@@ -801,7 +801,7 @@ public static class ConstructConfig
             var ok = e.Id switch
             {
                 CfgKey.Setting => true,
-                CfgKey.Recipe => d.IsAssembler || d.IsLathe || d.IsRefiner || d.IsPanelFormer, // (a Panel Former: its preset)
+                CfgKey.Recipe => d.IsAssembler || d.IsLathe || d.IsRefiner || d.IsPanelFormer || d.IsPress, // (a Panel Former: its preset; a press: its Pattern, PressTable.PatternChoices)
                 CfgKey.LinePick or CfgKey.OrderKind or CfgKey.OrderMaterial or CfgKey.LinePage or CfgKey.LineStopAfter => ProductionLines.IsConsole(d),
                 CfgKey.TextSize => ConstructPanels.HasText(d),
                 CfgKey.OrderCount => ProductionLines.IsConsole(d) || WorkOrders.TakesOrders(d),

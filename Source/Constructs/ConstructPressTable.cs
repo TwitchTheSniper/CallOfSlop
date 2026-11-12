@@ -49,15 +49,11 @@ public sealed class PressRow
 }
 
 /// <summary>
-/// The stamping table (Constructs/Pressing.json, format call-of-slop-pressing/2 or /1, written by the part kit's press_parts;
-/// docs/sandbox/CONSTRUCTS.md "The Press"). <see cref="Rows"/> are a press's: flat, one line per die family, material and size
-/// band, so a die with a dozen lines is a dozen rows and the first that its bays satisfy runs. <see cref="Lathe"/> are a Die
-/// Lathe's, chosen as a setting. A file that is refused gives no recipes and <see cref="Problem"/>.
-/// <para>
-/// Format /2 adds <see cref="Dies"/> and the presets (the Press rework: Pressed.cs): what a die makes of a whole blank, a part sized
-/// by the blank (a "Pressed Part (...)"), or the catalogue part when the blank is a preset's. A press with such a die fitted presses a
-/// bay's whole piece into one part (ConstructPress, "Sized dies"); a die with no entry here strokes its old rows.
-/// </para>
+/// The stamping table (Constructs/Pressing.json, format call-of-slop-pressing/2, written by the part kit's press_parts;
+/// docs/sandbox/CONSTRUCTS.md "The Press"). <see cref="Dies"/> say what a press makes of a whole blank (the Press rework: Pressed.cs):
+/// a part sized by the blank (a "Pressed Part (...)"), or the catalogue part when the blank is a preset's; a pattern may want a kit in
+/// bay 2. <see cref="Lathe"/> are a Die Lathe's rows, chosen as a setting. A file that is refused gives no dies and <see cref="Problem"/>.
+/// The old flat rows of format /1 (a stroke taking length off a piece) are gone: their parts are presets.
 /// </summary>
 public sealed class PressTable
 {
@@ -66,7 +62,6 @@ public sealed class PressTable
     public const int MaxDies = 64, MaxPatterns = 64, MaxFeatures = 24, MaxSockets = 16, MaxPresets = 4000;
     public const string NoRecipe = "(no die chosen)";
 
-    public PressRow[] Rows = [];
     public PressRow[] Lathe = [];
     public string[] LatheChoices = [NoRecipe];
     public string Problem = "";
@@ -90,7 +85,11 @@ public sealed class PressTable
     /// <summary>The pressed key a catalogue part is the preset of (the first listed), or null.</summary>
     public string? PresetKeyOf(ConstructPartDef d) => PresetKeyById.GetValueOrDefault(d.Id);
 
-    private readonly Dictionary<string, (int First, int Count)> _families = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>
+    /// A press's Pattern setting (its "recipe" key): 0 Auto (the blank picks: PressDie.PatternFor), else 1 + a pattern of the fitted die, by its
+    /// place in the die's list, so a saved press keeps its pattern when dies gain patterns at the end. The panel shows the pattern's own label.
+    /// </summary>
+    public static readonly string[] PatternChoices = ["Auto", .. Enumerable.Range(1, MaxPatterns).Select(n => $"Pattern {n}")];
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "Pressing.json");
 
@@ -127,8 +126,8 @@ public sealed class PressTable
         {
             if (d.IsLathe && d.CfgSlot[(int)CfgKey.Recipe] >= 0)
                 d.Config[d.CfgSlot[(int)CfgKey.Recipe]].Options = t.LatheChoices;
-            if (d.DieFamily.Length > 0)
-                d.DieRows = t._families.GetValueOrDefault(d.DieFamily);
+            if (d.IsPress && !d.IsLathe && d.CfgSlot[(int)CfgKey.Recipe] >= 0)
+                d.Config[d.CfgSlot[(int)CfgKey.Recipe]].Options = PatternChoices;
         }
     }
 
@@ -154,32 +153,14 @@ public sealed class PressTable
                 byName[d.Name] = d;
             using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
             var root = doc.RootElement;
-            if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("format", out var f) || f.GetString() is not (Format or FormatV1))
-                throw new FormatException($"\"format\" must be \"{Format}\" (or the older \"{FormatV1}\")");
-            var v2 = f.GetString() == Format;
+            if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("format", out var f) || f.GetString() != Format)
+                throw new FormatException($"\"format\" must be \"{Format}\" (a press's old rows went with {FormatV1}: every die says what it presses in \"dies\")");
             foreach (var p in root.EnumerateObject())
-                if (p.Name is not ("format" or "about" or "rows" or "lathe") && !(v2 && p.Name is "strength" or "dies" or "presets"))
+                if (p.Name is not ("format" or "about" or "lathe" or "strength" or "dies" or "presets"))
                     throw new FormatException($"unknown key \"{p.Name}\"");
-            var t = new PressTable
-            {
-                Rows = RowsOf(root, "rows", byName, true),
-                Lathe = RowsOf(root, "lathe", byName, false),
-            };
+            var t = new PressTable { Lathe = RowsOf(root, "lathe", byName, false) };
             t.LatheChoices = [NoRecipe, .. t.Lathe.Select(r => r.Output.Name)];
-            for (var k = 0; k < t.Rows.Length; k++)
-            {
-                var fam = t.Rows[k].Die;
-                if (t._families.TryGetValue(fam, out var have))
-                {
-                    if (have.First + have.Count != k)
-                        throw new FormatException($"rows of die \"{fam}\" must stand together");
-                    t._families[fam] = (have.First, have.Count + 1);
-                }
-                else
-                    t._families[fam] = (k, 1);
-            }
-            if (v2)
-                PressDies.Read(root, byName, t);
+            PressDies.Read(root, byName, t);
             return t;
         }
         catch (Exception ex) when (ex is JsonException or FormatException or InvalidOperationException or KeyNotFoundException)

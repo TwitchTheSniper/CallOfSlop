@@ -38,7 +38,19 @@ public static class Pressed
     public static bool Scalable(string field) => Array.IndexOf(ScaledFields, field) >= 0;
 
     /// <summary>A blank's size across (cm): its smaller side, but a plate's width (its height only sets its thickness).</summary>
-    public static int Across(in ExtrusionKey k) => k.Shape == ExShape.Section && Extrusion.PresetOf(k.Mask) == PlateSection ? k.W : Math.Min((int)k.W, k.H);
+    public static int Across(in ExtrusionKey k) => k.Shape is ExShape.Round or ExShape.Pipe || k.Shape == ExShape.Section && Extrusion.PresetOf(k.Mask) == PlateSection ? k.W : Math.Min((int)k.W, k.H);
+
+    /// <summary>A blank's section: an Extruder preset's index, or PressBaySpec.RoundSection or PipeSection; -1 for anything else (a custom grid, a wheel).</summary>
+    public static int SectionOf(in ExtrusionKey k) => PressBaySpec.SectionOf(k);
+
+    /// <summary>A section's word on a card or in a reason: "L-angle", "Round bar", "Pipe".</summary>
+    public static string SectionLabel(int section) => section switch
+    {
+        PressBaySpec.RoundSection => "Round bar",
+        PressBaySpec.PipeSection => "Pipe",
+        >= 0 when section < Extrusion.Presets.Length => Extrusion.ProfileLabel(Extrusion.Presets[section].Mask),
+        _ => "Custom",
+    };
 
     /// <summary>The least press class (0 Small .. 3 Capital) whose bay takes a blank this many cm across; -1 when none does.</summary>
     public static int PressClass(int acrossCm) => Array.FindIndex(PressMaxCm, c => acrossCm <= c);
@@ -53,7 +65,7 @@ public static class Pressed
     /// <summary>A blank's text read back, only when spelt exactly as a machine writes it; a preset section, never growing.</summary>
     public static ExtrusionKey? ParseBlank(string text)
     {
-        if (Extrusion.ParseKey(Extrusion.Prefix + text) is not { } k || k.Growing || k.Shape != ExShape.Section || Extrusion.PresetOf(k.Mask) < 0)
+        if (Extrusion.ParseKey(Extrusion.Prefix + text) is not { } k || k.Growing || SectionOf(k) < 0)
             return null;
         return BlankText(k) == text ? k : null;
     }
@@ -61,7 +73,7 @@ public static class Pressed
     /// <summary>Can this die and pattern press this blank? <see cref="Refusal"/> without its text: a press asks every step, and allocates nothing.</summary>
     public static bool Fits(PressDie die, PressPattern p, in ExtrusionKey k)
     {
-        var section = k.Shape == ExShape.Section ? Extrusion.PresetOf(k.Mask) : -1;
+        var section = SectionOf(k);
         if (section < 0 || !die.Takes(p, section) || Array.IndexOf(die.Materials, k.Material) < 0)
             return false;
         if (k.W % Extrusion.StepCm != 0 || k.H % Extrusion.StepCm != 0 || k.L % Extrusion.StepCm != 0 || k.W < MinCm || k.H < MinCm)
@@ -76,9 +88,9 @@ public static class Pressed
     /// <summary>Why a die and pattern can't press this blank (bay card text), or null.</summary>
     public static string? Refusal(PressDie die, PressPattern p, in ExtrusionKey k)
     {
-        var section = Extrusion.PresetOf(k.Mask);
-        if (k.Shape != ExShape.Section || section < 0 || !die.Takes(p, section))
-            return $"the {p.Label} pattern doesn't take a {Extrusion.ProfileLabel(k.Mask).ToLowerInvariant()} blank";
+        var section = SectionOf(k);
+        if (section < 0 || !die.Takes(p, section))
+            return $"the {p.Label} pattern doesn't take a {SectionLabel(section).ToLowerInvariant()} blank";
         if (Array.IndexOf(die.Materials, k.Material) < 0)
             return $"a {die.Family} die doesn't work {RecyclingTable.Current.NameOf(k.Material)}";
         if (k.W % Extrusion.StepCm != 0 || k.H % Extrusion.StepCm != 0 || k.L % Extrusion.StepCm != 0 || k.W < MinCm || k.H < MinCm)
@@ -179,7 +191,7 @@ public static class Pressed
     public static (float Volume, float Mass) VolumeMass(in ExtrusionKey k)
     {
         var mat = ExtrusionTable.Current.Find(k.Material)!;
-        var volume = Extrusion.Fill(k.Mask) * (k.W / 100f) * (k.H / 100f) * (k.L / 100f);
+        var volume = Extrusion.AreaM2(k) * (k.L / 100f);
         return (volume, volume * mat.UnitsPerM3 * RecyclingTable.Current.WeightOf(k.Material));
     }
 
@@ -266,6 +278,11 @@ public static class Pressed
 
     // ---- The def ---------------------------------------------------------------------------------------------------------
 
+    private static ushort _collar;
+
+    /// <summary>A collar's shape on a round blank: a closed cylinder along z.</summary>
+    private static ushort Collar => _collar != 0 ? _collar : _collar = PartShapes.For(new PartBox { Shape = "cylinder", Size = Vector3.One, Segments = 16, Inner = -1, Ends = "closed" });
+
     /// <summary>The z-fighting gap for a patch this size (m): 3 mm up to 2 m, 10 mm up to 8 m, 1/800 above, at most 50 mm (CLAUDE.md "No coplanar faces").</summary>
     public static float Gap(float patch) => patch <= 2 ? 0.003f : patch <= 8 ? 0.010f : MathF.Min(0.05f, patch / 800);
 
@@ -276,9 +293,14 @@ public static class Pressed
         var mat = ExtrusionTable.Current.Find(k.Material)!;
         var materialName = names.NameOf(k.Material);
         float w = k.W / 100f, h = k.H / 100f, len = k.L / 100f, cw = w / Extrusion.Grid, ch = h / Extrusion.Grid;
-        var section = Extrusion.PresetOf(k.Mask);
+        var section = SectionOf(k);
+        // The blank's boxes: a section's rects as the Extruder meshes them, or a round bar's or a pipe's own (its hidden solid boxes and its
+        // drawn lathe shape: Extrusion.BuildRound), moved so the blank's middle is the origin.
+        var round = k.Shape is ExShape.Round or ExShape.Pipe;
+        var bar = round ? Extrusion.Def(k with { Growing = false }) : null;
         Span<Extrusion.Rect> rects = stackalloc Extrusion.Rect[Extrusion.Grid * Extrusion.Grid];
-        var nb = Extrusion.Mesh(k.Mask, rects);
+        var nb = bar != null ? bar.Boxes.Length : Extrusion.Mesh(k.Mask, rects);
+        var solid = bar != null ? bar.SolidBoxes : nb;
         var nf = 0;
         foreach (var f in die.Features)
             nf += f.On(section) ? 1 : 0;
@@ -293,7 +315,17 @@ public static class Pressed
         var half = new Vector3(w * 0.5f, h * 0.5f, len * 0.5f);
         var min = new Vector3(float.MaxValue);
         var max = new Vector3(float.MinValue);
-        for (var i = 0; i < nb; i++)
+        var barShift = new Vector3(0, 0, len * 0.5f);
+        for (var i = 0; bar != null && i < nb; i++)
+        {
+            lo[i] = bar.Boxes[i].Center - bar.Boxes[i].Half - barShift;
+            hi[i] = bar.Boxes[i].Center + bar.Boxes[i].Half - barShift;
+            min = Vector3.Min(min, lo[i]);
+            max = Vector3.Max(max, hi[i]);
+        }
+        if (bar != null)
+            thinnest = k.Shape == ExShape.Pipe ? k.Wall / 100f : w;
+        for (var i = 0; bar == null && i < nb; i++)
         {
             var r = rects[i];
             lo[i] = new Vector3(r.X * cw, r.Y * ch, 0) - half;
@@ -344,8 +376,15 @@ public static class Pressed
         var boxes = new CPartBox[n];
         for (var i = 0; i < n; i++)
         {
+            if (bar != null && i < nb)
+            {
+                boxes[i] = bar.Boxes[i] with { Center = bar.Boxes[i].Center - barShift };
+                continue;
+            }
             var c = i < nb ? colour : Tone(colour, looks[i]);
-            boxes[i] = new CPartBox((lo[i] + hi[i]) * 0.5f, (hi[i] - lo[i]) * 0.5f, c, Detail: i >= nb);
+            // On a round bar or a pipe a feature that rings the whole section is a collar: drawn round, as the bar is.
+            var ring = bar != null && i >= nb && lo[i].X <= min.X + 1e-4f && lo[i].Y <= min.Y + 1e-4f && hi[i].X >= max.X - 1e-4f && hi[i].Y >= max.Y - 1e-4f;
+            boxes[i] = new CPartBox((lo[i] + hi[i]) * 0.5f, (hi[i] - lo[i]) * 0.5f, c, Detail: i >= nb, Shape: ring ? Collar : (ushort)0);
         }
         // Sockets: the die's, then the blank's own faces (as an extrusion's, moved with its origin), less any the die put in the same place.
         var across = Across(k);
@@ -367,7 +406,7 @@ public static class Pressed
         d.File = "";
         d.Description = $"Pressed on a {die.Family} die: a {p.Label} of a {Extrusion.ProfileLabel(k.Mask).ToLowerInvariant()} blank {w:0.##} by {h:0.##} by {len:0.##} m of {materialName}.";
         d.Boxes = boxes;
-        d.SolidBoxes = nb;
+        d.SolidBoxes = solid;
         d.BoundsMin = min;
         d.BoundsMax = max;
         d.Sockets = socks.ToArray();
@@ -384,7 +423,7 @@ public static class Pressed
         d.Legacy = false;
         d.OnBreak = PartBreak.Detach;
         d.CentreOptOut = true;
-        d.ColliderBoxes = false;
+        d.ColliderBoxes = k.Shape == ExShape.Pipe; // (a pipe collides as its ring of boxes, as an extruded pipe does)
         d.Hulls = null;
         d.HullCovers = null;
         d.HasGlass = false;
@@ -573,11 +612,11 @@ public static class Pressed
     private static int List(PressTable t)
     {
         var names = RecyclingTable.Current;
-        Console.WriteLine($"[press] {t.Dies.Length} dies, {t.PresetByKey.Count} presets ({PressTable.Format}; a press with one of these dies presses a whole blank, the other dies stroke the {t.Rows.Length} old rows)");
+        Console.WriteLine($"[press] {t.Dies.Length} dies, {t.PresetByKey.Count} presets ({PressTable.Format}; a press with one of these dies presses a whole blank)");
         foreach (var d in t.Dies)
         {
             var classes = Enumerable.Range(0, 4).Where(c => (c == 0 ? Pressed.MinCm : PressMaxCm[c - 1] + 1) <= d.AcrossMax && d.AcrossMin <= PressMaxCm[c]).Select(ClassWord);
-            Console.WriteLine($"[press] {d.Family} die: blanks {string.Join(", ", d.Blanks.Select(s => Extrusion.Presets[s].Id))}; {string.Join(", ", d.Materials.Select(names.NameOf))}; "
+            Console.WriteLine($"[press] {d.Family} die: blanks {string.Join(", ", d.Blanks.Select(SectionLabel))}; {string.Join(", ", d.Materials.Select(names.NameOf))}; "
                 + $"across {d.AcrossMin / 100f:0.00} to {d.AcrossMax / 100f:0.00} m, length {d.LengthMin / 100f:0.00} to {d.LengthMax / 100f:0.00} m, aspect {d.AspectMin:0.##} to {d.AspectMax:0.##}; "
                 + $"presses {string.Join(", ", classes)}; {d.Features.Length} features, {d.Sockets.Length} sockets; presets {t.PresetByKey.Keys.Count(k => k.StartsWith(Prefix + d.Id + ".", StringComparison.Ordinal))}");
             foreach (var p in d.Patterns)
@@ -760,6 +799,11 @@ public static class Pressed
 
     private static string KeyFor(PressDie die, PressPattern p, int section, int across, int length, byte material)
     {
+        var len = (ushort)Math.Clamp(length, Extrusion.StepCm, Extrusion.MaxLengthCm);
+        if (section == PressBaySpec.RoundSection)
+            return KeyOf(die, p, new ExtrusionKey(0, (ushort)across, (ushort)across, len, material, false, ExShape.Round));
+        if (section == PressBaySpec.PipeSection)
+            return KeyOf(die, p, new ExtrusionKey(0, (ushort)across, (ushort)across, len, material, false, ExShape.Pipe, (ushort)Math.Max(Extrusion.StepCm, across / 50 * Extrusion.StepCm)));
         var plate = section == PlateSection;
         int w = across, h = plate ? MinCm : across;
         if (section == PlateSection && across < MinCm)
