@@ -521,7 +521,7 @@ public static class ConstructStorage
             // A Piece Rack (ConstructConveyor.cs): whole pieces by kind, the largest section and length it holds and how many.
             if (pc.ValueKind != JsonValueKind.Object)
                 throw new ConstructPartException($"{file}: storage \"pieces\" is an object (section, length, count)");
-            ConstructParts.Known(pc, ["section", "length", "count", "hold", "crafting", "station", "designer"], $"{bw}.pieces");
+            ConstructParts.Known(pc, ["section", "length", "count", "hold", "crafting", "station", "designer", "plinth"], $"{bw}.pieces");
             var sec = ConstructParts.Need(pc, "section", $"{bw}.pieces");
             if (sec.ValueKind != JsonValueKind.Array || sec.GetArrayLength() != 2)
                 throw new ConstructPartException($"{file}: storage.pieces.section is [across, up] in metres");
@@ -546,6 +546,15 @@ public static class ConstructStorage
             d.IsCraftTerminal = ConstructParts.Opt(pc, "crafting") is { ValueKind: JsonValueKind.True };
             d.IsBuildStation = d.IsCraftTerminal && ConstructParts.Opt(pc, "station") is { ValueKind: JsonValueKind.True };
             d.IsPanelDesigner = d.IsCraftTerminal && ConstructParts.Opt(pc, "designer") is { ValueKind: JsonValueKind.True }; // (a Panel Designer: the terminal with the designer's panel, UiPanelDesigner.cs)
+            if (d.IsPanelDesigner && ConstructParts.Opt(pc, "plinth") is { } pl)
+            {
+                // Where the model of the newest design stands: [x, y, z, size] (its top's middle, and the cube the model is scaled into).
+                if (pl.ValueKind != JsonValueKind.Array || pl.GetArrayLength() != 4)
+                    throw new ConstructPartException($"{file}: storage.pieces.plinth is [x, y, z, size] in metres");
+                d.PlinthAt = new Vector3(pl[0].GetSingle(), pl[1].GetSingle(), pl[2].GetSingle());
+                d.PlinthSize = pl[3].GetSingle();
+                ConstructParts.Range(d.PlinthSize, 0.05f, 2, file, "storage.pieces.plinth");
+            }
             if (d.IsCraftTerminal)
                 d.DataIn = ["Orders"]; // (a Line Console's wire into it brings that console's machines: ConstructCrafting.cs)
         }

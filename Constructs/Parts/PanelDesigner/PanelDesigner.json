@@ -42,6 +42,12 @@
       "count": 200,
       "crafting": true,
       "designer": true,
+      "plinth": [
+        1.125,
+        0.81,
+        2.075,
+        0.34
+      ],
       "hold": [
         [
           1.445,

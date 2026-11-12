@@ -58,6 +58,8 @@ public static class RouteRender
             Frames(c, alpha, blendTicks);
             if (c.PieceRackCount > 0)
                 DrawRacks(gfx, world, c);
+            if (c.PieceRackCount > 0 && world.Designs.Count > 0)
+                DrawPlinths(gfx, world, c);
             if (c.PieceRackCount > 0)
                 DrawBays(gfx, world, c);
             for (var k = 0; k < c.RouteCount; k++)
@@ -308,6 +310,36 @@ public static class RouteRender
                 gfx.Draw(Matrix4x4.CreateScale(0.22f) * Matrix4x4.CreateTranslation(at), new Vector3(0.35f, 0.75f, 1f), 0.9f);
                 gfx.Draw(Matrix4x4.CreateScale(0.4f) * Matrix4x4.CreateTranslation(at), new Vector3(0.35f, 0.75f, 1f), 0.3f);
                 Frames(c, 1f, false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// A Panel Designer's plinth (docs/sandbox/constructs/production.md "Panel Designer"): a small model of the world's newest shared design,
+    /// scaled to the plinth, look-only, drawn within 25 m. The part is found by its key once a change of the list (PanelDesigns.cs).
+    /// </summary>
+    private static void DrawPlinths(Renderer gfx, ConstructWorld world, Construct c)
+    {
+        if (world.Designs.Count == 0)
+            return;
+        var eye = gfx.CameraPosition;
+        for (var k = 0; k < c.PieceRackCount; k++)
+        {
+            int part = c.PieceRacks[k];
+            if (part >= c.PartCount || c.DefOf(part) is not { PlinthSize: > 0 } rd)
+                continue;
+            ref var p = ref c.Parts[part];
+            var frame = Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * SegFrames[p.Seg <= c.JointCount && p.Seg <= Construct.MaxJoints ? p.Seg : 0];
+            if (Vector3.DistanceSquared(eye, Vector3.Transform(rd.PlinthAt, frame)) > 25 * 25 || PanelDesigns.Newest(world) is not { } d)
+                continue;
+            var size = d.BoundsMax - d.BoundsMin;
+            var fit = rd.PlinthSize / MathF.Max(0.05f, MathF.Max(size.X, MathF.Max(size.Y, size.Z)));
+            var m = Matrix4x4.CreateTranslation(-(d.BoundsMin.X + d.BoundsMax.X) * 0.5f, -d.BoundsMin.Y, -(d.BoundsMin.Z + d.BoundsMax.Z) * 0.5f) * Matrix4x4.CreateScale(fit) * Matrix4x4.CreateTranslation(rd.PlinthAt) * frame;
+            for (var bx = 0; bx < d.Boxes.Length; bx++)
+            {
+                ref readonly var box = ref d.Boxes[bx];
+                if (!box.Hidden)
+                    gfx.Draw(box.Model(0, box.Center) * m, box.Color, shape: box.Shape);
             }
         }
     }
