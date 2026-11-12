@@ -423,7 +423,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      new settings (bayWidth, bayDepth, bayHeight).
     // 257: uniforms (Source/Cosmetics/Uniforms.cs). The roster gains a u8 uniform per player after the look (bots too), and the look
     //      (PlayerLook.WireBytes) grows to 4 bytes: the fourth is the uniform choice (Issued Uniform or Own Clothes).
-    // 259: pressed parts (the Press rework, phase 1; 258 is the Panel Designer's): a run-time part named "Pressed Part (...)" travels as a
+    // 258: the tutorial's play areas (Game/GameTutorialBounds.cs): Msg.Quarry gains a u8 after the buses, 1 while the person is
+    //      outside their step's area (the panel says so; the marker already points back).
+    // 259: pressed parts (the Press rework, phase 1; 258 is the tutorial's play areas, the Panel Designer takes 260): a run-time part named "Pressed Part (...)" travels as a
     //      formed panel does (HullLoft.WireKind and its name); a peer on an older protocol would refuse the name.
     public const ushort ProtocolVersion = 259;
 

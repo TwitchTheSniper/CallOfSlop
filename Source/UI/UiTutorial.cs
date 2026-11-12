@@ -64,6 +64,11 @@ public sealed partial class Ui
                     ImGui.Spacing();
                     ImGuiSafe.TextColored(Orange, _tutHint);
                 }
+                if (game.PlayAreaOutLocal)
+                {
+                    ImGui.Spacing();
+                    ImGuiSafe.TextColored(Red, PlayAreaLine(step.Area));
+                }
                 ImGui.PopTextWrapPos();
                 TutorialLook(game, step);
                 if (_tutTarget is { } at && game.Local is { } me)
@@ -91,7 +96,7 @@ public sealed partial class Ui
     private void TutorialLook(Game game, TutorialStep step)
     {
         var now = Brutal.GlfwApi.Glfw.Time;
-        if (step.Spot != QuarrySpotKind.None)
+        if (step.Spot != QuarrySpotKind.None || game.PlayAreaOutLocal)
         {
             _tutTarget = game.QuarryHasTarget ? game.QuarryTarget : null; // (the server's: a bus stop, the bus, the mine wall)
             return;
@@ -141,6 +146,20 @@ public sealed partial class Ui
                 }
             }
         }
+    }
+
+    private PlayArea _paLineFor = (PlayArea)255;
+    private string _paLineText = "";
+
+    /// <summary>What the panel says while this PC's player is out of their step's play area (made once per area).</summary>
+    private string PlayAreaLine(PlayArea a)
+    {
+        if (a != _paLineFor)
+        {
+            _paLineFor = a;
+            _paLineText = $"OUT OF BOUNDS. Go back to {PlayAreas.Of(a)?.Name ?? "the work area"} (the orange marker): nothing you do out here counts.";
+        }
+        return _paLineText;
     }
 
     private static bool TutorialDropped(TutorialStep step, string name)

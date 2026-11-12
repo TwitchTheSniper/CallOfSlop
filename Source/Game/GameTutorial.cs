@@ -216,7 +216,7 @@ public sealed partial class Game
     /// <summary>Server: something the induction counts happened for this person outside an action (a bunk lain in).</summary>
     private void TutorialSee(byte id, TutorialCue cue)
     {
-        if (id < MaxPlayers && _tutState[id] == TutorialState.Running)
+        if (id < MaxPlayers && _tutState[id] == TutorialState.Running && !PlayAreaHolds(id))
             _tutSaw[id] |= 1u << (int)cue;
     }
 
@@ -297,6 +297,8 @@ public sealed partial class Game
             ref var hand = ref SandboxHands.Hand(id);
             if (Tutorial.Gate(state, _tutStep[id], hand.Tool) != hand.Tool)
                 SandboxHands.SetTool(id, ConstructTool.Hands, Constructs, p.Eye, p.Yaw); // (a respawn or a saved world's tool: the gun stays with the warden)
+            if (PlayAreaHolds(id))
+                continue; // (out of the step's area: it waits, GameTutorialBounds.cs)
             if (TutorialStepDone(p, steps[_tutStep[id]], now) && now - _tutStepAt[id] >= TutorialMinStep)
             {
                 _tutDone[id] = true; // (the group moves on below, together)
@@ -492,8 +494,8 @@ public sealed partial class Game
     /// </summary>
     private void TutorialSawAct(Player p, ref PacketReader r)
     {
-        if (p.Id >= MaxPlayers || _tutState[p.Id] != TutorialState.Running || !r.Has(1))
-            return;
+        if (p.Id >= MaxPlayers || _tutState[p.Id] != TutorialState.Running || !r.Has(1) || !PlayAreaLets(p))
+            return; // (done out of the step's area: it doesn't count, GameTutorialBounds.cs)
         var saw = 0u;
         switch ((CActKind)r.U8())
         {
