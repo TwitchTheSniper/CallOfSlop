@@ -303,7 +303,7 @@ public sealed class Assembling : IPartGenerator
         ["Copper Coil"] = 2, ["Wiring Loom"] = 2, ["Servo Motor"] = 2, ["Circuit Board"] = 3, ["Control Unit"] = 3,
     };
 
-    private static readonly string[] SkipFolders = ["Spawn", "Components", "Press/Dies", "Wings"]; // (dies come from a Die Lathe, or the start kit)
+    private static readonly string[] SkipFolders = ["Spawn", "Components", "Press/Dies", "Wings", "Lore"]; // (dies come from a Die Lathe, or the start kit; the colony's lore items are its own)
     // (the old ammo modules: a box's setting does it now) (a data centre's terminal is found, never made: docs/story/FRAGMENTS.md)
     private static readonly string[] SkipNames = ["Material Bundle", "Construct Core", "Data Centre Terminal", "Chest Lid", "Lid Hinge", "FMJ Rounds", "AP Rounds", "HE Rounds", "Incendiary Rounds"];
     private const int MaxUnits = 2000;

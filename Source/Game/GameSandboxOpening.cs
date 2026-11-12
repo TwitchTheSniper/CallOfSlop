@@ -103,6 +103,7 @@ public sealed partial class Game
         DepotReset(); // (and the Remote Works and the Orbital Depot: GameDepot.cs)
         QuarryReset(); // (and the Ministry Quarry: GameQuarry.cs)
         FragmentsReset(); // (and the data centres: GameStoryFragments.cs)
+        LoreReset(); // (and the things to look at: GameStoryLore.cs)
         OpeningLocal = OpeningStage.None;
         OpeningCaption = OpeningSubtitle = "";
         _storyMiddleOf = null; // (the people's middle is the colony's when there is one)

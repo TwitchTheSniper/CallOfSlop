@@ -129,6 +129,7 @@ public static unsafe partial class Program
             DrawNoclipHud();
             DrawTyping();
             DrawTalkInMatch(now); // (the talk panel: Program.StoryTalk.cs)
+            DrawLoreInMatch(); // (a lore item's words: Program.StoryLore.cs)
             DrawSelectInMatch();
             DrawReplaceInMatch();
             DrawBuildBar();
