@@ -565,6 +565,22 @@ public static unsafe partial class Program
                         WsSay(made == null ? "station: drop: no room" : "station: a loose " + loose.Name + " lies in the bay (construct " + made.Id + ")");
                         break;
                     }
+                    case "costtop": // the biggest shipped blueprints a 64 m bay doesn't refuse from their parts, costed as a station does
+                        foreach (var line in StationCostProbe.CostTop(new System.Numerics.Vector3(64, 64, 64), int.TryParse(rest, out var topN) ? topN : 6))
+                            WsSay("station: cost: " + line);
+                        break;
+                    case "saveworld" when g.IsServer:
+                        WsSay("station: " + g.StationSaveProbe(rest));
+                        break;
+                    case "loadworld" when g.IsServer:
+                        WsSay("station: " + g.StationLoadProbe(rest));
+                        (sc, spart) = WsFind(g, "Building Station");
+                        if (sc == null)
+                        {
+                            WsFail("no Building Station after the load");
+                            return;
+                        }
+                        break;
                     case "repeat":
                         g.SandboxStation(sc.Id, spart, StationOp.Repeat, (ushort)(int.TryParse(rest, out var more) ? more : 0));
                         break;

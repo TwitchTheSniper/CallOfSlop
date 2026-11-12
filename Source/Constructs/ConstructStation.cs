@@ -1496,3 +1496,42 @@ public static class StationProbe
         return (ConstructRecycler.Powered(world, c, t) ? "" : "NO POWER ") + (j == null ? "no job" : $"{j.State} \"{j.Name}\" parts {j.Fitted}/{j.Steps} links {j.LinksDone}/{j.Links} repeat {j.Repeat} body {j.Body} ({(b == null ? "none" : $"{b.PartCount} parts, {b.RouteCount} links, {(b.Frozen ? "frozen" : "free")}{(b.Anchored ? " anchored" : "")}{(b.Asleep ? " asleep" : " awake")}, wheels {b.WheelCount}, at {b.Pos.X:0.0},{b.Pos.Y:0.00},{b.Pos.Z:0.0}")}) reserved {Reserved(world, c, t)} hold {world.StoreOf(c, t)?.ItemCount ?? -1} orders {c.Parts[t].Craft?.Count ?? 0} note \"{j.Note}\"");
     }
 }
+
+public static class StationCostProbe
+{
+    /// <summary>
+    /// The window tool: the shipped blueprints with the most steps that a bay of <paramref name="bay"/> doesn't refuse from their
+    /// parts alone, each costed as a station costs it (the steps only, a slice of <see cref="ConstructStation.CostBudgetMs"/> at a time):
+    /// its steps, its size, whether it fits, the time in all and the longest slice.
+    /// </summary>
+    public static List<string> CostTop(Vector3 bay, int top)
+    {
+        var lines = new List<string>();
+        var list = ConstructBuild.Blueprints.Where(b => ConstructStation.QuickRefusal(b, bay) == null).OrderByDescending(b => b.Steps.Count).Take(top);
+        foreach (var bp in list)
+        {
+            // (as ConstructStation.Cost does it: the steps only, a slice at a time)
+            var run = new ConstructBuild.BuildRun { StepsOnly = true };
+            using var steps = ConstructBuild.BuildSteps(new ConstructWorld(), bp, Vector3.Zero, Quaternion.Identity, run).GetEnumerator();
+            double total = 0, worst = 0;
+            var slices = 0;
+            for (var more = true; more;)
+            {
+                var t0 = Stopwatch.GetTimestamp();
+                var until = t0 + (long)(ConstructStation.CostBudgetMs * Stopwatch.Frequency / 1000);
+                while (more && Stopwatch.GetTimestamp() < until)
+                    more = steps.MoveNext();
+                var ms = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
+                total += ms;
+                worst = Math.Max(worst, ms);
+                slices++;
+            }
+            var size = Vector3.Zero;
+            if (run.Body != null)
+                ConstructStation.PartBounds(run.Body, out _, out size);
+            lines.Add(run.Body == null ? $"{bp.Name}: {bp.Steps.Count} steps: doesn't build: {run.Why}"
+                : $"{bp.Name}: {bp.Steps.Count} steps, {size.X:0.0} x {size.Y:0.0} x {size.Z:0.0} m, {(ConstructStation.FitRefusal(size, bay) == null ? "fits" : "doesn't fit")}: {total:0.0} ms in {slices} slices, worst {worst:0.00} ms");
+        }
+        return lines;
+    }
+}

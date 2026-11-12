@@ -78,3 +78,34 @@ public sealed partial class Game
         return $"saved to {ws.Folder} and loaded: {before} bodies before, {Constructs.Bodies.Count} after";
     }
 }
+
+public sealed partial class Game
+{
+    /// <summary>The window tool (host): the world saved under a name in the save folder (--save-dir), through the real save.</summary>
+    internal string StationSaveProbe(string name)
+    {
+        if (!IsServer || !SandboxOn)
+            return "not the host";
+        if (WorldSession == null)
+        {
+            var made = WorldNew(name, World.Map, SandboxSurvivalOption);
+            WorldAttach(made);
+            made.Live = true;
+        }
+        return WorldSaveNow(wait: true) ? $"saved as {WorldSession!.Folder}" : "the world wasn't saved";
+    }
+
+    /// <summary>The window tool (host, a fresh process): a saved world loaded over this one, through the real load.</summary>
+    internal string StationLoadProbe(string name)
+    {
+        if (!IsServer || !SandboxOn)
+            return "not the host";
+        var entry = WorldStore.List().Find(e => e.Meta.Name.Equals(WorldStore.CleanName(name), StringComparison.OrdinalIgnoreCase));
+        if (entry == null || WorldOpen(entry, out var why) is not { } ws)
+            return "no such world";
+        WorldSession = ws;
+        Constructs.Clear();
+        WorldApply(ws);
+        return $"loaded {ws.Folder}: {Constructs.Bodies.Count} bodies";
+    }
+}
