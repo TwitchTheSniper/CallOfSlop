@@ -266,8 +266,8 @@ public sealed class ProductionShowcase : IPartGenerator
 
         /// <summary>
         /// Orders pull their inputs (production.md "Smart logistics", phase 2): a second Assembler on the panel strip's floor south of the
-        /// first, fed steel, set to nothing, its Piece out on a conveyor into the first Assembler's Piece in. Order a Transmission at the
-        /// terminal: the first Assembler is asked for it, and the two Gear Sets its recipe needs are asked of the second, ride in and are used.
+        /// first, fed steel, set to nothing, its Piece out on a conveyor into the first Assembler's Piece in. Order a Clutch at the
+        /// terminal: the first Assembler is asked for it, and the Gear Set its recipe needs is asked of the second, ride in and are used.
         /// </summary>
         private void ChainCorner(VPart asm)
         {
@@ -276,7 +276,7 @@ public sealed class ProductionShowcase : IPartGenerator
             var o = PortAt(asm2, "Piece out");
             var i = PortAt(asm, "Piece in");
             Convey(asm2, "Piece out", asm, "Piece in", Assembly, new Vector2(0.6f, 0.6f), V(i.X - 0.55f, o.Y, o.Z), V(i.X - 0.55f, o.Y, i.Z));
-            Sign(40.75f, Posts3, Assembly, "ORDER A TRANSMISSION: THIS ASSEMBLER MAKES ITS GEAR SETS");
+            Sign(40.75f, Posts3, Assembly, "ORDER A CLUTCH: THIS ASSEMBLER MAKES ITS GEAR SET");
         }
 
         /// <summary>
