@@ -661,7 +661,7 @@ public static partial class ConstructRender
                 WorkMove(gfx, c, in box, in p, centre, seg * body, ref model);
             if (box.Fence && routerOn && routerFence != 0)
             {
-                var pivot = p.Pos + Rot24.Apply(p.Rot, (d.BoundsMin + d.BoundsMax) * 0.5f with { Y = 0 });
+                var pivot = p.Pos + Rot24.Apply(p.Rot, ((d.BoundsMin + d.BoundsMax) * 0.5f) with { Y = 0 });
                 model = model * Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(Rot24.Apply(p.Rot, Vector3.UnitY), routerFence) * Matrix4x4.CreateTranslation(pivot); // (the diverter turned toward the way)
             }
             if (d.HasEngineBoxes && c.EngineOf[i] != 0 && c.EngineOf[i] == c.ModActive + 1)

@@ -233,8 +233,7 @@ public sealed class ProductionShowcase : IPartGenerator
                     .Select(p => V(p.X, FloorY + 0.03f, p.Z)).ToArray());
             // The Extruders' pieces come back too, and the Router's way to the tray: a Join before the terminal's side (Piece in 2) takes
             // the Long Piece Rack's Piece out, down to the back aisle's edge and along it, and the Router's left way from the south.
-            var side = PortAt(term, "Piece in 2");
-            var join = On("Conveyor Join", 58.25f, side.Z + 0.625f, Flow, "-y.0.0", Assembly);
+            var join = On("Conveyor Join", 58.25f, -7.75f, Flow, "-y.0.0", Assembly);
             Convey(join, "Piece out", term, "Piece in 2", Assembly);
             var back = PortAt(longRack, "Piece out");
             var jin = PortAt(join, "Piece in");
@@ -256,7 +255,7 @@ public sealed class ProductionShowcase : IPartGenerator
         private VPart SmartCorner(VPart asm, VPart partRack)
         {
             var o = PortAt(asm, "Piece out");
-            var router = On("Conveyor Router", 52.75f, o.Z + 0.625f, Flow, "-y.0.0", "#3f8f5a");
+            var router = On("Conveyor Router", 52.75f, -10.75f, Flow, "-y.0.0", "#3f8f5a");
             Convey(asm, "Piece out", router, "Piece in", Assembly);
             Convey(router, "Piece out", partRack, "Piece in", Assembly);
             Sign(53.75f, Posts2, Assembly, "ROUTER: ordered parts ride to the tray, the rest to the rack");
