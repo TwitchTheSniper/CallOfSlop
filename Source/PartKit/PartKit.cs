@@ -57,6 +57,7 @@ public static class PartKit
         new Generators.PilotParts(),
         new Generators.CallCentreParts(),
         new Generators.OfficeParts(),
+        new Generators.LoreParts(),
         new Generators.BritishParts(),
         new Generators.DoorParts(),
         new Generators.StationParts(),

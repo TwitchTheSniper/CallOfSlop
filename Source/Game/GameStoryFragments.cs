@@ -111,24 +111,12 @@ public sealed partial class Game
         var script = FragmentScript.Current;
         if (script.Problem.Length > 0 || World.Map.Planetoid is not { } pl)
             return;
-        var mine = false; // (does a site name this map? Then a terminal here is that site's, not the colony's)
-        foreach (var site in script.Sites)
-            mine |= site.Map.Equals(World.Map.Name, StringComparison.OrdinalIgnoreCase);
+        // The sites on this world first, then the colony's own (the story's home world can hold both, as Glacier does).
         for (var k = 0; k < script.Sites.Length; k++)
         {
             var site = script.Sites[k];
             if (site.Map.Length == 0)
-            {
-                // The colony's own site, back from a trip (the landing brings the colony's builds back, not which is which).
-                if (!mine && Constructs.Get(FragmentScript.SiteBodies[k]) == null)
-                    foreach (var c in Constructs.Bodies)
-                        if (c.Anchored | c.Frozen && FragmentTerminal(k, c) >= 0)
-                        {
-                            FragmentScript.SiteBodies[k] = c.Id;
-                            break;
-                        }
                 continue;
-            }
             if (!site.Map.Equals(World.Map.Name, StringComparison.OrdinalIgnoreCase))
                 continue;
             double lat = site.Lat * Math.PI / 180, lon = site.Lon * Math.PI / 180;
@@ -169,6 +157,28 @@ public sealed partial class Game
             }
             FragmentScript.SiteBodies[k] = found?.Id ?? 0;
         }
+        for (var k = 0; k < script.Sites.Length; k++)
+        {
+            // The colony's own site, back from a trip (the landing brings the colony's builds back, not which is which):
+            // a building with a terminal that isn't another site's.
+            if (script.Sites[k].Map.Length > 0 || Constructs.Get(FragmentScript.SiteBodies[k]) != null)
+                continue;
+            foreach (var c in Constructs.Bodies)
+                if (c.Anchored | c.Frozen && !FragmentSiteTaken(script, c.Id) && FragmentTerminal(k, c) >= 0)
+                {
+                    FragmentScript.SiteBodies[k] = c.Id;
+                    break;
+                }
+        }
+    }
+
+    /// <summary>Is this construct already a site's building?</summary>
+    private static bool FragmentSiteTaken(FragmentScript script, ushort id)
+    {
+        for (var j = 0; j < script.Sites.Length; j++)
+            if (FragmentScript.SiteBodies[j] == id)
+                return true;
+        return false;
     }
 
     /// <summary>Server, a save: each site's id and construct.</summary>

@@ -166,7 +166,8 @@ public sealed class PlayerRig
             PoseBody(p, _hat != null);
         Pelvis.Visible = p.Alive;
         _pelvisBox.Visible = !legsOnly;
-        _health.Visible = _gear.Visible = p.Alive && !legsOnly;
+        _gear.Visible = p.Alive && !legsOnly;
+        _health.Visible = _gear.Visible && !Program.TalkHidesBar(p.Id); // (your own, over your head in the talk camera's shot: not wanted)
         var stance = p.Alive && !legsOnly ? p.RenderStance switch { Stance.Prone => 2, Stance.Crouch => 1, _ => 0 } : -1;
         for (var i = 0; i < 3; i++)
             _stances[i].Visible = i == stance;

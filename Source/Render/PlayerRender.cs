@@ -89,8 +89,9 @@ public static class PlayerRender
             DrawArmed(g, p, gunPose, up, time);
 
         var frac = Math.Clamp(p.Health / (float)World.MaxHealth, 0f, 1f);
-        g.Draw(Matrix4x4.CreateScale(0.8f * frac, 0.06f, 0.06f) * Matrix4x4.CreateTranslation(0, barY, 0) * rot * at,
-            Vector3.Lerp(new Vector3(1, 0.1f, 0.1f), new Vector3(0.2f, 1, 0.2f), frac), 1f, mode: 2);
+        if (!Program.TalkHidesBar(p.Id)) // (your own, in the talk camera's shot: left off)
+            g.Draw(Matrix4x4.CreateScale(0.8f * frac, 0.06f, 0.06f) * Matrix4x4.CreateTranslation(0, barY, 0) * rot * at,
+                Vector3.Lerp(new Vector3(1, 0.1f, 0.1f), new Vector3(0.2f, 1, 0.2f), frac), 1f, mode: 2);
         BodyBloodRender.Unbind(g);
     }
 

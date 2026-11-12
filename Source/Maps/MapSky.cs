@@ -19,6 +19,12 @@ public sealed partial class Map
     public WeatherSettings? Weather;
 
     /// <summary>
+    /// The map's cold storm at ground level (the "storm" section): driven snow, a whiteout, frost and wind outdoors, or null
+    /// for none. Visual and sound only, like the sky: not part of <see cref="ContentHash"/> (Source/Weather/ColdStorm.cs).
+    /// </summary>
+    public StormSettings? Storm;
+
+    /// <summary>
     /// The light every scene shader uses on this map: its sky's (or the classic light), plus <see cref="OuterFog"/>.
     /// </summary>
     public LightSetup Light => (Skybox is { } s ? s.Light() : Lighting.Default) with { OuterFog = OuterFog, OuterStarts = OuterFogStarts };

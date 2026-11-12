@@ -123,6 +123,9 @@ public static class WorldSaveWriter
                 for (var k = 0; k < op.Sites.Length && k < 255; k++)
                     w.Str(op.Sites[k].Site).U16(op.Sites[k].Body);
                 w.U16(op.Quarry); // (the Ministry Quarry, GameQuarry.cs: after those, likewise)
+                w.U8((byte)Math.Min(op.Buildings.Length, 255)); // (the Ministry's buildings, GameColonyBuildings.cs: after it, likewise)
+                for (var k = 0; k < op.Buildings.Length && k < 255; k++)
+                    w.Str(op.Buildings[k].Name).U16(op.Buildings[k].Body);
             });
         if (Array.Exists(s.Players, p => p.TutorialState != TutorialState.None))
             w.Section(TutorialTag, () =>

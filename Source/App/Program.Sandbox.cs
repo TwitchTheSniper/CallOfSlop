@@ -349,6 +349,7 @@ public static unsafe partial class Program
         _scrTook = PointerFrame(g, me, in h, eye, dir, aimed, hit, now); // (Hands on a screen: a mouse on a page, a finger on a panel's buttons: Program.SandboxPointer.cs)
         ConstructRender.AimOnPage = _scrTook;
         var talkTook = TalkFrame(g, me, eye, dir, aimed, aimed ? hit.Distance : float.MaxValue); // (one of the story's people under the crosshair: Program.StoryTalk.cs)
+        talkTook = talkTook || LoreFrame(g, aimed, hit); // (a lore item under the crosshair, when no person is in front of it: Program.StoryLore.cs)
         var magFill = !talkTook && aimed && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Distance <= ConstructBuild.UseReach && ConstructParts.Get(h.Held) is { } magHeld && ConstructAmmo.IsMagazine(magHeld) && (ConstructAmmo.IsSource(hit.Body.DefOf(hit.Part)) || ConstructAmmo.IsMagazine(hit.Body.DefOf(hit.Part)));
         if (magFill)
         {

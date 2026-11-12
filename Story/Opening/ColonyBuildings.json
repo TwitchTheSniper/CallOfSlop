@@ -1,0 +1,26 @@
+{
+  // The Ministry of Slop's buildings round the penal colony (docs/story/OPENING.md "The Ministry's buildings";
+  // Game/GameColonyBuildings.cs). Built with the colony on a fresh story world, in this order. "at" is where a building's
+  // middle stands in the colony's own frame, in metres: x along the colony's front (its gate is at x 6), z back from it
+  // (the gate at z 0, the yard from z 0 to 12, so negative z is out in front). "yaw" turns it (degrees; 180 faces its
+  // door back towards the colony). "level": how much the ground under it may vary (m, default 1.2). When its spot is
+  // taken or too steep it goes on the nearest clear, level spot within "slack" metres, or isn't built.
+  "format": "call-of-slop-colony-buildings/1",
+  "slack": 12,
+  "buildings": [
+    // The gatehouse by the gate, on the east side, its step to the street.
+    { "blueprint": "Colony Gatehouse", "at": [15, -3], "yaw": 0 },
+    // Across the street (z -9), facing the colony: the infirmary, the records office with its queue, the canteen, the stores.
+    { "blueprint": "Colony Infirmary", "at": [-8, -18], "yaw": 180 },
+    { "blueprint": "Ministry Records Office", "at": [2, -20], "yaw": 180 },
+    { "blueprint": "Colony Canteen", "at": [14, -18], "yaw": 180 },
+    { "blueprint": "Requisitions Store", "at": [24, -16], "yaw": 180 },
+    // Lamps down the street, for the dark and the weather.
+    { "blueprint": "Lamp Post", "at": [-3, -9] },
+    { "blueprint": "Lamp Post", "at": [9, -9] },
+    { "blueprint": "Lamp Post", "at": [21, -9] },
+    // Watchtowers off the yard's back corners.
+    { "blueprint": "Watchtower", "at": [-4, 15] },
+    { "blueprint": "Watchtower", "at": [16, 15] }
+  ]
+}
