@@ -1319,7 +1319,7 @@ public static partial class ConstructParts
         }
     }
 
-    private static ConstructPartDef ParseBody(string json, string file)
+    internal static ConstructPartDef ParseBody(string json, string file)
     {
         using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
         var root = doc.RootElement;

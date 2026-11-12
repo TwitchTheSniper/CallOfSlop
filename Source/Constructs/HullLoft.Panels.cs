@@ -135,6 +135,37 @@ public static partial class HullLoft
         return n.LengthSquared() < 1e-12f ? Vector3.UnitY : Vector3.Normalize(n);
     }
 
+    /// <summary>
+    /// Force every panel to be made whole when it is first asked for (tools; a probe's "before"). Otherwise, once a game pumps the queue
+    /// (<see cref="PumpPanels"/>), a new key gets a cheap part at once (its collision boxes, sockets, mass and a plain slab to draw) and its
+    /// facets are made in slices over the following ticks and swapped in: a part's first make was 5 to 15 ms, over the 8 ms a tick may take.
+    /// </summary>
+    internal static bool PanelSync;
+    private static bool _panelPumped; // a game loop pumps the queue: new keys are deferred
+    private static long _panelSpent; // stopwatch ticks the placeholders made since the last pump took: they come off its budget
+    private const int PanelSlice = 6; // facets a slice (one small parse: about 1 ms)
+
+    private sealed class PanelJob
+    {
+        public required ConstructPartDef Def;
+        public PanelShape Shape;
+        public int Next, Total;
+        public readonly List<CPartBox> Facets = new(PanelMaxAlong * PanelMaxAcross);
+        public readonly List<ushort> Shapes = new(PanelMaxAlong * PanelMaxAcross);
+    }
+
+    private static readonly Queue<PanelJob> PanelJobs = new();
+
+    /// <summary>Panels whose facets are still to make.</summary>
+    public static int PanelsPending
+    {
+        get
+        {
+            lock (PanelJobs)
+                return PanelJobs.Count;
+        }
+    }
+
     /// <summary>(HullLoft.Make's hook.) A formed panel from its name; null: not a panel's name at all.</summary>
     private static (bool Ok, ConstructPartDef? Def)? MakePanel(string name)
     {
@@ -144,8 +175,19 @@ public static partial class HullLoft
             return (false, null);
         try
         {
-            var def = ConstructParts.Parse(PanelJson(name, sh), name);
-            return Adopt(def, name) is { } made ? (true, made) : (false, null);
+            var (nu, nv) = PanelGrid(sh);
+            var defer = _panelPumped && !PanelSync;
+            var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            var def = ConstructParts.Parse(PanelJson(name, sh, 0, defer ? 0 : nu * nv, defer), name);
+            if (Adopt(def, name) is not { } made)
+                return (false, null);
+            if (defer)
+                lock (PanelJobs)
+                {
+                    PanelJobs.Enqueue(new PanelJob { Def = made, Shape = sh, Total = nu * nv });
+                    _panelSpent += System.Diagnostics.Stopwatch.GetTimestamp() - t0;
+                }
+            return (true, made);
         }
         catch (ConstructPartException e)
         {
@@ -154,7 +196,89 @@ public static partial class HullLoft
         }
     }
 
-    private static string PanelJson(string name, in PanelShape sh)
+    /// <summary>
+    /// Once a tick or a frame (Game.Update): slices of the waiting panels' facets, oldest first, until <paramref name="budgetMs"/> is spent
+    /// (every key that came in one packet shares it); a finished panel's facets are swapped in for its slabs and the bodies that draw it are
+    /// told. Nothing to do: one lock and a count. <paramref name="budgetMs"/> negative: all of them, now (a tool).
+    /// </summary>
+    public static void PumpPanels(double budgetMs = 2.0)
+    {
+        _panelPumped = true;
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        var swapped = false;
+        if (budgetMs >= 0)
+            lock (PanelJobs)
+            {
+                if (PanelJobs.Count == 0)
+                {
+                    _panelSpent = 0;
+                    return;
+                }
+                // What the new keys' first parts cost since the last pump comes off this one's budget: a packet of many new keys isn't followed by slices too.
+                budgetMs -= _panelSpent * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+                _panelSpent = 0;
+                if (budgetMs <= 0)
+                    return;
+            }
+        while (true)
+        {
+            PanelJob? job;
+            lock (PanelJobs)
+                job = PanelJobs.Count > 0 ? PanelJobs.Peek() : null;
+            if (job == null)
+                break;
+            if (job.Def.Reclaimed)
+                job.Next = job.Total; // (freed before it was finished: nothing to make)
+            else if (job.Next < job.Total)
+            {
+                var to = Math.Min(job.Total, job.Next + PanelSlice);
+                var outer = PartShapes.BeginCollect();
+                try
+                {
+                    var part = ConstructParts.ParseBody(PanelJson(job.Def.Name, job.Shape, job.Next, to, false), job.Def.Name);
+                    for (var k = part.SolidBoxes; k < part.Boxes.Length; k++)
+                        job.Facets.Add(part.Boxes[k]);
+                }
+                catch (ConstructPartException e)
+                {
+                    Console.WriteLine($"[panels] {job.Def.Name}: facets {job.Next} to {to} refused, {e.Message}");
+                }
+                finally
+                {
+                    job.Shapes.AddRange(PartShapes.EndCollect(outer));
+                }
+                job.Next = to;
+            }
+            if (job.Next >= job.Total)
+            {
+                lock (PanelJobs)
+                    PanelJobs.Dequeue();
+                if (!job.Def.Reclaimed && job.Facets.Count > 0)
+                {
+                    var d = job.Def;
+                    var boxes = new CPartBox[d.SolidBoxes + job.Facets.Count];
+                    Array.Copy(d.Boxes, boxes, d.SolidBoxes);
+                    job.Facets.CopyTo(boxes, d.SolidBoxes);
+                    d.Boxes = boxes; // (its solid boxes, bounds, sockets and mass are as they were: only what is drawn changes)
+                    d.OwnShapes = [.. d.OwnShapes ?? [], .. job.Shapes];
+                    swapped = true;
+                }
+                else
+                    PartShapes.Release([.. job.Shapes]);
+            }
+            if (budgetMs >= 0 && System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds >= budgetMs)
+                break;
+        }
+        if (swapped)
+            RuntimeParts.Redrawn();
+    }
+
+    /// <summary>
+    /// A panel's part file: its hidden boxes, sockets and numbers always, and of its facets (counted along, then across) those from
+    /// <paramref name="from"/> up to <paramref name="to"/>. <paramref name="slabs"/>: a plain drawn slab over each hidden box, the look of a
+    /// panel whose facets aren't made yet. The same floats in the same order whatever the range, so a part made whole and one made in slices are equal.
+    /// </summary>
+    private static string PanelJson(string name, in PanelShape sh, int from, int to, bool slabs)
     {
         var p = new Builder();
         var (nu, nv) = PanelGrid(sh);
@@ -178,7 +302,8 @@ public static partial class HullLoft
                 area += n.Length() / 2;
                 // Rows shade a little by height, as a loft's, so a paint's tone shows the shape.
                 var tone = (i + j) % 2 == 0 ? Steel : SteelHigh;
-                p.Facet(q, n.LengthSquared() < 1e-12f ? Vector3.UnitY : n, nv == 1 && nu == 1 ? Steel : tone, t, off: off);
+                if (i * nv + j >= from && i * nv + j < to)
+                    p.Facet(q, n.LengthSquared() < 1e-12f ? Vector3.UnitY : n, nv == 1 && nu == 1 ? Steel : tone, t, off: off);
             }
         // Collision: up to four hidden boxes along its length, each over its strip's own height (a growing or riding panel collides by boxes, never a
         // hull). Their sides are whole centimetres just inside the drawn edges, so no hidden face shares a plane with a facet's rim and the edge
@@ -199,6 +324,8 @@ public static partial class HullLoft
                 (mn.Y, mx.Y) = (mn.Y - 0.01f, mn.Y + 0.02f);
             boxes[k] = (mn, mx);
             p.Hide(mn, mx);
+            if (slabs)
+                p.Boxes.Add(new JsonObject { ["min"] = V(mn.X, mn.Y, mn.Z), ["max"] = V(mx.X, mx.Y, mx.Z), ["color"] = Steel, ["detail"] = true });
         }
         // Edge sockets, about every half metre: e/w along its sides, s/n across its ends, and one under its middle. Each stands on a face of the
         // hidden box of its strip, at the surface's height there.
@@ -320,6 +447,7 @@ public static partial class HullLoft
             Console.WriteLine($"refused: \"{name}\" is not a panel any machine makes");
             return 1;
         }
+        PumpPanels(-1); // (a tool: whole at once)
         var madeMs = System.Diagnostics.Stopwatch.GetElapsedTime(made0).TotalMilliseconds;
         var bad = 0;
         var mat = FormedMaterial(name);
@@ -342,12 +470,17 @@ public static partial class HullLoft
         lock (Interned)
             Interned.Remove(name);
         made0 = System.Diagnostics.Stopwatch.GetTimestamp();
-        if (Parse(name) is not { } again || PanelHash(again) != first)
+        // (the first was made whole; this one as a running game makes it: a first part, then its facets in slices. They must be equal.)
+        var again = Parse(name);
+        var firstPart = System.Diagnostics.Stopwatch.GetElapsedTime(made0).TotalMilliseconds;
+        PumpPanels(-1);
+        if (again == null || PanelHash(again) != first)
         {
-            Console.WriteLine("  PROBLEM: a second make from the name differs");
+            Console.WriteLine("  PROBLEM: a second make from the name, in slices, differs from the part made whole");
             bad++;
         }
-        Console.WriteLine($"  a second make from the name: {System.Diagnostics.Stopwatch.GetElapsedTime(made0).TotalMilliseconds:0.0} ms, the same part");
+        else
+            Console.WriteLine($"  a second make from the name, in slices: its first part {firstPart:0.0} ms, {System.Diagnostics.Stopwatch.GetElapsedTime(made0).TotalMilliseconds:0.0} ms in all, the same part");
         if (IsPanelName(name) && facets > PanelMaxAlong * PanelMaxAcross)
         {
             Console.WriteLine($"  PROBLEM: {facets} facets, over {PanelMaxAlong * PanelMaxAcross}");

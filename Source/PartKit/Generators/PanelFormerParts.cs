@@ -105,7 +105,7 @@ public sealed class PanelFormerParts : IPartGenerator
             if (k % 2 == 0)
             {
                 p.Add(MachineLook.Work(L([-hw + 0.14 * s, bed + 0.03 + 2 * rr, z - rr * 0.8], [hw - 0.14 * s, bed + 0.03 + 3.6 * rr, z + rr * 0.8], MachineLook.Accent, shape: new PyDict(cyl)), "spin", "+x"));
-                foreach (var sx in new[] { -1, 1 })
+                foreach (var sx in c == Small ? [] : new[] { -1, 1 }) // (the pinch rollers' cheeks: the small former does without, for its look budget)
                     p.Add(L([sx > 0 ? hw - 0.14 * s : -hw + 0.09 * s, bed + 0.06 * s + 0.004, z - rr * 1.3], [sx > 0 ? hw - 0.09 * s : -hw + 0.14 * s, bed + 0.05 + 4 * rr, z + rr * 1.3], MachineLook.Base));
             }
         }
@@ -138,9 +138,10 @@ public sealed class PanelFormerParts : IPartGenerator
         p.Add(L([hw, 0.2, col + 0.2 * s], [hw + 0.12 * s, bed - 0.12, col + 0.75 * s], MachineLook.Base));
         p.Add(MachineLook.Work(L([hw + 0.12 * s, bed * 0.3, col + 0.3 * s], [hw + 0.12 * s + 0.045 * s, bed * 0.3 + 0.34 * s, col + 0.64 * s], MachineLook.Accent, shape: new PyDict(cyl)), "spin", "+x"));
         // Cladding seams on the bed's long sides (the body's own tone: they take its paint).
-        foreach (var z in new[] { z0 + r.Len * 0.3, z1 - r.Len * 0.22 })
+        foreach (var z in c == Small ? [] : new[] { z0 + r.Len * 0.3, z1 - r.Len * 0.22 })
             p.Add(L([hw, 0.16 * Math.Sqrt(s) + 0.01, z - 0.012], [hw + 0.014, bed - 0.02, z + 0.012], Trim, paintable: true));
-        p.Add(L([-hw - 0.014, 0.16 * Math.Sqrt(s) + 0.01, z0 + r.Len * 0.25 - 0.012], [-hw, bed - 0.02, z0 + r.Len * 0.25 + 0.012], Trim, paintable: true));
+        if (c != Small)
+            p.Add(L([-hw - 0.014, 0.16 * Math.Sqrt(s) + 0.01, z0 + r.Len * 0.25 - 0.012], [-hw, bed - 0.02, z0 + r.Len * 0.25 + 0.012], Trim, paintable: true));
         if (c != Small)
         {
             // A bigger former is built heavier: guard rails along the out bed and braces under the bridge.

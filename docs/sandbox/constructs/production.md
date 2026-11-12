@@ -280,7 +280,8 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
   the nose); Fender 140x45 c6 r45; Door skin 110x120 c6 r8; Roof bow 200x180 c22 r6; Cowl 60x150 c30 r12.
   `--form-panel PRESET [length=cm] [width=cm] [crown=cm] [rake=cm] [thick=mm] [material=NAME]` (or a whole name in quotes; `list` for the
   presets) prints the key, facets, boxes, sockets, mass, cost, the former that takes it, a hash of its geometry and the time its first
-  make took, and checks a second make from the name gives the same part; output in `callofslop.log`.
+  make took, and makes it a second time as a running game does (a first part, then its facets in slices), which must give the same part;
+  output in `callofslop.log`.
 - **The machines** (`storage.panel`: `speed`, `at` the out bed's middle, `maxWidth`, `maxLength`, on an `any` bin; `IsPanelFormer`, a
   member of the Extruder family, so the bin, feed, power, Run, status lamp, line state, console list and saves are the Extruder's):
 
@@ -316,21 +317,29 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
 - **Wire (protocol 253) and saves.** A named order's shape byte is 255 (`WorkOrders.NamedShape`): then its material, count, made and
   the name as text (a save: count, made, name). A panel in a Full, a rack's kinds or a conveyor's riders goes as a lofted part does
   (`Extrusion.WireMark`, `HullLoft.WireKind`, its name); a store saves it by name.
-- **Measured** (a throwaway probe, removed; host, a client and a late client over RakNet at 80 ms and 2 % loss, in one process, the
-  showcase in a creative world): the bill's two hoods, two fenders and the kit hood formed in order and racked in 46 s, the rack and the
-  console equal on all three peers; the too-large line kept on the console with its reason on the client; a save and a load with a hood
-  in the rack, a hood riding, two orders queued and a stroke under way came back the same. 200 orders queued: the former's step median
-  0.0003 ms, worst 0.02 ms; server updates median 0.009 ms, worst 2.2 ms, 0 bytes in 6,802 of 6,845 (the rest are finished panels and
-  the other machines). A part's first make at 96 facets took 4.7 to 15 ms and 3.4 MB on the busy 2-core box, which is why the cap is 48; at 48 the largest
-  panel (a 6 x 4.5 m roof bow) still made in 8.4 ms there (`--form-panel`'s second make), at the 8 ms line: the make wants moving off
-  the tick. It happens once a key, at Queue on the server and at the first packet naming it on a client, never in the step. The probe ran
-  before the cap was halved; the peers shared one part table, so equal geometry across machines rests on `--form-panel`'s hash being the
-  same in separate runs (it was).
+- **A new key costs little in its tick** (`HullLoft.PumpPanels`, from `Game.Update`). Making a panel whole took 4 to 8 ms (the largest,
+  3.4 MB of garbage), on the server at Queue and on a client at the first packet naming it. So in a running game a key seen for the first
+  time gets its part at once with what racks, riders, colliders and welds need (the hidden boxes, sockets, bounds, mass) and a plain slab
+  drawn over each box; its facets are made 6 at a time in the following updates, 2 ms an update less what the new keys' first parts cost
+  since the last one (every key of one packet shares it), then swapped in for the slabs in place (`RuntimeParts.Redrawn`: bodies' drawn
+  batches are made again; nothing solid changes). A tool, with no game pumping, makes every panel whole; `HullLoft.PanelSync` forces that.
+  The floats and their order are the same either way, so a part made in slices equals one made whole.
+- **Measured** (a throwaway probe, removed; 2026-11-11, the busy 2-core box). *Twenty different largest panels (6 x 4.5 m) in one tick*,
+  made whole and deferred: the worst server update 138 ms and 8.2 ms (host and client in one process; twenty first parts are about 6 ms
+  of it, which nothing spreads); the worst client update, the client in its own process, 102 ms and 6.1 ms; all twenty finished 0.13 s
+  later. *Host and client in separate processes*, the showcase in a creative world: the rack equal by name, geometry hash and box count
+  on both (two hoods, two fenders, the kit hood), each process having made the parts from the names alone; the same hashes as
+  `--form-panel` gives making them whole. *One process, a client at 80 ms and 2 % loss and a late client*: the bill formed in order and
+  racked, the too-large line kept on the console with its reason on the client, a save and a load with a hood racked, a hood riding, two
+  orders queued and a stroke under way the same, the late client's rack and console the same. *The Medium Panel Former*, standing alone
+  and fed 400 steel: a kit room bay the small former refuses ("too large") formed in 7.3 s and the largest roof bow in 36 s, each dropped
+  on its out bed, the same parts on the client. Earlier, 200 orders queued: the former's step median 0.0003 ms, worst 0.02 ms; server
+  updates median 0.009 ms, worst 2.2 ms, 0 bytes in 6,802 of 6,845.
 
 Proposed (the user's to confirm): the seven presets and their ranges; cost by mass; sheet counted into the bin rather than kept as a
 part on the bed; the two tiers' sizes; a timed stroke; the kit's lofts formed in steel only; for the designer's free shapes, a key
 `Formed Panel (#HASH)` with the design stored once per world and sent once per connection. Next: the designer window, the Laser Cutter
-(cut-outs), a panel drawn bending on the bed, a part's first make spread over ticks, a Large former.
+(cut-outs), a panel drawn bending on the bed, a cheaper first part for a new key (0.3 ms each today), the kit's own lofts made in slices too, a Large former.
 
 ## Machine tiers
 
