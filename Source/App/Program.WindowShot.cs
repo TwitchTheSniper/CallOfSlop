@@ -89,7 +89,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action);
 
     private static void WsSay(string s)
     {
@@ -437,6 +437,10 @@ public static unsafe partial class Program
                 _wsWait = 2;
                 return;
             }
+            case "timed": // host: machines work as in survival (their time and power) in this creative world
+                g.Constructs.CreativeRecycling = false;
+                WsSay("timed: machines take their time and need power");
+                return;
             case "poke": // host: a button pressed as F presses it on the server (ConstructEdits.Use: its hold time), for a check that needs no aim
             {
                 var (pc, ppart) = g.IsServer ? WsFind(g, arg) : (null, 0);
