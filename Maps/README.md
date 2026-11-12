@@ -741,7 +741,7 @@ The outline is generated in single precision from the spec, deterministically (s
 A map can float in the air: give it a top-level `"fallKill"` height and leave out the `Ground` op. With no ground there is
 nothing under the decks, and anyone whose feet drop below `fallKill` dies: the server kills them like the pause menu's
 "Kill yourself" (a death, no kill for anyone, "Suicide" in the feed, the usual respawn). The Space pack's **Stratos
-Station** (`Maps/Space/01-SkyStation.json`, written by `tools/space/skystation.py`; the pack was removed on 2026-11-12, in git history at 7748ca82) was the example.
+Station** (`Maps/Space/01-SkyStation.json`, written by `tools/space/skystation.py`; the pack and its script were removed on 2026-11-12, in git history at 7748ca82) was the example.
 
 - **Decks:** round platforms are cosmetic `Mesh` cylinders over hidden `Collider` strips just inside them (collision only,
   never drawn, so they cost no draw calls: map boxes are drawn one by one). Put the mesh's top 2 cm above the colliders.
@@ -755,7 +755,7 @@ Station** (`Maps/Space/01-SkyStation.json`, written by `tools/space/skystation.p
 - **The outline:** use a `boundary` with `"edge": "none"` round the whole station; the air between the platforms is
   inside it (you can fall there), the barrier stops anyone leaving the map at any height.
 - **Looks:** a sky can't draw anything below the horizon except its ground colour, so a cloud sea belongs in an image
-  sky (`tools/space/make_stratos_sky.py` paints one) and, for depth, a few big flattened cosmetic spheres below the decks.
+  sky (the Space pack's `tools/space/make_stratos_sky.py` painted one; removed on 2026-11-12, in git history at 7748ca82) and, for depth, a few big flattened cosmetic spheres below the decks.
 - `fallKill` is from -4 to 55 m. Maps without it are unchanged: nobody falls out.
 
 ## Props
