@@ -417,6 +417,14 @@ public static class TierMachine
             var low = C(bit, "min", 1); // (a steel platen on the bit, over the trays)
             MachineLook.Work(s.Add([s.U(-0.1), low + s.U(0.006), s.U(-0.035)], [s.U(0.1), low + s.U(0.022), s.U(0.1)], MachineLook.Steel, "steel"), "stroke", "-y", travel);
         }
+        // Three tones under paint: dark shoes on the posts, an accent band round the head's motor.
+        foreach (var post in s.Shape.Solid.Where(b => b.Min[1] <= 0.031 && b.Max[1] - b.Min[1] > 0.5 && b.Max[0] - b.Min[0] < 0.1 && b.Max[2] - b.Min[2] < 0.1))
+            s.Add([s.U(post.Min[0]) - Thin, s.U(0.03) - 0.004, s.U(post.Min[2]) - Thin], [s.U(post.Max[0]) + Thin, s.U(0.1), s.U(post.Max[2]) + Thin], MachineLook.Base);
+        if (s.Shape.Solid.FirstOrDefault(b => b.Role == "motor") is { } motor)
+        {
+            var my = s.U(motor.Min[1] + (motor.Max[1] - motor.Min[1]) * 0.2);
+            s.Add([s.U(motor.Min[0]) - Thin, my, s.U(motor.Min[2]) - Thin], [s.U(motor.Max[0]) + Thin, my + s.U(0.03), s.U(motor.Max[2]) + Thin], MachineLook.Accent);
+        }
         // The family's own cue: a Thruster Assembler's nozzle glows on its stand, a Tailor's bolt of cloth turns.
         if (t < 5 && s.Name == "Thruster Assembler" && s.Shape.Detail.LastOrDefault(b => b.Role == "coil" && Py.Truthy(b.Keys.Get("shape"))) is { } nozzle && s.Built(nozzle, true) is { } nz)
             Hot(s, nz);
