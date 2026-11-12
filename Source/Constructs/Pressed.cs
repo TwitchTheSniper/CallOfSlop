@@ -646,7 +646,14 @@ public static class Pressed
                 if (cls < 0 || cls >= PressMaxCm.Length)
                     why = $": no press with a {d.Family} Die takes a blank {Across(blank) / 100f:0.00} m across";
                 else if (d.PatternFor(blank, out var picked) == null || !ReferenceEquals(picked, part))
-                    why = $": a press makes {picked?.Name ?? "a sized part"} of this blank";
+                {
+                    // Not Auto's: its pattern set on the press makes it (two presets of one blank, as the Plate die's plate and tread).
+                    var place = Array.FindIndex(d.Patterns, x => x.Id == key[(Prefix.Length + d.Id.Length + 1)..key.IndexOf(' ', Prefix.Length)]);
+                    if (place < 0)
+                        why = $": a press makes {picked?.Name ?? "a sized part"} of this blank";
+                    else
+                        press = $" (a {ClassWord(cls)} Press set to Pattern {place + 1}; Auto makes {picked?.Name ?? "a sized part"})";
+                }
                 else
                     press = $" (a {ClassWord(cls)} Press)";
                 ok = why.Length == 0;

@@ -515,9 +515,9 @@ public sealed class PressParts : IPartGenerator
     /// <summary>
     /// The catalogue parts the sized dies' standard blanks give: the Bracket die's four (in every metal it works), every Housing and three
     /// plates. Each blank is the old row's piece made whole (an L Bracket from a 15 cm angle, a Corner Bracket from a 25 cm one), held to what
-    /// a press of the class that always made it takes (PresetAcross: a Housing 0.5 m is a 45 cm bar 50 cm long, on a Small Press). A press
-    /// picks the pattern from the blank until the Pattern setting comes (PressDie.PatternFor): a preset's blank names its part, so no two
-    /// presets of a die share a blank; the Plate die's plate, tread and grate patterns wait for that setting.
+    /// a press of the class that always made it takes (PresetAcross: a Housing 0.5 m is a 45 cm bar 50 cm long, on a Small Press). A press on
+    /// Auto picks the pattern from the blank (PressDie.PatternFor: the first preset of that blank); its Pattern setting picks the others that
+    /// share a blank (the Plate die's plate, tread and grate).
     /// </summary>
     private static List<object?> Presets()
     {
@@ -548,6 +548,9 @@ public sealed class PressParts : IPartGenerator
             Add(d.Like, "drive", d.Id, d.Blank);
         Add("Steel Plate", "plate", "steel", "plate 50x10x50 steel");
         Add("Sheet Steel 1 m", "plate", "sheet", "plate 100x10x100 steel");
+        Add("Plate Steel 1 m", "plate", "plate", "plate 100x10x100 steel"); // (the same blank as the sheet's: a press set to this pattern makes it)
+        Add("Tread Plate 1 m", "plate", "tread", "plate 100x10x100 steel");
+        Add("Mesh Grate 1 m", "plate", "grate", "plate 100x10x100 steel");
         Add("Armour Plate 1 m", "plate", "armour", "plate 100x20x100 steel");
         return r;
     }

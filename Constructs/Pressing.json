@@ -2633,6 +2633,24 @@
    "blank": "plate 100x10x100 steel"
   },
   {
+   "part": "Plate Steel 1 m",
+   "die": "plate",
+   "pattern": "plate",
+   "blank": "plate 100x10x100 steel"
+  },
+  {
+   "part": "Tread Plate 1 m",
+   "die": "plate",
+   "pattern": "tread",
+   "blank": "plate 100x10x100 steel"
+  },
+  {
+   "part": "Mesh Grate 1 m",
+   "die": "plate",
+   "pattern": "grate",
+   "blank": "plate 100x10x100 steel"
+  },
+  {
    "part": "Armour Plate 1 m",
    "die": "plate",
    "pattern": "armour",
