@@ -185,6 +185,9 @@ public sealed class ColonyBuildingsScript
     /// <summary>The bench's ramps to the land: from a spot on its edge to one out on the land (x, z m in the colony's frame).</summary>
     public (Vector2 From, Vector2 To)[] Ramps = [];
 
+    /// <summary>The works yard: rectangles of the colony's frame (x, z m) where a survival world's start kit stands, inside the fence.</summary>
+    public (Vector2 Min, Vector2 Max)[] Kit = [];
+
     public Building[] Buildings = [];
     public float Slack = 12;
     public string Problem = "";
@@ -237,6 +240,12 @@ public sealed class ColonyBuildingsScript
                     throw new FormatException("the bench is 16 to 160 m each way");
                 if (bench.TryGetProperty("most", out var most))
                     t.BenchMost = Math.Clamp(most.GetSingle(), 0.5f, 10f);
+                if (bench.TryGetProperty("kit", out var kit))
+                {
+                    t.Kit = [.. kit.EnumerateArray().Select(r => (V(r.GetProperty("min")), V(r.GetProperty("max"))))];
+                    if (t.Kit.Length > 8 || t.Kit.Any(r => r.Max.X <= r.Min.X || r.Max.Y <= r.Min.Y))
+                        throw new FormatException("at most 8 kit rectangles, each with its max over its min");
+                }
                 if (bench.TryGetProperty("ramps", out var ramps))
                 {
                     t.Ramps = [.. ramps.EnumerateArray().Select(r => (V(r.GetProperty("from")), V(r.GetProperty("to"))))];
