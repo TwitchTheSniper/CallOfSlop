@@ -85,7 +85,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "aim" or "near" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft";
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "aim" or "near" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown";
 
     private static void WsSay(string s)
     {
@@ -428,6 +428,14 @@ public static unsafe partial class Program
             case "esc": // the Escape key, through the window's key handler
                 OnKey(_window!, GlfwKey.Escape, 0, GlfwKeyAction.Press, default);
                 _wsWait = 3;
+                return;
+            case "disown": // host: the spawned blueprint belongs to nobody, so a joined client may work its consoles and terminals
+                if (g.IsServer && WsSpawned(g) is { } mine)
+                {
+                    mine.Owner = 255;
+                    g.Constructs.StructureDirty.Add(mine.Id);
+                    WsSay("disown: the blueprint is nobody's");
+                }
                 return;
             case "bring": // host: every other player to stand in front of a part's screen (a client's player can't be flown by its own tool)
             {
