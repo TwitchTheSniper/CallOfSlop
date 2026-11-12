@@ -97,7 +97,7 @@ public sealed class PressDie
     {
         preset = null;
         var k = blank with { Growing = false };
-        if (k.Shape != ExShape.Section || Extrusion.PresetOf(k.Mask) is not (var section and >= 0))
+        if (Pressed.SectionOf(k) is not (var section and >= 0))
             return null;
         foreach (var p in Presets)
             if (p.Blank == k && Takes(p.Pattern, section))
@@ -121,9 +121,9 @@ public sealed class PressDie
 
     private void Nearer(PressPattern p, in ExtrusionKey standard, in ExtrusionKey k, int section, ref PressPattern? best, ref int dist)
     {
-        if (standard.Mask != k.Mask || !Takes(p, section))
+        if (standard.Shape != k.Shape || standard.Mask != k.Mask || !Takes(p, section))
             return;
-        var d = Math.Abs(standard.W - k.W) + Math.Abs(standard.H - k.H);
+        var d = Math.Abs(standard.W - k.W) + Math.Abs(standard.H - k.H) + Math.Abs(standard.Wall - k.Wall);
         if (d < dist)
         {
             dist = d;
@@ -380,9 +380,12 @@ internal static class PressDies
         foreach (var e in list.EnumerateArray())
         {
             var id = e.GetString() ?? "";
-            if (id is "round" or "pipe")
-                throw new FormatException($"{where}: a {id} blank waits for lathe rings (the Press rework's phase 3)");
-            var k = Array.FindIndex(Extrusion.Presets, p => p.Id == id);
+            var k = id switch
+            {
+                "round" => PressBaySpec.RoundSection,
+                "pipe" => PressBaySpec.PipeSection,
+                _ => Array.FindIndex(Extrusion.Presets, p => p.Id == id),
+            };
             if (k < 0)
                 throw new FormatException($"{where}: \"{id}\" isn't a section");
             if (!sections.Contains(k))

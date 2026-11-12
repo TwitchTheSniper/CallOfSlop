@@ -439,7 +439,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      new die parts (Bracket and Plate in every class) move part ids.
     // 266: smart logistics phase 2 (feat/smart-logistics-2): every Assembler gains an implicit conveyor "Piece in" (a chained order's inputs ride in),
     //      so a conveyor link may end on a port an older build doesn't have. Chained orders themselves are server only (the order's note says it).
-    public const ushort ProtocolVersion = 266;
+    // 267: the Press rework's phase 3: PressStall gains Bay2Short, BayRefuse gains Pattern, Hopper and Kit (both ride the press's store bytes);
+    //      a press has a Pattern setting (its recipe key); bay 2 is a kit hopper (the store's mixed input and kinds); new die parts move part ids.
+    public const ushort ProtocolVersion = 267;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -224,12 +224,11 @@ public static partial class SelfTest
             Case("no die", 50, a);
             Case("no die", 50, a, gun: true);
             Die("Button Die");
-            // Part-way through a run: both bays full and a stroke under way. It stops, and nothing is used: a stroke takes its length only when it ends.
+            // Part-way through a run: a blank in bay 1, the kit in bay 2 and a stroke under way. It stops, and nothing is used: a stroke takes its blank and kit only when it ends.
             var made = 0;
             Case("part-way", 50, a, state: () =>
             {
-                if (ConstructPress.PieceIn(line, Press(), 1) < 0)
-                    ConstructPress.FitPiece(w, line, Press(), 1, new ExtrusionKey(0, 15, 15, 100, RecyclingTable.Current.IdOf("copper"), false, ExShape.Round), 1, 0);
+                ConstructPress.FeedKitMaterial(w, line, Press(), 10, RecyclingTable.Current.IdOf("copper")); // (bay 2 is the kit hopper: the Button die's copper)
                 line.Rebuild();
                 if (!Await(() => w.StoreOf(line, Press())!.Busy))
                     Fail($"press stock: part-way: the press never started ({ConstructPress.Look(line, Press(), w.StoreOf(line, Press())!, false, null, default)})");
@@ -238,7 +237,7 @@ public static partial class SelfTest
             Await(() => !w.StoreOf(line, Press())!.Busy, 1); // (the press looks at 10 Hz)
             if (w.StoreOf(line, Press())!.Items != made || w.StoreOf(line, Press())!.Busy)
                 Fail($"press stock: part-way: taking a piece out left a stroke running or made something ({w.StoreOf(line, Press())!.Items} from {made})");
-            // A short loose piece in the mouth is refused, and stays out where it is for the physics gun.
+            // A loose piece out of the die's sizes (too short) in the mouth is refused, and stays out where it is for the physics gun.
             Clear();
             var p0 = Press();
             line.WorldFrame(0, out var fq, out var ft);
@@ -251,8 +250,8 @@ public static partial class SelfTest
             else
             {
                 stub.Parts[0].Paint = 7;
-                if (!Await(() => w.StoreOf(line, Press())!.Blocked >> 2 == (int)BayRefuse.Short, 6) || ConstructPress.PieceIn(line, Press(), 0) >= 0 || w.Get(stub.Id) == null)
-                    Fail($"press stock: a short piece in the mouth wasn't refused (refusal {w.StoreOf(line, Press())!.Blocked >> 2}, in the bay {ConstructPress.PieceIn(line, Press(), 0)}, at {stub.Pos} mouth {mouth})");
+                if (!Await(() => w.StoreOf(line, Press())!.Blocked >> 2 == (int)BayRefuse.Bounds, 6) || ConstructPress.PieceIn(line, Press(), 0) >= 0 || w.Get(stub.Id) == null)
+                    Fail($"press stock: a piece out of the die's sizes in the mouth wasn't refused (refusal {w.StoreOf(line, Press())!.Blocked >> 2}, in the bay {ConstructPress.PieceIn(line, Press(), 0)}, at {stub.Pos} mouth {mouth})");
             }
             // A piece taken out isn't drawn back in while it lies in the mouth, however long it waits; picked up and put back, it goes in.
             Case("taken out", 50, a);

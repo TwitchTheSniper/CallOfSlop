@@ -1,244 +1,6 @@
 {
  "format": "call-of-slop-pressing/2",
- "about": "The stamping table (docs/sandbox/CONSTRUCTS.md, 'The Press'). Written by the part kit (--gen-parts press_parts): fix it, not this file. 'rows' are a press's: with a die of family 'die', the first row whose bays hold what it asks runs. Each bay gives its 'sections' (Extrusion presets, round, pipe), 'materials', 'minAcross' and 'maxAcross' (m, the piece's smaller side) and what a stroke takes: 'use' (m) or 'useAcross' (times its size across). 'lathe' rows are a Die Lathe's, chosen as a setting. 'dies' (the Press rework, Pressed.cs) say what a die makes of a whole blank: its blanks, materials, bounds in cm, features in the blank's unit frame and patterns (a like part and a preset blank); 'presets' name the catalogue part that is a die's product of one standard blank. A die listed in 'dies' presses bay 1's whole piece into one part (the preset's catalogue part when the blank is one); the other dies stroke 'rows'.",
- "rows": [
-  {
-   "die": "Button",
-   "output": "Button",
-   "seconds": 1.5,
-   "bays": [
-    {
-     "label": "Strip",
-     "sections": [
-      "plate"
-     ],
-     "materials": [
-      "laminate"
-     ],
-     "minAcross": 0.1,
-     "maxAcross": 0.45,
-     "use": 0.1
-    },
-    {
-     "label": "Rod",
-     "sections": [
-      "round"
-     ],
-     "materials": [
-      "copper"
-     ],
-     "minAcross": 0.1,
-     "maxAcross": 0.25,
-     "use": 0.05
-    }
-   ]
-  },
-  {
-   "die": "Gear",
-   "output": "Gear Set",
-   "seconds": 3,
-   "bays": [
-    {
-     "label": "Rod",
-     "sections": [
-      "round"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 0.1,
-     "maxAcross": 0.25,
-     "use": 0.15
-    }
-   ]
-  },
-  {
-   "die": "Board",
-   "output": "Circuit Board",
-   "seconds": 3,
-   "bays": [
-    {
-     "label": "Sheet",
-     "sections": [
-      "plate"
-     ],
-     "materials": [
-      "laminate"
-     ],
-     "minAcross": 0.2,
-     "maxAcross": 0.45,
-     "use": 0.2
-    },
-    {
-     "label": "Wire",
-     "sections": [
-      "round"
-     ],
-     "materials": [
-      "copper"
-     ],
-     "minAcross": 0.1,
-     "maxAcross": 0.15,
-     "use": 0.05
-    }
-   ]
-  },
-  {
-   "die": "Piston",
-   "output": "Piston Set",
-   "seconds": 5,
-   "bays": [
-    {
-     "label": "Rod",
-     "sections": [
-      "round"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 0.1,
-     "maxAcross": 0.25,
-     "use": 0.2
-    },
-    {
-     "label": "Bar",
-     "sections": [
-      "solid"
-     ],
-     "materials": [
-      "bronze"
-     ],
-     "minAcross": 0.1,
-     "maxAcross": 0.25,
-     "use": 0.1
-    }
-   ]
-  },
-  {
-   "die": "Cylinder",
-   "output": "Small Cylinder",
-   "seconds": 6,
-   "bays": [
-    {
-     "label": "Tube",
-     "sections": [
-      "pipe"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 0.2,
-     "maxAcross": 0.45,
-     "useAcross": 1
-    },
-    {
-     "label": "Plate",
-     "sections": [
-      "plate"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 0.2,
-     "maxAcross": 0.45,
-     "useAcross": 0.5
-    }
-   ]
-  },
-  {
-   "die": "Cylinder",
-   "output": "Medium Cylinder",
-   "seconds": 6,
-   "bays": [
-    {
-     "label": "Tube",
-     "sections": [
-      "pipe"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 0.5,
-     "maxAcross": 1.8,
-     "useAcross": 1
-    },
-    {
-     "label": "Plate",
-     "sections": [
-      "plate"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 0.5,
-     "maxAcross": 1.8,
-     "useAcross": 0.5
-    }
-   ]
-  },
-  {
-   "die": "Cylinder",
-   "output": "Large Cylinder",
-   "seconds": 6,
-   "bays": [
-    {
-     "label": "Tube",
-     "sections": [
-      "pipe"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 2,
-     "maxAcross": 7.2,
-     "useAcross": 1
-    },
-    {
-     "label": "Plate",
-     "sections": [
-      "plate"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 2,
-     "maxAcross": 7.2,
-     "useAcross": 0.5
-    }
-   ]
-  },
-  {
-   "die": "Cylinder",
-   "output": "Capital Cylinder",
-   "seconds": 6,
-   "bays": [
-    {
-     "label": "Tube",
-     "sections": [
-      "pipe"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 8,
-     "maxAcross": 28.8,
-     "useAcross": 1
-    },
-    {
-     "label": "Plate",
-     "sections": [
-      "plate"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 8,
-     "maxAcross": 28.8,
-     "useAcross": 0.5
-    }
-   ]
-  }
- ],
+ "about": "The stamping table (docs/sandbox/CONSTRUCTS.md, 'The Press'). Written by the part kit (--gen-parts press_parts): fix it, not this file. 'lathe' rows are a Die Lathe's, chosen as a setting: each bay gives its 'sections' (Extrusion presets, round, pipe), 'materials', 'minAcross' and 'maxAcross' (m, the piece's smaller side) and what a cut takes: 'use' (m). 'dies' (the Press rework, Pressed.cs) say what a die makes of a whole blank: its blanks, materials, bounds in cm, features in the blank's unit frame and patterns (a like part and a preset blank); 'presets' name the catalogue part that is a die's product of one standard blank. A die presses a blank bay's whole piece into one part (the preset's catalogue part when the blank is one), its pattern the press's Pattern setting or the blank's own; a pattern's 'bay2' is the kit it takes from bay 2, 'scale' the numbers that grow with the blank.",
  "lathe": [
   {
    "output": "Button Die",
@@ -256,6 +18,25 @@
      "minAcross": 0.25,
      "maxAcross": 0.45,
      "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Button Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "metal",
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
     }
    ]
   },
@@ -602,6 +383,78 @@
      ],
      "materials": [
       "metal",
+      "steel"
+     ],
+     "minAcross": 8.0,
+     "maxAcross": 28.8,
+     "use": 8.0
+    }
+   ]
+  },
+  {
+   "output": "Drive Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Drive Die",
+   "seconds": 60,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
+    }
+   ]
+  },
+  {
+   "output": "Large Drive Die",
+   "seconds": 90,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 4.0,
+     "maxAcross": 7.2,
+     "use": 4.0
+    }
+   ]
+  },
+  {
+   "output": "Capital Drive Die",
+   "seconds": 120,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
       "steel"
      ],
      "minAcross": 8.0,
@@ -1600,6 +1453,876 @@
      ]
     }
    ]
+  },
+  {
+   "die": "Button",
+   "blanks": [
+    "plate",
+    "solid",
+    "round"
+   ],
+   "materials": [
+    "laminate",
+    "metal",
+    "steel",
+    "wood"
+   ],
+   "across": [
+    10,
+    180
+   ],
+   "length": [
+    10,
+    800
+   ],
+   "aspect": [
+    0.25,
+    16.0
+   ],
+   "seconds": {
+    "base": 1.0,
+    "perKg": 0.02
+   },
+   "features": [
+    {
+     "tag": "cap",
+     "box": [
+      0.2,
+      1.0,
+      0.2,
+      0.8,
+      1.3,
+      0.8
+     ],
+     "proud": "y",
+     "clamp": "y",
+     "minCm": 0.5,
+     "maxCm": 5.0,
+     "look": "accent",
+     "blanks": [
+      "plate",
+      "solid"
+     ]
+    },
+    {
+     "tag": "lip",
+     "box": [
+      0.12,
+      0.96,
+      0.12,
+      0.88,
+      1.04,
+      0.88
+     ],
+     "proud": "y",
+     "clamp": "y",
+     "minCm": 0.3,
+     "maxCm": 2.0,
+     "look": "dark",
+     "blanks": [
+      "plate",
+      "solid"
+     ]
+    },
+    {
+     "tag": "cap",
+     "box": [
+      0.2,
+      0.2,
+      1.0,
+      0.8,
+      0.8,
+      1.15
+     ],
+     "proud": "z",
+     "clamp": "z",
+     "minCm": 0.5,
+     "maxCm": 5.0,
+     "look": "accent",
+     "blanks": [
+      "round"
+     ]
+    }
+   ],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "button",
+     "like": "Button",
+     "label": "button",
+     "preset": "plate 10x10x10 laminate",
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "length",
+      "max": 99
+     }
+    },
+    {
+     "id": "switch",
+     "like": "Switch",
+     "label": "switch",
+     "preset": "plate 10x10x15 laminate",
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "length",
+      "max": 99
+     }
+    }
+   ]
+  },
+  {
+   "die": "Gear",
+   "blanks": [
+    "round",
+    "solid"
+   ],
+   "materials": [
+    "steel",
+    "bronze"
+   ],
+   "across": [
+    10,
+    45
+   ],
+   "length": [
+    5,
+    50
+   ],
+   "aspect": [
+    0.2,
+    4.0
+   ],
+   "seconds": {
+    "base": 3.0,
+    "perKg": 0.05
+   },
+   "features": [
+    {
+     "tag": "teeth",
+     "box": [
+      -0.08,
+      -0.08,
+      0.25,
+      1.08,
+      1.08,
+      0.75
+     ],
+     "proud": "xy",
+     "look": "bare"
+    },
+    {
+     "tag": "hub",
+     "box": [
+      0.35,
+      0.35,
+      -0.06,
+      0.65,
+      0.65,
+      0.0
+     ],
+     "proud": "z",
+     "clamp": "z",
+     "minCm": 0.5,
+     "maxCm": 4.0,
+     "look": "dark"
+    },
+    {
+     "tag": "hub",
+     "box": [
+      0.35,
+      0.35,
+      1.0,
+      0.65,
+      0.65,
+      1.06
+     ],
+     "proud": "z",
+     "clamp": "z",
+     "minCm": 0.5,
+     "maxCm": 4.0,
+     "look": "dark"
+    }
+   ],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "set",
+     "like": "Gear Set",
+     "label": "gear set",
+     "preset": "round 15x15x15 steel"
+    }
+   ]
+  },
+  {
+   "die": "Board",
+   "blanks": [
+    "plate"
+   ],
+   "materials": [
+    "laminate"
+   ],
+   "across": [
+    20,
+    45
+   ],
+   "length": [
+    20,
+    100
+   ],
+   "aspect": [
+    0.5,
+    4.0
+   ],
+   "seconds": {
+    "base": 3.0,
+    "perKg": 0.05
+   },
+   "features": [
+    {
+     "tag": "pad",
+     "box": [
+      0.14,
+      1.0,
+      0.21999999999999997,
+      0.26,
+      1.15,
+      0.38
+     ],
+     "proud": "y",
+     "clamp": "y",
+     "minCm": 0.3,
+     "maxCm": 2.0,
+     "look": "accent"
+    },
+    {
+     "tag": "pad",
+     "box": [
+      0.14,
+      1.0,
+      0.52,
+      0.26,
+      1.15,
+      0.6799999999999999
+     ],
+     "proud": "y",
+     "clamp": "y",
+     "minCm": 0.3,
+     "maxCm": 2.0,
+     "look": "accent"
+    },
+    {
+     "tag": "pad",
+     "box": [
+      0.34,
+      1.0,
+      0.21999999999999997,
+      0.46,
+      1.15,
+      0.38
+     ],
+     "proud": "y",
+     "clamp": "y",
+     "minCm": 0.3,
+     "maxCm": 2.0,
+     "look": "accent"
+    },
+    {
+     "tag": "pad",
+     "box": [
+      0.34,
+      1.0,
+      0.52,
+      0.46,
+      1.15,
+      0.6799999999999999
+     ],
+     "proud": "y",
+     "clamp": "y",
+     "minCm": 0.3,
+     "maxCm": 2.0,
+     "look": "accent"
+    },
+    {
+     "tag": "pad",
+     "box": [
+      0.54,
+      1.0,
+      0.21999999999999997,
+      0.6599999999999999,
+      1.15,
+      0.38
+     ],
+     "proud": "y",
+     "clamp": "y",
+     "minCm": 0.3,
+     "maxCm": 2.0,
+     "look": "accent"
+    },
+    {
+     "tag": "pad",
+     "box": [
+      0.54,
+      1.0,
+      0.52,
+      0.6599999999999999,
+      1.15,
+      0.6799999999999999
+     ],
+     "proud": "y",
+     "clamp": "y",
+     "minCm": 0.3,
+     "maxCm": 2.0,
+     "look": "accent"
+    },
+    {
+     "tag": "pad",
+     "box": [
+      0.74,
+      1.0,
+      0.21999999999999997,
+      0.8600000000000001,
+      1.15,
+      0.38
+     ],
+     "proud": "y",
+     "clamp": "y",
+     "minCm": 0.3,
+     "maxCm": 2.0,
+     "look": "accent"
+    },
+    {
+     "tag": "pad",
+     "box": [
+      0.74,
+      1.0,
+      0.52,
+      0.8600000000000001,
+      1.15,
+      0.6799999999999999
+     ],
+     "proud": "y",
+     "clamp": "y",
+     "minCm": 0.3,
+     "maxCm": 2.0,
+     "look": "accent"
+    },
+    {
+     "tag": "edge",
+     "box": [
+      0.1,
+      0.2,
+      0.92,
+      0.9,
+      0.8,
+      1.04
+     ],
+     "proud": "z",
+     "clamp": "z",
+     "minCm": 0.3,
+     "maxCm": 3.0,
+     "look": "bare"
+    }
+   ],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "board",
+     "like": "Circuit Board",
+     "label": "circuit board",
+     "preset": "plate 20x10x20 laminate",
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 10.0,
+      "by": "area",
+      "max": 99
+     }
+    }
+   ]
+  },
+  {
+   "die": "Piston",
+   "blanks": [
+    "round"
+   ],
+   "materials": [
+    "steel"
+   ],
+   "across": [
+    10,
+    45
+   ],
+   "length": [
+    10,
+    50
+   ],
+   "aspect": [
+    0.5,
+    3.0
+   ],
+   "seconds": {
+    "base": 5.0,
+    "perKg": 0.05
+   },
+   "features": [
+    {
+     "tag": "ring",
+     "box": [
+      -0.04,
+      -0.04,
+      0.7,
+      1.04,
+      1.04,
+      0.74
+     ],
+     "proud": "xy",
+     "look": "dark"
+    },
+    {
+     "tag": "ring",
+     "box": [
+      -0.04,
+      -0.04,
+      0.8,
+      1.04,
+      1.04,
+      0.84
+     ],
+     "proud": "xy",
+     "look": "dark"
+    },
+    {
+     "tag": "pin",
+     "box": [
+      -0.06,
+      0.4,
+      0.3,
+      1.06,
+      0.6,
+      0.45
+     ],
+     "proud": "x",
+     "look": "bare"
+    }
+   ],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "set",
+     "like": "Piston Set",
+     "label": "piston set",
+     "preset": "round 10x10x20 steel",
+     "bay2": {
+      "material": "bronze",
+      "base": 1.0,
+      "rate": 20.0,
+      "by": "volume",
+      "max": 99
+     }
+    }
+   ]
+  },
+  {
+   "die": "Cylinder",
+   "blanks": [
+    "pipe"
+   ],
+   "materials": [
+    "steel"
+   ],
+   "across": [
+    20,
+    2880
+   ],
+   "length": [
+    25,
+    3200
+   ],
+   "aspect": [
+    1.0,
+    16.0
+   ],
+   "seconds": {
+    "base": 6.0,
+    "perKg": 0.01
+   },
+   "features": [
+    {
+     "tag": "cap",
+     "box": [
+      -0.05,
+      -0.05,
+      0.0,
+      1.05,
+      1.05,
+      0.06
+     ],
+     "proud": "xyz",
+     "look": "dark"
+    },
+    {
+     "tag": "cap",
+     "box": [
+      -0.05,
+      -0.05,
+      0.94,
+      1.05,
+      1.05,
+      1.0
+     ],
+     "proud": "xyz",
+     "look": "dark"
+    },
+    {
+     "tag": "port",
+     "box": [
+      0.4,
+      1.0,
+      0.12,
+      0.6,
+      1.12,
+      0.2
+     ],
+     "proud": "y",
+     "look": "bare"
+    },
+    {
+     "tag": "port",
+     "box": [
+      0.4,
+      1.0,
+      0.8,
+      0.6,
+      1.12,
+      0.88
+     ],
+     "proud": "y",
+     "look": "bare"
+    }
+   ],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "cylinder",
+     "like": "Small Cylinder",
+     "label": "cylinder",
+     "preset": "pipe5 30x30x30 steel",
+     "bay2": {
+      "material": "rubber",
+      "base": 1.0,
+      "rate": 6.0,
+      "by": "across",
+      "max": 999
+     }
+    }
+   ]
+  },
+  {
+   "die": "Drive",
+   "blanks": [
+    "hollow",
+    "solid"
+   ],
+   "materials": [
+    "steel",
+    "metal",
+    "bronze"
+   ],
+   "across": [
+    20,
+    720
+   ],
+   "length": [
+    20,
+    1600
+   ],
+   "aspect": [
+    0.5,
+    8.0
+   ],
+   "seconds": {
+    "base": 3.0,
+    "perKg": 0.02
+   },
+   "features": [
+    {
+     "tag": "cap",
+     "box": [
+      0.325,
+      0.325,
+      -0.04,
+      0.675,
+      0.675,
+      0.0
+     ],
+     "proud": "z",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 20.0,
+     "look": "bare"
+    },
+    {
+     "tag": "cap",
+     "box": [
+      0.325,
+      0.325,
+      1.0,
+      0.675,
+      0.675,
+      1.04
+     ],
+     "proud": "z",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 20.0,
+     "look": "bare"
+    },
+    {
+     "tag": "seam",
+     "box": [
+      -0.01,
+      0.48,
+      0.05,
+      1.01,
+      0.52,
+      0.95
+     ],
+     "proud": "x",
+     "clamp": "y",
+     "minCm": 0.5,
+     "maxCm": 4.0,
+     "look": "dark"
+    },
+    {
+     "tag": "sump",
+     "box": [
+      0.2,
+      -0.1,
+      0.2,
+      0.8,
+      0.0,
+      0.8
+     ],
+     "proud": "y",
+     "look": "dark"
+    }
+   ],
+   "sockets": [
+    {
+     "name": "+x",
+     "at": [
+      1,
+      0.5,
+      0.5
+     ],
+     "dir": "+x"
+    },
+    {
+     "name": "-x",
+     "at": [
+      0,
+      0.5,
+      0.5
+     ],
+     "dir": "-x"
+    },
+    {
+     "name": "+y",
+     "at": [
+      0.5,
+      1,
+      0.5
+     ],
+     "dir": "+y"
+    },
+    {
+     "name": "-y",
+     "at": [
+      0.5,
+      0,
+      0.5
+     ],
+     "dir": "-y"
+    },
+    {
+     "name": "+z",
+     "at": [
+      0.5,
+      0.5,
+      1
+     ],
+     "dir": "+z"
+    },
+    {
+     "name": "-z",
+     "at": [
+      0.5,
+      0.5,
+      0
+     ],
+     "dir": "-z"
+    }
+   ],
+   "patterns": [
+    {
+     "id": "gearbox",
+     "like": "5-Speed Gearbox",
+     "label": "gearbox",
+     "preset": "solid 50x50x75 steel",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true,
+       "ref": 900.0
+      }
+     ]
+    },
+    {
+     "id": "cvt",
+     "like": "CVT",
+     "label": "CVT",
+     "preset": "solid 50x50x70 steel",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true,
+       "ref": 900.0
+      }
+     ]
+    },
+    {
+     "id": "auto",
+     "like": "Automatic Gearbox",
+     "label": "auto gearbox",
+     "preset": "solid 50x50x80 steel",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true,
+       "ref": 900.0
+      }
+     ]
+    },
+    {
+     "id": "reversing",
+     "like": "Reversing Gearbox",
+     "label": "reversing gearbox",
+     "preset": "solid 50x50x65 steel",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true,
+       "ref": 900.0
+      }
+     ]
+    },
+    {
+     "id": "diff",
+     "like": "Differential",
+     "label": "differential",
+     "preset": "hollow 50x50x60 steel",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true,
+       "ref": 900.0
+      }
+     ]
+    },
+    {
+     "id": "lsd",
+     "like": "Limited-Slip Differential",
+     "label": "limited-slip diff",
+     "preset": "hollow 50x50x55 steel",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true,
+       "ref": 900.0
+      }
+     ]
+    },
+    {
+     "id": "locking",
+     "like": "Locking Differential",
+     "label": "locking diff",
+     "preset": "hollow 50x50x50 steel",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true,
+       "ref": 900.0
+      }
+     ]
+    }
+   ]
   }
  ],
  "presets": [
@@ -1802,6 +2525,102 @@
    "blank": "hollow 1600x1600x1600 bronze"
   },
   {
+   "part": "Button",
+   "die": "button",
+   "pattern": "button",
+   "blank": "plate 10x10x10 laminate"
+  },
+  {
+   "part": "Switch",
+   "die": "button",
+   "pattern": "switch",
+   "blank": "plate 10x10x15 laminate"
+  },
+  {
+   "part": "Gear Set",
+   "die": "gear",
+   "pattern": "set",
+   "blank": "round 15x15x15 steel"
+  },
+  {
+   "part": "Circuit Board",
+   "die": "board",
+   "pattern": "board",
+   "blank": "plate 20x10x20 laminate"
+  },
+  {
+   "part": "Piston Set",
+   "die": "piston",
+   "pattern": "set",
+   "blank": "round 10x10x20 steel"
+  },
+  {
+   "part": "Small Cylinder",
+   "die": "cylinder",
+   "pattern": "cylinder",
+   "blank": "pipe5 30x30x30 steel"
+  },
+  {
+   "part": "Medium Cylinder",
+   "die": "cylinder",
+   "pattern": "cylinder",
+   "blank": "pipe10 100x100x100 steel"
+  },
+  {
+   "part": "Large Cylinder",
+   "die": "cylinder",
+   "pattern": "cylinder",
+   "blank": "pipe40 400x400x400 steel"
+  },
+  {
+   "part": "Capital Cylinder",
+   "die": "cylinder",
+   "pattern": "cylinder",
+   "blank": "pipe160 1600x1600x1600 steel"
+  },
+  {
+   "part": "5-Speed Gearbox",
+   "die": "drive",
+   "pattern": "gearbox",
+   "blank": "solid 50x50x75 steel"
+  },
+  {
+   "part": "CVT",
+   "die": "drive",
+   "pattern": "cvt",
+   "blank": "solid 50x50x70 steel"
+  },
+  {
+   "part": "Automatic Gearbox",
+   "die": "drive",
+   "pattern": "auto",
+   "blank": "solid 50x50x80 steel"
+  },
+  {
+   "part": "Reversing Gearbox",
+   "die": "drive",
+   "pattern": "reversing",
+   "blank": "solid 50x50x65 steel"
+  },
+  {
+   "part": "Differential",
+   "die": "drive",
+   "pattern": "diff",
+   "blank": "hollow 50x50x60 steel"
+  },
+  {
+   "part": "Limited-Slip Differential",
+   "die": "drive",
+   "pattern": "lsd",
+   "blank": "hollow 50x50x55 steel"
+  },
+  {
+   "part": "Locking Differential",
+   "die": "drive",
+   "pattern": "locking",
+   "blank": "hollow 50x50x50 steel"
+  },
+  {
    "part": "Steel Plate",
    "die": "plate",
    "pattern": "steel",
@@ -1811,6 +2630,24 @@
    "part": "Sheet Steel 1 m",
    "die": "plate",
    "pattern": "sheet",
+   "blank": "plate 100x10x100 steel"
+  },
+  {
+   "part": "Plate Steel 1 m",
+   "die": "plate",
+   "pattern": "plate",
+   "blank": "plate 100x10x100 steel"
+  },
+  {
+   "part": "Tread Plate 1 m",
+   "die": "plate",
+   "pattern": "tread",
+   "blank": "plate 100x10x100 steel"
+  },
+  {
+   "part": "Mesh Grate 1 m",
+   "die": "plate",
+   "pattern": "grate",
    "blank": "plate 100x10x100 steel"
   },
   {

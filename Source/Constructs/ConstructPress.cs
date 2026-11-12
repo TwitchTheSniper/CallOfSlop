@@ -18,6 +18,7 @@ public enum PressStall : byte
     ConveyorFull, // its Piece out conveyor has no room at its start (the stamped parts wait for it)
     ConveyorSmall, // what it stamps is wider or taller than its Piece out conveyor
     ConveyorCut, // its Piece out conveyor is cut
+    Bay2Short, // a sized die's pattern wants more of its kit in bay 2 than it holds
 }
 
 /// <summary>Why a bay turned a piece away. <see cref="CStore.Blocked"/> holds this times 4 plus the bay (3: the die slot), on the wire.</summary>
@@ -33,6 +34,9 @@ public enum BayRefuse : byte
     Bulk, // a chute of bulk material: a press takes pieces
     Short, // the right piece, but shorter than a stroke
     Bounds, // a sized die's: the piece is outside its sizes (too thin, too long, too stubby: Pressed.Refusal says which)
+    Pattern, // the press's Pattern setting doesn't take this section
+    Hopper, // bay 2 is the kit hopper: it takes no piece
+    Kit, // bay 2: not the kit this pattern wants
 }
 
 /// <summary>
@@ -152,8 +156,7 @@ public static class ConstructPress
             var k = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0) - 1;
             return k >= 0 && k < t.Lathe.Length ? t.Lathe.AsSpan(k, 1) : default;
         }
-        var die = DieIn(c, part);
-        return die < 0 ? default : t.Rows.AsSpan(c.Parts[die].D.DieRows.First, c.Parts[die].D.DieRows.Count);
+        return default; // (a press's dies are sized dies: SizedDieOf)
     }
 
     /// <summary>
@@ -253,8 +256,17 @@ public static class ConstructPress
             return true;
         var held = ConstructGatherer.HeldOff(c, part);
         ConstructGatherer.SetHeld(world, st, held);
-        if (SizedDieOf(table, c, part) is { } sized)
-            return WorkSized(world, query, c, part, st, sized, held);
+        if (!d.IsLathe)
+        {
+            if (LoosenHopperPiece(world, c, part))
+                return true;
+            if (SizedDieOf(table, c, part) is { } sized)
+                return WorkSized(world, query, c, part, st, sized, held);
+            SetStall(world, st, PressStall.NoDie); // (no die, or one the table has no data for)
+            st.JobTicks = 0;
+            ConstructGatherer.SetBusy(world, st, false);
+            return false;
+        }
         var rows = RowsOf(table, c, part);
         var row = RowFor(rows, c, part);
         var why = StateOf(world, c, part, st, row, out var satisfied);
@@ -387,20 +399,21 @@ public static class ConstructPress
     }
 
     /// <summary>Why a press with a sized die won't take this piece, or None; with the pattern and preset it would press it to.</summary>
-    public static BayRefuse SizedRefusal(PressDie die, ConstructPartDef press, in ExtrusionKey key, out PressPattern? pattern, out ConstructPartDef? preset)
+    public static BayRefuse SizedRefusal(PressDie die, Construct c, int part, in ExtrusionKey key, out PressPattern? pattern, out ConstructPartDef? preset)
     {
         pattern = null;
         preset = null;
-        var section = key.Shape == ExShape.Section ? Extrusion.PresetOf(key.Mask) : -1;
+        var press = c.Parts[part].D;
+        var section = Pressed.SectionOf(key);
         if (section < 0 || Array.IndexOf(die.Blanks, section) < 0)
             return BayRefuse.Section;
         if (Array.IndexOf(die.Materials, key.Material) < 0)
             return BayRefuse.Material;
         if (Pressed.Across(key) > press.PressMaxCm)
             return BayRefuse.Size;
-        pattern = die.PatternFor(key, out preset);
+        pattern = PatternOf(die, c, part, key, out preset);
         if (pattern == null)
-            return BayRefuse.Section;
+            return SetPattern(die, c, part) != null ? BayRefuse.Pattern : BayRefuse.Section;
         if (!Pressed.Fits(die, pattern, key with { Growing = false }))
         {
             (pattern, preset) = (null, null);
@@ -414,7 +427,7 @@ public static class ConstructPress
     {
         var d = c.Parts[part].D;
         for (var b = 0; b < d.PressBays.Length; b++)
-            if (PieceIn(c, part, b) is var i and >= 0 && SizedRefusal(die, d, c.Parts[i].D.ExKey, out pattern, out preset) == BayRefuse.None)
+            if (b != HopperBay && PieceIn(c, part, b) is var i and >= 0 && SizedRefusal(die, c, part, c.Parts[i].D.ExKey, out pattern, out preset) == BayRefuse.None)
                 return b;
         (pattern, preset) = (null, null);
         return -1;
@@ -433,7 +446,9 @@ public static class ConstructPress
         ref var p = ref c.Parts[part];
         var d = p.D;
         var bay = ReadyBay(die, c, part, out var pattern, out var preset);
+        var need = bay < 0 ? 0 : Pressed.Bay2For(pattern!, c.Parts[PieceIn(c, part, bay)].D.ExKey with { Growing = false });
         var why = bay < 0 ? PressStall.Wants
+            : need > KitHeld(st, pattern!.Bay2) ? PressStall.Bay2Short
             : preset != null && ConstructAssembling.OutputOf(d, st, preset, 1) == AsmOut.TrayFull ? PressStall.TrayFull
             : ConstructRecycler.Powered(world, c, part) ? PressStall.None : PressStall.NoPower;
         SetStall(world, st, why);
@@ -462,9 +477,135 @@ public static class ConstructPress
         }
         if (!PutOut(world, query, c, part, st, output, 1))
             return false;
+        if (need > 0 && pattern!.Bay2 is { } kit)
+        {
+            if (kit.Part != null)
+                world.AddInputPart(st, kit.Part.Id, -need);
+            else
+                world.AddInput(st, kit.Material, -need);
+        }
         world.Note(CNoteKind.Made, c.Id, c.Owner, (ushort)(preset ?? pattern!.Like).Id, (byte)d.Tier); // (a sized part counts as its like part: its own id is this run's)
         world.RemovePart(c, piece);
         c.Wake();
+        return true;
+    }
+
+    // ---- The Pattern setting and bay 2 ----------------------------------------------------------------------------
+    // A press's Pattern (its "recipe" setting, PressTable.PatternChoices): 0 Auto, else 1 + the place of a pattern in the fitted die's list.
+    // Bay 2 is the kit hopper: a pattern's bay 2 part (kinds of the store, as an Assembler's parts) or bulk material (its mixed input) goes
+    // in by chute or F, and a stroke takes Pressed.Bay2For of it. A piece never sits there: one that does (an older save) is set loose.
+
+    /// <summary>Bay 2 (its index): the kit hopper on every press.</summary>
+    public const int HopperBay = 1;
+
+    /// <summary>The pattern the press's setting names on this die, or null (Auto, or a place past the die's list).</summary>
+    public static PressPattern? SetPattern(PressDie die, Construct c, int part)
+    {
+        ref var p = ref c.Parts[part];
+        var k = (int)ConstructConfig.Get(p, p.D, CfgKey.Recipe, 0) - 1;
+        return k >= 0 && k < die.Patterns.Length ? die.Patterns[k] : null;
+    }
+
+    /// <summary>What this press makes of a blank: the set pattern (null when it doesn't take the blank's section), or on Auto the blank's own (PressDie.PatternFor); and the preset's part when it is one.</summary>
+    public static PressPattern? PatternOf(PressDie die, Construct c, int part, in ExtrusionKey blank, out ConstructPartDef? preset)
+    {
+        preset = null;
+        if (SetPattern(die, c, part) is not { } set)
+            return die.PatternFor(blank, out preset);
+        var k = blank with { Growing = false };
+        if (!die.Takes(set, Pressed.SectionOf(k)))
+            return null;
+        foreach (var pr in die.Presets)
+            if (ReferenceEquals(pr.Pattern, set) && pr.Blank == k)
+            {
+                preset = pr.Part;
+                break;
+            }
+        return set;
+    }
+
+    /// <summary>How much of a kit the hopper holds (parts of its kind, or units of its material).</summary>
+    public static int KitHeld(CStore st, PressAmount? kit)
+    {
+        if (kit == null)
+            return 0;
+        if (kit.Part != null)
+            return st.KindIndex((ushort)kit.Part.Id) is var k and >= 0 ? st.KindCount![k] : 0;
+        for (var i = 0; i < st.MixN; i++)
+            if (st.MixMat![i] == kit.Material)
+                return st.MixAmount![i];
+        return 0;
+    }
+
+    /// <summary>The kit bay 2 wants now and how much the next stroke takes: the ready blank's pattern, else the set pattern, else (Auto) the die's first pattern with a kit; null when none wants one.</summary>
+    public static PressAmount? KitWanted(PressDie die, Construct c, int part, out int need, out PressPattern? pattern)
+    {
+        need = 0;
+        if (ReadyBay(die, c, part, out pattern, out _) is var bay and >= 0)
+        {
+            need = Pressed.Bay2For(pattern!, c.Parts[PieceIn(c, part, bay)].D.ExKey with { Growing = false });
+            return pattern!.Bay2;
+        }
+        pattern = SetPattern(die, c, part);
+        if (pattern == null)
+            foreach (var p in die.Patterns)
+                if (p.Bay2 != null)
+                {
+                    pattern = p;
+                    break;
+                }
+        return pattern?.Bay2;
+    }
+
+    /// <summary>How much more of its kit the hopper takes: twice the next stroke's, or a few strokes' when no blank is in.</summary>
+    private static int KitRoom(CStore st, PressAmount kit, int need) =>
+        Math.Max(0, (need > 0 ? need * 2 : Math.Min(kit.Max, kit.Part != null ? 12 : 60)) - KitHeld(st, kit));
+
+    /// <summary>Server: a part into the hopper (a chute, or F). True when it went in; a part the pattern doesn't want is noted on the bay.</summary>
+    public static bool FeedKitPart(ConstructWorld world, Construct c, int part, ConstructPartDef item)
+    {
+        if (!c.DefOf(part).IsPress || c.DefOf(part).IsLathe || world.StoreOf(c, part) is not { } st || SizedDieOf(PressTable.Current, c, part) is not { } die)
+            return false;
+        if (KitWanted(die, c, part, out var need, out _) is not { Part: { } want } kit || want.Id != item.Id)
+        {
+            SetRefusal(world, st, HopperBay, BayRefuse.Kit);
+            return false;
+        }
+        if (KitRoom(st, kit, need) <= 0)
+            return false;
+        world.AddInputPart(st, item.Id, 1);
+        return true;
+    }
+
+    /// <summary>Would the hopper take this part now? (A chute looking through its source: nothing is noted.)</summary>
+    public static bool WantsKitPart(ConstructWorld world, Construct c, int part, ushort item) =>
+        world.StoreOf(c, part) is { } st && SizedDieOf(PressTable.Current, c, part) is { } die && KitWanted(die, c, part, out var need, out _) is { Part: { } want } kit && want.Id == item && KitRoom(st, kit, need) > 0;
+
+    /// <summary>Server: bulk material into the hopper (a chute, or F); how much it took.</summary>
+    public static int FeedKitMaterial(ConstructWorld world, Construct c, int part, int amount, byte material)
+    {
+        if (amount <= 0 || !c.DefOf(part).IsPress || c.DefOf(part).IsLathe || world.StoreOf(c, part) is not { } st || SizedDieOf(PressTable.Current, c, part) is not { } die)
+            return 0;
+        if (KitWanted(die, c, part, out var need, out _) is not { Part: null } kit || kit.Material != material)
+        {
+            SetRefusal(world, st, HopperBay, BayRefuse.Kit);
+            return 0;
+        }
+        var n = Math.Min(amount, KitRoom(st, kit, need));
+        if (n > 0)
+            world.AddInput(st, material, n);
+        return n;
+    }
+
+    /// <summary>A piece in bay 2 (an older save, from when bay 2 took pieces) slides out of its mouth, loose. True when one did.</summary>
+    private static bool LoosenHopperPiece(ConstructWorld world, Construct c, int part)
+    {
+        if (c.Parts[part].D.PressBays.Length <= HopperBay || PieceIn(c, part, HopperBay) is not (var piece and >= 0))
+            return false;
+        var name = c.Parts[piece].D.Name;
+        if (TakeOut(world, c, part, piece, out _) != null)
+            return false;
+        Console.WriteLine($"[press] left 1 piece out of the {c.DefOf(part).Name}'s bay 2: {name} (bay 2 takes a kit now)");
         return true;
     }
 
@@ -480,7 +621,7 @@ public static class ConstructPress
         c.WorldFrame(p.Seg, out var q, out var t);
         for (var b = 0; b < d.PressBays.Length; b++)
         {
-            if (PieceIn(c, part, b) >= 0)
+            if (PieceIn(c, part, b) >= 0 || b == HopperBay && !d.IsLathe)
                 continue;
             ref readonly var bay = ref d.PressBays[b];
             var mid = t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, (bay.Min + bay.Max) * 0.5f), q);
@@ -549,6 +690,16 @@ public static class ConstructPress
     public static bool TakeFromConveyor(ConstructWorld world, IWorldQuery query, Construct c, int part, int bay, ConstructPartDef pd, float health, uint paint)
     {
         var d = c.Parts[part].D;
+        if (d.IsPress && !d.IsLathe && bay == HopperBay)
+        {
+            // Bay 2 is the kit hopper: its Piece in feeds the first free bay that takes blanks (bay 3, else bay 1).
+            bay = -1;
+            for (var b = d.PressBays.Length - 1; b >= 0 && bay < 0; b--)
+                if (b != HopperBay && PieceIn(c, part, b) < 0)
+                    bay = b;
+            if (bay < 0)
+                return false;
+        }
         if (!d.IsPress || bay >= d.PressBays.Length || c.Parts[part].Broken || PieceIn(c, part, bay) >= 0 || world.StoreOf(c, part) is not { } st)
             return false;
         if (!pd.IsExtrusion || pd.ExKey.Shape == ExShape.Wheel)
@@ -572,8 +723,12 @@ public static class ConstructPress
     public static BayRefuse Refusal(PressTable table, Construct c, int part, int bay, in ExtrusionKey key)
     {
         var d = c.Parts[part].D;
-        if (SizedDieOf(table, c, part) is { } sized)
-            return SizedRefusal(sized, d, key, out _, out _);
+        if (!d.IsLathe)
+        {
+            if (bay == HopperBay)
+                return BayRefuse.Hopper;
+            return SizedDieOf(table, c, part) is { } sized ? SizedRefusal(sized, c, part, key, out _, out _) : BayRefuse.NoDie;
+        }
         if (PressBaySpec.Across(key) > d.PressMaxCm)
             return BayRefuse.Size;
         var rows = RowsOf(table, c, part);
@@ -758,6 +913,25 @@ public static class ConstructPress
                     Queue(world, new Feed(cf.Id, (ushort)from, ct.Id, (ushort)to, moved.Id));
                     return true;
                 }
+        if (!d.IsLathe)
+        {
+            // Bay 2's kit: bulk from a bin, a part from a store's slots or kinds (as into an Assembler's input).
+            if ((fd.IsBin || fd.IsTerminal) && src.Amount > 0)
+            {
+                var put = FeedKitMaterial(world, ct, to, Math.Min(Math.Max(fd.ChuteLoad, d.ChuteLoad), src.Amount), src.Material);
+                if (put > 0)
+                    world.Withdraw(cf, from, put);
+                return put > 0;
+            }
+            for (var s = 0; s < src.SlotCount; s++)
+                if (src.Def[s] != ConstructParts.None && WantsKitPart(world, ct, to, src.Def[s]))
+                    return world.TakeOut(cf, from, s) is { } moved && FeedKitPart(world, ct, to, moved);
+            if (!fd.IsAssembler && !fd.IsPress)
+                for (var k = src.KindN - 1; k >= 0; k--)
+                    if (WantsKitPart(world, ct, to, src.KindDef![k]))
+                        return world.TakePart(cf, from, src.KindDef[k]) is { } moved && FeedKitPart(world, ct, to, moved);
+            return false;
+        }
         if (fd.IsBin && src.Amount > 0)
             SetRefusal(world, into, 0, BayRefuse.Bulk);
         return false;
@@ -872,6 +1046,9 @@ public static class ConstructPress
         BayRefuse.Bulk => "takes pieces, not bulk",
         BayRefuse.Short => "too short",
         BayRefuse.Bounds => "out of range",
+        BayRefuse.Pattern => "not its pattern",
+        BayRefuse.Hopper => "kits only",
+        BayRefuse.Kit => "not its kit",
         _ => "",
     };
 
@@ -922,9 +1099,12 @@ public static class ConstructPress
         if (at != bay)
             refused = BayRefuse.None;
         var piece = PieceIn(c, part, bay);
-        if (SizedDieOf(PressTable.Current, c, part) is { } sized)
+        if (!d.IsLathe && SizedDieOf(PressTable.Current, c, part) is { } sized)
         {
-            FillSizedBay(c, part, card, sized, piece, refused);
+            if (bay == HopperBay)
+                FillHopper(c, part, card, sized, st, refused);
+            else
+                FillSizedBay(c, part, card, sized, piece, refused);
             return;
         }
         if (row == null)
@@ -1017,7 +1197,7 @@ public static class ConstructPress
             card.Add(1, names.NameOf(k.Material));
             card.Add(2, Extrusion.PresetOf(k.Mask) is var sec and >= 0 ? SectionName(sec) : "Custom");
             card.AddShort(3, k.W / 100f).Add(3, 'x').AddShort(3, k.H / 100f).Add(3, 'x').AddShort(3, k.L / 100f).Add(3, 'm');
-            var why = SizedRefusal(die, d, k, out var pattern, out var preset);
+            var why = SizedRefusal(die, c, part, k, out var pattern, out var preset);
             if (why == BayRefuse.None)
             {
                 card.State = PanelState.Ok;
@@ -1047,6 +1227,57 @@ public static class ConstructPress
         card.Add(4, "Wants a blank");
     }
 
+    /// <summary>
+    /// Bay 2's card: the kit the pattern wants (a part or a material), what the next stroke takes of it for the blank in, and what the hopper
+    /// holds; read before the stroke, so a player sees "needs 3, holds 1" and tops it up.
+    /// </summary>
+    private static void FillHopper(Construct c, int part, PanelCard card, PressDie die, CStore? st, BayRefuse refused)
+    {
+        card.Add(0, ": Kit");
+        var kit = KitWanted(die, c, part, out var need, out _);
+        if (kit == null)
+        {
+            card.State = PanelState.Idle;
+            card.Add(1, "No kit");
+            card.Add(2, "for this");
+            card.Add(3, "pattern");
+            return;
+        }
+        var names = RecyclingTable.Current;
+        card.HasIcon = kit.Part == null;
+        if (kit.Part == null)
+            card.IconColour = names.ColourOf(kit.Material);
+        card.Add(1, kit.What);
+        var held = st == null ? 0 : KitHeld(st, kit);
+        if (need > 0)
+            card.Add(2, "needs ").Add(2, need);
+        else
+            card.Add(2, "per blank");
+        card.Add(3, "holds ").Add(3, held);
+        if (refused != BayRefuse.None)
+        {
+            card.State = PanelState.Refused;
+            card.Add(4, WhyText(refused));
+            return;
+        }
+        card.State = need > 0 && held >= need ? PanelState.Ok : PanelState.Wants;
+        card.Add(4, need == 0 ? "Wants a blank" : held >= need ? "Enough" : "Too little");
+    }
+
+    /// <summary>Touch "press.pattern": the next of the fitted die's patterns, then Auto (the Pattern setting, as the configure tool sets it).</summary>
+    public static string? NextPattern(ConstructWorld world, Construct c, int part)
+    {
+        ref var p = ref c.Parts[part];
+        var d = p.D;
+        if (!d.IsPress || d.IsLathe || d.CfgSlot[(int)CfgKey.Recipe] < 0)
+            return "this machine has no patterns";
+        if (SizedDieOf(PressTable.Current, c, part) is not { } die)
+            return "fit a die first";
+        var next = ((int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0) + 1) % (die.Patterns.Length + 1);
+        ConstructConfig.Put(ref p, d, CfgKey.Recipe, next);
+        return null;
+    }
+
     /// <summary>What a bay's line beside the icon holds of a list: as many as fit, then a "+". Text never runs off the screen.</summary>
     private static void Choice(PanelCard card, int line, string name, int nth)
     {
@@ -1074,12 +1305,15 @@ public static class ConstructPress
             card.Add(1, "Cuts: ").Add(1, row == null ? "nothing" : row.Output.Name);
         else
             card.Add(1, "Die: ").Add(1, die >= 0 ? c.Parts[die].D.Name : "none");
-        if (SizedDieOf(PressTable.Current, c, part) is { } sized)
+        if (!d.IsLathe && SizedDieOf(PressTable.Current, c, part) is { } sized)
         {
-            if (ReadyBay(sized, c, part, out var pattern, out var preset) >= 0)
-                SizedMakes(card, 2, pattern!, preset);
+            // The Pattern: the set one's label, or on Auto what the ready blank makes.
+            if (SetPattern(sized, c, part) is { } set)
+                card.Add(2, "Pattern: ").Add(2, set.Label);
+            else if (ReadyBay(sized, c, part, out var pattern, out var preset) >= 0)
+                card.Add(2, "Auto: ").Add(2, preset?.Name ?? pattern!.Label);
             else
-                card.Add(2, "One part a piece");
+                card.Add(2, "Pattern: auto");
         }
         else if (row != null && !d.IsLathe)
             card.Add(2, "Makes ").Add(2, row.Output.Name);
@@ -1100,7 +1334,7 @@ public static class ConstructPress
         card.State = st.Busy ? PanelState.Working : why switch
         {
             PressStall.None => PanelState.Ok,
-            PressStall.NoDie or PressStall.Wants or PressStall.TooShort or PressStall.NoRecipe => PanelState.Wants,
+            PressStall.NoDie or PressStall.Wants or PressStall.TooShort or PressStall.NoRecipe or PressStall.Bay2Short => PanelState.Wants,
             _ => PanelState.Fault,
         };
         card.Add(3, st.Busy ? (d.IsLathe ? "Cutting" : "Stamping") : StallText(why));
@@ -1119,6 +1353,7 @@ public static class ConstructPress
         PressStall.ConveyorFull => "Output conveyor full",
         PressStall.ConveyorSmall => "Conveyor too narrow",
         PressStall.ConveyorCut => "Output conveyor cut",
+        PressStall.Bay2Short => "Bay 2 needs its kit",
         _ => "Ready",
     };
 
@@ -1139,6 +1374,7 @@ public static class ConstructPress
             : (PressStall)st.Refused switch
             {
                 PressStall.None => null,
+                PressStall.Bay2Short when sized != null && KitWanted(sized, c, part, out var need, out _) is { } kit => $"needs {need} {kit.What} in bay 2, holds {KitHeld(st, kit)}",
                 PressStall.Wants when sized != null => $"needs a blank in a bay: {SectionName(sized.Blanks[0]).ToLowerInvariant()}{(sized.Blanks.Length > 1 ? " or another" : "")}, {sized.AcrossMin / 100f:0.00} to {Math.Min(sized.AcrossMax, d.PressMaxCm) / 100f:0.00} m across",
                 PressStall.Wants when row != null => "needs " + Wants(row, c, part),
                 var s => StallText(s).ToLowerInvariant(),
@@ -1253,5 +1489,8 @@ public readonly record struct PressBayDef(int Socket, Vector3 Min, Vector3 Max);
 public sealed partial class ConstructWorld
 {
     public int PressTicks;
+
+    /// <summary>A check's switch (the window tool's "timed"): machines take their time and need power in a creative world too.</summary>
+    public bool TimedMachines;
     public readonly List<ConstructPress.Feed> PressFeeds = new(32);
 }

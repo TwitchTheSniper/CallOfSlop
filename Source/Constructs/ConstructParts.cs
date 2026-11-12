@@ -803,7 +803,6 @@ public sealed partial class ConstructPartDef
     public int PressDieSocket = -1, PressMaxCm;
     public Vector3 PressDieMin, PressDieMax;
     public string DieFamily = ""; // a die: its rows in Pressing.json
-    public (int First, int Count) DieRows;
 
     public MonitorKind Monitor; // a production monitor's source: its "Data out" link makes a display show it (ProductionLines.Monitors.cs)
     public bool HasOutput => Role == PartRole.Seat || IsExtruder || IsRouter || IsMedia || Monitor != MonitorKind.None || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.Display or CLogic.Instrument or CLogic.RadioTx))

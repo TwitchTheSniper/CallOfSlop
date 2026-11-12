@@ -99,7 +99,7 @@ public static partial class ProductionLines
             return LineState.Running;
         return (PressStall)st.Refused switch
         {
-            PressStall.Wants or PressStall.TooShort or PressStall.NoDie or PressStall.NoRecipe => LineState.Starved,
+            PressStall.Wants or PressStall.TooShort or PressStall.NoDie or PressStall.NoRecipe or PressStall.Bay2Short => LineState.Starved,
             PressStall.TrayFull or PressStall.Blocked or PressStall.ConveyorFull or PressStall.ConveyorCut => LineState.Blocked,
             PressStall.WrongClass or PressStall.ConveyorSmall => LineState.Fault,
             _ => LineState.Idle, // (ready: nothing to say until a piece comes)
