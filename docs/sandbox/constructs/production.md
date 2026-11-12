@@ -1019,6 +1019,10 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   (`ConstructPower.Step`; proposed); without power it waits and its look line says so. **Link stock** is checked against an estimate
   (the ends as the crow flies, times 1.3) and paid by the length the link is laid at. A hold that is full says "next in: the hold is
   full until what it holds is fitted". After Release early or Cancel, parts already riding still land in the hold.
+  The fit from the parts alone compares a part's sides with the bay's, longest first. Costing is budgeted by time (1 ms a tick) and a
+  step is never split: of the shipped blueprints a 64 m bay doesn't refuse from their parts, the longest slices were 4.7 ms (IT War
+  Bus 1, 212 steps), 4.1 ms (Highland Giant Truck 5, 228 steps, the largest that fits) and 3.0 ms (Production Showcase, 442 steps)
+  (`station costtop`).
   Measured on the 2-core box (window tool, `station` verbs): the Buggy from Start to drivable 77 s; the station's step while building
   19 ms over 2,075 ticks, 48 KB in all (orders and fits; nothing in an idle tick: the step isn't entered); server tick p99 0.98 ms and
   worst 5.65 ms over the last 600 frames of a build; a world saved and loaded at 11 of 26 went on to Done; a client joining at 1 of 26

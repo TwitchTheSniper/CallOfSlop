@@ -516,6 +516,8 @@ public static unsafe partial class Program
             case "station": // a Building Station: "station" prints the first one's job; then "station pick NAME", start [N], cancel, release, stock (host: the parts it lacks into its hold), hold NAME (host: that part into this player's hands), save (host: its body saved and loaded)
             {
                 var words = arg.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                if (g.IsServer && arg.StartsWith("loadworld ", StringComparison.Ordinal))
+                    WsSay("station: " + g.StationLoadProbe(arg[10..])); // (first: the station is in the world it loads)
                 var (sc, spart) = WsFind(g, "Building Station");
                 if (sc == null || !sc.DefOf(spart).IsBuildStation)
                 {
@@ -573,7 +575,7 @@ public static unsafe partial class Program
                         WsSay("station: " + g.StationSaveProbe(rest));
                         break;
                     case "loadworld" when g.IsServer:
-                        WsSay("station: " + g.StationLoadProbe(rest));
+                        // (loaded above, before the station was looked for)
                         (sc, spart) = WsFind(g, "Building Station");
                         if (sc == null)
                         {
@@ -623,6 +625,8 @@ public static unsafe partial class Program
                     }
                 }
                 WsSay($"station: {StationProbe.Text(g.Constructs, sc, spart)}");
+                if (!ConstructRecycler.Powered(g.Constructs, sc, spart))
+                    WsSay("station: " + StationPowerProbe.Text(sc));
                 if (Ui.StationPreview is { Ready: true } pv && sverb == "pick")
                     WsSay($"station: preview {pv.Name}: {pv.Parts} parts, cost {pv.CostMs:0.0} ms, worst slice {pv.WorstMs:0.00} ms");
                 _wsWait = 2;

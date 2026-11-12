@@ -82,6 +82,8 @@ public sealed partial class Game
 public sealed partial class Game
 {
     /// <summary>The window tool (host): the world saved under a name in the save folder (--save-dir), through the real save.</summary>
+    private static string StationProbeDir => Path.Combine(Path.GetTempPath(), "callofslop-station-probe");
+
     internal string StationSaveProbe(string name)
     {
         if (!IsServer || !SandboxOn)
@@ -92,7 +94,14 @@ public sealed partial class Game
             WorldAttach(made);
             made.Live = true;
         }
-        return WorldSaveNow(wait: true) ? $"saved as {WorldSession!.Folder}" : "the world wasn't saved";
+        if (!WorldSaveNow(wait: true))
+            return "the world wasn't saved";
+        // (the tool plays on a throwaway copy of the saves: the world's folder is copied out, for another process to load)
+        var from = Path.Combine(WorldStore.Root, WorldSession!.Folder);
+        Directory.CreateDirectory(StationProbeDir);
+        foreach (var file in Directory.GetFiles(from))
+            File.Copy(file, Path.Combine(StationProbeDir, Path.GetFileName(file)), true);
+        return $"saved as {WorldSession.Folder}, copied to {StationProbeDir}";
     }
 
     /// <summary>The window tool (host, a fresh process): a saved world loaded over this one, through the real load.</summary>
@@ -100,6 +109,13 @@ public sealed partial class Game
     {
         if (!IsServer || !SandboxOn)
             return "not the host";
+        var into = Path.Combine(WorldStore.Root, WorldStore.FolderFor(WorldStore.CleanName(name)));
+        if (Directory.Exists(StationProbeDir))
+        {
+            Directory.CreateDirectory(into);
+            foreach (var file in Directory.GetFiles(StationProbeDir))
+                File.Copy(file, Path.Combine(into, Path.GetFileName(file)), true);
+        }
         var entry = WorldStore.List().Find(e => e.Meta.Name.Equals(WorldStore.CleanName(name), StringComparison.OrdinalIgnoreCase));
         if (entry == null || WorldOpen(entry, out var why) is not { } ws)
             return "no such world";

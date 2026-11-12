@@ -578,7 +578,13 @@ public sealed partial class ConstructWorld
         for (var i = 0; i < n; i++)
             parts[i].Paint = r.U32();
         for (var i = 0; i < n; i++)
+        {
+            // (the state is the save's: Init sets a switch or toggle to its Start on setting, which is read further down, so a loaded main
+            // switch was always off and its floor had no power until someone worked it: 2026-11-12)
+            var was = parts[i].State;
             ConstructConfig.Init(ref parts[i], parts[i].D);
+            parts[i].State = was;
+        }
         var settings = r.Count(8);
         ConstructFuse.Renumber? units = null;
         for (var k = 0; k < settings; k++)
