@@ -590,6 +590,8 @@ public sealed partial class ConstructPartDef
     public float DriveRatio = 1f, DriveEfficiency = 1f; // transfer part: reduction (engine side turns per output turn), what it keeps
     public float MaxAngle; // a U or CV joint: the most it bends (radians)
     public float MaxTorque; // a belt, U joint...: the most torque it carries before it slips (N m at the part; 0: no limit)
+    public Vector3? DataSeatAt; // where a data link ends when the part's middle is in the air (ConstructRoutes.DataSeat fills it on first use)
+    public bool DataSeatKnown;
     public NamedPort[] NamedPorts = []; // the link ports the part file names (ConstructPorts.cs): shafts, pipes, power
     public int[] Ports = []; // transfer part: the sockets the drive goes in and out of (empty: every socket)
     public int FrontPort = -1; // a transfer case: its switched (front) output socket

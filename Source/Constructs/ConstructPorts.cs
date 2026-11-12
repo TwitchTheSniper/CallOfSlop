@@ -109,7 +109,8 @@ public static partial class ConstructParts
         if (d.Electric && !list.Any(x => x.Type == RouteType.Power && x.In))
         {
             var c = (d.BoundsMin + d.BoundsMax) * 0.5f;
-            list.Add(new NamedPort { Name = "Power in", Type = RouteType.Power, In = true, At = new Vector3(c.X, c.Y, d.BoundsMax.Z), Face = 4, Implicit = true });
+            // (seated on the body: the middle of the bounds' face is in the air on an open frame or a machine with a stack)
+            list.Add(new NamedPort { Name = "Power in", Type = RouteType.Power, In = true, At = PortMounts.Seat(d, new Vector3(c.X, c.Y, d.BoundsMax.Z), 4), Face = 4, Implicit = true });
         }
         // Every gun takes an ammo feed and every box and crate gives one, unless the file names its own.
         if (d.Role == PartRole.Gun && !list.Any(x => x.Type == RouteType.Feed && x.In))
