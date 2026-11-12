@@ -175,7 +175,6 @@ public sealed class ProductionShowcase : IPartGenerator
             Feed(StockOf("steel", 52.25f, -13.25f), asm);
             var partRack = On("Piece Rack", 56.25f, -10.75f, Flow, "-y.0.0", Assembly);
             var router = SmartCorner(asm, partRack);
-            ChainCorner(asm);
             Sign(48.75f, Posts2, Assembly, "Send the bill: the Assembler makes these parts");
 
             // ---- 7. Orders: a second Line Console on both Extruders and the Wheel Former, its bill already on it. ------------------
@@ -203,6 +202,7 @@ public sealed class ProductionShowcase : IPartGenerator
             StationBay(orders);
             PanelLine(orders);
             PanelDesignerCorner(orders);
+            ChainCorner(asm); // (on the panel strip's floor: after it is laid)
 
             Monitors(refine, orders);
 
@@ -271,12 +271,12 @@ public sealed class ProductionShowcase : IPartGenerator
         /// </summary>
         private void ChainCorner(VPart asm)
         {
-            var asm2 = On("Assembler", 47.25f, -15.25f, Flow, paint: Assembly);
-            Feed(StockOf("steel", 44.75f, -15.25f), asm2);
+            var asm2 = On("Assembler", 46.25f, -15.25f, Flow, paint: Assembly);
+            Feed(StockOf("steel", 43.25f, -15.25f), asm2);
             var o = PortAt(asm2, "Piece out");
             var i = PortAt(asm, "Piece in");
             Convey(asm2, "Piece out", asm, "Piece in", Assembly, new Vector2(0.6f, 0.6f), V(i.X - 0.55f, o.Y, o.Z), V(i.X - 0.55f, o.Y, i.Z));
-            Sign(42.25f, Posts3, Assembly, "ORDER A TRANSMISSION: THIS ASSEMBLER MAKES ITS GEAR SETS");
+            Sign(40.75f, Posts3, Assembly, "ORDER A TRANSMISSION: THIS ASSEMBLER MAKES ITS GEAR SETS");
         }
 
         /// <summary>
