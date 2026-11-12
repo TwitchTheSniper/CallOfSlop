@@ -30,24 +30,30 @@ public static partial class HullLoft
         new("door", "Door skin", 110, 120, 6, 8, "a door's outer skin: a gentle crown and the top turned in by its rake"),
         new("roofbow", "Roof bow", 200, 180, 22, 6, "a roof: flat in the middle, rolled down at the sides, arched along by its rake"),
         new("cowl", "Cowl", 60, 150, 30, 12, "a round cowl between a hood and a screen, rising by its rake"),
+        new("bend", "Bent panel", 200, 100, 0, 0, "a flat sheet folded along a line across it: its angle, where along the sheet, and how tight"),
     ];
 
     /// <summary>A panel's key, read: its preset, sizes in cm, thickness in mm and material.</summary>
-    public readonly record struct PanelShape(int Kind, int L, int W, int Crown, int Rake, int Mm, string Material);
+    public readonly record struct PanelShape(int Kind, int L, int W, int Crown, int Rake, int Mm, string Material, int Angle = 0, int At = 0, int Radius = 0);
+
+    /// <summary>The bent panel's preset (its key has three more words: <c>a</c> the fold's angle in degrees, up positive; <c>p</c> where its middle lies along the sheet, cm; <c>b</c> its inside radius, cm).</summary>
+    public const int PanelBend = 7, PanelMaxAngle = 90, PanelMinRadiusCm = 2, PanelMaxRadiusCm = 100;
 
     public static bool IsPanelName(string name) => name.StartsWith(PanelPrefix, StringComparison.Ordinal);
 
     /// <summary>A named part a Panel Former makes: a formed panel or one of the vehicle kit's lofted parts.</summary>
     public static bool IsFormedName(string name) => IsPanelName(name) || name.StartsWith(Prefix, StringComparison.Ordinal);
 
-    public static string PanelKey(in PanelShape s) =>
-        string.Create(CultureInfo.InvariantCulture, $"{PanelPrefix}{PanelPresets[s.Kind].Word} {s.L}x{s.W} c{s.Crown} r{s.Rake} t{s.Mm} {s.Material})");
+    public static string PanelKey(in PanelShape s) => s.Kind == PanelBend
+        ? string.Create(CultureInfo.InvariantCulture, $"{PanelPrefix}{PanelPresets[s.Kind].Word} {s.L}x{s.W} c{s.Crown} r{s.Rake} t{s.Mm} a{s.Angle} p{s.At} b{s.Radius} {s.Material})")
+        : string.Create(CultureInfo.InvariantCulture, $"{PanelPrefix}{PanelPresets[s.Kind].Word} {s.L}x{s.W} c{s.Crown} r{s.Rake} t{s.Mm} {s.Material})");
 
     /// <summary>A preset at its default size, 20 mm thick.</summary>
     public static PanelShape PanelDefault(int kind, string material = "steel")
     {
         var p = PanelPresets[Math.Clamp(kind, 0, PanelPresets.Length - 1)];
-        return new PanelShape(Math.Clamp(kind, 0, PanelPresets.Length - 1), p.L, p.W, p.Crown, p.Rake, 20, material);
+        kind = Math.Clamp(kind, 0, PanelPresets.Length - 1);
+        return kind == PanelBend ? new PanelShape(kind, p.L, p.W, p.Crown, p.Rake, 20, material, 45, p.L / 2, 10) : new PanelShape(kind, p.L, p.W, p.Crown, p.Rake, 20, material);
     }
 
     /// <summary>Why a panel can't be made, or null. A key past a range is refused, never clamped, so every peer makes the same part or none.</summary>
@@ -63,6 +69,21 @@ public static partial class HullLoft
             return $"a panel's rake is within {PanelMaxRakeCm} cm and its own length";
         if (s.Mm < PanelMinMm || s.Mm > PanelMaxMm)
             return $"a panel is {PanelMinMm} to {PanelMaxMm} mm thick";
+        if (s.Kind != PanelBend && (s.Angle != 0 || s.At != 0 || s.Radius != 0))
+            return "only a bent panel has a fold";
+        if (s.Kind == PanelBend)
+        {
+            if (s.Rake != 0)
+                return "a bent panel has no rake: its fold is its angle";
+            if (Math.Abs(s.Angle) > PanelMaxAngle)
+                return $"a fold is within {PanelMaxAngle} degrees";
+            if (s.Radius < PanelMinRadiusCm || s.Radius > PanelMaxRadiusCm)
+                return $"a fold's radius is {PanelMinRadiusCm} to {PanelMaxRadiusCm} cm";
+            if (s.At < 0 || s.At > s.L)
+                return "a fold lies on the sheet: within its length";
+            if (s.Radius * MathF.Abs(s.Angle) * MathF.PI / 180f > s.L)
+                return "that fold is longer than the sheet: a smaller radius or angle";
+        }
         if (RecyclingTable.Current.IdOf(s.Material) is var m && (m == 0 || ExtrusionTable.Current.Find(m) == null))
             return $"a panel can't be formed of {s.Material}: takes {ExtrusionTable.Current.Takes()}";
         return null;
@@ -84,7 +105,15 @@ public static partial class HullLoft
             || w[3].Length < 2 || w[3][0] != 'r' || !Int(w[3][1..], out var rake)
             || w[4].Length < 2 || w[4][0] != 't' || !Int(w[4][1..], out var mm))
             return null;
-        var s = new PanelShape(kind, l, wd, crown, rake, mm, string.Join(' ', w[5..]));
+        var (ang, at, rad, first) = (0, 0, 0, 5);
+        if (kind == PanelBend)
+        {
+            if (w.Length < 9 || w[5].Length < 2 || w[5][0] != 'a' || !Int(w[5][1..], out ang) || w[6].Length < 2 || w[6][0] != 'p' || !Int(w[6][1..], out at)
+                || w[7].Length < 2 || w[7][0] != 'b' || !Int(w[7][1..], out rad))
+                return null;
+            first = 8;
+        }
+        var s = new PanelShape(kind, l, wd, crown, rake, mm, string.Join(' ', w[first..]), ang, at, rad);
         return PanelRefusal(s) == null && PanelKey(s) == name ? s : null; // (one spelling a key: no "+8", no leading zeros)
     }
 
@@ -109,6 +138,7 @@ public static partial class HullLoft
             3 => c * bow + r * MathF.Sin(MathF.PI * s), // fender
             4 => c * bow + r * 0.25f * (x + 1) * (x + 1), // door: x = 1 is its top edge
             5 => c * (1 - x * x * x * x) + r * 4 * s * (1 - s), // roofbow
+            PanelBend => c * bow, // (the fold is in PanelPoint: it moves the sheet along as well as up)
             _ => c * MathF.Sqrt(MathF.Max(0, 1 - x * x * 0.96f)) + r * s, // cowl
         };
     }
@@ -118,13 +148,87 @@ public static partial class HullLoft
     /// <summary>The facets a key takes: (along, across).</summary>
     public static (int Along, int Across) PanelGrid(in PanelShape p)
     {
+        if (p.Kind == PanelBend)
+            return (BendRows(p, null), p.Crown > 0 ? Math.Clamp(p.W / 20, 4, PanelMaxAcross) : 1);
         var bent = p.Rake != 0 && p.Kind is not (4 or 6);
         var along = bent ? Math.Clamp(p.L / 20, 5, PanelMaxAlong) : p.Kind == 2 ? 4 : 1;
         var across = p.Crown > 0 || p.Kind == 4 && p.Rake != 0 ? Math.Clamp(p.W / 20, 4, PanelMaxAcross) : 1;
         return (along, across);
     }
 
-    private static Vector3 PanelPoint(in PanelShape p, float s, float x) => new(x * PanelHalf(p, s), PanelHeight(p, s, x), s * p.L / 100f);
+    private static Vector3 PanelPoint(in PanelShape p, float s, float x)
+    {
+        if (p.Kind != PanelBend)
+            return new(x * PanelHalf(p, s), PanelHeight(p, s, x), s * p.L / 100f);
+        // A fold: flat, an arc of the fold's radius, flat again at its angle. s runs along the sheet itself, so the sheet's length is what was cut.
+        BendSpan(p, out var u0, out var u1, out var rad, out var a);
+        var u = s * p.L / 100f;
+        float z, y;
+        if (u <= u0 || a == 0)
+            (z, y) = (u, 0);
+        else
+        {
+            var th = (MathF.Min(u, u1) - u0) / rad;
+            var sg = MathF.Sign(a);
+            (z, y) = (u0 + rad * MathF.Sin(th), sg * rad * (1 - MathF.Cos(th)));
+            if (u > u1)
+                (z, y) = (z + (u - u1) * MathF.Cos(a), y + (u - u1) * MathF.Sin(a));
+        }
+        return new(x * PanelHalf(p, s), y + PanelHeight(p, s, x), z);
+    }
+
+    /// <summary>A fold's arc along the sheet (metres from its back edge), its radius and its signed angle (radians).</summary>
+    private static void BendSpan(in PanelShape p, out float u0, out float u1, out float rad, out float a)
+    {
+        a = p.Angle * MathF.PI / 180f;
+        rad = p.Radius / 100f;
+        var len = rad * MathF.Abs(a);
+        var total = p.L / 100f;
+        u0 = Math.Clamp(p.At / 100f - len / 2, 0, MathF.Max(0, total - len));
+        u1 = u0 + len;
+    }
+
+    /// <summary>
+    /// A bent panel's rows along the sheet: its back edge, the fold's start, a row every 22.5 degrees of it (at most 5 facets), its end and
+    /// the nose; a flat stretch shorter than 2 cm is left out. Returns the facets along; <paramref name="s"/> (if given) takes each row's place, 0 to 1.
+    /// </summary>
+    private static int BendRows(in PanelShape p, Span<float> s)
+    {
+        BendSpan(p, out var u0, out var u1, out _, out var a);
+        var total = p.L / 100f;
+        var arc = a == 0 ? 0 : Math.Clamp((int)MathF.Ceiling(MathF.Abs(p.Angle) / 22.5f), 1, 5);
+        var n = 0;
+        void Row(float u, Span<float> into)
+        {
+            if (!into.IsEmpty)
+                into[n] = u / total;
+            n++;
+        }
+        Row(0, s);
+        if (arc == 0)
+        {
+            Row(total, s);
+            return n - 1;
+        }
+        if (u0 > 0.02f)
+            Row(u0, s);
+        for (var k = 1; k < arc; k++)
+            Row(u0 + (u1 - u0) * k / arc, s);
+        if (total - u1 > 0.02f)
+            Row(u1, s);
+        Row(total, s);
+        return n - 1;
+    }
+
+    /// <summary>Where row <paramref name="i"/> of <paramref name="nu"/> lies along the sheet, 0 to 1: even steps, but a bent panel's rows follow its fold.</summary>
+    public static float PanelRowS(in PanelShape p, int i, int nu)
+    {
+        if (p.Kind != PanelBend)
+            return i / (float)nu;
+        Span<float> rows = stackalloc float[PanelMaxAlong + 1];
+        BendRows(p, rows);
+        return rows[Math.Clamp(i, 0, nu)];
+    }
 
     private static Vector3 PanelNormal(in PanelShape p, float s, float x)
     {
@@ -289,7 +393,7 @@ public static partial class HullLoft
         for (var i = 0; i <= nu; i++)
             for (var j = 0; j <= nv; j++)
             {
-                var (s, x) = (i / (float)nu, j * 2f / nv - 1);
+                var (s, x) = (PanelRowS(sh, i, nu), j * 2f / nv - 1);
                 grid[i, j] = PanelPoint(sh, s, x);
                 normal[i, j] = PanelNormal(sh, s, x);
             }
@@ -322,6 +426,8 @@ public static partial class HullLoft
             mx = new Vector3(In(mx.X, false), MathF.Round(mx.Y, 2), k == strips - 1 ? In(mx.Z, false) : MathF.Round(mx.Z, 2));
             if (mx.Y - mn.Y < 0.03f)
                 (mn.Y, mx.Y) = (mn.Y - 0.01f, mn.Y + 0.02f);
+            if (sh.Kind == PanelBend && mx.Z - mn.Z < 0.03f) // (a bent panel's leg standing straight up: its strip has no length of its own)
+                (mn.Z, mx.Z) = (MathF.Round(MathF.Min(mn.Z, mx.Z), 2) - 0.01f, MathF.Round(MathF.Min(mn.Z, mx.Z), 2) + 0.02f);
             boxes[k] = (mn, mx);
             p.Hide(mn, mx);
             if (slabs)
@@ -337,13 +443,27 @@ public static partial class HullLoft
                     return k;
             return strips - 1;
         }
+        // (a bent panel's strips follow its rows, not its length: a leg folded up shares its z with the fold)
+        var shc = sh; // (a copy: a local function can't read an in parameter)
+        int StripOf(float s, float z)
+        {
+            if (shc.Kind != PanelBend)
+                return StripAt(z);
+            var row = 0;
+            while (row < nu - 1 && PanelRowS(shc, row + 1, nu) <= s)
+                row++;
+            for (var k = 0; k < strips; k++)
+                if (row < (k + 1) * nu / strips)
+                    return k;
+            return strips - 1;
+        }
         var along = Math.Clamp(sh.L / 50, 1, 6);
         var across = Math.Clamp(sh.W / 50, 1, 6);
         for (var k = 0; k < along; k++)
         {
             var s = (k + 0.5f) / along;
-            var z = Cm2(s * sh.L / 100f);
-            var (mn, mx) = boxes[StripAt(z)];
+            var z = Cm2(PanelPoint(sh, s, 0).Z);
+            var (mn, mx) = boxes[StripOf(s, z)];
             z = Math.Clamp(z, mn.Z, mx.Z);
             p.Sock($"e{k}", new Vector3(mx.X, Math.Clamp(Cm2(PanelPoint(sh, s, 1).Y), mn.Y, mx.Y), z), "+x");
             p.Sock($"w{k}", new Vector3(mn.X, Math.Clamp(Cm2(PanelPoint(sh, s, -1).Y), mn.Y, mx.Y), z), "-x");
@@ -356,10 +476,14 @@ public static partial class HullLoft
             var ps = PanelPoint(sh, 0, x);
             var pn = PanelPoint(sh, 1, x);
             p.Sock($"s{k}", new Vector3(Math.Clamp(Cm2(ps.X), a0.X, a1.X), Math.Clamp(Cm2(ps.Y), a0.Y, a1.Y), a0.Z), "-z");
-            p.Sock($"n{k}", new Vector3(Math.Clamp(Cm2(pn.X), b0.X, b1.X), Math.Clamp(Cm2(pn.Y), b0.Y, b1.Y), b1.Z), "+z");
+            if (sh.Kind == PanelBend && Math.Abs(sh.Angle) > 45) // (a leg folded past 45 degrees ends upward or downward: its edge sockets with it)
+                p.Sock($"n{k}", new Vector3(Math.Clamp(Cm2(pn.X), b0.X, b1.X), sh.Angle > 0 ? b1.Y : b0.Y, Math.Clamp(Cm2(pn.Z), b0.Z, b1.Z)), sh.Angle > 0 ? "+y" : "-y");
+            else
+                p.Sock($"n{k}", new Vector3(Math.Clamp(Cm2(pn.X), b0.X, b1.X), Math.Clamp(Cm2(pn.Y), b0.Y, b1.Y), b1.Z), "+z");
         }
-        var (m0, m1) = boxes[StripAt(sh.L / 200f)];
-        p.Sock("back", new Vector3(0, m0.Y, Math.Clamp(Cm2(sh.L / 200f), m0.Z, m1.Z)), "-y");
+        var backZ = sh.Kind == PanelBend ? PanelPoint(sh, PanelRowS(sh, 1, nu) / 2, 0).Z : sh.L / 200f; // (a bent panel: under the middle of its first flat)
+        var (m0, m1) = boxes[sh.Kind == PanelBend ? 0 : StripAt(backZ)];
+        p.Sock("back", new Vector3(0, m0.Y, Math.Clamp(Cm2(backZ), m0.Z, m1.Z)), "-y");
         var mat = RecyclingTable.Current.IdOf(sh.Material);
         var row = ExtrusionTable.Current.Find(mat)!;
         var volume = area * t;
@@ -428,6 +552,9 @@ public static partial class HullLoft
                     case "crown" when num: s = s with { Crown = v }; break;
                     case "rake" when num: s = s with { Rake = v }; break;
                     case "thick" when num: s = s with { Mm = v }; break;
+                    case "angle" when num: s = s with { Angle = v }; break;
+                    case "at" when num: s = s with { At = v }; break;
+                    case "radius" when num: s = s with { Radius = v }; break;
                     case "material": s = s with { Material = kv[1] }; break;
                     default:
                         Console.WriteLine($"\"{a}\": key=value (length, width, crown, rake in cm; thick in mm; material)");

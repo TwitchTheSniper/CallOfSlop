@@ -31,12 +31,14 @@ public sealed partial class Ui
     public (ushort Body, int Part) DesignerTarget => (_pdBody, _pdPart);
 
     /// <summary>Probes: the shape on the sliders, the designs listed and the text under the sliders.</summary>
-    public HullLoft.PanelShape DesignerShape => new(_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm, RecyclingTable.Current.NameOf(_pdMat));
+    public HullLoft.PanelShape DesignerShape => _pdKind == HullLoft.PanelBend
+        ? new(_pdKind, _pdL, _pdW, _pdCrown, 0, _pdMm, RecyclingTable.Current.NameOf(_pdMat), _pdAngle, _pdFoldAt, _pdRadius)
+        : new(_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm, RecyclingTable.Current.NameOf(_pdMat));
     public int DesignerDesigns => _pdMine.Count;
     public string DesignerNote => _pdWhy;
 
     private ushort _pdBody;
-    private int _pdPart = -1, _pdKind, _pdL = 150, _pdW = 100, _pdCrown = 10, _pdRake, _pdMm = 20, _pdCount = 1;
+    private int _pdPart = -1, _pdKind, _pdL = 150, _pdW = 100, _pdCrown = 10, _pdRake, _pdMm = 20, _pdCount = 1, _pdAngle = 45, _pdFoldAt = 100, _pdRadius = 10;
     private byte _pdMat;
     private int _pdStamp, _pdTextKey, _pdMaxL = HullLoft.PanelMaxCm, _pdMaxW = HullLoft.PanelMaxCm, _pdFormers, _pdMineSel = -1;
     private double _pdBuiltAt;
@@ -91,6 +93,9 @@ public sealed partial class Ui
             case "crown": _pdCrown = value; break;
             case "rake": _pdRake = value; break;
             case "thick": _pdMm = value; break;
+            case "angle": _pdAngle = value; break;
+            case "at": _pdFoldAt = value; break;
+            case "radius": _pdRadius = value; break;
         }
         DesignerClamp();
     }
@@ -106,6 +111,8 @@ public sealed partial class Ui
     {
         var s = HullLoft.PanelDefault(kind);
         (_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm) = (s.Kind, s.L, s.W, s.Crown, s.Rake, s.Mm);
+        if (s.Kind == HullLoft.PanelBend)
+            (_pdAngle, _pdFoldAt, _pdRadius) = (s.Angle, s.At, s.Radius);
         _pdMineSel = -1;
     }
 
@@ -114,6 +121,8 @@ public sealed partial class Ui
         if (HullLoft.PanelOf(d.Key) is not { } s)
             return;
         (_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm) = (s.Kind, s.L, s.W, s.Crown, s.Rake, s.Mm);
+        if (s.Kind == HullLoft.PanelBend)
+            (_pdAngle, _pdFoldAt, _pdRadius) = (s.Angle, s.At, s.Radius);
         if (RecyclingTable.Current.IdOf(s.Material) is var m and not 0)
             _pdMat = m;
         _pdName ??= new ImInputString(PlayerBlueprints.MaxName + 1);
@@ -140,6 +149,11 @@ public sealed partial class Ui
         var rake = Math.Min(HullLoft.PanelMaxRakeCm, _pdL);
         _pdRake = Math.Clamp(_pdRake, -rake, rake);
         _pdMm = Math.Clamp(_pdMm, HullLoft.PanelMinMm, HullLoft.PanelMaxMm);
+        // A fold: within 90 degrees, on the sheet, and no longer than it (the radius gives way first).
+        _pdAngle = Math.Clamp(_pdAngle, -HullLoft.PanelMaxAngle, HullLoft.PanelMaxAngle);
+        _pdFoldAt = Math.Clamp(_pdFoldAt, 0, _pdL);
+        var tight = _pdAngle == 0 ? HullLoft.PanelMaxRadiusCm : (int)(_pdL / (Math.Abs(_pdAngle) * MathF.PI / 180f));
+        _pdRadius = Math.Clamp(_pdRadius, HullLoft.PanelMinRadiusCm, Math.Max(HullLoft.PanelMinRadiusCm, Math.Min(HullLoft.PanelMaxRadiusCm, tight)));
     }
 
     /// <summary>What the designer's network offers: the formers and their sizes, the materials (those a former is fed first). At most twice a second.</summary>
@@ -192,7 +206,7 @@ public sealed partial class Ui
     /// <summary>The readouts for the shape as it stands, made again only when it or the network changed.</summary>
     private void DesignerTexts(ConstructWorld world, Construct c, int part)
     {
-        var key = HashCode.Combine(_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm, _pdMat, _pdStamp) * 31 + DesignerPreview.Made;
+        var key = HashCode.Combine(_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm, _pdMat, _pdStamp) * 31 + DesignerPreview.Made + HashCode.Combine(_pdAngle, _pdFoldAt, _pdRadius);
         var bd = DesignerPreview.Base;
         key = key * 31 + (bd == null ? 0 : 1);
         if (key == _pdTextKey)
@@ -212,6 +226,10 @@ public sealed partial class Ui
             at.Append(_pdCrown >= HullLoft.PanelMaxCrownCm ? $"Crown stops at {HullLoft.PanelMaxCrownCm} cm. " : $"Crown stops at half the width ({_pdW / 2} cm). ");
         if (_pdRake != 0 && Math.Abs(_pdRake) >= Math.Min(HullLoft.PanelMaxRakeCm, _pdL))
             at.Append(Math.Abs(_pdRake) >= HullLoft.PanelMaxRakeCm ? $"Rake stops at {HullLoft.PanelMaxRakeCm} cm. " : $"Rake stops at the panel's length ({_pdL} cm). ");
+        if (_pdKind == HullLoft.PanelBend && Math.Abs(_pdAngle) >= HullLoft.PanelMaxAngle)
+            at.Append($"A fold stops at {HullLoft.PanelMaxAngle} degrees. ");
+        if (_pdKind == HullLoft.PanelBend && _pdAngle != 0 && _pdRadius < HullLoft.PanelMaxRadiusCm && _pdRadius >= (int)(_pdL / (Math.Abs(_pdAngle) * MathF.PI / 180f)))
+            at.Append($"The fold's radius stops at {_pdRadius} cm: the fold is as long as the sheet. ");
         if (_pdMm <= HullLoft.PanelMinMm || _pdMm >= HullLoft.PanelMaxMm)
             at.Append($"Sheet is {HullLoft.PanelMinMm} to {HullLoft.PanelMaxMm} mm thick. ");
         _pdAt = at.ToString();
@@ -274,7 +292,7 @@ public sealed partial class Ui
         bool order = false, save = false, share = true;
         int cancel = 0, preset = -1, loadMine = -1, loadWorld = -1, delMine = -1;
         var mat = _pdMat;
-        int l = _pdL, w = _pdW, crown = _pdCrown, rake = _pdRake, mm = _pdMm;
+        int l = _pdL, w = _pdW, crown = _pdCrown, rake = _pdRake, mm = _pdMm, angle = _pdAngle, bendAt = _pdFoldAt, radius = _pdRadius;
         var vp = ImGui.GetMainViewport();
         var ww = MathF.Min(1180 * _scale, vp.WorkSize.X * 0.96f);
         var wh = MathF.Min(690 * _scale, vp.WorkSize.Y * 0.94f);
@@ -394,9 +412,24 @@ public sealed partial class Ui
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip("How far the middle stands proud across the width: at most half the width, 80 cm."u8);
                 var rakeMax = Math.Min(HullLoft.PanelMaxRakeCm, _pdL);
-                ImGui.SliderInt(_pdKind switch { 1 => "Step"u8, 2 => "Nose drop"u8, 3 => "Arch"u8, 4 => "Turn-in"u8, 6 => "Rise"u8, _ => "Rake"u8 }, ref rake, -rakeMax, rakeMax, "%d cm"u8);
+                if (_pdKind == HullLoft.PanelBend)
+                {
+                    ImGui.SliderInt("Fold angle"u8, ref angle, -HullLoft.PanelMaxAngle, HullLoft.PanelMaxAngle, "%d deg"u8);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("How far the sheet folds along a line across it: up is positive. Within 90 degrees."u8);
+                    ImGui.SliderInt("Fold at"u8, ref bendAt, 0, _pdL, "%d cm"u8);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("Where the fold's middle lies along the sheet, from its back edge."u8);
+                    ImGui.SliderInt("Fold radius"u8, ref radius, HullLoft.PanelMinRadiusCm, HullLoft.PanelMaxRadiusCm, "%d cm"u8);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("How tight the fold is: 2 cm is a crease, 100 cm a long sweep. The fold can't be longer than the sheet."u8);
+                }
+                else
+                {
+                    ImGui.SliderInt(_pdKind switch { 1 => "Step"u8, 2 => "Nose drop"u8, 3 => "Arch"u8, 4 => "Turn-in"u8, 6 => "Rise"u8, _ => "Rake"u8 }, ref rake, -rakeMax, rakeMax, "%d cm"u8);
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip("The preset's second number: a curve's or a roof's arch along its length, an S-bend's step, a hood's nose drop, a fender's arch, a door's turn-in, a cowl's rise. Within the panel's length, 200 cm."u8);
+                }
                 ImGui.SliderInt("Thickness"u8, ref mm, HullLoft.PanelMinMm, HullLoft.PanelMaxMm, "%d mm"u8);
                 ImGui.PopItemWidth();
                 ImGui.PushTextWrapPos(0);
@@ -498,6 +531,7 @@ public sealed partial class Ui
         else
         {
             (_pdL, _pdW, _pdCrown, _pdRake, _pdMm, _pdMat) = (l, w, crown, rake, mm, mat);
+            (_pdAngle, _pdFoldAt, _pdRadius) = (angle, bendAt, radius);
             share = false;
         }
         DesignerClamp();

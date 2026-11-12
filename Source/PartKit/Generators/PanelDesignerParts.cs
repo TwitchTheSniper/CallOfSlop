@@ -89,7 +89,7 @@ public sealed class PanelDesignerParts : IPartGenerator
         p.Set(("power", 120), ("onBreak", "disable"));
         p.Set(("panels", Py.L(Kw(("source", "craft"), ("at", Py.L(Py.Round((x0 + xd) / 2, 3), Py.Round(y0 + MachineLook.EyeY + 0.01, 3), Py.Round(dz0 + 0.171, 3))), ("size", Py.L(0.86, 0.66)), ("face", "+z"), ("up", "+y"), ("rows", 9), ("range", 12)))));
         const double across = 1.85, up = 0.6, length = 2.3;
-        p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(across, up)), ("length", length), ("count", 200), ("crafting", true), ("designer", true),
+        p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(across, up)), ("length", length), ("count", 200), ("crafting", true), ("designer", true), ("plinth", Py.L(Py.Round((xd + 0.03 + xm - 0.07) / 2, 3), Py.Round(y0 + 0.935, 3), Py.Round((pz0 + pz1) / 2, 3), 0.34)),
             ("hold", Py.L(Py.L(Py.Round(xm + 0.07, 3), Py.Round(y0 + 0.133, 3), Py.Round(z0 + 0.074, 3)), Py.L(Py.Round(x1 - 0.07, 3), Py.Round(y0 + top2 - 0.01, 3), Py.Round(z1 - 0.06, 3)))))))));
         p.Set(("ports", Py.L(
             Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(Py.Round(mid, 3), Py.Round(y0 + 0.05, 3), z0)), ("face", "-z"), ("opening", Py.L(across, up))))));

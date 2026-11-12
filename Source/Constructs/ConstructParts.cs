@@ -668,6 +668,8 @@ public sealed partial class ConstructPartDef
     public bool IsCraftTerminal; // a Crafting Terminal (ConstructCrafting.cs): a Piece Rack whose hold is its tray (storage.pieces.crafting)
     public bool IsBuildStation; // a Building Station (ConstructStation.cs): a Crafting Terminal whose hold feeds a blueprint built in its bay (storage.pieces.station)
     public bool IsPanelDesigner; // a Panel Designer (storage.pieces.designer): a Crafting Terminal whose panel designs formed panels (UiPanelDesigner.cs)
+    public Vector3 PlinthAt; // ...its plinth's top (storage.pieces.plinth) and the size the newest design's model is scaled into (0: no plinth)
+    public float PlinthSize;
     public Vector2 RackSection;
     public float RackLength;
     public int RackCount;

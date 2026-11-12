@@ -89,7 +89,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" || WsGhostKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" || WsGhostKnown(action);
 
     private static void WsSay(string s)
     {
@@ -445,6 +445,32 @@ public static unsafe partial class Program
                 io.AddMouseButtonEvent(0, true);
                 _wsQueue.EnqueueFront("clickup");
                 _wsWait = 3;
+                return;
+            }
+            case "drag": // the left button held from "X1,Y1" to "X2,Y2" over 12 frames, through ImGui's event queue (a slider dragged by the mouse)
+            {
+                var ci = System.Globalization.CultureInfo.InvariantCulture;
+                if (arg.Split(' ', StringSplitOptions.RemoveEmptyEntries) is not [var from, var to] || from.Split(',') is not [var ax, var ay] || to.Split(',') is not [var bx, var by]
+                    || !float.TryParse(ax, ci, out var x1) || !float.TryParse(ay, ci, out var y1) || !float.TryParse(bx, ci, out var x2) || !float.TryParse(by, ci, out var y2))
+                {
+                    WsFail($"drag X1,Y1 X2,Y2: \"{arg}\"");
+                    return;
+                }
+                var dio = Brutal.ImGuiApi.ImGui.GetIO();
+                dio.AddMousePosEvent(x1, y1);
+                dio.AddMouseButtonEvent(0, true);
+                _wsQueue.EnqueueFront("clickup");
+                for (var k = 12; k >= 1; k--)
+                    _wsQueue.EnqueueFront(string.Create(ci, $"mousemove {x1 + (x2 - x1) * k / 12f:0.#},{y1 + (y2 - y1) * k / 12f:0.#}"));
+                _wsWait = 2;
+                return;
+            }
+            case "mousemove":
+            {
+                var ci = System.Globalization.CultureInfo.InvariantCulture;
+                if (arg.Split(',') is [var mx, var my] && float.TryParse(mx, ci, out var mpx) && float.TryParse(my, ci, out var mpy))
+                    Brutal.ImGuiApi.ImGui.GetIO().AddMousePosEvent(mpx, mpy);
+                _wsWait = 1;
                 return;
             }
             case "clickup":
