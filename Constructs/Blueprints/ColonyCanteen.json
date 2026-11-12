@@ -1,0 +1,240 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Colony Canteen",
+  "description": "The penal colony's canteen: mess tables, a serving line and the tea urn.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 1,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Corrugated Door Corner",
+      "on": 0,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#5d7a5f",
+      "finish": "rusty paint"
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 1,
+      "socket": "t8_0",
+      "by": "b0_7",
+      "spin": 2,
+      "paint": "#5d7a5f",
+      "finish": "rusty paint"
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 3,
+      "socket": "t8_15",
+      "by": "b7_0",
+      "spin": 3,
+      "paint": "#5d7a5f",
+      "finish": "rusty paint"
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 2,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1,
+      "paint": "#5d7a5f",
+      "finish": "rusty paint"
+    },
+    {
+      "part": "Corrugated Wall 4 m",
+      "on": 0,
+      "socket": "t8_0",
+      "by": "b0",
+      "paint": "#5d7a5f",
+      "finish": "rusty paint"
+    },
+    {
+      "part": "Corrugated Wall 4 m",
+      "on": 2,
+      "socket": "t8_15",
+      "by": "b15",
+      "spin": 3,
+      "paint": "#5d7a5f",
+      "finish": "rusty paint"
+    },
+    {
+      "part": "Corrugated Window Wall 4 m",
+      "on": 0,
+      "socket": "t0_8",
+      "by": "b15",
+      "spin": 1,
+      "paint": "#5d7a5f",
+      "finish": "rusty paint"
+    },
+    {
+      "part": "Corrugated Window Wall 4 m",
+      "on": 1,
+      "socket": "t15_8",
+      "by": "b0",
+      "spin": 2,
+      "paint": "#5d7a5f",
+      "finish": "rusty paint"
+    },
+    {
+      "part": "Corrugated Roof Slope 4x4 m",
+      "on": 4,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#4b5157"
+    },
+    {
+      "part": "Corrugated Roof Slope 4x4 m",
+      "on": 5,
+      "socket": "t0_0",
+      "by": "b15_0",
+      "paint": "#4b5157"
+    },
+    {
+      "part": "Corrugated Roof Slope 4x4 m",
+      "on": 7,
+      "socket": "t0_0",
+      "by": "b0_15",
+      "paint": "#4b5157"
+    },
+    {
+      "part": "Corrugated Roof Slope 4x4 m",
+      "on": 6,
+      "socket": "t0_0",
+      "by": "b15_15",
+      "paint": "#4b5157"
+    },
+    {
+      "part": "Text Sign",
+      "on": 8,
+      "socket": "f8_10",
+      "by": "back",
+      "text": [
+        "CANTEEN - GRUEL 12:00 TO 12:05"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Text Sign",
+      "on": 9,
+      "socket": "k8_5",
+      "by": "back",
+      "text": [
+        "SECOND HELPINGS BY WRITTEN REQUEST ONLY"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Mess Table",
+      "on": 0,
+      "socket": "t8_7",
+      "by": "bottom",
+      "paint": "#4b5157",
+      "finish": "wood"
+    },
+    {
+      "part": "Mess Table",
+      "on": 1,
+      "socket": "t8_7",
+      "by": "bottom",
+      "paint": "#4b5157",
+      "finish": "wood"
+    },
+    {
+      "part": "Seat",
+      "on": 1,
+      "socket": "t0_7",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Mess Table",
+      "on": 0,
+      "socket": "t8_15",
+      "by": "bottom",
+      "paint": "#4b5157",
+      "finish": "wood"
+    },
+    {
+      "part": "Mess Table",
+      "on": 1,
+      "socket": "t8_15",
+      "by": "bottom",
+      "paint": "#4b5157",
+      "finish": "wood"
+    },
+    {
+      "part": "Seat",
+      "on": 1,
+      "socket": "t0_15",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Tea Urn",
+      "on": 2,
+      "socket": "t7_8",
+      "by": "foot10",
+      "spin": 3
+    },
+    {
+      "part": "Galley Stove",
+      "on": 3,
+      "socket": "t0_8",
+      "by": "bottom",
+      "spin": 3,
+      "paint": "#4b5157"
+    },
+    {
+      "part": "Galley Stove",
+      "on": 3,
+      "socket": "t8_8",
+      "by": "bottom",
+      "spin": 3,
+      "paint": "#4b5157"
+    },
+    {
+      "part": "Battery",
+      "on": 9,
+      "socket": "k0_10",
+      "by": "-z",
+      "paint": "#4b5157"
+    },
+    {
+      "part": "Wall Light",
+      "on": 4,
+      "socket": "fa7_10",
+      "by": "back"
+    },
+    {
+      "part": "Wall Light",
+      "on": 10,
+      "socket": "k8_10",
+      "by": "back"
+    },
+    {
+      "part": "Wall Light",
+      "on": 11,
+      "socket": "k8_10",
+      "by": "back"
+    }
+  ]
+}
