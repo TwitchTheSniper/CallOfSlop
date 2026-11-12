@@ -2201,6 +2201,7 @@ public sealed partial class Game
         }
         if (!IsServer)
         {
+            SandboxShareRules(); // (the rules' flags as this peer knows them: a client that joins a running match gets no match start, so a creative world's machines read as unpowered without it)
             Constructs.NetRenderTick = _clockStarted ? RenderTick - ConstructNet.BodyExtraDelayTicks : double.NaN; // (cj01: bodies drawn on the server's ticks)
             ConstructNet.Blend(Constructs, now, dt);
             ConstructSeal.Step(Constructs, null, ref Constructs._sealTicks, server: false);

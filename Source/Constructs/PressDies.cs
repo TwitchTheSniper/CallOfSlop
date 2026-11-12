@@ -67,6 +67,14 @@ public sealed class PressPattern
     public PressAmount? Bay2;
     public PressScale[] Scale = [];
     public PressFeature[] Features = []; // drawn after the die's own
+
+    /// <summary>
+    /// "body": "like" (phase 3b): the part is its like part's own boxes and sockets stretched to the blank's size (the blank's length along
+    /// the like part's <see cref="Along"/> axis, its longest when -1), not the blank's boxes. For parts whose behaviour lives in their
+    /// geometry: a joint's base and leaf sides and pivot, a suspension's axle socket, a shaft's end ports, a reel's hose point.
+    /// </summary>
+    public bool LikeBody;
+    public sbyte Along = -1;
 }
 
 /// <summary>A die of Pressing.json format /2: what blanks it takes and the patterns it presses them into.</summary>
@@ -259,7 +267,7 @@ internal static class PressDies
 
     private static PressPattern PatternOf(JsonElement e, string die, PressDie d, Dictionary<string, ConstructPartDef> byName, PressTable t)
     {
-        Keys(e, die + " pattern", "id", "like", "label", "preset", "blanks", "bay2", "scale", "features");
+        Keys(e, die + " pattern", "id", "like", "label", "preset", "blanks", "bay2", "scale", "features", "body", "along");
         var id = e.GetProperty("id").GetString() ?? "";
         if (id.Length is 0 or > 16 || !id.All(c => c is >= 'a' and <= 'z' or >= '0' and <= '9' or '-'))
             throw new FormatException($"{die}: a pattern's id is 1 to 16 of a-z, 0-9 and -");
@@ -277,6 +285,18 @@ internal static class PressDies
             if (p.Blanks.Any(s => Array.IndexOf(d.Blanks, s) < 0))
                 throw new FormatException($"{where}: a pattern's blanks are some of its die's");
         }
+        if (e.TryGetProperty("body", out var body))
+            p.LikeBody = body.GetString() switch { "like" => true, "blank" => false, _ => throw new FormatException($"{where}: \"body\" is \"blank\" or \"like\"") };
+        if (e.TryGetProperty("along", out var along))
+        {
+            if (!p.LikeBody)
+                throw new FormatException($"{where}: \"along\" is for a \"like\" body");
+            p.Along = (sbyte)Array.IndexOf(["x", "y", "z"], along.GetString());
+            if (p.Along < 0)
+                throw new FormatException($"{where}: \"along\" is x, y or z");
+        }
+        if (p.LikeBody && p.Like.BoundsMax.X - p.Like.BoundsMin.X is var lx && (lx <= 0 || p.Like.Hulls != null || p.Like.Panels.Length > 0))
+            throw new FormatException($"{where}: a \"like\" body is a part of plain boxes (no hull, no screen): {p.Like.Name} isn't");
         if (e.TryGetProperty("bay2", out var b2))
         {
             Keys(b2, where + ".bay2", "part", "material", "base", "rate", "by", "max");

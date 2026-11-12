@@ -246,6 +246,24 @@ The user's "complex parts made in the world, not in menus". A **Press** stamps p
 - **Performance.** `ConstructPress.Step` at 10 Hz looks only at constructs with `HasPress`; a bay's mouth is a `Near` query only while the bay is empty. Nothing allocates but the bodies it makes.
 - **Wire (protocol 144).** No new message. Parts and links carry what is in it, `CBodyKind.Extrude` a shorter piece; the stall is `Refused`, the refusal `Blocked`.
 
+### Sized dies (the Press rework)
+
+Design: `docs/sandbox/design/press-rework.md`. A die in `Pressing.json` `"dies"` (`PressDies.cs`) presses a bay's whole blank into one part sized by it, its key its name: `Pressed Part (DIE.PATTERN PROFILE WxHxL MATERIAL)` (`Pressed.cs`; `--press-part list|presets|sweep DIE|DIE.PATTERN "BLANK"`). A pattern names a **like** part (its behaviour), a preset blank (the scale law's reference), a bay 2 kit by formula and the numbers that scale (`maxTorque`, `motorStrength`, `motorSpeed`, `sideLoad`, `maxLoad`, `fuelCapacity`, `hoseLength`). The press's Pattern setting picks one; Auto picks by the blank (a preset's blank first, else the pattern whose standard section is nearest). Sixteen dies: Bracket, Housing, Plate, Button, Gear, Board, Piston, Cylinder, Drive (phases 1-3), and phase 3b's:
+
+| Die | Blanks | Across, length, aspect | Patterns (like part) | Bay 2 | Scales |
+| --- | --- | --- | --- | --- | --- |
+| Shaft | round, pipe | 0.10-1.8 m, 0.25-32 m, 1-64 | drive shaft, U joint, CV joint, stub axle, wheel hub | Bearing, 2 + 0.5 x length (12) | torque d^3 x S |
+| Actuator | pipe, round, solid | 0.10-7.2 m, 0.10-32 m, 0.25-32 | piston, motor hinge, turntable, free pivot | Servo Motor, 1 + 0.01 x kg (8); pivot: Bearing | strength d^2 (linear) or d^3, speed 1/d, side load d^3; travel with length |
+| Spring | solid, L, T, plate | 0.10-7.2 m, 0.25-16 m, 1-16 | suspension, leaf spring, rigid mount, light suspension | Bearing, 1 + 2 x across | load d^2 x S; travel with length |
+| Cable | round, pipe | 0.10-1.8 m, 0.10-16 m, 0.5-64 | wiring loom, copper coil, power, data and fluid hose reels, fuel line | copper or rubber, 1 + 3 x length | a reel's lead with length |
+| Control | plate, hollow, solid | 0.10-7.2 m, 0.10-8 m, 0.1-8 | AND, NOT, timer, delay, compare, proximity and speed sensors | Circuit Board, 1 + 4 x area (16) | none |
+| Tank | pipe, hollow | 0.20-28.8 m, 0.25-64 m, 0.5-16 | fuel tank, small fuel tank, drum, fluid tank, small fluid tank | none | capacity with volume |
+| Beam | solid, hollow, I, C, T, round | 0.10-28.8 m, 0.5-128 m, 2-64 | girder, column, strut (Frame Beam) | none | none (structure, as an extrusion) |
+
+- **Like bodies** (`"body": "like"`, `"along"`; `Pressed.BuildLike`). Where behaviour lives in a part's geometry (a joint's base and leaf boxes, pivot and leaf socket, a suspension's axle socket, a shaft's end ports, a reel's hose point), the part is its like part's boxes and sockets stretched per axis to the blank's size, the blank's length along the like part's `along` axis; the die's features are drawn on it; mass, health and armour are the blank's. Pistons' travel and suspensions' travel stretch with it. A like part must be plain boxes (no hull, no screen). Other patterns are blank bodies; their like part's named ports are moved onto the blank's faces.
+- **Screens.** A 3-bay press's bay cards are lower than a Small Press's (0.5 cells, 32 columns) and every die screen is 5.8 by 1.2 cells (33 columns), so "Makes Limited-Slip Differential" fits.
+- **Not yet:** presets for the 3b dies (each makes sized parts only; the catalogue parts keep their Assembler recipes), a pipe shaft's bore in its torque, lift cells, lamps and screens (a like body drops lamps and panels).
+
 Choices made (the developer may change them): one part a press, not a frame you add bays to; a Small press has 2 bays and no recipe uses a third yet; a die only in a press of its own class, never a bigger one; a piece's size is its smaller side; a stroke's cost is a length, not a mass, so a stamped part doesn't weigh what it used; the Housing family is new, with no use yet beyond a box with sockets, and the Assembler can build them too; chutes carry pieces only from an Extruder (a shelf can't hold a piece, since a piece is physics-only); the ram strokes while it stamps (a "work" box, drawn only: [Machine look](look.md#machine-look)).
 
 ## The Panel Former

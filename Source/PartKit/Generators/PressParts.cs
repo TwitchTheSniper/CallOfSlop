@@ -50,10 +50,17 @@ public sealed class PressParts : IPartGenerator
         ("Cylinder", [Small, Medium, Large, Capital], "steel", 3, "#8a5570"),
         ("Plate", [Small, Medium, Large, Capital], "metal", 1, "#8c96a0"),
         ("Drive", [Small, Medium, Large, Capital], "steel", 2, "#4f7a5a"),
+        ("Shaft", [Small, Medium], "steel", 2, "#6b7f8f"),
+        ("Actuator", [Small, Medium, Large], "steel", 3, "#8f6b3f"),
+        ("Spring", [Small, Medium, Large], "steel", 2, "#5f8f6b"),
+        ("Cable", [Small, Medium], "metal", 1, "#b0703a"),
+        ("Control", [Small, Medium, Large], "steel", 2, "#3f6f9f"),
+        ("Tank", [Small, Medium, Large, Capital], "steel", 2, "#9f4a3f"),
+        ("Beam", [Small, Medium, Large, Capital], "metal", 1, "#7a7f88"),
     ];
 
     // The dies whose stroke presses a whole blank to one part (Pressing.json "dies", the Press rework): they have no old rows.
-    private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate", "Button", "Gear", "Board", "Piston", "Cylinder", "Drive"];
+    private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate", "Button", "Gear", "Board", "Piston", "Cylinder", "Drive", "Shaft", "Actuator", "Spring", "Cable", "Control", "Tank", "Beam"];
 
     private static double MaxAcross(Cls c) => c.Key switch { "small" => 0.45, "medium" => 1.8, "large" => 7.2, _ => 28.8 }; // what a class's bays take: 1.8 cells
 
@@ -155,9 +162,13 @@ public sealed class PressParts : IPartGenerator
         var proud = 0.004 * Math.Max(1, Math.Pow(c.X, 0.5));
         var h = k * 1.25;
         var o = new List<object?>();
+        // Three bays share the wall, so a card is 1.9 cells wide, not the Small Press's 2.9: a lower card (smaller text, still larger in metres
+        // than a Small Press's) holds 31 characters a line, the longest a card writes ("Makes Limited-Slip Differential", "Sized small fluid tank").
+        if (f.Centres.Count >= 3)
+            h = k * 0.5;
         for (var i = 0; i < f.Centres.Count; i++)
             o.Add(Kw(("source", "press.bay"), ("slot", i), ("at", Py.L(f.Centres[i], R3((f.Wall + f.Crown) / 2), Py.Round(f.Z0 - proud, 4))), ("size", Py.L(R3(baysWidth), R3(h))), ("face", "-z"), ("up", "+y"), ("rows", 5)));
-        var die = Kw(("source", "press.die"), ("at", Py.L(R3((f.X0 + f.X1) / 2), R3((f.Crown + f.Y1) / 2), Py.Round(f.Z1 + proud, 4))), ("size", Py.L(R3(k * 5), R3(k * 1.5))), ("face", "+z"), ("up", "+y"), ("rows", 4));
+        var die = Kw(("source", "press.die"), ("at", Py.L(R3((f.X0 + f.X1) / 2), R3((f.Crown + f.Y1) / 2), Py.Round(f.Z1 + proud, 4))), ("size", Py.L(R3(k * 5.8), R3(k * 1.2))), ("face", "+z"), ("up", "+y"), ("rows", 4)); // (31 characters: "Auto: Limited-Slip Differential")
         if (pattern)
             die["touch"] = Py.L(Kw(("action", "press.pattern"), ("at", Py.L(0.72, 0.02, 0.98, 0.24)), ("label", "Pattern"))); // (the next of its die's patterns, then Auto)
         o.Add(die);
@@ -332,9 +343,15 @@ public sealed class PressParts : IPartGenerator
         return f;
     }
 
-    private static PyDict Pattern(string id, string like, string label, string preset, string[]? blanks = null, List<object?>? features = null, PyDict? bay2 = null, List<object?>? scale = null)
+    private static PyDict Pattern(string id, string like, string label, string preset, string[]? blanks = null, List<object?>? features = null, PyDict? bay2 = null, List<object?>? scale = null, string? along = null)
     {
         var p = Kw(("id", id), ("like", like), ("label", label), ("preset", preset));
+        if (along != null) // (a like body: the like part's own boxes stretched to the blank, its length along this axis of the part; "" its longest)
+        {
+            p["body"] = "like";
+            if (along.Length > 0)
+                p["along"] = along;
+        }
         if (blanks != null)
             p["blanks"] = blanks.Cast<object?>().ToList();
         if (bay2 != null)
@@ -510,6 +527,106 @@ public sealed class PressParts : IPartGenerator
         var torque = Py.L(Scale("maxTorque", "across", 3, true, 900));
         yield return SizedDie("Drive", ["hollow", "solid"], ["steel", "metal", "bronze"], [20, 720], [20, 1600], [0.5, 8], 3, 0.02, drive,
             DrivePatterns.Select(d => (object?)Pattern(d.Id, d.Like, d.Label, d.Blank, bay2: gears, scale: torque)).ToList(), FaceSockets());
+        foreach (var die in WorkingDies3b())
+            yield return die;
+    }
+
+    // ---- Phase 3b: Shaft, Actuator, Spring, Cable, Control, Tank and Beam (design section 3.2). The patterns whose behaviour lives in
+    // their geometry (a joint's leaf side and pivot, a suspension's axle socket, a shaft's end ports, a reel's hose point) have a like body:
+    // the like part's own boxes and sockets stretched to the blank (Pressed.BuildLike). Tanks, beams and the cable kits are blank bodies.
+
+    private static IEnumerable<object?> WorkingDies3b()
+    {
+        string[] metals = ["steel", "metal", "bronze"];
+        // Shaft: a yoke flange at each end, 0.08 of the length; Bearings by length; torque as d^3 and strength (the Drive die's law).
+        // (Auto picks by the blank's section: 15 cm a U joint, 20 a drive shaft, 25 a CV joint, 30 and up a stub axle; the Pattern setting the rest.)
+        var shaft = Py.L(
+            Feature("flange", [-0.2, -0.2, 0, 1.2, 1.2, 0.08], "dark", proud: "xyz", clamp: "z", min: 0.5, max: 40),
+            Feature("flange", [-0.2, -0.2, 0.92, 1.2, 1.2, 1], "dark", proud: "xyz", clamp: "z", min: 0.5, max: 40));
+        var bearings = Kit("Bearing", true, 2, 0.5, "length", 12);
+        var shaftTorque = Py.L(Scale("maxTorque", "across", 3, true, 900));
+        yield return SizedDie("Shaft", ["round", "pipe"], metals, [10, 180], [25, 3200], [1, 64], 2, 0.02, shaft, Py.L(
+            Pattern("shaft", "Drive Shaft 1 m", "drive shaft", "round 20x20x100 steel", bay2: bearings, scale: shaftTorque, along: "z"),
+            Pattern("ujoint", "U Joint", "U joint", "round 15x15x25 steel", bay2: bearings, scale: shaftTorque, along: "x"),
+            Pattern("cv", "CV Joint", "CV joint", "round 25x25x25 steel", bay2: bearings, scale: shaftTorque, along: "x"),
+            Pattern("stub", "Stub Axle", "stub axle", "round 30x30x35 steel", bay2: bearings, along: "z"),
+            Pattern("hub", "Wheel Hub", "wheel hub", "round 30x30x35 steel", bay2: bearings, scale: shaftTorque, along: "z")));
+        // Actuator: a gland collar on the barrel and an eye under its base; Servo Motors by mass (powered) or Bearings by size (free).
+        var actuator = Py.L(
+            Feature("gland", [-0.05, -0.05, 0.3, 1.05, 1.05, 0.34], "dark", proud: "xy", clamp: "z", min: 0.5, max: 20),
+            Feature("eye", [0.3, 0.3, -0.08, 0.7, 0.7, 0], "bare", proud: "z", clamp: "z", min: 0.5, max: 30));
+        var servos = Kit("Servo Motor", true, 1, 0.01, "mass", 8);
+        var linear = Py.L(Scale("motorStrength", "across", 2, true), Scale("motorSpeed", "across", -1, false), Scale("sideLoad", "across", 3, true));
+        var turning = Py.L(Scale("motorStrength", "across", 3, true), Scale("motorSpeed", "across", -1, false));
+        yield return SizedDie("Actuator", ["pipe", "round", "solid"], ["steel", "metal"], [10, 720], [10, 3200], [0.25, 32], 3, 0.02, actuator, Py.L(
+            Pattern("piston", "Piston 1x1 Medium", "piston", "round 25x25x50 steel", bay2: servos, scale: linear, along: "y"),
+            Pattern("hinge", "Motor Hinge", "motor hinge", "solid 20x25x55 steel", blanks: ["solid"], bay2: servos, scale: turning, along: "y"),
+            Pattern("turntable", "Turntable", "turntable", "solid 65x65x20 steel", blanks: ["solid"], bay2: servos, scale: turning, along: "y"),
+            Pattern("pivot", "Free Pivot 1x1", "free pivot", "solid 30x25x30 steel", blanks: ["solid"], bay2: Kit("Bearing", true, 1, 2, "across", 16), along: "y")));
+        // Spring: wound bands from 0.25 to 0.75 of its length; Bearings by size; load as the section's area and strength, travel as the length.
+        var spring = new List<object?>();
+        foreach (var z in new[] { 0.25, 0.45, 0.65 })
+            spring.Add(Feature("coil", [-0.05, -0.05, z, 1.05, 1.05, z + 0.06], "dark", proud: "xy"));
+        var load = Py.L(Scale("maxLoad", "across", 2, true));
+        var springBearings = Kit("Bearing", true, 1, 2, "across", 16);
+        yield return SizedDie("Spring", ["solid", "l-angle", "t-bar", "plate"], ["steel", "metal", "bronze"], [10, 720], [25, 1600], [1, 16], 2, 0.02, spring, Py.L(
+            Pattern("suspension", "Suspension", "suspension", "solid 10x30x65 steel", bay2: springBearings, scale: load, along: "y"),
+            Pattern("leaf", "Leaf Spring", "leaf spring", "solid 10x55x90 steel", bay2: springBearings, scale: load, along: "z"),
+            Pattern("rigid", "Rigid Mount", "rigid mount", "solid 10x30x40 steel", bay2: springBearings, scale: load, along: "y"),
+            Pattern("light", "Light Suspension", "light suspension", "solid 25x25x30 steel", bay2: springBearings, scale: load, along: "y")));
+        // Cable: a ribbed jacket (a ring every 0.2 of its length) and a plug at each end; copper or rubber by length (the user's "cable by length").
+        var cable = new List<object?>();
+        foreach (var z in new[] { 0.2, 0.4, 0.6, 0.8 })
+            cable.Add(Feature("rib", [-0.04, -0.04, z - 0.015, 1.04, 1.04, z + 0.015], "dark", proud: "xy", clamp: "z", min: 0.5, max: 10));
+        cable.Add(Feature("plug", [0.25, 0.25, -0.05, 0.75, 0.75, 0], "bare", proud: "z", clamp: "z", min: 0.5, max: 20));
+        cable.Add(Feature("plug", [0.25, 0.25, 1, 0.75, 0.75, 1.05], "bare", proud: "z", clamp: "z", min: 0.5, max: 20));
+        var copperByLength = Kit("copper", false, 1, 3, "length", 99);
+        var rubberByLength = Kit("rubber", false, 1, 3, "length", 99);
+        var reach = Py.L(Scale("hoseLength", "length", 1, false));
+        yield return SizedDie("Cable", ["round", "pipe"], ["copper", "steel", "metal"], [10, 180], [10, 1600], [0.5, 64], 1, 0.02, cable, Py.L(
+            Pattern("loom", "Wiring Loom", "wiring loom", "round 10x10x30 copper", bay2: rubberByLength),
+            Pattern("coil", "Copper Coil", "copper coil", "round 25x25x25 copper"),
+            Pattern("power", "Power Lead Reel", "power lead reel", "round 45x45x60 steel", bay2: copperByLength, scale: reach, along: "x"),
+            Pattern("data", "Data Lead Reel", "data lead reel", "round 45x45x60 steel", bay2: copperByLength, scale: reach, along: "x"),
+            Pattern("hose", "Fluid Hose Reel", "fluid hose reel", "round 45x45x60 steel", bay2: rubberByLength, scale: reach, along: "x"),
+            Pattern("fuel", "Fuel Line", "fuel line", "pipe5 15x15x50 steel", blanks: ["pipe"], bay2: rubberByLength, along: "x")));
+        // Control: a face plate on its top end and a cable gland on its side; Circuit Boards by its largest face.
+        var control = Py.L(
+            Feature("face", [0.15, 0.15, 1, 0.85, 0.85, 1.03], "bare", proud: "z", clamp: "z", min: 0.3, max: 3),
+            Feature("gland", [0.4, -0.08, 0.2, 0.6, 0, 0.35], "dark", proud: "y", clamp: "y", min: 0.5, max: 10));
+        var boards = Kit("Circuit Board", true, 1, 4, "area", 16);
+        var gates = new (string Id, string Like, string Label)[]
+        {
+            ("and", "AND Gate", "AND gate"), ("not", "NOT Gate", "NOT gate"), ("timer", "Timer", "timer"), ("delay", "Delay", "delay"),
+            ("compare", "Compare", "compare"), ("proximity", "Proximity Sensor", "proximity sensor"), ("speed", "Speed Sensor", "speed sensor"),
+        };
+        yield return SizedDie("Control", ["plate", "hollow", "solid"], ["laminate", "metal", "steel"], [10, 720], [10, 800], [0.1, 8], 2, 0.02, control,
+            gates.Select(g => (object?)Pattern(g.Id, g.Like, g.Label, "solid 20x20x25 laminate", bay2: boards, along: "y")).ToList());
+        // Tank: a dished cap on each end, a filler neck at the middle of its top, two saddle bands; capacity as its volume.
+        var tank = Py.L(
+            Feature("cap", [0.1, 0.1, -0.04, 0.9, 0.9, 0], "dark", proud: "z", clamp: "z", min: 1, max: 50),
+            Feature("cap", [0.1, 0.1, 1, 0.9, 0.9, 1.04], "dark", proud: "z", clamp: "z", min: 1, max: 50),
+            Feature("neck", [0.42, 1, 0.45, 0.58, 1.1, 0.55], "bare", proud: "y", clamp: "y", min: 1, max: 40),
+            Feature("band", [-0.03, -0.03, 0.2, 1.03, 1.03, 0.25], "dark", proud: "xy"),
+            Feature("band", [-0.03, -0.03, 0.75, 1.03, 1.03, 0.8], "dark", proud: "xy"));
+        var capacity = Py.L(Scale("fuelCapacity", "volume", 1, false));
+        yield return SizedDie("Tank", ["pipe", "hollow"], metals, [20, 2880], [25, 6400], [0.5, 16], 3, 0.005, tank, Py.L(
+            Pattern("fuel", "Fuel Tank", "fuel tank", "hollow 50x50x50 steel", scale: capacity),
+            Pattern("small", "Small Fuel Tank", "small fuel tank", "hollow 40x40x40 steel", scale: capacity),
+            Pattern("drum", "Fuel Drum", "fuel drum", "pipe5 45x45x90 steel", blanks: ["pipe"], scale: capacity),
+            Pattern("fluid", "Fluid Tank", "fluid tank", "hollow 45x45x50 steel", scale: capacity),
+            Pattern("smallfluid", "Small Fluid Tank", "small fluid tank", "hollow 40x40x40 steel", scale: capacity)), FaceSockets());
+        // Beam: an end flange at each end, 0.05 of its length and 1.15 of its section; a column's base plates, a strut's middle band.
+        var beam = Py.L(
+            Feature("flange", [-0.075, -0.075, 0, 1.075, 1.075, 0.05], "bare", proud: "xy", clamp: "z", min: 1, max: 50),
+            Feature("flange", [-0.075, -0.075, 0.95, 1.075, 1.075, 1], "bare", proud: "xy", clamp: "z", min: 1, max: 50));
+        yield return SizedDie("Beam", ["solid", "hollow", "i-beam", "c-channel", "t-bar", "round"], ["steel", "metal", "bronze", "wood", "concrete"], [10, 2880], [50, 12800], [2, 64], 2, 0.002, beam, Py.L(
+            Pattern("girder", "Frame Beam", "girder", "i-beam 50x50x200 steel"),
+            Pattern("column", "Frame Beam", "column", "hollow 50x50x200 steel", features: Py.L(
+                Feature("base", [-0.2, -0.2, -0.03, 1.2, 1.2, 0], "dark", proud: "z", clamp: "z", min: 1, max: 30),
+                Feature("base", [-0.2, -0.2, 1, 1.2, 1.2, 1.03], "dark", proud: "z", clamp: "z", min: 1, max: 30))),
+            Pattern("strut", "Frame Beam", "strut", "solid 20x20x100 steel", features: Py.L(
+                Feature("band", [-0.06, -0.06, 0.47, 1.06, 1.06, 0.53], "dark", proud: "xy")))));
     }
 
     /// <summary>

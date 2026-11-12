@@ -462,6 +462,390 @@
      "use": 8.0
     }
    ]
+  },
+  {
+   "output": "Shaft Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Shaft Die",
+   "seconds": 60,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
+    }
+   ]
+  },
+  {
+   "output": "Actuator Die",
+   "seconds": 45,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Actuator Die",
+   "seconds": 90,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
+    }
+   ]
+  },
+  {
+   "output": "Large Actuator Die",
+   "seconds": 135,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 4.0,
+     "maxAcross": 7.2,
+     "use": 4.0
+    }
+   ]
+  },
+  {
+   "output": "Spring Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Spring Die",
+   "seconds": 60,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
+    }
+   ]
+  },
+  {
+   "output": "Large Spring Die",
+   "seconds": 90,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 4.0,
+     "maxAcross": 7.2,
+     "use": 4.0
+    }
+   ]
+  },
+  {
+   "output": "Cable Die",
+   "seconds": 15,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "metal",
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Cable Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "metal",
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
+    }
+   ]
+  },
+  {
+   "output": "Control Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Control Die",
+   "seconds": 60,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
+    }
+   ]
+  },
+  {
+   "output": "Large Control Die",
+   "seconds": 90,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 4.0,
+     "maxAcross": 7.2,
+     "use": 4.0
+    }
+   ]
+  },
+  {
+   "output": "Tank Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Tank Die",
+   "seconds": 60,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
+    }
+   ]
+  },
+  {
+   "output": "Large Tank Die",
+   "seconds": 90,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 4.0,
+     "maxAcross": 7.2,
+     "use": 4.0
+    }
+   ]
+  },
+  {
+   "output": "Capital Tank Die",
+   "seconds": 120,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 8.0,
+     "maxAcross": 28.8,
+     "use": 8.0
+    }
+   ]
+  },
+  {
+   "output": "Beam Die",
+   "seconds": 15,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "metal",
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Beam Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "metal",
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
+    }
+   ]
+  },
+  {
+   "output": "Large Beam Die",
+   "seconds": 45,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "metal",
+      "steel"
+     ],
+     "minAcross": 4.0,
+     "maxAcross": 7.2,
+     "use": 4.0
+    }
+   ]
+  },
+  {
+   "output": "Capital Beam Die",
+   "seconds": 60,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "metal",
+      "steel"
+     ],
+     "minAcross": 8.0,
+     "maxAcross": 28.8,
+     "use": 8.0
+    }
+   ]
   }
  ],
  "strength": {
@@ -2319,6 +2703,1309 @@
        "power": 3.0,
        "strength": true,
        "ref": 900.0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "die": "Shaft",
+   "blanks": [
+    "round",
+    "pipe"
+   ],
+   "materials": [
+    "steel",
+    "metal",
+    "bronze"
+   ],
+   "across": [
+    10,
+    180
+   ],
+   "length": [
+    25,
+    3200
+   ],
+   "aspect": [
+    1.0,
+    64.0
+   ],
+   "seconds": {
+    "base": 2.0,
+    "perKg": 0.02
+   },
+   "features": [
+    {
+     "tag": "flange",
+     "box": [
+      -0.2,
+      -0.2,
+      0.0,
+      1.2,
+      1.2,
+      0.08
+     ],
+     "proud": "xyz",
+     "clamp": "z",
+     "minCm": 0.5,
+     "maxCm": 40.0,
+     "look": "dark"
+    },
+    {
+     "tag": "flange",
+     "box": [
+      -0.2,
+      -0.2,
+      0.92,
+      1.2,
+      1.2,
+      1.0
+     ],
+     "proud": "xyz",
+     "clamp": "z",
+     "minCm": 0.5,
+     "maxCm": 40.0,
+     "look": "dark"
+    }
+   ],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "shaft",
+     "like": "Drive Shaft 1 m",
+     "label": "drive shaft",
+     "preset": "round 20x20x100 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Bearing",
+      "base": 2.0,
+      "rate": 0.5,
+      "by": "length",
+      "max": 12
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true,
+       "ref": 900.0
+      }
+     ]
+    },
+    {
+     "id": "ujoint",
+     "like": "U Joint",
+     "label": "U joint",
+     "preset": "round 15x15x25 steel",
+     "body": "like",
+     "along": "x",
+     "bay2": {
+      "part": "Bearing",
+      "base": 2.0,
+      "rate": 0.5,
+      "by": "length",
+      "max": 12
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true,
+       "ref": 900.0
+      }
+     ]
+    },
+    {
+     "id": "cv",
+     "like": "CV Joint",
+     "label": "CV joint",
+     "preset": "round 25x25x25 steel",
+     "body": "like",
+     "along": "x",
+     "bay2": {
+      "part": "Bearing",
+      "base": 2.0,
+      "rate": 0.5,
+      "by": "length",
+      "max": 12
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true,
+       "ref": 900.0
+      }
+     ]
+    },
+    {
+     "id": "stub",
+     "like": "Stub Axle",
+     "label": "stub axle",
+     "preset": "round 30x30x35 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Bearing",
+      "base": 2.0,
+      "rate": 0.5,
+      "by": "length",
+      "max": 12
+     }
+    },
+    {
+     "id": "hub",
+     "like": "Wheel Hub",
+     "label": "wheel hub",
+     "preset": "round 30x30x35 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Bearing",
+      "base": 2.0,
+      "rate": 0.5,
+      "by": "length",
+      "max": 12
+     },
+     "scale": [
+      {
+       "field": "maxTorque",
+       "by": "across",
+       "power": 3.0,
+       "strength": true,
+       "ref": 900.0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "die": "Actuator",
+   "blanks": [
+    "pipe",
+    "round",
+    "solid"
+   ],
+   "materials": [
+    "steel",
+    "metal"
+   ],
+   "across": [
+    10,
+    720
+   ],
+   "length": [
+    10,
+    3200
+   ],
+   "aspect": [
+    0.25,
+    32.0
+   ],
+   "seconds": {
+    "base": 3.0,
+    "perKg": 0.02
+   },
+   "features": [
+    {
+     "tag": "gland",
+     "box": [
+      -0.05,
+      -0.05,
+      0.3,
+      1.05,
+      1.05,
+      0.34
+     ],
+     "proud": "xy",
+     "clamp": "z",
+     "minCm": 0.5,
+     "maxCm": 20.0,
+     "look": "dark"
+    },
+    {
+     "tag": "eye",
+     "box": [
+      0.3,
+      0.3,
+      -0.08,
+      0.7,
+      0.7,
+      0.0
+     ],
+     "proud": "z",
+     "clamp": "z",
+     "minCm": 0.5,
+     "maxCm": 30.0,
+     "look": "bare"
+    }
+   ],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "piston",
+     "like": "Piston 1x1 Medium",
+     "label": "piston",
+     "preset": "round 25x25x50 steel",
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Servo Motor",
+      "base": 1.0,
+      "rate": 0.01,
+      "by": "mass",
+      "max": 8
+     },
+     "scale": [
+      {
+       "field": "motorStrength",
+       "by": "across",
+       "power": 2.0,
+       "strength": true
+      },
+      {
+       "field": "motorSpeed",
+       "by": "across",
+       "power": -1.0,
+       "strength": false
+      },
+      {
+       "field": "sideLoad",
+       "by": "across",
+       "power": 3.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "hinge",
+     "like": "Motor Hinge",
+     "label": "motor hinge",
+     "preset": "solid 20x25x55 steel",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "solid"
+     ],
+     "bay2": {
+      "part": "Servo Motor",
+      "base": 1.0,
+      "rate": 0.01,
+      "by": "mass",
+      "max": 8
+     },
+     "scale": [
+      {
+       "field": "motorStrength",
+       "by": "across",
+       "power": 3.0,
+       "strength": true
+      },
+      {
+       "field": "motorSpeed",
+       "by": "across",
+       "power": -1.0,
+       "strength": false
+      }
+     ]
+    },
+    {
+     "id": "turntable",
+     "like": "Turntable",
+     "label": "turntable",
+     "preset": "solid 65x65x20 steel",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "solid"
+     ],
+     "bay2": {
+      "part": "Servo Motor",
+      "base": 1.0,
+      "rate": 0.01,
+      "by": "mass",
+      "max": 8
+     },
+     "scale": [
+      {
+       "field": "motorStrength",
+       "by": "across",
+       "power": 3.0,
+       "strength": true
+      },
+      {
+       "field": "motorSpeed",
+       "by": "across",
+       "power": -1.0,
+       "strength": false
+      }
+     ]
+    },
+    {
+     "id": "pivot",
+     "like": "Free Pivot 1x1",
+     "label": "free pivot",
+     "preset": "solid 30x25x30 steel",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "solid"
+     ],
+     "bay2": {
+      "part": "Bearing",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "across",
+      "max": 16
+     }
+    }
+   ]
+  },
+  {
+   "die": "Spring",
+   "blanks": [
+    "solid",
+    "l-angle",
+    "t-bar",
+    "plate"
+   ],
+   "materials": [
+    "steel",
+    "metal",
+    "bronze"
+   ],
+   "across": [
+    10,
+    720
+   ],
+   "length": [
+    25,
+    1600
+   ],
+   "aspect": [
+    1.0,
+    16.0
+   ],
+   "seconds": {
+    "base": 2.0,
+    "perKg": 0.02
+   },
+   "features": [
+    {
+     "tag": "coil",
+     "box": [
+      -0.05,
+      -0.05,
+      0.25,
+      1.05,
+      1.05,
+      0.31
+     ],
+     "proud": "xy",
+     "look": "dark"
+    },
+    {
+     "tag": "coil",
+     "box": [
+      -0.05,
+      -0.05,
+      0.45,
+      1.05,
+      1.05,
+      0.51
+     ],
+     "proud": "xy",
+     "look": "dark"
+    },
+    {
+     "tag": "coil",
+     "box": [
+      -0.05,
+      -0.05,
+      0.65,
+      1.05,
+      1.05,
+      0.71
+     ],
+     "proud": "xy",
+     "look": "dark"
+    }
+   ],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "suspension",
+     "like": "Suspension",
+     "label": "suspension",
+     "preset": "solid 10x30x65 steel",
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Bearing",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "across",
+      "max": 16
+     },
+     "scale": [
+      {
+       "field": "maxLoad",
+       "by": "across",
+       "power": 2.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "leaf",
+     "like": "Leaf Spring",
+     "label": "leaf spring",
+     "preset": "solid 10x55x90 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Bearing",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "across",
+      "max": 16
+     },
+     "scale": [
+      {
+       "field": "maxLoad",
+       "by": "across",
+       "power": 2.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "rigid",
+     "like": "Rigid Mount",
+     "label": "rigid mount",
+     "preset": "solid 10x30x40 steel",
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Bearing",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "across",
+      "max": 16
+     },
+     "scale": [
+      {
+       "field": "maxLoad",
+       "by": "across",
+       "power": 2.0,
+       "strength": true
+      }
+     ]
+    },
+    {
+     "id": "light",
+     "like": "Light Suspension",
+     "label": "light suspension",
+     "preset": "solid 25x25x30 steel",
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Bearing",
+      "base": 1.0,
+      "rate": 2.0,
+      "by": "across",
+      "max": 16
+     },
+     "scale": [
+      {
+       "field": "maxLoad",
+       "by": "across",
+       "power": 2.0,
+       "strength": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "die": "Cable",
+   "blanks": [
+    "round",
+    "pipe"
+   ],
+   "materials": [
+    "copper",
+    "steel",
+    "metal"
+   ],
+   "across": [
+    10,
+    180
+   ],
+   "length": [
+    10,
+    1600
+   ],
+   "aspect": [
+    0.5,
+    64.0
+   ],
+   "seconds": {
+    "base": 1.0,
+    "perKg": 0.02
+   },
+   "features": [
+    {
+     "tag": "rib",
+     "box": [
+      -0.04,
+      -0.04,
+      0.185,
+      1.04,
+      1.04,
+      0.21500000000000002
+     ],
+     "proud": "xy",
+     "clamp": "z",
+     "minCm": 0.5,
+     "maxCm": 10.0,
+     "look": "dark"
+    },
+    {
+     "tag": "rib",
+     "box": [
+      -0.04,
+      -0.04,
+      0.385,
+      1.04,
+      1.04,
+      0.41500000000000004
+     ],
+     "proud": "xy",
+     "clamp": "z",
+     "minCm": 0.5,
+     "maxCm": 10.0,
+     "look": "dark"
+    },
+    {
+     "tag": "rib",
+     "box": [
+      -0.04,
+      -0.04,
+      0.585,
+      1.04,
+      1.04,
+      0.615
+     ],
+     "proud": "xy",
+     "clamp": "z",
+     "minCm": 0.5,
+     "maxCm": 10.0,
+     "look": "dark"
+    },
+    {
+     "tag": "rib",
+     "box": [
+      -0.04,
+      -0.04,
+      0.785,
+      1.04,
+      1.04,
+      0.8150000000000001
+     ],
+     "proud": "xy",
+     "clamp": "z",
+     "minCm": 0.5,
+     "maxCm": 10.0,
+     "look": "dark"
+    },
+    {
+     "tag": "plug",
+     "box": [
+      0.25,
+      0.25,
+      -0.05,
+      0.75,
+      0.75,
+      0.0
+     ],
+     "proud": "z",
+     "clamp": "z",
+     "minCm": 0.5,
+     "maxCm": 20.0,
+     "look": "bare"
+    },
+    {
+     "tag": "plug",
+     "box": [
+      0.25,
+      0.25,
+      1.0,
+      0.75,
+      0.75,
+      1.05
+     ],
+     "proud": "z",
+     "clamp": "z",
+     "minCm": 0.5,
+     "maxCm": 20.0,
+     "look": "bare"
+    }
+   ],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "loom",
+     "like": "Wiring Loom",
+     "label": "wiring loom",
+     "preset": "round 10x10x30 copper",
+     "bay2": {
+      "material": "rubber",
+      "base": 1.0,
+      "rate": 3.0,
+      "by": "length",
+      "max": 99
+     }
+    },
+    {
+     "id": "coil",
+     "like": "Copper Coil",
+     "label": "copper coil",
+     "preset": "round 25x25x25 copper"
+    },
+    {
+     "id": "power",
+     "like": "Power Lead Reel",
+     "label": "power lead reel",
+     "preset": "round 45x45x60 steel",
+     "body": "like",
+     "along": "x",
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 3.0,
+      "by": "length",
+      "max": 99
+     },
+     "scale": [
+      {
+       "field": "hoseLength",
+       "by": "length",
+       "power": 1.0,
+       "strength": false
+      }
+     ]
+    },
+    {
+     "id": "data",
+     "like": "Data Lead Reel",
+     "label": "data lead reel",
+     "preset": "round 45x45x60 steel",
+     "body": "like",
+     "along": "x",
+     "bay2": {
+      "material": "copper",
+      "base": 1.0,
+      "rate": 3.0,
+      "by": "length",
+      "max": 99
+     },
+     "scale": [
+      {
+       "field": "hoseLength",
+       "by": "length",
+       "power": 1.0,
+       "strength": false
+      }
+     ]
+    },
+    {
+     "id": "hose",
+     "like": "Fluid Hose Reel",
+     "label": "fluid hose reel",
+     "preset": "round 45x45x60 steel",
+     "body": "like",
+     "along": "x",
+     "bay2": {
+      "material": "rubber",
+      "base": 1.0,
+      "rate": 3.0,
+      "by": "length",
+      "max": 99
+     },
+     "scale": [
+      {
+       "field": "hoseLength",
+       "by": "length",
+       "power": 1.0,
+       "strength": false
+      }
+     ]
+    },
+    {
+     "id": "fuel",
+     "like": "Fuel Line",
+     "label": "fuel line",
+     "preset": "pipe5 15x15x50 steel",
+     "body": "like",
+     "along": "x",
+     "blanks": [
+      "pipe"
+     ],
+     "bay2": {
+      "material": "rubber",
+      "base": 1.0,
+      "rate": 3.0,
+      "by": "length",
+      "max": 99
+     }
+    }
+   ]
+  },
+  {
+   "die": "Control",
+   "blanks": [
+    "plate",
+    "hollow",
+    "solid"
+   ],
+   "materials": [
+    "laminate",
+    "metal",
+    "steel"
+   ],
+   "across": [
+    10,
+    720
+   ],
+   "length": [
+    10,
+    800
+   ],
+   "aspect": [
+    0.1,
+    8.0
+   ],
+   "seconds": {
+    "base": 2.0,
+    "perKg": 0.02
+   },
+   "features": [
+    {
+     "tag": "face",
+     "box": [
+      0.15,
+      0.15,
+      1.0,
+      0.85,
+      0.85,
+      1.03
+     ],
+     "proud": "z",
+     "clamp": "z",
+     "minCm": 0.3,
+     "maxCm": 3.0,
+     "look": "bare"
+    },
+    {
+     "tag": "gland",
+     "box": [
+      0.4,
+      -0.08,
+      0.2,
+      0.6,
+      0.0,
+      0.35
+     ],
+     "proud": "y",
+     "clamp": "y",
+     "minCm": 0.5,
+     "maxCm": 10.0,
+     "look": "dark"
+    }
+   ],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "and",
+     "like": "AND Gate",
+     "label": "AND gate",
+     "preset": "solid 20x20x25 laminate",
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "not",
+     "like": "NOT Gate",
+     "label": "NOT gate",
+     "preset": "solid 20x20x25 laminate",
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "timer",
+     "like": "Timer",
+     "label": "timer",
+     "preset": "solid 20x20x25 laminate",
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "delay",
+     "like": "Delay",
+     "label": "delay",
+     "preset": "solid 20x20x25 laminate",
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "compare",
+     "like": "Compare",
+     "label": "compare",
+     "preset": "solid 20x20x25 laminate",
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "proximity",
+     "like": "Proximity Sensor",
+     "label": "proximity sensor",
+     "preset": "solid 20x20x25 laminate",
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    },
+    {
+     "id": "speed",
+     "like": "Speed Sensor",
+     "label": "speed sensor",
+     "preset": "solid 20x20x25 laminate",
+     "body": "like",
+     "along": "y",
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 4.0,
+      "by": "area",
+      "max": 16
+     }
+    }
+   ]
+  },
+  {
+   "die": "Tank",
+   "blanks": [
+    "pipe",
+    "hollow"
+   ],
+   "materials": [
+    "steel",
+    "metal",
+    "bronze"
+   ],
+   "across": [
+    20,
+    2880
+   ],
+   "length": [
+    25,
+    6400
+   ],
+   "aspect": [
+    0.5,
+    16.0
+   ],
+   "seconds": {
+    "base": 3.0,
+    "perKg": 0.005
+   },
+   "features": [
+    {
+     "tag": "cap",
+     "box": [
+      0.1,
+      0.1,
+      -0.04,
+      0.9,
+      0.9,
+      0.0
+     ],
+     "proud": "z",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 50.0,
+     "look": "dark"
+    },
+    {
+     "tag": "cap",
+     "box": [
+      0.1,
+      0.1,
+      1.0,
+      0.9,
+      0.9,
+      1.04
+     ],
+     "proud": "z",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 50.0,
+     "look": "dark"
+    },
+    {
+     "tag": "neck",
+     "box": [
+      0.42,
+      1.0,
+      0.45,
+      0.58,
+      1.1,
+      0.55
+     ],
+     "proud": "y",
+     "clamp": "y",
+     "minCm": 1.0,
+     "maxCm": 40.0,
+     "look": "bare"
+    },
+    {
+     "tag": "band",
+     "box": [
+      -0.03,
+      -0.03,
+      0.2,
+      1.03,
+      1.03,
+      0.25
+     ],
+     "proud": "xy",
+     "look": "dark"
+    },
+    {
+     "tag": "band",
+     "box": [
+      -0.03,
+      -0.03,
+      0.75,
+      1.03,
+      1.03,
+      0.8
+     ],
+     "proud": "xy",
+     "look": "dark"
+    }
+   ],
+   "sockets": [
+    {
+     "name": "+x",
+     "at": [
+      1,
+      0.5,
+      0.5
+     ],
+     "dir": "+x"
+    },
+    {
+     "name": "-x",
+     "at": [
+      0,
+      0.5,
+      0.5
+     ],
+     "dir": "-x"
+    },
+    {
+     "name": "+y",
+     "at": [
+      0.5,
+      1,
+      0.5
+     ],
+     "dir": "+y"
+    },
+    {
+     "name": "-y",
+     "at": [
+      0.5,
+      0,
+      0.5
+     ],
+     "dir": "-y"
+    },
+    {
+     "name": "+z",
+     "at": [
+      0.5,
+      0.5,
+      1
+     ],
+     "dir": "+z"
+    },
+    {
+     "name": "-z",
+     "at": [
+      0.5,
+      0.5,
+      0
+     ],
+     "dir": "-z"
+    }
+   ],
+   "patterns": [
+    {
+     "id": "fuel",
+     "like": "Fuel Tank",
+     "label": "fuel tank",
+     "preset": "hollow 50x50x50 steel",
+     "scale": [
+      {
+       "field": "fuelCapacity",
+       "by": "volume",
+       "power": 1.0,
+       "strength": false
+      }
+     ]
+    },
+    {
+     "id": "small",
+     "like": "Small Fuel Tank",
+     "label": "small fuel tank",
+     "preset": "hollow 40x40x40 steel",
+     "scale": [
+      {
+       "field": "fuelCapacity",
+       "by": "volume",
+       "power": 1.0,
+       "strength": false
+      }
+     ]
+    },
+    {
+     "id": "drum",
+     "like": "Fuel Drum",
+     "label": "fuel drum",
+     "preset": "pipe5 45x45x90 steel",
+     "blanks": [
+      "pipe"
+     ],
+     "scale": [
+      {
+       "field": "fuelCapacity",
+       "by": "volume",
+       "power": 1.0,
+       "strength": false
+      }
+     ]
+    },
+    {
+     "id": "fluid",
+     "like": "Fluid Tank",
+     "label": "fluid tank",
+     "preset": "hollow 45x45x50 steel",
+     "scale": [
+      {
+       "field": "fuelCapacity",
+       "by": "volume",
+       "power": 1.0,
+       "strength": false
+      }
+     ]
+    },
+    {
+     "id": "smallfluid",
+     "like": "Small Fluid Tank",
+     "label": "small fluid tank",
+     "preset": "hollow 40x40x40 steel",
+     "scale": [
+      {
+       "field": "fuelCapacity",
+       "by": "volume",
+       "power": 1.0,
+       "strength": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "die": "Beam",
+   "blanks": [
+    "solid",
+    "hollow",
+    "i-beam",
+    "c-channel",
+    "t-bar",
+    "round"
+   ],
+   "materials": [
+    "steel",
+    "metal",
+    "bronze",
+    "wood",
+    "concrete"
+   ],
+   "across": [
+    10,
+    2880
+   ],
+   "length": [
+    50,
+    12800
+   ],
+   "aspect": [
+    2.0,
+    64.0
+   ],
+   "seconds": {
+    "base": 2.0,
+    "perKg": 0.002
+   },
+   "features": [
+    {
+     "tag": "flange",
+     "box": [
+      -0.075,
+      -0.075,
+      0.0,
+      1.075,
+      1.075,
+      0.05
+     ],
+     "proud": "xy",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 50.0,
+     "look": "bare"
+    },
+    {
+     "tag": "flange",
+     "box": [
+      -0.075,
+      -0.075,
+      0.95,
+      1.075,
+      1.075,
+      1.0
+     ],
+     "proud": "xy",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 50.0,
+     "look": "bare"
+    }
+   ],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "girder",
+     "like": "Frame Beam",
+     "label": "girder",
+     "preset": "i-beam 50x50x200 steel"
+    },
+    {
+     "id": "column",
+     "like": "Frame Beam",
+     "label": "column",
+     "preset": "hollow 50x50x200 steel",
+     "features": [
+      {
+       "tag": "base",
+       "box": [
+        -0.2,
+        -0.2,
+        -0.03,
+        1.2,
+        1.2,
+        0.0
+       ],
+       "proud": "z",
+       "clamp": "z",
+       "minCm": 1.0,
+       "maxCm": 30.0,
+       "look": "dark"
+      },
+      {
+       "tag": "base",
+       "box": [
+        -0.2,
+        -0.2,
+        1.0,
+        1.2,
+        1.2,
+        1.03
+       ],
+       "proud": "z",
+       "clamp": "z",
+       "minCm": 1.0,
+       "maxCm": 30.0,
+       "look": "dark"
+      }
+     ]
+    },
+    {
+     "id": "strut",
+     "like": "Frame Beam",
+     "label": "strut",
+     "preset": "solid 20x20x100 steel",
+     "features": [
+      {
+       "tag": "band",
+       "box": [
+        -0.06,
+        -0.06,
+        0.47,
+        1.06,
+        1.06,
+        0.53
+       ],
+       "proud": "xy",
+       "look": "dark"
       }
      ]
     }
