@@ -15,6 +15,7 @@ public static class ModuleLook
     public static void Dress(List<PyDict> boxes, bool drill, int tier, double s)
     {
         var solids = boxes.Where(b => !Py.Truthy(b.Get("detail"))).Select(b => (Min: V3(b["min"]), Max: V3(b["max"]))).ToList();
+        var given = boxes.Where(b => Py.Truthy(b.Get("detail"))).Select(b => (Min: V3(b["min"]), Max: V3(b["max"]))).ToList(); // (the tier's own dressing: it wins)
         var p = Math.Max(0.013, 0.011 * s); // how far a look box stands proud
         var thin = Math.Max(0.013, 0.012 * s);
 
@@ -25,14 +26,8 @@ public static class ModuleLook
         // A look box from its corners in metres; it gives way to any detail already there.
         PyDict? Put(double[] mn, double[] mx, string color, string? finish = null)
         {
-            foreach (var b in boxes)
-            {
-                if (!Py.Truthy(b.Get("detail")))
-                    continue;
-                double[] lo = V3(b["min"]), hi = V3(b["max"]);
-                if (Enumerable.Range(0, 3).All(a => mn[a] < hi[a] + 0.003 && lo[a] - 0.003 < mx[a]))
-                    return null;
-            }
+            if (given.Any(g => Enumerable.Range(0, 3).All(a => mn[a] < g.Max[a] + 0.003 && g.Min[a] - 0.003 < mx[a])))
+                return null;
             if (solids.Any(b => Enumerable.Range(0, 3).All(a => b.Min[a] <= mn[a] && mx[a] <= b.Max[a])))
                 return null; // (buried in the body)
             var o = MachineLook.D(mn, mx, color, finish);
@@ -46,7 +41,7 @@ public static class ModuleLook
         PyDict? Strip(int side, double half, double a0, double a1, double y0, double y1, string color, string? finish = null, double extra = 0)
         {
             var sg = side % 2 == 0 ? -1 : 1;
-            double f0 = half * s + 0.0015, f1 = half * s + p + extra;
+            double f0 = half * s - 0.004, f1 = half * s + p + extra;
             double[] mn = new double[3], mx = new double[3];
             var ax = side < 2 ? 0 : 2;
             (mn[ax], mx[ax]) = sg > 0 ? (f0, f1) : (-f1, -f0);
@@ -76,7 +71,7 @@ public static class ModuleLook
             for (var side = 0; side < 4; side++)
                 Strip(side, h, -h, h, 0.0, 0.07, MachineLook.Base);
             Strip(1, h, -0.2, 0.2, 0.37, 0.44, MachineLook.Out); // the way out: the chute leaves the hopper on this side
-            Put([0.19 * s + 0.0015, 0.462 * s, -0.15 * s], [0.19 * s + p, 0.5 * s, 0.15 * s], MachineLook.Accent, "hazard paint");
+            Put([0.19 * s - 0.004, 0.462 * s, -0.15 * s], [0.19 * s + p, 0.5 * s, 0.15 * s], MachineLook.Accent, "hazard paint");
             Buttons(-0.245, -0.195, -0.19, 0.19);
             // The bit: an accent collar under the mast that turns with it.
             Spin(Put([-0.088 * s, -0.352 * s, 0.592 * s], [0.088 * s, -0.303 * s, 0.768 * s], MachineLook.Accent));
@@ -107,22 +102,22 @@ public static class ModuleLook
         for (var side = 0; side < 4; side++)
             Strip(side, b0, -b0, b0, 0.0, 0.09, MachineLook.Base);
         // The fill band: a steel strip up the bin's side with a mark at each quarter.
-        if (Strip(1, b0, 0.24, 0.36, 0.1, wall - 0.04, MachineLook.Steel, "steel") is not null)
+        if (Strip(1, b0, -0.36, -0.24, 0.1, wall - 0.04, MachineLook.Steel, "steel") is not null)
             for (var k = 1; k < 4; k++)
             {
                 var y = 0.1 + (wall - 0.14) * k / 4;
-                Strip(1, b0, 0.24, 0.36, y - 0.008, y + 0.008, MachineLook.Ink, extra: 0.003);
+                Strip(1, b0, -0.36, -0.24, y - 0.008, y + 0.008, MachineLook.Ink, extra: 0.003);
             }
         Strip(3, b0, 0.14, 0.45, wall - 0.13, wall - 0.05, MachineLook.In); // the wood comes in over the front wall, each side of the arm
         Strip(3, b0, -0.45, -0.14, wall - 0.13, wall - 0.05, MachineLook.In);
         Strip(0, b0, -0.4, 0.4, wall - 0.13, wall - 0.05, MachineLook.Out); // and is taken out over the side
         Buttons(-0.495, -0.445, -0.3, 0.08);
         // The blade bar: hazard paint along the edge that cuts.
-        Put([-0.48 * s, 0.248 * s, 1.36 * s + 0.0015], [0.48 * s, 0.312 * s, 1.36 * s + p], MachineLook.Accent, "hazard paint");
+        Put([-0.48 * s, 0.248 * s, 1.36 * s - 0.004], [0.48 * s, 0.312 * s, 1.36 * s + p], MachineLook.Accent, "hazard paint");
         if (tier >= 2)
         {
-            Put([-0.5 * s - p, 0.248 * s, 1.02 * s], [-0.5 * s - 0.0015, 0.312 * s, 1.34 * s], MachineLook.Accent, "hazard paint");
-            Put([0.5 * s + 0.0015, 0.248 * s, 1.02 * s], [0.5 * s + p, 0.312 * s, 1.34 * s], MachineLook.Accent, "hazard paint");
+            Put([-0.5 * s - p, 0.248 * s, 1.02 * s], [-0.5 * s + 0.004, 0.312 * s, 1.34 * s], MachineLook.Accent, "hazard paint");
+            Put([0.5 * s - 0.004, 0.248 * s, 1.02 * s], [0.5 * s + p, 0.312 * s, 1.34 * s], MachineLook.Accent, "hazard paint");
         }
         if (tier >= 3)
         {
