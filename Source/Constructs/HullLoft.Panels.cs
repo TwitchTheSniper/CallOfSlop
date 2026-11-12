@@ -180,8 +180,12 @@ public static partial class HullLoft
                 var tone = (i + j) % 2 == 0 ? Steel : SteelHigh;
                 p.Facet(q, n.LengthSquared() < 1e-12f ? Vector3.UnitY : n, nv == 1 && nu == 1 ? Steel : tone, t, off: off);
             }
-        // Collision: up to four hidden boxes along its length, each over its strip's own height (a growing or riding panel collides by boxes, never a hull).
+        // Collision: up to four hidden boxes along its length, each over its strip's own height (a growing or riding panel collides by boxes, never a
+        // hull). Their sides are whole centimetres just inside the drawn edges, so no hidden face shares a plane with a facet's rim and the edge
+        // sockets, which stand on them, are whole centimetres too (docs/LESSONS.md, "Generated geometry").
+        static float In(float v, bool up) => up ? MathF.Ceiling(v * 100 + 0.2f) / 100 : MathF.Floor(v * 100 - 0.2f) / 100;
         var strips = Math.Min(4, nu);
+        var boxes = new (Vector3 Mn, Vector3 Mx)[strips];
         for (var k = 0; k < strips; k++)
         {
             int i0 = k * nu / strips, i1 = (k + 1) * nu / strips;
@@ -189,28 +193,46 @@ public static partial class HullLoft
             for (var i = i0; i <= i1; i++)
                 for (var j = 0; j <= nv; j++)
                     (mn, mx) = (Vector3.Min(mn, grid[i, j]), Vector3.Max(mx, grid[i, j]));
+            mn = new Vector3(In(mn.X, true), MathF.Round(mn.Y, 2), k == 0 ? In(mn.Z, true) : MathF.Round(mn.Z, 2));
+            mx = new Vector3(In(mx.X, false), MathF.Round(mx.Y, 2), k == strips - 1 ? In(mx.Z, false) : MathF.Round(mx.Z, 2));
             if (mx.Y - mn.Y < 0.03f)
-                (mn.Y, mx.Y) = ((mn.Y + mx.Y) / 2 - 0.015f, (mn.Y + mx.Y) / 2 + 0.015f);
-            // (2 mm inside the drawn edges, so a hidden box shares no plane with a facet's rim)
-            p.Hide(mn + new Vector3(0.002f, 0, 0.002f), mx - new Vector3(0.002f, 0, 0.002f));
+                (mn.Y, mx.Y) = (mn.Y - 0.01f, mn.Y + 0.02f);
+            boxes[k] = (mn, mx);
+            p.Hide(mn, mx);
         }
-        // Edge sockets, about every half metre, whole centimetres: e/w along its sides, s/n across its ends, and one under its middle.
-        static Vector3 CmV(Vector3 v) => new(MathF.Round(v.X, 2), MathF.Round(v.Y, 2), MathF.Round(v.Z, 2));
+        // Edge sockets, about every half metre: e/w along its sides, s/n across its ends, and one under its middle. Each stands on a face of the
+        // hidden box of its strip, at the surface's height there.
+        static float Cm2(float v) => MathF.Round(v, 2);
+        int StripAt(float z)
+        {
+            for (var k = 0; k < strips; k++)
+                if (z <= boxes[k].Mx.Z + 0.0001f)
+                    return k;
+            return strips - 1;
+        }
         var along = Math.Clamp(sh.L / 50, 1, 6);
         var across = Math.Clamp(sh.W / 50, 1, 6);
         for (var k = 0; k < along; k++)
         {
             var s = (k + 0.5f) / along;
-            p.Sock($"e{k}", CmV(PanelPoint(sh, s, 1)), "+x");
-            p.Sock($"w{k}", CmV(PanelPoint(sh, s, -1)), "-x");
+            var z = Cm2(s * sh.L / 100f);
+            var (mn, mx) = boxes[StripAt(z)];
+            z = Math.Clamp(z, mn.Z, mx.Z);
+            p.Sock($"e{k}", new Vector3(mx.X, Math.Clamp(Cm2(PanelPoint(sh, s, 1).Y), mn.Y, mx.Y), z), "+x");
+            p.Sock($"w{k}", new Vector3(mn.X, Math.Clamp(Cm2(PanelPoint(sh, s, -1).Y), mn.Y, mx.Y), z), "-x");
         }
         for (var k = 0; k < across; k++)
         {
             var x = (k + 0.5f) / across * 2 - 1;
-            p.Sock($"s{k}", CmV(PanelPoint(sh, 0, x)), "-z");
-            p.Sock($"n{k}", CmV(PanelPoint(sh, 1, x)), "+z");
+            var (a0, a1) = boxes[0];
+            var (b0, b1) = boxes[strips - 1];
+            var ps = PanelPoint(sh, 0, x);
+            var pn = PanelPoint(sh, 1, x);
+            p.Sock($"s{k}", new Vector3(Math.Clamp(Cm2(ps.X), a0.X, a1.X), Math.Clamp(Cm2(ps.Y), a0.Y, a1.Y), a0.Z), "-z");
+            p.Sock($"n{k}", new Vector3(Math.Clamp(Cm2(pn.X), b0.X, b1.X), Math.Clamp(Cm2(pn.Y), b0.Y, b1.Y), b1.Z), "+z");
         }
-        p.Sock("back", CmV(PanelPoint(sh, 0.5f, 0) - new Vector3(0, t / 2, 0)), "-y");
+        var (m0, m1) = boxes[StripAt(sh.L / 200f)];
+        p.Sock("back", new Vector3(0, m0.Y, Math.Clamp(Cm2(sh.L / 200f), m0.Z, m1.Z)), "-y");
         var mat = RecyclingTable.Current.IdOf(sh.Material);
         var row = ExtrusionTable.Current.Find(mat)!;
         var volume = area * t;

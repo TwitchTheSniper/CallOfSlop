@@ -255,6 +255,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleQualityCli.DiversityStyle(diversityStyle, args); // the same for every shape of a style
         if (args.Any(a => a.Equals("--route-ends", StringComparison.OrdinalIgnoreCase)))
             return RouteEndsProbe.Cli(args); // how auto-routed links leave and arrive at their ports: turns and short legs by the ends (RouteEndsProbe.cs)
+        if (args.Any(a => a.Equals("--form-panel", StringComparison.OrdinalIgnoreCase)))
+            return HullLoft.PanelCli([.. args.SkipWhile(a => !a.Equals("--form-panel", StringComparison.OrdinalIgnoreCase)).Skip(1).TakeWhile(a => !a.StartsWith("--", StringComparison.Ordinal))]); // a formed panel from a preset: its key, counts and checks (HullLoft.Panels.cs)
         if (args.SkipWhile(a => !a.Equals("--bill", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } billOf)
             return ConstructBill.Cli(billOf); // a blueprint's bill: the pieces it needs by key with counts (WorkOrders.cs)
         if (args.Any(a => a.Equals("--bench-parts", StringComparison.OrdinalIgnoreCase)))

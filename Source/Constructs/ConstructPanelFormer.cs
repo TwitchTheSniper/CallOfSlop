@@ -182,7 +182,7 @@ public static class ConstructPanelFormer
             c.WorldFrame(p.Seg, out var q, out var t);
             var turn = q * Rot24.Quat(p.Rot);
             var size = panel.BoundsMax - panel.BoundsMin;
-            var at = t + Vector3.Transform(p.Pos, q) + Vector3.Transform(d.ExtDieAt + new Vector3(0, size.Y * 0.5f + 0.05f, size.Z * 0.5f + 0.1f), turn);
+            var at = t + Vector3.Transform(p.Pos, q) + Vector3.Transform(d.ExtDieAt + new Vector3(0, size.Y * 0.5f + 0.05f, 0), turn); // (its middle over the out bed)
             if (ConstructEdits.DropLoose(world, panel, at, turn) is not { } body)
             {
                 Idle(world, st, ExtrudeStall.Blocked);

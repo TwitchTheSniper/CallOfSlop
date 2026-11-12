@@ -131,7 +131,7 @@ public static partial class ConstructParts
             var die = d.IsWheelFormer ? new Vector2(d.ExtWheelMax.X, d.ExtWheelMax.Y) : d.ExtMaxSection;
             if (d.IsPanelFormer)
                 die = new Vector2(d.ExtWheelMax.X, d.ExtWheelMax.X); // (a panel rides flat: its bed's width)
-            var y = d.IsPanelFormer ? d.ExtDieAt.Y : d.IsWheelFormer ? d.BoundsMin.Y + 0.1f : MathF.Max(d.BoundsMin.Y + 0.05f, d.ExtDieAt.Y - d.ExtDie.Y * 0.5f);
+            var y = d.IsWheelFormer ? d.BoundsMin.Y + 0.1f : MathF.Max(d.BoundsMin.Y + 0.05f, d.ExtDieAt.Y - d.ExtDie.Y * 0.5f);
             list.Add(new NamedPort { Name = "Piece out", Type = RouteType.Conveyor, Out = true, At = new Vector3(d.ExtDieAt.X, y, d.BoundsMax.Z), Face = 4, Opening = die, Implicit = true });
         }
         // A Press or Die Lathe takes pieces off a conveyor into its bays: a Piece in at each bay's socket (by its name: "Piece in", "Piece in 2"...),
