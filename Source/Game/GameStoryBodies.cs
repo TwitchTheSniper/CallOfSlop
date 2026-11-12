@@ -48,6 +48,14 @@ public sealed partial class Game
         public double MoodUntil; // game time
         public byte MoodCause; // whoever caused it: their player id (MoodCauseEntity -1: nobody)
         public int MoodCauseEntity, MoodAbout; // story entities: whoever caused it, whom it is about (-1: none)
+        public short Post; // their post for this shift (GameStoryPosts.cs): its index + 1 (0: none, the work spot)
+        public double PostFor = -1; // the Work step (its start on the story clock) the post is for
+        public Vector3 PostGoal; // where the post has them stand
+        public double PostStuck; // game time: since when they have been near the post's seat without sitting (-1: not)
+        public bool PostSat; // sat in the post's seat
+        public double DoorSince = -1; // game time: since when they have stood at the barracks' doorway step on the way in (-1: not)
+
+        public StoryBody() { }
     }
 
     private readonly StoryBody[] _bodies = new StoryBody[StoryBodiesMax];
@@ -337,7 +345,7 @@ public sealed partial class Game
             return b.LivesHere ? b.Home : b.Work; // (idle: at home, or about their work when they live elsewhere)
         var verb = s.Rules.People.Actions[a.Doing.Action].Verb;
         if (verb == _vWork)
-            return b.Work;
+            return StoryPostGoal(s, a, ref b) ?? b.Work; // (at their post for the shift: GameStoryPosts.cs)
         return verb == _vRest ? b.Home : b.Goal == default ? b.Home : b.Goal;
     }
 
@@ -398,11 +406,20 @@ public sealed partial class Game
         if (StoryFightBot(p, b, i, now))
             return; // (in a fight: GameStoryFights.cs)
         var goal = i >= 0 ? _bodies[i].Goal : p.SbHome;
+        if (i >= 0 && SandboxHands.Hand(p.Id).Seated)
+            goal = p.Position; // (sat at their post: GameStoryPosts.cs)
+        else if (i >= 0)
+        {
+            StoryDoorStep(p, ref _bodies[i], goal, now);
+            goal = StoryDoorRoute(p.Position, goal); // (in and out of the barracks by its doorway: GameStoryPosts.cs)
+        }
         b.HeardTime = b.LastSeenTime = -100;
         b.Target = byte.MaxValue;
         b.ForcedGoal = Flat2(goal - p.Position) < 1.2f * 1.2f ? p.Position : goal;
         b.HoldUntil = now + 1; // (a hold walks, and the stuck watch leaves a body standing at its spot alone)
         b.HoldAnchor = goal;
+        if (i >= 0)
+            StoryPostBot(p, b, ref _bodies[i], now); // (at their post: sat down, turned to the work, or up again: GameStoryPosts.cs)
         StorySightFace(p, b, now); // (turned to whoever they react to: GameStorySight.cs)
         StoryBodyFace(p, b, now); // (turned to whoever they talk to, and stopped for a player: GameStoryChat.cs)
     }

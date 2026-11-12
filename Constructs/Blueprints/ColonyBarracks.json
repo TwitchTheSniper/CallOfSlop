@@ -64,6 +64,39 @@
       "on": 4,
       "socket": "t0_0",
       "by": "b15_15"
+    },
+    {
+      "part": "Deck Plate",
+      "on": 1,
+      "socket": "t8_8",
+      "by": "bottom"
+    },
+    {
+      "part": "Computer",
+      "on": 10,
+      "socket": "top03",
+      "by": "foot10",
+      "spin": 3
+    },
+    {
+      "part": "Seat",
+      "on": 10,
+      "socket": "top01",
+      "by": "bottom",
+      "spin": 3
+    },
+    {
+      "part": "Fax Machine",
+      "on": 10,
+      "socket": "top30",
+      "by": "foot00",
+      "spin": 3
+    },
+    {
+      "part": "Tea Urn",
+      "on": 0,
+      "socket": "t7_7",
+      "by": "foot00"
     }
   ]
 }

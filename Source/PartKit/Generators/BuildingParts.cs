@@ -1875,6 +1875,15 @@ public sealed class BuildingParts : IPartGenerator
         bp.Put("Concrete Window Wall 4 m", Cell(15, 2, 8), RY270);
         bp.Put("Concrete Floor 4x4 m", Cell(0, 2 + WallH, 0), R0);
         bp.Put("Concrete Floor 4x4 m", Cell(0, 2 + WallH, 16), R0);
+        // The guards' office (the staff's posts, Story/Posts/PenalColony.json, Game/GameStoryPosts.cs): a deck plate as a raised
+        // floor at the back (its top sockets every 0.5 m) with the duty desk on it (a computer facing the back wall and a seat
+        // at it) and the fax at its front edge facing the room (worked from the pad: bodies don't step up onto the plate), and
+        // the tea urn on its trolley in the front half, its tap to the doorway.
+        bp.Put("Deck Plate", [2.0, 0.425, 6.0], R0);
+        bp.Put("Computer", [1.5, 0.47, 6.75], RY180);
+        bp.Put("Seat", [1.25, 0.47, 5.75], RY180);
+        bp.Put("Fax Machine", [2.625, 0.47, 5.25], RY180);
+        bp.Put("Tea Urn", [1.875, 0.375, 1.75], R0);
         o.Add(bp);
 
         // Remote Works: the Ministry's remote labour hall beside the penal colony (docs/story/DEPOT.md, Game/GameDepot.cs). A 4 by
