@@ -51,3 +51,30 @@ public sealed partial class Game
         }
     }
 }
+
+public sealed partial class Game
+{
+    /// <summary>
+    /// The window tool (host): the world is saved to a throwaway world file and loaded again in place, through the real save and the
+    /// real load (WorldSaveNow, WorldApply), so what a Building Station was doing must come back and go on. What happened, in words.
+    /// </summary>
+    internal string StationReloadProbe()
+    {
+        if (!IsServer || !SandboxOn)
+            return "not the host";
+        if (WorldSession == null)
+        {
+            var made = WorldNew("station probe " + Environment.ProcessId, World.Map, SandboxSurvivalOption);
+            WorldAttach(made);
+            made.Live = true;
+        }
+        var ws = WorldSession!;
+        var before = Constructs.Bodies.Count;
+        if (!WorldSaveNow(wait: true))
+            return "the world wasn't saved";
+        ws.HasSave = true;
+        Constructs.Clear();
+        WorldApply(ws);
+        return $"saved to {ws.Folder} and loaded: {before} bodies before, {Constructs.Bodies.Count} after";
+    }
+}

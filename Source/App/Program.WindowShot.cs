@@ -549,6 +549,38 @@ public static unsafe partial class Program
                             g.SandboxHands.Hands[pl.Id].Held = (ushort)hd.Id; // (every player: a client's give is tried with it)
                         WsSay($"station: every player holds a {hd.Name}");
                         break;
+                    case "reload" when g.IsServer: // the whole world through the real save and the real load, in place
+                        WsSay("station: reload: " + g.StationReloadProbe());
+                        (sc, spart) = WsFind(g, "Building Station");
+                        if (sc == null)
+                        {
+                            WsFail("no Building Station after the load");
+                            return;
+                        }
+                        break;
+                    case "repeat":
+                        g.SandboxStation(sc.Id, spart, StationOp.Repeat, (ushort)(int.TryParse(rest, out var more) ? more : 0));
+                        break;
+                    case "clear" when g.IsServer && sc.Parts[spart].Station is { } cj && g.Constructs.Get(cj.Body) is { HeldBy: 0 } built: // the finished vehicle is dragged 14 m out of the bay
+                        ConstructStation.Bay(sc, spart, out _, out var brot, out _);
+                        built.Pos += System.Numerics.Vector3.Transform(new System.Numerics.Vector3(14, 0.3f, 0), brot);
+                        built.PrevPos = built.NetPos = built.NetFromPos = built.Pos;
+                        built.NetHistReset();
+                        built.Wake();
+                        WsSay("station: the built vehicle was dragged out of the bay");
+                        break;
+                    case "measure":
+                        StationProbe.On = Perf.On = true;
+                        WsSay("station: " + StationProbe.Cost());
+                        {
+                            var ticks = new List<float>();
+                            for (var back = 0; back < Perf.History; back++)
+                                if (Perf.Ticks(back) > 0)
+                                    ticks.Add(Perf.TickWorstMs(back));
+                            ticks.Sort();
+                            WsSay(ticks.Count == 0 ? "station: no frames measured yet" : "station: server tick over the last " + ticks.Count + " frames: median " + ticks[ticks.Count / 2].ToString("0.00") + " ms, p99 " + ticks[(int)(ticks.Count * 0.99)].ToString("0.00") + " ms, worst " + ticks[^1].ToString("0.00") + " ms");
+                        }
+                        break;
                     case "save" when g.IsServer:
                     {
                         var snap = new WorldSnapshot();

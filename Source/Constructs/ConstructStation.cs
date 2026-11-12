@@ -78,7 +78,6 @@ public static class ConstructStation
     public const int OrderEvery = 30; // ticks between looks at what to order (2 Hz)
     public const int OrdersAStep = 4; // craft orders placed in one look
     public const int ReturnAStep = 8; // parts given back in one look
-    public const int Ahead = 3; // kinds held or on order below which the kinds of later steps are asked for too
     public const float BayGap = 0.5f; // between the station's side and its bay
     public const string WireStock = "copper", PipeStock = "steel"; // link stock by the metre (proposed): wires and cables; pipes, chutes, shafts, feeds, conveyors
     public const string HeldText = "a Building Station is building it: Cancel or Release early at the station";
@@ -282,14 +281,16 @@ public static class ConstructStation
                     world.CraftChanged(c);
                 }
         // What can go on now: a kind is asked for when a step of it has its parent in place, so the hold never fills with parts that
-        // can't be fitted yet; while the hold is nearly empty the next kinds are asked for too (they wait in the hold).
+        // can't be fitted yet; a part that came early (by hand, or left over) waits there.
+        TakeDropped(world, c, t, tray, j);
+        if (j.State != StationState.Building)
+            return;
         Array.Clear(j.KindReady);
         while (j.Cursor < j.PartOf.Length && j.PartOf[j.Cursor] >= 0)
             j.Cursor++;
         for (var s = j.Cursor; s < j.PartOf.Length; s++)
             if (j.PartOf[s] < 0 && Ready(j, s))
                 j.KindReady[j.StepKind[s]]++;
-        var roomy = tray.KindN + (q?.Count ?? 0) < Ahead;
         var placed = 0;
         string? first = null;
         var lacking = 0;
@@ -306,7 +307,7 @@ public static class ConstructStation
             var d = ConstructParts.Get(def);
             var name = d?.Name ?? "a part this build doesn't have";
             var asked = Asked(c.Parts[t].Craft, def);
-            var want = roomy ? lack : Math.Clamp(j.KindReady[i] - ConstructCrafting.Holds(tray, def), 0, lack);
+            var want = Math.Clamp(j.KindReady[i] - ConstructCrafting.Holds(tray, def), 0, lack);
             if (want > asked && d != null && placed < OrdersAStep && (c.Parts[t].Craft?.Count ?? 0) < ConstructCrafting.MaxOrders)
             {
                 placed++;
@@ -321,7 +322,10 @@ public static class ConstructStation
                     for (var k = 0; k < cq.Count; k++)
                         if (ConstructCrafting.KindOf(ref cq.Items[k]) == def)
                         {
-                            first = $"{name} ({ConstructCrafting.StateText(c, cq.Items[k])})";
+                            // (a full hold empties as its parts are fitted: said as that, not as the terminal's "take parts out")
+                            first = cq.Items[k].State == CraftState.Held && tray.ItemCount > 0 && cq.Items[k].Note.Contains("full", StringComparison.Ordinal)
+                                ? $"{name} (next in: the hold is full until what it holds is fitted)"
+                                : $"{name} ({ConstructCrafting.StateText(c, cq.Items[k])})";
                             break;
                         }
             }
@@ -334,6 +338,43 @@ public static class ConstructStation
             j.Note = note.Length > 120 ? note[..120] : note;
             world.StationChanged(c);
         }
+    }
+
+    /// <summary>
+    /// A loose part lying in the bay (a body of one part, held by nobody: set down by hand or dropped there with the physics gun) that
+    /// the build still lacks is taken: fitted at once when a step of its kind has its parent in place, else into the hold. This is how a
+    /// physics-only part, which no hands or backpack carry, is supplied by a player.
+    /// </summary>
+    private static void TakeDropped(ConstructWorld world, Construct c, int t, CStore tray, StationJob j)
+    {
+        Bay(c, t, out var floor, out var rot, out var bay);
+        var inv = Quaternion.Conjugate(rot);
+        Construct? found = null;
+        foreach (var b in world.Bodies)
+        {
+            if (b.PartCount != 1 || b.HeldBy != 0 || b.GrabbedBy != 255 || b.Id == j.Body)
+                continue;
+            var local = Vector3.Transform(b.WorldCom - floor, inv);
+            if (MathF.Abs(local.X) > bay.X * 0.5f || MathF.Abs(local.Z) > bay.Z * 0.5f || local.Y < -0.5f || local.Y > bay.Y)
+                continue;
+            var kind = KindOf(j, b.Parts[0].Def);
+            if (kind < 0 || j.KindFit[kind] + ConstructCrafting.Holds(tray, b.Parts[0].Def) >= j.KindNeed[kind])
+                continue;
+            found = b;
+            break;
+        }
+        if (found == null)
+            return;
+        var d = found.DefOf(0);
+        var k = NextStep(j, null, (ushort)d.Id);
+        if (k < 0 && ConstructConveyor.RackCheck(c, t, tray, d) != 0)
+            return; // (no step takes it yet and the hold has no room: it lies there)
+        world.Remove(found);
+        if (k >= 0)
+            FitOne(world, c, t, j, k);
+        else
+            world.RackPut(c, t, d);
+        world.CraftChanged(c);
     }
 
     // ---- The job (server) --------------------------------------------------------------------------------------------------
@@ -803,6 +844,16 @@ public static class ConstructStation
     {
         if (world.StationOpen.Count == 0)
             return;
+        if (StationProbe.On)
+        {
+            StationProbe.Timed(world);
+            return;
+        }
+        StepOpen(world);
+    }
+
+    internal static void StepOpen(ConstructWorld world)
+    {
         for (var bi = world.StationOpen.Count - 1; bi >= 0; bi--)
         {
             var any = false;
@@ -1011,7 +1062,7 @@ public static class ConstructStation
             j.Started = Stopwatch.GetTimestamp();
             if (j.State == StationState.Done)
                 continue; // (what it built is an ordinary body; a repeat is asked for again)
-            var resume = j.PartOf.Length == bp.Steps.Count && j.State == StationState.Building;
+            var resume = j.PartOf.Length == bp.Steps.Count && j.State is StationState.Building or StationState.Costing; // (Costing with a fitted set: saved again before the costing after a load was done)
             if (!resume)
             {
                 j.PartOf = [];
@@ -1264,6 +1315,44 @@ public sealed class StationPreview
 
 public static class StationProbe
 {
+    public static bool On; // the window tool: the station step is timed and its allocations counted
+    public static double TotalMs, WorstMs;
+    public static long Bytes, WorstBytes;
+    public static int Steps;
+
+    internal static void Timed(ConstructWorld world)
+    {
+        var b0 = GC.GetAllocatedBytesForCurrentThread();
+        var t0 = Stopwatch.GetTimestamp();
+        ConstructStation.StepOpen(world);
+        var ms = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
+        var bytes = GC.GetAllocatedBytesForCurrentThread() - b0;
+        TotalMs += ms;
+        WorstMs = Math.Max(WorstMs, ms);
+        Bytes += bytes;
+        WorstBytes = Math.Max(WorstBytes, bytes);
+        Steps++;
+    }
+
+    /// <summary>The measure so far, then it starts again.</summary>
+    public static string Cost()
+    {
+        var s = $"station step: {Steps} ticks, {TotalMs:0.00} ms in all, worst {WorstMs:0.000} ms; {Bytes} bytes in all, worst tick {WorstBytes} bytes";
+        (TotalMs, WorstMs, Bytes, WorstBytes, Steps) = (0, 0, 0, 0, 0);
+        return s;
+    }
+
+    /// <summary>Claims on stock held for a station's orders (every store).</summary>
+    public static int Reserved(ConstructWorld world, Construct c, int t)
+    {
+        var n = 0;
+        var owner = c.Parts[t].Store;
+        for (var i = 0; i < world.Reserve.Count; i++)
+            if (world.Reserve.Items[i].Owner == owner)
+                n += world.Reserve.Items[i].Count;
+        return n;
+    }
+
     /// <summary>The window tool (host): every part the job still lacks goes straight into the hold, as if it had been delivered. What happened, in words.</summary>
     public static string Stock(ConstructWorld world, Construct c, int t)
     {
@@ -1294,6 +1383,6 @@ public static class StationProbe
     {
         var j = c.Parts[t].Station;
         var b = j == null ? null : world.Get(j.Body);
-        return j == null ? "no job" : $"{j.State} \"{j.Name}\" parts {j.Fitted}/{j.Steps} links {j.LinksDone}/{j.Links} repeat {j.Repeat} body {j.Body} ({(b == null ? "none" : $"{b.PartCount} parts, {b.RouteCount} links, {(b.Frozen ? "frozen" : "free")}")}) hold {world.StoreOf(c, t)?.ItemCount ?? -1} orders {c.Parts[t].Craft?.Count ?? 0} note \"{j.Note}\"";
+        return j == null ? "no job" : $"{j.State} \"{j.Name}\" parts {j.Fitted}/{j.Steps} links {j.LinksDone}/{j.Links} repeat {j.Repeat} body {j.Body} ({(b == null ? "none" : $"{b.PartCount} parts, {b.RouteCount} links, {(b.Frozen ? "frozen" : "free")}{(b.Anchored ? " anchored" : "")}{(b.Asleep ? " asleep" : " awake")}, wheels {b.WheelCount}, at {b.Pos.X:0.0},{b.Pos.Y:0.00},{b.Pos.Z:0.0}")}) reserved {Reserved(world, c, t)} hold {world.StoreOf(c, t)?.ItemCount ?? -1} orders {c.Parts[t].Craft?.Count ?? 0} note \"{j.Note}\"";
     }
 }
