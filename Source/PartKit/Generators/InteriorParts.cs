@@ -410,7 +410,7 @@ public sealed partial class InteriorParts : IPartGenerator
 
     private static List<Part> FurnitureParts() =>
     [
-        Locker(), GunRack(), MedicineCabinet(), ToolRack(), MessTable(), ChartTable(), GalleyStove(),
+        Walled(Locker(), 0.5), Walled(GunRack(), 0.4), MedicineCabinet(), ToolRack(), MessTable(), ChartTable(), GalleyStove(),
         Board("Power Board", "The plant room's breaker board: its dial reads the circuit's charge, 0 to 1.", 1.2, 1.8, 0.3, false),
         Board("Engineer's Panel", "The bridge's power board: its dial reads the circuit's charge, 0 to 1.", 1.0, 1.2, 0.6, true),
         MedicalStation(), RepairStation(),
