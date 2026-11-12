@@ -450,8 +450,8 @@ public static unsafe partial class Program
             case "drag": // the left button held from "X1,Y1" to "X2,Y2" over 12 frames, through ImGui's event queue (a slider dragged by the mouse)
             {
                 var ci = System.Globalization.CultureInfo.InvariantCulture;
-                if (arg.Split(' ', StringSplitOptions.RemoveEmptyEntries) is not [var from, var to] || from.Split(',') is not [var ax, var ay] || to.Split(',') is not [var bx, var by]
-                    || !float.TryParse(ax, ci, out var x1) || !float.TryParse(ay, ci, out var y1) || !float.TryParse(bx, ci, out var x2) || !float.TryParse(by, ci, out var y2))
+                if (arg.Split(' ', StringSplitOptions.RemoveEmptyEntries) is not [var from, var to] || from.Split(',') is not [var ax, var ay] || to.Split(',') is not [var dbx, var dby]
+                    || !float.TryParse(ax, ci, out var x1) || !float.TryParse(ay, ci, out var y1) || !float.TryParse(dbx, ci, out var x2) || !float.TryParse(dby, ci, out var y2))
                 {
                     WsFail($"drag X1,Y1 X2,Y2: \"{arg}\"");
                     return;

@@ -988,6 +988,36 @@ Terminal's own code for everything else; the part from the part kit's `panel_des
 - **Wire (protocol 260).** `CActKind.CraftNamed`, `PanelDesign`; `CBodyKind.Designs`; an order in `CBodyKind.Craft` may be named (shape
   255: material, count, the name, then id and state as before). A save's crafting order the same.
 
+- **Bent panels** (phase 2, feat/panel-designer-2; protocol 263). An eighth preset, `bend`: a flat sheet folded along a line across it.
+  Its key has three more words after the thickness: `Formed Panel (bend 200x100 c0 r0 t20 a45 p100 b10 steel)`: `a` the fold's angle in
+  degrees (-90 to 90, up positive), `p` where the fold's middle lies along the sheet (cm from its back edge, within the length), `b`
+  its inside radius (2 to 100 cm; the fold no longer than the sheet). Its rake is 0 and its crown still works. Length is the sheet's own
+  (what was cut), so the folded panel's bounds are shorter. Rows follow the fold (`HullLoft.PanelRowS`: back edge, fold start, a row
+  every 22.5 degrees, fold end, nose: at most 7 facets along); its collision strips follow the rows; a leg folded past 45 degrees has its
+  `n` sockets on its end's top (or bottom) face. Every other kind's key, floats and hash are as they were (hood `d6421922`). The designer
+  shows Fold angle, Fold at and Fold radius in place of the rake; `--form-panel bend [angle=] [at=] [radius=]`. An older build refuses
+  the name ("not a panel"), hence the protocol.
+- **The plinth** shows the world's newest design: `storage.pieces.plinth` `[x, y, z, size]` in the part file (the generator's), the
+  design's part found by key once a change of the list (`PanelDesigns.Newest`), drawn scaled into the cube on the plinth's top within
+  25 m (`RouteRender.DrawPlinths`), look-only. A design saved again becomes the newest.
+- **Too big for the tray**: a panel the tray can't hold (a fold taller than 0.6 m) stays claimed at its rack: "too big for the tray:
+  collect it at the Long Piece Rack" (it said "the tray is full").
+- **A blocked blueprint step names the part**: "step 3: Formed Panel (...) on Formed Panel (...) "n0": the Deck Plate (step 0) is in the
+  way" (`ConstructBuild.BlockerOf`). Phase 1's "two panels of different crown can't be welded edge to edge" was wrong: six pairings of
+  different crowns, sizes and kinds weld by `n`/`s` and `e`/`w` sockets; the big panel had hung into the frame under the first.
+- **Seen (2026-11-12, phase 2).** Sliders dragged by the mouse in the window (the tool's `drag X1,Y1 X2,Y2`: button down, twelve moves,
+  up, through ImGui's queue): Length 200 to 60 cm with 13 panels previewed on the way, Fold angle 45 to 90. Host and a joined client:
+  the client folded a panel to 90 degrees by mouse, saved it as "Flange" and ordered it; the host held it racked with hash `7f0cfbd5`,
+  the client's preview the same hash; the design on both and through the host's save and load.
+- **Loft: the plan** (not built). A lofted panel is two edge profiles (the back edge and the nose edge, each up to 8 heights across the
+  width, cm) and the sheet between them, ruled or eased. It will not fit a readable key under 128 characters with every range, so:
+  `Formed Panel (#HASH)` with the design (kind, sizes, the two profiles, material) stored once per world beside the named designs
+  (`ConstructWorld.Designs` gains a body; section `DSGN` a second list) and sent before any body that names it; `HullLoft.Parse` asks
+  the world's store for the hash, so every peer makes the same floats. The designer gets a profile editor: eight drag handles an edge
+  in a side view, mirrored by default. Geometry is `PanelPoint` with the height read from the two profiles (Catmull-Rom across, lerp or
+  smoothstep along); rows and strips as today. Open: a blueprint file must carry the design's body (a `"designs"` block), and a hash
+  with no body on a peer is a refused part, not a guess.
+
 - **Seen and measured** (2026-11-12, `--window-shot` on the showcase; the 2-core box at a load average of 11 to 24, so times are upper
   bounds). *Host alone:* every preset in the preview (its hash the same as `--form-panel` gives: hood `d6421922`); a design saved, ordered,
   formed, racked and brought to the tray by the return conveyor; twenty opens and Esc closes, the mouse captured after each. *Host and a
@@ -1003,8 +1033,7 @@ Terminal's own code for everything else; the part from the part kit's `panel_des
   welded edge to edge were refused ("something is in the way": their hidden boxes overlap at the seam).
 
 Proposed (the user's to confirm): the designer being a Crafting Terminal; panels collected at the former's rack unless a conveyor returns
-them; any player may order, replace or delete a shared design; 64 designs a world, 128 a library. Not built: the plinth's model of the
-last design; a drag action in the window tool (sliders were set through `design length N`). Next: bend along a path, loft between
+them; any player may order, replace or delete a shared design; 64 designs a world, 128 a library. Next: loft between
 outlines (a `Formed Panel (#HASH)` key with the design stored per world), player-added sockets, cut-outs with the Laser Cutter.
 
 ## Reservations
