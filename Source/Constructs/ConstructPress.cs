@@ -423,8 +423,9 @@ public static class ConstructPress
     /// <summary>A sized die's stroke time in ticks at speed 1 (the press's speed is its work a step).</summary>
     public static int SizedTicks(PressDie die, in ExtrusionKey blank) => (int)MathF.Ceiling(Pressed.Seconds(die, blank, 0) * World.TickRate - 0.001f);
 
-    /// <summary>The name of what a sized die makes of a blank: the preset's part, else the pattern's label (a card or a look line; allocates nothing).</summary>
-    private static string SizedName(PressPattern pattern, ConstructPartDef? preset) => preset?.Name ?? pattern.Label;
+    /// <summary>What a card says a sized die makes of a blank: "Makes" the preset's part, else "Sized" and the pattern's label (allocates nothing).</summary>
+    private static void SizedMakes(PanelCard card, int line, PressPattern pattern, ConstructPartDef? preset) =>
+        card.Add(line, preset != null ? "Makes " : "Sized ").Add(line, preset?.Name ?? pattern.Label);
 
     /// <summary>A step of a press with a sized die. True when parts came or went.</summary>
     private static bool WorkSized(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, PressDie die, bool held)
@@ -1017,7 +1018,7 @@ public static class ConstructPress
             if (why == BayRefuse.None)
             {
                 card.State = PanelState.Ok;
-                card.Add(4, "Makes ").Add(4, SizedName(pattern!, preset));
+                SizedMakes(card, 4, pattern!, preset);
             }
             else
             {
@@ -1073,7 +1074,7 @@ public static class ConstructPress
         if (SizedDieOf(PressTable.Current, c, part) is { } sized)
         {
             if (ReadyBay(sized, c, part, out var pattern, out var preset) >= 0)
-                card.Add(2, "Makes ").Add(2, SizedName(pattern!, preset));
+                SizedMakes(card, 2, pattern!, preset);
             else
                 card.Add(2, "One part a piece");
         }
