@@ -21,10 +21,10 @@ public sealed class PressParts : IPartGenerator
     private const string Blueprint = "Constructs/Blueprints/PressLine.json";
     private const string Format = "call-of-slop-pressing/2";
     private const string About = "The stamping table (docs/sandbox/CONSTRUCTS.md, 'The Press'). Written by the part kit (--gen-parts press_parts): fix it, not this file. "
-        + "'rows' are a press's: with a die of family 'die', the first row whose bays hold what it asks runs. Each bay gives its 'sections' (Extrusion presets, round, pipe), 'materials', "
-        + "'minAcross' and 'maxAcross' (m, the piece's smaller side) and what a stroke takes: 'use' (m) or 'useAcross' (times its size across). 'lathe' rows are a Die Lathe's, chosen as a setting. "
+        + "'lathe' rows are a Die Lathe's, chosen as a setting: each bay gives its 'sections' (Extrusion presets, round, pipe), 'materials', "
+        + "'minAcross' and 'maxAcross' (m, the piece's smaller side) and what a cut takes: 'use' (m). "
         + "'dies' (the Press rework, Pressed.cs) say what a die makes of a whole blank: its blanks, materials, bounds in cm, features in the blank's unit frame and patterns (a like part and a preset blank); "
-        + "'presets' name the catalogue part that is a die's product of one standard blank. A die listed in 'dies' presses bay 1's whole piece into one part (the preset's catalogue part when the blank is one); the other dies stroke 'rows'.";
+        + "'presets' name the catalogue part that is a die's product of one standard blank. A die presses a blank bay's whole piece into one part (the preset's catalogue part when the blank is one), its pattern the press's Pattern setting or the blank's own; a pattern's 'bay2' is the kit it takes from bay 2, 'scale' the numbers that grow with the blank.";
     private const string Section = "Presses", Dies = "Dies";
     private const string BodyC = "#4d5a66", Trim = "#39424b", Dark = "#23272c", Gold = "#c8a13a", Bed = "#2f363d";
     private const string Blue = "#2f5f8f", LatheBlue = "#2a6878"; // the Press family's body colours (look.md, "Machine look")
@@ -41,7 +41,7 @@ public sealed class PressParts : IPartGenerator
     // Dies: family, classes it is made in, what it is cut from, die tier (1: a starter), colour
     private static readonly (string Family, Cls[] Classes, string Block, int Tier, string Colour)[] Families =
     [
-        ("Button", [Small], "metal", 1, "#c06040"),
+        ("Button", [Small, Medium], "metal", 1, "#c06040"),
         ("Bracket", [Small, Medium, Large, Capital], "metal", 1, "#7f8a94"),
         ("Gear", [Small], "metal", 1, "#a8763a"),
         ("Board", [Small], "steel", 2, "#3f9b5c"),
@@ -49,10 +49,11 @@ public sealed class PressParts : IPartGenerator
         ("Housing", [Small, Medium, Large, Capital], "steel", 2, "#55708a"),
         ("Cylinder", [Small, Medium, Large, Capital], "steel", 3, "#8a5570"),
         ("Plate", [Small, Medium, Large, Capital], "metal", 1, "#8c96a0"),
+        ("Drive", [Small, Medium, Large, Capital], "steel", 2, "#4f7a5a"),
     ];
 
     // The dies whose stroke presses a whole blank to one part (Pressing.json "dies", the Press rework): they have no old rows.
-    private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate"];
+    private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate", "Button", "Gear", "Board", "Piston", "Cylinder", "Drive"];
 
     private static double MaxAcross(Cls c) => c.Key switch { "small" => 0.45, "medium" => 1.8, "large" => 7.2, _ => 28.8 }; // what a class's bays take: 1.8 cells
 
@@ -147,7 +148,7 @@ public sealed class PressParts : IPartGenerator
     }
 
     /// <summary>The bays' cards, over their mouths on the back wall; the machine's own on the front of the crown.</summary>
-    private static List<object?> Panels(Part p, Frame f, double baysWidth)
+    private static List<object?> Panels(Part p, Frame f, double baysWidth, bool pattern = false)
     {
         var c = p.Cls;
         var k = c.Cell;
@@ -156,7 +157,10 @@ public sealed class PressParts : IPartGenerator
         var o = new List<object?>();
         for (var i = 0; i < f.Centres.Count; i++)
             o.Add(Kw(("source", "press.bay"), ("slot", i), ("at", Py.L(f.Centres[i], R3((f.Wall + f.Crown) / 2), Py.Round(f.Z0 - proud, 4))), ("size", Py.L(R3(baysWidth), R3(h))), ("face", "-z"), ("up", "+y"), ("rows", 5)));
-        o.Add(Kw(("source", "press.die"), ("at", Py.L(R3((f.X0 + f.X1) / 2), R3((f.Crown + f.Y1) / 2), Py.Round(f.Z1 + proud, 4))), ("size", Py.L(R3(k * 5), R3(k * 1.5))), ("face", "+z"), ("up", "+y"), ("rows", 4)));
+        var die = Kw(("source", "press.die"), ("at", Py.L(R3((f.X0 + f.X1) / 2), R3((f.Crown + f.Y1) / 2), Py.Round(f.Z1 + proud, 4))), ("size", Py.L(R3(k * 5), R3(k * 1.5))), ("face", "+z"), ("up", "+y"), ("rows", 4));
+        if (pattern)
+            die["touch"] = Py.L(Kw(("action", "press.pattern"), ("at", Py.L(0.72, 0.02, 0.98, 0.24)), ("label", "Pattern"))); // (the next of its die's patterns, then Auto)
+        o.Add(die);
         return o;
     }
 
@@ -201,12 +205,14 @@ public sealed class PressParts : IPartGenerator
         var width = Min(k * 3.2, (f.X1 - f.X0 - k) / bays - k * 0.1);
         var tz0 = R3(zm + k * 1.3);
         var tz1 = R3(f.Z1 - k * 0.55);
-        p.Set(("power", power), ("storage", Kw(
+        p.Set(("power", power), ("config", Py.L(Kw(("key", "recipe"), ("label", "Pattern"), ("group", "Work"),
+                ("tooltip", "What its die makes of a blank: Auto lets the blank choose (a standard blank gives its standard part), or one of the die's patterns by its place. Its die screen's Pattern button steps through them.")))),
+            ("storage", Kw(
                 ("slots", Tray(f.X0 + k * 0.55, f.X1 - k * 0.55, R3(f.Base + k * 0.01), tz0, tz1)),
                 ("press", Kw(("bays", bayList),
                     ("die", Kw(("socket", "dieslot"), ("min", Py.L(R3(mid - k * 2), R3(f.Base), R3(zm))), ("max", Py.L(R3(mid + k * 2), R3(f.Wall), R3(f.Z1 + k * 2))))),
                     ("maxAcross", MaxAcross(c)), ("speed", speed), ("outAt", Py.L(R3(mid), R3(f.Y0), R3(f.Z1 + k * 0.2))), ("outDir", "+z"))))),
-            ("panels", Panels(p, f, width)));
+            ("panels", Panels(p, f, width, pattern: true)));
         p.Add(StatusLamp(p, f)); // (its line state over its own screen: ProductionLines)
         return p;
     }
@@ -305,20 +311,6 @@ public sealed class PressParts : IPartGenerator
         return b;
     }
 
-    private static List<object?> Rows()
-    {
-        var r = new List<object?>();
-        void Add(string d, string output, object seconds, params PyDict[] bays) =>
-            r.Add(Kw(("die", d), ("output", output), ("seconds", seconds), ("bays", bays.Cast<object?>().ToList())));
-        Add("Button", "Button", 1.5, BayRow("Strip", ["plate"], ["laminate"], 0.1, 0.45, use: 0.1), BayRow("Rod", ["round"], ["copper"], 0.1, 0.25, use: 0.05));
-        // (Bracket and Housing press a whole blank now: SizedDies and Presets.)
-        Add("Gear", "Gear Set", 3, BayRow("Rod", ["round"], ["steel"], 0.1, 0.25, use: 0.15));
-        Add("Board", "Circuit Board", 3, BayRow("Sheet", ["plate"], ["laminate"], 0.2, 0.45, use: 0.2), BayRow("Wire", ["round"], ["copper"], 0.1, 0.15, use: 0.05));
-        Add("Piston", "Piston Set", 5, BayRow("Rod", ["round"], ["steel"], 0.1, 0.25, use: 0.2), BayRow("Bar", ["solid"], ["bronze"], 0.1, 0.25, use: 0.1));
-        foreach (var (c, lo, hi) in new (Cls, object, object)[] { (Small, 0.2, 0.45), (Medium, 0.5, 1.8), (Large, 2, 7.2), (Capital, 8, 28.8) })
-            Add("Cylinder", c != Small ? NameOf(c, "Cylinder") : "Small Cylinder", 6, BayRow("Tube", ["pipe"], ["steel"], lo, hi, across: 1), BayRow("Plate", ["plate"], ["steel"], lo, hi, across: 0.5));
-        return r;
-    }
 
     // ---- Sized dies (the Press rework, phase 1: Pressed.cs). A feature's box is in the blank's unit frame (x its width, y its height, z its
     // length); "proud" axes move a face outward off a shared plane, "clamp" axes hold its size to minCm..maxCm. Structure only: no bay 2.
@@ -340,20 +332,48 @@ public sealed class PressParts : IPartGenerator
         return f;
     }
 
-    private static PyDict Pattern(string id, string like, string label, string preset, string[]? blanks = null, List<object?>? features = null)
+    private static PyDict Pattern(string id, string like, string label, string preset, string[]? blanks = null, List<object?>? features = null, PyDict? bay2 = null, List<object?>? scale = null)
     {
         var p = Kw(("id", id), ("like", like), ("label", label), ("preset", preset));
         if (blanks != null)
             p["blanks"] = blanks.Cast<object?>().ToList();
+        if (bay2 != null)
+            p["bay2"] = bay2;
+        if (scale != null)
+            p["scale"] = scale;
         if (features != null)
             p["features"] = features;
         return p;
     }
 
-    private static PyDict SizedDie(string die, string[] blanks, string[] materials, int[] across, int[] length, double[] aspect, double secBase, double perKg, List<object?> features, List<object?> patterns) =>
+    /// <summary>A bay 2 kit by formula: <c>clamp(ceil(base + rate x measure), 1, max)</c> of a part or a bulk material.</summary>
+    private static PyDict Kit(string what, bool part, double @base, double rate, string by, int? max = null)
+    {
+        var k = Kw((part ? "part" : "material", what), ("base", @base), ("rate", rate), ("by", by));
+        if (max != null)
+            k["max"] = max;
+        return k;
+    }
+
+    /// <summary>A number scaled by the blank: <c>like x (measure / preset's)^power x (S / preset's S)</c>; <paramref name="ref"/> stands in for a like value of 0.</summary>
+    private static PyDict Scale(string field, string by, double power, bool strength, double? @ref = null)
+    {
+        var k = Kw(("field", field), ("by", by), ("power", power), ("strength", strength));
+        if (@ref != null)
+            k["ref"] = @ref;
+        return k;
+    }
+
+    /// <summary>A die's sockets at the middle of each face of the blank: what a drive part links by.</summary>
+    private static List<object?> FaceSockets() => Py.L(
+        Kw(("name", "+x"), ("at", Py.L(1, 0.5, 0.5)), ("dir", "+x")), Kw(("name", "-x"), ("at", Py.L(0, 0.5, 0.5)), ("dir", "-x")),
+        Kw(("name", "+y"), ("at", Py.L(0.5, 1, 0.5)), ("dir", "+y")), Kw(("name", "-y"), ("at", Py.L(0.5, 0, 0.5)), ("dir", "-y")),
+        Kw(("name", "+z"), ("at", Py.L(0.5, 0.5, 1)), ("dir", "+z")), Kw(("name", "-z"), ("at", Py.L(0.5, 0.5, 0)), ("dir", "-z")));
+
+    private static PyDict SizedDie(string die, string[] blanks, string[] materials, int[] across, int[] length, double[] aspect, double secBase, double perKg, List<object?> features, List<object?> patterns, List<object?>? sockets = null) =>
         Kw(("die", die), ("blanks", blanks.Cast<object?>().ToList()), ("materials", materials.Cast<object?>().ToList()), ("across", Py.L(across[0], across[1])),
             ("length", Py.L(length[0], length[1])), ("aspect", Py.L(aspect[0], aspect[1])), ("seconds", Kw(("base", secBase), ("perKg", perKg))),
-            ("features", features), ("sockets", Py.L()), ("patterns", patterns));
+            ("features", features), ("sockets", sockets ?? Py.L()), ("patterns", patterns));
 
     private static List<object?> SizedDies()
     {
@@ -415,10 +435,82 @@ public sealed class PressParts : IPartGenerator
             Pattern("tread", "Tread Plate 1 m", "tread plate", "plate 100x10x100 steel", features: treads),
             Pattern("armour", "Armour Plate 1 m", "armour plate", "plate 100x20x100 steel", features: rivets),
             Pattern("grate", "Mesh Grate 1 m", "ribbed plate", "plate 100x10x100 steel", features: ribs));
-        return Py.L(
+        var dies = Py.L(
             SizedDie("Bracket", ["l-angle", "plate", "solid"], metals, [10, 2880], [10, 800], [0.5, 8], 1, 0.02, bracket, bracketPatterns),
             SizedDie("Housing", ["hollow", "solid"], metals, [15, 2880], [15, 3200], [0.5, 8], 2, 0.01, housing, housingPatterns),
-            SizedDie("Plate", ["plate"], ["metal", "steel", "bronze", "copper", "laminate", "wood", "planks"], [10, 2880], [25, 6400], [1, 64], 1, 0.01, plate, platePatterns));
+            SizedDie("Plate", ["plate"], ["metal", "steel", "bronze", "copper", "laminate", "wood", "planks"], [10, 2880], [25, 6400], [1, 64], 1, 0.01, plate, platePatterns),
+);
+        dies.AddRange(WorkingDies());
+        return dies;
+    }
+
+    // ---- The working dies (the Press rework, phase 3): their parts work as their like part does, a kit from bay 2, numbers by the blank.
+    // The old rows' parts are their presets: a Button from a 10 cm laminate strip, a Gear Set from a 15 cm steel rod, and so on.
+
+    private static readonly (string Id, string Like, string Label, string Blank)[] DrivePatterns =
+    [
+        ("gearbox", "5-Speed Gearbox", "gearbox", "solid 50x50x75 steel"),
+        ("cvt", "CVT", "CVT", "solid 50x50x70 steel"),
+        ("auto", "Automatic Gearbox", "auto gearbox", "solid 50x50x80 steel"),
+        ("reversing", "Reversing Gearbox", "reversing gearbox", "solid 50x50x65 steel"),
+        ("diff", "Differential", "differential", "hollow 50x50x60 steel"),
+        ("lsd", "Limited-Slip Differential", "limited-slip diff", "hollow 50x50x55 steel"),
+        ("locking", "Locking Differential", "locking diff", "hollow 50x50x50 steel"),
+    ];
+
+    private static readonly (string Name, Cls C, int Cm, int Wall)[] Cylinders = [("Small Cylinder", Small, 30, 5), ("Medium Cylinder", Medium, 100, 10), ("Large Cylinder", Large, 400, 40), ("Capital Cylinder", Capital, 1600, 160)];
+
+    private static IEnumerable<object?> WorkingDies()
+    {
+        // Button: a raised cap on the top face (on a bar's end for a round), a bezel lip under it; copper for its contacts, by length.
+        var button = Py.L(
+            Feature("cap", [0.2, 1.0, 0.2, 0.8, 1.3, 0.8], "accent", proud: "y", clamp: "y", min: 0.5, max: 5, blanks: ["plate", "solid"]),
+            Feature("lip", [0.12, 0.96, 0.12, 0.88, 1.04, 0.88], "dark", proud: "y", clamp: "y", min: 0.3, max: 2, blanks: ["plate", "solid"]),
+            Feature("cap", [0.2, 0.2, 1.0, 0.8, 0.8, 1.15], "accent", proud: "z", clamp: "z", min: 0.5, max: 5, blanks: ["round"]));
+        var copper = Kit("copper", false, 1, 2, "length", 99);
+        yield return SizedDie("Button", ["plate", "solid", "round"], ["laminate", "metal", "steel", "wood"], [10, 180], [10, 800], [0.25, 16], 1, 0.02, button, Py.L(
+            Pattern("button", "Button", "button", "plate 10x10x10 laminate", bay2: copper),
+            Pattern("switch", "Switch", "switch", "plate 10x10x15 laminate", bay2: copper)));
+        // Gear: a toothed rim round the middle of the rod and a hub at each end.
+        var gear = Py.L(
+            Feature("teeth", [-0.08, -0.08, 0.25, 1.08, 1.08, 0.75], "bare", proud: "xy"),
+            Feature("hub", [0.35, 0.35, -0.06, 0.65, 0.65, 0.0], "dark", proud: "z", clamp: "z", min: 0.5, max: 4),
+            Feature("hub", [0.35, 0.35, 1.0, 0.65, 0.65, 1.06], "dark", proud: "z", clamp: "z", min: 0.5, max: 4));
+        yield return SizedDie("Gear", ["round", "solid"], ["steel", "bronze"], [10, 45], [5, 50], [0.2, 4], 3, 0.05, gear, Py.L(
+            Pattern("set", "Gear Set", "gear set", "round 15x15x15 steel")));
+        // Board: two rows of pads on its top face and an edge connector; copper for its tracks, by area.
+        var board = new List<object?>();
+        foreach (var x in new[] { 0.2, 0.4, 0.6, 0.8 })
+            foreach (var z in new[] { 0.3, 0.6 })
+                board.Add(Feature("pad", [x - 0.06, 1.0, z - 0.08, x + 0.06, 1.15, z + 0.08], "accent", proud: "y", clamp: "y", min: 0.3, max: 2));
+        board.Add(Feature("edge", [0.1, 0.2, 0.92, 0.9, 0.8, 1.04], "bare", proud: "z", clamp: "z", min: 0.3, max: 3));
+        yield return SizedDie("Board", ["plate"], ["laminate"], [20, 45], [20, 100], [0.5, 4], 3, 0.05, board, Py.L(
+            Pattern("board", "Circuit Board", "circuit board", "plate 20x10x20 laminate", bay2: Kit("copper", false, 1, 10, "area", 99))));
+        // Piston: ring grooves near its crown (proud rings) and a wrist pin boss across it; bronze for its rings, by volume.
+        var piston = Py.L(
+            Feature("ring", [-0.04, -0.04, 0.70, 1.04, 1.04, 0.74], "dark", proud: "xy"),
+            Feature("ring", [-0.04, -0.04, 0.80, 1.04, 1.04, 0.84], "dark", proud: "xy"),
+            Feature("pin", [-0.06, 0.4, 0.3, 1.06, 0.6, 0.45], "bare", proud: "x"));
+        yield return SizedDie("Piston", ["round"], ["steel"], [10, 45], [10, 50], [0.5, 3], 5, 0.05, piston, Py.L(
+            Pattern("set", "Piston Set", "piston set", "round 10x10x20 steel", bay2: Kit("bronze", false, 1, 20, "volume", 99))));
+        // Cylinder: an end cap on each end of the tube and two ports; rubber for its seals, by size across.
+        var cylinder = Py.L(
+            Feature("cap", [-0.05, -0.05, 0.0, 1.05, 1.05, 0.06], "dark", proud: "xyz"),
+            Feature("cap", [-0.05, -0.05, 0.94, 1.05, 1.05, 1.0], "dark", proud: "xyz"),
+            Feature("port", [0.4, 1.0, 0.12, 0.6, 1.12, 0.2], "bare", proud: "y"),
+            Feature("port", [0.4, 1.0, 0.8, 0.6, 1.12, 0.88], "bare", proud: "y"));
+        yield return SizedDie("Cylinder", ["pipe"], ["steel"], [20, 2880], [25, 3200], [1, 16], 6, 0.01, cylinder, Py.L(
+            Pattern("cylinder", "Small Cylinder", "cylinder", "pipe5 30x30x30 steel", bay2: Kit("rubber", false, 1, 6, "across", 999))));
+        // Drive: bearing caps on its shaft ends, a split seam along it, a sump under it; Gear Sets by mass; torque grows as d^3 and strength.
+        var drive = Py.L(
+            Feature("cap", [0.325, 0.325, -0.04, 0.675, 0.675, 0.0], "bare", proud: "z", clamp: "z", min: 1, max: 20),
+            Feature("cap", [0.325, 0.325, 1.0, 0.675, 0.675, 1.04], "bare", proud: "z", clamp: "z", min: 1, max: 20),
+            Feature("seam", [-0.01, 0.48, 0.05, 1.01, 0.52, 0.95], "dark", proud: "x", clamp: "y", min: 0.5, max: 4),
+            Feature("sump", [0.2, -0.1, 0.2, 0.8, 0.0, 0.8], "dark", proud: "y"));
+        var gears = Kit("Gear Set", true, 1, 0.02, "mass", 20);
+        var torque = Py.L(Scale("maxTorque", "across", 3, true, 900));
+        yield return SizedDie("Drive", ["hollow", "solid"], ["steel", "metal", "bronze"], [20, 720], [20, 1600], [0.5, 8], 3, 0.02, drive,
+            DrivePatterns.Select(d => (object?)Pattern(d.Id, d.Like, d.Label, d.Blank, bay2: gears, scale: torque)).ToList(), FaceSockets());
     }
 
     /// <summary>
@@ -446,6 +538,15 @@ public sealed class PressParts : IPartGenerator
             foreach (var tier in MaterialTiers)
                 Add($"{tier.Prefix}Housing {Py.G(Py.D(sideO))} m", "housing", "housing", $"hollow {across}x{across}x{cm} {tier.Material}");
         }
+        Add("Button", "button", "button", "plate 10x10x10 laminate");
+        Add("Switch", "button", "switch", "plate 10x10x15 laminate");
+        Add("Gear Set", "gear", "set", "round 15x15x15 steel");
+        Add("Circuit Board", "board", "board", "plate 20x10x20 laminate");
+        Add("Piston Set", "piston", "set", "round 10x10x20 steel");
+        foreach (var (name, _, cm, wall) in Cylinders)
+            Add(name, "cylinder", "cylinder", $"pipe{wall} {cm}x{cm}x{cm} steel");
+        foreach (var d in DrivePatterns)
+            Add(d.Like, "drive", d.Id, d.Blank);
         Add("Steel Plate", "plate", "steel", "plate 50x10x50 steel");
         Add("Sheet Steel 1 m", "plate", "sheet", "plate 100x10x100 steel");
         Add("Armour Plate 1 m", "plate", "armour", "plate 100x20x100 steel");
@@ -496,7 +597,7 @@ public sealed class PressParts : IPartGenerator
             foreach (var t in MaterialTiers)
                 parts.Add(("Housings", Housing(side, c, n, t)));
         WriteParts(o, Out, parts);
-        var table = Kw(("format", Format), ("about", About), ("rows", Rows()), ("lathe", LatheRows()),
+        var table = Kw(("format", Format), ("about", About), ("lathe", LatheRows()),
             ("strength", Kw(("of", "healthPerM3"), ("ref", 5000))), ("dies", SizedDies()), ("presets", Presets()));
         o.File(Table, PyJson.Dumps(table, 1) + "\n");
         o.File(Blueprint, PyJson.Dumps(Line(), 2) + "\n");

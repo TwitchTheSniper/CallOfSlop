@@ -1020,6 +1020,25 @@ public sealed partial class ConstructEdits
             Done.Add($"player {player}: fitted a {die.Name} in the {d.Name} (construct {c.Id})");
             return null;
         }
+        // Bay 2's kit: the part held, or the material carried, that the pattern wants.
+        if (ConstructParts.Get(h.Held) is { } kitPart && !d.IsLathe && ConstructPress.WantsKitPart(world, c, part, kitPart.Id) && ConstructPress.FeedKitPart(world, c, part, kitPart))
+        {
+            h.Held = ConstructParts.None;
+            h.Edit = EditKind.None;
+            Done.Add($"player {player}: put a {kitPart.Name} in the {d.Name}'s bay 2 (construct {c.Id})");
+            return null;
+        }
+        if (!d.IsLathe && Inventory?.Of(player) is { } kitInv && ConstructPress.SizedDieOf(PressTable.Current, c, part) is { } kitDie
+            && ConstructPress.KitWanted(kitDie, c, part, out _, out _) is { Part: null, Material: var km } && km != 0 && kitInv.Materials[km] > 0)
+        {
+            var fed = ConstructPress.FeedKitMaterial(world, c, part, kitInv.Materials[km], km);
+            if (fed > 0)
+            {
+                kitInv.TakeMaterial(km, fed);
+                Done.Add($"player {player}: tipped {fed} {RecyclingTable.Current.NameOf(km)} into the {d.Name}'s bay 2 (construct {c.Id})");
+                return null;
+            }
+        }
         if (ConstructPress.Nearest(c, part, eye) is var take and >= 0)
         {
             var name = c.Parts[take].D.Name;
@@ -1033,7 +1052,28 @@ public sealed partial class ConstructEdits
         for (var k = 0; k < st.SlotCount; k++)
             if (st.Def[k] != ConstructParts.None)
                 return TakeStored(world, player, eye, c.Id, part, k);
-        return d.IsLathe ? $"the {d.Name} is empty: set a block in its bay with the physics gun" : $"the {d.Name} is empty: set pieces in its bays with the physics gun, and fit a die";
+        // Bay 2's kit back: the part kinds, then the material.
+        if (!d.IsLathe && st.KindN > 0 && ConstructParts.Get(st.KindDef![st.KindN - 1]) is { } back)
+        {
+            if (h.Held != ConstructParts.None && !PackTakes(player, back))
+                return "your hands are full (put down what you hold first)";
+            world.AddInputPart(st, back.Id, -1);
+            Give(world, player, back, eye);
+            Done.Add($"player {player}: took a {back.Name} back from the {d.Name}'s bay 2 (construct {c.Id})");
+            return null;
+        }
+        if (!d.IsLathe && st.MixN > 0 && Inventory?.Of(player) is { } inv)
+        {
+            var m = st.MixMat![0];
+            var n = Math.Min(Math.Min(ConstructStorage.TakeLoad, st.MixAmount![0]), SandboxInventory.MaxCount - inv.Materials[m]);
+            if (n <= 0)
+                return "you can't carry any more of that";
+            world.AddInput(st, m, -n);
+            inv.AddMaterial(m, n);
+            Done.Add($"player {player}: took {n} {RecyclingTable.Current.NameOf(m)} back from the {d.Name}'s bay 2 (construct {c.Id})");
+            return null;
+        }
+        return d.IsLathe ? $"the {d.Name} is empty: set a block in its bay with the physics gun" : $"the {d.Name} is empty: set blanks in bay 1 (and 3) with the physics gun, a kit in bay 2 if its pattern wants one, and fit a die";
     }
 
     public string? Drop(ConstructWorld world, byte player, Vector3 feet, float yaw)
