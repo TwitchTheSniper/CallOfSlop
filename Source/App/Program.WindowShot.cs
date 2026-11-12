@@ -86,7 +86,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" || WsGhostKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" or "stock" || WsGhostKnown(action);
 
     private static void WsSay(string s)
     {
@@ -362,6 +362,36 @@ public static unsafe partial class Program
                 }
                 WsLook(g, me.Eye, spot);
                 _wsWait = 3;
+                return;
+            }
+            case "stock": // what a store holds by name (slots, and kinds: a rack's pieces too) as this peer has it, and the loose one-part bodies within 6 m
+            {
+                var (sc, spart) = WsFind(g, arg);
+                if (sc == null)
+                {
+                    WsFail($"no part \"{arg}\"");
+                    return;
+                }
+                var held = new SortedDictionary<string, int>(StringComparer.Ordinal);
+                void Count(ushort id, int n)
+                {
+                    if (id != ConstructParts.None && n > 0)
+                        held[ConstructParts.Def(id).Name] = held.GetValueOrDefault(ConstructParts.Def(id).Name) + n;
+                }
+                if (g.Constructs.StoreOf(sc, spart) is { } sst)
+                {
+                    for (var k = 0; k < sst.SlotCount; k++)
+                        Count(sst.Def[k], sst.Count[k]);
+                    for (var k = 0; k < sst.KindN; k++)
+                        Count(sst.KindDef![k], sst.KindCount![k]);
+                }
+                WsSay($"stock: {sc.DefOf(spart).Name}: {(held.Count == 0 ? "nothing" : string.Join(", ", held.Select(kv => $"{kv.Key} x{kv.Value}")))}");
+                var spotS = WsPartSpot(sc, spart, out _);
+                var loose = new SortedDictionary<string, int>(StringComparer.Ordinal);
+                foreach (var b in g.Constructs.Bodies)
+                    if (b != sc && b.PartCount == 1 && Vector3.Distance(b.WorldCom, spotS) < 6)
+                        loose[b.DefOf(0).Name] = loose.GetValueOrDefault(b.DefOf(0).Name) + 1;
+                WsSay($"stock: loose near it: {(loose.Count == 0 ? "nothing" : string.Join(", ", loose.Select(kv => $"{kv.Key} x{kv.Value}")))}");
                 return;
             }
             case "use":
