@@ -89,7 +89,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action);
 
     private static void WsSay(string s)
     {
@@ -412,6 +412,28 @@ public static unsafe partial class Program
                 var why = ConstructPress.Refusal(PressTable.Current, fc, fpart, fbay - 1, piece.ExKey); // (the store's byte keeps an earlier refusal a while)
                 var taken = ConstructPress.TakeFromConveyor(g.Constructs, World.Query, fc, fpart, fbay - 1, piece, 1, 0);
                 WsSay($"feed: {piece.Name} into bay {fbay}: {(taken ? "taken" : why != BayRefuse.None ? $"refused ({why})" : "not taken (no room out of its mouth, or the bay is full)")}");
+                _wsWait = 2;
+                return;
+            }
+            case "kit": // host: N of a part or a material into a press's bay 2 (its kit hopper), by the hopper's own rule
+            {
+                var bits = arg.Split(' ');
+                var at = Array.FindIndex(bits, b => int.TryParse(b, out _));
+                var (kc, kpart) = at > 0 && at < bits.Length - 1 && g.IsServer ? WsFind(g, string.Join(' ', bits[..at])) : (null, 0);
+                if (kc == null)
+                {
+                    WsFail("kit PRESS[#n] N PART-OR-MATERIAL (on the host or offline)");
+                    return;
+                }
+                var n = int.Parse(bits[at]);
+                var what = string.Join(' ', bits[(at + 1)..]);
+                var took = 0;
+                if (ConstructParts.Find(what) is { } kp && RecyclingTable.Current.IdOf(what) == 0)
+                    for (var k = 0; k < n && ConstructPress.FeedKitPart(g.Constructs, kc, kpart, kp); k++)
+                        took++;
+                else
+                    took = ConstructPress.FeedKitMaterial(g.Constructs, kc, kpart, n, RecyclingTable.Current.IdOf(what));
+                WsSay($"kit: {took} of {n} {what} went into bay 2");
                 _wsWait = 2;
                 return;
             }
@@ -1006,6 +1028,7 @@ public static unsafe partial class Program
     {
         var d = c.DefOf(part);
         WsSay($"panel: {d.Name} (part {part} of construct {c.Id}) at {WsPartSpot(c, part, out _):0.00}, {d.Panels.Length} screen(s); eye {g.Local?.Eye:0.00}, look {g.LookDir(g.LookYaw, g.LookPitch):0.00}; open:recipe picker {Ui.RecipePickerOpen}, configure {Ui.SandboxConfigOpen}, pause {Ui.PauseOpen}, menus {MenusOpen}");
+        WsSay($"  logic: out {c.Parts[part].Out:0.##}, in {c.Parts[part].In:0.##}, state {c.Parts[part].State}");
         if (g.Constructs.StoreOf(c, part) is { } st)
             WsSay($"  store: line state {(ProductionLines.Raw(g.Constructs, c, part, st) is { } s ? ProductionLines.Word(s) : "-")}, busy {st.Busy}, held {st.Held}, blocked {st.Blocked}, {st.Amount} {RecyclingTable.Current.NameOf(st.Material)}, {st.ItemCount} items, mains off {c.MainsOff}");
         if (d.Monitor != MonitorKind.None && (d.Panels.Length == 0 || d.Monitor == MonitorKind.Store))
