@@ -985,7 +985,7 @@ Terminal's own code for everything else; the part from the part kit's `panel_des
   to a joiner before the constructs; the world file keeps it (section `DSGN`, skipped by an older build).
 - **In blueprints.** A formed panel on a construct saves by its key, as a lofted part does; `--bill` lists it under "Formed panels" with
   the former that takes it.
-- **Wire (protocol 258).** `CActKind.CraftNamed`, `PanelDesign`; `CBodyKind.Designs`; an order in `CBodyKind.Craft` may be named (shape
+- **Wire (protocol 260).** `CActKind.CraftNamed`, `PanelDesign`; `CBodyKind.Designs`; an order in `CBodyKind.Craft` may be named (shape
   255: material, count, the name, then id and state as before). A save's crafting order the same.
 
 - **Seen and measured** (2026-11-12, `--window-shot` on the showcase; the 2-core box at a load average of 11 to 24, so times are upper

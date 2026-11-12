@@ -375,11 +375,31 @@
       }
     },
     {
-      "part": "Computer",
+      "part": "Bolt Deck 1x2 m",
       "on": 1,
       "socket": "t7_8",
+      "by": "back00",
+      "spin": 3
+    },
+    {
+      "part": "Computer",
+      "on": 45,
+      "socket": "front01",
       "by": "foot00",
       "spin": 3
+    },
+    {
+      "part": "Seat",
+      "on": 45,
+      "socket": "front14",
+      "by": "bottom",
+      "spin": 3
+    },
+    {
+      "part": "Tea Urn",
+      "on": 0,
+      "socket": "t7_7",
+      "by": "foot00"
     },
     {
       "part": "Locker",
@@ -496,12 +516,12 @@
   ],
   "wires": [
     [
-      51,
-      50
+      54,
+      53
     ],
     [
-      60,
-      59
+      63,
+      62
     ]
   ]
 }

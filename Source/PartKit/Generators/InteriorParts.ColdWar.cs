@@ -97,9 +97,12 @@ public sealed partial class InteriorParts
         var p = Hung("Wall Clock", "A Ministry clock. Right twice a day, which is above target.", color: CastIron, mass: 2, health: 20, armour: 0);
         p.Add(B([-0.17, -0.17, 0.0], [0.17, 0.17, 0.03], CastIron)); // (its box: what is hit)
         p.Add(Cyl([-0.19, -0.19, 0.03], [0.19, 0.19, 0.05], CastIron, "+z", segments: 16));
-        p.Add(Cyl([-0.165, -0.165, 0.05], [0.165, 0.165, 0.056], Enamel, "+z", false, 16));
-        p.Add(B([-0.006, 0.0, 0.056], [0.006, 0.12, 0.062], "#1c1c1c", true, ("paintable", false))); // the minute hand, at twelve
-        p.Add(B([0.0, -0.006, 0.062], [0.08, 0.006, 0.068], "#1c1c1c", true, ("paintable", false))); // the hour hand, at three
+        // (the part kit drops a box thinner than 10 mm, so the face, the marks and the hands are each at least that deep)
+        p.Add(Cyl([-0.165, -0.165, 0.05], [0.165, 0.165, 0.062], Enamel, "+z", false, 16));
+        foreach (var (x, y) in new[] { (0.0, 0.135), (0.135, 0.0), (0.0, -0.135), (-0.135, 0.0) }) // the marks at twelve, three, six and nine
+            p.Add(B([x - (x == 0 ? 0.006 : 0.015), y - (y == 0 ? 0.006 : 0.015), 0.062], [x + (x == 0 ? 0.006 : 0.015), y + (y == 0 ? 0.006 : 0.015), 0.074], "#1c1c1c", true, ("paintable", false)));
+        p.Add(B([-0.006, -0.02, 0.062], [0.006, 0.12, 0.074], "#1c1c1c", true, ("paintable", false))); // the minute hand, at twelve
+        p.Add(B([-0.02, -0.006, 0.074], [0.08, 0.006, 0.086], "#1c1c1c", true, ("paintable", false))); // the hour hand, at three
         return p;
     }
 
@@ -112,7 +115,7 @@ public sealed partial class InteriorParts
         p.Add(B([-0.27, 0.62, -0.22], [0.27, 0.86, 0.2], OldCream, false, ("finish", "worn paint"))); // the machine
         p.Add(B([-0.22, 0.66, 0.2], [0.22, 0.72, 0.3], "#1c1c1c", false, ("paintable", false), ("finish", "plastic"))); // the keys
         p.Add(B([-0.15, 0.86, -0.12], [0.15, h, -0.02], CastIron)); // the platen's cover
-        p.Add(B([-0.12, 0.3, d / 2 + 0.002], [0.12, 0.86, d / 2 + 0.006], "#f2efe6", true, ("paintable", false))); // the paper, down its front
+        p.Add(B([-0.12, 0.3, d / 2 + 0.002], [0.12, 0.86, d / 2 + 0.014], "#f2efe6", true, ("paintable", false))); // the paper, down its front
         p.Add(LitBox([0.2, 0.78, 0.2], [0.23, 0.81, 0.212], "#f0a020"));
         return p.Set(("power", 40));
     }

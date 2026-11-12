@@ -1,0 +1,28 @@
+{
+ "format": "call-of-slop-bounds/1",
+ "about": "The tutorial's play areas (Karl, 2026-11-12: after the crew bus drops you at the mine, the mining part happens inside a set area; go out of it and you are asked to go back, and nothing done out there counts). A step of the induction (Story/Tutorial/Induction.json) or of a Ministry duty (Story/Duties/Quarry.json) names its area with \"area\": colony (the penal colony and its bus stop at the gate) or quarry (the Ministry Quarry's works, the mine face and its bus stop). Each area is a circle round its middle, as wide as the place it is built round plus \"margin\" metres (5 to 200). Leave it and the Ministry's tannoy says one of the area's \"lines\" (then another every \"repeat\" seconds, 5 to 120, while you stay out), the orange marker points the way back, and the step waits: no cue done outside counts. Come back in (\"slack\" metres inside the edge, 0 to 20) and it says \"back\". Text is ASCII. Game/GameTutorialBounds.cs; docs/sandbox/TUTORIAL.md \"Play areas\".",
+ "speaker": "[MINISTRY TANNOY]",
+ "repeat": 15,
+ "slack": 4,
+ "back": "Thank you, inmate. Carry on.",
+ "areas": {
+  "colony": {
+   "name": "the colony",
+   "margin": 30,
+   "lines": [
+    "Inmate! You are outside the colony perimeter. Return at once.",
+    "This is a penal colony, not a nature walk. Back inside the perimeter.",
+    "Your absence has been noted. Your return will be noted more favourably."
+   ]
+  },
+  "quarry": {
+   "name": "the quarry",
+   "margin": 25,
+   "lines": [
+    "Inmate! You have strayed from the work area. Return to the quarry.",
+    "Work done outside the quarry is not work. It is wandering. Back to the face.",
+    "The Ministry does not pay for scenery. Return to the quarry at once."
+   ]
+  }
+ }
+}

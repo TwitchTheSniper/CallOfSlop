@@ -111,7 +111,7 @@
     // ---- A player comes up to them ----
     { "on": "Near", "every": "4m", "if": "not ?me Knows ?them",
       "say": [ "Don't think I know you.", "New around here?", "Can I help you?" ] },
-    { "on": "Near", "every": "4m", "if": "?me Knows ?them", "say": [ "{them}.", "Back again?", "Afternoon." ] },
+    { "on": "Near", "every": "4m", "if": "?me Knows ?them", "say": [ "{them}.", "Back again?", "Hello again." ] },
     { "on": "Near", "every": "4m", "if": "?me Likes ?them >= 20", "say": [ "Good to see you, {them}.", "{them}! How are you keeping?" ] },
     { "on": "Near", "every": "4m", "if": "?here Mourning", "say": [ "Not a good day here, {them}.", "Keep your voice down. People are grieving." ] },
     { "on": "Near", "every": "4m", "if": "?here Lawless", "say": [ "Watch yourself round here.", "I'd not hang about, if I were you." ] },

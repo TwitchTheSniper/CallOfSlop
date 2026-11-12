@@ -976,7 +976,7 @@ public static class ConstructCrafting
                 ref readonly var o = ref q.Items[k];
                 var key = o.What.Key;
                 if (o.What.Name != null)
-                    w.U8(WorkOrders.NamedShape).U8(key.Material).U16(o.What.Count).Str(o.What.Name); // (protocol 258: a formed panel by its name, as a work order's)
+                    w.U8(WorkOrders.NamedShape).U8(key.Material).U16(o.What.Count).Str(o.What.Name); // (protocol 260: a formed panel by its name, as a work order's)
                 else
                     w.U8((byte)key.Shape).U32((uint)key.Mask).U32((uint)(key.Mask >> 32)).U16(key.W).U16(key.H).U16(key.L).U16(key.Wall).U8(key.Material).U16(o.What.Part).U16(o.What.Count);
                 w.U16(o.Id).U16(o.Got).U8((byte)o.State).U16(o.Where).Str(o.Note ?? "");

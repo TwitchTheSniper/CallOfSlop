@@ -448,7 +448,14 @@ public sealed partial class BuildingParts
         Outside(bp, rc[0], "fa7_10");
         Outside(bp, rc[2], "fa7_10");
         // The guardroom.
-        bp.Put("Computer", [1.5, 0.375, 6.0], RY180); // the duty desk
+        // The duty desk where a guard sits doing the admin (the staff's posts: Story/Posts/PenalColony.json,
+        // Game/GameStoryPosts.cs): a bolt deck as its floor (top sockets every 0.25 m, which the pad hasn't) with the computer
+        // facing the back wall and a seat at it, and the tea urn on its trolley in the front half, its tap to the room's front.
+        // A body comes to the seat from behind, off the deck: bodies don't step up onto it.
+        bp.Put("Bolt Deck 1x2 m", [1.75, 0.5, 6.0], RY180);
+        bp.Put("Computer", [1.5, 0.425, 5.75], RY180);
+        bp.Put("Seat", [1.5, 0.425, 5.0], RY180);
+        bp.Put("Tea Urn", [1.875, 0.375, 1.75], R0);
         Look(bp, bp.Hang("Locker", west, "k15_0", "wall"), MinGreen, "worn paint");
         bp.Hang("Gun Rack", rc[3], "ka7_0", "wall");
         bp.Hang("Cast Iron Radiator", rc[0], "ka7_0", "back");

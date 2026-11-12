@@ -72,6 +72,7 @@ public sealed class FactionDef
     public FactionTech[] Teaches = [];
     public FactionJob[] Jobs = []; // what it offers work for (StoryFactionJobs.cs)
     public string Voice = ""; // the tag its lines go out under ("MINISTRY MEMO": "[MINISTRY MEMO] ...")
+    public string Stranger = ""; // what its people call someone whose name they don't know yet ("inmate"; "" the people's own default)
     public FactionSettlement? Settlement; // where its home stands on a world (Game/GameStorySettlements.cs)
     public string Courier = ""; // its line when its courier collects a crate
     public string[] Staff = []; // people from a cast (by name) who are its members whenever they are in the story
@@ -107,7 +108,7 @@ public sealed partial class FactionRules
 
     public FactionDef? Find(string name) => Array.Find(Factions, f => f.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
-    private static readonly string[] FileKeys = ["format", "name", "about", "home", "claims", "members", "staff", "wants", "tiers", "deeds", "teaches", "rivals", "jobs", "voice", "courier", "settlement"];
+    private static readonly string[] FileKeys = ["format", "name", "about", "home", "claims", "members", "staff", "wants", "tiers", "deeds", "teaches", "rivals", "jobs", "voice", "stranger", "courier", "settlement"];
     private static readonly string[] SettlementKeys = ["map", "lat", "lon", "buildings"];
     private static readonly string[] BuildingKeys = ["blueprint", "east", "north", "yaw"];
     private static readonly string[] TechKeys = ["name", "about", "tier", "parts"];
@@ -343,6 +344,9 @@ public sealed partial class FactionRules
 
         def.Jobs = ReadJobs(fr, rules, root, def, where);
         def.Voice = Voice(root, where);
+        def.Stranger = StoryRules.Str(root, "stranger", where);
+        if (def.Stranger.Length > 20 || def.Stranger.Any(c => c != ' ' && (c < 'a' || c > 'z')))
+            throw new StoryException($"{where}: \"stranger\" is a few lower-case words, like \"inmate\"");
         def.Courier = Line(root, "courier", where);
 
         if (root.TryGetProperty("rivals", out var rv))

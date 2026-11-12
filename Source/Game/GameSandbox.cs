@@ -96,8 +96,8 @@ public enum CActKind : byte
     SpawnCancel, // u16 token: the pending spawn is dropped (protocol 255)
     SpawnGhost, // server -> one client: u8 status (0 ready, 1 placed, 2 gone), u16 token, text name; ready: the ghost's shape and boxes (protocol 255)
     Station, // u16 body, u16 station, u8 StationOp, u16 n, text: a Building Station's Start (the blueprint's name, n repeats), Cancel, Release, Repeat or Give (protocol 256; ConstructStation.cs)
-    CraftNamed, // u16 body, u16 terminal, u16 count, text name: an order for a formed panel by its key at a Crafting Terminal or a Panel Designer (protocol 258; ConstructCrafting.Place)
-    PanelDesign, // u8 op (1 keep, 0 drop), text name, text key: a panel design saved to the world's shared list, or dropped from it (protocol 258; PanelDesigns.cs)
+    CraftNamed, // u16 body, u16 terminal, u16 count, text name: an order for a formed panel by its key at a Crafting Terminal or a Panel Designer (protocol 260; ConstructCrafting.Place)
+    PanelDesign, // u8 op (1 keep, 0 drop), text name, text key: a panel design saved to the world's shared list, or dropped from it (protocol 260; PanelDesigns.cs)
 }
 
 /// <summary>
@@ -409,6 +409,7 @@ public sealed partial class Game
         SandboxFlush();
         OpeningTick(now); // (the survival opening's beats: GameSandboxOpening.cs)
         ShellTick(); // (worn robot shells keep their link: GameRobotShell.cs)
+        PlayAreaTick(now); // (the tutorial's play areas: out of one, the step waits; GameTutorialBounds.cs)
         QuarryTick(now); // (the first Ministry duty, the quarry: GameQuarry.cs)
         DepotTick(now); // (the Orbital Depot's steps: GameDepot.cs)
         LockdownTick(now); // (the penal colony's lockdown: GameColonyLockdown.cs)

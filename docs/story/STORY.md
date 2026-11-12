@@ -265,7 +265,8 @@ is) walks about it as a bot of the people's own side (`Source/Game/GameStoryBodi
   road's end (40 to 50 m out, the same spot for the same place) 20 s before it is over, and it walks in; a person setting
   off walks out to the road's end and goes. At most 8 bodies, one player id always kept free for a person joining. They
   aren't saved: a loaded world puts the people back where the story says they are.
-- **Acting a step out**: Work at the place's work spot (everyone working there a little to their own side), Rest at
+- **Acting a step out**: Work at the place's work spot (everyone working there a little to their own side; at the
+  penal colony, at a post: "Posts" below), Rest at
   home (each person's own spot 12 to 26 m from the middle, the parts rack or the first spawn), a step with someone in
   mind next to them (a body, or a player here), and nothing else moves them. They walk, never run.
 - **Meeting**: a step with someone in mind doesn't end until the two bodies are within 4 m (`StoryAgents.Meet`, the
@@ -291,6 +292,20 @@ world's ambient life round the colony. Placeholder stations stand where places w
 them for ever (the ore run, the ration round, the fence patrol...), faction ships land to trade and jump away, and ships
 pass overhead; a ship from another world warps in with a flash, shock rings and a late boom. Every run has a reason, in
 the People tab's "Traffic" tooltip and now and then on the radio. Nothing is traded yet. `--traffic-check` tries it.
+
+### Posts
+
+At the penal colony a Work step is a shift at a post (`Source/Game/GameStoryPosts.cs`, data `Story/Posts/PenalColony.json`,
+Karl 2026-11-12: scripted things, like sat at desks doing admin). The Colony Barracks' guardroom has the duty desk (a
+computer and a seat on a bolt deck) and the tea urn. A post is a
+seat to sit in (the real seat, so every peer sees them sat there), a part to stand at facing it, or the watch outside the
+colony's gate; each names who takes it first, and a post another body holds is passed over (nothing free: the work spot,
+as before). The post is picked at the shift's start and kept to its end; a reaction, a fight, a talk with someone or the
+step's end gets them up first. Bots don't find doorways, so a body going in or out of the barracks walks to the spot
+outside the doorway, then the one inside (and is put in over the pad's step if it stands there for 1.5 s). Nothing is
+said about it: it is only shown. A world from before the furniture has none in its barracks, and its staff keep the work
+spot. Moving the furniture in the blueprint (the part kit's `BuildingParts`) needs no change here; moving the barracks'
+doorway means moving `BarracksDoorOut`/`BarracksDoorIn` too.
 
 ### Sight
 
@@ -406,7 +421,9 @@ drawn at random. A rule:
   (no `?them` for a Hurt by nobody known) isn't said.
 - **say**: up to 24 lines (printable ASCII, 110 characters), never the same twice running. They fill `{me} {them}
   {actor} {target} {place} {here} {owner}`, a first name with `.first` (`{them.first}`), and `{news}` (the event as a
-  sentence).
+  sentence). Nobody knows a name they haven't been told: until the speaker Knows the one they talk to (a player's Hello
+  introduces them), `{them}` and `{them.first}` say what the speaker's faction calls a stranger (its `"stranger"`,
+  the Ministry's "inmate"), or "friend" (`StoryTalk.Address`; topics and lore lines too).
 - **chance** (said this often when it wins: it still wins, so it doesn't fall back to a vaguer rule), **every** (one
   speaker says it at most this often), **once** (once per speaker and listener this session).
 
@@ -1015,6 +1032,8 @@ factions": what each asks, what it pays, and why one can't be taken yet.
 - **Pay**: `"standing"` (1 to 100) and `"wants"`, as a deed's: the faction remembers it (`JobsDone`), rivals cool, a new tier
   is rated, and technologies are taught. A Job event goes on the record (the radio has lines for it), and the IT desk can fax
   a notice named after a job.
+- **Stranger**: the faction's `"stranger"` (a few lower-case words) is what its people call someone they haven't met,
+  in place of `{them}` in a line ("Next question, inmate.").
 - **Voice**: the faction's `"voice"` is the tag its lines go out under to the party's players (`[MINISTRY MEMO] ...`):
   `"taken"` when a job is taken (after its `"ticket"`, if it has one), `"courier"` (the faction's) when a crate is collected,
   `"done"` when it is signed off. A long line goes as several chat lines.

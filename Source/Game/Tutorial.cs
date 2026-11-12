@@ -54,6 +54,7 @@ public sealed class TutorialStep
     public string Id = "", Title = "", Text = "", Warden = "", Hint = "";
     public string DropNote = ""; // what the notice says when the step's drops land ("dropNote"; empty: the speaker sets them down)
     public string Speaker = ""; // who says this step's line and hands its things over ("speaker"; empty: the file's)
+    public PlayArea Area; // the place this step happens in ("area": colony, quarry; Bounds.json): out of it, the step waits
     public QuarrySpotKind Spot; // a place the server marks for this step ("spot": the bus stops, the mine wall; a ride's bus once it is called)
     public TutorialCue Cue;
     public TutorialTarget Target;
@@ -152,6 +153,7 @@ public static class Tutorial
                 throw new FormatException($"steps[{n}] ({s.Id}): no such spot \"{spot}\" (colony, quarry, wall...)");
             if (s.Cue == TutorialCue.Ride && s.Spot is not (QuarrySpotKind.Colony or QuarrySpotKind.Quarry))
                 throw new FormatException($"steps[{n}] ({s.Id}): a ride's spot is where the bus is boarded: colony or quarry");
+            s.Area = PlayAreas.Named(Str("area", false), $"steps[{n}] ({s.Id})");
             if (s.Spot != QuarrySpotKind.None && s.Target != TutorialTarget.None)
                 throw new FormatException($"steps[{n}] ({s.Id}): a step has a spot or a target, not both");
             if (e.TryGetProperty("drops", out var drops))

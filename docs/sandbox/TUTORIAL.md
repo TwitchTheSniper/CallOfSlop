@@ -49,6 +49,20 @@ and the Rubble are parts in `Constructs/Parts/Story`; the face is part of the Mi
 part way through the older induction picks up at the step now at that number (at the colony: the markers show the way, or
 Esc skips).
 
+**Play areas** (Karl, 2026-11-12: after the crew bus drops you at the mine, the mining part happens inside a set area; go out
+of it and you are asked to go back, and nothing done out there counts). A step's `"area"` (`colony` or `quarry`) keeps it in
+that place: the induction's `wake` and `bus` are the colony's, the mine shift the quarry's, and the quarry duty
+(Story/Duties/Quarry.json) has the same field (its works and the ride home are the quarry's, the bunk the colony's). The areas'
+words and sizes are `Story/Tutorial/Bounds.json` (format `call-of-slop-bounds/1`): each is a circle across the ground round
+its place (the colony's middle, the works' centre), as wide as the construct or its bus stop, whichever reaches further, plus
+`margin` metres. On the host, ten times a second (`PlayAreaTick`, Game/GameTutorialBounds.cs), someone on such a step who goes
+past the edge is told by the Ministry's tannoy (a chat line from `speaker`, one of the area's `lines`, another every `repeat`
+seconds while they stay out), the orange marker points to the area's bus stop, the panel says OUT OF BOUNDS, and the step
+waits: its cue isn't judged, and actions carried out out there (`TutorialSawAct`, `QuarrySawAct`, a bunk) don't count. They
+are back once `slack` metres inside the edge (the `back` line). No area applies while the bus has them or has just set them
+down, or once they have done the step and wait for their group. A world with no colony or quarry has no bounds. Wire: the
+out flag is a u8 at the end of `Msg.Quarry` (protocol 258).
+
 **About the person** (Karl, 2026-11-10). The induction teaches the person: moving, their hands, the backpack, their own tools
 (attach tool, ground drill, physics gun) and their bunk. Machines (power, the Assembler, smelting) are not in it: they are
 taught later, in stages, on Ministry of Slop duties (the first is the quarry: docs/story/DUTIES.md). The power and Assembler steps were taken out on 2026-11-10, so a world
