@@ -29,6 +29,7 @@ public struct CraftOrder
     public bool Cancelled; // server: cancelled with parts already riding: they arrive anyway, and it asks for nothing more
     public bool Loose; // server: a machine with no conveyor dropped its parts beside itself, and they counted there (MadeLoose)
     public ushort Def; // server: the kind's id here (a run-time piece's is this machine's own); None until worked out
+    public byte Lost; // server: why a part for it last went to storage instead (a LogiReason; its row says so until it is done)
 
     public readonly int Left => Math.Max(0, What.Count - Got);
     public readonly bool Done => Got >= What.Count;
@@ -627,6 +628,7 @@ public static class ConstructCrafting
             return "that order is gone";
         ref var o = ref q.Items[k];
         world.Reserve.Release(world, c.Parts[t].Store, id);
+        ConstructLogisticsPlan.Cancelled(world, c, t, id); // (its chained inputs: their entries go, their unstarted orders leave their makers)
         if (o.Asked > 0)
         {
             var net = NetOf(world, c, t);
@@ -767,9 +769,10 @@ public static class ConstructCrafting
     /// <summary>Server, 2 Hz: every terminal with open orders. A world with none does nothing.</summary>
     public static void Step(ConstructWorld world)
     {
-        if (world.CraftOpen.Count == 0 || ++world.CraftTicks < StepEvery)
+        if (world.CraftOpen.Count == 0 && world.ChainCount == 0 || ++world.CraftTicks < StepEvery)
             return;
         world.CraftTicks = 0;
+        ConstructLogisticsPlan.Step(world); // (chained orders' links kept honest, before the terminals count on them)
         for (var b = world.CraftOpen.Count - 1; b >= 0; b--)
         {
             var any = false;
@@ -918,6 +921,7 @@ public static class ConstructCrafting
                     var why = WorkOrders.Queue(world, c, net.Machines[i], o.What with { Count = (ushort)ask, Made = 0 });
                     if (why == null)
                     {
+                        ConstructLogisticsPlan.Asked(world, c, net, t, o, net.Machines[i], ask); // (the parts its recipe needs: asked of other machines)
                         o.Asked += (ushort)ask;
                         ask = 0;
                         if (state == CraftState.Waiting)
@@ -945,7 +949,10 @@ public static class ConstructCrafting
                 // Why a queued order waits (its machine lacks an input), looked at every fifth step: the note is made only then.
                 note = o.Note ?? "";
                 if (o.State != CraftState.Queued || o.Age++ % 5 == 0)
-                    note = where < c.PartCount ? Starved(world, c, net, where, o.What) : "";
+                    note = ConstructLogisticsPlan.Note(world, c, t, o.Id) // (a chained input: the link nobody makes, or who makes it)
+                           ?? (where < c.PartCount ? Starved(world, c, net, where, o.What) : "");
+                if (o.Lost != 0 && note == "")
+                    note = "a part went to storage: " + ConstructLogistics.ReasonText((LogiReason)o.Lost) + " - it is fetched from there";
                 if (note != (o.Note ?? ""))
                     changed = true;
             }

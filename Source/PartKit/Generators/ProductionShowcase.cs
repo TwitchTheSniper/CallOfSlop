@@ -158,7 +158,7 @@ public sealed class ProductionShowcase : IPartGenerator
             var exS = On("Extruder", 38.25f, Row2, Flow, paint: Spur);
             Config(exS, ("profile", "Solid bar"), ("width", 0.3), ("height", 0.3), ("cutLength", 1.0));
             Feed(StockOf("metal", 36.25f, Row2), exS);
-            var spurRack = On("Piece Rack", 42.25f, -10.75f, Flow, "-y.0.0", Spur);
+            var spurRack = On("Piece Rack", 41.25f, -10.75f, Flow, "-y.0.0", Spur); // (its end clear of the parts conveyor into the Assembler's Piece in)
             Convey(exS, "Piece out", spurRack, "Piece in", Spur, new Vector2(0.1f, 0.1f));
             Sign(39.75f, Posts2, Spur, "Too narrow on purpose: aim the linking tool, wheel to widen");
 
@@ -175,6 +175,7 @@ public sealed class ProductionShowcase : IPartGenerator
             Feed(StockOf("steel", 52.25f, -13.25f), asm);
             var partRack = On("Piece Rack", 56.25f, -10.75f, Flow, "-y.0.0", Assembly);
             var router = SmartCorner(asm, partRack);
+            ChainCorner(asm);
             Sign(48.75f, Posts2, Assembly, "Send the bill: the Assembler makes these parts");
 
             // ---- 7. Orders: a second Line Console on both Extruders and the Wheel Former, its bill already on it. ------------------
@@ -261,6 +262,21 @@ public sealed class ProductionShowcase : IPartGenerator
             Sign(53.75f, Posts2, Assembly, "ROUTER: ordered parts ride to the tray, the rest to the rack");
             Sign(56.25f, Posts2, Assembly, "Aim at the Router: it names where each piece goes");
             return router;
+        }
+
+        /// <summary>
+        /// Orders pull their inputs (production.md "Smart logistics", phase 2): a second Assembler on the panel strip's floor south of the
+        /// first, fed steel, set to nothing, its Piece out on a conveyor into the first Assembler's Piece in. Order a Transmission at the
+        /// terminal: the first Assembler is asked for it, and the two Gear Sets its recipe needs are asked of the second, ride in and are used.
+        /// </summary>
+        private void ChainCorner(VPart asm)
+        {
+            var asm2 = On("Assembler", 47.25f, -15.25f, Flow, paint: Assembly);
+            Feed(StockOf("steel", 44.75f, -15.25f), asm2);
+            var o = PortAt(asm2, "Piece out");
+            var i = PortAt(asm, "Piece in");
+            Convey(asm2, "Piece out", asm, "Piece in", Assembly, new Vector2(0.6f, 0.6f), V(i.X - 0.55f, o.Y, o.Z), V(i.X - 0.55f, o.Y, i.Z));
+            Sign(42.25f, Posts3, Assembly, "ORDER A TRANSMISSION: THIS ASSEMBLER MAKES ITS GEAR SETS");
         }
 
         /// <summary>

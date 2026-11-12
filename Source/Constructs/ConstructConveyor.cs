@@ -781,7 +781,15 @@ public static class ConstructConveyor
     {
         int j = c.Routes[k].To;
         if (c.DefOf(j).IsRouter && ConstructRecycler.Powered(world, c, j) && ConstructLogistics.Map(c) is var m && m.RouterSlot(j) is var s and >= 0)
-            return ConstructLogistics.Pass(world, c, m, s, k, lead, ref changed); // (a powered Router: the way to the piece's destination; unpowered, it deals in turn below)
+        {
+            var pa = GC.GetAllocatedBytesForCurrentThread(); // PROBE
+            var p0 = Stopwatch.GetTimestamp(); // PROBE
+            var went = ConstructLogistics.Pass(world, c, m, s, k, lead, ref changed); // (a powered Router: the way to the piece's destination; unpowered, it deals in turn below)
+            LogiProbe.DecisionMs += Stopwatch.GetElapsedTime(p0).TotalMilliseconds; // PROBE
+            LogiProbe.DecisionBytes += GC.GetAllocatedBytesForCurrentThread() - pa; // PROBE
+            LogiProbe.Decisions++; // PROBE
+            return went;
+        }
         var d = ConstructParts.Def(c.Conveyed[lead].Def);
         Span<byte> outs = stackalloc byte[8];
         var n = 0;
@@ -993,6 +1001,14 @@ public static class ConstructConveyor
         }
         if (td.IsPanelFormer)
             return ConstructPanelFormer.TakeFromConveyor(world, c, to, d); // (extruded sheet into its bin)
+        if (td.IsAssembler)
+        {
+            // A part its recipe uses, while it has room: the chute's own test (a part it doesn't use waits at its door).
+            if (!world.WantsPart(c, to, d.Id) || !world.FeedPart(c, to, d))
+                return false;
+            ConstructLogisticsPlan.Arrived(world, c, to, r.Tag, d); // (a chained order's input: it counts for its link)
+            return true;
+        }
         if (td.IsPress && ConstructRoutes.PortOf(td, RouteType.Conveyor, c.Routes[route].ToPort) is { } port)
         {
             var bay = port.Name.Length > 9 && int.TryParse(port.Name.AsSpan(9), out var nb) ? nb - 1 : 0; // ("Piece in", "Piece in 2"...)
