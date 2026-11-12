@@ -9,6 +9,7 @@ public enum MonitorKind : byte
     Console, // a Line Console: its line
     Machine, // a refiner, Extruder, Wheel Former, Assembler, Press or Die Lathe: that machine
     Rack, // a Piece Rack: its fill and kinds
+    Store, // a Materials Bin, Storage Volume, Parts Shelf or other store: its fill and contents
 }
 
 /// <summary>
@@ -53,6 +54,11 @@ public static partial class ProductionLines
         else if (d.IsPieceRack)
         {
             d.Monitor = MonitorKind.Rack;
+            d.DataOut = DataOutOnly;
+        }
+        else if (d.Role == PartRole.Storage && !d.IsScoop && !d.IsTerminal && !d.IsBeacon && (d.IsBin || d.Slots.Length >= 4))
+        {
+            d.Monitor = MonitorKind.Store; // (bins, volumes, shelves: StoreMonitor.cs)
             d.DataOut = DataOutOnly;
         }
     }
@@ -241,7 +247,7 @@ public static partial class ProductionLines
     }
 
     /// <summary>The first of <paramref name="n"/> entries a list of <paramref name="fit"/> rows shows now: it moves on a row every <see cref="ScrollStep"/> s and rests at each end.</summary>
-    private static int AutoFirst(int n, int fit, double now)
+    internal static int AutoFirst(int n, int fit, double now)
     {
         var positions = n - fit + 1;
         if (positions <= 1)
@@ -263,6 +269,9 @@ public static partial class ProductionLines
                 break;
             case MonitorKind.Rack:
                 FillRack(world, c, source, sd, card);
+                break;
+            case MonitorKind.Store:
+                StoreMonitor.Fill(world, c, source, sd, card);
                 break;
             default:
                 FillMachine(world, c, source, sd, card);

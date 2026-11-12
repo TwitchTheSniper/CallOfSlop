@@ -298,7 +298,8 @@ public static partial class ProductionLines
         first = card.Scroll = Math.Clamp(first, 0, card.ScrollMax);
         var shown = Math.Min(fit, n - first);
         var brief = shown < n && cols < 24; // (the scroll mark needs the room: "Running 2/3")
-        card.Add(0, brief ? on ? "Running " : "Stopped " : on ? "Line running " : "Line stopped ").Add(0, running).Add(0, '/').Add(0, n);
+        var tight = shown < n && cols < 19; // (a big Text size: "On 2/3  1-2/3", the count kept before the scroll mark)
+        card.Add(0, tight ? on ? "On " : "Off " : brief ? on ? "Running " : "Stopped " : on ? "Line running " : "Line stopped ").Add(0, running).Add(0, '/').Add(0, n);
         card.ScrollMark(0, first, shown, n, cols).Clip(0, cols);
         var line = 1;
         for (var k = first; k < first + shown && line < rows; k++)
@@ -310,6 +311,8 @@ public static partial class ProductionLines
             if (s == LineState.NoPower)
                 colour = NoPowerGrey;
             card.Add(line, k == pick ? '>' : ' ');
+            if (k == pick)
+                card.Mark = line; // (the pick on a lit strip: which machine Recipe and Next act on)
             card.Field(line, NameOf(c, list[..n], k), nameW, k == pick, ConstructRender.Now);
             if (!stateBelow)
             {
@@ -416,10 +419,30 @@ public static partial class ProductionLines
             if (state == RefineState.Short && r != null)
                 card.Add(line, " (").Add(line, r.UnitsIn).Add(line, ' ').Add(line, r.InputName).Add(line, ')');
             card.Add(line, ", ");
-            card.Add(line, set != null ? "makes " : "auto").Add(line, set?.OutputName ?? "");
+            if (set != null)
+                card.Add(line, "makes ").Add(line, set.OutputName);
+            else
+                AutoNext(md, rs, r, card, line);
             return;
         }
-        card.Add(line, set != null ? "makes " : "auto recipe").Add(line, set?.OutputName ?? "");
+        if (set != null)
+            card.Add(line, "makes ").Add(line, set.OutputName);
+        else if (world.StoreOf(c, m) is { } ast2)
+        {
+            ConstructRefining.StateOf(RefiningTable.Current, md, ast2, out var next);
+            AutoNext(md, ast2, next, card, line);
+        }
+        else
+            card.Add(line, "auto recipe");
+    }
+
+    /// <summary>Auto's next batch: "auto: next metal" from what is in its input, or "auto: by its input" while it is empty.</summary>
+    private static void AutoNext(ConstructPartDef md, CStore st, RefineRecipe? next, PanelCard card, int line)
+    {
+        if (next != null)
+            card.Add(line, "auto: next ").Add(line, next.OutputName);
+        else
+            card.Add(line, st.InAmount > 0 || st.MixN > 0 ? "auto: no recipe" : "auto: by its input");
     }
 
     /// <summary>Why an Extruder or a Former waits, in a few words.</summary>

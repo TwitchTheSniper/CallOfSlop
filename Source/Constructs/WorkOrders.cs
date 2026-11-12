@@ -441,16 +441,16 @@ public static class WorkOrders
         switch (k.Shape)
         {
             case ExShape.Wheel:
-                card.Add(line, "Wheel ").AddFixed(line, k.H / 100f, 2).Add(line, 'x').AddFixed(line, k.W / 100f, 2);
+                card.Add(line, "Wheel ").AddShort(line, k.H / 100f).Add(line, 'x').AddShort(line, k.W / 100f);
                 break;
             case ExShape.Round:
             case ExShape.Pipe:
-                card.Add(line, k.Shape == ExShape.Round ? "Round " : "Pipe ").AddFixed(line, k.W / 100f, 2);
-                card.AddFixed(tail, k.L / 100f, 2).Add(tail, "m ");
+                card.Add(line, k.Shape == ExShape.Round ? "Round " : "Pipe ").AddShort(line, k.W / 100f);
+                card.AddShort(tail, k.L / 100f).Add(tail, "m ");
                 break;
             default:
-                card.Add(line, Extrusion.ProfileLabel(k.Mask)).Add(line, ' ').AddFixed(line, k.W / 100f, 2).Add(line, 'x').AddFixed(line, k.H / 100f, 2);
-                card.AddFixed(tail, k.L / 100f, 2).Add(tail, "m ");
+                card.Add(line, Extrusion.ProfileLabel(k.Mask)).Add(line, ' ').AddShort(line, k.W / 100f).Add(line, 'x').AddShort(line, k.H / 100f);
+                card.AddShort(tail, k.L / 100f).Add(tail, "m ");
                 break;
         }
         card.Add(tail, RecyclingTable.Current.NameOf(k.Material));

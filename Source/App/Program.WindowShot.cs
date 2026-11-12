@@ -10,7 +10,7 @@ namespace CallOfSlop;
 /// parts menu's own call (CActKind.Blueprint), flies the player (noclip) to the camera, runs a short script of actions through the real input
 /// paths, waits <c>--frames</c> frames and saves the frame (with <c>--every N</c> a numbered series over those frames), prints the paths and quits.
 /// Exit code: 0, or 1 when the window, the world or an action failed (the reason is printed).
-/// Actions (<see cref="WsActions"/>): aim PART[#n], near PART[#n] [m], use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME], deposit [TIER], fill PART[#n] N MATERIAL.
+/// Actions (<see cref="WsActions"/>): aim PART[#n], near PART[#n] [m], use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME], deposit [TIER], fill PART[#n] N MATERIAL, link FROM[#n] > TO[#m].
 /// </summary>
 public static unsafe partial class Program
 {
@@ -18,7 +18,7 @@ public static unsafe partial class Program
     private static int _wsExit;
     private static string _wsOut = "", _wsMap = "Proving Ground", _wsBlueprint = "";
     private static Vector3? _wsAt, _wsLookAt, _wsSpawnAt;
-    private static string _wsNet = "";
+    private static string _wsNet = "", _wsNotice = "";
     private static float? _wsYaw, _wsPitch;
     private static int _wsFrames = 45, _wsEvery, _wsStep, _wsWait, _wsShots, _wsCount;
     private static double _wsStart;
@@ -29,7 +29,7 @@ public static unsafe partial class Program
     private static ushort _wsBody; // the spawned blueprint
     private static TextWriter? _wsStdout;
 
-    private const string WsActions = "aim PART[#n], near PART[#n] [m], use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME], deposit [TIER], fill PART[#n] N MATERIAL";
+    private const string WsActions = "aim PART[#n], near PART[#n] [m], use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME], deposit [TIER], fill PART[#n] N MATERIAL, link FROM[#n] > TO[#m]";
 
     /// <summary>Reads the flags (before the window): the size and a throwaway save folder are set here.</summary>
     private static bool WindowShotArgs(string[] args)
@@ -83,7 +83,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "aim" or "near" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill";
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "aim" or "near" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link";
 
     private static void WsSay(string s)
     {
@@ -232,6 +232,9 @@ public static unsafe partial class Program
                 _wsWait = 20; // (the camera and the first fills settle before the script)
                 return;
             case 3: // the script
+                if (_session is { } sg && sg.SandboxNotice is { Length: > 0 } said && said != _wsNotice)
+                    WsSay($"notice: {said}"); // (a refusal or a hint on the HUD)
+                _wsNotice = _session?.SandboxNotice ?? "";
                 if (_wsWait > 0)
                 {
                     _wsWait--;
@@ -406,12 +409,36 @@ public static unsafe partial class Program
                 WsShot(arg.Length > 0 ? arg : $"{_wsShots:000}");
                 _wsWait = 1;
                 return;
+            case "link": // a data link FROM's Data out (or only output) to TO, as the linking tool sends it: "link Materials Bin#1 > Text Sign#3"
+            {
+                var ends = arg.Split('>', StringSplitOptions.TrimEntries);
+                var (c, from) = ends.Length == 2 ? WsFind(g, ends[0]) : (null, -1);
+                var (c2, to) = ends.Length == 2 ? WsFind(g, ends[1]) : (null, -1);
+                if (c == null || c2 != c)
+                {
+                    WsFail($"link FROM[#n] > TO[#m] on one construct (\"{arg}\")");
+                    return;
+                }
+                if (g.SandboxHands.Hand(me.Id).Tool != ConstructTool.Linker)
+                {
+                    g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Linker);
+                    _wsQueue.EnqueueFront($"link {arg}");
+                    _wsWait = 5;
+                    return;
+                }
+                var spot = WsPartSpot(c, to, out _);
+                WsEyeTo(g, me, spot + new Vector3(0, 1.2f, 0) + Vector3.Normalize(new Vector3(me.Eye.X - spot.X, 0, me.Eye.Z - spot.Z) + new Vector3(1e-4f, 0, 0)) * 1.5f);
+                var port = c.DefOf(from).DataOut is { Length: > 1 } outs ? ConstructRoutes.DataPortByte(Array.IndexOf(outs, "Data out")) : (byte)255;
+                g.SandboxSendRoute(c.Id, RouteType.Data, from, port, 255, 0, default, ReadOnlySpan<CRouteNode>.Empty, to, 255);
+                _wsWait = 5;
+                return;
+            }
             case "fill": // a store's bin set on the server (a test state: a full output, another material), sent as any change is
             {
                 var bits = arg.Split(' ');
                 if (bits.Length < 3 || !int.TryParse(bits[^2], out var amount) || !g.IsServer)
                 {
-                    WsFail("fill PART[#n] N MATERIAL (on the host or offline)");
+                    WsFail("fill PART[#n] N MATERIAL, link FROM[#n] > TO[#m] (on the host or offline)");
                     return;
                 }
                 var (c, part) = WsFind(g, string.Join(' ', bits[..^2]));
@@ -541,13 +568,17 @@ public static unsafe partial class Program
         WsSay($"panel: {d.Name} (part {part} of construct {c.Id}) at {WsPartSpot(c, part, out _):0.00}, {d.Panels.Length} screen(s); eye {g.Local?.Eye:0.00}, look {g.LookDir(g.LookYaw, g.LookPitch):0.00}; open:recipe picker {Ui.RecipePickerOpen}, configure {Ui.SandboxConfigOpen}, pause {Ui.PauseOpen}, menus {MenusOpen}");
         if (g.Constructs.StoreOf(c, part) is { } st)
             WsSay($"  store: line state {(ProductionLines.Raw(g.Constructs, c, part, st) is { } s ? ProductionLines.Word(s) : "-")}, busy {st.Busy}, held {st.Held}, blocked {st.Blocked}, {st.Amount} {RecyclingTable.Current.NameOf(st.Material)}, {st.ItemCount} items, mains off {c.MainsOff}");
-        if (d.Monitor != MonitorKind.None && d.Panels.Length == 0 && d.IsGatherer)
+        if (d.Monitor != MonitorKind.None && (d.Panels.Length == 0 || d.Monitor == MonitorKind.Store))
         {
-            var card = new PanelCard { Rows = 4, TextRows = 4, Cols = 24 };
-            MachineScreens.Gatherer(g.Constructs, c, part, d, card);
-            for (var l = 0; l < 4; l++)
-                if (card.Length(l) > 0)
-                    WsSay($"  monitor {l}| {card.Line(l)}");
+            // What a display on its Data out shows: a medium one (6 rows of 24) and a tiny one (a line).
+            foreach (var rows in (ReadOnlySpan<int>)[6, 1])
+            {
+                var card = new PanelCard { Rows = rows, TextRows = rows, Cols = 24 };
+                ProductionLines.FillMonitor(g.Constructs, c, part, card);
+                for (var l = 0; l < rows; l++)
+                    if (card.Length(l) > 0)
+                        WsSay($"  monitor{rows} {l}| {card.Line(l)}");
+            }
         }
         for (var n = 0; n < d.Panels.Length; n++)
         {
