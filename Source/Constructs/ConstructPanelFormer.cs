@@ -190,6 +190,7 @@ public static class ConstructPanelFormer
             }
             body.Owner = c.Owner;
             body.Vel = c.PointVel(at);
+            ConstructCrafting.MadeLoose(world, c, part, panel); // (nothing carries it on: a terminal's order for it counts it here)
         }
         st.JobAmount = 0;
         st.JobTicks = 0;

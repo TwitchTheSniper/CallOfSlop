@@ -1,4 +1,6 @@
-using System.Numerics;
+        if (d.IsPanelFormer)
+            return world.StoreOf(c, m) is { } fst && fst.Refused == (byte)ExtrudeStall.NoMaterial ? ConstructPanelFormer.Lacks(c, m, fst) : "";
+mo.Part == o.What.Part && mo.Name == o.What.Name && (!mo.IsPiece || mo.Key == o.What.Key))using System.Numerics;
 
 namespace CallOfSlop;
 
@@ -27,6 +29,7 @@ public struct CraftOrder
     public string Note; // Held: why
     public ushort Age; // steps since it was done (server)
     public bool Cancelled; // server: cancelled with parts already riding: they arrive anyway, and it asks for nothing more
+    public bool Loose; // server: a machine with no conveyor dropped its parts beside itself, and they counted there (MadeLoose)
     public ushort Def; // server: the kind's id here (a run-time piece's is this machine's own); None until worked out
 
     public readonly int Left => Math.Max(0, What.Count - Got);
@@ -301,11 +304,13 @@ public static class ConstructCrafting
     }
 
     /// <summary>An order's kind as a def here (a piece's def is made the first time its key is asked for), or null.</summary>
-    public static ConstructPartDef? DefOf(in WorkOrder o) => o.IsPiece ? Extrusion.Def(o.Key) : ConstructParts.Get(o.Part);
+    public static ConstructPartDef? DefOf(in WorkOrder o) => o.Name != null ? (HullLoft.IsFormedName(o.Name) ? ConstructParts.Find(o.Name) : null) : o.IsPiece ? Extrusion.Def(o.Key) : ConstructParts.Get(o.Part);
 
     /// <summary>"Gear Set", "L-angle 0.2 x 0.2 m, 1 m, metal".</summary>
     public static string NameOf(in WorkOrder o)
     {
+        if (o.Name != null)
+            return HullLoft.PanelLabel(o.Name);
         if (!o.IsPiece)
             return ConstructParts.Get(o.Part)?.Name ?? "part";
         var k = o.Key;
@@ -327,10 +332,10 @@ public static class ConstructCrafting
     {
         rows.Clear();
         var net = NetOf(world, c, t);
-        var byKey = new Dictionary<(ushort, ExtrusionKey), CraftRow>();
+        var byKey = new Dictionary<(ushort, ExtrusionKey, string?), CraftRow>();
         CraftRow Row(in WorkOrder what, ConstructPartDef? d)
         {
-            var key = (what.Part, what.IsPiece ? what.Key : default);
+            var key = (what.Part, what.IsPiece ? what.Key : default, what.Name);
             if (!byKey.TryGetValue(key, out var row))
             {
                 byKey[key] = row = new CraftRow { What = what with { Count = 1, Made = 0 }, Def = d, Name = NameOf(what) };
@@ -347,9 +352,10 @@ public static class ConstructCrafting
             {
                 if (ConstructParts.Get(def) is not { } d)
                     return;
-                if (Extrusion.IsRuntimeId(def) && d.ExKey.W == 0)
-                    return; // (a formed panel or a lofted part: named, not keyed; the terminal doesn't list those yet)
-                var what = Extrusion.IsRuntimeId(def) ? new WorkOrder { Key = d.ExKey, Part = ConstructParts.None } : new WorkOrder { Part = def };
+                var named = Extrusion.IsRuntimeId(def) && d.ExKey.W == 0;
+                if (named && !HullLoft.IsFormedName(d.Name))
+                    return; // (another named run-time part: nothing here orders those)
+                var what = named ? ConstructPanelFormer.Order(d.Name, 1) : Extrusion.IsRuntimeId(def) ? new WorkOrder { Key = d.ExKey, Part = ConstructParts.None } : new WorkOrder { Part = def };
                 var row = Row(what, d);
                 row.Def ??= d;
                 row.Stock = Stock(world, c, net, def); // (the whole network's, so a kind in two stores isn't added twice)
@@ -390,6 +396,31 @@ public static class ConstructCrafting
             var st = world.StoreOf(c, m);
             var fed = st is { Amount: > 0 };
             var mat = fed ? st!.Material : FirstMaterial(md);
+            if (md.IsPanelFormer)
+            {
+                // A Panel Former: each preset at its own size and the world's shared designs, in what it is fed (steel when empty).
+                var sheet = fed ? names.NameOf(st!.Material) : "steel";
+                void Panel(string name, string label)
+                {
+                    var what = ConstructPanelFormer.Order(name, 1);
+                    if (ConstructParts.Find(name) is not { } pd || WorkOrders.Refusal(world, c, m, what) != null)
+                        return;
+                    var row = Row(what, pd);
+                    if (label.Length > 0)
+                        row.Name = label;
+                    if (row.Make == 1)
+                        return;
+                    var units = HullLoft.FormedUnits(pd, what.Key.Material);
+                    row.Machine = m;
+                    row.Make = (byte)(fed && st!.Amount >= units ? 1 : Bulk(world, c, net, what.Key.Material, -1) > 0 ? 2 : 3);
+                    row.Missing = row.Make == 1 ? "" : $"needs {units} {names.NameOf(what.Key.Material)} sheet in the {md.Name}{(fed ? $", holds {st!.Amount}" : "")}";
+                }
+                for (var k = 0; k < HullLoft.PanelPresets.Length; k++)
+                    Panel(HullLoft.PanelKey(HullLoft.PanelDefault(k, sheet)), "");
+                foreach (var dsg in world.Designs)
+                    Panel(dsg.Key, $"{dsg.Name} ({HullLoft.PanelLabel(dsg.Key)})");
+                continue;
+            }
             void Piece(in ExtrusionKey key)
             {
                 var what = new WorkOrder { Key = key, Part = ConstructParts.None, Count = 1 };
@@ -485,7 +516,7 @@ public static class ConstructCrafting
             h = h * 31 + (world.StoreOf(c, net.Stores[i])?.Version ?? 0);
         for (var i = 0; i < net.MachineN; i++)
             h = h * 31 + (world.StoreOf(c, net.Machines[i])?.Version ?? 0);
-        return h * 31 + world.Reserve.Count;
+        return (h * 31 + world.Reserve.Count) * 31 + world.DesignStamp; // (and the shared designs: a former lists them)
     }
 
     /// <summary>An order's state in words, for the Orders tab (either peer).</summary>
@@ -497,7 +528,7 @@ public static class ConstructCrafting
             CraftState.Fetching => $"fetching from {where}",
             CraftState.Queued => string.IsNullOrEmpty(o.Note) ? $"queued at {where}" : $"queued at {where}: {o.Note}",
             CraftState.Riding => string.IsNullOrEmpty(o.Note) ? "riding to the tray" : o.Note,
-            CraftState.InTray => "in the tray",
+            CraftState.InTray => string.IsNullOrEmpty(o.Note) ? "in the tray" : o.Note,
             CraftState.Collect => $"no route from {where}: collect it there",
             CraftState.Held => string.IsNullOrEmpty(o.Note) ? "held" : o.Note,
             _ => "waiting",
@@ -552,7 +583,7 @@ public static class ConstructCrafting
             return $"an order is for 1 to {WorkOrders.MaxCount}";
         if (c.Parts[t].Craft is { Count: >= MaxOrders })
             return $"the {d.Name} has {MaxOrders} orders open: cancel one or wait";
-        if (!what.IsPiece && ConstructParts.Get(what.Part) == null)
+        if (what.Name == null && !what.IsPiece && ConstructParts.Get(what.Part) == null)
             return "no such part";
         if (DefOf(what) is not { } kind)
             return "that piece can't be made";
@@ -643,10 +674,44 @@ public static class ConstructCrafting
             {
                 o.State = CraftState.InTray;
                 o.Where = NoPart;
+                o.Note = "";
                 o.Age = 0;
             }
             world.CraftChanged(c);
             return;
+        }
+    }
+
+    /// <summary>
+    /// Server: a machine with no Piece out conveyor dropped what it made beside itself (a Panel Former's out bed). The oldest order on its
+    /// body that asked a machine for that kind counts it: nothing will carry it to a store or a tray. Its note says where it lies.
+    /// </summary>
+    public static void MadeLoose(ConstructWorld world, Construct c, int machine, ConstructPartDef d)
+    {
+        if (!world.CraftOpen.Contains(c.Id))
+            return;
+        for (var t = 0; t < c.PartCount; t++)
+        {
+            if (c.Parts[t].Craft is not { } q)
+                continue;
+            for (var k = 0; k < q.Count; k++)
+            {
+                ref var o = ref q.Items[k];
+                if (o.Done || o.Asked == 0 || KindOf(ref o) != d.Id)
+                    continue;
+                o.Got++;
+                o.Asked--;
+                o.Loose = true;
+                if (o.Done)
+                {
+                    o.State = CraftState.InTray;
+                    o.Where = (ushort)machine;
+                    o.Note = $"made: on the {c.DefOf(machine).Name}'s out bed";
+                    o.Age = 0;
+                }
+                world.CraftChanged(c);
+                return;
+            }
         }
     }
 
@@ -743,6 +808,7 @@ public static class ConstructCrafting
                 {
                     o.State = CraftState.InTray;
                     o.Where = NoPart;
+                    o.Note = "";
                     o.Age = 0;
                     changed = true;
                 }
@@ -905,7 +971,10 @@ public static class ConstructCrafting
             {
                 ref readonly var o = ref q.Items[k];
                 var key = o.What.Key;
-                w.U8((byte)key.Shape).U32((uint)key.Mask).U32((uint)(key.Mask >> 32)).U16(key.W).U16(key.H).U16(key.L).U16(key.Wall).U8(key.Material).U16(o.What.Part).U16(o.What.Count);
+                if (o.What.Name != null)
+                    w.U8(WorkOrders.NamedShape).U8(key.Material).U16(o.What.Count).Str(o.What.Name); // (protocol 256: a formed panel by its name, as a work order's)
+                else
+                    w.U8((byte)key.Shape).U32((uint)key.Mask).U32((uint)(key.Mask >> 32)).U16(key.W).U16(key.H).U16(key.L).U16(key.Wall).U8(key.Material).U16(o.What.Part).U16(o.What.Count);
                 w.U16(o.Id).U16(o.Got).U8((byte)o.State).U16(o.Where).Str(o.Note ?? "");
             }
             n++;
@@ -957,7 +1026,29 @@ public static class ConstructCrafting
             for (var k = 0; k < n; k++)
             {
                 var shape = r.U8();
-                var mask = (ulong)r.U32() | (ulong)r.U32() << 32;
+                CraftOrder o;
+                byte mat;
+                if (shape == WorkOrders.NamedShape)
+                {
+                    mat = r.U8();
+                    var cnt = r.U16();
+                    var nm = r.Text(ConstructParts.MaxRuntimeName);
+                    if (!HullLoft.IsFormedName(nm))
+                        throw new MalformedPacketException("a bad panel order");
+                    o = new CraftOrder { What = new WorkOrder { Key = new ExtrusionKey(0, 0, 0, 0, mat, false, ExShape.Section), Part = ConstructParts.None, Count = cnt, Name = nm } };
+                    shape = 0;
+                }
+                else
+                {
+                    var mask = (ulong)r.U32() | (ulong)r.U32() << 32;
+                    var kw = r.U16();
+                    var kh = r.U16();
+                    var kl = r.U16();
+                    var wall = r.U16();
+                    mat = r.U8();
+                    o = new CraftOrder { What = new WorkOrder { Key = new ExtrusionKey(mask, kw, kh, kl, mat, false, (ExShape)shape, wall), Part = r.U16(), Count = r.U16() } };
+                }
+| (ulong)r.U32() << 32;
                 var kw = r.U16();
                 var kh = r.U16();
                 var kl = r.U16();
@@ -1010,7 +1101,10 @@ public static class ConstructCrafting
             {
                 ref readonly var o = ref q.Items[k];
                 var key = o.What.Key;
-                w.U8((byte)key.Shape).U64(key.Mask).U16(key.W).U16(key.H).U16(key.L).U16(key.Wall).U8(key.Material).U16(names.Part(o.What.Part)).U16(o.What.Count);
+                if (o.What.Name != null)
+                    w.U8(WorkOrders.NamedShape).U16(o.What.Count).Str(o.What.Name); // (a formed panel: its name is its key and holds its material)
+                else
+                    w.U8((byte)key.Shape).U64(key.Mask).U16(key.W).U16(key.H).U16(key.L).U16(key.Wall).U8(key.Material).U16(names.Part(o.What.Part)).U16(o.What.Count);
                 w.U16(o.Id).U16(o.Got).U16(o.Asked).U16(o.Sent); // (a part riding is saved with its conveyor and counts as it lands)
             }
         }
@@ -1030,6 +1124,16 @@ public static class ConstructCrafting
             for (var k = 0; k < count; k++)
             {
                 var shape = r.U8();
+                if (shape == WorkOrders.NamedShape)
+                {
+                    var ncnt = r.U16();
+                    var nm = r.Str();
+                    var (nid, ngot, nasked, nsent) = (r.U16(), r.U16(), r.U16(), r.U16());
+                    if (ncnt is 0 or > WorkOrders.MaxCount || !HullLoft.IsFormedName(nm) || nm.Length > ConstructParts.MaxRuntimeName || q.Count >= MaxOrders)
+                        continue;
+                    q.Items[q.Count++] = new CraftOrder { What = ConstructPanelFormer.Order(nm, ncnt), Id = nid, Got = Math.Min(ncnt, ngot), Sent = nsent, Asked = nasked, Where = NoPart, Note = "", Def = ConstructParts.None };
+                    continue;
+                }
                 var mask = r.U64();
                 var kw = r.U16();
                 var kh = r.U16();

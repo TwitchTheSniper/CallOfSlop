@@ -95,6 +95,8 @@ public enum CActKind : byte
     SpawnPlace, // u16 token, vec point, f32 yaw: the pending spawn goes down there (protocol 255)
     SpawnCancel, // u16 token: the pending spawn is dropped (protocol 255)
     SpawnGhost, // server -> one client: u8 status (0 ready, 1 placed, 2 gone), u16 token, text name; ready: the ghost's shape and boxes (protocol 255)
+    CraftNamed, // u16 body, u16 terminal, u16 count, text name: an order for a formed panel by its key at a Crafting Terminal or a Panel Designer (protocol 256; ConstructCrafting.Place)
+    PanelDesign, // u8 op (1 keep, 0 drop), text name, text key: a panel design saved to the world's shared list, or dropped from it (protocol 256; PanelDesigns.cs)
 }
 
 /// <summary>
@@ -534,6 +536,12 @@ public sealed partial class Game
                 Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
             }
         Constructs.CraftDirty.Clear();
+        if (Constructs.DesignsDirty)
+        {
+            Constructs.DesignsDirty = false;
+            PanelDesigns.Write(w, Constructs);
+            Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+        }
         foreach (var id in _sbLater)
             Constructs.StructureDirty.Add(id);
         _sbLater.Clear();
@@ -700,6 +708,11 @@ public sealed partial class Game
         ConstructNet.WriteClear(w);
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         SendFactions(to); // (before the constructs: who shares what, GameSandboxFactions.cs)
+        if (Constructs.Designs.Count > 0)
+        {
+            PanelDesigns.Write(w, Constructs); // (the shared panel designs, before any order that names one)
+            Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        }
         ShellSendAll(to); // (who wears a robot shell: GameRobotShell.cs)
         if (Constructs.UseGrid)
         {
@@ -1111,6 +1124,23 @@ public sealed partial class Game
                     return "a bad order";
                 var what = new WorkOrder { Key = new ExtrusionKey(mask, kw, kh, kl, mat, false, (ExShape)shape, wall), Part = part, Count = count };
                 return hands.CraftOrder(Constructs, p.Id, eye, body, term, what, 0, Constructs.Get(body) is { } cc ? SandboxConfigRefusal(cc, p.Id) : null);
+            }
+            case CActKind.CraftNamed:
+            {
+                var body = r.U16();
+                var term = r.U16();
+                var count = r.U16();
+                var name = r.Text(ConstructParts.MaxRuntimeName);
+                if (!HullLoft.IsFormedName(name))
+                    return "a bad order";
+                return hands.CraftOrder(Constructs, p.Id, eye, body, term, ConstructPanelFormer.Order(name, count) with { Count = count }, 0, Constructs.Get(body) is { } cn ? SandboxConfigRefusal(cn, p.Id) : null);
+            }
+            case CActKind.PanelDesign:
+            {
+                var op = r.U8();
+                var name = r.Text(PlayerBlueprints.MaxName);
+                var key = r.Text(ConstructParts.MaxRuntimeName);
+                return op == 0 ? PanelDesigns.Remove(Constructs, name) : PanelDesigns.Set(Constructs, name, key);
             }
             case CActKind.CraftCancel:
             {
@@ -1549,9 +1579,23 @@ public sealed partial class Game
     public void SandboxCraftOrder(ushort body, int terminal, in WorkOrder what)
     {
         var w = SbW;
+        if (what.Name != null)
+        {
+            w.Begin(Msg.CAct).U8((byte)CActKind.CraftNamed).U16(body).U16((ushort)terminal).U16(what.Count).Str(what.Name); // (a formed panel by its key)
+            SandboxCraftSend(w);
+            return;
+        }
         var k = what.Key;
         w.Begin(Msg.CAct).U8((byte)CActKind.CraftOrder).U16(body).U16((ushort)terminal);
         w.U8((byte)k.Shape).U32((uint)k.Mask).U32((uint)(k.Mask >> 32)).U16(k.W).U16(k.H).U16(k.L).U16(k.Wall).U8(k.Material).U16(what.Part).U16(what.Count);
+        SandboxCraftSend(w);
+    }
+
+    /// <summary>Client (or the host itself): keeps a panel design in the world's shared list (PanelDesigns.cs), or drops it.</summary>
+    public void SandboxPanelDesign(string name, string key, bool keep = true)
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.PanelDesign).U8((byte)(keep ? 1 : 0)).Str(name).Str(key);
         SandboxCraftSend(w);
     }
 

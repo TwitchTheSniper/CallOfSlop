@@ -72,6 +72,7 @@ public sealed class WorldSnapshot
     public CNoCollide[] NoCollides = [];
     public int NoCollideCount;
     public ushort NextTag;
+    public PanelDesign[] Designs = []; // the world's shared panel designs (PanelDesigns.cs; the DSGN section)
     public DigOp[] Ops = [];
     public int OpCount;
     public bool GroundOnPlanet;

@@ -543,6 +543,9 @@ public sealed partial class Game
             case WorldSaveWriter.Misc:
                 nextTag = r.U16();
                 break;
+            case WorldSaveWriter.DesignsTag:
+                PanelDesigns.ReadSave(r, Constructs); // (the world's shared panel designs: PanelDesigns.cs)
+                break;
             case WorldSaveWriter.Players:
             {
                 FactionTable.Clear(); // (a world's own factions, if it has any, follow: WorldReadFactions)
