@@ -55,6 +55,23 @@
       "shape": "cylinder",
       "segments": 12,
       "front": "-z"
+    },
+    {
+      "min": [
+        -0.03,
+        0.25,
+        -0.0895
+      ],
+      "max": [
+        0.03,
+        0.31,
+        -0.0735
+      ],
+      "color": "#2c2e31",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "-z"
     }
   ],
   "sockets": [
