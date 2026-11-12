@@ -1034,7 +1034,7 @@ public static class ConstructPress
         card.IconMask = SectionMask(die.Blanks[0]);
         for (var m = 0; m < die.Materials.Length; m++)
             Choice(card, 1, names.NameOf(die.Materials[m]), m + 1);
-        for (var b = 0; b < die.Blanks.Length; b++)
+        for (var b = 0; b < die.Blanks.Length && b < 2; b++) // (two at most, as a row's card: a "+" after two would run off a Small Press's card)
             Choice(card, 2, SectionName(die.Blanks[b]), b + 1);
         card.AddShort(3, die.AcrossMin / 100f).Add(3, '-').AddShort(3, Math.Min(die.AcrossMax, d.PressMaxCm) / 100f).Add(3, " m");
         if (refused != BayRefuse.None)
