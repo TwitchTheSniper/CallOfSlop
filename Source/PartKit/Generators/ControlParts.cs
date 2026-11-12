@@ -379,7 +379,7 @@ public sealed class ControlParts : IPartGenerator
     /// </summary>
     private static (string, Part) LineConsole()
     {
-        var p = new Part("Line Console", Small, "Controls", "Runs a production line: wire its output to each machine's Run. Start, stop and pick recipes on its screen.",
+        var p = new Part("Line Console", Small, "Controls", "Runs a production line: wire Run to each machine's Run, Data out to any display. Outputs Alarm, Running and Made.",
             role: "logic", tool: "welder", color: Housing, group: "Logic");
         p.Add(Box([-0.45, 0, -0.25], [0.45, 1.0, 0.25])); // the desk
         p.Add(Box([-0.43, 0.99, -0.24], [0.43, 1.62, -0.1])); // the screen's housing, standing on the desk's back
@@ -398,6 +398,8 @@ public sealed class ControlParts : IPartGenerator
         p.Set(("logic", D(("kind", "switch"))),
             ("config", Py.L(
                 D(("key", "startOn"), ("label", "Starts running"), ("group", "General"), ("default", false), ("tooltip", "The line runs as soon as it is built.")),
+                D(("key", "lineStopAfter"), ("label", "Stop after"), ("group", "General"), ("unit", "pieces"), ("min", 0), ("max", 9999), ("step", 1), ("default", 0),
+                    ("tooltip", "Stops the line when it has made this many pieces since Start (its Made output). 0: it never stops by itself.")),
                 D(("key", "linePick"), ("label", "Machine"), ("group", "General"), ("min", 0), ("max", 31), ("step", 1), ("default", 0), ("hidden", true), ("tooltip", "Which machine its buttons work on.")),
                 D(("key", "linePage"), ("label", "Page"), ("group", "General"), ("options", Py.L("Line", "Bill")), ("default", 0), ("hidden", true), ("tooltip", "The line or the bill on its screen.")),
                 D(("key", "orderKind"), ("label", "Kind"), ("group", "Bill line"), ("options", Py.L("Piece", "Wheel")), ("default", 0), ("tooltip", "What Add puts on the bill: an Extruder's piece or a Wheel Former's wheel.")),

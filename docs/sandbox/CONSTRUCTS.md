@@ -126,7 +126,7 @@ Salvage and the inventory, the salvage haul, gathering, scoops.
 
 ## [Production](constructs/production.md), 82 KB
 
-Refining, extrusion, the Wheel Former, the Press, machine tiers, assembling, build stations, production lines, conveyors, work orders, the Production Showcase.
+Refining, extrusion, the Wheel Former, the Press, machine tiers, assembling, build stations, production lines, production monitors, conveyors, work orders, the Production Showcase.
 
 - Refining (decision 14)
 - Extrusion
@@ -137,6 +137,7 @@ Refining, extrusion, the Wheel Former, the Press, machine tiers, assembling, bui
 - Build stations
 - Build stations: the Selector and the Blueprint Desk
 - Production lines (the Line Console, the recipe picker, resource icons)
+- Production monitors (Data out to any display; Alarm, Running, Made, Stop after)
 - Conveyors
 - Work orders
 - Production Showcase

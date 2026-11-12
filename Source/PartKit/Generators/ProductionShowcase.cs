@@ -194,6 +194,8 @@ public sealed class ProductionShowcase : IPartGenerator
             foreach (var (part, n) in new[] { ("Gear Set", 4), ("Steel Plate", 4), ("Gun Barrel", 2) }) // (steel only, tier 1: what its stock makes)
                 BillPart(orders, part, n);
 
+            Monitors(refine, orders);
+
             // ---- Hazard stripes where pieces start and end their ride. ---------------------------------------------------------
             Stripe(26.75f, Row1, true);
             Stripe(36.75f, Row1, true);
@@ -204,6 +206,49 @@ public sealed class ProductionShowcase : IPartGenerator
             // ---- The lamps: one on every sign post, wired from the main switch along the aisles' edges. -------------------------
             foreach (var lamp in _lamps)
                 Lamp(lamp);
+        }
+
+        /// <summary>
+        /// Production monitors (production.md "Production monitors"), all on the front aisle's post line, x 19 to 22 and 57 to 63.5:
+        /// a small one by the refining console (a Number Readout on its Data out), a medium one by the orders console (a Text Sign),
+        /// and the orders line's board at the right-hand end (a Text Sign at Text size 50 %: no adapter takes a medium display onto
+        /// the small floor), a red lamp on a mast beside it on the console's Alarm output.
+        /// </summary>
+        private void Monitors(VPart refine, VPart orders)
+        {
+            // Small: a row a machine, by the refining console.
+            var smallPost = Sign(19.25f, Posts1, Refining, "MONITOR: the console's Data out wired to a display");
+            var small = Onto(smallPost, "y+1", "Number Readout", "back");
+            Paint(small, Board);
+            Link("data", refine, small, "Data out", null);
+
+            // Medium: two lines a machine, by the orders console.
+            var mediumPost = Sign(21.75f, Posts1, Control, "MONITOR: any display works; it lays itself out");
+            var medium = Onto(mediumPost, "y+1", "Text Sign", "back");
+            Paint(medium, Board);
+            Link("data", orders, medium, "Data out", null);
+
+            // Large: the orders line's board at the right-hand end, its Alarm on a red lamp on a mast beside it.
+            Sign(57.25f, Posts1, Control, "ORDERS BOARD: red lamp = Alarm (a machine waits or is out)");
+            var boardPost = On("Frame Beam", 60.75f, Posts1, Post, "end-", Control, "painted plating");
+            var board = Onto(boardPost, "y+3", "Text Sign", "back");
+            Paint(board, Board);
+            Config(board, ("textSize", 50));
+            var mast = On("Frame Beam", 62.75f, Posts1, Post, "end-", Control, "painted plating");
+            var mast2 = Onto(mast, "end+", "Frame Beam", "end-");
+            Paint(mast2, Control);
+            var alarm = Onto(mast2, "end+", "Lamp", "-y");
+            Config(alarm, ("colour", "#ff2a1a"), ("brightness", 160));
+            var cable = new List<Vector3>();
+            for (var x = 24.25f; x < 60.75f; x += 7.5f)
+                cable.Add(V(x, FloorY + 0.03f, -1.95f));
+            cable.Add(V(60.75f, FloorY + 0.03f, -1.95f));
+            Link("data", orders, board, "Data out", null, Control, true, cable.ToArray());
+            for (var k = 0; k < cable.Count; k++)
+                cable[k] = cable[k] with { Z = -1.9f };
+            cable.Add(V(62.75f, FloorY + 0.03f, -1.9f));
+            cable.Add(V(62.75f, FromRest(Live.Parts[alarm.Index].Pos).Y, -1.9f)); // (up the mast)
+            Link("data", orders, alarm, "Alarm", null, Spur, true, cable.ToArray());
         }
 
         /// <summary>A sign post at (x, z): a Frame Beam stood up in the station's colour, a Text Sign facing the aisle, a lamp on top.</summary>

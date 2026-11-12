@@ -552,7 +552,7 @@ public static class WorkOrders
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Orders != null)
                 return true;
-        return false;
+        return ProductionLines.AnyMade(c);
     }
 
     /// <summary>One body's queues and bills: u16 body, u16 lists; each u16 part, u8 flags (1: a bill), u16 orders, u32 pieces left, a note, u8 n, then n orders.</summary>
@@ -574,6 +574,7 @@ public static class WorkOrders
             n++;
         }
         w.PatchU16(at, (ushort)n);
+        ProductionLines.WriteMade(w, c); // (protocol 252: the consoles' Made counts)
     }
 
     private static void WriteOrder(PacketWriter w, in WorkOrder o)
@@ -624,6 +625,7 @@ public static class WorkOrders
             if (c != null && part < c.PartCount)
                 c.Parts[part].Orders = q;
         }
+        ProductionLines.ReadMade(ref r, c);
     }
 
     // ---- Saves (after a body's conveyors block: an older save ends before it) ------------------------------------------------

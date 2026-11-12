@@ -406,7 +406,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 250: CActKind.LineRecipe (u16 body, u16 console, u16 machine, u16 recipe, u8 flags): the recipe picker sets a Line Console's machine's recipe.
     // 251: Assemblers take work orders for catalogue parts (WorkOrders.cs; CBodyKind.Orders unchanged, an order's part is its id) and gain an
     //      implicit Piece out conveyor port (its port bytes); AsmBlock gains ConveyorSmall, ConveyorFull and ConveyorCut (the store's Blocked byte).
-    public const ushort ProtocolVersion = 251;
+    // 252: CBodyKind.Orders ends with the Line Consoles' Made counts (u8 n, each u16 part, u32 made); a Line Console gains the Stop after setting
+    //      and the Data out, Alarm, Running and Made outputs (its settings' slots change); refiners, Assemblers, Presses and Piece Racks have a Data out.
+    public const ushort ProtocolVersion = 252;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
