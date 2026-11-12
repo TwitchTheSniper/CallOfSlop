@@ -289,16 +289,21 @@ public static partial class SelfTest
         var rec = ConstructEdits.DropLoose(w, ConstructParts.Need("Recycler"), new Vector3(-9, 10, 12), Quaternion.Identity)!;
         var rst = w.StoreOf(rec, 0)!;
         Says(rec, "Fault", "No power", "no battery");
+        // A Recycler's screen is its line state (ProductionLines.Of), which holds a new state for ProductionLines.Hold before
+        // showing it: the clock doesn't move here, so each step is the screen's first look (LineSeen off), which shows at once.
         w.CreativeRecycling = true;
-        Says(rec, "Idle", "Waiting", "nothing in it");
+        rst.LineSeen = false;
+        Says(rec, ProductionLines.Panel(LineState.Starved).ToString(), ProductionLines.Word(LineState.Starved), "nothing in it");
         rst.Busy = true;
         rst.Progress = 25;
+        rst.LineSeen = false;
         Says(rec, "Working", "Recycling", "at work");
         want(MathF.Abs(FillCard(w, rec, 0).Bar - 0.25f) < 0.01f, "a Recycler's bar is its job");
         rst.Busy = false;
         rst.Amount = rec.DefOf(0).BulkCapacity;
         rst.Material = metal;
-        Says(rec, "Wants", "Output full", "a full bin");
+        rst.LineSeen = false;
+        Says(rec, ProductionLines.Panel(LineState.Blocked).ToString(), ProductionLines.Word(LineState.Blocked), "a full bin");
         // The screen allocates nothing in a steady state.
         var card = new PanelCard();
         var bodies = new[] { smelter, foundry, asm, ex, former, rec };
