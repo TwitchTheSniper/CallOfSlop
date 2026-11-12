@@ -364,7 +364,7 @@ public static unsafe partial class Program
                 _wsWait = 3;
                 return;
             }
-            case "stock": // what a store holds by name (slots, and kinds: a rack's pieces too) as this peer has it, and the loose one-part bodies within 6 m
+            case "stock": // what a store holds by name (slots, and kinds: a rack's pieces too) as this peer has it, and the loose one-part bodies within 6 m of it
             {
                 var (sc, spart) = WsFind(g, arg);
                 if (sc == null)
@@ -387,9 +387,10 @@ public static unsafe partial class Program
                 }
                 WsSay($"stock: {sc.DefOf(spart).Name}: {(held.Count == 0 ? "nothing" : string.Join(", ", held.Select(kv => $"{kv.Key} x{kv.Value}")))}");
                 var spotS = WsPartSpot(sc, spart, out _);
+                var reach = 6 + (sc.DefOf(spart).BoundsMax - sc.DefOf(spart).BoundsMin).Length(); // (6 m past a big machine's far side)
                 var loose = new SortedDictionary<string, int>(StringComparer.Ordinal);
                 foreach (var b in g.Constructs.Bodies)
-                    if (b != sc && b.PartCount == 1 && Vector3.Distance(b.WorldCom, spotS) < 6)
+                    if (b != sc && b.PartCount == 1 && Vector3.Distance(b.WorldCom, spotS) < reach)
                         loose[b.DefOf(0).Name] = loose.GetValueOrDefault(b.DefOf(0).Name) + 1;
                 WsSay($"stock: loose near it: {(loose.Count == 0 ? "nothing" : string.Join(", ", loose.Select(kv => $"{kv.Key} x{kv.Value}")))}");
                 return;
@@ -405,8 +406,9 @@ public static unsafe partial class Program
                     WsFail("feed PRESS[#n] BAY EXTRUSION-KEY (on the host or offline)");
                     return;
                 }
+                var why = ConstructPress.Refusal(PressTable.Current, fc, fpart, fbay - 1, piece.ExKey); // (the store's byte keeps an earlier refusal a while)
                 var taken = ConstructPress.TakeFromConveyor(g.Constructs, World.Query, fc, fpart, fbay - 1, piece, 1, 0);
-                WsSay($"feed: {piece.Name} into bay {fbay}: {(taken ? "taken" : $"refused ({(BayRefuse)(fst.Blocked >> 2)})")}");
+                WsSay($"feed: {piece.Name} into bay {fbay}: {(taken ? "taken" : $"refused ({why})")}");
                 _wsWait = 2;
                 return;
             }

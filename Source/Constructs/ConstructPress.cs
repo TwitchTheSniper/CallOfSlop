@@ -871,7 +871,7 @@ public static class ConstructPress
         BayRefuse.DieSize => "wrong die size",
         BayRefuse.Bulk => "takes pieces, not bulk",
         BayRefuse.Short => "too short",
-        BayRefuse.Bounds => "outside the die's sizes",
+        BayRefuse.Bounds => "out of range",
         _ => "",
     };
 
@@ -879,6 +879,9 @@ public static class ConstructPress
     private static string SizedWhy(BayRefuse why, ConstructPartDef press) => why == BayRefuse.Size ? PressWide[Math.Clamp(Pressed.PressClass(press.PressMaxCm), 0, PressWide.Length - 1)] : WhyText(why);
 
     private static readonly string[] PressWide = ["too wide: Medium Press", "too wide: Large Press", "too wide: Capital Press", "too wide for any press"];
+
+    /// <summary>The same on a bay's card, which is narrow (12 characters on a Medium Press): its range line beside it says how wide.</summary>
+    private static string SizedWhyShort(BayRefuse why) => why == BayRefuse.Size ? "too wide" : WhyText(why);
 
     /// <summary>The bay a refusal is about, and why (from the wire's byte).</summary>
     private static BayRefuse RefusedAt(CStore st, out int bay)
@@ -1013,7 +1016,7 @@ public static class ConstructPress
             card.IconMask = k.Mask;
             card.Add(1, names.NameOf(k.Material));
             card.Add(2, Extrusion.PresetOf(k.Mask) is var sec and >= 0 ? SectionName(sec) : "Custom");
-            card.AddShort(3, k.W / 100f).Add(3, 'x').AddShort(3, k.H / 100f).Add(3, 'x').AddShort(3, k.L / 100f).Add(3, " m");
+            card.AddShort(3, k.W / 100f).Add(3, 'x').AddShort(3, k.H / 100f).Add(3, 'x').AddShort(3, k.L / 100f).Add(3, 'm');
             var why = SizedRefusal(die, d, k, out var pattern, out var preset);
             if (why == BayRefuse.None)
             {
@@ -1023,7 +1026,7 @@ public static class ConstructPress
             else
             {
                 card.State = PanelState.Refused;
-                card.Add(4, SizedWhy(why, d));
+                card.Add(4, SizedWhyShort(why));
             }
             return;
         }
@@ -1033,11 +1036,11 @@ public static class ConstructPress
             Choice(card, 1, names.NameOf(die.Materials[m]), m + 1);
         for (var b = 0; b < die.Blanks.Length; b++)
             Choice(card, 2, SectionName(die.Blanks[b]), b + 1);
-        card.AddMetres(3, die.AcrossMin).Add(3, " to ").AddMetres(3, Math.Min(die.AcrossMax, d.PressMaxCm));
+        card.AddShort(3, die.AcrossMin / 100f).Add(3, '-').AddShort(3, Math.Min(die.AcrossMax, d.PressMaxCm) / 100f).Add(3, " m");
         if (refused != BayRefuse.None)
         {
             card.State = PanelState.Refused;
-            card.Add(4, SizedWhy(refused, d));
+            card.Add(4, SizedWhyShort(refused));
             return;
         }
         card.State = PanelState.Wants;
@@ -1142,7 +1145,9 @@ public static class ConstructPress
             };
         var why = RefusedAt(st, out var bay);
         if (why != BayRefuse.None && sized != null && bay != 3)
-            problem = $"bay {bay + 1}: {SizedWhy(why, d)}";
+            problem = $"bay {bay + 1}: {SizedWhy(why, d)}" + (why == BayRefuse.Bounds
+                ? $", the {sized.Family} Die takes {sized.AcrossMin / 100f:0.00} to {Math.Min(sized.AcrossMax, d.PressMaxCm) / 100f:0.00} m across, {sized.LengthMin / 100f:0.00} to {sized.LengthMax / 100f:0.00} m long, {sized.AspectMin:0.##} to {sized.AspectMax:0.##} times as long"
+                : "");
         else if (why != BayRefuse.None)
             problem = (bay == 3 ? "die slot: " : $"bay {bay + 1}: ") + WhyText(why) + (why is BayRefuse.Material or BayRefuse.Section or BayRefuse.Size && row != null && SpecFor(row, bay) is { } want ? ", wants " + Spec(want) : "");
         string? action = null;
