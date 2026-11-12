@@ -20,12 +20,17 @@ public sealed partial class Game
     public const float MakeEngineMinFit = 0.3f, MakeEngineMaxFit = 100f;
 
     /// <summary>Client (or the host): ask for an engine in front of you. <paramref name="size"/> -1: any; <paramref name="fit"/> length, width, height (m; 0: any).</summary>
-    public void SandboxMakeEngine(int kw, int tier, EngineLayout layout, EngineBoost boost, int size, Vector3 fit, int seed)
+    public void SandboxMakeEngine(int kw, int tier, EngineLayout layout, EngineBoost boost, int size, Vector3 fit, int seed, bool ghost = false)
     {
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.MakeEngine).U16((ushort)Math.Clamp(kw, 0, ushort.MaxValue)).U8((byte)Math.Clamp(tier, 0, 255))
             .U8((byte)layout).U8((byte)boost).U8((byte)(size < 0 ? 255 : Math.Min(size, 254)))
             .U16(FitCm(fit.X)).U16(FitCm(fit.Y)).U16(FitCm(fit.Z)).U32((uint)Math.Max(0, seed));
+        if (ghost)
+        {
+            SpawnPrepareSend(w, $"engine of {kw} kW"); // (placed with a ghost: GameSandboxBlueprintGhost.cs)
+            return;
+        }
         if (IsServer)
         {
             if (Local is { } me)

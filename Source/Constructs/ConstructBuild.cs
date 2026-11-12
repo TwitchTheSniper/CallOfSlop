@@ -1060,8 +1060,25 @@ public static class ConstructBuild
     }
 
     /// <summary>Upright on the ground there, turned by <paramref name="yaw"/> about its up.</summary>
-    private static Quaternion GroundRot(Vector3 ground, float yaw) =>
+    internal static Quaternion GroundRot(Vector3 ground, float yaw) =>
         Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(Matrix4x4.CreateRotationY(-yaw) * GravityFrames.Basis(ground)));
+
+    /// <summary>
+    /// A built construct's lowest point in its own frame (rebuilt first if it must be): its parts' bounds, or the wheels' bottoms, or a
+    /// walker's resting feet when enough fed legs hold it. <see cref="SetDown"/> stands it there; the blueprint ghost rests on it too.
+    /// </summary>
+    internal static float LowOf(ConstructWorld world, Construct c)
+    {
+        if (c.Dirty)
+            c.Rebuild(); // (its bounds, wheels and legs as built: the first tick would rebuild it anyway)
+        var low = c.LocalMin.Y;
+        for (var k = 0; k < c.WheelCount; k++)
+            low = MathF.Min(low, c.Wheels[k].Centre.Y - c.Wheels[k].Travel * 0.5f - c.Wheels[k].Radius);
+        if (c.LegCount > 0 && ConstructPhysics.PowerLegs(world, c, false) >= ConstructPhysics.MinWalkLegs)
+            for (var k = 0; k < c.LegCount; k++)
+                low = MathF.Min(low, c.Legs[k].Rest.Y);
+        return low;
+    }
 
     /// <summary>A built construct's loot rolled and its lowest point stood on the ground (its cargo moves with it).</summary>
     private static void SetDown(ConstructWorld world, Construct c, Blueprint bp, int[]? partOf, Vector3 ground, Quaternion rot)
@@ -1073,14 +1090,7 @@ public static class ConstructBuild
         // Lowest point: the parts' bounds, or the wheels' bottoms, or a walker's resting feet (docs/sandbox/GIANTS.md, "Walking
         // on real maps"): one with enough fed legs to hold it is set down standing, its hull clear of the ground and of what
         // stands on it, so it walks from the first tick instead of standing up from its hips.
-        if (c.Dirty)
-            c.Rebuild(); // (its bounds, wheels and legs as built: the first tick would rebuild it anyway)
-        var low = c.LocalMin.Y;
-        for (var k = 0; k < c.WheelCount; k++)
-            low = MathF.Min(low, c.Wheels[k].Centre.Y - c.Wheels[k].Travel * 0.5f - c.Wheels[k].Radius);
-        if (c.LegCount > 0 && ConstructPhysics.PowerLegs(world, c, false) >= ConstructPhysics.MinWalkLegs)
-            for (var k = 0; k < c.LegCount; k++)
-                low = MathF.Min(low, c.Legs[k].Rest.Y);
+        var low = LowOf(world, c);
         c.Pos = ground - Vector3.Transform(new Vector3(0, low - 0.02f, 0), rot);
         c.PrevPos = c.NetPos = c.NetFromPos = c.Pos;
         c.NetHistReset();
@@ -1131,6 +1141,12 @@ public static class ConstructBuild
 
         /// <summary>Its steps (and its tow's) are done: <see cref="Join"/> may be called.</summary>
         public bool Ready => _ready;
+
+        /// <summary>The body its steps built, in its scratch world (once ready; null when they refused): the blueprint ghost measures it.</summary>
+        public Construct? Body => _ready ? _run.Body : null;
+
+        /// <summary>The scratch world it was built in (its body's legs are fed there).</summary>
+        public ConstructWorld Scratch => _scratch;
 
         /// <summary>Why its steps refused (once <see cref="Step"/> is true), or "".</summary>
         public string Why = "";

@@ -32,6 +32,7 @@ The configure tool, fusing, free placement, painting, the remover, snappy/socket
 - The configure tool
 - Fusing
 - New constructs (free placement)
+- Spawning with a ghost
 - The paint tool (board item pp01)
 - The texture paint tool
 - The material painter
