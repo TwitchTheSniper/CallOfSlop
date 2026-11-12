@@ -32,6 +32,7 @@ public enum BayRefuse : byte
     DieSize, // a die of another size class
     Bulk, // a chute of bulk material: a press takes pieces
     Short, // the right piece, but shorter than a stroke
+    Bounds, // a sized die's: the piece is outside its sizes (too thin, too long, too stubby: Pressed.Refusal says which)
 }
 
 /// <summary>
@@ -252,6 +253,8 @@ public static class ConstructPress
             return true;
         var held = ConstructGatherer.HeldOff(c, part);
         ConstructGatherer.SetHeld(world, st, held);
+        if (SizedDieOf(table, c, part) is { } sized)
+            return WorkSized(world, query, c, part, st, sized, held);
         var rows = RowsOf(table, c, part);
         var row = RowFor(rows, c, part);
         var why = StateOf(world, c, part, st, row, out var satisfied);
@@ -299,24 +302,24 @@ public static class ConstructPress
     private static bool OutputFull(ConstructPartDef d, CStore st, PressRow r) =>
         ConstructAssembling.OutputOf(d, st, r.Output, r.Count) == AsmOut.TrayFull;
 
-    /// <summary>A stroke: the output first, then the length off each piece, the highest part first so a piece that goes leaves the others' indices alone. True when a part went.</summary>
-    private static bool Stroke(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, PressRow r)
+    /// <summary>What a stroke makes goes out: to the tray, the Piece out conveyor (whole strokes only) or the floor in front. False (and the stall set) when it can't.</summary>
+    private static bool PutOut(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, ConstructPartDef output, int count)
     {
         var d = c.Parts[part].D;
-        if (ConstructAssembling.OutputOf(d, st, r.Output, r.Count) == AsmOut.Body && ConstructConveyor.Out(c, part) is var conveyor and >= 0)
+        if (ConstructAssembling.OutputOf(d, st, output, count) == AsmOut.Body && ConstructConveyor.Out(c, part) is var conveyor and >= 0)
         {
             // (a Piece out conveyor takes what no tray holds, whole strokes only; without one it drops in front as before)
-            if (!ConstructConveyor.PutMade(world, c, conveyor, r.Output, r.Count, out var full))
+            if (!ConstructConveyor.PutMade(world, c, conveyor, output, count, out var full))
             {
                 SetStall(world, st, full switch { ExtrudeStall.ConveyorSmall => PressStall.ConveyorSmall, ExtrudeStall.ConveyorCut => PressStall.ConveyorCut, _ => PressStall.ConveyorFull });
                 return false;
             }
         }
-        else if (ConstructAssembling.OutputOf(d, st, r.Output, r.Count) == AsmOut.Body)
+        else if (ConstructAssembling.OutputOf(d, st, output, count) == AsmOut.Body)
         {
-            for (var n = 0; n < r.Count; n++)
+            for (var n = 0; n < count; n++)
             {
-                var why = ConstructAssembling.Leave(world, query, c, part, r.Output);
+                var why = ConstructAssembling.Leave(world, query, c, part, output);
                 if (why != AsmBlock.None)
                 {
                     SetStall(world, st, PressStall.Blocked);
@@ -325,8 +328,17 @@ public static class ConstructPress
             }
         }
         else
-            for (var n = 0; n < r.Count; n++)
-                world.TrayAdd(st, d, r.Output);
+            for (var n = 0; n < count; n++)
+                world.TrayAdd(st, d, output);
+        return true;
+    }
+
+    /// <summary>A stroke: the output first, then the length off each piece, the highest part first so a piece that goes leaves the others' indices alone. True when a part went.</summary>
+    private static bool Stroke(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, PressRow r)
+    {
+        var d = c.Parts[part].D;
+        if (!PutOut(world, query, c, part, st, r.Output, r.Count))
+            return false;
         world.Note(CNoteKind.Made, c.Id, c.Owner, (ushort)r.Output.Id, (byte)d.Tier);
         Span<int> pieces = stackalloc int[PressTable.MaxBays];
         Span<int> left = stackalloc int[PressTable.MaxBays];
@@ -357,6 +369,103 @@ public static class ConstructPress
         }
         c.Wake();
         return gone;
+    }
+
+    // ---- Sized dies -----------------------------------------------------------------------------------------------
+    // A die with Pressing.json /2 data (Bracket, Housing, Plate: PressTable.Dies) presses a bay's whole piece into one part: the preset's
+    // catalogue part when the piece is a preset's blank, else a "Pressed Part (...)" sized by it (Pressed.cs). Every bay takes blanks and a
+    // stroke works the first ready one, bay 1 first; the pattern is the blank's (PressDie.PatternFor) until the press has a Pattern setting.
+    // A long strip makes one long part, not many (the user's decision D8). Dies with no such data stroke their rows as before.
+
+    /// <summary>The fitted die's sized data, or null (no die, a lathe, or a die that strokes rows).</summary>
+    public static PressDie? SizedDieOf(PressTable t, Construct c, int part)
+    {
+        if (t.Dies.Length == 0 || c.Parts[part].D.IsLathe)
+            return null;
+        var die = DieIn(c, part);
+        return die < 0 ? null : t.Die(c.Parts[die].D.DieFamily);
+    }
+
+    /// <summary>Why a press with a sized die won't take this piece, or None; with the pattern and preset it would press it to.</summary>
+    public static BayRefuse SizedRefusal(PressDie die, ConstructPartDef press, in ExtrusionKey key, out PressPattern? pattern, out ConstructPartDef? preset)
+    {
+        pattern = null;
+        preset = null;
+        var section = key.Shape == ExShape.Section ? Extrusion.PresetOf(key.Mask) : -1;
+        if (section < 0 || Array.IndexOf(die.Blanks, section) < 0)
+            return BayRefuse.Section;
+        if (Array.IndexOf(die.Materials, key.Material) < 0)
+            return BayRefuse.Material;
+        if (Pressed.Across(key) > press.PressMaxCm)
+            return BayRefuse.Size;
+        pattern = die.PatternFor(key, out preset);
+        if (pattern == null)
+            return BayRefuse.Section;
+        if (!Pressed.Fits(die, pattern, key with { Growing = false }))
+        {
+            (pattern, preset) = (null, null);
+            return BayRefuse.Bounds;
+        }
+        return BayRefuse.None;
+    }
+
+    /// <summary>The first bay (bay 1 first) whose piece the sized die presses, with what it makes; -1 when none.</summary>
+    public static int ReadyBay(PressDie die, Construct c, int part, out PressPattern? pattern, out ConstructPartDef? preset)
+    {
+        var d = c.Parts[part].D;
+        for (var b = 0; b < d.PressBays.Length; b++)
+            if (PieceIn(c, part, b) is var i and >= 0 && SizedRefusal(die, d, c.Parts[i].D.ExKey, out pattern, out preset) == BayRefuse.None)
+                return b;
+        (pattern, preset) = (null, null);
+        return -1;
+    }
+
+    /// <summary>A sized die's stroke time in ticks at speed 1 (the press's speed is its work a step).</summary>
+    public static int SizedTicks(PressDie die, in ExtrusionKey blank) => (int)MathF.Ceiling(Pressed.Seconds(die, blank, 0) * World.TickRate - 0.001f);
+
+    /// <summary>What a card says a sized die makes of a blank: "Makes" the preset's part, else "Sized" and the pattern's label (allocates nothing).</summary>
+    private static void SizedMakes(PanelCard card, int line, PressPattern pattern, ConstructPartDef? preset) =>
+        card.Add(line, preset != null ? "Makes " : "Sized ").Add(line, preset?.Name ?? pattern.Label);
+
+    /// <summary>A step of a press with a sized die. True when parts came or went.</summary>
+    private static bool WorkSized(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, PressDie die, bool held)
+    {
+        ref var p = ref c.Parts[part];
+        var d = p.D;
+        var bay = ReadyBay(die, c, part, out var pattern, out var preset);
+        var why = bay < 0 ? PressStall.Wants
+            : preset != null && ConstructAssembling.OutputOf(d, st, preset, 1) == AsmOut.TrayFull ? PressStall.TrayFull
+            : ConstructRecycler.Powered(world, c, part) ? PressStall.None : PressStall.NoPower;
+        SetStall(world, st, why);
+        if (why != PressStall.None || held || p.Broken)
+        {
+            st.JobTicks = 0;
+            ConstructGatherer.SetBusy(world, st, false);
+            return false;
+        }
+        var piece = PieceIn(c, part, bay);
+        var blank = c.Parts[piece].D.ExKey with { Growing = false };
+        if (!world.CreativeRecycling)
+        {
+            ConstructGatherer.SetBusy(world, st, true);
+            st.JobTicks += d.RefineWork;
+            if (st.JobTicks < SizedTicks(die, blank) * Milli)
+                return false;
+            st.JobTicks = 0;
+        }
+        // The part: a preset is the catalogue part; anything else is made from its key (once a machine, then shared: Pressed.Parse).
+        var output = preset ?? Pressed.Parse(Pressed.KeyOf(die, pattern!, blank));
+        if (output == null)
+        {
+            SetStall(world, st, PressStall.Blocked); // (the run-time part table is full)
+            return false;
+        }
+        if (!PutOut(world, query, c, part, st, output, 1))
+            return false;
+        world.Note(CNoteKind.Made, c.Id, c.Owner, (ushort)(preset ?? pattern!.Like).Id, (byte)d.Tier); // (a sized part counts as its like part: its own id is this run's)
+        world.RemovePart(c, piece);
+        c.Wake();
+        return true;
     }
 
     // ---- What comes in -------------------------------------------------------------------------------------------
@@ -463,6 +572,8 @@ public static class ConstructPress
     public static BayRefuse Refusal(PressTable table, Construct c, int part, int bay, in ExtrusionKey key)
     {
         var d = c.Parts[part].D;
+        if (SizedDieOf(table, c, part) is { } sized)
+            return SizedRefusal(sized, d, key, out _, out _);
         if (PressBaySpec.Across(key) > d.PressMaxCm)
             return BayRefuse.Size;
         var rows = RowsOf(table, c, part);
@@ -760,8 +871,17 @@ public static class ConstructPress
         BayRefuse.DieSize => "wrong die size",
         BayRefuse.Bulk => "takes pieces, not bulk",
         BayRefuse.Short => "too short",
+        BayRefuse.Bounds => "out of range",
         _ => "",
     };
+
+    /// <summary>A sized die's reason: a piece too wide names this press's class, so the player knows to take it to a bigger one.</summary>
+    private static string SizedWhy(BayRefuse why, ConstructPartDef press) => why == BayRefuse.Size ? PressWide[Math.Clamp(Pressed.PressClass(press.PressMaxCm), 0, PressWide.Length - 1)] : WhyText(why);
+
+    private static readonly string[] PressWide = ["too wide: Medium Press", "too wide: Large Press", "too wide: Capital Press", "too wide for any press"];
+
+    /// <summary>The same on a bay's card, which is narrow (12 characters on a Medium Press): its range line beside it says how wide.</summary>
+    private static string SizedWhyShort(BayRefuse why) => why == BayRefuse.Size ? "too wide" : WhyText(why);
 
     /// <summary>The bay a refusal is about, and why (from the wire's byte).</summary>
     private static BayRefuse RefusedAt(CStore st, out int bay)
@@ -802,6 +922,11 @@ public static class ConstructPress
         if (at != bay)
             refused = BayRefuse.None;
         var piece = PieceIn(c, part, bay);
+        if (SizedDieOf(PressTable.Current, c, part) is { } sized)
+        {
+            FillSizedBay(c, part, card, sized, piece, refused);
+            return;
+        }
         if (row == null)
         {
             card.State = piece >= 0 ? PanelState.Wants : PanelState.Idle;
@@ -874,6 +999,54 @@ public static class ConstructPress
             card.Add(4, ": wrong");
     }
 
+    /// <summary>
+    /// A bay's card under a sized die: what blanks it takes (materials, sections, the sizes across on this press) until a piece is in, then
+    /// that piece (material, section, size) and what the stroke will make of it: the preset's name, or the pattern's (it is sized by the piece).
+    /// </summary>
+    private static void FillSizedBay(Construct c, int part, PanelCard card, PressDie die, int piece, BayRefuse refused)
+    {
+        var d = c.Parts[part].D;
+        var names = RecyclingTable.Current;
+        card.Add(0, ": Blank");
+        card.HasIcon = true;
+        if (piece >= 0 && refused == BayRefuse.None)
+        {
+            ref readonly var k = ref c.Parts[piece].D.ExKey;
+            card.IconColour = names.ColourOf(k.Material);
+            card.IconMask = k.Mask;
+            card.Add(1, names.NameOf(k.Material));
+            card.Add(2, Extrusion.PresetOf(k.Mask) is var sec and >= 0 ? SectionName(sec) : "Custom");
+            card.AddShort(3, k.W / 100f).Add(3, 'x').AddShort(3, k.H / 100f).Add(3, 'x').AddShort(3, k.L / 100f).Add(3, 'm');
+            var why = SizedRefusal(die, d, k, out var pattern, out var preset);
+            if (why == BayRefuse.None)
+            {
+                card.State = PanelState.Ok;
+                SizedMakes(card, 4, pattern!, preset);
+            }
+            else
+            {
+                card.State = PanelState.Refused;
+                card.Add(4, SizedWhyShort(why));
+            }
+            return;
+        }
+        card.IconColour = names.ColourOf(die.Materials[0]);
+        card.IconMask = SectionMask(die.Blanks[0]);
+        for (var m = 0; m < die.Materials.Length; m++)
+            Choice(card, 1, names.NameOf(die.Materials[m]), m + 1);
+        for (var b = 0; b < die.Blanks.Length && b < 2; b++) // (two at most, as a row's card: a "+" after two would run off a Small Press's card)
+            Choice(card, 2, SectionName(die.Blanks[b]), b + 1);
+        card.AddShort(3, die.AcrossMin / 100f).Add(3, '-').AddShort(3, Math.Min(die.AcrossMax, d.PressMaxCm) / 100f).Add(3, " m");
+        if (refused != BayRefuse.None)
+        {
+            card.State = PanelState.Refused;
+            card.Add(4, SizedWhyShort(refused));
+            return;
+        }
+        card.State = PanelState.Wants;
+        card.Add(4, "Wants a blank");
+    }
+
     /// <summary>What a bay's line beside the icon holds of a list: as many as fit, then a "+". Text never runs off the screen.</summary>
     private static void Choice(PanelCard card, int line, string name, int nth)
     {
@@ -901,7 +1074,14 @@ public static class ConstructPress
             card.Add(1, "Cuts: ").Add(1, row == null ? "nothing" : row.Output.Name);
         else
             card.Add(1, "Die: ").Add(1, die >= 0 ? c.Parts[die].D.Name : "none");
-        if (row != null && !d.IsLathe)
+        if (SizedDieOf(PressTable.Current, c, part) is { } sized)
+        {
+            if (ReadyBay(sized, c, part, out var pattern, out var preset) >= 0)
+                SizedMakes(card, 2, pattern!, preset);
+            else
+                card.Add(2, "One part a piece");
+        }
+        else if (row != null && !d.IsLathe)
             card.Add(2, "Makes ").Add(2, row.Output.Name);
         var st = world.StoreOf(c, part);
         if (st == null)
@@ -949,6 +1129,7 @@ public static class ConstructPress
         var d = p.D;
         var row = RowFor(RowsOf(PressTable.Current, c, part), c, part);
         var die = DieIn(c, part);
+        var sized = SizedDieOf(PressTable.Current, c, part);
         var state = d.IsLathe ? row == null ? "nothing chosen" : "cuts " + row.Output.Name : die < 0 ? "no die" : c.Parts[die].D.Name;
         if (st.Items > 0)
             state += $", tray {st.Items}";
@@ -958,10 +1139,16 @@ public static class ConstructPress
             : (PressStall)st.Refused switch
             {
                 PressStall.None => null,
+                PressStall.Wants when sized != null => $"needs a blank in a bay: {SectionName(sized.Blanks[0]).ToLowerInvariant()}{(sized.Blanks.Length > 1 ? " or another" : "")}, {sized.AcrossMin / 100f:0.00} to {Math.Min(sized.AcrossMax, d.PressMaxCm) / 100f:0.00} m across",
                 PressStall.Wants when row != null => "needs " + Wants(row, c, part),
                 var s => StallText(s).ToLowerInvariant(),
             };
-        if (RefusedAt(st, out var bay) is var why and not BayRefuse.None)
+        var why = RefusedAt(st, out var bay);
+        if (why != BayRefuse.None && sized != null && bay != 3)
+            problem = $"bay {bay + 1}: {SizedWhy(why, d)}" + (why == BayRefuse.Bounds
+                ? $", the {sized.Family} Die takes {sized.AcrossMin / 100f:0.00} to {Math.Min(sized.AcrossMax, d.PressMaxCm) / 100f:0.00} m across, {sized.LengthMin / 100f:0.00} to {sized.LengthMax / 100f:0.00} m long, {sized.AspectMin:0.##} to {sized.AspectMax:0.##} times as long"
+                : "");
+        else if (why != BayRefuse.None)
             problem = (bay == 3 ? "die slot: " : $"bay {bay + 1}: ") + WhyText(why) + (why is BayRefuse.Material or BayRefuse.Section or BayRefuse.Size && row != null && SpecFor(row, bay) is { } want ? ", wants " + Spec(want) : "");
         string? action = null;
         if (near)

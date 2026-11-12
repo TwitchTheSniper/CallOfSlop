@@ -1,6 +1,6 @@
 {
  "format": "call-of-slop-pressing/2",
- "about": "The stamping table (docs/sandbox/CONSTRUCTS.md, 'The Press'). Written by the part kit (--gen-parts press_parts): fix it, not this file. 'rows' are a press's: with a die of family 'die', the first row whose bays hold what it asks runs. Each bay gives its 'sections' (Extrusion presets, round, pipe), 'materials', 'minAcross' and 'maxAcross' (m, the piece's smaller side) and what a stroke takes: 'use' (m) or 'useAcross' (times its size across). 'lathe' rows are a Die Lathe's, chosen as a setting. 'dies' (the Press rework, Pressed.cs) say what a die makes of a whole blank: its blanks, materials, bounds in cm, features in the blank's unit frame and patterns (a like part and a preset blank); 'presets' name the catalogue part that is a die's product of one standard blank. The press still strokes 'rows' until the rework's phase 2.",
+ "about": "The stamping table (docs/sandbox/CONSTRUCTS.md, 'The Press'). Written by the part kit (--gen-parts press_parts): fix it, not this file. 'rows' are a press's: with a die of family 'die', the first row whose bays hold what it asks runs. Each bay gives its 'sections' (Extrusion presets, round, pipe), 'materials', 'minAcross' and 'maxAcross' (m, the piece's smaller side) and what a stroke takes: 'use' (m) or 'useAcross' (times its size across). 'lathe' rows are a Die Lathe's, chosen as a setting. 'dies' (the Press rework, Pressed.cs) say what a die makes of a whole blank: its blanks, materials, bounds in cm, features in the blank's unit frame and patterns (a like part and a preset blank); 'presets' name the catalogue part that is a die's product of one standard blank. A die listed in 'dies' presses bay 1's whole piece into one part (the preset's catalogue part when the blank is one); the other dies stroke 'rows'.",
  "rows": [
   {
    "die": "Button",
@@ -30,90 +30,6 @@
      "minAcross": 0.1,
      "maxAcross": 0.25,
      "use": 0.05
-    }
-   ]
-  },
-  {
-   "die": "Bracket",
-   "output": "L Bracket",
-   "seconds": 1,
-   "bays": [
-    {
-     "label": "Angle",
-     "sections": [
-      "l-angle"
-     ],
-     "materials": [
-      "metal",
-      "steel",
-      "bronze"
-     ],
-     "minAcross": 0.1,
-     "maxAcross": 0.2,
-     "use": 0.15
-    }
-   ]
-  },
-  {
-   "die": "Bracket",
-   "output": "Corner Bracket",
-   "seconds": 1.5,
-   "bays": [
-    {
-     "label": "Angle",
-     "sections": [
-      "l-angle"
-     ],
-     "materials": [
-      "metal",
-      "steel",
-      "bronze"
-     ],
-     "minAcross": 0.25,
-     "maxAcross": 0.45,
-     "use": 0.25
-    }
-   ]
-  },
-  {
-   "die": "Bracket",
-   "output": "Gusset 0.25 m",
-   "seconds": 1,
-   "bays": [
-    {
-     "label": "Plate",
-     "sections": [
-      "plate"
-     ],
-     "materials": [
-      "metal",
-      "steel",
-      "bronze"
-     ],
-     "minAcross": 0.25,
-     "maxAcross": 0.35,
-     "use": 0.25
-    }
-   ]
-  },
-  {
-   "die": "Bracket",
-   "output": "Gusset 0.5 m",
-   "seconds": 1.5,
-   "bays": [
-    {
-     "label": "Plate",
-     "sections": [
-      "plate"
-     ],
-     "materials": [
-      "metal",
-      "steel",
-      "bronze"
-     ],
-     "minAcross": 0.4,
-     "maxAcross": 0.45,
-     "use": 0.5
     }
    ]
   },
@@ -195,426 +111,6 @@
      "minAcross": 0.1,
      "maxAcross": 0.25,
      "use": 0.1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Housing 0.25 m",
-   "seconds": 2.125,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "metal"
-     ],
-     "minAcross": 0.1,
-     "maxAcross": 0.2,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Steel Housing 0.25 m",
-   "seconds": 2.125,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 0.1,
-     "maxAcross": 0.2,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Bronze Housing 0.25 m",
-   "seconds": 2.125,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "bronze"
-     ],
-     "minAcross": 0.1,
-     "maxAcross": 0.2,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Housing 0.5 m",
-   "seconds": 2.25,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "metal"
-     ],
-     "minAcross": 0.25,
-     "maxAcross": 0.45,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Steel Housing 0.5 m",
-   "seconds": 2.25,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 0.25,
-     "maxAcross": 0.45,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Bronze Housing 0.5 m",
-   "seconds": 2.25,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "bronze"
-     ],
-     "minAcross": 0.25,
-     "maxAcross": 0.45,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Housing 1 m",
-   "seconds": 2.5,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "metal"
-     ],
-     "minAcross": 0.5,
-     "maxAcross": 0.95,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Steel Housing 1 m",
-   "seconds": 2.5,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 0.5,
-     "maxAcross": 0.95,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Bronze Housing 1 m",
-   "seconds": 2.5,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "bronze"
-     ],
-     "minAcross": 0.5,
-     "maxAcross": 0.95,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Housing 2 m",
-   "seconds": 3.0,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "metal"
-     ],
-     "minAcross": 1,
-     "maxAcross": 1.8,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Steel Housing 2 m",
-   "seconds": 3.0,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 1,
-     "maxAcross": 1.8,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Bronze Housing 2 m",
-   "seconds": 3.0,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "bronze"
-     ],
-     "minAcross": 1,
-     "maxAcross": 1.8,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Housing 4 m",
-   "seconds": 4.0,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "metal"
-     ],
-     "minAcross": 2,
-     "maxAcross": 3.95,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Steel Housing 4 m",
-   "seconds": 4.0,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 2,
-     "maxAcross": 3.95,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Bronze Housing 4 m",
-   "seconds": 4.0,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "bronze"
-     ],
-     "minAcross": 2,
-     "maxAcross": 3.95,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Housing 8 m",
-   "seconds": 6.0,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "metal"
-     ],
-     "minAcross": 4,
-     "maxAcross": 7.2,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Steel Housing 8 m",
-   "seconds": 6.0,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 4,
-     "maxAcross": 7.2,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Bronze Housing 8 m",
-   "seconds": 6.0,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "bronze"
-     ],
-     "minAcross": 4,
-     "maxAcross": 7.2,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Housing 16 m",
-   "seconds": 10.0,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "metal"
-     ],
-     "minAcross": 8,
-     "maxAcross": 28.8,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Steel Housing 16 m",
-   "seconds": 10.0,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "steel"
-     ],
-     "minAcross": 8,
-     "maxAcross": 28.8,
-     "useAcross": 1
-    }
-   ]
-  },
-  {
-   "die": "Housing",
-   "output": "Bronze Housing 16 m",
-   "seconds": 10.0,
-   "bays": [
-    {
-     "label": "Bar",
-     "sections": [
-      "hollow",
-      "solid"
-     ],
-     "materials": [
-      "bronze"
-     ],
-     "minAcross": 8,
-     "maxAcross": 28.8,
-     "useAcross": 1
     }
    ]
   },
@@ -779,6 +275,63 @@
      "minAcross": 0.25,
      "maxAcross": 0.45,
      "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Bracket Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "metal",
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
+    }
+   ]
+  },
+  {
+   "output": "Large Bracket Die",
+   "seconds": 45,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "metal",
+      "steel"
+     ],
+     "minAcross": 4.0,
+     "maxAcross": 7.2,
+     "use": 4.0
+    }
+   ]
+  },
+  {
+   "output": "Capital Bracket Die",
+   "seconds": 60,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "metal",
+      "steel"
+     ],
+     "minAcross": 8.0,
+     "maxAcross": 28.8,
+     "use": 8.0
     }
    ]
   },
@@ -973,6 +526,82 @@
       "solid"
      ],
      "materials": [
+      "steel"
+     ],
+     "minAcross": 8.0,
+     "maxAcross": 28.8,
+     "use": 8.0
+    }
+   ]
+  },
+  {
+   "output": "Plate Die",
+   "seconds": 15,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "metal",
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Plate Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "metal",
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
+    }
+   ]
+  },
+  {
+   "output": "Large Plate Die",
+   "seconds": 45,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "metal",
+      "steel"
+     ],
+     "minAcross": 4.0,
+     "maxAcross": 7.2,
+     "use": 4.0
+    }
+   ]
+  },
+  {
+   "output": "Capital Plate Die",
+   "seconds": 60,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "metal",
       "steel"
      ],
      "minAcross": 8.0,
@@ -1185,7 +814,7 @@
      "id": "l",
      "like": "L Bracket",
      "label": "L bracket",
-     "preset": "l-angle 25x25x25 steel",
+     "preset": "l-angle 15x15x15 steel",
      "blanks": [
       "l-angle",
       "solid"
@@ -1458,7 +1087,7 @@
      "id": "housing",
      "like": "Housing 0.5 m",
      "label": "housing",
-     "preset": "hollow 50x50x50 metal"
+     "preset": "hollow 45x45x50 metal"
     }
    ]
   },
@@ -1978,7 +1607,7 @@
    "part": "L Bracket",
    "die": "bracket",
    "pattern": "l",
-   "blank": "l-angle 25x25x25 steel"
+   "blank": "l-angle 15x15x15 steel"
   },
   {
    "part": "Corner Bracket",
@@ -1996,13 +1625,13 @@
    "part": "Gusset 0.5 m",
    "die": "bracket",
    "pattern": "gusset",
-   "blank": "plate 50x10x50 steel"
+   "blank": "plate 45x10x50 steel"
   },
   {
    "part": "L Bracket",
    "die": "bracket",
    "pattern": "l",
-   "blank": "l-angle 25x25x25 metal"
+   "blank": "l-angle 15x15x15 metal"
   },
   {
    "part": "Corner Bracket",
@@ -2020,13 +1649,13 @@
    "part": "Gusset 0.5 m",
    "die": "bracket",
    "pattern": "gusset",
-   "blank": "plate 50x10x50 metal"
+   "blank": "plate 45x10x50 metal"
   },
   {
    "part": "L Bracket",
    "die": "bracket",
    "pattern": "l",
-   "blank": "l-angle 25x25x25 bronze"
+   "blank": "l-angle 15x15x15 bronze"
   },
   {
    "part": "Corner Bracket",
@@ -2044,7 +1673,7 @@
    "part": "Gusset 0.5 m",
    "die": "bracket",
    "pattern": "gusset",
-   "blank": "plate 50x10x50 bronze"
+   "blank": "plate 45x10x50 bronze"
   },
   {
    "part": "Housing 0.25 m",
@@ -2068,19 +1697,19 @@
    "part": "Housing 0.5 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 50x50x50 metal"
+   "blank": "hollow 45x45x50 metal"
   },
   {
    "part": "Steel Housing 0.5 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 50x50x50 steel"
+   "blank": "hollow 45x45x50 steel"
   },
   {
    "part": "Bronze Housing 0.5 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 50x50x50 bronze"
+   "blank": "hollow 45x45x50 bronze"
   },
   {
    "part": "Housing 1 m",
@@ -2104,19 +1733,19 @@
    "part": "Housing 2 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 200x200x200 metal"
+   "blank": "hollow 180x180x200 metal"
   },
   {
    "part": "Steel Housing 2 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 200x200x200 steel"
+   "blank": "hollow 180x180x200 steel"
   },
   {
    "part": "Bronze Housing 2 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 200x200x200 bronze"
+   "blank": "hollow 180x180x200 bronze"
   },
   {
    "part": "Housing 4 m",
@@ -2140,19 +1769,19 @@
    "part": "Housing 8 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 800x800x800 metal"
+   "blank": "hollow 720x720x800 metal"
   },
   {
    "part": "Steel Housing 8 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 800x800x800 steel"
+   "blank": "hollow 720x720x800 steel"
   },
   {
    "part": "Bronze Housing 8 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 800x800x800 bronze"
+   "blank": "hollow 720x720x800 bronze"
   },
   {
    "part": "Housing 16 m",
@@ -2171,6 +1800,24 @@
    "die": "housing",
    "pattern": "housing",
    "blank": "hollow 1600x1600x1600 bronze"
+  },
+  {
+   "part": "Steel Plate",
+   "die": "plate",
+   "pattern": "steel",
+   "blank": "plate 50x10x50 steel"
+  },
+  {
+   "part": "Sheet Steel 1 m",
+   "die": "plate",
+   "pattern": "sheet",
+   "blank": "plate 100x10x100 steel"
+  },
+  {
+   "part": "Armour Plate 1 m",
+   "die": "plate",
+   "pattern": "armour",
+   "blank": "plate 100x20x100 steel"
   }
  ]
 }

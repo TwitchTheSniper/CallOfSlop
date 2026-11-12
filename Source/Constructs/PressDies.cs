@@ -81,11 +81,59 @@ public sealed class PressDie
     public PressFeature[] Features = [];
     public PressSocketSpec[] Sockets = [];
     public PressPattern[] Patterns = [];
+    public PressPreset[] Presets = []; // this die's presets, in the file's order
 
     public PressPattern? Pattern(string id) => Array.Find(Patterns, p => p.Id == id);
 
     public bool Takes(PressPattern p, int section) => Array.IndexOf(p.Blanks.Length > 0 ? p.Blanks : Blanks, section) >= 0;
+
+    /// <summary>
+    /// What a press makes of this blank until the Pattern setting comes (the Press rework's phase 3): the pattern of the first preset whose
+    /// blank it is (and <paramref name="preset"/>, that catalogue part), else the pattern whose standard blank of this section is nearest in
+    /// size (a preset's or the pattern's own; the first listed of equals), else the first pattern that takes the section. Null: none takes
+    /// it. Every peer picks the same; allocates nothing.
+    /// </summary>
+    public PressPattern? PatternFor(in ExtrusionKey blank, out ConstructPartDef? preset)
+    {
+        preset = null;
+        var k = blank with { Growing = false };
+        if (k.Shape != ExShape.Section || Extrusion.PresetOf(k.Mask) is not (var section and >= 0))
+            return null;
+        foreach (var p in Presets)
+            if (p.Blank == k && Takes(p.Pattern, section))
+            {
+                preset = p.Part;
+                return p.Pattern;
+            }
+        PressPattern? best = null;
+        var dist = int.MaxValue;
+        foreach (var p in Presets)
+            Nearer(p.Pattern, p.Blank, k, section, ref best, ref dist);
+        foreach (var p in Patterns)
+            Nearer(p, p.Preset, k, section, ref best, ref dist);
+        if (best != null)
+            return best;
+        foreach (var p in Patterns)
+            if (Takes(p, section))
+                return p;
+        return null;
+    }
+
+    private void Nearer(PressPattern p, in ExtrusionKey standard, in ExtrusionKey k, int section, ref PressPattern? best, ref int dist)
+    {
+        if (standard.Mask != k.Mask || !Takes(p, section))
+            return;
+        var d = Math.Abs(standard.W - k.W) + Math.Abs(standard.H - k.H);
+        if (d < dist)
+        {
+            dist = d;
+            best = p;
+        }
+    }
 }
+
+/// <summary>A catalogue part that is a die's product of one standard blank (Pressing.json "presets").</summary>
+public readonly record struct PressPreset(ExtrusionKey Blank, PressPattern Pattern, ConstructPartDef Part);
 
 /// <summary>Reads Pressing.json /2's "strength", "dies" and "presets" (PressTable.Parse calls it; a bad entry refuses the whole file).</summary>
 internal static class PressDies
@@ -139,6 +187,7 @@ internal static class PressDies
                 if (!t.PresetByKey.TryAdd(key, part))
                     throw new FormatException($"{where}: {key} is already the preset of {t.PresetByKey[key].Name}");
                 t.PresetKeyById.TryAdd(part.Id, key);
+                die.Presets = [.. die.Presets, new PressPreset(blank, pat, part)];
             }
         }
     }
