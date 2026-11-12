@@ -27,6 +27,7 @@ public static class Pressed
     public static readonly int[] PressMaxCm = [45, 180, 720, 2880];
 
     private static readonly string[] ClassWords = ["Small", "Medium", "Large", "Capital"];
+    private static readonly byte[] DieSocketClass = [ConstructParts.Small, ConstructParts.Medium, ConstructParts.Large, ConstructParts.Capital]; // (a die's mount socket class, by press class)
     private static readonly float[] PressSpeed = [1, 2, 4, 8];
     public static readonly string[] ScaledFields = ["maxTorque", "motorStrength", "motorSpeed", "sideLoad", "maxLoad", "fuelCapacity", "hoseLength"];
 
@@ -55,6 +56,21 @@ public static class Pressed
         if (Extrusion.ParseKey(Extrusion.Prefix + text) is not { } k || k.Growing || k.Shape != ExShape.Section || Extrusion.PresetOf(k.Mask) < 0)
             return null;
         return BlankText(k) == text ? k : null;
+    }
+
+    /// <summary>Can this die and pattern press this blank? <see cref="Refusal"/> without its text: a press asks every step, and allocates nothing.</summary>
+    public static bool Fits(PressDie die, PressPattern p, in ExtrusionKey k)
+    {
+        var section = k.Shape == ExShape.Section ? Extrusion.PresetOf(k.Mask) : -1;
+        if (section < 0 || !die.Takes(p, section) || Array.IndexOf(die.Materials, k.Material) < 0)
+            return false;
+        if (k.W % Extrusion.StepCm != 0 || k.H % Extrusion.StepCm != 0 || k.L % Extrusion.StepCm != 0 || k.W < MinCm || k.H < MinCm)
+            return false;
+        var across = Across(k);
+        if (across < die.AcrossMin || across > die.AcrossMax || k.L < die.LengthMin || k.L > die.LengthMax)
+            return false;
+        var aspect = k.L / (float)across;
+        return aspect >= die.AspectMin - 1e-4f && aspect <= die.AspectMax + 1e-4f && PressClass(across) >= 0;
     }
 
     /// <summary>Why a die and pattern can't press this blank (bay card text), or null.</summary>
@@ -192,9 +208,12 @@ public static class Pressed
         return a.Part != null ? a.Part.Mass * n : RecyclingTable.Current.WeightOf(a.Material) * n;
     }
 
-    /// <summary>A stroke's seconds on a press of class <paramref name="pressClass"/>.</summary>
+    /// <summary>The most a stroke takes at speed 1 (s): a blank's mass grows as its size cubed, and a 16 m housing isn't an afternoon's wait.</summary>
+    public const float MaxSeconds = 60;
+
+    /// <summary>A stroke's seconds on a press of class <paramref name="pressClass"/> (class 0: at speed 1, as a press's own speed then divides it).</summary>
     public static float Seconds(PressDie die, in ExtrusionKey k, int pressClass) =>
-        (die.SecondsBase + die.SecondsPerKg * VolumeMass(k).Mass) / PressSpeed[Math.Clamp(pressClass, 0, PressSpeed.Length - 1)];
+        MathF.Min(MaxSeconds, die.SecondsBase + die.SecondsPerKg * VolumeMass(k).Mass) / PressSpeed[Math.Clamp(pressClass, 0, PressSpeed.Length - 1)];
 
     private static float Strength(byte material) => (ExtrusionTable.Current.Find(material)?.HealthPerM3 ?? 0) / PressTable.Current.StrengthRef;
 
@@ -554,7 +573,7 @@ public static class Pressed
     private static int List(PressTable t)
     {
         var names = RecyclingTable.Current;
-        Console.WriteLine($"[press] {t.Dies.Length} dies, {t.PresetByKey.Count} presets ({PressTable.Format}; the press still strokes its {t.Rows.Length} old rows)");
+        Console.WriteLine($"[press] {t.Dies.Length} dies, {t.PresetByKey.Count} presets ({PressTable.Format}; a press with one of these dies presses a whole blank, the other dies stroke the {t.Rows.Length} old rows)");
         foreach (var d in t.Dies)
         {
             var classes = Enumerable.Range(0, 4).Where(c => (c == 0 ? Pressed.MinCm : PressMaxCm[c - 1] + 1) <= d.AcrossMax && d.AcrossMin <= PressMaxCm[c]).Select(ClassWord);
@@ -576,8 +595,25 @@ public static class Pressed
                 continue;
             var found = ConstructParts.Find(key);
             var ok = ReferenceEquals(found, part);
+            var why = ok ? "" : $": resolves to {found?.Name ?? "nothing"}";
+            // Where it is made: the least press class whose bay takes the blank and that has this family's die; and the press must pick this
+            // part from the blank alone (PressDie.PatternFor), or the preset never comes out of a press.
+            var press = "";
+            if (ok && TryParse(key, out var d, out _, out var blank, out _) && d != null)
+            {
+                var cls = PressClass(Across(blank));
+                while (cls >= 0 && cls < PressMaxCm.Length && !ConstructParts.All.Any(x => x.IsPressDie && x.DieFamily.Equals(d.Family, StringComparison.OrdinalIgnoreCase) && ConstructPress.DieClassOf(x) == DieSocketClass[cls]))
+                    cls++;
+                if (cls < 0 || cls >= PressMaxCm.Length)
+                    why = $": no press with a {d.Family} Die takes a blank {Across(blank) / 100f:0.00} m across";
+                else if (d.PatternFor(blank, out var picked) == null || !ReferenceEquals(picked, part))
+                    why = $": a press makes {picked?.Name ?? "a sized part"} of this blank";
+                else
+                    press = $" (a {ClassWord(cls)} Press)";
+                ok = why.Length == 0;
+            }
             bad += ok ? 0 : 1;
-            Console.WriteLine($"[press] {(ok ? "ok " : "BAD")} {part.Name,-24} {key}{(ok ? "" : $": resolves to {found?.Name ?? "nothing"}")}");
+            Console.WriteLine($"[press] {(ok ? "ok " : "BAD")} {part.Name,-24} {key}{press}{why}");
         }
         Console.WriteLine($"[press] presets: {bad} problems");
         return bad;

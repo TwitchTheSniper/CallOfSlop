@@ -435,7 +435,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 264: smart logistics phase 1 (feat/smart-logistics-1; planned as 262, renumbered at the merge: main had passed it). CBodyKind.Riders: each rider
     //      gains u16 destination store handle, u16 order id and u8 LogiFlags after the link it came through (ConstructLogistics: the Conveyor
     //      Router's choice and the stuck state on clients).
-    public const ushort ProtocolVersion = 264;
+    // 265: (planned as 261) a sized die (Bracket, Housing, Plate) presses a bay's whole piece into one part; BayRefuse.Bounds rides the press's Blocked byte;
+    //      new die parts (Bracket and Plate in every class) move part ids.
+    public const ushort ProtocolVersion = 265;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
