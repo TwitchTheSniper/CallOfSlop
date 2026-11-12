@@ -338,7 +338,7 @@ public static partial class SelfTest
         Want(!ConstructRoutes.ChuteMove(w, c, binIn, mill, mi) && ms.Refused == ore && ms.InAmount == 0, $"a Sawmill took ore ({ms.InAmount}, refused {ms.Refused})");
         w.Withdraw(c, binIn, 100);
 
-        // ---- Creative: at once, unpowered; the Run wire still holds it; only what fits.
+        // ---- Creative: a load at CreativeSpeed times survival's speed, never under CreativeMinSteps steps (10 Hz), unpowered; the Run wire still holds it; only what fits.
         c.Parts[sw].State = 0;
         Run(0.2f);
         w.Withdraw(c, si, 1000);
@@ -349,12 +349,23 @@ public static partial class SelfTest
         ConstructRoutes.Remove(w, c, Enumerable.Range(0, c.RouteCount).First(k => c.Routes[k].Type == RouteType.Data));
         c.Rebuild();
         c.Charge = 0; // (a flat battery: a switch's wire would hold it off, as any logic with no power)
-        Run(0.3f);
-        Want(st.InAmount == 0 && st.Amount == creativeIn / 2 && !st.Busy, $"in creative it should refine at once ({st.InAmount}, {st.Amount} from {creativeIn}, busy {st.Busy})");
+        ConstructRefining.StateOf(RefiningTable.Current, def, st, out var creativeRecipe);
+        float CreativeSeconds(int batches) // (the steps Creative takes: its need over the work a step does, rounded up)
+        {
+            var need = Math.Max((long)batches * creativeRecipe!.Ticks * ConstructRefining.Milli / ConstructRefining.CreativeSpeed, (long)ConstructRefining.CreativeMinSteps * def.RefineWork);
+            return (need + def.RefineWork - 1) / def.RefineWork / 10f;
+        }
+        var creativeTime = CreativeSeconds(creativeIn / creativeRecipe!.UnitsIn);
+        Run(creativeTime - 0.3f);
+        Want(st.Busy && st.InAmount == creativeIn && st.Amount == 0, $"in creative a load takes its time ({st.InAmount}, {st.Amount} from {creativeIn}, busy {st.Busy}, {creativeTime} s)");
+        Run(0.6f);
+        Want(st.InAmount == 0 && st.Amount == creativeIn / 2, $"in creative it should refine its load in {creativeTime} s ({st.InAmount}, {st.Amount} from {creativeIn}, busy {st.Busy})");
+        Run(0.2f);
+        Want(!st.Busy, "in creative an empty refiner should stop");
         w.Withdraw(c, si, 1000);
         w.Deposit(c, si, def.BulkCapacity - 3, metal);
         w.Feed(c, si, 20, ore);
-        Run(0.3f);
+        Run(CreativeSeconds(3) + 0.3f);
         Want(st.Amount == def.BulkCapacity && st.InAmount == 14, $"in creative only what fits ({st.Amount}, input {st.InAmount})");
         w.CreativeRecycling = false;
 
