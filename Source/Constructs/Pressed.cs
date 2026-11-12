@@ -294,6 +294,8 @@ public static class Pressed
         var materialName = names.NameOf(k.Material);
         float w = k.W / 100f, h = k.H / 100f, len = k.L / 100f, cw = w / Extrusion.Grid, ch = h / Extrusion.Grid;
         var section = SectionOf(k);
+        if (p.LikeBody)
+            return BuildLike(die, p, k, name, section);
         // The blank's boxes: a section's rects as the Extruder meshes them, or a round bar's or a pipe's own (its hidden solid boxes and its
         // drawn lathe shape: Extrusion.BuildRound), moved so the blank's middle is the origin.
         var round = k.Shape is ExShape.Round or ExShape.Pipe;
@@ -335,41 +337,7 @@ public static class Pressed
             thinnest = MathF.Min(thinnest, MathF.Min(r.W * cw, r.H * ch));
         }
         // Features: unit boxes on the blank's whole size, thin sides held to their cm, then moved off any face plane they share.
-        var size = new Vector3(w, h, len);
-        var at = nb;
-        foreach (var f in die.Features.Concat(p.Features))
-        {
-            if (!f.On(section))
-                continue;
-            var a = f.Lo * size - half;
-            var b = f.Hi * size - half;
-            for (var ax = 0; ax < 3; ax++)
-            {
-                if ((f.Clamp >> ax & 1) == 0)
-                    continue;
-                float x0 = Get(a, ax), x1 = Get(b, ax), e = x1 - x0;
-                var want = Math.Clamp(e, f.MinCm / 100f, f.MaxCm / 100f);
-                if (want == e)
-                    continue;
-                float u0 = Get(f.Lo, ax), u1 = Get(f.Hi, ax);
-                if (u0 <= 0) // (it stands on or past the blank's low face: that side stays)
-                    x1 = x0 + want;
-                else if (u1 >= 1)
-                    x0 = x1 - want;
-                else
-                {
-                    var c = (x0 + x1) * 0.5f;
-                    (x0, x1) = (c - want * 0.5f, c + want * 0.5f);
-                }
-                a = With(a, ax, x0);
-                b = With(b, ax, x1);
-            }
-            lo[at] = a;
-            hi[at] = b;
-            proud[at] = f.Proud;
-            looks[at] = f.Look;
-            at++;
-        }
+        PlaceFeatures(die, p, section, new Vector3(w, h, len), lo, hi, proud, looks, nb, [0, 1, 2], Vector3.Zero);
         Settle(lo, hi, proud, nb, Gap(MathF.Max(w, MathF.Max(h, len))));
         // The boxes: the blank's solid ones in its material's colour, then the features (detail: drawn only).
         var colour = names.ColourOf(k.Material);
@@ -439,8 +407,213 @@ public static class Pressed
         d.ExHash = Fnv(name);
         d.SurfaceOverride = SurfaceRules.OfBulk(materialName);
         SurfaceRules.Apply(d);
+        // The like part's named ports (a tank's pipes, a gearbox's shafts) where its faces now are: its bounds stretched onto the blank's.
+        var likeSize = p.Like.BoundsMax - p.Like.BoundsMin;
+        d.NamedPorts = MapPorts(p.Like.NamedPorts, (p.Like.BoundsMin + p.Like.BoundsMax) * 0.5f, (max - min) / Vector3.Max(likeSize, new Vector3(1e-3f)), (min + max) * 0.5f);
         foreach (var s in p.Scale)
             SetField(d, s.Field, Scaled(s, Field(p.Like, s.Field), p, k));
+        return d;
+    }
+
+    private static NamedPort[] MapPorts(NamedPort[] ports, Vector3 from, Vector3 scale, Vector3 to)
+    {
+        if (ports.Length == 0)
+            return ports;
+        var r = new NamedPort[ports.Length];
+        for (var i = 0; i < r.Length; i++)
+        {
+            var q = ports[i];
+            r[i] = new NamedPort
+            {
+                Name = q.Name, Type = q.Type, In = q.In, Out = q.Out, Socket = q.Socket, At = (q.At - from) * scale + to, Face = q.Face, Fluid = q.Fluid,
+                NoEffect = q.NoEffect, Byte = q.Byte, Implicit = q.Implicit, Opening = q.Opening,
+            };
+        }
+        return r;
+    }
+
+    /// <summary>
+    /// The die's and pattern's features on a blank of <paramref name="size"/>, from index <paramref name="at"/>: unit boxes on the blank, thin
+    /// sides held to their cm. <paramref name="axes"/> maps the blank's axes (width, height, length) to the part's, <paramref name="centre"/>
+    /// is the blank's middle in the part's frame (a like body's frame differs from the blank's). Returns the next index.
+    /// </summary>
+    private static int PlaceFeatures(PressDie die, PressPattern p, int section, Vector3 size, Span<Vector3> lo, Span<Vector3> hi, Span<byte> proud, byte[] looks, int at, ReadOnlySpan<int> axes, Vector3 centre)
+    {
+        var half = size * 0.5f;
+        foreach (var f in die.Features)
+            at = Place(f, section, size, half, lo, hi, proud, looks, at, axes, centre);
+        foreach (var f in p.Features)
+            at = Place(f, section, size, half, lo, hi, proud, looks, at, axes, centre);
+        return at;
+    }
+
+    private static int Place(PressFeature f, int section, Vector3 size, Vector3 half, Span<Vector3> lo, Span<Vector3> hi, Span<byte> proud, byte[] looks, int at, ReadOnlySpan<int> axes, Vector3 centre)
+    {
+        if (!f.On(section))
+            return at;
+        var a = f.Lo * size - half;
+        var b = f.Hi * size - half;
+        for (var ax = 0; ax < 3; ax++)
+        {
+            if ((f.Clamp >> ax & 1) == 0)
+                continue;
+            float x0 = Get(a, ax), x1 = Get(b, ax), e = x1 - x0;
+            var want = Math.Clamp(e, f.MinCm / 100f, f.MaxCm / 100f);
+            if (want == e)
+                continue;
+            float u0 = Get(f.Lo, ax), u1 = Get(f.Hi, ax);
+            if (u0 <= 0) // (it stands on or past the blank's low face: that side stays)
+                x1 = x0 + want;
+            else if (u1 >= 1)
+                x0 = x1 - want;
+            else
+            {
+                var c = (x0 + x1) * 0.5f;
+                (x0, x1) = (c - want * 0.5f, c + want * 0.5f);
+            }
+            a = With(a, ax, x0);
+            b = With(b, ax, x1);
+        }
+        Vector3 pa = centre, pb = centre;
+        byte bits = 0;
+        for (var ax = 0; ax < 3; ax++)
+        {
+            pa = With(pa, axes[ax], Get(centre, axes[ax]) + Get(a, ax));
+            pb = With(pb, axes[ax], Get(centre, axes[ax]) + Get(b, ax));
+            bits |= (byte)((f.Proud >> ax & 1) << axes[ax]);
+        }
+        lo[at] = pa;
+        hi[at] = pb;
+        proud[at] = bits;
+        looks[at] = f.Look;
+        return at + 1;
+    }
+
+    /// <summary>
+    /// A like-body pressed part (<see cref="PressPattern.LikeBody"/>): the like part's boxes, sockets and part-frame points stretched per axis
+    /// so its bounds are the blank's size (the blank's length along <see cref="PressPattern.Along"/>), so a joint keeps its base and leaf
+    /// sides, its pivot and leaf socket, a suspension its axle socket, a shaft its end ports; the die's features drawn on it; numbers from
+    /// the blank as a blank body's. A piston's travel and a suspension's travel stretch with it.
+    /// </summary>
+    private static ConstructPartDef BuildLike(PressDie die, PressPattern p, in ExtrusionKey k, string name, int section)
+    {
+        var like = p.Like;
+        var names = RecyclingTable.Current;
+        var mat = ExtrusionTable.Current.Find(k.Material)!;
+        var materialName = names.NameOf(k.Material);
+        float w = k.W / 100f, h = k.H / 100f, len = k.L / 100f;
+        var lsize = like.BoundsMax - like.BoundsMin;
+        var along = p.Along >= 0 ? p.Along : lsize.X >= lsize.Y && lsize.X >= lsize.Z ? 0 : lsize.Y >= lsize.Z ? 1 : 2;
+        Span<int> axes = stackalloc int[3]; // the blank's width, height and length: which of the like part's axes each goes along
+        axes[2] = along;
+        for (int ax = 0, j = 0; ax < 3; ax++)
+            if (ax != along)
+                axes[j++] = ax;
+        var target = Vector3.Zero;
+        target = With(target, axes[0], w);
+        target = With(target, axes[1], h);
+        target = With(target, axes[2], len);
+        var s = target / Vector3.Max(lsize, new Vector3(1e-3f));
+        Vector3 Map(Vector3 v) => v * s;
+        var nb = like.Boxes.Length;
+        var nf = 0;
+        foreach (var f in die.Features)
+            nf += f.On(section) ? 1 : 0;
+        foreach (var f in p.Features)
+            nf += f.On(section) ? 1 : 0;
+        var n = nb + nf;
+        Span<Vector3> lo = stackalloc Vector3[n];
+        Span<Vector3> hi = stackalloc Vector3[n];
+        Span<byte> proud = stackalloc byte[n];
+        var looks = new byte[n];
+        for (var i = 0; i < nb; i++)
+        {
+            var b = like.Boxes[i];
+            var c = Map(b.Center);
+            var hh = Vector3.Abs(b.Half * s);
+            lo[i] = c - hh;
+            hi[i] = c + hh;
+        }
+        var centre = Map((like.BoundsMin + like.BoundsMax) * 0.5f);
+        PlaceFeatures(die, p, section, new Vector3(w, h, len), lo, hi, proud, looks, nb, axes, centre);
+        Settle(lo, hi, proud, nb, Gap(MathF.Max(w, MathF.Max(h, len))));
+        var colour = names.ColourOf(k.Material);
+        var boxes = new CPartBox[n];
+        var min = Map(like.BoundsMin);
+        var max = Map(like.BoundsMax);
+        for (var i = 0; i < n; i++)
+        {
+            if (i < nb)
+            {
+                var b = like.Boxes[i];
+                boxes[i] = b with { Center = (lo[i] + hi[i]) * 0.5f, Half = (hi[i] - lo[i]) * 0.5f };
+                continue;
+            }
+            boxes[i] = new CPartBox((lo[i] + hi[i]) * 0.5f, (hi[i] - lo[i]) * 0.5f, Tone(colour, looks[i]), Detail: true);
+            min = Vector3.Min(min, lo[i]);
+            max = Vector3.Max(max, hi[i]);
+        }
+        var across = Across(k);
+        var cls = across < 200 ? ConstructParts.Small : across < 700 ? ConstructParts.Medium : across < 2400 ? ConstructParts.Large : ConstructParts.Capital;
+        var socks = new CSocket[like.Sockets.Length];
+        for (var i = 0; i < socks.Length; i++)
+            socks[i] = like.Sockets[i] with { At = Map(like.Sockets[i].At), Class = cls };
+        var (volume, mass) = VolumeMass(k);
+        var thinnest = k.Shape == ExShape.Pipe ? k.Wall / 100f : MathF.Min(w, h);
+        var d = like.ShallowCopy();
+        d.Name = name;
+        d.File = "";
+        d.Description = $"Pressed on a {die.Family} die: a {p.Label} of a {Extrusion.ProfileLabel(k.Mask).ToLowerInvariant()} blank {w:0.##} by {h:0.##} by {len:0.##} m of {materialName}.";
+        d.Boxes = boxes;
+        d.BoundsMin = min;
+        d.BoundsMax = max;
+        d.Sockets = socks;
+        d.Class = cls;
+        d.Mass = Math.Clamp(mass + Bay2Mass(p, k), 0.1f, ConstructParts.MaxPartMass);
+        d.Health = Math.Clamp(volume * mat.HealthPerM3, 10, ConstructParts.MaxPartHealth);
+        d.Armour = MathF.Min(mat.MaxArmour, mat.ArmourPerCm * thinnest * 100);
+        d.Material = mat.Class;
+        d.AttachSeconds = Math.Clamp(2 + volume * 2, 2, 8);
+        d.PhysicsOnly = true;
+        d.PhysicsWhy = "pressed to size";
+        d.Stage = true;
+        d.Legacy = false;
+        d.CentreOptOut = true;
+        d.Hulls = null;
+        d.HullCovers = null;
+        d.DamagedTo = -1;
+        d.DamagedName = "";
+        d.Lamps = [];
+        d.Panels = [];
+        d.MatBase = null;
+        d.IsNamedRuntime = true;
+        d.ExHash = Fnv(name);
+        d.SurfaceOverride = SurfaceRules.OfBulk(materialName);
+        SurfaceRules.Apply(d);
+        // Points in the part's frame, and lengths along an axis.
+        d.SeatAt = Map(like.SeatAt);
+        d.JointPivot = Map(like.JointPivot);
+        d.PathPivot = Map(like.PathPivot);
+        d.ThrustAt = Map(like.ThrustAt);
+        d.SmokeAt = Map(like.SmokeAt);
+        d.HitchAt = Map(like.HitchAt);
+        d.HoseAt = Map(like.HoseAt);
+        d.DialAt = Map(like.DialAt);
+        d.FlameAt = Map(like.FlameAt);
+        d.GunMuzzle = Map(like.GunMuzzle);
+        d.DataSeatAt = null;
+        d.NamedPorts = MapPorts(like.NamedPorts, Vector3.Zero, s, Vector3.Zero);
+        if (like.Role == PartRole.Joint && like.JointType is JointType.Piston or JointType.Slider && float.IsFinite(like.JointMin) && float.IsFinite(like.JointMax))
+        {
+            var along2 = Get(s, like.JointAxis / 2);
+            d.JointMin = Math.Clamp(like.JointMin * along2, -ConstructParts.MaxPistonTravel, 0);
+            d.JointMax = Math.Clamp(like.JointMax * along2, 0, ConstructParts.MaxPistonTravel);
+            d.JointGive = like.JointGive * along2;
+        }
+        if (like.Role == PartRole.Suspension)
+            d.Travel = like.Travel * Get(s, along);
+        foreach (var sc in p.Scale)
+            SetField(d, sc.Field, Scaled(sc, Field(like, sc.Field), p, k));
         return d;
     }
 

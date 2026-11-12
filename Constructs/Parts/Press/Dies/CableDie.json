@@ -1,0 +1,56 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cable Die",
+  "description": "Fits a press and makes it press a whole piece into one cable part, sized by the piece. A standard piece gives the standard part.",
+  "group": "Production",
+  "section": "Dies",
+  "role": "panel",
+  "tool": "wrench",
+  "mass": 12.0,
+  "health": 300,
+  "armour": 20,
+  "material": "steel",
+  "color": "#2f363d",
+  "attachSeconds": 2,
+  "pressDie": "Cable",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.3,
+        0.0,
+        -0.3
+      ],
+      "max": [
+        0.3,
+        0.1125,
+        0.3
+      ]
+    },
+    {
+      "min": [
+        -0.165,
+        0.1125,
+        -0.165
+      ],
+      "max": [
+        0.165,
+        0.1688,
+        0.165
+      ],
+      "color": "#b0703a"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y",
+      "kind": "pressdie"
+    }
+  ]
+}
