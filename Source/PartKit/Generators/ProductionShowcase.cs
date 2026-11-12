@@ -216,14 +216,14 @@ public sealed class ProductionShowcase : IPartGenerator
         /// </summary>
         private void CraftingCorner(VPart orders, VPart partRack)
         {
-            var term = On("Crafting Terminal", 61.5f, -9.0f, Front, "-y.0.0");
+            var term = On("Crafting Terminal", 61.25f, -9.25f, Front, "-y.0.0");
             var from = PortAt(partRack, "Piece out");
             var to = PortAt(term, "Piece in");
             Convey(partRack, "Piece out", term, "Piece in", Assembly, null, V(to.X, from.Y, from.Z));
             Link("data", orders, term, null, "Orders", Control, true, null,
                 new[] { V(24.25f, 0, -2.0f), V(31.75f, 0, -2.0f), V(39.25f, 0, -2.0f), V(46.75f, 0, -2.0f), V(54.25f, 0, -2.0f), V(60.5f, 0, -2.0f), V(60.5f, 0, -6.2f) }
                     .Select(p => V(p.X, FloorY + 0.03f, p.Z)).ToArray());
-            Sign(60.5f, -6.4f, Assembly, "F on the screen: order a part. It arrives in the tray");
+            Sign(60.25f, -6.75f, Assembly, "F on the screen: order a part. It arrives in the tray");
         }
 
         /// <summary>A sign post at (x, z): a Frame Beam stood up in the station's colour, a Text Sign facing the aisle, a lamp on top.</summary>

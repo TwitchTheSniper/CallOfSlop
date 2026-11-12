@@ -33,7 +33,7 @@ public sealed class CraftingTerminalParts : IPartGenerator
         p.Add(Box([x0 + 0.07, y0 + 1.06, dz0 + 0.154], [xm - 0.07, y0 + 1.6, dz0 + 0.166], Screen, detail: true)); // what its panel stands on
         for (var k = 0; k < 3; k++) // the keys: what a hand goes to
             p.Add(Box([x0 + 0.14 + k * 0.22, y0 + 1.012, dz1 - 0.2], [x0 + 0.3 + k * 0.22, y0 + 1.03, dz1 - 0.08], Key, detail: true));
-        p.Add(Box([x0 + 0.02, y0 + 0.08, dz1 - 0.004], [xm - 0.02, y0 + 0.2, dz1 + 0.006], Dark, detail: true)); // a kick plate
+        p.Add(Box([x0 + 0.02, y0 + 0.08, dz1 - 0.008], [xm - 0.02, y0 + 0.2, dz1 + 0.008], Dark, detail: true)); // a kick plate
         // ---- The sorter, behind the desk: a low cabinet with the chute's hopper on top and a slide into the tray.
         p.Add(Box([x0 + 0.05, y0, z0 + 0.05], [xm - 0.05, y0 + 0.7, dz0 - 0.01], Dark));
         p.Add(Box([x0 + 0.2, y0 + 0.695, z0 + 0.3], [xm - 0.2, y0 + 0.95, z0 + 0.82])); // the hopper
