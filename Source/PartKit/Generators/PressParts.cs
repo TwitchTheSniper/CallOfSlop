@@ -139,6 +139,22 @@ public sealed class PressParts : IPartGenerator
         return o;
     }
 
+    /// <summary>The status lamp: a bar the die screen's width just above it on the front of the crown, standing a few mm proud of the face
+    /// (ProductionLines: its colour and blink are the line state; the box only says where).</summary>
+    private static PyDict? StatusLamp(Part p, Frame f)
+    {
+        var k = p.Cls.Cell;
+        var mx = (f.X0 + f.X1) / 2;
+        var y0 = (f.Crown + f.Y1) / 2 + k * 0.75 + 0.004;
+        var y1 = Math.Min(f.Y1 - 0.004, y0 + Math.Max(0.03, k * 0.4));
+        if (y1 - y0 < 0.0125)
+            y1 = y0 + 0.0125; // (the game refuses under 1 cm)
+        var b = MachineLook.D([R3(mx - k * 2.5), R3(y0), R3(f.Z1 - 0.005)], [R3(mx + k * 2.5), R3(y1), R3(f.Z1 + 0.008)], "#2b3036");
+        if (b is not null)
+            b["status"] = true;
+        return b;
+    }
+
     private static List<object?> Tray(double x0, double x1, double y, double z0, double z1)
     {
         var gap = (x1 - x0) * 0.01;
@@ -173,6 +189,7 @@ public sealed class PressParts : IPartGenerator
                     ("die", Kw(("socket", "dieslot"), ("min", Py.L(R3(mid - k * 2), R3(f.Base), R3(zm))), ("max", Py.L(R3(mid + k * 2), R3(f.Wall), R3(f.Z1 + k * 2))))),
                     ("maxAcross", MaxAcross(c)), ("speed", speed), ("outAt", Py.L(R3(mid), R3(f.Y0), R3(f.Z1 + k * 0.2))), ("outDir", "+z"))))),
             ("panels", Panels(p, f, width)));
+        p.Add(StatusLamp(p, f)); // (its line state over its own screen: ProductionLines)
         return p;
     }
 
@@ -199,6 +216,7 @@ public sealed class PressParts : IPartGenerator
                     ("bays", Py.L(Kw(("socket", "bay1"), ("min", Py.L(R3(c0 - k * 0.95), R3(f.Base), R3(f.Z0 - k * 1.5))), ("max", Py.L(R3(c0 + k * 0.95), R3(f.Wall), R3(f.Z0 + k * 1.5)))))),
                     ("maxAcross", MaxAcross(c)), ("speed", speed), ("outAt", Py.L(R3((f.X0 + f.X1) / 2), R3(f.Y0), R3(f.Z1 + k * 0.2))), ("outDir", "+z"))))),
             ("panels", Panels(p, f, width)));
+        p.Add(StatusLamp(p, f)); // (its line state over its own screen: ProductionLines)
         return p;
     }
 

@@ -440,6 +440,22 @@
       "paintable": false,
       "work": "spin",
       "axis": "+z"
+    },
+    {
+      "min": [
+        0.5,
+        5.254,
+        4.495
+      ],
+      "max": [
+        5.5,
+        5.496,
+        4.508
+      ],
+      "color": "#2b3036",
+      "detail": true,
+      "paintable": false,
+      "status": true
     }
   ],
   "sockets": [
