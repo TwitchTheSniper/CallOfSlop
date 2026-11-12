@@ -90,8 +90,9 @@ public sealed partial class BuildingParts
     }
 
     /// <summary>The lid: fascias round a roof of 4 m slabs (cells x0.., z0.., nx by nz, the slabs' row y), and the corners where two
-    /// sides meet. <paramref name="front"/> false leaves the -z side off (where a taller part of the building stands).</summary>
-    private static List<int> Lid(Blueprint bp, int x0, int z0, int nx, int nz, int y, bool front = true)
+    /// sides meet. <paramref name="front"/> false leaves the -z side off (where a taller part of the building stands),
+    /// <paramref name="back"/> false the +z side.</summary>
+    private static List<int> Lid(Blueprint bp, int x0, int z0, int nx, int nz, int y, bool front = true, bool back = true)
     {
         const string Band = "Concrete Fascia 4 m", Corner = "Concrete Fascia Corner";
         var o = new List<int>();
@@ -99,7 +100,8 @@ public sealed partial class BuildingParts
         {
             if (front)
                 o.Add(bp.Put(Band, Cell(x, y, z0 - 2), R0));
-            o.Add(bp.Put(Band, Cell(x + 15, y, z0 + nz + 1), RY180));
+            if (back)
+                o.Add(bp.Put(Band, Cell(x + 15, y, z0 + nz + 1), RY180));
         }
         for (var z = z0; z < z0 + nz; z += 16)
         {
@@ -111,8 +113,11 @@ public sealed partial class BuildingParts
             o.Add(bp.Put(Corner, Cell(x0 - 2, y, z0 - 2), R0));
             o.Add(bp.Put(Corner, Cell(x0 + nx + 1, y, z0 - 2), RY270));
         }
-        o.Add(bp.Put(Corner, Cell(x0 + nx + 1, y, z0 + nz + 1), RY180));
-        o.Add(bp.Put(Corner, Cell(x0 - 2, y, z0 + nz + 1), RY90));
+        if (back)
+        {
+            o.Add(bp.Put(Corner, Cell(x0 + nx + 1, y, z0 + nz + 1), RY180));
+            o.Add(bp.Put(Corner, Cell(x0 - 2, y, z0 + nz + 1), RY90));
+        }
         Concrete(bp, o, MinWeathered);
         return o;
     }
@@ -359,6 +364,104 @@ public sealed partial class BuildingParts
         bp.Put("Phone Box", OnPad(0, -1, 2.125, 1.75), R0);
         Switch(bp, rc[0], "kb7_5", Strip(bp, rc[2], "ka7_10"));
         Look(bp, bp.Hang("Battery", rc[1], "kb7_10", "-z"), MinSlate);
+        o.Add(bp);
+        // Penal Colony: the Ministry's holding pen where a survival world's players wake (docs/story/OPENING.md), and a yard
+        // is a place to be counted in. Nine pads (12 by 12 m) inside a wire fence a guard can see through, between four
+        // concrete posts with a floodlight on each; the gateway (x 4 to 8 m) is in the front, z 0. Two masses stand in it.
+        // The cell block (x 2 to 6, z 6 to 10 m) is the tall one: a blind box two storeys high with no floor between, one
+        // window near the top where nobody can reach it, a steel door, and its light switch on the outside. The warden's
+        // office (x 6 to 10, z 2 to 6 m) is low, with the one window at eye level the Ministry allows (he watches the gate
+        // from his desk) and its roof thrown 4 m west over the muster, in front of the cell door: the inmates stand under it
+        // to be counted and the warden counts from his wall. The lore's items and the wake spot keep their places.
+        bp = new Blueprint("Penal Colony", "The Ministry of Slop's penal colony: a fenced yard with bunks, a cell block and the warden's office.", defs);
+        Pads(bp, [(0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2)]);
+        var yard = RoomCorners(bp, "Concrete", 0, G, 0, 48, 48);
+        Concrete(bp, yard, MinWeathered);
+        foreach (var k in new[] { 1, 2, 3 }) // the east, back and west sides: from each post's leg A, two 4 m fences to the next
+        {
+            var fn = bp.Hang("Wire Fence 4 m", yard[k], "ra0", "l0");
+            bp.Hang("Wire Fence 4 m", fn, "r0", "l0");
+        }
+        var gl = bp.Hang("Wire Fence 2 m", yard[0], "ra0", "l0"); // the front: x 2 to 4 m, the gateway, x 8 to 10 m
+        bp.Hang("Wire Fence 2 m", yard[1], "rb0", "l0");
+        var hg = bp.Hang("Hinge", gl, "r4", "base");
+        bp.Hang("Fence Gate", hg, "leaf", "hang");
+        foreach (var c in yard)
+            Outside(bp, c, "ka7_10"); // the floodlights, into the yard
+        // The cell block.
+        var cells = RoomCorners(bp, "Concrete", 8, G, 24, 16, 16, door: 0);
+        var cellsUp = RoomCorners(bp, "Concrete", 8, Slab1, 24, 16, 16, window: 1);
+        Concrete(bp, cells.Concat(cellsUp));
+        Roof(bp, 8, 24, 16, 16, Slab1 + WallH);
+        Lid(bp, 8, 24, 16, 16, Slab1 + WallH);
+        Door(bp, cells[0], "Steel Flush Door 1.5x2.25 m", MinSlate);
+        Sign(bp, cellsUp[1], "fb7_5", "CELL BLOCK A - THERE IS NO CELL BLOCK B");
+        Switch(bp, cells[1], "fb7_5", Strip(bp, cellsUp[3], "ka7_0")); // (the switch is outside: lights out is the guard's)
+        // The warden's office and the muster's roof.
+        var office = RoomCorners(bp, "Concrete", 24, G, 8, 16, 16, door: 1, window: 0);
+        Concrete(bp, office);
+        Roof(bp, 24, 8, 16, 16, Slab1);
+        Roof(bp, 8, 8, 16, 16, Slab1); // (thrown out over the muster, on the first slab's edge, up to the cell block's wall)
+        Lid(bp, 8, 8, 32, 16, Slab1, back: false);
+        Concrete(bp, [bp.Put("Concrete Fascia 4 m", Cell(39, Slab1, 25), RY180), bp.Put("Concrete Fascia Corner", Cell(41, Slab1, 25), RY180)], MinWeathered);
+        Door(bp, office[1]);
+        Porch(bp, office[1], "WARDEN");
+        Sign(bp, office[0], "fb7_5", "ROLL CALL 05:00. AND 05:10. AND 05:20.");
+        Outside(bp, office[0], "fb0_10");
+        Outside(bp, office[3], "fa7_10");
+        bp.Put("Computer", [7.75, 0.375, 4.0], RY90); // the warden's desk, facing his door
+        bp.Hang("Filing Cabinet", office[3], "kb7_0", "wall");
+        bp.Hang("Cast Iron Radiator", office[0], "ka7_0", "back");
+        bp.Hang("Wall Clock", office[0], "kb7_5", "back");
+        Switch(bp, office[1], "kb7_5", Strip(bp, office[3], "ka7_10"));
+        Look(bp, bp.Hang("Battery", office[2], "kb7_10", "-z"), MinSlate);
+        foreach (var z in new[] { 1.75, 4.0 }) // the open-air dormitory: two Bunks down the yard's west side (the induction's bunk step)
+            bp.Put("Bunk", [1.75, 0.375, z], R0);
+        o.Add(bp);
+
+        // Colony Barracks: the guards' quarters beside the penal colony, where the lockdown squad turns out from
+        // (Game/GameColonyLockdown.cs). Guards sleep away from the door and leave by it fast, so it is a narrow slab two
+        // storeys tall, 4 by 8 m: the guardroom below (the duty desk, the gun rack, a locker, an open doorway in the east
+        // wall with no door, because the squad comes out of it without stopping, steps and a canopy outside it), the
+        // dormitory above, up a stair along the east wall at the back, with a high ribbon each side over the bunks. Fins
+        // down the east front, buttresses on the west. The lore's items keep the west and back walls downstairs.
+        bp = new Blueprint("Colony Barracks", "The Ministry of Slop's guard barracks beside the penal colony.", defs);
+        Pads(bp, [(0, 1)]);
+        rc = RoomCorners(bp, "Concrete", 0, G, 0, 16, 32, door: 1);
+        west = bp.Put("Concrete Wall 4 m", Cell(0, G, 23), RY90);
+        east = bp.Put("Concrete Slot Wall 4 m", Cell(15, G, 8), RY270);
+        Concrete(bp, rc.Concat([west, east]));
+        Look(bp, bp.Put("Concrete Floor 4x4 m", Cell(0, Slab1, 0), R0), MinWeathered, "concrete");
+        Look(bp, bp.Put("Concrete Stair Floor 4x4 m", Cell(15, Slab1, 31), RY180), MinWeathered, "concrete");
+        Look(bp, bp.Put("Concrete Straight Stair 3 m", Cell(11, G, 16), R0), MinWeathered, "concrete");
+        uc = RoomCorners(bp, "Concrete", 0, U, 0, 16, 32);
+        var dormW = bp.Put("Concrete Ribbon Wall 4 m", Cell(0, U, 23), RY90);
+        var dormE = bp.Put("Concrete Ribbon Wall 4 m", Cell(15, U, 8), RY270);
+        Concrete(bp, uc.Concat([dormW, dormE]));
+        Roof(bp, 0, 0, 16, 32, roof2);
+        Lid(bp, 0, 0, 16, 32, roof2);
+        Porch(bp, rc[1], "BARRACKS");
+        Look(bp, bp.Put("Concrete Entrance Steps 2 m", Cell(19, 0, 0), RY270), MinWeathered, "concrete");
+        Piers(bp, FinPart, (east, "f0_5"), (east, "f8_5"), (east, "f15_5"), (dormE, "f0_5"), (dormE, "f8_5"), (dormE, "f15_5"));
+        Piers(bp, ButtressPart, (west, "f0_5"), (west, "f8_5"), (west, "f15_5"));
+        Sign(bp, uc[1], "fb7_5", "GUARDS ONLY. GUARDS, THIS MEANS YOU");
+        Outside(bp, rc[0], "fa7_10");
+        Outside(bp, rc[2], "fa7_10");
+        // The guardroom.
+        bp.Put("Computer", [1.5, 0.375, 6.0], RY180); // the duty desk
+        Look(bp, bp.Hang("Locker", west, "k15_0", "wall"), MinGreen, "worn paint");
+        bp.Hang("Gun Rack", rc[3], "ka7_0", "wall");
+        bp.Hang("Cast Iron Radiator", rc[0], "ka7_0", "back");
+        bp.Hang("Wall Clock", east, "k0_5", "back");
+        Switch(bp, rc[1], "kb7_5", Strip(bp, east, "k8_10"));
+        Look(bp, bp.Hang("Battery", east, "k15_10", "-z"), MinSlate);
+        // The dormitory: three bunks across the room, a locker at each end, the switch at the stair's head.
+        foreach (var z in new[] { 1.75, 3.75, 5.75 })
+            bp.Put("Bunk", [2.0, (Slab1 + 0.5) * C, z], RY90);
+        Look(bp, bp.Hang("Locker", uc[0], "ka7_0", "wall"), MinGreen, "worn paint");
+        Look(bp, bp.Hang("Locker", uc[3], "kb7_0", "wall"), MinGreen, "worn paint");
+        bp.Hang("Cast Iron Radiator", dormW, "k15_0", "back");
+        Switch(bp, uc[2], "kb7_5", Strip(bp, dormW, "k8_10"));
         o.Add(bp);
         return o;
     }

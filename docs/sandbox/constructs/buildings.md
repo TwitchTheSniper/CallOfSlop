@@ -55,7 +55,7 @@ Nothing inside is newer than the building. The fittings are the part kit's (`Int
 - **Strip Light**, **Bulkhead Light**: mains lamps (lit from the building's battery, the fuse box high on a wall).
 - **Cast Iron Radiator** under windows and by desks; **Wall Clock** (stopped) where people wait.
 - **Filing Cabinet** (storage, four drawers), **Teleprinter**, **Tape Cabinet** (the Ministry's computer: reels and
-  lamps). These have a `"wall"` socket low on the back: hung on a wall's bottom face socket (`k8_0`) they stand on the
+  lamps). These, the Locker and the Gun Rack have a `"wall"` socket low on the back: hung on a wall's bottom face socket (`k8_0`) they stand on the
   floor against the wall, where a pad's own sockets (0, 1.75, 2 and 3.75 m) would leave them a metre out.
 - With them, the older parts that fit: Mess Table (a counter), Locker, Parts Shelf, Medical Station, Bunk, Galley Stove,
   Tea Urn, Computer, Fax Machine, Phone Box, Pillar Box, Queue Post, Belisha Beacon, Employee of the Month.
@@ -71,6 +71,13 @@ Colours inside: cream, Ministry green, cast-iron grey, brown Bakelite; `worn pai
 | **Colony Infirmary** | A ward: long and low. A blank buttressed wall to the weather, a high ribbon over the beds on the other. Triage at the door, the drugs and the files furthest from it. Whitewashed. | Long, low, white |
 | **Requisitions Store** | A dock and a counter: the roof runs 4 m out over a dock at lorry-bed height; nobody passes the counter in the opening. Slots, not windows. | Deep roof on two columns |
 | **Colony Gatehouse** | The clerk stays by the radiator: the roof is thrown 4 m towards the gate with nothing under it, and whoever is being checked stands there. | A post under a long lid |
+
+The colony itself and the guards' quarters are in the same file:
+
+| Building | Its job, and what that made it | Outline |
+| --- | --- | --- |
+| **Penal Colony** | A yard is for being counted in: wire a guard sees through, between four concrete posts with a floodlight each. The cell block is a blind box two storeys high with one window near the top and its light switch outside the door. The warden's office is low, has the Ministry's one window at eye level (he watches the gate from his desk) and throws its roof 4 m over the muster, in front of the cell door. | A tower and a long lid inside a fence |
+| **Colony Barracks** | Guards sleep away from the door and leave by it fast: a narrow slab two storeys tall, the guardroom below (duty desk, gun rack, an open doorway with steps and a canopy), the dormitory above under a high ribbon each side, the stair at the back. | A tall narrow slab, fins down its front |
 
 `--look-report` shows these as almost wholly "dark or grey": that is the style, not a fault. Judge them by outline, lamps
 and finish count, and in the window (`--window-shot OUT.png --blueprint "Colony Canteen" --at X,Y,Z --look-at X,Y,Z`).
@@ -93,12 +100,20 @@ What the game's build check taught (the generator's mirror doesn't know what is 
   foot is why the corners' plinth band starts 4 mm up.
 - The west wall upstairs over a `Concrete Stair Floor`'s opening (x 0.1 to 1.1 m, z 0.9 to 3.9 m) is the stairwell's.
 - Furniture on the `"wall"` socket: two on neighbouring sockets (`k7_0`, `k8_0`) overlap; use `k0`, `k8`, `k15`.
+- A room that things are stood in at run time (the lore's items, Story/Lore: a wake spot, a post) keeps those spots
+  clear: the build check can't see them. Read the file's `"at"`s for the building before furnishing it, and after a
+  throwaway story world (`--traffic-check 5`) look for `[lore]` lines in the log.
+- A 4 by 4 m room is four corners, which take no fin or buttress: give it height or a thrown roof instead. `Lid(...,
+  back: false)` leaves the +z side off where a roof runs into a taller wall; close the rest by hand.
+- A stair in a 4 m wide room: `Concrete Stair Floor 4x4 m` turned `RY180` at `Cell(15, slab, z + 15)` with the stair
+  `R0` at `Cell(11, G, z)` puts it along the east wall, rising to the back.
 
 ### Not done
 
-- The colony itself (the yard, the cell block, the warden's office) and the Colony Barracks, the Remote Works and the
-  Sealed Data Centre are still plain concrete and tin rooms: the lore's items and the staff's posts stand at fixed spots
-  in them, so they are restyled in place, keeping every room's floor, or those spots move with them.
+- The Remote Works and the Sealed Data Centre are still plain concrete rooms (`BuildingParts.cs`). The game finds the
+  Works' chairs and apron by their places (`DepotSpots` in GameDepot.cs), so it is restyled in place. The Data Centre
+  is from before the Ministry: it wants its own, older style, not this one.
+- The site (level ground, paving, what joins the buildings) is another piece of work: see "The site" when it lands.
 - No storm porch: a door opens straight to the weather (a canopy and steps only). An inner lobby needs a wall piece that
   stands off the 2 m module.
 - No board-marked finish: the walls use `concrete`. A `Materials/Surfaces.json` row with a plank pattern would do it.
