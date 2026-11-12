@@ -70,7 +70,7 @@ public sealed class PanelFormerParts : IPartGenerator
                 ("panel", Kw(("speed", r.Speed), ("at", Py.L(0, R(bed + 0.03), R(z1 - (z1 - col) / 2))), ("maxWidth", r.MaxW), ("maxLength", r.MaxL))))),
             ("config", Py.L(
                 Kw(("key", "recipe"), ("label", "Preset"), ("group", "Orders"), ("options", Py.L([.. HullLoft.PanelPresets.Select(x => (object?)x.Label)])), ("default", 0),
-                    ("tooltip", "The panel its Queue button orders, at the preset's own size, in what its bin holds. The Preset button on its screen steps through them.")),
+                    ("tooltip", "The panel its Queue button orders, at the preset's own size, in what its bin holds. The Preset button on its screen opens a picker of them.")),
                 ExtrusionParts.OrderCount,
                 Kw(("key", "ink"), ("type", "colour"), ("label", "Screen colour"), ("group", "Display"), ("default", "#000000"), ("tooltip", "The colour of what its screen shows. Black: its own colours.")))),
             ("ports", Py.L(
