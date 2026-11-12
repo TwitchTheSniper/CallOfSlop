@@ -12,7 +12,7 @@ Set-Location $root
 $logs = Join-Path $env:TEMP "callofslop-merge"
 New-Item -ItemType Directory -Force $logs | Out-Null
 $trailer = "Co-Authored-By: $Model <noreply@anthropic.com>"
-$exe = "bin\Release\net10.0\CallOfSlop.exe"
+$dll = "bin\Release\net10.0\CallOfSlop.dll" # through dotnet: the exe is a window program, which PowerShell does not wait for
 
 if (git status --porcelain) { "main checkout is not clean"; exit 2 }
 git fetch -q origin
@@ -27,11 +27,11 @@ if (-not $?) { "merge conflict"; git merge --abort; exit 3 }
 dotnet build -c Release --no-restore > "$logs\build.log"
 if ($LASTEXITCODE -ne 0) { "build failed"; Select-String -Path "$logs\build.log" -Pattern "error CS" | Select-Object -First 3 | ForEach-Object { $_.Line }; exit 4 }
 "build 0"
-& $exe --check-construct-parts > "$logs\ccp.log"; $c = $LASTEXITCODE; "check $c"; if ($c -ne 0) { exit 5 }
+dotnet $dll --check-construct-parts > "$logs\ccp.log"; $c = $LASTEXITCODE; "check $c"; if ($c -ne 0) { exit 5 }
 if ($Sections) {
-    & $exe --gen-parts all --check > "$logs\genparts.log"; $g = $LASTEXITCODE; "gen-parts $g"; if ($g -ne 0) { exit 7 }
+    dotnet $dll --gen-parts all --check > "$logs\genparts.log"; $g = $LASTEXITCODE; "gen-parts $g"; if ($g -ne 0) { exit 7 }
     Remove-Item "bin\Release\net10.0\selftest.log" -ErrorAction SilentlyContinue
-    & $exe --selftest-only $Sections | Out-Null; $t = $LASTEXITCODE; "sections $t"
+    dotnet $dll --selftest-only $Sections | Out-Null; $t = $LASTEXITCODE; "sections $t"
     if ($t -ne 0) { Select-String -Path "bin\Release\net10.0\selftest.log" -Pattern "FAIL" | Select-Object -First 5 | ForEach-Object { $_.Line }; exit 8 }
 }
 git fetch -q origin main
