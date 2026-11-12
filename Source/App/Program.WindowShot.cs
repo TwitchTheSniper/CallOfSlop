@@ -446,7 +446,10 @@ public static unsafe partial class Program
                     return;
                 }
                 ref var bp = ref pc.Parts[ppart];
-                bp.Count = (ushort)Math.Max(1, (int)MathF.Round(ConstructConfig.Get(bp, bp.D, CfgKey.Hold, ConstructLogic.ButtonSeconds) * World.TickRate));
+                if (ConstructConfig.Get(bp, bp.D, CfgKey.Latched, 0) >= 0.5f)
+                    bp.State ^= 1; // (latched: push on, push off)
+                else
+                    bp.Count = (ushort)Math.Max(1, (int)MathF.Round(ConstructConfig.Get(bp, bp.D, CfgKey.Hold, ConstructLogic.ButtonSeconds) * World.TickRate));
                 pc.Wake();
                 WsSay($"poke: pressed the {pc.DefOf(ppart).Name}");
                 _wsWait = 2;
@@ -1043,7 +1046,7 @@ public static unsafe partial class Program
     {
         var d = c.DefOf(part);
         WsSay($"panel: {d.Name} (part {part} of construct {c.Id}) at {WsPartSpot(c, part, out _):0.00}, {d.Panels.Length} screen(s); eye {g.Local?.Eye:0.00}, look {g.LookDir(g.LookYaw, g.LookPitch):0.00}; open:recipe picker {Ui.RecipePickerOpen}, configure {Ui.SandboxConfigOpen}, pause {Ui.PauseOpen}, menus {MenusOpen}");
-        WsSay($"  logic: out {c.Parts[part].Out:0.##}, in {c.Parts[part].In:0.##}, state {c.Parts[part].State}");
+        WsSay($"  logic: out {c.Parts[part].Out:0.##}, in {c.Parts[part].In:0.##}, state {c.Parts[part].State}, count {c.Parts[part].Count}; the body: {c.WireCount} wires, logic {c.HasLogic}, powered {c.Parts[part].Powered}");
         if (g.Constructs.StoreOf(c, part) is { } st)
             WsSay($"  store: line state {(ProductionLines.Raw(g.Constructs, c, part, st) is { } s ? ProductionLines.Word(s) : "-")}, busy {st.Busy}, held {st.Held}, blocked {st.Blocked}, {st.Amount} {RecyclingTable.Current.NameOf(st.Material)}, {st.ItemCount} items, mains off {c.MainsOff}");
         if (d.Monitor != MonitorKind.None && (d.Panels.Length == 0 || d.Monitor == MonitorKind.Store))
