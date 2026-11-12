@@ -227,7 +227,10 @@ public sealed class ProductionShowcase : IPartGenerator
             // The Extruders' pieces come back too: the Long Piece Rack's Piece out, down to the back aisle's edge and along it to the sorter's side.
             var back = PortAt(longRack, "Piece out");
             var side = PortAt(term, "Piece in 2");
-            Convey(longRack, "Piece out", term, "Piece in 2", LineA, new Vector2(0.5f, 0.5f), V(back.X + 0.6f, back.Y, back.Z), V(back.X + 0.6f, back.Y, side.Z));
+            var path = new List<Vector3> { V(back.X + 0.6f, back.Y, back.Z), V(back.X + 0.6f, back.Y, side.Z) };
+            for (var x = back.X + 0.6f + 7f; x < side.X - 1f; x += 7f) // (a segment reaches at most 8 m)
+                path.Add(V(x, back.Y, side.Z));
+            Convey(longRack, "Piece out", term, "Piece in 2", LineA, new Vector2(0.5f, 0.5f), path.ToArray());
             Sign(60.25f, -6.75f, Assembly, "F on the screen: order a part. It arrives in the tray");
         }
 
