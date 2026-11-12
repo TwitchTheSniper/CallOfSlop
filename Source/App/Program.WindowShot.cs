@@ -89,7 +89,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" || WsGhostKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" or "logi" || WsGhostKnown(action);
 
     private static void WsSay(string s)
     {
@@ -538,6 +538,9 @@ public static unsafe partial class Program
                 WsSay($"saveload: {(same ? "the same parts" : "DIFFERENT")} ({body.Span.Length} bytes)");
                 return;
             }
+            case "logi": // smart logistics (Program.WindowShotLogi.cs): riders, a Router's net and why; host: order, cut, fill, spawn
+                WsLogi(g, arg);
+                return;
             case "craft": // a Crafting Terminal's orders, tray and reserved parts as this peer has them; on the host, also a save and load of its body
             {
                 var (cc, cpart) = WsFind(g, arg);

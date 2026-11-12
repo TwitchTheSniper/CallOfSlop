@@ -779,6 +779,46 @@ gap; junctions as parts rather than branches of a link; three ways at a junction
 fitted parts, drawing at most 24; F dropping the piece loose by the rack; riders passing through players (not reached: a piece as
 a solid box against a player near it is the next step); a piece longer than its whole link refused.
 
+## Smart logistics
+
+Phase 1 of the smart logistics network (design 2026-11-12, the user's decisions D1 to D5 and answers Q1 to Q7): **Routers send pieces
+where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogistics.cs`; the part from the part kit's
+`conveyor_junction_parts`; the window tool's `logi` verbs in `Source/App/Program.WindowShotLogi.cs`.
+
+- **The network** is one group of parts on one construct joined by intact conveyors and chutes, either way round (Q1: one construct).
+  Its map (`LogiMap`, on `Construct.Logi`) is built on either peer from the links when they change (`Construct.RebuildStamp`; a
+  conveyor's width bumps `Construct.LogiStamp`), never per tick: nodes, groups, Routers, destinations, each conveyor's length. Next
+  hops are columns, one a destination, made the first time a piece is sent there (a shortest way back from it over intact conveyors,
+  through Routers and Joins only: a Splitter deals in turn, so a way through it is no way), at most 4 a conveyor step. A way costs its
+  metres plus 2 m a junction.
+- **The Conveyor Router** (and the Large one): the Splitter's table, ports and port bytes, in logistics green, `"router": true`, 20 W
+  (40 W). Its out arrows are lamps (`"way": 1..3` boxes: ahead, then the two sides in port order) lit orange when its last piece went that way
+  to an order, white to storage, and all blinking red while the piece at its input is stuck; a low steel fence on the deck (`"fence"`
+  boxes) swings 45 degrees toward the way. Deck lamps only, no post (Q6). Outputs: **Alarm** (1 while a piece is stuck at it) and
+  **Moving** (pieces riding its network). Unpowered, it deals in turn like a Splitter and its lamps are out.
+- **A piece's destination** (`CRider.Dest`, a store handle; `Tag`, the order; `Flags`, `LogiFlags` with the reason in bits 4-7).
+  A machine's piece gets one as it leaves (`AtSource`) when its network has a Router: the oldest order at a terminal on the network
+  that asked this machine (else any) for its kind, while the order's Asked is more than what already rides to it. A terminal's fetch
+  from a store rides tagged for its order (and a store's way to the tray may now pass a Router: `RouteTo`). A piece with none gets one
+  at its first Router: an order that wants it, else the nearest plain Piece Rack on the network with room for it less what already
+  rides there (D5). Wants are read from the terminals' orders; no table is kept in phase 1.
+- **At a Router** (`ConstructLogistics.Pass`, once per lead piece a step): the destination's way is one array read and one `Takes`.
+  Its way cut or too narrow, its order closed or its tray full, it goes to storage as overflow (and is not offered to an order again);
+  its way full for 5 s, the same; 32 junctions crossed (a Splitter sending it round), the same. With no storage that has room it waits
+  at the Router, **stuck** (Q7): red lamps, Alarm 1, the conveyor's look line "held at the Router: no Piece Rack on the network has room
+  for it"; it looks again every 2 s. Nothing is dropped.
+- **Seeing it.** Aimed at a Router: "Conveyor Router: last piece Gear Set -> Crafting Terminal (order 1) - 3 ways out, 4 destinations
+  (2 for storage)", or "holding ... - stuck: ...". Aimed at a riding piece: its name "on a conveyor -> Crafting Terminal (order 1)" or
+  "-> storage: Piece Rack (its order closed)". A client knows the Router's choice from the riders it hears.
+- **Net and saves.** Protocol 264: each rider in `CBodyKind.Riders` gains u16 destination handle, u16 order and u8 flags. A save's body
+  gains a `LOGI` block after the stations' jobs (written only when a rider has a destination: per rider its destination part plus one,
+  order, flags); an older build skips it, an older save loads with no destinations (they get one at their first Router).
+- **Not in phase 1:** chains (orders pull their inputs), stock targets and overrides, the Router's settings (`routerSpill`,
+  `routerHold`) and screen, the network board, press bays and the Panel Former as destinations, the source's own "no storage" stall
+  (a full network backs up to the Router, stuck, and the line behind it backs up to the machine as today).
+- **Showcase:** the Assembler's Piece out runs to a Router; its way ahead to the part rack (storage), its way 3 to a Join before the
+  Crafting Terminal's side. Line A keeps its plain Splitter (the press is fed in turn until Press phase 2 gives it orders).
+
 ## Work orders
 
 The first step of automated vehicle building (the user, 2026-11-11: "every exact part to be built", a machine working through a queue

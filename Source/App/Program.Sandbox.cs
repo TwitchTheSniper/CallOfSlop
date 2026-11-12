@@ -325,6 +325,17 @@ public static unsafe partial class Program
             }
             g.SandboxLookText = _sbPieceText;
         }
+        if (aimed && hit.RoutePlus1 == 0 && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Body.DefOf(hit.Part).IsRouter)
+        {
+            // A Conveyor Router: its last piece and where it went, or the piece it holds and why (ConstructLogistics.Look).
+            var rk = ((long)hit.Body.Id << 40) ^ ((long)hit.Part << 24) ^ (hit.Body.Logi?.ShowVersion ?? 0) ^ (ConstructRecycler.Powered(g.Constructs, hit.Body, hit.Part) ? 1L << 62 : 0) ^ ((long)hit.Body.RebuildStamp << 32);
+            if (rk != _sbRouterKey)
+            {
+                _sbRouterKey = rk;
+                _sbRouterText = ConstructLogistics.Look(g.Constructs, hit.Body, hit.Part);
+            }
+            g.SandboxLookText = _sbRouterText;
+        }
         var terminalTook = TerminalFrame(g, me, in h, aimed, hit, storeNear); // (a Smart Terminal under the crosshair takes the wheel, the use key and reload: Program.SandboxTerminal.cs)
         var feet = me.Position;
         var nearRack = World.Map.Sandbox is { } sb && Vector3.Distance(feet with { Y = 0 }, sb.Rack) <= 4.5f;
@@ -1000,6 +1011,9 @@ public static unsafe partial class Program
                 n++;
         return n;
     }
+
+    private static long _sbRouterKey = -1;
+    private static string _sbRouterText = "";
 
     private static string StorageLook(Game g, Player me, in ConstructHit hit, CStore st, bool near, ConstructPartDef? held)
     {

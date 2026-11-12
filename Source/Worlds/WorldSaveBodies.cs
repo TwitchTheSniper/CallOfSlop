@@ -119,6 +119,8 @@ public sealed class WorldNamesRead
 /// <summary>A world's constructs and stores in a save (docs/sandbox/WORLD-SAVES.md): caught on the tick, written on the worker, read back at the start of play.</summary>
 public sealed partial class ConstructWorld
 {
+    private const uint LogiTag = 0x49474F4C; // "LOGI": a body's smart logistics block (its riders' destinations)
+
     /// <summary>The tick's copy: every array the worker needs, in bulk.</summary>
     public void CaptureInto(WorldSnapshot s, Func<Construct, bool>? keep = null)
     {
@@ -157,6 +159,9 @@ public sealed partial class ConstructWorld
             b.SpaceShip = c.SpaceShip;
             b.Brief = c.Brief;
             b.Conveyed = c.ConveyedCount > 0 ? c.Conveyed.AsSpan(0, c.ConveyedCount).ToArray() : null; // (a save is rare: a copy is fine)
+            if (b.Conveyed != null)
+                foreach (ref var cr in b.Conveyed.AsSpan())
+                    cr.Dest = (ushort)(ConstructLogistics.PartOfStore(c, cr.Dest) + 1); // (the copy's destination by part, plus one: handles are this run's own)
             b.Orders = WorkOrders.Snapshot(c);
             b.Craft = ConstructCrafting.Snapshot(c);
             b.Station = ConstructStation.Snapshot(c);
@@ -399,17 +404,30 @@ public sealed partial class ConstructWorld
         var conveyors = b.Conveyed != null;
         foreach (ref readonly var r in routes)
             conveyors |= r.Type == RouteType.Conveyor;
-        if (conveyors || b.Orders != null || b.Craft != null || b.Station != null)
+        var logi = false; // (a rider with a destination: the LOGI block follows the stations' jobs)
+        foreach (ref readonly var cr in (b.Conveyed ?? []).AsSpan())
+            logi |= cr.Dest != 0 || cr.Flags != 0;
+        if (conveyors || b.Orders != null || b.Craft != null || b.Station != null || logi)
             ConstructConveyor.WriteSave(w, routes, b.Conveyed ?? [], names); // (an empty one before the work orders: they follow it)
         // Work orders (WorkOrders.cs), after the conveyors: a body without any writes nothing.
-        if (b.Orders != null || b.Craft != null || b.Station != null)
+        if (b.Orders != null || b.Craft != null || b.Station != null || logi)
             WorkOrders.WriteSave(w, b.Orders ?? [], names); // (an empty one before the crafting orders: they follow it)
         // Crafting Terminals' orders (ConstructCrafting.cs), after the work orders the same way.
-        if (b.Craft != null || b.Station != null)
+        if (b.Craft != null || b.Station != null || logi)
             ConstructCrafting.WriteSave(w, b.Craft ?? [], names); // (an empty one before the stations' jobs: they follow it)
         // Building Stations' jobs (ConstructStation.cs), after the crafting orders the same way.
-        if (b.Station != null)
-            ConstructStation.WriteSave(w, b.Station);
+        if (b.Station != null || logi)
+            ConstructStation.WriteSave(w, b.Station ?? []);
+        // Smart logistics (ConstructLogistics.cs), after the stations' jobs: "LOGI", its length, then per rider in the riders' order its
+        // destination part plus one (0: none), its order and its LogiFlags. An older build skips it; an older save ends before it.
+        if (logi)
+        {
+            var riders = b.Conveyed!;
+            w.U32(LogiTag).I32(4 + riders.Length * 5);
+            w.I32(riders.Length);
+            foreach (ref readonly var cr in riders.AsSpan())
+                w.U16(cr.Dest).U16(cr.Tag).U8(cr.Flags);
+        }
     }
 
     public static void WriteStore(SaveWriter w, CStore s, WorldNames names)
@@ -735,6 +753,26 @@ public sealed partial class ConstructWorld
         var orders = conveyors != null ? WorkOrders.ReadSave(r, bodyEnd, names) : null; // (after the conveyors, the same way)
         var craft = orders != null ? ConstructCrafting.ReadSave(r, bodyEnd, names) : null; // (after the work orders, the same way)
         var stations = craft != null ? ConstructStation.ReadSave(r, bodyEnd) : null; // (after the crafting orders, the same way)
+        (ushort Dest, ushort Tag, byte Flags)[]? logi = null; // (after the stations' jobs: the riders' destinations, ConstructLogistics.cs)
+        if (stations != null && r.Has(8) && r.Pos + 8 <= bodyEnd)
+        {
+            var tag = r.U32();
+            var len = r.I32();
+            if (len < 0 || r.Pos + len > bodyEnd || !r.Has(len))
+                throw new WorldFileException($"a logistics block of {len} bytes");
+            var end = r.Pos + len;
+            if (tag == LogiTag && len >= 4)
+            {
+                var m = r.I32();
+                if (m < 0 || m > Construct.MaxConveyed || 4 + m * 5 > len)
+                    throw new WorldFileException($"{m} rider destinations");
+                logi = new (ushort, ushort, byte)[m];
+                for (var i = 0; i < m; i++)
+                    logi[i] = (r.U16(), r.U16(), r.U8());
+            }
+            while (r.Pos < end)
+                r.U8(); // (a newer block's rest)
+        }
         var c = Create(pos, rot, freshId ? (ushort)0 : id) ?? throw new WorldFileException($"no room for construct {id}");
         id = c.Id;
         _partTally = -1;
@@ -784,6 +822,14 @@ public sealed partial class ConstructWorld
             if (p.Burn > 0)
                 c.Burning++;
         }
+        if (logi != null && conveyors != null)
+            for (var j = 0; j < conveyors.Index.Count && j < c.ConveyedCount; j++)
+                if (conveyors.Index[j] < logi.Length && logi[conveyors.Index[j]] is var (lp, lt, lf))
+                {
+                    ref var cr = ref c.Conveyed[j];
+                    cr.Dest = lp > 0 && lp <= n ? c.Parts[lp - 1].Store : (ushort)0; // (its destination's store as loaded)
+                    (cr.Tag, cr.Flags) = (lt, cr.Dest != 0 || (lf & (byte)LogiFlags.Stuck) != 0 ? lf : (byte)0);
+                }
         c.Root = root >= 0 && root < n ? root : 0;
         if (tracks.Count > 0)
             foreach (var t in tracks)
