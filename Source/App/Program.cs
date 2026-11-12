@@ -491,6 +491,7 @@ public static unsafe partial class Program
             var name = args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)) ? "serverlist.log"
                 : args.Any(a => a.Equals("--net-client", StringComparison.OrdinalIgnoreCase)) ? $"netclient-{Environment.ProcessId}.log" // beside a running game (NetClientProcess.cs)
                 : args.Any(a => a.Equals("--alloc-join", StringComparison.OrdinalIgnoreCase)) ? "alloc-client.log" // --alloc-frames as a joiner, beside a host on the same machine (Program.AllocFrames.cs)
+                : args.Any(a => a.StartsWith("join:", StringComparison.OrdinalIgnoreCase)) ? "callofslop-join.log" // the window tool's joined client (--net join:IP), beside its host: Windows locks the host's log
                 : "callofslop.log";
             var writer = new StreamWriter(AppFolders.LogPath(name), append: false) { AutoFlush = true };
             Console.SetOut(writer);
