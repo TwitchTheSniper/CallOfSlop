@@ -83,14 +83,16 @@ public static class MachineScreens
                 case RefineState.OutputFull: Say(card, PanelState.Wants, "Output full"); break;
                 default: Say(card, PanelState.Fault, "No power"); break;
             }
-        if (state == RefineState.Short && !st.Busy && r!.Mix.Length == 0)
+        // The recipe line: the one set (the Recipe button under the lines picks it), else Auto and what the input makes.
+        var set = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0);
+        if (set > 0 && set <= d.RefineChoices.Length)
+            card.Add(1, "Recipe ").Add(1, d.RefineChoices[set - 1].OutputName);
+        else if (state == RefineState.Short && !st.Busy && r!.Mix.Length == 0)
             card.Add(1, "Batch ").Add(1, r.UnitsIn).Add(1, ' ').Add(1, r.InputName);
         else if (r != null)
-            card.Add(1, "Makes ").Add(1, r.OutputName);
-        else if ((int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0) is var set and > 0 && set <= d.RefineChoices.Length)
-            card.Add(1, "Makes ").Add(1, d.RefineChoices[set - 1].OutputName); // (the recipe set, before anything has come in)
+            card.Add(1, "Auto: ").Add(1, r.OutputName);
         else
-            card.Add(1, "Recipe Auto"); // (what comes in picks it; the Recipe button under the lines sets one)
+            card.Add(1, "Recipe Auto");
         if (d.RefineMix)
         {
             Amount(card, 2, "In ", st.MixN > 0 ? st.MixAmount![0] : 0, st.MixN > 0 ? names.NameOf(st.MixMat![0]) : "");
