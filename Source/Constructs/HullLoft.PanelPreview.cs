@@ -147,7 +147,7 @@ public static partial class HullLoft
             if (ShownNormals.Length != gu * gv)
                 ShownNormals = new Vector3[gu * gv];
             for (var k = 0; k < gu * gv; k++)
-                ShownNormals[k] = PanelNormal(_want, (k / gv + 0.5f) / gu, (k % gv + 0.5f) * 2f / gv - 1);
+                ShownNormals[k] = PanelNormal(_want, (PanelRowS(_want, k / gv, gu) + PanelRowS(_want, k / gv + 1, gu)) * 0.5f, (k % gv + 0.5f) * 2f / gv - 1);
             _next = _total = 0;
         }
 

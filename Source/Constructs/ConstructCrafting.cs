@@ -534,7 +534,7 @@ public static class ConstructCrafting
             CraftState.Queued => string.IsNullOrEmpty(o.Note) ? $"queued at {where}" : $"queued at {where}: {o.Note}",
             CraftState.Riding => string.IsNullOrEmpty(o.Note) ? "riding to the tray" : o.Note,
             CraftState.InTray => string.IsNullOrEmpty(o.Note) ? "in the tray" : o.Note,
-            CraftState.Collect => $"no route from {where}: collect it there",
+            CraftState.Collect => string.IsNullOrEmpty(o.Note) ? $"no route from {where}: collect it there" : o.Note,
             CraftState.Held => string.IsNullOrEmpty(o.Note) ? "held" : o.Note,
             _ => "waiting",
         };
@@ -876,7 +876,15 @@ public static class ConstructCrafting
                     continue;
                 }
                 state = CraftState.Fetching;
-                if (ConstructConveyor.RackCheck(c, t, tray, d) != 0)
+                var fits = ConstructConveyor.RackCheck(c, t, tray, d);
+                if (fits == 3)
+                {
+                    // (a panel folded taller than the tray: it stays claimed at its rack for the player, as with no route)
+                    state = CraftState.Collect;
+                    note = $"too big for the tray: collect it at the {c.DefOf(net.Stores[s]).Name}";
+                    continue;
+                }
+                if (fits != 0)
                 {
                     state = CraftState.Held;
                     note = "held: the tray is full - take parts out";

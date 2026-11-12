@@ -202,6 +202,54 @@
       "detail": true,
       "side": "leaf",
       "paintable": false
+    },
+    {
+      "min": [
+        -0.149,
+        -0.0625,
+        -0.1045
+      ],
+      "max": [
+        -0.133,
+        0.147,
+        0.1045
+      ],
+      "color": "#f08a12",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    },
+    {
+      "min": [
+        0.133,
+        -0.0625,
+        -0.1045
+      ],
+      "max": [
+        0.149,
+        0.147,
+        0.1045
+      ],
+      "color": "#f08a12",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.0125,
+        0.1652,
+        -0.0945
+      ],
+      "max": [
+        0.0125,
+        0.1812,
+        0.0945
+      ],
+      "color": "#1c1c1c",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
     }
   ],
   "sockets": [

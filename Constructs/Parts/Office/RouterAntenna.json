@@ -59,6 +59,21 @@
         0.7
       ],
       "front": "+y"
+    },
+    {
+      "min": [
+        -0.012,
+        0.01,
+        -0.045
+      ],
+      "max": [
+        0.012,
+        0.026,
+        -0.029
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false
     }
   ],
   "sockets": [

@@ -1,0 +1,44 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Colony Fence 20 m",
+  "description": "A run of the penal colony's outer fence.",
+  "steps": [
+    {
+      "part": "Concrete Fence Panel 4 m",
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fence Panel 4 m",
+      "on": 0,
+      "socket": "r",
+      "by": "l",
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fence Panel 4 m",
+      "on": 1,
+      "socket": "r",
+      "by": "l",
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fence Panel 4 m",
+      "on": 2,
+      "socket": "r",
+      "by": "l",
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fence Panel 4 m",
+      "on": 3,
+      "socket": "r",
+      "by": "l",
+      "paint": "#a29e94",
+      "finish": "concrete"
+    }
+  ]
+}

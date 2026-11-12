@@ -1130,7 +1130,7 @@ public static class ConstructConveyor
 
     // ---- The wire (protocol 244: CBodyKind.Riders) -------------------------------------------------------------------
 
-    /// <summary>One body's riders, the whole list: u16 body, u16 n, each u8 link, f32 front (m: before a junction's output starts, below 0), u8 health, u32 paint, u8 the link it came through plus one, u16 destination store handle, u16 order, u8 LogiFlags (protocol 262), then the piece's key (protocol 245).</summary>
+    /// <summary>One body's riders, the whole list: u16 body, u16 n, each u8 link, f32 front (m: before a junction's output starts, below 0), u8 health, u32 paint, u8 the link it came through plus one, u16 destination store handle, u16 order, u8 LogiFlags (protocol 264), then the piece's key (protocol 245).</summary>
     public static void Write(PacketWriter w, Construct c)
     {
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Riders).U16(c.Id).U16((ushort)c.ConveyedCount);
