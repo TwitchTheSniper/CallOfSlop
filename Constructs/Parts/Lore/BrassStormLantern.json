@@ -116,6 +116,7 @@
         0.065
       ],
       "color": "#d8e4e8",
+      "detail": true,
       "glass": true,
       "shape": "cylinder",
       "segments": 12,

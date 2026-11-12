@@ -25,9 +25,9 @@ public sealed class LoreParts : IPartGenerator
 
     private static PyDict NoPaint => Kw(("paintable", false));
 
-    /// <summary>A detail on a front face at z: 1 cm thick, 4 mm proud of it.</summary>
+    /// <summary>A detail on a front face at z: 16 mm thick (the corrector may take a few off), 4 mm proud of it.</summary>
     private static PyDict? Face(double x0, double y0, double x1, double y1, double z, string colour) =>
-        Box([x0, y0, z - 0.006], [x1, y1, z + 0.004], colour, detail: true, shape: NoPaint);
+        Box([x0, y0, z - 0.012], [x1, y1, z + 0.004], colour, detail: true, shape: NoPaint);
 
     private static void Feet(Part p, params double[] xs)
     {
@@ -59,11 +59,11 @@ public sealed class LoreParts : IPartGenerator
                 var x0 = -0.3 + g * 0.2 + row * 0.006;
                 var y1 = 0.88 - row * 0.12;
                 for (var s = 0; s < 4; s++)
-                    p.Add(Face(x0 + s * 0.03, y1 - 0.08 - (row > 3 ? s % 2 * 0.012 : 0), x0 + s * 0.03 + 0.01, y1, z, WoodDark));
-                p.Add(Face(x0 - 0.015, y1 - 0.045, x0 + 0.115, y1 - 0.035, z, WoodDark));
+                    p.Add(Face(x0 + s * 0.03, y1 - 0.08 - (row > 3 ? s % 2 * 0.012 : 0), x0 + s * 0.03 + 0.016, y1, z, WoodDark));
+                p.Add(Face(x0 - 0.015, y1 - 0.048, x0 + 0.115, y1 - 0.032, z, WoodDark));
             }
         for (var s = 0; s < 3; s++)
-            p.Add(Face(-0.3 + s * 0.03, 0.08, -0.29 + s * 0.03, 0.16, z, WoodDark));
+            p.Add(Face(-0.3 + s * 0.03, 0.08, -0.284 + s * 0.03, 0.16, z, WoodDark));
         p.Add(Face(0.12, 0.08, 0.14, 0.2, z, Iron)); // (the arrow, cut deep: its shaft and head)
         p.Add(Face(0.1, 0.18, 0.16, 0.2, z, Iron));
         p.Add(Face(0.115, 0.2, 0.145, 0.22, z, Iron));
@@ -82,14 +82,14 @@ public sealed class LoreParts : IPartGenerator
                 if (row == 2 && col == 2)
                 {
                     p.Add(Face(x0, y0, x0 + 0.13, y0 + 0.16, z, CorkPale)); // (the paler square where it hung)
-                    p.Add(Box([x0 + 0.1, y0 + 0.13, z - 0.002], [x0 + 0.125, y0 + 0.155, z + 0.009], Paper, detail: true, shape: NoPaint)); // (a torn corner under the pin)
+                    p.Add(Box([x0 + 0.1, y0 + 0.13, z - 0.002], [x0 + 0.125, y0 + 0.155, z + 0.014], Paper, detail: true, shape: NoPaint)); // (a torn corner under the pin)
                     p.Add(Box([x0 + 0.105, y0 + 0.135, z], [x0 + 0.12, y0 + 0.15, z + 0.016], "#c03030", detail: true, shape: NoPaint));
                     continue;
                 }
                 p.Add(Face(x0, y0, x0 + 0.13, y0 + 0.16, z, Paper));
-                p.Add(Box([x0 + 0.035, y0 + 0.05, z], [x0 + 0.095, y0 + 0.13, z + 0.008], row == 0 ? "#6e6252" : "#5a5e64", detail: true, shape: NoPaint)); // (a face)
+                p.Add(Box([x0 + 0.035, y0 + 0.05, z], [x0 + 0.095, y0 + 0.13, z + 0.016], row == 0 ? "#6e6252" : "#5a5e64", detail: true, shape: NoPaint)); // (a face)
             }
-        p.Add(Box([-0.04, 0.9, z], [-0.03, 0.96, z + 0.008], Ink, detail: true, shape: NoPaint)); // (a biro arrow beside the gap)
+        p.Add(Box([-0.045, 0.9, z], [-0.029, 0.96, z + 0.016], Ink, detail: true, shape: NoPaint)); // (a biro arrow beside the gap)
         p.Stats(5, 25, 0, 0.5);
         return p;
     }
@@ -106,7 +106,7 @@ public sealed class LoreParts : IPartGenerator
         p.Add(Box([0.008, 1.06, -0.15], [0.22, 1.095, 0.14], Paper, shape: NoPaint));
         p.Add(Box([-0.012, 1.055, -0.15], [0.012, 1.09, 0.14], RedCover)); // (the spine's fold)
         for (var k = 0; k < 6; k++)
-            p.Add(Box([0.04, 1.091, 0.1 - k * 0.04], [0.19 - k % 2 * 0.04, 1.101, 0.11 - k * 0.04], Ink, detail: true, shape: NoPaint)); // (rule 212 and its margin)
+            p.Add(Box([0.04, 1.088, 0.1 - k * 0.04], [0.19 - k % 2 * 0.04, 1.104, 0.116 - k * 0.04], Ink, detail: true, shape: NoPaint)); // (rule 212 and its margin)
         Feet(p, 0);
         p.Stats(8, 30, 0, 0.5);
         return p;
@@ -121,16 +121,16 @@ public sealed class LoreParts : IPartGenerator
         {
             p.Add(Box([-w + 0.02, 0.04 + k * 0.25, d - 0.006], [w - 0.02, 0.25 + k * 0.25, d + 0.008], GreyDark)); // (a drawer front)
             p.Add(Box([-0.06, 0.2 + k * 0.25, d + 0.004], [0.06, 0.22 + k * 0.25, d + 0.03], Iron)); // (its handle)
-            p.Add(Box([-0.04, 0.12 + k * 0.25, d + 0.004], [0.04, 0.16 + k * 0.25, d + 0.016], Paper, detail: true, shape: NoPaint)); // (its label)
+            p.Add(Box([-0.04, 0.12 + k * 0.25, d + 0.002], [0.04, 0.16 + k * 0.25, d + 0.018], Paper, detail: true, shape: NoPaint)); // (its label)
         }
         p.Add(Box([-0.18, h + 0.002, -0.22], [0.18, h + 0.014, 0.2], Iron)); // (the tray's floor)
         foreach (var x in new[] { -0.18, 0.168 })
             p.Add(Box([x, h + 0.014, -0.22], [x + 0.012, h + 0.08, 0.2], Iron)); // (its wire sides)
         p.Add(Box([-0.168, h + 0.014, -0.2], [0.168, h + 0.06, 0.18], PaperOld, shape: NoPaint)); // (the memos)
         p.Add(Box([-0.15, h + 0.06, -0.17], [0.155, h + 0.072, 0.19], Paper, shape: NoPaint)); // (the top one, askew)
-        p.Add(Box([-0.12, h + 0.07, 0.1], [0.12, h + 0.08, 0.13], Ink, detail: true, shape: NoPaint)); // (MEMO 1,144)
-        p.Add(Box([-0.12, h + 0.07, -0.05], [0.05, h + 0.08, -0.03], Ink, detail: true, shape: NoPaint));
-        p.Add(Box([-0.14, h + 0.07, -0.15], [-0.11, h + 0.08, -0.12], "#9a9ea2", detail: true, shape: NoPaint)); // (staple holes, nothing in them)
+        p.Add(Box([-0.12, h + 0.066, 0.1], [0.12, h + 0.082, 0.13], Ink, detail: true, shape: NoPaint)); // (MEMO 1,144)
+        p.Add(Box([-0.12, h + 0.066, -0.05], [0.05, h + 0.082, -0.03], Ink, detail: true, shape: NoPaint));
+        p.Add(Box([-0.14, h + 0.066, -0.15], [-0.11, h + 0.082, -0.12], "#9a9ea2", detail: true, shape: NoPaint)); // (staple holes, nothing in them)
         Feet(p, -0.12, 0.12);
         p.Stats(25, 60, 1, 1.0);
         return p;
@@ -148,14 +148,14 @@ public sealed class LoreParts : IPartGenerator
         {
             p.Add(Face(x0, y0, x1, y1, z, c));
             for (var k = 0; k < 4; k++) // (the rota's lines)
-                p.Add(Box([x0 + 0.03, y1 - 0.06 - k * 0.05, z], [x1 - 0.05, y1 - 0.05 - k * 0.05, z + 0.008], Ink, detail: true, shape: NoPaint));
+                p.Add(Box([x0 + 0.03, y1 - 0.06 - k * 0.05, z], [x1 - 0.05, y1 - 0.044 - k * 0.05, z + 0.016], Ink, detail: true, shape: NoPaint));
         }
         p.Add(Face(0.26, 1.18, 0.5, 1.4, z, "#3a86b8")); // (the postcard: sky,)
-        p.Add(Box([0.26, 1.18, z], [0.5, 1.24, z + 0.008], "#d8c27a", detail: true, shape: NoPaint)); // (sand,)
-        p.Add(Box([0.36, 1.24, z], [0.4, 1.36, z + 0.008], "#e0e4e8", detail: true, shape: NoPaint)); // (and the centrifuge's arm)
-        p.Add(Box([0.27, 1.32, z], [0.49, 1.34, z + 0.008], "#e0e4e8", detail: true, shape: NoPaint));
+        p.Add(Box([0.26, 1.18, z], [0.5, 1.24, z + 0.016], "#d8c27a", detail: true, shape: NoPaint)); // (sand,)
+        p.Add(Box([0.36, 1.24, z], [0.4, 1.36, z + 0.016], "#e0e4e8", detail: true, shape: NoPaint)); // (and the centrifuge's arm)
+        p.Add(Box([0.27, 1.32, z], [0.49, 1.34, z + 0.016], "#e0e4e8", detail: true, shape: NoPaint));
         foreach (var (x, y) in new[] { (0.27, 1.38), (0.48, 1.38), (-0.36, 1.42), (-0.04, 1.42) })
-            p.Add(Box([x, y, z], [x + 0.015, y + 0.015, z + 0.02], "#c03030", detail: true, shape: NoPaint)); // (pins)
+            p.Add(Box([x, y, z], [x + 0.016, y + 0.016, z + 0.024], "#c03030", detail: true, shape: NoPaint)); // (pins)
         p.Stats(5, 25, 0, 0.5);
         return p;
     }
@@ -168,7 +168,7 @@ public sealed class LoreParts : IPartGenerator
         {
             var x = -0.42 + k * 0.12;
             var last = k == 7;
-            p.Add(Box([x, 1.42, z - 0.006], [x + 0.03, 1.45, z + 0.04], last ? BrassBright : Brass, detail: true, shape: NoPaint)); // (the hook)
+            p.Add(Box([x, 1.42, z - 0.008], [x + 0.03, 1.45, z + 0.04], last ? BrassBright : Brass, detail: true, shape: NoPaint)); // (the hook)
             if (last)
                 continue;
             p.Add(Box([x + 0.005, 1.33, z + 0.01], [x + 0.025, 1.43, z + 0.03], Brass, detail: true, shape: NoPaint)); // (the key, hung on it)
@@ -188,7 +188,7 @@ public sealed class LoreParts : IPartGenerator
         double y = 0.46;
         p.Add(Box([-0.08, y + 0.002, -0.08], [0.08, y + 0.04, 0.08], Brass)); // (the lantern's base, the fount)
         p.Add(Box([-0.065, y + 0.04, -0.065], [0.065, y + 0.2, 0.065], hidden: true));
-        p.Add(Box([-0.065, y + 0.04, -0.065], [0.065, y + 0.2, 0.065], "#d8e4e8", glass: true, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+y")))); // (the glass)
+        p.Add(Box([-0.065, y + 0.04, -0.065], [0.065, y + 0.2, 0.065], "#d8e4e8", detail: true, glass: true, shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+y")))); // (the glass)
         p.Add(Box([-0.012, y + 0.04, -0.012], [0.012, y + 0.08, 0.012], "#f0ead8", detail: true, shape: NoPaint)); // (the wick, trimmed square)
         foreach (var x in new[] { -0.075, 0.063 })
             p.Add(Box([x, y + 0.04, -0.006], [x + 0.012, y + 0.2, 0.006], Brass)); // (the guard wires)
@@ -225,9 +225,9 @@ public sealed class LoreParts : IPartGenerator
         p.Add(Box([-0.13, y + 0.002, -0.17], [0.13, y + 0.014, 0.17], "#8a6a44")); // (the clipboard)
         p.Add(Box([-0.12, y + 0.014, -0.16], [0.12, y + 0.026, 0.15], Paper, shape: NoPaint)); // (the lunch log)
         for (var k = 0; k < 6; k++)
-            p.Add(Box([-0.1, y + 0.025, 0.1 - k * 0.04], [0.04, y + 0.035, 0.11 - k * 0.04], Ink, detail: true, shape: NoPaint));
+            p.Add(Box([-0.1, y + 0.022, 0.1 - k * 0.04], [0.04, y + 0.038, 0.116 - k * 0.04], Ink, detail: true, shape: NoPaint));
         foreach (var k in new[] { 1, 3 })
-            p.Add(Box([0.06, y + 0.025, 0.095 - k * 0.04], [0.08, y + 0.035, 0.115 - k * 0.04], Light, detail: true, shape: NoPaint)); // (stars for the good lunches)
+            p.Add(Box([0.06, y + 0.022, 0.095 - k * 0.04], [0.08, y + 0.038, 0.115 - k * 0.04], Light, detail: true, shape: NoPaint)); // (stars for the good lunches)
         p.Add(Box([-0.05, y + 0.014, 0.13], [0.05, y + 0.04, 0.17], Iron)); // (the clip)
         Feet(p, -0.15, 0.15);
         p.Stats(9, 30, 0, 0.5);
@@ -243,7 +243,7 @@ public sealed class LoreParts : IPartGenerator
         for (var k = 0; k < covers.Length; k++)
             p.Add(Box([-w + 0.04 + k * 0.074, 0.05, -0.14], [-w + 0.104 + k * 0.074, 0.27 - k % 3 * 0.02, 0.14], covers[k])); // (books standing)
         p.Add(Box([-0.16, h + 0.06, -0.12], [0.16, h + 0.08, 0.12], BlueCover)); // (the night sky book, lying on top)
-        p.Add(Box([-0.03, h + 0.075, -0.02], [0.03, h + 0.086, 0.04], Light, detail: true, shape: Kw(("paintable", false), ("glow", true)))); // (its cover: the Light, and nothing else)
+        p.Add(Box([-0.03, h + 0.072, -0.02], [0.03, h + 0.088, 0.04], Light, detail: true, shape: Kw(("paintable", false), ("glow", true)))); // (its cover: the Light, and nothing else)
         p.Stats(10, 30, 0, 0.5);
         return p;
     }

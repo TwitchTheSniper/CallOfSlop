@@ -528,6 +528,47 @@ Edie (asking him first costs Crumb). Officer Nettles: the clipboard and the play
 sister named after the Light, the north wall's newer bricks; the report Nettles put in (made smaller for a friend:
 Suspicion -1). Each has a line of grief when one of the others is dead. Foreman Grubb has no body yet, so no topics.
 
+### Lore
+
+Things in the colony a player can look at closely (`Source/Story/StoryLore.cs` the engine, `Source/Game/GameStoryLore.cs`
+the host, `Source/App/Program.StoryLore.cs` and `Source/UI/UiStoryLore.cs` the screen; data `Story/Lore/*.json`, format
+`call-of-slop-lore/1`; the parts are the part kit's `LoreParts`, `Constructs/Parts/Lore`). Show, don't tell: each one
+is somebody's, nothing explains it, and noticing it is how a new question opens with that person.
+
+```json
+{ "id": "crumb-postcard", "part": "Barracks Noticeboard", "title": "The barracks noticeboard",
+  "in": "Colony Barracks", "at": [1.2, 0.375, 7.42], "yaw": 180,
+  "text": [ "A corkboard of duty rotas...", "Pinned in the corner, a postcard: ..." ],
+  "noticed": { "by": "Officer Crumb", "reach": 14, "then": [ "?me Likes ?them +1" ], "say": [ "Oi! That's private." ] } }
+```
+
+- **An item**: `id`, `part` (a part of its own: one item a part, found by the part's name), `title` (48 characters),
+  `text` (1 to 6 paragraphs, ASCII). `in` and `at`: the building it stands in (a colony building's blueprint name:
+  `Game.LoreBuilding`) and where, metres in that building's own frame (the floor's top is y 0.375); `yaw` turns the
+  part's front (its +z) in degrees, 90 to the building's -x. `then` (effects on the first look, `?me` the player) and
+  `learn` (a Lead) are there for an item that should change the story by itself; the shipped ones don't.
+- **Noticed**: `by` (a person), `reach` (m, 12 if not said), `if` (a query over `?me`, the person, and `?them`), `say`
+  (a line, `{me}` and `{them}`), `then`: on the player's first look, when that person's body is within reach, they say
+  it (and face the player, as any line).
+- **Standing**: the host stands every item with an `at` in its building once per world, a pinned construct of one part
+  (the story's Thing "placed lore ID" notes it, so one taken away isn't put back), every few seconds until its building
+  is there; an older world gets them when it loads.
+- **Looking**: the crosshair on a lore part within use reach shows "Name  F: look closer"; the use key opens the words
+  at the left of the screen (no mouse; F again, Esc or walking 4.5 m off puts it down) and sends the ordinary use act,
+  so no protocol of its own. The host counts it as the relation `Inspected` (a player towards the Thing "lore ID",
+  `Story/Relations/Talk.json`), saved with the world, and a topic or storylet reads it: `"?them Inspected 'lore edie-tally'"`.
+- **Checks**: `--check-story` lists the items and warns of a `noticed` person in no cast and an item no topic asks for;
+  `--talk-sim --inspected edie-tally,page-nine` has the player look at items first.
+
+Shipped: `Lore/PenalColony.json`, ten items, each opening a topic in `Topics/Colony.json`. In the cell block, the
+scratched tally board (Bellweather: whose tally?) and the photo board with year three's gap (Crumb names Edie Marsh,
+which opens Bellweather's "Who was Edie Marsh?"). In the Warden's office, the handbook open at rule 212 (the Light and
+a count of ten), the brass storm lantern from the Brine Flats (a way into his lighthouse thread) and the in-tray with
+memo 1,144 (the almanac that was never attached). In the yard, Nettles' clipboard (her margin, which opens the north
+wall) and the old mine's shift board (marker nine: Crumb on Foreman Grubb gives the lead "Old Mine", Bellweather
+raises Suspicion). In the barracks, the noticeboard with Crumb's postcard (Barnaby), the key board's eighth hook (a
+way into Bellweather's exits) and Nettles' schoolbook with chapter nine, "The Others", taken out.
+
 ## Plays
 
 Plays are short scenes cast from the world (`Source/Story/StoryPlays.cs`; data `Story/Plays/*.json`). Where a pattern notices a story after it happened, a play makes a small one happen: two who hold grudges meet and
