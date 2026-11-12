@@ -631,9 +631,10 @@ public class BlueprintScript
     public void Store(VPart container, int slot, string part, int count)
     {
         var def = Def(part);
-        if (slot < 0 || slot >= C.DefOf(container.Index).Slots.Length)
+        var rack = C.DefOf(container.Index).IsPieceRack; // (a Piece Rack packs any piece by volume: no slot, and a physics-only part is at home there)
+        if (!rack && (slot < 0 || slot >= C.DefOf(container.Index).Slots.Length))
             throw new VehicleKitException($"a {container.Name} has no slot {slot}");
-        if (def.PhysicsOnly)
+        if (!rack && def.PhysicsOnly)
             throw new VehicleKitException($"the {part} is physics-only: it rides as cargo, not in a slot");
         _stored.Add((container.Step, slot, part, count));
     }

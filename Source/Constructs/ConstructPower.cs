@@ -189,6 +189,12 @@ public static class ConstructPower
                 var d = p.D;
                 if (!p.Powered || p.Broken || d.PowerDraw <= 0)
                     continue;
+                if (d.IsBuildStation)
+                {
+                    if (p.Station is { State: StationState.Costing or StationState.Building })
+                        watts += d.PowerDraw; // (a Building Station draws its wattage while it builds, nothing idle; its rack's Data out is no on or off)
+                    continue;
+                }
                 var machine = d.IsRecycler || d.IsGatherer || d.IsRefiner || d.IsAssembler || d.IsPress || d.IsBeacon || d.IsTerminal || d.IsExtruder;
                 if (machine && world.StoreOf(c, i) is not { Busy: true, Held: false, Drive: ShaftState.None })
                     continue; // (a Recycler, gathering module, production machine or beacon draws only while it works; one a wire holds off doesn't, even with a job in hand; a drill on a drive shaft never does)

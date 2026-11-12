@@ -132,7 +132,7 @@ Salvage and the inventory, the salvage haul, gathering, scoops.
 
 ## [Production](constructs/production.md), 82 KB
 
-Refining, extrusion, the Wheel Former, the Press, the Panel Former, machine tiers, assembling, build stations, production lines, production monitors, conveyors, work orders, the crafting terminal, reservations, the Production Showcase.
+Refining, extrusion, the Wheel Former, the Press, the Panel Former, machine tiers, assembling, build stations, production lines, production monitors, conveyors, work orders, the crafting terminal, reservations, the building station, the Production Showcase.
 
 - Refining (decision 14)
 - Extrusion
@@ -149,6 +149,7 @@ Refining, extrusion, the Wheel Former, the Press, the Panel Former, machine tier
 - Work orders
 - Crafting terminal
 - Reservations
+- Building station
 - Production Showcase
 
 ## [Storage and cargo](constructs/storage-and-cargo.md), 42 KB

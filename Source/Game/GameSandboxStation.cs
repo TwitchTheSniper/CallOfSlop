@@ -1,0 +1,80 @@
+using System.Numerics;
+
+namespace CallOfSlop;
+
+/// <summary>Sandbox: the Building Station's actions (ConstructStation.cs; docs/sandbox/constructs/production.md "Building station").</summary>
+public sealed partial class Game
+{
+    /// <summary>Server: CActKind.Station.</summary>
+    private string? SandboxStationAct(ref PacketReader r, Player p, Vector3 eye)
+    {
+        var body = r.U16();
+        var part = r.U16();
+        var op = r.U8();
+        var n = r.U16();
+        var name = r.Str();
+        if (op > (byte)StationOp.Give || name.Length > 96)
+            return "a bad action";
+        return SandboxHands.StationAct(Constructs, p.Id, eye, body, part, (StationOp)op, n, name, Constructs.Get(body) is { } c ? SandboxConfigRefusal(c, p.Id) : null);
+    }
+
+    /// <summary>Client (or the host itself): an action at a Building Station. The server checks reach, power and who may, and says why not.</summary>
+    public void SandboxStation(ushort body, int part, StationOp op, ushort n = 0, string name = "")
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.Station).U16(body).U16((ushort)part).U8((byte)op).U16(n).Str(name);
+        SandboxCraftSend(w);
+    }
+}
+
+public sealed partial class Game
+{
+    /// <summary>This peer: a weld's end for each part a Building Station fits, a link's sound for each link it lays (from the jobs as heard).</summary>
+    private void StationSounds()
+    {
+        foreach (var c in Constructs.Bodies)
+        {
+            if (c.PieceRackCount == 0)
+                continue;
+            for (var k = 0; k < c.PieceRackCount; k++)
+            {
+                int part = c.PieceRacks[k];
+                if (part >= c.PartCount || c.Parts[part].Station is not { } j || (j.HeardFit == j.FitSeq && j.HeardLink == j.LinkSeq))
+                    continue;
+                ConstructStation.Bay(c, part, out var floor, out _, out _);
+                if (j.HeardFit != j.FitSeq)
+                    BuildSounds.Play(BuildSound.WeldDone, floor);
+                if (j.HeardLink != j.LinkSeq)
+                    BuildSounds.Play(BuildSound.LinkCable, floor);
+                (j.HeardFit, j.HeardLink) = (j.FitSeq, j.LinkSeq);
+            }
+        }
+    }
+}
+
+public sealed partial class Game
+{
+    /// <summary>
+    /// The window tool (host): the world is saved to a throwaway world file and loaded again in place, through the real save and the
+    /// real load (WorldSaveNow, WorldApply), so what a Building Station was doing must come back and go on. What happened, in words.
+    /// </summary>
+    internal string StationReloadProbe()
+    {
+        if (!IsServer || !SandboxOn)
+            return "not the host";
+        if (WorldSession == null)
+        {
+            var made = WorldNew("station probe " + Environment.ProcessId, World.Map, SandboxSurvivalOption);
+            WorldAttach(made);
+            made.Live = true;
+        }
+        var ws = WorldSession!;
+        var before = Constructs.Bodies.Count;
+        if (!WorldSaveNow(wait: true))
+            return "the world wasn't saved";
+        ws.HasSave = true;
+        Constructs.Clear();
+        WorldApply(ws);
+        return $"saved to {ws.Folder} and loaded: {before} bodies before, {Constructs.Bodies.Count} after";
+    }
+}

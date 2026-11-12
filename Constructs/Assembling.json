@@ -630,6 +630,7 @@
     {"output": "Concrete Ribbon Wall 4 m", "materials": {"concrete": 485, "steel": 121}, "seconds": 87.5},
     {"output": "Concrete Slot Wall 2 m", "materials": {"concrete": 236, "steel": 59}, "seconds": 43.6},
     {"output": "Concrete Slot Wall 4 m", "materials": {"concrete": 472, "steel": 118}, "seconds": 85.2},
+    {"output": "Building Station", "materials": {"steel": 84, "rubber": 17}, "seconds": 14.6},
     {"output": "Bumper", "materials": {"steel": 4, "rubber": 1}, "seconds": 2.7},
     {"output": "Button", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.1, "minTier": 3},
     {"output": "Capital Box Frame 128 m", "materials": {"steel": 2000, "concrete": 500}, "seconds": 600.0, "minTier": 4},
