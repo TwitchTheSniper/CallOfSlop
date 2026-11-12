@@ -49,8 +49,8 @@ public sealed class PieceRackParts : IPartGenerator
         for (var k = 1; k < 4; k++)
         {
             var z = z0 + (z1 - z0) * k / 4;
-            p.Add(MachineLook.D([x0 + 0.004, y1 - rail - 0.004, z - 0.02], [x0 + 0.036 + post, y1 + 0.004, z + 0.02], MachineLook.Ink));
-            p.Add(MachineLook.D([x1 - 0.036 - post, y1 - rail - 0.004, z - 0.02], [x1 - 0.004, y1 + 0.004, z + 0.02], MachineLook.Ink));
+            p.Add(MachineLook.D([x0 + 0.004, y1 - rail - 0.004, z - 0.02], [x0 + 0.032 + post, y1 + 0.004, z + 0.02], MachineLook.Ink));
+            p.Add(MachineLook.D([x1 - 0.032 - post, y1 - rail - 0.004, z - 0.02], [x1 - 0.004, y1 + 0.004, z + 0.02], MachineLook.Ink));
         }
         var plateY = y0 + high + (y1 - rail - y0 - high) * 0.55;
         p.Add(MachineLook.D([x0 + 0.006, plateY, z0 + 0.045], [x0 + 0.022, plateY + 0.14, z0 + 0.155], MachineLook.Steel, "steel"));
@@ -60,8 +60,8 @@ public sealed class PieceRackParts : IPartGenerator
         // (the in side's white band across the sill, hazard paint over it: look.md "Machine look")
         p.Add(MachineLook.D([x0 + runner + 0.01, y0 + 0.02, z0 - 0.006], [x1 - runner - 0.01, y0 + 0.078, z0 + 0.008], MachineLook.In));
         MachineLook.Hazard(p, [x0 + runner + 0.01, y0 + 0.082, z0 - 0.006], [x1 - runner - 0.01, y0 + 0.098, z0 + 0.008]);
-        MachineLook.Arrow(p, 1, y0 + high - 0.002, 1, 2, 1, z0 + 0.3, x0 + runner / 2, 0.3, runner * 0.7, MachineLook.In);
-        MachineLook.Arrow(p, 1, y0 + high - 0.002, 1, 2, 1, z0 + 0.3, x1 - runner / 2, 0.3, runner * 0.7, MachineLook.In);
+        MachineLook.Arrow(p, 1, y0 + high - 0.002, 1, 2, 1, z0 + 0.3, x0 + runner / 2, 0.3, runner * 0.46, MachineLook.In);
+        MachineLook.Arrow(p, 1, y0 + high - 0.002, 1, 2, 1, z0 + 0.3, x1 - runner / 2, 0.3, runner * 0.46, MachineLook.In);
         BlockSockets(p, nx, ny, nz, faces: "y", skip: ["+y"], limit: new() { ["-y"] = (3, 6) });
         var wide = nx * c.Cell;
         var deep = nz * c.Cell;
