@@ -239,6 +239,8 @@ public static partial class MapFile
             sb.Append($"  \"sky\": {Col(m.Sky)},\n");
         if (m.Weather is { } weather)
             sb.Append("  \"weather\": ").Append(weather.ToJson()).Append(",\n");
+        if (m.Storm is { } storm)
+            sb.Append("  \"storm\": ").Append(storm.ToJson()).Append(",\n");
         if (m.Boundary != null)
             sb.Append("  \"boundary\": ").Append(BoundaryToJson(m.Boundary.Spec)).Append(",\n");
         if (m.Gravity is { } gravity)
@@ -374,6 +376,8 @@ public static partial class MapFile
             }
             if (Prop(root, "weather") is { } weatherEl)
                 map.Weather = WeatherSettings.Parse(weatherEl, source); // a regional weather simulation (Source/Weather)
+            if (Prop(root, "storm") is { } stormEl)
+                map.Storm = StormSettings.Parse(stormEl, source); // a cold storm at ground level (Source/Weather/ColdStorm.cs)
             if (boundaryEl is { } boundary)
             {
                 var spec = ReadBoundary(boundary, source);
