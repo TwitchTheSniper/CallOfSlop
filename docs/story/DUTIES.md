@@ -10,7 +10,7 @@ Code `Source/Game/GameQuarry.cs`, words `Story/Duties/Quarry.json` (format `call
 the ride's camera `Source/App/Program.Quarry.cs`.
 
 - **The place.** A fresh story world (the opening's colony) also gets the **Ministry Quarry Works** (a blueprint: the Starter
-  Assembler's machines, an Assembler fed by a Materials Bin and a Parts Shelf, and a Small Genset on a Fuel Tank with no
+  Smelter's machines, a Smelter fed from a Materials Bin and filling a second, and a Small Genset on a Fuel Tank with no
   cable), 180 to 320 m from the colony (`from`, `to`), on level ground. Its bus stop is 14 m from it on the colony's side; the
   colony's is 8 m out from the gate. A world saved before the quarry gets one when it loads (the opening section's last u16).
 - **The mine face** (2026-11-11). Behind the works stands the Mine Face (two more slabs, a rock face with a footing): the
@@ -20,9 +20,11 @@ the ride's camera `Source/App/Program.Quarry.cs`.
 - **Who.** Once a person's induction is finished or skipped (and the opening is over, and they haven't started the Orbital
   Depot), the Ministry's memo sends them to the colony's bus stop. The depot (docs/story/DEPOT.md) waits until this duty is done.
 - **Steps.** `bus` (ride from the colony), `power` (a power cable laid on the works, or a world cable beside them), `feed`
-  (anything tipped into the works: dig with the ground drill, Interact on the Materials Bin), `recipe` (the works' Assembler's
-  recipe set with the configure tool), `home` (ride back), `done`. Foreman Grubb says each step's line. Every step has an
-  orange marker (the stop, the bus once it is called, the genset, the bin, the Assembler) with its distance, and a hint after
+  (anything tipped into the works: Foreman Grubb shovels 20 iron ore into the inmate's pack as the step starts, the step's
+  `give`; Interact on the Materials Bin), `metal` (cue `carry`: they carry some metal, taken from the bin the Smelter fills),
+  `home` (ride back), `bunk`, `done`. Karl, 2026-11-12: the first machine is a Smelter, not the Assembler; a world saved with
+  the older works (an Assembler) passes the `metal` step at once. Foreman Grubb says each step's line. Every step has an
+  orange marker (the stop, the bus once it is called, the genset, the bins) with its distance, and a hint after
   `hintAfter` seconds (default 40). Cues come from the actions the server carried out (`QuarrySawAct`, beside the induction's).
 - **Skip.** The Esc menu's "Skip this Ministry duty" counts it as done (not while riding).
 - **Co-op.** Each person has their own run and their own bus; the works are shared, so a friend's cable counts only for the
@@ -45,5 +47,5 @@ person's state is saved in the world's `QuarryTag` section (`WorldPlayer.QuarryS
 
 ## Next
 
-More duties in the same pattern, each teaching a machine: the smelter (steel for the Assembler), refining, the Requisition
+More duties in the same pattern, each teaching a machine: the foundry (steel), the Assembler, refining, the Requisition
 Crate and faction jobs. Standing with the Ministry for a duty done is not paid yet.
