@@ -36,7 +36,7 @@ public static unsafe partial class Program
 
     /// <summary>Sandbox with a tool out (or in a seat): the trigger and aim belong to the tools, not the gun.</summary>
     private static bool SandboxHoldsTrigger =>
-        _game is { SandboxOn: true } g && g.Local is { Alive: true } me && (g.SpawnPlacing || g.SandboxHands.Hand(me.Id).Tool != ConstructTool.None || g.SandboxHands.Hand(me.Id).Seated
+        _game is { SandboxOn: true } g && g.Local is { Alive: true } me && (g.SpawnPlacing || g.GhostState == BlueprintGhostState.Carrying || _bgEat || g.SandboxHands.Hand(me.Id).Tool != ConstructTool.None || g.SandboxHands.Hand(me.Id).Seated
             || g.SandboxHands.Hand(me.Id).Held != ConstructParts.None); // (a part carried in both hands: the click sets it into storage, never fires the gun)
 
     private static bool _sbMenuKeyEaten;

@@ -16,6 +16,7 @@ public static unsafe partial class Program
     private static double _bgScroll;
     private static ushort _bgTokenSeen;
     private static bool _bgMenuWas, _bgSeen;
+    private static bool _bgEat; // the click that placed or dropped the ghost: the gun doesn't see it (until the buttons are up)
     private static ConstructTool _bgTool;
     private static string _bgLook = "";
     private static long _bgLookKey = long.MinValue;
@@ -25,6 +26,8 @@ public static unsafe partial class Program
     private static void BlueprintGhostWatch(Game g)
     {
         ConstructRender.BpGhostOn = false;
+        if (_bgEat && !Down(GameAction.Fire) && !Down(GameAction.Aim))
+            _bgEat = false;
         var menus = MenusOpen;
         var menuNew = menus && !_bgMenuWas;
         _bgMenuWas = menus;
@@ -158,6 +161,7 @@ public static unsafe partial class Program
         g.SandboxLookText = _bgLook;
         if (Pressed(GameAction.Aim))
         {
+            _bgEat = true;
             g.SpawnCancelSend();
             return true;
         }
@@ -170,6 +174,7 @@ public static unsafe partial class Program
             }
             else
                 g.SpawnPlaceSend(at, _bgYaw);
+            _bgEat = true;
         }
         return true;
     }

@@ -25,7 +25,7 @@ public static partial class ConstructRender
         var tint = BpGhostValid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.3f, 0.25f);
         var n = Math.Min(BpGhostCount, Math.Min(BpGhostBoxes.Length, MaxGroupBoxes));
         for (var k = 0; k < n; k++)
-            gfx.Draw(BpGhostBoxes[k] * BpGhostBody, Vector3.Lerp(BpGhostColours[k], tint, 0.55f), BpGhostAlpha[k] * pulse, mode: 2, shape: BpGhostShapes[k]);
+            gfx.Draw(BpGhostBoxes[k] * BpGhostBody, BpGhostValid ? Vector3.Lerp(BpGhostColours[k], tint, 0.45f) : tint, BpGhostAlpha[k] * pulse, mode: 2, shape: BpGhostShapes[k]);
         Outline(gfx, (BpGhostMin + BpGhostMax) * 0.5f, (BpGhostMax - BpGhostMin) * 0.5f, BpGhostBody, tint, 0.85f);
     }
 }
