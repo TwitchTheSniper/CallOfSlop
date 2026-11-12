@@ -24,6 +24,9 @@ public static partial class HullLoft
         public ConstructPartDef? Base { get; private set; }
 
         public PanelShape ShownShape { get; private set; }
+
+        /// <summary>The shown panel's facets' outward normals, in the order its drawn boxes follow its solid ones (a picture shades by them, so the curve reads).</summary>
+        public Vector3[] ShownNormals { get; private set; } = [];
         public bool Building => _next < _total;
         public int Made { get; private set; } // keys this preview has made a base for (a probe's count)
 
@@ -48,7 +51,7 @@ public static partial class HullLoft
             var outer = PartShapes.BeginCollect();
             try
             {
-                Base = ConstructParts.ParseBody(PanelJson(name, s, 0, 0, false), name);
+                Base = ConstructParts.ParseBody(PanelJson(name, s, 0, 0, true), name); // (with its slabs, as a deferred panel's first part: a part needs a drawn box; the facets replace them)
                 var (nu, nv) = PanelGrid(s);
                 _total = nu * nv;
                 Made++;
@@ -107,6 +110,11 @@ public static partial class HullLoft
             _facets.Clear();
             Shown = d;
             ShownShape = _want;
+            var (gu, gv) = PanelGrid(_want);
+            if (ShownNormals.Length != gu * gv)
+                ShownNormals = new Vector3[gu * gv];
+            for (var k = 0; k < gu * gv; k++)
+                ShownNormals[k] = PanelNormal(_want, (k / gv + 0.5f) / gu, (k % gv + 0.5f) * 2f / gv - 1);
             _next = _total = 0;
         }
 

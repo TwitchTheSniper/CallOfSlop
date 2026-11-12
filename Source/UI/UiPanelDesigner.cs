@@ -38,7 +38,7 @@ public sealed partial class Ui
     private int _pdStamp, _pdTextKey, _pdMaxL = HullLoft.PanelMaxCm, _pdMaxW = HullLoft.PanelMaxCm, _pdFormers, _pdMineSel = -1;
     private double _pdBuiltAt;
     private bool _pdBuilt;
-    private string _pdKey = "", _pdNumbers = "", _pdWhy = "", _pdSaved = "", _pdLimit = "";
+    private string _pdKey = "", _pdNumbers = "", _pdWhy = "", _pdSaved = "", _pdLimit = "", _pdAt = "", _pdBig = "";
     private readonly List<string> _pdFits = new(8);
     private readonly List<bool> _pdFitOk = new(8);
     private readonly List<byte> _pdMats = new(8);
@@ -90,6 +90,13 @@ public sealed partial class Ui
             case "thick": _pdMm = value; break;
         }
         DesignerClamp();
+    }
+
+    /// <summary>Probes and the window tool: the name in the Save box, as if typed.</summary>
+    public void DesignerName(string name)
+    {
+        _pdName ??= new ImInputString(PlayerBlueprints.MaxName + 1);
+        ImGuiSafe.SetInput(_pdName, name);
     }
 
     private void DesignerPreset(int kind)
@@ -154,6 +161,8 @@ public sealed partial class Ui
             if (!d.IsPanelFormer)
                 continue;
             _pdFormers++;
+            if (d.ExtWheelMax.Y > maxL)
+                _pdBig = $"the {d.Name} takes {d.ExtWheelMax.Y:0.##} x {d.ExtWheelMax.X:0.##} m";
             maxL = MathF.Max(maxL, d.ExtWheelMax.Y);
             maxW = MathF.Max(maxW, d.ExtWheelMax.X);
             if (world.StoreOf(c, net.Machines[i]) is { Amount: > 0 } st && !_pdMats.Contains(st.Material) && ExtrusionTable.Current.Find(st.Material) != null)
@@ -188,6 +197,21 @@ public sealed partial class Ui
         _pdTextKey = key;
         var shape = DesignerShape;
         _pdWhy = HullLoft.PanelRefusal(shape) ?? "";
+        // Which limits the sliders stand at, and why.
+        var at = new System.Text.StringBuilder();
+        var longMax = Math.Min(HullLoft.PanelMaxCm, _pdMaxL);
+        var linked = _pdFormers > 0 && longMax < HullLoft.PanelMaxCm;
+        if (Math.Max(_pdL, _pdW) >= longMax)
+            at.Append(linked ? $"{longMax} cm is the longest side a linked former forms ({_pdBig}). " : $"{longMax} cm is the longest a panel's key allows. ");
+        if (_pdFormers > 0 && Math.Min(_pdL, _pdW) >= Math.Min(HullLoft.PanelMaxCm, _pdMaxW) && _pdMaxW < HullLoft.PanelMaxCm)
+            at.Append($"The shorter side stops at {_pdMaxW} cm ({_pdBig}). ");
+        if (_pdCrown > 0 && _pdCrown >= Math.Min(HullLoft.PanelMaxCrownCm, _pdW / 2))
+            at.Append(_pdCrown >= HullLoft.PanelMaxCrownCm ? $"Crown stops at {HullLoft.PanelMaxCrownCm} cm. " : $"Crown stops at half the width ({_pdW / 2} cm). ");
+        if (_pdRake != 0 && Math.Abs(_pdRake) >= Math.Min(HullLoft.PanelMaxRakeCm, _pdL))
+            at.Append(Math.Abs(_pdRake) >= HullLoft.PanelMaxRakeCm ? $"Rake stops at {HullLoft.PanelMaxRakeCm} cm. " : $"Rake stops at the panel's length ({_pdL} cm). ");
+        if (_pdMm <= HullLoft.PanelMinMm || _pdMm >= HullLoft.PanelMaxMm)
+            at.Append($"Sheet is {HullLoft.PanelMinMm} to {HullLoft.PanelMaxMm} mm thick. ");
+        _pdAt = at.ToString();
         _pdKey = _pdWhy.Length == 0 ? HullLoft.PanelKey(shape) : "";
         _pdFits.Clear();
         _pdFitOk.Clear();
@@ -370,6 +394,8 @@ public sealed partial class Ui
                 ImGui.PopItemWidth();
                 ImGui.PushTextWrapPos(0);
                 ImGuiSafe.TextColored(_pdFormers == 0 ? CrWarn : Dim, _pdLimit);
+                if (_pdAt.Length > 0)
+                    ImGuiSafe.TextColored(CrWarn, _pdAt);
                 ImGui.PopTextWrapPos();
                 ImGui.Spacing();
                 ImGui.TextColored(PdHead, "Material"u8);
@@ -379,7 +405,7 @@ public sealed partial class Ui
                     var names = RecyclingTable.Current;
                     for (var k = 0; k < _pdMats.Count; k++)
                     {
-                        if (k > 0)
+                        if (k % 6 != 0)
                             ImGui.SameLine(0, 6 * _scale);
                         var at = ImGui.GetCursorScreenPos();
                         ImGui.PushID(3000 + k);
@@ -438,9 +464,14 @@ public sealed partial class Ui
             if (_pdSaved.Length > 0)
                 ImGuiSafe.TextColored(CrGood, _pdSaved);
             else
-                ImGui.TextColored(Dim, "A linked Panel Former forms it; it rides to its rack, or to this desk's tray by a conveyor."u8);
+                ImGui.TextColored(Dim, "Formed by a linked Panel Former; collect it at its rack or in this tray."u8);
             if (ImGui.BeginChild("##pdorders"u8, new float2(0, -ImGui.GetFrameHeightWithSpacing()), ImGuiChildFlags.Borders))
-                cancel = CraftingOrderList(q);
+            {
+                if (q is { Count: > 0 })
+                    cancel = CraftingOrderList(q);
+                else
+                    ImGui.TextColored(Dim, "No open orders. Set the panel, then ORDER."u8);
+            }
             ImGui.EndChild();
             if (ImGui.Button("Close"u8))
                 open = false;

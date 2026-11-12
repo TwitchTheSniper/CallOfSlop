@@ -200,6 +200,7 @@ public sealed class ProductionShowcase : IPartGenerator
             // ---- 8. The Crafting Terminal: on the orders console's machines, the Assembler's rack returning to its tray. ------------------
             CraftingCorner(orders, partRack, longRack);
             PanelLine(orders);
+            PanelDesignerCorner(orders);
 
             Monitors(refine, orders);
 
@@ -258,7 +259,7 @@ public sealed class ProductionShowcase : IPartGenerator
             Feed(StockOf("steel", 23.25f, Row3), sheet);
             var former = On("Panel Former", 30.25f, Row3, Flow, paint: Panels);
             Convey(sheet, "Piece out", former, "Piece in", Panels);
-            var rack = On("Long Piece Rack", 34.25f, Row3 + 0.5f, Flow, "-y.0.0", Panels);
+            var rack = _panelRack = On("Long Piece Rack", 34.25f, Row3 + 0.5f, Flow, "-y.0.0", Panels);
             Convey(former, "Piece out", rack, "Piece in", Panels);
             Sign(28.75f, Posts3, Panels, "PANELS: sheet in at the white end, panels out at the orange");
             Sign(31.25f, Posts3, Panels, "Send the bill: a hood, a fender and a kit hood are formed");
@@ -268,6 +269,32 @@ public sealed class ProductionShowcase : IPartGenerator
             BillPanel(orders, "Hull Loft (hoodg UOV2WyWjXYXYVd ~7O07WW7Gn5v1014)", 1); // one of the vehicle kit's lofted hoods (an IT truck's)
             Stripe(27.25f, Row3, true);
             Stripe(33.25f, Row3, true);
+        }
+
+        private VPart? _panelRack;
+
+        /// <summary>
+        /// The Panel Designer's corner (production.md "Panel Designer"), on its own floor at the panel line's far end (x 50 to 56, z -14 to
+        /// -20): the designer, the orders console's wire into its Orders port (so it sees the Panel Former that console runs), a return
+        /// conveyor from the panel rack's Piece out to its tray, and its sign.
+        /// </summary>
+        private void PanelDesignerCorner(VPart orders)
+        {
+            for (var j = TilesZ; j < TilesZ + 3; j++)
+                for (var i = PanelTile0 + PanelTiles; i < PanelTile0 + PanelTiles + 3; i++)
+                {
+                    var t = Put("Foundation", V(1 + 2 * i, 0.15f, -1 - 2 * j), Front);
+                    Paint(t, j == TilesZ ? Aisle : Floor);
+                    Finish(t, j == TilesZ ? "painted deck plate" : "concrete");
+                }
+            var desk = On("Panel Designer", 51.25f, -19.25f, Front, "-y.0.0");
+            Link("data", orders, desk, null, "Orders", Control, true, null,
+                new[] { V(24.25f, 0, -2.0f), V(26.75f, 0, -2.0f), V(26.75f, 0, -8.6f), V(26.75f, 0, -14.4f), V(33.75f, 0, -14.4f), V(40.75f, 0, -14.4f), V(47.75f, 0, -14.4f), V(50.6f, 0, -14.4f), V(50.6f, 0, -16.6f) }
+                    .Select(p => V(p.X, FloorY + 0.03f, p.Z)).ToArray());
+            var from = PortAt(_panelRack!, "Piece out");
+            var to = PortAt(desk, "Piece in");
+            Convey(_panelRack!, "Piece out", desk, "Piece in", Panels, null, V(from.X + 1.2f, from.Y, from.Z), V(from.X + 1.2f, from.Y, to.Z - 0.9f), V(to.X, from.Y, to.Z - 0.9f));
+            Sign(55.25f, Posts3, Panels, "F: design a panel; it is formed next door");
         }
 
         /// <summary>

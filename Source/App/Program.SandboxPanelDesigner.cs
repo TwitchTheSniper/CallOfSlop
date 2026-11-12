@@ -40,7 +40,7 @@ public static unsafe partial class Program
         _swallowClick = true; // (the click that closed it mustn't also fire the tool)
     }
 
-    private static readonly Vector3 PdFloor = new(0.16f, 0.18f, 0.22f), PdBar = new(0.95f, 0.69f, 0.12f), PdFigure = new(0.36f, 0.5f, 0.66f), PdSocket = new(0.95f, 0.45f, 0.1f), PdBeam = new(0.3f, 0.33f, 0.37f);
+    private static readonly Vector3 PdSteel = new(0.74f, 0.78f, 0.83f), PdLine = new(0.3f, 0.34f, 0.4f), PdFloor = new(0.22f, 0.25f, 0.3f), PdBar = new(0.95f, 0.69f, 0.12f), PdFigure = new(0.36f, 0.5f, 0.66f), PdSocket = new(0.95f, 0.45f, 0.1f), PdBeam = new(0.3f, 0.33f, 0.37f);
 
     private static void PdBox(Vector3 mn, Vector3 mx, Vector3 colour) =>
         Gfx.Draw(Matrix4x4.CreateScale(mx - mn) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f), colour);
@@ -83,8 +83,13 @@ public static unsafe partial class Program
         // The floor, the 1 m bar in front of the panel and a player-height figure beside it.
         var half = MathF.Max(size.X, size.Z) * 0.5f + 1.3f;
         PdBox(new Vector3(-half, -0.04f, -half), new Vector3(half, 0, half), PdFloor);
+        for (var m = -(int)half; m <= (int)half; m++) // a line a metre, both ways
+        {
+            PdBox(new Vector3(m - 0.006f, 0, -half), new Vector3(m + 0.006f, 0.003f, half), PdLine);
+            PdBox(new Vector3(-half, 0, m - 0.006f), new Vector3(half, 0.003f, m + 0.006f), PdLine);
+        }
         var barZ = size.Z * 0.5f + 0.35f;
-        PdBox(new Vector3(-0.5f, 0.002f, barZ), new Vector3(0.5f, 0.03f, barZ + 0.06f), PdBar);
+        PdBox(new Vector3(-0.5f, 0.004f, barZ), new Vector3(0.5f, 0.035f, barZ + 0.06f), PdBar);
         PdBox(new Vector3(-0.5f, 0.002f, barZ - 0.05f), new Vector3(-0.485f, 0.06f, barZ + 0.11f), PdBar);
         PdBox(new Vector3(0.485f, 0.002f, barZ - 0.05f), new Vector3(0.5f, 0.06f, barZ + 0.11f), PdBar);
         var fx = size.X * 0.5f + 0.75f;
@@ -110,9 +115,20 @@ public static unsafe partial class Program
             PdBox(new Vector3(-0.04f, 0.002f, -0.04f), new Vector3(0.04f, deck - 0.004f, 0.04f), PdBeam); // a stand under its middle
         // The panel: its drawn boxes (the facets), as a construct draws them.
         var place = Matrix4x4.CreateTranslation(lift);
-        foreach (var b in d.Boxes)
-            if (!b.Hidden)
-                Gfx.Draw(b.Model(0, b.Center) * place, b.Color, 1f, mode: 0, shape: b.Shape);
+        // One plain colour, shaded by each facet's own normal against a fixed key light, so the crown and the rake read as the panel turns.
+        var normals = Ui.DesignerPreview.ShownNormals;
+        var key = Vector3.Normalize(new Vector3(-0.45f, 0.8f, 0.4f));
+        var facet = 0;
+        for (var k = 0; k < d.Boxes.Length; k++)
+        {
+            ref readonly var b = ref d.Boxes[k];
+            if (b.Hidden)
+                continue;
+            var n = facet < normals.Length ? normals[facet] : Vector3.UnitY;
+            facet++;
+            var lit = 0.42f + 0.6f * MathF.Max(0, Vector3.Dot(n, key)) + 0.1f * n.Y;
+            Gfx.Draw(b.Model(0, b.Center) * place, PdSteel * lit, 1f, mode: 0, shape: b.Shape);
+        }
         if (Ui.DesignerSockets)
             foreach (var s in d.Sockets)
             {
