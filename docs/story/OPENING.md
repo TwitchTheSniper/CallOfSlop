@@ -1,9 +1,14 @@
 # The survival opening
 
-A new survival world starts with a story: you crash-land on the planet and pass out, come to for a moment with a recovery
-team standing over you ("There's one over here!"), black out again and wake in the Ministry of Slop's penal colony. The
+A new survival world starts with a story: your ship crash-lands and you wake in the Ministry of Slop's penal colony. The
 warden's induction (the keybind tutorial, `Source/Game/GameTutorial.cs`) takes over from there. Karl's idea (2026-11-07);
 it leans towards premise E (Convicts) in the project doc `planets/PREMISES.md`.
+
+**The crash is a placeholder (Karl, 2026-11-12).** The falling-down-in-your-ship scene (a tumbling view, the impact, coming
+to with a recovery team over you) was taken out, to be made again later: for now a black card says what happened, with a
+small "placeholder: crash landing" tag over it, while the player already lies in the cell block. The wreck is still placed
+out past the colony. The old scene is in git history (PR #64) for whoever rebuilds it; the unused beats keep their bytes in
+`OpeningStage` (wire values).
 
 Code: `Source/Game/GameSandboxOpening.cs` (the server's beats, the colony, the wire, the save), `Source/App/Program.Opening.cs`
 (the camera, the screen and the skip key). Data: `Story/Opening/Opening.json` (names, times, lines), `Story/Casts/PenalColony.json`
@@ -14,17 +19,16 @@ Code: `Source/Game/GameSandboxOpening.cs` (the server's beats, the colony, the w
 - **A new survival world**: Survival chosen in the lobby (the same switch as the start kit), on a fresh world or an unsaved match.
   At the match start the server places the **Penal Colony** blueprint on the nearest clear ground round the parts rack (or the
   first spawn) whose ground varies by under 1.2 m, then the start kit round the colony (it is the colony's work yard), the
-  **wreck** (`"wreck"`, the Crashed Plane: a hand-made blueprint, never a vehicle-kit vehicle) 70 to 140 m out, and adds the
+  **wreck** (`"wreck"`, the Crashed Plane: a hand-made blueprint, never a vehicle-kit vehicle) 70 to 140 m out as dressing, and adds the
   **Penal Colony cast** to the story, so the warden and three guards have bodies about the colony (their middle is just outside
   its gate). No room for the colony: the opening still runs, and everyone wakes near the start.
 - **Every player, once per world**: the host, each friend and every late joiner, on first arriving alive. In a saved world
   "once" is the person's record (`WorldPlayer.Opened`); in an unsaved match, once per player id. Worlds from before this have
   no colony and no opening.
-- **Together (co-op, 2026-11-08)**: friends who arrive while a crash is still coming down or out cold (the Crash and Out
-  beats) crashed with it: they lie beside the first of the group, go through every beat on its clock, share one recovery team
-  (three bodies however many were found) and hear its lines, with a `"group": true` line ("And another!") said only when more
-  than one came down. Everyone wakes in the cell block together, each to their own side, and starts the induction as a group
-  (docs/sandbox/TUTORIAL.md, "Together"). Anyone arriving later has a crash of their own, then joins whoever is on their step.
+- **Together (co-op, 2026-11-08)**: friends who arrive while someone is still on the placeholder card join their group:
+  they go through the beats on that clock and everyone wakes in the cell block together, each to their own side, and starts
+  the induction as a group (docs/sandbox/TUTORIAL.md, "Together"). Anyone arriving later has a card of their own, then joins
+  whoever is on their step.
   **STORY** on the main screen starts it alone: Sandbox survival on the story's home planetoid (`Game.StoryHomeMap`, the
   Planetoid in Slopstar), in a saved world (a new one named Story when none is picked), with no bots. Multiplayer has
   **HOST STORY CO-OP**: the host's lobby opens on the same map and mode, where they pick or make the saved world; friends
@@ -34,14 +38,11 @@ Code: `Source/Game/GameSandboxOpening.cs` (the server's beats, the colony, the w
 
 ## The beats
 
-Times are in `Opening.json`. Each crash group (one player, or friends who arrived together) has its own clock, and only the group hears its scene's lines.
+Times are in `Opening.json`. Each group (one player, or friends who arrived together) has its own clock, and only the group hears its lines.
 
 | Beat | What happens |
 | --- | --- |
-| Crash (3.5 s) | At the crash site. The view tumbles and shakes, fire flickers, a white flash, black. Caption. |
-| Out (3 s) | Black. |
-| ComeTo (8 s) | Lying on their back, eyes opening slowly and blinking, edges dark. Three of the recovery team (bots of the people's side, named in `"rescuers"`) stand over them, turned to them, and say their lines: "There's one over here!" and two more. |
-| Under (3.5 s) | Eyes close. Caption ("Some time later..."). The team goes, and the player is moved to the colony's cell block. |
+| Placeholder (4 s, `OpeningStage.Out`, `"placeholder"` in the file) | Black, lying in the cell block. The caption ("Your ship comes down hard. The Ministry of Slop finds you.") under a small "[ placeholder: crash landing ]" tag. |
 | Wake (4.5 s) | The black lifts on the cell block's ceiling, looking towards the warden; his line; they get up over the last second. Then the induction (`TutorialBegin`). |
 
 While it runs the player lies prone and nothing they press acts (`OpeningFilter` on both sides, `OpeningInput` on the client),
