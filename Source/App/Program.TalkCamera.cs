@@ -25,8 +25,11 @@ public static partial class Program
     /// <summary>How far into the shot the frame is (0..1, eased); above 0 the camera is the talk camera's.</summary>
     public static float TalkCamWeight => DeathCam.EaseInOut(_talkCamT);
 
-    /// <summary>While the talk camera shows: the local player's own health bar is left off their head (PlayerRig.cs).</summary>
-    public static bool TalkHidesBar(byte id) => _talkCamT > 0f && id == _game.LocalId;
+    /// <summary>
+    /// While the talk camera shows: the local player's own health bar is left off their head (PlayerRig.cs). On a story ride
+    /// (a cinematic, Program.Quarry.cs) nobody's is drawn.
+    /// </summary>
+    public static bool TalkHidesBar(byte id) => _talkCamT > 0f && id == _game.LocalId || _session is { QuarryRiding: true };
 
     /// <summary>
     /// The shot for you at <paramref name="eye"/> talking to someone whose eye is at <paramref name="face"/>: where the

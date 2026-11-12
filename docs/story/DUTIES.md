@@ -36,7 +36,8 @@ A STAND-IN (Source/StandIns): the hover hauler, a picture on a scripted path. At
 (12 s in, waiting up to 10 minutes). Once it has stopped, walking within 6 m of it boards: that bus pulls away, the other
 stop's bus is called to come in as the scene ends, and for `QuarryRideSeconds` (10 s) the rider's input does nothing and the
 camera follows the leaving bus, goes black ("Some time later..."), then watches the other bus arrive; then the host sets them
-down beside it. The body stays where it boarded until then (others see it standing at the stop: a stand-in's limit). When
+down beside it. The ride is a cinematic: letterbox bars, no HUD, hands, crosshair or health bars, only its caption in the
+story text's size and colour (Settings > Video "Story text", `UiSubtitles.cs`). The body stays where it boarded until then (others see it standing at the stop: a stand-in's limit). When
 real vehicles carry players, a real crew bus driven by Ministry staff replaces this.
 
 ## Wire and save (protocol 236)
