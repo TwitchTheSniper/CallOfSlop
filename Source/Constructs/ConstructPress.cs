@@ -926,7 +926,7 @@ public static class ConstructPress
         card.Add(3, st.Busy ? (d.IsLathe ? "Cutting" : "Stamping") : StallText(why));
     }
 
-    private static string StallText(PressStall s) => s switch
+    internal static string StallText(PressStall s) => s switch
     {
         PressStall.NoPower => "No power",
         PressStall.NoDie => "Fit a die",

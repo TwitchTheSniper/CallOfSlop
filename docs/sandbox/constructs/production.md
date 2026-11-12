@@ -534,6 +534,20 @@ the part kit's `control_parts` (the console).
   dim grey of its hue so its shape reads. They show in the recipe picker, the material painter's list and a beacon's Materials tab. A
   window that shows only a few tiles (`SandboxTiles.WantFew`, `Prefer`) has the resources and its own tiles drawn first, not the whole
   atlas.
+- **Recycler and gathering modules** (2026-11-11, the user: "quality of life for some of these machines"). Both are line machines: the
+  same six states, a status lamp, a row on a console wired to their Run, and a Data out (a gathering module has no screen, so a monitor
+  on its Data out is its screen: `MachineScreens.Gatherer`). A Recycler is Starved with nothing in its intake, Blocked when its output is
+  full or a wreck waits for room, Running while it breaks one. A Drill or Saw Module is Starved off a deposit or with no tree in reach,
+  Blocked with a full bin or one holding another material, at Fault when the deposit or the trees need a higher tier, No power when a
+  shaft drill's shaft isn't turning. Why it waits rides the store's `Blocked` byte (`GatherStall`; a Recycler's 1 = output full), sent
+  and saved as it was, so no wire change. The look line starts with the state word ("Drill Module: 0/20 - Starved: nothing below;
+  nearest deposit ..."). Lamps: the Recycler's over its screen (its part file), a module's on its hopper's or bin's back rim (`MachineTiers.ModuleLamp`).
+- **Press and Die Lathe** on lines (2026-11-11): Running while it stamps or cuts, Starved waiting for a piece or a die, Blocked with its tray,
+  its path or its Piece out conveyor full or cut, at Fault with a conveyor too narrow or the wrong size of lathe; from its stall byte
+  (`ProductionLines.PressRaw`). Its lamp is a bar on the front of the crown's dark cap, over its die screen (`PressParts.StatusLamp`).
+- **Console reading** (2026-11-11): the picked machine sits on a lit strip as well as its ">"; Auto reads "auto: next metal" from what is
+  in the input ("auto: by its input" while empty); bill and queue sizes drop trailing zeros (0.25x0.25, 1m); at a big Text size the title
+  keeps its count before the scroll mark ("On 2/3  1-2/3").
 - **The mains** (2026-11-11, proposed). A Battery takes one wire, its isolator. When every working battery on a body has one and every one
   says off (`Construct.MainsOff`, `ConstructPower.Mains`, on the wire in the gear byte's top bit since protocol 247), the circuit gives
   machines nothing: `ConstructRecycler.Powered` is false for every production machine, recycler, gatherer and beacon it reaches, in creative
@@ -558,7 +572,9 @@ queues and line status, but in different size displays"). No monitor part: any d
   out** too (an Extruder's first output stays its Length). A data link from a Data out to any logic Display part (readouts, signs,
   gauges, graphs, lamp banks; `ProductionLines.CanMonitor`) makes that display a monitor of its source: its own page is set aside
   while the link is intact. Several displays may hang off one source. The link is an ordinary data wire carrying nothing, so saves,
-  blueprints, copies and joiners keep it.
+  blueprints, copies and joiners keep it. Recyclers, Drill and Saw Modules and every store (Materials Bin, Storage Volume, Parts Shelf,
+  shelves, chests: `StoreMonitor.cs`) have one as well: a store's monitor shows its fill ("300/528 metal, 57%" and a bar, or a shelf's
+  slots and each kind with its count, moving on by itself); tiny: "Storage Volume 57% metal".
 - **Size.** A monitor's rows are its panel's height in 6 cm rows at its Text size, up to 16; a panel 2 rows or less shows one line as
   big as fits; a list that would be under 18 characters across takes smaller text (`MonitorRows`). So a Number Readout is small, a Text
   Sign medium, a Text Sign at 50 % or a Medium Number Readout and anything bigger a board.

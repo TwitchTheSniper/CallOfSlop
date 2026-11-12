@@ -225,19 +225,41 @@ public static class MachineScreens
 
     private static void Recycler(ConstructWorld world, Construct c, int part, ConstructPartDef d, CStore st, PanelCard card)
     {
-        var powered = ConstructRecycler.Powered(world, c, part);
-        if (st.Held)
-            Say(card, PanelState.Idle, "Held off");
-        else if (st.Amount >= d.BulkCapacity)
-            Say(card, PanelState.Wants, "Output full");
-        else if (!powered)
-            Say(card, PanelState.Fault, "No power");
-        else if (st.Busy)
-            Say(card, PanelState.Working, "Recycling");
-        else
-            Say(card, PanelState.Idle, "Waiting");
-        card.Add(1, st.Busy ? "Breaking a wreck" : "Drop wrecks in");
+        // The line's state word (as its lamp and a console say it), then the reason in plain words.
+        var s = ProductionLines.Of(world, c, part, st, ConstructRender.Now);
+        Say(card, ProductionLines.Panel(s), s == LineState.Running ? "Recycling" : ProductionLines.Word(s));
+        card.Add(1, s switch
+        {
+            LineState.Running => "Breaking a wreck",
+            LineState.Blocked => "Empty its output",
+            LineState.Idle => "Run wire is off",
+            LineState.NoPower => "Needs power",
+            _ => "Drop wrecks in",
+        });
         Amount(card, 2, "Out ", st.Amount, RecyclingTable.Current.NameOf(st.Material));
         card.Bar = st.Busy ? st.Progress / 100f : 0;
+    }
+
+    /// <summary>A gathering module's card: it has no screen, so this is what a monitor on its Data out shows (its state, why, its bin).</summary>
+    public static void Gatherer(ConstructWorld world, Construct c, int part, ConstructPartDef d, PanelCard card)
+    {
+        if (world.StoreOf(c, part) is not { } st)
+        {
+            card.State = PanelState.Off;
+            return;
+        }
+        var s = ProductionLines.Of(world, c, part, st, ConstructRender.Now);
+        Say(card, ProductionLines.Panel(s), s == LineState.Running ? d.GatherSaw ? "Cutting" : "Drilling" : ProductionLines.Word(s));
+        card.Add(1, s switch
+        {
+            LineState.Running => d.Name,
+            LineState.Idle => "Run wire is off",
+            LineState.NoPower => st.Drive is ShaftState.None or ShaftState.Turning ? "Needs power" : "Shaft not turning",
+            _ => ConstructGatherer.StallWord(d, (GatherStall)st.Blocked),
+        });
+        Amount(card, 2, "Bin ", st.Amount, RecyclingTable.Current.NameOf(st.Material));
+        card.Bar = Math.Clamp(st.Amount / (float)Math.Max(1, d.BulkCapacity), 0, 1);
+        for (var l = 0; l < PanelCard.MaxLines; l++)
+            card.Clip(l, card.Cols);
     }
 }

@@ -139,6 +139,19 @@ public sealed class PressParts : IPartGenerator
         return o;
     }
 
+    /// <summary>The status lamp: a bar the die screen's width on the front of the crown's dark cap, just over the screen, a few mm proud of it
+    /// (ProductionLines: its colour and blink are the line state; the box only says where).</summary>
+    private static PyDict? StatusLamp(Part p, Frame f)
+    {
+        var k = p.Cls.Cell;
+        var mx = (f.X0 + f.X1) / 2;
+        var mk = Math.Min(k * 0.06, 0.03) < 0.012 ? 0.012 : Math.Min(k * 0.06, 0.03); // (the dark cap's overhang: PressBody)
+        var b = MachineLook.D([R3(mx - k * 2.5), R3(f.Y1 - k * 0.3 + 0.004), R3(f.Z1 + mk - 0.004)], [R3(mx + k * 2.5), R3(f.Y1 - k * 0.04 - 0.004), R3(f.Z1 + mk + 0.009)], "#2b3036");
+        if (b is not null)
+            b["status"] = true;
+        return b;
+    }
+
     private static List<object?> Tray(double x0, double x1, double y, double z0, double z1)
     {
         var gap = (x1 - x0) * 0.01;
@@ -173,6 +186,7 @@ public sealed class PressParts : IPartGenerator
                     ("die", Kw(("socket", "dieslot"), ("min", Py.L(R3(mid - k * 2), R3(f.Base), R3(zm))), ("max", Py.L(R3(mid + k * 2), R3(f.Wall), R3(f.Z1 + k * 2))))),
                     ("maxAcross", MaxAcross(c)), ("speed", speed), ("outAt", Py.L(R3(mid), R3(f.Y0), R3(f.Z1 + k * 0.2))), ("outDir", "+z"))))),
             ("panels", Panels(p, f, width)));
+        p.Add(StatusLamp(p, f)); // (its line state over its own screen: ProductionLines)
         return p;
     }
 
@@ -199,6 +213,7 @@ public sealed class PressParts : IPartGenerator
                     ("bays", Py.L(Kw(("socket", "bay1"), ("min", Py.L(R3(c0 - k * 0.95), R3(f.Base), R3(f.Z0 - k * 1.5))), ("max", Py.L(R3(c0 + k * 0.95), R3(f.Wall), R3(f.Z0 + k * 1.5)))))),
                     ("maxAcross", MaxAcross(c)), ("speed", speed), ("outAt", Py.L(R3((f.X0 + f.X1) / 2), R3(f.Y0), R3(f.Z1 + k * 0.2))), ("outDir", "+z"))))),
             ("panels", Panels(p, f, width)));
+        p.Add(StatusLamp(p, f)); // (its line state over its own screen: ProductionLines)
         return p;
     }
 
