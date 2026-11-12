@@ -35,6 +35,9 @@ on Glacier, the story's home, so Glacier has two; Redrock's site is spare): `Sto
 host builds the Sealed Data Centre there the first time a story game plays the world (docs/story/FRAGMENTS.md "On
 another world"). Mille's stands on the cavity's wall under the Proving Bowl.
 
+Glacier has a cold storm outdoors (`"storm": true`, set in make_worlds.py): driven snow, a whiteout down to about
+45 m at its height, frost and wind, gone under a roof and above 700 m (Maps/README.md "Storm").
+
 ### Settlements
 
 A faction's file (`Story/Factions/*.json`) may hold a `"settlement"`: the planetoid's `map`, a `lat` and `lon` (its home

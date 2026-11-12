@@ -1316,6 +1316,30 @@ grow into hurricanes, move and die over land. The sky's clouds come from it (it 
 Check a section without starting the game: `CallOfSlop --weather-sim --seed 7 --days 10` prints every storm every 12
 hours into `callofslop.log` (`--png out{day}.png` writes a picture of the region each day).
 
+## Storm
+
+A `storm` section gives a cold world its weather at ground level (docs/weather/WEATHER.md, "Cold storm"): snow
+driven sideways round you, a whiteout that closes the view in (the fog and the sky go to the storm's colour), frost
+creeping in at the edges of the screen and the wind howling while you are out in it. Under a roof, in a cabin or down
+a mine the snow and frost stop and the wind goes dull. It rises and falls through lulls and gusts, and thins out
+high above the ground. Looks and sound only, worked out on each PC: not part of the map's fingerprint.
+
+```
+"storm": { "visibility": 45, "clear": 220 },
+```
+
+`true` gives the defaults. Keys (all optional):
+
+| Key | Default | What it does |
+|---|---|---|
+| `visibility` | 45 | Metres you see at the height of the storm (10 to 2000). |
+| `clear` | 220 | Metres you see in its calmest lull (10 to 5000, at least `visibility`). |
+| `strength` | 1 | How hard it blows at its worst, 0 to 1: the snow, the wind and the whiteout together. |
+| `cycle` | 300 | Seconds from one lull to the next (20 to 7200). |
+| `wind` | 16 | The wind at its height, m/s (0 to 60): how fast the snow goes past. |
+| `color` | [0.8, 0.85, 0.9] | The whiteout in full daylight; the day's light dims it at dusk and night. |
+| `ceiling` | 700 | Metres above the ground where it is gone (it thins from half of that), so a ship climbing out leaves it. |
+
 ## Testing a map
 
 Every shipped map is checked by the game's self-test ("Map contract", `Source/App/SelfTestMapContract.cs`), and
