@@ -396,7 +396,10 @@ public sealed class MachineTiers : IPartGenerator
                         blade["axis"] = "+y";
                         double cx = (lo[0] + hi[0]) / 2, cz = (lo[2] + hi[2]) / 2, r = (hi[0] - lo[0]) * 0.45;
                         Turning([cx - r, hi[1] - 0.004, cz - r * 0.14], [cx + r, hi[1] + 0.012, cz + r * 0.14], MachineLook.Ink); // (a mark across it, so the turn shows)
+                        if ((string?)disc.Keys.Get("shape") == "cylinder")
+                            Turning([cx - r * 0.24, hi[1] + 0.0125, cz - r * 0.24], [cx + r * 0.24, hi[1] + 0.027, cz + r * 0.24], MachineLook.Accent); // (a hub cap)
                     }
+            ModuleLook.Dress(boxes, line.Gather.Value.Kind == "drill", tier, size); // (the machine look over the settled module: look boxes only)
             boxes = [.. boxes.Select(b => new PyDict(b) { ["min"] = Vec(D3(b["min"])), ["max"] = Vec(D3(b["max"])) })];
         }
         if (big) // (the machine look, over the settled body: look boxes only, so nothing above moves)
