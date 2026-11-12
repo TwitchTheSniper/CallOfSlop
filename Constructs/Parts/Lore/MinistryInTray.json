@@ -1,0 +1,285 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ministry In-Tray",
+  "description": "A filing cabinet with a wire in-tray of Ministry memos on top, every one dated a Thursday.",
+  "group": "Vehicle Body",
+  "section": "Furniture",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 25.0,
+  "health": 60,
+  "armour": 1,
+  "material": "steel",
+  "color": "#7d8287",
+  "attachSeconds": 1.0,
+  "boxes": [
+    {
+      "min": [
+        -0.24,
+        0.0,
+        -0.3
+      ],
+      "max": [
+        0.24,
+        0.8,
+        0.3
+      ],
+      "color": "#7d8287"
+    },
+    {
+      "min": [
+        -0.22,
+        0.04,
+        0.294
+      ],
+      "max": [
+        0.22,
+        0.25,
+        0.308
+      ],
+      "color": "#55595e"
+    },
+    {
+      "min": [
+        -0.06,
+        0.2,
+        0.304
+      ],
+      "max": [
+        0.06,
+        0.22,
+        0.33
+      ],
+      "color": "#3a3c3f"
+    },
+    {
+      "min": [
+        -0.04,
+        0.12,
+        0.302
+      ],
+      "max": [
+        0.04,
+        0.16,
+        0.318
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.22,
+        0.29,
+        0.294
+      ],
+      "max": [
+        0.22,
+        0.5,
+        0.308
+      ],
+      "color": "#55595e"
+    },
+    {
+      "min": [
+        -0.06,
+        0.45,
+        0.304
+      ],
+      "max": [
+        0.06,
+        0.47,
+        0.33
+      ],
+      "color": "#3a3c3f"
+    },
+    {
+      "min": [
+        -0.04,
+        0.37,
+        0.302
+      ],
+      "max": [
+        0.04,
+        0.41,
+        0.318
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.22,
+        0.54,
+        0.294
+      ],
+      "max": [
+        0.22,
+        0.75,
+        0.308
+      ],
+      "color": "#55595e"
+    },
+    {
+      "min": [
+        -0.06,
+        0.7,
+        0.304
+      ],
+      "max": [
+        0.06,
+        0.72,
+        0.33
+      ],
+      "color": "#3a3c3f"
+    },
+    {
+      "min": [
+        -0.04,
+        0.62,
+        0.302
+      ],
+      "max": [
+        0.04,
+        0.66,
+        0.318
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.18,
+        0.802,
+        -0.22
+      ],
+      "max": [
+        0.18,
+        0.814,
+        0.2
+      ],
+      "color": "#3a3c3f"
+    },
+    {
+      "min": [
+        -0.18,
+        0.814,
+        -0.22
+      ],
+      "max": [
+        -0.168,
+        0.88,
+        0.2
+      ],
+      "color": "#3a3c3f"
+    },
+    {
+      "min": [
+        0.168,
+        0.814,
+        -0.22
+      ],
+      "max": [
+        0.18,
+        0.88,
+        0.2
+      ],
+      "color": "#3a3c3f"
+    },
+    {
+      "min": [
+        -0.168,
+        0.814,
+        -0.2
+      ],
+      "max": [
+        0.168,
+        0.86,
+        0.18
+      ],
+      "color": "#e2d6b8",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.15,
+        0.86,
+        -0.17
+      ],
+      "max": [
+        0.155,
+        0.872,
+        0.19
+      ],
+      "color": "#f2efe6",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.12,
+        0.866,
+        0.1
+      ],
+      "max": [
+        0.12,
+        0.882,
+        0.13
+      ],
+      "color": "#2a2c30",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.12,
+        0.866,
+        -0.05
+      ],
+      "max": [
+        0.05,
+        0.882,
+        -0.03
+      ],
+      "color": "#2a2c30",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.14,
+        0.866,
+        -0.15
+      ],
+      "max": [
+        -0.11,
+        0.882,
+        -0.12
+      ],
+      "color": "#9a9ea2",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot0",
+      "at": [
+        -0.12,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot1",
+      "at": [
+        0.12,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

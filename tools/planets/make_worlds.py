@@ -119,6 +119,7 @@ WORLDS = [
         "surface": {"grass": "#e4ecf3", "dirt": "#c4d6e6", "rock": "#7ba3c8", "sand": "#a6c5de", "dirtSlope": 18, "rockSlope": 30, "sandBelow": -18},
         "skybox": {"preset": "alpine", "zenith": "#6f9fd0", "horizon": "#dbe8f2", "ground": "#c9d6e0",
                    "sun": {"color": "#f4f8ff", "intensity": 1.05, "size": 1.2}, "haze": {"color": "#e6eef5", "strength": 0.55}, "ambient": 1.25},
+        "storm": True,  # the cold storm outdoors (Maps/README.md "Storm", docs/weather/WEATHER.md "Cold storm")
         "features": [
             noise(80, 4200, 5, 71),
             noise(28, 650, 4, 19, ridged=True),
@@ -223,9 +224,13 @@ def build(w):
     ops.append({"op": "SurfaceBlock", "lat": 90, "lon": 0, "w": 1.2, "h": 6, "d": 1.2, "color": "#8a8f99", "material": "Concrete"})  # the pole's post
     for kind, lat, lon, _, _, _ in w["sites"]:  # a survey post on each site, so it can be found
         ops.append({"op": "SurfaceBlock", "lat": lat, "lon": lon, "w": 0.8, "h": 4, "d": 0.8, "color": "#d9c14a" if kind == "home" else "#4ab0d9", "material": "Concrete"})
-    return {
+    head = {
         "format": "call-of-slop-map/1", "name": w["name"], "description": w["description"], "author": "Call of Slop", "order": w["order"],
-        "halfX": half, "halfZ": half, "maxPlayers": 8, "skybox": w["skybox"], "planetoid": planetoid,
+        "halfX": half, "halfZ": half, "maxPlayers": 8, "skybox": w["skybox"]}
+    if "storm" in w:
+        head["storm"] = w["storm"]
+    return {
+        **head, "planetoid": planetoid,
         "sandbox": {"resources": {"mix": w["ore"]}},  # each world's own ground (WORLDS.md "Ore")
         "teamSpawns": [[[x, y(x, z, 0.24), z] for x, z in ((-6, s * 40), (6, s * 40), (-12, s * 36), (12, s * 36))] for s in (-1, 1)],
         "hills": [{"x": s * 30, "y": y(30, 30), "z": s * 30, "radius": 6} for s in (1, -1)],

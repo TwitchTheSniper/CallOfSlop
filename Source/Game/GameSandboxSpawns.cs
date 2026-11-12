@@ -1002,8 +1002,6 @@ public sealed partial class Game
     {
         if (!p.SbSpawned || !p.Alive)
             return false;
-        if (OpeningRescuerBot(p, b, now))
-            return false; // (the survival opening's recovery team, standing over someone: GameSandboxOpening.cs)
         if (p.Team == SbPeopleTeam)
         {
             StoryBodyBot(p, b, now); // (a story person's body: GameStoryBodies.cs)

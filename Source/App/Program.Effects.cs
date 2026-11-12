@@ -41,6 +41,8 @@ public static unsafe partial class Program
             var l = Lighting.Current;
             var ambient = (l.AmbSky + l.AmbGround) * 0.5f + l.SunColor * MathF.Max(l.SunDir.Y, 0f) * 0.55f;
             FxGpu.Draw(Gfx, ambient);
+            if (!CameraFeeds.InPass)
+                SnowRenderer.Draw(Gfx, _settings.Particles, now); // a cold storm's driven snow (nothing without one; Source/Render/SnowRenderer.cs)
         }
         using (Perf.Pass(PerfArea.PostFx, PerfGpuPass.PostFx))
             PostFx.Apply(Gfx, w, h, now);
