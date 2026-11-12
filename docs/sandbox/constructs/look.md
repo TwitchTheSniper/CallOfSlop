@@ -141,6 +141,14 @@ Budget: about 40 look boxes at tier 1 or the small class, 80 at the top; racks a
 storage (Materials Bin, Storage Volume and Parts Shelf are hand-made files), tier by build on the Extruders, Formers,
 Press and Die Lathe, and a Press has no status lamp.
 
+**Ports sit on the machine** (`--check-ports [NAME]`, `PortMounts.cs`: each link port's gap to the nearest drawn box, worst
+first in `check-ports.txt` next to the DLL; over 3 cm floats). A port with nothing drawn at it gets a fitting, never a move
+that a blueprint's links or conveyors would feel: a chute port the shared spout (`MachineLook.Mouth`: a dark body back to
+the wall or on a stand from the floor, a rim in the side's colour, 2.6 cm clear of the port so the link's end shows), a
+Press's or Die Lathe's Piece in a steel feed table in the bay's mouth, its Piece out a run-off lip. The loader's own ports
+seat themselves: the implicit Power in slides from the middle of the bounds' face onto the nearest drawn face
+(`PortMounts.Seat`), and a data link ends on the body when the part's middle is in the air (`ConstructRoutes.DataSeat`).
+
 **The tiered buildings** (`TierMachine.cs`, over `TierStyle`'s bodies; phase 2). A tier keeps its own body and palette
 ([Machine tiers](production.md#machine-tiers)), so the language goes on as look boxes in metres, after the screen is
 mounted and the faces are settled: no solid box, socket, port or screen moves. `Site.Add` leaves out a box that would

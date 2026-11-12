@@ -51,7 +51,7 @@ public static class PortMounts
         return (near, back);
     }
 
-    private static bool Still(in CPartBox b) => !b.Hidden && !b.Spin && !b.Roll && b.Pump == 0; // drawn, and not a box that moves
+    private static bool Still(in CPartBox b) => !b.Hidden && !b.Spin && !b.Roll && b.Pump == 0 && b.Work is not (BoxWork.Spin or BoxWork.Stroke) && b.RigTravel == 0; // drawn, and not a box that moves (a ram, a chuck, a lever)
 
     /// <summary>
     /// A port the loader makes (an implicit "Power in": the middle of a bounds face) seated on the part: <paramref name="want"/>
