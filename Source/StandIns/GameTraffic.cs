@@ -23,6 +23,7 @@ public sealed partial class Game
 {
     public const double TrafficPadSeconds = 900; // a pad's script lasts this long; the host renews it a minute before
     public const float TrafficClear = 45f; // m: a placeholder station keeps this far from anything built
+    public const float TrafficBay = 40f; // m: a real station's traffic stands this far to the side of its crew bus stop
 
     /// <summary>The host's switch (the Story window's People tab).</summary>
     public bool TrafficOn = true;
@@ -124,12 +125,12 @@ public sealed partial class Game
             ref readonly var st = ref data.Stations[i];
             if (st.Real == TrafficReal.Colony)
             {
-                _tfSpot[i] = QuarryColonyStop();
+                _tfSpot[i] = TrafficBayBeside(QuarryColonyStop());
                 continue;
             }
             if (st.Real == TrafficReal.Quarry && _qrWorks != 0 && Constructs.Get(_qrWorks) != null)
             {
-                _tfSpot[i] = _qrStop;
+                _tfSpot[i] = TrafficBayBeside(_qrStop);
                 continue;
             }
             // A placeholder: out by its bearing and distance, turned a little at a time off anything built there.
@@ -157,6 +158,44 @@ public sealed partial class Game
             _tfOver[f] = new TrafficRun { At = now + 45 + data.Flyovers[f].Every * (f + TrafficRand()) / Math.Max(1, _tfOver.Length) };
         _tfRadioAt = now + data.RadioEvery * 0.5;
         Log($"[traffic] {n} stations round the colony, {_tfRound.Length} rounds, {_tfVisit.Length} visits, {_tfOver.Length} flyovers");
+    }
+
+    /// <summary>
+    /// A real station's traffic bay: off to the side of its crew bus stop (GameQuarry.cs), so the rounds' haulers, which look
+    /// just like the bus, never stand at the stop and read as extra buses for whoever is waiting there.
+    /// </summary>
+    private Vector3 TrafficBayBeside(Vector3 stop)
+    {
+        var up = StandInPath.Up(stop);
+        var off = stop - _opGate;
+        var side = StandInPath.Along(off.LengthSquared() > 1f ? Vector3.Cross(up, off) : Vector3.Cross(up, Vector3.UnitZ), stop);
+        var best = StandInPath.Ground(stop + side * TrafficBay + up * 30f);
+        foreach (var (sign, far) in ((float, float)[])[(1, 1), (-1, 1), (1, 0.6f), (-1, 0.6f), (1, 1.5f), (-1, 1.5f)])
+        {
+            var at = StandInPath.Ground(stop + side * (sign * far * TrafficBay) + up * 30f);
+            if (TrafficBayClear(at))
+                return at;
+        }
+        return best; // (crowded all round: the first choice anyway)
+    }
+
+    /// <summary>Server, once a world: no built part (a building's wall, the fence) within a craft's reach of this spot.</summary>
+    private bool TrafficBayClear(Vector3 at)
+    {
+        const float reach = 8f;
+        foreach (var c in Constructs.Bodies)
+        {
+            if (!(c.Anchored || c.Frozen) || Vector3.Distance(c.WorldCom, at) > c.Radius + reach)
+                continue;
+            for (var k = 0; k < c.PartCount; k++)
+            {
+                c.PartBounds(k, out var min, out var max);
+                var mid = c.SegToWorld(c.Parts[k].Seg, (min + max) * 0.5f);
+                if (Vector3.Distance(mid, at) < (max - min).Length() * 0.5f + reach)
+                    return false;
+            }
+        }
+        return true;
     }
 
     private bool TrafficSpotClear(Vector3 spot)

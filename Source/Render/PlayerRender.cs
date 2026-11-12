@@ -60,7 +60,7 @@ public static class PlayerRender
         BodyModel.DrawImmediate(g, p, stance, up, hat != null);
         if (hat != null)
             HatRender.Draw(g, hat, HatRender.OnHead(hat, s.HeadSize, p, time) * BodyModel.TalkHead(stance, p.Id) * up);
-        DrawLegs(g, legs, body, color);
+        DrawLegs(g, legs, body, BodyModel.LegsFor(p));
         var (gunAt, barY) = stance switch
         {
             2 => (new Vector3(0.25f, 0.3f, -0.9f), 0.9f),
@@ -89,8 +89,9 @@ public static class PlayerRender
             DrawArmed(g, p, gunPose, up, time);
 
         var frac = Math.Clamp(p.Health / (float)World.MaxHealth, 0f, 1f);
-        g.Draw(Matrix4x4.CreateScale(0.8f * frac, 0.06f, 0.06f) * Matrix4x4.CreateTranslation(0, barY, 0) * rot * at,
-            Vector3.Lerp(new Vector3(1, 0.1f, 0.1f), new Vector3(0.2f, 1, 0.2f), frac), 1f, mode: 2);
+        if (!Program.TalkHidesBar(p.Id)) // (your own, in the talk camera's shot: left off)
+            g.Draw(Matrix4x4.CreateScale(0.8f * frac, 0.06f, 0.06f) * Matrix4x4.CreateTranslation(0, barY, 0) * rot * at,
+                Vector3.Lerp(new Vector3(1, 0.1f, 0.1f), new Vector3(0.2f, 1, 0.2f), frac), 1f, mode: 2);
         BodyBloodRender.Unbind(g);
     }
 
@@ -116,7 +117,7 @@ public static class PlayerRender
             BodyModel.DrawImmediate(g, p, 0, up, hat != null, detail: true);
             if (hat != null)
                 HatRender.Draw(g, hat, HatRender.OnHead(hat, s.HeadSize, p, time) * BodyModel.TalkHead(0, p.Id) * up);
-            DrawLegs(g, legs, body, p.Color);
+            DrawLegs(g, legs, body, BodyModel.LegsFor(p));
             var gunPose = Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(0.3f, 1.3f, -0.25f) * up;
             DrawArmed(g, p, gunPose, up, time);
         }
@@ -128,9 +129,8 @@ public static class PlayerRender
     }
 
     /// <summary>The legs posed by <see cref="LegAnimator.Animate"/>: pelvis, then per leg thigh, knee pad, shin, boot, sole (the rig's order).</summary>
-    public static void DrawLegs(Renderer g, LegPose legs, in Matrix4x4 body, Vector3 color)
+    public static void DrawLegs(Renderer g, LegPose legs, in Matrix4x4 body, in LegColors c)
     {
-        var c = LegColors.For(color);
         var pelvis = legs.PelvisLocal * body;
         var pp = LegAnimator.PelvisPart;
         g.Draw(Matrix4x4.CreateScale(pp.Size) * Matrix4x4.CreateTranslation(pp.Center) * pelvis, c.Of(pp.Paint));

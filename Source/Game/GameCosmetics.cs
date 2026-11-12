@@ -1,7 +1,7 @@
 namespace CallOfSlop;
 
 /// <summary>A player's cosmetic profile as it travels in the roster: prestige, account level, hat and look (Appearance.cs).</summary>
-public readonly record struct PlayerCosmetics(byte Prestige, byte Level, HatId Hat, PlayerLook Look = default);
+public readonly record struct PlayerCosmetics(byte Prestige, byte Level, HatId Hat, PlayerLook Look = default, byte Uniform = 0);
 
 /// <summary>
 /// Prestige and hats on the network (Source/Cosmetics/Cosmetics.cs). Cosmetic only: nothing here touches gameplay.
@@ -77,6 +77,7 @@ public sealed partial class Game
         else
             w.U8(p.Prestige).U8(p.Level).U8((byte)p.Hat);
         (p.Bot != null ? default : p.Look).Pack(w); // protocol 45: the look (Appearance.cs; bots: Auto)
+        w.U8(p.Uniform); // protocol 257: the uniform the server dresses them in (GameUniforms.cs; bots too: the colony's staff)
     }
 
     private static PlayerCosmetics ReadRosterCosmetics(ref PacketReader r, bool isBot)
@@ -85,16 +86,20 @@ public sealed partial class Game
         var level = r.Has(1) ? r.U8() : (byte)0;
         var hat = r.Has(1) ? (HatId)r.U8() : HatId.None;
         var look = PlayerLook.Unpack(ref r); // sanitised: an unknown variant draws as Auto
+        var uniform = r.Has(1) ? r.U8() : (byte)0;
+        if (Uniforms.Get(uniform) == null)
+            uniform = 0; // (a uniform this build doesn't have: plain clothes)
         if (isBot)
-            return default;
+            return new PlayerCosmetics(0, 0, HatId.None, default, uniform);
         prestige = (byte)Math.Min((int)prestige, Cosmetics.MaxPrestige);
         if (!Cosmetics.IsUnlocked(hat, prestige))
             hat = HatId.None; // unknown id or not earned: draw nothing
-        return new PlayerCosmetics(prestige, level, hat, look);
+        return new PlayerCosmetics(prestige, level, hat, look, uniform);
     }
 
     private static void ApplyCosmetics(Player p, in PlayerCosmetics c)
     {
+        p.Uniform = c.Uniform;
         if (p.Bot != null)
             return;
         p.Prestige = c.Prestige;

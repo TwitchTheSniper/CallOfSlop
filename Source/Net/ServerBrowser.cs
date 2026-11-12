@@ -418,10 +418,15 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      it as a pending spawn), SpawnPlace (u16 token, vec point, f32 yaw), SpawnCancel (u16 token) and SpawnGhost (server -> one client: u8 status,
     //      u16 token, text name; ready: vec min, vec max, f32 low, u16 n boxes, each 3 x f32 centre, 3 x half-float size, 4 x i16 turn, 3 x u8 colour,
     //      u8 alpha, u8 shape).
-    // 257: the Panel Designer (feat/panel-designer-1; 256 is the Building Station's branch). CActKind gains CraftNamed (u16 body, u16 terminal, u16 count, text name: a formed panel's order at
+    // 256: the Building Station (ConstructStation.cs): CActKind gains Station (at the end); CBodyKind.Station (at the end) carries a body's stations' jobs
+    //      (state, the blueprint's name, counts, the frozen body, the last part fitted, a note); a new part file (Building Station) moves part ids; three
+    //      new settings (bayWidth, bayDepth, bayHeight).
+    // 257: uniforms (Source/Cosmetics/Uniforms.cs). The roster gains a u8 uniform per player after the look (bots too), and the look
+    //      (PlayerLook.WireBytes) grows to 4 bytes: the fourth is the uniform choice (Issued Uniform or Own Clothes).
+    // 258: the Panel Designer (feat/panel-designer-1). CActKind gains CraftNamed (u16 body, u16 terminal, u16 count, text name: a formed panel's order at
     //      a terminal) and PanelDesign (u8 op, text name, text key); CBodyKind.Designs (at the end): the world's shared panel designs, whole; an order
     //      in CBodyKind.Craft may be named (shape 255: u8 material, u16 count, text name, then the id and state as before).
-    public const ushort ProtocolVersion = 257;
+    public const ushort ProtocolVersion = 258;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

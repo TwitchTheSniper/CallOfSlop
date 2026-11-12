@@ -964,6 +964,9 @@ public sealed partial class Ui
             TextSizeControl(s, w); // (UiTextSize.cs)
 
             ImGui.Spacing();
+            SubtitleControls(s, w); // (UiSubtitles.cs)
+
+            ImGui.Spacing();
             ImGui.Text("HUD width"u8);
             var hud = (int)s.HudWidth;
             for (var i = 0; i <= (int)HudWidth.Full; i++)

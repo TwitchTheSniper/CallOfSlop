@@ -454,6 +454,12 @@ Players talk to the story's people (`Source/Game/GameStoryChat.cs` on the host, 
   Zombies trader's shelf. It shows what they said lately and four buttons: Hello, Any news?, Trade your (what you hold),
   Goodbye. Esc, Goodbye, walking 6 m off or their death closes it. Each button is `CActKind.Talk` (protocol 159): the
   host decides everything and the answer comes back as their own words, said aloud like any line.
+- **The talk camera** (`Source/App/Program.TalkCamera.cs`, local only): while the panel is open on someone near you,
+  the view eases (0.7 s in, 0.55 s out) from whatever it was, first person or the shoulder camera, to a shot over
+  your left shoulder at their face, framed left of the middle so the panel doesn't cover them. When your own head
+  and shoulders (with room for a hat's brim) or a wall would cover their face, it tries the right shoulder, then wider
+  and more side-on shots, and past those sits just in front of your face; the shot in use is kept while it stays clear. Your own body is drawn (no first-person gun, no crosshair, no health bar over your head). Closing the
+  talk eases back to your own view as it is now. A talk joined from afar, a seat, the opening and the crew bus skip it.
 - **Hello**: the first time, the story records a Greet (the player met them; answered with the `Greeted` rules), after
   that a Chat (at most every 2 minutes for the same two, so it warms them to each other like any Chat; answered with
   `Chatted`). Someone who fears the player says so.

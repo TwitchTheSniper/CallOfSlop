@@ -47,6 +47,7 @@ public sealed partial class Game
         _bsLast = now;
         BuildHands(now, away);
         BuildBodies(now, away);
+        StationSounds();
         var worldLinks = Constructs.WorldLinkCount;
         if (!away && worldLinks > _bsWorldLinks && BuildNear(Audio.ListenerPosition, 100f) is { } layer)
             BuildSounds.Play(LinkSound(Constructs.WorldLinks[worldLinks - 1].Type), BuildAim(layer));

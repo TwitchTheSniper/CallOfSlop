@@ -33,7 +33,7 @@ public static partial class SelfTest
                     Fail($"invite {ip}:{port} list {list} -> {code} -> {(err.Length > 0 ? err : back.ToString())}");
             }
         }
-        var sample = new Invite(IPAddress.Parse("203.0.113.45"), 27015, ServerInfo.ProtocolVersion, 27050);
+        var sample = new Invite(IPAddress.Parse("203.0.113.45"), 27015, (ushort)(ServerInfo.ProtocolVersion & 255), 27050); // (an invite holds the low byte)
         var c = InviteCode.Encode(sample);
         Line($"invite for 203.0.113.45:27015 list 27050: {c} ({InviteCode.Link(c)}); 2000 random round trips, {bad} bad");
         if (c.Length != 19 || c[4] != '-' || c[9] != '-' || c[14] != '-')

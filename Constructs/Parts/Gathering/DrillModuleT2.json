@@ -51,7 +51,8 @@
     {"min": [-0.2938, 0.591, -0.2042], "max": [-0.2563, 0.606, -0.1377], "color": "#f2b01e", "detail": true, "paintable": false},
     {"min": [-0.2938, 0.591, -0.0902], "max": [-0.2563, 0.606, -0.0237], "color": "#f2b01e", "detail": true, "paintable": false},
     {"min": [-0.2938, 0.591, 0.0237], "max": [-0.2563, 0.606, 0.0902], "color": "#f2b01e", "detail": true, "paintable": false},
-    {"min": [-0.2938, 0.591, 0.1377], "max": [-0.2563, 0.6135, 0.2042], "color": "#d02a1e", "detail": true, "paintable": false}
+    {"min": [-0.2938, 0.591, 0.1377], "max": [-0.2563, 0.6135, 0.2042], "color": "#d02a1e", "detail": true, "paintable": false},
+    {"min": [-0.11, -0.352, 0.74], "max": [0.11, -0.303, 0.96], "color": "#f2b01e", "detail": true, "paintable": false, "work": "spin", "axis": "+y"}
   ],
   "sockets": [
     {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},

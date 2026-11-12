@@ -13,7 +13,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// 2 m and 4 m; a room's corners are L pieces with 2 m legs, so four corners close a 4 by 4 m room. The blueprints' socket steps are
 /// worked out by a mirror of the game's Rot24 turns and fitting order (<see cref="Blueprint"/>), which interior_parts and make_rv share.
 /// </summary>
-public sealed class BuildingParts : IPartGenerator
+public sealed partial class BuildingParts : IPartGenerator
 {
     public string Name => "building_parts";
 
@@ -486,8 +486,9 @@ public sealed class BuildingParts : IPartGenerator
         var dark = Mats[key].Dark;
         if (key is "concrete" or "rc" && kind != "parapet")
         {
-            p.FBox(-0.015, 0, -0.015, 2.0, 0.15, 0, dark, detail: true);
-            p.FBox(-0.015, 0, 0, 0, 0.15, 2.0, dark, detail: true);
+            // (4 mm up: on an upper storey the band's underside is otherwise in the plane of a slab's that meets the wall outside)
+            p.FBox(-0.015, 0.004, -0.015, 2.0, 0.15, 0, dark, detail: true);
+            p.FBox(-0.015, 0.004, 0, 0, 0.15, 2.0, dark, detail: true);
         }
         else if (key == "tin")
         {
@@ -1521,6 +1522,8 @@ public sealed class BuildingParts : IPartGenerator
             foreach (var n in new[] { 8, 16 })
                 o.Add(("85-Frame", Beam(key, n)));
         }
+        o.AddRange(BrutalistParts()); // (fins, buttresses, canopies, fascias, slot and ribbon walls: BuildingParts.Brutalist.cs)
+        o.AddRange(SiteParts()); // (road slabs, heating mains, the stack, gate piers, the flag, notice boards: BuildingParts.Site.cs)
         return o;
     }
 
@@ -1607,6 +1610,9 @@ public sealed class BuildingParts : IPartGenerator
         public readonly Dictionary<string, PyDict> Defs = defs;
         public readonly List<Placed> Parts = [];
         public readonly List<PyDict> Steps = [];
+
+        /// <summary>Signal wires by step, from and to (look.md "The authoring fields"): a switch to its lamps.</summary>
+        public readonly List<(int From, int To)> Wires = [];
 
         public int First(string part, int rot = 0)
         {
@@ -1724,9 +1730,12 @@ public sealed class BuildingParts : IPartGenerator
 
         public PyDict Json()
         {
-            if (Steps.Count > 96)
+            if (Steps.Count > 128)
                 throw new InvalidOperationException($"{Name}: {Steps.Count} steps");
-            return new PyDict { ["format"] = "call-of-slop-construct-blueprint/1", ["name"] = Name, ["description"] = Desc, ["steps"] = Steps.Cast<object?>().ToList() };
+            var d = new PyDict { ["format"] = "call-of-slop-construct-blueprint/1", ["name"] = Name, ["description"] = Desc, ["steps"] = Steps.Cast<object?>().ToList() };
+            if (Wires.Count > 0)
+                d["wires"] = Wires.Select(w => (object?)new List<object?> { w.From, w.To }).ToList();
+            return d;
         }
     }
 
@@ -1833,49 +1842,7 @@ public sealed class BuildingParts : IPartGenerator
         bp.Hang("Fence Gate", hg, "leaf", "hang");
         o.Add(bp);
 
-        // Penal Colony: the Ministry of Slop's holding pen where a survival world's players wake (docs/story/OPENING.md). Nine pads
-        // (12 by 12 m); a corrugated corner at each corner of the yard, two 4 m fences between them on three sides and a 4 m gateway
-        // with a gate between two 2 m fences at the front (z 0); inside, the cell block at the back left (where everyone wakes) and
-        // the warden's concrete office at the front right. Fences go on a corner's leg end ("ra0", "rb0") and on each other ("r0" to
-        // "l0"), so they meet end to end and share no face.
-        bp = new Blueprint("Penal Colony", "The Ministry of Slop's penal colony: a fenced yard with bunks, a cell block and the warden's office.", defs);
-        bp.First(Pad);
-        foreach (var (i, j) in new[] { (0, 1), (0, 2), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2) })
-            bp.Put(Pad, Cell(16 * i, 0, 16 * j), R0);
-        var yard = RoomCorners(bp, "Corrugated", 0, 2, 0, 48, 48);
-        foreach (var k in new[] { 1, 2, 3 }) // the east, back and west sides: from each corner's leg A, two 4 m fences to the next corner
-        {
-            var fn = bp.Hang("Wire Fence 4 m", yard[k], "ra0", "l0");
-            bp.Hang("Wire Fence 4 m", fn, "r0", "l0");
-        }
-        var gl = bp.Hang("Wire Fence 2 m", yard[0], "ra0", "l0"); // the front: x 8 to 15, the gateway, x 32 to 39
-        bp.Hang("Wire Fence 2 m", yard[1], "rb0", "l0");
-        hg = bp.Hang("Hinge", gl, "r4", "base");
-        bp.Hang("Fence Gate", hg, "leaf", "hang");
-        var cells = RoomCorners(bp, "Corrugated", 8, 2, 24, 16, 16, door: 0); // the cell block (x 8 to 23, z 24 to 39)
-        bp.Put("Corrugated Roof Slope 4x4 m", Cell(8, 2 + WallH, 24), R0);
-        hd = bp.Hang("Door Hinge", cells[0], "hinge", "base");
-        bp.Hang("Steel Flush Door 1.5x2.25 m", hd, "leaf", "hang");
-        var office = RoomCorners(bp, "Concrete", 24, 2, 8, 16, 16, door: 1); // the warden's office (x 24 to 39, z 8 to 23)
-        bp.Put("Concrete Floor 4x4 m", Cell(24, 2 + WallH, 8), R0);
-        var ho = bp.Hang("Door Hinge", office[1], "hinge", "base");
-        bp.Hang("Wood Flush Door 1.5x2.25 m", ho, "leaf", "hang");
-        foreach (var z in new[] { 1.75, 4.0 }) // the open-air dormitory: two Bunks down the yard's west side (the induction's bunk step)
-            bp.Put("Bunk", [1.75, 0.375, z], R0);
-        o.Add(bp);
-
-        // Colony Barracks: the guards' quarters beside the penal colony, where the lockdown squad turns out from
-        // (Game/GameColonyLockdown.cs). Two pads, a 4 by 8 m concrete block with windows down both long sides, a flat roof and an
-        // open doorway (no door: the squad comes out of it without stopping).
-        bp = new Blueprint("Colony Barracks", "The Ministry of Slop's guard barracks beside the penal colony.", defs);
-        bp.First(Pad);
-        bp.Put(Pad, Cell(0, 0, 16), R0);
-        RoomCorners(bp, "Concrete", 0, 2, 0, 16, 32, door: 1);
-        bp.Put("Concrete Window Wall 4 m", Cell(0, 2, 23), RY90);
-        bp.Put("Concrete Window Wall 4 m", Cell(15, 2, 8), RY270);
-        bp.Put("Concrete Floor 4x4 m", Cell(0, 2 + WallH, 0), R0);
-        bp.Put("Concrete Floor 4x4 m", Cell(0, 2 + WallH, 16), R0);
-        o.Add(bp);
+        // (The Penal Colony and the Colony Barracks are the Ministry's: BuildingParts.Ministry.cs.)
 
         // Remote Works: the Ministry's remote labour hall beside the penal colony (docs/story/DEPOT.md, Game/GameDepot.cs). A 4 by
         // 12 m concrete hall with windows down both long sides, an open doorway at the front (z 0, the door corner's side), four
@@ -1937,6 +1904,8 @@ public sealed class BuildingParts : IPartGenerator
         bp.Put("Tower Platform 2x2 m", Cell(ox + 8, 2 + WallH, oz + 8), R0);
         bp.Put("Ship Ladder 3 m", Cell(ox + 10, 2, oz), R0);
         o.Add(bp);
+        o.AddRange(MinistryBlueprints(defs)); // (the Ministry's buildings round the penal colony: BuildingParts.Ministry.cs)
+        o.AddRange(SiteBlueprints(defs)); // (the penal colony's site: its street, square, covered way and heating mains: BuildingParts.Site.cs)
         return o;
     }
 

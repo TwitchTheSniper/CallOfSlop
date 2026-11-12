@@ -73,8 +73,9 @@ public static class ModuleLook
             Strip(1, h, -0.2, 0.2, 0.37, 0.44, MachineLook.Out); // the way out: the chute leaves the hopper on this side
             Put([0.19 * s - 0.004, 0.462 * s, -0.15 * s], [0.19 * s + p, 0.5 * s, 0.15 * s], MachineLook.Accent, "hazard paint");
             Buttons(-0.245, -0.195, -0.19, 0.19);
-            // The bit: an accent collar under the mast that turns with it.
-            Spin(Put([-0.088 * s, -0.352 * s, 0.592 * s], [0.088 * s, -0.303 * s, 0.768 * s], MachineLook.Accent));
+            // The bit: an accent collar under the mast that turns with it. The bit's height is the same at every tier (y -1.2 to -0.3 m;
+            // only its plan grows), so a collar's y is in metres, never scaled: scaled, the Plasma tier's lower collar hung 1.6 m under the bit.
+            Spin(Put([-0.088 * s, -0.352, 0.592 * s], [0.088 * s, -0.303, 0.768 * s], MachineLook.Accent));
             if (tier >= 2)
             {
                 Strip(3, h, -0.24, -0.135, 0.39, 0.44, MachineLook.Accent, "hazard paint");
@@ -93,7 +94,7 @@ public static class ModuleLook
                     Strip(side, h, 0.2, 0.244, 0.09, 0.36, MachineLook.Steel, "steel", 0.002);
                 }
             if (tier >= 5)
-                Spin(Put([-0.082 * s, -1.12 * s, 0.598 * s], [0.082 * s, -1.08 * s, 0.762 * s], MachineLook.Steel, "steel"));
+                Spin(Put([-0.082 * s, -1.17, 0.598 * s], [0.082 * s, -1.13, 0.762 * s], MachineLook.Steel, "steel")); // (near the bit's tip, under the tier's own spin bars)
             return;
         }
 

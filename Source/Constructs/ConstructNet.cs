@@ -34,7 +34,8 @@ public enum CBodyKind : byte
     Riders, // protocol 244: one body's pieces riding its conveyors, the whole list (ConstructConveyor.Write)
     Orders, // protocol 246: one body's work-order queues and bills, each its totals and head (WorkOrders.Write)
     Craft, // protocol 254: one body's Crafting Terminals' orders and its stores' reserved parts (ConstructCrafting.Write)
-    Designs, // protocol 257: the world's shared panel designs, the whole list: u8 n, each a name and a key (PanelDesigns.Write)
+    Station, // protocol 256: one body's Building Stations' jobs (ConstructStation.Write)
+    Designs, // protocol 258: the world's shared panel designs, the whole list: u8 n, each a name and a key (PanelDesigns.Write)
 }
 
 /// <summary>
@@ -886,6 +887,9 @@ public static partial class ConstructNet
                 break;
             case CBodyKind.Craft:
                 ConstructCrafting.Read(ref r, world);
+                break;
+            case CBodyKind.Station:
+                ConstructStation.Read(ref r, world);
                 break;
             case CBodyKind.Designs:
                 PanelDesigns.Read(ref r, world);

@@ -159,6 +159,7 @@ public sealed partial class ConstructWorld
             b.Conveyed = c.ConveyedCount > 0 ? c.Conveyed.AsSpan(0, c.ConveyedCount).ToArray() : null; // (a save is rare: a copy is fine)
             b.Orders = WorkOrders.Snapshot(c);
             b.Craft = ConstructCrafting.Snapshot(c);
+            b.Station = ConstructStation.Snapshot(c);
             b.Parts = s.PartCount;
             b.PartCount = c.PartCount;
             b.Links = s.LinkCount;
@@ -398,14 +399,17 @@ public sealed partial class ConstructWorld
         var conveyors = b.Conveyed != null;
         foreach (ref readonly var r in routes)
             conveyors |= r.Type == RouteType.Conveyor;
-        if (conveyors || b.Orders != null || b.Craft != null)
+        if (conveyors || b.Orders != null || b.Craft != null || b.Station != null)
             ConstructConveyor.WriteSave(w, routes, b.Conveyed ?? [], names); // (an empty one before the work orders: they follow it)
         // Work orders (WorkOrders.cs), after the conveyors: a body without any writes nothing.
-        if (b.Orders != null || b.Craft != null)
+        if (b.Orders != null || b.Craft != null || b.Station != null)
             WorkOrders.WriteSave(w, b.Orders ?? [], names); // (an empty one before the crafting orders: they follow it)
         // Crafting Terminals' orders (ConstructCrafting.cs), after the work orders the same way.
-        if (b.Craft != null)
-            ConstructCrafting.WriteSave(w, b.Craft, names);
+        if (b.Craft != null || b.Station != null)
+            ConstructCrafting.WriteSave(w, b.Craft ?? [], names); // (an empty one before the stations' jobs: they follow it)
+        // Building Stations' jobs (ConstructStation.cs), after the crafting orders the same way.
+        if (b.Station != null)
+            ConstructStation.WriteSave(w, b.Station);
     }
 
     public static void WriteStore(SaveWriter w, CStore s, WorldNames names)
@@ -724,6 +728,7 @@ public sealed partial class ConstructWorld
         var conveyors = ConstructConveyor.ReadSave(r, bodyEnd, names); // (after the brief: an older save ends before it)
         var orders = conveyors != null ? WorkOrders.ReadSave(r, bodyEnd, names) : null; // (after the conveyors, the same way)
         var craft = orders != null ? ConstructCrafting.ReadSave(r, bodyEnd, names) : null; // (after the work orders, the same way)
+        var stations = craft != null ? ConstructStation.ReadSave(r, bodyEnd) : null; // (after the crafting orders, the same way)
         var c = Create(pos, rot, freshId ? (ushort)0 : id) ?? throw new WorldFileException($"no room for construct {id}");
         id = c.Id;
         _partTally = -1;
@@ -748,6 +753,8 @@ public sealed partial class ConstructWorld
             WorkOrders.Apply(c, orders);
         if (craft != null)
             ConstructCrafting.Apply(this, c, craft);
+        if (stations != null)
+            ConstructStation.Apply(this, c, stations);
         c.Wreck = (flags & 1) != 0;
         c.Damaged = (flags & 4) != 0;
         c.Pinned = (flags & 8) != 0;

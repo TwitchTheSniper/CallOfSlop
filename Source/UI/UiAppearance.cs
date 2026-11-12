@@ -72,7 +72,7 @@ public sealed partial class Ui
     }
 
     /// <summary>The height the picker panel's content needs (unscaled px): heading, the hat row, the axis rows, the team note.</summary>
-    internal static float AppearancePanelContentH() => 34 + 26 + LookHatCardH + 14 + LookAxes.Length * LookAxisRowH + 60;
+    internal static float AppearancePanelContentH() => 34 + 26 + LookHatCardH + 14 + LookAxes.Length * LookAxisRowH + 100;
 
     /// <summary>The axes in screen order.</summary>
     internal static readonly LookAxis[] LookAxes = Enum.GetValues<LookAxis>();
@@ -131,6 +131,7 @@ public sealed partial class Ui
                 ImGui.Spacing();
                 ImGui.PushStyleColor(ImGuiCol.Text, Dim);
                 ImGui.TextWrapped("Team modes: your shirt, sleeves, trousers and a bandana wear the team colour so sides stay readable. Without teams (free-for-all, co-op, Zombies) they wear your outfit colour. Everything else (skin, hair, headwear, beard, helmet colour, hat) shows in every mode."u8);
+                ImGui.TextWrapped("Faction uniform: in the story, the Ministry of Slop issues a uniform for your standing (a boiler suit for inmates, a donkey jacket for contractors, a bowler for Crown Servants). It replaces your outfit and hat while worn. Own Clothes keeps your own look."u8);
                 ImGui.PopStyleColor();
             }
             ImGui.EndChild();
@@ -161,7 +162,7 @@ public sealed partial class Ui
         var btn = new float2(110 * _scale, 0);
         if (ImGui.Button("RANDOM"u8, btn))
         {
-            SetLook(PlayerLook.Randomized(_lookRng));
+            SetLook(PlayerLook.Randomized(_lookRng) with { Uniform = AppearanceStore.Look.Uniform }); // (the uniform choice stays)
             audio.Effect(Sfx.HitTick, 0.4f);
         }
         ImGui.SameLine();

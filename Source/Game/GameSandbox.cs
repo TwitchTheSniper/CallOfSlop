@@ -95,8 +95,9 @@ public enum CActKind : byte
     SpawnPlace, // u16 token, vec point, f32 yaw: the pending spawn goes down there (protocol 255)
     SpawnCancel, // u16 token: the pending spawn is dropped (protocol 255)
     SpawnGhost, // server -> one client: u8 status (0 ready, 1 placed, 2 gone), u16 token, text name; ready: the ghost's shape and boxes (protocol 255)
-    CraftNamed, // u16 body, u16 terminal, u16 count, text name: an order for a formed panel by its key at a Crafting Terminal or a Panel Designer (protocol 257; ConstructCrafting.Place)
-    PanelDesign, // u8 op (1 keep, 0 drop), text name, text key: a panel design saved to the world's shared list, or dropped from it (protocol 257; PanelDesigns.cs)
+    Station, // u16 body, u16 station, u8 StationOp, u16 n, text: a Building Station's Start (the blueprint's name, n repeats), Cancel, Release, Repeat or Give (protocol 256; ConstructStation.cs)
+    CraftNamed, // u16 body, u16 terminal, u16 count, text name: an order for a formed panel by its key at a Crafting Terminal or a Panel Designer (protocol 258; ConstructCrafting.Place)
+    PanelDesign, // u8 op (1 keep, 0 drop), text name, text key: a panel design saved to the world's shared list, or dropped from it (protocol 258; PanelDesigns.cs)
 }
 
 /// <summary>
@@ -485,6 +486,11 @@ public sealed partial class Game
             ConstructCrafting.Write(w, Constructs, c);
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
+        if (ConstructStation.Any(c))
+        {
+            ConstructStation.Write(w, c);
+            Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        }
     }
 
     private void SandboxFlush()
@@ -513,6 +519,8 @@ public sealed partial class Game
                     Constructs.OrdersChanged(c); // (its parts may have been renumbered; a Full leaves a client's parts without them)
                 if (ConstructCrafting.Any(Constructs, c))
                     Constructs.CraftChanged(c); // (the same: its terminals' parts may have been renumbered)
+                if (ConstructStation.Any(c))
+                    Constructs.StationChanged(c);
             }
         Constructs.StructureDirty.Clear();
         foreach (var id in Constructs.RidersDirty)
@@ -536,6 +544,13 @@ public sealed partial class Game
                 Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
             }
         Constructs.CraftDirty.Clear();
+        foreach (var id in Constructs.StationDirty)
+            if (Constructs.Get(id) is { } c)
+            {
+                ConstructStation.Write(w, c);
+                Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+            }
+        Constructs.StationDirty.Clear();
         if (Constructs.DesignsDirty)
         {
             Constructs.DesignsDirty = false;
@@ -1151,6 +1166,8 @@ public sealed partial class Game
                 var oid = r.U16();
                 return hands.CraftOrder(Constructs, p.Id, eye, body, term, default, oid, Constructs.Get(body) is { } cc2 ? SandboxConfigRefusal(cc2, p.Id) : null);
             }
+            case CActKind.Station:
+                return SandboxStationAct(ref r, p, eye);
             case CActKind.WebState:
             {
                 var body = r.U16();

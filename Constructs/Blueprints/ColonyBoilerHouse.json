@@ -1,0 +1,374 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Colony Boiler House",
+  "description": "The penal colony's boiler house: one boiler, a tall hall and the stack.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 1,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Door Corner",
+      "on": 0,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 0,
+      "socket": "t8_0",
+      "by": "b0_7",
+      "spin": 2,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 1,
+      "socket": "t8_15",
+      "by": "b7_0",
+      "spin": 3,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 1,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall 4 m",
+      "on": 0,
+      "socket": "t0_8",
+      "by": "b15",
+      "spin": 1,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall 4 m",
+      "on": 0,
+      "socket": "t15_8",
+      "by": "b0",
+      "spin": 2,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 3,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 4,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "spin": 2,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 5,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "spin": 3,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 6,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "spin": 1,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Ribbon Wall 4 m",
+      "on": 7,
+      "socket": "t0",
+      "by": "b0",
+      "spin": 1,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Ribbon Wall 4 m",
+      "on": 8,
+      "socket": "t0",
+      "by": "b0",
+      "spin": 2,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 9,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 11,
+      "socket": "t0_0",
+      "by": "b15_15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 15,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 16,
+      "socket": "k0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 15,
+      "socket": "l0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 15,
+      "socket": "r0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 16,
+      "socket": "l0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 16,
+      "socket": "r0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 17,
+      "socket": "l",
+      "by": "+x",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 17,
+      "socket": "r",
+      "by": "+z",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 18,
+      "socket": "l",
+      "by": "+x",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 18,
+      "socket": "r",
+      "by": "+z",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Door Hinge",
+      "on": 3,
+      "socket": "hinge",
+      "by": "base"
+    },
+    {
+      "part": "Steel Flush Door 1.5x2.25 m",
+      "on": 27,
+      "socket": "leaf",
+      "by": "hang",
+      "paint": "#4b5157",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Concrete Canopy 2 m",
+      "on": 3,
+      "socket": "fa7_10",
+      "by": "back7",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 29,
+      "socket": "lamp",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Text Sign",
+      "on": 29,
+      "socket": "sign",
+      "by": "back",
+      "text": [
+        "BOILER HOUSE"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Concrete Entrance Steps 2 m",
+      "on": 0,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Buttress 2.75 m",
+      "on": 7,
+      "socket": "f0_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Buttress 2.75 m",
+      "on": 7,
+      "socket": "f8_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Text Sign",
+      "on": 4,
+      "socket": "fb7_5",
+      "by": "back",
+      "text": [
+        "HEAT IS ISSUED, NOT OWED"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Concrete Chimney 2.75 m",
+      "on": 2,
+      "socket": "t7_7",
+      "by": "b00",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Chimney 2.75 m",
+      "on": 36,
+      "socket": "t00",
+      "by": "b00",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Chimney 2.75 m",
+      "on": 37,
+      "socket": "t00",
+      "by": "b00",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Chimney 2.75 m",
+      "on": 38,
+      "socket": "t00",
+      "by": "b00",
+      "paint": "#3a3836",
+      "finish": "soot"
+    },
+    {
+      "part": "Lancashire Boiler",
+      "on": 1,
+      "socket": "t7_7",
+      "by": "b"
+    },
+    {
+      "part": "Wall Clock",
+      "on": 4,
+      "socket": "ka7_5",
+      "by": "back"
+    },
+    {
+      "part": "Strip Light",
+      "on": 4,
+      "socket": "ka7_10",
+      "by": "back",
+      "config": {
+        "colour": "#e4f2dc"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 3,
+      "socket": "kb7_5",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Battery",
+      "on": 4,
+      "socket": "kb7_10",
+      "by": "-z",
+      "paint": "#4b5157"
+    }
+  ],
+  "wires": [
+    [
+      43,
+      42
+    ]
+  ]
+}

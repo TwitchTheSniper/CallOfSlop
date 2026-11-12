@@ -1,0 +1,418 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Filing Cabinet",
+  "description": "Four drawers of files. Everything is in here somewhere, under something else.",
+  "group": "Interior",
+  "section": "Furniture",
+  "role": "storage",
+  "tool": "wrench",
+  "finish": "worn paint",
+  "mass": 50.0,
+  "health": 220,
+  "armour": 4,
+  "material": "steel",
+  "color": "#2f5a3c",
+  "attachSeconds": 2.0,
+  "storage": {
+    "slots": [
+      {
+        "min": [
+          -0.19,
+          0.06,
+          -0.26
+        ],
+        "max": [
+          0.19,
+          0.3,
+          0.27
+        ],
+        "label": "files",
+        "stack": 4
+      },
+      {
+        "min": [
+          -0.19,
+          0.38,
+          -0.26
+        ],
+        "max": [
+          0.19,
+          0.62,
+          0.27
+        ],
+        "label": "files",
+        "stack": 4
+      },
+      {
+        "min": [
+          -0.19,
+          0.7,
+          -0.26
+        ],
+        "max": [
+          0.19,
+          0.94,
+          0.27
+        ],
+        "label": "files",
+        "stack": 4
+      },
+      {
+        "min": [
+          -0.19,
+          1.02,
+          -0.26
+        ],
+        "max": [
+          0.19,
+          1.26,
+          0.27
+        ],
+        "label": "files",
+        "stack": 4
+      }
+    ]
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.235,
+        0.0,
+        -0.31
+      ],
+      "max": [
+        0.235,
+        0.03,
+        0.31
+      ],
+      "color": "#2f5a3c"
+    },
+    {
+      "min": [
+        -0.235,
+        1.29,
+        -0.31
+      ],
+      "max": [
+        0.235,
+        1.32,
+        0.31
+      ],
+      "color": "#2f5a3c"
+    },
+    {
+      "min": [
+        -0.235,
+        0.03,
+        -0.31
+      ],
+      "max": [
+        0.235,
+        1.29,
+        -0.28
+      ],
+      "color": "#2f5a3c"
+    },
+    {
+      "min": [
+        -0.235,
+        0.03,
+        -0.28
+      ],
+      "max": [
+        -0.205,
+        1.29,
+        0.31
+      ],
+      "color": "#2f5a3c"
+    },
+    {
+      "min": [
+        0.205,
+        0.03,
+        -0.28
+      ],
+      "max": [
+        0.235,
+        1.29,
+        0.31
+      ],
+      "color": "#2f5a3c"
+    },
+    {
+      "min": [
+        -0.205,
+        0.335,
+        -0.28
+      ],
+      "max": [
+        0.205,
+        0.365,
+        0.31
+      ],
+      "color": "#2f5a3c"
+    },
+    {
+      "min": [
+        -0.205,
+        0.655,
+        -0.28
+      ],
+      "max": [
+        0.205,
+        0.685,
+        0.31
+      ],
+      "color": "#2f5a3c"
+    },
+    {
+      "min": [
+        -0.205,
+        0.975,
+        -0.28
+      ],
+      "max": [
+        0.205,
+        1.005,
+        0.31
+      ],
+      "color": "#2f5a3c"
+    },
+    {
+      "min": [
+        -0.2,
+        0.05,
+        0.29
+      ],
+      "max": [
+        0.2,
+        0.31,
+        0.314
+      ],
+      "color": "#2f5a3c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.07,
+        0.23,
+        0.314
+      ],
+      "max": [
+        0.07,
+        0.255,
+        0.334
+      ],
+      "color": "#b9bcbd",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.05,
+        0.12,
+        0.314
+      ],
+      "max": [
+        0.05,
+        0.18,
+        0.326
+      ],
+      "color": "#e9e6da",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        0.37,
+        0.29
+      ],
+      "max": [
+        0.2,
+        0.63,
+        0.314
+      ],
+      "color": "#2f5a3c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.07,
+        0.55,
+        0.314
+      ],
+      "max": [
+        0.07,
+        0.575,
+        0.334
+      ],
+      "color": "#b9bcbd",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.05,
+        0.44,
+        0.314
+      ],
+      "max": [
+        0.05,
+        0.5,
+        0.326
+      ],
+      "color": "#e9e6da",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        0.69,
+        0.29
+      ],
+      "max": [
+        0.2,
+        0.95,
+        0.314
+      ],
+      "color": "#2f5a3c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.07,
+        0.87,
+        0.314
+      ],
+      "max": [
+        0.07,
+        0.895,
+        0.334
+      ],
+      "color": "#b9bcbd",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.05,
+        0.76,
+        0.314
+      ],
+      "max": [
+        0.05,
+        0.82,
+        0.326
+      ],
+      "color": "#e9e6da",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        1.01,
+        0.29
+      ],
+      "max": [
+        0.2,
+        1.27,
+        0.314
+      ],
+      "color": "#2f5a3c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.07,
+        1.19,
+        0.314
+      ],
+      "max": [
+        0.07,
+        1.215,
+        0.334
+      ],
+      "color": "#b9bcbd",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.05,
+        1.08,
+        0.314
+      ],
+      "max": [
+        0.05,
+        1.14,
+        0.326
+      ],
+      "color": "#e9e6da",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        1.32,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.66,
+        -0.31
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.235,
+        0.66,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.235,
+        0.66,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        -0.31
+      ],
+      "dir": "-z"
+    }
+  ]
+}

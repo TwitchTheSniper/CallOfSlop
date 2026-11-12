@@ -1,0 +1,206 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Lancashire Boiler",
+  "description": "An old drum boiler on its saddles. Older than the colony.",
+  "group": "Building",
+  "section": "Site works",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 6000.0,
+  "health": 4000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#3d3835",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.125
+      ],
+      "max": [
+        1.375,
+        1.625,
+        2.875
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.025,
+        -0.125,
+        0.275
+      ],
+      "max": [
+        1.275,
+        0.325,
+        0.675
+      ],
+      "color": "#858179"
+    },
+    {
+      "min": [
+        -0.025,
+        -0.125,
+        2.075
+      ],
+      "max": [
+        1.275,
+        0.325,
+        2.475
+      ],
+      "color": "#858179"
+    },
+    {
+      "min": [
+        -0.125,
+        0.125,
+        -0.075
+      ],
+      "max": [
+        1.375,
+        1.625,
+        2.875
+      ],
+      "color": "#3d3835",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "front": "+z"
+    },
+    {
+      "min": [
+        -0.155,
+        0.095,
+        -0.125
+      ],
+      "max": [
+        1.405,
+        1.655,
+        -0.045
+      ],
+      "color": "#2e2b29",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "front": "+z"
+    },
+    {
+      "min": [
+        -0.145,
+        0.105,
+        0.875
+      ],
+      "max": [
+        1.395,
+        1.645,
+        0.945
+      ],
+      "color": "#2e2b29",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "front": "+z"
+    },
+    {
+      "min": [
+        -0.145,
+        0.105,
+        1.875
+      ],
+      "max": [
+        1.395,
+        1.645,
+        1.945
+      ],
+      "color": "#2e2b29",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "front": "+z"
+    },
+    {
+      "min": [
+        0.175,
+        0.475,
+        -0.165
+      ],
+      "max": [
+        0.525,
+        0.825,
+        -0.125
+      ],
+      "color": "#6e2a22",
+      "detail": true
+    },
+    {
+      "min": [
+        0.725,
+        0.475,
+        -0.165
+      ],
+      "max": [
+        1.075,
+        0.825,
+        -0.125
+      ],
+      "color": "#6e2a22",
+      "detail": true
+    },
+    {
+      "min": [
+        0.495,
+        1.175,
+        -0.175
+      ],
+      "max": [
+        0.755,
+        1.435,
+        -0.125
+      ],
+      "color": "#d8d2bf",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+z"
+    },
+    {
+      "min": [
+        0.475,
+        1.625,
+        1.175
+      ],
+      "max": [
+        0.775,
+        2.175,
+        1.475
+      ],
+      "color": "#2e2b29",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "b",
+      "at": [
+        1.25,
+        -0.125,
+        1.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "t",
+      "at": [
+        0.75,
+        1.625,
+        1.5
+      ],
+      "dir": "+y"
+    }
+  ]
+}

@@ -1,0 +1,269 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Colony Gatehouse",
+  "description": "The penal colony's gatehouse: the gate clerk's post, its roof thrown out over the way in.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "f0",
+      "by": "k0"
+    },
+    {
+      "part": "Concrete Door Corner",
+      "on": 0,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 0,
+      "socket": "t8_0",
+      "by": "b0_7",
+      "spin": 2,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 0,
+      "socket": "t8_15",
+      "by": "b7_0",
+      "spin": 3,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Window Corner",
+      "on": 0,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 2,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 6,
+      "socket": "l0",
+      "by": "r0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 7,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 7,
+      "socket": "k0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 6,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 6,
+      "socket": "k0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 7,
+      "socket": "l0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 6,
+      "socket": "r0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 8,
+      "socket": "l",
+      "by": "+x",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 10,
+      "socket": "r",
+      "by": "+z",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 11,
+      "socket": "l",
+      "by": "+x",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 9,
+      "socket": "r",
+      "by": "+z",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Door Hinge",
+      "on": 2,
+      "socket": "hinge",
+      "by": "base"
+    },
+    {
+      "part": "Wood Flush Door 1.5x2.25 m",
+      "on": 18,
+      "socket": "leaf",
+      "by": "hang",
+      "paint": "#2f5a3c",
+      "finish": "painted wood"
+    },
+    {
+      "part": "Concrete Entrance Steps 2 m",
+      "on": 1,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Text Sign",
+      "on": 3,
+      "socket": "fb7_5",
+      "by": "back",
+      "text": [
+        "PENAL COLONY 7 - ALL VISITORS REPORT HERE"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Text Sign",
+      "on": 5,
+      "socket": "fa7_5",
+      "by": "back",
+      "text": [
+        "ESCAPEES ALSO REPORT HERE"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "fa0_10",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "fa0_10",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Computer",
+      "on": 0,
+      "socket": "t7_8",
+      "by": "foot00",
+      "spin": 3
+    },
+    {
+      "part": "Cast Iron Radiator",
+      "on": 4,
+      "socket": "ka7_0",
+      "by": "back"
+    },
+    {
+      "part": "Wall Clock",
+      "on": 3,
+      "socket": "ka7_5",
+      "by": "back"
+    },
+    {
+      "part": "Belisha Beacon",
+      "on": 1,
+      "socket": "t15_7",
+      "by": "base"
+    },
+    {
+      "part": "Phone Box",
+      "on": 1,
+      "socket": "t8_7",
+      "by": "foot00"
+    },
+    {
+      "part": "Strip Light",
+      "on": 4,
+      "socket": "ka7_10",
+      "by": "back",
+      "config": {
+        "colour": "#e4f2dc"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 2,
+      "socket": "kb7_5",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Battery",
+      "on": 3,
+      "socket": "kb7_10",
+      "by": "-z",
+      "paint": "#4b5157"
+    }
+  ],
+  "wires": [
+    [
+      31,
+      30
+    ]
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Bakelite Switch",
+  "description": "An old round light switch. On or off, with a clunk: wire it to a lamp.",
+  "group": "Interior",
+  "section": "Dressing",
+  "role": "logic",
+  "tool": "wrench",
+  "finish": "plastic",
+  "mass": 0.5,
+  "health": 20,
+  "armour": 0,
+  "material": "steel",
+  "color": "#3b2a20",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "switch"
+  },
+  "config": [
+    {
+      "key": "startOn",
+      "label": "Starts on",
+      "group": "General",
+      "default": false,
+      "tooltip": "A newly built switch starts in the on position."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.05,
+        -0.05,
+        0.0
+      ],
+      "max": [
+        0.05,
+        0.05,
+        0.012
+      ],
+      "color": "#d9d2b8",
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        -0.038,
+        -0.038,
+        0.012
+      ],
+      "max": [
+        0.038,
+        0.038,
+        0.034
+      ],
+      "color": "#3b2a20",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+z"
+    },
+    {
+      "min": [
+        -0.006,
+        -0.004,
+        0.034
+      ],
+      "max": [
+        0.006,
+        0.022,
+        0.052
+      ],
+      "color": "#a58a4e",
+      "detail": true,
+      "paintable": false,
+      "finish": "brass"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

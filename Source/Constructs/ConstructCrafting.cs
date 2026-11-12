@@ -236,6 +236,8 @@ public static class ConstructCrafting
     public static string Look(ConstructWorld world, Construct c, int t, CStore st, bool near)
     {
         var d = c.DefOf(t);
+        if (d.IsBuildStation)
+            return ConstructStation.Look(world, c, t, st, near);
         var net = NetOf(world, c, t);
         var sb = new System.Text.StringBuilder(d.Name).Append(": ").Append(Sees(net));
         if (net.MachineN + net.StoreN == 0)
@@ -288,7 +290,7 @@ public static class ConstructCrafting
         return n;
     }
 
-    private static bool TakeOne(ConstructWorld world, Construct c, int part, CStore st, ConstructPartDef d)
+    internal static bool TakeOne(ConstructWorld world, Construct c, int part, CStore st, ConstructPartDef d)
     {
         var sd = c.DefOf(part);
         if (sd.IsPieceRack)
@@ -713,7 +715,7 @@ public static class ConstructCrafting
         }
     }
 
-    private static ushort KindOf(ref CraftOrder o)
+    internal static ushort KindOf(ref CraftOrder o)
     {
         if (o.Def == 0 || o.Def == ConstructParts.None)
             o.Def = (ushort)(DefOf(o.What)?.Id ?? ConstructParts.None);
@@ -974,7 +976,7 @@ public static class ConstructCrafting
                 ref readonly var o = ref q.Items[k];
                 var key = o.What.Key;
                 if (o.What.Name != null)
-                    w.U8(WorkOrders.NamedShape).U8(key.Material).U16(o.What.Count).Str(o.What.Name); // (protocol 257: a formed panel by its name, as a work order's)
+                    w.U8(WorkOrders.NamedShape).U8(key.Material).U16(o.What.Count).Str(o.What.Name); // (protocol 258: a formed panel by its name, as a work order's)
                 else
                     w.U8((byte)key.Shape).U32((uint)key.Mask).U32((uint)(key.Mask >> 32)).U16(key.W).U16(key.H).U16(key.L).U16(key.Wall).U8(key.Material).U16(o.What.Part).U16(o.What.Count);
                 w.U16(o.Id).U16(o.Got).U8((byte)o.State).U16(o.Where).Str(o.Note ?? "");
