@@ -54,9 +54,9 @@ public sealed class PressRow
 /// band, so a die with a dozen lines is a dozen rows and the first that its bays satisfy runs. <see cref="Lathe"/> are a Die
 /// Lathe's, chosen as a setting. A file that is refused gives no recipes and <see cref="Problem"/>.
 /// <para>
-/// Format /2 adds <see cref="Dies"/> and the presets (the Press rework, phase 1: Pressed.cs): what a die makes of a whole blank, a
-/// part sized by the blank (a "Pressed Part (...)"). The press still strokes the old rows; the dies are read for blueprints, creative
-/// and <c>--press-part</c> until the stroke learns them.
+/// Format /2 adds <see cref="Dies"/> and the presets (the Press rework: Pressed.cs): what a die makes of a whole blank, a part sized
+/// by the blank (a "Pressed Part (...)"), or the catalogue part when the blank is a preset's. A press with such a die fitted presses a
+/// bay's whole piece into one part (ConstructPress, "Sized dies"); a die with no entry here strokes its old rows.
 /// </para>
 /// </summary>
 public sealed class PressTable
@@ -79,7 +79,13 @@ public sealed class PressTable
     internal readonly Dictionary<ushort, string> PresetKeyById = new();
 
     /// <summary>The die of a family ("bracket", any case), or null.</summary>
-    public PressDie? Die(string id) => Array.Find(Dies, d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+    public PressDie? Die(string id)
+    {
+        foreach (var d in Dies) // (a loop, not Array.Find: a press asks every step, and a lambda over id would allocate)
+            if (d.Id.Equals(id, StringComparison.OrdinalIgnoreCase))
+                return d;
+        return null;
+    }
 
     /// <summary>The pressed key a catalogue part is the preset of (the first listed), or null.</summary>
     public string? PresetKeyOf(ConstructPartDef d) => PresetKeyById.GetValueOrDefault(d.Id);

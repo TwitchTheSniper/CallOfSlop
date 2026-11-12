@@ -57,6 +57,21 @@ public static class Pressed
         return BlankText(k) == text ? k : null;
     }
 
+    /// <summary>Can this die and pattern press this blank? <see cref="Refusal"/> without its text: a press asks every step, and allocates nothing.</summary>
+    public static bool Fits(PressDie die, PressPattern p, in ExtrusionKey k)
+    {
+        var section = k.Shape == ExShape.Section ? Extrusion.PresetOf(k.Mask) : -1;
+        if (section < 0 || !die.Takes(p, section) || Array.IndexOf(die.Materials, k.Material) < 0)
+            return false;
+        if (k.W % Extrusion.StepCm != 0 || k.H % Extrusion.StepCm != 0 || k.L % Extrusion.StepCm != 0 || k.W < MinCm || k.H < MinCm)
+            return false;
+        var across = Across(k);
+        if (across < die.AcrossMin || across > die.AcrossMax || k.L < die.LengthMin || k.L > die.LengthMax)
+            return false;
+        var aspect = k.L / (float)across;
+        return aspect >= die.AspectMin - 1e-4f && aspect <= die.AspectMax + 1e-4f && PressClass(across) >= 0;
+    }
+
     /// <summary>Why a die and pattern can't press this blank (bay card text), or null.</summary>
     public static string? Refusal(PressDie die, PressPattern p, in ExtrusionKey k)
     {
@@ -192,9 +207,12 @@ public static class Pressed
         return a.Part != null ? a.Part.Mass * n : RecyclingTable.Current.WeightOf(a.Material) * n;
     }
 
-    /// <summary>A stroke's seconds on a press of class <paramref name="pressClass"/>.</summary>
+    /// <summary>The most a stroke takes at speed 1 (s): a blank's mass grows as its size cubed, and a 16 m housing isn't an afternoon's wait.</summary>
+    public const float MaxSeconds = 60;
+
+    /// <summary>A stroke's seconds on a press of class <paramref name="pressClass"/> (class 0: at speed 1, as a press's own speed then divides it).</summary>
     public static float Seconds(PressDie die, in ExtrusionKey k, int pressClass) =>
-        (die.SecondsBase + die.SecondsPerKg * VolumeMass(k).Mass) / PressSpeed[Math.Clamp(pressClass, 0, PressSpeed.Length - 1)];
+        MathF.Min(MaxSeconds, die.SecondsBase + die.SecondsPerKg * VolumeMass(k).Mass) / PressSpeed[Math.Clamp(pressClass, 0, PressSpeed.Length - 1)];
 
     private static float Strength(byte material) => (ExtrusionTable.Current.Find(material)?.HealthPerM3 ?? 0) / PressTable.Current.StrengthRef;
 

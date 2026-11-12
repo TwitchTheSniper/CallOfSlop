@@ -24,7 +24,7 @@ public sealed class PressParts : IPartGenerator
         + "'rows' are a press's: with a die of family 'die', the first row whose bays hold what it asks runs. Each bay gives its 'sections' (Extrusion presets, round, pipe), 'materials', "
         + "'minAcross' and 'maxAcross' (m, the piece's smaller side) and what a stroke takes: 'use' (m) or 'useAcross' (times its size across). 'lathe' rows are a Die Lathe's, chosen as a setting. "
         + "'dies' (the Press rework, Pressed.cs) say what a die makes of a whole blank: its blanks, materials, bounds in cm, features in the blank's unit frame and patterns (a like part and a preset blank); "
-        + "'presets' name the catalogue part that is a die's product of one standard blank. The press still strokes 'rows' until the rework's phase 2.";
+        + "'presets' name the catalogue part that is a die's product of one standard blank. A die listed in 'dies' presses bay 1's whole piece into one part (the preset's catalogue part when the blank is one); the other dies stroke 'rows'.";
     private const string Section = "Presses", Dies = "Dies";
     private const string BodyC = "#4d5a66", Trim = "#39424b", Dark = "#23272c", Gold = "#c8a13a", Bed = "#2f363d";
     private const string Blue = "#2f5f8f", LatheBlue = "#2a6878"; // the Press family's body colours (look.md, "Machine look")
@@ -42,13 +42,17 @@ public sealed class PressParts : IPartGenerator
     private static readonly (string Family, Cls[] Classes, string Block, int Tier, string Colour)[] Families =
     [
         ("Button", [Small], "metal", 1, "#c06040"),
-        ("Bracket", [Small], "metal", 1, "#7f8a94"),
+        ("Bracket", [Small, Medium, Large, Capital], "metal", 1, "#7f8a94"),
         ("Gear", [Small], "metal", 1, "#a8763a"),
         ("Board", [Small], "steel", 2, "#3f9b5c"),
         ("Piston", [Small], "steel", 2, "#6f7d8c"),
         ("Housing", [Small, Medium, Large, Capital], "steel", 2, "#55708a"),
         ("Cylinder", [Small, Medium, Large, Capital], "steel", 3, "#8a5570"),
+        ("Plate", [Small, Medium, Large, Capital], "metal", 1, "#8c96a0"),
     ];
+
+    // The dies whose stroke presses a whole blank to one part (Pressing.json "dies", the Press rework): they have no old rows.
+    private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate"];
 
     private static double MaxAcross(Cls c) => c.Key switch { "small" => 0.45, "medium" => 1.8, "large" => 7.2, _ => 28.8 }; // what a class's bays take: 1.8 cells
 
@@ -57,11 +61,8 @@ public sealed class PressParts : IPartGenerator
     // (side m, int or float; class; cells)
     private static readonly (object Side, Cls C, int N)[] Housings = [(0.25, Small, 1), (0.5, Small, 2), (1, Medium, 1), (2, Medium, 2), (4, Large, 1), (8, Large, 2), (16, Capital, 1)];
 
-    // A housing's size follows the bar: this band of bar makes that side of housing.
-    private static (object, object) HousingBand(double side) => side switch
-    {
-        0.25 => (0.1, 0.2), 0.5 => (0.25, 0.45), 1 => (0.5, 0.95), 2 => ((object)1, 1.8), 4 => ((object)2, 3.95), 8 => ((object)4, 7.2), _ => ((object)8, 28.8),
-    };
+    /// <summary>A preset blank's size across (cm): the part's own side, held to what the class it was always pressed on takes, so every preset comes off some press.</summary>
+    private static int PresetAcross(int sideCm, Cls c) => Math.Min(sideCm, (int)Math.Round(MaxAcross(c) * 100));
 
     // Tiers of a family are materials: (material, name prefix, mass x, health x, armour x, colour); the factors keep their Python type.
     private static readonly (string Material, string Prefix, object Mx, object Hx, object Ax, string Colour)[] MaterialTiers =
@@ -226,7 +227,11 @@ public sealed class PressParts : IPartGenerator
         var h = k * 0.45;
         var nm = NameOf(c, $"{family} Die");
         var mass = c == Small ? 12 : c == Medium ? 36 : c == Large ? 2000 : 60000;
-        var p = new Part(nm, c, Dies, $"Fits a {(c.Name.Length > 0 ? c.Name.ToLowerInvariant() + " " : "")}press and makes it stamp {family.ToLowerInvariant()} parts. Every material a {family.ToLowerInvariant()} part comes in uses this die.",
+        var press = $"Fits a {(c.Name.Length > 0 ? c.Name.ToLowerInvariant() + " " : "")}press";
+        var what = Array.IndexOf(SizedFamilies, family) >= 0
+            ? $"{press} and makes it press a whole piece into one {family.ToLowerInvariant()} part, sized by the piece. A standard piece gives the standard part."
+            : $"{press} and makes it stamp {family.ToLowerInvariant()} parts. Every material a {family.ToLowerInvariant()} part comes in uses this die.";
+        var p = new Part(nm, c, Dies, what,
             role: "panel", tool: "wrench", group: "Production", color: Bed);
         p.Add(Box([-s, 0, -s], [s, h, s]));
         p.Add(Box([-s * 0.55, h, -s * 0.55], [s * 0.55, h * 1.5, s * 0.55], colour));
@@ -288,22 +293,10 @@ public sealed class PressParts : IPartGenerator
         void Add(string d, string output, object seconds, params PyDict[] bays) =>
             r.Add(Kw(("die", d), ("output", output), ("seconds", seconds), ("bays", bays.Cast<object?>().ToList())));
         Add("Button", "Button", 1.5, BayRow("Strip", ["plate"], ["laminate"], 0.1, 0.45, use: 0.1), BayRow("Rod", ["round"], ["copper"], 0.1, 0.25, use: 0.05));
-        // Bracket: the section picks the shape, the bar's size which of them. They are one tier, so every metal gives the same part.
-        string[] metals = ["metal", "steel", "bronze"];
-        Add("Bracket", "L Bracket", 1, BayRow("Angle", ["l-angle"], metals, 0.1, 0.2, use: 0.15));
-        Add("Bracket", "Corner Bracket", 1.5, BayRow("Angle", ["l-angle"], metals, 0.25, 0.45, use: 0.25));
-        Add("Bracket", "Gusset 0.25 m", 1, BayRow("Plate", ["plate"], metals, 0.25, 0.35, use: 0.25));
-        Add("Bracket", "Gusset 0.5 m", 1.5, BayRow("Plate", ["plate"], metals, 0.4, 0.45, use: 0.5));
+        // (Bracket and Housing press a whole blank now: SizedDies and Presets.)
         Add("Gear", "Gear Set", 3, BayRow("Rod", ["round"], ["steel"], 0.1, 0.25, use: 0.15));
         Add("Board", "Circuit Board", 3, BayRow("Sheet", ["plate"], ["laminate"], 0.2, 0.45, use: 0.2), BayRow("Wire", ["round"], ["copper"], 0.1, 0.15, use: 0.05));
         Add("Piston", "Piston Set", 5, BayRow("Rod", ["round"], ["steel"], 0.1, 0.25, use: 0.2), BayRow("Bar", ["solid"], ["bronze"], 0.1, 0.25, use: 0.1));
-        foreach (var (sideO, _, _) in Housings)
-        {
-            var side = Py.D(sideO);
-            var (lo, hi) = HousingBand(side);
-            foreach (var tier in MaterialTiers)
-                Add("Housing", $"{tier.Prefix}Housing {Py.G(side)} m", 2 + side * 0.5, BayRow("Bar", ["hollow", "solid"], [tier.Material], lo, hi, across: 1));
-        }
         foreach (var (c, lo, hi) in new (Cls, object, object)[] { (Small, 0.2, 0.45), (Medium, 0.5, 1.8), (Large, 2, 7.2), (Capital, 8, 28.8) })
             Add("Cylinder", c != Small ? NameOf(c, "Cylinder") : "Small Cylinder", 6, BayRow("Tube", ["pipe"], ["steel"], lo, hi, across: 1), BayRow("Plate", ["plate"], ["steel"], lo, hi, across: 0.5));
         return r;
@@ -359,7 +352,7 @@ public sealed class PressParts : IPartGenerator
             Feature("boss", [0.35, 0.98, 0.14, 0.65, 1.06, 0.26], "dark", proud: "y", blanks: ["solid"]),
             Feature("boss", [0.35, 0.98, 0.74, 0.65, 1.06, 0.86], "dark", proud: "y", blanks: ["solid"]));
         var bracketPatterns = Py.L(
-            Pattern("l", "L Bracket", "L bracket", "l-angle 25x25x25 steel", blanks: ["l-angle", "solid"]),
+            Pattern("l", "L Bracket", "L bracket", "l-angle 15x15x15 steel", blanks: ["l-angle", "solid"]),
             Pattern("corner", "Corner Bracket", "corner bracket", "l-angle 25x25x25 steel", blanks: ["l-angle"]),
             Pattern("gusset", "Gusset 0.25 m", "gusset", "plate 25x10x25 steel", blanks: ["plate"]));
         // Housing: a flange round each open end, a lid seam at 0.9 of its height on its sides, four bosses on its long edges.
@@ -375,7 +368,7 @@ public sealed class PressParts : IPartGenerator
         housing.Add(Feature("seam", [0.97, 0.89, 0.1, 1.01, 0.91, 0.9], "dark", proud: "x", clamp: "y", min: 1, max: 4));
         foreach (var (x0, y0) in new[] { (-0.03, -0.03), (0.94, -0.03), (-0.03, 0.94), (0.94, 0.94) })
             housing.Add(Feature("boss", [x0, y0, 0.44, x0 + 0.09, y0 + 0.09, 0.56], "dark", proud: "xy"));
-        var housingPatterns = Py.L(Pattern("housing", "Housing 0.5 m", "housing", "hollow 50x50x50 metal"));
+        var housingPatterns = Py.L(Pattern("housing", "Housing 0.5 m", "housing", "hollow 45x45x50 metal"));
         // Plate: a rolled lip round the rim (proud of both faces); per pattern a field of treads, rivets or ribs on its top face.
         var plate = Py.L(
             Feature("lip", [0, 0.3, 0, 0.04, 0.7, 1], "bare", proud: "y", clamp: "x", min: 1, max: 10),
@@ -410,24 +403,34 @@ public sealed class PressParts : IPartGenerator
             SizedDie("Plate", ["plate"], ["metal", "steel", "bronze", "copper", "laminate", "wood", "planks"], [10, 2880], [25, 6400], [1, 64], 1, 0.01, plate, platePatterns));
     }
 
-    /// <summary>The catalogue parts the sized dies' standard blanks give: the Bracket die's four (in every metal it works) and every Housing.</summary>
+    /// <summary>
+    /// The catalogue parts the sized dies' standard blanks give: the Bracket die's four (in every metal it works), every Housing and three
+    /// plates. Each blank is the old row's piece made whole (an L Bracket from a 15 cm angle, a Corner Bracket from a 25 cm one), held to what
+    /// a press of the class that always made it takes (PresetAcross: a Housing 0.5 m is a 45 cm bar 50 cm long, on a Small Press). A press
+    /// picks the pattern from the blank until the Pattern setting comes (PressDie.PatternFor): a preset's blank names its part, so no two
+    /// presets of a die share a blank; the Plate die's plate, tread and grate patterns wait for that setting.
+    /// </summary>
     private static List<object?> Presets()
     {
         var r = new List<object?>();
         void Add(string part, string die, string pattern, string blank) => r.Add(Kw(("part", part), ("die", die), ("pattern", pattern), ("blank", blank)));
         foreach (var m in new[] { "steel", "metal", "bronze" })
         {
-            Add("L Bracket", "bracket", "l", $"l-angle 25x25x25 {m}");
+            Add("L Bracket", "bracket", "l", $"l-angle 15x15x15 {m}");
             Add("Corner Bracket", "bracket", "corner", $"l-angle 25x25x25 {m}");
             Add("Gusset 0.25 m", "bracket", "gusset", $"plate 25x10x25 {m}");
-            Add("Gusset 0.5 m", "bracket", "gusset", $"plate 50x10x50 {m}");
+            Add("Gusset 0.5 m", "bracket", "gusset", $"plate {PresetAcross(50, Small)}x10x50 {m}");
         }
-        foreach (var (sideO, _, _) in Housings)
+        foreach (var (sideO, c, _) in Housings)
         {
             var cm = (int)Math.Round(Py.D(sideO) * 100);
+            var across = PresetAcross(cm, c);
             foreach (var tier in MaterialTiers)
-                Add($"{tier.Prefix}Housing {Py.G(Py.D(sideO))} m", "housing", "housing", $"hollow {cm}x{cm}x{cm} {tier.Material}");
+                Add($"{tier.Prefix}Housing {Py.G(Py.D(sideO))} m", "housing", "housing", $"hollow {across}x{across}x{cm} {tier.Material}");
         }
+        Add("Steel Plate", "plate", "steel", "plate 50x10x50 steel");
+        Add("Sheet Steel 1 m", "plate", "sheet", "plate 100x10x100 steel");
+        Add("Armour Plate 1 m", "plate", "armour", "plate 100x20x100 steel");
         return r;
     }
 
