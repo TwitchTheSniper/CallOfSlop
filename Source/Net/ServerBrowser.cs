@@ -414,10 +414,14 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      action, orders.preset.
     // 254: the Crafting Terminal (ConstructCrafting.cs): CActKind gains CraftOrder and CraftCancel; CBodyKind.Craft (at the end) carries a body's
     //      terminals' orders and its stores' reserved parts; a Piece Rack gains an implicit Piece out conveyor port (after its Piece in).
-    // 255: the Building Station (ConstructStation.cs): CActKind gains Station (at the end); CBodyKind.Station (at the end) carries a body's stations' jobs
+    // 255: the blueprint ghost (feat/blueprint-ghost). CActKind gains SpawnPrepare (u8 inner kind, then that spawn act's own fields: the host prepares
+    //      it as a pending spawn), SpawnPlace (u16 token, vec point, f32 yaw), SpawnCancel (u16 token) and SpawnGhost (server -> one client: u8 status,
+    //      u16 token, text name; ready: vec min, vec max, f32 low, u16 n boxes, each 3 x f32 centre, 3 x half-float size, 4 x i16 turn, 3 x u8 colour,
+    //      u8 alpha, u8 shape).
+    // 256: the Building Station (ConstructStation.cs): CActKind gains Station (at the end); CBodyKind.Station (at the end) carries a body's stations' jobs
     //      (state, the blueprint's name, counts, the frozen body, the last part fitted, a note); a new part file (Building Station) moves part ids; three
     //      new settings (bayWidth, bayDepth, bayHeight).
-    public const ushort ProtocolVersion = 255;
+    public const ushort ProtocolVersion = 256;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

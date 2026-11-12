@@ -1321,6 +1321,7 @@ public static partial class ConstructRender
             }
         }
         DrawSelection(gfx, pulse);
+        DrawBlueprintGhost(gfx, pulse); // (ConstructRenderBlueprintGhost.cs)
         if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount)
         {
             if ((AimRefused || AimHands) && !AimOnPage)

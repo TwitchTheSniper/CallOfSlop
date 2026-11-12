@@ -246,10 +246,21 @@ public static partial class SelfTest
             else
                 Fail("no Physics Test map with movers for the mover surface check");
 
-            // Terrain: grass and rock on a High Ground map, snow on the alpine one.
-            TerrainSurfaces("Ridgeline", TerrainMaterial.Grass, FootSurface.Grass, steep: false);
-            TerrainSurfaces("Ridgeline", TerrainMaterial.Rock, FootSurface.Rock, steep: true);
-            TerrainSurfaces("Alpine Pass", TerrainMaterial.Sand, FootSurface.Snow, steep: false);
+            // Terrain: grass and rock on the Terrain Test, snow on a copy of it with Alpine Pass's pale "sand" colour (Ridgeline
+            // and Alpine Pass until the Legacy pack went, 2026-11-12).
+            TerrainSurfaces("Terrain Test", TerrainMaterial.Grass, FootSurface.Grass, steep: false);
+            TerrainSurfaces("Terrain Test", TerrainMaterial.Rock, FootSurface.Rock, steep: true);
+            if (Maps.Find("Terrain Test") is { SourceFile: { } testFile })
+            {
+                var text = File.ReadAllText(Path.IsPathRooted(testFile) ? testFile : Path.Combine(Maps.Folder, testFile));
+                var snowText = text.Replace("\"sand\": \"#b5a577\"", "\"sand\": \"#e6ebef\"");
+                if (snowText == text)
+                    Fail("Terrain Test: its sand colour changed, so the snowy copy for the footstep check wasn't made");
+                else
+                    TerrainSurfaces(Validated(MapFile.Load(snowText, "Terrain Test (snow)", Maps.Find("Terrain Test")!.PackDir)), "Terrain Test (snow)", TerrainMaterial.Sand, FootSurface.Snow, steep: false);
+            }
+            else
+                Fail("no Terrain Test map for the footstep surface check");
         }
         finally
         {
@@ -258,9 +269,10 @@ public static partial class SelfTest
     }
 
     /// <summary>Probes up to 24 samples of one terrain material (flat or steep): at least 80% must come out as <paramref name="want"/>.</summary>
-    private static void TerrainSurfaces(string mapName, TerrainMaterial mat, FootSurface want, bool steep)
+    private static void TerrainSurfaces(string mapName, TerrainMaterial mat, FootSurface want, bool steep) => TerrainSurfaces(Maps.Find(mapName), mapName, mat, want, steep);
+
+    private static void TerrainSurfaces(Map? map, string mapName, TerrainMaterial mat, FootSurface want, bool steep)
     {
-        var map = Maps.Find(mapName);
         if (map?.Terrain is not { } t)
         {
             Fail($"terrain map '{mapName}' not found for the footstep surface check");

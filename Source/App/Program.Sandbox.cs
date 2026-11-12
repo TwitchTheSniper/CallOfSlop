@@ -36,7 +36,7 @@ public static unsafe partial class Program
 
     /// <summary>Sandbox with a tool out (or in a seat): the trigger and aim belong to the tools, not the gun.</summary>
     private static bool SandboxHoldsTrigger =>
-        _game is { SandboxOn: true } g && g.Local is { Alive: true } me && (g.SpawnPlacing || g.SandboxHands.Hand(me.Id).Tool != ConstructTool.None || g.SandboxHands.Hand(me.Id).Seated
+        _game is { SandboxOn: true } g && g.Local is { Alive: true } me && (g.SpawnPlacing || g.GhostState == BlueprintGhostState.Carrying || _bgEat || g.SandboxHands.Hand(me.Id).Tool != ConstructTool.None || g.SandboxHands.Hand(me.Id).Seated
             || g.SandboxHands.Hand(me.Id).Held != ConstructParts.None); // (a part carried in both hands: the click sets it into storage, never fires the gun)
 
     private static bool _sbMenuKeyEaten;
@@ -115,6 +115,7 @@ public static unsafe partial class Program
         SandboxSelectTick(g, g.Local is { Alive: true } sp && g.SandboxHands.Hand(sp.Id).Tool == ConstructTool.Selector); // (Program.SandboxSelect.cs)
         SandboxTrackTick(g.Local is { Alive: true } tp && g.SandboxHands.Hand(tp.Id).Tool == ConstructTool.Tracks); // (Program.SandboxTracks.cs)
         SandboxSnapFrame(g, now); // (snappy building: markers off, the ease running out, the thunk; Program.SandboxSnap.cs)
+        BlueprintGhostWatch(g); // (a menu, death, a seat or another tool drops the blueprint ghost: Program.SandboxBlueprintGhost.cs)
         if (g.Local is not { Alive: true } me || !_mouseCaptured || MenusOpen)
         {
             _sbFiring = _sbRemoving = false;
@@ -169,6 +170,8 @@ public static unsafe partial class Program
         }
         if (SandboxSpawnInput(g, me))
             return true; // placing a spawn: Fire spawns, Aim stops (Program.SandboxSpawn.cs)
+        if (SandboxBlueprintGhostInput(g, me))
+            return true; // a blueprint ghost out: Fire places it, the wheel turns it (Program.SandboxBlueprintGhost.cs)
         if (Pressed(GameAction.SandboxDrop) && (h.Held != ConstructParts.None || g.Constructs.HoseHeldBy(me.Id) >= 0))
             g.SandboxSend(CActKind.Drop); // (a held hose's receiver first: it reels back)
         // The backpack (H: stow what you hold; J: draw the next part out).

@@ -893,7 +893,7 @@ public static class ConstructStation
         return j.State == StationState.Done && j.Repeat > 0;
     }
 
-    // ---- The wire (CBodyKind.Station, protocol 255) ------------------------------------------------------------------------
+    // ---- The wire (CBodyKind.Station, protocol 256) ------------------------------------------------------------------------
 
     public static bool Any(Construct c)
     {

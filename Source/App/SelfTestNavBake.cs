@@ -44,7 +44,7 @@ public static partial class SelfTest
         }
     }
 
-    private static readonly string[] NavBakeMaps = ["Rooftops", "Building Yard", "Destruction Test", "Pocket Planet", "Keelhaul Yard", "Cave Test", "Paris Quarter"];
+    private static readonly string[] NavBakeMaps = ["Blackmoor Asylum", "Building Yard", "Destruction Test", "Pocket Planet", "Twin Worlds", "Cave Test", "Ashgrave Cathedral"]; // Rooftops, Keelhaul Yard and Paris Quarter until their packs went (2026-11-12)
 
     /// <summary>Every kind of map: the live graph, written and read back, is the same graph.</summary>
     private static void NavBakeRoundTrips()
@@ -98,7 +98,7 @@ public static partial class SelfTest
     /// <summary>Build, cache, read the cache; a baked file wins over the cache.</summary>
     private static void NavBakeCacheAndBaked(string baked, string cache)
     {
-        if (Maps.Find("Rooftops") is not { } map)
+        if (Maps.Find("Blackmoor Asylum") is not { } map)
             return;
         World.SetMap(map);
         NavGraph.Forget(map);
@@ -127,14 +127,14 @@ public static partial class SelfTest
         var third = NavGraph.Current;
         if (third.Origin != "baked" || NavFingerprint(third) != liveHash)
             Fail($"Nav bake: with a baked file the graph came out {third.Origin} ({NavBake.LastResult})");
-        Line($"Rooftops: built and cached, then read from the cache, then from the baked folder: {first.Origin} / {second.Origin} / {third.Origin}");
+        Line($"{map.Name}: built and cached, then read from the cache, then from the baked folder: {first.Origin} / {second.Origin} / {third.Origin}");
         File.Delete(Path.Combine(baked, NavBake.FileName(map.Name)));
     }
 
     /// <summary>A file that doesn't exactly match is ignored and the graph built live.</summary>
     private static void NavBakeRefusals(string cache)
     {
-        if (Maps.Find("Rooftops") is not { } map)
+        if (Maps.Find("Blackmoor Asylum") is not { } map)
             return;
         World.SetMap(map);
         NavGraph.Forget(map);
@@ -147,9 +147,9 @@ public static partial class SelfTest
         var json = MapFile.ToJson(map);
         var y1 = new System.Text.RegularExpressions.Regex("\"y1\": (-?[0-9.]+)");
         var edited = y1.Replace(json, m => $"\"y1\": {(double.Parse(m.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture) + 0.0004).ToString(System.Globalization.CultureInfo.InvariantCulture)}", 1);
-        var moved = MapFile.Load(edited, "Rooftops.json", "");
+        var moved = MapFile.Load(edited, map.Name + ".json", "");
         var changedKey = NavBake.KeyOf(moved, moved.ContentHash);
-        Line($"Rooftops with a box 0.4 mm taller: fingerprint {(moved.ContentHash == map.ContentHash ? "the same" : "changed")}, bake key {(changedKey.AsSpan().SequenceEqual(key) ? "THE SAME" : "changed")}");
+        Line($"{map.Name} with a box 0.4 mm taller: fingerprint {(moved.ContentHash == map.ContentHash ? "the same" : "changed")}, bake key {(changedKey.AsSpan().SequenceEqual(key) ? "THE SAME" : "changed")}");
         if (edited == json || changedKey.AsSpan().SequenceEqual(key))
             Fail("Nav bake: a changed box didn't change the bake key");
 
@@ -194,7 +194,7 @@ public static partial class SelfTest
     /// </summary>
     private static void NavBakeNeverWaits(string cache)
     {
-        foreach (var name in new[] { "Paris Quarter", "Building Yard", "Pocket Planet" })
+        foreach (var name in new[] { "Ashgrave Cathedral", "Building Yard", "Pocket Planet" })
             if (Maps.Find(name) is { } map)
                 NavBakeNeverWaits(cache, map);
     }

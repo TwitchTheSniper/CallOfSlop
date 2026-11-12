@@ -40,7 +40,7 @@ public static unsafe partial class Program
         _passMarks |= 1 << k;
     }
 
-    private static readonly string[] BenchDefaultMaps = { "Downtown", "Ashgrave Cathedral", "Horde Test" };
+    private static readonly string[] BenchDefaultMaps = { "Proving Ground", "Ashgrave Cathedral", "Horde Test" }; // Downtown until the Legacy pack went (2026-11-12)
 
     private static void RunGlBench(string[] args)
     {

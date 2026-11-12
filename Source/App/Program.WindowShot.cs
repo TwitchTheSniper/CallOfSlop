@@ -85,7 +85,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown";
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" || WsGhostKnown(action);
 
     private static void WsSay(string s)
     {
@@ -330,6 +330,8 @@ public static unsafe partial class Program
         var verb = parts[0].ToLowerInvariant();
         var arg = parts.Length > 1 ? parts[1] : "";
         WsSay($"> {action}");
+        if (WsGhostVerb(g, me, verb, arg))
+            return; // (the blueprint ghost's actions: Program.WindowShotGhost.cs)
         switch (verb)
         {
             case "wait":
