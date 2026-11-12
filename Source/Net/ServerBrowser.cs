@@ -437,7 +437,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      Router's choice and the stuck state on clients).
     // 265: (planned as 261) a sized die (Bracket, Housing, Plate) presses a bay's whole piece into one part; BayRefuse.Bounds rides the press's Blocked byte;
     //      new die parts (Bracket and Plate in every class) move part ids.
-    public const ushort ProtocolVersion = 265;
+    // 266: smart logistics phase 2 (feat/smart-logistics-2): every Assembler gains an implicit conveyor "Piece in" (a chained order's inputs ride in),
+    //      so a conveyor link may end on a port an older build doesn't have. Chained orders themselves are server only (the order's note says it).
+    public const ushort ProtocolVersion = 266;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

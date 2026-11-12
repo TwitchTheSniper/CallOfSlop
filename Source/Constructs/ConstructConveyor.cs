@@ -993,6 +993,14 @@ public static class ConstructConveyor
         }
         if (td.IsPanelFormer)
             return ConstructPanelFormer.TakeFromConveyor(world, c, to, d); // (extruded sheet into its bin)
+        if (td.IsAssembler)
+        {
+            // A part its recipe uses, while it has room: the chute's own test (a part it doesn't use waits at its door).
+            if (!world.WantsPart(c, to, d.Id) || !world.FeedPart(c, to, d))
+                return false;
+            ConstructLogisticsPlan.Arrived(world, c, to, r.Tag, d); // (a chained order's input: it counts for its link)
+            return true;
+        }
         if (td.IsPress && ConstructRoutes.PortOf(td, RouteType.Conveyor, c.Routes[route].ToPort) is { } port)
         {
             var bay = port.Name.Length > 9 && int.TryParse(port.Name.AsSpan(9), out var nb) ? nb - 1 : 0; // ("Piece in", "Piece in 2"...)

@@ -228,10 +228,11 @@ public static class ConstructLogistics
             }
             else if (d.IsConveyorJunction)
                 m.Through[n] = outs[n] == 1; // (a Join; a Splitter deals in turn, so a way through it is no way)
-            else if (d.IsPieceRack && m.DestN < LogiMap.MaxDests && c.Parts[m.NodePart[n]].Store != 0)
+            else if ((d.IsPieceRack || d.IsAssembler || d.IsPanelFormer) && m.DestN < LogiMap.MaxDests && c.Parts[m.NodePart[n]].Store != 0)
             {
+                // A rack or a tray; an Assembler's Piece in (a chained order's inputs); a Panel Former's (no wants yet: phase 3's sheet needs).
                 m.DestOfNode[n] = (short)m.DestN;
-                m.DestStore[m.DestN] = !d.IsCraftTerminal;
+                m.DestStore[m.DestN] = d.IsPieceRack && !d.IsCraftTerminal;
                 m.Dests[m.DestN++] = (ushort)n;
             }
         }
@@ -351,6 +352,8 @@ public static class ConstructLogistics
     private static ushort WantAt(ConstructWorld world, Construct c, LogiMap m, int ds, ConstructPartDef d, int maker)
     {
         int t = m.NodePart[m.Dests[ds]];
+        if (c.DefOf(t).IsAssembler)
+            return ConstructLogisticsPlan.WantAt(world, c, t, d, maker); // (a chained order's input)
         if (c.Parts[t].Craft is not { Count: > 0 } q || world.StoreOf(c, t) is not { } tray)
             return 0;
         ushort any = 0;
@@ -375,6 +378,11 @@ public static class ConstructLogistics
     /// </summary>
     public static void AtSource(ConstructWorld world, Construct c, int machine, ref CRider r, ConstructPartDef d)
     {
+        if (world.ChainCount > 0 && ConstructLogisticsPlan.FromMaker(world, c, machine, d, out var into) is var link and > 0)
+        {
+            (r.Dest, r.Tag, r.Flags) = (c.Parts[into].Store, link, 0); // (made for a chained order: to the machine that needs it, Router or not)
+            return;
+        }
         if (!world.CraftOpen.Contains(c.Id))
             return;
         var m = Map(c);
@@ -460,6 +468,8 @@ public static class ConstructLogistics
         int part = m.NodePart[m.Dests[ds]];
         if (world.StoreOf(c, part) is not { } st)
             return LogiReason.Closed;
+        if (c.DefOf(part) is { IsPieceRack: false } md)
+            return md.IsAssembler && ConstructLogisticsPlan.Open(world, c, part, r.Tag) ? LogiReason.None : LogiReason.Closed; // (a machine's input waits at its door)
         if (((LogiFlags)r.Flags & LogiFlags.Storage) == 0 && (r.Tag == 0 || c.Parts[part].Craft is not { } q || q.Find(r.Tag) < 0))
             return LogiReason.Closed;
         return ConstructConveyor.RackCheck(c, part, st, d) != 0 ? LogiReason.DestFull : LogiReason.None;
@@ -539,6 +549,8 @@ public static class ConstructLogistics
     private static bool Reassign(ConstructWorld world, Construct c, LogiMap m, int s, ref CRider r, ConstructPartDef d, int lost, LogiReason why)
     {
         var hadOrder = r.Dest != 0 && ((LogiFlags)r.Flags & LogiFlags.Storage) == 0;
+        if (hadOrder && why is not (LogiReason.None or LogiReason.Closed) && lost >= 0 && c.Parts[m.NodePart[m.Dests[lost]]].Craft is { } q && q.Find(r.Tag) is var k and >= 0)
+            q.Items[k].Lost = (byte)why; // (its order's row says why a part went to storage)
         SetReason(ref r, why);
         if (hadOrder && why != LogiReason.None)
             r.Flags |= (byte)LogiFlags.Overflow;
@@ -777,3 +789,4 @@ public static class ConstructLogistics
 
     private static string PieceName(ushort def) => ConstructParts.Get(def) is { } pd ? pd.IsExtrusion ? Extrusion.Label(pd.ExKey) : pd.Name : "a piece";
 }
+
