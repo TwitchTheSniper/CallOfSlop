@@ -15,7 +15,7 @@ public static partial class Program
     private static (Construct? C, int Part) LogiFind(Game g, string spec)
     {
         var at = spec.LastIndexOf('@');
-        if (at > 0 && int.TryParse(spec[(at + 1)..], out var idx) && WsSpawned(g) is { } c && idx >= 0 && idx < c.PartCount)
+        if (at > 0 && int.TryParse(spec[(at + 1)..], out var idx) && (WsSpawned(g) ?? WsFind(g, "Conveyor Router").C) is { } c && idx >= 0 && idx < c.PartCount)
             return (c, idx);
         return WsFind(g, spec);
     }
@@ -25,10 +25,10 @@ public static partial class Program
         var words = arg.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
         var verb = words.Length > 0 ? words[0] : "riders";
         var rest = words.Length > 1 ? words[1] : "";
-        var c = WsSpawned(g);
+        var c = WsSpawned(g) ?? (WsFind(g, "Conveyor Router") is ({ } rc, _) ? rc : null); // (a joined client spawns nothing: the body with a Router)
         if (c == null)
         {
-            WsFail("logi: no spawned blueprint");
+            WsFail("logi: no spawned blueprint and no Router");
             return;
         }
         var w = g.Constructs;
@@ -69,6 +69,8 @@ public static partial class Program
                 }
                 // The map built again from nothing, and every column of this Router's network, timed (the rebuild a link change costs).
                 fc.LogiStamp++;
+                if (fc.Logi != null)
+                    fc.Logi.LinkHash = 0; // (built whole, as after a link change)
                 var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
                 var m = ConstructLogistics.Map(fc);
                 var build = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
