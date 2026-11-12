@@ -12,8 +12,13 @@ public struct WorkOrder
     public ExtrusionKey Key; // a piece: Growing false; a wheel's L is 0
     public ushort Part; // a catalogue part's id (a file part's, never a run-time one), or ConstructParts.None for a piece
     public ushort Count, Made;
+    public string? Name; // a formed panel or a lofted hull part by its name, which is its key (HullLoft.Panels.cs): a Panel Former's order; Key holds its material only
 
-    public readonly bool IsPiece => Part == ConstructParts.None;
+    public readonly bool IsPiece => Part == ConstructParts.None && Name == null;
+    public readonly bool IsPanel => Name != null;
+
+    /// <summary>What makes it: 0 an Extruder or a Former (a piece), 1 an Assembler (a catalogue part), 2 a Panel Former (a named panel).</summary>
+    public readonly int Kind => Name != null ? 2 : Part != ConstructParts.None ? 1 : 0;
     public readonly int Left => Math.Max(0, Count - Made);
 }
 
@@ -76,6 +81,7 @@ public static class WorkOrders
     public const int MaxCount = 999; // pieces an order asks for
     public const int Sent = 32; // orders a client is sent (a screen's list scrolls through them; 3 before protocol 248)
     private const int OrderBytes = 22; // one order on the wire
+    public const byte NamedShape = 255; // an order's shape byte for a named panel: its name follows as text (wire and saves)
 
     // ---- Accepting --------------------------------------------------------------------------------------------------------
 
@@ -91,6 +97,10 @@ public static class WorkOrders
         var d = c.DefOf(part);
         if (!TakesOrders(d))
             return d.IsFanFormer || d.IsAirframeFormer ? $"the {d.Name} takes no orders yet" : $"the {d.Name} takes no orders";
+        if (d.IsPanelFormer)
+            return ConstructPanelFormer.Refusal(world, c, part, d, o);
+        if (o.IsPanel)
+            return $"the {d.Name} takes no panels: {o.Name} is a Panel Former's order";
         if (d.IsAssembler)
             return AssemblerRefusal(c, part, d, o);
         if (!o.IsPiece)
@@ -228,6 +238,8 @@ public static class WorkOrders
             o = new WorkOrder { Part = (ushort)list[k].Output.Id, Count = count };
             return null;
         }
+        if (d.IsPanelFormer)
+            return ConstructPanelFormer.FromSettings(c, part, count, "steel", out o);
         if (d.IsWheelFormer)
         {
             var w = Cm(ConstructConfig.Get(p, d, CfgKey.Width, d.ExtWheelStart.X));
@@ -265,6 +277,9 @@ public static class WorkOrders
             return why;
         if (o.IsPiece)
             o.Key = o.Key with { Material = MaterialFor(world, c, part) };
+        else if (o.IsPanel && world.StoreOf(c, part) is { Amount: > 0 } fed && fed.Material != o.Key.Material
+            && ConstructPanelFormer.FromSettings(c, part, o.Count, RecyclingTable.Current.NameOf(fed.Material), out var inStock) == null)
+            o = inStock; // (a preset in what its bin holds)
         return Queue(world, c, part, o);
     }
 
@@ -388,7 +403,8 @@ public static class WorkOrders
                 if (Queue(world, c, m, bill.Items[i]) is { } no)
                 {
                     // (the reason that matters is the first from a machine of the order's kind: an Assembler's for a part, else an Extruder's or a Former's)
-                    var kind = c.DefOf(m).IsAssembler != bill.Items[i].IsPiece;
+                    var md = c.DefOf(m);
+                    var kind = (md.IsPanelFormer ? 2 : md.IsAssembler ? 1 : 0) == bill.Items[i].Kind;
                     if (why == null || kind && !whyKind)
                         (why, whyKind) = ($"{c.DefOf(m).Name}: {no}", kind);
                 }
@@ -431,6 +447,15 @@ public static class WorkOrders
         if (marker != '\0')
             card.Add(line, marker);
         card.Add(line, o.Made).Add(line, '/').Add(line, o.Count).Add(line, ' ');
+        if (o.Name != null)
+        {
+            // A panel by its key, without the family's prefix when it is a formed panel's ("hood 160x150 c14 r18 t20 steel").
+            var (from, to) = HullLoft.IsPanelName(o.Name) ? (HullLoft.PanelPrefix.Length, o.Name.Length - 1) : (0, o.Name.Length);
+            for (var ch = from; ch < to && ch - from < cols; ch++)
+                card.Add(line, o.Name[ch]);
+            card.Clip(line, cols);
+            return 1;
+        }
         if (!o.IsPiece)
         {
             card.Add(line, ConstructParts.Def(o.Part).Name).Clip(line, cols);
@@ -580,6 +605,12 @@ public static class WorkOrders
     private static void WriteOrder(PacketWriter w, in WorkOrder o)
     {
         var k = o.Key;
+        if (o.Name != null)
+        {
+            // A named panel (protocol 253): shape 255, its material, counts, then the name as text.
+            w.U8(NamedShape).U8(k.Material).U16(o.Count).U16(o.Made).Str(o.Name);
+            return;
+        }
         w.U8((byte)k.Shape).U32((uint)k.Mask).U32((uint)(k.Mask >> 32)).U16(k.W).U16(k.H).U16(k.L).U16(k.Wall).U8(k.Material).U16(o.Part).U16(o.Count).U16(o.Made);
     }
 
@@ -605,6 +636,19 @@ public static class WorkOrders
             for (var k = 0; k < shown; k++)
             {
                 var shape = r.U8();
+                if (shape == NamedShape)
+                {
+                    var named = new WorkOrder { Part = ConstructParts.None };
+                    var nm = r.U8();
+                    named.Count = r.U16();
+                    named.Made = r.U16();
+                    named.Name = r.Text(ConstructParts.MaxRuntimeName);
+                    named.Key = new ExtrusionKey(0, 0, 0, 0, nm, false, ExShape.Section);
+                    if (nm > RecyclingTable.Current.Materials.Length || named.Made > named.Count || !HullLoft.IsFormedName(named.Name))
+                        throw new MalformedPacketException("a bad panel order");
+                    q.Add(named);
+                    continue;
+                }
                 var mask = (ulong)r.U32() | (ulong)r.U32() << 32;
                 var o = new WorkOrder
                 {
@@ -654,6 +698,11 @@ public static class WorkOrders
             {
                 ref readonly var o = ref q.Items[k];
                 var key = o.Key;
+                if (o.Name != null)
+                {
+                    w.U8(NamedShape).U16(o.Count).U16(o.Made).Str(o.Name); // (its material is the name's own)
+                    continue;
+                }
                 w.U8((byte)key.Shape).U64(key.Mask).U16(key.W).U16(key.H).U16(key.L).U16(key.Wall).U8(key.Material).U16(names.Part(o.Part)).U16(o.Count).U16(o.Made);
             }
         }
@@ -676,6 +725,15 @@ public static class WorkOrders
             for (var k = 0; k < count; k++)
             {
                 var shape = r.U8();
+                if (shape == NamedShape)
+                {
+                    var pc = r.U16();
+                    var pm = r.U16();
+                    var pn2 = r.Str();
+                    if (pc is >= 1 and <= MaxCount && HullLoft.IsFormedName(pn2) && pn2.Length <= ConstructParts.MaxRuntimeName && HullLoft.FormedMaterial(pn2) != 0)
+                        q.Add(ConstructPanelFormer.Order(pn2, pc) with { Made = Math.Min(pm, pc) });
+                    continue;
+                }
                 var mask = r.U64();
                 var w = r.U16();
                 var h = r.U16();
@@ -720,6 +778,7 @@ public static class ConstructBill
     public sealed class Bill
     {
         public readonly List<WorkOrder> Pieces = new(); // by key, first seen first
+        public readonly List<WorkOrder> Panels = new(); // formed panels and lofted hull parts, by name, first seen first (a Panel Former's)
         public readonly List<(string Part, ConstructPartDef? Def, int Count)> Parts = new(); // catalogue parts, by name, first seen first (Def null: not a part this build has)
         public readonly float[] LinkMetres = new float[(int)RouteType.COUNT]; // link stock by type: metres of every link of that type, as built
         public readonly int[] LinkCount = new int[(int)RouteType.COUNT];
@@ -747,6 +806,15 @@ public static class ConstructBill
                     bill.Pieces.Add(new WorkOrder { Key = key, Part = ConstructParts.None, Count = 1 });
                 else
                     bill.Pieces[k] = bill.Pieces[k] with { Count = (ushort)Math.Min(bill.Pieces[k].Count + 1, WorkOrders.MaxCount) };
+                continue;
+            }
+            if (HullLoft.IsFormedName(step.Part))
+            {
+                var k = bill.Panels.FindIndex(o => o.Name == step.Part);
+                if (k < 0)
+                    bill.Panels.Add(ConstructPanelFormer.Order(step.Part, 1));
+                else
+                    bill.Panels[k] = bill.Panels[k] with { Count = (ushort)Math.Min(bill.Panels[k].Count + 1, WorkOrders.MaxCount) };
                 continue;
             }
             if (parts.TryGetValue(step.Part, out var n))
@@ -794,6 +862,12 @@ public static class ConstructBill
                 return why;
             any = true;
         }
+        foreach (var o in bill.Panels)
+        {
+            if (WorkOrders.AddToBill(world, c, console, o) is { } why)
+                return why;
+            any = true;
+        }
         foreach (var (_, d, n) in bill.Parts)
             if (RecipeOf(d) != null)
             {
@@ -814,20 +888,27 @@ public static class ConstructBill
         if (e.ValueKind != System.Text.Json.JsonValueKind.Object)
             throw new ConstructPartException($"{file}: bill[{k}] is {{\"step\", \"piece\" or \"part\", \"count\"}}");
         int step = -1, count = 1;
-        string piece = "", part = "";
+        string piece = "", part = "", panel = "";
         foreach (var f in e.EnumerateObject())
             switch (f.Name)
             {
                 case "step": step = f.Value.GetInt32(); break;
                 case "piece": piece = f.Value.GetString() ?? ""; break;
                 case "part": part = f.Value.GetString() ?? ""; break;
+                case "panel": panel = f.Value.GetString() ?? ""; break;
                 case "count": count = f.Value.GetInt32(); break;
-                default: throw new ConstructPartException($"{file}: bill[{k}]: unknown key \"{f.Name}\" (step, piece, part, count)");
+                default: throw new ConstructPartException($"{file}: bill[{k}]: unknown key \"{f.Name}\" (step, piece, part, panel, count)");
             }
         if (step < 0 || count < 1 || count > WorkOrders.MaxCount)
             throw new ConstructPartException($"{file}: bill[{k}]: a step and a count 1 to {WorkOrders.MaxCount}");
-        if ((piece.Length > 0) == (part.Length > 0))
-            throw new ConstructPartException($"{file}: bill[{k}]: a \"piece\" or a \"part\", one of them");
+        if ((piece.Length > 0 ? 1 : 0) + (part.Length > 0 ? 1 : 0) + (panel.Length > 0 ? 1 : 0) != 1)
+            throw new ConstructPartException($"{file}: bill[{k}]: a \"piece\", a \"part\" or a \"panel\", one of them");
+        if (panel.Length > 0)
+        {
+            if (!HullLoft.IsFormedName(panel) || ConstructParts.Find(panel) == null)
+                throw new ConstructPartException($"{file}: bill[{k}]: \"{panel}\" isn't a panel a Panel Former makes, like \"{HullLoft.PanelKey(HullLoft.PanelDefault(2))}\"");
+            return (step, ConstructPanelFormer.Order(panel, count));
+        }
         if (part.Length > 0)
         {
             if (ConstructParts.Find(part) is not { } d || d.Id >= Extrusion.RuntimeBase || d.Name.StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase))
@@ -874,6 +955,7 @@ public static class ConstructBill
     {
         var bill = FromBlueprint(bp);
         var sb = new StringBuilder();
+        int panelNone = 0, panelNoneParts = 0;
         var extruded = bill.Pieces.Where(o => o.Key.Shape is ExShape.Section or ExShape.Round or ExShape.Pipe).ToList();
         var formed = bill.Pieces.Where(o => o.Key.Shape is not (ExShape.Section or ExShape.Round or ExShape.Pipe)).ToList();
         sb.AppendLine($"{bp.Name}");
@@ -888,6 +970,23 @@ public static class ConstructBill
             sb.AppendLine($" Formed: {formed.Count} kinds, {formed.Sum(o => o.Count)} pieces");
             foreach (var o in formed)
                 sb.AppendLine($"  {o.Count,4} x {Extrusion.Name(o.Key)}  ({Extrusion.Label(o.Key)}; {WorkOrders.Maker(o.Key)}{(o.Key.Shape is ExShape.Wheel ? "" : ": no orders yet")})");
+        }
+        if (bill.Panels.Count > 0)
+        {
+            sb.AppendLine($" Formed panels: {bill.Panels.Count} kinds, {bill.Panels.Sum(o => o.Count)} panels (a Panel Former)");
+            foreach (var o in bill.Panels)
+            {
+                var pd = ConstructParts.Find(o.Name!);
+                var how = pd == null ? "not a part this build makes" : ConstructPanelFormer.TierFor(pd) is { } tier
+                    ? $"{tier}: {HullLoft.FormedUnits(pd, o.Key.Material)} {RecyclingTable.Current.NameOf(o.Key.Material)}, {ConstructPanelFormer.Seconds(pd):0} s"
+                    : "no recipe: too large for any Panel Former";
+                if (pd == null || ConstructPanelFormer.TierFor(pd) == null)
+                {
+                    panelNone++;
+                    panelNoneParts += o.Count;
+                }
+                sb.AppendLine($"  {o.Count,4} x {o.Name}  ({how})");
+            }
         }
         var cats = PartCategories.Current;
         var groups = bill.Parts
@@ -919,7 +1018,8 @@ public static class ConstructBill
             if (bill.LinkCount[t] > 0)
                 sb.AppendLine($"   {bill.LinkMetres[t],8:0.0} m of {(t < LinkNames.Length ? LinkNames[t] : ((RouteType)t).ToString())} ({bill.LinkCount[t]} links)");
         var pieces = bill.Pieces.Sum(o => o.Count);
-        sb.AppendLine($" Total: {pieces + parts} parts ({pieces} pieces in {bill.Pieces.Count} kinds, {parts} catalogue in {kinds} kinds); no recipe: {none} kinds, {noneParts} parts; links {bill.LinkMetres.Sum():0.0} m");
+        var panels = bill.Panels.Sum(o => o.Count);
+        sb.AppendLine($" Total: {pieces + panels + parts} parts ({pieces} pieces in {bill.Pieces.Count} kinds, {panels} formed panels in {bill.Panels.Count} kinds, {parts} catalogue in {kinds} kinds); no recipe: {none + panelNone} kinds, {noneParts + panelNoneParts} parts; links {bill.LinkMetres.Sum():0.0} m");
         return sb.ToString();
     }
 }

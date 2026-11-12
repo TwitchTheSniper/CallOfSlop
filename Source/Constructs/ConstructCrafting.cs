@@ -26,6 +26,7 @@ public struct CraftOrder
     public ushort Where; // the part it waits on (a store or a machine of this body; 0xFFFF: none)
     public string Note; // Held: why
     public ushort Age; // steps since it was done (server)
+    public bool Cancelled; // server: cancelled with parts already riding: they arrive anyway, and it asks for nothing more
     public ushort Def; // server: the kind's id here (a run-time piece's is this machine's own); None until worked out
 
     public readonly int Left => Math.Max(0, What.Count - Got);
@@ -493,7 +494,7 @@ public static class ConstructCrafting
         {
             CraftState.Fetching => $"fetching from {where}",
             CraftState.Queued => string.IsNullOrEmpty(o.Note) ? $"queued at {where}" : $"queued at {where}: {o.Note}",
-            CraftState.Riding => "riding to the tray",
+            CraftState.Riding => string.IsNullOrEmpty(o.Note) ? "riding to the tray" : o.Note,
             CraftState.InTray => "in the tray",
             CraftState.Collect => $"no route from {where}: collect it there",
             CraftState.Held => string.IsNullOrEmpty(o.Note) ? "held" : o.Note,
@@ -605,7 +606,18 @@ public static class ConstructCrafting
                         }
                     }
         }
-        q.RemoveAt(k);
+        if (o.Sent > 0)
+        {
+            // Parts already on a conveyor can't be called back: the order shrinks to them, says so, and ends when they land.
+            o.What.Count = (ushort)(o.Got + o.Sent);
+            o.Asked = 0;
+            o.Cancelled = true;
+            o.State = CraftState.Riding;
+            o.Where = NoPart;
+            o.Note = $"cancelled: {o.Sent} part{(o.Sent == 1 ? "" : "s")} on the way arrive{(o.Sent == 1 ? "s" : "")} anyway";
+        }
+        else
+            q.RemoveAt(k);
         world.CraftChanged(c);
         return null;
     }
@@ -740,6 +752,8 @@ public static class ConstructCrafting
                 }
                 continue;
             }
+            if (o.Cancelled)
+                continue; // (it waits only for what is riding: Arrived ends it)
             var def = KindOf(ref o);
             if (ConstructParts.Get(def) is not { } d)
             {

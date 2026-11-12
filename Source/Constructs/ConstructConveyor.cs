@@ -930,6 +930,8 @@ public static class ConstructConveyor
                 ConstructCrafting.Arrived(world, c, to, d); // (it counts for the oldest open order of its kind)
             return true;
         }
+        if (td.IsPanelFormer)
+            return ConstructPanelFormer.TakeFromConveyor(world, c, to, d); // (extruded sheet into its bin)
         if (td.IsPress && ConstructRoutes.PortOf(td, RouteType.Conveyor, c.Routes[route].ToPort) is { } port)
         {
             var bay = port.Name.Length > 9 && int.TryParse(port.Name.AsSpan(9), out var nb) ? nb - 1 : 0; // ("Piece in", "Piece in 2"...)

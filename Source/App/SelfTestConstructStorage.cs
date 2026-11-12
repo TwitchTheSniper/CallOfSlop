@@ -78,7 +78,7 @@ public static partial class SelfTest
         var good = Bad("{\"slots\": [{\"min\": [-0.4, 0.06, -0.4], \"max\": [0.4, 0.5, 0.4]}]}");
         (string Json, string Want)[] bad =
         [
-            ("{}", "needs \"slots\" or \"bulk\""),
+            ("{}", "needs \"slots\", \"bulk\" or \"pieces\""),
             ("{\"slots\": [{\"min\": [-0.4, 0.06, -0.4], \"max\": [0.4, 0.9, 0.4]}]}", "outside the part"),
             ("{\"slots\": [{\"min\": [-0.5, 0.06, -0.4], \"max\": [0.4, 0.5, 0.4]}]}", "runs into the part's box"),
             ("{\"slots\": [{\"min\": [-0.4, 0.06, -0.4], \"max\": [0.1, 0.5, 0.4]}, {\"min\": [0, 0.06, -0.4], \"max\": [0.4, 0.5, 0.4]}]}", "overlaps slots[0]"),

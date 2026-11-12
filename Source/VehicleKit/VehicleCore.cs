@@ -549,6 +549,18 @@ public class BlueprintScript
         _bill.Add($"{{\"step\": {console.Step}, \"part\": {Quote(d.Name)}, \"count\": {count}}}");
     }
 
+    /// <summary>A formed panel's line on a Line Console's bill (a Panel Former's order: ConstructPanelFormer.cs) by its name, which is its key, and how many.</summary>
+    public void BillPanel(VPart console, string panel, int count)
+    {
+        if (!ProductionLines.IsConsole(console.Def))
+            throw new VehicleKitException($"a bill goes on a Line Console, and a {console.Name} isn't one");
+        if (!HullLoft.IsFormedName(panel) || ConstructParts.Find(panel) == null)
+            throw new VehicleKitException($"\"{panel}\" isn't a panel a Panel Former makes");
+        if (WorkOrders.AddToBill(World, C, console.Index, ConstructPanelFormer.Order(panel, count)) is { } why)
+            throw new VehicleKitException($"the bill: {why}");
+        _bill.Add($"{{\"step\": {console.Step}, \"panel\": {Quote(panel)}, \"count\": {count}}}");
+    }
+
     /// <summary>A step's settings by key (the configure tool's): the values are written as JSON.</summary>
     public void Config(VPart p, params (string Key, object Value)[] values) =>
         _steps[p.Step].Config = "{" + string.Join(", ", values.Select(v => $"\"{v.Key}\": {JsonValue(v.Value)}")) + "}";

@@ -33,7 +33,7 @@ public enum CBodyKind : byte
     Door, // protocol 226: event doors that started moving or settled: (id, part, flags) each (ConstructDoors.Write)
     Riders, // protocol 244: one body's pieces riding its conveyors, the whole list (ConstructConveyor.Write)
     Orders, // protocol 246: one body's work-order queues and bills, each its totals and head (WorkOrders.Write)
-    Craft, // protocol 253: one body's Crafting Terminals' orders and its stores' reserved parts (ConstructCrafting.Write)
+    Craft, // protocol 254: one body's Crafting Terminals' orders and its stores' reserved parts (ConstructCrafting.Write)
 }
 
 /// <summary>

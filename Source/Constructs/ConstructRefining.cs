@@ -24,7 +24,7 @@ public enum RefineState : byte
 public static class ConstructRefining
 {
     public const int Every = 6; // ticks between steps (10 Hz)
-    private const int Milli = 1000; // a store's JobTicks counts thousandths of a tick here, so a machine's speed adds up exactly
+    public const int Milli = 1000; // a store's JobTicks counts thousandths of a tick here, so a machine's speed adds up exactly
     public const int BaseWork = Every * Milli; // a step's work at speed 1
     private const int RefusalSteps = 40; // how long the look line remembers a refused chute (a two-way junction's branch tries every other second)
 

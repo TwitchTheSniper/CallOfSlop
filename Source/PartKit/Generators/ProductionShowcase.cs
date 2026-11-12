@@ -29,6 +29,9 @@ public sealed class ProductionShowcase : IPartGenerator
         private const int TilesX = 32, TilesZ = 7; // 2 m Foundations: 64 by 14 m
         private const float Row1 = -4.75f, Row2 = -11.25f; // the two rows of machines; the front aisle is z 0 to -2, the back one z -7 to -8.5
         private const float Posts1 = -2.25f, Posts2 = -8.75f; // the sign posts and consoles of each row, at its aisle
+        private const float Row3 = -17.25f, Posts3 = -15.25f; // the panel line's own floor behind the second row: z -14 to -20, x 22 to 50
+        private const int PanelTile0 = 11, PanelTiles = 14;
+        private const string Panels = "#5d7f3c";
 
         // Paint by section (look.md): a warm concrete floor, steel-blue walkways, one accent a station, yellow controls.
         private const string Floor = "#8c8576", Aisle = "#4f6578", Hazard = "#d8a020", Board = "#23272b", Control = "#e0b020";
@@ -196,6 +199,8 @@ public sealed class ProductionShowcase : IPartGenerator
 
             // ---- 8. The Crafting Terminal: on the orders console's machines, the Assembler's rack returning to its tray. ------------------
             CraftingCorner(orders, partRack, longRack);
+            PanelLine(orders);
+
             Monitors(refine, orders);
 
             // ---- Hazard stripes where pieces start and end their ride. ---------------------------------------------------------
@@ -232,6 +237,37 @@ public sealed class ProductionShowcase : IPartGenerator
                 path.Add(V(x, back.Y, side.Z));
             Convey(longRack, "Piece out", term, "Piece in 2", LineA, new Vector2(0.5f, 0.5f), path.ToArray());
             Sign(60.25f, -6.75f, Assembly, "F on the screen: order a part. It arrives in the tray");
+        }
+
+        /// <summary>
+        /// The panel line (production.md "The Panel Former"), on its own strip of floor behind the second row: an Extruder making steel sheet,
+        /// a conveyor into a Panel Former's Piece in, the former's Piece out onto a conveyor to a Long Piece Rack; on the orders console,
+        /// whose bill gains two preset panels and one of the vehicle kit's lofted hoods.
+        /// </summary>
+        private void PanelLine(VPart orders)
+        {
+            for (var j = TilesZ; j < TilesZ + 3; j++)
+                for (var i = PanelTile0; i < PanelTile0 + PanelTiles; i++)
+                {
+                    var t = Put("Foundation", V(1 + 2 * i, 0.15f, -1 - 2 * j), Front);
+                    Paint(t, j == TilesZ ? Aisle : Floor);
+                    Finish(t, j == TilesZ ? "painted deck plate" : "concrete");
+                }
+            var sheet = On("Extruder", 25.25f, Row3, Flow, paint: Panels);
+            Config(sheet, ("profile", "Solid bar"), ("width", 0.5), ("height", 0.1), ("cutLength", 1.0)); // (sheet: 10 cm is the thinnest a die makes)
+            Feed(StockOf("steel", 23.25f, Row3), sheet);
+            var former = On("Panel Former", 30.25f, Row3, Flow, paint: Panels);
+            Convey(sheet, "Piece out", former, "Piece in", Panels);
+            var rack = On("Long Piece Rack", 34.25f, Row3 + 0.5f, Flow, "-y.0.0", Panels);
+            Convey(former, "Piece out", rack, "Piece in", Panels);
+            Sign(28.75f, Posts3, Panels, "PANELS: sheet in at the white end, panels out at the orange");
+            Sign(31.25f, Posts3, Panels, "Send the bill: a hood, a fender and a kit hood are formed");
+            Run(orders, former, V(24.25f, 0, -2.0f), V(26.75f, 0, -2.0f), V(26.75f, 0, -8.6f), V(26.75f, 0, -14.6f), V(29.25f, 0, -14.6f));
+            BillPanel(orders, HullLoft.PanelKey(HullLoft.PanelDefault(2)), 2); // a hood
+            BillPanel(orders, HullLoft.PanelKey(HullLoft.PanelDefault(3)), 2); // a fender
+            BillPanel(orders, "Hull Loft (hoodg UOV2WyWjXYXYVd ~7O07WW7Gn5v1014)", 1); // one of the vehicle kit's lofted hoods (an IT truck's)
+            Stripe(27.25f, Row3, true);
+            Stripe(33.25f, Row3, true);
         }
 
         /// <summary>

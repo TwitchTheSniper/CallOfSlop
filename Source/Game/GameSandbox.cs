@@ -89,8 +89,8 @@ public enum CActKind : byte
     RackDrop, // u16 body, u16 part: Shift+F on a Piece Rack, the kind looked at drops loose over it (protocol 249; ConstructEditsRack.cs)
     Rider, // u16 body, u8 conveyor, u16 front (cm), u8 1 the physics gun: a piece off a conveyor, into the hands or the beam (protocol 249; ConstructEditsRack.cs)
     LineRecipe, // u16 body, u16 console, u16 machine, u16 recipe value, u8 flags (1: every machine of its kind on the line): the recipe picker (protocol 250; ProductionLines.SetRecipe)
-    CraftOrder, // u16 body, u16 terminal, the order (u8 shape, u64 mask, u16 w, h, l, wall, u8 material, u16 part, u16 count): a Crafting Terminal's order (protocol 253; ConstructCrafting.Place)
-    CraftCancel, // u16 body, u16 terminal, u16 order id: cancels it (protocol 253; ConstructCrafting.Cancel)
+    CraftOrder, // u16 body, u16 terminal, the order (u8 shape, u64 mask, u16 w, h, l, wall, u8 material, u16 part, u16 count): a Crafting Terminal's order (protocol 254; ConstructCrafting.Place)
+    CraftCancel, // u16 body, u16 terminal, u16 order id: cancels it (protocol 254; ConstructCrafting.Cancel)
 }
 
 /// <summary>

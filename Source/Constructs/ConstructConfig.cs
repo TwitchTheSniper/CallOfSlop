@@ -798,7 +798,7 @@ public static class ConstructConfig
             var ok = e.Id switch
             {
                 CfgKey.Setting => true,
-                CfgKey.Recipe => d.IsAssembler || d.IsLathe || d.IsRefiner,
+                CfgKey.Recipe => d.IsAssembler || d.IsLathe || d.IsRefiner || d.IsPanelFormer, // (a Panel Former: its preset)
                 CfgKey.LinePick or CfgKey.OrderKind or CfgKey.OrderMaterial or CfgKey.LinePage or CfgKey.LineStopAfter => ProductionLines.IsConsole(d),
                 CfgKey.TextSize => ConstructPanels.HasText(d),
                 CfgKey.OrderCount => ProductionLines.IsConsole(d) || WorkOrders.TakesOrders(d),
@@ -821,9 +821,9 @@ public static class ConstructConfig
                 CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Seconds => d.Logic is CLogic.Delay or CLogic.Filter,
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,
-                CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.Wall or CfgKey.CutLength => d.IsExtruder || ProductionLines.IsConsole(d), // (a console's: its next bill line)
-                CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => d.IsExtruder,
-                CfgKey.RunMode => d.IsWheelFormer,
+                CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.Wall or CfgKey.CutLength => d.IsExtruder && !d.IsPanelFormer || ProductionLines.IsConsole(d), // (a console's: its next bill line)
+                CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => d.IsExtruder && !d.IsPanelFormer,
+                CfgKey.RunMode => d.IsWheelFormer && !d.IsPanelFormer,
                 CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,
                 CfgKey.Charge => d.IsReceiverGun,
                 CfgKey.SteerKind => d.Diff == DiffKind.Steering,
