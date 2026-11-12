@@ -1,0 +1,155 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Requisitions Store",
+  "description": "The Ministry's requisitions store: shelves and crates behind an open bay.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 0,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#7a6a4f",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 1,
+      "socket": "t8_0",
+      "by": "b0_7",
+      "spin": 2,
+      "paint": "#7a6a4f",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 1,
+      "socket": "t8_15",
+      "by": "b7_0",
+      "spin": 3,
+      "paint": "#7a6a4f",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 0,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1,
+      "paint": "#7a6a4f",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Corrugated Garage Wall 4 m",
+      "on": 0,
+      "socket": "t8_0",
+      "by": "b0",
+      "paint": "#7a6a4f",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Corrugated Wall 4 m",
+      "on": 0,
+      "socket": "t8_15",
+      "by": "b15",
+      "spin": 3,
+      "paint": "#7a6a4f",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Corrugated Roof Slope 4x4 m",
+      "on": 2,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#4b5157"
+    },
+    {
+      "part": "Corrugated Roof Slope 4x4 m",
+      "on": 3,
+      "socket": "t0_0",
+      "by": "b15_0",
+      "paint": "#4b5157"
+    },
+    {
+      "part": "Text Sign",
+      "on": 6,
+      "socket": "f8_10",
+      "by": "back",
+      "text": [
+        "REQUISITIONS"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Text Sign",
+      "on": 7,
+      "socket": "k8_5",
+      "by": "back",
+      "text": [
+        "ALL ISSUES ON FORM R-12, IN TRIPLICATE"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Parts Shelf",
+      "on": 0,
+      "socket": "t8_8",
+      "by": "bottom",
+      "spin": 3,
+      "paint": "#4b5157"
+    },
+    {
+      "part": "Parts Shelf",
+      "on": 1,
+      "socket": "t8_8",
+      "by": "bottom",
+      "spin": 3,
+      "paint": "#4b5157"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 0,
+      "socket": "t15_7",
+      "by": "-y"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 14,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 14,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Battery",
+      "on": 7,
+      "socket": "k0_10",
+      "by": "-z",
+      "paint": "#4b5157"
+    },
+    {
+      "part": "Wall Light",
+      "on": 6,
+      "socket": "k8_10",
+      "by": "back"
+    },
+    {
+      "part": "Wall Light",
+      "on": 2,
+      "socket": "fa7_10",
+      "by": "back"
+    }
+  ]
+}

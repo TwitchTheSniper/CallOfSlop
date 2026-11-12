@@ -1,0 +1,306 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Ministry Records Office",
+  "description": "The Ministry of Slop's records office: a counter, the filing and a queue outside.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 1,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "f0",
+      "by": "k0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 1,
+      "socket": "f0",
+      "by": "k0"
+    },
+    {
+      "part": "Concrete Door Corner",
+      "on": 0,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#c9bf9f",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 1,
+      "socket": "t8_0",
+      "by": "b0_7",
+      "spin": 2,
+      "paint": "#c9bf9f",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 3,
+      "socket": "t8_15",
+      "by": "b7_0",
+      "spin": 3,
+      "paint": "#c9bf9f",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 2,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1,
+      "paint": "#c9bf9f",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Concrete Wall 4 m",
+      "on": 0,
+      "socket": "t8_0",
+      "by": "b0",
+      "paint": "#c9bf9f",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Concrete Wall 4 m",
+      "on": 2,
+      "socket": "t8_15",
+      "by": "b15",
+      "spin": 3,
+      "paint": "#c9bf9f",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Concrete Window Wall 4 m",
+      "on": 0,
+      "socket": "t0_8",
+      "by": "b15",
+      "spin": 1,
+      "paint": "#c9bf9f",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Concrete Window Wall 4 m",
+      "on": 1,
+      "socket": "t15_8",
+      "by": "b0",
+      "spin": 2,
+      "paint": "#c9bf9f",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 6,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#4b5157",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 7,
+      "socket": "t0_0",
+      "by": "b15_0",
+      "paint": "#4b5157",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 9,
+      "socket": "t0_0",
+      "by": "b0_15",
+      "paint": "#4b5157",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 8,
+      "socket": "t0_0",
+      "by": "b15_15",
+      "paint": "#4b5157",
+      "finish": "concrete"
+    },
+    {
+      "part": "Door Hinge",
+      "on": 6,
+      "socket": "hinge",
+      "by": "base"
+    },
+    {
+      "part": "Wood Flush Door 1.5x2.25 m",
+      "on": 18,
+      "socket": "leaf",
+      "by": "hang",
+      "paint": "#2f5a3c",
+      "finish": "painted wood"
+    },
+    {
+      "part": "Text Sign",
+      "on": 10,
+      "socket": "f8_10",
+      "by": "back",
+      "text": [
+        "MINISTRY OF SLOP - RECORDS OFFICE"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Text Sign",
+      "on": 10,
+      "socket": "f15_5",
+      "by": "back",
+      "text": [
+        "QUEUE HERE"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Mess Table",
+      "on": 2,
+      "socket": "t8_0",
+      "by": "bottom",
+      "spin": 3,
+      "paint": "#4b5157",
+      "finish": "wood"
+    },
+    {
+      "part": "Mess Table",
+      "on": 3,
+      "socket": "t0_0",
+      "by": "bottom",
+      "spin": 3,
+      "paint": "#4b5157",
+      "finish": "wood"
+    },
+    {
+      "part": "Mess Table",
+      "on": 3,
+      "socket": "t8_0",
+      "by": "bottom",
+      "spin": 3,
+      "paint": "#4b5157",
+      "finish": "wood"
+    },
+    {
+      "part": "Employee of the Month",
+      "on": 23,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Teapot",
+      "on": 24,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Locker",
+      "on": 2,
+      "socket": "t7_8",
+      "by": "bottom",
+      "spin": 3,
+      "paint": "#2f5a3c"
+    },
+    {
+      "part": "Parts Shelf",
+      "on": 2,
+      "socket": "t15_8",
+      "by": "bottom",
+      "spin": 3,
+      "paint": "#4b5157"
+    },
+    {
+      "part": "Locker",
+      "on": 3,
+      "socket": "t7_8",
+      "by": "bottom",
+      "spin": 3,
+      "paint": "#2f5a3c"
+    },
+    {
+      "part": "Office Plant",
+      "on": 1,
+      "socket": "t7_7",
+      "by": "base"
+    },
+    {
+      "part": "Queue Post",
+      "on": 4,
+      "socket": "t0_7",
+      "by": "base"
+    },
+    {
+      "part": "Queue Post",
+      "on": 4,
+      "socket": "t7_7",
+      "by": "base"
+    },
+    {
+      "part": "Queue Post",
+      "on": 4,
+      "socket": "t15_7",
+      "by": "base"
+    },
+    {
+      "part": "Queue Post",
+      "on": 5,
+      "socket": "t0_7",
+      "by": "base"
+    },
+    {
+      "part": "Pillar Box",
+      "on": 5,
+      "socket": "t8_7",
+      "by": "foot00"
+    },
+    {
+      "part": "Union Flag",
+      "on": 17,
+      "socket": "t8_8",
+      "by": "base"
+    },
+    {
+      "part": "Battery",
+      "on": 11,
+      "socket": "k0_10",
+      "by": "-z",
+      "paint": "#4b5157"
+    },
+    {
+      "part": "Wall Light",
+      "on": 6,
+      "socket": "fa7_10",
+      "by": "back"
+    },
+    {
+      "part": "Wall Light",
+      "on": 12,
+      "socket": "k8_10",
+      "by": "back"
+    },
+    {
+      "part": "Wall Light",
+      "on": 13,
+      "socket": "k8_10",
+      "by": "back"
+    }
+  ]
+}

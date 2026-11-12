@@ -100,6 +100,7 @@ public sealed partial class Game
         _opOn = false;
         _opColony = 0;
         LockdownReset(); // (and its barracks: GameColonyLockdown.cs)
+        ColonyBuildingsReset(); // (and the Ministry's buildings round the colony: GameColonyBuildings.cs)
         DepotReset(); // (and the Remote Works and the Orbital Depot: GameDepot.cs)
         QuarryReset(); // (and the Ministry Quarry: GameQuarry.cs)
         FragmentsReset(); // (and the data centres: GameStoryFragments.cs)
@@ -138,6 +139,7 @@ public sealed partial class Game
         }
         _opColony = colony.Id;
         OpeningSpots(colony);
+        ColonyBuildingsBuild(); // (the Ministry's street in front of it, first, so the rest find room round them: GameColonyBuildings.cs)
         LockdownBuildBarracks(); // (the guards' barracks beside it: GameColonyLockdown.cs)
         DepotBuild(); // (the Remote Works beside it and the Orbital Depot over that: GameDepot.cs)
         QuarryBuild(); // (the Ministry Quarry a few hundred metres out: GameQuarry.cs)
@@ -424,7 +426,7 @@ public sealed partial class Game
     private OpeningSave? OpeningCapture() => _opOn ? new OpeningSave
     {
         Map = World.Map.Name, Colony = _opColony, Crash = _opCrash, Barracks = _opBarracks, Works = _dpWorks, Depot = _dpDepot,
-        Sites = FragmentSitesCapture(), Quarry = _qrWorks,
+        Sites = FragmentSitesCapture(), Quarry = _qrWorks, Buildings = ColonyBuildingsCapture(), BuildingsListed = true,
     } : null;
 
     /// <summary>Server, loading a world: its opening, when it was saved on this map (another planetoid's has none here).</summary>
@@ -442,6 +444,7 @@ public sealed partial class Game
             _opColony = 0;
             _opMiddle = _opGate = _opWake = o.Crash;
         }
+        ColonyBuildingsLoad(o.Buildings, o.BuildingsListed); // (GameColonyBuildings.cs)
         LockdownLoadBarracks(o.Barracks); // (GameColonyLockdown.cs)
         DepotLoad(o.Works, o.Depot); // (GameDepot.cs)
         QuarryLoad(o.Quarry); // (GameQuarry.cs)
@@ -460,6 +463,8 @@ public sealed class OpeningSave
     public ushort Works, Depot; // the Remote Works and the Orbital Depot (GameDepot.cs; after the barracks, so an older reader stops before them)
     public (string Site, ushort Body)[] Sites = []; // the sealed data centres (GameStoryFragments.cs; after the depot, likewise)
     public ushort Quarry; // the Ministry Quarry Works (GameQuarry.cs; after the data centres, likewise)
+    public (string Name, ushort Body)[] Buildings = []; // the Ministry's buildings round the colony (GameColonyBuildings.cs; after the quarry, likewise)
+    public bool BuildingsListed; // the save had the list (a world from before it gets the buildings when loaded)
 }
 
 /// <summary>Story/Opening/Opening.json (docs/story/OPENING.md): the opening's names, times and lines. A bad file is refused with a reason and there is no opening.</summary>

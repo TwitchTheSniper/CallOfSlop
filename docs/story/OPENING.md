@@ -77,6 +77,32 @@ Hurt the warden or a guard (anyone in the Penal Colony cast) and the colony goes
 - Standing: the Ministry's deed "Assaulted our staff" (-15, at most once a minute) on the story's Attack, and "Killed our
   staff" (-40) as before (`Story/Factions/Ministry.json`).
 
+## The Ministry's buildings
+
+The colony doesn't stand alone: the Ministry of Slop's street is built with it on a fresh story world
+(`Game/GameColonyBuildings.cs`), before the barracks, the Remote Works and the quarry, so those find room round it.
+
+- **Across the street**, facing the gate: the **Colony Infirmary** (hospital white, a medical station, two bunks, the
+  medicine cabinet), the **Ministry Records Office** (cream concrete, a counter of three tables, lockers and a shelf of
+  files, the queue posts and pillar box on its forecourt, the Union Flag on the roof), the **Colony Canteen** (green
+  corrugated tin, mess tables, the tea urn and two stoves on the serving line) and the **Requisitions Store** (an open
+  bay, shelves and crates).
+- **By the gate**: the **Colony Gatehouse** (the gate clerk's terminal, a Belisha beacon and the phone box); **lamp posts**
+  down the street and the stock **Watchtowers** off the yard's back corners.
+- Every building has a battery (a fuse box high on a wall) so its mains Wall Lights are lit, a lamp over the door, and
+  signs in the Ministry's voice ("ESCAPEES ALSO REPORT HERE", "FORM 27B: NOTICE OF INTENT TO BE ILL").
+- **Where**: `Story/Opening/ColonyBuildings.json`: each building's blueprint, where its middle stands in the colony's
+  own frame (x along the front, the gate at x 6; negative z out in front of the gate), its turn and how level its ground
+  must be. A spot that is taken or too steep moves the building to the nearest clear, level spot within `"slack"` metres
+  (logged as `[colony] ... m off its spot`), or it isn't built.
+- **The blueprints** are the part kit's (`Source/PartKit/Generators/BuildingParts.Ministry.cs`, `--gen-parts
+  building_parts`), in the Ministry's palette (cream `#c9bf9f`, slate `#4b5157`, Ministry green `#2f5a3c`, navy signs).
+- **For other code** (the lore's items, the staff's posts): `Game.ColonyBuilding("Ministry Records Office")` is the
+  server's construct of a building by its blueprint's name, or null (taken down, or none); "Penal Colony" and "Colony
+  Barracks" answer too. A spot in it is its blueprint's metres through `ToWorld`.
+- **The save**: the Opening section lists the buildings (name and construct id) after the quarry. One someone takes
+  down stays down; a world saved before the list gets the buildings the next time it loads.
+
 ## Network and save
 
 - **`Msg.ColonyAlarm`** (protocol 208), server to all: u8 on, vec where it sounds; reliable when it changes, and again every
@@ -86,7 +112,8 @@ Hurt the warden or a guard (anyone in the Penal Colony cast) and the colony goes
   to that player only. **`CActKind.OpeningSkip`** asks to skip.
 - **The world save** has an `Opening` section (tag `OPEN`, its own section, so an older reader skips it): the map, the colony's
   construct id, the crash site, the key and Steam id of everyone who has been through it, and last the barracks' construct
-  id (an older reader stops before it; a world without it gets a barracks when it loads). The colony itself is an ordinary
+  id (an older reader stops before it; a world without it gets a barracks when it loads), then the depot's, the data
+  centres', the quarry's and the Ministry's buildings (likewise). The colony itself is an ordinary
   anchored construct, saved with the rest. On another planetoid (free travel) the section's map doesn't match, so there is no
   colony there and no opening for someone joining there.
 
