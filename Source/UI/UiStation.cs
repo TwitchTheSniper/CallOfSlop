@@ -18,7 +18,7 @@ public sealed partial class Ui
     private int _bstSel = -1, _bstRepeat = 1;
     private bool _bstForever;
     private double _bstFilledAt;
-    private string _bstSearch = "", _bstFit = "", _bstHead = "";
+    private string _bstSearch = "", _bstFit = "", _bstHead = "", _bstQuick = "";
     private ImInputString? _bstSearchInput;
     private ushort _bstBody;
     private int _bstPart = -1;
@@ -68,7 +68,7 @@ public sealed partial class Ui
         var j = c.Parts[part].Station;
         var busy = j is { State: StationState.Costing or StationState.Building };
         RouteRender.BayPanel(c.Id, part, _bstSel >= 0 && _bstPreview.Ready && !_bstFit.StartsWith("FITS", StringComparison.Ordinal));
-        if (_bstSel >= 0 && !_bstPreview.Ready)
+        if (_bstSel >= 0 && _bstQuick.Length == 0 && !_bstPreview.Ready)
             _bstPreview.Step(2.0);
         if (_bstSel >= 0 && _bstPreview.Ready && now - _bstFilledAt > 0.5)
         {
@@ -123,7 +123,13 @@ public sealed partial class Ui
             ImGui.SameLine();
             if (ImGui.BeginChild("##stbill"u8, new float2(0, -foot), ImGuiChildFlags.Borders))
             {
-                if (_bstSel < 0)
+                if (_bstQuick.Length > 0)
+                {
+                    ImGui.PushStyleColor(ImGuiCol.Text, StBad);
+                    ImGuiSafe.TextWrapped(_bstQuick);
+                    ImGui.PopStyleColor();
+                }
+                else if (_bstSel < 0)
                     ImGui.TextColored(Dim, "Pick a blueprint on the left: shipped vehicles and your own saved ones."u8);
                 else if (!_bstPreview.Ready)
                     ImGui.TextColored(Dim, "Working out its size and bill..."u8);
@@ -144,7 +150,7 @@ public sealed partial class Ui
                 }
             }
             ImGui.EndChild();
-            var can = _bstSel >= 0 && _bstPreview.Ready && _bstPreview.Why.Length == 0 && !busy;
+            var can = _bstSel >= 0 && _bstQuick.Length == 0 && _bstPreview.Ready && _bstPreview.Why.Length == 0 && !busy;
             ImGui.BeginDisabled(!can);
             ImGui.PushStyleColor(ImGuiCol.Button, CrTabOn);
             start = ImGui.Button("Start"u8, new float2(120 * _scale, 0));
@@ -187,8 +193,15 @@ public sealed partial class Ui
         {
             _bstSel = pick;
             _bstFilledAt = 0;
+            _bstQuick = "";
             if (ConstructStation.Find(_bstList[pick].Name) is { } bp)
-                _bstPreview.Begin(bp);
+            {
+                // (a blueprint far too big for the bay is told so from its parts alone; nothing is built)
+                if (ConstructStation.QuickRefusal(bp, ConstructStation.BaySize(c, part)) is { } small)
+                    _bstQuick = bp.Name + ": DOESN'T FIT: " + small;
+                else
+                    _bstPreview.Begin(bp);
+            }
         }
         var n = _bstForever ? ushort.MaxValue : (ushort)(_bstRepeat - 1);
         if (start && _bstSel >= 0)

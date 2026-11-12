@@ -74,7 +74,7 @@ public static class ConstructStation
     public const float FitSecondsPerKg = 0.02f; // ...plus this for its mass...
     public const float FitSecondsMax = 10f; // ...at most
     public const float LinkSeconds = 1f; // a wire or a link laid
-    public const double CostBudgetMs = 1.5; // a tick's slice of the scratch build
+    public const double CostBudgetMs = 1.0; // a tick's slice of the scratch build
     public const int OrderEvery = 30; // ticks between looks at what to order (2 Hz)
     public const int OrdersAStep = 4; // craft orders placed in one look
     public const int ReturnAStep = 8; // parts given back in one look
@@ -152,6 +152,34 @@ public static class ConstructStation
         return MathF.Max(0.5f, Vector3.Distance(a, z) * 1.3f);
     }
 
+    /// <summary>
+    /// Why a blueprint can't fit a bay, from its parts alone and without building it (a walk of its steps: 5,573 steps in about a
+    /// millisecond), or null when only a build can tell: a part longer than the bay's longest side, or parts whose boxes add up to more
+    /// than one and a half times the bay's volume. Asked before any costing, on either peer.
+    /// </summary>
+    public static string? QuickRefusal(ConstructBuild.Blueprint bp, Vector3 bay)
+    {
+        var room = bay.X * bay.Y * bay.Z;
+        var longest = MathF.Max(bay.X, MathF.Max(bay.Y, bay.Z));
+        double volume = 0;
+        string last = "";
+        ConstructPartDef? d = null;
+        foreach (var step in bp.Steps)
+        {
+            if (!ReferenceEquals(step.Part, last))
+                (last, d) = (step.Part, ConstructParts.Find(step.Part));
+            if (d == null)
+                continue;
+            var s = d.BoundsMax - d.BoundsMin;
+            if (MathF.Min(s.X, MathF.Min(s.Y, s.Z)) > longest + 0.01f)
+                return $"doesn't fit the bay: its {d.Name} alone is {s.X:0.0} x {s.Y:0.0} x {s.Z:0.0} m, the bay {bay.X:0.0} x {bay.Z:0.0} m and {bay.Y:0.0} m high (the station's Bay settings)";
+            volume += s.X * s.Y * s.Z;
+        }
+        return volume > room * 1.5
+            ? $"doesn't fit the bay: its {bp.Steps.Count} parts take about {volume:0} m3, the bay holds {room:0} m3 ({bay.X:0.0} x {bay.Z:0.0} m and {bay.Y:0.0} m high: the station's Bay settings)"
+            : null;
+    }
+
     /// <summary>What a built body takes up, wheels' travel included: its low corner and its size, body frame.</summary>
     public static void Bounds(Construct b, out Vector3 lo, out Vector3 size)
     {
@@ -184,6 +212,8 @@ public static class ConstructStation
             sb.Append($"bay {size.X:0.#} x {size.Z:0.#} x {size.Y:0.#} m, ").Append(ConstructCrafting.Sees(ConstructCrafting.NetOf(world, c, t)));
         else
             sb.Append(StateText(j));
+        if (!ConstructRecycler.Powered(world, c, t))
+            sb.Append(" - NO POWER: it waits");
         if (st.ItemCount > 0)
             sb.Append($", {st.ItemCount} in the hold");
         if (j is { Note.Length: > 0 })
@@ -463,6 +493,8 @@ public static class ConstructStation
             return $"no blueprint named \"{name}\"";
         if (bp.Steps.Count == 0 || bp.Steps.Count >= None)
             return "that blueprint has no parts";
+        if (QuickRefusal(bp, BaySize(c, t)) is { } small)
+            return small; // (told from its parts alone: nothing is built to find out)
         var j = new StationJob { Name = bp.Name, Bp = bp, Repeat = repeat, Steps = (ushort)bp.Steps.Count, Started = Stopwatch.GetTimestamp() };
         c.Parts[t].Station = j;
         BeginCosting(world, j);
@@ -1459,6 +1491,6 @@ public static class StationProbe
     {
         var j = c.Parts[t].Station;
         var b = j == null ? null : world.Get(j.Body);
-        return j == null ? "no job" : $"{j.State} \"{j.Name}\" parts {j.Fitted}/{j.Steps} links {j.LinksDone}/{j.Links} repeat {j.Repeat} body {j.Body} ({(b == null ? "none" : $"{b.PartCount} parts, {b.RouteCount} links, {(b.Frozen ? "frozen" : "free")}{(b.Anchored ? " anchored" : "")}{(b.Asleep ? " asleep" : " awake")}, wheels {b.WheelCount}, at {b.Pos.X:0.0},{b.Pos.Y:0.00},{b.Pos.Z:0.0}")}) reserved {Reserved(world, c, t)} hold {world.StoreOf(c, t)?.ItemCount ?? -1} orders {c.Parts[t].Craft?.Count ?? 0} note \"{j.Note}\"";
+        return (ConstructRecycler.Powered(world, c, t) ? "" : "NO POWER ") + (j == null ? "no job" : $"{j.State} \"{j.Name}\" parts {j.Fitted}/{j.Steps} links {j.LinksDone}/{j.Links} repeat {j.Repeat} body {j.Body} ({(b == null ? "none" : $"{b.PartCount} parts, {b.RouteCount} links, {(b.Frozen ? "frozen" : "free")}{(b.Anchored ? " anchored" : "")}{(b.Asleep ? " asleep" : " awake")}, wheels {b.WheelCount}, at {b.Pos.X:0.0},{b.Pos.Y:0.00},{b.Pos.Z:0.0}")}) reserved {Reserved(world, c, t)} hold {world.StoreOf(c, t)?.ItemCount ?? -1} orders {c.Parts[t].Craft?.Count ?? 0} note \"{j.Note}\"");
     }
 }
