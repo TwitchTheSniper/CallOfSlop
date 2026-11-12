@@ -24,6 +24,9 @@ public sealed partial class Ui
     public bool DesignerFrame, DesignerSockets = true;
     public double DesignerTouched; // when the player last turned it (it turns by itself again a little later)
 
+    /// <summary>What the preview's part cost (its base and facet slices), summed and the worst frame: a probe reads and clears them.</summary>
+    public double DesignerSpentMs, DesignerWorstMs;
+
     /// <summary>The designer the panel is open on.</summary>
     public (ushort Body, int Part) DesignerTarget => (_pdBody, _pdPart);
 
@@ -189,7 +192,7 @@ public sealed partial class Ui
     /// <summary>The readouts for the shape as it stands, made again only when it or the network changed.</summary>
     private void DesignerTexts(ConstructWorld world, Construct c, int part)
     {
-        var key = HashCode.Combine(_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm, _pdMat, _pdStamp);
+        var key = HashCode.Combine(_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm, _pdMat, _pdStamp) * 31 + DesignerPreview.Made;
         var bd = DesignerPreview.Base;
         key = key * 31 + (bd == null ? 0 : 1);
         if (key == _pdTextKey)
@@ -258,8 +261,12 @@ public sealed partial class Ui
         var world = game.Constructs;
         DesignerBuild(world, c, part, now);
         var shape = DesignerShape;
+        var pt0 = System.Diagnostics.Stopwatch.GetTimestamp();
         DesignerPreview.Want(shape);
         DesignerPreview.Pump();
+        var pms = System.Diagnostics.Stopwatch.GetElapsedTime(pt0).TotalMilliseconds;
+        DesignerSpentMs += pms;
+        DesignerWorstMs = Math.Max(DesignerWorstMs, pms);
         DesignerTexts(world, c, part);
         var q = c.Parts[part].Craft;
         CraftingOrders(c, q);

@@ -21,6 +21,9 @@ public static unsafe partial class Program
     private static string _wsOut = "", _wsMap = "Proving Ground", _wsBlueprint = "";
     private static Vector3? _wsAt, _wsLookAt, _wsSpawnAt;
     private static string _wsNet = "", _wsNotice = "";
+    private static int _wsDesignTries;
+    private static int _wsDragLeft, _wsDragAll, _wsDragKeys;
+    private static long _wsDragBytes, _wsDragAt;
     private static float? _wsYaw, _wsPitch;
     private static int _wsFrames = 45, _wsEvery, _wsStep, _wsWait, _wsShots, _wsCount;
     private static double _wsStart;
@@ -515,6 +518,62 @@ public static unsafe partial class Program
             }
             case "design": // the Panel Designer's panel: "design" reports it; "design preset 2", "design length 600" set the sliders as a drag would (clamped the same)
             {
+                if (arg is "await" or "held" || arg.StartsWith("bring ", StringComparison.Ordinal))
+                {
+                    // Two windows keep no common clock: wait for the other side instead of counting frames. "await": press use until the designer's
+                    // panel is open; "held": until a store holds a formed panel; "bring N": until N other players are here, then bring them to the desk.
+                    var others = g.Players.Count - 1;
+                    var held = false;
+                    foreach (var hs in g.Constructs.Stores)
+                        for (var k = 0; hs is { Live: true } && k < hs.KindN; k++)
+                            held |= ConstructParts.Get(hs.KindDef![k]) is { } hd && HullLoft.IsPanelName(hd.Name) && hs.KindCount![k] > 0;
+                    var ready = arg == "await" ? Ui.DesignerOpen : arg == "held" ? held : int.TryParse(arg[6..], out var need) && others >= need;
+                    if (!ready)
+                    {
+                        if (++_wsDesignTries > 400)
+                        {
+                            WsFail($"design {arg}: never happened");
+                            return;
+                        }
+                        _wsQueue.EnqueueFront("design " + arg);
+                        if (arg == "await")
+                        {
+                            _wsQueue.EnqueueFront("use");
+                            if (WsFind(g, "Panel Designer").Item1 != null)
+                                _wsQueue.EnqueueFront("aim Panel Designer"); // (a client is brought to the desk by the host: it looks at the screen itself)
+                        }
+                        _wsWait = 30;
+                        return;
+                    }
+                    WsSay($"design {arg}: after {_wsDesignTries} waits");
+                    _wsDesignTries = 0;
+                    if (arg.StartsWith("bring ", StringComparison.Ordinal))
+                        _wsQueue.EnqueueFront("bring Panel Designer");
+                    _wsWait = 20;
+                    return;
+                }
+                if (arg.StartsWith("drag ", StringComparison.Ordinal) && int.TryParse(arg[5..], out var dragFrames))
+                {
+                    // A slider dragged: a new length every frame for N frames (each a new key), then what it cost and what it left behind.
+                    if (_wsDragLeft == 0)
+                    {
+                        _wsDragLeft = _wsDragAll = Math.Max(1, dragFrames);
+                        _wsDragBytes = GC.GetTotalAllocatedBytes();
+                        _wsDragAt = System.Diagnostics.Stopwatch.GetTimestamp();
+                        (Ui.DesignerSpentMs, Ui.DesignerWorstMs) = (0, 0);
+                        _wsDragKeys = Ui.DesignerPreview.Made;
+                    }
+                    Ui.DesignerSet("length", 20 + (_wsDragAll - _wsDragLeft) * 5 % 230);
+                    if (--_wsDragLeft > 0)
+                    {
+                        _wsQueue.EnqueueFront(action);
+                        _wsWait = 1;
+                        return;
+                    }
+                    var secs = System.Diagnostics.Stopwatch.GetElapsedTime(_wsDragAt).TotalSeconds;
+                    WsSay($"design drag: {_wsDragAll} values in {secs:0.0} s ({secs * 1000 / _wsDragAll:0.0} ms a frame, all of the game); the preview's own work {Ui.DesignerSpentMs / _wsDragAll:0.000} ms a frame, worst {Ui.DesignerWorstMs:0.00} ms; {(GC.GetTotalAllocatedBytes() - _wsDragBytes) / _wsDragAll} bytes a frame (the whole process); {Ui.DesignerPreview.Made - _wsDragKeys} keys previewed; {RuntimeParts.Line()}");
+                    return;
+                }
                 var dw = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 if (dw.Length >= 2 && dw[0] == "name")
                     Ui.DesignerName(arg[(arg.IndexOf(' ') + 1)..].Trim());

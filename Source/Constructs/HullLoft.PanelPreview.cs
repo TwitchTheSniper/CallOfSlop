@@ -37,11 +37,32 @@ public static partial class HullLoft
         private readonly List<CPartBox> _facets = new(PanelMaxAlong * PanelMaxAcross);
         private readonly List<ushort> _shapes = new(PanelMaxAlong * PanelMaxAcross + 8);
 
-        /// <summary>The key to show. A new one drops what was half made and starts again (one base a call at most: about 0.3 ms).</summary>
+        private PanelShape _queued;
+        private bool _hasQueued, _started;
+
+        /// <summary>
+        /// The key to show. While a panel is being made the newest key waits for it (the one before it is forgotten), so a slider dragged through a
+        /// hundred values makes a panel every few frames, each whole, never one a frame: the picture follows the hand and nothing is thrown away half made.
+        /// </summary>
         public void Want(in PanelShape s)
         {
             if (_has && s == _want)
+            {
+                _hasQueued = false;
                 return;
+            }
+            if (Building)
+            {
+                (_queued, _hasQueued) = (s, true);
+                return;
+            }
+            Start(s);
+        }
+
+        private void Start(in PanelShape s)
+        {
+            _hasQueued = false;
+            _started = true;
             DropPending();
             _want = s;
             _has = true;
@@ -70,6 +91,18 @@ public static partial class HullLoft
         /// <summary>A frame's slices of the facets (6 each) inside <paramref name="budgetMs"/>; the finished panel replaces the one shown.</summary>
         public void Pump(double budgetMs = 1.5)
         {
+            if (_started)
+            {
+                _started = false; // (this frame made the base: the facets begin next frame)
+                if (budgetMs < 100)
+                    return;
+            }
+            if (!Building && _hasQueued)
+            {
+                Start(_queued);
+                _started = false;
+                return;
+            }
             if (_next >= _total || Base == null)
                 return;
             var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
