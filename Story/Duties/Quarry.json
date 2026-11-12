@@ -11,6 +11,7 @@
  "steps": [
   {
    "id": "bus",
+   "area": "colony",
    "cue": "ride",
    "spot": "colony",
    "title": "The crew bus",
@@ -19,6 +20,7 @@
   },
   {
    "id": "power",
+   "area": "quarry",
    "cue": "power",
    "spot": "genset",
    "title": "Power the works",
@@ -28,6 +30,7 @@
   },
   {
    "id": "feed",
+   "area": "quarry",
    "cue": "feed",
    "spot": "bin",
    "title": "Feed the Smelter",
@@ -39,6 +42,7 @@
   },
   {
    "id": "metal",
+   "area": "quarry",
    "cue": "carry",
    "material": "metal",
    "spot": "out",
@@ -49,6 +53,7 @@
   },
   {
    "id": "home",
+   "area": "quarry",
    "cue": "ride",
    "spot": "quarry",
    "title": "Back to the colony",
@@ -57,6 +62,7 @@
   },
   {
    "id": "bunk",
+   "area": "colony",
    "cue": "bunk",
    "title": "Lights out",
    "text": "Look at a Bunk and press {Interact}. You wake here if you die.",
@@ -65,6 +71,7 @@
   },
   {
    "id": "done",
+   "area": "colony",
    "cue": "wait",
    "seconds": 8,
    "title": "Duty done",

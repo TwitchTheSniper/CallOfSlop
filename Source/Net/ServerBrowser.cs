@@ -423,7 +423,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      new settings (bayWidth, bayDepth, bayHeight).
     // 257: uniforms (Source/Cosmetics/Uniforms.cs). The roster gains a u8 uniform per player after the look (bots too), and the look
     //      (PlayerLook.WireBytes) grows to 4 bytes: the fourth is the uniform choice (Issued Uniform or Own Clothes).
-    public const ushort ProtocolVersion = 257;
+    // 258: the tutorial's play areas (Game/GameTutorialBounds.cs): Msg.Quarry gains a u8 after the buses, 1 while the person is
+    //      outside their step's area (the panel says so; the marker already points back).
+    public const ushort ProtocolVersion = 258;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

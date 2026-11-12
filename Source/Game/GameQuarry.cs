@@ -65,6 +65,8 @@ public sealed partial class Game
     {
         Array.Clear(_qr);
         Array.Clear(_qrWho);
+        Array.Clear(_paOut);
+        PlayAreaOutLocal = false;
         _qrWorks = 0;
         QuarryLocal = QuarryNone;
         QuarryHasTarget = false;
@@ -204,6 +206,8 @@ public sealed partial class Game
                 continue;
             }
             var k = run.State - QuarryFirstStep;
+            if (PlayAreaHolds(p.Id))
+                continue; // (out of the step's area: it waits, GameTutorialBounds.cs)
             if (QuarryJudge(p, ref run, steps[k], now))
             {
                 if (k + 1 < steps.Length)
@@ -318,7 +322,7 @@ public sealed partial class Game
     /// <summary>Server: something the duty counts happened for this person outside an action (a bunk lain in).</summary>
     private void QuarrySee(byte id, QuarryCue cue)
     {
-        if (id < MaxPlayers && _qr[id].State is >= QuarryFirstStep and < QuarryDone)
+        if (id < MaxPlayers && _qr[id].State is >= QuarryFirstStep and < QuarryDone && !PlayAreaHolds(id))
             _qr[id].Saw |= QuarryBit(cue);
     }
 
@@ -380,8 +384,8 @@ public sealed partial class Game
     /// </summary>
     private void QuarrySawAct(Player p, ref PacketReader r)
     {
-        if (p.Id >= MaxPlayers || _qrWorks == 0 || _qr[p.Id].State is < QuarryFirstStep or QuarryDone || !r.Has(1))
-            return;
+        if (p.Id >= MaxPlayers || _qrWorks == 0 || _qr[p.Id].State is < QuarryFirstStep or QuarryDone || !r.Has(1) || !PlayAreaLets(p))
+            return; // (done out of the step's area: it doesn't count, GameTutorialBounds.cs)
         var saw = 0u;
         switch ((CActKind)r.U8())
         {
@@ -474,6 +478,8 @@ public sealed partial class Game
 
     private Vector3? QuarryTargetOf(Player p)
     {
+        if (PlayAreaBack(p) is { } back)
+            return back; // (out of the step's area: the way back, GameTutorialBounds.cs)
         ref var run = ref _qr[p.Id];
         var script = QuarryScript.Current;
         if (_tutState[p.Id] == TutorialState.Running && _tutStep[p.Id] < Tutorial.Steps.Length)
@@ -495,7 +501,7 @@ public sealed partial class Game
         return step.Spot == QuarrySpotKind.None ? null : QuarrySpot(step.Spot);
     }
 
-    /// <summary>Server: their state, to them (<see cref="Msg.Quarry"/>: u8 state, u8 has a target, vec the target, u32 ride tick, u16 bus, u16 bus). The host's own goes straight in.</summary>
+    /// <summary>Server: their state, to them (<see cref="Msg.Quarry"/>: u8 state, u8 has a target, vec the target, u32 ride tick, u16 bus, u16 bus, u8 out of their step's play area). The host's own goes straight in.</summary>
     private void QuarrySend(Player p)
     {
         var target = QuarryTargetOf(p);
@@ -503,15 +509,16 @@ public sealed partial class Game
         var (a, b) = ((ushort)run.Bus, (ushort)run.RideTo);
         if (run.RideFrom == 0)
             (a, b) = (0, 0);
+        var outside = PlayAreaHolds(p.Id);
         if (p.Id == LocalId)
         {
-            QuarryHear(run.State, target, run.RideFrom, a, b);
+            QuarryHear(run.State, target, run.RideFrom, a, b, outside);
             return;
         }
         if (GuidOf(p) is not { } guid)
             return;
         var w = SbW;
-        w.Begin(Msg.Quarry).U8(run.State).U8(target != null ? (byte)1 : (byte)0).Vec(target ?? default).U32(run.RideFrom).U16(a).U16(b);
+        w.Begin(Msg.Quarry).U8(run.State).U8(target != null ? (byte)1 : (byte)0).Vec(target ?? default).U32(run.RideFrom).U16(a).U16(b).U8(outside ? (byte)1 : (byte)0);
         Net.SendTo(guid, w.Span, PacketReliability.ReliableOrdered);
     }
 
@@ -524,11 +531,13 @@ public sealed partial class Game
         var from = r.U32();
         var a = r.U16();
         var b = r.U16();
-        QuarryHear(state, has && float.IsFinite(at.X + at.Y + at.Z) ? at : null, from, a, b);
+        var outside = r.Has(1) && r.U8() != 0;
+        QuarryHear(state, has && float.IsFinite(at.X + at.Y + at.Z) ? at : null, from, a, b, outside);
     }
 
-    private void QuarryHear(byte state, Vector3? target, uint rideFrom, ushort a, ushort b)
+    private void QuarryHear(byte state, Vector3? target, uint rideFrom, ushort a, ushort b, bool outside)
     {
+        PlayAreaOutLocal = outside;
         if (state != QuarryLocal)
             QuarryChangedAt = Brutal.GlfwApi.Glfw.Time;
         QuarryLocal = state;
@@ -617,6 +626,7 @@ public sealed class QuarryStep
     public string Id = "", Title = "", Text = "", Say = "", Hint = "";
     public QuarryCue Cue;
     public QuarrySpotKind Spot;
+    public PlayArea Area; // the place this step happens in ("area": colony, quarry; Story/Tutorial/Bounds.json): out of it, the step waits
     public float Seconds = 6, Amount = 6, HintAfter = 40;
     public string Give = "", Material = ""; // a material handed over as the step starts ("give", "giveUnits"), and the one a carry step looks for ("material")
     public int GiveUnits = 20;
@@ -697,6 +707,7 @@ public sealed class QuarryScript
             st.Spot = Spot(Str(e, "spot", where), $"{where} ({st.Id})");
             if (st.Cue == QuarryCue.Ride && st.Spot is not (QuarrySpotKind.Colony or QuarrySpotKind.Quarry))
                 throw new FormatException($"{where} ({st.Id}): a ride's spot is colony or quarry (where the bus is boarded)");
+            st.Area = PlayAreas.Named(Str(e, "area", where), $"{where} ({st.Id})");
             st.Give = Str(e, "give", where);
             st.Material = Str(e, "material", where);
             if (e.TryGetProperty("giveUnits", out var gu) && gu.ValueKind == JsonValueKind.Number)
