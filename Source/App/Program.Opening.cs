@@ -118,14 +118,15 @@ public static partial class Program
             dl.AddRectFilled(new float2(0, 0), screen, new ImColor8(0, 0, 0, (byte)(Math.Clamp(black, 0, 1) * 255)));
 
         var font = ImGui.GetFont();
-        var big = 26f * Ui.Scale;
-        var small = 18f * Ui.Scale;
+        var big = Ui.SubtitlePx(26f); // (the story text's size and colour: UiSubtitles.cs)
+        var small = Ui.SubtitlePx(18f);
+        var tint = Ui.SubtitleTint;
         if (g.OpeningCaption.Length > 0)
         {
             var a = (byte)(Math.Clamp(MathF.Min(t / 0.6f, (length - t) / 0.5f), 0, 1) * 230);
             var size = ImGui.CalcTextSize(g.OpeningCaption) * (big / ImGui.GetFontSize());
             var at = new float2((screen.X - size.X) * 0.5f, screen.Y * 0.42f);
-            dl.AddText(font, big, at, new ImColor8(220, 214, 200, a), g.OpeningCaption);
+            dl.AddText(font, big, at, new ImColor8((byte)(tint.X * 235), (byte)(tint.Y * 235), (byte)(tint.Z * 235), a), g.OpeningCaption);
             if (stage == OpeningStage.Out)
             {
                 // (a placeholder until the crash-landing scene is made again: Karl, 2026-11-12)
@@ -139,7 +140,7 @@ public static partial class Program
             var size = ImGui.CalcTextSize(g.OpeningSubtitle) * (small / ImGui.GetFontSize());
             var at = new float2((screen.X - size.X) * 0.5f, screen.Y * 0.78f);
             dl.AddText(font, small, at + new float2(1.5f, 1.5f), new ImColor8(0, 0, 0, 200), g.OpeningSubtitle);
-            dl.AddText(font, small, at, new ImColor8(240, 236, 220, 255), g.OpeningSubtitle);
+            dl.AddText(font, small, at, new ImColor8((byte)(tint.X * 255), (byte)(tint.Y * 255), (byte)(tint.Z * 255), 255), g.OpeningSubtitle);
         }
         var hint = $"{SandboxKeys.JumpKey}: {Game.OpeningSkipHint}";
         var hs = ImGui.CalcTextSize(hint);

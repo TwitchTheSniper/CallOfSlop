@@ -91,10 +91,20 @@ public sealed partial class Ui
         var black = Program.QuarryRideBlack(t);
         if (black > 0)
             ImDrawListExtensions.AddRectFilled(dl, in org, new float2(org.X + area.X, org.Y + area.Y), Hud.Colour(System.Numerics.Vector3.Zero, black));
+        // Letterbox bars: the ride is a cinematic (no HUD, Program.cs), eased in over its first half second.
+        var bar = area.Y * 0.1f * (float)Math.Clamp(t / 0.5, 0, 1);
+        ImDrawListExtensions.AddRectFilled(dl, in org, new float2(org.X + area.X, org.Y + bar), Hud.Colour(System.Numerics.Vector3.Zero, 1f));
+        ImDrawListExtensions.AddRectFilled(dl, new float2(org.X, org.Y + area.Y - bar), new float2(org.X + area.X, org.Y + area.Y), Hud.Colour(System.Numerics.Vector3.Zero, 1f));
         var line = t > Game.QuarryRideAway && t < Game.QuarryRideAway + Game.QuarryRideBlack + 0.6 ? "Some time later..." : "Company-approved transport. Do not touch anything.";
-        var w = ImGui.CalcTextSize(line).X;
-        var at = new float2(org.X + (area.X - w) * 0.5f, org.Y + area.Y * (black > 0.5f ? 0.5f : 0.82f));
-        ImDrawListExtensions.AddText(dl, in at, Hud.Colour(new System.Numerics.Vector3(1, 1, 1), 0.9f), line);
+        SubtitleLine(dl, line, org.Y + area.Y * (black > 0.5f ? 0.5f : 0.8f), 22f);
+    }
+
+    /// <summary>A story ride's screen (Program.cs draws this instead of the HUD while <see cref="Game.QuarryRiding"/>): its words only.</summary>
+    public void DrawRideUi(Game game)
+    {
+        if (!game.SandboxOn || PauseOpen || MenuOpen)
+            return;
+        DrawQuarryRide(game);
     }
 
     /// <summary>The Esc menu's duty button (Sandbox): skip the quarry while it runs.</summary>

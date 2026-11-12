@@ -104,6 +104,8 @@ public sealed class Settings
     public ImpactDecalQuality ImpactDecals = ImpactDecalQuality.High; // bullet-impact decals kept at once: High 1024, Medium 512, Low 128, Off (Source/Decals)
     public FrenzyVisualMode FrenzyVisuals = FrenzyVisualMode.Full; // Settings > Video "Frenzy visuals": per-class frenzy effects (Source/Render/FrenzyFx)
     public BloodMode BloodOverlay = BloodMode.Full; // Settings > Video "Blood overlay": screen splatters by your health + blood marks on bodies (BloodOverlay.cs, BodyBloodRender.cs)
+    public int SubtitleSize = Ui.SubtitleSizeDefault; // Settings > Video "Story text size": a percent (UiSubtitles.cs)
+    public SubtitleColour SubtitleColour = SubtitleColour.Cream; // Settings > Video "Story text colour"
     public BloodColour BloodColour = BloodColour.Red; // Settings > Video "Blood colour": red or dark
     public GoreMode Gore = GoreMode.Full; // Settings > Video "Gore": meaty gibs from animals and blast kills, blood splats (Source/Props/Gibs.cs)
     public GoreLasting GoreLasting = GoreLasting.Fade; // Settings > Video "Bodies and gore": dead bodies and gibs fade or stay (Ragdolls.Stay, Gibs.Stay; a host's choice holds for the bodies it settles, GameCorpses.cs)
@@ -560,6 +562,8 @@ public sealed class Settings
                     case "impact_decals" when Enum.TryParse<ImpactDecalQuality>(v, out var iq) && Enum.IsDefined(iq): s.ImpactDecals = iq; break;
                     case "frenzy_visuals" when Enum.TryParse<FrenzyVisualMode>(v, true, out var fv) && Enum.IsDefined(fv): s.FrenzyVisuals = fv; break;
                     case "blood_overlay" when Enum.TryParse<BloodMode>(v, true, out var bo) && Enum.IsDefined(bo): s.BloodOverlay = bo; break;
+                    case "story_text_size": s.SubtitleSize = Ui.ParseSubtitleSize(v); break;
+                    case "story_text_colour" when Enum.TryParse<SubtitleColour>(v, true, out var sc) && Enum.IsDefined(sc): s.SubtitleColour = sc; break;
                     case "blood_colour" when Enum.TryParse<BloodColour>(v, true, out var bc) && Enum.IsDefined(bc): s.BloodColour = bc; break;
                     case "gore" when Enum.TryParse<GoreMode>(v, true, out var gm) && Enum.IsDefined(gm): s.Gore = gm; break;
                     case "gore_lasting" when Enum.TryParse<GoreLasting>(v, true, out var gl) && Enum.IsDefined(gl): s.GoreLasting = gl; break;
@@ -708,6 +712,8 @@ public sealed class Settings
                     $"gore_lasting={GoreLasting}",
                     $"frenzy_gunsound={FrenzyGunSound}",
                     $"blood_overlay={BloodOverlay}",
+                    $"story_text_size={SubtitleSize.ToString(CultureInfo.InvariantCulture)}",
+                    $"story_text_colour={SubtitleColour}",
                     $"blood_colour={BloodColour}",
                     $"head_bob={HeadBob}",
                     $"name_tags={NameTags}",
