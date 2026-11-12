@@ -813,11 +813,28 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
 - **Net and saves.** Protocol 264: each rider in `CBodyKind.Riders` gains u16 destination handle, u16 order and u8 flags. A save's body
   gains a `LOGI` block after the stations' jobs (written only when a rider has a destination: per rider its destination part plus one,
   order, flags); an older build skips it, an older save loads with no destinations (they get one at their first Router).
+- **Orders pull their inputs** (phase 2, one level; `Source/Constructs/ConstructLogisticsPlan.cs`). When a terminal's order is
+  queued at an Assembler whose recipe needs parts, each part it doesn't hold or have coming is asked of another Assembler on the
+  terminal's network: a chain entry (`ChainEntry`: maker, kind, asked, arrived, the Assembler that needs it, the root order) and a
+  work order marked with it (`WorkOrder.Chain`, server only, 0 for the player's own). Every Assembler now has an implicit **Piece in**
+  opposite its Piece out; the made part rides there as soon as it leaves its maker (its destination is the entry, with or without a
+  Router) and is fed as a chute would (`WantsPart`, `FeedPart`); a part its head recipe doesn't use yet waits at its door. A 2 Hz
+  step keeps entries honest: a maker that went or dropped the order is replaced (counting what already rides), a cancelled or done
+  root's entries go and their unstarted orders leave their makers (a head order on the die finishes; its part goes to storage at the
+  next Router). A link nobody makes stays open and the order's row says "waiting on Gear Set: nothing on the network makes it" (else
+  "Gear Set 1/2 from the Assembler"). Loose material is not ordered (the user's answer: kept by levels). Entries are saved in the
+  LOGI block after the riders (an entry's maker order is marked again on load, so nothing is asked twice); no new wire data: the row
+  travels as the order's note. An order whose part went to storage says why in its row ("a part went to storage: ... - it is fetched
+  from there"). Assemblers and Panel Formers are Router destinations (an Assembler's for its chained inputs; a Panel Former has no
+  wants yet).
+- **Not yet** (phase 2's rest, written plan in the coordinator's notes): deeper chains (a maker's own inputs), stock before making for
+  chained inputs, priorities between roots, the Building Station as a root, the Orders tab's indented chain lines, press bays as
+  destinations (a pressed part's maker waits for the Press's orders).
 - **Not in phase 1:** chains (orders pull their inputs), stock targets and overrides, the Router's settings (`routerSpill`,
   `routerHold`) and screen, the network board, press bays and the Panel Former as destinations, the source's own "no storage" stall
   (a full network backs up to the Router, stuck, and the line behind it backs up to the machine as today).
 - **Showcase:** the Assembler's Piece out runs to a Router; its way ahead to the part rack (storage), its way 3 to a Join before the
-  Crafting Terminal's side. Line A keeps its plain Splitter (the press is fed in turn until Press phase 2 gives it orders).
+  Crafting Terminal's side. Line A keeps its plain Splitter (the press is fed in turn until Press phase 2 gives it orders). A second Assembler on the panel strip's floor feeds the first's Piece in: "ORDER A CLUTCH: THIS ASSEMBLER MAKES ITS GEAR SET".
 
 ## Work orders
 

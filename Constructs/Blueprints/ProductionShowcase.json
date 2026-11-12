@@ -449,7 +449,7 @@
     {"part": "Assembler", "on": 387, "socket": "top01", "by": "bottom", "spin": 1, "paint": "#2f8f8a"},
     {"part": "Storage Volume", "on": 385, "socket": "top21", "by": "-y", "config": {"sizeX": 1.2, "sizeY": 1, "sizeZ": 1.2, "atY": 0.35, "material": "steel", "fill": 24}, "paint": "#c9a24a"},
     {"part": "Frame Beam", "on": 384, "socket": "top11", "by": "end-", "spin": 3, "paint": "#2f8f8a", "finish": "painted plating"},
-    {"part": "Text Sign", "on": 444, "socket": "y+3", "by": "back", "paint": "#23272b", "text": ["ORDER A TRANSMISSION: THIS ASSEMBLER MAKES ITS GEAR SETS"]},
+    {"part": "Text Sign", "on": 444, "socket": "y+3", "by": "back", "paint": "#23272b", "text": ["ORDER A CLUTCH: THIS ASSEMBLER MAKES ITS GEAR SET"]},
     {"part": "Lamp", "on": 444, "socket": "end+", "by": "-y", "config": {"colour": "#ffb347", "brightness": 120}},
     {"part": "Frame Beam", "on": 41, "socket": "top23", "by": "end-", "spin": 3, "paint": "#d17a22", "finish": "painted plating"},
     {"part": "Text Sign", "on": 447, "socket": "y+3", "by": "back", "paint": "#23272b", "text": ["MONITOR: the console's Data out wired to a display"]},

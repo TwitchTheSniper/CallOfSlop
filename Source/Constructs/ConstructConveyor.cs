@@ -781,15 +781,7 @@ public static class ConstructConveyor
     {
         int j = c.Routes[k].To;
         if (c.DefOf(j).IsRouter && ConstructRecycler.Powered(world, c, j) && ConstructLogistics.Map(c) is var m && m.RouterSlot(j) is var s and >= 0)
-        {
-            var pa = GC.GetAllocatedBytesForCurrentThread(); // PROBE
-            var p0 = Stopwatch.GetTimestamp(); // PROBE
-            var went = ConstructLogistics.Pass(world, c, m, s, k, lead, ref changed); // (a powered Router: the way to the piece's destination; unpowered, it deals in turn below)
-            LogiProbe.DecisionMs += Stopwatch.GetElapsedTime(p0).TotalMilliseconds; // PROBE
-            LogiProbe.DecisionBytes += GC.GetAllocatedBytesForCurrentThread() - pa; // PROBE
-            LogiProbe.Decisions++; // PROBE
-            return went;
-        }
+            return ConstructLogistics.Pass(world, c, m, s, k, lead, ref changed); // (a powered Router: the way to the piece's destination; unpowered, it deals in turn below)
         var d = ConstructParts.Def(c.Conveyed[lead].Def);
         Span<byte> outs = stackalloc byte[8];
         var n = 0;

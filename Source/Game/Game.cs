@@ -300,9 +300,7 @@ public sealed partial class Game : IDisposable
             {
                 using var _ = Perf.Measure(PerfArea.ServerTick);
                 var stressT0 = StressBeginTick(); // a horde stress round times its ticks for its summary (ZombiesCrowdStress.cs)
-                var probeT0 = System.Diagnostics.Stopwatch.GetTimestamp(); // PROBE
                 ServerTickStep(now);
-                LogiProbe.TickMs[LogiProbe.TickN++ % LogiProbe.TickMs.Length] = System.Diagnostics.Stopwatch.GetElapsedTime(probeT0).TotalMilliseconds; // PROBE
                 StressEndTick(stressT0);
             }
             else

@@ -790,23 +790,3 @@ public static class ConstructLogistics
     private static string PieceName(ushort def) => ConstructParts.Get(def) is { } pd ? pd.IsExtrusion ? Extrusion.Label(pd.ExKey) : pd.Name : "a piece";
 }
 
-/// <summary>PROBE (phase 2 measure; removed before the merge): whole server ticks and the Routers' decisions.</summary>
-public static class LogiProbe
-{
-    public static readonly double[] TickMs = new double[8192];
-    public static int TickN;
-    public static long DecisionBytes, Decisions;
-    public static double DecisionMs;
-
-    public static string Report()
-    {
-        var n = Math.Min(TickN, TickMs.Length);
-        var a = TickMs.AsSpan(0, n).ToArray();
-        Array.Sort(a);
-        var text = n == 0 ? "no ticks" : $"{n} server ticks: median {a[n / 2]:0.000} ms, p99 {a[Math.Min(n - 1, n * 99 / 100)]:0.000} ms, worst {a[n - 1]:0.000} ms; {Decisions} Router decisions, {DecisionMs:0.000} ms, {DecisionBytes} bytes";
-        TickN = 0;
-        DecisionBytes = Decisions = 0;
-        DecisionMs = 0;
-        return text;
-    }
-}
