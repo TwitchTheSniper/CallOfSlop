@@ -29,6 +29,7 @@ public sealed partial class Game
     public const double StandInBoardWait = 30; // s: the longest a body waits at the road's end for its craft
     public const double StandInResend = 3; // s between resends of every craft (for anyone who joined)
     public const float StandInApart = 14f; // m: craft standing at once keep this far apart
+    public const double StandInPickupHold = 180; // s: the longest a pickup stands waiting for a person still walking out
 
     /// <summary>The host's switch (the Story window's People tab).</summary>
     public bool StandInsOn = true;
@@ -203,8 +204,24 @@ public sealed partial class Game
                 Console.WriteLine($"[standin] a {kind} comes for {s.World.NameOf(a.Entity)}, off to {s.World.NameOf(a.Doing.Place)}");
         }
         for (var i = 0; i < StandInCount; i++)
-            if (_standInWhy[i].For == StandInFor.Pickup && ServerTick < StandIns[i].LeavesAt && StoryBodyIndexOf(_standInWhy[i].Who) < 0)
+        {
+            if (_standInWhy[i].For != StandInFor.Pickup || ServerTick >= StandIns[i].LeavesAt)
+                continue;
+            if (StoryBodyIndexOf(_standInWhy[i].Who) < 0)
                 StandInLeave(i, 1.5); // (aboard, or gone some other way)
+            else
+                StandInHoldFor(i); // (still walking out: it waits, so a slow walker doesn't miss it and get a second craft)
+        }
+    }
+
+    /// <summary>Server: a pickup about to go with its person still on the way waits on (up to <see cref="StandInPickupHold"/> s standing).</summary>
+    private void StandInHoldFor(int i)
+    {
+        ref var c = ref StandIns[i];
+        if (c.LeavesAt > ServerTick + StandInTicks(3) || c.Wait >= StandInTicks(StandInPickupHold))
+            return;
+        c.Wait = (ushort)Math.Min(StandInTicks(StandInPickupHold), c.Wait + StandInTicks(10));
+        StandInSend(i, resend: false);
     }
 
     /// <summary>A shuttle for a long road, a hauler for a short one.</summary>
