@@ -61,9 +61,10 @@ public sealed partial class Ui
 
     public int RecipePickerPictures { get; private set; }
 
-    /// <summary>Machines the picker serves: a refiner with recipes to choose, an Assembler.</summary>
+    /// <summary>Machines the picker serves: a refiner with recipes to choose, an Assembler, a Panel Former (its presets).</summary>
     public static bool RecipePickable(ConstructPartDef d) =>
-        d.CfgSlot[(int)CfgKey.Recipe] >= 0 && (d.IsRefiner && d.RefineChoices.Length > 0 || d.IsAssembler && AssemblingTable.Current.ByMachine[d.AsmMachine].Length > 0);
+        d.CfgSlot[(int)CfgKey.Recipe] >= 0 && (d.IsRefiner && d.RefineChoices.Length > 0 || d.IsPanelFormer && d.Config[d.CfgSlot[(int)CfgKey.Recipe]].Options.Length > 0
+            || d.IsAssembler && AssemblingTable.Current.ByMachine[d.AsmMachine].Length > 0);
 
     /// <summary>Opens the picker for a Line Console's machine (<paramref name="same"/>: machines of its kind on the line, itself counted).</summary>
     public void OpenRecipePicker(ushort body, int console, int machine, ConstructPartDef d, int same)
@@ -76,6 +77,9 @@ public sealed partial class Ui
         _rcpFromConfig = false;
         _rcpAllLabel = same > 1 ? $"Apply to all {same} {d.Name}s on the line" : "";
     }
+
+    /// <summary>Opens the picker from a machine's own Recipe button (the pick goes as <see cref="CActKind.LineRecipe"/> with the machine as its console).</summary>
+    public void OpenRecipePickerMachine(ushort body, int machine, ConstructPartDef d) => OpenRecipePicker(body, machine, machine, d, 1);
 
     /// <summary>Opens the picker for the configure panel's recipe row (its selection gets the pick, as the row would).</summary>
     public void OpenRecipePickerConfig(ushort body, int part, ConstructPartDef d, int slot)
@@ -141,7 +145,26 @@ public sealed partial class Ui
             t.InSwatch = ins.Select(i => i.Swatch).ToArray();
         }
         (int, string, ImColor8) Mat(byte m, int units) => (SandboxTiles.ResourceSlot(m), $"{units}", Col8(names.ColourOf(m)));
-        if (d.IsRefiner)
+        if (d.IsPanelFormer)
+        {
+            // A Panel Former's presets (HullLoft.PanelPresets, the Preset setting's options): a swatch each, its size and what it is.
+            var opts = d.Config[d.CfgSlot[(int)CfgKey.Recipe]].Options;
+            var shades = new ImColor8[] { new(96, 120, 150, 255), new(110, 140, 112, 255), new(150, 128, 92, 255), new(128, 104, 140, 255) };
+            for (var k = 0; k < opts.Length; k++)
+            {
+                var pr = HullLoft.PanelPresets[Math.Clamp(k, 0, HullLoft.PanelPresets.Length - 1)];
+                tiles.Add(new RpTile
+                {
+                    Value = k,
+                    Name = opts[k],
+                    Out = $"{pr.L / 100f:0.##} x {pr.W / 100f:0.##} m",
+                    Search = $"{opts[k]} {pr.What}".ToLowerInvariant(),
+                    Tip = $"{opts[k]}: {pr.What}. Queue orders it at {pr.L / 100f:0.##} x {pr.W / 100f:0.##} m in what the bin holds.",
+                    Swatch = shades[k % shades.Length],
+                });
+            }
+        }
+        else if (d.IsRefiner)
         {
             tiles.Add(new RpTile { Value = 0, Name = "Auto", Search = "auto", Tip = "Auto: what is in the input picks the recipe.", Swatch = new ImColor8(70, 76, 88, 255) });
             var table = RefiningTable.Current;

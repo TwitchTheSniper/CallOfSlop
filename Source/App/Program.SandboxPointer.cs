@@ -224,6 +224,10 @@ public static partial class Program
             {
                 // (the Recipe button opens the recipe picker on the line's picked machine: Program.SandboxRecipe.cs)
             }
+            else if (def.Touch[region].Action == "machine.recipe" && MachineRecipePicker(c, part))
+            {
+                // (a machine's own Recipe button opens the picker on it: Program.SandboxRecipe.cs)
+            }
             else
                 g.SandboxPanelTouch(c.Id, part, n, region);
         }

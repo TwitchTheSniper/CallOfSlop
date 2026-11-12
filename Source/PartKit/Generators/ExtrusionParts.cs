@@ -73,8 +73,17 @@ public sealed class ExtrusionParts : IPartGenerator
     internal static readonly PyDict OrderCount = Kw(("key", "orderCount"), ("label", "Order count"), ("group", "Orders"), ("min", 1), ("max", 999), ("step", 1), ("default", 1),
         ("tooltip", "Pieces the Queue button on its screen asks for: one order of its settings as they stand."));
 
-    /// <summary>The touch buttons under a machine's queue (WorkOrders.cs): Queue, Cancel, Clear, Up and Down. The Assemblers' too (MachineTiers).</summary>
-    internal static List<object?> OrderButtons() => Py.L(
+    /// <summary>The touch buttons under a machine's queue (WorkOrders.cs): Queue, Cancel, Clear, Up and Down. The Assemblers' too (MachineTiers),
+    /// with <paramref name="recipe"/> a Recipe button among them (the recipe picker on this machine: Program.MachineRecipePicker).</summary>
+    internal static List<object?> OrderButtons(bool recipe = false) => recipe
+        ? Py.L(
+            Kw(("action", "orders.queue"), ("at", Py.L(0.02, 0.02, 0.2, 0.12)), ("label", "Queue")),
+            Kw(("action", "orders.cancel"), ("at", Py.L(0.21, 0.02, 0.39, 0.12)), ("label", "Cancel")),
+            Kw(("action", "orders.clear"), ("at", Py.L(0.4, 0.02, 0.56, 0.12)), ("label", "Clear")),
+            Kw(("action", "machine.recipe"), ("at", Py.L(0.57, 0.02, 0.75, 0.12)), ("label", "Recipe")),
+            Kw(("action", "view.up"), ("at", Py.L(0.76, 0.02, 0.87, 0.12)), ("label", "Up")),
+            Kw(("action", "view.down"), ("at", Py.L(0.88, 0.02, 0.98, 0.12)), ("label", "Down")))
+        : Py.L(
         Kw(("action", "orders.queue"), ("at", Py.L(0.02, 0.02, 0.24, 0.12)), ("label", "Queue")),
         Kw(("action", "orders.cancel"), ("at", Py.L(0.26, 0.02, 0.48, 0.12)), ("label", "Cancel")),
         Kw(("action", "orders.clear"), ("at", Py.L(0.5, 0.02, 0.72, 0.12)), ("label", "Clear")),

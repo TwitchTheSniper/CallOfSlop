@@ -30,7 +30,7 @@ public sealed class PanelFormerParts : IPartGenerator
         Kw(("action", "orders.queue"), ("at", Py.L(0.02, 0.02, 0.2, 0.12)), ("label", "Queue")),
         Kw(("action", "orders.cancel"), ("at", Py.L(0.21, 0.02, 0.39, 0.12)), ("label", "Cancel")),
         Kw(("action", "orders.clear"), ("at", Py.L(0.4, 0.02, 0.56, 0.12)), ("label", "Clear")),
-        Kw(("action", "orders.preset"), ("at", Py.L(0.57, 0.02, 0.75, 0.12)), ("label", "Preset")), // (the next preset its Queue orders)
+        Kw(("action", "machine.recipe"), ("at", Py.L(0.57, 0.02, 0.75, 0.12)), ("label", "Preset")), // (the preset its Queue orders, from the recipe picker)
         Kw(("action", "view.up"), ("at", Py.L(0.76, 0.02, 0.87, 0.12)), ("label", "Up")),
         Kw(("action", "view.down"), ("at", Py.L(0.88, 0.02, 0.98, 0.12)), ("label", "Down")));
 
