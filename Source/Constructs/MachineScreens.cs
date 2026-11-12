@@ -137,6 +137,18 @@ public static class MachineScreens
             }
         if (r != null)
             card.Add(1, r.Name);
+        if (d.IsPanelFormer)
+        {
+            // A Panel Former works orders only: its stock, the preset its Queue button orders, then the queue (or how to give it one).
+            Amount(card, 1, "Stock ", st.Amount, RecyclingTable.Current.NameOf(st.Material));
+            card.Add(2, "Preset: ").Add(2, HullLoft.PanelPresets[Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0), 0, HullLoft.PanelPresets.Length - 1)].Label);
+            if (p.Orders != null)
+                WorkOrders.FillQueue(p, card, 3);
+            else
+                card.Add(3, "No orders: Queue, or a bill");
+            card.Bar = st.Busy ? st.Progress / 100f : -1;
+            return;
+        }
         if (p.Orders != null)
         {
             // Work orders (WorkOrders.cs): what it builds and what it lacks, then the queue: its totals and the next orders (the buttons under them).
@@ -158,10 +170,10 @@ public static class MachineScreens
             switch ((ExtrudeStall)st.Refused)
             {
                 case ExtrudeStall.NoPower: Say(card, PanelState.Fault, "No power"); break;
-                case ExtrudeStall.NoMaterial: Say(card, PanelState.Wants, "Needs material"); break;
+                case ExtrudeStall.NoMaterial: Say(card, PanelState.Wants, d.IsPanelFormer ? "Needs sheet" : "Needs material"); break;
                 case ExtrudeStall.BadMaterial: Say(card, PanelState.Refused, "Wrong material"); break;
                 case ExtrudeStall.Mixed: Say(card, PanelState.Wants, "Other material"); break;
-                case ExtrudeStall.BadShape: Say(card, PanelState.Refused, "Bad section"); break;
+                case ExtrudeStall.BadShape: Say(card, PanelState.Refused, d.IsPanelFormer ? "Not a panel" : "Bad section"); break;
                 case ExtrudeStall.AtCap: Say(card, PanelState.Wants, "At full size"); break;
                 case ExtrudeStall.Blocked: Say(card, PanelState.Wants, "Blocked"); break;
                 case ExtrudeStall.TooHeavy: Say(card, PanelState.Wants, "Path too heavy"); break;

@@ -667,6 +667,7 @@ public sealed partial class ConstructPartDef
     public float RackLength;
     public int RackCount;
     public Vector3 RackHoldMin, RackHoldMax; // ...the box its pieces pack into, in its own frame (storage.pieces.hold; ConstructRackPack.cs)
+    public bool IsPanelFormer; // a Panel Former (also IsExtruder and IsWheelFormer; ConstructPanelFormer.cs): it forms named panels from its bin, by order
     public bool IsWheelFormer; // a Wheel Former (also IsExtruder; ConstructExtruder.cs): its die is a hub and its piece a wheel
     public Vector2 ExtWheelMax, ExtWheelStart; // ...the biggest and the first wheel (metres wide, across)
     public bool IsExtrusion; // a piece an Extruder made (ConstructExtrusion.cs): not from a file
@@ -1172,7 +1173,7 @@ public static partial class ConstructParts
             return Ordnance.Parse(name); // (a design names itself, as a piece does)
         if (name.StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase))
             return Extrusion.Parse(name); // (a piece names itself: a blueprint's extrusion)
-        if (name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal))
+        if (name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal) || HullLoft.IsPanelName(name))
             return HullLoft.Parse(name); // (a lofted hull bay names itself too: HullLoft.cs)
         if (name.StartsWith(ModularRack.Prefix, StringComparison.OrdinalIgnoreCase) || name.StartsWith(ModularRack.LegacyPrefix, StringComparison.OrdinalIgnoreCase))
             return ModularRack.Parse(name); // (a rack of a shape no file has names itself too, an old Modular Bomb Rack's as well)

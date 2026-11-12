@@ -924,6 +924,8 @@ public static class ConstructConveyor
         var td = c.DefOf(to);
         if (td.IsPieceRack)
             return world.RackPut(c, to, d);
+        if (td.IsPanelFormer)
+            return ConstructPanelFormer.TakeFromConveyor(world, c, to, d); // (extruded sheet into its bin)
         if (td.IsPress && ConstructRoutes.PortOf(td, RouteType.Conveyor, c.Routes[route].ToPort) is { } port)
         {
             var bay = port.Name.Length > 9 && int.TryParse(port.Name.AsSpan(9), out var nb) ? nb - 1 : 0; // ("Piece in", "Piece in 2"...)

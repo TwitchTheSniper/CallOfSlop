@@ -261,8 +261,8 @@ public static partial class HullLoft
     /// <summary>The part a key names, made the first time it is asked for. Null: a key no machine would write, or the run-time table is full.</summary>
     public static ConstructPartDef? Parse(string name)
     {
-        if (!name.StartsWith(Prefix, StringComparison.Ordinal) || !name.EndsWith(')') || name.Length > ConstructParts.MaxRuntimeName)
-            return null;
+        if (!name.StartsWith(Prefix, StringComparison.Ordinal) && !IsPanelName(name) || !name.EndsWith(')') || name.Length > ConstructParts.MaxRuntimeName)
+            return null; // (a formed panel comes through this door too: HullLoft.Panels.cs)
         lock (Interned)
         {
             if (Interned.TryGetValue(name, out var have))
@@ -289,6 +289,8 @@ public static partial class HullLoft
 
     private static ConstructPartDef? Make(string name)
     {
+        if (MakePanel(name) is { } panel)
+            return panel.Ok ? panel.Def : null; // (a Panel Former's formed panel: HullLoft.Panels.cs)
         if (MakeFront(name) is { } front)
             return front.Ok ? front.Def : null; // (phase 3: a lofted cab, hood or window pane: HullLoft.Cabs.cs)
         if (MakeTrim(name) is { } trim)
@@ -341,7 +343,7 @@ public static partial class HullLoft
     public static ushort Read(ref PacketReader r)
     {
         var name = r.Str();
-        if (!name.StartsWith(Prefix, StringComparison.Ordinal))
+        if (!name.StartsWith(Prefix, StringComparison.Ordinal) && !IsPanelName(name))
             throw new MalformedPacketException($"a run-time part named \"{name}\"");
         return Parse(name) is { } d ? d.Id : ConstructParts.Need("Hull Bay T").Id;
     }
