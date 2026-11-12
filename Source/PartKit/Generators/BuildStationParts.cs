@@ -45,7 +45,7 @@ public sealed class BuildStationParts : IPartGenerator
         p.Add(MachineLook.D([x0 + 0.006, y0 + 0.02, z0 + 0.6], [x0 + 0.022, y0 + 0.5, z0 + 1.2], MachineLook.In));
         MachineLook.Hazard(p, [x0 + 0.002, y0 + 0.0, z0 + 0.62], [x0 + 0.024, y0 + 0.018, z0 + 1.18]);
         // ---- The tray, along the right: runners, slats, accent rails; parts ride in at the back and are taken at the front.
-        const double runner = 0.12, high = 0.12, post = 0.07, rail = 0.06, top = 0.62;
+        const double runner = 0.12, high = 0.12, post = 0.07, rail = 0.06, top = 1.4;
         p.Add(Box([xm, y0, z0], [xm + runner, y0 + high, z1], MachineLook.Base));
         p.Add(Box([x1 - runner, y0, z0], [x1, y0 + high, z1], MachineLook.Base));
         for (var k = 0; k <= 2; k++)
@@ -85,7 +85,7 @@ public sealed class BuildStationParts : IPartGenerator
         const double section = 1.8, length = 2.8;
         static PyDict Bay(string key, string label, double def, string tip) => Kw(("key", key), ("label", label), ("group", "Bay"), ("min", 2), ("max", 64), ("step", 0.5), ("default", def), ("unit", "m"), ("tooltip", tip));
         p.Set(("config", Py.L(Bay("bayWidth", "Bay width", 6, "The bay's size across, away from the station."), Bay("bayDepth", "Bay depth", 8, "The bay's size along the station."), Bay("bayHeight", "Bay height", 4, "The bay's height. A blueprint is built only if it fits the bay."))));
-        p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(section, 0.8)), ("length", length), ("count", 400), ("crafting", true), ("station", true),
+        p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(section, 1.25)), ("length", length), ("count", 400), ("crafting", true), ("station", true),
             ("hold", Py.L(Py.L(Py.Round(xm + 0.1, 3), Py.Round(y0 + 0.133, 3), Py.Round(z0 + 0.074, 3)), Py.L(Py.Round(x1 - 0.1, 3), Py.Round(y0 + top - 0.01, 3), Py.Round(z1 - 0.06, 3)))))))));
         p.Set(("ports", Py.L(
             Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(Py.Round(mid, 3), Py.Round(y0 + 0.05, 3), z0)), ("face", "-z"), ("opening", Py.L(section, section))),

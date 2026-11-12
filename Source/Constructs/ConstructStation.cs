@@ -1245,3 +1245,39 @@ public sealed class StationPreview
         Lines.Add(($"{metres:0} {material} for {metres:0} m of {what}: {Math.Min(have, (int)metres)} in linked bins{(have < metres ? $", {metres - have:0} MISSING (the links wait)" : "")}", (byte)(have < metres ? 3 : 1)));
     }
 }
+
+public static class StationProbe
+{
+    /// <summary>The window tool (host): every part the job still lacks goes straight into the hold, as if it had been delivered. What happened, in words.</summary>
+    public static string Stock(ConstructWorld world, Construct c, int t)
+    {
+        if (c.Parts[t].Station is not { State: StationState.Building } j || world.StoreOf(c, t) is not { } tray)
+            return "nothing is being built";
+        int put = 0, refused = 0;
+        var first = "";
+        for (var i = 0; i < j.KindN; i++)
+        {
+            if (ConstructParts.Get(j.KindDef[i]) is not { } d)
+                continue;
+            for (var n = j.KindNeed[i] - j.KindFit[i] - ConstructCrafting.Holds(tray, j.KindDef[i]); n > 0; n--)
+                if (world.RackPut(c, t, d))
+                    put++;
+                else
+                {
+                    refused++;
+                    if (first.Length == 0)
+                        first = $"{d.Name}: {ConstructConveyor.RackRefusal(c, t, tray, d)}";
+                }
+        }
+        world.CraftChanged(c);
+        return $"{put} part(s) into the hold{(refused > 0 ? $", {refused} refused ({first})" : "")}";
+    }
+
+    /// <summary>A job in one line, for the window tool's dump.</summary>
+    public static string Text(ConstructWorld world, Construct c, int t)
+    {
+        var j = c.Parts[t].Station;
+        var b = j == null ? null : world.Get(j.Body);
+        return j == null ? "no job" : $"{j.State} \"{j.Name}\" parts {j.Fitted}/{j.Steps} links {j.LinksDone}/{j.Links} repeat {j.Repeat} body {j.Body} ({(b == null ? "none" : $"{b.PartCount} parts, {b.RouteCount} links, {(b.Frozen ? "frozen" : "free")}")}) hold {world.StoreOf(c, t)?.ItemCount ?? -1} orders {c.Parts[t].Craft?.Count ?? 0} note \"{j.Note}\"";
+    }
+}

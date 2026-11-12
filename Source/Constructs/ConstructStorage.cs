@@ -521,7 +521,7 @@ public static class ConstructStorage
             // A Piece Rack (ConstructConveyor.cs): whole pieces by kind, the largest section and length it holds and how many.
             if (pc.ValueKind != JsonValueKind.Object)
                 throw new ConstructPartException($"{file}: storage \"pieces\" is an object (section, length, count)");
-            ConstructParts.Known(pc, ["section", "length", "count", "hold", "crafting"], $"{bw}.pieces");
+            ConstructParts.Known(pc, ["section", "length", "count", "hold", "crafting", "station"], $"{bw}.pieces");
             var sec = ConstructParts.Need(pc, "section", $"{bw}.pieces");
             if (sec.ValueKind != JsonValueKind.Array || sec.GetArrayLength() != 2)
                 throw new ConstructPartException($"{file}: storage.pieces.section is [across, up] in metres");

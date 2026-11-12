@@ -984,7 +984,7 @@ public static class ConstructBuild
                 return;
             }
         for (var k = 0; k < bp.Stored.Count; k++)
-            if (bp.Stored[k].Step < 0 || bp.Stored[k].Step >= bp.Steps.Count || bp.Stored[k].Slot >= c.DefOf(partOf[bp.Stored[k].Step]).Slots.Length)
+            if (bp.Stored[k].Step < 0 || bp.Stored[k].Step >= bp.Steps.Count || (bp.Stored[k].Slot < 0 || bp.Stored[k].Slot >= c.DefOf(partOf[bp.Stored[k].Step]).Slots.Length) && !c.DefOf(partOf[bp.Stored[k].Step]).IsPieceRack)
             {
                 run.Why = $"stored[{k}]: step {bp.Stored[k].Step} has no slot {bp.Stored[k].Slot}";
                 world.Remove(c);

@@ -620,6 +620,7 @@
     {"output": "Wood Beam 2 m", "materials": {"planks": 30, "laminate": 7}, "seconds": 2.9},
     {"output": "Wood Beam 4 m", "materials": {"planks": 60, "laminate": 15}, "seconds": 3.8},
     {"output": "Wood Post 2.75 m", "materials": {"planks": 69, "laminate": 17}, "seconds": 4.1},
+    {"output": "Building Station", "materials": {"steel": 84, "rubber": 17}, "seconds": 14.6},
     {"output": "Bumper", "materials": {"steel": 4, "rubber": 1}, "seconds": 2.7},
     {"output": "Button", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.1, "minTier": 3},
     {"output": "Capital Box Frame 128 m", "materials": {"steel": 2000, "concrete": 500}, "seconds": 600.0, "minTier": 4},
