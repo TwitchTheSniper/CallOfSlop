@@ -66,7 +66,7 @@ Generators (`--gen-parts` lists them): `free_parts`, `bandit_parts`, `media_part
 `air_cargo`, `air_weapons_parts`, `ordnance_parts`, `hull_parts`, `body_parts`, `wing_parts`, `actuator_parts`, `make_joint_sides`,
 `control_parts`, `hydraulics_parts`, `press_parts`, `extrusion_parts`, `panel_former_parts`, `structure_parts`, `capital_parts`, `large_systems`,
 `stabiliser_parts`, `leg_parts`, `upgrade_parts`, `engine_parts`, `building_parts` (the Building pieces and nine example blueprints),
-`interior_parts`, `make_rv` (RV.json), `machine_tiers` (with `TierStyle.cs`), `assembling`, `production_showcase` (the Production Showcase
+`interior_parts`, `make_rv` (RV.json), `machine_tiers` (with `TierStyle.cs` and `TierMachine.cs`, the machine look over each tier), `assembling`, `production_showcase` (the Production Showcase
 blueprint, built step by step through the game's rules on the vehicle kit's `BlueprintScript`: it reads the part files as the game loads them, so
 it runs last). Helpers: `PartScale.cs` (the size classes,
 `Part`, `Box`, `BlockSockets`, `WriteParts`), `PartZFight.cs` (zfight), `PartScreens.cs` (machine screens), `JointSides.cs`, `PyJson.cs`.
@@ -83,7 +83,7 @@ skips a part whose solid box has no `"size"` (the door hinges' min/max boxes, wh
 
 Checks the generators make, as the Python did: `assembling` refuses a recipe whose output names no part (in `Constructs/Parts` or
 the weapon builder's `Parts/*/`), a part input that isn't an item and more than six inputs; `building_parts` refuses a socket on no
-solid face and a stage whose sockets differ from its whole wall's; `machine_tiers` a box thinner than 1 cm and more than 33 boxes;
+solid face and a stage whose sockets differ from its whole wall's; `machine_tiers` a box thinner than 1 cm and more than 150 boxes;
 `make_rv` a step that overlaps an earlier part. Not ported: machine_tiers' leftover z-fight report (the "No z-fighting" self-test covers
 shipped parts) and make_rv's `--list`/`--zfight` printouts.
 

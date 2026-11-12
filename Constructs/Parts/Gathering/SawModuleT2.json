@@ -27,9 +27,9 @@
     {"min": [0.595, 0.35, -0.15], "max": [0.75, 0.65, 0.15], "color": "#3a3f46"},
     {"min": [-0.75, 0.35, -0.15], "max": [-0.595, 0.65, 0.15], "color": "#3a3f46"},
     {"min": [-0.15, 0.35, -0.75], "max": [0.15, 0.65, -0.595], "color": "#3a3f46"},
-    {"min": [-0.6188, 0.4075, 1.2687], "max": [-0.2063, 0.4312, 1.6812], "color": "#c9ced6", "detail": true, "shape": "cylinder", "front": "+y", "segments": 24},
-    {"min": [-0.2063, 0.4075, 1.2687], "max": [0.2063, 0.4312, 1.6812], "color": "#c9ced6", "detail": true, "shape": "cylinder", "front": "+y", "segments": 24},
-    {"min": [0.2063, 0.4075, 1.2687], "max": [0.6188, 0.4312, 1.6812], "color": "#c9ced6", "detail": true, "shape": "cylinder", "front": "+y", "segments": 24},
+    {"min": [-0.6188, 0.4075, 1.2687], "max": [-0.2063, 0.4312, 1.6812], "color": "#c9ced6", "detail": true, "shape": "cylinder", "front": "+y", "segments": 24, "work": "spin", "axis": "+y"},
+    {"min": [-0.2063, 0.4075, 1.2687], "max": [0.2063, 0.4312, 1.6812], "color": "#c9ced6", "detail": true, "shape": "cylinder", "front": "+y", "segments": 24, "work": "spin", "axis": "+y"},
+    {"min": [0.2063, 0.4075, 1.2687], "max": [0.6188, 0.4312, 1.6812], "color": "#c9ced6", "detail": true, "shape": "cylinder", "front": "+y", "segments": 24, "work": "spin", "axis": "+y"},
     {"min": [-0.6325, 0.825, -0.6325], "max": [0.6325, 0.8625, -0.5475], "color": "#d8c690", "detail": true},
     {"min": [-0.6325, 0.825, 0.5475], "max": [0.6325, 0.8625, 0.6325], "color": "#d8c690", "detail": true},
     {"min": [-0.635, 0.0375, 0.6175], "max": [0.635, 0.15, 0.635], "color": "#3a3f46", "detail": true},
@@ -42,7 +42,10 @@
     {"min": [-0.265, 0.6725, 0.625], "max": [-0.235, 0.7025, 0.655], "color": "#d8c690", "detail": true, "shape": "sphere"},
     {"min": [0.235, 0.6725, 0.625], "max": [0.265, 0.7025, 0.655], "color": "#d8c690", "detail": true, "shape": "sphere"},
     {"min": [0.485, 0.6725, 0.625], "max": [0.515, 0.7025, 0.655], "color": "#d8c690", "detail": true, "shape": "sphere"},
-    {"min": [-0.4375, 0.877, -0.622], "max": [0.4375, 0.952, -0.553], "color": "#2b3036", "detail": true, "paintable": false, "status": true}
+    {"min": [-0.4375, 0.877, -0.622], "max": [0.4375, 0.952, -0.553], "color": "#2b3036", "detail": true, "paintable": false, "status": true},
+    {"min": [-0.5982, 0.4272, 1.449], "max": [-0.2269, 0.4432, 1.5009], "color": "#15171a", "detail": true, "paintable": false, "work": "spin", "axis": "+y"},
+    {"min": [-0.1857, 0.4272, 1.449], "max": [0.1857, 0.4432, 1.5009], "color": "#15171a", "detail": true, "paintable": false, "work": "spin", "axis": "+y"},
+    {"min": [0.2269, 0.4272, 1.449], "max": [0.5982, 0.4432, 1.5009], "color": "#15171a", "detail": true, "paintable": false, "work": "spin", "axis": "+y"}
   ],
   "sockets": [
     {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
