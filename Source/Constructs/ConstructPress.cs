@@ -937,7 +937,7 @@ public static class ConstructPress
         PressStall.TrayFull => "Tray full",
         PressStall.Blocked => "Output blocked",
         PressStall.ConveyorFull => "Output conveyor full",
-        PressStall.ConveyorSmall => "Too big for its conveyor",
+        PressStall.ConveyorSmall => "Conveyor too narrow",
         PressStall.ConveyorCut => "Output conveyor cut",
         _ => "Ready",
     };

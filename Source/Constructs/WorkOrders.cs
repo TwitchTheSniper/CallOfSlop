@@ -79,8 +79,11 @@ public static class WorkOrders
 
     // ---- Accepting --------------------------------------------------------------------------------------------------------
 
-    /// <summary>A machine that can take orders: an Extruder or a Wheel Former (Fan and Airframe Formers wait for a later phase).</summary>
-    public static bool TakesOrders(ConstructPartDef d) => d.IsExtruder && !d.IsFanFormer && !d.IsAirframeFormer;
+    /// <summary>A machine that can take orders: an Extruder or a Wheel Former (Fan and Airframe Formers wait for a later phase), or an Assembler of any family.</summary>
+    public static bool TakesOrders(ConstructPartDef d) => d.IsExtruder && !d.IsFanFormer && !d.IsAirframeFormer || d.IsAssembler;
+
+    /// <summary>The name of an Assembler family (<see cref="AssemblingTable.Machines"/>), for a refusal.</summary>
+    public static string FamilyName(byte machine) => machine switch { 1 => "Thruster Assembler", 2 => "Tailor", _ => "Assembler" };
 
     /// <summary>Server: will this machine take the order? Null, or why not (one reason; a refused order is never queued).</summary>
     public static string? Refusal(ConstructWorld world, Construct c, int part, in WorkOrder o)
@@ -88,6 +91,8 @@ public static class WorkOrders
         var d = c.DefOf(part);
         if (!TakesOrders(d))
             return d.IsFanFormer || d.IsAirframeFormer ? $"the {d.Name} takes no orders yet" : $"the {d.Name} takes no orders";
+        if (d.IsAssembler)
+            return AssemblerRefusal(c, part, d, o);
         if (!o.IsPiece)
             return $"the {d.Name} makes pieces: {ConstructParts.Def(o.Part).Name} is an Assembler's order";
         if (o.Count is < 1 or > MaxCount)
@@ -130,6 +135,34 @@ public static class WorkOrders
         return null;
     }
 
+    /// <summary>An Assembler's side: a catalogue part its family has a recipe for, at its tier, and room in the queue.</summary>
+    private static string? AssemblerRefusal(Construct c, int part, ConstructPartDef d, in WorkOrder o)
+    {
+        if (o.IsPiece)
+            return $"the {d.Name} makes catalogue parts: a {Extrusion.Label(o.Key)} is {Maker(o.Key)}'s order";
+        var made = ConstructParts.Def(o.Part);
+        if (o.Count is < 1 or > MaxCount)
+            return $"an order is for 1 to {MaxCount} parts";
+        if (AssemblingTable.Current.Of(o.Part) is not { } r)
+            return $"no recipe makes the {made.Name}";
+        if (r.Machine != d.AsmMachine)
+            return $"the {made.Name} is made by a {FamilyName(r.Machine)}, not the {d.Name}";
+        if (r.MinTier > d.Tier)
+            return $"the {made.Name} needs a tier {r.MinTier} {FamilyName(r.Machine)} (this is tier {d.Tier})";
+        if (c.Parts[part].Orders is { Count: >= MaxOrders })
+            return $"the {d.Name}'s queue is full ({MaxOrders} orders)";
+        return null;
+    }
+
+    /// <summary>Which machine makes a piece: "an Extruder", "a Wheel Former"...</summary>
+    public static string Maker(in ExtrusionKey k) => k.Shape switch
+    {
+        ExShape.Wheel => "a Wheel Former",
+        ExShape.Fan or ExShape.Blade => "a Fan Former",
+        ExShape.Wing => "an Airframe Former",
+        _ => "an Extruder",
+    };
+
     /// <summary>Server: queues an order on a machine, or says why not.</summary>
     public static string? Queue(ConstructWorld world, Construct c, int part, in WorkOrder o)
     {
@@ -159,12 +192,12 @@ public static class WorkOrders
         k.Shape == head.Key.Shape && k.Material == head.Key.Material && (k.Shape == ExShape.Wheel || k.Mask == head.Key.Mask && k.W == head.Key.W && k.H == head.Key.H && k.Wall == head.Key.Wall);
 
     /// <summary>Server: a piece for the head order came off: one more made, and the head goes once all are.</summary>
-    public static void Made(ConstructWorld world, Construct c, OrderList? q)
+    public static void Made(ConstructWorld world, Construct c, OrderList? q, int n = 1)
     {
         if (q is not { Count: > 0 })
             return;
         ref var h = ref q.Head;
-        h.Made++;
+        h.Made = (ushort)Math.Min(h.Count, h.Made + n); // (an Assembler's batch may make more than the order still asks: the rest is a bonus)
         if (h.Made >= h.Count)
             q.RemoveAt(0);
         else
@@ -185,6 +218,16 @@ public static class WorkOrders
             return ConsoleOrder(p, d, count, out o);
         if (!TakesOrders(d))
             return $"the {d.Name} takes no orders";
+        if (d.IsAssembler)
+        {
+            // An Assembler's order is its Recipe setting's part.
+            var k = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0) - 1;
+            var list = AssemblingTable.Current.ByMachine[d.AsmMachine];
+            if (k < 0 || k >= list.Length)
+                return $"set the {d.Name}'s Recipe: an order is a part";
+            o = new WorkOrder { Part = (ushort)list[k].Output.Id, Count = count };
+            return null;
+        }
         if (d.IsWheelFormer)
         {
             var w = Cm(ConstructConfig.Get(p, d, CfgKey.Width, d.ExtWheelStart.X));
@@ -220,7 +263,8 @@ public static class WorkOrders
     {
         if (FromSettings(c, part, out var o) is { } why)
             return why;
-        o.Key = o.Key with { Material = MaterialFor(world, c, part) };
+        if (o.IsPiece)
+            o.Key = o.Key with { Material = MaterialFor(world, c, part) };
         return Queue(world, c, part, o);
     }
 
@@ -329,19 +373,25 @@ public static class WorkOrders
             if (TakesOrders(c.DefOf(list[k])))
                 list[takers++] = list[k];
         if (takers == 0)
-            return "no machine on this line takes orders: wire the console's output to an Extruder's or a Wheel Former's Run";
+            return "no machine on this line takes orders: wire the console's output to an Extruder's, a Wheel Former's or an Assembler's Run";
         var cursor = DealCursor % takers;
         string? first = null;
         int sent = 0, kept = 0;
         for (var i = 0; i < bill.Count;)
         {
             string? why = null;
+            var whyKind = false;
             var took = false;
             for (var t = 0; t < takers && !took; t++)
             {
                 var m = list[(cursor + t) % takers];
                 if (Queue(world, c, m, bill.Items[i]) is { } no)
-                    why ??= $"{c.DefOf(m).Name}: {no}";
+                {
+                    // (the reason that matters is the first from a machine of the order's kind: an Assembler's for a part, else an Extruder's or a Former's)
+                    var kind = c.DefOf(m).IsAssembler != bill.Items[i].IsPiece;
+                    if (why == null || kind && !whyKind)
+                        (why, whyKind) = ($"{c.DefOf(m).Name}: {no}", kind);
+                }
                 else
                 {
                     took = true;
@@ -524,7 +574,7 @@ public static class WorkOrders
             n++;
         }
         w.PatchU16(at, (ushort)n);
-        ProductionLines.WriteMade(w, c); // (protocol 251: the consoles' Made counts)
+        ProductionLines.WriteMade(w, c); // (protocol 252: the consoles' Made counts)
     }
 
     private static void WriteOrder(PacketWriter w, in WorkOrder o)
@@ -670,13 +720,21 @@ public static class ConstructBill
     public sealed class Bill
     {
         public readonly List<WorkOrder> Pieces = new(); // by key, first seen first
-        public readonly List<(string Part, int Count)> Parts = new(); // catalogue parts, by name
+        public readonly List<(string Part, ConstructPartDef? Def, int Count)> Parts = new(); // catalogue parts, by name, first seen first (Def null: not a part this build has)
+        public readonly float[] LinkMetres = new float[(int)RouteType.COUNT]; // link stock by type: metres of every link of that type, as built
+        public readonly int[] LinkCount = new int[(int)RouteType.COUNT];
+        public string LinksWhy = ""; // why the links weren't counted (the blueprint didn't build), or ""
     }
 
+    /// <summary>
+    /// Every part a blueprint needs: its extruded and formed pieces by key, its catalogue parts by part, each with a count, and its link
+    /// stock: metres of each link type (wire, power cable, pipe, shaft, chute, ammo feed, conveyor), measured on the blueprint built in a
+    /// scratch world (so its links' lengths are the ones the game lays). The building station will issue a blueprint's bill from this.
+    /// </summary>
     public static Bill FromBlueprint(ConstructBuild.Blueprint bp)
     {
         var bill = new Bill();
-        var parts = new Dictionary<string, int>(StringComparer.Ordinal);
+        var parts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var step in bp.Steps)
         {
             if (step.Part.StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase))
@@ -691,86 +749,179 @@ public static class ConstructBill
                     bill.Pieces[k] = bill.Pieces[k] with { Count = (ushort)Math.Min(bill.Pieces[k].Count + 1, WorkOrders.MaxCount) };
                 continue;
             }
-            parts[step.Part] = parts.GetValueOrDefault(step.Part) + 1;
+            if (parts.TryGetValue(step.Part, out var n))
+            {
+                parts[step.Part] = n + 1;
+                continue;
+            }
+            parts[step.Part] = 1;
+            bill.Parts.Add((step.Part, ConstructParts.Find(step.Part), 0));
         }
-        foreach (var (name, n) in parts)
-            bill.Parts.Add((name, n));
+        for (var k = 0; k < bill.Parts.Count; k++)
+            bill.Parts[k] = bill.Parts[k] with { Part = bill.Parts[k].Def?.Name ?? bill.Parts[k].Part, Count = parts[bill.Parts[k].Part] };
+        if (bp.Links.Count == 0 && bp.Wires.Count == 0)
+            return bill;
+        var built = ConstructBuild.Build(new ConstructWorld(), bp, System.Numerics.Vector3.Zero, System.Numerics.Quaternion.Identity, out var why);
+        if (built == null)
+        {
+            bill.LinksWhy = why;
+            return bill;
+        }
+        for (var r = 0; r < built.RouteCount; r++)
+        {
+            var t = (int)built.Routes[r].Type;
+            if (t >= bill.LinkMetres.Length)
+                continue;
+            bill.LinkMetres[t] += ConstructConveyor.Length(built, r);
+            bill.LinkCount[t]++;
+        }
         return bill;
     }
 
-    /// <summary>Server: a blueprint's pieces onto a Line Console's bill (creative and the probe; the station's later). Null, or why not.</summary>
+    /// <summary>The recipe that makes a catalogue part, or null (the factory can't make it).</summary>
+    public static AssembleRecipe? RecipeOf(ConstructPartDef? d) => d == null ? null : AssemblingTable.Current.Of((ushort)d.Id);
+
+    /// <summary>Server: a blueprint's pieces and the catalogue parts a recipe makes onto a Line Console's bill (creative and the probe; the station's later). Null, or why not.</summary>
     public static string? ToConsole(ConstructWorld world, Construct c, int console, ConstructBuild.Blueprint bp)
     {
         if (!ProductionLines.IsConsole(c.DefOf(console)))
             return "that isn't a Line Console";
         var bill = FromBlueprint(bp);
-        if (bill.Pieces.Count == 0)
-            return $"{bp.Name} needs no extruded or formed pieces";
+        var any = false;
         foreach (var o in bill.Pieces)
+        {
             if (WorkOrders.AddToBill(world, c, console, o) is { } why)
                 return why;
-        return null;
+            any = true;
+        }
+        foreach (var (_, d, n) in bill.Parts)
+            if (RecipeOf(d) != null)
+            {
+                if (WorkOrders.AddToBill(world, c, console, new WorkOrder { Part = (ushort)d!.Id, Count = (ushort)Math.Min(n, WorkOrders.MaxCount) }) is { } why)
+                    return why;
+                any = true;
+            }
+        return any ? null : $"{bp.Name} needs nothing a line makes";
     }
 
     /// <summary>
-    /// A blueprint's <c>"bill"</c> line: <c>{"step": n, "piece": "Extrusion l-angle 20x20x150 metal", "count": 3}</c>, a line on the bill of the
-    /// Line Console that step builds (the Production Showcase's). Orders only: a bill holds no material, so survival gets nothing free from it.
+    /// A blueprint's <c>"bill"</c> line: <c>{"step": n, "piece": "Extrusion l-angle 20x20x150 metal", "count": 3}</c>, or a catalogue part an
+    /// Assembler makes, <c>{"step": n, "part": "Gear Set", "count": 4}</c>: a line on the bill of the Line Console that step builds (the
+    /// Production Showcase's). Orders only: a bill holds no material, so survival gets nothing free from it.
     /// </summary>
-    public static (int Step, ExtrusionKey Key, int Count) ParseLine(System.Text.Json.JsonElement e, string file, int k)
+    public static (int Step, WorkOrder Order) ParseLine(System.Text.Json.JsonElement e, string file, int k)
     {
         if (e.ValueKind != System.Text.Json.JsonValueKind.Object)
-            throw new ConstructPartException($"{file}: bill[{k}] is {{\"step\", \"piece\", \"count\"}}");
+            throw new ConstructPartException($"{file}: bill[{k}] is {{\"step\", \"piece\" or \"part\", \"count\"}}");
         int step = -1, count = 1;
-        var piece = "";
+        string piece = "", part = "";
         foreach (var f in e.EnumerateObject())
             switch (f.Name)
             {
                 case "step": step = f.Value.GetInt32(); break;
                 case "piece": piece = f.Value.GetString() ?? ""; break;
+                case "part": part = f.Value.GetString() ?? ""; break;
                 case "count": count = f.Value.GetInt32(); break;
-                default: throw new ConstructPartException($"{file}: bill[{k}]: unknown key \"{f.Name}\" (step, piece, count)");
+                default: throw new ConstructPartException($"{file}: bill[{k}]: unknown key \"{f.Name}\" (step, piece, part, count)");
             }
-        if (Extrusion.ParseKey(piece) is not { Growing: false } key || key.Shape is not (ExShape.Section or ExShape.Round or ExShape.Pipe or ExShape.Wheel))
-            throw new ConstructPartException($"{file}: bill[{k}]: \"{piece}\" isn't a piece an Extruder or a Wheel Former makes, like \"Extrusion i-beam 25x25x400 metal\"");
         if (step < 0 || count < 1 || count > WorkOrders.MaxCount)
             throw new ConstructPartException($"{file}: bill[{k}]: a step and a count 1 to {WorkOrders.MaxCount}");
-        return (step, key, count);
+        if ((piece.Length > 0) == (part.Length > 0))
+            throw new ConstructPartException($"{file}: bill[{k}]: a \"piece\" or a \"part\", one of them");
+        if (part.Length > 0)
+        {
+            if (ConstructParts.Find(part) is not { } d || d.Id >= Extrusion.RuntimeBase || d.Name.StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase))
+                throw new ConstructPartException($"{file}: bill[{k}]: no catalogue part named \"{part}\"");
+            return (step, new WorkOrder { Part = (ushort)d.Id, Count = (ushort)count });
+        }
+        if (Extrusion.ParseKey(piece) is not { Growing: false } key || key.Shape is not (ExShape.Section or ExShape.Round or ExShape.Pipe or ExShape.Wheel))
+            throw new ConstructPartException($"{file}: bill[{k}]: \"{piece}\" isn't a piece an Extruder or a Wheel Former makes, like \"Extrusion i-beam 25x25x400 metal\"");
+        return (step, new WorkOrder { Key = key, Part = ConstructParts.None, Count = (ushort)count });
     }
 
     /// <summary>A blueprint's bill line onto the console its step built (<see cref="ConstructBuild.FinishBuild"/>). Null, or why not.</summary>
-    public static string? FromLine(ConstructWorld world, Construct c, (int Step, ExtrusionKey Key, int Count) line, ReadOnlySpan<int> partOf)
+    public static string? FromLine(ConstructWorld world, Construct c, (int Step, WorkOrder Order) line, ReadOnlySpan<int> partOf)
     {
         if (line.Step >= partOf.Length || partOf[line.Step] < 0 || !ProductionLines.IsConsole(c.DefOf(partOf[line.Step])))
             return $"step {line.Step} isn't a Line Console";
-        return WorkOrders.AddToBill(world, c, partOf[line.Step], new WorkOrder { Key = line.Key, Part = ConstructParts.None, Count = (ushort)line.Count });
+        return WorkOrders.AddToBill(world, c, partOf[line.Step], line.Order);
     }
 
-    /// <summary><c>--bill NAME</c>: a blueprint's bill as text.</summary>
-    public static int Cli(string name)
+    /// <summary>
+    /// <c>--bill NAME[|NAME...]</c>: a blueprint's bill as text, grouped: extruded pieces, formed pieces, catalogue parts by category (each with
+    /// the recipe that makes it and from what tier, or "no recipe": the factory can't make those), then link stock by type; totals last.
+    /// </summary>
+    public static int Cli(string names)
     {
-        if (ConstructBuild.FindBlueprint(name) is not { } bp)
+        var bad = 0;
+        foreach (var name in names.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
-            Console.WriteLine($"no blueprint named \"{name}\"");
-            return 1;
+            if (ConstructBuild.FindBlueprint(name) is not { } bp)
+            {
+                Console.WriteLine($"no blueprint named \"{name}\"");
+                bad++;
+                continue;
+            }
+            Console.Write(Text(bp));
         }
+        return bad;
+    }
+
+    private static readonly string[] LinkNames = ["wire", "power cable", "pipe", "shaft", "chute", "ammo feed", "conveyor"];
+
+    /// <summary>A blueprint's bill as the <c>--bill</c> text.</summary>
+    public static string Text(ConstructBuild.Blueprint bp)
+    {
         var bill = FromBlueprint(bp);
         var sb = new StringBuilder();
-        sb.AppendLine($"{bp.Name}: {bill.Pieces.Count} kinds of piece, {bill.Pieces.Sum(o => o.Count)} pieces; {bill.Parts.Count} kinds of part, {bill.Parts.Sum(p => p.Count)} parts");
-        foreach (var o in bill.Pieces)
-            sb.AppendLine($"  {o.Count,4} x {Extrusion.Name(o.Key)}  ({Extrusion.Label(o.Key)}; {Maker(o.Key)})");
-        foreach (var (part, n) in bill.Parts.OrderByDescending(p => p.Count))
-            sb.AppendLine($"  {n,4} x {part}");
-        Console.Write(sb.ToString());
-        return 0;
+        var extruded = bill.Pieces.Where(o => o.Key.Shape is ExShape.Section or ExShape.Round or ExShape.Pipe).ToList();
+        var formed = bill.Pieces.Where(o => o.Key.Shape is not (ExShape.Section or ExShape.Round or ExShape.Pipe)).ToList();
+        sb.AppendLine($"{bp.Name}");
+        if (extruded.Count > 0)
+        {
+            sb.AppendLine($" Extruded: {extruded.Count} kinds, {extruded.Sum(o => o.Count)} pieces (an Extruder)");
+            foreach (var o in extruded)
+                sb.AppendLine($"  {o.Count,4} x {Extrusion.Name(o.Key)}  ({Extrusion.Label(o.Key)})");
+        }
+        if (formed.Count > 0)
+        {
+            sb.AppendLine($" Formed: {formed.Count} kinds, {formed.Sum(o => o.Count)} pieces");
+            foreach (var o in formed)
+                sb.AppendLine($"  {o.Count,4} x {Extrusion.Name(o.Key)}  ({Extrusion.Label(o.Key)}; {WorkOrders.Maker(o.Key)}{(o.Key.Shape is ExShape.Wheel ? "" : ": no orders yet")})");
+        }
+        var cats = PartCategories.Current;
+        var groups = bill.Parts
+            .Select(p => (p.Part, p.Def, p.Count, Cat: p.Def != null && cats.Place(p.Def, out var cat, out _) ? cat : "(unplaced)"))
+            .GroupBy(p => p.Cat).OrderBy(g => g.Key, StringComparer.Ordinal);
+        int kinds = 0, parts = 0, none = 0, noneParts = 0;
+        sb.AppendLine($" Catalogue: {bill.Parts.Count} kinds, {bill.Parts.Sum(p => p.Count)} parts");
+        foreach (var g in groups)
+        {
+            sb.AppendLine($"  {g.Key}:");
+            foreach (var (part, def, n, _) in g.OrderByDescending(p => p.Count).ThenBy(p => p.Part, StringComparer.Ordinal))
+            {
+                kinds++;
+                parts += n;
+                var r = RecipeOf(def);
+                if (r == null)
+                {
+                    none++;
+                    noneParts += n;
+                }
+                var how = def == null ? "not a part of this build" : r == null ? "no recipe" : $"{WorkOrders.FamilyName(r.Machine)} tier {r.MinTier}: {r.Batch}{(r.Count > 1 ? $" makes {r.Count}" : "")}";
+                sb.AppendLine($"   {n,4} x {part}  ({how})");
+            }
+        }
+        sb.AppendLine(" Links:");
+        if (bill.LinksWhy.Length > 0)
+            sb.AppendLine($"   not counted: the blueprint didn't build ({bill.LinksWhy})");
+        for (var t = 0; t < bill.LinkMetres.Length; t++)
+            if (bill.LinkCount[t] > 0)
+                sb.AppendLine($"   {bill.LinkMetres[t],8:0.0} m of {(t < LinkNames.Length ? LinkNames[t] : ((RouteType)t).ToString())} ({bill.LinkCount[t]} links)");
+        var pieces = bill.Pieces.Sum(o => o.Count);
+        sb.AppendLine($" Total: {pieces + parts} parts ({pieces} pieces in {bill.Pieces.Count} kinds, {parts} catalogue in {kinds} kinds); no recipe: {none} kinds, {noneParts} parts; links {bill.LinkMetres.Sum():0.0} m");
+        return sb.ToString();
     }
-
-    private static string Maker(in ExtrusionKey k) => k.Shape switch
-    {
-        ExShape.Wheel => "a Wheel Former",
-        ExShape.Fan or ExShape.Blade => "a Fan Former (no orders yet)",
-        ExShape.Wing => "an Airframe Former (no orders yet)",
-        _ => "an Extruder",
-    };
 }
 
 /// <summary>Work orders' side of the world (WorkOrders.cs).</summary>

@@ -39,6 +39,8 @@ public static partial class ProductionLines
         var d = c.DefOf(part);
         if (d.IsExtruder)
             return ExtruderRaw(world, c, part, st);
+        if (d.IsAssembler)
+            return AssemblerRaw(world, c, part, d, st);
         if (!d.IsRefiner)
             return null;
         if (!ConstructRecycler.Powered(world, c, part))
@@ -72,6 +74,26 @@ public static partial class ProductionLines
             ExtrudeStall.NoPower => LineState.NoPower,
             ExtrudeStall.None or ExtrudeStall.NoOrders => LineState.Idle,
             _ => LineState.Blocked, // (at its cap, blocked, too heavy to push, a chute or a conveyor waiting)
+        };
+    }
+
+    /// <summary>An Assembler's state (ConstructAssembling.cs): no recipe or an empty queue is Stopped; a recipe it can't work is a Fault.</summary>
+    private static LineState AssemblerRaw(ConstructWorld world, Construct c, int part, ConstructPartDef d, CStore st)
+    {
+        if (!ConstructRecycler.Powered(world, c, part))
+            return LineState.NoPower;
+        if (st.Held)
+            return LineState.Idle;
+        if (st.Busy && st.Blocked == 0)
+            return LineState.Running;
+        ref var p = ref c.Parts[part];
+        return ConstructAssembling.StateOf(p, d, st, ConstructAssembling.RecipeOf(AssemblingTable.Current, p, d)) switch
+        {
+            AsmState.Short => LineState.Starved,
+            AsmState.OutputFull or AsmState.Blocked => st.Blocked == (byte)AsmBlock.ConveyorSmall ? LineState.Fault : LineState.Blocked,
+            AsmState.TierLow or AsmState.Untaught => LineState.Fault,
+            AsmState.NoRecipe or AsmState.NoOrders => LineState.Idle,
+            _ => LineState.Running, // (ready and powered: it starts at its next step)
         };
     }
 
@@ -186,7 +208,7 @@ public static partial class ProductionLines
         return n;
     }
 
-    private static bool NotMachine(Construct c, int part) => c.DefOf(part) is { IsRefiner: false, IsExtruder: false }; // (refiners, Extruders and Formers are the lines' machines so far)
+    private static bool NotMachine(Construct c, int part) => c.DefOf(part) is { IsRefiner: false, IsExtruder: false, IsAssembler: false }; // (refiners, Extruders, Formers and Assemblers are the lines' machines so far)
 
     private static bool OnBill(in CPart p, ConstructPartDef d) => ConstructConfig.Get(p, d, CfgKey.LinePage, 0) >= 0.5f;
 
@@ -325,6 +347,36 @@ public static partial class ProductionLines
                 card.Add(line, "own settings");
             return;
         }
+        if (md.IsAssembler)
+        {
+            var r = ConstructAssembling.RecipeOf(AssemblingTable.Current, mp, md);
+            if (why && world.StoreOf(c, m) is { } ast)
+            {
+                if (ast.Blocked != 0)
+                    card.Add(line, ConstructAssembling.BlockedWord(ast)).Add(line, ", ");
+                else if (r != null && ConstructAssembling.MissingOf(ast, r, out var mat, out var lack))
+                {
+                    card.Add(line, "needs ");
+                    if (lack != null)
+                        card.Add(line, r.CountOf(lack.Id)).Add(line, ' ').Add(line, lack.Name);
+                    else
+                        card.Add(line, r.UnitsOf(mat)).Add(line, ' ').Add(line, RecyclingTable.Current.NameOf(mat));
+                    card.Add(line, ", ");
+                }
+                else if (r != null && r.MinTier > md.Tier)
+                    card.Add(line, "needs tier ").Add(line, r.MinTier).Add(line, ", ");
+            }
+            if (mp.Orders is { } aq)
+            {
+                if (aq.Total == 0)
+                    card.Add(line, "no orders");
+                else
+                    card.Add(line, aq.PiecesLeft).Add(line, " to go, ").Add(line, aq.Total).Add(line, aq.Total == 1 ? " order" : " orders");
+            }
+            else
+                card.Add(line, r != null ? "makes " : "no recipe").Add(line, r?.Name ?? "");
+            return;
+        }
         var set = ConstructRefining.SetOf(mp, md);
         if (why && world.StoreOf(c, m) is { } rs)
         {
@@ -369,7 +421,7 @@ public static partial class ProductionLines
     };
 
     /// <summary>"Smelter T3", "Extruder", "Wheel Former": a machine's kind on a line, in full.</summary>
-    private static string KindName(ConstructPartDef d) => d.LineName ??= d.IsExtruder ? d.Name : d.Tier > 1 ? $"{Capital(d.RefineMachine)} T{d.Tier}" : Capital(d.RefineMachine);
+    private static string KindName(ConstructPartDef d) => d.LineName ??= d.IsExtruder || d.IsAssembler ? d.Name : d.Tier > 1 ? $"{Capital(d.RefineMachine)} T{d.Tier}" : Capital(d.RefineMachine);
 
     /// <summary>A machine's name on its console: its kind, and its number among those of its kind on this line in wire order ("Extruder 2") when there are two or more. Cached per def.</summary>
     internal static string NameOf(Construct c, ReadOnlySpan<int> list, int k)

@@ -42,7 +42,8 @@
     {"min": [-3.072, 2.16, -2.94], "max": [-3, 5.28, -2.82], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
     {"min": [3, 2.16, -2.94], "max": [3.072, 5.28, -2.82], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
     {"min": [-2.52, 2.04, -2.712], "max": [2.52, 2.112, -2.628], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
-    {"min": [-2.6078, 1.0429, -2.7849], "max": [-0.1777, 1.9729, -2.7268], "color": "#14181c", "detail": true}
+    {"min": [-2.6078, 0.7968, -2.7849], "max": [-0.1777, 1.9758, -2.7268], "color": "#14181c", "detail": true},
+    {"min": [-2.5577, 1.7268, -2.8264], "max": [-0.2277, 1.9258, -2.7725], "color": "#2b3036", "detail": true, "paintable": false, "status": true}
   ],
   "sockets": [
     {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
@@ -54,9 +55,10 @@
     {"name": "Chute in", "type": "chute", "dir": "in", "at": [3, 1.5, -1.8], "face": "+x"},
     {"name": "Chute out", "type": "chute", "dir": "out", "at": [3, 1.5, 1.8], "face": "+x"}
   ],
-  "panels": [{"source": "machine", "at": [-1.3927, 1.5079, -2.7889], "size": [2.33, 0.83], "face": "-z", "up": "+y", "rows": 4, "range": 30}],
+  "panels": [{"source": "machine", "at": [-1.3927, 1.2618, -2.7889], "size": [2.33, 0.83], "face": "-z", "up": "+y", "rows": 8, "range": 30, "touch": [{"action": "orders.queue", "at": [0.02, 0.02, 0.24, 0.12], "label": "Queue"}, {"action": "orders.cancel", "at": [0.26, 0.02, 0.48, 0.12], "label": "Cancel"}, {"action": "orders.clear", "at": [0.5, 0.02, 0.72, 0.12], "label": "Clear"}, {"action": "view.up", "at": [0.75, 0.02, 0.86, 0.12], "label": "Up"}, {"action": "view.down", "at": [0.87, 0.02, 0.98, 0.12], "label": "Down"}]}],
   "config": [
     {"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds."},
+    {"key": "orderCount", "label": "Order count", "group": "Orders", "min": 1, "max": 999, "step": 1, "default": 1, "tooltip": "Parts the Queue button on its screen asks for: one order of its Recipe."},
     {"key": "ink", "type": "colour", "label": "Screen colour", "group": "Display", "default": "#000000", "tooltip": "The colour of what its screen shows. Black: its own colours."}
   ],
   "storage": {

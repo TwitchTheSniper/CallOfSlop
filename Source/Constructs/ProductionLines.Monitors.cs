@@ -21,7 +21,7 @@ public enum MonitorKind : byte
 /// <para>
 /// The console also has <b>Alarm</b> (any machine on its line Starved, Blocked, Fault or No power), <b>Running</b> (any running) and
 /// <b>Made</b> (pieces or batches made since Start) outputs, worked out on the server at 10 Hz (<see cref="Step"/>), and the
-/// <b>Stop after</b> setting, which stops the line when Made reaches it. Made reaches clients with the orders (CBodyKind.Orders, protocol 251).
+/// <b>Stop after</b> setting, which stops the line when Made reaches it. Made reaches clients with the orders (CBodyKind.Orders, protocol 252).
 /// </para>
 /// </summary>
 public static partial class ProductionLines

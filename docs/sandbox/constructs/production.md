@@ -354,7 +354,9 @@ The step after refining: an **Assembler** builds parts from what the chains make
 
   A tier 1 machine asks only what a tier 1 Assembler can make, so survival can start: a Smelter is 643 steel, 322 concrete, 129 rubber and 2 Gear Sets.
 - **Input.** Materials sit in the mixed input, parts in the store's kinds. Chutes bring both, as many at once as you run: a chute from a bin brings a load of a material the recipe uses; a chute from a shelf or a Storage Volume brings one part a second that the recipe wants, passing over others. What it can't use stays in the source, and the look line says so. Each input holds up to `batches` of what a batch asks. F, in order: the held part if the recipe wants it, the materials it wants from what you carry, a part off the tray, then its input back, which clears a machine whose recipe changed.
-- **Output.** An item lands on the tray, in a pile of 12 a slot, and a chute, F or a beacon takes it as from any slots; nothing can be set in. A physics-only part, or one too big for a slot, leaves as a body at the output point, its near side at the point, level, and owned as the machine is. If the world or a player is in the way (or there is no room for another construct) the batch waits with its inputs, draws nothing, looks again twice a second and says why.
+- **Output.** An item lands on the tray, in a pile of 12 a slot, and a chute, F or a beacon takes it as from any slots; nothing can be set in. A physics-only part, or one too big for a slot, leaves as a body at the output point, its near side at the point, level, and owned as the machine is. If the world or a player is in the way (or there is no room for another construct) the batch waits with its inputs, draws nothing, looks again twice a second and says why. With a conveyor out of its **Piece out** each batch rides to a rack instead, and with a queue of
+  **work orders** its head order sets the recipe ([Work orders](#work-orders), protocol 251); a status lamp stands over its screen, which
+  lists the queue over Queue, Cancel, Clear, Up and Down, and an Order count setting.
 - **Same rules as the machines.** The batch's inputs go when it is done, so power cut or broken loses nothing. It needs power in survival (`ConstructRecycler.Powered`), draws only while it works, and takes a **Run** wire. In creative (`CreativeRecycling`) it builds a batch a step, unpowered. Its input counts in the mass (`LoadOf`), and a broken one spills its input and tray.
 - **Beacons.** A network reads the tray and can take from it. It never sees the input or fills the tray (`SlotCheck.OutputOnly`).
 - **The look line**: "Workshop Assembler (Engine): in 12 steel + 1 Piston Set, tray 0 - needs 20 steel (a batch: 20 steel + 2 Piston Set + 1 Wiring Loom) - F: tip in your 8 steel". Worked out from the store and the table on either side.
@@ -570,14 +572,19 @@ Code: `Source/Constructs/ConstructConveyor.cs`; drawing in `RouteRender.Conveyor
   came to the way it goes as its middle crosses (`ConstructConveyor.LeadIn`, `CRider.ViaPlus1`); the piece behind stops short by
   as much of it as still lies on the input (`Tails`).
 - **The link** is `RouteType.Conveyor`: routed, auto-routed, damaged, mended, painted and deleted as every routed link is; bends
-  in 45 degree steps; it doesn't branch. A new conveyor opens to the smaller of its ends' openings (`CRoute.ConvW`, `ConvH`, cm).
-  Aimed at with the linking tool, the wheel sets its width and Ctrl+wheel its height, 5 cm a notch, from 10 cm up to that limit,
-  sent once the wheel rests (`RouteEditOp.Size`). It is drawn as a roller bed the set width: a dark under-plate, steel-blue side
+  in 45 degree steps; it doesn't branch. A conveyor has one size, its width (user, 2026-11-11): it is clear
+  above, so a piece fits when its section's larger side is no wider (`ConstructConveyor.Needs`). A new conveyor opens to the smaller of
+  its ends' opening widths, no wider than its turns leave room for (`CRoute.ConvW`, cm; [Auto-routing](power-and-links.md#routed-links-decision-20)).
+  `ConvH` stays in the wire, saves and blueprints and is ignored. Aimed at with the linking tool, the look line says
+  "Conveyor 0.30 m wide (max 1.00 m) - wheel: width, R: widest"; the wheel sets the width 5 cm a notch, drawn at once, sent once the
+  wheel rests, and the Reload key (R) sets it to the widest its ends and turns allow, sent at once (`RouteEditOp.Size`). The size
+  change wakes the body: the machine retries the piece on its die at its next step. It is drawn as a roller bed the set width: a dark under-plate, steel-blue side
   rails (the paint), steel rollers every 0.3 m and amber chevrons on the rails pointing the way the pieces go.
 - **Riding.** A cut at the die (the Cut input or Cut every) with a conveyor out of Piece out puts the finished piece on it whole:
   the part leaves the construct and becomes a rider (`CRider`: its def, link, front in metres, health share, paint). Riders move at
   0.5 m/s, front first, never closer than 10 cm, and the lead one goes into the rack at the end. The machine waits, the piece on its
-  die, when the piece is wider or taller than the link ("refused: the piece is too big for its conveyor (0.10 x 0.10 m)"), when there
+  die, when the piece is too wide for the link ("conveyor too narrow: 0.10 m, piece needs 0.30 m - aim the linking tool at it: wheel
+  or R to widen"; the screen says "Conveyor too narrow"), when there
   is no room at the start ("blocked: its conveyor is full": a full rack backs the pieces up to the machine) or when the link is cut.
 - **Off the link.** A cut or deleted conveyor drops every piece on it as a loose body where it was, moving as the body moved, and so
   does a construct that goes on the server with pieces riding (deleted, destroyed, cleared as a wreck, fallen out of the world:
@@ -631,7 +638,21 @@ and how many to make; a Line Console holds a **bill** and deals it to the machin
 `control_parts`.
 
 - **An order** (`WorkOrder`) is a piece's whole key (shape, section, width, height, pipe wall, length, material; a wheel's length 0) and
-  a count, 1 to 999; or a catalogue part and a count (no machine takes those yet: the Assembler is next).
+  a count, 1 to 999; or a catalogue part and a count, which an Assembler takes (below).
+- **The Assembler's orders** (2026-11-11). Every Assembler, Thruster Assembler and Tailor takes an order for a catalogue part its family
+  has a recipe for at its tier (`AssemblingTable.Of`: one recipe a part); else the reason: "no recipe makes the Rudder", "the Bearing needs
+  a tier 2 Assembler (this is tier 1)", "the Capital Jet is made by a Thruster Assembler, not the Assembler", a full queue. With a queue
+  its head order sets the recipe (`ConstructAssembling.RecipeOf`), chutes and F feed that recipe, Starved names the missing input, and each
+  batch counts its parts made (a recipe that makes 2 may make one more than the order asks); an empty queue waits ("Waiting for orders").
+  Queue makes one order of its Recipe setting and Order count. Its screen, lamp, buttons and line state are the Extruder's (below).
+- **Piece out on an Assembler.** Every Assembler has an implicit **Piece out** conveyor port at its output point (`outAt`, facing
+  `outDir`, the machine's width across). With a conveyor linked, each batch rides it whole to a rack (`ConstructConveyor.PutMade`); a part
+  too wide for the conveyor goes to the tray when a slot takes it, else waits ("refused: the part is too wide for its conveyor"); a full
+  or cut conveyor holds the batch ("blocked: its conveyor is full"). With none linked, the tray and the output point as before.
+  Measured (a throwaway probe, removed; host and client over RakNet at 80 ms and 2 % loss, the showcase in a creative world): the bill's
+  three catalogue lines made in order and racked, the rack equal by kind on both peers; a Rudder line kept with "no recipe makes the
+  Rudder" on the client's console; an idle Assembler's step 0.0001 ms, 0 bytes; 200 orders queued: the assembling step 0 bytes a call
+  (worst 0.02 ms), whole server ticks median 0.014 ms, worst 0.8 ms; a save and a reload kept all 196 orders left.
 - **The queue** is the machine's own (`CPart.Orders`), at most 255 orders, so it moves with the part. A machine with a queue, even an
   empty one, works its orders and nothing else: idle with "waiting for orders" when it runs out, so a finished bill spills nothing.
   **Clear** drops the queue and the machine is back on its own settings. The head order replaces the settings: an Extruder grows its
@@ -653,10 +674,17 @@ and how many to make; a Line Console holds a **bill** and deals it to the machin
   line of its Bill line settings: Kind, Profile, Width, Height, Pipe wall, Length, Material, Count), **Send**, **Clear** and **Line**.
   Send deals each line whole, in order, to the console's machines (its wires into their Run) that accept it, round robin on from the
   last that took one; a line none takes stays with the first refusal on the screen (on every peer). The line page lists Extruders and
-  Formers with their pieces to go ("own": on their settings).
-- **A blueprint's bill.** `ConstructBill.FromBlueprint` lists every extruded or formed piece a blueprint needs, grouped by key with
-  counts, and its catalogue parts; `ToConsole` puts the pieces on a console's bill (the building station will call these).
-  `--bill NAME` prints one. Of the shipped blueprints only Fabric Flyer and Sky Crane need pieces, and those are fans and wings.
+  Formers with their pieces to go ("own": on their settings), and Assemblers with their parts to go or their recipe. A Send deals catalogue
+  lines to the Assemblers and pieces to the Extruders and Formers; a line kept names the reason of a machine of its kind.
+- **A blueprint's bill.** `ConstructBill.FromBlueprint` lists everything a blueprint needs: extruded and formed pieces by key, catalogue
+  parts by part, each with a count, and its **link stock**: metres of each link type (wire, power cable, pipe, shaft, chute, ammo feed,
+  conveyor), measured on the blueprint built in a scratch world. `ToConsole` puts the pieces and the parts a recipe makes on a console's
+  bill (the building station will call these). `--bill "NAME|NAME..."` prints it grouped (extruded, formed, catalogue by category with
+  the recipe, family and tier that make each part or "no recipe", links) with totals, to `callofslop.log`. Of the shipped blueprints only
+  Fabric Flyer and Sky Crane need pieces, and those are fans and wings. What has no recipe (ten vehicles, 2026-11-11): hull lofts (each
+  vehicle's own), the weapon builder's gun parts (receivers, barrels, sears, splitters) and the flight surfaces and rotors (wings,
+  elevators, ailerons, flaps, rudders, fins, props, rotors). A blueprint's `"bill"` line may name a catalogue part:
+  `{"step": n, "part": "Gear Set", "count": 4}`.
 - **Network (protocol 246).** `CBodyKind.Orders`, per body when a queue or bill changes, after a Full and to a joiner: each list's
   part, totals, note and its first 32 orders (22 fixed bytes each; three before protocol 248). A client holds only those: all a screen shows.
 - **Saves.** After a body's conveyors block (an empty one when it has none), its lists in full: materials and parts by the save's names.
@@ -671,7 +699,8 @@ and how many to make; a Line Console holds a **bill** and deals it to the machin
 Proposed (the user's to confirm): the Line Console holding the bill rather than a new desk part; its wires into Run as the order links;
 a machine with a queue working orders only, Clear going back to its settings; an empty bin accepting any material; whole lines dealt
 round robin rather than counts split across machines; the queue and bill bounds (255 orders, 999 a line); a cancelled head's piece cut
-off as it is; blueprints carrying no orders. Next: the Assembler taking catalogue-part orders, the Fan and Airframe Formers, and the
+off as it is; blueprints carrying no orders; an Assembler's order counting parts made by whole batches; with a Piece out conveyor linked, every
+batch riding it (a part too wide goes to the tray if it fits there). Next: the Fan and Airframe Formers, and the
 building station issuing a blueprint's bill.
 
 ## Production Showcase
@@ -690,7 +719,9 @@ a step the rules refuse fails there with their reason. It reads the part files: 
   Long Piece Rack); **line B** (an Extruder fed planks, its conveyor meeting line A's at the join); **the spur** (an Extruder making a
   0.3 m bar onto a conveyor set to 0.10 m, on purpose, to a Piece Rack); **wheels** (a Wheel Former fed rubber, a conveyor, a Piece
   Rack); **orders** (a second Line Console wired to both Extruders' and the Wheel Former's Runs, its bill already on it: seven sizes of
-  metal angle and plate, two of planks, two wheels; 19 pieces).
+  metal angle and plate, two of planks, two wheels; 19 pieces; and three catalogue lines, 4 Gear Sets, 4 Steel Plates, 2 Gun Barrels);
+  **assembling** (an Assembler fed steel, its Piece out onto a conveyor to a Piece Rack, on the orders console: "Send the bill: the
+  Assembler makes these parts").
 - **Stock** is the Storage Volume's own creative-only Material and Fill settings (`ConstructBuild.SetConfig`): a creative world fills
   each box as the blueprint builds; a survival world builds it empty, so a blueprint gives survival nothing. They are filled to 24%,
   under the 25% an open side may hold before it pours ([Sealed volumes](power-and-links.md#sealed-volumes)), so they need no walls.

@@ -781,8 +781,20 @@ public static class ConstructExtruder
     /// <summary>The look line's key for the piece's size: changes when it grows (the store's version doesn't).</summary>
     public static int SizeKey(Construct c, int part) => ProductOf(c, part) is var k and >= 0 && c.Parts[k].D is { IsExtrusion: true } d ? d.ExKey.L + (d.ExKey.W * 257 ^ d.ExKey.H * 65537) : 0;
 
-    private static string ConveyorSize(Construct c, int part) =>
-        ConstructConveyor.Out(c, part) is var k and >= 0 ? $" ({c.Routes[k].ConvW / 100f:0.00} x {c.Routes[k].ConvH / 100f:0.00} m)" : "";
+    /// <summary>": 0.10 m, piece needs 0.30 m" (a conveyor has one size, its width: ConstructConveyor.Needs).</summary>
+    private static string ConveyorSize(Construct c, int part)
+    {
+        if (ConstructConveyor.Out(c, part) is not (var k and >= 0))
+            return "";
+        var piece = ProductOf(c, part) is var p and >= 0 ? c.Parts[p].D : null;
+        var needs = 0f;
+        if (piece != null)
+        {
+            ConstructConveyor.Size(piece, out var across, out var up, out _);
+            needs = ConstructConveyor.Needs(across, up);
+        }
+        return $": {c.Routes[k].ConvW / 100f:0.00} m{(needs > 0 ? $", piece needs {needs:0.00} m" : "")}";
+    }
 
     /// <summary>What it is doing, or why not. Read by the look line on either side.</summary>
     public static string Status(Construct c, int part, CStore st)
@@ -806,7 +818,7 @@ public static class ConstructExtruder
             ExtrudeStall.Blocked => wheel ? " - blocked: the wheel has no room to grow" : " - blocked: something fixed in the piece's path (a wall, the ground)",
             ExtrudeStall.TooHeavy => " - what is in the piece's path is too heavy to push",
             ExtrudeStall.ChuteWaits => " - the piece waits for its chute: the press's bay is full or won't take it",
-            ExtrudeStall.ConveyorSmall => $" - refused: the piece is too big for its conveyor{ConveyorSize(c, part)}: widen it or change the section",
+            ExtrudeStall.ConveyorSmall => $" - conveyor too narrow{ConveyorSize(c, part)} - aim the linking tool at it: wheel or {SandboxKeys.Reload} to widen",
             ExtrudeStall.ConveyorFull => " - blocked: its conveyor is full",
             ExtrudeStall.ConveyorCut => " - blocked: its conveyor is cut: mend it",
             ExtrudeStall.NoOrders => ", waiting for orders (Clear on its screen: back to its own settings)",

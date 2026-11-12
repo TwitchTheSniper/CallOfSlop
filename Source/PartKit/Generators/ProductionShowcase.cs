@@ -32,7 +32,7 @@ public sealed class ProductionShowcase : IPartGenerator
 
         // Paint by section (look.md): a warm concrete floor, steel-blue walkways, one accent a station, yellow controls.
         private const string Floor = "#8c8576", Aisle = "#4f6578", Hazard = "#d8a020", Board = "#23272b", Control = "#e0b020";
-        private const string Power = "#b5452b", Stock = "#c9a24a", Refining = "#d17a22", LineA = "#3d7ab8", PressBlue = "#2f5f8f", LineB = "#4f8f45", Spur = "#b83a3a", Wheels = "#8050a8";
+        private const string Power = "#b5452b", Stock = "#c9a24a", Refining = "#d17a22", LineA = "#3d7ab8", PressBlue = "#2f5f8f", LineB = "#4f8f45", Spur = "#b83a3a", Wheels = "#8050a8", Assembly = "#2f8f8a";
 
         private static readonly Orient Front = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, Vector3.UnitZ); // own +z to the front aisle
         private static readonly Orient Back = new(Vector3.UnitY, Vector3.UnitY, -Vector3.UnitZ, Vector3.UnitZ); // own -z to the front (a refiner's screen)
@@ -151,13 +151,13 @@ public sealed class ProductionShowcase : IPartGenerator
             Convey(exB, "Piece out", join, "Piece in 2", LineB, null, V(bIn.X, bOut.Y, bOut.Z));
             Sign(33.25f, Posts2, LineB, "Line B (planks) meets line A at the join: one rack");
 
-            // ---- The spur: a conveyor set too small on purpose, so its Extruder refuses the piece with the reason. ----------------
+            // ---- The spur: a conveyor set too narrow on purpose, so its Extruder refuses the piece with the reason. ----------------
             var exS = On("Extruder", 38.25f, Row2, Flow, paint: Spur);
             Config(exS, ("profile", "Solid bar"), ("width", 0.3), ("height", 0.3), ("cutLength", 1.0));
             Feed(StockOf("metal", 36.25f, Row2), exS);
             var spurRack = On("Piece Rack", 42.25f, -10.75f, Flow, "-y.0.0", Spur);
             Convey(exS, "Piece out", spurRack, "Piece in", Spur, new Vector2(0.1f, 0.1f));
-            Sign(39.75f, Posts2, Spur, "Too small on purpose: see the Extruder refuse the piece");
+            Sign(39.75f, Posts2, Spur, "Too narrow on purpose: aim the linking tool, wheel to widen");
 
             // ---- 6. The wheel line: a Wheel Former, a conveyor, a Piece Rack. ----------------------------------------------------
             var former = On("Wheel Former", 52.25f, Row1, Flow, paint: Wheels);
@@ -165,7 +165,14 @@ public sealed class ProductionShowcase : IPartGenerator
             Feed(StockOf("rubber", 52.25f, -7.25f), former);
             var wheelRack = On("Piece Rack", 56.25f, -4.25f, Flow, "-y.0.0", Wheels);
             Convey(former, "Piece out", wheelRack, "Piece in", Wheels);
-            Sign(54.75f, Posts1, Wheels, "Set this conveyor too small with the mouse wheel: a refusal");
+            Sign(54.75f, Posts1, Wheels, "Narrow this conveyor (linking tool, wheel): a refusal");
+
+            // ---- 6b. The assembling line: an Assembler fed steel, its Piece out onto a conveyor to a Piece Rack (catalogue parts). --
+            var asm = On("Assembler", 52.25f, Row2, Flow, paint: Assembly);
+            Feed(StockOf("steel", 52.25f, -13.25f), asm);
+            var partRack = On("Piece Rack", 55.25f, -10.75f, Flow, "-y.0.0", Assembly);
+            Convey(asm, "Piece out", partRack, "Piece in", Assembly);
+            Sign(50.25f, Posts2, Assembly, "Send the bill: the Assembler makes these parts");
 
             // ---- 7. Orders: a second Line Console on both Extruders and the Wheel Former, its bill already on it. ------------------
             var orders = On("Line Console", 24.25f, Posts1, Front, paint: Control);
@@ -182,6 +189,10 @@ public sealed class ProductionShowcase : IPartGenerator
                          ("Extrusion wheel 25x60x0 rubber", 2), ("Extrusion wheel 30x90x0 rubber", 2),
                      })
                 Bill(orders, piece, n);
+            // (and the Assembler's catalogue parts: a Send deals them to it, the pieces to the Extruders and the Former)
+            Run(orders, asm, V(24.25f, 0, -2.0f), V(26.75f, 0, -2.0f), V(26.75f, 0, -8.6f), V(34.25f, 0, -8.6f), V(41.75f, 0, -8.6f), V(49.25f, 0, -8.6f), V(52.25f, 0, -8.6f));
+            foreach (var (part, n) in new[] { ("Gear Set", 4), ("Steel Plate", 4), ("Gun Barrel", 2) }) // (steel only, tier 1: what its stock makes)
+                BillPart(orders, part, n);
 
             Monitors(refine, orders);
 

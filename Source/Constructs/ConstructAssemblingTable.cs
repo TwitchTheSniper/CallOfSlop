@@ -13,6 +13,7 @@ public sealed class AssembleRecipe
     public float Seconds = 1;
     public int MinTier = 1;
     public byte Machine; // which family of Assembler builds it: an index of AssemblingTable.Machines
+    public int Choice; // its value of the recipe setting: 1 + its index in its family's list (AssemblingTable.ByMachine)
     public string Batch = ""; // "4 steel + 2 copper + 1 Gear Set" (made once)
 
     /// <summary>The ticks a batch takes at speed 1.</summary>
@@ -57,6 +58,10 @@ public sealed class AssemblingTable
     public AssembleRecipe[][] ByMachine = [[], [], []]; // per family: its recipes, in the file's order
     public string[][] ChoicesBy = [[NoRecipe], [NoRecipe], [NoRecipe]]; // ...and its recipe choice
     public string Problem = "";
+    public Dictionary<ushort, AssembleRecipe> ByOutput = new(); // the recipe that makes a part (one recipe a part): work orders find theirs here
+
+    /// <summary>The recipe that makes a part, or null.</summary>
+    public AssembleRecipe? Of(ushort part) => ByOutput.TryGetValue(part, out var r) ? r : null;
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "Assembling.json");
 
@@ -139,9 +144,13 @@ public sealed class AssemblingTable
             for (var m = 0; m < Machines.Length; m++)
             {
                 t.ByMachine[m] = recipes.Where(r => r.Machine == m).ToArray();
+                for (var k = 0; k < t.ByMachine[m].Length; k++)
+                    t.ByMachine[m][k].Choice = k + 1;
                 t.ChoicesBy[m] = [NoRecipe, .. t.ByMachine[m].Select(r => r.Name)];
             }
             t.Choices = t.ChoicesBy[0];
+            foreach (var r in recipes)
+                t.ByOutput[(ushort)r.Output.Id] = r;
             return t;
         }
         catch (Exception ex) when (ex is JsonException or FormatException or InvalidOperationException)

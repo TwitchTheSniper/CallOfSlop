@@ -210,16 +210,25 @@ public static class ConstructConveyor
         Limit(c, r.From, r.FromPort, r.To, r.ToPort, out w, out h);
     }
 
-    /// <summary>Why a conveyor can't be set to <paramref name="w"/> by <paramref name="h"/> cm, or null.</summary>
+    /// <summary>Why a conveyor can't be set <paramref name="w"/> cm wide, or null (its height is unused: user, 2026-11-11).</summary>
     public static string? SizeRefusal(Construct c, int route, int w, int h)
     {
-        Limit(c, route, out var mw, out var mh);
-        if (w < MinSizeCm || h < MinSizeCm)
-            return $"a conveyor is at least {MinSizeCm} cm each way";
-        if (w > mw || h > mh)
-            return $"its ends take at most {mw / 100f:0.00} x {mh / 100f:0.00} m";
+        ConstructRoutes.ConveyorMax(c, route, out var mw, out _); // (no wider than its turns leave room for: ConstructRoutesEnds.cs)
+        if (w < MinSizeCm)
+            return $"a conveyor is at least {MinSizeCm} cm wide";
+        if (w > mw)
+            return $"at most {mw / 100f:0.00} m wide here (its ends and its turns)";
         return null;
     }
+
+    /// <summary>
+    /// The width a piece needs (m): a conveyor has one size, its width, and is clear above it (user, 2026-11-11), so a piece needs
+    /// its section's larger side (it may ride on its narrow side; a bed this wide takes it either way).
+    /// </summary>
+    public static float Needs(float across, float up) => MathF.Max(across, up);
+
+    /// <summary>Does a piece this size fit conveyor <paramref name="r"/>?</summary>
+    public static bool Fits(float across, float up, in CRoute r) => Needs(across, up) <= r.ConvW / 100f + 0.005f;
 
     // ---- The rack ------------------------------------------------------------------------------------------------
 
@@ -564,7 +573,7 @@ public static class ConstructConveyor
             return false;
         }
         Size(piece, out var across, out var up, out var along);
-        if (across > r.ConvW / 100f + 0.005f || up > r.ConvH / 100f + 0.005f)
+        if (!Fits(across, up, r))
         {
             why = ExtrudeStall.ConveyorSmall;
             return false;
@@ -618,7 +627,7 @@ public static class ConstructConveyor
             return false;
         }
         Size(d, out var across, out var up, out var along);
-        if (across > r.ConvW / 100f + 0.005f || up > r.ConvH / 100f + 0.005f)
+        if (!Fits(across, up, r))
         {
             why = ExtrudeStall.ConveyorSmall;
             return false;
@@ -731,7 +740,7 @@ public static class ConstructConveyor
         if (r.FirstCut <= r.Count)
             return false;
         Size(d, out var across, out var up, out var along);
-        if (across > r.ConvW / 100f + 0.005f || up > r.ConvH / 100f + 0.005f || along > Length(c, o) + 0.01f)
+        if (!Fits(across, up, r) || along > Length(c, o) + 0.01f)
             return false;
         if (LastOn(c, o) is var last and >= 0)
         {

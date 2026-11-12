@@ -143,7 +143,8 @@ public static partial class ConstructParts
             }
         // And a Piece out after them (so the bays' port bytes stay as they were), where a stroke's body leaves (outAt, facing outDir) at the
         // floor's line: what it stamps that no tray holds rides out on a conveyor to a rack (ConstructPress.Stroke), the machine's width across.
-        if (d.IsPress && d.PressBays.Length > 0 && !list.Any(x => x.Type == RouteType.Conveyor && x.Out))
+        // An Assembler has one too, at its output point: what it builds rides out to a rack (ConstructAssembling.Finish).
+        if ((d.IsPress && d.PressBays.Length > 0 || d.IsAssembler) && !list.Any(x => x.Type == RouteType.Conveyor && x.Out))
         {
             byte face = 4;
             for (byte f = 0; f < 6; f++)

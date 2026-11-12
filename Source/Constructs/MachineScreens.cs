@@ -102,7 +102,7 @@ public static class MachineScreens
     private static void Assembler(in CPart p, ConstructPartDef d, CStore st, PanelCard card)
     {
         var r = ConstructAssembling.RecipeOf(AssemblingTable.Current, p, d);
-        var state = ConstructAssembling.StateOf(d, st, r);
+        var state = ConstructAssembling.StateOf(p, d, st, r);
         var names = RecyclingTable.Current;
         var line = 2;
         if (st.Held)
@@ -113,6 +113,7 @@ public static class MachineScreens
             switch (state)
             {
                 case AsmState.NoRecipe: Say(card, PanelState.Idle, "No recipe"); card.Add(2, "Configure it"); line = 3; break;
+                case AsmState.NoOrders: Say(card, PanelState.Idle, "Waiting for orders"); break;
                 case AsmState.TierLow: card.State = PanelState.Refused; card.Add(0, "Needs tier ").Add(0, r!.MinTier); break;
                 case AsmState.Untaught: card.State = PanelState.Refused; card.Add(0, "Not taught"); card.Add(2, "A faction teaches it (F2)"); line = 3; break;
                 case AsmState.Short:
@@ -127,11 +128,22 @@ public static class MachineScreens
                     }
                     break;
                 case AsmState.OutputFull: Say(card, PanelState.Wants, "Tray full"); break;
-                case AsmState.Blocked: Say(card, PanelState.Wants, st.Blocked == (byte)AsmBlock.WorldFull ? "World is full" : "Output blocked"); break;
+                case AsmState.Blocked:
+                    Say(card, st.Blocked == (byte)AsmBlock.ConveyorSmall ? PanelState.Refused : st.Blocked == (byte)AsmBlock.ConveyorCut ? PanelState.Fault : PanelState.Wants, "Blocked");
+                    card.Add(2, ConstructAssembling.BlockedWord(st));
+                    line = 3;
+                    break;
                 default: Say(card, PanelState.Fault, "No power"); break;
             }
         if (r != null)
             card.Add(1, r.Name);
+        if (p.Orders != null)
+        {
+            // Work orders (WorkOrders.cs): what it builds and what it lacks, then the queue: its totals and the next orders (the buttons under them).
+            WorkOrders.FillQueue(p, card, line == 3 ? 3 : 2);
+            card.Bar = -1;
+            return;
+        }
         card.Add(line, "Tray ").Add(line, st.Items);
         card.Bar = st.Busy ? st.Progress / 100f : 0;
     }
@@ -154,7 +166,7 @@ public static class MachineScreens
                 case ExtrudeStall.Blocked: Say(card, PanelState.Wants, "Blocked"); break;
                 case ExtrudeStall.TooHeavy: Say(card, PanelState.Wants, "Path too heavy"); break;
                 case ExtrudeStall.ChuteWaits: Say(card, PanelState.Wants, "Chute waits"); break;
-                case ExtrudeStall.ConveyorSmall: Say(card, PanelState.Refused, "Conveyor too small"); break;
+                case ExtrudeStall.ConveyorSmall: Say(card, PanelState.Refused, "Conveyor too narrow"); break;
                 case ExtrudeStall.ConveyorFull: Say(card, PanelState.Wants, "Conveyor full"); break;
                 case ExtrudeStall.ConveyorCut: Say(card, PanelState.Fault, "Conveyor cut"); break;
                 case ExtrudeStall.NoOrders: Say(card, PanelState.Idle, "Waiting for orders"); break;

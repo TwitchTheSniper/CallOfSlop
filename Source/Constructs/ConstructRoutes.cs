@@ -893,7 +893,8 @@ public static partial class ConstructRoutes
         }
         pts[n] = PortPoint(c, to, toPort, type);
         hosts[n++] = to;
-        return PathRule(c, type, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, true, toPort, straight, checkFrom);
+        return PathRule(c, type, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, true, toPort, straight, checkFrom)
+            ?? (type == RouteType.Conveyor ? ConveyorTurns(c, pts[..n], hosts[..n]) : null); // (ConstructRoutesEnds.cs)
     }
 
     /// <summary>A path of up to this many points is worked on the stack; a longer one, which is rare and made once, on the heap (a whole link's arrays would be half a megabyte of stack).</summary>
@@ -1468,7 +1469,8 @@ public static partial class ConstructRoutes
         }
         pts[n] = next;
         hosts[n++] = host;
-        return PathRule(c, type, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, false, 255, checkFrom: nodes.Length); // (only the new end: the rest was checked as it was laid)
+        return PathRule(c, type, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, false, 255, checkFrom: nodes.Length) // (only the new end: the rest was checked as it was laid)
+            ?? (type == RouteType.Conveyor ? ConveyorTurns(c, pts[..n], hosts[..n], nodes.Length) : null);
     }
 
     /// <summary>The rule for a whole link (the server's <see cref="Check"/>) with node <c>Node</c> of its nodes at a spot: the input end's adjust (its last node).</summary>
@@ -1633,10 +1635,10 @@ public static partial class ConstructRoutes
             Share0 = 1f,
             Share = 1f,
         };
-        if (type == RouteType.Conveyor)
-            ConstructConveyor.Limit(c, from, fromPort, to, toPort, out c.Routes[k].ConvW, out c.Routes[k].ConvH); // (it opens to the most both ends take)
         for (var i = 0; i < nodes.Length; i++)
             c.RouteNodes[c.RouteNodeCount++] = new CRouteNode { Pos = ConstructWorld.Quantise(nodes[i].Pos), Host = nodes[i].Host, Health = Health(type) };
+        if (type == RouteType.Conveyor)
+            ConveyorMax(c, k, out c.Routes[k].ConvW, out c.Routes[k].ConvH); // (it opens to the most both ends take and its turns leave room for: ConstructRoutesEnds.cs)
         Changed(world, c);
         return k;
     }
