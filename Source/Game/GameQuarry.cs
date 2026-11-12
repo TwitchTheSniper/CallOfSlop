@@ -174,6 +174,8 @@ public sealed partial class Game
             if (_qrWho[p.Id] != p)
             {
                 _qrWho[p.Id] = p;
+                _qr[p.Id].RideFrom = 0;
+                QuarryBusDismiss(p, ref _qr[p.Id]); // (a bus called for whoever had this seat before goes)
                 _qr[p.Id] = default;
             }
             ref var run = ref _qr[p.Id];
@@ -256,6 +258,12 @@ public sealed partial class Game
         {
             if (QuarrySpot(from) is not { } stop || QuarrySpot(from == QuarrySpotKind.Colony ? QuarrySpotKind.Quarry : QuarrySpotKind.Colony) is not { } other)
                 return;
+            if (QuarryBusAt(p, stop) is var shared and not 0)
+            {
+                run.Bus = shared; // (one bus for everyone at this stop: a crew together rides together)
+                QuarrySend(p);
+                return;
+            }
             var way = StandInPath.Along(other - stop, stop);
             var i = StandInCall(StandInKind.Hauler, stop, way, 12, 600, StandInFor.Duty, p.Id, 0, jump: false);
             run.Bus = i >= 0 ? StandIns[i].Id : 0;
@@ -277,6 +285,49 @@ public sealed partial class Game
         SandboxStand(p, teleport: false); // (out of any seat first)
         Log($"[quarry] {p.Name} boards the crew bus");
         QuarrySend(p);
+        // Everyone else waiting for this bus and standing at it rides too (the same scene, the same bus in).
+        foreach (var q in Players.Values)
+        {
+            if (q == p || q.Bot != null || q.Id >= MaxPlayers || _qrWho[q.Id] != q || !q.Alive)
+                continue;
+            ref var other = ref _qr[q.Id];
+            if (other.Bus != c.Id || other.RideFrom != 0 || Vector3.Distance(q.Position, c.Land) > QuarryBoardReach)
+                continue;
+            (other.RideTo, other.RideFrom, other.RideOff) = (run.RideTo, run.RideFrom, from);
+            SandboxStand(q, teleport: false);
+            Log($"[quarry] {q.Name} boards the crew bus");
+            QuarrySend(q);
+        }
+    }
+
+    /// <summary>Server: a bus another person called that is waiting (or still coming) at this stop, and not yet away. 0: none.</summary>
+    private int QuarryBusAt(Player p, Vector3 stop)
+    {
+        foreach (var q in Players.Values)
+        {
+            if (q == p || q.Id >= MaxPlayers || _qrWho[q.Id] != q || _qr[q.Id].RideFrom != 0)
+                continue;
+            var k = StandInSlotOf(_qr[q.Id].Bus);
+            if (k >= 0 && ServerTick < StandIns[k].LeavesAt && Vector3.Distance(StandIns[k].Land, stop) < StandInApart * 3f)
+                return _qr[q.Id].Bus;
+        }
+        return 0;
+    }
+
+    /// <summary>Server: a bus called for a ride step that is over (or never ridden) goes, unless someone else still waits for it.</summary>
+    private void QuarryBusDismiss(Player p, ref QuarryRun run)
+    {
+        if (run.Bus == 0 || run.RideFrom != 0)
+            return;
+        var k = StandInSlotOf(run.Bus);
+        var id = run.Bus;
+        run.Bus = 0;
+        if (k < 0 || ServerTick >= StandIns[k].LeavesAt)
+            return;
+        foreach (var q in Players.Values)
+            if (q != p && q.Id < MaxPlayers && _qrWho[q.Id] == q && _qr[q.Id].Bus == id)
+                return;
+        StandInLeave(k, 1);
     }
 
     /// <summary>
@@ -290,6 +341,8 @@ public sealed partial class Game
         if (_qrWho[p.Id] != p)
         {
             _qrWho[p.Id] = p;
+            _qr[p.Id].RideFrom = 0;
+            QuarryBusDismiss(p, ref _qr[p.Id]); // (a bus called for whoever had this seat before goes)
             _qr[p.Id] = default;
         }
         ref var run = ref _qr[p.Id];
@@ -310,8 +363,7 @@ public sealed partial class Game
             return;
         ref var run = ref _qr[p.Id];
         run.Rode = false;
-        if (run.RideFrom == 0)
-            run.Bus = 0;
+        QuarryBusDismiss(p, ref run);
         QuarrySend(p);
     }
 
@@ -420,6 +472,7 @@ public sealed partial class Game
         run.State = state;
         run.StepAt = now;
         run.Saw = 0;
+        QuarryBusDismiss(p, ref run);
         run.Bus = 0;
         if (memo != null)
             OpeningSay(p, null, "[MINISTRY MEMO]", memo, now);
