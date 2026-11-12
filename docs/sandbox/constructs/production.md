@@ -534,6 +534,14 @@ the part kit's `control_parts` (the console).
   dim grey of its hue so its shape reads. They show in the recipe picker, the material painter's list and a beacon's Materials tab. A
   window that shows only a few tiles (`SandboxTiles.WantFew`, `Prefer`) has the resources and its own tiles drawn first, not the whole
   atlas.
+- **Recycler and gathering modules** (2026-11-11, the user: "quality of life for some of these machines"). Both are line machines: the
+  same six states, a status lamp, a row on a console wired to their Run, and a Data out (a gathering module has no screen, so a monitor
+  on its Data out is its screen: `MachineScreens.Gatherer`). A Recycler is Starved with nothing in its intake, Blocked when its output is
+  full or a wreck waits for room, Running while it breaks one. A Drill or Saw Module is Starved off a deposit or with no tree in reach,
+  Blocked with a full bin or one holding another material, at Fault when the deposit or the trees need a higher tier, No power when a
+  shaft drill's shaft isn't turning. Why it waits rides the store's `Blocked` byte (`GatherStall`; a Recycler's 1 = output full), sent
+  and saved as it was, so no wire change. The look line starts with the state word ("Drill Module: 0/20 - Starved: nothing below;
+  nearest deposit ..."). Lamps: the Recycler's over its screen (its part file), a module's on its hopper's or bin's back rim (`MachineTiers.ModuleLamp`).
 - **The mains** (2026-11-11, proposed). A Battery takes one wire, its isolator. When every working battery on a body has one and every one
   says off (`Construct.MainsOff`, `ConstructPower.Mains`, on the wire in the gear byte's top bit since protocol 247), the circuit gives
   machines nothing: `ConstructRecycler.Powered` is false for every production machine, recycler, gatherer and beacon it reaches, in creative
