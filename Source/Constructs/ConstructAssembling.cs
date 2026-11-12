@@ -13,6 +13,7 @@ public enum AsmState : byte
     Blocked, // a finished batch can't leave (CStore.Blocked)
     Ready,
     Untaught, // a story faction hasn't taught its owner this part yet (AsmBlock.Untaught)
+    NoOrders, // it has a queue of work orders, empty: it waits for the next (WorkOrders.cs)
 }
 
 /// <summary>Why a finished batch can't leave an Assembler (<see cref="CStore.Blocked"/>).</summary>
@@ -22,6 +23,9 @@ public enum AsmBlock : byte
     OutputBlocked, // something stands where a body leaves
     WorldFull, // no room for another construct
     Untaught, // not a finished batch: the recipe's part is a technology its owner hasn't been taught (ConstructWorld.Taught)
+    ConveyorSmall, // the part is too wide for the conveyor out of its Piece out, and no tray slot takes it
+    ConveyorFull, // no room at the start of that conveyor
+    ConveyorCut, // that conveyor is cut
     COUNT,
 }
 
@@ -67,9 +71,14 @@ public static class ConstructAssembling
         }
     }
 
-    /// <summary>The recipe a part has chosen, or null.</summary>
+    /// <summary>
+    /// The recipe a part works now, or null: with a queue of work orders (WorkOrders.cs) its head order's (none when the queue is empty, so
+    /// a finished queue makes nothing more), else the one chosen with the configure tool.
+    /// </summary>
     public static AssembleRecipe? RecipeOf(AssemblingTable table, in CPart p, ConstructPartDef d)
     {
+        if (p.Orders is { Bill: false } q)
+            return q.Count > 0 && table.Of(q.Head.Part) is { } r && r.Machine == d.AsmMachine ? r : null;
         var k = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0) - 1;
         var list = table.ByMachine[d.AsmMachine];
         return k >= 0 && k < list.Length ? list[k] : null;
@@ -87,7 +96,7 @@ public static class ConstructAssembling
         }
         var d = c.Parts[part].D;
         var recipe = RecipeOf(table, c.Parts[part], d);
-        var id = recipe == null ? 0 : (int)ConstructConfig.Get(c.Parts[part], d, CfgKey.Recipe, 0);
+        var id = recipe?.Choice ?? 0;
         if (st.JobAmount != id)
         {
             st.JobAmount = id; // (a new recipe starts its batch afresh)
@@ -160,9 +169,25 @@ public static class ConstructAssembling
     {
         var d = c.Parts[part].D;
         var dest = OutputOf(d, st, recipe);
-        if (dest == AsmOut.TrayFull)
+        var conveyor = ConstructConveyor.Out(c, part);
+        var rode = false;
+        if (conveyor >= 0)
+        {
+            // A Piece out conveyor takes what it makes, whole batches only; a part too wide for it goes to the tray when a slot takes it.
+            rode = ConstructConveyor.PutMade(world, c, conveyor, recipe.Output, recipe.Count, out var full);
+            if (!rode && !(full == ExtrudeStall.ConveyorSmall && dest != AsmOut.Body))
+            {
+                SetBlocked(world, st, full switch { ExtrudeStall.ConveyorSmall => AsmBlock.ConveyorSmall, ExtrudeStall.ConveyorCut => AsmBlock.ConveyorCut, _ => AsmBlock.ConveyorFull });
+                return;
+            }
+        }
+        if (!rode && dest == AsmOut.TrayFull)
             return; // (creative, or a chute took less than the state saw: it waits)
-        if (dest == AsmOut.Body)
+        if (rode)
+        {
+            // (on its way to a rack)
+        }
+        else if (dest == AsmOut.Body)
         {
             for (var n = 0; n < recipe.Count; n++)
             {
@@ -182,6 +207,8 @@ public static class ConstructAssembling
             world.AddInput(st, m, -units);
         foreach (var (p, count) in recipe.Parts)
             world.AddInputPart(st, p.Id, -count);
+        if (c.Parts[part].Orders is { Bill: false, Count: > 0 } q && q.Head.Part == recipe.Output.Id)
+            WorkOrders.Made(world, c, q, recipe.Count); // (its head order: at its count the next order's recipe starts)
     }
 
     /// <summary>A body leaves at the output point, on its far side and level, its near side at the point. Why not, or None.</summary>
@@ -251,6 +278,10 @@ public static class ConstructAssembling
     }
 
     /// <summary>Where a machine stands with what it holds.</summary>
+    /// <summary>The same for a machine as it stands: a queue of work orders run dry waits for orders (<see cref="AsmState.NoOrders"/>).</summary>
+    public static AsmState StateOf(in CPart p, ConstructPartDef d, CStore st, AssembleRecipe? r) =>
+        r == null && p.Orders is { Bill: false } ? AsmState.NoOrders : StateOf(d, st, r);
+
     public static AsmState StateOf(ConstructPartDef d, CStore st, AssembleRecipe? r)
     {
         if (r == null)
@@ -304,30 +335,51 @@ public static class ConstructAssembling
     /// <summary>Who teaches a part, as words for the look line (the game sets it from the faction table, which every PC has): null when it can't say.</summary>
     public static Func<string, string?>? TaughtBy;
 
-    public static string Status(ConstructPartDef d, CStore st, AssembleRecipe? r)
+    public static string Status(ConstructPartDef d, CStore st, AssembleRecipe? r, bool queued = false)
     {
         var names = RecyclingTable.Current;
         var doing = st.Held ? Program.HeldLook
             : st.Busy && st.Blocked == 0 ? ", building"
-            : StateOf(d, st, r) switch
+            : (queued && r == null ? AsmState.NoOrders : StateOf(d, st, r)) switch
             {
                 AsmState.NoRecipe => " - no recipe: pick one with the configure tool",
                 AsmState.TierLow => $" - needs a tier {r!.MinTier} assembler",
                 AsmState.Short => MissingOf(st, r!, out var m, out var p) ? $" - needs {(p != null ? $"{r!.CountOf(p.Id)} {p.Name}" : $"{r!.UnitsOf(m)} {names.NameOf(m)}")}" : "",
                 AsmState.Untaught => TaughtBy?.Invoke(r!.Output.Name) is { } who ? $" - not taught: {who}" : " - not taught: a faction must teach it first (F2)",
                 AsmState.OutputFull => " - tray full",
-                AsmState.Blocked => st.Blocked == (byte)AsmBlock.WorldFull ? " - the world is full of constructs" : " - something is in the way of its output",
+                AsmState.NoOrders => " - waiting for orders (Clear on its screen: back to its recipe)",
+                AsmState.Blocked => BlockedWhy(st),
                 _ => " - no power: needs a charged battery",
             };
         if (st.RefusedPart != ConstructParts.None && ConstructParts.Get(st.RefusedPart) is { } rp)
-            return $"{doing} - chute refused the {rp.Name}: {RefusedWhy(r)}";
-        return st.Refused != 0 ? $"{doing} - chute refused {names.NameOf(st.Refused)}: {RefusedWhy(r)}" : doing;
+            return $"{doing} - chute refused the {rp.Name}: {RefusedWhy(r, queued)}";
+        return st.Refused != 0 ? $"{doing} - chute refused {names.NameOf(st.Refused)}: {RefusedWhy(r, queued)}" : doing;
     }
 
-    private static string RefusedWhy(AssembleRecipe? r) => r == null ? "pick a recipe first" : $"takes {r.Batch}";
+    private static string RefusedWhy(AssembleRecipe? r, bool queued) => r == null ? queued ? "no order needs it" : "pick a recipe first" : $"takes {r.Batch}";
+
+    /// <summary>Why a finished batch waits, for the look line.</summary>
+    public static string BlockedWhy(CStore st) => (AsmBlock)st.Blocked switch
+    {
+        AsmBlock.WorldFull => " - the world is full of constructs",
+        AsmBlock.ConveyorSmall => " - refused: the part is too wide for its conveyor: widen it",
+        AsmBlock.ConveyorFull => " - blocked: its conveyor is full",
+        AsmBlock.ConveyorCut => " - its conveyor is cut",
+        _ => " - something is in the way of its output",
+    };
+
+    /// <summary>A few words for why a finished batch waits (the screen and the console).</summary>
+    public static string BlockedWord(CStore st) => (AsmBlock)st.Blocked switch
+    {
+        AsmBlock.WorldFull => "world is full",
+        AsmBlock.ConveyorSmall => "conveyor too small",
+        AsmBlock.ConveyorFull => "conveyor full",
+        AsmBlock.ConveyorCut => "conveyor cut",
+        _ => "output blocked",
+    };
 
     /// <summary>The whole look line: its recipe, what it holds, what it is doing, what F would do.</summary>
-    public static string Look(ConstructPartDef d, CStore st, AssembleRecipe? r, bool near, SandboxInventory inv, ConstructPartDef? held)
+    public static string Look(ConstructPartDef d, CStore st, AssembleRecipe? r, bool near, SandboxInventory inv, ConstructPartDef? held, bool queued = false)
     {
         var names = RecyclingTable.Current;
         var tip = TipMaterial(inv, d, st, r);
@@ -343,7 +395,7 @@ public static class ConstructAssembling
         var holds = st.MixN == 0 && st.KindN == 0 ? "" : $"in {Holds(st)}";
         var tray = st.Items > 0 ? $"tray {st.Items}" : "";
         var state = holds.Length > 0 && tray.Length > 0 ? $"{holds}, {tray}" : holds + tray;
-        return $"{name}{(state.Length > 0 ? ": " + state : "")}{Status(d, st, r)}{act}";
+        return $"{name}{(state.Length > 0 ? ": " + state : "")}{Status(d, st, r, queued)}{act}";
     }
 
     /// <summary>The first part in the tray, or null.</summary>
