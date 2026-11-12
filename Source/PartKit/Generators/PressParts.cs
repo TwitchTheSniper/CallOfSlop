@@ -139,17 +139,14 @@ public sealed class PressParts : IPartGenerator
         return o;
     }
 
-    /// <summary>The status lamp: a bar the die screen's width just above it on the front of the crown, standing a few mm proud of the face
+    /// <summary>The status lamp: a bar the die screen's width on the front of the crown's dark cap, just over the screen, a few mm proud of it
     /// (ProductionLines: its colour and blink are the line state; the box only says where).</summary>
     private static PyDict? StatusLamp(Part p, Frame f)
     {
         var k = p.Cls.Cell;
         var mx = (f.X0 + f.X1) / 2;
-        var y0 = (f.Crown + f.Y1) / 2 + k * 0.75 + 0.004;
-        var y1 = Math.Min(f.Y1 - 0.004, y0 + Math.Max(0.03, k * 0.4));
-        if (y1 - y0 < 0.0125)
-            y1 = y0 + 0.0125; // (the game refuses under 1 cm)
-        var b = MachineLook.D([R3(mx - k * 2.5), R3(y0), R3(f.Z1 - 0.005)], [R3(mx + k * 2.5), R3(y1), R3(f.Z1 + 0.008)], "#2b3036");
+        var mk = Math.Min(k * 0.06, 0.03) < 0.012 ? 0.012 : Math.Min(k * 0.06, 0.03); // (the dark cap's overhang: PressBody)
+        var b = MachineLook.D([R3(mx - k * 2.5), R3(f.Y1 - k * 0.3 + 0.004), R3(f.Z1 + mk - 0.004)], [R3(mx + k * 2.5), R3(f.Y1 - k * 0.04 - 0.004), R3(f.Z1 + mk + 0.009)], "#2b3036");
         if (b is not null)
             b["status"] = true;
         return b;
