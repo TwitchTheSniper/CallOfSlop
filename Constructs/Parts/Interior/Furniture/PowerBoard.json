@@ -38,6 +38,66 @@
         0.15
       ],
       "color": "#3a3f45"
+    },
+    {
+      "min": [
+        -0.45,
+        0.4,
+        0.144
+      ],
+      "max": [
+        0.45,
+        0.44,
+        0.16
+      ],
+      "color": "#a58a4e",
+      "detail": true,
+      "finish": "brass"
+    },
+    {
+      "min": [
+        -0.45,
+        0.7,
+        0.144
+      ],
+      "max": [
+        0.45,
+        0.74,
+        0.16
+      ],
+      "color": "#a58a4e",
+      "detail": true,
+      "finish": "brass"
+    },
+    {
+      "min": [
+        -0.45,
+        1.0,
+        0.144
+      ],
+      "max": [
+        0.45,
+        1.04,
+        0.16
+      ],
+      "color": "#a58a4e",
+      "detail": true,
+      "finish": "brass"
+    },
+    {
+      "min": [
+        -0.45,
+        1.3,
+        0.144
+      ],
+      "max": [
+        0.45,
+        1.34,
+        0.16
+      ],
+      "color": "#a58a4e",
+      "detail": true,
+      "finish": "brass"
     }
   ],
   "sockets": [

@@ -152,11 +152,29 @@ public static class PartKitMath
     /// <summary>A length for a part's name: 16, 0.5 (f"{v:g}").</summary>
     public static string Fmt(double v) => Py.G(v);
 
-    /// <summary>A box from its corners (null when it would be thinner than 1 cm: Part.Add skips it). shape: the other keys, in order.</summary>
+    /// <summary>The depth a thin detail box is grown to: the game refuses a box under 1 cm, and 16 mm stays over it after the z-fight corrector trims a box by up to 5 mm.</summary>
+    public const double DetailMin = 0.016;
+
+    /// <summary>A box from its corners. shape: the other keys, in order. The game refuses a box thinner than 1 cm, so a thinner detail box
+    /// (a clock's face, a sign's letters, a seam line) is grown about its middle to <see cref="DetailMin"/> on each thin side, rather than
+    /// lost; a thinner solid box, or one under 2 mm (a sliver a generator's sums left), is null and Part.Add skips it.</summary>
     public static PyDict? Box(double[] mn, double[] mx, string? color = null, bool detail = false, bool hidden = false, bool glass = false, PyDict? shape = null)
     {
-        if (Math.Min(mx[0] - mn[0], Math.Min(mx[1] - mn[1], mx[2] - mn[2])) < 0.0099)
-            return null;
+        var thin = Math.Min(mx[0] - mn[0], Math.Min(mx[1] - mn[1], mx[2] - mn[2]));
+        if (thin < 0.0099)
+        {
+            if (!detail || thin < 0.002)
+                return null;
+            mn = [.. mn];
+            mx = [.. mx];
+            for (var k = 0; k < 3; k++)
+                if (mx[k] - mn[k] < DetailMin)
+                {
+                    var mid = (mn[k] + mx[k]) / 2;
+                    mn[k] = mid - DetailMin / 2;
+                    mx[k] = mid + DetailMin / 2;
+                }
+        }
         var b = new PyDict { ["min"] = Vec(mn), ["max"] = Vec(mx) };
         if (!string.IsNullOrEmpty(color))
             b["color"] = color;
