@@ -86,7 +86,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" || WsGhostKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "saveworld" or "loadworld" || WsGhostKnown(action);
 
     private static void WsSay(string s)
     {
@@ -396,9 +396,11 @@ public static unsafe partial class Program
             }
             case "feed": // host: a piece by its key into a press's bay, by the bays' own rule (its Piece in's: refused with the reason, or taken)
             {
-                var bits = arg.Split(' ', 3);
-                var (fc, fpart) = bits.Length == 3 && g.IsServer ? WsFind(g, bits[0]) : (null, 0);
-                if (fc == null || !int.TryParse(bits[1], out var fbay) || ConstructParts.Find(bits[2]) is not { IsExtrusion: true } piece || g.Constructs.StoreOf(fc, fpart) is not { } fst)
+                var keyAt = arg.IndexOf(" " + Extrusion.Prefix, StringComparison.Ordinal); // (PRESS may be two words: "Medium Press#1 2 Extrusion ...")
+                var head = keyAt > 0 ? arg[..keyAt] : "";
+                var sp = head.LastIndexOf(' ');
+                var (fc, fpart) = sp > 0 && g.IsServer ? WsFind(g, head[..sp]) : (null, 0);
+                if (fc == null || !int.TryParse(head[(sp + 1)..], out var fbay) || ConstructParts.Find(arg[(keyAt + 1)..]) is not { IsExtrusion: true } piece || g.Constructs.StoreOf(fc, fpart) is not { } fst)
                 {
                     WsFail("feed PRESS[#n] BAY EXTRUSION-KEY (on the host or offline)");
                     return;
@@ -406,6 +408,21 @@ public static unsafe partial class Program
                 var taken = ConstructPress.TakeFromConveyor(g.Constructs, World.Query, fc, fpart, fbay - 1, piece, 1, 0);
                 WsSay($"feed: {piece.Name} into bay {fbay}: {(taken ? "taken" : $"refused ({(BayRefuse)(fst.Blocked >> 2)})")}");
                 _wsWait = 2;
+                return;
+            }
+            case "saveworld" or "loadworld": // host: the world saved under a name through the real save and copied out, or (a fresh process) that copy loaded; then the run-time parts of every body
+            {
+                WsSay($"{verb}: " + (verb == "saveworld" ? g.StationSaveProbe(arg) : g.StationLoadProbe(arg)));
+                foreach (var b in g.Constructs.Bodies)
+                {
+                    var made = new SortedDictionary<string, int>(StringComparer.Ordinal);
+                    for (var i = 0; i < b.PartCount; i++)
+                        if (b.DefOf(i).RuntimeMade)
+                            made[b.DefOf(i).Name] = made.GetValueOrDefault(b.DefOf(i).Name) + 1;
+                    if (made.Count > 0)
+                        WsSay($"{verb}: body {b.Id} ({b.PartCount} parts): {string.Join(", ", made.Select(kv => $"{kv.Key} x{kv.Value}"))}");
+                }
+                _wsWait = 5;
                 return;
             }
             case "use":
