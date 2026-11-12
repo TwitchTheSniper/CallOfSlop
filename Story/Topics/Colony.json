@@ -66,7 +66,7 @@
         { "then": [ "?me Likes ?them +2" ], "say": [ "Bricked up, after somebody used it. Year three. North side. A white-out." ] } ] },
     { "id": "bellweather-who", "who": "Sergeant Bellweather", "ask": "Who used it?", "after": "bellweather-eighth", "priority": 9,
       "answers": [
-        { "if": "?me Likes ?them < 15", "keep": true, "say": [ "Nobody gets out of this colony. Write that down. Nettles will." ] },
+        { "if": "?me Likes ?them < 15", "keep": true, "say": [ "Nobody you'd know. Nobody gets out of this colony. Write that down. Nettles will." ] },
         { "then": [ "?me Likes ?them +3" ], "say": [ "Edie Marsh. Walked out into the storm towards the Light. Said she'd see what was under it." ] } ] },
     { "id": "bellweather-edie-name", "who": "Sergeant Bellweather", "ask": "Who was Edie Marsh?", "after": [ "crumb-sergeant", "crumb-photo-gap" ], "priority": 9,
       "if": "not ?them Asked 'topic bellweather-who'",
@@ -124,8 +124,9 @@
     { "id": "crumb-sergeant", "who": "Officer Crumb", "ask": "What's the Sergeant's story?", "after": "crumb-gossip", "priority": 6,
       "if": "not 'Sergeant Bellweather' Dead",
       "answers": [
-        { "if": "?me Likes ?them < 8", "keep": true, "say": [ "Ooh, no. Not for free. Bring me some sugar. Metaphorical sugar." ] },
-        { "then": [ "?me Likes ?them +2" ], "say": [ "Ask him about Edie Marsh. Actually, don't. Actually, do. Just not from me." ] } ] },
+        { "if": "?me Likes ?them < 8", "keep": true, "say": [ "The Sergeant's story? Oh, it's a sad one. Too sad for somebody I've only just met.",
+                                                                     "His? Not yet. I tell that one to friends, and we're still on biscuit terms." ] },
+        { "then": [ "?me Likes ?them +2" ], "say": [ "Twenty-two years here and one bad night, year three. Ask him about Edie Marsh. Just not from me." ] } ] },
     { "id": "crumb-mine", "who": "Officer Crumb", "ask": "About the old mine...", "if": "?them Lead 'Old Mine'", "priority": 10,
       "answers": [
         { "if": "?them Asked 'topic bellweather-mine'", "then": [ "?me Likes ?them -3" ],
@@ -139,18 +140,18 @@
     // ==== Officer Nettles: the clipboard, the player's own file, a sister, the north wall ====
     { "id": "nettles-clipboard", "who": "Officer Nettles", "ask": "What are you always writing?", "priority": 4,
       "answers": [
-        { "then": [ "?me Likes ?them +1" ], "say": [ "Notes! Observations. Lunch, mostly. I put a star next to the good lunches." ] } ] },
+        { "then": [ "?me Likes ?them +1" ], "say": [ "Notes! Observations. Lunch, mostly, with stars for the good ones. And the north wall. But mostly lunch." ] } ] },
     { "id": "nettles-file", "who": "Officer Nettles", "ask": "What have you written about me?", "after": "nettles-clipboard", "again": true, "priority": 6,
       "answers": [
         { "if": "?me Likes ?them < 6", "keep": true, "say": [ "Absolutely not. Regulations. Well. Probably regulations." ] },
         { "if": "?them Suspicion >= 5", "say": [ "'Inmate {them.first}: looks at the fence. Looks at the fence a LOT.' Sorry. It's true." ] },
         { "if": "?them Course 'Trustee'", "say": [ "'Trustee {them.first}: reliable, polite, nodded at me once.' I underlined the nod." ] },
         { "if": "?them Rank >= 2", "say": [ "'Good worker. Makes quota. Possibly a nice person.' I've crossed out 'possibly'." ] },
-        { "if": "?them Inducted", "say": [ "'Did the induction. Pressed the keys. Didn't fall off the bus.' It's early days." ] },
+        { "if": "?them Inducted", "say": [ "'Did the mine shift. Propped a wall. Didn't fall off the bus.' It's early days." ] },
         { "say": [ "'New inmate. Confused. Hair like a startled hedge.' I'll revise it. Probably." ] } ] },
     { "id": "nettles-volunteer", "who": "Officer Nettles", "ask": "Why did you volunteer for this?", "priority": 3,
       "answers": [
-        { "then": [ "?me Likes ?them +2" ], "say": [ "Character-building, they said. I've got loads of character now. It's mostly worry." ] } ] },
+        { "then": [ "?me Likes ?them +2" ], "say": [ "Character-building, they said. And somebody back home might notice. So far I've built mostly worry." ] } ] },
     { "id": "nettles-sister", "who": "Officer Nettles", "ask": "Who were you hoping would notice?", "after": "nettles-volunteer", "priority": 7,
       "answers": [
         { "if": "?me Likes ?them < 10", "keep": true, "say": [ "Nobody! Nobody in particular. Why would you ask that. Next." ] },
@@ -182,7 +183,7 @@
       "answers": [
         { "if": "?me Grudge ?them >= 30", "keep": true, "say": [ "Is not for you." ] },
         { "if": "?me Likes ?them < 5", "keep": true, "say": [ "It is a lantern. It is on a stool. Both are regulation." ] },
-        { "then": [ "?me Likes ?them +3" ], "say": [ "The last lamp off the Brine Flats. I trim it every Sunday. Rule 40 says no flames indoors. I wrote rule 40." ] } ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "My mother's, off the Brine Flats. I trim it every Sunday. Rule 40 says no flames indoors. I wrote rule 40." ] } ] },
     { "id": "bellweather-tally", "who": "Sergeant Bellweather", "ask": "Whose tally is that in the cell block?", "if": "?them Inspected 'lore edie-tally'", "priority": 7,
       "answers": [
         { "if": "?me Grudge ?them >= 30", "keep": true, "say": [ "Yours, soon, if you keep asking." ] },
@@ -204,11 +205,11 @@
     { "id": "crumb-barnaby", "who": "Officer Crumb", "ask": "Barnaby?", "if": "?them Inspected 'lore crumb-postcard'", "priority": 7,
       "answers": [
         { "then": [ "?me Likes ?them +3" ], "say": [ "Nobody calls me that. Mum did. She kept a jar for my rocket. It's the tea money now." ] } ] },
-    { "id": "crumb-grubb", "who": "Officer Crumb", "ask": "Who's Foreman Grubb?", "if": "?them Inspected 'lore marker-nine'", "priority": 6,
+    { "id": "crumb-grubb", "who": "Officer Crumb", "ask": "Foreman Grubb ran the old mine?", "if": "?them Inspected 'lore marker-nine'", "priority": 6,
       "answers": [
-        { "if": "?me Likes ?them < 5", "keep": true, "say": [ "A foreman. Big hands, small words. Why?" ] },
+        { "if": "?me Likes ?them < 5", "keep": true, "say": [ "Grubb? Big hands, small words. You've met him. Ask him. Go on, I dare you." ] },
         { "learn": "Old Mine", "then": [ "?me Likes ?them +1" ],
-          "say": [ "Ran the old mine till it shut. Let nobody past marker nine. East of the fence, it was. Not from me." ] } ] },
+          "say": [ "Till it shut. Then they gave him this one. Nobody past marker nine. East of the fence. Not from me." ] } ] },
     { "id": "nettles-margin", "who": "Officer Nettles", "ask": "You left your clipboard on a crate.", "if": "?them Inspected 'lore lunch-log'", "priority": 7,
       "answers": [
         { "then": [ "?me Likes ?them +2" ], "say": [ "I did? I never do that. ...Did you read the margin? Don't tell the Sergeant about the margin." ] } ] },

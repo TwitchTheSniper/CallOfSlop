@@ -255,6 +255,8 @@ public sealed class StoryTalk
             var slot = Array.IndexOf(LineRules.Fills, name.ToString());
             if (slot == LineRules.Fills.Length - 1)
                 sb.Append(NewsText(f));
+            else if (slot == 1 && Address(f.Me, f.Them) is { } stranger)
+                AppendAddress(sb, stranger);
             else if (slot >= 0)
             {
                 var who = w.NameOf(f.Fill(slot));
@@ -268,6 +270,36 @@ public sealed class StoryTalk
             return (cut.LastIndexOf(' ') is var sp and > 40 ? cut[..sp] : cut) + "...";
         }
         return sb.ToString();
+    }
+
+    /// <summary>The default word for someone whose name the speaker doesn't know, when their faction gives none.</summary>
+    public const string StrangerWord = "friend";
+
+    /// <summary>
+    /// What a speaker calls the one they talk to when they don't know them yet (never met: no Knows between them; a
+    /// player introduces themselves with Hello), in place of their name: their faction's "stranger" word ("inmate"), or
+    /// <see cref="StrangerWord"/>. Null: they know them, so it's the name.
+    /// </summary>
+    public string? Address(int speaker, int them)
+    {
+        var w = _e.World;
+        var knows = _e.Rules.People.Knows;
+        if (knows < 0 || !w.Valid(speaker) || !w.Valid(them) || speaker == them || w.Get(speaker, knows, them) > 0)
+            return null;
+        if (w[them].Kind is not (StoryKind.Person or StoryKind.Player))
+            return null;
+        var f = _e.Factions.OwnerOf(speaker);
+        return f >= 0 && _e.Rules.Factions.Factions[f].Stranger is { Length: > 0 } word ? word : StrangerWord;
+    }
+
+    /// <summary>A stranger's word into a line: capitalised where it starts a sentence ("Inmate! Over here.").</summary>
+    public static void AppendAddress(System.Text.StringBuilder sb, string word)
+    {
+        var k = sb.Length - 1;
+        while (k >= 0 && sb[k] == ' ')
+            k--;
+        var start = k < 0 || sb[k] is '.' or '!' or '?' or '"' or '\'';
+        sb.Append(start ? char.ToUpperInvariant(word[0]) : word[0]).Append(word, 1, word.Length - 1);
     }
 
     /// <summary>What the news is, as a sentence: the event from the chronicle, or (folded away) from the facts.</summary>
