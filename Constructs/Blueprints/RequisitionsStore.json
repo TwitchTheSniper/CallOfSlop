@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Requisitions Store",
-  "description": "The Ministry's requisitions store: shelves and crates behind an open bay.",
+  "description": "The Ministry's requisitions store: a covered loading dock, a counter and the shelves behind it.",
   "steps": [
     {
       "part": "Concrete Foundation 4x4 m"
@@ -13,74 +13,248 @@
       "by": "l0"
     },
     {
-      "part": "Corrugated Wall Corner",
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "f0",
+      "by": "k0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 1,
+      "socket": "f0",
+      "by": "k0"
+    },
+    {
+      "part": "Concrete Wall Corner",
       "on": 0,
       "socket": "t0_0",
       "by": "b0_0",
-      "paint": "#7a6a4f",
-      "finish": "worn paint"
+      "paint": "#a29e94",
+      "finish": "concrete"
     },
     {
-      "part": "Corrugated Wall Corner",
+      "part": "Concrete Wall Corner",
       "on": 1,
       "socket": "t8_0",
       "by": "b0_7",
       "spin": 2,
-      "paint": "#7a6a4f",
-      "finish": "worn paint"
+      "paint": "#a29e94",
+      "finish": "concrete"
     },
     {
-      "part": "Corrugated Wall Corner",
+      "part": "Concrete Wall Corner",
       "on": 1,
       "socket": "t8_15",
       "by": "b7_0",
       "spin": 3,
-      "paint": "#7a6a4f",
-      "finish": "worn paint"
+      "paint": "#a29e94",
+      "finish": "concrete"
     },
     {
-      "part": "Corrugated Wall Corner",
+      "part": "Concrete Wall Corner",
       "on": 0,
       "socket": "t0_8",
       "by": "b7_0",
       "spin": 1,
-      "paint": "#7a6a4f",
-      "finish": "worn paint"
+      "paint": "#a29e94",
+      "finish": "concrete"
     },
     {
-      "part": "Corrugated Garage Wall 4 m",
+      "part": "Concrete Garage Wall 4 m",
       "on": 0,
       "socket": "t8_0",
       "by": "b0",
-      "paint": "#7a6a4f",
-      "finish": "worn paint"
+      "paint": "#a29e94",
+      "finish": "concrete"
     },
     {
-      "part": "Corrugated Wall 4 m",
+      "part": "Concrete Slot Wall 4 m",
       "on": 0,
       "socket": "t8_15",
       "by": "b15",
       "spin": 3,
-      "paint": "#7a6a4f",
-      "finish": "worn paint"
+      "paint": "#a29e94",
+      "finish": "concrete"
     },
     {
-      "part": "Corrugated Roof Slope 4x4 m",
+      "part": "Concrete Column 2.75 m",
       "on": 2,
       "socket": "t0_0",
-      "by": "b0_0",
-      "paint": "#4b5157"
+      "by": "b00",
+      "paint": "#858179",
+      "finish": "concrete"
     },
     {
-      "part": "Corrugated Roof Slope 4x4 m",
+      "part": "Concrete Column 2.75 m",
       "on": 3,
+      "socket": "t15_0",
+      "by": "b10",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 10,
+      "socket": "t00",
+      "by": "b0_0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 11,
+      "socket": "t10",
+      "by": "b15_0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 4,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 5,
       "socket": "t0_0",
       "by": "b15_0",
-      "paint": "#4b5157"
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 12,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 14,
+      "socket": "k0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 13,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 15,
+      "socket": "k0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 12,
+      "socket": "l0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 13,
+      "socket": "r0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 14,
+      "socket": "l0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 15,
+      "socket": "r0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 16,
+      "socket": "l",
+      "by": "+x",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 18,
+      "socket": "r",
+      "by": "+z",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 19,
+      "socket": "l",
+      "by": "+x",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 17,
+      "socket": "r",
+      "by": "+z",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Entrance Steps 2 m",
+      "on": 2,
+      "socket": "f8",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Buttress 2.75 m",
+      "on": 9,
+      "socket": "f0_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Buttress 2.75 m",
+      "on": 9,
+      "socket": "f8_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Buttress 2.75 m",
+      "on": 9,
+      "socket": "f15_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
     },
     {
       "part": "Text Sign",
-      "on": 6,
+      "on": 8,
       "socket": "f8_10",
       "by": "back",
       "text": [
@@ -90,13 +264,39 @@
     },
     {
       "part": "Text Sign",
-      "on": 7,
+      "on": 9,
       "socket": "k8_5",
       "by": "back",
       "text": [
         "ALL ISSUES ON FORM R-12, IN TRIPLICATE"
       ],
       "paint": "#1f2b45"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 8,
+      "socket": "f0_10",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 8,
+      "socket": "f15_10",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Mess Table",
+      "on": 1,
+      "socket": "t0_0",
+      "by": "bottom",
+      "paint": "#4b5157",
+      "finish": "steel"
     },
     {
       "part": "Parts Shelf",
@@ -115,41 +315,71 @@
       "paint": "#4b5157"
     },
     {
+      "part": "Filing Cabinet",
+      "on": 9,
+      "socket": "k0_0",
+      "by": "wall"
+    },
+    {
+      "part": "Teleprinter",
+      "on": 9,
+      "socket": "k15_0",
+      "by": "wall"
+    },
+    {
+      "part": "Wall Clock",
+      "on": 9,
+      "socket": "k15_5",
+      "by": "back"
+    },
+    {
       "part": "Requisition Crate",
-      "on": 0,
-      "socket": "t15_7",
+      "on": 3,
+      "socket": "t8_8",
       "by": "-y"
     },
     {
       "part": "Requisition Crate",
-      "on": 14,
+      "on": 42,
       "socket": "+x",
       "by": "-x"
     },
     {
       "part": "Requisition Crate",
-      "on": 14,
+      "on": 42,
       "socket": "-z",
       "by": "+z"
     },
     {
+      "part": "Strip Light",
+      "on": 9,
+      "socket": "k8_10",
+      "by": "back",
+      "config": {
+        "colour": "#e4f2dc"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 4,
+      "socket": "kb7_5",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
       "part": "Battery",
-      "on": 7,
-      "socket": "k0_10",
+      "on": 9,
+      "socket": "k7_10",
       "by": "-z",
       "paint": "#4b5157"
-    },
-    {
-      "part": "Wall Light",
-      "on": 6,
-      "socket": "k8_10",
-      "by": "back"
-    },
-    {
-      "part": "Wall Light",
-      "on": 2,
-      "socket": "fa7_10",
-      "by": "back"
     }
+  ],
+  "wires": [
+    [
+      46,
+      45
+    ]
   ]
 }

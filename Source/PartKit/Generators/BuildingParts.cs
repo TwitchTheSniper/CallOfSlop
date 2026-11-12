@@ -1521,6 +1521,7 @@ public sealed partial class BuildingParts : IPartGenerator
             foreach (var n in new[] { 8, 16 })
                 o.Add(("85-Frame", Beam(key, n)));
         }
+        o.AddRange(BrutalistParts()); // (fins, buttresses, canopies, fascias, slot and ribbon walls: BuildingParts.Brutalist.cs)
         return o;
     }
 
@@ -1607,6 +1608,9 @@ public sealed partial class BuildingParts : IPartGenerator
         public readonly Dictionary<string, PyDict> Defs = defs;
         public readonly List<Placed> Parts = [];
         public readonly List<PyDict> Steps = [];
+
+        /// <summary>Signal wires by step, from and to (look.md "The authoring fields"): a switch to its lamps.</summary>
+        public readonly List<(int From, int To)> Wires = [];
 
         public int First(string part, int rot = 0)
         {
@@ -1724,9 +1728,12 @@ public sealed partial class BuildingParts : IPartGenerator
 
         public PyDict Json()
         {
-            if (Steps.Count > 96)
+            if (Steps.Count > 128)
                 throw new InvalidOperationException($"{Name}: {Steps.Count} steps");
-            return new PyDict { ["format"] = "call-of-slop-construct-blueprint/1", ["name"] = Name, ["description"] = Desc, ["steps"] = Steps.Cast<object?>().ToList() };
+            var d = new PyDict { ["format"] = "call-of-slop-construct-blueprint/1", ["name"] = Name, ["description"] = Desc, ["steps"] = Steps.Cast<object?>().ToList() };
+            if (Wires.Count > 0)
+                d["wires"] = Wires.Select(w => (object?)new List<object?> { w.From, w.To }).ToList();
+            return d;
         }
     }
 

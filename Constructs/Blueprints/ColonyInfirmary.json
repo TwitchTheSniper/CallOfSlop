@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Colony Infirmary",
-  "description": "The penal colony's infirmary: a medical station, two bunks and the medicine cabinet.",
+  "description": "The penal colony's infirmary: triage at the door, a ward of two beds and the medicine cabinet.",
   "steps": [
     {
       "part": "Concrete Foundation 4x4 m"
@@ -18,7 +18,7 @@
       "socket": "t0_0",
       "by": "b0_0",
       "paint": "#d6dad3",
-      "finish": "worn paint"
+      "finish": "concrete"
     },
     {
       "part": "Concrete Wall Corner",
@@ -27,7 +27,7 @@
       "by": "b0_7",
       "spin": 2,
       "paint": "#d6dad3",
-      "finish": "worn paint"
+      "finish": "concrete"
     },
     {
       "part": "Concrete Wall Corner",
@@ -36,7 +36,7 @@
       "by": "b7_0",
       "spin": 3,
       "paint": "#d6dad3",
-      "finish": "worn paint"
+      "finish": "concrete"
     },
     {
       "part": "Concrete Wall Corner",
@@ -45,16 +45,16 @@
       "by": "b7_0",
       "spin": 1,
       "paint": "#d6dad3",
-      "finish": "worn paint"
+      "finish": "concrete"
     },
     {
-      "part": "Concrete Window Wall 4 m",
+      "part": "Concrete Ribbon Wall 4 m",
       "on": 0,
       "socket": "t0_8",
       "by": "b15",
       "spin": 1,
       "paint": "#d6dad3",
-      "finish": "worn paint"
+      "finish": "concrete"
     },
     {
       "part": "Concrete Wall 4 m",
@@ -63,14 +63,14 @@
       "by": "b0",
       "spin": 2,
       "paint": "#d6dad3",
-      "finish": "worn paint"
+      "finish": "concrete"
     },
     {
       "part": "Concrete Floor 4x4 m",
       "on": 2,
       "socket": "t0_0",
       "by": "b0_0",
-      "paint": "#4b5157",
+      "paint": "#858179",
       "finish": "concrete"
     },
     {
@@ -78,7 +78,87 @@
       "on": 4,
       "socket": "t0_0",
       "by": "b15_15",
-      "paint": "#4b5157",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 8,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 9,
+      "socket": "k0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 8,
+      "socket": "l0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 8,
+      "socket": "r0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 9,
+      "socket": "l0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 9,
+      "socket": "r0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 10,
+      "socket": "l",
+      "by": "+x",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 10,
+      "socket": "r",
+      "by": "+z",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 11,
+      "socket": "l",
+      "by": "+x",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 11,
+      "socket": "r",
+      "by": "+z",
+      "paint": "#858179",
       "finish": "concrete"
     },
     {
@@ -89,21 +169,86 @@
     },
     {
       "part": "Wood Flush Door 1.5x2.25 m",
-      "on": 10,
+      "on": 20,
       "socket": "leaf",
       "by": "hang",
       "paint": "#2f5a3c",
       "finish": "painted wood"
     },
     {
+      "part": "Concrete Canopy 2 m",
+      "on": 2,
+      "socket": "fa7_10",
+      "by": "back7",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 22,
+      "socket": "lamp",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
       "part": "Text Sign",
-      "on": 3,
-      "socket": "fb7_10",
+      "on": 22,
+      "socket": "sign",
       "by": "back",
       "text": [
-        "INFIRMARY - AILMENTS BY APPOINTMENT"
+        "INFIRMARY"
       ],
       "paint": "#1f2b45"
+    },
+    {
+      "part": "Concrete Entrance Steps 2 m",
+      "on": 0,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Buttress 2.75 m",
+      "on": 3,
+      "socket": "fa7_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Buttress 2.75 m",
+      "on": 7,
+      "socket": "f8_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Buttress 2.75 m",
+      "on": 4,
+      "socket": "fb7_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fin 2.75 m",
+      "on": 6,
+      "socket": "f0_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fin 2.75 m",
+      "on": 6,
+      "socket": "f8_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
     },
     {
       "part": "Text Sign",
@@ -145,23 +290,67 @@
       "paint": "#d6dad3"
     },
     {
+      "part": "Filing Cabinet",
+      "on": 7,
+      "socket": "k0_0",
+      "by": "wall",
+      "paint": "#d6dad3"
+    },
+    {
+      "part": "Cast Iron Radiator",
+      "on": 6,
+      "socket": "k8_0",
+      "by": "back"
+    },
+    {
+      "part": "Wall Clock",
+      "on": 7,
+      "socket": "k7_5",
+      "by": "back"
+    },
+    {
+      "part": "Strip Light",
+      "on": 6,
+      "socket": "k0_10",
+      "by": "back",
+      "config": {
+        "colour": "#e4f2dc"
+      }
+    },
+    {
+      "part": "Strip Light",
+      "on": 6,
+      "socket": "k15_10",
+      "by": "back",
+      "config": {
+        "colour": "#e4f2dc"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 2,
+      "socket": "kb7_5",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
       "part": "Battery",
       "on": 7,
       "socket": "k0_10",
       "by": "-z",
       "paint": "#4b5157"
-    },
-    {
-      "part": "Wall Light",
-      "on": 2,
-      "socket": "fa0_10",
-      "by": "back"
-    },
-    {
-      "part": "Wall Light",
-      "on": 6,
-      "socket": "k8_10",
-      "by": "back"
     }
+  ],
+  "wires": [
+    [
+      41,
+      39
+    ],
+    [
+      41,
+      40
+    ]
   ]
 }
