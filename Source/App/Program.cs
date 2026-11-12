@@ -1301,7 +1301,7 @@ public static unsafe partial class Program
             return; // (Esc closes the talk panel: Program.StoryTalk.cs)
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && SandboxLinkEsc())
             return; // (Esc cancels the link being routed, not the match: Program.SandboxLinks.cs)
-        if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && (RemoverEsc() || SelectEsc()))
+        if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && (RemoverEsc() || SelectEsc() || BlueprintGhostEsc()))
             return; // (Esc cancels the remover's delete question, not the match: Program.SandboxRemover.cs)
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && SocketWeldEsc())
             return; // (Esc cancels the socket weld being set up, not the match: Program.SandboxSocketWeld.cs)
@@ -1371,6 +1371,8 @@ public static unsafe partial class Program
     private static void ScrollInput(double y)
     {
         var offset = new double2(0, y);
+        if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && BlueprintGhostScroll(offset.Y))
+            return; // (a blueprint ghost out: the wheel turns it; Program.SandboxBlueprintGhost.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && TerminalScroll(offset.Y))
             return; // (a Smart Terminal under the crosshair: the wheel picks an item; Program.SandboxTerminal.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && LinkAdjustScroll(offset.Y))

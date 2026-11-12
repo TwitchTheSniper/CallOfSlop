@@ -115,6 +115,7 @@ public static unsafe partial class Program
         SandboxSelectTick(g, g.Local is { Alive: true } sp && g.SandboxHands.Hand(sp.Id).Tool == ConstructTool.Selector); // (Program.SandboxSelect.cs)
         SandboxTrackTick(g.Local is { Alive: true } tp && g.SandboxHands.Hand(tp.Id).Tool == ConstructTool.Tracks); // (Program.SandboxTracks.cs)
         SandboxSnapFrame(g, now); // (snappy building: markers off, the ease running out, the thunk; Program.SandboxSnap.cs)
+        BlueprintGhostWatch(g); // (a menu, death, a seat or another tool drops the blueprint ghost: Program.SandboxBlueprintGhost.cs)
         if (g.Local is not { Alive: true } me || !_mouseCaptured || MenusOpen)
         {
             _sbFiring = _sbRemoving = false;
@@ -169,6 +170,8 @@ public static unsafe partial class Program
         }
         if (SandboxSpawnInput(g, me))
             return true; // placing a spawn: Fire spawns, Aim stops (Program.SandboxSpawn.cs)
+        if (SandboxBlueprintGhostInput(g, me))
+            return true; // a blueprint ghost out: Fire places it, the wheel turns it (Program.SandboxBlueprintGhost.cs)
         if (Pressed(GameAction.SandboxDrop) && (h.Held != ConstructParts.None || g.Constructs.HoseHeldBy(me.Id) >= 0))
             g.SandboxSend(CActKind.Drop); // (a held hose's receiver first: it reels back)
         // The backpack (H: stow what you hold; J: draw the next part out).

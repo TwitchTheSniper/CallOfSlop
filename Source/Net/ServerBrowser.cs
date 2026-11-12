@@ -412,7 +412,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      u16 count, u16 made and the panel's name as text, in place of the 22 fixed bytes. A run-time part named "Formed Panel (...)" travels as a
     //      lofted hull part does (HullLoft.WireKind and its name). Two new part files (Panel Former, Medium Panel Former) move part ids; a new touch
     //      action, orders.preset.
-    public const ushort ProtocolVersion = 253;
+    // 254: the blueprint ghost (feat/blueprint-ghost). CActKind gains SpawnPrepare (u8 inner kind, then that spawn act's own fields: the host prepares
+    //      it as a pending spawn), SpawnPlace (u16 token, vec point, f32 yaw), SpawnCancel (u16 token) and SpawnGhost (server -> one client: u8 status,
+    //      u16 token, text name; ready: vec min, vec max, f32 low, u16 n boxes, each 3 x f32 centre, 3 x half-float size, 4 x i16 turn, 3 x u8 colour,
+    //      u8 alpha, u8 shape).
+    public const ushort ProtocolVersion = 254;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

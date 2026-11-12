@@ -89,6 +89,10 @@ public enum CActKind : byte
     RackDrop, // u16 body, u16 part: Shift+F on a Piece Rack, the kind looked at drops loose over it (protocol 249; ConstructEditsRack.cs)
     Rider, // u16 body, u8 conveyor, u16 front (cm), u8 1 the physics gun: a piece off a conveyor, into the hands or the beam (protocol 249; ConstructEditsRack.cs)
     LineRecipe, // u16 body, u16 console, u16 machine, u16 recipe value, u8 flags (1: every machine of its kind on the line): the recipe picker (protocol 250; ProductionLines.SetRecipe)
+    SpawnPrepare, // u8 inner kind (Blueprint, Vehicle, FactionVehicle, MakeEngine), then that act's fields: made ready as a pending spawn, placed with a ghost (protocol 254; GameSandboxBlueprintGhost.cs)
+    SpawnPlace, // u16 token, vec point, f32 yaw: the pending spawn goes down there (protocol 254)
+    SpawnCancel, // u16 token: the pending spawn is dropped (protocol 254)
+    SpawnGhost, // server -> one client: u8 status (0 ready, 1 placed, 2 gone), u16 token, text name; ready: the ghost's shape and boxes (protocol 254)
 }
 
 /// <summary>
@@ -160,6 +164,7 @@ public sealed partial class Game
         SandboxClearBuilds(); // (built weapons go with the match: GameSandboxBench.cs)
         ResetSandboxSpawns(); // (no spawns queued, no spawned zombies: GameSandboxSpawns.cs)
         _vehicleSpawn?.Reset(); // (no faction vehicles on the way: GameSandboxVehicles.cs)
+        SpawnHeldReset();
         _pilots.Clear(); // (no bot pilots: GameSandboxAircraft.cs)
         _airPending = 0;
         _airEscortAt = 0;
@@ -392,6 +397,7 @@ public sealed partial class Game
         SandboxAidsTick(); // (build stations: GameSandboxAids.cs)
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
         _vehicleSpawn?.Tick(); // faction vehicles made at spawn time, a slice a tick (GameSandboxVehicles.cs)
+        SpawnHeldTick(); // pending spawns of the dead, the gone and the forgotten go (GameSandboxBlueprintGhost.cs)
         SandboxPilotsTick(); // bot pilots of AI aircraft (GameSandboxAircraft.cs)
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
         SandboxDebris(now);
@@ -751,7 +757,10 @@ public sealed partial class Game
                 }
                 break;
             case (byte)Msg.CAct when !IsServer:
-                if (r.U8() == (byte)CActKind.Notice)
+                var actKind = r.U8();
+                if (actKind == (byte)CActKind.SpawnGhost)
+                    SpawnGhostRead(ref r); // (GameSandboxBlueprintGhost.cs)
+                else if (actKind == (byte)CActKind.Notice)
                 {
                     SandboxSay(r.Text(120));
                     BuildSounds.Play(BuildSound.Refuse, default);
@@ -1118,6 +1127,16 @@ public sealed partial class Game
             }
             case CActKind.Blueprint:
                 return SandboxSpawnBlueprint(p, r.U16()); // (protocol 227: two bytes, past 255 blueprints)
+            case CActKind.SpawnPrepare:
+                return SandboxSpawnPrepareAct(p, ref r, now); // (GameSandboxBlueprintGhost.cs)
+            case CActKind.SpawnPlace:
+            {
+                var token = r.U16();
+                var at = r.Vec();
+                return SandboxSpawnPlaceAct(p, token, at, r.F32());
+            }
+            case CActKind.SpawnCancel:
+                return SandboxSpawnCancelAct(p, r.U16());
             case CActKind.Drop:
                 if (Constructs.HoseLetGo(p.Id))
                     return null; // (the hose's receiver first: it reels back)
@@ -1602,13 +1621,15 @@ public sealed partial class Game
         if (index < 0 || index >= all.Count)
             return "no such blueprint";
         var bp = all[index];
-        if (!VehicleSpawner.AtOnce(bp, null))
+        var held = VehicleSpawn.HoldFor == p.Id; // (a ghost's: made ready in slices and held, GameSandboxBlueprintGhost.cs)
+        if (!VehicleSpawner.AtOnce(bp, null) || held)
         {
             // Too big for one tick (a faction vehicle's file, the RV): set down a slice a tick, in front of them when it is ready.
             var ground = ConstructWorld.Ground(World.Query, p.Position + GravityFrames.FlatForward(p.Position, p.Yaw) * 6f);
             if (VehicleSpawn.RequestBlueprint(bp, ground, p.Yaw, p.Id, p.Id, _blueprintSpawned ??= BlueprintSpawned) is { } busy)
                 return busy;
-            SandboxHands.Notices.Add((p.Id, VehicleSpawn.Pending > 1 ? $"placing the {bp.Name} ({VehicleSpawn.Pending - 1} ahead of it)" : $"placing the {bp.Name}"));
+            if (!held)
+                SandboxHands.Notices.Add((p.Id, VehicleSpawn.Pending > 1 ? $"placing the {bp.Name} ({VehicleSpawn.Pending - 1} ahead of it)" : $"placing the {bp.Name}"));
             return null;
         }
         if (SandboxBuildInFront(p, bp, null, out var why) is not { } c)
