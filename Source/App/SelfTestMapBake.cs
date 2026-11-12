@@ -113,13 +113,16 @@ public static partial class SelfTest
             ("sky image", m => m.Skybox?.Loaded != null), ("boundary", m => m.Boundary != null), ("movers", m => m.Movers.Count > 0),
             ("zombies", m => m.Zombies != null), ("decals", m => m.DecalRequests.Count > 0), ("flags", m => m.FlagPoolIds != null),
         };
-        var counts = kinds.Select(k => (k.Kind, N: back.Count(k.Has))).ToArray();
+        var counts = kinds.Select(k => (k.Kind, N: back.Count(k.Has), Live: live.Count(k.Has))).ToArray();
         Line("kinds: " + string.Join(", ", counts.Select(c => $"{c.Kind} {c.N}")));
-        foreach (var (kind, n) in counts)
-            if (n == 0)
-                Fail($"Map bake: no baked map with {kind} (the round trip should cover every kind)");
+        // Since the Space pack went (2026-11-12) no shipped map has a sky image: a kind no shipped map has is noted, not failed.
+        foreach (var (kind, n, liveN) in counts)
+            if (liveN == 0)
+                Line($"Map bake: no shipped map has {kind}, so the round trip can't cover it");
+            else if (n == 0 || n != liveN)
+                Fail($"Map bake: {n} baked maps with {kind}, {liveN} built (the round trip should cover every kind)");
 
-        var map = live.FirstOrDefault(m => m.Name == "Blackmoor Asylum") ?? live[0];
+        var map = live.FirstOrDefault(m => m.Name == "Proto Box") ?? live[0]; // Rooftops until the Legacy pack went (2026-11-12); a map without foliage, whose stats hold build timings
         var rel = map.SourceFile!;
         var cacheFile = Path.Combine(cache, MapBake.FileName(rel));
         var good = File.ReadAllBytes(cacheFile);
