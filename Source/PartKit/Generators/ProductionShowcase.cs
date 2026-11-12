@@ -197,6 +197,8 @@ public sealed class ProductionShowcase : IPartGenerator
             foreach (var (part, n) in new[] { ("Gear Set", 4), ("Steel Plate", 4), ("Gun Barrel", 2) }) // (steel only, tier 1: what its stock makes)
                 BillPart(orders, part, n);
 
+            // ---- 8. The Crafting Terminal: on the orders console's machines, the Assembler's rack returning to its tray. ------------------
+            CraftingCorner(orders, partRack, longRack);
             PanelLine(orders);
 
             Monitors(refine, orders);
@@ -211,6 +213,30 @@ public sealed class ProductionShowcase : IPartGenerator
             // ---- The lamps: one on every sign post, wired from the main switch along the aisles' edges. -------------------------
             foreach (var lamp in _lamps)
                 Lamp(lamp);
+        }
+
+        /// <summary>
+        /// The Crafting Terminal's corner (its own floor area: x 60 to 64, z -9.2 to -6.2, between the wheel rack and the part rack): the
+        /// terminal, the orders console's wire into its Orders port (so it sees that console's machines), a return conveyor from the
+        /// Assembler's Piece Rack to its tray, and its sign.
+        /// </summary>
+        private void CraftingCorner(VPart orders, VPart partRack, VPart longRack)
+        {
+            var term = On("Crafting Terminal", 61.25f, -9.25f, Front, "-y.0.0");
+            var from = PortAt(partRack, "Piece out");
+            var to = PortAt(term, "Piece in");
+            Convey(partRack, "Piece out", term, "Piece in", Assembly, null, V(to.X, from.Y, from.Z));
+            Link("data", orders, term, null, "Orders", Control, true, null,
+                new[] { V(24.25f, 0, -2.0f), V(31.75f, 0, -2.0f), V(39.25f, 0, -2.0f), V(46.75f, 0, -2.0f), V(54.25f, 0, -2.0f), V(60.5f, 0, -2.0f), V(60.5f, 0, -6.2f) }
+                    .Select(p => V(p.X, FloorY + 0.03f, p.Z)).ToArray());
+            // The Extruders' pieces come back too: the Long Piece Rack's Piece out, down to the back aisle's edge and along it to the sorter's side.
+            var back = PortAt(longRack, "Piece out");
+            var side = PortAt(term, "Piece in 2");
+            var path = new List<Vector3> { V(back.X + 0.6f, back.Y, back.Z), V(back.X + 0.6f, back.Y, side.Z) };
+            for (var x = back.X + 0.6f + 7f; x < side.X - 1f; x += 7f) // (a segment reaches at most 8 m)
+                path.Add(V(x, back.Y, side.Z));
+            Convey(longRack, "Piece out", term, "Piece in 2", LineA, new Vector2(0.5f, 0.5f), path.ToArray());
+            Sign(60.25f, -6.75f, Assembly, "F on the screen: order a part. It arrives in the tray");
         }
 
         /// <summary>

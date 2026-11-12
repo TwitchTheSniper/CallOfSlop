@@ -1142,6 +1142,7 @@
     {"output": "Large Conveyor Join", "materials": {"steel": 50, "concrete": 10}, "seconds": 9.5},
     {"output": "Large Conveyor Splitter", "materials": {"steel": 50, "concrete": 10}, "seconds": 9.5},
     {"output": "Corner", "materials": {"steel": 3, "concrete": 1}, "seconds": 2.4},
+    {"output": "Crafting Terminal", "materials": {"steel": 36, "rubber": 7}, "seconds": 7.4},
     {"output": "Deck Plate", "materials": {"steel": 12, "rubber": 2}, "seconds": 3.8},
     {"output": "Delay", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.1, "minTier": 3},
     {"output": "Door", "materials": {"steel": 8}, "parts": {"Bearing": 1}, "seconds": 3.2, "minTier": 2},

@@ -2116,6 +2116,8 @@ public static partial class ConstructRoutes
         var td = ct.DefOf(to);
         if (td.IsTerminal)
             return false; // (a chute into a terminal is how it reads the network: nothing goes in)
+        if (td.IsCraftTerminal)
+            return ConstructCrafting.ChuteInto(world, cf, from, ct, to); // (only what its orders claimed in the source: ConstructCrafting.cs)
         if (td.IsAssembler)
             return IntoAssembler(world, cf, from, src, fd, ct, to);
         if (td.IsPress)
