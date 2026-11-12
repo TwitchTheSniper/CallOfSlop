@@ -482,7 +482,7 @@
     {"type": "conveyor", "from": 263, "to": 294, "fromPort": "Piece out", "toPort": "Piece in 2", "nodes": [[50.225, 0.345, -3.625], [50.225, 0.345, -7.475], [57.225, 0.345, -7.475]], "size": [0.5, 0.5], "paint": "#3d7ab8"},
     {"type": "data", "from": 290, "to": 361, "toPort": "Orders", "nodes": [[23.25, 0.33, -1.05], [30.75, 0.33, -1.05], [38.25, 0.33, -1.05], [45.75, 0.33, -1.05], [53.25, 0.33, -1.05], [59.5, 0.33, -1.05], [63.6, 0.33, -1.05], [63.6, 0.33, -5]], "laid": true, "paint": "#e0b020"},
     {"type": "chute", "from": 362, "to": 361, "fromPort": "Chute out", "paint": "#c9a24a"},
-    {"type": "conveyor", "from": 363, "to": 361, "fromPort": "Piece out", "toPort": "Piece in", "nodes": [[66.085, 0.345, -11.375]], "size": [1, 1], "paint": "#2f8f8a"},
+    {"type": "conveyor", "from": 363, "to": 361, "fromPort": "Piece out", "toPort": "Piece in", "nodes": [[66.085, 0.345, -11.375]], "paint": "#2f8f8a"},
     {"type": "chute", "from": 410, "to": 409, "fromPort": "Chute out", "paint": "#c9a24a"},
     {"type": "conveyor", "from": 409, "to": 411, "fromPort": "Piece out", "toPort": "Piece in", "paint": "#5d7f3c"},
     {"type": "conveyor", "from": 411, "to": 412, "fromPort": "Piece out", "toPort": "Piece in", "paint": "#5d7f3c"},

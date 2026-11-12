@@ -270,7 +270,7 @@ public sealed class ProductionShowcase : IPartGenerator
                 Store(kit, -1, part, n); // (the Swing Arm Buggy's 26 parts: the station reserves them here and they ride in)
             var from = PortAt(kit, "Piece out");
             var to = PortAt(station, "Piece in");
-            Convey(kit, "Piece out", station, "Piece in", Assembly, new Vector2(1.0f, 1.0f), V(to.X, from.Y, from.Z)); // (out of the rack's end, then straight up to the hold's back)
+            Convey(kit, "Piece out", station, "Piece in", Assembly, null, V(to.X, from.Y, from.Z)); // (out of the rack's end, then straight up to the hold's back)
             Sign(68.75f, Posts1, Assembly, "F on the station: pick Swing Arm Buggy, Start. Parts ride in");
         }
 

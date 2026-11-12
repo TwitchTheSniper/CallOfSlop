@@ -955,6 +955,68 @@ station's build see only that. One table a world, at most 1,024 claims.
   kinds in `CBodyKind.Craft`, so their lists read the same.
 - Never saved: an order is the truth, a reservation its claim, made again after a load.
 
+## Building station
+
+The end of the factory (the user, 2026-11-11: "fully automate the production of a vehicle"): a station that receives every exact part
+of a blueprint and builds it in a bay, part by part, where it can be seen. Phase 1 (2026-11-12). Code: `Source/Constructs/ConstructStation.cs`
+(the job, the bay, the wire, saves, `StationPreview`), `ConstructBuild.FitStep` (a blueprint's one step, shared with the loader),
+`Source/UI/UiStation.cs` (the panel), `RouteRender.DrawBays` (the outline and the effects); the part from the part kit's `build_station_parts`.
+
+- **The part** (`Constructs/Parts/BuildingStation/BuildingStation.json`, 3 by 3 m, 150 W): a control pedestal with the screen at 1.5 m, an
+  intake cabinet with a chute hopper, a hold along its right, and a mast with a boom that points at the bay. It is a Crafting Terminal by
+  data (`storage.pieces.crafting` and `station`: `ConstructPartDef.IsBuildStation`), so its hold is a Piece Rack's (packed by volume, F
+  takes a stack), its ports are **Piece in**, **Piece in 2**, **Chute in** and **Orders**, and its network and orders are
+  [the terminal's](#crafting-terminal).
+- **The bay** is three settings on the station (configure tool, group Bay): `bayWidth` (away from the station), `bayDepth` (along it),
+  `bayHeight`, 2 to 64 m in 0.5 m steps, 6 x 8 x 4 by default. It is a box on the station's +x side, 0.5 m from it, its floor at the
+  station's foot (`ConstructStation.Bay`): on the ground or on a construct's floor, whichever the station stands on; nothing checks for a
+  floor under it. It is drawn (floor, four posts, top) while the station is looked at or its panel is open (amber; red when the picked
+  blueprint doesn't fit) and green while a build is on.
+- **The panel.** F on the station opens it: the blueprints on the left (shipped by group, then the player's own saved ones; a search box),
+  and for the picked one whether it **fits** (its bounds, wheels' travel included, against the bay, with both sizes) and its **bill** by
+  group: pieces, panels and catalogue parts, each with what the hold and the linked stores have, where the rest would be ordered, or
+  "NOTHING MAKES" with the machine's own reason; link stock; fluids. The blueprint is built in a scratch world a 2 ms slice a frame for
+  this (`StationPreview`), never in one go. **Start**, a build count or **forever**, **Set repeat**, **Cancel build**, **Release early**.
+  It is opened, closed and reset as the terminal's panel (`Ui.CraftingOpen`).
+- **The job** (`CPart.Station`, a `StationJob`; server). Start costs the blueprint in a scratch world, 1.5 ms a tick: its bounds (the fit
+  is checked again here and refused with the numbers), each link's length, its kinds. Then, at 2 Hz, each kind the build lacks (need
+  less fitted, held and asked) becomes a craft order: linked stock is reserved and fetched first, the rest dealt to the wired consoles'
+  machines. A kind is asked for when a step of it can go on, and a few kinds ahead while the hold is nearly empty, so the hold never
+  fills with parts that can't be fitted yet. What nothing holds or makes is named on the screen with the reason; only what hangs off it waits.
+- **Fitting.** The vehicle is an ordinary construct, frozen at its final pose in the bay and `HeldBy` the station: no physics, and every
+  edit, grab and seat refuses ("a Building Station is building it"). The station fits one part every `FitSeconds` (2 s) plus 0.02 s a kg,
+  10 s at most: the first unfitted step, in the blueprint's order, whose parent step (and the steps its `"also"` names) is in place and
+  whose kind is in the hold, through `ConstructBuild.FitStep`, the loader's own step (socket, turn, `"at"`, weld, also-links, setting,
+  config), then its paint and finish. Each fit flashes a shell round the new part and plays the weld's end on every peer.
+- **By hand.** F on a station that is building, with a part in the hands the build still needs: it is fitted at once when a step of
+  its kind has its parent in place (no wait), else it goes into the hold.
+- **Links.** When every part is on, the blueprint's wires and then its links are laid in its order, one a second, each paid from link
+  stock in a linked bin: 1 **copper** a metre of wire or cable, 1 **steel** a metre of pipe, chute, shaft, feed or conveyor
+  (`WireStock`, `PipeStock`). No stock: the build waits and says how much. A blue pulse runs the new link's length and the link sound
+  plays: a different effect from a part's. A link the rules refuse is left out and named.
+- **Done, cancel, release.** After the last link `ConstructBuild.FinishBuild` does the rest (fused units, hoses, ropes, tracks, cargo)
+  and the body is freed: a normal construct on its wheels, the station's owner's; the screen says "done - drive it out". **Repeat**
+  starts the next when the bay is clear of it. **Cancel build** drops the orders and their claims, takes the body apart and gives its
+  parts back eight a look: a linked Piece Rack with room, else the hold, else loose beside the bay. **Release early** frees the body
+  as it stands and drops the unfitted parts of the hold beside the bay. A build damaged in the bay stops and is freed as it stands.
+- **Network (protocol 256).** `CActKind.Station` (body, station, op, n, the blueprint's name: a blueprint goes by name, never an
+  index) is checked as a finger on a console: reach, power, who may configure. `CBodyKind.Station`, per body on a change, after a Full
+  and to a joiner: each station's state, name, counts, the frozen body, the part fitted last, two effect counters and a note. The
+  frozen body is an ordinary Full.
+- **Saves.** After a body's crafting orders (an empty block when it has none): each job's name, state, repeat, body and each step's
+  part. On load a building job costs its blueprint again and goes on from its fitted set. A finished job isn't kept.
+- **Cost.** No job: one list check a tick. Building: a fit at most every 2 s; the 2 Hz look walks the unfitted steps once.
+
+Not in phase 1: arms and cranes; roll-out and carriers; vehicles generated on request; fluids and ammo filled from linked tanks and
+bins (a tank is as the blueprint spawns it); panels ordered from a Panel Former by the station (brought by hand); a part too big for
+the hold; hand delivery aimed at the build rather than the station, and of physics-only parts; a client's own saved blueprints (the
+host's folder is read); marker posts.
+
+Proposed (the user's to confirm): size settings rather than marker posts; the bay on the station's +x side; 2 s plus mass a part;
+a hand-delivered part fitted at once; copper and steel as the link stock, a unit a metre, taken from linked bins; links laid after
+the last part, in the blueprint's order (a link's branch and its hosts depend on that order); the frozen body refusing every edit;
+blueprints by name.
+
 ## Production Showcase
 
 One shipped blueprint, **Production Showcase** (`Constructs/Blueprints/ProductionShowcase.json`, group Production), with every machine
