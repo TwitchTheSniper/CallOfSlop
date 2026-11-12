@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Text.Json;
 
 namespace CallOfSlop;
@@ -48,21 +49,40 @@ public sealed class PressRow
 }
 
 /// <summary>
-/// The stamping table (Constructs/Pressing.json, format call-of-slop-pressing/1, written by the part kit's press_parts;
+/// The stamping table (Constructs/Pressing.json, format call-of-slop-pressing/2 or /1, written by the part kit's press_parts;
 /// docs/sandbox/CONSTRUCTS.md "The Press"). <see cref="Rows"/> are a press's: flat, one line per die family, material and size
 /// band, so a die with a dozen lines is a dozen rows and the first that its bays satisfy runs. <see cref="Lathe"/> are a Die
 /// Lathe's, chosen as a setting. A file that is refused gives no recipes and <see cref="Problem"/>.
+/// <para>
+/// Format /2 adds <see cref="Dies"/> and the presets (the Press rework, phase 1: Pressed.cs): what a die makes of a whole blank, a
+/// part sized by the blank (a "Pressed Part (...)"). The press still strokes the old rows; the dies are read for blueprints, creative
+/// and <c>--press-part</c> until the stroke learns them.
+/// </para>
 /// </summary>
 public sealed class PressTable
 {
-    public const string Format = "call-of-slop-pressing/1";
+    public const string Format = "call-of-slop-pressing/2", FormatV1 = "call-of-slop-pressing/1";
     public const int MaxRows = 2000, MaxBays = 3;
+    public const int MaxDies = 64, MaxPatterns = 64, MaxFeatures = 24, MaxSockets = 16, MaxPresets = 4000;
     public const string NoRecipe = "(no die chosen)";
 
     public PressRow[] Rows = [];
     public PressRow[] Lathe = [];
     public string[] LatheChoices = [NoRecipe];
     public string Problem = "";
+
+    /// <summary>The dies of format /2 (none in a /1 file), and the catalogue parts that are a die's product of one standard blank.</summary>
+    public PressDie[] Dies = [];
+
+    public float StrengthRef = 5000; // a material's healthPerM3 that is strength 1 (steel's)
+    internal readonly Dictionary<string, ConstructPartDef> PresetByKey = new(StringComparer.Ordinal);
+    internal readonly Dictionary<ushort, string> PresetKeyById = new();
+
+    /// <summary>The die of a family ("bracket", any case), or null.</summary>
+    public PressDie? Die(string id) => Array.Find(Dies, d => d.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>The pressed key a catalogue part is the preset of (the first listed), or null.</summary>
+    public string? PresetKeyOf(ConstructPartDef d) => PresetKeyById.GetValueOrDefault(d.Id);
 
     private readonly Dictionary<string, (int First, int Count)> _families = new(StringComparer.OrdinalIgnoreCase);
 
@@ -128,10 +148,11 @@ public sealed class PressTable
                 byName[d.Name] = d;
             using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
             var root = doc.RootElement;
-            if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("format", out var f) || f.GetString() != Format)
-                throw new FormatException($"\"format\" must be \"{Format}\"");
+            if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("format", out var f) || f.GetString() is not (Format or FormatV1))
+                throw new FormatException($"\"format\" must be \"{Format}\" (or the older \"{FormatV1}\")");
+            var v2 = f.GetString() == Format;
             foreach (var p in root.EnumerateObject())
-                if (p.Name is not ("format" or "about" or "rows" or "lathe"))
+                if (p.Name is not ("format" or "about" or "rows" or "lathe") && !(v2 && p.Name is "strength" or "dies" or "presets"))
                     throw new FormatException($"unknown key \"{p.Name}\"");
             var t = new PressTable
             {
@@ -151,6 +172,8 @@ public sealed class PressTable
                 else
                     t._families[fam] = (k, 1);
             }
+            if (v2)
+                PressDies.Read(root, byName, t);
             return t;
         }
         catch (Exception ex) when (ex is JsonException or FormatException or InvalidOperationException or KeyNotFoundException)
