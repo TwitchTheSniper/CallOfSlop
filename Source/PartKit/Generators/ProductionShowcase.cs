@@ -199,6 +199,7 @@ public sealed class ProductionShowcase : IPartGenerator
 
             // ---- 8. The Crafting Terminal: on the orders console's machines, the Assembler's rack returning to its tray. ------------------
             CraftingCorner(orders, partRack, longRack);
+            StationBay(orders);
             PanelLine(orders);
 
             Monitors(refine, orders);
@@ -237,6 +238,40 @@ public sealed class ProductionShowcase : IPartGenerator
                 path.Add(V(x, back.Y, side.Z));
             Convey(longRack, "Piece out", term, "Piece in 2", LineA, new Vector2(0.5f, 0.5f), path.ToArray());
             Sign(60.25f, -6.75f, Assembly, "F on the screen: order a part. It arrives in the tray");
+        }
+
+        /// <summary>
+        /// The Building Station (production.md "Building station"), on its own floor past the end (x 64 to 82): the station with its bay
+        /// on its far side, the orders console's wire into its Orders port, a kit rack behind the bay holding every part of the Swing Arm
+        /// Buggy with a conveyor into the station's Piece in, and copper for its wires chuted to it (steel is the Assembler's stock).
+        /// </summary>
+        private void StationBay(VPart orders)
+        {
+            for (var j = 0; j < TilesZ; j++)
+                for (var i = TilesX; i < TilesX + 9; i++)
+                {
+                    var t = Put("Foundation", V(1 + 2 * i, 0.15f, -1 - 2 * j), Front);
+                    Paint(t, j == 0 ? Aisle : Floor);
+                    Finish(t, j == 0 ? "painted deck plate" : "concrete");
+                }
+            var station = On("Building Station", 65.25f, -9.25f, Front, "-y.0.0");
+            Config(station, ("bayWidth", 4.0), ("bayDepth", 5.0), ("bayHeight", 3.0));
+            Link("data", orders, station, null, "Orders", Control, true, null,
+                new[] { V(24.25f, 0, -2.05f), V(31.75f, 0, -2.05f), V(39.25f, 0, -2.05f), V(46.75f, 0, -2.05f), V(54.25f, 0, -2.05f), V(60.5f, 0, -2.05f), V(64.6f, 0, -2.05f), V(64.6f, 0, -6.0f) }
+                    .Select(p => V(p.X, FloorY + 0.03f, p.Z)).ToArray());
+            Feed(StockOf("copper", 65.25f, -3.25f), station);
+            var kit = On("Long Piece Rack", 81.25f, -13.75f, Toward, "-y.0.0", Assembly); // (15 kinds, a column each along its 12 m)
+            foreach (var (part, n) in new[]
+                     {
+                         ("Differential", 1), ("Engine", 1), ("Transmission", 1), ("Tow Hitch", 1), ("Fuel Tank", 1), ("Driving Module", 1), ("Seat", 1),
+                         ("Wedge 1:1 0.25 m", 3), ("Square Beam 0.5 m", 2), ("Square Beam 2 m", 2), ("Plate Steel 1 m", 1), ("Square Beam 0.75 m", 1),
+                         ("Swing Arm", 4), ("Wheel", 4), ("Steering Pivot", 2),
+                     })
+                Store(kit, -1, part, n); // (the Swing Arm Buggy's 26 parts: the station reserves them here and they ride in)
+            var from = PortAt(kit, "Piece out");
+            var to = PortAt(station, "Piece in");
+            Convey(kit, "Piece out", station, "Piece in", Assembly, null, V(to.X, from.Y, from.Z)); // (out of the rack's end, then straight up to the hold's back)
+            Sign(68.75f, Posts1, Assembly, "F on the station: pick Swing Arm Buggy, Start. Parts ride in");
         }
 
         /// <summary>

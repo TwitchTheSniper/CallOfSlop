@@ -521,7 +521,7 @@ public static class ConstructStorage
             // A Piece Rack (ConstructConveyor.cs): whole pieces by kind, the largest section and length it holds and how many.
             if (pc.ValueKind != JsonValueKind.Object)
                 throw new ConstructPartException($"{file}: storage \"pieces\" is an object (section, length, count)");
-            ConstructParts.Known(pc, ["section", "length", "count", "hold", "crafting"], $"{bw}.pieces");
+            ConstructParts.Known(pc, ["section", "length", "count", "hold", "crafting", "station"], $"{bw}.pieces");
             var sec = ConstructParts.Need(pc, "section", $"{bw}.pieces");
             if (sec.ValueKind != JsonValueKind.Array || sec.GetArrayLength() != 2)
                 throw new ConstructPartException($"{file}: storage.pieces.section is [across, up] in metres");
@@ -544,6 +544,7 @@ public static class ConstructStorage
             }
             d.IsPieceRack = true;
             d.IsCraftTerminal = ConstructParts.Opt(pc, "crafting") is { ValueKind: JsonValueKind.True };
+            d.IsBuildStation = d.IsCraftTerminal && ConstructParts.Opt(pc, "station") is { ValueKind: JsonValueKind.True };
             if (d.IsCraftTerminal)
                 d.DataIn = ["Orders"]; // (a Line Console's wire into it brings that console's machines: ConstructCrafting.cs)
         }
@@ -1078,6 +1079,8 @@ public sealed partial class ConstructWorld
         CraftNets.Clear();
         CraftOpen.Clear();
         CraftDirty.Clear();
+        StationOpen.Clear();
+        StationDirty.Clear();
         Beacons.Dirty = true;
     }
 
