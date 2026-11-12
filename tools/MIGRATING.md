@@ -72,6 +72,10 @@ Each update unzips into its own folder (`CallOfSlop-<version>`) with a small `.c
 
 The game's built-in sound levels are now the **SeabMix2** mix: your own gun, other players' guns, explosions, bullet whizz and the hit sounds are louder, footsteps a little quieter (README, "Audio mixer", lists every level). If you never saved a mix, you get it straight away. If you have an `audio_mix.json` (or presets in `AudioMixes`), every level you changed in the F8 mixer stays as you set it, and every level you left at its old default moves to the new one the first time the file loads; press **Save** in the mixer to keep the result. To start over from the new defaults, use **Revert to defaults** and Save, or delete `audio_mix.json`.
 
+### Map packs removed (2026-11-12)
+
+The **Legacy**, **Cluttered**, **World Tour** and **Space** map packs were removed: the game is Sandbox now. **Proto Box** and **Pocket Planet** moved to the **Dev** pack. A `settings.txt` that still picks random maps from a removed pack picks from **Sandbox** instead; one that names a removed map plays Proto Box. Co-op had its only mission on the World Tour map Silo, so it has none now. If you unzip a new build over an old one, delete `Maps\Legacy`, `Maps\Cluttered`, `Maps\World` and `Maps\Space` from the game folder.
+
 ### The Legacy map pack
 
 The **Classic**, **Collision Point** and **High Ground** map packs are now one pack called **Legacy** (`Maps/Legacy`, 36 maps, same maps and same names: Proto Box to Military Base, then Blueprint to Confluence, then Gravel Pit to Alpine Pass). A `settings.txt` that still picks random maps from one of the old packs switches to Legacy on its own the first time it loads. If you unzipped the new build **over** an old one, the leftover `Maps\Classic`, `Maps\CollisionPoint` and `Maps\HighGround` folders are harmless: the game sees that their maps are the same as Legacy's and ignores them (`callofslop.log` says so), but you can delete them. A map you edited in one of those folders still loads, as its own pack. Online, these maps are the same maps as before: hosts and joiners on either layout can play together.
