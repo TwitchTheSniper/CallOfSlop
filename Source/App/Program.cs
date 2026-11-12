@@ -1146,7 +1146,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.LogbookOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.LogbookOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -1207,6 +1207,13 @@ public static unsafe partial class Program
         {
             Ui.CloseInventory(); // Esc closes the Zombies parts inventory (back to the fight), not the match (Program.Zombies.cs)
             SetMouseCaptured(true);
+            return;
+        }
+        if (key == GlfwKey.Escape && Ui.CraftingOpen)
+        {
+            Ui.CloseCrafting(); // Esc closes the Crafting Terminal's panel (back to the terminal)
+            if (!MenusOpen)
+                SetMouseCaptured(true);
             return;
         }
         if (key == GlfwKey.Escape && Ui.RecipePickerOpen)

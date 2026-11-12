@@ -412,7 +412,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      u16 count, u16 made and the panel's name as text, in place of the 22 fixed bytes. A run-time part named "Formed Panel (...)" travels as a
     //      lofted hull part does (HullLoft.WireKind and its name). Two new part files (Panel Former, Medium Panel Former) move part ids; a new touch
     //      action, orders.preset.
-    public const ushort ProtocolVersion = 253;
+    // 254: the Crafting Terminal (ConstructCrafting.cs): CActKind gains CraftOrder and CraftCancel; CBodyKind.Craft (at the end) carries a body's
+    //      terminals' orders and its stores' reserved parts; a Piece Rack gains an implicit Piece out conveyor port (after its Piece in).
+    public const ushort ProtocolVersion = 254;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

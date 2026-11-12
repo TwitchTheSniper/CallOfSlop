@@ -1,4 +1,6 @@
 using System.Numerics;
+using Brutal.GlfwApi;
+using Brutal.ImGuiApi;
 using Brutal.OpenGlApi;
 
 namespace CallOfSlop;
@@ -83,7 +85,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "aim" or "near" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link";
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "aim" or "near" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown";
 
     private static void WsSay(string s)
     {
@@ -405,6 +407,94 @@ public static unsafe partial class Program
                 _wsWait = 3;
                 return;
             }
+            case "click": // the left mouse button at a window pixel "X,Y", through ImGui's own event queue (a panel's tile or button)
+            {
+                if (arg.Split(',') is not [var cx, var cy] || !float.TryParse(cx, System.Globalization.CultureInfo.InvariantCulture, out var px) || !float.TryParse(cy, System.Globalization.CultureInfo.InvariantCulture, out var py))
+                {
+                    WsFail($"click X,Y: \"{arg}\"");
+                    return;
+                }
+                var io = Brutal.ImGuiApi.ImGui.GetIO();
+                io.AddMousePosEvent(px, py);
+                io.AddMouseButtonEvent(0, true);
+                _wsQueue.EnqueueFront("clickup");
+                _wsWait = 3;
+                return;
+            }
+            case "clickup":
+                Brutal.ImGuiApi.ImGui.GetIO().AddMouseButtonEvent(0, false);
+                _wsWait = 3;
+                return;
+            case "esc": // the Escape key, through the window's key handler
+                OnKey(_window!, GlfwKey.Escape, 0, GlfwKeyAction.Press, default);
+                _wsWait = 3;
+                return;
+            case "disown": // host: the spawned blueprint belongs to nobody, so a joined client may work its consoles and terminals
+                if (g.IsServer && WsSpawned(g) is { } mine)
+                {
+                    mine.Owner = 255;
+                    g.Constructs.StructureDirty.Add(mine.Id);
+                    WsSay("disown: the blueprint is nobody's");
+                }
+                return;
+            case "bring": // host: every other player to stand in front of a part's screen (a client's player can't be flown by its own tool)
+            {
+                var (bc, bpart) = WsFind(g, arg);
+                if (bc == null)
+                {
+                    WsFail($"no part \"{arg}\"");
+                    return;
+                }
+                var spot = WsPartSpot(bc, bpart, out var normal);
+                var stand = spot + (normal != Vector3.Zero ? normal : Vector3.UnitZ) * 1.8f;
+                var feet = new Vector3(stand.X, World.Map.GroundHeight(stand.X, stand.Z) + 0.35f, stand.Z);
+                var n = 0;
+                foreach (var other in g.Players.Values)
+                    if (other != me)
+                    {
+                        other.Teleport(feet);
+                        n++;
+                    }
+                WsSay($"bring: {n} player(s) to {feet:0.0}");
+                _wsWait = 5;
+                return;
+            }
+            case "craft": // a Crafting Terminal's orders, tray and reserved parts as this peer has them; on the host, also a save and load of its body
+            {
+                var (cc, cpart) = WsFind(g, arg);
+                if (cc == null || !cc.DefOf(cpart).IsCraftTerminal || g.Constructs.StoreOf(cc, cpart) is not { } tray)
+                {
+                    WsFail($"no Crafting Terminal \"{arg}\"");
+                    return;
+                }
+                var q = cc.Parts[cpart].Craft;
+                var kinds = string.Join(", ", Enumerable.Range(0, tray.KindN).Select(k => $"{tray.KindCount![k]} {ConstructParts.Get(tray.KindDef![k])?.Name}").OrderBy(x => x));
+                var reserved = 0;
+                for (var i = 0; i < g.Constructs.Reserve.Count; i++)
+                    reserved += g.Constructs.Reserve.Items[i].Count;
+                WsSay($"craft: {q?.Count ?? 0} order(s); tray [{kinds}]; reserved {reserved}");
+                for (var k = 0; q != null && k < q.Count; k++)
+                    WsSay($"craft:   #{q.Items[k].Id} {q.Items[k].Got}/{q.Items[k].What.Count} {ConstructCrafting.NameOf(q.Items[k].What)}: {ConstructCrafting.StateText(cc, q.Items[k])}");
+                if (g.IsServer)
+                {
+                    var snap = new WorldSnapshot();
+                    g.Constructs.CaptureInto(snap);
+                    var names = new WorldNames();
+                    var body = new SaveWriter();
+                    ConstructWorld.WriteBody(body, snap, snap.Bodies.First(b => b.Id == cc.Id), names);
+                    var nameBytes = new SaveWriter();
+                    names.Write(nameBytes);
+                    var read = new WorldNamesRead();
+                    read.Read(new SaveReader(nameBytes.Span.ToArray()));
+                    var w2 = new ConstructWorld();
+                    var loaded = w2.ReadBody(new SaveReader(body.Span.ToArray()), read, _ => 0);
+                    WsSay($"craft: saved and loaded: {(loaded == null ? "NO BODY" : $"{loaded.Parts[cpart].Craft?.Count ?? 0} order(s), {w2.StoreOf(loaded, cpart)?.ItemCount ?? -1} in the tray")}");
+                }
+                return;
+            }
+            case "ui": // what is open and who has the mouse
+                WsSay($"ui: menus {(MenusOpen ? "open" : "closed")}, crafting {(Ui.CraftingOpen ? "open" : "closed")} ({Ui.CraftingTiles} tiles), mouse {(_mouseCaptured ? "captured" : "free")}");
+                return;
             case "shot":
                 WsShot(arg.Length > 0 ? arg : $"{_wsShots:000}");
                 _wsWait = 1;

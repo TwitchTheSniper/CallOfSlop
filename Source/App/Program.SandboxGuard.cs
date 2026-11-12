@@ -64,6 +64,7 @@ public static unsafe partial class Program
         {
             LinkReset();
             TerminalIdle();
+            Ui.CloseCrafting();
             _linkWheel.ResetMode();
             _lkMarkN = 0;
             PhysGunIdle();
@@ -116,6 +117,7 @@ public static unsafe partial class Program
             DrawConnectorPanelInMatch();
             Ui.DrawOrdnanceBench();
             DrawRecipePickerInMatch(now);
+            DrawCraftingInMatch(now);
             DrawToolWheelEditorInMatch();
             DrawSandboxTrackInMatch();
             DrawSandboxPaintInMatch();
