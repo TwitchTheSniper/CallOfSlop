@@ -3,7 +3,7 @@ using static CallOfSlop.PartKit.PartKitMath;
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// The Panel Designer: Constructs/Parts/Crafting/PanelDesigner.json (docs/sandbox/constructs/production.md, "Panel Designer"). A
+/// The Panel Designer: Constructs/Parts/PanelDesigner/PanelDesigner.json (docs/sandbox/constructs/production.md, "Panel Designer"). A
 /// drafting desk with a large screen at standing height at its front left, a raked drawing board under the screen, a model plinth
 /// beside the desk, a plan chest behind it, and along its right a wide flat tray formed panels ride into from the back. It is a
 /// Crafting Terminal (<c>storage.pieces</c> with <c>crafting</c>) with <c>designer</c> set: its network, orders and tray are the
@@ -15,7 +15,7 @@ public sealed class PanelDesignerParts : IPartGenerator
 {
     public string Name => "panel_designer_parts";
 
-    private const string Out = "Constructs/Parts/Crafting";
+    private const string Out = "Constructs/Parts/PanelDesigner";
     private const string Body = "#3f6f9a", Screen = "#10161c", Paper = "#dfe6ea"; // (a drawing office's blue: it takes paint)
 
     private static Part Designer()
@@ -55,7 +55,7 @@ public sealed class PanelDesignerParts : IPartGenerator
         for (var k = 0; k < 4; k++)
         {
             var y = y0 + 0.08 + k * 0.17;
-            p.Add(MachineLook.D([xm - 0.076, y, z0 + 0.12], [xm - 0.062, y + 0.13, dz0 - 0.1]));
+            p.Add(MachineLook.D([xm - 0.076, y, z0 + 0.12], [xm - 0.062, y + 0.13, dz0 - 0.1], Body, paintable: true));
             p.Add(MachineLook.D([xm - 0.066, y + 0.05, z0 + 0.6], [xm - 0.048, y + 0.08, dz0 - 0.58], MachineLook.Steel, "steel"));
         }
         p.Add(MachineLook.D([x0 + 0.1, y0 + 0.78, z0 + 0.14], [xm - 0.16, y0 + 0.794, dz0 - 0.12], MachineLook.Steel, "steel")); // its top: a place for drawings

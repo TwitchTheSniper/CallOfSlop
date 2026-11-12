@@ -103,13 +103,18 @@ public static unsafe class SandboxTiles
     public static bool Complete => _count > 0 && _next >= _count && _key == Key();
 
     /// <summary>How many tiles there are: every part, blueprint and tool model.</summary>
-    public static int Count => ConstructParts.All.Count + ConstructBuild.Blueprints.Count + ConstructTools.All.Count + RecyclingTable.Current.Materials.Length;
+    public static int Count => ConstructParts.All.Count + ConstructBuild.Blueprints.Count + ConstructTools.All.Count + RecyclingTable.Current.Materials.Length + HullLoft.PanelPresets.Length;
 
     /// <summary>The first loose resource's slot.</summary>
     private static int ResourceBase => ConstructParts.All.Count + ConstructBuild.Blueprints.Count + ConstructTools.All.Count;
 
     /// <summary>A loose resource's slot (material id, 1-based), or -1.</summary>
     public static int ResourceSlot(byte material) => material >= 1 && material <= RecyclingTable.Current.Materials.Length ? ResourceBase + material - 1 : -1;
+
+    /// <summary>A formed panel preset's slot (HullLoft.PanelPresets, at its own size): after the resources. The Panel Designer's tiles.</summary>
+    public static int PanelSlot(int preset) => (uint)preset < (uint)HullLoft.PanelPresets.Length ? ResourceBase + RecyclingTable.Current.Materials.Length + preset : -1;
+
+    private static readonly HullLoft.PanelPreview PanelTile = new(); // (the preset being drawn: its shapes are its own, given back at the next)
 
     /// <summary>The slot of a part (by id), a blueprint or a tool model (by index).</summary>
     public static int SlotOf(Kind kind, int index) => kind switch
@@ -264,6 +269,20 @@ public static unsafe class SandboxTiles
         {
             var id = (byte)(slot + 1);
             ResourceIcons.Boxes(names.ShapeOf(id), names.ColourOf(id), slot, boxes);
+            return boxes.Count > 0;
+        }
+        slot -= names.Materials.Length;
+        if (slot < HullLoft.PanelPresets.Length)
+        {
+            // A preset panel at its own size, made for the picture alone (never interned: HullLoft.PanelPreview).
+            PanelTile.Release();
+            PanelTile.Want(HullLoft.PanelDefault(slot));
+            PanelTile.Pump(1000);
+            if (PanelTile.Shown is not { } pd)
+                return false;
+            foreach (var b in pd.Boxes)
+                if (!b.Hidden)
+                    boxes.Add(new TileBox(b.Model(0, b.Center), b.Color, b.Shape));
             return boxes.Count > 0;
         }
         return false;

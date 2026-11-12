@@ -1,6 +1,4 @@
-        if (d.IsPanelFormer)
-            return world.StoreOf(c, m) is { } fst && fst.Refused == (byte)ExtrudeStall.NoMaterial ? ConstructPanelFormer.Lacks(c, m, fst) : "";
-mo.Part == o.What.Part && mo.Name == o.What.Name && (!mo.IsPiece || mo.Key == o.What.Key))using System.Numerics;
+using System.Numerics;
 
 namespace CallOfSlop;
 
@@ -630,7 +628,7 @@ public static class ConstructCrafting
                     for (var j = mq.Count - 1; j >= 0; j--)
                     {
                         ref var mo = ref mq.Items[j];
-                        if (mo.Made == 0 && mo.Count == o.Asked && mo.Part == o.What.Part && (!mo.IsPiece || mo.Key == o.What.Key))
+                        if (mo.Made == 0 && mo.Count == o.Asked && mo.Part == o.What.Part && mo.Name == o.What.Name && (!mo.IsPiece || mo.Key == o.What.Key))
                         {
                             mq.RemoveAt(j);
                             world.OrdersChanged(c);
@@ -728,6 +726,8 @@ public static class ConstructCrafting
         var d = c.DefOf(m);
         if (d.IsAssembler)
             return !what.IsPiece && AssemblingTable.Current.Of(what.Part) is { } r ? Missing(world, c, net, m, r, out _) : "";
+        if (d.IsPanelFormer)
+            return world.StoreOf(c, m) is { } fst && fst.Refused == (byte)ExtrudeStall.NoMaterial ? ConstructPanelFormer.Lacks(c, m, fst) : "";
         if (!d.IsExtruder || world.StoreOf(c, m) is not { } st || st.Amount > 0)
             return "";
         return "needs " + RecyclingTable.Current.NameOf(what.Key.Material);
@@ -1048,13 +1048,6 @@ public static class ConstructCrafting
                     mat = r.U8();
                     o = new CraftOrder { What = new WorkOrder { Key = new ExtrusionKey(mask, kw, kh, kl, mat, false, (ExShape)shape, wall), Part = r.U16(), Count = r.U16() } };
                 }
-| (ulong)r.U32() << 32;
-                var kw = r.U16();
-                var kh = r.U16();
-                var kl = r.U16();
-                var wall = r.U16();
-                var mat = r.U8();
-                var o = new CraftOrder { What = new WorkOrder { Key = new ExtrusionKey(mask, kw, kh, kl, mat, false, (ExShape)shape, wall), Part = r.U16(), Count = r.U16() } };
                 o.Id = r.U16();
                 o.Got = r.U16();
                 var state = r.U8();

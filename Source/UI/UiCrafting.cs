@@ -74,7 +74,7 @@ public sealed partial class Ui
         for (var i = 0; i < _crRows.Count; i++)
         {
             var row = _crRows[i];
-            if (had && row.What.Part == selected.Part && (!row.What.IsPiece || row.What.Key == selected.Key))
+            if (had && row.What.Part == selected.Part && row.What.Name == selected.Name && (!row.What.IsPiece || row.What.Key == selected.Key))
                 _crSel = i;
             _crMake += row.Make > 0 ? 1 : 0;
             _crStock += row.Stock > 0 ? 1 : 0;
@@ -85,7 +85,7 @@ public sealed partial class Ui
                 Value = usable ? i : -1,
                 Name = row.Name,
                 Out = row.Stock > 0 ? $"x{row.Stock}" : "",
-                Slot = row.What.IsPiece ? SandboxTiles.ResourceSlot(mat) : SandboxTiles.SlotOf(SandboxTiles.Kind.Part, row.What.Part),
+                Slot = row.What.Name != null ? SandboxTiles.PanelSlot(HullLoft.PanelOf(row.What.Name)?.Kind ?? -1) : row.What.IsPiece ? SandboxTiles.ResourceSlot(mat) : SandboxTiles.SlotOf(SandboxTiles.Kind.Part, row.What.Part),
                 Swatch = row.What.IsPiece ? Col8(names.ColourOf(mat)) : Col8(row.Def is { Boxes.Length: > 0 } d ? d.Boxes[0].Color : new System.Numerics.Vector3(0.5f)),
                 Search = row.Name.ToLowerInvariant(),
             };

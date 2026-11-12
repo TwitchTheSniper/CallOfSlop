@@ -513,8 +513,33 @@ public static unsafe partial class Program
                 }
                 return;
             }
+            case "design": // the Panel Designer's panel: "design" reports it; "design preset 2", "design length 600" set the sliders as a drag would (clamped the same)
+            {
+                var dw = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (dw.Length == 2 && int.TryParse(dw[1], out var dv))
+                {
+                    Ui.DesignerSet(dw[0], dv);
+                    _wsWait = 3;
+                }
+                var ds = Ui.DesignerShape;
+                WsSay($"design: {(Ui.DesignerOpen ? "open" : "closed")}; {(HullLoft.PanelRefusal(ds) ?? HullLoft.PanelKey(ds))}; preview {(Ui.DesignerPreview.Shown == null ? "none" : $"{HullLoft.PanelKey(Ui.DesignerPreview.ShownShape)} hash {HullLoft.PanelHash(Ui.DesignerPreview.Shown):x8}")}{(Ui.DesignerPreview.Building ? " (building)" : "")}, {Ui.DesignerPreview.Made} keys previewed; library {Ui.DesignerDesigns}; world designs [{string.Join("; ", g.Constructs.Designs.Select(x => $"{x.Name} = {x.Key}"))}]");
+                WsSay($"design: {RuntimeParts.Line()}");
+                foreach (var st in g.Constructs.Stores)
+                    for (var k = 0; st is { Live: true } && k < st.KindN; k++)
+                        if (ConstructParts.Get(st.KindDef![k]) is { } fd && HullLoft.IsPanelName(fd.Name))
+                            WsSay($"design:   held {st.KindCount![k]} x {fd.Name} hash {HullLoft.PanelHash(fd):x8}");
+                if (g.IsServer && g.Constructs.Designs.Count > 0)
+                {
+                    var sw = new SaveWriter();
+                    PanelDesigns.WriteSave(sw, g.Constructs.Designs);
+                    var w3 = new ConstructWorld();
+                    PanelDesigns.ReadSave(new SaveReader(sw.Span.ToArray()), w3);
+                    WsSay($"design: saved and loaded: {w3.Designs.Count} design(s)");
+                }
+                return;
+            }
             case "ui": // what is open and who has the mouse
-                WsSay($"ui: menus {(MenusOpen ? "open" : "closed")}, crafting {(Ui.CraftingOpen ? "open" : "closed")} ({Ui.CraftingTiles} tiles), mouse {(_mouseCaptured ? "captured" : "free")}");
+                WsSay($"ui: menus {(MenusOpen ? "open" : "closed")}, crafting {(Ui.CraftingOpen ? "open" : "closed")} ({Ui.CraftingTiles} tiles), designer {(Ui.DesignerOpen ? "open" : "closed")}, mouse {(_mouseCaptured ? "captured" : "free")}");
                 return;
             case "shot":
                 WsShot(arg.Length > 0 ? arg : $"{_wsShots:000}");

@@ -1492,6 +1492,7 @@
     {"output": "Router Antenna", "materials": {"steel": 1}, "seconds": 2.0},
     {"output": "Wi-Fi Mast", "materials": {"steel": 1}, "seconds": 2.0},
     {"output": "OR Gate", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.1, "minTier": 3},
+    {"output": "Panel Designer", "materials": {"steel": 46, "rubber": 9}, "seconds": 8.9},
     {"output": "Medium Panel Former", "materials": {"steel": 1280, "rubber": 256}, "seconds": 194.0, "minTier": 2},
     {"output": "Panel Former", "materials": {"steel": 104, "rubber": 21}, "seconds": 17.6},
     {"output": "Long Piece Rack", "materials": {"steel": 234, "rubber": 47}, "seconds": 37.1},
