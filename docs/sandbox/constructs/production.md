@@ -967,8 +967,9 @@ Terminal's own code for everything else; the part from the part kit's `panel_des
   - *Bottom:* a name and **Save design**, a count, **ORDER**, and the designer's open orders with their state and Cancel.
 - **The preview leaves no key behind.** `HullLoft.PanelPreview` makes the part from the key by the real code (`PanelJson`: the same
   floats, the same hash as `--form-panel`) but never interns it: no run-time part slot, no name in the table. A changed key makes its base
-  at once (boxes, sockets, mass: the readouts) and its facets 6 a frame inside 1.5 ms into shapes the preview owns; the last whole panel
-  stays drawn until the new one is whole; a key dropped half made gives its shapes back, and closing the panel gives all back. Only Save
+  at once (boxes, sockets, mass: the readouts) and from the next frame its facets, 6 a slice inside 1.5 ms, into shapes the preview owns;
+  while one is being made the newest key waits for it (the keys between are forgotten), so a dragged slider shows a whole panel every
+  few frames; the last whole panel stays drawn until the next is whole and then gives its shapes back; closing the panel gives all back. Only Save
   (nothing made) and Order (the server's `ConstructParts.Find`, as any order) go further.
 - **An order** is the terminal's, for a named part: `CActKind.CraftNamed` (body, terminal, count, the key); `CraftOrder.What.Name`. The
   first linked former that accepts it queues it (its own refusals apply: too large, another line, a full queue). The made panel rides the
@@ -986,6 +987,20 @@ Terminal's own code for everything else; the part from the part kit's `panel_des
   the former that takes it.
 - **Wire (protocol 257).** `CActKind.CraftNamed`, `PanelDesign`; `CBodyKind.Designs`; an order in `CBodyKind.Craft` may be named (shape
   255: material, count, the name, then id and state as before). A save's crafting order the same.
+
+- **Seen and measured** (2026-11-12, `--window-shot` on the showcase; the 2-core box at a load average of 11 to 24, so times are upper
+  bounds). *Host alone:* every preset in the preview (its hash the same as `--form-panel` gives: hood `d6421922`); a design saved, ordered,
+  formed, racked and brought to the tray by the return conveyor; twenty opens and Esc closes, the mouse captured after each. *Host and a
+  joined client, two windows over RakNet:* the client designed a fender 140x60, saved it as "Wing" and ordered it; both peers held the
+  panel in the tray with hash `08ad6017`, the design on both, the host's save and load of the design list and the order kept both.
+  *A second client joining later* got the design with its join, loaded it and ordered another: two in the tray on every peer.
+  *A slider dragged* (a new length every frame, 600 frames): 352 panels previewed, the preview's own work 2.6 ms a frame, worst 11 ms;
+  run-time parts before and after 1,544 and 1,544 (no key left); part shapes live 30,868 before, 30,916 during, 30,868 after closing.
+  Each previewed panel takes about 36 shape slots and gives them back; the slot counter runs on (12,800 slots in that run) and
+  the table reuses freed slots when it has been through all 65,535. A preview's part is made from JSON text, so a changing key
+  allocates (a still panel allocates nothing of the preview's). *A blueprint* with two designed panels on a Deck Plate built from its
+  file and `--bill` listed both ("Panel Former: 18 steel, 12 s", "Medium Panel Former: 60 steel, 28 s"). Two panels of different crown
+  welded edge to edge were refused ("something is in the way": their hidden boxes overlap at the seam).
 
 Proposed (the user's to confirm): the designer being a Crafting Terminal; panels collected at the former's rack unless a conveyor returns
 them; any player may order, replace or delete a shared design; 64 designs a world, 128 a library. Not built: the plinth's model of the
