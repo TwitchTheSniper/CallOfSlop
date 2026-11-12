@@ -42,6 +42,38 @@
     },
     {
       "min": [
+        -0.045,
+        0.66,
+        0.176
+      ],
+      "max": [
+        -0.015,
+        0.68,
+        0.192
+      ],
+      "color": "#3aa0ff",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        0.015,
+        0.66,
+        0.176
+      ],
+      "max": [
+        0.045,
+        0.68,
+        0.192
+      ],
+      "color": "#d8322a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
         -0.12,
         0.902,
         -0.12

@@ -139,6 +139,52 @@ public sealed partial class Game
         return null;
     }
 
+    /// <summary>
+    /// Server, a survival world's start kit (GameSandboxSurvival.cs): a starter machine or rig stood in the site's works yard
+    /// (the plan's "kit" rectangles, inside the fence), on the first spot of a 1.5 m grid where its footprint is clear of
+    /// every other body's. Null with no bench or no room: the caller looks for ground round the colony as before, which
+    /// with the fence up means outside it.
+    /// </summary>
+    private Construct? ColonySiteKit(string name)
+    {
+        var script = ColonyBuildingsScript.Current;
+        if (!_csBench || script.Problem.Length > 0 || script.Kit.Length == 0 || Constructs.Get(_opColony) is not { } colony)
+            return null;
+        var first = ColonySiteSpot(colony, script.Kit[0].Min.X, script.Kit[0].Min.Y);
+        var ground = ConstructWorld.Ground(World.Query, first.X, first.Z);
+        var c = ConstructBuild.FindBlueprint(name) is { } bp ? ConstructBuild.BuildOnGround(Constructs, bp, ground, 0, out _)
+            : ConstructParts.Find(name) is { } def ? ConstructBuild.PlaceNew(Constructs, def, ground, 0) : null;
+        if (c == null)
+            return null;
+        if (c.Dirty)
+            c.Rebuild();
+        var (flo, fhi) = ColonyFootprint(c);
+        var half = (fhi - flo) * 0.5f;
+        var mid = (flo + fhi) * 0.5f;
+        foreach (var (min, max) in script.Kit)
+            for (var z = min.Y + half.Y; z <= max.Y - half.Y; z += 1.5f)
+                for (var x = min.X + half.X; x <= max.X - half.X; x += 1.5f)
+                {
+                    var at = ColonySiteSpot(colony, x, z);
+                    var move = new Vector3(at.X - mid.X, 0, at.Z - mid.Y);
+                    if (!ColonyBuildingSpotClear(c, move, 1f))
+                        continue;
+                    var g = ConstructWorld.Ground(World.Query, at.X, at.Z);
+                    c.Pos += move with { Y = g.Y - ground.Y };
+                    c.PrevPos = c.NetPos = c.NetFromPos = c.Pos;
+                    c.NetHistReset();
+                    if (!c.Anchored)
+                    {
+                        c.Frozen = true; // (a rig stands as built until someone picks it up with the physics gun)
+                        c.Rebuild();
+                    }
+                    return c;
+                }
+        Constructs.Remove(c);
+        Log($"[site] no room in the works yard for the {name}: it stands outside the fence");
+        return null;
+    }
+
     /// <summary>Server: every body's footprint in the colony's own frame, one line each (the site plan is drawn against these).
     /// Once a new world.</summary>
     private void ColonySiteLog()

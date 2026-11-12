@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Heating Branch 6 m",
+  "description": "A branch of the colony's heating mains to one building.",
+  "steps": [
+    {
+      "part": "Heating Main 4 m"
+    },
+    {
+      "part": "Heating Main 2 m",
+      "on": 0,
+      "socket": "ra",
+      "by": "la"
+    }
+  ]
+}

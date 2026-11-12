@@ -70,8 +70,8 @@ public static partial class SelfTest
             var what = slot < parts.Count ? parts[slot].Name
                 : slot < parts.Count + ConstructBuild.Blueprints.Count ? $"blueprint {ConstructBuild.Blueprints[slot - parts.Count].Name}"
                 : slot < parts.Count + ConstructBuild.Blueprints.Count + ConstructTools.All.Count ? $"tool {ConstructTools.All[slot - parts.Count - ConstructBuild.Blueprints.Count].Name}"
-                : slot < parts.Count + ConstructBuild.Blueprints.Count + ConstructTools.All.Count + RecyclingTable.Current.Materials.Length ? $"resource {RecyclingTable.Current.Materials[slot - parts.Count - ConstructBuild.Blueprints.Count - ConstructTools.All.Count]}" // (the loose materials' icons follow the tools: SandboxTiles.ResourceSlot)
-                : $"panel preset {slot - parts.Count - ConstructBuild.Blueprints.Count - ConstructTools.All.Count - RecyclingTable.Current.Materials.Length}"; // (the Panel Designer's preset tiles follow the resources: SandboxTiles.PanelSlot)
+                : SandboxTiles.ResourceSlot((byte)RecyclingTable.Current.Materials.Length) is var lastRes && slot <= lastRes ? $"resource {RecyclingTable.Current.Materials[slot - parts.Count - ConstructBuild.Blueprints.Count - ConstructTools.All.Count]}"
+                : $"panel preset {HullLoft.PanelPresets[slot - lastRes - 1].Label}"; // (the loose materials' icons follow the tools: SandboxTiles.ResourceSlot)
             SandboxTiles.Place(slot, out var page, out var x, out var y);
             if (!places.Add((page, x, y)) || x < 0 || y < 0 || x + SandboxTiles.Tile > SandboxTiles.PageSize || y + SandboxTiles.Tile > SandboxTiles.PageSize)
                 badPlace++;

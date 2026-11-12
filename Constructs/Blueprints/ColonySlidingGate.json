@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Colony Sliding Gate",
+  "description": "The penal colony's sliding gate: two leaves, 8 m.",
+  "steps": [
+    {
+      "part": "Sliding Gate Leaf 4 m"
+    },
+    {
+      "part": "Sliding Gate Leaf 4 m",
+      "on": 0,
+      "socket": "r",
+      "by": "l"
+    }
+  ]
+}

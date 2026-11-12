@@ -86,6 +86,22 @@
       "detail": true,
       "side": "leaf",
       "paintable": false
+    },
+    {
+      "min": [
+        -0.045,
+        0.2075,
+        -0.3
+      ],
+      "max": [
+        0.045,
+        0.2235,
+        0.3
+      ],
+      "color": "#1c1c1c",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
     }
   ],
   "sockets": [
