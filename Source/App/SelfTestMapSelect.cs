@@ -142,6 +142,13 @@ public static partial class SelfTest
         }
 
         // ---- True Random draws from every pack but Dev, within the player limits ------------------
+        // Since the arena packs went (2026-11-12) no shipped pack takes part in True Random (Zombies, Sandbox, Planetoids
+        // and Dev all say "trueRandom": false), so these checks on the real packs run only when one does; the made-up
+        // folder below covers the same rules either way.
+        var realTrueRandom = MapPack.TrueRandomPacks(Maps.Packs).Any();
+        if (!realTrueRandom)
+            Line("True Random: no shipped pack takes part (the made-up folder below checks its rules)");
+        else
         {
             var s = new Settings { MapRandom = true, MapPack = MapPack.TrueRandomKey };
             var pool = MapPack.TrueRandomPool(Maps.Packs, Maps.All);
@@ -224,6 +231,7 @@ public static partial class SelfTest
         }
 
         // ---- The real True Random vote pool --------------------------------------------------------
+        if (realTrueRandom)
         {
             var played = Maps.All.FirstOrDefault(m => m.Pack is { InTrueRandom: true }) ?? Maps.All[0];
             var pool = Game.TrueRandomVotePool(played.Name, Maps.Packs, Maps.All);

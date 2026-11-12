@@ -44,7 +44,7 @@ public static partial class SelfTest
         }
     }
 
-    private static readonly string[] NavBakeMaps = ["Blackmoor Asylum", "Building Yard", "Destruction Test", "Pocket Planet", "Twin Worlds", "Cave Test", "Ashgrave Cathedral"] // Rooftops, Keelhaul Yard and Paris Quarter until their packs went (2026-11-12);
+    private static readonly string[] NavBakeMaps = ["Blackmoor Asylum", "Building Yard", "Destruction Test", "Pocket Planet", "Twin Worlds", "Cave Test", "Ashgrave Cathedral"]; // Rooftops, Keelhaul Yard and Paris Quarter until their packs went (2026-11-12)
 
     /// <summary>Every kind of map: the live graph, written and read back, is the same graph.</summary>
     private static void NavBakeRoundTrips()

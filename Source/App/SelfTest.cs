@@ -880,8 +880,8 @@ public static partial class SelfTest
             }
         }
 
-        // The same with the real packs
-        if (classic != null)
+        // The same with a real pack (Legacy until 2026-11-12; the Dev pack has the most maps)
+        if (Maps.FindPack("Dev") is { } classic)
         {
             var s = new Settings { MapRandom = true, MapPack = classic.Name };
             if (Enumerable.Range(0, 200).Any(_ => s.PickMap().Pack != classic))

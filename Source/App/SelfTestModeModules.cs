@@ -368,11 +368,6 @@ public static partial class SelfTest
             Game.SeedNextGame = 6100 + (int)mode * 17; // seeded: the same match every run (a flaky check is no check)
             if (zombies)
                 game = ZGame(2, ref now, hostIn: false);
-            else if (mode == GameMode.Coop && Maps.Find("Silo") is { } silo)
-            {
-                ClutteredLargeNav(silo); // co-op plays on a map with a mission (Silo Breach): 3 co-op bots against the director's squads
-                game = ModeGame(3, mode, silo.Id);
-            }
             else if (mode == GameMode.Sandbox && Maps.Find(ConstructYardMap) is { } yard)
                 game = ModeGame(3, mode, yard.Id); // Sandbox plays on a map with a "sandbox" section (Construct Yard): 3 bots among the constructs
             else
