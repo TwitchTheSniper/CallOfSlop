@@ -166,7 +166,7 @@ public static class ConstructStation
         ConstructPartDef? d = null;
         foreach (var step in bp.Steps)
         {
-            if (!ReferenceEquals(step.Part, last))
+            if (step.Part != last)
                 (last, d) = (step.Part, ConstructParts.Find(step.Part));
             if (d == null)
                 continue;
@@ -489,6 +489,8 @@ public static class ConstructStation
             return "it is building: Cancel or Release early first";
         if (c.Parts[t].Station is { Return.Count: > 0 })
             return "it is still giving parts back";
+        if (c.Parts[t].Station is { Body: not 0 } was && !BayClear(world, c, t, was))
+            return "the bay isn't clear: move what was built out of it first";
         if (Find(name) is not { } bp)
             return $"no blueprint named \"{name}\"";
         if (bp.Steps.Count == 0 || bp.Steps.Count >= None)

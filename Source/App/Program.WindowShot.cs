@@ -547,7 +547,7 @@ public static unsafe partial class Program
                     case "hold" when g.IsServer && ConstructParts.Find(rest) is { } hd:
                         foreach (var pl in g.Players.Values)
                             g.SandboxHands.Hands[pl.Id].Held = (ushort)hd.Id; // (every player: a client's give is tried with it)
-                        WsSay($"station: every player holds a {hd.Name}");
+                        WsSay($"station: every player holds a {hd.Name}{(hd.PhysicsOnly ? " (PHYSICS-ONLY: real hands refuse it)" : "")}");
                         break;
                     case "reload" when g.IsServer: // the whole world through the real save and the real load, in place
                         WsSay("station: reload: " + g.StationReloadProbe());
@@ -558,6 +558,13 @@ public static unsafe partial class Program
                             return;
                         }
                         break;
+                    case "drop" when g.IsServer && ConstructParts.Find(rest) is { } loose: // a loose part set down in the bay, as the physics gun would leave it
+                    {
+                        ConstructStation.Bay(sc, spart, out var bfloor, out var bturn, out var bsize);
+                        var made = ConstructBuild.PlaceNew(g.Constructs, loose, bfloor + System.Numerics.Vector3.Transform(new System.Numerics.Vector3(bsize.X * 0.3f, 0.3f, bsize.Z * 0.3f), bturn), 0);
+                        WsSay(made == null ? "station: drop: no room" : "station: a loose " + loose.Name + " lies in the bay (construct " + made.Id + ")");
+                        break;
+                    }
                     case "repeat":
                         g.SandboxStation(sc.Id, spart, StationOp.Repeat, (ushort)(int.TryParse(rest, out var more) ? more : 0));
                         break;
