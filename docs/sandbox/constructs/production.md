@@ -962,7 +962,7 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
 (the job, the bay, the wire, saves, `StationPreview`), `ConstructBuild.FitStep` (a blueprint's one step, shared with the loader),
 `Source/UI/UiStation.cs` (the panel), `RouteRender.DrawBays` (the outline and the effects); the part from the part kit's `build_station_parts`.
 
-- **The part** (`Constructs/Parts/BuildingStation/BuildingStation.json`, 3 by 3 m, 150 W): a control pedestal with the screen at 1.5 m, an
+- **The part** (`Constructs/Parts/BuildingStation/BuildingStation.json`, 3 by 5 m, 150 W while it builds): a control pedestal with the screen at 1.5 m, an
   intake cabinet with a chute hopper, a hold along its right, and a mast with a boom that points at the bay. It is a Crafting Terminal by
   data (`storage.pieces.crafting` and `station`: `ConstructPartDef.IsBuildStation`), so its hold is a Piece Rack's (packed by volume, F
   takes a stack), its ports are **Piece in**, **Piece in 2**, **Chute in** and **Orders**, and its network and orders are
@@ -1006,6 +1006,23 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
 - **Saves.** After a body's crafting orders (an empty block when it has none): each job's name, state, repeat, body and each step's
   part. On load a building job costs its blueprint again and goes on from its fitted set. A finished job isn't kept.
 - **Cost.** No job: one list check a tick. Building: a fit at most every 2 s; the 2 Hz look walks the unfitted steps once.
+
+- **After the verification pass** (2026-11-12). The part is 3 by 5 m: its hold is 4.8 m long, since a rack packs a kind a column along
+  its length. **A fit told without building**: `ConstructStation.QuickRefusal` walks the steps' part files (a part longer than the bay,
+  or boxes adding up to over one and a half times its volume) before any costing, at Start and in the panel; the costing itself is
+  the blueprint's steps only (`StepsOnly`: no finish), 1 ms a tick, the bounds from the parts' boxes (`PartBounds`), so one slice
+  is as long as its longest single step (a freeform weld on a big body rebuilds it). **Orders follow what can be fitted**: a kind is
+  asked for only while a step of it has its parent in place, so the hold holds what the next fits take. **A loose part lying in the
+  bay** (a body of one part: set down, or dropped there with the physics gun) that the build lacks is taken at the next look, fitted
+  at once or into the hold: the way to supply a physics-only part, which hands don't carry. **Start** refuses while the last build
+  stands in the bay ("the bay isn't clear"). **Power**: the station draws its 150 W while it costs or builds and nothing idle
+  (`ConstructPower.Step`; proposed); without power it waits and its look line says so. **Link stock** is checked against an estimate
+  (the ends as the crow flies, times 1.3) and paid by the length the link is laid at. A hold that is full says "next in: the hold is
+  full until what it holds is fitted". After Release early or Cancel, parts already riding still land in the hold.
+  Measured on the 2-core box (window tool, `station` verbs): the Buggy from Start to drivable 77 s; the station's step while building
+  19 ms over 2,075 ticks, 48 KB in all (orders and fits; nothing in an idle tick: the step isn't entered); server tick p99 0.98 ms and
+  worst 5.65 ms over the last 600 frames of a build; a world saved and loaded at 11 of 26 went on to Done; a client joining at 1 of 26
+  saw the same frozen body and counts to Done; Repeat started the second build only once the first was dragged out.
 
 Not in phase 1: arms and cranes; roll-out and carriers; vehicles generated on request; fluids and ammo filled from linked tanks and
 bins (a tank is as the blueprint spawns it); panels ordered from a Panel Former by the station (brought by hand); a part too big for
