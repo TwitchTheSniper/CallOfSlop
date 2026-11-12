@@ -6,17 +6,17 @@ namespace CallOfSlop;
 /// <summary>
 /// <c>--window-shot OUT.png|bmp [--map NAME] [--creative] [--blueprint NAME] [--at X,Y,Z] [--look-at X,Y,Z | --yaw D --pitch D] [--frames N] [--every N] [--do "a; b; ..."] [--size WxH]</c>:
 /// pictures of the real game in its real window, for an agent's own checking (README.md "Testing without playing"). It starts an offline creative
-/// Sandbox world (default map Construct Yard) on a throwaway copy of the saves, optionally spawns a blueprint in front of the player through the
+/// Sandbox world (default map Proving Ground: a big blueprint fits inside its arena) on a throwaway copy of the saves, optionally spawns a blueprint in front of the player through the
 /// parts menu's own call (CActKind.Blueprint), flies the player (noclip) to the camera, runs a short script of actions through the real input
 /// paths, waits <c>--frames</c> frames and saves the frame (with <c>--every N</c> a numbered series over those frames), prints the paths and quits.
 /// Exit code: 0, or 1 when the window, the world or an action failed (the reason is printed).
-/// Actions (<see cref="WsActions"/>): aim PART[#n], near PART[#n] [m], use, key ACTION, touch LABEL, wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME].
+/// Actions (<see cref="WsActions"/>): aim PART[#n], near PART[#n] [m], use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME].
 /// </summary>
 public static unsafe partial class Program
 {
     private static bool _windowShot;
     private static int _wsExit;
-    private static string _wsOut = "", _wsMap = "Construct Yard", _wsBlueprint = "";
+    private static string _wsOut = "", _wsMap = "Proving Ground", _wsBlueprint = "";
     private static Vector3? _wsAt, _wsLookAt;
     private static float? _wsYaw, _wsPitch;
     private static int _wsFrames = 45, _wsEvery, _wsStep, _wsWait, _wsShots, _wsCount;
@@ -28,7 +28,7 @@ public static unsafe partial class Program
     private static ushort _wsBody; // the spawned blueprint
     private static TextWriter? _wsStdout;
 
-    private const string WsActions = "aim PART[#n], near PART[#n] [m], use, key ACTION, touch LABEL, wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME]";
+    private const string WsActions = "aim PART[#n], near PART[#n] [m], use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME]";
 
     /// <summary>Reads the flags (before the window): the size and a throwaway save folder are set here.</summary>
     private static bool WindowShotArgs(string[] args)
@@ -242,7 +242,13 @@ public static unsafe partial class Program
     private static Construct? WsSpawned(Game g) => _wsBlueprint.Length > 0 ? g.Constructs.Get(_wsBody) : null;
 
     /// <summary>The player's eye to a place (noclip holds them there).</summary>
-    private static void WsEyeTo(Game g, Player p, Vector3 eye) => p.Teleport(eye - (p.Eye - p.Position));
+    private static void WsEyeTo(Game g, Player p, Vector3 eye)
+    {
+        var feet = eye - (p.Eye - p.Position);
+        if (Vector3.DistanceSquared(World.ClampToArena(feet), feet) > 0.01f)
+            WsSay($"note: {feet:0.0} is outside {World.Map.Name}'s arena: the player stops at its edge (a bigger map: --map)");
+        p.Teleport(feet);
+    }
 
     private static void WsLook(Game g, Vector3 eye, Vector3 at)
     {
@@ -380,11 +386,21 @@ public static unsafe partial class Program
     }
 
     /// <summary>A finger on a screen's button by its label, through the crosshair: Hands out, the eye in front of it, the view on it, then LMB.</summary>
-    private static void WsTouch(Game g, Player me, string label)
+    private static void WsTouch(Game g, Player me, string arg)
     {
-        foreach (var c in WsSpawned(g) is { } s ? [s] : g.Constructs.Bodies)
+        var on = arg.IndexOf('@'); // "Bill @ Line Console#2": that part's button only
+        var label = on > 0 ? arg[..on].Trim() : arg;
+        var (only, onlyPart) = on > 0 ? WsFind(g, arg[(on + 1)..]) : (null, -1);
+        if (on > 0 && only == null)
+        {
+            WsFail($"no part \"{arg[(on + 1)..].Trim()}\"");
+            return;
+        }
+        foreach (var c in only != null ? [only] : WsSpawned(g) is { } s ? [s] : g.Constructs.Bodies)
             for (var part = 0; part < c.PartCount; part++)
             {
+                if (only != null && part != onlyPart)
+                    continue;
                 var d = c.DefOf(part);
                 for (var n = 0; n < d.Panels.Length; n++)
                 {
@@ -398,7 +414,7 @@ public static unsafe partial class Program
                         if (g.SandboxHands.Hand(me.Id).Tool != ConstructTool.Hands)
                         {
                             g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Hands);
-                            _wsQueue.EnqueueFront($"touch {label}");
+                            _wsQueue.EnqueueFront($"touch {arg}");
                             _wsWait = 5;
                             return;
                         }
@@ -445,7 +461,7 @@ public static unsafe partial class Program
     private static void WsDumpPanels(Game g, Construct c, int part)
     {
         var d = c.DefOf(part);
-        WsSay($"panel: {d.Name} (part {part} of construct {c.Id}), {d.Panels.Length} screen(s); open: recipe picker {Ui.RecipePickerOpen}, configure {Ui.SandboxConfigOpen}, pause {Ui.PauseOpen}, menus {MenusOpen}");
+        WsSay($"panel: {d.Name} (part {part} of construct {c.Id}) at {WsPartSpot(c, part, out _):0.00}, {d.Panels.Length} screen(s); eye {g.Local?.Eye:0.00}, look {g.LookDir(g.LookYaw, g.LookPitch):0.00}; open:recipe picker {Ui.RecipePickerOpen}, configure {Ui.SandboxConfigOpen}, pause {Ui.PauseOpen}, menus {MenusOpen}");
         for (var n = 0; n < d.Panels.Length; n++)
         {
             var card = WsFill(g, c, part, d.Panels[n]);
