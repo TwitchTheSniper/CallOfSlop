@@ -108,8 +108,11 @@ public sealed partial class Game
         _storyMiddleOf = null; // (the people's middle is the colony's when there is one)
     }
 
-    /// <summary>The story's home planetoid: where a story game starts (the Ministry's colony), in the galaxy's first system (docs/planets/WORLDS.md).</summary>
-    public const string StoryHomeMap = "Planetoid";
+    /// <summary>
+    /// The story's home planetoid: where a story game starts (the Ministry's colony). Glacier, the ice world of Frostreach
+    /// (Karl, 2026-11-12: the story starts on the cold planet; docs/planets/WORLDS.md).
+    /// </summary>
+    public const string StoryHomeMap = "Glacier";
 
     /// <summary>
     /// Server, a fresh survival world's start (from <see cref="SandboxStartKit"/>, before the kit): the colony on level
