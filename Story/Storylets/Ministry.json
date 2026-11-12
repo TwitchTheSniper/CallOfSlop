@@ -1,0 +1,202 @@
+{
+  // The Ministry of Slop's ladder on the Trustee road (docs/story/STORY.md "Storylets"; Karl, 2026-11-12: the Ministry
+  // builds up enough trust to move the player out of the penal colony, then a story for each rung). DRAFT words.
+  // Inside the colony the staff act the beats; outside it the Ministry speaks only by memo. The rungs after the gate
+  // wait for the faction's own tiers (Story/Factions/Ministry.json): a technology it taught the player, or their group,
+  // is the sign the standing is there, so a tiered job is never handed to someone the Ministry would refuse.
+  "format": "call-of-slop-storylets/1",
+  "about": "the Ministry of Slop's ladder: trusted inside the colony, let out on licence, then up through the grades",
+  "qualities": [
+    { "name": "Grade", "kind": "progress", "max": 6,
+      "about": "the Ministry's own ladder: 1 paroled, 2 Clerk (out of the colony), 3 Executive Officer, 4 Inspector of Works, 5 Under-Secretary, 6 Crown Servant" }
+  ],
+  "storylets": [
+    {
+      "id": "stores-key", "title": "The stores key", "bucket": "A",
+      "about": "the sergeant hands the trustee the stores key, and a job to go with it",
+      "needs": "?me Course 'Trustee', ?me Rank >= 4",
+      "cast": "?s MemberOf 'Ministry of Slop', ?s is Person, ?s Brave >= 60",
+      "prefer": "?s Likes ?me",
+      "beats": [
+        { "by": "?s", "to": "?me", "say": [ "Stores key, {me.first}. Trustees carry it. Lose it and you'll be carrying it in your teeth." ] },
+        { "by": "?s", "to": "?me", "after": "5s", "say": [ "The Warden's urns are in the stores. All of them. He wants two more." ] }
+      ],
+      "job": "Ministry of Slop: Tea for the Warden",
+      "ends": [
+        { "id": "done", "when": { "verb": "Job", "actor": "?me", "item": "Tea for the Warden" }, "within": "1h",
+          "then": [ "?me Rank +1", "?s Likes ?me +10" ], "say": [ "Two urns and the towels. You'll go far. Probably out of the gate." ], "next": "parole-board" },
+        { "id": "late", "after": "1h",
+          "then": [ "?me Suspicion +1" ], "say": [ "The Warden had his tea cold, {me.first}. He's not a man who forgets a cold tea." ] }
+      ]
+    },
+    {
+      "id": "head-count", "title": "Head count", "bucket": "B",
+      "about": "the keen guard has the trustee help with roll call, and the count comes up one short: a guard",
+      "needs": "?me Course 'Trustee', ?me Rank >= 4",
+      "cast": "?n MemberOf 'Ministry of Slop', ?n is Person, ?n Honest >= 75, ?c MemberOf 'Ministry of Slop', ?c is Person, ?c Gossipy >= 70",
+      "beats": [
+        { "by": "?n", "to": "?me", "say": [ "Roll call, {me.first}. Trustees count. I've brought you a clipboard of your own." ] },
+        { "by": "?n", "to": "?me", "after": "5s", "say": [ "I make it one short. Officer Crumb. Again." ] }
+      ],
+      "ends": [
+        { "id": "told", "choice": "He's asleep in the boiler room.", "by": "?n",
+          "then": [ "?n Likes ?me +10", "?c Likes ?me -10" ], "say": [ "Thank you. That's honesty, that is. I'll note it. In pen." ],
+          "world": [ "Officer Crumb is woken in the boiler room and put on report, and is cool with the player for a while." ] },
+        { "id": "covered", "choice": "Count's right, Officer.", "by": "?n",
+          "then": [ "?c Likes ?me +15", "?me Suspicion +1" ], "say": [ "...Is it. Right. Then I've counted wrong. Again." ] },
+        { "id": "left", "after": "3m", "say": [ "Never mind. I'll count them myself. Twice." ] }
+      ]
+    },
+    {
+      "id": "parole-board", "title": "The parole board", "bucket": "A", "priority": 10,
+      "about": "the warden tells the trusted trustee they are being let out on licence, into the Ministry's service",
+      "needs": "?me Course 'Trustee', ?me Rank >= 5, ?me Suspicion < 3",
+      "cast": "?w is Person, ?w == 'Warden Pettigrew'",
+      "beats": [
+        { "by": "?w", "to": "?me", "say": [ "{me.first}. Sit. The parole board has met." ] },
+        { "by": "?w", "to": "?me", "after": "4s", "say": [ "The board is me, and Form HM-404. Release on licence, into the Ministry's service." ] },
+        { "by": "?w", "to": "?me", "after": "5s", "say": [ "Clerk, Grade Seven. The lowest grade there is. Congratulations." ] }
+      ],
+      "ends": [
+        { "id": "thanks", "choice": "Thank you, Warden.", "then": [ "?me Grade +1", "?w Likes ?me +10" ],
+          "say": [ "Don't thank me. Thank the form." ], "next": "the-gate" },
+        { "id": "goodbye", "choice": "Can I say goodbye first?", "then": [ "?me Grade +1" ],
+          "say": [ "Goodbyes are not on the form. Be quick about it." ], "next": "last-cup" },
+        { "id": "silence", "after": "10m", "then": [ "?me Grade +1" ],
+          "say": [ "[MINISTRY MEMO] Form HM-404 filed. Under Section Four, silence is consent. You are released." ], "next": "the-gate" }
+      ]
+    },
+    {
+      "id": "last-cup", "title": "The last cup", "bucket": "B", "priority": 10,
+      "about": "the kettle guard makes the leaving trustee one last cup",
+      "needs": "?me Grade >= 1, ?me Grade < 2",
+      "cast": "?c MemberOf 'Ministry of Slop', ?c is Person, ?c Gossipy >= 60",
+      "prefer": "?c Likes ?me",
+      "beats": [
+        { "by": "?c", "to": "?me", "say": [ "Kettle's on. Last one, then. Don't tell the Sergeant." ] },
+        { "by": "?c", "to": "?me", "after": "5s", "say": [ "Out there they'll have you filing. In here we had rocks. You'll miss the rocks." ] }
+      ],
+      "ends": [
+        { "id": "drunk", "after": "4s", "then": [ "?c Likes ?me +10" ],
+          "say": [ "Go on. Before I get sentimental. It's against regulations." ], "next": "the-gate" }
+      ]
+    },
+    {
+      "id": "the-gate", "title": "The gate", "bucket": "A", "priority": 10,
+      "about": "the sergeant opens the colony gate for the paroled trustee, who leaves for the Ministry's service",
+      "needs": "?me Grade >= 1, ?me Grade < 2",
+      "cast": "?s MemberOf 'Ministry of Slop', ?s is Person, ?s Brave >= 60",
+      "beats": [
+        { "by": "?s", "to": "?me", "say": [ "Gate's open, {me.first}. First time I've opened it outwards." ] },
+        { "by": "?s", "to": "?me", "after": "4s", "say": [ "If I see you back here I'll assume it's a visit. Make it a visit." ] }
+      ],
+      "ends": [
+        { "id": "out", "after": "4s", "then": [ "?me Grade +1", "?s Likes ?me +5" ],
+          "say": [ "[MINISTRY MEMO] Clerk {me.first}, Grade Seven: your desk is wherever you are. Bring a pen. Bring two." ],
+          "world": [ "The colony gate swings outwards and the crew bus waits beyond it with its engine running.",
+                     "The player rides out past the fence; their bunk in the barracks goes to the next intake.",
+                     "From here the Ministry reaches them by memo, and its guards treat them as staff." ],
+          "next": "in-tray" }
+      ]
+    },
+    {
+      "id": "in-tray", "title": "The in-tray", "bucket": "A",
+      "about": "the new clerk's first memo: plates, as every inmate made, but now it is paperwork",
+      "needs": "?me Grade >= 2",
+      "job": "Ministry of Slop: Number Plates",
+      "ends": [
+        { "id": "done", "when": { "verb": "Job", "actor": "?me", "item": "Number Plates" }, "within": "2h",
+          "say": [ "[MINISTRY MEMO] Form HM-7 noted on your file. Your file now has something in it." ], "next": "licensed" },
+        { "id": "lost", "after": "2h",
+          "say": [ "[MINISTRY MEMO] Your in-tray has been moved to a larger in-tray." ] }
+      ]
+    },
+    {
+      "id": "licensed", "title": "Licensed", "bucket": "A",
+      "about": "trusted with explosives at last, the clerk is set to build the public something to queue at",
+      "needs": [ "?me Grade >= 2, ?me Learnt 'Explosives Licence'", "?me Grade >= 2, ?me MemberOf ?g, ?g Learnt 'Explosives Licence'" ],
+      "job": "Ministry of Slop: Public Information Point",
+      "ends": [
+        { "id": "built", "when": { "verb": "Job", "actor": "?me", "item": "Public Information Point" }, "within": "2h",
+          "then": [ "?me Grade +1" ],
+          "say": [ "[MINISTRY MEMO] Promoted: Executive Officer. You now have an out-tray. Use it sparingly." ], "next": "new-cells" },
+        { "id": "unbuilt", "after": "2h",
+          "say": [ "[MINISTRY MEMO] The public has nowhere to queue. They are queuing anyway, at your door." ] }
+      ]
+    },
+    {
+      "id": "new-cells", "title": "New cells", "bucket": "A",
+      "about": "the executive officer fits out the colony's new cell block: cells for the next intake, as there once were for them",
+      "needs": "?me Grade >= 3",
+      "job": "Ministry of Slop: Fit Out the Cell Block",
+      "ends": [
+        { "id": "fitted", "when": { "verb": "Job", "actor": "?me", "item": "Fit Out the Cell Block" }, "within": "3h",
+          "say": [ "[MINISTRY MEMO] The new cells are up. Someone will be grateful for them one day. Not the people inside." ],
+          "next": "inspector" },
+        { "id": "unfitted", "after": "3h",
+          "say": [ "[MINISTRY MEMO] The next intake is sleeping in the corridor. They have been told it is a cell." ] }
+      ]
+    },
+    {
+      "id": "inspector", "title": "Inspector of Works", "bucket": "A",
+      "about": "the Ministry trusts the player with atoms, and makes them an inspector: their first inspection is the colony",
+      "needs": [ "?me Grade >= 3, ?me Learnt 'Atomic Licence'", "?me Grade >= 3, ?me MemberOf ?g, ?g Learnt 'Atomic Licence'" ],
+      "ends": [
+        { "id": "promoted", "after": "3s", "then": [ "?me Grade +1" ],
+          "say": [ "[MINISTRY MEMO] Promoted: Inspector of Works. First inspection: the Penal Colony. Be seen being thorough." ],
+          "next": "the-inspection" }
+      ]
+    },
+    {
+      "id": "the-inspection", "title": "The inspection", "bucket": "A", "priority": 10,
+      "about": "the former inmate inspects the warden's colony, and the warden has to stand for it",
+      "needs": "?me Grade >= 4",
+      "cast": "?w is Person, ?w == 'Warden Pettigrew'",
+      "beats": [
+        { "by": "?w", "to": "?me", "say": [ "Inspector {me.first}. Of course it's you." ] },
+        { "by": "?w", "to": "?me", "after": "4s", "say": [ "The kettle is regulation. The rocks are regulation. Officer Crumb is... mostly regulation." ] }
+      ],
+      "ends": [
+        { "id": "passed", "choice": "Everything's in order, Warden.", "then": [ "?w Likes ?me +15" ],
+          "say": [ "...Thank you. Would you like a biscuit? We have one." ], "next": "new-wing" },
+        { "id": "reported", "choice": "Crumb sleeps on duty.", "then": [ "?w Likes ?me -5" ],
+          "say": [ "Noted. I'll put him on report. He'll put the kettle on about it." ], "next": "new-wing" },
+        { "id": "filed", "after": "20m",
+          "say": [ "[MINISTRY MEMO] The Penal Colony has been inspected, by somebody. Filed." ], "next": "new-wing" }
+      ]
+    },
+    {
+      "id": "new-wing", "title": "The new wing", "bucket": "A",
+      "about": "the inspector pours the Ministry's new wing, and is made an under-secretary for it",
+      "needs": "?me Grade >= 4",
+      "job": "Ministry of Slop: Concrete for the New Wing",
+      "ends": [
+        { "id": "poured", "when": { "verb": "Job", "actor": "?me", "item": "Concrete for the New Wing" }, "within": "3h",
+          "then": [ "?me Grade +1" ],
+          "say": [ "[MINISTRY MEMO] Promoted: Under-Secretary. The Permanent Secretary will see you. Eventually." ], "next": "last-word" },
+        { "id": "unpoured", "after": "3h",
+          "say": [ "[MINISTRY MEMO] The new wing remains a drawing of a new wing. It has been framed." ] }
+      ]
+    },
+    {
+      "id": "last-word", "title": "The last word", "bucket": "A",
+      "about": "the Permanent Secretary makes the player a Crown Servant, and with it the keeper of the Ministry's last word",
+      "needs": [ "?me Grade >= 5, ?me Learnt 'The Antimatter Bomb'", "?me Grade >= 5, ?me MemberOf ?g, ?g Learnt 'The Antimatter Bomb'" ],
+      "ends": [
+        { "id": "sworn", "after": "3s", "then": [ "?me Grade +1" ],
+          "say": [ "[MINISTRY MEMO] Crown Servant {me.first}: you now hold the Ministry's last word. It is a bomb. Don't say it." ],
+          "next": "floor-below" }
+      ]
+    },
+    {
+      "id": "floor-below", "title": "The floor below", "bucket": "A", "final": true,
+      "about": "a Crown Servant holds every key in the Ministry, including one for a floor that is not on the plans (the council chamber, frag.silence)",
+      "needs": "?me Grade >= 6",
+      "ends": [
+        { "id": "keys", "after": "8s", "learn": "Council Chamber",
+          "say": [ "[MINISTRY MEMO] Your keys open every floor, and the one under the bottom one. Do not ask about it in writing." ],
+          "world": [ "A key ring is issued with one key nobody can name; it opens the old council chamber under the Ministry's headquarters (STORYLINE.md)." ] }
+      ]
+    }
+  ]
+}
