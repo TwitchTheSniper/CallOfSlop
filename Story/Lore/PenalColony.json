@@ -33,7 +33,7 @@
       "noticed": { "by": "Warden Pettigrew", "reach": 14,
         "say": [ "That copy is annotated, {them.first}. Hands where the handbook can see them.", "Reading ahead? Rule 9: nobody reads ahead." ] } },
     { "id": "memo-1144", "part": "Ministry In-Tray", "title": "An in-tray in the Records Office",
-      "in": "Ministry Records Office", "at": [3.2, 0.375, 2.0], "yaw": 180,
+      "in": "Ministry Records Office", "at": [2.2, 0.375, 5.0], "yaw": 180,
       "text": [
         "A wire in-tray on a filing cabinet, stacked with memos from the Ministry. Every one is dated a Thursday.",
         "The top one: 'MEMO 1,144. Staff will not discuss the night sky with inmates beyond what is printed in the almanac (attached).' Nothing is attached. The staple holes say something was.",

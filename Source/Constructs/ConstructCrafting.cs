@@ -235,6 +235,8 @@ public static class ConstructCrafting
     public static string Look(ConstructWorld world, Construct c, int t, CStore st, bool near)
     {
         var d = c.DefOf(t);
+        if (d.IsBuildStation)
+            return ConstructStation.Look(world, c, t, st, near);
         var net = NetOf(world, c, t);
         var sb = new System.Text.StringBuilder(d.Name).Append(": ").Append(Sees(net));
         if (net.MachineN + net.StoreN == 0)
@@ -287,7 +289,7 @@ public static class ConstructCrafting
         return n;
     }
 
-    private static bool TakeOne(ConstructWorld world, Construct c, int part, CStore st, ConstructPartDef d)
+    internal static bool TakeOne(ConstructWorld world, Construct c, int part, CStore st, ConstructPartDef d)
     {
         var sd = c.DefOf(part);
         if (sd.IsPieceRack)
@@ -650,7 +652,7 @@ public static class ConstructCrafting
         }
     }
 
-    private static ushort KindOf(ref CraftOrder o)
+    internal static ushort KindOf(ref CraftOrder o)
     {
         if (o.Def == 0 || o.Def == ConstructParts.None)
             o.Def = (ushort)(DefOf(o.What)?.Id ?? ConstructParts.None);

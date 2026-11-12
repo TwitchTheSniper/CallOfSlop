@@ -161,6 +161,8 @@ public sealed partial class Ui
     {
         if (!CraftingOpen)
             return false;
+        if (c.DefOf(part).IsBuildStation)
+            return DrawStation(game, c, part, now); // (a Building Station is a terminal by data: its own panel, opened and closed as this one)
         SandboxTiles.WantFew();
         var world = game.Constructs;
         CraftingBuild(world, c, part, now);

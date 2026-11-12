@@ -540,7 +540,7 @@ public sealed partial class ConstructEdits
     }
 
     /// <summary>Decision 19 (survival only; creative is unrestricted): why this player may not edit or grab this construct now, or null.</summary>
-    public string? Contested(Construct c, byte player) => InfiniteParts ? null : ConstructGrab.Defended(c, player, AliveAt, NameOf);
+    public string? Contested(Construct c, byte player) => c.HeldBy != 0 ? ConstructStation.HeldText : InfiniteParts ? null : ConstructGrab.Defended(c, player, AliveAt, NameOf);
 
     /// <summary>How far this player's beam holds something (their reach: <see cref="ReachOf"/>).</summary>
     public float GrabRange(byte player) => ReachOf(player, InfiniteParts);

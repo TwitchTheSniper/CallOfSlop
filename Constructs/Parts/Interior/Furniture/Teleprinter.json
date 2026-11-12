@@ -1,0 +1,146 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Teleprinter",
+  "description": "A teleprinter on a stand. It prints the Ministry's wires, in capitals, eventually.",
+  "group": "Interior",
+  "section": "Furniture",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "worn paint",
+  "mass": 45.0,
+  "health": 160,
+  "armour": 4,
+  "material": "steel",
+  "color": "#4a4d4f",
+  "attachSeconds": 2.0,
+  "power": 40,
+  "boxes": [
+    {
+      "min": [
+        -0.3,
+        0.0,
+        -0.25
+      ],
+      "max": [
+        0.3,
+        0.62,
+        0.25
+      ],
+      "color": "#4a4d4f"
+    },
+    {
+      "min": [
+        -0.27,
+        0.62,
+        -0.22
+      ],
+      "max": [
+        0.27,
+        0.86,
+        0.2
+      ],
+      "color": "#d9d2b8",
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.22,
+        0.66,
+        0.2
+      ],
+      "max": [
+        0.22,
+        0.72,
+        0.3
+      ],
+      "color": "#1c1c1c",
+      "paintable": false,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.15,
+        0.86,
+        -0.12
+      ],
+      "max": [
+        0.15,
+        1.0,
+        -0.02
+      ],
+      "color": "#4a4d4f"
+    },
+    {
+      "min": [
+        0.2,
+        0.78,
+        0.2
+      ],
+      "max": [
+        0.23,
+        0.81,
+        0.212
+      ],
+      "color": "#f0a020",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.5,
+        -0.25
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.3,
+        0.5,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.3,
+        0.5,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ]
+}

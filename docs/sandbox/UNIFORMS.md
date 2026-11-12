@@ -20,7 +20,7 @@ only: a uniform changes how a body is drawn, never its hit boxes.
   faction's voice when one is issued or withdrawn. Plain Sandbox worlds have a story too (everyone an Inmate there), so
   players get nothing outside the opening's worlds.
 - **Wire:** the roster carries one byte a player (bots too) after the look; the look itself is 4 bytes (the fourth is
-  the uniform choice). Protocol 256.
+  the uniform choice). Protocol 257.
 - **Drawing:** `BodyModel.UniformOf(p)` (null in a robot shell), `ColorsFor`, `LegsFor`, `ArmsFor`; `BodyModel.Build`
   takes the uniform. The rig, the immediate path, ragdolls and gibs all go through these.
 

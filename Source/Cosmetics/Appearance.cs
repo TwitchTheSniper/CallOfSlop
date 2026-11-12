@@ -22,7 +22,7 @@ public enum LookAxis : byte
 public readonly record struct PlayerLook(byte Skin = 0, byte Hair = 0, byte Headwear = 0, byte Beard = 0, byte Gear = 0, byte Outfit = 0, byte Uniform = 0)
 {
     /// <summary>Bytes on the wire (<see cref="Pack"/>).</summary>
-    public const int WireBytes = 4; // (protocol 256: the fourth carries the uniform choice)
+    public const int WireBytes = 4; // (protocol 257: the fourth carries the uniform choice)
 
     /// <summary>All Auto: the name-based look (what bots and players who never opened the screen wear).</summary>
     public static PlayerLook Auto => default;

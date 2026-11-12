@@ -77,7 +77,7 @@ public sealed partial class Game
         else
             w.U8(p.Prestige).U8(p.Level).U8((byte)p.Hat);
         (p.Bot != null ? default : p.Look).Pack(w); // protocol 45: the look (Appearance.cs; bots: Auto)
-        w.U8(p.Uniform); // protocol 256: the uniform the server dresses them in (GameUniforms.cs; bots too: the colony's staff)
+        w.U8(p.Uniform); // protocol 257: the uniform the server dresses them in (GameUniforms.cs; bots too: the colony's staff)
     }
 
     private static PlayerCosmetics ReadRosterCosmetics(ref PacketReader r, bool isBot)
