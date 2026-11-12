@@ -74,8 +74,39 @@ public sealed partial class Game
             }
             _loreBody[k] = c.Id;
             s.World.Get(StoryKind.Thing, placed, "placed lore " + t.Id, s.Time);
+            if (LoreInside(host, def, t) is { } hit)
+                Log($"[lore] the {t.Part} ({t.Id}) in the {t.In}: {hit}; move its \"at\" (Story/Lore)");
             Constructs.Events.Add($"lore: the {t.Part} as construct {c.Id}");
         }
+    }
+
+    /// <summary>The first of the building's parts an item placed in it would stand inside, or that it floats over air, or null: a check for whoever writes "at".</summary>
+    private static string? LoreInside(Construct host, ConstructPartDef def, LoreDef t)
+    {
+        var yaw = -t.Yaw * MathF.PI / 180f;
+        var turn = Quaternion.CreateFromAxisAngle(Vector3.UnitY, yaw);
+        var at = new Vector3(t.At[0], t.At[1], t.At[2]);
+        Vector3 min = new(float.MaxValue), max = new(float.MinValue);
+        for (var i = 0; i < 8; i++)
+        {
+            var corner = new Vector3((i & 1) != 0 ? def.BoundsMax.X : def.BoundsMin.X, (i & 2) != 0 ? def.BoundsMax.Y : def.BoundsMin.Y, (i & 4) != 0 ? def.BoundsMax.Z : def.BoundsMin.Z);
+            var w = at + Vector3.Transform(corner, turn);
+            (min, max) = (Vector3.Min(min, w), Vector3.Max(max, w));
+        }
+        min += new Vector3(0.01f, 0.03f, 0.01f);
+        max -= new Vector3(0.01f, 0, 0.01f);
+        var floor = float.MinValue; // (the top of what it stands on: the highest solid top under it, up to its own foot)
+        for (var i = 0; i < host.PartCount; i++)
+            for (var j = 0; j < host.DefOf(i).SolidBoxes; j++)
+            {
+                host.BoxOf(i, j, out var centre, out var half);
+                Vector3 pmin = centre - half, pmax = centre + half;
+                if (pmin.X < max.X && pmax.X > min.X && pmin.Z < max.Z && pmax.Z > min.Z && pmax.Y <= at.Y + 0.03f)
+                    floor = MathF.Max(floor, pmax.Y);
+                if (pmin.X < max.X && pmax.X > min.X && pmin.Y < max.Y && pmax.Y > min.Y && pmin.Z < max.Z && pmax.Z > min.Z)
+                    return host.DefOf(i).Name;
+            }
+        return MathF.Abs(floor - at.Y) > 0.03f ? $"air: the floor under it is at {(floor == float.MinValue ? "nothing" : $"y {floor:0.###}")}" : null;
     }
 
     /// <summary>
