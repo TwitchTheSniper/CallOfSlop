@@ -312,6 +312,11 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
     /// <summary>"status": true: a production machine's status lamp, drawn unlit in the colour of its line state (<see cref="ProductionLines"/>).</summary>
     public bool Status { get; init; }
 
+    /// <summary>"way": 1 to 3: a Conveyor Router's lamp of its n-th way out, drawn lit while its last piece went that way (ConstructLogistics); 0: none.</summary>
+    public byte Way { get; init; }
+    /// <summary>"fence": true: a Conveyor Router's diverter, drawn turned about the deck's middle toward the way its last piece went.</summary>
+    public bool Fence { get; init; }
+
     /// <summary>How a suspension's box moves with its wheel (<see cref="BoxRig"/>, "rig" in the file; docs/sandbox/CONSTRUCTS.md "Suspension types"). Its points are in the part's frame.</summary>
     public BoxRig Rig { get; init; }
 
@@ -663,6 +668,8 @@ public sealed partial class ConstructPartDef
     public bool IsDieFrame; // a Die Frame ("dieFrame": true): the die of an Extruder it is joined to reaches across it
     public bool IsFanFormer; // a Fan Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a whole rotor
     public bool IsAirframeFormer; // an Airframe Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a wing or a control surface, to the size it is set to
+    public bool IsRouter; // "router": true: a Conveyor Router, a junction that sends each piece the way to where it is wanted (ConstructLogistics.cs)
+    public bool HasRouterBoxes; // its "way" lamps or "fence" (drawn by the Router's last choice)
     public bool IsConveyorJunction; // conveyor ports in and out (a Conveyor Splitter or Join): pieces pass through it from one conveyor to the next (ConstructConveyor.cs)
     public bool IsPieceRack; // a Piece Rack (ConstructConveyor.cs): holds whole pieces by kind, up to RackCount, each within RackSection x RackLength
     public bool IsCraftTerminal; // a Crafting Terminal (ConstructCrafting.cs): a Piece Rack whose hold is its tray (storage.pieces.crafting)
@@ -797,7 +804,7 @@ public sealed partial class ConstructPartDef
     public (int First, int Count) DieRows;
 
     public MonitorKind Monitor; // a production monitor's source: its "Data out" link makes a display show it (ProductionLines.Monitors.cs)
-    public bool HasOutput => Role == PartRole.Seat || IsExtruder || IsMedia || Monitor != MonitorKind.None || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.Display or CLogic.Instrument or CLogic.RadioTx))
+    public bool HasOutput => Role == PartRole.Seat || IsExtruder || IsRouter || IsMedia || Monitor != MonitorKind.None || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.Display or CLogic.Instrument or CLogic.RadioTx))
                              || Role == PartRole.Hose && HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Inlet; // (a data lead's inlet puts out what the lead carries)
 
     /// <summary>
@@ -1291,7 +1298,7 @@ public static partial class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis", "router",
         "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
@@ -1357,6 +1364,7 @@ public static partial class ConstructParts
         d.AttachSeconds = Opt(root, "attachSeconds") is { } secs ? Num(secs, file, "attachSeconds") : hint == ConstructTool.Welder ? 2.5f : 1.5f;
         Range(d.AttachSeconds, 0.2f, MaxAttachSeconds, file, "attachSeconds");
         d.Legacy = Opt(root, "legacy") is { ValueKind: JsonValueKind.True };
+        d.IsRouter = Opt(root, "router") is { ValueKind: JsonValueKind.True };
         d.Stage = Opt(root, "stage") is { ValueKind: JsonValueKind.True };
         d.Walk = Opt(root, "walk") is { } walk ? EnumOf<WalkKind>(Str(walk, file, "walk"), file, "walk") : WalkKind.None;
         d.Boarding = Opt(root, "boarding") is { ValueKind: JsonValueKind.True }; // (a grab handle, a boarding ladder, a step plate: Use grabs on here first; ConstructRide.cs)
@@ -1451,7 +1459,7 @@ public static partial class ConstructParts
         foreach (var b in boxes.EnumerateArray())
         {
             var where = $"boxes[{bi++}]";
-            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel", "work", "axis"], $"{file}, {where}");
+            Known(b, [.. BoxKeys, "status", "finish", "front", "rig", "pivot", "from", "to", "span", "key", "travel", "work", "axis", "way", "fence"], $"{file}, {where}");
             Vector3 min, max;
             if (Opt(b, "min") is { } mn && Opt(b, "max") is { } mx)
             {
@@ -1525,6 +1533,10 @@ public static partial class ConstructParts
                 made = detail && glass == 0 ? made with { Status = true } : throw new ConstructPartException($"{file}: {where}: only an opaque detail box can be a \"status\" lamp");
             if (Opt(b, "finish") is { } boxFinish)
                 made = made with { Surface = SurfaceByName(boxFinish, file, where) };
+            if (Opt(b, "way") is { } wayBox)
+                made = detail && Num(wayBox, file, where + ".way") is >= 1 and <= 3 and var wn ? made with { Way = (byte)wn } : throw new ConstructPartException($"{file}: {where}.way is 1, 2 or 3 on a detail box");
+            if (Opt(b, "fence") is { ValueKind: JsonValueKind.True })
+                made = detail ? made with { Fence = true } : throw new ConstructPartException($"{file}: {where}: only a detail box can be a \"fence\"");
             if (Opt(b, "work") is { } wk)
             {
                 var kind = Str(wk, file, where + ".work") switch
@@ -1553,6 +1565,7 @@ public static partial class ConstructParts
         d.HasRig = list.Any(x => x.Rig != BoxRig.None);
         d.HasWork = list.Any(x => x.Work != BoxWork.None);
         d.StatusBox = Array.FindIndex(d.Boxes, x => x.Status);
+        d.HasRouterBoxes = list.Any(x => x.Way != 0 || x.Fence);
         d.UseBoxes = Enumerable.Range(0, d.Boxes.Length).Where(k => d.Boxes[k].Use || d.Boxes[k].Rig is BoxRig.Lever or BoxRig.Knob or BoxRig.Slide or BoxRig.Stick).ToArray(); // (an Analog Lever's rig is its handle)
         d.SolidBoxes = list.Count(x => !x.Detail);
         d.HasGlass = list.Any(x => x.IsGlass);
@@ -1841,6 +1854,8 @@ public static partial class ConstructParts
         OfficeParts.Parse(d, root, file); // (the fax and the computer, after their panels: OfficeParts.cs)
         ConstructPress.ParseDie(d, root, file);
         ProductionLines.MonitorPorts(d); // (after the panels and the machines: a console's, a machine's or a rack's Data out)
+        if (d.IsRouter)
+            d.DataOut = ConstructLogistics.RouterOut; // (Alarm: a piece stuck at it; Moving: pieces riding its network)
         if (d.IsTerminal && !ConstructTerminals.HasPorts(d))
             throw new ConstructPartException($"{file}: a terminal names two chute ports: \"{ConstructTerminals.NetworkPort}\" (both ways) and \"{ConstructTerminals.OutPort}\" (out only)");
         ParseSystems(d, root, file); // (docks, catapults, conveyors: ConstructSystems.cs)

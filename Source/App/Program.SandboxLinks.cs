@@ -605,12 +605,13 @@ public static partial class Program
             for (var i = 0; i < hit.RiderPlus1 - 1 && lead; i++)
                 lead = c.Conveyed[i].Route != k;
             var near = hit.Distance <= ConstructBuild.UseReach;
-            var rkey = ((long)c.Id << 40) ^ ((long)piece.Id << 20) ^ ((long)(lead ? jam : 0) << 8) ^ (near ? 1L << 62 : 0) ^ ((long)h.Tool << 56) ^ (1L << 61);
+            ref readonly var rider = ref c.Conveyed[hit.RiderPlus1 - 1];
+            var rkey = ((long)c.Id << 40) ^ ((long)piece.Id << 20) ^ ((long)(lead ? jam : 0) << 8) ^ (near ? 1L << 62 : 0) ^ ((long)h.Tool << 56) ^ (1L << 61) ^ ((long)rider.Dest * 2654435761L) ^ ((long)rider.Flags << 48) ^ ((long)rider.Tag << 30);
             if (rkey != _lkLookKey)
             {
                 _lkLookKey = rkey;
                 var name = piece.IsExtrusion ? Extrusion.Label(piece.ExKey) : piece.Name;
-                _lkLook = SandboxKeys.Line(name, "on a conveyor", lead ? ConstructConveyor.JamText(c, k, jam) : null,
+                _lkLook = SandboxKeys.Line(name, ConstructLogistics.RiderNote(c, rider) is { } going ? "on a conveyor " + going : "on a conveyor", lead ? ConstructConveyor.JamText(c, k, jam) : null,
                     !near ? null : h.Tool == ConstructTool.PhysicsGun ? $"hold {SandboxKeys.Fire}: grab it" : SandboxKeys.Do(SandboxKeys.Use, "take"));
             }
             g.SandboxLookText = _lkLook;

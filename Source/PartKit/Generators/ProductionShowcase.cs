@@ -171,11 +171,11 @@ public sealed class ProductionShowcase : IPartGenerator
             Sign(54.75f, Posts1, Wheels, "Narrow this conveyor (linking tool, wheel): a refusal");
 
             // ---- 6b. The assembling line: an Assembler fed steel, its Piece out onto a conveyor to a Piece Rack (catalogue parts). --
-            var asm = On("Assembler", 52.25f, Row2, Flow, paint: Assembly);
+            var asm = On("Assembler", 50.25f, Row2, Flow, paint: Assembly);
             Feed(StockOf("steel", 52.25f, -13.25f), asm);
-            var partRack = On("Piece Rack", 55.25f, -10.75f, Flow, "-y.0.0", Assembly);
-            Convey(asm, "Piece out", partRack, "Piece in", Assembly);
-            Sign(50.25f, Posts2, Assembly, "Send the bill: the Assembler makes these parts");
+            var partRack = On("Piece Rack", 56.25f, -10.75f, Flow, "-y.0.0", Assembly);
+            var router = SmartCorner(asm, partRack);
+            Sign(48.75f, Posts2, Assembly, "Send the bill: the Assembler makes these parts");
 
             // ---- 7. Orders: a second Line Console on both Extruders and the Wheel Former, its bill already on it. ------------------
             var orders = On("Line Console", 24.25f, Posts1, Front, paint: Control);
@@ -198,7 +198,7 @@ public sealed class ProductionShowcase : IPartGenerator
                 BillPart(orders, part, n);
 
             // ---- 8. The Crafting Terminal: on the orders console's machines, the Assembler's rack returning to its tray. ------------------
-            CraftingCorner(orders, partRack, longRack);
+            CraftingCorner(orders, partRack, longRack, router);
             StationBay(orders);
             PanelLine(orders);
             PanelDesignerCorner(orders);
@@ -222,23 +222,46 @@ public sealed class ProductionShowcase : IPartGenerator
         /// terminal, the orders console's wire into its Orders port (so it sees that console's machines), a return conveyor from the
         /// Assembler's Piece Rack to its tray, and its sign.
         /// </summary>
-        private void CraftingCorner(VPart orders, VPart partRack, VPart longRack)
+        private void CraftingCorner(VPart orders, VPart partRack, VPart longRack, VPart router)
         {
-            var term = On("Crafting Terminal", 61.25f, -9.25f, Front, "-y.0.0");
+            var term = On("Crafting Terminal", 62.25f, -9.25f, Front, "-y.0.0");
             var from = PortAt(partRack, "Piece out");
             var to = PortAt(term, "Piece in");
             Convey(partRack, "Piece out", term, "Piece in", Assembly, null, V(to.X, from.Y, from.Z));
             Link("data", orders, term, null, "Orders", Control, true, null,
                 new[] { V(24.25f, 0, -2.0f), V(31.75f, 0, -2.0f), V(39.25f, 0, -2.0f), V(46.75f, 0, -2.0f), V(54.25f, 0, -2.0f), V(60.5f, 0, -2.0f), V(60.5f, 0, -6.2f) }
                     .Select(p => V(p.X, FloorY + 0.03f, p.Z)).ToArray());
-            // The Extruders' pieces come back too: the Long Piece Rack's Piece out, down to the back aisle's edge and along it to the sorter's side.
-            var back = PortAt(longRack, "Piece out");
+            // The Extruders' pieces come back too, and the Router's way to the tray: a Join before the terminal's side (Piece in 2) takes
+            // the Long Piece Rack's Piece out, down to the back aisle's edge and along it, and the Router's left way from the south.
             var side = PortAt(term, "Piece in 2");
-            var path = new List<Vector3> { V(back.X + 0.6f, back.Y, back.Z), V(back.X + 0.6f, back.Y, side.Z) };
-            for (var x = back.X + 0.6f + 7f; x < side.X - 1f; x += 7f) // (a segment reaches at most 8 m)
-                path.Add(V(x, back.Y, side.Z));
-            Convey(longRack, "Piece out", term, "Piece in 2", LineA, new Vector2(0.5f, 0.5f), path.ToArray());
+            var join = On("Conveyor Join", 58.25f, side.Z + 0.625f, Flow, "-y.0.0", Assembly);
+            Convey(join, "Piece out", term, "Piece in 2", Assembly);
+            var back = PortAt(longRack, "Piece out");
+            var jin = PortAt(join, "Piece in");
+            var path = new List<Vector3> { V(back.X + 0.6f, back.Y, back.Z), V(back.X + 0.6f, back.Y, jin.Z) };
+            for (var x = back.X + 0.6f + 7f; x < jin.X - 1f; x += 7f) // (a segment reaches at most 8 m)
+                path.Add(V(x, back.Y, jin.Z));
+            Convey(longRack, "Piece out", join, "Piece in", LineA, new Vector2(0.5f, 0.5f), path.ToArray());
+            var rout = PortAt(router, "Piece out 3");
+            var jin2 = PortAt(join, "Piece in 2");
+            Convey(router, "Piece out 3", join, "Piece in 2", Assembly, null, V(rout.X, rout.Y, -9.9f), V(jin2.X, rout.Y, -9.9f));
             Sign(60.25f, -6.75f, Assembly, "F on the screen: order a part. It arrives in the tray");
+        }
+
+        /// <summary>
+        /// Smart logistics (production.md "Smart logistics"): the Assembler's Piece out runs to a Conveyor Router; its way ahead goes to the
+        /// part rack (storage), its left way along the back of the rack to a Join before the Crafting Terminal's side (CraftingCorner). A
+        /// part ordered at the terminal rides straight to its tray; a part nobody ordered (the bill's) goes to the rack. The Router.
+        /// </summary>
+        private VPart SmartCorner(VPart asm, VPart partRack)
+        {
+            var o = PortAt(asm, "Piece out");
+            var router = On("Conveyor Router", 52.75f, o.Z + 0.625f, Flow, "-y.0.0", "#3f8f5a");
+            Convey(asm, "Piece out", router, "Piece in", Assembly);
+            Convey(router, "Piece out", partRack, "Piece in", Assembly);
+            Sign(53.75f, Posts2, Assembly, "ROUTER: ordered parts ride to the tray, the rest to the rack");
+            Sign(56.25f, Posts2, Assembly, "Aim at the Router: it names where each piece goes");
+            return router;
         }
 
         /// <summary>

@@ -206,6 +206,11 @@ public static class ConstructCrafting
             int to = r.To;
             for (var hop = 0; hop < 8 && to != t; hop++)
             {
+                if (to < c.PartCount && c.DefOf(to).IsRouter && ConstructLogistics.Reaches(c, to, t))
+                {
+                    to = t; // (a Router sends a fetched piece on to its tray: ConstructLogistics)
+                    break;
+                }
                 // Through a join (one conveyor out); a splitter sends pieces in turn, so it is no route.
                 var next = -1;
                 var outs = 0;
@@ -879,7 +884,7 @@ public static class ConstructCrafting
                 }
                 if (via < 0 || via >= c.RouteCount || world.StoreOf(c, net.Stores[s]) is not { } st)
                     continue;
-                if (ConstructConveyor.PutMade(world, c, via, d, 1, out var why))
+                if (ConstructConveyor.PutMade(world, c, via, d, 1, out var why, owner, o.Id)) // (it rides for this order: a Router on the way sends it to the tray)
                 {
                     if (TakeOne(world, c, net.Stores[s], st, d))
                     {

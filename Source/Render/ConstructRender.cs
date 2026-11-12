@@ -611,6 +611,10 @@ public static partial class ConstructRender
         var leafMoves = d.IsRail || d.Role == PartRole.Joint && d.JointType == JointType.Swivel;
         var railSeg = leafMoves && railShown && c.JointOf(i) is var rj and >= 0 ? SegMatrix(c, rj + 1, alpha) : seg;
         var working = d.HasWork && !p.Broken && world.StoreOf(c, i) is { } workStore && ProductionLines.Working(world, c, i, workStore, Now); // (a machine at work: its "work" boxes move, glow and smoke)
+        byte routerWay = 0, routerState = 0;
+        var routerStuck = false;
+        var routerFence = 0f;
+        var routerOn = d.HasRouterBoxes && !p.Broken && ConstructRecycler.Powered(world, c, i) && ConstructLogistics.ShowOf(c, i, out routerWay, out routerState, out routerStuck, out routerFence); // (a Conveyor Router: its lamps and fence show its last choice)
         for (var b = 0; b < d.Boxes.Length; b++)
         {
             ref readonly var box = ref d.Boxes[b];
@@ -655,6 +659,11 @@ public static partial class ConstructRender
                 model = rig.Model(in box, in p, model);
             if (working && box.Work != BoxWork.None)
                 WorkMove(gfx, c, in box, in p, centre, seg * body, ref model);
+            if (box.Fence && routerOn && routerFence != 0)
+            {
+                var pivot = p.Pos + Rot24.Apply(p.Rot, (d.BoundsMin + d.BoundsMax) * 0.5f with { Y = 0 });
+                model = model * Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(Rot24.Apply(p.Rot, Vector3.UnitY), routerFence) * Matrix4x4.CreateTranslation(pivot); // (the diverter turned toward the way)
+            }
             if (d.HasEngineBoxes && c.EngineOf[i] != 0 && c.EngineOf[i] == c.ModActive + 1)
                 EngineFx.Animate(c, i, in box, centre, ref model);
             if (c.ModActive >= 0 && c.EngineOf[i] == c.ModActive + 1)
@@ -669,6 +678,8 @@ public static partial class ConstructRender
             var tint = ConstructPaint.BoxColour(p.Paint, in box) * shade; // (the paint tool: a painted part's paintable boxes, ConstructPaint.cs)
             if (lit)
                 gfx.Draw(model, glow, opacity, mode: 2, shape: box.Shape);
+            else if (box.Way != 0 && routerOn && (routerStuck ? MathF.Sin((float)Now * MathF.Tau * 3f) > 0 : routerWay == box.Way))
+                gfx.Draw(model, routerStuck ? RouterStuck : routerState == 2 ? RouterStore : RouterOrder, opacity, mode: 2, shape: box.Shape); // (its way lit: orange to an order, white to storage; every way blinking red while a piece is stuck)
             else if (box.Work == BoxWork.Glow && working)
                 gfx.Draw(model, WorkHot * (0.85f + 0.15f * MathF.Sin((float)Now * 5f + i)), opacity, mode: 2, shape: box.Shape); // (a hot die, bright while the machine runs; its own dull colour otherwise)
             else if (box.Glow)
@@ -687,6 +698,7 @@ public static partial class ConstructRender
     }
 
     private static readonly Vector3 WorkHot = new(1f, 0.5f, 0.12f);
+    private static readonly Vector3 RouterOrder = new(1f, 0.5f, 0.1f), RouterStore = new(0.95f, 0.95f, 0.9f), RouterStuck = new(1f, 0.12f, 0.08f);
 
     /// <summary>A "work" box of a machine that runs (<see cref="BoxWork"/>): a spin about its own centre, a ram.s stroke, a stack.s puffs. <paramref name="model"/> is in the body frame.</summary>
     private static void WorkMove(Renderer gfx, Construct c, in CPartBox box, in CPart p, Vector3 centre, in Matrix4x4 onBody, ref Matrix4x4 model)

@@ -430,7 +430,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 260: the Panel Designer (feat/panel-designer-1). CActKind gains CraftNamed (u16 body, u16 terminal, u16 count, text name: a formed panel's order at
     //      a terminal) and PanelDesign (u8 op, text name, text key); CBodyKind.Designs (at the end): the world's shared panel designs, whole; an order
     //      in CBodyKind.Craft may be named (shape 255: u8 material, u16 count, text name, then the id and state as before).
-    public const ushort ProtocolVersion = 260;
+    // 262: smart logistics phase 1 (feat/smart-logistics-1). CBodyKind.Riders: each rider gains u16 destination store handle, u16 order id and
+    //      u8 LogiFlags after the link it came through (ConstructLogistics: the Conveyor Router's choice and the stuck state on clients).
+    public const ushort ProtocolVersion = 262;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
