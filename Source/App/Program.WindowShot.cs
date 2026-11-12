@@ -438,7 +438,7 @@ public static unsafe partial class Program
                 return;
             }
             case "timed": // host: machines work as in survival (their time and power) in this creative world
-                g.Constructs.CreativeRecycling = false;
+                g.Constructs.TimedMachines = true;
                 WsSay("timed: machines take their time and need power");
                 return;
             case "poke": // host: a button pressed as F presses it on the server (ConstructEdits.Use: its hold time), for a check that needs no aim

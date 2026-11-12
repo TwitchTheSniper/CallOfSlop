@@ -52,7 +52,7 @@ public sealed partial class Game
     private void SandboxShareRules()
     {
         var infinite = SandboxInfiniteParts;
-        Constructs.CreativeRecycling = infinite; // (Recyclers: instant and unpowered in creative)
+        Constructs.CreativeRecycling = infinite && !Constructs.TimedMachines; // (Recyclers: instant and unpowered in creative; a check can ask for survival's timing)
         SandboxHands.RemoverInSurvival = World.Map.Sandbox?.RemoverInSurvival ?? true;
         SandboxHands.Survival = !infinite && !(World.Map.Sandbox is { PartsMenu: true } && !SandboxSurvivalOption); // (physical storage: salvage comes into the hands)
         if (SandboxHands.InfiniteParts != infinite)

@@ -1489,5 +1489,8 @@ public readonly record struct PressBayDef(int Socket, Vector3 Min, Vector3 Max);
 public sealed partial class ConstructWorld
 {
     public int PressTicks;
+
+    /// <summary>A check's switch (the window tool's "timed"): machines take their time and need power in a creative world too.</summary>
+    public bool TimedMachines;
     public readonly List<ConstructPress.Feed> PressFeeds = new(32);
 }
