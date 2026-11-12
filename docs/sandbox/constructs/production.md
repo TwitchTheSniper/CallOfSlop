@@ -754,6 +754,12 @@ panel); the part from the part kit's `crafting_terminal_parts`.
 - **Saves.** After a body's work orders (an empty block when it has none): each terminal's orders with got, asked and riding counts.
   Reservations aren't written: the orders claim again at the first step after a load. An older save ends before the block.
 - **Cost.** A world without open orders: one list check a tick. A blueprint carries no orders.
+  Measured (a throwaway probe, removed: host and client over RakNet at 80 ms and 2 % loss, the showcase in a creative world): the
+  client ordered 2 Gear Sets in stock (reserved, rode from the rack to the tray), 2 Steel Plates (queued at the Assembler, made, rode
+  back), a 1 m solid bar (made by the Extruder, racked where no conveyor returns: "no route from the Long Piece Rack: collect it
+  there") and a Tyre Carcass whose inputs are missing (queued at the Assembler, which waits starved); both peers agreed on the tray,
+  the reserved counts and every order's state; a save taken mid-order loaded all 4 orders; a cancel took the order and its work order
+  off the Assembler's queue. The step with 32 open orders on a terminal: 0.03 ms, 0 bytes; an idle world: under 0.5 microseconds a tick.
 
 Not yet: other constructs by world link; splitters on a return path (a splitter deals in turn, so it is no route); chutes of more
 than one hop; a Piece Rack as a bigger tray; press products; a custom size entry (the Line Console's bill makes those); reserving a
