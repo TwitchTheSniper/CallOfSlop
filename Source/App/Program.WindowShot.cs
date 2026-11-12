@@ -538,7 +538,7 @@ public static unsafe partial class Program
                 WsSay($"saveload: {(same ? "the same parts" : "DIFFERENT")} ({body.Span.Length} bytes)");
                 return;
             }
-            case "logi": // smart logistics (Program.WindowShotLogi.cs): riders, a Router's net and why; host: order, cut, fill, spawn, perf
+            case "logi": // smart logistics (Program.WindowShotLogi.cs): riders, a Router's net and why; host: order, cut, fill, spawn
                 WsLogi(g, arg);
                 return;
             case "craft": // a Crafting Terminal's orders, tray and reserved parts as this peer has them; on the host, also a save and load of its body

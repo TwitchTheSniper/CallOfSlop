@@ -781,15 +781,7 @@ public static class ConstructConveyor
     {
         int j = c.Routes[k].To;
         if (c.DefOf(j).IsRouter && ConstructRecycler.Powered(world, c, j) && ConstructLogistics.Map(c) is var m && m.RouterSlot(j) is var s and >= 0)
-        {
-            var lp0 = Stopwatch.GetTimestamp(); // PROBE
-            var lpa = GC.GetAllocatedBytesForCurrentThread(); // PROBE
-            var went = ConstructLogistics.Pass(world, c, m, s, k, lead, ref changed); // (a powered Router: the way to the piece's destination; unpowered, it deals in turn below)
-            LogiMs += Stopwatch.GetElapsedTime(lp0).TotalMilliseconds; // PROBE
-            LogiBytes += GC.GetAllocatedBytesForCurrentThread() - lpa; // PROBE
-            LogiCalls++; // PROBE
-            return went;
-        }
+            return ConstructLogistics.Pass(world, c, m, s, k, lead, ref changed); // (a powered Router: the way to the piece's destination; unpowered, it deals in turn below)
         var d = ConstructParts.Def(c.Conveyed[lead].Def);
         Span<byte> outs = stackalloc byte[8];
         var n = 0;
@@ -848,31 +840,7 @@ public static class ConstructConveyor
         if (++world.ConveyorTicks < Every)
             return;
         world.ConveyorTicks = 0;
-        var probe0 = Stopwatch.GetTimestamp(); // PROBE (smart logistics phase 1 measure; removed before the merge)
-        var probeA = GC.GetAllocatedBytesForCurrentThread(); // PROBE
         StepAll(world, query);
-        ProbeMs[ProbeN++ % ProbeMs.Length] = Stopwatch.GetElapsedTime(probe0).TotalMilliseconds; // PROBE
-        ProbeBytes += GC.GetAllocatedBytesForCurrentThread() - probeA; // PROBE
-    }
-
-    private static readonly double[] ProbeMs = new double[4096]; // PROBE
-    private static int ProbeN; // PROBE
-    private static long ProbeBytes; // PROBE
-    private static double LogiMs; // PROBE
-    private static long LogiBytes, LogiCalls; // PROBE
-
-    /// <summary>PROBE: the conveyor step's median, p99 and worst since the last report, and the bytes it allocated.</summary>
-    public static string ProbeReport()
-    {
-        var n = Math.Min(ProbeN, ProbeMs.Length);
-        var a = ProbeMs.AsSpan(0, n).ToArray();
-        Array.Sort(a);
-        var text = n == 0 ? "no steps" : $"{n} steps: median {a[n / 2]:0.0000} ms, p99 {a[Math.Min(n - 1, n * 99 / 100)]:0.0000} ms, worst {a[n - 1]:0.0000} ms, {ProbeBytes} bytes allocated";
-        text += $"; Router decisions and refreshes: {LogiCalls} decisions, {LogiMs:0.000} ms in all, {LogiBytes} bytes";
-        ProbeN = 0;
-        ProbeBytes = LogiBytes = LogiCalls = 0;
-        LogiMs = 0;
-        return text;
     }
 
     private static void StepAll(ConstructWorld world, IWorldQuery query)
@@ -895,11 +863,7 @@ public static class ConstructConveyor
             if (StepBody(world, query, c, dt, server: true))
             {
                 world.RidersChanged(c);
-                var lp0 = Stopwatch.GetTimestamp(); // PROBE
-                var lpa = GC.GetAllocatedBytesForCurrentThread(); // PROBE
                 ConstructLogistics.Refresh(c, server: true);
-                LogiMs += Stopwatch.GetElapsedTime(lp0).TotalMilliseconds; // PROBE
-                LogiBytes += GC.GetAllocatedBytesForCurrentThread() - lpa; // PROBE
             }
             c.ConveyedStamp = now;
         }
