@@ -387,42 +387,80 @@ public static class Pressed
     }
 
     /// <summary>
-    /// Moves feature faces (index <paramref name="fixedCount"/> and up) off any face plane another box shares facing the same way with
-    /// overlap: outward on a proud axis, else inward (outward when the box is too thin to give). The blank's boxes never move.
+    /// Moves feature faces (index <paramref name="fixedCount"/> and up) off any face plane an earlier box shares facing the same way with
+    /// overlap: outward on a proud axis, else inward (outward when the box is too thin to give). The blank's boxes never move, and of two
+    /// features the later one moves, so a pair never leapfrogs.
     /// </summary>
     private static void Settle(Span<Vector3> lo, Span<Vector3> hi, ReadOnlySpan<byte> proud, int fixedCount, float gap)
     {
         var n = lo.Length;
-        for (var pass = 0; pass < 8; pass++)
+        Span<float> tries = stackalloc float[8];
+        for (var pass = 0; pass < 3; pass++)
         {
             var moved = false;
             for (var i = fixedCount; i < n; i++)
                 for (var ax = 0; ax < 3; ax++)
                     for (var s = -1; s <= 1; s += 2)
-                        for (var j = 0; j < n; j++)
+                    {
+                        var at = s < 0 ? Get(lo[i], ax) : Get(hi[i], ax);
+                        if (!Shares(lo, hi, i, ax, s, at))
+                            continue;
+                        // The nearest free plane: on its preferred side first (out on a proud axis, else in while it stays thick enough), then the other.
+                        var thick = Get(hi[i], ax) - Get(lo[i], ax);
+                        var outFirst = (proud[i] >> ax & 1) != 0;
+                        var t = 0;
+                        for (var k = 1; k <= 4; k++)
                         {
-                            if (j == i)
-                                continue;
-                            var pi = s < 0 ? Get(lo[i], ax) : Get(hi[i], ax);
-                            var pj = s < 0 ? Get(lo[j], ax) : Get(hi[j], ax);
-                            if (MathF.Abs(pi - pj) > 0.0006f)
-                                continue;
-                            int b = (ax + 1) % 3, c = (ax + 2) % 3;
-                            var ob = MathF.Min(Get(hi[i], b), Get(hi[j], b)) - MathF.Max(Get(lo[i], b), Get(lo[j], b));
-                            var oc = MathF.Min(Get(hi[i], c), Get(hi[j], c)) - MathF.Max(Get(lo[i], c), Get(lo[j], c));
-                            if (ob <= 0 || oc <= 0 || ob * oc < 1e-5f)
-                                continue;
-                            var outward = (proud[i] >> ax & 1) != 0 || Get(hi[i], ax) - Get(lo[i], ax) < 3 * gap;
-                            var step = outward ? s * gap : -s * gap;
-                            if (s < 0)
-                                lo[i] = With(lo[i], ax, pi + step);
+                            var o = at + s * gap * k;
+                            var inw = at - s * gap * k;
+                            var inOk = thick - gap * k >= gap;
+                            if (outFirst)
+                            {
+                                tries[t++] = o;
+                                if (inOk && k <= 2)
+                                    tries[t++] = inw;
+                            }
                             else
-                                hi[i] = With(hi[i], ax, pi + step);
-                            moved = true;
+                            {
+                                if (inOk)
+                                    tries[t++] = inw;
+                                if (k <= 2)
+                                    tries[t++] = o;
+                            }
+                            if (t >= tries.Length - 1)
+                                break;
                         }
+                        foreach (var plane in tries[..t])
+                            if (!Shares(lo, hi, i, ax, s, plane))
+                            {
+                                if (s < 0)
+                                    lo[i] = With(lo[i], ax, plane);
+                                else
+                                    hi[i] = With(hi[i], ax, plane);
+                                moved = true;
+                                break;
+                            }
+                    }
             if (!moved)
                 return;
         }
+    }
+
+    // Does box i's face on axis ax, side s, put on this plane, lie on an earlier box's face that faces the same way, with overlap?
+    private static bool Shares(ReadOnlySpan<Vector3> lo, ReadOnlySpan<Vector3> hi, int i, int ax, int s, float plane)
+    {
+        int b = (ax + 1) % 3, c = (ax + 2) % 3;
+        for (var j = 0; j < i; j++)
+        {
+            var pj = s < 0 ? Get(lo[j], ax) : Get(hi[j], ax);
+            if (MathF.Abs(plane - pj) > 0.0006f)
+                continue;
+            var ob = MathF.Min(Get(hi[i], b), Get(hi[j], b)) - MathF.Max(Get(lo[i], b), Get(lo[j], b));
+            var oc = MathF.Min(Get(hi[i], c), Get(hi[j], c)) - MathF.Max(Get(lo[i], c), Get(lo[j], c));
+            if (ob > 0 && oc > 0 && ob * oc >= 1e-5f)
+                return true;
+        }
+        return false;
     }
 
     private static float Get(Vector3 v, int a) => a == 0 ? v.X : a == 1 ? v.Y : v.Z;
@@ -555,7 +593,7 @@ public static class Pressed
         Console.WriteLine($"[press] key {name} ({name.Length} characters)");
         if (t.PresetByKey.TryGetValue(name, out var preset))
             Console.WriteLine($"[press] a preset: it is the catalogue part {preset.Name}");
-        var probs = Report(die!, p!, k, name, out var made);
+        var probs = Report(die!, p!, k, name, out var made, out _);
         var need = Bay2For(p!, k);
         if (p!.Bay2 is { } a)
         {
@@ -575,21 +613,28 @@ public static class Pressed
     }
 
     /// <summary>Makes the part twice from its name (as a server and a client would), prints its numbers and checks; the problems found.</summary>
-    private static int Report(PressDie die, PressPattern p, in ExtrusionKey k, string name, out ConstructPartDef made)
+    private static int Report(PressDie die, PressPattern p, in ExtrusionKey k, string name, out ConstructPartDef made, out double ms)
     {
         var probs = 0;
         var bytes0 = GC.GetAllocatedBytesForCurrentThread();
         var t0 = Stopwatch.GetTimestamp();
         made = Build(die, p, k, name);
-        var ms = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        var first = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
         var bytes = GC.GetAllocatedBytesForCurrentThread() - bytes0;
-        var again = Build(die, p, k, name);
+        ConstructPartDef again = made;
+        ms = first;
+        for (var rep = 0; rep < 3; rep++) // (a client's make from the name; the least of three, as two other agents' builds share the box)
+        {
+            var t1 = Stopwatch.GetTimestamp();
+            again = Build(die, p, k, name);
+            ms = Math.Min(ms, Stopwatch.GetElapsedTime(t1).TotalMilliseconds);
+        }
         var hash = GeometryHash(made);
         var pc = PressClass(Across(k));
         var drawn = made.Boxes.Count(b => !b.Hidden);
         Console.WriteLine($"[press] {made.Name}: like {p.Like.Name}; {ClassWord(pc)} Press and up, a {ClassWord(pc)} {die.Family} Die; "
             + $"{drawn} boxes drawn, {made.SolidBoxes} solid, {made.Sockets.Length} sockets; {made.Mass:0.##} kg, {made.Health:0} hp, armour {made.Armour:0.#}; "
-            + $"bounds {(made.BoundsMax - made.BoundsMin).X:0.###} x {(made.BoundsMax - made.BoundsMin).Y:0.###} x {(made.BoundsMax - made.BoundsMin).Z:0.###} m; hash {hash:x8}; first make {ms:0.000} ms, {bytes / 1024.0:0.0} KB");
+            + $"bounds {(made.BoundsMax - made.BoundsMin).X:0.###} x {(made.BoundsMax - made.BoundsMin).Y:0.###} x {(made.BoundsMax - made.BoundsMin).Z:0.###} m; hash {hash:x8}; a make {ms:0.000} ms (least of 4; the first {first:0.000} ms), {bytes / 1024.0:0.0} KB");
         if (GeometryHash(again) != hash)
         {
             Console.WriteLine("[press] PROBLEM: a second make from the name gives another part");
@@ -630,7 +675,7 @@ public static class Pressed
             foreach (var s in p.Blanks.Length > 0 ? p.Blanks : die.Blanks)
             {
                 var m = die.Materials[0];
-                int aMax = Step(die.AcrossMax), aMin = Step(Math.Max(die.AcrossMin, MinCm));
+                int aMax = Step((int)Math.Min(die.AcrossMax, die.LengthMax / die.AspectMin)), aMin = Step(Math.Max(die.AcrossMin, MinCm));
                 keys.Add(KeyFor(die, p, s, aMax, Step((int)Math.Min(die.LengthMax, aMax * die.AspectMax)), m));
                 keys.Add(KeyFor(die, p, s, aMin, Step((int)Math.Max(die.LengthMin, aMin * die.AspectMin)), m));
             }
@@ -653,24 +698,23 @@ public static class Pressed
                 Console.WriteLine($"[press] skipped {key}: {why}");
                 continue;
             }
-            var t0 = Stopwatch.GetTimestamp();
-            var bad = Report(d!, p!, k, key, out _);
-            var ms = Stopwatch.GetElapsedTime(t0).TotalMilliseconds / 2;
-            if (ms > worst && made > 0)
+            var bad = Report(d!, p!, k, key, out _, out var ms);
+            if (ms > worst)
                 (worst, worstKey) = (ms, key);
             probs += bad;
             made++;
         }
         // 200 new keys in one update: what a Full naming them all costs a client (made and adopted, then freed by the next sweep).
         var batch = new List<string>(200);
-        for (var len = die.LengthMin; batch.Count < 200 && len <= die.LengthMax; len += Extrusion.StepCm)
-        {
-            var p = die.Patterns[batch.Count % die.Patterns.Length];
-            var s = (p.Blanks.Length > 0 ? p.Blanks : die.Blanks)[0];
-            var key = KeyFor(die, p, s, Step(Math.Max(die.AcrossMin, MinCm)), len, die.Materials[0]);
-            if (TryParse(key, out _, out _, out _, out _) && !t.PresetByKey.ContainsKey(key))
-                batch.Add(key);
-        }
+        for (var across = Step(Math.Max(die.AcrossMin, MinCm)); batch.Count < 200 && across <= die.AcrossMax; across += 4 * Extrusion.StepCm)
+            for (var len = die.LengthMin; batch.Count < 200 && len <= die.LengthMax && len <= across * die.AspectMax; len += 4 * Extrusion.StepCm)
+            {
+                var p = die.Patterns[batch.Count % die.Patterns.Length];
+                var s = (p.Blanks.Length > 0 ? p.Blanks : die.Blanks)[0];
+                var key = KeyFor(die, p, s, across, len, die.Materials[0]);
+                if (TryParse(key, out _, out _, out _, out _) && !t.PresetByKey.ContainsKey(key) && !batch.Contains(key))
+                    batch.Add(key);
+            }
         var b0 = Stopwatch.GetTimestamp();
         var ok = batch.Count(key => Parse(key) != null);
         var batchMs = Stopwatch.GetElapsedTime(b0).TotalMilliseconds;

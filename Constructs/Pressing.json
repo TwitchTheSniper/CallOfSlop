@@ -1,6 +1,6 @@
 {
- "format": "call-of-slop-pressing/1",
- "about": "The stamping table (docs/sandbox/CONSTRUCTS.md, 'The Press'). Written by the part kit (--gen-parts press_parts): fix it, not this file. 'rows' are a press's: with a die of family 'die', the first row whose bays hold what it asks runs. Each bay gives its 'sections' (Extrusion presets, round, pipe), 'materials', 'minAcross' and 'maxAcross' (m, the piece's smaller side) and what a stroke takes: 'use' (m) or 'useAcross' (times its size across). 'lathe' rows are a Die Lathe's, chosen as a setting.",
+ "format": "call-of-slop-pressing/2",
+ "about": "The stamping table (docs/sandbox/CONSTRUCTS.md, 'The Press'). Written by the part kit (--gen-parts press_parts): fix it, not this file. 'rows' are a press's: with a die of family 'die', the first row whose bays hold what it asks runs. Each bay gives its 'sections' (Extrusion presets, round, pipe), 'materials', 'minAcross' and 'maxAcross' (m, the piece's smaller side) and what a stroke takes: 'use' (m) or 'useAcross' (times its size across). 'lathe' rows are a Die Lathe's, chosen as a setting. 'dies' (the Press rework, Pressed.cs) say what a die makes of a whole blank: its blanks, materials, bounds in cm, features in the blank's unit frame and patterns (a like part and a preset blank); 'presets' name the catalogue part that is a die's product of one standard blank. The press still strokes 'rows' until the rework's phase 2.",
  "rows": [
   {
    "die": "Button",
@@ -980,6 +980,1197 @@
      "use": 8.0
     }
    ]
+  }
+ ],
+ "strength": {
+  "of": "healthPerM3",
+  "ref": 5000
+ },
+ "dies": [
+  {
+   "die": "Bracket",
+   "blanks": [
+    "l-angle",
+    "plate",
+    "solid"
+   ],
+   "materials": [
+    "metal",
+    "steel",
+    "bronze"
+   ],
+   "across": [
+    10,
+    2880
+   ],
+   "length": [
+    10,
+    800
+   ],
+   "aspect": [
+    0.5,
+    8.0
+   ],
+   "seconds": {
+    "base": 1.0,
+    "perKg": 0.02
+   },
+   "features": [
+    {
+     "tag": "web",
+     "box": [
+      0.25,
+      0.25,
+      0.15,
+      0.42,
+      0.42,
+      0.85
+     ],
+     "proud": "xy",
+     "look": "bare",
+     "blanks": [
+      "l-angle"
+     ]
+    },
+    {
+     "tag": "boss",
+     "box": [
+      -0.04,
+      0.6,
+      0.14,
+      0.02,
+      0.72,
+      0.26
+     ],
+     "proud": "x",
+     "clamp": "x",
+     "minCm": 1.0,
+     "maxCm": 6.0,
+     "look": "dark",
+     "blanks": [
+      "l-angle"
+     ]
+    },
+    {
+     "tag": "boss",
+     "box": [
+      -0.04,
+      0.6,
+      0.74,
+      0.02,
+      0.72,
+      0.86
+     ],
+     "proud": "x",
+     "clamp": "x",
+     "minCm": 1.0,
+     "maxCm": 6.0,
+     "look": "dark",
+     "blanks": [
+      "l-angle"
+     ]
+    },
+    {
+     "tag": "boss",
+     "box": [
+      0.6,
+      -0.04,
+      0.14,
+      0.72,
+      0.02,
+      0.26
+     ],
+     "proud": "y",
+     "clamp": "y",
+     "minCm": 1.0,
+     "maxCm": 6.0,
+     "look": "dark",
+     "blanks": [
+      "l-angle"
+     ]
+    },
+    {
+     "tag": "boss",
+     "box": [
+      0.6,
+      -0.04,
+      0.74,
+      0.72,
+      0.02,
+      0.86
+     ],
+     "proud": "y",
+     "clamp": "y",
+     "minCm": 1.0,
+     "maxCm": 6.0,
+     "look": "dark",
+     "blanks": [
+      "l-angle"
+     ]
+    },
+    {
+     "tag": "flange",
+     "box": [
+      0.0,
+      0.3,
+      0.0,
+      0.08,
+      0.7,
+      1.0
+     ],
+     "proud": "y",
+     "clamp": "x",
+     "minCm": 1.0,
+     "maxCm": 10.0,
+     "look": "bare",
+     "blanks": [
+      "plate"
+     ]
+    },
+    {
+     "tag": "flange",
+     "box": [
+      0.08,
+      0.3,
+      0.0,
+      1.0,
+      0.7,
+      0.08
+     ],
+     "proud": "y",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 10.0,
+     "look": "bare",
+     "blanks": [
+      "plate"
+     ]
+    },
+    {
+     "tag": "boss",
+     "box": [
+      0.35,
+      0.98,
+      0.14,
+      0.65,
+      1.06,
+      0.26
+     ],
+     "proud": "y",
+     "look": "dark",
+     "blanks": [
+      "solid"
+     ]
+    },
+    {
+     "tag": "boss",
+     "box": [
+      0.35,
+      0.98,
+      0.74,
+      0.65,
+      1.06,
+      0.86
+     ],
+     "proud": "y",
+     "look": "dark",
+     "blanks": [
+      "solid"
+     ]
+    }
+   ],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "l",
+     "like": "L Bracket",
+     "label": "L bracket",
+     "preset": "l-angle 25x25x25 steel",
+     "blanks": [
+      "l-angle",
+      "solid"
+     ]
+    },
+    {
+     "id": "corner",
+     "like": "Corner Bracket",
+     "label": "corner bracket",
+     "preset": "l-angle 25x25x25 steel",
+     "blanks": [
+      "l-angle"
+     ]
+    },
+    {
+     "id": "gusset",
+     "like": "Gusset 0.25 m",
+     "label": "gusset",
+     "preset": "plate 25x10x25 steel",
+     "blanks": [
+      "plate"
+     ]
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "blanks": [
+    "hollow",
+    "solid"
+   ],
+   "materials": [
+    "metal",
+    "steel",
+    "bronze"
+   ],
+   "across": [
+    15,
+    2880
+   ],
+   "length": [
+    15,
+    3200
+   ],
+   "aspect": [
+    0.5,
+    8.0
+   ],
+   "seconds": {
+    "base": 2.0,
+    "perKg": 0.01
+   },
+   "features": [
+    {
+     "tag": "flange",
+     "box": [
+      -0.04,
+      0.94,
+      0.0,
+      1.04,
+      1.04,
+      0.06
+     ],
+     "proud": "xy",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 40.0,
+     "look": "bare"
+    },
+    {
+     "tag": "flange",
+     "box": [
+      -0.04,
+      -0.04,
+      0.0,
+      1.04,
+      0.06,
+      0.06
+     ],
+     "proud": "xy",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 40.0,
+     "look": "bare"
+    },
+    {
+     "tag": "flange",
+     "box": [
+      -0.04,
+      0.06,
+      0.0,
+      0.06,
+      0.94,
+      0.06
+     ],
+     "proud": "xy",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 40.0,
+     "look": "bare"
+    },
+    {
+     "tag": "flange",
+     "box": [
+      0.94,
+      0.06,
+      0.0,
+      1.04,
+      0.94,
+      0.06
+     ],
+     "proud": "xy",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 40.0,
+     "look": "bare"
+    },
+    {
+     "tag": "flange",
+     "box": [
+      -0.04,
+      0.94,
+      0.94,
+      1.04,
+      1.04,
+      1.0
+     ],
+     "proud": "xy",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 40.0,
+     "look": "bare"
+    },
+    {
+     "tag": "flange",
+     "box": [
+      -0.04,
+      -0.04,
+      0.94,
+      1.04,
+      0.06,
+      1.0
+     ],
+     "proud": "xy",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 40.0,
+     "look": "bare"
+    },
+    {
+     "tag": "flange",
+     "box": [
+      -0.04,
+      0.06,
+      0.94,
+      0.06,
+      0.94,
+      1.0
+     ],
+     "proud": "xy",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 40.0,
+     "look": "bare"
+    },
+    {
+     "tag": "flange",
+     "box": [
+      0.94,
+      0.06,
+      0.94,
+      1.04,
+      0.94,
+      1.0
+     ],
+     "proud": "xy",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 40.0,
+     "look": "bare"
+    },
+    {
+     "tag": "seam",
+     "box": [
+      -0.01,
+      0.89,
+      0.1,
+      0.03,
+      0.91,
+      0.9
+     ],
+     "proud": "x",
+     "clamp": "y",
+     "minCm": 1.0,
+     "maxCm": 4.0,
+     "look": "dark"
+    },
+    {
+     "tag": "seam",
+     "box": [
+      0.97,
+      0.89,
+      0.1,
+      1.01,
+      0.91,
+      0.9
+     ],
+     "proud": "x",
+     "clamp": "y",
+     "minCm": 1.0,
+     "maxCm": 4.0,
+     "look": "dark"
+    },
+    {
+     "tag": "boss",
+     "box": [
+      -0.03,
+      -0.03,
+      0.44,
+      0.06,
+      0.06,
+      0.56
+     ],
+     "proud": "xy",
+     "look": "dark"
+    },
+    {
+     "tag": "boss",
+     "box": [
+      0.94,
+      -0.03,
+      0.44,
+      1.03,
+      0.06,
+      0.56
+     ],
+     "proud": "xy",
+     "look": "dark"
+    },
+    {
+     "tag": "boss",
+     "box": [
+      -0.03,
+      0.94,
+      0.44,
+      0.06,
+      1.03,
+      0.56
+     ],
+     "proud": "xy",
+     "look": "dark"
+    },
+    {
+     "tag": "boss",
+     "box": [
+      0.94,
+      0.94,
+      0.44,
+      1.03,
+      1.03,
+      0.56
+     ],
+     "proud": "xy",
+     "look": "dark"
+    }
+   ],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "housing",
+     "like": "Housing 0.5 m",
+     "label": "housing",
+     "preset": "hollow 50x50x50 metal"
+    }
+   ]
+  },
+  {
+   "die": "Plate",
+   "blanks": [
+    "plate"
+   ],
+   "materials": [
+    "metal",
+    "steel",
+    "bronze",
+    "copper",
+    "laminate",
+    "wood",
+    "planks"
+   ],
+   "across": [
+    10,
+    2880
+   ],
+   "length": [
+    25,
+    6400
+   ],
+   "aspect": [
+    1.0,
+    64.0
+   ],
+   "seconds": {
+    "base": 1.0,
+    "perKg": 0.01
+   },
+   "features": [
+    {
+     "tag": "lip",
+     "box": [
+      0.0,
+      0.3,
+      0.0,
+      0.04,
+      0.7,
+      1.0
+     ],
+     "proud": "y",
+     "clamp": "x",
+     "minCm": 1.0,
+     "maxCm": 10.0,
+     "look": "bare"
+    },
+    {
+     "tag": "lip",
+     "box": [
+      0.96,
+      0.3,
+      0.0,
+      1.0,
+      0.7,
+      1.0
+     ],
+     "proud": "y",
+     "clamp": "x",
+     "minCm": 1.0,
+     "maxCm": 10.0,
+     "look": "bare"
+    },
+    {
+     "tag": "lip",
+     "box": [
+      0.04,
+      0.3,
+      0.0,
+      0.96,
+      0.7,
+      0.04
+     ],
+     "proud": "y",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 10.0,
+     "look": "bare"
+    },
+    {
+     "tag": "lip",
+     "box": [
+      0.04,
+      0.3,
+      0.96,
+      0.96,
+      0.7,
+      1.0
+     ],
+     "proud": "y",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 10.0,
+     "look": "bare"
+    }
+   ],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "sheet",
+     "like": "Sheet Steel 1 m",
+     "label": "sheet",
+     "preset": "plate 100x10x100 steel"
+    },
+    {
+     "id": "plate",
+     "like": "Plate Steel 1 m",
+     "label": "plate",
+     "preset": "plate 100x10x100 steel"
+    },
+    {
+     "id": "steel",
+     "like": "Steel Plate",
+     "label": "steel plate",
+     "preset": "plate 50x10x50 steel"
+    },
+    {
+     "id": "tread",
+     "like": "Tread Plate 1 m",
+     "label": "tread plate",
+     "preset": "plate 100x10x100 steel",
+     "features": [
+      {
+       "tag": "tread",
+       "box": [
+        0.14,
+        0.6,
+        0.17500000000000002,
+        0.26,
+        0.66,
+        0.225
+       ],
+       "proud": "y",
+       "look": "bare"
+      },
+      {
+       "tag": "tread",
+       "box": [
+        0.17500000000000002,
+        0.6,
+        0.34,
+        0.225,
+        0.66,
+        0.46
+       ],
+       "proud": "y",
+       "look": "bare"
+      },
+      {
+       "tag": "tread",
+       "box": [
+        0.14,
+        0.6,
+        0.575,
+        0.26,
+        0.66,
+        0.625
+       ],
+       "proud": "y",
+       "look": "bare"
+      },
+      {
+       "tag": "tread",
+       "box": [
+        0.17500000000000002,
+        0.6,
+        0.74,
+        0.225,
+        0.66,
+        0.8600000000000001
+       ],
+       "proud": "y",
+       "look": "bare"
+      },
+      {
+       "tag": "tread",
+       "box": [
+        0.375,
+        0.6,
+        0.14,
+        0.42500000000000004,
+        0.66,
+        0.26
+       ],
+       "proud": "y",
+       "look": "bare"
+      },
+      {
+       "tag": "tread",
+       "box": [
+        0.34,
+        0.6,
+        0.375,
+        0.46,
+        0.66,
+        0.42500000000000004
+       ],
+       "proud": "y",
+       "look": "bare"
+      },
+      {
+       "tag": "tread",
+       "box": [
+        0.375,
+        0.6,
+        0.54,
+        0.42500000000000004,
+        0.66,
+        0.6599999999999999
+       ],
+       "proud": "y",
+       "look": "bare"
+      },
+      {
+       "tag": "tread",
+       "box": [
+        0.34,
+        0.6,
+        0.775,
+        0.46,
+        0.66,
+        0.8250000000000001
+       ],
+       "proud": "y",
+       "look": "bare"
+      },
+      {
+       "tag": "tread",
+       "box": [
+        0.54,
+        0.6,
+        0.17500000000000002,
+        0.6599999999999999,
+        0.66,
+        0.225
+       ],
+       "proud": "y",
+       "look": "bare"
+      },
+      {
+       "tag": "tread",
+       "box": [
+        0.575,
+        0.6,
+        0.34,
+        0.625,
+        0.66,
+        0.46
+       ],
+       "proud": "y",
+       "look": "bare"
+      },
+      {
+       "tag": "tread",
+       "box": [
+        0.54,
+        0.6,
+        0.575,
+        0.6599999999999999,
+        0.66,
+        0.625
+       ],
+       "proud": "y",
+       "look": "bare"
+      },
+      {
+       "tag": "tread",
+       "box": [
+        0.575,
+        0.6,
+        0.74,
+        0.625,
+        0.66,
+        0.8600000000000001
+       ],
+       "proud": "y",
+       "look": "bare"
+      },
+      {
+       "tag": "tread",
+       "box": [
+        0.775,
+        0.6,
+        0.14,
+        0.8250000000000001,
+        0.66,
+        0.26
+       ],
+       "proud": "y",
+       "look": "bare"
+      },
+      {
+       "tag": "tread",
+       "box": [
+        0.74,
+        0.6,
+        0.375,
+        0.8600000000000001,
+        0.66,
+        0.42500000000000004
+       ],
+       "proud": "y",
+       "look": "bare"
+      },
+      {
+       "tag": "tread",
+       "box": [
+        0.775,
+        0.6,
+        0.54,
+        0.8250000000000001,
+        0.66,
+        0.6599999999999999
+       ],
+       "proud": "y",
+       "look": "bare"
+      },
+      {
+       "tag": "tread",
+       "box": [
+        0.74,
+        0.6,
+        0.775,
+        0.8600000000000001,
+        0.66,
+        0.8250000000000001
+       ],
+       "proud": "y",
+       "look": "bare"
+      }
+     ]
+    },
+    {
+     "id": "armour",
+     "like": "Armour Plate 1 m",
+     "label": "armour plate",
+     "preset": "plate 100x20x100 steel",
+     "features": [
+      {
+       "tag": "rivet",
+       "box": [
+        0.08,
+        0.6,
+        0.08,
+        0.12000000000000001,
+        0.67,
+        0.12000000000000001
+       ],
+       "proud": "y",
+       "clamp": "xz",
+       "minCm": 1.0,
+       "maxCm": 8.0,
+       "look": "dark"
+      },
+      {
+       "tag": "rivet",
+       "box": [
+        0.08,
+        0.6,
+        0.48,
+        0.12000000000000001,
+        0.67,
+        0.52
+       ],
+       "proud": "y",
+       "clamp": "xz",
+       "minCm": 1.0,
+       "maxCm": 8.0,
+       "look": "dark"
+      },
+      {
+       "tag": "rivet",
+       "box": [
+        0.08,
+        0.6,
+        0.88,
+        0.12000000000000001,
+        0.67,
+        0.92
+       ],
+       "proud": "y",
+       "clamp": "xz",
+       "minCm": 1.0,
+       "maxCm": 8.0,
+       "look": "dark"
+      },
+      {
+       "tag": "rivet",
+       "box": [
+        0.88,
+        0.6,
+        0.08,
+        0.92,
+        0.67,
+        0.12000000000000001
+       ],
+       "proud": "y",
+       "clamp": "xz",
+       "minCm": 1.0,
+       "maxCm": 8.0,
+       "look": "dark"
+      },
+      {
+       "tag": "rivet",
+       "box": [
+        0.88,
+        0.6,
+        0.48,
+        0.92,
+        0.67,
+        0.52
+       ],
+       "proud": "y",
+       "clamp": "xz",
+       "minCm": 1.0,
+       "maxCm": 8.0,
+       "look": "dark"
+      },
+      {
+       "tag": "rivet",
+       "box": [
+        0.88,
+        0.6,
+        0.88,
+        0.92,
+        0.67,
+        0.92
+       ],
+       "proud": "y",
+       "clamp": "xz",
+       "minCm": 1.0,
+       "maxCm": 8.0,
+       "look": "dark"
+      }
+     ]
+    },
+    {
+     "id": "grate",
+     "like": "Mesh Grate 1 m",
+     "label": "ribbed plate",
+     "preset": "plate 100x10x100 steel",
+     "features": [
+      {
+       "tag": "rib",
+       "box": [
+        0.185,
+        0.6,
+        0.08,
+        0.21500000000000002,
+        0.68,
+        0.92
+       ],
+       "proud": "y",
+       "clamp": "x",
+       "minCm": 1.0,
+       "maxCm": 6.0,
+       "look": "dark"
+      },
+      {
+       "tag": "rib",
+       "box": [
+        0.385,
+        0.6,
+        0.08,
+        0.41500000000000004,
+        0.68,
+        0.92
+       ],
+       "proud": "y",
+       "clamp": "x",
+       "minCm": 1.0,
+       "maxCm": 6.0,
+       "look": "dark"
+      },
+      {
+       "tag": "rib",
+       "box": [
+        0.585,
+        0.6,
+        0.08,
+        0.615,
+        0.68,
+        0.92
+       ],
+       "proud": "y",
+       "clamp": "x",
+       "minCm": 1.0,
+       "maxCm": 6.0,
+       "look": "dark"
+      },
+      {
+       "tag": "rib",
+       "box": [
+        0.785,
+        0.6,
+        0.08,
+        0.8150000000000001,
+        0.68,
+        0.92
+       ],
+       "proud": "y",
+       "clamp": "x",
+       "minCm": 1.0,
+       "maxCm": 6.0,
+       "look": "dark"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "presets": [
+  {
+   "part": "L Bracket",
+   "die": "bracket",
+   "pattern": "l",
+   "blank": "l-angle 25x25x25 steel"
+  },
+  {
+   "part": "Corner Bracket",
+   "die": "bracket",
+   "pattern": "corner",
+   "blank": "l-angle 25x25x25 steel"
+  },
+  {
+   "part": "Gusset 0.25 m",
+   "die": "bracket",
+   "pattern": "gusset",
+   "blank": "plate 25x10x25 steel"
+  },
+  {
+   "part": "Gusset 0.5 m",
+   "die": "bracket",
+   "pattern": "gusset",
+   "blank": "plate 50x10x50 steel"
+  },
+  {
+   "part": "L Bracket",
+   "die": "bracket",
+   "pattern": "l",
+   "blank": "l-angle 25x25x25 metal"
+  },
+  {
+   "part": "Corner Bracket",
+   "die": "bracket",
+   "pattern": "corner",
+   "blank": "l-angle 25x25x25 metal"
+  },
+  {
+   "part": "Gusset 0.25 m",
+   "die": "bracket",
+   "pattern": "gusset",
+   "blank": "plate 25x10x25 metal"
+  },
+  {
+   "part": "Gusset 0.5 m",
+   "die": "bracket",
+   "pattern": "gusset",
+   "blank": "plate 50x10x50 metal"
+  },
+  {
+   "part": "L Bracket",
+   "die": "bracket",
+   "pattern": "l",
+   "blank": "l-angle 25x25x25 bronze"
+  },
+  {
+   "part": "Corner Bracket",
+   "die": "bracket",
+   "pattern": "corner",
+   "blank": "l-angle 25x25x25 bronze"
+  },
+  {
+   "part": "Gusset 0.25 m",
+   "die": "bracket",
+   "pattern": "gusset",
+   "blank": "plate 25x10x25 bronze"
+  },
+  {
+   "part": "Gusset 0.5 m",
+   "die": "bracket",
+   "pattern": "gusset",
+   "blank": "plate 50x10x50 bronze"
+  },
+  {
+   "part": "Housing 0.25 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 25x25x25 metal"
+  },
+  {
+   "part": "Steel Housing 0.25 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 25x25x25 steel"
+  },
+  {
+   "part": "Bronze Housing 0.25 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 25x25x25 bronze"
+  },
+  {
+   "part": "Housing 0.5 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 50x50x50 metal"
+  },
+  {
+   "part": "Steel Housing 0.5 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 50x50x50 steel"
+  },
+  {
+   "part": "Bronze Housing 0.5 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 50x50x50 bronze"
+  },
+  {
+   "part": "Housing 1 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 100x100x100 metal"
+  },
+  {
+   "part": "Steel Housing 1 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 100x100x100 steel"
+  },
+  {
+   "part": "Bronze Housing 1 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 100x100x100 bronze"
+  },
+  {
+   "part": "Housing 2 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 200x200x200 metal"
+  },
+  {
+   "part": "Steel Housing 2 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 200x200x200 steel"
+  },
+  {
+   "part": "Bronze Housing 2 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 200x200x200 bronze"
+  },
+  {
+   "part": "Housing 4 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 400x400x400 metal"
+  },
+  {
+   "part": "Steel Housing 4 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 400x400x400 steel"
+  },
+  {
+   "part": "Bronze Housing 4 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 400x400x400 bronze"
+  },
+  {
+   "part": "Housing 8 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 800x800x800 metal"
+  },
+  {
+   "part": "Steel Housing 8 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 800x800x800 steel"
+  },
+  {
+   "part": "Bronze Housing 8 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 800x800x800 bronze"
+  },
+  {
+   "part": "Housing 16 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 1600x1600x1600 metal"
+  },
+  {
+   "part": "Steel Housing 16 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 1600x1600x1600 steel"
+  },
+  {
+   "part": "Bronze Housing 16 m",
+   "die": "housing",
+   "pattern": "housing",
+   "blank": "hollow 1600x1600x1600 bronze"
   }
  ]
 }
