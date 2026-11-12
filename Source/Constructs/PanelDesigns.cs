@@ -63,7 +63,7 @@ public static class PanelDesigns
         return "that design is gone";
     }
 
-    /// <summary>The whole list: u8 n, each a name and a key (CBodyKind.Designs, protocol 256).</summary>
+    /// <summary>The whole list: u8 n, each a name and a key (CBodyKind.Designs, protocol 257).</summary>
     public static void Write(PacketWriter w, ConstructWorld world)
     {
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Designs).U8((byte)world.Designs.Count);

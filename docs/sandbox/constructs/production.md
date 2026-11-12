@@ -940,6 +940,58 @@ machine's inputs for an order.
 Proposed (the user's to confirm): the console-to-terminal wire as the order link; conveyors and chutes joining either way round;
 stock before making; 32 open orders; a done order shown 60 s; reservations worked out again on load; the tray's size.
 
+## Panel Designer
+
+The user (2026-11-11): "a more sophisticated tool that can design larger panels to be used in bodywork. This terminal will then send its
+order off to the appropriate extruder to try to make a piece... large curves or S-bends, or maybe even hood pieces." Phase 1
+(feat/panel-designer-1): presets with sliders, end to end. Code: `Source/UI/UiPanelDesigner.cs` and `Program.SandboxPanelDesigner.cs` (the
+panel and its preview), `Source/Constructs/HullLoft.PanelPreview.cs` (the preview's part), `PanelDesigns.cs` (designs), and the Crafting
+Terminal's own code for everything else; the part from the part kit's `panel_designer_parts`.
+
+- **The part** (`Constructs/Parts/PanelDesigner/PanelDesigner.json`, 3.5 by 2.5 m, 120 W, body `#3f6f9a`): a drafting desk with a wide
+  screen at standing height over a raked drawing board, a model plinth beside it, a plan chest behind, and along its right a flat tray
+  (1.85 m across, 0.6 m high, 2.3 m long) with a **Piece in** at its back. It is a Crafting Terminal with `storage.pieces.designer`
+  (`IsPanelDesigner`): its **Orders** port, its network (`ConstructCrafting.NetOf`), its orders, wire block, saves, reservations and tray
+  are the terminal's code. Link it to a Panel Former as a terminal is linked: a Line Console's wire into Orders (the console's machines), or
+  conveyors and chutes either way round (the former's rack returning to its Piece in). The screen is upright (a panel screen faces an axis).
+- **The panel** (F on the desk; Esc, walking off, dying or a local reset closes it; it holds the mouse):
+  - *Left:* the seven presets as tiles (pictures in the tile atlas, `SandboxTiles.PanelSlot`: each preset at its own size, after the
+    resources), your designs (click loads, x deletes) and this world's designs.
+  - *Middle:* the preview, drawn after the UI pass in its own viewport (scissored; the default light): the panel as it will be formed,
+    one colour shaded by each facet's normal so the crown and rake read, on a stand 0.9 m up or (**On a frame**) on a beam frame; a floor
+    with a line a metre, a 1 m bar, a 1.8 m figure, a mark at each edge socket. Drag turns it, the wheel zooms, left alone it turns slowly.
+  - *Right:* sliders with values and units (length, width, crown, the preset's second number under its own name: step, nose drop, arch,
+    turn-in, rise; thickness), material tiles (what a linked former is fed first, the rest dim), and readouts: the key it will have, its
+    size and mass, the sheet it costs, facets and sockets against their limits, and each linked former: "Panel Former 1: yes" or why not.
+    A slider stops at what the key takes and the largest linked former makes; the line under them says which limit and why.
+  - *Bottom:* a name and **Save design**, a count, **ORDER**, and the designer's open orders with their state and Cancel.
+- **The preview leaves no key behind.** `HullLoft.PanelPreview` makes the part from the key by the real code (`PanelJson`: the same
+  floats, the same hash as `--form-panel`) but never interns it: no run-time part slot, no name in the table. A changed key makes its base
+  at once (boxes, sockets, mass: the readouts) and its facets 6 a frame inside 1.5 ms into shapes the preview owns; the last whole panel
+  stays drawn until the new one is whole; a key dropped half made gives its shapes back, and closing the panel gives all back. Only Save
+  (nothing made) and Order (the server's `ConstructParts.Find`, as any order) go further.
+- **An order** is the terminal's, for a named part: `CActKind.CraftNamed` (body, terminal, count, the key); `CraftOrder.What.Name`. The
+  first linked former that accepts it queues it (its own refusals apply: too large, another line, a full queue). The made panel rides the
+  former's Piece out to its rack, where the order claims it: with a conveyor from that rack to the designer's Piece in it rides to the tray
+  when the tray takes it; else "no route from the Long Piece Rack: collect it there". A former with no conveyor drops it on its out bed
+  and the order counts it there ("made: on the Panel Former's out bed", `ConstructCrafting.MadeLoose`).
+- **The Crafting Terminal lists panels too**: formed panels in linked stores (In stock), and on Make each linked former's seven presets at
+  their own size and the world's designs, in the material the former is fed (steel when empty).
+- **Designs** (`PanelDesigns.cs`). A design is a name (the blueprint name rule: ASCII, 32 characters) and a key. *Your library* is
+  `ConstructBlueprints/PanelDesigns.txt` in the save folder (one `name TAB key` line, at most 128; written as every save, with a `.bak`;
+  the folder is already a save folder, so the package lists need nothing new). *The world's list* (`ConstructWorld.Designs`, at most 64):
+  Save sends `CActKind.PanelDesign` (op, name, key); the server checks both and sends the whole list to everyone (`CBodyKind.Designs`) and
+  to a joiner before the constructs; the world file keeps it (section `DSGN`, skipped by an older build).
+- **In blueprints.** A formed panel on a construct saves by its key, as a lofted part does; `--bill` lists it under "Formed panels" with
+  the former that takes it.
+- **Wire (protocol 257).** `CActKind.CraftNamed`, `PanelDesign`; `CBodyKind.Designs`; an order in `CBodyKind.Craft` may be named (shape
+  255: material, count, the name, then id and state as before). A save's crafting order the same.
+
+Proposed (the user's to confirm): the designer being a Crafting Terminal; panels collected at the former's rack unless a conveyor returns
+them; any player may order, replace or delete a shared design; 64 designs a world, 128 a library. Not built: the plinth's model of the
+last design; a drag action in the window tool (sliders were set through `design length N`). Next: bend along a path, loft between
+outlines (a `Formed Panel (#HASH)` key with the design stored per world), player-added sockets, cut-outs with the Laser Cutter.
+
 ## Reservations
 
 Shared by the Crafting Terminal and, next, the blueprint building station (`Source/Constructs/ConstructReserve.cs`,

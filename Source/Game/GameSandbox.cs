@@ -95,8 +95,8 @@ public enum CActKind : byte
     SpawnPlace, // u16 token, vec point, f32 yaw: the pending spawn goes down there (protocol 255)
     SpawnCancel, // u16 token: the pending spawn is dropped (protocol 255)
     SpawnGhost, // server -> one client: u8 status (0 ready, 1 placed, 2 gone), u16 token, text name; ready: the ghost's shape and boxes (protocol 255)
-    CraftNamed, // u16 body, u16 terminal, u16 count, text name: an order for a formed panel by its key at a Crafting Terminal or a Panel Designer (protocol 256; ConstructCrafting.Place)
-    PanelDesign, // u8 op (1 keep, 0 drop), text name, text key: a panel design saved to the world's shared list, or dropped from it (protocol 256; PanelDesigns.cs)
+    CraftNamed, // u16 body, u16 terminal, u16 count, text name: an order for a formed panel by its key at a Crafting Terminal or a Panel Designer (protocol 257; ConstructCrafting.Place)
+    PanelDesign, // u8 op (1 keep, 0 drop), text name, text key: a panel design saved to the world's shared list, or dropped from it (protocol 257; PanelDesigns.cs)
 }
 
 /// <summary>

@@ -34,7 +34,7 @@ public enum CBodyKind : byte
     Riders, // protocol 244: one body's pieces riding its conveyors, the whole list (ConstructConveyor.Write)
     Orders, // protocol 246: one body's work-order queues and bills, each its totals and head (WorkOrders.Write)
     Craft, // protocol 254: one body's Crafting Terminals' orders and its stores' reserved parts (ConstructCrafting.Write)
-    Designs, // protocol 256: the world's shared panel designs, the whole list: u8 n, each a name and a key (PanelDesigns.Write)
+    Designs, // protocol 257: the world's shared panel designs, the whole list: u8 n, each a name and a key (PanelDesigns.Write)
 }
 
 /// <summary>
