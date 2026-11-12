@@ -51,13 +51,13 @@ public sealed partial class BuildingParts
 
     /// <summary>The two pipes along x from 0 to <paramref name="L"/> m at height <paramref name="y"/>: what is hit (hidden boxes)
     /// and what is seen (lagging, a clamp band at each end), and a socket on each pipe's two ends ("la", "lb", "ra", "rb").</summary>
-    private static void Pipes(BPart p, double L, double y)
+    private static void Pipes(BPart p, double L, double y, bool bands = true)
     {
         foreach (var (z, n) in new[] { (PipeA, "a"), (PipeB, "b") })
         {
             p.FBox(0, y - PipeR, z - PipeR, L, y + PipeR, z + PipeR, hidden: true);
             p.FBox(0, y - PipeR, z - PipeR, L, y + PipeR, z + PipeR, SiteLagging, detail: true, shape: Cyl("+x"));
-            foreach (var x in new[] { 0.06, L - 0.14 })
+            foreach (var x in bands ? new[] { 0.06, L - 0.14 } : [])
                 p.FBox(x, y - PipeR - 0.025, z - PipeR - 0.025, x + 0.08, y + PipeR + 0.025, z + PipeR + 0.025, SiteBand, detail: true, shape: Cyl("+x"));
             p.Sock($"l{n}", [-H, y - H, z - H], "-x");
             p.Sock($"r{n}", [L - H, y - H, z - H], "+x");
@@ -69,6 +69,13 @@ public sealed partial class BuildingParts
     private static BPart HeatingMain(int n)
     {
         var L = n * C;
+        if (n < 8)
+        {
+            // A make-up length (1 m, 0.5 m): the pipes alone, on the end of a length that has a trestle.
+            var s = new BPart($"Heating Main {F(L)} m", SectionSite, "A short make-up length of lagged heating pipe.", role: "frame", tool: "welder", material: "steel", color: SiteBand);
+            Pipes(s, L, PipeY, bands: n >= 4);
+            return s.Stats(120 * L, 150, 15, 2.0);
+        }
         var p = new BPart($"Heating Main {F(L)} m", SectionSite, "Lagged heating pipes on a trestle, above the frozen ground.", role: "foundation", tool: "welder", material: "concrete", color: MinWeathered);
         var m = L / 2;
         p.FBox(m - 0.3, 0, 0, m + 0.3, 0.15, MainW); // the footing
@@ -218,6 +225,49 @@ public sealed partial class BuildingParts
         return p.Stats(6000, 4000, 30, 8.0);
     }
 
+    /// <summary>A length of the outer fence: a precast concrete panel 4 m long and 2.5 m tall between two posts, three raised
+    /// fields cast in its face each side, and over it two strands of wire on cranked arms. A footing: lengths go end to end.</summary>
+    private static BPart FencePanel()
+    {
+        const double L = 4.0, Hm = 2.5;
+        var p = new BPart("Concrete Fence Panel 4 m", SectionSite, "A precast panel of the outer fence, wire over it.", role: "foundation", tool: "welder", material: "concrete", color: MinConcrete);
+        p.CBox(0, 0, 0, 16, 10, 1);
+        foreach (var x in new[] { 0.0, L - 0.3 })
+            p.FBox(x, 0, -0.06, x + 0.3, Hm + 0.1, C + 0.06, MinWeathered); // the posts
+        for (var k = 0; k < 3; k++)
+        {
+            var x = 0.45 + k * 1.07;
+            p.FBox(x, 0.45, -0.03, x + 0.95, 2.1, 0, BrutDark, detail: true); // (the cast fields, outside and in)
+            p.FBox(x, 0.45, C, x + 0.95, 2.1, C + 0.03, BrutDark, detail: true);
+        }
+        foreach (var x in new[] { 0.11, L - 0.19 })
+            p.FBox(x, Hm + 0.1, -0.2, x + 0.08, Hm + 0.5, C + 0.2, SiteBand, detail: true); // the arms
+        foreach (var z in new[] { -0.19, C + 0.15 })
+            p.FBox(0.11, Hm + 0.44, z, L - 0.11, Hm + 0.48, z + 0.04, "#2e2b29", detail: true); // the wire
+        p.CSock("l", (0, 5, 0), "-x", must: true);
+        p.CSock("r", (15, 5, 0), "+x", must: true);
+        p.CSock("f", (8, 6, 0), "-z", must: true);
+        p.CSock("k", (8, 6, 0), "+z", must: true);
+        return p.Stats(1800 * L * Hm * 0.15, 3000, 30, 6.0);
+    }
+
+    /// <summary>A leaf of a sliding gate on its kerb: a steel frame of bars 4 m long and 2.4 m tall, in the Ministry's green.
+    /// Two end to end close an 8 m way; parked along the inside of the fence they leave it open.</summary>
+    private static BPart SlidingGate()
+    {
+        const double L = 4.0;
+        var p = new BPart("Sliding Gate Leaf 4 m", SectionSite, "A leaf of a sliding gate on its kerb.", role: "foundation", tool: "welder", material: "steel", color: MinGreen);
+        p.FBox(0, 0, 0, L, 0.12, C, MinWeathered); // the kerb and its rail
+        p.FBox(0, 0.12, 0.06, L, 2.4, 0.19, hidden: true);
+        foreach (var y in new[] { 0.2, 2.3 })
+            p.FBox(0, y, 0.06, L, y + 0.1, 0.19, MinGreen, detail: true);
+        for (var k = 0; k < 9; k++)
+            p.FBox(k * 0.4875, 0.3, 0.09, k * 0.4875 + 0.1, 2.3, 0.16, MinGreen, detail: true);
+        p.Sock("l", [-H, 0.06 - H, C / 2 - H], "-x");
+        p.Sock("r", [L - H, 0.06 - H, C / 2 - H], "+x");
+        return p.Stats(450, 1500, 25, 5.0);
+    }
+
     private static IEnumerable<(string, BPart)> SiteParts()
     {
         const string folder = "96-Site";
@@ -225,6 +275,10 @@ public sealed partial class BuildingParts
         yield return (folder, RoadSlab(8));
         yield return (folder, HeatingMain(16));
         yield return (folder, HeatingMain(8));
+        yield return (folder, HeatingMain(4));
+        yield return (folder, HeatingMain(2));
+        yield return (folder, FencePanel());
+        yield return (folder, SlidingGate());
         yield return (folder, HeatingSpan());
         yield return (folder, HeatingRiser());
         yield return (folder, ValveChamber());
@@ -296,6 +350,33 @@ public sealed partial class BuildingParts
                 last = bp.Hang(part, last, "ra", "la");
             o.Add(bp);
         }
+
+        // The branches: from the mains behind the street to each building's back wall, in the lengths the plan needs.
+        foreach (var (name, parts) in new (string, string[])[]
+        {
+            ("Heating Branch 2 m", ["Heating Main 2 m"]), ("Heating Branch 3 m", ["Heating Main 2 m", "Heating Main 1 m"]),
+            ("Heating Branch 6 m", [Main4, "Heating Main 2 m"]), ("Heating Branch 6.5 m", [Main4, "Heating Main 2 m", "Heating Main 0.5 m"]),
+        })
+        {
+            bp = new Blueprint(name, "A branch of the colony's heating mains to one building.", defs);
+            var last = bp.First(parts[0]);
+            foreach (var part in parts.Skip(1))
+                last = bp.Hang(part, last, "ra", "la");
+            o.Add(bp);
+        }
+
+        // The outer fence, in the runs the plan lays round the bench, and the sliding gate (two leaves on their kerbs).
+        foreach (var n in new[] { 4, 5, 6, 7 })
+        {
+            bp = new Blueprint($"Colony Fence {4 * n} m", "A run of the penal colony's outer fence.", defs);
+            var last = Look(bp, bp.First("Concrete Fence Panel 4 m"), MinConcrete, "concrete");
+            for (var i = 1; i < n; i++)
+                last = Look(bp, bp.Hang("Concrete Fence Panel 4 m", last, "r", "l"), MinConcrete, "concrete");
+            o.Add(bp);
+        }
+        bp = new Blueprint("Colony Sliding Gate", "The penal colony's sliding gate: two leaves, 8 m.", defs);
+        bp.Hang("Sliding Gate Leaf 4 m", bp.First("Sliding Gate Leaf 4 m"), "r", "l");
+        o.Add(bp);
 
         // The portal: the mains lifted over the road on two risers, 8 m apart and 3 m clear.
         bp = new Blueprint("Heating Main Portal", "The heating mains carried over a road on two risers.", defs);

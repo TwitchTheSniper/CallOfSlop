@@ -45,7 +45,7 @@ first site is the penal colony's (`Game/GameColonySite.cs` lays it, `Story/Openi
    its front: the public buildings (infirmary, records, canteen, stores) in one row facing the yard, the gatehouse at
    the gate. Staff live west of the yard (the barracks, its door to the muster square); work goes east (the Remote
    Works). Services stand at the downwind end by the road: the boiler house, behind a coal forecourt. The way in is one
-   road, from the east, between two piers.
+   road, from the east, between two piers (rule 8).
 3. **A drawn plan.** Rows marked `"site"` are laid at exactly their spot in the colony's plane, square with it, `"sink"`
    m into the bench (no search, no clearance check): the plan says where things are, so pieces meet edge to edge. Rows
    marked `"elsewhere"` fix the spot of a building another file builds (the barracks, the Remote Works).
@@ -63,9 +63,22 @@ first site is the penal colony's (`Game/GameColonySite.cs` lays it, `Story/Openi
 7. **A place run by notice.** `Colony Gate Pier` (lamp, name, warning), the flag on the muster square, `Concrete Notice
    Board 2 m` with two notices each. Signs follow the Ministry's voice.
 
-Not done on the site: no outer fence (a wall round the bench would need gates the staff's bots and the traffic can
-pass); the mains have no branch to each building; the street's slabs stop at x -16 and 32 (the ramps are bare ice); a
-world from before the site keeps its ground and gets none of it; the other factions' settlements have no site.
+8. **One fence, and a reason for each way through it.** `Colony Fence` runs (precast `Concrete Fence Panel 4 m`, wire
+   over it) stand 2 m inside the bench's edge, x -20 to 44 and z -36 to 20. Two ways through, both across the street's
+   ends: the main gate in the east side between the piers, its `Sliding Gate Leaf` pair slid open along the inside of
+   the fence (people, the staff's bots and the crew bus pass), and the service gate in the west side, shut, where the
+   mains' portal stands over the road. A long thin body has a big radius, and the old ring search for clear ground
+   (`SandboxKitPiece`) keeps that far from it: anything placed after a fence must be given its spot.
+9. **A yard for what the player is given.** A survival world's starter machines and rigs stand in the works yard, the
+   plan's `"kit"` rectangles inside the fence (`ColonySiteKit`: a 1.5 m grid, footprints clear of each other), not
+   wherever the ring search finds room.
+10. **Every building is on the heat.** A `Heating Branch` leaves the mains for each street building's back wall (2, 3,
+    6 and 6.5 m: lengths of 4, 2, 1 and 0.5 m end to end; a branch stands between the mains' trestles, which are at
+    every 4 m length's middle).
+
+Not done on the site: the yard, the gatehouse and the Remote Works have no branch of the mains; the gates are furniture
+(the main gate can't be shut, the service gate can't be opened); the street's slabs stop at x -16 and 32; a world from
+before the site keeps its ground and gets none of it; the other factions' settlements have no site.
 
 To see a site whole: `--window-shot OUT.png --survival --calm --map Glacier --do "key Jump; wait 40; from Flagpole Base
 14,32,48; wait 30"` (`--calm`: no storm; `from PART side,up,out` puts the eye after the opening has woken the player).

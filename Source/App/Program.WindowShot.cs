@@ -21,6 +21,9 @@ public static unsafe partial class Program
     private static string _wsOut = "", _wsMap = "Proving Ground", _wsBlueprint = "";
     private static Vector3? _wsAt, _wsLookAt, _wsSpawnAt;
     private static string _wsNet = "", _wsNotice = "";
+    private static int _wsDesignTries;
+    private static int _wsDragLeft, _wsDragAll, _wsDragKeys;
+    private static long _wsDragBytes, _wsDragAt;
     private static float? _wsYaw, _wsPitch;
     private static int _wsFrames = 45, _wsEvery, _wsStep, _wsWait, _wsShots, _wsCount;
     private static double _wsStart;
@@ -86,7 +89,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "saveworld" or "loadworld" || WsGhostKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "saveworld" or "loadworld" || WsGhostKnown(action);
 
     private static void WsSay(string s)
     {
@@ -408,7 +411,7 @@ public static unsafe partial class Program
                 }
                 var why = ConstructPress.Refusal(PressTable.Current, fc, fpart, fbay - 1, piece.ExKey); // (the store's byte keeps an earlier refusal a while)
                 var taken = ConstructPress.TakeFromConveyor(g.Constructs, World.Query, fc, fpart, fbay - 1, piece, 1, 0);
-                WsSay($"feed: {piece.Name} into bay {fbay}: {(taken ? "taken" : $"refused ({why})")}");
+                WsSay($"feed: {piece.Name} into bay {fbay}: {(taken ? "taken" : why != BayRefuse.None ? $"refused ({why})" : "not taken (no room out of its mouth, or the bay is full)")}");
                 _wsWait = 2;
                 return;
             }
@@ -605,6 +608,90 @@ public static unsafe partial class Program
                 }
                 return;
             }
+            case "design": // the Panel Designer's panel: "design" reports it; "design preset 2", "design length 600" set the sliders as a drag would (clamped the same)
+            {
+                if (arg is "await" or "held" || arg.StartsWith("bring ", StringComparison.Ordinal))
+                {
+                    // Two windows keep no common clock: wait for the other side instead of counting frames. "await": press use until the designer's
+                    // panel is open; "held": until a store holds a formed panel; "bring N": until N other players are here, then bring them to the desk.
+                    var others = g.Players.Count - 1;
+                    var held = false;
+                    foreach (var hs in g.Constructs.Stores)
+                        for (var k = 0; hs is { Live: true } && k < hs.KindN; k++)
+                            held |= ConstructParts.Get(hs.KindDef![k]) is { } hd && HullLoft.IsPanelName(hd.Name) && hs.KindCount![k] > 0;
+                    var ready = arg == "await" ? Ui.DesignerOpen : arg == "held" ? held : int.TryParse(arg[6..], out var need) && others >= need;
+                    if (!ready)
+                    {
+                        if (++_wsDesignTries > 400)
+                        {
+                            WsFail($"design {arg}: never happened");
+                            return;
+                        }
+                        _wsQueue.EnqueueFront("design " + arg);
+                        if (arg == "await")
+                        {
+                            _wsQueue.EnqueueFront("use");
+                            if (WsFind(g, "Panel Designer").Item1 != null)
+                                _wsQueue.EnqueueFront("aim Panel Designer"); // (a client is brought to the desk by the host: it looks at the screen itself)
+                        }
+                        _wsWait = 30;
+                        return;
+                    }
+                    WsSay($"design {arg}: after {_wsDesignTries} waits");
+                    _wsDesignTries = 0;
+                    if (arg.StartsWith("bring ", StringComparison.Ordinal))
+                        _wsQueue.EnqueueFront("bring Panel Designer");
+                    _wsWait = 20;
+                    return;
+                }
+                if (arg.StartsWith("drag ", StringComparison.Ordinal) && int.TryParse(arg[5..], out var dragFrames))
+                {
+                    // A slider dragged: a new length every frame for N frames (each a new key), then what it cost and what it left behind.
+                    if (_wsDragLeft == 0)
+                    {
+                        _wsDragLeft = _wsDragAll = Math.Max(1, dragFrames);
+                        _wsDragBytes = GC.GetTotalAllocatedBytes();
+                        _wsDragAt = System.Diagnostics.Stopwatch.GetTimestamp();
+                        (Ui.DesignerSpentMs, Ui.DesignerWorstMs) = (0, 0);
+                        _wsDragKeys = Ui.DesignerPreview.Made;
+                    }
+                    Ui.DesignerSet("length", 20 + (_wsDragAll - _wsDragLeft) * 5 % 230);
+                    if (--_wsDragLeft > 0)
+                    {
+                        _wsQueue.EnqueueFront(action);
+                        _wsWait = 1;
+                        return;
+                    }
+                    var secs = System.Diagnostics.Stopwatch.GetElapsedTime(_wsDragAt).TotalSeconds;
+                    WsSay($"design drag: {_wsDragAll} values in {secs:0.0} s ({secs * 1000 / _wsDragAll:0.0} ms a frame, all of the game); the preview's own work {Ui.DesignerSpentMs / _wsDragAll:0.000} ms a frame, worst {Ui.DesignerWorstMs:0.00} ms; {(GC.GetTotalAllocatedBytes() - _wsDragBytes) / _wsDragAll} bytes a frame (the whole process); {Ui.DesignerPreview.Made - _wsDragKeys} keys previewed; {RuntimeParts.Line()}");
+                    return;
+                }
+                var dw = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (dw.Length >= 2 && dw[0] == "name")
+                    Ui.DesignerName(arg[(arg.IndexOf(' ') + 1)..].Trim());
+                else
+                    if (dw.Length == 2 && int.TryParse(dw[1], out var dv))
+                {
+                    Ui.DesignerSet(dw[0], dv);
+                    _wsWait = 3;
+                }
+                var ds = Ui.DesignerShape;
+                WsSay($"design: {(Ui.DesignerOpen ? "open" : "closed")}; {(HullLoft.PanelRefusal(ds) ?? HullLoft.PanelKey(ds))}; preview {(Ui.DesignerPreview.Shown == null ? "none" : $"{HullLoft.PanelKey(Ui.DesignerPreview.ShownShape)} hash {HullLoft.PanelHash(Ui.DesignerPreview.Shown):x8}")}{(Ui.DesignerPreview.Building ? " (building)" : "")}, {Ui.DesignerPreview.Made} keys previewed; library {Ui.DesignerDesigns}; world designs [{string.Join("; ", g.Constructs.Designs.Select(x => $"{x.Name} = {x.Key}"))}]");
+                WsSay($"design: {RuntimeParts.Line()}");
+                foreach (var st in g.Constructs.Stores)
+                    for (var k = 0; st is { Live: true } && k < st.KindN; k++)
+                        if (ConstructParts.Get(st.KindDef![k]) is { } fd && HullLoft.IsPanelName(fd.Name))
+                            WsSay($"design:   held {st.KindCount![k]} x {fd.Name} hash {HullLoft.PanelHash(fd):x8}");
+                if (g.IsServer && g.Constructs.Designs.Count > 0)
+                {
+                    var sw = new SaveWriter();
+                    PanelDesigns.WriteSave(sw, g.Constructs.Designs);
+                    var w3 = new ConstructWorld();
+                    PanelDesigns.ReadSave(new SaveReader(sw.Span.ToArray()), w3);
+                    WsSay($"design: saved and loaded: {w3.Designs.Count} design(s)");
+                }
+                return;
+            }
             case "station": // a Building Station: "station" prints the first one's job; then "station pick NAME", start [N], cancel, release, stock (host: the parts it lacks into its hold), hold NAME (host: that part into this player's hands), save (host: its body saved and loaded)
             {
                 var words = arg.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
@@ -725,7 +812,7 @@ public static unsafe partial class Program
                 return;
             }
             case "ui": // what is open and who has the mouse
-                WsSay($"ui: menus {(MenusOpen ? "open" : "closed")}, crafting {(Ui.CraftingOpen ? "open" : "closed")} ({Ui.CraftingTiles} tiles), mouse {(_mouseCaptured ? "captured" : "free")}");
+                WsSay($"ui: menus {(MenusOpen ? "open" : "closed")}, crafting {(Ui.CraftingOpen ? "open" : "closed")} ({Ui.CraftingTiles} tiles), designer {(Ui.DesignerOpen ? "open" : "closed")}, mouse {(_mouseCaptured ? "captured" : "free")}");
                 return;
             case "shot":
                 WsShot(arg.Length > 0 ? arg : $"{_wsShots:000}");

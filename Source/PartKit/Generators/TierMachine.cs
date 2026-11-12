@@ -176,6 +176,8 @@ public static class TierMachine
         var host = s.Boxes.Where(b => !Py.Truthy(b.Get("detail")) && Math.Abs((sg > 0 ? C(b, "max", n) : C(b, "min", n)) - at[n]) < 0.035
             && C(b, "min", 1) <= at[1] + 0.01 && C(b, "max", 1) >= at[1] - 0.01 && C(b, "min", along) <= at[along] + 0.01 && C(b, "max", along) >= at[along] - 0.01)
             .OrderByDescending(b => (C(b, "max", 1) - C(b, "min", 1)) * (C(b, "max", along) - C(b, "min", along))).FirstOrDefault();
+        if (host is null || Py.Truthy(host.Get("hidden")))
+            Fitting(s, at, n, sg, along, input); // (nothing drawn at the port: a hidden wall under a tier 5's shapes counts as nothing)
         if (host is null)
             return;
         var wall = sg > 0 ? C(host, "max", n) : C(host, "min", n);
@@ -218,6 +220,46 @@ public static class TierMachine
         var (h0, h1) = above ? (at[1] - gap - high * 0.6, at[1] - gap) : (at[1] + gap, at[1] + gap + high * 0.6);
         if (h0 >= y0 + 0.005 && h1 <= y1 - 0.005 && h1 - h0 >= 0.03)
             Flat(mid - half, mid + half, h0, h1, Thin, MachineLook.Accent, "hazard paint");
+    }
+
+    /// <summary>
+    /// A port with no solid face behind it (an Assembler's Chute out beside its open trays, a tier 5 wall drawn by shapes) gets
+    /// the shared spout (<see cref="MachineLook.Mouth"/>): back to what is drawn behind it when that is near, else on a
+    /// stand from the floor. A port already on something drawn gets nothing.
+    /// </summary>
+    private static void Fitting(Site s, double[] at, int n, int sg, int along, bool input)
+    {
+        var back = double.PositiveInfinity;
+        foreach (var b in s.Boxes)
+        {
+            if (Py.Truthy(b.Get("hidden")) || C(b, "min", 1) > at[1] || C(b, "max", 1) < at[1] || C(b, "min", along) > at[along] || C(b, "max", along) < at[along])
+                continue;
+            var gap = (at[n] - (sg > 0 ? C(b, "max", n) : C(b, "min", n))) * sg;
+            if (gap > -0.001)
+                back = Math.Min(back, Math.Max(gap, 0));
+        }
+        if (back <= 0.03)
+            return;
+        var half = Math.Clamp(s.Size * 0.035, 0.07, 0.2);
+        var stood = back > 0.3;
+        var depth = stood ? Math.Clamp(s.Size * 0.035, 0.07, 0.2) : back + 0.004;
+        s.Boxes.AddRange(MachineLook.Mouth(at, n, sg, half, depth, input));
+        if (!stood)
+            return;
+        // The stand: from the floor under the spout up into it.
+        double[] mn = new double[3], mx = new double[3];
+        (mn[n], mx[n]) = sg > 0 ? (at[n] - depth + 0.004, at[n] - 0.03) : (at[n] + 0.03, at[n] + depth - 0.004);
+        (mn[along], mx[along]) = (at[along] - half * 0.5, at[along] + half * 0.5);
+        var under = at[1] - half;
+        var floor = double.NegativeInfinity;
+        foreach (var b in s.Boxes)
+            if (!Py.Truthy(b.Get("hidden")) && C(b, "max", 1) < under - 0.02 && C(b, "min", 0) <= mn[0] && C(b, "max", 0) >= mx[0] && C(b, "min", 2) <= mn[2] && C(b, "max", 2) >= mx[2])
+                floor = Math.Max(floor, C(b, "max", 1));
+        if (double.IsNegativeInfinity(floor))
+            return;
+        (mn[1], mx[1]) = (floor - 0.004, under + 0.003);
+        if (MachineLook.D(mn, mx, MachineLook.Base) is { } stand)
+            s.Boxes.Add(stand);
     }
 
     /// <summary>A dark kick band round a footprint, a little proud.</summary>

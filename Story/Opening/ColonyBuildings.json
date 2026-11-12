@@ -51,14 +51,41 @@
     { "blueprint": "Heating Main 12 m", "at": [-14.75, -1.65], "yaw": 90, "site": true },
     { "blueprint": "Heating Valve Chamber", "at": [-14.75, 5.1], "site": true },
     // The way in from the east: a pier each side of the road at the top of the ramp.
-    { "blueprint": "Colony Gate Pier", "at": [44, -9.9], "yaw": 270, "site": true },
-    { "blueprint": "Colony Gate Pier", "at": [44, -15.9], "yaw": 270, "site": true }
+    { "blueprint": "Colony Gate Pier", "at": [44, -8.5], "yaw": 270, "site": true },
+    { "blueprint": "Colony Gate Pier", "at": [44, -15.5], "yaw": 270, "site": true },
+    // The branches: from the mains behind the street (their pipes' near side at z -30.95) to each building's back wall.
+    { "blueprint": "Heating Branch 6.5 m", "at": [-10, -27.7], "yaw": 90, "site": true },
+    { "blueprint": "Heating Branch 3 m", "at": [2, -29.45], "yaw": 90, "site": true },
+    { "blueprint": "Heating Branch 2 m", "at": [14, -29.95], "yaw": 90, "site": true },
+    { "blueprint": "Heating Branch 6 m", "at": [26, -27.95], "yaw": 90, "site": true },
+    // The outer fence: precast panels round the bench, x -20 to 44 and z -36 to 20, 2 m inside its edge. Two ways through
+    // it, both across the street's ends (z -16 to -8): the main gate in the east side between the piers, its leaves slid
+    // open along the inside of the fence, and the service gate in the west side, shut.
+    { "blueprint": "Colony Fence 24 m", "at": [-8, 20], "site": true },
+    { "blueprint": "Colony Fence 24 m", "at": [16, 20], "site": true },
+    { "blueprint": "Colony Fence 16 m", "at": [36, 20], "site": true },
+    { "blueprint": "Colony Fence 24 m", "at": [-8, -36], "site": true },
+    { "blueprint": "Colony Fence 24 m", "at": [16, -36], "site": true },
+    { "blueprint": "Colony Fence 16 m", "at": [36, -36], "site": true },
+    { "blueprint": "Colony Fence 20 m", "at": [-20, -26], "yaw": 90, "site": true },
+    { "blueprint": "Colony Fence 28 m", "at": [-20, 6], "yaw": 90, "site": true },
+    { "blueprint": "Colony Fence 20 m", "at": [44, -26], "yaw": 90, "site": true },
+    { "blueprint": "Colony Fence 28 m", "at": [44, 6], "yaw": 90, "site": true },
+    { "blueprint": "Colony Sliding Gate", "at": [-20, -12], "yaw": 90, "site": true },
+    { "blueprint": "Colony Sliding Gate", "at": [43.5, -3.9], "yaw": 90, "site": true }
   ],
   // The bench: the ground under the whole site, graded level to the colony's own height on a fresh world ("most": not
   // when the land stands further than this over or under it), and the ramps from its edge down to the land (the street's
   // two ends).
   "bench": {
     "min": [-22, -38], "max": [46, 24], "most": 6,
+    // The works yard: where a survival world's starter machines and rigs stand, inside the fence (between the gatehouse and
+    // the Remote Works, then behind the yard between the watchtowers).
+    "kit": [
+      { "min": [18.5, -0.5], "max": [29.5, 19.5] },
+      { "min": [-1.5, 12.6], "max": [13.5, 19.5] },
+      { "min": [-19.5, 9.5], "max": [-7, 19.5] }
+    ],
     "ramps": [
       { "from": [-21, -12.9], "to": [-40, -12.9] },
       { "from": [45, -12.9], "to": [64, -12.9] }

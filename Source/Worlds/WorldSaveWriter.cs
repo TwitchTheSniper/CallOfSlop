@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// </summary>
 public static class WorldSaveWriter
 {
-    public const uint Names = 0x53454D41, Players = 0x53594C50, Stores = 0x53524F54, Bodies = 0x53594442, Links = 0x534B4E4C, Ground = 0x53444E47, Resources = 0x53435352, Space = 0x53435053, Misc = 0x4353494D, Riders = 0x53524452, Connectors = 0x534E4E43, NoCollide = 0x4C4F434E, Story = 0x59525453, SpaceAway = 0x59415753, SpaceSeats = 0x54455353, Origin = 0x4E494752, FactionsTag = 0x4E544346, FactionLooks = 0x32544346, Opening = 0x4E45504F, TutorialTag = 0x52545554, Fate = 0x45544146, DepotTag = 0x4F504544, ToolsTag = 0x4C4F4F54, QuarryTag = 0x52415551;
+    public const uint Names = 0x53454D41, Players = 0x53594C50, Stores = 0x53524F54, Bodies = 0x53594442, Links = 0x534B4E4C, Ground = 0x53444E47, Resources = 0x53435352, Space = 0x53435053, Misc = 0x4353494D, Riders = 0x53524452, Connectors = 0x534E4E43, NoCollide = 0x4C4F434E, Story = 0x59525453, SpaceAway = 0x59415753, SpaceSeats = 0x54455353, Origin = 0x4E494752, FactionsTag = 0x4E544346, FactionLooks = 0x32544346, Opening = 0x4E45504F, TutorialTag = 0x52545554, Fate = 0x45544146, DepotTag = 0x4F504544, ToolsTag = 0x4C4F4F54, QuarryTag = 0x52415551, DesignsTag = 0x4E475344;
 
     /// <summary>Makes and writes the file. Null when it's on disk, else why not.</summary>
     public static string? Run(string folder, WorldSnapshot s)
@@ -44,6 +44,8 @@ public static class WorldSaveWriter
         if (s.PlanetCentre is { } centre)
             w.Section(Origin, () => w.Vec(centre)); // (first: a reader shifts what follows by it, ReadOrigin)
         w.Section(Misc, () => w.U16(s.NextTag));
+        if (s.Designs.Length > 0)
+            w.Section(DesignsTag, () => PanelDesigns.WriteSave(w, s.Designs)); // (shared panel designs: a section of its own, so an older reader skips it)
         w.Section(Players, () =>
         {
             w.I32(s.Players.Length);

@@ -366,7 +366,12 @@ public static unsafe partial class Program
         else if (Pressed(GameAction.Interact) && !magFill && aimed && hit.RiderPlus1 > 0 && hit.RiderPlus1 <= hit.Body.ConveyedCount && hit.Distance <= ConstructBuild.UseReach && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
             g.SandboxSend(CActKind.Rider, body: hit.Body.Id, part: (ushort)(hit.RoutePlus1 - 1), socket: (ushort)Math.Clamp((int)MathF.Round(hit.Body.Conveyed[hit.RiderPlus1 - 1].At * 100), 0, ushort.MaxValue)); // (a piece off a conveyor, into the hands: ConstructEditsRack.cs)
         else if (Pressed(GameAction.Interact) && !magFill && storage != null && storeNear && hit.Body.DefOf(hit.Part).IsCraftTerminal && hit.RackPlus1 == 0 && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
-            OpenCraftingTerminal(hit.Body, hit.Part); // (a Crafting Terminal's desk: its panel; a stack in its tray is taken as from a rack, below)
+        {
+            if (hit.Body.DefOf(hit.Part).IsPanelDesigner)
+                OpenPanelDesigner(hit.Body, hit.Part); // (a Panel Designer: its own panel, Program.SandboxPanelDesigner.cs)
+            else
+                OpenCraftingTerminal(hit.Body, hit.Part); // (a Crafting Terminal's desk: its panel; a stack in its tray is taken as from a rack, below)
+        }
         else if (Pressed(GameAction.Interact) && !magFill && storage != null && storeNear && hit.Body.DefOf(hit.Part).IsPieceRack && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
             g.SandboxSend(ShiftHeld ? CActKind.RackDrop : CActKind.Bin, body: hit.Body.Id, part: (ushort)hit.Part); // (a Piece Rack: the piece looked at into the hands; Shift: that kind loose over the rack)
         else if (Pressed(GameAction.Interact) && !magFill && storage != null && storeNear && (hit.SlotPlus1 > 0 || hit.Body.DefOf(hit.Part).IsBin || hit.Body.DefOf(hit.Part).IsAssembler || hit.Body.DefOf(hit.Part).IsPress))

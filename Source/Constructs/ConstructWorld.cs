@@ -438,6 +438,8 @@ public sealed partial class ConstructWorld
 
     public void Clear()
     {
+        Designs.Clear(); // (a world's shared panel designs go with it: PanelDesigns.cs)
+        DesignStamp++;
         foreach (var c in Bodies)
             Removed.Add(c.Id);
         PatchBase.Clear();

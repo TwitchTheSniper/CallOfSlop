@@ -427,6 +427,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      outside their step's area (the panel says so; the marker already points back).
     // 259: pressed parts (the Press rework, phase 1; 258 is the tutorial's play areas, the Panel Designer takes 260): a run-time part named "Pressed Part (...)" travels as a
     //      formed panel does (HullLoft.WireKind and its name); a peer on an older protocol would refuse the name.
+    // 260: the Panel Designer (feat/panel-designer-1). CActKind gains CraftNamed (u16 body, u16 terminal, u16 count, text name: a formed panel's order at
+    //      a terminal) and PanelDesign (u8 op, text name, text key); CBodyKind.Designs (at the end): the world's shared panel designs, whole; an order
+    //      in CBodyKind.Craft may be named (shape 255: u8 material, u16 count, text name, then the id and state as before).
     // 261: a sized die (Bracket, Housing, Plate) presses a bay's whole piece into one part; BayRefuse.Bounds rides the press's Blocked byte;
     //      new die parts (Bracket and Plate in every class) move part ids.
     public const ushort ProtocolVersion = 261;

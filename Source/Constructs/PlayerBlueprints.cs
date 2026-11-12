@@ -42,12 +42,15 @@ public static class PlayerBlueprints
     public static bool Exists(string name) => File.Exists(PathOf(name));
 
     /// <summary>Writes one (call <see cref="NameRefusal"/> first). Null, or why not.</summary>
-    public static string? Write(string name, string text)
+    public static string? Write(string name, string text) => WriteFile(PathOf(name), text);
+
+    /// <summary>Writes a file of the library's folder as every save is (the panel designs' list: PanelDesigns.cs). Null, or why not.</summary>
+    public static string? WriteFile(string path, string text)
     {
         try
         {
             Directory.CreateDirectory(Folder);
-            return SavePaths.WriteAtomic(PathOf(name), text) ? null : "the file couldn't be written";
+            return SavePaths.WriteAtomic(path, text) ? null : "the file couldn't be written";
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

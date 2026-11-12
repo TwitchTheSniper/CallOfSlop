@@ -307,6 +307,8 @@ public static unsafe partial class Program
             return PartTools.Check(partFile); // for part makers: does this part (fragment, base, registry) file load, and where does it fit?
         if (args.Any(a => a.Equals("--look-report", StringComparison.OrdinalIgnoreCase)))
             return LookReport(args); // how finished blueprints look: paint, colours, finishes, lamps, likeness (Program.LookReport.cs, docs/sandbox/constructs/look.md)
+        if (args.Any(a => a.Equals("--check-ports", StringComparison.OrdinalIgnoreCase)))
+            return PortMounts.Cli(args); // does every link port sit on something drawn? (Source/Constructs/PortMounts.cs)
         if (args.Any(a => a.Equals("--check-construct-parts", StringComparison.OrdinalIgnoreCase)))
             return ConstructParts.CheckCli(); // Sandbox construct parts and blueprints: what loads, what's refused and why (Source/Constructs)
         if (args.Any(a => a.Equals("--check-mods", StringComparison.OrdinalIgnoreCase)))
@@ -981,6 +983,8 @@ public static unsafe partial class Program
                 Gfx.Rebind(); // (ImGui's renderer leaves its program unbound: ImGuiRenderer.cs)
                 if (Ui.Thumbs.Count > 0)
                     DrawGunThumbs(now); // gun pictures on the loadout cards, over the UI
+                if (Ui.DesignerOpen)
+                    DrawDesignerPreview(now); // the Panel Designer's turning panel, over the UI in its own viewport (Program.SandboxPanelDesigner.cs)
             }
             perf.Dispose();
             Perf.Gpu?.Mark(PerfGpuPass.Ui);
@@ -1155,7 +1159,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.LogbookOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.LogbookOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen || Ui.DesignerOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -1216,6 +1220,13 @@ public static unsafe partial class Program
         {
             Ui.CloseInventory(); // Esc closes the Zombies parts inventory (back to the fight), not the match (Program.Zombies.cs)
             SetMouseCaptured(true);
+            return;
+        }
+        if (key == GlfwKey.Escape && Ui.DesignerOpen)
+        {
+            Ui.CloseDesigner(); // Esc closes the Panel Designer's panel (back to the desk)
+            if (!MenusOpen)
+                SetMouseCaptured(true);
             return;
         }
         if (key == GlfwKey.Escape && Ui.CraftingOpen)
