@@ -83,7 +83,9 @@ public static unsafe partial class Program
                 _wsWait = 2;
                 return true;
             case "esc":
-                WsSay(BlueprintGhostEsc() ? "esc: the ghost went" : "esc: no ghost");
+                if (!BlueprintGhostEsc())
+                    return false; // (no ghost: the window's own Escape, Program.WindowShot.cs: a panel closes)
+                WsSay("esc: the ghost went");
                 _wsWait = 3;
                 return true;
             case "ghostinfo":
