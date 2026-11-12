@@ -1,7 +1,9 @@
 {
   // Talking to people (docs/story/STORY.md "Topics"): a topic is a Thing ("topic:ID"); a player holds Asked towards it,
-  // how many times they have asked it (of anyone). Saved with the story, like any relation.
+  // how many times they have asked it (of anyone). Saved with the story, like any relation. A lore item (docs/story/STORY.md
+  // "Lore") is a Thing too ("lore:ID"); a player holds Inspected towards it, how many times they have looked at it closely.
   "relations": [
-    { "name": "Asked", "about": "a player and a talk topic: how many times they asked it" }
+    { "name": "Asked", "about": "a player and a talk topic: how many times they asked it" },
+    { "name": "Inspected", "about": "a player and a lore item: how many times they looked at it closely" }
   ]
 }

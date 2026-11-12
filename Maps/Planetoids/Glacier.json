@@ -23,6 +23,7 @@
     },
     "ambient": 1.25
   },
+  "storm": true,
   "planetoid": {
     "radius": 8000,
     "cell": 2,

@@ -1,6 +1,6 @@
 # The warden's induction (the first tutorial)
 
-After the story opening (crash, "there's one over here!", waking in the penal colony), the Ministry of Slop's warden walks a new
+After the story opening (a placeholder card for the crash, then waking in the penal colony), the Ministry of Slop's warden walks a new
 convict through the important keys and first survival steps, one step at a time, with a dry aside per step. Code:
 `Source/Game/Tutorial.cs` (the data), `Source/Game/GameTutorial.cs` (server state, cues, network, save),
 `Source/UI/UiTutorial.cs` (the HUD panel and the Esc menu's buttons). Sandbox only.

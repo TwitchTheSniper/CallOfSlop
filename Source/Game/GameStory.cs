@@ -123,6 +123,7 @@ public sealed partial class Game
         StoryTalkJoinTick(); // (a joined talk that ended: GameStoryTalkJoin.cs)
         StoryPathsTick(s, now); // (each player's paths and standings for their Logbook: GameStoryPaths.cs)
         FragmentsTick(s, now); // (the data centres' terminals and what each player holds: GameStoryFragments.cs)
+        LoreTick(s, now); // (the colony's things to look at, stood where they belong: GameStoryLore.cs)
         if (StoryPlaying is { } run)
         {
             run.Live(s);

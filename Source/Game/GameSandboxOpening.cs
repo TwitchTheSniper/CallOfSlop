@@ -9,19 +9,19 @@ namespace CallOfSlop;
 public enum OpeningStage : byte
 {
     None, // not in it (done, skipped, or no opening in this world)
-    Crash, // coming down: shaking, a flash, black
-    Out, // out cold
-    ComeTo, // eyes open for a moment, lying at the crash site, the recovery team over them
-    Under, // out again, carried off
+    Crash, // (unused since the placeholder, 2026-11-12: the crash scene; the byte stays for the wire)
+    Out, // the placeholder: black, a caption saying what happened, already in the cell block
+    ComeTo, // (unused since the placeholder)
+    Under, // (unused since the placeholder)
     Wake, // waking in the colony's cell block
 }
 
 /// <summary>
-/// The survival opening (docs/story/OPENING.md): a new survival world's players crash-land, pass out, come to for a
-/// moment with the Ministry of Slop's recovery team over them ("There's one over here!"), black out again and wake in
-/// the Ministry's penal colony, where the warden's induction (the keybind tutorial, GameTutorial.cs) takes over.
+/// The survival opening (docs/story/OPENING.md): a new survival world's players see a placeholder card for the crash
+/// landing (Karl, 2026-11-12: the falling-down scene is to be redone) and wake in the Ministry of Slop's penal colony,
+/// where the warden's induction (the keybind tutorial, GameTutorial.cs) takes over.
 /// The server runs it per player: it places the colony (a blueprint, anchored, with the start kit round it), the
-/// wreck at the crash site and the colony's staff (a story cast with bodies), and walks each player through the beats.
+/// wreck out past it and the colony's staff (a story cast with bodies), and walks each player through the beats.
 /// Every friend gets it on first arriving in the world, late joiners too, and the jump key skips it. Clients only
 /// draw it: the beat comes in <see cref="Msg.Opening"/>, the input is filtered on both sides, the lines are chat lines.
 /// </summary>
@@ -39,13 +39,11 @@ public sealed partial class Game
         public double From; // game time the beat began
         public float Time; // how long it lasts
         public int Line; // the next line of the beat to say
-        public byte R0, R1, R2; // the recovery team's bodies (player ids; 0: none; shared by a group)
         public int Group; // who crashed together (co-op): the same number goes through the beats on one clock
         public Vector3 Focus; // where the camera looks (sent with the beat)
     }
 
     private readonly OpeningRun[] _op = new OpeningRun[256];
-    private readonly bool[] _opRescuer = new bool[256]; // this bot is a recovery team member (GameSandboxSpawns.cs asks)
     private readonly bool[] _opDone = new bool[256]; // no saved world: this player id has been through it this match
     private bool _opOn; // this world has the opening: a colony and a crash site
     private ushort _opColony; // the colony construct (0: none, then everyone wakes at the start)
@@ -98,7 +96,6 @@ public sealed partial class Game
     internal void OpeningReset()
     {
         Array.Clear(_op);
-        Array.Clear(_opRescuer);
         Array.Clear(_opDone);
         _opOn = false;
         _opColony = 0;
@@ -107,6 +104,7 @@ public sealed partial class Game
         DepotReset(); // (and the Remote Works and the Orbital Depot: GameDepot.cs)
         QuarryReset(); // (and the Ministry Quarry: GameQuarry.cs)
         FragmentsReset(); // (and the data centres: GameStoryFragments.cs)
+        LoreReset(); // (and the things to look at: GameStoryLore.cs)
         OpeningLocal = OpeningStage.None;
         OpeningCaption = OpeningSubtitle = "";
         _storyMiddleOf = null; // (the people's middle is the colony's when there is one)
@@ -230,60 +228,32 @@ public sealed partial class Game
     private void OpeningStart(Player p, double now)
     {
         TutorialDefer(p.Id);
-        // Co-op: friends arriving while a group is still coming down or out cold crashed with it, on its clock, lying
-        // beside the first of them; anyone later has a crash of their own (found on their own, then woken in the colony).
+        // Straight into the cell block, under the placeholder card. Co-op: friends arriving while a group is still on
+        // the card join it, on its clock, so they wake together; anyone later has a card of their own.
+        OpeningToColony(p);
         for (var id = 0; id < MaxPlayers; id++)
         {
             ref var g = ref _op[id];
-            if (id == p.Id || g.Stage is not (OpeningStage.Crash or OpeningStage.Out) || !Players.TryGetValue((byte)id, out var lead))
+            if (id == p.Id || g.Stage != OpeningStage.Out || !Players.TryGetValue((byte)id, out var lead))
                 continue;
-            var n = OpeningGroupSize(g.Group);
-            var a = lead.Yaw + MathF.PI * 0.5f * (n % 2 == 0 ? 1 : -1);
-            var beside = SbScatter(lead.Position + new Vector3(MathF.Sin(a), 0, -MathF.Cos(a)) * (1.6f + (n - 1) / 2 * 1.4f) + new Vector3(0, 0.5f, 0), 0.4f);
-            p.Teleport(beside);
-            var dc = _opCrash - beside;
-            p.Yaw = MathF.Atan2(dc.X, -dc.Z);
             ref var run = ref _op[p.Id];
-            run = g; // (the same beat, begun at the same time, with the same team once it comes)
-            Log($"[opening] {p.Name}: crash-landed with {lead.Name}'s group ({n + 1} now)");
+            run = g; // (the same beat, begun at the same time)
+            Log($"[opening] {p.Name}: with {lead.Name}'s group ({OpeningGroupSize(g.Group)} now)");
             OpeningSend(p, run.Stage, (float)(now - run.From), run.Time, run.Focus, OpeningScript.Current.Beat(run.Stage).Caption, "");
             return;
         }
-        // At the crash site, lying near the wreck, facing it.
-        var off = new Vector3(MathF.Sin(p.Id * 2.39996f), 0, MathF.Cos(p.Id * 2.39996f));
-        var feet = SbScatter(_opCrash + off * 6f + new Vector3(0, 0.5f, 0), 2.5f);
-        p.Teleport(feet);
-        var d = _opCrash - feet;
-        p.Yaw = MathF.Atan2(d.X, -d.Z);
-        Log($"[opening] {p.Name}: crash-landed at {feet.X:0},{feet.Z:0}");
+        Log($"[opening] {p.Name}: the placeholder crash, then the cell block");
         _op[p.Id].Group = ++_opNextGroup;
-        OpeningBeat(p, OpeningStage.Crash, now);
+        OpeningBeat(p, OpeningStage.Out, now);
     }
 
-    /// <summary>Server: the next beat (moving them to the colony while they are under).</summary>
+    /// <summary>Server: the next beat (the placeholder card, then waking).</summary>
     private void OpeningNext(Player p, ref OpeningRun run, double now)
     {
-        switch (run.Stage)
-        {
-            case OpeningStage.Crash:
-                OpeningBeat(p, OpeningStage.Out, now);
-                break;
-            case OpeningStage.Out:
-                OpeningRescue(p, ref run);
-                OpeningBeat(p, OpeningStage.ComeTo, now);
-                break;
-            case OpeningStage.ComeTo:
-                OpeningBeat(p, OpeningStage.Under, now);
-                break;
-            case OpeningStage.Under:
-                OpeningRescueGone(p.Id);
-                OpeningToColony(p);
-                OpeningBeat(p, OpeningStage.Wake, now);
-                break;
-            default:
-                OpeningEnd(p, skipped: false);
-                break;
-        }
+        if (run.Stage == OpeningStage.Out)
+            OpeningBeat(p, OpeningStage.Wake, now);
+        else
+            OpeningEnd(p, skipped: false);
     }
 
     private void OpeningBeat(Player p, OpeningStage stage, double now)
@@ -294,12 +264,7 @@ public sealed partial class Game
         run.From = now;
         run.Time = beat.Time;
         run.Line = 0;
-        run.Focus = stage switch
-        {
-            OpeningStage.ComeTo when Players.TryGetValue(run.R0, out var r) && run.R0 != 0 => r.Position + GravityFrames.UpAt(r.Position) * 1.35f,
-            OpeningStage.Wake => p.Position + new Vector3(MathF.Sin(_opWakeYaw), 0, -MathF.Cos(_opWakeYaw)) * 3f + GravityFrames.UpAt(p.Position) * 1.4f, // (towards the cell block's door)
-            _ => _opCrash,
-        };
+        run.Focus = p.Position + new Vector3(MathF.Sin(_opWakeYaw), 0, -MathF.Cos(_opWakeYaw)) * 3f + GravityFrames.UpAt(p.Position) * 1.4f; // (towards the cell block's door)
         OpeningSend(p, stage, 0, beat.Time, run.Focus, beat.Caption, "");
     }
 
@@ -312,14 +277,8 @@ public sealed partial class Game
             var line = beat.Lines[run.Line++];
             if (line.Group && OpeningGroupSize(run.Group) < 2)
                 continue; // (a line for friends found together)
-            var speaker = line.By switch
-            {
-                OpeningScript.ByWarden => OpeningWarden(),
-                0 => run.R0 != 0 && Players.TryGetValue(run.R0, out var a) ? a : null,
-                1 => run.R1 != 0 && Players.TryGetValue(run.R1, out var b) ? b : null,
-                _ => run.R2 != 0 && Players.TryGetValue(run.R2, out var c) ? c : null,
-            };
-            var name = speaker?.Name ?? (line.By == OpeningScript.ByWarden ? OpeningScript.Current.Warden : "");
+            var speaker = OpeningWarden(); // (every line is the warden's since the placeholder)
+            var name = speaker?.Name ?? OpeningScript.Current.Warden;
             OpeningSay(p, speaker, name, line.Text, now);
             OpeningSend(p, run.Stage, (float)(now - run.From), run.Time, run.Focus, OpeningScript.Current.Beat(run.Stage).Caption, name.Length > 0 ? $"{name}: {line.Text}" : line.Text);
         }
@@ -345,108 +304,6 @@ public sealed partial class Game
         Net.SendTo(guid, _w.Span, PacketReliability.ReliableOrdered);
     }
 
-    /// <summary>Server: the recovery team round a player lying at the crash site, facing them.</summary>
-    private void OpeningRescue(Player p, ref OpeningRun run)
-    {
-        for (var id = 0; id < MaxPlayers; id++)
-            if (id != p.Id && _op[id].Stage != OpeningStage.None && _op[id].Group == run.Group && _op[id].R0 != 0)
-            {
-                (run.R0, run.R1, run.R2) = (_op[id].R0, _op[id].R1, _op[id].R2); // (co-op: one team stands over the group)
-                return;
-            }
-        var names = OpeningScript.Current.Rescuers;
-        run.R0 = OpeningRescuer(p, names.Length > 0 ? names[0] : "Recovery Officer", 0f);
-        run.R1 = OpeningRescuer(p, names.Length > 1 ? names[1] : "Recovery Officer", -0.75f);
-        run.R2 = OpeningRescuer(p, names.Length > 2 ? names[2] : "Recovery Officer", 0.75f);
-        BroadcastRoster();
-    }
-
-    private byte OpeningRescuer(Player p, string name, float turn)
-    {
-        var id = FreeNpcId();
-        if (id == 0)
-            return 0;
-        var a = p.Yaw + turn;
-        var at = p.Position + new Vector3(MathF.Sin(a), 0, -MathF.Cos(a)) * 1.5f;
-        var feet = SandboxSpawnSpot(at + new Vector3(0, 1f, 0), out var f) == null ? f : at;
-        var bot = new Player
-        {
-            Id = id,
-            Name = name,
-            Bot = new BotBrain(BotDifficulty.Easy, BotPersonality.Anchor, _rng.Next()),
-            Team = SbPeopleTeam, // (the people's side: nobody's enemy, no spawner's)
-            SbSpawned = true, // (never respawns)
-        };
-        Players[id] = bot;
-        Spawn(bot, ServerTick, Brutal.GlfwApi.Glfw.Time);
-        bot.Teleport(feet);
-        bot.SbHome = feet;
-        var d = p.Position - feet;
-        bot.Yaw = bot.RenderYaw = MathF.Atan2(d.X, -d.Z);
-        for (var i = 0; i < Player.HistorySize; i++)
-            bot.History[i] = new HistoryEntry { Position = feet, Yaw = bot.Yaw };
-        _opRescuer[id] = true;
-        _storyWho[id] = -1; // (nobody in the story: a kill of one is a kill of a stranger)
-        return id;
-    }
-
-    /// <summary>Server, before the bot tick (GameSandboxSpawns.cs): a recovery team member stands over the one they found.</summary>
-    internal bool OpeningRescuerBot(Player p, BotBrain b, double now)
-    {
-        if (!_opRescuer[p.Id])
-            return false;
-        b.HeardTime = b.LastSeenTime = -100;
-        b.Target = byte.MaxValue;
-        b.ForcedGoal = p.Position;
-        b.HoldUntil = now + 1;
-        b.HoldAnchor = p.SbHome;
-        for (var id = 0; id < MaxPlayers; id++)
-        {
-            ref var run = ref _op[id];
-            if (run.Stage != OpeningStage.None && (run.R0 == p.Id || run.R1 == p.Id || run.R2 == p.Id) && Players.TryGetValue((byte)id, out var them))
-            {
-                var d = them.Position - p.Position;
-                b.GlanceYaw = GravityFrames.Curved ? GravityFrames.YawOf(p.Position, d) : MathF.Atan2(d.X, -d.Z);
-                b.GlanceUntil = now + 0.3;
-                b.NextGlance = now + 0.3;
-                break;
-            }
-        }
-        return true;
-    }
-
-    /// <summary>Is this player id a recovery team member (the people's bodies leave them be)?</summary>
-    private bool OpeningRescuerId(byte id) => _opRescuer[id];
-
-    /// <summary>Server: this player's recovery team is done with them; the bodies go once nobody else in the group still has them.</summary>
-    private void OpeningRescueGone(byte self)
-    {
-        ref var run = ref _op[self];
-        var any = false;
-        foreach (var id in (ReadOnlySpan<byte>)[run.R0, run.R1, run.R2])
-            if (id != 0 && _opRescuer[id] && !OpeningRescuerShared(self, id))
-            {
-                _opRescuer[id] = false;
-                if (Players.TryGetValue(id, out var bot) && bot.Bot != null)
-                {
-                    Players.Remove(id);
-                    OnModePlayerLeave(bot);
-                    any = true;
-                }
-            }
-        run.R0 = run.R1 = run.R2 = 0;
-        if (any)
-            BroadcastRoster();
-    }
-
-    private bool OpeningRescuerShared(byte self, byte bot)
-    {
-        for (var id = 0; id < MaxPlayers; id++)
-            if (id != self && _op[id].Stage != OpeningStage.None && (_op[id].R0 == bot || _op[id].R1 == bot || _op[id].R2 == bot))
-                return true;
-        return false;
-    }
-
     /// <summary>Server: into the cell block, lying down (each a little to their own side, so friends don't stack).</summary>
     private void OpeningToColony(Player p)
     {
@@ -462,7 +319,6 @@ public sealed partial class Game
         ref var run = ref _op[p.Id];
         if (run.Stage == OpeningStage.None)
             return;
-        OpeningRescueGone(p.Id);
         if (skipped && p.Alive && run.Stage != OpeningStage.Wake)
             OpeningToColony(p);
         run.Stage = OpeningStage.None;
@@ -479,13 +335,12 @@ public sealed partial class Game
         return null;
     }
 
-    /// <summary>Server: a player leaves mid-opening: the team goes, and they are kept as if they had woken (their record's place).</summary>
+    /// <summary>Server: a player leaves mid-opening: they are kept as if they had woken (their record's place).</summary>
     internal void OpeningLeave(Player p)
     {
         ref var run = ref _op[p.Id];
         if (run.Stage == OpeningStage.None)
             return;
-        OpeningRescueGone(p.Id);
         if (p.Alive && run.Stage != OpeningStage.Wake)
             OpeningToColony(p);
         run.Stage = OpeningStage.None;
@@ -554,7 +409,7 @@ public sealed partial class Game
             OpeningSubtitle = subtitle;
             OpeningSubtitleAt = now;
         }
-        else if (stage == OpeningStage.None || stage == OpeningStage.Crash)
+        else if (stage is OpeningStage.None or OpeningStage.Out)
             OpeningSubtitle = "";
     }
 
@@ -629,7 +484,6 @@ public sealed class OpeningScript
 
     public string Colony = "Penal Colony", Cast = "Penal Colony", Warden = "", Wreck = "Crashed Plane", Skip = "skip the opening";
     public float CrashFrom = 70, CrashTo = 140;
-    public string[] Rescuers = [];
     public readonly BeatDef[] Beats = new BeatDef[(int)OpeningStage.Wake + 1];
     public string Problem = "";
 
@@ -660,14 +514,12 @@ public sealed class OpeningScript
                 t.CrashFrom = Math.Clamp(cf.GetSingle(), 10, 500);
             if (root.TryGetProperty("crashTo", out var ct))
                 t.CrashTo = Math.Clamp(ct.GetSingle(), t.CrashFrom + 5, 600);
-            if (root.TryGetProperty("rescuers", out var rs))
-                t.Rescuers = [.. rs.EnumerateArray().Take(3).Select(e => Ascii(e.GetString() ?? "", "rescuers"))];
             if (ConstructBuild.FindBlueprint(t.Colony) == null)
                 throw new FormatException($"no blueprint named \"{t.Colony}\" (the colony)");
             if (ConstructBuild.FindBlueprint(t.Wreck) == null && ConstructParts.Find(t.Wreck) == null)
                 throw new FormatException($"no blueprint or part named \"{t.Wreck}\" (the wreck)");
             var beats = root.GetProperty("beats");
-            foreach (var (key, stage) in new[] { ("crash", OpeningStage.Crash), ("out", OpeningStage.Out), ("cometo", OpeningStage.ComeTo), ("under", OpeningStage.Under), ("wake", OpeningStage.Wake) })
+            foreach (var (key, stage) in new[] { ("placeholder", OpeningStage.Out), ("wake", OpeningStage.Wake) })
             {
                 if (!beats.TryGetProperty(key, out var b))
                     throw new FormatException($"beats: no \"{key}\"");
@@ -677,7 +529,7 @@ public sealed class OpeningScript
                 if (b.TryGetProperty("lines", out var ls))
                     def.Lines = [.. ls.EnumerateArray().Select(l => new Line(
                         Math.Clamp(l.GetProperty("at").GetSingle(), 0, def.Time),
-                        l.GetProperty("by").ValueKind == JsonValueKind.String ? l.GetProperty("by").GetString() == "warden" ? ByWarden : throw new FormatException($"beats.{key}: \"by\" is a rescuer's number or \"warden\"") : Math.Clamp(l.GetProperty("by").GetInt32(), 0, 2),
+                        l.TryGetProperty("by", out var by) && by.GetString() != "warden" ? throw new FormatException($"beats.{key}: \"by\" is \"warden\"") : ByWarden,
                         Ascii(l.GetProperty("text").GetString() ?? "", $"beats.{key}"),
                         l.TryGetProperty("group", out var gl) && gl.GetBoolean())).OrderBy(l => l.At)];
             }

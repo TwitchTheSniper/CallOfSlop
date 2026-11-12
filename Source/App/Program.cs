@@ -850,6 +850,7 @@ public static unsafe partial class Program
             perf.Dispose();
 
             CrashLog.Phase = "ui";
+            StormIdle(now); // (no world drawn lately: the storm's wind stops; Program.Storm.cs)
             perf = Perf.Measure(PerfArea.Ui);
             using (Perf.Measure(PerfArea.UiNewFrame)) // (the UI's sub-areas: which part of a slow UI frame was slow)
                 Ui.BeginFrame();
@@ -866,6 +867,8 @@ public static unsafe partial class Program
                 var benchCovers = Ui.WorkbenchOpen;
                 uiPart.Dispose();
                 uiPart = Perf.Measure(PerfArea.UiHud);
+                if (!benchCovers)
+                    DrawStormFrost(); // frost at the edges while you are out in a cold storm (Program.Storm.cs)
                 if (!benchCovers && g.OpeningActive)
                     DrawOpeningUi(g, now); // the survival opening has the screen: no HUD (Program.Opening.cs)
                 else if (!benchCovers)
@@ -1088,7 +1091,7 @@ public static unsafe partial class Program
             SpaceSky.UpdateAway(map, away.awaySpace, away.awaySys, away.awayPose, away.awayGalaxy, away.awayBody, spaceT, Gfx.CameraPosition);
         else
             SpaceSky.Update(map, _session?.Space, spaceT, Gfx.CameraPosition); // a map in a star system: the real sun and moon (Source/Render/Sky/SpaceSky.cs)
-        SkyRenderer.Use(map); // this map's sun, ambient and sky-coloured fog in every scene shader (no-op if unchanged)
+        Lighting.Use(StormLight(map)); // this map's sun, ambient and sky-coloured fog in every scene shader, under its storm if it has one (no-op if unchanged; Program.Storm.cs)
         (LightGrid.Enabled, LightGrid.DynamicEnabled) = (_settings.Lighting != LightingQuality.Off, _settings.Lighting == LightingQuality.Full);
         LightGrid.BeginWorld(map, Glfw.Time); // a lit map's baked light grid for this frame's world (Source/Render/LightGrid.cs; unlit maps: off)
         // Buildings (walls, floors, roofs, doors, glass) and the map's own boxes, instanced and culled by cell (BuildingRenderer.cs).
@@ -1139,6 +1142,7 @@ public static unsafe partial class Program
             WeatherFrame(Glfw.Time, Gfx.CameraPosition); // maps with weather: its time, and the sky's clouds from it (Program.Weather.cs)
         using (Perf.Pass(PerfArea.Sky, PerfGpuPass.Sky))
             SkyRenderer.Draw(Gfx, map, _settings.SkyQuality, Glfw.Time); // last opaque pass: only where nothing was drawn (Source/Render/Sky)
+        SnowRenderer.DrawVeil(Gfx); // a cold storm's whiteout over the sky (nothing without one; Source/Render/SnowRenderer.cs)
         BenchPass(7);
     }
 
@@ -1306,6 +1310,8 @@ public static unsafe partial class Program
             return; // (Esc leaves a sign or a keypad's typing box: Program.SandboxControls.cs)
         if (_session != null && key == GlfwKey.Escape && TalkEsc())
             return; // (Esc closes the talk panel: Program.StoryTalk.cs)
+        if (_session != null && key == GlfwKey.Escape && LoreEsc())
+            return; // (Esc puts a lore item down: Program.StoryLore.cs)
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && SandboxLinkEsc())
             return; // (Esc cancels the link being routed, not the match: Program.SandboxLinks.cs)
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && (RemoverEsc() || SelectEsc() || BlueprintGhostEsc()))
@@ -1994,6 +2000,7 @@ public static unsafe partial class Program
         var view = Gfx.View; // (the world's view, for everything that isn't the box renderer)
         _worldEye = eye; // the first-person gun samples the baked light here (LightGrid.BeginViewModel)
         Gfx.SetFog(World.Map.Sky, World.Map.FogStart, World.Map.FogEnd);
+        StormFrame(now, eye); // a cold storm: its whiteout fog, wind and frost (nothing without one; Program.Storm.cs)
         UpdateNameTags(now, eye, fwd, view, proj); // HUD world labels and name tags (Program.NameTags.cs)
         DevToolsFrame(eye, fwd, view * proj); // the look-at inspector's ray, while it's open (Program.DevTools.cs)
 

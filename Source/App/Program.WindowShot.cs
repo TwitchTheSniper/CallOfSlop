@@ -74,7 +74,7 @@ public static unsafe partial class Program
         if (args.SkipWhile(a => !a.Equals("--size", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault()?.Split('x') is [var w, var h] && int.TryParse(w, out var wi) && int.TryParse(h, out var hi))
             (_settings.Width, _settings.Height) = (Math.Clamp(wi, 320, 3840), Math.Clamp(hi, 240, 2160));
         _settings.Mode = GameMode.Sandbox;
-        _settings.SandboxSurvival = false; // (--creative: the default; survival isn't offered)
+        _settings.SandboxSurvival = args.Any(a => a.Equals("--survival", StringComparison.OrdinalIgnoreCase)); // (creative by default; --survival: a survival world, with the story's colony on its home map)
         _settings.MapRandom = false;
         _settings.Bots = 0;
         _settings.ShowFps = false;
