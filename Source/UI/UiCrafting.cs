@@ -154,7 +154,7 @@ public sealed partial class Ui
         }
     }
 
-    private static readonly float4 CrTabOn = new(0.18f, 0.32f, 0.5f, 1f), CrGood = new(0.45f, 0.86f, 0.55f, 1f), CrWarn = new(1f, 0.72f, 0.3f, 1f);
+    private static readonly float4 CrTabOn = new(0.26f, 0.55f, 0.9f, 1f), CrGood = new(0.45f, 0.86f, 0.55f, 1f), CrWarn = new(1f, 0.72f, 0.3f, 1f);
 
     /// <summary>The panel (between NewFrame and Render). True while it stays open. An order or a cancel goes to the server after the drawing.</summary>
     public bool DrawCrafting(Game game, Construct c, int part, double now)
@@ -332,7 +332,7 @@ public sealed partial class Ui
                     pick = i;
                 if (hot && t.Tip.Length > 0)
                     ImGuiSafe.WrappedTooltip(t.Tip, 420 * _scale);
-                RecipeTile(dl, t, at, tw, th, icon, i == _crSel, hot);
+                RecipeTile(dl, t, at, tw, th, icon, i == _crSel, hot, setMark: false);
                 tiles++;
             }
             ImGui.SetCursorScreenPos(rowAt);

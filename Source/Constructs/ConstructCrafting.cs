@@ -520,20 +520,20 @@ public static class ConstructCrafting
         var q = c.Parts[part].Craft;
         card.State = q is { Count: > 0 } ? PanelState.Working : PanelState.Ok;
         card.Add(0, "CRAFTING");
-        card.Add(1, net.MachineN).Add(1, net.MachineN == 1 ? " machine, " : " machines, ").Add(1, net.StoreN).Add(1, net.StoreN == 1 ? " store" : " stores");
-        card.Add(2, "Tray: ").Add(2, st.ItemCount).Add(2, st.ItemCount == 1 ? " part" : " parts");
+        card.Add(1, net.MachineN).Add(1, net.MachineN == 1 ? " machine" : " machines");
+        card.Add(2, net.StoreN).Add(2, net.StoreN == 1 ? " store" : " stores");
+        card.Add(3, "Tray: ").Add(3, st.ItemCount).Add(3, st.ItemCount == 1 ? " part" : " parts");
         if (q is not { Count: > 0 })
         {
-            card.Add(4, "Use the screen:");
-            card.Add(5, "order a part");
+            card.Add(5, "Use the screen:");
+            card.Add(6, "order a part");
             return;
         }
-        card.Add(3, q.Count).Add(3, q.Count == 1 ? " order" : " orders");
+        // (short lines: the screen is 19 characters wide at its size)
         for (var k = 0; k < q.Count && k < 4; k++)
         {
             ref readonly var o = ref q.Items[k];
-            card.Add(4 + k, o.Got).Add(4 + k, '/').Add(4 + k, o.What.Count).Add(4 + k, ' ');
-            card.Add(4 + k, o.What.IsPiece ? "Piece" : ConstructParts.Get(o.What.Part)?.Name ?? "part").Add(4 + k, ": ").Add(4 + k, StateWords[(int)o.State]);
+            card.Add(4 + k, o.Got).Add(4 + k, '/').Add(4 + k, o.What.Count).Add(4 + k, ' ').Add(4 + k, StateWords[(int)o.State]);
         }
     }
 
