@@ -29,7 +29,7 @@ public static unsafe partial class Program
     private static ushort _wsBody; // the spawned blueprint
     private static TextWriter? _wsStdout;
 
-    private const string WsActions = "aim PART[#n], near PART[#n] [m], use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME], deposit [TIER], fill PART[#n] N MATERIAL, link FROM[#n] > TO[#m]";
+    private const string WsActions = "aim PART[#n], near PART[#n] [m], from PART[#n] SIDE,UP,OUT, use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME], deposit [TIER], fill PART[#n] N MATERIAL, link FROM[#n] > TO[#m]";
 
     /// <summary>Reads the flags (before the window): the size and a throwaway save folder are set here.</summary>
     private static bool WindowShotArgs(string[] args)
@@ -83,7 +83,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "aim" or "near" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link";
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link";
 
     private static void WsSay(string s)
     {
@@ -387,6 +387,25 @@ public static unsafe partial class Program
             case "touch":
                 WsTouch(g, me, arg);
                 return;
+            case "from": // "from PART[#n] SIDE,UP,OUT": the eye that far beside, above and in front of the part's screen (OUT negative: behind it), looking at it
+            {
+                var cut = arg.LastIndexOf(' ');
+                var off = cut > 0 ? arg[(cut + 1)..].Split(',') : [];
+                var (c, part) = WsFind(g, cut > 0 ? arg[..cut] : arg);
+                if (c == null || off.Length != 3 || !off.All(o => float.TryParse(o, System.Globalization.CultureInfo.InvariantCulture, out _)))
+                {
+                    WsFail("from PART[#n] SIDE,UP,OUT");
+                    return;
+                }
+                var v = off.Select(o => float.Parse(o, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                var spot = WsPartSpot(c, part, out var normal);
+                if (normal == Vector3.Zero)
+                    normal = Vector3.UnitZ;
+                WsEyeTo(g, me, spot + Vector3.Cross(Vector3.UnitY, normal) * v[0] + Vector3.UnitY * v[1] + normal * v[2]);
+                WsLook(g, me.Eye, spot);
+                _wsWait = 3;
+                return;
+            }
             case "mains":
             {
                 var (c, part) = WsFind(g, "Switch");
@@ -436,13 +455,15 @@ public static unsafe partial class Program
             case "fill": // a store's bin set on the server (a test state: a full output, another material), sent as any change is
             {
                 var bits = arg.Split(' ');
-                if (bits.Length < 3 || !int.TryParse(bits[^2], out var amount) || !g.IsServer)
+                var at = Array.FindLastIndex(bits, b => int.TryParse(b, out _)); // (a material may be two words: "iron ore")
+                var amount = at > 0 ? int.Parse(bits[at]) : 0;
+                if (at < 1 || at == bits.Length - 1 || !g.IsServer)
                 {
                     WsFail("fill PART[#n] N MATERIAL, link FROM[#n] > TO[#m] (on the host or offline)");
                     return;
                 }
-                var (c, part) = WsFind(g, string.Join(' ', bits[..^2]));
-                var mat = RecyclingTable.Current.IdOf(bits[^1]);
+                var (c, part) = WsFind(g, string.Join(' ', bits[..at]));
+                var mat = RecyclingTable.Current.IdOf(string.Join(' ', bits[(at + 1)..]));
                 if (c == null || g.Constructs.StoreOf(c, part) is not { } st || mat == 0)
                 {
                     WsFail($"fill: no store or material in \"{arg}\"");

@@ -361,6 +361,44 @@ public sealed class MachineTiers : IPartGenerator
         }
         PartZFight.Resolve(boxes, sockets);
         boxes = [.. boxes.Select(b => new PyDict(b) { ["min"] = Vec(D3(b["min"])), ["max"] = Vec(D3(b["max"])) })];
+        if (!big && line.Gather is not null) // (a gathering module shows its work too: the bit's flights and the blades turn while it gathers)
+        {
+            PyDict? BuiltOf(TB t, bool detail)
+            {
+                double[] mn = Scaled(t.Min, size), mx = Scaled(t.Max, size);
+                return boxes.FirstOrDefault(b => Py.Truthy(b.Get("detail")) == detail && !Py.Truthy(b.Get("status")) && Enumerable.Range(0, 3).All(a => Math.Abs(D3(b["min"])[a] - mn[a]) < 0.03 && Math.Abs(D3(b["max"])[a] - mx[a]) < 0.03));
+            }
+            void Turning(double[] mn, double[] mx, string color)
+            {
+                if (MachineLook.Work(MachineLook.D(mn, mx, color, color == MachineLook.Steel ? "steel" : null), "spin", "+y") is { } b)
+                    boxes.Add(b);
+            }
+            if (line.Gather.Value.Kind == "drill" && shape.Solid.FirstOrDefault(b => b.Min[1] <= -1.19) is { } bitBox && BuiltOf(bitBox, false) is { } bit)
+            {
+                double[] lo = D3(bit["min"]), hi = D3(bit["max"]);
+                double cx = (lo[0] + hi[0]) / 2, cz = (lo[2] + hi[2]) / 2, reach = (hi[0] - lo[0]) * 0.9, thin = Math.Max(0.012, (hi[0] - lo[0]) * 0.1);
+                var k = 0;
+                foreach (var f in new[] { 0.1, 0.36, 0.62, 0.84 })
+                {
+                    var y = lo[1] + (hi[1] - lo[1]) * f;
+                    if (k++ % 2 == 0)
+                        Turning([cx - reach, y, cz - thin], [cx + reach, y + 0.035, cz + thin], MachineLook.Steel);
+                    else
+                        Turning([cx - thin, y, cz - reach], [cx + thin, y + 0.035, cz + reach], MachineLook.Steel);
+                }
+            }
+            if (line.Gather.Value.Kind == "saw")
+                foreach (var disc in shape.Detail.Where(b => (string?)b.Keys.Get("shape") is "cylinder" or "tube" && b.Min[2] > 0.9 && b.Max[1] - b.Min[1] < 0.06))
+                    if (BuiltOf(disc, true) is { } blade)
+                    {
+                        double[] lo = D3(blade["min"]), hi = D3(blade["max"]);
+                        blade["work"] = "spin";
+                        blade["axis"] = "+y";
+                        double cx = (lo[0] + hi[0]) / 2, cz = (lo[2] + hi[2]) / 2, r = (hi[0] - lo[0]) * 0.45;
+                        Turning([cx - r, hi[1] - 0.004, cz - r * 0.14], [cx + r, hi[1] + 0.012, cz + r * 0.14], MachineLook.Ink); // (a mark across it, so the turn shows)
+                    }
+            boxes = [.. boxes.Select(b => new PyDict(b) { ["min"] = Vec(D3(b["min"])), ["max"] = Vec(D3(b["max"])) })];
+        }
         if (big) // (the machine look, over the settled body: look boxes only, so nothing above moves)
         {
             var rooms = new List<(double[], double[])>();

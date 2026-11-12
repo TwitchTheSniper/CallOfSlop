@@ -287,7 +287,7 @@ public static class TierMachine
                 s.Add([x0 - c * 1.6, y1 + 0.003, z0 - c * 1.6], [x1 + c * 1.6, y1 + 0.003 + capH, z1 + c * 1.6], MachineLook.Base);
                 top = y1 + 0.003 + capH;
             }
-            double fx = (x1 - x0) * 0.22, fz = (z1 - z0) * 0.22;
+            double fx = (x1 - x0) * 0.06, fz = (z1 - z0) * 0.06; // (the puffs are as wide as their box)
             var flue = s.Add([x0 + fx, top - 0.004, z0 + fz], [x1 - fx, top + Math.Max(0.02, s.U(0.008)), z1 - fz], MachineLook.Ink);
             MachineLook.Work(flue, "smoke");
         }
