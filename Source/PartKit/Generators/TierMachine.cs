@@ -135,6 +135,11 @@ public static class TierMachine
     public static void Dress(Site s)
     {
         s.Start();
+        // Three tones under any paint: what TierStyle draws dark (stacks, housings) or as bare metal (blades, bits, pipes) keeps its tone.
+        foreach (var tb in s.Shape.Solid.Concat(s.Shape.Detail).Where(b => b.Role is "dark" or "edge" or "pipe"))
+            foreach (var detail in new[] { false, true })
+                if (s.Built(tb, detail) is { } own && !own.Has("paintable"))
+                    own["paintable"] = false;
         var before = s.Boxes.Count;
         MachineLook.Buttons(s.Boxes, s.Plate, s.Face);
         // (a button that would cover a socket or a port goes)
@@ -319,17 +324,18 @@ public static class TierMachine
             {
                 // A Foundry: the mouth glows; a steel crucible hangs in front of it with its melt showing, and pours into a row of moulds.
                 Hot(s, m);
-                double r = Math.Min(mw * 0.2, s.U(0.03)), cy = my0 + mh * 0.62, cz = mz + 0.01 + r;
+                var room = (0.1 * s.Size - 0.41 - 0.03 - (mz + 0.01)) / 2; // (it stands out of the recess, short of the aisle)
+                double r = Math.Min(Math.Min(mw * 0.3, s.U(0.042)), room), cy = my0 + mh * 0.5, cz = mz + 0.01 + r;
                 s.Add([cx - r, cy, cz - r], [cx + r, cy + 2 * r, cz + r], MachineLook.Steel, "steel", shape: Cylinder("+y"));
                 MachineLook.Work(s.Add([cx - r * 0.7, cy + 2 * r - 0.006, cz - r * 0.7], [cx + r * 0.7, cy + 2 * r + 0.01, cz + r * 0.7], MachineLook.Hot, shape: Cylinder("+y")), "glow");
                 s.Add([cx - r * 1.5, cy + r * 0.8, cz - 0.02], [cx + r * 1.5, cy + r * 1.2, cz + 0.02], MachineLook.Accent); // (its trunnion bar)
-                MachineLook.Work(s.Add([cx - 0.02, fl0 + s.U(0.028), cz + r * 0.5], [cx + 0.02, cy + 0.004, cz + r * 0.5 + 0.03], MachineLook.Hot), "glow"); // (the pour)
-                var mould = mw * 0.26;
+                MachineLook.Work(s.Add([cx - 0.02, fl0 + s.U(0.043), cz + r * 0.5], [cx + 0.02, cy + 0.004, cz + r * 0.5 + 0.03], MachineLook.Hot), "glow"); // (the pour)
+                var mould = mw * 0.3;
                 for (var i = -1; i <= 1; i++)
                 {
-                    var x = cx + i * mw * 0.32;
-                    s.Add([x - mould / 2, fl0 - 0.004, mz + 0.006], [x + mould / 2, fl0 + s.U(0.03), cz + r * 0.9], MachineLook.Steel, "steel");
-                    MachineLook.Work(s.Add([x - mould * 0.32, fl0 + s.U(0.03) - 0.008, mz + 0.006 + mould * 0.15], [x + mould * 0.32, fl0 + s.U(0.03) + 0.006, cz + r * 0.9 - mould * 0.15], MachineLook.Hot), "glow");
+                    var x = cx + i * mw * 0.34;
+                    s.Add([x - mould / 2, fl0 - 0.004, mz + 0.006], [x + mould / 2, fl0 + s.U(0.045), cz + r * 0.9], MachineLook.Steel, "steel");
+                    MachineLook.Work(s.Add([x - mould * 0.32, fl0 + s.U(0.045) - 0.008, mz + 0.006 + mould * 0.15], [x + mould * 0.32, fl0 + s.U(0.045) + 0.006, cz + r * 0.9 - mould * 0.15], MachineLook.Hot), "glow");
                 }
             }
         }
@@ -407,7 +413,9 @@ public static class TierMachine
             MachineLook.Work(o, "stroke", "-y", travel);
             s.Boxes[s.Boxes.IndexOf(bit)] = o;
             var y = C(bit, "max", 1);
-            MachineLook.Work(s.Add([s.U(-0.034), y - s.U(0.014), s.U(-0.034)], [s.U(0.034), y + s.U(0.006), s.U(0.034)], MachineLook.Accent), "stroke", "-y", travel);
+            MachineLook.Work(s.Add([s.U(-0.045), y - s.U(0.014), s.U(-0.045)], [s.U(0.045), y + s.U(0.006), s.U(0.045)], MachineLook.Accent), "stroke", "-y", travel);
+            var low = C(bit, "min", 1); // (a steel platen on the bit, over the trays)
+            MachineLook.Work(s.Add([s.U(-0.1), low + s.U(0.006), s.U(-0.035)], [s.U(0.1), low + s.U(0.022), s.U(0.1)], MachineLook.Steel, "steel"), "stroke", "-y", travel);
         }
         // The family's own cue: a Thruster Assembler's nozzle glows on its stand, a Tailor's bolt of cloth turns.
         if (t < 5 && s.Name == "Thruster Assembler" && s.Shape.Detail.LastOrDefault(b => b.Role == "coil" && Py.Truthy(b.Keys.Get("shape"))) is { } nozzle && s.Built(nozzle, true) is { } nz)

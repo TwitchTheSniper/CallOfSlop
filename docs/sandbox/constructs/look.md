@@ -137,8 +137,29 @@ station, arms and cranes to come) follows seven points. The shared pieces are `S
 Rules of the build: everything added is a `"detail"` box, so collision, bounds, sockets and ports stay the solid boxes';
 keep a look box 12 mm thick or more (the game refuses under 1 cm, and `MachineLook.D` throws between); anything on a
 face a Die Frame, a piece or a conveyor stands against is under 2 cm proud; faces sit a few mm apart by construction.
-Budget: about 40 look boxes at tier 1 or the small class, 80 at the top. Not done yet: the refiners, the Assembler,
-racks and junctions (their tiers have palettes and shapes, not this language), and a Press has no status lamp.
+Budget: about 40 look boxes at tier 1 or the small class, 80 at the top. Not done yet: the drill and saw modules, the
+Recycler, racks, junctions and storage, and a Press has no status lamp.
+
+**The tiered buildings** (`TierMachine.cs`, over `TierStyle`'s bodies; phase 2). A tier keeps its own body and palette
+([Machine tiers](production.md#machine-tiers)), so the language goes on as look boxes in metres, after the screen is
+mounted and the faces are settled: no solid box, socket, port or screen moves. `Site.Add` leaves out a box that would
+cover a port, a socket, a bin, a tray, the screen, the aisle or an Assembler's open front (the "Machine tier looks"
+rules, by construction). What `TierStyle` draws as `dark`, `edge` or `pipe` stops taking paint, so a painted machine
+keeps a dark stack and a steel blade.
+
+- **A line's cues are the same at every tier.** Smelter: a white-rimmed hopper, a dark charge door with two slots and
+  a tap hole that glow over a steel spout, a collared stack that smokes. Foundry: the mouth glows, a steel crucible on a
+  trunnion pours into three moulds, both stacks smoke. Sawmill: steel rails through the frame, a carriage and log that
+  feed (`stroke`), the blade turns (`spin`), planks over the out bed. Assembler family: the bit, an accent collar and
+  a steel platen stroke over the trays; a Thruster Assembler's nozzle glows, a Tailor's bolt turns. Tier 5 keeps
+  its lit core instead of a mouth.
+- **Flow**: a band over or under each chute port (white in, orange out) with a black arrow pointing back to front,
+  hazard paint on the port's other side; tread plate and hazard ends on a furnace's aisle; an orange strip on the
+  tray or the trays' lip.
+- **Tier by build** adds, never reshapes: tier 2 a guard rail round the hopper, a second stack collar, a door frame,
+  hazard strips at the blade and on an Assembler's front posts; tier 3 a pipe main with a valve wheel, a third plank,
+  a cable run; tier 4 steel or tread-plate cladding; tier 5 a third collar. A stack's cap grows with the tier.
+- A box added with `clear: true` gives way to a detail the tier already has there, so a tier's own dressing wins.
 
 ## Off the axis
 
