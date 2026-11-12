@@ -6,7 +6,7 @@ using Brutal.OpenGlApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--window-shot OUT.png|bmp [--map NAME] [--creative] [--blueprint NAME] [--at X,Y,Z] [--look-at X,Y,Z | --yaw D --pitch D] [--frames N] [--every N] [--do "a; b; ..."] [--size WxH]</c>:
+/// <c>--window-shot OUT.png|bmp [--map NAME] [--creative] [--blueprint NAME] [--at X,Y,Z] [--look-at X,Y,Z | --yaw D --pitch D] [--calm] [--frames N] [--every N] [--do "a; b; ..."] [--size WxH]</c>:
 /// pictures of the real game in its real window, for an agent's own checking (README.md "Testing without playing"). It starts an offline creative
 /// Sandbox world (default map Proving Ground: a big blueprint fits inside its arena) on a throwaway copy of the saves, optionally spawns a blueprint in front of the player through the
 /// parts menu's own call (CActKind.Blueprint), flies the player (noclip) to the camera, runs a short script of actions through the real input
@@ -16,7 +16,7 @@ namespace CallOfSlop;
 /// </summary>
 public static unsafe partial class Program
 {
-    private static bool _windowShot;
+    private static bool _windowShot, _wsCalm;
     private static int _wsExit;
     private static string _wsOut = "", _wsMap = "Proving Ground", _wsBlueprint = "";
     private static Vector3? _wsAt, _wsLookAt, _wsSpawnAt;
@@ -46,6 +46,7 @@ public static unsafe partial class Program
         _wsMap = Val("--map") ?? _wsMap;
         _wsBlueprint = Val("--blueprint") ?? "";
         _wsAt = Val("--at") is { } at ? WsVec(at) : null;
+        _wsCalm = args.Any(a => a.Equals("--calm", StringComparison.OrdinalIgnoreCase)); // (no cold storm: a site is seen whole)
         _wsLookAt = Val("--look-at") is { } la ? WsVec(la) : null;
         _wsSpawnAt = Val("--spawn-at") is { } sa ? WsVec(sa) : null;
         _wsNet = Val("--net") ?? "";
@@ -214,6 +215,7 @@ public static unsafe partial class Program
                     _wsBody = made.Id;
                     WsSay($"{_wsBlueprint}: construct {made.Id}, {made.PartCount} parts, centre {made.WorldCom:0.0}, radius {made.Radius:0.0} m");
                 }
+                game.NoclipShot = _wsAt != null; // (a survival world's camera flies too when it is put somewhere)
                 p.NoclipWanted = game.NoclipAllowed(p); // (hover where the camera is put)
                 var spawned = WsSpawned(game);
                 if (_wsAt is { } at)

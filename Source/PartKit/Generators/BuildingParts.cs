@@ -1523,6 +1523,7 @@ public sealed partial class BuildingParts : IPartGenerator
                 o.Add(("85-Frame", Beam(key, n)));
         }
         o.AddRange(BrutalistParts()); // (fins, buttresses, canopies, fascias, slot and ribbon walls: BuildingParts.Brutalist.cs)
+        o.AddRange(SiteParts()); // (road slabs, heating mains, the stack, gate piers, the flag, notice boards: BuildingParts.Site.cs)
         return o;
     }
 
@@ -1904,6 +1905,7 @@ public sealed partial class BuildingParts : IPartGenerator
         bp.Put("Ship Ladder 3 m", Cell(ox + 10, 2, oz), R0);
         o.Add(bp);
         o.AddRange(MinistryBlueprints(defs)); // (the Ministry's buildings round the penal colony: BuildingParts.Ministry.cs)
+        o.AddRange(SiteBlueprints(defs)); // (the penal colony's site: its street, square, covered way and heating mains: BuildingParts.Site.cs)
         return o;
     }
 
