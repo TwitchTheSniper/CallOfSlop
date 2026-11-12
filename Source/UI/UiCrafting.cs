@@ -143,7 +143,7 @@ public sealed partial class Ui
         var key = 17;
         if (q != null)
             for (var k = 0; k < q.Count; k++)
-                key = key * 31 + q.Items[k].Id * 7919 + q.Items[k].Got * 131 + (int)q.Items[k].State * 17 + q.Items[k].Where + (q.Items[k].Note?.Length ?? 0);
+                key = key * 31 + q.Items[k].Id * 7919 + q.Items[k].Got * 131 + (int)q.Items[k].State * 17 + q.Items[k].Where + (q.Items[k].Note?.GetHashCode() ?? 0); // (the note's text, not its length: "Gear Set 0/4 from the Assembler" becomes "1/4")
         if (key == _crOrdersKey)
             return;
         _crOrdersKey = key;
