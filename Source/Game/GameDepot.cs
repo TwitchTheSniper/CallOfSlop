@@ -68,7 +68,7 @@ public sealed partial class Game
             return;
         if (Constructs.Get(_dpWorks) == null)
         {
-            _dpWorks = SandboxKitPiece("Remote Works", _opMiddle, 22, 90, level: 1.2f) is { } works ? works.Id : (ushort)0;
+            _dpWorks = (ColonySiteStand("Remote Works") ?? SandboxKitPiece("Remote Works", _opMiddle, 22, 90, level: 1.2f)) is { } works ? works.Id : (ushort)0;
             if (_dpWorks == 0)
             {
                 Log("[depot] no level ground for the Remote Works: no depot");

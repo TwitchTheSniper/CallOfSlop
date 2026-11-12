@@ -1,0 +1,40 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Colony Road 24 m",
+  "description": "Twenty-four metres of concrete road.",
+  "steps": [
+    {
+      "part": "Concrete Road Slab 4x4 m"
+    },
+    {
+      "part": "Concrete Road Slab 4x4 m",
+      "on": 0,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Road Slab 4x4 m",
+      "on": 1,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Road Slab 4x4 m",
+      "on": 2,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Road Slab 4x4 m",
+      "on": 3,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Road Slab 4x4 m",
+      "on": 4,
+      "socket": "r0",
+      "by": "l0"
+    }
+  ]
+}

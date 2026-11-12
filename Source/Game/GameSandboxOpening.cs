@@ -139,9 +139,13 @@ public sealed partial class Game
         }
         _opColony = colony.Id;
         OpeningSpots(colony);
+        _csBench = ColonySiteGrade(); // (the ground under the whole site graded level, before anything stands on it: GameColonySite.cs)
+        if (_csBench)
+            OpeningSpots(colony); // (the gate's spot again, on the bench)
         ColonyBuildingsBuild(); // (the Ministry's street in front of it, first, so the rest find room round them: GameColonyBuildings.cs)
         LockdownBuildBarracks(); // (the guards' barracks beside it: GameColonyLockdown.cs)
         DepotBuild(); // (the Remote Works beside it and the Orbital Depot over that: GameDepot.cs)
+        ColonySiteFurnish(); // (the street, the square, the covered way, the heating mains: the site's pieces, GameColonySite.cs)
         QuarryBuild(); // (the Ministry Quarry a few hundred metres out: GameQuarry.cs)
         FragmentSitesBuild(); // (the sealed data centres out past it: GameStoryFragments.cs)
         var wreck = SandboxKitPiece(script.Wreck, _opMiddle, script.CrashFrom, script.CrashTo) ?? SandboxKitPiece(script.Wreck, _opMiddle, 25, script.CrashTo);
@@ -158,6 +162,7 @@ public sealed partial class Game
             Log($"[opening] the {cast.Name} cast: {n} people");
         }
         _storyMiddleOf = null;
+        ColonySiteLog();
         Log($"[opening] the colony is construct {colony.Id} at {_opMiddle.X:0},{_opMiddle.Z:0}; the crash site at {_opCrash.X:0},{_opCrash.Z:0}");
         return _opMiddle;
     }

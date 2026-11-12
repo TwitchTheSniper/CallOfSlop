@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Heating Valve Chamber",
+  "description": "A valve chamber on the colony's heating mains.",
+  "steps": [
+    {
+      "part": "Heating Valve Chamber"
+    },
+    {
+      "part": "Text Sign",
+      "on": 0,
+      "socket": "f",
+      "by": "back",
+      "text": [
+        "VALVE. DO NOT TURN. DO NOT ASK WHO DID."
+      ],
+      "paint": "#1f2b45"
+    }
+  ]
+}

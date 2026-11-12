@@ -28,6 +28,48 @@ same headings, before building for them.
 7. **The place fits the climate.** On a cold world: small, high or narrow windows, doors under cover, a blank wall to
    the weather, the heat's stack showing.
 
+## The site: what the buildings stand on and what joins them
+
+A group of buildings is a place only when the ground under it was made for it and something runs from door to door. The
+first site is the penal colony's (`Game/GameColonySite.cs` lays it, `Story/Opening/ColonyBuildings.json` is the plan,
+`BuildingParts.Site.cs` the parts and blueprints). Plan a faction's settlement to the same headings.
+
+1. **One level.** A camp on frozen ground is founded on a bench: the land is cut and filled to one height before anything
+   is built. On a fresh story world the plan's `"bench"` rectangle (68 by 62 m in the colony's own frame) is graded to
+   the colony's plane with ground ops (a player's Flatten, through `Game.Dig`: it saves and reaches a joiner as dug
+   ground), a hand's breadth over the highest land so the whole bench is one surface: on Glacier, the snow scraped to
+   blue ice. Each `"ramps"` entry is a slope from its edge to the land. Every building then stands at one height; no
+   building is placed on raw land at its own level. Land more than `"most"` m off the colony's level is left alone and
+   the site is not laid.
+2. **Zones, as the job has them.** The yard is the secure compound (the only fence). The Ministry's street runs along
+   its front: the public buildings (infirmary, records, canteen, stores) in one row facing the yard, the gatehouse at
+   the gate. Staff live west of the yard (the barracks, its door to the muster square); work goes east (the Remote
+   Works). Services stand at the downwind end by the road: the boiler house, behind a coal forecourt. The way in is one
+   road, from the east, between two piers.
+3. **A drawn plan.** Rows marked `"site"` are laid at exactly their spot in the colony's plane, square with it, `"sink"`
+   m into the bench (no search, no clearance check): the plan says where things are, so pieces meet edge to edge. Rows
+   marked `"elsewhere"` fix the spot of a building another file builds (the barracks, the Remote Works).
+   `[site]` lines in the log give every footprint in the plan's frame: lay a new piece against those numbers.
+4. **Hard ground where people walk.** `Concrete Road Slab` (4 by 4 and 4 by 2 m, a footing, 0.12 m proud of the bench):
+   the street (`Colony Road 24 m`), the muster square, the way to the gate. Columns, posts and a flag's base stand on a
+   slab's top sockets (at 0, 1.75, 2 and 3.75 m, as a pad's).
+5. **A covered way on the walk made every day.** `Colony Gate Path`: the 8 m from the yard's gate towards the street is
+   under a flat roof on six columns with its lid and two lamps; the last 2 m is open for the crew bus.
+6. **Services above ground, and shown.** Nothing is buried in frozen ground: the `Heating Main` (two lagged pipes on
+   concrete trestles) runs from the boiler house behind the street's buildings and up the west side to the barracks, a
+   `Heating Valve Chamber` where it ends or turns, and where it meets the road two `Heating Main Riser`s lift it over
+   (`Heating Main Portal`, 3 m clear). The `Colony Boiler House` is a tall single hall for one `Lancashire Boiler`
+   (furniture: it heats nothing) with the tallest stack in the colony (`Concrete Chimney 2.75 m`, four high).
+7. **A place run by notice.** `Colony Gate Pier` (lamp, name, warning), the flag on the muster square, `Concrete Notice
+   Board 2 m` with two notices each. Signs follow the Ministry's voice.
+
+Not done on the site: no outer fence (a wall round the bench would need gates the staff's bots and the traffic can
+pass); the mains have no branch to each building; the street's slabs stop at x -16 and 32 (the ramps are bare ice); a
+world from before the site keeps its ground and gets none of it; the other factions' settlements have no site.
+
+To see a site whole: `--window-shot OUT.png --survival --calm --map Glacier --do "key Jump; wait 40; from Flagpole Base
+14,32,48; wait 30"` (`--calm`: no storm; `from PART side,up,out` puts the eye after the opening has woken the player).
+
 ## The Ministry of Slop: Brutalism
 
 The Ministry builds as a government that expects to be there for ever and has stopped spending: heavy raw concrete,

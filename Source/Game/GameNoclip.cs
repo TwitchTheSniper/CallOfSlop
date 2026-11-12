@@ -17,7 +17,10 @@ public sealed partial class Game
     public bool NoclipCreative => SandboxOn && SandboxInfiniteParts;
 
     /// <summary>May this player fly? Creative Sandbox, in play, alive and not in a seat (a seat ends it).</summary>
-    public bool NoclipAllowed(Player p) => NoclipCreative && Phase == MatchPhase.Playing && p.Alive && p.Bot == null && !SandboxSeated(p);
+    /// <summary>The window-shot tool's camera may fly in a survival world too (Program.WindowShot.cs: <c>--at</c>).</summary>
+    internal bool NoclipShot;
+
+    public bool NoclipAllowed(Player p) => (NoclipCreative || NoclipShot) && Phase == MatchPhase.Playing && p.Alive && p.Bot == null && !SandboxSeated(p);
 
     /// <summary>The local player's noclip key. Refused keeps the wish off, so it can't start later by itself.</summary>
     public void ToggleNoclip()

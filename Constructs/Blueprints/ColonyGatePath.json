@@ -1,0 +1,201 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Colony Gate Path",
+  "description": "The way from the street to the penal colony's gate, under a covered way.",
+  "steps": [
+    {
+      "part": "Concrete Road Slab 4x4 m"
+    },
+    {
+      "part": "Concrete Road Slab 4x4 m",
+      "on": 0,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Road Slab 4x2 m",
+      "on": 0,
+      "socket": "f0",
+      "by": "k0"
+    },
+    {
+      "part": "Concrete Column 2.75 m",
+      "on": 0,
+      "socket": "t0_0",
+      "by": "b00",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Column 2.75 m",
+      "on": 0,
+      "socket": "t15_0",
+      "by": "b10",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Column 2.75 m",
+      "on": 0,
+      "socket": "t0_15",
+      "by": "b00",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Column 2.75 m",
+      "on": 0,
+      "socket": "t15_15",
+      "by": "b10",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Column 2.75 m",
+      "on": 1,
+      "socket": "t0_15",
+      "by": "b01",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Column 2.75 m",
+      "on": 1,
+      "socket": "t15_15",
+      "by": "b11",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 3,
+      "socket": "t00",
+      "by": "b0_0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 5,
+      "socket": "t01",
+      "by": "b0_0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 9,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 10,
+      "socket": "k0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 9,
+      "socket": "l0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 9,
+      "socket": "r0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 10,
+      "socket": "l0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 10,
+      "socket": "r0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 11,
+      "socket": "l",
+      "by": "+x",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 11,
+      "socket": "r",
+      "by": "+z",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 12,
+      "socket": "l",
+      "by": "+x",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 12,
+      "socket": "r",
+      "by": "+z",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Text Sign",
+      "on": 11,
+      "socket": "f8",
+      "by": "back",
+      "text": [
+        "INMATES KEEP LEFT. STAFF KEEP INMATES LEFT."
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "r0_10",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 6,
+      "socket": "l0_10",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Battery",
+      "on": 7,
+      "socket": "r0_10",
+      "by": "-z",
+      "paint": "#4b5157"
+    }
+  ]
+}
