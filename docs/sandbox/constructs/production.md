@@ -920,6 +920,19 @@ panel); the part from the part kit's `crafting_terminal_parts`.
   Seen in the window: F opens it, twenty opens and Esc closes leave the mouse captured, a clicked tile, Order and Cancel work,
   and the made part lands in the tray.
 
+- **Who may order, and a cancel with parts riding** (2026-11-12). An order is checked by the configure rule (`SandboxConfigRefusal`): the
+  construct's owner, a faction mate, or anyone when it is nobody's; another player hears "Owned by X: only its owner can configure it"
+  (seen from a joined client). A cancelled order whose parts are already on a conveyor shrinks to those parts, asks nothing more of
+  the machines, and its row says "cancelled: 1 part on the way arrives anyway" until it lands in the tray; its claims on stock go at once.
+  The order bar's buttons come before the part's name, so they stay in place whatever is picked. Formed panels and lofted parts
+  (named run-time parts) in a linked store aren't listed yet.
+  Seen with a host and a joined client as two windows over RakNet (80 ms, 2 % loss; the window tool's `disown`, `bring` and `craft`
+  actions): the client ordered through the panel a part that waits ("queued at the Assembler"), cancelled it, ordered one from In stock
+  with no route ("no route from the Piece Rack: collect it there", reserved 1 on both peers) and one that was made (4/4 in the tray on
+  both peers); the host's save and load kept the open orders each time. On the host alone: "queued at the Assembler: needs 1 Gear Set
+  (the Assembler can make it)", Gun Barrels fetched from the Assembler's rack, and an L-angle from the Long Piece Rack riding the
+  return conveyor into the tray.
+
 Not yet: other constructs by world link; splitters on a return path (a splitter deals in turn, so it is no route); chutes of more
 than one hop; a Piece Rack as a bigger tray; press products; a custom size entry (the Line Console's bill makes those); reserving a
 machine's inputs for an order.
