@@ -336,6 +336,17 @@ public static partial class ConstructLifters
         var md = b.DefOf(part);
         if (md.IsAssembler)
             return ConstructAssembling.RecipeOf(AssemblingTable.Current, b.Parts[part], md) is { } r && r.Output == d;
+        if (md.IsPress && ConstructPress.SizedDieOf(PressTable.Current, b, part) is { } die)
+        {
+            // A press with a sized die (phase 5: phase 4 read only the lathe's rows, so a press's output was never picked): one of the
+            // die's preset parts, or a part pressed from its key ("Pressed Part (die.pattern ...)").
+            foreach (var p in die.Presets)
+                if (p.Part == d)
+                    return true;
+            var name = d.Name.AsSpan();
+            return name.StartsWith(Pressed.Prefix) && name[Pressed.Prefix.Length..].StartsWith(die.Id) && name.Length > Pressed.Prefix.Length + die.Id.Length
+                && name[Pressed.Prefix.Length + die.Id.Length] == '.';
+        }
         if (md.IsPress)
             return ConstructPress.RowFor(ConstructPress.RowsOf(PressTable.Current, b, part), b, part) is { } row && row.Output == d;
         return md.IsExtruder && d.IsExtrusion;

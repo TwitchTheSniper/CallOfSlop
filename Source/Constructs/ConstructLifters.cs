@@ -199,8 +199,12 @@ public static partial class ConstructLifters
     public static void Scan(ConstructWorld world, bool server)
     {
         foreach (var c in world.Bodies)
+        {
+            if (server && (c.PadStamp != c.RebuildStamp || c.PadPartCount != c.PartCount))
+                NotePads(world, c); // (phase 5: the bodies with a Lay-down Pad, ConstructLifterPads.cs; its own stamp, as a host's drawing scans this world too)
             if (c.LiftStamp != c.RebuildStamp || c.LiftPartCount != c.PartCount)
                 ScanBody(world, c, server);
+        }
         for (var k = world.LiftBodies.Count - 1; k >= 0; k--)
         {
             var lb = world.LiftBodies[k];
@@ -308,6 +312,7 @@ public static partial class ConstructLifters
         if (world.LiftTick % ScanEvery == 1)
         {
             Scan(world, server: true); // (phase 4: always, so an arm with no station open finds its carries; a body is looked at only when its parts changed)
+            PadsTakeIn(world); // (phase 5: a loose piece set down on a Lay-down Pad goes into its hold)
         }
         if (world.LiftBodies.Count == 0 || world.LiftTick % Every != 0)
             return;
@@ -1402,6 +1407,7 @@ public sealed partial class ConstructWorld
         LiftSeen.Clear();
         LiftBodies.Clear();
         LiftDirty.Clear();
+        PadBodies.Clear();
         (LiftBusy, LiftTick, FitThisTick) = (0, 0, false);
     }
 
