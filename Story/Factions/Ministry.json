@@ -18,7 +18,7 @@
     { "name": "Enemy of the State", "below": -50 },
     { "name": "Person of Interest", "below": -15,
       "promotion": "Your file has been moved from the red cabinet to the beige one. This is progress, of a kind." },
-    { "name": "Inmate", "below": 15,
+    { "name": "Inmate", "below": 5,
       "promotion": "You are an ordinary inmate again. The Ministry has lost the paperwork on your misdeeds, for now." },
     { "name": "Trusty", "below": 40,
       "promotion": "Congratulations: you are trusted. Not very much. Form HM-40 (Trust, Limited) has been filed on your behalf." },
