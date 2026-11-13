@@ -488,7 +488,8 @@ public static class ConstructLogisticsPlan
             var why = WorkOrders.Refusal(world, c, mk, what);
             if (why != null)
             {
-                refusal ??= why;
+                if (refusal == null || ConstructCrafting.Kin(c.DefOf(mk), what))
+                    refusal = why; // (the machine of its kind says why: a Press's die, not an Assembler's "no recipe")
                 continue;
             }
             var score = c.Parts[mk].Orders is { Bill: false } q ? q.Count * 2 + (Making(q, e.Kind) ? 0 : 1) : 1;
@@ -499,6 +500,7 @@ public static class ConstructLogisticsPlan
         }
         if (best >= 0 && WorkOrders.Queue(world, c, best, what) is var no && no == null)
         {
+            Ranked(world, c, best, IsStock(e) ? (byte)1 : (byte)(e.Class + 2));
             AheadOfUsers(world, c, c.Parts[best].Orders!, e);
             e.Maker = (ushort)best;
             e.Flags &= unchecked((byte)~ChainFlags.Expanded);
@@ -534,6 +536,31 @@ public static class ConstructLogisticsPlan
             return;
         }
     }
+
+    /// <summary>
+    /// The line just queued at <paramref name="maker"/> (the last) takes <paramref name="rank"/> (1 a stock refill, 2 Low, 3 Normal,
+    /// 4 High) and moves ahead of the first line after the head that ranks below it (phase 5, design 7.3: High orders take shared
+    /// machines first). The head is never passed (it may be under way), and lines of equal rank keep their age.
+    /// </summary>
+    public static void Ranked(ConstructWorld world, Construct c, int maker, byte rank)
+    {
+        if (maker >= c.PartCount || c.Parts[maker].Orders is not { Bill: false, Count: > 0 } q)
+            return;
+        var last = q.Count - 1;
+        q.Items[last].Rank = rank;
+        for (var k = 1; k < last; k++)
+        {
+            if (RankOf(q.Items[k]) >= rank)
+                continue;
+            var mine = q.Items[last];
+            Array.Copy(q.Items, k, q.Items, k + 1, last - k);
+            q.Items[k] = mine;
+            world.OrdersChanged(c);
+            return;
+        }
+    }
+
+    private static int RankOf(in WorkOrder o) => o.Rank == 0 ? 3 : o.Rank;
 
     private static bool IsAncestor(ConstructWorld world, in ChainEntry e, ushort id)
     {

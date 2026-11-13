@@ -1103,6 +1103,7 @@ public static class ConstructCrafting
                     var why = WorkOrders.Queue(world, c, net.Machines[i], o.What with { Count = (ushort)ask, Made = 0 });
                     if (why == null)
                     {
+                        ConstructLogisticsPlan.Ranked(world, c, net.Machines[i], (byte)(StockTargets.FeedClass(c, t) + 2)); // (a High terminal's line goes ahead of Normal ones: phase 5)
                         ConstructLogisticsPlan.Asked(world, c, net, t, o, net.Machines[i], ask); // (the parts its recipe needs: asked of other machines)
                         o.Asked += (ushort)ask;
                         ask = 0;

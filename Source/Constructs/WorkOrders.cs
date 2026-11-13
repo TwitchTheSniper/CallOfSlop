@@ -13,6 +13,7 @@ public struct WorkOrder
     public ushort Part; // a catalogue part's id (a file part's, never a run-time one), or ConstructParts.None for a piece
     public ushort Count, Made;
     public ushort Chain; // server: the chained order's link it serves (ConstructLogisticsPlan; 0: the player's own); saved in the LOGI block, never sent
+    public byte Rank; // server: its order's rank in the queue (ConstructLogisticsPlan.Ranked: 1 a stock refill, 2 Low, 3 Normal, 4 High; 0 the player's own line, as Normal); never sent or saved
     public string? Name; // a formed panel or a lofted hull part by its name, which is its key (HullLoft.Panels.cs): a Panel Former's order; Key holds its material only
 
     public readonly bool IsPiece => Part == ConstructParts.None && Name == null;

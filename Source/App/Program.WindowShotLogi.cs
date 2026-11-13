@@ -94,12 +94,32 @@ public static partial class Program
                 }
                 return;
             }
+            case "send": // "logi send PART@N NAME [N]": an order through this peer's own message, as the terminal's Order button sends it (stand in reach first: the host's "bring")
+            {
+                var sp = rest.IndexOf(' ');
+                var (tc, t) = sp > 0 ? LogiFind(g, rest[..sp]) : (null, -1);
+                var tail = sp > 0 ? rest[(sp + 1)..] : "";
+                var cut = tail.LastIndexOf(' ');
+                var n = cut > 0 && ushort.TryParse(tail[(cut + 1)..], out var cn) ? cn : (ushort)1;
+                var name = cut > 0 && tail[(cut + 1)..] == n.ToString() ? tail[..cut] : tail;
+                if (tc == null || ConstructParts.Find(name) is not { } pd)
+                {
+                    WsFail($"logi send: no terminal or no part in \"{rest}\"");
+                    return;
+                }
+                g.SandboxCraftOrder(tc.Id, t, ConstructStation.OrderFor(pd, n));
+                WsSay($"[logi] send {n} {name} at {tc.DefOf(t).Name}#{t}");
+                return;
+            }
             case "order" when g.IsServer:
             {
                 var atStation = rest.StartsWith("station ", StringComparison.Ordinal); // ("logi order station NAME [N]": at the first Building Station, a chain root too)
                 if (atStation)
                     rest = rest[8..];
-                var (tc, t) = LogiFind(g, atStation ? "Building Station" : "Crafting Terminal");
+                var spec = atStation ? "Building Station" : "Crafting Terminal";
+                if (rest.StartsWith('@') && rest.IndexOf(' ') is var sp and > 1) // ("logi order @N NAME [N]": at part N, a second terminal)
+                    (spec, rest) = ("x" + rest[..sp], rest[(sp + 1)..]);
+                var (tc, t) = LogiFind(g, spec);
                 var cut = rest.LastIndexOf(' ');
                 var n = cut > 0 && ushort.TryParse(rest[(cut + 1)..], out var cn) ? cn : (ushort)1;
                 var name = cut > 0 && n > 0 && rest[(cut + 1)..] == n.ToString() ? rest[..cut] : rest;
