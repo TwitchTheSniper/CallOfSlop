@@ -323,7 +323,7 @@ def build(w):
     for _, lat, lon, rad, height, edge in w["sites"]:
         features.append(flatten(lat, lon, rad, height, edge))
     if "city" in w:  # the city's ground: level to its last street and a little over (CITY.md)
-        features.append(flatten(90, 0, w["city"]["radius"] + 80, h, 300))
+        features.append(flatten(90, 0, w["city"]["radius"] + 80, h + 0.18, 300))  # (level with the pavements' tops: CityGeometry.GroundTop)
     else:
         features.append(flatten(90, 0, 70, h, 150))
     planetoid = {"radius": r, "cell": 2, "strength": w["strength"], "surface": w["surface"]}
