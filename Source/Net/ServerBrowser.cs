@@ -461,7 +461,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      (1 + its row's place in its family's list) names another recipe than on 277. No new bytes.
     // 282: sized gun parts phase 1: the Barrel die (three die part files move part ids) and its plain pattern; a pressed barrel's gun
     //      numbers are derived from its key on every peer. No new bytes.
-    public const ushort ProtocolVersion = 282;
+    // 283: Laser Cutter phase 1: cut parts, "Cut Panel (...)" and "Cut Plate (...)", travel as named run-time parts, and a run-time
+    //      part's name may be 240 characters (was 128): older builds refuse both. No new bytes.
+    public const ushort ProtocolVersion = 283;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

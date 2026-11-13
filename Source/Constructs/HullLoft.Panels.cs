@@ -208,7 +208,7 @@ public static partial class HullLoft
 
     /// <summary>The material a formed part is made of: a panel's own, steel for the kit's lofts (0: this build has no such material).</summary>
     public static byte FormedMaterial(string name) =>
-        RecyclingTable.Current.IdOf(PanelOf(name) is { } s ? s.Material : "steel");
+        IsCutName(name) ? CutMaterial(name) : RecyclingTable.Current.IdOf(PanelOf(name) is { } s ? s.Material : "steel");
 
     /// <summary>What a formed part costs in units of its material: its mass at the material's weight, so it weighs what went in.</summary>
     public static int FormedUnits(ConstructPartDef d, byte material) =>
@@ -353,6 +353,7 @@ public static partial class HullLoft
     {
         public required ConstructPartDef Def;
         public PanelShape Shape;
+        public CutPlan? Cut; // (a cut part: HullLoft.Cuts.cs)
         public int Next, Total;
         public readonly List<CPartBox> Facets = new(PanelMaxAlong * PanelMaxAcross);
         public readonly List<ushort> Shapes = new(PanelMaxAlong * PanelMaxAcross);
@@ -439,7 +440,7 @@ public static partial class HullLoft
                 var outer = PartShapes.BeginCollect();
                 try
                 {
-                    var part = ConstructParts.ParseBody(PanelJson(job.Def.Name, job.Shape, job.Next, to, false), job.Def.Name);
+                    var part = ConstructParts.ParseBody(PanelJson(job.Def.Name, job.Shape, job.Next, to, false, job.Cut), job.Def.Name);
                     for (var k = part.SolidBoxes; k < part.Boxes.Length; k++)
                         job.Facets.Add(part.Boxes[k]);
                 }
@@ -482,12 +483,14 @@ public static partial class HullLoft
     /// <paramref name="from"/> up to <paramref name="to"/>. <paramref name="slabs"/>: a plain drawn slab over each hidden box, the look of a
     /// panel whose facets aren't made yet. The same floats in the same order whatever the range, so a part made whole and one made in slices are equal.
     /// </summary>
-    private static string PanelJson(string name, in PanelShape sh, int from, int to, bool slabs)
+    private static string PanelJson(string name, in PanelShape sh, int from, int to, bool slabs, CutPlan? cut = null)
     {
         var p = new Builder();
         var (nu, nv) = PanelGrid(sh);
-        var t = sh.Mm / 1000f;
+        var t = cut?.Thick ?? sh.Mm / 1000f;
         var area = 0f;
+        var item = 0; // (a cut part: whole facets and pieces counted in one run, so its slices are ranges of it)
+        var face = cut is { Plate: true } ? Hex(RecyclingTable.Current.ColourOf(cut.Stock.Material)) : null;
         var grid = new Vector3[nu + 1, nv + 1];
         var normal = new Vector3[nu + 1, nv + 1];
         for (var i = 0; i <= nu; i++)
@@ -503,12 +506,30 @@ public static partial class HullLoft
                 Vector3[] q = [grid[i, j], grid[i, j + 1], grid[i + 1, j + 1], grid[i + 1, j]];
                 Vector3[] off = [normal[i, j], normal[i, j + 1], normal[i + 1, j + 1], normal[i + 1, j]]; // (neighbours share each corner's offset: the seams close)
                 var n = Vector3.Cross(q[2] - q[0], q[1] - q[3]);
-                area += n.Length() / 2;
                 // Rows shade a little by height, as a loft's, so a paint's tone shows the shape.
-                var tone = (i + j) % 2 == 0 ? Steel : SteelHigh;
-                if (i * nv + j >= from && i * nv + j < to)
-                    p.Facet(q, n.LengthSquared() < 1e-12f ? Vector3.UnitY : n, nv == 1 && nu == 1 ? Steel : tone, t, off: off);
+                var tone = face ?? ((i + j) % 2 == 0 ? Steel : SteelHigh);
+                if (cut?.Pieces[i * nv + j] is { } pieces)
+                {
+                    // A facet the cuts touch: the pieces it keeps, each on its own quad, and only their area.
+                    double u0 = i == nu ? sh.L : PanelRowS(sh, i, nu) * (double)sh.L, u1 = i + 1 == nu ? sh.L : PanelRowS(sh, i + 1, nu) * (double)sh.L;
+                    double v0 = j * (double)sh.W / nv, v1 = (j + 1) * (double)sh.W / nv;
+                    foreach (var piece in pieces)
+                    {
+                        PieceOnQuad(piece, u0, u1, v0, v1, q, off, out var pts, out var offs);
+                        area += PolyArea(pts);
+                        if (item >= from && item < to)
+                            p.Facet(pts, n.LengthSquared() < 1e-12f ? Vector3.UnitY : n, nv == 1 && nu == 1 ? face ?? Steel : tone, t, off: offs);
+                        item++;
+                    }
+                    continue;
+                }
+                area += n.Length() / 2;
+                if (cut != null ? item >= from && item < to : i * nv + j >= from && i * nv + j < to)
+                    p.Facet(q, n.LengthSquared() < 1e-12f ? Vector3.UnitY : n, nv == 1 && nu == 1 ? face ?? Steel : tone, t, off: off);
+                item++;
             }
+        if (cut is { Plate: true })
+            return PlateJson(name, cut, p, area, slabs);
         // Collision: up to four hidden boxes along its length, each over its strip's own height (a growing or riding panel collides by boxes, never a
         // hull). Their sides are whole centimetres just inside the drawn edges, so no hidden face shares a plane with a facet's rim and the edge
         // sockets, which stand on them, are whole centimetres too (docs/LESSONS.md, "Generated geometry").
@@ -593,9 +614,11 @@ public static partial class HullLoft
         {
             ["format"] = "call-of-slop-construct-part/1",
             ["name"] = name,
-            ["description"] = $"{preset.Label}, {sh.L / 100f:0.##} by {sh.W / 100f:0.##} m of {sh.Mm} mm {sh.Material}: {preset.What}. Formed by a Panel Former; weld it by its edges.",
+            ["description"] = cut != null
+                ? $"{preset.Label}, {sh.L / 100f:0.##} by {sh.W / 100f:0.##} m of {sh.Mm} mm {sh.Material}, with {cut.Cuts.Length} cut-out{(cut.Cuts.Length == 1 ? "" : "s")}. Cut by a Laser Cutter; weld it by its edges."
+                : $"{preset.Label}, {sh.L / 100f:0.##} by {sh.W / 100f:0.##} m of {sh.Mm} mm {sh.Material}: {preset.What}. Formed by a Panel Former; weld it by its edges.",
             ["group"] = "Vehicle Body",
-            ["section"] = "Formed panels",
+            ["section"] = cut != null ? "Cut parts" : "Formed panels",
             ["role"] = "panel",
             ["tool"] = "welder",
             ["mass"] = mass,
@@ -625,7 +648,7 @@ public static partial class HullLoft
             return 0;
         }
         string name;
-        if (IsFormedName(args[0]))
+        if (IsFormedName(args[0]) || IsCutName(args[0]))
             name = args[0];
         else
         {
@@ -672,6 +695,11 @@ public static partial class HullLoft
             name = PanelKey(s);
         }
         var made0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (IsCutName(name) && CutRefusal(name) is { } cutWhy)
+        {
+            Console.WriteLine($"refused: {cutWhy}");
+            return 1;
+        }
         if (Parse(name) is not { } d)
         {
             Console.WriteLine($"refused: \"{name}\" is not a panel any machine makes");
@@ -693,7 +721,17 @@ public static partial class HullLoft
         Console.WriteLine(name);
         Console.WriteLine($"  facets {facets}, collision boxes {hidden}, sockets {d.Sockets.Length} ({string.Join(' ', d.Sockets.Select(s => s.Name))})");
         Console.WriteLine($"  bounds {size.X:0.00} x {size.Y:0.00} x {size.Z:0.00} m, mass {d.Mass:0.#} kg, health {d.Health:0}, armour {d.Armour:0}");
-        Console.WriteLine($"  cost {FormedUnits(d, mat)} {RecyclingTable.Current.NameOf(mat)}; made by: {ConstructPanelFormer.TierFor(d) ?? "no Panel Former is big enough"}");
+        if (IsCutName(name) && ReadCut(name, out _) is { } plan)
+        {
+            // What the cut takes away comes back as offcut (phase 3's bin): the blank's mass less the cut part's, in units of its material.
+            var blank = ConstructParts.Find(plan.Blank);
+            PumpPanels(-1);
+            var off = blank == null ? 0 : (int)MathF.Floor(MathF.Max(0, blank.Mass - d.Mass) / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(mat)));
+            Console.WriteLine($"  cuts {plan.Cuts.Length} ({string.Join(' ', plan.Cuts.Select(c => c.Text))}), drawn pieces {plan.Items} of {CutMaxFacets}, key {name.Length} of {ConstructParts.MaxRuntimeName} characters");
+            Console.WriteLine($"  blank {plan.Blank}: {blank?.Mass ?? 0:0.#} kg; offcut {off} {RecyclingTable.Current.NameOf(mat)}");
+        }
+        else
+            Console.WriteLine($"  cost {FormedUnits(d, mat)} {RecyclingTable.Current.NameOf(mat)}; made by: {ConstructPanelFormer.TierFor(d) ?? "no Panel Former is big enough"}");
         Console.WriteLine($"  hash {PanelHash(d):x8} (boxes, sockets, mass and health: the same on every peer); first make {madeMs:0.0} ms (the first part a process makes also pays the JIT)");
         // A second make from the name alone (the table forgotten) gives the same part.
         var first = PanelHash(d);
@@ -711,6 +749,11 @@ public static partial class HullLoft
         }
         else
             Console.WriteLine($"  a second make from the name, in slices: its first part {firstPart:0.0} ms, {System.Diagnostics.Stopwatch.GetElapsedTime(made0).TotalMilliseconds:0.0} ms in all, the same part");
+        if (IsCutName(name) && facets > CutMaxFacets)
+        {
+            Console.WriteLine($"  PROBLEM: {facets} facets, over {CutMaxFacets}");
+            bad++;
+        }
         if (IsPanelName(name) && facets > PanelMaxAlong * PanelMaxAcross)
         {
             Console.WriteLine($"  PROBLEM: {facets} facets, over {PanelMaxAlong * PanelMaxAcross}");
