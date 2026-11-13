@@ -445,7 +445,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      u16 kind, made, asked, maker part, dest part, stock claimed, a reason): the Orders tab's indented lines on both peers.
     // 270: lofted panels (feat/panel-designer-3; 269 left to the Press's phase 4): a formed panel's name may be the loft kind
     //      ("loft LxWxN tT bH,.. fH,.. MATERIAL": HullLoft.Panels.cs); a peer on an older protocol would refuse the name.
-    public const ushort ProtocolVersion = 270;
+    // 271: the Press rework's phase 4 (269 on its branch, renumbered at the merge): work orders, crafting orders and CraftNamed carry a pressed part by its key ("Pressed Part (...)", the
+    //      named shape 255 as a panel's); PressStall gains WantsOrder, BayRefuse gains Order (both ride the press's store bytes); a chain
+    //      line's kind is written by ConstructStorage.WriteDef (a run-time piece by its key), not as a u16 id.
+    public const ushort ProtocolVersion = 271;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

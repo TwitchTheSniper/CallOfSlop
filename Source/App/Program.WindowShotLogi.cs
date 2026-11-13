@@ -108,7 +108,7 @@ public static partial class Program
                     WsFail($"logi order: no terminal or no part \"{name}\"");
                     return;
                 }
-                var why = ConstructCrafting.Place(w, tc, t, new WorkOrder { Part = pd.Id, Count = n, Key = default });
+                var why = ConstructCrafting.Place(w, tc, t, ConstructStation.OrderFor(pd, n)); // (a piece, a panel or a pressed part by its key; a catalogue part by its id)
                 WsSay($"[logi] order {n} {name}: {why ?? "placed"}");
                 return;
             }
@@ -169,9 +169,15 @@ public static partial class Program
                     WsSay($"[logi]   #{e.Id} {ConstructParts.Get(e.Kind)?.Name} {e.Made}/{e.Asked} for {(e.Dest < c.PartCount ? c.DefOf(e.Dest).Name : "?")}#{e.Dest} by {(e.Maker < c.PartCount ? $"{c.DefOf(e.Maker).Name}#{e.Maker}" : "nobody")} (root {e.Root} order {e.RootId}) {e.Reason}");
                 }
                 for (var i = 0; i < c.PartCount; i++)
-                    if (c.Parts[i].Orders is { Bill: false, Count: > 0 } oq && c.DefOf(i).IsAssembler)
+                    if (c.Parts[i].Orders is { Bill: false, Count: > 0 } oq && WorkOrders.TakesOrders(c.DefOf(i)))
                         for (var k = 0; k < oq.Count; k++)
-                            WsSay($"[logi]   queue {c.DefOf(i).Name}#{i}: {ConstructParts.Get(oq.Items[k].Part)?.Name} {oq.Items[k].Made}/{oq.Items[k].Count} chain {oq.Items[k].Chain}");
+                            WsSay($"[logi]   queue {c.DefOf(i).Name}#{i} ({(w.StoreOf(c, i) is { } qst ? ProductionLines.Raw(w, c, i, qst) : null)}, stall {w.StoreOf(c, i)?.Refused}): {ConstructCrafting.NameOf(oq.Items[k])} {oq.Items[k].Made}/{oq.Items[k].Count} chain {oq.Items[k].Chain}");
+                for (var i = 0; i < c.PartCount; i++) // (a press's bays and stall: Press phase 4's chained blanks)
+                    if (c.DefOf(i) is { IsPress: true, IsLathe: false } pdef && w.StoreOf(c, i) is { } pst)
+                    {
+                        var bays = string.Join(", ", Enumerable.Range(0, pdef.PressBays.Length).Select(b => ConstructPress.PieceIn(c, i, b) is var pi and >= 0 ? c.DefOf(pi).Name : "-"));
+                        WsSay($"[logi]   press {pdef.Name}#{i}: line {ProductionLines.Raw(w, c, i, pst)}; {ConstructPress.StallText((PressStall)pst.Refused)}; bays [{bays}]; refused {pst.Blocked / 4} at bay {pst.Blocked % 4 + 1}; queue {(c.Parts[i].Orders is { } pq ? pq.Count.ToString() : "none")}");
+                    }
                 for (var i = 0; i < c.PartCount; i++) // (the Orders rows' chain lines, as this peer has them: the server's, or a client's from CBodyKind.Craft)
                     if (c.Parts[i].Craft is { Count: > 0 } cq)
                         for (var k = 0; k < cq.Count; k++)

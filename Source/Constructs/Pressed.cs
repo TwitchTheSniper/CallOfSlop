@@ -175,6 +175,48 @@ public static class Pressed
         }
     }
 
+    /// <summary>A key read for a work order: its die, pattern and blank (no def is made), or null when it isn't a pressed key.</summary>
+    public sealed record OrderSpec(PressDie Die, PressPattern Pattern, ExtrusionKey Blank, ConstructPartDef? Preset);
+
+    private static readonly Dictionary<string, OrderSpec?> OrderSpecs = new(StringComparer.Ordinal);
+    private static PressTable? _orderTable;
+
+    /// <summary>
+    /// What a press needs to work an order for this key (Press phase 4): read once, then looked up, so a press asking every step allocates
+    /// nothing. Null: not a pressed key. A preset's key gives its catalogue part as <see cref="OrderSpec.Preset"/>.
+    /// </summary>
+    public static OrderSpec? SpecOf(string key)
+    {
+        var t = PressTable.Current;
+        lock (OrderSpecs)
+        {
+            if (!ReferenceEquals(_orderTable, t) || OrderSpecs.Count > 4096)
+            {
+                OrderSpecs.Clear(); // (a table read again: its dies are new objects)
+                _orderTable = t;
+            }
+            if (OrderSpecs.TryGetValue(key, out var have))
+                return have;
+            OrderSpec? spec = null;
+            if (TryParse(key, out var die, out var pattern, out var blank, out _))
+                spec = new OrderSpec(die!, pattern!, blank, t.PresetByKey.GetValueOrDefault(key));
+            OrderSpecs[key] = spec;
+            return spec;
+        }
+    }
+
+    /// <summary>A work order a press makes: a pressed key by name, or a catalogue part that is a die's preset. Null: neither.</summary>
+    public static OrderSpec? SpecOf(in WorkOrder o) =>
+        o.Name != null ? (o.Name.StartsWith(Prefix, StringComparison.Ordinal) ? SpecOf(o.Name) : null)
+        : !o.IsPiece && ConstructParts.Get(o.Part) is { } d && PressTable.Current.PresetKeyOf(d) is { } key ? SpecOf(key) : null;
+
+    /// <summary>Is this an order's name for a pressed part (its key's prefix)?</summary>
+    public static bool IsName(string? name) => name != null && name.StartsWith(Prefix, StringComparison.Ordinal);
+
+    /// <summary>"CVT 0.50 x 0.50 x 0.75 m steel" for a key; the key itself when it doesn't read.</summary>
+    public static string Label(string key) =>
+        SpecOf(key) is { } s ? s.Preset?.Name ?? $"{s.Pattern.Label} {s.Blank.W / 100f:0.##} x {s.Blank.H / 100f:0.##} x {s.Blank.L / 100f:0.##} m {RecyclingTable.Current.NameOf(s.Blank.Material)}" : key;
+
     /// <summary>(RuntimeParts) Drops the doomed parts from the key table, and the keys that made nothing.</summary>
     internal static void Forget(Func<ConstructPartDef, bool> doomed)
     {

@@ -228,7 +228,7 @@ public static class ConstructLogistics
             }
             else if (d.IsConveyorJunction)
                 m.Through[n] = outs[n] == 1; // (a Join; a Splitter deals in turn, so a way through it is no way)
-            else if ((d.IsPieceRack || d.IsAssembler || d.IsPanelFormer) && m.DestN < LogiMap.MaxDests && c.Parts[m.NodePart[n]].Store != 0)
+            else if ((d.IsPieceRack || d.IsAssembler || d.IsPanelFormer || d.IsPress && !d.IsLathe) && m.DestN < LogiMap.MaxDests && c.Parts[m.NodePart[n]].Store != 0)
             {
                 // A rack or a tray; an Assembler's Piece in (a chained order's inputs); a Panel Former's (no wants yet: phase 3's sheet needs).
                 m.DestOfNode[n] = (short)m.DestN;
@@ -352,7 +352,7 @@ public static class ConstructLogistics
     private static ushort WantAt(ConstructWorld world, Construct c, LogiMap m, int ds, ConstructPartDef d, int maker)
     {
         int t = m.NodePart[m.Dests[ds]];
-        if (c.DefOf(t).IsAssembler)
+        if (c.DefOf(t) is { IsAssembler: true } or { IsPress: true, IsLathe: false })
             return ConstructLogisticsPlan.WantAt(world, c, t, d, maker); // (a chained order's input)
         if (c.Parts[t].Craft is not { Count: > 0 } q || world.StoreOf(c, t) is not { } tray)
             return 0;
@@ -487,7 +487,7 @@ public static class ConstructLogistics
         if (world.StoreOf(c, part) is not { } st)
             return LogiReason.Closed;
         if (c.DefOf(part) is { IsPieceRack: false } md)
-            return md.IsAssembler && ConstructLogisticsPlan.Open(world, c, part, r.Tag) ? LogiReason.None : LogiReason.Closed; // (a machine's input waits at its door)
+            return (md.IsAssembler || md.IsPress) && ConstructLogisticsPlan.Open(world, c, part, r.Tag) ? LogiReason.None : LogiReason.Closed; // (a machine's input waits at its door)
         if (((LogiFlags)r.Flags & LogiFlags.Storage) == 0 && (r.Tag == 0 || c.Parts[part].Craft is not { } q || q.Find(r.Tag) < 0))
             return LogiReason.Closed;
         return ConstructConveyor.RackCheck(c, part, st, d) != 0 ? LogiReason.DestFull : LogiReason.None;

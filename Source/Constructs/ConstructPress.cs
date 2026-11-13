@@ -19,6 +19,7 @@ public enum PressStall : byte
     ConveyorSmall, // what it stamps is wider or taller than its Piece out conveyor
     ConveyorCut, // its Piece out conveyor is cut
     Bay2Short, // a sized die's pattern wants more of its kit in bay 2 than it holds
+    WantsOrder, // it has a queue (Press phase 4) and the queue is empty: it presses nothing until an order comes
 }
 
 /// <summary>Why a bay turned a piece away. <see cref="CStore.Blocked"/> holds this times 4 plus the bay (3: the die slot), on the wire.</summary>
@@ -37,6 +38,7 @@ public enum BayRefuse : byte
     Pattern, // the press's Pattern setting doesn't take this section
     Hopper, // bay 2 is the kit hopper: it takes no piece
     Kit, // bay 2: not the kit this pattern wants
+    Order, // a press with a queue: not its head order's blank (or no order yet)
 }
 
 /// <summary>
@@ -404,6 +406,16 @@ public static class ConstructPress
         pattern = null;
         preset = null;
         var press = c.Parts[part].D;
+        if (c.Parts[part].Orders is { Bill: false } q)
+        {
+            // A press with a queue works its head order only (Press phase 4): its pattern, and a bay takes only its blank.
+            if (q.Count == 0 || Pressed.SpecOf(q.Head) is not { } spec || !ReferenceEquals(spec.Die, die) || (key with { Growing = false }) != spec.Blank)
+                return BayRefuse.Order;
+            if (Pressed.Across(spec.Blank) > press.PressMaxCm)
+                return BayRefuse.Size;
+            (pattern, preset) = (spec.Pattern, spec.Preset);
+            return BayRefuse.None;
+        }
         var section = Pressed.SectionOf(key);
         if (section < 0 || Array.IndexOf(die.Blanks, section) < 0)
             return BayRefuse.Section;
@@ -445,9 +457,15 @@ public static class ConstructPress
     {
         ref var p = ref c.Parts[part];
         var d = p.D;
+        if (p.Orders is { Bill: false, Count: 0 })
+        {
+            // A press has no Clear button: a queue that ran out goes, and it is back on its own Pattern (Press phase 4; phase4 notes).
+            p.Orders = null;
+            world.OrdersChanged(c);
+        }
         var bay = ReadyBay(die, c, part, out var pattern, out var preset);
         var need = bay < 0 ? 0 : Pressed.Bay2For(pattern!, c.Parts[PieceIn(c, part, bay)].D.ExKey with { Growing = false });
-        var why = bay < 0 ? PressStall.Wants
+        var why = bay < 0 ? (p.Orders is { Bill: false, Count: 0 } ? PressStall.WantsOrder : PressStall.Wants)
             : need > KitHeld(st, pattern!.Bay2) ? PressStall.Bay2Short
             : preset != null && ConstructAssembling.OutputOf(d, st, preset, 1) == AsmOut.TrayFull ? PressStall.TrayFull
             : ConstructRecycler.Powered(world, c, part) ? PressStall.None : PressStall.NoPower;
@@ -485,6 +503,9 @@ public static class ConstructPress
                 world.AddInput(st, kit.Material, -need);
         }
         world.Note(CNoteKind.Made, c.Id, c.Owner, (ushort)(preset ?? pattern!.Like).Id, (byte)d.Tier); // (a sized part counts as its like part: its own id is this run's)
+        ProductionLines.Made(world, c, part, 1); // (its console's Made count)
+        if (c.Parts[part].Orders is { Bill: false, Count: > 0 } q)
+            WorkOrders.Made(world, c, q); // (its head order: SizedRefusal took only its blank)
         world.RemovePart(c, piece);
         c.Wake();
         return true;
@@ -545,6 +566,13 @@ public static class ConstructPress
         {
             need = Pressed.Bay2For(pattern!, c.Parts[PieceIn(c, part, bay)].D.ExKey with { Growing = false });
             return pattern!.Bay2;
+        }
+        if (c.Parts[part].Orders is { Bill: false, Count: > 0 } q && Pressed.SpecOf(q.Head) is { } spec && ReferenceEquals(spec.Die, die))
+        {
+            // (its head order's kit, before its blank comes: the hopper fills while the Extruder makes it)
+            pattern = spec.Pattern;
+            need = Pressed.Bay2For(spec.Pattern, spec.Blank);
+            return pattern.Bay2;
         }
         pattern = SetPattern(die, c, part);
         if (pattern == null)
@@ -690,6 +718,8 @@ public static class ConstructPress
     public static bool TakeFromConveyor(ConstructWorld world, IWorldQuery query, Construct c, int part, int bay, ConstructPartDef pd, float health, uint paint)
     {
         var d = c.Parts[part].D;
+        if (!pd.IsExtrusion && d.IsPress && !d.IsLathe && !c.Parts[part].Broken && WantsKitPart(world, c, part, (ushort)pd.Id))
+            return FeedKitPart(world, c, part, pd); // (a kit part riding in, at any bay's Piece in, goes to the hopper: a chained order's kit, Press phase 4)
         if (d.IsPress && !d.IsLathe && bay == HopperBay)
         {
             // Bay 2 is the kit hopper: its Piece in feeds the first free bay that takes blanks (bay 3, else bay 1).
@@ -1053,6 +1083,7 @@ public static class ConstructPress
         BayRefuse.Pattern => "not its pattern",
         BayRefuse.Hopper => "kits only",
         BayRefuse.Kit => "not its kit",
+        BayRefuse.Order => "not its order",
         _ => "",
     };
 
@@ -1214,6 +1245,19 @@ public static class ConstructPress
             }
             return;
         }
+        if (c.Parts[part].Orders is { Bill: false, Count: > 0 } q && Pressed.SpecOf(q.Head) is { } spec && ReferenceEquals(spec.Die, die))
+        {
+            // A press working orders wants its head order's blank (Press phase 4): that one, by its sizes.
+            var k = spec.Blank;
+            card.IconColour = names.ColourOf(k.Material);
+            card.IconMask = k.Mask;
+            card.Add(1, names.NameOf(k.Material));
+            card.Add(2, Pressed.SectionOf(k) is var sec and >= 0 ? SectionName(sec) : "Custom");
+            card.AddShort(3, k.W / 100f).Add(3, 'x').AddShort(3, k.H / 100f).Add(3, 'x').AddShort(3, k.L / 100f).Add(3, 'm');
+            card.State = refused != BayRefuse.None ? PanelState.Refused : PanelState.Wants;
+            card.Add(4, refused != BayRefuse.None ? SizedWhyShort(refused) : "For its order");
+            return;
+        }
         card.IconColour = names.ColourOf(die.Materials[0]);
         card.IconMask = SectionMask(die.Blanks[0]);
         for (var m = 0; m < die.Materials.Length; m++)
@@ -1358,6 +1402,7 @@ public static class ConstructPress
         PressStall.ConveyorSmall => "Conveyor too narrow",
         PressStall.ConveyorCut => "Output conveyor cut",
         PressStall.Bay2Short => "Bay 2 needs its kit",
+        PressStall.WantsOrder => "No orders: waiting",
         _ => "Ready",
     };
 
