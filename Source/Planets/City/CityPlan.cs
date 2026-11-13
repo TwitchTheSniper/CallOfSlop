@@ -559,6 +559,7 @@ public sealed class CityPlan
                 MidRise(id, ref b, half, height, ref d);
                 Billboard(id, half, front, ref d);
             }
+            Entrance(id, half, front, b.Shops, ref d);
             if (b.Shops && d.Chance(0.85f))
             {
                 Blade(id, half, front, ref d, 1);
@@ -621,9 +622,34 @@ public sealed class CityPlan
             var roofColor = Rgb(0x5a5e63);
             var crownTop = bottom + d.Range(4, 7);
             Add(id, Vector2.Zero, crown, bottom - 0.05f, crownTop, CityStyle.Plain, roofColor, shape, shape == 1 ? MathF.Min(crown.X, crown.Y) * 0.3f : 0);
+            // The skyline: towers end differently. A third keep the flat plant room (and maybe a pad), the rest step in,
+            // rise to a pyramid or a spire, or wear a lit crown.
+            var kind = top > 90 ? d.Pick(4) : 0;
+            if (kind == 1)
+            {
+                // Stepped: two shrinking tiers over the plant room.
+                var t2 = crown * 0.7f;
+                Add(id, Vector2.Zero, t2, crownTop - 0.05f, crownTop + 5, CityStyle.Plain, Rgb(0x6a6e73), shape, shape == 1 ? MathF.Min(t2.X, t2.Y) * 0.3f : 0);
+                Add(id, Vector2.Zero, t2 * 0.6f, crownTop + 4.95f, crownTop + 9, CityStyle.Plain, Rgb(0x7a7e83), shape, shape == 1 ? MathF.Min(t2.X, t2.Y) * 0.18f : 0);
+                crownTop += 9;
+            }
+            else if (kind == 2 && shape != 2)
+            {
+                // A pyramid roof, dark metal, a lamp at its point.
+                var ph = MathF.Min(crown.X, crown.Y) * d.Range(0.9f, 1.6f);
+                Add(id, Vector2.Zero, crown, crownTop - 0.05f, crownTop + ph, CityStyle.Roof, Rgb(0x3a4248), 3, 0.08f);
+                Add(id, Vector2.Zero, new Vector2(0.5f), crownTop + ph - 0.2f, crownTop + ph + 0.6f, CityStyle.Beacon, Rgb(0xff2020), solid: false);
+                crownTop += 1000; // (no pad on a point)
+            }
+            else if (kind == 3)
+            {
+                // A lit crown: a band of light round the top, the tower's name at night.
+                Add(id, Vector2.Zero, crown + new Vector2(0.15f), crownTop - 1.6f, crownTop - 0.2f, CityStyle.Lamp, d.Chance(0.5f) ? Rgb(0x8ad0ff) : Rgb(0xffd49a), shape,
+                    shape == 1 ? MathF.Min(crown.X, crown.Y) * 0.3f + 0.1f : 0, detail: false, solid: false);
+            }
             // A landing pad on the crown of a tower tall and broad enough (the air taxis come and go from these).
             var padR = MathF.Min(crown.X, crown.Y) - 0.3f;
-            if (top > 80 && padR >= 5.5f && d.Chance(0.8f))
+            if (top > 80 && padR >= 5.5f && crownTop < top + 900 && d.Chance(0.8f))
             {
                 padR = MathF.Min(padR, 11f);
                 Add(id, Vector2.Zero, new Vector2(padR), crownTop - 0.05f, crownTop + 0.35f, CityStyle.Pad, Rgb(0x3a3d40), 2);
@@ -656,8 +682,34 @@ public sealed class CityPlan
             {
                 Add(id, Vector2.Zero, half, 0, top, (CityStyle)b.Style, b.Wall);
                 Cornice(id, Vector2.Zero, half, top, b.Wall);
-                RoofClutter(id, half, top, ref d, true);
+                if (b.Style == (byte)CityStyle.Brick && d.Chance(0.5f))
+                {
+                    // An old brick block: a hipped slate roof over its cornice instead of a flat one.
+                    var rh = MathF.Min(half.X, half.Y) * d.Range(0.5f, 0.8f);
+                    Add(id, Vector2.Zero, half + new Vector2(0.2f), top + 0.1f, top + rh, CityStyle.Roof, Rgb(0x3e4247), 3, 0.25f);
+                }
+                else
+                    RoofClutter(id, half, top, ref d, true);
             }
+        }
+
+        /// <summary>The way in, marked (buildings.md rule 4): a canopy over the door in the middle of the front, a lamp under it;
+        /// a lobby without shops gets a deeper canopy on two posts.</summary>
+        private void Entrance(int id, Vector2 half, Vector2 front, bool shops, ref Dice d)
+        {
+            var along = new Vector2(MathF.Abs(front.Y), MathF.Abs(front.X));
+            var reach = front.X != 0 ? half.X : half.Y;
+            var deep = shops ? 1.1f : 2.4f;
+            var at = front * (reach + deep * 0.5f);
+            var hs = front.X != 0 ? new Vector2(deep * 0.5f, 2.2f) : new Vector2(2.2f, deep * 0.5f);
+            var colour = shops ? Rgb(0x2c2f33) : Rgb(d.Pick(3) switch { 0 => 0x3a3d42, 1 => 0x6b2a2a, _ => 0x2a4a3a });
+            Add(id, at, hs, 4.1f, 4.35f, CityStyle.Plain, colour, detail: true, solid: false);
+            var lampAt = front * (reach + 0.25f);
+            var ls = front.X != 0 ? new Vector2(0.15f, 0.35f) : new Vector2(0.35f, 0.15f);
+            Add(id, lampAt, ls, 3.85f, 4.08f, CityStyle.Lamp, Rgb(0xffd49a), detail: true, solid: false);
+            if (!shops)
+                foreach (var sgn in new[] { -1f, 1f })
+                    Add(id, front * (reach + deep - 0.15f) + along * sgn * 2.0f, new Vector2(0.08f), 0.2f, 4.1f, CityStyle.Metal, Rgb(0x2c2f33), detail: true, solid: true);
         }
 
         /// <summary>A blade sign: a lit panel standing out from the front wall near a corner, over the shops.</summary>

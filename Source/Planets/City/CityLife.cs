@@ -440,6 +440,13 @@ public sealed class CityLife
             if (i < 10)
                 beds.Add((new Vector2(MathF.Cos(la), MathF.Sin(la)) * 21f - new Vector2(0.8f), new Vector2(MathF.Cos(la), MathF.Sin(la)) * 21f + new Vector2(0.8f)));
         }
+        // Benches round the fountain and the ring of trees: keep strollers' rounds outside 33 m or inside 12 m; cafes.
+        beds.Add((new Vector2(-33f), new Vector2(33f)));
+        foreach (var (qx, qz) in new[] { (0f, -1f), (0f, 1f), (-1f, 0f), (1f, 0f) })
+        {
+            var centre = new Vector2(qx * MathF.Min(52f, (plan.SquareMax.X - plan.SquareMin.X) * 0.5f - 22f), qz * MathF.Min(70f, (plan.SquareMax.Y - plan.SquareMin.Y) * 0.5f - 22f));
+            beds.Add((centre - new Vector2(11f), centre + new Vector2(11f)));
+        }
         keepOut = beds.ToArray();
         for (var i = 0; i < 160; i++)
         {

@@ -117,6 +117,20 @@ frame for the city; the game at 2,100 to 3,000 fps from above, in the market and
 Cost on Karl's PC with all of it (1920x1080, vsync off): 0.07 to 0.09 ms CPU, 0.12 to 0.13 ms GPU a frame for the city;
 the game at 2,670 to 2,840 fps from above, by the market and in the avenue.
 
+## The square, the ways in, the skyline (slice 5)
+
+- **The square**: twelve benches round the fountain facing the water, a ring of sixteen trees at 30 m, four cafe
+  terraces (six tables under umbrellas, stools, a kiosk) between the beds; strollers keep clear of all of it.
+- **Every way in is marked** (buildings.md rule 4): a canopy over the door in the middle of each front with a lamp under
+  it; a lobby without shops has a deeper coloured canopy on two posts (`Entrance`).
+- **The skyline**: a mass may taper (`Shape` 3, its top the outline scaled by `Cut`: hipped roofs, pyramids). Towers end
+  four ways: the flat plant room (and maybe a pad), a stepped crown, a dark pyramid with a lamp at its point, or a lit
+  crown band; half the brick blocks wear a hipped slate roof.
+- **Cars**: a body, bonnet and boot, a dark glasshouse and a roof, wheels outside the body; a fifth are vans (longer,
+  taller) or buses.
+
+Cost (same PC and settings): 0.08 to 0.1 ms CPU, 0.13 ms GPU a frame for the city; 1,770 to 2,660 fps.
+
 ## The plan for the rest (slices)
 
 1. **Done: the core** (this file): streets, 790 buildings, the square, lamps, the elevated loop and its stations.
