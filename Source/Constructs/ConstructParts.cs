@@ -1857,8 +1857,6 @@ public static partial class ConstructParts
         OfficeParts.Parse(d, root, file); // (the fax and the computer, after their panels: OfficeParts.cs)
         ConstructPress.ParseDie(d, root, file);
         ProductionLines.MonitorPorts(d); // (after the panels and the machines: a console's, a machine's or a rack's Data out)
-        if (d.IsRouter)
-            d.DataOut = ConstructLogistics.RouterOut; // (Alarm: a piece stuck at it; Moving: pieces riding its network)
         if (d.IsTerminal && !ConstructTerminals.HasPorts(d))
             throw new ConstructPartException($"{file}: a terminal names two chute ports: \"{ConstructTerminals.NetworkPort}\" (both ways) and \"{ConstructTerminals.OutPort}\" (out only)");
         ParseSystems(d, root, file); // (docks, catapults, conveyors: ConstructSystems.cs)

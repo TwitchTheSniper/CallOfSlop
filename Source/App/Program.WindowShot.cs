@@ -1127,12 +1127,12 @@ public static unsafe partial class Program
         WsSay($"  logic: out {c.Parts[part].Out:0.##}, in {c.Parts[part].In:0.##}, state {c.Parts[part].State}, count {c.Parts[part].Count}; the body: {c.WireCount} wires, logic {c.HasLogic}, powered {c.Parts[part].Powered}");
         if (g.Constructs.StoreOf(c, part) is { } st)
             WsSay($"  store: line state {(ProductionLines.Raw(g.Constructs, c, part, st) is { } s ? ProductionLines.Word(s) : "-")}, busy {st.Busy}, held {st.Held}, blocked {st.Blocked}, {st.Amount} {RecyclingTable.Current.NameOf(st.Material)}, {st.ItemCount} items, mains off {c.MainsOff}; creative {g.Constructs.CreativeRecycling} (parts {g.SandboxInfiniteParts}, survival option {g.SandboxSurvivalOption}, map {World.Map.Name})");
-        if (d.Monitor != MonitorKind.None && (d.Panels.Length == 0 || d.Monitor == MonitorKind.Store))
+        if (d.Monitor != MonitorKind.None && (d.Panels.Length == 0 || d.Monitor is MonitorKind.Store or MonitorKind.Network))
         {
-            // What a display on its Data out shows: a medium one (6 rows of 24) and a tiny one (a line).
-            foreach (var rows in (ReadOnlySpan<int>)[6, 1])
+            // What a display on its Data out shows: a medium one (6 rows of 24) and a tiny one (a line); a Router's board also as a 14-row one of 40.
+            foreach (var rows in d.Monitor == MonitorKind.Network ? (ReadOnlySpan<int>)[16, 6, 1] : [6, 1])
             {
-                var card = new PanelCard { Rows = rows, TextRows = rows, Cols = 24 };
+                var card = new PanelCard { Rows = rows, TextRows = rows, Cols = rows > 6 ? 64 : 24 };
                 ProductionLines.FillMonitor(g.Constructs, c, part, card);
                 for (var l = 0; l < rows; l++)
                     if (card.Length(l) > 0)

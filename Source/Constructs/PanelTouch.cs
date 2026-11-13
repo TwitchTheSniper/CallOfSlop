@@ -51,6 +51,8 @@ public static class PanelTouch
         ["orders.preset"] = (w, c, part, player, tick) => ConstructPanelFormer.NextPreset(w, c, part), // (a Panel Former's fourth button)
         ["press.pattern"] = (w, c, part, player, tick) => ConstructPress.NextPattern(w, c, part), // (a press's die screen: the next pattern of its die)
         ["machine.recipe"] = (w, c, part, player, tick) => ConstructEdits.NextRecipe(c, part), // (a machine's Recipe button: the picker opens on this PC, Program.MachineRecipePicker; this step only where it can't)
+        ["router.spill"] = (w, c, part, player, tick) => RouterScreen.NextSpill(c, part), // (a Router's screen: where a piece with no order goes)
+        ["router.hold"] = (w, c, part, player, tick) => RouterScreen.ToggleHold(c, part),
         ["office.advert2"] = (w, c, part, player, tick) => OfficeParts.ClickAdvert(c, part, 1),
         ["view.up"] = (w, c, part, player, tick) => null, // (a list's Up and Down are this PC's own: Program.PointerFrame scrolls the panel and sends nothing)
         ["view.down"] = (w, c, part, player, tick) => null,

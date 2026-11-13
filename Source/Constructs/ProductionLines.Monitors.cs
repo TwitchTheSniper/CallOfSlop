@@ -10,6 +10,7 @@ public enum MonitorKind : byte
     Machine, // a refiner, Extruder, Wheel Former, Assembler, Press or Die Lathe: that machine
     Rack, // a Piece Rack: its fill and kinds
     Store, // a Materials Bin, Storage Volume, Parts Shelf or other store: its fill and contents
+    Network, // a Conveyor Router: its conveyor network's board (ConstructLogisticsBoard.cs)
 }
 
 /// <summary>
@@ -51,6 +52,11 @@ public static partial class ProductionLines
             d.Monitor = MonitorKind.Machine;
             d.DataOut = DataOutOnly; // (one name: the part itself, port 255, as a single output always was)
         }
+        else if (d.IsRouter)
+        {
+            d.Monitor = MonitorKind.Network;
+            d.DataOut = ConstructLogistics.RouterOut; // (Alarm, Moving, then Data out: the board)
+        }
         else if (d.IsPieceRack)
         {
             d.Monitor = MonitorKind.Rack;
@@ -68,6 +74,7 @@ public static partial class ProductionLines
     {
         MonitorKind.Console => ConstructRoutes.DataPort(port) == PortData,
         MonitorKind.Machine when d.IsExtruder => ConstructRoutes.DataPort(port) == 1,
+        MonitorKind.Network => ConstructRoutes.DataPort(port) == ConstructLogistics.PortBoard,
         MonitorKind.None => false,
         _ => port == 255,
     };
@@ -272,6 +279,9 @@ public static partial class ProductionLines
                 break;
             case MonitorKind.Store:
                 StoreMonitor.Fill(world, c, source, sd, card);
+                break;
+            case MonitorKind.Network:
+                ConstructLogisticsBoard.Fill(world, c, source, card);
                 break;
             default:
                 FillMachine(world, c, source, sd, card);
