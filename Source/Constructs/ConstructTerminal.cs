@@ -197,6 +197,8 @@ public static class ConstructTerminals
         }
         var picked = view.Picked;
         card.Add(0, "Item ").Add(0, picked + 1).Add(0, '/').Add(0, rows.Count);
+        if (view.Stock.MadeOver > 0)
+            card.Add(0, " +").Add(0, view.Stock.MadeOver); // (made kinds past the list's 64: the look line says so in words)
         var top = Math.Max(0, Math.Min(picked - 1, rows.Count - ListRows));
         for (var k = 0; k < ListRows && top + k < rows.Count; k++)
         {
@@ -515,6 +517,11 @@ public sealed partial class ConstructEdits
 
     private readonly TerminalJob[] _jobs = new TerminalJob[ConstructTerminals.MaxJobs];
     private int _jobN;
+
+    /// <summary>Pulls under way, and the part each is bringing (None for a material): the run-time parts sweep keeps them (RuntimeParts.MarkRoots).</summary>
+    internal int TerminalJobs => _jobN;
+
+    internal ushort TerminalJobPart(int k) => _jobs[k].Material ? ConstructParts.None : _jobs[k].Id;
 
     /// <summary>Server: a player at a terminal asks for an item. <paramref name="flags"/>: 1 to the hands, 2 <paramref name="id"/> is a material. Null, or why not.</summary>
     public string? TerminalPull(ConstructWorld world, byte player, Vector3 eye, ushort body, int part, ushort id, byte flags)

@@ -215,6 +215,10 @@ public static class RuntimeParts
                         Mark(h.HeldGone);
                         Mark(h.MagFor);
                     }
+            foreach (var r in Hands)
+                if (r.TryGetTarget(out var e))
+                    for (var k = 0; k < e.TerminalJobs; k++)
+                        Mark(e.TerminalJobPart(k)); // (a Smart Terminal's pull on its way: the piece may be taken by someone else meanwhile)
             foreach (var r in Counted)
                 if (r.TryGetTarget(out var inv))
                     for (var k = 0; k < inv.MadeN; k++)
@@ -239,6 +243,8 @@ public static class RuntimeParts
                 Mark(s.Def[k]);
             for (var k = 0; k < s.KindN; k++)
                 Mark(s.KindDef![k]);
+            if (s.PullWaiting > 0 && !s.PullMaterial)
+                Mark(s.PullId); // (a terminal's screen names what it is bringing, on every peer, by key)
         }
     }
 

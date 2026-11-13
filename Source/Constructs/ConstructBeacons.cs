@@ -205,7 +205,7 @@ public sealed class SlotStore : INetworkStore
 }
 
 /// <summary>
-/// A Piece Rack or a Lay-down Pad on a network (docs/sandbox/design/inventory-run-time-parts.md phase 3): the pieces it holds by kind,
+/// A Piece Rack on a network (docs/sandbox/design/inventory-run-time-parts.md phase 3; a Lay-down Pad is a work point, left out): the pieces it holds by kind,
 /// made parts mostly (an Extruder's, a Press's, a cutter's). A piece taken goes as a body: a Smart Terminal sets it down in front of
 /// the player. Nothing is put into one through the network (its columns are packed by the conveyors and the lifters). A Crafting
 /// Terminal's hold (and a Building Station's, a Panel Designer's) is its own work, never the network's.
@@ -214,7 +214,10 @@ public sealed class RackStore : INetworkStore
 {
     public static readonly RackStore Instance = new();
 
-    public bool Serves(ConstructPartDef d) => d.IsPieceRack && !d.IsCraftTerminal && !d.IsBeacon && !d.IsTerminal;
+    public bool Serves(ConstructPartDef d) => d.IsPieceRack && !d.IsCraftTerminal && !d.IsBeacon && !d.IsTerminal && !IsPad(d);
+
+    /// <summary>A Lay-down Pad (and the Large one) is a work point for the arms and the lines, not storage: never on a network (no flag of its own yet: its name).</summary>
+    public static bool IsPad(ConstructPartDef d) => d.Name.EndsWith("Lay-down Pad", StringComparison.Ordinal);
 
     public int Parts(ConstructWorld world, Construct c, int part) => world.StoreOf(c, part)?.ItemCount ?? 0;
 
@@ -326,6 +329,8 @@ public sealed class BeaconView
     internal uint SentMade; // server: the made list's stamp as last sent whole (0: nothing sent)
     internal int MadeCursor; // server: the next made entry of a list split over messages (0: none under way)
     internal uint MadeSending; // server: the stamp of the list being split
+    private readonly ushort[] _overIds = new ushort[MaxMade];
+    private static bool _overLogged;
 
     public BeaconView() => RuntimeParts.Track(this); // (its made ids keep their parts while it lists them)
 
@@ -348,7 +353,19 @@ public sealed class BeaconView
             }
         if (MadeN == MaxMade)
         {
+            // Left out of the list: counted once a kind (the first MaxMade of them told apart; past that every store's adds),
+            // sent with the list and shown at the terminal; logged once a run.
+            for (var k = 0; k < MadeOver && k < MaxMade; k++)
+                if (_overIds[k] == id)
+                    return;
+            if (MadeOver < MaxMade)
+                _overIds[MadeOver] = id;
             MadeOver++;
+            if (!_overLogged)
+            {
+                _overLogged = true;
+                Console.WriteLine($"[beacons] a network holds more than {MaxMade} kinds of made part: the rest are not listed (a Smart Terminal says how many)");
+            }
             return;
         }
         MadeDef[MadeN] = id;
@@ -369,7 +386,7 @@ public sealed class BeaconView
     /// <summary>The made list's stamp (ids, keys and counts, in order; never 0). Allocates nothing.</summary>
     internal uint MadeStamp()
     {
-        var h = 2166136261u ^ (uint)MadeN;
+        var h = 2166136261u ^ (uint)MadeN ^ (uint)MadeOver << 16; // (the kinds left out are sent too)
         for (var k = 0; k < MadeN; k++)
         {
             h = (h ^ MadeDef[k]) * 16777619u;
@@ -660,7 +677,8 @@ public sealed partial class ConstructBeacons
         return (byte)net;
     }
 
-    private static int KindOf(ConstructPartDef d)
+    /// <summary>The kind of network store that speaks for a part (-1: none). Public for checks.</summary>
+    public static int KindOf(ConstructPartDef d)
     {
         for (var k = 0; k < Kinds.Length; k++)
             if (Kinds[k].Serves(d))
@@ -1161,6 +1179,8 @@ public sealed partial class ConstructBeacons
             return false;
         }
         w.U8((byte)(v.MadeCursor == 0 ? 1 : 2));
+        if (v.MadeCursor == 0)
+            w.U16((ushort)Math.Min(v.MadeOver, ushort.MaxValue)); // (a whole list: how many kinds past MaxMade it leaves out)
         var at = w.Length;
         w.U8(0);
         var n = 0;
@@ -1189,6 +1209,9 @@ public sealed partial class ConstructBeacons
             return;
         if (flags > 2)
             throw new MalformedPacketException($"a beacon's made list flagged {flags}");
+        var over = flags == 1 ? r.U16() : -1;
+        if (over >= 0 && v != null)
+            v.MadeOver = over;
         int n = r.U8();
         if (n > BeaconView.MaxMade)
             throw new MalformedPacketException($"a beacon list of {n} made kinds");
@@ -1246,7 +1269,7 @@ public sealed partial class ConstructBeacons
                 v.Materials[id] = (int)amount;
         }
         if ((flags & 1) != 0 && v != null)
-            v.MadeN = 0;
+            v.MadeN = v.MadeOver = 0;
         ReadMade(ref r, v);
         if (v == null)
             return;

@@ -16,8 +16,10 @@ Notes of 2026-11-13 for `inventory-run-time-parts.md` (the design and the user's
   `CountOf(id)` for either), tracked by the `RuntimeParts` sweep. Sent by key at the end of `CBodyKind.Beacon` and `Terminal`: u8 0 when
   unchanged, else u8 1 (a whole list) or 2 (continued), u8 n, n x (PartRef, u16); a list past 12000 bytes goes on in the next message.
   The callers that indexed `Counts[id]` with any part (salvage counts, the build aids, the parts list) use `CountOf`.
-- **Piece Racks on a network** (`RackStore`, before `SlotStore` in `ConstructBeacons.Kinds`): a Piece Rack or Lay-down Pad chuted to a
-  network counts its pieces by kind; a Crafting Terminal's, Building Station's or Panel Designer's hold is left out. Nothing is put
+- **Piece Racks on a network** (`RackStore`, before `SlotStore` in `ConstructBeacons.Kinds`): a Piece Rack chuted to a
+  network counts its pieces by kind (catalogue pieces too: a beacon builds from a rack, as storage). A Lay-down Pad is a work point for the
+  arms and lines, so it is left out (matched by name until it has a flag); so is a Crafting Terminal's, Building Station's or Panel
+  Designer's hold. Nothing is put
   into a rack through the network.
 - **Smart Terminal rows**: made parts are listed with the rest, one row per key, by `PartRef.Listed` ("Round 0.1 m, 0.7 m long,
   steel"). The use key asks by key (`CActKind.TerminalPull` flag 4, the PartRef after the flags); a made piece comes off the rack and is
@@ -60,3 +62,14 @@ Notes of 2026-11-13 for `inventory-run-time-parts.md` (the design and the user's
 4. **Pictures on the terminal's screen**: it is a text panel; recommend leaving it text.
 
 STATUS: built; tried on host and a joined client.
+
+## After the merge review (2026-11-13)
+
+- Past 64 made kinds a list leaves the rest out: it now says how many (u16 with a whole list), the terminal's screen shows "+N" on its
+  title and the look line "N more made kinds not listed"; logged once a run.
+- A pull under way keeps its part from the sweep: `RuntimeParts.MarkRoots` marks each terminal job's part and every store's
+  `PullId`, so the store message never names a freed id.
+- Lay-down Pads left out of networks (above).
+- Sections passed by name: Inventory beacon, Inventory beacon network, Sandbox inventory, Sandbox Tab inventory, Construct storage,
+  Custom bins, Extruder network, Construct salvage, Assembling, Display screens, Interaction sweep (two re-run alone after a port clash
+  with another session's test).
