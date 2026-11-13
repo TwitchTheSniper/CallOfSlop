@@ -212,6 +212,8 @@ public sealed class CityGeometry
             par = Pack(style, word, wide * 10, narrow * 100, !wideX);
         }
         var round = m.Shape == 2;
+        var cm = m;
+        Vector2 T(Vector2 q) => cm.Shape == 3 ? cm.At + (q - cm.At) * cm.Cut : q; // (a tapered mass: a hipped roof, a spire)
         var u = 0f;
         for (var i = 0; i < n; i++)
         {
@@ -222,13 +224,18 @@ public sealed class CityGeometry
             var outN = Dir(new Vector2(edge.Y, -edge.X));
             if (Vector3.Dot(outN, Dir(mid)) < 0)
                 outN = -outN;
+            if (m.Shape == 3)
+            {
+                var sloped = Vector3.Normalize(Vector3.Cross(P(e, m.Bottom) - P(a, m.Bottom), P(T(a), m.Top) - P(a, m.Bottom)));
+                outN = Vector3.Dot(sloped, outN) < 0 ? -sloped : sloped;
+            }
             Vector3 na = round ? Dir(a - m.At) : outN, ne = round ? Dir(e - m.At) : outN;
-            Quad(c, m.Detail, P(a, m.Bottom), P(e, m.Bottom), P(e, m.Top), P(a, m.Top), na, ne, ne, na,
+            Quad(c, m.Detail, P(a, m.Bottom), P(e, m.Bottom), P(T(e), m.Top), P(T(a), m.Top), na, ne, ne, na,
                 new Vector2(u, m.Bottom), new Vector2(u + len, m.Bottom), new Vector2(u + len, m.Top), new Vector2(u, m.Top), m.Color, par, outN);
             if (m.Solid)
             {
-                ColTri(c, P(a, m.Bottom), P(e, m.Bottom), P(e, m.Top), outN);
-                ColTri(c, P(a, m.Bottom), P(e, m.Top), P(a, m.Top), outN);
+                ColTri(c, P(a, m.Bottom), P(e, m.Bottom), P(T(e), m.Top), outN);
+                ColTri(c, P(a, m.Bottom), P(T(e), m.Top), P(T(a), m.Top), outN);
             }
             u += len;
         }
@@ -238,7 +245,7 @@ public sealed class CityGeometry
         var centre = Vert(c, P(m.At, m.Top), up, m.At, topColor, topPar);
         var first = c.V.Count;
         for (var i = 0; i < n; i++)
-            Vert(c, P(pts[i], m.Top), up, pts[i], topColor, topPar);
+            Vert(c, P(T(pts[i]), m.Top), up, T(pts[i]), topColor, topPar);
         for (var i = 0; i < n; i++)
         {
             uint i0 = (uint)(first + i), i1 = (uint)(first + (i + 1) % n);
@@ -249,7 +256,7 @@ public sealed class CityGeometry
                 Tri(c, m.Detail, centre, i0, i1);
             if (m.Solid)
             {
-                ColTri(c, P(m.At, m.Top), P(pts[i], m.Top), P(pts[(i + 1) % n], m.Top), up);
+                ColTri(c, P(m.At, m.Top), P(T(pts[i]), m.Top), P(T(pts[(i + 1) % n]), m.Top), up);
                 ColTri(c, P(m.At, m.Bottom), P(pts[i], m.Bottom), P(pts[(i + 1) % n], m.Bottom), -up);
             }
         }
@@ -587,6 +594,41 @@ public sealed class CityGeometry
             Box(cb, bedFoot + bu * 0.27f, bx * (half.X - 0.3f), bu * 0.25f, bz * (half.Y - 0.3f), CityPlanColours.Rgb(0x4d6b35), Pack(CityStyle.Leaves, 9, 0, 0), false, false);
             for (var t = -1; t <= 1; t++)
                 Tree(centre + new Vector2(t * 5f, 0), ref d);
+            // Shrubs along the bed's long sides.
+            for (var t = -3; t <= 3; t++)
+                foreach (var sz in new[] { -1f, 1f })
+                {
+                    var sp = centre + new Vector2(t * 2.1f + d.Range(-0.3f, 0.3f), sz * (half.Y - 1.1f));
+                    var h = d.Range(0.7f, 1.2f);
+                    Prism(cb, sp, RoadLift + Kerb + 0.45f, RoadLift + Kerb + 0.45f + h, d.Range(0.6f, 0.85f), 0.35f, 7, CityPlanColours.Rgb(d.Pick(2) == 0 ? 0x3d5a2eu : 0x5a6b30u), Pack(CityStyle.Leaves, d.Next(), 0, 0), false, turn: d.Range(0, 1));
+                }
+        }
+        // Round the fountain: benches facing the water, and a ring of trees further out.
+        for (var i = 0; i < 12; i++)
+        {
+            var a = i * MathF.Tau / 12;
+            var at = new Vector2(MathF.Cos(a), MathF.Sin(a)) * 13.5f;
+            Bench(at, MathF.Abs(MathF.Cos(a)) < 0.7f);
+        }
+        for (var i = 0; i < 16; i++)
+        {
+            var a = (i + 0.5f) * MathF.Tau / 16;
+            var at = new Vector2(MathF.Cos(a), MathF.Sin(a)) * 30f;
+            if (!InHole(at, 3f))
+                Tree(at, ref d);
+        }
+        // Cafe terraces: tables under umbrellas in four clusters between the beds, a kiosk serving each.
+        foreach (var (qx, qz) in new[] { (0f, -1f), (0f, 1f), (-1f, 0f), (1f, 0f) })
+        {
+            var centre = new Vector2(qx * MathF.Min(52f, (max.X - min.X) * 0.5f - 22f), qz * MathF.Min(70f, (max.Y - min.Y) * 0.5f - 22f));
+            Kiosk(centre + new Vector2(qx * 6f, qz * 6f), ref d);
+            for (var t = 0; t < 6; t++)
+            {
+                var off = new Vector2((t % 3 - 1) * 4.2f, (t / 3 - 0.5f) * 4.5f);
+                if (qx != 0)
+                    off = new Vector2(off.Y, off.X);
+                CafeTable(centre + off, ref d);
+            }
         }
         // Lamps standing across the open paving, in a ring round the fountain.
         for (var i = 0; i < 10; i++)
@@ -685,6 +727,25 @@ public sealed class CityGeometry
         Box(c, foot + ax * 0.85f + up * 0.22f, ax * 0.12f, up * 0.22f, az * 0.25f, Planter, stone, false);
         Box(c, foot - ax * 0.85f + up * 0.22f, ax * 0.12f, up * 0.22f, az * 0.25f, Planter, stone, false);
         Box(c, foot + up * 0.47f, ax * 1.0f, up * 0.04f, az * 0.26f, Wood, Pack(CityStyle.Plain, 6, 0, 0), true);
+    }
+
+    /// <summary>A cafe table: a round top on a post, four stools, an umbrella over it in a cheerful colour.</summary>
+    private void CafeTable(Vector2 at, ref CityPlan.Dice d)
+    {
+        var c = At(at);
+        var y = RoadLift + Kerb;
+        var metal = Pack(CityStyle.Metal, 0, 0, 0);
+        Prism(c, at, y + 0.7f, y + 0.75f, 0.45f, 0.45f, 8, CityPlanColours.Rgb(0xd8d2c4), Pack(CityStyle.Plain, 20, 0, 0), true);
+        Prism(c, at, y, y + 0.7f, 0.04f, 0.04f, 4, Steel, metal, false);
+        for (var k = 0; k < 4; k++)
+        {
+            var a = k * MathF.PI * 0.5f + 0.4f;
+            var sp = at + new Vector2(MathF.Cos(a), MathF.Sin(a)) * 0.75f;
+            Prism(c, sp, y, y + 0.45f, 0.17f, 0.17f, 6, Wood, Pack(CityStyle.Plain, 6, 0, 0), false);
+        }
+        uint colour = CityPlanColours.Rgb(d.Pick(4) switch { 0 => 0xc8483c, 1 => 0xe8d8b0, 2 => 0x2f7a5a, _ => 0xd8a030 });
+        Prism(c, at, y + 0.75f, y + 2.3f, 0.03f, 0.03f, 4, Steel, metal, false);
+        Prism(c, at, y + 2.05f, y + 2.6f, 1.5f, 0.05f, 8, colour, Pack(CityStyle.Plain, 21, 0, 0), false, turn: d.Range(0, 1));
     }
 
     /// <summary>A kiosk: a small lit booth with a striped awning.</summary>

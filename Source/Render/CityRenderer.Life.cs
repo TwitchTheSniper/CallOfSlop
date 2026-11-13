@@ -135,6 +135,15 @@ public sealed unsafe partial class CityRenderer
                 ln.yz = vec2(c * ln.y - s * ln.z, s * ln.y + c * ln.z);
             }
             float scale = 0.92 + 0.16 * float((Hash(seed * 3u) >> 8) & 255u) / 255.0;
+            if (kind == 2)
+            {
+                // A fifth of the traffic are vans and buses: longer and taller.
+                uint vh = Hash(seed * 11u);
+                float big = (vh & 255u) < 51u ? ((vh & 7u) == 0u ? 2.6 : 1.35) : 1.0;
+                lp.z *= big;
+                lp.y *= big > 2.0 ? 2.0 : big > 1.2 ? 1.45 : 1.0;
+                scale = 1.0;
+            }
             lp *= scale;
             lp.y += abs(sin(ph)) * 0.035 * moving; // the bob of a step
             vec3 base = uPlanet + up * (uR + h);
@@ -887,12 +896,16 @@ public sealed unsafe partial class CityRenderer
                 ix.AddRange([first, (ushort)(first + 1), (ushort)(first + 2), first, (ushort)(first + 2), (ushort)(first + 3)]);
             }
         }
-        Box(new Vector3(-0.88f, 0.32f, -2.15f), new Vector3(0.88f, 0.95f, 2.15f), 1);
-        Box(new Vector3(-0.8f, 0.95f, -1.05f), new Vector3(0.8f, 1.4f, 1.0f), 4);
-        Box(new Vector3(-0.78f, 1.4f, -0.95f), new Vector3(0.78f, 1.46f, 0.9f), 1);
-        foreach (var sx in new[] { -0.82f, 0.82f })
+        Box(new Vector3(-0.86f, 0.3f, -2.15f), new Vector3(0.86f, 0.82f, 2.15f), 1);      // the body
+        Box(new Vector3(-0.84f, 0.82f, 0.95f), new Vector3(0.84f, 0.9f, 2.1f), 1);        // the bonnet's top
+        Box(new Vector3(-0.84f, 0.82f, -2.1f), new Vector3(0.84f, 0.92f, -1.4f), 1);      // the boot's
+        Box(new Vector3(-0.76f, 0.82f, -1.35f), new Vector3(0.76f, 1.3f, 0.9f), 4);       // the glasshouse
+        Box(new Vector3(-0.72f, 1.3f, -1.25f), new Vector3(0.72f, 1.38f, 0.75f), 1);      // the roof
+        Box(new Vector3(-0.9f, 0.26f, 2.1f), new Vector3(0.9f, 0.5f, 2.28f), 4);          // the bumpers, dark
+        Box(new Vector3(-0.9f, 0.26f, -2.28f), new Vector3(0.9f, 0.5f, -2.1f), 4);
+        foreach (var sx in new[] { -0.86f, 0.86f })
             foreach (var sz in new[] { -1.35f, 1.35f })
-                Box(new Vector3(sx - 0.12f, 0f, sz - 0.32f), new Vector3(sx + 0.12f, 0.62f, sz + 0.32f), 4);
+                Box(new Vector3(sx - 0.13f, 0f, sz - 0.33f), new Vector3(sx + 0.13f, 0.62f, sz + 0.33f), 4);
         foreach (var sx in new[] { -0.6f, 0.6f })
         {
             Box(new Vector3(sx - 0.18f, 0.62f, 2.14f), new Vector3(sx + 0.18f, 0.78f, 2.2f), 5);
