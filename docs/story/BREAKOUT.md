@@ -66,4 +66,4 @@ Grassing: once Crew is 1, Sergeant Bellweather offers "Some of the inmates are p
   marker moves to the Ministry Courier on the first pad.
 - **Saves.** Nothing new is saved: a player with the lead who hasn't `Escaped` is back at the muster when the world
   loads, one who has is at the spaceport, and a convict who `Fled` is put back at the landing.
-- **Wire.** `Msg.Breakout` (protocol 287) to each player: their stage, the marker, the ride's tick and the two haulers.
+- **Wire.** `Msg.Breakout` (protocol 288) to each player: their stage, the marker, the ride's tick and the two haulers.
