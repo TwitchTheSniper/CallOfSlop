@@ -168,6 +168,10 @@ public sealed unsafe partial class CityRenderer
                 float shelves = 1.0 - 0.55 * step(0.5, fract((fv - 0.75) / 0.7)) * step(fv, 2.6) * step(0.25, fract(fu / 1.7));
                 vec3 room = shopLight * open * shelves;
                 vec3 glass = mix(inside + room, refl, fres * 0.6);
+                // A shut shop has its roller shutter down: ribbed grey steel under the lamps, not a black hole.
+                float rib = 0.82 + 0.18 * step(0.5, fract(fv / 0.12));
+                vec3 shutter = Lit(vec3(0.42, 0.43, 0.45) * rib, n, 0.0, vWorld) + vec3(0.42) * vec3(1.0, 0.72, 0.42) * 0.25 * gOut;
+                glass = mix(shutter, glass, open);
                 col = mix(lightWall * 0.8, glass, win);
                 glow = room * win * 0.6;
                 if (shops)
