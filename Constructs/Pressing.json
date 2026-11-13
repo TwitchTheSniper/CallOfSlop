@@ -900,6 +900,42 @@
      "use": 4.0
     }
    ]
+  },
+  {
+   "output": "Receiver Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Receiver Die",
+   "seconds": 60,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
+    }
+   ]
   }
  ],
  "strength": {
@@ -6200,6 +6236,78 @@
     0.7,
     1.5
    ]
+  },
+  {
+   "die": "Receiver",
+   "blanks": [
+    "solid",
+    "hollow"
+   ],
+   "materials": [
+    "steel"
+   ],
+   "across": [
+    15,
+    120
+   ],
+   "length": [
+    30,
+    600
+   ],
+   "aspect": "preset",
+   "seconds": {
+    "base": 4.0,
+    "perKg": 0.02
+   },
+   "features": [],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "rifle",
+     "like": "Rifle Receiver",
+     "label": "rifle receiver",
+     "preset": "solid 20x20x40 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "heavy",
+     "like": "Heavy Receiver",
+     "label": "heavy receiver",
+     "preset": "solid 25x25x50 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "shell",
+     "like": "Shell Receiver",
+     "label": "shell receiver",
+     "preset": "hollow 20x20x40 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    }
+   ]
   }
  ],
  "presets": [
@@ -6862,6 +6970,24 @@
    "die": "barrel",
    "pattern": "tube",
    "blank": "round 20x20x165 steel"
+  },
+  {
+   "part": "Rifle Receiver",
+   "die": "receiver",
+   "pattern": "rifle",
+   "blank": "solid 20x20x40 steel"
+  },
+  {
+   "part": "Heavy Receiver",
+   "die": "receiver",
+   "pattern": "heavy",
+   "blank": "solid 25x25x50 steel"
+  },
+  {
+   "part": "Shell Receiver",
+   "die": "receiver",
+   "pattern": "shell",
+   "blank": "hollow 20x20x40 steel"
   }
  ]
 }

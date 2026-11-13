@@ -474,7 +474,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 289: Building Station fill settings: the station part has four more settings (fillFuel, fillAmmo, fillCharge, fillWait; CfgKey at the end), part data both peers must share; no new bytes.
     // 290: Lifters phase 2: the Loader Arm in five tiers (Constructs/Parts/Lifters, ids move); CBodyKind.Lifts adds per lifter u16 carry rise (cm),
     //   u8 why, u16 step plus one, u16 station body, u16 moves (ConstructLifters.Write); CfgKey.LiftMode and CarryHeight (at the end).
-    public const ushort ProtocolVersion = 290;
+    // 295: Sized parts phase 3: the Receiver die (two die part files, ids move); a pressed receiver sizes its gun by the merge's law (derived on each peer, no new bytes).
+    public const ushort ProtocolVersion = 295;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

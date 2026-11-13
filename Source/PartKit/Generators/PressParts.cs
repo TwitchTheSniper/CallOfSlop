@@ -58,10 +58,11 @@ public sealed class PressParts : IPartGenerator
         ("Tank", [Small, Medium, Large, Capital], "steel", 2, "#9f4a3f"),
         ("Beam", [Small, Medium, Large, Capital], "metal", 1, "#7a7f88"),
         ("Barrel", [Small, Medium, Large], "steel", 2, "#4a4d52"),
+        ("Receiver", [Small, Medium], "steel", 2, "#4a5146"),
     ];
 
     // The dies whose stroke presses a whole blank to one part (Pressing.json "dies", the Press rework): they have no old rows.
-    private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate", "Button", "Gear", "Board", "Piston", "Cylinder", "Drive", "Shaft", "Actuator", "Spring", "Cable", "Control", "Tank", "Beam", "Barrel"];
+    private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate", "Button", "Gear", "Board", "Piston", "Cylinder", "Drive", "Shaft", "Actuator", "Spring", "Cable", "Control", "Tank", "Beam", "Barrel", "Receiver"];
 
     private static double MaxAcross(Cls c) => c.Key switch { "small" => 0.45, "medium" => 1.8, "large" => 7.2, _ => 28.8 }; // what a class's bays take: 1.8 cells
 
@@ -537,6 +538,28 @@ public sealed class PressParts : IPartGenerator
         foreach (var die in WorkingDies3b())
             yield return die;
         yield return BarrelDie();
+        yield return ReceiverDie();
+    }
+
+    // ---- Sized gun parts, phase 3 (docs/sandbox/design/sized-gun-engine-parts.md 4): the Receiver die. One free dimension, its across: a blank
+    // keeps its preset's shape ("aspect": "preset"), and its scale s (across over the preset's) sizes the gun by the merge's law read with a
+    // real number (ReceiverMerge.json's powers; ConstructMerge.ScaleGun), so a Rifle Receiver at 40x40x80 is today's 2x2 merge. The three
+    // hand-made receivers first; the 26 generated ones are later data. Rifle and Shell share a size, so the Shell's preset is the hollow blank.
+
+    private static readonly (string Id, string Like, string Label, string Blank)[] ReceiverPatterns =
+    [
+        ("rifle", "Rifle Receiver", "rifle receiver", "solid 20x20x40 steel"),
+        ("heavy", "Heavy Receiver", "heavy receiver", "solid 25x25x50 steel"),
+        ("shell", "Shell Receiver", "shell receiver", "hollow 20x20x40 steel"),
+    ];
+
+    private static PyDict ReceiverDie()
+    {
+        var gears = Kit("Gear Set", true, 1, 0.02, "mass", 20); // (as the Drive die: the action's gearing)
+        var die = SizedDie("Receiver", ["solid", "hollow"], ["steel"], [15, 120], [30, 600], [1, 1], 4, 0.02, Py.L(),
+            ReceiverPatterns.Select(r => (object?)Pattern(r.Id, r.Like, r.Label, r.Blank, bay2: gears, along: "z")).ToList());
+        die["aspect"] = "preset";
+        return die;
     }
 
     // ---- Sized gun parts, phase 1 (docs/sandbox/design/sized-gun-engine-parts.md 3): the Barrel die and its plain pattern. A barrel's length
@@ -809,6 +832,9 @@ public sealed class PressParts : IPartGenerator
             Add(builder, "barrel", id, blank);
         foreach (var (builder, blank) in ArtilleryTubes)
             Add(builder, "barrel", "tube", blank);
+        // Phase 3: the hand-made receivers are the Receiver die's presets (their Assembler recipes stay until that design's phase 6).
+        foreach (var (id, like, _, blank) in ReceiverPatterns)
+            Add(like, "receiver", id, blank);
         return r;
     }
 

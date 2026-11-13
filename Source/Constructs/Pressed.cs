@@ -82,8 +82,23 @@ public static class Pressed
         if (across < die.AcrossMin || across > die.AcrossMax || k.L < die.LengthMin || k.L > die.LengthMax)
             return false;
         var aspect = k.L / (float)across;
-        return aspect >= die.AspectMin - 1e-4f && aspect <= die.AspectMax + 1e-4f && PressClass(across) >= 0;
+        return aspect >= die.AspectMin - 1e-4f && aspect <= die.AspectMax + 1e-4f && PressClass(across) >= 0 && (!die.AspectPreset || p.Preset.W == 0 || Proportioned(p, k) == (k.W, k.H, k.L));
     }
+
+    /// <summary>
+    /// The blank a die with <c>"aspect": "preset"</c> takes at this one's across (sized-parts design 4.1): the pattern's preset blank times
+    /// across over the preset's across, each side to the 5 cm lattice. One free dimension: a Rifle Receiver (20x20x40) is 15x15x30, 25x25x50...
+    /// </summary>
+    public static (int W, int H, int L) Proportioned(PressPattern p, in ExtrusionKey k)
+    {
+        var s = Across(k) / (float)Math.Max(1, Across(p.Preset));
+        static int Lattice(float cm) => Math.Max(MinCm, (int)MathF.Round(cm / Extrusion.StepCm, MidpointRounding.AwayFromZero) * Extrusion.StepCm);
+        return (Lattice(p.Preset.W * s), Lattice(p.Preset.H * s), Lattice(p.Preset.L * s));
+    }
+
+    /// <summary>A pressed receiver's scale (sized-parts design 4.2): its across over its pattern's preset's; 1 for anything else.</summary>
+    public static float ReceiverScale(PressPattern p, in ExtrusionKey k) =>
+        p.Like.IsReceiverGun ? Across(k) / (float)Math.Max(1, Across(p.Preset)) : 1f;
 
     /// <summary>Why a die and pattern can't press this blank (bay card text), or null.</summary>
     public static string? Refusal(PressDie die, PressPattern p, in ExtrusionKey k)
@@ -103,6 +118,8 @@ public static class Pressed
         var aspect = k.L / (float)across;
         if (aspect < die.AspectMin - 1e-4f || aspect > die.AspectMax + 1e-4f)
             return $"the blank is {aspect:0.##} times as long as it is across: a {die.Family} die takes {die.AspectMin:0.##} to {die.AspectMax:0.##}";
+        if (die.AspectPreset && p.Preset.W > 0 && Proportioned(p, k) is var want && want != (k.W, k.H, k.L))
+            return $"a {p.Like.Name} blank keeps its shape ({p.Preset.W}x{p.Preset.H}x{p.Preset.L}): {want.W / 100f:0.00} x {want.H / 100f:0.00} x {want.L / 100f:0.00} m";
         if (PressClass(across) < 0)
             return "too large for any press";
         return null;
@@ -463,6 +480,7 @@ public static class Pressed
             d.GunSized = SizedGunParts.Make(builder, die, p, k, name);
             d.GunPartName = name;
         }
+        d.GunScale = ReceiverScale(p, k);
         return d;
     }
 
@@ -672,6 +690,7 @@ public static class Pressed
             d.GunSized = SizedGunParts.Make(builder, die, p, k, name);
             d.GunPartName = name;
         }
+        d.GunScale = ReceiverScale(p, k);
         return d;
     }
 
@@ -923,6 +942,12 @@ public static class Pressed
         if (made.GunSized is { } gun)
             foreach (var line in SizedGunParts.Lines(gun, Parts.Find(p.Like.GunPartName)!, p, k))
                 Console.WriteLine($"[press] {line}");
+        if (made.GunScale != 1f)
+        {
+            var r = ReceiverMergeRules.Current;
+            float T(float power) => ReceiverMergeRules.Times(made.GunScale, power);
+            Console.WriteLine(FormattableString.Invariant($"[press] receiver scale {made.GunScale:0.###} (the merge's law): damage x{T(r.Damage):0.###}, fire rate x{T(r.FireRate):0.###}, kick x{T(r.Recoil):0.###}, rounds a shot {Math.Max(1, (int)MathF.Round(T(r.AmmoPerShot)))}, magazine x{T(r.Magazine):0.###}; it never merges; catalogue gun parts on it drawn {ConstructMerge.DrawnOn(made)}x; its bore for a pressed barrel {made.GunScale:0.###}"));
+        }
         var pc = PressClass(Across(k));
         Console.WriteLine($"[press] seconds: {string.Join(", ", Enumerable.Range(Math.Max(0, pc), 4 - Math.Max(0, pc)).Select(c => $"{ClassWord(c)} {Seconds(die!, k, c):0.##}"))}");
         Console.WriteLine($"[press] {probs} problems");
@@ -1041,16 +1066,24 @@ public static class Pressed
 
     private static string KeyFor(PressDie die, PressPattern p, int section, int across, int length, byte material)
     {
+        var k = KeyAt(section, across, length, material);
+        if (die.AspectPreset && Proportioned(p, k) is var (w, h, l)) // (one free dimension: the preset's shape at this across)
+            k = k with { W = (ushort)w, H = (ushort)h, L = (ushort)Math.Clamp(l, Extrusion.StepCm, Extrusion.MaxLengthCm) };
+        return KeyOf(die, p, k);
+    }
+
+    private static ExtrusionKey KeyAt(int section, int across, int length, byte material)
+    {
         var len = (ushort)Math.Clamp(length, Extrusion.StepCm, Extrusion.MaxLengthCm);
         if (section == PressBaySpec.RoundSection)
-            return KeyOf(die, p, new ExtrusionKey(0, (ushort)across, (ushort)across, len, material, false, ExShape.Round));
+            return new ExtrusionKey(0, (ushort)across, (ushort)across, len, material, false, ExShape.Round);
         if (section == PressBaySpec.PipeSection)
-            return KeyOf(die, p, new ExtrusionKey(0, (ushort)across, (ushort)across, len, material, false, ExShape.Pipe, (ushort)Math.Max(Extrusion.StepCm, across / 50 * Extrusion.StepCm)));
+            return new ExtrusionKey(0, (ushort)across, (ushort)across, len, material, false, ExShape.Pipe, (ushort)Math.Max(Extrusion.StepCm, across / 50 * Extrusion.StepCm));
         var plate = section == PlateSection;
         int w = across, h = plate ? MinCm : across;
         if (section == PlateSection && across < MinCm)
             w = MinCm;
-        return KeyOf(die, p, new ExtrusionKey(Extrusion.Presets[section].Mask, (ushort)w, (ushort)h, (ushort)Math.Clamp(length, Extrusion.StepCm, Extrusion.MaxLengthCm), material, false));
+        return new ExtrusionKey(Extrusion.Presets[section].Mask, (ushort)w, (ushort)h, len, material, false);
     }
 
     private static int Step(int cm) => Math.Max(MinCm, cm / Extrusion.StepCm * Extrusion.StepCm);

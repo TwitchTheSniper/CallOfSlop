@@ -117,8 +117,8 @@ public sealed class ReceiverMergeRules
         return v;
     }
 
-    /// <summary>N to the power <paramref name="power"/>.</summary>
-    public static float Times(int n, float power) => n <= 1 || power == 0 ? 1f : MathF.Pow(n, power);
+    /// <summary>N to the power <paramref name="power"/>; N is a real number for a pressed receiver (sized-parts design 4.2: 0.75 gives 0.56 times the damage).</summary>
+    public static float Times(float n, float power) => n <= 0 || n == 1 || power == 0 ? 1f : MathF.Pow(n, power);
 }
 
 /// <summary>The shot sound of an NxN merged gun, from the rules' "sound" block (board item mr01): lower, bassier, louder, carrying further.</summary>
@@ -271,7 +271,7 @@ public static class ConstructMerge
     private const float Tolerance = 0.006f; // metres: how far off its grid a member may sit (positions are on a 1 cm grid)
 
     private static bool Candidate(Construct c, int i, int exclude) =>
-        i != exclude && c.Parts[i].Working && c.Parts[i].D.IsReceiverGun;
+        i != exclude && c.Parts[i].Working && c.Parts[i].D.IsReceiverGun && !c.Parts[i].D.Name.StartsWith(Pressed.Prefix, StringComparison.Ordinal); // (a pressed receiver never merges: sized-parts design 4.3)
 
     private static Vector3 Local(in CPart p) => Vector3.Transform(p.Pos, Quaternion.Conjugate(Rot24.Quat(p.Rot)));
 
@@ -405,27 +405,40 @@ public static class ConstructMerge
     }
 
     /// <summary>Every gun part on a merged receiver's centre sockets, and every gun part bolted on through them, is N times bigger.</summary>
+    /// <summary>
+    /// A pressed receiver's catalogue gun parts are drawn round(s) times bigger (sized-parts design 4.3), as on a merge; 1 for anything
+    /// else (a file receiver, or a pressed one under 1.5).
+    /// </summary>
+    public static byte DrawnOn(ConstructPartDef receiver) =>
+        receiver.GunScale == 1f || !receiver.IsReceiverGun ? (byte)1 : (byte)Math.Clamp((int)MathF.Round(receiver.GunScale), 1, 255);
+
     public static void DeriveScales(Construct c)
     {
         c.PartScale.AsSpan().Clear();
-        if (c.MergeCount == 0)
+        var any = c.MergeCount > 0;
+        for (var i = 0; i < c.PartCount && !any; i++)
+            any = DrawnOn(c.Parts[i].D) > 1;
+        if (!any)
             return;
         using var scratch = Scratch.Begin();
         Span<ushort> queue = scratch.Take<ushort>(c.PartCount);
         for (var l = 0; l < c.LinkCount; l++)
         {
             ref var link = ref c.Links[l];
-            int lead, other, socket;
+            int other;
+            byte n;
             if (link.A < c.PartCount && c.MergeLead(link.A) && link.SA >= c.DefOf(link.A).Sockets.Length)
-                (lead, other, socket) = (link.A, link.B, link.SA);
+                (other, n) = (link.B, c.Merges[c.MergeOf[link.A] - 1].N);
             else if (link.B < c.PartCount && c.MergeLead(link.B) && link.SB >= c.DefOf(link.B).Sockets.Length)
-                (lead, other, socket) = (link.B, link.A, link.SB);
+                (other, n) = (link.A, c.Merges[c.MergeOf[link.B] - 1].N);
+            else if (link.A < c.PartCount && DrawnOn(c.Parts[link.A].D) is > 1 and var na)
+                (other, n) = (link.B, na); // (a pressed receiver: its own sockets)
+            else if (link.B < c.PartCount && DrawnOn(c.Parts[link.B].D) is > 1 and var nb)
+                (other, n) = (link.A, nb);
             else
                 continue;
-            _ = socket;
             if (other >= c.PartCount || c.Parts[other].D.Role != PartRole.GunPart || c.PartScale[other] != 0)
                 continue;
-            var n = c.Merges[c.MergeOf[lead] - 1].N;
             int head = 0, tail = 0;
             c.PartScale[other] = Own(c, other, n);
             queue[tail++] = (ushort)other;
@@ -510,10 +523,12 @@ public static class ConstructMerge
     /// <summary>The scale a part <paramref name="def"/> fitted to socket <paramref name="socket"/> of part <paramref name="part"/> gets (a gun part on a centre socket or on a scaled gun part: N).</summary>
     public static byte ScaleFor(Construct c, int part, int socket, ConstructPartDef def)
     {
-        if (def.Role != PartRole.GunPart)
+        if (def.Role != PartRole.GunPart || def.GunSized != null) // (a pressed gun part's size is its own: sized-parts design 4.3)
             return 1;
         if (c.MergeLead(part) && socket >= c.DefOf(part).Sockets.Length)
             return c.Merges[c.MergeOf[part] - 1].N;
+        if (DrawnOn(c.DefOf(part)) is > 1 and var s)
+            return s; // (a pressed receiver's own sockets)
         return c.PartScale[part] > 1 ? c.PartScale[part] : (byte)1;
     }
 
@@ -535,8 +550,8 @@ public static class ConstructMerge
 
     // ---- The gun's numbers ------------------------------------------------------------------------------------------
 
-    /// <summary>An NxN merged receiver's gun: its numbers from the single receiver's by the rules (N squared receivers' worth, not strictly better).</summary>
-    public static void ScaleGun(ref CGun g, WeaponDef w, int n)
+    /// <summary>An NxN merged receiver's gun, or a pressed receiver of scale N (a real number): its numbers from the single receiver's by the rules (N squared receivers' worth, not strictly better).</summary>
+    public static void ScaleGun(ref CGun g, WeaponDef w, float n)
     {
         var r = ReceiverMergeRules.Current;
         w.Damage = Math.Max(1, (int)MathF.Round(w.Damage * ReceiverMergeRules.Times(n, r.Damage)));
@@ -547,7 +562,7 @@ public static class ConstructMerge
         g.Spread *= ReceiverMergeRules.Times(n, r.Spread);
         g.Kick *= ReceiverMergeRules.Times(n, r.Recoil);
         g.PerShot = (ushort)Math.Clamp((int)MathF.Round(ReceiverMergeRules.Times(n, r.AmmoPerShot)), 1, 1000);
-        g.MergeN = (byte)n;
+        g.MergeN = (byte)Math.Clamp((int)MathF.Round(n), 1, 255); // (the sound steps: a pressed receiver of scale s sounds as round(s))
     }
 
     // ---- Settling an edit (server) ----------------------------------------------------------------------------------
