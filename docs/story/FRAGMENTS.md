@@ -25,7 +25,8 @@ Code: `Source/Story/StoryFragments.cs` (the file and the terminal's screen, ever
 A Sandbox window (rebindable, binds version 25; Esc closes it): "Old records: 2 of 5 found", each held record with its text and
 where it was found, a `?` line with the hint for each one still missing, and the player's leads (the story's `Lead` relation:
 "Old Mine" from Crumb's tea, a data centre they walked into), each `?` until what it points to is found (a site whose `name` or
-`lead` it is gave them its fragment). It reads only what the host sent.
+`lead` it is gave them its fragment, or they hold a record that names it in its `"leads"`: the break-out's last words,
+BREAKOUT.md "The spaceport"). It reads only what the host sent.
 
 ## A data centre
 
