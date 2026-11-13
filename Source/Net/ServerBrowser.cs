@@ -494,7 +494,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 303: Inventories phase 3 (a network's made parts): CBodyKind.Beacon and Terminal end with the made list (u8 0 unchanged, or u8 1 whole /
     //   2 continued; a whole list then u16 the kinds it leaves out past 64; u8 n, n x (PartRef, u16 count); split past 12000 bytes); CActKind.TerminalPull flag 4 (a made part: its PartRef after the
     //   flags); a terminal store's pull goes u8 material then a material id (u16) or a part by PartRef (docs/sandbox/design/inventory-run-time-parts.md).
-    public const ushort ProtocolVersion = 301;
+    // 302: Laser Cutter phase 4: CraftNamed carries a cut key ("Cut Panel (...)", "Cut Plate (...)") to a Crafting Terminal or a Panel Designer, and
+    //   to a Laser Cutter itself (its Design button's pick, queued there); the cutters' screens gain a Design button (touch regions move).
+    public const ushort ProtocolVersion = 302;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

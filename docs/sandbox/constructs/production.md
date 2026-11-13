@@ -408,7 +408,8 @@ flat extruded piece (plate, a flat bar either way up). Code: `ConstructLaserCutt
 
 - **Orders only.** A cut key is a named order; the cutter refuses anything else ("nothing to cut: a Panel Former's order", "too large for
   this cutter", "too tall for the bed", the key's own rule broken). Every other machine refuses a cut key: "a cut part is a Laser Cutter's
-  order". Its Queue button adds its Order count of the head order's cut part (no design setting yet: phase 5's picker).
+  order". Its Queue button adds its Order count of the head order's cut part; its **Design** button opens the recipe picker on the world's
+  cut designs, and a pick orders that design at it (`CActKind.CraftNamed` with the cutter as its terminal).
 - **No stock of its own.** Only the head order's blank is taken off the conveyor into Piece in (a formed panel by name, an extruded piece by
   its key), one at a time onto its bed (`CStore.JobAmount` 1); anything else waits on the conveyor. Its screen and look line say "needs
   BLANK on its bed". Cancel or Clear with an uncut blank on the bed drops it on the out bed as a loose part.
@@ -421,13 +422,18 @@ flat extruded piece (plate, a flat bar either way up). Code: `ConstructLaserCutt
   "offcut bin full"), the cut part waiting on the bed. A cut costs power and time, never material.
 - **Look**: a slatted bed under a gantry, the head's carriage running along the gantry and the beam's line glowing while it cuts, a fume
   duct, the offcut hopper on the right of the out end, the control board on the left. Body `#a8365e`.
-- **Window tool**: `cutter`, `cutter order KEY [N]`, `cutter feed KEY`, `cutter await` (`Program.WindowShotCutter.cs`).
+- **Where orders come from** (phase 4): the Panel Designer's **Cut-outs** (openings and cut corners on the panel's sliders, up to six;
+  a refused cut turns the readout red and holds ORDER), saved as a cut design and ORDERed like a panel; a Crafting Terminal's list (each
+  linked cutter's cut designs: now with the blank in stock or on the bed, through a chain when a linked machine makes it); a blueprint's bill
+  (`Bill.Cut`, its blank a Panel Former's or an Extruder's line; a bill line `{"step": n, "cut": "Cut Panel (...)", "count": 2}`; `--bill`
+  prints "Cut panels"); a Building Station's step (`OrderFor`). A cut order at a cutter chains its blank (`ConstructLogisticsPlan.CutterInputs`):
+  a formed panel asked of a linked Panel Former, a plate or flat bar of a linked Extruder, riding to the cutter tagged for it.
+- **Window tool**: `cutter`, `cutter order KEY [N]`, `cutter feed KEY`, `cutter await` (`Program.WindowShotCutter.cs`). The designer's `design cut rU,V,A,B,C | mK,A,B | clear | drop N`.
 - **Tried** (2026-11-13, Proving Ground, a former, a conveyor and a small cutter; host and a joined client): a 20 mm panel's window and
   corner (1.61 m of edge) cut in 6.9 s, the same at 40 mm in 11.7 s, a 5 cm plate in 14.1 s and a 10 cm plate in 26.2 s, each as the law
   says, on both peers; the tenths 0.6 + 1.1 gave a unit and 0.7 over.
 
-Next: the Panel Designer's Cut-outs mode (phase 4); chains, bills, the terminal, the Building Station, the recipe picker and the Showcase's
-cutter (phase 5); the Pane (phase 6); a loose blank let go on the in bed taken in; F taking back a blank from the bed.
+Next: the designer's drawn plan of the sheet (cuts dragged by mouse) and cut plates designed there; the Showcase's cutter; the Pane (phase 6); a loose blank let go on the in bed taken in; F taking back a blank from the bed.
 
 ## Machine tiers
 

@@ -128,6 +128,166 @@ public sealed partial class Ui
         DesignerClamp();
     }
 
+    // ---- Cut-outs (laser cutter phase 4): openings and cut corners on the sheet, ordered at a linked Laser Cutter -----------------------
+
+    private readonly List<HullLoft.Cut> _pdCuts = new(HullLoft.MaxCuts);
+    private string _pdCutWhy = "";
+    private int _pdCutters;
+    private readonly List<string> _pdCutFits = new(4);
+    private readonly List<bool> _pdCutFitOk = new(4);
+
+    /// <summary>The cuts as they stand (the window tool and probes read them).</summary>
+    public int DesignerCuts => _pdCuts.Count;
+
+    /// <summary>The design's key: the formed panel's, or with cuts the cut panel's (its blank that panel).</summary>
+    public string DesignerKey => _pdCuts.Count == 0 ? HullLoft.PanelKey(DesignerShape) : CutKeyOf(DesignerShape);
+
+    private string CutKeyOf(in HullLoft.PanelShape s)
+    {
+        var blank = HullLoft.PanelKey(s);
+        return HullLoft.CutKey(false, blank[HullLoft.PanelPrefix.Length..^1], _pdCuts);
+    }
+
+    /// <summary>Probes and the window tool: a cut by its key text ("r70,60,40,50,5" an opening, "m0,30,30" a corner), "clear" or "drop N".</summary>
+    public string DesignerCut(string text)
+    {
+        if (text == "clear")
+        {
+            _pdCuts.Clear();
+            return "cuts cleared";
+        }
+        if (text.StartsWith("drop ", StringComparison.Ordinal) && int.TryParse(text.AsSpan(5), out var at))
+        {
+            if (at < 0 || at >= _pdCuts.Count)
+                return "no such cut";
+            _pdCuts.RemoveAt(at);
+            return $"cut {at} dropped";
+        }
+        if (_pdCuts.Count >= HullLoft.MaxCuts)
+            return $"a panel takes {HullLoft.MaxCuts} cuts";
+        var corner = text.StartsWith('m');
+        if (!corner && !text.StartsWith('r'))
+            return "a cut is rU,V,A,B,C or mK,A,B";
+        var nums = text[1..].Split(',');
+        var v = new int[nums.Length];
+        for (var k = 0; k < nums.Length; k++)
+            if (!int.TryParse(nums[k], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out v[k]))
+                return "a cut's numbers are whole cm";
+        if (corner ? v.Length != 3 : v.Length != 5)
+            return "a cut is rU,V,A,B,C or mK,A,B";
+        _pdCuts.Add(corner ? new HullLoft.Cut(true, v[0], 0, v[1], v[2], 0) : new HullLoft.Cut(false, v[0], v[1], v[2], v[3], v[4]));
+        return $"{_pdCuts.Count} cut(s)";
+    }
+
+    /// <summary>The cuts' editor, under the sliders: a row of sliders each, Add, Mirror and Clear.</summary>
+    private void CutEditor(ref int dropCut, ref int addCut)
+    {
+        ImGui.Spacing();
+        ImGui.TextColored(PdHead, "Cut-outs"u8);
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Openings and cut corners a Laser Cutter cuts out of the formed panel. Openings of 10 cm and more open for real."u8);
+        for (var k = 0; k < _pdCuts.Count; k++)
+        {
+            var cut = _pdCuts[k];
+            ImGui.PushID(4000 + k);
+            if (ImGui.SmallButton("x"u8))
+                dropCut = k;
+            ImGui.SameLine();
+            ImGuiSafe.TextColored(Dim, cut.Corner ? $"Corner {k + 1}" : $"Opening {k + 1}");
+            ImGui.PushItemWidth(190 * _scale);
+            int u = cut.U, vv = cut.V, a = cut.A, b = cut.B, cc = cut.C;
+            if (cut.Corner)
+            {
+                ImGui.SliderInt("Corner"u8, ref u, 0, 3, "%d"u8);
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Which corner: 0 back left, 1 back right, 2 nose right, 3 nose left."u8);
+                ImGui.SliderInt("Along"u8, ref a, HullLoft.CutMinCm, Math.Max(HullLoft.CutMinCm, _pdL - HullLoft.CutMinCm), "%d cm"u8);
+                ImGui.SliderInt("Across"u8, ref b, HullLoft.CutMinCm, Math.Max(HullLoft.CutMinCm, _pdW - HullLoft.CutMinCm), "%d cm"u8);
+            }
+            else
+            {
+                ImGui.SliderInt("Middle along"u8, ref u, 0, _pdL, "%d cm"u8);
+                ImGui.SliderInt("Middle across"u8, ref vv, 0, _pdW, "%d cm"u8);
+                ImGui.SliderInt("Long"u8, ref a, HullLoft.CutMinCm, Math.Max(HullLoft.CutMinCm, _pdL), "%d cm"u8);
+                ImGui.SliderInt("Wide"u8, ref b, HullLoft.CutMinCm, Math.Max(HullLoft.CutMinCm, _pdW), "%d cm"u8);
+                ImGui.SliderInt("Corners cut"u8, ref cc, 0, Math.Max(0, Math.Min(a, b) / 2), "%d cm"u8);
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("How far each corner of the opening is cut back: 0 square, about 0.29 of its side an eight-sided round."u8);
+            }
+            ImGui.PopItemWidth();
+            var now = new HullLoft.Cut(cut.Corner, u, vv, a, b, cut.Corner ? 0 : Math.Clamp(cc, 0, Math.Min(a, b) / 2));
+            if (now != cut)
+                _pdCuts[k] = now;
+            ImGui.PopID();
+        }
+        ImGui.BeginDisabled(_pdCuts.Count >= HullLoft.MaxCuts);
+        if (ImGui.Button("+ Opening"u8))
+            addCut = 1;
+        ImGui.SameLine();
+        if (ImGui.Button("+ Corner"u8))
+            addCut = 2;
+        ImGui.SameLine();
+        if (ImGui.Button("Mirror"u8))
+            addCut = 3;
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Adds a twin of the last cut across the sheet's centre line."u8);
+        ImGui.EndDisabled();
+        if (_pdCuts.Count > 0)
+        {
+            ImGui.SameLine();
+            if (ImGui.Button("Clear"u8))
+                addCut = 4;
+        }
+        ImGuiSafe.TextColored(Dim, $"Cuts {_pdCuts.Count} of {HullLoft.MaxCuts}");
+        if (_pdCutWhy.Length > 0)
+        {
+            ImGui.PushTextWrapPos(0);
+            ImGuiSafe.TextColored(CrWarn, _pdCutWhy);
+            ImGui.PopTextWrapPos();
+        }
+    }
+
+    private int _pdPrevHash;
+    private string? _pdPrevCut;
+
+    /// <summary>
+    /// The cut key the preview shows for this frame's shape and cuts, or null (no cuts, or the key refused): made again only when they change,
+    /// so the key and the shape it is built on always come from the same frame.
+    /// </summary>
+    private string? PreviewCut(in HullLoft.PanelShape shape)
+    {
+        if (_pdCuts.Count == 0 || HullLoft.PanelRefusal(shape) != null)
+            return null;
+        var h = shape.GetHashCode();
+        for (var k = 0; k < _pdCuts.Count; k++)
+            h = h * 31 + _pdCuts[k].GetHashCode();
+        if (h == _pdPrevHash && _pdPrevCut != null)
+            return _pdPrevCut.Length > 0 ? _pdPrevCut : null;
+        _pdPrevHash = h;
+        var key = CutKeyOf(shape);
+        _pdPrevCut = HullLoft.CutRefusal(key) == null ? key : "";
+        return _pdPrevCut.Length > 0 ? _pdPrevCut : null;
+    }
+
+    private void CutApply(int dropCut, int addCut)
+    {
+        if (dropCut >= 0 && dropCut < _pdCuts.Count)
+            _pdCuts.RemoveAt(dropCut);
+        if (addCut == 4)
+            _pdCuts.Clear();
+        if (addCut is < 1 or > 3 || _pdCuts.Count >= HullLoft.MaxCuts)
+            return;
+        if (addCut == 1)
+            _pdCuts.Add(new HullLoft.Cut(false, _pdL / 2, _pdW / 2, Math.Max(HullLoft.CutMinCm, _pdL / 4), Math.Max(HullLoft.CutMinCm, _pdW / 4), 0));
+        else if (addCut == 2)
+            _pdCuts.Add(new HullLoft.Cut(true, 0, 0, Math.Max(HullLoft.CutMinCm, _pdL / 5), Math.Max(HullLoft.CutMinCm, _pdW / 5), 0));
+        else if (_pdCuts.Count > 0)
+        {
+            var last = _pdCuts[^1];
+            _pdCuts.Add(last.Corner ? last with { U = last.U switch { 0 => 1, 1 => 0, 2 => 3, _ => 2 } } : last with { V = _pdW - last.V });
+        }
+    }
+
     private bool _pdPressSave, _pdPressOrder;
 
     /// <summary>The window tool: Save design or ORDER, pressed at the panel's next frame.</summary>
@@ -157,8 +317,13 @@ public sealed partial class Ui
 
     private void DesignerLoad(in PanelDesign d)
     {
-        if (HullLoft.PanelOf(d.Key) is not { } s)
+        // A cut design (laser cutter phase 4): its blank's shape and its cuts. A cut plate's design isn't drawn here (its blank is an extrusion).
+        var cuts = HullLoft.IsCutName(d.Key) ? HullLoft.ReadCut(d.Key, out _) : null;
+        if ((cuts != null ? cuts.Plate ? null : HullLoft.PanelOf(cuts.Blank) : HullLoft.PanelOf(d.Key)) is not { } s)
             return;
+        _pdCuts.Clear();
+        if (cuts != null)
+            _pdCuts.AddRange(cuts.Cuts);
         (_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm) = (s.Kind, s.L, s.W, s.Crown, s.Rake, s.Mm);
         if (s.Kind == HullLoft.PanelBend)
             (_pdAngle, _pdFoldAt, _pdRadius) = (s.Angle, s.At, s.Radius);
@@ -260,6 +425,8 @@ public sealed partial class Ui
     private void DesignerTexts(ConstructWorld world, Construct c, int part)
     {
         var key = HashCode.Combine(_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm, _pdMat, _pdStamp) * 31 + DesignerPreview.Made + HashCode.Combine(_pdAngle, _pdFoldAt, _pdRadius, _pdNoseW, _pdBack, _pdNose);
+        for (var k = 0; k < _pdCuts.Count; k++)
+            key = key * 31 + _pdCuts[k].GetHashCode();
         var bd = DesignerPreview.Base;
         key = key * 31 + (bd == null ? 0 : 1);
         if (key == _pdTextKey)
@@ -289,6 +456,7 @@ public sealed partial class Ui
         _pdKey = _pdWhy.Length == 0 ? HullLoft.PanelKey(shape) : "";
         _pdFits.Clear();
         _pdFitOk.Clear();
+        DesignerCutTexts(world, c, part, shape);
         if (bd == null || _pdWhy.Length > 0)
         {
             _pdNumbers = "";
@@ -318,6 +486,52 @@ public sealed partial class Ui
                 why = $"is fed {RecyclingTable.Current.NameOf(st.Material)}: another line";
             _pdFits.Add(why == null ? $"{d.Name} {seen}: yes" : $"{d.Name} {seen}: {why}");
             _pdFitOk.Add(why == null);
+        }
+    }
+
+    /// <summary>The cuts' refusal and each linked Laser Cutter's answer (laser cutter phase 4); the key shown becomes the cut panel's.</summary>
+    private void DesignerCutTexts(ConstructWorld world, Construct c, int part, in HullLoft.PanelShape shape)
+    {
+        _pdCutWhy = "";
+        _pdCutFits.Clear();
+        _pdCutFitOk.Clear();
+        _pdCutters = 0;
+        var net = ConstructCrafting.NetOf(world, c, part);
+        for (var i = 0; i < net.MachineN; i++)
+            if (c.DefOf(net.Machines[i]).IsLaserCutter)
+                _pdCutters++;
+        if (_pdCuts.Count == 0 || _pdWhy.Length > 0)
+            return;
+        var key = CutKeyOf(shape);
+        if (HullLoft.CutRefusal(key) is { } why)
+        {
+            _pdCutWhy = why;
+            return;
+        }
+        _pdKey = key;
+        if (_pdCutters == 0)
+        {
+            _pdCutFits.Add("No Laser Cutter linked: this design has cut-outs. Link one by a conveyor or a Line Console's wire into Orders.");
+            _pdCutFitOk.Add(false);
+            return;
+        }
+        // (read from the key and the preview's bounds: no run-time part is made for a key the sliders pass through)
+        if (!HullLoft.CutJob(key, out _, out _, out _, out var edge, out var mm) || DesignerPreview.Base is not { } bd)
+            return;
+        var s = bd.BoundsMax - bd.BoundsMin;
+        var job = new ConstructLaserCutter.Job { EdgeM = edge, Mm = mm, Longest = MathF.Max(s.X, MathF.Max(s.Y, s.Z)), Least = MathF.Min(s.X, MathF.Min(s.Y, s.Z)) };
+        job.Next = s.X + s.Y + s.Z - job.Longest - job.Least;
+        var seen = 0;
+        for (var i = 0; i < net.MachineN && _pdCutFits.Count < 4; i++)
+        {
+            var d = c.DefOf(net.Machines[i]);
+            if (!d.IsLaserCutter)
+                continue;
+            seen++;
+            var ok = ConstructLaserCutter.Fits(d, job);
+            _pdCutFitOk.Add(ok);
+            _pdCutFits.Add(ok ? $"{d.Name} {seen}: yes, {ConstructLaserCutter.Seconds(job, d):0.#} s a cut ({edge:0.##} m of edge through {mm:0} mm)"
+                : job.Least > d.CutMaxHeight + 0.005f ? $"{d.Name} {seen}: too tall for its bed: {job.Least:0.##} m" : $"{d.Name} {seen}: too large for its bed: {job.Longest:0.##} x {job.Next:0.##} m");
         }
     }
 
@@ -395,7 +609,7 @@ public sealed partial class Ui
         DesignerBuild(world, c, part, now);
         var shape = DesignerShape;
         var pt0 = System.Diagnostics.Stopwatch.GetTimestamp();
-        DesignerPreview.Want(shape);
+        DesignerPreview.Want(shape, PreviewCut(shape)); // (with its cuts once they pass: laser cutter phase 4)
         DesignerPreview.Pump();
         var pms = System.Diagnostics.Stopwatch.GetElapsedTime(pt0).TotalMilliseconds;
         DesignerSpentMs += pms;
@@ -405,7 +619,7 @@ public sealed partial class Ui
         CraftingOrders(c, q);
         var open = true;
         bool order = false, save = false, share = true;
-        int cancel = 0, preset = -1, loadMine = -1, loadWorld = -1, delMine = -1;
+        int cancel = 0, preset = -1, loadMine = -1, loadWorld = -1, delMine = -1, dropCut = -1, addCut = 0;
         var mat = _pdMat;
         int l = _pdL, w = _pdW, crown = _pdCrown, rake = _pdRake, mm = _pdMm, angle = _pdAngle, bendAt = _pdFoldAt, radius = _pdRadius, noseW = _pdNoseW;
         ulong back = _pdBack, nose = _pdNose;
@@ -562,6 +776,7 @@ public sealed partial class Ui
                 }
                 ImGui.SliderInt("Thickness"u8, ref mm, HullLoft.PanelMinMm, HullLoft.PanelMaxMm, "%d mm"u8);
                 ImGui.PopItemWidth();
+                CutEditor(ref dropCut, ref addCut);
                 ImGui.PushTextWrapPos(0);
                 ImGuiSafe.TextColored(_pdFormers == 0 ? CrWarn : Dim, _pdLimit);
                 if (_pdAt.Length > 0)
@@ -602,6 +817,8 @@ public sealed partial class Ui
                     ImGuiSafe.TextColored(Dim, _pdNumbers);
                     for (var k = 0; k < _pdFits.Count; k++)
                         ImGuiSafe.TextColored(_pdFitOk[k] ? CrGood : CrWarn, _pdFits[k]);
+                    for (var k = 0; k < _pdCutFits.Count; k++)
+                        ImGuiSafe.TextColored(_pdCutFitOk[k] ? CrGood : CrWarn, _pdCutFits[k]);
                 }
                 ImGui.PopTextWrapPos();
             }
@@ -626,7 +843,7 @@ public sealed partial class Ui
             _pdCount = Math.Clamp(_pdCount, 1, WorkOrders.MaxCount);
             ImGui.SameLine();
             ImGui.PushStyleColor(ImGuiCol.Button, CrTabOn);
-            ImGui.BeginDisabled(_pdWhy.Length > 0);
+            ImGui.BeginDisabled(_pdWhy.Length > 0 || _pdCutWhy.Length > 0);
             order = ImGui.Button("ORDER"u8, new float2(130 * _scale, 0)) | _pdPressOrder;
             _pdPressSave = _pdPressOrder = false;
             ImGui.EndDisabled();
@@ -635,7 +852,7 @@ public sealed partial class Ui
             if (_pdSaved.Length > 0)
                 ImGuiSafe.TextColored(CrGood, _pdSaved);
             else
-                ImGui.TextColored(Dim, "Formed by a linked Panel Former; collect it at its rack or in this tray."u8);
+                ImGui.TextColored(Dim, _pdCuts.Count > 0 ? "Cut by a linked Laser Cutter from a formed blank; collect it at its rack or in this tray."u8 : "Formed by a linked Panel Former; collect it at its rack or in this tray."u8);
             if (ImGui.BeginChild("##pdorders"u8, new float2(0, -ImGui.GetFrameHeightWithSpacing()), ImGuiChildFlags.Borders))
             {
                 if (q is { Count: > 0 })
@@ -666,6 +883,7 @@ public sealed partial class Ui
             (_pdNoseW, _pdBack, _pdNose) = (noseW, back, nose);
             share = false;
         }
+        CutApply(dropCut, addCut);
         DesignerClamp();
         if (delMine >= 0 && delMine < _pdMine.Count)
         {
@@ -676,7 +894,7 @@ public sealed partial class Ui
         if (save && !share)
         {
             var name = ImGuiSafe.Text(_pdName!).Trim();
-            var key = HullLoft.PanelKey(DesignerShape);
+            var key = DesignerKey;
             if (PanelDesigns.Refusal(name, key) is { } why)
                 _pdSaved = "Not saved: " + why;
             else
@@ -694,9 +912,9 @@ public sealed partial class Ui
                 }
             }
         }
-        if (order && !share && HullLoft.PanelRefusal(DesignerShape) == null)
+        if (order && !share && HullLoft.PanelRefusal(DesignerShape) == null && (_pdCuts.Count == 0 || HullLoft.CutRefusal(DesignerKey) == null))
         {
-            game.SandboxCraftOrder(_pdBody, _pdPart, ConstructPanelFormer.Order(HullLoft.PanelKey(DesignerShape), _pdCount));
+            game.SandboxCraftOrder(_pdBody, _pdPart, ConstructPanelFormer.Order(DesignerKey, _pdCount));
             _pdSaved = "";
         }
         if (cancel != 0)

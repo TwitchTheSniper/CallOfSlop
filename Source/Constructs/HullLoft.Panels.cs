@@ -515,6 +515,8 @@ public static partial class HullLoft
     {
         var p = new Builder { Edge = cut is { Edge: true } }; // (a bar on edge: everything written turned into the piece's frame, HullLoft.Cuts.cs)
         var (nu, nv) = PanelGrid(sh);
+        if (cut != null && cut.Pieces.Length != nu * nv)
+            throw new ConstructPartException($"{name}: its cut plan's facets ({cut.Pieces.Length}) aren't this sheet's ({nu * nv})"); // (a key paired with another frame's shape: refused, never read past)
         var t = cut?.Thick ?? sh.Mm / 1000f;
         var area = 0f;
         var item = 0; // (a cut part: whole facets and pieces counted in one run, so its slices are ranges of it)

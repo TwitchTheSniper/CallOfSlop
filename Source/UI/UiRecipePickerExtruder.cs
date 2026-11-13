@@ -51,6 +51,7 @@ public sealed partial class Ui
         _exTestSet = 0;
         _rcpTestPick = -1;
         _exOpen = true;
+        _rcpCut = false;
         RecipePickerOpen = true;
     }
 

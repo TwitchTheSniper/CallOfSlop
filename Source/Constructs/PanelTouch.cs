@@ -268,6 +268,21 @@ public sealed partial class ConstructEdits
         if (world.Get(body) is not { } c || terminal >= c.PartCount)
             return "that terminal is gone";
         var d = c.DefOf(terminal);
+        if (d.IsLaserCutter && cancel == 0 && what.Name != null && HullLoft.IsCutName(what.Name))
+        {
+            // A cut design picked at a Laser Cutter's own Design button (laser cutter phase 4): queued at that cutter.
+            if (Contested(c, player) is { } held)
+                return held;
+            if (refusal != null)
+                return refusal;
+            if (Vector3.Distance(eye, ReachPoint(c, terminal, eye)) > ConstructConfig.Reach)
+                return "too far away";
+            if (WorkOrders.Queue(world, c, terminal, what) is { } no)
+                return no;
+            var maker = ConstructLaserCutter.AskBlanks(world, c, terminal, what.Name, what.Count); // (its blanks, from a linked former or Extruder)
+            Done.Add($"player {player}: queued {what.Count} {what.Name} at part {terminal} of construct {c.Id}; blanks {(maker != null ? $"from the {maker}" : "asked of nobody")}");
+            return null;
+        }
         if (!d.IsCraftTerminal)
             return $"a {d.Name} takes no such orders";
         if (Contested(c, player) is { } defended)

@@ -242,13 +242,46 @@ public static class ConstructLaserCutter
         ConstructGatherer.SetBusy(world, st, false);
     }
 
+    /// <summary>
+    /// Server: an order queued at the cutter itself (its Design picker) asks a linked machine for its blanks: a formed panel of a Panel Former, a
+    /// plate or flat bar of an Extruder, as a machine order (the blank rides plainly and the cutter takes it for that order). The maker, or null.
+    /// </summary>
+    public static string? AskBlanks(ConstructWorld world, Construct c, int part, string key, int count)
+    {
+        if (JobOf(key) is not { } j)
+            return null;
+        var order = j.Plate ? new WorkOrder { Key = j.Stock with { Growing = false }, Part = ConstructParts.None, Count = (ushort)count }
+            : ConstructPanelFormer.Order(j.Blank, count);
+        var net = ConstructCrafting.NetOf(world, c, part);
+        for (var i = 0; i < net.MachineN; i++)
+        {
+            var m = net.Machines[i];
+            if (m != part && !c.DefOf(m).IsLaserCutter && WorkOrders.Queue(world, c, m, order) == null)
+                return c.DefOf(m).Name;
+        }
+        return null;
+    }
+
     /// <summary>The tag a blank routed to a cutter rides with (a Conveyor Router's want, ConstructLogistics.WantAt); no chain takes this id.</summary>
     public const ushort BedTag = 0xFFFF;
 
     /// <summary>Server: does this cutter want this piece now (its bed empty, the piece its head order's blank)? A Router sends it one then.</summary>
     public static bool Wants(ConstructWorld world, Construct c, int part, ConstructPartDef piece) =>
-        world.StoreOf(c, part) is { JobAmount: 0 } && WorkOrders.HeadOf(c.Parts[part], out var head) && head.Name != null
-        && JobOf(head.Name) is { } j && IsBlank(j, piece);
+        world.StoreOf(c, part) is { JobAmount: 0 } && OrderFor(c, part, piece) >= 0;
+
+    /// <summary>
+    /// The first order in the cutter's queue whose blank this piece is, or -1. Not only the head's: orders come from a designer, a terminal and
+    /// the Design picker, each with its own blank on the way, and the blank that arrives first is cut first (none waits behind another's).
+    /// </summary>
+    private static int OrderFor(Construct c, int part, ConstructPartDef piece)
+    {
+        if (c.Parts[part].Orders is not { Bill: false, Count: > 0 } q)
+            return -1;
+        for (var k = 0; k < q.Count; k++)
+            if (q.Items[k].Left > 0 && q.Items[k].Name is { } n && JobOf(n) is { } j && IsBlank(j, piece))
+                return k;
+        return -1;
+    }
 
     /// <summary>Is this piece the head order's blank? (A formed panel by its name, an extruded piece by its key: nothing allocates.)</summary>
     public static bool IsBlank(Job j, ConstructPartDef piece) =>
@@ -260,9 +293,18 @@ public static class ConstructLaserCutter
     /// </summary>
     public static bool TakeFromConveyor(ConstructWorld world, Construct c, int part, ConstructPartDef piece)
     {
-        if (world.StoreOf(c, part) is not { JobAmount: 0 } st || !WorkOrders.HeadOf(c.Parts[part], out var head) || head.Name == null
-            || JobOf(head.Name) is not { } j || !IsBlank(j, piece))
+        if (world.StoreOf(c, part) is not { JobAmount: 0 } st || OrderFor(c, part, piece) is not (var at and >= 0))
             return false;
+        if (at > 0)
+        {
+            // Its order goes to the head (the bed is empty: nothing is under way), so the blank is cut to the order it was made for.
+            var q = c.Parts[part].Orders!;
+            var mine = q.Items[at];
+            Array.Copy(q.Items, 0, q.Items, 1, at);
+            q.Items[0] = mine;
+            world.OrdersChanged(c);
+        }
+        var j = JobOf(c.Parts[part].Orders!.Items[0].Name!)!;
         st.JobAmount = 1;
         st.OnBed = true;
         st.JobMaterial = j.Material;

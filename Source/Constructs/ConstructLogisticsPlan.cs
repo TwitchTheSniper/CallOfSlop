@@ -61,7 +61,7 @@ public static class ConstructLogisticsPlan
     /// </summary>
     public static void Asked(ConstructWorld world, Construct c, CraftNet net, int t, in CraftOrder o, int m, int ask)
     {
-        var panel = o.What.Name != null && HullLoft.IsFormedName(o.What.Name);
+        var panel = o.What.Name != null && (HullLoft.IsFormedName(o.What.Name) || HullLoft.IsCutName(o.What.Name)); // (a cut part: a Laser Cutter's, its blank asked by chain)
         if (o.What.IsPiece || o.What.Name != null && !o.What.IsPressed && !panel)
             return;
         var kind = o.What.IsPressed ? o.Def : panel ? (ushort)(ConstructParts.Find(o.What.Name!)?.Id ?? 0) : o.What.Part; // (a pressed part's kind is its run-time def here: Place set it)
@@ -113,6 +113,22 @@ public static class ConstructLogisticsPlan
         var units = one * ask - st.JobAmount; // (a stroke under way has its units already)
         var inBin = st.Material == mat ? st.Amount : 0;
         (kinds[0], counts[0], held[0]) = ((ushort)sheet.Id, (Math.Max(0, units) + each - 1) / each, inBin / each);
+        return 1;
+    }
+
+    /// <summary>
+    /// What a Laser Cutter needs to cut <paramref name="ask"/> of cut part <paramref name="product"/> (laser cutter phase 4): its blank, one a
+    /// cut, a formed panel (a Panel Former's order) or an extruded plate or flat bar (an Extruder's). Held: the blank on its bed, when it is this one.
+    /// </summary>
+    private static int CutterInputs(ConstructWorld world, Construct c, int m, CStore st, ushort product, int ask, Span<ushort> kinds, Span<int> counts, Span<int> held)
+    {
+        if (ConstructParts.Get(product) is not { } pd || ConstructLaserCutter.JobOf(pd.Name) is not { } j)
+            return 0;
+        var blank = j.Plate ? Extrusion.Def(j.Stock) : ConstructParts.Find(j.Blank);
+        if (blank == null)
+            return 0;
+        var onBed = st.JobAmount > 0 && WorkOrders.HeadOf(c.Parts[m], out var head) && head.Name != null && ConstructLaserCutter.JobOf(head.Name) is { } hj && hj.Blank == j.Blank ? 1 : 0;
+        (kinds[0], counts[0], held[0]) = ((ushort)blank.Id, ask, onBed);
         return 1;
     }
 
@@ -216,7 +232,9 @@ public static class ConstructLogisticsPlan
         var md = c.DefOf(m);
         if (md.IsPress && !md.IsLathe)
             inputs = PressInputs(c, m, st, product, ask, kinds, wants, inside);
-        else if (md.IsPanelFormer && !md.IsLaserCutter) // (a cutter's blanks by chain: phase 5)
+        else if (md.IsLaserCutter)
+            inputs = CutterInputs(world, c, m, st, product, ask, kinds, wants, inside);
+        else if (md.IsPanelFormer)
             inputs = FormerInputs(c, net, st, product, ask, kinds, wants, inside);
         else if (md.IsAssembler && AssemblingTable.Current.Of(product) is { Parts.Length: > 0 } r)
         {
@@ -401,6 +419,8 @@ public static class ConstructLogisticsPlan
                 return new WorkOrder { Key = d.ExKey with { Growing = false }, Part = ConstructParts.None, Count = n };
             if (Pressed.IsName(d.Name) && WorkOrders.PressedOrder(d.Name, n) is { } pressed)
                 return pressed;
+            if (HullLoft.IsFormedName(d.Name))
+                return ConstructPanelFormer.Order(d.Name, n); // (a Laser Cutter's blank: a Panel Former's order, laser cutter phase 4)
         }
         return new WorkOrder { Part = kind, Count = n };
     }
@@ -412,18 +432,23 @@ public static class ConstructLogisticsPlan
     private static void FindMaker(ConstructWorld world, Construct c, CraftNet net, ref ChainEntry e, int count)
     {
         var what = OrderOf(e.Kind, count) with { Chain = e.Id };
+        var refusalKin = false;
         string? refusal = null;
         var best = -1;
         var bestScore = int.MaxValue;
         for (var i = 0; i < net.MachineN; i++)
         {
             var mk = net.Machines[i];
-            if (mk == e.Dest || what.IsPiece != c.DefOf(mk).IsExtruder && !c.DefOf(mk).IsPress && !(WorkOrders.IsWholeFormer(c.DefOf(mk)) && FormerPresets.PartOf(what) != null))
-                continue; // (a piece is an Extruder's or a Former's; a part an Assembler's, a Press's or, a preset wing or rotor, a Fan or Airframe Former's: Refusal says which)
+            if (mk == e.Dest || what.IsPiece != c.DefOf(mk).IsExtruder && !c.DefOf(mk).IsPress && !(WorkOrders.IsWholeFormer(c.DefOf(mk)) && FormerPresets.PartOf(what) != null) && !(what.IsPanel && !what.IsPressed && c.DefOf(mk).IsPanelFormer))
+                continue; // (a piece is an Extruder's or a Former's; a part an Assembler's, a Press's or, a preset wing or rotor, a Fan or Airframe Former's; a formed or cut panel a Panel Former's or a Laser Cutter's: Refusal says which)
             var why = WorkOrders.Refusal(world, c, mk, what);
             if (why != null)
             {
-                refusal ??= why;
+                // (the reason of a machine of the order's own kind, else the first: never a former's "not a panel" for a press's part)
+                var kin = what.IsPressed ? c.DefOf(mk).IsPress : what.IsPanel ? c.DefOf(mk).IsPanelFormer && c.DefOf(mk).IsLaserCutter == HullLoft.IsCutName(what.Name!)
+                    : ConstructCrafting.Kin(c.DefOf(mk), what);
+                if (refusal == null || kin && !refusalKin)
+                    (refusal, refusalKin) = (why, kin);
                 continue;
             }
             var score = c.Parts[mk].Orders is { Bill: false } q ? q.Count * 2 + (Making(q, e.Kind) ? 0 : 1) : 1;
