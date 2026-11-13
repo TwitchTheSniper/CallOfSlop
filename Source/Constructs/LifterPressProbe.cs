@@ -84,3 +84,41 @@ public static partial class LifterProbe
         return s + "]";
     }
 }
+
+public static partial class LifterProbe
+{
+    /// <summary>
+    /// Host: a Lay-down Pad behind the newest arm (away from the station's bay, its long side along the bay), stocked with what the
+    /// station's job still needs: a pick pad for an arm that doesn't reach the hold (phase 5).
+    /// </summary>
+    public static string PickPad(ConstructWorld world, Construct sc, int t)
+    {
+        if (ConstructParts.Find("Lay-down Pad") is not { } pad)
+            return "pickpad: no Lay-down Pad part";
+        Construct? arm = null;
+        foreach (var b in world.Bodies)
+            if (b.PartCount == 1 && b.DefOf(0).Lifter != null && (arm == null || b.Id > arm.Id))
+                arm = b;
+        if (arm == null || sc.Parts[t].Station is not { } j)
+            return "pickpad: no arm, or the station has no job";
+        Freeform.PartWorld(sc, t, out _, out var sr);
+        var ad = arm.DefOf(0);
+        var armMid = arm.Pos + Vector3.Transform((ad.BoundsMin + ad.BoundsMax) * 0.5f, arm.Rot);
+        var mid = (pad.BoundsMin + pad.BoundsMax) * 0.5f;
+        var back = Vector3.Transform(-Vector3.UnitZ, sr);
+        var centre = armMid + back * ((ad.BoundsMax.Z - ad.BoundsMin.Z) * 0.5f + 0.4f + (pad.BoundsMax.X - pad.BoundsMin.X) * 0.5f);
+        var turn = sr * Quaternion.CreateFromAxisAngle(Vector3.UnitY, MathF.PI / 2); // (its long side, local z, along the bay's x)
+        var pos = centre - Vector3.Transform(mid, turn);
+        pos.Y = World.Map.GroundHeight(centre.X, centre.Z) - pad.BoundsMin.Y + 0.01f;
+        if (ConstructBuild.PlaceNew(world, pad, new FreePlacement { Pos = pos, Rot = turn }) is not { } pd)
+            return "pickpad: no room";
+        pd.Anchored = true;
+        LinePad = pd.Id;
+        var n = 0;
+        for (var i = 0; i < j.KindN; i++)
+            if (ConstructParts.Get(j.KindDef[i]) is { } d)
+                for (var m = j.KindFit[i]; m < j.KindNeed[i]; m++)
+                    n += world.RackPut(pd, 0, d) ? 1 : 0;
+        return $"pickpad: Lay-down Pad body {pd.Id} behind arm body {arm.Id}, {n} pieces of the job's {j.KindN} kinds on it";
+    }
+}
