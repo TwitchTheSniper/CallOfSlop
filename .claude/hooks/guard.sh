@@ -19,6 +19,15 @@ case $input in
     *git*) ;;
     *) exit 0 ;;
 esac
+case $input in
+    *checkout* | *switch* | *commit*) ;;
+    *) exit 0 ;; # nothing here it judges: leave before the parsing, which is slow on Windows
+esac
+
+# Started through a git alias, this script inherits the session's own repository from git (GIT_DIR and its friends).
+# Forget it, so that each `git -C DIR` below answers for DIR: with it, a session sitting in a worktree was let through
+# when its command went to the main folder (`cd MAIN; git checkout -b x`), found on the Windows PC, 2026-11-13.
+unset GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR GIT_INDEX_FILE GIT_PREFIX GIT_NAMESPACE
 
 # The value of a string field of the hook's JSON, unescaped ("command" and "cwd" are the only ones read).
 json_str() {

@@ -5,8 +5,15 @@ This folder is what every Claude Code session on the repo shares: cloud threads,
 | Piece | What it is |
 | --- | --- |
 | `rules/*.md` | The lessons and gotchas, one file per area. Each starts with a `paths:` list; Claude Code puts the file in front of a session when it reads a file under those paths. `docs/LESSONS.md` is the index. |
-| `settings.json` | Runs `hooks/guard.sh` before every Bash or PowerShell command (a `PreToolUse` hook). Your own settings go in `settings.local.json`, which git ignores. |
+| `settings.json` | Runs `hooks/guard.sh` before every Bash or PowerShell command (a `PreToolUse` hook) and `hooks/cloud-start.sh` when a session starts. Your own settings go in `settings.local.json`, which git ignores. |
 | `hooks/guard.sh` | The guard rails below. |
+| `hooks/cloud-start.sh` | Cloud sessions only: installs the .NET 10 SDK if the container has none (about 20 s, once per container) and sets `XDG_RUNTIME_DIR`. It does nothing on a PC and never restores packages: `dotnet restore` stays the one step a session takes itself, once, when it is going to build. |
+| `skills/` | Step-by-step guides that load when their job comes up: `merge-branch`, `playtest-tour`, `building-look`, `story-writing`. |
+| `agents/` | Two readers a session calls before a merge: `merge-reviewer` (the diff against the lessons, and what else reads what it changed) and `look-critic` (pictures against the style guides). They report and change nothing. |
+
+## Skills and agents
+
+A skill is `skills/NAME/SKILL.md`: a description that says when it applies, then the steps. Write one for a job that has come back three times and went wrong at least once; keep it to the order of work and point at the docs for the detail. An agent is `agents/NAME.md`: its description says when to call it and what to hand it. Both agents are for reading and cost tokens on each call, so they are called for merges that change code or looks, not for docs.
 
 ## Rules
 
@@ -24,7 +31,7 @@ What the loading does not cover: a session that changes a file without reading i
 
 It judges the working tree against `HEAD`, since a command often stages and commits in one line. It does not judge a commit that finishes a merge, a cherry-pick or a revert. It cannot see a script's own git calls (`tools/coordinator/merge.ps1` switches to main itself), a new save file that was never listed, or a wire change with none of the marks above: the rules still hold where the guard is blind.
 
-**How it runs.** `settings.json` starts it through a git alias, so the only thing it needs is git: Git for Windows brings the `sh` it runs under, whether the session's shell is Git Bash or PowerShell. It exits 42 to refuse (the alias line turns that into the hook's blocking exit 2); any other exit, a missing file and a syntax error all let the command through, so a broken guard never stops work.
+**How it runs.** `settings.json` starts it through a git alias, so the only thing it needs is git: Git for Windows brings the `sh` it runs under, whether the session's shell is Git Bash or PowerShell (Git Bash need not be on the PATH). It exits 42 to refuse (the alias line turns that into the hook's blocking exit 2); any other exit, a missing file and a syntax error all let the command through, so a broken guard never stops work. It costs a few milliseconds a command on Linux and up to 0.4 s on Windows for a command it has to read closely (one with checkout, switch or commit in it). Tried on Linux and on the Windows PC, from PowerShell and Git Bash, 2026-11-13.
 
 **Trying it by hand** (from the repo root; exit 42 and a message is a refusal, 0 lets it through):
 
