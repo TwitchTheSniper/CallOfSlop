@@ -1087,6 +1087,8 @@ public sealed partial class Game
                     return hoseWhy; // (a hose part: take, plug, unplug or hang back its hose; GameSandboxWorldLinks.cs)
                 if (Constructs.Get(body) is { Loose: true, PartCount: 1 } module && ToolUpgrades.Current.ModuleOf(module.Parts[0].Def) != null)
                     return hands.FitUpgrade(Constructs, p.Id, eye, module); // (a tool upgrade: fitted, ConstructEditsUpgrades.cs)
+                if (Constructs.Get(body) is { } lc && part < lc.PartCount && lc.DefOf(part).LadderTop > 0)
+                    return SandboxGrabOn(p, lc, part, ladder: true); // (a vertical ladder: climbed up or down, ConstructRide.ClimbLadder)
                 if (Constructs.Get(body) is { } bc && part < bc.PartCount && bc.DefOf(part).Boarding)
                     return SandboxGrabOn(p, bc, part); // (a grab handle, a boarding ladder, a step plate: ba01)
                 var used = hands.Use(Constructs, p.Id, eye, body, part);
@@ -1895,7 +1897,7 @@ public sealed partial class Game
     /// Board item ba01's grab-on (server): Use at a construct's side or a boarding part latches the player on in its frame
     /// and pulls them up onto the nearest top (ConstructRide.GrabOn; the climb runs in the shared movement step).
     /// </summary>
-    internal string? SandboxGrabOn(Player p, Construct c, int part)
+    internal string? SandboxGrabOn(Player p, Construct c, int part, bool ladder = false)
     {
         if (!p.Alive)
             return "you are dead";
@@ -1905,7 +1907,8 @@ public sealed partial class Game
             return "not while noclipping";
         // (it moved on since the player aimed: a little more reach the faster it goes)
         var slack = c.Anchored || c.Asleep ? 0 : MathF.Min((c.Vel - p.Sim.Velocity).Length(), 12f) * 0.15f;
-        var why = ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack, frame: p.Bot == null);
+        var why = ladder ? ConstructRide.ClimbLadder(ref p.Sim, c, part, World.HeightOf(Stance.Stand), frame: p.Bot == null)
+            : ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack, frame: p.Bot == null);
         if (why == null)
             Constructs.Events.Add($"player {p.Id} grabbed on to construct {c.Id}");
         return why;

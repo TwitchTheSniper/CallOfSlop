@@ -292,6 +292,7 @@ public static unsafe partial class Program
                     PartRole.Logic => SandboxKeys.Line(d.Name, SandboxKeys.Join(setting, signal), unpowered),
                     PartRole.Gun when hit.Body.GunOf(hit.Part) is var gk and >= 0 => GunLook(hit.Body, gk, part),
                     PartRole.AmmoBox => SandboxKeys.Line(d.Name, SandboxKeys.Join($"{part.Rounds} rounds", wrecked), part.Burn > 0 ? "ON FIRE" : null),
+                    _ when d.LadderTop > 0 && near && !hit.Body.Loose => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, "climb")), // (a vertical ladder: up from its foot, down from its top)
                     _ when part.Burn > 0 => SandboxKeys.Line(d.Name, hp, "ON FIRE"),
                     _ when hit.Body.Loose && near && h.Tool != ConstructTool.Hands && ToolUpgrades.Current.ModuleOf(d.Id) is { } up => UpgradeLook(g, me, hit.Body, d, up.Stat, up.Level),
                     _ when hit.Body.Loose && d.PhysicsOnly => SandboxKeys.Line(d.Name, carriedIn, "physics gun only"),
