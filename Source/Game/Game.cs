@@ -1553,7 +1553,10 @@ public sealed partial class Game : IDisposable
         if (victim.Health > 0)
         {
             if (victim.Team == SbPeopleTeam)
+            {
                 StoryBodyHurt(victim, attacker); // (a story person says so: GameStoryTalk.cs)
+                OutpostHurt(victim, attacker, now); // (an outpost's person, and their mates: GameOutposts.cs)
+            }
             return false;
         }
         if (victim.Perks.Has(PerkId.LastStand) && !victim.LastStandUsed && kind != DamageKind.Melee) // melee always kills (Melee.cs)

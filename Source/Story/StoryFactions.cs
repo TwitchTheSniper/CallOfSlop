@@ -700,6 +700,13 @@ public sealed partial class StoryFactions
             W.Set(player, rel, now, 0);
     }
 
+    /// <summary>A person who works for a faction (an outpost's people: Game/GameOutposts.cs): its member from now on.</summary>
+    public void Enlist(int person, int f)
+    {
+        if (EntityOf(f) is var id and >= 0 && W.Valid(person) && R.MemberOf >= 0)
+            W.Set(person, R.MemberOf, id, 1);
+    }
+
     /// <summary>A construct a faction built itself (a building of its settlement) is its own.</summary>
     public void ClaimFor(int f, int construct)
     {
@@ -747,6 +754,13 @@ public sealed partial class StoryFactions
             return false;
         SetStanding(id, party, s);
         return true;
+    }
+
+    /// <summary>A hand check's shortcut (--outpost-check): a faction's standing with a party set outright.</summary>
+    public void SetStandingForCheck(int f, int party, int s)
+    {
+        if (EntityOf(f) is var id and >= 0 && W.Valid(party))
+            SetStanding(id, party, s);
     }
 
     private void SetStanding(int id, int party, int s)
