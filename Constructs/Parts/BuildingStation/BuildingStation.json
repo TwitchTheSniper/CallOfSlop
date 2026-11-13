@@ -65,6 +65,47 @@
       "default": 4.0,
       "unit": "m",
       "tooltip": "The bay's height. A blueprint is built only if it fits the bay."
+    },
+    {
+      "key": "fillFuel",
+      "label": "Fuel and tanks",
+      "group": "Fill",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 100,
+      "unit": "%",
+      "tooltip": "Fuel and fluid tanks (gases too) are filled to this share of what the blueprint holds, from tanks piped to Fluid in and gas in linked bins. 0: none, 100: full. Survival only: in creative a build comes full."
+    },
+    {
+      "key": "fillAmmo",
+      "label": "Ammo",
+      "group": "Fill",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 100,
+      "unit": "%",
+      "tooltip": "Ammo boxes, Ammo Containers and fitted magazines are filled to this share, from bulk ammo in linked bins. 0: none, 100: full. Survival only: in creative a build comes full."
+    },
+    {
+      "key": "fillCharge",
+      "label": "Battery charge",
+      "group": "Fill",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 100,
+      "unit": "%",
+      "tooltip": "Batteries are charged to this share from the station's own power. 0: none, 100: full. Survival only: in creative a build comes full."
+    },
+    {
+      "key": "fillWait",
+      "label": "Wait until filled",
+      "group": "Fill",
+      "type": "toggle",
+      "default": false,
+      "tooltip": "On: a build stays in the bay until it is filled. Off: it finishes with what it got and says what is short."
     }
   ],
   "storage": {
