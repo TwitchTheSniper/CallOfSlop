@@ -86,7 +86,10 @@ public static partial class SelfTest
                 var v = PowderCharge.HandSpeed(a.Slots[0].Def);
                 var seen = server.Tracers.Count == 0 ? 0.0 : server.Tracers[^1].Born;
                 float reach = 0, bow = 0;
-                for (var shot = 0; shot < 7; shot++)
+                // (At 300% the hip spread is near 6 deg: a round sent 0.9 deg or more down from the 1.6 m eye meets the ground
+                // by 100 m, and now and then all seven went low: CI 2026-11-13, "reach at 300%: 103 m". The long reach is
+                // shown by a round that flew level or up, so the high charge fires on, up to 20 rounds, until one has.)
+                for (var shot = 0; shot < 7 || charge == 300 && reach < 250 && shot < 20; shot++)
                 {
                     a.LookYaw = MathF.PI / 2;
                     a.LookPitch = 0;

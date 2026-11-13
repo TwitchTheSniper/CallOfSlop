@@ -15,6 +15,15 @@ public static partial class SelfTest
 
         public void Clear() => N = 0;
 
+        /// <summary>The longest gap between two frames (ms): a runner's stall, named in a failure beside the spike it makes.</summary>
+        public double MaxGapMs()
+        {
+            var gap = 0.0;
+            for (var i = 1; i < N; i++)
+                gap = Math.Max(gap, T[i] - T[i - 1]);
+            return gap * 1000;
+        }
+
         public void Add(double t, Vector3 p, Vector3 aim)
         {
             if (N > 0 && t - T[N - 1] < 0.002)
@@ -222,13 +231,13 @@ public static partial class SelfTest
             if (ha.Seconds < 2.5f || wa.Seconds < 2.5f)
                 problems.Add($"{name}: the clients' copies weren't drawn for the sweep ({ha.Seconds:0.0} s, {wa.Seconds:0.0} s)");
             if (ha.P98 > SmoothP98 || ha.Max > SmoothMax || ha.BackPerSec > 0.5f)
-                problems.Add($"{name}: the holder's drawn piece jitters (accel worst {ha.Max:0}, 98% {ha.P98:0} m/s2, limits {SmoothMax:0} / {SmoothP98:0}; back-steps {ha.BackPerSec:0.0}/s)");
+                problems.Add($"{name}: the holder's drawn piece jitters (accel worst {ha.Max:0}, 98% {ha.P98:0} m/s2, limits {SmoothMax:0} / {SmoothP98:0}; back-steps {ha.BackPerSec:0.0}/s; longest frame gap {hold.MaxGapMs():0} ms)");
             // (The watcher draws the server's own motion, which on wheels dragged over the ground is rougher than the aim:
             // its limits are the same or 1.5 times the host's, whichever is more.)
             var wP98 = MathF.Max(SmoothP98, sa.P98 * 1.5f);
             var wMax = MathF.Max(SmoothMax, sa.Max * 3f);
             if (wa.P98 > wP98 || wa.Max > wMax || wa.BackPerSec > sa.BackPerSec + 0.7f)
-                problems.Add($"{name}: the watcher's copy jitters (accel worst {wa.Max:0}, 98% {wa.P98:0} m/s2, limits {wMax:0} / {wP98:0}; back-steps {wa.BackPerSec:0.0}/s, the host's {sa.BackPerSec:0.0}/s)");
+                problems.Add($"{name}: the watcher's copy jitters (accel worst {wa.Max:0}, 98% {wa.P98:0} m/s2, limits {wMax:0} / {wP98:0}; back-steps {wa.BackPerSec:0.0}/s, the host's {sa.BackPerSec:0.0}/s; longest frame gap {watch.MaxGapMs():0} ms)");
             if (hEnd > 0.03f || wEnd > 0.03f)
                 problems.Add($"{name}: once the aim rested the clients' copies weren't within 3 cm of the server's ({hEnd * 100:0.0} cm, {wEnd * 100:0.0} cm)");
             a.SandboxLetGo(freeze: false);

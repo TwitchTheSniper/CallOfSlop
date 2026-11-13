@@ -271,11 +271,15 @@ public static partial class SelfTest
         oldRec.Keep = newRec.Keep = false;
         var f = new ToolFrame();
         var anim = new ViewModelAnimator();
+        // (Where the bytes went, by call, named in a failure: CI once saw 28744 B in both windows and it never came back here.)
+        var split = new long[4];
         long Frames(int n)
         {
+            Array.Clear(split);
             var before = GC.GetAllocatedBytesForCurrentThread();
             for (var i = 0; i < n; i++)
             {
+                var a0 = GC.GetAllocatedBytesForCurrentThread();
                 t += 1 / 60.0;
                 var input = new ToolRender.ViewInput { Tool = i % 120 < 60 ? ConstructTool.Welder : ConstructTool.Linker, Held = wheel, Now = t, Using = true, Grounded = true };
                 ToolRender.FirstPerson(input, ref f, out _);
@@ -284,22 +288,34 @@ public static partial class SelfTest
                 anim.Right.Solve(f.Right, Matrix4x4.Identity, Vector3.Zero);
                 anim.Left.Solve(f.Left, Matrix4x4.Identity, Vector3.Zero);
                 ToolRender.AddLights(t);
+                var a1 = GC.GetAllocatedBytesForCurrentThread();
                 oldRec.Reset();
                 newRec.Reset();
                 PlayerRender.DrawImmediate(oldG, bot, t);
+                var a2 = GC.GetAllocatedBytesForCurrentThread();
                 ScenePresentation.DrawPlayer(newG, bot, t);
+                var a3 = GC.GetAllocatedBytesForCurrentThread();
                 ScenePresentation.DrawPlayer(newG, me, t);
+                var a4 = GC.GetAllocatedBytesForCurrentThread();
+                split[0] += a1 - a0;
+                split[1] += a2 - a1;
+                split[2] += a3 - a2;
+                split[3] += a4 - a3;
             }
             return GC.GetAllocatedBytesForCurrentThread() - before;
         }
         Frames(30);
         var bytes = Frames(240);
+        var where = $"first person {split[0]}, bot immediate {split[1]}, bot scene {split[2]}, local player scene {split[3]}";
         if (bytes > 0)
-            bytes = Math.Min(bytes, Frames(240)); // (a one-off isn't a steady cost: now and then about 12 KB lands in the window, as in "Sandbox spawns")
+        {
+            var again = Frames(240); // (a one-off isn't a steady cost: now and then about 12 KB lands in the window, as in "Sandbox spawns")
+            where += $"; again {again} B: first person {split[0]}, bot immediate {split[1]}, bot scene {split[2]}, local player scene {split[3]}; the bot {bot.Name}, gun {bot.Weapon}";
+            bytes = Math.Min(bytes, again);
+        }
         Line($"tool models: 240 frames of tools in use (first person, a bot and the local player in third person) allocated {bytes} bytes");
         if (bytes > 0)
-            Fail($"tool models: drawing tools allocated {bytes} bytes over 240 frames");
-        ToolRender.Hands = null;
+            Fail($"tool models: drawing tools allocated {bytes} bytes over 240 frames ({where})");
     }
 
     /// <summary>A real host and client: each sees the other's tool in their hands.</summary>

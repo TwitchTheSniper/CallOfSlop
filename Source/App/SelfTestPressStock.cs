@@ -323,6 +323,14 @@ public static partial class SelfTest
                 var metal = RecyclingTable.Current.IdOf("metal");
                 Pump(server, [a], 0.3, ref now, clock);
                 var piece = ConstructExtruder.ProductOf(m, mi);
+                // (wait for the client's copy to catch up, as Case does: AimAt looks the server's part index up in the client's
+                // copy, and on a loaded machine 0.3 s can leave it without the piece or still with the battery, indices shifted)
+                if (!Await(() => a.Constructs.Get(m.Id) is { } cm2 && cm2.PartCount == m.PartCount && ConstructExtruder.ProductOf(cm2, PartNamed(cm2, name)) == piece))
+                {
+                    Fail($"press stock: the client never saw the {name}'s piece");
+                    w.Remove(m);
+                    continue;
+                }
                 var cm = m.Parts[piece].D.ExKey.L;
                 Tool(a, ConstructTool.Hands);
                 if (!AimAt(a, m, piece, ConstructBuild.UseReach))
