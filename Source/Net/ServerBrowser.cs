@@ -475,7 +475,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 290: Lifters phase 2: the Loader Arm in five tiers (Constructs/Parts/Lifters, ids move); CBodyKind.Lifts adds per lifter u16 carry rise (cm),
     //   u8 why, u16 step plus one, u16 station body, u16 moves (ConstructLifters.Write); CfgKey.LiftMode and CarryHeight (at the end).
     // 291: Smart logistics 4c: a Conveyor Router takes a name (its part text, TextSlots 1), so CBody's text tail may carry one; an older peer refuses it as malformed. No new bytes.
-    public const ushort ProtocolVersion = 291;
+    // 292: run-time parts in the hands by key: the Sandbox hand state's held part is PartRef.WriteCached (a U16 id, or WireMark,
+    //      u8 length and the key's bytes); docs/sandbox/design/inventory-run-time-parts.md phase 1.
+    public const ushort ProtocolVersion = 292;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

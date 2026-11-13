@@ -1104,7 +1104,7 @@ public static unsafe partial class Program
             var pile = most > 1 ? $"{st.Count[k]}/{most}" : "";
             var hurt = st.Health[k] < 0.995f ? $"{st.Health[k] * 100:0}% health" : "";
             var take = !near ? "" : held != null ? "hands full" : "";
-            return _sbStoreText = SandboxKeys.Line(d.Name, SandboxKeys.Join(pile, hurt), take, !near || held != null ? null : SandboxKeys.Do(hands ? SandboxKeys.Fire : SandboxKeys.Use, most > 1 ? "take one" : "take"));
+            return _sbStoreText = SandboxKeys.Line(PartRef.Shown(d), SandboxKeys.Join(pile, hurt), take, !near || held != null ? null : SandboxKeys.Do(hands ? SandboxKeys.Fire : SandboxKeys.Use, most > 1 ? "take one" : "take"));
         }
         var used = 0;
         for (var k = 0; k < st.SlotCount; k++)

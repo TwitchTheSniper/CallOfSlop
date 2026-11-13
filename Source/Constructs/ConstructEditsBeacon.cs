@@ -52,10 +52,8 @@ public sealed partial class ConstructEdits
         {
             if (!ToNetwork(world, player, held, eye))
             {
-                if (Survival || Inventory == null)
+                if (Survival || Inventory == null || !Inventory.Of(player).Add(held.Id)) // (a run-time part isn't counted: never lost)
                     Give(world, player, held, eye); // (hands full: the backpack, else set down)
-                else
-                    Inventory.Of(player).Add(held.Id);
             }
             h.Held = ConstructParts.None;
         }
