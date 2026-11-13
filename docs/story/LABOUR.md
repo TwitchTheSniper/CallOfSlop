@@ -32,7 +32,7 @@ goes through them).
 - **The host** (`Source/Game/GameLabour.cs`) reads the file, and once the colony stands (and again when the quarry does)
   works out each gang's points in the world from its frame: `colony` is the Penal Colony construct's own metres, a
   building its blueprint's (with `part`, from that part), `quarry` the Mine Face's (x along the face, z out from it). It
-  sends the list once in `Msg.Labour` (protocol 269) and to each joiner. A bad file is refused with a reason (the log's
+  sends the list once in `Msg.Labour` (protocol 276) and to each joiner. A bad file is refused with a reason (the log's
   `[labour]` line) and there is nobody.
 - **Every PC** (`Source/Render/LabourRender.cs`) builds the figures when the list changes: the players' own torso and head
   (`BodyModel.Build`) in a Ministry uniform (mostly the issue boiler suit, a little lighter or darker each, the odd
