@@ -378,18 +378,17 @@ public static class ConstructLogistics
     /// </summary>
     public static void AtSource(ConstructWorld world, Construct c, int machine, ref CRider r, ConstructPartDef d)
     {
-        if (world.ChainCount > 0 && ConstructLogisticsPlan.FromMaker(world, c, machine, d, out var into) is var link and > 0)
+        int into = -1;
+        uint stamp = 0;
+        var link = world.ChainCount > 0 ? ConstructLogisticsPlan.FromMaker(world, c, machine, d, out into, out stamp) : (ushort)0;
+        if (link > 0 && !OlderAsked(c, machine, d, stamp))
         {
             (r.Dest, r.Tag, r.Flags) = (c.Parts[into].Store, link, 0); // (made for a chained order: to the machine that needs it, Router or not)
             return;
         }
-        if (!world.CraftOpen.Contains(c.Id))
-            return;
-        var m = Map(c);
-        var net = m.NetOf(machine);
-        if (net < 0 || !m.NetHasRouter[net])
-            return;
-        for (var ds = 0; ds < m.DestN; ds++)
+        var m = world.CraftOpen.Contains(c.Id) ? Map(c) : null;
+        var net = m?.NetOf(machine) ?? -1;
+        for (var ds = 0; m != null && net >= 0 && m.NetHasRouter[net] && ds < m.DestN; ds++)
         {
             if (m.DestStore[ds] || m.NodeNet[m.Dests[ds]] != net || WantAt(world, c, m, ds, d, machine) is not (var id and > 0))
                 continue;
@@ -398,6 +397,25 @@ public static class ConstructLogistics
             r.Flags = 0;
             return;
         }
+        if (link > 0)
+            (r.Dest, r.Tag, r.Flags) = (c.Parts[into].Store, link, 0); // (the older terminal order had no way to be served here: the chain takes it)
+    }
+
+    /// <summary>Did a terminal order older than <paramref name="stamp"/> ask machine <paramref name="machine"/> for this kind (it goes first: class, then age)?</summary>
+    private static bool OlderAsked(Construct c, int machine, ConstructPartDef d, uint stamp)
+    {
+        for (var t = 0; t < c.PartCount; t++)
+        {
+            if (c.Parts[t].Craft is not { Count: > 0 } q)
+                continue;
+            for (var k = 0; k < q.Count; k++)
+            {
+                ref var o = ref q.Items[k];
+                if (o.Asked > 0 && o.Where == machine && o.Stamp < stamp && !o.Done && !o.Cancelled && ConstructCrafting.KindOf(ref o) == d.Id)
+                    return true;
+            }
+        }
+        return false;
     }
 
     /// <summary>Does the way from Router slot <paramref name="s"/> to destination <paramref name="ds"/> exist and take a piece this wide?</summary>

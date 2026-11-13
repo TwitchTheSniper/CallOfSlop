@@ -94,6 +94,18 @@ public sealed partial class Ui
                 j == null || j.State == StationState.Idle ? "Idle. Pick a blueprint, check it fits the bay, then Start." : ConstructStation.StateText(j));
             if (j is { Note.Length: > 0 })
                 ImGuiSafe.TextColored(j.State == StationState.Failed ? StBad : StWarn, j.Note);
+            if (c.Parts[part].Craft is { Count: > 0 } sq)
+            {
+                // A chained order's links (smart logistics): the station's craft orders whose parts are made from parts made elsewhere.
+                CraftingOrders(c, sq);
+                for (var k = 0; k < sq.Count; k++)
+                    if (_crLineText[k] is { Length: > 0 } lines)
+                    {
+                        ImGuiSafe.TextColored(Dim, _crOrderText[k] ?? "");
+                        for (var i = 0; i < lines.Length; i++)
+                            ImGuiSafe.TextColored(_crLineBad[k][i] ? StBad : Dim, lines[i]);
+                    }
+            }
             ImGui.Separator();
             var foot = ImGui.GetFrameHeightWithSpacing() * 2 + 6 * _scale;
             if (ImGui.BeginChild("##stlist"u8, new float2(300 * _scale, -foot), ImGuiChildFlags.Borders))

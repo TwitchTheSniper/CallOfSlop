@@ -428,13 +428,17 @@ public sealed partial class ConstructWorld
         {
             var riders = b.Conveyed ?? [];
             var chains = b.Chains ?? [];
-            w.U32(LogiTag).I32(4 + riders.Length * 5 + 4 + chains.Length * 16);
+            w.U32(LogiTag).I32(4 + riders.Length * 5 + 4 + chains.Length * 16 + 4 + chains.Length * 9);
             w.I32(riders.Length);
             foreach (ref readonly var cr in riders.AsSpan())
                 w.U16(cr.Dest).U16(cr.Tag).U8(cr.Flags);
             w.I32(chains.Length);
             foreach (ref readonly var e in chains.AsSpan())
                 w.U16(e.Id).U16(e.Maker).U16(names.Part(e.Kind)).U16(e.Asked).U16(e.Made).U16(e.Dest).U16(e.Root).U16(e.RootId);
+            // (phase 2b, deeper chains: per link in the same order, u16 parent id, u8 depth, u8 class, u32 age stamp, u8 ChainFlags)
+            w.I32(chains.Length);
+            foreach (ref readonly var e in chains.AsSpan())
+                w.U16(e.Parent).U8(e.Depth).U8(e.Class).U32(e.Stamp).U8(e.Flags);
         }
     }
 
@@ -790,7 +794,11 @@ public sealed partial class ConstructWorld
                         var kind = r.U16();
                         chains[i].Kind = kind < names.Parts.Length ? names.Parts[kind] : ConstructParts.None;
                         (chains[i].Asked, chains[i].Made, chains[i].Dest, chains[i].Root, chains[i].RootId) = (r.U16(), r.U16(), r.U16(), r.U16(), r.U16());
+                        (chains[i].Depth, chains[i].Class) = (1, ConstructLogisticsPlan.ClassNormal); // (a one-level save's links)
                     }
+                    if (r.Pos + 4 <= end && r.I32() is var k2 && k2 == k && r.Pos + k * 9 <= end)
+                        for (var i = 0; i < k; i++)
+                            (chains[i].Parent, chains[i].Depth, chains[i].Class, chains[i].Stamp, chains[i].Flags) = (r.U16(), r.U8(), r.U8(), r.U32(), r.U8());
                 }
             }
             while (r.Pos < end)

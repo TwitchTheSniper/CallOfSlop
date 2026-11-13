@@ -650,6 +650,19 @@ the part kit's `control_parts` (the console).
   the input makes) or "Recipe Auto"; a Panel Former's "Preset Hood". Another machine adopts it with one data line, a `machine.recipe`
   button on its screen, and its list in the picker (`Ui.RecipePickable`, `MakeRecipeSet`). The Assembler table no longer writes its
   recipe names over a Panel Former's preset list (`AssemblingTable.Fill`), which had left its Preset at the first preset.
+- **The makers adopt it** (2026-11-12, `UiRecipePickerMakers.cs`). The setting a pick sets is `ProductionLines.RecipeKey`: a Fan
+  Former's Makes (`fanKind`), an Airframe Former's Cuts (`wingKind`), else the recipe setting, so the same `CActKind.LineRecipe` serves
+  them all (no protocol change). Every **Press** has **Recipe** beside **Pattern** on its die screen: the picker shows Auto, the fitted
+  die's patterns (the part each is like, a kit icon when bay 2 wants one, "P2" for its Pattern number), then the patterns of every other
+  die of its size, dim, one category tab per die ("Bracket (fitted)" first): what it could make with another die fitted. Its tiles are
+  made per kind and fitted die (`Ui.RecipeVariant`); the picker closes when the die changes. Pattern still steps through them, and the
+  bay cards are as they were. A **Die Lathe**'s die screen has Recipe: None, then every die of the lathe list with its time and its
+  block's material; a die of another size is dim and refused (`ConstructPress.LatheCuts`, as its WrongClass stall). A **Fan Former**
+  (all sizes) and an **Airframe Former** have a Recipe button on their four-row screens: the kinds, as swatches; size, blades and
+  chord stay the configure tool's. The Fan Former's screen now names its kind ("Ducted fan"). The pick from a machine's own button
+  marks its body dirty, so a client's screen shows it (it had stayed on the host until something else changed). For window shots,
+  `picker` prints the open picker's tiles, `picker N` picks value N as a click does (a scripted click doesn't reach ImGui on a Windows
+  desktop: the real cursor wins), `picker @PART` opens it on a part as its button does (a joined window can't fly its eye to a screen).
 - **Resource icons** (`Source/Render/ResourceIcons.cs`). Every loose material has an icon: a small 3D stack of its family's shape in
   its colour, drawn from boxes and part shapes into the inventory's tile atlas (`SandboxTiles`, slots of `Kind.Resource`, made first
   and in a few frames; no image files). The family is `Recycling.json`'s `"shapes"` (ore, ingot, plank, log, heap, drum, gas, block,
@@ -853,13 +866,34 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   root's entries go and their unstarted orders leave their makers (a head order on the die finishes; its part goes to storage at the
   next Router). A link nobody makes stays open and the order's row says "waiting on Gear Set: nothing on the network makes it" (else
   "Gear Set 1/2 from the Assembler"). Loose material is not ordered (the user's answer: kept by levels). Entries are saved in the
-  LOGI block after the riders (an entry's maker order is marked again on load, so nothing is asked twice); no new wire data: the row
+  LOGI block after the riders (an entry's maker order is marked again on load, so nothing is asked twice); the row
   travels as the order's note. An order whose part went to storage says why in its row ("a part went to storage: ... - it is fetched
   from there"). Assemblers and Panel Formers are Router destinations (an Assembler's for its chained inputs; a Panel Former has no
   wants yet).
-- **Not yet** (phase 2's rest, written plan in the coordinator's notes): deeper chains (a maker's own inputs), stock before making for
-  chained inputs, priorities between roots, the Building Station as a root, the Orders tab's indented chain lines, press bays as
-  destinations (a pressed part's maker waits for the Press's orders).
+- **Deeper chains, stock first, rank** (phase 2b, the same file). From the step after an entry's maker takes its order, that maker's
+  own recipe inputs are asked the same way (one level a step), at most `MaxDepth` (6) levels below the root ("waiting on X: chain too
+  deep (6 levels)"), never a kind the root or an ancestor link is (a recipe loop: "recipe loop: the X needs itself"); an entry knows
+  its `Parent` and `Depth`, and a link whose parent finished, went or changed maker goes with its unstarted order. Before a maker is
+  asked, free stock of the kind in the root's network's stores with a conveyor way to the destination (`ConstructCrafting.RouteTo`,
+  joins and Routers) is claimed for it (a `ConstructReserve` claim owned by the destination's store, id the entry's) and sent one
+  piece a step with the entry as its destination; only the rest is made (a chute into the machine brings what it wants by itself,
+  so stock behind a chute is not claimed). A maker is the Assembler already making that kind, else the shortest queue; the chained
+  line goes ahead of the first line in that queue it is an input for (else a machine asked for a part and for that part's input
+  would wait on itself; that line has no batch under way, an Assembler starts one only with every input in). Cancelling drops a
+  chained head line too when its Assembler has no batch under way. **Rank:** roots compete by priority class, then age (the user,
+  Q2): every crafting order gets an age stamp when first stepped (`CraftOrder.Stamp`, server, not saved: stamped again in order),
+  terminals and stations are stepped oldest open order first, each followed by its own chains (`ConstructLogisticsPlan.Serve`), so
+  the oldest claims stock first; the entry table is kept in rank order (class, then the root's stamp), so a maker's piece goes to the
+  best-ranked link, and a terminal's own order that asked the same machine for that kind earlier is served first. Every root is
+  Normal until phase 3's priorities; stock targets will rank below Low. **The Building Station** is a root like a terminal (it is
+  one by data): its craft orders chain the same way, and its panel lists the chained orders' lines under its note.
+- **Chain lines** (protocol 268). Each order's chain is made into at most 6 lines on the server (`ChainLine`: depth, kind, arrived,
+  asked, maker, destination, stock claimed, the reason; "and N more"), only when they change, and sent with the order in
+  `CBodyKind.Craft`; the Orders tab draws them indented under the order's row on both peers (`ConstructLogisticsPlan.LineText`), a
+  link nobody makes in the fault colour. The LOGI block gains a third part after the entries: per entry its parent, depth, class,
+  stamp and flags (an older phase 2 block loads as one level).
+- **Not yet:** press bays and Panel Former sheet orders as destinations (with the Press's orders), priority classes and stock targets
+  (phase 3).
 - **Not in phase 1:** chains (orders pull their inputs), stock targets and overrides, the Router's settings (`routerSpill`,
   `routerHold`) and screen, the network board, press bays and the Panel Former as destinations, the source's own "no storage" stall
   (a full network backs up to the Router, stuck, and the line behind it backs up to the machine as today).

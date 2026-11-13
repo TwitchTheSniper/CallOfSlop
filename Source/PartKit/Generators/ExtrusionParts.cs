@@ -93,7 +93,7 @@ public sealed class ExtrusionParts : IPartGenerator
     private static double At(PyDict s, int k) => Py.D(((List<object?>)s["at"]!)[k]);
 
     /// <summary>The part's screen: a side of its block (PartScreens), never the die's.</summary>
-    private static Part WithScreen(Part p, bool orders = false, string[]? faces = null, double? width = null)
+    private static Part WithScreen(Part p, bool orders = false, string[]? faces = null, double? width = null, bool recipe = false)
     {
         var keepClear = p.Sockets.Select(s => (new[] { At(s, 0), At(s, 1), At(s, 2) }, (string)s["dir"]!)).ToList();
         // A machine that takes work orders (WorkOrders.cs) is a machine of a production line: a status lamp over its screen, its queue on
@@ -106,6 +106,8 @@ public sealed class ExtrusionParts : IPartGenerator
             p.Boxes.Add(lamp);
         if (orders)
             panel["touch"] = OrderButtons();
+        else if (recipe) // (a Fan or Airframe Former: what it makes, from the recipe picker: Program.MachineRecipePicker)
+            panel["touch"] = Py.L(Kw(("action", "machine.recipe"), ("at", Py.L(0.72, 0.02, 0.98, 0.24)), ("label", "Recipe")));
         var config = p.D.Get("config") is List<object?> cfg ? new List<object?>(cfg) : [];
         if (orders)
             config.Add(OrderCount);
@@ -361,7 +363,7 @@ public sealed class ExtrusionParts : IPartGenerator
         p.Set(("power", power), ("storage", Kw(("bulk", bulk), ("wheel", wheel))),
             ("config", air ? AirframeConfig(across, width, d0, w0) : fan ? FanConfig(across, d0) : FormerConfig(across, width, d0, w0)),
             ("collider", "boxes")); // (the hub is a look: its cylinder must never become a hull)
-        return WithScreen(p, orders: !fan && !air);
+        return WithScreen(p, orders: !fan && !air, recipe: fan || air);
     }
 
     /// <summary>The small Formers' look: a headstock on a dark column, a big bare hub with a chuck that turns, the hopper banded white, hazard paint round the hub.</summary>
