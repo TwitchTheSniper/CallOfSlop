@@ -89,7 +89,7 @@ public sealed class CitySpec
 /// <summary>The facade or surface a face is drawn with (CityRenderer's shader reads it from the vertex).</summary>
 public enum CityStyle : byte
 {
-    Glass, Grid, Brick, Ribbon, Plain, Roof, Road, Crossing, Pavement, Kerb, Court, Lamp, Metal, Neon, Beacon, Rail, Stairs, Leaves, TrainSide, TrainEnd, MetroWall, Pad,
+    Glass, Grid, Brick, Ribbon, Plain, Roof, Road, Crossing, Pavement, Kerb, Court, Lamp, Metal, Neon, Beacon, Rail, Stairs, Leaves, TrainSide, TrainEnd, MetroWall, Pad, Water,
 }
 
 /// <summary>A building: its middle on the plan, its turn, and the seed its looks are drawn from. Its masses stand in its frame.</summary>

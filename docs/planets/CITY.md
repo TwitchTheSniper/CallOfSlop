@@ -97,6 +97,26 @@ stations. Under the city's ground the city's and the figures' shaders light with
 Cost on Karl's PC with all of it (1920x1080, vsync off, 2026-11-13): 0.07 to 0.09 ms CPU and 0.09 to 0.12 ms GPU a
 frame for the city; the game at 2,100 to 3,000 fps from above, in the market and in the avenue.
 
+## Words, the square, traffic (slice 4)
+
+- **Signs say something** (`CitySigns`): the panels' font (`PanelFontData`, a distance field) and a small table of words
+  go to the GPU once; the shader writes a shop's name on its fascia (50 names, picked by the shop's seed), a blade's
+  name down its face (letter by letter), a slogan over a billboard's picture, MARKET over the market, each metro
+  station's name along its frieze (`CitySigns.Metro`, south to north: CENTRAL under the square) and each el station's
+  on a board under its canopy. Faces are laid so a word reads the right way round from outside (`Box`, `Wall`).
+- **Shopfronts**: nine in ten shops are open; a shut one has its roller shutter down; every shop has a framed glass door
+  at one end of its window.
+- **The square**: a fountain round the column (a stone basin, rippling water), four planted beds with trees, a ring of
+  lamps across the open paving, darker stone in rings and spokes round the fountain.
+- **The market's roof**: a sawtooth of north lights over its ceiling, the glazing lit from inside.
+- **Traffic**: about 1,600 cars drive the streets' lanes both ways (two lanes each way on the avenues), keeping right,
+  with head and tail lamps; drawn like the walkers, one instanced figure posed on the GPU from its lane and the clock
+  (`CityLife.StreetCars`, kind 2), within 400 m. A car that reaches its run's end (the city's edge, the square) comes
+  in again at its start. They are dressing, not vehicles: the vehicle system is not touched.
+
+Cost on Karl's PC with all of it (1920x1080, vsync off): 0.07 to 0.09 ms CPU, 0.12 to 0.13 ms GPU a frame for the city;
+the game at 2,670 to 2,840 fps from above, by the market and in the avenue.
+
 ## The plan for the rest (slices)
 
 1. **Done: the core** (this file): streets, 790 buildings, the square, lamps, the elevated loop and its stations.
