@@ -1,11 +1,12 @@
 {
-  "format": "call-of-slop-modular-engine/1",
-  "about": "Written by the part kit (--gen-parts engine_parts). An engine's peak power is the sum over its cylinders of kW x the bank's fuel system x its booster.",
+  "format": "call-of-slop-modular-engine/2",
+  "about": "Written by the part kit (--gen-parts engine_parts). An engine's peak power is the sum over its cylinders of kW x the bank's fuel system x its booster. The sizes are knots: a piece of any scale reads kW and rpm between them in log-log (EngineRules.At); a cylinder gives its own scale's kW, the crank's largest section sets the revs, and starterFrom is the crank scale from which it needs a starter.",
   "burnPerKw": 0.00044,
   "misfireBelow": 0.5,
   "misfirePower": 0.5,
   "thirstyAt": 1.15,
   "frugalAt": 0.85,
+  "starterFrom": 8,
   "sizes": [
     {
       "name": "small",

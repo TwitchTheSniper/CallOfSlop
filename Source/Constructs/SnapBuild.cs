@@ -389,10 +389,9 @@ public static class SnapBuild
         var ts = td.Sockets[socket % td.Sockets.Length];
         var ds = def.Sockets[own];
         var onLeaf = td.HasJoint && socket == td.LeafIndex;
-        if (!ConstructBuild.KindsMate(ts.Kind, ds.Kind, onLeaf) || ds.Class != ts.Class || ts.Kind == SocketKind.Port)
+        if (!ConstructBuild.KindsMate(ts.Kind, ds.Kind, onLeaf) || ds.Class != ts.Class && !ConstructBuild.EngineMate(def, td) || ts.Kind == SocketKind.Port)
             return false;
-        if (def.Piece != EnginePiece.None && td.Piece != EnginePiece.None && def.PieceSize != td.PieceSize)
-            return false; // (a modular engine is one size)
+        // (engine pieces of any sizes mate: each cylinder gives its own power, a small fuel system starves its bank; sized-parts design 6.4)
         var ot = OwnType(def, own);
         if (ot == ConnType.Mount)
             return true;

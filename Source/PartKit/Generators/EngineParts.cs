@@ -260,13 +260,14 @@ public sealed class EngineParts : IPartGenerator
 
     private static PyDict RulesFile() => new()
     {
-        ["format"] = "call-of-slop-modular-engine/1",
-        ["about"] = "Written by the part kit (--gen-parts engine_parts). An engine's peak power is the sum over its cylinders of kW x the bank's fuel system x its booster.",
+        ["format"] = "call-of-slop-modular-engine/2",
+        ["about"] = "Written by the part kit (--gen-parts engine_parts). An engine's peak power is the sum over its cylinders of kW x the bank's fuel system x its booster. The sizes are knots: a piece of any scale reads kW and rpm between them in log-log (EngineRules.At); a cylinder gives its own scale's kW, the crank's largest section sets the revs, and starterFrom is the crank scale from which it needs a starter.",
         ["burnPerKw"] = BurnPerKw,
         ["misfireBelow"] = MisfireBelow,
         ["misfirePower"] = MisfirePower,
         ["thirstyAt"] = ThirstyAt,
         ["frugalAt"] = FrugalAt,
+        ["starterFrom"] = 8, // (an engine whose crank's scale reaches this needs a starter: half-way in log between Medium and Large, sized-parts design 6.1)
         ["sizes"] = Sizes.Select(z => (object?)new PyDict
         {
             ["name"] = z.Title.ToLowerInvariant(), ["scale"] = z.S, ["kw"] = z.Kw, ["idleRpm"] = z.Idle, ["peakRpm"] = z.Peak, ["maxRpm"] = z.Max, ["starter"] = z.Start,

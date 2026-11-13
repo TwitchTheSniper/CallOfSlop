@@ -329,9 +329,8 @@ public static class EngineKit
         res.Cylinders = e.Cylinders;
         res.Banks = e.Banks;
         res.BurnLps = e.Burn;
-        res.IdleRpm = rules.Idle[e.Size];
-        res.PeakRpm = rules.Peak[e.Size];
-        res.MaxRpm = rules.Max[e.Size];
+        rules.At(e.Scale, out _, out var idle, out var peak, out var max); // (read back from the live engine: its crank's scale, sized-parts design 6.1)
+        (res.IdleRpm, res.PeakRpm, res.MaxRpm) = (idle, peak, max);
         res.TorqueNm = e.Kw * 1000 / (res.PeakRpm / ConstructDrive.RpmPerRadS);
         res.Layout = LayoutName(p.Layout, e.Cylinders);
         res.Fault = e.Fault is EngineFault.None or EngineFault.NoTank ? "" : e.Fault.ToString();

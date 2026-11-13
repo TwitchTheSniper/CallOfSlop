@@ -87,3 +87,11 @@ Phase 2's three questions were answered (2026-11-13, all A: devices keep changin
 
 - The 26 generated receivers as patterns (question 3).
 - A pressed receiver fired at a plate in the window; the press-in-a-world run traced to a barrel coming out.
+
+## The user's answers (2026-11-13)
+
+1. **A pressed receiver's mass is the merge's** (B, not the recommendation): the catalogue file's mass times s squared, so the 40 cm Rifle
+   Receiver weighs 56 kg, as the 2x2 merge it equals. Built in phase 4 (`Pressed`: `ReceiverMergeRules.Times(s, partMass)`; no bay 2 mass).
+2. **The drawn scale stays round half up** (A).
+3. **The 26 generated receivers stay catalogue only** (B, not the recommendation): "No, catalogue only". The Receiver die keeps its three
+   patterns. (Phase 4 had built them as patterns before the answer came; that commit was reverted.)
