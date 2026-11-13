@@ -1245,6 +1245,19 @@ public static class ConstructPress
             }
             return;
         }
+        if (c.Parts[part].Orders is { Bill: false, Count: > 0 } q && Pressed.SpecOf(q.Head) is { } spec && ReferenceEquals(spec.Die, die))
+        {
+            // A press working orders wants its head order's blank (Press phase 4): that one, by its sizes.
+            var k = spec.Blank;
+            card.IconColour = names.ColourOf(k.Material);
+            card.IconMask = k.Mask;
+            card.Add(1, names.NameOf(k.Material));
+            card.Add(2, Pressed.SectionOf(k) is var sec and >= 0 ? SectionName(sec) : "Custom");
+            card.AddShort(3, k.W / 100f).Add(3, 'x').AddShort(3, k.H / 100f).Add(3, 'x').AddShort(3, k.L / 100f).Add(3, 'm');
+            card.State = refused != BayRefuse.None ? PanelState.Refused : PanelState.Wants;
+            card.Add(4, refused != BayRefuse.None ? SizedWhyShort(refused) : "For its order");
+            return;
+        }
         card.IconColour = names.ColourOf(die.Materials[0]);
         card.IconMask = SectionMask(die.Blanks[0]);
         for (var m = 0; m < die.Materials.Length; m++)

@@ -1138,7 +1138,11 @@ public static class ConstructCrafting
                 var lines = o.Lines ?? [];
                 w.U8((byte)lines.Length).U8(o.LinesMore); // (protocol 268: the chain lines under its row)
                 foreach (ref readonly var l in lines.AsSpan())
-                    w.U8(l.Depth).U16(l.Kind).U16(l.Made).U16(l.Asked).U16(l.Maker).U16(l.Dest).U16(l.Stock).Str(l.Reason ?? "");
+                {
+                    w.U8(l.Depth);
+                    ConstructStorage.WriteDef(w, l.Kind); // (by key, protocol 269: a press's blank is a run-time piece)
+                    w.U16(l.Made).U16(l.Asked).U16(l.Maker).U16(l.Dest).U16(l.Stock).Str(l.Reason ?? "");
+                }
             }
             n++;
         }
@@ -1225,7 +1229,7 @@ public static class ConstructCrafting
                     o.Lines = new ChainLine[ln];
                     for (var i = 0; i < ln; i++)
                     {
-                        o.Lines[i] = new ChainLine { Depth = r.U8(), Kind = r.U16(), Made = r.U16(), Asked = r.U16(), Maker = r.U16(), Dest = r.U16(), Stock = r.U16(), Reason = r.Text(200) };
+                        o.Lines[i] = new ChainLine { Depth = r.U8(), Kind = ConstructStorage.ReadDef(ref r), Made = r.U16(), Asked = r.U16(), Maker = r.U16(), Dest = r.U16(), Stock = r.U16(), Reason = r.Text(200) };
                         if (ConstructParts.Get(o.Lines[i].Kind) == null || o.Lines[i].Depth > ConstructLogisticsPlan.MaxDepth + 1)
                             throw new MalformedPacketException("a bad chain line");
                     }
