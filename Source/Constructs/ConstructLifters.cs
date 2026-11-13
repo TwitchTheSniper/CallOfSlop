@@ -1225,10 +1225,12 @@ public static class LifterProbe
             {
                 var l = lb.Lifts[i];
                 n++;
-                sb.Append($" [body {lb.Body} part {l.Part} {world.Get(lb.Body)?.DefOf(l.Part).Name}: {l.State} {l.Why} moves {l.Moves}{(l.Def != 0 ? " " + (ConstructParts.Get(l.Def)?.Name ?? "?") : "")} {l.Age}/{l.Dur} ticks{(l.WaitFrom != 0 ? $" waiting at tick {l.WaitFrom}" : "")} held {l.Held}]");
+                sb.Append($" [body {lb.Body} part {l.Part} {world.Get(lb.Body)?.DefOf(l.Part).Name}: {l.State} {l.Why} moves {l.Moves}{(l.Def != 0 ? " " + (ConstructParts.Get(l.Def)?.Name ?? "?") : "")} {l.Age}/{l.Dur} ticks{(l.WaitFrom != 0 ? $" waiting at tick {l.WaitFrom}" : "")} held {l.Held}{IkOf(world, lb.Body, l)}]");
             }
         var f = System.Diagnostics.Stopwatch.Frequency / 1e6;
         var cost = StepTicks > 0 ? $"; lifter step {StepTotal / f / StepTicks:0.0} us a tick on average, worst {StepWorst / f:0} us (with its fits) over {StepTicks} ticks" : "";
+        if (ConstructLifterPush.BlockCalls > 0)
+            cost += $"; push {ConstructLifterPush.BlockTotal / f / ConstructLifterPush.BlockCalls:0.00} us a player tick on average, worst {ConstructLifterPush.BlockWorst / f:0.0} us over {ConstructLifterPush.BlockCalls}";
         return $"{n} lifter(s), {CarriesHeard} carries seen, {Fits} fitted by lifters (host count), players pushed {ConstructLifterPush.Pushes} times, pinned {ConstructLifterPush.Pins} (this peer; last in the way: {ConstructLifterPush.LastBlock}){cost}{sb}";
     }
 
@@ -1251,6 +1253,41 @@ public static class LifterProbe
     }
 
     public static long StepTicks, StepTotal, StepWorst; // server: the lifter step's own cost (Stopwatch ticks), for the window tool
+
+    /// <summary>
+    /// The window tool: an arm's pose over its whole move as this peer has it, posed as LifterRender poses it. The wrist's
+    /// wanted distance from the shoulder against the links' range (under 1 at LinkMin: folded; over 1 at LinkMax: stretched,
+    /// which the IK clamps), and the elbow at the move's middle tick (host and client compare it).
+    /// </summary>
+    public static string Ik(LifterDef ld, CLift l)
+    {
+        if (ld.Bridge || l.State is not (LiftState.Carry or LiftState.Return) || l.Dur <= 0)
+            return "";
+        float lo = float.MaxValue, hi = 0;
+        var clamped = 0;
+        for (var a = 0; a <= l.Dur; a += 3)
+        {
+            var grip = Grip(ld, l, a);
+            var len = (grip + Vector3.UnitY * ConstructLifters.Wrist - ld.Base).Length();
+            lo = MathF.Min(lo, len);
+            hi = MathF.Max(hi, len);
+            clamped += len < ld.LinkMin - 0.001f || len > ld.LinkMax + 0.001f ? 1 : 0;
+        }
+        ArmIk.Solve(ld, Grip(ld, l, l.Dur * 0.5f), out _, out var elbow, out _);
+        return $" ik: wrist {lo:0.00} to {hi:0.00} m of links {ld.LinkMin:0.00} to {ld.LinkMax:0.00}, {clamped} sample(s) clamped, elbow at mid-move {elbow:0.000}";
+    }
+
+    private static string IkOf(ConstructWorld world, ushort body, CLift l) =>
+        world.Get(body) is { } c && l.Part < c.PartCount && c.DefOf(l.Part).Lifter is { } ld ? Ik(ld, l) : "";
+
+    private static Vector3 Grip(LifterDef ld, CLift l, float age)
+    {
+        var origin = ConstructLifters.Pose(ld, l, age, out var turn);
+        if (l.Def == 0 || ConstructParts.Get(l.Def) is not { } d)
+            return origin + Vector3.UnitY * ConstructLifters.GripLift;
+        var top = new Vector3((d.BoundsMin.X + d.BoundsMax.X) * 0.5f, d.BoundsMax.Y, (d.BoundsMin.Z + d.BoundsMax.Z) * 0.5f);
+        return origin + Vector3.Transform(top, turn) + Vector3.UnitY * ConstructLifters.GripLift;
+    }
 
     /// <summary>
     /// Host (the window tool's "lifter stand" and "lifter pen"): a spot on the ground the piece of a carry that has just begun

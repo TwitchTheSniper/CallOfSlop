@@ -45,6 +45,16 @@ public static class ConstructLifterPush
     /// <summary>For the window tool: pushes made and pins found since start (this peer).</summary>
     public static int Pushes, Pins;
 
+    /// <summary>For the window tool: the push's own cost on this peer (calls, Stopwatch ticks), with lifters in the world.</summary>
+    public static long BlockCalls, BlockTotal, BlockWorst;
+
+    private static void Time(long t0)
+    {
+        var dt = System.Diagnostics.Stopwatch.GetTimestamp() - t0;
+        BlockTotal += dt;
+        BlockWorst = Math.Max(BlockWorst, dt);
+    }
+
     /// <summary>For the window tool: what the last pin found in the way.</summary>
     public static string LastBlock = "";
 
@@ -62,9 +72,14 @@ public static class ConstructLifterPush
     {
         if (world.LiftBodies.Count == 0 || s.RideUp != Vector3.Zero)
             return; // (contraption space: a rider moves in its construct's frame, and a piece passes through constructs)
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var n = Gather(world, tick, s.Position, height);
+        BlockCalls++;
         if (n == 0)
+        {
+            Time(t0);
             return;
+        }
         var based = false;
         for (var iter = 0; iter < 2; iter++)
         {
@@ -72,6 +87,8 @@ public static class ConstructLifterPush
             for (var i = 0; i < n; i++)
             {
                 ref readonly var b = ref Boxes[i];
+                if (b.Lift.WaitFrom != 0)
+                    continue; // (a stopped piece pushes nobody: the player it waits for walks out of it; and a pin costs no room checks a tick)
                 if (!Overlap(b, s.Position, height, World.PlayerRadius, out var push))
                     continue;
                 any = true;
@@ -121,6 +138,7 @@ public static class ConstructLifterPush
             if (!any)
                 break;
         }
+        Time(t0);
     }
 
     /// <summary>Server, while a lifter waits for a player: is everyone clear of its stopped piece (by <see cref="Clearance"/>)?</summary>
