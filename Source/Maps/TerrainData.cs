@@ -416,6 +416,13 @@ public sealed class TerrainData
             var sand = s.SandBelow is { } sb ? Smooth(((float)sb + 0.75f - h) / 1.5f) * (1 - rock - dirt) : 0f;
             var grass = MathF.Max(0, 1 - rock - dirt - sand);
             color = s.Grass * grass + s.Dirt * dirt + s.Rock * rock + s.Sand * sand;
+            if (s.IcePatches > 0 && grass > 0)
+            {
+                // Bare ice where the wind scours the snow off: low patches with ragged edges, on gentle ground only.
+                var nz = TerrainGen.ValueNoise(x / s.IceScale, z / s.IceScale, 5151) * 0.75 + TerrainGen.ValueNoise(x / (s.IceScale * 0.23), z / (s.IceScale * 0.23), 5152) * 0.25;
+                var ice = Smooth(((float)nz - (0.5f - (float)s.IcePatches) * 1.1f) / 0.07f) * grass;
+                color = Vector3.Lerp(color, s.Ice, ice);
+            }
         }
         var vary = 1f + (float)(s.Variation * TerrainGen.ValueNoise(x / 9.0, z / 9.0, 4242));
         if (s.SnowAbove is { } line)

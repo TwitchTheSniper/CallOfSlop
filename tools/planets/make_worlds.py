@@ -40,6 +40,94 @@ def terrace(step, sharp=0.8, **place):
     return {"type": "terrace", "step": step, "sharp": sharp, **place}
 
 
+def ridge(lat, lon, bearing, length, width, height, peaks=0.5, rough=0.15, wander=0, seed=1):
+    return {"type": "ridge", "lat": lat, "lon": lon, "bearing": bearing, "length": length, "width": width, "height": height, "peaks": peaks, "rough": rough, "wander": wander, "seed": seed}
+
+
+def crevasses(lat, lon, radius, bearing, spacing=60, length=90, width=8, depth=24, share=0.5, spread=20, edge=None, seed=1):
+    f = {"type": "crevasses", "lat": lat, "lon": lon, "radius": radius, "bearing": bearing, "spacing": spacing, "length": length, "width": width, "depth": depth, "share": share, "spread": spread, "seed": seed}
+    if edge is not None:
+        f["edge"] = edge
+    return f
+
+
+def drifts(lat, lon, radius, bearing, amplitude, scale, stretch=6, octaves=2, edge=None, seed=1):
+    f = {"type": "drifts", "lat": lat, "lon": lon, "radius": radius, "bearing": bearing, "amplitude": amplitude, "scale": scale, "stretch": stretch, "octaves": octaves, "seed": seed}
+    if edge is not None:
+        f["edge"] = edge
+    return f
+
+
+def cave(lat, lon, bearing, radius=2.6, chamber=8, cover=14, climb=8, seed=1):
+    """A cave dug when a fresh world starts (PLANETS.md "Caves"): a chamber under (lat, lon) and a tunnel out along bearing."""
+    return {"type": "cave", "lat": lat, "lon": lon, "bearing": bearing, "radius": radius, "chamber": chamber, "cover": cover, "climb": climb, "seed": seed}
+
+
+def away(radius, lat, lon, keep):
+    """True when (lat, lon) is further than each kept place's own distance (m) from it: keep is [(lat, lon, metres)]."""
+    a = (math.cos(math.radians(lat)) * math.sin(math.radians(lon)), math.sin(math.radians(lat)), math.cos(math.radians(lat)) * math.cos(math.radians(lon)))
+    for klat, klon, m in keep:
+        b = (math.cos(math.radians(klat)) * math.sin(math.radians(klon)), math.sin(math.radians(klat)), math.cos(math.radians(klat)) * math.cos(math.radians(klon)))
+        if math.acos(max(-1.0, min(1.0, sum(x * y for x, y in zip(a, b))))) * radius < m:
+            return False
+    return True
+
+
+def reach(f):
+    """How far from its centre a feature can change the ground (m), as Planetoid.ReachOf works it out."""
+    if f["type"] == "ridge":
+        return math.hypot(f["length"] / 2, f["width"] / 2 + f.get("wander", 0)) + 2
+    return f["radius"] + f.get("edge", f["radius"] * 0.3) + 2
+
+
+def scattered(radius, seed, count, keep, make):
+    """count features spread over the world by a seeded draw (even in area), each make(rng, lat, lon, k), none reaching
+    a kept place."""
+    import random
+    rng = random.Random(seed)
+    out = []
+    while len(out) < count:
+        lat = round(math.degrees(math.asin(rng.uniform(-1, 1))), 2)
+        lon = round(rng.uniform(0, 360), 2)
+        f = make(rng, lat, lon, len(out))
+        if away(radius, lat, lon, [(a, b, m + reach(f)) for a, b, m in keep]):
+            out.append(f)
+    return out
+
+
+# Glacier's places that keep their ground: the colony round the pole with its quarry, stations and data centre (all within
+# about 450 m; the new ground starts past 700 m), the Ministry Spaceport about 2 km out along longitude 90, the Server Farm
+# on the Mirror and the data centre in the Rent (both flattened last anyway), metres of clear ground round each.
+GLACIER_KEEP = [(90, 0, 1600), (76.4, 90, 500), (-10, 320, 900), (15, 170, 300)]
+
+
+def glacier_terrain():
+    """Glacier's rough country (docs/planets/WORLDS.md "Glacier's ground"): near the colony a ridge, a pressure-ridge field
+    and a crevasse field, each within a short walk; over the whole world ice ridges with passes, crevasse fields, pressure
+    ridges and wind drifts. Nothing reaches within 700 m of the pole or the spaceport's ground."""
+    r = 8000
+    near = [
+        ridge(81.5, 285, 95, 2600, 340, 110, peaks=0.65, rough=0.2, wander=120, seed=61),  # the Spine: west of the colony
+        drifts(79.5, 210, 500, 30, 9, 45, stretch=7, edge=250, seed=62),  # the Rucks: pressure ridges, south-west
+        crevasses(80, 150, 450, 60, spacing=55, length=100, width=9, depth=24, share=0.5, spread=18, edge=150, seed=63),  # the Teeth
+        cave(81.75, 282, 0, chamber=10, cover=16, climb=6, seed=65),  # the Spine's ice cave, opening towards the colony
+    ]
+    world = []
+    world += scattered(r, 101, 9, GLACIER_KEEP, lambda g, lat, lon, k: ridge(
+        lat, lon, round(g.uniform(0, 180)), round(g.uniform(2200, 4600)), round(g.uniform(220, 420)), round(g.uniform(50, 150)),
+        peaks=round(g.uniform(0.5, 0.8), 2), rough=0.2, wander=round(g.uniform(80, 260)), seed=200 + k))
+    world += [cave(f["lat"], f["lon"], (f["bearing"] + 90 + 180 * (k % 2)) % 360, chamber=round(6 + k % 4 * 2), seed=500 + k)
+              for k, f in enumerate(world) if f["height"] >= 70]  # (a cave under each tall ridge, out of one flank or the other)
+    world += scattered(r, 102, 12, GLACIER_KEEP, lambda g, lat, lon, k: crevasses(
+        lat, lon, round(g.uniform(400, 900)), round(g.uniform(0, 180)), spacing=round(g.uniform(45, 75)), length=round(g.uniform(70, 140)),
+        width=round(g.uniform(6, 12)), depth=round(g.uniform(15, 35)), share=round(g.uniform(0.4, 0.65), 2), spread=20, seed=300 + k))
+    world += scattered(r, 103, 7, GLACIER_KEEP, lambda g, lat, lon, k: drifts(
+        lat, lon, round(g.uniform(600, 1400)), round(g.uniform(0, 180)), round(g.uniform(5, 11), 1), round(g.uniform(35, 60)), stretch=7, seed=400 + k))
+    # Sastrugi: wind-cut drifts half a metre high on every bit of open snow, fading out short of the colony.
+    world.append(drifts(-90, 0, 23500, 60, 0.5, 6, stretch=6, octaves=1, edge=800, seed=64))
+    return near + world
+
+
 def flatten(lat, lon, radius, height, edge):
     return {"type": "flatten", "lat": lat, "lon": lon, "radius": radius, "height": height, "edge": edge}
 
@@ -118,7 +206,9 @@ WORLDS = [
         "description": "Glacier, the 8 km ice world of Frostreach (Systems/Frostreach.json): snowfields, pressure ridges of blue ice, two black nunataks and the Rent, a crevasse 9 km long. The IT Department keeps its Server Farm here, for the cooling.",
         "surface": {"grass": "#e4ecf3", "dirt": "#c4d6e6", "rock": "#7ba3c8", "sand": "#a6c5de", "dirtSlope": 18, "rockSlope": 30, "sandBelow": -18,
                     # (made ground is dark cinder with snow blown over it, not the blue of the ice: the colony's bench)
-                    "stone": "#3d3f44", "dusting": 0.8},
+                    "stone": "#3d3f44", "dusting": 0.8,
+                    # (wind-scoured patches of bare blue ice on the open snow)
+                    "ice": "#9ec3df", "icePatches": 0.22, "iceScale": 90},
         "skybox": {"preset": "alpine", "zenith": "#6f9fd0", "horizon": "#dbe8f2", "ground": "#c9d6e0",
                    "sun": {"color": "#f4f8ff", "intensity": 1.05, "size": 1.2}, "haze": {"color": "#e6eef5", "strength": 0.55}, "ambient": 1.25},
         "storm": {"dusk": 0.85},  # the cold storm outdoors (Maps/README.md "Storm", docs/weather/WEATHER.md "Cold storm")
@@ -139,6 +229,7 @@ WORLDS = [
             rift(-60, 60, 40, 2200, 66, 80, floor=0.15, wander=120, seed=8),
             rift(5, 20, 130, 1800, 56, 70, floor=0.15, wander=100, seed=10),
             rift(75, 120, 10, 1600, 60, 70, floor=0.15, wander=90, seed=12),
+            *glacier_terrain(),
             noise(3, 90, 3, 5),
         ],
         "landing": 20,

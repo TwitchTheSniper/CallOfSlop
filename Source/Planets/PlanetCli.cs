@@ -18,6 +18,7 @@ public static class PlanetCli
         Console.SetOut(stdout);
         string? file = null, png = null;
         var at = new List<(double Lat, double Lon)>();
+        var lines = new List<double[]>();
         for (var k = 0; k < args.Length; k++)
         {
             var v = k + 1 < args.Length ? args[k + 1] : null;
@@ -29,6 +30,12 @@ public static class PlanetCli
                      && double.TryParse(ll[0], System.Globalization.CultureInfo.InvariantCulture, out var la)
                      && double.TryParse(ll[1], System.Globalization.CultureInfo.InvariantCulture, out var lonArg))
                 at.Add((la, lonArg));
+            else if (args[k].Equals("--line", StringComparison.OrdinalIgnoreCase) && v?.Split(',') is { Length: 4 or 5 } li)
+            {
+                var nums = li.Select(t => double.TryParse(t, System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : double.NaN).ToArray();
+                if (!nums.Any(double.IsNaN))
+                    lines.Add(nums);
+            }
         }
         if (file == null || !File.Exists(file))
         {
@@ -121,6 +128,21 @@ public static class PlanetCli
         else
             Console.WriteLine("ore: none (the map has no \"sandbox\" section)");
 
+        foreach (var cave in PlanetCaves.Of(p))
+        {
+            var plan = PlanetCaves.Dig(p, cave);
+            var c = plan.Chamber - p.Center;
+            var where = $"cave under {cave.Num("lat", 0)}, {cave.Num("lon", 0)}: chamber {c.Length() - p.Radius:0.0} m, tunnel {plan.Length:0} m, {plan.Ops.Count} scoops";
+            if (plan.Mouth is { } mo)
+            {
+                var d = Vector3.Normalize(mo - p.Center);
+                Console.WriteLine($"{where}; its mouth at {Math.Asin(d.Y) * 180 / Math.PI:0.000}, {Math.Atan2(d.X, d.Z) * 180 / Math.PI:0.000}, height {(mo - p.Center).Length() - p.Radius:0.0} m");
+            }
+            else
+                Console.WriteLine($"{where}; SEALED (it never comes out within {PlanetCaves.MaxLength:0} m: dig to find it)");
+        }
+        foreach (var l in lines)
+            Line(p, l);
         foreach (var (la, lon) in at)
         {
             double worst = 0, hMin = double.MaxValue, hMax = double.MinValue;
@@ -197,6 +219,26 @@ public static class PlanetCli
             Console.WriteLine($"picture: {png} ({w} x {hgt}: longitude -180 to 180 across, north up, rows even in area)");
         }
         return 0;
+    }
+
+    /// <summary>
+    /// <c>--line LAT,LON,LAT,LON[,N]</c>: the ground's height at N points (60 if not said) along the great circle between two
+    /// places, as metres along and the height: a crevasse's walls, a ridge's pass, a cut through a site.
+    /// </summary>
+    private static void Line(Planetoid p, double[] l)
+    {
+        var n = l.Length > 4 ? Math.Clamp((int)l[4], 2, 2000) : 60;
+        Dir(l[0] * Math.PI / 180, l[1] * Math.PI / 180, out var ax, out var ay, out var az);
+        Dir(l[2] * Math.PI / 180, l[3] * Math.PI / 180, out var bx, out var by, out var bz);
+        var ang = Math.Acos(Math.Clamp(ax * bx + ay * by + az * bz, -1, 1));
+        var sb = new System.Text.StringBuilder($"line {l[0]}, {l[1]} to {l[2]}, {l[3]} ({ang * p.Radius:0} m):");
+        for (var k = 0; k < n; k++)
+        {
+            var t = k / (double)(n - 1);
+            double wa = ang < 1e-9 ? 1 - t : Math.Sin((1 - t) * ang) / Math.Sin(ang), wb = ang < 1e-9 ? t : Math.Sin(t * ang) / Math.Sin(ang);
+            sb.Append($" {t * ang * p.Radius:0}:{p.HeightAt(ax * wa + bx * wb, ay * wa + by * wb, az * wa + bz * wb):0.0}");
+        }
+        Console.WriteLine(sb.ToString());
     }
 
     private static void Dir(double lat, double lon, out double x, out double y, out double z)

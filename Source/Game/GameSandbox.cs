@@ -187,6 +187,7 @@ public sealed partial class Game
         }
         if (SandboxOn && World.Map.Sandbox is { } sandbox && WorldSession is not { HasSave: true })
         {
+            SandboxCaves(); // (a planetoid's caves, dug into the fresh ground before anything stands on it: GameSandboxCaves.cs)
             Constructs.Populate(sandbox, World.Query); // (their structure goes out on the first playing tick)
             SandboxStartKit(sandbox); // (survival: what a fresh world can't make for itself; GameSandboxSurvival.cs)
         }
