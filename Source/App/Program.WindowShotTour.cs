@@ -43,7 +43,7 @@ public static partial class Program
                 var p99 = _wsPerfMs[Math.Min(_wsPerfMs.Count - 1, (int)(_wsPerfMs.Count * 0.99))];
                 var p50 = _wsPerfMs[_wsPerfMs.Count / 2];
                 WsSay($"[perf] {_wsPerfLabel}: {_wsPerfMs.Count} frames, mean {mean:0.00} ms ({1000 / mean:0} fps), median {p50:0.00} ms, 99th {p99:0.00} ms, worst {_wsPerfMs[^1]:0.00} ms"
-                    + (_session is { } g ? $", bodies {g.Constructs.Bodies.Count}, players {g.Players.Count}" : ""));
+                    + (_session is { } g ? $", bodies {g.Constructs.Bodies.Count}, players {g.Players.Count}, lamps lit {ConstructLamps.LastLit} of {ConstructLamps.LastNear}, free lights {LightGrid.DynamicFree}" : ""));
             }
         }
         _wsPerfLast = t;
