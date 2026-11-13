@@ -51,6 +51,42 @@ public static class PerfBench
         public double TicksPerFrame, TickMean, TickWorst;
         public (int Index, float Ms, (int Area, float Ms)[] Top)[] WorstFrames = [];
         public Dictionary<string, double> Extra = [];
+
+        /// <summary>Other load while measuring: cores' worth of CPU other game windows and builds used, and how many there were.</summary>
+        public double OtherCores;
+
+        public string Others = "";
+    }
+
+    // ---- What else was running (the numbers aren't the game's own when another window or a build shares the machine) --
+
+    private static readonly string[] Rivals = ["CallOfSlop", "csc", "VBCSCompiler", "dotnet", "MSBuild"];
+    private static double _otherCpu0;
+    private static long _wall0;
+
+    /// <summary>CPU seconds so far of the other game windows and builds, and a word on which ran (outside the measured frames: it allocates).</summary>
+    private static (double Seconds, string Who) OtherLoad()
+    {
+        double s = 0;
+        var who = new SortedDictionary<string, int>();
+        var me = Environment.ProcessId;
+        foreach (var name in Rivals)
+            foreach (var p in System.Diagnostics.Process.GetProcessesByName(name))
+                using (p)
+                {
+                    if (p.Id == me)
+                        continue;
+                    try
+                    {
+                        s += p.TotalProcessorTime.TotalSeconds;
+                        who[name] = who.GetValueOrDefault(name) + 1;
+                    }
+                    catch (Exception)
+                    {
+                        // (gone, or not ours to read)
+                    }
+                }
+        return (s, string.Join(", ", who.Select(kv => $"{kv.Value} {kv.Key}")));
     }
 
     /// <summary>Starts measuring a spot: turns the profiler on (and the GPU timer with it) and forgets the last spot's frames.</summary>
@@ -77,6 +113,8 @@ public static class PerfBench
             _gpuFrames0 = g.FramesRead;
             _gpuGaps0 = g.GapsSum;
         }
+        _otherCpu0 = OtherLoad().Seconds;
+        _wall0 = System.Diagnostics.Stopwatch.GetTimestamp();
         _skip = 2; // (the frame Begin lands in, and the one after: the profiler's areas start clean)
         Recording = true;
     }
@@ -119,6 +157,10 @@ public static class PerfBench
     {
         Recording = false;
         var s = new Spot { Name = _label, Frames = _n };
+        var (other, who) = OtherLoad();
+        var wall = System.Diagnostics.Stopwatch.GetElapsedTime(_wall0).TotalSeconds;
+        s.OtherCores = wall > 0 ? Math.Max(0, other - _otherCpu0) / wall : 0;
+        s.Others = who;
         var n = _n;
         if (n > 0)
         {
@@ -219,10 +261,13 @@ public static class PerfBench
     }
 
     /// <summary>One line for the log: the spot's frame rate, its 1% low, CPU and GPU, draws and allocations.</summary>
-    public static string Line(Spot s) => string.Create(CultureInfo.InvariantCulture,
-        $"[bench] {s.Name}: {s.Frames} frames, {s.Fps:0} fps (1% low {s.Low1Fps:0}), median {s.P50:0.00} ms, 99th {s.P99:0.00}, worst {s.Max:0.00}; "
-        + $"CPU game {s.AreaMean[(int)PerfArea.Game]:0.00} render {s.AreaMean[(int)PerfArea.Render]:0.00} ui {s.AreaMean[(int)PerfArea.Ui]:0.00} swap {s.AreaMean[(int)PerfArea.Swap]:0.00} ms; "
-        + $"GPU {(s.GpuFrames > 0 ? $"{s.GpuTotal:0.00} ms" : "n/a")}; {s.Draws:0} draws, {s.Triangles / 1000:0}k tris; {s.AllocBytes:0} B/frame, gc0 {s.Gc0}; worst tick {s.TickWorst:0.00} ms");
+    public static string Line(Spot s) =>
+        Inv($"[bench] {s.Name}: {s.Frames} frames, {s.Fps:0} fps (1% low {s.Low1Fps:0}), median {s.P50:0.00} ms, 99th {s.P99:0.00}, worst {s.Max:0.00}; ")
+        + Inv($"CPU game {s.AreaMean[(int)PerfArea.Game]:0.00} render {s.AreaMean[(int)PerfArea.Render]:0.00} ui {s.AreaMean[(int)PerfArea.Ui]:0.00} swap {s.AreaMean[(int)PerfArea.Swap]:0.00} ms; ")
+        + Inv($"GPU {(s.GpuFrames > 0 ? $"{s.GpuTotal:0.00} ms" : "n/a")}; {s.Draws:0} draws, {s.Triangles / 1000:0}k tris; {s.AllocBytes:0} B/frame, gc0 {s.Gc0}; worst tick {s.TickWorst:0.00} ms")
+        + (s.OtherCores >= 0.05 ? Inv($"; NOT ALONE: {s.Others} used {s.OtherCores:0.0} cores") : "");
+
+    private static string Inv(FormattableString f) => f.ToString(CultureInfo.InvariantCulture);
 
     // ---- The run's file --------------------------------------------------------------------------------------------
 
@@ -255,7 +300,8 @@ public static class PerfBench
             spots.Add(new JsonObject
             {
                 ["name"] = s.Name, ["frames"] = s.Frames,
-                ["fps"] = R(s.Fps, 1), ["low1Fps"] = R(s.Low1Fps, 1),
+                ["fps"] = R(s.Fps, 1), ["medianFps"] = s.P50 > 0 ? R(1000 / s.P50, 1) : 0, ["low1Fps"] = R(s.Low1Fps, 1),
+                ["otherCores"] = R(s.OtherCores, 2), ["others"] = s.Others,
                 ["frameMs"] = new JsonObject { ["mean"] = R(s.Mean), ["p50"] = R(s.P50), ["p95"] = R(s.P95), ["p99"] = R(s.P99), ["max"] = R(s.Max) },
                 ["gpuMs"] = s.GpuFrames > 0 ? R(s.GpuTotal) : null, ["gpuFrames"] = s.GpuFrames, ["gpuGapMs"] = R(s.GpuGap),
                 ["draws"] = R(s.Draws, 1), ["triangles"] = Math.Round(s.Triangles), ["instances"] = Math.Round(s.Instances),
@@ -276,7 +322,8 @@ public static class PerfBench
     /// <summary>
     /// <c>--bench-compare BASE.json NEW.json [--noise PCT]</c>: each spot side by side (frame rate, 1% low, 99th percentile,
     /// GPU, CPU render and game, draws, allocations) and the CPU areas and GPU passes that moved most. A change past the
-    /// noise (default 5%) the wrong way is marked WORSE. Returns the number of spots whose frame rate or 99th percentile got worse.
+    /// noise (default 5%) the wrong way is marked WORSE (the median frame rate; the 99th percentile at twice the noise), and spots
+    /// measured while another game window or a build ran are listed. Returns the number of spots marked WORSE.
     /// </summary>
     public static int Compare(string basePath, string newPath, double noisePct, TextWriter o)
     {
@@ -292,7 +339,8 @@ public static class PerfBench
         var noise = noisePct / 100;
         string Pct(double x, double y) => x > 0 ? $"{(y - x) / x * 100,6:+0.0;-0.0;0.0}%" : "     -";
         o.WriteLine();
-        o.WriteLine($"{"spot",-22} {"fps",17} {"1% low",17} {"99th ms",17} {"GPU ms",17} {"render ms",17} {"game ms",17} {"draws",15}");
+        o.WriteLine($"{"spot",-22} {"median fps",17} {"mean fps",17} {"99th ms",17} {"GPU ms",17} {"render ms",17} {"game ms",17} {"draws",15}");
+        var busy = new List<string>();
         var bs = b["spots"]!.AsArray().ToDictionary(s => (string)s!["name"]!, s => s!);
         foreach (var sa in a["spots"]!.AsArray())
         {
@@ -310,15 +358,19 @@ public static class PerfBench
                 return n is JsonValue v && v.TryGetValue<double>(out var d) ? d : 0;
             }
             var flag = "";
+            foreach (var (run, s) in new[] { ("base", sa), ("new", sb) })
+                if (V(s, "otherCores") >= 0.05)
+                    busy.Add($"{name} ({run}): {(string?)s["others"]} used {V(s, "otherCores"):0.0} cores");
             string Col(string path, bool higherBetter, string fmt = "0.00")
             {
                 double x = V(sa, path), y = V(sb, path);
-                var bad = x > 0 && (higherBetter ? y < x * (1 - noise) : y > x * (1 + noise));
-                if (bad && (path == "fps" || path == "frameMs/p99"))
+                var tol = path == "frameMs/p99" ? noise * 2 : noise; // (the slow frames are noisier than the median)
+                var bad = x > 0 && (higherBetter ? y < x * (1 - tol) : y > x * (1 + tol));
+                if (bad && (path == "medianFps" || path == "frameMs/p99"))
                     flag = " WORSE";
                 return $"{x.ToString(fmt, CultureInfo.InvariantCulture),7}>{y.ToString(fmt, CultureInfo.InvariantCulture),-7}{(bad ? "!" : " ")}".PadRight(10) + Pct(x, y);
             }
-            var line = $"{name,-22} {Col("fps", true, "0")} {Col("low1Fps", true, "0")} {Col("frameMs/p99", false)} {Col("gpuMs", false)} "
+            var line = $"{name,-22} {Col("medianFps", true, "0")} {Col("fps", true, "0")} {Col("frameMs/p99", false)} {Col("gpuMs", false)} "
                        + $"{Col("cpu/Render (CPU)/mean", false)} {Col("cpu/Game update/mean", false)} {V(sa, "draws"),6:0}>{V(sb, "draws"),-6:0}";
             if (flag.Length > 0)
                 worse++;
@@ -346,7 +398,13 @@ public static class PerfBench
                 o.WriteLine($"{"",-24}{n}: {x:0.000} > {y:0.000} ms ({(y - x >= 0 ? "+" : "")}{y - x:0.000})");
         }
         o.WriteLine();
-        o.WriteLine(worse == 0 ? $"no spot worse past {noisePct:0.#}% noise" : $"{worse} spot(s) worse past {noisePct:0.#}% noise (fps or 99th percentile)");
+        o.WriteLine(worse == 0 ? $"no spot worse past {noisePct:0.#}% noise" : $"{worse} spot(s) worse: median fps past {noisePct:0.#}%, or the 99th percentile past {noisePct * 2:0.#}%");
+        if (busy.Count > 0)
+        {
+            o.WriteLine("NOT ALONE: other game windows or builds ran during these spots, so their numbers mean little; run again when the machine is free:");
+            foreach (var line in busy)
+                o.WriteLine($"  {line}");
+        }
         return worse;
     }
 

@@ -155,6 +155,7 @@ public static partial class Program
             return 2;
         }
         var noise = double.TryParse(args.SkipWhile(a => !a.Equals("--noise", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(), NumberStyles.Float, CultureInfo.InvariantCulture, out var n) ? n : 5;
-        return PerfBench.Compare(files[0], files[1], noise, Console.Out);
+        using var o = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true }; // (Console.Out is the log file in this build)
+        return PerfBench.Compare(files[0], files[1], noise, o);
     }
 }
