@@ -1363,9 +1363,19 @@ public static unsafe partial class Program
                     for (var i = 0; i < plan.DotN; i++)
                         dots[plan.DotKind[i]]++;
                     WsSay($"  map: axes {plan.Axis0},{plan.Axis1}, {plan.Min:0.0} to {plan.Max:0.0} m; {plan.LineN} conveyors ({cuts} cut), {plan.PointN} points; nodes: {kinds[0]} machines, {kinds[1]} stores, {kinds[2]} terminals, {kinds[3]} Routers, {kinds[4]} splitters, {kinds[5]} joins, {kinds[6]} other; dots {dots[0]} storage, {dots[1]} ordered, {dots[2]} stuck; ring {(plan.Ring >= 0 ? c.DefOf(plan.NodePart[plan.Ring]).Name : "none")}; hash {plan.Hash:x8}");
+                    // The fill's cost (design 9.3): the board and its plan filled again 200 times, timed, and what it allocated.
+                    var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                    var a0 = GC.GetAllocatedBytesForCurrentThread();
+                    for (var n = 0; n < 200; n++)
+                    {
+                        card.Clear();
+                        ProductionLines.FillMonitor(g.Constructs, c, part, card);
+                    }
+                    var us = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds * 1000 / 200;
+                    WsSay($"  map fill: {us:0.0} us a fill over 200, {(GC.GetAllocatedBytesForCurrentThread() - a0) / 200} bytes a fill; {plan.NodeN} nodes, {plan.LineN} conveyors, {c.ConveyedCount} riders on the body");
                     for (var i = 0; i < plan.NodeN; i++)
-                        if (plan.NodeKind[i] is PlanNode.Machine or PlanNode.Store or PlanNode.Terminal)
-                            WsSay($"    {plan.NodeTag[i * 2]}{plan.NodeTag[i * 2 + 1]} {c.DefOf(plan.NodePart[i]).Name}#{plan.NodePart[i]} at {plan.NodeAt[i]:0.0}{(plan.NodeFill[i] >= 0 ? $", fill {plan.NodeFill[i]:0.00}" : "")}");
+                        if (plan.NodeKind[i] is PlanNode.Machine or PlanNode.Store or PlanNode.Terminal or PlanNode.Router)
+                            WsSay($"    {plan.NodeTag[i * 2]}{plan.NodeTag[i * 2 + 1]} {c.DefOf(plan.NodePart[i]).Name}#{plan.NodePart[i]} at {plan.NodeAt[i]:0.0}{(plan.NodeFill[i] >= 0 ? $", fill {plan.NodeFill[i]:0.00}" : "")}{(plan.NodeKeep[i] >= 0 ? $", keep mark {plan.NodeKeep[i]:0.00}" : "")}{(plan.NodeWay[i] != Vector2.Zero ? $", way stub {plan.NodeWay[i]:0.00}" : "")}");
                 }
                 else
                     WsSay("  map: none (the board drew a list)");

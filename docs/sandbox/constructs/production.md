@@ -967,8 +967,9 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   caption (the stuck spot or `All moving`; the counts): conveyors as lines (cut: red dashes), machines as squares in their lamp colour
   with a two-letter tag, stores as boxes with a fill bar, Routers diamonds, Splitters triangles, Joins dots, pieces as dots (orange an
   order's, white storage's, red stuck), a red ring blinking round the first stuck Router. A `NetPlan` per body and network keeps the
-  lines and nodes until the links change; dots, states and fills are made at each fill (nothing allocated). Not yet: keep-mark ticks,
-  the Router's chosen-way stub, dots gliding between fills. The Production Showcase's NETWORK BOARD (a Medium Text Sign in the
+  lines and nodes until the links change; dots, states and fills are made at each fill (nothing allocated). A store with a keep shows an amber tick at the fill
+  that keep of each kind it holds would make (`NetPlan.KeepMark`); a Router a bright stub along the way it last sent a piece (phase 4c;
+  a fill costs 1-2 us on the showcase, 17 nodes and 130 riders, nothing allocated). Not yet: dots gliding between fills. The Production Showcase's NETWORK BOARD (a Medium Text Sign in the
   back aisle at x 44) shows it; the window tool's `panel Conveyor Router` prints the plan's counts.
 - **The Router's screen (phase 4, `RouterScreen.cs`, panel source `router`):** a low dark plate on each side face's frame, under
   the side ports' conveyor beds (no post: Q6). Lines: what it is doing (sent, STUCK, waiting, no power), its last piece and way and
