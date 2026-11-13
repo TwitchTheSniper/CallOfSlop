@@ -89,7 +89,7 @@ public sealed class CitySpec
 /// <summary>The facade or surface a face is drawn with (CityRenderer's shader reads it from the vertex).</summary>
 public enum CityStyle : byte
 {
-    Glass, Grid, Brick, Ribbon, Plain, Roof, Road, Crossing, Pavement, Kerb, Court, Lamp, Metal, Neon, Beacon, Rail, Stairs, Leaves, TrainSide, TrainEnd, MetroWall,
+    Glass, Grid, Brick, Ribbon, Plain, Roof, Road, Crossing, Pavement, Kerb, Court, Lamp, Metal, Neon, Beacon, Rail, Stairs, Leaves, TrainSide, TrainEnd, MetroWall, Pad,
 }
 
 /// <summary>A building: its middle on the plan, its turn, and the seed its looks are drawn from. Its masses stand in its frame.</summary>
@@ -161,6 +161,13 @@ public sealed class CityRail
     public float Length;
 }
 
+/// <summary>A landing pad on a tower's roof: its middle on the plan, its deck's height over the ground and its radius.</summary>
+public struct CityPad
+{
+    public Vector2 At;
+    public float Height, Radius;
+}
+
 /// <summary>The whole plan of a city: what <see cref="CityGeometry"/> makes its meshes and colliders from.</summary>
 public sealed class CityPlan
 {
@@ -176,6 +183,9 @@ public sealed class CityPlan
 
     /// <summary>The metro under the central avenue (null: none).</summary>
     public CityMetro? Metro;
+
+    /// <summary>The towers' rooftop pads (the air taxis' stops).</summary>
+    public CityPad[] Pads = [];
 
     /// <summary>The square in the middle (no traffic): its rectangle on the plan.</summary>
     public Vector2 SquareMin, SquareMax;
@@ -266,6 +276,8 @@ public sealed class CityPlan
         private readonly List<CityStreet> _streets = new();
         private readonly List<CityCrossing> _crossings = new();
         private readonly List<CityBlock> _blocks = new();
+        private readonly List<CityPad> _pads = new();
+        private bool _market;
         private Dice _dice = new((uint)plan.Spec.Seed);
 
         private record struct Line(float Pos, float Half, float Car, bool Avenue);
@@ -320,8 +332,11 @@ public sealed class CityPlan
                         continue;
                     built[i, j] = true;
                     var square = InSquare(mid);
-                    _blocks.Add(new CityBlock { Min = min, Max = max, Kind = (byte)(square ? 1 : 0) });
-                    if (!square)
+                    // The market hall: the block over the avenue from the square's north side, east of the middle.
+                    var market = !square && !_market && min.X > 0 && min.X < 20 && min.Y > plan.SquareMax.Y && min.Y < plan.SquareMax.Y + 30;
+                    _market |= market;
+                    _blocks.Add(new CityBlock { Min = min, Max = max, Kind = (byte)(square ? 1 : market ? 2 : 0) });
+                    if (!square && !market)
                         Block(min, max);
                 }
             bool Built(int i, int j) => i >= 0 && j >= 0 && i < xs.Count && j < zs.Count && built[i, j];
@@ -364,6 +379,7 @@ public sealed class CityPlan
                 plan.Rail = Rail(xs, zs);
             if (_s.Metro)
                 plan.Metro = Metro(zs, plan.Rail);
+            plan.Pads = _pads.ToArray();
             plan.Buildings = _buildings.ToArray();
             plan.Masses = _masses.ToArray();
             plan.Streets = _streets.ToArray();
@@ -489,7 +505,9 @@ public sealed class CityPlan
                     var lo = longX ? new Vector2(min.X + l0, min.Y + s0) : new Vector2(min.X + s0, min.Y + l0);
                     var hi = longX ? new Vector2(min.X + l1, min.Y + s1) : new Vector2(min.X + s1, min.Y + l1);
                     // Which sides face a street (the building's front), so the tower sets back from the right edges.
-                    Lot(lo, hi, tall * _dice.Range(0.55f, 1.2f) * (a == landmark && b == 0 ? 1.6f : 1f));
+                    // The lot's front: the block's side it stands on (a back row faces the other way).
+                    var front = longX ? new Vector2(0, b == 0 ? -1 : 1) : new Vector2(b == 0 ? -1 : 1, 0);
+                    Lot(lo, hi, tall * _dice.Range(0.55f, 1.2f) * (a == landmark && b == 0 ? 1.6f : 1f), front);
                 }
         }
 
@@ -501,7 +519,7 @@ public sealed class CityPlan
         private static readonly uint[] BrickWalls = [Rgb(0x8a4a3c), Rgb(0x6e3a2f), Rgb(0x96654e), Rgb(0x4a3a3a), Rgb(0xa8866f), Rgb(0x7a4a30), Rgb(0xb09060)];
         private static readonly uint[] RibbonWalls = [Rgb(0xd6dcdc), Rgb(0x5f5c63), Rgb(0xd0cbc4), Rgb(0x9f9b8d)];
 
-        private void Lot(Vector2 lo, Vector2 hi, float height)
+        private void Lot(Vector2 lo, Vector2 hi, float height, Vector2 front)
         {
             const float Gap = 0.6f; // between neighbours: an alley's shadow line, never a shared face
             lo += new Vector2(Gap);
@@ -539,6 +557,13 @@ public sealed class CityPlan
                     _ => RibbonWalls[d.Pick(RibbonWalls.Length)],
                 };
                 MidRise(id, ref b, half, height, ref d);
+                Billboard(id, half, front, ref d);
+            }
+            if (b.Shops && d.Chance(0.85f))
+            {
+                Blade(id, half, front, ref d, 1);
+                if (d.Chance(0.4f))
+                    Blade(id, half, front, ref d, -1);
             }
             _buildings.Add(b);
         }
@@ -594,7 +619,16 @@ public sealed class CityPlan
             // The crown: a plant room set in, a parapet, an aerial with a lamp on the tallest.
             var crown = h * 0.75f;
             var roofColor = Rgb(0x5a5e63);
-            Add(id, Vector2.Zero, crown, bottom - 0.05f, bottom + d.Range(4, 7), CityStyle.Plain, roofColor, shape, shape == 1 ? MathF.Min(crown.X, crown.Y) * 0.3f : 0);
+            var crownTop = bottom + d.Range(4, 7);
+            Add(id, Vector2.Zero, crown, bottom - 0.05f, crownTop, CityStyle.Plain, roofColor, shape, shape == 1 ? MathF.Min(crown.X, crown.Y) * 0.3f : 0);
+            // A landing pad on the crown of a tower tall and broad enough (the air taxis come and go from these).
+            var padR = MathF.Min(crown.X, crown.Y) - 0.3f;
+            if (top > 80 && padR >= 5.5f && d.Chance(0.8f))
+            {
+                padR = MathF.Min(padR, 11f);
+                Add(id, Vector2.Zero, new Vector2(padR), crownTop - 0.05f, crownTop + 0.35f, CityStyle.Pad, Rgb(0x3a3d40), 2);
+                _pads.Add(new CityPad { At = b.At, Height = crownTop + 0.35f - 0.3f, Radius = padR });
+            }
             RoofClutter(id, h, bottom, ref d, false);
             if (top > 150 && d.Chance(0.3f))
             {
@@ -624,6 +658,36 @@ public sealed class CityPlan
                 Cornice(id, Vector2.Zero, half, top, b.Wall);
                 RoofClutter(id, half, top, ref d, true);
             }
+        }
+
+        /// <summary>A blade sign: a lit panel standing out from the front wall near a corner, over the shops.</summary>
+        private void Blade(int id, Vector2 half, Vector2 front, ref Dice d, int end)
+        {
+            var colour = Rgb(d.Pick(5) switch { 0 => 0xff3060, 1 => 0x30d0ff, 2 => 0xffd030, 3 => 0x60ff80, _ => 0xc050ff });
+            var along = new Vector2(MathF.Abs(front.Y), MathF.Abs(front.X)); // (along the front wall)
+            var reach = front.X != 0 ? half.X : half.Y;
+            var side = front.X != 0 ? half.Y : half.X;
+            var at = front * (reach + 0.75f) + along * (side - 1.6f) * end;
+            var hs = front.X != 0 ? new Vector2(0.65f, 0.12f) : new Vector2(0.12f, 0.65f);
+            var h = d.Range(6f, 11f);
+            Add(id, at, hs, 5.4f, 5.4f + h, CityStyle.Neon, colour, detail: true, solid: false);
+        }
+
+        /// <summary>A billboard on a mid-rise's roof, facing its street: a lit face on two steel legs.</summary>
+        private void Billboard(int id, Vector2 half, Vector2 front, ref Dice d)
+        {
+            if (!d.Chance(0.22f) || half.X < 7 || half.Y < 7)
+                return;
+            var top = _masses.Where(m => m.Building == id).Max(m => m.Top);
+            var colour = Rgb(d.Pick(4) switch { 0 => 0xffffff, 1 => 0xffe0b0, 2 => 0xb0e0ff, _ => 0xffb0d0 });
+            var reach = (front.X != 0 ? half.X : half.Y) - 2.5f;
+            var w = MathF.Min((front.X != 0 ? half.Y : half.X) - 2, 7);
+            var at = front * reach;
+            var hs = front.X != 0 ? new Vector2(0.12f, w) : new Vector2(w, 0.12f);
+            Add(id, at, hs, top + 2.2f, top + 6.2f, CityStyle.Neon, colour, detail: true, solid: false);
+            var along = new Vector2(MathF.Abs(front.Y), MathF.Abs(front.X));
+            foreach (var sgn in new[] { -1f, 1f })
+                Add(id, at - front * 0.3f + along * sgn * w * 0.7f, new Vector2(0.12f), top, top + 2.2f, CityStyle.Metal, Rgb(0x3a3a3a), detail: true, solid: false);
         }
 
         /// <summary>A band round a mass's top, standing out from its walls; with a parapet over a roof people can reach.</summary>

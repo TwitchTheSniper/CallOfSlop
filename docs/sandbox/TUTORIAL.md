@@ -126,6 +126,29 @@ waiting for you." Server state per person: `_tutGroup`, `_tutDone`; each group i
 - The Esc menu (Sandbox): **Skip the induction** while it runs; **Resume** a skipped one where it stopped, or **Start it again**;
   **Replay the induction** once finished.
 
+## Pacing (`Source/Game/GamePace.cs`, 2026-11-13)
+
+How long the induction and the first duty take, so a change to them is judged on how it plays, not only on how it looks.
+Two kinds of number, both `[pace]` lines, neither on the wire or in a save:
+
+- **Measured, from real play.** When a person finishes a step the server logs `[pace] induction bus: 95.3 s (Name)` (the
+  quarry duty's steps are `[pace] duty power: ...`), and at the end of each `[pace] induction done: 12 steps in 6 min 41 s,
+  the slowest bus at 95 s`. They are in `callofslop.log` after any play session, the host's for everyone. A step's time
+  is the person's own, from the step's start to their finishing it: the wait for the rest of a group is not in it, and a
+  person the group moved on without gets `not finished, the group moved on`. A skip logs nothing, a replay starts the
+  sums again, and steps done before the session started aren't in the total.
+- **Estimated, with no player.** The window script's `pace` action (`--window-shot ... --map Glacier --survival --do "skip;
+  wait 120; pace"`, and the play-test tour runs it) prints each step's floor: its words read at `PaceWordsPerSecond` (3 a
+  second), the way on foot to the step's place at walking speed (with the sprinting time beside it), the bus (12 s to come,
+  `QuarryRideSeconds` to ride) and a wait step's seconds, then a total per track and the distances between the places
+  (cell block, gate, the two bus stops, the mine face). Distances are straight lines, through the gate when a step leaves
+  or enters the colony. What the player does at a step (finding the part, fitting it) is not in the floor.
+
+Reading them: a step whose measured time is several times its floor is where people are lost, waiting or stuck; a step
+whose floor is mostly walking or the bus is dead time to shorten or to fill; reading that is more than a third of a
+track's floor is too many words. Change `Story/Tutorial/Induction.json` or `Story/Duties/Quarry.json`, run `pace` again
+and compare.
+
 ## Network (protocol 201, the group 209)
 
 `Msg.Tutorial`, a `TutorialOp` first, reliable ordered. Server to one client: `State` (u8 step, u8 state) whenever it changes

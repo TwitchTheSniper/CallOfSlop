@@ -458,6 +458,7 @@ public static partial class ConstructRender
         }
         if (!set.On)
             return false;
+        AllocProfile.Mark("cr: merged chunks");
         if (++_segTok == int.MaxValue)
         {
             Array.Clear(_segToken);
@@ -519,6 +520,7 @@ public static partial class ConstructRender
             LastBatchBoxes += ch.Gl.Slots;
             n += ch.Gl.Slots;
         }
+        AllocProfile.Mark("cr: walked parts"); // (the benchmark's --trace-frame)
         for (var k = 0; k < set.WalkedCount; k++)
         {
             var i = set.Walked[k];

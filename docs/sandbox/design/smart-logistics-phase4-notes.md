@@ -154,3 +154,15 @@ failures. Files outside the logistics set touched: `ConstructParts.cs` (one line
    panel (fewer pieces, less like a sheet). **Recommended: (a).**
 3. **Naming with F in hand.** A Router's name is set only in the configure tool's box, since F with Hands presses its screen buttons.
    (a) Keep; (b) F on the Router's body (off its screens) opens the typing box as on a sign. **Recommended: (a).**
+
+### The user's answers to the phase 4c questions (2026-11-13)
+
+2. **Strips for a wide panel.** In the user's words: "When possible, it should be encouraged that the player just builds a larger
+   extruder or adds expansion pieces to the extruder to allow them to print larger things. When those options aren't available or
+   not possible, then you should have the option to keep equal width strips that you'll assemble later." So, to build: when a
+   panel is wider than the linked Extruder's die, the order first says so and points at a bigger Extruder (or expansion pieces
+   for one, which do not exist yet: a design item); splitting into equal-width strips is an option the player chooses, not what
+   happens by default. Where the choice lives (the Panel Former's setting, or the order) is open.
+3. **A Router's name** is set with the configure tool only; no Name button on its screen (as built).
+1. (Which link an order's note names when its chain is blocked lower down) was not answered: the recommendation stands for now,
+   the deepest blocked link and its reason.
