@@ -639,6 +639,12 @@ public static partial class ConstructNet
                 n++;
             }
         w.PatchU8(at, (byte)n);
+        w.U8((byte)inv.MadeN); // (protocol 298: made parts by key, at most 64 kinds; docs/sandbox/design/inventory-run-time-parts.md)
+        for (var k = 0; k < inv.MadeN; k++)
+        {
+            PartRef.Write(w, inv.MadeDef[k]);
+            w.U16(inv.MadeCount[k]);
+        }
     }
 
     private static void ReadInventory(ref PacketReader r, SandboxInventory? inv)
@@ -664,6 +670,17 @@ public static partial class ConstructNet
                 throw new MalformedPacketException($"an inventory of {count} of material {id}");
             if (inv != null)
                 inv.Materials[id] = count;
+        }
+        int made = r.U8();
+        if (made > SandboxInventory.MaxMadeKinds)
+            throw new MalformedPacketException($"an inventory of {made} kinds of made part");
+        for (var k = 0; k < made; k++)
+        {
+            var id = PartRef.Read(ref r);
+            var count = r.U16();
+            if (count > SandboxInventory.MaxCount)
+                throw new MalformedPacketException($"an inventory of {count} of made part {id}");
+            inv?.Set(id, count);
         }
         if (inv == null)
             return;

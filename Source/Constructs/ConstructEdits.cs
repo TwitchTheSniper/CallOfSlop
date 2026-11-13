@@ -511,6 +511,12 @@ public sealed partial class ConstructEdits
                 var def = world.RemovePart(c, h.Part);
                 if (image)
                     MirrorRemove(world, player, ref h, from, imageDef, imagePos, eye);
+                if (def.RuntimeMade && !wrecked && Inventory != null && (salvage || !InfiniteParts) && !Survival && Inventory.Of(player).Add(def.Id))
+                {
+                    // A made part (an extrusion, a pressed or cut part...) is counted the way catalogue parts are, never held
+                    // (docs/sandbox/design/inventory-run-time-parts.md phase 2); 64 kinds full, it is cut free as below.
+                    return $"ok: {PartRef.Shown(def)} {(salvage ? "salvaged" : "taken back")} from construct {from} into the inventory ({Inventory.Of(player).Count(def.Id)})";
+                }
                 if (def.PhysicsOnly && !wrecked)
                 {
                     // Decision 21: a physics-only part is never an item: it is cut free as a body where it was.

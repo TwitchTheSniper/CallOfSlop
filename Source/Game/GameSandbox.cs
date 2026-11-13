@@ -100,6 +100,7 @@ public enum CActKind : byte
     PanelDesign, // u8 op (1 keep, 0 drop), text name, text key: a panel design saved to the world's shared list, or dropped from it (protocol 260; PanelDesigns.cs)
     Celebrate, // server -> one client: text title, text name, text line: a moment in the middle of their screen (protocol 274; GameCelebrate.cs)
     ExtruderSection, // u16 body, u16 machine, u8 profile, u16 width, height, wall (cm), u64 mask: the Extruder's picker sets its section at once (protocol 284; ConstructExtruderPick.cs)
+    TakeMade, // a part by PartRef (a made part's key): set down in front of the player from their Tab inventory (protocol 298; docs/sandbox/design/inventory-run-time-parts.md phase 2)
 }
 
 /// <summary>
@@ -1264,6 +1265,11 @@ public sealed partial class Game
                 var pick = r.U16(); // (protocol 90: part ids are two bytes)
                 return pick == 0 ? hands.TakeFromRack(World.Map.Sandbox, p.Id, p.Position, Constructs, eye, p.Yaw) : hands.TakePart(SandboxPartsMenu ? World.Map.Sandbox : null, p.Id, (ushort)(pick - 1), Constructs, eye, p.Yaw);
             }
+            case CActKind.TakeMade:
+            {
+                var made = PartRef.Read(ref r); // (protocol 298: a made part from the Tab inventory, by key)
+                return Extrusion.IsRuntimeId(made) ? hands.TakePart(SandboxPartsMenu ? World.Map.Sandbox : null, p.Id, made, Constructs, eye, p.Yaw) : "no such made part";
+            }
             case CActKind.Blueprint:
                 return SandboxSpawnBlueprint(p, r.U16()); // (protocol 227: two bytes, past 255 blueprints)
             case CActKind.SpawnPrepare:
@@ -1815,7 +1821,19 @@ public sealed partial class Game
     // ---- The debug parts menu (UiSandboxParts.cs) ------------------------------------------------------------------
 
     /// <summary>Client (or host): ask for a part by id from the debug parts menu (the rack's request with a part id).</summary>
-    public void SandboxTakePart(ushort id) => SandboxSend(CActKind.Rack, body: (ushort)(id + 1));
+    public void SandboxTakePart(ushort id)
+    {
+        if (!Extrusion.IsRuntimeId(id))
+        {
+            SandboxSend(CActKind.Rack, body: (ushort)(id + 1));
+            return;
+        }
+        // A made part from the Tab inventory: by its key (its id is this machine's own; protocol 298).
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.TakeMade);
+        PartRef.Write(w, id);
+        SandboxSendBuilt(w);
+    }
 
     /// <summary>
     /// Server: the debug parts menu's blueprint button: the blueprint is built standing on the ground in front of the

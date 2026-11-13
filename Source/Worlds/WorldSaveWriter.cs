@@ -262,9 +262,11 @@ public static class WorldSaveWriter
     {
         w.U64(p.Key).U64(p.SteamId).Str(p.Name).U8((byte)(p.HasPlace ? 1 : 0)).Vec(p.Pos).F32(p.Yaw).F32(p.Pitch).F32(p.Health);
         w.Str(p.Tool.ToString()).U16(names.Part(p.Held));
-        w.I32(p.Parts.Length);
+        w.I32(p.Parts.Length + p.Made.Length);
         foreach (var (def, count) in p.Parts)
             w.U16(names.Part(def)).U16(count);
+        foreach (var (key, count) in p.Made)
+            w.U16(names.PartNamed(key)).U16(count); // (made parts in the same list, by key: an older build drops them, as it did)
         w.I32(p.Materials.Length);
         foreach (var (material, count) in p.Materials)
             w.U8(material).U16(count);
@@ -284,14 +286,18 @@ public static class WorldSaveWriter
         p.Held = names.Part(r.U16(), "a player's hands");
         var n = r.Count(4);
         var parts = new List<(ushort, ushort)>();
+        List<(string, ushort)>? made = null;
         for (var k = 0; k < n; k++)
         {
             var def = names.Part(r.U16(), "an inventory");
             var count = r.U16();
             if (def != ConstructParts.None && def < SandboxInventory.MaxKinds)
-                parts.Add((def, count)); // (an extrusion is a body, never counted: its id is past the inventory's)
+                parts.Add((def, count));
+            else if (def != ConstructParts.None && Extrusion.IsRuntimeId(def))
+                (made ??= new()).Add((ConstructParts.Def(def).Name, count)); // (a made part, by its key: inventory-run-time-parts.md phase 2)
         }
         p.Parts = parts.ToArray();
+        p.Made = made?.ToArray() ?? [];
         n = r.Count(3);
         var mats = new List<(byte, ushort)>();
         for (var k = 0; k < n; k++)
