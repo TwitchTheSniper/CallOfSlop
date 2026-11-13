@@ -471,7 +471,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 287: Lifters phase 1: the Loader Arm part (Constructs/Parts/Lifters, ids move); CBodyKind.Lifts (at the end): a body's lifters, each its part, state, piece, path, age (ConstructLifters.Write).
     // 288: Msg.Breakout (u8 stage, u8 has a target, vec target, u32 ride tick, u16 hauler, u16 hauler): a player's place in the
     //      convicts' break-out and its ride (GameBreakout.cs).
-    public const ushort ProtocolVersion = 288;
+    // 289: Building Station fill settings: the station part has four more settings (fillFuel, fillAmmo, fillCharge, fillWait; CfgKey at the end), part data both peers must share; no new bytes.
+    public const ushort ProtocolVersion = 289;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

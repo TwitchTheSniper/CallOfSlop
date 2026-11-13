@@ -1376,6 +1376,17 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   0/40 L - pipe tanks to its Fluid in, ammo in a linked bin"). The state reads "filling its tanks". No new bytes; protocol 285
   for the part's new port. Window tool: `link pipe FROM > TO`, `station tanks`, `station await fitted|linked|done`.
 
+- **Fill settings (2026-11-13, the user's answers to phase 2; notes as above, "Fill settings").** The station has a **Fill** group
+  of settings, in the configure tool and on a row of its window (the window sets them with any tool in hand: `WindowSets`):
+  `fillFuel`, `fillAmmo`, `fillCharge` (0 to 100 %, default 100) and `fillWait` (default off). Each kind is filled to that share:
+  fuel pool and Fluid Tanks (a share of the blueprint's fill; gases too), ammo boxes, **fitted magazines** and **Ammo Containers**
+  (bulk ammo by the unit) from bulk `ammo` in linked bins, **gases** (hydrogen, helium, oxidiser) from bulk in linked bins as well as
+  through pipes (4 units a look, a unit a Gas Compressor's 50 L; a part-used unit's spare is lost), and **batteries**: a survival
+  build's start empty and are charged from the station construct's own charge at 50 kW plus what its power plants make (proposed).
+  With `fillWait` on, a look that moves nothing keeps the build in the bay ("waits for its fill: ..."; the screen's row 4 reads
+  WAITS FOR FILL); off, it finishes short and says so. Creative (untimed machines) comes full, batteries charged. Protocol 289 (the
+  part's settings list; no new bytes). Window tool: `station set KEY VALUE` (as the configure tool sends it, either peer).
+
 Not in phase 1: arms and cranes (their own design, `docs/sandbox/design/arms-and-cranes.md`, waits on the user's answers to its
 questions 1 and 4); roll-out and carriers; vehicles generated on request; panels ordered from a Panel Former by the station (brought by hand); a part too big for
 the hold; hand delivery aimed at the build rather than the station, and of physics-only parts; a client's own saved blueprints (the

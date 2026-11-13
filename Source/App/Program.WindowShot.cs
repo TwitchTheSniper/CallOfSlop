@@ -957,6 +957,20 @@ public static unsafe partial class Program
                             return;
                         }
                         break;
+                    case "set": // "station set fillAmmo 50": one of the station's settings by its key, sent as the configure tool sends it (either peer)
+                    {
+                        var kv = rest.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        var sd = sc.DefOf(spart);
+                        var slot = kv.Length == 2 ? Array.FindIndex(sd.Config, e => e.Key == kv[0]) : -1;
+                        if (slot < 0 || !float.TryParse(kv[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var sv))
+                        {
+                            WsFail($"station set {rest}: no such setting");
+                            return;
+                        }
+                        g.SandboxConfigure(sc.Id, [(ushort)spart], [(byte)slot], [sv]);
+                        WsSay($"station: set {kv[0]} {sv}");
+                        break;
+                    }
                     case "repeat":
                         g.SandboxStation(sc.Id, spart, StationOp.Repeat, (ushort)(int.TryParse(rest, out var more) ? more : 0));
                         break;
