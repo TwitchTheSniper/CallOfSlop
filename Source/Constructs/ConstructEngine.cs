@@ -46,6 +46,12 @@ public sealed class EngineRules
     public float BurnPerKw = 0.00044f, MisfireBelow = 0.5f, MisfirePower = 0.5f, ThirstyAt = 1.15f, FrugalAt = 0.85f;
     public float StarterFrom = 8f; // an engine whose crank's scale reaches this needs a starter (sized-parts design 6.1: half-way in log between Medium and Large)
 
+    /// <summary>An engine whose crank is this scale needs a starter (<see cref="StarterFrom"/>; a class: its row's scale).</summary>
+    public bool StarterAt(float scale) => scale >= StarterFrom;
+
+    /// <summary>An engine of this size class needs a starter (the Engine Kit plans by class).</summary>
+    public bool StarterFor(int size) => StarterAt(Scale[Math.Clamp(size, 0, Scale.Length - 1)]);
+
     /// <summary>
     /// A size's numbers at any scale (sized-parts design 6.1): a straight line between the <c>sizes</c> rows in log-log (knots at their
     /// scales), past the ends the end segment. At a knot it is the row itself, not an interpolation beside it, so every file engine keeps
@@ -114,6 +120,8 @@ public sealed class EngineRules
     public static EngineRules Parse(string json)
     {
         var r = new EngineRules();
+        var firstStarter = int.MaxValue; // (the first size a /1 file flags "starter")
+        var starterFrom = false;
         try
         {
             using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
@@ -126,7 +134,7 @@ public sealed class EngineRules
                 switch (p.Name)
                 {
                     case "format" or "about": break;
-                    case "starterFrom": r.StarterFrom = Num(p.Value, p.Name, 0.1f, 1000); break;
+                    case "starterFrom": r.StarterFrom = Num(p.Value, p.Name, 0.1f, 1000); starterFrom = true; break;
                     case "burnPerKw": r.BurnPerKw = Num(p.Value, p.Name, 0, 1); break;
                     case "misfireBelow": r.MisfireBelow = Num(p.Value, p.Name, 0, 1); break;
                     case "misfirePower": r.MisfirePower = Num(p.Value, p.Name, 0, 1); break;
@@ -149,7 +157,7 @@ public sealed class EngineRules
                                     case "idleRpm": r.Idle[i] = Num(q.Value, q.Name, 10, 60000); break;
                                     case "peakRpm": r.Peak[i] = Num(q.Value, q.Name, 10, 60000); break;
                                     case "maxRpm": r.Max[i] = Num(q.Value, q.Name, 10, 60000); break;
-                                    case "starter": r.NeedsStarter[i] = q.Value.ValueKind == JsonValueKind.True; break;
+                                    case "starter": if (q.Value.ValueKind == JsonValueKind.True) firstStarter = Math.Min(firstStarter, i); break; // (a /1 file's per-size flag: read into starterFrom below when the file gives none)
                                     default: throw new FormatException($"unknown size key \"{q.Name}\"");
                                 }
                             if (r.Idle[i] >= r.Peak[i] || r.Peak[i] > r.Max[i])
@@ -161,6 +169,8 @@ public sealed class EngineRules
                         break;
                     default: throw new FormatException($"unknown key \"{p.Name}\"");
                 }
+            if (!starterFrom && firstStarter < r.Scale.Length) // (a /1 file: its first starter size, half-way in log from the one below)
+                r.StarterFrom = firstStarter == 0 ? r.Scale[0] : MathF.Sqrt(r.Scale[firstStarter - 1] * r.Scale[firstStarter]);
             return r;
         }
         catch (Exception ex) when (ex is JsonException or FormatException or InvalidOperationException)
@@ -456,7 +466,7 @@ public static class ConstructEngine
     private static float Gain(float power, float share) => share >= 1f ? power : 1f + (power - 1f) * share;
 
     /// <summary>Does this engine need a starter to turn over? Its crank's scale reaches the rules' starterFrom (design 6.1).</summary>
-    public static bool NeedsStarter(ModEngine e, EngineRules rules) => e.Scale >= rules.StarterFrom;
+    public static bool NeedsStarter(ModEngine e, EngineRules rules) => rules.StarterAt(e.Scale);
 
     private static void Reset(ModEngine e)
     {

@@ -272,6 +272,17 @@ public static class Pressed
     /// <summary>What bay 2 must hold for this blank (D4), or 0 when the pattern takes nothing there.</summary>
     public static int Bay2For(PressPattern p, in ExtrusionKey k) => p.Bay2 is { } a ? a.For(Measure(a.By, k)) : 0;
 
+    /// <summary>What a pressed piece cost to make, as mass: its blank and what bay 2 took. A piece never weighs more (it would recycle for more).</summary>
+    public static float CostMass(PressPattern p, in ExtrusionKey k) => VolumeMass(k).Mass + Bay2Mass(p, k);
+
+    /// <summary>
+    /// A pressed receiver's mass: the merge's (the file's times s squared, so it weighs what the merge it equals does; the user, 2026-11-13,
+    /// phase 3 question 1), held to what it cost (<see cref="CostMass"/>): a small or hollow blank's merge mass can pass its blank and Gear
+    /// Sets, and it would recycle for more than it cost.
+    /// </summary>
+    public static float ReceiverMass(PressPattern p, in ExtrusionKey k, float scale) =>
+        Math.Clamp(MathF.Min(p.Like.Mass * ReceiverMergeRules.Times(scale, ReceiverMergeRules.Current.PartMass), CostMass(p, k)), 0.1f, ConstructParts.MaxPartMass);
+
     private static float Bay2Mass(PressPattern p, in ExtrusionKey k)
     {
         if (p.Bay2 is not { } a)
@@ -482,7 +493,7 @@ public static class Pressed
         }
         d.GunScale = ReceiverScale(p, k);
         if (p.Like.IsReceiverGun)
-            d.Mass = Math.Clamp(p.Like.Mass * ReceiverMergeRules.Times(d.GunScale, ReceiverMergeRules.Current.PartMass), 0.1f, ConstructParts.MaxPartMass); // (the merge's mass: the file's times s squared, so a pressed receiver weighs what the merge it equals does; the user, 2026-11-13, phase 3 question 1)
+            d.Mass = ReceiverMass(p, k, d.GunScale);
         return d;
     }
 
@@ -694,7 +705,7 @@ public static class Pressed
         }
         d.GunScale = ReceiverScale(p, k);
         if (p.Like.IsReceiverGun)
-            d.Mass = Math.Clamp(p.Like.Mass * ReceiverMergeRules.Times(d.GunScale, ReceiverMergeRules.Current.PartMass), 0.1f, ConstructParts.MaxPartMass); // (the merge's mass: the file's times s squared, so a pressed receiver weighs what the merge it equals does; the user, 2026-11-13, phase 3 question 1)
+            d.Mass = ReceiverMass(p, k, d.GunScale);
         return d;
     }
 
@@ -993,6 +1004,11 @@ public static class Pressed
         if (made.Sockets.Length > PressTable.MaxSockets + 40 || made.Sockets.Select(s => s.Name).Distinct().Count() != made.Sockets.Length)
         {
             Console.WriteLine("[press] PROBLEM: its sockets repeat a name or are too many");
+            probs++;
+        }
+        if (made.Mass > CostMass(p, k) + 0.01f) // (a piece never recycles for more than it cost to make: its blank and bay 2)
+        {
+            Console.WriteLine($"[press] PROBLEM: it weighs {made.Mass:0.##} kg, more than its blank and bay 2 ({CostMass(p, k):0.##} kg): it would recycle for more than it cost");
             probs++;
         }
         if (name.Length >= 80)

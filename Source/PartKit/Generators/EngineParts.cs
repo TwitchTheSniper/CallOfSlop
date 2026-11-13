@@ -270,7 +270,7 @@ public sealed class EngineParts : IPartGenerator
         ["starterFrom"] = 8, // (an engine whose crank's scale reaches this needs a starter: half-way in log between Medium and Large, sized-parts design 6.1)
         ["sizes"] = Sizes.Select(z => (object?)new PyDict
         {
-            ["name"] = z.Title.ToLowerInvariant(), ["scale"] = z.S, ["kw"] = z.Kw, ["idleRpm"] = z.Idle, ["peakRpm"] = z.Peak, ["maxRpm"] = z.Max, ["starter"] = z.Start,
+            ["name"] = z.Title.ToLowerInvariant(), ["scale"] = z.S, ["kw"] = z.Kw, ["idleRpm"] = z.Idle, ["peakRpm"] = z.Peak, ["maxRpm"] = z.Max, // (no per-size "starter": starterFrom says it by scale; a /1 file's flags still load)
         }).ToList(),
     };
 
