@@ -41,6 +41,7 @@ public static unsafe partial class Program
     private static readonly FoliageRenderer FoliageGfx = new();
     private static readonly PropRenderer PropGfx = new();
     private static readonly MeshRenderer MeshGfx = new();
+    private static readonly CityRenderer CityGfx = new(); // a planetoid's city (docs/planets/CITY.md)
     private static readonly BuildingRenderer BuildingGfx = new();
     private static readonly DecalRenderer DecalGfx = new();
     private static readonly TerrainRenderer TerrainGfx = new();
@@ -1133,6 +1134,7 @@ public static unsafe partial class Program
             BenchPass(1);
             DrawMovers(map); // moving platforms at this frame's pose
             StandInRender.Draw(Gfx, _session); // STAND-IN: the story's placeholder craft (Source/StandIns)
+            CityGfx.Draw(map, Gfx, Glfw.Time); // a planetoid's city: one draw a chunk (Source/Render/CityRenderer.cs)
         }
         using (Perf.Pass(PerfArea.Terrain, PerfGpuPass.Terrain))
             TerrainGfx.Draw(Gfx, map); // terrain maps only (built once per map)
