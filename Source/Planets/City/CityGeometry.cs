@@ -195,6 +195,22 @@ public sealed class CityGeometry
         var style = (CityStyle)m.Style;
         var facade = style is CityStyle.Glass or CityStyle.Grid or CityStyle.Brick or CityStyle.Ribbon;
         var par = Pack(style, b.Seed, b.FloorHeight * 20, (facade ? b.Lit : 0.5f) * 255, facade && b.Shops && m.Bottom <= 0.01f);
+        if (style == CityStyle.Neon)
+        {
+            // A blade or a billboard: its word (from the building's seed), its wide and narrow faces' widths, and which
+            // way round they go (the outline starts down the +x side: a mass wider in x has its narrow face first).
+            var wideX = m.Half.X >= m.Half.Y;
+            float wide = 2 * MathF.Max(m.Half.X, m.Half.Y), narrow = 2 * MathF.Min(m.Half.X, m.Half.Y);
+            var word = (uint)((b.Seed >> 3) % (uint)CitySigns.Shops.Length);
+            // A blade stacks its letters 0.85 m apart from 5.7 m up: pick a name short enough to fit its height.
+            if (m.Color != 0 && !(MathF.Min(MathF.Min((m.Color & 255) / 255f, (m.Color >> 8 & 255) / 255f), (m.Color >> 16 & 255) / 255f) > 0.6f))
+            {
+                var room = (int)((m.Top - 5.8f) / 0.85f);
+                for (var k = 0; k < CitySigns.Shops.Length && CitySigns.Shops[word].Length > room; k++)
+                    word = (word + 1) % (uint)CitySigns.Shops.Length;
+            }
+            par = Pack(style, word, wide * 10, narrow * 100, !wideX);
+        }
         var round = m.Shape == 2;
         var u = 0f;
         for (var i = 0; i < n; i++)
@@ -424,6 +440,17 @@ public sealed class CityGeometry
             {
                 Vector3 n = axes[k] * s, a1 = axes[(k + 1) % 3], a2 = axes[(k + 2) % 3];
                 var nn = Vector3.Normalize(n);
+                // A side face's metres read as a viewer outside it sees them: x to their right, y up (hy is up), so a
+                // sign's word is never mirrored.
+                if (k != 1)
+                {
+                    var yUp = Vector3.Normalize(hy);
+                    (a1, a2) = MathF.Abs(Vector3.Dot(Vector3.Normalize(a2), yUp)) > 0.5f ? (a1, a2) : (a2, a1);
+                    if (Vector3.Dot(a1, Vector3.Cross(yUp, nn)) < 0)
+                        a1 = -a1;
+                    if (Vector3.Dot(a2, yUp) < 0)
+                        a2 = -a2;
+                }
                 Vector3 p0 = mid + n - a1 - a2, p1 = mid + n + a1 - a2, p2 = mid + n + a1 + a2, p3 = mid + n - a1 + a2;
                 float l1 = a1.Length() * 2, l2 = a2.Length() * 2;
                 Quad(c, detail, p0, p1, p2, p3, nn, nn, nn, nn, Vector2.Zero, new Vector2(l1, 0), new Vector2(l1, l2), new Vector2(0, l2), color, par, nn);
@@ -542,6 +569,33 @@ public sealed class CityGeometry
             }
         Kiosk(new Vector2(min.X + 22, (min.Y + max.Y) * 0.5f + 18), ref d);
         Kiosk(new Vector2(max.X - 22, (min.Y + max.Y) * 0.5f - 18), ref d);
+        // A fountain round the column's plinth: a stone basin, water in it.
+        {
+            var cc0 = At(Vector2.Zero);
+            Prism(cc0, Vector2.Zero, RoadLift + Kerb - 0.05f, RoadLift + Kerb + 0.55f, 10.4f, 10.4f, 32, CityPlanColours.Rgb(0xb0a594), Pack(CityStyle.Plain, 7, 0, 0), true, false);
+            Prism(cc0, Vector2.Zero, RoadLift + Kerb + 0.55f, RoadLift + Kerb + 0.6f, 9.9f, 9.9f, 32, CityPlanColours.Rgb(0x2a4a58), Pack(CityStyle.Water, 0, 0, 0), false, false);
+        }
+        // Four planted beds in the square's quarters, each with its low stone kerb and three trees.
+        foreach (var (qx, qz) in new[] { (-1f, -1f), (1f, -1f), (-1f, 1f), (1f, 1f) })
+        {
+            var centre = new Vector2(qx * MathF.Min(36f, (max.X - min.X) * 0.25f), qz * MathF.Min(28f, (max.Y - min.Y) * 0.22f));
+            Vector2 half = new(8f, 5f);
+            var cb = At(centre);
+            var (bx, bz, bu) = Axes(centre);
+            var bedFoot = _plan.Ground(centre, RoadLift + Kerb - 0.05f);
+            Box(cb, bedFoot + bu * 0.25f, bx * half.X, bu * 0.25f, bz * half.Y, CityPlanColours.Rgb(0xa89c88), Pack(CityStyle.Plain, 3, 0, 0), true, false);
+            Box(cb, bedFoot + bu * 0.27f, bx * (half.X - 0.3f), bu * 0.25f, bz * (half.Y - 0.3f), CityPlanColours.Rgb(0x4d6b35), Pack(CityStyle.Leaves, 9, 0, 0), false, false);
+            for (var t = -1; t <= 1; t++)
+                Tree(centre + new Vector2(t * 5f, 0), ref d);
+        }
+        // Lamps standing across the open paving, in a ring round the fountain.
+        for (var i = 0; i < 10; i++)
+        {
+            var a = i * MathF.Tau / 10 + 0.3f;
+            var at = new Vector2(MathF.Cos(a), MathF.Sin(a)) * 21f;
+            if (!InHole(at, 2f))
+                Lamp(at, -Vector2.Normalize(at));
+        }
         // The column at the pole: a stepped plinth, a tall shaft, a lantern.
         var mid = Vector2.Zero;
         var cc = At(mid);
@@ -644,6 +698,9 @@ public sealed class CityGeometry
         Box(c, foot + up * 2.95f, ax * 2.6f, up * 0.15f, az * 2.0f, CityPlanColours.Rgb(0xc8483c), Pack(CityStyle.Plain, 8, 0, 0), true, false);
     }
 
+    /// <summary>A sign box's parameters: its word, the width and height of its big faces (the shader centres the word).</summary>
+    private static uint SignBox(int word, float width, float height) => Pack(CityStyle.Neon, 128u + (uint)word, width * 10, height * 100);
+
     // ---- The market hall ------------------------------------------------------------------------------------------------
 
     /// <summary>The market's aisles (along x) are this far apart, the first this far in from the block's south edge; its end
@@ -671,6 +728,33 @@ public sealed class CityGeometry
                 var centre = _plan.Ground((a + b) * 0.5f, y0 + MarketRoof + 0.3f);
                 Box(c, centre, ax * ((b.X - a.X) * 0.5f), up * 0.3f, az * ((b.Y - a.Y) * 0.5f), CityPlanColours.Rgb(0x3d4a52), Pack(CityStyle.Plain, 17, 0, 0), true, false);
             }
+        // Over the ceiling a sawtooth roof: each 8 m bay a slope rising to the east, then a lit glazed face back down
+        // (north lights, the way a market hall or a mill lets in light without the sun).
+        for (var x = min.X; x < max.X - 4; x += 8)
+        {
+            var x1 = MathF.Min(x + 8, max.X);
+            for (var z = min.Y; z < max.Y - 0.01f; z += 16)
+            {
+                var z1 = MathF.Min(z + 16, max.Y);
+                var mid0 = new Vector2((x + x1) * 0.5f, (z + z1) * 0.5f);
+                var c = At(mid0);
+                var (ax, az, up) = Axes(mid0);
+                float lo = y0 + MarketRoof + 0.6f, hi = y0 + MarketRoof + 3.0f;
+                Vector3 p00 = _plan.Ground(new Vector2(x, z), lo), p01 = _plan.Ground(new Vector2(x, z1), lo);
+                Vector3 p10 = _plan.Ground(new Vector2(x1, z), hi), p11 = _plan.Ground(new Vector2(x1, z1), hi);
+                var slopeN = Vector3.Normalize(Vector3.Cross(p01 - p00, p10 - p00));
+                if (Vector3.Dot(slopeN, up) < 0)
+                    slopeN = -slopeN;
+                Quad(c, false, p00, p10, p11, p01, slopeN, slopeN, slopeN, slopeN, new Vector2(x, z), new Vector2(x1, z), new Vector2(x1, z1), new Vector2(x, z1),
+                    CityPlanColours.Rgb(0x4a565e), Pack(CityStyle.Roof, 0, 0, 0), slopeN);
+                // The glazing, lit from inside, facing west (seen from the square's side as warm strips).
+                Vector3 g0 = _plan.Ground(new Vector2(x1, z), lo), g1 = _plan.Ground(new Vector2(x1, z1), lo);
+                Quad(c, false, g0, g1, p11, p10, ax, ax, ax, ax, new Vector2(z, 0), new Vector2(z1, 0), new Vector2(z1, 2.4f), new Vector2(z, 2.4f),
+                    CityPlanColours.Rgb(0x9a7848), Pack(CityStyle.Lamp, 0, 0, 0), ax);
+                Quad(c, false, g0, g1, p11, p10, -ax, -ax, -ax, -ax, new Vector2(z, 0), new Vector2(z1, 0), new Vector2(z1, 2.4f), new Vector2(z, 2.4f),
+                    CityPlanColours.Rgb(0x9a7848), Pack(CityStyle.Lamp, 0, 0, 0), -ax);
+            }
+        }
         // Columns down each end aisle's outer side and along the stall rows' middles.
         for (var z = min.Y + 1; z <= max.Y - 1 + 0.01f; z += 8)
             foreach (var x in new[] { min.X + 0.8f, max.X - 0.8f })
@@ -702,7 +786,7 @@ public sealed class CityGeometry
             var p = new Vector2(mid.X, min.Y - 0.4f);
             var c = At(p);
             var (ax, az, up) = Axes(p);
-            Box(c, _plan.Ground(p, y0 + MarketRoof + 1.6f), ax * 9f, up * 1.0f, az * 0.15f, CityPlanColours.Rgb(0xffd060), Pack(CityStyle.Neon, 3, 0, 0), false, false);
+            Box(c, _plan.Ground(p, y0 + MarketRoof + 1.6f), ax * 9f, up * 1.0f, az * 0.15f, CityPlanColours.Rgb(0xffd060), SignBox(CitySigns.MarketWord, 18f, 2f), false, false);
         }
 
         void Column(Vector2 p)
@@ -907,6 +991,17 @@ public sealed class CityGeometry
                 Box(c, at + up * 1.8f, sideW * 0.12f, up * 1.8f, along * 0.12f, Steel, Pack(CityStyle.Metal, 0, 0, 0), true);
             }
             Stairs(r, b, side);
+            // The station's name on a board hanging under the canopy, over the platform's middle.
+            {
+                var (p, sv) = RailAt(r, k);
+                var c = At(p);
+                var up = _plan.DirOf(p);
+                var sideW = Vector3.Normalize(_plan.Ground(p + sv) - _plan.Ground(p));
+                var along = Vector3.Cross(up, sideW);
+                var board = _plan.Ground(p + sv * side * 6.2f, r.Height + 1.0f + 3.0f);
+                var word = CitySigns.LoopWord(Array.IndexOf(StationPoints(r), k));
+                Box(c, board, along * 2.2f, up * 0.35f, sideW * 0.06f, CityPlanColours.Rgb(0x1f3a6a), SignBox(word, 4.4f, 0.7f), false);
+            }
         }
     }
 
@@ -1031,6 +1126,9 @@ public sealed class CityGeometry
             Vector2 a = Vector2.Lerp(p, q, k / (float)n), b = Vector2.Lerp(p, q, (k + 1) / (float)n);
             var c = At((a + b) * 0.5f);
             float ua = u0 + len * k / n, ub = u0 + len * (k + 1) / n;
+            // (x runs to the right of a viewer facing the wall, so the station's name reads the right way round)
+            if (Vector2.Dot(q - p, new Vector2(Vector3.Dot(Vector3.Cross(_plan.DirOf(a), facing), _plan.East), Vector3.Dot(Vector3.Cross(_plan.DirOf(a), facing), _plan.North))) < 0)
+                (ua, ub) = (u0 + len - len * k / n, u0 + len - len * (k + 1) / n);
             Vector3 a0 = _plan.Ground(a, y0), b0 = _plan.Ground(b, y0), b1 = _plan.Ground(b, y1), a1 = _plan.Ground(a, y1);
             Quad(c, false, a0, b0, b1, a1, facing, facing, facing, facing, new Vector2(ua, y0), new Vector2(ub, y0), new Vector2(ub, y1), new Vector2(ua, y1), color, par, facing);
             if (solid)
@@ -1080,8 +1178,10 @@ public sealed class CityGeometry
         var plain = Pack(CityStyle.Plain, 14, 0, 0, true);
         float top = -m.Depth, bed = -m.Depth - CityMetro.Bed, ceil = -m.Depth + CityMetro.Ceiling;
         var x0 = m.X;
-        foreach (var z in m.Stations)
+        for (var si = 0; si < m.Stations.Length; si++)
         {
+            var z = m.Stations[si];
+            tiles = Pack(CityStyle.MetroWall, 0, CitySigns.MetroWord(si), 0);
             var (ax, az, _) = Axes(new Vector2(x0, z));
             float zl = z - CityMetro.HallZ, zh = z + CityMetro.HallZ;
             // The platforms: concrete with a stone top, and their faces down to the track bed.

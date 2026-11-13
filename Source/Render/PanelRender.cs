@@ -1079,7 +1079,7 @@ public static unsafe class PanelRender
     }
 
     /// <summary>The font as an R8 picture, unpacked from <see cref="PanelFontData.Atlas"/>: the first row of cells at the top of the texture's v.</summary>
-    private static byte[] Atlas(out int w, out int h)
+    internal static byte[] Atlas(out int w, out int h)
     {
         w = PanelFontData.Columns * PanelFontData.CellW;
         h = PanelFontData.Rows * PanelFontData.CellH;
