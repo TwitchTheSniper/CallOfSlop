@@ -1102,6 +1102,11 @@ public static unsafe partial class Program
                     case "tanks": // the build's fuel, Fluid Tanks and ammo boxes as this peer has them, and the station's own source
                         WsSay("station: tanks: " + StationProbe.Tanks(g.Constructs, sc, spart));
                         break;
+                    case "cutpipe" or "mendpipe" when g.IsServer: // every pipe into the station cut through (as a blast leaves it), or repaired whole
+                        for (var k = 0; k < sc.RouteCount; k++)
+                            if (sc.Routes[k].Type == RouteType.Pipe && sc.Routes[k].To == spart)
+                                WsSay($"station: {sverb} pipe {k}: " + (sverb == "cutpipe" ? (ConstructRoutes.Damage(g.Constructs, sc, k, 0, 1e9f) ? "cut" : "not cut") : ConstructRoutes.Repair(g.Constructs, sc, k) ? "repaired" : "nothing to repair"));
+                        break;
                     case "clear" when g.IsServer && sc.Parts[spart].Station is { } cj && g.Constructs.Get(cj.Body) is { HeldBy: 0 } built: // the finished vehicle is dragged 14 m out of the bay
                         ConstructStation.Bay(sc, spart, out _, out var brot, out _);
                         built.Pos += System.Numerics.Vector3.Transform(new System.Numerics.Vector3(14, 0.3f, 0), brot);
