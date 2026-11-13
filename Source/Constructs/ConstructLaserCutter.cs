@@ -202,6 +202,35 @@ public static class ConstructLaserCutter
         ConstructExtruder.SetStall(world, st, why);
     }
 
+    /// <summary>
+    /// Server: the head order is going (Cancel, Clear): a blank on the bed, uncut, drops onto the out bed as a loose part, so it is never cut to
+    /// the next order. Where nothing has room for it, it is lost with its order.
+    /// </summary>
+    public static void GiveBack(ConstructWorld world, Construct c, int part)
+    {
+        if (world.StoreOf(c, part) is not { JobAmount: > 0 } st)
+            return;
+        if (WorkOrders.HeadOf(c.Parts[part], out var head) && head.Name != null && JobOf(head.Name) is { } j && ConstructParts.Find(j.Blank) is { } blank)
+        {
+            ref var p = ref c.Parts[part];
+            c.WorldFrame(p.Seg, out var q, out var t);
+            var turn = q * Rot24.Quat(p.Rot);
+            var size = blank.BoundsMax - blank.BoundsMin;
+            var at = t + Vector3.Transform(p.Pos, q) + Vector3.Transform(p.D.ExtDieAt + new Vector3(0, size.Y * 0.5f + 0.05f, 0), turn);
+            if (ConstructEdits.DropLoose(world, blank, at, turn) is { } body)
+            {
+                body.Owner = c.Owner;
+                body.Vel = c.PointVel(at);
+            }
+        }
+        st.JobAmount = 0;
+        st.JobTicks = 0;
+        st.Progress = 0;
+        st.Version++;
+        world.StoreDirty.Add(st.Handle);
+        ConstructGatherer.SetBusy(world, st, false);
+    }
+
     /// <summary>Is this piece the head order's blank? (A formed panel by its name, an extruded piece by its key: nothing allocates.)</summary>
     public static bool IsBlank(Job j, ConstructPartDef piece) =>
         j.Plate ? piece.IsExtrusion && piece.ExKey == j.Stock : !piece.IsExtrusion && string.Equals(piece.Name, j.Blank, StringComparison.Ordinal);

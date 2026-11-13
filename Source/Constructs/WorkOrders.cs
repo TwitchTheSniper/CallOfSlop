@@ -403,6 +403,8 @@ public static class WorkOrders
     {
         if (c.Parts[part].Orders is not { Count: > 0 } q)
             return "no orders to cancel";
+        if (c.DefOf(part).IsLaserCutter)
+            ConstructLaserCutter.GiveBack(world, c, part); // (the head's blank leaves the bed, so it is never cut to the next order)
         q.RemoveAt(0);
         world.OrdersChanged(c);
         return null;
@@ -413,6 +415,8 @@ public static class WorkOrders
     {
         if (c.Parts[part].Orders == null)
             return "no queue: it works its own settings";
+        if (c.DefOf(part).IsLaserCutter)
+            ConstructLaserCutter.GiveBack(world, c, part);
         c.Parts[part].Orders = null;
         world.OrdersChanged(c);
         return null;
