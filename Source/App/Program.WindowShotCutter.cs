@@ -69,6 +69,26 @@ public static unsafe partial class Program
                 WsFail("cutter feed: no Laser Cutter");
                 return true;
             }
+            case "wreck" when g.IsServer: // the first cutter wrecked; then the Material Bundles it spilled, each with its worth
+            {
+                foreach (var c in bodies)
+                    for (var i = 0; i < c.PartCount; i++)
+                        if (c.DefOf(i).IsLaserCutter && w.StoreOf(c, i) is { } st)
+                        {
+                            WsSay($"cutter wreck: {c.DefOf(i).Name}#{i} holding {st.Amount} {RecyclingTable.Current.NameOf(st.Material)} +{st.InAmount} tenths");
+                            var before = new HashSet<Construct>(w.Bodies);
+                            w.DamagePart(c, i, 1e9f, out _, raw: true);
+                            var worth = new List<string>();
+                            foreach (var b in w.Bodies)
+                                if (!before.Contains(b) && b.PartCount == 1 && b.DefOf(0).Name == ConstructStorage.MaterialBundle)
+                                    worth.Add($"{b.Parts[0].Rounds} {RecyclingTable.Current.NameOf((byte)b.Parts[0].Setting)}");
+                            WsSay($"cutter wreck: spilled {worth.Count} bundle(s): {string.Join(", ", worth)}");
+                            _wsWait = 2;
+                            return true;
+                        }
+                WsFail("cutter wreck: no Laser Cutter");
+                return true;
+            }
             case "await":
             {
                 foreach (var c in bodies)
@@ -106,7 +126,7 @@ public static unsafe partial class Program
                     var head = WorkOrders.HeadOf(c.Parts[i], out var h) && h.Name != null ? $"{h.Name} {h.Made}/{h.Count}" : "none";
                     var job = h.Name != null ? ConstructLaserCutter.JobOf(h.Name) : null;
                     WsSay($"cutter: {d.Name}#{i}: {(ExtrudeStall)st.Refused}{(st.Busy ? " busy" : "")}, offcut {st.Amount} {RecyclingTable.Current.NameOf(st.Material)} +{st.InAmount} tenths {RecyclingTable.Current.NameOf(st.InMaterial)}, "
-                        + $"bed {(st.JobAmount > 0 ? "blank" : "empty")} {st.Progress}%, orders {c.Parts[i].Orders?.Count ?? 0}, head {head}"
+                        + $"bed {(st.OnBed ? "blank" : "empty")} {st.Progress}%, orders {c.Parts[i].Orders?.Count ?? 0}, head {head}"
                         + (job != null ? $"; job: edge {job.EdgeM:0.00} m, {job.Mm:0} mm, {ConstructLaserCutter.Seconds(job, d):0.0} s by the law, offcut {job.OffTenths / 10f:0.0}" : ""));
                 }
         var loose = new Dictionary<string, int>();

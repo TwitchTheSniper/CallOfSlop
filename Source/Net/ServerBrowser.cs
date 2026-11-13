@@ -483,7 +483,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 295: Msg.Breakout's stage gains 3 (away in the Ministry Courier, GameBreakoutShip.cs); no new bytes.
     // 296: Laser Cutter phase 3: the Laser Cutter and Medium Laser Cutter (two part files, ids move); ExtrudeStall.OffcutFull (16) in a
     //   machine's stall byte; a cutter's offcut tenths ride in the store's input amount (ConstructLaserCutter.cs).
-    public const ushort ProtocolVersion = 296;
+    // 297: Laser Cutter phase 3 fixes: a store's second flags byte gains 64, a Laser Cutter's blank on its bed (no bytes; ConstructStorage.Write).
+    public const ushort ProtocolVersion = 297;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

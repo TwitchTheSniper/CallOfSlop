@@ -42,6 +42,9 @@ public static class ConstructLaserCutter
         if (HullLoft.CutJob(name, out var blank, out var plate, out var stock, out var edge, out var mm)
             && ConstructParts.Find(blank) is { } bd && ConstructParts.Find(name) is { } cd)
         {
+            // (Find finishes a stand-in asked for by name, HullLoft.Parse; should one still come back, its mass and bounds are a box's: never kept)
+            if (HullLoft.IsStandIn(bd) || HullLoft.IsStandIn(cd))
+                return null;
             var mat = HullLoft.FormedMaterial(name);
             var s = bd.BoundsMax - bd.BoundsMin;
             var longest = MathF.Max(s.X, MathF.Max(s.Y, s.Z));
@@ -99,6 +102,12 @@ public static class ConstructLaserCutter
     {
         ref var p = ref c.Parts[part];
         var d = p.D;
+        if (st.OnBed != st.JobAmount > 0)
+        {
+            st.OnBed = st.JobAmount > 0; // (after a load: the saved job says what lies on the bed; the wire carries OnBed)
+            st.Version++;
+            world.StoreDirty.Add(st.Handle);
+        }
         var held = ConstructExtruder.RunHeld(c, part);
         ConstructGatherer.SetHeld(world, st, held);
         if (held || p.Broken)
@@ -182,6 +191,7 @@ public static class ConstructLaserCutter
         st.InAmount = tenths % 10;
         st.InMaterial = st.InAmount > 0 ? j.Material : (byte)0;
         st.JobAmount = 0;
+        st.OnBed = false;
         st.JobTicks = 0;
         st.Progress = 0;
         st.Version++;
@@ -224,12 +234,21 @@ public static class ConstructLaserCutter
             }
         }
         st.JobAmount = 0;
+        st.OnBed = false;
         st.JobTicks = 0;
         st.Progress = 0;
         st.Version++;
         world.StoreDirty.Add(st.Handle);
         ConstructGatherer.SetBusy(world, st, false);
     }
+
+    /// <summary>The tag a blank routed to a cutter rides with (a Conveyor Router's want, ConstructLogistics.WantAt); no chain takes this id.</summary>
+    public const ushort BedTag = 0xFFFF;
+
+    /// <summary>Server: does this cutter want this piece now (its bed empty, the piece its head order's blank)? A Router sends it one then.</summary>
+    public static bool Wants(ConstructWorld world, Construct c, int part, ConstructPartDef piece) =>
+        world.StoreOf(c, part) is { JobAmount: 0 } && WorkOrders.HeadOf(c.Parts[part], out var head) && head.Name != null
+        && JobOf(head.Name) is { } j && IsBlank(j, piece);
 
     /// <summary>Is this piece the head order's blank? (A formed panel by its name, an extruded piece by its key: nothing allocates.)</summary>
     public static bool IsBlank(Job j, ConstructPartDef piece) =>
@@ -245,6 +264,7 @@ public static class ConstructLaserCutter
             || JobOf(head.Name) is not { } j || !IsBlank(j, piece))
             return false;
         st.JobAmount = 1;
+        st.OnBed = true;
         st.JobMaterial = j.Material;
         st.JobTicks = 0;
         st.Progress = 0;
@@ -282,7 +302,7 @@ public static class ConstructLaserCutter
         if (WorkOrders.HeadOf(c.Parts[part], out var h) && h.Name != null)
         {
             sb.Append(", ").Append(h.Name);
-            if (st.JobAmount > 0)
+            if (st.OnBed)
                 sb.Append(", blank on the bed ").Append(st.Progress).Append('%');
         }
     }

@@ -860,7 +860,7 @@ public static unsafe partial class Program
                     _wsWait = 3;
                 }
                 var ds = Ui.DesignerShape;
-                WsSay($"design: {(Ui.DesignerOpen ? "open" : "closed")}; {(HullLoft.PanelRefusal(ds) ?? HullLoft.PanelKey(ds))}; preview {(Ui.DesignerPreview.Shown == null ? "none" : $"{HullLoft.PanelKey(Ui.DesignerPreview.ShownShape)} hash {HullLoft.PanelHash(Ui.DesignerPreview.Shown):x8}")}{(Ui.DesignerPreview.Building ? " (building)" : "")}, {Ui.DesignerPreview.Made} keys previewed; library {Ui.DesignerDesigns}; world designs [{string.Join("; ", g.Constructs.Designs.Select(x => $"{x.Name} = {x.Key}"))}]");
+                WsSay($"design: {(Ui.DesignerOpen ? "open" : "closed")}; {(HullLoft.PanelRefusal(ds) ?? HullLoft.PanelKey(ds))}; preview {(Ui.DesignerPreview.Shown == null ? "none" : $"{HullLoft.PanelKey(Ui.DesignerPreview.ShownShape)} hash {HullLoft.PanelHash(Ui.DesignerPreview.Shown):x8}")}{(Ui.DesignerPreview.Building ? " (building)" : "")}, {Ui.DesignerPreview.Made} keys previewed; links {Ui.DesignerLinks}; library {Ui.DesignerDesigns}; world designs [{string.Join("; ", g.Constructs.Designs.Select(x => $"{x.Name} = {x.Key}"))}]");
                 WsSay($"design: {RuntimeParts.Line()}");
                 foreach (var st in g.Constructs.Stores)
                     for (var k = 0; st is { Live: true } && k < st.KindN; k++)
