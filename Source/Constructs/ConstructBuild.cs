@@ -45,6 +45,9 @@ public static class ConstructBuild
 
     private static byte Opposite(byte dir) => (byte)(dir ^ 1);
 
+    /// <summary>Two modular engine pieces mate whatever their size classes (sized-parts design 6.4: anything bolts on; a small fuel system starves its bank).</summary>
+    public static bool EngineMate(ConstructPartDef a, ConstructPartDef b) => a.Piece != EnginePiece.None && b.Piece != EnginePiece.None;
+
     /// <summary>
     /// Where <paramref name="def"/> goes when its socket <paramref name="defSocket"/> mates socket <paramref name="socket"/> of
     /// part <paramref name="part"/>, turned by <paramref name="spin"/> (0..3) about that socket. Null reason: it fits.
@@ -81,7 +84,7 @@ public static class ConstructBuild
         var onLeaf = target.HasJoint && socket == target.LeafIndex; // what goes on a joint's leaf hangs on a new joint
         if (!KindsMate(ts.Kind, ds.Kind, onLeaf) || ts.Kind == SocketKind.Port)
             return "those don't fit together";
-        if (ts.Class != ds.Class)
+        if (ts.Class != ds.Class && !EngineMate(target, def))
             return $"that's a {ConstructParts.ClassNames[ts.Class]} socket and this a {ConstructParts.ClassNames[ds.Class]} part: use an adapter";
         if (c.SocketUsed(part, socket))
             return "something is already attached there";

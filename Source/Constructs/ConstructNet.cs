@@ -613,57 +613,95 @@ public static partial class ConstructNet
     }
 
     /// <summary>
-    /// A player's own inventory, whole (it is small): flags (1: infinite parts), then each part kind held (id,
-    /// count) and each material held (id, count). About 4 bytes plus 4 a kind (protocol 106: no scrap).
+    /// A player's own inventory: flags (1: infinite parts; 2: a continuation, made parts only), then each part kind held (id,
+    /// count), each material held (id, count) and each made part (protocol 299: PartRef, count). About 4 bytes plus 4 a kind
+    /// (protocol 106: no scrap). Made keys can be long (up to about 250 bytes each, 64 kinds), so the made list stops at
+    /// <see cref="InventoryBudget"/> bytes and the rest go in continuations: call again with the returned index until it is
+    /// <see cref="SandboxInventory.MadeN"/>.
     /// </summary>
-    public static void WriteInventory(PacketWriter w, SandboxInventory inv)
+    public static int WriteInventory(PacketWriter w, SandboxInventory inv, int fromMade = 0)
     {
-        w.Begin(Msg.CBody).U8((byte)CBodyKind.Inventory).U8((byte)(inv.Infinite ? 1 : 0));
-        var at = w.Length;
-        w.U8(0);
-        var n = 0;
-        for (var i = 0; i < inv.Parts.Length && n < 255; i++)
-            if (inv.Parts[i] > 0)
-            {
-                w.U16((ushort)i).U16(inv.Parts[i]);
-                n++;
-            }
-        w.PatchU8(at, (byte)n);
+        var more = fromMade > 0;
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Inventory).U8((byte)((inv.Infinite ? 1 : 0) | (more ? 2 : 0)));
+        int at, n;
+        if (!more)
+        {
+            at = w.Length;
+            w.U8(0);
+            n = 0;
+            for (var i = 0; i < inv.Parts.Length && n < 255; i++)
+                if (inv.Parts[i] > 0)
+                {
+                    w.U16((ushort)i).U16(inv.Parts[i]);
+                    n++;
+                }
+            w.PatchU8(at, (byte)n);
+            at = w.Length;
+            w.U8(0);
+            n = 0;
+            for (var i = 0; i < inv.Materials.Length; i++)
+                if (inv.Materials[i] > 0)
+                {
+                    w.U8((byte)i).U16(inv.Materials[i]);
+                    n++;
+                }
+            w.PatchU8(at, (byte)n);
+        }
         at = w.Length;
-        w.U8(0);
+        w.U8(0); // (protocol 299: made parts by key, at most 64 kinds; docs/sandbox/design/inventory-run-time-parts.md)
         n = 0;
-        for (var i = 0; i < inv.Materials.Length; i++)
-            if (inv.Materials[i] > 0)
-            {
-                w.U8((byte)i).U16(inv.Materials[i]);
-                n++;
-            }
+        var k = fromMade;
+        for (; k < inv.MadeN && (n == 0 || w.Length < InventoryBudget); k++, n++)
+        {
+            PartRef.Write(w, inv.MadeDef[k]);
+            w.U16(inv.MadeCount[k]);
+        }
         w.PatchU8(at, (byte)n);
+        return k;
     }
+
+    /// <summary>The bytes an inventory message fills before its made list goes on in another (the writers' buffers hold 16384; a made entry is under 300).</summary>
+    public const int InventoryBudget = 12000;
 
     private static void ReadInventory(ref PacketReader r, SandboxInventory? inv)
     {
         var flags = r.U8();
-        int kinds = r.U8();
-        inv?.Clear();
-        for (var k = 0; k < kinds; k++)
+        var more = (flags & 2) != 0;
+        if (!more)
         {
-            var id = r.U16();
-            var count = r.U16();
-            if (ConstructParts.Get(id) == null || count > SandboxInventory.MaxCount)
-                throw new MalformedPacketException($"an inventory of {count} of part {id}");
-            if (inv != null)
-                inv.Parts[id] = count;
+            int kinds = r.U8();
+            inv?.Clear();
+            for (var k = 0; k < kinds; k++)
+            {
+                var id = r.U16();
+                var count = r.U16();
+                if (ConstructParts.Get(id) == null || count > SandboxInventory.MaxCount)
+                    throw new MalformedPacketException($"an inventory of {count} of part {id}");
+                if (inv != null)
+                    inv.Parts[id] = count;
+            }
+            int mats = r.U8();
+            for (var k = 0; k < mats; k++)
+            {
+                var id = r.U8();
+                var count = r.U16();
+                if (id >= SandboxInventory.MaxMaterials || count > SandboxInventory.MaxCount)
+                    throw new MalformedPacketException($"an inventory of {count} of material {id}");
+                if (inv != null)
+                    inv.Materials[id] = count;
+            }
         }
-        int mats = r.U8();
-        for (var k = 0; k < mats; k++)
+        int made = r.U8();
+        if (made > SandboxInventory.MaxMadeKinds)
+            throw new MalformedPacketException($"an inventory of {made} kinds of made part");
+        for (var k = 0; k < made; k++)
         {
-            var id = r.U8();
+            var id = PartRef.Read(ref r);
             var count = r.U16();
-            if (id >= SandboxInventory.MaxMaterials || count > SandboxInventory.MaxCount)
-                throw new MalformedPacketException($"an inventory of {count} of material {id}");
-            if (inv != null)
-                inv.Materials[id] = count;
+            if (count > SandboxInventory.MaxCount)
+                throw new MalformedPacketException($"an inventory of {count} of made part {id}");
+            if (Extrusion.IsRuntimeId(id))
+                inv?.Set(id, count); // (a key this machine can't make reads as a catalogue stand-in: left out, never over a catalogue count)
         }
         if (inv == null)
             return;

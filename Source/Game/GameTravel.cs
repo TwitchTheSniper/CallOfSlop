@@ -482,6 +482,7 @@ public sealed partial class Game
     private static void WorldTravellerCopy(WorldPlayer from, WorldPlayer to)
     {
         to.Parts = from.Parts;
+        to.Made = from.Made;
         to.Materials = from.Materials;
         WorldStores.Copy(from.Pack, to.Pack);
         to.Tool = from.Tool;

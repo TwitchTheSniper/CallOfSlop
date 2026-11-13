@@ -230,6 +230,7 @@ public sealed partial class Ui
     {
         _sbGroupSel = group;
         _sbSectionSel = section;
+        _sbMadeSel = false;
         _sbFilterVersion++;
     }
 
@@ -640,7 +641,11 @@ public sealed partial class Ui
                 var below = ImGui.GetFrameHeightWithSpacing() * (_sbOptionsOpen ? 10.5f : 3.2f);
                 var treeH = ImGui.GetContentRegionAvail().Y - below;
                 if (ImGui.BeginChild("##sbtree"u8, new float2(0, MathF.Max(60 * _scale, treeH)), ImGuiChildFlags.None))
-                    SbDrawTree();
+                    {
+                        SbDrawTree();
+                        if (_sbTab == SbTab.Parts)
+                            SbDrawMadeNode(game, _sbSearch.Length > 0); // (UiSandboxMade.cs)
+                    }
                 ImGui.EndChild();
                 ImGui.Separator();
                 _sbOptionsOpen = ImGui.CollapsingHeader("Options"u8);
@@ -734,7 +739,11 @@ public sealed partial class Ui
                     SandboxPartsPick(game, picked.Part);
                 picked = null;
             }
-            var gridPicked = SbDrawGrid(game, me.Id, settings);
+            SbItem? gridPicked = null;
+            if (_sbTab == SbTab.Parts && _sbMadeSel && _sbSearch.Length == 0)
+                SbDrawMade(game, me.Id); // (the made parts the player counts: UiSandboxMade.cs)
+            else
+                gridPicked = SbDrawGrid(game, me.Id, settings);
             picked ??= gridPicked;
             ImGui.EndGroup();
             if (picked != null)

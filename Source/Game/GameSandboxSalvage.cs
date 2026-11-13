@@ -58,12 +58,22 @@ public sealed partial class Game
         {
             if (!SandboxInv.Changed(cl.Id))
                 continue;
-            ConstructNet.WriteInventory(SbW, SandboxInv.Of(cl.Id));
-            Net.SendTo(cl.Guid, SbW.Span, PacketReliability.ReliableOrdered);
+            SendInventoryTo(cl.Guid, SandboxInv.Of(cl.Id));
             SandboxInv.MarkSent(cl.Id);
         }
         if (LocalId != byte.MaxValue)
             SandboxInv.MarkSent(LocalId);
+    }
+
+    /// <summary>Server: an inventory to its owner, in as many messages as its made keys need (ConstructNet.InventoryBudget).</summary>
+    private void SendInventoryTo(RakNetGUID to, SandboxInventory inv)
+    {
+        var next = 0;
+        do
+        {
+            next = ConstructNet.WriteInventory(SbW, inv, next);
+            Net.SendTo(to, SbW.Span, PacketReliability.ReliableOrdered);
+        } while (next < inv.MadeN);
     }
 
     /// <summary>Server: a joiner's own inventory (empty, unless the id came back within the match).</summary>
@@ -71,8 +81,7 @@ public sealed partial class Game
     {
         if (!_clients.TryGetValue(to.G, out var cl))
             return;
-        ConstructNet.WriteInventory(SbW, SandboxInv.Of(cl.Id));
-        Net.SendTo(to, SbW.Span, PacketReliability.ReliableOrdered);
+        SendInventoryTo(to, SandboxInv.Of(cl.Id));
         SandboxInv.MarkSent(cl.Id);
     }
 

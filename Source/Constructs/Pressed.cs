@@ -481,6 +481,8 @@ public static class Pressed
             d.GunPartName = name;
         }
         d.GunScale = ReceiverScale(p, k);
+        if (p.Like.IsReceiverGun)
+            d.Mass = Math.Clamp(p.Like.Mass * ReceiverMergeRules.Times(d.GunScale, ReceiverMergeRules.Current.PartMass), 0.1f, ConstructParts.MaxPartMass); // (the merge's mass: the file's times s squared, so a pressed receiver weighs what the merge it equals does; the user, 2026-11-13, phase 3 question 1)
         return d;
     }
 
@@ -691,6 +693,8 @@ public static class Pressed
             d.GunPartName = name;
         }
         d.GunScale = ReceiverScale(p, k);
+        if (p.Like.IsReceiverGun)
+            d.Mass = Math.Clamp(p.Like.Mass * ReceiverMergeRules.Times(d.GunScale, ReceiverMergeRules.Current.PartMass), 0.1f, ConstructParts.MaxPartMass); // (the merge's mass: the file's times s squared, so a pressed receiver weighs what the merge it equals does; the user, 2026-11-13, phase 3 question 1)
         return d;
     }
 

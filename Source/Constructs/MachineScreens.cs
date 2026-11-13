@@ -42,7 +42,12 @@ public static class MachineScreens
         else if (d.IsAssembler)
             Assembler(p, d, st, card);
         else if (d.IsExtruder)
-            Extruder(c, part, d, st, card);
+        {
+            if (d.IsLaserCutter)
+                Cutter(c, part, st, card);
+            else
+                Extruder(c, part, d, st, card);
+        }
         else if (d.IsRecycler)
             Recycler(world, c, part, d, st, card);
         for (var l = 0; l < PanelCard.MaxLines; l++)
@@ -167,6 +172,37 @@ public static class MachineScreens
         }
         card.Add(line, "Tray ").Add(line, st.Items);
         card.Bar = st.Busy ? st.Progress / 100f : 0;
+    }
+
+    /// <summary>A Laser Cutter's screen (ConstructLaserCutter.cs): its state, the offcut bin and its tenths, the blank on the bed, then the queue.</summary>
+    private static void Cutter(Construct c, int part, CStore st, PanelCard card)
+    {
+        ref var p = ref c.Parts[part];
+        if (st.Held)
+            Say(card, PanelState.Idle, "Held off");
+        else
+            switch ((ExtrudeStall)st.Refused)
+            {
+                case ExtrudeStall.NoPower: Say(card, PanelState.Fault, "No power"); break;
+                case ExtrudeStall.NoMaterial: Say(card, PanelState.Wants, "Needs its blank"); break;
+                case ExtrudeStall.BadShape: Say(card, PanelState.Refused, "Not a cut part"); break;
+                case ExtrudeStall.OffcutFull: Say(card, PanelState.Wants, "Offcut bin full"); break;
+                case ExtrudeStall.Blocked: Say(card, PanelState.Wants, "Blocked"); break;
+                case ExtrudeStall.ConveyorSmall: Say(card, PanelState.Refused, "Conveyor too narrow"); break;
+                case ExtrudeStall.ConveyorFull: Say(card, PanelState.Wants, "Conveyor full"); break;
+                case ExtrudeStall.ConveyorCut: Say(card, PanelState.Fault, "Conveyor cut"); break;
+                case ExtrudeStall.NoOrders: Say(card, PanelState.Idle, "Waiting for orders"); break;
+                default: Say(card, st.Busy ? PanelState.Working : PanelState.Idle, st.Busy ? "Cutting" : "Waiting"); break;
+            }
+        Amount(card, 1, "Offcut ", st.Amount, RecyclingTable.Current.NameOf(st.Material));
+        if (st.InAmount > 0)
+            card.Add(1, " +0.").Add(1, st.InAmount);
+        card.Add(2, st.OnBed ? "Blank on the bed" : "Bed empty");
+        if (p.Orders != null)
+            WorkOrders.FillQueue(p, card, 3);
+        else
+            card.Add(3, "No orders: a designer, a terminal or a bill");
+        card.Bar = st.Busy ? st.Progress / 100f : -1;
     }
 
     private static void Extruder(Construct c, int part, ConstructPartDef d, CStore st, PanelCard card)

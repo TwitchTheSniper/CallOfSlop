@@ -1349,6 +1349,8 @@ public static class ConstructPress
         var row = RowFor(rows, c, part);
         var die = DieIn(c, part);
         card.Add(0, d.Name);
+        if (ConstructConveyor.Out(c, part) >= 0)
+            card.Add(0, " -> conveyor"); // (what it makes rides away on its Piece out: on its way, not lost; sized parts phase 4 notes)
         if (d.IsLathe)
             card.Add(1, "Cuts: ").Add(1, row == null ? "nothing" : row.Output.Name);
         else
@@ -1417,6 +1419,8 @@ public static class ConstructPress
         var state = d.IsLathe ? row == null ? "nothing chosen" : "cuts " + row.Output.Name : die < 0 ? "no die" : c.Parts[die].D.Name;
         if (st.Items > 0)
             state += $", tray {st.Items}";
+        if (ConstructConveyor.Out(c, part) >= 0)
+            state += ", what it makes leaves on its Piece out conveyor";
         string? problem = p.Broken ? "wrecked"
             : st.Held ? "held off by its Run wire"
             : st.Busy ? null
@@ -1453,7 +1457,7 @@ public static class ConstructPress
         var h = 17;
         for (var b = 0; b < c.Parts[part].D.PressBays.Length; b++)
             h = h * 31 + (PieceIn(c, part, b) is var i and >= 0 ? (int)c.Parts[i].D.ExKey.Stable() : 0);
-        return h * 31 + (DieIn(c, part) is var k and >= 0 ? c.Parts[k].Def : 0);
+        return (h * 31 + (DieIn(c, part) is var k and >= 0 ? c.Parts[k].Def : 0)) * 2 + (ConstructConveyor.Out(c, part) >= 0 ? 1 : 0); // (and whether a Piece out conveyor leads away)
     }
 
     private static string Spec(PressBaySpec s) => $"{RecyclingTable.Current.NameOf(s.Materials[0])} {SectionName(s.Sections[0]).ToLowerInvariant()}";

@@ -572,6 +572,7 @@ public sealed partial class ConstructPartDef
     public bool EngineModular; // a modular engine's flywheel ("engine": {"modular": size}): its numbers come from the pieces on its crank (ConstructEngine.cs)
     public EnginePiece Piece; // a modular engine's piece kind (the flywheel: Output)
     public byte PieceSize; // Small 0, Medium 1, Large 2, Capital 3
+    public float PieceScale; // its scale (sized-parts design 6.1): 0 on a file piece, read as its class's (EngineRules.ScaleOf); a pressed piece's from its blank (phase 5)
     public float PiecePower = 1f, PieceThirst = 1f, PieceSpool; // a fuel system's or booster's multipliers, a turbo's lag
     public int SmokeSocket = -1; // the socket smoke leaves by (a stack's top, an exhaust's top, a head)
     public bool HasEngineBoxes; // boxes that pump or spin (the renderer skips the rest)
@@ -686,6 +687,8 @@ public sealed partial class ConstructPartDef
     public int RackCount;
     public Vector3 RackHoldMin, RackHoldMax; // ...the box its pieces pack into, in its own frame (storage.pieces.hold; ConstructRackPack.cs)
     public bool IsPanelFormer; // a Panel Former (also IsExtruder and IsWheelFormer; ConstructPanelFormer.cs): it forms named panels from its bin, by order
+    public bool IsLaserCutter; // a Laser Cutter (also IsPanelFormer, IsExtruder and IsWheelFormer; ConstructLaserCutter.cs): it cuts a formed panel or flat stock to a cut key, by order; its bin is its offcut
+    public float CutKw, CutMaxHeight; // ...its cutting power (kW, the time law's) and the tallest blank its bed takes (m)
     public bool IsWheelFormer; // a Wheel Former (also IsExtruder; ConstructExtruder.cs): its die is a hub and its piece a wheel
     public Vector2 ExtWheelMax, ExtWheelStart; // ...the biggest and the first wheel (metres wide, across)
     public bool IsExtrusion; // a piece an Extruder made (ConstructExtrusion.cs): not from a file

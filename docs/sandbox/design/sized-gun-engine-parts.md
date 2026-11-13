@@ -155,7 +155,7 @@ So a Rifle Receiver pressed at 40x40x80 with a 20 cm barrel of 5 calibres has **
 Rifle Receiver with a Gun Barrel**, and the preset is the file part. The top, 6, is the merge's `maxSize`. Code:
 `ConstructPartDef.GunScale` (1 on files), `ConstructMerge.ScaleGun(ref CGun, WeaponDef, float n)` and
 `ReceiverMergeRules.Times(float n, float power)`; `BuildReceiver` calls `ScaleGun` when `GunScale x N != 1`. The sound
-steps (`g.MergeN`) take `round(s)`. The mass is the blank's plus bay 2, not `partMass`.
+steps (`g.MergeN`) take `round(s)`. The mass is the merge's: the file's times s to `partMass` (the user, 2026-11-13; phase 3 notes).
 
 ### 4.3 Sized receivers and merging
 

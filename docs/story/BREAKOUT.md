@@ -13,6 +13,11 @@ Built in slices, one PR each:
 3. **The spaceport**: the guards, the deaths and their last words into the Logbook ("The spaceport" below).
 4. **The ship**: the survivors board the Ministry Courier and leave ("The ship" below).
 
+**A lane of its own.** The break-out's storylets are in the `side` bucket (Story/Storylets/Breakout.json): a player has
+one side storylet at a time beside whatever the A and B plots (a Ministry duty, the main quest) are running, so the
+convicts can start on them at any point (STORY.md "Storylets"). Before this they waited behind the first duty and never
+began.
+
 ## The crew
 
 Four convicts in the Penal Colony cast (`Story/Casts/PenalColony.json`), in the Ministry's boiler suit

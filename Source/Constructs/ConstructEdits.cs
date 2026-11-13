@@ -511,7 +511,13 @@ public sealed partial class ConstructEdits
                 var def = world.RemovePart(c, h.Part);
                 if (image)
                     MirrorRemove(world, player, ref h, from, imageDef, imagePos, eye);
-                if (def.PhysicsOnly && !wrecked)
+                if (def.RuntimeMade && !wrecked && Inventory != null && (salvage || !InfiniteParts) && !Survival && Inventory.Of(player).Add(def.Id))
+                {
+                    // A made part (an extrusion, a pressed or cut part...) is counted the way catalogue parts are, never held
+                    // (docs/sandbox/design/inventory-run-time-parts.md phase 2); 64 kinds full, it is cut free as below.
+                    return $"ok: {PartRef.Shown(def)} {(salvage ? "salvaged" : "taken back")} from construct {from} into the inventory ({Inventory.Of(player).Count(def.Id)})";
+                }
+                if ((def.PhysicsOnly || def.RuntimeMade) && !wrecked) // (a made part is always a body: the user's answer 1)
                 {
                     // Decision 21: a physics-only part is never an item: it is cut free as a body where it was.
                     if (DropLoose(world, def, where, q * Rot24.Quat(partRot)) is { } freed)
@@ -728,20 +734,24 @@ public sealed partial class ConstructEdits
             return "no such part";
         if (def.CreativeOnly && !InfiniteParts)
             return $"the {def.Name} is creative-only (a Zombies-economy part)";
-        if (def.PhysicsOnly)
+        if (def.PhysicsOnly || def.RuntimeMade)
         {
-            // Decision 21: the creative inventory spawns a physics-only part as a body in front of you (never into the hands).
+            // Decision 21: the creative inventory spawns a physics-only part as a body in front of you (never into the hands). A made part
+            // (a lofted or cut panel, a rack: not every one is physics-only by its own rule) is always a body too: the user's answer 1,
+            // docs/sandbox/design/inventory-run-time-parts.md.
             if (world == null || eye is not { } e)
                 return PhysicsOnlyRefusal(def, "be carried");
-            var counted = !InfiniteParts && Inventory != null;
-            if (counted && Inventory!.Of(player).Count(def.Id) == 0 && net != 0)
+            if (def.RuntimeMade && Inventory == null)
+                return $"no {PartRef.Shown(def)} in your inventory";
+            var counted = (!InfiniteParts || def.RuntimeMade) && Inventory != null; // (a made part is never endless: it comes out of the count, creative too)
+            if (counted && Inventory!.Of(player).Count(def.Id) == 0 && net != 0 && !def.RuntimeMade)
                 return PhysicsFromNetwork(world, player, def, e, yaw, net);
             if (counted && !Inventory!.Of(player).Take(def.Id))
-                return $"no {def.Name} in your inventory (salvage one)";
+                return $"no {PartRef.Shown(def)} in your inventory (salvage one)";
             var why = SpawnInFront(world, player, def, e, yaw, out _);
             if (why != null && counted)
                 Inventory!.Of(player).Add(def.Id);
-            else if (why == null && InfiniteParts)
+            else if (why == null && InfiniteParts && !def.RuntimeMade)
             {
                 h.Held = ConstructParts.None; // (creative: a new pick replaces what the hands hold; parts are endless, so it just goes back, never dropped)
                 h.Edit = EditKind.None;

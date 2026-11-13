@@ -43,7 +43,7 @@ public sealed class EngineSounds
             Body[slot] = c.Id;
             At[slot] = at;
             Variant[slot] = Synth.EngineLoopVariant(e.Cylinders, e.Misfiring + e.Wrecked > 0);
-            Scale[slot] = rules.Scale[e.Size];
+            Scale[slot] = e.Scale; // (the crank's own scale: sized-parts design 6.1)
             // The firing rate in the loop follows the rpm; a big engine turns slowly and sounds it.
             Pitch[slot] = MathF.Max(c.Rpm, 1f) / Synth.EngineLoopRpm;
             Gain[slot] = Math.Clamp((0.35f + 0.65f * c.EngineLoad) * (0.45f + 0.05f * MathF.Min(e.Cylinders, 12)), 0, 1);

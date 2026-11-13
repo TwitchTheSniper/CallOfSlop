@@ -39,7 +39,7 @@ public static class ConstructPanelFormer
     {
         ConstructPartDef? best = null;
         foreach (var d in ConstructParts.All)
-            if (d.IsPanelFormer && Fits(d, panel) && (best == null || d.ExtWheelMax.Y < best.ExtWheelMax.Y))
+            if (d.IsPanelFormer && !d.IsLaserCutter && Fits(d, panel) && (best == null || d.ExtWheelMax.Y < best.ExtWheelMax.Y))
                 best = d;
         return best?.Name;
     }

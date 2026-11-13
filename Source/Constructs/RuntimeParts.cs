@@ -24,6 +24,7 @@ public static class RuntimeParts
 
     private static readonly List<WeakReference<ConstructWorld>> Worlds = new();
     private static readonly List<WeakReference<ConstructEdits>> Hands = new();
+    private static readonly List<WeakReference<SandboxInventory>> Counted = new(); // (players' counted inventories: made parts by id, phase 2 of inventory-run-time-parts.md)
     private static readonly object TrackGate = new();
     private static bool[] _mark = [];
     private static long _nextSweep, _nextCheck, _lastWarn = -WarnEveryMs;
@@ -35,6 +36,8 @@ public static class RuntimeParts
     internal static void Track(ConstructWorld w) => Add(Worlds, w);
 
     internal static void Track(ConstructEdits e) => Add(Hands, e);
+
+    internal static void Track(SandboxInventory inv) => Add(Counted, inv);
 
     private static void Add<T>(List<WeakReference<T>> list, T item) where T : class
     {
@@ -208,6 +211,10 @@ public static class RuntimeParts
                         Mark(h.HeldGone);
                         Mark(h.MagFor);
                     }
+            foreach (var r in Counted)
+                if (r.TryGetTarget(out var inv))
+                    for (var k = 0; k < inv.MadeN; k++)
+                        Mark(inv.MadeDef[k]);
         }
     }
 

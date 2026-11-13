@@ -15,6 +15,9 @@ public sealed partial class Ui
 {
     public bool DesignerOpen { get; private set; }
 
+    /// <summary>(Tools: the window tool's design report) The linked formers as the window counts them, its size limit's words and the fit list.</summary>
+    public string DesignerLinks => $"{_pdFormers} former(s); {_pdLimit}; fits [{string.Join("; ", _pdFits)}]";
+
     /// <summary>The preview's rectangle in window points (min, max) as drawn last frame; zero size: none.</summary>
     public (float2 Min, float2 Max) DesignerView { get; private set; }
 
@@ -225,7 +228,7 @@ public sealed partial class Ui
         for (var i = 0; i < net.MachineN; i++)
         {
             var d = c.DefOf(net.Machines[i]);
-            if (!d.IsPanelFormer)
+            if (!d.IsPanelFormer || d.IsLaserCutter) // (a cutter forms nothing: phase 4 lists it for cut designs)
                 continue;
             _pdFormers++;
             if (d.ExtWheelMax.Y > maxL)
@@ -300,7 +303,7 @@ public sealed partial class Ui
         {
             var m = net.Machines[i];
             var d = c.DefOf(m);
-            if (!d.IsPanelFormer)
+            if (!d.IsPanelFormer || d.IsLaserCutter)
                 continue;
             seen++;
             string? why = null;

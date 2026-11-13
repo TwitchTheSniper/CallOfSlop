@@ -48,7 +48,7 @@ public static class EngineFx
         var hz = DrawnHz(c, e);
         c.EngineAngle = (c.EngineAngle + hz * MathF.Tau * dt) % (MathF.Tau * 1024);
         // The shake: a big engine rocks at idle and smooths out as it revs; a misfiring one lurches.
-        var scale = EngineRules.Current.Scale[e.Size];
+        var scale = e.Scale;
         var rough = 1f - Math.Clamp(c.Rpm / MathF.Max(1, c.EngineDef.PeakRpm), 0, 1) * 0.7f;
         var amount = 0.0035f * scale * (0.5f + 0.25f * MathF.Min(e.Cylinders, 8) / 4f) * rough * (e.Misfiring + e.Wrecked > 0 ? 1.6f : 1f);
         c.EngineShake = new Vector3(MathF.Sin(c.EngineAngle * 2.3f), MathF.Sin(c.EngineAngle * 3f + 1f), MathF.Sin(c.EngineAngle * 1.7f + 2f)) * amount;

@@ -123,6 +123,7 @@ public sealed class WorldPlayer
     public ConstructTool Tool;
     public ushort Held = ConstructParts.None; // the part in the hands (this run's id)
     public (ushort Def, ushort Count)[] Parts = [];
+    public (string Key, ushort Count)[] Made = []; // made parts counted in the inventory, by key (an id could be swept while they are away: inventory-run-time-parts.md phase 2)
     public (byte Material, ushort Count)[] Materials = [];
     public CStore Pack = new();
     public string[] Builds = []; // the built weapons in their slots, as text ("": none)
@@ -236,6 +237,7 @@ public static class WorldStores
         to.JobTicks = from.JobTicks;
         to.JobFull = from.JobFull;
         to.JobAmount = from.JobAmount;
+        to.OnBed = from.OnBed;
         to.JobMaterial = from.JobMaterial;
         to.MixN = from.MixN;
         if (from.MixN > 0)

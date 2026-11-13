@@ -995,7 +995,7 @@ public static class ConstructConveyor
         }
         if (td.IsPanelFormer)
         {
-            if (!ConstructPanelFormer.TakeFromConveyor(world, c, to, d)) // (extruded sheet into its bin)
+            if (!(td.IsLaserCutter ? ConstructLaserCutter.TakeFromConveyor(world, c, to, d) : ConstructPanelFormer.TakeFromConveyor(world, c, to, d))) // (extruded sheet into its bin; a cutter's blank onto its bed)
                 return false;
             ConstructLogisticsPlan.Arrived(world, c, to, r.Tag, d); // (a chained panel order's sheet: it counts for its link)
             return true;

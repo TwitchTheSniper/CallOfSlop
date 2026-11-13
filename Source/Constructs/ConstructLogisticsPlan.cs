@@ -216,7 +216,7 @@ public static class ConstructLogisticsPlan
         var md = c.DefOf(m);
         if (md.IsPress && !md.IsLathe)
             inputs = PressInputs(c, m, st, product, ask, kinds, wants, inside);
-        else if (md.IsPanelFormer)
+        else if (md.IsPanelFormer && !md.IsLaserCutter) // (a cutter's blanks by chain: phase 5)
             inputs = FormerInputs(c, net, st, product, ask, kinds, wants, inside);
         else if (md.IsAssembler && AssemblingTable.Current.Of(product) is { Parts.Length: > 0 } r)
         {
@@ -325,7 +325,7 @@ public static class ConstructLogisticsPlan
             var id = world.NextChainId++;
             if (world.NextChainId == 0)
                 world.NextChainId = 1;
-            if (id == 0)
+            if (id is 0 or ConstructLaserCutter.BedTag) // (a Laser Cutter's want rides with that tag: ConstructLogistics.WantAt)
                 continue;
             if (Find(world, id) < 0)
                 return id;

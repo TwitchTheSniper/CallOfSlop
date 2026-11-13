@@ -298,6 +298,10 @@ public sealed partial class Game
             if (inv.Parts[i] > 0)
                 parts.Add(((ushort)i, inv.Parts[i]));
         rec.Parts = parts.ToArray();
+        var made = new (string, ushort)[inv.MadeN];
+        for (var k = 0; k < inv.MadeN; k++)
+            made[k] = (ConstructParts.Def(inv.MadeDef[k]).Name, inv.MadeCount[k]); // (made parts by key: a run-time part's name is its key)
+        rec.Made = made;
         var mats = new List<(byte, ushort)>();
         for (var i = 0; i < inv.Materials.Length; i++)
             if (inv.Materials[i] > 0)
@@ -890,6 +894,9 @@ public sealed partial class Game
         inv.Clear();
         foreach (var (def, count) in rec.Parts)
             inv.Parts[def] = count;
+        foreach (var (key, count) in rec.Made)
+            if (ConstructParts.Find(key) is { } made)
+                inv.Set(made.Id, count); // (made again from its key if it was swept; past 64 kinds the rest are left out)
         foreach (var (material, count) in rec.Materials)
             inv.Materials[material] = count;
         inv.Version++;
