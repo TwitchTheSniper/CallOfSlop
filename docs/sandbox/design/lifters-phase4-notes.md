@@ -110,3 +110,6 @@ No `ConstructLogistics*.cs` file was changed: phase 4's carries need nothing of 
   whole key, and reads it back through the same names table as a rack's pieces. Read in the code; in runs, a saved and loaded world kept a
   loose extruded rod at the Assembler's out and the arm carried it after the load, and an Engine in a hand at the save loaded in the hand
   and was put on the pad. An extruded piece in a hand at a save was not caught.
+- **Checks after review**: `--gen-parts all --check` passes; sections run by name, all pass (0 failures, 126 s): Assembling, Assembling
+  network, Extruder, Extruder network, Press stock, Construct logic, Construct links and power, Interaction sweep, Construct storage,
+  No z-fighting, Compound collision.
