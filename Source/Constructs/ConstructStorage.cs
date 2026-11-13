@@ -1389,6 +1389,8 @@ public sealed partial class ConstructWorld
                         heap.Rebuild();
                         spilled++;
                     }
+                    else
+                        lost++; // (the world is full: counted, as a loose part's is)
                 }
             }
             Heap(st.Amount, st.Material, box ? Vector3.Zero : (cd.FillMin + cd.FillMax) * 0.5f);
