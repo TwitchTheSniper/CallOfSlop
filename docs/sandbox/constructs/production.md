@@ -266,6 +266,38 @@ Design: `docs/sandbox/design/press-rework.md`. A die in `Pressing.json` `"dies"`
 
 Choices made (the developer may change them): one part a press, not a frame you add bays to; a Small press has 2 bays and no recipe uses a third yet; a die only in a press of its own class, never a bigger one; a piece's size is its smaller side; a stroke's cost is a length, not a mass, so a stamped part doesn't weigh what it used; the Housing family is new, with no use yet beyond a box with sockets, and the Assembler can build them too; chutes carry pieces only from an Extruder (a shelf can't hold a piece, since a piece is physics-only); the ram strokes while it stamps (a "work" box, drawn only: [Machine look](look.md#machine-look)).
 
+### A press's orders (Press rework phase 4)
+
+A Press (not a Die Lathe) takes [work orders](#work-orders) (`WorkOrders.PressRefusal`, the press's side in `ConstructPress.SizedRefusal`
+and `WorkSized`). Notes and open choices: `docs/sandbox/design/press-phase4-notes.md`. Protocol 269.
+
+- **An order** is a pressed part by its key (`WorkOrder.Name` = `Pressed Part (...)`, the named shape 255 on the wire and in saves, as a
+  panel's; `WorkOrders.PressedOrder`), or a catalogue part that is a die's preset (by its id, as an Assembler's). `Pressed.SpecOf` reads a
+  key once into its die, pattern, blank and preset, then looks it up, so a press asks every step and allocates nothing.
+- **Refusals:** `the Press has no die: this order needs a Bracket Die`, `the Press holds a Button Die: this order needs a Drive Die`,
+  `a Medium Press's order: the blank is 0.80 m across`, `not a pressed part`, a full queue. An Extruder or an Assembler given a pressed key:
+  `the Extruder presses nothing: L bracket 0.2 x 0.2 x 0.3 m metal is a Press's order`.
+- **The head order rules the press:** its pattern (the press's own Pattern setting is left as it is), and a bay takes only its blank
+  (`BayRefuse.Order`, "not its order"); the bay card names that blank and says "For its order". Each part pressed counts on the head
+  order (`WorkOrders.Made`) and on its console's Made count. A press has no Clear button, so a queue that runs out goes and the press is
+  back on its own Pattern (`PressStall.WantsOrder` shows only for a moment). The line console's detail line adds `, order 1/2`.
+- **The kit hopper** wants the head order's kit before its blank comes (`KitWanted`), and a kit part riding in at any bay's Piece in goes
+  to the hopper (`TakeFromConveyor`).
+- **The Crafting Terminal** lists, per linked press, its fitted die's presets by their catalogue parts (`now` when the blank is in linked
+  stock or a bay and the kit is in the hopper or stock; `through a chain` when a linked Extruder can make the blank and the kit's maker is
+  linked: `ConstructCrafting.PressMissing`). Parts "to size" are not listed: bills and blueprints order those. Pressed parts in linked
+  stores are listed by key ("in stock"). A queued order's row says what the press lacks, the same text.
+- **Chains** (`ConstructLogisticsPlan.PressInputs`): a terminal's order queued at a press asks for its blank (a piece line at an Extruder,
+  by key) and, when the kit is a part, its kit (at an Assembler); both ride to the press, tagged, and count on arrival. Bulk kits are not
+  ordered (they come by chute, as an Assembler's materials). A chain line's kind goes on the wire by `ConstructStorage.WriteDef`, so a
+  run-time blank reaches a client by its key.
+- **Bills** (`ConstructBill`): `Bill.Pressed` (pressed keys and counts), each one's blank added to `Pieces` and its kit to `Kits`; a
+  catalogue part with a preset and no Assembler recipe adds its blank and kit too and goes to the console as a Press's order. Blueprint bill
+  line: `{"step": n, "pressed": "Pressed Part (bracket.l l-angle 20x20x30 metal)", "count": 3}`. `--bill` prints a "Pressed" group (die,
+  pattern, press class, blank, bay 2, seconds), a "Kits (bay 2)" line, and catalogue lines `pressed (Bracket Die, blank ...)`.
+- **The recipe picker** on a press is unchanged: its tiles set the press's Pattern (phase 3b's Recipe button). Orders come from a
+  terminal, a console's bill or a building station (`ConstructStation.OrderFor` gives a pressed key its press order).
+
 ## The Panel Former
 
 Bodywork made by a machine (the user, 2026-11-11: a factory builds whole vehicles, every exact part; "larger panels ... large curves or
