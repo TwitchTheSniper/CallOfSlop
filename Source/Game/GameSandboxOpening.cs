@@ -85,7 +85,7 @@ public sealed partial class Game
 
     /// <summary>The warden's body (the cast's warden), or null.</summary>
     public Player? OpeningWarden() =>
-        Story is { } s && s.World.Find(OpeningScript.Current.Warden) is var e and >= 0 ? StoryBodyOf(e) : null;
+        Story is { } s && OpScript.Warden.Length > 0 && s.World.Find(OpScript.Warden) is var e and >= 0 ? StoryBodyOf(e) : null;
 
     /// <summary>Is this player in the opening now (server)?</summary>
     public bool OpeningHas(byte id) => _op[id].Stage != OpeningStage.None;
@@ -108,6 +108,7 @@ public sealed partial class Game
         OpeningLocal = OpeningStage.None;
         OpeningCaption = OpeningSubtitle = "";
         _storyMiddleOf = null; // (the people's middle is the colony's when there is one)
+        _start = null; // (the story start, worked out again on this match's map: GameStoryStart.cs)
     }
 
     /// <summary>
@@ -123,13 +124,16 @@ public sealed partial class Game
     /// </summary>
     private Vector3 OpeningBuild(Vector3 from)
     {
-        var script = OpeningScript.Current;
+        var script = OpScript;
         if (script.Problem.Length > 0)
         {
             Log($"[opening] {script.Problem}: no opening");
             return from;
         }
         _opOn = true;
+        Log($"[opening] the {PlayedStart.Name} start on {World.Map.Name} (GameStoryStart.cs)");
+        if (script.Colony.Length == 0)
+            return OpeningBuildAlone(script, from);
         if (SandboxKitPiece(script.Colony, from, level: 1.2f) is not { } colony)
         {
             Log($"[opening] no level ground for the {script.Colony} near {from}: everyone wakes at the start");
@@ -165,6 +169,26 @@ public sealed partial class Game
         ColonySiteLog();
         Log($"[opening] the colony is construct {colony.Id} at {_opMiddle.X:0},{_opMiddle.Z:0}; the crash site at {_opCrash.X:0},{_opCrash.Z:0}");
         return _opMiddle;
+    }
+
+    /// <summary>
+    /// Server, an opening with no colony (a start that isn't the penal colony's, docs/story/STARTS.md): the players wake
+    /// at the start, the wreck (when the script names one) lies out past them, and the cast (when it names one) joins the
+    /// story. None of the Ministry's colony, quarry, depot or data centres is built: those are the penal colony start's.
+    /// </summary>
+    private Vector3 OpeningBuildAlone(OpeningScript script, Vector3 from)
+    {
+        _opMiddle = _opGate = _opWake = from;
+        _opCrash = from + new Vector3(script.CrashFrom * 0.5f, 0, 0);
+        if (script.Wreck.Length > 0 && SandboxKitPiece(script.Wreck, from, script.CrashFrom, script.CrashTo) is { } wreck)
+        {
+            _opCrash = wreck.WorldCom;
+            Constructs.Events.Add($"opening: the wreck ({script.Wreck}) as construct {wreck.Id}");
+        }
+        if (script.Cast.Length > 0 && Story is { } s && StoryData.People.Cast(script.Cast) is { } cast)
+            Log($"[opening] the {cast.Name} cast: {s.Agents.AddCast(cast, StoryPlace(), scripted: false)} people");
+        Log($"[opening] no colony: everyone wakes at {from.X:0},{from.Z:0}; the crash site at {_opCrash.X:0},{_opCrash.Z:0}");
+        return from;
     }
 
     /// <summary>The colony's spots from its pose (the blueprint's cells: docs/story/OPENING.md).</summary>
@@ -244,7 +268,7 @@ public sealed partial class Game
             ref var run = ref _op[p.Id];
             run = g; // (the same beat, begun at the same time)
             Log($"[opening] {p.Name}: with {lead.Name}'s group ({OpeningGroupSize(g.Group)} now)");
-            OpeningSend(p, run.Stage, (float)(now - run.From), run.Time, run.Focus, OpeningScript.Current.Beat(run.Stage).Caption, "");
+            OpeningSend(p, run.Stage, (float)(now - run.From), run.Time, run.Focus, OpScript.Beat(run.Stage).Caption, "");
             return;
         }
         Log($"[opening] {p.Name}: the placeholder crash, then the cell block");
@@ -264,7 +288,7 @@ public sealed partial class Game
     private void OpeningBeat(Player p, OpeningStage stage, double now)
     {
         ref var run = ref _op[p.Id];
-        var beat = OpeningScript.Current.Beat(stage);
+        var beat = OpScript.Beat(stage);
         run.Stage = stage;
         run.From = now;
         run.Time = beat.Time;
@@ -276,16 +300,16 @@ public sealed partial class Game
     /// <summary>Server: the beat's lines due by now, said to this player only (in their chat, over the speaker's head).</summary>
     private void OpeningLines(Player p, ref OpeningRun run, double now)
     {
-        var beat = OpeningScript.Current.Beat(run.Stage);
+        var beat = OpScript.Beat(run.Stage);
         while (run.Line < beat.Lines.Length && now - run.From >= beat.Lines[run.Line].At)
         {
             var line = beat.Lines[run.Line++];
             if (line.Group && OpeningGroupSize(run.Group) < 2)
                 continue; // (a line for friends found together)
             var speaker = OpeningWarden(); // (every line is the warden's since the placeholder)
-            var name = speaker?.Name ?? OpeningScript.Current.Warden;
+            var name = speaker?.Name ?? OpScript.Warden;
             OpeningSay(p, speaker, name, line.Text, now);
-            OpeningSend(p, run.Stage, (float)(now - run.From), run.Time, run.Focus, OpeningScript.Current.Beat(run.Stage).Caption, name.Length > 0 ? $"{name}: {line.Text}" : line.Text);
+            OpeningSend(p, run.Stage, (float)(now - run.From), run.Time, run.Focus, OpScript.Beat(run.Stage).Caption, name.Length > 0 ? $"{name}: {line.Text}" : line.Text);
         }
     }
 
@@ -330,6 +354,7 @@ public sealed partial class Game
         OpeningSend(p, OpeningStage.None, 0, 0, default, "", "");
         Log($"[opening] {p.Name}: {(skipped ? "skipped" : "awake")} in the colony");
         SandboxTellKit(p);
+        StartStanding(p); // (the start's standing with its faction, when it sets one: GameStoryStart.cs)
         TutorialBegin(p.Id);
     }
 
@@ -519,9 +544,9 @@ public sealed class OpeningScript
                 t.CrashFrom = Math.Clamp(cf.GetSingle(), 10, 500);
             if (root.TryGetProperty("crashTo", out var ct))
                 t.CrashTo = Math.Clamp(ct.GetSingle(), t.CrashFrom + 5, 600);
-            if (ConstructBuild.FindBlueprint(t.Colony) == null)
+            if (t.Colony.Length > 0 && ConstructBuild.FindBlueprint(t.Colony) == null)
                 throw new FormatException($"no blueprint named \"{t.Colony}\" (the colony)");
-            if (ConstructBuild.FindBlueprint(t.Wreck) == null && ConstructParts.Find(t.Wreck) == null)
+            if (t.Wreck.Length > 0 && ConstructBuild.FindBlueprint(t.Wreck) == null && ConstructParts.Find(t.Wreck) == null)
                 throw new FormatException($"no blueprint or part named \"{t.Wreck}\" (the wreck)");
             var beats = root.GetProperty("beats");
             foreach (var (key, stage) in new[] { ("placeholder", OpeningStage.Out), ("wake", OpeningStage.Wake) })

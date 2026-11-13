@@ -735,6 +735,20 @@ public sealed partial class StoryFactions
     /// <summary>A party every faction hunts: it has done something none forgives (an Atrocity: the world-wide state on top of each faction's own).</summary>
     public bool Notorious(int party) => R.Notorious >= 0 && W.Valid(party) && W.Quality(party, R.Notorious) > 0;
 
+    /// <summary>
+    /// A story start's standing (docs/story/STARTS.md): the player (or their group) begins on <paramref name="s"/> with the
+    /// faction, when it has made nothing of them yet. True: set.
+    /// </summary>
+    public bool StartStanding(int f, int who, int s)
+    {
+        var id = EntityOf(f);
+        var party = Party(who);
+        if (id < 0 || !W.Valid(party) || Standing(f, party) != 0)
+            return false;
+        SetStanding(id, party, s);
+        return true;
+    }
+
     private void SetStanding(int id, int party, int s)
     {
         s = Math.Clamp(s, -FactionRules.MaxStanding, FactionRules.MaxStanding);

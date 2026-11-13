@@ -29,8 +29,8 @@ Code: `Source/Game/GameSandboxOpening.cs` (the server's beats, the colony, the w
   they go through the beats on that clock and everyone wakes in the cell block together, each to their own side, and starts
   the induction as a group (docs/sandbox/TUTORIAL.md, "Together"). Anyone arriving later has a card of their own, then joins
   whoever is on their step.
-  **STORY** on the main screen starts it alone: Sandbox survival on the story's home planetoid (`Game.StoryHomeMap`,
-  Glacier in Frostreach, the cold planet: Karl, 2026-11-12), in a saved world (a new one named Story when none is picked), with no bots. Multiplayer has
+  **STORY** on the main screen starts it alone: Sandbox survival on the chosen start's planetoid (docs/story/STARTS.md;
+  the default start's is Glacier in Frostreach, the cold planet: Karl, 2026-11-12), in a saved world (a new one named Story when none is picked), with no bots. Multiplayer has
   **HOST STORY CO-OP**: the host's lobby opens on the same map and mode, where they pick or make the saved world; friends
   join from the server browser or the invite code. The other systems' worlds are a Jump Drive away in the same saved world
   (docs/planets/WORLDS.md).

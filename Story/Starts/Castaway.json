@@ -1,0 +1,17 @@
+{
+  // PLACEHOLDER start (Karl, 2026-11-13: "allow it such that there may be different starts"): proves a start can begin on
+  // another planetoid, as someone else, with another faction's standing and no colony or induction. Not a storyline: replace
+  // or remove it when a real second start is written (docs/story/STARTS.md).
+  "format": "call-of-slop-start/1",
+  "name": "Highland castaway",
+  "order": 10,
+  "placeholder": true,
+  "character": "Castaway",
+  "background": "a salvage pilot who came down in the hills of Caledon, where Clan MacSlop take in strays",
+  "about": "PLACEHOLDER: you crash alone on Caledon, the green world of the Glenmore system, with your wreck and the start kit and nobody to tell you what to do. Clan MacSlop think well of you already.",
+  "map": "Caledon",
+  "opening": "Castaway.json", // a card and waking beside the wreck: no colony, no cast
+  "tutorial": "none",
+  "faction": "Clan MacSlop",
+  "standing": 20 // "Friend of the Clan" (Story/Factions/MacSlop.json tiers)
+}

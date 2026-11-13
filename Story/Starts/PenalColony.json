@@ -1,0 +1,17 @@
+{
+  // A story start (docs/story/STARTS.md; Game/StoryStarts.cs): where and as whom a new story world begins.
+  // The first and default start: the Ministry of Slop's penal colony on Glacier (Karl, 2026-11-12). Old saves, and survival
+  // worlds on other maps, play this one. Text is ASCII.
+  "format": "call-of-slop-start/1",
+  "name": "Ministry convict",
+  "order": 0,
+  "default": true,
+  "character": "Convict",
+  "background": "a stranger the Ministry of Slop pulled out of a wreck and booked as an inmate",
+  "about": "You crash on Glacier, the ice world of the Frostreach system, and wake in the Ministry of Slop's penal colony.",
+  "map": "Glacier", // the planetoid it begins on
+  "opening": "Opening.json", // Story/Opening: the placeholder crash card and waking in the colony's cell block ("none": no opening)
+  "tutorial": "Induction", // the warden's induction follows ("none": no tutorial)
+  "faction": "Ministry of Slop" // whose colony it is; "standing" (not set here) would start each player on that much with it
+  // "kit": not set: the shipped start kit (Constructs/SurvivalStart.json)
+}
