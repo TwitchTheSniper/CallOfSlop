@@ -1,0 +1,62 @@
+{
+  // What the break-out's four convicts say when a player talks to them (docs/story/BREAKOUT.md; the occasions are
+  // Lines/Colony.json's). Working people, cold, wary of a new face; the comedy is drier than the staff's and the stakes
+  // are real. A stranger gets nothing; a friend gets a little more.
+  "about": "the break-out's convicts answering a player in the penal colony",
+  "rules": [
+    // ---- Hello, first time ----
+    { "on": "Greeted", "if": "?me == 'Dot Pruett', ?me is Person",
+      "say": [ "Dot. Don't stand on the coal, they count it.", "Pruett. Dot. You're blocking my light. What light there is.", "Dot. Hello. Mind the shovel, it bites." ] },
+    { "on": "Greeted", "if": "?me == 'Wren Haskett', ?me is Person",
+      "say": [ "Oh. Hello. Wren. Sit, if you're sick. Stand, if you're not. Nobody checks.", "Wren Haskett. Don't shake, it's the bad arm." ] },
+    { "on": "Greeted", "if": "?me == 'Ambrose Thale', ?me is Person",
+      "say": [ "Ambrose. Come in, come in, the fire doesn't bite. Much.", "Thale. Ambrose Thale. Hands out, that's it. That's the only warm thing for a mile." ] },
+    { "on": "Greeted", "if": "?me == 'Hester Mossop', ?me is Person",
+      "say": [ "...Mossop.", "Hester. That's all you need.", "Mossop. You're standing where I was looking." ] },
+
+    // ---- Hello, again ----
+    { "on": "Chatted", "if": "?me == 'Dot Pruett', ?me is Person",
+      "say": [ "Still here? Grab a shovel or grab a fire.", "Coal doesn't move itself. Well, it does here. We move it.",
+               "Afternoon, {them.first}. Watch the barrow.", "Don't look at the gate when you talk to me. People notice." ] },
+    { "on": "Chatted", "if": "?me == 'Wren Haskett', ?me is Person",
+      "say": [ "Hello again. Nobody's been seen yet today. Nobody ever is.", "Sit down, {them.first}. Look poorly. It's restful.",
+               "You've a cough. No you haven't. You have now, if anyone asks." ] },
+    { "on": "Chatted", "if": "?me == 'Ambrose Thale', ?me is Person",
+      "say": [ "Ah, {them.first}. Pull up a bit of snow.", "Warm your hands. Warm your soul, if you've got one left.",
+               "Look at that sky. Nothing in it. Never has been. Funny." ] },
+    { "on": "Chatted", "if": "?me == 'Hester Mossop', ?me is Person",
+      "say": [ "Mm.", "You again.", "Keep walking, {them.first}. That's what walking's for." ] },
+    { "on": "Chatted", "if": "?me == 'Hester Mossop', ?me Likes ?them >= 25",
+      "say": [ "{them.first}. Pipe's warm. Stand there.", "Seen anything I should know?", "Good. You're still here. Stay boring." ] },
+
+    // ---- Any news? (nothing to say) ----
+    { "on": "NoNews", "if": "?me == 'Dot Pruett', ?me is Person", "say": [ "News is for people who get out. Ask me later.", "Coal's up. Spirits are down." ] },
+    { "on": "NoNews", "if": "?me == 'Wren Haskett', ?me is Person", "say": [ "The doctor's coming Thursday. He's been coming Thursday for a year.", "Nothing. I'd have seen it." ] },
+    { "on": "NoNews", "if": "?me == 'Ambrose Thale', ?me is Person", "say": [ "No news. Just the Light up there, watching.", "Nothing new under the Light." ] },
+    { "on": "NoNews", "if": "?me == 'Hester Mossop', ?me is Person", "say": [ "No.", "If I had news I wouldn't tell it standing here." ] },
+
+    // ---- What's this place? ----
+    { "on": "AskPlace", "if": "?me == 'Dot Pruett', ?me is Person", "say": [ "A coal heap with a fence round it. The fence is the expensive bit." ] },
+    { "on": "AskPlace", "if": "?me == 'Wren Haskett', ?me is Person", "say": [ "The infirmary step. Best seat in the colony. You see everyone." ] },
+    { "on": "AskPlace", "if": "?me == 'Ambrose Thale', ?me is Person", "say": [ "The end of the world, near enough. Nice and warm by this bin, though." ] },
+    { "on": "AskPlace", "if": "?me == 'Hester Mossop', ?me is Person", "say": [ "Somewhere you leave. One way or the other." ] },
+
+    // ---- What do you do here? ----
+    { "on": "AskSelf", "if": "?me == 'Dot Pruett', ?me is Person", "say": [ "Coal. From there to there. Then the barrow takes it back. Don't ask." ] },
+    { "on": "AskSelf", "if": "?me == 'Wren Haskett', ?me is Person", "say": [ "I wait to be seen. I'm very good at waiting. Ask anyone. They're waiting too." ] },
+    { "on": "AskSelf", "if": "?me == 'Ambrose Thale', ?me is Person", "say": [ "Keep this fire in. Somebody has to. The Ministry's forgotten we're cold." ] },
+    { "on": "AskSelf", "if": "?me == 'Hester Mossop', ?me is Person", "say": [ "I keep warm and I keep count." ] },
+
+    // ---- Any advice? ----
+    { "on": "AskAdvice", "if": "?me == 'Dot Pruett', ?me is Person", "say": [ "Never volunteer. Unless it's for the motor pool. Then always volunteer." ] },
+    { "on": "AskAdvice", "if": "?me == 'Wren Haskett', ?me is Person", "say": [ "Be kind to the sick. Nobody searches us, and we see everything." ] },
+    { "on": "AskAdvice", "if": "?me == 'Ambrose Thale', ?me is Person", "say": [ "Keep your feet dry and your eyes up. Something's wrong with that sky, mark me." ] },
+    { "on": "AskAdvice", "if": "?me == 'Hester Mossop', ?me is Person", "say": [ "Don't tell anyone anything. Start now." ] },
+
+    // ---- Goodbye ----
+    { "on": "Bye", "if": "?me == 'Dot Pruett', ?me is Person", "chance": 0.7, "say": [ "Off you go. Don't trip on the coal.", "Ta-ra." ] },
+    { "on": "Bye", "if": "?me == 'Wren Haskett', ?me is Person", "chance": 0.7, "say": [ "Look after yourself. Somebody has to.", "Bye now. Wrap up." ] },
+    { "on": "Bye", "if": "?me == 'Ambrose Thale', ?me is Person", "chance": 0.7, "say": [ "Come back when you're cold.", "Mind how you go." ] },
+    { "on": "Bye", "if": "?me == 'Hester Mossop', ?me is Person", "chance": 0.7, "say": [ "Mm." ] }
+  ]
+}

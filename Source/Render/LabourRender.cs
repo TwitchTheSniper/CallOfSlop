@@ -80,6 +80,10 @@ public static class LabourRender
     private const float WayStep = 0.5f;
 
     private static readonly Figure[] Figures = new Figure[MaxFigures];
+    private static readonly Figure[] Hands = new Figure[Game.LabourHandsMax]; // story people working in a gang (GameLabourHands.cs)
+    private static readonly Player?[] HandOf = new Player?[Game.LabourHandsMax];
+    private static readonly int[] HandLook = new int[Game.LabourHandsMax];
+    private static readonly bool[] HandIn = new bool[Game.LabourScenesMax]; // this frame: the gang's last inmate stands aside for a hand
     private static int _count;
     private static readonly Way?[] Ways = new Way?[Game.LabourScenesMax];
     private static readonly Vector3[] SceneUp = new Vector3[Game.LabourScenesMax], SceneRight = new Vector3[Game.LabourScenesMax], SceneFwd = new Vector3[Game.LabourScenesMax];
@@ -129,10 +133,16 @@ public static class LabourRender
         _flick = (float)(raw % 1000.0);
         SetFrustum(g.ViewProj);
         var cam = g.CameraPosition;
+        Array.Clear(HandIn);
+        for (var h = 0; h < game.LabourHandCount; h++)
+            if (game.LabourHandScene[h] < game.LabourCount && game.Players.TryGetValue(game.LabourHandPlayer[h], out var hp) && hp.Alive)
+                HandIn[game.LabourHandScene[h]] = true;
         for (var i = 0; i < _count; i++)
         {
             var f = Figures[i];
             ref readonly var s = ref game.LabourScenes[f.Scene];
+            if (HandIn[f.Scene] && f.Role == Role.Inmate && f.Slot == Math.Max((int)s.Inmates, 1) - 1)
+                continue; // (stood aside for the story person working in their place: DrawHands)
             // Posed again only so often past arm's length (the boxes are kept and drawn again in between).
             var d2 = Vector3.DistanceSquared(f.Drawn, cam);
             var lod = d2 < DetailRange * DetailRange ? (byte)4 : d2 < FullRange * FullRange ? (byte)3 : d2 < MidRange * MidRange ? (byte)2 : (byte)1;
@@ -182,8 +192,91 @@ public static class LabourRender
             else
                 DrawnFar++;
         }
+        DrawHands(g, game, t, raw, cam, alarm);
         for (var k = 0; k < game.LabourCount; k++)
             DrawProps(g, game.LabourScenes[k], k, cam);
+    }
+
+    /// <summary>
+    /// The story people working in a gang (GameLabourHands.cs): each drawn in their own body's look as the gang's last
+    /// inmate, where their body stands, posed like the rest (their own body isn't drawn meanwhile: Program.DrawPlayer).
+    /// </summary>
+    private static void DrawHands(Renderer g, Game game, double t, double raw, Vector3 cam, bool alarm)
+    {
+        for (var h = 0; h < game.LabourHandCount; h++)
+        {
+            var k = game.LabourHandScene[h];
+            if (k >= game.LabourCount || !game.Players.TryGetValue(game.LabourHandPlayer[h], out var p) || !p.Alive)
+                continue;
+            ref readonly var s = ref game.LabourScenes[k];
+            var f = Hands[h] ??= new Figure();
+            var look = HashCode.Combine(p.Id, p.Name, p.Look, p.Uniform, p.Color, k);
+            if (!ReferenceEquals(HandOf[h], p) || HandLook[h] != look || f.Scene != k)
+            {
+                HandOf[h] = p;
+                HandLook[h] = look;
+                BuildHand(f, p, k, s);
+            }
+            var pos = p.RenderPosition;
+            var d2 = Vector3.DistanceSquared(pos, cam);
+            if (d2 > FarRange * FarRange || !Visible(pos + SceneUp[k], 1.4f))
+                continue;
+            var lod = d2 < DetailRange * DetailRange ? (byte)4 : d2 < FullRange * FullRange ? (byte)3 : d2 < MidRange * MidRange ? (byte)2 : (byte)1;
+            var up = SceneUp[k];
+            var fwd = s.Kind is LabourKind.Huddle or LabourKind.Hammer ? StandInPath.Along(s.P0 - pos, pos) : SceneFwd[k];
+            if (fwd.LengthSquared() < 0.25f)
+                fwd = SceneFwd[k];
+            var right = Vector3.Normalize(Vector3.Cross(fwd, up));
+            var w = new Matrix4x4(right.X, right.Y, right.Z, 0, up.X, up.Y, up.Z, 0, -fwd.X, -fwd.Y, -fwd.Z, 0, pos.X, pos.Y, pos.Z, 1);
+            var pose = PoseOf(f, s, t, 0, 0, alarm);
+            f.N = 0;
+            _rec = f;
+            if (lod >= 2)
+            {
+                f.Torso.ShowDetail = f.Head.ShowDetail = lod == 4;
+                DrawFull(g, f, s, w, pose, right, mid: lod == 2);
+            }
+            else
+                DrawFar(g, f, w, pose, d2 < ToolRange * ToolRange);
+            _rec = null;
+            f.Drawn = pos;
+            f.PosedAt = raw;
+            f.Lod = lod;
+            for (var b = 0; b < f.N; b++)
+                g.Draw(f.M[b], f.C[b]);
+            Boxes += f.N;
+            if (lod >= 2)
+                DrawnNear++;
+            else
+                DrawnFar++;
+        }
+    }
+
+    /// <summary>A hand's figure: the gang's last inmate's place and pace, their own body's look (as Scene/Rigs/PlayerRig.cs builds it).</summary>
+    private static void BuildHand(Figure f, Player p, int k, in LabourScene s)
+    {
+        f.Scene = k;
+        f.Slot = Math.Max((int)s.Inmates, 1) - 1;
+        f.Role = Role.Inmate;
+        var key = 2166136261u; // (the name's own: the same stroke on every PC)
+        foreach (var ch in p.Name)
+            key = (key ^ ch) * 16777619u;
+        f.Rand = (key & 0xFFFF) / 65536f;
+        f.Rand2 = ((key >> 16) & 0xFFFF) / 65536f;
+        f.Grounded = true;
+        f.Beat = -1;
+        f.Extra = 0; // (no bandage: their own body has none when they get up)
+        f.N = 0;
+        f.Lod = 0;
+        var v = BodyModel.VariantFor(p);
+        var c = BodyModel.ColorsFor(p, v);
+        var u = BodyModel.UniformOf(p);
+        f.Hat = u?.Hat;
+        BodyModel.Build(f.Torso, f.Head, 0, v, c, f.Hat != null, u);
+        f.Legs = BodyModel.LegsFor(p);
+        f.Arms = BodyModel.ArmsFor(p);
+        f.Skin = c.Skin;
+        f.Cap = v.Headwear == Headwear.Hair ? c.Hair : c.Gear;
     }
 
     // ---- Building the figures ----------------------------------------------------------------------------------------

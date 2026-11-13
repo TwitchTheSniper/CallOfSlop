@@ -3,7 +3,7 @@
   // world with the colony (Game/GameSandboxOpening.cs). The one place is the host's world, so they live and work there
   // and have bodies round the colony. Serious world, funny people: by the book, underpaid, and very fond of forms.
   "name": "Penal Colony",
-  "about": "the Ministry of Slop's warden and three guards at the penal colony",
+  "about": "the Ministry of Slop's warden and three guards at the penal colony, and four of its convicts",
   "places": [
     { "name": "Penal Colony", "world": true }
   ],
@@ -16,6 +16,16 @@
       "qualities": { "Sociable": 80, "Honest": 55, "Brave": 30, "Vengeful": 20, "Gossipy": 85, "Greedy": 40, "Wealth": 6 } },
     { "name": "Officer Nettles", "about": "guard, new, keen, armed with a clipboard", "home": "Penal Colony", "works": "Penal Colony",
       "qualities": { "Sociable": 60, "Honest": 80, "Brave": 55, "Vengeful": 30, "Gossipy": 50, "Greedy": 15, "Wealth": 5 } },
+    // ---- Convicts who mean to leave (Storylets/Breakout.json, docs/story/BREAKOUT.md). They work in the gangs (Posts) and
+    //      trust slowly: none of them says the word "escape" to a stranger.
+    { "name": "Dot Pruett", "about": "convict on the boiler coal; drove the Ministry's ore haulers until she drove one into a Minister's pond", "home": "Penal Colony", "works": "Penal Colony",
+      "qualities": { "Sociable": 55, "Honest": 45, "Brave": 70, "Vengeful": 40, "Gossipy": 35, "Greedy": 25, "Wealth": 2 } },
+    { "name": "Wren Haskett", "about": "convict at sick parade, an arm that never quite heals; cleaned the Ministry Spaceport for eleven years", "home": "Penal Colony", "works": "Penal Colony",
+      "qualities": { "Sociable": 50, "Honest": 75, "Brave": 30, "Vengeful": 15, "Gossipy": 45, "Greedy": 10, "Wealth": 1 } },
+    { "name": "Ambrose Thale", "about": "old convict at the brazier; built hulls once, and still talks to the sky", "home": "Penal Colony", "works": "Penal Colony",
+      "qualities": { "Sociable": 70, "Honest": 60, "Brave": 45, "Vengeful": 10, "Gossipy": 60, "Greedy": 15, "Wealth": 1 } },
+    { "name": "Hester Mossop", "about": "convict at the heating main; says little, plans everything, trusts nobody twice", "home": "Penal Colony", "works": "Penal Colony",
+      "qualities": { "Sociable": 25, "Honest": 55, "Brave": 80, "Vengeful": 65, "Gossipy": 10, "Greedy": 20, "Wealth": 3 } },
     // The Ministry Courier's pilot at the spaceport 2 km out (docs/story/SPACEPORT.md): his body keeps to the apron there.
     { "name": "Captain Fairweather", "about": "Ministry courier pilot, grounded at the spaceport for want of a signature", "home": "Penal Colony", "works": "Penal Colony",
       "qualities": { "Sociable": 55, "Honest": 75, "Brave": 20, "Vengeful": 35, "Gossipy": 60, "Greedy": 20, "Wealth": 15 } }
@@ -23,6 +33,11 @@
   "feelings": [
     { "who": "Sergeant Bellweather", "rel": "Likes", "to": "Warden Pettigrew", "value": 30 },
     { "who": "Officer Crumb", "rel": "Likes", "to": "Officer Nettles", "value": 25 },
-    { "who": "Officer Nettles", "rel": "Likes", "to": "Sergeant Bellweather", "value": 35 }
+    { "who": "Officer Nettles", "rel": "Likes", "to": "Sergeant Bellweather", "value": 35 },
+    { "who": "Dot Pruett", "rel": "Likes", "to": "Hester Mossop", "value": 45 },
+    { "who": "Wren Haskett", "rel": "Likes", "to": "Dot Pruett", "value": 40 },
+    { "who": "Ambrose Thale", "rel": "Likes", "to": "Wren Haskett", "value": 50 },
+    { "who": "Hester Mossop", "rel": "Likes", "to": "Ambrose Thale", "value": 35 },
+    { "who": "Sergeant Bellweather", "rel": "Grudge", "to": "Hester Mossop", "value": 22 }
   ]
 }

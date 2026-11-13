@@ -80,3 +80,14 @@ Protocol 282. The design itself was first revised for the user's answers 6 and 8
    - A (recommended): by power: the feed is the carburettor's size's kW over the bank's (a Small one on Medium cylinders
      feeds 5%), so a carburettor must be about the cylinders' size.
    - B: gentler, by scale (across) alone: a Small one on Medium cylinders (a quarter of their scale) feeds 25%.
+
+## The user's answers (2026-11-13)
+
+1. **A bullet gun's reach follows its barrel, for every barrel** (A): the receiver's `maxRange` times the build's range over the
+   bare receiver's. Catalogue guns' reach changes with it.
+2. **5 cm everywhere** (A), as built.
+3. In the user's words: "Engine cylinders are now being dictated by size, so I don't think performance tiers are necessary
+   anymore." The coordinator's reading: the Engine Kit stops planning with tier cylinders altogether; where it wanted more power
+   it plans a bigger plain cylinder, and its tiers 3 to 5 are no longer told apart by cylinder kind. Close to A, without keeping
+   the three fixed bore steps as stand-ins for the old tiers.
+4. A small carburettor starves a big bank **by power** (A).

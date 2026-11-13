@@ -1,0 +1,83 @@
+{
+  // What the break-out's four convicts will talk about (docs/story/BREAKOUT.md; the beats are Storylets/Breakout.json).
+  // They give nothing away to a stranger: each thread brushes the player off ("keep") until the convict likes them
+  // enough, and every proper answer warms them a little more, which is how trust is earned. Each ends on something to
+  // notice later. Grassing to the Sergeant is his topic at the end. ?me is the person asked, ?them the player.
+  "format": "call-of-slop-topics/1",
+  "about": "the break-out's convicts, and the Sergeant who would like to hear about them",
+  "topics": [
+    // ==== Dot Pruett, on the boiler coal: drove the Ministry's haulers ====
+    { "id": "dot-in-for", "who": "Dot Pruett", "ask": "What are you in for?", "priority": 5,
+      "answers": [
+        { "if": "?me Grudge ?them >= 20", "keep": true, "say": [ "Shovelling. Go away." ] },
+        { "then": [ "?me Likes ?them +3" ],
+          "say": [ "Drove an ore hauler into a Minister's pond. He was in the pond at the time. Eight years." ] } ] },
+    { "id": "dot-hauler", "who": "Dot Pruett", "ask": "You can drive a hauler?", "after": "dot-in-for", "priority": 8,
+      "answers": [
+        { "if": "?me Likes ?them < 8", "keep": true, "say": [ "Could. Past tense. Shovel's present tense." ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "Anything with wheels and a few without. They don't take your hands off you in here. Yet." ] } ] },
+    { "id": "dot-motor-pool", "who": "Dot Pruett", "ask": "Where do they keep the transports?", "after": "dot-hauler", "priority": 8,
+      "answers": [
+        { "if": "?me Likes ?them < 20", "keep": true, "then": [ "?them Suspicion +1" ], "say": [ "Funny question. Ask it louder, near Bellweather. See what happens." ] },
+        { "then": [ "?me Likes ?them +2" ], "say": [ "The ration hauler sleeps at the motor pool. Keys in. Nobody steals from the Ministry. Nobody sane." ] } ] },
+    { "id": "dot-hester", "who": "Dot Pruett", "ask": "Who's the quiet one at the heating main?", "if": "?them Crew >= 1", "priority": 6,
+      "answers": [
+        { "then": [ "?me Likes ?them +2" ], "say": [ "Hester. Don't. You don't talk to Hester. Hester talks to you, when she's ready." ] } ] },
+
+    // ==== Wren Haskett, at sick parade: cleaned the spaceport ====
+    { "id": "wren-arm", "who": "Wren Haskett", "ask": "What happened to your arm?", "priority": 5,
+      "answers": [
+        { "then": [ "?me Likes ?them +3" ], "say": [ "Slipped on the stairs. The stairs have been very sorry since. So has the sergeant who pushed me." ] } ] },
+    { "id": "wren-before", "who": "Wren Haskett", "ask": "What did you do before this?", "after": "wren-arm", "priority": 8,
+      "answers": [
+        { "if": "?me Likes ?them < 8", "keep": true, "say": [ "Cleaning. I'm good at it. Ask the infirmary's floor." ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "Cleaned at the Ministry Spaceport. Eleven years. You learn a building when you mop it." ] } ] },
+    { "id": "wren-wrong-office", "who": "Wren Haskett", "ask": "What got you sent here?", "after": "wren-before", "priority": 8,
+      "answers": [
+        { "if": "?me Likes ?them < 18", "keep": true, "say": [ "Wrong office. Wrong night. That's all I say about it." ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "I cleaned a room under headquarters once. Wasn't on my rota. Five big chairs. Then I was here." ] } ] },
+    { "id": "wren-sick-parade", "who": "Wren Haskett", "ask": "Why sit out here every day?", "after": "wren-arm", "priority": 4,
+      "answers": [
+        { "then": [ "?me Likes ?them +1" ], "say": [ "Nobody searches the sick. And you see everyone who goes past. Everyone." ] } ] },
+
+    // ==== Ambrose Thale, at the brazier: built hulls ====
+    { "id": "ambrose-sky", "who": "Ambrose Thale", "ask": "What are you looking at up there?", "priority": 5,
+      "answers": [
+        { "then": [ "?me Likes ?them +3" ], "say": [ "Nothing. That's the trouble. My gran said the sky used to be full. She was a liar, mostly." ] } ] },
+    { "id": "ambrose-hulls", "who": "Ambrose Thale", "ask": "What was your trade?", "after": "ambrose-sky", "priority": 8,
+      "answers": [
+        { "if": "?me Likes ?them < 8", "keep": true, "say": [ "Standing near fires. I'm very good at it." ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "Hulls. Riveted and welded, forty years. I flew what I built, too. Somebody had to." ] } ] },
+    { "id": "ambrose-gran", "who": "Ambrose Thale", "ask": "What else did your gran say?", "after": "ambrose-sky", "priority": 7,
+      "answers": [
+        { "if": "?me Likes ?them < 15", "keep": true, "say": [ "That I'd come to no good. She was right about that one." ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "Kept an old ticket in her purse. A number from a lottery, she said. Wouldn't say what for." ] } ] },
+    { "id": "ambrose-light", "who": "Ambrose Thale", "ask": "Do you steer by the Light?", "after": "ambrose-hulls", "priority": 6,
+      "answers": [
+        { "then": [ "?me Likes ?them +2" ], "say": [ "Everyone does. I never liked it. A light that never blinks is a light that's watching." ] } ] },
+
+    // ==== Hester Mossop, at the heating main: the one who decides ====
+    { "id": "hester-hello", "who": "Hester Mossop", "ask": "Cold enough for you?", "priority": 5,
+      "answers": [
+        { "if": "?me Grudge ?them >= 20", "keep": true, "say": [ "..." ] },
+        { "then": [ "?me Likes ?them +2" ], "say": [ "It's warm here. That's why I'm here. Find your own pipe." ] } ] },
+    { "id": "hester-who", "who": "Hester Mossop", "ask": "How long have you been here?", "after": "hester-hello", "priority": 7,
+      "answers": [
+        { "if": "?me Likes ?them < 10", "keep": true, "say": [ "Longer than you. Shorter than I mean to." ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "Six winters. I've counted the guards every one of them. The count goes down in the cold." ] } ] },
+    { "id": "hester-bellweather", "who": "Hester Mossop", "ask": "You and the Sergeant don't get on?", "after": "hester-who", "priority": 7,
+      "answers": [
+        { "if": "?me Likes ?them < 20", "keep": true, "say": [ "We get on fine. He watches me. I let him." ] },
+        { "then": [ "?me Likes ?them +3" ], "say": [ "He caught me once, the first winter. He's been waiting for twice. He'll be waiting a long time." ] } ] },
+    { "id": "hester-crew", "who": "Hester Mossop", "ask": "Dot and Wren speak well of you.", "if": "?them Crew >= 2", "priority": 8,
+      "answers": [
+        { "if": "?them Grassed", "keep": true, "say": [ "Do they. They'll learn." ] },
+        { "then": [ "?me Likes ?them +4" ], "say": [ "They speak well of everyone. That's why I do the talking. Keep warm, {them.first}." ] } ] },
+
+    // ==== The Sergeant, if the player would rather tell ====
+    { "id": "bellweather-grass", "who": "Sergeant Bellweather", "ask": "Some of the inmates are planning something.", "if": "?them Crew >= 1, not ?them Grassed", "priority": 7,
+      "answers": [
+        { "then": [ "?them Grassed =1", "?them Suspicion -3", "?me Likes ?them +15", "'Hester Mossop' Grudge ?them +60", "'Dot Pruett' Grudge ?them +40" ],
+          "say": [ "Are they now. Names, {them.first}. ...Mossop. Of course. The Ministry won't forget this. It files it." ] } ] }
+  ]
+}
