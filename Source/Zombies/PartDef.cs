@@ -174,6 +174,9 @@ public sealed class PartSocket
     public bool Required;
 
     public Quaternion Rotation => PartDef.Rot(RotDeg);
+
+    /// <summary>A shallow copy (a sized part moves its muzzle socket: SizedGunParts).</summary>
+    public PartSocket Copy() => (PartSocket)MemberwiseClone();
 }
 
 /// <summary>
@@ -524,6 +527,12 @@ public sealed class SplitInfo
 public sealed class PartDef
 {
     public required string Name;
+
+    /// <summary>A pressed (sized) part's blank across and length (cm), for the fit check (sized-gun-engine-parts.md 5); 0 on every file part.</summary>
+    public int SizeAcrossCm, SizeLengthCm;
+
+    /// <summary>A shallow copy: a sized builder part starts as its pattern's file part (SizedGunParts.Make).</summary>
+    public PartDef Copy() => (PartDef)MemberwiseClone();
     public PartCategory Category;
     public Rarity Rarity;
     public string Flavor = "";

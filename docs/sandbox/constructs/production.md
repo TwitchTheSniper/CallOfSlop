@@ -262,7 +262,9 @@ Design: `docs/sandbox/design/press-rework.md`. A die in `Pressing.json` `"dies"`
 
 - **Like bodies** (`"body": "like"`, `"along"`; `Pressed.BuildLike`). Where behaviour lives in a part's geometry (a joint's base and leaf boxes, pivot and leaf socket, a suspension's axle socket, a shaft's end ports, a reel's hose point), the part is its like part's boxes and sockets stretched per axis to the blank's size, the blank's length along the like part's `along` axis; the die's features are drawn on it; mass, health and armour are the blank's. Pistons' travel and suspensions' travel stretch with it. A like part must be plain boxes (no hull, no screen). Other patterns are blank bodies; their like part's named ports are moved onto the blank's faces.
 - **Screens.** A 3-bay press's bay cards are lower than a Small Press's (0.5 cells, 32 columns) and every die screen is 5.8 by 1.2 cells (33 columns), so "Makes Limited-Slip Differential" fits.
-- **Not yet:** presets for the 3b dies (each makes sized parts only; the catalogue parts keep their Assembler recipes), a pipe shaft's bore in its torque, lift cells, lamps and screens (a like body drops lamps and panels).
+- **Presets, and what left the Assembler** (phase 5, protocol 277, and 5b; notes: `docs/sandbox/design/press-phase5-notes.md`). Every die's standard blanks are named in `Pressing.json` `"presets"`, the 3b dies' among them (`PressParts.Presets3b`), so a Gear Die press makes the catalogue **Gear Set**, a Tank die the **Fuel Tank**, a Beam die the **Frame Beam** (`i-beam 45x45x200 steel`, a Small Press), and so on. A catalogue part a die presses this way **has no Assembler recipe** (the sort is `Moved` and `PressedNow` in the part kit's `Assembling.cs`): 73 rows (brackets, housings, plates, the Gear Set, Circuit Board and Piston Set, the Button and Switch, the gearboxes and the two sized differentials, actuators, springs, cables and reels, the six tier 1 drivetrain parts, whose dies take a Gear Set in bay 2, the logic gates and sensors, the tanks, the Frame Beam). What stayed: engine pieces (the sized-engine phase), the building pieces of `Parts/Building` and `Parts/Capital`, and the Differential and Proximity Sensor (two kinds of part input). The survival start kit carries a Beam Die beside the Button, Bracket and Gear Dies, so a first frame needs only the tier 1 Press and Extruder.
+- **The rows are gone** (phase 5b: the user accepted that an Assembler saved before it may read another recipe, since the setting is `1 +` the row's place in its family's list; `tools/MIGRATING.md`). What says a part is pressed reads the presets: `AssemblingTable.PressedLine(def)` (`the Gear Set is pressed now: a Gear Die and a Round 0.15 m`) and `PressedDieOf(def)`, for a preset part no Assembler builds. The plain Assembler's recipe picker lists those dimmed under "Pressed", the die in the tip; the Technologies page and its notice say "your Presses press X"; a blueprint's or mod's `"config": {"recipe": "Gear Set"}` loads with the recipe None and a `[blueprint] ... is pressed now` line; a loot table may still hold a pressed part; and a terminal's chain treats a linked press with the right die as that kit's maker, so an order for a Clutch asks it for the Gear Set.
+- **Not yet:** a pipe shaft's bore in its torque, lift cells, lamps and screens (a like body drops lamps and panels).
 
 Choices made (the developer may change them): one part a press, not a frame you add bays to; a Small press has 2 bays and no recipe uses a third yet; a die only in a press of its own class, never a bigger one; a piece's size is its smaller side; a stroke's cost is a length, not a mass, so a stamped part doesn't weigh what it used; the Housing family is new, with no use yet beyond a box with sockets, and the Assembler can build them too; chutes carry pieces only from an Extruder (a shelf can't hold a piece, since a piece is physics-only); the ram strokes while it stamps (a "work" box, drawn only: [Machine look](look.md#machine-look)).
 
@@ -479,7 +481,7 @@ The step after refining: an **Assembler** builds parts from what the chains make
 
 - **The part** (`Constructs/Parts/Assembling`, attach tool, physics-only, five tiers: [Machine tiers](#machine-tiers)): an open gantry 2 to 6 m wide, with a low hopper at the back (its input), a tray at the front (its output) and an arm. `storage.assemble` holds `capacity` (the fill's scale), `speed`, `chuteLoad`, `batches` (how many batches of each input it buffers: 4 a tier), and `outAt`, `outDir`, where a body leaves. Its `slots` are the tray.
 - **The recipe** is a setting (`"config": [{"key": "recipe"}]`): a choice filled from the table as the parts load, so the configure tool lists every recipe (a filter box stands over a long list) and a blueprint step names one (`"config": {"recipe": "Engine"}`). 0 is none.
-- **The table** (`Constructs/Assembling.json`, format `call-of-slop-assembling/1`; `AssemblingTable`). Each recipe gives `output` (a part), `count` (default 1), `materials` (material: units), `parts` (part: count), `seconds` (at speed 1) and optionally `minTier`. At most 6 inputs, one recipe a part. A physics-only part can't be an input, since no chute or hands can bring one, so a chain goes through **components**. A refused file gives no recipes and the reason (`--check-construct-parts`).
+- **The table** (`Constructs/Assembling.json`, format `call-of-slop-assembling/1`; `AssemblingTable`). Each recipe gives `output` (a part), `count` (default 1), `materials` (material: units), `parts` (part: count), `seconds` (at speed 1) and optionally `minTier`. At most 6 inputs, one recipe a part. A physics-only part can't be an input, since no chute or hands can bring one, so a chain goes through **components**. A refused file gives no recipes and the reason (`--check-construct-parts`). A part a die presses from a standard blank has no row: it is pressed, not assembled ([The Press](#the-press)).
 - **Components** (`Constructs/Parts/Components`, items, in the parts menu's Production category): Gear Set, Bearing, Piston Set, Copper Coil, Wiring Loom, Circuit Board, Control Unit, Servo Motor, Tyre Carcass, Steel Plate, Lens.
 - **Written and generated.** the part kit's `--gen-parts assembling` holds 46 recipes by hand (every component, and what a player reaches for first) and generates 437 for the long tail from the part files, by rule: half a part's mass in its class's material, what its role must have (an engine's Piston Sets, a gearbox's Gear Sets, an actuator's Servo Motors, a logic part's Circuit Board), and a tier from what that needs. Spawners, the Construct Core, a chest's lid and damage stages have none, nor do the weapon builder's generated parts. Fix the tool, not its output (`--check` compares).
 
@@ -952,11 +954,27 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   has no conveyor); ordered pieces follow their order. `routerHold` on: an ordered piece whose way is cut, too narrow or full waits
   at the Router with its order kept, marked stuck (red lamps), tried again every 2 s, instead of going to storage.
 - **Order priority:** terminals are stepped best class first, then oldest open order; a root's links take its terminal's class.
+- **The network board (phase 4, `ConstructLogisticsBoard.cs`):** a Router's third output, **Data out** (after Alarm and Moving;
+  `ConstructLogistics.PortBoard`, `MonitorKind.Network`), linked to any display makes it the board of that Router's network, by the
+  monitor bands: one line (`Network: 6 moving, 1 order, storage 57%`, or `STUCK at Router 1: Gear Set - no Piece Rack ...` in red);
+  2-6 rows: a title, the stuck spots, the open orders, the stores; 7 rows up: the counts (`Moving Orders Stuck Running n/m`), then
+  under headings the stuck Routers with the piece and reason, each open terminal order with its state (where it is held up in amber)
+  and its chain lines (maker, or why nobody makes it), the machines with their state and head order, the stores with fill and keep,
+  the Routers with their last piece and settings. A long list moves on by itself. Either peer, from what it already holds; names
+  of pieces cached once a kind. **Not yet:** the map of design 9.2 (`PanelDraw.Map`): a large panel shows the list.
+- **The Router's screen (phase 4, `RouterScreen.cs`, panel source `router`):** a low dark plate on each side face's frame, under
+  the side ports' conveyor beds (no post: Q6). Lines: what it is doing (sent, STUCK, waiting, no power), its last piece and way and
+  whether to an order or storage, the destination or the stuck reason, its settings. Buttons **Spill** (steps `routerSpill`) and
+  **Hold** (toggles `routerHold`), labelled with the current value, under the configure tool's rule (`router.spill`,
+  `router.hold` in `PanelTouch`); the setting rides with the body, so nothing new is on the wire. A conveyor on a side hides that
+  side's plate from a standing player (the other side's stays readable).
+- **Window tool:** `panel Conveyor Router` also prints the board at 16, 6 and 1 rows; `touch LABEL @ PART /N` picks the part's
+  N-th screen; a low screen's touch stands the player in front looking down, and a joined client lands before it aims.
 - **Not yet (phase 3's rest):** the terminal's Stock tab and `CActKind.StockTarget` (a target for a kind the rack doesn't hold),
   `feedPriority` on machines and `linePriority` on Line Consoles, a material in `storeTakes`, High chains inserted ahead in a
   maker's queue, rounding a refill to the maker's batch, targets on bins (bulk: phase 5), blueprint `"targets"`, store monitors' rows.
 - **Not in phase 1:** chains (orders pull their inputs), stock targets and overrides, the Router's settings (`routerSpill`,
-  `routerHold`) and screen, the network board, press bays and the Panel Former as destinations, the source's own "no storage" stall
+  `routerHold`) and screen, the network board (all since added: phases 2 to 4), press bays and the Panel Former as destinations, the source's own "no storage" stall
   (a full network backs up to the Router, stuck, and the line behind it backs up to the machine as today).
 - **Showcase:** the Assembler's Piece out runs to a Router; its way ahead to the part rack (storage), its way 3 to a Join before the
   Crafting Terminal's side. Line A keeps its plain Splitter (the press is fed in turn until Press phase 2 gives it orders). A second Assembler on the panel strip's floor feeds the first's Piece in: "ORDER A CLUTCH: THIS ASSEMBLER MAKES ITS GEAR SET".
@@ -1255,8 +1273,8 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
 - **The part** (`Constructs/Parts/BuildingStation/BuildingStation.json`, 3 by 5 m, 150 W while it builds): a control pedestal with the screen at 1.5 m, an
   intake cabinet with a chute hopper, a hold along its right, and a mast with a boom that points at the bay. It is a Crafting Terminal by
   data (`storage.pieces.crafting` and `station`: `ConstructPartDef.IsBuildStation`), so its hold is a Piece Rack's (packed by volume, F
-  takes a stack), its ports are **Piece in**, **Piece in 2**, **Chute in** and **Orders**, and its network and orders are
-  [the terminal's](#crafting-terminal).
+  takes a stack), its ports are **Piece in**, **Piece in 2**, **Fluid in** (a pipe, phase 2), **Chute in** and **Orders**, and its
+  network and orders are [the terminal's](#crafting-terminal).
 - **The bay** is three settings on the station (configure tool, group Bay): `bayWidth` (away from the station), `bayDepth` (along it),
   `bayHeight`, 2 to 64 m in 0.5 m steps, 6 x 8 x 4 by default. It is a box on the station's +x side, 0.5 m from it, its floor at the
   station's foot (`ConstructStation.Bay`): on the ground or on a construct's floor, whichever the station stands on; nothing checks for a
@@ -1318,8 +1336,18 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   worst 5.65 ms over the last 600 frames of a build; a world saved and loaded at 11 of 26 went on to Done; a client joining at 1 of 26
   saw the same frozen body and counts to Done; Repeat started the second build only once the first was dragged out.
 
-Not in phase 1: arms and cranes; roll-out and carriers; vehicles generated on request; fluids and ammo filled from linked tanks and
-bins (a tank is as the blueprint spawns it); panels ordered from a Panel Former by the station (brought by hand); a part too big for
+- **Filling (phase 2, 2026-11-13; notes in `docs/sandbox/design/building-station-phase2-notes.md`).** In survival a part the station
+  fits holds nothing: a fuel tank adds no fuel, an ammo box no rounds, a Fluid Tank none of its blueprint's fill (creative with
+  untimed machines: full, as a spawned blueprint; `FillsFree`). After the last link a fill stage runs, a look every half second:
+  the fuel pool to full, each Fluid Tank to its step's config (fluid and percentage; not hot air, vacuum or exhaust), each ammo box
+  to full. Fuel and fluids come through intact pipes laid to the station's **Fluid in** from tanks on its construct (50 L a look; a
+  fuel tank gives from its construct's pool); rounds from bulk `ammo` in its linked bins (10 units a look, 10 rounds a unit). It
+  ends when all is full or a look moves nothing; the job is then done and the note names what wasn't filled ("not filled: fuel
+  0/40 L - pipe tanks to its Fluid in, ammo in a linked bin"). The state reads "filling its tanks". No new bytes; protocol 285
+  for the part's new port. Window tool: `link pipe FROM > TO`, `station tanks`, `station await fitted|linked|done`.
+
+Not in phase 1: arms and cranes (their own design, `docs/sandbox/design/arms-and-cranes.md`, waits on the user's answers to its
+questions 1 and 4); roll-out and carriers; vehicles generated on request; panels ordered from a Panel Former by the station (brought by hand); a part too big for
 the hold; hand delivery aimed at the build rather than the station, and of physics-only parts; a client's own saved blueprints (the
 host's folder is read); marker posts.
 

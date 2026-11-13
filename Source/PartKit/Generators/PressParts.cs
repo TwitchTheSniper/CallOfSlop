@@ -57,10 +57,11 @@ public sealed class PressParts : IPartGenerator
         ("Control", [Small, Medium, Large], "steel", 2, "#3f6f9f"),
         ("Tank", [Small, Medium, Large, Capital], "steel", 2, "#9f4a3f"),
         ("Beam", [Small, Medium, Large, Capital], "metal", 1, "#7a7f88"),
+        ("Barrel", [Small, Medium, Large], "steel", 2, "#4a4d52"),
     ];
 
     // The dies whose stroke presses a whole blank to one part (Pressing.json "dies", the Press rework): they have no old rows.
-    private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate", "Button", "Gear", "Board", "Piston", "Cylinder", "Drive", "Shaft", "Actuator", "Spring", "Cable", "Control", "Tank", "Beam"];
+    private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate", "Button", "Gear", "Board", "Piston", "Cylinder", "Drive", "Shaft", "Actuator", "Spring", "Cable", "Control", "Tank", "Beam", "Barrel"];
 
     private static double MaxAcross(Cls c) => c.Key switch { "small" => 0.45, "medium" => 1.8, "large" => 7.2, _ => 28.8 }; // what a class's bays take: 1.8 cells
 
@@ -528,11 +529,58 @@ public sealed class PressParts : IPartGenerator
             Feature("seam", [-0.01, 0.48, 0.05, 1.01, 0.52, 0.95], "dark", proud: "x", clamp: "y", min: 0.5, max: 4),
             Feature("sump", [0.2, -0.1, 0.2, 0.8, 0.0, 0.8], "dark", proud: "y"));
         var gears = Kit("Gear Set", true, 1, 0.02, "mass", 20);
-        var torque = Py.L(Scale("maxTorque", "across", 3, true, 900));
+        // (no stand-in rating: every gearbox and differential in the catalogue is unrated, 0 = no limit, and a 900 N m stand-in capped every
+        // pressed one there, so a pressed gearbox drove a truck at 11.5 m/s where its catalogue twin gave 17.9: Press phase 5. A rated like part scales.)
+        var torque = Py.L(Scale("maxTorque", "across", 3, true));
         yield return SizedDie("Drive", ["hollow", "solid"], ["steel", "metal", "bronze"], [20, 720], [20, 1600], [0.5, 8], 3, 0.02, drive,
             DrivePatterns.Select(d => (object?)Pattern(d.Id, d.Like, d.Label, d.Blank, bay2: gears, scale: torque)).ToList(), FaceSockets());
         foreach (var die in WorkingDies3b())
             yield return die;
+        yield return BarrelDie();
+    }
+
+    // ---- Sized gun parts, phase 1 (docs/sandbox/design/sized-gun-engine-parts.md 3): the Barrel die and its plain pattern. A barrel's length
+    // is read in calibres (length over across), and its numbers are curves whose knots are the catalogue barrels: Stub (2 calibres), Standard
+    // (5) and Long (9), read from their builder part files here, so tuning Long Barrel moves the curve. Each curve is held to the widest value
+    // any catalogue barrel has, so no sized barrel leaves the range the builder is balanced for.
+
+    private static readonly (string Part, string Builder, string Blank)[] PlainBarrels =
+    [
+        ("Stub Barrel", "Stub Barrel", "round 10x10x20 steel"),
+        ("Gun Barrel", "Standard Barrel", "round 10x10x50 steel"),
+        ("Long Gun Barrel", "Long Barrel", "round 10x10x90 steel"),
+    ];
+
+    private static readonly (string Stat, string Op)[] BarrelCurves = [("rangeM", "mul"), ("hipSpreadDeg", "mul"), ("adsTime", "add"), ("mobility", "add")];
+
+    /// <summary>A builder part file's change to a stat by this op (the identity when it has none).</summary>
+    private static double EffectOf(PartDef p, string stat, string op)
+    {
+        foreach (var e in p.Effects)
+            if (e.Op == op && e.Field.Name.Equals(stat, StringComparison.OrdinalIgnoreCase))
+                return Py.Round(Convert.ToDouble(e.Value, System.Globalization.CultureInfo.InvariantCulture), 4);
+        return op == "mul" ? 1 : 0;
+    }
+
+    private static PyDict BarrelDie()
+    {
+        var curves = new List<object?>();
+        var barrels = CallOfSlop.Parts.InCategory(PartCategory.Barrel).OrderBy(p => p.Name, StringComparer.Ordinal).ToList();
+        foreach (var (stat, op) in BarrelCurves)
+        {
+            var points = new List<object?>();
+            foreach (var (_, builder, blank) in PlainBarrels)
+            {
+                var b = CallOfSlop.Parts.Find(builder) ?? throw new InvalidOperationException($"press_parts: no builder part {builder}");
+                var size = blank.Split(' ')[1].Split('x');
+                points.Add(Py.L(int.Parse(size[2]) / int.Parse(size[0]), EffectOf(b, stat, op)));
+            }
+            var values = barrels.Select(b => EffectOf(b, stat, op)).Append(op == "mul" ? 1 : 0).ToList();
+            curves.Add(Kw(("field", stat), ("by", "calibres"), ("points", points), ("clamp", Py.L(values.Min(), values.Max())), ("op", op)));
+        }
+        var crown = Py.L(Feature("crown", [-0.1, -0.1, 0, 1.1, 1.1, 0.04], "dark", proud: "xyz", clamp: "z", min: 1, max: 10));
+        return SizedDie("Barrel", ["round", "pipe"], ["steel"], [10, 120], [10, 1920], [1, 16], 4, 0.02, crown, Py.L(
+            Pattern("plain", "Gun Barrel", "barrel", "round 10x10x50 steel", scale: curves, along: "z")));
     }
 
     // ---- Phase 3b: Shaft, Actuator, Spring, Cable, Control, Tank and Beam (design section 3.2). The patterns whose behaviour lives in
@@ -542,13 +590,14 @@ public sealed class PressParts : IPartGenerator
     private static IEnumerable<object?> WorkingDies3b()
     {
         string[] metals = ["steel", "metal", "bronze"];
-        // Shaft: a yoke flange at each end, 0.08 of the length; Bearings by length; torque as d^3 and strength (the Drive die's law).
+        // Shaft: a yoke flange at each end, 0.08 of the length; Gear Sets by length; torque as d^3 and strength (the Drive die's law).
         // (Auto picks by the blank's section: 15 cm a U joint, 20 a drive shaft, 25 a CV joint, 30 and up a stub axle; the Pattern setting the rest.)
         var shaft = Py.L(
             Feature("flange", [-0.2, -0.2, 0, 1.2, 1.2, 0.08], "dark", proud: "xyz", clamp: "z", min: 0.5, max: 40),
             Feature("flange", [-0.2, -0.2, 0.92, 1.2, 1.2, 1], "dark", proud: "xyz", clamp: "z", min: 0.5, max: 40));
-        var bearings = Kit("Bearing", true, 2, 0.5, "length", 12);
-        var shaftTorque = Py.L(Scale("maxTorque", "across", 3, true, 900));
+        // (Gear Sets, not Bearings: the user, 2026-11-13. These were tier 1 Assembler parts taking a Gear Set, and bronze is a tier 2 foundry's.)
+        var bearings = Kit("Gear Set", true, 0, 0.5, "length", 12);
+        var shaftTorque = Py.L(Scale("maxTorque", "across", 3, true)); // (the U Joint is rated, 4,000 N m, and scales; the unrated stay unrated, as the Drive die)
         yield return SizedDie("Shaft", ["round", "pipe"], metals, [10, 180], [25, 3200], [1, 64], 2, 0.02, shaft, Py.L(
             Pattern("shaft", "Drive Shaft 1 m", "drive shaft", "round 20x20x100 steel", bay2: bearings, scale: shaftTorque, along: "z"),
             Pattern("ujoint", "U Joint", "U joint", "round 15x15x25 steel", bay2: bearings, scale: shaftTorque, along: "x"),
@@ -574,7 +623,7 @@ public sealed class PressParts : IPartGenerator
         var load = Py.L(Scale("maxLoad", "across", 2, true));
         var springBearings = Kit("Bearing", true, 1, 2, "across", 16);
         yield return SizedDie("Spring", ["solid", "l-angle", "t-bar", "plate"], ["steel", "metal", "bronze"], [10, 720], [25, 1600], [1, 16], 2, 0.02, spring, Py.L(
-            Pattern("suspension", "Suspension", "suspension", "solid 10x30x65 steel", bay2: springBearings, scale: load, along: "y"),
+            Pattern("suspension", "Suspension", "suspension", "solid 10x30x65 steel", bay2: Kit("Gear Set", true, 0, 2, "across", 16), scale: load, along: "y"),
             Pattern("leaf", "Leaf Spring", "leaf spring", "solid 10x55x90 steel", bay2: springBearings, scale: load, along: "z"),
             Pattern("rigid", "Rigid Mount", "rigid mount", "solid 10x30x40 steel", bay2: springBearings, scale: load, along: "y"),
             Pattern("light", "Light Suspension", "light suspension", "solid 25x25x30 steel", bay2: springBearings, scale: load, along: "y")));
@@ -673,8 +722,56 @@ public sealed class PressParts : IPartGenerator
         Add("Tread Plate 1 m", "plate", "tread", "plate 100x10x100 steel");
         Add("Mesh Grate 1 m", "plate", "grate", "plate 100x10x100 steel");
         Add("Armour Plate 1 m", "plate", "armour", "plate 100x20x100 steel");
+        // Press phase 5: the phase 3b dies' patterns, each from its pattern's own preset blank (several share one: the Pattern setting or an
+        // order picks).
+        foreach (var (part, die, pattern, blank) in Presets3b)
+            Add(part, die, pattern, blank);
+        // The Frame Beam is the Beam die's girder (the user, 2026-11-13, phase 5 question 3): a 2 m I-beam held to what a Small Press takes
+        // (45 cm), so a start's first frame needs no tier 2 press. The other building pieces stay on the Assembler.
+        Add("Frame Beam", "beam", "girder", $"i-beam {PresetAcross(50, Small)}x{PresetAcross(50, Small)}x200 steel");
+        // Sized gun parts phase 1: the plain barrels are the Barrel die's knots. Their Assembler recipes stay until that design's phase 6.
+        foreach (var (part, _, blank) in PlainBarrels)
+            Add(part, "barrel", "plain", blank);
         return r;
     }
+
+    private static readonly (string Part, string Die, string Pattern, string Blank)[] Presets3b =
+    [
+        ("Drive Shaft 1 m", "shaft", "shaft", "round 20x20x100 steel"),
+        ("U Joint", "shaft", "ujoint", "round 15x15x25 steel"),
+        ("CV Joint", "shaft", "cv", "round 25x25x25 steel"),
+        ("Stub Axle", "shaft", "stub", "round 30x30x35 steel"),
+        ("Wheel Hub", "shaft", "hub", "round 30x30x35 steel"),
+        ("Piston 1x1 Medium", "actuator", "piston", "round 25x25x50 steel"),
+        ("Motor Hinge", "actuator", "hinge", "solid 20x25x55 steel"),
+        ("Turntable", "actuator", "turntable", "solid 65x65x20 steel"),
+        ("Free Pivot 1x1", "actuator", "pivot", "solid 30x25x30 steel"),
+        ("Suspension", "spring", "suspension", "solid 10x30x65 steel"),
+        ("Leaf Spring", "spring", "leaf", "solid 10x55x90 steel"),
+        ("Rigid Mount", "spring", "rigid", "solid 10x30x40 steel"),
+        ("Light Suspension", "spring", "light", "solid 25x25x30 steel"),
+        ("Wiring Loom", "cable", "loom", "round 10x10x30 copper"),
+        ("Copper Coil", "cable", "coil", "round 25x25x25 copper"),
+        ("Power Lead Reel", "cable", "power", "round 45x45x60 steel"),
+        ("Data Lead Reel", "cable", "data", "round 45x45x60 steel"),
+        ("Fluid Hose Reel", "cable", "hose", "round 45x45x60 steel"),
+        ("Fuel Line", "cable", "fuel", "pipe5 15x15x50 steel"),
+        ("AND Gate", "control", "and", "solid 20x20x25 laminate"),
+        ("NOT Gate", "control", "not", "solid 20x20x25 laminate"),
+        ("Timer", "control", "timer", "solid 20x20x25 laminate"),
+        ("Delay", "control", "delay", "solid 20x20x25 laminate"),
+        ("Compare", "control", "compare", "solid 20x20x25 laminate"),
+        ("Proximity Sensor", "control", "proximity", "solid 20x20x25 laminate"),
+        ("Speed Sensor", "control", "speed", "solid 20x20x25 laminate"),
+        ("Fuel Tank", "tank", "fuel", "hollow 50x50x50 steel"),
+        ("Small Fuel Tank", "tank", "small", "hollow 40x40x40 steel"),
+        ("Fuel Drum", "tank", "drum", "pipe5 45x45x90 steel"),
+        ("Fluid Tank", "tank", "fluid", "hollow 45x45x50 steel"),
+        ("Small Fluid Tank", "tank", "smallfluid", "hollow 40x40x40 steel"),
+    ];
+
+    /// <summary>Every catalogue part a die presses from a standard blank (the Assembling generator moves the single-piece ones off the Assembler).</summary>
+    internal static HashSet<string> PresetParts() => Presets().Select(p => (string)((PyDict)p!)["part"]!).ToHashSet(StringComparer.Ordinal);
 
     private static List<object?> LatheRows()
     {

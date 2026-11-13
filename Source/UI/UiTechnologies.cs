@@ -42,6 +42,21 @@ public sealed partial class Ui
         return open < 0 ? (line[..colon], "", line[(colon + 3)..]) : (line[..open], line[(open + 2)..colon], line[(colon + 3)..]);
     }
 
+    /// <summary>
+    /// "Your Assemblers build X, Y." for a technology's parts, naming the Press for those a die presses now (Press phase 5: a preset part with
+    /// no Assembler recipe): "Your Assemblers build X; your Presses press Y." Made when the rows are (not per frame).
+    /// </summary>
+    private static string MakersLine(string parts)
+    {
+        var built = new List<string>();
+        var pressed = new List<string>();
+        foreach (var name in parts.Split(", "))
+            (ConstructParts.Find(name) is { } d && AssemblingTable.PressedDieOf(d) is not null ? pressed : built).Add(name);
+        return pressed.Count == 0 ? $"Your Assemblers build {parts}."
+            : built.Count == 0 ? $"Your Presses press {string.Join(", ", pressed)}."
+            : $"Your Assemblers build {string.Join(", ", built)}; your Presses press {string.Join(", ", pressed)}.";
+    }
+
     private void CelAdd(string title, string name, string line, string hint)
     {
         if (_celCount == _celQ.Length) // (a flood: the oldest waiting one gives way)
@@ -90,7 +105,7 @@ public sealed partial class Ui
                         var list = parts.Split(", ");
                         if (list.Length > 3)
                             parts = $"{string.Join(", ", list.Take(3))} and {list.Length - 3} more";
-                        CelAdd("TECHNOLOGY LEARNT", name, parts.Length > 0 ? $"Taught by {t.StoryNames[f]}. Your Assemblers build {parts}." : $"Taught by {t.StoryNames[f]}.", hint);
+                        CelAdd("TECHNOLOGY LEARNT", name, parts.Length > 0 ? $"Taught by {t.StoryNames[f]}. {MakersLine(parts)}" : $"Taught by {t.StoryNames[f]}.", hint);
                     }
             }
         }
@@ -253,7 +268,7 @@ public sealed partial class Ui
                     {
                         have++;
                         _techRows.Add(($"  [learnt] {name}", 1));
-                        _techRows.Add(($"      Your Assemblers build {parts}.", 3));
+                        _techRows.Add(($"      {MakersLine(parts)}", 3));
                     }
                     else
                     {

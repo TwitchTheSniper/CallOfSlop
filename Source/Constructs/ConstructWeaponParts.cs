@@ -298,6 +298,8 @@ public static class ConstructWeaponParts
             }
             sb.Append(']');
         }
+        if (receiver && AmmoIn(p, s, centre, half, drawn) is { } feed)
+            sb.Append(", \"ports\": [{\"name\": \"Ammo in\", \"type\": \"feed\", \"dir\": \"in\", \"at\": ").Append(V(feed.At)).Append(", \"face\": \"").Append(feed.Face).Append("\"}]");
         if (receiver)
         {
             var act = p.Receiver!.StockAction is { } sa && Parts.Find(sa) is { Action: not null } ? sa : DefaultAction(p);
@@ -312,6 +314,45 @@ public static class ConstructWeaponParts
             sb.Append(", \"gunPart\": {\"part\": ").Append(JsonSerializer.Serialize(p.Name)).Append('}');
         sb.Append('}');
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// A receiver's "Ammo in", when the implicit one (the middle of the bounds' left face, ConstructPorts) isn't on its drawn body: a
+    /// side rail or lug wider than the body put the Reaper Battle Rifle's out in the air. A port stays on the bounds' faces (the
+    /// part check's rule), so the first that touches a drawn box: the bottom under the builder's feed socket, the bottom's middle,
+    /// the back's middle. Null: the implicit one is on the body, or nothing is (it keeps the implicit one).
+    /// </summary>
+    private static (Vector3 At, string Face)? AmmoIn(PartDef p, float s, Vector3 centre, Vector3 half, IReadOnlyList<ZFight.ZBox> drawn)
+    {
+        const float Touch = 0.009f; // (the bounds round up to 5 mm a side and a face may step 3 mm off its neighbour's)
+        bool OnBody(Vector3 at, int axis)
+        {
+            foreach (var b in drawn)
+            {
+                if (MathF.Abs(MathF.Abs(at[axis] - b.C[axis]) - b.H[axis]) > Touch)
+                    continue;
+                var inside = true;
+                for (var a = 0; a < 3 && inside; a++)
+                    if (a != axis && MathF.Abs(at[a] - b.C[a]) > b.H[a])
+                        inside = false;
+                if (inside)
+                    return true;
+            }
+            return false;
+        }
+        if (OnBody(new Vector3(-half.X, 0, 0), 0))
+            return null;
+        var under = Array.Find(p.Sockets, x => x.Type == "feed") is { } f ? f.Pos * s - centre : Vector3.Zero;
+        (Vector3 At, int Axis, string Face)[] tries =
+        [
+            (new Vector3(Math.Clamp(under.X, -half.X, half.X), -half.Y, Math.Clamp(under.Z, -half.Z, half.Z)), 1, "-y"),
+            (new Vector3(0, -half.Y, 0), 1, "-y"),
+            (new Vector3(0, 0, half.Z), 2, "+z"),
+        ];
+        foreach (var t in tries)
+            if (OnBody(t.At, t.Axis))
+                return (t.At, t.Face);
+        return null;
     }
 
     /// <summary>

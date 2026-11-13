@@ -373,3 +373,17 @@ One at a time; the first option is the recommendation and what the phases assume
    - A (recommended): **carrying between machines and the network** (phases 3 and 4), then the crane.
    - B: **the crane** straight after phase 3, the network later: big pieces move sooner, but only between points one
      lifter reaches.
+
+## 12. The user's answers (2026-11-13)
+
+1. **A scripted machine** (A).
+2. **Not A, B or C as written:** the carried piece passes through vehicles, walls and other pieces, but it **pushes players**
+   out of its way. Nothing else is physical: no contact with pieces or bodies, and no "solid carry". (Whether the build-time
+   "no clear way" check of A is still wanted was not asked; the phases may keep it as a cheap warning.)
+3. **Rails and a bridge** (A).
+4. **No**: the station alone still fits anything; lifters make it faster (A).
+5. **By itself**, by the Routers' rule, with a mode setting (A).
+6. **Move orders on the panel and a cab** (B): a seat from which a player steers the hook, grabs loose pieces and sets them
+   down. One phase more than the plan in section 10.
+7. **Arms in five tiers, the crane in three size classes** (A).
+8. **Carrying between machines and the network first**, then the crane (A).

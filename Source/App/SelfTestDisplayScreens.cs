@@ -257,7 +257,7 @@ public static partial class SelfTest
         ref var ap = ref asm.Parts[0];
         var ad = asm.DefOf(0);
         Says(asm, "Wants", "No recipe set", "no recipe");
-        var gears = Array.FindIndex(AssemblingTable.Current.Recipes, r => r.Name == "Gear Set");
+        var gears = AssemblingTable.Current.Of(ConstructParts.Need("Wall Clock").Id)!.Choice - 1; // (its recipe value less one; the Gear Set is pressed now)
         ap.Cfg[ad.CfgSlot[(int)CfgKey.Recipe]] = gears + 1;
         Says(asm, "Wants", "Needs input", "nothing in it");
         want(new string(FillCard(w, asm, 0).Line(2)).Contains("steel"), $"what it lacks: {CardText(FillCard(w, asm, 0))}");
@@ -468,7 +468,7 @@ public static partial class SelfTest
             string Host() => CardText(FillCard(w, c, asm));
             string Client() => CardText(FillCard(a.Constructs, copy, asm));
             want(Await(() => Host() == Client()), $"an idle machine's screen: host {Host()}, client {Client()}");
-            var gears = Array.FindIndex(AssemblingTable.Current.Recipes, r => r.Name == "Gear Set");
+            var gears = AssemblingTable.Current.Of(ConstructParts.Need("Wall Clock").Id)!.Choice - 1; // (its recipe value less one; the Gear Set is pressed now)
             a.SandboxConfigure(c.Id, [(ushort)asm], [(byte)ad.CfgSlot[(int)CfgKey.Recipe]], [gears + 1]);
             want(Await(() => Host().Contains("Needs input") && Host() == Client()), $"no input: host {Host()}, client {Client()}");
             var st = w.StoreOf(c, asm)!;

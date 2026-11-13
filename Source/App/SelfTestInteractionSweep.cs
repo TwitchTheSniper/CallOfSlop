@@ -52,6 +52,7 @@ public static partial class SelfTest
         }
         finally
         {
+            Program.SweepEnd();
             yard.RestoreProps(); // (the Ground Drill digs and fills the yard: later sections want it as built)
             Program.SandboxGuardRethrow = false;
             Game.SandboxActRethrow = false;

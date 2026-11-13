@@ -94,12 +94,30 @@ public sealed class ConveyorJunctionParts : IPartGenerator
                 p.Add(cap);
             }
         }
+        var panels = new List<object?>();
+        if (router)
+        {
+            // Its screen (smart logistics phase 4): no post (the user's Q6), so a low dark plate on each side face's frame, under the side
+            // ports' conveyor beds (their under-plates come down to 9 cm under the line), 12 mm proud of the frame; panel source "router",
+            // with the Spill and Hold buttons along its bottom (RouterScreen.cs). Two, so a conveyor on one side leaves the other to read.
+            double sw = Math.Round((x1 - x0) * 0.72, 3), sh = 0.24, sy0 = y0 + 0.02, sy1 = sy0 + sh + 0.02;
+            foreach (var (face, sign) in new[] { ("-x", -1.0), ("+x", 1.0) })
+            {
+                var edge = sign < 0 ? x0 : x1;
+                double px0 = sign < 0 ? edge - 0.012 : edge - 0.02, px1 = sign < 0 ? edge + 0.02 : edge + 0.012;
+                p.Add(MachineLook.D([px0, sy0, cz - sw / 2 - 0.02], [px1, sy1, cz + sw / 2 + 0.02], "#14181c"));
+                panels.Add(Kw(("source", "router"), ("at", Py.L(Py.Round(edge + sign * 0.016, 4), Py.Round((sy0 + sy1) / 2, 4), Py.Round(cz, 4))),
+                    ("size", Py.L(sw, sh)), ("face", face), ("up", "+y"), ("rows", 5), ("range", 16),
+                    ("touch", Py.L(Kw(("action", "router.spill"), ("at", Py.L(0.02, 0.03, 0.49, 0.27)), ("label", "Spill")),
+                        Kw(("action", "router.hold"), ("at", Py.L(0.51, 0.03, 0.98, 0.27)), ("label", "Hold"))))));
+            }
+        }
         BlockSockets(p, n, 2, n, faces: "y", skip: ["+y"], limit: new() { ["-y"] = (3, 6) });
         var wide = n * c.Cell;
         p.Stats(wide * wide * 40, 300 + 40 * wide * wide, 4);
         p.Set(("ports", ports));
         if (router)
-            p.Set(("router", true), ("power", n > 6 ? 40 : 20));
+            p.Set(("router", true), ("power", n > 6 ? 40 : 20), ("panels", panels));
         return p;
     }
 
