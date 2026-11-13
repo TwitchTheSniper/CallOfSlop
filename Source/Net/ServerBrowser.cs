@@ -443,7 +443,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      a press has a Pattern setting (its recipe key); bay 2 is a kit hopper (the store's mixed input and kinds); new die parts move part ids.
     // 268: smart logistics phase 2b: each crafting order in CBodyKind.Craft ends with its chain lines (u8 n, u8 more, each u8 depth,
     //      u16 kind, made, asked, maker part, dest part, stock claimed, a reason): the Orders tab's indented lines on both peers.
-    public const ushort ProtocolVersion = 268;
+    // 270: lofted panels (feat/panel-designer-3; 269 left to the Press's phase 4): a formed panel's name may be the loft kind
+    //      ("loft LxWxN tT bH,.. fH,.. MATERIAL": HullLoft.Panels.cs); a peer on an older protocol would refuse the name.
+    public const ushort ProtocolVersion = 270;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -31,20 +31,83 @@ public static partial class HullLoft
         new("roofbow", "Roof bow", 200, 180, 22, 6, "a roof: flat in the middle, rolled down at the sides, arched along by its rake"),
         new("cowl", "Cowl", 60, 150, 30, 12, "a round cowl between a hood and a screen, rising by its rake"),
         new("bend", "Bent panel", 200, 100, 0, 0, "a flat sheet folded along a line across it: its angle, where along the sheet, and how tight"),
+        new("loft", "Lofted panel", 200, 120, 0, 0, "a sheet ruled between two edge profiles: eight heights across its back edge and eight across its nose, the nose its own width"),
     ];
 
     /// <summary>A panel's key, read: its preset, sizes in cm, thickness in mm and material.</summary>
-    public readonly record struct PanelShape(int Kind, int L, int W, int Crown, int Rake, int Mm, string Material, int Angle = 0, int At = 0, int Radius = 0);
+    public readonly record struct PanelShape(int Kind, int L, int W, int Crown, int Rake, int Mm, string Material, int Angle = 0, int At = 0, int Radius = 0,
+        int NoseW = 0, ulong Back = 0, ulong Nose = 0);
 
     /// <summary>The bent panel's preset (its key has three more words: <c>a</c> the fold's angle in degrees, up positive; <c>p</c> where its middle lies along the sheet, cm; <c>b</c> its inside radius, cm).</summary>
     public const int PanelBend = 7, PanelMaxAngle = 90, PanelMinRadiusCm = 2, PanelMaxRadiusCm = 100;
+
+    /// <summary>
+    /// The lofted panel's preset (phase 3): a sheet ruled between two edge profiles. Its key: <c>Formed Panel (loft LxWxN tT bH,H,.. fH,H,.. MATERIAL)</c>,
+    /// <c>N</c> the nose's width (cm), <c>b</c> the back edge's eight heights across it and <c>f</c> the nose's (cm, -99 to 99, from the left
+    /// side to the right). The heights ride in <see cref="PanelShape.Back"/> and <see cref="PanelShape.Nose"/>, a signed byte each (<see cref="ProfileAt"/>),
+    /// so the shape stays a plain value. Crown and rake are 0: the profiles are the shape. At most 102 characters and the material's name.
+    /// </summary>
+    public const int PanelLoft = 8, PanelProfilePoints = 8, PanelMaxProfileCm = 99;
+
+    /// <summary>A loft profile's height <paramref name="k"/> (0 the left side, 7 the right), cm.</summary>
+    public static int ProfileAt(ulong profile, int k) => (sbyte)(byte)(profile >> (8 * k));
+
+    /// <summary>A loft profile with height <paramref name="k"/> set to <paramref name="cm"/> (clamped to the range).</summary>
+    public static ulong ProfileSet(ulong profile, int k, int cm) =>
+        profile & ~(0xFFUL << (8 * k)) | (ulong)(byte)(sbyte)Math.Clamp(cm, -PanelMaxProfileCm, PanelMaxProfileCm) << (8 * k);
+
+    /// <summary>A profile from its heights, cm (the left side first).</summary>
+    public static ulong Profile(params ReadOnlySpan<int> cm)
+    {
+        var p = 0UL;
+        for (var k = 0; k < PanelProfilePoints && k < cm.Length; k++)
+            p = ProfileSet(p, k, cm[k]);
+        return p;
+    }
+
+    public static string ProfileText(ulong p)
+    {
+        var sb = new StringBuilder(32);
+        for (var k = 0; k < PanelProfilePoints; k++)
+            sb.Append(k == 0 ? "" : ",").Append(ProfileAt(p, k).ToString(CultureInfo.InvariantCulture));
+        return sb.ToString();
+    }
+
+    public static bool ProfileRead(string s, out ulong p)
+    {
+        p = 0;
+        var w = s.Split(',');
+        if (w.Length != PanelProfilePoints)
+            return false;
+        for (var k = 0; k < PanelProfilePoints; k++)
+        {
+            if (!int.TryParse(w[k], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var v) || Math.Abs(v) > PanelMaxProfileCm)
+                return false;
+            p = ProfileSet(p, k, v);
+        }
+        return true;
+    }
+
+    /// <summary>A profile's height x across (-1 the left side, 1 the right), metres: a Catmull-Rom curve through its eight heights, evenly spaced.</summary>
+    public static float ProfileHeight(ulong p, float x)
+    {
+        var t = Math.Clamp((x + 1) * 0.5f, 0, 1) * (PanelProfilePoints - 1);
+        var i = Math.Min((int)t, PanelProfilePoints - 2);
+        var f = t - i;
+        float H(int k) => k < 0 ? 2 * ProfileAt(p, 0) - ProfileAt(p, 1) : k >= PanelProfilePoints ? 2 * ProfileAt(p, PanelProfilePoints - 1) - ProfileAt(p, PanelProfilePoints - 2) : ProfileAt(p, k);
+        float p0 = H(i - 1), p1 = H(i), p2 = H(i + 1), p3 = H(i + 2);
+        var v = 0.5f * (2 * p1 + (-p0 + p2) * f + (2 * p0 - 5 * p1 + 4 * p2 - p3) * f * f + (-p0 + 3 * p1 - 3 * p2 + p3) * f * f * f);
+        return v / 100f;
+    }
 
     public static bool IsPanelName(string name) => name.StartsWith(PanelPrefix, StringComparison.Ordinal);
 
     /// <summary>A named part a Panel Former makes: a formed panel or one of the vehicle kit's lofted parts.</summary>
     public static bool IsFormedName(string name) => IsPanelName(name) || name.StartsWith(Prefix, StringComparison.Ordinal);
 
-    public static string PanelKey(in PanelShape s) => s.Kind == PanelBend
+    public static string PanelKey(in PanelShape s) => s.Kind == PanelLoft
+        ? string.Create(CultureInfo.InvariantCulture, $"{PanelPrefix}loft {s.L}x{s.W}x{s.NoseW} t{s.Mm} b{ProfileText(s.Back)} f{ProfileText(s.Nose)} {s.Material})")
+        : s.Kind == PanelBend
         ? string.Create(CultureInfo.InvariantCulture, $"{PanelPrefix}{PanelPresets[s.Kind].Word} {s.L}x{s.W} c{s.Crown} r{s.Rake} t{s.Mm} a{s.Angle} p{s.At} b{s.Radius} {s.Material})")
         : string.Create(CultureInfo.InvariantCulture, $"{PanelPrefix}{PanelPresets[s.Kind].Word} {s.L}x{s.W} c{s.Crown} r{s.Rake} t{s.Mm} {s.Material})");
 
@@ -53,7 +116,9 @@ public static partial class HullLoft
     {
         var p = PanelPresets[Math.Clamp(kind, 0, PanelPresets.Length - 1)];
         kind = Math.Clamp(kind, 0, PanelPresets.Length - 1);
-        return kind == PanelBend ? new PanelShape(kind, p.L, p.W, p.Crown, p.Rake, 20, material, 45, p.L / 2, 10) : new PanelShape(kind, p.L, p.W, p.Crown, p.Rake, 20, material);
+        return kind == PanelBend ? new PanelShape(kind, p.L, p.W, p.Crown, p.Rake, 20, material, 45, p.L / 2, 10)
+            : kind == PanelLoft ? new PanelShape(kind, p.L, p.W, 0, 0, 20, material, NoseW: 100, Back: Profile(0, 8, 13, 15, 15, 13, 8, 0), Nose: Profile(-6, 0, 4, 6, 6, 4, 0, -6))
+            : new PanelShape(kind, p.L, p.W, p.Crown, p.Rake, 20, material);
     }
 
     /// <summary>Why a panel can't be made, or null. A key past a range is refused, never clamped, so every peer makes the same part or none.</summary>
@@ -71,6 +136,18 @@ public static partial class HullLoft
             return $"a panel is {PanelMinMm} to {PanelMaxMm} mm thick";
         if (s.Kind != PanelBend && (s.Angle != 0 || s.At != 0 || s.Radius != 0))
             return "only a bent panel has a fold";
+        if (s.Kind != PanelLoft && (s.NoseW != 0 || s.Back != 0 || s.Nose != 0))
+            return "only a lofted panel has edge profiles";
+        if (s.Kind == PanelLoft)
+        {
+            if (s.Crown != 0 || s.Rake != 0)
+                return "a lofted panel has no crown or rake: its profiles are its shape";
+            if (s.NoseW < PanelMinCm || s.NoseW > PanelMaxCm || s.NoseW % PanelStepCm != 0)
+                return $"a lofted panel's nose is {PanelMinCm} to {PanelMaxCm} cm wide, in {PanelStepCm} cm steps";
+            for (var k = 0; k < PanelProfilePoints; k++)
+                if (Math.Abs(ProfileAt(s.Back, k)) > PanelMaxProfileCm || Math.Abs(ProfileAt(s.Nose, k)) > PanelMaxProfileCm)
+                    return $"a profile's heights are within {PanelMaxProfileCm} cm";
+        }
         if (s.Kind == PanelBend)
         {
             if (s.Rake != 0)
@@ -86,6 +163,8 @@ public static partial class HullLoft
         }
         if (RecyclingTable.Current.IdOf(s.Material) is var m && (m == 0 || ExtrusionTable.Current.Find(m) == null))
             return $"a panel can't be formed of {s.Material}: takes {ExtrusionTable.Current.Takes()}";
+        if (s.Kind == PanelLoft && PanelKey(s).Length > ConstructParts.MaxRuntimeName)
+            return "that key is too long for a part's name";
         return null;
     }
 
@@ -100,6 +179,16 @@ public static partial class HullLoft
         var kind = Array.FindIndex(PanelPresets, p => p.Word == w[0]);
         var size = w[1].Split('x');
         static bool Int(string s, out int v) => int.TryParse(s, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out v);
+        if (kind == PanelLoft)
+        {
+            if (size.Length != 3 || !Int(size[0], out var ll) || !Int(size[1], out var lw) || !Int(size[2], out var ln)
+                || w[2].Length < 2 || w[2][0] != 't' || !Int(w[2][1..], out var lmm)
+                || w[3].Length < 2 || w[3][0] != 'b' || !ProfileRead(w[3][1..], out var back)
+                || w[4].Length < 2 || w[4][0] != 'f' || !ProfileRead(w[4][1..], out var nose))
+                return null;
+            var ls = new PanelShape(kind, ll, lw, 0, 0, lmm, string.Join(' ', w[5..]), NoseW: ln, Back: back, Nose: nose);
+            return PanelRefusal(ls) == null && PanelKey(ls) == name ? ls : null;
+        }
         if (kind < 0 || size.Length != 2 || !Int(size[0], out var l) || !Int(size[1], out var wd)
             || w[2].Length < 2 || w[2][0] != 'c' || !Int(w[2][1..], out var crown)
             || w[3].Length < 2 || w[3][0] != 'r' || !Int(w[3][1..], out var rake)
@@ -139,17 +228,28 @@ public static partial class HullLoft
             4 => c * bow + r * 0.25f * (x + 1) * (x + 1), // door: x = 1 is its top edge
             5 => c * (1 - x * x * x * x) + r * 4 * s * (1 - s), // roofbow
             PanelBend => c * bow, // (the fold is in PanelPoint: it moves the sheet along as well as up)
+            PanelLoft => ProfileHeight(p.Back, x) * (1 - s) + ProfileHeight(p.Nose, x) * s, // ruled: a straight line from each back point to its nose point
             _ => c * MathF.Sqrt(MathF.Max(0, 1 - x * x * 0.96f)) + r * s, // cowl
         };
     }
 
-    private static float PanelHalf(in PanelShape p, float s) => p.W / 200f * (p.Kind == 2 ? 1 - 0.18f * s * s : 1);
+    private static float PanelHalf(in PanelShape p, float s) => p.Kind == PanelLoft ? (p.W * (1 - s) + p.NoseW * s) / 200f : p.W / 200f * (p.Kind == 2 ? 1 - 0.18f * s * s : 1);
 
     /// <summary>The facets a key takes: (along, across).</summary>
     public static (int Along, int Across) PanelGrid(in PanelShape p)
     {
         if (p.Kind == PanelBend)
             return (BendRows(p, null), p.Crown > 0 ? Math.Clamp(p.W / 20, 4, PanelMaxAcross) : 1);
+        if (p.Kind == PanelLoft)
+        {
+            // Across: a facet between each two of the eight heights (both profiles straight: one). Along: the rulings are straight, so one
+            // facet when the two edges are alike or both straight, else rows enough for the twist between them (at most 6: 42 facets).
+            var flat = true;
+            for (var k = 0; k < PanelProfilePoints; k++)
+                flat &= ProfileAt(p.Back, k) == ProfileAt(p.Back, 0) && ProfileAt(p.Nose, k) == ProfileAt(p.Nose, 0);
+            var alike = p.Back == p.Nose && p.NoseW == p.W;
+            return (alike || flat ? 1 : Math.Clamp(p.L / 30, 2, 6), flat ? 1 : PanelProfilePoints - 1);
+        }
         var bent = p.Rake != 0 && p.Kind is not (4 or 6);
         var along = bent ? Math.Clamp(p.L / 20, 5, PanelMaxAlong) : p.Kind == 2 ? 4 : 1;
         var across = p.Crown > 0 || p.Kind == 4 && p.Rake != 0 ? Math.Clamp(p.W / 20, 4, PanelMaxAcross) : 1;
@@ -555,6 +655,9 @@ public static partial class HullLoft
                     case "angle" when num: s = s with { Angle = v }; break;
                     case "at" when num: s = s with { At = v }; break;
                     case "radius" when num: s = s with { Radius = v }; break;
+                    case "nose" when num: s = s with { NoseW = v }; break;
+                    case "back" when ProfileRead(kv[1], out var bp): s = s with { Back = bp }; break;
+                    case "front" when ProfileRead(kv[1], out var fp): s = s with { Nose = fp }; break;
                     case "material": s = s with { Material = kv[1] }; break;
                     default:
                         Console.WriteLine($"\"{a}\": key=value (length, width, crown, rake in cm; thick in mm; material)");

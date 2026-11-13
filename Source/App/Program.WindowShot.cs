@@ -712,8 +712,8 @@ public static unsafe partial class Program
                     }
                     WsSay($"design {arg}: after {_wsDesignTries} waits");
                     _wsDesignTries = 0;
-                    if (arg.StartsWith("bring ", StringComparison.Ordinal))
-                        _wsQueue.EnqueueFront("bring Panel Designer");
+                    if (arg.StartsWith("bring ", StringComparison.Ordinal) && WsFind(g, "Panel Designer").Item1 != null)
+                        _wsQueue.EnqueueFront("bring Panel Designer"); // (no desk: they only had to be here)
                     _wsWait = 20;
                     return;
                 }
@@ -740,7 +740,34 @@ public static unsafe partial class Program
                     return;
                 }
                 var dw = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                if (dw.Length >= 2 && dw[0] == "name")
+                if (arg == "open") // the panel opened on the first Panel Designer as the use key on its desk opens it (the aim skipped)
+                {
+                    if (WsFind(g, "Panel Designer") is ({ } oc, var op))
+                        OpenPanelDesigner(oc, op);
+                    WsSay($"design open: {(Ui.DesignerOpen ? "open" : "NOT OPEN")}");
+                    _wsWait = 5;
+                    return;
+                }
+                if (arg is "save" or "order")
+                {
+                    Ui.DesignerPress(arg); // (the button, pressed at the panel's next frame)
+                    _wsWait = 3;
+                    return;
+                }
+                if (arg == "parts") // every formed panel placed on a body, by name and geometry hash: two peers compare them
+                {
+                    foreach (var b in g.Constructs.Bodies)
+                        for (var i = 0; i < b.PartCount; i++)
+                            if (HullLoft.IsPanelName(b.DefOf(i).Name))
+                                WsSay($"design: placed on body {b.Id} part {i}: {b.DefOf(i).Name} hash {HullLoft.PanelHash(b.DefOf(i)):x8}");
+                    return;
+                }
+                if (dw.Length >= 2 && dw[0] == "profile" && dw[1].Split(',') is { Length: 2 } pv && int.TryParse(pv[0], out var ph) && int.TryParse(pv[1], out var pcm))
+                {
+                    Ui.DesignerProfile(ph, pcm); // "profile H,CM": a loft's handle H (0-7 the back edge, 8-15 the nose) to CM, as a drag would
+                    _wsWait = 3;
+                }
+                else if (dw.Length >= 2 && dw[0] == "name")
                     Ui.DesignerName(arg[(arg.IndexOf(' ') + 1)..].Trim());
                 else
                     if (dw.Length == 2 && int.TryParse(dw[1], out var dv))
