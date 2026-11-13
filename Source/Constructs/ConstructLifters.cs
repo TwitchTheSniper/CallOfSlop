@@ -254,7 +254,15 @@ public static class ConstructLifters
     public static void Step(ConstructWorld world)
     {
         var fitTaken = world.FitThisTick;
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         StepLifts(world, fitTaken);
+        if (world.LiftBodies.Count > 0)
+        {
+            var dt = System.Diagnostics.Stopwatch.GetTimestamp() - t0;
+            LifterProbe.StepTicks++;
+            LifterProbe.StepTotal += dt;
+            LifterProbe.StepWorst = Math.Max(LifterProbe.StepWorst, dt);
+        }
         world.FitThisTick = false; // (after: a lifter's own fit sets it too)
     }
 
@@ -798,6 +806,53 @@ public static class ConstructLifters
     public static float AgeNow(CLift l) =>
         l.State is LiftState.Carry or LiftState.Return && l.Why != LiftWhy.NoPower ? MathF.Min(l.Dur, l.Age + (float)((ConstructConveyor.Clock - l.At) * World.TickRate)) : l.Dur;
 
+    private static double _fittersAt = -10;
+    private static ushort _fittersBody;
+    private static int _fittersPart = -1;
+    private static string _fittersText = "";
+
+    /// <summary>
+    /// A station panel's line (arms-and-cranes.md section 4): "Fitters: the station, 2 Loader Arms (Workshop, Scrap) - about 1.4 parts
+    /// a second". Every lifter whose hand reaches the station's hold counts; the rate is a light part's, the station's own 2 s and
+    /// each arm's cycle from the hold to the bay's middle and back. Made again once a second while the panel is open.
+    /// </summary>
+    public static string FittersLine(ConstructWorld world, Construct sc, int t)
+    {
+        var now = ConstructConveyor.Clock;
+        if (_fittersBody == sc.Id && _fittersPart == t && now - _fittersAt < 1.0)
+            return _fittersText;
+        (_fittersBody, _fittersPart, _fittersAt) = (sc.Id, t, now);
+        var rate = 1f / ConstructStation.FitSeconds;
+        var n = 0;
+        var tiers = new System.Text.StringBuilder();
+        ConstructStation.Bay(sc, t, out var floor, out _, out var bay);
+        var middle = floor + Vector3.UnitY * MathF.Min(bay.Y * 0.5f, 1f);
+        foreach (var lb in world.LiftBodies)
+        {
+            if (world.Get(lb.Body) is not { } c)
+                continue;
+            for (var i = 0; i < lb.N; i++)
+            {
+                var part = lb.Lifts[i].Part;
+                if (part >= c.PartCount || c.DefOf(part).Lifter is not { Bridge: false } ld)
+                    continue;
+                Frame(c, part, ld, out _, out var lr, out var shoulder);
+                var hold = HoldPoint(sc, t, shoulder);
+                if (!InReach(ld, shoulder, lr, hold, SafeLift, out _))
+                    continue;
+                n++;
+                tiers.Append(tiers.Length > 0 ? ", " : "").Append(TierName(ld.Tier));
+                rate += 1f / (ld.Handle * 1.25f + 2 * Vector3.Distance(hold, middle) / ld.Speed);
+            }
+        }
+        _fittersText = n == 0
+            ? "Fitters: the station alone. A Loader Arm whose reach takes in the hold fits parts beside it."
+            : $"Fitters: the station, {n} Loader Arm{(n == 1 ? "" : "s")} ({tiers}) - about {rate:0.0} light parts a second";
+        return _fittersText;
+    }
+
+    private static string TierName(int tier) => tier switch { 2 => "Workshop", 3 => "Industrial", 4 => "Military", 5 => "Plasma", _ => "Scrap" };
+
     // ---- The look line (both peers) ---------------------------------------------------------------------------------------
 
     /// <summary>A key that changes when the look line would (Program.Sandbox.cs builds the text only then).</summary>
@@ -1076,23 +1131,32 @@ public static class LifterProbe
             {
                 var l = lb.Lifts[i];
                 n++;
-                sb.Append($" [body {lb.Body} part {l.Part}: {l.State}{(l.Def != 0 ? " " + (ConstructParts.Get(l.Def)?.Name ?? "?") : "")} {l.Age}/{l.Dur} ticks]");
+                sb.Append($" [body {lb.Body} part {l.Part} {world.Get(lb.Body)?.DefOf(l.Part).Name}: {l.State} {l.Why} moves {l.Moves}{(l.Def != 0 ? " " + (ConstructParts.Get(l.Def)?.Name ?? "?") : "")} {l.Age}/{l.Dur} ticks]");
             }
-        return $"{n} lifter(s), {CarriesHeard} carries seen, {Fits} fitted by lifters (host count){sb}";
+        var f = System.Diagnostics.Stopwatch.Frequency / 1e6;
+        var cost = StepTicks > 0 ? $"; lifter step {StepTotal / f / StepTicks:0.0} us a tick on average, worst {StepWorst / f:0} us (with its fits) over {StepTicks} ticks" : "";
+        return $"{n} lifter(s), {CarriesHeard} carries seen, {Fits} fitted by lifters (host count){cost}{sb}";
     }
 
     /// <summary>Host: a Loader Arm on the ground behind the station's hold, inside its bay's back corner, turned as the station is.</summary>
-    public static string Place(ConstructWorld world, Construct sc, int t)
+    public static string Place(ConstructWorld world, Construct sc, int t, string tier = "", int slot = 0)
     {
-        if (ConstructParts.Find("Loader Arm") is not { Lifter: { } ld } d)
-            return "no Loader Arm part";
+        var name = (tier.Length > 0 && tier != "Scrap" ? tier + " " : "") + "Loader Arm";
+        if (ConstructParts.Find(name) is not { Lifter: { } ld } d)
+            return $"no {name} part";
         var sd = sc.DefOf(t);
         Freeform.PartWorld(sc, t, out var sp, out var sr);
         var centre = (d.BoundsMin + d.BoundsMax) * 0.5f;
-        var local = new Vector3(sd.BoundsMax.X + ConstructStation.BayGap + 0.9f - centre.X, sd.BoundsMin.Y - d.BoundsMin.Y + 0.02f, sd.BoundsMin.Z - 0.9f - centre.Z);
+        var half = (d.BoundsMax - d.BoundsMin) * 0.5f;
+        // Slot 0: the bay's back corner (phase 1's place); 1: its front corner; 2 and 3 the same, 6 m further along the bay.
+        var x = sd.BoundsMax.X + ConstructStation.BayGap + half.X + 0.15f + slot / 2 * 6f;
+        var z = slot % 2 == 0 ? sd.BoundsMin.Z - half.Z - 0.15f : sd.BoundsMax.Z + half.Z + 0.15f;
+        var local = new Vector3(x - centre.X, sd.BoundsMin.Y - d.BoundsMin.Y + 0.02f, z - centre.Z);
         var made = ConstructBuild.PlaceNew(world, d, new FreePlacement { Pos = sp + Vector3.Transform(local, sr), Rot = sr });
-        return made == null ? "no room for the arm" : $"a Loader Arm stands at the bay's back corner (construct {made.Id}), shoulder {ld.Base}";
+        return made == null ? $"no room for the {name}" : $"a {name} stands at the bay's slot {slot} (construct {made.Id}), shoulder {ld.Base}";
     }
+
+    public static long StepTicks, StepTotal, StepWorst; // server: the lifter step's own cost (Stopwatch ticks), for the window tool
 }
 
 /// <summary>

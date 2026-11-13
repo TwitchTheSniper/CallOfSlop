@@ -857,10 +857,11 @@ public static unsafe partial class Program
                     _wsWait = 1;
                     return;
                 }
-                if (arg.Trim() == "place" && g.IsServer)
+                if (arg.Trim().StartsWith("place", StringComparison.Ordinal) && g.IsServer) // "lifter place [TIER] [SLOT]": TIER Scrap, Workshop, Industrial, Military or Plasma; SLOT 0 to 3 round the bay
                 {
+                    var pw = arg.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
                     var (lc, lpart) = WsFind(g, "Building Station");
-                    WsSay("lifter: place: " + (lc == null ? "no Building Station" : LifterProbe.Place(g.Constructs, lc, lpart)));
+                    WsSay("lifter: place: " + (lc == null ? "no Building Station" : LifterProbe.Place(g.Constructs, lc, lpart, pw.Length > 1 ? pw[1] : "", pw.Length > 2 && int.TryParse(pw[2], out var ps) ? ps : 0)));
                 }
                 WsSay("lifter: " + LifterProbe.Text(g.Constructs));
                 return;
