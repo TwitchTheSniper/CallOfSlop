@@ -110,7 +110,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "aim" or "near" or "from" or "person" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "aim" or "near" or "from" or "person" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "guns" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action);
 
     private static void WsSay(string s)
     {
@@ -489,6 +489,16 @@ public static unsafe partial class Program
                     }
                 else
                     WsSay("joints: no spawned body");
+                return;
+            case "guns": // each gun of the spawned body as this peer derives it (sized parts: host and client agree): its part, problem, reach, spread, damage and rate
+                if ((WsSpawned(g) ?? g.Constructs.Bodies.OrderByDescending(b => b.GunCount).FirstOrDefault(b => b.GunCount > 0)) is { } gc) // (a client spawned nothing: the body with the most guns)
+                    for (var k = 0; k < gc.GunCount; k++)
+                    {
+                        ref var cg = ref gc.Guns[k];
+                        WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"guns: {k} {gc.DefOf(cg.Part).Name}: {(cg.Problem.Length > 0 ? cg.Problem : "fires")}, reach {cg.MaxRange:0.##} m, spread {cg.Spread * 180 / MathF.PI:0.####} deg, damage {cg.Def?.Damage ?? 0}, every {cg.Interval} ticks, {cg.Shots} a shot"));
+                    }
+                else
+                    WsSay("guns: no spawned body");
                 return;
             case "saveworld" or "loadworld": // host: the world saved under a name through the real save and copied out, or (a fresh process) that copy loaded; then the run-time parts of every body
             {
