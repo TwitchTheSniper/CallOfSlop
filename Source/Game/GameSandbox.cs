@@ -1957,6 +1957,8 @@ public sealed partial class Game
             return;
         }
         Constructs.BlockPlayer(ref s, World.HeightOf(s.Stance), IsServer, p.Id, frame: p.Bot == null);
+        if (Constructs.LiftBodies.Count > 0 && p.Bot == null)
+            ConstructLifterPush.Block(Constructs, ref s, World.HeightOf(s.Stance), _sepAtTick != 0 ? _sepAtTick : MoverPhysics.Clock, IsServer); // (a Loader Arm's piece in the air pushes them aside, or waits for them: ConstructLifterPush.cs)
         if (IsServer && Constructs.LastHitSpeed > RunOverSpeed && Constructs.LastHitBody is { } car)
             SandboxRunOver(p, ref s, car);
     }

@@ -2048,6 +2048,7 @@ public static unsafe partial class Program
         ScenePresentation.BeginFrame(MeshGfx);
         using (Perf.Measure(PerfArea.Ragdolls))
             UpdateRagdolls(now); // new bodies for the newly dead, their 60 Hz steps (Program.Ragdolls.cs); drawn with the props' debris
+        ConstructLifters.DrawTick = _game.MoverRenderTick; // (a Loader Arm's move is posed on the mover clock: ConstructLifters.AgeAt)
         AddFrameLights(now, eye, fwd); // muzzle flash and blasts light a lit map this frame (Program.Lighting.cs)
         ApplyVideoLevels();
         DrawArena();
