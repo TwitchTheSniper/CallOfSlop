@@ -566,10 +566,16 @@ public static class ConstructEngine
         EngineFault.NoStarter => "needs a starter motor",
         EngineFault.NoTank => "no fuel: link a fuel tank",
         EngineFault.AllWrecked => "every cylinder is wrecked",
-        _ => e.Starved == 0 ? ""
-            : e.StarvedBoost ? $"bank {e.Starved}: the {e.StarvedBy?.Name ?? "booster"} is small for its cylinders ({e.StarvedShare * 100:0}% of its boost)"
-            : $"bank {e.Starved} starved: the {e.StarvedBy?.Name ?? "fuel system"} feeds {e.StarvedShare * 100:0.#}% of its cylinders", // (it runs on that: design 6.4)
+        _ => StarvedText(e),
     };
+
+    /// <summary>
+    /// The first bank a small piece costs power (design 6.4; "" for none): "bank 1 starved: the Small Carburettor feeds 5% of its cylinders",
+    /// "bank 1: the Small Turbo is small for its cylinders (40% of its boost)". It still runs on that.
+    /// </summary>
+    public static string StarvedText(ModEngine e) => e.Starved == 0 ? ""
+        : e.StarvedBoost ? $"bank {e.Starved}: the {e.StarvedBy?.Name ?? "booster"} is small for its cylinders ({e.StarvedShare * 100:0}% of its boost)"
+        : $"bank {e.Starved} starved: the {e.StarvedBy?.Name ?? "fuel system"} feeds {e.StarvedShare * 100:0.#}% of its cylinders";
 
     /// <summary>What the pieces add up to, then what is wrong: "V8 320 kW, thirsty - no fuel: link a fuel tank".</summary>
     public static string Readout(ModEngine e) => SandboxKeys.Line(Sums(e), null, FaultText(e)).TrimStart(' ', '-');
@@ -599,7 +605,7 @@ public static class ConstructEngine
         var running = c.ModActive == k && c.EngineRunning ? $"{c.Rpm:0} rpm" : "";
         var share = d.Piece == EnginePiece.Cylinder && !p.Broken && Share(c, part, EngineRules.Current) < 1 ? "misfiring" : "";
         var battery = c.ModActive == k && c.EngineDef.NeedsStarter && !c.HasBattery ? "no battery for the starter" : "";
-        return SandboxKeys.Line(d.Name, SandboxKeys.Join(health, share, Sums(e), running), SandboxKeys.Join(FaultText(e), battery));
+        return SandboxKeys.Line(d.Name, SandboxKeys.Join(health, share, Sums(e), running), SandboxKeys.Join(FaultText(e), e.Fault != EngineFault.None ? StarvedText(e) : "", battery));
     }
 
     /// <summary>What decides <see cref="Look"/> beyond the part (the look line's cache key).</summary>
@@ -609,7 +615,7 @@ public static class ConstructEngine
         if (k < 0 || k >= c.ModCount)
             return 0;
         var e = c.ModEngines![k];
-        return (long)e.Fault ^ (long)e.FaultBank << 4 ^ (long)e.Cylinders << 8 ^ (long)(int)e.Kw << 16 ^ (e.Fuelled ? 1L << 15 : 0) ^ (long)e.Misfiring << 42;
+        return (long)e.Fault ^ (long)e.FaultBank << 4 ^ (long)e.Cylinders << 8 ^ (long)(int)e.Kw << 16 ^ (e.Fuelled ? 1L << 15 : 0) ^ (long)e.Misfiring << 42 ^ (long)e.Starved << 50 ^ (long)(int)(e.StarvedShare * 1000) << 54;
     }
 
     /// <summary>Why no modular engine on the construct runs, for the HUD ("" when there are no pieces).</summary>
