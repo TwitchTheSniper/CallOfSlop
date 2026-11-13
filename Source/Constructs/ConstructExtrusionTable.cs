@@ -34,6 +34,7 @@ public sealed class ExtrusionTable
     public FanKind[] FanKinds = [];
     public AirframeKind[] Airframes = [];
     public ExtrusionMaterial[] WingRows = [];
+    public (string Part, string Piece)[] Presets = []; // a former's presets: a catalogue part and the key it is cut as (FormerPresets.cs)
     public string Problem = "";
 
     /// <summary>
@@ -105,6 +106,7 @@ public sealed class ExtrusionTable
             var kinds = new List<FanKind>();
             var wings = new List<ExtrusionMaterial>();
             var frames = new List<AirframeKind>();
+            var presets = new List<(string, string)>();
             JsonElement? painter = null;
             foreach (var p in root.EnumerateObject())
                 switch (p.Name)
@@ -142,6 +144,15 @@ public sealed class ExtrusionTable
                         foreach (var row in p.Value.EnumerateArray())
                             frames.Add(Frame(row, frames.Count + 1));
                         break;
+                    case "presets":
+                        foreach (var row in p.Value.EnumerateArray())
+                        {
+                            if (row.ValueKind != JsonValueKind.Object || !row.TryGetProperty("part", out var pn) || pn.GetString() is not { Length: > 0 } partName
+                                || !row.TryGetProperty("piece", out var pk) || pk.GetString() is not { Length: > 0 } pieceKey)
+                                throw new FormatException($"presets[{presets.Count}] is {{\"part\": NAME, \"piece\": KEY}}");
+                            presets.Add((partName, pieceKey));
+                        }
+                        break;
                     case "painter":
                         painter = p.Value.Clone();
                         break;
@@ -159,6 +170,7 @@ public sealed class ExtrusionTable
             t.FanKinds = kinds.ToArray();
             t.WingRows = wings.ToArray();
             t.Airframes = frames.ToArray();
+            t.Presets = presets.ToArray();
             foreach (var r in fans)
                 t._fans[r.Material] = r;
             foreach (var r in wings)

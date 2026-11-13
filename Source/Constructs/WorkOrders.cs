@@ -87,8 +87,11 @@ public static class WorkOrders
 
     // ---- Accepting --------------------------------------------------------------------------------------------------------
 
-    /// <summary>A machine that can take orders: an Extruder or a Wheel Former (Fan and Airframe Formers wait for a later phase), an Assembler of any family, or a Press (not a Die Lathe).</summary>
-    public static bool TakesOrders(ConstructPartDef d) => d.IsExtruder && !d.IsFanFormer && !d.IsAirframeFormer || d.IsAssembler || d.IsPress && !d.IsLathe;
+    /// <summary>A machine that can take orders: an Extruder, a Wheel, Fan, Airframe or Panel Former, an Assembler of any family, or a Press (not a Die Lathe).</summary>
+    public static bool TakesOrders(ConstructPartDef d) => d.IsExtruder || d.IsAssembler || d.IsPress && !d.IsLathe;
+
+    /// <summary>A Fan or an Airframe Former: its piece is made whole to its order's size (ConstructExtruder.GrowWhole).</summary>
+    public static bool IsWholeFormer(ConstructPartDef d) => d.IsFanFormer || d.IsAirframeFormer;
 
     /// <summary>The name of an Assembler family (<see cref="AssemblingTable.Machines"/>), for a refusal.</summary>
     public static string FamilyName(byte machine) => machine switch { 1 => "Thruster Assembler", 2 => "Tailor", _ => "Assembler" };
@@ -98,7 +101,7 @@ public static class WorkOrders
     {
         var d = c.DefOf(part);
         if (!TakesOrders(d))
-            return d.IsFanFormer || d.IsAirframeFormer ? $"the {d.Name} takes no orders yet" : $"the {d.Name} takes no orders";
+            return $"the {d.Name} takes no orders";
         if (d.IsPress)
             return PressRefusal(c, part, d, o);
         if (d.IsPanelFormer)
@@ -109,6 +112,8 @@ public static class WorkOrders
             return $"the {d.Name} takes no panels: {o.Name} is a Panel Former's order";
         if (d.IsAssembler)
             return AssemblerRefusal(c, part, d, o);
+        if (IsWholeFormer(d))
+            return FormerRefusal(world, c, part, d, o);
         if (!o.IsPiece)
             return $"the {d.Name} makes pieces: {ConstructParts.Def(o.Part).Name} is an Assembler's order";
         if (o.Count is < 1 or > MaxCount)
@@ -160,7 +165,7 @@ public static class WorkOrders
         if (o.Count is < 1 or > MaxCount)
             return $"an order is for 1 to {MaxCount} parts";
         if (AssemblingTable.Current.Of(o.Part) is not { } r)
-            return $"no recipe makes the {made.Name}";
+            return FormerPresets.Line(made) ?? $"no recipe makes the {made.Name}";
         if (r.Machine != d.AsmMachine)
             return $"the {made.Name} is made by a {FamilyName(r.Machine)}, not the {d.Name}";
         if (r.MinTier > d.Tier)
@@ -194,6 +199,38 @@ public static class WorkOrders
         return null;
     }
 
+    /// <summary>
+    /// A Fan or an Airframe Former's side: a prop or a wing by its key, or a catalogue part that is one of its presets (FormerPresets.cs), inside
+    /// the machine's sizes, in a material its table takes and its bin isn't fed otherwise.
+    /// </summary>
+    private static string? FormerRefusal(ConstructWorld world, Construct c, int part, ConstructPartDef d, in WorkOrder o)
+    {
+        var fan = d.IsFanFormer;
+        if (!FormerPresets.KeyFor(o, out var k))
+            return o.Name != null ? $"the {d.Name} takes no panels or pressed parts: {o.Name} is another machine's order"
+                : AssemblingTable.Current.Of(o.Part) != null ? $"the {ConstructParts.Def(o.Part).Name} is an Assembler's order"
+                : $"no former's preset makes the {ConstructParts.Def(o.Part).Name}";
+        if (o.Count is < 1 or > MaxCount)
+            return $"an order is for 1 to {MaxCount} pieces";
+        if (k.Shape != (fan ? ExShape.Fan : ExShape.Wing))
+            return $"the {d.Name} {(fan ? "forms props and rotors" : "cuts wings and control surfaces")}: a {Extrusion.Label(k)} is {Maker(k)}'s order";
+        var names = RecyclingTable.Current;
+        var mat = names.NameOf(k.Material);
+        if ((fan ? ExtrusionTable.Current.FindFan(k.Material) : ExtrusionTable.Current.FindWing(k.Material)) == null)
+            return $"the {d.Name} can't form {mat}";
+        if (fan ? Extrusion.FanKindOf(k.Wall) == null : Extrusion.AirframeOf(k.Wall) == null)
+            return $"the {d.Name} doesn't know that kind";
+        if (FormerPresets.Fits(d, k) is { } size)
+            return size;
+        if (k.H % Extrusion.StepCm != 0 || k.W % Extrusion.StepCm != 0 || k.L % Extrusion.StepCm != 0)
+            return $"sizes go in {Extrusion.StepCm} cm steps";
+        if (c.Parts[part].Orders is { Count: >= MaxOrders })
+            return $"the {d.Name}'s queue is full ({MaxOrders} orders)";
+        if (world.StoreOf(c, part) is { Amount: > 0 } st && st.Material != k.Material)
+            return $"the {d.Name} is fed {names.NameOf(st.Material)}: an order in {mat} is another line";
+        return null;
+    }
+
     /// <summary>A pressed part's order by its key (its material the blank's), or null when the key doesn't read.</summary>
     public static WorkOrder? PressedOrder(string key, int count) => Pressed.SpecOf(key) is { } s
         ? new WorkOrder { Name = key, Key = new ExtrusionKey(0, 0, 0, 0, s.Blank.Material, false, ExShape.Section), Part = ConstructParts.None, Count = (ushort)Math.Clamp(count, 1, MaxCount) }
@@ -215,7 +252,10 @@ public static class WorkOrders
             return why;
         ref var p = ref c.Parts[part];
         p.Orders ??= new OrderList();
-        p.Orders.Add(o with { Made = 0 });
+        var add = o with { Made = 0 };
+        if (!o.IsPiece && IsWholeFormer(p.D) && FormerPresets.KeyFor(o, out var preset))
+            add.Key = preset; // (a former's preset: the part by its id, and the key it is cut as, for its material on screens and look lines)
+        p.Orders.Add(add);
         world.OrdersChanged(c);
         return null;
     }
@@ -232,9 +272,18 @@ public static class WorkOrders
         return false;
     }
 
-    /// <summary>Is a piece on the die the head order's (its section, material and shape; its length may still be short)?</summary>
-    public static bool ForHead(in WorkOrder head, in ExtrusionKey k) =>
-        k.Shape == head.Key.Shape && k.Material == head.Key.Material && (k.Shape == ExShape.Wheel || k.Mask == head.Key.Mask && k.W == head.Key.W && k.H == head.Key.H && k.Wall == head.Key.Wall);
+    /// <summary>
+    /// Is a piece on the die the head order's (<paramref name="want"/>: its key, FormerPresets.KeyFor)? Its section, material and shape; its length
+    /// may still be short. A prop its kind, style and blades (its diameter grows); a wing its kind and chord (its span grows).
+    /// </summary>
+    public static bool ForHead(in ExtrusionKey want, in ExtrusionKey k) =>
+        k.Shape == want.Shape && k.Material == want.Material && k.Shape switch
+        {
+            ExShape.Wheel => true,
+            ExShape.Fan => k.Wall == want.Wall,
+            ExShape.Wing => k.Wall == want.Wall && k.W == want.W,
+            _ => k.Mask == want.Mask && k.W == want.W && k.H == want.H && k.Wall == want.Wall,
+        };
 
     /// <summary>Server: a piece for the head order came off: one more made, and the head goes once all are.</summary>
     public static void Made(ConstructWorld world, Construct c, OrderList? q, int n = 1)
@@ -277,6 +326,22 @@ public static class WorkOrders
             return ConstructPanelFormer.FromSettings(c, part, count, "steel", out o);
         if (d.IsPress)
             return $"the {d.Name} takes its orders from a Crafting Terminal or a Line Console";
+        if (d.IsFanFormer)
+        {
+            // A prop of its settings: what it makes, its blades and style, how far across.
+            var across = Cm(ConstructConfig.Get(p, d, CfgKey.FanDiameter, d.ExtWheelStart.Y));
+            var fanWall = Extrusion.FanWall((int)ConstructConfig.Get(p, d, CfgKey.FanKind, 0), (int)ConstructConfig.Get(p, d, CfgKey.BladeStyle, 0), (int)ConstructConfig.Get(p, d, CfgKey.FanBlades, 3));
+            o = new WorkOrder { Key = new ExtrusionKey(0, 0, (ushort)across, 0, 0, false, ExShape.Fan, fanWall), Part = ConstructParts.None, Count = count };
+            return null;
+        }
+        if (d.IsAirframeFormer)
+        {
+            // A wing or a control surface of its settings: what it cuts, its chord and its span.
+            var chord = Cm(ConstructConfig.Get(p, d, CfgKey.WingChord, d.ExtWheelStart.X));
+            var span = Cm(ConstructConfig.Get(p, d, CfgKey.WingSpan, d.ExtWheelStart.Y));
+            o = new WorkOrder { Key = new ExtrusionKey(0, (ushort)chord, 0, (ushort)span, 0, false, ExShape.Wing, (ushort)ConstructConfig.Get(p, d, CfgKey.WingKind, 0)), Part = ConstructParts.None, Count = count };
+            return null;
+        }
         if (d.IsWheelFormer)
         {
             var w = Cm(ConstructConfig.Get(p, d, CfgKey.Width, d.ExtWheelStart.X));
@@ -302,7 +367,8 @@ public static class WorkOrders
             return st.Material;
         var names = RecyclingTable.Current;
         for (byte m = 1; m <= names.Materials.Length; m++)
-            if (d.IsWheelFormer ? ExtrusionTable.Current.FindWheel(m) != null : ExtrusionTable.Current.Find(m) != null)
+            if (d.IsFanFormer ? ExtrusionTable.Current.FindFan(m) != null : d.IsAirframeFormer ? ExtrusionTable.Current.FindWing(m) != null
+                : d.IsWheelFormer ? ExtrusionTable.Current.FindWheel(m) != null : ExtrusionTable.Current.Find(m) != null)
                 return m;
         return 1;
     }
@@ -441,7 +507,9 @@ public static class WorkOrders
                 {
                     // (the reason that matters is the first from a machine of the order's kind: an Assembler's for a part, else an Extruder's or a Former's)
                     var md = c.DefOf(m);
-                    var kind = md.IsPress ? Pressed.SpecOf(bill.Items[i]) != null : (md.IsPanelFormer ? 2 : md.IsAssembler ? 1 : 0) == bill.Items[i].Kind;
+                    var kind = md.IsPress ? Pressed.SpecOf(bill.Items[i]) != null
+                        : IsWholeFormer(md) && FormerPresets.KeyFor(bill.Items[i], out var fk) ? fk.Shape == (md.IsFanFormer ? ExShape.Fan : ExShape.Wing)
+                        : (md.IsPanelFormer ? 2 : md.IsAssembler ? 1 : 0) == bill.Items[i].Kind;
                     if (why == null || kind && !whyKind)
                         (why, whyKind) = ($"{c.DefOf(m).Name}: {no}", kind);
                 }
@@ -504,6 +572,14 @@ public static class WorkOrders
         {
             case ExShape.Wheel:
                 card.Add(line, "Wheel ").AddShort(line, k.H / 100f).Add(line, 'x').AddShort(line, k.W / 100f);
+                break;
+            case ExShape.Fan:
+                // "Propeller 1.8m 3 blades": its kind and size, the blades on the next line when it doesn't fit.
+                card.Add(line, Extrusion.FanKindOf(k.Wall)?.Label ?? "Fan").Add(line, ' ').AddShort(line, k.H / 100f).Add(line, 'm');
+                card.Add(tail, Extrusion.FanBladesOf(k.Wall)).Add(tail, " blades ");
+                break;
+            case ExShape.Wing:
+                card.Add(line, Extrusion.AirframeOf(k.Wall)?.Label ?? "Wing").Add(line, ' ').AddShort(line, k.W / 100f).Add(line, 'x').AddShort(line, k.L / 100f);
                 break;
             case ExShape.Round:
             case ExShape.Pipe:
@@ -960,7 +1036,7 @@ public static class ConstructBill
             any = true;
         }
         foreach (var (_, d, n) in bill.Parts)
-            if (RecipeOf(d) != null || PresetOf(d) != null) // (a preset is a Press's order by its catalogue part)
+            if (RecipeOf(d) != null || PresetOf(d) != null || FormerPresets.KeyOf(d) != null) // (a preset is a Press's or a former's order by its catalogue part)
             {
                 if (WorkOrders.AddToBill(world, c, console, new WorkOrder { Part = (ushort)d!.Id, Count = (ushort)Math.Min(n, WorkOrders.MaxCount) }) is { } why)
                     return why;
@@ -1017,8 +1093,8 @@ public static class ConstructBill
                 throw new ConstructPartException($"{file}: bill[{k}]: no catalogue part named \"{part}\"");
             return (step, new WorkOrder { Part = (ushort)d.Id, Count = (ushort)count });
         }
-        if (Extrusion.ParseKey(piece) is not { Growing: false } key || key.Shape is not (ExShape.Section or ExShape.Round or ExShape.Pipe or ExShape.Wheel))
-            throw new ConstructPartException($"{file}: bill[{k}]: \"{piece}\" isn't a piece an Extruder or a Wheel Former makes, like \"Extrusion i-beam 25x25x400 metal\"");
+        if (Extrusion.ParseKey(piece) is not { Growing: false } key || key.Shape is not (ExShape.Section or ExShape.Round or ExShape.Pipe or ExShape.Wheel or ExShape.Fan or ExShape.Wing))
+            throw new ConstructPartException($"{file}: bill[{k}]: \"{piece}\" isn't a piece an Extruder or a Wheel, Fan or Airframe Former makes, like \"Extrusion i-beam 25x25x400 metal\"");
         return (step, new WorkOrder { Key = key, Part = ConstructParts.None, Count = (ushort)count });
     }
 
@@ -1119,12 +1195,13 @@ public static class ConstructBill
                 parts += n;
                 var r = RecipeOf(def);
                 var pressedBy = PresetOf(def);
-                if (r == null && pressedBy == null)
+                var formedAs = FormerPresets.KeyOf(def);
+                if (r == null && pressedBy == null && formedAs == null)
                 {
                     none++;
                     noneParts += n;
                 }
-                var how = def == null ? "not a part of this build" : pressedBy != null ? $"pressed ({pressedBy.Die.Family} Die, blank {Pressed.BlankText(pressedBy.Blank)})" : r == null ? "no recipe" :$"{WorkOrders.FamilyName(r.Machine)} tier {r.MinTier}: {r.Batch}{(r.Count > 1 ? $" makes {r.Count}" : "")}";
+                var how = def == null ? "not a part of this build" : pressedBy != null ? $"pressed ({pressedBy.Die.Family} Die, blank {Pressed.BlankText(pressedBy.Blank)})" : formedAs is { } fa ? $"formed ({(fa.Shape == ExShape.Fan ? "Fan Former" : "Airframe Former")}, {Extrusion.Name(fa)})" : r == null ? "no recipe" :$"{WorkOrders.FamilyName(r.Machine)} tier {r.MinTier}: {r.Batch}{(r.Count > 1 ? $" makes {r.Count}" : "")}";
                 sb.AppendLine($"   {n,4} x {part}  ({how})");
             }
         }
