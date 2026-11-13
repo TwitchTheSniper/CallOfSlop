@@ -73,3 +73,25 @@ Throwaway runs (`--save-dir` to a temp folder; the test blueprint copied into `b
    - B: leave the kit as it is.
 4. **The engine pieces other than cylinders** keep their Assembler recipes beside their presets until phase 6. A (recommended): as the
    design says; B: move them now.
+
+## 6. Merge review (2026-11-13)
+
+1. **Old keys load.** The Cylinder die keeps main's band (across 20 to 2880 cm, 1 to 16 times as long as across), so every key made before
+   still parses; the stroke ratio is held to 0.6 to 1.6 instead (`Pressed.MinStroke`, `MaxStroke`). Tried: a world saved on main (built
+   from `origin/main`) with a Small Crank, `pipe5 30x30x90` and `pipe10 60x60x100` pressed cylinders, a carburettor, flywheel and tank,
+   loaded on this branch: both parts are there; their bodies are now like bodies (the Small Cylinder stretched), so their model, sockets,
+   mass and bay 2 differ, and the engine re-derives: main read each at Small's 40 kW; here `B2 17 kW` (the 30 cm one 16.7 kW, stroke 1.6,
+   peak 3125 rpm; the 60 cm one's bank has no fuel system). A made part in a player's inventory that no longer builds now logs a line
+   (`GameWorldSave`); construct parts already did ("left out N x NAME").
+2. **Assembler rows**: `tools/MIGRATING.md` says which 15 rows went and what a pressed cylinder saved before does on load.
+3. **Presets heavier than their cost.** The engine dies' presets are lengthened by 5 cm steps until the blank alone weighs at least the
+   file part (Small Flywheel `round 45x45x45`, Small Turbo `hollow 40x40x40`, Supercharger and Starter likewise); `--press-part presets`
+   holds them as problems (0). It also lists 35 **older** presets (housings, plates, the Gear Set, Piston Set, differentials, tanks,
+   barrels, the Heavy Receiver) as OVER lines without failing.
+
+## Question 5 (from the review)
+
+5. **The 35 older presets that come out heavier than their blank and bay 2** (a Gear Set 6 kg from 1.33 kg of steel).
+   - A (recommended): a press phase lengthens or thickens their preset blanks the same way (their keys move, so presses set to Auto make
+     the new blank's preset; a save keeps the parts it holds).
+   - B: recycling a catalogue part pays by its Assembler recipe's cost rather than its mass.
