@@ -41,7 +41,8 @@ public sealed class FactionWant
 }
 
 /// <summary>A faction's word for a party whose standing is below <see cref="Below"/> (the last tier has no top).</summary>
-public readonly record struct FactionTier(string Name, int Below);
+/// <summary>A standing tier ("Trusty" below 40); <see cref="Promotion"/> is what the faction says when someone rises to it (the promotion moment, Game/GameStoryRanks.cs).</summary>
+public readonly record struct FactionTier(string Name, int Below, string Promotion = "");
 
 /// <summary>A faction member, a story person (in F1 a name with traits; their bodies come with visits).</summary>
 public readonly record struct FactionMember(string Name, string About, (ushort Quality, int Value)[] Qualities);
@@ -114,7 +115,7 @@ public sealed partial class FactionRules
     private static readonly string[] TechKeys = ["name", "about", "tier", "parts"];
     private static readonly string[] MemberKeys = ["name", "about", "qualities"];
     private static readonly string[] WantKeys = ["name", "about", "start", "perHour"];
-    private static readonly string[] TierKeys = ["name", "below"];
+    private static readonly string[] TierKeys = ["name", "below", "promotion"];
     private static readonly string[] DeedKeys = ["name", "about", "verb", "theirs", "whose", "words", "remember", "standing", "wants", "every"];
 
     public static FactionRules Load(StoryRules rules, string folder)
@@ -260,7 +261,10 @@ public sealed partial class FactionRules
                 throw new StoryException($"{at}: tiers go from the worst up (\"below\" grows)");
             if (tiers.Any(o => o.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
                 throw new StoryException($"{at}: a tier called {name} already exists");
-            tiers.Add(new FactionTier(name, below));
+            var promotion = StoryRules.Str(t, "promotion", at);
+            if (promotion.Length > 200 || promotion.Any(c => c < ' ' || c > '~'))
+                throw new StoryException($"{at}: \"promotion\" is up to 200 printable ASCII characters");
+            tiers.Add(new FactionTier(name, below, promotion));
         }
         if (tiers.Count > MaxTiers)
             throw new StoryException($"{where}: {MaxTiers} tiers at most");
@@ -712,6 +716,13 @@ public sealed partial class StoryFactions
     {
         if (EntityOf(f) is var id and >= 0 && W.Valid(construct) && R.Claims >= 0)
             W.Set(id, R.Claims, construct, 1);
+    }
+
+    /// <summary>A construct no longer the faction's (handed over, or taken).</summary>
+    public void Unclaim(int f, int construct)
+    {
+        if (EntityOf(f) is var id and >= 0 && W.Valid(construct) && R.Claims >= 0)
+            W.Set(id, R.Claims, construct, 0);
     }
 
     /// <summary>A construct the story has just met, by its name: a faction whose claim it starts with takes it as its own.</summary>

@@ -1,0 +1,207 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Spaceport Landing Pad",
+  "description": "A Ministry of Slop landing pad: 16 by 16 m of concrete, a touchdown square and corner lamps.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "r0",
+      "by": "l0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 1,
+      "socket": "r0",
+      "by": "l0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 2,
+      "socket": "r0",
+      "by": "l0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "k0",
+      "by": "f0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 1,
+      "socket": "k0",
+      "by": "f0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 2,
+      "socket": "k0",
+      "by": "f0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 3,
+      "socket": "k0",
+      "by": "f0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 4,
+      "socket": "k0",
+      "by": "f0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 5,
+      "socket": "k0",
+      "by": "f0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 6,
+      "socket": "k0",
+      "by": "f0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 7,
+      "socket": "k0",
+      "by": "f0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 8,
+      "socket": "k0",
+      "by": "f0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 9,
+      "socket": "k0",
+      "by": "f0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 10,
+      "socket": "k0",
+      "by": "f0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 11,
+      "socket": "k0",
+      "by": "f0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Bay Marking",
+      "on": 5,
+      "socket": "t8_8",
+      "by": "bottom",
+      "paint": "#b8902c",
+      "finish": "hazard paint"
+    },
+    {
+      "part": "Bay Marking",
+      "on": 6,
+      "socket": "t7_8",
+      "by": "bottom",
+      "paint": "#b8902c",
+      "finish": "hazard paint"
+    },
+    {
+      "part": "Bay Marking",
+      "on": 9,
+      "socket": "t8_7",
+      "by": "bottom",
+      "paint": "#b8902c",
+      "finish": "hazard paint"
+    },
+    {
+      "part": "Bay Marking",
+      "on": 10,
+      "socket": "t7_7",
+      "by": "bottom",
+      "paint": "#b8902c",
+      "finish": "hazard paint"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 0,
+      "socket": "t0_0",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 3,
+      "socket": "t15_0",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 12,
+      "socket": "t0_15",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 15,
+      "socket": "t15_15",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Battery",
+      "on": 0,
+      "socket": "l8",
+      "by": "-z",
+      "paint": "#4b5157"
+    }
+  ]
+}

@@ -30,10 +30,14 @@
   ],
   "tiers": [
     { "name": "Blood Feud", "below": -50 },
-    { "name": "Sassenach", "below": -15 },
-    { "name": "Stranger", "below": 15 },
-    { "name": "Friend of the Clan", "below": 45 },
-    { "name": "Clansman" }
+    { "name": "Sassenach", "below": -15,
+      "promotion": "The clan has stopped sharpening things when you walk past. Mostly." },
+    { "name": "Stranger", "below": 15,
+      "promotion": "The feud is set down. You are nobody to the clan, which is a fine place to start." },
+    { "name": "Friend of the Clan", "below": 45,
+      "promotion": "The clan raises a dram to you. You are a Friend of the Clan, and the pipes play you in." },
+    { "name": "Clansman",
+      "promotion": "You are kin now. The tartan is yours, the feuds are yours, and so is the caber." }
   ],
   "deeds": [
     { "name": "Killed our kin", "verb": "Kill", "remember": "KilledOurs", "standing": -40 },

@@ -298,6 +298,8 @@ public sealed partial class Game
     {
         if (Story is not { } s || Constructs.Get(body) is not { } c || StoryWho(p) is not (var who and >= 0))
             return;
+        if (SpaceportBoard(p, body))
+            return; // (the Ministry's courier, taken: its own story, GameSpaceport.cs)
         var t = StoryConstruct(body);
         if (t < 0 || c.Owner == p.Id && _rRode >= 0 && s.World.Get(who, _rRode, t) > 0 || StoryRepeat(_vBoard, who, t))
             return;

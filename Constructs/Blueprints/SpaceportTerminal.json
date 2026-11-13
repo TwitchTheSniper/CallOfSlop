@@ -1,0 +1,912 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Spaceport Terminal",
+  "description": "The Ministry of Slop spaceport's arrivals and customs hall; its roof is a landing deck.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 1,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 2,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 1,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 2,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 3,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 4,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 5,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 6,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 7,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Door Corner",
+      "on": 0,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 3,
+      "socket": "t8_0",
+      "by": "b0_7",
+      "spin": 2,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Door Corner",
+      "on": 11,
+      "socket": "t8_15",
+      "by": "b7_0",
+      "spin": 3,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 8,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Slot Wall 4 m",
+      "on": 0,
+      "socket": "t8_0",
+      "by": "b0",
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall 4 m",
+      "on": 8,
+      "socket": "t8_15",
+      "by": "b15",
+      "spin": 3,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Slot Wall 4 m",
+      "on": 1,
+      "socket": "t8_0",
+      "by": "b0",
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall 4 m",
+      "on": 9,
+      "socket": "t8_15",
+      "by": "b15",
+      "spin": 3,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Slot Wall 4 m",
+      "on": 2,
+      "socket": "t8_0",
+      "by": "b0",
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wall 4 m",
+      "on": 10,
+      "socket": "t8_15",
+      "by": "b15",
+      "spin": 3,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Ribbon Wall 4 m",
+      "on": 0,
+      "socket": "t0_8",
+      "by": "b15",
+      "spin": 1,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Ribbon Wall 4 m",
+      "on": 3,
+      "socket": "t15_8",
+      "by": "b0",
+      "spin": 2,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Ribbon Wall 4 m",
+      "on": 4,
+      "socket": "t0_8",
+      "by": "b15",
+      "spin": 1,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Ribbon Wall 4 m",
+      "on": 7,
+      "socket": "t15_8",
+      "by": "b0",
+      "spin": 2,
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Stair Floor 4x4 m",
+      "on": 22,
+      "socket": "t0",
+      "by": "b0_7",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 12,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 16,
+      "socket": "t8",
+      "by": "b0_0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 18,
+      "socket": "t8",
+      "by": "b0_0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 13,
+      "socket": "t0_0",
+      "by": "b15_0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 26,
+      "socket": "r0",
+      "by": "l0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 29,
+      "socket": "k0",
+      "by": "f0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 23,
+      "socket": "t8",
+      "by": "b15_0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 15,
+      "socket": "t0_0",
+      "by": "b0_15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 17,
+      "socket": "t0",
+      "by": "b7_15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 19,
+      "socket": "t0",
+      "by": "b7_15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 14,
+      "socket": "t0_0",
+      "by": "b15_15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Straight Stair 3 m",
+      "on": 4,
+      "socket": "t4_4",
+      "by": "b0_11",
+      "spin": 3,
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 27,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 34,
+      "socket": "k0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 28,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 35,
+      "socket": "k0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 29,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 36,
+      "socket": "k0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 30,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 37,
+      "socket": "k0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 27,
+      "socket": "l0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 30,
+      "socket": "r0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 26,
+      "socket": "l0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 33,
+      "socket": "r0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 34,
+      "socket": "l0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 37,
+      "socket": "r0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 39,
+      "socket": "l",
+      "by": "+x",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 45,
+      "socket": "r",
+      "by": "+z",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 46,
+      "socket": "l",
+      "by": "+x",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia Corner",
+      "on": 40,
+      "socket": "r",
+      "by": "+z",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Door Hinge",
+      "on": 12,
+      "socket": "hinge",
+      "by": "base"
+    },
+    {
+      "part": "Steel Flush Door 1.5x2.25 m",
+      "on": 57,
+      "socket": "leaf",
+      "by": "hang",
+      "paint": "#2f5a3c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Door Hinge",
+      "on": 14,
+      "socket": "hinge",
+      "by": "base"
+    },
+    {
+      "part": "Steel Flush Door 1.5x2.25 m",
+      "on": 59,
+      "socket": "leaf",
+      "by": "hang",
+      "paint": "#4b5157",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Concrete Canopy 2 m",
+      "on": 12,
+      "socket": "fa7_10",
+      "by": "back7",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 61,
+      "socket": "lamp",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Text Sign",
+      "on": 61,
+      "socket": "sign",
+      "by": "back",
+      "text": [
+        "ARRIVALS AND DEPARTURES"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Concrete Canopy 2 m",
+      "on": 14,
+      "socket": "fa7_10",
+      "by": "back7",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 64,
+      "socket": "lamp",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Text Sign",
+      "on": 64,
+      "socket": "sign",
+      "by": "back",
+      "text": [
+        "AIRSIDE"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Concrete Entrance Steps 2 m",
+      "on": 0,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Entrance Steps 2 m",
+      "on": 11,
+      "socket": "k8",
+      "by": "back7",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fin 2.75 m",
+      "on": 16,
+      "socket": "f0_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fin 2.75 m",
+      "on": 16,
+      "socket": "f8_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fin 2.75 m",
+      "on": 18,
+      "socket": "f0_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fin 2.75 m",
+      "on": 18,
+      "socket": "f8_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fin 2.75 m",
+      "on": 20,
+      "socket": "f0_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fin 2.75 m",
+      "on": 20,
+      "socket": "f8_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Buttress 2.75 m",
+      "on": 23,
+      "socket": "f0_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Buttress 2.75 m",
+      "on": 23,
+      "socket": "f8_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Buttress 2.75 m",
+      "on": 25,
+      "socket": "f0_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Buttress 2.75 m",
+      "on": 25,
+      "socket": "f8_5",
+      "by": "back5",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 41,
+      "socket": "f7",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 44,
+      "socket": "f7",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 49,
+      "socket": "f7",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 50,
+      "socket": "f7",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Queue Post",
+      "on": 1,
+      "socket": "t7_15",
+      "by": "base"
+    },
+    {
+      "part": "Queue Post",
+      "on": 1,
+      "socket": "t15_15",
+      "by": "base"
+    },
+    {
+      "part": "Queue Post",
+      "on": 2,
+      "socket": "t7_15",
+      "by": "base"
+    },
+    {
+      "part": "Seat",
+      "on": 3,
+      "socket": "t8_7",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Seat",
+      "on": 3,
+      "socket": "t8_15",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Seat",
+      "on": 7,
+      "socket": "t8_7",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Phone Box",
+      "on": 0,
+      "socket": "t8_15",
+      "by": "foot00"
+    },
+    {
+      "part": "Mess Table",
+      "on": 5,
+      "socket": "t8_8",
+      "by": "bottom",
+      "spin": 3,
+      "paint": "#4b5157",
+      "finish": "wood"
+    },
+    {
+      "part": "Mess Table",
+      "on": 6,
+      "socket": "t0_8",
+      "by": "bottom",
+      "spin": 3,
+      "paint": "#4b5157",
+      "finish": "wood"
+    },
+    {
+      "part": "Mess Table",
+      "on": 6,
+      "socket": "t8_8",
+      "by": "bottom",
+      "spin": 3,
+      "paint": "#4b5157",
+      "finish": "wood"
+    },
+    {
+      "part": "Employee of the Month",
+      "on": 90,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Teapot",
+      "on": 92,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Filing Cabinet",
+      "on": 19,
+      "socket": "k0_0",
+      "by": "wall",
+      "paint": "#2f5a3c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Filing Cabinet",
+      "on": 19,
+      "socket": "k15_0",
+      "by": "wall",
+      "paint": "#2f5a3c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Teleprinter",
+      "on": 17,
+      "socket": "k8_0",
+      "by": "wall"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 10,
+      "socket": "t8_8",
+      "by": "-y"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 98,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 98,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Cast Iron Radiator",
+      "on": 24,
+      "socket": "k0_0",
+      "by": "back"
+    },
+    {
+      "part": "Cast Iron Radiator",
+      "on": 23,
+      "socket": "k8_0",
+      "by": "back"
+    },
+    {
+      "part": "Wall Clock",
+      "on": 18,
+      "socket": "k8_5",
+      "by": "back"
+    },
+    {
+      "part": "Text Sign",
+      "on": 16,
+      "socket": "k8_5",
+      "by": "back",
+      "text": [
+        "CUSTOMS: DECLARE EVERYTHING. THEN DECLARE IT AGAIN"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Text Sign",
+      "on": 21,
+      "socket": "k8_5",
+      "by": "back",
+      "text": [
+        "DEPARTURES: NONE WITHOUT FORM 88"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Text Sign",
+      "on": 20,
+      "socket": "k8_5",
+      "by": "back",
+      "text": [
+        "THIS QUEUE IS NOT MOVING. NEITHER ARE YOU"
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Strip Light",
+      "on": 22,
+      "socket": "k8_10",
+      "by": "back",
+      "config": {
+        "colour": "#e4f2dc"
+      }
+    },
+    {
+      "part": "Strip Light",
+      "on": 24,
+      "socket": "k0_10",
+      "by": "back",
+      "config": {
+        "colour": "#e4f2dc"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 22,
+      "socket": "k15_5",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Strip Light",
+      "on": 23,
+      "socket": "k8_10",
+      "by": "back",
+      "config": {
+        "colour": "#e4f2dc"
+      }
+    },
+    {
+      "part": "Strip Light",
+      "on": 25,
+      "socket": "k0_10",
+      "by": "back",
+      "config": {
+        "colour": "#e4f2dc"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 23,
+      "socket": "k0_5",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Battery",
+      "on": 19,
+      "socket": "k8_10",
+      "by": "-z",
+      "paint": "#4b5157"
+    }
+  ],
+  "wires": [
+    [
+      109,
+      107
+    ],
+    [
+      109,
+      108
+    ],
+    [
+      112,
+      110
+    ],
+    [
+      112,
+      111
+    ]
+  ]
+}

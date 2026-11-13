@@ -145,12 +145,13 @@ public sealed partial class Ui
         var b = _jb[f];
         var jf = game.JobsView[f];
         ImGuiSafe.TextColored(Orange, b.Head);
-        if (b.Next.Length > 0)
+        var ranked = compact && game.FactionTable.PlayerStory[game.LocalId]; // (the Faction window has its rank bars above: UiRanks.cs)
+        if (b.Next.Length > 0 && !ranked)
         {
             ImGui.ProgressBar(b.Bar, new float2(compact ? 220 * _scale : -1, 8 * _scale), ""u8);
             ImGuiSafe.TextColored(Dim, b.Next);
         }
-        if (b.Teaches.Length > 0)
+        if (b.Teaches.Length > 0 && !ranked)
             ImGuiSafe.TextColored(Dim, b.Teaches);
         for (var j = 0; j < jf.Jobs.Length && j < b.Title.Length; j++)
         {

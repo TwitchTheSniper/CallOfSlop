@@ -48,6 +48,24 @@ public static class LabourRender
     }
 
     private const int BoxCap = 96;
+
+    // The pushed barrow (DrawTool): where the wrists go in the body's frame, the rails' ends in the barrow's own frame
+    // (the axle at its origin, +Z back to the handles), the wheel's size, and the frame that tips the barrow up about
+    // its axle so the grips come to the hands with the wheel on the ground. Worked out once: nothing per frame.
+    private static readonly Vector3 BarrowWrist = new(0.26f, 0.84f, -0.4f), BarrowGrip = new(0.26f, 0.81f, -0.44f), BarrowRailEnd = new(0.275f, 0.24f, 1.3f);
+    private const float BarrowFork = 0.075f, BarrowWheelSide = 0.4f, BarrowAxleY = 0.205f;
+    private static readonly Matrix4x4 BarrowFrame = MakeBarrowFrame();
+
+    private static Matrix4x4 MakeBarrowFrame()
+    {
+        const float gripZ = 1.2f; // (where the mittens close on the rails)
+        var gripY = BarrowRailEnd.Y * gripZ / BarrowRailEnd.Z;
+        var reach = MathF.Sqrt(gripY * gripY + gripZ * gripZ);
+        var dy = BarrowGrip.Y - BarrowAxleY;
+        var dz = MathF.Sqrt(reach * reach - dy * dy);
+        var tilt = MathF.Atan2(dy, dz) - MathF.Atan2(gripY, gripZ);
+        return Matrix4x4.CreateRotationX(-tilt) * Matrix4x4.CreateTranslation(0, BarrowAxleY, BarrowGrip.Z - dz);
+    }
     private static Figure? _rec; // the figure being posed: its boxes are kept
 
     /// <summary>A way along the ground, sampled every <see cref="WayStep"/> m (both ends kept).</summary>
@@ -694,7 +712,7 @@ public static class LabourRender
             }
             case LabourKind.Barrow:
             {
-                p = Pose.Standing with { Lean = -0.18f, Tool = Tool.Barrow, HeadPitch = -0.1f, Wheel = phase * Stride / 0.2f };
+                p = Pose.Standing with { Lean = -0.18f, Tool = Tool.Barrow, HeadPitch = -0.1f, Wheel = phase * Stride / BarrowAxleY };
                 // Full both ways, or (loaded) full out and empty back.
                 p.Loaded = (s.Flags & LabourScene.FlagHeapMask) != 0 && ((s.Flags & LabourScene.FlagLoaded) == 0 || Ways[f.Scene] is not { } wy || phase * Stride <= wy.Length);
                 if (walks)
@@ -856,8 +874,8 @@ public static class LabourRender
         // The barrow's handles are where the hands go (in the body's frame, so back into the upper body's).
         if (p.Tool == Tool.Barrow && Matrix4x4.Invert(upper, out var inv))
         {
-            p.HandR = Vector3.Transform(new Vector3(0.27f, 0.74f, -0.48f), inv);
-            p.HandL = Vector3.Transform(new Vector3(-0.27f, 0.74f, -0.48f), inv);
+            p.HandR = Vector3.Transform(new Vector3(BarrowWrist.X, BarrowWrist.Y, BarrowWrist.Z), inv);
+            p.HandL = Vector3.Transform(new Vector3(-BarrowWrist.X, BarrowWrist.Y, BarrowWrist.Z), inv);
         }
         var uw = upper * w;
         var st = BodyModel.Stances[0];
@@ -979,15 +997,28 @@ public static class LabourRender
                 break;
             case Tool.Barrow:
             {
+                // Lifted by the handles and pushed: the grips in the mittens, the legs off the ground, the weight on the wheel.
+                // Made in the barrow's own frame (the axle at its origin, +Z back to the handles, as it stands level on its legs),
+                // tipped up about the axle and set with the wheel on the ground in front of the figure.
+                var bw = BarrowFrame * w;
                 var tray = (s.Flags & LabourScene.FlagHeapMask) switch { LabourScene.FlagCoal => Coal, LabourScene.FlagSnow => Snow, _ => Rock };
-                Box(g, new Vector3(0.04f, 0.04f, 0.72f), new Vector3(0.24f, 0.62f, -0.82f), w, Wood);
-                Box(g, new Vector3(0.04f, 0.04f, 0.72f), new Vector3(-0.24f, 0.62f, -0.82f), w, Wood);
-                Box(g, new Vector3(0.62f, 0.26f, 0.78f), new Vector3(0, 0.56f, -1.25f), w, Barrow);
-                Box(g, new Vector3(0.05f, 0.34f, 0.05f), new Vector3(0.21f, 0.25f, -1.0f), w, Rust);
-                Box(g, new Vector3(0.05f, 0.34f, 0.05f), new Vector3(-0.21f, 0.25f, -1.0f), w, Rust);
-                Box(g, new Vector3(0.08f, 0.4f, 0.4f), Vector3.Zero, Matrix4x4.CreateRotationX(-p.Wheel) * Matrix4x4.CreateTranslation(0, 0.2f, -1.66f) * w, new Vector3(0.12f, 0.12f, 0.12f));
+                for (var side = -1f; side <= 1f; side += 2f)
+                {
+                    var a = Vector3.Transform(new Vector3(side * BarrowFork, 0, 0), bw);
+                    var b = Vector3.Transform(new Vector3(side * BarrowRailEnd.X, BarrowRailEnd.Y, BarrowRailEnd.Z), bw);
+                    var len = Vector3.Distance(a, b);
+                    Box(g, new Vector3(0.04f, 0.04f, len), new Vector3(0, 0, -len * 0.5f), Arms.BoneFrame(a, b, right), Wood);
+                    Box(g, new Vector3(0.05f, 0.36f, 0.05f), new Vector3(side * 0.205f, -0.04f, 0.85f), bw, Rust); // (a leg, its top inside the tray)
+                }
+                Box(g, new Vector3(0.62f, 0.26f, 0.78f), new Vector3(0, 0.24f, 0.66f), bw, Barrow);
                 if (p.Loaded)
-                    Box(g, new Vector3(0.5f, 0.16f, 0.62f), new Vector3(0, 0.72f, -1.25f), w, tray);
+                    Box(g, new Vector3(0.5f, 0.16f, 0.62f), new Vector3(0, 0.34f, 0.66f), bw, tray);
+                // The wheel: an octagon (four strips an eighth-turn apart), turning on the axle between the rails' ends.
+                var spin = Matrix4x4.CreateRotationX(-p.Wheel) * bw;
+                var strip = new Vector3(0.08f, BarrowWheelSide, BarrowWheelSide * 0.4142f);
+                for (var k = 0; k < 4; k++)
+                    Box(g, strip with { X = 0.08f - 0.003f * k }, Vector3.Zero, Matrix4x4.CreateRotationX(k * MathF.PI / 4) * spin, new Vector3(0.12f, 0.12f, 0.12f));
+                Box(g, new Vector3(BarrowFork * 2 + 0.03f, 0.05f, 0.05f), Vector3.Zero, bw, Steel); // (the axle)
                 break;
             }
         }

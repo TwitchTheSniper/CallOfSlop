@@ -15,7 +15,10 @@
     { "name": "Officer Crumb", "about": "guard, mostly guards the kettle", "home": "Penal Colony", "works": "Penal Colony",
       "qualities": { "Sociable": 80, "Honest": 55, "Brave": 30, "Vengeful": 20, "Gossipy": 85, "Greedy": 40, "Wealth": 6 } },
     { "name": "Officer Nettles", "about": "guard, new, keen, armed with a clipboard", "home": "Penal Colony", "works": "Penal Colony",
-      "qualities": { "Sociable": 60, "Honest": 80, "Brave": 55, "Vengeful": 30, "Gossipy": 50, "Greedy": 15, "Wealth": 5 } }
+      "qualities": { "Sociable": 60, "Honest": 80, "Brave": 55, "Vengeful": 30, "Gossipy": 50, "Greedy": 15, "Wealth": 5 } },
+    // The Ministry Courier's pilot at the spaceport 2 km out (docs/story/SPACEPORT.md): his body keeps to the apron there.
+    { "name": "Captain Fairweather", "about": "Ministry courier pilot, grounded at the spaceport for want of a signature", "home": "Penal Colony", "works": "Penal Colony",
+      "qualities": { "Sociable": 55, "Honest": 75, "Brave": 20, "Vengeful": 35, "Gossipy": 60, "Greedy": 20, "Wealth": 15 } }
   ],
   "feelings": [
     { "who": "Sergeant Bellweather", "rel": "Likes", "to": "Warden Pettigrew", "value": 30 },

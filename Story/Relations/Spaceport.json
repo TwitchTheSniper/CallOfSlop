@@ -1,0 +1,7 @@
+{
+  // The courier's pilot (docs/story/SPACEPORT.md): what became of his ship, for his topics and lines.
+  "qualities": [
+    { "name": "CourierGiven", "about": "the courier's pilot has handed his ship to a player who ran his errand" },
+    { "name": "CourierStolen", "about": "the courier's pilot has had his ship stolen" }
+  ]
+}
