@@ -2,8 +2,11 @@
 
 Karl, 2026-11-13: a planetoid that is dense and full of life, with places, travel and ways to get about, and that
 doesn't look blocky. The first is **Slopolis**, the free port: a 3.5 km world whose north is one city, built by
-everybody and owned by nobody (`Maps/Planetoids/Slopolis.json`, made by `tools/planets/make_worlds.py`). It is in no
-star system yet: start a Sandbox on it to visit.
+everybody and owned by nobody (`Maps/Planetoids/Slopolis.json`, made by `tools/planets/make_worlds.py`). It is a moon of
+Glacier in Frostreach (`Systems/Frostreach.json`, 140 km out, a 3 h orbit), the story's home system, so a ship from the
+colony can fly there; or start a Sandbox on it. Its axis stands upright to its orbit, so the city at the north pole is in
+a blue hour that never ends (the sun about a degree up, going round the horizon once in its 26 h day). It has no ore: a
+free port's stock comes in by ship (and a deposit's rocks would stand in the streets).
 
 ## How a city is made
 
@@ -77,6 +80,23 @@ each station, turn back in the tunnel out of sight and come back on the other tr
 (`CityLife.MetroTrain`). People come down the stairs and wait, board, and get off and go up to the street, as at the el's
 stations. Under the city's ground the city's and the figures' shaders light with the strip lights, not the sun.
 
+## Places, signs and the sky (slice 3)
+
+- **The market** (`CityGeometry.Market`): the block over the avenue from the square's north-east corner is a covered
+  market: a steel roof on columns over rows of stalls (counter, shelf, striped awning, a lamp, wares), aisles between
+  them, open all round, a lit sign over the side facing the square; shoppers go round between two aisles each.
+- **Signs**: most buildings with shops have a lit blade sign (or two) standing out over the pavement near a corner, its
+  letters flickering and now and then stuttering; one mid-rise in five has a lit billboard on its roof facing its street.
+- **Rooftop pads**: 30 towers carry a landing pad on their crown (a dark deck with its circle and H, green lamps
+  blinking round the rim). **Air taxis** (yellow, lit windows, nav lights and a beacon) hop between them: stand, climb,
+  cross high over the towers, come down (`CityLife.Taxi`, from the clock like everything else).
+- **The apron** (`CityGeometry.Apron`): a disc of rough asphalt just over the ground under the whole city, drawn first
+  and pushed back in depth; the planetoid's own ground under it is not drawn (`PlanetRenderer.CityClip`). Without it the
+  ground (and anything under 15 cm apart) fought the paving at a distance and showed through in dark patches.
+
+Cost on Karl's PC with all of it (1920x1080, vsync off, 2026-11-13): 0.07 to 0.09 ms CPU and 0.09 to 0.12 ms GPU a
+frame for the city; the game at 2,100 to 3,000 fps from above, in the market and in the avenue.
+
 ## The plan for the rest (slices)
 
 1. **Done: the core** (this file): streets, 790 buildings, the square, lamps, the elevated loop and its stations.
@@ -86,10 +106,10 @@ stations. Under the city's ground the city's and the figures' shaders light with
    entrances on the pavements, stairs down to a ticket hall and platforms; people on the pavements, waiting on
    platforms, getting on and off, each with somewhere to go (home, work, a shop) on a daily round. Trains are pictures
    with riders, not vehicles (the vehicle system is TwitchTheSniper's).
-3. **Places**: buildings you can go into at street level (a station hall, a market, a bar, a hotel lobby with lifts to a
+3. **Partly done (above): the market, signs, pads and taxis.** Still to come: more (a station hall, a market, a bar, a hotel lobby with lifts to a
    roof), signs and neon, rooftop pads where the stand-in flyers land, the docks at the edge.
-4. **Getting there**: Slopolis in a star system (a body of Frostreach, near the story's home), landing pads, traffic in
-   its sky; the land beyond the last street (quarries, a road out).
+4. **Getting there**: done, a moon of Glacier. Still to come: a spaceport where ships can land, traffic between it and
+   the colony, the land beyond the last street (quarries, a road out).
 
 ## Not yet
 
