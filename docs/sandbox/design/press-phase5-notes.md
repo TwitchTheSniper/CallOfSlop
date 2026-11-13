@@ -111,3 +111,47 @@ gone from both dies (a rated like part, such as the U Joint's 4,000 N m, still s
    building piece, or let the Beam die make it and leave only `Parts/Building` and `Parts/Capital` behind?
 4. **Marker rows for good?** The markers keep saved recipe indices safe for ever, but they also keep 66 dead rows in
    `Assembling.json`. Should a later phase drop them once a by-name migration for the recipe setting exists (design section 8)?
+
+## The user's answers (2026-11-13) and phase 5b
+
+Branch `claude/press-phase-5b-7e6ac4`. Protocol 277 -> 281 (no new bytes: the recipe values mean other rows).
+
+1. **The Bearing tier: move the six, bay 2 a Gear Set.** Done on main before 5b (`74e8e0a0`), as answer 1 above says.
+2. **The engine cylinders: wait** for the sized gun and engine parts phase. Left alone: the Cylinder die's presets stand, and its
+   rows stay on the Assembler (so `PressedLine` is null for them and the Technologies page says the Assemblers build them).
+3. **The Frame Beam: the Beam die presses it.** A preset `Frame Beam <- beam.girder, i-beam 45x45x200 steel` (`PressParts.Presets`;
+   the 50 cm girder blank wants a Medium Press, tier 2, so the preset is held to a Small Press's 45 cm), and `"Frame Beam"` joined
+   `Assembling.Moved`. `Parts/Building` and `Parts/Capital` stay on the Assembler. **The start, traced before moving it:** no
+   recipe, chained order or start takes a Frame Beam as an input (it was only ever an output); the Press (104 steel, 21 rubber),
+   Extruder (76 steel, 15 rubber) and Die Lathe are tier 1 Assembler parts of steel and rubber alone; the tier 1 Extruder's 6 x 6 m
+   section and 48 m length take the blank; the Beam die is a tier 1 die (a Die Lathe cuts it). Blueprints that hold Frame Beams
+   (vehicles, the showcase, the turrets) need them in stock like any part. The fix: **a Beam Die in `SurvivalStart.json`**, beside
+   the Button, Bracket and Gear Dies, so a first frame is Extruder + Press, no Die Lathe first.
+4. **Drop the marker rows now, no migration.** The generator removes the 73 rows; `"pressed"` is no longer a key of the format
+   (a file naming it is refused). What leaned on a marker reads the presets: `AssemblingTable.PressedLine(def)` and `PressedDieOf`
+   (a preset part with no Assembler recipe); the picker's dimmed "Pressed" tiles come from `PressTable.PresetByKey` for the plain
+   Assembler family; `UiTechnologies.MakersLine` asks `PressedDieOf` (it used to ask for any preset, which named the cylinders as
+   pressed); a blueprint's or mod's `"config": {"recipe": "Gear Set"}` loads with the recipe None and
+   `[blueprint] FILE: steps[n]: the Gear Set is pressed now: ...: its Assembler's recipe is None` (`ConstructConfig.ParseValues`).
+   No shipped blueprint, map, story file or generator names a moved recipe. `tools/MIGRATING.md` tells players to set saved
+   Assemblers again. Removed: the loader's marker branch, `AsmState.Pressed` in `StateOf` and the look line, the Line Console's
+   Fault for it, `ProductionLines.RecipeRefusal`'s and `WorkOrders`' pressed-row refusals, `AssembleRecipe.PressedText`.
+   **Also fixed:** `ConstructLoot.Refuse` refused every pressed part ("no recipe to show its tier") since phase 5, so the loot
+   tables silently lost their Gear Sets, Circuit Boards, Copper Coils and so on; a part a die presses is taken again.
+
+**Dead code left in other sessions' files** (they were being edited at the same time), for a later tidy:
+- `ConstructCrafting.cs` line ~389: `if (r.Pressed || ...)` in `MachineMakes`: `AssembleRecipe.Pressed` is now `=> false`.
+- `MachineScreens.cs` line ~124: the `AsmState.Pressed` "Pressed now / Use a Press" card: nothing sets that state.
+- To remove with them: `AssembleRecipe.Pressed` and `PressedDie()` (ConstructAssemblingTable.cs) and the `AsmState.Pressed`
+  member (ConstructAssembling.cs; it is not saved or sent, so it may go).
+- `GameStoryTech.cs` line 74 still says "Your Assemblers build it now" for a taught technology whatever makes it (not a marker
+  use; it predates phase 5).
+
+**Tried (throwaway save, scratch blueprint removed):** a Press with a Beam Die fed `Extrusion i-beam 45x45x200 steel` printed
+`a Press built a Frame Beam` and `loose near it: Frame Beam x1`; the same blueprint's Workshop Assembler named `"recipe": "Gear Set"`:
+it loaded with the line above and its screen read `No recipe set`. The Workshop Assembler's picker opened with a "Pressed" category
+and no moved part among its recipe tiles. `--check-construct-parts`, `--gen-parts all --check` and `--press-part presets` clean;
+sections Press stock, Assembling, Assembling network, Wheel orders, Display screens: 0 failures.
+
+**Not verified:** the "Pressed" tab's own tiles (the click on it did not land in the scripted shot); a survival start played
+through to a first pressed Frame Beam (checked by data and the bench only); an old save opened on this build; host and client.

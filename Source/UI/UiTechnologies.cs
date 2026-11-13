@@ -51,7 +51,7 @@ public sealed partial class Ui
         var built = new List<string>();
         var pressed = new List<string>();
         foreach (var name in parts.Split(", "))
-            (ConstructParts.Find(name) is { } d && ConstructBill.PresetOf(d) is not null ? pressed : built).Add(name);
+            (ConstructParts.Find(name) is { } d && AssemblingTable.PressedDieOf(d) is not null ? pressed : built).Add(name);
         return pressed.Count == 0 ? $"Your Assemblers build {parts}."
             : built.Count == 0 ? $"Your Presses press {string.Join(", ", pressed)}."
             : $"Your Assemblers build {string.Join(", ", built)}; your Presses press {string.Join(", ", pressed)}.";

@@ -928,6 +928,9 @@ public static class ConstructConfig
                 JsonValueKind.Number => p.Value.GetSingle(),
                 JsonValueKind.String when e.Type == CfgType.Colour => Pack(ConstructParts.Colour(p.Value, where, p.Name)),
                 JsonValueKind.String when e.Options.Length > 0 && Array.IndexOf(e.Options, p.Value.GetString()) is var oi and >= 0 => oi,
+                // (a recipe that left the Assembler for a press, Press phase 5: an older blueprint or a mod still loads, its Assembler set to none)
+                JsonValueKind.String when e.Id == CfgKey.Recipe && d.IsAssembler && ConstructParts.Find(p.Value.GetString() ?? "") is { } rd
+                    && AssemblingTable.PressedLine(rd) is { } why => PressedRecipe(where, why),
                 _ => throw new ConstructPartException($"{where}: \"{p.Name}\" isn't a value a {d.Name}'s {e.Label.ToLowerInvariant()} takes"),
             };
             if (e.Type == CfgType.Number && (v < e.Min || v > e.Max))
@@ -937,6 +940,12 @@ public static class ConstructConfig
             list.Add((slot, v));
         }
         return list;
+    }
+
+    private static float PressedRecipe(string where, string why)
+    {
+        Console.WriteLine($"[blueprint] {where}: {why}: its Assembler's recipe is None (order it at a Press)");
+        return 0;
     }
 
     /// <summary>A part's settings as a blueprint step's "config" object (the values off their default), or "" when none are.</summary>

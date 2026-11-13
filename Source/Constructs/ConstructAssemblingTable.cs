@@ -15,20 +15,10 @@ public sealed class AssembleRecipe
     public byte Machine; // which family of Assembler builds it: an index of AssemblingTable.Machines
     public int Choice; // its value of the recipe setting: 1 + its index in its family's list (AssemblingTable.ByMachine)
     public string Batch = ""; // "4 steel + 2 copper + 1 Gear Set" (made once)
-    public bool Pressed; // Press phase 5: a part a die presses now; the row only keeps its place (and a saved Assembler's choice), it builds nothing
-
-    /// <summary>What an Assembler set to a pressed row says (design section 6): "the Gear Set is pressed now: a Gear Die and a steel round 15x15x15".</summary>
-    public string PressedText() => _pressedText ??= PressedSpec() is { } s
-        ? $"the {Name} is pressed now: a {s.Die.Family} Die and a {Extrusion.Label(s.Blank)}{(s.Pattern.Bay2 is { } kit ? $", with {kit.What} in bay 2" : "")}"
-        : $"the {Name} is pressed now: no die here makes it";
-
-    /// <summary>The die that presses a pressed row's part ("Gear Die"), for a screen line.</summary>
-    public string PressedDie() => _pressedDie ??= PressedSpec() is { } s ? $"{s.Die.Family} Die" : "no die";
-
-    private string? _pressedText, _pressedDie; // (made once; a table is read again whole when its files change)
-
-    private CallOfSlop.Pressed.OrderSpec? PressedSpec() =>
-        PressTable.Current.PresetKeyOf(Output) is { } key ? CallOfSlop.Pressed.SpecOf(key) : null;
+    // (Phase 5b dropped the "pressed" marker rows: no recipe is pressed. These two stay only so ConstructCrafting.MachineMakes and the
+    // MachineScreens "Pressed now" card, other sessions' files, still compile; remove them with those branches. press-phase5-notes.md.)
+    public bool Pressed => false;
+    public string PressedDie() => AssemblingTable.PressedDieOf(Output) ?? "no die";
 
     /// <summary>The ticks a batch takes at speed 1.</summary>
     public int Ticks => (int)MathF.Ceiling(Seconds * World.TickRate - 0.001f);
@@ -76,6 +66,21 @@ public sealed class AssemblingTable
 
     /// <summary>The recipe that makes a part, or null.</summary>
     public AssembleRecipe? Of(ushort part) => ByOutput.TryGetValue(part, out var r) ? r : null;
+
+    /// <summary>
+    /// A part that left the Assembler for a press (Press phase 5: a die presses it from a standard blank, a preset of Pressing.json, and no
+    /// Assembler builds it): "the Gear Set is pressed now: a Gear Die and a steel round 15x15x15", or null. For the picker, a blueprint
+    /// that names it as a recipe and an order's refusal; made on demand (menus and loads, never per tick).
+    /// </summary>
+    public static string? PressedLine(ConstructPartDef d) => PressedSpec(d) is { } s
+        ? $"the {d.Name} is pressed now: a {s.Die.Family} Die and a {Extrusion.Label(s.Blank)}{(s.Pattern.Bay2 is { } kit ? $", with {kit.What} in bay 2" : "")}"
+        : null;
+
+    /// <summary>The die that presses such a part ("Gear Die"), or null.</summary>
+    public static string? PressedDieOf(ConstructPartDef d) => PressedSpec(d) is { } s ? $"{s.Die.Family} Die" : null;
+
+    private static Pressed.OrderSpec? PressedSpec(ConstructPartDef d) =>
+        Current.Of((ushort)d.Id) == null && PressTable.Current.PresetKeyOf(d) is { } key ? Pressed.SpecOf(key) : null;
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "Assembling.json");
 
@@ -154,13 +159,13 @@ public sealed class AssemblingTable
                     throw new FormatException($"recipe {recipes.Count + 1}: {r.Name} already has a recipe: one recipe a part");
                 recipes.Add(r);
             }
-            var t = new AssemblingTable { Recipes = recipes.Where(r => !r.Pressed).ToArray() };
+            var t = new AssemblingTable { Recipes = [.. recipes] };
             for (var m = 0; m < Machines.Length; m++)
             {
                 t.ByMachine[m] = recipes.Where(r => r.Machine == m).ToArray();
                 for (var k = 0; k < t.ByMachine[m].Length; k++)
                     t.ByMachine[m][k].Choice = k + 1;
-                t.ChoicesBy[m] = [NoRecipe, .. t.ByMachine[m].Select(r => r.Name)]; // (a pressed row keeps its plain name: a blueprint or mod naming it still resolves, and the machine says it is pressed now)
+                t.ChoicesBy[m] = [NoRecipe, .. t.ByMachine[m].Select(r => r.Name)];
             }
             t.Choices = t.ChoicesBy[0];
             foreach (var r in t.Recipes)
@@ -178,21 +183,13 @@ public sealed class AssemblingTable
         if (e.ValueKind != JsonValueKind.Object)
             throw new FormatException($"{at} is an object (output, materials, parts, seconds)");
         foreach (var p in e.EnumerateObject())
-            if (p.Name is not ("output" or "count" or "materials" or "parts" or "seconds" or "minTier" or "machine" or "pressed"))
+            if (p.Name is not ("output" or "count" or "materials" or "parts" or "seconds" or "minTier" or "machine"))
                 throw new FormatException($"{at}: unknown key \"{p.Name}\"");
         var output = e.TryGetProperty("output", out var o) && o.ValueKind == JsonValueKind.String ? o.GetString()! : throw new FormatException($"{at} needs \"output\" (a part's name)");
         if (!byName.TryGetValue(output, out var def))
             throw new FormatException($"{at}: no part named \"{output}\"");
         at = $"{at} ({def.Name})";
         var r = new AssembleRecipe { Name = def.Name, Output = def };
-        if (e.TryGetProperty("pressed", out var pr) && pr.ValueKind == JsonValueKind.True)
-        {
-            // (a part a die presses now: the row keeps its place in its family's list, takes nothing and builds nothing; Press phase 5)
-            if (e.TryGetProperty("machine", out var pm))
-                r.Machine = MachineOf(pm.GetString() ?? "", at);
-            r.Pressed = true;
-            return r;
-        }
         if (e.TryGetProperty("machine", out var mc))
             r.Machine = MachineOf(mc.GetString() ?? "", at);
         if (e.TryGetProperty("count", out var c))

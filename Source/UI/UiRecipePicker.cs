@@ -220,24 +220,6 @@ public sealed partial class Ui
             for (var k = 0; k < list.Length; k++)
             {
                 var r = list[k];
-                if (r.Pressed)
-                {
-                    // (Press phase 5: a part a die presses now keeps its tile, dimmed, in a "Pressed" category: the tip says which die)
-                    if (!groupOf.TryGetValue("Pressed", out var pgi))
-                    {
-                        groupOf["Pressed"] = pgi = groups.Count;
-                        groups.Add("Pressed");
-                    }
-                    tiles.Add(new RpTile
-                    {
-                        Value = -1, Name = r.Name, Out = "press", Group = pgi,
-                        Slot = SandboxTiles.SlotOf(SandboxTiles.Kind.Part, r.Output.Id),
-                        Swatch = Col8(r.Output.Boxes.Length > 0 ? r.Output.Boxes[0].Color : new System.Numerics.Vector3(0.5f)),
-                        Search = $"{r.Name} pressed press {r.PressedDie()}".ToLowerInvariant(),
-                        Tip = $"{Cap(r.PressedText())}. A Press with that die makes it; a Crafting Terminal or Line Console orders it there.",
-                    });
-                    continue;
-                }
                 var g = SandboxCatalogue.Classify(r.Output).Group;
                 if (!groupOf.TryGetValue(g, out var gi))
                 {
@@ -265,8 +247,38 @@ public sealed partial class Ui
                     : $"{r.Name}: needs a tier {r.MinTier} assembler; this one is tier {d.Tier}.";
                 tiles.Add(t);
             }
+            if (d.AsmMachine == 0)
+                PressedTiles(tiles, groups);
         }
         return new RpSet { Tiles = tiles.ToArray(), Groups = groups.ToArray(), Title = $"Recipe: {d.Name}###rpick", Key = key };
+    }
+
+    /// <summary>
+    /// The parts that left the Assembler for a press (Press phase 5: a die's preset, no Assembler recipe), dimmed in a "Pressed" category of
+    /// the plain Assembler's picker, the die in the tip. From the presets, once per picker set (it is cached by machine kind).
+    /// </summary>
+    private static void PressedTiles(List<RpTile> tiles, List<string> groups)
+    {
+        var seen = new HashSet<int>();
+        var gi = -1;
+        foreach (var pd in PressTable.Current.PresetByKey.Values)
+        {
+            if (!seen.Add(pd.Id) || AssemblingTable.PressedLine(pd) is not { } line)
+                continue;
+            if (gi < 0)
+            {
+                gi = groups.Count;
+                groups.Add("Pressed");
+            }
+            tiles.Add(new RpTile
+            {
+                Value = -1, Name = pd.Name, Out = "press", Group = gi,
+                Slot = SandboxTiles.SlotOf(SandboxTiles.Kind.Part, pd.Id),
+                Swatch = Col8(pd.Boxes.Length > 0 ? pd.Boxes[0].Color : new System.Numerics.Vector3(0.5f)),
+                Search = $"{pd.Name} pressed press {AssemblingTable.PressedDieOf(pd)}".ToLowerInvariant(),
+                Tip = $"{Cap(line)}. A Press with that die makes it; a Crafting Terminal or Line Console orders it there.",
+            });
+        }
     }
 
     private void RecipeFilter()

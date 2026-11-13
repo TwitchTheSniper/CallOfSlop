@@ -268,8 +268,6 @@ public static class WorkOrders
             // An Assembler's order is its Recipe setting's part.
             var k = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0) - 1;
             var list = AssemblingTable.Current.ByMachine[d.AsmMachine];
-            if (k >= 0 && k < list.Length && list[k].Pressed)
-                return list[k].PressedText() + ": order it at a Press";
             if (k < 0 || k >= list.Length)
                 return $"set the {d.Name}'s Recipe: an order is a part";
             o = new WorkOrder { Part = (ushort)list[k].Output.Id, Count = count };

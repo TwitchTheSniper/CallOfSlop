@@ -457,7 +457,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 276: the penal colony's convict labourers: Msg.Labour (every gang, to all and each joiner; GameLabour.cs).
     // 277: Press rework phase 5: the single-piece Assembling rows a die presses are "pressed" markers (they take nothing and build nothing),
     //      so what a peer's Assemblers can build changed. No new bytes: the recipe setting, orders and pressed keys ride as before.
-    public const ushort ProtocolVersion = 277;
+    // 281: Press phase 5b: the 73 pressed marker rows left Assembling.json and the Frame Beam is pressed, so an Assembler's recipe value
+    //      (1 + its row's place in its family's list) names another recipe than on 277. No new bytes.
+    public const ushort ProtocolVersion = 281;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
