@@ -176,6 +176,20 @@ public static partial class ProductionLines
         c.Wake();
     }
 
+    // ---- Made in a world save (WorldSaveBodies.MadeKey) ------------------------------------------------------------------------
+
+    /// <summary>The most a save keeps (a setting is an f32: whole numbers are exact to 2^24).</summary>
+    public const int MaxSavedMade = 1 << 24;
+
+    /// <summary>A loaded console's count: a console that was running carries on counting, not reset as a new Start would.</summary>
+    public static void LoadMade(ref CPart p, float v)
+    {
+        if (!float.IsFinite(v) || v < 1 || p.D.Monitor != MonitorKind.Console)
+            return;
+        p.LineMade = (int)Math.Min(v, MaxSavedMade);
+        p.LineBits = p.Out >= 0.5f && !p.Broken ? OnBit : (byte)0;
+    }
+
     // ---- Made on the wire (the end of CBodyKind.Orders) ----------------------------------------------------------------------
 
     public static bool AnyMade(Construct c)
