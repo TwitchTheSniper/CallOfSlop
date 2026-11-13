@@ -1030,6 +1030,8 @@ public static unsafe partial class Program
             key ^= (long)ConstructPress.LookKey(hit.Body, hit.Part) * 2654435761L; // (what is in its bays and die slot: parts, not the store)
         if (hit.Body.DefOf(hit.Part).IsPieceRack)
             key ^= ((long)hit.RackPlus1 << 8 | hit.RackLane) * 2654435761L; // (which stack is looked at: its kind names the piece F takes)
+        if (StockTargets.IsStore(hit.Body.DefOf(hit.Part)))
+            key ^= StockTargets.LookKey(hit.Body, hit.Part) * 0x9E3779B97F4AL; // (its Logistics settings: what it keeps and takes)
         if (hit.Body.DefOf(hit.Part).IsCraftTerminal)
             key ^= (long)((hit.Body.Parts[hit.Part].Craft?.Count ?? 0) + 1 + hit.Body.RouteCount * 64) * 40503L; // (its orders and the body's links: what its line says)
         if (hit.Body.DefOf(hit.Part).IsBuildStation)
@@ -1051,7 +1053,7 @@ public static unsafe partial class Program
         if (cd.IsCraftTerminal && hit.RackPlus1 == 0 && _game is { } cg)
             return _sbStoreText = ConstructCrafting.Look(cg.Constructs, hit.Body, hit.Part, st, near);
         if (cd.IsPieceRack)
-            return _sbStoreText = ConstructConveyor.Look(cd, st, near, hit.RackPlus1 > 0 && hit.RackPlus1 <= st.SlabN ? ConstructParts.Get(st.Slabs![hit.RackPlus1 - 1].Def) : null);
+            return _sbStoreText = ConstructConveyor.Look(cd, st, near, hit.RackPlus1 > 0 && hit.RackPlus1 <= st.SlabN ? ConstructParts.Get(st.Slabs![hit.RackPlus1 - 1].Def) : null) is var rl && StockTargets.Look(hit.Body, hit.Part) is { Length: > 0 } kl ? rl + " - " + kl : rl;
         if (cd.IsRefiner)
             return _sbStoreText = ConstructRefining.Look(cd, st, near, inv, ConstructRefining.SetOf(hit.Body.Parts[hit.Part], cd));
         if (cd.IsAssembler && hit.SlotPlus1 == 0)
@@ -1200,6 +1202,7 @@ public static unsafe partial class Program
         g.SandboxSounds(now); // horns (GameSandbox.cs)
         g.ColonyAlarmSounds(now); // the penal colony's lockdown siren (GameColonyLockdown.cs)
         g.StoryBabbleSounds(now); // the story people murmur their lines (GameStoryBabble.cs)
+        PartAmbience.Frame(g.Constructs, Gfx.CameraPosition, now, g.TickAlpha, g.IsServer, g.Audio); // smoke, steam, a tannoy, snow along the ground (PartAmbience.cs)
         g.EngineAudio.Pick(g.Constructs, Gfx.CameraPosition);
         g.EngineAudio.Play(g.Audio); // (modular engines: EngineSounds.cs)
         g.SandboxBuildSounds(now); // (building: GameSandboxBuildSounds.cs)

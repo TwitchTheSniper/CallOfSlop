@@ -924,8 +924,37 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   `CBodyKind.Craft`; the Orders tab draws them indented under the order's row on both peers (`ConstructLogisticsPlan.LineText`), a
   link nobody makes in the fault colour. The LOGI block gains a third part after the entries: per entry its parent, depth, class,
   stamp and flags (an older phase 2 block loads as one level).
-- **Not yet:** press bays and Panel Former sheet orders as destinations (with the Press's orders), priority classes and stock targets
-  (phase 3).
+- **Press bays and Panel Former sheet** as chain destinations. A press's blank and part kit chain since Press phase 4 (they ride
+  into the bay that takes them). A Panel Former's order now chains too: its panel's material in units, less what its bin holds of
+  that material and a stroke under way, is asked as **sheet** (`ConstructLogisticsPlan.SheetKey`: a solid bar 0.5 x 0.1 m cut at
+  1 m in the panel's material, the showcase's sheet), counted in pieces at what one puts into the bin (`SheetUnits`); a sheet that
+  arrives counts for its link. A maker with a conveyor way to the destination (`ConstructCrafting.RouteTo`: joins and Routers) is
+  chosen before one without (a Splitter's line may still bring it, in turn).
+- **Logistics settings** (phase 3, protocol 275; `Source/Constructs/StockTargets.cs`, group Logistics in the configure tool, added
+  by code after every other setting so older slots keep their place). Piece Rack (not a tray): `storeKeep` "Keep what it holds" (0
+  to 200, 0 off), `storePriority` (1 to 5, default 3), `storeTakes` (Anything, Only what it holds now, Nothing). Conveyor Router:
+  `routerSpill` (Auto, Ahead, Left, Right), `routerHold` (off, on). Crafting Terminal and Building Station: `feedPriority` "Order
+  priority" (Low, Normal, High). The rack's look line ends with them: "keeps 6 of each kind it holds (refills at 4); takes only
+  what it holds; store priority 5" (either peer: made from the settings).
+- **Stock targets** (design section 6). Within 2 s of a rack's `storeKeep` going above 0 (a scan of every body's racks every 2 s,
+  `StockTargets.Scan`), each kind it holds becomes a target (at most 8; an empty rack waits for its first piece). The low mark is
+  keep less a quarter rounded up, at least one (keep 20: 15; keep 6: 4). At or below it, with nothing riding to it and no refill
+  open, the target asks one maker for keep less held and riding (no more than the rack's room) as a chain link flagged `Stock`
+  whose root and destination are the rack (`ConstructLogisticsPlan.AskStock`); it never takes stock from other stores, only makes;
+  its own inputs chain as an order's do. A refill closes when its pieces arrive, or when its maker is done or dropped it and nothing
+  rides; the next opens no sooner than 5 s later. `storeKeep` 0 ends the targets and their unstarted orders. Targets are stepped
+  after every terminal (2 Hz) and rank below every order (`Better`: Stock last, then class, then age). Saved in the LOGI block's
+  fourth part (rack part, kind by name); a loaded refill is taken up again by its target, not asked twice.
+- **Storage choice** with settings: a rack's `storeTakes` filter holds for storage and overflow (a store always takes a kind it
+  keeps); the highest `storePriority` wins, a store that keeps the kind before any other, then the shorter way. A rack is a
+  destination for its refill's pieces (they ride tagged to it, Router or not).
+- **At a Router:** `routerSpill` pinned sends a piece for storage, or one with nowhere to go, out by that way (it waits if that way
+  has no conveyor); ordered pieces follow their order. `routerHold` on: an ordered piece whose way is cut, too narrow or full waits
+  at the Router with its order kept, marked stuck (red lamps), tried again every 2 s, instead of going to storage.
+- **Order priority:** terminals are stepped best class first, then oldest open order; a root's links take its terminal's class.
+- **Not yet (phase 3's rest):** the terminal's Stock tab and `CActKind.StockTarget` (a target for a kind the rack doesn't hold),
+  `feedPriority` on machines and `linePriority` on Line Consoles, a material in `storeTakes`, High chains inserted ahead in a
+  maker's queue, rounding a refill to the maker's batch, targets on bins (bulk: phase 5), blueprint `"targets"`, store monitors' rows.
 - **Not in phase 1:** chains (orders pull their inputs), stock targets and overrides, the Router's settings (`routerSpill`,
   `routerHold`) and screen, the network board, press bays and the Panel Former as destinations, the source's own "no storage" stall
   (a full network backs up to the Router, stuck, and the line behind it backs up to the machine as today).

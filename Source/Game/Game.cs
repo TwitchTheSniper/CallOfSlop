@@ -2001,6 +2001,7 @@ public sealed partial class Game : IDisposable
                 SendSpaceState(sender); // the space bubble and its clock (GameSpace.cs)
                 SendLogicState(sender); // map logic: doors, lamps, levers, controlled movers (GameLogic.cs)
                 SendCorpseState(sender); // the bodies lying about (GameCorpses.cs)
+                SendLabourState(sender); // the penal colony's convict labourers (GameLabour.cs)
                 Module.OnClientJoined(this, sender); // the active mode's own state (Sandbox: every construct)
                 if (VoteOpen)
                 {
@@ -2309,6 +2310,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.StandIn when !IsServer:
                 ReadStandIn(ref r); // STAND-IN: the story's placeholder craft (Source/StandIns/GameStandIns.cs)
+                break;
+            case (byte)Msg.Labour when !IsServer:
+                ReadLabour(ref r); // the penal colony's convict labourers (GameLabour.cs)
                 break;
             case (byte)Msg.Fragments when !IsServer:
                 ReadFragments(ref r); // the old records' fragments and the leads (GameStoryFragments.cs)

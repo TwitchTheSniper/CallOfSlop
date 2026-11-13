@@ -8,11 +8,11 @@ namespace CallOfSlop;
 /// The "what next" line (docs/story/OBJECTIVES.md; Karl, 2026-11-13): once the warden's induction and the first duty are
 /// over, a story player always has a current goal on the HUD, from <c>Story/Objectives.json</c>: the first goal in the list
 /// they haven't met yet. Each goal is judged from the game's own state, never ticked off by hand: standing with a faction,
-/// the Orbital Depot's run, a craft of their own with thrusters and a driving seat, having left the planetoid, having landed
-/// on another, a Shell Control Chair and a Robot Shell of their own. The host judges everyone once a second and tells each
+/// the Orbital Depot's run, and the milestones for firsts (GameMilestones.cs): a flight in a craft of their own, having left
+/// the planetoid, having landed on another, a first wake in a robot shell. The host judges everyone once a second and tells each
 /// person their goal (<see cref="Msg.Objective"/>) only when it changes. Nothing is shown while a story panel has the screen
 /// (the induction, the quarry, the depot), during the opening, or on a planetoid's own game. Survival story worlds only.
-/// Server state is fixed arrays by player id and one walk over the bodies a second: nothing allocates in a steady tick.
+/// Server state is fixed arrays by player id: nothing allocates in a steady tick.
 /// </summary>
 public sealed partial class Game
 {
@@ -21,10 +21,7 @@ public sealed partial class Game
     private readonly byte[] _objSent = new byte[256]; // the goal each person was last told (ObjectiveNone: none)
     private readonly short[] _objHave = new short[256], _objNeed = new short[256];
     private readonly Player?[] _objWho = new Player?[256]; // whose the slot is (a new Player object in it: a new person)
-    private readonly byte[] _objFirsts = new byte[256]; // firsts seen while here (bits of ObjectiveKind): see ObjectiveFirst
-    private readonly byte[] _objOwns = new byte[256]; // this second's walk: what each owner byte owns (bits of ObjectiveKind)
     private double _objNextLook;
-    private bool _objWantChairs; // someone's goal is the shell: the walk looks through parts for chairs
 
     // ---- Every peer: this PC's own goal, as the server tells it
     public byte ObjectiveLocal { get; private set; } = ObjectiveNone;
@@ -43,7 +40,6 @@ public sealed partial class Game
     {
         Array.Fill(_objSent, ObjectiveNone);
         Array.Clear(_objWho);
-        Array.Clear(_objFirsts);
         ObjectiveLocal = ObjectiveMet = ObjectiveNone;
     }
 
@@ -55,9 +51,6 @@ public sealed partial class Game
         _objNextLook = now + 1;
         var goals = ObjectiveScript.Current.Goals;
         var on = goals.Length > 0 && Story != null && !SandboxInfiniteParts && Host == null && Phase == MatchPhase.Playing;
-        if (on)
-            ObjectivesWalk();
-        var wantChairs = false;
         foreach (var p in Players.Values)
         {
             if (p.Bot != null || p.Id >= MaxPlayers)
@@ -65,7 +58,6 @@ public sealed partial class Game
             if (_objWho[p.Id] != p)
             {
                 _objWho[p.Id] = p;
-                _objFirsts[p.Id] = 0;
                 _objSent[p.Id] = 254; // (not told yet: anything below is news)
             }
             byte goal = ObjectiveNone;
@@ -75,7 +67,6 @@ public sealed partial class Game
                     if (!ObjectiveDone(p, goals[k], out have, out need))
                     {
                         goal = (byte)k;
-                        wantChairs |= goals[k].Kind == ObjectiveKind.Shell;
                         break;
                     }
             if (goal == _objSent[p.Id] && (goal == ObjectiveNone || have == _objHave[p.Id] && need == _objNeed[p.Id]))
@@ -85,7 +76,6 @@ public sealed partial class Game
             _objNeed[p.Id] = (short)Math.Clamp(need, short.MinValue, short.MaxValue);
             ObjectiveSend(p);
         }
-        _objWantChairs = wantChairs;
     }
 
     /// <summary>Is the line for them now? Not while a story panel has the screen (the induction, the quarry's or the depot's steps) or the opening has them.</summary>
@@ -131,26 +121,24 @@ public sealed partial class Game
     }
 
     /// <summary>
-    /// Server: has this person done a first (a craft of their own, off the planetoid, landed on another, a shell and chair of
-    /// their own)? Seen from what they own and where they are, kept while they are here. The technologies thread's
-    /// milestones (saved with the world) take this over once they are in.
+    /// Server: has this person done a first? Their milestones, saved with the world (GameMilestones.cs): a flight in a craft of
+    /// their own, off the planetoid, landed on another, awake in a robot shell. Being away on another planetoid, or out in space
+    /// in a seat, counts as soon as it is seen (route 1's travel lands nobody through a ship's landing), and is kept as a first.
     /// </summary>
     private bool ObjectiveFirst(Player p, ObjectiveKind k)
     {
-        var bit = (byte)(1 << (int)k);
-        if ((_objFirsts[p.Id] & bit) != 0)
-            return true;
-        var now = k switch
+        var m = k switch
         {
-            ObjectiveKind.Ship => (_objOwns[p.Id] & bit) != 0,
-            ObjectiveKind.Shell => (_objOwns[p.Id] & bit) != 0,
-            ObjectiveKind.Space => ObjectiveInSpace(p) || ObjectiveAway(p),
-            ObjectiveKind.Landing => ObjectiveAway(p),
-            _ => false,
+            ObjectiveKind.Ship => Milestone.Ship,
+            ObjectiveKind.Space => Milestone.Space,
+            ObjectiveKind.Landing => Milestone.Landing,
+            _ => Milestone.Shell,
         };
-        if (now)
-            _objFirsts[p.Id] |= bit;
-        return now;
+        if (HasFirst(p.Id, m))
+            return true;
+        if (k == ObjectiveKind.Space && (ObjectiveInSpace(p) || ObjectiveAway(p)) || k == ObjectiveKind.Landing && ObjectiveAway(p))
+            FirstReached(p, m, World.Map.Name);
+        return HasFirst(p.Id, m);
     }
 
     /// <summary>On another planetoid: away on one the host runs, or the whole game landed somewhere other than the story's home.</summary>
@@ -163,35 +151,6 @@ public sealed partial class Game
     {
         ref var h = ref SandboxHands.Hand(p.Id);
         return h.Seated && Constructs.Get(h.SeatBody) is { } c && InSpace(c);
-    }
-
-    /// <summary>Server, once a second: what each owner byte owns, one walk over the bodies (the parts only for chairs, when someone wants one).</summary>
-    private void ObjectivesWalk()
-    {
-        Array.Clear(_objOwns);
-        const byte ship = 1 << (int)ObjectiveKind.Ship, shell = 1 << (int)ObjectiveKind.Shell, chair = 1 << 7;
-        Span<byte> shells = stackalloc byte[256];
-        shells.Clear();
-        foreach (var c in Constructs.Bodies)
-        {
-            var o = c.Owner;
-            if (o == 255 || c.PartCount == 0)
-                continue;
-            if (c.ThrusterCount > 0 && c.DriveSeat >= 0 && (_dpWho[o] == null || _dp[o].Lander != c.Id))
-                _objOwns[o] |= ship; // (a craft of their own: not the lander the depot lent them)
-            if (c.PartCount == 1 && c.Parts[0].D.ShellBody)
-                shells[o] = 1;
-            else if (_objWantChairs && (_objOwns[o] & chair) == 0)
-                for (var k = 0; k < c.PartCount; k++)
-                    if (c.Parts[k].D.ShellRange > 0)
-                    {
-                        _objOwns[o] |= chair;
-                        break;
-                    }
-        }
-        for (var o = 0; o < 255; o++)
-            if (shells[o] != 0 && (_objOwns[o] & chair) != 0)
-                _objOwns[o] |= shell;
     }
 
     private void ObjectiveSend(Player p)

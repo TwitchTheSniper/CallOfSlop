@@ -83,6 +83,31 @@ before the site keeps its ground and gets none of it; the other factions' settle
 To see a site whole: `--window-shot OUT.png --survival --calm --map Glacier --do "key Jump; wait 40; from Flagpole Base
 14,32,48; wait 30"` (`--calm`: no storm; `from PART side,up,out` puts the eye after the opening has woken the player).
 
+## Ambience: what moves and sounds about a place
+
+`Constructs/Ambience.json` names parts that do something wherever they are built, on any world
+(`Source/Render/PartAmbience.cs`): looks and sound only, worked out on each PC, nothing sent or saved.
+
+| Kind | What the part does | Now on |
+| --- | --- | --- |
+| `smoke` | Puffs from its top, bent by a storm's wind; `top`: only the highest of its name on a body | `Concrete Chimney 2.75 m` |
+| `steam` | Vents for `burst` seconds every `every` | `Heating Valve Chamber` |
+| `searchlight` | In a storm's dusk, a pool of light `width` m across sweeps the ground up to `reach` m out (the nearest one only: one of the frame's four lights) | `Tower Roof 2x2 m` |
+| `tannoy` | Two chimes and a garbled announcement about every `every` seconds, heard within `reach` m (the mixer's "Storm wind" row) | `Flagpole Top 3.75 m` |
+
+A cold storm also blows snow along the ground round the camera (the `drift` particle kind), on any world with a storm.
+To give another faction's place life, name its parts in the file: no code. People are not this file's business (the
+story's people have their own posts).
+
+Cost (measured 2026-11-13 in the agent container, the colony in view): the world's bodies are looked through twice a
+second, the frames between walk a short list (seven parts in the colony): about 3 microseconds a frame plus 1 for the
+searchlight, against 6.5 for the lamps' own code on the same machine; three rays every fifth of a second; no
+allocation in a steady frame. Particles go into the one pool at the Particles setting's share.
+
+Not done: a searchlight has no beam and no lit lamp head (only its pool on the ground); smoke rises along world +Y
+(the particle pool's gravity), right at a pole and wrong far from it; no steam on the mains' pipes themselves; the
+tannoy is one recording.
+
 ## The Ministry of Slop: Brutalism
 
 The Ministry builds as a government that expects to be there for ever and has stopped spending: heavy raw concrete,

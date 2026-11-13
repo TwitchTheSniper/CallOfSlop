@@ -307,6 +307,12 @@ said about it: it is only shown. A world from before the furniture has none in i
 spot. Moving the furniture in the blueprint (the part kit's `BuildingParts`) needs no change here; moving the barracks'
 doorway means moving `BarracksDoorOut`/`BarracksDoorIn` too.
 
+### Convict labourers
+
+Round the named people, about eighty nameless convicts and their guards work the colony and the quarry: roll call,
+queues, coal, snow, kerb painting, a column under escort, picks and barrows (docs/story/LABOUR.md; data
+`Story/Labour/PenalColony.json`). They are pictures posed from the clock, not story people: no steps, no bodies, no AI.
+
 ### Sight
 
 What a body sees is `Source/Game/GameStorySight.cs`, in the same look. A body sees what is in front of it (about 70
@@ -988,7 +994,16 @@ padlock; its tooltip names the faction, the technology, the standing it is taugh
 in hand it can't be taken (a beacon's window that hides what the network doesn't hold still shows them, as goals). The
 server sends each player's standings and known technologies in `Msg.Factions` (`FactionTable.PlayerStanding`,
 `PlayerLearnt`, `LockOf`; UI: `UiSandboxPartLocks.cs`), so it works per player in co-op and for a player in no faction.
-Creative worlds and worlds without a story lock nothing. What ships:
+Creative worlds and worlds without a story lock nothing.
+
+**What you have learnt, and the moment you learn it** (`Source/UI/UiTechnologies.cs`). It reads the same
+`FactionTable.PlayerLearnt`, so every peer knows its own. The Logbook (F1) has a Technologies page: each
+faction's technologies, learnt or locked with the tier that teaches them, then the player's tool upgrades. When a new bit
+appears (or a tool upgrade's level rises), a short celebration plays in the middle of the screen with the LevelUp sound:
+title, name in story-text size and colour, what it unlocks. The first four seconds in a game are taken as already known (a
+join, a load). Other code celebrates through `Game.Celebrate(player, title, name, line)` on the server (a client gets
+`CActKind.Celebrate`) or `Game.CelebrateHere` on a peer (`Source/Game/GameCelebrate.cs`). They queue one at a time and
+wait out the opening, a story ride, the workbench and the menus. What ships:
 
 | Faction | Tier | Technology | Parts |
 | --- | --- | --- | --- |

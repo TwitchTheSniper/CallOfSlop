@@ -891,6 +891,9 @@ public static unsafe partial class Program
                     DrawFriendlyHitText(g, now); // "FRIENDLY" under the friendly hit marker (Program.FriendlyHit.cs)
                     Ui.DrawHud(g, now, _joinAddress, _settings);
                 }
+                // What the player has just learnt, in the middle of the screen; it waits out the opening, a ride and the bench (UiTechnologies.cs).
+                if (Ui.DrawCelebration(g, now, benchCovers || g.OpeningActive || g.QuarryRiding, _settings.Bind(GameAction.Logbook)))
+                    AudioSystem.Effect(Sfx.LevelUp, 0.6f);
                 uiPart.Dispose();
                 uiPart = Perf.Measure(PerfArea.UiMenus);
                 DrawBenchInMatch(now); // a Zombies workbench, open over the match (Program.Zombies.cs)
@@ -2058,6 +2061,7 @@ public static unsafe partial class Program
             }
             DrawPlayer(p);
         }
+        LabourRender.Draw(Gfx, _game); // the penal colony's convict labourers (Source/Render/LabourRender.cs)
 
         pass.Dispose();
 
@@ -2521,3 +2525,4 @@ public static unsafe partial class Program
     }
 
 }
+

@@ -18,6 +18,7 @@ public struct BodySnap
     public (ushort Part, OrderList List)[]? Orders; // its work-order queues and bills, copied (WorkOrders.cs; written after the conveyors)
     public (ushort Part, CraftList List)[]? Craft; // its Crafting Terminals' open orders, copied (ConstructCrafting.cs; written after the work orders)
     public ChainEntry[]? Chains; // its chained orders' links, copied (ConstructLogisticsPlan.cs; written in the LOGI block)
+    public (ushort Part, ushort Kind)[]? Targets; // its racks' stock targets (StockTargets.cs; written in the LOGI block's fourth part)
     public (ushort Part, StationJob Job)[]? Station; // its Building Stations' jobs, copied (ConstructStation.cs; written after the crafting orders)
     public VehicleKit.VehicleBrief? Brief; // a generated faction vehicle's behaviour data (written after the tracks; the tick doesn't change a brief once it is on its construct)
 }
@@ -145,6 +146,7 @@ public sealed class WorldPlayer
     public ushort BunkBody; // their checkpoint: the bunk they last lay in (its construct, stable in a save; 0: none), segment and place in its rest frame
     public byte BunkSeg;
     public Vector3 BunkPos;
+    public ushort Firsts; // their milestones for firsts, a bit each (GameMilestones.cs; saved in the Firsts section)
     public byte[] Upgrades = []; // their tool upgrade levels, a byte a ToolStat (ConstructEditsUpgrades.cs; saved in the Tools section)
 
     public WorldPlayer Copy()
