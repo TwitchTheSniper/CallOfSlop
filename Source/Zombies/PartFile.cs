@@ -987,7 +987,10 @@ public static partial class Parts
         return first.Equals("Builds", StringComparison.OrdinalIgnoreCase) || first.Equals("Tables", StringComparison.OrdinalIgnoreCase) || first.StartsWith('_');
     }
 
-    public static PartDef? Find(string name) => All.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+    /// <summary>A builder part by name; a pressed key ("Pressed Part (barrel.plain ...)") is the sized builder part its pressed part owns (SizedGunParts).</summary>
+    public static PartDef? Find(string name) =>
+        name.StartsWith(Pressed.Prefix, StringComparison.Ordinal) ? ConstructParts.Find(name)?.GunSized
+        : All.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
     public static IEnumerable<PartDef> InCategory(PartCategory c) => All.Where(p => p.Category == c);
 

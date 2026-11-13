@@ -846,6 +846,60 @@
      "use": 8.0
     }
    ]
+  },
+  {
+   "output": "Barrel Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Barrel Die",
+   "seconds": 60,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
+    }
+   ]
+  },
+  {
+   "output": "Large Barrel Die",
+   "seconds": 90,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 4.0,
+     "maxAcross": 7.2,
+     "use": 4.0
+    }
+   ]
   }
  ],
  "strength": {
@@ -3999,6 +4053,155 @@
      ]
     }
    ]
+  },
+  {
+   "die": "Barrel",
+   "blanks": [
+    "round",
+    "pipe"
+   ],
+   "materials": [
+    "steel"
+   ],
+   "across": [
+    10,
+    120
+   ],
+   "length": [
+    10,
+    1920
+   ],
+   "aspect": [
+    1.0,
+    16.0
+   ],
+   "seconds": {
+    "base": 4.0,
+    "perKg": 0.02
+   },
+   "features": [
+    {
+     "tag": "crown",
+     "box": [
+      -0.1,
+      -0.1,
+      0.0,
+      1.1,
+      1.1,
+      0.04
+     ],
+     "proud": "xyz",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 10.0,
+     "look": "dark"
+    }
+   ],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "plain",
+     "like": "Gun Barrel",
+     "label": "barrel",
+     "preset": "round 10x10x50 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2,
+         0.7
+        ],
+        [
+         5,
+         1.0
+        ],
+        [
+         9,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul"
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2,
+         1.15
+        ],
+        [
+         5,
+         1.0
+        ],
+        [
+         9,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul"
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2,
+         -0.02
+        ],
+        [
+         5,
+         0.0
+        ],
+        [
+         9,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add"
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2,
+         0.02
+        ],
+        [
+         5,
+         0.0
+        ],
+        [
+         9,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add"
+      }
+     ]
+    }
+   ]
   }
  ],
  "presets": [
@@ -4523,6 +4726,24 @@
    "die": "beam",
    "pattern": "girder",
    "blank": "i-beam 45x45x200 steel"
+  },
+  {
+   "part": "Stub Barrel",
+   "die": "barrel",
+   "pattern": "plain",
+   "blank": "round 10x10x20 steel"
+  },
+  {
+   "part": "Gun Barrel",
+   "die": "barrel",
+   "pattern": "plain",
+   "blank": "round 10x10x50 steel"
+  },
+  {
+   "part": "Long Gun Barrel",
+   "die": "barrel",
+   "pattern": "plain",
+   "blank": "round 10x10x90 steel"
   }
  ]
 }
