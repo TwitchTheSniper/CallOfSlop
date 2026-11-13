@@ -978,7 +978,17 @@ builds everything. The first loop:
 A party is a player's group (their player faction) or the player alone; an Assembler builds a part for its owner when the
 owner or their group has learnt it. Joining a group (or loading a save from before technologies) teaches what the
 standing already earns. The Faction window (F2) lists what each faction teaches, and with a faction of yours which it has
-learnt. What ships:
+learnt.
+
+**What you have learnt, and the moment you learn it** (`Source/UI/UiTechnologies.cs`). The faction table carries, per
+player slot, what each story faction has taught them, alone or through their group (`FactionTable.PlayerLearnt`, sent
+with `Msg.Factions` since protocol 269), so every peer knows its own. The Logbook (F1) has a Technologies page: each
+faction's technologies, learnt or locked with the tier that teaches them, then the player's tool upgrades. When a new bit
+appears (or a tool upgrade's level rises), a short celebration plays in the middle of the screen with the LevelUp sound:
+title, name in story-text size and colour, what it unlocks. The first four seconds in a game are taken as already known (a
+join, a load). Other code celebrates through `Game.Celebrate(player, title, name, line)` on the server (a client gets
+`CActKind.Celebrate`) or `Game.CelebrateHere` on a peer (`Source/Game/GameCelebrate.cs`). They queue one at a time and
+wait out the opening, a story ride, the workbench and the menus. What ships:
 
 | Faction | Tier | Technology | Parts |
 | --- | --- | --- | --- |

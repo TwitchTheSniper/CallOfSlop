@@ -90,6 +90,12 @@ public sealed class FactionTable
     }
     public readonly byte[] StoryLearnt = new byte[Max * MaxStory];
 
+    /// <summary>
+    /// Per player slot (owner byte), what each story faction has taught them, themselves or through their group, a bit each
+    /// (<see cref="PlayerLearnt"/>[slot * MaxStory + f]): the Logbook's Technologies page and the "learnt" moment on screen.
+    /// </summary>
+    public readonly byte[] PlayerLearnt = new byte[256 * MaxStory];
+
     /// <summary>A player faction every story faction hunts (it did something none forgives; StoryFactions.Notorious).</summary>
     public readonly bool[] Notorious = new bool[Max];
 
@@ -117,6 +123,7 @@ public sealed class FactionTable
         Array.Clear(Stance);
         Array.Clear(StoryStanding);
         Array.Clear(StoryLearnt);
+        Array.Clear(PlayerLearnt);
         Array.Clear(Notorious);
         Version++;
     }

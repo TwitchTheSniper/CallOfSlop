@@ -37,6 +37,7 @@ public sealed partial class Game
             StoryTeachEarned(s, who); // (what their standing already earns: a group just joined, a save from before technologies; GameStoryTech.cs)
         }
         StoryStandingsTick(s, t);
+        StoryPlayerLearntTick(s, t);
         StoryTaughtTick(s);
     }
 
@@ -83,6 +84,43 @@ public sealed partial class Game
                 lm = learnt;
             }
         }
+        if (changed)
+            t.Version++;
+    }
+
+    private readonly bool[] _learntSeen = new bool[256];
+
+    /// <summary>
+    /// Once a second: what each player here knows of each story faction's technologies (their own or their group's), into the
+    /// table, so every peer's Logbook and "learnt" moment show their own (GameStoryTech.cs). Slots with nobody are cleared.
+    /// </summary>
+    private void StoryPlayerLearntTick(StoryEngine s, FactionTable t)
+    {
+        var count = Math.Min(s.Factions.Count, FactionTable.MaxStory);
+        var changed = false;
+        Array.Clear(_learntSeen);
+        foreach (var p in Players.Values)
+        {
+            if (p.Bot != null || StoryWho(p) is not (var who and >= 0))
+                continue;
+            _learntSeen[p.Id] = true;
+            var g = s.Factions.Party(who);
+            for (var f = 0; f < count; f++)
+            {
+                var m = (byte)(s.Factions.LearntMask(who, f) | (g != who ? s.Factions.LearntMask(g, f) : 0));
+                ref var at = ref t.PlayerLearnt[p.Id * FactionTable.MaxStory + f];
+                changed |= at != m;
+                at = m;
+            }
+        }
+        for (var k = 0; k < 256; k++)
+            if (!_learntSeen[k])
+                for (var f = 0; f < FactionTable.MaxStory; f++)
+                {
+                    ref var at = ref t.PlayerLearnt[k * FactionTable.MaxStory + f];
+                    changed |= at != 0;
+                    at = 0;
+                }
         if (changed)
             t.Version++;
     }

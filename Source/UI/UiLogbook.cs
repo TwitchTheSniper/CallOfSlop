@@ -6,7 +6,7 @@ namespace CallOfSlop;
 /// <summary>
 /// The Logbook (F1 in Sandbox by default; docs/story/FRAGMENTS.md): the old records' fragments this player holds, each with where it
 /// came from, a "?" for each one still out there, and the leads they have heard of, a "?" until what the lead points to is found.
-/// Its second page, Paths, is UiLogbookPaths.cs.
+/// Its second page, Paths, is UiLogbookPaths.cs; its third, Technologies, UiTechnologies.cs.
 /// It reads what the host sent (Game.FragmentsHeld, Game.FragmentLeads) and the texts every peer has (Story/Fragments). Closed, it
 /// costs one bool check.
 /// </summary>
@@ -34,6 +34,11 @@ public sealed partial class Ui
                 if (ImGui.BeginTabItem("Paths"u8))
                 {
                     DrawLogbookPaths(game); // (what they did and chose, and where they stand: UiLogbookPaths.cs)
+                    ImGui.EndTabItem();
+                }
+                if (ImGui.BeginTabItem("Technologies"u8))
+                {
+                    DrawLogbookTechnologies(game); // (what the factions taught them, what is still locked, their tool upgrades: UiTechnologies.cs)
                     ImGui.EndTabItem();
                 }
                 ImGui.EndTabBar();
