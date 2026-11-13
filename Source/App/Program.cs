@@ -1134,7 +1134,7 @@ public static unsafe partial class Program
             BenchPass(1);
             DrawMovers(map); // moving platforms at this frame's pose
             StandInRender.Draw(Gfx, _session); // STAND-IN: the story's placeholder craft (Source/StandIns)
-            CityGfx.Draw(map, Gfx, Glfw.Time); // a planetoid's city: one draw a chunk (Source/Render/CityRenderer.cs)
+            CityGfx.Draw(map, Gfx, Glfw.Time, _game is { } cg ? cg.MoverRenderTick / World.TickRate : Glfw.Time); // a planetoid's city: one draw a chunk (Source/Render/CityRenderer.cs)
         }
         using (Perf.Pass(PerfArea.Terrain, PerfGpuPass.Terrain))
             TerrainGfx.Draw(Gfx, map); // terrain maps only (built once per map)

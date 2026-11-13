@@ -13,7 +13,7 @@ namespace CallOfSlop;
 /// lamps are worked out per pixel from each face's own metres, so a tower is a dozen faces and still reads as a building.
 /// Nothing allocates in a steady frame.
 /// </summary>
-public sealed unsafe class CityRenderer
+public sealed unsafe partial class CityRenderer
 {
     /// <summary>Within this many metres of the camera a chunk's detail is drawn too.</summary>
     public static float DetailRange = 420f;
@@ -28,6 +28,7 @@ public sealed unsafe class CityRenderer
         uniform mat4 uViewProjRel;
         uniform vec3 uChunkRel;
         uniform vec3 uChunkWorld;
+        uniform mat3 uRot;      // identity for the city's chunks; a train car's turn
         out vec3 vWorld;
         out vec3 vNormal;
         out vec2 vUv;
@@ -36,12 +37,13 @@ public sealed unsafe class CityRenderer
 
         void main()
         {
-            vWorld = uChunkWorld + aPos;
-            vNormal = aNormal;
+            vec3 p = uRot * aPos;
+            vWorld = uChunkWorld + p;
+            vNormal = uRot * aNormal;
             vUv = aUv;
             vColor = aColor.rgb;
             vPar = aPar;
-            gl_Position = uViewProjRel * vec4(aPos + uChunkRel, 1.0);
+            gl_Position = uViewProjRel * vec4(p + uChunkRel, 1.0);
         }
         """;
 
@@ -365,6 +367,34 @@ public sealed unsafe class CityRenderer
                 vec3 albedo = vColor * k * (0.75 + 0.25 * max(dot(n, Up()), 0.0));
                 col = ApplyLightAt(albedo, n, 0.4, vWorld) + albedo * vec3(1.0, 0.72, 0.42) * 0.25;
             }
+            else if (style == 18) // a railway car's side: livery, a band of lit windows with people in them, two doors
+            {
+                float x = vUv.x, y = vUv.y;
+                vec3 paint = vColor;
+                paint = mix(paint, vec3(0.55, 0.1, 0.08), Band(y, 0.5, 1.05, fw));
+                paint = mix(paint, vec3(0.55, 0.1, 0.08), Band(y, 2.55, 2.68, fw));
+                float door = Band(abs(abs(x) - 4.0), -0.65, 0.65, fw) * Band(y, 0.55, 2.45, fw);
+                float win = Band(fract((x + 100.0) / 1.9), 0.12, 0.88, fwidth(x / 1.9)) * Band(y, 1.35, 2.35, fw) * (1.0 - step(abs(abs(x) - 4.0), 0.9)) * step(abs(x), 6.9);
+                float dwin = Band(abs(abs(x) - 4.0), -0.35, 0.35, fw) * Band(y, 1.35, 2.3, fw);
+                vec3 body = ApplyLightAt(mix(paint, vec3(0.2, 0.22, 0.25), door * 0.85), n, 0.0, vWorld);
+                float w = max(win, dwin);
+                // Inside: a warm light and the riders' heads and shoulders against it.
+                float slot = floor((x + 100.0) / 0.95);
+                uint hs = Hash(uint(slot) * 2654435761u + seed * 97u);
+                float person = step(0.45, float(hs & 255u) / 255.0);
+                float hx = (fract((x + 100.0) / 0.95) - 0.5) * 0.95;
+                float hy = y - (float((hs >> 8) & 1u) > 0.5 ? 2.0 : 1.72);
+                float head = step(hx * hx + hy * hy * 0.8, 0.018) + step(abs(hx), 0.22) * step(hy, -0.16);
+                vec3 inside = vec3(1.0, 0.9, 0.72) * 0.85 * (1.0 - 0.8 * clamp(head * person, 0.0, 1.0));
+                vec3 glass = inside + Reflection(n, v, vec3(0.8)) * 0.25;
+                col = mix(body, glass, w);
+                glow = inside * w * 0.6;
+            }
+            else if (style == 19) // a car's end: a dark windscreen over the coupler
+            {
+                float screen = Band(vUv.y, 1.6, 2.6, fw) * Band(abs(vUv.x), -1.0, 1.05, fw);
+                col = mix(ApplyLightAt(vColor, n, 0.0, vWorld), vec3(0.03) + Reflection(n, v, vec3(0.8)) * 0.4, screen);
+            }
             else // metal and the rest
                 col = ApplyLightAt(vColor * (0.85 + 0.2 * Noise(vUv * 2.0)), n, 0.0, vWorld) + vec3(0.02);
             col += glow;
@@ -415,7 +445,7 @@ public sealed unsafe class CityRenderer
         return true;
     }
 
-    public void Draw(Map map, Renderer gfx, double now)
+    public void Draw(Map map, Renderer gfx, double now, double clock)
     {
         if (_broken || map.CityGeometry is not { } geo || geo.Chunks.Length == 0)
             return;
@@ -478,6 +508,7 @@ public sealed unsafe class CityRenderer
             Native.glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, (void*)((nint)c.First * sizeof(uint)));
             DrawnTriangles += count / 3;
         }
+        DrawLife(map, gfx, geo, clock);
         Native.glDisable(GlCapability.CullFace);
         if (timing)
         {
@@ -545,6 +576,9 @@ public sealed unsafe class CityRenderer
             fs.Dispose();
             Lighting.Upload(_program);
             _program.Use();
+            _locRot = Uniform(_program, "uRot\0"u8);
+            float* rotId = stackalloc float[9] { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
+            Native.glUniformMatrix3fv(_locRot, 1, false, rotId);
             _locVp = Uniform(_program, "uViewProjRel\0"u8);
             _locChunkRel = Uniform(_program, "uChunkRel\0"u8);
             _locChunkWorld = Uniform(_program, "uChunkWorld\0"u8);
