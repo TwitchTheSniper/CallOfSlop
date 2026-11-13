@@ -1,0 +1,12 @@
+{
+  // The Ministry Courier at the spaceport (docs/story/SPACEPORT.md, Game/GameSpaceport.cs): taken, or handed over.
+  // Target: the ship; owner: its pilot.
+  "verbs": [
+    { "name": "Commandeer", "players": true, "sentence": "{actor} stole {target}",
+      "about": "a player takes the Ministry's courier without its pilot's say-so (the Ministry's deed: Stole a Ministry ship)",
+      "effects": [ "owner Grudge actor +40" ] },
+    { "name": "Cleared", "players": true, "sentence": "{actor} was cleared to fly {target}",
+      "about": "the courier's pilot hands it over, Form 88 signed (the Ministry's deed: Ran the courier's errand)",
+      "effects": [ "actor Owns target =1", "owner Likes actor +15" ] }
+  ]
+}

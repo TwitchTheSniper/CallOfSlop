@@ -1,0 +1,31 @@
+{
+  // What Captain Fairweather, the Ministry Courier's grounded pilot, says at the spaceport (docs/story/SPACEPORT.md;
+  // occasions as Story/Lines/Colony.json). Cheerful, polite, terrified of heights, and three years into waiting for a
+  // signature. Words change nothing: the errand is his topics' (Story/Topics/Spaceport.json).
+  "about": "Captain Fairweather, the Ministry Courier's pilot at the spaceport",
+  "rules": [
+    { "on": "Greeted", "if": "?me == 'Captain Fairweather', ?me is Person",
+      "say": [ "Hello! A visitor! Captain Fairweather, Ministry Courier Service. And you are? ...Splendid. Mind the pad.",
+               "Good heavens, a person. Fairweather. Captain. Name? ...Lovely. You've walked from the colony? In this?",
+               "How do you do. Captain Fairweather. I fly the courier. Well. I sit beside it. Your name? ...Marvellous." ] },
+    { "on": "Chatted", "if": "?me == 'Captain Fairweather', ?me is Person",
+      "say": [ "Hello again! Still here. Still grounded. Still cheerful, mostly.", "Ah, {them.first}. Any word from the outside? No? Same here.",
+               "Back again! The snow's been keeping me company. It's a good listener." ] },
+    { "on": "NoNews", "if": "?me == 'Captain Fairweather', ?me is Person",
+      "say": [ "News? Nothing lands here. That's rather the problem.", "Nothing new. The tower counted the snow again. Same as yesterday, give or take." ] },
+    { "on": "AskPlace", "if": "?me == 'Captain Fairweather', ?me is Person",
+      "say": [ "Frostreach One. Three pads, one tower, one terminal and one pilot. The pilot is the weak point.",
+               "Arrivals and departures. Mostly neither. The customs hall has a queue nobody is in, and it still isn't moving.",
+               "The tower's tall so the controllers can see the ships. There aren't any ships. Or any controllers." ] },
+    { "on": "AskSelf", "if": "?me == 'Captain Fairweather', ?me is Person",
+      "say": [ "I fly the Ministry Courier. In principle. In practice I polish it.",
+               "Courier pilot. Post, parcels, the odd minister. Not lately. Not for three years.",
+               "Between you and me, {them.first}, I've never liked heights. Don't tell the Ministry. It's not on the form." ] },
+    { "on": "AskAdvice", "if": "?me == 'Captain Fairweather', ?me is Person",
+      "say": [ "Never fly without the paperwork. Or with it, frankly. Paperwork is heavy.",
+               "Up is the easy part. It's down that wants practice.",
+               "If the red lights are behind you, you're going the wrong way. Or the right way. Depends what you're fleeing." ] },
+    { "on": "Bye", "if": "?me == 'Captain Fairweather', ?me is Person", "chance": 0.8,
+      "say": [ "Cheerio! Mind the snow.", "Off you go. Wave if you're ever up there.", "Goodbye! Do come back. Nobody else does." ] }
+  ]
+}

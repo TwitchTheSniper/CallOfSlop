@@ -25,7 +25,10 @@
     { "name": "Ambrose Thale", "about": "old convict at the brazier; built hulls once, and still talks to the sky", "home": "Penal Colony", "works": "Penal Colony",
       "qualities": { "Sociable": 70, "Honest": 60, "Brave": 45, "Vengeful": 10, "Gossipy": 60, "Greedy": 15, "Wealth": 1 } },
     { "name": "Hester Mossop", "about": "convict at the heating main; says little, plans everything, trusts nobody twice", "home": "Penal Colony", "works": "Penal Colony",
-      "qualities": { "Sociable": 25, "Honest": 55, "Brave": 80, "Vengeful": 65, "Gossipy": 10, "Greedy": 20, "Wealth": 3 } }
+      "qualities": { "Sociable": 25, "Honest": 55, "Brave": 80, "Vengeful": 65, "Gossipy": 10, "Greedy": 20, "Wealth": 3 } },
+    // The Ministry Courier's pilot at the spaceport 2 km out (docs/story/SPACEPORT.md): his body keeps to the apron there.
+    { "name": "Captain Fairweather", "about": "Ministry courier pilot, grounded at the spaceport for want of a signature", "home": "Penal Colony", "works": "Penal Colony",
+      "qualities": { "Sociable": 55, "Honest": 75, "Brave": 20, "Vengeful": 35, "Gossipy": 60, "Greedy": 20, "Wealth": 15 } }
   ],
   "feelings": [
     { "who": "Sergeant Bellweather", "rel": "Likes", "to": "Warden Pettigrew", "value": 30 },

@@ -22,6 +22,7 @@ public sealed partial class Game
     public const byte SbPeopleTeam = 12;
 
     public const int StoryBodiesMax = 12; // (the colony's staff, the break-out's convicts and a visitor or two)
+    public const float StoryStationReach = 30f; // m: a body kept to a station goes no further from it to meet anyone
     public const float StoryMeetReach = 4f, StoryBeside = 1.3f; // m: two bodies this close are together; one goes this far from the other
     public const float StoryHomeMin = 12, StoryHomeMax = 26, StoryWorkMin = 6, StoryWorkMax = 10, StoryRoadMin = 40, StoryRoadMax = 50; // m from the place's middle
     public const double StoryArriveWalk = 20; // s: a trip here shows its body at the road's end this long before it ends
@@ -55,6 +56,7 @@ public sealed partial class Game
         public double PostStuck; // game time: since when they have been near the post's seat without sitting (-1: not)
         public bool PostSat; // sat in the post's seat
         public double DoorSince = -1; // game time: since when they have stood at the barracks' doorway step on the way in (-1: not)
+        public bool Station; // keeps to Home (the spaceport's pilot, 2 km from the colony: GameSpaceport.cs), never walks off to anyone far
 
         public StoryBody() { }
     }
@@ -346,6 +348,8 @@ public sealed partial class Game
         }
         else
             b.Work = b.Home;
+        if (SpaceportKeeper(name) && SpaceportKeeperSpot() is { } station)
+            (b.Home, b.Work, b.Station) = (station, station, true); // (the courier's pilot keeps to his apron: GameSpaceport.cs)
         var at = arriving ? StoryRoadEnd(s, ref b, a.DoingFromPlace) : StoryStepSpot(s, a, ref b);
         var bot = new Player
         {
@@ -397,6 +401,8 @@ public sealed partial class Game
             // Beside the one they're with (on this side of them): a body, or a player.
             if (StoryPosOf(with) is { } them)
             {
+                if (b.Station && Vector3.DistanceSquared(them, b.Home) > StoryStationReach * StoryStationReach)
+                    return b.Home; // (whoever it is, they can come to him)
                 var off = new Vector3(p.Position.X - them.X, 0, p.Position.Z - them.Z);
                 var len = off.Length();
                 return len < StoryBeside ? p.Position : them + off / len * StoryBeside;

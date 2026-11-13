@@ -1,0 +1,69 @@
+{
+  // The Ministry spaceport's way off the planet (docs/story/SPACEPORT.md). Captain Fairweather has been grounded for
+  // three years: his Form 88 (Permission to Leave the Surface) wants the warden's countersignature, the warden is 2 km
+  // away at the colony, and a pilot may not leave the spaceport without Form 88. A player who carries it there and back
+  // is handed the courier ("fairweather-signed" is the file's handover: Game/GameSpaceport.cs gives the ship), because
+  // the form now names the bearer, and Fairweather has never much liked heights. One who just climbs in has stolen it.
+  // The colony's staff point the way. ?me is the person asked, ?them the player.
+  "format": "call-of-slop-topics/1",
+  "about": "the Ministry spaceport: Captain Fairweather, his courier and his Form 88",
+  "topics": [
+    // ==== At the colony: which way is out ====
+    { "id": "crumb-spaceport", "who": "Officer Crumb", "ask": "Is there any way off this planet?", "after": "crumb-rockets", "priority": 6,
+      "answers": [
+        { "if": "?me Grudge ?them >= 20", "keep": true, "say": [ "Yes. Through me. Which is a no." ] },
+        { "then": [ "?me Likes ?them +1" ],
+          "say": [ "The spaceport, two kilometres east of the main gate. Red lights on the tower. You can't miss it. People do.",
+                   "Ministry spaceport, east of the gate. Captain Fairweather's been stuck out there since before the kettle." ] } ] },
+    { "id": "bellweather-spaceport", "who": "Sergeant Bellweather", "ask": "What's that red light out east?", "if": "?them Inducted", "priority": 3,
+      "answers": [
+        { "say": [ "The spaceport's tower. Two kilometres. Escape attempt number four went that way. He came back for his gloves.",
+                   "The Ministry spaceport. Nothing leaves it without Form 88. Nobody's seen one signed since the Coronation." ] } ] },
+
+    // ==== Captain Fairweather: the courier, the form, the errand ====
+    { "id": "fairweather-ship", "who": "Captain Fairweather", "ask": "Is that your ship?", "priority": 9,
+      "answers": [
+        { "if": "?me CourierStolen", "say": [ "It was. Some light-fingered so-and-so flew off in it. I've filed a Form 12. In my best hand." ] },
+        { "if": "?me CourierGiven", "say": [ "It was. I gave it away. Best day of my career. I've taken up knitting." ] },
+        { "then": [ "?me Likes ?them +2" ],
+          "say": [ "The Ministry Courier, {them.first}. Fastest thing on Frostreach, and it hasn't moved in three years. Grounded.",
+                   "Mine, yes. The Ministry's, technically. Grounded, actually. Three years this Tuesday." ] } ] },
+    { "id": "fairweather-grounded", "who": "Captain Fairweather", "ask": "Why is it grounded?", "after": "fairweather-ship", "priority": 9,
+      "if": "not ?me CourierStolen, not ?me CourierGiven",
+      "answers": [
+        { "say": [ "Form 88 wants the warden's countersignature. He's at the colony. I may not leave here without Form 88.",
+                   "Paperwork. The warden must countersign my Form 88, and I can't go to him without it. I wrote. That needed one." ] } ] },
+    { "id": "fairweather-keys", "who": "Captain Fairweather", "ask": "Couldn't someone just fly it off?", "after": "fairweather-grounded", "priority": 7,
+      "if": "not ?me CourierStolen, not ?me CourierGiven",
+      "answers": [
+        { "then": [ "?me Likes ?them -2" ],
+          "say": [ "The keys are in it: Form 12. Anyone who climbed in would be robbing the Ministry. The Ministry never forgets.",
+                   "Steal a Ministry vessel? The Ministry would never forget your face. It has it on file already, I expect." ] } ] },
+    { "id": "fairweather-errand", "who": "Captain Fairweather", "ask": "I could take your form to the warden.", "after": "fairweather-grounded", "priority": 10,
+      "if": "not ?me CourierStolen, not ?me CourierGiven",
+      "answers": [
+        { "if": "?me Grudge ?them >= 20", "keep": true, "say": [ "You? I wouldn't trust you with a Form 1, and Form 1 is blank." ] },
+        { "then": [ "?me Likes ?them +5" ],
+          "say": [ "Would you? Splendid! Form 88, in triplicate. Warden Pettigrew, at the colony, west. Don't fold it.",
+                   "Oh, would you! Take it to Warden Pettigrew at the colony. All three copies want his signature. Mind the snow." ] } ] },
+    { "id": "pettigrew-form88", "who": "Warden Pettigrew", "ask": "Captain Fairweather's Form 88, for signing.", "after": "fairweather-errand", "priority": 10,
+      "if": "not 'Captain Fairweather' CourierStolen, not 'Captain Fairweather' CourierGiven",
+      "answers": [
+        { "if": "?them Suspicion >= 5", "keep": true, "say": [ "With your file, {them.first}? I'd be signing your escape. Come back when the Thursday memo forgets you." ] },
+        { "if": "?me Grudge ?them >= 30", "keep": true, "say": [ "I don't sign things for people who hit my staff. It's in the handbook. Page one." ] },
+        { "then": [ "?me Likes ?them +2" ],
+          "say": [ "Fairweather's 88! At last. There. And there. And... there. Take it back to him before it expires. It expires.",
+                   "Permission to Leave the Surface. Not seen one since the Coronation. Signed, countersigned, blotted. Go on." ] } ] },
+    { "id": "fairweather-signed", "who": "Captain Fairweather", "ask": "Here's your Form 88, signed.", "after": "pettigrew-form88", "priority": 10,
+      "if": "not ?me CourierStolen, not ?me CourierGiven",
+      "answers": [
+        { "then": [ "?me Likes ?them +10" ],
+          "say": [ "Signed! And page four says the bearer may leave the surface. You're the bearer. She's yours. No scratches.",
+                   "It's signed! The bearer may leave the surface, and pilots may not carry forms. So take her up. I hate heights." ] } ] },
+    { "id": "fairweather-after", "who": "Captain Fairweather", "ask": "What will you do now?", "again": true, "priority": 2,
+      "if": "?me CourierGiven",
+      "answers": [
+        { "say": [ "Wait for the next ship, and the next Form 88. Three years, roughly. I've a jumper on the go.",
+                   "Count the snow. Somebody has to, and the Ministry wants it in triplicate." ] } ] }
+  ]
+}
