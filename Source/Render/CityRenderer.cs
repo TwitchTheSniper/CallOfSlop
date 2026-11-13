@@ -196,7 +196,7 @@ public sealed unsafe partial class CityRenderer
                 vec3 inside = vec3(0.02);
                 // A shop: lit inside, the shelves and the counter darker bands across it; one in five is shut for the night.
                 uint sh = Hash(seed * 5u + uint(bay + 4096.0));
-                float open = shops ? step(0.2, float(sh & 255u) / 255.0) : step(0.55, float(sh & 255u) / 255.0);
+                float open = shops ? step(0.1, float(sh & 255u) / 255.0) : step(0.55, float(sh & 255u) / 255.0);
                 vec3 shopLight = mix(vec3(1.0, 0.8, 0.55), vec3(0.85, 0.95, 1.0), float((sh >> 8) & 1u)) * (0.35 + 0.25 * float((sh >> 9) & 255u) / 255.0);
                 float shelves = 1.0 - 0.55 * step(0.5, fract((fv - 0.75) / 0.7)) * step(fv, 2.6) * step(0.25, fract(fu / 1.7));
                 vec3 room = shopLight * open * shelves;
@@ -206,6 +206,13 @@ public sealed unsafe partial class CityRenderer
                 vec3 shutter = Lit(vec3(0.42, 0.43, 0.45) * rib, n, 0.0, vWorld) + vec3(0.42) * vec3(1.0, 0.72, 0.42) * 0.25 * gOut;
                 glass = mix(shutter, glass, open);
                 col = mix(lightWall * 0.8, glass, win);
+                // The shop's door at one end of its window: a dark frame, its own glass, a step.
+                float doorX = (float((sh >> 12) & 1u) > 0.5) ? 0.55 : sw - 1.65;
+                float door = Band(fu, doorX, doorX + 1.1, fw) * Band(fv, 0.45, 2.75, fw);
+                float frame = door * (1.0 - Band(fu, doorX + 0.08, doorX + 1.02, fw) * Band(fv, 0.45, 2.67, fw));
+                vec3 doorGlass = mix(vec3(0.02) + shopLight * open * 0.8, refl, fres * 0.5);
+                col = mix(col, doorGlass, door);
+                col = mix(col, Lit(vec3(0.12, 0.12, 0.13), n, 0.0, vWorld), frame);
                 glow = room * win * 0.6;
                 if (shops)
                 {

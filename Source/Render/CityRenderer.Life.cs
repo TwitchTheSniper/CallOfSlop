@@ -36,6 +36,7 @@ public sealed unsafe partial class CityRenderer
         out vec3 vWorld;
         out vec3 vNormal;
         flat out vec3 vColor;
+        flat out vec3 vGlow;
 
         uint Hash(uint x)
         {
@@ -92,6 +93,18 @@ public sealed unsafe partial class CityRenderer
                 h = 0.18;
                 moving = 1.0;
             }
+            else if (kind == 2)
+            {
+                // A car along its lane: as far as the clock has taken it, coming in again at the start.
+                vec2 a = iA.xy;
+                vec2 b = iA.zw;
+                float len = max(length(b - a), 1.0);
+                f = (b - a) / len;
+                walked = uClock * iB.x + iB.y;
+                p = a + f * mod(walked, len);
+                h = 0.03;
+                moving = 0.0;
+            }
             else
             {
                 p = iA.xy;
@@ -125,18 +138,21 @@ public sealed unsafe partial class CityRenderer
             lp *= scale;
             lp.y += abs(sin(ph)) * 0.035 * moving; // the bob of a step
             vec3 base = uPlanet + up * (uR + h);
-            if (kind == 0 && distance(base, uCam) > uRange)
+            if (kind != 1 && distance(base, uCam) > uRange * (kind == 2 ? 1.6 : 1.0))
             {
                 gl_Position = vec4(0.0, 0.0, -2.0, 1.0); // (out of range: clipped away)
                 vWorld = base;
                 vNormal = up;
                 vColor = vec3(0.0);
+                vGlow = vec3(0.0);
                 return;
             }
             vWorld = base + right * lp.x + up * lp.y + fw * lp.z;
             vNormal = right * ln.x + up * ln.y + fw * ln.z;
             int part = int(aPart + 0.5);
             vColor = Pick(Hash(seed * 7u + uint(part) * 1013u), part);
+            // A car's lamps: white at the front, red behind.
+            vGlow = part == 5 ? vec3(1.0, 0.95, 0.8) * 1.6 : part == 6 ? vec3(1.0, 0.12, 0.08) * 1.2 : vec3(0.0);
             gl_Position = uViewProjRel * vec4(vWorld - uOrigin, 1.0);
         }
         """;
@@ -146,6 +162,7 @@ public sealed unsafe partial class CityRenderer
         in vec3 vWorld;
         in vec3 vNormal;
         flat in vec3 vColor;
+        flat in vec3 vGlow;
         uniform vec3 uPlanet;
         uniform float uR;
         out vec4 FragColor;
@@ -158,13 +175,16 @@ public sealed unsafe partial class CityRenderer
                 col = vColor * vec3(0.9, 0.95, 1.0) * (0.6 + 0.3 * max(dot(n, normalize(vWorld - uPlanet)), 0.0));
             else
                 col = ApplyLightAt(vColor, n, 0.3, vWorld) + vColor * vec3(1.0, 0.75, 0.5) * 0.3; // (the lamps)
+            col += vGlow;
             FragColor = vec4(ApplyFog(col, vWorld), 1.0);
         }
         """;
 
     private GlProgram _fig;
     private GlVertexArray _figVao;
-    private GlBuffer _figVbo, _figIbo, _walkVbo, _poseVbo;
+    private GlBuffer _figVbo, _figIbo, _walkVbo, _poseVbo, _carMeshVbo, _carMeshIbo, _carInstVbo;
+    private GlVertexArray _carFigVao;
+    private int _carMeshIndices;
     private int _figIndices, _poseCap;
     private int _fVp, _fOrigin, _fPlanet, _fUp, _fEast, _fNorth, _fR, _fClock, _fCam, _fFog, _fFogRange, _fRange;
     private CityLife? _life;
@@ -246,6 +266,33 @@ public sealed unsafe partial class CityRenderer
             EnableVertexAttribArray(a);
             Native.glVertexAttribDivisor(a, 1);
         }
+        // The street car: the figure's vertex format (bone 0: nothing swings), drawn by the same program as kind 2.
+        var (sv, si) = StreetCarMesh();
+        _carFigVao = GenVertexArray();
+        _carFigVao.Bind();
+        _carMeshVbo = GenBuffer();
+        Native.glBindBuffer(GL_ARRAY_BUFFER, _carMeshVbo);
+        fixed (float* p = sv)
+            Native.glBufferData(GL_ARRAY_BUFFER, (nint)sv.Length * 4, p, GL_STATIC_DRAW);
+        Native.glVertexAttribPointer(0, 3, GL_FLOAT, false, 32, (void*)0);
+        Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, 32, (void*)12);
+        Native.glVertexAttribPointer(2, 1, GL_FLOAT, false, 32, (void*)24);
+        Native.glVertexAttribPointer(3, 1, GL_FLOAT, false, 32, (void*)28);
+        for (uint a = 0; a < 4; a++)
+            EnableVertexAttribArray(a);
+        _carMeshIbo = GenBuffer();
+        Native.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _carMeshIbo);
+        fixed (ushort* p = si)
+            Native.glBufferData(GL_ELEMENT_ARRAY_BUFFER, (nint)si.Length * 2, p, GL_STATIC_DRAW);
+        _carMeshIndices = si.Length;
+        _carInstVbo = GenBuffer();
+        Native.glBindBuffer(GL_ARRAY_BUFFER, _carInstVbo);
+        for (uint a = 4; a < 6; a++)
+        {
+            Native.glVertexAttribPointer(a, 4, GL_FLOAT, false, 32, (void*)(nint)((a - 4) * 16));
+            EnableVertexAttribArray(a);
+            Native.glVertexAttribDivisor(a, 1);
+        }
         // The car.
         var (cv, ci) = CarMesh(0);
         var (mv, mi) = CarMesh(1);
@@ -291,6 +338,9 @@ public sealed unsafe partial class CityRenderer
             Native.glBufferData(GL_ARRAY_BUFFER, (nint)Math.Max(life.Walkers.Length, 2) * 16, life.Walkers.Length > 0 ? p : null, GL_STATIC_DRAW);
         _life = life;
         _walkerMids = life.WalkerChunks.Select(w => life.Plan.Ground(w.Mid)).ToArray();
+        Native.glBindBuffer(GL_ARRAY_BUFFER, _carInstVbo);
+        fixed (Vector4* p = life.StreetCars)
+            Native.glBufferData(GL_ARRAY_BUFFER, (nint)Math.Max(life.StreetCars.Length, 2) * 16, life.StreetCars.Length > 0 ? p : null, GL_STATIC_DRAW);
         Console.WriteLine($"[city] life: {life.Walkers.Length / 2} people walking, trains every {life.Period / CityLife.TrainsPerTrack:0} s each way round a {life.Length:0} m loop");
     }
 
@@ -352,6 +402,14 @@ public sealed unsafe partial class CityRenderer
             }
             if (near)
                 (runFirst, runCount) = (life.WalkerChunks[c].First, life.WalkerChunks[c].Count);
+        }
+        // The traffic: every car in one call (the vertex shader drops those far off).
+        if (life.StreetCars.Length > 0)
+        {
+            _carFigVao.Bind();
+            Native.glDrawElementsInstanced(GL_TRIANGLES, _carMeshIndices, GL_UNSIGNED_SHORT, null, life.StreetCars.Length / 2);
+            DrawnPeople += 0;
+            _figVao.Bind();
         }
         if (_poseCount > 0)
         {
@@ -802,6 +860,44 @@ public sealed unsafe partial class CityRenderer
         Box(new Vector3(-0.05f, 1.46f, -0.05f), new Vector3(0.05f, 1.52f, 0.05f), 0, 2);
         Box(new Vector3(-0.1f, 1.52f, -0.1f), new Vector3(0.1f, 1.74f, 0.11f), 0, 2);
         Box(new Vector3(-0.105f, 1.66f, -0.115f), new Vector3(0.105f, 1.78f, 0.06f), 0, 3);
+        return (v.ToArray(), ix.ToArray());
+    }
+
+    /// <summary>A street car (x to its right, y up, z forward; its wheels on 0), in the figure's format: body (part 1, its
+    /// paint), glass and tyres (4), headlamps (5) and tail lamps (6).</summary>
+    private static (float[] Verts, ushort[] Idx) StreetCarMesh()
+    {
+        var v = new List<float>();
+        var ix = new List<ushort>();
+        void Box(Vector3 lo, Vector3 hi, int part)
+        {
+            Span<Vector3> n = [Vector3.UnitX, -Vector3.UnitX, Vector3.UnitY, -Vector3.UnitY, Vector3.UnitZ, -Vector3.UnitZ];
+            foreach (var nn in n)
+            {
+                var u = MathF.Abs(nn.Y) > 0.5f ? Vector3.UnitX : Vector3.UnitY;
+                var w = Vector3.Cross(nn, u);
+                var c = (lo + hi) * 0.5f;
+                var half = (hi - lo) * 0.5f;
+                var first = (ushort)(v.Count / 8);
+                foreach (var (su, sw) in new[] { (-1f, -1f), (1f, -1f), (1f, 1f), (-1f, 1f) })
+                {
+                    var p = c + (nn + u * su + w * sw) * half;
+                    v.AddRange([p.X, p.Y, p.Z, nn.X, nn.Y, nn.Z, 0, part]);
+                }
+                ix.AddRange([first, (ushort)(first + 1), (ushort)(first + 2), first, (ushort)(first + 2), (ushort)(first + 3)]);
+            }
+        }
+        Box(new Vector3(-0.88f, 0.32f, -2.15f), new Vector3(0.88f, 0.95f, 2.15f), 1);
+        Box(new Vector3(-0.8f, 0.95f, -1.05f), new Vector3(0.8f, 1.4f, 1.0f), 4);
+        Box(new Vector3(-0.78f, 1.4f, -0.95f), new Vector3(0.78f, 1.46f, 0.9f), 1);
+        foreach (var sx in new[] { -0.82f, 0.82f })
+            foreach (var sz in new[] { -1.35f, 1.35f })
+                Box(new Vector3(sx - 0.12f, 0f, sz - 0.32f), new Vector3(sx + 0.12f, 0.62f, sz + 0.32f), 4);
+        foreach (var sx in new[] { -0.6f, 0.6f })
+        {
+            Box(new Vector3(sx - 0.18f, 0.62f, 2.14f), new Vector3(sx + 0.18f, 0.78f, 2.2f), 5);
+            Box(new Vector3(sx - 0.18f, 0.66f, -2.2f), new Vector3(sx + 0.18f, 0.8f, -2.14f), 6);
+        }
         return (v.ToArray(), ix.ToArray());
     }
 

@@ -75,6 +75,7 @@ public sealed class CityLife
         if (plan.Metro is { Stations.Length: > 0 } metro)
             MakeMetro(metro);
         (Walkers, WalkerChunks) = MakeWalkers(plan);
+        StreetCars = MakeCars(plan);
     }
 
     /// <summary>The loop's length (m).</summary>
@@ -316,6 +317,59 @@ public sealed class CityLife
         tau -= cross;
         var g = tau / Climb;
         return (b.At, cruise + (b.Height + 0.6f - cruise) * g * g * (3 - 2 * g), dir);
+    }
+
+    // ---- Traffic ------------------------------------------------------------------------------------------------------
+
+    /// <summary>Cars on the streets: (start x, z, end x, z) of the lane they drive along on the plan, then speed, where
+    /// they start (m), a seed and 2 (the figure shader's kind for a car). A car that reaches the run's end comes in again
+    /// at its start: the runs end at the city's edge or at the square.</summary>
+    public readonly Vector4[] StreetCars = [];
+
+    private static Vector4[] MakeCars(CityPlan plan)
+    {
+        var d = new CityPlan.Dice((uint)plan.Spec.Seed * 6007u + 13);
+        var cars = new List<Vector4>();
+        // Runs of street: neighbouring segments on one line, joined across their crossings.
+        foreach (var alongX in new[] { true, false })
+        {
+            var lines = plan.Streets.Where(st => st.AlongX == alongX).GroupBy(st => alongX ? st.A.Y : st.A.X);
+            foreach (var line in lines)
+            {
+                var segs = line.OrderBy(st => alongX ? st.A.X : st.A.Y).ToList();
+                var k = 0;
+                while (k < segs.Count)
+                {
+                    var j = k;
+                    while (j + 1 < segs.Count && (alongX ? segs[j + 1].A.X - segs[j].B.X : segs[j + 1].A.Y - segs[j].B.Y) < 32)
+                        j++;
+                    Vector2 a = segs[k].A, b = segs[j].B;
+                    var car = segs[k].Carriage;
+                    var len = Vector2.Distance(a, b);
+                    if (len > 60)
+                    {
+                        var dir = Vector2.Normalize(b - a);
+                        var left = new Vector2(-dir.Y, dir.X);
+                        // Lanes: one each way on a street, two on an avenue; keep to the right.
+                        float[] lanes = segs[k].Avenue ? [car * 0.25f, car * 0.72f] : [car * 0.5f];
+                        foreach (var lane in lanes)
+                            foreach (var way in new[] { 1, -1 })
+                            {
+                                var off = -left * lane * way;
+                                Vector2 from = way > 0 ? a + off : b + off, to = way > 0 ? b + off : a + off;
+                                var n = Math.Max(1, (int)(len / d.Range(35, 60)));
+                                for (var i = 0; i < n; i++)
+                                {
+                                    cars.Add(new Vector4(from.X, from.Y, to.X, to.Y));
+                                    cars.Add(new Vector4(d.Range(8, 14), len * (i + d.Range(0, 0.6f)) / n, d.Next() & 0xffff, 2));
+                                }
+                            }
+                    }
+                    k = j + 1;
+                }
+            }
+        }
+        return cars.ToArray();
     }
 
     // ---- Walkers ------------------------------------------------------------------------------------------------------
