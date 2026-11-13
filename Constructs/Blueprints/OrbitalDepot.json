@@ -154,10 +154,10 @@
       "by": "b0_0"
     },
     {
-      "part": "Ship Ladder 3 m",
+      "part": "Fixed Ladder 3 m",
       "on": 24,
-      "socket": "front4",
-      "by": "k2_11"
+      "socket": "front3",
+      "by": "k0_11"
     }
   ]
 }

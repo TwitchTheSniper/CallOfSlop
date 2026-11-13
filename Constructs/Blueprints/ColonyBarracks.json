@@ -84,9 +84,9 @@
     },
     {
       "part": "Concrete Straight Stair 3 m",
-      "on": 7,
-      "socket": "k8_0",
-      "by": "r0",
+      "on": 1,
+      "socket": "t11_11",
+      "by": "b0_11",
       "paint": "#858179",
       "finish": "concrete"
     },
