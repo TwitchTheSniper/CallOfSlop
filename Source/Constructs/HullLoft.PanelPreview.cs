@@ -13,7 +13,27 @@ public static partial class HullLoft
 {
     /// <summary>"Hood 160 x 150 cm, steel" for a panel's key; a lofted part's or any other name as it is, cut short.</summary>
     public static string PanelLabel(string name) =>
-        PanelOf(name) is { } s ? $"{PanelPresets[s.Kind].Label} {s.L} x {s.W} cm, {s.Material}" : name.Length <= 40 ? name : name[..38] + "..";
+        PanelOf(name) is { } s ? $"{PanelPresets[s.Kind].Label} {s.L} x {s.W} cm, {s.Material}" : CutLabel(name) ?? (name.Length <= 40 ? name : name[..38] + "..");
+
+    /// <summary>"Door 110 x 120 cm, steel, 2 cuts" or "Cut plate 200 x 20 x 300 cm, steel, 1 cut" for a cut key; null for any other name.</summary>
+    public static string? CutLabel(string name)
+    {
+        if (!IsCutName(name))
+            return null;
+        var plate = name.StartsWith(CutPlatePrefix, StringComparison.Ordinal);
+        var start = (plate ? CutPlatePrefix : CutPanelPrefix).Length;
+        var bar = name.IndexOf(" | ", start, StringComparison.Ordinal);
+        if (bar < 0)
+            return null;
+        var cuts = 1;
+        for (var i = bar + 3; i < name.Length; i++)
+            if (name[i] == ' ')
+                cuts++;
+        var blank = name[start..bar];
+        var what = plate ? "Cut " + (blank.StartsWith("Extrusion ", StringComparison.Ordinal) ? blank[10..] : blank)
+            : PanelOf(PanelPrefix + blank + ")") is { } b ? $"Cut {PanelPresets[b.Kind].Label.ToLowerInvariant()} {b.L} x {b.W} cm, {b.Material}" : "Cut panel";
+        return $"{what}, {cuts} cut{(cuts == 1 ? "" : "s")}";
+    }
 
     public sealed class PanelPreview
     {

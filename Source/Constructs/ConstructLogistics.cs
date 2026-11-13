@@ -354,7 +354,9 @@ public static class ConstructLogistics
     {
         int t = m.NodePart[m.Dests[ds]];
         if (c.DefOf(t).IsLaserCutter)
-            return ConstructLaserCutter.Wants(world, c, t, d) && world.StoreOf(c, t) is { } bed && Riding(c, bed.Handle, 0, LogiFlags.None, LogiFlags.None) == 0 ? ConstructLaserCutter.BedTag : (ushort)0; // (its head order's blank, one riding at a time)
+            return ConstructLogisticsPlan.WantAt(world, c, t, d, maker) is var link and > 0 ? link // (its chained order's blank)
+                : maker >= 0 && OlderAsked(c, maker, d, uint.MaxValue) ? (ushort)0 // (a terminal ordered this panel from that machine: never the cutter's)
+                : ConstructLaserCutter.Wants(world, c, t, d) && world.StoreOf(c, t) is { } bed && Riding(c, bed.Handle, 0, LogiFlags.None, LogiFlags.None) == 0 ? ConstructLaserCutter.BedTag : (ushort)0; // (its head order's blank, one riding at a time)
         if (c.DefOf(t) is { IsAssembler: true } or { IsPanelFormer: true } or { IsPress: true, IsLathe: false })
             return ConstructLogisticsPlan.WantAt(world, c, t, d, maker); // (a chained order's input)
         if (c.Parts[t].Craft is not { Count: > 0 } q || world.StoreOf(c, t) is not { } tray)

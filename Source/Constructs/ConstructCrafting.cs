@@ -313,7 +313,7 @@ public static class ConstructCrafting
     }
 
     /// <summary>An order's kind as a def here (a piece's def is made the first time its key is asked for), or null.</summary>
-    public static ConstructPartDef? DefOf(in WorkOrder o) => o.Name != null ? (HullLoft.IsFormedName(o.Name) ? ConstructParts.Find(o.Name) : Pressed.IsName(o.Name) ? Pressed.Parse(o.Name) : null) : o.IsPiece ? Extrusion.Def(o.Key) : ConstructParts.Get(o.Part);
+    public static ConstructPartDef? DefOf(in WorkOrder o) => o.Name != null ? (HullLoft.IsFormedName(o.Name) || HullLoft.IsCutName(o.Name) ? ConstructParts.Find(o.Name) : Pressed.IsName(o.Name) ? Pressed.Parse(o.Name) : null) : o.IsPiece ? Extrusion.Def(o.Key) : ConstructParts.Get(o.Part);
 
     /// <summary>"Gear Set", "L-angle 0.2 x 0.2 m, 1 m, metal".</summary>
     public static string NameOf(in WorkOrder o)
@@ -363,7 +363,7 @@ public static class ConstructCrafting
                     return;
                 var named = Extrusion.IsRuntimeId(def) && d.ExKey.W == 0;
                 var pressed = named && Pressed.IsName(d.Name) ? WorkOrders.PressedOrder(d.Name, 1) : null; // (a pressed part in stock: listed by its key, Press phase 4)
-                if (named && !HullLoft.IsFormedName(d.Name) && pressed == null)
+                if (named && !HullLoft.IsFormedName(d.Name) && !HullLoft.IsCutName(d.Name) && pressed == null)
                     return; // (another named run-time part: nothing here orders those)
                 var what = pressed ?? (named ? ConstructPanelFormer.Order(d.Name, 1) : Extrusion.IsRuntimeId(def) ? new WorkOrder { Key = d.ExKey, Part = ConstructParts.None } : new WorkOrder { Part = def });
                 var row = Row(what, d);
@@ -431,6 +431,32 @@ public static class ConstructCrafting
             var st = world.StoreOf(c, m);
             var fed = st is { Amount: > 0 };
             var mat = fed ? st!.Material : FirstMaterial(md);
+            if (md.IsLaserCutter)
+            {
+                // A Laser Cutter (laser cutter phase 4): the world's cut designs it takes; now when the blank is in linked stock or on its
+                // bed, through a chain when a linked machine makes the blank.
+                foreach (var dsg in world.Designs)
+                {
+                    if (!HullLoft.IsCutName(dsg.Key))
+                        continue;
+                    var what = ConstructPanelFormer.Order(dsg.Key, 1);
+                    if (WorkOrders.Refusal(world, c, m, what) != null || ConstructLaserCutter.JobOf(dsg.Key) is not { } job || ConstructParts.Find(dsg.Key) is not { } cd)
+                        continue;
+                    var row = Row(what, cd);
+                    row.Name = $"{dsg.Name} ({HullLoft.PanelLabel(dsg.Key)})";
+                    if (row.Make == 1)
+                        continue;
+                    var make = CutterMissing(world, c, net, m, job, out var missing);
+                    if (row.Make == 0 || make < row.Make)
+                    {
+                        row.Make = make;
+                        row.Missing = missing;
+                        row.Machine = m;
+                        row.Recipe = null;
+                    }
+                }
+                continue;
+            }
             if (md.IsPanelFormer)
             {
                 // A Panel Former: each preset at its own size and the world's shared designs, in what it is fed (steel when empty).
@@ -500,6 +526,40 @@ public static class ConstructCrafting
                         foreach (var l in StdLengths)
                             Piece(new ExtrusionKey(Extrusion.Presets[p].Mask, s, s, l, mat, false));
         }
+    }
+
+    /// <summary>
+    /// What cutter <paramref name="m"/> lacks for a cut (laser cutter phase 4): 1 with its blank on the bed or in linked stock, 2 when a linked
+    /// machine makes the blank (a chain asks it), else 3; <paramref name="missing"/> says which.
+    /// </summary>
+    internal static byte CutterMissing(ConstructWorld world, Construct c, CraftNet net, int m, ConstructLaserCutter.Job j, out string missing)
+    {
+        missing = "";
+        var blank = j.Plate ? Extrusion.Def(j.Stock) : ConstructParts.Find(j.Blank);
+        if (blank == null)
+        {
+            missing = $"its blank is no part this build makes: {j.Blank}";
+            return 3;
+        }
+        if (world.StoreOf(c, m) is { JobAmount: > 0 } bed && WorkOrders.HeadOf(c.Parts[m], out var head) && head.Name != null
+            && ConstructLaserCutter.JobOf(head.Name) is { } hj && hj.Blank == j.Blank || Stock(world, c, net, (ushort)blank.Id) > 0)
+            return 1;
+        var order = j.Plate ? new WorkOrder { Key = j.Stock, Part = ConstructParts.None, Count = 1 } : ConstructPanelFormer.Order(j.Blank, 1);
+        string? why = null;
+        for (var i = 0; i < net.MachineN; i++)
+        {
+            var mk = net.Machines[i];
+            if (mk == m || c.DefOf(mk).IsLaserCutter)
+                continue;
+            if (WorkOrders.Refusal(world, c, mk, order) is not { } no)
+            {
+                missing = $"its blank, {NameOf(order)}, from the {c.DefOf(mk).Name}";
+                return 2;
+            }
+            why ??= no;
+        }
+        missing = $"needs {NameOf(order)}: {(why ?? (j.Plate ? "no Extruder linked makes it" : "no Panel Former linked forms it"))}";
+        return 3;
     }
 
     private static byte FirstMaterial(ConstructPartDef d)
@@ -1258,7 +1318,7 @@ public static class ConstructCrafting
                     mat = r.U8();
                     var cnt = r.U16();
                     var nm = r.Text(ConstructParts.MaxRuntimeName);
-                    if (!HullLoft.IsFormedName(nm) && !Pressed.IsName(nm))
+                    if (!HullLoft.IsFormedName(nm) && !HullLoft.IsCutName(nm) && !Pressed.IsName(nm))
                         throw new MalformedPacketException("a bad panel order");
                     o = new CraftOrder { What = new WorkOrder { Key = new ExtrusionKey(0, 0, 0, 0, mat, false, ExShape.Section), Part = ConstructParts.None, Count = cnt, Name = nm } };
                     shape = 0;
@@ -1362,7 +1422,7 @@ public static class ConstructCrafting
                     var nm = r.Str();
                     var (nid, ngot, nasked, nsent) = (r.U16(), r.U16(), r.U16(), r.U16());
                     var pressedWhat = Pressed.IsName(nm) ? WorkOrders.PressedOrder(nm, ncnt) : null; // (a pressed part's order, Press phase 4)
-                    if (ncnt is 0 or > WorkOrders.MaxCount || !HullLoft.IsFormedName(nm) && pressedWhat == null || nm.Length > ConstructParts.MaxRuntimeName || q.Count >= MaxOrders)
+                    if (ncnt is 0 or > WorkOrders.MaxCount || !HullLoft.IsFormedName(nm) && !HullLoft.IsCutName(nm) && pressedWhat == null || nm.Length > ConstructParts.MaxRuntimeName || q.Count >= MaxOrders)
                         continue;
                     q.Items[q.Count++] = new CraftOrder { What = pressedWhat ?? ConstructPanelFormer.Order(nm, ncnt), Id = nid, Got = Math.Min(ncnt, ngot), Sent = nsent, Asked = nasked, Where = NoPart, Note = "", Def = ConstructParts.None };
                     continue;

@@ -1198,7 +1198,7 @@ public sealed partial class Game
                 var count = r.U16();
                 var name = r.Text(ConstructParts.MaxRuntimeName);
                 var pressed = Pressed.IsName(name) ? WorkOrders.PressedOrder(name, count) : null; // (a pressed part by its key, Press phase 4)
-                if (!HullLoft.IsFormedName(name) && pressed == null)
+                if (!HullLoft.IsFormedName(name) && !HullLoft.IsCutName(name) && pressed == null) // (a cut part by its key: a Laser Cutter's, laser cutter phase 4)
                     return Pressed.IsName(name) ? "not a pressed part" : "a bad order";
                 return hands.CraftOrder(Constructs, p.Id, eye, body, term, (pressed ?? ConstructPanelFormer.Order(name, count)) with { Count = count }, 0, Constructs.Get(body) is { } cn ? SandboxConfigRefusal(cn, p.Id) : null);
             }

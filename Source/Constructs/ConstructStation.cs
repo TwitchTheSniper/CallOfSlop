@@ -303,7 +303,7 @@ public static partial class ConstructStation
     public static WorkOrder OrderFor(ConstructPartDef d, int count)
     {
         var n = (ushort)Math.Clamp(count, 1, WorkOrders.MaxCount);
-        if (HullLoft.IsFormedName(d.Name))
+        if (HullLoft.IsFormedName(d.Name) || HullLoft.IsCutName(d.Name)) // (a cut part by its key: a Laser Cutter's order)
             return ConstructPanelFormer.Order(d.Name, n);
         if (Pressed.IsName(d.Name) && WorkOrders.PressedOrder(d.Name, n) is { } pressed)
             return pressed; // (a pressed part by its key: a Press's order, Press phase 4)
@@ -1649,11 +1649,11 @@ public sealed class StationPreview
             for (var i = 0; i < names.Count; i++)
             {
                 var d = ConstructParts.Find(names[i]);
-                var g = HullLoft.IsFormedName(names[i]) ? 1 : names[i].StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase) ? 0 : 2;
+                var g = HullLoft.IsFormedName(names[i]) || HullLoft.IsCutName(names[i]) ? 1 : names[i].StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase) ? 0 : 2;
                 if (g != group)
                     continue;
                 if (!head)
-                    Lines.Add((group == 0 ? "PIECES (an Extruder's, a Former's)" : group == 1 ? "PANELS (a Panel Former's)" : "CATALOGUE PARTS", 0));
+                    Lines.Add((group == 0 ? "PIECES (an Extruder's, a Former's)" : group == 1 ? "PANELS (a Panel Former's, a Laser Cutter's)" : "CATALOGUE PARTS", 0));
                 head = true;
                 if (d == null)
                 {

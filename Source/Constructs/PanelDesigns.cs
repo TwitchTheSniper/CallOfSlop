@@ -22,7 +22,7 @@ public static class PanelDesigns
     /// <summary>Why a design can't be kept, or null: its name by the blueprint rule, its key a panel some machine could make.</summary>
     public static string? Refusal(string name, string key) =>
         PlayerBlueprints.NameRefusal(name) is { } why ? "a design's name: " + why
-        : key.Length > ConstructParts.MaxRuntimeName || HullLoft.PanelOf(key) == null ? "that is not a panel a Panel Former makes"
+        : key.Length > ConstructParts.MaxRuntimeName || HullLoft.PanelOf(key) == null && !(HullLoft.IsCutName(key) && HullLoft.CutRefusal(key) == null) ? "that is not a panel a Panel Former makes or a Laser Cutter cuts"
         : null;
 
     // ---- The world's list (server: the truth; client: as heard) ---------------------------------------------------------

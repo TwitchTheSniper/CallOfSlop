@@ -523,7 +523,8 @@ public static class WorkOrders
                 {
                     // (the reason that matters is the first from a machine of the order's kind: an Assembler's for a part, else an Extruder's or a Former's)
                     var md = c.DefOf(m);
-                    var kind = md.IsPress ? Pressed.SpecOf(bill.Items[i]) != null
+                    var kind = md.IsLaserCutter ? bill.Items[i].Name != null && HullLoft.IsCutName(bill.Items[i].Name!)
+                        : md.IsPress ? Pressed.SpecOf(bill.Items[i]) != null
                         : IsWholeFormer(md) && FormerPresets.KeyFor(bill.Items[i], out var fk) ? fk.Shape == (md.IsFanFormer ? ExShape.Fan : ExShape.Wing)
                         : (md.IsPanelFormer && !md.IsLaserCutter ? 2 : md.IsAssembler ? 1 : 0) == bill.Items[i].Kind;
                     if (why == null || kind && !whyKind)
@@ -912,6 +913,7 @@ public static class ConstructBill
         public readonly List<WorkOrder> Panels = new(); // formed panels and lofted hull parts, by name, first seen first (a Panel Former's)
         public readonly List<(string Part, ConstructPartDef? Def, int Count)> Parts = new(); // catalogue parts, by name, first seen first (Def null: not a part this build has)
         public readonly List<WorkOrder> Pressed = new(); // pressed parts by their keys, first seen first (a Press's; their blanks are in Pieces, their kits in Kits)
+        public readonly List<WorkOrder> Cut = new(); // cut panels and plates by their keys, first seen first (a Laser Cutter's; their blanks are in Panels or Pieces)
         public readonly List<(string What, int Count)> Kits = new(); // bay 2 kits the pressed parts take, by part or material name
         public readonly float[] LinkMetres = new float[(int)RouteType.COUNT]; // link stock by type: metres of every link of that type, as built
         public readonly int[] LinkCount = new int[(int)RouteType.COUNT];
@@ -949,11 +951,14 @@ public static class ConstructBill
             }
             if (HullLoft.IsFormedName(step.Part))
             {
-                var k = bill.Panels.FindIndex(o => o.Name == step.Part);
-                if (k < 0)
-                    bill.Panels.Add(ConstructPanelFormer.Order(step.Part, 1));
-                else
-                    bill.Panels[k] = bill.Panels[k] with { Count = (ushort)Math.Min(bill.Panels[k].Count + 1, WorkOrders.MaxCount) };
+                AddPanel(bill.Panels, step.Part);
+                continue;
+            }
+            if (HullLoft.IsCutName(step.Part) && ConstructLaserCutter.JobOf(step.Part) is { } cut)
+            {
+                // A cut part (laser cutter phase 4): a Laser Cutter's line by its key, its blank a Panel Former's or an Extruder's line.
+                AddPanel(bill.Cut, step.Part);
+                AddBlank(bill, cut);
                 continue;
             }
             if (parts.TryGetValue(step.Part, out var n))
@@ -988,6 +993,31 @@ public static class ConstructBill
             bill.LinkCount[t]++;
         }
         return bill;
+    }
+
+    private static void AddPanel(List<WorkOrder> list, string name)
+    {
+        var k = list.FindIndex(o => o.Name == name);
+        if (k < 0)
+            list.Add(ConstructPanelFormer.Order(name, 1));
+        else
+            list[k] = list[k] with { Count = (ushort)Math.Min(list[k].Count + 1, WorkOrders.MaxCount) };
+    }
+
+    /// <summary>One cut part's blank onto the bill: a formed panel a Panel Former's line, a plate or flat bar an Extruder's.</summary>
+    private static void AddBlank(Bill bill, ConstructLaserCutter.Job j)
+    {
+        if (!j.Plate)
+        {
+            AddPanel(bill.Panels, j.Blank);
+            return;
+        }
+        var key = j.Stock with { Growing = false };
+        var b = bill.Pieces.FindIndex(o => o.Key == key);
+        if (b < 0)
+            bill.Pieces.Add(new WorkOrder { Key = key, Part = ConstructParts.None, Count = 1 });
+        else
+            bill.Pieces[b] = bill.Pieces[b] with { Count = (ushort)Math.Min(bill.Pieces[b].Count + 1, WorkOrders.MaxCount) };
     }
 
     /// <summary>A catalogue part no Assembler makes but a die presses (a preset, Press phase 4), as its press order's spec; else null.</summary>
@@ -1051,6 +1081,12 @@ public static class ConstructBill
                 return why;
             any = true;
         }
+        foreach (var o in bill.Cut)
+        {
+            if (WorkOrders.AddToBill(world, c, console, o) is { } why)
+                return why;
+            any = true;
+        }
         foreach (var (_, d, n) in bill.Parts)
             if (RecipeOf(d) != null || PresetOf(d) != null || FormerPresets.KeyOf(d) != null) // (a preset is a Press's or a former's order by its catalogue part)
             {
@@ -1071,7 +1107,7 @@ public static class ConstructBill
         if (e.ValueKind != System.Text.Json.JsonValueKind.Object)
             throw new ConstructPartException($"{file}: bill[{k}] is {{\"step\", \"piece\" or \"part\", \"count\"}}");
         int step = -1, count = 1;
-        string piece = "", part = "", panel = "", pressed = "";
+        string piece = "", part = "", panel = "", pressed = "", cut = "";
         foreach (var f in e.EnumerateObject())
             switch (f.Name)
             {
@@ -1080,13 +1116,21 @@ public static class ConstructBill
                 case "part": part = f.Value.GetString() ?? ""; break;
                 case "panel": panel = f.Value.GetString() ?? ""; break;
                 case "pressed": pressed = f.Value.GetString() ?? ""; break;
+                case "cut": cut = f.Value.GetString() ?? ""; break;
                 case "count": count = f.Value.GetInt32(); break;
-                default: throw new ConstructPartException($"{file}: bill[{k}]: unknown key \"{f.Name}\" (step, piece, part, panel, pressed, count)");
+                default: throw new ConstructPartException($"{file}: bill[{k}]: unknown key \"{f.Name}\" (step, piece, part, panel, pressed, cut, count)");
             }
         if (step < 0 || count < 1 || count > WorkOrders.MaxCount)
             throw new ConstructPartException($"{file}: bill[{k}]: a step and a count 1 to {WorkOrders.MaxCount}");
-        if ((piece.Length > 0 ? 1 : 0) + (part.Length > 0 ? 1 : 0) + (panel.Length > 0 ? 1 : 0) + (pressed.Length > 0 ? 1 : 0) != 1)
-            throw new ConstructPartException($"{file}: bill[{k}]: a \"piece\", a \"part\", a \"panel\" or a \"pressed\", one of them");
+        if ((piece.Length > 0 ? 1 : 0) + (part.Length > 0 ? 1 : 0) + (panel.Length > 0 ? 1 : 0) + (pressed.Length > 0 ? 1 : 0) + (cut.Length > 0 ? 1 : 0) != 1)
+            throw new ConstructPartException($"{file}: bill[{k}]: a \"piece\", a \"part\", a \"panel\", a \"pressed\" or a \"cut\", one of them");
+        if (cut.Length > 0)
+        {
+            // A cut part by its key (laser cutter phase 4): a Laser Cutter's line.
+            if (!HullLoft.IsCutName(cut) || HullLoft.CutRefusal(cut) is { } why)
+                throw new ConstructPartException($"{file}: bill[{k}]: \"{cut}\" isn't a part a Laser Cutter cuts{(HullLoft.IsCutName(cut) ? $" ({HullLoft.CutRefusal(cut)})" : "")}, like \"Cut Panel (door 110x120 c6 r8 t20 steel | r70,60,40,50,5)\"");
+            return (step, ConstructPanelFormer.Order(cut, count));
+        }
         if (pressed.Length > 0)
         {
             // A pressed part by its key (Press phase 4): a Press's line.
@@ -1194,8 +1238,25 @@ public static class ConstructBill
                 sb.AppendLine($"  {o.Count,4} x {o.Name}  ({spec.Die.Family} Die, {spec.Pattern.Label}; a {Pressed.ClassWord(Pressed.PressClass(across))} Press; blank {Pressed.BlankText(spec.Blank)}{kit}; {Pressed.Seconds(spec.Die, spec.Blank, Math.Max(0, Pressed.PressClass(across))):0.#} s)");
             }
         }
+        if (bill.Cut.Count > 0)
+        {
+            // Cut parts by key (laser cutter phase 4): the cutter that takes each, its blank (counted above), the stroke and the offcut returned.
+            sb.AppendLine($" Cut panels: {bill.Cut.Count} kinds, {bill.Cut.Sum(o => o.Count)} parts (a Laser Cutter)");
+            foreach (var o in bill.Cut)
+            {
+                if (ConstructLaserCutter.JobOf(o.Name!) is not { } j)
+                {
+                    sb.AppendLine($"  {o.Count,4} x {o.Name}  (no part this build cuts)");
+                    continue;
+                }
+                var tier = ConstructLaserCutter.TierFor(j);
+                var cutter = tier != null ? ConstructParts.Find(tier) : null;
+                var secs = cutter != null ? $"{ConstructLaserCutter.Seconds(j, cutter):0.#} s" : "no cutter's bed takes it";
+                sb.AppendLine($"  {o.Count,4} x {o.Name}  ({tier ?? "no Laser Cutter"}; blank {j.Blank}; {secs}; offcut {j.OffTenths / 10f:0.#} {RecyclingTable.Current.NameOf(j.Material)})");
+            }
+        }
         if (bill.Kits.Count > 0)
-            sb.AppendLine($" Kits (bay 2): {string.Join(", ", bill.Kits.Select(x => $"{x.Count} {x.What}"))}");
+            sb.AppendLine($" Kits (bay 2):{string.Join(", ", bill.Kits.Select(x => $"{x.Count} {x.What}"))}");
         var cats = PartCategories.Current;
         var groups = bill.Parts
             .Select(p => (p.Part, p.Def, p.Count, Cat: p.Def != null && cats.Place(p.Def, out var cat, out _) ? cat : "(unplaced)"))
