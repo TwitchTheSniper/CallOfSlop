@@ -650,6 +650,19 @@ the part kit's `control_parts` (the console).
   the input makes) or "Recipe Auto"; a Panel Former's "Preset Hood". Another machine adopts it with one data line, a `machine.recipe`
   button on its screen, and its list in the picker (`Ui.RecipePickable`, `MakeRecipeSet`). The Assembler table no longer writes its
   recipe names over a Panel Former's preset list (`AssemblingTable.Fill`), which had left its Preset at the first preset.
+- **The makers adopt it** (2026-11-12, `UiRecipePickerMakers.cs`). The setting a pick sets is `ProductionLines.RecipeKey`: a Fan
+  Former's Makes (`fanKind`), an Airframe Former's Cuts (`wingKind`), else the recipe setting, so the same `CActKind.LineRecipe` serves
+  them all (no protocol change). Every **Press** has **Recipe** beside **Pattern** on its die screen: the picker shows Auto, the fitted
+  die's patterns (the part each is like, a kit icon when bay 2 wants one, "P2" for its Pattern number), then the patterns of every other
+  die of its size, dim, one category tab per die ("Bracket (fitted)" first): what it could make with another die fitted. Its tiles are
+  made per kind and fitted die (`Ui.RecipeVariant`); the picker closes when the die changes. Pattern still steps through them, and the
+  bay cards are as they were. A **Die Lathe**'s die screen has Recipe: None, then every die of the lathe list with its time and its
+  block's material; a die of another size is dim and refused (`ConstructPress.LatheCuts`, as its WrongClass stall). A **Fan Former**
+  (all sizes) and an **Airframe Former** have a Recipe button on their four-row screens: the kinds, as swatches; size, blades and
+  chord stay the configure tool's. The Fan Former's screen now names its kind ("Ducted fan"). The pick from a machine's own button
+  marks its body dirty, so a client's screen shows it (it had stayed on the host until something else changed). For window shots,
+  `picker` prints the open picker's tiles, `picker N` picks value N as a click does (a scripted click doesn't reach ImGui on a Windows
+  desktop: the real cursor wins), `picker @PART` opens it on a part as its button does (a joined window can't fly its eye to a screen).
 - **Resource icons** (`Source/Render/ResourceIcons.cs`). Every loose material has an icon: a small 3D stack of its family's shape in
   its colour, drawn from boxes and part shapes into the inventory's tile atlas (`SandboxTiles`, slots of `Kind.Resource`, made first
   and in a few frames; no image files). The family is `Recycling.json`'s `"shapes"` (ore, ingot, plank, log, heap, drum, gas, block,

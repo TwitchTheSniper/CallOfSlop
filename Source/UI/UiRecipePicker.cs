@@ -42,9 +42,10 @@ public sealed partial class Ui
 
     public bool RecipePickerOpen { get; private set; }
 
-    private readonly Dictionary<ConstructPartDef, RpSet> _rcpSets = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<(ConstructPartDef, string), RpSet> _rcpSets = new(); // (by machine kind and variant: a press's fitted die)
     private RpSet? _rcp;
     private ConstructPartDef? _rcpDef;
+    private string _rcpVariant = "";
     private ushort _rcpBody;
     private int _rcpConsole = -1, _rcpMachine = -1, _rcpSlot = -1, _rcpSame;
     private bool _rcpAll, _rcpFromConfig;
@@ -61,15 +62,32 @@ public sealed partial class Ui
 
     public int RecipePickerPictures { get; private set; }
 
-    /// <summary>Machines the picker serves: a refiner with recipes to choose, an Assembler, a Panel Former (its presets).</summary>
-    public static bool RecipePickable(ConstructPartDef d) =>
-        d.CfgSlot[(int)CfgKey.Recipe] >= 0 && (d.IsRefiner && d.RefineChoices.Length > 0 || d.IsPanelFormer && d.Config[d.CfgSlot[(int)CfgKey.Recipe]].Options.Length > 0
-            || d.IsAssembler && AssemblingTable.Current.ByMachine[d.AsmMachine].Length > 0);
+    /// <summary>
+    /// Machines the picker serves: a refiner with recipes to choose, an Assembler, a Panel Former (its presets), a press (its die's patterns),
+    /// a Die Lathe (the dies it cuts), a Fan Former (what it makes) and an Airframe Former (what it cuts). The setting it sets is
+    /// <see cref="ProductionLines.RecipeKey"/>.
+    /// </summary>
+    public static bool RecipePickable(ConstructPartDef d)
+    {
+        var slot = d.CfgSlot[(int)ProductionLines.RecipeKey(d)];
+        if (slot < 0 || d.Config[slot].Options.Length == 0)
+            return false;
+        return d.IsRefiner && d.RefineChoices.Length > 0 || d.IsPanelFormer || d.IsFanFormer || d.IsAirframeFormer
+            || d.IsLathe && PressTable.Current.Lathe.Length > 0 || d.IsPress && !d.IsLathe && PressTable.Current.Dies.Length > 0
+            || d.IsAssembler && AssemblingTable.Current.ByMachine[d.AsmMachine].Length > 0;
+    }
+
+    /// <summary>What a machine's tiles depend on beyond its kind: a press's fitted die (its family), else "".</summary>
+    public static string RecipeVariant(Construct c, int part) =>
+        c.DefOf(part) is { IsPress: true, IsLathe: false } && ConstructPress.DieIn(c, part) is var die and >= 0 ? c.DefOf(die).DieFamily : "";
+
+    /// <summary>The variant the open picker was made for (it closes when its machine's changes: a die fitted or taken out).</summary>
+    public string RecipePickerVariant => _rcpVariant;
 
     /// <summary>Opens the picker for a Line Console's machine (<paramref name="same"/>: machines of its kind on the line, itself counted).</summary>
-    public void OpenRecipePicker(ushort body, int console, int machine, ConstructPartDef d, int same)
+    public void OpenRecipePicker(ushort body, int console, int machine, ConstructPartDef d, int same, string variant = "")
     {
-        Open(d);
+        Open(d, variant);
         _rcpBody = body;
         _rcpConsole = console;
         _rcpMachine = machine;
@@ -79,12 +97,12 @@ public sealed partial class Ui
     }
 
     /// <summary>Opens the picker from a machine's own Recipe button (the pick goes as <see cref="CActKind.LineRecipe"/> with the machine as its console).</summary>
-    public void OpenRecipePickerMachine(ushort body, int machine, ConstructPartDef d) => OpenRecipePicker(body, machine, machine, d, 1);
+    public void OpenRecipePickerMachine(ushort body, int machine, ConstructPartDef d, string variant = "") => OpenRecipePicker(body, machine, machine, d, 1, variant);
 
     /// <summary>Opens the picker for the configure panel's recipe row (its selection gets the pick, as the row would).</summary>
-    public void OpenRecipePickerConfig(ushort body, int part, ConstructPartDef d, int slot)
+    public void OpenRecipePickerConfig(ushort body, int part, ConstructPartDef d, int slot, string variant = "")
     {
-        Open(d);
+        Open(d, variant);
         _rcpBody = body;
         _rcpConsole = -1;
         _rcpMachine = part;
@@ -94,13 +112,14 @@ public sealed partial class Ui
         _rcpAllLabel = "";
     }
 
-    private void Open(ConstructPartDef d)
+    private void Open(ConstructPartDef d, string variant)
     {
         var key = SandboxTiles.Key();
-        if (!_rcpSets.TryGetValue(d, out var set) || set.Key != key)
-            _rcpSets[d] = set = MakeRecipeSet(d, key);
-        if (_rcpDef != d)
+        if (!_rcpSets.TryGetValue((d, variant), out var set) || set.Key != key)
+            _rcpSets[(d, variant)] = set = MakeRecipeSet(d, key, variant);
+        if (_rcpDef != d || _rcpVariant != variant)
         {
+            _rcpVariant = variant;
             _rcpGroup = 0;
             _rcpSearch = "";
             if (_rcpSearchInput != null)
@@ -132,8 +151,10 @@ public sealed partial class Ui
     private static string Secs(float s) => s >= 10 ? $"{s:0} s" : s >= 1 ? $"{s:0.#} s" : $"{s:0.##} s";
 
     /// <summary>A machine kind's tiles, made once (the texts, the icons' slots, the categories).</summary>
-    private static RpSet MakeRecipeSet(ConstructPartDef d, int key)
+    private static RpSet MakeRecipeSet(ConstructPartDef d, int key, string variant)
     {
+        if (d.IsPress || d.IsFanFormer || d.IsAirframeFormer)
+            return MakeMakerSet(d, key, variant);
         var names = RecyclingTable.Current;
         var speed = MathF.Max(0.01f, d.RefineWork / (float)ConstructRefining.BaseWork);
         var tiles = new List<RpTile>();
@@ -332,6 +353,12 @@ public sealed partial class Ui
             }
         }
         ImGui.End();
+        if (_rcpTestPick >= 0)
+        {
+            if (Array.Exists(set.Tiles, t => t.Value == _rcpTestPick))
+                picked = _rcpTestPick; // (a window shot's "picker N": as a click on that tile)
+            _rcpTestPick = -1;
+        }
         if (picked >= 0)
         {
             // After the drawing: the pick goes to the server (or the configure panel), and the picker closes.

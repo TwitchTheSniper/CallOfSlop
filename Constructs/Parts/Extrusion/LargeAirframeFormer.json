@@ -111,7 +111,19 @@
       "face": "-x",
       "up": "+y",
       "rows": 4,
-      "range": 30
+      "range": 30,
+      "touch": [
+        {
+          "action": "machine.recipe",
+          "at": [
+            0.72,
+            0.02,
+            0.98,
+            0.24
+          ],
+          "label": "Recipe"
+        }
+      ]
     }
   ],
   "boxes": [

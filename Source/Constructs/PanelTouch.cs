@@ -176,7 +176,13 @@ public sealed partial class ConstructEdits
             return "that console is gone";
         var d = c.DefOf(console);
         if (console == machine)
-            return OwnRecipe(c, machine, player, eye, value, refusal); // (the machine's own Recipe button: same bytes, its own screen for the console)
+        {
+            // (the machine's own Recipe button: same bytes, its own screen for the console; its setting goes to the clients with the structure)
+            var own = OwnRecipe(c, machine, player, eye, value, refusal);
+            if (own == null)
+                world.StructureDirty.Add(c.Id);
+            return own;
+        }
         if (!ConstructConfig.Has(d, CfgKey.LinePick))
             return $"a {d.Name} runs no line";
         if (Contested(c, player) is { } defended)
@@ -224,7 +230,7 @@ public sealed partial class ConstructEdits
             return $"the {d.Name} has no power";
         if (ProductionLines.RecipeRefusal(d, value) is { } why)
             return why;
-        ConstructConfig.Put(ref p, d, CfgKey.Recipe, value);
+        ConstructConfig.Put(ref p, d, ProductionLines.RecipeKey(d), value);
         c.Wake();
         Done.Add($"player {player}: recipe {value} on part {machine} of construct {c.Id} (its own button)");
         return null;
@@ -235,15 +241,16 @@ public sealed partial class ConstructEdits
     {
         ref var p = ref c.Parts[part];
         var d = p.D;
-        var slot = d.CfgSlot[(int)CfgKey.Recipe];
+        var key = ProductionLines.RecipeKey(d);
+        var slot = d.CfgSlot[(int)key];
         if (slot < 0 || d.Config[slot].Options.Length == 0)
             return $"the {d.Name} has no recipe to pick";
         var n = d.Config[slot].Options.Length;
-        var v = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0);
+        var v = (int)ConstructConfig.Get(p, d, key, 0);
         for (var k = 1; k <= n; k++)
             if (ProductionLines.RecipeRefusal(d, (v + k) % n) == null)
             {
-                ConstructConfig.Put(ref p, d, CfgKey.Recipe, (v + k) % n);
+                ConstructConfig.Put(ref p, d, key, (v + k) % n);
                 c.Wake();
                 return null;
             }

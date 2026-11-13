@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Die Lathe",
-  "description": "Cuts press dies from a solid block. Choose the die with the configure tool, and set the block in its bay. Needs power.",
+  "description": "Cuts press dies from a solid block. Choose the die with the Recipe button on its screen (or the configure tool), and set the block in its bay. Needs power.",
   "group": "Production",
   "section": "Presses",
   "role": "storage",
@@ -109,7 +109,19 @@
       ],
       "face": "+z",
       "up": "+y",
-      "rows": 4
+      "rows": 4,
+      "touch": [
+        {
+          "action": "machine.recipe",
+          "at": [
+            0.72,
+            0.02,
+            0.98,
+            0.24
+          ],
+          "label": "Recipe"
+        }
+      ]
     }
   ],
   "boxes": [

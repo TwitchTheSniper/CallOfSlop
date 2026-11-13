@@ -295,7 +295,7 @@ public static class ConstructPress
         satisfied = false;
         if (row == null)
             return d.IsLathe ? PressStall.NoRecipe : PressStall.NoDie;
-        if (d.IsLathe && row.Output.Sockets.Length > 0 && row.Output.Sockets[0].Class != d.Sockets[d.PressBays[0].Socket].Class)
+        if (d.IsLathe && !LatheCuts(d, row))
             return PressStall.WrongClass;
         for (var b = 0; b < row.Bays.Length; b++)
         {
@@ -827,6 +827,10 @@ public static class ConstructPress
     /// <summary>A die's size class, the one its mount socket fits.</summary>
     public static byte DieClassOf(ConstructPartDef die) => die.Sockets[0].Class;
 
+    /// <summary>Die Lathe <paramref name="d"/> cuts this row: its die is of the lathe's own size (the bay's class).</summary>
+    public static bool LatheCuts(ConstructPartDef d, PressRow row) =>
+        d.PressBays.Length == 0 || row.Output.Sockets.Length == 0 || row.Output.Sockets[0].Class == d.Sockets[d.PressBays[0].Socket].Class;
+
     /// <summary>A die goes on the machine's die socket.</summary>
     public static bool FitDie(ConstructWorld world, Construct c, int part, ConstructPartDef die)
     {
@@ -1111,7 +1115,7 @@ public static class ConstructPress
         {
             card.State = piece >= 0 ? PanelState.Wants : PanelState.Idle;
             card.Add(1, d.IsLathe ? "No die chosen" : "No die fitted");
-            card.Add(2, d.IsLathe ? "Pick one: configure" : "Fit a die first");
+            card.Add(2, d.IsLathe ? "Pick one: Recipe" : "Fit a die first");
             return;
         }
         if (SpecFor(row, bay) is not { } spec)

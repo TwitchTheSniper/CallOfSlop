@@ -169,8 +169,12 @@ public sealed class PressParts : IPartGenerator
         for (var i = 0; i < f.Centres.Count; i++)
             o.Add(Kw(("source", "press.bay"), ("slot", i), ("at", Py.L(f.Centres[i], R3((f.Wall + f.Crown) / 2), Py.Round(f.Z0 - proud, 4))), ("size", Py.L(R3(baysWidth), R3(h))), ("face", "-z"), ("up", "+y"), ("rows", 5)));
         var die = Kw(("source", "press.die"), ("at", Py.L(R3((f.X0 + f.X1) / 2), R3((f.Crown + f.Y1) / 2), Py.Round(f.Z1 + proud, 4))), ("size", Py.L(R3(k * 5.8), R3(k * 1.2))), ("face", "+z"), ("up", "+y"), ("rows", 4)); // (31 characters: "Auto: Limited-Slip Differential")
-        if (pattern)
-            die["touch"] = Py.L(Kw(("action", "press.pattern"), ("at", Py.L(0.72, 0.02, 0.98, 0.24)), ("label", "Pattern"))); // (the next of its die's patterns, then Auto)
+        // Recipe opens the recipe picker on the machine (Program.MachineRecipePicker: a press's patterns, a lathe's dies); a press's Pattern
+        // steps to its die's next pattern, then Auto, as before.
+        var recipe = Kw(("action", "machine.recipe"), ("at", pattern ? Py.L(0.44, 0.02, 0.70, 0.24) : Py.L(0.72, 0.02, 0.98, 0.24)), ("label", "Recipe"));
+        die["touch"] = pattern
+            ? Py.L(recipe, Kw(("action", "press.pattern"), ("at", Py.L(0.72, 0.02, 0.98, 0.24)), ("label", "Pattern")))
+            : Py.L(recipe);
         o.Add(die);
         return o;
     }
@@ -217,7 +221,7 @@ public sealed class PressParts : IPartGenerator
         var tz0 = R3(zm + k * 1.3);
         var tz1 = R3(f.Z1 - k * 0.55);
         p.Set(("power", power), ("config", Py.L(Kw(("key", "recipe"), ("label", "Pattern"), ("group", "Work"),
-                ("tooltip", "What its die makes of a blank: Auto lets the blank choose (a standard blank gives its standard part), or one of the die's patterns by its place. Its die screen's Pattern button steps through them.")))),
+                ("tooltip", "What its die makes of a blank: Auto lets the blank choose, or one of the die's patterns. On its die screen, Recipe opens a picker of them and Pattern steps through them.")))),
             ("storage", Kw(
                 ("slots", Tray(f.X0 + k * 0.55, f.X1 - k * 0.55, R3(f.Base + k * 0.01), tz0, tz1)),
                 ("press", Kw(("bays", bayList),
@@ -233,7 +237,7 @@ public sealed class PressParts : IPartGenerator
         var (c, _, speed, power, mass, health) = row;
         var k = c.Cell;
         int nx = 7, ny = 6, nz = 5;
-        var p = new Part(NameOf(c, "Die Lathe"), c, Section, "Cuts press dies from a solid block. Choose the die with the configure tool, and set the block in its bay. Needs power.",
+        var p = new Part(NameOf(c, "Die Lathe"), c, Section, "Cuts press dies from a solid block. Choose the die with the Recipe button on its screen (or the configure tool), and set the block in its bay. Needs power.",
             role: "storage", group: "Production", color: LatheBlue);
         var f = PressBody(p, nx, ny, nz, 1, false);
         BlockSockets(p, nx, ny, nz, faces: "xy", limit: Lim(3, "+x", "-x", "+y", "-y"));

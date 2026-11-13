@@ -17,7 +17,7 @@ public static partial class Program
         var m = ProductionLines.Picked(c, console, out var same);
         if (m < 0 || !Ui.RecipePickable(c.DefOf(m)))
             return false;
-        Ui.OpenRecipePicker(c.Id, console, m, c.DefOf(m), same);
+        Ui.OpenRecipePicker(c.Id, console, m, c.DefOf(m), same, Ui.RecipeVariant(c, m));
         SetMouseCaptured(false);
         return true;
     }
@@ -35,7 +35,7 @@ public static partial class Program
         var d = c.DefOf(machine);
         if (!Ui.RecipePickable(d) || c.Parts[machine].Broken || !ConstructPower.On(c, machine))
             return false; // (no power: the server's touch says so)
-        Ui.OpenRecipePickerMachine(c.Id, machine, d);
+        Ui.OpenRecipePickerMachine(c.Id, machine, d, Ui.RecipeVariant(c, machine));
         SetMouseCaptured(false);
         return true;
     }
@@ -50,13 +50,13 @@ public static partial class Program
         var (body, machine, console) = Ui.RecipePickerTarget;
         var c = g?.Constructs.Get(body);
         var gone = _session == null || g is not { SandboxOn: true } || me is not { Alive: true } || g.Phase != MatchPhase.Playing || c == null
-            || machine < 0 || machine >= c.PartCount || !Ui.RecipePickable(c.DefOf(machine))
+            || machine < 0 || machine >= c.PartCount || !Ui.RecipePickable(c.DefOf(machine)) || Ui.RecipeVariant(c, machine) != Ui.RecipePickerVariant // (a press's die changed: its patterns did)
             || (Ui.RecipePickerFromConfig ? !Ui.SandboxConfigOpen : _mouseCaptured || console < 0 || console >= c.PartCount || console != machine && !ConstructConfig.Has(c.DefOf(console), CfgKey.LinePick)
                 || System.Numerics.Vector3.Distance(me!.Position, c.WorldCom) > c.Radius + ConstructConfig.Reach + 4);
         if (!gone)
         {
             var md = c!.DefOf(machine);
-            var current = (int)ConstructConfig.Get(c.Parts[machine], md, CfgKey.Recipe, 0);
+            var current = (int)ConstructConfig.Get(c.Parts[machine], md, ProductionLines.RecipeKey(md), 0);
             if (Ui.DrawRecipePicker(g!, current, now))
                 return;
         }

@@ -335,7 +335,7 @@ public sealed class ProductionShowcase : IPartGenerator
             var rack = _panelRack = On("Long Piece Rack", 34.25f, Row3 + 0.5f, Flow, "-y.0.0", Panels);
             Convey(former, "Piece out", rack, "Piece in", Panels);
             Sign(28.75f, Posts3, Panels, "PANELS: sheet in at the white end, panels out at the orange");
-            Sign(31.25f, Posts3, Panels, "Send the bill: a hood, a fender and a kit hood are formed");
+            Sign(32.25f, Posts3, Panels, "Send the bill: a hood, a fender and a kit hood are formed");
             Run(orders, former, V(24.25f, 0, -2.0f), V(26.75f, 0, -2.0f), V(26.75f, 0, -8.6f), V(26.75f, 0, -14.6f), V(29.25f, 0, -14.6f));
             BillPanel(orders, HullLoft.PanelKey(HullLoft.PanelDefault(2)), 2); // a hood
             BillPanel(orders, HullLoft.PanelKey(HullLoft.PanelDefault(3)), 2); // a fender
