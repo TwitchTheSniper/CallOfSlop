@@ -33,7 +33,30 @@ public sealed partial class Ui
     /// <summary>Probes: the shape on the sliders, the designs listed and the text under the sliders.</summary>
     public HullLoft.PanelShape DesignerShape => _pdKind == HullLoft.PanelBend
         ? new(_pdKind, _pdL, _pdW, _pdCrown, 0, _pdMm, RecyclingTable.Current.NameOf(_pdMat), _pdAngle, _pdFoldAt, _pdRadius)
+        : _pdKind == HullLoft.PanelLoft
+        ? new(_pdKind, _pdL, _pdW, 0, 0, _pdMm, RecyclingTable.Current.NameOf(_pdMat), NoseW: _pdNoseW, Back: _pdBack, Nose: _pdNose)
         : new(_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm, RecyclingTable.Current.NameOf(_pdMat));
+
+    // A lofted panel's nose width and its two edge profiles (HullLoft.Profile: eight heights a ulong); mirrored, a handle moves its twin too.
+    private int _pdNoseW = 100, _pdDragH = -1;
+    private ulong _pdBack = HullLoft.PanelDefault(HullLoft.PanelLoft).Back, _pdNose = HullLoft.PanelDefault(HullLoft.PanelLoft).Nose;
+    private bool _pdMirror = true;
+
+    /// <summary>Probes and the window tool: a loft's profile handle (0-7 the back edge's, 8-15 the nose's, left to right) to <paramref name="cm"/>, as a drag would (mirrored when the box is ticked).</summary>
+    public void DesignerProfile(int handle, int cm)
+    {
+        if ((uint)handle >= 2 * HullLoft.PanelProfilePoints)
+            return;
+        var nose = handle >= HullLoft.PanelProfilePoints;
+        ref var p = ref nose ? ref _pdNose : ref _pdBack;
+        p = ProfileMove(p, handle % HullLoft.PanelProfilePoints, cm, _pdMirror);
+    }
+
+    private static ulong ProfileMove(ulong p, int k, int cm, bool mirror)
+    {
+        p = HullLoft.ProfileSet(p, k, cm);
+        return mirror ? HullLoft.ProfileSet(p, HullLoft.PanelProfilePoints - 1 - k, cm) : p;
+    }
     public int DesignerDesigns => _pdMine.Count;
     public string DesignerNote => _pdWhy;
 
@@ -96,8 +119,19 @@ public sealed partial class Ui
             case "angle": _pdAngle = value; break;
             case "at": _pdFoldAt = value; break;
             case "radius": _pdRadius = value; break;
+            case "nose": _pdNoseW = value; break;
+            case "mirror": _pdMirror = value != 0; break;
         }
         DesignerClamp();
+    }
+
+    private bool _pdPressSave, _pdPressOrder;
+
+    /// <summary>The window tool: Save design or ORDER, pressed at the panel's next frame.</summary>
+    public void DesignerPress(string what)
+    {
+        _pdPressSave |= what == "save";
+        _pdPressOrder |= what == "order";
     }
 
     /// <summary>Probes and the window tool: the name in the Save box, as if typed.</summary>
@@ -113,6 +147,8 @@ public sealed partial class Ui
         (_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm) = (s.Kind, s.L, s.W, s.Crown, s.Rake, s.Mm);
         if (s.Kind == HullLoft.PanelBend)
             (_pdAngle, _pdFoldAt, _pdRadius) = (s.Angle, s.At, s.Radius);
+        if (s.Kind == HullLoft.PanelLoft)
+            (_pdNoseW, _pdBack, _pdNose) = (s.NoseW, s.Back, s.Nose);
         _pdMineSel = -1;
     }
 
@@ -123,6 +159,11 @@ public sealed partial class Ui
         (_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm) = (s.Kind, s.L, s.W, s.Crown, s.Rake, s.Mm);
         if (s.Kind == HullLoft.PanelBend)
             (_pdAngle, _pdFoldAt, _pdRadius) = (s.Angle, s.At, s.Radius);
+        if (s.Kind == HullLoft.PanelLoft)
+        {
+            (_pdNoseW, _pdBack, _pdNose) = (s.NoseW, s.Back, s.Nose);
+            _pdMirror = s.Back == Mirrored(s.Back) && s.Nose == Mirrored(s.Nose); // (a design drawn lopsided opens with the mirror off)
+        }
         if (RecyclingTable.Current.IdOf(s.Material) is var m and not 0)
             _pdMat = m;
         _pdName ??= new ImInputString(PlayerBlueprints.MaxName + 1);
@@ -146,6 +187,15 @@ public sealed partial class Ui
                 _pdW = shortMax;
         }
         _pdCrown = Math.Clamp(_pdCrown, 0, Math.Min(HullLoft.PanelMaxCrownCm, _pdW / 2));
+        // A loft's nose is a width too: within the same limits, and the wider of its two ends is what the former must take.
+        _pdNoseW = Math.Clamp(Step(_pdNoseW), HullLoft.PanelMinCm, longMax);
+        if (_pdKind == HullLoft.PanelLoft && Math.Min(_pdL, _pdNoseW) > shortMax)
+        {
+            if (_pdL <= _pdNoseW)
+                _pdL = shortMax;
+            else
+                _pdNoseW = shortMax;
+        }
         var rake = Math.Min(HullLoft.PanelMaxRakeCm, _pdL);
         _pdRake = Math.Clamp(_pdRake, -rake, rake);
         _pdMm = Math.Clamp(_pdMm, HullLoft.PanelMinMm, HullLoft.PanelMaxMm);
@@ -206,7 +256,7 @@ public sealed partial class Ui
     /// <summary>The readouts for the shape as it stands, made again only when it or the network changed.</summary>
     private void DesignerTexts(ConstructWorld world, Construct c, int part)
     {
-        var key = HashCode.Combine(_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm, _pdMat, _pdStamp) * 31 + DesignerPreview.Made + HashCode.Combine(_pdAngle, _pdFoldAt, _pdRadius);
+        var key = HashCode.Combine(_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm, _pdMat, _pdStamp) * 31 + DesignerPreview.Made + HashCode.Combine(_pdAngle, _pdFoldAt, _pdRadius, _pdNoseW, _pdBack, _pdNose);
         var bd = DesignerPreview.Base;
         key = key * 31 + (bd == null ? 0 : 1);
         if (key == _pdTextKey)
@@ -270,6 +320,68 @@ public sealed partial class Ui
 
     private static readonly float4 PdHead = new(0.62f, 0.8f, 1f, 1f);
 
+    private static ulong Mirrored(ulong p)
+    {
+        var m = 0UL;
+        for (var k = 0; k < HullLoft.PanelProfilePoints; k++)
+            m = HullLoft.ProfileSet(m, k, HullLoft.ProfileAt(p, HullLoft.PanelProfilePoints - 1 - k));
+        return m;
+    }
+
+    /// <summary>
+    /// A loft edge's profile, seen along the panel: its eight heights as handles over a line at 0 (the left side on the left), the curve the
+    /// former follows through them. Drag a handle up or down (the nearest across where the drag starts); mirrored, its twin moves with it.
+    /// </summary>
+    private void ProfileEditor(string label, int handleBase, ref ulong profile)
+    {
+        ImGuiSafe.TextColored(Dim, label);
+        var dl = ImGui.GetWindowDrawList();
+        var at = ImGui.GetCursorScreenPos();
+        var size = new float2(MathF.Max(120 * _scale, ImGui.GetContentRegionAvail().X - 8 * _scale), 64 * _scale);
+        ImGui.PushID(handleBase + 7000);
+        ImGui.InvisibleButton("##pdprof"u8, size);
+        ImGui.PopID();
+        var active = ImGui.IsItemActive();
+        var pad = 10 * _scale;
+        float X(int k) => at.X + pad + (size.X - 2 * pad) * k / (HullLoft.PanelProfilePoints - 1);
+        float Y(float cm) => at.Y + size.Y * 0.5f - cm / HullLoft.PanelMaxProfileCm * (size.Y * 0.5f - 6 * _scale);
+        var mouse = ImGui.GetIO().MousePos;
+        if (active)
+        {
+            if (_pdDragH < 0 || _pdDragH / HullLoft.PanelProfilePoints != handleBase / HullLoft.PanelProfilePoints)
+            {
+                var best = 0;
+                for (var k = 1; k < HullLoft.PanelProfilePoints; k++)
+                    if (MathF.Abs(X(k) - mouse.X) < MathF.Abs(X(best) - mouse.X))
+                        best = k;
+                _pdDragH = handleBase + best;
+            }
+            var cm = (int)MathF.Round((at.Y + size.Y * 0.5f - mouse.Y) / (size.Y * 0.5f - 6 * _scale) * HullLoft.PanelMaxProfileCm);
+            profile = ProfileMove(profile, _pdDragH - handleBase, cm, _pdMirror);
+        }
+        else if (_pdDragH >= handleBase && _pdDragH < handleBase + HullLoft.PanelProfilePoints)
+            _pdDragH = -1;
+        dl.AddRectFilled(at, new float2(at.X + size.X, at.Y + size.Y), new ImColor8(34, 40, 50, 255), 4 * _scale);
+        dl.AddLine(new float2(at.X + pad, Y(0)), new float2(at.X + size.X - pad, Y(0)), new ImColor8(90, 100, 115, 255), 1);
+        var prev = default(float2);
+        const int Steps = 28;
+        for (var i = 0; i <= Steps; i++)
+        {
+            var x = i * 2f / Steps - 1;
+            var pt = new float2(at.X + pad + (size.X - 2 * pad) * (x + 1) / 2, Y(HullLoft.ProfileHeight(profile, x) * 100));
+            if (i > 0)
+                dl.AddLine(prev, pt, new ImColor8(160, 200, 255, 255), 2 * _scale);
+            prev = pt;
+        }
+        for (var k = 0; k < HullLoft.PanelProfilePoints; k++)
+        {
+            var c = new float2(X(k), Y(HullLoft.ProfileAt(profile, k)));
+            ImDrawListExtensions.AddCircleFilled(dl, in c, 4.5f * _scale, _pdDragH == handleBase + k ? new ImColor8(255, 200, 90, 255) : new ImColor8(230, 236, 245, 255), 12);
+        }
+        if (ImGui.IsItemHovered() && !active)
+            ImGui.SetTooltip("Drag a point up or down: the edge's height there, -99 to 99 cm."u8);
+    }
+
     /// <summary>The panel (between NewFrame and Render). True while it stays open. Orders, saves and deletes go out after the drawing.</summary>
     public bool DrawDesigner(Game game, Construct c, int part, double now)
     {
@@ -292,7 +404,8 @@ public sealed partial class Ui
         bool order = false, save = false, share = true;
         int cancel = 0, preset = -1, loadMine = -1, loadWorld = -1, delMine = -1;
         var mat = _pdMat;
-        int l = _pdL, w = _pdW, crown = _pdCrown, rake = _pdRake, mm = _pdMm, angle = _pdAngle, bendAt = _pdFoldAt, radius = _pdRadius;
+        int l = _pdL, w = _pdW, crown = _pdCrown, rake = _pdRake, mm = _pdMm, angle = _pdAngle, bendAt = _pdFoldAt, radius = _pdRadius, noseW = _pdNoseW;
+        ulong back = _pdBack, nose = _pdNose;
         var vp = ImGui.GetMainViewport();
         var ww = MathF.Min(1180 * _scale, vp.WorkSize.X * 0.96f);
         var wh = MathF.Min(690 * _scale, vp.WorkSize.Y * 0.94f);
@@ -407,12 +520,26 @@ public sealed partial class Ui
                 ImGui.PushItemWidth(190 * _scale);
                 var longMax = Math.Min(HullLoft.PanelMaxCm, _pdMaxL);
                 ImGui.SliderInt("Length"u8, ref l, HullLoft.PanelMinCm, longMax, "%d cm"u8);
-                ImGui.SliderInt("Width"u8, ref w, HullLoft.PanelMinCm, longMax, "%d cm"u8);
-                ImGui.SliderInt("Crown"u8, ref crown, 0, Math.Max(1, Math.Min(HullLoft.PanelMaxCrownCm, _pdW / 2)), "%d cm"u8);
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("How far the middle stands proud across the width: at most half the width, 80 cm."u8);
+                ImGui.SliderInt(_pdKind == HullLoft.PanelLoft ? "Back width"u8 : "Width"u8, ref w, HullLoft.PanelMinCm, longMax, "%d cm"u8);
+                if (_pdKind != HullLoft.PanelLoft)
+                {
+                    ImGui.SliderInt("Crown"u8, ref crown, 0, Math.Max(1, Math.Min(HullLoft.PanelMaxCrownCm, _pdW / 2)), "%d cm"u8);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("How far the middle stands proud across the width: at most half the width, 80 cm."u8);
+                }
                 var rakeMax = Math.Min(HullLoft.PanelMaxRakeCm, _pdL);
-                if (_pdKind == HullLoft.PanelBend)
+                if (_pdKind == HullLoft.PanelLoft)
+                {
+                    ImGui.SliderInt("Nose width"u8, ref noseW, HullLoft.PanelMinCm, longMax, "%d cm"u8);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("How wide the nose edge is: the sheet tapers or flares straight from the back edge to it."u8);
+                    ImGui.Checkbox("Mirrored"u8, ref _pdMirror);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("A handle moves its twin on the other side too, so the panel stays even."u8);
+                    ProfileEditor("Back edge", 0, ref back);
+                    ProfileEditor("Nose edge", HullLoft.PanelProfilePoints, ref nose);
+                }
+                else if (_pdKind == HullLoft.PanelBend)
                 {
                     ImGui.SliderInt("Fold angle"u8, ref angle, -HullLoft.PanelMaxAngle, HullLoft.PanelMaxAngle, "%d deg"u8);
                     if (ImGui.IsItemHovered())
@@ -481,7 +608,7 @@ public sealed partial class Ui
             ImGui.SetNextItemWidth(220 * _scale);
             ImGui.InputTextWithHint("##pdname"u8, "Design name..."u8, _pdName);
             ImGui.SameLine();
-            save = ImGui.Button("Save design"u8, new float2(120 * _scale, 0));
+            save = ImGui.Button("Save design"u8, new float2(120 * _scale, 0)) | _pdPressSave;
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("Keeps it in your library and shares it with this world: anyone here can order it, and the world's save keeps it."u8);
             ImGui.SameLine(0, 24 * _scale);
@@ -497,7 +624,8 @@ public sealed partial class Ui
             ImGui.SameLine();
             ImGui.PushStyleColor(ImGuiCol.Button, CrTabOn);
             ImGui.BeginDisabled(_pdWhy.Length > 0);
-            order = ImGui.Button("ORDER"u8, new float2(130 * _scale, 0));
+            order = ImGui.Button("ORDER"u8, new float2(130 * _scale, 0)) | _pdPressOrder;
+            _pdPressSave = _pdPressOrder = false;
             ImGui.EndDisabled();
             ImGui.PopStyleColor();
             ImGui.SameLine();
@@ -532,6 +660,7 @@ public sealed partial class Ui
         {
             (_pdL, _pdW, _pdCrown, _pdRake, _pdMm, _pdMat) = (l, w, crown, rake, mm, mat);
             (_pdAngle, _pdFoldAt, _pdRadius) = (angle, bendAt, radius);
+            (_pdNoseW, _pdBack, _pdNose) = (noseW, back, nose);
             share = false;
         }
         DesignerClamp();

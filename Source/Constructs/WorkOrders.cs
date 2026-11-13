@@ -16,9 +16,10 @@ public struct WorkOrder
     public string? Name; // a formed panel or a lofted hull part by its name, which is its key (HullLoft.Panels.cs): a Panel Former's order; Key holds its material only
 
     public readonly bool IsPiece => Part == ConstructParts.None && Name == null;
-    public readonly bool IsPanel => Name != null;
+    public readonly bool IsPanel => Name != null && !Pressed.IsName(Name);
+    public readonly bool IsPressed => Pressed.IsName(Name); // a pressed part by its key (Press phase 4): a Press's order
 
-    /// <summary>What makes it: 0 an Extruder or a Former (a piece), 1 an Assembler (a catalogue part), 2 a Panel Former (a named panel).</summary>
+    /// <summary>What makes it: 0 an Extruder or a Former (a piece), 1 an Assembler or a Press (a catalogue part; a preset is a Press's), 2 a Panel Former (a named panel) or a Press (a pressed key).</summary>
     public readonly int Kind => Name != null ? 2 : Part != ConstructParts.None ? 1 : 0;
     public readonly int Left => Math.Max(0, Count - Made);
 }
@@ -86,8 +87,8 @@ public static class WorkOrders
 
     // ---- Accepting --------------------------------------------------------------------------------------------------------
 
-    /// <summary>A machine that can take orders: an Extruder or a Wheel Former (Fan and Airframe Formers wait for a later phase), or an Assembler of any family.</summary>
-    public static bool TakesOrders(ConstructPartDef d) => d.IsExtruder && !d.IsFanFormer && !d.IsAirframeFormer || d.IsAssembler;
+    /// <summary>A machine that can take orders: an Extruder or a Wheel Former (Fan and Airframe Formers wait for a later phase), an Assembler of any family, or a Press (not a Die Lathe).</summary>
+    public static bool TakesOrders(ConstructPartDef d) => d.IsExtruder && !d.IsFanFormer && !d.IsAirframeFormer || d.IsAssembler || d.IsPress && !d.IsLathe;
 
     /// <summary>The name of an Assembler family (<see cref="AssemblingTable.Machines"/>), for a refusal.</summary>
     public static string FamilyName(byte machine) => machine switch { 1 => "Thruster Assembler", 2 => "Tailor", _ => "Assembler" };
@@ -98,8 +99,12 @@ public static class WorkOrders
         var d = c.DefOf(part);
         if (!TakesOrders(d))
             return d.IsFanFormer || d.IsAirframeFormer ? $"the {d.Name} takes no orders yet" : $"the {d.Name} takes no orders";
+        if (d.IsPress)
+            return PressRefusal(c, part, d, o);
         if (d.IsPanelFormer)
             return ConstructPanelFormer.Refusal(world, c, part, d, o);
+        if (o.IsPressed)
+            return $"the {d.Name} presses nothing: {Pressed.Label(o.Name!)} is a Press's order";
         if (o.IsPanel)
             return $"the {d.Name} takes no panels: {o.Name} is a Panel Former's order";
         if (d.IsAssembler)
@@ -164,6 +169,35 @@ public static class WorkOrders
             return $"the {d.Name}'s queue is full ({MaxOrders} orders)";
         return null;
     }
+
+    /// <summary>
+    /// A Press's side (Press phase 4): a pressed key, or a catalogue part that is a preset, whose die is the one fitted and whose blank is
+    /// inside the press's across. The order sets what the press makes: its bays take only the order's blank (ConstructPress.SizedRefusal).
+    /// </summary>
+    private static string? PressRefusal(Construct c, int part, ConstructPartDef d, in WorkOrder o)
+    {
+        if (Pressed.SpecOf(o) is not { } spec)
+            return o.IsPiece ? $"the {d.Name} presses parts: a {Extrusion.Label(o.Key)} is {Maker(o.Key)}'s order"
+                : o.Name != null ? (o.IsPressed ? "not a pressed part" : $"the {d.Name} presses parts: {o.Name} is a Panel Former's order")
+                : $"no die presses the {ConstructParts.Def(o.Part).Name}";
+        if (o.Count is < 1 or > MaxCount)
+            return $"an order is for 1 to {MaxCount} parts";
+        if (ConstructPress.SizedDieOf(PressTable.Current, c, part) is not { } die)
+            return $"the {d.Name} has no die: this order needs a {spec.Die.Family} Die";
+        if (!ReferenceEquals(die, spec.Die))
+            return $"the {d.Name} holds a {die.Family} Die: this order needs a {spec.Die.Family} Die";
+        var across = Pressed.Across(spec.Blank);
+        if (across > d.PressMaxCm)
+            return $"a {Pressed.ClassWord(Pressed.PressClass(across))} Press's order: the blank is {across / 100f:0.00} m across";
+        if (c.Parts[part].Orders is { Count: >= MaxOrders })
+            return $"the {d.Name}'s queue is full ({MaxOrders} orders)";
+        return null;
+    }
+
+    /// <summary>A pressed part's order by its key (its material the blank's), or null when the key doesn't read.</summary>
+    public static WorkOrder? PressedOrder(string key, int count) => Pressed.SpecOf(key) is { } s
+        ? new WorkOrder { Name = key, Key = new ExtrusionKey(0, 0, 0, 0, s.Blank.Material, false, ExShape.Section), Part = ConstructParts.None, Count = (ushort)Math.Clamp(count, 1, MaxCount) }
+        : null;
 
     /// <summary>Which machine makes a piece: "an Extruder", "a Wheel Former"...</summary>
     public static string Maker(in ExtrusionKey k) => k.Shape switch
@@ -241,6 +275,8 @@ public static class WorkOrders
         }
         if (d.IsPanelFormer)
             return ConstructPanelFormer.FromSettings(c, part, count, "steel", out o);
+        if (d.IsPress)
+            return $"the {d.Name} takes its orders from a Crafting Terminal or a Line Console";
         if (d.IsWheelFormer)
         {
             var w = Cm(ConstructConfig.Get(p, d, CfgKey.Width, d.ExtWheelStart.X));
@@ -389,7 +425,7 @@ public static class WorkOrders
             if (TakesOrders(c.DefOf(list[k])))
                 list[takers++] = list[k];
         if (takers == 0)
-            return "no machine on this line takes orders: wire the console's output to an Extruder's, a Wheel Former's or an Assembler's Run";
+            return "no machine on this line takes orders: wire the console's output to an Extruder's, a Wheel Former's, an Assembler's or a Press's Run";
         var cursor = DealCursor % takers;
         string? first = null;
         int sent = 0, kept = 0;
@@ -405,7 +441,7 @@ public static class WorkOrders
                 {
                     // (the reason that matters is the first from a machine of the order's kind: an Assembler's for a part, else an Extruder's or a Former's)
                     var md = c.DefOf(m);
-                    var kind = (md.IsPanelFormer ? 2 : md.IsAssembler ? 1 : 0) == bill.Items[i].Kind;
+                    var kind = md.IsPress ? Pressed.SpecOf(bill.Items[i]) != null : (md.IsPanelFormer ? 2 : md.IsAssembler ? 1 : 0) == bill.Items[i].Kind;
                     if (why == null || kind && !whyKind)
                         (why, whyKind) = ($"{c.DefOf(m).Name}: {no}", kind);
                 }
@@ -451,7 +487,7 @@ public static class WorkOrders
         if (o.Name != null)
         {
             // A panel by its key, without the family's prefix when it is a formed panel's ("hood 160x150 c14 r18 t20 steel").
-            var (from, to) = HullLoft.IsPanelName(o.Name) ? (HullLoft.PanelPrefix.Length, o.Name.Length - 1) : (0, o.Name.Length);
+            var (from, to) = HullLoft.IsPanelName(o.Name) ? (HullLoft.PanelPrefix.Length, o.Name.Length - 1) : Pressed.IsName(o.Name) ? (Pressed.Prefix.Length, o.Name.Length - 1) : (0, o.Name.Length);
             for (var ch = from; ch < to && ch - from < cols; ch++)
                 card.Add(line, o.Name[ch]);
             card.Clip(line, cols);
@@ -645,7 +681,7 @@ public static class WorkOrders
                     named.Made = r.U16();
                     named.Name = r.Text(ConstructParts.MaxRuntimeName);
                     named.Key = new ExtrusionKey(0, 0, 0, 0, nm, false, ExShape.Section);
-                    if (nm > RecyclingTable.Current.Materials.Length || named.Made > named.Count || !HullLoft.IsFormedName(named.Name))
+                    if (nm > RecyclingTable.Current.Materials.Length || named.Made > named.Count || !HullLoft.IsFormedName(named.Name) && !Pressed.IsName(named.Name))
                         throw new MalformedPacketException("a bad panel order");
                     q.Add(named);
                     continue;
@@ -733,6 +769,8 @@ public static class WorkOrders
                     var pn2 = r.Str();
                     if (pc is >= 1 and <= MaxCount && HullLoft.IsFormedName(pn2) && pn2.Length <= ConstructParts.MaxRuntimeName && HullLoft.FormedMaterial(pn2) != 0)
                         q.Add(ConstructPanelFormer.Order(pn2, pc) with { Made = Math.Min(pm, pc) });
+                    else if (pc is >= 1 and <= MaxCount && Pressed.IsName(pn2) && PressedOrder(pn2, pc) is { } pressed)
+                        q.Add(pressed with { Made = Math.Min(pm, pc) }); // (a pressed part's order, Press phase 4: a key this build can't read is left out)
                     continue;
                 }
                 var mask = r.U64();
@@ -781,6 +819,8 @@ public static class ConstructBill
         public readonly List<WorkOrder> Pieces = new(); // by key, first seen first
         public readonly List<WorkOrder> Panels = new(); // formed panels and lofted hull parts, by name, first seen first (a Panel Former's)
         public readonly List<(string Part, ConstructPartDef? Def, int Count)> Parts = new(); // catalogue parts, by name, first seen first (Def null: not a part this build has)
+        public readonly List<WorkOrder> Pressed = new(); // pressed parts by their keys, first seen first (a Press's; their blanks are in Pieces, their kits in Kits)
+        public readonly List<(string What, int Count)> Kits = new(); // bay 2 kits the pressed parts take, by part or material name
         public readonly float[] LinkMetres = new float[(int)RouteType.COUNT]; // link stock by type: metres of every link of that type, as built
         public readonly int[] LinkCount = new int[(int)RouteType.COUNT];
         public string LinksWhy = ""; // why the links weren't counted (the blueprint didn't build), or ""
@@ -809,6 +849,12 @@ public static class ConstructBill
                     bill.Pieces[k] = bill.Pieces[k] with { Count = (ushort)Math.Min(bill.Pieces[k].Count + 1, WorkOrders.MaxCount) };
                 continue;
             }
+            if (Pressed.IsName(step.Part) && global::CallOfSlop.Pressed.SpecOf(step.Part) is { } spec)
+            {
+                // A pressed part (Press phase 4): a Press's line by its key, its blank an Extruder's line, its kit a tally.
+                AddPressed(bill, step.Part, spec);
+                continue;
+            }
             if (HullLoft.IsFormedName(step.Part))
             {
                 var k = bill.Panels.FindIndex(o => o.Name == step.Part);
@@ -827,7 +873,12 @@ public static class ConstructBill
             bill.Parts.Add((step.Part, ConstructParts.Find(step.Part), 0));
         }
         for (var k = 0; k < bill.Parts.Count; k++)
+        {
             bill.Parts[k] = bill.Parts[k] with { Part = bill.Parts[k].Def?.Name ?? bill.Parts[k].Part, Count = parts[bill.Parts[k].Part] };
+            if (PresetOf(bill.Parts[k].Def) is { } preset)
+                for (var n = 0; n < bill.Parts[k].Count; n++)
+                    AddInputs(bill, preset); // (a catalogue part a Press makes: its blank and kit, so the bill is complete down to stock)
+        }
         if (bp.Links.Count == 0 && bp.Wires.Count == 0)
             return bill;
         var built = ConstructBuild.Build(new ConstructWorld(), bp, System.Numerics.Vector3.Zero, System.Numerics.Quaternion.Identity, out var why);
@@ -845,6 +896,39 @@ public static class ConstructBill
             bill.LinkCount[t]++;
         }
         return bill;
+    }
+
+    /// <summary>A catalogue part no Assembler makes but a die presses (a preset, Press phase 4), as its press order's spec; else null.</summary>
+    public static Pressed.OrderSpec? PresetOf(ConstructPartDef? d) =>
+        d != null && RecipeOf(d) == null && PressTable.Current.PresetKeyOf(d) is { } key ? Pressed.SpecOf(key) : null;
+
+    private static void AddPressed(Bill bill, string key, Pressed.OrderSpec spec)
+    {
+        var k = bill.Pressed.FindIndex(o => o.Name == key);
+        if (k < 0)
+            bill.Pressed.Add(WorkOrders.PressedOrder(key, 1)!.Value);
+        else
+            bill.Pressed[k] = bill.Pressed[k] with { Count = (ushort)Math.Min(bill.Pressed[k].Count + 1, WorkOrders.MaxCount) };
+        AddInputs(bill, spec);
+    }
+
+    /// <summary>One pressed part's blank (an Extruder's line) and bay 2 kit (a tally) onto the bill.</summary>
+    private static void AddInputs(Bill bill, Pressed.OrderSpec spec)
+    {
+        var blank = spec.Blank with { Growing = false };
+        var b = bill.Pieces.FindIndex(o => o.Key == blank);
+        if (b < 0)
+            bill.Pieces.Add(new WorkOrder { Key = blank, Part = ConstructParts.None, Count = 1 });
+        else
+            bill.Pieces[b] = bill.Pieces[b] with { Count = (ushort)Math.Min(bill.Pieces[b].Count + 1, WorkOrders.MaxCount) };
+        if (spec.Pattern.Bay2 is not { } kit || Pressed.Bay2For(spec.Pattern, spec.Blank) is not (var n and > 0))
+            return;
+        var what = kit.What;
+        var at = bill.Kits.FindIndex(x => x.What == what);
+        if (at < 0)
+            bill.Kits.Add((what, n));
+        else
+            bill.Kits[at] = (what, bill.Kits[at].Count + n);
     }
 
     /// <summary>The recipe that makes a catalogue part, or null (the factory can't make it).</summary>
@@ -869,8 +953,14 @@ public static class ConstructBill
                 return why;
             any = true;
         }
+        foreach (var o in bill.Pressed)
+        {
+            if (WorkOrders.AddToBill(world, c, console, o) is { } why)
+                return why;
+            any = true;
+        }
         foreach (var (_, d, n) in bill.Parts)
-            if (RecipeOf(d) != null)
+            if (RecipeOf(d) != null || PresetOf(d) != null) // (a preset is a Press's order by its catalogue part)
             {
                 if (WorkOrders.AddToBill(world, c, console, new WorkOrder { Part = (ushort)d!.Id, Count = (ushort)Math.Min(n, WorkOrders.MaxCount) }) is { } why)
                     return why;
@@ -889,7 +979,7 @@ public static class ConstructBill
         if (e.ValueKind != System.Text.Json.JsonValueKind.Object)
             throw new ConstructPartException($"{file}: bill[{k}] is {{\"step\", \"piece\" or \"part\", \"count\"}}");
         int step = -1, count = 1;
-        string piece = "", part = "", panel = "";
+        string piece = "", part = "", panel = "", pressed = "";
         foreach (var f in e.EnumerateObject())
             switch (f.Name)
             {
@@ -897,13 +987,24 @@ public static class ConstructBill
                 case "piece": piece = f.Value.GetString() ?? ""; break;
                 case "part": part = f.Value.GetString() ?? ""; break;
                 case "panel": panel = f.Value.GetString() ?? ""; break;
+                case "pressed": pressed = f.Value.GetString() ?? ""; break;
                 case "count": count = f.Value.GetInt32(); break;
-                default: throw new ConstructPartException($"{file}: bill[{k}]: unknown key \"{f.Name}\" (step, piece, part, panel, count)");
+                default: throw new ConstructPartException($"{file}: bill[{k}]: unknown key \"{f.Name}\" (step, piece, part, panel, pressed, count)");
             }
         if (step < 0 || count < 1 || count > WorkOrders.MaxCount)
             throw new ConstructPartException($"{file}: bill[{k}]: a step and a count 1 to {WorkOrders.MaxCount}");
-        if ((piece.Length > 0 ? 1 : 0) + (part.Length > 0 ? 1 : 0) + (panel.Length > 0 ? 1 : 0) != 1)
-            throw new ConstructPartException($"{file}: bill[{k}]: a \"piece\", a \"part\" or a \"panel\", one of them");
+        if ((piece.Length > 0 ? 1 : 0) + (part.Length > 0 ? 1 : 0) + (panel.Length > 0 ? 1 : 0) + (pressed.Length > 0 ? 1 : 0) != 1)
+            throw new ConstructPartException($"{file}: bill[{k}]: a \"piece\", a \"part\", a \"panel\" or a \"pressed\", one of them");
+        if (pressed.Length > 0)
+        {
+            // A pressed part by its key (Press phase 4): a Press's line.
+            if (!Pressed.IsName(pressed) || WorkOrders.PressedOrder(pressed, count) is not { } po)
+            {
+                Pressed.TryParse(pressed, out _, out _, out _, out var why);
+                throw new ConstructPartException($"{file}: bill[{k}]: \"{pressed}\" isn't a part a Press makes ({why}), like \"Pressed Part (bracket.l l-angle 15x15x20 steel)\"");
+            }
+            return (step, po);
+        }
         if (panel.Length > 0)
         {
             if (!HullLoft.IsFormedName(panel) || ConstructParts.Find(panel) == null)
@@ -989,6 +1090,20 @@ public static class ConstructBill
                 sb.AppendLine($"  {o.Count,4} x {o.Name}  ({how})");
             }
         }
+        if (bill.Pressed.Count > 0)
+        {
+            // Pressed parts by key (Press phase 4): die and pattern, the press class, the blank (counted under Extruded) and the kit.
+            sb.AppendLine($" Pressed: {bill.Pressed.Count} kinds, {bill.Pressed.Sum(o => o.Count)} parts (a Press)");
+            foreach (var o in bill.Pressed)
+            {
+                var spec = Pressed.SpecOf(o.Name!)!;
+                var across = Pressed.Across(spec.Blank);
+                var kit = spec.Pattern.Bay2 is { } a && Pressed.Bay2For(spec.Pattern, spec.Blank) is var n and > 0 ? $", bay 2: {n} {a.What}" : "";
+                sb.AppendLine($"  {o.Count,4} x {o.Name}  ({spec.Die.Family} Die, {spec.Pattern.Label}; a {Pressed.ClassWord(Pressed.PressClass(across))} Press; blank {Pressed.BlankText(spec.Blank)}{kit}; {Pressed.Seconds(spec.Die, spec.Blank, Math.Max(0, Pressed.PressClass(across))):0.#} s)");
+            }
+        }
+        if (bill.Kits.Count > 0)
+            sb.AppendLine($" Kits (bay 2): {string.Join(", ", bill.Kits.Select(x => $"{x.Count} {x.What}"))}");
         var cats = PartCategories.Current;
         var groups = bill.Parts
             .Select(p => (p.Part, p.Def, p.Count, Cat: p.Def != null && cats.Place(p.Def, out var cat, out _) ? cat : "(unplaced)"))
@@ -1003,12 +1118,13 @@ public static class ConstructBill
                 kinds++;
                 parts += n;
                 var r = RecipeOf(def);
-                if (r == null)
+                var pressedBy = PresetOf(def);
+                if (r == null && pressedBy == null)
                 {
                     none++;
                     noneParts += n;
                 }
-                var how = def == null ? "not a part of this build" : r == null ? "no recipe" : $"{WorkOrders.FamilyName(r.Machine)} tier {r.MinTier}: {r.Batch}{(r.Count > 1 ? $" makes {r.Count}" : "")}";
+                var how = def == null ? "not a part of this build" : pressedBy != null ? $"pressed ({pressedBy.Die.Family} Die, blank {Pressed.BlankText(pressedBy.Blank)})" : r == null ? "no recipe" :$"{WorkOrders.FamilyName(r.Machine)} tier {r.MinTier}: {r.Batch}{(r.Count > 1 ? $" makes {r.Count}" : "")}";
                 sb.AppendLine($"   {n,4} x {part}  ({how})");
             }
         }
@@ -1020,7 +1136,8 @@ public static class ConstructBill
                 sb.AppendLine($"   {bill.LinkMetres[t],8:0.0} m of {(t < LinkNames.Length ? LinkNames[t] : ((RouteType)t).ToString())} ({bill.LinkCount[t]} links)");
         var pieces = bill.Pieces.Sum(o => o.Count);
         var panels = bill.Panels.Sum(o => o.Count);
-        sb.AppendLine($" Total: {pieces + panels + parts} parts ({pieces} pieces in {bill.Pieces.Count} kinds, {panels} formed panels in {bill.Panels.Count} kinds, {parts} catalogue in {kinds} kinds); no recipe: {none + panelNone} kinds, {noneParts + panelNoneParts} parts; links {bill.LinkMetres.Sum():0.0} m");
+        var pressedN = bill.Pressed.Sum(o => o.Count);
+        sb.AppendLine($" Total: {pieces + panels + parts + pressedN} parts ({pieces} pieces in {bill.Pieces.Count} kinds, {panels} formed panels in {bill.Panels.Count} kinds, {pressedN} pressed in {bill.Pressed.Count} kinds, {parts} catalogue in {kinds} kinds; the pieces hold the pressed parts' blanks); no recipe: {none + panelNone} kinds, {noneParts + panelNoneParts} parts; links {bill.LinkMetres.Sum():0.0} m");
         return sb.ToString();
     }
 }

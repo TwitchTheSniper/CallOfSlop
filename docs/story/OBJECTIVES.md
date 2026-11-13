@@ -39,6 +39,6 @@ goal just met shows "Filed: ..." for 5 s. The words use Settings > Video "Story 
 ## Network and cost
 
 `Msg.Objective` (server to one client, reliable ordered: u8 goal index, 255 none; two i16 as u16, have and need) only when it
-changes (protocol 269). The host's own player hears it with no packet. Once a second the host walks the bodies once to see
+changes (protocol 273). The host's own player hears it with no packet. Once a second the host walks the bodies once to see
 what each owner has (the parts only while someone's goal is the shell), then judges each person: fixed arrays by player id,
 nothing allocated. The HUD makes its words only when the goal, the numbers or a key change.

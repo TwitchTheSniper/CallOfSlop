@@ -443,8 +443,15 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      a press has a Pattern setting (its recipe key); bay 2 is a kit hopper (the store's mixed input and kinds); new die parts move part ids.
     // 268: smart logistics phase 2b: each crafting order in CBodyKind.Craft ends with its chain lines (u8 n, u8 more, each u8 depth,
     //      u16 kind, made, asked, maker part, dest part, stock claimed, a reason): the Orders tab's indented lines on both peers.
-    // 269: Msg.Objective (the "what next" goal line, GameObjectives.cs) at the end of Msg.
-    public const ushort ProtocolVersion = 269;
+    // 270: lofted panels (feat/panel-designer-3; 269 left to the Press's phase 4): a formed panel's name may be the loft kind
+    //      ("loft LxWxN tT bH,.. fH,.. MATERIAL": HullLoft.Panels.cs); a peer on an older protocol would refuse the name.
+    // 271: the Press rework's phase 4 (269 on its branch, renumbered at the merge): work orders, crafting orders and CraftNamed carry a pressed part by its key ("Pressed Part (...)", the
+    //      named shape 255 as a panel's); PressStall gains WantsOrder, BayRefuse gains Order (both ride the press's store bytes); a chain
+    //      line's kind is written by ConstructStorage.WriteDef (a run-time piece by its key), not as a u16 id.
+    // 272: Msg.Factions ends with each story technology's standing and, per player the story knows, their standings and the
+    //      technologies they know (the build menu's locks).
+    // 273: Msg.Objective (the "what next" goal line, GameObjectives.cs) at the end of Msg (269 on its branch, renumbered at the merge).
+    public const ushort ProtocolVersion = 273;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

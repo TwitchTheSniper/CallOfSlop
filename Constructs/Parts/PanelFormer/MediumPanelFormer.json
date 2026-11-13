@@ -53,7 +53,8 @@
         "Door skin",
         "Roof bow",
         "Cowl",
-        "Bent panel"
+        "Bent panel",
+        "Lofted panel"
       ],
       "default": 0,
       "tooltip": "The panel its Queue button orders, at the preset's own size, in what its bin holds. The Preset button on its screen opens a picker of them."
