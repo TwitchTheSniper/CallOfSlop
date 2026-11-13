@@ -1,0 +1,200 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Ministry Courier",
+  "description": "The Ministry of Slop's courier ship from the Frostreach spaceport: an Orbiter for two in navy and green, that climbs out of the sky into orbit.",
+  "steps": [
+    {
+      "part": "Fuel Tank",
+      "paint": "#2f5a3c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "-x",
+      "by": "+x",
+      "paint": "#2f5a3c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "+x",
+      "by": "-x",
+      "paint": "#2f5a3c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "-z",
+      "by": "+z",
+      "paint": "#1f2b45",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "+z",
+      "by": "-z",
+      "paint": "#1f2b45",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 3,
+      "socket": "-x",
+      "by": "+x",
+      "paint": "#1f2b45",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 3,
+      "socket": "+x",
+      "by": "-x",
+      "paint": "#1f2b45",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 4,
+      "socket": "-x",
+      "by": "+x",
+      "paint": "#1f2b45",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 4,
+      "socket": "+x",
+      "by": "-x",
+      "paint": "#1f2b45",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 1,
+      "socket": "-x",
+      "by": "+x",
+      "paint": "#1f2b45",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 2,
+      "socket": "+x",
+      "by": "-x",
+      "paint": "#1f2b45",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 9,
+      "socket": "-x",
+      "by": "+x",
+      "paint": "#1f2b45",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 10,
+      "socket": "+x",
+      "by": "-x",
+      "paint": "#1f2b45",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 11,
+      "socket": "-y",
+      "by": "+y",
+      "paint": "#1f2b45",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 12,
+      "socket": "-y",
+      "by": "+y",
+      "paint": "#1f2b45",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Seat",
+      "on": 9,
+      "socket": "+y",
+      "by": "bottom"
+    },
+    {
+      "part": "Seat",
+      "on": 0,
+      "socket": "+y",
+      "by": "bottom"
+    },
+    {
+      "part": "Small Jet",
+      "on": 5,
+      "socket": "-y",
+      "by": "front",
+      "paint": "#4b5157",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Small Jet",
+      "on": 6,
+      "socket": "-y",
+      "by": "front",
+      "paint": "#4b5157",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Small Jet",
+      "on": 7,
+      "socket": "-y",
+      "by": "front",
+      "paint": "#4b5157",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Small Jet",
+      "on": 8,
+      "socket": "-y",
+      "by": "front",
+      "paint": "#4b5157",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Small Jet",
+      "on": 13,
+      "socket": "-x",
+      "by": "+x",
+      "paint": "#4b5157",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Small Jet",
+      "on": 14,
+      "socket": "+x",
+      "by": "-x",
+      "paint": "#4b5157",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Driving Module",
+      "on": 16,
+      "socket": "+x",
+      "by": "-x"
+    }
+  ],
+  "wires": [
+    [
+      16,
+      23
+    ],
+    [
+      23,
+      17
+    ]
+  ]
+}

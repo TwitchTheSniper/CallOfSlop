@@ -1,0 +1,37 @@
+{
+  // The Ministry of Slop's spaceport (docs/story/SPACEPORT.md, Game/GameSpaceport.cs): built with the penal colony on a
+  // fresh story world on this map, or once on a world from before it. "place": which way from the colony ("toward": [x, z]
+  // in the colony's frame, x along its front, so [1, 0] is out of the main gate along the street) and how far (m); the
+  // spot is the most level clear one within "spread" degrees either side ("step" apart) and "slack" m nearer or further,
+  // and none is built when the land under the bench stands more than "most" m over or under it. The spaceport's own frame
+  // has its origin on the bench's level in the middle and its front (-z) turned to the colony; "at" is where a piece's
+  // footprint's middle stands in it (m), "sink" how far its underside is let into the bench.
+  "format": "call-of-slop-spaceport/1",
+  "map": "Glacier",
+  "faction": "Ministry of Slop",
+  "place": { "toward": [1, 0], "distance": 2000, "slack": 150, "spread": 40, "step": 10, "most": 6 },
+  // The bench under it all, graded level (dark cinder, like the colony's), and a ramp from its front to the land.
+  "bench": {
+    "min": [-24, -26], "max": [36, 20],
+    "ramps": [ { "from": [-8, -27], "to": [-8, -46] } ]
+  },
+  "pieces": [
+    // The terminal first (the frame is worked out from it on a loaded world): its front door to the colony, its airside
+    // door at the back-east corner, out to the apron. Its roof is the second landing deck.
+    { "blueprint": "Spaceport Terminal", "at": [-8, -14] },
+    // The control tower east of it, 2 m clear: the third deck on its roof, 21.5 m up.
+    { "blueprint": "Spaceport Control Tower", "at": [8, -15] },
+    // The apron: three pads behind, laid flush with the bench (a pad is 0.5 m of slab).
+    { "blueprint": "Spaceport Landing Pad", "at": [-12, 8], "sink": 0.45 },
+    { "blueprint": "Spaceport Landing Pad", "at": [6, 8], "sink": 0.45 },
+    { "blueprint": "Spaceport Landing Pad", "at": [24, 8], "sink": 0.45 }
+  ],
+  // The Ministry Courier parked on the first pad ("up": the pad's top over the bench, m).
+  "courier": { "blueprint": "Ministry Courier", "at": [-12, 8], "yaw": 0, "up": 0.05 },
+  // Its pilot keeps to the apron beside it, and gives it up when "handover" (a topic, Story/Topics/Spaceport.json) is
+  // answered; "stolen" is what he shouts when somebody takes it without.
+  "keeper": {
+    "name": "Captain Fairweather", "at": [-5, 4], "handover": "fairweather-signed",
+    "stolen": "Oi! That is a Ministry vessel! Come back! I shall need that in writing!"
+  }
+}

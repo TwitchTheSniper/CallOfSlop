@@ -93,9 +93,35 @@ public sealed class ShellParts : IPartGenerator
         };
     }
 
+    /// <summary>The Orbiter in the Ministry's colours (navy tanks, a green band, slate jets): the Ministry Courier parked on the
+    /// spaceport's first pad (docs/story/SPACEPORT.md), the same ship to fly, its seats and wires as they are.</summary>
+    private static PyDict Courier(PartOutput o)
+    {
+        var orbiter = (PyDict)o.ReadJson("Constructs/Blueprints/Orbiter.json")!;
+        var steps = ((List<object?>)orbiter["steps"]!).Cast<PyDict>().ToList();
+        for (var k = 0; k < steps.Count; k++)
+        {
+            var part = (string?)steps[k]["part"];
+            var paint = part switch { "Fuel Tank" => k is 0 or 1 or 2 ? "#2f5a3c" : "#1f2b45", "Small Jet" => "#4b5157", _ => null };
+            if (paint == null)
+                continue;
+            steps[k]["paint"] = paint;
+            steps[k]["finish"] = "worn paint";
+        }
+        return new PyDict
+        {
+            ["format"] = "call-of-slop-construct-blueprint/1",
+            ["name"] = "Ministry Courier",
+            ["description"] = "The Ministry of Slop's courier ship from the Frostreach spaceport: an Orbiter for two in navy and green, that climbs out of the sky into orbit.",
+            ["steps"] = steps.Cast<object?>().ToList(),
+            ["wires"] = orbiter["wires"],
+        };
+    }
+
     public void Make(PartOutput o)
     {
         WriteParts(o, Out, [("", Shell()), ("", Chair())]);
         o.File("Constructs/Blueprints/DepotLander.json", PyJson.Dumps(Lander(o), 2) + "\n");
+        o.File("Constructs/Blueprints/MinistryCourier.json", PyJson.Dumps(Courier(o), 2) + "\n");
     }
 }

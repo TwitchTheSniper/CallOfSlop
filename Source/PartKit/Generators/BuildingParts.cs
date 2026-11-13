@@ -1934,6 +1934,7 @@ public sealed partial class BuildingParts : IPartGenerator
         bp.Put("Fixed Ladder 3 m", Cell(ox + 11, 2, oz + 7), R0); // (straight up the platform's open front)
         o.Add(bp);
         o.AddRange(MinistryBlueprints(defs)); // (the Ministry's buildings round the penal colony: BuildingParts.Ministry.cs)
+        o.AddRange(SpaceportBlueprints(defs)); // (the Ministry's spaceport on Glacier, 2 km from the colony: BuildingParts.Spaceport.cs)
         o.AddRange(SiteBlueprints(defs)); // (the penal colony's site: its street, square, covered way and heating mains: BuildingParts.Site.cs)
         return o;
     }

@@ -707,6 +707,13 @@ public sealed partial class StoryFactions
             W.Set(id, R.Claims, construct, 1);
     }
 
+    /// <summary>A construct no longer the faction's (handed over, or taken).</summary>
+    public void Unclaim(int f, int construct)
+    {
+        if (EntityOf(f) is var id and >= 0 && W.Valid(construct) && R.Claims >= 0)
+            W.Set(id, R.Claims, construct, 0);
+    }
+
     /// <summary>A construct the story has just met, by its name: a faction whose claim it starts with takes it as its own.</summary>
     public void Claim(int construct, string name)
     {

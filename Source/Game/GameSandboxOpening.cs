@@ -148,6 +148,7 @@ public sealed partial class Game
         ColonySiteFurnish(); // (the street, the square, the covered way, the heating mains: the site's pieces, GameColonySite.cs)
         QuarryBuild(); // (the Ministry Quarry a few hundred metres out: GameQuarry.cs)
         FragmentSitesBuild(); // (the sealed data centres out past it: GameStoryFragments.cs)
+        SpaceportBuild(late: false); // (the Ministry's spaceport 2 km out, clear of all that: GameSpaceport.cs)
         var wreck = SandboxKitPiece(script.Wreck, _opMiddle, script.CrashFrom, script.CrashTo) ?? SandboxKitPiece(script.Wreck, _opMiddle, 25, script.CrashTo);
         if (wreck != null)
         {
@@ -454,6 +455,7 @@ public sealed partial class Game
         DepotLoad(o.Works, o.Depot); // (GameDepot.cs)
         QuarryLoad(o.Quarry); // (GameQuarry.cs)
         FragmentSitesLoad(o.Sites); // (the data centres, or built now for a world from before them: GameStoryFragments.cs)
+        SpaceportBuild(late: true); // (built now for a world from before the spaceport, once: GameSpaceport.cs)
         _storyMiddleOf = null;
     }
 }

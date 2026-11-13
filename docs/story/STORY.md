@@ -842,6 +842,11 @@ in play yet (the F4 Story tab's End buttons stand in).
 
 The old records the main storyline is told through, found in any order, and the sealed data centres that hold them: [FRAGMENTS.md](FRAGMENTS.md). A fragment is a Thing named by its id (`frag.threat`), held through the `Fragment` relation; the Logbook (F1) shows them.
 
+## The spaceport
+
+The Ministry's spaceport 2 km from the colony, Captain Fairweather and his courier, the first way off the planet
+(stolen, or handed over for carrying his Form 88 to the warden and back): [SPACEPORT.md](SPACEPORT.md).
+
 ## Scenarios
 
 `Story/Scenarios/*.json`: entities to make (`"owner"` gives a construct its owner's `Owns`), events at times from the
