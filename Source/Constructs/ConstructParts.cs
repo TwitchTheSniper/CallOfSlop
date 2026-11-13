@@ -891,7 +891,7 @@ public static partial class ConstructParts
     public const float MaxPartMass = 50_000_000f, MaxPartHealth = 16_000_000f; // (kg, hp, which three bytes carry; a capital chassis deck)
     public const float MaxAttachSeconds = 60f, MaxPistonTravel = 64f, MaxHitchReach = 64f;
     public const int MaxName = 32; // a part file's name (a sanity check: the inventory's tiles and lists show it whole)
-    public const int MaxRuntimeName = 128; // a part made at run time ("stage": the Ordnance Rack's shapes): its name is its key in saves and blueprints, never a fixed-width field (a save's names are length-prefixed, a packet's text is at most 255 bytes)
+    public const int MaxRuntimeName = 240; // (128 until protocol 283: a cut panel's key is longer) a part made at run time ("stage": the Ordnance Rack's shapes): its name is its key in saves and blueprints, never a fixed-width field (a save's names are length-prefixed, a packet's text is at most 255 bytes)
 
     // The size classes (docs/sandbox/CONSTRUCTS.md, "Size classes"; the part kit's PartScale.cs): wire and file values of a socket's class.
     public const byte Small = 0, Medium = 1, Large = 2, Capital = 3;
@@ -1189,7 +1189,7 @@ public static partial class ConstructParts
             return Extrusion.Parse(name); // (a piece names itself: a blueprint's extrusion)
         if (name.StartsWith(Pressed.Prefix, StringComparison.Ordinal))
             return Pressed.Parse(name); // (a pressed part names itself, a preset's key its catalogue part: Pressed.cs)
-        if (name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal) || HullLoft.IsPanelName(name))
+        if (name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal) || HullLoft.IsPanelName(name) || HullLoft.IsCutName(name))
             return HullLoft.Parse(name); // (a lofted hull bay names itself too: HullLoft.cs)
         if (name.StartsWith(ModularRack.Prefix, StringComparison.OrdinalIgnoreCase) || name.StartsWith(ModularRack.LegacyPrefix, StringComparison.OrdinalIgnoreCase))
             return ModularRack.Parse(name); // (a rack of a shape no file has names itself too, an old Modular Bomb Rack's as well)

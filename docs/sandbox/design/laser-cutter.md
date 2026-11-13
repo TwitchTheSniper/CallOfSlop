@@ -131,8 +131,9 @@ Cut Panel (curve 200x100 c0 r0 t30 steel | r100,50,10,40,3 m0,30,30 m1,30,30)   
 ### 4.2 What is drawn
 
 New file `Source/Constructs/HullLoft.Cuts.cs` (partial `HullLoft`: `CutPrefix`, `CutSet`, `CutOf`, `CutKey`,
-`CutRefusal`, the clipper). `PanelShape` gains a `CutSet` (six packed `ulong`s, so the shape stays a value), and
-`PanelJson` asks the clipper for each facet's pieces instead of emitting the facet whole.
+`CutRefusal`, the clipper). As built in phase 1, a key is read once into a `CutPlan` (the sheet, the cuts, each facet's
+pieces) and `PanelShape` is unchanged; `PanelJson` takes the plan and emits each touched facet's pieces instead of the
+facet whole (`laser-cutter-phase1-notes.md`).
 
 - **The blank's facets are the canvas.** The panel's grid (`PanelGrid`, `PanelRowS`) is made exactly as today. Each cut is
   a convex polygon in whole centimetres (an opening has up to eight corners, a cut corner three). For each facet, its
