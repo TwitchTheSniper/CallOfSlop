@@ -19,7 +19,7 @@ public static class ConstructLamps
     /// and harder: pools of light on the ground. The same few lights as by day (<see cref="LightGrid.MaxDynamic"/>), so a
     /// pixel costs what it did; only their numbers change.
     /// </summary>
-    public const float DarkReach = 60f, DarkRange = 10f, DarkStrength = 1.1f;
+    public const float DarkReach = 60f, DarkRange = 15f, DarkStrength = 2.2f;
 
     /// <summary>A plain lamp's light in the dark: the orange of an old sodium lamp, against the dusk's blue.</summary>
     public static readonly Vector3 DarkColour = new(1f, 0.74f, 0.36f);

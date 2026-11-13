@@ -13,6 +13,7 @@
     { "name": "flash", "sizeFrom": 0.6, "sizeTo": 1.4, "colours": ["#ffffff", "#ffd890", "#ff8028"], "mid": 0.3, "alpha": 1.0, "fadeIn": 0, "fadePow": 2.0, "glow": 1.0, "gravity": 0, "drag": 0, "turbulence": 0, "stretch": 0 },
     { "name": "fireball", "sizeFrom": 0.5, "sizeTo": 1.6, "colours": ["#fff0b8", "#ff8420", "#401208"], "mid": 0.35, "alpha": 0.9, "fadeIn": 0.02, "fadePow": 1.4, "glow": 0.85, "gravity": -1.5, "drag": 2.4, "turbulence": 2.0, "stretch": 0 },
     { "name": "steam", "sizeFrom": 0.5, "sizeTo": 2.4, "colours": ["#e8ecf0", "#d4d8dc", "#c4c8cc"], "mid": 0.5, "alpha": 0.22, "fadeIn": 0.08, "fadePow": 1.3, "glow": 0, "lit": 1, "gravity": -1.1, "drag": 0.8, "turbulence": 0.8, "stretch": 0 },
-    { "name": "drift", "sizeFrom": 0.7, "sizeTo": 1.5, "colours": ["#f4f8fc", "#e6eef6", "#dce6f0"], "mid": 0.5, "alpha": 0.2, "fadeIn": 0.25, "fadePow": 1.2, "glow": 0, "lit": 1, "gravity": 0.05, "drag": 0.05, "turbulence": 1.6, "stretch": 0.07 }
+    { "name": "drift", "sizeFrom": 0.7, "sizeTo": 1.5, "colours": ["#f4f8fc", "#e6eef6", "#dce6f0"], "mid": 0.5, "alpha": 0.2, "fadeIn": 0.25, "fadePow": 1.2, "glow": 0, "lit": 1, "gravity": 0.05, "drag": 0.05, "turbulence": 1.6, "stretch": 0.07 },
+    { "name": "chimney", "sizeFrom": 0.6, "sizeTo": 4.4, "colours": ["#c4c2be", "#a6a4a0", "#8c8a86"], "mid": 0.45, "alpha": 0.5, "fadeIn": 0.06, "fadePow": 1.5, "glow": 0, "lit": 1, "gravity": -0.6, "drag": 0.5, "turbulence": 0.7, "stretch": 0 }
   ]
 }
