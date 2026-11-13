@@ -33,7 +33,13 @@ public sealed class StormSettings
     /// <summary>Above this height over the ground, metres, the storm is gone (it thins out from half of it).</summary>
     public float Ceiling = 700f;
 
-    private static readonly string[] Keys = ["visibility", "clear", "strength", "cycle", "wind", "color", "ceiling"];
+    /// <summary>
+    /// How dark it is under the storm, 0 (the day's own light) to 1: a polar dusk, the sun all but gone and what light
+    /// is left blue, so lamps and lit windows carry the colour. It lifts with the storm above <see cref="Ceiling"/>.
+    /// </summary>
+    public float Dusk;
+
+    private static readonly string[] Keys = ["visibility", "clear", "strength", "cycle", "wind", "color", "ceiling", "dusk"];
 
     public StormSettings Clone() => (StormSettings)MemberwiseClone();
 
@@ -82,6 +88,9 @@ public sealed class StormSettings
                 case "wind":
                     s.Wind = v is >= 0 and <= 60 ? (float)v : throw new MapFileException($"{where}: \"wind\" is 0 to 60 m/s, got {v}");
                     break;
+                case "dusk":
+                    s.Dusk = v is >= 0 and <= 1 ? (float)v : throw new MapFileException($"{where}: \"dusk\" is 0 to 1, got {v}");
+                    break;
                 case "ceiling":
                     s.Ceiling = v is >= 20 and <= 20000 ? (float)v : throw new MapFileException($"{where}: \"ceiling\" is 20 to 20000 m, got {v}");
                     break;
@@ -104,6 +113,7 @@ public sealed class StormSettings
         if (Wind != d.Wind) parts.Add($"\"wind\": {N(Wind)}");
         if (Color != d.Color) parts.Add($"\"color\": [{N(Color.X)}, {N(Color.Y)}, {N(Color.Z)}]");
         if (Ceiling != d.Ceiling) parts.Add($"\"ceiling\": {N(Ceiling)}");
+        if (Dusk != d.Dusk) parts.Add($"\"dusk\": {N(Dusk)}");
         return parts.Count == 0 ? "true" : "{ " + string.Join(", ", parts) + " }";
     }
 

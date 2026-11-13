@@ -38,6 +38,17 @@ public static class ColdStorm
     /// <summary>How far you see now, metres (the fog's end).</summary>
     public static float Visibility { get; private set; } = 1000f;
 
+    /// <summary>
+    /// How dark the storm's dusk is here, 0 to 1 (<see cref="StormSettings.Dusk"/>, lifting with the height over the ground),
+    /// in steps of 1/40 so the light is re-sent only when it changes. Lamps reach further by it (<see cref="ConstructLamps.Dark"/>).
+    /// </summary>
+    public static float Dusk { get; private set; }
+
+    /// <summary>What a full dusk leaves of the light, by colour: little, and blue.</summary>
+    public static readonly Vector3 DuskTint = new(0.26f, 0.33f, 0.50f);
+
+    private static Vector3 DuskDim => Vector3.Lerp(Vector3.One, DuskTint, Dusk);
+
     /// <summary>The whiteout's colour now: the storm's colour in this light.</summary>
     public static Vector3 Color { get; private set; }
 
@@ -56,7 +67,7 @@ public static class ColdStorm
     {
         Settings = null;
         _map = null;
-        Level = Gust = Frost = 0f;
+        Level = Gust = Frost = Dusk = 0f;
         Outside = _openTarget = 1f;
         Visibility = 1000f;
         Wind = Vector3.Zero;
@@ -91,6 +102,7 @@ public static class ColdStorm
         var low = 1f - Smooth(s.Ceiling * 0.5f, s.Ceiling, height);
         var level = storm * low;
         Level = level;
+        Dusk = MathF.Round(s.Dusk * low * 40f) / 40f;
         Gust = (float)Math.Clamp(0.5 + 0.35 * Math.Sin(_clock * 0.83) * Math.Sin(_clock * 0.31 + 2.0) + 0.15 * Math.Sin(_clock * 2.3 + 0.7), 0, 1);
 
         // The wind along the ground: a heading that wanders slowly round a prevailing one, harder in gusts.
@@ -127,7 +139,7 @@ public static class ColdStorm
         // The whiteout's colour: the storm's colour in this light (dark at night, warm under a low sun).
         var sunUp = MathF.Max(Vector3.Dot(light.SunDir, up), 0f);
         var lum = (light.AmbSky.X + light.AmbSky.Y + light.AmbSky.Z) / 3f * 0.9f + (light.SunColor.X + light.SunColor.Y + light.SunColor.Z) / 3f * MathF.Sqrt(sunUp) * 0.7f;
-        Color = s.Color * Math.Clamp(lum, 0.05f, 1.05f);
+        Color = s.Color * Math.Clamp(lum, 0.05f, 1.05f) * DuskDim;
     }
 
     /// <summary>How open the sky is over <paramref name="eye"/>, 0 to 1: rays straight up and leaning four ways.</summary>
@@ -174,18 +186,19 @@ public static class ColdStorm
             return light;
         var k = MathF.Round(Level * 40f) / 40f;
         var c = new Vector3(MathF.Round(Color.X * 64f), MathF.Round(Color.Y * 64f), MathF.Round(Color.Z * 64f)) / 64f;
-        var sun = light.SunColor * (1f - 0.7f * k);
-        var spread = light.SunColor * (0.35f * k); // (what the cloud takes from the sun comes back as light from all round)
+        var dim = DuskDim; // (a dusk under the storm: the sun all but gone, the rest of the light little and blue)
+        var sun = light.SunColor * ((1f - 0.7f * k) * (1f - 0.85f * Dusk));
+        var spread = light.SunColor * dim * (0.35f * k); // (what the cloud takes from the sun comes back as light from all round)
         return light with
         {
             SunColor = sun,
-            AmbSky = Vector3.Lerp(light.AmbSky, c * 1.1f, 0.55f * k) + spread,
-            AmbGround = Vector3.Lerp(light.AmbGround, c * 0.9f, 0.55f * k) + spread * 0.8f,
+            AmbSky = Vector3.Lerp(light.AmbSky * dim, c * 1.1f, 0.55f * k) + spread,
+            AmbGround = Vector3.Lerp(light.AmbGround * dim, c * 0.9f, 0.55f * k) + spread * 0.8f,
             FogMax = light.FogMax + (1f - light.FogMax) * MathF.Min(k * 3f, 1f),
             SkyFog = light.SkyFog && k < 0.15f,
-            Zenith = Vector3.Lerp(light.Zenith, c, k),
-            Horizon = Vector3.Lerp(light.Horizon, c, k),
-            Ground = Vector3.Lerp(light.Ground, c, k),
+            Zenith = Vector3.Lerp(light.Zenith * dim, c, k),
+            Horizon = Vector3.Lerp(light.Horizon * dim, c, k),
+            Ground = Vector3.Lerp(light.Ground * dim, c, k),
             Haze = light.Haze * (1f - k),
         };
     }

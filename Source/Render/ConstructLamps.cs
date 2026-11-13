@@ -14,6 +14,19 @@ public static class ConstructLamps
     /// <summary>How far from the eye a lamp is lit, and how far its light reaches.</summary>
     public const float Reach = 16f, Range = 4.5f, Strength = 1.1f;
 
+    /// <summary>
+    /// In the dark (a storm's dusk: <see cref="ColdStorm.Dusk"/>) lamps are lit from further off and throw their light further
+    /// and harder: pools of light on the ground. The same few lights as by day (<see cref="LightGrid.MaxDynamic"/>), so a
+    /// pixel costs what it did; only their numbers change.
+    /// </summary>
+    public const float DarkReach = 60f, DarkRange = 10f, DarkStrength = 1.1f;
+
+    /// <summary>A plain lamp's light in the dark: the orange of an old sodium lamp, against the dusk's blue.</summary>
+    public static readonly Vector3 DarkColour = new(1f, 0.74f, 0.36f);
+
+    /// <summary>How dark the scene is, 0 (day, or under a roof, where a lamp a metre from a wall would burn it white: the plain reach and range) to 1 (set each frame by the storm's glue, Program.Storm.cs).</summary>
+    public static float Dark;
+
     private const int Most = LightGrid.MaxDynamic + 1;
     private static readonly float[] BestD = new float[Most];
     private static readonly Vector3[] BestPos = new Vector3[Most], BestCol = new Vector3[Most];
@@ -29,6 +42,8 @@ public static class ConstructLamps
             return;
         var keep = Math.Min(free + 1, Most);
         var n = 0;
+        var dark = Math.Clamp(Dark, 0f, 1f);
+        float reach = Reach + (DarkReach - Reach) * dark, range = Range + (DarkRange - Range) * dark, strength = Strength + (DarkStrength - Strength) * dark;
         foreach (var c in world.Bodies)
         {
             if (c.SpaceAway != 0)
@@ -38,7 +53,7 @@ public static class ConstructLamps
             if (c.LampParts.Length == 0)
                 continue;
             var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
-            if (Vector3.DistanceSquared(pos, eye) > (Reach + 30f) * (Reach + 30f))
+            if (Vector3.DistanceSquared(pos, eye) > (reach + 30f) * (reach + 30f))
                 continue; // (a body's parts are within 30 m of its origin)
             var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
             foreach (var i in c.LampParts)
@@ -50,36 +65,36 @@ public static class ConstructLamps
                 if (d.Logic == CLogic.Lamp)
                 {
                     if (d.Mains ? MainsLit(c, i) : p.Out >= 0.5f)
-                        Offer(c, i, (d.BoundsMin + d.BoundsMax) * 0.5f, new Vector3(1f, 0.93f, 0.6f), pos, rot, eye, keep, ref n);
+                        Offer(c, i, (d.BoundsMin + d.BoundsMax) * 0.5f, Vector3.Lerp(new Vector3(1f, 0.93f, 0.6f), DarkColour, dark), pos, rot, eye, keep, reach, ref n);
                     continue;
                 }
                 foreach (var (at, colour) in d.Lamps)
-                    Offer(c, i, at, colour, pos, rot, eye, keep, ref n);
+                    Offer(c, i, at, colour, pos, rot, eye, keep, reach, ref n);
             }
         }
         LastNear = n;
         var lit = Math.Min(n, free);
         for (var k = 0; k < lit; k++)
         {
-            var fade = Math.Clamp((Reach - BestD[k]) / 3f, 0f, 1f);
+            var fade = Math.Clamp((reach - BestD[k]) / 3f, 0f, 1f);
             if (n > free)
                 fade *= Math.Clamp((BestD[free] - BestD[k]) / 1.5f, 0f, 1f); // (the next one left out: a lamp handing over dims rather than pops)
             if (fade > 0.01f)
             {
-                LightGrid.AddDynamic(BestPos[k], BestCol[k] * (Strength * fade), Range);
+                LightGrid.AddDynamic(BestPos[k], BestCol[k] * (strength * fade), range);
                 LastLit++;
             }
         }
     }
 
     /// <summary>A lamp at <paramref name="local"/> on part i: kept among the nearest <paramref name="keep"/> (sorted by distance).</summary>
-    private static void Offer(Construct c, int i, Vector3 local, Vector3 colour, Vector3 pos, Quaternion rot, Vector3 eye, int keep, ref int n)
+    private static void Offer(Construct c, int i, Vector3 local, Vector3 colour, Vector3 pos, Quaternion rot, Vector3 eye, int keep, float reach, ref int n)
     {
         ref var p = ref c.Parts[i];
         var rest = p.Pos + Rot24.Apply(p.Rot, local);
         var world = c.FrameOf(p.Seg) == 0 ? pos + Vector3.Transform(rest, rot) : c.SegToWorld(p.Seg, rest);
         var dist = Vector3.Distance(world, eye);
-        if (dist > Reach)
+        if (dist > reach)
             return;
         var at = Math.Min(n, keep);
         while (at > 0 && BestD[at - 1] > dist)
