@@ -961,7 +961,14 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   under headings the stuck Routers with the piece and reason, each open terminal order with its state (where it is held up in amber)
   and its chain lines (maker, or why nobody makes it), the machines with their state and head order, the stores with fill and keep,
   the Routers with their last piece and settings. A long list moves on by itself. Either peer, from what it already holds; names
-  of pieces cached once a kind. **Not yet:** the map of design 9.2 (`PanelDraw.Map`): a large panel shows the list.
+  of pieces cached once a kind. **The plan map (phase 4b, `ConstructLogisticsMap.cs`, `PanelDraw.Map`):** 15 rows up on a panel
+  0.8 m wide or more, the board is a plan from above (the two axes the network is widest on) between the title and a two-line
+  caption (the stuck spot or `All moving`; the counts): conveyors as lines (cut: red dashes), machines as squares in their lamp colour
+  with a two-letter tag, stores as boxes with a fill bar, Routers diamonds, Splitters triangles, Joins dots, pieces as dots (orange an
+  order's, white storage's, red stuck), a red ring blinking round the first stuck Router. A `NetPlan` per body and network keeps the
+  lines and nodes until the links change; dots, states and fills are made at each fill (nothing allocated). Not yet: keep-mark ticks,
+  the Router's chosen-way stub, dots gliding between fills. The Production Showcase's NETWORK BOARD (a Medium Text Sign in the
+  back aisle at x 44) shows it; the window tool's `panel Conveyor Router` prints the plan's counts.
 - **The Router's screen (phase 4, `RouterScreen.cs`, panel source `router`):** a low dark plate on each side face's frame, under
   the side ports' conveyor beds (no post: Q6). Lines: what it is doing (sent, STUCK, waiting, no power), its last piece and way and
   whether to an order or storage, the destination or the stuck reason, its settings. Buttons **Spill** (steps `routerSpill`) and

@@ -127,6 +127,45 @@ public static partial class Program
                 WsFail($"logi cut: no way {way} out of \"{rest}\"");
                 return;
             }
+            case "feed" when g.IsServer: // "logi feed N [NAME]": N pieces (Gear Set) with no order put on the conveyors into a Router, one at a time as room comes
+            {
+                var fb = rest.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                var left = fb.Length > 0 && int.TryParse(fb[0], out var fn) ? fn : 1;
+                var piece = ConstructParts.Find(fb.Length > 1 ? fb[1] : "Gear Set");
+                if (piece == null)
+                {
+                    WsFail($"logi feed: no part \"{fb[1]}\"");
+                    return;
+                }
+                for (var k = 0; k < c.RouteCount && left > 0; k++)
+                    if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].To < c.PartCount && c.DefOf(c.Routes[k].To).IsRouter
+                        && ConstructConveyor.PutMade(w, c, k, piece, 1, out var fwhy) && fwhy == ExtrudeStall.None)
+                        left--;
+                if (left > 0 && ++_wsSpawnTries < 300)
+                {
+                    _wsQueue.EnqueueFront($"logi feed {left} {piece.Name}");
+                    _wsWait = 30;
+                    return;
+                }
+                _wsSpawnTries = 0;
+                WsSay($"[logi] feed: {(left > 0 ? $"{left} not put (no room)" : "all put")}; {c.ConveyedCount} riding");
+                return;
+            }
+            case "mend" when g.IsServer: // "logi mend PART WAY": a cut way repaired whole, as the repair tool leaves it
+            {
+                var cut = rest.LastIndexOf(' ');
+                var (fc, part) = LogiFind(g, cut > 0 ? rest[..cut] : rest);
+                var way = cut > 0 && int.TryParse(rest[(cut + 1)..], out var wn) ? wn : 1;
+                for (var k = 0; fc != null && k < fc.RouteCount; k++)
+                    if (fc.Routes[k].Type == RouteType.Conveyor && fc.Routes[k].From == part && ConstructLogistics.WayOf(fc, k) == way)
+                    {
+                        var ok = ConstructRoutes.Repair(w, fc, k);
+                        WsSay($"[logi] mend conveyor {k} (way {way} of {fc.DefOf(part).Name}#{part}): {(ok ? "repaired" : "nothing to repair")}");
+                        return;
+                    }
+                WsFail($"logi mend: no way {way} out of \"{rest}\"");
+                return;
+            }
             case "fill" when g.IsServer:
             {
                 var fb = rest.Split('|'); // ("PART|NAME|N": at most N)

@@ -50,3 +50,54 @@ already holds, and the Router's settings ride with the body as every setting doe
 ## Left for the next phase
 `PanelDraw.Map` (layout, conveyors, machines, stores, pieces as dots, the stuck ring, caption); a NETWORK BOARD sign on the
 showcase wired to its Router; the client's button press; a scratch layout for `routerSpill`/`routerHold` and verification items 6 and 7.
+
+## Phase 4b (2026-11-13, branch `claude/smart-logistics-4b-71acf2`, no protocol change)
+
+**1. A joined client's press on the Router's buttons: lands; nothing in the game needed changing.** The phase 4 failure was the window
+tool: a joined client can't fly itself (the host owns its position and snaps a teleport back), so its `touch` pressed from its spawn
+300 m away. Now a client's `touch` presses from where it stands when that is in reach and in front, else fails saying the host must
+`bring` it first; `bring` stands a player 1 m from a low screen (in a finger's reach); `touch` prints the ray (`touch ray: button
+1.88 m, ground or wall 2.34 m, hit Conveyor Router ... panel 0 button 1`). Host and client (`--net host:28417` / `join:127.0.0.1:28417`,
+spawn 120,0,-100): standing 1 m off the side face, eye 1.95 m, the ray meets the Router's button at 1.9 m, the ground only at 2.3 m.
+The host logged both presses done and the screens read `Spill: Ahead`, `Hold: On` on both peers (3 runs of 4; the first, before
+a log line was added, sent nothing that changed, and it wasn't seen again). Not tried: crouching (a lower eye meets the face at a flatter
+angle, so the ground is no nearer), and a conveyor on that side (its bed hangs over the plate: use the other side's screen, as designed).
+Tool note: a window run's `wait N` counts frames, which run well over 60 a second, so a host waiting for a client needs thousands.
+
+**2. The Router settings at run time: both behave as `StockTargets.cs` says.** New window-tool verbs: `logi feed N [NAME]` puts pieces
+with no order onto the conveyors into a Router (the showcase's own lines stall before the Router), `logi mend PART WAY` repairs a cut
+way. On the showcase (its Router has way 1 to the Piece Rack and way 3 to the Crafting Terminal, no way 2):
+- `routerSpill` 3: an unordered Gear Set left by way 3; back on Auto the next went by way 1 to the rack.
+- `logi order L Bracket 1`, `routerHold` 1, way 3 cut, an L Bracket fed: it took order 1 at its source, waited at the Router marked
+  stuck (`no way to it: a conveyor on the way is cut or missing`), alarm 1, the Router's screen `STUCK / Holds L Bracket`; mended, it
+  went on by way 3 with its order. (A piece takes some seconds to reach the Router's end of its input: look after that.)
+- Seen, not changed: a piece pinned down a spill way keeps its storage destination (the Piece Rack) though that way leads to the
+  terminal; it hadn't reached the end of the 11.5 m lane in the run, so what the terminal does with it is not seen. A held piece's reason
+  stays in its flags after it goes on (the rider note doesn't show it).
+
+**3. A Panel Former's sheet sized to the panel: not done (time).** What it needs: `FormerInputs` gets the world, body and network
+(its caller `Need` has them); the key is a solid section the panel's width (5 cm steps), 10 cm thick, cut so one piece holds the panel's
+units (`HullLoft.FormedUnits`) with less than a 5 cm step to spare (units per cm from one def, so only one new extrusion def per panel
+size); if no Extruder on the network takes it (`WorkOrders.Refusal`: `ExtMaxSection`, the welded die, `ExtMaxLength`), the width
+halves down to what one takes and the count goes up; if none takes any, the chain line says the Extruder's refusal, as now.
+
+**4. The plan map: built after the user's answer below** (`ConstructLogisticsMap.cs` `NetPlan`, `PanelRender.MapPlot`, `PanelDraw.Map`
+at the end of the enum; production.md "The plan map"). A board of 15 rows up on a panel 0.8 m wide or more draws the map; smaller
+ones keep the list. Tried on the showcase (L Bracket order, Hold on, way 3 cut, three pieces fed): the plan read 14 conveyors (1 cut),
+5 machines, 2 stores, the terminal, the Router, a splitter and 3 joins, the Router ringed; in the real window the new sign showed the
+lines, the tagged squares, the store boxes, the red dashed cut way, white dots and the blinking ring, with `STUCK at Router 1: L Bracket
+- no way to it ...` and `3 moving  1 order  storage 0%` under it. Not built: keep-mark ticks on stores, the Router's chosen-way stub,
+dots gliding between fills (they step at each fill), a 1,024-quad cap on the static layer (lines are capped, nodes and dots are not).
+Not measured: the fill's cost on a big network (one pass over the riders and the network's nodes, in view only).
+
+**5. A NETWORK BOARD sign on the Showcase: done** (generator `NetworkBoard`): a Medium Text Sign (4 x 2 m, 16 rows) on an Adapter
+Medium to Small on a Frame Beam in the back aisle at x 44.25, wired from the Router's Data out along the aisle edge (z -8.55).
+`--gen-parts production_showcase` rewrote the blueprint; `--check-construct-parts` and `--gen-parts all --check` pass.
+
+**6. Verification items 6 and 7: not done (time).** **Router names** (the user's answer below): not built; left for the next phase.
+
+No self-test sections run. No protocol change: the map is each viewer's own, from what its peer already holds.
+
+**The user's answers (2026-11-13), after phase 4b:** (question 2) the plan map **is wanted**: on big signs, the list staying on small
+ones. (Question 3) a Router **takes a name** the player sets with the sign tool's text; an unnamed one keeps its number, and the board
+and the order lines use the name ("held at North Gate").
