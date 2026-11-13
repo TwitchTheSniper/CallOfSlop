@@ -2322,6 +2322,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.Depot when !IsServer && r.Has(14):
                 ReadDepot(ref r); // the Orbital Depot's steps (GameDepot.cs)
                 break;
+            case (byte)Msg.Objective when !IsServer && r.Has(5):
+                ReadObjective(ref r); // the "what next" goal (GameObjectives.cs)
+                break;
             case (byte)Msg.ColonyAlarm when !IsServer:
                 ReadColonyAlarm(ref r); // the penal colony's alarm (GameColonyLockdown.cs)
                 break;

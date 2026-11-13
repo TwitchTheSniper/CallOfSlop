@@ -116,6 +116,7 @@ public enum Msg : byte
     StandIn, // STAND-IN: server -> all, Sandbox story: a placeholder craft's script (u16 id, u8 kind, u8 flags, u32 start tick, u16 in, u16 wait, u16 out ticks, vec land, vec way, vec from, 3 x u8 tint) when it changes (reliable ordered), and every craft again every 3 s (unreliable) for anyone who joined (Source/StandIns/GameStandIns.cs, protocol 233; from and tint 240)
     Quarry, // server -> one client, Sandbox story: their place on the first Ministry duty (u8 state, u8 has a target, vec target, u32 the tick they boarded the crew bus (0: not riding), u16 bus leaving, u16 bus arriving) when it changes (reliable ordered; GameQuarry.cs, protocol 236)
     TalkTopics, // server -> one client, Sandbox story: the topics the person they talk to offers in their talk panel (u8 the body's player, u8 n, n u16: the topic's index in Story/Topics, top bit asked before) when they change (reliable ordered; GameStoryTopics.cs, protocol 239)
+    Objective, // server -> one client, Sandbox story: their "what next" goal (u8 the goal's index in Story/Objectives.json, 255 none; i16 have, i16 need as u16) when it changes (reliable ordered; GameObjectives.cs, protocol 273)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

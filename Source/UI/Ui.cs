@@ -238,6 +238,7 @@ public sealed partial class Ui : IDisposable
             DrawTutorial(game, pos, size, settings); // the warden's induction, top left (UiTutorial.cs)
             DrawQuarry(game, pos, size, settings); // the first Ministry duty, the quarry, once the induction is over (UiQuarry.cs)
             DrawDepot(game, pos, size, settings); // the Orbital Depot's steps, there once the quarry is done (UiDepot.cs)
+            DrawObjective(game, pos, size, settings); // the "what next" goal, there when none of those is (UiObjectives.cs)
         }
 
         // ---- Top-left: session info -------------------------------------------------
