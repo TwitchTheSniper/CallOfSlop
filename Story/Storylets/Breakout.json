@@ -13,7 +13,9 @@
     { "name": "Grassed", "kind": "menace", "max": 1, "about": "told the Sergeant about the break-out" },
     { "name": "Escaped", "kind": "progress", "max": 1, "about": "a player who left the colony in the hauler (Game/GameBreakout.cs sets it)" },
     { "name": "Fled", "kind": "progress", "max": 1, "about": "a convict who left the colony with them (Game/GameBreakout.cs sets it)" },
-    { "name": "Stormed", "kind": "progress", "max": 1, "about": "an escapee who was there when the spaceport's last guard went down (Game/GameBreakoutFight.cs)" }
+    { "name": "Stormed", "kind": "progress", "max": 1, "about": "an escapee who was there when the spaceport's last guard went down (Game/GameBreakoutFight.cs)" },
+    { "name": "Aboard", "kind": "progress", "max": 1, "about": "a convict riding in the Ministry Courier (Game/GameBreakoutShip.cs)" },
+    { "name": "Free", "kind": "progress", "max": 1, "about": "away from the spaceport in the courier: the break-out done (Game/GameBreakoutShip.cs)" }
   ],
   "storylets": [
     {

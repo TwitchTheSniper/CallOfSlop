@@ -18,14 +18,20 @@ public sealed partial class Ui
         if (!game.SandboxOn || PauseOpen || MenuOpen || game.QuarryRiding || game.TutorialCurrent != null)
             return;
         var stage = game.BreakoutLocal;
-        if (stage == Game.BreakoutNone || stage == Game.BreakoutSpaceport && Brutal.GlfwApi.Glfw.Time - game.BreakoutChangedAt > 60)
-            return; // (at the spaceport the words stay a minute; the marker stays while there's somewhere to go)
+        var since = Brutal.GlfwApi.Glfw.Time - game.BreakoutChangedAt;
+        if (stage == Game.BreakoutNone || stage == Game.BreakoutSpaceport && since > 60 || stage == Game.BreakoutAway && since > 30)
+            return; // (at the spaceport the words stay a minute, away half a minute; the marker stays while there's somewhere to go)
         var script = BreakoutScript.Current;
         if (stage != _bkFilled)
         {
             _bkFilled = stage;
             _bkMetres = -1;
-            (_bkTitle, _bkText) = stage == Game.BreakoutMuster ? (script.MusterTitle, script.MusterText) : (script.SpaceportTitle, script.SpaceportText);
+            (_bkTitle, _bkText) = stage switch
+            {
+                Game.BreakoutMuster => (script.MusterTitle, script.MusterText),
+                Game.BreakoutAway => (script.Ship.Title, script.Ship.Text),
+                _ => (script.SpaceportTitle, script.SpaceportText),
+            };
         }
         if (_bkTitle.Length == 0)
             return;

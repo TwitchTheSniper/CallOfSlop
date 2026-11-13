@@ -130,9 +130,14 @@ public sealed partial class Game
             }
             if (!p.Alive)
                 continue; // (lying there: the spawns tick takes it away, GameSandboxSpawns.cs)
+            // Empty hands (the sidearm stays away) until they fight: Karl's convicts were walking round the colony pistol in hand.
+            ref var hand = ref SandboxHands.Hand(p.Id);
+            var tool = b.Fight == StoryFighting || BreakoutCrewArmed(b.Entity) ? ConstructTool.None : ConstructTool.Hands;
+            if (hand.Tool != tool && !hand.Seated)
+                hand.Tool = tool;
             var leaving = StoryLeaving(s, a, place);
             b.Leaving = leaving;
-            var gone = !on || a.Dead || !(ag.Where(a.Entity) == place || StoryArriving(s, a, place, clock) || leaving);
+            var gone = !on || a.Dead || !(ag.Where(a.Entity) == place || StoryArriving(s, a, place, clock) || leaving) || BreakoutAboard(a.Entity);
             if (!gone && leaving && Flat2(p.Position - StoryRoadEnd(s, ref b, a.Doing.Place)) < 3f * 3f)
                 gone = StandInMayBoard(a.Entity); // (at the road's end: off they go; STAND-IN: once their craft has landed, Source/StandIns)
             if (gone)
@@ -157,8 +162,8 @@ public sealed partial class Game
         if (on && _bodyCount < StoryBodiesMax && place >= 0)
             foreach (var a in ag.All)
             {
-                if (a.Dead || StoryBodyIndexOf(a.Entity) >= 0)
-                    continue;
+                if (a.Dead || StoryBodyIndexOf(a.Entity) >= 0 || BreakoutAboard(a.Entity))
+                    continue; // (riding in the courier: GameBreakoutShip.cs)
                 var here = ag.Where(a.Entity) == place;
                 var arriving = !here && StoryArriving(s, a, place, clock);
                 if (!here && !arriving)
