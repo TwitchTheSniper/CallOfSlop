@@ -176,7 +176,7 @@ public sealed unsafe partial class CityRenderer
     // The train: one car's mesh in the city's vertex format, drawn with the city's program turned by uRot.
     private GlVertexArray _carVao;
     private GlBuffer _carVbo, _carIbo;
-    private int _carIndices, _locRot, _metroFirst, _metroIndices;
+    private int _carIndices, _locRot, _metroFirst, _metroIndices, _taxiFirst, _taxiIndices;
 
     /// <summary>People and trains drawn in the last frame.</summary>
     public int DrawnPeople, DrawnCars;
@@ -249,8 +249,14 @@ public sealed unsafe partial class CityRenderer
         // The car.
         var (cv, ci) = CarMesh(0);
         var (mv, mi) = CarMesh(1);
+        var (tv, ti) = TaxiMesh();
+        mv = [.. mv, .. tv];
+        _taxiFirst = mi.Length;
+        mi = [.. mi, .. ti.Select(i => i + (uint)(mv.Length - tv.Length))];
+        _taxiIndices = ti.Length;
         _metroFirst = ci.Length;
-        _metroIndices = mi.Length;
+        _metroIndices = _taxiFirst;
+        _taxiFirst += _metroFirst;
         var baseV = (uint)cv.Length;
         cv = [.. cv, .. mv];
         ci = [.. ci, .. mi.Select(i => i + baseV)];
@@ -302,6 +308,7 @@ public sealed unsafe partial class CityRenderer
         var origin = gfx.Origin;
         DrawTrains(plan, life, clock, origin);
         DrawMetroTrains(plan, life, clock, origin);
+        DrawTaxis(plan, life, clock, origin);
         // People: the walkers of the near chunks straight from their buffer, then the stations' people posed here.
         PoseStations(plan, life, clock, cam);
         PoseMetro(plan, life, clock, cam);
@@ -445,6 +452,61 @@ public sealed unsafe partial class CityRenderer
         }
         float* id = stackalloc float[9] { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
         Native.glUniformMatrix3fv(_locRot, 1, false, id);
+    }
+
+    private void DrawTaxis(CityPlan plan, CityLife life, double clock, Vector3 origin)
+    {
+        if (life.Taxis == 0)
+            return;
+        _carVao.Bind();
+        for (var k = 0; k < life.Taxis; k++)
+        {
+            var (p, h, d) = life.Taxi(clock, k);
+            Car(plan.Ground(p + d * 1.5f, h), plan.Ground(p - d * 1.5f, h), plan, origin, _taxiFirst, _taxiIndices);
+        }
+        float* id = stackalloc float[9] { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
+        Native.glUniformMatrix3fv(_locRot, 1, false, id);
+    }
+
+    /// <summary>An air taxi (x along, y up, z to its right; its skids at 0): a yellow body with a band of lit windows, a dark
+    /// canopy, skids, a beacon on top and the red and green lamps on its sides.</summary>
+    private static (CityVertex[] Verts, uint[] Idx) TaxiMesh()
+    {
+        var v = new List<CityVertex>();
+        var ix = new List<uint>();
+        void Box(Vector3 lo, Vector3 hi, uint col, uint par)
+        {
+            Vector3 c = (lo + hi) * 0.5f, h = (hi - lo) * 0.5f;
+            Span<Vector3> n = [Vector3.UnitX, -Vector3.UnitX, Vector3.UnitY, -Vector3.UnitY, Vector3.UnitZ, -Vector3.UnitZ];
+            foreach (var nn in n)
+            {
+                var u = MathF.Abs(nn.Y) > 0.5f ? Vector3.UnitX : Vector3.UnitY;
+                var w = Vector3.Cross(nn, u);
+                var first = (uint)v.Count;
+                foreach (var (su, sw) in new[] { (-1f, -1f), (1f, -1f), (1f, 1f), (-1f, 1f) })
+                {
+                    var p = c + (nn + u * su + w * sw) * h;
+                    // (a side face's own metres: along x and up y, so the window band lands where a train's does)
+                    v.Add(new CityVertex { Position = p, Normal = nn, Uv = new Vector2(p.X + 5.0f, p.Y + 1.0f), Color = col, Params = par });
+                }
+                ix.AddRange([first, first + 1, first + 2, first, first + 2, first + 3]);
+            }
+        }
+        uint yellow = CityPlanColours.Rgb(0xe8b020), dark = CityPlanColours.Rgb(0x202326);
+        var metal = CityGeometry.Pack(CityStyle.Metal, 0, 0, 0);
+        Box(new Vector3(-2.6f, 0.5f, -1.1f), new Vector3(2.6f, 1.75f, 1.1f), yellow, CityGeometry.Pack(CityStyle.TrainSide, 2, 0, 0));
+        Box(new Vector3(-1.4f, 1.75f, -0.9f), new Vector3(1.8f, 2.25f, 0.9f), dark, CityGeometry.Pack(CityStyle.TrainEnd, 0, 0, 0));
+        foreach (var sz in new[] { -0.8f, 0.8f })
+        {
+            Box(new Vector3(-2.2f, 0f, sz - 0.06f), new Vector3(2.2f, 0.1f, sz + 0.06f), dark, metal);
+            foreach (var sx in new[] { -1.4f, 1.4f })
+                Box(new Vector3(sx - 0.05f, 0.1f, sz - 0.05f), new Vector3(sx + 0.05f, 0.5f, sz + 0.05f), dark, metal);
+        }
+        Box(new Vector3(-0.15f, 2.25f, -0.15f), new Vector3(0.15f, 2.45f, 0.15f), CityPlanColours.Rgb(0xff3020), CityGeometry.Pack(CityStyle.Beacon, 0, 0, 0));
+        Box(new Vector3(-0.2f, 1.0f, -1.2f), new Vector3(0.2f, 1.2f, -1.1f), CityPlanColours.Rgb(0xff2020), CityGeometry.Pack(CityStyle.Lamp, 0, 0, 0));
+        Box(new Vector3(-0.2f, 1.0f, 1.1f), new Vector3(0.2f, 1.2f, 1.2f), CityPlanColours.Rgb(0x20ff40), CityGeometry.Pack(CityStyle.Lamp, 0, 0, 0));
+        Box(new Vector3(2.6f, 0.8f, -0.6f), new Vector3(2.7f, 1.0f, 0.6f), CityPlanColours.Rgb(0xfff2d0), CityGeometry.Pack(CityStyle.Lamp, 0, 0, 0));
+        return (v.ToArray(), ix.ToArray());
     }
 
     private void PoseMetro(CityPlan plan, CityLife life, double clock, Vector3 cam)

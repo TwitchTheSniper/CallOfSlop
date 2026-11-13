@@ -168,6 +168,10 @@ public sealed unsafe partial class CityRenderer
                 float shelves = 1.0 - 0.55 * step(0.5, fract((fv - 0.75) / 0.7)) * step(fv, 2.6) * step(0.25, fract(fu / 1.7));
                 vec3 room = shopLight * open * shelves;
                 vec3 glass = mix(inside + room, refl, fres * 0.6);
+                // A shut shop has its roller shutter down: ribbed grey steel under the lamps, not a black hole.
+                float rib = 0.82 + 0.18 * step(0.5, fract(fv / 0.12));
+                vec3 shutter = Lit(vec3(0.42, 0.43, 0.45) * rib, n, 0.0, vWorld) + vec3(0.42) * vec3(1.0, 0.72, 0.42) * 0.25 * gOut;
+                glass = mix(shutter, glass, open);
                 col = mix(lightWall * 0.8, glass, win);
                 glow = room * win * 0.6;
                 if (shops)
@@ -306,6 +310,8 @@ public sealed unsafe partial class CityRenderer
                     float armZ = Band(p.y, cz + 0.6, cz + 3.2, fw) * step(p.x, cx - 0.3) * step(fract(vUv.x / 1.1), 0.5);
                     paint = max(armX, armZ);
                 }
+                if (style == 6 && seed == 2u)
+                    paint = 0.0; // (the apron under the city: no markings)
                 paint *= 0.55 + 0.45 * Noise(vUv * 3.1); // worn
                 vec3 albedo = mix(asphalt, paintCol, clamp(paint, 0.0, 1.0));
                 col = Lit(albedo, n, 0.0, vWorld);
@@ -385,7 +391,7 @@ public sealed unsafe partial class CityRenderer
             {
                 float x = vUv.x, y = vUv.y;
                 vec3 paint = seed == 1u ? vec3(0.72, 0.74, 0.77) : vColor;
-                vec3 band = seed == 1u ? vec3(0.1, 0.32, 0.62) : vec3(0.55, 0.1, 0.08);
+                vec3 band = seed == 1u ? vec3(0.1, 0.32, 0.62) : seed == 2u ? vec3(0.08, 0.08, 0.09) : vec3(0.55, 0.1, 0.08);
                 paint = mix(paint, band, Band(y, 0.5, 1.05, fw));
                 paint = mix(paint, band, Band(y, 2.55, 2.68, fw));
                 float door = Band(abs(abs(x) - 4.0), -0.65, 0.65, fw) * Band(y, 0.55, 2.45, fw);
@@ -409,6 +415,57 @@ public sealed unsafe partial class CityRenderer
             {
                 float screen = Band(vUv.y, 1.6, 2.6, fw) * Band(abs(vUv.x), -1.0, 1.05, fw);
                 col = mix(Lit(vColor, n, 0.0, vWorld), vec3(0.03) + Reflection(n, v, vec3(0.8)) * 0.4, screen);
+            }
+            else if (style == 13) // neon: a blade sign's letters, or a lit billboard's picture; both flicker a little
+            {
+                uint h = Hash(uint(abs(vWorld.x) * 0.7) * 73856093u ^ uint(abs(vWorld.z) * 0.7) * 19349663u);
+                float bright = min(min(vColor.r, vColor.g), vColor.b);
+                float t = uTime + float(h & 255u);
+                vec3 lit;
+                if (bright > 0.6 && seed != 3u)
+                {
+                    // A billboard: big blocks of colour (a picture from across the street), a pale frame.
+                    vec2 cell = floor(vUv / vec2(1.6, 1.1));
+                    uint ch = Hash(uint(cell.x + 4096.0) * 7919u + uint(cell.y + 4096.0) * 104729u + h);
+                    vec3 c = vec3(float(ch & 255u), float((ch >> 8) & 255u), float((ch >> 16) & 255u)) / 255.0;
+                    lit = mix(vColor, c, 0.6) * 0.9;
+                }
+                else
+                {
+                    // Letters: strokes on a dark ground, a tube round them.
+                    float strokes = step(0.52, Noise(vUv * vec2(2.2, 1.7) + float(h & 63u)));
+                    float tube = 1.0 - smoothstep(0.0, 0.25, abs(fract(vUv.y / 0.9) - 0.5) - 0.38);
+                    lit = vColor * (strokes * 1.4 + 0.12 + tube * 0.0);
+                    // Now and then a sign stutters: off for a moment.
+                    float stutter = step(0.985, fract(sin(floor(t * 4.0) * 12.9898 + float(h & 1023u)) * 43758.5453));
+                    lit *= 1.0 - stutter * 0.85;
+                    lit *= 0.85 + 0.15 * sin(t * 2.0 + vUv.y);
+                }
+                col = lit;
+                glow = lit * 0.8;
+            }
+            else if (style == 21) // a rooftop pad: a dark deck, its circle and H, lamps blinking round its rim
+            {
+                vec3 up = Up();
+                if (dot(n, up) > 0.8)
+                {
+                    float r = length(vUv);
+                    vec2 a = abs(vUv);
+                    float ring = Band(r, 4.6, 5.0, fw);
+                    float hbar = Band(a.y, -0.3, 0.3, fw) * Band(a.x, -1.4, 1.4, fw);
+                    float hleg = Band(a.x, 1.1, 1.6, fw) * Band(a.y, -2.1, 2.1, fw);
+                    float mark = clamp(ring + hbar + hleg, 0.0, 1.0);
+                    vec3 deck = vColor * (0.85 + 0.2 * Noise(vUv * 1.3));
+                    col = Lit(mix(deck, vec3(0.95, 0.78, 0.2), mark), n, 0.0, vWorld);
+                }
+                else
+                {
+                    float dot1 = Band(abs(fract(vUv.x / 1.6) - 0.5), -0.12, 0.12, fw) * Band(vUv.y - floor(vUv.y), 0.0, 1.0, fw);
+                    float on = 0.4 + 0.6 * step(0.5, fract(uTime * 0.7 - vUv.x / 40.0));
+                    vec3 green = vec3(0.3, 1.0, 0.45) * dot1 * on;
+                    col = Lit(vColor, n, 0.0, vWorld) + green * 1.5;
+                    glow = green;
+                }
             }
             else if (style == 20) // the metro's tiles: small glazed tiles, the line's band, the station's name frieze
             {
@@ -489,8 +546,15 @@ public sealed unsafe partial class CityRenderer
 
     public void Draw(Map map, Renderer gfx, double now, double clock)
     {
+        PlanetRenderer.CityClip = default;
         if (_broken || map.CityGeometry is not { } geo || geo.Chunks.Length == 0)
             return;
+        if (map.City is { } clipPlan)
+        {
+            // (the planetoid's ground under the city's apron is left out: CityGeometry.Apron)
+            PlanetRenderer.CityClip = new Vector4(clipPlan.Up, (float)Math.Cos(geo.Reach / clipPlan.GroundRadius));
+            PlanetRenderer.CityTop = (float)clipPlan.GroundRadius + 0.6f;
+        }
         if (!_ready && !Init())
             return;
         if (geo != _geo)
@@ -538,6 +602,21 @@ public sealed unsafe partial class CityRenderer
         Native.glEnable(GlCapability.CullFace);
         Native.glCullFace(GlFace.Back);
         var origin = gfx.Origin;
+        // The apron first, pushed back in depth: at a distance the depth buffer can't tell 15 cm apart.
+        Native.glEnable(GlCapability.PolygonOffsetFill);
+        Native.glPolygonOffset(4f, 64f);
+        for (var k = 0; k < n; k++)
+        {
+            ref readonly var c = ref geo.Chunks[_order[k]];
+            if (c.Under == 0)
+                continue;
+            var rel = c.Origin - origin;
+            Native.glUniform3f(_locChunkRel, rel.X, rel.Y, rel.Z);
+            Native.glUniform3f(_locChunkWorld, c.Origin.X, c.Origin.Y, c.Origin.Z);
+            Native.glDrawElements(GL_TRIANGLES, c.Under, GL_UNSIGNED_INT, (void*)((nint)c.UnderFirst * sizeof(uint)));
+        }
+        Native.glPolygonOffset(0f, 0f);
+        Native.glDisable(GlCapability.PolygonOffsetFill);
         for (var k = 0; k < n; k++)
         {
             ref readonly var c = ref geo.Chunks[_order[k]];
