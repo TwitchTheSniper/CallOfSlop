@@ -13,7 +13,8 @@
         "At the present rate the outer system is inside it in eleven years. The inner four follow within the decade.",
         "I have sent this to all five councils with one line added: nobody solves this alone. We each hold a piece. Bring yours."
       ],
-      "hint": "What were the five systems afraid of?" },
+      "hint": "What were the five systems afraid of?",
+      "leads": [ "Ambrose's lottery ticket" ] },
     { "id": "frag.fold", "title": "The Fold",
       "kind": "Design note, attached to a drawing nobody can open any more.",
       "text": [
@@ -40,7 +41,8 @@
         "Item four. It is resolved that no one should have to carry this who did not choose to. Records to be withdrawn. The observatories to be given other work.",
         "One delegate asked that her objection be minuted. It is minuted."
       ],
-      "hint": "Why was it never put back?" },
+      "hint": "Why was it never put back?",
+      "leads": [ "Wren's room with five chairs" ] },
     { "id": "frag.switch", "title": "How to Work the Machine",
       "kind": "Maintenance sheet, laminated, bolted to a wall.",
       "text": [
