@@ -1,0 +1,57 @@
+{
+  // The "what next" line (docs/story/OBJECTIVES.md; Game/GameObjectives.cs, UI/UiObjectives.cs): once the induction and the
+  // first duty are over, the HUD shows the first goal here a story player hasn't met. Each is judged from the game's state:
+  //   standing  the faction's standing with them (or their group) has reached "tier" ({have} and {need} in the text)
+  //   depot     the Orbital Depot's run is done (the robot shells and the lander; no depot in the world: met)
+  //   ship      they own a craft with thrusters and a driving seat (not the lander the depot lent them)
+  //   space     they have been out past the sky's edge in a craft
+  //   landing   they have stood on another planetoid
+  //   shell     they own a Shell Control Chair and a Robot Shell
+  // "text" is the line under the title; "memo" shows for its first seconds (under "voice"), "hint" from "hintAfter" seconds.
+  // {Action} names in text and hint show as the player's own key. Player text is ASCII.
+  "format": "call-of-slop-objectives/1",
+  "voice": "MINISTRY MEMO",
+  "hintAfter": 45,
+  "goals": [
+    { "id": "trusty", "kind": "standing", "faction": "Ministry of Slop", "tier": "Trusty",
+      "title": "Make Trusty",
+      "text": "Earn the Ministry's trust. Standing {have} of {need}.",
+      "memo": "Trusties are issued an Explosives Licence and a marginally better chair.",
+      "hint": "The Faction window ({FactionWindow}) lists the Ministry's jobs and what each pays in standing. Breaking rocks is always hiring." },
+    { "id": "posting", "kind": "depot",
+      "title": "Earn a remote posting",
+      "text": "The Remote Works takes trusted inmates only. Do the work and wait to be noticed.",
+      "memo": "Remote labour is a privilege. Privileges are rationed.",
+      "hint": "Rank comes to those who finish their duties and keep their noses clean. The Warden makes the offers." },
+    { "id": "ship", "kind": "ship",
+      "title": "Build a craft of your own",
+      "text": "Thrusters, a seat and a Driving Module to link them. The depot's lander was a loan.",
+      "memo": "Privately built spacecraft are to be registered within thirty days of leaving the ground. The form is in the post.",
+      "hint": "Have a look over the depot's lander first: jets, fuel tanks, a seat and its Driving Module. Copy the idea, not the paintwork." },
+    { "id": "space", "kind": "space",
+      "title": "Leave the planetoid",
+      "text": "Fly up past the edge of the sky.",
+      "memo": "Inmates leaving the atmosphere must carry form EX-1 (Exit, Temporary). Nobody has ever seen form EX-2.",
+      "hint": "Climb until the sky gives out. Take more fuel than you think; the Ministry will not be sending a tow." },
+    { "id": "landing", "kind": "landing",
+      "title": "Set foot somewhere else",
+      "text": "Land on another planetoid and step outside.",
+      "memo": "The Ministry has jurisdiction over every planetoid it has a form for. It has a form for all of them.",
+      "hint": "Point the nose at another world and come down gently. Gently is the important part." },
+    { "id": "shell", "kind": "shell",
+      "title": "Build a spare body",
+      "text": "A Shell Control Chair and a Robot Shell of your own. A shell can be lost; you can't, much.",
+      "memo": "Staff are reminded that death does not excuse them from duty. Neither does being a robot.",
+      "hint": "An Assembler makes both from steel, copper, rubber and Circuit Boards. Sit in the chair to wake in the shell." },
+    { "id": "contractor", "kind": "standing", "faction": "Ministry of Slop", "tier": "Contractor",
+      "title": "Make Contractor",
+      "text": "Standing {have} of {need} with the Ministry.",
+      "memo": "Contractors are trusted with the Atomic Licence and the Heavy Lifting Permit. Not with the stationery cupboard.",
+      "hint": "Trusty and Contractor jobs pay better. The Faction window ({FactionWindow}) shows which are open to you." },
+    { "id": "crown", "kind": "standing", "faction": "Ministry of Slop", "tier": "Crown Servant",
+      "title": "Become a Crown Servant",
+      "text": "Standing {have} of {need} with the Ministry.",
+      "memo": "The Ministry's last word is reserved for its most loyal servants, and is very loud.",
+      "hint": "Keep working for the Ministry. Nobody has ever been promoted for asking how much further." }
+  ]
+}

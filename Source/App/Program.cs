@@ -309,6 +309,8 @@ public static unsafe partial class Program
             return LookReport(args); // how finished blueprints look: paint, colours, finishes, lamps, likeness (Program.LookReport.cs, docs/sandbox/constructs/look.md)
         if (args.Any(a => a.Equals("--check-ports", StringComparison.OrdinalIgnoreCase)))
             return PortMounts.Cli(args); // does every link port sit on something drawn? (Source/Constructs/PortMounts.cs)
+        if (args.Any(a => a.Equals("--check-starts", StringComparison.OrdinalIgnoreCase)))
+            return StoryStarts.Check(); // the story's starts (Story/Starts): what each holds, what's refused and why (docs/story/STARTS.md)
         if (args.Any(a => a.Equals("--check-construct-parts", StringComparison.OrdinalIgnoreCase)))
             return ConstructParts.CheckCli(); // Sandbox construct parts and blueprints: what loads, what's refused and why (Source/Constructs)
         if (args.Any(a => a.Equals("--check-mods", StringComparison.OrdinalIgnoreCase)))
@@ -887,6 +889,9 @@ public static unsafe partial class Program
                     DrawFriendlyHitText(g, now); // "FRIENDLY" under the friendly hit marker (Program.FriendlyHit.cs)
                     Ui.DrawHud(g, now, _joinAddress, _settings);
                 }
+                // What the player has just learnt, in the middle of the screen; it waits out the opening, a ride and the bench (UiTechnologies.cs).
+                if (Ui.DrawCelebration(g, now, benchCovers || g.OpeningActive || g.QuarryRiding, _settings.Bind(GameAction.Logbook)))
+                    AudioSystem.Effect(Sfx.LevelUp, 0.6f);
                 uiPart.Dispose();
                 uiPart = Perf.Measure(PerfArea.UiMenus);
                 DrawBenchInMatch(now); // a Zombies workbench, open over the match (Program.Zombies.cs)
@@ -972,6 +977,7 @@ public static unsafe partial class Program
             DrawWeatherUi(); // the weather map (F11; Program.Weather.cs): closed one check
             DrawStoryUi(); // the Story window (F4; Program.Story.cs): closed one check
             DrawFactionUi(); // the Faction window (F2; Program.Factions.cs): closed one check
+            DrawJobBoardUi(); // the job board (the use key on the colony's work board; Program.JobBoard.cs): closed one check
             DrawLogbookUi(); // the Logbook (F1; Program.Logbook.cs): closed one check
             DrawDevTools(now); // the look-at inspector and prop editor (F6 / F10; Program.DevTools.cs): closed two checks
             uiPart.Dispose();
@@ -1160,7 +1166,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.LogbookOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen || Ui.DesignerOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.JobBoardOpen || Ui.LogbookOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen || Ui.DesignerOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -1352,6 +1358,8 @@ public static unsafe partial class Program
         if (WeatherMapKey(key)) // F11 (rebindable) or Esc: the weather map window (Program.Weather.cs)
             return;
         if (StoryKey(key)) // F4 (rebindable) or Esc: the Story window (Program.Story.cs)
+            return;
+        if (JobBoardKey(key)) // Esc or the use key: the job board (Program.JobBoard.cs)
             return;
         if (FactionKey(key)) // F2 (rebindable) or Esc: the Faction window (Program.Factions.cs)
             return;
@@ -2514,3 +2522,4 @@ public static unsafe partial class Program
     }
 
 }
+

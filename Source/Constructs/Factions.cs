@@ -90,6 +90,79 @@ public sealed class FactionTable
     }
     public readonly byte[] StoryLearnt = new byte[Max * MaxStory];
 
+    /// <summary>The standing each technology is taught at, per story faction in the order of <see cref="StoryTech"/> (its tier's lowest standing).</summary>
+    public sbyte[][] StoryTechNeed = [];
+
+    /// <summary>
+    /// Per player (by player id, the server's view sent to everyone): whether the story knows them, the standing each story
+    /// faction holds with their party (their faction, else themselves) at [id * MaxStory + f], and the technologies they
+    /// know (taught to them or to their faction), a bit each. A player in no faction has this alone, which the build
+    /// menu's locks read (<see cref="LockOf"/>).
+    /// </summary>
+    public readonly bool[] PlayerStory = new bool[256];
+    public readonly sbyte[] PlayerStanding = new sbyte[256 * MaxStory];
+    public readonly byte[] PlayerLearnt = new byte[256 * MaxStory];
+
+    private string[][]? _techParsed; // the StoryTech the map below was made from
+    private readonly Dictionary<ushort, (byte F, byte K)[]> _techOfPart = new();
+
+    /// <summary>The technologies that hold each part (by part id), made again when <see cref="StoryTech"/> is replaced.</summary>
+    private Dictionary<ushort, (byte F, byte K)[]> TechOfPart()
+    {
+        if (ReferenceEquals(_techParsed, StoryTech))
+            return _techOfPart;
+        _techParsed = StoryTech;
+        _techOfPart.Clear();
+        for (var f = 0; f < StoryTech.Length && f < MaxStory; f++)
+            for (var k = 0; k < StoryTech[f].Length && k < 8; k++)
+            {
+                var line = StoryTech[f][k];
+                var colon = line.IndexOf("): ", StringComparison.Ordinal);
+                if (colon < 0)
+                    continue;
+                foreach (var name in line[(colon + 3)..].Split(", "))
+                    if (ConstructParts.Find(name) is { } d)
+                        _techOfPart[d.Id] = _techOfPart.TryGetValue(d.Id, out var had) ? [.. had, ((byte)f, (byte)k)] : [((byte)f, (byte)k)];
+            }
+        return _techOfPart;
+    }
+
+    /// <summary>
+    /// Is a part locked for a player: a story faction teaches it and they know none of the technologies that hold it? Then
+    /// (f, k) is the one nearest their reach (the least standing still to earn). Not locked: no story faction teaches it,
+    /// they know it, or the story doesn't know them yet. The caller decides when locks apply at all (survival only).
+    /// </summary>
+    public bool LockOf(byte player, ushort part, out int f, out int k)
+    {
+        (f, k) = (-1, -1);
+        if (StoryTech.Length == 0 || !PlayerStory[player] || !TechOfPart().TryGetValue(part, out var techs))
+            return false;
+        var best = int.MaxValue;
+        foreach (var (tf, tk) in techs)
+        {
+            if ((PlayerLearnt[player * MaxStory + tf] & (1 << tk)) != 0)
+                return false;
+            var gap = TechNeed(tf, tk) - PlayerStanding[player * MaxStory + tf];
+            if (gap < best)
+                (best, f, k) = (gap, tf, tk);
+        }
+        return f >= 0;
+    }
+
+    /// <summary>The standing a technology is taught at (100 when unknown).</summary>
+    public int TechNeed(int f, int k) => f < StoryTechNeed.Length && k < StoryTechNeed[f].Length ? StoryTechNeed[f][k] : 100;
+
+    /// <summary>A technology's name and tier, from its line ("Remote Control", "Registered").</summary>
+    public (string Name, string Tier) TechNames(int f, int k)
+    {
+        if (f >= StoryTech.Length || k >= StoryTech[f].Length)
+            return ("", "");
+        var line = StoryTech[f][k];
+        var colon = line.IndexOf("): ", StringComparison.Ordinal);
+        var open = colon < 0 ? -1 : line.LastIndexOf(" (", colon, StringComparison.Ordinal);
+        return open < 0 ? (line, "") : (line[..open], line[(open + 2)..colon]);
+    }
+
     /// <summary>A player faction every story faction hunts (it did something none forgives; StoryFactions.Notorious).</summary>
     public readonly bool[] Notorious = new bool[Max];
 
@@ -117,6 +190,9 @@ public sealed class FactionTable
         Array.Clear(Stance);
         Array.Clear(StoryStanding);
         Array.Clear(StoryLearnt);
+        Array.Clear(PlayerStory);
+        Array.Clear(PlayerStanding);
+        Array.Clear(PlayerLearnt);
         Array.Clear(Notorious);
         Version++;
     }

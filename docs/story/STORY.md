@@ -580,10 +580,13 @@ is somebody's, nothing explains it, and noticing it is how a new question opens 
   at the left of the screen (no mouse; F again, Esc or walking 4.5 m off puts it down) and sends the ordinary use act,
   so no protocol of its own. The host counts it as the relation `Inspected` (a player towards the Thing "lore ID",
   `Story/Relations/Talk.json`), saved with the world, and a topic or storylet reads it: `"?them Inspected 'lore edie-tally'"`.
+- **Opens**: `"opens": "jobs:FACTION"` (or `"jobs"`) makes the item a job board: the use key ("F: read the jobs") opens
+  the job board window ("Jobs", "The job board") with the item's title and text over it, on that faction's tab, and the
+  look is counted as any other.
 - **Checks**: `--check-story` lists the items and warns of a `noticed` person in no cast and an item no topic asks for;
   `--talk-sim --inspected edie-tally,page-nine` has the player look at items first.
 
-Shipped: `Lore/PenalColony.json`, ten items, each opening a topic in `Topics/Colony.json`. In the cell block, the
+Shipped: `Lore/PenalColony.json`, ten items and the Ministry Work Board on the muster square (the job board), each opening a topic in `Topics/Colony.json`. In the cell block, the
 scratched tally board (Bellweather: whose tally?) and the photo board with year three's gap (Crumb names Edie Marsh,
 which opens Bellweather's "Who was Edie Marsh?"). In the Warden's office, the handbook open at rule 212 (the Light and
 a count of ten), the brass storm lantern from the Brine Flats (a way into his lighthouse thread) and the in-tray with
@@ -983,7 +986,21 @@ builds everything. The first loop:
 A party is a player's group (their player faction) or the player alone; an Assembler builds a part for its owner when the
 owner or their group has learnt it. Joining a group (or loading a save from before technologies) teaches what the
 standing already earns. The Faction window (F2) lists what each faction teaches, and with a faction of yours which it has
-learnt. What ships:
+learnt. The inventory (Tab, or an Inventory Beacon's window) shows each part the player hasn't learnt greyed with a
+padlock; its tooltip names the faction, the technology, the standing it is taught at and the player's own, and with none
+in hand it can't be taken (a beacon's window that hides what the network doesn't hold still shows them, as goals). The
+server sends each player's standings and known technologies in `Msg.Factions` (`FactionTable.PlayerStanding`,
+`PlayerLearnt`, `LockOf`; UI: `UiSandboxPartLocks.cs`), so it works per player in co-op and for a player in no faction.
+Creative worlds and worlds without a story lock nothing.
+
+**What you have learnt, and the moment you learn it** (`Source/UI/UiTechnologies.cs`). It reads the same
+`FactionTable.PlayerLearnt`, so every peer knows its own. The Logbook (F1) has a Technologies page: each
+faction's technologies, learnt or locked with the tier that teaches them, then the player's tool upgrades. When a new bit
+appears (or a tool upgrade's level rises), a short celebration plays in the middle of the screen with the LevelUp sound:
+title, name in story-text size and colour, what it unlocks. The first four seconds in a game are taken as already known (a
+join, a load). Other code celebrates through `Game.Celebrate(player, title, name, line)` on the server (a client gets
+`CActKind.Celebrate`) or `Game.CelebrateHere` on a peer (`Source/Game/GameCelebrate.cs`). They queue one at a time and
+wait out the opening, a story ride, the workbench and the menus. What ships:
 
 | Faction | Tier | Technology | Parts |
 | --- | --- | --- | --- |
@@ -1011,9 +1028,9 @@ when it teaches one it says so in its own voice too.
 ## Jobs
 
 Work for a faction (code: the engine's side `Source/Story/StoryFactionJobs.cs`, the game's `Source/Game/GameStoryJobs.cs`, the
-window `Source/UI/UiFactions.cs`; data `"jobs"` in `Story/Factions/*.json`). No money: a job pays standing, and standing is
-what a faction teaches its technologies for. The Faction window (F2) lists every faction's jobs under "Jobs for the world's
-factions": what each asks, what it pays, and why one can't be taken yet.
+window `Source/UI/UiFactions.cs` and the job board `Source/UI/UiJobBoard.cs`; data `"jobs"` in `Story/Factions/*.json`). No
+money: a job pays standing, and standing is what a faction teaches its technologies for. The job board on the colony's muster
+square and the Faction window (F2) list every faction's jobs: what each asks, what it pays, and why one can't be taken yet.
 
 - **Who holds one**: a party (the player's faction, or the player alone) holds one job of each faction at a time, taken and
   dropped in the window by any member. A job may want a tier (`"tier"`: offered from that tier up); one with none is offered
@@ -1045,6 +1062,14 @@ factions": what each asks, what it pays, and why one can't be taken yet.
 - **State**: a party holds a job as `OnJob` towards its Thing (`"job:FACTION:NAME"`), with `JobAgain` (the story minute it
   may be taken again) and `JobRefused` (the paperwork); all saved with the story. How far along a job is is worked out again
   every two seconds and isn't saved: a sealed crate is sealed again after a load.
+- **The job board** (`Source/UI/UiJobBoard.cs`, `Source/App/Program.JobBoard.cs`): the Ministry Work Board on the colony's
+  muster square (a concrete hood on two posts over a steel case of sheets in four colours; the part kit's lore parts) is a
+  lore item with `"opens": "jobs:Ministry of Slop"`. F on it opens "Work Allocation" with the cursor free, on the
+  Ministry's tab: a tab a faction (a `*` on one where your party holds a job), your standing and tier, a bar to the next
+  tier with what it teaches, and each job's asks, pay ("+5 standing: 5 of the 15 to Trusty", or "enough for Trusty"), why
+  it can't be taken yet or how far along yours is, with Take and Drop. F again, Esc, the X or walking 4.5 m off closes it.
+  The F2 window draws the same rows. Tiers, teaching and pay are read from the faction files every peer has, so the board
+  adds nothing to the wire; its words are made again only when the server's view changes.
 - **Network (protocol 203)**: `Msg.Jobs` carries a take or a drop from a client, and to each player their window when it
   changes (checked once a second against a key of their party, the standings, the jobs held and their progress, and the minute).
 

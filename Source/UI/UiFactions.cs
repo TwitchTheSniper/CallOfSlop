@@ -67,7 +67,7 @@ public sealed partial class Ui
     /// What the world's factions teach (docs/story/STORY.md "Technologies"): the parts an Assembler builds only once a faction
     /// has taught them, at a tier of its standing. With a faction of yours, which ones it has learnt.
     /// </summary>
-    private void DrawStoryTech(FactionTable t, byte mine)
+    private void DrawStoryTech(FactionTable t, byte mine, byte self)
     {
         var any = false;
         for (var f = 0; f < t.StoryTech.Length && !any; f++)
@@ -83,7 +83,7 @@ public sealed partial class Ui
             if (techs.Length == 0)
                 continue;
             ImGuiSafe.TextColored(Orange, t.StoryNames[f]);
-            var learnt = mine != 0 ? t.StoryLearnt[mine * FactionTable.MaxStory + f] : 0;
+            var learnt = (mine != 0 ? t.StoryLearnt[mine * FactionTable.MaxStory + f] : 0) | t.PlayerLearnt[self * FactionTable.MaxStory + f]; // (yours too, alone or in it)
             for (var k = 0; k < techs.Length; k++)
             {
                 var have = (learnt & (1 << k)) != 0;
@@ -104,34 +104,12 @@ public sealed partial class Ui
         var view = game.JobsView;
         if (view.Length == 0 || !ImGui.CollapsingHeader("Jobs for the world's factions##fajobs"u8, ImGuiTreeNodeFlags.DefaultOpen))
             return;
-        ImGuiSafe.TextColored(Dim, "No money: a job pays standing, and standing is what the factions teach their technologies for. One job of each faction at a time. Supply jobs go in a Requisition Crate you own (fill its box: chute, hand, or lay a cut piece in it); the courier collects. Build jobs are inspected where they stand.");
+        ImGuiSafe.TextColored(Dim, "No money: a job pays standing, and standing is what the factions teach their technologies for. One job of each faction at a time. Supply jobs go in a Requisition Crate you own (fill its box: chute, hand, or lay a cut piece in it); the courier collects. Build jobs are inspected where they stand. The Ministry Work Board in the colony yard posts the same jobs.");
+        JobBoardBuild(game); // (the job board's rows: UiJobBoard.cs)
         for (var f = 0; f < view.Length; f++)
         {
-            var jf = view[f];
-            ImGuiSafe.TextColored(Orange, $"{jf.Name}: {jf.Tier} ({jf.Standing:+0;-0;0})");
-            for (var j = 0; j < jf.Jobs.Length; j++)
-            {
-                var row = jf.Jobs[j];
-                if (row.Held)
-                    ImGuiSafe.TextColored(new float4(0.45f, 0.9f, 0.45f, 1f), $"  [yours] {row.Name}{(row.Ticket.Length > 0 ? $" ({row.Ticket})" : "")}");
-                else
-                    ImGuiSafe.TextColored(row.Open ? new float4(1f, 1f, 1f, 1f) : Dim, $"  {row.Name}{(row.Ticket.Length > 0 ? $" ({row.Ticket})" : "")}");
-                if (row.About.Length > 0)
-                    ImGuiSafe.TextWrapped($"    {row.About}");
-                ImGuiSafe.TextWrapped($"    {row.What}. Pays {row.Pay}.");
-                if (row.Note.Length > 0)
-                    ImGuiSafe.TextColored(row.Held ? Orange : Dim, $"    {row.Note}");
-                if (row.Held)
-                {
-                    if (ImGui.Button($"Drop this job##fajd{f}_{j}"))
-                        game.JobAsk(f, -1);
-                }
-                else if (row.Open)
-                {
-                    if (ImGui.Button($"Take this job##fajt{f}_{j}"))
-                        game.JobAsk(f, j);
-                }
-            }
+            ImGui.Spacing();
+            DrawJobFaction(game, f, true);
         }
     }
 
@@ -184,7 +162,7 @@ public sealed partial class Ui
             }
             DrawFactionList(game, t, me);
             DrawFactionJobs(game);
-            DrawStoryTech(t, 0);
+            DrawStoryTech(t, 0, me.Id);
             return;
         }
         var myRank = t.RankOf(me.Id);
@@ -322,7 +300,7 @@ public sealed partial class Ui
                 ImGuiSafe.TextWrapped($"{t.StoryNames[f]}: {StandingWord(v)} ({v:+0;-0;0})");
             }
             DrawFactionJobs(game);
-            DrawStoryTech(t, mine);
+            DrawStoryTech(t, mine, me.Id);
         }
 
         // ---- Give

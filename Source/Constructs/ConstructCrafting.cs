@@ -848,12 +848,17 @@ public static class ConstructCrafting
     /// <summary>Server, 2 Hz: every terminal with open orders. A world with none does nothing.</summary>
     public static void Step(ConstructWorld world)
     {
-        if (world.CraftOpen.Count == 0 && world.ChainCount == 0 || ++world.CraftTicks < StepEvery)
+        if (++world.StockScan >= StockTargets.ScanTicks)
+        {
+            world.StockScan = 0;
+            StockTargets.Scan(world); // (racks whose keep setting changed: phase 3's stock targets)
+        }
+        if (world.CraftOpen.Count == 0 && world.ChainCount == 0 && world.StockTargetN == 0 || ++world.CraftTicks < StepEvery)
             return;
         world.CraftTicks = 0;
         ConstructLogisticsPlan.Step(world); // (chained orders' links kept honest, before the terminals count on them)
-        // Roots compete by class, then age (the user, Q2): terminals are stepped oldest open order first, each followed by its chains,
-        // so the oldest claims free stock first. Every root is Normal until phase 3's priorities; stock targets will come last.
+        // Roots compete by class, then age (the user, Q2): terminals are stepped best class first (their Order priority setting), then
+        // oldest open order first, each followed by its chains, so the oldest claims free stock first; stock targets come last.
         Span<ulong> rank = stackalloc ulong[RankedMax];
         Span<int> rankBody = stackalloc int[RankedMax], rankPart = stackalloc int[RankedMax];
         var n = 0;
@@ -875,7 +880,8 @@ public static class ConstructCrafting
                         }
                         if (n < RankedMax)
                         {
-                            (rank[n], rankBody[n], rankPart[n]) = ((ulong)oldest << 32 | (uint)n, c.Id, t);
+                            var cls = StockTargets.FeedClass(c, t);
+                            (rank[n], rankBody[n], rankPart[n]) = ((ulong)(ConstructLogisticsPlan.ClassHigh - cls) << 60 | (ulong)oldest << 16 | (uint)n, c.Id, t);
                             n++;
                         }
                         else
@@ -898,6 +904,8 @@ public static class ConstructCrafting
                 ConstructLogisticsPlan.Serve(world, c, t);
             }
         }
+        if (world.StockTargetN > 0)
+            StockTargets.Step(world); // (after every order: a refill never starves a build)
     }
 
     private const int RankedMax = 64;

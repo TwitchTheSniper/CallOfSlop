@@ -56,6 +56,11 @@
         "Under the lunch log, a list headed INMATES WHO HAVE BEEN NICE TO ME. It is short. There is plenty of room." ],
       "noticed": { "by": "Officer Nettles", "reach": 16,
         "say": [ "That's confidential! It's mostly lunches. Give it - no, put it down. Thank you.", "Oh no. Oh no. Did you read the margin? Don't read the margin." ] } },
+    { "id": "work-board", "part": "Ministry Work Board", "title": "WORK ALLOCATION",
+      "in": "Colony Muster Square", "at": [5.875, 0.125, 7.35], "yaw": 180, "opens": "jobs:Ministry of Slop",
+      "text": [
+        "A concrete hood on two posts, and under it a steel case of sheets in four colours: whoever has work going posts it here, and the Ministry stamps it.",
+        "Across the bottom of the case, stencilled: TAKE ONE. SIGN FOR IT. DO IT. STANDING IS PAID ON COMPLETION, NOT ON ENTHUSIASM." ] },
     { "id": "marker-nine", "part": "Mine Shift Board", "title": "The old mine's shift board",
       "in": "Penal Colony", "at": [10.8, 0.375, 8.0], "yaw": 90,
       "text": [

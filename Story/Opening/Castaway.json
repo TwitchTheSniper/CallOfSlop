@@ -1,0 +1,15 @@
+{
+  // PLACEHOLDER opening for the Highland castaway start (Story/Starts/Castaway.json, docs/story/STARTS.md): no colony and
+  // no cast, so everyone wakes at the start with the wreck lying out past them. Same format as Opening.json.
+  "format": "call-of-slop-opening/1",
+  "colony": "", // none: wake at the start
+  "cast": "",
+  "warden": "", // nobody: the lines below are plain lines
+  "wreck": "Crashed Plane",
+  "crashFrom": 20, "crashTo": 60,
+  "beats": {
+    "placeholder": { "time": 4.0, "caption": "Your ship comes down hard in the hills of Caledon. Nobody comes." },
+    "wake": { "time": 3.5, "lines": [] }
+  },
+  "skip": "skip the opening"
+}

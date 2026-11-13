@@ -32,6 +32,7 @@ public enum ChainFlags : byte
     Loop = 1, // its kind is one an ancestor (or the root) is made of: never asked
     Deep = 2, // deeper than MaxDepth: never asked
     Expanded = 4, // its own inputs were asked of others (cleared when its maker changes)
+    Stock = 8, // its root is a stock target (StockTargets.cs): Root is the store, RootId the kind it keeps; it ranks below every order
     Blocked = Loop | Deep,
 }
 
@@ -60,12 +61,13 @@ public static class ConstructLogisticsPlan
     /// </summary>
     public static void Asked(ConstructWorld world, Construct c, CraftNet net, int t, in CraftOrder o, int m, int ask)
     {
-        if (o.What.IsPiece || o.What.Name != null && !o.What.IsPressed)
+        var panel = o.What.Name != null && HullLoft.IsFormedName(o.What.Name);
+        if (o.What.IsPiece || o.What.Name != null && !o.What.IsPressed && !panel)
             return;
-        var kind = o.What.IsPressed ? o.Def : o.What.Part; // (a pressed part's kind is its run-time def here: Place set it)
+        var kind = o.What.IsPressed ? o.Def : panel ? (ushort)(ConstructParts.Find(o.What.Name!)?.Id ?? 0) : o.What.Part; // (a pressed part's kind is its run-time def here: Place set it)
         if (kind == 0 || kind == ConstructParts.None)
             return;
-        var root = new ChainEntry { Root = (ushort)t, RootId = o.Id, Class = ClassNormal, Stamp = o.Stamp, Depth = 0, Kind = kind };
+        var root = new ChainEntry { Root = (ushort)t, RootId = o.Id, Class = StockTargets.FeedClass(c, t), Stamp = o.Stamp, Depth = 0, Kind = kind };
         Need(world, c, net, m, kind, ask, root);
     }
 
@@ -97,6 +99,30 @@ public static class ConstructLogisticsPlan
     }
 
     /// <summary>
+    /// What a Panel Former needs to form <paramref name="ask"/> of panel <paramref name="product"/>: extruded sheet of the panel's material
+    /// (<see cref="SheetKey"/>), counted in pieces against what its bin holds of that material. 0 inputs: nothing to ask (or not a panel).
+    /// </summary>
+    private static int FormerInputs(CStore st, ushort product, int ask, Span<ushort> kinds, Span<int> counts, Span<int> held)
+    {
+        if (ConstructParts.Get(product) is not { } pd || !HullLoft.IsFormedName(pd.Name) || HullLoft.FormedMaterial(pd.Name) is var mat && mat == 0)
+            return 0;
+        if (Extrusion.Def(SheetKey(mat)) is not { } sheet)
+            return 0;
+        var each = SheetUnits(sheet, mat);
+        var units = HullLoft.FormedUnits(pd, mat) * ask - st.JobAmount; // (a stroke under way has its units already)
+        var inBin = st.Material == mat ? st.Amount : 0;
+        (kinds[0], counts[0], held[0]) = ((ushort)sheet.Id, (Math.Max(0, units) + each - 1) / each, inBin / each);
+        return 1;
+    }
+
+    /// <summary>The sheet a chained Panel Former order asks for (the showcase's): a solid bar 0.5 x 0.1 m cut at 1 m, in the panel's material.</summary>
+    public static ExtrusionKey SheetKey(byte material) => new(ulong.MaxValue, 50, 10, 100, material, false, ExShape.Section);
+
+    /// <summary>Units of material a sheet piece puts into a former's bin (<see cref="ConstructPanelFormer.TakeFromConveyor"/>'s count).</summary>
+    public static int SheetUnits(ConstructPartDef sheet, byte material) =>
+        Math.Max(1, (int)MathF.Round(sheet.Mass / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(material))));
+
+    /// <summary>
     /// Machine <paramref name="m"/> makes <paramref name="ask"/> of <paramref name="product"/> for <paramref name="parent"/> (the root itself
     /// at depth 0): each recipe part it lacks becomes an entry under it. False when the table was full (asked again next step).
     /// </summary>
@@ -111,6 +137,8 @@ public static class ConstructLogisticsPlan
         var md = c.DefOf(m);
         if (md.IsPress && !md.IsLathe)
             inputs = PressInputs(c, m, st, product, ask, kinds, wants, inside);
+        else if (md.IsPanelFormer)
+            inputs = FormerInputs(st, product, ask, kinds, wants, inside);
         else if (md.IsAssembler && AssemblingTable.Current.Of(product) is { Parts.Length: > 0 } r)
         {
             var batches = (ask + r.Count - 1) / r.Count;
@@ -139,17 +167,17 @@ public static class ConstructLogisticsPlan
             {
                 Id = NextId(world), Body = c.Id, Maker = NoPart, Kind = (ushort)part.Id, Asked = (ushort)Math.Min(shortBy, WorkOrders.MaxCount),
                 Dest = (ushort)m, Root = parent.Root, RootId = parent.RootId, Parent = parent.Depth == 0 ? (ushort)0 : parent.Id,
-                Depth = (byte)(parent.Depth + 1), Class = parent.Class, Stamp = parent.Stamp, Born = world.ChainStepNo, Reason = "",
+                Depth = (byte)(parent.Depth + 1), Class = parent.Class, Stamp = parent.Stamp, Flags = (byte)(parent.Flags & (byte)ChainFlags.Stock), Born = world.ChainStepNo, Reason = "",
             };
             var name = part.Name;
             if (e.Depth > MaxDepth)
             {
-                e.Flags = (byte)ChainFlags.Deep;
+                e.Flags |= (byte)ChainFlags.Deep;
                 e.Reason = BlockedText(e.Flags, name);
             }
             else if (Loops(world, c, parent, e.Kind))
             {
-                e.Flags = (byte)ChainFlags.Loop;
+                e.Flags |= (byte)ChainFlags.Loop;
                 e.Reason = BlockedText(e.Flags, name);
             }
             var at = Insert(world, e);
@@ -201,7 +229,7 @@ public static class ConstructLogisticsPlan
     }
 
     /// <summary>Does <paramref name="a"/> outrank <paramref name="b"/>: a higher class, else an older root?</summary>
-    public static bool Better(in ChainEntry a, in ChainEntry b) => a.Class != b.Class ? a.Class > b.Class : a.Stamp < b.Stamp;
+    public static bool Better(in ChainEntry a, in ChainEntry b) => IsStock(a) != IsStock(b) ? !IsStock(a) : a.Class != b.Class ? a.Class > b.Class : a.Stamp < b.Stamp;
 
     private static int Find(ConstructWorld world, ushort id)
     {
@@ -320,6 +348,8 @@ public static class ConstructLogisticsPlan
                 continue;
             }
             var score = c.Parts[mk].Orders is { Bill: false } q ? q.Count * 2 + (Making(q, e.Kind) ? 0 : 1) : 1;
+            if (ConstructCrafting.RouteTo(c, mk, e.Dest) == -1)
+                score += 1000; // (no conveyor way through joins and Routers to it: last; a Splitter's line may still bring it in turn)
             if (score < bestScore)
                 (best, bestScore) = (mk, score);
         }
@@ -394,7 +424,7 @@ public static class ConstructLogisticsPlan
                 continue; // (a removal cascaded)
             ref var e = ref world.Chains[i];
             var c = world.Get(e.Body);
-            var gone = c == null || e.Root >= c.PartCount || e.Dest >= c.PartCount || e.Made >= e.Asked || c.Parts[e.Root].Craft is not { } q || RootClosed(q, e.RootId);
+            var gone = c == null || e.Root >= c.PartCount || e.Dest >= c.PartCount || e.Made >= e.Asked || RootGone(world, c, e);
             if (!gone && e.Parent != 0)
                 gone = Find(world, e.Parent) is var p && (p < 0 || world.Chains[p].Maker != e.Dest); // (its parent finished, went, or changed maker)
             if (gone)
@@ -408,6 +438,12 @@ public static class ConstructLogisticsPlan
             var held = world.Reserve.Held(c!.Parts[e.Dest].Store, e.Id);
             if (e.Maker != NoPart && (e.Maker >= c.PartCount || !QueuedAt(c, e.Maker, e.Id)) && riding + held + e.Made < e.Asked)
             {
+                if (IsStock(e) && e.Depth == 1 && riding == 0)
+                {
+                    Drop(world, c, e); // (a refill whose maker is done, or dropped it: closed; its target looks again in 5 s)
+                    Remove(world, i);
+                    continue;
+                }
                 e.Maker = NoPart; // (its maker went, or the order left its queue: the player pressed Clear; asked again when served)
                 e.Flags &= unchecked((byte)~ChainFlags.Expanded);
             }
@@ -435,7 +471,7 @@ public static class ConstructLogisticsPlan
             {
                 var left = e.Asked - e.Made - Riding(c, e) - held;
                 if (left > 0)
-                    left -= FromStock(world, c, net, ref e, left);
+                    left -= IsStock(e) && e.Depth == 1 ? 0 : FromStock(world, c, net, ref e, left); // (a target never robs a store: it only makes)
                 if (left > 0)
                     FindMaker(world, c, net, ref e, left);
                 else if (e.Reason != "")
@@ -450,6 +486,45 @@ public static class ConstructLogisticsPlan
                     world.Chains[i].Flags |= (byte)ChainFlags.Expanded; // (Need may have moved later entries, never this one: children rank after it)
             }
         }
+    }
+
+    public static bool IsStock(in ChainEntry e) => ((ChainFlags)e.Flags & ChainFlags.Stock) != 0;
+
+    /// <summary>Has the entry's root gone: a terminal's order closed, or a stock target ended (its store no longer keeps that kind)?</summary>
+    private static bool RootGone(ConstructWorld world, Construct c, in ChainEntry e) =>
+        IsStock(e) ? !StockTargets.Keeps(world, c, c.Parts[e.Root].Store, e.RootId) : c.Parts[e.Root].Craft is not { } q || RootClosed(q, e.RootId);
+
+    /// <summary>
+    /// Server: stock target of store <paramref name="store"/> asks for <paramref name="count"/> of <paramref name="kind"/>: a link ranked
+    /// below every order (its root the store, its destination the store), asked of one maker; its inputs chain as an order's do. Its id, 0: the table is full.
+    /// </summary>
+    public static ushort AskStock(ConstructWorld world, Construct c, int store, ushort kind, int count)
+    {
+        if (world.ChainCount >= MaxEntries || store >= c.PartCount)
+            return 0;
+        var e = new ChainEntry
+        {
+            Id = NextId(world), Body = c.Id, Maker = NoPart, Kind = kind, Asked = (ushort)Math.Clamp(count, 1, WorkOrders.MaxCount), Dest = (ushort)store,
+            Root = (ushort)store, RootId = kind, Depth = 1, Class = ClassLow, Stamp = world.OrderStamp++, Flags = (byte)ChainFlags.Stock,
+            Born = world.ChainStepNo, Reason = "",
+        };
+        var at = Insert(world, e);
+        FindMaker(world, c, ConstructCrafting.NetOf(world, c, store), ref world.Chains[at], e.Asked);
+        world.CraftChanged(c);
+        return e.Id;
+    }
+
+    /// <summary>A store's open refill of <paramref name="kind"/>: arrived, asked, and its maker (or its reason), for its look line; false: none.</summary>
+    public static bool Refill(ConstructWorld world, Construct c, int store, ushort kind, out ChainEntry e)
+    {
+        for (var i = 0; i < world.ChainCount; i++)
+            if (world.Chains[i].Body == c.Id && world.Chains[i].Root == store && world.Chains[i].Depth == 1 && world.Chains[i].Kind == kind && IsStock(world.Chains[i]))
+            {
+                e = world.Chains[i];
+                return true;
+            }
+        e = default;
+        return false;
     }
 
     private static bool RootClosed(CraftList q, ushort id) => q.Find(id) is var k && (k < 0 || q.Items[k].Cancelled || q.Items[k].Done);
@@ -571,6 +646,8 @@ public static class ConstructLogisticsPlan
     public static void Arrived(ConstructWorld world, Construct c, int dest, ushort tag, ConstructPartDef d)
     {
         var at = tag != 0 ? Find(world, tag) : -1;
+        if (at >= 0 && (world.Chains[at].Dest != dest || world.Chains[at].Body != c.Id))
+            at = -1; // (a piece tagged for another machine that a plain conveyor brought here)
         for (var i = 0; i < world.ChainCount && at < 0; i++)
             if (world.Chains[i].Body == c.Id && world.Chains[i].Dest == dest && world.Chains[i].Kind == d.Id && world.Chains[i].Made < world.Chains[i].Asked)
                 at = i;

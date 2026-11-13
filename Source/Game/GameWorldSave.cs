@@ -208,6 +208,7 @@ public sealed partial class Game
         s.FactionOpen = (bool[])FactionTable.Open.Clone();
         s.FactionStances = (sbyte[])FactionTable.Stance.Clone();
         s.Opening = OpeningCapture(); // (GameSandboxOpening.cs)
+        s.Start = StartCapture(); // (GameStoryStart.cs)
         s.OpCount = 0;
         s.GroundOnPlanet = World.Map.Planetoid != null;
         if (DigGroundIfMade is { } g)
@@ -309,6 +310,7 @@ public sealed partial class Game
         DepotCatch(p, rec); // (the Orbital Depot's run: GameDepot.cs)
         QuarryCatch(p, rec); // (the first Ministry duty: GameQuarry.cs)
         UpgradesCatch(p, rec); // (tool upgrades: GameSandboxUpgrades.cs)
+        FirstsCatch(p, rec); // (milestones for firsts: GameMilestones.cs)
         rec.Builds = ZPlayers.TryGetValue(p.Id, out var zp) ? zp.Slots.Select(b => b?.ToText() ?? "").ToArray() : [];
     }
 
@@ -456,6 +458,7 @@ public sealed partial class Game
         Constructs.Resources = World.Map.Resources;
         var r = new SaveReader(body) { Shift = WorldShift(body) };
         ushort nextTag = 1;
+        StartLoad(""); // (a world from before starts plays the default; its Start section says otherwise: GameStoryStart.cs)
         while (r.Has(8))
         {
             var tag = r.U32();
@@ -583,11 +586,17 @@ public sealed partial class Game
             case WorldSaveWriter.QuarryTag:
                 WorldReadQuarry(r, ws); // (the first Ministry duty: GameQuarry.cs)
                 break;
+            case WorldSaveWriter.StartTag:
+                StartLoad(r.Str()); // (the story start it was made with: GameStoryStart.cs)
+                break;
             case WorldSaveWriter.Fate:
                 WorldReadDeath(r, ws); // (death and checkpoints: GameSandboxDeath.cs)
                 break;
             case WorldSaveWriter.ToolsTag:
                 WorldReadUpgrades(r, ws); // (tool upgrades: GameSandboxUpgrades.cs)
+                break;
+            case WorldSaveWriter.FirstsTag:
+                WorldReadFirsts(r, ws); // (milestones for firsts: GameMilestones.cs)
                 break;
             case WorldSaveWriter.FactionsTag:
                 WorldReadFactions(r, ws); // (GameSandboxFactions.cs)
@@ -876,6 +885,7 @@ public sealed partial class Game
         DepotArrive(p, rec); // (where they were on the Orbital Depot's run: GameDepot.cs)
         QuarryArrive(p, rec); // (where they were on the first Ministry duty: GameQuarry.cs)
         UpgradesArrive(p, rec); // (their tool upgrades: GameSandboxUpgrades.cs)
+        FirstsArrive(p, rec); // (their firsts: GameMilestones.cs)
         var inv = SandboxInv.Of(p.Id);
         inv.Clear();
         foreach (var (def, count) in rec.Parts)

@@ -31,7 +31,7 @@ public sealed partial class Game
     /// </summary>
     internal Construct? ColonyBuilding(string blueprint)
     {
-        if (blueprint.Equals(OpeningScript.Current.Colony, StringComparison.OrdinalIgnoreCase))
+        if (blueprint.Equals(OpScript.Colony, StringComparison.OrdinalIgnoreCase))
             return Constructs.Get(_opColony);
         if (blueprint.Equals("Colony Barracks", StringComparison.OrdinalIgnoreCase))
             return Constructs.Get(_opBarracks);
