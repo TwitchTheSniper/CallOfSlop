@@ -499,7 +499,7 @@ public static partial class HullLoft
     /// </summary>
     private static string PanelJson(string name, in PanelShape sh, int from, int to, bool slabs, CutPlan? cut = null, bool facetsOnly = false)
     {
-        var p = new Builder();
+        var p = new Builder { Edge = cut is { Edge: true } }; // (a bar on edge: everything written turned into the piece's frame, HullLoft.Cuts.cs)
         var (nu, nv) = PanelGrid(sh);
         var t = cut?.Thick ?? sh.Mm / 1000f;
         var area = 0f;

@@ -365,6 +365,7 @@ public static partial class HullLoft
         public readonly JsonArray Boxes = new(), Sockets = new();
         public readonly List<(Vector3 At, Vector3 Colour)> Lamps = new(); // (phase 7b: the lamps that light the room: ConstructPartDef.Lamps)
         public float Centre = float.MaxValue; // the lowest of the roof's slabs over the centreline: a lever hangs under it
+        public bool Edge; // a cut flat bar on edge: facets and hidden boxes are written turned a quarter about z (HullLoft.Cuts.cs, TurnEdge)
 
         /// <param name="off">Each corner's own offset for the thickness (a mitre, <see cref="Mitre"/>), so facets meeting at an angle share the joint's plane; null: along <paramref name="n"/>.</param>
         public void Facet(IReadOnlyList<Vector3> q, Vector3 n, string colour, float t = T, bool paint = true, Vector3[]? off = null)
@@ -376,6 +377,8 @@ public static partial class HullLoft
                 foreach (var s in (float[])[-1, 1])
                 {
                     var v = q[c] + (off?[c] ?? n) * (s * t / 2);
+                    if (Edge)
+                        v = new Vector3(-v.Y, v.X, v.Z); // (a cut bar on edge: TurnEdge)
                     v = new Vector3(R(v.X), R(v.Y), R(v.Z));
                     pts.Add(V(v.X, v.Y, v.Z));
                     (mn, mx) = (Vector3.Min(mn, v), Vector3.Max(mx, v));
@@ -396,6 +399,8 @@ public static partial class HullLoft
 
         public void Hide(Vector3 a, Vector3 b)
         {
+            if (Edge)
+                (a, b) = (new Vector3(-a.Y, a.X, a.Z), new Vector3(-b.Y, b.X, b.Z));
             var (mn, mx) = (Vector3.Min(a, b), Vector3.Max(a, b));
             if (Thin(new Vector3(R(mn.X), R(mn.Y), R(mn.Z)), new Vector3(R(mx.X), R(mx.Y), R(mx.Z))))
                 return;

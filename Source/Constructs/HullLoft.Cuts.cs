@@ -41,6 +41,7 @@ public static partial class HullLoft
     {
         public PanelShape Sheet; // the canvas; a plate's is a flat "curve" with its length and width (never a key of its own)
         public bool Plate;
+        public bool Edge; // a flat bar on edge (H over W): the sheet L by H stands in the piece's y, cut through its width W (TurnEdge)
         public ExtrusionKey Stock; // a plate's blank
         public float Thick; // m
         public string Blank = ""; // the blank's own name: "Formed Panel (...)" or "Extrusion ..."
@@ -111,9 +112,10 @@ public static partial class HullLoft
             }
             plan.Stock = k;
             plan.Blank = Extrusion.Prefix + blankText;
-            var mm = Extrusion.PresetOf(k.Mask) == PlateSection ? k.H * 2.5f : k.H * 10f;
+            plan.Edge = OnEdge(k);
+            var mm = StockMm(k);
             plan.Thick = mm / 1000f;
-            plan.Sheet = new PanelShape(0, k.L, k.W, 0, 0, (int)mm, RecyclingTable.Current.NameOf(k.Material));
+            plan.Sheet = new PanelShape(0, k.L, plan.Edge ? k.H : k.W, 0, 0, (int)mm, RecyclingTable.Current.NameOf(k.Material));
         }
         else
         {
@@ -195,15 +197,26 @@ public static partial class HullLoft
             label = label.Length > 1 && label[1] == '-' ? label : label.ToLowerInvariant();
             return $"a Laser Cutter cuts flat stock: plate or a flat bar, not {("aeiouAEIOUL".Contains(label[0]) ? "an" : "a")} {label}";
         }
-        var mm = section == PlateSection ? k.H * 2.5f : k.H * 10f;
-        if (section == SolidSection && k.H > k.W)
-            return "lay the bar flat: a Laser Cutter cuts through its thinner side";
+        var mm = StockMm(k);
         if (mm > CutMaxThickMm)
             return $"too thick for any Laser Cutter's bed: {mm / 1000f:0.##} m, the largest takes {CutMaxThickMm / 1000} m";
-        if (k.L < PanelMinCm || k.L > CutMaxCm || k.W < PanelMinCm || k.W > CutMaxCm)
-            return k.L > CutMaxCm ? $"cut it to length at the Extruder: a Laser Cutter's bed is {CutMaxCm / 100} m" : $"a cut piece is {PanelMinCm} to {CutMaxCm} cm long and wide";
+        var across = OnEdge(k) ? k.H : k.W; // (a bar on edge is cut through its width: its sheet is its length by its height)
+        if (k.L < PanelMinCm || k.L > CutMaxCm || across < PanelMinCm || across > CutMaxCm)
+            return k.L > CutMaxCm ? $"cut it to length at the Extruder: a Laser Cutter's bed is {CutMaxCm / 100} m" : $"a cut piece is {PanelMinCm} to {CutMaxCm} cm long and {(OnEdge(k) ? "high" : "wide")}";
         return null;
     }
+
+    /// <summary>A flat bar standing on edge (taller than wide): cut through its width, its sheet standing in its own y (the user, 2026-11-13).</summary>
+    private static bool OnEdge(in ExtrusionKey k) => Extrusion.PresetOf(k.Mask) == SolidSection && k.H > k.W;
+
+    /// <summary>The thickness a cut goes through, mm: a plate's quarter of its height, a flat bar's height lying flat or its width on edge.</summary>
+    private static float StockMm(in ExtrusionKey k) => Extrusion.PresetOf(k.Mask) == PlateSection ? k.H * 2.5f : OnEdge(k) ? k.W * 10f : k.H * 10f;
+
+    /// <summary>
+    /// A point or a way from the sheet's frame (x across, y through, z along) into the piece's: the same for plate and a bar lying flat; a bar on
+    /// edge is turned a quarter about its length (x to y, y to -x), so its sheet stands in its y and its thickness lies across x.
+    /// </summary>
+    private static Vector3 TurnEdge(bool edge, Vector3 v) => edge ? new Vector3(-v.Y, v.X, v.Z) : v;
 
     // ---- The rules -----------------------------------------------------------------------------------------------
 
@@ -527,9 +540,10 @@ public static partial class HullLoft
         (at, normal) = (default, Vector3.UnitY);
         if (ReadCut(name, out _) is not { } plan || u < 0 || v < 0 || u > plan.Sheet.L || v > plan.Sheet.W)
             return false;
-        at = SheetAt(plan, u, v);
+        at = TurnEdge(plan.Edge, SheetAt(plan, u, v));
         if (!plan.Plate)
             normal = PanelNormal(plan.Sheet, (float)(u / plan.Sheet.L), (float)(v * 2 / plan.Sheet.W - 1));
+        normal = TurnEdge(plan.Edge, normal);
         return true;
     }
 
@@ -706,8 +720,8 @@ public static partial class HullLoft
         {
             if (c.Corner || c.A < CutOpenCm || c.B < CutOpenCm || c.U <= 0 || c.U >= sh.L || c.V <= 0 || c.V >= sh.W)
                 continue;
-            var at = SheetAt(plan, c.U, c.V);
-            var n = plan.Plate ? Vector3.UnitY : PanelNormal(sh, c.U / (float)sh.L, c.V * 2f / sh.W - 1);
+            var at = TurnEdge(plan.Edge, SheetAt(plan, c.U, c.V));
+            var n = TurnEdge(plan.Edge, plan.Plate ? Vector3.UnitY : PanelNormal(sh, c.U / (float)sh.L, c.V * 2f / sh.W - 1));
             var axis = MathF.Abs(n.X) >= MathF.Abs(n.Y) && MathF.Abs(n.X) >= MathF.Abs(n.Z) ? 0 : MathF.Abs(n.Y) >= MathF.Abs(n.Z) ? 1 : 2;
             var dir = (byte)(axis * 2 + (n[axis] < 0 ? 1 : 0));
             add ??= new List<CSocket>(MaxCuts);
@@ -900,8 +914,11 @@ public static partial class HullLoft
     private static string PlateJson(string name, CutPlan cut, Builder p, float area, bool slabs)
     {
         var k = cut.Stock;
-        float w = k.W / 100f, len = k.L / 100f, half = cut.Thick / 2;
-        var (mn, mx) = (new Vector3(-w / 2, -half, 0), new Vector3(w / 2, half, len));
+        int sw = cut.Sheet.W; // (the sheet's width, cm: the piece's W, or its H on edge)
+        float w = sw / 100f, len = k.L / 100f, half = cut.Thick / 2;
+        // The piece's own box (the extrusion's, for its sockets): the sheet's, turned for a bar on edge.
+        var (mn, mx) = (TurnEdge(cut.Edge, new Vector3(-w / 2, -half, 0)), TurnEdge(cut.Edge, new Vector3(w / 2, half, len)));
+        (mn, mx) = (Vector3.Min(mn, mx), Vector3.Max(mn, mx));
         // Collision (phase 2): a box over each rectangle of solid sheet, exact at the plate's own edges (as the extrusion's box), a whole
         // centimetre inside an opening's rim, and exact at a seam between two rectangles.
         foreach (var c in cut.Rects)
@@ -909,7 +926,7 @@ public static partial class HullLoft
             float x0 = (float)(c.V0 / 100 - w / 2), x1 = (float)(c.V1 / 100 - w / 2), z0 = (float)(c.U0 / 100), z1 = (float)(c.U1 / 100);
             if (c.V0 > 0)
                 x0 = CutIn(x0, true);
-            if (c.V1 < k.W)
+            if (c.V1 < sw)
                 x1 = CutIn(x1, false);
             if (c.RimU0 && c.U0 > 0)
                 z0 = CutIn(z0, true);
@@ -918,13 +935,17 @@ public static partial class HullLoft
             var (b0, b1) = (new Vector3(x0, -half, z0), new Vector3(x1, half, z1));
             if (!Solid(b0, b1))
                 continue;
-            p.Hide(b0, b1);
+            p.Hide(b0, b1); // (turned there for a bar on edge)
             if (slabs)
-                p.Boxes.Add(new System.Text.Json.Nodes.JsonObject { ["min"] = V(b0.X, b0.Y, b0.Z), ["max"] = V(b1.X, b1.Y, b1.Z), ["color"] = Hex(RecyclingTable.Current.ColourOf(k.Material)), ["detail"] = true });
+            {
+                var (t0, t1) = (TurnEdge(cut.Edge, b0), TurnEdge(cut.Edge, b1));
+                (t0, t1) = (Vector3.Min(t0, t1), Vector3.Max(t0, t1));
+                p.Boxes.Add(new System.Text.Json.Nodes.JsonObject { ["min"] = V(t0.X, t0.Y, t0.Z), ["max"] = V(t1.X, t1.Y, t1.Z), ["color"] = Hex(RecyclingTable.Current.ColourOf(k.Material)), ["detail"] = true });
+            }
         }
-        // The extrusion's own sockets at their places, less those whose spot was cut away.
-        foreach (var s in Extrusion.Sockets(k, w, k.H / 100f, len, mn, mx))
-            if (!CutAway(cut, s.At.Z * 100, (s.At.X + w / 2) * 100))
+        // The extrusion's own sockets at their places (in the piece's frame), less those whose spot was cut away: on edge the sheet's V is up the piece's y.
+        foreach (var s in Extrusion.Sockets(k, k.W / 100f, k.H / 100f, len, mn, mx))
+            if (!CutAway(cut, s.At.Z * 100, ((cut.Edge ? s.At.Y : s.At.X) + w / 2) * 100))
                 p.Sock(s.Name, s.At, ConstructParts.DirName(s.Dir));
         var names = RecyclingTable.Current;
         var row = ExtrusionTable.Current.Find(k.Material)!;
@@ -933,7 +954,7 @@ public static partial class HullLoft
         {
             ["format"] = "call-of-slop-construct-part/1",
             ["name"] = name,
-            ["description"] = $"A cut {(Extrusion.PresetOf(k.Mask) == PlateSection ? "plate" : "flat bar")}, {len:0.##} by {w:0.##} m of {cut.Thick * 100:0.#} cm {names.NameOf(k.Material)}, with {cut.Cuts.Length} cut-out{(cut.Cuts.Length == 1 ? "" : "s")}. Cut by a Laser Cutter; weld it by its faces.",
+            ["description"] = $"A cut {(Extrusion.PresetOf(k.Mask) == PlateSection ? "plate" : cut.Edge ? "flat bar on edge" : "flat bar")}, {len:0.##} by {w:0.##} m of {cut.Thick * 100:0.#} cm {names.NameOf(k.Material)}, with {cut.Cuts.Length} cut-out{(cut.Cuts.Length == 1 ? "" : "s")}. Cut by a Laser Cutter; weld it by its faces.",
             ["group"] = "Production",
             ["section"] = "Cut parts",
             ["role"] = "frame",
