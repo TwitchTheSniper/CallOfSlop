@@ -966,7 +966,7 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   into the bay that takes them). A Panel Former's order now chains too: its panel's material in units, less what its bin holds of
   that material and a stroke under way, is asked as **sheet sized to the panel** (`ConstructLogisticsPlan.SheetFor`, phase 4c: a solid
   section the panel's width in 5 cm steps, 10 cm thick, cut so one piece holds one panel's units; when no Extruder
-  on the network takes it it is split across into the fewest equal strips the widest one takes, each holding its share), counted in pieces at what one puts into the bin (`SheetUnits`); a sheet that
+  on the network takes it, phase 5: the link waits and says what would make it, Die Frames on an Extruder whose most section takes it or the smallest bigger Extruder (`TooWideText`), and only with the Panel Former's **"Too wide: make strips"** (`formerStrips`, off by default, protocol 304) is it split across into the fewest equal strips the widest one takes, each holding its share; a waiting link follows the setting as it changes, `Rekey`), counted in pieces at what one puts into the bin (`SheetUnits`); a sheet that
   arrives counts for its link. A maker with a conveyor way to the destination (`ConstructCrafting.RouteTo`: joins and Routers) is
   chosen before one without (a Splitter's line may still bring it, in turn).
 - **Logistics settings** (phase 3, protocol 275; `Source/Constructs/StockTargets.cs`, group Logistics in the configure tool, added
@@ -975,6 +975,7 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   `routerSpill` (Auto, Ahead, Left, Right), `routerHold` (off, on). Crafting Terminal and Building Station: `feedPriority` "Order
   priority" (Low, Normal, High). The rack's look line ends with them: "keeps 6 of each kind it holds (refills at 4); takes only
   what it holds; store priority 5" (either peer: made from the settings).
+  Phase 5: a terminal's line queued at a shared maker goes ahead of unstarted lines of a lower class after the head (`ConstructLogisticsPlan.Ranked`; `WorkOrder.Rank`, server only: 1 a refill, 2 Low, 3 Normal, 4 High, a player's own line as Normal); a later change of the setting doesn't re-rank queued lines. A chain link nobody makes is asked again only when its network's look changes (`Seen`: links, rebuilds, each machine's queue, bin and settings) or after a minute (`RetrySteps`).
 - **Stock targets** (design section 6). Within 2 s of a rack's `storeKeep` going above 0 (a scan of every body's racks every 2 s,
   `StockTargets.Scan`), each kind it holds becomes a target (at most 8; an empty rack waits for its first piece). The low mark is
   keep less a quarter rounded up, at least one (keep 20: 15; keep 6: 4). At or below it, with nothing riding to it and no refill
