@@ -189,14 +189,23 @@ Cut Plate (solid 120x10x240 steel | r60,60,40,80,0 m2,20,20)  a 10 cm flat bar w
 
 - **`BLANK`** is the piece as an Extruder names it less `Extrusion ` (`Pressed.BlankText`, as a pressed part's key carries
   its blank), spelt exactly as a machine writes it; never growing. `CUTS` are section 4.1's, in the same sheet frame.
-- **Which sections.** Flat stock only, the laser cutting through its thickness:
-  - **plate** (the Extruder's Plate preset: the middle two rows of the grid, so `H / 4` thick): `H` up to 40 (10 cm thick);
-  - **solid** lying flat (a flat bar, the Panel Former's "sheet"): `H` up to 10 and no more than `W`.
+- **Which sections.** Flat stock only, the laser cutting through its thickness (the user's answers of 2026-11-13 to phase 1's
+  questions 2 and 3, `laser-cutter-phase1-notes.md`):
+  - **plate** (the Extruder's Plate preset: the middle two rows of the grid, so `H / 4` thick), any thickness;
+  - **solid** (a flat bar, the Panel Former's "sheet"), either way up: **lying flat** (`H` at most `W`) it is cut through
+    `H`, the sheet `L` by `W`; **on edge** (`H` over `W`) it is cut through its width `W`, the sheet `L` by `H` standing
+    in the piece's own `y`, `V` across its height from its bottom. The blank's own text (its `W` and `H`) tells which,
+    so nothing is added to the key.
+  - **No fixed thickest stock.** Anything the bed takes is cut; a thicker piece is only slower (section 5's law). The
+    only bound is the largest bed's height (`maxHeight`, 2 m on the Medium cutter): "too thick for any Laser Cutter's
+    bed: 2.4 m, the largest takes 2 m". A given cutter refuses a piece taller than its own bed at the order ("too tall
+    for the bed: 0.9 m, the Laser Cutter takes 0.6 m"), as a panel.
   - Refused with a reason, never cut: an L-angle, T-bar, I-beam, C-channel, cross, wall or hollow section ("a Laser
     Cutter cuts flat stock: plate or a flat bar, not an L-angle"), a custom grid or an airfoil (the same words), a round
-    or a pipe ("a pipe is not flat stock"), a wheel, fan, blade or wing (not stock at all), stock thicker than 10 cm
-    ("too thick to cut: 12.5 cm, a Laser Cutter cuts 10 cm"). Cutting a hole across a section's web is a later idea, not
-    this design.
+    or a pipe ("a pipe is not flat stock"), a wheel, fan, blade or wing (not stock at all). Cutting a hole across a
+    section's web is a later idea, not this design.
+  - Phase 1 built the plate and the bar lying flat, with a 10 cm limit and "lay the bar flat" for one on edge. Phase 2
+    replaces the limit with the bed's bound; the bar on edge goes where `laser-cutter-phase2-notes.md` says.
 - **Size.** 20 to 600 cm long and wide (the largest bed: section 5); a longer piece is cut to length at the Extruder
   first ("cut it to length at the Extruder: a Laser Cutter's bed is 6 m").
 - **The frame.** The sheet is the piece's own: `U` along its length (its `z`, 0 at its `base` end), `V` across its width
@@ -238,15 +247,15 @@ Cut Pane (r40,50,5 t12 glass)         the pane for the door's window of section 
 
 ## 5. The machine
 
-Part data `storage.cut` (`speed`, `maxLength`, `maxWidth`, `maxHeight`, `at` the out bed's middle, `scrap` the offcut
+Part data `storage.cut` (`kw`, `maxLength`, `maxWidth`, `maxHeight`, `at` the out bed's middle, `scrap` the offcut
 bin's size); `IsLaserCutter`; new `Source/Constructs/ConstructLaserCutter.cs`, shaped as `ConstructPanelFormer.cs`
 (`Refusal`, `Order`, `Work`, `TakeFromConveyor`, `Lacks`, `Parse`). A line machine: Run wire, power, status lamp, line
 state and console list as the Extruder family's.
 
-| Machine | Largest panel (bounds: longest x next x height) | Speed | Draw while cutting | Offcut bin | Size (estimate) |
-| --- | --- | --- | --- | --- | --- |
-| Laser Cutter | 2.5 x 1.8 x 0.6 m (the Panel Former's) | x1 | 2.4 kW | 200 | 3.5 x 2.5 m |
-| Medium Laser Cutter | 6 x 4.5 x 2 m (the Medium Panel Former's) | x2 | 9.6 kW | 1,200 | 7.5 x 5.5 m |
+| Machine | Largest panel (bounds: longest x next x height) | Draw while cutting (`kw`, the law's power) | Offcut bin | Size (estimate) |
+| --- | --- | --- | --- | --- |
+| Laser Cutter | 2.5 x 1.8 x 0.6 m (the Panel Former's) | 2.4 kW | 200 | 3.5 x 2.5 m |
+| Medium Laser Cutter | 6 x 4.5 x 2 m (the Medium Panel Former's) | 9.6 kW | 1,200 | 7.5 x 5.5 m |
 
 - **Sizes follow the Panel Former, not the Press.** Its blanks are a former's, and no panel passes 6 m; a Press's four
   classes would give two machines nothing can feed. A Large cutter comes with a Large former (on the Former's own
@@ -266,13 +275,29 @@ state and console list as the Extruder family's.
   a full queue. An Extruder, a Press, an Assembler and a Panel Former each refuse a cut key: "a Laser Cutter's order".
   Waiting says what it lacks: "needs Formed Panel (door 110x120 c6 r8 t20 steel)" or "needs Extrusion plate 200x20x300
   steel". A pane's stroke is its outline's length.
-- **The cut is a timed stroke**: `2 s + 3 s a metre of cut edge x (thickness / 20 mm)`, over the machine's speed
-  (proposal). A door's window (1.8 m of edge, 20 mm) is 7.4 s on the small cutter. Power is drawn only while it cuts;
+- **The cut is a timed stroke, slower through thicker stock and faster on a stronger machine** (the user, 2026-11-13:
+  "thicker the cut, the slower it should go in relation to the given machine's power output"). The law:
+
+  `seconds = 2 + E x edge x thickness / power`
+
+  with `edge` the length of cut edge in metres, `thickness` in mm, `power` the machine's cutting draw in kW
+  (`storage.cut.kw`, which replaces a `speed` multiplier) and `E` the energy a metre of cut takes per mm of thickness,
+  **0.36 kJ** (estimate: it keeps the first proposal's 3 s a metre through 20 mm on the 2.4 kW cutter). Linear in
+  thickness and edge, inverse in power, no cap. Estimates on the small cutter (2.4 kW): a door's window (1.8 m of edge,
+  20 mm) 7.4 s; a 5 cm plate's 60 cm round port (1.9 m) 16 s; a 10 cm plate with a 2 m hatch 32 s; a 40 cm bar with a
+  2 m cut 122 s. The Medium cutter (9.6 kW) takes a quarter of the cutting time. The bed is the only limit (4.4).
+  Power is drawn only while it cuts;
   no power, Run held off or a full offcut bin stops it with the blank untouched (the blank goes when the stroke ends,
   as a press's length).
-- **The offcut** (question 6): the area cut away, by the thickness, in units of the panel's material, rounded down, into
-  the offcut bin (`any`, bulk), which a chute empties from the **Offcut** port. A bin holding another material, or
-  full, stalls it: "offcut bin full" (`ExtrudeStall`, one new value). So a cut costs power and time, and no material.
+- **The offcut** (question 6, and the user's answer of 2026-11-13 to phase 1's question 1): the area cut away, by the
+  thickness, in units of the panel's material, **counted finer by the cutter**: each cut's offcut is rounded to the
+  nearest **tenth** of a unit (the tenth is a proposal) and added to the cutter's own count (one integer of tenths, saved
+  and sent with the machine); whole units go into the offcut bin (`any`, bulk) as they add up, and the tenths left wait
+  for the next cut. So a small window in thin sheet is not lost (0.4 of a unit three times gives one unit), and the
+  game's bulk units are unchanged: only the cutter counts finer. A chute empties the bin from the **Offcut** port. A
+  bin holding another material, or full, stalls it: "offcut bin full" (`ExtrudeStall`, one new value). A blank of
+  another material, with tenths still counted, first rounds them to the nearest unit into the bin. So a cut costs power
+  and time, and no material.
 - **Out**: the cut panel rides out of **Piece out** to a rack, waiting as a former's panel does (too narrow, full, cut),
   or with nothing linked drops on the out bed as a loose part.
 - **Look** ([Machine look](../constructs/look.md#machine-look) already names a Laser Cutter among the machines with a
@@ -355,7 +380,7 @@ in `CONSTRUCTS.md`) at the end of phases 3 and 5.
 | --- | --- | --- | --- | --- | --- |
 | 1 | **The cut panel and cut plate, drawn** | `HullLoft.Cuts.cs`: both keys (parse, write, the order of cuts; a cut plate's blank and its refused sections), the cut set, the rules, the clipper (pieces within each facet, on its quad; a plate is one flat facet), mass and health from what is left; collision and sockets still the blank's. `MaxRuntimeName` 240 and its readers. `--form-panel "Cut Panel (...)"` and `"Cut Plate (...)"`. Protocol bump | new `HullLoft.Cuts.cs`; `HullLoft.Panels.cs`, `HullLoft.cs`, `ConstructParts.cs`, `Net/ServerBrowser.cs` | `--form-panel` on eight sample keys (flat, door, hood, bend, loft, a plate, a flat bar, refused ones: an L-angle among them) prints clean, and each made in slices equals itself made whole. **Shippable alone**: cut panels exist for blueprints and creative | `--form-panel`; a scratch blueprint with two cut panels in `--window-shot`, and `--net host` with `join`: the same names and hashes; a creative save and load |
 | 2 | **Openings that work** | Strips split round openings (a cut plate's one box too), the box limit, the inset on rims; `o` sockets, dropped edge sockets; the facet limit's and box limit's words; `--form-panel` prints clear openings; the measurements of section 8 | `HullLoft.Cuts.cs`, `HullLoft.Panels.cs` | A player walks through a doorway cut in a flat sheet and a shot passes a 10 by 40 cm slot, on host and client | A scratch blueprint: a wall panel with a doorway and a slot, a door skin with a pane welded to `o0`; `--zfight-props` style check by eye on the rims at 1 m and 30 m; the probe's numbers to a file |
-| 3 | **The machine** | `storage.cut`, `IsLaserCutter`, `ConstructLaserCutter.cs` (orders, the bed's slot taking a formed panel or a flat piece, Piece in, the hand feed, the stroke, the offcut bin and port, Piece out, look line, screen, console row), the other machines' refusals, both parts from `laser_cutter_parts`, recipes, `Categories.json`, the bed's drawn blank. Protocol bump | new `ConstructLaserCutter.cs`, `PartKit/Generators/LaserCutterParts.cs`, `Constructs/Parts/LaserCutter`; `ConstructParts.cs`, `WorkOrders.cs`, `ConstructExtruder.cs`, `ConstructPress.cs`, `ConstructPanelFormer.cs`, `ConstructConveyor.cs`, `MachineScreens.cs`, `Render/RouteRender.cs`, `Generators/Assembling.cs`, docs | A former, a conveyor, a cutter and a rack: an order queued at the cutter by the window tool is cut from a formed blank and racked, the offcut in its bin, on host and client; a cut plate from a hand-fed extruded plate | That line in a window; a hand-fed blank; a hand-fed L-angle (refused); a wrong panel ("not its order"); the offcut bin full; power cut mid-stroke (the blank stays); save and load with a blank on the bed and an order queued; `--gen-parts laser_cutter_parts --check`, `--check-construct-parts`, `--look-report` |
+| 3 | **The machine** | `storage.cut`, `IsLaserCutter`, `ConstructLaserCutter.cs` (orders, the bed's slot taking a formed panel or a flat piece, Piece in, the hand feed, the stroke, the offcut bin and port, Piece out, look line, screen, console row), the other machines' refusals, both parts from `laser_cutter_parts`, recipes, `Categories.json`, the bed's drawn blank. Protocol bump | new `ConstructLaserCutter.cs`, `PartKit/Generators/LaserCutterParts.cs`, `Constructs/Parts/LaserCutter`; `ConstructParts.cs`, `WorkOrders.cs`, `ConstructExtruder.cs`, `ConstructPress.cs`, `ConstructPanelFormer.cs`, `ConstructConveyor.cs`, `MachineScreens.cs`, `Render/RouteRender.cs`, `Generators/Assembling.cs`, docs | A former, a conveyor, a cutter and a rack: an order queued at the cutter by the window tool is cut from a formed blank and racked, the offcut in its bin, on host and client; a cut plate from a hand-fed extruded plate | That line in a window; a hand-fed blank; a hand-fed L-angle (refused); a thick plate (slow, by the law); offcut tenths adding up to a unit; a wrong panel ("not its order"); the offcut bin full; power cut mid-stroke (the blank stays); save and load with a blank on the bed and an order queued; `--gen-parts laser_cutter_parts --check`, `--check-construct-parts`, `--look-report` |
 | 4 | **Cut-outs in the designer** | The Cut-outs mode, tools, Mirror, snap, readouts, red cuts; designs with cut keys; ORDER to a cutter; the window tool's `design cut ...` verbs | `UI/UiPanelDesigner.cs`, `App/Program.SandboxPanelDesigner.cs`, `PanelDesigns.cs`, `ConstructCrafting.cs`, the window tool | A door with a window is drawn by mouse, saved, ordered and arrives cut, the preview's hash the rack's | By mouse in the window; a client designs and orders, the host holds the same hash; a late joiner gets the design; a slider dragged with cuts on (cuts turn red and back) |
 | 5 | **Chains, bills, the terminal, the station** | `CutterInputs` (a former's or an Extruder's blank); the cutter in `LogiMap`; `Bill.Cut`, the bill line, `--bill`; the terminal's rows; `OrderFor`; the picker on a cutter; the Production Showcase's cutter; the code guide | `ConstructLogisticsPlan.cs`, `ConstructLogistics.cs`, `ConstructCrafting.cs`, `UI/UiCrafting.cs`, `WorkOrders.cs` (`ConstructBill`), `VehicleKit/VehicleCore.cs`, `ConstructStation.cs`, `UI/UiRecipePicker*.cs`, `Generators/ProductionShowcase.cs`, docs | One ORDER at the designer, with only bulk steel in the former's bin, ends with a cut panel in the tray and nobody touching anything | The Showcase in a window, host and client; `--bill` on a scratch blueprint with two cut panels; a Building Station build of it |
 | 6 | **The Pane** | `Cut Pane (...)`: its key and part (one flat piece, the opening's outline less 2 mm, glass, its `back` socket), its blank and offcut at the cutter; the designer's Glazed box and ORDER's extra panes; a pane in `Bill.Cut` and a blueprint step welding it to `o0` | `HullLoft.Cuts.cs`, `ConstructLaserCutter.cs`, `UI/UiPanelDesigner.cs`, `WorkOrders.cs` | A door skin with a glazed window ordered once arrives with its pane, and the pane welds into the opening by its socket | In a window: the order, the pane on `o0`, a shot breaking the pane alone; `--form-panel "Cut Pane (...)"` |
@@ -458,3 +483,7 @@ They will be asked together; each stands on its own. The first option is the rec
 7. **Two sizes, no tiers** (A).
 8. **By orders only** (A).
 9. **A socket in each opening, and a Pane** cut to the opening's outline from glass sheet (B): one more phase.
+
+Phase 1's three questions were answered the same day (`laser-cutter-phase1-notes.md` keeps the record): offcuts round
+to the nearest unit and the cutter counts them in tenths (section 5); no fixed thickest stock, the cutting time a law of
+thickness over power (section 5, the bed's bound in 4.4); a flat bar on edge is cut through its width (4.4).

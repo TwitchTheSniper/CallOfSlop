@@ -530,6 +530,17 @@ public static partial class HullLoft
             }
         if (cut is { Plate: true })
             return PlateJson(name, cut, p, area, slabs);
+        if (cut != null)
+            CutPanelCollision(p, sh, cut, slabs, Steel); // (a cut panel: its boxes round the openings, its edge sockets less those cut away)
+        else
+            PanelCollision(p, sh, nu, grid, slabs);
+        return PanelNumbers(name, sh, cut, p, area, t);
+    }
+
+    /// <summary>An uncut panel's collision and sockets: up to four hidden boxes along its length, and its edge sockets on them.</summary>
+    private static void PanelCollision(Builder p, in PanelShape sh, int nu, Vector3[,] grid, bool slabs)
+    {
+        var nv = grid.GetLength(1) - 1;
         // Collision: up to four hidden boxes along its length, each over its strip's own height (a growing or riding panel collides by boxes, never a
         // hull). Their sides are whole centimetres just inside the drawn edges, so no hidden face shares a plane with a facet's rim and the edge
         // sockets, which stand on them, are whole centimetres too (docs/LESSONS.md, "Generated geometry").
@@ -605,6 +616,11 @@ public static partial class HullLoft
         var backZ = sh.Kind == PanelBend ? PanelPoint(sh, PanelRowS(sh, 1, nu) / 2, 0).Z : sh.L / 200f; // (a bent panel: under the middle of its first flat)
         var (m0, m1) = boxes[sh.Kind == PanelBend ? 0 : StripAt(backZ)];
         p.Sock("back", new Vector3(0, m0.Y, Math.Clamp(Cm2(backZ), m0.Z, m1.Z)), "-y");
+    }
+
+    /// <summary>A panel's (or cut panel's) part file from its drawn boxes, collision and sockets: mass and health by the area drawn.</summary>
+    private static string PanelNumbers(string name, in PanelShape sh, CutPlan? cut, Builder p, float area, float t)
+    {
         var mat = RecyclingTable.Current.IdOf(sh.Material);
         var row = ExtrusionTable.Current.Find(mat)!;
         var volume = area * t;
@@ -723,12 +739,13 @@ public static partial class HullLoft
         Console.WriteLine($"  bounds {size.X:0.00} x {size.Y:0.00} x {size.Z:0.00} m, mass {d.Mass:0.#} kg, health {d.Health:0}, armour {d.Armour:0}");
         if (IsCutName(name) && ReadCut(name, out _) is { } plan)
         {
-            // What the cut takes away comes back as offcut (phase 3's bin): the blank's mass less the cut part's, in units of its material.
+            // What the cut takes away comes back as offcut (phase 3's bin): the blank's mass less the cut part's, in units of its material, to the
+            // nearest tenth (the user, 2026-11-13: the cutter counts its offcut in tenths and hands out whole units as they add up).
             var blank = ConstructParts.Find(plan.Blank);
             PumpPanels(-1);
-            var off = blank == null ? 0 : (int)MathF.Floor(MathF.Max(0, blank.Mass - d.Mass) / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(mat)));
+            var off = blank == null ? 0 : MathF.Round(MathF.Max(0, blank.Mass - d.Mass) / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(mat)) * 10) / 10;
             Console.WriteLine($"  cuts {plan.Cuts.Length} ({string.Join(' ', plan.Cuts.Select(c => c.Text))}), drawn pieces {plan.Items} of {CutMaxFacets}, key {name.Length} of {ConstructParts.MaxRuntimeName} characters");
-            Console.WriteLine($"  blank {plan.Blank}: {blank?.Mass ?? 0:0.#} kg; offcut {off} {RecyclingTable.Current.NameOf(mat)}");
+            Console.WriteLine($"  blank {plan.Blank}: {blank?.Mass ?? 0:0.#} kg; offcut {off:0.0} {RecyclingTable.Current.NameOf(mat)}");
         }
         else
             Console.WriteLine($"  cost {FormedUnits(d, mat)} {RecyclingTable.Current.NameOf(mat)}; made by: {ConstructPanelFormer.TierFor(d) ?? "no Panel Former is big enough"}");
