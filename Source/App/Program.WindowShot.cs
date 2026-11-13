@@ -110,7 +110,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "bundle" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action);
 
     private static void WsSay(string s)
     {
@@ -501,6 +501,11 @@ public static unsafe partial class Program
                             made[b.DefOf(i).Name] = made.GetValueOrDefault(b.DefOf(i).Name) + 1;
                     if (made.Count > 0)
                         WsSay($"{verb}: body {b.Id} ({b.PartCount} parts): {string.Join(", ", made.Select(kv => $"{kv.Key} x{kv.Value}"))}");
+                    for (var i = 0; i < b.PartCount; i++) // (a spilled bundle's material and worth; a Line Console's Made count)
+                        if (b.DefOf(i).Name == ConstructStorage.MaterialBundle)
+                            WsSay($"{verb}: body {b.Id}: Material Bundle of {RecyclingTable.Current.NameOf(b.Parts[i].Setting)}, worth {b.Parts[i].Rounds}");
+                        else if (b.Parts[i].LineMade != 0)
+                            WsSay($"{verb}: body {b.Id}: {b.DefOf(i).Name} part {i}: Made {b.Parts[i].LineMade}");
                 }
                 _wsWait = 5;
                 return;
@@ -1124,6 +1129,20 @@ public static unsafe partial class Program
                 st.Material = st.Amount > 0 ? mat : (byte)0;
                 st.Version++;
                 g.Constructs.StoreDirty.Add(st.Handle);
+                _wsWait = 2;
+                return;
+            }
+            case "bundle" when g.IsServer: // "bundle N MATERIAL" (host): a spilled Material Bundle of N units 2 m in front of the player, as a broken bin spills one
+            {
+                var sp = arg.IndexOf(' ');
+                var bmat = sp > 0 ? RecyclingTable.Current.IdOf(arg[(sp + 1)..]) : (byte)0;
+                if (!int.TryParse(sp > 0 ? arg[..sp] : "", out var bunits) || bmat == 0)
+                {
+                    WsFail("bundle N MATERIAL (on the host or offline)");
+                    return;
+                }
+                var bat = me.Position + new Vector3(MathF.Sin(me.Yaw), 0, MathF.Cos(me.Yaw)) * 2 + Vector3.UnitY;
+                WsSay($"bundle: {(g.Constructs.SpillBundle(bmat, bunits, bat, Vector3.Zero) ? "spilled" : "refused")} {bunits} {RecyclingTable.Current.NameOf(bmat)}");
                 _wsWait = 2;
                 return;
             }
