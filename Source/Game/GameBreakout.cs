@@ -139,7 +139,9 @@ public sealed partial class Game
             {
                 var escaped = _bkQEscaped >= 0 && s.World.Quality(who, _bkQEscaped) > 0;
                 // A loaded world (or a joiner): the lead without the escape is the muster again; the escape is the spaceport.
-                if (escaped)
+                if (escaped && BreakoutFreeOf(s, who))
+                    run.Stage = BreakoutAway;
+                else if (escaped)
                     run.Stage = BreakoutSpaceport;
                 else if (_bkRelLead >= 0 && s.World.Get(who, _bkRelLead, _bkLead) > 0)
                     run.Stage = BreakoutMuster;
@@ -151,6 +153,8 @@ public sealed partial class Game
                 muster = true;
                 BreakoutWait(s, p, ref run, who);
             }
+            else if (run.Stage == BreakoutSpaceport)
+                BreakoutShipLook(s, p, ref run, who); // (GameBreakoutShip.cs)
         }
         _bkMuster = muster;
         if (look)
@@ -283,7 +287,15 @@ public sealed partial class Game
             if (_bkCrew[i] != entity || entity < 0)
                 continue;
             if (_bkQFled >= 0 && _bkCrewOf.World.Quality(entity, _bkQFled) > 0)
+            {
+                // Round the courier once the guards are down (or before they ever came out), else at the landing.
+                if (!_bfOn && BreakoutCourier() is { } ship)
+                {
+                    var at = ship.WorldCom;
+                    return BreakoutCrewSpot(StandInPath.Ground(at + StandInPath.Up(at) * 10f), i) + new Vector3(0, 0, -6f);
+                }
                 return BreakoutLanding() is { } l ? BreakoutCrewSpot(l, i) : null;
+            }
             if (_bkMuster && BreakoutPool() is { } pool)
                 return BreakoutCrewSpot(pool, i);
             return null;
@@ -425,6 +437,15 @@ public sealed class BreakoutScript
 
     public FightPlan Fight = new();
 
+    /// <summary>The courier: a convict's line going aboard, each one's line once away ((name, line)), the memo, the panel's words.</summary>
+    public sealed class ShipPlan
+    {
+        public string Aboard = "", Memo = "", Title = "", Text = "";
+        public (string Name, string Line)[] Away = [];
+    }
+
+    public ShipPlan Ship = new();
+
     private static BreakoutScript? _current;
     public static BreakoutScript Current => _current ??= Load(Path.Combine(AppFolders.Data, "Story", "Opening", "Breakout.json"));
 
@@ -479,6 +500,21 @@ public sealed class BreakoutScript
             (d.MusterTitle, d.MusterText) = (Line(m, "title"), Str(m, "text"));
         if (root.TryGetProperty("spaceport", out var sp))
             (d.SpaceportTitle, d.SpaceportText) = (Line(sp, "title"), Str(sp, "text"));
+        if (root.TryGetProperty("ship", out var sh))
+        {
+            d.Ship.Aboard = Line(sh, "aboard");
+            d.Ship.Memo = Line(sh, "memo");
+            d.Ship.Title = Line(sh, "title");
+            d.Ship.Text = Str(sh, "text");
+            if (sh.TryGetProperty("away", out var aw))
+                d.Ship.Away = [.. aw.EnumerateArray().Select(x =>
+                {
+                    var (who, says) = (Line(x, "who"), Line(x, "says"));
+                    if (who.Length == 0 || says.Length == 0)
+                        throw new FormatException("\"ship\": an \"away\" line has \"who\" and \"says\"");
+                    return (who, says);
+                })];
+        }
         if (root.TryGetProperty("fight", out var fi))
         {
             var plan = d.Fight;

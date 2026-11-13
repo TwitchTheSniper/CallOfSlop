@@ -57,6 +57,17 @@ public sealed partial class Game
         return false;
     }
 
+    /// <summary>A convict who fled, while the guards are out: gun in hand (GameStoryBodies.cs keeps a calm body's hands empty).</summary>
+    private bool BreakoutCrewArmed(int entity)
+    {
+        if (!_bfOn || _bkCrewOf == null || _bkCrewOf != Story || _bkQFled < 0 || entity < 0)
+            return false;
+        for (var i = 0; i < _bkCrew.Length; i++)
+            if (_bkCrew[i] == entity)
+                return _bkCrewOf.World.Quality(entity, _bkQFled) > 0;
+        return false;
+    }
+
     /// <summary>Server, from <see cref="BreakoutTick"/>'s look: turn out, steer the scripted deaths, and stand down.</summary>
     private void BreakoutFightTick(StoryEngine s, double now)
     {
