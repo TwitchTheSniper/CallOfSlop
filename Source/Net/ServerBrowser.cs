@@ -474,7 +474,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 289: Building Station fill settings: the station part has four more settings (fillFuel, fillAmmo, fillCharge, fillWait; CfgKey at the end), part data both peers must share; no new bytes.
     // 290: Lifters phase 2: the Loader Arm in five tiers (Constructs/Parts/Lifters, ids move); CBodyKind.Lifts adds per lifter u16 carry rise (cm),
     //   u8 why, u16 step plus one, u16 station body, u16 moves (ConstructLifters.Write); CfgKey.LiftMode and CarryHeight (at the end).
-    public const ushort ProtocolVersion = 290;
+    // 294: run-time parts in the hands by key: the Sandbox hand state's held part is PartRef.WriteCached (a U16 id, or WireMark,
+    //      u8 length and the key's bytes); docs/sandbox/design/inventory-run-time-parts.md phase 1.
+    public const ushort ProtocolVersion = 294;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

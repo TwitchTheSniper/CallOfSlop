@@ -82,7 +82,7 @@ public sealed partial class Game
     {
         card.Clear();
         card.State = PanelState.Idle;
-        card.Add(0, ConstructParts.Get(h.Held)?.Name ?? SandboxHandText(me)); // (the tool you can see; the part you can't read off it)
+        card.Add(0, PartRef.Shown(h.Held) ?? SandboxHandText(me)); // (the tool you can see; the part you can't read off it)
         var first = 1;
         if (mode.Length > 0)
         {

@@ -152,6 +152,11 @@ public sealed partial class ConstructEdits
 
     public ref SandboxHand Hand(byte player) => ref Hands[player];
 
+    private readonly PartRef.Cache?[] _heldKeys = new PartRef.Cache?[256];
+
+    /// <summary>A hand's last held key on the wire (protocol 294: a run-time part in the hands travels by key; PartRef.WriteCached).</summary>
+    public PartRef.Cache HeldKey(byte player) => _heldKeys[player] ??= new PartRef.Cache();
+
     public string? SetTool(byte player, ConstructTool tool, ConstructWorld? world = null, Vector3? eye = null, float yaw = 0)
     {
         ref var h = ref Hands[player];

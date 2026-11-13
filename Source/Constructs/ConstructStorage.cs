@@ -833,19 +833,9 @@ public static class ConstructStorage
     }
 
     /// <summary>A stored part's id, or a run-time piece's key (its id is this machine's own: protocol 244).</summary>
-    internal static void WriteDef(PacketWriter w, ushort def)
-    {
-        if (def != ConstructParts.None && Extrusion.IsRuntimeId(def) && ConstructParts.Get(def) is { } d)
-            Extrusion.Write(w, d);
-        else
-            w.U16(def);
-    }
+    internal static void WriteDef(PacketWriter w, ushort def) => PartRef.Write(w, def); // (the shared form: PartRef.cs)
 
-    internal static ushort ReadDef(ref PacketReader r)
-    {
-        var def = r.U16();
-        return def == Extrusion.WireMark ? Extrusion.Read(ref r) : def;
-    }
+    internal static ushort ReadDef(ref PacketReader r) => PartRef.Read(ref r);
 
     /// <summary>Reads <see cref="Write"/>'s bytes into <paramref name="s"/> (bad values refused, never trusted).</summary>
     public static void Read(ref PacketReader r, CStore s)
