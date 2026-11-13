@@ -280,7 +280,7 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
 
   | Word | What | Range |
   | --- | --- | --- |
-  | `KIND` | the preset: `curve`, `sbend`, `hood`, `fender`, `door`, `roofbow`, `cowl` | |
+  | `KIND` | the preset: `curve`, `sbend`, `hood`, `fender`, `door`, `roofbow`, `cowl` (and `bend`, `loft`, whose keys differ: [Panel Designer](#panel-designer)) | |
   | `LxW` | length and width, cm | 20 to 600, 5 cm steps |
   | `c` | crown: how far the middle stands proud across the width, cm | 0 to 80, at most half the width |
   | `r` | rake, the kind's second number, cm: a curve's or a roof bow's arch along its length, an S-bend's step, a hood's nose drop, a fender's arch height, a door's turn-in at the top, a cowl's rise | -200 to 200, within its length |
@@ -1130,14 +1130,26 @@ Terminal's own code for everything else; the part from the part kit's `panel_des
   up, through ImGui's queue): Length 200 to 60 cm with 13 panels previewed on the way, Fold angle 45 to 90. Host and a joined client:
   the client folded a panel to 90 degrees by mouse, saved it as "Flange" and ordered it; the host held it racked with hash `7f0cfbd5`,
   the client's preview the same hash; the design on both and through the host's save and load.
-- **Loft: the plan** (not built). A lofted panel is two edge profiles (the back edge and the nose edge, each up to 8 heights across the
-  width, cm) and the sheet between them, ruled or eased. It will not fit a readable key under 128 characters with every range, so:
-  `Formed Panel (#HASH)` with the design (kind, sizes, the two profiles, material) stored once per world beside the named designs
-  (`ConstructWorld.Designs` gains a body; section `DSGN` a second list) and sent before any body that names it; `HullLoft.Parse` asks
-  the world's store for the hash, so every peer makes the same floats. The designer gets a profile editor: eight drag handles an edge
-  in a side view, mirrored by default. Geometry is `PanelPoint` with the height read from the two profiles (Catmull-Rom across, lerp or
-  smoothstep along); rows and strips as today. Open: a blueprint file must carry the design's body (a `"designs"` block), and a hash
-  with no body on a peer is a refused part, not a guess.
+- **Lofted panels** (phase 3, feat/panel-designer-3; protocol 270). A ninth preset, `loft`: a sheet ruled between two edge profiles.
+  Its key carries the whole design, so it travels, saves and bills as every other formed panel (no world store):
+  `Formed Panel (loft 200x120x100 t20 b0,8,13,15,15,13,8,0 f-6,0,4,6,6,4,0,-6 steel)`: length x back width x nose width (cm, 5 cm
+  steps), thickness, `b` the back edge's eight heights across it and `f` the nose's (whole cm, -99 to 99, left to right). At most 102
+  characters and the material's name (the plan's `#HASH` key with a per-world body was not needed: `docs/sandbox/design/panel-designer-3-notes.md`).
+  Crown and rake are 0. Geometry: each edge a Catmull-Rom curve through its eight heights, the width and height straight between the
+  edges (`HullLoft.ProfileHeight`, `PanelHalf`); 7 facets across (one when both edges are straight), 1 along when the edges are alike,
+  else `L/30` clamped 2 to 6 (at most 42). The heights ride in `PanelShape.Back` and `Nose`, a signed byte each, so the shape stays a value.
+  The designer shows Back width, Nose width, **Mirrored** (on by default; a lopsided design loads with it off) and two profile editors,
+  eight drag handles each over the curve the former follows. `--form-panel loft [nose=cm] [back=h,h,h,h,h,h,h,h] [front=...]`. Every
+  other kind's key, floats and hash are as they were (hood `d6421922`). The default loft: 42 facets, 13 sockets, 22.9 kg, hash `6be2b55e`;
+  the largest (6 x 4.5 m, nose 2 m, laminate) 25 sockets, Medium Panel Former only.
+- **Seen (2026-11-12, phase 3, this PC).** *Phase 2's late joiner:* a host with a bent panel and a loft welded to a foundation, a client
+  joining afterwards: both parts by name and hash on the client as on the host (bend `b5a9ad44`, loft `6be2b55e`), and the body's save
+  and load kept both names. *The loft end to end, a host and a late client (two windows):* the designer opened on the showcase, the loft
+  preset, two handles dragged (mirrored), the nose narrowed to 80 cm, saved as "Scoop" and ordered; the Panel Former formed it and the
+  return conveyor brought it to the tray, hash `7487f415` as the preview's; a client joining after got the design and the tray's panel
+  with the same hash; the world saved, and loaded in a fresh process, kept both. The window tool gained `design open|save|order|parts|
+  profile H,CM|nose N|mirror 0/1`. Not seen: the panel opened by F on the showcase's designer in this run's tool (the tool's `aim; use`
+  found the screen's pointer instead; `design open` calls the same opening), the handles dragged by a real mouse.
 
 - **Seen and measured** (2026-11-12, `--window-shot` on the showcase; the 2-core box at a load average of 11 to 24, so times are upper
   bounds). *Host alone:* every preset in the preview (its hash the same as `--form-panel` gives: hood `d6421922`); a design saved, ordered,
@@ -1154,8 +1166,8 @@ Terminal's own code for everything else; the part from the part kit's `panel_des
   welded edge to edge were refused ("something is in the way": their hidden boxes overlap at the seam).
 
 Proposed (the user's to confirm): the designer being a Crafting Terminal; panels collected at the former's rack unless a conveyor returns
-them; any player may order, replace or delete a shared design; 64 designs a world, 128 a library. Next: loft between
-outlines (a `Formed Panel (#HASH)` key with the design stored per world), player-added sockets, cut-outs with the Laser Cutter.
+them; any player may order, replace or delete a shared design; 64 designs a world, 128 a library; a loft's key in whole cm within 99 cm,
+ruled, eight heights an edge (the notes file above). Next: player-added sockets, cut-outs with the Laser Cutter, an eased loft.
 
 ## Reservations
 
