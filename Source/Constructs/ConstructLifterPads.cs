@@ -69,8 +69,10 @@ public static partial class ConstructLifters
             var pd = lo.DefOf(0);
             // Not a part that holds anything (its contents would be lost: a rack holds kinds only), nor a damaged one (it would come
             // out whole), nor what the pad or its stock target refuses.
-            if (lo.Parts[0].Store != 0 || pd.IsPieceRack || lo.Parts[0].Health < pd.Health * 0.999f)
+            if (lo.Parts[0].Store != 0 || pd.IsPieceRack || pd.Lifter != null || lo.Parts[0].Health < pd.Health * 0.999f)
                 continue;
+            if (!OnDeck(lo, pd, pp, inv, d.RackHoldMin.Y))
+                continue; // (standing beside the pad on the ground, as a placed machine does: not set down on it)
             if (ConstructConveyor.RackCheck(c, part, st, pd) != 0 || !StockTargets.Accepts(world, c, part, st, pd))
                 continue;
             world.Remove(lo);
@@ -83,6 +85,19 @@ public static partial class ConstructLifters
             n++;
         }
         return n;
+    }
+
+    /// <summary>Does the piece rest on the pad's deck: its lowest corner within 15 cm of the hold's floor (not below it: on the ground beside)?</summary>
+    private static bool OnDeck(Construct lo, ConstructPartDef pd, Vector3 padAt, Quaternion padInv, float floor)
+    {
+        Freeform.PartWorld(lo, 0, out var at, out var rot);
+        var low = float.MaxValue;
+        for (var k = 0; k < 8; k++)
+        {
+            var corner = new Vector3((k & 1) != 0 ? pd.BoundsMax.X : pd.BoundsMin.X, (k & 2) != 0 ? pd.BoundsMax.Y : pd.BoundsMin.Y, (k & 4) != 0 ? pd.BoundsMax.Z : pd.BoundsMin.Z);
+            low = MathF.Min(low, Vector3.Transform(at + Vector3.Transform(corner, rot) - padAt, padInv).Y);
+        }
+        return low > floor - 0.15f && low < floor + 0.15f;
     }
 }
 

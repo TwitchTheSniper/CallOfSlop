@@ -29,7 +29,8 @@ public static partial class LifterProbe
         var pr = ConstructBuild.PlaceNew(world, press, px with { Y = G(px.X, px.Z) }, 0);
         var rx = at + new Vector3(-(r * 0.45f + Half(rack).X), 0, 0);
         var rk = ConstructBuild.PlaceNew(world, rack, rx with { Y = G(rx.X, rx.Z) }, 0);
-        var pdx = at + new Vector3(0, 0, -(1.6f + Half(pad).Z));
+        var padMid = (pad.BoundsMin + pad.BoundsMax) * 0.5f;
+        var pdx = at + new Vector3(-padMid.X, 0, -(1.6f + Half(pad).Z) - padMid.Z); // (its middle there: a part's origin is its corner cell)
         var pd = ConstructBuild.PlaceNew(world, pad, pdx with { Y = G(pdx.X, pdx.Z) }, 0);
         if (arm == null || pr == null || rk == null || pd == null)
             return "press: no room for the line";
