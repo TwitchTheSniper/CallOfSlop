@@ -221,6 +221,7 @@ public sealed partial class Game
                 continue; // (out of the step's area: it waits, GameTutorialBounds.cs)
             if (QuarryJudge(p, ref run, steps[k], now))
             {
+                PaceStep(p, PaceDuty, steps[k].Id, now - run.StepAt, k + 1 >= steps.Length); // (GamePace.cs: how long the step took them)
                 if (k + 1 < steps.Length)
                     QuarrySet(p, (byte)(run.State + 1), now, null);
                 else

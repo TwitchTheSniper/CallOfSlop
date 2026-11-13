@@ -366,6 +366,8 @@ public sealed partial class Game
                 var p = Players[(byte)j];
                 if (!_tutDone[j] && members > 1)
                     SandboxHands.Notices.Add(((byte)j, $"{WardenName} moves on without waiting for you"));
+                if (step < Tutorial.Steps.Length)
+                    PaceStep(p, PaceInduction, Tutorial.Steps[step].Id, now - _tutStepAt[j], next >= stepCount); // (GamePace.cs: how long the step took them)
                 TutorialGo((byte)j, next, next >= stepCount ? TutorialState.Finished : TutorialState.Running, keepGroup: true);
                 if (next >= stepCount)
                     Console.WriteLine($"[tutorial] {p.Name} finished the induction");
