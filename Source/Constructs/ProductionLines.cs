@@ -120,7 +120,7 @@ public static partial class ProductionLines
         {
             AsmState.Short => LineState.Starved,
             AsmState.OutputFull or AsmState.Blocked => st.Blocked == (byte)AsmBlock.ConveyorSmall ? LineState.Fault : LineState.Blocked,
-            AsmState.TierLow or AsmState.Untaught or AsmState.Pressed => LineState.Fault,
+            AsmState.TierLow or AsmState.Untaught => LineState.Fault,
             AsmState.NoRecipe or AsmState.NoOrders => LineState.Idle,
             _ => LineState.Running, // (ready and powered: it starts at its next step)
         };
@@ -620,8 +620,6 @@ public static partial class ProductionLines
         var options = md.Config[md.CfgSlot[(int)key]].Options.Length;
         if (value < 0 || value >= options || md.IsRefiner && value > md.RefineChoices.Length)
             return $"the {md.Name} has no such recipe";
-        if (md.IsAssembler && value >= 1 && AssemblingTable.Current.ByMachine[md.AsmMachine] is var pasm && value <= pasm.Length && pasm[value - 1].Pressed)
-            return pasm[value - 1].PressedText();
         if (md.IsAssembler && value >= 1 && AssemblingTable.Current.ByMachine[md.AsmMachine] is var asm && value <= asm.Length && asm[value - 1].MinTier > md.Tier)
             return $"{asm[value - 1].Name} needs a tier {asm[value - 1].MinTier} assembler";
         if (md.IsLathe && value >= 1 && PressTable.Current.Lathe is var lathe && value <= lathe.Length && !ConstructPress.LatheCuts(md, lathe[value - 1]))

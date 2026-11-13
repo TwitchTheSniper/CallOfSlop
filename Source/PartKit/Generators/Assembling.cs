@@ -497,18 +497,18 @@ public sealed class Assembling : IPartGenerator
                 if (!byName.TryGetValue(q, out var qp) || !IsItem(qp))
                     throw new InvalidOperationException($"assembling: {r["output"]}: {q} isn't an item part");
         }
-        // Press phase 5: a single-piece part a die presses leaves the Assembler. Its row stays in place as a marker (an Assembler's recipe
-        // setting is saved as 1 + its place in the list, so removing a row would move every saved Assembler after it onto another recipe):
-        // the Assembler refuses it and says which die presses it.
+        // Press phase 5: a single-piece part a die presses leaves the Assembler. Its row goes (phase 5b, the user's answer 4: an Assembler's
+        // recipe setting is saved as 1 + its place in its family's list, so a saved Assembler past a removed row reads another recipe; accepted,
+        // tools/MIGRATING.md). The picker, the Technologies page and a blueprint naming it find the die from the presets instead.
         var presets = PressParts.PresetParts();
-        for (var k = 0; k < recipes.Count; k++)
+        for (var k = recipes.Count - 1; k >= 0; k--)
         {
             var output = (string)recipes[k]["output"]!;
             if (!PressedNow(output, recipes[k]))
                 continue;
             if (!presets.Contains(output))
                 throw new InvalidOperationException($"assembling: {output} is to be pressed, but no die has a preset for it (PressParts.Presets)");
-            recipes[k] = new PyDict { ["output"] = output, ["pressed"] = true };
+            recipes.RemoveAt(k);
         }
         o.File("Constructs/Assembling.json", Layout(recipes));
     }
