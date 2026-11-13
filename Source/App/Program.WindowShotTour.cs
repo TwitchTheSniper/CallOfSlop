@@ -19,7 +19,7 @@ public static partial class Program
     private static long _wsPerfLast;
     private static readonly List<double> _wsPerfMs = [];
 
-    private static bool WsTourKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "places" or "view" or "perf" or "skip";
+    private static bool WsTourKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "places" or "view" or "perf" or "skip" or "open";
 
     private static void WsTourSettings(string[] args)
     {
@@ -66,10 +66,37 @@ public static partial class Program
                 PerfBench.Begin(_wsPerfLabel); // (the profiler on over the same frames: PerfBench.cs)
                 return true;
             }
-            case "skip": // the survival opening skipped, as its key does
+            case "skip": // the survival opening skipped, as its key does; "skip induction": the induction too, as its button does
                 g.OpeningSkip();
+                if (arg.Equals("induction", StringComparison.OrdinalIgnoreCase))
+                    g.TutorialAsk(TutorialOp.Skip);
                 _wsWait = 90;
                 return true;
+            case "open": // a window as its key opens it: "open logbook [Records|Paths|Technologies]", "open parts", "open factions"
+            {
+                var sp = arg.Split(' ', 2, StringSplitOptions.TrimEntries);
+                SetLogbookOpen(false);
+                SetFactionOpen(false);
+                switch (sp[0].ToLowerInvariant())
+                {
+                    case "logbook":
+                        Ui.LogbookPick = sp.Length > 1 ? sp[1] : null;
+                        SetLogbookOpen(true);
+                        break;
+                    case "parts":
+                        Ui.OpenSandboxParts(focusSearch: false);
+                        SetMouseCaptured(false);
+                        break;
+                    case "factions":
+                        SetFactionOpen(true);
+                        break;
+                    default:
+                        WsFail("open logbook [TAB] | parts | factions");
+                        return true;
+                }
+                _wsWait = 20;
+                return true;
+            }
             case "places":
             {
                 var pl = World.Map.Planetoid;
