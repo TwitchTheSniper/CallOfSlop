@@ -267,8 +267,11 @@ public static partial class SelfTest
         // ---- No allocation per query ------------------------------------------------------------------------------------
         var sink = 0.0;
         var tq = times[2];
-        for (var n = 0; n < 50; n++) // warm up
-            sink += dev.PoseOf(new FrameRef(FrameKind.BodyFixed, moon), tq + n).Origin.X;
+        for (var n = 0; n < 2 * frames.Length + 50; n++) // warm up every call the measure makes, on every frame (a first call's JIT or lazy fill landed in the measure on CI)
+        {
+            var pose = dev.PoseOf(frames[n % frames.Length], tq + n * 1000L);
+            sink += pose.FromEcliptic(dev.PositionOf(moon, tq)).X + dev.BubbleOn(home, 1, 1, 0, tq).Origin.Y;
+        }
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var n = 0; n < 2000; n++)
         {
