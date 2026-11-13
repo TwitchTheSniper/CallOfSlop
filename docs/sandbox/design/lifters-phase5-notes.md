@@ -82,3 +82,18 @@ Bridge Crane, after that.
    ordered into the hold. B: the boom reaches pads in its bay's footprint too.
 3. **Damaged parts on a pad.** A (recommended, built): left lying (a rack holds kinds, so it would come out whole). B: taken in at
    full health.
+
+## After review (2026-11-13)
+
+- **Pick pads count only for an arm that can work now** (powered, whole, Run not held, not Stuck), so an arm that loses power
+  beside a stocked pad no longer stalls the build: tried with `timed` (the lone arm lost power), and the station ordered the pad's
+  parts at once ("waits for 23 parts ... riding to the tray").
+- **What a pad takes in**: only what the hands call loose (`Construct.Loose`: no seat, foundation or core, not anchored), with no
+  driver, not nudged (the Nudge tool) and not frozen (the physics gun), and only **as new**: full health, no rounds, no paint, no
+  text, settings at their defaults, no fluid, no queue. The other intakes (a conveyor into a rack, the hands' pick-up) keep a kind
+  only too; the pad refuses rather than lose what the part carries.
+- **Cost** (`lifter points` prints both): the take-in walks every body once a second per pad, 7 us average and 15 us worst with 24
+  bodies; a station's pick pad count (2 Hz while building) 14 us average, 34 us worst, bounded at 512 steps by 8 arms. First use
+  (JIT) up to 0.8 ms. Not measured in a world of hundreds of bodies.
+- Sections run by name, all pass: Construct gun recoil, Construct actuators, Interaction sweep (alone: its first run met another
+  session's server on its port), Nudge tool, Sandbox physics gun, Press stock, Extruder, Assembling, Construct storage, Sandbox full hands.
