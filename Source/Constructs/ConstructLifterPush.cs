@@ -40,9 +40,19 @@ public static class ConstructLifterPush
 
     private static readonly Posed[] Boxes = new Posed[MaxBoxes];
     private static int _count;
+    private static bool _mapAlready, _bodyAlready; // (this Block call: the player's own spot already overlaps the map, a construct)
 
     /// <summary>For the window tool: pushes made and pins found since start (this peer).</summary>
     public static int Pushes, Pins;
+
+    /// <summary>For the window tool: what the last pin found in the way.</summary>
+    public static string LastBlock = "";
+
+    private static bool Blocked(string what)
+    {
+        LastBlock = what;
+        return false;
+    }
 
     /// <summary>
     /// After a player's movement step (server, and a client's prediction and replay): out of every lifter's piece in the air
@@ -55,6 +65,7 @@ public static class ConstructLifterPush
         var n = Gather(world, tick, s.Position, height);
         if (n == 0)
             return;
+        var based = false;
         for (var iter = 0; iter < 2; iter++)
         {
             var any = false;
@@ -64,6 +75,15 @@ public static class ConstructLifterPush
                 if (!Overlap(b, s.Position, height, World.PlayerRadius, out var push))
                     continue;
                 any = true;
+                if (!based)
+                {
+                    // What already overlaps where they stand (a ledge they stand on, a part they lean in) is not a wall a push meets.
+                    var raised = s.Position with { Y = s.Position.Y + Lift };
+                    var h = MathF.Max(0.3f, height - Lift);
+                    _mapAlready = MoverPhysics.BlockedAll(raised, h, tick);
+                    _bodyAlready = world.BodyIn(raised, h - 0.02f);
+                    based = true;
+                }
                 var top = b.Centre.Y + b.World.Y;
                 if (top - s.Position.Y <= StepUp && Free(world, s.Position with { Y = top + 0.001f }, height, tick, i, n))
                 {
@@ -77,6 +97,8 @@ public static class ConstructLifterPush
                 if (!Free(world, s.Position + push, height, tick, i, n) && !Escape(world, b, s.Position, height, tick, i, n, ref push))
                 {
                     Pins++;
+                    if (Pins == 1)
+                        Console.WriteLine($"[lifter] pinned: feet {s.Position:0.00}, push {push:0.00}, last in the way: {LastBlock}");
                     if (server)
                         ConstructLifters.Pin(world, b.Lift, tick);
                     continue; // (pinned: not pushed; on the server the arm waits)
@@ -110,6 +132,14 @@ public static class ConstructLifterPush
             if (Overlap(b, world.PlayerSpots[k], World.PlayerHeight, World.PlayerRadius + Clearance, out _))
                 return false;
         return true;
+    }
+
+    /// <summary>The window tool: the piece in a hand as a world box (its middle and its world bounds' half size), <paramref name="age"/> ticks into the move.</summary>
+    public static bool PieceBox(Construct c, CLift l, LifterDef ld, float age, out Vector3 centre, out Vector3 half)
+    {
+        var ok = Pose(c, l, ld, age, out var b);
+        (centre, half) = (b.Centre, b.World);
+        return ok;
     }
 
     /// <summary>The pieces in the air near the feet, posed at a tick, into <see cref="Boxes"/>.</summary>
@@ -272,11 +302,13 @@ public static class ConstructLifterPush
     {
         var raised = feet with { Y = feet.Y + Lift }; // (a slope or a kerb under the pushed feet is not a wall: the mover steps them up)
         var h = MathF.Max(0.3f, height - Lift);
-        if (MoverPhysics.BlockedAll(raised, h, tick) || world.BodyIn(raised, h - 0.02f))
-            return false;
+        if (!_mapAlready && MoverPhysics.BlockedAll(raised, h, tick))
+            return Blocked($"the map at {raised:0.00}");
+        if (!_bodyAlready && world.BodyIn(raised, h - 0.02f))
+            return Blocked($"a construct at {raised:0.00}");
         for (var i = 0; i < n; i++)
             if (i != self && Overlap(Boxes[i], raised, h, World.PlayerRadius, out _))
-                return false;
+                return Blocked("another piece");
         return true;
     }
 }

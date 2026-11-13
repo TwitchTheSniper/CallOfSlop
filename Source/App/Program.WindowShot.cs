@@ -898,7 +898,52 @@ public static unsafe partial class Program
                     var (lc, lpart) = WsFind(g, "Building Station");
                     WsSay("lifter: place: " + (lc == null ? "no Building Station" : LifterProbe.Place(g.Constructs, lc, lpart, pw.Length > 1 ? pw[1] : "", pw.Length > 2 && int.TryParse(pw[2], out var ps) ? ps : 0)));
                 }
+                var lw = arg.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (lw.Length > 0 && lw[0] == "walk") // "lifter walk": this peer's player out of the window tool's flight, on its feet (a client before the host's "lifter stand others")
+                {
+                    me.NoclipWanted = false;
+                    g.NoclipShot = false;
+                }
+                else if (lw.Length > 0 && lw[0] is "stand" or "pen" && g.IsServer)
+                {
+                    // "lifter stand [me|others]" (host): the players where a carry that has just begun will pass its piece; "lifter pen
+                    // [me|others]": the same with four Crate Stacks round them, so a push can't get them out (pinned: the arm must wait).
+                    if (LifterProbe.PathSpot(g.Constructs, out var pinfo) is not { } pspot)
+                    {
+                        if (_wsLiftWaits++ < 1200)
+                        {
+                            _wsQueue.EnqueueFront($"lifter {arg.Trim()}");
+                            _wsWait = 1;
+                            return;
+                        }
+                        WsFail("lifter: no carry began in 20 s");
+                        return;
+                    }
+                    _wsLiftWaits = 0;
+                    var who = lw.Length > 1 ? lw[1] : "me";
+                    if (who != "others")
+                    {
+                        me.NoclipWanted = false;
+                        g.NoclipShot = false;
+                    }
+                    var moved = 0;
+                    foreach (var pl in g.Players.Values)
+                        if (pl.Bot == null && (who == "others" ? pl != me : pl == me))
+                        {
+                            pl.Teleport(pspot + new Vector3(0, 0.05f, 0));
+                            moved++;
+                        }
+                    var pens = lw[0] == "pen" ? LifterProbe.Pen(g.Constructs, pspot) : 0;
+                    WsSay($"lifter: {lw[0]}: {moved} player(s) to {pspot:0.00}{(pens > 0 ? $", {pens} Crate Stacks round them" : "")}; {pinfo}");
+                }
+                else if (lw.Length > 0 && lw[0] == "free" && g.IsServer) // "lifter free" (host): every player 4 m north, out of a pen
+                    foreach (var pl in g.Players.Values)
+                        if (pl.Bot == null)
+                            pl.Teleport(pl.Position + new Vector3(0, 0.05f, -4f));
                 WsSay("lifter: " + LifterProbe.Text(g.Constructs));
+                foreach (var pl in g.Players.Values)
+                    if (pl.Bot == null)
+                        WsSay($"lifter: player {pl.Id}{(pl == me ? " (this peer)" : "")} feet {pl.Position:0.00}");
                 return;
             }
             case "station": // a Building Station: "station" prints the first one's job; then "station pick NAME", start [N], cancel, release, stock (host: the parts it lacks into its hold), hold NAME (host: that part into this player's hands), save (host: its body saved and loaded)

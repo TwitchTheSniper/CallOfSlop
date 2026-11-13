@@ -1225,11 +1225,11 @@ public static class LifterProbe
             {
                 var l = lb.Lifts[i];
                 n++;
-                sb.Append($" [body {lb.Body} part {l.Part} {world.Get(lb.Body)?.DefOf(l.Part).Name}: {l.State} {l.Why} moves {l.Moves}{(l.Def != 0 ? " " + (ConstructParts.Get(l.Def)?.Name ?? "?") : "")} {l.Age}/{l.Dur} ticks]");
+                sb.Append($" [body {lb.Body} part {l.Part} {world.Get(lb.Body)?.DefOf(l.Part).Name}: {l.State} {l.Why} moves {l.Moves}{(l.Def != 0 ? " " + (ConstructParts.Get(l.Def)?.Name ?? "?") : "")} {l.Age}/{l.Dur} ticks{(l.WaitFrom != 0 ? $" waiting at tick {l.WaitFrom}" : "")} held {l.Held}]");
             }
         var f = System.Diagnostics.Stopwatch.Frequency / 1e6;
         var cost = StepTicks > 0 ? $"; lifter step {StepTotal / f / StepTicks:0.0} us a tick on average, worst {StepWorst / f:0} us (with its fits) over {StepTicks} ticks" : "";
-        return $"{n} lifter(s), {CarriesHeard} carries seen, {Fits} fitted by lifters (host count){cost}{sb}";
+        return $"{n} lifter(s), {CarriesHeard} carries seen, {Fits} fitted by lifters (host count), players pushed {ConstructLifterPush.Pushes} times, pinned {ConstructLifterPush.Pins} (this peer; last in the way: {ConstructLifterPush.LastBlock}){cost}{sb}";
     }
 
     /// <summary>Host: a Loader Arm on the ground behind the station's hold, inside its bay's back corner, turned as the station is.</summary>
@@ -1251,6 +1251,55 @@ public static class LifterProbe
     }
 
     public static long StepTicks, StepTotal, StepWorst; // server: the lifter step's own cost (Stopwatch ticks), for the window tool
+
+    /// <summary>
+    /// Host (the window tool's "lifter stand" and "lifter pen"): a spot on the ground the piece of a carry that has just begun
+    /// will pass over, 60 % into its move; null while no such carry runs. <paramref name="info"/>: the piece's box there.
+    /// </summary>
+    public static Vector3? PathSpot(ConstructWorld world, out string info)
+    {
+        info = "";
+        foreach (var lb in world.LiftBodies)
+        {
+            if (world.Get(lb.Body) is not { } c)
+                continue;
+            for (var i = 0; i < lb.N; i++)
+            {
+                var l = lb.Lifts[i];
+                if (l is not { State: LiftState.Carry, ToHold: false, WaitFrom: 0 } || l.Def == 0 || l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { } ld)
+                    continue;
+                var age = ConstructLifters.AgeAt(l, ConstructLifters.Now);
+                if (age > l.Dur * 0.3f || !ConstructLifterPush.PieceBox(c, l, ld, l.Dur * 0.6f, out var centre, out var half))
+                    continue;
+                var ground = World.Map.GroundHeight(centre.X, centre.Z);
+                info = $"{ConstructParts.Get(l.Def)?.Name} of body {l.Body} part {l.Part}, {age:0}/{l.Dur} ticks in: at 60 % its box spans {centre.Y - half.Y - ground:0.00} to {centre.Y + half.Y - ground:0.00} m over the ground, {half.X * 2:0.00} x {half.Z * 2:0.00} m across";
+                return new Vector3(centre.X, ground, centre.Z);
+            }
+        }
+        return null;
+    }
+
+    /// <summary>Host: four Crate Stacks round a spot, their near faces 0.45 m from it (a pen a player cannot be pushed out of).</summary>
+    public static int Pen(ConstructWorld world, Vector3 spot)
+    {
+        if (ConstructParts.Find("Crate Stack") is not { } d)
+            return 0;
+        var mid = (d.BoundsMin + d.BoundsMax) * 0.5f;
+        var half = (d.BoundsMax - d.BoundsMin) * 0.5f;
+        var n = 0;
+        for (var k = 0; k < 4; k++)
+        {
+            var dir = k switch { 0 => Vector3.UnitX, 1 => -Vector3.UnitX, 2 => Vector3.UnitZ, _ => -Vector3.UnitZ };
+            var along = MathF.Abs(dir.X) * half.X + MathF.Abs(dir.Z) * half.Z;
+            var at = spot + dir * (0.45f + along) - new Vector3(mid.X, 0, mid.Z);
+            if (ConstructBuild.PlaceNew(world, d, new FreePlacement { Pos = at with { Y = spot.Y - d.BoundsMin.Y + 0.02f }, Rot = Quaternion.Identity }) is { } made)
+            {
+                made.Anchored = true;
+                n++;
+            }
+        }
+        return n;
+    }
 }
 
 /// <summary>
