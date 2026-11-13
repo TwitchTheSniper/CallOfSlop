@@ -277,10 +277,20 @@ public static partial class SelfTest
         // ---- Nothing allocates while the Recycler idles; the store reads back as it was written.
         Ticks(60);
         var a0 = GC.GetAllocatedBytesForCurrentThread();
+        int allocTicks = 0, firstTick = -1;
+        long worstTick = 0;
         for (var k = 0; k < 120; k++)
+        {
+            var b0 = GC.GetAllocatedBytesForCurrentThread();
             w.Step(World.Query, World.TickDt);
+            var b = GC.GetAllocatedBytesForCurrentThread() - b0;
+            if (b > 0 && allocTicks++ == 0)
+                firstTick = k;
+            worstTick = Math.Max(worstTick, b);
+        }
         var alloc = GC.GetAllocatedBytesForCurrentThread() - a0;
-        Want(alloc < 4096, $"the world step with an idle Recycler allocates {alloc} B over 120 ticks");
+        // (in a failure, how many ticks allocated tells a one-off from a steady cost: CI saw 7664 B once, never seen here)
+        Want(alloc < 4096, $"the world step with an idle Recycler allocates {alloc} B over 120 ticks ({allocTicks} ticks allocated, the first {firstTick}, the most {worstTick} B; {w.Bodies.Count} bodies)");
         var pw = new PacketWriter(2048);
         st.Material = metal;
         st.Amount = 77;
