@@ -97,7 +97,12 @@ gone from both dies (a rated like part, such as the U Joint's 4,000 N m, still s
 
 ## Open questions for the user
 
-1. **The Bearing tier.** Six drivetrain parts (Suspension, Drive Shaft 1 m, U Joint, CV Joint, Stub Axle, Wheel Hub) stayed on
+1. **Answered 2026-11-13: move them, bay 2 is a Gear Set.** The Shaft die's five patterns and the Spring die's Suspension pattern
+   take Gear Sets in bay 2 in place of Bearings (shafts `0 + 0.5 x length`, at least 1; the Suspension `0 + 2 x across`), and the
+   six rows are markers like the other 66 (72 now). The Bearing stays tier 2: bronze is a tier 2 foundry's, so a tier 1 recipe
+   would have had no material. The Suspension's old recipe took rubber, not a Gear Set: it takes the Gear Set as the others do.
+   `--press-part shaft "round 20x20x100 steel"`: `bay 2: 1 Gear Set`. Not tried in a window. The question was:
+   **The Bearing tier.** Six drivetrain parts (Suspension, Drive Shaft 1 m, U Joint, CV Joint, Stub Axle, Wheel Hub) stayed on
    the Assembler only because their die wants Bearings, a tier 2 part, where the recipe was tier 1. Should the Bearing become a
    tier 1 part (it is 2 bronze), or should those six move and cost a tier?
 2. **The engine cylinders.** Small to Capital Cylinder have a working Cylinder die and preset today, and stayed only because

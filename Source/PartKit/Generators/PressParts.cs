@@ -544,12 +544,13 @@ public sealed class PressParts : IPartGenerator
     private static IEnumerable<object?> WorkingDies3b()
     {
         string[] metals = ["steel", "metal", "bronze"];
-        // Shaft: a yoke flange at each end, 0.08 of the length; Bearings by length; torque as d^3 and strength (the Drive die's law).
+        // Shaft: a yoke flange at each end, 0.08 of the length; Gear Sets by length; torque as d^3 and strength (the Drive die's law).
         // (Auto picks by the blank's section: 15 cm a U joint, 20 a drive shaft, 25 a CV joint, 30 and up a stub axle; the Pattern setting the rest.)
         var shaft = Py.L(
             Feature("flange", [-0.2, -0.2, 0, 1.2, 1.2, 0.08], "dark", proud: "xyz", clamp: "z", min: 0.5, max: 40),
             Feature("flange", [-0.2, -0.2, 0.92, 1.2, 1.2, 1], "dark", proud: "xyz", clamp: "z", min: 0.5, max: 40));
-        var bearings = Kit("Bearing", true, 2, 0.5, "length", 12);
+        // (Gear Sets, not Bearings: the user, 2026-11-13. These were tier 1 Assembler parts taking a Gear Set, and bronze is a tier 2 foundry's.)
+        var bearings = Kit("Gear Set", true, 0, 0.5, "length", 12);
         var shaftTorque = Py.L(Scale("maxTorque", "across", 3, true)); // (the U Joint is rated, 4,000 N m, and scales; the unrated stay unrated, as the Drive die)
         yield return SizedDie("Shaft", ["round", "pipe"], metals, [10, 180], [25, 3200], [1, 64], 2, 0.02, shaft, Py.L(
             Pattern("shaft", "Drive Shaft 1 m", "drive shaft", "round 20x20x100 steel", bay2: bearings, scale: shaftTorque, along: "z"),
@@ -576,7 +577,7 @@ public sealed class PressParts : IPartGenerator
         var load = Py.L(Scale("maxLoad", "across", 2, true));
         var springBearings = Kit("Bearing", true, 1, 2, "across", 16);
         yield return SizedDie("Spring", ["solid", "l-angle", "t-bar", "plate"], ["steel", "metal", "bronze"], [10, 720], [25, 1600], [1, 16], 2, 0.02, spring, Py.L(
-            Pattern("suspension", "Suspension", "suspension", "solid 10x30x65 steel", bay2: springBearings, scale: load, along: "y"),
+            Pattern("suspension", "Suspension", "suspension", "solid 10x30x65 steel", bay2: Kit("Gear Set", true, 0, 2, "across", 16), scale: load, along: "y"),
             Pattern("leaf", "Leaf Spring", "leaf spring", "solid 10x55x90 steel", bay2: springBearings, scale: load, along: "z"),
             Pattern("rigid", "Rigid Mount", "rigid mount", "solid 10x30x40 steel", bay2: springBearings, scale: load, along: "y"),
             Pattern("light", "Light Suspension", "light suspension", "solid 25x25x30 steel", bay2: springBearings, scale: load, along: "y")));

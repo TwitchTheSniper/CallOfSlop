@@ -517,9 +517,8 @@ public sealed class Assembling : IPartGenerator
 
     // The parts a die presses from one blank (a preset in PressParts) that leave the Assembler. Not here, and why:
     // Differential and Proximity Sensor take two kinds of part (an assembly by the sort's rule); the engine cylinders are engine pieces, sized in
-    // their own phase (answer 4); the Frame Beam is the basic building piece (answer 3); Suspension, Drive Shaft 1 m, U Joint, CV Joint, Stub
-    // Axle and Wheel Hub are tier 1 Assembler parts whose die takes Bearings, a tier 2 Assembler's part, so pressing them would lift a first
-    // vehicle's drivetrain a tier.
+    // their own phase (answer 4); the Frame Beam is the basic building piece (answer 3). Suspension, Drive Shaft 1 m, U Joint, CV Joint, Stub
+    // Axle and Wheel Hub moved on 2026-11-13, once their patterns took a Gear Set in bay 2 in place of Bearings (bronze is tier 2).
     private static readonly HashSet<string> Moved = new(StringComparer.Ordinal)
     {
         "L Bracket", "Corner Bracket", "Gusset 0.25 m", "Gusset 0.5 m",
@@ -527,6 +526,7 @@ public sealed class Assembling : IPartGenerator
         "5-Speed Gearbox", "CVT", "Automatic Gearbox", "Reversing Gearbox", "Limited-Slip Differential", "Locking Differential",
         "Steel Plate", "Sheet Steel 1 m", "Plate Steel 1 m", "Tread Plate 1 m", "Mesh Grate 1 m", "Armour Plate 1 m",
         "Piston 1x1 Medium", "Motor Hinge", "Turntable", "Free Pivot 1x1", "Leaf Spring", "Rigid Mount", "Light Suspension",
+        "Suspension", "Drive Shaft 1 m", "U Joint", "CV Joint", "Stub Axle", "Wheel Hub",
         "Wiring Loom", "Copper Coil", "Power Lead Reel", "Data Lead Reel", "Fluid Hose Reel", "Fuel Line",
         "AND Gate", "NOT Gate", "Timer", "Delay", "Compare", "Speed Sensor",
         "Fuel Tank", "Small Fuel Tank", "Fuel Drum", "Fluid Tank", "Small Fluid Tank",

@@ -2772,8 +2772,8 @@
      "body": "like",
      "along": "z",
      "bay2": {
-      "part": "Bearing",
-      "base": 2.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 0.5,
       "by": "length",
       "max": 12
@@ -2795,8 +2795,8 @@
      "body": "like",
      "along": "x",
      "bay2": {
-      "part": "Bearing",
-      "base": 2.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 0.5,
       "by": "length",
       "max": 12
@@ -2818,8 +2818,8 @@
      "body": "like",
      "along": "x",
      "bay2": {
-      "part": "Bearing",
-      "base": 2.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 0.5,
       "by": "length",
       "max": 12
@@ -2841,8 +2841,8 @@
      "body": "like",
      "along": "z",
      "bay2": {
-      "part": "Bearing",
-      "base": 2.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 0.5,
       "by": "length",
       "max": 12
@@ -2856,8 +2856,8 @@
      "body": "like",
      "along": "z",
      "bay2": {
-      "part": "Bearing",
-      "base": 2.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 0.5,
       "by": "length",
       "max": 12
@@ -3135,8 +3135,8 @@
      "body": "like",
      "along": "y",
      "bay2": {
-      "part": "Bearing",
-      "base": 1.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 2.0,
       "by": "across",
       "max": 16
