@@ -60,12 +60,15 @@ public sealed partial class Ui
     private bool SbNetMissing(SbItem it) => _sbNet != null && _sbTab == SbTab.Parts && it.Part != null && SbNetHas(it.Index) == 0;
 
     /// <summary>Does the Parts tab leave this part out?</summary>
-    private bool SbNetHides(int item) => _sbNet != null && SandboxNetHideMissing && _sbTab == SbTab.Parts && SbNetHas(item) == 0;
+    private bool SbNetHides(int item) => _sbNet != null && SandboxNetHideMissing && _sbTab == SbTab.Parts && SbNetHas(item) == 0
+        && !(SandboxShowLocked && _sbItems[0][item].Locked); // (a locked part stays, as a goal: UiSandboxPartLocks.cs)
 
     /// <summary>The beacon's line and the hide box, under the window's own options.</summary>
     private void SbNetOptions()
     {
         if (ImGui.Checkbox("Hide what it doesn't hold"u8, ref SandboxNetHideMissing))
+            _sbFilterVersion++;
+        if (SandboxNetHideMissing && ImGui.Checkbox("...but show locked parts"u8, ref SandboxShowLocked))
             _sbFilterVersion++;
         ImGuiSafe.TextColored(Dim, _sbNet!.Line);
     }
