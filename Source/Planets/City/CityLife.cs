@@ -370,10 +370,23 @@ public sealed class CityLife
         var mz = (plan.SquareMin.Y + plan.SquareMax.Y) * 0.5f;
         (Vector2 Min, Vector2 Max)[] keepOut =
         [
-            (new Vector2(-8), new Vector2(8)),
+            (new Vector2(-11.5f), new Vector2(11.5f)),
             (new Vector2(plan.SquareMin.X + 18, mz + 15), new Vector2(plan.SquareMin.X + 26, mz + 21)),
             (new Vector2(plan.SquareMax.X - 26, mz - 21), new Vector2(plan.SquareMax.X - 18, mz - 15)),
         ];
+        var beds = new List<(Vector2 Min, Vector2 Max)>(keepOut);
+        foreach (var (qx, qz) in new[] { (-1f, -1f), (1f, -1f), (-1f, 1f), (1f, 1f) })
+        {
+            var centre = new Vector2(qx * MathF.Min(36f, (plan.SquareMax.X - plan.SquareMin.X) * 0.25f), qz * MathF.Min(28f, (plan.SquareMax.Y - plan.SquareMin.Y) * 0.22f));
+            beds.Add((centre - new Vector2(9.5f, 6.5f), centre + new Vector2(9.5f, 6.5f)));
+        }
+        for (var i = 0; i < 10; i++)
+        {
+            var la = i * MathF.Tau / 10 + 0.3f;
+            if (i < 10)
+                beds.Add((new Vector2(MathF.Cos(la), MathF.Sin(la)) * 21f - new Vector2(0.8f), new Vector2(MathF.Cos(la), MathF.Sin(la)) * 21f + new Vector2(0.8f)));
+        }
+        keepOut = beds.ToArray();
         for (var i = 0; i < 160; i++)
         {
             var a = new Vector2(d.Range(smin.X, smax.X), d.Range(smin.Y, smax.Y));

@@ -376,6 +376,15 @@ public sealed unsafe partial class CityRenderer
                 float joint = 1.0 - Band(max(g.x, g.y), 0.0, 0.47, fwidth(t.x) + fwidth(t.y));
                 float k = 0.88 + 0.18 * H01(uint(floor(t.x) + 4096.0) * 7919u + uint(floor(t.y) + 4096.0));
                 vec3 albedo = vColor * k * (1.0 - 0.25 * joint * clamp(1.0 - fw * 6.0, 0.0, 1.0));
+                if (seed == 1u)
+                {
+                    // The square: darker stone in rings round the fountain and in spokes from it.
+                    float r = length(vUv);
+                    float ring = Band(fract(r / 12.0), 0.0, 0.09, fwidth(r / 12.0)) * step(13.0, r);
+                    float ang = atan(vUv.y, vUv.x) * 16.0 / 6.2831853;
+                    float spoke = Band(abs(fract(ang) - 0.5) * r * 6.2831853 / 16.0, -0.6, 0.6, fwidth(r)) * step(13.0, r);
+                    albedo = mix(albedo, vColor * 0.62, clamp(ring + spoke, 0.0, 1.0));
+                }
                 col = Lit(albedo, n, 0.0, vWorld) + albedo * vec3(1.0, 0.75, 0.48) * gOut * (seed == 1u ? 0.45 : 0.1);
             }
             else if (style == 11) // a lamp's head
@@ -535,6 +544,14 @@ public sealed unsafe partial class CityRenderer
                     col = Lit(vColor, n, 0.0, vWorld) + green * 1.5;
                     glow = green;
                 }
+            }
+            else if (style == 22) // water: dark, rippling, the sky and the lamps in it
+            {
+                vec2 q = vWorld.xz;
+                float rip = sin(q.x * 3.1 + uTime * 1.7) * 0.5 + sin(q.y * 2.7 - uTime * 1.3) * 0.5 + sin((q.x + q.y) * 4.3 + uTime * 2.3) * 0.3;
+                vec3 nn = normalize(n + (cross(n, vec3(1.0, 0.0, 0.0)) * cos(q.x * 3.1 + uTime * 1.7) + cross(n, vec3(0.0, 0.0, 1.0)) * cos(q.y * 2.7 - uTime * 1.3)) * 0.06);
+                float fres = 0.1 + 0.9 * pow(1.0 - max(dot(nn, v), 0.0), 5.0);
+                col = mix(vColor * 0.4, Reflection(nn, v, vec3(0.9)), max(fres, 0.35)) + vec3(1.0, 0.75, 0.45) * 0.12 * (0.6 + 0.4 * rip) * gOut;
             }
             else if (style == 20) // the metro's tiles: small glazed tiles, the line's band, the station's name frieze
             {
