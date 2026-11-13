@@ -87,12 +87,12 @@ public sealed class BuildStationParts : IPartGenerator
         p.Set(("panels", Py.L(Kw(("source", "station"), ("at", Py.L(Py.Round((x0 + xm) / 2, 3), Py.Round(y0 + MachineLook.EyeY, 3), Py.Round(dz0 + 0.171, 3))), ("size", Py.L(0.74, 0.5)), ("face", "+z"), ("up", "+y"), ("rows", 8), ("range", 12)))));
         const double section = 1.8, length = 4.8;
         static PyDict Fill(string key, string label, string tip) => Kw(("key", key), ("label", label), ("group", "Fill"), ("min", 0), ("max", 100), ("step", 5), ("default", 100), ("unit", "%"),
-            ("tooltip", tip + " 0: none, 100: full. Survival only: in creative a build comes full."));
+            ("tooltip", "Survival: a build is filled to this share. " + tip + " 0: none, 100: full."));
         static PyDict Bay(string key, string label, double def, string tip) => Kw(("key", key), ("label", label), ("group", "Bay"), ("min", 2), ("max", 64), ("step", 0.5), ("default", def), ("unit", "m"), ("tooltip", tip));
         p.Set(("config", Py.L(Bay("bayWidth", "Bay width", 6, "The bay's size across, away from the station."), Bay("bayDepth", "Bay depth", 8, "The bay's size along the station."), Bay("bayHeight", "Bay height", 4, "The bay's height. A blueprint is built only if it fits the bay."),
-            Fill("fillFuel", "Fuel and tanks", "Fuel and fluid tanks (gases too) are filled to this share of what the blueprint holds, from tanks piped to Fluid in and gas in linked bins."),
-            Fill("fillAmmo", "Ammo", "Ammo boxes, Ammo Containers and fitted magazines are filled to this share, from bulk ammo in linked bins."),
-            Fill("fillCharge", "Battery charge", "Batteries are charged to this share from the station's own power."),
+            Fill("fillFuel", "Fuel and tanks", "Fuel and fluid tanks, gases too: from tanks piped to Fluid in, gas from linked bins."),
+            Fill("fillAmmo", "Ammo", "Ammo boxes, Ammo Containers and fitted magazines: from bulk ammo in linked bins."),
+            Fill("fillCharge", "Battery charge", "Batteries: charged from the station's own power, which takes time."),
             Kw(("key", "fillWait"), ("label", "Wait until filled"), ("group", "Fill"), ("type", "toggle"), ("default", false),
                 ("tooltip", "On: a build stays in the bay until it is filled. Off: it finishes with what it got and says what is short.")))));
         p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(section, 1.25)), ("length", length), ("count", 400), ("crafting", true), ("station", true),

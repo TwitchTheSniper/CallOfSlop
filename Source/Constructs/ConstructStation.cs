@@ -966,6 +966,17 @@ public static partial class ConstructStation
         return !full && (moved || waits);
     }
 
+    /// <summary>Are these only a station's fill settings (its window sets them with any tool in hand: ConstructEdits.Configure)?</summary>
+    public static bool WindowSets(ConstructPartDef d, ReadOnlySpan<byte> slots)
+    {
+        if (!d.IsBuildStation || slots.Length == 0)
+            return false;
+        foreach (var s in slots)
+            if (s >= d.Config.Length || d.Config[s].Id is < CfgKey.FillFuel or > CfgKey.FillWait)
+                return false;
+        return true;
+    }
+
     /// <summary>A fill setting of the station, as a share (0 to 1; 1 when the part has no such setting).</summary>
     private static float Share(Construct c, int t, CfgKey k) => Math.Clamp(ConstructConfig.Get(c.Parts[t], c.DefOf(t), k, 100) / 100f, 0, 1);
 
@@ -1805,7 +1816,7 @@ public static class StationProbe
             }
         if (c.Parts[t].Station is not { } j || world.Get(j.Body) is not { } b)
             return sb.Append("; no build").ToString();
-        sb.Append($"; build {b.Id} fuel {b.Fuel:0.0}/{b.FuelCapacity():0.0} L");
+        sb.Append($"; build {b.Id} fuel {b.Fuel:0.0}/{b.FuelCapacity():0.0} L, charge {b.Charge:0}/{b.ChargeCapacity:0} kJ; station charge {c.Charge:0}/{c.ChargeCapacity:0} kJ");
         for (var i = 0; i < b.PartCount; i++)
         {
             var d = b.DefOf(i);
@@ -1813,6 +1824,10 @@ public static class StationProbe
                 sb.Append($", {d.Name}#{i} {b.Parts[i].Rounds}/{d.BoxRounds}");
             else if (d.Role == PartRole.FluidTank)
                 sb.Append($", {d.Name}#{i} {ConstructFluid.State(b.Parts[i], d)}");
+            else if (ConstructAmmo.IsMagazine(d))
+                sb.Append($", {d.Name}#{i} {ConstructAmmo.PackRounds(b.Parts[i].Rounds)}/{ConstructAmmo.Capacity(d)}");
+            else if (d.AmmoStore && world.StoreOf(b, i) is { } ast)
+                sb.Append($", {d.Name}#{i} {ast.Amount}/{ConstructStorage.Capacity(b, i)} units");
         }
         return sb.ToString();
     }

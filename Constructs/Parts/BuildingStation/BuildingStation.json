@@ -75,7 +75,7 @@
       "step": 5,
       "default": 100,
       "unit": "%",
-      "tooltip": "Fuel and fluid tanks (gases too) are filled to this share of what the blueprint holds, from tanks piped to Fluid in and gas in linked bins. 0: none, 100: full. Survival only: in creative a build comes full."
+      "tooltip": "Survival: a build is filled to this share. Fuel and fluid tanks, gases too: from tanks piped to Fluid in, gas from linked bins. 0: none, 100: full."
     },
     {
       "key": "fillAmmo",
@@ -86,7 +86,7 @@
       "step": 5,
       "default": 100,
       "unit": "%",
-      "tooltip": "Ammo boxes, Ammo Containers and fitted magazines are filled to this share, from bulk ammo in linked bins. 0: none, 100: full. Survival only: in creative a build comes full."
+      "tooltip": "Survival: a build is filled to this share. Ammo boxes, Ammo Containers and fitted magazines: from bulk ammo in linked bins. 0: none, 100: full."
     },
     {
       "key": "fillCharge",
@@ -97,7 +97,7 @@
       "step": 5,
       "default": 100,
       "unit": "%",
-      "tooltip": "Batteries are charged to this share from the station's own power. 0: none, 100: full. Survival only: in creative a build comes full."
+      "tooltip": "Survival: a build is filled to this share. Batteries: charged from the station's own power, which takes time. 0: none, 100: full."
     },
     {
       "key": "fillWait",
