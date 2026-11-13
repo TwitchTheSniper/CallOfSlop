@@ -774,8 +774,8 @@ the source of truth, `--check-story` decides what is valid, and the read-only st
 - **beats**: a play's beats over the cast (`?me` among them; "Plays"), acted out as a play is, with bodies meeting.
   A play broken off gives the storylet up (it may come again after a minute).
 - **job**: `"Ministry of Slop: Breaking Rocks"` hands the player that faction job ("Jobs"). **hook**: something the game
-  starts: `lockdown` (the colony's lockdown, the player wanted), `depot` (the Orbital Depot's report memo: with a
-  storylet that hooks the depot, the depot no longer follows the induction by itself).
+  starts: `lockdown` (the colony's lockdown, the player wanted), `depot` (the Orbital Depot's report memo, if the player hasn't had it yet: since 2026-11-13 the
+  depot follows the first duty whatever the storylets do).
 - **ends**: the first that happens wins, each one of: `"when"` an event (a verb and roles, a variable of the storylet's
   or a name: `{"verb": "Job", "actor": "?me", "item": "Breaking Rocks"}`, with an optional `"within"`), `"after"` a time
   (from when its beats ended; a paused storylet's clock stands still) or `"choice"` (an answer the player picks in the
