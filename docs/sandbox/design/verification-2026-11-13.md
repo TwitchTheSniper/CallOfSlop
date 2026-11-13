@@ -14,7 +14,7 @@ These are the behaviours that the 2026-11-13 merges left untried at run time. Ea
 | 8 | Formers take orders; a wing preset beside its twin | **Partly** | **Fan Former** (the one the builder didn't run): `fill` 400 steel, a scripted Queue on its screen -> "Forming / 1 order, 1 to make / >0/1 Propeller 0.5m 3 blades steel", then "Waiting for orders" and `Extrusion fan0.straight.3 0x50x0 steel` loose beside it. **Wing presets:** `--former-presets` lists 12 PRESET rows, each the same mass as its catalogue twin (Wing Segment 27 vs 27 kg; Short Wing Segment 13.5 vs 13.5; Swept L/R 27 vs 27 ...); the cloth and narrow segments STAY with their differences listed, and the Capital ones don't build at all and stay. The Airframe Former order was not run again (the builder's run made one). |
 | 9 | The Loader Arm's elbow at a station build | **Not tried** | Out of time. |
 
-**Count:** 5 work (1, 2, 3, 4, 7), 2 work or partly with a note (5 works with a client fault beside it; 8 partly), 2 not tried (6, 9).
+**Count:** 6 work (1, 2, 3, 4, 5, 7; item 5 with a client fault seen beside it), 1 partly (8), 2 not tried (6, 9).
 
 **Faults:**
 - A still body's fuel isn't sent to clients when it changes (item 5): `ConstructNet.cs` ~1395 skips a still body whose `SigHash` hasn't changed, and fuel rides only the pose. A station drains a parked tank, and a joined player sees it full. The fix is in the net code (a fuel term in what makes a still body resend, or the station's fill marking its source's pose), which is another session's area; not changed here.
