@@ -110,7 +110,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action);
 
     private static void WsSay(string s)
     {
@@ -534,6 +534,23 @@ public static unsafe partial class Program
             case "touch":
                 WsTouch(g, me, arg);
                 return;
+            case "person": // "person NAME X,UP,Z": the eye that far from a story person's body along the world's x, up and z, looking at their chest
+            {
+                var cut = arg.LastIndexOf(' ');
+                var off = cut > 0 ? arg[(cut + 1)..].Split(',') : [];
+                var who = cut > 0 ? g.Players.Values.FirstOrDefault(q => q.Alive && q.Name.Equals(arg[..cut], StringComparison.OrdinalIgnoreCase)) : null;
+                if (who == null || off.Length != 3 || !off.All(o => float.TryParse(o, System.Globalization.CultureInfo.InvariantCulture, out _)))
+                {
+                    WsFail("person NAME X,UP,Z (someone alive by that name)");
+                    return;
+                }
+                var v = off.Select(o => float.Parse(o, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                var at = who.RenderPosition + Vector3.UnitY;
+                WsEyeTo(g, me, at + new Vector3(v[0], v[1], v[2]));
+                WsLook(g, me.Eye, at);
+                _wsWait = 3;
+                return;
+            }
             case "from": // "from PART[#n] SIDE,UP,OUT": the eye that far beside, above and in front of the part's screen (OUT negative: behind it), looking at it
             {
                 var cut = arg.LastIndexOf(' ');

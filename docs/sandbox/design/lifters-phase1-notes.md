@@ -1,7 +1,7 @@
 # Lifters phase 1: notes (2026-11-13)
 
 Branch `claude/lifters-1-f8f1dc`. The design is `arms-and-cranes.md` (revised the same day for the user's answers 2 and 6:
-pushing players is phase 3, the cab phase 8, eight phases in all). Protocol 286 on this branch; main has since taken 286 (Msg.LabourHands), so the merger renumbers this to 287.
+pushing players is phase 3, the cab phase 8, eight phases in all). Protocol 287 on this branch; main has since taken 286 (Msg.LabourHands), so the merger renumbers this to 287.
 
 ## What was built
 

@@ -36,7 +36,7 @@ public enum CBodyKind : byte
     Craft, // protocol 254: one body's Crafting Terminals' orders and its stores' reserved parts (ConstructCrafting.Write)
     Station, // protocol 256: one body's Building Stations' jobs (ConstructStation.Write)
     Designs, // protocol 260: the world's shared panel designs, the whole list: u8 n, each a name and a key (PanelDesigns.Write)
-    Lifts, // protocol 286: one body's lifters, the whole list: u8 n, each its part, state, piece, path and age (ConstructLifters.Write)
+    Lifts, // protocol 287: one body's lifters, the whole list: u8 n, each its part, state, piece, path and age (ConstructLifters.Write)
 }
 
 /// <summary>

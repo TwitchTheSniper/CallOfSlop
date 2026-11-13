@@ -124,7 +124,7 @@ public sealed class LiftBody
 /// base and fits it with the station's own <c>FitOne</c> when the move ends; at most one fit a tick a world. A claimed step
 /// is <c>-2</c> in <see cref="StationJob.PartOf"/>: neither the station's boom nor a hand gives it. Server: nothing runs while
 /// no station is open and no hand holds a piece. The wire: <see cref="CBodyKind.Lifts"/>, a body's lifters when a move starts
-/// or ends (protocol 286); clients draw the move from it (LifterRender.cs).
+/// or ends (protocol 287); clients draw the move from it (LifterRender.cs).
 /// </summary>
 public static class ConstructLifters
 {
@@ -559,7 +559,7 @@ public static class ConstructLifters
     public static float AgeNow(CLift l) =>
         l.State is LiftState.Carry or LiftState.Return ? MathF.Min(l.Dur, l.Age + (float)((ConstructConveyor.Clock - l.At) * World.TickRate)) : l.Dur;
 
-    // ---- The wire (CBodyKind.Lifts, protocol 286) --------------------------------------------------------------------------
+    // ---- The wire (CBodyKind.Lifts, protocol 287) --------------------------------------------------------------------------
 
     private static ushort Cm(float v) => unchecked((ushort)(short)Math.Clamp(MathF.Round(v * 100), short.MinValue, short.MaxValue));
     private static float FromCm(ushort v) => unchecked((short)v) / 100f;
