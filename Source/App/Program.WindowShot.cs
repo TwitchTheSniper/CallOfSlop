@@ -636,7 +636,8 @@ public static unsafe partial class Program
                     return;
                 }
                 var spot = WsPartSpot(bc, bpart, out var normal);
-                var stand = spot + (normal != Vector3.Zero ? normal : Vector3.UnitZ) * 1.8f;
+                var low = bc.DefOf(bpart).Panels is [var first, ..] && first.At.Y < 0.8f && MathF.Abs(normal.Y) < 0.5f; // (a Router's low screen: stand in a finger's reach)
+                var stand = spot + (normal != Vector3.Zero ? normal : Vector3.UnitZ) * (low ? 1.0f : 1.8f);
                 var feet = new Vector3(stand.X, World.Map.GroundHeight(stand.X, stand.Z) + 0.35f, stand.Z);
                 var n = 0;
                 foreach (var other in g.Players.Values)
@@ -1121,7 +1122,6 @@ public static unsafe partial class Program
     }
 
     /// <summary>A finger on a screen's button by its label, through the crosshair: Hands out, the eye in front of it, the view on it, then LMB.</summary>
-    private static bool _wsTouchLanded; // a joined client's touch moved it and waits to land: the next touch aims from where it stands
 
     private static void WsTouch(Game g, Player me, string arg)
     {
@@ -1164,21 +1164,33 @@ public static unsafe partial class Program
                         var right = Vector3.Cross(up, normal);
                         var r = panel.Touch[b].At;
                         var spot = centre + right * (((r.X + r.Z) * 0.5f - 0.5f) * panel.Size.X) + up * (((r.Y + r.W) * 0.5f - 0.5f) * panel.Size.Y);
-                        var moved = !_wsTouchLanded && (Vector3.Distance(me.Eye, spot) > 2.2f || Vector3.Dot(me.Eye - spot, normal) < 0.3f);
-                        _wsTouchLanded = false;
+                        var moved = Vector3.Distance(me.Eye, spot) > 2.2f || Vector3.Dot(me.Eye - spot, normal) < 0.3f;
+                        if (moved && !g.IsServer)
+                        {
+                            // (a joined client can't fly itself: the host owns its position and snaps a teleport back. It presses from where it
+                            // stands, as a player would, when that is in reach and in front; else the host brings it first: "bring PART")
+                            if (Vector3.Distance(me.Eye, spot) > ConstructBuild.UseReach - 0.1f || Vector3.Dot(me.Eye - spot, normal) < 0.1f)
+                            {
+                                WsFail($"touch: the joined client stands {Vector3.Distance(me.Eye, spot):0.0} m from that button (eye {me.Eye:0.0}); the host brings it first: bring PART");
+                                return;
+                            }
+                            moved = false;
+                        }
                         if (moved)
                             WsEyeTo(g, me, panel.At.Y < 0.8f && MathF.Abs(normal.Y) < 0.5f
                                 ? centre + normal * 0.9f + Vector3.UnitY * 1.2f // (a low screen, a Router's: read standing, looking down, as a player does)
                                 : centre + normal * 1.3f);
-                        if (moved && !g.IsServer)
-                        {
-                            // (a joined client: its move reaches the host and it lands on the ground first; then the touch again aims from there)
-                            _wsQueue.EnqueueFront(screen >= 0 ? $"touch {arg} /{screen}" : $"touch {arg}");
-                            _wsWait = 30;
-                            _wsTouchLanded = true;
-                            return;
-                        }
                         WsLook(g, me.Eye, spot);
+                        {
+                            // (what the crosshair's ray meets on the way, as the pointer will see it: the ground or a wall first, another part, or this button)
+                            var dir = g.LookDir(g.LookYaw, g.LookPitch);
+                            var wall = World.RaycastWorld(me.Eye, dir, ConstructBuild.Reach + 1);
+                            var aimed = g.Constructs.Raycast(me.Eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var th, look: true, noTracks: true);
+                            Vector2 tat = default;
+                            var tp = aimed && th.Part >= 0 && th.Part < th.Body.PartCount ? PanelTouch.Find(th.Body, th.Part, me.Eye, dir, out tat) : -1;
+                            WsSay($"touch ray: button {Vector3.Distance(me.Eye, spot):0.00} m (reach {ConstructBuild.UseReach}), ground or wall {wall:0.00} m, "
+                                + (aimed ? $"hit {th.Body.DefOf(th.Part).Name} part {th.Part} at {th.Distance:0.00} m, slot {th.SlotPlus1}, route {th.RoutePlus1}, panel {tp}{(tp >= 0 ? $" button {PanelTouch.Region(th.Body.DefOf(th.Part).Panels[tp], tat)}" : "")}" : "no part"));
+                        }
                         _wsQueue.EnqueueFront("key Fire");
                         _wsWait = 3; // (the pointer finds the button first, then the click)
                         WsSay($"touch: {d.Name} (part {part}) panel {n} button {b} \"{now}\"");
