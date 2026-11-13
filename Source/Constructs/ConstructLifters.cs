@@ -1396,7 +1396,7 @@ public sealed partial class ConstructWorld
 }
 
 /// <summary>The window tool's "lifter" verb (Program.WindowShot.cs): every lifter as this peer has it, and an arm set beside a station.</summary>
-public static class LifterProbe
+public static partial class LifterProbe
 {
     public static int Fits; // server: steps fitted by lifters since start
     public static int CarriesHeard; // either peer: moves seen to start (state became Carry)

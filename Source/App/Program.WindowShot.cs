@@ -976,6 +976,20 @@ public static unsafe partial class Program
                     var pens = lw[0] == "pen" ? LifterProbe.Pen(g.Constructs, pspot) : 0;
                     WsSay($"lifter: {lw[0]}: {moved} player(s) to {pspot:0.00}{(pens > 0 ? $", {pens} Crate Stacks round them" : "")}; {pinfo}");
                 }
+                else if (lw.Length > 0 && lw[0] is "line" or "hold" or "set" or "mains" or "points" && g.IsServer)
+                {
+                    // Lifters phase 4 (LifterLineProbe.cs): "lifter line [TIER]" an arm, an Assembler, a stocked rack and a pad round this player;
+                    // "lifter hold NAME" that piece at the line's Assembler's out; "lifter set liftMode|carryHeight V"; "lifter mains on|off"; "lifter points".
+                    var rest4 = lw.Length > 1 ? string.Join(' ', lw.Skip(1)) : "";
+                    WsSay("lifter: " + lw[0] switch
+                    {
+                        "line" => LifterProbe.Line(g.Constructs, me.Position, rest4, out _),
+                        "hold" => LifterProbe.Hold(g.Constructs, LifterProbe.LineAsm, rest4),
+                        "set" => LifterProbe.Set(g.Constructs, lw.Length > 1 ? lw[1] : "", lw.Length > 2 && float.TryParse(lw[2], System.Globalization.CultureInfo.InvariantCulture, out var sv) ? sv : 0),
+                        "mains" => LifterProbe.Mains(g.Constructs, lw.Length > 1 && lw[1] == "off"),
+                        _ => LifterProbe.Points(g.Constructs),
+                    });
+                }
                 else if (lw.Length > 0 && lw[0] == "free" && g.IsServer) // "lifter free" (host): every player 4 m north, out of a pen
                     foreach (var pl in g.Players.Values)
                         if (pl.Bot == null)
