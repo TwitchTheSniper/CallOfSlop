@@ -992,7 +992,12 @@ public static class ConstructConveyor
             return true;
         }
         if (td.IsPanelFormer)
-            return ConstructPanelFormer.TakeFromConveyor(world, c, to, d); // (extruded sheet into its bin)
+        {
+            if (!ConstructPanelFormer.TakeFromConveyor(world, c, to, d)) // (extruded sheet into its bin)
+                return false;
+            ConstructLogisticsPlan.Arrived(world, c, to, r.Tag, d); // (a chained panel order's sheet: it counts for its link)
+            return true;
+        }
         if (td.IsAssembler)
         {
             // A part its recipe uses, while it has room: the chute's own test (a part it doesn't use waits at its door).

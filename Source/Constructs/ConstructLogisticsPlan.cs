@@ -60,9 +60,10 @@ public static class ConstructLogisticsPlan
     /// </summary>
     public static void Asked(ConstructWorld world, Construct c, CraftNet net, int t, in CraftOrder o, int m, int ask)
     {
-        if (o.What.IsPiece || o.What.Name != null && !o.What.IsPressed)
+        var panel = o.What.Name != null && HullLoft.IsFormedName(o.What.Name);
+        if (o.What.IsPiece || o.What.Name != null && !o.What.IsPressed && !panel)
             return;
-        var kind = o.What.IsPressed ? o.Def : o.What.Part; // (a pressed part's kind is its run-time def here: Place set it)
+        var kind = o.What.IsPressed ? o.Def : panel ? (ushort)(ConstructParts.Find(o.What.Name!)?.Id ?? 0) : o.What.Part; // (a pressed part's kind is its run-time def here: Place set it)
         if (kind == 0 || kind == ConstructParts.None)
             return;
         var root = new ChainEntry { Root = (ushort)t, RootId = o.Id, Class = ClassNormal, Stamp = o.Stamp, Depth = 0, Kind = kind };
@@ -97,6 +98,30 @@ public static class ConstructLogisticsPlan
     }
 
     /// <summary>
+    /// What a Panel Former needs to form <paramref name="ask"/> of panel <paramref name="product"/>: extruded sheet of the panel's material
+    /// (<see cref="SheetKey"/>), counted in pieces against what its bin holds of that material. 0 inputs: nothing to ask (or not a panel).
+    /// </summary>
+    private static int FormerInputs(CStore st, ushort product, int ask, Span<ushort> kinds, Span<int> counts, Span<int> held)
+    {
+        if (ConstructParts.Get(product) is not { } pd || !HullLoft.IsFormedName(pd.Name) || HullLoft.FormedMaterial(pd.Name) is var mat && mat == 0)
+            return 0;
+        if (Extrusion.Def(SheetKey(mat)) is not { } sheet)
+            return 0;
+        var each = SheetUnits(sheet, mat);
+        var units = HullLoft.FormedUnits(pd, mat) * ask - st.JobAmount; // (a stroke under way has its units already)
+        var inBin = st.Material == mat ? st.Amount : 0;
+        (kinds[0], counts[0], held[0]) = ((ushort)sheet.Id, (Math.Max(0, units) + each - 1) / each, inBin / each);
+        return 1;
+    }
+
+    /// <summary>The sheet a chained Panel Former order asks for (the showcase's): a solid bar 0.5 x 0.1 m cut at 1 m, in the panel's material.</summary>
+    public static ExtrusionKey SheetKey(byte material) => new(ulong.MaxValue, 50, 10, 100, material, false, ExShape.Section);
+
+    /// <summary>Units of material a sheet piece puts into a former's bin (<see cref="ConstructPanelFormer.TakeFromConveyor"/>'s count).</summary>
+    public static int SheetUnits(ConstructPartDef sheet, byte material) =>
+        Math.Max(1, (int)MathF.Round(sheet.Mass / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(material))));
+
+    /// <summary>
     /// Machine <paramref name="m"/> makes <paramref name="ask"/> of <paramref name="product"/> for <paramref name="parent"/> (the root itself
     /// at depth 0): each recipe part it lacks becomes an entry under it. False when the table was full (asked again next step).
     /// </summary>
@@ -111,6 +136,8 @@ public static class ConstructLogisticsPlan
         var md = c.DefOf(m);
         if (md.IsPress && !md.IsLathe)
             inputs = PressInputs(c, m, st, product, ask, kinds, wants, inside);
+        else if (md.IsPanelFormer)
+            inputs = FormerInputs(st, product, ask, kinds, wants, inside);
         else if (md.IsAssembler && AssemblingTable.Current.Of(product) is { Parts.Length: > 0 } r)
         {
             var batches = (ask + r.Count - 1) / r.Count;
@@ -320,6 +347,8 @@ public static class ConstructLogisticsPlan
                 continue;
             }
             var score = c.Parts[mk].Orders is { Bill: false } q ? q.Count * 2 + (Making(q, e.Kind) ? 0 : 1) : 1;
+            if (ConstructCrafting.RouteTo(c, mk, e.Dest) == -1)
+                score += 1000; // (no conveyor way through joins and Routers to it: last; a Splitter's line may still bring it in turn)
             if (score < bestScore)
                 (best, bestScore) = (mk, score);
         }
