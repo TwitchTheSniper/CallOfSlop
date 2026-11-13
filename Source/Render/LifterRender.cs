@@ -118,11 +118,10 @@ public static class LifterRender
             {
                 if (!sc.DefOf(st).IsBuildStation || sc.Parts[st].Station is not { State: StationState.Building })
                     continue;
-                var hold = ConstructLifters.HoldPoint(sc, st, shoulder);
-                if (Vector3.Distance(hold, shoulder) > ld.ReachMax * 2 + 4)
+                if (Vector3.Distance(ConstructLifters.HoldPoint(sc, st, shoulder), shoulder) > ld.ReachMax * 2 + 4)
                     continue;
                 Freeform.PartWorld(c, part, out _, out var lr);
-                var ok = ConstructLifters.InReach(ld, shoulder, lr, hold, ConstructLifters.SafeLift, out _);
+                var ok = ConstructLifters.HoldPick(sc, st, ld, shoulder, lr, ConstructLifters.SafeLift, ConstructLifters.SafeLift, out var hold); // (the nearest point along the hold's side it reaches)
                 gfx.Draw(Matrix4x4.CreateScale(0.08f, 1.2f, 0.08f) * Matrix4x4.CreateTranslation(hold + Vector3.UnitY * 0.6f), ok ? new Vector3(0.3f, 1f, 0.45f) : new Vector3(1f, 0.25f, 0.2f), 0.8f);
             }
         }

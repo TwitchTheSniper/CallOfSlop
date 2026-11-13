@@ -389,7 +389,7 @@ public static partial class ConstructStation
         for (var i = 0; i < j.KindN; i++)
         {
             var def = j.KindDef[i];
-            var held = ConstructCrafting.Holds(tray, def);
+            var held = ConstructCrafting.Holds(tray, def) + LiftHolds(world, c, t, def); // (a piece in a Loader Arm's hand counts as in the hold: ConstructLifters.cs)
             var lack = j.KindNeed[i] - j.KindFit[i] - held;
             if (lack <= 0)
             {

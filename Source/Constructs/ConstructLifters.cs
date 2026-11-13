@@ -485,17 +485,16 @@ public static class ConstructLifters
                 ConstructStation.Bay(sc, t, out var floor, out _, out var bay);
                 if (Vector3.Distance(floor, shoulder) > ld.ReachMax + bay.Length() * 0.5f + ld.Down)
                     continue;
-                // The pick: the point of the hold nearest the shoulder, a hand's height over its floor.
-                var hold = HoldPoint(sc, t, shoulder);
-                if (!InReach(ld, shoulder, lr, hold, SafeLift, out _))
+                // The pick: the nearest point along the hold's side the empty hand reaches, a hand's height over its floor (the user, 2026-11-13).
+                if (!HoldPick(sc, t, ld, shoulder, lr, SafeLift, SafeLift, out var hold))
                     continue;
                 near = true;
                 var k = ConstructStation.LiftOffer(j, tray, ld, shoulder, lr);
                 if (k < 0)
                     continue;
                 var d = ConstructParts.Find(j.Bp!.Steps[k].Part)!;
-                if (!InReach(ld, shoulder, lr, hold, WristLift(d), out _))
-                    continue; // (the hold's corner is too close or too far for the arm with this piece in its hand)
+                if (!HoldPick(sc, t, ld, shoulder, lr, SafeLift, WristLift(d), out hold))
+                    continue; // (no point along the hold's side suits the arm with this piece in its hand)
                 if (!world.StationTake(sc, t, tray, d))
                     continue;
                 world.CraftChanged(sc);
@@ -539,6 +538,40 @@ public static class ConstructLifters
         return sp + Vector3.Transform(new Vector3(x, d.BoundsMin.Y + 0.9f, z), sr);
     }
 
+    /// <summary>
+    /// The pick (the user, 2026-11-13: "picks from anywhere along the hold side"): of the points over the hold's floor, across it and
+    /// along its whole side every half metre, the nearest to the shoulder that the wrist reaches with both lifts (an empty hand's and
+    /// the piece's). Pick pads for larger building areas are to come with the network phase. Allocates nothing.
+    /// </summary>
+    public static bool HoldPick(Construct sc, int t, LifterDef ld, Vector3 shoulder, Quaternion rot, float lift, float lift2, out Vector3 at)
+    {
+        var d = sc.DefOf(t);
+        Freeform.PartWorld(sc, t, out var sp, out var sr);
+        var local = Vector3.Transform(shoulder - sp, Quaternion.Conjugate(sr));
+        var mid = (d.BoundsMin.X + d.BoundsMax.X) * 0.5f;
+        float x0 = mid + 0.3f, x1 = MathF.Max(x0, d.BoundsMax.X - 0.3f);
+        float z0 = d.BoundsMin.Z + 0.4f, z1 = MathF.Max(z0, d.BoundsMax.Z - 0.4f);
+        var zSteps = Math.Clamp((int)MathF.Ceiling((z1 - z0) / 0.5f), 1, 32);
+        var y = d.BoundsMin.Y + 0.9f;
+        var best = float.MaxValue;
+        at = HoldPoint(sc, t, shoulder);
+        for (var xi = 0; xi < 3; xi++)
+        {
+            var x = xi switch { 0 => x0, 1 => x1, _ => Math.Clamp(local.X, x0, x1) };
+            for (var zi = 0; zi <= zSteps; zi++)
+            {
+                var z = z0 + (z1 - z0) * zi / zSteps;
+                var p = sp + Vector3.Transform(new Vector3(x, y, z), sr);
+                var dist = Vector3.DistanceSquared(p, shoulder);
+                if (dist >= best || !InReach(ld, shoulder, rot, p, lift, out _) || lift2 != lift && !InReach(ld, shoulder, rot, p, lift2, out _))
+                    continue;
+                best = dist;
+                at = p;
+            }
+        }
+        return best < float.MaxValue;
+    }
+
     /// <summary>Is the step this hand carries for still wanted (the same job, building, the step still claimed)?</summary>
     private static bool ClaimHolds(ConstructWorld world, CLift l)
     {
@@ -566,7 +599,7 @@ public static class ConstructLifters
         if (sc != null && t >= 0 && t < sc.PartCount)
         {
             Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
-            to = Vector3.Transform(HoldPoint(sc, t, shoulder) - lp, Quaternion.Conjugate(lr));
+            to = Vector3.Transform((HoldPick(sc, t, ld, shoulder, lr, SafeLift, SafeLift, out var pick) ? pick : HoldPoint(sc, t, shoulder)) - lp, Quaternion.Conjugate(lr));
         }
         l.From = from;
         l.To = to;
@@ -645,8 +678,7 @@ public static class ConstructLifters
                     continue;
                 if (ConstructConveyor.RackRefusal(sc, t, tray, d) != null)
                     continue;
-                var hold = HoldPoint(sc, t, shoulder);
-                if (!InReach(ld, shoulder, lr, hold, WristLift(d), out _))
+                if (!HoldPick(sc, t, ld, shoulder, lr, WristLift(d), WristLift(d), out var hold))
                     continue;
                 var inv = Quaternion.Conjugate(lr);
                 l.From = Pose(ld, l, l.Age, out var rot);
@@ -917,8 +949,7 @@ public static class ConstructLifters
                 if (part >= c.PartCount || c.DefOf(part).Lifter is not { Bridge: false } ld)
                     continue;
                 Frame(c, part, ld, out _, out var lr, out var shoulder);
-                var hold = HoldPoint(sc, t, shoulder);
-                if (!InReach(ld, shoulder, lr, hold, SafeLift, out _))
+                if (!HoldPick(sc, t, ld, shoulder, lr, SafeLift, SafeLift, out var hold))
                     continue;
                 n++;
                 tiers.Append(tiers.Length > 0 ? ", " : "").Append(TierName(ld.Tier));
@@ -1176,6 +1207,40 @@ public static partial class ConstructStation
     }
 
     /// <summary>A lifter's place: the station's own fit, on its job, of the step it claimed.</summary>
+    /// <summary>
+    /// Server, for the station's orders (the user, 2026-11-13: "fix it"): pieces of a kind in Loader Arms' hands that are not a claimed
+    /// step (a piece loaded in a hand, stuck or on its way back into a hold) and go to this station: on their way to its hold, or
+    /// waiting where its hold is in their reach. So a save and load never orders a part twice. Claimed steps count as fitted already.
+    /// </summary>
+    private static int LiftHolds(ConstructWorld world, Construct sc, int t, ushort def)
+    {
+        if (world.LiftBusy == 0)
+            return 0;
+        var n = 0;
+        for (var bi = 0; bi < world.LiftBodies.Count; bi++)
+        {
+            var lb = world.LiftBodies[bi];
+            Construct? c = null;
+            for (var i = 0; i < lb.N; i++)
+            {
+                var l = lb.Lifts[i];
+                if (l.Def != def || l.Fitted || l.Job != null || l.State is not (LiftState.Carry or LiftState.Stuck))
+                    continue;
+                if (l.State == LiftState.Carry)
+                {
+                    n += l.ToHold && l.StationBody == sc.Id && l.StationPart == t ? 1 : 0;
+                    continue;
+                }
+                c ??= world.Get(lb.Body);
+                if (c == null || l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { } ld || ConstructParts.Get(def) is not { } d)
+                    continue;
+                ConstructLifters.Frame(c, l.Part, ld, out _, out var lr, out var shoulder);
+                n += ConstructLifters.HoldPick(sc, t, ld, shoulder, lr, ConstructLifters.WristLift(d), ConstructLifters.WristLift(d), out _) ? 1 : 0;
+            }
+        }
+        return n;
+    }
+
     public static void LiftFit(ConstructWorld world, Construct c, int t, StationJob j, int k)
     {
         j.PartOf[k] = -1;
