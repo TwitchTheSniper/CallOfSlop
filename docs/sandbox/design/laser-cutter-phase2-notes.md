@@ -188,3 +188,10 @@ The update that reads the keys (one packet), then the pumps:
 2. **The occasional slow pump on a busy PC** (a slice whose own work is 0.5 ms waiting 7 to 17 ms).
    - A (recommended): leave it: the work is within the budget; look again with the game alone on the machine.
    - B: move part making to a worker thread (the loader's parse off the game's thread): a bigger change, its own phase.
+
+### The user's answers to phase 2's questions (2026-11-13)
+
+1. **A cut corner collides as the rectangle inside its triangle** (A, the recommendation): a little air along the diagonal
+   still stops things. As built.
+2. **The `back` socket is left out when a cut takes the middle away** (A, the recommendation), as every cut-away socket.
+   As built.
