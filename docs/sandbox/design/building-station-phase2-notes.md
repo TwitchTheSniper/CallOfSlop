@@ -80,3 +80,47 @@ and Q4.
 4. **Ammo Containers and fitted magazines are filled** from bulk ammo in linked bins, following the fill setting.
 5. **Gas tanks fill from linked bins too**, as well as through pipes (not the recommendation).
 6. **Creative: tanks come full**, as built.
+
+## Fill settings (2026-11-13, the answers built)
+
+**Built.** Answers 1 to 5; 6 needed nothing (creative already came full; batteries too, since `Empty` is skipped there).
+
+- **Fill setting:** `fillFuel`, `fillAmmo`, `fillCharge` (0-100 %, step 5, default 100) on the station part (part kit
+  `build_station_parts`, CfgKey at the end), in the configure tool and as three sliders on the station window's new Fill row. The
+  server takes the window's change with any tool in hand, but only for these four settings (`ConstructStation.WindowSets`, checked
+  in `ConstructEdits.Configure`).
+- **Wait setting:** `fillWait`, a checkbox on the same row. On: a look that moves nothing keeps the job Building, the note reads
+  "waits for its fill: ammo 170/330 rounds - ..." and the screen's row 4 WAITS FOR FILL. Off: Done with "not filled: ...", as before.
+- **Ammo Containers and fitted magazines** filled from bulk ammo in linked bins, to `fillAmmo`, in the same 10-units-a-look budget.
+- **Gas from bins:** a Fluid Tank whose blueprint fluid is hydrogen, helium or oxidiser takes what pipes don't give from bulk in the
+  linked bins, 4 units a look at the Gas Compressor's 50 L a unit.
+- **Batteries:** a survival build's batteries start empty (`Empty` clamps the charge as it does the fuel) and the fill stage moves
+  charge from the station's construct at 50 kW plus its plants' output (`ChargeKW`, proposed); the note shows "charge 40/300 kJ".
+- Protocol 292 (the part's settings list; no new bytes). Window tool: `station set KEY VALUE`; `station tanks` also prints the
+  build's charge, magazines and Ammo Containers and the station's charge.
+
+**Tried by hand** (window tool, Production Showcase at 140,0,-100, `timed`, a throwaway `--save-dir`):
+- Gun Bench (Ammo Box, Box Magazine), 40 units of ammo in a bin: magazine 30/30 and box 300/300 at Done; with `fillAmmo 50`, 15/30
+  and 150/300. With `fillWait 1` and 20 units: it held at 170/330 with the waits note and WAITS FOR FILL, then finished once 20
+  more went in. (The bench's gun loads from its magazine while frozen, so the station refills the magazine it drew.)
+- Lamp Post: battery 0/300 kJ with every part on; `fillCharge 80` gave 240/300 at Done, the station's charge 500 to 416 kJ.
+  A world saved and loaded before the charge kept 0/300, then charged to 300.
+- Two-Stage Rocket (bay 10 x 10 x 24 m), `fillFuel 50`, a pipe from the showcase's Fuel Tank and 100 oxidiser in a bin: its two
+  fuel tanks 20/40 L each from the pipe (the showcase's tank 80 to 40 L), its two oxidiser tanks 20/40 L each from 2 units.
+- Host and joined client (port 27999: another session's host held the default): the client set `fillWait` from its own window path
+  (no configure tool), saw the waits note on the screen, the fill and Done, the same counts as the host.
+- A world saved and loaded mid-fill (`station reload`, waiting at 170/330): the wait setting and the rounds kept; it went on to Done.
+- `--check-construct-parts` 0, `--gen-parts all --check` 0 out of date. No self-test sections run or added.
+
+**Not verified:** a cut pipe; an Ammo Container (no small shipped blueprint has one); a battery seen charging from the client
+(the charge rides the body's state message, not checked for a frozen body); a station with no power left to charge from, with
+the wait on; creative's charged batteries from a station; tick cost (the look walks the steps at 2 Hz, as before; no allocation
+but the note string).
+
+**New questions for the user**
+1. **Gas units:** a bulk unit is 50 L, so a 40 L oxidiser tank at 50 % takes a whole unit and loses 30 L. Keep that (simple, as a
+   Compressor's granularity), or **(recommended)** give the whole unit up to the tank's room, past the setting?
+2. **Charge rate:** 50 kW plus the station construct's plants' output (a Battery in 6 s, a 1 MJ bank in about 5 hours with no plant).
+   Keep it **(recommended, proposed)**, or tie it to the station's draw (150 W today) or a setting?
+3. **Defaults:** fill 100 % and wait off (phase 2's behaviour). Should wait default to on **(recommended: a build without fuel can't
+   drive out anyway)**, or stay off?
