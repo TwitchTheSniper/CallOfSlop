@@ -465,7 +465,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      part's name may be 240 characters (was 128): older builds refuse both. No new bytes.
     // 284: CActKind.ExtruderSection (u16 body, u16 machine, u8 profile, u16 width, height, wall in cm, u64 mask): the Extruder's recipe
     //      picker sets its section and size in one act; Extruders have a Recipe button among their queue buttons.
-    public const ushort ProtocolVersion = 284;
+    // 285: Building Station phase 2: the station part has a Fluid in pipe port (part data both peers must share); the build's tanks and ammo are filled from it and linked bins (no new bytes).
+    public const ushort ProtocolVersion = 285;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
