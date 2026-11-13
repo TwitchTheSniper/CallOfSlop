@@ -588,7 +588,8 @@ public sealed partial class ConstructWorld
         for (var i = 0; i < n; i++)
         {
             var setting = r.U8();
-            parts[i].Setting = setting > 0 && setting >= parts[i].D.Settings.Length ? parts[i].D.DefaultSetting : setting;
+            var sd = parts[i].D; // (a material bundle's Setting is its material id, not a row of its settings: it has none)
+            parts[i].Setting = setting > 0 && setting >= sd.Settings.Length && sd.Yield == 0 ? sd.DefaultSetting : setting;
         }
         for (var i = 0; i < n; i++)
             parts[i].State = r.U8();
