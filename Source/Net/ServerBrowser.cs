@@ -463,7 +463,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      numbers are derived from its key on every peer. No new bytes.
     // 283: Laser Cutter phase 1: cut parts, "Cut Panel (...)" and "Cut Plate (...)", travel as named run-time parts, and a run-time
     //      part's name may be 240 characters (was 128): older builds refuse both. No new bytes.
-    public const ushort ProtocolVersion = 283;
+    // 284: CActKind.ExtruderSection (u16 body, u16 machine, u8 profile, u16 width, height, wall in cm, u64 mask): the Extruder's recipe
+    //      picker sets its section and size in one act; Extruders have a Recipe button among their queue buttons.
+    public const ushort ProtocolVersion = 284;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

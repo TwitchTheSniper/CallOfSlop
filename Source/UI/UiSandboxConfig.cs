@@ -755,7 +755,19 @@ public sealed partial class Ui
     private void SandboxConfigCells(Game game, ConstructPartDef d, double now)
     {
         var mask = SandboxConfigMask(d);
-        var cell = 20 * _scale;
+        var clicked = SectionCells(mask, 20 * _scale);
+        if (clicked >= 0)
+            SandboxConfigFlipCell(game, clicked, now);
+        if (Extrusion.ShapeOf((int)_cfVals[d.CfgSlot[(int)CfgKey.Profile]]) == ExShape.Section)
+            SectionCellsRefusal(mask);
+    }
+
+    /// <summary>
+    /// An Extruder's 8 by 8 section grid as buttons, top row first (the configure panel's and the Extruder's recipe picker's): the cell
+    /// clicked this frame, or -1. What a click does is the caller's: both flip that cell of the section shown.
+    /// </summary>
+    private int SectionCells(ulong mask, float cell)
+    {
         var clicked = -1;
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new float2(2 * _scale, 2 * _scale));
         for (var y = Extrusion.Grid - 1; y >= 0; y--)
@@ -772,10 +784,16 @@ public sealed partial class Ui
                 ImGui.PopStyleColor(2);
             }
         ImGui.PopStyleVar();
-        if (clicked >= 0)
-            SandboxConfigFlipCell(game, clicked, now);
-        if (Extrusion.ShapeOf((int)_cfVals[d.CfgSlot[(int)CfgKey.Profile]]) == ExShape.Section && Extrusion.Refusal(mask) is { } why)
-            ImGuiSafe.TextColored(new float4(0.94f, 0.43f, 0.35f, 1), why);
+        return clicked;
+    }
+
+    /// <summary>Why a drawn section can't be made (<see cref="Extrusion.Refusal"/>: one piece, few enough boxes), in red under its grid; true when it can.</summary>
+    private static bool SectionCellsRefusal(ulong mask)
+    {
+        if (Extrusion.Refusal(mask) is not { } why)
+            return true;
+        ImGuiSafe.TextColored(new float4(0.94f, 0.43f, 0.35f, 1), why);
+        return false;
     }
 
     private int _cfRackCapKey = -1;

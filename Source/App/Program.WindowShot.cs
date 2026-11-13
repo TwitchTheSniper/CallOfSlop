@@ -950,6 +950,12 @@ public static unsafe partial class Program
                     WsSay(pc != null && MachineRecipePicker(pc, pp) ? $"picker: opened on {pc.DefOf(pp).Name} (part {pp})" : $"picker: not opened on {arg[1..].Trim()}");
                     _wsWait = 3;
                 }
+                else if (arg.Length > 0 && char.IsLetter(arg[0]))
+                {
+                    // An Extruder's picker (UiRecipePickerExtruder.cs): "picker size W H [WALL]" (cm), "picker cell N", "picker set".
+                    WsSay($"picker: {Ui.ExtruderPickerDo(arg) ?? "no Extruder picker open"}");
+                    _wsWait = 3;
+                }
                 else if (int.TryParse(arg, out var pickValue))
                 {
                     Ui.RecipePickerPick(pickValue);

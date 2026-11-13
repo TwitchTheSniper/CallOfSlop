@@ -54,3 +54,32 @@ leave Custom and free sizes to the configure tool until players ask for more.
 **The user's answer (2026-11-13): A, section tiles with sizes under them** (not the recommendation, B). One tile per Profile drawn
 from its mask, Width and Height steppers (and Pipe wall) clamped to the die's size, Set; Custom opens the cell grid in the same
 window. A new act and a protocol bump.
+
+## Built: the Extruder's picker, option A (2026-11-13, branch claude/extruder-picker-e9eb0f, protocol 284)
+
+- **Button.** Every Extruder (small, Medium, Large, Capital) has Recipe among its queue buttons (`ExtrusionParts.OrderButtons(recipe: true)`);
+  its look line ends "Recipe on its screen: section and size". The Wheel, Panel, Fan and Airframe Formers are unchanged. A Line Console's
+  Recipe button doesn't open it for an Extruder (the section is picked at the machine).
+- **Window** (`UI/UiRecipePickerExtruder.cs`): one tile per Profile option (15: the nine presets, Custom, Round, Pipe, three foils), each
+  drawn as its section (grid cells; Round a disc; Pipe a ring of the picked wall; the foils as NACA outlines from thickness and camber),
+  names shrunk to fit by the recipe tiles' own `TileName`; the machine's own profile marked "set". Under them Width and Height steppers
+  (5 cm; Diameter for Round and Pipe), Pipe wall (1 cm) for Pipe, held to `ExtruderPicks.DieCm` (the die as it is now, Die Frames
+  counted), the piece in words ("L-angle 0.2 x 0.2 m"), the die's size, and why it can't be set; then Set. Custom opens the configure
+  panel's own cell grid beside the steppers (`Ui.SectionCells` and `SectionCellsRefusal`, shared with `UiSandboxConfig`), starting from
+  the shown section when the saved cells can't be made.
+- **Wire.** `CActKind.ExtruderSection` (u16 body, u16 machine, u8 profile, u16 width, height, wall in cm, u64 mask). The server
+  (`ConstructExtruderPick.cs`) takes it as a finger on the Recipe button (who may, reach, power) and refuses a profile out of range, sizes
+  off the 5 cm step, wider or taller than the die (a Round or Pipe: its smaller side), a pipe wall that leaves under 5 cm of bore, or Custom
+  cells `Extrusion.Refusal` refuses; then writes Profile, Width, Height, Wall (Pipe) and the four mask words (Custom) through
+  `ConstructConfig.Set`, as the configure tool does: orders, bills and saves read the same settings.
+- **Window shots:** `picker @Extruder#1` opens it, `picker` prints it, `picker N` picks tile N, `picker size W H [WALL]` (cm),
+  `picker cell N` (flips a Custom cell; picks Custom), `picker set`.
+
+Left: the configure panel still edits the same settings (unchanged); a console's bill lines don't use the picker; no typed sizes (steppers only).
+
+Tried (2026-11-13, Windows, Proving Ground at 140,0,-100, `--blueprint "Extruder Line"`): as host, `picker @Extruder#1; picker 6; picker size 20 20;
+picker set` and the screen said Extruding / L-angle. As a joined client, Pipe 0.3 m with a 4 cm wall: the screen said Pipe, and
+reopening the picker marked Pipe "set". Then Custom with two cells flipped: the screen said Custom (then "Path too heavy", with the old
+pipe stub still at the die). Not tried: the Recipe button pressed through a scripted `touch` (it reported "nothing in reach to pick up" on
+this desktop, as the Press notes found; `picker @` opens it the way the button does); the server's refusals (out of reach, too big for the
+die), which the client's steppers never send.
