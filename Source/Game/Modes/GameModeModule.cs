@@ -254,6 +254,9 @@ public abstract class GameModeModule
     /// <summary>For modes without teams: the big text and the line under it in the match bar (null: the plain free-for-all bar).</summary>
     public virtual (string Big, string Sub)? ScoreBar(Game game) => null;
 
+    /// <summary>True: nothing is drawn at the top centre while the match is played (Sandbox has no score or clock to show).</summary>
+    public virtual bool NoMatchBar => false;
+
     /// <summary>The two number columns of the scoreboard.</summary>
     public virtual (string First, string Second) ScoreboardColumns => ("Kills", "Deaths");
 

@@ -548,6 +548,8 @@ public sealed partial class Ui : IDisposable
     /// <summary>Top-centre: clock, your score vs the best other score, and the win condition.</summary>
     private void DrawMatchBar(Game game, float2 pos, float2 size)
     {
+        if (game.Phase == MatchPhase.Playing && game.Module.NoMatchBar)
+            return; // (Sandbox: no title card while playing)
         ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + 12 * _scale), ImGuiCond.Always, new float2(0.5f, 0));
         ImGui.SetNextWindowBgAlpha(0.45f);
         if (ImGui.Begin("##match"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.AlwaysAutoResize

@@ -38,6 +38,7 @@ public sealed partial class Map
                     Console.WriteLine($"[city] {Name}: {plan.Buildings.Length} buildings, {plan.Masses.Length} masses, {plan.Streets.Length} streets, "
                         + $"{plan.Crossings.Length} crossings; {_cityGeometry.Triangles} triangles in {_cityGeometry.Chunks.Length} chunks, "
                         + $"{_cityGeometry.CollisionTriangles} solid, {sw.Elapsed.TotalMilliseconds:0} ms"
+                        + $"; {plan.Pads.Length} pads" + (plan.Blocks.FirstOrDefault(b => b.Kind == 2) is { Kind: 2 } mk ? $", market ({mk.Min.X:0},{mk.Min.Y:0})-({mk.Max.X:0},{mk.Max.Y:0})" : "")
                         + (plan.Rail is { } rail ? $"; railway {rail.Length:0} m, stations at {string.Join(" ", rail.Stations.Select(st => $"({st.X:0},{st.Y:0})"))}" : ""));
                 }
                 return _cityGeometry;

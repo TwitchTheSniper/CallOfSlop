@@ -639,7 +639,7 @@ public static partial class ConstructNet
                 n++;
             }
         w.PatchU8(at, (byte)n);
-        w.U8((byte)inv.MadeN); // (protocol 298: made parts by key, at most 64 kinds; docs/sandbox/design/inventory-run-time-parts.md)
+        w.U8((byte)inv.MadeN); // (protocol 297: made parts by key, at most 64 kinds; docs/sandbox/design/inventory-run-time-parts.md)
         for (var k = 0; k < inv.MadeN; k++)
         {
             PartRef.Write(w, inv.MadeDef[k]);

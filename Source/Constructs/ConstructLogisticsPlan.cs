@@ -216,7 +216,7 @@ public static class ConstructLogisticsPlan
         var md = c.DefOf(m);
         if (md.IsPress && !md.IsLathe)
             inputs = PressInputs(c, m, st, product, ask, kinds, wants, inside);
-        else if (md.IsPanelFormer)
+        else if (md.IsPanelFormer && !md.IsLaserCutter) // (a cutter's blanks by chain: phase 5)
             inputs = FormerInputs(c, net, st, product, ask, kinds, wants, inside);
         else if (md.IsAssembler && AssemblingTable.Current.Of(product) is { Parts.Length: > 0 } r)
         {

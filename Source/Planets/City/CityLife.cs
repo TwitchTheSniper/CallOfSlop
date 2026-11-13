@@ -267,6 +267,57 @@ public sealed class CityLife
         return (standing ? a - head + Dwell : a + Dwell, a + head, standing, a);
     }
 
+    // ---- Air taxis -----------------------------------------------------------------------------------------------------
+
+    /// <summary>A taxi's hop from one rooftop pad to another (s): it stands a while, climbs, crosses the city high over the
+    /// towers and comes down.</summary>
+    public const float Hop = 80f, Stand = 14f, Climb = 16f;
+
+    /// <summary>Taxis in the sky: two for each pad, at most twelve.</summary>
+    public int Taxis => Math.Min(Plan.Pads.Length * 2, 12);
+
+    private static uint Mix(uint a, uint b)
+    {
+        var x = a * 0x9E3779B1u ^ b * 0x85EBCA77u;
+        x ^= x >> 15;
+        x *= 0x2C1B3C6Du;
+        x ^= x >> 12;
+        return x;
+    }
+
+    /// <summary>Where taxi k is at time t: its plan point and height over the ground, and the way it faces on the plan.</summary>
+    public (Vector2 P, float H, Vector2 Dir) Taxi(double t, int k)
+    {
+        var pads = Plan.Pads;
+        var tt = t + k * 37.0;
+        var leg = (long)Math.Floor(tt / Hop);
+        var tau = (float)(tt - leg * Hop);
+        var a = pads[(int)(Mix((uint)k, (uint)leg) % (uint)pads.Length)];
+        var b = pads[(int)(Mix((uint)k, (uint)(leg + 1)) % (uint)pads.Length)];
+        var cruise = Plan.Spec.Tallest * 1.3f;
+        var dir = b.At - a.At;
+        dir = dir.LengthSquared() > 1 ? Vector2.Normalize(dir) : new Vector2(MathF.Cos(k), MathF.Sin(k));
+        if (tau < Stand)
+            return (a.At, a.Height + 0.6f, dir);
+        tau -= Stand;
+        if (tau < Climb)
+        {
+            var f = tau / Climb;
+            return (a.At, a.Height + 0.6f + (cruise - a.Height) * f * f * (3 - 2 * f), dir);
+        }
+        tau -= Climb;
+        var cross = Hop - Stand - 2 * Climb;
+        if (tau < cross)
+        {
+            var f = tau / cross;
+            f = f * f * (3 - 2 * f);
+            return (Vector2.Lerp(a.At, b.At, f), cruise, dir);
+        }
+        tau -= cross;
+        var g = tau / Climb;
+        return (b.At, cruise + (b.Height + 0.6f - cruise) * g * g * (3 - 2 * g), dir);
+    }
+
     // ---- Walkers ------------------------------------------------------------------------------------------------------
 
     private static (Vector4[], (int, int, Vector2)[]) MakeWalkers(CityPlan plan)
@@ -285,7 +336,7 @@ public sealed class CityLife
         foreach (var b in plan.Blocks)
         {
             if (b.Kind == 1)
-                continue;
+                continue; // (the square has its own strollers; the market's pavements are walked like any block's)
             var size = b.Max - b.Min;
             var perimeter = 2 * (size.X + size.Y);
             // About one person every 9 m of the block's round, in two lanes (near the shop windows and out by the lamps),
@@ -297,6 +348,22 @@ public sealed class CityLife
                 var dir = d.Chance(0.5f) ? 1f : -1f;
                 Add(b.Min - new Vector2(lane), b.Max + new Vector2(lane), dir * d.Range(1.1f, 1.6f), d.Range(0, perimeter + 8 * lane), d.Next());
             }
+        }
+        // The market: shoppers going round between two aisles, up one and back down the next.
+        foreach (var b in plan.Blocks)
+        {
+            if (b.Kind != 2)
+                continue;
+            float x0 = b.Min.X + CityGeometry.MarketEnd, x1 = b.Max.X - CityGeometry.MarketEnd;
+            var aisles = new List<float>();
+            for (var z = b.Min.Y + CityGeometry.MarketFirst; z < b.Max.Y - 1; z += CityGeometry.MarketStep)
+                aisles.Add(z);
+            for (var k = 0; k + 1 < aisles.Count; k++)
+                for (var i = 0; i < 14; i++)
+                {
+                    var lane = d.Range(-0.6f, 0.6f);
+                    Add(new Vector2(x0 + lane, aisles[k] + lane), new Vector2(x1 - lane, aisles[k + 1] - lane), (d.Chance(0.5f) ? 1 : -1) * d.Range(0.7f, 1.1f), d.Range(0, 300), d.Next());
+                }
         }
         // The square: people strolling round rectangles of their own inside it, clear of the column and the kiosks.
         Vector2 smin = plan.SquareMin + new Vector2(12), smax = plan.SquareMax - new Vector2(12);

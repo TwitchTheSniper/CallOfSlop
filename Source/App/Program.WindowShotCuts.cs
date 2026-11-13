@@ -19,6 +19,8 @@ public static unsafe partial class Program
 
     private static bool WsCutVerb(Game g, Player me, string verb, string arg)
     {
+        if (WsCutterVerb(g, verb, arg))
+            return true; // (the Laser Cutter: Program.WindowShotCutter.cs)
         if (verb is not ("ray" or "walk" or "side" or "put"))
             return false;
         var words = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

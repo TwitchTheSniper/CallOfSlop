@@ -75,7 +75,7 @@ The phases below were rewritten on 2026-11-13 for the user's answers (at the end
   catalogue part is), never into the hands. Saved in the player record by name (the save already writes every part by name; an older
   build drops the run-time names, as it did), sent by key in `CBodyKind.Inventory`, marked by the `RuntimeParts` sweep (inventories
   are tracked like hands). The Tab inventory lists them in one "Made parts" category, sorted by kind then size, by their shown names.
-  The pick goes to the server by key (protocol 298). Made parts stay physics-only: the hands, backpack, shelves and F still refuse them.
+  The pick goes to the server by key (protocol 297; 298 on its branch). Made parts stay physics-only: the hands, backpack, shelves and F still refuse them.
   Done (2026-11-13; `SandboxInventory.MadeDef`/`MadeCount`, `WorldPlayer.Made` by key, `CActKind.TakeMade`, `UiSandboxMade.cs`): a made
   part is always counted, creative too (it is never endless). `--window-shot ... --do "inv drop NAME; inv takeback NAME; inv count;
   inv setdown NAME"` (`Program.WindowShotInv.cs`) took a pressed bracket and an I-beam back into the count with the real remove edit,

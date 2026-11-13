@@ -27,6 +27,9 @@ public struct CityChunk
 
     /// <summary>Its indices: the first <see cref="Main"/> are drawn at any distance, the <see cref="Detail"/> after them only near.</summary>
     public int First, Main, Detail;
+
+    /// <summary>The apron's indices (drawn first, pushed back in depth so nothing on it ever fights it).</summary>
+    public int UnderFirst, Under;
 }
 
 /// <summary>
@@ -53,13 +56,14 @@ public sealed class CityGeometry
     {
         public Vector3 Origin;
         public readonly List<CityVertex> V = new();
-        public readonly List<uint> Main = new(), Detail = new();
+        public readonly List<uint> Main = new(), Detail = new(), Under = new();
         public readonly List<Vector3> CP = new();
         public readonly List<int> CI = new();
         public Vector3 Min = new(float.MaxValue), Max = new(float.MinValue);
     }
 
     private readonly Dictionary<(int, int), Chunk> _chunks = new();
+    [ThreadStatic] private static bool _under; // (Tri is static: set while the apron is written)
     private readonly CityPlan _plan;
 
     private CityGeometry(CityPlan plan) => _plan = plan;
@@ -90,7 +94,7 @@ public sealed class CityGeometry
 
     private static void Tri(Chunk c, bool detail, uint a, uint b, uint d)
     {
-        var l = detail ? c.Detail : c.Main;
+        var l = _under ? c.Under : detail ? c.Detail : c.Main;
         l.Add(a);
         l.Add(b);
         l.Add(d);
@@ -431,10 +435,48 @@ public sealed class CityGeometry
             }
     }
 
+    /// <summary>How far from the centre the city's ground reaches (m): the apron's edge, inside which the planetoid's own
+    /// ground is not drawn (PlanetRenderer.CityClip).</summary>
+    public float Reach;
+
+    /// <summary>The apron: a disc of rough asphalt just over the ground under the whole city, so nothing of the planetoid's
+    /// ground shows between its streets and blocks (the terrain under it is left out of the drawing).</summary>
+    private void Apron()
+    {
+        var reach = 0f;
+        foreach (var b in _plan.Blocks)
+            foreach (var c in new[] { b.Min, b.Max, new Vector2(b.Min.X, b.Max.Y), new Vector2(b.Max.X, b.Min.Y) })
+                reach = MathF.Max(reach, c.Length());
+        Reach = reach + 30;
+        const int Seg = 256;
+        var rings = (int)MathF.Ceiling(Reach / 16f);
+        var par = Pack(CityStyle.Road, 2, 0, 0);
+        var colour = CityPlanColours.Rgb(0x34322f);
+        for (var i = 0; i < rings; i++)
+        {
+            float r0 = Reach * i / rings, r1 = Reach * (i + 1) / rings;
+            var seg = i == 0 ? 16 : Seg;
+            for (var j = 0; j < seg; j++)
+            {
+                float a0 = MathF.Tau * j / seg, a1 = MathF.Tau * (j + 1) / seg;
+                Vector2 p00 = new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * r0, p01 = new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * r0;
+                Vector2 p10 = new Vector2(MathF.Cos(a0), MathF.Sin(a0)) * r1, p11 = new Vector2(MathF.Cos(a1), MathF.Sin(a1)) * r1;
+                var mid = (p00 + p11) * 0.5f;
+                var c = At(mid);
+                var up = _plan.DirOf(mid);
+                Quad(c, false, _plan.Ground(p00, 0.01f), _plan.Ground(p10, 0.01f), _plan.Ground(p11, 0.01f), _plan.Ground(p01, 0.01f), _plan.DirOf(p00), _plan.DirOf(p10), _plan.DirOf(p11), _plan.DirOf(p01),
+                    p00, p10, p11, p01, colour, par, up);
+            }
+        }
+    }
+
     private void Build()
     {
         if (_plan.Metro is { } metro)
             _holes.AddRange(metro.Holes());
+        _under = true;
+        Apron();
+        _under = false;
         foreach (var m in _plan.Masses)
             Mass(m);
         foreach (var s in _plan.Streets)
@@ -446,7 +488,9 @@ public sealed class CityGeometry
             if (b.Kind == 1)
                 continue; // (under the square)
             var c = At((b.Min + b.Max) * 0.5f);
-            PavedSlab(c, b.Min, b.Max, RoadLift + Kerb, CourtColor, Pack(CityStyle.Court, 0, 0, 0), p => p);
+            PavedSlab(c, b.Min, b.Max, RoadLift + Kerb, CourtColor, Pack(CityStyle.Court, (uint)(b.Kind == 2 ? 3 : 0), 0, 0), p => p);
+            if (b.Kind == 2)
+                Market(b);
         }
         Square();
         if (_plan.Rail is { } rail)
@@ -598,6 +642,101 @@ public sealed class CityGeometry
         var shopPar = Pack(CityStyle.Grid, d.Next(), 3.6f * 20, 0.9f * 255, true);
         Box(c, foot + up * 1.4f, ax * 2.2f, up * 1.4f, az * 1.6f, CityPlanColours.Rgb(0x2f5a4a), shopPar, true, false);
         Box(c, foot + up * 2.95f, ax * 2.6f, up * 0.15f, az * 2.0f, CityPlanColours.Rgb(0xc8483c), Pack(CityStyle.Plain, 8, 0, 0), true, false);
+    }
+
+    // ---- The market hall ------------------------------------------------------------------------------------------------
+
+    /// <summary>The market's aisles (along x) are this far apart, the first this far in from the block's south edge; its end
+    /// aisles (along z) this far in from its east and west edges. CityLife's shoppers walk these.</summary>
+    public const float MarketStep = 7f, MarketFirst = 4f, MarketEnd = 2.6f, MarketRoof = 9f;
+
+    private static readonly uint[] Awnings = [CityPlanColours.Rgb(0xc8483c), CityPlanColours.Rgb(0x2f7a5a), CityPlanColours.Rgb(0xd8a030), CityPlanColours.Rgb(0x3a5a9a), CityPlanColours.Rgb(0xe0e0d8), CityPlanColours.Rgb(0x8a3a7a)];
+
+    /// <summary>A covered market on a block: a steel roof on columns over rows of stalls, each with its counter, awning and
+    /// lamp and its wares, aisles between them, open all round; a lit sign over the side facing the square.</summary>
+    private void Market(CityBlock blk)
+    {
+        var d = new CityPlan.Dice((uint)_plan.Spec.Seed * 3571u + 11);
+        Vector2 min = blk.Min, max = blk.Max, mid = (min + max) * 0.5f;
+        var y0 = RoadLift + Kerb;
+        var metal = Pack(CityStyle.Metal, 0, 0, 0);
+        // The roof: a slab over the whole block (in chunk-sized pieces), its edge a deep fascia, lamps under it.
+        for (var x = min.X; x < max.X - 0.01f; x += 32)
+            for (var z = min.Y; z < max.Y - 0.01f; z += 32)
+            {
+                var a = new Vector2(x, z);
+                var b = Vector2.Min(max, a + new Vector2(32));
+                var c = At((a + b) * 0.5f);
+                var (ax, az, up) = Axes((a + b) * 0.5f);
+                var centre = _plan.Ground((a + b) * 0.5f, y0 + MarketRoof + 0.3f);
+                Box(c, centre, ax * ((b.X - a.X) * 0.5f), up * 0.3f, az * ((b.Y - a.Y) * 0.5f), CityPlanColours.Rgb(0x3d4a52), Pack(CityStyle.Plain, 17, 0, 0), true, false);
+            }
+        // Columns down each end aisle's outer side and along the stall rows' middles.
+        for (var z = min.Y + 1; z <= max.Y - 1 + 0.01f; z += 8)
+            foreach (var x in new[] { min.X + 0.8f, max.X - 0.8f })
+                Column(new Vector2(x, z));
+        // Stall rows between the aisles: two rows back to back, facing the aisle on each side.
+        var zA = min.Y + MarketFirst;
+        while (zA + MarketStep < max.Y - 2)
+        {
+            var rowMid = zA + MarketStep * 0.5f;
+            for (var x = min.X + MarketEnd + 2.5f; x < max.X - MarketEnd - 3.5f; x += 3.4f)
+                foreach (var face in new[] { -1f, 1f })
+                    Stall(new Vector2(x + 1.6f, rowMid + face * 1.05f), face, ref d);
+            for (var x = min.X + 10; x < max.X - 8; x += 16)
+                Column(new Vector2(x, rowMid));
+            zA += MarketStep;
+        }
+        // Lamps hanging over the aisles.
+        for (var z = min.Y + MarketFirst; z < max.Y - 1; z += MarketStep)
+            for (var x = min.X + 6; x < max.X - 4; x += 8)
+            {
+                var p = new Vector2(x, z);
+                var c = At(p);
+                var (ax, az, up) = Axes(p);
+                Box(c, _plan.Ground(p, y0 + MarketRoof - 1.2f), ax * 0.35f, up * 0.12f, az * 0.35f, LampColor, Pack(CityStyle.Lamp, 0, 0, 0), false);
+                Box(c, _plan.Ground(p, y0 + MarketRoof - 0.55f), ax * 0.02f, up * 0.55f, az * 0.02f, Steel, metal, false);
+            }
+        // The sign over the side facing the square (the south side).
+        {
+            var p = new Vector2(mid.X, min.Y - 0.4f);
+            var c = At(p);
+            var (ax, az, up) = Axes(p);
+            Box(c, _plan.Ground(p, y0 + MarketRoof + 1.6f), ax * 9f, up * 1.0f, az * 0.15f, CityPlanColours.Rgb(0xffd060), Pack(CityStyle.Neon, 3, 0, 0), false, false);
+        }
+
+        void Column(Vector2 p)
+        {
+            var c = At(p);
+            var (ax, az, up) = Axes(p);
+            Box(c, _plan.Ground(p, y0 + MarketRoof * 0.5f), ax * 0.18f, up * (MarketRoof * 0.5f), az * 0.18f, Steel, metal, true, false);
+        }
+    }
+
+    /// <summary>A market stall: a counter facing <paramref name="face"/> (+z or -z), a shelf behind, an awning on two posts,
+    /// a lamp under it and its wares on the counter.</summary>
+    private void Stall(Vector2 at, float face, ref CityPlan.Dice d)
+    {
+        var c = At(at);
+        var (ax, az, up) = Axes(at);
+        var f = az * face;
+        var foot = _plan.Ground(at, RoadLift + Kerb);
+        var wood = Pack(CityStyle.Plain, 6, 0, 0);
+        Box(c, foot + f * 0.45f + up * 0.5f, ax * 1.4f, up * 0.5f, az * 0.28f, Wood, wood, true);
+        Box(c, foot - f * 0.55f + up * 0.9f, ax * 1.4f, up * 0.9f, az * 0.18f, CityPlanColours.Rgb(0x5a4632), wood, true);
+        var awning = Awnings[d.Pick(Awnings.Length)];
+        Box(c, foot + f * 0.35f + up * 2.45f, ax * 1.55f, up * 0.05f, az * 0.9f, awning, Pack(CityStyle.Plain, 18, 0, 0), false);
+        foreach (var sx in new[] { -1f, 1f })
+            Box(c, foot + ax * (1.45f * sx) + f * 1.1f + up * 1.2f, ax * 0.03f, up * 1.2f, az * 0.03f, Steel, Pack(CityStyle.Metal, 0, 0, 0), false);
+        Box(c, foot + f * 0.4f + up * 2.3f, ax * 0.5f, up * 0.05f, az * 0.08f, LampColor, Pack(CityStyle.Lamp, 0, 0, 0), false);
+        // Wares: a few crates and heaps of colour along the counter.
+        var n = 3 + d.Pick(3);
+        for (var k = 0; k < n; k++)
+        {
+            var x = -1.2f + 2.4f * (k + 0.5f) / n;
+            var colour = CityPlanColours.Rgb(d.Pick(6) switch { 0 => 0xd04030, 1 => 0xe0a020, 2 => 0x50a040, 3 => 0xe0d0b0, 4 => 0x8a5a3a, _ => 0x6a3a8a });
+            Box(c, foot + ax * x + f * 0.5f + up * 1.1f, ax * 0.18f, up * d.Range(0.06f, 0.16f), az * 0.16f, colour, Pack(CityStyle.Plain, 19, 0, 0), false);
+        }
     }
 
     // ---- The elevated railway ----------------------------------------------------------------------------------------
@@ -1081,13 +1220,16 @@ public sealed class CityGeometry
         {
             var baseV = (uint)verts.Count;
             verts.AddRange(c.V);
+            var underFirst = idx.Count;
+            foreach (var i in c.Under)
+                idx.Add(baseV + i);
             var first = idx.Count;
             foreach (var i in c.Main)
                 idx.Add(baseV + i);
             foreach (var i in c.Detail)
                 idx.Add(baseV + i);
             var centre = (c.Min + c.Max) * 0.5f;
-            chunks.Add(new CityChunk { Origin = c.Origin, Centre = centre, Radius = (c.Max - c.Min).Length() * 0.5f, First = first, Main = c.Main.Count, Detail = c.Detail.Count });
+            chunks.Add(new CityChunk { Origin = c.Origin, Centre = centre, Radius = (c.Max - c.Min).Length() * 0.5f, First = first, Main = c.Main.Count, Detail = c.Detail.Count, UnderFirst = underFirst, Under = c.Under.Count });
             if (c.CI.Count > 0)
             {
                 Colliders.Add(new TriangleMeshCollider(c.CP.ToArray(), c.CI.ToArray()));

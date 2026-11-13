@@ -100,7 +100,7 @@ public enum CActKind : byte
     PanelDesign, // u8 op (1 keep, 0 drop), text name, text key: a panel design saved to the world's shared list, or dropped from it (protocol 260; PanelDesigns.cs)
     Celebrate, // server -> one client: text title, text name, text line: a moment in the middle of their screen (protocol 274; GameCelebrate.cs)
     ExtruderSection, // u16 body, u16 machine, u8 profile, u16 width, height, wall (cm), u64 mask: the Extruder's picker sets its section at once (protocol 284; ConstructExtruderPick.cs)
-    TakeMade, // a part by PartRef (a made part's key): set down in front of the player from their Tab inventory (protocol 298; docs/sandbox/design/inventory-run-time-parts.md phase 2)
+    TakeMade, // a part by PartRef (a made part's key): set down in front of the player from their Tab inventory (protocol 297; docs/sandbox/design/inventory-run-time-parts.md phase 2)
 }
 
 /// <summary>
@@ -1267,7 +1267,7 @@ public sealed partial class Game
             }
             case CActKind.TakeMade:
             {
-                var made = PartRef.Read(ref r); // (protocol 298: a made part from the Tab inventory, by key)
+                var made = PartRef.Read(ref r); // (protocol 297: a made part from the Tab inventory, by key)
                 return Extrusion.IsRuntimeId(made) ? hands.TakePart(SandboxPartsMenu ? World.Map.Sandbox : null, p.Id, made, Constructs, eye, p.Yaw) : "no such made part";
             }
             case CActKind.Blueprint:
@@ -1828,7 +1828,7 @@ public sealed partial class Game
             SandboxSend(CActKind.Rack, body: (ushort)(id + 1));
             return;
         }
-        // A made part from the Tab inventory: by its key (its id is this machine's own; protocol 298).
+        // A made part from the Tab inventory: by its key (its id is this machine's own; protocol 297).
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.TakeMade);
         PartRef.Write(w, id);
@@ -2492,20 +2492,6 @@ public sealed partial class Game
     }
 
     // ---- HUD ----------------------------------------------------------------------------------------------------------
-
-    private string _sbBar = "";
-    private int _sbBarKey = -1;
-
-    public string SandboxBarText()
-    {
-        var key = Constructs.Bodies.Count * 10000 + Constructs.TotalParts;
-        if (key != _sbBarKey)
-        {
-            _sbBarKey = key;
-            _sbBar = $"{Constructs.Bodies.Count} constructs, {Constructs.TotalParts} parts";
-        }
-        return _sbBar;
-    }
 
     /// <summary>A line of text rebuilt only when what it shows changes (the HUD runs every frame: no allocation per frame).</summary>
     private struct SbText

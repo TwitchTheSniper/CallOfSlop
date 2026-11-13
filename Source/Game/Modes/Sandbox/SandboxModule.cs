@@ -110,9 +110,12 @@ public sealed class SandboxModule : GameModeModule
                 ref var h = ref hands.Hand(p.Id);
                 if (pass == 1)
                 {
-                    var idle = h.Tool == default && h.Held == 0 && h.SeatBody == 0 && h.Edit == EditKind.None && h.GrabBody == 0;
+                    // (empty hands count as idle too: a calm story body holds the Hands tool, GameStoryBodies.cs; a change of tool is sent three times again)
+                    var idle = h.Tool is ConstructTool.None or ConstructTool.Hands && h.Held == 0 && h.SeatBody == 0 && h.Edit == EditKind.None && h.GrabBody == 0;
                     ref var quiet = ref game.SbHandQuiet[p.Id];
-                    quiet = idle ? (byte)Math.Min(quiet + 1, 255) : (byte)0;
+                    ref var was = ref game.SbHandTool[p.Id];
+                    quiet = idle && was == (byte)h.Tool ? (byte)Math.Min(quiet + 1, 255) : (byte)0;
+                    was = (byte)h.Tool;
                     if (quiet > 3)
                         continue;
                 }
@@ -201,7 +204,7 @@ public sealed class SandboxModule : GameModeModule
 
     public override string GoalText(Game game) => $"{Name}: {Rules()}";
 
-    public override (string Big, string Sub)? ScoreBar(Game game) => ("SANDBOX", game.SandboxBarText());
+    public override bool NoMatchBar => true; // (no title card: the user, 2026-11-13, "I don't think it's necessary to tell you what game mode you're playing anymore, nor the part counts")
 
     public override void HudLines(Game game, Player me, List<HudLine> lines, ref Vector3? pointAt) => game.SandboxHud(me, lines, HudWhite, HudDim, HudOrange, HudGreen, HudRed);
 

@@ -102,6 +102,10 @@ public static class WorkOrders
         var d = c.DefOf(part);
         if (!TakesOrders(d))
             return $"the {d.Name} takes no orders";
+        if (d.IsLaserCutter)
+            return ConstructLaserCutter.Refusal(world, c, part, d, o);
+        if (o.Name != null && HullLoft.IsCutName(o.Name))
+            return $"the {d.Name} cuts nothing: a cut part is a Laser Cutter's order";
         if (d.IsPress)
             return PressRefusal(c, part, d, o);
         if (d.IsPanelFormer)
@@ -310,6 +314,14 @@ public static class WorkOrders
         var count = (ushort)Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.OrderCount, 1), 1, MaxCount);
         if (ProductionLines.IsConsole(d))
             return ConsoleOrder(p, d, count, out o);
+        if (d.IsLaserCutter)
+        {
+            // (no design setting yet, phase 5: Queue adds its Order count of the head order's cut part)
+            if (!HeadOf(p, out var lh) || lh.Name == null)
+                return $"the {d.Name} cuts to an order: from a Panel Designer, a Crafting Terminal or a bill; then Queue repeats it";
+            o = ConstructPanelFormer.Order(lh.Name, count);
+            return null;
+        }
         if (!TakesOrders(d))
             return $"the {d.Name} takes no orders";
         if (d.IsAssembler)
@@ -380,7 +392,7 @@ public static class WorkOrders
             return why;
         if (o.IsPiece)
             o.Key = o.Key with { Material = MaterialFor(world, c, part) };
-        else if (o.IsPanel && world.StoreOf(c, part) is { Amount: > 0 } fed && fed.Material != o.Key.Material
+        else if (o.IsPanel && !c.DefOf(part).IsLaserCutter && world.StoreOf(c, part) is { Amount: > 0 } fed && fed.Material != o.Key.Material
             && ConstructPanelFormer.FromSettings(c, part, o.Count, RecyclingTable.Current.NameOf(fed.Material), out var inStock) == null)
             o = inStock; // (a preset in what its bin holds)
         return Queue(world, c, part, o);
@@ -391,6 +403,8 @@ public static class WorkOrders
     {
         if (c.Parts[part].Orders is not { Count: > 0 } q)
             return "no orders to cancel";
+        if (c.DefOf(part).IsLaserCutter)
+            ConstructLaserCutter.GiveBack(world, c, part); // (the head's blank leaves the bed, so it is never cut to the next order)
         q.RemoveAt(0);
         world.OrdersChanged(c);
         return null;
@@ -401,6 +415,8 @@ public static class WorkOrders
     {
         if (c.Parts[part].Orders == null)
             return "no queue: it works its own settings";
+        if (c.DefOf(part).IsLaserCutter)
+            ConstructLaserCutter.GiveBack(world, c, part);
         c.Parts[part].Orders = null;
         world.OrdersChanged(c);
         return null;
@@ -509,7 +525,7 @@ public static class WorkOrders
                     var md = c.DefOf(m);
                     var kind = md.IsPress ? Pressed.SpecOf(bill.Items[i]) != null
                         : IsWholeFormer(md) && FormerPresets.KeyFor(bill.Items[i], out var fk) ? fk.Shape == (md.IsFanFormer ? ExShape.Fan : ExShape.Wing)
-                        : (md.IsPanelFormer ? 2 : md.IsAssembler ? 1 : 0) == bill.Items[i].Kind;
+                        : (md.IsPanelFormer && !md.IsLaserCutter ? 2 : md.IsAssembler ? 1 : 0) == bill.Items[i].Kind;
                     if (why == null || kind && !whyKind)
                         (why, whyKind) = ($"{c.DefOf(m).Name}: {no}", kind);
                 }

@@ -480,9 +480,13 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 293: Sized parts phase 3: the Receiver die (two die part files, ids move); a pressed receiver sizes its gun by the merge's law (derived on each peer, no new bytes).
     // 294: Lifters phase 3 (a carried piece pushes players): CBodyKind.Lifts sends the move on the mover clock: u32 start tick, u32 held ticks and
     //   u32 the tick it waits at (0: it runs) in place of u16 age and u16 held (ConstructLifters.Write); LiftWhy gains Player, PlayerStuck.
-    // 298: Inventories phase 2 (made parts counted in the Tab inventory): CBodyKind.Inventory ends with u8 n and n made parts (PartRef, u16 count),
-    //   at most 64 kinds; CActKind.TakeMade (a PartRef) sets one down in front of the player (docs/sandbox/design/inventory-run-time-parts.md).
-    public const ushort ProtocolVersion = 298;
+    // 295: Msg.Breakout's stage gains 3 (away in the Ministry Courier, GameBreakoutShip.cs); no new bytes.
+    // 296: Laser Cutter phase 3: the Laser Cutter and Medium Laser Cutter (two part files, ids move); ExtrudeStall.OffcutFull (16) in a
+    //   machine's stall byte; a cutter's offcut tenths ride in the store's input amount (ConstructLaserCutter.cs).
+    // 297: Inventories phase 2 (made parts counted in the Tab inventory): CBodyKind.Inventory ends with u8 n and n made parts (PartRef, u16 count),
+    //   at most 64 kinds, split over several messages past a packet's room; CActKind.TakeMade (a PartRef) sets one down in front of the player
+    //   (docs/sandbox/design/inventory-run-time-parts.md; 298 on its branch).
+    public const ushort ProtocolVersion = 297;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
