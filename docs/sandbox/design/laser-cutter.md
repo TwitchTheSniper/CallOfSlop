@@ -1,7 +1,8 @@
 # The Laser Cutter: cut-outs in panels (design)
 
-Design only (2026-11-13). No code changed, nothing built, nothing measured: every number below is a proposal or an
-estimate unless it says where it is quoted from. Written for an agent to build in five phases of 60 to 90 minutes.
+Design only (2026-11-13; revised the same day for the user's answers 3 and 9, which section 13 keeps as the record).
+Every number below is a proposal or an estimate unless it says where it is quoted from. Written for an agent to build in
+six phases of 60 to 90 minutes.
 
 The queue item is a name with no description. The only earlier words about it are two "Next" lines in
 `docs/sandbox/constructs/production.md`: the Panel Former's ("the designer window, the Laser Cutter (cut-outs)") and the
@@ -31,7 +32,7 @@ beside it. That is the gap: **taking material out of a sheet.**
 
 | | A. Cut-outs in panels | B. A saw for stock | C. Cutting parts and wrecks apart |
 | --- | --- | --- | --- |
-| What it is | A machine that takes a formed panel (flat or shaped) and cuts openings, notches and corners out of it, to a pattern drawn in the Panel Designer | A machine that cuts extruded stock to length or to a mitre | A machine, or a tool on an arm, that cuts a finished part or a wreck into pieces |
+| What it is | A machine that takes a formed panel (flat or shaped) or a flat extruded piece (plate, a flat bar) and cuts openings, notches and corners out of it, to a pattern drawn in the Panel Designer | A machine that cuts extruded stock to length or to a mitre | A machine, or a tool on an arm, that cuts a finished part or a wreck into pieces |
 | New to the game | Yes: nothing removes material today | Length: no (the Extruder cuts exactly). Mitre: yes, but boxes do not turn, so a mitred end is a drawn wedge on a square collider | Yes, but it needs "half a part" to be a thing: every catalogue part would need a rule for what each half is, does and weighs |
 | What the player gets | Windows, ports, hatches, doorways, arches, vents, lightening holes, shaped outlines: bodywork and bases that read as made, and openings that work (rays, bodies and players pass) | Picture-frame corners | A salvage scene. The loot loop already has its rule (what you take off whole is what survives; the rest goes to a Recycler by mass) |
 | Fits the chain | Exactly: the Former makes the blank, the cutter is the next machine, the key carries both, as a pressed part's key carries its extrusion | It would bring back the saw the user took out | Outside the production chain: it is a gathering feature |
@@ -46,7 +47,8 @@ designer, a named work order).
 - **B.** A mitre, if wanted later, is an end setting on the Extruder ("End: square or mitre", a drawn wedge), not a machine.
 - **C.** Salvage stays the attach tool and the Recycler. A cutting head on a Loader Arm is a possible later use of the
   cutter's look, not of its code.
-- Cutting extruded plate (10 cm and thicker) and pressed plates: section 12, question 3, as a later phase.
+- Pressed plates (a Press's output): their features stand proud of the blank, so a cut through them needs the die's own
+  shapes. Later, if asked. Extruded flat stock is cut from phase 1 (section 4.4).
 - Cut-outs in the vehicle kit's own lofted parts (`Hull Loft (...)`: cabs, bays): their keys are the kit's, their shapes
   are not a sheet. Later, if at all.
 - Free polygons and true curves (section 4.2 says why; question 4).
@@ -57,9 +59,9 @@ designer, a named work order).
 | | Panel Former | Laser Cutter |
 | --- | --- | --- |
 | Does | Gives a sheet its **shape**: crown, rake, fold, loft, size, thickness | Takes material **out** of a formed sheet: openings, notches, cut corners |
-| Stock | Bulk material in its bin (or extruded sheet counted into it) | One formed panel at a time, on its bed; no bin of stock |
+| Stock | Bulk material in its bin (or extruded sheet counted into it) | One formed panel or one flat extruded piece at a time, on its bed; no bin of stock (answer 3) |
 | Never | Removes anything; a panel leaves it whole | Bends, sizes or thickens anything; it cannot make a panel, only cut one |
-| Output | `Formed Panel (...)` | `Cut Panel (...)`, and the offcut as bulk material |
+| Output | `Formed Panel (...)` | `Cut Panel (...)`, `Cut Plate (...)` (from an extrusion), `Cut Pane (...)` (glass, section 4.5), and the offcut as bulk material |
 | Costs | Material by mass, a short stroke | Power and time by the length of the cut; no material |
 
 A flat sheet is the Former's (`curve` with crown and rake 0). The cutter refuses to "make" a panel with no cuts ("nothing
@@ -67,7 +69,7 @@ to cut: a Panel Former's order"), and the Former refuses a cut panel ("a Laser C
 
 ## 3. What the player does
 
-1. **Build the line.** A Panel Former, a conveyor from its Piece out to the **Laser Cutter**'s Piece in, a conveyor from
+1. **Build the line.** A Panel Former (or an Extruder making plate), a conveyor from its Piece out to the **Laser Cutter**'s Piece in, a conveyor from
    the cutter's Piece out to a Piece Rack; a chute from the cutter's **Offcut** port to a Materials Bin (or back to the
    Former's hopper); power; a Panel Designer or a Crafting Terminal linked as today (a Line Console's wire into Orders,
    or conveyors either way round).
@@ -78,15 +80,16 @@ to cut: a Panel Former's order"), and the Former refuses a cut panel ("a Laser C
    of 6, facets and collision boxes against their limits, each opening's clear size, the mass before and after, the
    offcut that comes back, the key, and each linked cutter: "Laser Cutter 1: yes" or why not.
 3. **Save and order.** Name it, Save design, set a count, ORDER. The order goes to the first linked cutter that takes
-   it; the cutter's order asks a linked Panel Former for its blank (a chain, as a press's order asks an Extruder).
+   it; the cutter's order asks a linked Panel Former for its blank, or a linked Extruder when the blank is a plate (a
+   chain, as a press's order asks an Extruder).
 4. **Watch it run.** The Former forms the blank; it rides to the cutter's bed; the head tracks over it, glowing, for the
    cut's time; the cut panel rides out to the rack (or to the designer's tray when a conveyor returns it); the offcut
    lands in the cutter's scrap bin and leaves by chute.
 5. **By hand, with no line.** Queue an order at the cutter (its screen: Queue orders its Design setting, a world design
    picked with the Recipe button), let a loose panel of the right kind go on its in bed, and take the cut panel off the
    out bed. F on the machine takes back what lies on it, in every state.
-6. **Build with it.** A cut panel welds by its edge sockets as the panel it was cut from, and each opening has a socket
-   in its middle for a pane, a hatch, a lamp or a vent. A blueprint keeps it by its key; a Building Station's bill orders it.
+6. **Build with it.** A cut panel welds by its edge sockets as the panel it was cut from (a cut plate by the
+   extrusion's face sockets), and each opening has a socket in its middle for a pane (section 4.5), a hatch, a lamp or a vent. A blueprint keeps it by its key; a Building Station's bill orders it.
 
 ## 4. The cut panel
 
@@ -111,11 +114,12 @@ Cut Panel (curve 200x100 c0 r0 t30 steel | r100,50,10,40,3 m0,30,30 m1,30,30)   
 - **The sheet's frame.** Cuts are placed on the flat sheet, `L` by `W`, before the former's shape: `(U, V)` maps to the
   panel's own `(s, x)` (`s = U / L`, `x = 2V / W - 1`), so a cut follows a crown, a fold or a loft, and narrows with a
   tapering panel. One frame for every kind; no cut has a kind-specific rule.
-- **At most 6 cuts**, written in one order (by `U`, then `V`, then openings before corners). A key spelt another way, past
+- **At most 6 cuts**, written in one order: the openings by `U`, then `V`, then `A`, `B`, `C`; then the cut corners by `K`. A key spelt another way, past
   a range or breaking a rule below is refused ("not a cut panel"), never clamped: every peer makes the same part or none.
-- **Rules a key must pass** (`HullLoft.CutRefusal`, each with its own words for the designer): cuts do not overlap; two
-  cuts, or a cut and an edge it does not cross, keep 3 cm of sheet between them; what is left is one connected piece
-  ("the cuts would part the sheet"); at least a quarter of the sheet's area is left; the facets and boxes of 4.2 and 4.3
+- **Rules a key must pass** (`HullLoft.CutRefusal`, each with its own words for the designer): each cut lies at least
+  partly on the sheet; cuts do not overlap; two cuts, or a cut and an edge it does not reach, keep 3 cm of sheet between
+  them; no cut reaches two opposite edges ("the cut would part the sheet": with the webs above, that is the only way the
+  sheet can come apart, so no flood fill is needed); at least a quarter of the sheet's area is left; the facets and boxes of 4.2 and 4.3
   stay within their limits.
 - **Length.** The longest loft key is 102 characters and its material (quoted: `panel-designer-3-notes.md`); six cuts add
   up to 132 (estimate, from the widest numbers). `ConstructParts.MaxRuntimeName` is 128 today, and its comment says a
@@ -172,6 +176,65 @@ New file `Source/Constructs/HullLoft.Cuts.cs` (partial `HullLoft`: `CutPrefix`, 
   (`FormedMaterial`, `FormedUnits`).
 - Still a welder part, never in the menus (`"stage"`); paint and health share carry over from the blank.
 
+### 4.4 Cut extruded stock (answer 3)
+
+The cutter also takes a piece straight off an Extruder, so plate never has to go through a Panel Former.
+
+```
+Cut Plate (BLANK | CUTS)
+Cut Plate (plate 200x20x300 steel | r150,100,60,60,17)        a 5 cm steel plate with a round port
+Cut Plate (solid 120x10x240 steel | r60,60,40,80,0 m2,20,20)  a 10 cm flat bar with a hatch and a cut corner
+```
+
+- **`BLANK`** is the piece as an Extruder names it less `Extrusion ` (`Pressed.BlankText`, as a pressed part's key carries
+  its blank), spelt exactly as a machine writes it; never growing. `CUTS` are section 4.1's, in the same sheet frame.
+- **Which sections.** Flat stock only, the laser cutting through its thickness:
+  - **plate** (the Extruder's Plate preset: the middle two rows of the grid, so `H / 4` thick): `H` up to 40 (10 cm thick);
+  - **solid** lying flat (a flat bar, the Panel Former's "sheet"): `H` up to 10 and no more than `W`.
+  - Refused with a reason, never cut: an L-angle, T-bar, I-beam, C-channel, cross, wall or hollow section ("a Laser
+    Cutter cuts flat stock: plate or a flat bar, not an L-angle"), a custom grid or an airfoil (the same words), a round
+    or a pipe ("a pipe is not flat stock"), a wheel, fan, blade or wing (not stock at all), stock thicker than 10 cm
+    ("too thick to cut: 12.5 cm, a Laser Cutter cuts 10 cm"). Cutting a hole across a section's web is a later idea, not
+    this design.
+- **Size.** 20 to 600 cm long and wide (the largest bed: section 5); a longer piece is cut to length at the Extruder
+  first ("cut it to length at the Extruder: a Laser Cutter's bed is 6 m").
+- **The frame.** The sheet is the piece's own: `U` along its length (its `z`, 0 at its `base` end), `V` across its width
+  (its `x`, from `-W/2`), its middle plane at `y = 0` as the extrusion's. So a cut plate is the flat case of the panel's
+  canvas: one facet, `L` by `W`, the extrusion's thickness, cut by the same clipper.
+- **Collision.** A plate is flat, so an opening opens truly (risk 3 does not apply): its one solid box becomes rectangles
+  round the openings, as a panel's strips (phase 2). Until then, the blank's box.
+- **Sockets.** The extrusion's own (`base`, `tip`, `+x0`, `-y2` ...: `Extrusion.Sockets`), at the same places, so a
+  blueprint that welded the plate welds the cut plate in its place; a socket whose spot is cut away is left out
+  (phase 2), and each opening adds its `o` socket.
+- **Mass, health, armour** by the extrusion's rules, from what is left: area left by thickness at the material's
+  `unitsPerM3` and weight, `healthPerM3`, armour by the thickness. The offcut is the rest, in that material.
+- **One family on the wire and in saves** with cut panels: a named run-time part, `HullLoft.Parse` the one door, its name
+  after `HullLoft.WireKind`.
+
+### 4.5 The Pane (answer 9)
+
+A window wants glass that fits it. The cutter cuts a **Pane** to an opening's own outline from glass sheet.
+
+```
+Cut Pane (rA,B,C tT glass)            a pane A by B cm, corners cut back by C, T mm thick
+Cut Pane (r40,50,5 t12 glass)         the pane for the door's window of section 4.1
+```
+
+- **The key is the opening's outline** (`A`, `B`, `C` as an opening's), its thickness in mm (12 to 40, the Former's) and
+  `glass` (the only material a pane takes). It is flat, one convex piece of at most eight corners, whatever the panel it
+  goes into: on a crowned panel it sits flat in the opening; the designer says so when the curve over the opening is
+  more than 2 cm.
+- **Its blank** is the smallest glass sheet that holds it: `Formed Panel (curve LxW c0 r0 tT glass)`, `L` and `W` the
+  outline rounded up to 5 cm and at least 20 (the Former forms glass already: `Extrusion.json` lists it), or an extruded
+  glass plate of that size. The rest comes back as glass offcut. The chain asks for that blank as for a cut panel's.
+- **It welds** by one socket, `back`, in its middle on its back face, to an opening's `o` socket (the opening's middle at
+  the surface). Its outline is the opening's less 2 mm all round, so its rim never shares a plane with the cut's. It is
+  glass: it draws in the glass material, stops bodies, and breaks as glass does (`health` from its volume; armour 0, as
+  `Extrusion.json`'s glass row).
+- **The designer** gets a check box beside each opening, **Glazed**: ORDER then orders the panel and one pane per glazed
+  opening, and a blueprint step welds each to its `o` socket. A pane is its own part, so a bill lists it and a broken
+  pane is replaced alone.
+
 ## 5. The machine
 
 Part data `storage.cut` (`speed`, `maxLength`, `maxWidth`, `maxHeight`, `at` the out bed's middle, `scrap` the offcut
@@ -192,13 +255,16 @@ state and console list as the Extruder family's.
   (`RouteRender`, as the plinth). Not a part of the construct as a press's piece is: nothing has to fit, nothing is solid,
   and the wire and saves are a store's own. A panel taller than `maxHeight` (a 90 degree fold with a long leg) is
   refused: "too tall for the bed: 0.9 m, the Laser Cutter takes 0.6 m".
+- **Blanks.** The head order's blank: a formed panel (a cut panel's), an extruded plate or flat bar (a cut plate's), or a
+  glass sheet (a pane's, formed or extruded). The bed's size is the same limit for each.
 - **Fed** by conveyor into **Piece in** (it takes only the head order's blank; anything else waits on the conveyor, "not
   its order"), or by hand: a loose panel let go on the in bed is taken in (the mouth check a press's bay makes, 10 Hz,
   only while a slot is free).
-- **Orders only** (question 8). `WorkOrder.Name` is the cut panel's key (named shape 255, as a panel's). Refusals: "not a
-  cut panel", "nothing to cut: a Panel Former's order", "panel too large for this cutter: ...", "too tall for the bed",
+- **Orders only** (question 8). `WorkOrder.Name` is the cut part's key (named shape 255, as a panel's). Refusals: "not a
+  cut part", "nothing to cut: a Panel Former's order", "panel too large for this cutter: ...", "too tall for the bed",
   a full queue. An Extruder, a Press, an Assembler and a Panel Former each refuse a cut key: "a Laser Cutter's order".
-  Waiting says what it lacks: "needs Formed Panel (door 110x120 c6 r8 t20 steel)".
+  Waiting says what it lacks: "needs Formed Panel (door 110x120 c6 r8 t20 steel)" or "needs Extrusion plate 200x20x300
+  steel". A pane's stroke is its outline's length.
 - **The cut is a timed stroke**: `2 s + 3 s a metre of cut edge x (thickness / 20 mm)`, over the machine's speed
   (proposal). A door's window (1.8 m of edge, 20 mm) is 7.4 s on the small cutter. Power is drawn only while it cuts;
   no power, Run held off or a full offcut bin stops it with the blank untouched (the blank goes when the stroke ends,
@@ -238,13 +304,13 @@ No new desk: the Panel Designer designs the whole part, and one design is one ke
 | Where | What changes | Code |
 | --- | --- | --- |
 | Work orders | A cut key is a named order; the refusal texts above | `WorkOrders.cs`, `ConstructLaserCutter.Refusal` |
-| Chains | `CutterInputs`: an order queued at a cutter asks for its blank, `Formed Panel (PANEL)`, at a linked Panel Former that takes it (its size, its bin's material), tagged, riding to the cutter's Piece in and counted on arrival; beside `PressInputs` and `FormerInputs` | `ConstructLogisticsPlan.cs` |
+| Chains | `CutterInputs`: an order queued at a cutter asks for its blank, `Formed Panel (PANEL)` at a linked Panel Former that takes it (its size, its bin's material), or `Extrusion BLANK` at a linked Extruder (as `PressInputs` asks), tagged, riding to the cutter's Piece in and counted on arrival; beside `PressInputs` and `FormerInputs` | `ConstructLogisticsPlan.cs` |
 | Routing | The cutter is a destination with a want (its head order's blank) and a source (Piece out), as a press | `ConstructLogistics.cs` |
 | Crafting Terminal | Cut panels in linked stores listed "in stock"; on Make, per linked cutter, the world's cut designs: `now` when the blank is in linked stock or on the bed, `through a chain` when a linked former can form it | `ConstructCrafting.cs` (a `CutterMissing` beside `PressMissing`), `UiCrafting.cs` |
-| Bills | `Bill.Cut` (keys and counts); each adds its blank to `Bill.Panels`; `ToConsole` and a console's Send deal them to its cutters. Blueprint bill line: `{"step": n, "cut": "Cut Panel (...)", "count": 2}`. `--bill` prints "Cut panels": the cutter that takes each, its blank, seconds, the offcut returned | `WorkOrders.cs` (`ConstructBill`), `VehicleKit/VehicleCore.cs` (`BlueprintScript.BillPanel`'s twin) |
+| Bills | `Bill.Cut` (keys and counts, panes too); each adds its blank to `Bill.Panels` or its piece to the Extruder's lines; `ToConsole` and a console's Send deal them to its cutters. Blueprint bill line: `{"step": n, "cut": "Cut Panel (...)", "count": 2}`. `--bill` prints "Cut panels": the cutter that takes each, its blank, seconds, the offcut returned | `WorkOrders.cs` (`ConstructBill`), `VehicleKit/VehicleCore.cs` (`BlueprintScript.BillPanel`'s twin) |
 | Building Station | `ConstructStation.OrderFor` gives a cut key its cutter order | `ConstructStation.cs` |
 | Recipe picker | The cutter's Design button opens it on the world's cut designs | `UiRecipePicker*.cs` |
-| Wire | No new message: a cut panel in a Full, a rack's kinds or a conveyor's riders goes as a formed panel does (`Extrusion.WireMark`, `HullLoft.WireKind`, its name); a named order as today. Protocol bumps: phase 1 (a name older builds refuse, the longer name), phase 3 (new parts, the stall value) | `ServerBrowser.ProtocolVersion` (277 now; the merger renumbers) |
+| Wire | No new message: a cut panel, plate or pane in a Full, a rack's kinds or a conveyor's riders goes as a formed panel does (`Extrusion.WireMark`, `HullLoft.WireKind`, its name); a named order as today. Protocol bumps: phase 1 (a name older builds refuse, the longer name), phase 3 (new parts, the stall value) | `ServerBrowser.ProtocolVersion` (277 now; the merger renumbers) |
 | Saves | By name everywhere (bodies, stores, orders, designs). No new save file | none |
 
 ## 8. Limits that protect the tick and the wire
@@ -286,20 +352,21 @@ in `CONSTRUCTS.md`) at the end of phases 3 and 5.
 
 | # | Title | Work | Files | Stop point | Try by hand |
 | --- | --- | --- | --- | --- | --- |
-| 1 | **The cut panel, drawn** | `HullLoft.Cuts.cs`: the key (parse, write, the order of cuts), `CutSet` in `PanelShape`, the rules, the clipper (pieces within each facet, on its quad), mass and health from what is left; collision and sockets still the blank's. `MaxRuntimeName` 240 and its readers. `--form-panel "Cut Panel (...)"`. Protocol bump | new `HullLoft.Cuts.cs`; `HullLoft.Panels.cs`, `HullLoft.cs`, `ConstructParts.cs`, `Net/ServerBrowser.cs` | `--form-panel` on six sample keys (flat, door, hood, bend, loft, a refused one) prints clean, and each made in slices equals itself made whole. **Shippable alone**: cut panels exist for blueprints and creative | `--form-panel`; a scratch blueprint with two cut panels in `--window-shot`, and `--net host` with `join`: the same names and hashes; a creative save and load |
-| 2 | **Openings that work** | Strips split round openings, the box limit, the inset on rims; `o` sockets, dropped edge sockets; the facet limit's and box limit's words; `--form-panel` prints clear openings; the measurements of section 8 | `HullLoft.Cuts.cs`, `HullLoft.Panels.cs` | A player walks through a doorway cut in a flat sheet and a shot passes a 10 by 40 cm slot, on host and client | A scratch blueprint: a wall panel with a doorway and a slot, a door skin with a pane welded to `o0`; `--zfight-props` style check by eye on the rims at 1 m and 30 m; the probe's numbers to a file |
-| 3 | **The machine** | `storage.cut`, `IsLaserCutter`, `ConstructLaserCutter.cs` (orders, the bed's slot, Piece in, the hand feed, the stroke, the offcut bin and port, Piece out, look line, screen, console row), the other machines' refusals, both parts from `laser_cutter_parts`, recipes, `Categories.json`, the bed's drawn blank. Protocol bump | new `ConstructLaserCutter.cs`, `PartKit/Generators/LaserCutterParts.cs`, `Constructs/Parts/LaserCutter`; `ConstructParts.cs`, `WorkOrders.cs`, `ConstructExtruder.cs`, `ConstructPress.cs`, `ConstructPanelFormer.cs`, `ConstructConveyor.cs`, `MachineScreens.cs`, `Render/RouteRender.cs`, `Generators/Assembling.cs`, docs | A former, a conveyor, a cutter and a rack: an order queued at the cutter by the window tool is cut from a formed blank and racked, the offcut in its bin, on host and client | That line in a window; a hand-fed blank; a wrong panel ("not its order"); the offcut bin full; power cut mid-stroke (the blank stays); save and load with a blank on the bed and an order queued; `--gen-parts laser_cutter_parts --check`, `--check-construct-parts`, `--look-report` |
+| 1 | **The cut panel and cut plate, drawn** | `HullLoft.Cuts.cs`: both keys (parse, write, the order of cuts; a cut plate's blank and its refused sections), the cut set, the rules, the clipper (pieces within each facet, on its quad; a plate is one flat facet), mass and health from what is left; collision and sockets still the blank's. `MaxRuntimeName` 240 and its readers. `--form-panel "Cut Panel (...)"` and `"Cut Plate (...)"`. Protocol bump | new `HullLoft.Cuts.cs`; `HullLoft.Panels.cs`, `HullLoft.cs`, `ConstructParts.cs`, `Net/ServerBrowser.cs` | `--form-panel` on eight sample keys (flat, door, hood, bend, loft, a plate, a flat bar, refused ones: an L-angle among them) prints clean, and each made in slices equals itself made whole. **Shippable alone**: cut panels exist for blueprints and creative | `--form-panel`; a scratch blueprint with two cut panels in `--window-shot`, and `--net host` with `join`: the same names and hashes; a creative save and load |
+| 2 | **Openings that work** | Strips split round openings (a cut plate's one box too), the box limit, the inset on rims; `o` sockets, dropped edge sockets; the facet limit's and box limit's words; `--form-panel` prints clear openings; the measurements of section 8 | `HullLoft.Cuts.cs`, `HullLoft.Panels.cs` | A player walks through a doorway cut in a flat sheet and a shot passes a 10 by 40 cm slot, on host and client | A scratch blueprint: a wall panel with a doorway and a slot, a door skin with a pane welded to `o0`; `--zfight-props` style check by eye on the rims at 1 m and 30 m; the probe's numbers to a file |
+| 3 | **The machine** | `storage.cut`, `IsLaserCutter`, `ConstructLaserCutter.cs` (orders, the bed's slot taking a formed panel or a flat piece, Piece in, the hand feed, the stroke, the offcut bin and port, Piece out, look line, screen, console row), the other machines' refusals, both parts from `laser_cutter_parts`, recipes, `Categories.json`, the bed's drawn blank. Protocol bump | new `ConstructLaserCutter.cs`, `PartKit/Generators/LaserCutterParts.cs`, `Constructs/Parts/LaserCutter`; `ConstructParts.cs`, `WorkOrders.cs`, `ConstructExtruder.cs`, `ConstructPress.cs`, `ConstructPanelFormer.cs`, `ConstructConveyor.cs`, `MachineScreens.cs`, `Render/RouteRender.cs`, `Generators/Assembling.cs`, docs | A former, a conveyor, a cutter and a rack: an order queued at the cutter by the window tool is cut from a formed blank and racked, the offcut in its bin, on host and client; a cut plate from a hand-fed extruded plate | That line in a window; a hand-fed blank; a hand-fed L-angle (refused); a wrong panel ("not its order"); the offcut bin full; power cut mid-stroke (the blank stays); save and load with a blank on the bed and an order queued; `--gen-parts laser_cutter_parts --check`, `--check-construct-parts`, `--look-report` |
 | 4 | **Cut-outs in the designer** | The Cut-outs mode, tools, Mirror, snap, readouts, red cuts; designs with cut keys; ORDER to a cutter; the window tool's `design cut ...` verbs | `UI/UiPanelDesigner.cs`, `App/Program.SandboxPanelDesigner.cs`, `PanelDesigns.cs`, `ConstructCrafting.cs`, the window tool | A door with a window is drawn by mouse, saved, ordered and arrives cut, the preview's hash the rack's | By mouse in the window; a client designs and orders, the host holds the same hash; a late joiner gets the design; a slider dragged with cuts on (cuts turn red and back) |
-| 5 | **Chains, bills, the terminal, the station** | `CutterInputs`; the cutter in `LogiMap`; `Bill.Cut`, the bill line, `--bill`; the terminal's rows; `OrderFor`; the picker on a cutter; the Production Showcase's cutter; the code guide | `ConstructLogisticsPlan.cs`, `ConstructLogistics.cs`, `ConstructCrafting.cs`, `UI/UiCrafting.cs`, `WorkOrders.cs` (`ConstructBill`), `VehicleKit/VehicleCore.cs`, `ConstructStation.cs`, `UI/UiRecipePicker*.cs`, `Generators/ProductionShowcase.cs`, docs | One ORDER at the designer, with only bulk steel in the former's bin, ends with a cut panel in the tray and nobody touching anything | The Showcase in a window, host and client; `--bill` on a scratch blueprint with two cut panels; a Building Station build of it |
+| 5 | **Chains, bills, the terminal, the station** | `CutterInputs` (a former's or an Extruder's blank); the cutter in `LogiMap`; `Bill.Cut`, the bill line, `--bill`; the terminal's rows; `OrderFor`; the picker on a cutter; the Production Showcase's cutter; the code guide | `ConstructLogisticsPlan.cs`, `ConstructLogistics.cs`, `ConstructCrafting.cs`, `UI/UiCrafting.cs`, `WorkOrders.cs` (`ConstructBill`), `VehicleKit/VehicleCore.cs`, `ConstructStation.cs`, `UI/UiRecipePicker*.cs`, `Generators/ProductionShowcase.cs`, docs | One ORDER at the designer, with only bulk steel in the former's bin, ends with a cut panel in the tray and nobody touching anything | The Showcase in a window, host and client; `--bill` on a scratch blueprint with two cut panels; a Building Station build of it |
+| 6 | **The Pane** | `Cut Pane (...)`: its key and part (one flat piece, the opening's outline less 2 mm, glass, its `back` socket), its blank and offcut at the cutter; the designer's Glazed box and ORDER's extra panes; a pane in `Bill.Cut` and a blueprint step welding it to `o0` | `HullLoft.Cuts.cs`, `ConstructLaserCutter.cs`, `UI/UiPanelDesigner.cs`, `WorkOrders.cs` | A door skin with a glazed window ordered once arrives with its pane, and the pane welds into the opening by its socket | In a window: the order, the pane on `o0`, a shot breaking the pane alone; `--form-panel "Cut Pane (...)"` |
 
-Order: 2 needs 1; 3 needs 1; 4 needs 1 (and 3 to see an order through); 5 needs 3. Phases 2 and 3 touch different files
+Order: 2 needs 1; 3 needs 1; 4 needs 1 (and 3 to see an order through); 5 needs 3; 6 needs 2 (the `o` sockets), 3 and 4. Phases 2 and 3 touch different files
 and can run side by side; 4 is the only one in `UiPanelDesigner.cs`. Phase 5 touches `ConstructLogistics*.cs`,
 `ConstructCrafting.cs` and `ConstructStation.cs`, which smart logistics phase 4 and the station's phase 2 are editing
 now: start it only when those are on main.
 
 ## 11. Risks
 
-1. **The longer name.** If something does hold a run-time name in 128 bytes (phase 1 finds out before anything else),
+1. **The longer name.** (A cut plate's key is short: its blank is at most 29 characters.) If something does hold a run-time name in 128 bytes (phase 1 finds out before anything else),
    the fallback is a key that must fit 128: about four cuts on a preset, one or two on a loft, the designer counting
    characters as it counts facets. The design otherwise stands.
 2. **The same part on every peer.** Pieces are computed in whole centimetres and mapped through the facet's corners by
