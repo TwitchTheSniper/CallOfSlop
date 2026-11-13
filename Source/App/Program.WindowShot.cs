@@ -1048,8 +1048,13 @@ public static unsafe partial class Program
     }
 
     /// <summary>A finger on a screen's button by its label, through the crosshair: Hands out, the eye in front of it, the view on it, then LMB.</summary>
+    private static bool _wsTouchLanded; // a joined client's touch moved it and waits to land: the next touch aims from where it stands
+
     private static void WsTouch(Game g, Player me, string arg)
     {
+        var screen = -1; // "Hold: Off @ Conveyor Router /1": that part's second screen only (a part with a screen each side)
+        if (arg.LastIndexOf(" /", StringComparison.Ordinal) is var sl and > 0 && int.TryParse(arg[(sl + 2)..], out var sn))
+            (arg, screen) = (arg[..sl], sn);
         var on = arg.IndexOf('@'); // "Bill @ Line Console#2": that part's button only
         var label = on > 0 ? arg[..on].Trim() : arg;
         var (only, onlyPart) = on > 0 ? WsFind(g, arg[(on + 1)..]) : (null, -1);
@@ -1066,6 +1071,8 @@ public static unsafe partial class Program
                 var d = c.DefOf(part);
                 for (var n = 0; n < d.Panels.Length; n++)
                 {
+                    if (screen >= 0 && n != screen)
+                        continue;
                     var panel = d.Panels[n];
                     var card = WsFill(g, c, part, panel);
                     for (var b = 0; b < panel.Touch.Length; b++)
@@ -1076,7 +1083,7 @@ public static unsafe partial class Program
                         if (g.SandboxHands.Hand(me.Id).Tool != ConstructTool.Hands)
                         {
                             g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Hands);
-                            _wsQueue.EnqueueFront($"touch {arg}");
+                            _wsQueue.EnqueueFront(screen >= 0 ? $"touch {arg} /{screen}" : $"touch {arg}");
                             _wsWait = 5;
                             return;
                         }
@@ -1084,8 +1091,20 @@ public static unsafe partial class Program
                         var right = Vector3.Cross(up, normal);
                         var r = panel.Touch[b].At;
                         var spot = centre + right * (((r.X + r.Z) * 0.5f - 0.5f) * panel.Size.X) + up * (((r.Y + r.W) * 0.5f - 0.5f) * panel.Size.Y);
-                        if (Vector3.Distance(me.Eye, spot) > 2.2f || Vector3.Dot(me.Eye - spot, normal) < 0.3f)
-                            WsEyeTo(g, me, centre + normal * 1.3f);
+                        var moved = !_wsTouchLanded && (Vector3.Distance(me.Eye, spot) > 2.2f || Vector3.Dot(me.Eye - spot, normal) < 0.3f);
+                        _wsTouchLanded = false;
+                        if (moved)
+                            WsEyeTo(g, me, panel.At.Y < 0.8f && MathF.Abs(normal.Y) < 0.5f
+                                ? centre + normal * 0.9f + Vector3.UnitY * 1.2f // (a low screen, a Router's: read standing, looking down, as a player does)
+                                : centre + normal * 1.3f);
+                        if (moved && !g.IsServer)
+                        {
+                            // (a joined client: its move reaches the host and it lands on the ground first; then the touch again aims from there)
+                            _wsQueue.EnqueueFront(screen >= 0 ? $"touch {arg} /{screen}" : $"touch {arg}");
+                            _wsWait = 30;
+                            _wsTouchLanded = true;
+                            return;
+                        }
                         WsLook(g, me.Eye, spot);
                         _wsQueue.EnqueueFront("key Fire");
                         _wsWait = 3; // (the pointer finds the button first, then the click)
