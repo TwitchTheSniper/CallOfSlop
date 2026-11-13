@@ -258,6 +258,9 @@ public sealed partial class ConstructWorld
     /// <summary>The setting key a part's fused unit (ConstructFuse.cs) is saved under: its number in the body (1, 2, ...), new tags when read.</summary>
     public const string FuseKey = "fuse:unit";
 
+    /// <summary>The setting key a Line Console's Made count (ProductionLines.Monitors.cs) is saved under; an older save has none: 0.</summary>
+    public const string MadeKey = "line:made";
+
     /// <summary>One body as bytes: its fields, then its parts as columns (like values side by side, which packs far smaller).</summary>
     public static void WriteBody(SaveWriter w, WorldSnapshot s, in BodySnap b, WorldNames names)
     {
@@ -324,6 +327,12 @@ public sealed partial class ConstructWorld
                 if (!fused.TryGetValue(p.Fuse, out var unit))
                     fused[p.Fuse] = unit = fused.Count + 1;
                 countAt.U16((ushort)i).U16(names.Key(FuseKey)).F32(unit);
+                settings++;
+            }
+            // (a Line Console's Made count, the same way: ProductionLines.Monitors.cs)
+            if (p.LineMade > 0)
+            {
+                countAt.U16((ushort)i).U16(names.Key(MadeKey)).F32(Math.Min(p.LineMade, ProductionLines.MaxSavedMade));
                 settings++;
             }
             for (var k = 0; k < d.Config.Length; k++)
@@ -588,7 +597,8 @@ public sealed partial class ConstructWorld
         for (var i = 0; i < n; i++)
         {
             var setting = r.U8();
-            parts[i].Setting = setting > 0 && setting >= parts[i].D.Settings.Length ? parts[i].D.DefaultSetting : setting;
+            var sd = parts[i].D; // (a material bundle's Setting is its material id, not a row of its settings: it has none)
+            parts[i].Setting = setting > 0 && setting >= sd.Settings.Length && sd.Yield == 0 ? sd.DefaultSetting : setting;
         }
         for (var i = 0; i < n; i++)
             parts[i].State = r.U8();
@@ -635,6 +645,11 @@ public sealed partial class ConstructWorld
             {
                 if (float.IsFinite(v) && v >= 1 && v < 1 << 24)
                     parts[part].Fuse = (units ??= new ConstructFuse.Renumber()).Tag((int)v); // (new tags: a unit is one by its number in this body)
+                continue;
+            }
+            if (names.Keys[key] == MadeKey)
+            {
+                ProductionLines.LoadMade(ref parts[part], v);
                 continue;
             }
             if (names.Keys[key].StartsWith(FinishKey, StringComparison.Ordinal))

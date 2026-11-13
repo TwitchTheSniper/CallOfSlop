@@ -48,7 +48,7 @@ public sealed class ProductionShowcase : IPartGenerator
 
         public static Script Build()
         {
-            var s = new Script { Description = "Every new production machine on one floor, stocked and wired: read the signs, press Start, send the bill." };
+            var s = new Script { Description = "Every new production machine on one floor, stocked and wired: read the signs, press Start, send the bill. Set it on flat ground: it is 82 by 20 m, and a slope through the back strip buries the panel line's Extruder." };
             s.Group = "Production";
             s.Lay();
             return s;
@@ -137,10 +137,15 @@ public sealed class ProductionShowcase : IPartGenerator
             Onto(press, "dieslot", "Bracket Die", "mount");
             Convey(split, "Piece out 2", press, "Piece in", LineA);
             Sign(28.25f, Posts2, PressBlue, "Line A's angles go in here: the press stamps brackets");
-            var bracketRack = On("Piece Rack", 27.75f, -12.75f, Toward, "-y.0.0", PressBlue);
-            Convey(press, "Piece out", bracketRack, "Piece in", PressBlue);
-            var join = On("Conveyor Join", 33.25f, -4.25f, Flow, "-y.0.0", LineA);
-            Convey(split, "Piece out", join, "Piece in", LineA);
+            // The press's brackets join line A on the way to the Long Piece Rack, whose Piece out runs to the Crafting Terminal's tray:
+            // a pressed part ordered at the terminal rides there (a rack of its own here had no way to the tray).
+            var pressJoin = On("Conveyor Join", 31.25f, -4.25f, Flow, "-y.0.0", PressBlue);
+            Convey(split, "Piece out", pressJoin, "Piece in", LineA);
+            var pOut = PortAt(press, "Piece out");
+            var pIn2 = PortAt(pressJoin, "Piece in 2");
+            Convey(press, "Piece out", pressJoin, "Piece in 2", PressBlue, null, V(pIn2.X, pOut.Y, pOut.Z));
+            var join = On("Conveyor Join", 33.75f, -4.25f, Flow, "-y.0.0", LineA);
+            Convey(pressJoin, "Piece out", join, "Piece in", LineA);
             var longRack = On("Long Piece Rack", 37.75f, -3.25f, Flow, "-y.0.0", LineA);
             Convey(join, "Piece out", longRack, "Piece in", LineA);
             Sign(40.25f, Posts1, LineA, "Take a piece with F (aim at the one you want)");

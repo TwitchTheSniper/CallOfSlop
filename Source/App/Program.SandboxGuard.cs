@@ -151,6 +151,16 @@ public static unsafe partial class Program
     // ---- Self-test seam ("Interaction sweep") -------------------------------------------------------------
 
     /// <summary>
+    /// The end of the sweep: the Job Board's window, which F on a board opens and only its own Close shuts, is closed, so the
+    /// sections after it don't find a menu open (2026-11-13: "Nudge tool" and "Custom bins network" lost their clicks to it).
+    /// </summary>
+    internal static void SweepEnd()
+    {
+        SetJobBoardOpen(false);
+        _swallowClick = false;
+    }
+
+    /// <summary>
     /// One frame of this PC's Sandbox input for game <paramref name="g"/> as the player's loop runs it (outside any ImGui frame):
     /// the keys in <paramref name="down"/> are held this frame (pressed if they weren't last frame), the mouse moved by
     /// <paramref name="mouse"/>, the wheel turned by <paramref name="scroll"/> notches. Restores the session afterwards.

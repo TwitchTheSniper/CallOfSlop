@@ -846,6 +846,60 @@
      "use": 8.0
     }
    ]
+  },
+  {
+   "output": "Barrel Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Barrel Die",
+   "seconds": 60,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
+    }
+   ]
+  },
+  {
+   "output": "Large Barrel Die",
+   "seconds": 90,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 4.0,
+     "maxAcross": 7.2,
+     "use": 4.0
+    }
+   ]
   }
  ],
  "strength": {
@@ -2569,8 +2623,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2591,8 +2644,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2613,8 +2665,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2635,8 +2686,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2657,8 +2707,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2679,8 +2728,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2701,8 +2749,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     }
@@ -2779,8 +2826,8 @@
      "body": "like",
      "along": "z",
      "bay2": {
-      "part": "Bearing",
-      "base": 2.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 0.5,
       "by": "length",
       "max": 12
@@ -2790,8 +2837,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2803,8 +2849,8 @@
      "body": "like",
      "along": "x",
      "bay2": {
-      "part": "Bearing",
-      "base": 2.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 0.5,
       "by": "length",
       "max": 12
@@ -2814,8 +2860,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2827,8 +2872,8 @@
      "body": "like",
      "along": "x",
      "bay2": {
-      "part": "Bearing",
-      "base": 2.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 0.5,
       "by": "length",
       "max": 12
@@ -2838,8 +2883,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2851,8 +2895,8 @@
      "body": "like",
      "along": "z",
      "bay2": {
-      "part": "Bearing",
-      "base": 2.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 0.5,
       "by": "length",
       "max": 12
@@ -2866,8 +2910,8 @@
      "body": "like",
      "along": "z",
      "bay2": {
-      "part": "Bearing",
-      "base": 2.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 0.5,
       "by": "length",
       "max": 12
@@ -2877,8 +2921,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     }
@@ -3146,8 +3189,8 @@
      "body": "like",
      "along": "y",
      "bay2": {
-      "part": "Bearing",
-      "base": 1.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 2.0,
       "by": "across",
       "max": 16
@@ -4010,6 +4053,155 @@
      ]
     }
    ]
+  },
+  {
+   "die": "Barrel",
+   "blanks": [
+    "round",
+    "pipe"
+   ],
+   "materials": [
+    "steel"
+   ],
+   "across": [
+    10,
+    120
+   ],
+   "length": [
+    10,
+    1920
+   ],
+   "aspect": [
+    1.0,
+    16.0
+   ],
+   "seconds": {
+    "base": 4.0,
+    "perKg": 0.02
+   },
+   "features": [
+    {
+     "tag": "crown",
+     "box": [
+      -0.1,
+      -0.1,
+      0.0,
+      1.1,
+      1.1,
+      0.04
+     ],
+     "proud": "xyz",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 10.0,
+     "look": "dark"
+    }
+   ],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "plain",
+     "like": "Gun Barrel",
+     "label": "barrel",
+     "preset": "round 10x10x50 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2,
+         0.7
+        ],
+        [
+         5,
+         1.0
+        ],
+        [
+         9,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul"
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2,
+         1.15
+        ],
+        [
+         5,
+         1.0
+        ],
+        [
+         9,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul"
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2,
+         -0.02
+        ],
+        [
+         5,
+         0.0
+        ],
+        [
+         9,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add"
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2,
+         0.02
+        ],
+        [
+         5,
+         0.0
+        ],
+        [
+         9,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add"
+      }
+     ]
+    }
+   ]
   }
  ],
  "presets": [
@@ -4342,6 +4534,216 @@
    "die": "plate",
    "pattern": "armour",
    "blank": "plate 100x20x100 steel"
+  },
+  {
+   "part": "Drive Shaft 1 m",
+   "die": "shaft",
+   "pattern": "shaft",
+   "blank": "round 20x20x100 steel"
+  },
+  {
+   "part": "U Joint",
+   "die": "shaft",
+   "pattern": "ujoint",
+   "blank": "round 15x15x25 steel"
+  },
+  {
+   "part": "CV Joint",
+   "die": "shaft",
+   "pattern": "cv",
+   "blank": "round 25x25x25 steel"
+  },
+  {
+   "part": "Stub Axle",
+   "die": "shaft",
+   "pattern": "stub",
+   "blank": "round 30x30x35 steel"
+  },
+  {
+   "part": "Wheel Hub",
+   "die": "shaft",
+   "pattern": "hub",
+   "blank": "round 30x30x35 steel"
+  },
+  {
+   "part": "Piston 1x1 Medium",
+   "die": "actuator",
+   "pattern": "piston",
+   "blank": "round 25x25x50 steel"
+  },
+  {
+   "part": "Motor Hinge",
+   "die": "actuator",
+   "pattern": "hinge",
+   "blank": "solid 20x25x55 steel"
+  },
+  {
+   "part": "Turntable",
+   "die": "actuator",
+   "pattern": "turntable",
+   "blank": "solid 65x65x20 steel"
+  },
+  {
+   "part": "Free Pivot 1x1",
+   "die": "actuator",
+   "pattern": "pivot",
+   "blank": "solid 30x25x30 steel"
+  },
+  {
+   "part": "Suspension",
+   "die": "spring",
+   "pattern": "suspension",
+   "blank": "solid 10x30x65 steel"
+  },
+  {
+   "part": "Leaf Spring",
+   "die": "spring",
+   "pattern": "leaf",
+   "blank": "solid 10x55x90 steel"
+  },
+  {
+   "part": "Rigid Mount",
+   "die": "spring",
+   "pattern": "rigid",
+   "blank": "solid 10x30x40 steel"
+  },
+  {
+   "part": "Light Suspension",
+   "die": "spring",
+   "pattern": "light",
+   "blank": "solid 25x25x30 steel"
+  },
+  {
+   "part": "Wiring Loom",
+   "die": "cable",
+   "pattern": "loom",
+   "blank": "round 10x10x30 copper"
+  },
+  {
+   "part": "Copper Coil",
+   "die": "cable",
+   "pattern": "coil",
+   "blank": "round 25x25x25 copper"
+  },
+  {
+   "part": "Power Lead Reel",
+   "die": "cable",
+   "pattern": "power",
+   "blank": "round 45x45x60 steel"
+  },
+  {
+   "part": "Data Lead Reel",
+   "die": "cable",
+   "pattern": "data",
+   "blank": "round 45x45x60 steel"
+  },
+  {
+   "part": "Fluid Hose Reel",
+   "die": "cable",
+   "pattern": "hose",
+   "blank": "round 45x45x60 steel"
+  },
+  {
+   "part": "Fuel Line",
+   "die": "cable",
+   "pattern": "fuel",
+   "blank": "pipe5 15x15x50 steel"
+  },
+  {
+   "part": "AND Gate",
+   "die": "control",
+   "pattern": "and",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "NOT Gate",
+   "die": "control",
+   "pattern": "not",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Timer",
+   "die": "control",
+   "pattern": "timer",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Delay",
+   "die": "control",
+   "pattern": "delay",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Compare",
+   "die": "control",
+   "pattern": "compare",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Proximity Sensor",
+   "die": "control",
+   "pattern": "proximity",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Speed Sensor",
+   "die": "control",
+   "pattern": "speed",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Fuel Tank",
+   "die": "tank",
+   "pattern": "fuel",
+   "blank": "hollow 50x50x50 steel"
+  },
+  {
+   "part": "Small Fuel Tank",
+   "die": "tank",
+   "pattern": "small",
+   "blank": "hollow 40x40x40 steel"
+  },
+  {
+   "part": "Fuel Drum",
+   "die": "tank",
+   "pattern": "drum",
+   "blank": "pipe5 45x45x90 steel"
+  },
+  {
+   "part": "Fluid Tank",
+   "die": "tank",
+   "pattern": "fluid",
+   "blank": "hollow 45x45x50 steel"
+  },
+  {
+   "part": "Small Fluid Tank",
+   "die": "tank",
+   "pattern": "smallfluid",
+   "blank": "hollow 40x40x40 steel"
+  },
+  {
+   "part": "Frame Beam",
+   "die": "beam",
+   "pattern": "girder",
+   "blank": "i-beam 45x45x200 steel"
+  },
+  {
+   "part": "Stub Barrel",
+   "die": "barrel",
+   "pattern": "plain",
+   "blank": "round 10x10x20 steel"
+  },
+  {
+   "part": "Gun Barrel",
+   "die": "barrel",
+   "pattern": "plain",
+   "blank": "round 10x10x50 steel"
+  },
+  {
+   "part": "Long Gun Barrel",
+   "die": "barrel",
+   "pattern": "plain",
+   "blank": "round 10x10x90 steel"
   }
  ]
 }

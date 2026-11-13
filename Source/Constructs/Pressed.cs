@@ -247,6 +247,7 @@ public static class Pressed
             PressMeasure.Across => Across(k) / 100f,
             PressMeasure.Area => MathF.Max(w * l, MathF.Max(h * l, w * h)),
             PressMeasure.Volume => VolumeMass(k).Volume,
+            PressMeasure.Calibres => k.L / (float)Math.Max(1, Across(k)),
             _ => VolumeMass(k).Mass,
         };
     }
@@ -274,6 +275,8 @@ public static class Pressed
     /// <summary>One scaled number for this blank (the law of section 5), from the like value; three significant figures.</summary>
     public static float Scaled(PressScale s, float likeValue, PressPattern p, in ExtrusionKey k)
     {
+        if (s.Points != null)
+            return Sig3(s.At(Measure(s.By, k))); // (a curve through catalogue parts: its value is the number itself)
         var like = likeValue == 0 ? s.Ref : likeValue;
         if (like == 0)
             return 0;
@@ -284,7 +287,7 @@ public static class Pressed
         return Sig3(like * ratio);
     }
 
-    private static float Sig3(float v)
+    internal static float Sig3(float v)
     {
         if (v == 0 || !float.IsFinite(v))
             return 0;
@@ -454,6 +457,12 @@ public static class Pressed
         d.NamedPorts = MapPorts(p.Like.NamedPorts, (p.Like.BoundsMin + p.Like.BoundsMax) * 0.5f, (max - min) / Vector3.Max(likeSize, new Vector3(1e-3f)), (min + max) * 0.5f);
         foreach (var s in p.Scale)
             SetField(d, s.Field, Scaled(s, Field(p.Like, s.Field), p, k));
+        d.GunSized = null;
+        if (p.Like.Role == PartRole.GunPart && Parts.Find(p.Like.GunPartName) is { } builder)
+        {
+            d.GunSized = SizedGunParts.Make(builder, p, k, name);
+            d.GunPartName = name;
+        }
         return d;
     }
 
@@ -656,6 +665,13 @@ public static class Pressed
             d.Travel = like.Travel * Get(s, along);
         foreach (var sc in p.Scale)
             SetField(d, sc.Field, Scaled(sc, Field(like, sc.Field), p, k));
+        // A gun part is a sized builder part too (sized-gun-engine-parts.md 3.4): the gun code finds it by the key (Parts.Find).
+        d.GunSized = null;
+        if (like.Role == PartRole.GunPart && Parts.Find(like.GunPartName) is { } builder)
+        {
+            d.GunSized = SizedGunParts.Make(builder, p, k, name);
+            d.GunPartName = name;
+        }
         return d;
     }
 
@@ -902,7 +918,11 @@ public static class Pressed
         else
             Console.WriteLine("[press] bay 2: nothing");
         foreach (var s in p.Scale)
-            Console.WriteLine($"[press] {s.Field} {Field(made, s.Field):0.###} (preset {(Field(p.Like, s.Field) == 0 ? s.Ref : Field(p.Like, s.Field)):0.###} at {Measure(s.By, p.Preset):0.###} {s.By.ToString().ToLowerInvariant()})");
+            if (s.Op.Length == 0)
+                Console.WriteLine($"[press] {s.Field} {Field(made, s.Field):0.###} (preset {(Field(p.Like, s.Field) == 0 ? s.Ref : Field(p.Like, s.Field)):0.###} at {Measure(s.By, p.Preset):0.###} {s.By.ToString().ToLowerInvariant()})");
+        if (made.GunSized is { } gun)
+            foreach (var line in SizedGunParts.Lines(gun, Parts.Find(p.Like.GunPartName)!, p, k))
+                Console.WriteLine($"[press] {line}");
         var pc = PressClass(Across(k));
         Console.WriteLine($"[press] seconds: {string.Join(", ", Enumerable.Range(Math.Max(0, pc), 4 - Math.Max(0, pc)).Select(c => $"{ClassWord(c)} {Seconds(die!, k, c):0.##}"))}");
         Console.WriteLine($"[press] {probs} problems");

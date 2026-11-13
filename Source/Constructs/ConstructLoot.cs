@@ -98,6 +98,8 @@ public static class ConstructLoot
         var recipe = AssemblingTable.Current.Recipes.FirstOrDefault(r => r.Output == d);
         if (recipe != null && recipe.MinTier > t.MaxTier)
             return $"its recipe needs a tier {recipe.MinTier} Assembler: the table stops at tier {t.MaxTier}";
+        if (recipe == null && AssemblingTable.PressedDieOf(d) != null)
+            return null; // (a part a die presses, Press phase 5: no Assembler recipe and no tier number, so it is taken as it stood before)
         return recipe == null && wp == null && d.Surface == null && d.Rotor == null ? $"it has no recipe to show its tier" : null; // (a wing or a rotor file is looted only: an Airframe or Fan Former makes its own, so it has none)
     }
 

@@ -798,7 +798,8 @@ public static unsafe partial class Program
             {
                 if (game.Disconnected && _link == null) // (a visit that ended goes back to the link: Program.Travel.cs)
                 {
-                    EndSession(game.Status);
+                    if (!WsRejoin(game.Status, now)) // (the window tool's joined client: its host may still be starting up)
+                        EndSession(game.Status);
                 }
                 else
                 {

@@ -76,6 +76,84 @@
   ],
   "router": true,
   "power": 20,
+  "panels": [
+    {
+      "source": "router",
+      "at": [
+        -0.141,
+        0.025,
+        0.625
+      ],
+      "size": [
+        1.08,
+        0.24
+      ],
+      "face": "-x",
+      "up": "+y",
+      "rows": 5,
+      "range": 16,
+      "touch": [
+        {
+          "action": "router.spill",
+          "at": [
+            0.02,
+            0.03,
+            0.49,
+            0.27
+          ],
+          "label": "Spill"
+        },
+        {
+          "action": "router.hold",
+          "at": [
+            0.51,
+            0.03,
+            0.98,
+            0.27
+          ],
+          "label": "Hold"
+        }
+      ]
+    },
+    {
+      "source": "router",
+      "at": [
+        1.391,
+        0.025,
+        0.625
+      ],
+      "size": [
+        1.08,
+        0.24
+      ],
+      "face": "+x",
+      "up": "+y",
+      "rows": 5,
+      "range": 16,
+      "touch": [
+        {
+          "action": "router.spill",
+          "at": [
+            0.02,
+            0.03,
+            0.49,
+            0.27
+          ],
+          "label": "Spill"
+        },
+        {
+          "action": "router.hold",
+          "at": [
+            0.51,
+            0.03,
+            0.98,
+            0.27
+          ],
+          "label": "Hold"
+        }
+      ]
+    }
+  ],
   "boxes": [
     {
       "min": [
@@ -547,6 +625,36 @@
       "paintable": false,
       "finish": "hazard paint",
       "fence": true
+    },
+    {
+      "min": [
+        -0.137,
+        -0.105,
+        0.065
+      ],
+      "max": [
+        -0.105,
+        0.155,
+        1.185
+      ],
+      "color": "#14181c",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        1.355,
+        -0.105,
+        0.065
+      ],
+      "max": [
+        1.387,
+        0.155,
+        1.185
+      ],
+      "color": "#14181c",
+      "detail": true,
+      "paintable": false
     }
   ],
   "sockets": [

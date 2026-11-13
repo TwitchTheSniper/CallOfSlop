@@ -99,6 +99,7 @@ public enum CActKind : byte
     CraftNamed, // u16 body, u16 terminal, u16 count, text name: an order for a formed panel by its key at a Crafting Terminal or a Panel Designer (protocol 260; ConstructCrafting.Place)
     PanelDesign, // u8 op (1 keep, 0 drop), text name, text key: a panel design saved to the world's shared list, or dropped from it (protocol 260; PanelDesigns.cs)
     Celebrate, // server -> one client: text title, text name, text line: a moment in the middle of their screen (protocol 274; GameCelebrate.cs)
+    ExtruderSection, // u16 body, u16 machine, u8 profile, u16 width, height, wall (cm), u64 mask: the Extruder's picker sets its section at once (protocol 284; ConstructExtruderPick.cs)
 }
 
 /// <summary>
@@ -1136,6 +1137,17 @@ public sealed partial class Game
                 var flags = r.U8();
                 return hands.LineRecipe(Constructs, p.Id, eye, body, console, machine, value, (flags & 1) != 0, Constructs.Get(body) is { } lc ? SandboxConfigRefusal(lc, p.Id) : null);
             }
+            case CActKind.ExtruderSection:
+            {
+                var body = r.U16();
+                var machine = r.U16();
+                var profile = r.U8();
+                var ew = r.U16();
+                var eh = r.U16();
+                var ewall = r.U16();
+                var mask = (ulong)r.U32() | (ulong)r.U32() << 32;
+                return hands.ExtruderSection(Constructs, p.Id, eye, body, machine, new ExtruderPick(profile, ew, eh, ewall, mask), Constructs.Get(body) is { } ec ? SandboxConfigRefusal(ec, p.Id) : null);
+            }
             case CActKind.CraftOrder:
             {
                 var body = r.U16();
@@ -1594,6 +1606,28 @@ public sealed partial class Game
     {
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.LineRecipe).U16(body).U16((ushort)console).U16((ushort)machine).U16((ushort)Math.Clamp(value, 0, ushort.MaxValue)).U8((byte)(all ? 1 : 0));
+        if (IsServer)
+        {
+            if (Local is { } me)
+            {
+                var r = new PacketReader(w.Span[1..]);
+                if (SandboxActGuarded(me, ref r) is { } why)
+                    SandboxSay(why);
+            }
+            return;
+        }
+        Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
+    }
+
+    /// <summary>
+    /// Client (or the host itself): the Extruder's picker sets machine <paramref name="machine"/>'s Profile, Width, Height, Pipe wall and (Custom)
+    /// cells in one act. The server checks it as a finger on the machine's Recipe button, and the sizes against its die.
+    /// </summary>
+    public void SandboxExtruderSection(ushort body, int machine, in ExtruderPick pick)
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.ExtruderSection).U16(body).U16((ushort)machine).U8(pick.Profile).U16(pick.W).U16(pick.H).U16(pick.Wall)
+            .U32((uint)pick.Mask).U32((uint)(pick.Mask >> 32));
         if (IsServer)
         {
             if (Local is { } me)
