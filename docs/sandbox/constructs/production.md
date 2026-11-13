@@ -866,13 +866,34 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   root's entries go and their unstarted orders leave their makers (a head order on the die finishes; its part goes to storage at the
   next Router). A link nobody makes stays open and the order's row says "waiting on Gear Set: nothing on the network makes it" (else
   "Gear Set 1/2 from the Assembler"). Loose material is not ordered (the user's answer: kept by levels). Entries are saved in the
-  LOGI block after the riders (an entry's maker order is marked again on load, so nothing is asked twice); no new wire data: the row
+  LOGI block after the riders (an entry's maker order is marked again on load, so nothing is asked twice); the row
   travels as the order's note. An order whose part went to storage says why in its row ("a part went to storage: ... - it is fetched
   from there"). Assemblers and Panel Formers are Router destinations (an Assembler's for its chained inputs; a Panel Former has no
   wants yet).
-- **Not yet** (phase 2's rest, written plan in the coordinator's notes): deeper chains (a maker's own inputs), stock before making for
-  chained inputs, priorities between roots, the Building Station as a root, the Orders tab's indented chain lines, press bays as
-  destinations (a pressed part's maker waits for the Press's orders).
+- **Deeper chains, stock first, rank** (phase 2b, the same file). From the step after an entry's maker takes its order, that maker's
+  own recipe inputs are asked the same way (one level a step), at most `MaxDepth` (6) levels below the root ("waiting on X: chain too
+  deep (6 levels)"), never a kind the root or an ancestor link is (a recipe loop: "recipe loop: the X needs itself"); an entry knows
+  its `Parent` and `Depth`, and a link whose parent finished, went or changed maker goes with its unstarted order. Before a maker is
+  asked, free stock of the kind in the root's network's stores with a conveyor way to the destination (`ConstructCrafting.RouteTo`,
+  joins and Routers) is claimed for it (a `ConstructReserve` claim owned by the destination's store, id the entry's) and sent one
+  piece a step with the entry as its destination; only the rest is made (a chute into the machine brings what it wants by itself,
+  so stock behind a chute is not claimed). A maker is the Assembler already making that kind, else the shortest queue; the chained
+  line goes ahead of the first line in that queue it is an input for (else a machine asked for a part and for that part's input
+  would wait on itself; that line has no batch under way, an Assembler starts one only with every input in). Cancelling drops a
+  chained head line too when its Assembler has no batch under way. **Rank:** roots compete by priority class, then age (the user,
+  Q2): every crafting order gets an age stamp when first stepped (`CraftOrder.Stamp`, server, not saved: stamped again in order),
+  terminals and stations are stepped oldest open order first, each followed by its own chains (`ConstructLogisticsPlan.Serve`), so
+  the oldest claims stock first; the entry table is kept in rank order (class, then the root's stamp), so a maker's piece goes to the
+  best-ranked link, and a terminal's own order that asked the same machine for that kind earlier is served first. Every root is
+  Normal until phase 3's priorities; stock targets will rank below Low. **The Building Station** is a root like a terminal (it is
+  one by data): its craft orders chain the same way, and its panel lists the chained orders' lines under its note.
+- **Chain lines** (protocol 268). Each order's chain is made into at most 6 lines on the server (`ChainLine`: depth, kind, arrived,
+  asked, maker, destination, stock claimed, the reason; "and N more"), only when they change, and sent with the order in
+  `CBodyKind.Craft`; the Orders tab draws them indented under the order's row on both peers (`ConstructLogisticsPlan.LineText`), a
+  link nobody makes in the fault colour. The LOGI block gains a third part after the entries: per entry its parent, depth, class,
+  stamp and flags (an older phase 2 block loads as one level).
+- **Not yet:** press bays and Panel Former sheet orders as destinations (with the Press's orders), priority classes and stock targets
+  (phase 3).
 - **Not in phase 1:** chains (orders pull their inputs), stock targets and overrides, the Router's settings (`routerSpill`,
   `routerHold`) and screen, the network board, press bays and the Panel Former as destinations, the source's own "no storage" stall
   (a full network backs up to the Router, stuck, and the line behind it backs up to the machine as today).
