@@ -36,7 +36,7 @@ public sealed class PartOutput(string root)
     }
 
     /// <summary>A file the generator reads, from the repo root.</summary>
-    public string Read(string path) => System.IO.File.ReadAllText(Path.Combine(Root, path), Encoding.UTF8);
+    public string Read(string path) => System.IO.File.ReadAllText(Path.Combine(Root, path), Encoding.UTF8).Replace("\r\n", "\n");
 
     /// <summary>A committed JSON file, parsed the way Python's json.load does.</summary>
     public object? ReadJson(string path) => PyJson.Loads(Read(path));
@@ -163,11 +163,11 @@ public static class PartKit
                 if (!Directory.Exists(full))
                     continue;
                 foreach (var f in Directory.EnumerateFiles(full, "*.json", SearchOption.AllDirectories))
-                    have[Path.GetRelativePath(outRoot, f).Replace('\\', '/')] = System.IO.File.ReadAllText(f, Encoding.UTF8);
+                    have[Path.GetRelativePath(outRoot, f).Replace('\\', '/')] = System.IO.File.ReadAllText(f, Encoding.UTF8).Replace("\r\n", "\n"); // (a Windows checkout has CRLF files; the generators write LF)
             }
             foreach (var path in o.Files.Keys)
                 if (!have.ContainsKey(path) && System.IO.File.Exists(Path.Combine(outRoot, path)))
-                    have[path] = System.IO.File.ReadAllText(Path.Combine(outRoot, path), Encoding.UTF8);
+                    have[path] = System.IO.File.ReadAllText(Path.Combine(outRoot, path), Encoding.UTF8).Replace("\r\n", "\n");
             var stale = have.Keys.Where(p => !o.Files.ContainsKey(p)).Order(StringComparer.Ordinal).ToList();
             var changed = o.Files.Where(kv => !have.TryGetValue(kv.Key, out var t) || t != kv.Value).Select(kv => kv.Key).Order(StringComparer.Ordinal).ToList();
             if (check)

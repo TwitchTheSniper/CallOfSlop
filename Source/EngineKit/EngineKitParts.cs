@@ -53,7 +53,7 @@ public static class EngineKitParts
                 files++;
                 if (check)
                 {
-                    if (!File.Exists(path) || File.ReadAllText(path) != text)
+                    if (!File.Exists(path) || File.ReadAllText(path).Replace("\r\n", "\n") != text)
                     {
                         Console.WriteLine($"out of date: {path}");
                         bad++;
