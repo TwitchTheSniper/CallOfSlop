@@ -396,6 +396,8 @@ public static partial class MapFile
                 map.Gravity = ReadGravity(gravity, source); // a planet, or gravity zones (MapFile.Gravity.cs)
             if (Prop(root, "planetoid") is { ValueKind: not JsonValueKind.Null } planetoid)
                 map.SetPlanetoid(Planetoid.Parse(planetoid, source)); // a whole world with ground all round (Source/Planets/Planetoid.cs)
+            if (Prop(root, "city") is { ValueKind: not JsonValueKind.Null } city)
+                map.CitySpec = map.Planetoid != null ? CitySpec.Parse(city, source) : throw new MapFileException($"{source}: a city stands on a planetoid"); // docs/planets/CITY.md
             if (Prop(root, "terrain") is { ValueKind: not JsonValueKind.Null } terrain)
                 map.SetTerrain(TerrainSpec.Parse(terrain, source)); // before the ops: they're placed on the ground as they run
             try
