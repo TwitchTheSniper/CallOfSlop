@@ -202,6 +202,13 @@ public sealed class CityGeometry
             var wideX = m.Half.X >= m.Half.Y;
             float wide = 2 * MathF.Max(m.Half.X, m.Half.Y), narrow = 2 * MathF.Min(m.Half.X, m.Half.Y);
             var word = (uint)((b.Seed >> 3) % (uint)CitySigns.Shops.Length);
+            // A blade stacks its letters 0.85 m apart from 5.7 m up: pick a name short enough to fit its height.
+            if (m.Color != 0 && !(MathF.Min(MathF.Min((m.Color & 255) / 255f, (m.Color >> 8 & 255) / 255f), (m.Color >> 16 & 255) / 255f) > 0.6f))
+            {
+                var room = (int)((m.Top - 5.8f) / 0.85f);
+                for (var k = 0; k < CitySigns.Shops.Length && CitySigns.Shops[word].Length > room; k++)
+                    word = (word + 1) % (uint)CitySigns.Shops.Length;
+            }
             par = Pack(style, word, wide * 10, narrow * 100, !wideX);
         }
         var round = m.Shape == 2;
