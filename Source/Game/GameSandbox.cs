@@ -412,6 +412,7 @@ public sealed partial class Game
         PlayAreaTick(now); // (the tutorial's play areas: out of one, the step waits; GameTutorialBounds.cs)
         QuarryTick(now); // (the first Ministry duty, the quarry: GameQuarry.cs)
         DepotTick(now); // (the Orbital Depot's steps: GameDepot.cs)
+        ObjectivesTick(now); // (the "what next" goal line: GameObjectives.cs)
         LockdownTick(now); // (the penal colony's lockdown: GameColonyLockdown.cs)
         TutorialTick(now); // (the warden's induction: who starts, which steps are done; GameTutorial.cs)
         StoryTick(now); // (the story: who came and sat down, what happened to constructs; GameStory.cs)

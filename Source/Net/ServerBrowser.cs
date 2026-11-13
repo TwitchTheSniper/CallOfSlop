@@ -443,7 +443,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      a press has a Pattern setting (its recipe key); bay 2 is a kit hopper (the store's mixed input and kinds); new die parts move part ids.
     // 268: smart logistics phase 2b: each crafting order in CBodyKind.Craft ends with its chain lines (u8 n, u8 more, each u8 depth,
     //      u16 kind, made, asked, maker part, dest part, stock claimed, a reason): the Orders tab's indented lines on both peers.
-    public const ushort ProtocolVersion = 268;
+    // 269: Msg.Objective (the "what next" goal line, GameObjectives.cs) at the end of Msg.
+    public const ushort ProtocolVersion = 269;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

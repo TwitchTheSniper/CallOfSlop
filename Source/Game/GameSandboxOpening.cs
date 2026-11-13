@@ -102,6 +102,7 @@ public sealed partial class Game
         LockdownReset(); // (and its barracks: GameColonyLockdown.cs)
         ColonyBuildingsReset(); // (and the Ministry's buildings round the colony: GameColonyBuildings.cs)
         DepotReset(); // (and the Remote Works and the Orbital Depot: GameDepot.cs)
+        ObjectivesReset(); // (and the "what next" goals: GameObjectives.cs)
         QuarryReset(); // (and the Ministry Quarry: GameQuarry.cs)
         FragmentsReset(); // (and the data centres: GameStoryFragments.cs)
         LoreReset(); // (and the things to look at: GameStoryLore.cs)
