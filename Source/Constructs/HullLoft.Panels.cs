@@ -383,7 +383,7 @@ public static partial class HullLoft
             var (nu, nv) = PanelGrid(sh);
             var defer = _panelPumped && !PanelSync;
             var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-            var def = ConstructParts.Parse(PanelJson(name, sh, 0, defer ? 0 : nu * nv, defer), name);
+            var def = PanelFirst(name, sh, defer);
             if (Adopt(def, name) is not { } made)
                 return (false, null);
             if (defer)
@@ -401,6 +401,13 @@ public static partial class HullLoft
         }
     }
 
+    /// <summary>A formed panel, not yet adopted: its first part (boxes, sockets, mass, slabs drawn) when <paramref name="defer"/>, else whole.</summary>
+    private static ConstructPartDef PanelFirst(string name, in PanelShape sh, bool defer)
+    {
+        var (nu, nv) = PanelGrid(sh);
+        return ConstructParts.Parse(PanelJson(name, sh, 0, defer ? 0 : nu * nv, defer), name);
+    }
+
     /// <summary>
     /// Once a tick or a frame (Game.Update): slices of the waiting panels' facets, oldest first, until <paramref name="budgetMs"/> is spent
     /// (every key that came in one packet shares it); a finished panel's facets are swapped in for its slabs and the bodies that draw it are
@@ -408,13 +415,27 @@ public static partial class HullLoft
     /// </summary>
     public static void PumpPanels(double budgetMs = 2.0)
     {
+        if (_standInsMade == 0)
+        {
+            PumpPanelsNow(budgetMs);
+            return;
+        }
+        // A batch that had stand-ins is watched until it is whole: one log line (HullLoft.FirstParts.cs).
+        var asked = _panelSpent * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        PumpPanelsNow(budgetMs);
+        NoteStandInPump(asked, System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
+    }
+
+    private static void PumpPanelsNow(double budgetMs)
+    {
         _panelPumped = true;
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var swapped = false;
         if (budgetMs >= 0)
             lock (PanelJobs)
             {
-                if (PanelJobs.Count == 0)
+                if (PanelJobs.Count == 0 && StandInQueue.Count == 0) // (the stand-ins' count read without their lock: at worst a pump late)
                 {
                     _panelSpent = 0;
                     return;
@@ -425,6 +446,13 @@ public static partial class HullLoft
                 if (budgetMs <= 0)
                     return;
             }
+        // Keys off the wire that got a stand-in: their real parts first, oldest first (HullLoft.FirstParts.cs).
+        if (StandInQueue.Count > 0)
+        {
+            PumpStandIns(t0, budgetMs);
+            if (budgetMs >= 0 && System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds >= budgetMs)
+                return;
+        }
         while (true)
         {
             PanelJob? job;
@@ -440,7 +468,7 @@ public static partial class HullLoft
                 var outer = PartShapes.BeginCollect();
                 try
                 {
-                    var part = ConstructParts.ParseBody(PanelJson(job.Def.Name, job.Shape, job.Next, to, false, job.Cut), job.Def.Name);
+                    var part = ConstructParts.ParseBody(PanelJson(job.Def.Name, job.Shape, job.Next, to, false, job.Cut, facetsOnly: true), job.Def.Name);
                     for (var k = part.SolidBoxes; k < part.Boxes.Length; k++)
                         job.Facets.Add(part.Boxes[k]);
                 }
@@ -483,9 +511,9 @@ public static partial class HullLoft
     /// <paramref name="from"/> up to <paramref name="to"/>. <paramref name="slabs"/>: a plain drawn slab over each hidden box, the look of a
     /// panel whose facets aren't made yet. The same floats in the same order whatever the range, so a part made whole and one made in slices are equal.
     /// </summary>
-    private static string PanelJson(string name, in PanelShape sh, int from, int to, bool slabs, CutPlan? cut = null)
+    private static string PanelJson(string name, in PanelShape sh, int from, int to, bool slabs, CutPlan? cut = null, bool facetsOnly = false)
     {
-        var p = new Builder();
+        var p = new Builder { Edge = cut is { Edge: true } }; // (a bar on edge: everything written turned into the piece's frame, HullLoft.Cuts.cs)
         var (nu, nv) = PanelGrid(sh);
         var t = cut?.Thick ?? sh.Mm / 1000f;
         var area = 0f;
@@ -528,6 +556,19 @@ public static partial class HullLoft
                     p.Facet(q, n.LengthSquared() < 1e-12f ? Vector3.UnitY : n, nv == 1 && nu == 1 ? face ?? Steel : tone, t, off: off);
                 item++;
             }
+        if (facetsOnly)
+        {
+            // A slice for the pump: only its facets are kept, so the collision, sockets and numbers (a third of a slice's parse) are one
+            // stand-in box and socket. The part's colour is the real one's: a facet's tone is judged against it.
+            p.Hide(new Vector3(-0.05f), new Vector3(0.05f));
+            p.Sock("back", new Vector3(0, -0.05f, 0), "-y");
+            return new JsonObject
+            {
+                ["format"] = "call-of-slop-construct-part/1", ["name"] = name, ["role"] = "frame", ["tool"] = "welder", ["mass"] = 1, ["health"] = 1,
+                ["color"] = cut is { Plate: true } ? Hex(RecyclingTable.Current.ColourOf(cut.Stock.Material)) : Steel, ["stage"] = true, ["centreSockets"] = false,
+                ["boxes"] = p.Boxes, ["sockets"] = p.Sockets,
+            }.ToJsonString();
+        }
         if (cut is { Plate: true })
             return PlateJson(name, cut, p, area, slabs);
         if (cut != null)

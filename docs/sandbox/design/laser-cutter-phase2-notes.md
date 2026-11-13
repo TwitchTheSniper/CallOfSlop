@@ -104,3 +104,94 @@ pump's own 2 ms budget, and are **not fixed here**:
 2. **The `back` socket when a cut takes the middle away** (a door skin with a window in its middle).
    - A (recommended): left out, as every cut-away socket: a blueprint that needs it uses a different design.
    - B: moved to the nearest solid spot on the sheet's centre line, keeping its name.
+
+## Phase 2b (2026-11-13): new keys within the tick, and the bar on edge
+
+No wire change: the protocol stays at main's number (290).
+
+### What was built
+
+- **Stand-ins for new keys off the wire** (`HullLoft.FirstParts.cs`). A key read from the wire (`HullLoft.Read`) is made at
+  once while the update's first parts have cost under `FirstBudgetMs` (3 ms). Past it, the key gets a stand-in: its own id and
+  name at once, one plain box over the blank sheet's bounds (from the key's text alone: no plan, no part file) and one socket.
+  The pump (`PumpPanels`, 2 ms an update) makes the real part from the key, oldest first, and **copies it into the stand-in in
+  place**, so its id never changes and nothing that holds it has to be found; every body holding one is marked for a full
+  rebuild (`RuntimeParts.Reshaped`), and its facets are queued as any new panel's. Formed panels get the same treatment.
+  Anything that asks for a key by name (a blueprint, a save, a build step, `--form-panel`) gets the real part at once: a
+  stand-in still waiting is finished there (`Parse`), so sockets are right wherever they are used. A batch that had
+  stand-ins logs one line when it is whole (`[cuts] N new keys off the wire waited behind stand-ins ...`).
+- **Slices parse only their facets**: a slice's part file has one stand-in box and socket instead of the part's collision,
+  sockets and numbers (a slice of six facets: part file 0.18 to 0.08 ms, parse 0.62 to 0.44 ms).
+- **A flat bar on edge is cut** (the user's answer 3; design 4.4, "A cut on edge"): the plate's sheet, `L` by `H` and `W`
+  thick, turned a quarter about the length (`TurnEdge`; `Builder.Edge` turns facets and hidden boxes as they are written).
+  Its boxes, the extrusion's own sockets (judged by `U` and `V` up the bar), the `o` sockets (facing `-x`), mass and the
+  stand-in's bounds follow; the key is unchanged (`H` over `W` says it). "lay the bar flat" is gone; the size rule reads the
+  sheet's width (`H` on edge).
+- Fixed on the way: a cut panel's `back` socket is clamped onto its box. A wide loft with a seam at its middle (for example
+  `loft 230x160x100 ... | r50,60,30,40,5 r100,60,30,40,5 r150,60,30,40,5`) passed `CutRefusal` and was then refused by the
+  loader ("socket back ... not on that face"); keys that worked are unchanged.
+
+### Measured (a throwaway probe, removed; this PC, which five other sessions shared)
+
+The update that reads the keys (one packet), then the pumps:
+
+| New keys | Before: the update | After: the update | After: pumps (worst; count) |
+| --- | --- | --- | --- |
+| 1 loft (three cuts) | 0.7 ms | 1.1 ms | 2.4 ms; 3 |
+| 20 lofts | 11.5 to 16.2 ms | 4.8 ms (14 stand-ins) | 5.1 ms; 50 |
+| 100 lofts | 69 ms | 4.1 ms (94 stand-ins) | 4.2 ms, one of 10.5 ms with a GC; 256 |
+| 1 plate | 0.5 ms | 0.9 ms | 1.4 ms; 1 |
+| 20 plates | 9.6 ms | 4.2 ms (12 stand-ins) | 2.4 ms; 16 |
+| 100 plates | 37.6 ms | 3.8 ms (90 stand-ins) | 2.5 ms; 68 |
+
+- A body that already has them: asking again for 100 keys, 0.01 to 0.03 ms.
+- Every part made through stand-ins equals the same key made whole at once (boxes, colours, tones, sockets, mass, health,
+  bounds): 0 differ in every run above.
+- A stand-in costs about 0.015 ms; a first part 0.45 (plate) to 0.6 ms (loft), of which the loader's parse is 70%.
+- **In the game** (window tool, Proving Ground at 140,0,-100, a host with a scratch blueprint of a foundation, a cut bar on
+  edge and a chain of 40 cut plates of 40 different keys, a client joining after it was spawned; four runs): the client
+  made 1 key and 40 stand-ins in the update that read them (4.1 to 6.0 ms); 16 to 19 pumps made them whole, 42 to 65 ms in
+  all. The worst pump was 8.6 to 19 ms in each run: one slice of 7 to 17 ms wall, but its own thread's CPU cycles were 1.2 to
+  2.5 M, against a mean of about 1.1 M a slice (0.5 ms): the main thread was waiting, not working (another thread or the
+  machine's load). Not fixed; see the questions.
+
+### Tried by hand
+
+- `--form-panel` on `Cut Plate (solid 10x40x200 steel | r100,20,40,20,3)` (on edge: bounds 0.10 x 0.40 x 2.00 m, 4 boxes, 11
+  sockets with `o0`), the same with a cut corner (5 boxes; `+x0`/`-x0` cut away), and the lying-flat bar and plate of phase 2
+  (same counts as before). A second make in slices is the same part in each.
+- Window tool, Proving Ground, `--spawn-at 140,0,-100`, the scratch blueprint (in `bin` only, removed), a 2 m bar 60 cm high
+  and 10 cm thick standing on a foundation by `-y0`, a 40 by 30 cm opening in its middle:
+  - **Offline:** rays square to the bar pass the opening (100,30) and hit beside, above and below it (100,55; 30,30; 100,8)
+    at 1.95 m of 4 (its 5 cm half thickness).
+  - **Joined client** (`--net join:127.0.0.1:27611`): the same rays the same way on the client's copy, and the last of the 40
+    plates (the last stand-in made real) passes at its opening and stops beside it.
+- `--check-construct-parts`, `--gen-parts all --check`: pass. Self-test by name, `Compound collision` and `Press stock`: pass.
+
+### Not done, not verified
+
+- `--form-panel` still does not print each opening's clear size.
+- A player walking through an opening of a bar on edge (only rays), and bodies through it.
+- The body rebuilds a stand-in's swap asks for were not timed on their own (they run in the world's tick; the in-game pumps
+  above do not include them). A body of thousands of parts holding stand-ins rebuilds once a pump that fills one.
+- A stand-in collides as its whole blank for a few updates: on a client a shot or a player at an opening in that time is
+  stopped (the host's own bodies never use stand-ins unless a client's edit names many new keys at once).
+- A malformed key from a peer now becomes a box stand-in rather than the old "Hull Bay T" stand-in, and logs once.
+- Linux CI.
+
+### Questions for the user (asked together; the first option is the recommendation)
+
+1. **The first-part budget an update** (stand-ins past it).
+   - A (recommended): 3 ms, as built: a packet's update stays under about 6 ms, and 100 keys are whole in about a second.
+   - B: 1.5 ms: more stand-ins, a lighter update, whole a little later.
+   - C: 5 ms: fewer stand-ins, an update near the 8 ms limit with the rest of a tick.
+2. **The occasional slow pump on a busy PC** (a slice whose own work is 0.5 ms waiting 7 to 17 ms).
+   - A (recommended): leave it: the work is within the budget; look again with the game alone on the machine.
+   - B: move part making to a worker thread (the loader's parse off the game's thread): a bigger change, its own phase.
+
+### The user's answers to phase 2's questions (2026-11-13)
+
+1. **A cut corner collides as the rectangle inside its triangle** (A, the recommendation): a little air along the diagonal
+   still stops things. As built.
+2. **The `back` socket is left out when a cut takes the middle away** (A, the recommendation), as every cut-away socket.
+   As built.

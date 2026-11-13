@@ -205,7 +205,21 @@ Cut Plate (solid 120x10x240 steel | r60,60,40,80,0 m2,20,20)  a 10 cm flat bar w
     or a pipe ("a pipe is not flat stock"), a wheel, fan, blade or wing (not stock at all). Cutting a hole across a
     section's web is a later idea, not this design.
   - Phase 1 built the plate and the bar lying flat, with a 10 cm limit and "lay the bar flat" for one on edge. Phase 2
-    replaces the limit with the bed's bound; the bar on edge goes where `laser-cutter-phase2-notes.md` says.
+    replaced the limit with the bed's bound; phase 2b cuts the bar on edge.
+  - **A cut on edge** (phase 2b). The sheet is made as a plate's, `L` by `H` and `W` thick, then turned a quarter about the
+    piece's length (the sheet's `x` to the piece's `y`, its `y` to `-x`), so `V` runs up the piece from its bottom and the
+    cut goes through `x`. What follows from that, and nothing else changes:
+    - **May:** any opening or cut corner a plate takes, by the same rules (3 cm webs, 5 cm to 6 m a side, a quarter left,
+      never reaching two opposite edges, 24 boxes, 96 pieces). Its collision boxes are exact at the bar's own faces and a
+      centimetre in from an opening's rim, as a plate's. It keeps the extrusion's own sockets (`base`, `tip`, `+x0`, `-y0`
+      ...) where they are, less those whose spot a cut takes away (judged by `U` along and `V` up), and adds `o0`.. in each
+      opening of 10 cm or more on the bar's middle plane, facing `-x`. Mass, health and armour by the plate's rules, the
+      thickness being `W`. The key is the blank's own text: nothing marks it on edge but `H` over `W`.
+    - **May not:** be cut through its height (the bar would have to be laid flat: that is the same key's other way up,
+      which a bar of `H` over `W` never is), be cut through both ways at once, or turn a cut to the bar's ends (`U` is always
+      along its length). The bed's height bounds `H` (the sheet's width), not `W`; a bar thicker than the bed is tall is
+      "too thick for any Laser Cutter's bed", as any stock.
+    - A square bar (`H` equal to `W`) lies flat.
 - **Size.** 20 to 600 cm long and wide (the largest bed: section 5); a longer piece is cut to length at the Extruder
   first ("cut it to length at the Extruder: a Laser Cutter's bed is 6 m").
 - **The frame.** The sheet is the piece's own: `U` along its length (its `z`, 0 at its `base` end), `V` across its width
