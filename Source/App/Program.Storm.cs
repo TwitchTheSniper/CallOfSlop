@@ -42,6 +42,7 @@ public static unsafe partial class Program
         _stormSeen = -1;
         ColdStorm.Reset();
         ConstructLamps.Dark = 0f;
+        PartAmbience.Reset();
         _game?.Audio.StormWindStop();
     }
 
