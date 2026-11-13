@@ -67,7 +67,7 @@ The shipped vehicles carry these recipes. A hand-built gun changes the same way:
   and Large Barrel Die (Small: a solid steel block 0.25 to 0.45 m across). The dies are in the Production > Dies section, and no faction
   technology locks a die. Like every die except Button, Bracket, Gear and Beam, it isn't in the start kit. So a survival player can make
   one, and no data was missing.
-- `--gen-parts all --check`, `--check-construct-parts`: clean. Self-test sections run by name: "Construct merged receivers", "Powder
+- `--gen-parts all --check`, `--check-construct-parts`: clean. `--gen-vehicles`: 238 vehicles, all identical to the committed files. Self-test sections run by name: "Construct merged receivers", "Powder
   charge", "Sandbox weapon parts", "Press stock", "Construct gun recoil", "Sandbox gun bench": 0 failures.
 
 ## Not verified
