@@ -688,7 +688,8 @@ public static unsafe partial class Program
                     read.Read(new SaveReader(nameBytes.Span.ToArray()));
                     var w2 = new ConstructWorld();
                     var loaded = w2.ReadBody(new SaveReader(body.Span.ToArray()), read, _ => 0);
-                    WsSay($"craft: saved and loaded: {(loaded == null ? "NO BODY" : $"{loaded.Parts[cpart].Craft?.Count ?? 0} order(s), {w2.StoreOf(loaded, cpart)?.ItemCount ?? -1} in the tray")}");
+                    // (the body alone: the tray is a store, saved in the world's stores section, so it isn't in this round trip; saveworld covers it)
+                    WsSay($"craft: saved and loaded: {(loaded == null ? "NO BODY" : $"{loaded.Parts[cpart].Craft?.Count ?? 0} order(s) (the tray is saved with the world's stores, not the body)")}");
                 }
                 return;
             }
