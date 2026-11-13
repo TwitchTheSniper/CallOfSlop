@@ -1,6 +1,7 @@
 # Sized gun and engine parts (design)
 
-Design only (2026-11-12). No code changed, nothing built, nothing run. Written for an agent to build in six phases of 60
+Design only (2026-11-12; revised 2026-11-13 for the user's answers in section 14, chiefly 6 and 8). No code changed,
+nothing built, nothing run. Written for an agent to build in six phases of 60
 to 90 minutes. It follows `press-rework.md` (sections are cited as "rework 4.2") and the user's answer 4 in its section
 12: gun parts and engine pieces are **sized from the start**; a longer barrel shoots further, a bigger cylinder gives more
 power. The Barrel, Receiver and Engine dies wait for this.
@@ -44,8 +45,10 @@ name, and an engine's in a table indexed by class. Neither can see a blank's siz
 3. **Curves run through today's parts.** A number that depends on size is a curve whose knots are catalogue parts
    (Stub, Standard and Long Barrel; the four engine sizes; a 1x1, 2x2 ... 6x6 merge). At a knot the curve gives the
    file's number, and a preset is the file part anyway (rework 4.4), so nothing shipped changes.
-4. **Fit is a band, never a silent clamp.** A barrel must suit its receiver's bore and a cylinder its crank, within a
-   stated band; outside it the gun or engine says why, in the words rework section 6 uses for the Assembler.
+4. **A barrel fits its receiver within a band; an engine takes anything.** A barrel must suit its receiver's bore within
+   a stated band; outside it the gun says why, in the words rework section 6 uses for the Assembler. An engine refuses
+   no size (answer 6): each cylinder gives its own bore's power, and a piece too small for its work costs power, which
+   the engine's look line names. Neither ever clamps silently.
 
 ## 3. Barrels
 
@@ -157,7 +160,7 @@ steps (`g.MergeN`) take `round(s)`. The mass is the blank's plus bay 2, not `par
 ### 4.3 Sized receivers and merging
 
 - A pressed receiver **never merges** (the merge finder takes file receivers only), so sizes cannot be multiplied
-  through both doors: 36 times a rifle's damage stays the ceiling. Catalogue receivers merge as today. Question 3.
+  through both doors: 36 times a rifle's damage stays the ceiling. Catalogue receivers merge as today (answer 3).
 - Catalogue gun parts on a pressed receiver (magazines, actions, optics, catalogue barrels, and what hangs on them) are
   drawn `round(s)` times bigger through the existing `PartScale`, as on a merge. A pressed gun part is never rescaled
   (`PartScale` 1), on a pressed receiver or a merged one: its size is its own.
@@ -174,7 +177,7 @@ bore class is `b = d / d_preset` (a 10 cm plain barrel is 1; a 20 cm one 2). `Si
 | Catalogue barrel on a pressed receiver | drawn `round(s)` times bigger; fits when `0.7 <= round(s) / s <= 1.5` (always true) | none |
 | Barrels on one splitter | each checked against the receiver | the same text, naming the first |
 
-Inside the band nothing changes with the mismatch (question 4 offers a cost instead). Muzzle devices are catalogue parts
+Inside the band nothing changes with the mismatch (answer 4). Muzzle devices are catalogue parts
 and follow the catalogue rule. The band is data (`Pressing.json`, the Barrel die's `"fit": [0.7, 1.5]`).
 
 ## 6. Engines
@@ -183,11 +186,14 @@ and follow the catalogue rule. The band is data (`Pressing.json`, the Barrel die
 
 - `ConstructPartDef.PieceScale`: `rules.Scale[PieceSize]` for a file piece; for a pressed piece the blank's across over
   the Small preset's across. `PieceSize` stays as the nearest class (the Engine Kit's words, the sound bank's pick).
+- **The crank's scale** is the largest crank section's `PieceScale`: sections of any sizes join into one crank, and the
+  biggest sets the revs (it is the heaviest to turn).
 - `EngineRules.At(float scale)` gives kW, idle, peak and limiter rpm by a straight line between the `sizes` rows in
   log-log (knots at 1, 4, 16, 64); past the ends, the end segment. At a knot it is the row. kW is 20 times a step, so
   between knots it is `40 x scale^2.161`; rpm falls by 0.56 then 0.5 a step.
-- A starter is needed from `starterFrom` (new in the file, 8: half-way in log between Medium and Large).
-- `ModEngine` gains `Scale` (the first crank's) and `Stroke`; `EngineFx` and `EngineSounds` read `e.Scale` where they
+- A starter is needed when the crank's scale reaches `starterFrom` (new in the file, 8: half-way in log between Medium
+  and Large). A starter of any size turns any engine over.
+- `ModEngine` gains `Scale` (the crank's) and `Stroke`; `EngineFx` and `EngineSounds` read `e.Scale` where they
   read `rules.Scale[e.Size]`.
 
 ### 6.2 What the dies offer
@@ -207,37 +213,50 @@ Each pattern has **four presets**, the Small to Capital files, which are its kno
 preset's file (by log of scale), so a cylinder 3.5 times Small is the Medium model stretched to 0.875. Ranges: across
 from 0.7 of the Small preset to the Capital preset (a press of its class; rework 3.1), in steps of 5 cm, or 1/16 of
 across where that is more (to the lattice), so a size is never more than about 6% from its neighbour and the count of
-sizes stays near 16 an octave. Recipes with two or more kinds of part input (the sort rule, rework section 2), the
-tier cylinders among them, stay Assembler recipes (question 8).
+sizes stays near 16 an octave. Recipes with two or more kinds of part input (the sort rule, rework section 2) stay
+Assembler recipes.
+
+**The tier cylinders go (answer 8).** Bored, Performance and Racing Cylinders (12 files, `power` 1.3, 1.6, 2) are replaced
+by bore: a plain cylinder 1.13, 1.24 or 1.38 times its crank's scale gives the same 1.3, 1.6 or 2 times the power
+(`ratio^2.161`), for the steel and Piston Sets of its size. Their Assembler recipes are removed and they leave the build
+catalogue (`Categories.json`); their part files stay and still load, so an old blueprint, a save or a shipped vehicle
+holding one builds and runs with today's numbers (section 8). The Engine Kit plans with them until it learns to plan a
+bigger bore (section 9).
 
 ### 6.3 The sums
 
 | Number | Formula | Anchor |
 | --- | --- | --- |
 | A cylinder's kW | `At(boreScale).Kw x PiecePower x share x fuel x boost`, with `boreScale` = its across / the Small preset's | the four cylinder files give 40, 800, 16,000, 320,000 |
-| Stroke ratio `r` | (its length / the Small preset's length) / the crank's scale; 0.6 to 1.6 | 1 for every file cylinder on its own class of crank |
-| Engine rpm (idle, peak, limiter) | `At(crankScale).Rpm / r`, `r` the lead cylinder's (lowest part index) | the table's rows at `r` = 1 |
+| Stroke ratio `r` | (its length / the Small preset's length) / its own bore scale; 0.6 to 1.6 (the die's range) | 1 for every file cylinder |
+| Engine rpm (idle, peak, limiter) | `At(crankScale).Rpm / r`, `r` the cylinders' mean weighted by their kW | the table's rows at `r` = 1 |
+| A bank's feed | `min(1, At(fuel scale).Kw / At(bank scale).Kw)`, the bank's scale its largest cylinder's bore scale; the bank's kW times it | 1 when the fuel system is the cylinders' size, as on every file engine |
+| A booster's gain | `1 + (PiecePower - 1) x min(1, At(booster scale).Kw / At(bank scale).Kw)` | the file's multiplier at its own size |
 | Torque at the peak | power / peak rpm, as today: so it rises with `r` | unchanged at `r` = 1 |
 | Fuel | `kW x PieceThirst x thirsts x burnPerKw`, as today | unchanged |
 | Fuel system, booster | their multipliers, unscaled | unchanged |
 | Mass, health | the blank's, as every pressed part | preset: the file's |
 
 Bore gives power; stroke trades revs for torque at the same power (a long-stroke engine pulls from low revs, a short one
-spins). A bore above the crank's scale is a "bored" cylinder: at the band's top, 1.4, it gives 2.07 times the power for
-about twice the steel and Piston Sets.
+spins). A bore above the crank's scale is a "bored" cylinder, the way to more power now that the tier cylinders are gone:
+1.38 times the crank's scale gives twice the power for about twice the steel and Piston Sets. Nothing caps it but the
+press: a cylinder of 4 times the crank's scale bolts on and gives a Medium cylinder's 800 kW at a Small crank's revs.
 
-### 6.4 Fit
+### 6.4 Mixed sizes: anything bolts on (answer 6)
 
-`EngineFault.MixedSizes` becomes a band on `PieceScale` against the crank's (`ModularEngine.json` `"fit": [0.7, 1.4]`,
-`"strokeTolerance": 0.10`); `SnapBuild`'s refusal at the attach uses the same test and text.
+No size is refused. `EngineFault.MixedSizes` is no longer raised (the value stays in the enum, which is never on the
+wire) and `SnapBuild` no longer refuses a piece of another class. What a mismatch does instead:
 
-| Case | Rule | Text |
+| Piece | Of another size | Look line when it costs power |
 | --- | --- | --- |
-| Any piece against the crank | `0.7 <= piece scale / crank scale <= 1.4` | `the Cylinder is 0.90 m across: this 0.45 m crank takes 0.32 to 0.63 m` |
-| Cylinders of one engine | each `r` within 10% of the lead's | `the Cylinder's stroke is 1.00 m: the others are 0.75 m (0.68 to 0.83 m)` |
-| Crank sections of one engine | same scale within 10% | `the Crank Section is 0.60 m: this engine's crank is 0.45 m` |
+| Cylinder | gives its own bore's kW; its stroke joins the engine's weighted `r` | none |
+| Crank section | joins the crank; the largest sets the crank's scale and so the revs | none |
+| Carburettor, Injector Rail | feeds its bank by the feed ratio (6.3): a Small carburettor on a bank of Medium cylinders feeds 5% | `bank 1 starved: the 0.30 m carburettor feeds 5% of 0.90 m cylinders` |
+| Turbo, Supercharger | its gain scaled by the same ratio; a bigger one gives no more than its own multiplier | `bank 1: the turbo is small for its cylinders (40% of its boost)` |
+| Flywheel, Starter, Exhaust, Stack | work at any size (their mass and look are their own) | none |
 
-File pieces of one class pass every test (ratio 1); two classes fail (ratio 4), as today.
+A starved engine still runs (`Complete` as today); the text is the first starved bank's, shown where the fault would be.
+File pieces of one class behave exactly as today (every ratio 1).
 
 ## 7. Data
 
@@ -249,8 +268,7 @@ File pieces of one class pass every test (ratio 1); two classes fail (ratio 4), 
   pattern may list several presets (`"presets": [...]`, the knots) and `"likeBy": "nearest"`; a die may state `"fit"`,
   `"step"` and `"aspect": "preset"`. Written by `--gen-parts press_parts` only; the curve points are read from the part
   files by the generator.
-- **`ModularEngine.json`** becomes format `/2`: adds `fit`, `strokeTolerance`, `starterFrom`. Format 1 is read with the
-  defaults. Its generator is the part kit's `engine_parts`.
+- **`ModularEngine.json`** becomes format `/2`: adds `starterFrom`. Format 1 is read with the default. No fit band. Its generator is the part kit's `engine_parts`.
 - **`ReceiverMerge.json`**: unchanged; its powers now also serve a real `s`.
 - Die parts: `Barrel Die`, `Receiver Die`, `Engine Die` in the classes their bounds reach, and their lathe rows, as
   `PressParts.WorkingDies3b` made the last seven.
@@ -269,7 +287,10 @@ File pieces of one class pass every test (ratio 1); two classes fail (ratio 4), 
 - **Protocol.** One bump in each phase that adds part files (die parts move ids) or changes a formula's data
   (`ModularEngine.json` /2): phases 1, 3, 4 and 5 below. The merger renumbers.
 - **Old saves, blueprints, shipped vehicles, builds.** They name catalogue parts, which are presets: the same file part,
-  the same id on this build, the same numbers. No migration and no file changes; `--gen-vehicles` must stay clean.
+  the same id on this build, the same numbers. No migration and no file changes; `--gen-vehicles` must stay clean. The
+  tier cylinders are the one kind of catalogue part with no recipe after phase 5: they still load and run as before, so
+  a blueprint holding one builds where parts are free (creative, a shipped vehicle) and, in survival, waits for the part
+  as any part without a recipe does.
 - **Mods.** A mod's builder part or engine piece is a file part as before. A mod's `ModularEngine.json` in format 1 loads.
 
 ## 9. What happens to the fixed parts
@@ -278,12 +299,12 @@ File pieces of one class pass every test (ratio 1); two classes fail (ratio 4), 
 | --- | --- |
 | `Gun Barrel`, `Long Gun Barrel`, the 22 generated barrel items | presets of the Barrel die (and the knots of its curve). Items, as today |
 | `Rifle`, `Heavy`, `Shell Receiver`, the 26 generated receivers | presets of the Receiver die |
-| The 40 modular engine pieces | presets of the Cylinder and Engine dies, four a pattern, where the sort rule makes them single-piece; the rest keep their Assembler recipe |
-| The 12 tier cylinders | Assembler recipes, unchanged (question 8) |
+| The 40 modular engine pieces | presets of the Cylinder and Engine dies, four a pattern, where the sort rule makes them single-piece (the four plain cylinders leave the Assembler for the Cylinder die in phase 5); the rest keep their Assembler recipe |
+| The 12 tier cylinders | removed from play (answer 8): no recipe, out of the build catalogue, phase 5. The part files stay so old blueprints, saves and shipped vehicles keep working; the Engine Kit still plans with them for its tiers 3 to 5 until it plans bored cylinders (later work) |
 | Gun and engine single-piece recipes held back from rework phase 5 (9 `gunpart` rows, 36 `enginePiece` rows) | become presets in phase 6 here; generated builder barrels and receivers, which had no recipe, get one |
 | Feeds, actions, muzzle devices, optics, stocks, grips, ammo (about 290 generated items) | unchanged: catalogue items, no size, still no recipe. Not in this design |
 | The fixed `Engine` part and the other `engine` role parts | assemblies: unchanged |
-| The Engine Kit and the vehicle generators | plan with catalogue pieces as today; reading back uses `e.Scale`. Planning sized pieces is later work |
+| The Engine Kit and the vehicle generators | plan with catalogue pieces as today, the tier cylinders included; reading back uses `e.Scale`. Planning sized pieces (a bored plain cylinder in place of a tier one) is later work |
 | Handheld builds at the Gun Workbench | catalogue parts only. An odd-sized part is a physical piece until inventories carry parts by key (user answer 2); question 7 |
 
 ## 10. Performance
@@ -321,8 +342,8 @@ in phases 3 and 6 only. Start after the press's phase 4 has merged (`Pressed.cs`
 | 1 | **Curves and the sized builder part** | `PressScale` `points`, `calibres`; `SizedGunParts.Make`; `ConstructPartDef.GunSized`; `Parts.Find`'s prefix door; the Barrel die with the plain pattern, its three presets, die parts and lathe rows; `--press-part` prints a gun part's effects beside its preset's. Check that clients run `BuildReceiver`. Protocol bump | new `Source/Constructs/SizedGunParts.cs`; `PressDies.cs`, `Pressed.cs`, `ConstructParts.cs`, `Zombies/PartDef.cs`, `Zombies/PartFile.cs`, `PartKit/Generators/PressParts.cs`, `Pressing.json`, die part files, `Net/ServerBrowser.cs` | `--press-part barrel.plain "round 10x10x50 steel"` is the Gun Barrel; `10x10x70` prints range x1.2; `sweep barrel` clean; a blueprint with a pressed barrel on a Rifle Receiver fires | `--press-part` for 20, 50, 70, 90, 160 cm; a window shot of the gun's look line; host and client agree on its range |
 | 2 | **Barrels on guns** | The bore band (`FitWhy`, the look line's text); pressed gun parts exempt from `PartScale` on a merge; the bore, match, shell, special and artillery patterns with their presets (the generated barrel items) | `ConstructWeapons.cs`, `ConstructMerge.cs`, `SizedGunParts.cs`, `PressParts.cs`, `Pressing.json` | A 20 cm barrel on a 2x2 merged Rifle Receiver has a scaled Gun Barrel's numbers; a 10 cm one is refused with its text; every barrel preset resolves to its catalogue part (`--press-part presets barrel`) | Press a barrel on the Production Showcase and fit it; the two merge cases; a splitter with one pressed and one catalogue barrel |
 | 3 | **Sized receivers** | `GunScale`; `ScaleGun` and `Times` with a real number; the Receiver die (three hand-made patterns, then the generated ones as data), its proportion rule and bay 2; pressed receivers never merge; catalogue gun parts take `round(s)`; bore `s x N` in the band. Protocol bump. Docs: weapons.md, production.md | `ConstructMerge.cs`, `ConstructWeapons.cs`, `ConstructParts.cs`, `Pressed.cs`, `PressParts.cs`, `Pressing.json`, die part files, `ServerBrowser.cs`, docs | A 40x40x80 Rifle Receiver with a 20x20x100 barrel prints the numbers of a 2x2 merge with a Gun Barrel | Both guns side by side, fired at a plate; a 15 cm receiver; four pressed receivers in a square stay four guns; a client's look lines |
-| 4 | **The engine reads scale** | `PieceScale`, `EngineRules.At`, `ModularEngine.json` /2, the fit band and its texts in `Build` and `SnapBuild`, `ModEngine.Scale` and `Stroke`, rpm by `r`, `EngineFx`, `EngineSounds`, the kit's read-back. No die yet: nothing a player has changes. Protocol bump | `ConstructEngine.cs`, `ConstructParts.cs`, `ConstructDriveParts.cs`, `SnapBuild.cs`, `Render/EngineFx.cs`, `Audio/EngineSounds.cs`, `EngineKit/EngineKit.cs`, the part kit's engine generator, `ModularEngine.json`, `ServerBrowser.cs` | `--gen-engine` prints ENGINEKIT.md's sample table unchanged; `--gen-vehicles` and `--gen-engine-parts --check` clean | `--speed-test` on two shipped vehicles against the doc's figures; a Medium cylinder on a Small crank is still refused |
-| 5 | **Engine pieces off the press** | The Cylinder die's `engine` pattern and the Engine die: four presets a pattern, `likeBy` nearest, `PieceScale` from the key, bay 2; `--press-part` prints kW, rpm and the crank range. Protocol bump | `Pressed.cs`, `PressDies.cs`, `PressParts.cs`, `Pressing.json`, die part files, `ServerBrowser.cs` | A 60 cm bore on a Small crank gives more kW than the catalogue cylinder; a 100 cm one is refused with its text; a 100 cm stroke lowers the peak rpm | An engine of a pressed crank, two pressed cylinders, a catalogue carburettor and flywheel run in a window; its look line; a client agrees |
+| 4 | **The engine reads scale** | `PieceScale`, `EngineRules.At`, `ModularEngine.json` /2, the crank's scale, the feed and boost ratios and the starved texts, `Build` and `SnapBuild` no longer refusing mixed classes, `ModEngine.Scale` and `Stroke`, rpm by the weighted `r`, `EngineFx`, `EngineSounds`, the kit's read-back. No die yet: the one change a player sees is that pieces of two classes now make one engine. Protocol bump | `ConstructEngine.cs`, `ConstructParts.cs`, `ConstructDriveParts.cs`, `SnapBuild.cs`, `Render/EngineFx.cs`, `Audio/EngineSounds.cs`, `EngineKit/EngineKit.cs`, the part kit's engine generator, `ModularEngine.json`, `ServerBrowser.cs` | `--gen-engine` prints ENGINEKIT.md's sample table unchanged; `--gen-vehicles` and `--gen-engine-parts --check` clean | `--speed-test` on two shipped vehicles against the doc's figures; a Medium cylinder on a Small crank with a Medium carburettor runs at 800 kW and a Small crank's revs; with a Small carburettor it says the bank is starved |
+| 5 | **Engine pieces off the press** | The Cylinder die's `engine` pattern and the Engine die: four presets a pattern, `likeBy` nearest, `PieceScale` from the key, bay 2; `--press-part` prints kW, rpm and the stroke ratio. The four plain cylinders' recipes leave the Assembler for the Cylinder die; the 12 tier cylinders lose their recipes and leave `Categories.json` (answer 8). Protocol bump | `Pressed.cs`, `PressDies.cs`, `PressParts.cs`, `Pressing.json`, die part files, `PartKit/Generators/Assembling.cs`, `Assembling.json`, `Categories.json`, `ServerBrowser.cs` | A 60 cm bore on a Small crank gives more kW than the catalogue cylinder; a 100 cm one runs with its own kW and is starved by a Small carburettor; a 100 cm stroke lowers the peak rpm; `--bill` of a vehicle with a tier cylinder says it has no recipe | An engine of a pressed crank, two pressed cylinders, a catalogue carburettor and flywheel run in a window; its look line; a client agrees |
 | 6 | **Presets, bills, docs** | The Assembling generator's sort gives the held-back `gunpart` and `enginePiece` rows and the generated barrels and receivers their presets; `--bill` shows no "no recipe" for them; docs: drivetrain-and-engines.md, ENGINEKIT.md, WEAPON-BUILDER.md (a pointer), MODS.md | `PartKit/Generators/Assembling.cs`, `PressParts.cs`, `Assembling.json`, `Pressing.json`, docs | `--gen-parts assembling --check` and `press_parts --check` clean; `--press-part presets` clean | `--bill` of two armed vehicles before and after, to files; a terminal order for a Gun Barrel reaches a press |
 
 Order: 1, 2, 3 in turn; 4 then 5; 6 last and after rework phase 5. Phase 4 touches none of 1 to 3's files and may run
@@ -346,6 +367,13 @@ beside them. Phases 1 to 3 and 5 share `Pressed.cs`, `PressParts.cs` and `Pressi
   back from the live engine, so its reports stay true.
 - **Sound and effects by class.** `EngineSounds.Pick` and the gun report's steps take the nearest class or `round(s)`:
   a 2.4 and a 1.6 receiver sound the same.
+- **Anything bolts on (answer 6)** puts a Capital cylinder on a Small crank within reach: 320 MW through the smallest
+  crank, at its revs. Nothing models a crank's strength; the cost is the press's class and the steel. If it proves silly,
+  a crank's torque limit is the lever, not a fit band.
+- **The Engine Kit's tiers 3 to 5** lean on the tier cylinders, which a survival player can no longer make after phase
+  5. Vehicles it generated still run; a player copying one in survival lacks those parts until the kit plans bored
+  cylinders.
+- **The "Modular engine" section** may pin `MixedSizes` for two classes; phase 4 runs it by name and updates the case.
 - **Self-tests pinned to numbers** ("Modular engine", the vehicle speed figures) fail if phase 4 moves a float by a last
   digit: `At` must return the row itself at a knot, not an interpolation that lands beside it.
 - **Not verified here**: clients running `BuildReceiver`; engine file bounds; whether `ReceiverMergeRules.Times` and
@@ -353,7 +381,8 @@ beside them. Phases 1 to 3 and 5 share `Pressed.cs`, `PressParts.cs` and `Pressi
 
 ## 13. Questions for the user
 
-One at a time; the recommended option is first.
+One at a time; the recommended option is first. All eight are answered (section 14): the text above follows the
+answers, and the questions are kept as the record of what was asked.
 
 1. **A barrel's character (Needle, Heavy Bore, Bloat, Marksman...): where does it come from?**
    - A (recommended): a **pattern** on the press; size adds length (range, spread, handling) on top. Every catalogue
