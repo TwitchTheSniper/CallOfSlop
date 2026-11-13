@@ -79,6 +79,11 @@ public static unsafe partial class Program
 
     public static int Main(string[] args)
     {
+        // Started from a clicked callofslop:// link (UrlProtocol.cs registers "exe" "%1"): the link is the only argument
+        // honoured. A crafted link with quotes or spaces in it could otherwise smuggle in options of its own
+        // (--save-dir, a tool that writes files), and a link never needs any.
+        if (args.Length > 1 && UrlProtocol.FindLink(args.Take(1)) != null)
+            args = [args[0]];
         // A release build's game restarts itself once with .NET crash dumps on, unless its launcher set them (CrashDumps.cs).
         if (CrashDumps.Relaunch(args) is { } exitCode)
             return exitCode;

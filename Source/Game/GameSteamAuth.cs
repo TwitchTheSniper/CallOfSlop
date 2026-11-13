@@ -66,6 +66,7 @@ public sealed partial class Game
             return false;
         }
         p.SteamId = id;
+        p.SteamVerified = true; // (the connection itself names it)
         return true;
     }
 
@@ -150,6 +151,7 @@ public sealed partial class Game
             return;
         if (ok)
         {
+            p.SteamVerified = true;
             Log($"Steam verified {p.Name}");
             return;
         }
@@ -196,6 +198,12 @@ public sealed partial class Game
             KickPlayer(p.Id, "banned by the host");
         return true;
     }
+
+    /// <summary>
+    /// Host: a player's Steam ID when it can be trusted (from the Steam connection, or checked by Steam), else 0. Anyone can
+    /// claim an ID over RakNet, and IDs are told to every player, so a claim alone never finds a saved world's record.
+    /// </summary>
+    internal static ulong TrustedSteamId(Player p) => p.SteamVerified ? p.SteamId : 0;
 
     /// <summary>Host: a verified-or-claimed Steam id arrived for a player; banned ids go at once.</summary>
     private void OnSteamIdClaimed(Player p)

@@ -92,6 +92,9 @@ public static class WorldFile
         return (format, meta, 8 + r.Pos);
     }
 
+    /// <summary>The most a world's body may unpack to (a shared or damaged file can say anything; real worlds are far smaller).</summary>
+    public const int MaxRawLength = 1 << 30;
+
     /// <summary>Unpacks a whole file's body, checking its hash. Throws <see cref="WorldFileException"/> when it is damaged or newer.</summary>
     public static byte[] Unpack(byte[] file, out WorldMeta meta, out int format)
     {
@@ -110,6 +113,8 @@ public static class WorldFile
             throw new WorldFileException("it is cut short");
         if (Hash(file.AsSpan(r.Pos, packedLength)) != hash)
             throw new WorldFileException("its hash doesn't match");
+        if (rawLength > MaxRawLength)
+            throw new WorldFileException($"it says it unpacks to {rawLength / (1 << 20)} MB, past the {MaxRawLength >> 20} MB a world may be"); // (a damaged or made-up file: never an allocation that takes the game down)
         var body = new byte[rawLength];
         try
         {

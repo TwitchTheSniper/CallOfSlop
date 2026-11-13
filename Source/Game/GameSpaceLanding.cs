@@ -356,7 +356,7 @@ public sealed partial class Game
         // People: the travellers sit in the ship again; anyone away from the game comes back at a spawn.
         var here = new HashSet<WorldPlayer>();
         foreach (var p in Players.Values)
-            if (WorldKnown(p) && ws.Find(WorldKeyOf(p), p.SteamId) is { } rec)
+            if (WorldKnown(p) && ws.Find(WorldKeyOf(p), TrustedSteamId(p)) is { } rec)
                 here.Add(rec);
         foreach (var rec in ws.Players)
         {
