@@ -34,7 +34,7 @@
       "about": "shovelling the snow off the pavement into the street, which another gang sweeps back" },
     { "name": "Sweeping the street", "at": "colony", "way": [[8, -11.3], [19, -11.3]], "do": "sweep", "inmates": 1,
       "about": "sweeping the street's snow back onto the pavement" },
-    { "name": "Work detail under escort", "at": "colony", "way": [[-12, -12.6], [30, -12.6], [30, -14.2], [-12, -14.2]], "do": "march", "inmates": 8, "guards": 1, "gap": 0.8,
+    { "name": "Work detail under escort", "at": "colony", "way": [[-12, -12.6], [30, -12.6], [30, -14.2], [-12, -14.2]], "do": "march", "inmates": 8, "guards": 1, "gap": 0.95,
       "about": "a column shuffling up and down the street, each with a hand on the shoulder in front, going nowhere on the Ministry's time" },
     { "name": "Waiting for the crew bus", "at": "colony", "spot": [8.6, -9.6], "face": 270, "do": "queue", "inmates": 4,
       "about": "at the bus stop by the gate; the bus never stops for them" },

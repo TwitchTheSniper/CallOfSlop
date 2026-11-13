@@ -3,14 +3,18 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Lifters' plain drawing (phase 1 of docs/sandbox/design/arms-and-cranes.md): the boom as one box from the shoulder to the hand,
-/// a gripper over the piece, and the piece at true size in its paint on the move's path (ConstructLifters.Pose), run on from the
-/// last word the peer heard. Nothing is drawn for a lifter more than <see cref="DrawNear"/> away. Allocates nothing.
+/// Lifters' drawing (docs/sandbox/design/arms-and-cranes.md, section 6): an arm's turning half, posed each frame from its hand by
+/// <see cref="ArmIk.Solve"/> (a turret on the part's slewing ring, a shoulder, the upper arm, an elbow, the forearm, a wrist and a
+/// gripper), and the piece at true size in its paint on the move's path (ConstructLifters.Pose), run on from the last word the
+/// peer heard. The pose comes from the hand alone, so host and client draw the same arm. Nothing is drawn for a lifter more than
+/// <see cref="DrawNear"/> away. Allocates nothing.
 /// </summary>
 public static class LifterRender
 {
     public const float DrawNear = 150f;
-    private static readonly Vector3 Boom = new(0.48f, 0.27f, 0.2f), Grip = new(0.94f, 0.47f, 0.09f);
+    public const float TurretDrop = 0.66f; // the slewing ring's top under the shoulder (LifterParts: base y 1.32 over the floor, TurretY 0.66)
+    private static readonly Vector3 Rust = new(0.478f, 0.267f, 0.196f), Rust2 = new(0.42f, 0.29f, 0.21f), Iron = new(0.545f, 0.522f, 0.478f),
+        Dark = new(0.184f, 0.165f, 0.149f), Out = new(0.94f, 0.47f, 0.09f), Accent = new(0.95f, 0.69f, 0.12f);
     private static double _scanAt;
 
     public static void Draw(Renderer gfx, ConstructWorld world)
@@ -30,24 +34,24 @@ public static class LifterRender
             for (var i = 0; i < lb.N; i++)
             {
                 var l = lb.Lifts[i];
-                if (l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { } ld || c.Parts[l.Part].Broken)
+                if (l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { Bridge: false } ld || c.Parts[l.Part].Broken)
                     continue;
                 ConstructLifters.Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
                 if (Vector3.DistanceSquared(eye, shoulder) > DrawNear * DrawNear)
                     continue;
+                // The hand, in the part's frame: the piece's origin and turn on the path, the gripper bar on its top.
                 Vector3 origin;
                 var turn = Quaternion.Identity;
                 if (l.Moved)
                     origin = ConstructLifters.Pose(ld, l, ConstructLifters.AgeNow(l), out turn);
                 else
-                    origin = ld.Base + new Vector3(ld.ReachMin + 0.6f, -0.6f, 0); // (at rest before its first move)
-                var worldRot = Quaternion.Normalize(lr * turn);
-                var at = lp + Vector3.Transform(origin, lr);
-                var grip = at;
+                    origin = ld.Base + new Vector3(ld.ReachMin + 0.9f, -0.9f, 0); // (at rest before its first move)
+                var grip = origin + Vector3.UnitY * ConstructLifters.GripLift;
                 var span = 0.35f;
+                var part = Matrix4x4.CreateFromQuaternion(lr) * Matrix4x4.CreateTranslation(lp);
                 if (l.Def != 0 && ConstructParts.Get(l.Def) is { } d)
                 {
-                    var m = Matrix4x4.CreateFromQuaternion(worldRot) * Matrix4x4.CreateTranslation(at);
+                    var m = Matrix4x4.CreateFromQuaternion(turn) * Matrix4x4.CreateTranslation(origin) * part;
                     var paint = l.Paint != 0 ? ConstructPaint.ToVector(l.Paint) : Vector3.Zero;
                     for (var bx = 0; bx < d.Boxes.Length; bx++)
                     {
@@ -56,32 +60,59 @@ public static class LifterRender
                             gfx.Draw(box.Model(0, box.Center) * m, l.Paint != 0 && box.Paintable ? paint : box.Color, shape: box.Shape);
                     }
                     var top = new Vector3((d.BoundsMin.X + d.BoundsMax.X) * 0.5f, d.BoundsMax.Y, (d.BoundsMin.Z + d.BoundsMax.Z) * 0.5f);
-                    grip = at + Vector3.Transform(top, worldRot) + Vector3.UnitY * ConstructLifters.GripLift;
-                    span = Math.Clamp(MathF.Min(d.BoundsMax.X - d.BoundsMin.X, d.BoundsMax.Z - d.BoundsMin.Z) * 0.8f, 0.2f, 1.2f);
+                    grip = origin + Vector3.Transform(top, turn) + Vector3.UnitY * ConstructLifters.GripLift;
+                    span = Math.Clamp(MathF.Min(d.BoundsMax.X - d.BoundsMin.X, d.BoundsMax.Z - d.BoundsMin.Z) * 0.8f, 0.25f, 1.2f);
                 }
-                // The gripper: a bar over the piece with two pads, under a short wrist the boom ends in.
-                var up = Vector3.Transform(Vector3.UnitY, lr);
-                var wrist = grip + up * 0.3f;
-                var gm = Matrix4x4.CreateFromQuaternion(lr) * Matrix4x4.CreateTranslation(grip + up * 0.04f);
-                gfx.Draw(Matrix4x4.CreateScale(span + 0.1f, 0.08f, 0.14f) * gm, Grip);
-                gfx.Draw(Matrix4x4.CreateScale(0.1f, 0.5f, 0.1f) * Matrix4x4.CreateTranslation(0, 0.25f, 0) * Matrix4x4.CreateTranslation(-0.004f, 0, 0) * gm, Boom);
-                Beam(gfx, shoulder, wrist, 0.16f, Boom);
+                ArmIk.Solve(ld, grip, out var yaw, out var elbow, out var wrist);
+                DrawArm(gfx, ld, part, yaw, elbow, wrist, span);
             }
         }
     }
 
-    /// <summary>A square beam from <paramref name="a"/> to <paramref name="b"/>.</summary>
-    private static void Beam(Renderer gfx, Vector3 a, Vector3 b, float thick, Vector3 colour)
+    /// <summary>The turning half of an arm, from the part's frame matrix and its pose (all in the part's frame).</summary>
+    private static void DrawArm(Renderer gfx, LifterDef ld, Matrix4x4 part, float yaw, Vector3 elbow, Vector3 wrist, float span)
+    {
+        var s = ld.Base;
+        var heading = new Vector3(MathF.Cos(yaw), 0, MathF.Sin(yaw));
+        var side = new Vector3(-heading.Z, 0, heading.X);
+        var turret = Matrix4x4.CreateFromQuaternion(Quaternion.CreateFromAxisAngle(Vector3.UnitY, -yaw)); // (+x towards the hand)
+        // The turret: a squat housing on the slewing ring (sunk 4 mm into it), a counterweight behind, the shoulder's yoke on top.
+        var floor = s.Y - TurretDrop - 0.004f;
+        var h = s.Y - 0.12f - floor;
+        Box(gfx, part, turret, s + new Vector3(0, floor + h * 0.5f - s.Y, 0), new Vector3(0.72f, h, 0.66f), Rust);
+        Box(gfx, part, turret, s - heading * 0.5f + new Vector3(0, floor + 0.3f - s.Y, 0), new Vector3(0.36f, 0.42f, 0.58f), Dark);
+        Box(gfx, part, turret, s - heading * 0.5f + new Vector3(0, floor + 0.3f - s.Y, 0) + side * 0.292f, new Vector3(0.3f, 0.08f, 0.012f), Accent); // (hazard on the weight's flank)
+        Box(gfx, part, turret, s + side * 0.22f, new Vector3(0.3f, 0.34f, 0.1f), Iron);
+        Box(gfx, part, turret, s - side * 0.22f, new Vector3(0.3f, 0.34f, 0.1f), Iron);
+        Box(gfx, part, turret, s, new Vector3(0.24f, 0.24f, 0.56f), Out); // (the shoulder's pin: what moves)
+        // The upper arm, the elbow, the forearm.
+        Beam(gfx, part, s, elbow, 0.2f, Rust);
+        Box(gfx, part, turret, elbow, new Vector3(0.28f, 0.28f, 0.34f), Iron);
+        Box(gfx, part, turret, elbow, new Vector3(0.14f, 0.14f, 0.42f), Out); // (the elbow's pin)
+        Beam(gfx, part, elbow, wrist, 0.15f, Rust2);
+        // The wrist: a knuckle, a rod straight down to the gripper bar, the pads either side of the piece.
+        Box(gfx, part, turret, wrist, new Vector3(0.18f, 0.18f, 0.22f), Iron);
+        var bar = wrist - Vector3.UnitY * ConstructLifters.Wrist;
+        Beam(gfx, part, wrist, bar + Vector3.UnitY * 0.04f, 0.07f, Iron);
+        Box(gfx, part, turret, bar + Vector3.UnitY * 0.04f, new Vector3(0.14f, 0.08f, span + 0.12f), Out);
+        for (var k = -1; k <= 1; k += 2)
+            Box(gfx, part, turret, bar + side * (k * (span * 0.5f + 0.03f)) - Vector3.UnitY * 0.1f, new Vector3(0.1f, 0.24f, 0.04f), Out);
+    }
+
+    private static void Box(Renderer gfx, Matrix4x4 part, Matrix4x4 turn, Vector3 at, Vector3 size, Vector3 colour) =>
+        gfx.Draw(Matrix4x4.CreateScale(size) * turn * Matrix4x4.CreateTranslation(at) * part, colour);
+
+    /// <summary>A square beam from <paramref name="a"/> to <paramref name="b"/>, in the part's frame.</summary>
+    private static void Beam(Renderer gfx, Matrix4x4 part, Vector3 a, Vector3 b, float thick, Vector3 colour)
     {
         var d = b - a;
         var len = d.Length();
         if (len < 1e-3f)
             return;
         var z = d / len;
-        var x = Vector3.Cross(MathF.Abs(z.Y) > 0.98f ? Vector3.UnitX : Vector3.UnitY, z);
-        x = Vector3.Normalize(x);
+        var x = Vector3.Normalize(Vector3.Cross(MathF.Abs(z.Y) > 0.98f ? Vector3.UnitX : Vector3.UnitY, z));
         var y = Vector3.Cross(z, x);
         var basis = new Matrix4x4(x.X, x.Y, x.Z, 0, y.X, y.Y, y.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1);
-        gfx.Draw(Matrix4x4.CreateScale(thick, thick, len) * basis * Matrix4x4.CreateTranslation((a + b) * 0.5f), colour);
+        gfx.Draw(Matrix4x4.CreateScale(thick, thick, len) * basis * Matrix4x4.CreateTranslation((a + b) * 0.5f) * part, colour);
     }
 }

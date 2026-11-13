@@ -222,12 +222,19 @@ public static class ConstructExtruder
         // Work orders (WorkOrders.cs): a queue's head order replaces the settings; a piece on the die that isn't the head's is cut off as it is.
         var queue = p.Orders is { Bill: false } ql ? ql : null;
         var hasHead = WorkOrders.HeadOf(p, out var head);
+        var headKey = default(ExtrusionKey);
+        var keyed = hasHead && FormerPresets.KeyFor(head, out headKey); // (a piece's key, or a former's preset's: FormerPresets.cs)
         var forOrder = false;
         if (queue != null && product >= 0)
         {
             ref readonly var pk = ref c.Parts[product].D.ExKey;
-            if (!hasHead || !WorkOrders.ForHead(head, pk))
+            if (!keyed || !WorkOrders.ForHead(headKey, pk))
                 asked = true;
+            else if (whole)
+            {
+                forOrder = (d.IsAirframeFormer ? pk.L >= headKey.L : pk.H >= headKey.H); // (a prop parts off at its order's diameter, a wing at its span)
+                asked |= forOrder;
+            }
             else if (d.IsWheelFormer)
             {
                 depth = pk.W >= head.Key.W;
@@ -239,10 +246,24 @@ public static class ConstructExtruder
         }
         var size = product < 0 ? 0 : d.IsAirframeFormer ? len : c.Parts[product].D.ExKey.H;
         p.Out = p.OutNext = product < 0 ? 0 : (d.IsWheelFormer ? depth ? size : c.Parts[product].D.ExKey.W : len) / 100f; // (its output: the length so far, a wheel's size in this mode)
-        if (whole && product >= 0 && size >= TargetCm(p, d))
-            asked = true; // (a Fan or an Airframe Former parts a piece off when it reaches the size asked)
+        if (whole && queue == null && product >= 0 && size >= TargetCm(p, d))
+            asked = true; // (a Fan or an Airframe Former parts a piece off when it reaches the size asked; with a queue, its order's size)
         if (product >= 0 && !p.Broken && (asked || CutAtCm(p, d) is var every and > 0 && len >= every) && ConstructRecycler.Powered(world, c, part))
         {
+            if (forOrder && FormerPresets.PartOf(head) is { } made)
+            {
+                // A former's preset (FormerPresets.cs): the catalogue part it names comes off in the piece's place, paid as the piece was.
+                if (CutAs(world, c, part, product, made, out var stall))
+                {
+                    WorkOrders.Made(world, c, queue);
+                    ProductionLines.Made(world, c, part, 1);
+                    return true;
+                }
+                p.State |= CutPending;
+                ConstructGatherer.SetBusy(world, st, false);
+                SetStall(world, st, stall);
+                return false;
+            }
             if (ConstructConveyor.Out(c, part) is var conveyor and >= 0)
             {
                 // A conveyor out of its Piece out takes the piece whole (ConstructConveyor.cs): it waits on the die, the machine blocked, until it fits and there is room.
@@ -289,7 +310,7 @@ public static class ConstructExtruder
             SetStall(world, st, ExtrudeStall.NoOrders);
             return false;
         }
-        var why = whole ? GrowWhole(world, query, c, part, st, product) : d.IsWheelFormer ? GrowWheel(world, query, c, part, st, product, depth, hasHead, head) : Grow(world, query, c, part, st, product, len, hasHead, head);
+        var why = whole ? GrowWhole(world, query, c, part, st, product, keyed, headKey) : d.IsWheelFormer ? GrowWheel(world, query, c, part, st, product, depth, hasHead, head) : Grow(world, query, c, part, st, product, len, hasHead, head);
         SetStall(world, st, why);
         ConstructGatherer.SetBusy(world, st, why == ExtrudeStall.None);
         return false;
@@ -533,7 +554,7 @@ public static class ConstructExtruder
     /// blade takes, until it reaches the size asked (<see cref="Work"/> parts it off then); a wing, the same along its span at the chord
     /// set. Its kind and blades or its chord are set when it starts.
     /// </summary>
-    private static ExtrudeStall GrowWhole(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, int product)
+    private static ExtrudeStall GrowWhole(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, int product, bool order, in ExtrusionKey want)
     {
         ref var p = ref c.Parts[part];
         var d = p.D;
@@ -548,11 +569,15 @@ public static class ConstructExtruder
         {
             if (st.Amount <= 0)
                 return ExtrudeStall.NoMaterial;
+            if (order && st.Material != want.Material)
+                return ExtrudeStall.OrderMaterial;
             if ((air ? ExtrusionTable.Current.FindWing(st.Material) : ExtrusionTable.Current.FindFan(st.Material)) == null)
                 return ExtrudeStall.BadMaterial;
             key = default;
             var start = (ushort)MathF.Round(d.ExtWheelStart.Y * 100);
-            if (air)
+            if (order)
+                next = air ? want with { L = start, Growing = true } : want with { H = start, Growing = true }; // (its order's kind, chord or blades: Work parts it off at the order's size)
+            else if (air)
                 next = new ExtrusionKey(0, (ushort)ChordCm(p, d), 0, start, st.Material, true, ExShape.Wing, (ushort)ConstructConfig.Get(p, d, CfgKey.WingKind, 0));
             else
                 next = new ExtrusionKey(0, 0, start, 0, st.Material, true, ExShape.Fan, Extrusion.FanWall((int)ConstructConfig.Get(p, d, CfgKey.FanKind, 0), (int)ConstructConfig.Get(p, d, CfgKey.BladeStyle, 0), (int)ConstructConfig.Get(p, d, CfgKey.FanBlades, 3)));
@@ -571,7 +596,7 @@ public static class ConstructExtruder
         var row = air ? ExtrusionTable.Current.FindWing(next.Material) : ExtrusionTable.Current.FindFan(next.Material);
         if (row == null)
             return ExtrudeStall.BadMaterial;
-        var limit = Math.Min(air ? Extrusion.MaxLengthCm : Extrusion.MaxFanCm, TargetCm(p, d));
+        var limit = Math.Min(air ? Extrusion.MaxLengthCm : Extrusion.MaxFanCm, order ? (air ? want.L : want.H) : TargetCm(p, d));
         st.JobTicks += (int)(d.ExtSpeed * Every / World.TickRate * 1000);
         var steps = st.JobTicks / StepMm;
         if (steps == 0)
@@ -774,6 +799,53 @@ public static class ConstructExtruder
         world.RemovePart(c, product);
         c.Wake();
         return body;
+    }
+
+    /// <summary>
+    /// A former's preset (FormerPresets.cs): the finished piece goes and the catalogue part <paramref name="made"/> comes off in its place, with
+    /// the piece's share of health and its paint. With a Piece out conveyor it rides that as a made part (ConstructConveyor.PutMade), else it
+    /// drops at the die as a body of its own, laid where the piece lay (a wing's span along the piece's, its leading edge the piece's).
+    /// True when it went (the piece left the construct: indices moved); else <paramref name="why"/> says why it waits on the die.
+    /// </summary>
+    internal static bool CutAs(ConstructWorld world, Construct c, int machine, int product, ConstructPartDef made, out ExtrudeStall why)
+    {
+        why = ExtrudeStall.None;
+        ref var pp = ref c.Parts[product];
+        var was = pp.D;
+        var share = pp.Health / MathF.Max(1, was.Health);
+        var paint = pp.Paint;
+        if (ConstructConveyor.Out(c, machine) is var conveyor and >= 0)
+        {
+            if (!ConstructConveyor.PutMade(world, c, conveyor, made, 1, out why))
+                return false;
+            world.RemovePart(c, product);
+            c.Wake();
+            return true;
+        }
+        if (Extrusion.Def(was.ExKey with { Growing = false }) is not { } piece)
+        {
+            why = ExtrudeStall.BadShape;
+            return false;
+        }
+        c.WorldFrame(pp.Seg, out var q, out var t);
+        var turn = q * Rot24.Quat(pp.Rot);
+        var centre = t + Vector3.Transform(pp.Pos, q) + Vector3.Transform((piece.BoundsMin + piece.BoundsMax) * 0.5f, turn);
+        if (made.Surface != null && was.ExKey.Shape == ExShape.Wing)
+            turn *= Quaternion.CreateFromAxisAngle(Vector3.UnitY, MathF.PI / 2); // (a catalogue wing's span is its x, its leading edge -z: the piece's are z and -x)
+        if (ConstructEdits.DropLoose(world, made, centre, turn) is not { } body)
+        {
+            why = ExtrudeStall.Blocked;
+            return false;
+        }
+        body.Owner = c.Owner;
+        body.Vel = c.PointVel(centre);
+        body.AngVel = c.AngVel;
+        ref var np = ref body.Parts[0];
+        np.Health = MathF.Max(1, made.Health * share);
+        np.Paint = paint;
+        world.RemovePart(c, product);
+        c.Wake();
+        return true;
     }
 
     /// <summary>Why nothing can be welded to this part just now (a piece still on its die), or null.</summary>

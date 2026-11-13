@@ -917,7 +917,9 @@ public sealed partial class Game : IDisposable
 
     private void Log(string line, bool mine = false)
     {
-        Feed.Add(new FeedEntry(Brutal.GlfwApi.Glfw.Time, line, mine));
+        // A tagged line ("[outpost] ...", "[tutorial] ...") is the log's, not the player's: it stays off the HUD's feed.
+        if (!(line.Length > 2 && line[0] == '[' && char.IsAsciiLetterLower(line[1])))
+            Feed.Add(new FeedEntry(Brutal.GlfwApi.Glfw.Time, line, mine));
         Console.WriteLine(line);
     }
 
@@ -2351,6 +2353,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.LabourHands when !IsServer:
                 ReadLabourHands(ref r); // the story people working among them (GameLabourHands.cs)
+                break;
+            case (byte)Msg.Breakout when !IsServer:
+                ReadBreakout(ref r); // the convicts' break-out (GameBreakout.cs)
                 break;
             case (byte)Msg.Fragments when !IsServer:
                 ReadFragments(ref r); // the old records' fragments and the leads (GameStoryFragments.cs)

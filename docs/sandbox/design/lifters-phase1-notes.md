@@ -1,7 +1,7 @@
 # Lifters phase 1: notes (2026-11-13)
 
 Branch `claude/lifters-1-f8f1dc`. The design is `arms-and-cranes.md` (revised the same day for the user's answers 2 and 6:
-pushing players is phase 3, the cab phase 8, eight phases in all). Protocol 287 on this branch; main has since taken 286 (Msg.LabourHands), so the merger renumbers this to 287.
+pushing players is phase 3, the cab phase 8, eight phases in all). Protocol 287 (renumbered from 286 at the merge; the elbow changed no bytes).
 
 ## What was built
 
@@ -22,8 +22,13 @@ pushing players is phase 3, the cab phase 8, eight phases in all). Protocol 287 
   the hold then; `LiftFit` is the station's own `FitOne`.
 - **The wire**: `CBodyKind.Lifts` (at the end), a body's lifters when a move starts or ends and for a joiner, about 44 bytes
   a lifter. A client runs the move on from when it heard it.
-- **Drawing** (`Source/Render/LifterRender.cs`, one call from `RouteRender.Draw`): the boom as one beam from the shoulder to
-  a wrist over the hand, a gripper bar, and the piece at true size in its paint on the path.
+- **Drawing** (`Source/Render/LifterRender.cs`, one call from `RouteRender.Draw`): an arm with an elbow (the user, 2026-11-13):
+  the part holds the plinth and the slewing ring; a turret with a counterweight turns on the ring, and the shoulder, upper
+  arm (2.3 m), elbow, forearm (2.2 m), wrist and gripper are posed each frame by `ArmIk.Solve` (two links, elbow up) from
+  the hand's place on the path, the same on host and client. The reach test also wants the wrist within 0.98 of the two links
+  and no nearer than their difference plus 0.6 m, and the carry height is capped to keep it there (`lifter.arm`). The piece
+  is drawn at true size in its paint. With the elbow the Buggy run gave the same result: 44.1 s, 10 parts by the arm, the
+  joined client in step. Protocol unchanged (the pose is never sent).
 - **Window tool**: `lifter` (every lifter as this peer has it, carries seen, fits by lifters), `lifter place` (host: an arm
   in the station's bay's back corner, turned as the station is), `lifter await` (host: until every part is fitted, with
   the seconds since the start).
@@ -65,7 +70,7 @@ pushing players is phase 3, the cab phase 8, eight phases in all). Protocol 287 
 
 - **A piece in a hand at a save is lost**: the step loads unfitted and its part is not in the hold (the `LIFT` block).
 - The look line, the station panel's Fitters line, the reach view, Busy, Alarm and Moved ports, `liftMode`, `carryHeight`,
-  power draw while moving, the five tiers and the IK drawing (the boom is one straight beam).
+  power draw while moving, and the five tiers (their own turrets, links and grippers).
 - `LiftSeen` keeps a small record for every body ever looked at (removed only for bodies that had lifters).
 - Not measured: a tick with eight arms, bytes a second in a long build, allocations over 600 ticks (the step allocates
   nothing; a look at a changed body allocates its lifter list).

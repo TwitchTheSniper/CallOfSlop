@@ -1,0 +1,19 @@
+{
+  // The convicts' break-out (docs/story/BREAKOUT.md, Game/GameBreakout.cs): the night itself. It starts when a player
+  // learns "lead" (the storylet "The night", hook "breakout"). The crew (the driver first) walk to the Ministry's ration
+  // hauler waiting at "motorPool" (the colony's frame: x along its front, out of the main gate past x 44; the street at z -11 to
+  // -15); walking up to it is boarding, and the hauler sets them down at "landing" (the spaceport's frame: its front, -z,
+  // to the colony). The colony's siren goes behind them; "memo" goes to everyone ({name}: who broke out).
+  "format": "call-of-slop-breakout/1",
+  "crew": [ "Dot Pruett", "Wren Haskett", "Ambrose Thale", "Hester Mossop" ],
+  "lead": "The Night",
+  "motorPool": [ 52, -13 ],
+  "landing": [ 22, -24 ],
+  "caption": "Ministry ration hauler, borrowed. Nobody waves.",
+  "driverSays": "In. Heads down. Nobody waves.",
+  "memo": "[MINISTRY MEMO] {name} and others have left the colony without a Form 12. Sirens will continue.",
+  "muster": { "title": "The night",
+              "text": "The crew is at the ration hauler outside the gate. Walk up to it and you're away. There's no coming back." },
+  "spaceport": { "title": "The spaceport",
+                 "text": "The Ministry Spaceport. The courier sits on the first pad, behind the terminal. Get the crew aboard." }
+}

@@ -1011,12 +1011,12 @@ and how many to make; a Line Console holds a **bill** and deals it to the machin
   cancelled) is cut off as it is. Pieces leave by the Piece out conveyor, or drop as before. Run held (the console stopped) holds the
   queue.
 - **Accepting.** `WorkOrders.Refusal` gives one reason and a refused order is never queued: the wrong family (an Extruder takes
-  sections, rounds and pipes; a Wheel Former wheels; Fan and Airframe Formers take no orders yet), a size past the die as it stands
+  sections, rounds and pipes; a Wheel Former wheels; a Fan Former props; an Airframe Former wings and its presets: [below](#a-formers-orders)), a size past the die as it stands
   (Die Frames counted) or the machine, a length off the 5 cm step or past `maxLength`, a wheel smaller than the machine's first, a
   section that can't be meshed, a material its table hasn't, a full queue, and **another material**: a machine fed metal refuses an
   order in wood ("the Extruder is fed metal: an order in wood is another line"). An empty bin takes any; it then waits Starved with
   "needs metal for its order" until its chute brings it.
-- **At the machine.** Every Extruder and Wheel Former has a status lamp over its screen (the line's colours) and three buttons under
+- **At the machine.** Every Extruder and Wheel, Fan and Airframe Former has a status lamp over its screen (the line's colours) and three buttons under
   it: **Queue** (one order of its settings as they stand and its **Order count**: an Extruder's section and Cut every, a Wheel Former's
   Order width and Order diameter; the material its bin holds), **Cancel** (the head) and **Clear**. The screen shows stock, the piece so
   far, the orders and pieces to go and the next three, the head marked.
@@ -1050,8 +1050,31 @@ Proposed (the user's to confirm): the Line Console holding the bill rather than 
 a machine with a queue working orders only, Clear going back to its settings; an empty bin accepting any material; whole lines dealt
 round robin rather than counts split across machines; the queue and bill bounds (255 orders, 999 a line); a cancelled head's piece cut
 off as it is; blueprints carrying no orders; an Assembler's order counting parts made by whole batches; with a Piece out conveyor linked, every
-batch riding it (a part too wide goes to the tray if it fits there). Next: the Fan and Airframe Formers, and the
-building station issuing a blueprint's bill.
+batch riding it (a part too wide goes to the tray if it fits there). Next: the building station issuing a blueprint's bill.
+
+### A former's orders
+
+The Fan and Airframe Formers take [work orders](#work-orders) as the Wheel Former does (2026-11-13; notes and open choices:
+`docs/sandbox/design/formers-work-orders-notes.md`). Code: `WorkOrders.FormerRefusal`, `ConstructExtruder.GrowWhole` and `CutAs`,
+`FormerPresets.cs`. No wire change.
+
+- **An order** is a prop by its key (`Extrusion fan0.straight.3 0x220x0 steel`: kind, blade style, blades, diameter) or a wing by its key
+  (`Extrusion wing-aileron 50x0x200 steel`: kind, chord, span), or a catalogue part that is a **preset**. The head order replaces the
+  settings: the piece starts at its kind, blades or chord and parts off at the order's diameter or span. Refusals: the other former's
+  shape, a material its table hasn't, a size past or under the machine, off the 5 cm step, a full queue, a bin fed another material.
+- **At the machine**: lamp, queue, Queue, Cancel, Clear, Recipe, Up, Down and an Order count (part kit `extrusion_parts`). Queue orders its
+  settings in the bin's material. A Line Console's bill deals fan and wing lines and preset parts to them; a blueprint's bill line may name a
+  fan or wing piece or a preset part.
+- **Presets** (`Extrusion.json` `"presets"`, `{"part", "piece"}`): a catalogue wing a former makes exactly, by the same flight numbers and
+  mass from its key. An order for it grows the key's piece, paid by volume, and at the cut the **catalogue part itself** comes off in its
+  place (by the Piece out conveyor as a made part, else dropped where the piece lay), so blueprints keep the part they name. Twelve: the
+  Wing Segment, Short Wing Segment and Swept Wing L and R, Small (tier 1 Airframe Former), Medium and Large. `--former-presets` compares
+  every catalogue wing, control surface and rotor with the key a former would cut and fails when the list is wrong. What stayed (no
+  recipe, from wrecks, as before): control surfaces, fins and tail planes (mass differs), Narrow and Fabric segments (aspect, lift),
+  Capital surfaces (too big) and every rotor (power, rpm and mass differ). Catalogue wings and rotors never had an Assembler recipe, so
+  nothing moved off the Assembler. `--bill` lists a preset as `formed (Airframe Former, KEY)`.
+- **Not yet**: the Crafting Terminal lists no former's parts and a chain doesn't ask a former (`ConstructCrafting.MachineMakes`).
+
 
 ## Crafting terminal
 

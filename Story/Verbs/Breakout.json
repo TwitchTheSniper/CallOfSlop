@@ -1,0 +1,8 @@
+{
+  // The convicts' break-out (docs/story/BREAKOUT.md, Game/GameBreakout.cs): a player leaves the colony in the stolen
+  // ration hauler. No target (the crew's own Fled quality says who came).
+  "verbs": [
+    { "name": "Abscond", "players": true, "sentence": "{actor} broke out of the colony",
+      "about": "a player leaves the penal colony with the convicts in the Ministry's ration hauler (the Ministry's deed: Absconded)" }
+  ]
+}

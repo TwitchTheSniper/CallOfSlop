@@ -4,7 +4,7 @@
 #   powershell -File tools\playtest\tour.ps1 [-Out shots] [-Calm] [-Frames 300] [-Size 1920x1080]
 # Spots are "NAME = TARGET | DIST,UP,BEARING" (Program.WindowShotTour.cs: TARGET is a colony building's blueprint
 # name, outpost N, geo LAT,LON, body N or X,Y,Z; the eye is DIST m out on the bearing and UP m above, looking at it).
-param([string]$Out = "shots", [switch]$Calm, [int]$Frames = 300, [int]$Settle = 1500, [string]$Size = "1600x900")
+param([string]$Out = "shots", [switch]$Calm, [int]$Frames = 300, [int]$Settle = 1500, [string]$Size = "1600x900", [string[]]$Only = @())
 
 $spots = [ordered]@{
     "colony_overview"  = "Penal Colony | 75,40,135"
@@ -17,7 +17,7 @@ $spots = [ordered]@{
     "barracks"         = "Colony Barracks | 18,3,280"
     "quarry_gangs"     = "body 47 | 45,15,0"
     "spine_ridge"      = "geo 81.5,285 | 500,60,0"
-    "ice_cave"         = "geo 81.75,282 | 22,4,0"
+    "ice_cave"         = "geo 82.206,281.942 | 14,1,0"
     "teeth_crevasses"  = "geo 80,150 | 140,45,0"
     "rucks_drifts"     = "geo 79.5,210 | 150,25,0"
     "outpost1_checkpoint" = "outpost 1 | 22,5,0"
@@ -29,12 +29,13 @@ $spots = [ordered]@{
     "spaceport_pad"    = "Spaceport Landing Pad | 25,4,0"
 }
 
+$Only = @($Only | ForEach-Object { $_ -split "," } | Where-Object { $_ })
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $bin = Join-Path $root "bin\Release\net10.0"
 $Out = [IO.Path]::GetFullPath((Join-Path $root $Out))
 New-Item -ItemType Directory -Force $Out | Out-Null
 $do = "skip; wait 120; places"
-foreach ($k in $spots.Keys) { $do += "; view $($spots[$k]); wait $Settle; perf $Frames $k; shot $k" }
+foreach ($k in $spots.Keys) { if ($Only.Count -gt 0 -and -not ($Only | Where-Object { $k -like "$_*" })) { continue }; $do += "; view $($spots[$k]); wait $Settle; perf $Frames $k; shot $k" }
 $a = @("--window-shot", "`"$Out\tour.png`"", "--map", "Glacier", "--survival", "--uncapped", "--size", $Size, "--frames", "5", "--do", "`"$do`"")
 if ($Calm) { $a += "--calm" }
 $t = Get-Date

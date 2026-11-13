@@ -235,8 +235,8 @@ Flight parts in survival are looted or made on machines; they are not gated by m
 
 | What | Where it comes from |
 | --- | --- |
-| Wings, tails, control surfaces | An Airframe Former. The part files in `Parts/Wings` have no recipe: they come from wrecks |
-| Props, rotors, ducted fans | A Fan Former (the part files have no recipe) |
+| Wings, tails, control surfaces | An Airframe Former, by its settings or a work order. Twelve part files (the Wing Segment, Short Wing Segment and Swept Wings, Small to Large) are its presets: ordered there, the catalogue part comes off (production.md "A former's orders"). The rest of `Parts/Wings` has no recipe: they come from wrecks |
+| Props, rotors, ducted fans | A Fan Former, by its settings or a work order (the part files have no recipe and are no preset: their numbers aren't a Fan Former's) |
 | Jets, lift fans, rockets (their gimbal is a setting), boosters, decouplers, repulsors, anti-grav | A **Thruster Assembler**, from Turbine Stages, Thrust Chambers or Field Coils the plain Assembler makes |
 | Cloth lift cells | A **Tailor**. Armoured and vacuum cells stay on the plain Assembler. Cells are boxes: shaped envelopes aren't made |
 

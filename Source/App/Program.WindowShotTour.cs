@@ -43,7 +43,7 @@ public static partial class Program
                 var p99 = _wsPerfMs[Math.Min(_wsPerfMs.Count - 1, (int)(_wsPerfMs.Count * 0.99))];
                 var p50 = _wsPerfMs[_wsPerfMs.Count / 2];
                 WsSay($"[perf] {_wsPerfLabel}: {_wsPerfMs.Count} frames, mean {mean:0.00} ms ({1000 / mean:0} fps), median {p50:0.00} ms, 99th {p99:0.00} ms, worst {_wsPerfMs[^1]:0.00} ms"
-                    + (_session is { } g ? $", bodies {g.Constructs.Bodies.Count}, players {g.Players.Count}" : ""));
+                    + (_session is { } g ? $", bodies {g.Constructs.Bodies.Count}, players {g.Players.Count}, lamps lit {ConstructLamps.LastLit} of {ConstructLamps.LastNear}, free lights {LightGrid.DynamicFree}" : ""));
                 if (PerfBench.Recording)
                     BenchSpotDone(PerfBench.End(keepOn: Ui.PerfMode != PerfView.Off), _session); // the profiler's breakdown, and with --bench the run's JSON (Program.Bench.cs)
             }
@@ -104,6 +104,8 @@ public static partial class Program
                 GravityFrames.Frame(target, out var right, out var up, out var north);
                 var b = v[2] * MathF.PI / 180;
                 var eye = target + (north * MathF.Cos(b) + right * MathF.Sin(b)) * v[0] + up * v[1];
+                g.NoclipShot = true; // (the eye hovers where it is put, in a survival world too)
+                me.NoclipWanted = g.NoclipAllowed(me);
                 WsEyeTo(g, me, eye);
                 g.LookFrame = me.Position;
                 (g.LookYaw, g.LookPitch) = GravityFrames.Curved ? GravityFrames.Angles(me.Position, target - me.Eye) : (MathF.Atan2((target - me.Eye).X, -(target - me.Eye).Z), MathF.Asin(Math.Clamp(Vector3.Normalize(target - me.Eye).Y, -1f, 1f)));

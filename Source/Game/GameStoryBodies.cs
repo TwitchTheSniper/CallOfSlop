@@ -393,6 +393,8 @@ public sealed partial class Game
     {
         if (b.Leaving)
             return StoryRoadEnd(s, ref b, a.Doing.Place);
+        if (BreakoutGoalOf(a.Entity) is { } breakout)
+            return breakout; // (the convicts' break-out: to the hauler, or at the spaceport: GameBreakout.cs)
         var with = s.Plays.PartnerOf(a.Entity); // (in a play: beside whoever they are with in it)
         if (with < 0 && a.Busy && a.Doing.Target >= 0 && !s.Rules.People.Actions[a.Doing.Action].Road)
             with = a.Doing.Target;
@@ -405,7 +407,15 @@ public sealed partial class Game
                     return b.Home; // (whoever it is, they can come to him)
                 var off = new Vector3(p.Position.X - them.X, 0, p.Position.Z - them.Z);
                 var len = off.Length();
-                return len < StoryBeside ? p.Position : them + off / len * StoryBeside;
+                if (len < StoryBeside)
+                    return p.Position;
+                // Each round them on a spot of their own (a turn and a step by who they are), so a few come up to the same
+                // person in a ring, not in one clump through each other.
+                var turn = ((a.Entity * 37 % 9) - 4) * 0.3f;
+                var (sin, cos) = MathF.SinCos(turn);
+                var dir = off / len;
+                dir = new Vector3(dir.X * cos - dir.Z * sin, 0, dir.X * sin + dir.Z * cos);
+                return them + dir * (StoryBeside + a.Entity % 3 * 0.55f);
             }
             return p.Position;
         }
