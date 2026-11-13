@@ -928,8 +928,9 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   stamp and flags (an older phase 2 block loads as one level).
 - **Press bays and Panel Former sheet** as chain destinations. A press's blank and part kit chain since Press phase 4 (they ride
   into the bay that takes them). A Panel Former's order now chains too: its panel's material in units, less what its bin holds of
-  that material and a stroke under way, is asked as **sheet** (`ConstructLogisticsPlan.SheetKey`: a solid bar 0.5 x 0.1 m cut at
-  1 m in the panel's material, the showcase's sheet), counted in pieces at what one puts into the bin (`SheetUnits`); a sheet that
+  that material and a stroke under way, is asked as **sheet sized to the panel** (`ConstructLogisticsPlan.SheetFor`, phase 4c: a solid
+  section the panel's width in 5 cm steps, 10 cm thick, cut so one piece holds one panel's units; when no Extruder
+  on the network takes it it is split across into the fewest equal strips the widest one takes, each holding its share), counted in pieces at what one puts into the bin (`SheetUnits`); a sheet that
   arrives counts for its link. A maker with a conveyor way to the destination (`ConstructCrafting.RouteTo`: joins and Routers) is
   chosen before one without (a Splitter's line may still bring it, in turn).
 - **Logistics settings** (phase 3, protocol 275; `Source/Constructs/StockTargets.cs`, group Logistics in the configure tool, added
@@ -966,8 +967,9 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   caption (the stuck spot or `All moving`; the counts): conveyors as lines (cut: red dashes), machines as squares in their lamp colour
   with a two-letter tag, stores as boxes with a fill bar, Routers diamonds, Splitters triangles, Joins dots, pieces as dots (orange an
   order's, white storage's, red stuck), a red ring blinking round the first stuck Router. A `NetPlan` per body and network keeps the
-  lines and nodes until the links change; dots, states and fills are made at each fill (nothing allocated). Not yet: keep-mark ticks,
-  the Router's chosen-way stub, dots gliding between fills. The Production Showcase's NETWORK BOARD (a Medium Text Sign in the
+  lines and nodes until the links change; dots, states and fills are made at each fill (nothing allocated). A store with a keep shows an amber tick at the fill
+  that keep of each kind it holds would make (`NetPlan.KeepMark`); a Router a bright stub along the way it last sent a piece (phase 4c;
+  a fill costs 1-2 us on the showcase, 17 nodes and 130 riders, nothing allocated). Not yet: dots gliding between fills. The Production Showcase's NETWORK BOARD (a Medium Text Sign in the
   back aisle at x 44) shows it; the window tool's `panel Conveyor Router` prints the plan's counts.
 - **The Router's screen (phase 4, `RouterScreen.cs`, panel source `router`):** a low dark plate on each side face's frame, under
   the side ports' conveyor beds (no post: Q6). Lines: what it is doing (sent, STUCK, waiting, no power), its last piece and way and
@@ -975,7 +977,12 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   **Hold** (toggles `routerHold`), labelled with the current value, under the configure tool's rule (`router.spill`,
   `router.hold` in `PanelTouch`); the setting rides with the body, so nothing new is on the wire. A conveyor on a side hides that
   side's plate from a standing player (the other side's stays readable).
-- **Window tool:** `panel Conveyor Router` also prints the board at 16, 6 and 1 rows; `touch LABEL @ PART /N` picks the part's
+- **A Router's name** (phase 4c, protocol 291): a Router holds one text slot (`TextSlots` 1, set for every `"router"` part), set in the
+  configure tool's **Name** box (F with Hands still presses its screen's buttons: `ControlFrame` skips Routers). An unnamed one keeps
+  its number on its network (`ConstructLogisticsBoard.RouterNo`). The board (title, stuck lines, Routers list, the map's caption), a
+  conveyor's held line (`JamText` 8) and an order's note while a piece of it is held (`ConstructLogistics.HeldNote`: "held at North
+  Gate: ...") use it. It rides as any part text does: CBody's text tail, the world save, a blueprint step's `"text"`.
+- **Window tool:** `panel Conveyor Router` also prints the board at 16, 6 and 1 rows; `logi name PART = TEXT` (a part's text through this peer's own message: stand near it first), `logi list [FILTER]` (the terminal's list rows); `touch LABEL @ PART /N` picks the part's
   N-th screen; a low screen's touch stands the player in front looking down, and a joined client lands before it aims.
 - **Not yet (phase 3's rest):** the terminal's Stock tab and `CActKind.StockTarget` (a target for a kind the rack doesn't hold),
   `feedPriority` on machines and `linePriority` on Line Consoles, a material in `storeTakes`, High chains inserted ahead in a
@@ -1081,7 +1088,9 @@ The Fan and Airframe Formers take [work orders](#work-orders) as the Wheel Forme
   Capital surfaces (too big) and every rotor (power, rpm and mass differ). Catalogue wings and rotors never had an Assembler recipe, so
   nothing moved off the Assembler. `--bill` lists a preset as `formed (Airframe Former, KEY)`.
 - **Not yet**: the Crafting Terminal lists no former's parts and a chain doesn't ask a former (`ConstructCrafting.MachineMakes`).
-
+- **The Crafting Terminal and chains** (phase 4c): the list shows each preset a linked Fan or Airframe Former takes (`ConstructCrafting.Catalogue`),
+  an order for one goes to that former, `MachineMakes` names it in a recipe's missing line, and a chain link for a preset may go to it
+  (`ConstructLogisticsPlan.FindMaker`). Catalogue wings are physics-only, so no Assembler recipe takes one and a chain never asks for one today.
 
 ## Crafting terminal
 

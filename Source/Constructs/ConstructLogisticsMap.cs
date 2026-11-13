@@ -36,6 +36,8 @@ public sealed class NetPlan
     // Dynamic, made each fill.
     public readonly Vector3[] NodeColour = new Vector3[MaxNodes];
     public readonly float[] NodeFill = new float[MaxNodes]; // a store's fill, 0..1 (-1: none)
+    public readonly float[] NodeKeep = new float[MaxNodes]; // a store's keep mark, 0..1: the fill it would show holding its keep of each kind it holds (-1: none)
+    public readonly Vector2[] NodeWay = new Vector2[MaxNodes]; // a Router's chosen way: the flattened direction of the conveyor it last sent along (zero: none)
     public readonly Vector2[] Dots = new Vector2[MaxDots];
     public readonly byte[] DotKind = new byte[MaxDots]; // 0 storage, 1 an order's, 2 stuck
     public int DotN;
@@ -145,6 +147,34 @@ public sealed class NetPlan
         tag[1] = char.ToUpperInvariant(space > 0 && space + 1 < name.Length ? name[space + 1] : name.Length > 1 ? name[1] : ' ');
     }
 
+    /// <summary>A store's keep mark (design 9.2): the share of its hold that <paramref name="keep"/> of each kind it holds would fill, 0 to 1.</summary>
+    private static float KeepMark(ConstructPartDef rd, CStore st, int keep)
+    {
+        ConstructRackPack.Hold(rd, out var lo, out var hi);
+        var w = hi - lo;
+        var hold = w.X * w.Y * w.Z;
+        var v = 0f;
+        for (var k = 0; k < st.KindN; k++)
+            if (st.KindCount![k] > 0 && ConstructParts.Get(st.KindDef![k]) is { } d)
+            {
+                var s = d.BoundsMax - d.BoundsMin;
+                v += s.X * s.Y * s.Z * keep;
+            }
+        return hold > 0 && v > 0 ? Math.Clamp(v / hold, 0, 1) : -1;
+    }
+
+    /// <summary>The flattened direction a Router's way <paramref name="way"/> (1 ahead, 2 and 3 the sides) leaves along: its conveyor's first run on the plan.</summary>
+    private Vector2 WayDir(Construct c, int router, int way)
+    {
+        for (var k = 0; k < c.RouteCount; k++)
+            if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].From == router && RouteCount[k] >= 2 && ConstructLogistics.WayOf(c, k) == way)
+            {
+                var d = Points[RouteFirst[k] + 1] - Points[RouteFirst[k]];
+                return d.LengthSquared() > 1e-8f ? Vector2.Normalize(d) : Vector2.Zero;
+            }
+        return Vector2.Zero;
+    }
+
     private void Dynamic(ConstructWorld world, Construct c, LogiMap m, int net)
     {
         var h = 2166136261u;
@@ -153,7 +183,8 @@ public sealed class NetPlan
         for (var i = 0; i < NodeN; i++)
         {
             int part = NodePart[i];
-            NodeFill[i] = -1;
+            NodeFill[i] = NodeKeep[i] = -1;
+            NodeWay[i] = Vector2.Zero;
             var colour = new Vector3(0.45f, 0.55f, 0.62f);
             if (part < c.PartCount)
             {
@@ -173,6 +204,11 @@ public sealed class NetPlan
                         ConstructRackPack.Ensure(d, st);
                         NodeFill[i] = Math.Clamp(ConstructRackPack.Fill(d, st), 0, 1);
                         Mix((uint)(NodeFill[i] * 40));
+                        if (StockTargets.Keep(c, part) is var keep and > 0)
+                        {
+                            NodeKeep[i] = KeepMark(d, st, keep);
+                            Mix((uint)(NodeKeep[i] * 40) << 8);
+                        }
                         break;
                     case PlanNode.Router when m.RouterSlot(part) is var rs and >= 0:
                         if (m.ShowStuck[rs])
@@ -183,7 +219,9 @@ public sealed class NetPlan
                         }
                         else
                             colour = new Vector3(0.35f, 0.72f, 1f);
-                        Mix((uint)rs | (m.ShowStuck[rs] ? 64u : 0));
+                        if (!m.ShowStuck[rs] && m.ShowWay[rs] is var way and > 0)
+                            NodeWay[i] = WayDir(c, part, way);
+                        Mix((uint)rs | (m.ShowStuck[rs] ? 64u : 0) | (uint)m.ShowWay[rs] << 8);
                         break;
                 }
             }

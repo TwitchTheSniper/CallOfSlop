@@ -748,6 +748,11 @@ public static unsafe class PanelRender
                     Solid(s, at.X - h + line, at.Y - h + line, at.X + h - line, at.Y + h - line, new Vector3(0.06f, 0.08f, 0.1f), 3);
                     if (p.NodeFill[i] > 0)
                         Solid(s, at.X - h + line, at.Y - h + line, at.X + h - line, at.Y - h + line + (2 * h - 2 * line) * p.NodeFill[i], RampColour(PanelRamp.Level, p.NodeFill[i], edge), 4);
+                    if (p.NodeKeep[i] >= 0) // (the keep mark: an amber tick across the box, a little proud of it each side)
+                    {
+                        var ky = at.Y - h + line + (2 * h - 2 * line) * p.NodeKeep[i];
+                        Solid(s, at.X - h - line, ky - line * 0.5f, at.X + h + line, ky + line * 0.5f, new Vector3(1f, 0.72f, 0.2f), 5);
+                    }
                     break;
                 }
                 case PlanNode.Router:
@@ -758,6 +763,8 @@ public static unsafe class PanelRender
                         Solid(s, at.X - w, at.Y + b, at.X + w, at.Y + b + h / 4f, col, 2);
                         Solid(s, at.X - w, at.Y - b - h / 4f, at.X + w, at.Y - b, col, 2);
                     }
+                    if (p.NodeWay[i] != Vector2.Zero) // (the chosen way: a short bright stub out of the diamond along that conveyor)
+                        MapLine(s, at, at + p.NodeWay[i] * (cell * 1.1f), line * 1.6f, new Vector3(0.85f, 0.97f, 1f), false, 24);
                     break;
                 case PlanNode.Splitter:
                     for (var r = 0; r < 3; r++) // (a triangle, point up)

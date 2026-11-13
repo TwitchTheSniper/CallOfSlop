@@ -101,3 +101,56 @@ No self-test sections run. No protocol change: the map is each viewer's own, fro
 **The user's answers (2026-11-13), after phase 4b:** (question 2) the plan map **is wanted**: on big signs, the list staying on small
 ones. (Question 3) a Router **takes a name** the player sets with the sign tool's text; an unnamed one keeps its number, and the board
 and the order lines use the name ("held at North Gate").
+
+## Phase 4c (2026-11-13, branch `claude/smart-logistics-4c-5ca7c5`, protocol 291)
+
+All tried in throwaway window runs on the Production Showcase (`--spawn-at 140,0,-100`, temp save folders); scratch data in `bin/` only,
+restored after (its `Assembling.json` hash checked equal to the committed one).
+
+**1. A Panel Former's chained order asks for sheet sized to the panel** (`ConstructLogisticsPlan.SheetFor`). A solid section the panel's
+width (5 cm steps), 10 cm thick, as long as one panel's units need; when no Extruder on the network takes that width, the panel is split
+across into the fewest equal strips the widest one takes (by its most section and its die as welded), each holding its share, so the count
+goes up; a piece past the best one's most length is cut there. None takes any: the full-width sheet, and the Extruder's refusal on the line.
+Seen: the showcase's sheet Extruder takes 0.5 m; a Hood 160 x 150 asked for 3 x `solid 50x10x40`, a Door skin 110 x 120 x2 for 6 x
+`solid 40x10x25`. With the bins filled and Line Console #2 started, the hood's three strips were made, rode to the Panel Former and it
+went Running; the door's were on the conveyor. (Splitting into strips rather than halving: halving 150 cm gave 75 then 35 cm, past a 50 cm
+die that took 50.)
+
+**2. Fan and Airframe Formers as makers** (the formers' notes' change, `ConstructCrafting.cs`, and `FindMaker`, `Kin`, the piece line
+`Prop`/`Span` in `MachineScreens.cs`). A scratch copy of the showcase with its Wheel Former swapped for an Airframe Former: the terminal's
+list showed Wing Segment, Short Wing Segment and Swept Wing L/R by the Airframe Former (make 2 "needs steel: a linked bin holds some",
+make 1 once filled); `logi order Wing Segment 1` and `logi order station Wing Segment 1` both went to the former's queue. A chained
+(depth 1+) wing or rotor can't happen today: catalogue wings are physics-only, so no Assembler recipe may take one (the table refuses it);
+the chain path is there for when one can. No Fan Former preset exists (rotors stayed off the list), so the Fan side is untried.
+
+**3. Routers take a name** (protocol 291). A Router holds one text slot (`TextSlots` 1 for `"router"` parts), set in the configure
+tool's **Name** box; F with Hands on a Router still presses its screen (`ControlFrame` skips Routers). The board (title, stuck lines,
+Routers list, the map caption), a conveyor's held line and an order's note while a piece of it is held (`HeldNote`) use it; unnamed keeps
+`Router N`. Seen: host `NETWORK - STUCK at North Gate`, `STUCK North Gate: L Bracket - ...`, ` North Gate: stuck`, `its input 26: held
+at North Gate: ...`; a joined client set `South Gate` and both peers' boards read it; a world saved and loaded kept `North Gate`.
+Not seen: an order's note reading "held at" (the fed pieces had no order; the code path is the stuck rider's own tag).
+
+**4. The board's leftovers.** Keep marks: a store with a keep shows an amber tick where that keep of each kind it holds would fill
+(seen: keep 20 Gear Sets on a rack of 480: fill 0.59, mark 0.02). The Router's chosen-way stub: a bright stub along the conveyor it last
+sent along (seen: `way stub <1.00, 0.00>`). Fill cost: 1-2 us a fill and 0 bytes on the showcase (17 nodes, 14 conveyors, 130 riders);
+**not measured on a big network** (none to hand; the fill is linear in nodes, riders and a Router's conveyors). Window tool: the map's
+node lines print the marks and stubs, and `map fill:` times 200 fills.
+
+**5. Verification items 6 and 7.** Item 6 **works**, on the showcase's own two Assemblers through its Router with scratch recipes: a
+Clutch <-> Reduction Gearbox loop gave link 2 `recipe loop: the Clutch needs itself` (maker nobody); a seven-deep chain (Clutch, Chain
+Drive 1:1, 2:1, Drive Shafts, Right-Angle and Reduction Gearbox, Wheel) grew one level a step, the makers alternating, and link 7 read
+`waiting on Wheel: chain too deep (6 levels)`, which the order's note showed. Seen: with the loop, the order's note names the first link
+("the Assembler makes it"), not the blocked one below it. Item 7 (rank between two terminals): **not done** (time).
+
+Checks: build; `--check-construct-parts` and `--gen-parts all --check` pass; self-test by name `Display screens, Wheel orders`: 0
+failures. Files outside the logistics set touched: `ConstructParts.cs` (one line: a Router's text slot), `Program.SandboxControls.cs`
+(one condition), `UiSandboxConfig.cs` (the box's heading and tooltip), `PanelRender.cs` (the map's two marks), `Program.WindowShot*.cs`
+(tool lines; the step-name line untouched), `ServerBrowser.cs`.
+
+### Questions for the user (phase 4c)
+1. **Order note with a blocked link below.** An order whose chain is blocked two levels down (a loop) shows the first link's "the
+   Assembler makes it". (a) Keep (the chain lines below show the rest); (b) the note shows the deepest blocked link first. **Recommended: (b).**
+2. **Strips for a wide panel** split across into equal widths the widest Extruder takes. (a) Keep; (b) prefer one long narrow strip per
+   panel (fewer pieces, less like a sheet). **Recommended: (a).**
+3. **Naming with F in hand.** A Router's name is set only in the configure tool's box, since F with Hands presses its screen buttons.
+   (a) Keep; (b) F on the Router's body (off its screens) opens the typing box as on a sign. **Recommended: (a).**

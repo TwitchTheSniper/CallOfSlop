@@ -69,7 +69,7 @@ public static class ConstructLogisticsBoard
         // The title: the stuck spot first, in red, else the counts.
         if (k.FirstStuck >= 0)
         {
-            card.Add(0, "NETWORK - STUCK at Router ").Add(0, k.FirstStuckNo);
+            RouterName(card.Add(0, "NETWORK - STUCK at "), 0, c, k.FirstStuck, k.FirstStuckNo);
             if (k.Stuck > 1)
                 card.Add(0, " +").Add(0, k.Stuck - 1).Add(0, " more");
             card.Tint(0, 0, card.Length(0), StuckRed).Clip(0, cols);
@@ -317,11 +317,32 @@ public static class ConstructLogisticsBoard
         card.Clip(line, cols);
     }
 
+    /// <summary>A Router as the board names it: the name the player gave it (its text, set with the configure tool), else "Router N".</summary>
+    private static PanelCard RouterName(PanelCard card, int line, Construct c, int router, int no) =>
+        router >= 0 && router < c.PartCount && c.Parts[router].Text is { } name ? card.Add(line, name) : card.Add(line, "Router ").Add(line, no);
+
+    /// <summary>A Router's number on its network's board: its place among the network's Routers in the map's node order (1 up), or 0.</summary>
+    public static int RouterNo(Construct c, LogiMap m, int router)
+    {
+        var at = (uint)router < (uint)m.NodeOf.Length ? m.NodeOf[router] : -1;
+        if (at < 0)
+            return 0;
+        var no = 0;
+        for (var nd = 0; nd <= at; nd++)
+            if (m.NodeNet[nd] == m.NodeNet[at] && m.RouterOfNode[nd] >= 0 && m.NodePart[nd] < c.PartCount)
+                no++;
+        return no;
+    }
+
+    /// <summary>A Router's name for a line of text ("North Gate", "Router 2"): allocates, so for notes made when they change, not for a panel's fill.</summary>
+    public static string RouterLabel(Construct c, int router) =>
+        router >= 0 && router < c.PartCount && c.Parts[router].Text is { } name ? name : "Router " + RouterNo(c, ConstructLogistics.Map(c), router);
+
     /// <summary>"STUCK Router 2: Gear Set - no Piece Rack on the network has room for it", in red.</summary>
     private static void StuckLine(Construct c, LogiMap m, int router, int no, PanelCard card, int line, bool tiny)
     {
         var s = m.RouterSlot(router);
-        card.Add(line, tiny ? "STUCK at Router " : "STUCK Router ").Add(line, no).Add(line, ": ");
+        RouterName(card.Add(line, tiny ? "STUCK at " : "STUCK "), line, c, router, no).Add(line, ": ");
         if (s >= 0)
             card.Add(line, Names.Piece(m.ShowStuckDef[s])).Add(line, " - ").Add(line, ConstructLogistics.ReasonText((LogiReason)m.ShowReason[s]));
         card.Tint(line, 0, card.Length(line), StuckRed);
@@ -380,7 +401,7 @@ public static class ConstructLogisticsBoard
     private static void RouterLine(Construct c, LogiMap m, int router, int no, PanelCard card, int line)
     {
         var s = m.RouterSlot(router);
-        card.Add(line, " Router ").Add(line, no).Add(line, ": ");
+        RouterName(card.Add(line, " "), line, c, router, no).Add(line, ": ");
         if (s < 0)
             return;
         if (m.ShowStuck[s])

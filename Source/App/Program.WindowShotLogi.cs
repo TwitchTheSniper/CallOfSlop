@@ -229,6 +229,35 @@ public static partial class Program
                                 WsSay($"[logi]     | and {cq.Items[k].LinesMore} more");
                         }
                 return;
+            case "name": // "logi name PART = TEXT": a part's text (a Router's name) set as the configure tool's Text box sets it, through this peer's own message
+            {
+                var sp = rest.IndexOf(" = ", StringComparison.Ordinal);
+                var (nc, np) = LogiFind(g, sp > 0 ? rest[..sp] : rest);
+                if (nc == null)
+                {
+                    WsFail($"logi name: no part \"{rest}\"");
+                    return;
+                }
+                g.SandboxPartText(nc.Id, (ushort)np, 0, sp > 0 ? rest[(sp + 3)..] : "");
+                WsSay($"[logi] name {nc.DefOf(np).Name}#{np}: sent \"{(sp > 0 ? rest[(sp + 3)..] : "")}\"");
+                return;
+            }
+            case "list": // "logi list [FILTER]": the first Crafting Terminal's list rows (name, make 0-3, its machine, what is missing), filtered by name
+            {
+                var (tc, t) = LogiFind(g, "Crafting Terminal");
+                if (tc == null)
+                {
+                    WsFail("logi list: no Crafting Terminal");
+                    return;
+                }
+                var rows = new List<CraftRow>();
+                ConstructCrafting.Catalogue(w, tc, t, rows);
+                var shown = rows.Where(r => rest.Length == 0 || r.Name.Contains(rest, StringComparison.OrdinalIgnoreCase)).ToList();
+                WsSay($"[logi] list: {rows.Count} rows, {shown.Count} shown");
+                foreach (var r in shown)
+                    WsSay($"[logi]   {r.Name}: make {r.Make} stock {r.Stock} by {(r.Machine >= 0 ? $"{tc.DefOf(r.Machine).Name}#{r.Machine}" : "-")} {r.Missing}");
+                return;
+            }
             case "tier": // a test state in this process: "logi tier Assembler 4" sets every part of that name to that tier (a two-level recipe on the showcase)
             {
                 var sp = rest.LastIndexOf(' ');

@@ -828,6 +828,22 @@ public static class ConstructLogistics
         return $"-> {name} (order {r.Tag})";
     }
 
+    /// <summary>
+    /// "held at North Gate: no way to it ..." when a piece of terminal <paramref name="t"/>'s order <paramref name="order"/> waits stuck at
+    /// a Router (by its name, else its number: phase 4c); null when none does. Allocates only when one is held.
+    /// </summary>
+    public static string? HeldNote(Construct c, int t, ushort order)
+    {
+        for (var i = 0; i < c.ConveyedCount; i++)
+        {
+            ref readonly var r = ref c.Conveyed[i];
+            if (((LogiFlags)r.Flags & LogiFlags.Stuck) == 0 || r.Tag != order || r.Route >= c.RouteCount || PartOfStore(c, r.Dest) != t)
+                continue;
+            return "held at " + ConstructLogisticsBoard.RouterLabel(c, c.Routes[r.Route].To) + ": " + ReasonText(ReasonOf(r));
+        }
+        return null;
+    }
+
     /// <summary>A Router's look line: its last piece and where it went, the piece it holds and why, or its ways and destinations.</summary>
     public static string Look(ConstructWorld world, Construct c, int part)
     {
