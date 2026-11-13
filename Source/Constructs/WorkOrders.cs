@@ -1291,7 +1291,7 @@ public static class ConstructBill
         var pieces = bill.Pieces.Sum(o => o.Count);
         var panels = bill.Panels.Sum(o => o.Count);
         var pressedN = bill.Pressed.Sum(o => o.Count);
-        sb.AppendLine($" Total: {pieces + panels + parts + pressedN} parts ({pieces} pieces in {bill.Pieces.Count} kinds, {panels} formed panels in {bill.Panels.Count} kinds, {pressedN} pressed in {bill.Pressed.Count} kinds, {parts} catalogue in {kinds} kinds; the pieces hold the pressed parts' blanks); no recipe: {none + panelNone} kinds, {noneParts + panelNoneParts} parts; links {bill.LinkMetres.Sum():0.0} m");
+        sb.AppendLine($" Total: {pieces + panels + parts + pressedN + bill.Cut.Sum(o => o.Count)} parts ({pieces} pieces in {bill.Pieces.Count} kinds, {panels} formed panels in {bill.Panels.Count} kinds, {pressedN} pressed in {bill.Pressed.Count} kinds, {bill.Cut.Sum(o => o.Count)} cut in {bill.Cut.Count} kinds, {parts} catalogue in {kinds} kinds; the pieces and formed panels hold the pressed and cut parts' blanks); no recipe: {none + panelNone} kinds, {noneParts + panelNoneParts} parts; links {bill.LinkMetres.Sum():0.0} m");
         return sb.ToString();
     }
 }
