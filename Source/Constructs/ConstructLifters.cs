@@ -1200,7 +1200,7 @@ public static partial class ConstructLifters
                 world.LiftSeen[id] = lb = new LiftBody { Body = id };
             if (lb.Lifts.Length < n)
                 Array.Resize(ref lb.Lifts, n);
-            if (!world.LiftBodies.Contains(lb))
+            if (!world.LiftBodies.Contains(lb) && CountLifters(c) > 0) // (a body whose lifter parts this copy hasn't had yet: listed by its Scan once they come)
                 world.LiftBodies.Add(lb);
         }
         for (var k = 0; k < n; k++)
