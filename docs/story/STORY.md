@@ -1094,7 +1094,7 @@ square and the Faction window (F2) list every faction's jobs: what each asks, wh
   muster square (a concrete hood on two posts over a steel case of sheets in four colours; the part kit's lore parts) is a
   lore item with `"opens": "jobs:Ministry of Slop"`. F on it opens "Work Allocation" with the cursor free, on the
   Ministry's tab: a tab a faction (a `*` on one where your party holds a job), your standing and tier, a bar to the next
-  tier with what it teaches, and each job's asks, pay ("+5 standing: 5 of the 15 to Trusty", or "enough for Trusty"), why
+  tier with what it teaches, and each job's asks, pay ("+4 standing: 4 of the 5 to Trusty", or "enough for Trusty"), why
   it can't be taken yet or how far along yours is, with Take and Drop. F again, Esc, the X or walking 4.5 m off closes it.
   The F2 window draws the same rows. Tiers, teaching and pay are read from the faction files every peer has, so the board
   adds nothing to the wire; its words are made again only when the server's view changes.
