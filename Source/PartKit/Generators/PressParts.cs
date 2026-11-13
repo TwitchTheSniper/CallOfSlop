@@ -488,7 +488,7 @@ public sealed class PressParts : IPartGenerator
     // its like body ("likeBy": "nearest") and its engine scale runs through them (Pressed.EngineScale). A size the dies can't press (past a
     // Capital press's 28.8 m across or 32 m long) has no preset and keeps its Assembler recipe; the curve's end segment carries on past it.
 
-    private const int EngineAcrossMax = 2880, EngineLengthMax = 3200; // (from about 0.7 of the Small files' across, design 6.2: the Cylinder die 30 cm, the Engine die 20; a 10 cm injector rail squashed its 2 mm gaps to half a mm)
+    private const int EngineAcrossMax = 2880, EngineLengthMax = 3200; // (the Engine die from 20 cm, about 0.7 of the Small files' across, design 6.2; a 10 cm injector rail squashed its 2 mm gaps to half a mm)
 
     /// <summary>
     /// An engine piece pattern: id, the file's name after its size word, its blank's section, the like part's long axis (the blank's length
@@ -522,7 +522,12 @@ public sealed class PressParts : IPartGenerator
         if (across > EngineAcrossMax || len > EngineLengthMax)
             return null;
         var wall = Math.Clamp(Lattice(across / 900.0), 5, 200); // (a ninth of across, to the lattice)
-        return section == "pipe" ? $"pipe{wall} {across}x{across}x{len} steel" : $"{section} {across}x{across}x{len} steel";
+        string Text(int l) => section == "pipe" ? $"pipe{wall} {across}x{across}x{l} steel" : $"{section} {across}x{across}x{l} steel";
+        // The preset comes out as the file part at its own mass: its blank alone (bay 2 not counted) weighs at least that, or it would recycle
+        // for more than it cost (review, 2026-11-13: the Small Flywheel and Turbo). Longer by 5 cm steps until it does.
+        while (len + 5 <= EngineLengthMax && CallOfSlop.Pressed.ParseBlank(Text(len)) is { } k && CallOfSlop.Pressed.VolumeMass(k).Mass < d.Mass)
+            len += 5;
+        return Text(len);
     }
 
     /// <summary>The four plain cylinders' presets (those the Cylinder die can press).</summary>
@@ -573,10 +578,10 @@ public sealed class PressParts : IPartGenerator
         yield return SizedDie("Piston", ["round"], ["steel"], [10, 45], [10, 50], [0.5, 3], 5, 0.05, piston, Py.L(
             Pattern("set", "Piston Set", "piston set", "round 10x10x20 steel", bay2: Kit("bronze", false, 1, 20, "volume", 99))));
         // Sized parts phase 5: a like body (the nearest preset's cylinder stretched; its bore across, its stroke along y), Piston Sets by
-        // volume; the aspect is 0.6 to 1.6 times the presets' (design 6.3: the stroke ratio's range); no die features (a like body is the file's own model).
+        // volume; no die features (a like body is the file's own model). Its band stays the one presses used before phase 5 (20 cm up, 1 to 16 times as long
+        // as across), so every key made before still loads (review, 2026-11-13); the stroke ratio is held to design 6.3's 0.6 to 1.6 (Pressed.EngineNumbers).
         var cylPresets = CylinderPresets().ToList();
-        var aspect = Calibres(cylPresets[0].Blank);
-        yield return SizedDie("Cylinder", ["pipe"], ["steel"], [30, EngineAcrossMax], [15, EngineLengthMax], [Py.Round(0.6 * aspect, 2), Py.Round(1.6 * aspect, 2)], 6, 0.01, Py.L(), Py.L(
+        yield return SizedDie("Cylinder", ["pipe"], ["steel"], [20, EngineAcrossMax], [25, EngineLengthMax], [1, 16], 6, 0.01, Py.L(), Py.L(
             Pattern("cylinder", "Small Cylinder", "cylinder", cylPresets[0].Blank, bay2: Kit("Piston Set", true, 1, 20, "volume", 20), along: "y", nearest: true)));
         yield return EngineDie();
         // Drive: bearing caps on its shaft ends, a split seam along it, a sump under it; Gear Sets by mass; torque grows as d^3 and strength.

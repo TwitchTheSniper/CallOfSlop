@@ -371,8 +371,10 @@ public static class Pressed
     /// An engine piece's scale and stroke from its blank (sized-parts design 6.1, 6.3). The scale runs through the pattern's knots (its
     /// presets: their across against their class's scale) by a straight line in log-log, the end segment past the ends, so it rises with
     /// across and at a preset is that part's own. A cylinder's stroke ratio is its length over its across against its nearest preset's, three
-    /// figures, held to the die's aspect; 1 at a preset's proportions. Nothing on a pattern without knots or a part that isn't an engine piece.
+    /// figures, held to 0.6 to 1.6; 1 at a preset's proportions. Nothing on a pattern without knots or a part that isn't an engine piece.
     /// </summary>
+    public const float MinStroke = 0.6f, MaxStroke = 1.6f; // a cylinder's stroke ratio (design 6.3)
+
     internal static void EngineNumbers(ConstructPartDef d, PressPattern p, in ExtrusionKey k)
     {
         if (d.Piece == EnginePiece.None || p.Knots.Length == 0)
@@ -384,7 +386,7 @@ public static class Pressed
         if (d.Piece == EnginePiece.Cylinder)
         {
             var near = p.For(k).Preset;
-            var r = Sig3(k.L / (float)Math.Max(1, Across(k)) / (near.L / (float)Math.Max(1, Across(near))));
+            var r = Math.Clamp(Sig3(k.L / (float)Math.Max(1, Across(k)) / (near.L / (float)Math.Max(1, Across(near)))), MinStroke, MaxStroke); // (the die takes longer and shorter blanks, every key made before phase 5; the stroke stops at design 6.3's range)
             d.PieceStroke = MathF.Abs(r - 1f) < 1e-4f ? 0 : r;
         }
     }
@@ -940,6 +942,7 @@ public static class Pressed
     private static int Presets(PressTable t, string? die)
     {
         var bad = 0;
+        var over = 0;
         foreach (var (key, part) in t.PresetByKey)
         {
             if (die != null && !key.StartsWith($"{Prefix}{die.ToLowerInvariant()}.", StringComparison.Ordinal))
@@ -968,12 +971,28 @@ public static class Pressed
                 }
                 else
                     press = $" (a {ClassWord(cls)} Press)";
+                // A preset comes out as the catalogue part, at its file's mass: never more than the blank and bay 2 that went in, or it
+                // would recycle for more than it cost (review, 2026-11-13).
+                var pat = d.Pattern(key[(Prefix.Length + d.Id.Length + 1)..key.IndexOf(' ', Prefix.Length)]);
+                // The engine dies' presets (sized parts phase 5) are held to it as a problem; the older dies' are reported as "over" until their
+                // blanks are settled (sized-parts-phase5-notes.md, question 5).
+                if (why.Length == 0 && pat != null && part.Mass > CostMass(pat, blank) + 0.01f)
+                {
+                    var text = $": weighs {part.Mass:0.##} kg, more than its blank and bay 2 ({CostMass(pat, blank):0.##} kg): it recycles for more than it cost";
+                    if (d.Id is "engine" or "cylinder")
+                        why = text;
+                    else
+                    {
+                        over++;
+                        Console.WriteLine($"[press] OVER {part.Name,-24} {key}{text}");
+                    }
+                }
                 ok = why.Length == 0;
             }
             bad += ok ? 0 : 1;
             Console.WriteLine($"[press] {(ok ? "ok " : "BAD")} {part.Name,-24} {key}{press}{why}");
         }
-        Console.WriteLine($"[press] presets: {bad} problems");
+        Console.WriteLine($"[press] presets: {bad} problems; {over} older presets come out heavier than their blank and bay 2 (OVER lines)");
         return bad;
     }
 

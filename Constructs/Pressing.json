@@ -2481,16 +2481,16 @@
     "steel"
    ],
    "across": [
-    30,
+    20,
     2880
    ],
    "length": [
-    15,
+    25,
     3200
    ],
    "aspect": [
     1.0,
-    2.67
+    16.0
    ],
    "seconds": {
     "base": 6.0,
@@ -2570,7 +2570,7 @@
      "id": "flywheel",
      "like": "Small Flywheel",
      "label": "flywheel",
-     "preset": "round 45x45x40 steel",
+     "preset": "round 45x45x45 steel",
      "likeBy": "nearest",
      "body": "like",
      "along": "z",
@@ -2620,7 +2620,7 @@
      "id": "turbo",
      "like": "Small Turbo",
      "label": "turbo",
-     "preset": "hollow 40x40x25 steel",
+     "preset": "hollow 40x40x40 steel",
      "likeBy": "nearest",
      "body": "like",
      "along": "y",
@@ -2639,7 +2639,7 @@
      "id": "supercharger",
      "like": "Small Supercharger",
      "label": "supercharger",
-     "preset": "round 40x40x25 steel",
+     "preset": "round 40x40x30 steel",
      "likeBy": "nearest",
      "body": "like",
      "along": "y",
@@ -2658,7 +2658,7 @@
      "id": "starter",
      "like": "Small Starter Motor",
      "label": "starter motor",
-     "preset": "round 30x30x30 steel",
+     "preset": "round 30x30x35 steel",
      "likeBy": "nearest",
      "body": "like",
      "along": "y",
@@ -6789,7 +6789,7 @@
    "part": "Small Flywheel",
    "die": "engine",
    "pattern": "flywheel",
-   "blank": "round 45x45x40 steel"
+   "blank": "round 45x45x45 steel"
   },
   {
    "part": "Medium Flywheel",
@@ -6861,7 +6861,7 @@
    "part": "Small Turbo",
    "die": "engine",
    "pattern": "turbo",
-   "blank": "hollow 40x40x25 steel"
+   "blank": "hollow 40x40x40 steel"
   },
   {
    "part": "Medium Turbo",
@@ -6885,7 +6885,7 @@
    "part": "Small Supercharger",
    "die": "engine",
    "pattern": "supercharger",
-   "blank": "round 40x40x25 steel"
+   "blank": "round 40x40x30 steel"
   },
   {
    "part": "Medium Supercharger",
@@ -6909,7 +6909,7 @@
    "part": "Small Starter Motor",
    "die": "engine",
    "pattern": "starter",
-   "blank": "round 30x30x30 steel"
+   "blank": "round 30x30x35 steel"
   },
   {
    "part": "Medium Starter Motor",
