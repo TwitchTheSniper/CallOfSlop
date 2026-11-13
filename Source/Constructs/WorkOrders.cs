@@ -1195,12 +1195,13 @@ public static class ConstructBill
                 parts += n;
                 var r = RecipeOf(def);
                 var pressedBy = PresetOf(def);
-                if (r == null && pressedBy == null)
+                var formedAs = FormerPresets.KeyOf(def);
+                if (r == null && pressedBy == null && formedAs == null)
                 {
                     none++;
                     noneParts += n;
                 }
-                var how = def == null ? "not a part of this build" : pressedBy != null ? $"pressed ({pressedBy.Die.Family} Die, blank {Pressed.BlankText(pressedBy.Blank)})" : r == null ? "no recipe" :$"{WorkOrders.FamilyName(r.Machine)} tier {r.MinTier}: {r.Batch}{(r.Count > 1 ? $" makes {r.Count}" : "")}";
+                var how = def == null ? "not a part of this build" : pressedBy != null ? $"pressed ({pressedBy.Die.Family} Die, blank {Pressed.BlankText(pressedBy.Blank)})" : formedAs is { } fa ? $"formed ({(fa.Shape == ExShape.Fan ? "Fan Former" : "Airframe Former")}, {Extrusion.Name(fa)})" : r == null ? "no recipe" :$"{WorkOrders.FamilyName(r.Machine)} tier {r.MinTier}: {r.Batch}{(r.Count > 1 ? $" makes {r.Count}" : "")}";
                 sb.AppendLine($"   {n,4} x {part}  ({how})");
             }
         }
