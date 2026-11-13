@@ -928,8 +928,9 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   stamp and flags (an older phase 2 block loads as one level).
 - **Press bays and Panel Former sheet** as chain destinations. A press's blank and part kit chain since Press phase 4 (they ride
   into the bay that takes them). A Panel Former's order now chains too: its panel's material in units, less what its bin holds of
-  that material and a stroke under way, is asked as **sheet** (`ConstructLogisticsPlan.SheetKey`: a solid bar 0.5 x 0.1 m cut at
-  1 m in the panel's material, the showcase's sheet), counted in pieces at what one puts into the bin (`SheetUnits`); a sheet that
+  that material and a stroke under way, is asked as **sheet sized to the panel** (`ConstructLogisticsPlan.SheetFor`, phase 4c: a solid
+  section the panel's width in 5 cm steps, 10 cm thick, cut so one piece holds one panel's units; when no Extruder
+  on the network takes it it is split across into the fewest equal strips the widest one takes, each holding its share), counted in pieces at what one puts into the bin (`SheetUnits`); a sheet that
   arrives counts for its link. A maker with a conveyor way to the destination (`ConstructCrafting.RouteTo`: joins and Routers) is
   chosen before one without (a Splitter's line may still bring it, in turn).
 - **Logistics settings** (phase 3, protocol 275; `Source/Constructs/StockTargets.cs`, group Logistics in the configure tool, added
