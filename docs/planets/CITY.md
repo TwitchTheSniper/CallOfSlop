@@ -109,7 +109,7 @@ frame for the city; the game at 2,100 to 3,000 fps from above, in the market and
 - **The square**: a fountain round the column (a stone basin, rippling water), four planted beds with trees, a ring of
   lamps across the open paving, darker stone in rings and spokes round the fountain.
 - **The market's roof**: a sawtooth of north lights over its ceiling, the glazing lit from inside.
-- **Traffic**: about 700 cars drive the streets' lanes both ways (two lanes each way on the avenues), keeping right,
+- **Traffic**: about 1,600 cars drive the streets' lanes both ways (two lanes each way on the avenues), keeping right,
   with head and tail lamps; drawn like the walkers, one instanced figure posed on the GPU from its lane and the clock
   (`CityLife.StreetCars`, kind 2), within 400 m. A car that reaches its run's end (the city's edge, the square) comes
   in again at its start. They are dressing, not vehicles: the vehicle system is not touched.

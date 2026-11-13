@@ -341,7 +341,7 @@ public sealed unsafe partial class CityRenderer
         Native.glBindBuffer(GL_ARRAY_BUFFER, _carInstVbo);
         fixed (Vector4* p = life.StreetCars)
             Native.glBufferData(GL_ARRAY_BUFFER, (nint)Math.Max(life.StreetCars.Length, 2) * 16, life.StreetCars.Length > 0 ? p : null, GL_STATIC_DRAW);
-        Console.WriteLine($"[city] life: {life.Walkers.Length / 2} people walking, trains every {life.Period / CityLife.TrainsPerTrack:0} s each way round a {life.Length:0} m loop");
+        Console.WriteLine($"[city] life: {life.Walkers.Length / 2} people walking, {life.StreetCars.Length / 2} cars, trains every {life.Period / CityLife.TrainsPerTrack:0} s each way round a {life.Length:0} m loop");
     }
 
     /// <summary>The people and the trains, after the city's own chunks (the city program still bound).</summary>
