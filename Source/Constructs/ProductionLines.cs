@@ -369,6 +369,8 @@ public static partial class ProductionLines
             // Why it waits in its screen's words ("Bays need pieces"), else what it does.
             if (world.StoreOf(c, m) is { } pst)
                 card.Add(line, s == LineState.Running ? md.IsLathe ? "cutting" : "stamping" : ConstructPress.StallText((PressStall)pst.Refused));
+            if (WorkOrders.HeadOf(mp, out var head))
+                card.Add(line, ", order ").Add(line, head.Made).Add(line, '/').Add(line, head.Count); // (its head order: Press phase 4)
             return;
         }
         if (md.IsRecycler || md.IsGatherer)
