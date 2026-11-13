@@ -11,7 +11,7 @@ Built in slices, one PR each:
 1. **The crew** (this file's first part): four convicts in the gangs, talking, trust, the question.
 2. **The night**: the crew takes the Ministry's ration hauler to the spaceport ("The night" below).
 3. **The spaceport**: the guards, the deaths and their last words into the Logbook ("The spaceport" below).
-4. **The ship**: a stand-in ship the survivors board, off the planet (not built yet).
+4. **The ship**: the survivors board the Ministry Courier and leave ("The ship" below).
 
 ## The crew
 
@@ -87,4 +87,23 @@ Grassing: once Crew is 1, Sergeant Bellweather offers "Some of the inmates are p
 - **Won.** When every guard is down, each escapee there gains `Stormed` and a memo goes round; the guards never come again
   for them. A world loaded mid-fight turns the guards out again; the dead stay dead.
 - No wire change: guards are players, the words are speech.
+
+## The ship
+
+`Game/GameBreakoutShip.cs`, data under `"ship"` in `Story/Opening/Breakout.json`.
+
+- **To the courier.** Once the guards are down, the convicts who are left walk to the Ministry Courier on the first pad
+  (until then they hold round the landing). The marker is on it already.
+- **Aboard.** An escapee who sits in the courier (stolen, or handed over by Captain Fairweather: SPACEPORT.md) takes
+  every convict alive within 40 m aboard: each says `aboard`, gains `Aboard`, and their body goes (no body while aboard).
+- **Away.** Once the courier is 1.5 km from the spaceport, or has left this world for space, everyone aboard is `Free`:
+  the convicts say their `away` lines, the memo goes round, and each escapee in the courier gets the `ship` panel for
+  half a minute (the stage `BreakoutAway`, 3). The courier is a real ship and theirs: where it goes is up to them.
+- **Not built.** The crew stepping out somewhere: they stay aboard for now (a later slice can set them down on another
+  world, where they could become the player's first crew).
+
+## Empty hands
+
+A story body keeps its sidearm away (the Hands tool, so it is drawn with empty hands) unless it is fighting, or is one of
+the fled convicts while the spaceport's guards are out (GameStoryBodies.cs).
 

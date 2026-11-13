@@ -1,7 +1,7 @@
 # Laser Cutter, phase 3: notes (2026-11-13)
 
 Phase 3 of `laser-cutter.md`, its first coherent part: the machine in two sizes, a blank in, the cut, the cut part out, the offcut
-counted in tenths and handed into its bin, its recipe and tier. Protocol 295 (main was 294; the merger renumbers). The user-facing
+counted in tenths and handed into its bin, its recipe and tier. Protocol 296 (main was 294; the merger renumbers). The user-facing
 summary is `docs/sandbox/constructs/production.md` "The Laser Cutter".
 
 ## What was built
