@@ -906,7 +906,7 @@ public static class VehicleChecks
             }
             var fired = w.ShotsFired - before;
             r.Shots += fired;
-            r.Notes.Add($"the {name}: {fired} shots a second");
+            r.Notes.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"the {name}: {fired} shots a second, range {gun.MaxRange:0.#} m, spread {gun.Spread * 180 / MathF.PI:0.###} deg"));
             if (fired == 0)
                 r.Failures.Add($"Fire in the gunner's seat fired the {name} no shots in a second");
             Aim(c, w, q, g, seat, name, r);
