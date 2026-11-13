@@ -74,7 +74,7 @@ public sealed partial class Ui
         var slot = d.CfgSlot[(int)ProductionLines.RecipeKey(d)];
         if (slot < 0 || d.Config[slot].Options.Length == 0)
             return false;
-        return d.IsRefiner && d.RefineChoices.Length > 0 || d.IsPanelFormer || d.IsFanFormer || d.IsAirframeFormer
+        return d.IsRefiner && d.RefineChoices.Length > 0 || d.IsPanelFormer && !d.IsLaserCutter || d.IsFanFormer || d.IsAirframeFormer
             || d.IsLathe && PressTable.Current.Lathe.Length > 0 || d.IsPress && !d.IsLathe && PressTable.Current.Dies.Length > 0
             || d.IsAssembler && AssemblingTable.Current.ByMachine[d.AsmMachine].Length > 0;
     }
@@ -170,7 +170,7 @@ public sealed partial class Ui
             t.InSwatch = ins.Select(i => i.Swatch).ToArray();
         }
         (int, string, ImColor8) Mat(byte m, int units) => (SandboxTiles.ResourceSlot(m), $"{units}", Col8(names.ColourOf(m)));
-        if (d.IsPanelFormer)
+        if (d.IsPanelFormer && !d.IsLaserCutter)
         {
             // A Panel Former's presets (HullLoft.PanelPresets, the Preset setting's options): a swatch each, its size and what it is.
             var opts = d.Config[d.CfgSlot[(int)CfgKey.Recipe]].Options;

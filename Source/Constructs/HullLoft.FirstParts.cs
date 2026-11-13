@@ -196,6 +196,13 @@ public static partial class HullLoft
             f.SetValue(to, f.GetValue(from)); // (OwnShapes too: the stand-in owned none)
     }
 
+    /// <summary>Is this def a stand-in still waiting for its real part? (A Laser Cutter's job is never read from one: ConstructLaserCutter.JobOf.)</summary>
+    public static bool IsStandIn(ConstructPartDef d)
+    {
+        lock (Interned)
+            return StandIns.Count > 0 && StandIns.Contains(d);
+    }
+
     /// <summary>(Parse, under <see cref="Interned"/>) A stand-in asked for by name off the wire: finished now, so its sockets are there for the caller.</summary>
     private static void FinishIfStandIn(ConstructPartDef d)
     {

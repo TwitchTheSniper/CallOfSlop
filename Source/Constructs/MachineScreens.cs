@@ -197,7 +197,7 @@ public static class MachineScreens
         Amount(card, 1, "Offcut ", st.Amount, RecyclingTable.Current.NameOf(st.Material));
         if (st.InAmount > 0)
             card.Add(1, " +0.").Add(1, st.InAmount);
-        card.Add(2, st.JobAmount > 0 ? "Blank on the bed" : "Bed empty");
+        card.Add(2, st.OnBed ? "Blank on the bed" : "Bed empty");
         if (p.Orders != null)
             WorkOrders.FillQueue(p, card, 3);
         else

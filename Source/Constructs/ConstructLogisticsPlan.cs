@@ -325,7 +325,7 @@ public static class ConstructLogisticsPlan
             var id = world.NextChainId++;
             if (world.NextChainId == 0)
                 world.NextChainId = 1;
-            if (id == 0)
+            if (id is 0 or ConstructLaserCutter.BedTag) // (a Laser Cutter's want rides with that tag: ConstructLogistics.WantAt)
                 continue;
             if (Find(world, id) < 0)
                 return id;

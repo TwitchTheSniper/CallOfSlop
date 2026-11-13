@@ -482,7 +482,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   u32 the tick it waits at (0: it runs) in place of u16 age and u16 held (ConstructLifters.Write); LiftWhy gains Player, PlayerStuck.
     // 295: Laser Cutter phase 3: the Laser Cutter and Medium Laser Cutter (two part files, ids move); ExtrudeStall.OffcutFull (16) in a
     //   machine's stall byte; a cutter's offcut tenths ride in the store's input amount (ConstructLaserCutter.cs).
-    public const ushort ProtocolVersion = 295;
+    // 296: Laser Cutter phase 3 fixes: a store's second flags byte gains 64, a Laser Cutter's blank on its bed (no bytes; ConstructStorage.Write).
+    public const ushort ProtocolVersion = 296;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

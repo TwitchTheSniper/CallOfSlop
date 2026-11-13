@@ -353,6 +353,8 @@ public static class ConstructLogistics
     private static ushort WantAt(ConstructWorld world, Construct c, LogiMap m, int ds, ConstructPartDef d, int maker)
     {
         int t = m.NodePart[m.Dests[ds]];
+        if (c.DefOf(t).IsLaserCutter)
+            return ConstructLaserCutter.Wants(world, c, t, d) && world.StoreOf(c, t) is { } bed && Riding(c, bed.Handle, 0, LogiFlags.None, LogiFlags.None) == 0 ? ConstructLaserCutter.BedTag : (ushort)0; // (its head order's blank, one riding at a time)
         if (c.DefOf(t) is { IsAssembler: true } or { IsPanelFormer: true } or { IsPress: true, IsLathe: false })
             return ConstructLogisticsPlan.WantAt(world, c, t, d, maker); // (a chained order's input)
         if (c.Parts[t].Craft is not { Count: > 0 } q || world.StoreOf(c, t) is not { } tray)
@@ -490,7 +492,8 @@ public static class ConstructLogistics
         if (world.StoreOf(c, part) is not { } st)
             return LogiReason.Closed;
         if (c.DefOf(part) is { IsPieceRack: false } md)
-            return (md.IsAssembler || md.IsPanelFormer || md.IsPress) && ConstructLogisticsPlan.Open(world, c, part, r.Tag) ? LogiReason.None : LogiReason.Closed; // (a machine's input waits at its door)
+            return md.IsLaserCutter ? (ConstructLaserCutter.Wants(world, c, part, d) ? LogiReason.None : LogiReason.Closed) // (a cutter: while it still wants this blank)
+                : (md.IsAssembler || md.IsPanelFormer || md.IsPress) && ConstructLogisticsPlan.Open(world, c, part, r.Tag) ? LogiReason.None : LogiReason.Closed; // (a machine's input waits at its door)
         if (((LogiFlags)r.Flags & LogiFlags.Storage) == 0 && (r.Tag == 0 || c.Parts[part].Craft is not { } q || q.Find(r.Tag) < 0) && !(c.Parts[part].Craft == null && ConstructLogisticsPlan.Open(world, c, part, r.Tag)))
             return LogiReason.Closed; // (a plain rack: its stock target's refill, phase 3)
         return ConstructConveyor.RackCheck(c, part, st, d) != 0 ? LogiReason.DestFull : LogiReason.None;

@@ -236,6 +236,7 @@ public static class WorldStores
         to.JobTicks = from.JobTicks;
         to.JobFull = from.JobFull;
         to.JobAmount = from.JobAmount;
+        to.OnBed = from.OnBed;
         to.JobMaterial = from.JobMaterial;
         to.MixN = from.MixN;
         if (from.MixN > 0)

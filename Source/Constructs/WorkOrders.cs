@@ -773,7 +773,7 @@ public static class WorkOrders
                     named.Made = r.U16();
                     named.Name = r.Text(ConstructParts.MaxRuntimeName);
                     named.Key = new ExtrusionKey(0, 0, 0, 0, nm, false, ExShape.Section);
-                    if (nm > RecyclingTable.Current.Materials.Length || named.Made > named.Count || !HullLoft.IsFormedName(named.Name) && !Pressed.IsName(named.Name))
+                    if (nm > RecyclingTable.Current.Materials.Length || named.Made > named.Count || !HullLoft.IsFormedName(named.Name) && !HullLoft.IsCutName(named.Name) && !Pressed.IsName(named.Name))
                         throw new MalformedPacketException("a bad panel order");
                     q.Add(named);
                     continue;
@@ -859,7 +859,7 @@ public static class WorkOrders
                     var pc = r.U16();
                     var pm = r.U16();
                     var pn2 = r.Str();
-                    if (pc is >= 1 and <= MaxCount && HullLoft.IsFormedName(pn2) && pn2.Length <= ConstructParts.MaxRuntimeName && HullLoft.FormedMaterial(pn2) != 0)
+                    if (pc is >= 1 and <= MaxCount && (HullLoft.IsFormedName(pn2) || HullLoft.IsCutName(pn2)) && pn2.Length <= ConstructParts.MaxRuntimeName && HullLoft.FormedMaterial(pn2) != 0)
                         q.Add(ConstructPanelFormer.Order(pn2, pc) with { Made = Math.Min(pm, pc) });
                     else if (pc is >= 1 and <= MaxCount && Pressed.IsName(pn2) && PressedOrder(pn2, pc) is { } pressed)
                         q.Add(pressed with { Made = Math.Min(pm, pc) }); // (a pressed part's order, Press phase 4: a key this build can't read is left out)

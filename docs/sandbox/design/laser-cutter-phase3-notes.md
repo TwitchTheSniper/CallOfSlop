@@ -80,3 +80,17 @@ Laser Cutter, nothing on its out port (cut parts drop on the out bed).
 3. **The Queue button with no design setting** (until phase 5's picker).
    - A (recommended): it repeats the head order, as built.
    - B: it does nothing until a design is picked.
+
+## Fixes after review (2026-11-13, protocol 296)
+
+- The Panel Designer and the recipe picker no longer count a cutter as a Panel Former (with only a cutter linked: "No Panel Former is
+  linked"; with a former and a cutter: one former, its size, "Panel Former 1: yes").
+- A cut order now survives a client's read of the order list and a world save (both took formed or pressed names only; the client threw the
+  whole packet away). Crafting Terminal and bill readers still take formed names only: phase 5.
+- Wrecking a cutter spills its offcut tenths rounded to the nearest unit (4 steel + 0.2 spilled one bundle of 4).
+- The blank on the bed goes on the wire (`CStore.OnBed`, bit 64 of a store's second flags byte): a joined client reads "Blank on the bed"
+  and the stroke's percent, and the queue.
+- A job is never read from a stand-in (`HullLoft.IsStandIn`; `Find` already finishes one asked for by name).
+- A Conveyor Router sends a cutter its head order's blank (tag `BedTag`, one riding at a time) while its bed is empty; anything else waits
+  at the Router ("no Piece Rack has room") as before. Tried: a 5 cm plate routed and cut in 14.1 s.
+- Tried as well: a world saved with a blank on the bed mid-stroke and an order of 2 loaded in a fresh process: the cut resumed and ended.

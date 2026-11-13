@@ -71,6 +71,7 @@ public sealed class CStore
     public int MixN; // materials held
     public int JobTicks, JobAmount; // a Recycler (server only): ticks left on the part it took, and the units it will give; a drill's JobAmount: units towards its next scoop; a production machine's JobTicks: ticks of work on this batch
     public byte JobMaterial;
+    public bool OnBed; // a Laser Cutter: a blank lies on its bed (on the wire: its screen and look line; the server keeps it with JobAmount, ConstructLaserCutter.cs)
     public int JobFull; // a Recycler (server only): the ticks its job took at the start
     public byte Progress; // an Assembler's or a Recycler's job, 0 to 100 (on the wire about once a second: its screen, MachineScreens.cs)
     public byte ProgressAge; // ...steps since it was last sent (server only)
@@ -125,6 +126,7 @@ public sealed class CStore
         JobTicks = JobAmount = 0;
         JobMaterial = 0;
         JobFull = 0;
+        OnBed = false;
         Progress = ProgressAge = 0;
         BeaconStores = BeaconParts = 0;
         PullId = 0;
@@ -797,10 +799,10 @@ public static class ConstructStorage
         var pull = s.PullWaiting > 0; // (a Smart Terminal under way: its panel, on every peer)
         var progress = s.Progress > 0;
         var slabs = s.SlabN > 0 && s.SlabSum == s.ItemCount; // (a Piece Rack's columns: ConstructRackPack.cs)
-        var more = drive || mix || machine || pull || progress || slabs; // (the flags byte is full: 64 says a second one follows, so a plain store costs the same)
+        var more = drive || mix || machine || pull || progress || slabs || s.OnBed; // (the flags byte is full: 64 says a second one follows, so a plain store costs the same)
         w.U16((ushort)amount).U8(s.Material).U8((byte)((s.Busy ? 1 : 0) | (s.Held ? 2 : 0) | (input ? 4 : 0) | (big ? 8 : 0) | (s.KindN > 0 ? 16 : 0) | (beacon ? 32 : 0) | (more ? 64 : 0)));
         if (more)
-            w.U8((byte)((drive ? 1 : 0) | (mix ? 2 : 0) | (machine ? 4 : 0) | (pull ? 8 : 0) | (progress ? 16 : 0) | (slabs ? 32 : 0)));
+            w.U8((byte)((drive ? 1 : 0) | (mix ? 2 : 0) | (machine ? 4 : 0) | (pull ? 8 : 0) | (progress ? 16 : 0) | (slabs ? 32 : 0) | (s.OnBed ? 64 : 0))); // (64: a Laser Cutter's blank on its bed, no bytes)
         if (drive)
             w.U8((byte)s.Drive).U16(s.DriveRpm).U8(s.DrivePct);
         if (progress)
@@ -867,8 +869,9 @@ public static class ConstructStorage
         s.Busy = (flags & 1) != 0;
         s.Held = (flags & 2) != 0;
         var more = (flags & 64) != 0 ? r.U8() : 0;
-        if (more >= 64)
+        if (more >= 128)
             throw new MalformedPacketException($"a store with more flags {more}");
+        s.OnBed = (more & 64) != 0;
         if ((more & 1) != 0)
         {
             var state = r.U8();
@@ -1386,7 +1389,7 @@ public sealed partial class ConstructWorld
                 }
             }
             Heap(st.Amount, st.Material, box ? Vector3.Zero : (cd.FillMin + cd.FillMax) * 0.5f);
-            Heap(st.InAmount, st.InMaterial, (cd.InFillMin + cd.InFillMax) * 0.5f); // (a production machine's input spills the same way)
+            Heap(cd.IsLaserCutter ? (st.InAmount >= 5 ? 1 : 0) : st.InAmount, st.InMaterial, (cd.InFillMin + cd.InFillMax) * 0.5f); // (a production machine's input spills the same way; a Laser Cutter's is its offcut in tenths, rounded to the nearest unit)
             for (var k = 0; k < st.MixN; k++)
                 Heap(st.MixAmount![k], st.MixMat![k], (cd.InFillMin + cd.InFillMax) * 0.5f + new Vector3(0, 0.3f * k, 0));
         }
