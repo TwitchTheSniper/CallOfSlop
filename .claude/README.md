@@ -8,7 +8,7 @@ This folder is what every Claude Code session on the repo shares: cloud threads,
 | `settings.json` | Runs `hooks/guard.sh` before every Bash or PowerShell command (a `PreToolUse` hook) and `hooks/cloud-start.sh` when a session starts. Your own settings go in `settings.local.json`, which git ignores. |
 | `hooks/guard.sh` | The guard rails below. |
 | `hooks/cloud-start.sh` | Cloud sessions only: installs the .NET 10 SDK if the container has none (about 20 s, once per container) and sets `XDG_RUNTIME_DIR`. It does nothing on a PC and never restores packages: `dotnet restore` stays the one step a session takes itself, once, when it is going to build. |
-| `skills/` | Step-by-step guides that load when their job comes up: `merge-branch`, `playtest-tour`, `building-look`, `story-writing`. |
+| `skills/` | Step-by-step guides that load when their job comes up: `merge-branch`, `playtest-tour`, `building-look`, `story-writing`, `playtest-board-item` (an approved item from the playtest board), `construct-part` (adding or changing a part), `world-site` (a place on a story world), `slow-frame` (where a slow frame or tick goes). |
 | `agents/` | Two readers a session calls before a merge: `merge-reviewer` (the diff against the lessons, and what else reads what it changed) and `look-critic` (pictures against the style guides). They report and change nothing. |
 
 ## Skills and agents
