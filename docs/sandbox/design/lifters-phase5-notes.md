@@ -50,8 +50,9 @@ the two pad files (generated), `Program.WindowShot.cs` (inside the `lifter` case
   this branch's).
 - **Tick cost**: after the first ticks, the lifter step (with the pad take-in) 2.9 us a tick on average, worst 0.96 ms over 914
   ticks with a take-in and a press put; 16.8 ms once in a run's first ticks (first use).
-- Checks: build passes; `--gen-parts all --check` passes; `--check-construct-parts` has no REFUSED lines; sections run by name are
-  in the final report.
+- Checks: build passes; `--gen-parts all --check` passes; `--check-construct-parts` has no REFUSED lines; sections run by name, all
+  pass (0 failures, 106 s): Construct gun recoil, Construct actuators, Compound collision, Interaction sweep, Press stock, Machine
+  tier looks, Extruder, Assembling, Construct storage. No section covers lifters by name.
 
 ## Not tried or not built
 
