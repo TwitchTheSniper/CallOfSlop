@@ -39,11 +39,11 @@ moment.
 
 **Fix (smallest):** `RackCheck` lets a Building Station's hold take a store part (`&& !rd.IsBuildStation`). Nothing is lost: what
 reaches the hold is new and empty (an order's or a hand's part is a def, no contents). No wire change. Ordinary racks still refuse
-stores. Also fixed on the same chain: `ConstructStation.Finish` now cancels the job's open orders (`ConstructStation.cs` 1099), as
-Cancel, Release and Fail did; before it, a part that arrived another way left its Assembler order open after Done (`orders 1`).
+stores. (A first change that made `ConstructStation.Finish` cancel the job's open orders was taken out after the merge review:
+see the last section.)
 
 **After the fix:**
-- Host: `station stock` gave `2 part(s) into the hold`; the build went Done 2/2 with the container from the hold, `orders 0`, the
+- Host: `station stock` gave `2 part(s) into the hold`; the build went Done 2/2 with the container from the hold, `orders 0` (with the Finish change since taken out), the
   Assembler's queue empty ("Orders: none").
 - Magazine fill (`station set fillAmmo 5`, `fill Storage Volume#10 200 ammo`): "filling: ammo 700/1440", then 1200/1440 rounds as
   the bin ran out (it holds 120 units); the container 120/2880 units. At 100 % the target read 0/28800 rounds.
@@ -119,11 +119,32 @@ gun's reach past 300 m; that was not tried either.)
   Buggy refused 11 parts "Wheel: rack full", the hold's own limit.
 
 ## Faults (file and line)
-1. **Fixed:** a station's hold refused store parts, `ConstructConveyor.cs` 247; and Done left orders open, `ConstructStation.cs` 1099.
+1. **Fixed:** a station's hold refused store parts, `ConstructConveyor.cs` 247 (with the review's three follow-ups: last section).
 2. Unordered store parts jam a maker's out conveyor at the Router: `ConstructLogistics.cs` 644 (NoStorage).
 3. A terminal's tray refuses a store part with the reason "the tray is full": `ConstructCrafting.cs` 1064, 1075.
-4. A store part riding a conveyor is dropped from a save: `ConstructConveyor.cs` 1213.
+4. **Fixed after the review:** a store part riding a conveyor was dropped from a save, `ConstructConveyor.cs` 1213.
 5. The hood's sized strips went to the Long Piece Rack with no route to the Panel Former; strips are the default against the user's
    answer: `ConstructLogisticsPlan.cs` 110.
 6. Window tool: `wait`, `put` and `walk` wait in frames at uncapped rates (`Program.WindowShotCuts.cs` 104); b's `_wsLiftWaits` cap
    is the same.
+
+## After the merge review (four points)
+1. **A store part riding at a save** was dropped by the load (`ConstructConveyor.ReadSave`) while its order kept it as `Sent`. The
+   load now keeps any rider whose part this build knows. Tried: `logi feed 1 Ammo Container`, `saveworld vtride`, then
+   `loadworld vtride` in a fresh process: `Ammo Container on 26 (Assembler#284 -> Conveyor Router#287) at 1.41` came back. The whole
+   "save mid-ride, the build finishes" wasn't run: on the showcase no conveyor leads from the Assembler to the station.
+2. **Done cancelling open orders: taken out again.** `ConstructCrafting.Cancel` removes a machine order only when none of it is made,
+   so a part the Assembler had begun would come out unordered, and an unordered store part sticks at the Router (fault 2 above).
+   As before, an order left open at Done lands its part in the hold as a spare for the next run; it never jams. The open order
+   after Done (`orders 1`) is back, a smaller fault for the station's owner: `ConstructStation.Finish` (~1088).
+3. **A loaded store set down in the bay** was removed and kept as a bare def (fitted fresh or into the hold), so what it held was
+   lost; this predates the hold fix for the fitted path. `ConstructStation.TakeDropped` now leaves a one-part body whose store holds
+   anything (bulk, items, a machine's input) lying in the bay. Tried with a new window-tool verb, `station droploaded NAME` (50 units
+   of ammo in it): the loaded container stayed loose and the build waited at 1/2; an empty one dropped after it was taken and the
+   build went Done.
+4. **The wide rule is kept on purpose:** a station builds any blueprint, a factory with Assemblers and a Piece Rack among them, and
+   its hold is a count of defs; everything that reaches it is new and empty (an order's rider, the hands, a stock), and a loose
+   loaded one is now left alone (3). Other racks still refuse stores. The rack's own size check limits what fits.
+
+Self-test by name, `Assembling, Assembling network, Extruder, Press stock, Construct storage, Custom bins`: 6 sections, 0 failures
+(39.5 s).

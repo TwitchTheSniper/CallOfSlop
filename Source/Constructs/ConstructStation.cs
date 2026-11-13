@@ -465,6 +465,8 @@ public static partial class ConstructStation
             var kind = KindOf(j, b.Parts[0].Def);
             if (kind < 0 || j.KindFit[kind] + ConstructCrafting.Holds(tray, b.Parts[0].Def) >= j.KindNeed[kind])
                 continue;
+            if (world.StoreOf(b, 0) is { } held && (held.Amount > 0 || held.ItemCount > 0 || held.InAmount > 0))
+                continue; // (a loaded container, a bin with something in it: taking it would lose what it holds, so it lies there for the player to empty)
             found = b;
             break;
         }
@@ -1096,7 +1098,6 @@ public static partial class ConstructStation
             return;
         }
         Free(world, b, j);
-        CancelOrders(world, c, t); // (a part that came another way, by hand or stocked, leaves its order open: verification 2026-11-13c)
         j.State = StationState.Done;
         j.Note = "";
         var s = (Stopwatch.GetTimestamp() - j.Started) / (double)Stopwatch.Frequency;
