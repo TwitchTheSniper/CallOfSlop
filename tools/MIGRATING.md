@@ -92,6 +92,10 @@ The workbench now has a **blueprint library** (`blueprints.txt` in your save fol
 
 The Cut-off Saws are gone: an Extruder now cuts by itself. A saved world that has one loads without it, and `callofslop.log` says how many were left out. Wire what fed the saw into the Extruder's **Cut** input, or set its **Cut every**.
 
+### Assemblers in a saved world (2026-11-13)
+
+Seventy-three parts a Press makes now (the Gear Set, brackets, plates, housings, tanks, the Frame Beam and others) left the Assembler's recipe list. An Assembler in a world saved before this version may show **another recipe** than the one you set, or none: check your Assemblers and set their recipe again. A blueprint whose Assembler names one of those parts still loads, with its recipe set to None.
+
 ### Keeping saves on a USB stick (portable mode)
 
 Put an empty file called `portable.txt` next to `CallOfSlop.exe`. The game then keeps its saves in its own folder, like the old builds did. Copy your save files into that folder yourself.
