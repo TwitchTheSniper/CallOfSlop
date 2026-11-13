@@ -44,6 +44,9 @@ public sealed class BuildStationParts : IPartGenerator
         // The second way in, on the sorter's side: a white band round the mouth and a hazard sill.
         p.Add(MachineLook.D([x0 + 0.006, y0 + 0.02, z0 + 0.6], [x0 + 0.022, y0 + 0.5, z0 + 1.2], MachineLook.In));
         MachineLook.Hazard(p, [x0 + 0.002, y0 + 0.0, z0 + 0.62], [x0 + 0.024, y0 + 0.018, z0 + 1.18]);
+        // The fluid inlet beside it: a steel flange with a white ring, what a pipe from a tank is laid to (the build's tanks are filled from it).
+        p.Add(MachineLook.D([x0 + 0.006, y0 + 0.24, z0 + 1.44], [x0 + 0.03, y0 + 0.46, z0 + 1.66], MachineLook.Steel, "steel"));
+        p.Add(MachineLook.D([x0 + 0.002, y0 + 0.3, z0 + 1.5], [x0 + 0.008, y0 + 0.4, z0 + 1.6], MachineLook.In));
         // ---- The tray, along the right: runners, slats, accent rails; parts ride in at the back and are taken at the front.
         const double runner = 0.12, high = 0.12, post = 0.07, rail = 0.06, top = 1.4;
         p.Add(Box([xm, y0, z0], [xm + runner, y0 + high, z1], MachineLook.Base));
@@ -90,6 +93,7 @@ public sealed class BuildStationParts : IPartGenerator
         p.Set(("ports", Py.L(
             Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(Py.Round(mid, 3), Py.Round(y0 + 0.05, 3), z0)), ("face", "-z"), ("opening", Py.L(section, section))),
             Kw(("name", "Piece in 2"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(Py.Round(x0 + 0.02, 3), Py.Round(y0 + 0.05, 3), Py.Round(z0 + 0.9, 3))), ("face", "-x"), ("opening", Py.L(0.5, 0.5))),
+            Kw(("name", "Fluid in"), ("type", "pipe"), ("dir", "in"), ("at", Py.L(Py.Round(x0 + 0.002, 3), Py.Round(y0 + 0.35, 3), Py.Round(z0 + 1.55, 3))), ("face", "-x")),
             Kw(("name", "Chute in"), ("type", "chute"), ("dir", "in"), ("at", Py.L(Py.Round((x0 + xm) / 2, 3), Py.Round(y0 + 0.95, 3), Py.Round(z0 + 0.56, 3))), ("face", "+y")))));
         return p;
     }

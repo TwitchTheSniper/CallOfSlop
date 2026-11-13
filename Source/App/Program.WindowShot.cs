@@ -896,6 +896,9 @@ public static unsafe partial class Program
                     case "repeat":
                         g.SandboxStation(sc.Id, spart, StationOp.Repeat, (ushort)(int.TryParse(rest, out var more) ? more : 0));
                         break;
+                    case "tanks": // the build's fuel, Fluid Tanks and ammo boxes as this peer has them, and the station's own source
+                        WsSay("station: tanks: " + StationProbe.Tanks(g.Constructs, sc, spart));
+                        break;
                     case "clear" when g.IsServer && sc.Parts[spart].Station is { } cj && g.Constructs.Get(cj.Body) is { HeldBy: 0 } built: // the finished vehicle is dragged 14 m out of the bay
                         ConstructStation.Bay(sc, spart, out _, out var brot, out _);
                         built.Pos += System.Numerics.Vector3.Transform(new System.Numerics.Vector3(14, 0.3f, 0), brot);
@@ -965,8 +968,11 @@ public static unsafe partial class Program
                 WsShot(arg.Length > 0 ? arg : $"{_wsShots:000}");
                 _wsWait = 1;
                 return;
-            case "link": // a data link FROM's Data out (or only output) to TO, as the linking tool sends it: "link Materials Bin#1 > Text Sign#3"
+            case "link": // a data link FROM's Data out (or only output) to TO, as the linking tool sends it: "link Materials Bin#1 > Text Sign#3"; "link pipe Fuel Tank#1 > Building Station": a straight pipe from FROM's first pipe out to TO's first pipe in
             {
+                var pipe = arg.StartsWith("pipe ", StringComparison.Ordinal);
+                if (pipe)
+                    arg = arg[5..];
                 var ends = arg.Split('>', StringSplitOptions.TrimEntries);
                 var (c, from) = ends.Length == 2 ? WsFind(g, ends[0]) : (null, -1);
                 var (c2, to) = ends.Length == 2 ? WsFind(g, ends[1]) : (null, -1);
@@ -984,6 +990,20 @@ public static unsafe partial class Program
                 }
                 var spot = WsPartSpot(c, to, out _);
                 WsEyeTo(g, me, spot + new Vector3(0, 1.2f, 0) + Vector3.Normalize(new Vector3(me.Eye.X - spot.X, 0, me.Eye.Z - spot.Z) + new Vector3(1e-4f, 0, 0)) * 1.5f);
+                if (pipe)
+                {
+                    byte outP = 255, inP = 255;
+                    foreach (var np in c.DefOf(from).NamedPorts)
+                        if (np.Type == RouteType.Pipe && np.Out && outP == 255)
+                            outP = np.Byte;
+                    foreach (var np in c.DefOf(to).NamedPorts)
+                        if (np.Type == RouteType.Pipe && np.In && inP == 255)
+                            inP = np.Byte;
+                    WsSay($"link: pipe {c.DefOf(from).Name} port {outP} > {c.DefOf(to).Name} port {inP}");
+                    g.SandboxSendRoute(c.Id, RouteType.Pipe, from, outP, 255, 0, default, ReadOnlySpan<CRouteNode>.Empty, to, inP);
+                    _wsWait = 5;
+                    return;
+                }
                 var port = c.DefOf(from).DataOut is { Length: > 1 } outs ? ConstructRoutes.DataPortByte(Array.IndexOf(outs, "Data out")) : (byte)255;
                 g.SandboxSendRoute(c.Id, RouteType.Data, from, port, 255, 0, default, ReadOnlySpan<CRouteNode>.Empty, to, 255);
                 _wsWait = 5;
