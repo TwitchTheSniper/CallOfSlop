@@ -14,6 +14,7 @@
   "attachSeconds": 6.0,
   "power": 600,
   "onBreak": "disable",
+  "collider": "boxes",
   "lifter": {
     "kind": "arm",
     "base": [

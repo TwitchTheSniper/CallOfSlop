@@ -15,6 +15,7 @@
   "tier": 3,
   "power": 1900,
   "onBreak": "disable",
+  "collider": "boxes",
   "lifter": {
     "kind": "arm",
     "base": [

@@ -157,7 +157,7 @@ public sealed class LifterParts : IPartGenerator
         p.Stats(380 * MassK[t], 600 * HealthK[t], Armour[t], seconds: Py.Round(6.0 * (1 + 0.25 * (t - 1)), 2));
         if (t > 1)
             p.Set(("tier", t));
-        p.Set(("power", tb.Power), ("onBreak", "disable"));
+        p.Set(("power", tb.Power), ("onBreak", "disable"), ("collider", "boxes")); // (as the machines: a tier's round details are looks and never become a hull)
         var lk = Look[t];
         p.Set(("lifter", Kw(("kind", "arm"), ("base", Py.L(Py.Round(cx, 3), Py.Round(y0 + 1.32 * s, 3), Py.Round(cz, 3))), ("ring", Py.Round(y0 + ring, 3)),
             ("reach", Py.L(tb.R0, tb.R1)), ("up", tb.Up), ("down", Py.Round(1.0 * s, 2)), ("payload", tb.Payload), ("piece", Py.L(tb.Across, tb.Long)),
