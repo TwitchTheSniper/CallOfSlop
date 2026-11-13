@@ -28,11 +28,12 @@ public sealed class LaserCutterParts : IPartGenerator
     ];
 
     private static List<object?> Buttons() => Py.L(
-        Kw(("action", "orders.queue"), ("at", Py.L(0.02, 0.02, 0.24, 0.12)), ("label", "Queue")),
-        Kw(("action", "orders.cancel"), ("at", Py.L(0.25, 0.02, 0.47, 0.12)), ("label", "Cancel")),
-        Kw(("action", "orders.clear"), ("at", Py.L(0.48, 0.02, 0.7, 0.12)), ("label", "Clear")),
-        Kw(("action", "view.up"), ("at", Py.L(0.72, 0.02, 0.85, 0.12)), ("label", "Up")),
-        Kw(("action", "view.down"), ("at", Py.L(0.86, 0.02, 0.98, 0.12)), ("label", "Down")));
+        Kw(("action", "orders.queue"), ("at", Py.L(0.02, 0.02, 0.2, 0.12)), ("label", "Queue")),
+        Kw(("action", "orders.cancel"), ("at", Py.L(0.21, 0.02, 0.39, 0.12)), ("label", "Cancel")),
+        Kw(("action", "orders.clear"), ("at", Py.L(0.4, 0.02, 0.56, 0.12)), ("label", "Clear")),
+        Kw(("action", "machine.recipe"), ("at", Py.L(0.57, 0.02, 0.75, 0.12)), ("label", "Design")), // (the world's cut designs, from the recipe picker: a pick orders one)
+        Kw(("action", "view.up"), ("at", Py.L(0.76, 0.02, 0.87, 0.12)), ("label", "Up")),
+        Kw(("action", "view.down"), ("at", Py.L(0.88, 0.02, 0.98, 0.12)), ("label", "Down")));
 
     private static Part Cutter(Row r)
     {

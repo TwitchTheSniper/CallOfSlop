@@ -58,43 +58,48 @@ public static partial class HullLoft
         private readonly List<ushort> _shapes = new(PanelMaxAlong * PanelMaxAcross + 8);
 
         private PanelShape _queued;
+        private string? _wantCut, _queuedCut; // (a cut key over the shape, laser cutter phase 4; null: the panel whole)
+        private CutPlan? _plan;
+        public string? ShownCut { get; private set; }
         private bool _hasQueued, _started;
 
         /// <summary>
         /// The key to show. While a panel is being made the newest key waits for it (the one before it is forgotten), so a slider dragged through a
         /// hundred values makes a panel every few frames, each whole, never one a frame: the picture follows the hand and nothing is thrown away half made.
         /// </summary>
-        public void Want(in PanelShape s)
+        public void Want(in PanelShape s, string? cut = null)
         {
-            if (_has && s == _want)
+            if (_has && s == _want && cut == _wantCut)
             {
                 _hasQueued = false;
                 return;
             }
             if (Building)
             {
-                (_queued, _hasQueued) = (s, true);
+                (_queued, _queuedCut, _hasQueued) = (s, cut, true);
                 return;
             }
-            Start(s);
+            Start(s, cut);
         }
 
-        private void Start(in PanelShape s)
+        private void Start(in PanelShape s, string? cut)
         {
             _hasQueued = false;
             _started = true;
             DropPending();
             _want = s;
+            _wantCut = cut;
             _has = true;
+            _plan = cut != null ? ReadCut(cut, out _) : null;
             if (PanelRefusal(s) != null)
                 return;
-            var name = PanelKey(s);
+            var name = _plan != null ? cut! : PanelKey(s);
             var outer = PartShapes.BeginCollect();
             try
             {
-                Base = ConstructParts.ParseBody(PanelJson(name, s, 0, 0, true), name); // (with its slabs, as a deferred panel's first part: a part needs a drawn box; the facets replace them)
+                Base = ConstructParts.ParseBody(PanelJson(name, s, 0, 0, true, _plan), name); // (with its slabs, as a deferred panel's first part: a part needs a drawn box; the facets replace them)
                 var (nu, nv) = PanelGrid(s);
-                _total = nu * nv;
+                _total = _plan?.Items ?? nu * nv;
                 Made++;
             }
             catch (ConstructPartException e)
@@ -119,7 +124,7 @@ public static partial class HullLoft
             }
             if (!Building && _hasQueued)
             {
-                Start(_queued);
+                Start(_queued, _queuedCut);
                 _started = false;
                 return;
             }
@@ -133,7 +138,7 @@ public static partial class HullLoft
                 var outer = PartShapes.BeginCollect();
                 try
                 {
-                    var part = ConstructParts.ParseBody(PanelJson(name, _want, _next, to, false), name);
+                    var part = ConstructParts.ParseBody(PanelJson(name, _want, _next, to, false, _plan), name);
                     for (var k = part.SolidBoxes; k < part.Boxes.Length; k++)
                         _facets.Add(part.Boxes[k]);
                 }
@@ -163,11 +168,19 @@ public static partial class HullLoft
             _facets.Clear();
             Shown = d;
             ShownShape = _want;
+            ShownCut = _plan != null ? _wantCut : null;
             var (gu, gv) = PanelGrid(_want);
-            if (ShownNormals.Length != gu * gv)
-                ShownNormals = new Vector3[gu * gv];
-            for (var k = 0; k < gu * gv; k++)
-                ShownNormals[k] = PanelNormal(_want, (PanelRowS(_want, k / gv, gu) + PanelRowS(_want, k / gv + 1, gu)) * 0.5f, (k % gv + 0.5f) * 2f / gv - 1);
+            var items = _plan?.Items ?? gu * gv;
+            if (ShownNormals.Length != items)
+                ShownNormals = new Vector3[items];
+            for (int k = 0, it = 0; k < gu * gv && it < items; k++)
+            {
+                // (a cut panel draws each touched facet as its pieces, in the facets' order: each piece takes its facet's normal)
+                var n = PanelNormal(_want, (PanelRowS(_want, k / gv, gu) + PanelRowS(_want, k / gv + 1, gu)) * 0.5f, (k % gv + 0.5f) * 2f / gv - 1);
+                var count = _plan?.Pieces[k] is { } pieces ? pieces.Length : 1;
+                for (var q = 0; q < count && it < items; q++)
+                    ShownNormals[it++] = n;
+            }
             _next = _total = 0;
         }
 

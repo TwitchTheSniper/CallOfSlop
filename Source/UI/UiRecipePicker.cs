@@ -114,8 +114,68 @@ public sealed partial class Ui
         _rcpAllLabel = "";
     }
 
+    private bool _rcpCut; // the open picker is a Laser Cutter's: a tile orders that cut design at it (CActKind.CraftNamed)
+    private readonly List<string> _rcpCutKeys = new();
+    private int _rcpCutCount = 1;
+
+    /// <summary>The open picker is a Laser Cutter's design list (laser cutter phase 4).</summary>
+    public bool RecipePickerCut => RecipePickerOpen && _rcpCut;
+
+    /// <summary>
+    /// Opens the picker on a Laser Cutter's Design button (laser cutter phase 4): a tile for each of the world's cut designs, dim when this cutter
+    /// can't take it (its bed, a cut it refuses); a pick orders <paramref name="count"/> (its Order count) at the cutter.
+    /// </summary>
+    public void OpenCutterPicker(ushort body, int machine, ConstructPartDef d, IReadOnlyList<PanelDesign> designs, int count)
+    {
+        _rcpCutKeys.Clear();
+        var tiles = new List<RpTile>();
+        foreach (var dsg in designs)
+        {
+            if (!HullLoft.IsCutName(dsg.Key))
+                continue;
+            var job = ConstructLaserCutter.JobOf(dsg.Key);
+            var fits = job != null && ConstructLaserCutter.Fits(d, job);
+            var label = HullLoft.PanelLabel(dsg.Key);
+            tiles.Add(new RpTile
+            {
+                Value = fits ? _rcpCutKeys.Count : -1,
+                Name = dsg.Name,
+                Out = job != null ? $"{job.EdgeM:0.#} m cut" : "",
+                Time = job != null ? Secs(ConstructLaserCutter.Seconds(job, d)) : "",
+                Search = $"{dsg.Name} {label}".ToLowerInvariant(),
+                Tip = job == null ? $"{dsg.Name}: {HullLoft.CutRefusal(dsg.Key) ?? "its blank is no part this build makes"}."
+                    : fits ? $"{dsg.Name}: {label}. Cut from {job.Blank}; {count} ordered at this {d.Name}."
+                    : $"{dsg.Name}: {label}. Too big for this {d.Name}'s bed: {ConstructLaserCutter.TierFor(job) ?? "no Laser Cutter"} takes it.",
+                Swatch = new ImColor8(168, 54, 94, 255),
+            });
+            _rcpCutKeys.Add(dsg.Key);
+        }
+        if (tiles.Count == 0)
+            tiles.Add(new RpTile { Value = -1, Name = "No cut designs", Search = "", Tip = "No cut designs in this world yet: draw one at a Panel Designer (Cut-outs) and Save it.", Swatch = new ImColor8(70, 76, 88, 255) });
+        _rcp = new RpSet { Tiles = tiles.ToArray(), Groups = ["All"], Title = $"Cut design: {d.Name}###rpick", Key = SandboxTiles.Key() };
+        _rcpDef = d;
+        _rcpVariant = "";
+        _rcpGroup = 0;
+        _rcpSearch = "";
+        if (_rcpSearchInput != null)
+            ImGuiSafe.SetInput(_rcpSearchInput, "");
+        _exOpen = false;
+        _rcpFilterVersion++;
+        _rcpFocusSearch = tiles.Count > 12;
+        RecipePickerOpen = true;
+        _rcpBody = body;
+        _rcpConsole = machine;
+        _rcpMachine = machine;
+        _rcpSame = 1;
+        _rcpFromConfig = false;
+        _rcpAllLabel = "";
+        _rcpCut = true;
+        _rcpCutCount = Math.Clamp(count, 1, WorkOrders.MaxCount);
+    }
+
     private void Open(ConstructPartDef d, string variant)
     {
+        _rcpCut = false;
         var key = SandboxTiles.Key();
         if (!_rcpSets.TryGetValue((d, variant), out var set) || set.Key != key)
             _rcpSets[(d, variant)] = set = MakeRecipeSet(d, key, variant);
@@ -398,7 +458,12 @@ public sealed partial class Ui
         if (picked >= 0)
         {
             // After the drawing: the pick goes to the server (or the configure panel), and the picker closes.
-            if (_rcpFromConfig)
+            if (_rcpCut)
+            {
+                if (picked < _rcpCutKeys.Count)
+                    game.SandboxCraftOrder(_rcpBody, _rcpMachine, ConstructPanelFormer.Order(_rcpCutKeys[picked], _rcpCutCount)); // (queued at the cutter)
+            }
+            else if (_rcpFromConfig)
                 SandboxConfigSet(game, _rcpSlot, picked, now);
             else
                 game.SandboxLineRecipe(_rcpBody, _rcpConsole, _rcpMachine, picked, _rcpAll && _rcpSame > 1);

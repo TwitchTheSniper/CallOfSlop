@@ -848,7 +848,7 @@ public static unsafe partial class Program
                     var held = false;
                     foreach (var hs in g.Constructs.Stores)
                         for (var k = 0; hs is { Live: true } && k < hs.KindN; k++)
-                            held |= ConstructParts.Get(hs.KindDef![k]) is { } hd && HullLoft.IsPanelName(hd.Name) && hs.KindCount![k] > 0;
+                            held |= ConstructParts.Get(hs.KindDef![k]) is { } hd && (HullLoft.IsPanelName(hd.Name) || HullLoft.IsCutName(hd.Name)) && hs.KindCount![k] > 0;
                     var ready = arg == "await" ? Ui.DesignerOpen : arg == "held" ? held : int.TryParse(arg[6..], out var need) && others >= need;
                     if (!ready)
                     {
@@ -915,13 +915,18 @@ public static unsafe partial class Program
                 {
                     foreach (var b in g.Constructs.Bodies)
                         for (var i = 0; i < b.PartCount; i++)
-                            if (HullLoft.IsPanelName(b.DefOf(i).Name))
+                            if (HullLoft.IsPanelName(b.DefOf(i).Name) || HullLoft.IsCutName(b.DefOf(i).Name))
                                 WsSay($"design: placed on body {b.Id} part {i}: {b.DefOf(i).Name} hash {HullLoft.PanelHash(b.DefOf(i)):x8}");
                     return;
                 }
                 if (dw.Length >= 2 && dw[0] == "profile" && dw[1].Split(',') is { Length: 2 } pv && int.TryParse(pv[0], out var ph) && int.TryParse(pv[1], out var pcm))
                 {
                     Ui.DesignerProfile(ph, pcm); // "profile H,CM": a loft's handle H (0-7 the back edge, 8-15 the nose) to CM, as a drag would
+                    _wsWait = 3;
+                }
+                else if (dw.Length == 2 && dw[0] == "cut" || arg.StartsWith("cut drop ", StringComparison.Ordinal))
+                {
+                    WsSay($"design cut: {Ui.DesignerCut(arg[4..].Trim())}"); // "cut r70,60,40,50,5", "cut m0,30,30", "cut clear", "cut drop N" (laser cutter phase 4)
                     _wsWait = 3;
                 }
                 else if (dw.Length >= 2 && dw[0] == "name")
@@ -933,11 +938,11 @@ public static unsafe partial class Program
                     _wsWait = 3;
                 }
                 var ds = Ui.DesignerShape;
-                WsSay($"design: {(Ui.DesignerOpen ? "open" : "closed")}; {(HullLoft.PanelRefusal(ds) ?? HullLoft.PanelKey(ds))}; preview {(Ui.DesignerPreview.Shown == null ? "none" : $"{HullLoft.PanelKey(Ui.DesignerPreview.ShownShape)} hash {HullLoft.PanelHash(Ui.DesignerPreview.Shown):x8}")}{(Ui.DesignerPreview.Building ? " (building)" : "")}, {Ui.DesignerPreview.Made} keys previewed; links {Ui.DesignerLinks}; library {Ui.DesignerDesigns}; world designs [{string.Join("; ", g.Constructs.Designs.Select(x => $"{x.Name} = {x.Key}"))}]");
+                WsSay($"design: {(Ui.DesignerOpen ? "open" : "closed")}; {(HullLoft.PanelRefusal(ds) ?? Ui.DesignerKey)}; cuts {Ui.DesignerCuts}{(Ui.DesignerCuts > 0 && HullLoft.CutRefusal(Ui.DesignerKey) is { } cw ? $" (refused: {cw})" : "")}; preview {(Ui.DesignerPreview.Shown == null ? "none" : $"{Ui.DesignerPreview.ShownCut ?? HullLoft.PanelKey(Ui.DesignerPreview.ShownShape)} hash {HullLoft.PanelHash(Ui.DesignerPreview.Shown):x8}")}{(Ui.DesignerPreview.Building ? " (building)" : "")}, {Ui.DesignerPreview.Made} keys previewed; links {Ui.DesignerLinks}; library {Ui.DesignerDesigns}; world designs [{string.Join("; ", g.Constructs.Designs.Select(x => $"{x.Name} = {x.Key}"))}]");
                 WsSay($"design: {RuntimeParts.Line()}");
                 foreach (var st in g.Constructs.Stores)
                     for (var k = 0; st is { Live: true } && k < st.KindN; k++)
-                        if (ConstructParts.Get(st.KindDef![k]) is { } fd && HullLoft.IsPanelName(fd.Name))
+                        if (ConstructParts.Get(st.KindDef![k]) is { } fd && (HullLoft.IsPanelName(fd.Name) || HullLoft.IsCutName(fd.Name)))
                             WsSay($"design:   held {st.KindCount![k]} x {fd.Name} hash {HullLoft.PanelHash(fd):x8}");
                 if (g.IsServer && g.Constructs.Designs.Count > 0)
                 {
