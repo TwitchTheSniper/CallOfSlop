@@ -1006,8 +1006,12 @@ public sealed partial class Game
             return false;
         if (p.Team == SbPeopleTeam)
         {
+            AllocProfile.Mark("bot: outpost person");
             if (!OutpostBot(p, b, now)) // (an outpost's person: GameOutposts.cs)
+            {
+                AllocProfile.Mark("bot: story body");
                 StoryBodyBot(p, b, now); // (a story person's body: GameStoryBodies.cs)
+            }
             return false;
         }
         if (LockdownSquadBot(p, b, now))

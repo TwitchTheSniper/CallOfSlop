@@ -266,6 +266,8 @@ public static unsafe partial class Program
             return FormerPresets.Cli(); // every catalogue wing and rotor against the key a Fan or Airframe Former would cut for it (FormerPresets.cs)
         if (args.SkipWhile(a => !a.Equals("--bill", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } billOf)
             return ConstructBill.Cli(billOf); // a blueprint's bill: the pieces it needs by key with counts (WorkOrders.cs)
+        if (args.Any(a => a.Equals("--bench-compare", StringComparison.OrdinalIgnoreCase)))
+            return BenchCompare(args); // two frame-rate benchmark runs side by side (Program.Bench.cs, docs/perf/BENCHMARK.md)
         if (args.Any(a => a.Equals("--bench-parts", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BenchParts(args); // run-time parts and part shapes over many generated vehicles, offline and host + client (Source/App/BenchParts.cs)
         if (args.Any(a => a.Equals("--bench-material", StringComparison.OrdinalIgnoreCase)))
@@ -338,6 +340,7 @@ public static unsafe partial class Program
 
         // Saves live in %APPDATA%\CallOfSlop (or portable.txt / --save-dir) so they carry over between builds (SavePaths.cs).
         // The smoke test works on a throwaway copy and never touches the real save folder.
+        args = BenchArgs(args); // --bench: the frame-rate benchmark is a window-tool run over a spots file (Program.Bench.cs)
         _shotTool = args.Any(a => a.Equals("--light-shots", StringComparison.OrdinalIgnoreCase)); // (Program.LightShots.cs)
         var perfShot = args.Any(a => a.Equals("--perf-shot", StringComparison.OrdinalIgnoreCase)); // (Program.Perf.cs)
         var megaWindow = args.Any(a => a.Equals("--mega-host", StringComparison.OrdinalIgnoreCase) || a.Equals("--mega-client", StringComparison.OrdinalIgnoreCase)
@@ -1136,8 +1139,9 @@ public static unsafe partial class Program
             BenchPass(1);
             DrawMovers(map); // moving platforms at this frame's pose
             StandInRender.Draw(Gfx, _session); // STAND-IN: the story's placeholder craft (Source/StandIns)
-            CityGfx.Draw(map, Gfx, Glfw.Time, _game is { } cg ? cg.MoverRenderTick / World.TickRate : Glfw.Time); // a planetoid's city: one draw a chunk (Source/Render/CityRenderer.cs)
         }
+        using (Perf.Pass(PerfArea.City, PerfGpuPass.City))
+            CityGfx.Draw(map, Gfx, Glfw.Time, _game is { } cg ? cg.MoverRenderTick / World.TickRate : Glfw.Time); // a planetoid's city: one draw a chunk (Source/Render/CityRenderer.cs)
         using (Perf.Pass(PerfArea.Terrain, PerfGpuPass.Terrain))
             TerrainGfx.Draw(Gfx, map); // terrain maps only (built once per map)
         BenchPass(2);
@@ -2098,6 +2102,8 @@ public static unsafe partial class Program
         DrawZombiesWorld(now); // push carts and the slot station (Program.Workbench.cs); nothing in normal matches
         DrawZombiesMode(now); // the Zombies mode: zombies, doors, windows, buyables (Program.Zombies.cs); nothing on other maps
         DrawLogic(now); // map logic: doors, lamps, buttons, levers, plates (Program.Logic.cs); nothing on maps without a "logic" section
+        pass.Dispose();
+        pass = Perf.Pass(PerfArea.ConstructDraw, PerfGpuPass.Constructs); // (the next two draw nothing in Sandbox)
         DrawSandbox(now); // Sandbox: the constructs (Program.Sandbox.cs); nothing in other modes
         DrawAmmoFx(now); // special ammo flashes, in any mode (Program.Zombies.cs)
         DrawPveEnemies(now, eye, fwd); // co-op enemy soldiers, with level of detail (Program.Pve.cs); nothing outside Co-op

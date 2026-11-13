@@ -44,6 +44,8 @@ public static partial class Program
                 var p50 = _wsPerfMs[_wsPerfMs.Count / 2];
                 WsSay($"[perf] {_wsPerfLabel}: {_wsPerfMs.Count} frames, mean {mean:0.00} ms ({1000 / mean:0} fps), median {p50:0.00} ms, 99th {p99:0.00} ms, worst {_wsPerfMs[^1]:0.00} ms"
                     + (_session is { } g ? $", bodies {g.Constructs.Bodies.Count}, players {g.Players.Count}, lamps lit {ConstructLamps.LastLit} of {ConstructLamps.LastNear}, free lights {LightGrid.DynamicFree}" : ""));
+                if (PerfBench.Recording)
+                    BenchSpotDone(PerfBench.End(keepOn: Ui.PerfMode != PerfView.Off), _session); // the profiler's breakdown, and with --bench the run's JSON (Program.Bench.cs)
             }
         }
         _wsPerfLast = t;
@@ -61,6 +63,7 @@ public static partial class Program
                 _wsPerfMs.Clear();
                 _wsPerfLast = 0;
                 _wsWait = _wsPerfAll + 2;
+                PerfBench.Begin(_wsPerfLabel); // (the profiler on over the same frames: PerfBench.cs)
                 return true;
             }
             case "skip": // the survival opening skipped, as its key does
