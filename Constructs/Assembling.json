@@ -175,7 +175,7 @@
     {"output": "Blueprint Desk", "materials": {"steel": 20, "laminate": 6}, "parts": {"Control Unit": 3, "Circuit Board": 2}, "seconds": 30, "minTier": 3},
     {"output": "Foundation", "materials": {"concrete": 100, "steel": 10}, "seconds": 15},
     {"output": "Frame Block", "materials": {"steel": 6}, "seconds": 4},
-    {"output": "Frame Beam", "materials": {"steel": 14}, "seconds": 6},
+    {"output": "Frame Beam", "pressed": true},
     {"output": "Panel", "materials": {"steel": 4}, "seconds": 3},
     {"output": "Wood Panel", "materials": {"laminate": 4}, "seconds": 2},
     {"output": "Lift Coil Mk 2", "materials": {"copper": 6, "steel": 4}, "parts": {"Copper Coil": 1}, "seconds": 20, "minTier": 2},

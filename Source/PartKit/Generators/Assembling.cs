@@ -517,8 +517,9 @@ public sealed class Assembling : IPartGenerator
 
     // The parts a die presses from one blank (a preset in PressParts) that leave the Assembler. Not here, and why:
     // Differential and Proximity Sensor take two kinds of part (an assembly by the sort's rule); the engine cylinders are engine pieces, sized in
-    // their own phase (answer 4); the Frame Beam is the basic building piece (answer 3). Suspension, Drive Shaft 1 m, U Joint, CV Joint, Stub
-    // Axle and Wheel Hub moved on 2026-11-13, once their patterns took a Gear Set in bay 2 in place of Bearings (bronze is tier 2).
+    // their own phase (the user's answer 2, 2026-11-13). Suspension, Drive Shaft 1 m, U Joint, CV Joint, Stub Axle and Wheel Hub moved on
+    // 2026-11-13, once their patterns took a Gear Set in bay 2 in place of Bearings (bronze is tier 2); the Frame Beam the same day as the
+    // Beam die's girder (answer 3; the start kit carries a Beam Die). The other building pieces (Parts/Building, Parts/Capital) stay.
     private static readonly HashSet<string> Moved = new(StringComparer.Ordinal)
     {
         "L Bracket", "Corner Bracket", "Gusset 0.25 m", "Gusset 0.5 m",
@@ -530,6 +531,7 @@ public sealed class Assembling : IPartGenerator
         "Wiring Loom", "Copper Coil", "Power Lead Reel", "Data Lead Reel", "Fluid Hose Reel", "Fuel Line",
         "AND Gate", "NOT Gate", "Timer", "Delay", "Compare", "Speed Sensor",
         "Fuel Tank", "Small Fuel Tank", "Fuel Drum", "Fluid Tank", "Small Fluid Tank",
+        "Frame Beam",
     };
 
     /// <summary>A recipe that leaves the plain Assembler for a press: one of <see cref="Moved"/>, or a Housing (the Housing die presses all 21).</summary>

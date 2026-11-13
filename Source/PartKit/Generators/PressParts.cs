@@ -677,9 +677,12 @@ public sealed class PressParts : IPartGenerator
         Add("Mesh Grate 1 m", "plate", "grate", "plate 100x10x100 steel");
         Add("Armour Plate 1 m", "plate", "armour", "plate 100x20x100 steel");
         // Press phase 5: the phase 3b dies' patterns, each from its pattern's own preset blank (several share one: the Pattern setting or an
-        // order picks). The Beam die's patterns are all like the Frame Beam, which stays an Assembler's (a building piece: design 12, answer 3).
+        // order picks).
         foreach (var (part, die, pattern, blank) in Presets3b)
             Add(part, die, pattern, blank);
+        // The Frame Beam is the Beam die's girder (the user, 2026-11-13, phase 5 question 3): a 2 m I-beam held to what a Small Press takes
+        // (45 cm), so a start's first frame needs no tier 2 press. The other building pieces stay on the Assembler.
+        Add("Frame Beam", "beam", "girder", $"i-beam {PresetAcross(50, Small)}x{PresetAcross(50, Small)}x200 steel");
         return r;
     }
 

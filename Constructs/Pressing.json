@@ -4517,6 +4517,12 @@
    "die": "tank",
    "pattern": "smallfluid",
    "blank": "hollow 40x40x40 steel"
+  },
+  {
+   "part": "Frame Beam",
+   "die": "beam",
+   "pattern": "girder",
+   "blank": "i-beam 45x45x200 steel"
   }
  ]
 }
