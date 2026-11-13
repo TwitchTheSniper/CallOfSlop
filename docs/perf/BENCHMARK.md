@@ -5,7 +5,7 @@ before and after any change to what is drawn or ticked every frame, on the user'
 software renderer: its numbers say nothing about a real frame).
 
 ```
-CallOfSlop.exe --bench [SPOTS] [--out FILE.json] [--frames N] [--settle N] [--size WxH] [--shots] [--storm] [--trace-ticks MS]
+CallOfSlop.exe --bench [SPOTS] [--out FILE.json] [--frames N] [--settle N] [--size WxH] [--shots] [--storm] [--trace-ticks MS] [--trace-frame]
 CallOfSlop.exe --bench-compare BASE.json NEW.json [--noise PCT]
 ```
 
@@ -28,6 +28,15 @@ CallOfSlop.exe --bench-compare BASE.json NEW.json [--noise PCT]
 `[bench] SPOT slow tick N, 8.33 ms: bot: movement 7.84, ...` and into the spot's `slowTicks`. The marks cost a bool test
 when the trace is off, but timing every one of them while it is on slows the frame: use it to find a spike, not for the
 numbers you compare. To look deeper, add an `AllocProfile.Mark("...")` where the time goes.
+
+## Where the frame goes: `--trace-frame`
+
+`--bench --trace-frame` times every marked section over each spot and prints the slowest as ms a frame (`[bench] SPOT
+sections (ms a frame): people: player bodies 0.34, cr: body parts 0.24, ...`, and `frameSections` in the JSON). The render
+side has marks in the construct renderer (`cr: ...`: culling, body parts, merged chunks, parts drawn one by one, the flush,
+the sweep with links, tracks and routes), the Sandbox draw (`sb: ...`) and the people (`people: ...`); the tick side the
+same marks as `--trace-ticks`. Like that one it slows the frame. Each spot's `world` also records the construct renderer's
+last frame: boxes, merged chunks drawn, parts drawn one by one, bodies culled and bodies drawn far.
 
 ## Noise: run alone
 

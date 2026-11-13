@@ -126,8 +126,8 @@ public static unsafe class Lighting
             vec4 uProbeA;    // mode 2: light rgb, flicker share
             vec4 uProbeB;    // mode 2: light direction (view space), ambient
             vec4 uProbeC;    // mode 2: sun, flicker phasor (x, y), flicker pace
-            vec4 uDynPos[4]; // dynamic lights: position, range
-            vec4 uDynCol[4]; // colour * intensity
+            vec4 uDynPos[12]; // dynamic lights: position, range (the size is LightGrid.MaxDynamic: its check below)
+            vec4 uDynCol[12]; // colour * intensity
             vec4 uSurfQ;     // x: the materials setting (0 Low: the classic light, 1 Medium, 2 High; docs/render/MATERIALS.md); y: 1 while glow is marked for the bloom
         };
         uniform sampler3D uLitA; // rgb: static light reaching the cell, a: the share that flickers
@@ -217,7 +217,7 @@ public static unsafe class Lighting
             {
                 vec3 dl = vec3(0.0);
                 int nd5 = int(uLitMode.w + 0.5);
-                for (int i = 0; i < nd5; i++) // at most 4 (LightGrid.MaxDynamic)
+                for (int i = 0; i < nd5; i++) // at most LightGrid.MaxDynamic
                 {
                     vec3 l = uDynPos[i].xyz - p;
                     float d = length(l);
@@ -250,7 +250,7 @@ public static unsafe class Lighting
             float facing = (1.0 - min(length(b.xyz), 1.0)) * 0.6 + max((dot(n, b.xyz) + wrap) / (1.0 + wrap), 0.0);
             vec3 lit = a.rgb * facing * LitFlicker(uLitMode.y, c, a.a);
             int nd = uLitMode.x < 1.5 ? int(uLitMode.w + 0.5) : 0;
-            for (int i = 0; i < nd; i++) // at most 4 (LightGrid.MaxDynamic)
+            for (int i = 0; i < nd; i++) // at most LightGrid.MaxDynamic
             {
                 vec3 l = uDynPos[i].xyz - p;
                 float d = length(l);
