@@ -40,8 +40,8 @@ already holds, and the Router's settings ride with the body as every setting doe
 1. **Where the Router's screen goes.** Q6 took away the post the design put it on. Chosen: a low plate on each side face, under
    the conveyor line (knee height; a conveyor on that side hides it from a standing player). Its buttons are near the ground and a
    joined client's press was not seen to land. Alternatives: (B) a short screen post at one corner after all; (C) no screen on the
-   Router, its state on the board's top lines and its settings with the configure tool only. (Asked of the coordinator at the start;
-   no answer during the phase.)
+   Router, its state on the board's top lines and its settings with the configure tool only. **Answered (user, 2026-11-13): A**, the
+   low plate on each side face below the conveyor line, as built. Whether a client's press lands on its low buttons is still open.
 2. **The board is a list on every size for now**; the plan map (9.2) is the next step. Is the list enough on a big sign, or is the
    map wanted?
 3. **"Router 1, 2 ..."** are numbered in the map's node order (stable while the links don't change), not by anything the player sets.
