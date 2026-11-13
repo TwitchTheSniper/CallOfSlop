@@ -2569,8 +2569,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2591,8 +2590,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2613,8 +2611,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2635,8 +2632,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2657,8 +2653,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2679,8 +2674,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2701,8 +2695,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     }
@@ -2790,8 +2783,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2814,8 +2806,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2838,8 +2829,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2877,8 +2867,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     }

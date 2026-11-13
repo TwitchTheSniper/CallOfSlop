@@ -528,7 +528,9 @@ public sealed class PressParts : IPartGenerator
             Feature("seam", [-0.01, 0.48, 0.05, 1.01, 0.52, 0.95], "dark", proud: "x", clamp: "y", min: 0.5, max: 4),
             Feature("sump", [0.2, -0.1, 0.2, 0.8, 0.0, 0.8], "dark", proud: "y"));
         var gears = Kit("Gear Set", true, 1, 0.02, "mass", 20);
-        var torque = Py.L(Scale("maxTorque", "across", 3, true, 900));
+        // (no stand-in rating: every gearbox and differential in the catalogue is unrated, 0 = no limit, and a 900 N m stand-in capped every
+        // pressed one there, so a pressed gearbox drove a truck at 11.5 m/s where its catalogue twin gave 17.9: Press phase 5. A rated like part scales.)
+        var torque = Py.L(Scale("maxTorque", "across", 3, true));
         yield return SizedDie("Drive", ["hollow", "solid"], ["steel", "metal", "bronze"], [20, 720], [20, 1600], [0.5, 8], 3, 0.02, drive,
             DrivePatterns.Select(d => (object?)Pattern(d.Id, d.Like, d.Label, d.Blank, bay2: gears, scale: torque)).ToList(), FaceSockets());
         foreach (var die in WorkingDies3b())
@@ -548,7 +550,7 @@ public sealed class PressParts : IPartGenerator
             Feature("flange", [-0.2, -0.2, 0, 1.2, 1.2, 0.08], "dark", proud: "xyz", clamp: "z", min: 0.5, max: 40),
             Feature("flange", [-0.2, -0.2, 0.92, 1.2, 1.2, 1], "dark", proud: "xyz", clamp: "z", min: 0.5, max: 40));
         var bearings = Kit("Bearing", true, 2, 0.5, "length", 12);
-        var shaftTorque = Py.L(Scale("maxTorque", "across", 3, true, 900));
+        var shaftTorque = Py.L(Scale("maxTorque", "across", 3, true)); // (the U Joint is rated, 4,000 N m, and scales; the unrated stay unrated, as the Drive die)
         yield return SizedDie("Shaft", ["round", "pipe"], metals, [10, 180], [25, 3200], [1, 64], 2, 0.02, shaft, Py.L(
             Pattern("shaft", "Drive Shaft 1 m", "drive shaft", "round 20x20x100 steel", bay2: bearings, scale: shaftTorque, along: "z"),
             Pattern("ujoint", "U Joint", "U joint", "round 15x15x25 steel", bay2: bearings, scale: shaftTorque, along: "x"),
