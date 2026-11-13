@@ -718,6 +718,8 @@ public static class ConstructPress
     public static bool TakeFromConveyor(ConstructWorld world, IWorldQuery query, Construct c, int part, int bay, ConstructPartDef pd, float health, uint paint)
     {
         var d = c.Parts[part].D;
+        if (!pd.IsExtrusion && d.IsPress && !d.IsLathe && !c.Parts[part].Broken && WantsKitPart(world, c, part, (ushort)pd.Id))
+            return FeedKitPart(world, c, part, pd); // (a kit part riding in, at any bay's Piece in, goes to the hopper: a chained order's kit, Press phase 4)
         if (d.IsPress && !d.IsLathe && bay == HopperBay)
         {
             // Bay 2 is the kit hopper: its Piece in feeds the first free bay that takes blanks (bay 3, else bay 1).

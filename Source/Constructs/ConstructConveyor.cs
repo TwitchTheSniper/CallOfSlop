@@ -1004,7 +1004,10 @@ public static class ConstructConveyor
         if (td.IsPress && ConstructRoutes.PortOf(td, RouteType.Conveyor, c.Routes[route].ToPort) is { } port)
         {
             var bay = port.Name.Length > 9 && int.TryParse(port.Name.AsSpan(9), out var nb) ? nb - 1 : 0; // ("Piece in", "Piece in 2"...)
-            return ConstructPress.TakeFromConveyor(world, query, c, to, bay, d, r.Health / 255f, r.Paint);
+            if (!ConstructPress.TakeFromConveyor(world, query, c, to, bay, d, r.Health / 255f, r.Paint))
+                return false;
+            ConstructLogisticsPlan.Arrived(world, c, to, r.Tag, d); // (a chained press order's blank or kit: it counts for its link, Press phase 4)
+            return true;
         }
         return false;
     }

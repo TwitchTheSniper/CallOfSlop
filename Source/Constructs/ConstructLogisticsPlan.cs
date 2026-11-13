@@ -48,6 +48,7 @@ public enum ChainFlags : byte
 public static class ConstructLogisticsPlan
 {
     public const int MaxEntries = 256, MaxDepth = 6, MaxLines = 6;
+    private const int MaxInputs = 24; // (inputs a machine asks for: more than any recipe lists)
     public const ushort NoPart = ushort.MaxValue;
     public const byte ClassLow = 0, ClassNormal = 1, ClassHigh = 2; // (stock targets, phase 3, rank below Low)
 
@@ -59,10 +60,40 @@ public static class ConstructLogisticsPlan
     /// </summary>
     public static void Asked(ConstructWorld world, Construct c, CraftNet net, int t, in CraftOrder o, int m, int ask)
     {
-        if (o.What.IsPiece || o.What.Name != null)
+        if (o.What.IsPiece || o.What.Name != null && !o.What.IsPressed)
             return;
-        var root = new ChainEntry { Root = (ushort)t, RootId = o.Id, Class = ClassNormal, Stamp = o.Stamp, Depth = 0, Kind = o.What.Part };
-        Need(world, c, net, m, o.What.Part, ask, root);
+        var kind = o.What.IsPressed ? o.Def : o.What.Part; // (a pressed part's kind is its run-time def here: Place set it)
+        if (kind == 0 || kind == ConstructParts.None)
+            return;
+        var root = new ChainEntry { Root = (ushort)t, RootId = o.Id, Class = ClassNormal, Stamp = o.Stamp, Depth = 0, Kind = kind };
+        Need(world, c, net, m, kind, ask, root);
+    }
+
+    /// <summary>
+    /// What a press needs to press <paramref name="ask"/> of <paramref name="product"/> (Press phase 4): its blank, one a part (a piece kind,
+    /// an Extruder's), and its bay 2 kit when the kit is a part. Bulk kits are not ordered (the user, Q3): they come by chute. 0 inputs: not a press's.
+    /// </summary>
+    private static int PressInputs(Construct c, int m, CStore st, ushort product, int ask, Span<ushort> kinds, Span<int> counts, Span<int> held)
+    {
+        if (ConstructParts.Get(product) is not { } pd || ConstructPress.SizedDieOf(PressTable.Current, c, m) is not { } die)
+            return 0;
+        var key = Pressed.IsName(pd.Name) ? pd.Name : PressTable.Current.PresetKeyOf(pd);
+        if (key == null || Pressed.SpecOf(key) is not { } spec || !ReferenceEquals(spec.Die, die) || Extrusion.Def(spec.Blank) is not { } blank)
+            return 0;
+        var n = 0;
+        var inBays = 0;
+        var md = c.DefOf(m);
+        for (var b = 0; b < md.PressBays.Length; b++)
+            if (b != ConstructPress.HopperBay && ConstructPress.PieceIn(c, m, b) is var i and >= 0 && (c.Parts[i].D.ExKey with { Growing = false }) == spec.Blank)
+                inBays++;
+        (kinds[n], counts[n], held[n]) = ((ushort)blank.Id, ask, inBays);
+        n++;
+        if (spec.Pattern.Bay2 is { Part: { } kit } amount && Pressed.Bay2For(spec.Pattern, spec.Blank) is var each and > 0)
+        {
+            (kinds[n], counts[n], held[n]) = ((ushort)kit.Id, each * ask, ConstructPress.KitHeld(st, amount));
+            n++;
+        }
+        return n;
     }
 
     /// <summary>
@@ -71,16 +102,35 @@ public static class ConstructLogisticsPlan
     /// </summary>
     private static bool Need(ConstructWorld world, Construct c, CraftNet net, int m, ushort product, int ask, in ChainEntry parent)
     {
-        if (m >= c.PartCount || !c.DefOf(m).IsAssembler || AssemblingTable.Current.Of(product) is not { Parts.Length: > 0 } r || world.StoreOf(c, m) is not { } st)
+        if (m >= c.PartCount || world.StoreOf(c, m) is not { } st)
             return true;
-        var batches = (ask + r.Count - 1) / r.Count;
-        foreach (var (part, n) in r.Parts)
+        // The inputs: an Assembler's recipe parts (whole batches), or a press's blank and part kit (Press phase 4).
+        Span<ushort> kinds = stackalloc ushort[MaxInputs];
+        Span<int> wants = stackalloc int[MaxInputs], inside = stackalloc int[MaxInputs];
+        var inputs = 0;
+        var md = c.DefOf(m);
+        if (md.IsPress && !md.IsLathe)
+            inputs = PressInputs(c, m, st, product, ask, kinds, wants, inside);
+        else if (md.IsAssembler && AssemblingTable.Current.Of(product) is { Parts.Length: > 0 } r)
         {
+            var batches = (ask + r.Count - 1) / r.Count;
+            foreach (var (rp, rn) in r.Parts)
+                if (inputs < kinds.Length)
+                {
+                    (kinds[inputs], wants[inputs], inside[inputs]) = ((ushort)rp.Id, rn * batches, ConstructCrafting.Holds(st, rp.Id));
+                    inputs++;
+                }
+        }
+        for (var j = 0; j < inputs; j++)
+        {
+            var part = ConstructParts.Get(kinds[j]);
+            if (part == null)
+                continue;
             var coming = 0;
             for (var i = 0; i < world.ChainCount; i++)
                 if (world.Chains[i].Body == c.Id && world.Chains[i].Dest == m && world.Chains[i].Kind == part.Id)
                     coming += world.Chains[i].Asked - world.Chains[i].Made;
-            var shortBy = n * batches - ConstructCrafting.Holds(st, part.Id) - coming; // (one root a machine at a time: its head order uses what it holds)
+            var shortBy = wants[j] - inside[j] - coming; // (one root a machine at a time: its head order uses what it holds)
             if (shortBy <= 0)
                 continue;
             if (world.ChainCount >= MaxEntries)
@@ -234,21 +284,35 @@ public static class ConstructLogisticsPlan
         }
     }
 
+    /// <summary>The work order for a chained kind: a piece by its key (a press's blank), a pressed part by its key, else a catalogue part.</summary>
+    private static WorkOrder OrderOf(ushort kind, int count)
+    {
+        var n = (ushort)Math.Clamp(count, 1, WorkOrders.MaxCount);
+        if (Extrusion.IsRuntimeId(kind) && ConstructParts.Get(kind) is { } d)
+        {
+            if (d.IsExtrusion && d.ExKey.W > 0)
+                return new WorkOrder { Key = d.ExKey with { Growing = false }, Part = ConstructParts.None, Count = n };
+            if (Pressed.IsName(d.Name) && WorkOrders.PressedOrder(d.Name, n) is { } pressed)
+                return pressed;
+        }
+        return new WorkOrder { Part = kind, Count = n };
+    }
+
     /// <summary>
     /// A machine on the root's network (not the one that needs it) takes <paramref name="count"/>: one already making the kind first, else
     /// the shortest queue; queued there, marked with the entry. Nobody: the entry's reason.
     /// </summary>
     private static void FindMaker(ConstructWorld world, Construct c, CraftNet net, ref ChainEntry e, int count)
     {
-        var what = new WorkOrder { Part = e.Kind, Count = (ushort)Math.Clamp(count, 1, WorkOrders.MaxCount), Chain = e.Id };
+        var what = OrderOf(e.Kind, count) with { Chain = e.Id };
         string? refusal = null;
         var best = -1;
         var bestScore = int.MaxValue;
         for (var i = 0; i < net.MachineN; i++)
         {
             var mk = net.Machines[i];
-            if (mk == e.Dest || !c.DefOf(mk).IsAssembler)
-                continue;
+            if (mk == e.Dest || what.IsPiece != c.DefOf(mk).IsExtruder && !c.DefOf(mk).IsPress)
+                continue; // (a piece is an Extruder's or a Former's; a part an Assembler's or a Press's: Refusal says which takes it)
             var why = WorkOrders.Refusal(world, c, mk, what);
             if (why != null)
             {
