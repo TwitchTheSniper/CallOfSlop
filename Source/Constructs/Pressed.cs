@@ -276,7 +276,7 @@ public static class Pressed
     public static float Scaled(PressScale s, float likeValue, PressPattern p, in ExtrusionKey k)
     {
         if (s.Points != null)
-            return Sig3(s.At(Measure(s.By, k))); // (a curve through catalogue parts: its value is the number itself)
+            return Sig3(s.At(s.ReadAt > 0 ? s.ReadAt * Measure(s.By, k) / MathF.Max(Measure(s.By, p.Preset), 1e-6f) : Measure(s.By, k))); // (a curve through catalogue parts: its value is the number itself; "at": read relative to the pattern's preset)
         var like = likeValue == 0 ? s.Ref : likeValue;
         if (like == 0)
             return 0;
@@ -460,7 +460,7 @@ public static class Pressed
         d.GunSized = null;
         if (p.Like.Role == PartRole.GunPart && Parts.Find(p.Like.GunPartName) is { } builder)
         {
-            d.GunSized = SizedGunParts.Make(builder, p, k, name);
+            d.GunSized = SizedGunParts.Make(builder, die, p, k, name);
             d.GunPartName = name;
         }
         return d;
@@ -669,7 +669,7 @@ public static class Pressed
         d.GunSized = null;
         if (like.Role == PartRole.GunPart && Parts.Find(like.GunPartName) is { } builder)
         {
-            d.GunSized = SizedGunParts.Make(builder, p, k, name);
+            d.GunSized = SizedGunParts.Make(builder, die, p, k, name);
             d.GunPartName = name;
         }
         return d;

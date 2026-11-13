@@ -4200,7 +4200,2005 @@
        "op": "add"
       }
      ]
+    },
+    {
+     "id": "bigiron",
+     "like": "Big Iron Barrel",
+     "label": "big iron barrel",
+     "preset": "round 15x15x125 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.3438,
+        1.25
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.6875,
+        2.25
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "bloat",
+     "like": "Bloat Barrel",
+     "label": "bloat barrel",
+     "preset": "round 10x10x60 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.5,
+        1.6364
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.07,
+        0.03
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "blunderbussbell",
+     "like": "Blunderbuss Bell",
+     "label": "blunderbuss bell",
+     "preset": "round 15x15x50 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.9167,
+        3.3333
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.3438,
+        1.125
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "cannonsleeve",
+     "like": "Cannon Sleeve",
+     "label": "cannon sleeve",
+     "preset": "round 10x10x75 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.4583,
+        1.5
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.1,
+        0.0
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        0.0,
+        0.08
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "coil",
+     "like": "Coil Barrel",
+     "label": "coil barrel",
+     "preset": "round 10x10x80 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.275,
+        1.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "flamenozzle",
+     "like": "Flame Nozzle",
+     "label": "flame nozzle",
+     "preset": "round 15x15x65 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "flechettesleeve",
+     "like": "Flechette Sleeve",
+     "label": "flechette sleeve",
+     "preset": "round 10x10x80 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.9167,
+        3.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "flutedmatch",
+     "like": "Fluted Match Barrel",
+     "label": "fluted match barrel",
+     "preset": "round 10x10x85 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.3667,
+        1.3333
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.7857,
+        2.5714
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "harpoontube",
+     "like": "Harpoon Tube",
+     "label": "harpoon tube",
+     "preset": "round 15x15x85 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "heatsink",
+     "like": "Heatsink Barrel",
+     "label": "heatsink barrel",
+     "preset": "round 10x10x65 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.5238,
+        1.7143
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "heavybore",
+     "like": "Heavy Bore Barrel",
+     "label": "heavy bore barrel",
+     "preset": "round 10x10x65 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "launchertube",
+     "like": "Launcher Tube",
+     "label": "launcher tube",
+     "preset": "round 25x25x65 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "marksman",
+     "like": "Marksman Barrel",
+     "label": "marksman barrel",
+     "preset": "round 10x10x125 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        1.0,
+        3.2727
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.09,
+        0.01
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.01,
+        0.07
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "needle",
+     "like": "Needle Barrel",
+     "label": "needle barrel",
+     "preset": "round 10x10x110 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.7333,
+        2.4
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.06,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "ported",
+     "like": "Ported Barrel",
+     "label": "ported barrel",
+     "preset": "round 10x10x55 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.5978,
+        2.1739
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "sawn-off",
+     "like": "Sawn-Off Barrel",
+     "label": "sawn-off barrel",
+     "preset": "round 10x10x20 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        1.0,
+        3.6364
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.3056,
+        1.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        0.0,
+        0.1
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.08,
+        0.0
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "scattermouth",
+     "like": "Scattermouth Barrel",
+     "label": "scattermouth barrel",
+     "preset": "round 15x15x75 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "squeezebore",
+     "like": "Squeeze Bore Barrel",
+     "label": "squeeze bore barrel",
+     "preset": "round 10x10x75 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.6111,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "tube",
+     "like": "Howitzer Tube",
+     "label": "artillery tube",
+     "preset": "round 20x20x105 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         5.25,
+         1.0
+        ],
+        [
+         8.25,
+         1.5
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul"
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         5.25,
+         1.0
+        ],
+        [
+         8.25,
+         0.8
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul"
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         5.25,
+         0.0
+        ],
+        [
+         8.25,
+         0.0
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add"
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         5.25,
+         0.0
+        ],
+        [
+         8.25,
+         0.0
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add"
+      }
+     ]
     }
+   ],
+   "fit": [
+    0.7,
+    1.5
    ]
   }
  ],
@@ -4744,6 +6742,126 @@
    "die": "barrel",
    "pattern": "plain",
    "blank": "round 10x10x90 steel"
+  },
+  {
+   "part": "Big Iron Barrel",
+   "die": "barrel",
+   "pattern": "bigiron",
+   "blank": "round 15x15x125 steel"
+  },
+  {
+   "part": "Bloat Barrel",
+   "die": "barrel",
+   "pattern": "bloat",
+   "blank": "round 10x10x60 steel"
+  },
+  {
+   "part": "Blunderbuss Bell",
+   "die": "barrel",
+   "pattern": "blunderbussbell",
+   "blank": "round 15x15x50 steel"
+  },
+  {
+   "part": "Cannon Sleeve",
+   "die": "barrel",
+   "pattern": "cannonsleeve",
+   "blank": "round 10x10x75 steel"
+  },
+  {
+   "part": "Coil Barrel",
+   "die": "barrel",
+   "pattern": "coil",
+   "blank": "round 10x10x80 steel"
+  },
+  {
+   "part": "Flame Nozzle",
+   "die": "barrel",
+   "pattern": "flamenozzle",
+   "blank": "round 15x15x65 steel"
+  },
+  {
+   "part": "Flechette Sleeve",
+   "die": "barrel",
+   "pattern": "flechettesleeve",
+   "blank": "round 10x10x80 steel"
+  },
+  {
+   "part": "Fluted Match Barrel",
+   "die": "barrel",
+   "pattern": "flutedmatch",
+   "blank": "round 10x10x85 steel"
+  },
+  {
+   "part": "Harpoon Tube",
+   "die": "barrel",
+   "pattern": "harpoontube",
+   "blank": "round 15x15x85 steel"
+  },
+  {
+   "part": "Heatsink Barrel",
+   "die": "barrel",
+   "pattern": "heatsink",
+   "blank": "round 10x10x65 steel"
+  },
+  {
+   "part": "Heavy Bore Barrel",
+   "die": "barrel",
+   "pattern": "heavybore",
+   "blank": "round 10x10x65 steel"
+  },
+  {
+   "part": "Launcher Tube",
+   "die": "barrel",
+   "pattern": "launchertube",
+   "blank": "round 25x25x65 steel"
+  },
+  {
+   "part": "Marksman Barrel",
+   "die": "barrel",
+   "pattern": "marksman",
+   "blank": "round 10x10x125 steel"
+  },
+  {
+   "part": "Needle Barrel",
+   "die": "barrel",
+   "pattern": "needle",
+   "blank": "round 10x10x110 steel"
+  },
+  {
+   "part": "Ported Barrel",
+   "die": "barrel",
+   "pattern": "ported",
+   "blank": "round 10x10x55 steel"
+  },
+  {
+   "part": "Sawn-Off Barrel",
+   "die": "barrel",
+   "pattern": "sawn-off",
+   "blank": "round 10x10x20 steel"
+  },
+  {
+   "part": "Scattermouth Barrel",
+   "die": "barrel",
+   "pattern": "scattermouth",
+   "blank": "round 15x15x75 steel"
+  },
+  {
+   "part": "Squeeze Bore Barrel",
+   "die": "barrel",
+   "pattern": "squeezebore",
+   "blank": "round 10x10x75 steel"
+  },
+  {
+   "part": "Howitzer Tube",
+   "die": "barrel",
+   "pattern": "tube",
+   "blank": "round 20x20x105 steel"
+  },
+  {
+   "part": "Long Gun Tube",
+   "die": "barrel",
+   "pattern": "tube",
+   "blank": "round 20x20x165 steel"
   }
  ]
 }

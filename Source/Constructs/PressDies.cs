@@ -67,6 +67,7 @@ public sealed class PressScale
     public bool Log;
     public float Lo = float.MinValue, Hi = float.MaxValue;
     public string Op = ""; // a builder stat's: "mul" or "add"
+    public float ReadAt; // ("at") above 0: the curve is read at At x (the blank's measure / the preset's), so a pattern's preset sits at the curve's At (a Needle Barrel on the plain barrel's curve: 5)
 
     /// <summary>The curve's value at a measure (Points only): no allocation, at most a few knots.</summary>
     public float At(float x)
@@ -127,6 +128,7 @@ public sealed class PressDie
     public PressSocketSpec[] Sockets = [];
     public PressPattern[] Patterns = [];
     public PressPreset[] Presets = []; // this die's presets, in the file's order
+    public float FitLo, FitHi; // a gun part's band: its bore over its receiver's (0, 0: no band; the Barrel die's [0.7, 1.5], sized-parts design section 5)
 
     public PressPattern? Pattern(string id) => Array.Find(Patterns, p => p.Id == id);
 
@@ -239,7 +241,7 @@ internal static class PressDies
 
     private static PressDie DieOf(JsonElement e, Dictionary<string, ConstructPartDef> byName, PressTable t)
     {
-        Keys(e, "a die", "die", "blanks", "materials", "across", "length", "aspect", "seconds", "features", "sockets", "patterns");
+        Keys(e, "a die", "die", "blanks", "materials", "across", "length", "aspect", "seconds", "features", "sockets", "patterns", "fit");
         var family = e.GetProperty("die").GetString() ?? "";
         if (family.Length is 0 or > 16 || !family.All(char.IsAsciiLetter))
             throw new FormatException($"die \"{family}\": a family is 1 to 16 letters");
@@ -265,6 +267,13 @@ internal static class PressDies
             throw new FormatException($"{where}: \"aspect\" is [least, most]");
         d.AspectMin = Num(asp[0], where + ".aspect", 0.01f, 1000);
         d.AspectMax = Num(asp[1], where + ".aspect", d.AspectMin, 1000);
+        if (e.TryGetProperty("fit", out var fit))
+        {
+            if (fit.ValueKind != JsonValueKind.Array || fit.GetArrayLength() != 2)
+                throw new FormatException($"{where}: \"fit\" is [least, most] of a gun part's bore over its receiver's");
+            d.FitLo = Num(fit[0], where + ".fit", 0.1f, 1);
+            d.FitHi = Num(fit[1], where + ".fit", 1, 10);
+        }
         var sec = e.GetProperty("seconds");
         Keys(sec, where + ".seconds", "base", "perKg");
         d.SecondsBase = Num(sec.GetProperty("base"), where + ".seconds.base", 0.1f, 600);
@@ -355,7 +364,7 @@ internal static class PressDies
             var rows = new List<PressScale>();
             foreach (var s in sc.EnumerateArray())
             {
-                Keys(s, where + ".scale", "field", "by", "power", "strength", "ref", "points", "log", "clamp", "op");
+                Keys(s, where + ".scale", "field", "by", "power", "strength", "ref", "points", "log", "clamp", "op", "at");
                 var row = new PressScale { Field = s.GetProperty("field").GetString() ?? "", By = MeasureOf(s, where + ".scale") };
                 var builder = SizedGunParts.IsStat(row.Field);
                 if (!Pressed.Scalable(row.Field) && !builder)
@@ -377,6 +386,12 @@ internal static class PressDies
                     row.Hi = Num(cl[1], where + ".scale.clamp", row.Lo, 1e9f);
                 }
                 row.Op = s.TryGetProperty("op", out var op) ? op.GetString() ?? "" : "";
+                if (s.TryGetProperty("at", out var at))
+                {
+                    if (row.Points == null)
+                        throw new FormatException($"{where}.scale {row.Field}: \"at\" reads a curve (\"points\") relative to the preset");
+                    row.ReadAt = Num(at, where + ".scale.at", 1e-3f, 1e6f);
+                }
                 if (builder != (row.Op is "mul" or "add"))
                     throw new FormatException($"{where}.scale {row.Field}: \"op\" (\"mul\" or \"add\") is for a builder stat, and a builder stat has one");
                 row.Strength = s.TryGetProperty("strength", out var sg) && sg.ValueKind == JsonValueKind.True;

@@ -531,6 +531,9 @@ public sealed class PartDef
     /// <summary>A pressed (sized) part's blank across and length (cm), for the fit check (sized-gun-engine-parts.md 5); 0 on every file part.</summary>
     public int SizeAcrossCm, SizeLengthCm;
 
+    /// <summary>A pressed gun part's bore class: its across over its pattern's preset's (1 at the preset), and the band of a receiver's bore it fits (its die's "fit"); 0 on every file part.</summary>
+    public float SizeBore, SizeFitLo, SizeFitHi;
+
     /// <summary>A shallow copy: a sized builder part starts as its pattern's file part (SizedGunParts.Make).</summary>
     public PartDef Copy() => (PartDef)MemberwiseClone();
     public PartCategory Category;
