@@ -471,7 +471,16 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 287: Lifters phase 1: the Loader Arm part (Constructs/Parts/Lifters, ids move); CBodyKind.Lifts (at the end): a body's lifters, each its part, state, piece, path, age (ConstructLifters.Write).
     // 288: Msg.Breakout (u8 stage, u8 has a target, vec target, u32 ride tick, u16 hauler, u16 hauler): a player's place in the
     //      convicts' break-out and its ride (GameBreakout.cs).
-    public const ushort ProtocolVersion = 288;
+    // 289: Building Station fill settings: the station part has four more settings (fillFuel, fillAmmo, fillCharge, fillWait; CfgKey at the end), part data both peers must share; no new bytes.
+    // 290: Lifters phase 2: the Loader Arm in five tiers (Constructs/Parts/Lifters, ids move); CBodyKind.Lifts adds per lifter u16 carry rise (cm),
+    //   u8 why, u16 step plus one, u16 station body, u16 moves (ConstructLifters.Write); CfgKey.LiftMode and CarryHeight (at the end).
+    // 291: Smart logistics 4c: a Conveyor Router takes a name (its part text, TextSlots 1), so CBody's text tail may carry one; an older peer refuses it as malformed. No new bytes.
+    // 292: run-time parts in the hands by key: the Sandbox hand state's held part is PartRef.WriteCached (a U16 id, or WireMark,
+    //      u8 length and the key's bytes); docs/sandbox/design/inventory-run-time-parts.md phase 1.
+    // 293: Sized parts phase 3: the Receiver die (two die part files, ids move); a pressed receiver sizes its gun by the merge's law (derived on each peer, no new bytes).
+    // 294: Lifters phase 3 (a carried piece pushes players): CBodyKind.Lifts sends the move on the mover clock: u32 start tick, u32 held ticks and
+    //   u32 the tick it waits at (0: it runs) in place of u16 age and u16 held (ConstructLifters.Write); LiftWhy gains Player, PlayerStuck.
+    public const ushort ProtocolVersion = 294;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

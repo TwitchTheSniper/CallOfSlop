@@ -107,6 +107,37 @@
       "by": "base"
     },
     {
+      "part": "Adapter Medium to Small",
+      "on": 1,
+      "socket": "t8_8",
+      "by": "front2.2",
+      "paint": "#d8d8d8",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Medium Truss 8 m",
+      "on": 14,
+      "socket": "back",
+      "by": "-z",
+      "paint": "#d8d8d8",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Medium Truss 8 m",
+      "on": 15,
+      "socket": "+z",
+      "by": "-z",
+      "paint": "#d8d8d8",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Floodlight Medium",
+      "on": 16,
+      "socket": "+z",
+      "by": "-y",
+      "paint": "#ffd6ef"
+    },
+    {
       "part": "Loudhailer",
       "on": 1,
       "socket": "t11_4",

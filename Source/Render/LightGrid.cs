@@ -32,8 +32,21 @@ public static unsafe class LightGrid
     /// <summary>The uniform block binding point the LitFrame block uses in every program.</summary>
     public const uint Binding = 7;
 
-    /// <summary>The most dynamic lights (muzzle flashes, blasts) a frame takes; more are dropped.</summary>
-    public const int MaxDynamic = 4;
+    /// <summary>
+    /// The most dynamic lights (muzzle flashes, blasts, construct lamps: ConstructLamps.cs) a frame takes; more are dropped.
+    /// The shader's arrays take their size from <see cref="MaxDynamicGlsl"/>, which must say the same number.
+    /// </summary>
+    public const int MaxDynamic = 12;
+
+    /// <summary>Is the shader's block the same size as <see cref="FrameBlock"/> (its arrays sized <see cref="MaxDynamic"/>)? Checked when the block is made.</summary>
+    public static bool ShaderAgrees => Lighting.Glsl.Contains($"uDynPos[{MaxDynamic}]", StringComparison.Ordinal) && Lighting.Glsl.Contains($"uDynCol[{MaxDynamic}]", StringComparison.Ordinal);
+
+    /// <summary>The block's dynamic lights, one vec4 each, as the std140 array lays them out.</summary>
+    [System.Runtime.CompilerServices.InlineArray(MaxDynamic)]
+    public struct DynArray
+    {
+        private Vector4 _first;
+    }
 
     /// <summary>Settings > Video > Baked lighting (off: every map draws with the classic light).</summary>
     public static bool Enabled = true;
@@ -57,8 +70,8 @@ public static unsafe class LightGrid
         public Vector4 ProbeA;  // probe: light rgb, flicker share
         public Vector4 ProbeB;  // probe: direction (view space), ambient
         public Vector4 ProbeC;  // probe: sun, flicker phasor x, y, pace (as stored: LightFlicker)
-        public Vector4 Dyn0, Dyn1, Dyn2, Dyn3;     // dynamic lights: position, range
-        public Vector4 DynC0, DynC1, DynC2, DynC3; // colour * intensity
+        public DynArray Dyn;  // dynamic lights: position, range
+        public DynArray DynC; // colour * intensity
         public Vector4 Surf;    // x: the materials setting (Surfaces.cs)
     }
 
@@ -115,6 +128,8 @@ public static unsafe class LightGrid
     {
         if (_ready || _broken)
             return _ready;
+        if (!ShaderAgrees)
+            throw new InvalidOperationException($"LightGrid.MaxDynamic is {MaxDynamic} but Lighting.Glsl's uDynPos/uDynCol arrays are another size: change both");
         try
         {
             _ubo = GenBuffer();
@@ -293,14 +308,11 @@ public static unsafe class LightGrid
             b.Origin = new Vector4(bake.Origin, NormalOffsetY(bake));
             b.Scale = new Vector4(1f / (bake.NX * bake.Cell), 1f / (bake.NY * bake.CellY), 1f / (bake.NZ * bake.Cell), 0f);
         }
-        b.Dyn0 = n > 0 ? dynPos[0] : default;
-        b.Dyn1 = n > 1 ? dynPos[1] : default;
-        b.Dyn2 = n > 2 ? dynPos[2] : default;
-        b.Dyn3 = n > 3 ? dynPos[3] : default;
-        b.DynC0 = n > 0 ? dynCol[0] : default;
-        b.DynC1 = n > 1 ? dynCol[1] : default;
-        b.DynC2 = n > 2 ? dynCol[2] : default;
-        b.DynC3 = n > 3 ? dynCol[3] : default;
+        for (var i = 0; i < MaxDynamic; i++)
+        {
+            b.Dyn[i] = i < n ? dynPos[i] : default;
+            b.DynC[i] = i < n ? dynCol[i] : default;
+        }
     }
 
     /// <summary>Fills the first-person gun's block: one CPU sample of the grid at <paramref name="eye"/> (no GL, no allocation).</summary>

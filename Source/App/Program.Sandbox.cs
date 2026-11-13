@@ -337,6 +337,18 @@ public static unsafe partial class Program
             }
             g.SandboxLookText = _sbRouterText;
         }
+        if (aimed && hit.RoutePlus1 == 0 && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Body.DefOf(hit.Part).Lifter != null)
+        {
+            // A Loader Arm: what it does or waits on, and its reach drawn round it (ConstructLifters.Look, LifterRender.Look).
+            LifterRender.Look(hit.Body.Id, hit.Part);
+            var lk = ConstructLifters.LookKey(g.Constructs, hit.Body, hit.Part) ^ ((long)hit.Body.Id << 48) ^ ((long)hit.Part << 52);
+            if (lk != _sbLifterKey)
+            {
+                _sbLifterKey = lk;
+                _sbLifterText = ConstructLifters.Look(g.Constructs, hit.Body, hit.Part);
+            }
+            g.SandboxLookText = _sbLifterText;
+        }
         var terminalTook = TerminalFrame(g, me, in h, aimed, hit, storeNear); // (a Smart Terminal under the crosshair takes the wheel, the use key and reload: Program.SandboxTerminal.cs)
         var feet = me.Position;
         var nearRack = World.Map.Sandbox is { } sb && Vector3.Distance(feet with { Y = 0 }, sb.Rack) <= 4.5f;
@@ -1015,6 +1027,8 @@ public static unsafe partial class Program
 
     private static long _sbRouterKey = -1;
     private static string _sbRouterText = "";
+    private static long _sbLifterKey = -1;
+    private static string _sbLifterText = "";
 
     private static string StorageLook(Game g, Player me, in ConstructHit hit, CStore st, bool near, ConstructPartDef? held)
     {
@@ -1090,7 +1104,7 @@ public static unsafe partial class Program
             var pile = most > 1 ? $"{st.Count[k]}/{most}" : "";
             var hurt = st.Health[k] < 0.995f ? $"{st.Health[k] * 100:0}% health" : "";
             var take = !near ? "" : held != null ? "hands full" : "";
-            return _sbStoreText = SandboxKeys.Line(d.Name, SandboxKeys.Join(pile, hurt), take, !near || held != null ? null : SandboxKeys.Do(hands ? SandboxKeys.Fire : SandboxKeys.Use, most > 1 ? "take one" : "take"));
+            return _sbStoreText = SandboxKeys.Line(PartRef.Shown(d), SandboxKeys.Join(pile, hurt), take, !near || held != null ? null : SandboxKeys.Do(hands ? SandboxKeys.Fire : SandboxKeys.Use, most > 1 ? "take one" : "take"));
         }
         var used = 0;
         for (var k = 0; k < st.SlotCount; k++)
@@ -1201,6 +1215,7 @@ public static unsafe partial class Program
         // (a client's constructs were blended to this frame's pose in Game.UpdateSandboxSeats, before the camera was set)
         ConstructRender.Now = now;
         ConstructRender.Draw(Gfx, g.Constructs, g.TickAlpha, blendTicks: g.IsServer);
+        AllocProfile.Mark("sb: beams, sounds, ambience");
         DrawPhysGunBeams(g, now); // the physics guns' beams (Program.PhysicsGun.cs)
         g.SandboxSounds(now); // horns (GameSandbox.cs)
         g.ColonyAlarmSounds(now); // the penal colony's lockdown siren (GameColonyLockdown.cs)
@@ -1209,6 +1224,7 @@ public static unsafe partial class Program
         g.EngineAudio.Pick(g.Constructs, Gfx.CameraPosition);
         g.EngineAudio.Play(g.Audio); // (modular engines: EngineSounds.cs)
         g.SandboxBuildSounds(now); // (building: GameSandboxBuildSounds.cs)
+        AllocProfile.Stop();
     }
 
     private static ToolFrame _sbTool;

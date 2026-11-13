@@ -106,8 +106,9 @@ public static partial class SelfTest
         World.SetMap(yard);
         using var server = new Game(NetPeer.Host(port, 4), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: yard.Id) { MapVoteEnabled = false };
         server.Mode = GameMode.Sandbox;
-        using var a = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Alpha", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
-        using var b = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Bravo", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
+        using var relay = new SelfTestLossyRelay(port, port + 1, seed: 11); // (not RakNet's own simulator: SelfTestLossyRelay.cs)
+        using var a = new Game(NetPeer.Join("127.0.0.1", relay.Port), new Audio(), "Alpha", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
+        using var b = new Game(NetPeer.Join("127.0.0.1", relay.Port), new Audio(), "Bravo", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
         Game[] clients = [a, b];
         Pump(server, clients, 1.5, ref now, clock);
         for (var wait = 0; wait < 40 && server.Phase != MatchPhase.Playing; wait++)
@@ -156,7 +157,8 @@ public static partial class SelfTest
             Fail("physics gun smooth: the host never got the client's tool and position, or the clients never got the bodies");
             return;
         }
-        var simOn = server.Net.SimulateBadNetwork(50, 10, 2) & a.Net.SimulateBadNetwork(50, 10, 2) & b.Net.SimulateBadNetwork(50, 10, 2);
+        relay.Set(50, 10, 2);
+        var simOn = true;
         Pump(server, clients, 0.5, ref now, clock);
         var hold = new SmoothTrack();
         var watch = new SmoothTrack();
@@ -172,7 +174,7 @@ public static partial class SelfTest
             {
                 w.Remove(buggy);
                 buggy = ConstructBuild.BuildOnGround(w, bp!, ConstructWorld.Ground(World.Query, 0, 9f), 0.3f, out _);
-                simOn &= server.Net.SimulateBadNetwork(50, jitter, 2) & a.Net.SimulateBadNetwork(50, jitter, 2) & b.Net.SimulateBadNetwork(50, jitter, 2);
+                relay.Set(50, jitter, 2);
                 var fresh = buggy;
                 if (fresh == null || !WaitFor(() => a.Constructs.Get(fresh.Id) != null && b.Constructs.Get(fresh.Id) != null))
                 {

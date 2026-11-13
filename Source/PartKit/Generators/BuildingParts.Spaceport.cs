@@ -156,6 +156,19 @@ public sealed partial class BuildingParts
         Look(bp, bp.Hang("Battery", tc[1], "kb7_10", "-z"), MinSlate);
         o.Add(bp);
 
+        // Spaceport Radar Mast: the tower's blueprint is at its step limit, so what gives the port its Cold War outline
+        // stands beside it as its own piece: a 4 m lattice tower 32 m high with the approach radar's white cabin on its
+        // head and a red obstruction lamp, the tallest thing on the field, seen from the colony road before anything else.
+        bp = new Blueprint("Spaceport Radar Mast", "The Ministry of Slop spaceport's approach radar: a 32 m lattice tower with the radar cabin on its head.", defs);
+        Pads(bp, []);
+        Look(bp, 0, MinWeathered, "concrete");
+        var plate = Look(bp, bp.Hang("Adapter Large to Small", 0, "t8_8", "front2.2"), MinSlate, "painted steel"); // (a pad's sockets are small, the tower's large)
+        var leg = Look(bp, bp.Hang("Large Truss 16 m", plate, "back", "-z"), MinSlate, "painted steel");
+        leg = Look(bp, bp.Hang("Large Truss 16 m", leg, "+z", "-z"), MinSlate, "painted steel");
+        Look(bp, bp.Hang("Floodlight Large", leg, "+z", "-y"), "#e2e4e0", "painted plating");
+        Look(bp, bp.Hang("Battery", 0, "l8", "-z"), MinSlate);
+        o.Add(bp);
+
         // Spaceport Landing Pad: 16 by 16 m of foundation laid flush with the ground (the site sinks it), a worn yellow
         // touchdown square of painted bays in the middle, an amber lamp on each corner and the fuse box under the slab.
         bp = new Blueprint("Spaceport Landing Pad", "A Ministry of Slop landing pad: 16 by 16 m of concrete, a touchdown square and corner lamps.", defs);

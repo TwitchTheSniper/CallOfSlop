@@ -510,7 +510,7 @@ public sealed partial class Ui
         if (d.TextSlots == 0 || part < 0 || part >= c.PartCount)
             return;
         var key = (long)c.Id << 20 | (uint)part;
-        ImGui.SeparatorText("Text"u8);
+        ImGui.SeparatorText(d.IsRouter ? "Name"u8 : "Text"u8);
         for (var slot = 0; slot < d.TextSlots; slot++)
         {
             _cfText[slot] ??= new ImInputString(LogicText.MaxChars + 1);
@@ -521,7 +521,7 @@ public sealed partial class Ui
             if (ImGui.IsItemDeactivatedAfterEdit())
                 game.SandboxPartText(c.Id, part, slot, ImGuiSafe.Text(_cfText[slot]!));
             if (ImGui.IsItemHovered())
-                ImGuiSafe.SetTooltip(d.TextSlots == 2 ? slot == 0 ? "Shown with its wire off." : "Shown with its wire on." : "Labels, comma-separated.");
+                ImGuiSafe.SetTooltip(d.IsRouter ? "Its name on the network board and in order notes (empty: its number)." : d.TextSlots == 2 ? slot == 0 ? "Shown with its wire off." : "Shown with its wire on." : "Labels, comma-separated.");
         }
         _cfTextKey = key;
     }

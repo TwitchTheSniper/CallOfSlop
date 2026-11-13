@@ -1,0 +1,21 @@
+{
+  "about": "The standard frame-rate benchmark: the Glacier story world (survival, the colony built, the opening skipped, no cold storm). Each spot's view is the window tool's 'view TARGET | DIST,UP,BEARING' (Program.WindowShotTour.cs). Keep the names stable: --bench-compare matches spots by name. docs/perf/BENCHMARK.md",
+  "map": "Glacier",
+  "survival": true,
+  "calm": true,
+  "size": "1600x900",
+  "settle": 900,
+  "frames": 900,
+  "spots": [
+    { "name": "colony_overview", "view": "Penal Colony | 75,40,135" },
+    { "name": "colony_eye", "view": "Penal Colony | 30,1.7,60" },
+    { "name": "muster_board", "view": "Colony Muster Square | 16,3,90" },
+    { "name": "boiler_smoke", "view": "Colony Boiler House | 40,14,135" },
+    { "name": "barracks", "view": "Colony Barracks | 18,3,280" },
+    { "name": "quarry_gangs", "view": "body 47 | 45,15,0" },
+    { "name": "spine_ridge", "view": "geo 81.5,285 | 500,60,0" },
+    { "name": "outpost1_checkpoint", "view": "outpost 1 | 22,5,0" },
+    { "name": "spaceport", "view": "Spaceport Terminal | 90,30,0" },
+    { "name": "spaceport_pad", "view": "Spaceport Landing Pad | 25,4,0" }
+  ]
+}

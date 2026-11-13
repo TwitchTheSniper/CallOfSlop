@@ -946,7 +946,13 @@ public sealed class Planetoid
                 if (dug != null && dug.Touched(f, i, j))
                 {
                     // A dug cell: its columns' faces, two-sided (PlanetEdits.cs).
-                    var sink = new DugContacts { Into = into, Min = min, Max = max, Cell = (f * N + j) * N + i };
+                    var dugCell = (f * N + j) * N + i;
+                    if (DugFacesCached(dug, f, i, j, dugCell, out var start, out var count))
+                    {
+                        EmitDugFaces(start, count, dugCell, min, max, into);
+                        continue;
+                    }
+                    var sink = new DugContacts { Into = into, Min = min, Max = max, Cell = dugCell };
                     dug.CellFaces(f, i, j, 0, 0, 0, ref sink);
                     continue;
                 }
@@ -973,6 +979,86 @@ public sealed class Planetoid
                 into.Add(ContactShape.FromTriangle(a, e, b, new ShapeId(ShapeKind.Terrain, cell, 1), true));
             }
         }
+    }
+
+    // ---- Collision's cache of dug cells' faces ----------------------------------------------------------------------
+    // Working out a dug cell's faces (PlanetEdits.CellFaces) costs about 5 us, and every mover gathers the cells round it
+    // every tick: on the colony's levelled ground that was 0.5-0.7 ms of each server tick (the benchmark's slow-tick trace,
+    // docs/perf/BENCHMARK.md). The faces only change when the ground does, so they are kept per cell until the edits'
+    // version or generation moves on, and filtered by the query box on the way out exactly as DugContacts does (the same
+    // triangles, in the same order, with the same sub ids). Only the thread that filled the cache uses it (the game's).
+
+    private struct DugPrim
+    {
+        public Vector3 A, B, C, D, Lo, Hi;
+        public bool Quad;
+    }
+
+    private PlanetEdits? _dfEdits;
+    private int _dfVersion = -1, _dfGeneration = -1, _dfThread = -1;
+    private readonly Dictionary<int, (int Start, int Count)> _dfCells = new();
+    private readonly List<DugPrim> _dfPrims = new();
+
+    /// <summary>The cell's faces from the cache (worked out and kept the first time). False: not this thread's cache, use the plain path.</summary>
+    private bool DugFacesCached(PlanetEdits dug, int f, int i, int j, int cell, out int start, out int count)
+    {
+        start = count = 0;
+        var me = Environment.CurrentManagedThreadId;
+        if (_dfThread == -1)
+            _dfThread = me;
+        else if (_dfThread != me)
+            return false;
+        if (!ReferenceEquals(_dfEdits, dug) || _dfVersion != dug.Version || _dfGeneration != dug.Generation || _dfPrims.Count > 1 << 18)
+        {
+            _dfEdits = dug;
+            _dfVersion = dug.Version;
+            _dfGeneration = dug.Generation;
+            _dfCells.Clear();
+            _dfPrims.Clear();
+        }
+        if (_dfCells.TryGetValue(cell, out var at))
+        {
+            (start, count) = at;
+            return true;
+        }
+        start = _dfPrims.Count;
+        var rec = new DugRecord { Into = _dfPrims };
+        dug.CellFaces(f, i, j, 0, 0, 0, ref rec);
+        count = _dfPrims.Count - start;
+        _dfCells[cell] = (start, count);
+        return true;
+    }
+
+    /// <summary>The cached faces that reach min..max, as <see cref="DugContacts"/> would have added them.</summary>
+    private void EmitDugFaces(int start, int count, int cell, Vector3 min, Vector3 max, List<ContactShape> into)
+    {
+        var sub = 0;
+        var prims = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_dfPrims).Slice(start, count);
+        foreach (ref readonly var p in prims)
+        {
+            if (p.Hi.X < min.X || p.Lo.X > max.X || p.Hi.Y < min.Y || p.Lo.Y > max.Y || p.Hi.Z < min.Z || p.Lo.Z > max.Z)
+                continue;
+            into.Add(ContactShape.FromTriangle(p.A, p.B, p.C, new ShapeId(ShapeKind.Terrain, cell, sub++)));
+            if (p.Quad)
+                into.Add(ContactShape.FromTriangle(p.A, p.C, p.D, new ShapeId(ShapeKind.Terrain, cell, sub++)));
+        }
+    }
+
+    /// <summary>Records a dug cell's faces for the cache, unfiltered (the same calls <see cref="DugContacts"/> takes).</summary>
+    private struct DugRecord : IDigFaceSink
+    {
+        public List<DugPrim> Into;
+
+        public void Smooth(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 na, Vector3 nb, Vector3 nc, Vector3 nd, Vector4 ca, Vector4 cb, Vector4 cc, Vector4 cd) =>
+            Quad(a, b, c, d, default, default, 0);
+
+        public void Tri(Vector3 a, Vector3 b, Vector3 c, Vector3 na, Vector3 nb, Vector3 nc, Vector4 ca, Vector4 cb, Vector4 cc) =>
+            Into.Add(new DugPrim { A = a, B = b, C = c, Lo = Vector3.Min(Vector3.Min(a, b), c), Hi = Vector3.Max(Vector3.Max(a, b), c) });
+
+        public bool Shaded => false;
+
+        public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock) =>
+            Into.Add(new DugPrim { A = a, B = b, C = c, D = d, Quad = true, Lo = Vector3.Min(Vector3.Min(a, b), Vector3.Min(c, d)), Hi = Vector3.Max(Vector3.Max(a, b), Vector3.Max(c, d)) });
     }
 
     private struct DugContacts : IDigFaceSink

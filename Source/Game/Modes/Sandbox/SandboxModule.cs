@@ -125,7 +125,9 @@ public sealed class SandboxModule : GameModeModule
     private static void WriteHand(Game game, PacketWriter w, Player p, ref SandboxHand h)
     {
         {
-            w.U8(p.Id).U8((byte)h.Tool).U16(h.Held).U16(h.SeatBody).U16(h.SeatPart).U8((byte)h.Edit)
+            w.U8(p.Id).U8((byte)h.Tool);
+            PartRef.WriteCached(w, h.Held, game.SandboxHands.HeldKey(p.Id)); // (a run-time part by its key, protocol 292)
+            w.U16(h.SeatBody).U16(h.SeatPart).U8((byte)h.Edit)
                 .U16((ushort)Math.Clamp(h.Duration * 100, 0, 65535)).U16((ushort)Math.Clamp((game.SandboxNow - h.Start) * 100, 0, 65535));
             w.U16(h.GrabBody);
             if (h.GrabBody != 0)
@@ -144,7 +146,7 @@ public sealed class SandboxModule : GameModeModule
         {
             var id = r.U8();
             var tool = ConstructToolWire.From(r.U8());
-            var held = r.U16();
+            var held = PartRef.ReadCached(ref r, game.SandboxHands.HeldKey(id));
             var seat = r.U16();
             var seatPart = r.U16();
             var edit = (EditKind)Math.Min(r.U8(), (byte)EditKind.SocketWeld);

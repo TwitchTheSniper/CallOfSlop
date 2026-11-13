@@ -149,6 +149,22 @@
       "on": 1,
       "socket": "t11_11",
       "by": "base"
+    },
+    {
+      "part": "Concrete Chimney 2.75 m",
+      "on": 1,
+      "socket": "t0_7",
+      "by": "b00",
+      "paint": "#8a8072",
+      "finish": "stone"
+    },
+    {
+      "part": "Concrete Chimney 2.75 m",
+      "on": 20,
+      "socket": "t00",
+      "by": "b00",
+      "paint": "#8a8072",
+      "finish": "stone"
     }
   ]
 }

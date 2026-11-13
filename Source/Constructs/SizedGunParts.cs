@@ -20,13 +20,15 @@ public static class SizedGunParts
     public static bool IsStat(string field) => Stats.ContainsKey(field);
 
     /// <summary>The sized builder part of a pressed gun part: <paramref name="builder"/> (its pattern's like part's) sized by the blank.</summary>
-    public static PartDef Make(PartDef builder, PressPattern p, in ExtrusionKey k, string name)
+    public static PartDef Make(PartDef builder, PressDie die, PressPattern p, in ExtrusionKey k, string name)
     {
         var q = builder.Copy();
         q.Name = name;
         q.SourceFile = null;
         q.SizeAcrossCm = Pressed.Across(k);
         q.SizeLengthCm = k.L;
+        q.SizeBore = q.SizeAcrossCm / (float)Math.Max(1, Pressed.Across(p.Preset));
+        (q.SizeFitLo, q.SizeFitHi) = (die.FitLo, die.FitHi);
         // The length: muzzle, muzzle sockets and hand move along -Z with the blank's calibres (a plain barrel's muzzle is 0.04 m a calibre).
         var along = Pressed.Measure(PressMeasure.Calibres, k) / MathF.Max(1e-6f, Pressed.Measure(PressMeasure.Calibres, p.Preset));
         q.Muzzles = builder.Muzzles.Select(m => m with { Z = m.Z * along }).ToArray();
@@ -56,6 +58,23 @@ public static class SizedGunParts
         }
         q.Effects = effects.ToArray();
         return q;
+    }
+
+    /// <summary>
+    /// The bore band (design section 5): why sized gun part <paramref name="part"/> doesn't suit a receiver of bore <paramref name="receiverBore"/>
+    /// (its scale times its merge size: 1 for a plain catalogue receiver, N for an N x N merge), or null when it fits. A catalogue part always
+    /// fits (a merge draws it to size). Inside the band nothing changes with the mismatch (the user's answer 4).
+    /// </summary>
+    public static string? FitWhy(PartDef part, float receiverBore)
+    {
+        if (part.SizeBore <= 0 || part.SizeFitHi <= 0)
+            return null;
+        var r = part.SizeBore / MathF.Max(1e-3f, receiverBore);
+        if (r >= part.SizeFitLo - 1e-4f && r <= part.SizeFitHi + 1e-4f)
+            return null;
+        var preset = part.SizeAcrossCm / part.SizeBore / 100f; // (m: the pattern's preset across, bore 1)
+        var inv = CultureInfo.InvariantCulture;
+        return string.Create(inv, $"the barrel is {part.SizeAcrossCm / 100f:0.00} m across: this receiver takes {preset * receiverBore * part.SizeFitLo:0.00} to {preset * receiverBore * part.SizeFitHi:0.00} m");
     }
 
     /// <summary><c>--press-part</c>'s lines for a sized gun part: its length, muzzle and weight, and each curve's value beside the pattern's preset's.</summary>

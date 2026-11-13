@@ -161,6 +161,38 @@ public static class RuntimeParts
                         c.RebuildStamp++;
     }
 
+    /// <summary>
+    /// Stand-ins were made into their real parts in place (HullLoft.FirstParts.cs): their solid boxes, bounds, sockets and mass changed. Every body
+    /// that holds one is marked for a full rebuild (each in its own world's tick) and the caches that know a part are emptied. A few times after
+    /// a packet of many new keys.
+    /// </summary>
+    internal static void Reshaped(List<ConstructPartDef> defs)
+    {
+        Forgotten();
+        if (_reshape.Length < Extrusion.MaxDefs)
+            _reshape = new bool[Extrusion.MaxDefs];
+        foreach (var d in defs)
+            _reshape[d.Id - Extrusion.RuntimeBase] = true;
+        lock (TrackGate)
+            foreach (var r in Worlds)
+                if (r.TryGetTarget(out var w))
+                    foreach (var c in w.Bodies)
+                        for (var i = 0; i < c.PartCount; i++)
+                        {
+                            var k = c.Parts[i].Def - Extrusion.RuntimeBase;
+                            if (k >= 0 && k < _reshape.Length && _reshape[k])
+                            {
+                                c.Dirty = true;
+                                c.RebuildStamp++;
+                                break;
+                            }
+                        }
+        foreach (var d in defs)
+            _reshape[d.Id - Extrusion.RuntimeBase] = false;
+    }
+
+    private static bool[] _reshape = [];
+
     private static void MarkRoots()
     {
         lock (TrackGate)

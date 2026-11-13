@@ -30,6 +30,14 @@ public static class ImGuiSafe
     /// <summary><c>ImGui.TextWrapped</c> without printf formatting.</summary>
     public static void TextWrapped(ImString text) => ImGui.TextWrapped(Escape(text));
 
+    /// <summary>Coloured text that wraps at the window's edge (a long line of names in a list).</summary>
+    public static void TextColoredWrapped(in float4 col, ImString text)
+    {
+        ImGui.PushStyleColor(ImGuiCol.Text, col);
+        ImGui.TextWrapped(Escape(text));
+        ImGui.PopStyleColor();
+    }
+
     /// <summary><c>ImGui.TextDisabled</c> without printf formatting.</summary>
     public static void TextDisabled(ImString text) => ImGui.TextDisabled(Escape(text));
 

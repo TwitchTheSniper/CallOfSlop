@@ -247,6 +247,14 @@ public static class BuildStats
 
         /// <summary>Its action part's numbers (fire type, rate, spool-up, chamber).</summary>
         public ActionInfo Action = NoAction;
+
+        /// <summary>
+        /// How far its barrels (with their muzzle devices) carry the round against the bare receiver: their range over the
+        /// range before the barrel stage, averaged over the barrel paths (1 with none). A mounted bullet gun's reach is its
+        /// receiver's <c>gun.maxRange</c> times this (sized-parts phase 2: a longer barrel reaches further, catalogue or pressed).
+        /// The powder charge and the round's speed are left out: the construct gun applies them on its own.
+        /// </summary>
+        public float BarrelReach = 1f;
         public readonly List<(BarrelLeaf Leaf, float Damage, int Pellets, float HipSpread, float Size)> Barrels = new();
     }
 
@@ -280,6 +288,7 @@ public static class BuildStats
         var rateMult = w.Rpm / (float)Math.Max(1, act.Rpm);
         var res = new ReceiverResult { Node = receiver, Def = w };
         var copies = new List<WeaponDef>();
+        var reach = 0f;
         foreach (var leaf in Leaves(receiver))
         {
             var c = w.Clone();
@@ -287,6 +296,7 @@ public static class BuildStats
             foreach (var (s, dev) in leaf.Barrel.Children())
                 if (s.Type == "muzzle")
                     Apply(dev.Part, c);
+            reach += w.RangeM > 0 ? c.RangeM / w.RangeM : 1f;
             c.PowderLess = !PowderCharge.Takes(receiver.Part);
             if (!c.PowderLess)
                 PowderCharge.Apply(c, charge, PowderCharge.BarrelLength(leaf.Barrel.Part, leaf.Muzzle)); // (the Sandbox's powder charge: PowderCharge.cs)
@@ -299,6 +309,7 @@ public static class BuildStats
         }
         if (copies.Count > 0)
         {
+            res.BarrelReach = reach / copies.Count;
             foreach (var f in Numeric)
             {
                 double sum = 0;
