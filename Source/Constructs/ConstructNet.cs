@@ -1174,8 +1174,11 @@ public static partial class ConstructNet
         if (newer)
             c.Asleep = (flags & 4) != 0;
         c.Root = root < parts ? root : 0;
-        c.Fuel = fuel;
-        c.Charge = float.IsFinite(charge) ? charge : 0;
+        if (newer) // (an older Full, a big body's kept base on a resync, keeps the newer pose's fuel and charge too: a still body sends no other)
+        {
+            c.Fuel = fuel;
+            c.Charge = float.IsFinite(charge) ? charge : 0;
+        }
         SetPower(c, power, gear);
         SetDrive(c, rpm, note);
         c.ThrustShow = thrust;
