@@ -88,6 +88,7 @@ public sealed partial class Game
         _bkQEscaped = s.Rules.Quality("Escaped")?.Id ?? -1;
         _bkQFled = s.Rules.Quality("Fled")?.Id ?? -1;
         _bkVAbscond = s.Rules.VerbId("Abscond");
+        BreakoutShipIds(s); // (GameBreakoutShip.cs)
         if (_bkLead < 0)
             _bkRelLead = -1; // (looked again when the lead first exists: it is made when somebody learns it)
         return _bkLead >= 0;
@@ -161,6 +162,7 @@ public sealed partial class Game
         {
             BreakoutCrewTick(s);
             BreakoutFightTick(s, now); // (GameBreakoutFight.cs)
+            BreakoutShipAwayTick(s); // (GameBreakoutShip.cs)
         }
     }
 

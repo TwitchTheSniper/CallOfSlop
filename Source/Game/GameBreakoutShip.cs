@@ -20,6 +20,16 @@ public sealed partial class Game
 
     private int _bsQAboard = -1, _bsQFree = -1;
     private StoryEngine? _bsFor;
+    private Player? _bsCarrier; // the escapee last seen seated in the courier with the crew aboard
+
+    /// <summary>The ship's quality ids, looked up with the break-out's own (<see cref="BreakoutIds"/>).</summary>
+    private void BreakoutShipIds(StoryEngine s)
+    {
+        _bsFor = s;
+        _bsQAboard = s.Rules.Quality("Aboard")?.Id ?? -1;
+        _bsQFree = s.Rules.Quality("Free")?.Id ?? -1;
+        _bsCarrier = null;
+    }
 
     /// <summary>A crew member riding in the courier: no body (GameStoryBodies.cs).</summary>
     private bool BreakoutAboard(int entity)
@@ -44,14 +54,14 @@ public sealed partial class Game
     /// <summary>Server, a player at the spaceport, each look (from <see cref="BreakoutTick"/>): aboard, and away.</summary>
     private void BreakoutShipLook(StoryEngine s, Player p, ref BreakoutRun run, int who)
     {
-        if (_bsFor != s)
-        {
-            _bsFor = s;
-            _bsQAboard = s.Rules.Quality("Aboard")?.Id ?? -1;
-            _bsQFree = s.Rules.Quality("Free")?.Id ?? -1;
-        }
-        if (_bsQAboard < 0 || _bsQFree < 0)
+        if (_bsFor != s || _bsQAboard < 0 || _bsQFree < 0)
             return;
+        if (StoryWho(p) is var pw and >= 0 && s.World.Quality(pw, _bsQFree) > 0)
+        {
+            run.Stage = BreakoutAway; // (carried them off and came back: the break-out is done for them)
+            BreakoutSend(p);
+            return;
+        }
         var courier = BreakoutCourier();
         ref var h = ref SandboxHands.Hand(p.Id);
         var seated = courier != null && h.Seated && h.SeatBody == courier.Id;
@@ -78,12 +88,27 @@ public sealed partial class Game
                 StorySpeak(body, script.Ship.Aboard, SandboxNow);
             Log($"[breakout] {s.World.NameOf(e)} goes aboard the courier");
         }
-        if (!any || !seated || courier == null)
+        if (any && seated)
+            _bsCarrier = p;
+    }
+
+    /// <summary>
+    /// Server, each look: the crew aboard and the courier far from the spaceport, or gone from this world (into space,
+    /// its pilot with it): they are away.
+    /// </summary>
+    private void BreakoutShipAwayTick(StoryEngine s)
+    {
+        if (_bsFor != s || _bsQAboard < 0 || _bsQFree < 0 || _bsCarrier is not { } carrier)
             return;
-        var far = !SpaceportFrame(out var origin, out _) || Flat2(courier.WorldCom - origin) > BreakoutAwayAt * BreakoutAwayAt;
-        if (!far)
+        var aboard = false;
+        for (var i = 0; i < _bkCrew.Length && !aboard; i++)
+            aboard = _bkCrew[i] >= 0 && s.World.Quality(_bkCrew[i], _bsQAboard) > 0 && s.World.Quality(_bkCrew[i], _bsQFree) == 0;
+        if (!aboard)
             return;
-        BreakoutGoAway(s, p);
+        var courier = BreakoutCourier();
+        if (courier != null && SpaceportFrame(out var origin, out _) && Flat2(courier.WorldCom - origin) <= BreakoutAwayAt * BreakoutAwayAt)
+            return;
+        BreakoutGoAway(s, carrier);
     }
 
     /// <summary>The courier is away with the crew aboard: everyone aboard is free, and so is whoever flew them.</summary>
@@ -100,16 +125,21 @@ public sealed partial class Game
                 if (name.Equals(s.World.NameOf(e), StringComparison.OrdinalIgnoreCase))
                     ServerSystemChat($"{name}: {line}", SandboxNow); // (inside the cabin: everyone aboard hears it)
         }
+        // The pilot is free wherever they are now (in space, another world: their stage follows when they're back here).
+        if (StoryWho(p) is var pw and >= 0)
+            s.World.SetQuality(pw, _bsQFree, 1);
+        _bsCarrier = null;
         foreach (var q in Players.Values)
         {
+            if (q != p && q.Bot == null && q.Id < MaxPlayers && _bkWho[q.Id] == q && _bk[q.Id].Stage == BreakoutSpaceport
+                && SandboxHands.Hand(q.Id) is { Seated: true } sq && BreakoutCourier() is { } cq && sq.SeatBody == cq.Id && StoryWho(q) is var qw and >= 0)
+                s.World.SetQuality(qw, _bsQFree, 1); // (a passenger)
             // Whoever is in the courier with them (the pilot, and anyone else seated in it) is away too.
             if (q.Bot != null || q.Id >= MaxPlayers || _bkWho[q.Id] != q || _bk[q.Id].Stage != BreakoutSpaceport)
                 continue;
             ref var hq = ref SandboxHands.Hand(q.Id);
             if (q != p && !(hq.Seated && BreakoutCourier() is { } c && hq.SeatBody == c.Id))
                 continue;
-            if (StoryWho(q) is var qw and >= 0)
-                s.World.SetQuality(qw, _bsQFree, 1);
             _bk[q.Id].Stage = BreakoutAway;
             BreakoutSend(q);
             Log($"[breakout] {q.Name} is away in the courier with the crew");
