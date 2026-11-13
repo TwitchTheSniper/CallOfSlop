@@ -199,7 +199,8 @@ public static partial class ConstructLifters
     public static void Scan(ConstructWorld world, bool server)
     {
         foreach (var c in world.Bodies)
-            ScanBody(world, c, server);
+            if (c.LiftStamp != c.RebuildStamp || c.LiftPartCount != c.PartCount)
+                ScanBody(world, c, server);
         for (var k = world.LiftBodies.Count - 1; k >= 0; k--)
         {
             var lb = world.LiftBodies[k];
@@ -216,19 +217,38 @@ public static partial class ConstructLifters
                 world.LiftSeen.Remove(id); // (a body without lifters that went: a removal while looking is allowed on a Dictionary)
     }
 
-    /// <summary>One body: its lifter parts found again when its parts changed; a lifter that stays keeps its state.</summary>
-    public static LiftBody ScanBody(ConstructWorld world, Construct c, bool server)
+    private static readonly LiftBody NoLifts = new();
+
+    private static int CountLifters(Construct c)
     {
-        if (!world.LiftSeen.TryGetValue(c.Id, out var lb))
-            world.LiftSeen[c.Id] = lb = new LiftBody { Body = c.Id };
-        if (lb.Stamp == c.RebuildStamp && lb.Count == c.PartCount)
-            return lb;
-        lb.Stamp = c.RebuildStamp;
-        lb.Count = c.PartCount;
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
             if (c.DefOf(i).Lifter != null)
                 n++;
+        return n;
+    }
+
+    /// <summary>One body: its lifter parts found again when its parts changed; a lifter that stays keeps its state.</summary>
+    public static LiftBody ScanBody(ConstructWorld world, Construct c, bool server)
+    {
+        var n = 0;
+        if (!world.LiftSeen.TryGetValue(c.Id, out var lb))
+        {
+            // A body never seen with lifters: none kept for it while it has none (a shell, a wreck piece or a dropped part
+            // came and went every Scan, and each one's LiftBody was an allocation in the world step).
+            n = CountLifters(c);
+            c.LiftStamp = c.RebuildStamp;
+            c.LiftPartCount = c.PartCount;
+            if (n == 0)
+                return NoLifts; // (read only: no lifters)
+            world.LiftSeen[c.Id] = lb = new LiftBody { Body = c.Id };
+        }
+        else if (lb.Stamp == c.RebuildStamp && lb.Count == c.PartCount)
+            return lb;
+        else
+            n = CountLifters(c);
+        lb.Stamp = c.LiftStamp = c.RebuildStamp;
+        lb.Count = c.LiftPartCount = c.PartCount;
         var old = lb.Lifts;
         var oldN = lb.N;
         var fresh = n == 0 ? [] : new CLift[n];
@@ -1180,7 +1200,7 @@ public static partial class ConstructLifters
                 world.LiftSeen[id] = lb = new LiftBody { Body = id };
             if (lb.Lifts.Length < n)
                 Array.Resize(ref lb.Lifts, n);
-            if (!world.LiftBodies.Contains(lb))
+            if (!world.LiftBodies.Contains(lb) && CountLifters(c) > 0) // (a body whose lifter parts this copy hasn't had yet: listed by its Scan once they come)
                 world.LiftBodies.Add(lb);
         }
         for (var k = 0; k < n; k++)
