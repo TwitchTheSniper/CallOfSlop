@@ -59,10 +59,11 @@ public sealed class PressParts : IPartGenerator
         ("Beam", [Small, Medium, Large, Capital], "metal", 1, "#7a7f88"),
         ("Barrel", [Small, Medium, Large], "steel", 2, "#4a4d52"),
         ("Receiver", [Small, Medium], "steel", 2, "#4a5146"),
+        ("Engine", [Small, Medium, Large, Capital], "steel", 3, "#6a4f3a"),
     ];
 
     // The dies whose stroke presses a whole blank to one part (Pressing.json "dies", the Press rework): they have no old rows.
-    private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate", "Button", "Gear", "Board", "Piston", "Cylinder", "Drive", "Shaft", "Actuator", "Spring", "Cable", "Control", "Tank", "Beam", "Barrel", "Receiver"];
+    private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate", "Button", "Gear", "Board", "Piston", "Cylinder", "Drive", "Shaft", "Actuator", "Spring", "Cable", "Control", "Tank", "Beam", "Barrel", "Receiver", "Engine"];
 
     private static double MaxAcross(Cls c) => c.Key switch { "small" => 0.45, "medium" => 1.8, "large" => 7.2, _ => 28.8 }; // what a class's bays take: 1.8 cells
 
@@ -349,9 +350,11 @@ public sealed class PressParts : IPartGenerator
         return f;
     }
 
-    private static PyDict Pattern(string id, string like, string label, string preset, string[]? blanks = null, List<object?>? features = null, PyDict? bay2 = null, List<object?>? scale = null, string? along = null)
+    private static PyDict Pattern(string id, string like, string label, string preset, string[]? blanks = null, List<object?>? features = null, PyDict? bay2 = null, List<object?>? scale = null, string? along = null, bool nearest = false)
     {
         var p = Kw(("id", id), ("like", like), ("label", label), ("preset", preset));
+        if (nearest) // (its presets are knots: a blank takes the nearest one's part as its like, sized-parts design 6.2)
+            p["likeBy"] = "nearest";
         if (along != null) // (a like body: the like part's own boxes stretched to the blank, its length along this axis of the part; "" its longest)
         {
             p["body"] = "like";
@@ -480,7 +483,66 @@ public sealed class PressParts : IPartGenerator
         ("locking", "Locking Differential", "locking diff", "hollow 50x50x50 steel"),
     ];
 
-    private static readonly (string Name, Cls C, int Cm, int Wall)[] Cylinders = [("Small Cylinder", Small, 30, 5), ("Medium Cylinder", Medium, 100, 10), ("Large Cylinder", Large, 400, 40), ("Capital Cylinder", Capital, 1600, 160)];
+    // ---- Sized parts phase 5 (docs/sandbox/design/sized-gun-engine-parts.md 6.2): engine pieces off the press. Each pattern's presets are
+    // the four size files (Small to Capital), at their own bounds on the 5 cm lattice, and its knots: a blank takes the nearest one's part as
+    // its like body ("likeBy": "nearest") and its engine scale runs through them (Pressed.EngineScale). A size the dies can't press (past a
+    // Capital press's 28.8 m across or 32 m long) has no preset and keeps its Assembler recipe; the curve's end segment carries on past it.
+
+    private const int EngineAcrossMax = 2880, EngineLengthMax = 3200; // (the Engine die from 20 cm, about 0.7 of the Small files' across, design 6.2; a 10 cm injector rail squashed its 2 mm gaps to half a mm)
+
+    /// <summary>
+    /// An engine piece pattern: id, the file's name after its size word, its blank's section, the like part's long axis (the blank's length
+    /// goes along it), and its bay 2 kit.
+    /// </summary>
+    private static readonly (string Id, string Piece, string Section, string Along, Func<PyDict?> Bay2)[] EnginePatterns =
+    [
+        ("crank", "Crank Section", "solid", "z", () => Kit("Bearing", true, 2, 0.5, "length", 20)),
+        ("flywheel", "Flywheel", "round", "z", () => Kit("Bearing", true, 1, 0, "length", 1)),
+        ("carburettor", "Carburettor", "hollow", "y", () => null),
+        ("injector", "Injector Rail", "solid", "y", () => Kit("Circuit Board", true, 1, 0, "length", 1)),
+        ("turbo", "Turbo", "hollow", "y", () => Kit("Bearing", true, 2, 0, "length", 2)),
+        ("supercharger", "Supercharger", "round", "y", () => Kit("Bearing", true, 2, 0, "length", 2)),
+        ("starter", "Starter Motor", "round", "y", () => Kit("Copper Coil", true, 1, 0, "length", 1)),
+        ("exhaust", "Exhaust Outlet", "pipe", "y", () => null),
+        ("stack", "Smokestack", "pipe", "z", () => null),
+    ];
+
+    private static readonly string[] EngineSizes = ["Small", "Medium", "Large", "Capital"];
+
+    /// <summary>A size file's preset blank on its bounds (across its two short axes' larger, length along <paramref name="along"/>), or null
+    /// past what a die presses.</summary>
+    private static string? EngineBlank(string part, string section, string along, Cls c)
+    {
+        var d = CallOfSlop.ConstructParts.Find(part) ?? throw new InvalidOperationException($"press_parts: no engine piece {part}");
+        var size = d.BoundsMax - d.BoundsMin;
+        var ax = along == "y" ? 1 : along == "x" ? 0 : 2;
+        static int Lattice(double m) => Math.Max(10, (int)Math.Round(m * 100 / 5, MidpointRounding.AwayFromZero) * 5);
+        var len = Lattice(ax == 0 ? size.X : ax == 1 ? size.Y : size.Z);
+        var across = PresetAcross(Lattice(ax == 0 ? Math.Max(size.Y, size.Z) : ax == 1 ? Math.Max(size.X, size.Z) : Math.Max(size.X, size.Y)), c); // (held to its class's press, as every die's presets: a Small crank from a Small press)
+        if (across > EngineAcrossMax || len > EngineLengthMax)
+            return null;
+        var wall = Math.Clamp(Lattice(across / 900.0), 5, 200); // (a ninth of across, to the lattice)
+        string Text(int l) => section == "pipe" ? $"pipe{wall} {across}x{across}x{l} steel" : $"{section} {across}x{across}x{l} steel";
+        // The preset comes out as the file part at its own mass: its blank alone (bay 2 not counted) weighs at least that, or it would recycle
+        // for more than it cost (review, 2026-11-13: the Small Flywheel and Turbo). Longer by 5 cm steps until it does.
+        while (len + 5 <= EngineLengthMax && CallOfSlop.Pressed.ParseBlank(Text(len)) is { } k && CallOfSlop.Pressed.VolumeMass(k).Mass < d.Mass)
+            len += 5;
+        return Text(len);
+    }
+
+    /// <summary>The four plain cylinders' presets (those the Cylinder die can press).</summary>
+    private static IEnumerable<(string Name, string Blank)> CylinderPresets() =>
+        EngineSizes.Select((s, i) => ($"{s} Cylinder", EngineBlank($"{s} Cylinder", "pipe", "y", Classes[i]))).Where(p => p.Item2 != null).Select(p => (p.Item1, p.Item2!));
+
+    /// <summary>An engine pattern's presets.</summary>
+    private static IEnumerable<(string Name, string Blank)> EnginePresets(string piece, string section, string along) =>
+        EngineSizes.Select((s, i) => ($"{s} {piece}", EngineBlank($"{s} {piece}", section, along, Classes[i]))).Where(p => p.Item2 != null).Select(p => (p.Item1, p.Item2!));
+
+    /// <summary>The Engine die (design 6.2): every other engine piece, a like body, its nearest preset's.</summary>
+    private static PyDict EngineDie() =>
+        SizedDie("Engine", ["solid", "round", "hollow", "pipe"], ["steel"], [20, EngineAcrossMax], [10, EngineLengthMax], [0.25, 6], 4, 0.01, Py.L(),
+            EnginePatterns.Select(p => (object?)Pattern(p.Id, $"Small {p.Piece}", p.Piece.ToLowerInvariant(), EnginePresets(p.Piece, p.Section, p.Along).First().Blank,
+                blanks: [p.Section], bay2: p.Bay2(), along: p.Along, nearest: true)).ToList());
 
     private static IEnumerable<object?> WorkingDies()
     {
@@ -515,14 +577,13 @@ public sealed class PressParts : IPartGenerator
             Feature("pin", [-0.06, 0.4, 0.3, 1.06, 0.6, 0.45], "bare", proud: "x"));
         yield return SizedDie("Piston", ["round"], ["steel"], [10, 45], [10, 50], [0.5, 3], 5, 0.05, piston, Py.L(
             Pattern("set", "Piston Set", "piston set", "round 10x10x20 steel", bay2: Kit("bronze", false, 1, 20, "volume", 99))));
-        // Cylinder: an end cap on each end of the tube and two ports; rubber for its seals, by size across.
-        var cylinder = Py.L(
-            Feature("cap", [-0.05, -0.05, 0.0, 1.05, 1.05, 0.06], "dark", proud: "xyz"),
-            Feature("cap", [-0.05, -0.05, 0.94, 1.05, 1.05, 1.0], "dark", proud: "xyz"),
-            Feature("port", [0.4, 1.0, 0.12, 0.6, 1.12, 0.2], "bare", proud: "y"),
-            Feature("port", [0.4, 1.0, 0.8, 0.6, 1.12, 0.88], "bare", proud: "y"));
-        yield return SizedDie("Cylinder", ["pipe"], ["steel"], [20, 2880], [25, 3200], [1, 16], 6, 0.01, cylinder, Py.L(
-            Pattern("cylinder", "Small Cylinder", "cylinder", "pipe5 30x30x30 steel", bay2: Kit("rubber", false, 1, 6, "across", 999))));
+        // Sized parts phase 5: a like body (the nearest preset's cylinder stretched; its bore across, its stroke along y), Piston Sets by
+        // volume; no die features (a like body is the file's own model). Its band stays the one presses used before phase 5 (20 cm up, 1 to 16 times as long
+        // as across), so every key made before still loads (review, 2026-11-13); the stroke ratio is held to design 6.3's 0.6 to 1.6 (Pressed.EngineNumbers).
+        var cylPresets = CylinderPresets().ToList();
+        yield return SizedDie("Cylinder", ["pipe"], ["steel"], [20, EngineAcrossMax], [25, EngineLengthMax], [1, 16], 6, 0.01, Py.L(), Py.L(
+            Pattern("cylinder", "Small Cylinder", "cylinder", cylPresets[0].Blank, bay2: Kit("Piston Set", true, 1, 20, "volume", 20), along: "y", nearest: true)));
+        yield return EngineDie();
         // Drive: bearing caps on its shaft ends, a split seam along it, a sump under it; Gear Sets by mass; torque grows as d^3 and strength.
         var drive = Py.L(
             Feature("cap", [0.325, 0.325, -0.04, 0.675, 0.675, 0.0], "bare", proud: "z", clamp: "z", min: 1, max: 20),
@@ -807,8 +868,12 @@ public sealed class PressParts : IPartGenerator
         Add("Gear Set", "gear", "set", "round 15x15x15 steel");
         Add("Circuit Board", "board", "board", "plate 20x10x20 laminate");
         Add("Piston Set", "piston", "set", "round 10x10x20 steel");
-        foreach (var (name, _, cm, wall) in Cylinders)
-            Add(name, "cylinder", "cylinder", $"pipe{wall} {cm}x{cm}x{cm} steel");
+        foreach (var (name, blank) in CylinderPresets())
+            Add(name, "cylinder", "cylinder", blank);
+        // Sized parts phase 5: the Engine die's presets (they keep their Assembler recipes until that design's phase 6).
+        foreach (var p in EnginePatterns)
+            foreach (var (name, blank) in EnginePresets(p.Piece, p.Section, p.Along))
+                Add(name, "engine", p.Id, blank);
         foreach (var d in DrivePatterns)
             Add(d.Like, "drive", d.Id, d.Blank);
         Add("Steel Plate", "plate", "steel", "plate 50x10x50 steel");

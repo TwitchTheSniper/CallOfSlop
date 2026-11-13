@@ -14,8 +14,7 @@
       "kw": 40,
       "idleRpm": 900,
       "peakRpm": 5000,
-      "maxRpm": 7000,
-      "starter": false
+      "maxRpm": 7000
     },
     {
       "name": "medium",
@@ -23,8 +22,7 @@
       "kw": 800,
       "idleRpm": 600,
       "peakRpm": 2800,
-      "maxRpm": 4000,
-      "starter": false
+      "maxRpm": 4000
     },
     {
       "name": "large",
@@ -32,8 +30,7 @@
       "kw": 16000,
       "idleRpm": 300,
       "peakRpm": 1400,
-      "maxRpm": 2000,
-      "starter": true
+      "maxRpm": 2000
     },
     {
       "name": "capital",
@@ -41,8 +38,7 @@
       "kw": 320000,
       "idleRpm": 150,
       "peakRpm": 700,
-      "maxRpm": 1000,
-      "starter": true
+      "maxRpm": 1000
     }
   ]
 }

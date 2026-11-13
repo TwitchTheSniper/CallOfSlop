@@ -172,8 +172,8 @@ public static class EngineKit
                                 var kw = cylinders * rules.Kw[size] * cyl.PiecePower * fuel!.PiecePower * (boost?.PiecePower ?? 1f);
                                 var mass = n * crank.Mass + cylinders * cyl.Mass + banks.Length * (fuel.Mass + (boost?.Mass ?? 0)) + fly.Mass
                                            + (r.Exhausts && exhaust != null ? (cylinders - banks.Length) * exhaust.Mass : 0)
-                                           + (rules.NeedsStarter[size] && starter != null ? starter.Mass : 0);
-                                var dims = Estimate(banks, n, boost != null, rules.NeedsStarter[size], s);
+                                           + (rules.StarterFor(size) && starter != null ? starter.Mass : 0);
+                                var dims = Estimate(banks, n, boost != null, rules.StarterFor(size), s);
                                 plans.Add(Score(r, size, layout, n, cyl.Name, fuel.Name, boost?.Name, kw, mass, dims, target, peakW, rules.Peak[size], tier, Math.Max(cyl.Tier, Math.Max(TierOf(fuel), boost != null ? TierOf(boost) : 1))));
                             }
             }
@@ -329,7 +329,7 @@ public static class EngineKit
         res.Cylinders = e.Cylinders;
         res.Banks = e.Banks;
         res.BurnLps = e.Burn;
-        rules.At(e.Scale, out _, out var idle, out var peak, out var max); // (read back from the live engine: its crank's scale, sized-parts design 6.1)
+        e.Rpm(rules, out var idle, out var peak, out var max); // (read back from the live engine: its crank's scale and stroke, sized-parts design 6.1, 6.3)
         (res.IdleRpm, res.PeakRpm, res.MaxRpm) = (idle, peak, max);
         res.TorqueNm = e.Kw * 1000 / (res.PeakRpm / ConstructDrive.RpmPerRadS);
         res.Layout = LayoutName(p.Layout, e.Cylinders);
@@ -395,7 +395,7 @@ public static class EngineKit
                     s.Onto(cyl, "head", $"{sw} Exhaust Outlet", "base", 0);
             }
         fly ??= s.Onto(cranks[^1], "front", $"{sw} Flywheel", "crank", 0);
-        if (EngineRules.Current.NeedsStarter[p.Size])
+        if (EngineRules.Current.StarterFor(p.Size))
             Starter(s, sw, cranks, fly, banks);
         if (r.Paint.Length > 0)
         {

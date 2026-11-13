@@ -21,7 +21,7 @@ internal static class PlainParts
         nameof(ConstructPartDef.ColliderBoxes), nameof(ConstructPartDef.HasGlass), nameof(ConstructPartDef.Sockets), nameof(ConstructPartDef.Class),
         nameof(ConstructPartDef.CentreOptOut), nameof(ConstructPartDef.BoundsMin), nameof(ConstructPartDef.BoundsMax),
         nameof(ConstructPartDef.DamagedBelow), nameof(ConstructPartDef.DamagedName), nameof(ConstructPartDef.DamagedTo),
-        nameof(ConstructPartDef.Generated), nameof(ConstructPartDef.CreativeOnly), nameof(ConstructPartDef.Legacy),
+        nameof(ConstructPartDef.Generated), nameof(ConstructPartDef.CreativeOnly), nameof(ConstructPartDef.Legacy), nameof(ConstructPartDef.Retired),
         nameof(ConstructPartDef.Faces), nameof(ConstructPartDef.FaceAxis),
         nameof(ConstructPartDef.PhysicsOnly), nameof(ConstructPartDef.PhysicsWhy), // (how the inventory hands it out)
         nameof(ConstructPartDef.CfgSlot), // (follows Config, which is checked)

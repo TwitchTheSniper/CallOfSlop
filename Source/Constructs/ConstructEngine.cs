@@ -46,6 +46,12 @@ public sealed class EngineRules
     public float BurnPerKw = 0.00044f, MisfireBelow = 0.5f, MisfirePower = 0.5f, ThirstyAt = 1.15f, FrugalAt = 0.85f;
     public float StarterFrom = 8f; // an engine whose crank's scale reaches this needs a starter (sized-parts design 6.1: half-way in log between Medium and Large)
 
+    /// <summary>An engine whose crank is this scale needs a starter (<see cref="StarterFrom"/>; a class: its row's scale).</summary>
+    public bool StarterAt(float scale) => scale >= StarterFrom;
+
+    /// <summary>An engine of this size class needs a starter (the Engine Kit plans by class).</summary>
+    public bool StarterFor(int size) => StarterAt(Scale[Math.Clamp(size, 0, Scale.Length - 1)]);
+
     /// <summary>
     /// A size's numbers at any scale (sized-parts design 6.1): a straight line between the <c>sizes</c> rows in log-log (knots at their
     /// scales), past the ends the end segment. At a knot it is the row itself, not an interpolation beside it, so every file engine keeps
@@ -114,6 +120,8 @@ public sealed class EngineRules
     public static EngineRules Parse(string json)
     {
         var r = new EngineRules();
+        var firstStarter = int.MaxValue; // (the first size a /1 file flags "starter")
+        var starterFrom = false;
         try
         {
             using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
@@ -126,7 +134,7 @@ public sealed class EngineRules
                 switch (p.Name)
                 {
                     case "format" or "about": break;
-                    case "starterFrom": r.StarterFrom = Num(p.Value, p.Name, 0.1f, 1000); break;
+                    case "starterFrom": r.StarterFrom = Num(p.Value, p.Name, 0.1f, 1000); starterFrom = true; break;
                     case "burnPerKw": r.BurnPerKw = Num(p.Value, p.Name, 0, 1); break;
                     case "misfireBelow": r.MisfireBelow = Num(p.Value, p.Name, 0, 1); break;
                     case "misfirePower": r.MisfirePower = Num(p.Value, p.Name, 0, 1); break;
@@ -149,7 +157,7 @@ public sealed class EngineRules
                                     case "idleRpm": r.Idle[i] = Num(q.Value, q.Name, 10, 60000); break;
                                     case "peakRpm": r.Peak[i] = Num(q.Value, q.Name, 10, 60000); break;
                                     case "maxRpm": r.Max[i] = Num(q.Value, q.Name, 10, 60000); break;
-                                    case "starter": r.NeedsStarter[i] = q.Value.ValueKind == JsonValueKind.True; break;
+                                    case "starter": if (q.Value.ValueKind == JsonValueKind.True) firstStarter = Math.Min(firstStarter, i); break; // (a /1 file's per-size flag: read into starterFrom below when the file gives none)
                                     default: throw new FormatException($"unknown size key \"{q.Name}\"");
                                 }
                             if (r.Idle[i] >= r.Peak[i] || r.Peak[i] > r.Max[i])
@@ -161,6 +169,8 @@ public sealed class EngineRules
                         break;
                     default: throw new FormatException($"unknown key \"{p.Name}\"");
                 }
+            if (!starterFrom && firstStarter < r.Scale.Length) // (a /1 file: its first starter size, half-way in log from the one below)
+                r.StarterFrom = firstStarter == 0 ? r.Scale[0] : MathF.Sqrt(r.Scale[firstStarter - 1] * r.Scale[firstStarter]);
             return r;
         }
         catch (Exception ex) when (ex is JsonException or FormatException or InvalidOperationException)
@@ -184,6 +194,8 @@ public sealed class ModEngine
     public int Output = -1; // the flywheel
     public byte Size; // the size class nearest the crank's scale (the kit's words, the sound bank, the drawn crank)
     public float Scale = 1f; // the crank's: its largest section's (sized-parts design 6.1); it sets the revs and whether it needs a starter
+    public float Stroke = 1f; // the cylinders' stroke ratio, their mean weighted by kW (design 6.3): rpm is the crank's over it, so a long stroke pulls from low revs at the same power
+    private float _strokeKw, _kwForStroke;
     public int Starved; // the first bank (1 up) whose fuel system or booster is small for its cylinders, or 0 (design 6.4)
     public float StarvedShare; // what that bank's fuel system feeds (0 to 1), or its booster gives of its boost when the feed is whole
     public bool StarvedBoost; // the booster is the small one, not the fuel system
@@ -196,6 +208,20 @@ public sealed class ModEngine
     public int FaultBank; // NoFuelSystem: which (1 up)
     public readonly int[] Emit = new int[MaxEmits]; // where the smoke leaves
     public int EmitCount;
+
+    /// <summary>The engine's revs: the crank's scale's (<see cref="EngineRules.At"/>) over its <see cref="Stroke"/> (design 6.3; 1 on every file cylinder).</summary>
+    public void Rpm(EngineRules rules, out float idle, out float peak, out float max)
+    {
+        rules.At(Scale, out _, out idle, out peak, out max);
+        if (Stroke != 1f)
+            (idle, peak, max) = (idle / Stroke, peak / Stroke, max / Stroke);
+    }
+
+    internal void AddStroke(float kw, float r) => (_strokeKw, _kwForStroke) = (_strokeKw + kw * r, _kwForStroke + kw);
+
+    internal void EndStroke() => Stroke = _kwForStroke > 0 && MathF.Abs(_strokeKw / _kwForStroke - 1f) > 1e-4f ? _strokeKw / _kwForStroke : 1f; // (exactly 1 when every cylinder's is: file engines keep their rows)
+
+    internal void ResetStroke() => (Stroke, _strokeKw, _kwForStroke) = (1f, 0, 0);
 
     /// <summary>It can run (maybe on less than it was built for: <see cref="Fault"/> says why).</summary>
     public bool Complete => Output >= 0 && Kw > 0 && Fault is EngineFault.None or EngineFault.NoFuelSystem or EngineFault.NoTank;
@@ -412,11 +438,13 @@ public static class ConstructEngine
                 continue;
             var kw = rules.KwAt(rules.ScaleOf(d)) * d.PiecePower * share * fuelMul[at] * boostMul[at]; // (a cylinder's own power at its own bore: design 6.3; PiecePower 1, more for a tier cylinder's)
             e.Kw += kw;
+            e.AddStroke(kw, d.PieceStroke > 0 ? d.PieceStroke : 1f);
             e.Burn += kw * d.PieceThirst * fuelThirst[at] * boostThirst[at] * rules.BurnPerKw;
         }
         for (var k = 0; k < c.ModCount; k++)
         {
             var e = c.ModEngines[k];
+            e.EndStroke();
             for (var q = 0; q < e.Banks; q++)
             {
                 var at = k * MaxBanks + q;
@@ -456,7 +484,7 @@ public static class ConstructEngine
     private static float Gain(float power, float share) => share >= 1f ? power : 1f + (power - 1f) * share;
 
     /// <summary>Does this engine need a starter to turn over? Its crank's scale reaches the rules' starterFrom (design 6.1).</summary>
-    public static bool NeedsStarter(ModEngine e, EngineRules rules) => e.Scale >= rules.StarterFrom;
+    public static bool NeedsStarter(ModEngine e, EngineRules rules) => rules.StarterAt(e.Scale);
 
     private static void Reset(ModEngine e)
     {
@@ -464,6 +492,7 @@ public static class ConstructEngine
         e.Size = 0;
         e.Scale = 1f;
         e.Starved = 0;
+        e.ResetStroke();
         e.StarvedShare = 1f;
         e.StarvedBoost = false;
         e.StarvedBy = null;
@@ -527,7 +556,7 @@ public static class ConstructEngine
         var e = c.ModEngines![k];
         var r = EngineRules.Current;
         var d = c.ModDef ??= new ConstructPartDef { Name = "Modular engine", Role = PartRole.Engine, EngineModular = true, Curve = EngineCurve.Petrol, FuelKind = EngineFuel.Fuel, Noise = 0.8f };
-        r.At(e.Scale, out _, out var idle, out var peak, out var max); // (the crank's scale sets the revs: design 6.1; at a size's own scale its row)
+        e.Rpm(r, out var idle, out var peak, out var max); // (the crank's scale sets the revs, the stroke divides them: design 6.1, 6.3; at a size's own scale and stroke 1 its row)
         (d.IdleRpm, d.PeakRpm, d.MaxRpm) = (idle, peak, max);
         d.EngineTorque = e.Kw * 1000f / (d.PeakRpm / ConstructDrive.RpmPerRadS);
         d.BurnRate = e.Burn;

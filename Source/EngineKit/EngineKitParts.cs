@@ -86,6 +86,7 @@ public static class EngineKitParts
             ["material"] = root["material"]!.GetValue<string>(),
             ["color"] = root["color"]!.GetValue<string>(),
             ["tier"] = g.Tier,
+            ["retired"] = true, // (bore replaces them: sized-parts answer 8; old blueprints, saves and shipped vehicles keep working)
             ["centreSockets"] = false,
         };
         var boxes = root["boxes"]!.DeepClone().AsArray();

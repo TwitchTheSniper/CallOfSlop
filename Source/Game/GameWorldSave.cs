@@ -897,6 +897,8 @@ public sealed partial class Game
         foreach (var (key, count) in rec.Made)
             if (ConstructParts.Find(key) is { } made)
                 inv.Set(made.Id, count); // (made again from its key if it was swept; past 64 kinds the rest are left out)
+            else
+                Console.WriteLine($"[worlds] player {p.Id}: left out {count} x {key} from the inventory: this build doesn't make it");
         foreach (var (material, count) in rec.Materials)
             inv.Materials[material] = count;
         inv.Version++;

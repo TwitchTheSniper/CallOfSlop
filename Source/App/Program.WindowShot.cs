@@ -113,7 +113,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "bundle" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action) || WsTourKnown(action) || WsTalkKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action) || WsTourKnown(action) || WsTalkKnown(action);
 
     private static void WsSay(string s)
     {
@@ -501,6 +501,17 @@ public static unsafe partial class Program
                     }
                 else
                     WsSay("joints: no spawned body");
+                return;
+            case "engines": // each modular engine of the spawned body as this peer derives it (sized parts phase 5: host and client agree): its readout, scale, stroke, revs and whether it runs
+                if ((WsSpawned(g) ?? g.Constructs.Bodies.FirstOrDefault(b => b.ModCount > 0)) is { ModEngines: { } mes } ec)
+                    for (var k = 0; k < ec.ModCount; k++)
+                    {
+                        var me2 = mes[k];
+                        me2.Rpm(EngineRules.Current, out var idle, out var peak, out var max);
+                        WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"engines: {k} {ConstructEngine.Readout(me2)}; scale {me2.Scale:0.###} ({ConstructEngine.SizeNames[me2.Size]}), stroke {me2.Stroke:0.###}, {me2.Kw:0.#} kW, idle {idle:0} rpm, peak {peak:0}, limiter {max:0}, {me2.Kw * 1000 / (peak / ConstructDrive.RpmPerRadS):0} N m; fault {me2.Fault}; running {ec.EngineRunning}, rpm now {ec.Rpm:0}"));
+                    }
+                else
+                    WsSay("engines: no body with a modular engine");
                 return;
             case "guns": // each gun of the spawned body as this peer derives it (sized parts: host and client agree): its part, problem, reach, spread, damage and rate
                 if ((WsSpawned(g) ?? g.Constructs.Bodies.OrderByDescending(b => b.GunCount).FirstOrDefault(b => b.GunCount > 0)) is { } gc) // (a client spawned nothing: the body with the most guns)

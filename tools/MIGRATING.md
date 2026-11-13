@@ -99,6 +99,11 @@ Seventy-three parts a Press makes now (the Gear Set, brackets, plates, housings,
 ### Panel Formers and wide panels in a saved world (2026-11-13)
 
 A Panel Former no longer splits a panel wider than your Extruders make into strips by itself. An order for one now waits and says which bigger Extruder, or Die Frames on the one you have, would make it. To keep the old behaviour, open the Panel Former with the configure tool and turn on **Too wide: make strips** (in its Logistics settings).
+### Engine cylinders in a saved world (sized parts, 2026-11-13)
+
+Fifteen more rows left the Assembler's recipe list: the **Small, Medium and Large Cylinder** (a Press with a Cylinder Die makes them now) and the twelve **Bored, Performance and Racing Cylinders** (a bigger bore replaces them: they can't be made any more). As before, an Assembler in a world saved before this version may show **another recipe** than the one you set, or none: check your Assemblers and set their recipe again. Tier cylinders you already have, and the vehicles that carry them, keep working.
+
+A cylinder pressed before this version still loads, but it is now shaped and rated like a real cylinder of its size: its power comes from its bore and its revs from its length, so an engine built with one may give less (or more) power than before, and the model looks different. Look at the engine's readout after loading. A part or a made piece this version can't build is left out with a line in `callofslop.log`.
 
 ### Keeping saves on a USB stick (portable mode)
 

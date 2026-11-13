@@ -936,6 +936,78 @@
      "use": 1.0
     }
    ]
+  },
+  {
+   "output": "Engine Die",
+   "seconds": 45,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Engine Die",
+   "seconds": 90,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
+    }
+   ]
+  },
+  {
+   "output": "Large Engine Die",
+   "seconds": 135,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 4.0,
+     "maxAcross": 7.2,
+     "use": 4.0
+    }
+   ]
+  },
+  {
+   "output": "Capital Engine Die",
+   "seconds": 180,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 8.0,
+     "maxAcross": 28.8,
+     "use": 8.0
+    }
+   ]
   }
  ],
  "strength": {
@@ -2424,74 +2496,206 @@
     "base": 6.0,
     "perKg": 0.01
    },
-   "features": [
-    {
-     "tag": "cap",
-     "box": [
-      -0.05,
-      -0.05,
-      0.0,
-      1.05,
-      1.05,
-      0.06
-     ],
-     "proud": "xyz",
-     "look": "dark"
-    },
-    {
-     "tag": "cap",
-     "box": [
-      -0.05,
-      -0.05,
-      0.94,
-      1.05,
-      1.05,
-      1.0
-     ],
-     "proud": "xyz",
-     "look": "dark"
-    },
-    {
-     "tag": "port",
-     "box": [
-      0.4,
-      1.0,
-      0.12,
-      0.6,
-      1.12,
-      0.2
-     ],
-     "proud": "y",
-     "look": "bare"
-    },
-    {
-     "tag": "port",
-     "box": [
-      0.4,
-      1.0,
-      0.8,
-      0.6,
-      1.12,
-      0.88
-     ],
-     "proud": "y",
-     "look": "bare"
-    }
-   ],
+   "features": [],
    "sockets": [],
    "patterns": [
     {
      "id": "cylinder",
      "like": "Small Cylinder",
      "label": "cylinder",
-     "preset": "pipe5 30x30x30 steel",
+     "preset": "pipe10 45x45x75 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "y",
      "bay2": {
-      "material": "rubber",
+      "part": "Piston Set",
       "base": 1.0,
-      "rate": 6.0,
-      "by": "across",
-      "max": 999
+      "rate": 20.0,
+      "by": "volume",
+      "max": 20
      }
+    }
+   ]
+  },
+  {
+   "die": "Engine",
+   "blanks": [
+    "solid",
+    "round",
+    "hollow",
+    "pipe"
+   ],
+   "materials": [
+    "steel"
+   ],
+   "across": [
+    20,
+    2880
+   ],
+   "length": [
+    10,
+    3200
+   ],
+   "aspect": [
+    0.25,
+    6.0
+   ],
+   "seconds": {
+    "base": 4.0,
+    "perKg": 0.01
+   },
+   "features": [],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "crank",
+     "like": "Small Crank Section",
+     "label": "crank section",
+     "preset": "solid 45x45x50 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "solid"
+     ],
+     "bay2": {
+      "part": "Bearing",
+      "base": 2.0,
+      "rate": 0.5,
+      "by": "length",
+      "max": 20
+     }
+    },
+    {
+     "id": "flywheel",
+     "like": "Small Flywheel",
+     "label": "flywheel",
+     "preset": "round 45x45x45 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Bearing",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "length",
+      "max": 1
+     }
+    },
+    {
+     "id": "carburettor",
+     "like": "Small Carburettor",
+     "label": "carburettor",
+     "preset": "hollow 40x40x25 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "hollow"
+     ]
+    },
+    {
+     "id": "injector",
+     "like": "Small Injector Rail",
+     "label": "injector rail",
+     "preset": "solid 40x40x25 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "solid"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "length",
+      "max": 1
+     }
+    },
+    {
+     "id": "turbo",
+     "like": "Small Turbo",
+     "label": "turbo",
+     "preset": "hollow 40x40x40 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "hollow"
+     ],
+     "bay2": {
+      "part": "Bearing",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "length",
+      "max": 2
+     }
+    },
+    {
+     "id": "supercharger",
+     "like": "Small Supercharger",
+     "label": "supercharger",
+     "preset": "round 40x40x30 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Bearing",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "length",
+      "max": 2
+     }
+    },
+    {
+     "id": "starter",
+     "like": "Small Starter Motor",
+     "label": "starter motor",
+     "preset": "round 30x30x35 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Copper Coil",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "length",
+      "max": 1
+     }
+    },
+    {
+     "id": "exhaust",
+     "like": "Small Exhaust Outlet",
+     "label": "exhaust outlet",
+     "preset": "pipe10 40x40x25 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "pipe"
+     ]
+    },
+    {
+     "id": "stack",
+     "like": "Small Smokestack",
+     "label": "smokestack",
+     "preset": "pipe10 30x30x150 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "pipe"
+     ]
     }
    ]
   },
@@ -6543,25 +6747,229 @@
    "part": "Small Cylinder",
    "die": "cylinder",
    "pattern": "cylinder",
-   "blank": "pipe5 30x30x30 steel"
+   "blank": "pipe10 45x45x75 steel"
   },
   {
    "part": "Medium Cylinder",
    "die": "cylinder",
    "pattern": "cylinder",
-   "blank": "pipe10 100x100x100 steel"
+   "blank": "pipe20 180x180x300 steel"
   },
   {
    "part": "Large Cylinder",
    "die": "cylinder",
    "pattern": "cylinder",
-   "blank": "pipe40 400x400x400 steel"
+   "blank": "pipe80 720x720x1200 steel"
   },
   {
-   "part": "Capital Cylinder",
-   "die": "cylinder",
-   "pattern": "cylinder",
-   "blank": "pipe160 1600x1600x1600 steel"
+   "part": "Small Crank Section",
+   "die": "engine",
+   "pattern": "crank",
+   "blank": "solid 45x45x50 steel"
+  },
+  {
+   "part": "Medium Crank Section",
+   "die": "engine",
+   "pattern": "crank",
+   "blank": "solid 180x180x200 steel"
+  },
+  {
+   "part": "Large Crank Section",
+   "die": "engine",
+   "pattern": "crank",
+   "blank": "solid 720x720x800 steel"
+  },
+  {
+   "part": "Capital Crank Section",
+   "die": "engine",
+   "pattern": "crank",
+   "blank": "solid 2880x2880x3200 steel"
+  },
+  {
+   "part": "Small Flywheel",
+   "die": "engine",
+   "pattern": "flywheel",
+   "blank": "round 45x45x45 steel"
+  },
+  {
+   "part": "Medium Flywheel",
+   "die": "engine",
+   "pattern": "flywheel",
+   "blank": "round 180x180x160 steel"
+  },
+  {
+   "part": "Large Flywheel",
+   "die": "engine",
+   "pattern": "flywheel",
+   "blank": "round 720x720x640 steel"
+  },
+  {
+   "part": "Capital Flywheel",
+   "die": "engine",
+   "pattern": "flywheel",
+   "blank": "round 2880x2880x2560 steel"
+  },
+  {
+   "part": "Small Carburettor",
+   "die": "engine",
+   "pattern": "carburettor",
+   "blank": "hollow 40x40x25 steel"
+  },
+  {
+   "part": "Medium Carburettor",
+   "die": "engine",
+   "pattern": "carburettor",
+   "blank": "hollow 160x160x100 steel"
+  },
+  {
+   "part": "Large Carburettor",
+   "die": "engine",
+   "pattern": "carburettor",
+   "blank": "hollow 640x640x400 steel"
+  },
+  {
+   "part": "Capital Carburettor",
+   "die": "engine",
+   "pattern": "carburettor",
+   "blank": "hollow 2560x2560x1600 steel"
+  },
+  {
+   "part": "Small Injector Rail",
+   "die": "engine",
+   "pattern": "injector",
+   "blank": "solid 40x40x25 steel"
+  },
+  {
+   "part": "Medium Injector Rail",
+   "die": "engine",
+   "pattern": "injector",
+   "blank": "solid 170x170x100 steel"
+  },
+  {
+   "part": "Large Injector Rail",
+   "die": "engine",
+   "pattern": "injector",
+   "blank": "solid 670x670x400 steel"
+  },
+  {
+   "part": "Capital Injector Rail",
+   "die": "engine",
+   "pattern": "injector",
+   "blank": "solid 2690x2690x1600 steel"
+  },
+  {
+   "part": "Small Turbo",
+   "die": "engine",
+   "pattern": "turbo",
+   "blank": "hollow 40x40x40 steel"
+  },
+  {
+   "part": "Medium Turbo",
+   "die": "engine",
+   "pattern": "turbo",
+   "blank": "hollow 160x160x100 steel"
+  },
+  {
+   "part": "Large Turbo",
+   "die": "engine",
+   "pattern": "turbo",
+   "blank": "hollow 640x640x400 steel"
+  },
+  {
+   "part": "Capital Turbo",
+   "die": "engine",
+   "pattern": "turbo",
+   "blank": "hollow 2560x2560x1600 steel"
+  },
+  {
+   "part": "Small Supercharger",
+   "die": "engine",
+   "pattern": "supercharger",
+   "blank": "round 40x40x30 steel"
+  },
+  {
+   "part": "Medium Supercharger",
+   "die": "engine",
+   "pattern": "supercharger",
+   "blank": "round 160x160x100 steel"
+  },
+  {
+   "part": "Large Supercharger",
+   "die": "engine",
+   "pattern": "supercharger",
+   "blank": "round 640x640x400 steel"
+  },
+  {
+   "part": "Capital Supercharger",
+   "die": "engine",
+   "pattern": "supercharger",
+   "blank": "round 2560x2560x1600 steel"
+  },
+  {
+   "part": "Small Starter Motor",
+   "die": "engine",
+   "pattern": "starter",
+   "blank": "round 30x30x35 steel"
+  },
+  {
+   "part": "Medium Starter Motor",
+   "die": "engine",
+   "pattern": "starter",
+   "blank": "round 120x120x120 steel"
+  },
+  {
+   "part": "Large Starter Motor",
+   "die": "engine",
+   "pattern": "starter",
+   "blank": "round 480x480x480 steel"
+  },
+  {
+   "part": "Capital Starter Motor",
+   "die": "engine",
+   "pattern": "starter",
+   "blank": "round 1920x1920x1920 steel"
+  },
+  {
+   "part": "Small Exhaust Outlet",
+   "die": "engine",
+   "pattern": "exhaust",
+   "blank": "pipe10 40x40x25 steel"
+  },
+  {
+   "part": "Medium Exhaust Outlet",
+   "die": "engine",
+   "pattern": "exhaust",
+   "blank": "pipe20 160x160x100 steel"
+  },
+  {
+   "part": "Large Exhaust Outlet",
+   "die": "engine",
+   "pattern": "exhaust",
+   "blank": "pipe70 640x640x400 steel"
+  },
+  {
+   "part": "Capital Exhaust Outlet",
+   "die": "engine",
+   "pattern": "exhaust",
+   "blank": "pipe200 2560x2560x1600 steel"
+  },
+  {
+   "part": "Small Smokestack",
+   "die": "engine",
+   "pattern": "stack",
+   "blank": "pipe10 30x30x150 steel"
+  },
+  {
+   "part": "Medium Smokestack",
+   "die": "engine",
+   "pattern": "stack",
+   "blank": "pipe15 120x120x600 steel"
+  },
+  {
+   "part": "Large Smokestack",
+   "die": "engine",
+   "pattern": "stack",
+   "blank": "pipe55 480x480x2400 steel"
   },
   {
    "part": "5-Speed Gearbox",

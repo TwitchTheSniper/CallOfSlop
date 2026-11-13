@@ -498,7 +498,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   to a Laser Cutter itself (its Design button's pick, queued there); the cutters' screens gain a Design button (touch regions move).
     // 303: Smart logistics phase 5: CfgKey.FormerStrips (at the end), a new setting slot on Panel Formers (settings ride CBody by slot): a panel too wide
     //   for the network's Extruders is formed of strips only when the player turns it on.
-    public const ushort ProtocolVersion = 303;
+    //   (Main took it as 301.)
+    // 304: Sized parts phase 5 (engine pieces off the press): the Engine Die parts (ids move); the Cylinder die's presets on the files' bounds and the
+    //   Engine die (Pressing.json); a pressed engine piece's scale and a cylinder's stroke ratio come from its key (derived on each peer, no new bytes).
+    public const ushort ProtocolVersion = 304;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
