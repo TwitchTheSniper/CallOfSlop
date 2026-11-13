@@ -392,3 +392,16 @@ One at a time; the recommended option is first.
      tier cylinder the Assembler's. They become piece recipes (a pressed cylinder in, sized out) after rework phase 6.
    - B: three more patterns of the Cylinder die, sized like the plain one.
    - C: removed: bore replaces them (old blueprints keep the files).
+
+## 14. The user's answers (2026-11-13)
+
+1. A barrel's character is **a pattern on the press** (A).
+2. A receiver's size follows **the merge's law** (A).
+3. **Both stay**: a pressed receiver never merges, catalogue receivers merge as today (A).
+4. A barrel outside 0.7 to 1.5 of the receiver's bore is **refused** (A).
+5. **Bore gives power; stroke trades revs for torque** (A).
+6. **Anything bolts on** (B, not the recommendation): no band. Each cylinder gives its own power and a small carburettor
+   starves a big bank. Principle 4 ("fit is a band") no longer holds for engines; it still holds for a barrel on a receiver.
+7. Hand-held guns **wait for the inventory project** (A).
+8. Bored, Performance and Racing Cylinders are **removed** (C, not the recommendation): bore replaces them; old blueprints
+   keep the files, and their Assembler recipes go.

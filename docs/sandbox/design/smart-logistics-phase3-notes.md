@@ -47,3 +47,12 @@ bullets from "Press bays and Panel Former sheet" on). Design: smart-logistics.md
 The terminal's Stock tab and `CActKind.StockTarget`; `feedPriority` on machines and `linePriority` on Line Consoles (7.2's
 conflict rule); High chains queued ahead of Normal ones in a maker's queue (7.3); blueprint `"targets"`; store monitor rows; bin
 targets (bulk, phase 5); a showcase layout where the sheet Extruder and the Gear Set Assembler run, to watch a refill end to end.
+
+## The user's answers (2026-11-13)
+1. A Panel Former's chained order asks for **a sheet sized to the panel** (a change: to build).
+3. "Keep what it holds" stays with **the first kinds only** (as built).
+4. A refill stays **exact**, not rounded to the batch (as built).
+5. `storeTakes` gets **no material choice** (as built).
+6. `routerSpill` keeps taking pieces with nowhere to go (as built).
+7. `routerHold` keeps sending a closed order's piece to storage (as built).
+(2, the low mark's rounding, was not asked: it follows the design's own example.)

@@ -376,3 +376,17 @@ They will be asked together; each stands on its own. The first option is the rec
    - B: yes, and add a **Pane** the cutter cuts to an opening's own outline from glass sheet, so windows are glazed by
      the same design: one more phase.
    - C: no sockets: weld into an opening by the freeform tool.
+
+## 13. The user's answers (2026-11-13)
+
+1. It **cuts openings, notches and corners out of panels** (A).
+2. **Its own machine** (A).
+3. **Not A, B or C as written:** "I wanted to be able to cut pieces made in the panel former or in an extruder." So the
+   cutter takes a formed panel **and an extruded piece** from the start, not thick plate "later"; it has no sheet bin of its own.
+   The phases must say which extruded sections can be cut (plate and sheet at least) and how a cut extrusion is keyed.
+4. **Straight edges and diagonals**, up to six a panel (A).
+5. Openings of **10 cm and more open for real** (A).
+6. The offcut **all comes back** as bulk material (A).
+7. **Two sizes, no tiers** (A).
+8. **By orders only** (A).
+9. **A socket in each opening, and a Pane** cut to the opening's outline from glass sheet (B): one more phase.

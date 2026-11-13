@@ -50,3 +50,7 @@ it is a second home for the configure panel's grid editor.
 
 Recommendation: B now, as it keeps the picker a one-click list and needs no wire change; add A's drawn section pictures to B's tiles;
 leave Custom and free sizes to the configure tool until players ask for more.
+
+**The user's answer (2026-11-13): A, section tiles with sizes under them** (not the recommendation, B). One tile per Profile drawn
+from its mask, Width and Height steppers (and Pipe wall) clamped to the die's size, Set; Custom opens the cell grid in the same
+window. A new act and a protocol bump.
