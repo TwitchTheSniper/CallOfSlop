@@ -448,6 +448,7 @@ public sealed partial class Construct
     public int AmbStamp = -1; // (PartAmbience.cs: AmbParts was gathered at this RebuildStamp)
     public int[] AmbParts = []; // the parts with something about them that moves or sounds (a chimney's smoke, a valve's steam, a searchlight, a tannoy)
     public int[] MainsFeed = []; // (interiors phase 11) by part, for mains lamps: the part whose wire switches it (-1: none, lit from the circuit alone); gathered with LampParts
+    public int LiftStamp = -1, LiftPartCount = -1; // (ConstructLifters.Scan: its lifter parts were looked for at this RebuildStamp and part count)
     public int RebuildStamp; // goes up with every rebuild (what is drawn from the parts follows it: ConstructRenderBatch.cs)
     internal ushort[] SigList = []; // the signal parts in part order (ConstructNet.Signals: kept for the poses)
     internal int SigListCount, SigListStamp = -1, SigListParts = -1;
