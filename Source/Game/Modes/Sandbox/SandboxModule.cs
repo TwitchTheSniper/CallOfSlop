@@ -110,9 +110,12 @@ public sealed class SandboxModule : GameModeModule
                 ref var h = ref hands.Hand(p.Id);
                 if (pass == 1)
                 {
-                    var idle = h.Tool == default && h.Held == 0 && h.SeatBody == 0 && h.Edit == EditKind.None && h.GrabBody == 0;
+                    // (empty hands count as idle too: a calm story body holds the Hands tool, GameStoryBodies.cs; a change of tool is sent three times again)
+                    var idle = h.Tool is ConstructTool.None or ConstructTool.Hands && h.Held == 0 && h.SeatBody == 0 && h.Edit == EditKind.None && h.GrabBody == 0;
                     ref var quiet = ref game.SbHandQuiet[p.Id];
-                    quiet = idle ? (byte)Math.Min(quiet + 1, 255) : (byte)0;
+                    ref var was = ref game.SbHandTool[p.Id];
+                    quiet = idle && was == (byte)h.Tool ? (byte)Math.Min(quiet + 1, 255) : (byte)0;
+                    was = (byte)h.Tool;
                     if (quiet > 3)
                         continue;
                 }

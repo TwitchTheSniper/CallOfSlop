@@ -1,7 +1,7 @@
 # Laser Cutter, phase 3: notes (2026-11-13)
 
 Phase 3 of `laser-cutter.md`, its first coherent part: the machine in two sizes, a blank in, the cut, the cut part out, the offcut
-counted in tenths and handed into its bin, its recipe and tier. Protocol 295 (main was 294; the merger renumbers). The user-facing
+counted in tenths and handed into its bin, its recipe and tier. Protocol 296 (main was 294; the merger renumbers). The user-facing
 summary is `docs/sandbox/constructs/production.md` "The Laser Cutter".
 
 ## What was built
@@ -81,7 +81,7 @@ Laser Cutter, nothing on its out port (cut parts drop on the out bed).
    - A (recommended): it repeats the head order, as built.
    - B: it does nothing until a design is picked.
 
-## Fixes after review (2026-11-13, protocol 296)
+## Fixes after review (2026-11-13, protocol 297)
 
 - The Panel Designer and the recipe picker no longer count a cutter as a Panel Former (with only a cutter linked: "No Panel Former is
   linked"; with a former and a cutter: one former, its size, "Panel Former 1: yes").

@@ -16,6 +16,19 @@
               "text": "The crew is at the ration hauler outside the gate. Walk up to it and you're away. There's no coming back." },
   "spaceport": { "title": "The spaceport",
                  "text": "The Ministry Spaceport. The courier sits on the first pad, behind the terminal. Get the crew aboard." },
+  // The ship (Game/GameBreakoutShip.cs): an escapee who sits in the Ministry Courier takes the convicts alive within
+  // 40 m aboard (each says "aboard"); 1.5 km from the spaceport they are away: each one aboard says their "away" line,
+  // "memo" goes round ({name}: the pilot) and the panel shows "title" and "text" for half a minute.
+  "ship": {
+    "aboard": "Budge up. Mind the stick.",
+    "away": [
+      { "who": "Dot Pruett", "says": "Nobody waved. Told you." },
+      { "who": "Hester Mossop", "says": "For them that didn't make it. Now fly, and don't tell me where. I'll sleep." }
+    ],
+    "memo": "[MINISTRY MEMO] Ministry Courier missing from the spaceport. Captain Fairweather is filling in the form.",
+    "title": "Away",
+    "text": "The colony is behind you and the crew is aboard. The courier is yours now. Where it goes is up to you."
+  },
   // The fight (Game/GameBreakoutFight.cs): an escapee within "wake" m of the landing turns the guards out at their posts
   // (the spaceport's frame, as "landing"), the first shouting; they go for whoever escaped, never the convicts, apart
   // from "deaths": each is due "after" s into the fight or once "down" guards are, whichever is first. The convict says
