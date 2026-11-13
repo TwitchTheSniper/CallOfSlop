@@ -1394,6 +1394,7 @@
     {"output": "Steel Panel Wall 4 m", "materials": {"steel": 352, "concrete": 70}, "seconds": 54.8},
     {"output": "Steel Panel Wall 8 m", "materials": {"steel": 704, "concrete": 141}, "seconds": 107.6},
     {"output": "Lever", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.1, "minTier": 3},
+    {"output": "Loader Arm", "materials": {"steel": 76, "concrete": 15}, "seconds": 13.4},
     {"output": "Linear Actuator 1x1 0.5 m", "materials": {"steel": 1}, "parts": {"Servo Motor": 1}, "seconds": 2.0, "minTier": 2},
     {"output": "Linear Actuator 1x1 1 m", "materials": {"steel": 1}, "parts": {"Servo Motor": 1}, "seconds": 2.1, "minTier": 2},
     {"output": "Linear Actuator 1x1 2 m", "materials": {"steel": 1}, "parts": {"Servo Motor": 1}, "seconds": 2.1, "minTier": 2},

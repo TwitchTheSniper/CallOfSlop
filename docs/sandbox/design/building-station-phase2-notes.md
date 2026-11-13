@@ -71,3 +71,12 @@ and Q4.
 - `--check-construct-parts` lists about 80 `Loot.json: ... it has no recipe to show its tier` lines (Wiring Loom, Gear Set,
   Copper Coil and others, most likely the rows press phase 5 took off the Assembler). They don't count in the exit code and don't
   come from this branch.
+
+## The user's answers (2026-11-13)
+
+1. **A fill setting** at the station (full, none, a percentage) (not the recommendation).
+2. **A setting at the station** for whether a build waits for fuel and ammo or finishes empty and says so.
+3. **Batteries are charged from the station's power**, taking time.
+4. **Ammo Containers and fitted magazines are filled** from bulk ammo in linked bins, following the fill setting.
+5. **Gas tanks fill from linked bins too**, as well as through pipes (not the recommendation).
+6. **Creative: tanks come full**, as built.

@@ -119,7 +119,7 @@ public enum Msg : byte
     Objective, // server -> one client, Sandbox story: their "what next" goal (u8 the goal's index in Story/Objectives.json, 255 none; i16 have, i16 need as u16) when it changes (reliable ordered; GameObjectives.cs, protocol 273)
     Labour, // server -> all and each joiner, Sandbox story: the penal colony's convict labourers, every gang (u8 n, each u8 kind, u8 inmates, u8 guards, u8 seed, u8 flags, u8 gap 10 cm, vec facing, u8 points, vec each) when they change (reliable ordered; GameLabour.cs, protocol 276)
     LabourHands, // server -> all and each joiner, Sandbox story: the story people working among the labourers now (u8 n, each u8 player, u8 scene: their body is drawn as that gang's last inmate) when it changes (reliable ordered; GameLabourHands.cs, protocol 286)
-    Breakout, // server -> one client, Sandbox story: their place in the convicts' break-out (u8 stage, u8 has a target, vec target, u32 the tick they boarded the hauler (0: not riding), u16 hauler leaving, u16 hauler arriving) when it changes (reliable ordered; GameBreakout.cs, protocol 287)
+    Breakout, // server -> one client, Sandbox story: their place in the convicts' break-out (u8 stage, u8 has a target, vec target, u32 the tick they boarded the hauler (0: not riding), u16 hauler leaving, u16 hauler arriving) when it changes (reliable ordered; GameBreakout.cs, protocol 288)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

@@ -71,3 +71,13 @@ Phase 1 of `laser-cutter.md` as revised for the user's answers 3 and 9: cut pane
 3. **A flat bar standing on edge** (taller than wide).
    - A (recommended): refused, "lay the bar flat".
    - B: cut through its width as well.
+
+## The user's answers (2026-11-13)
+
+1. **Offcuts round to the nearest unit, and the cutter counts them finer** (the user: "Round to the nearest unit, but also reduce
+   unit sizes somewhat"; asked which units: "the cutter's offcut only"). So the cutter keeps its offcut in smaller steps in its
+   own bin (tenths of a unit is the coordinator's suggestion) and hands out whole units as they add up; the game's bulk units stay.
+2. **No fixed thickest stock** (not A, B or C; the user: "thicker the cut, the slower it should go in relation to the given
+   machine's power output"). Cutting time grows with thickness and falls with the machine's power; any thickness the machine's
+   bed takes is cut, slowly if need be. The phases must give the law and a sane upper bound from the bed, not from a rule.
+3. **A flat bar on edge is cut through its width too** (B, not the recommendation).

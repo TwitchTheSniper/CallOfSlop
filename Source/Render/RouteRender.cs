@@ -115,6 +115,8 @@ public static class RouteRender
             if (c.ConveyedCount > 0)
                 DrawRiders(gfx, c);
         }
+        if (world.LiftBodies.Count > 0 || world.Bodies.Count > 0)
+            LifterRender.Draw(gfx, world); // (Loader Arms: the boom, the hand and the piece on its move)
         gfx.EndBatch();
         LastSegments = n;
     }

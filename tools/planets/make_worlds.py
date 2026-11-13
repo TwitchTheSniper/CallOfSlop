@@ -287,6 +287,26 @@ WORLDS = [
         "landing": 9,
         "sites": [("home", 55, 300, 90, 9, 120), ("data", 70, 40, 30, -66, 30)],
     },
+    {
+        "name": "Slopolis", "order": 6, "radius": 3500, "strength": 10,
+        "ore": {"iron vein": 0.5, "copper vein": 0.5},
+        "description": "Slopolis, the free port: a 3.5 km world whose north is one city, built by everybody and owned by nobody. Towers in the middle, old brick blocks at the edge, a square at the pole with a column in it, and lamps coming on at the blue hour. Hills and old quarries beyond the last street (docs/planets/CITY.md).",
+        "surface": {"grass": "#5d6b4a", "dirt": "#6b5d4c", "rock": "#5a5752", "sand": "#8c7f68", "dirtSlope": 16, "rockSlope": 30, "sandBelow": -30},
+        "skybox": {"preset": "dusk", "zenith": "#16224a", "horizon": "#d98a64", "ground": "#1a1a20", "stars": 0.5, "ambient": 0.8,
+                   "sun": {"elevation": 4, "azimuth": 250, "color": "#ff9a62", "intensity": 0.55, "size": 2.4, "glow": 0.9},
+                   "haze": {"color": "#e07a52", "strength": 0.7}},
+        "features": [
+            noise(28, 900, 5, 61),
+            mountain(55, 120, 700, 260, 63, ridges=0.5, erosion=0.6),
+            mountain(48, 300, 600, 200, 64, ridges=0.4, erosion=0.6),
+            crater(20, 200, 300, 60),
+            noise(5, 120, 3, 8),
+        ],
+        "landing": 12,
+        "sites": [],
+        "city": {"radius": 640, "seed": 7, "blockX": 64, "blockZ": 88, "street": 16, "avenue": 26, "avenueEvery": 3, "tallest": 230, "lowest": 14, "coreFalloff": 700, "loop": 330},
+        "pole": False,
+    },
 ]
 
 
@@ -301,7 +321,10 @@ def build(w):
     features = list(w["features"]) + [FINE]
     for _, lat, lon, rad, height, edge in w["sites"]:
         features.append(flatten(lat, lon, rad, height, edge))
-    features.append(flatten(90, 0, 70, h, 150))
+    if "city" in w:  # the city's ground: level to its last street and a little over (CITY.md)
+        features.append(flatten(90, 0, w["city"]["radius"] + 80, h, 300))
+    else:
+        features.append(flatten(90, 0, 70, h, 150))
     planetoid = {"radius": r, "cell": 2, "strength": w["strength"], "surface": w["surface"]}
     if "cavity" in w:
         planetoid["cavity"] = w["cavity"]
@@ -314,7 +337,8 @@ def build(w):
 
     half = min(r + 2600, 12600)
     ops = [{"op": "SurfaceSpawn", "lat": lat_of(top, 14), "lon": 22.5 + 45 * k} for k in range(8)]
-    ops.append({"op": "SurfaceBlock", "lat": 90, "lon": 0, "w": 1.2, "h": 6, "d": 1.2, "color": "#8a8f99", "material": "Concrete"})  # the pole's post
+    if w.get("pole", True):
+        ops.append({"op": "SurfaceBlock", "lat": 90, "lon": 0, "w": 1.2, "h": 6, "d": 1.2, "color": "#8a8f99", "material": "Concrete"})  # the pole's post
     for kind, lat, lon, _, _, _ in w["sites"]:  # a survey post on each site, so it can be found
         ops.append({"op": "SurfaceBlock", "lat": lat, "lon": lon, "w": 0.8, "h": 4, "d": 0.8, "color": "#d9c14a" if kind == "home" else "#4ab0d9", "material": "Concrete"})
     head = {
@@ -323,7 +347,7 @@ def build(w):
     if "storm" in w:
         head["storm"] = w["storm"]
     return {
-        **head, "planetoid": planetoid,
+        **head, "planetoid": planetoid, **({"city": {"lat": 90, "lon": 0, "height": h, **w["city"]}} if "city" in w else {}),
         "sandbox": {"resources": {"mix": w["ore"]}},  # each world's own ground (WORLDS.md "Ore")
         "teamSpawns": [[[x, y(x, z, 0.24), z] for x, z in ((-6, s * 40), (6, s * 40), (-12, s * 36), (12, s * 36))] for s in (-1, 1)],
         "hills": [{"x": s * 30, "y": y(30, 30), "z": s * 30, "radius": 6} for s in (1, -1)],
