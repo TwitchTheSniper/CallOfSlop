@@ -7,7 +7,8 @@ namespace CallOfSlop;
 /// them is judged on how it plays as well as how it looks.
 /// <list type="bullet">
 /// <item><b>Measured.</b> When a real player finishes a step the server logs <c>[pace] induction bus: 95.3 s (Name)</c>,
-/// and at the end the total and the slowest steps. They are in callofslop.log after any play session.</item>
+/// their own time from the step's start to their finishing it (not the wait for the rest of a group), and at the end the
+/// total and the slowest step. They are in callofslop.log after any play session.</item>
 /// <item><b>Estimated.</b> <see cref="PaceEstimate"/> (the window script's <c>pace</c>, which the play-test tour runs)
 /// prints each step's floor with no player: the reading at <see cref="PaceWordsPerSecond"/>, the way on foot between the
 /// steps' places at walking and sprinting speed, the bus, and the waits. What the player does at a step comes on top,
@@ -28,26 +29,62 @@ public sealed partial class Game
     private readonly double[] _paceSum = new double[2 * MaxPlayers], _paceSlow = new double[2 * MaxPlayers];
     private readonly int[] _paceSteps = new int[2 * MaxPlayers];
     private readonly string[] _paceSlowId = new string[2 * MaxPlayers];
+    private readonly Player?[] _paceWho = new Player?[2 * MaxPlayers]; // (whose sums a slot holds: an id is used again when a person leaves)
 
-    /// <summary>Server: a person finished a step of a track after <paramref name="seconds"/>; <paramref name="last"/> ends the track with its total.</summary>
+    /// <summary>
+    /// Server: a person finished a step of a track after <paramref name="seconds"/> of their own (negative: they did not,
+    /// their group moved on without them); <paramref name="last"/> ends the track with its total.
+    /// </summary>
     private void PaceStep(Player p, int track, string step, double seconds, bool last)
     {
-        if (p.Bot != null || p.Id >= MaxPlayers || seconds < 0)
+        if (p.Bot != null || p.Id >= MaxPlayers)
             return;
         var k = track * MaxPlayers + p.Id;
-        _paceSum[k] += seconds;
-        _paceSteps[k]++;
-        if (seconds > _paceSlow[k])
+        if (_paceWho[k] != p)
         {
-            _paceSlow[k] = seconds;
-            _paceSlowId[k] = step;
+            PaceClear(k); // (another person had this id before)
+            _paceWho[k] = p;
         }
-        Log($"[pace] {PaceTracks[track]} {step}: {seconds:0.0} s ({p.Name})");
+        if (seconds < 0)
+            Log($"[pace] {PaceTracks[track]} {step}: not finished, the group moved on ({p.Name})");
+        else
+        {
+            _paceSum[k] += seconds;
+            _paceSteps[k]++;
+            if (seconds > _paceSlow[k])
+            {
+                _paceSlow[k] = seconds;
+                _paceSlowId[k] = step;
+            }
+            Log($"[pace] {PaceTracks[track]} {step}: {seconds:0.0} s ({p.Name})");
+        }
         if (!last)
             return;
-        Log($"[pace] {PaceTracks[track]} done: {_paceSteps[k]} steps in {PaceClock(_paceSum[k])}, the slowest {_paceSlowId[k]} at {_paceSlow[k]:0} s ({p.Name}; steps done before this session aren't counted)");
+        if (_paceSteps[k] > 0)
+            Log($"[pace] {PaceTracks[track]} done: {_paceSteps[k]} steps in {PaceClock(_paceSum[k])}, the slowest {_paceSlowId[k]} at {_paceSlow[k]:0} s ({p.Name}; steps done before this session aren't counted)");
+        PaceClear(k);
+    }
+
+    private void PaceClear(int k)
+    {
         _paceSum[k] = _paceSlow[k] = 0;
         _paceSteps[k] = 0;
+    }
+
+    /// <summary>Server: a person starts a track again from its first step (the induction replayed): their sums start again too.</summary>
+    private void PaceRestart(int id, int track)
+    {
+        if (id < MaxPlayers)
+            PaceClear(track * MaxPlayers + id);
+    }
+
+    /// <summary>A new match: nobody's sums carry over from the last world.</summary>
+    private void PaceReset()
+    {
+        Array.Clear(_paceSum);
+        Array.Clear(_paceSlow);
+        Array.Clear(_paceSteps);
+        Array.Clear(_paceWho);
     }
 
     private static string PaceClock(double seconds) => $"{(int)(seconds / 60)} min {(int)(seconds % 60):00} s";
@@ -79,7 +116,12 @@ public sealed partial class Game
     /// </summary>
     public bool PaceEstimate(Action<string> say)
     {
-        if (!IsServer || _opColony == 0 || QuarrySpot(QuarrySpotKind.Colony) is not { } colonyStop)
+        if (!IsServer)
+        {
+            say("[pace] no estimate: only the host can make it (this window joined a game)");
+            return false;
+        }
+        if (_opColony == 0 || QuarrySpot(QuarrySpotKind.Colony) is not { } colonyStop)
         {
             say("[pace] no estimate: this world has no penal colony (a survival world on the story's home map has one)");
             return false;

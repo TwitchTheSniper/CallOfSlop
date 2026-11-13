@@ -133,8 +133,10 @@ Two kinds of number, both `[pace]` lines, neither on the wire or in a save:
 
 - **Measured, from real play.** When a person finishes a step the server logs `[pace] induction bus: 95.3 s (Name)` (the
   quarry duty's steps are `[pace] duty power: ...`), and at the end of each `[pace] induction done: 12 steps in 6 min 41 s,
-  the slowest bus at 95 s`. They are in `callofslop.log` after any play session, the host's for everyone. A skip logs
-  nothing, and steps done before the session started aren't in the total.
+  the slowest bus at 95 s`. They are in `callofslop.log` after any play session, the host's for everyone. A step's time
+  is the person's own, from the step's start to their finishing it: the wait for the rest of a group is not in it, and a
+  person the group moved on without gets `not finished, the group moved on`. A skip logs nothing, a replay starts the
+  sums again, and steps done before the session started aren't in the total.
 - **Estimated, with no player.** The window script's `pace` action (`--window-shot ... --map Glacier --survival --do "skip;
   wait 120; pace"`, and the play-test tour runs it) prints each step's floor: its words read at `PaceWordsPerSecond` (3 a
   second), the way on foot to the step's place at walking speed (with the sprinting time beside it), the bus (12 s to come,

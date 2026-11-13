@@ -158,6 +158,7 @@ public sealed partial class Game
         _tutStep[id] = 0;
         _tutWasRunning[id] = false;
         _tutArrivedAt[id] = SandboxNow;
+        _tutStepAt[id] = SandboxNow; // (a person arriving part-way: their step starts now, not when the slot was last used)
         _tutSaw[id] = 0;
         _tutAmount[id] = 0;
         _tutGroup[id] = 0;
@@ -175,6 +176,8 @@ public sealed partial class Game
         _tutDone[id] = false;
         _tutGroupDirty[id] = true;
         _tutStepAt[id] = SandboxNow;
+        if (step == 0)
+            PaceRestart(id, PaceInduction); // (from the top, a replay too: GamePace.cs)
         _tutSaw[id] = 0;
         _tutAmount[id] = 0;
         if (Players.TryGetValue(id, out var p))
@@ -367,7 +370,7 @@ public sealed partial class Game
                 if (!_tutDone[j] && members > 1)
                     SandboxHands.Notices.Add(((byte)j, $"{WardenName} moves on without waiting for you"));
                 if (step < Tutorial.Steps.Length)
-                    PaceStep(p, PaceInduction, Tutorial.Steps[step].Id, now - _tutStepAt[j], next >= stepCount); // (GamePace.cs: how long the step took them)
+                    PaceStep(p, PaceInduction, Tutorial.Steps[step].Id, _tutDone[j] ? _tutDoneAt[j] - _tutStepAt[j] : -1, next >= stepCount); // (GamePace.cs: how long the step took them, not the wait for the group)
                 TutorialGo((byte)j, next, next >= stepCount ? TutorialState.Finished : TutorialState.Running, keepGroup: true);
                 if (next >= stepCount)
                     Console.WriteLine($"[tutorial] {p.Name} finished the induction");

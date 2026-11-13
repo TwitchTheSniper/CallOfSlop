@@ -74,6 +74,7 @@ public sealed partial class Game
     {
         Array.Clear(_qr);
         Array.Clear(_qrWho);
+        PaceReset(); // (GamePace.cs)
         Array.Clear(_paOut);
         PlayAreaOutLocal = false;
         _qrWorks = 0;
