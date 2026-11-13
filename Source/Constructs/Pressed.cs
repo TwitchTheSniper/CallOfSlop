@@ -82,7 +82,7 @@ public static class Pressed
         if (across < die.AcrossMin || across > die.AcrossMax || k.L < die.LengthMin || k.L > die.LengthMax)
             return false;
         var aspect = k.L / (float)across;
-        return aspect >= die.AspectMin - 1e-4f && aspect <= die.AspectMax + 1e-4f && PressClass(across) >= 0 && (!die.AspectPreset || p.Preset.W == 0 || Proportioned(p, k) == (k.W, k.H, k.L)) && ReceiverScaleIn(p, k);
+        return aspect >= die.AspectMin - 1e-4f && aspect <= die.AspectMax + 1e-4f && PressClass(across) >= 0 && (!die.AspectPreset || p.Preset.W == 0 || Proportioned(p, k) == (k.W, k.H, k.L));
     }
 
     /// <summary>
@@ -122,17 +122,8 @@ public static class Pressed
             return $"a {p.Like.Name} blank keeps its shape ({p.Preset.W}x{p.Preset.H}x{p.Preset.L}): {want.W / 100f:0.00} x {want.H / 100f:0.00} x {want.L / 100f:0.00} m";
         if (PressClass(across) < 0)
             return "too large for any press";
-        if (!ReceiverScaleIn(p, k))
-            return $"a {p.Like.Name} is pressed {MinReceiverScale:0.##} to {ReceiverMergeRules.Current.MaxSize} times its size: {Math.Max(MinCm, MathF.Ceiling(Across(p.Preset) * MinReceiverScale / Extrusion.StepCm) * Extrusion.StepCm) / 100f:0.00} to {Across(p.Preset) * ReceiverMergeRules.Current.MaxSize / 100f:0.00} m across";
         return null;
     }
-
-    /// <summary>The least scale of a pressed receiver (sized-parts design 4.1); the most is the merge's maxSize (ReceiverMergeRules), so pressing never passes merging.</summary>
-    public const float MinReceiverScale = 0.75f;
-
-    /// <summary>Is a receiver pattern's scale at this blank within 0.75 to the merge's maxSize (phase 4: a 15 cm preset would otherwise reach 8)? True for any other pattern.</summary>
-    public static bool ReceiverScaleIn(PressPattern p, in ExtrusionKey k) =>
-        !p.Like.IsReceiverGun || p.Preset.W == 0 || ReceiverScale(p, k) is var s && s >= MinReceiverScale - 1e-4f && s <= ReceiverMergeRules.Current.MaxSize + 1e-4f;
 
     /// <summary>Reads a key (null die: not a pressed part; then <paramref name="why"/> says why).</summary>
     public static bool TryParse(string name, out PressDie? die, out PressPattern? pattern, out ExtrusionKey blank, out string why)
@@ -615,7 +606,6 @@ public static class Pressed
         var centre = Map((like.BoundsMin + like.BoundsMax) * 0.5f);
         PlaceFeatures(die, p, section, new Vector3(w, h, len), lo, hi, proud, looks, nb, axes, centre);
         Settle(lo, hi, proud, nb, Gap(MathF.Max(w, MathF.Max(h, len))));
-        SettleBody(lo, hi, like.Boxes, Gap(MathF.Max(w, MathF.Max(h, len))));
         var colour = names.ColourOf(k.Material);
         var boxes = new CPartBox[n];
         var min = Map(like.BoundsMin);
@@ -761,46 +751,6 @@ public static class Pressed
                     }
             if (!moved)
                 return;
-        }
-    }
-
-    /// <summary>
-    /// The like body's own drawn detail boxes, stretched: two that face the same way on one plane (a like part's faces stepped 3 mm apart
-    /// at its own size can still meet once stretched unevenly; the Kingpin Revolver Receiver at 2x, sized parts phase 4) step apart, the
-    /// later box's face in by the gap where it stays thick enough, else out. Hidden and solid boxes stay (the sockets and collision are
-    /// theirs), and two of one look need nothing (as the check). Nothing moves on a body with no such pair.
-    /// </summary>
-    private static void SettleBody(Span<Vector3> lo, Span<Vector3> hi, CPartBox[] body, float gap)
-    {
-        var nb = Math.Min(body.Length, lo.Length);
-        for (var i = 1; i < nb; i++)
-        {
-            if (!body[i].Detail || body[i].Hidden)
-                continue;
-            for (var j = 0; j < i; j++)
-            {
-                if (!body[j].Detail || body[j].Hidden || body[j].Color == body[i].Color && body[j].Tone == body[i].Tone)
-                    continue;
-                for (var ax = 0; ax < 3; ax++)
-                    for (var s = -1; s <= 1; s += 2)
-                    {
-                        var pi = s < 0 ? Get(lo[i], ax) : Get(hi[i], ax);
-                        var pj = s < 0 ? Get(lo[j], ax) : Get(hi[j], ax);
-                        if (MathF.Abs(pi - pj) > 0.0006f)
-                            continue;
-                        int b = (ax + 1) % 3, c = (ax + 2) % 3;
-                        var ob = MathF.Min(Get(hi[i], b), Get(hi[j], b)) - MathF.Max(Get(lo[i], b), Get(lo[j], b));
-                        var oc = MathF.Min(Get(hi[i], c), Get(hi[j], c)) - MathF.Max(Get(lo[i], c), Get(lo[j], c));
-                        if (ob <= 0 || oc <= 0 || ob * oc < ZFight.MinArea)
-                            continue;
-                        var thick = Get(hi[i], ax) - Get(lo[i], ax);
-                        var plane = thick - gap >= gap ? pi - s * gap : pi + s * gap; // (in, or out when too thin to give)
-                        if (s < 0)
-                            lo[i] = With(lo[i], ax, plane);
-                        else
-                            hi[i] = With(hi[i], ax, plane);
-                    }
-            }
         }
     }
 

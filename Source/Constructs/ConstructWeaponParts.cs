@@ -209,34 +209,9 @@ public static class ConstructWeaponParts
     /// <summary>The part file text for one builder part (see the class summary).</summary>
     public static string Text(PartDef p, string name, Rules rules)
     {
-        var boxes = ModelBoxes(p, rules.Scale, out var mn, out var mx);
-        // Centred on its bounds (the sockets on its faces, a merged receiver's grid on its size), at least 4 cm a side.
-        var centre = (mn + mx) * 0.5f;
-        var half = HalfOf(p, mn, mx);
-        var mass = MathF.Max(0.5f, MathF.Round(p.Weight * rules.MassScale * 10f) / 10f);
-        var receiver = p.Category == PartCategory.Receiver && p.Receiver != null;
-        return Text(p, name, rules, boxes, centre, half, mass, receiver);
-    }
-
-    /// <summary>The size (m) of the generated construct part for a builder part at this scale: what its file's bounds come to (the Receiver die's presets, PressParts).</summary>
-    public static Vector3 SizeOf(PartDef p, float scale)
-    {
-        ModelBoxes(p, scale, out var mn, out var mx);
-        return HalfOf(p, mn, mx) * 2;
-    }
-
-    private static Vector3 HalfOf(PartDef p, Vector3 mn, Vector3 mx)
-    {
-        var half = Vector3.Max((mx - mn) * 0.5f, new Vector3(0.02f));
-        return p.Category == PartCategory.Receiver && p.Receiver != null ? MergeGrid(half) : half; // (whole centimetres a side, so an NxN square built socket to socket stays on the merge grid)
-    }
-
-    /// <summary>
-    /// The drawn boxes: the builder model's (tagged boxes, drawn only with something else fitted, left out), each as the box round it
-    /// turned, the biggest 15 kept, in their own order; and their bounds.
-    /// </summary>
-    private static List<(Vector3 Min, Vector3 Max, Vector3 Rgb, float Vol, int Order)> ModelBoxes(PartDef p, float s, out Vector3 mn, out Vector3 mx)
-    {
+        var s = rules.Scale;
+        // The drawn boxes: the builder model's (tagged boxes, drawn only with something else fitted, left out), each as the
+        // box round it turned, the biggest 15 kept, in their own order.
         var boxes = new List<(Vector3 Min, Vector3 Max, Vector3 Rgb, float Vol, int Order)>();
         for (var i = 0; i < p.Boxes.Length; i++)
         {
@@ -259,19 +234,20 @@ public static class ConstructWeaponParts
             boxes.Add((new Vector3(-0.03f), new Vector3(0.03f), new Vector3(0.3f), 1, 0));
         if (boxes.Count > 15)
             boxes = boxes.OrderByDescending(b => b.Vol).ThenBy(b => b.Order).Take(15).OrderBy(b => b.Order).ToList();
-        mn = new Vector3(float.MaxValue);
-        mx = new Vector3(float.MinValue);
+        var mn = new Vector3(float.MaxValue);
+        var mx = new Vector3(float.MinValue);
         foreach (var b in boxes)
         {
             mn = Vector3.Min(mn, b.Min);
             mx = Vector3.Max(mx, b.Max);
         }
-        return boxes;
-    }
-
-    private static string Text(PartDef p, string name, Rules rules, List<(Vector3 Min, Vector3 Max, Vector3 Rgb, float Vol, int Order)> boxes, Vector3 centre, Vector3 half, float mass, bool receiver)
-    {
-        var s = rules.Scale;
+        // Centred on its bounds (the sockets on its faces, a merged receiver's grid on its size), at least 4 cm a side.
+        var centre = (mn + mx) * 0.5f;
+        var half = Vector3.Max((mx - mn) * 0.5f, new Vector3(0.02f));
+        var mass = MathF.Max(0.5f, MathF.Round(p.Weight * rules.MassScale * 10f) / 10f);
+        var receiver = p.Category == PartCategory.Receiver && p.Receiver != null;
+        if (receiver)
+            half = MergeGrid(half); // (whole centimetres a side, so an NxN square built socket to socket stays on the merge grid)
         var ic = CultureInfo.InvariantCulture;
         string V(Vector3 v) => string.Create(ic, $"[{v.X:0.####}, {v.Y:0.####}, {v.Z:0.####}]");
         string Hex(Vector3 c) => $"#{(int)Math.Clamp(c.X * 255, 0, 255):x2}{(int)Math.Clamp(c.Y * 255, 0, 255):x2}{(int)Math.Clamp(c.Z * 255, 0, 255):x2}";

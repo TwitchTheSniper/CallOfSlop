@@ -553,47 +553,11 @@ public sealed class PressParts : IPartGenerator
         ("shell", "Shell Receiver", "shell receiver", "hollow 20x20x40 steel"),
     ];
 
-    /// <summary>The builder receivers the three hand-made construct receivers wrap (their files' "receiver"): not generated, so not patterns again.</summary>
-    private static readonly string[] HandMadeReceivers = ["Workhorse Receiver", "Thumper Chain Gun Receiver", "Street Sweeper Receiver"];
-
-    /// <summary>
-    /// Every Receiver die pattern as (id, like part, label, preset blank): the three hand-made ones, then (sized parts phase 4) each generated
-    /// receiver by name, its preset blank its generated construct part's size (ConstructWeaponParts.SizeOf at WeaponParts.json's scale) on
-    /// the 5 cm lattice, half up, at least 15 cm a side (the die's least across) and 30 long (its least length).
-    /// </summary>
-    private static IEnumerable<(string Id, string Like, string Label, string Blank)> ReceiverPatternsAll()
-    {
-        var ids = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var r in ReceiverPatterns)
-        {
-            ids.Add(r.Id);
-            yield return r;
-        }
-        var scale = WeaponPartsScale();
-        static int Lattice(double cm, int least) => Math.Max(least, (int)Math.Round(cm / 5, MidpointRounding.AwayFromZero) * 5);
-        foreach (var p in CallOfSlop.Parts.InCategory(PartCategory.Receiver).Where(p => p.Receiver != null && !HandMadeReceivers.Contains(p.Name)).OrderBy(p => p.Name, StringComparer.Ordinal))
-        {
-            var size = ConstructWeaponParts.SizeOf(p, scale) * 100;
-            var id = PatternId(p.Name.Replace("Receiver", "", StringComparison.OrdinalIgnoreCase));
-            if (!ids.Add(id))
-                throw new InvalidOperationException($"press_parts: two receivers make the pattern id \"{id}\" ({p.Name})");
-            var label = p.Name.Replace("Receiver", "", StringComparison.OrdinalIgnoreCase).Trim().ToLowerInvariant(); // (a label is at most 24 characters: "gravedigger auto")
-            yield return (id, p.Name, label.Length > 24 ? label[..24].TrimEnd() : label, $"solid {Lattice(size.X, 15)}x{Lattice(size.Y, 15)}x{Lattice(size.Z, 30)} steel");
-        }
-    }
-
-    /// <summary>WeaponParts.json's "scale" (how much bigger than the handheld part a generated construct gun part is), read from the file.</summary>
-    private static float WeaponPartsScale()
-    {
-        using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(Path.Combine(CallOfSlop.PartKit.PartKit.FindRoot(), "Constructs", "WeaponParts.json")));
-        return doc.RootElement.TryGetProperty("scale", out var s) ? s.GetSingle() : new ConstructWeaponParts.Rules().Scale;
-    }
-
     private static PyDict ReceiverDie()
     {
         var gears = Kit("Gear Set", true, 1, 0.02, "mass", 20); // (as the Drive die: the action's gearing)
         var die = SizedDie("Receiver", ["solid", "hollow"], ["steel"], [15, 120], [30, 600], [1, 1], 4, 0.02, Py.L(),
-            ReceiverPatternsAll().Select(r => (object?)Pattern(r.Id, r.Like, r.Label, r.Blank, bay2: gears, along: "z")).ToList());
+            ReceiverPatterns.Select(r => (object?)Pattern(r.Id, r.Like, r.Label, r.Blank, bay2: gears, along: "z")).ToList());
         die["aspect"] = "preset";
         return die;
     }
@@ -868,8 +832,8 @@ public sealed class PressParts : IPartGenerator
             Add(builder, "barrel", id, blank);
         foreach (var (builder, blank) in ArtilleryTubes)
             Add(builder, "barrel", "tube", blank);
-        // Phase 3: the hand-made receivers are the Receiver die's presets (their Assembler recipes stay until that design's phase 6); phase 4: the generated ones too.
-        foreach (var (id, like, _, blank) in ReceiverPatternsAll())
+        // Phase 3: the hand-made receivers are the Receiver die's presets (their Assembler recipes stay until that design's phase 6).
+        foreach (var (id, like, _, blank) in ReceiverPatterns)
             Add(like, "receiver", id, blank);
         return r;
     }
