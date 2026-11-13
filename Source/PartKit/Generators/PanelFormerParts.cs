@@ -62,7 +62,7 @@ public sealed class PanelFormerParts : IPartGenerator
         double bz0 = col + 0.12, bz1 = bz0 + 1.0;
         p.Add(L([-hw - 0.06, 0.2, bz0 + 0.04], [-hw, 1.0, bz0 + 0.12], MachineLook.Base));
         p.Add(L([-hw - 0.06, 0.2, bz1 - 0.12], [-hw, 1.0, bz1 - 0.04], MachineLook.Base));
-        p.Add(L([-hw - 0.07, 1.0, bz0], [-hw, 1.92, bz1], MachineLook.Base));
+        p.Add(Box([-hw - 0.07, 1.0, bz0], [-hw, 1.92, bz1], MachineLook.Base)!.Update(("paintable", false))); // (solid, not a look box: the crosshair finds its screen's buttons on it)
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Sock("top", [0, R(top), 0], "+y");
         p.Stats(r.Mass, r.Health, c == Small ? 6 : c.Armour, c == Small ? 5 : null);
