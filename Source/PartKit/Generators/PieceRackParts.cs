@@ -74,9 +74,54 @@ public sealed class PieceRackParts : IPartGenerator
         return p;
     }
 
+    /// <summary>
+    /// The Lay-down Pad (docs/sandbox/design/arms-and-cranes.md 3.5, lifters phase 4): an open steel deck, no bars, where pieces
+    /// too wide for a rack wait and where Loader Arms pick and put. A Piece Rack by its <c>storage.pieces</c> block (pieces up to
+    /// section by up, length, packed by ConstructRackPack in its hold over the deck); four corner posts mark how high it stacks.
+    /// </summary>
+    private static Part Pad(string name, int nx, int ny, int nz, double section, double up, double length, int count, string desc)
+    {
+        var c = Small;
+        var p = new Part(name, c, "Extrusion", desc, role: "storage", tool: "welder", color: Frame, group: "Production");
+        double x0 = c.Lo(), x1 = c.Hi(nx), y0 = c.Lo(), y1 = c.Hi(ny), z0 = c.Lo(), z1 = c.Hi(nz);
+        const double deck = 0.1, post = 0.12, kerb = 0.1;
+        var top = y0 + deck;
+        // The deck: one plate, and a raised kerb round its edge in hazard paint (set 4 mm inside the deck's sides, its foot in the deck).
+        p.Add(Box([x0, y0, z0], [x1, top, z1]));
+        MachineLook.Hazard(p, [x0 + 0.004, top - 0.005, z0 + 0.004 + kerb], [x0 + 0.004 + kerb, top + 0.035, z1 - 0.004 - kerb]);
+        MachineLook.Hazard(p, [x1 - 0.004 - kerb, top - 0.005, z0 + 0.004 + kerb], [x1 - 0.004, top + 0.035, z1 - 0.004 - kerb]);
+        // (the -z end's kerb is the in side's white band, hazard over its top: look.md "Machine look"; the +z end's is hazard)
+        p.Add(MachineLook.D([x0 + 0.004, top - 0.005, z0 + 0.004], [x1 - 0.004, top + 0.03, z0 + 0.004 + kerb], MachineLook.In));
+        MachineLook.Hazard(p, [x0 + 0.01, top + 0.03, z0 + 0.008], [x1 - 0.01, top + 0.042, z0 + kerb]);
+        MachineLook.Hazard(p, [x0 + 0.004, top - 0.005, z1 - 0.004 - kerb], [x1 - 0.004, top + 0.035, z1 - 0.004]);
+        // Corner posts to the stacking height, each with an amber cap and a dark mark at every metre.
+        foreach (var (px, pz) in new[] { (x0 + 0.02, z0 + 0.02), (x1 - 0.02 - post, z0 + 0.02), (x0 + 0.02, z1 - 0.02 - post), (x1 - 0.02 - post, z1 - 0.02 - post) })
+        {
+            p.Add(Box([px, top + 0.03, pz], [px + post, y1 - 0.1, pz + post], Bar));
+            p.Add(MachineLook.D([px - 0.006, y1 - 0.1 - 0.005, pz - 0.006], [px + post + 0.006, y1, pz + post + 0.006], MachineLook.Accent));
+            for (var m = 1.0; m < y1 - y0 - 0.3; m += 1.0)
+                p.Add(MachineLook.D([px - 0.004, y0 + m - 0.02, pz - 0.004], [px + post + 0.004, y0 + m + 0.02, pz + post + 0.004], MachineLook.Ink));
+        }
+        // Deck seams every 2 m across: thin dark strips laid on it.
+        for (var z = z0 + 2.0; z < z1 - 0.5; z += 2.0)
+            p.Add(MachineLook.D([x0 + kerb + 0.02, top - 0.002, z - 0.015], [x1 - kerb - 0.02, top + 0.006, z + 0.015], MachineLook.Ink));
+        BlockSockets(p, nx, ny, nz, faces: "y", skip: ["+y"], limit: new() { ["-y"] = (3, 6) });
+        var wide = nx * c.Cell;
+        var deep = nz * c.Cell;
+        p.Stats(wide * deep * 40, 300 + 30 * wide * deep, 4);
+        p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(section, up)), ("length", length), ("count", count),
+            ("hold", Py.L(Py.L(Py.Round(x0 + kerb + 0.01, 3), Py.Round(top + 0.045, 3), Py.Round(z0 + kerb + 0.01, 3)), Py.L(Py.Round(x1 - kerb - 0.01, 3), Py.Round(y1 - 0.01, 3), Py.Round(z1 - kerb - 0.01, 3)))))))));
+        p.Set(("ports", Py.L(
+            Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(Py.Round((x0 + x1) / 2, 3), Py.Round(top + 0.05, 3), z0)), ("face", "-z"),
+                ("opening", Py.L(Math.Min(section, 2.0), Math.Min(up, 2.0)))))));
+        return p;
+    }
+
     public void Make(PartOutput o) => WriteParts(o, Out,
     [
         ("", Rack("Piece Rack", 6, 4, 26, 1.0, 6.0, 2000, "Takes whole pieces off a conveyor at its Piece in and holds them: up to 1 x 1 m and 6 m long, as many as fill it. F takes the one you look at.")),
         ("", Rack("Long Piece Rack", 12, 6, 52, 2.0, 12.0, 6000, "Takes whole pieces off a conveyor: up to 2 x 2 m and 12 m long, as many as fill it. F takes the one you look at.")),
+        ("", Pad("Lay-down Pad", 16, 8, 32, 3.6, 1.8, 7.6, 4000, "An open deck where pieces wait: up to 3.6 m across, 1.8 m high and 7.6 m long, stacked to 2 m. Loader Arms in reach pick from it and put on it; a conveyor may end at it.")),
+        ("", Pad("Large Lay-down Pad", 32, 16, 64, 7.6, 3.8, 15.6, 16000, "An open deck for large pieces: up to 7.6 m across, 3.8 m high and 15.6 m long, stacked to 4 m. Loader Arms in reach pick from it and put on it.")),
     ]);
 }

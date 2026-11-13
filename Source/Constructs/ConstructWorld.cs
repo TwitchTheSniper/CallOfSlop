@@ -2119,7 +2119,7 @@ public sealed partial class ConstructWorld
         AllocProfile.Mark("machines: ConstructStation");
         ConstructStation.Step(this); // (Building Stations cost, order and fit: only bodies whose stations have a job)
         AllocProfile.Mark("machines: ConstructLifters");
-        ConstructLifters.Step(this); // (Loader Arms fit parts at the stations they reach: only while a station is open or a hand is busy)
+        ConstructLifters.Step(this, query); // (Loader Arms fit parts at the stations they reach and carry between points: lifters phase 4)
         AllocProfile.Mark("machines: ConstructPress");
         ConstructPress.Step(this, query); // (Presses and Die Lathes take pieces in and stamp)
         AllocProfile.Mark("machines: ProductionLines");
