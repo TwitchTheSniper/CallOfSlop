@@ -61,6 +61,39 @@ public sealed unsafe partial class CityRenderer
         out vec4 FragColor;
         bool gUnder = false;
         float gOut = 1.0;
+        uniform sampler2D uFont;   // the panels' font (PanelFontData): a signed distance field, 16 x 6 cells
+        uniform sampler2D uWords;  // CitySigns.Table: a row a word, a letter a column, its length in the last
+        uniform float uShopWords;  // how many of the words are shops' names
+
+        // How much of a sign's word covers p: p.x in letters from the word's start, p.y from 0 (the letters' foot) to 1.
+        float Letters(vec2 p, int word)
+        {
+            if (p.y < 0.0 || p.y > 1.0 || p.x < 0.0 || p.x >= 15.0)
+                return 0.0;
+            int i = int(p.x);
+            float code = texelFetch(uWords, ivec2(i, word), 0).r * 255.0;
+            if (code < 0.5)
+                return 0.0;
+            int g = int(code + 0.5);
+            int col = g % 16, row = g / 16;
+            vec2 f = vec2(fract(p.x), p.y);
+            vec2 uv = vec2((float(col) + (9.0 + f.x * 30.0) / 48.0) / 16.0, (float(row) + 1.0 - (9.0 + f.y * 40.0) / 58.0) / 6.0);
+            float d = texture(uFont, uv).r;
+            float w = max(fwidth(d) * 0.75, 1e-3);
+            return smoothstep(0.5 - w, 0.5 + w, d);
+        }
+
+        float WordLength(int word) { return texelFetch(uWords, ivec2(15, word), 0).r * 255.0; }
+
+        // A word centred in a box (x0..x1 along, y0..y1 up) at the largest size that fits, three quarters of its height.
+        float Word(vec2 q, int word, float x0, float x1, float y0, float y1)
+        {
+            float n = max(WordLength(word), 1.0);
+            float lh = min((y1 - y0) * 0.75, (x1 - x0) * 0.92 / (n * 0.75));
+            float lw = lh * 0.75;
+            float sx = (x0 + x1 - n * lw) * 0.5, sy = (y0 + y1 - lh) * 0.5;
+            return Letters(vec2((q.x - sx) / lw, (q.y - sy) / lh), word);
+        }
 
         // The light on a surface: the map's sun and sky above ground, the metro's strip lights below it.
         vec3 Lit(vec3 albedo, vec3 n, float wrap, vec3 p)
@@ -181,7 +214,7 @@ public sealed unsafe partial class CityRenderer
                     vec3 sign = vec3(float(s & 255u), float((s >> 8) & 255u), float((s >> 16) & 255u)) / 255.0;
                     sign = normalize(sign + 0.15) * 0.9;
                     float band = Band(fv, 3.75, 4.5, fw) * Band(fu, 0.2, sw - 0.2, fw);
-                    float letters = step(0.45, Noise(vec2(u * 2.2, fv * 3.0 + float(bay)))) * Band(fv, 3.9, 4.35, fw) * Band(fu, 0.9, sw - 0.9, fw);
+                    float letters = Word(vec2(fu, fv), int((s >> 4) % uint(uShopWords + 0.5)), 0.5, sw - 0.5, 3.8, 4.45);
                     col = mix(col, sign * 0.25, band);
                     glow += (sign * 0.5 * band + vec3(1.0, 0.95, 0.85) * letters * 0.9) * step(0.3, float((s >> 24) & 255u) / 255.0);
                 }
@@ -416,30 +449,66 @@ public sealed unsafe partial class CityRenderer
                 float screen = Band(vUv.y, 1.6, 2.6, fw) * Band(abs(vUv.x), -1.0, 1.05, fw);
                 col = mix(Lit(vColor, n, 0.0, vWorld), vec3(0.03) + Reflection(n, v, vec3(0.8)) * 0.4, screen);
             }
-            else if (style == 13) // neon: a blade sign's letters, or a lit billboard's picture; both flicker a little
+            else if (style == 13) // neon: a blade sign's name down its face, a billboard's picture and slogan, a box sign's word
             {
                 uint h = Hash(uint(abs(vWorld.x) * 0.7) * 73856093u ^ uint(abs(vWorld.z) * 0.7) * 19349663u);
                 float bright = min(min(vColor.r, vColor.g), vColor.b);
                 float t = uTime + float(h & 255u);
+                float wide = vPar.z / 10.0, narrow = vPar.w / 100.0;
                 vec3 lit;
-                if (bright > 0.6 && seed != 3u)
+                if (seed >= 128u)
                 {
-                    // A billboard: big blocks of colour (a picture from across the street), a pale frame.
-                    vec2 cell = floor(vUv / vec2(1.6, 1.1));
-                    uint ch = Hash(uint(cell.x + 4096.0) * 7919u + uint(cell.y + 4096.0) * 104729u + h);
-                    vec3 c = vec3(float(ch & 255u), float((ch >> 8) & 255u), float((ch >> 16) & 255u)) / 255.0;
-                    lit = mix(vColor, c, 0.6) * 0.9;
+                    // A sign box: its own metres on each face; the word centred on the big faces.
+                    float text = Word(vUv, int(seed - 128u), 0.0, wide, 0.0, narrow);
+                    lit = mix(vColor * 0.18, vec3(1.0, 0.96, 0.86) * 1.3, text);
                 }
                 else
                 {
-                    // Letters: strokes on a dark ground, a tube round them.
-                    float strokes = step(0.52, Noise(vUv * vec2(2.2, 1.7) + float(h & 63u)));
-                    float tube = 1.0 - smoothstep(0.0, 0.25, abs(fract(vUv.y / 0.9) - 0.5) - 0.38);
-                    lit = vColor * (strokes * 1.4 + 0.12 + tube * 0.0);
-                    // Now and then a sign stutters: off for a moment.
-                    float stutter = step(0.985, fract(sin(floor(t * 4.0) * 12.9898 + float(h & 1023u)) * 43758.5453));
-                    lit *= 1.0 - stutter * 0.85;
-                    lit *= 0.85 + 0.15 * sin(t * 2.0 + vUv.y);
+                    // A blade or a billboard: which way round its faces go (narrow, wide, narrow, wide, or the other way).
+                    float u = vUv.x;
+                    float a = flag ? 0.0 : narrow;
+                    float fx = -1.0;
+                    if (u > a && u < a + wide)
+                        fx = (u - a) / wide;
+                    else if (u > 2.0 * a + wide + (flag ? narrow : 0.0) && u < 2.0 * a + 2.0 * wide + (flag ? narrow : 0.0))
+                        fx = (u - (2.0 * a + wide + (flag ? narrow : 0.0))) / wide;
+                    if (bright > 0.6)
+                    {
+                        // A billboard: big blocks of colour (a picture from across the street) and a slogan over it.
+                        vec2 cell = floor(vUv / vec2(1.6, 1.1));
+                        uint ch = Hash(uint(cell.x + 4096.0) * 7919u + uint(cell.y + 4096.0) * 104729u + h);
+                        vec3 c = vec3(float(ch & 255u), float((ch >> 8) & 255u), float((ch >> 16) & 255u)) / 255.0;
+                        lit = mix(vColor, c, 0.6) * 0.9;
+                        if (fx >= 0.0)
+                        {
+                            float text = Word(vec2(fx * wide, fract(vUv.y / 2.0) * 2.0), int(seed), 0.3, wide - 0.3, 0.25, 1.35);
+                            lit = mix(lit, vec3(0.04), text);
+                        }
+                    }
+                    else
+                    {
+                        // A blade: the name's letters stacked down the face, lit tubes on a dark ground.
+                        float n = max(WordLength(int(seed)), 1.0);
+                        float lh = 0.85;
+                        float top = 5.7 + n * lh;
+                        float k = floor((top - vUv.y) / lh);
+                        float text = 0.0;
+                        if (fx >= 0.0 && k >= 0.0 && k < n)
+                        {
+                            float code = texelFetch(uWords, ivec2(int(k), int(seed)), 0).r * 255.0;
+                            // (one letter at a time: write a one-letter "word" by asking for letter k at x = k)
+                            float lw = lh * 0.75;
+                            float x = k + (fx * wide - (wide - lw) * 0.5) / lw;
+                            float y = (vUv.y - (top - (k + 1.0) * lh)) / lh;
+                            text = (x >= k && x < k + 1.0) ? Letters(vec2(x, y * 0.9 + 0.05), int(seed)) : 0.0;
+                            text *= step(0.5, code);
+                        }
+                        lit = vColor * (text * 1.6 + 0.1);
+                        // Now and then a sign stutters: off for a moment.
+                        float stutter = step(0.985, fract(sin(floor(t * 4.0) * 12.9898 + float(h & 1023u)) * 43758.5453));
+                        lit *= 1.0 - stutter * 0.85;
+                        lit *= 0.88 + 0.12 * sin(t * 2.0 + vUv.y);
+                    }
                 }
                 col = lit;
                 glow = lit * 0.8;
@@ -488,7 +557,8 @@ public sealed unsafe partial class CityRenderer
                     float floorY = -10.0;
                     albedo = mix(albedo, vec3(0.12, 0.35, 0.58), Band(y, floorY + 2.0, floorY + 2.5, fw));
                     float panel = Band(y, floorY + 2.9, floorY + 3.7, fw) * Band(fract(vUv.x / 14.0), 0.1, 0.9, fwidth(vUv.x / 14.0));
-                    float letters = step(0.5, Noise(vec2(vUv.x * 2.4, y * 2.5))) * Band(y, floorY + 3.05, floorY + 3.55, fw) * Band(fract(vUv.x / 14.0), 0.18, 0.82, fwidth(vUv.x / 14.0));
+                    float px = fract(vUv.x / 14.0) * 14.0;
+                    float letters = Word(vec2(px, y), int(vPar.z + 0.5), 1.6, 12.4, floorY + 2.95, floorY + 3.65);
                     albedo = mix(albedo, vec3(0.08, 0.16, 0.3), panel);
                     albedo = mix(albedo, vec3(0.95), letters * panel);
                 }
@@ -506,6 +576,7 @@ public sealed unsafe partial class CityRenderer
     private GlProgram _program;
     private GlVertexArray _vao;
     private GlBuffer _vbo, _ibo;
+    private uint _fontTex, _wordsTex;
     private int _locVp, _locChunkRel, _locChunkWorld, _locTime, _locGlow, _locPlanet, _locGroundR, _locCam, _locFog, _locFogRange;
     private CityGeometry? _geo;
     private int[] _order = [];
@@ -599,6 +670,11 @@ public sealed unsafe partial class CityRenderer
         Native.glUniform3f(_locPlanet, pc.X, pc.Y, pc.Z);
         Native.glUniform1f(_locGroundR, map.City is { } cityPlan ? (float)cityPlan.GroundRadius : 0f);
         _vao.Bind();
+        Native.glActiveTexture(GL_TEXTURE4);
+        Native.glBindTexture(GL_TEXTURE_2D, _fontTex);
+        Native.glActiveTexture(GL_TEXTURE5);
+        Native.glBindTexture(GL_TEXTURE_2D, _wordsTex);
+        Native.glActiveTexture(GL_TEXTURE0);
         Native.glEnable(GlCapability.CullFace);
         Native.glCullFace(GlFace.Back);
         var origin = gfx.Origin;
@@ -699,6 +775,33 @@ public sealed unsafe partial class CityRenderer
             Lighting.Upload(_program);
             _program.Use();
             _locRot = Uniform(_program, "uRot\0"u8);
+            // The signs' font and words (units 4 and 5: the lit grid has 12 to 14, the boxes 0 and 1).
+            Native.glUniform1i(Uniform(_program, "uFont\0"u8), 4);
+            Native.glUniform1i(Uniform(_program, "uWords\0"u8), 5);
+            Native.glUniform1f(Uniform(_program, "uShopWords\0"u8), CitySigns.Shops.Length);
+            var atlas = PanelRender.Atlas(out var aw, out var ah);
+            var words = CitySigns.Table();
+            GlTexture tex = default;
+            Native.glGenTextures(1, &tex);
+            _fontTex = tex.Id;
+            Native.glBindTexture(GL_TEXTURE_2D, _fontTex);
+            Native.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+            fixed (byte* p = atlas)
+                Native.glTexImage2D(GL_TEXTURE_2D, 0, (int)GL_R8, aw, ah, 0, GL_RED, GL_UNSIGNED_BYTE, p);
+            Native.glGenerateMipmap(GL_TEXTURE_2D);
+            Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (int)GL_LINEAR_MIPMAP_LINEAR);
+            Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (int)GL_LINEAR);
+            Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (int)GL_CLAMP_TO_EDGE);
+            Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (int)GL_CLAMP_TO_EDGE);
+            Native.glGenTextures(1, &tex);
+            _wordsTex = tex.Id;
+            Native.glBindTexture(GL_TEXTURE_2D, _wordsTex);
+            fixed (byte* p = words)
+                Native.glTexImage2D(GL_TEXTURE_2D, 0, (int)GL_R8, CitySigns.MaxLetters + 1, CitySigns.All.Length, 0, GL_RED, GL_UNSIGNED_BYTE, p);
+            Native.glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+            Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (int)GL_NEAREST);
+            Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (int)GL_NEAREST);
+            Native.glBindTexture(GL_TEXTURE_2D, 0);
             float* rotId = stackalloc float[9] { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
             Native.glUniformMatrix3fv(_locRot, 1, false, rotId);
             _locVp = Uniform(_program, "uViewProjRel\0"u8);
