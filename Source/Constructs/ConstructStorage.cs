@@ -1096,6 +1096,9 @@ public sealed partial class ConstructWorld
         Beacons.Dirty = true;
     }
 
+    /// <summary>A tool's test state written straight into a store (Program.WindowShotInv.cs): marked as any change is.</summary>
+    internal void ChangedForTool(CStore s) => Changed(s);
+
     private void Changed(CStore s)
     {
         s.Version++;

@@ -8,7 +8,7 @@ namespace CallOfSlop;
 /// player's counted inventory holds (extrusions, pressed parts, formed and cut panels...: up to <see cref="SandboxInventory.MaxMadeKinds"/>
 /// kinds), sorted by kind then size, each by its real name and count. A click sets one down in front of the player as a body (made parts
 /// are never hand items: the user's answer 1), asked for by its key. The rows are made again only when the inventory changes, so an
-/// open window allocates nothing frame to frame. Plain rows for now: their pictures are phase 4.
+/// open window allocates nothing frame to frame. Each row has its picture, drawn on demand (SandboxTiles.Made.cs).
 /// </summary>
 public sealed partial class Ui
 {
@@ -86,6 +86,34 @@ public sealed partial class Ui
         _sbMadeLabel = $"Made parts ({total})##sbmade";
     }
 
+    /// <summary>A made part's row picture's side (px at scale 1).</summary>
+    private const float SbMadeIcon = 40;
+
+    /// <summary>Made-part pictures drawn last frame, and swatches in their place (self-test, tools).</summary>
+    public int SandboxMadeIcons, SandboxMadeSwatches;
+
+    private int _sbMadeIcons, _sbMadeSwatches;
+
+    /// <summary>A part's picture in a square (a made part's is asked for and drawn over the next frames), or its colour as a swatch until then.</summary>
+    private void SbDrawMadeIcon(ImDrawListPtr dl, ushort id, float2 at, float side)
+    {
+        var b = new float2(at.X + side, at.Y + side);
+        dl.AddRectFilled(at, b, SbCard, 4 * _scale);
+        var pad = side * 0.06f;
+        if (SandboxTiles.TryGetPart(id, out var tex, out var uv0, out var uv1))
+        {
+            dl.AddImage(new ImTextureRef { _TexID = new ImTextureID((nint)tex) }, new float2(at.X + pad, at.Y + pad), new float2(b.X - pad, b.Y - pad), new float2(uv0.X, uv0.Y), new float2(uv1.X, uv1.Y), new ImColor8(255, 255, 255, 255));
+            _sbMadeIcons++;
+            return;
+        }
+        if (ConstructParts.Get(id) is { Boxes.Length: > 0 } d)
+        {
+            var c = d.Boxes[0].Color;
+            dl.AddRectFilled(new float2(at.X + side * 0.3f, at.Y + side * 0.3f), new float2(b.X - side * 0.3f, b.Y - side * 0.3f), new ImColor8((byte)(c.X * 255), (byte)(c.Y * 255), (byte)(c.Z * 255), 255), 3 * _scale);
+        }
+        _sbMadeSwatches++;
+    }
+
     /// <summary>The tree's "Made parts" node, under the categories (the Parts tab).</summary>
     private void SbDrawMadeNode(Game game, bool searching)
     {
@@ -123,14 +151,24 @@ public sealed partial class Ui
                     ImGui.Spacing();
                 ImGuiSafe.TextColored(Dim, head);
             }
-            if (ImGui.Selectable(_sbMadeRow[i]) && ConstructParts.Get(_sbMadeIds[i]) is { } d)
+            // Its picture on the left (drawn on demand: SandboxTiles.Made.cs; a swatch until it is), the row beside it.
+            var at = ImGui.GetCursorScreenPos();
+            var side = SbMadeIcon * _scale;
+            ImGui.SetCursorScreenPos(new float2(at.X + side + 6 * _scale, at.Y));
+            var clicked = ImGui.Selectable(_sbMadeRow[i], false, ImGuiSelectableFlags.None, new float2(0, side));
+            var hovered = ImGui.IsItemHovered();
+            SbDrawMadeIcon(ImGui.GetWindowDrawList(), _sbMadeIds[i], at, side);
+            if (clicked && ConstructParts.Get(_sbMadeIds[i]) is { } d)
             {
                 SbSpawned(game, PartRef.Listed(d)); // (a body in front of you: the window stays open)
                 game.SandboxTakePart(d.Id);
             }
-            if (ImGui.IsItemHovered())
+            if (hovered)
                 ImGui.SetTooltip("Set it down in front of you (a made part is moved with the physics gun)"u8);
         }
         ImGui.EndChild();
+        SandboxMadeIcons = _sbMadeIcons;
+        SandboxMadeSwatches = _sbMadeSwatches;
+        _sbMadeIcons = _sbMadeSwatches = 0;
     }
 }
