@@ -1,6 +1,7 @@
 # A play-test tour of the Glacier story world: one window run that skips the opening, flies the camera to each spot,
 # reads the frame rate (VSync and caps off) and takes a picture. Run from the repo root after a Release build; close
-# the game first. Output: <Out>\tour_<spot>.png and <Out>\tour.txt (grep "[perf]" for the frame rates).
+# the game first. Output: <Out>\tour_<spot>.png and <Out>\tour.txt (grep "[perf]" for the frame rates, "[pace]" for how
+# long the induction and the first duty take at the least: GamePace.cs).
 #   powershell -File tools\playtest\tour.ps1 [-Out shots] [-Calm] [-Frames 300] [-Size 1920x1080]
 # Spots are "NAME = TARGET | DIST,UP,BEARING" (Program.WindowShotTour.cs: TARGET is a colony building's blueprint
 # name, outpost N, geo LAT,LON, body N or X,Y,Z; the eye is DIST m out on the bearing and UP m above, looking at it).
@@ -34,7 +35,7 @@ $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $bin = Join-Path $root "bin\Release\net10.0"
 $Out = [IO.Path]::GetFullPath((Join-Path $root $Out))
 New-Item -ItemType Directory -Force $Out | Out-Null
-$do = "skip; wait 120; places"
+$do = "skip; wait 120; places; pace"
 # -Menus: the windows a camera tour can't show (the Logbook's Technologies page, the Faction window's rank bars, the
 # parts menu with its locked parts, the Work Board), after the induction is skipped. Pictures only: no frame rates.
 if ($Menus) { $do = "skip induction; wait 300; open logbook Technologies; wait 60; shot menu_technologies; open factions; wait 60; shot menu_ranks; esc; wait 30; key SandboxInventory; wait 60; shot menu_parts; esc; wait 30; near Ministry Work Board 2; wait 60; use; wait 90; shot menu_workboard"; $spots = [ordered]@{} }
@@ -44,4 +45,4 @@ if ($Calm) { $a += "--calm" }
 $t = Get-Date
 $p = Start-Process (Join-Path $bin "CallOfSlop.exe") -ArgumentList $a -WorkingDirectory $bin -RedirectStandardOutput "$Out\tour.txt" -Wait -PassThru
 "exit $($p.ExitCode) after $([int]((Get-Date) - $t).TotalSeconds) s"
-Get-Content "$Out\tour.txt" | Select-String "\[perf\]|fail|unknown action" | Select-Object -Unique | ForEach-Object { $_.Line }
+Get-Content "$Out\tour.txt" | Select-String "\[perf\]|\[pace\]|fail|unknown action" | Select-Object -Unique | ForEach-Object { $_.Line }

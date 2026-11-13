@@ -31,7 +31,7 @@ Resolve by hand, and look for what shows no text conflict:
    dotnet bin/Release/net10.0/CallOfSlop.dll --selftest-only "Sandbox inventory, Interaction sweep"
    ```
    then read `selftest.log` next to the DLL (the exit code is the failure count). Known pairs: icon tiles or inventory entries, "Sandbox inventory"; anything a sweep can open with F, the Interaction sweep and what runs after it; machine looks, "Machine tier looks"; production, the list in `tools/coordinator/merge.sh`.
-4. **A second pair of eyes.** For a branch that changes code, run the `merge-reviewer` agent on it (`.claude/agents/merge-reviewer.md`) and settle each finding: fix it, or say why it doesn't apply. For a branch that changes how something looks, take the pictures the play-test tour or `--window-shot` gives and run the `look-critic` agent on them. Skip both for docs-only and data-typo merges.
+4. **A second pair of eyes.** For a branch that changes code, run the `merge-reviewer` agent on it (`.claude/agents/merge-reviewer.md`) and settle each finding: fix it, or say why it doesn't apply. It is the pass with this repo's lessons in hand, asking what else reads what the branch changed; Claude Code's own `/code-review` is the general pass for plain bugs in the diff, worth adding on a big or risky branch, and neither stands in for the other. For a branch that changes how something looks, take the pictures the play-test tour or `--window-shot` gives and run the `look-critic` agent on them. Skip both for docs-only and data-typo merges.
 
 ## 3. Merge
 
