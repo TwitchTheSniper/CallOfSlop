@@ -83,3 +83,24 @@ conveyors former to cutter and cutter to the designer (or the terminal), 400 ste
 3. **Cut plates in the designer.**
    - A (recommended): a "Blank: formed panel / extruded plate" choice in the designer, the plate's length, width and thickness from the sliders.
    - B: leave cut plates to bills and blueprints.
+
+## Fixes after review (2026-11-13)
+
+1. **The preview's key and shape from one frame.** The designer's preview key was the last frame's while its shape was this frame's, so
+   raising Crown from 0, widening or picking another preset with a cut on could read past the cut plan's facets. The preview now builds a
+   cut key on that key's own sheet (`PanelPreview._sheet`), the designer makes the key from this frame's shape (`PreviewCut`, again only when
+   shape or cuts change), and `PanelJson` refuses a plan whose facets aren't its sheet's (caught, never read past). Tried: cuts on, then Crown
+   30, Width +20, another preset and a 40-frame Length drag: no error, the preview follows.
+2. **No order blocks another at the cutter.** It takes a blank for any order in its queue and moves that order to the head (the bed is empty),
+   so a blank that arrives first is cut first; and a Design pick also asks a linked former or Extruder for its blanks (`AskBlanks`). Tried: an
+   order whose blank nobody makes at the head, a designer order behind it: the second's blank came, was cut, reached the tray. A pick: the
+   former got the blank's order, the cut part reached the tray.
+3. **`FindMaker`** lets only formed and cut panels reach Panel Formers and cutters (not pressed parts), and keeps the refusal of a machine of
+   the order's own kind.
+4. `--bill`'s "Kits (bay 2): " has its space back.
+
+Tried as well: **the Router path of the `WantAt` fix** (a former, a Router, a cutter whose head order's blank is the very panel a terminal
+ordered from that former): the panel went to the terminal's tray and the cutter kept waiting. **A cut plate's chain**: a terminal's
+`Cut Plate (solid 40x10x200 steel | r100,20,30,10,0)` queued at the cutter, its blank asked of the Extruder, extruded, cut (offcut 0.6) and
+racked in the tray. Sections: Interaction sweep, Display screens, Panel pointer at speed, Press stock, Extruder, Extruder network, Wheel
+orders, Assembling network, Construct configure: 0 failures.

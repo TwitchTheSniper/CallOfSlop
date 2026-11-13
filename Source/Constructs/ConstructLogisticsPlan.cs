@@ -432,18 +432,23 @@ public static class ConstructLogisticsPlan
     private static void FindMaker(ConstructWorld world, Construct c, CraftNet net, ref ChainEntry e, int count)
     {
         var what = OrderOf(e.Kind, count) with { Chain = e.Id };
+        var refusalKin = false;
         string? refusal = null;
         var best = -1;
         var bestScore = int.MaxValue;
         for (var i = 0; i < net.MachineN; i++)
         {
             var mk = net.Machines[i];
-            if (mk == e.Dest || what.IsPiece != c.DefOf(mk).IsExtruder && !c.DefOf(mk).IsPress && !(WorkOrders.IsWholeFormer(c.DefOf(mk)) && FormerPresets.PartOf(what) != null) && !(what.Name != null && c.DefOf(mk).IsPanelFormer))
-                continue; // (a piece is an Extruder's or a Former's; a part an Assembler's, a Press's or, a preset wing or rotor, a Fan or Airframe Former's: Refusal says which)
+            if (mk == e.Dest || what.IsPiece != c.DefOf(mk).IsExtruder && !c.DefOf(mk).IsPress && !(WorkOrders.IsWholeFormer(c.DefOf(mk)) && FormerPresets.PartOf(what) != null) && !(what.IsPanel && !what.IsPressed && c.DefOf(mk).IsPanelFormer))
+                continue; // (a piece is an Extruder's or a Former's; a part an Assembler's, a Press's or, a preset wing or rotor, a Fan or Airframe Former's; a formed or cut panel a Panel Former's or a Laser Cutter's: Refusal says which)
             var why = WorkOrders.Refusal(world, c, mk, what);
             if (why != null)
             {
-                refusal ??= why;
+                // (the reason of a machine of the order's own kind, else the first: never a former's "not a panel" for a press's part)
+                var kin = what.IsPressed ? c.DefOf(mk).IsPress : what.IsPanel ? c.DefOf(mk).IsPanelFormer && c.DefOf(mk).IsLaserCutter == HullLoft.IsCutName(what.Name!)
+                    : ConstructCrafting.Kin(c.DefOf(mk), what);
+                if (refusal == null || kin && !refusalKin)
+                    (refusal, refusalKin) = (why, kin);
                 continue;
             }
             var score = c.Parts[mk].Orders is { Bill: false } q ? q.Count * 2 + (Making(q, e.Kind) ? 0 : 1) : 1;

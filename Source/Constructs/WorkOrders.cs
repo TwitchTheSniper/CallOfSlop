@@ -1256,7 +1256,7 @@ public static class ConstructBill
             }
         }
         if (bill.Kits.Count > 0)
-            sb.AppendLine($" Kits (bay 2):{string.Join(", ", bill.Kits.Select(x => $"{x.Count} {x.What}"))}");
+            sb.AppendLine($" Kits (bay 2): {string.Join(", ", bill.Kits.Select(x => $"{x.Count} {x.What}"))}");
         var cats = PartCategories.Current;
         var groups = bill.Parts
             .Select(p => (p.Part, p.Def, p.Count, Cat: p.Def != null && cats.Place(p.Def, out var cat, out _) ? cat : "(unplaced)"))

@@ -279,7 +279,8 @@ public sealed partial class ConstructEdits
                 return "too far away";
             if (WorkOrders.Queue(world, c, terminal, what) is { } no)
                 return no;
-            Done.Add($"player {player}: queued {what.Count} {what.Name} at part {terminal} of construct {c.Id}");
+            var maker = ConstructLaserCutter.AskBlanks(world, c, terminal, what.Name, what.Count); // (its blanks, from a linked former or Extruder)
+            Done.Add($"player {player}: queued {what.Count} {what.Name} at part {terminal} of construct {c.Id}; blanks {(maker != null ? $"from the {maker}" : "asked of nobody")}");
             return null;
         }
         if (!d.IsCraftTerminal)

@@ -60,6 +60,7 @@ public static partial class HullLoft
         private PanelShape _queued;
         private string? _wantCut, _queuedCut; // (a cut key over the shape, laser cutter phase 4; null: the panel whole)
         private CutPlan? _plan;
+        private PanelShape _sheet; // (what is built: the cut plan's sheet, else the wanted shape)
         public string? ShownCut { get; private set; }
         private bool _hasQueued, _started;
 
@@ -91,16 +92,19 @@ public static partial class HullLoft
             _wantCut = cut;
             _has = true;
             _plan = cut != null ? ReadCut(cut, out _) : null;
+            if (_plan is { Plate: true })
+                _plan = null; // (a cut plate isn't a panel sheet: shown uncut)
+            _sheet = _plan?.Sheet ?? s; // (a cut key is built on its own sheet, never on another frame's shape)
             if (PanelRefusal(s) != null)
                 return;
             var name = _plan != null ? cut! : PanelKey(s);
             var outer = PartShapes.BeginCollect();
             try
             {
-                Base = ConstructParts.ParseBody(PanelJson(name, s, 0, 0, true, _plan), name); // (with its slabs, as a deferred panel's first part: a part needs a drawn box; the facets replace them)
+                Base = ConstructParts.ParseBody(PanelJson(name, _sheet, 0, 0, true, _plan), name); // (with its slabs, as a deferred panel's first part: a part needs a drawn box; the facets replace them)
                 if (_plan != null)
                     AddOpeningSockets(Base, _plan); // (a cut part's sockets in its openings, as CutFirst gives the real one: so the hashes agree)
-                var (nu, nv) = PanelGrid(s);
+                var (nu, nv) = PanelGrid(_sheet);
                 _total = _plan?.Items ?? nu * nv;
                 Made++;
             }
@@ -140,7 +144,7 @@ public static partial class HullLoft
                 var outer = PartShapes.BeginCollect();
                 try
                 {
-                    var part = ConstructParts.ParseBody(PanelJson(name, _want, _next, to, false, _plan), name);
+                    var part = ConstructParts.ParseBody(PanelJson(name, _sheet, _next, to, false, _plan), name);
                     for (var k = part.SolidBoxes; k < part.Boxes.Length; k++)
                         _facets.Add(part.Boxes[k]);
                 }
@@ -169,16 +173,16 @@ public static partial class HullLoft
             _shapes.Clear();
             _facets.Clear();
             Shown = d;
-            ShownShape = _want;
+            ShownShape = _sheet;
             ShownCut = _plan != null ? _wantCut : null;
-            var (gu, gv) = PanelGrid(_want);
+            var (gu, gv) = PanelGrid(_sheet);
             var items = _plan?.Items ?? gu * gv;
             if (ShownNormals.Length != items)
                 ShownNormals = new Vector3[items];
             for (int k = 0, it = 0; k < gu * gv && it < items; k++)
             {
                 // (a cut panel draws each touched facet as its pieces, in the facets' order: each piece takes its facet's normal)
-                var n = PanelNormal(_want, (PanelRowS(_want, k / gv, gu) + PanelRowS(_want, k / gv + 1, gu)) * 0.5f, (k % gv + 0.5f) * 2f / gv - 1);
+                var n = PanelNormal(_sheet, (PanelRowS(_sheet, k / gv, gu) + PanelRowS(_sheet, k / gv + 1, gu)) * 0.5f, (k % gv + 0.5f) * 2f / gv - 1);
                 var count = _plan?.Pieces[k] is { } pieces ? pieces.Length : 1;
                 for (var q = 0; q < count && it < items; q++)
                     ShownNormals[it++] = n;

@@ -247,6 +247,28 @@ public sealed partial class Ui
         }
     }
 
+    private int _pdPrevHash;
+    private string? _pdPrevCut;
+
+    /// <summary>
+    /// The cut key the preview shows for this frame's shape and cuts, or null (no cuts, or the key refused): made again only when they change,
+    /// so the key and the shape it is built on always come from the same frame.
+    /// </summary>
+    private string? PreviewCut(in HullLoft.PanelShape shape)
+    {
+        if (_pdCuts.Count == 0 || HullLoft.PanelRefusal(shape) != null)
+            return null;
+        var h = shape.GetHashCode();
+        for (var k = 0; k < _pdCuts.Count; k++)
+            h = h * 31 + _pdCuts[k].GetHashCode();
+        if (h == _pdPrevHash && _pdPrevCut != null)
+            return _pdPrevCut.Length > 0 ? _pdPrevCut : null;
+        _pdPrevHash = h;
+        var key = CutKeyOf(shape);
+        _pdPrevCut = HullLoft.CutRefusal(key) == null ? key : "";
+        return _pdPrevCut.Length > 0 ? _pdPrevCut : null;
+    }
+
     private void CutApply(int dropCut, int addCut)
     {
         if (dropCut >= 0 && dropCut < _pdCuts.Count)
@@ -587,7 +609,7 @@ public sealed partial class Ui
         DesignerBuild(world, c, part, now);
         var shape = DesignerShape;
         var pt0 = System.Diagnostics.Stopwatch.GetTimestamp();
-        DesignerPreview.Want(shape, _pdCuts.Count > 0 && _pdCutWhy.Length == 0 && _pdKey.Length > 0 && HullLoft.IsCutName(_pdKey) ? _pdKey : null); // (with its cuts once they pass: laser cutter phase 4)
+        DesignerPreview.Want(shape, PreviewCut(shape)); // (with its cuts once they pass: laser cutter phase 4)
         DesignerPreview.Pump();
         var pms = System.Diagnostics.Stopwatch.GetElapsedTime(pt0).TotalMilliseconds;
         DesignerSpentMs += pms;
