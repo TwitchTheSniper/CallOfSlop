@@ -45,6 +45,7 @@ public static unsafe partial class Program
     private static long _wsDragBytes, _wsDragAt;
     private static float? _wsYaw, _wsPitch;
     private static int _wsFrames = 45, _wsEvery, _wsStep, _wsWait, _wsShots, _wsCount, _wsLiftWaits;
+    private static long _wsJoinSeen; // (lifter stand others: when a joined player was first seen)
     private static double _wsStart;
     private static int _wsAwait; // frames a "station await" has waited
     private static readonly Queue<string> _wsQueue = new();
@@ -899,7 +900,19 @@ public static unsafe partial class Program
                     WsSay("lifter: place: " + (lc == null ? "no Building Station" : LifterProbe.Place(g.Constructs, lc, lpart, pw.Length > 1 ? pw[1] : "", pw.Length > 2 && int.TryParse(pw[2], out var ps) ? ps : 0)));
                 }
                 var lw = arg.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                if (lw.Length > 0 && lw[0] == "walk") // "lifter walk": this peer's player out of the window tool's flight, on its feet (a client before the host's "lifter stand others")
+                if (lw.Length > 0 && lw[0] == "joined" && g.IsServer) // "lifter joined" (host): waits (3 minutes at most) until a joined player has been in for 15 s
+                {
+                    var inNow = g.Players.Values.Any(pl => pl.Bot == null && pl != me && pl.Alive);
+                    _wsJoinSeen = inNow ? (_wsJoinSeen == 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : _wsJoinSeen) : 0;
+                    if ((_wsJoinSeen == 0 || System.Diagnostics.Stopwatch.GetElapsedTime(_wsJoinSeen).TotalSeconds < 15) && _wsLiftWaits++ < 6000)
+                    {
+                        _wsQueue.EnqueueFront("lifter joined");
+                        _wsWait = 30;
+                        return;
+                    }
+                    _wsLiftWaits = 0;
+                }
+                else if (lw.Length > 0 && lw[0] == "walk") // "lifter walk": this peer's player out of the window tool's flight, on its feet (a client before the host's "lifter stand others")
                 {
                     me.NoclipWanted = false;
                     g.NoclipShot = false;
@@ -908,15 +921,20 @@ public static unsafe partial class Program
                 {
                     // "lifter stand [me|others]" (host): the players where a carry that has just begun will pass its piece; "lifter pen
                     // [me|others]": the same with four Crate Stacks round them, so a push can't get them out (pinned: the arm must wait).
-                    if (LifterProbe.PathSpot(g.Constructs, out var pinfo) is not { } pspot)
+                    var pinfo = "";
+                    var anyJoined = g.Players.Values.Any(pl => pl.Bot == null && pl != me && pl.Alive);
+                    _wsJoinSeen = anyJoined ? (_wsJoinSeen == 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : _wsJoinSeen) : 0;
+                    var waitJoin = lw.Length > 1 && lw[1] == "others" && (_wsJoinSeen == 0 || System.Diagnostics.Stopwatch.GetElapsedTime(_wsJoinSeen).TotalSeconds < 15); // (joined 15 s ago: its window has spawned it)
+                    var pspotOr = waitJoin ? null : LifterProbe.PathSpot(g.Constructs, out pinfo);
+                    if (pspotOr is not { } pspot)
                     {
-                        if (_wsLiftWaits++ < 1200)
+                        if (_wsLiftWaits++ < 40000)
                         {
                             _wsQueue.EnqueueFront($"lifter {arg.Trim()}");
-                            _wsWait = 1;
+                            _wsWait = waitJoin ? 30 : 1; // (a join takes seconds: look again every 30 frames)
                             return;
                         }
-                        WsFail("lifter: no carry began in 20 s");
+                        WsFail($"lifter: no carry began (or no player joined) in time: {(waitJoin ? "nobody joined" : pinfo)}");
                         return;
                     }
                     _wsLiftWaits = 0;
@@ -930,6 +948,7 @@ public static unsafe partial class Program
                     foreach (var pl in g.Players.Values)
                         if (pl.Bot == null && (who == "others" ? pl != me : pl == me))
                         {
+                            pl.NoclipWanted = false; // (the window tool flies every player: on their feet first)
                             pl.Teleport(pspot + new Vector3(0, 0.05f, 0));
                             moved++;
                         }

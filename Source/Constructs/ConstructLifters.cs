@@ -1269,11 +1269,23 @@ public static class LifterProbe
                 if (l is not { State: LiftState.Carry, ToHold: false, WaitFrom: 0 } || l.Def == 0 || l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { } ld)
                     continue;
                 var age = ConstructLifters.AgeAt(l, ConstructLifters.Now);
-                if (age > l.Dur * 0.3f || !ConstructLifterPush.PieceBox(c, l, ld, l.Dur * 0.6f, out var centre, out var half))
+                if (age > l.Dur * 0.2f)
                     continue;
-                var ground = World.Map.GroundHeight(centre.X, centre.Z);
-                info = $"{ConstructParts.Get(l.Def)?.Name} of body {l.Body} part {l.Part}, {age:0}/{l.Dur} ticks in: at 60 % its box spans {centre.Y - half.Y - ground:0.00} to {centre.Y + half.Y - ground:0.00} m over the ground, {half.X * 2:0.00} x {half.Z * 2:0.00} m across";
-                return new Vector3(centre.X, ground, centre.Z);
+                // The first point from 35 % on whose ground is clear of constructs (not on the build) and where the piece is at body height.
+                for (var f = 0.25f; f <= 0.95f; f += 0.05f)
+                {
+                    if (!ConstructLifterPush.PieceBox(c, l, ld, l.Dur * f, out var centre, out var half))
+                        break;
+                    var ground = World.Map.GroundHeight(centre.X, centre.Z);
+                    var feet = new Vector3(centre.X, ground + 0.5f, centre.Z); // (over a floor plate: the build, not the bay's floor, is what rules a point out)
+                    if (centre.Y - half.Y - ground > 1.6f || world.BodyIn(feet, World.PlayerHeight - 0.5f))
+                    {
+                        info = $"the last carry's points are over a construct or above head height (at {f * 100:0} %: {centre.Y - half.Y - ground:0.00} m up)";
+                                            continue;
+                    }
+                    info = $"{ConstructParts.Get(l.Def)?.Name} of body {l.Body} part {l.Part}, {age:0}/{l.Dur} ticks in: at {f * 100:0} % its box spans {centre.Y - half.Y - ground:0.00} to {centre.Y + half.Y - ground:0.00} m over the ground, {half.X * 2:0.00} x {half.Z * 2:0.00} m across";
+                    return new Vector3(centre.X, ground, centre.Z);
+                }
             }
         }
         return null;
