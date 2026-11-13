@@ -21,7 +21,7 @@ public sealed partial class Game
     /// <summary>The story people's team (the Sandbox's sides: GameSandboxSpawns.cs).</summary>
     public const byte SbPeopleTeam = 12;
 
-    public const int StoryBodiesMax = 8;
+    public const int StoryBodiesMax = 12; // (the colony's staff, the break-out's convicts and a visitor or two)
     public const float StoryStationReach = 30f; // m: a body kept to a station goes no further from it to meet anyone
     public const float StoryMeetReach = 4f, StoryBeside = 1.3f; // m: two bodies this close are together; one goes this far from the other
     public const float StoryHomeMin = 12, StoryHomeMax = 26, StoryWorkMin = 6, StoryWorkMax = 10, StoryRoadMin = 40, StoryRoadMax = 50; // m from the place's middle
@@ -183,6 +183,7 @@ public sealed partial class Game
             }
         }
         StoryTalkTick(s, now); // (what they say, and who hears it: GameStoryTalk.cs)
+        LabourHandsTick(now); // (who of them stands working in a gang of convicts: GameLabourHands.cs)
     }
 
     private static float Flat2(Vector3 v) => v.X * v.X + v.Z * v.Z;
