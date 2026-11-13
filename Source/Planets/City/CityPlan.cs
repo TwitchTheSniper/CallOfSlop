@@ -559,8 +559,12 @@ public sealed class CityPlan
                 MidRise(id, ref b, half, height, ref d);
                 Billboard(id, half, front, ref d);
             }
-            if (b.Shops && d.Chance(0.5f))
-                Blade(id, half, front, ref d);
+            if (b.Shops && d.Chance(0.85f))
+            {
+                Blade(id, half, front, ref d, 1);
+                if (d.Chance(0.4f))
+                    Blade(id, half, front, ref d, -1);
+            }
             _buildings.Add(b);
         }
 
@@ -619,7 +623,7 @@ public sealed class CityPlan
             Add(id, Vector2.Zero, crown, bottom - 0.05f, crownTop, CityStyle.Plain, roofColor, shape, shape == 1 ? MathF.Min(crown.X, crown.Y) * 0.3f : 0);
             // A landing pad on the crown of a tower tall and broad enough (the air taxis come and go from these).
             var padR = MathF.Min(crown.X, crown.Y) - 0.3f;
-            if (top > 90 && padR >= 6.5f && d.Chance(0.6f))
+            if (top > 80 && padR >= 5.5f && d.Chance(0.8f))
             {
                 padR = MathF.Min(padR, 11f);
                 Add(id, Vector2.Zero, new Vector2(padR), crownTop - 0.05f, crownTop + 0.35f, CityStyle.Pad, Rgb(0x3a3d40), 2);
@@ -657,15 +661,15 @@ public sealed class CityPlan
         }
 
         /// <summary>A blade sign: a lit panel standing out from the front wall near a corner, over the shops.</summary>
-        private void Blade(int id, Vector2 half, Vector2 front, ref Dice d)
+        private void Blade(int id, Vector2 half, Vector2 front, ref Dice d, int end)
         {
             var colour = Rgb(d.Pick(5) switch { 0 => 0xff3060, 1 => 0x30d0ff, 2 => 0xffd030, 3 => 0x60ff80, _ => 0xc050ff });
             var along = new Vector2(MathF.Abs(front.Y), MathF.Abs(front.X)); // (along the front wall)
             var reach = front.X != 0 ? half.X : half.Y;
             var side = front.X != 0 ? half.Y : half.X;
-            var at = front * (reach + 0.75f) + along * (side - 1.6f) * (d.Chance(0.5f) ? 1 : -1);
+            var at = front * (reach + 0.75f) + along * (side - 1.6f) * end;
             var hs = front.X != 0 ? new Vector2(0.65f, 0.12f) : new Vector2(0.12f, 0.65f);
-            var h = d.Range(4.5f, 8f);
+            var h = d.Range(6f, 11f);
             Add(id, at, hs, 5.4f, 5.4f + h, CityStyle.Neon, colour, detail: true, solid: false);
         }
 

@@ -147,6 +147,8 @@ public sealed unsafe partial class PlanetRenderer
         uniform float uGroundLayer;
         uniform float uRockLayer;
         uniform mat3 uToLocal; // world -> the camera's local frame (y = up there)
+        uniform vec4 uCityClip; // a city's ground (docs/planets/CITY.md): its direction and the cosine of its reach (w 0: none)
+        uniform float uCityTop; // ...and the radius under which its own paving covers the ground
         uniform float uDip;    // sin of how far the limb is below level (the sky's horizon drops to it: SkyRenderer)
         out vec4 FragColor;
 
@@ -183,6 +185,9 @@ public sealed unsafe partial class PlanetRenderer
 
         void main()
         {
+            // Under a city the ground is its paving's to draw: the terrain under it is left out, so it never shows through.
+            if (uCityClip.w > 0.0 && dot(normalize(vWorld - uCenter), uCityClip.xyz) > uCityClip.w && length(vWorld - uCenter) < uCityTop)
+                discard;
             #ifdef DUG_MASK
             if (vDug >= 0.0)
             {
@@ -236,6 +241,11 @@ public sealed unsafe partial class PlanetRenderer
     }
 
     private Source? _src;
+
+    /// <summary>A city on this planetoid (CityRenderer sets it each frame): the ground under its streets is not drawn.</summary>
+    public static Vector4 CityClip;
+
+    public static float CityTop;
     private int _gen;
     private int _levels;
     private readonly float[] _range = new float[MaxLevels];
@@ -312,7 +322,7 @@ public sealed unsafe partial class PlanetRenderer
     private struct Ground
     {
         public GlProgram Program;
-        public int ViewProj, Cam, Center, TexOrigin, Morph, Pos, Nrm, Tex, GroundLayer, Rock, Fog, FogRange, ToLocal, Dip, Dug;
+        public int ViewProj, Cam, Center, TexOrigin, Morph, Pos, Nrm, Tex, GroundLayer, Rock, Fog, FogRange, ToLocal, Dip, Dug, CityClip, CityTop;
     }
 
     private Ground _plain, _masked;
@@ -790,6 +800,8 @@ public sealed unsafe partial class PlanetRenderer
         Native.glUniform3f(g.Cam, cam.X, cam.Y, cam.Z);
         var c = src.Planet.Center;
         Native.glUniform3f(g.Center, c.X, c.Y, c.Z);
+        Native.glUniform4f(g.CityClip, CityClip.X, CityClip.Y, CityClip.Z, CityClip.W);
+        Native.glUniform1f(g.CityTop, CityTop);
         var to = new Vector3(MathF.Floor(cam.X / 64f) * 64f, MathF.Floor(cam.Y / 64f) * 64f, MathF.Floor(cam.Z / 64f) * 64f);
         Native.glUniform3f(g.TexOrigin, to.X, to.Y, to.Z);
         fixed (Vector2* m = _morph)
@@ -979,6 +991,8 @@ public sealed unsafe partial class PlanetRenderer
             ToLocal = Uniform(program, "uToLocal\0"u8),
             Dip = Uniform(program, "uDip\0"u8),
             Dug = Uniform(program, "uDug\0"u8),
+            CityClip = Uniform(program, "uCityClip\0"u8),
+            CityTop = Uniform(program, "uCityTop\0"u8),
         };
         Lighting.Upload(program);
         return g;
