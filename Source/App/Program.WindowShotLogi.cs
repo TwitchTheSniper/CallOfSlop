@@ -94,6 +94,46 @@ public static partial class Program
                 }
                 return;
             }
+            case "cost" when g.IsServer: // "logi cost [N]": the planner's 2 Hz step (terminals, chains, stock targets) run N times and the network board's list filled N times: time and bytes each (phase 5)
+            {
+                var n = int.TryParse(rest, out var cn) && cn > 0 ? cn : 200;
+                var net = (0, 0, 0);
+                for (var i = 0; i < c.PartCount; i++)
+                    if (c.DefOf(i).IsCraftTerminal)
+                    {
+                        var cnet = ConstructCrafting.NetOf(w, c, i);
+                        net = (Math.Max(net.Item1, cnet.MachineN), Math.Max(net.Item2, cnet.StoreN), net.Item3 + 1);
+                    }
+                ConstructCrafting.Step(w); // (warm: a first step may make its lines)
+                long worstTicks = 0;
+                var a0 = GC.GetAllocatedBytesForCurrentThread();
+                var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                for (var k = 0; k < n; k++)
+                {
+                    w.CraftTicks = ConstructCrafting.StepEvery - 1;
+                    var s0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                    ConstructCrafting.Step(w);
+                    worstTicks = Math.Max(worstTicks, System.Diagnostics.Stopwatch.GetTimestamp() - s0);
+                }
+                var us = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds * 1000 / n;
+                var bytes = (GC.GetAllocatedBytesForCurrentThread() - a0) / n;
+                WsSay($"[logi] cost: planner step {us:0.0} us mean, {worstTicks * 1e6 / System.Diagnostics.Stopwatch.Frequency:0.0} us worst, {bytes} bytes a step over {n}; {w.ChainCount} links, {w.CraftOpen.Count} bodies with orders, {w.StockTargetN} stock targets; {net.Item3} terminals, biggest network {net.Item1} machines {net.Item2} stores; {c.ConveyedCount} riders");
+                var (bc, bp) = WsFind(g, "Conveyor Router");
+                if (bc != null)
+                {
+                    var card = new PanelCard { Rows = 16, TextRows = 16, Cols = 64 };
+                    ProductionLines.FillMonitor(w, bc, bp, card);
+                    a0 = GC.GetAllocatedBytesForCurrentThread();
+                    t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                    for (var k = 0; k < n; k++)
+                    {
+                        card.Clear();
+                        ProductionLines.FillMonitor(w, bc, bp, card);
+                    }
+                    WsSay($"[logi] cost: board list fill (16 rows) {System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds * 1000 / n:0.0} us, {(GC.GetAllocatedBytesForCurrentThread() - a0) / n} bytes a fill");
+                }
+                return;
+            }
             case "send": // "logi send PART@N NAME [N]": an order through this peer's own message, as the terminal's Order button sends it (stand in reach first: the host's "bring")
             {
                 var sp = rest.IndexOf(' ');

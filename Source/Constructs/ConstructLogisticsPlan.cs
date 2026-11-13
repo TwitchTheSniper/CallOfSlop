@@ -23,6 +23,10 @@ public struct ChainEntry
     public byte Flags; // ChainFlags
     public ushort Born; // the plan step it was made in (its own inputs are asked from the next step: one level a step)
     public string Reason; // why nobody makes it ("" while a maker or stock is on it)
+    public uint Seen; // server: its network's look when nobody would make it (ConstructLogisticsPlan.Seen); not saved
+    public ushort Tried; // server: the plan step of that last try
+    public string? NoteText; // server: its order note while it is the first link (ConstructLogisticsPlan.Note), and what it was made from
+    public uint NoteKey;
 }
 
 [Flags]
@@ -642,14 +646,21 @@ public static class ConstructLogisticsPlan
             var held = world.Reserve.Held(c.Parts[e.Dest].Store, e.Id);
             if (e.Maker == NoPart)
             {
-                if (e.Reason != "" && e.Made == 0 && held == 0 && Riding(c, e) == 0)
+                // A link nobody would make is asked again only when its network looks different (phase 5: each machine's refusal is
+                // text, so asking every step allocated about 300 bytes a machine), or after RetrySteps as a fallback.
+                var look = e.Reason != "" && (ushort)(world.ChainStepNo - e.Tried) < RetrySteps && e.Seen == Seen(world, c, net);
+                if (!look && e.Reason != "" && e.Made == 0 && held == 0 && Riding(c, e) == 0)
                     Rekey(world, c, net, ref e); // (a waiting Panel Former sheet follows its strips setting and the network's Extruders)
                 var left = e.Asked - e.Made - Riding(c, e) - held;
                 if (left > 0)
                     left -= IsStock(e) && e.Depth == 1 ? 0 : FromStock(world, c, net, ref e, left); // (a target never robs a store: it only makes)
-                if (left > 0)
+                if (left > 0 && !look)
+                {
                     FindMaker(world, c, net, ref e, left);
-                else if (e.Reason != "")
+                    if (e.Maker == NoPart)
+                        (e.Seen, e.Tried) = (Seen(world, c, net), world.ChainStepNo);
+                }
+                else if (left <= 0 && e.Reason != "")
                     e.Reason = "";
             }
             if (held > 0 || e.Maker == NoPart)
@@ -661,6 +672,32 @@ public static class ConstructLogisticsPlan
                     world.Chains[i].Flags |= (byte)ChainFlags.Expanded; // (Need may have moved later entries, never this one: children rank after it)
             }
         }
+    }
+
+    /// <summary>Plan steps (0.5 s each: a minute) a link nobody would make waits at most before it is asked again with nothing seen changing.</summary>
+    public const int RetrySteps = 120;
+
+    /// <summary>
+    /// What a maker's refusal depends on, folded into one number without allocating: the body's links and rebuilds (a Die Frame, a
+    /// die, a new machine), and each machine's queue, bin and settings. A blocked link is asked again when it changes.
+    /// </summary>
+    private static uint Seen(ConstructWorld world, Construct c, CraftNet net)
+    {
+        var h = (2166136261u ^ net.Key) * 16777619u;
+        h = (h ^ (uint)c.RebuildStamp) * 16777619u;
+        h = (h ^ (uint)c.PartCount) * 16777619u;
+        for (var i = 0; i < net.MachineN; i++)
+        {
+            var m = net.Machines[i];
+            ref readonly var p = ref c.Parts[m];
+            h = (h ^ (uint)m ^ (uint)(p.Orders?.Count ?? 0) << 16) * 16777619u;
+            if (world.StoreOf(c, m) is { } st)
+                h = (h ^ st.Material ^ (st.Amount > 0 ? 256u : 0u)) * 16777619u;
+            var slots = Math.Min(p.D.Config.Length, ConstructConfig.MaxSlots);
+            for (var s = 0; s < slots; s++)
+                h = (h ^ BitConverter.SingleToUInt32Bits(p.Cfg[s])) * 16777619u;
+        }
+        return h == 0 ? 1 : h;
     }
 
     public static bool IsStock(in ChainEntry e) => ((ChainFlags)e.Flags & ChainFlags.Stock) != 0;
@@ -848,8 +885,11 @@ public static class ConstructLogisticsPlan
         }
         if (first < 0)
             return null;
-        ref readonly var f = ref world.Chains[first];
-        return $"{ConstructParts.Get(f.Kind)?.Name} {f.Made}/{f.Asked} {(f.Maker == NoPart ? "from stock" : $"from the {c.DefOf(f.Maker).Name}")}";
+        ref var f = ref world.Chains[first];
+        var key = ((uint)f.Kind * 31 + f.Made) * 65599u ^ (uint)f.Asked << 16 ^ f.Maker; // (the note is made again only when one of these changes: phase 5)
+        if (f.NoteText == null || f.NoteKey != key)
+            (f.NoteText, f.NoteKey) = ($"{ConstructParts.Get(f.Kind)?.Name} {f.Made}/{f.Asked} {(f.Maker == NoPart ? "from stock" : $"from the {c.DefOf(f.Maker).Name}")}", key);
+        return f.NoteText;
     }
 
     /// <summary>
