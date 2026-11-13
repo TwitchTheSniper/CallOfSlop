@@ -129,16 +129,17 @@ public static partial class Program
             }
             case "fill" when g.IsServer:
             {
-                var cut = rest.IndexOf('|');
-                var (fc, part) = LogiFind(g, cut > 0 ? rest[..cut] : rest);
-                var what = ConstructParts.Find(cut > 0 ? rest[(cut + 1)..] : "Steel Plate");
+                var fb = rest.Split('|'); // ("PART|NAME|N": at most N)
+                var (fc, part) = LogiFind(g, fb[0]);
+                var what = ConstructParts.Find(fb.Length > 1 ? fb[1] : "Steel Plate");
+                var most = fb.Length > 2 && int.TryParse(fb[2], out var fm) ? fm : 4000;
                 if (fc == null || what == null)
                 {
                     WsFail($"logi fill: \"{rest}\"");
                     return;
                 }
                 var put = 0;
-                while (put < 4000 && w.RackPut(fc, part, what))
+                while (put < most && w.RackPut(fc, part, what))
                     put++;
                 WsSay($"[logi] fill {fc.DefOf(part).Name}#{part}: {put} x {what.Name}");
                 return;
@@ -212,6 +213,58 @@ public static partial class Program
                 var name = fc.DefOf(part).Name;
                 w.RemovePart(fc, part);
                 WsSay($"[logi] removed {name}#{part}");
+                return;
+            }
+            case "set" when g.IsServer: // "logi set PART|key|value": a setting as the configure tool sets it (phase 3: storeKeep, routerSpill ...)
+            {
+                var bits = rest.Split('|');
+                var (fc, part) = bits.Length == 3 ? LogiFind(g, bits[0]) : (null, -1);
+                var key = CfgKey.None;
+                for (var k = CfgKey.None + 1; k < CfgKey.COUNT; k++)
+                    if (ConstructConfig.KeyName(k) == (bits.Length == 3 ? bits[1] : ""))
+                        key = k;
+                if (fc == null || key == CfgKey.None || !ConstructConfig.Has(fc.DefOf(part), key) || !float.TryParse(bits[2], System.Globalization.CultureInfo.InvariantCulture, out var v))
+                {
+                    WsFail($"logi set: \"{rest}\" (PART|key|value, a key the part has)");
+                    return;
+                }
+                ConstructConfig.Put(ref fc.Parts[part], fc.DefOf(part), key, v);
+                w.StructureDirty.Add(fc.Id);
+                WsSay($"[logi] set {fc.DefOf(part).Name}#{part} {bits[1]} = {ConstructConfig.Get(fc.Parts[part], fc.DefOf(part), key, -1)}");
+                return;
+            }
+            case "take" when g.IsServer: // "logi take PART|NAME|N": N pieces of a kind taken out of a rack by hand
+            {
+                var bits = rest.Split('|');
+                var (fc, part) = bits.Length >= 2 ? LogiFind(g, bits[0]) : (null, -1);
+                var what = bits.Length >= 2 ? ConstructParts.Find(bits[1]) : null;
+                if (fc == null || what == null || w.StoreOf(fc, part) is not { } tst)
+                {
+                    WsFail($"logi take: \"{rest}\"");
+                    return;
+                }
+                var want = bits.Length > 2 && int.TryParse(bits[2], out var tn) ? tn : 1;
+                var took = 0;
+                while (took < want && ConstructCrafting.TakeOne(w, fc, part, tst, what))
+                    took++;
+                WsSay($"[logi] took {took} {what.Name} from {fc.DefOf(part).Name}#{part}: {ConstructCrafting.Holds(tst, (ushort)what.Id)} left");
+                return;
+            }
+            case "targets": // the stock targets (server) and each target rack's have / keep, and its open refill
+            {
+                WsSay($"[logi] targets: {w.StockTargetN}");
+                for (var i = 0; i < c.PartCount; i++) // (either peer: each rack's Logistics look, from its settings)
+                    if (StockTargets.IsStore(c.DefOf(i)) && StockTargets.Look(c, i) is { Length: > 0 } look)
+                        WsSay($"[logi]   look {c.DefOf(i).Name}#{i}: {look}");
+                for (var i = 0; i < w.StockTargetN; i++)
+                {
+                    ref readonly var t = ref w.StockTargets[i];
+                    var tp = ConstructLogistics.PartOfStore(c, t.Store);
+                    var have = tp >= 0 && w.StoreOf(c, tp) is { } tst ? ConstructCrafting.Holds(tst, t.Kind) : -1;
+                    var refill = tp >= 0 && ConstructLogisticsPlan.Refill(w, c, tp, t.Kind, out var e)
+                        ? $"refill {e.Made}/{e.Asked} by {(e.Maker < c.PartCount ? $"{c.DefOf(e.Maker).Name}#{e.Maker}" : "nobody")} {e.Reason}" : "no refill";
+                    WsSay($"[logi]   {(tp >= 0 ? c.DefOf(tp).Name : "?")}#{tp} keeps {(tp >= 0 ? StockTargets.Keep(c, tp) : 0)} {ConstructParts.Get(t.Kind)?.Name}: has {have}; {refill}");
+                }
                 return;
             }
             case "cancel" when g.IsServer: // "logi cancel ID": a terminal order cancelled

@@ -117,6 +117,8 @@ public static class StockTargets
                 t.Entry = 0; // (its refill closed: the next no sooner than 5 s on)
                 t.NextStep = (ushort)(step + CooldownSteps);
             }
+            if (t.Entry == 0 && ConstructLogisticsPlan.Refill(world, c, part, t.Kind, out var open))
+                t.Entry = open.Id; // (a loaded world's refill: its link came back from the save, not its target's mark)
             if (t.Entry != 0 || (short)(step - t.NextStep) < 0 || world.StoreOf(c, part) is not { } st || ConstructParts.Get(t.Kind) is not { } d)
                 continue;
             var keep = Keep(c, part);
