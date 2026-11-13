@@ -49,6 +49,11 @@ public sealed partial class Ui
     {
         if (ReferenceEquals(inv, _sbMadeInv) && inv.Version == _sbMadeVersion)
             return;
+        SbMadeRebuild(inv); // (its own method: the sort's closure would otherwise be made every frame, before this return)
+    }
+
+    private void SbMadeRebuild(SandboxInventory inv)
+    {
         _sbMadeInv = inv;
         _sbMadeVersion = inv.Version;
         var n = 0;

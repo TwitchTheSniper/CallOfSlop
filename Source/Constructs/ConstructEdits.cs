@@ -517,7 +517,7 @@ public sealed partial class ConstructEdits
                     // (docs/sandbox/design/inventory-run-time-parts.md phase 2); 64 kinds full, it is cut free as below.
                     return $"ok: {PartRef.Shown(def)} {(salvage ? "salvaged" : "taken back")} from construct {from} into the inventory ({Inventory.Of(player).Count(def.Id)})";
                 }
-                if (def.PhysicsOnly && !wrecked)
+                if ((def.PhysicsOnly || def.RuntimeMade) && !wrecked) // (a made part is always a body: the user's answer 1)
                 {
                     // Decision 21: a physics-only part is never an item: it is cut free as a body where it was.
                     if (DropLoose(world, def, where, q * Rot24.Quat(partRot)) is { } freed)
@@ -734,11 +734,15 @@ public sealed partial class ConstructEdits
             return "no such part";
         if (def.CreativeOnly && !InfiniteParts)
             return $"the {def.Name} is creative-only (a Zombies-economy part)";
-        if (def.PhysicsOnly)
+        if (def.PhysicsOnly || def.RuntimeMade)
         {
-            // Decision 21: the creative inventory spawns a physics-only part as a body in front of you (never into the hands).
+            // Decision 21: the creative inventory spawns a physics-only part as a body in front of you (never into the hands). A made part
+            // (a lofted or cut panel, a rack: not every one is physics-only by its own rule) is always a body too: the user's answer 1,
+            // docs/sandbox/design/inventory-run-time-parts.md.
             if (world == null || eye is not { } e)
                 return PhysicsOnlyRefusal(def, "be carried");
+            if (def.RuntimeMade && Inventory == null)
+                return $"no {PartRef.Shown(def)} in your inventory";
             var counted = (!InfiniteParts || def.RuntimeMade) && Inventory != null; // (a made part is never endless: it comes out of the count, creative too)
             if (counted && Inventory!.Of(player).Count(def.Id) == 0 && net != 0 && !def.RuntimeMade)
                 return PhysicsFromNetwork(world, player, def, e, yaw, net);
