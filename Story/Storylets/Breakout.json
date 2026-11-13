@@ -4,6 +4,7 @@
   // boiler coal, Wren Haskett at sick parade, Ambrose Thale at the brazier, Hester Mossop at the heating main. Talking
   // to them warms them (Hello, their topics in Topics/Breakout.json); each beat here waits until one of them likes the
   // player enough, and tests them a little. Crew is how far in the player is. Grassing to Bellweather (his topic) ends it.
+  // All in the side lane (bucket "side"): it runs beside a duty or the main quest, never waiting for them.
   // DRAFT words; Karl gives notes, Claude edits.
   "format": "call-of-slop-storylets/1",
   "about": "the convicts' break-out: earn their trust, then leave with them",
@@ -19,7 +20,7 @@
   ],
   "storylets": [
     {
-      "id": "sized-up", "title": "Sized up", "bucket": "B", "again": "20m", "priority": 4,
+      "id": "sized-up", "title": "Sized up", "bucket": "side", "again": "20m", "priority": 4,
       "about": "the convict on the boiler coal decides whether the new one talks",
       "needs": "?me Inducted, ?me Crew < 1, not ?me Grassed",
       "cast": "?d is Person, ?d == 'Dot Pruett', ?d Likes ?me >= 10",
@@ -36,7 +37,7 @@
       ]
     },
     {
-      "id": "the-parcel", "title": "The parcel", "bucket": "B", "again": "20m", "priority": 4,
+      "id": "the-parcel", "title": "The parcel", "bucket": "side", "again": "20m", "priority": 4,
       "about": "Dot asks the player to carry something to Wren at sick parade without being searched",
       "needs": "?me Crew >= 1, ?me Crew < 2, ?me Parcel < 1, not ?me Grassed",
       "cast": "?d is Person, ?d == 'Dot Pruett', ?d Likes ?me >= 15",
@@ -53,7 +54,7 @@
       ]
     },
     {
-      "id": "the-delivery", "title": "The delivery", "bucket": "B", "priority": 5,
+      "id": "the-delivery", "title": "The delivery", "bucket": "side", "priority": 5,
       "about": "the parcel reaches Wren, or it doesn't",
       "needs": "?me Parcel >= 1",
       "cast": "?w is Person, ?w == 'Wren Haskett'",
@@ -72,7 +73,7 @@
       ]
     },
     {
-      "id": "wrens-rota", "title": "The rota", "bucket": "B", "again": "20m", "priority": 4,
+      "id": "wrens-rota", "title": "The rota", "bucket": "side", "again": "20m", "priority": 4,
       "about": "Wren, who cleaned the spaceport, tells the player when its guard changes",
       "needs": "?me Crew >= 2, ?me Crew < 3, not ?me Grassed",
       "cast": "?w is Person, ?w == 'Wren Haskett', ?w Likes ?me >= 20",
@@ -87,7 +88,7 @@
       ]
     },
     {
-      "id": "ambroses-sky", "title": "A seat and a stick", "bucket": "B", "again": "20m", "priority": 4,
+      "id": "ambroses-sky", "title": "A seat and a stick", "bucket": "side", "again": "20m", "priority": 4,
       "about": "the old shipwright at the brazier says he can fly them off the planet",
       "needs": "?me Crew >= 3, ?me Crew < 4, not ?me Grassed",
       "cast": "?a is Person, ?a == 'Ambrose Thale', ?a Likes ?me >= 20",
@@ -101,7 +102,7 @@
       ]
     },
     {
-      "id": "mossops-question", "title": "Mossop's question", "bucket": "B", "again": "45m", "priority": 6,
+      "id": "mossops-question", "title": "Mossop's question", "bucket": "side", "again": "45m", "priority": 6,
       "about": "the ringleader asks once whether the player is coming; a trustee may say yes too",
       "needs": "?me Crew >= 4, ?me Crew < 5, not ?me Grassed",
       "cast": "?h is Person, ?h == 'Hester Mossop', not ?h Grudge ?me >= 20",
@@ -120,7 +121,7 @@
       ]
     },
     {
-      "id": "the-night", "title": "The night", "bucket": "A", "priority": 9, "final": true,
+      "id": "the-night", "title": "The night", "bucket": "side", "priority": 9, "final": true,
       "about": "word comes: the crew takes the Ministry's ration hauler to the spaceport (Opening/Breakout.json)",
       "needs": "?me Course 'Escapee', ?me Crew >= 5",
       "cast": "?d is Person, ?d == 'Dot Pruett'",
@@ -136,7 +137,7 @@
       ]
     },
     {
-      "id": "the-coal-heap", "title": "Searched", "bucket": "B", "priority": 7, "final": true,
+      "id": "the-coal-heap", "title": "Searched", "bucket": "side", "priority": 7, "final": true,
       "about": "the player told Bellweather; the crew knows who did",
       "needs": "?me Grassed",
       "cast": "?d is Person, ?d == 'Dot Pruett'",

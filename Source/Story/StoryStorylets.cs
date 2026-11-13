@@ -3,12 +3,17 @@ using System.Text.Json;
 
 namespace CallOfSlop.Story;
 
-/// <summary>Which queue a storylet waits in: the A plot and the B plot take turns; an urgent one jumps the queue.</summary>
+/// <summary>
+/// Which queue a storylet waits in: the A plot and the B plot take turns; an urgent one jumps the queue. A side road
+/// (<see cref="Side"/>: the convicts' break-out) runs in a lane of its own beside them, one at a time, so it can be taken
+/// while a duty or the main quest holds the player's other lane (Karl, 2026-11-13: "branch off the main quest at any point").
+/// </summary>
 public enum StoryletBucket : byte
 {
     A,
     B,
     Urgent,
+    Side,
 }
 
 /// <summary>A quality the storylets keep on a player (Rank, Suspicion): progress or menace, its range, and how it cools off.</summary>
@@ -263,7 +268,8 @@ public sealed class StoryletRules
             "A" or "a" => StoryletBucket.A,
             "B" or "b" => StoryletBucket.B,
             "urgent" => StoryletBucket.Urgent,
-            _ => throw new StoryException($"{where}: \"bucket\" is A, B or urgent"),
+            "side" => StoryletBucket.Side,
+            _ => throw new StoryException($"{where}: \"bucket\" is A, B, urgent or side"),
         };
         d.Group = StoryRules.Str(e, "scope", where) switch
         {
@@ -664,13 +670,16 @@ public sealed class StoryStorylets
     /// <summary>How many times a player has had this storylet to its end.</summary>
     public int PlayedCount(int player, int def) => W.Get(player, R.Played, Thing(def));
 
-    public int RunOf(int player, bool paused = false)
+    public int RunOf(int player, bool paused = false, bool side = false)
     {
         for (var i = 0; i < Runs.Count; i++)
-            if (Runs[i].Player == player && (Runs[i].Phase == StoryletPhase.Paused) == paused)
+            if (Runs[i].Player == player && (Runs[i].Phase == StoryletPhase.Paused) == paused && IsSide(Runs[i].Def) == side)
                 return i;
         return -1;
     }
+
+    /// <summary>A side road's storylet: its own lane (<see cref="StoryletBucket.Side"/>).</summary>
+    private bool IsSide(int def) => R.Storylets[def].Bucket == StoryletBucket.Side;
 
     // ---- Each second --------------------------------------------------------------------------------------------------
 
@@ -711,6 +720,13 @@ public sealed class StoryStorylets
     /// <summary>One player: an urgent storylet that can play pauses theirs; with none under way, a paused one goes on, or the next starts.</summary>
     private void Consider(int player, double now)
     {
+        // The side lane first, on its own: one side road's storylet at a time, whatever the main lane is doing.
+        if (RunOf(player, side: true) < 0 && !Restore(player, now, side: true))
+        {
+            var side = Next(player, StoryletBucket.Side, now, out var sb);
+            if (side >= 0)
+                Start(side, sb, now);
+        }
         var active = RunOf(player);
         if (active < 0 && Restore(player, now))
             active = RunOf(player);
@@ -887,7 +903,8 @@ public sealed class StoryStorylets
         var run = new StoryletRun { Def = def, Player = player, Serial = ++_serial, Binds = binds, StartedAt = now, WaitFrom = now, Phase = d.Play >= 0 ? StoryletPhase.Beats : StoryletPhase.Waiting };
         Runs.Add(run);
         Started++;
-        _player[player] = (d.Bucket == StoryletBucket.Urgent ? _player.GetValueOrDefault(player).Last : d.Bucket, 0);
+        if (d.Bucket != StoryletBucket.Side) // (the side lane neither takes a turn from A and B nor rests them)
+            _player[player] = (d.Bucket == StoryletBucket.Urgent ? _player.GetValueOrDefault(player).Last : d.Bucket, 0);
         Note?.Invoke($"{W.NameOf(player)}: the storylet {d.Title} begins{(d.CastVars > 1 ? $" ({CastText(d, binds)})" : "")}");
         if (d.Job >= 0)
         {
@@ -909,7 +926,7 @@ public sealed class StoryStorylets
     }
 
     /// <summary>A world that was saved with a storylet under way for this player: it waits for its ends again, cast afresh.</summary>
-    private bool Restore(int player, double now)
+    private bool Restore(int player, double now, bool side = false)
     {
         if (W[player].PairCount == 0)
             return false;
@@ -923,10 +940,12 @@ public sealed class StoryStorylets
             for (var k = 0; k < R.Storylets.Length && def < 0; k++)
                 if (Thing(k) == pair.Target)
                     def = k;
-            if (def < 0 || RunOf(player) >= 0 || RunOf(player, true) >= 0)
+            if (def >= 0 && IsSide(def) != side)
+                continue; // (the other lane's: restored with it)
+            if (def < 0 || RunOf(player, side: side) >= 0 || RunOf(player, true, side) >= 0)
             {
                 W.Set(player, R.OnStorylet, pair.Target, 0); // (a storylet this build no longer has, or one too many)
-                return Restore(player, now);
+                return Restore(player, now, side);
             }
             var d = R.Storylets[def];
             if (!CastFor(d, player, out var binds))
@@ -934,7 +953,7 @@ public sealed class StoryStorylets
                 // Nobody to play it now (the cast is busy, or dead): it is dropped, and may come again.
                 W.Set(player, R.OnStorylet, pair.Target, 0);
                 Note?.Invoke($"{W.NameOf(player)}: the storylet {d.Title} was under way, and can't be cast again: dropped");
-                return Restore(player, now);
+                return Restore(player, now, side);
             }
             for (var n = 0; n < d.Named.Length; n++)
                 binds[d.CastVars + n] = NamedThing(d.Named[n]);
@@ -1076,7 +1095,7 @@ public sealed class StoryStorylets
         if ((uint)def >= (uint)R.Storylets.Length || !W.Valid(player))
             return "no such storylet";
         var d = R.Storylets[def];
-        if (RunOf(player) >= 0)
+        if (RunOf(player, side: IsSide(def)) >= 0)
             return "another is under way for them";
         if (!CastFor(d, player, out var b))
             return "nobody can be cast";
@@ -1167,7 +1186,7 @@ public sealed class StoryStorylets
         }
         if (end is { Hook.Length: > 0 })
             Hook?.Invoke(r.Player, end.Hook, r.Binds);
-        if (d.Bucket != StoryletBucket.Urgent || RunOf(r.Player, true) < 0)
+        if (d.Bucket != StoryletBucket.Side && (d.Bucket != StoryletBucket.Urgent || RunOf(r.Player, true) < 0))
             _player[r.Player] = (_player.GetValueOrDefault(r.Player).Last, now + Rest);
         Ended++;
         Keep(new StoryletDone(r.Def, r.Player, endIndex, null, r.StartedAt, now));
