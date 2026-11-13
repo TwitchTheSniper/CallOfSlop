@@ -6,6 +6,24 @@
   "section": "Lifters",
   "role": "frame",
   "tool": "welder",
+  "panels": [
+    {
+      "source": "lifter",
+      "at": [
+        1.0,
+        0.705,
+        2.002
+      ],
+      "size": [
+        0.74,
+        0.28
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 5,
+      "range": 10
+    }
+  ],
   "mass": 855.0,
   "health": 1350,
   "armour": 6,
@@ -277,6 +295,37 @@
       "detail": true,
       "paintable": false,
       "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.6,
+        0.381,
+        1.915
+      ],
+      "max": [
+        1.4,
+        0.885,
+        1.995
+      ],
+      "color": "#5e6266",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.62,
+        0.555,
+        1.987
+      ],
+      "max": [
+        1.38,
+        0.855,
+        2.003
+      ],
+      "color": "#10161c",
+      "detail": true,
+      "paintable": false
     }
   ],
   "sockets": [

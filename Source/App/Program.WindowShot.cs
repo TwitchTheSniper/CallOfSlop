@@ -912,6 +912,15 @@ public static unsafe partial class Program
                     }
                     _wsLiftWaits = 0;
                 }
+                else if (lw.Length > 0 && lw[0] == "screen") // "lifter screen": every lifter's screen as this peer fills it (they stand on their own foundations, outside the blueprint "panel" searches)
+                {
+                    foreach (var sb in g.Constructs.LiftBodies)
+                        if (g.Constructs.Get(sb.Body) is { } sbc)
+                            for (var si = 0; si < sb.N; si++)
+                                if (sb.Lifts[si].Part < sbc.PartCount)
+                                    WsDumpPanels(g, sbc, sb.Lifts[si].Part);
+                    return;
+                }
                 else if (lw.Length > 0 && lw[0] == "walk") // "lifter walk": this peer's player out of the window tool's flight, on its feet (a client before the host's "lifter stand others")
                 {
                     me.NoclipWanted = false;

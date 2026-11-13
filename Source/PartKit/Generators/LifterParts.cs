@@ -16,7 +16,7 @@ public sealed class LifterParts : IPartGenerator
     public string Name => "lifter_parts";
 
     private const string Out = "Constructs/Parts/Lifters";
-    private const string Rust = "#6b4a35", Rust2 = "#7a4432", Timber = "#9a7442", Dark = "#2f2a26", Iron = "#8b857a", Pin = "#f07818";
+    private const string Rust = "#6b4a35", Rust2 = "#7a4432", Timber = "#9a7442", Dark = "#2f2a26", Iron = "#8b857a", Pin = "#f07818", Screen = "#10161c";
     public const double TurretY = 0.66; // the slewing ring's top over the part's floor at tier 1 (grown by the tier's size)
 
     private static readonly string[] Tiers = ["", "Scrap", "Workshop", "Industrial", "Military", "Plasma"];
@@ -153,6 +153,13 @@ public sealed class LifterParts : IPartGenerator
                 p.Add(MachineLook.D([cx - 0.14, y0 + ring * 0.4, cz - drum - 0.04], [cx + 0.14, y0 + ring * 0.55, cz - drum + 0.004], pal["heat"]));
                 break;
         }
+        // ---- Its screen (the user, 2026-11-13: "a small screen now"): a console on the plinth in front of the drum on the +z side,
+        // clear of every tier's dressing (the drum's bands end 0.02 m out, Industrial's kick rail starts 0.12 m in from the edge).
+        double sy0 = y0 + plinth - 0.004, sy1 = y0 + plinth + 0.5, sz0 = z1 - 0.21, sz1 = z1 - 0.13;
+        p.Add(MachineLook.D([cx - 0.4, sy0, sz0], [cx + 0.4, sy1, sz1], t == 1 ? Iron : pal["frame"], "steel"));
+        p.Add(MachineLook.D([cx - 0.38, sy1 - 0.33, sz1 - 0.004], [cx + 0.38, sy1 - 0.03, sz1 + 0.004], Screen)); // (the glass behind the panel's card)
+        p.Set(("panels", Py.L(Kw(("source", "lifter"), ("at", Py.L(Py.Round(cx, 3), Py.Round(sy1 - 0.18, 3), Py.Round(sz1 + 0.007, 3))), ("size", Py.L(0.74, 0.28)),
+            ("face", "+z"), ("up", "+y"), ("rows", 5), ("range", 10)))));
         BlockSockets(p, n, n, n, faces: "y", skip: ["+y"]);
         p.Stats(380 * MassK[t], 600 * HealthK[t], Armour[t], seconds: Py.Round(6.0 * (1 + 0.25 * (t - 1)), 2));
         if (t > 1)

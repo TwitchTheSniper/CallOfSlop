@@ -1018,6 +1018,79 @@ public static class ConstructLifters
         return $"{d.Name}: {what} - reaches {ld.ReachMin:0.#} to {ld.ReachMax:0.#} m, carries {carries}{(l is { Moves: > 0 } ? $"; {l.Moves} fitted" : "")}";
     }
 
+    private static readonly string[] ScreenName = ["", "SCRAP ARM", "WORKSHOP ARM", "INDUSTRIAL ARM", "MILITARY ARM", "PLASMA ARM"];
+
+    /// <summary>
+    /// The <c>lifter</c> panel source: a Loader Arm's small screen on its plinth (the user, 2026-11-13). What it does or waits on,
+    /// the piece in its hand and the parts it has fitted. Either peer; allocates nothing (names and fixed words only).
+    /// </summary>
+    public static void FillPanel(ConstructWorld world, Construct c, int part, PanelDef panel, PanelCard card)
+    {
+        var d = c.DefOf(part);
+        if (d.Lifter is not { } ld)
+            return;
+        card.Add(0, ScreenName[Math.Clamp(ld.Tier, 1, 5)]);
+        if (c.Parts[part].Broken)
+        {
+            card.State = PanelState.Fault;
+            card.Add(1, "Wrecked");
+            return;
+        }
+        var l = Find(world, c.Id, part);
+        var piece = l != null && l.Def != 0 ? ConstructParts.Get(l.Def)?.Name : null;
+        if (l is { Why: LiftWhy.NoPower })
+        {
+            card.State = PanelState.Fault;
+            card.Add(1, "No power");
+            if (piece != null)
+                card.Add(2, piece);
+        }
+        else if (l is { Why: LiftWhy.Player or LiftWhy.PlayerStuck })
+        {
+            card.State = l.Why == LiftWhy.PlayerStuck ? PanelState.Refused : PanelState.Wants;
+            card.Add(1, "WAITING");
+            card.Add(2, "Player in the way");
+            if (piece != null)
+                card.Add(3, piece);
+        }
+        else if (l is { State: LiftState.Carry })
+        {
+            card.State = PanelState.Working;
+            card.Add(1, l.Why == LiftWhy.PutBack ? "Putting back" : "Fitting");
+            if (piece != null)
+                card.Add(2, piece);
+            if (l.Step >= 0)
+                card.Add(3, "Step ").Add(3, l.Step + 1);
+        }
+        else if (l is { State: LiftState.Return })
+        {
+            card.State = PanelState.Working;
+            card.Add(1, "Back to the hold");
+        }
+        else if (l is { State: LiftState.Stuck })
+        {
+            card.State = PanelState.Refused;
+            card.Add(1, "STUCK");
+            if (piece != null)
+                card.Add(2, piece);
+            card.Add(3, "No hold in reach");
+        }
+        else
+        {
+            card.State = PanelState.Idle;
+            card.Add(1, "Idle");
+            card.Add(2, l?.Why switch
+            {
+                LiftWhy.RunOff => "Held by Run",
+                LiftWhy.Off => "Works: Off",
+                LiftWhy.NoPart => "Nothing to fit",
+                LiftWhy.NoStation => "No station in reach",
+                _ => "",
+            });
+        }
+        card.Add(4, "Fitted: ").Add(4, l?.Moves ?? 0);
+    }
+
     private static string JobText(ConstructWorld world, CLift l)
     {
         if (world.Get(l.StationBody) is not { } sc)

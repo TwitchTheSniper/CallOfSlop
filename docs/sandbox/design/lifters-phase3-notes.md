@@ -98,3 +98,23 @@ Shared files, a line or two each: `Game/GameSandbox.cs` (the call), `App/Program
    (recommended): keep it. B: a piece that meets only the head stops the arm instead (it waits, as for a pin).
 3. **Phase 2's three questions are still open** (the arm's machine screen, a spare part after a load, the Industrial arm that
    cannot reach the hold); this phase changed nothing they depend on.
+
+## Phase 2's answers, built here (the user, 2026-11-13; recorded in `lifters-phase2-notes.md`)
+
+- **The arm's screen.** A console on the plinth in front of the drum (+z side; 0.8 m wide, clear of every tier's dressing),
+  with a 0.74 x 0.28 m screen of 5 rows, 22 characters: the tier ("SCRAP ARM"), what it does (Fitting, Back to the hold,
+  Idle, WAITING, STUCK, No power), the piece or the reason, the step, and "Fitted: N". Its own panel source `lifter`
+  (`ConstructLifters.FillPanel`), not `MachineScreens.cs`; registering a source takes **one line in `DisplayPanel.cs`'s
+  `PanelSources` table** (`["lifter"] = ConstructLifters.FillPanel`), the logistics owner's file: there is no other way in.
+  Seen on the host and on a joined client (`lifter screen`, a new verb: the arms stand outside the blueprint the `panel` verb
+  searches). The five part files changed (generator only); `--gen-parts all --check`, `--check-construct-parts` and the
+  "Compound collision" and "No z-fighting" sections pass. Not looked at with my own eyes (no pictures).
+- **A piece in a hand counts as in the hold** for the station's orders (`ConstructStation.LiftHolds`, one call in `Orders`):
+  a loaded piece on its way to this station's hold, or waiting with this hold in its reach. Saved mid-carry with four arms,
+  loaded in a fresh process: the piece came back in the hand (the screen said STUCK), the build finished 26/26 and the hold
+  was empty at the end (phase 2 left a spare part).
+- **Picks along the hold's side** (`ConstructLifters.HoldPick`): of the points over the hold's floor, across it and along its
+  whole side every half metre, the nearest the wrist reaches with an empty hand and with the piece. Used by the claim, the
+  way back, the put-back, the Fitters line and the reach view's post. The Industrial arm at the window tool's slot 2 (6 m
+  along the bay) still reaches no point of the hold: its 6 m reach ends short of the hold's side there. Pick pads for larger
+  building areas wait for the network phase, as the user said.
