@@ -442,8 +442,22 @@ public sealed partial class Ui
         var pic = Picture(dl, t.Slot, t.Swatch, i0, new float2(i0.X + icon, i0.Y + icon), tint, t.Slot < 0 ? t.Name : null);
         var clip = new float4(at.X + 4 * _scale, at.Y, p1.X - 4 * _scale, p1.Y);
         var y = at.Y + icon + 6 * _scale;
+        // A long name ("Helicopter rotor", "Swept wing, left") is shrunk to the tile's width instead of running out of its box:
+        // measured once at 16 and scaled by what it needs, down to 11.
         ImGui.PushFont(default, 16);
-        DlText(dl, new float2(at.X + 7 * _scale, y), usable ? SbText : SbDim, t.Name, clip);
+        var nameW = ImGui.CalcTextSize(t.Name).X;
+        var inner = w - 14 * _scale;
+        var nameSize = nameW > inner && nameW > 0 ? MathF.Max(11f, MathF.Floor(16f * inner / nameW)) : 16f;
+        if (nameSize < 16f)
+        {
+            ImGui.PopFont();
+            ImGui.PushFont(default, nameSize);
+            DlText(dl, new float2(at.X + 7 * _scale, y + (16f - nameSize) * 0.5f * _scale), usable ? SbText : SbDim, t.Name, clip);
+            ImGui.PopFont();
+            ImGui.PushFont(default, 16);
+        }
+        else
+            DlText(dl, new float2(at.X + 7 * _scale, y), usable ? SbText : SbDim, t.Name, clip);
         if (t.Out.Length > 0)
             DlText(dl, new float2(p1.X - 7 * _scale - ImGui.CalcTextSize(t.Out).X, at.Y + 6 * _scale), usable ? SbText : SbDim, t.Out);
         ImGui.PopFont();
@@ -492,10 +506,41 @@ public sealed partial class Ui
         dl.AddRectFilled(new float2(p0.X + inset, p0.Y + inset), new float2(p1.X - inset, p1.Y - inset), swatch, 4 * _scale);
         if (letter != null)
         {
+            // A whole name stands in for a picture the atlas hasn't got (the Fan and Airframe Formers' kinds): long ones
+            // ("Helicopter rotor", "Swept wing, left") are shrunk to the swatch and wrapped at a space, so none runs out of its box.
+            const float least = 10f; // (smaller than this is unreadable: the swatch is left plain and the tile's name row carries it)
+            var room = p1.X - p0.X - 2 * inset;
+            var box = new float4(p0.X + inset, p0.Y + inset, p1.X - inset, p1.Y - inset);
             ImGui.PushFont(default, 22);
-            var ts = ImGui.CalcTextSize(letter);
-            DlText(dl, new float2((p0.X + p1.X - ts.X) * 0.5f, (p0.Y + p1.Y - ts.Y) * 0.5f), SbText, letter);
+            var full = ImGui.CalcTextSize(letter).X;
+            var one = letter;
+            var two = "";
+            if (letter.IndexOf(' ') is var brk && brk > 0)
+            {
+                one = letter[..brk].TrimEnd(',');
+                two = letter[(brk + 1)..].TrimEnd(',');
+            }
+            var wide = two.Length > 0 ? MathF.Max(ImGui.CalcTextSize(one).X, ImGui.CalcTextSize(two).X) : full;
             ImGui.PopFont();
+            var size = full > room && full > 0 ? MathF.Floor(22f * room / full) : 22f; // one line
+            var pair = wide > room && wide > 0 ? MathF.Floor(22f * room / wide) : 22f; // two lines
+            if (size >= least)
+            {
+                ImGui.PushFont(default, size);
+                var ts = ImGui.CalcTextSize(letter);
+                DlText(dl, new float2((p0.X + p1.X - ts.X) * 0.5f, (p0.Y + p1.Y - ts.Y) * 0.5f), SbText, letter, box);
+                ImGui.PopFont();
+            }
+            else if (two.Length > 0 && pair >= least)
+            {
+                ImGui.PushFont(default, pair);
+                var s1 = ImGui.CalcTextSize(one);
+                var s2 = ImGui.CalcTextSize(two);
+                var mid = (p0.Y + p1.Y) * 0.5f;
+                DlText(dl, new float2((p0.X + p1.X - s1.X) * 0.5f, mid - s1.Y), SbText, one, box);
+                DlText(dl, new float2((p0.X + p1.X - s2.X) * 0.5f, mid), SbText, two, box);
+                ImGui.PopFont();
+            }
         }
         return false;
     }

@@ -21,6 +21,25 @@ public static unsafe partial class Program
     private static string _wsOut = "", _wsMap = "Proving Ground", _wsBlueprint = "";
     private static Vector3? _wsAt, _wsLookAt, _wsSpawnAt;
     private static string _wsNet = "", _wsNotice = "";
+    private static double _wsJoinTry; // (when a joining client last tried the host: it may still be loading)
+
+    /// <summary>
+    /// The window tool's joined client (<c>--net join:IP</c>), whose session has just been dropped: true when it joins again
+    /// instead. Two windows started together reach RakNet before the host is listening (a headless start is 15-20 s of data and
+    /// maps), and RakNet gives up after a few seconds with "Could not reach host": the client keeps trying while the host comes up.
+    /// </summary>
+    private static bool WsRejoin(string status, double now)
+    {
+        if (!_windowShot || !_wsNet.StartsWith("join:", StringComparison.OrdinalIgnoreCase) || _quit || now - _wsStart > 90)
+            return false;
+        if (now - _wsJoinTry < 2)
+            return true; // (the session stays as it is for a moment: the next frame tries again)
+        _wsJoinTry = now;
+        WsSay($"joining again at {now - _wsStart:0} s ({status})");
+        StartSession(LobbyAction.Join);
+        _wsStep = 1;
+        return true;
+    }
     private static int _wsDesignTries;
     private static int _wsDragLeft, _wsDragAll, _wsDragKeys;
     private static long _wsDragBytes, _wsDragAt;
@@ -195,8 +214,8 @@ public static unsafe partial class Program
                     _wsStep = 2;
                     _wsWait = 0;
                 }
-                else if (now - _wsStart > 40)
-                    WsFail($"the world didn't reach play (phase {g.Phase}, alive {g.Local?.Alive}, menu {Ui.MenuOpen})");
+                else if (now - _wsStart > (_wsNet.StartsWith("join:", StringComparison.OrdinalIgnoreCase) ? 90 : 40)) // (a joined client waits out the host's own start-up)
+                    WsFail($"the world didn't reach play (phase {g.Phase}, alive {g.Local?.Alive}, menu {Ui.MenuOpen}{(g.Disconnected ? $", {g.Status}" : "")})");
                 return;
             case 2: // the blueprint down, then the camera
                 if (_session is not { Local: { } p } game)
@@ -688,7 +707,8 @@ public static unsafe partial class Program
                     read.Read(new SaveReader(nameBytes.Span.ToArray()));
                     var w2 = new ConstructWorld();
                     var loaded = w2.ReadBody(new SaveReader(body.Span.ToArray()), read, _ => 0);
-                    WsSay($"craft: saved and loaded: {(loaded == null ? "NO BODY" : $"{loaded.Parts[cpart].Craft?.Count ?? 0} order(s), {w2.StoreOf(loaded, cpart)?.ItemCount ?? -1} in the tray")}");
+                    // (the body alone: the tray is a store, saved in the world's stores section, so it isn't in this round trip; saveworld covers it)
+                    WsSay($"craft: saved and loaded: {(loaded == null ? "NO BODY" : $"{loaded.Parts[cpart].Craft?.Count ?? 0} order(s) (the tray is saved with the world's stores, not the body)")}");
                 }
                 return;
             }

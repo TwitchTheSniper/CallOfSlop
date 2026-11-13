@@ -1050,6 +1050,9 @@ public static unsafe partial class Program
             return _sbStoreText = ConstructTerminals.Look(cd, st, hit.Body.Parts[hit.Part].Broken);
         if (cd.IsVolumeStore)
             return _sbStoreText = ConstructStoreVolume.Look(hit.Body, hit.Part, st, near, inv, held);
+        if (cd.IsPanelDesigner && hit.RackPlus1 == 0)
+            return _sbStoreText = SandboxKeys.Line(cd.Name, $"{hit.Body.Parts[hit.Part].Craft?.Count ?? 0} order(s), {st.ItemCount} in the tray", null,
+                SandboxKeys.Do(SandboxKeys.Use, st.ItemCount > 0 ? "on the tray: take a panel; elsewhere: design a panel" : "design a panel")); // (the desk is a terminal, but F opens the designer)
         if (cd.IsCraftTerminal && hit.RackPlus1 == 0 && _game is { } cg)
             return _sbStoreText = ConstructCrafting.Look(cg.Constructs, hit.Body, hit.Part, st, near);
         if (cd.IsPieceRack)
