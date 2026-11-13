@@ -65,19 +65,26 @@ categories (`PartCategories.cs`) know catalogue parts only; HUD notices (`Give`,
   Done (2026-11-13): `--window-shot ... --do "inv hold NAME; inv show; inv reload"` (`Program.WindowShotInv.cs`) put an extrusion
   and a pressed part into the hands (forced past the physics-only rule, as a test state), and a host and a joined client over RakNet
   printed the same part, by name, for both players.
-- **Phase 2: small made parts become items (question 1).** A made part under the hand-carry limit and not structural loses
-  `PhysicsOnly`, by the same rule as a part file (`ConstructParts.Parse`'s: welded, heavy or bulky), so it can be held, backpacked,
-  shelved and picked up with F; a blank on a die or a growing piece stays physics-only. Each holder's stack rule (`StackOf`) keys by
-  part id, which is one per key on a machine, so stacks of the same piece work as they are.
-- **Phase 3: the counted inventory takes run-time parts.** `SandboxInventory` gets a short list of run-time kinds beside its array (key
-  def id and count, at most 64 kinds), saved by name in the player record (a new section so older builds skip it), sent by key in
-  `CBodyKind.Inventory`, marked by the `RuntimeParts` sweep. `Add`/`Take`/`Count` work for both, so salvage, `ReturnHeld` and
-  `GiveResult.Inventory` keep run-time parts. The Tab inventory lists them under one category (question 3).
-- **Phase 4: the network and terminals.** `BeaconView` counts run-time kinds in a list beside its array (sent by key); the Smart
-  Terminal lists and hands them out; Inventory Beacon pulls take them.
-- **Phase 5: pictures.** Run-time icons in the atlas: a small pool of tiles past the blueprint and tool slots, drawn on demand from the
-  part's boxes and given back when the part is swept (question 4). Then the hand-held guns from pressed parts (sized-gun-engine-parts.md,
-  answer 7) can start.
+The phases below were rewritten on 2026-11-13 for the user's answers (at the end of this file).
+
+- **Phase 2: the counted inventory takes made parts** (answers 1 and 2, as read below; was phase 3). `SandboxInventory` keeps a
+  short list of run-time kinds beside its array (def id and count, at most 64 kinds), so `Add`/`Take`/`Count` work for every part and
+  salvage, `GiveResult.Inventory` and the refunds keep made parts. In the counted inventory (infinite parts off, not survival: the same
+  rule as catalogue parts) a made part taken off a body with the remove tool, a loose made piece included, goes into the count instead
+  of being cut free; picked in the Tab inventory it is set down in front of the player as a body (`SpawnInFront`, as a physics-only
+  catalogue part is), never into the hands. Saved in the player record by name (the save already writes every part by name; an older
+  build drops the run-time names, as it did), sent by key in `CBodyKind.Inventory`, marked by the `RuntimeParts` sweep (inventories
+  are tracked like hands). The Tab inventory lists them in one "Made parts" category, sorted by kind then size, by their shown names.
+  The pick goes to the server by key (protocol 298). Made parts stay physics-only: the hands, backpack, shelves and F still refuse them.
+- **Phase 3: the network and terminals** (answer 5). `BeaconView` counts run-time kinds in a list beside its array (sent by key); the
+  Smart Terminal lists them with the rest, one row per key, and hands them out as bodies in front of the player; Inventory Beacon pulls
+  and the network's refunds take them. Stores that refuse physics-only parts keep refusing, so a network holds a made part only where
+  bodies are kept (a storage volume's bodies, a Piece Rack): this phase first counts what those hold.
+- **Phase 4: pictures** (answer 4). Run-time icons in the atlas: a pool of 512 tiles past the blueprint and tool slots, each drawn once
+  from the part's boxes when first shown (cached: no per-frame work) and given back when the part is swept or the pool is full (the
+  longest unseen first). The Tab inventory, the terminal's rows and the store look line use them.
+- **Dropped: made parts as hand items** (answer 1). The hand-held guns from pressed parts (sized-gun-engine-parts.md, answer 7) need
+  another way: a gun finished at a bench as one item, or the user asked again.
 
 ## Questions for the user
 
@@ -94,3 +101,17 @@ categories (`PartCategories.cs`) know catalogue parts only; HUD notices (`Give`,
    shape's letter, no rendering.
 5. **A Smart Terminal and its network:** a) list run-time parts with the rest, one row per key (recommended); b) one row per shape,
    any size, the nearest size handed out.
+
+## The user's answers (2026-11-13)
+
+1. **c) No, they stay bodies.** Machine-made parts do not become hand-held items: the physics gun, racks and conveyors move them.
+2. **a) Yes, into the counted inventory (Tab), up to 64 run-time kinds a player.**
+3. **a) One "Made parts" category, sorted by kind then size.**
+4. **a) Real icons drawn on demand, a pool of 512 tiles.**
+5. **a) A Smart Terminal and its network list run-time parts with the rest, one row per key.**
+
+**How answers 1 and 2 are read together** (the coordinator's reading, which the plan above builds on; the user can correct it): a made
+part is never carried in the hands or a backpack slot as an item, but it can be counted in the Tab inventory the way catalogue parts
+are: taken back from a body or salvaged into the count, set down or fitted from the count as a body (or a part of one), listed by
+stores and terminals, saved and sent by key. Where nothing is counted abstractly (survival: physical storage) a made part is a body,
+as every part is there.
