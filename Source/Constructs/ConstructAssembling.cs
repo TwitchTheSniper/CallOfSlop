@@ -14,6 +14,7 @@ public enum AsmState : byte
     Ready,
     Untaught, // a story faction hasn't taught its owner this part yet (AsmBlock.Untaught)
     NoOrders, // it has a queue of work orders, empty: it waits for the next (WorkOrders.cs)
+    Pressed, // its recipe setting names a part a die presses now (Press phase 5): it builds nothing and says which die
 }
 
 /// <summary>Why a finished batch can't leave an Assembler (<see cref="CStore.Blocked"/>).</summary>
@@ -81,7 +82,7 @@ public static class ConstructAssembling
             return q.Count > 0 && table.Of(q.Head.Part) is { } r && r.Machine == d.AsmMachine ? r : null;
         var k = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0) - 1;
         var list = table.ByMachine[d.AsmMachine];
-        return k >= 0 && k < list.Length ? list[k] : null;
+        return k >= 0 && k < list.Length ? list[k] : null; // (a pressed row too: StateOf says Pressed, and it builds nothing)
     }
 
     private static void Work(ConstructWorld world, IWorldQuery query, AssemblingTable table, Construct c, int part, CStore st)
@@ -103,7 +104,7 @@ public static class ConstructAssembling
             st.JobTicks = 0;
             SetBlocked(world, st, AsmBlock.None);
         }
-        if (recipe != null && world.Taught is { } taught && !world.CreativeRecycling && !taught(c.Owner, recipe.Output))
+        if (recipe is { Pressed: false } && world.Taught is { } taught && !world.CreativeRecycling && !taught(c.Owner, recipe.Output))
         {
             // A technology nobody has taught its owner: it waits, and says so (a faction's teaching ends the wait).
             st.JobTicks = 0;
@@ -287,6 +288,8 @@ public static class ConstructAssembling
     {
         if (r == null)
             return AsmState.NoRecipe;
+        if (r.Pressed)
+            return AsmState.Pressed;
         if (st.Blocked == (byte)AsmBlock.Untaught)
             return AsmState.Untaught;
         if (r.MinTier > d.Tier)
@@ -345,6 +348,7 @@ public static class ConstructAssembling
             {
                 AsmState.NoRecipe => " - no recipe set: Recipe on its screen picks one",
                 AsmState.TierLow => $" - needs a tier {r!.MinTier} assembler",
+                AsmState.Pressed => $" - {r!.PressedText()}: set another recipe, or order it at a Press",
                 AsmState.Short => MissingOf(st, r!, out var m, out var p) ? $" - needs {(p != null ? $"{r!.CountOf(p.Id)} {p.Name}" : $"{r!.UnitsOf(m)} {names.NameOf(m)}")}" : "",
                 AsmState.Untaught => TaughtBy?.Invoke(r!.Output.Name) is { } who ? $" - not taught: {who}" : " - not taught: a faction must teach it first (F2)",
                 AsmState.OutputFull => " - tray full",
