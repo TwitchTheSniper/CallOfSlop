@@ -101,6 +101,8 @@ public static partial class Program
                 GravityFrames.Frame(target, out var right, out var up, out var north);
                 var b = v[2] * MathF.PI / 180;
                 var eye = target + (north * MathF.Cos(b) + right * MathF.Sin(b)) * v[0] + up * v[1];
+                g.NoclipShot = true; // (the eye hovers where it is put, in a survival world too)
+                me.NoclipWanted = g.NoclipAllowed(me);
                 WsEyeTo(g, me, eye);
                 g.LookFrame = me.Position;
                 (g.LookYaw, g.LookPitch) = GravityFrames.Curved ? GravityFrames.Angles(me.Position, target - me.Eye) : (MathF.Atan2((target - me.Eye).X, -(target - me.Eye).Z), MathF.Asin(Math.Clamp(Vector3.Normalize(target - me.Eye).Y, -1f, 1f)));
