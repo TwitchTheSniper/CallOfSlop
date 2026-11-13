@@ -1386,6 +1386,12 @@ public static partial class ConstructParts
         d.Class = Opt(root, "sizeClass") is { } szc ? ClassOf(Str(szc, file, "sizeClass"), file, "sizeClass") : Small;
         d.Tier = Opt(root, "tier") is { } tier ? (int)Num(tier, file, "tier") : 1;
         Range(d.Tier, 1, MaxTier, file, "tier");
+        if (d.Lifter != null)
+        {
+            d.Lifter.Tier = d.Tier; // (its drawn half's dressing)
+            d.DataIn = [ConstructGatherer.RunPort];
+            d.DataOut = ConstructLifters.OutPorts; // (Busy, Alarm, Moved: ConstructLifters.Ports)
+        }
         d.Mass = Num(Need(root, "mass", file), file, "mass");
         Range(d.Mass, 0.5f, MaxPartMass, file, "mass"); // (building pieces: a 4 m concrete pad is about 14 t; a Capital flywheel 280 t)
         // Decision 21: what can't be carried as an item, by the tool that fits it and its mass (so every new welder or heavy part follows without a list).

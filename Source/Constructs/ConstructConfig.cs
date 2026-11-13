@@ -207,6 +207,8 @@ public enum CfgKey : byte
     StorePriority, // Piece Rack: 1 to 5, which store a piece for storage goes to first
     StoreTakes, // Piece Rack: what it takes as storage (anything, only what it holds now, nothing: orders and what it keeps only)
     FeedPriority, // Crafting Terminal, Building Station: Low, Normal, High: its orders' class (ConstructLogisticsPlan: class, then age)
+    LiftMode, // Loader Arm: what it works at (Auto, Station only, Carry only, Off: ConstructLifters.cs)
+    CarryHeight, // Loader Arm: how high it lifts a piece over the higher end of a move before it turns (m)
     COUNT,
 }
 
@@ -815,6 +817,7 @@ public static class ConstructConfig
                 CfgKey.BayWidth or CfgKey.BayDepth or CfgKey.BayHeight => d.IsBuildStation,
                 CfgKey.RouterSpill or CfgKey.RouterHold => d.IsRouter && d.IsConveyorJunction,
                 CfgKey.StoreKeep or CfgKey.StorePriority or CfgKey.StoreTakes => StockTargets.IsStore(d),
+                CfgKey.LiftMode or CfgKey.CarryHeight => d.Lifter != null, // (a Loader Arm: ConstructLifters.cs)
                 CfgKey.FeedPriority => d.IsCraftTerminal,
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
