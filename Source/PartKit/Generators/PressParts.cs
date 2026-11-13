@@ -57,10 +57,11 @@ public sealed class PressParts : IPartGenerator
         ("Control", [Small, Medium, Large], "steel", 2, "#3f6f9f"),
         ("Tank", [Small, Medium, Large, Capital], "steel", 2, "#9f4a3f"),
         ("Beam", [Small, Medium, Large, Capital], "metal", 1, "#7a7f88"),
+        ("Barrel", [Small, Medium, Large], "steel", 2, "#4a4d52"),
     ];
 
     // The dies whose stroke presses a whole blank to one part (Pressing.json "dies", the Press rework): they have no old rows.
-    private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate", "Button", "Gear", "Board", "Piston", "Cylinder", "Drive", "Shaft", "Actuator", "Spring", "Cable", "Control", "Tank", "Beam"];
+    private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate", "Button", "Gear", "Board", "Piston", "Cylinder", "Drive", "Shaft", "Actuator", "Spring", "Cable", "Control", "Tank", "Beam", "Barrel"];
 
     private static double MaxAcross(Cls c) => c.Key switch { "small" => 0.45, "medium" => 1.8, "large" => 7.2, _ => 28.8 }; // what a class's bays take: 1.8 cells
 
@@ -535,6 +536,51 @@ public sealed class PressParts : IPartGenerator
             DrivePatterns.Select(d => (object?)Pattern(d.Id, d.Like, d.Label, d.Blank, bay2: gears, scale: torque)).ToList(), FaceSockets());
         foreach (var die in WorkingDies3b())
             yield return die;
+        yield return BarrelDie();
+    }
+
+    // ---- Sized gun parts, phase 1 (docs/sandbox/design/sized-gun-engine-parts.md 3): the Barrel die and its plain pattern. A barrel's length
+    // is read in calibres (length over across), and its numbers are curves whose knots are the catalogue barrels: Stub (2 calibres), Standard
+    // (5) and Long (9), read from their builder part files here, so tuning Long Barrel moves the curve. Each curve is held to the widest value
+    // any catalogue barrel has, so no sized barrel leaves the range the builder is balanced for.
+
+    private static readonly (string Part, string Builder, string Blank)[] PlainBarrels =
+    [
+        ("Stub Barrel", "Stub Barrel", "round 10x10x20 steel"),
+        ("Gun Barrel", "Standard Barrel", "round 10x10x50 steel"),
+        ("Long Gun Barrel", "Long Barrel", "round 10x10x90 steel"),
+    ];
+
+    private static readonly (string Stat, string Op)[] BarrelCurves = [("rangeM", "mul"), ("hipSpreadDeg", "mul"), ("adsTime", "add"), ("mobility", "add")];
+
+    /// <summary>A builder part file's change to a stat by this op (the identity when it has none).</summary>
+    private static double EffectOf(PartDef p, string stat, string op)
+    {
+        foreach (var e in p.Effects)
+            if (e.Op == op && e.Field.Name.Equals(stat, StringComparison.OrdinalIgnoreCase))
+                return Py.Round(Convert.ToDouble(e.Value, System.Globalization.CultureInfo.InvariantCulture), 4);
+        return op == "mul" ? 1 : 0;
+    }
+
+    private static PyDict BarrelDie()
+    {
+        var curves = new List<object?>();
+        var barrels = CallOfSlop.Parts.InCategory(PartCategory.Barrel).OrderBy(p => p.Name, StringComparer.Ordinal).ToList();
+        foreach (var (stat, op) in BarrelCurves)
+        {
+            var points = new List<object?>();
+            foreach (var (_, builder, blank) in PlainBarrels)
+            {
+                var b = CallOfSlop.Parts.Find(builder) ?? throw new InvalidOperationException($"press_parts: no builder part {builder}");
+                var size = blank.Split(' ')[1].Split('x');
+                points.Add(Py.L(int.Parse(size[2]) / int.Parse(size[0]), EffectOf(b, stat, op)));
+            }
+            var values = barrels.Select(b => EffectOf(b, stat, op)).Append(op == "mul" ? 1 : 0).ToList();
+            curves.Add(Kw(("field", stat), ("by", "calibres"), ("points", points), ("clamp", Py.L(values.Min(), values.Max())), ("op", op)));
+        }
+        var crown = Py.L(Feature("crown", [-0.1, -0.1, 0, 1.1, 1.1, 0.04], "dark", proud: "xyz", clamp: "z", min: 1, max: 10));
+        return SizedDie("Barrel", ["round", "pipe"], ["steel"], [10, 120], [10, 1920], [1, 16], 4, 0.02, crown, Py.L(
+            Pattern("plain", "Gun Barrel", "barrel", "round 10x10x50 steel", scale: curves, along: "z")));
     }
 
     // ---- Phase 3b: Shaft, Actuator, Spring, Cable, Control, Tank and Beam (design section 3.2). The patterns whose behaviour lives in
@@ -683,6 +729,9 @@ public sealed class PressParts : IPartGenerator
         // The Frame Beam is the Beam die's girder (the user, 2026-11-13, phase 5 question 3): a 2 m I-beam held to what a Small Press takes
         // (45 cm), so a start's first frame needs no tier 2 press. The other building pieces stay on the Assembler.
         Add("Frame Beam", "beam", "girder", $"i-beam {PresetAcross(50, Small)}x{PresetAcross(50, Small)}x200 steel");
+        // Sized gun parts phase 1: the plain barrels are the Barrel die's knots. Their Assembler recipes stay until that design's phase 6.
+        foreach (var (part, _, blank) in PlainBarrels)
+            Add(part, "barrel", "plain", blank);
         return r;
     }
 

@@ -88,7 +88,8 @@ public static class ConstructLogistics
     public const int FullSteps = 50; // conveyor steps (5 s) a piece waits for its way before it goes to storage instead
     public const int RetrySteps = 20; // a stuck piece looks again every 2 s
     public const float JunctionCost = 2f; // metres a way is charged for each junction it crosses
-    public static readonly string[] RouterOut = ["Alarm", "Moving"]; // a Router's outputs: its Out and Out1 (Refresh)
+    public static readonly string[] RouterOut = ["Alarm", "Moving", "Data out"]; // a Router's outputs: its Out and Out1 (Refresh), then the network board
+    public const int PortBoard = 2; // Data out's port: a display linked to it is the network board (ConstructLogisticsBoard.cs)
 
     private static int _columnsLeft = ColumnsPerStep;
 

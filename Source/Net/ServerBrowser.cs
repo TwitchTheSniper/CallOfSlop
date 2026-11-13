@@ -459,7 +459,14 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      so what a peer's Assemblers can build changed. No new bytes: the recipe setting, orders and pressed keys ride as before.
     // 281: Press phase 5b: the 73 pressed marker rows left Assembling.json and the Frame Beam is pressed, so an Assembler's recipe value
     //      (1 + its row's place in its family's list) names another recipe than on 277. No new bytes.
-    public const ushort ProtocolVersion = 281;
+    // 282: sized gun parts phase 1: the Barrel die (three die part files move part ids) and its plain pattern; a pressed barrel's gun
+    //      numbers are derived from its key on every peer. No new bytes.
+    // 283: Laser Cutter phase 1: cut parts, "Cut Panel (...)" and "Cut Plate (...)", travel as named run-time parts, and a run-time
+    //      part's name may be 240 characters (was 128): older builds refuse both. No new bytes.
+    // 284: CActKind.ExtruderSection (u16 body, u16 machine, u8 profile, u16 width, height, wall in cm, u64 mask): the Extruder's recipe
+    //      picker sets its section and size in one act; Extruders have a Recipe button among their queue buttons.
+    // 285: Building Station phase 2: the station part has a Fluid in pipe port (part data both peers must share); the build's tanks and ammo are filled from it and linked bins (no new bytes).
+    public const ushort ProtocolVersion = 285;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

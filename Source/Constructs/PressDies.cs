@@ -4,8 +4,11 @@ using System.Text.Json;
 
 namespace CallOfSlop;
 
-/// <summary>What a bay 2 amount or a scaled number is measured by: the blank's length (m), its size across (m), its largest face (m2), its volume (m3) or its mass (kg).</summary>
-public enum PressMeasure : byte { Length, Across, Area, Volume, Mass }
+/// <summary>
+/// What a bay 2 amount or a scaled number is measured by: the blank's length (m), its size across (m), its largest face (m2), its volume (m3),
+/// its mass (kg), or its length in calibres (its length over its size across: a barrel's, docs/sandbox/design/sized-gun-engine-parts.md 3.2).
+/// </summary>
+public enum PressMeasure : byte { Length, Across, Area, Volume, Mass, Calibres }
 
 /// <summary>
 /// A die's feature: a box in the blank's unit frame (x across its width, y its height, z its length, each 0 to 1), so it stretches with
@@ -47,7 +50,12 @@ public sealed class PressAmount
     public string What => Part?.Name ?? RecyclingTable.Current.NameOf(Material);
 }
 
-/// <summary>One number scaled by the law of docs section 5: <c>like x (measure / preset's)^power x (S / preset's S)</c>.</summary>
+/// <summary>
+/// One number scaled by the law of docs section 5: <c>like x (measure / preset's)^power x (S / preset's S)</c>; or, with <see cref="Points"/>,
+/// a curve whose knots are catalogue parts (sized-gun-engine-parts.md 7): the value read off it, a straight line between knots (in log-log
+/// with <see cref="Log"/>), the end segment past the ends, then held to <see cref="Lo"/>..<see cref="Hi"/>. A builder stat (a weapon
+/// builder part's "stats" name) is a curve's, and <see cref="Op"/> says how the gun takes it ("mul" or "add").
+/// </summary>
 public sealed class PressScale
 {
     public string Field = "";
@@ -55,6 +63,35 @@ public sealed class PressScale
     public float Power;
     public bool Strength;
     public float Ref; // the like value when the like part's own is 0 ("no limit")
+    public Vector2[]? Points; // (measure, value), measure rising
+    public bool Log;
+    public float Lo = float.MinValue, Hi = float.MaxValue;
+    public string Op = ""; // a builder stat's: "mul" or "add"
+
+    /// <summary>The curve's value at a measure (Points only): no allocation, at most a few knots.</summary>
+    public float At(float x)
+    {
+        var p = Points!;
+        if (p.Length == 1)
+            return Math.Clamp(p[0].Y, Lo, Hi);
+        var k = 0;
+        while (k < p.Length - 2 && x > p[k + 1].X)
+            k++;
+        Vector2 a = p[k], b = p[k + 1];
+        float v;
+        if (Log)
+        {
+            var t = (MathF.Log(MathF.Max(x, 1e-6f)) - MathF.Log(a.X)) / (MathF.Log(b.X) - MathF.Log(a.X));
+            v = MathF.Exp(MathF.Log(a.Y) + t * (MathF.Log(b.Y) - MathF.Log(a.Y)));
+        }
+        else
+            v = a.Y + (x - a.X) / (b.X - a.X) * (b.Y - a.Y);
+        // (at a knot, the knot itself: never an interpolation that lands a last digit beside it)
+        foreach (var q in p)
+            if (MathF.Abs(q.X - x) < 1e-5f)
+                v = q.Y;
+        return Math.Clamp(v, Lo, Hi);
+    }
 }
 
 /// <summary>What a stroke makes of a blank: the behaviour of <see cref="Like"/>, sized by the blank.</summary>
@@ -148,7 +185,7 @@ internal static class PressDies
 {
     private static readonly string[] Dirs = ["+x", "-x", "+y", "-y", "+z", "-z"];
     private static readonly string[] Looks = ["blank", "bare", "dark", "accent"];
-    private static readonly string[] Measures = ["length", "across", "area", "volume", "mass"];
+    private static readonly string[] Measures = ["length", "across", "area", "volume", "mass", "calibres"];
 
     public static void Read(JsonElement root, Dictionary<string, ConstructPartDef> byName, PressTable t)
     {
@@ -318,10 +355,30 @@ internal static class PressDies
             var rows = new List<PressScale>();
             foreach (var s in sc.EnumerateArray())
             {
-                Keys(s, where + ".scale", "field", "by", "power", "strength", "ref");
-                var row = new PressScale { Field = s.GetProperty("field").GetString() ?? "", By = MeasureOf(s, where + ".scale"), Power = Num(s.GetProperty("power"), where + ".scale.power", -4, 4) };
-                if (!Pressed.Scalable(row.Field))
-                    throw new FormatException($"{where}: \"{row.Field}\" isn't a number the press scales ({string.Join(", ", Pressed.ScaledFields)})");
+                Keys(s, where + ".scale", "field", "by", "power", "strength", "ref", "points", "log", "clamp", "op");
+                var row = new PressScale { Field = s.GetProperty("field").GetString() ?? "", By = MeasureOf(s, where + ".scale") };
+                var builder = SizedGunParts.IsStat(row.Field);
+                if (!Pressed.Scalable(row.Field) && !builder)
+                    throw new FormatException($"{where}: \"{row.Field}\" isn't a number the press scales ({string.Join(", ", Pressed.ScaledFields)}, or a weapon builder stat)");
+                if (s.TryGetProperty("points", out var pts))
+                    row.Points = Points(pts, $"{where}.scale {row.Field}");
+                else if (builder)
+                    throw new FormatException($"{where}: a builder stat ({row.Field}) is scaled by a curve: give \"points\"");
+                else
+                    row.Power = Num(s.GetProperty("power"), where + ".scale.power", -4, 4);
+                row.Log = s.TryGetProperty("log", out var lg) && lg.ValueKind == JsonValueKind.True;
+                if (row.Log && row.Points!.Any(q => q.X <= 0 || q.Y <= 0))
+                    throw new FormatException($"{where}.scale {row.Field}: a \"log\" curve's points are above 0");
+                if (s.TryGetProperty("clamp", out var cl))
+                {
+                    if (cl.ValueKind != JsonValueKind.Array || cl.GetArrayLength() != 2)
+                        throw new FormatException($"{where}.scale {row.Field}: \"clamp\" is [least, most]");
+                    row.Lo = Num(cl[0], where + ".scale.clamp", -1e9f, 1e9f);
+                    row.Hi = Num(cl[1], where + ".scale.clamp", row.Lo, 1e9f);
+                }
+                row.Op = s.TryGetProperty("op", out var op) ? op.GetString() ?? "" : "";
+                if (builder != (row.Op is "mul" or "add"))
+                    throw new FormatException($"{where}.scale {row.Field}: \"op\" (\"mul\" or \"add\") is for a builder stat, and a builder stat has one");
                 row.Strength = s.TryGetProperty("strength", out var sg) && sg.ValueKind == JsonValueKind.True;
                 row.Ref = s.TryGetProperty("ref", out var rf) ? Num(rf, where + ".scale.ref", 0, 1e9f) : 0;
                 rows.Add(row);
@@ -414,6 +471,23 @@ internal static class PressDies
         if (sections.Count == 0)
             throw new FormatException($"{where}: it lists blanks");
         return sections.ToArray();
+    }
+
+    private static Vector2[] Points(JsonElement e, string where)
+    {
+        if (e.ValueKind != JsonValueKind.Array || e.GetArrayLength() is 0 or > 8)
+            throw new FormatException($"{where}: \"points\" is 1 to 8 [measure, value] pairs");
+        var r = new Vector2[e.GetArrayLength()];
+        for (var i = 0; i < r.Length; i++)
+        {
+            var q = e[i];
+            if (q.ValueKind != JsonValueKind.Array || q.GetArrayLength() != 2)
+                throw new FormatException($"{where}: a point is [measure, value]");
+            r[i] = new Vector2(Num(q[0], where, -1e9f, 1e9f), Num(q[1], where, -1e9f, 1e9f));
+            if (i > 0 && r[i].X <= r[i - 1].X)
+                throw new FormatException($"{where}: the points' measures rise");
+        }
+        return r;
     }
 
     private static PressMeasure MeasureOf(JsonElement e, string where)

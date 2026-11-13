@@ -16,7 +16,8 @@ public sealed partial class Ui
 
     /// <summary>The open picker's tiles as text (window shots: --do "picker"), or why there are none.</summary>
     public string RecipePickerDump() =>
-        !RecipePickerOpen || _rcp is not { } set ? "picker closed"
+        RecipePickerOpen && _exOpen ? ExtruderPickerDump()
+            : !RecipePickerOpen || _rcp is not { } set ? "picker closed"
             : $"{set.Title.Split("###")[0]}, {set.Tiles.Length} tiles, groups {string.Join("/", set.Groups)}: "
               + string.Join("; ", set.Tiles.Select(t => $"{(t.Value >= 0 ? t.Value.ToString() : "dim")} {t.Name}{(t.Out.Length > 0 ? $" [{t.Out}]" : "")}"));
 

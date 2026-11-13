@@ -476,6 +476,7 @@ public static class PanelSources
         ["media"] = MediaDirector.Fill,
         ["terminal"] = ConstructTerminals.FillPanel,
         ["machine"] = MachineScreens.Fill,
+        ["router"] = RouterScreen.Fill, // (a Conveyor Router's own screen, with its Spill and Hold buttons)
         ["line"] = ProductionLines.Fill,
         ["craft"] = PanelDesignerScreen.Fill, // (a Panel Designer's own screen, else the Crafting Terminal's)
         ["station"] = ConstructStation.FillPanel,

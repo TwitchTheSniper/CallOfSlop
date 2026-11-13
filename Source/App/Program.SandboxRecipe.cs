@@ -15,7 +15,7 @@ public static partial class Program
         if (ConstructConfig.Get(c.Parts[console], d, CfgKey.LinePage, 0) >= 0.5f || MenusOpen)
             return false; // (the bill page's third button is Clear)
         var m = ProductionLines.Picked(c, console, out var same);
-        if (m < 0 || !Ui.RecipePickable(c.DefOf(m)))
+        if (m < 0 || !Ui.RecipePickable(c.DefOf(m)) || ExtruderPicks.Pickable(c.DefOf(m))) // (an Extruder's section is picked at the machine: its own Recipe button)
             return false;
         Ui.OpenRecipePicker(c.Id, console, m, c.DefOf(m), same, Ui.RecipeVariant(c, m));
         SetMouseCaptured(false);
@@ -35,7 +35,10 @@ public static partial class Program
         var d = c.DefOf(machine);
         if (!Ui.RecipePickable(d) || c.Parts[machine].Broken || !ConstructPower.On(c, machine))
             return false; // (no power: the server's touch says so)
-        Ui.OpenRecipePickerMachine(c.Id, machine, d, Ui.RecipeVariant(c, machine));
+        if (ExtruderPicks.Pickable(d))
+            Ui.OpenExtruderPicker(c, machine); // (its section tiles and sizes: UiRecipePickerExtruder.cs)
+        else
+            Ui.OpenRecipePickerMachine(c.Id, machine, d, Ui.RecipeVariant(c, machine));
         SetMouseCaptured(false);
         return true;
     }

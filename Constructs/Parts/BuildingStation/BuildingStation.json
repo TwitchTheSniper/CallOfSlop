@@ -123,6 +123,17 @@
       ]
     },
     {
+      "name": "Fluid in",
+      "type": "pipe",
+      "dir": "in",
+      "at": [
+        -0.105,
+        0.225,
+        1.425
+      ],
+      "face": "-x"
+    },
+    {
       "name": "Chute in",
       "type": "chute",
       "dir": "in",
@@ -352,6 +363,37 @@
       "detail": true,
       "paintable": false,
       "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.119,
+        0.115,
+        1.315
+      ],
+      "max": [
+        -0.095,
+        0.335,
+        1.535
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.128,
+        0.175,
+        1.375
+      ],
+      "max": [
+        -0.112,
+        0.275,
+        1.475
+      ],
+      "color": "#ecebe4",
+      "detail": true,
+      "paintable": false
     },
     {
       "min": [

@@ -261,7 +261,7 @@ public static partial class HullLoft
     /// <summary>The part a key names, made the first time it is asked for. Null: a key no machine would write, or the run-time table is full.</summary>
     public static ConstructPartDef? Parse(string name)
     {
-        if (!name.StartsWith(Prefix, StringComparison.Ordinal) && !IsPanelName(name) || !name.EndsWith(')') || name.Length > ConstructParts.MaxRuntimeName)
+        if (!name.StartsWith(Prefix, StringComparison.Ordinal) && !IsPanelName(name) && !IsCutName(name) || !name.EndsWith(')') || name.Length > ConstructParts.MaxRuntimeName)
             return null; // (a formed panel comes through this door too: HullLoft.Panels.cs)
         lock (Interned)
         {
@@ -289,6 +289,8 @@ public static partial class HullLoft
 
     private static ConstructPartDef? Make(string name)
     {
+        if (MakeCut(name) is { } cut)
+            return cut.Ok ? cut.Def : null; // (a Laser Cutter's cut panel or plate: HullLoft.Cuts.cs)
         if (MakePanel(name) is { } panel)
             return panel.Ok ? panel.Def : null; // (a Panel Former's formed panel: HullLoft.Panels.cs)
         if (MakeFront(name) is { } front)
@@ -345,7 +347,7 @@ public static partial class HullLoft
         var name = r.Str();
         if (name.StartsWith(Pressed.Prefix, StringComparison.Ordinal))
             return Pressed.Read(name); // (protocol 258: a pressed part travels as a named run-time part does)
-        if (!name.StartsWith(Prefix, StringComparison.Ordinal) && !IsPanelName(name))
+        if (!name.StartsWith(Prefix, StringComparison.Ordinal) && !IsPanelName(name) && !IsCutName(name))
             throw new MalformedPacketException($"a run-time part named \"{name}\"");
         return Parse(name) is { } d ? d.Id : ConstructParts.Need("Hull Bay T").Id;
     }
