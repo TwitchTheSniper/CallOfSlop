@@ -176,7 +176,13 @@ public sealed partial class ConstructEdits
             return "that console is gone";
         var d = c.DefOf(console);
         if (console == machine)
-            return OwnRecipe(c, machine, player, eye, value, refusal); // (the machine's own Recipe button: same bytes, its own screen for the console)
+        {
+            // (the machine's own Recipe button: same bytes, its own screen for the console; its setting goes to the clients with the structure)
+            var own = OwnRecipe(c, machine, player, eye, value, refusal);
+            if (own == null)
+                world.StructureDirty.Add(c.Id);
+            return own;
+        }
         if (!ConstructConfig.Has(d, CfgKey.LinePick))
             return $"a {d.Name} runs no line";
         if (Contested(c, player) is { } defended)

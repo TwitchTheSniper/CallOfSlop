@@ -884,8 +884,15 @@ public static unsafe partial class Program
                 _wsWait = 2;
                 return;
             }
-            case "picker": // "picker": the open recipe picker's tiles (value, or dim); "picker N": picks the tile of value N as a click does
-                if (int.TryParse(arg, out var pickValue))
+            case "picker": // "picker": the open recipe picker's tiles (value, or dim); "picker N": picks the tile of value N as a click does;
+                // "picker @PART[#n]": opens it on that machine as its Recipe button does (a joined window, whose eye a touch can't fly)
+                if (arg.StartsWith('@'))
+                {
+                    var (pc, pp) = WsFind(g, arg[1..].Trim());
+                    WsSay(pc != null && MachineRecipePicker(pc, pp) ? $"picker: opened on {pc.DefOf(pp).Name} (part {pp})" : $"picker: not opened on {arg[1..].Trim()}");
+                    _wsWait = 3;
+                }
+                else if (int.TryParse(arg, out var pickValue))
                 {
                     Ui.RecipePickerPick(pickValue);
                     _wsWait = 3;
