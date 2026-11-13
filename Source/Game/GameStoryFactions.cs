@@ -38,6 +38,7 @@ public sealed partial class Game
         }
         StoryStandingsTick(s, t);
         StoryPlayerTechTick(s, t);
+        StoryRanksTick(s); // (each player's standings and promotions: GameStoryRanks.cs)
         StoryTaughtTick(s);
     }
 

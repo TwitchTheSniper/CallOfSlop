@@ -161,6 +161,12 @@ public sealed partial class Ui
                 ImGuiSafe.SetInput(_faName, "");
             }
             DrawFactionList(game, t, me);
+            if (game.FactionTable.PlayerStory[game.LocalId]) // (where the world's factions stand with you on your own: UiRanks.cs)
+            {
+                ImGui.Separator();
+                ImGuiSafe.TextColored(Orange, "How the world's factions see you");
+                DrawRankBars(game);
+            }
             DrawFactionJobs(game);
             DrawStoryTech(t, 0, me.Id);
             return;
@@ -294,11 +300,12 @@ public sealed partial class Ui
         {
             ImGui.Separator();
             ImGuiSafe.TextColored(Orange, "How the world's factions see you");
-            for (var f = 0; f < t.StoryNames.Length; f++)
-            {
-                int v = t.StoryStanding[mine * FactionTable.MaxStory + f];
-                ImGuiSafe.TextWrapped($"{t.StoryNames[f]}: {StandingWord(v)} ({v:+0;-0;0})");
-            }
+            if (!DrawRankBars(game))
+                for (var f = 0; f < t.StoryNames.Length; f++)
+                {
+                    int v = t.StoryStanding[mine * FactionTable.MaxStory + f];
+                    ImGuiSafe.TextWrapped($"{t.StoryNames[f]}: {StandingWord(v)} ({v:+0;-0;0})");
+                }
             DrawFactionJobs(game);
             DrawStoryTech(t, mine, me.Id);
         }

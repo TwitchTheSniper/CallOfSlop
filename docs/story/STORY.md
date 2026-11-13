@@ -937,6 +937,7 @@ Ministry of Slop (`Ministry.json`) are data in the same shape,.
   so queries, patterns, the drama manager and the fax read it like any feeling (`?us Grudge ?them >= 16`). `"tiers"`
   name its bands from the worst up (IT: Blacklisted below -50, Flagged below -15, Unregistered, Registered from 15, Admin
   from 50); coming to a new one is a Rate event ("IT Department now rates Rook: Flagged"), and the desk can fax a notice.
+  A tier's optional `"promotion"` (200 ASCII characters at most) is what the faction says on the promotion moment (Ranks).
 - **Groups**: standing is kept for a player's group: the player faction they are in (`Source/Constructs/Factions.cs`,
   a Faction entity `"group:NAME"` the game keeps them `MemberOf`, once a second), or themselves when in none. A deed
   counts towards both the doer and their group; a group's is the one the fax reads.
@@ -1019,6 +1020,21 @@ Karl keeps `Learnt` after wrecking the Ministry's own vans takes him to Enemy of
 
 Standing is also earned by **jobs** (below); each faction's first jobs say which technology its next tier brings, and
 when it teaches one it says so in its own voice too.
+
+## Ranks
+
+Rising through a faction is shown, not just counted (`Source/Game/GameStoryRanks.cs`, `Source/UI/UiRanks.cs`). The
+Faction window (F2) draws a bar per story faction from the standings every peer has (`FactionTable.PlayerStanding`), from
+where the player's tier begins to where the next one does ("5 / 25 to Contractor"), and what the next tier brings: the
+uniform it issues (when this world issues uniforms by standing, as `GameUniforms.cs` does in the story's opening), the
+technologies it teaches and the jobs it opens. A bar under the tier a party starts in is red, the top tier gold.
+
+When a player's standing rises into a higher tier, they get the promotion moment: "PROMOTED", the tier and faction, then
+what it brings ("Issued: Trusty's Boiler Suit and Flat Cap. Now teaches: Explosives Licence. New work: ..."), and the
+tier's `"promotion"` words in their chat in the faction's voice (on the moment itself when the tier brings nothing). A rise that is still below the starting tier (out of a grudge) is "RECONSIDERED". A player's
+first look, a change of group (joining or leaving a player faction) and a new story are taken quietly, so loading a save
+or joining a well-liked faction is no promotion. It goes through the shared celebration (`Game.Celebrate`, GameCelebrate.cs),
+which waits out the opening, rides and menus; each technology then gets its own moment from the technologies' side.
 
 ## Jobs
 
