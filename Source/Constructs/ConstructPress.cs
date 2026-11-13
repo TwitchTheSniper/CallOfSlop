@@ -567,6 +567,13 @@ public static class ConstructPress
             need = Pressed.Bay2For(pattern!, c.Parts[PieceIn(c, part, bay)].D.ExKey with { Growing = false });
             return pattern!.Bay2;
         }
+        if (c.Parts[part].Orders is { Bill: false, Count: > 0 } q && Pressed.SpecOf(q.Head) is { } spec && ReferenceEquals(spec.Die, die))
+        {
+            // (its head order's kit, before its blank comes: the hopper fills while the Extruder makes it)
+            pattern = spec.Pattern;
+            need = Pressed.Bay2For(spec.Pattern, spec.Blank);
+            return pattern.Bay2;
+        }
         pattern = SetPattern(die, c, part);
         if (pattern == null)
             foreach (var p in die.Patterns)

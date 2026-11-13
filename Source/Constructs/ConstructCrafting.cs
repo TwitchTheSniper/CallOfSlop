@@ -313,13 +313,13 @@ public static class ConstructCrafting
     }
 
     /// <summary>An order's kind as a def here (a piece's def is made the first time its key is asked for), or null.</summary>
-    public static ConstructPartDef? DefOf(in WorkOrder o) => o.Name != null ? (HullLoft.IsFormedName(o.Name) ? ConstructParts.Find(o.Name) : null) : o.IsPiece ? Extrusion.Def(o.Key) : ConstructParts.Get(o.Part);
+    public static ConstructPartDef? DefOf(in WorkOrder o) => o.Name != null ? (HullLoft.IsFormedName(o.Name) ? ConstructParts.Find(o.Name) : Pressed.IsName(o.Name) ? Pressed.Parse(o.Name) : null) : o.IsPiece ? Extrusion.Def(o.Key) : ConstructParts.Get(o.Part);
 
     /// <summary>"Gear Set", "L-angle 0.2 x 0.2 m, 1 m, metal".</summary>
     public static string NameOf(in WorkOrder o)
     {
         if (o.Name != null)
-            return HullLoft.PanelLabel(o.Name);
+            return Pressed.IsName(o.Name) ? Pressed.Label(o.Name) : HullLoft.PanelLabel(o.Name);
         if (!o.IsPiece)
             return ConstructParts.Get(o.Part)?.Name ?? "part";
         var k = o.Key;
@@ -362,9 +362,10 @@ public static class ConstructCrafting
                 if (ConstructParts.Get(def) is not { } d)
                     return;
                 var named = Extrusion.IsRuntimeId(def) && d.ExKey.W == 0;
-                if (named && !HullLoft.IsFormedName(d.Name))
+                var pressed = named && Pressed.IsName(d.Name) ? WorkOrders.PressedOrder(d.Name, 1) : null; // (a pressed part in stock: listed by its key, Press phase 4)
+                if (named && !HullLoft.IsFormedName(d.Name) && pressed == null)
                     return; // (another named run-time part: nothing here orders those)
-                var what = named ? ConstructPanelFormer.Order(d.Name, 1) : Extrusion.IsRuntimeId(def) ? new WorkOrder { Key = d.ExKey, Part = ConstructParts.None } : new WorkOrder { Part = def };
+                var what = pressed ?? (named ? ConstructPanelFormer.Order(d.Name, 1) : Extrusion.IsRuntimeId(def) ? new WorkOrder { Key = d.ExKey, Part = ConstructParts.None } : new WorkOrder { Part = def });
                 var row = Row(what, d);
                 row.Def ??= d;
                 row.Stock = Stock(world, c, net, def); // (the whole network's, so a kind in two stores isn't added twice)
@@ -398,6 +399,31 @@ public static class ConstructCrafting
                         row.Missing = missing;
                         row.Machine = m;
                         row.Recipe = r;
+                    }
+                }
+                continue;
+            }
+            if (md.IsPress)
+            {
+                // A Press (Press phase 4): its fitted die's presets, by their catalogue parts. Parts "to size" come by bills and blueprints.
+                if (ConstructPress.SizedDieOf(PressTable.Current, c, m) is not { } die)
+                    continue;
+                foreach (var pr in die.Presets)
+                {
+                    var what = new WorkOrder { Part = (ushort)pr.Part.Id, Count = 1 };
+                    if (WorkOrders.Refusal(world, c, m, what) != null)
+                        continue;
+                    var row = Row(what, pr.Part);
+                    if (row.Make == 1)
+                        continue;
+                    var missing = PressMissing(world, c, net, m, pr.Pattern, pr.Blank, out var chain);
+                    var make = (byte)(missing.Length == 0 ? 1 : chain ? 2 : 3);
+                    if (row.Make == 0 || make < row.Make)
+                    {
+                        row.Make = make;
+                        row.Missing = missing;
+                        row.Machine = m;
+                        row.Recipe = null;
                     }
                 }
                 continue;
@@ -487,6 +513,50 @@ public static class ConstructCrafting
             (sb ??= new()).Append(sb.Length > 0 ? ", " : "").Append(count).Append(' ').Append(part.Name);
             if (made != null)
                 sb.Append(" (the ").Append(made).Append(" can make it)");
+        }
+        return sb == null ? "" : "needs " + sb;
+    }
+
+    /// <summary>
+    /// What press <paramref name="m"/> lacks to press one part of this pattern from this blank ("needs a solid 0.5 x 0.5 m, 0.75 m, steel
+    /// blank (the Extruder can make it), 3 Gear Set"), empty when nothing; <paramref name="chain"/>: every lack is made by a linked machine.
+    /// The one-level chain rule (design section 7): the blank from stock, a bay or a linked Extruder; the kit from the hopper, stock or a maker.
+    /// </summary>
+    private static string PressMissing(ConstructWorld world, Construct c, CraftNet net, int m, PressPattern pattern, in ExtrusionKey blank, out bool chain)
+    {
+        chain = true;
+        System.Text.StringBuilder? sb = null;
+        var names = RecyclingTable.Current;
+        var have = Extrusion.Def(blank) is { } bd ? Stock(world, c, net, (ushort)bd.Id) : 0;
+        var md = c.DefOf(m);
+        for (var b = 0; b < md.PressBays.Length && have == 0; b++)
+            if (b != ConstructPress.HopperBay && ConstructPress.PieceIn(c, m, b) is var i and >= 0 && (c.Parts[i].D.ExKey with { Growing = false }) == blank)
+                have = 1;
+        if (have == 0)
+        {
+            var piece = new WorkOrder { Key = blank, Part = ConstructParts.None, Count = 1 };
+            string? maker = null;
+            for (var i = 0; i < net.MachineN && maker == null; i++)
+                if (c.DefOf(net.Machines[i]).IsExtruder && WorkOrders.Refusal(world, c, net.Machines[i], piece) == null)
+                    maker = c.DefOf(net.Machines[i]).Name;
+            chain &= maker != null;
+            (sb ??= new()).Append("a ").Append(NameOf(piece)).Append(" blank");
+            if (maker != null)
+                sb.Append(" (the ").Append(maker).Append(" can make it)");
+        }
+        if (pattern.Bay2 is { } kit && Pressed.Bay2For(pattern, blank) is var need and > 0)
+        {
+            var ms = world.StoreOf(c, m);
+            var held = ms != null ? ConstructPress.KitHeld(ms, kit) : 0;
+            held += kit.Part != null ? Stock(world, c, net, (ushort)kit.Part.Id) : Bulk(world, c, net, kit.Material, -1);
+            if (held < need)
+            {
+                var made = kit.Part != null ? MachineMakes(c, net, (ushort)kit.Part.Id) : RefinerMakes(c, net, kit.Material);
+                chain &= made != null;
+                (sb ??= new()).Append(sb.Length > 0 ? ", " : "").Append(need).Append(' ').Append(kit.What).Append(" in bay 2");
+                if (made != null)
+                    sb.Append(" (the ").Append(made).Append(" can make it)");
+            }
         }
         return sb == null ? "" : "needs " + sb;
     }
@@ -603,7 +673,7 @@ public static class ConstructCrafting
         {
             var why = WorkOrders.Refusal(world, c, net.Machines[i], what);
             ok = why == null;
-            if (why != null && (refusal == null || c.DefOf(net.Machines[i]).IsAssembler != what.IsPiece))
+            if (why != null && (refusal == null || Kin(c.DefOf(net.Machines[i]), what)))
                 refusal = why;
         }
         if (!ok)
@@ -620,6 +690,10 @@ public static class ConstructCrafting
         world.CraftChanged(c);
         return null;
     }
+
+    /// <summary>Is a machine of the order's own kind, so its refusal is the one a player reads: a Press for a pressed part, an Assembler for a catalogue part, else an Extruder or a Former.</summary>
+    internal static bool Kin(ConstructPartDef md, in WorkOrder what) =>
+        what.IsPressed ? md.IsPress : md.IsPress ? Pressed.SpecOf(what) != null : md.IsAssembler != what.IsPiece;
 
     /// <summary>Server: cancels an order: its claims go, and what it asked of a machine and wasn't begun comes off that queue.</summary>
     public static string? Cancel(ConstructWorld world, Construct c, int t, ushort id)
@@ -738,6 +812,8 @@ public static class ConstructCrafting
         var d = c.DefOf(m);
         if (d.IsAssembler)
             return !what.IsPiece && AssemblingTable.Current.Of(what.Part) is { } r ? Missing(world, c, net, m, r, out _) : "";
+        if (d.IsPress)
+            return Pressed.SpecOf(what) is { } spec ? PressMissing(world, c, net, m, spec.Pattern, spec.Blank, out _) : "";
         if (d.IsExtruder && ConstructExtruder.RunHeld(c, m))
             return "its line is stopped: press Start on its console";
         if (d.IsPanelFormer)
@@ -984,7 +1060,7 @@ public static class ConstructCrafting
                         if (state == CraftState.Waiting)
                             where = (ushort)net.Machines[i];
                     }
-                    else if (refusal == null || c.DefOf(net.Machines[i]).IsAssembler != o.What.IsPiece)
+                    else if (refusal == null || Kin(c.DefOf(net.Machines[i]), o.What))
                         refusal = why;
                 }
                 if (ask > 0 && state == CraftState.Waiting)
@@ -1120,7 +1196,7 @@ public static class ConstructCrafting
                     mat = r.U8();
                     var cnt = r.U16();
                     var nm = r.Text(ConstructParts.MaxRuntimeName);
-                    if (!HullLoft.IsFormedName(nm))
+                    if (!HullLoft.IsFormedName(nm) && !Pressed.IsName(nm))
                         throw new MalformedPacketException("a bad panel order");
                     o = new CraftOrder { What = new WorkOrder { Key = new ExtrusionKey(0, 0, 0, 0, mat, false, ExShape.Section), Part = ConstructParts.None, Count = cnt, Name = nm } };
                     shape = 0;
@@ -1223,9 +1299,10 @@ public static class ConstructCrafting
                     var ncnt = r.U16();
                     var nm = r.Str();
                     var (nid, ngot, nasked, nsent) = (r.U16(), r.U16(), r.U16(), r.U16());
-                    if (ncnt is 0 or > WorkOrders.MaxCount || !HullLoft.IsFormedName(nm) || nm.Length > ConstructParts.MaxRuntimeName || q.Count >= MaxOrders)
+                    var pressedWhat = Pressed.IsName(nm) ? WorkOrders.PressedOrder(nm, ncnt) : null; // (a pressed part's order, Press phase 4)
+                    if (ncnt is 0 or > WorkOrders.MaxCount || !HullLoft.IsFormedName(nm) && pressedWhat == null || nm.Length > ConstructParts.MaxRuntimeName || q.Count >= MaxOrders)
                         continue;
-                    q.Items[q.Count++] = new CraftOrder { What = ConstructPanelFormer.Order(nm, ncnt), Id = nid, Got = Math.Min(ncnt, ngot), Sent = nsent, Asked = nasked, Where = NoPart, Note = "", Def = ConstructParts.None };
+                    q.Items[q.Count++] = new CraftOrder { What = pressedWhat ?? ConstructPanelFormer.Order(nm, ncnt), Id = nid, Got = Math.Min(ncnt, ngot), Sent = nsent, Asked = nasked, Where = NoPart, Note = "", Def = ConstructParts.None };
                     continue;
                 }
                 var mask = r.U64();
