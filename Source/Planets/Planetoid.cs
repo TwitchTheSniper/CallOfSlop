@@ -118,6 +118,10 @@ public sealed class Planetoid
         ["crater"] = (["lat", "lon", "radius", "depth", "rim"], ["lat", "lon", "radius", "depth"]),
         ["rift"] = (["lat", "lon", "bearing", "length", "width", "depth", "floor", "wander", "seed"], ["lat", "lon", "length", "width", "depth"]),
         ["terrace"] = (["step", "sharp", "lat", "lon", "radius", "edge"], ["step"]),
+        ["ridge"] = (["lat", "lon", "bearing", "length", "width", "height", "peaks", "rough", "wander", "seed"], ["lat", "lon", "length", "width", "height"]),
+        ["crevasses"] = (["lat", "lon", "radius", "edge", "bearing", "spacing", "length", "width", "depth", "share", "spread", "lip", "seed"], ["lat", "lon", "radius"]),
+        ["cave"] = (["lat", "lon", "bearing", "radius", "chamber", "cover", "climb", "wander", "seed"], ["lat", "lon", "bearing"]),
+        ["drifts"] = (["lat", "lon", "radius", "edge", "bearing", "amplitude", "scale", "stretch", "octaves", "seed"], ["lat", "lon", "radius", "amplitude"]),
     };
 
     public static IEnumerable<string> FeatureTypes => Schema.Keys;
@@ -237,7 +241,12 @@ public sealed class Planetoid
         // flatten: R radius, E edge, A height; crater: R radius, A depth, B rim
         // rift: A depth, B half length, C half width, D floor share, E wander, G wander's wavelength, Sin / Cos of the bearing, J seed
         // terrace: A step, B the riser's share of a step, R radius, E edge (R 0: everywhere)
-        public double A, B, C, D, E, G, R, Sin, Cos;
+        // ridge: A height, B half length, C half width, D peaks (how far the crest dips into passes), E wander, G the
+        //   crest's wavelength, H rough, Sin / Cos of the bearing, J seed
+        // crevasses: R radius, E edge, A depth, B half length, C half width, G spacing, D share, H spread (radians), K lip,
+        //   Sin / Cos of the bearing, J seed
+        // drifts: R radius, E edge, A amplitude, B scale (across the wind), D stretch (along it), I octaves, J seed, Sin / Cos
+        public double A, B, C, D, E, G, H, K, R, Sin, Cos;
         public int I, J;
         public bool Flag;
     }
@@ -249,10 +258,11 @@ public sealed class Planetoid
 
     private Placed[] Place()
     {
-        var list = new Placed[Features.Count];
-        for (var k = 0; k < Features.Count; k++)
+        var shapes = Features.Where(f => f.Type != "cave").ToList(); // (a cave is dug, not drawn: PlanetCaves.cs)
+        var list = new Placed[shapes.Count];
+        for (var k = 0; k < shapes.Count; k++)
         {
-            var f = Features[k];
+            var f = shapes[k];
             var p = new Placed { F = f, Local = f.Has("lat") };
             switch (f.Type)
             {
@@ -276,6 +286,27 @@ public sealed class Planetoid
                 case "terrace":
                     p.A = f.Num("step", 1); p.B = 1 - Math.Clamp(f.Num("sharp", 0.8), 0, 0.98);
                     p.R = p.Local ? f.Num("radius", 1) : 0; p.E = Math.Max(f.Num("edge", p.R * 0.5), 0.01);
+                    break;
+                case "ridge":
+                    p.A = f.Num("height", 1); p.B = f.Num("length", 1) * 0.5; p.C = f.Num("width", 1) * 0.5;
+                    p.D = Math.Clamp(f.Num("peaks", 0.5), 0, 0.95); p.H = Math.Clamp(f.Num("rough", 0.15), 0, 0.5);
+                    p.E = Math.Abs(f.Num("wander", 0)); p.G = Math.Max(p.C * 3, 1);
+                    p.Sin = Math.Sin(f.Num("bearing", 0) * Math.PI / 180); p.Cos = Math.Cos(f.Num("bearing", 0) * Math.PI / 180);
+                    p.J = (int)f.Num("seed", 1);
+                    break;
+                case "crevasses":
+                    p.R = f.Num("radius", 1); p.E = Math.Max(f.Num("edge", p.R * 0.3), 0.01);
+                    p.A = f.Num("depth", 25); p.B = f.Num("length", 90) * 0.5; p.C = f.Num("width", 8) * 0.5;
+                    p.G = Math.Max(f.Num("spacing", 70), p.C * 6); p.D = Math.Clamp(f.Num("share", 0.5), 0, 1);
+                    p.H = f.Num("spread", 20) * Math.PI / 180; p.K = f.Num("lip", 0.8);
+                    p.Sin = Math.Sin(f.Num("bearing", 0) * Math.PI / 180); p.Cos = Math.Cos(f.Num("bearing", 0) * Math.PI / 180);
+                    p.J = (int)f.Num("seed", 1);
+                    break;
+                case "drifts":
+                    p.R = f.Num("radius", 1); p.E = Math.Max(f.Num("edge", p.R * 0.3), 0.01);
+                    p.A = f.Num("amplitude", 0.5); p.B = f.Num("scale", 6); p.D = Math.Max(f.Num("stretch", 5), 1);
+                    p.I = (int)f.Num("octaves", 2); p.J = (int)f.Num("seed", 1);
+                    p.Sin = Math.Sin(f.Num("bearing", 0) * Math.PI / 180); p.Cos = Math.Cos(f.Num("bearing", 0) * Math.PI / 180);
                     break;
             }
             if (p.Local)
@@ -315,8 +346,10 @@ public sealed class Planetoid
     public double HeightAt(double x, double y, double z)
     {
         var h = Base;
-        foreach (var p in PlacedFeatures)
+        var list = PlacedFeatures;
+        for (var n = 0; n < list.Length; n++)
         {
+            var p = list[n];
             var f = p.F;
             if (!p.Local)
             {
@@ -334,6 +367,7 @@ public sealed class Planetoid
             double tx = x - c * p.Dx, ty = y - c * p.Dy, tz = z - c * p.Dz;
             var s = Math.Sqrt(tx * tx + ty * ty + tz * tz);
             var ang = Math.Atan2(s, c);
+            var d = ang * Radius;
             double lx = 0, lz = 0;
             if (s > 1e-12)
             {
@@ -341,7 +375,6 @@ public sealed class Planetoid
                 lx = (tx * p.Ex + ty * p.Ey + tz * p.Ez) * k;
                 lz = -(tx * p.Nx + ty * p.Ny + tz * p.Nz) * k;
             }
-            var d = ang * Radius;
             switch (f.Type)
             {
                 case "noise": // (a patch of noise: dunes in one basin, rough ground on one side)
@@ -352,12 +385,106 @@ public sealed class Planetoid
                     if (d < p.R + p.E)
                         h += (Terrace(p, h) - h) * (d <= p.R ? 1 : 1 - TerrainGen.Smoothstep((d - p.R) / p.E));
                     break;
+                case "ridge":
+                    h += Ridge(p, lx, lz, x, y, z);
+                    break;
+                case "crevasses":
+                    if (d < p.R + p.E)
+                        h += Crevasses(p, lx, lz) * (d <= p.R ? 1 : 1 - TerrainGen.Smoothstep((d - p.R) / p.E));
+                    break;
+                case "drifts":
+                    if (d < p.R + p.E)
+                        h += Drifts(p, lx, lz) * (d <= p.R ? 1 : 1 - TerrainGen.Smoothstep((d - p.R) / p.E));
+                    break;
                 default:
                     h = Apply(p, h, lx, lz, d);
                     break;
             }
         }
         return Math.Round(h / Quantum) * Quantum;
+    }
+
+    /// <summary>
+    /// A ridge along a bearing: a crest <c>height</c> high falling away to the ground either side over half its width,
+    /// steeper near the top, ends that taper over its width, a crest that dips into passes (<c>peaks</c>: 0 an even crest,
+    /// 0.9 deep saddles between peaks) and broken rock on its flanks (<c>rough</c>: a share of the height).
+    /// </summary>
+    private double Ridge(Placed p, double lx, double lz, double x, double y, double z)
+    {
+        double north = -lz, along = lx * p.Sin + north * p.Cos, across = lx * p.Cos - north * p.Sin;
+        var end = (p.B - Math.Abs(along)) / (p.C * 2);
+        if (end <= 0)
+            return 0;
+        if (p.E > 0)
+            across += p.E * Noise3(along / (p.G * 4), 0.5, 0.5, p.J);
+        var t = Math.Abs(across) / p.C;
+        if (t >= 1)
+            return 0;
+        // Its shoulders: concave towards the foot (scree), steep up to a narrow crest.
+        var u = 1 - t;
+        var side = u * u * (3 - 2 * u);
+        side *= 0.35 + 0.65 * u;
+        var crest = 1 - p.D * (0.5 + 0.5 * Noise3(along / p.G, 1.5, 0.5, p.J + 7));
+        var rough = p.H > 0 ? p.H * (1 - 2 * Math.Abs(Fbm3(x * Radius, y * Radius, z * Radius, Math.Max(p.C * 0.35, 4), 2, 0.5, 2, p.J + 11))) : 0;
+        return p.A * side * (crest + rough) * (end >= 1 ? 1 : TerrainGen.Smoothstep(end));
+    }
+
+    /// <summary>
+    /// A field of crevasses: the ground cut into a lattice of cells along the bearing (<c>spacing</c> across, the crack's
+    /// length along), each holding a crack or not (<c>share</c>), its middle, length, width and line jittered by its own hash,
+    /// turned up to <c>spread</c> degrees. A crack is a slot with near-upright walls, <c>depth</c> deep in its middle and
+    /// pinching out at its ends, with a low lip of thrown-up snow along each side. Only the nine cells round a point are
+    /// asked, so a field costs the same however big it is.
+    /// </summary>
+    private static double Crevasses(Placed p, double lx, double lz)
+    {
+        double north = -lz, along = lx * p.Sin + north * p.Cos, across = lx * p.Cos - north * p.Sin;
+        double cellA = Math.Max(p.B * 2.4, p.G), cellC = p.G;
+        var ia = (int)Math.Floor(along / cellA);
+        var ic = (int)Math.Floor(across / cellC);
+        double cut = 0, lip = 0;
+        for (var da = -1; da <= 1; da++)
+            for (var dc = -1; dc <= 1; dc++)
+            {
+                int a = ia + da, cc = ic + dc;
+                if ((Hash3(a, cc, 0, p.J) + 1) * 0.5 >= p.D)
+                    continue;
+                // Its middle somewhere in the cell's middle half, its own length, width and turn.
+                var ma = (a + 0.5 + 0.25 * Hash3(a, cc, 1, p.J)) * cellA;
+                var mc = (cc + 0.5 + 0.25 * Hash3(a, cc, 2, p.J)) * cellC;
+                var half = p.B * (0.8 + 0.2 * Hash3(a, cc, 3, p.J));
+                var hw = p.C * (0.8 + 0.2 * Hash3(a, cc, 4, p.J));
+                var turn = p.H * Hash3(a, cc, 5, p.J);
+                double sa = Math.Sin(turn), ca = Math.Cos(turn);
+                double ra = along - ma, rc = across - mc;
+                var al = ra * ca + rc * sa;
+                var ac = -ra * sa + rc * ca;
+                var e = 1 - Math.Abs(al) / half;
+                if (e <= 0)
+                    continue;
+                // (a gentle bow along its length, so a crack isn't ruler-straight)
+                ac += hw * 1.5 * Hash3(a, cc, 6, p.J) * (1 - e) * (1 - e);
+                var w = hw * Math.Sqrt(Math.Min(e * 3, 1)); // (pinching to a point over its last third)
+                var t = Math.Abs(ac) / w;
+                if (t < 1)
+                {
+                    var wall = 1 - t * t * t * t; // (near-upright walls, a V at the bottom)
+                    cut = Math.Max(cut, p.A * wall * Math.Min(e * 2.5, 1) * (0.7 + 0.3 * Hash3(a, cc, 7, p.J)));
+                }
+                else if (t < 2.5)
+                    lip = Math.Max(lip, p.K * (1 - TerrainGen.Smoothstep((t - 1) / 1.5)) * Math.Min(e * 2.5, 1));
+            }
+        return cut > 0 ? -cut : lip;
+    }
+
+    /// <summary>
+    /// Wind drifts (sastrugi): ridged noise stretched along the wind's bearing, sharp crests a few metres apart across it.
+    /// </summary>
+    private static double Drifts(Placed p, double lx, double lz)
+    {
+        double north = -lz, along = lx * p.Sin + north * p.Cos, across = lx * p.Cos - north * p.Sin;
+        var n = Fbm3(along / p.D, across, 0.5, p.B, p.I, 0.5, 2, p.J);
+        return p.A * (0.5 - Math.Abs(n)); // (sharp crests about half the amplitude up, rounded troughs as far down)
     }
 
     private double Noise(Placed p, double x, double y, double z)
@@ -427,6 +554,9 @@ public sealed class Planetoid
         "crater" => f.Num("radius", 1) * 2 + 2,
         "rift" => Math.Sqrt(f.Num("length", 1) * f.Num("length", 1) * 0.25 + Math.Pow(f.Num("width", 1) * 0.5 + Math.Abs(f.Num("wander", 0)), 2)) + 2,
         "noise" or "terrace" => f.Num("radius", 1) + Math.Max(f.Num("edge", f.Num("radius", 1) * 0.5), 0.01) + 2,
+        "cave" => 0,
+        "crevasses" or "drifts" => f.Num("radius", 1) + Math.Max(f.Num("edge", f.Num("radius", 1) * 0.3), 0.01) + 2,
+        "ridge" => Math.Sqrt(f.Num("length", 1) * f.Num("length", 1) * 0.25 + Math.Pow(f.Num("width", 1) * 0.5 + Math.Abs(f.Num("wander", 0)), 2)) + 2,
         _ => Radius * 4,
     };
 
@@ -446,6 +576,15 @@ public sealed class Planetoid
                 return (f.Num("depth", 0), Math.Abs(f.Num("rim", f.Num("depth", 0) * 0.25)));
             case "rift":
                 return (Math.Max(f.Num("depth", 0), 0), Math.Max(-f.Num("depth", 0), 0));
+            case "ridge":
+                var rh = f.Num("height", 0);
+                var lift = Math.Abs(rh) * (1 + Math.Clamp(f.Num("rough", 0.15), 0, 0.5));
+                return rh >= 0 ? (0, lift) : (lift, 0);
+            case "crevasses":
+                return (Math.Abs(f.Num("depth", 25)), Math.Abs(f.Num("lip", 0.8)));
+            case "drifts":
+                var da = Math.Abs(f.Num("amplitude", 0.5));
+                return (da, da);
             case "terrace": // (a height stays within its own step: a step either way covers it)
                 var step = Math.Abs(f.Num("step", 0));
                 return (step, step);
@@ -467,10 +606,10 @@ public sealed class Planetoid
         var local = new List<(double X, double Y, double Z, double Reach, double Down, double Up)>();
         foreach (var f in Features)
         {
-            if (f.Type == "flatten")
+            if (f.Type is "flatten" or "cave")
                 continue;
             var (down, up) = Swing(f);
-            if (!f.Has("lat"))
+            if (!f.Has("lat") || ReachOf(f) > Radius * Math.PI * 0.5) // (one that reaches half the world is as good as everywhere)
             {
                 everyDown += down;
                 everyUp += up;
@@ -1126,6 +1265,14 @@ public sealed class Planetoid
             throw new MapFileException($"{where}: a place is \"lat\", \"lon\" and \"radius\" together");
         if (type == "terrace" && f.Num("step", 1) < 0.5)
             throw new MapFileException($"{where}: \"step\" is at least 0.5");
+        if (type == "ridge" && (f.Num("length", 1) <= 0 || f.Num("width", 1) < 4 || f.Num("width", 1) > f.Num("length", 1)))
+            throw new MapFileException($"{where}: \"width\" is 4 m to the \"length\"");
+        if (type == "crevasses" && (f.Num("width", 8) < 2 || f.Num("length", 90) < f.Num("width", 8) * 2 || f.Num("depth", 25) < 0))
+            throw new MapFileException($"{where}: a crack is at least 2 m wide, twice as long as it is wide, and \"depth\" is not below 0");
+        if (type == "cave" && (f.Num("radius", 2.6) is < 1.5 or > 6 || f.Num("chamber", 8) is < 0 or > 20 || f.Num("climb", 8) is < -30 or > 30))
+            throw new MapFileException($"{where}: a cave's \"radius\" is 1.5 to 6 m, its \"chamber\" 0 to 20 m and its \"climb\" -30 to 30 degrees");
+        if (type == "drifts" && f.Num("scale", 6) <= 0.5)
+            throw new MapFileException($"{where}: \"scale\" is more than 0.5 m");
         if (type == "rift" && (f.Num("length", 1) <= 0 || f.Num("width", 1) < 4 || f.Num("width", 1) > f.Num("length", 1)))
             throw new MapFileException($"{where}: \"width\" is 4 m to the \"length\"");
         return f;
