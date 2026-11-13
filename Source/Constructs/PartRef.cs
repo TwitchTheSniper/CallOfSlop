@@ -95,7 +95,54 @@ public static class PartRef
 
     /// <summary>The name a player reads: a piece's label ("Steel I-beam 0.1 x 0.1 m"), an ordnance design's description, else the part's name.</summary>
     public static string Shown(ConstructPartDef d) =>
-        d.IsOrdnance && d.Description.Length > 0 ? d.Description : d.IsExtrusion ? Extrusion.Label(d.ExKey) : d.Name;
+        d.IsOrdnance && d.Description.Length > 0 ? d.Description
+        : d.IsExtrusion ? Extrusion.Label(d.ExKey)
+        : Pressed.IsName(d.Name) ? Pressed.Label(d.Name)
+        : d.RuntimeMade ? HullLoft.PanelLabel(d.Name) // (a formed or cut panel's label; any other made name as it is, cut short)
+        : d.Name;
+
+    /// <summary>
+    /// A made part's line in a list (the Tab inventory's "Made parts", phase 2 of inventory-run-time-parts.md): <see cref="Shown"/>, with a
+    /// straight piece's length, since pieces of one section differ only by it.
+    /// </summary>
+    public static string Listed(ConstructPartDef d) =>
+        !d.IsExtrusion ? Shown(d)
+        : d.ExKey.Shape is ExShape.Section or ExShape.Round or ExShape.Pipe ? $"{Extrusion.Label(d.ExKey)}, {d.ExKey.L / 100f:0.##} m long, {RecyclingTable.Current.NameOf(d.ExKey.Material)}"
+        : $"{Extrusion.Label(d.ExKey)}, {RecyclingTable.Current.NameOf(d.ExKey.Material)}";
+
+    /// <summary>A made part's kind, for sorting a list by kind then size: the extrusion's shape, else what made it.</summary>
+    public static int KindOrder(ConstructPartDef d) =>
+        d.IsExtrusion ? (int)d.ExKey.Shape
+        : Pressed.IsName(d.Name) ? 10
+        : d.IsOrdnance ? 30
+        : d.IsRackRuntime ? 40
+        : d.MatBase != null ? 50
+        : 20; // (formed, lofted and cut panels)
+
+    /// <summary>The name of <see cref="KindOrder"/>'s kind, for a list's subheading.</summary>
+    public static string KindName(ConstructPartDef d) => d.IsExtrusion
+        ? d.ExKey.Shape switch
+        {
+            ExShape.Round => "Rounds",
+            ExShape.Pipe => "Pipes",
+            ExShape.Wheel => "Wheels",
+            ExShape.Fan => "Fans and rotors",
+            ExShape.Blade => "Blades",
+            ExShape.Wing => "Wings",
+            _ => "Beams and sections",
+        }
+        : Pressed.IsName(d.Name) ? "Pressed parts"
+        : d.IsOrdnance ? "Ordnance"
+        : d.IsRackRuntime ? "Racks"
+        : d.MatBase != null ? "Parts of another material"
+        : "Panels and lofted parts";
+
+    /// <summary>A made part's size, for sorting (its bounds' volume, m3).</summary>
+    public static float SizeOf(ConstructPartDef d)
+    {
+        var e = d.BoundsMax - d.BoundsMin;
+        return e.X * e.Y * e.Z;
+    }
 
     /// <summary><see cref="Shown"/> by id (null: no such part).</summary>
     public static string? Shown(ushort def) => ConstructParts.Get(def) is { } d ? Shown(d) : null;

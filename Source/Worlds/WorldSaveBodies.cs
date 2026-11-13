@@ -23,6 +23,20 @@ public sealed class WorldNames
         return k;
     }
 
+    /// <summary>A part's number in this file by its name (a made part held by key, whose id here may be gone).</summary>
+    public ushort PartNamed(string name)
+    {
+        if (!_named.TryGetValue(name, out var k))
+        {
+            k = (ushort)Parts.Count;
+            _named[name] = k;
+            Parts.Add(name);
+        }
+        return k;
+    }
+
+    private readonly Dictionary<string, ushort> _named = new();
+
     public ushort Key(string name)
     {
         if (!_keys.TryGetValue(name, out var k))

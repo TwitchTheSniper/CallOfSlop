@@ -486,7 +486,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 297: Laser Cutter phase 3 fixes: a store's second flags byte gains 64, a Laser Cutter's blank on its bed (no bytes; ConstructStorage.Write).
     // 298: Sized parts phase 4: the engine reads scale (ModularEngine.json /2, starterFrom); engine pieces of any sizes make one engine,
     //      each cylinder at its own bore's kW, a small fuel system or booster feeding its bank by the kW ratio (derived on each peer, no new bytes).
-    public const ushort ProtocolVersion = 298;
+    // 299: Inventories phase 2 (made parts counted in the Tab inventory): CBodyKind.Inventory ends with u8 n and n made parts (PartRef, u16 count),
+    //   at most 64 kinds, split over several messages past a packet's room; CActKind.TakeMade (a PartRef) sets one down in front of the player
+    //   (docs/sandbox/design/inventory-run-time-parts.md; 298 on its branch).
+    public const ushort ProtocolVersion = 299;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
