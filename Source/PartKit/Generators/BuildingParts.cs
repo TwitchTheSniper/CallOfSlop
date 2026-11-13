@@ -1935,6 +1935,7 @@ public sealed partial class BuildingParts : IPartGenerator
         o.Add(bp);
         o.AddRange(MinistryBlueprints(defs)); // (the Ministry's buildings round the penal colony: BuildingParts.Ministry.cs)
         o.AddRange(SiteBlueprints(defs)); // (the penal colony's site: its street, square, covered way and heating mains: BuildingParts.Site.cs)
+        o.AddRange(OutpostBlueprints(defs)); // (the factions' outposts beyond the colony: BuildingParts.Outposts.cs)
         return o;
     }
 

@@ -55,6 +55,10 @@ Features (lat/lon in degrees: latitude 90 is the +Y pole, longitude 0 faces +Z a
 | `crater` | lat, lon, radius, depth, rim = depth / 4 | A bowl with a raised rim out to twice the radius. |
 | `rift` | lat, lon, length, width, depth, bearing = 0, floor = 0.3, wander = 0, seed = 1 | A trench `length` long through its centre along `bearing` (0 north, 90 east): a flat floor `floor` of its width across, sides rising to the ground either side, ends that taper out, and a line that wanders up to `wander` metres. Canyons, glens, crevasses; a negative depth is a wall. |
 | `terrace` | step, sharp = 0.8, and optionally lat, lon, radius, edge | Steps the height so far into flat treads `step` high with a riser over the last `1 - sharp` of each: mesas, benches, a layered crust. Everywhere, or within `radius` of a place, fading over `edge`. Put it after the big shapes and before the fine noise. |
+| `ridge` | lat, lon, length, width, height, bearing = 0, peaks = 0.5, rough = 0.15, wander = 0, seed = 1 | A ridge `length` long along `bearing`: a crest `height` high with steep upper flanks and scree-like feet, falling to the ground over half its `width` either side. `peaks` lets the crest dip into passes (0 an even crest, 0.9 deep saddles: the way over), `rough` breaks its flanks (a share of the height), `wander` bends its line. Nunatak spurs, ice pressure ridges, hogbacks. |
+| `crevasses` | lat, lon, radius, edge = radius x 0.3, bearing = 0, spacing = 70, length = 90, width = 8, depth = 25, share = 0.5, spread = 20, lip = 0.8, seed = 1 | A field of cracks round a place: the ground cut into cells (`spacing` across the bearing, about the crack's length along it), a `share` of them holding a crack with its own middle, size and turn (up to `spread` degrees). A crack is a slot with near-upright walls, `depth` deep, pinching out at its ends, with a low `lip` of snow along each side. Only the nine cells round a point are asked, so a field costs the same however big. The gaps between cracks are the routes through. |
+| `drifts` | lat, lon, radius, amplitude, edge = radius x 0.3, bearing = 0, scale = 6, stretch = 6, octaves = 2, seed = 1 | Ridged noise stretched along the wind's `bearing`: crests `scale` m apart across the wind, `stretch` times longer along it, about `amplitude` m from crest to trough. Small: sastrugi (Glacier lays half a metre on all its open snow, from a centre at the far pole). Big (amplitude 5 to 11, scale 40 to 60): a field of pressure ridges. |
+| `cave` | lat, lon, bearing, radius = 2.6, chamber = 8, cover = 14, climb = 8, wander = radius x 2, seed = 1 | Not a height: a cave dug when a fresh world starts ("Caves" below). |
 
 A `noise` may also take `lat`, `lon`, `radius` and `edge` (half the radius if not said): the noise is laid only round
 that place and fades out over the edge (a dune sea, one side's broken ground).
@@ -75,6 +79,29 @@ of the heights (the same on every machine: a change that shouldn't move old grou
 where the sun stands overhead through a turn. `--at` tells whether a place is level (the ground within 40 m) and how
 it sits in the country round it (the ground 300 m out); `--png` draws the whole world unrolled, coloured and shaded as
 the game colours it. The story's worlds are in docs/planets/WORLDS.md.
+
+**What the ground costs.** A height is worked out for every vertex of every tile (on worker threads, once, then cached),
+so a feature's price is what a tile takes to make, never a frame's: `--check-planetoid` prints it. Glacier's rough
+country (2026-11-13: 32 more features, 61 in all) took a height from 0.63 to 0.84 us on the cloud box (a 33 x 33 tile
+from about 0.7 to 0.9 ms); digging and the dug meshes cost the same as before (`--bench-dig --map Glacier --at 70,30`).
+A local feature costs one dot product where it doesn't reach; put the big ones where they belong rather than everywhere.
+`--line LAT,LON,LAT,LON[,N]` prints the heights along a line between two places (a crevasse's walls, a ridge's pass).
+
+## Caves
+
+A height field has no roofs, so a cave is dug: a `"cave"` in the features list is a chamber under its `lat` and `lon`
+(its top `cover` m under the ground there, `chamber` m across its middle, a few balls wide and squashed) and a tunnel
+`radius` m round leaving it along `bearing`, climbing `climb` degrees and wandering up to `wander` m either side, until
+it comes out of the ground: the mouth is found, so a cave put under a ridge's crest opens on whichever flank it heads
+for. Where the tunnel has less than 6 m of ground over it the roof falls in (`TerrainEdits.MinRoof`), so the last
+stretch is an open cut into the slope. A tunnel still in the ground after 320 m is sealed (dig to find it).
+
+The scoops are the ground drill's own (`DigKind.Scoop`, `Source/Planets/PlanetCaves.cs`), dug by the server when a
+**fresh** Sandbox world starts on the map (`Game.SandboxCaves`, before anything is placed), so they save, reach a
+joiner and can be dug further like any dug ground; a saved world keeps its own ground log, so a world from before a
+cave never gets it. Inside, a tunnel is dug ground's columns: blocky, like a drilled tunnel. `--check-planetoid` lists
+each cave: its chamber, tunnel length, scoops and mouth. Glacier's eight take 495 scoops, about 0.1 to 0.2 s at a
+world's start on the cloud box.
 
 ## Collision
 

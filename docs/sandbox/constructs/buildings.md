@@ -83,6 +83,31 @@ before the site keeps its ground and gets none of it; the other factions' settle
 To see a site whole: `--window-shot OUT.png --survival --calm --map Glacier --do "key Jump; wait 40; from Flagpole Base
 14,32,48; wait 30"` (`--calm`: no storm; `from PART side,up,out` puts the eye after the opening has woken the player).
 
+## Ambience: what moves and sounds about a place
+
+`Constructs/Ambience.json` names parts that do something wherever they are built, on any world
+(`Source/Render/PartAmbience.cs`): looks and sound only, worked out on each PC, nothing sent or saved.
+
+| Kind | What the part does | Now on |
+| --- | --- | --- |
+| `smoke` | Puffs from its top, bent by a storm's wind; `top`: only the highest of its name on a body | `Concrete Chimney 2.75 m` |
+| `steam` | Vents for `burst` seconds every `every` | `Heating Valve Chamber` |
+| `searchlight` | In a storm's dusk, a pool of light `width` m across sweeps the ground up to `reach` m out (the nearest one only: one of the frame's four lights) | `Tower Roof 2x2 m` |
+| `tannoy` | Two chimes and a garbled announcement about every `every` seconds, heard within `reach` m (the mixer's "Storm wind" row) | `Flagpole Top 3.75 m` |
+
+A cold storm also blows snow along the ground round the camera (the `drift` particle kind), on any world with a storm.
+To give another faction's place life, name its parts in the file: no code. People are not this file's business (the
+story's people have their own posts).
+
+Cost (measured 2026-11-13 in the agent container, the colony in view): the world's bodies are looked through twice a
+second, the frames between walk a short list (seven parts in the colony): about 3 microseconds a frame plus 1 for the
+searchlight, against 6.5 for the lamps' own code on the same machine; three rays every fifth of a second; no
+allocation in a steady frame. Particles go into the one pool at the Particles setting's share.
+
+Not done: a searchlight has no beam and no lit lamp head (only its pool on the ground); smoke rises along world +Y
+(the particle pool's gravity), right at a pole and wrong far from it; no steam on the mains' pipes themselves; the
+tannoy is one recording.
+
 ## The Ministry of Slop: Brutalism
 
 The Ministry builds as a government that expects to be there for ever and has stopped spending: heavy raw concrete,
@@ -163,6 +188,28 @@ What the game's build check taught (the generator's mirror doesn't know what is 
 - A stair in a 4 m wide room: `Concrete Stair Floor 4x4 m` turned `RY180` at `Cell(15, slab, z + 15)` with the stair
   `R0` at `Cell(11, G, z)` puts it along the east wall, rising to the back.
 
+## Out on the ice: the factions' outposts (`BuildingParts.Outposts.cs`)
+
+Each faction keeps a small outpost beyond the colony (docs/story/OUTPOSTS.md). The Ministry's two are in its style above;
+the other three factions' styles start here, at outpost size: one room, and the thing outside that says whose it is.
+
+| | Clan MacSlop: drystone and tin | The IT Department: beige steel | The Call Centre: portacabins |
+| --- | --- | --- | --- |
+| **Material** | Walls and pad stone `#8a8072`, finish `stone`; never concrete-grey | Steel walls `#c8c2ae` (every computer it ever owned), `painted steel` | Corrugated walls `#7a2f6e`, `gloss paint` |
+| **Roof** | A tin ridge, `#6e3324`, `rusty paint` | Flat, a grey steel lid `#5a5f63` | A single tin slope in the walls' purple |
+| **Accents** | Saltire blue `#1f4f9a` signs; dark timber doors `#3b2a1c` | Teal `#1c8c99` door and signs | Gift-card gold `#e0b030` door and signs |
+| **Light** | Firelight `#ff8a3c` at the door | Cold blue-white `#cfe8ff` | A pink nobody asked for, `#ffd6ef` |
+| **Windows** | One small one, away from the weather | None: nothing inside wants to look out | One on the road, to watch who walks past |
+| **Signature** | Outside, not in: the saltire on its pole, casks, a keg, the pipe box, sandbags half across the front towards the Ministry | Masts and dishes you see from a kilometre, a drum of cable nobody rewound | The phone mast, a loudhailer facing the colony, a prize wheel that never paid out |
+
+| Building | Its job, and what that made it | Outline |
+| --- | --- | --- |
+| **Ministry Checkpoint** | Stopping people: a 4 m road between the booth (door and window on the road) and a barrier line that closes the forecourt either side of it. The flag on its tall pole over the barrier is lit, to be seen in the snow. Queue posts where nobody will ever queue. | A low box, a line, a tall pole |
+| **Ministry Sentry Post** | Two men on foot need a hard place to stand: a pillbox, sandbags across half the forecourt, the patrol's way out through the other half, the flag to walk back to. | A squat block behind a low wall |
+| **Clan MacSlop Bothy** | A shelter for whoever is passing: one stone room under a tin ridge, a door that doesn't lock, a bunk. The clan's own touches are all outside. | A cottage, a flag, casks |
+| **IT Field Cabinet** | Keeping a rack dry and running, and being found by the engineer sent to reboot it: a blind steel box with the rack in the middle, the mast and the dish on the pad beside it. | A box and a mast |
+| **Call Centre Relay** | Being heard: the mast is the tall thing, the loudhailer faces the colony, the cabin watches the road. | A cabin and a mast, loud |
+
 ### Not done
 
 - The Remote Works and the Sealed Data Centre are still plain concrete rooms (`BuildingParts.cs`). The game finds the
@@ -173,5 +220,5 @@ What the game's build check taught (the generator's mirror doesn't know what is 
   stands off the 2 m module.
 - No board-marked finish: the walls use `concrete`. A `Materials/Surfaces.json` row with a plank pattern would do it.
 - The windows have no glass, as every building piece's.
-- The settlements of the Call Centre, the IT Department and Clan MacSlop share four unpainted blueprints: each needs its
-  own style here, then its own buildings.
+- The settlements of the Call Centre, the IT Department and Clan MacSlop share four unpainted blueprints: their styles are
+  above now ("Out on the ice"); their homes still want buildings in them.
