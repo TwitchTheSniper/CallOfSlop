@@ -1304,6 +1304,7 @@ public sealed partial class BuildingParts : IPartGenerator
     {
         var p = new BPart("Tower Platform 2x2 m", SectionTower, "Lookout on four Wood Posts, open for a Ship Ladder.", role: "frame", tool: "wrench", material: "wood", color: "#7a5a38");
         p.CBox(0, 0, 0, 8, 1, 8);
+        p.FBox(0.26, -0.25, 0.26, 1.74, 0.003, 1.74); // (Karl, 2026-11-13: a thicker deck under the boards, 0.5 m in all; clear of the corner cells and their sockets and posts, 3 mm into the boards: no shared face)
         p.CBox(0, 1, 7, 8, 5, 8);
         p.CBox(0, 1, 0, 1, 5, 7);
         p.CBox(7, 1, 0, 8, 5, 7);
