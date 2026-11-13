@@ -74,6 +74,9 @@ public sealed class TerminalView
             for (var id = 0; id < Stock.Counts.Length; id++)
                 if (Stock.Counts[id] > 0 && ConstructParts.Get((ushort)id) is { } d)
                     _rows.Add(new TerminalRow(false, (ushort)id, d.Name, Stock.Counts[id]));
+            for (var k = 0; k < Stock.MadeN; k++) // (made parts with the rest, one row per key: docs/sandbox/design/inventory-run-time-parts.md phase 3)
+                if (Stock.MadeCount[k] > 0 && ConstructParts.Get(Stock.MadeDef[k]) is { } d)
+                    _rows.Add(new TerminalRow(false, d.Id, PartRef.Listed(d), Stock.MadeCount[k]));
             _rows.Sort(first, _rows.Count - first, ByName);
             return _rows;
         }
@@ -236,7 +239,7 @@ public static class ConstructTerminals
         if (material)
             card.Add(line, RecyclingTable.Current.NameOf((byte)id));
         else if (ConstructParts.Get(id) is { } d)
-            card.Add(line, d.Name);
+            card.Add(line, d.RuntimeMade ? PartRef.Shown(d) : d.Name);
     }
 
     /// <summary>The look line on any peer: from its store, which carries its network's numbers.</summary>

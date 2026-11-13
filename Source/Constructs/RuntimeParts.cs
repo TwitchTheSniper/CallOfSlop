@@ -39,6 +39,10 @@ public static class RuntimeParts
 
     internal static void Track(SandboxInventory inv) => Add(Counted, inv);
 
+    internal static void Track(BeaconView v) => Add(Views, v);
+
+    private static readonly List<WeakReference<BeaconView>> Views = new(); // (beacon and terminal views: made parts a network lists, phase 3)
+
     private static void Add<T>(List<WeakReference<T>> list, T item) where T : class
     {
         lock (TrackGate)
@@ -215,6 +219,10 @@ public static class RuntimeParts
                 if (r.TryGetTarget(out var inv))
                     for (var k = 0; k < inv.MadeN; k++)
                         Mark(inv.MadeDef[k]);
+            foreach (var r in Views)
+                if (r.TryGetTarget(out var v))
+                    for (var k = 0; k < v.MadeN; k++)
+                        Mark(v.MadeDef[k]);
         }
     }
 

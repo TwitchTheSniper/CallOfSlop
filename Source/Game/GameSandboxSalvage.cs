@@ -28,7 +28,7 @@ public sealed partial class Game
         public int PartCount(Game game, byte playerId, ushort partId)
         {
             var inv = game.SandboxInventory(playerId);
-            return inv.Infinite ? -1 : inv.Count(partId) + game.SandboxBeacon(playerId).Counts[partId]; // (a beacon in range: what its network holds; out of range the view is empty)
+            return inv.Infinite ? -1 : inv.Count(partId) + game.SandboxBeacon(playerId).CountOf(partId); // (a beacon in range: what its network holds; out of range the view is empty)
         }
     }
 

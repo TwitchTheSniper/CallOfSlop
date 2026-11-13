@@ -58,7 +58,7 @@ public enum CActKind : byte
     Connector, // u8 op: 0 new (u8 kind, u8 size, 255 by the parts; two ends: u16 body, u16 part, vec point), 1 delete (u16 id), 2 set (u16 id, 4 x f32 length, rating, stiffness, damping) (protocol 134; GameSandboxConnectors.cs)
     Track, // u8 TrackOp, u16 body, then its fields: the track tool (protocol 136; ConstructEditsTracks.cs)
     FreezePiece, // u16 body, u8 segment (0: the base): the physics gun freezes or unfreezes one piece of a mechanism (protocol 139)
-    TerminalPull, // u16 body, u16 part, u16 id, u8 flags (1: to the hands, 2: id is a material): a Smart Terminal pulls an item off its network (protocol 142; ConstructTerminal.cs)
+    TerminalPull, // u16 body, u16 part, u16 id, u8 flags (1: to the hands, 2: id is a material, 4: a made part, its PartRef follows; protocol 303): a Smart Terminal pulls an item off its network (protocol 142; ConstructTerminal.cs)
     Harpoon, // u8 op: 0 cut the line you hold, 1 reel in, 2 stop reeling, 3 tear out the head stuck in you (protocol 148; GameSandboxHarpoon.cs)
     KeyPress, // u16 body, u16 part, u8 key ('0'-'9', 'C', 'E'): a key of a Numpad or Code Lock (protocol 153; LogicInputs.cs)
     PartText, // u16 body, u16 part, u8 slot, text: a sign's message, a lamp bank's labels (protocol 153; LogicText.cs)
@@ -1337,7 +1337,14 @@ public sealed partial class Game
                 var body = r.U16();
                 var part = r.U16();
                 var id = r.U16();
-                return hands.TerminalPull(Constructs, p.Id, eye, body, part, id, r.U8());
+                var pullFlags = r.U8();
+                if ((pullFlags & 4) != 0)
+                {
+                    id = PartRef.Read(ref r); // (protocol 303: a made part's row, by key)
+                    if (!Extrusion.IsRuntimeId(id) || (pullFlags & 2) != 0)
+                        return "no such item";
+                }
+                return hands.TerminalPull(Constructs, p.Id, eye, body, part, id, (byte)(pullFlags & 3));
             }
             case CActKind.Stow:
                 return hands.Stow(p.Id);

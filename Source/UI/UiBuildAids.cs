@@ -71,7 +71,7 @@ public sealed partial class Ui
             {
                 if (find.Length > 0 && d.Name.IndexOf(find, StringComparison.OrdinalIgnoreCase) < 0)
                     continue;
-                var have = game.SandboxInfiniteParts ? -1 : d.PhysicsOnly ? _rpLoose.GetValueOrDefault(d.Id) : inv.Count(d.Id) + (beacon.On ? beacon.Counts[d.Id] : 0);
+                var have = game.SandboxInfiniteParts ? -1 : d.PhysicsOnly ? _rpLoose.GetValueOrDefault(d.Id) : inv.Count(d.Id) + (beacon.On ? beacon.CountOf(d.Id) : 0);
                 ImGui.BeginDisabled(have == 0);
                 if (ImGui.Selectable(have < 0 ? d.Name : $"{d.Name}  ({have})"))
                 {

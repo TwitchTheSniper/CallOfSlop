@@ -272,12 +272,66 @@ public sealed class BeaconView
     internal int Epoch = -1;
     internal bool IsTerminal; // a Smart Terminal's list, not a beacon's: its own message (ConstructTerminal.cs)
 
+    // Made parts (run-time ids: docs/sandbox/design/inventory-run-time-parts.md phase 3): a short list beside the table, by this
+    // machine's id, sent by key (PartRef). Past MaxMade kinds the rest are left out of the list (MadeOver says how many).
+    public const int MaxMade = 64;
+    public readonly ushort[] MadeDef = new ushort[MaxMade];
+    public readonly ushort[] MadeCount = new ushort[MaxMade];
+    public int MadeN, MadeOver;
+    internal uint SentMade; // server: the made list's stamp as last sent whole (0: nothing sent)
+    internal int MadeCursor; // server: the next made entry of a list split over messages (0: none under way)
+    internal uint MadeSending; // server: the stamp of the list being split
+
+    public BeaconView() => RuntimeParts.Track(this); // (its made ids keep their parts while it lists them)
+
     public bool On => State == BeaconState.On;
 
     public void Add(ushort id, int n)
     {
-        if (id < Counts.Length) // (a run-time part's id is past the table: not counted yet, docs/sandbox/design/inventory-run-time-parts.md phase 3)
+        if (id < Counts.Length)
+        {
             Counts[id] = (ushort)Math.Min(Counts[id] + n, ushort.MaxValue);
+            return;
+        }
+        if (!Extrusion.IsRuntimeId(id) || n <= 0)
+            return;
+        for (var k = 0; k < MadeN; k++)
+            if (MadeDef[k] == id)
+            {
+                MadeCount[k] = (ushort)Math.Min(MadeCount[k] + n, ushort.MaxValue);
+                return;
+            }
+        if (MadeN == MaxMade)
+        {
+            MadeOver++;
+            return;
+        }
+        MadeDef[MadeN] = id;
+        MadeCount[MadeN++] = (ushort)Math.Min(n, ushort.MaxValue);
+    }
+
+    /// <summary>How many of a part this view lists: the table for a catalogue part, the made list for a run-time one.</summary>
+    public int CountOf(ushort id)
+    {
+        if (id < Counts.Length)
+            return Counts[id];
+        for (var k = 0; k < MadeN; k++)
+            if (MadeDef[k] == id)
+                return MadeCount[k];
+        return 0;
+    }
+
+    /// <summary>The made list's stamp (ids, keys and counts, in order; never 0). Allocates nothing.</summary>
+    internal uint MadeStamp()
+    {
+        var h = 2166136261u ^ (uint)MadeN;
+        for (var k = 0; k < MadeN; k++)
+        {
+            h = (h ^ MadeDef[k]) * 16777619u;
+            h = (h ^ (uint)(ConstructParts.Get(MadeDef[k])?.Name.GetHashCode() ?? 0)) * 16777619u; // (an id freed and made again for another key reads as a change)
+            h = (h ^ MadeCount[k]) * 16777619u;
+        }
+        return h | 1;
     }
 
     public void AddMaterial(byte id, int n)
@@ -291,6 +345,7 @@ public sealed class BeaconView
     {
         Array.Clear(Counts);
         Array.Clear(Materials);
+        MadeN = MadeOver = 0;
         State = BeaconState.None;
         Stores = Parts = Bulk = 0;
         Range = Distance = 0;
@@ -304,6 +359,8 @@ public sealed class BeaconView
     {
         Array.Clear(SentCounts);
         Array.Clear(SentMaterials);
+        SentMade = 0;
+        MadeCursor = 0;
         SentState = BeaconState.None;
         SentStores = SentParts = SentBulk = 0;
         SentRange = SentDistance = 0;
@@ -883,6 +940,7 @@ public sealed partial class ConstructBeacons
         v.Distance = bucket;
         Array.Clear(v.Counts);
         Array.Clear(v.Materials);
+        v.MadeN = v.MadeOver = 0;
         v.Stores = v.Parts = v.Bulk = 0;
         for (var net = 0; net < _nets; net++)
         {
@@ -1033,7 +1091,74 @@ public sealed partial class ConstructBeacons
                 mats++;
             }
         w.PatchU8(at, (byte)mats);
-        v.Unsent = !whole; // (more to say next tick)
+        var madeMore = WriteMade(w, v, reset);
+        v.Unsent = !whole || madeMore; // (more to say next tick)
+    }
+
+    /// <summary>The bytes a beacon or terminal message fills before its made list goes on in the next (the writers' buffers hold 16384; a made entry is under 300).</summary>
+    public const int MadeBudget = 12000;
+
+    /// <summary>
+    /// The made list (protocol 303): u8 0 when it is as last sent; else u8 1 (a whole list starts: the client empties its own) or 2 (the
+    /// same list goes on), u8 n and n made parts (PartRef, u16 count). A list past <see cref="MadeBudget"/> goes on in the next message.
+    /// True when some of it is still to go.
+    /// </summary>
+    private static bool WriteMade(PacketWriter w, BeaconView v, bool reset)
+    {
+        if (reset)
+            v.SentMade = 0; // (the client empties its copy on a reset: the list goes again whole)
+        var stamp = v.MadeStamp();
+        if (v.MadeCursor > 0 && stamp != v.MadeSending)
+            v.MadeCursor = 0; // (it changed half way: again from the start)
+        if (v.MadeCursor == 0 && stamp == v.SentMade)
+        {
+            w.U8(0);
+            return false;
+        }
+        w.U8((byte)(v.MadeCursor == 0 ? 1 : 2));
+        var at = w.Length;
+        w.U8(0);
+        var n = 0;
+        var k = v.MadeCursor;
+        for (; k < v.MadeN && (n == 0 || w.Length < MadeBudget); k++, n++)
+        {
+            PartRef.Write(w, v.MadeDef[k]);
+            w.U16(v.MadeCount[k]);
+        }
+        w.PatchU8(at, (byte)n);
+        if (k >= v.MadeN)
+        {
+            v.SentMade = stamp;
+            v.MadeCursor = 0;
+            return false;
+        }
+        v.MadeCursor = k;
+        v.MadeSending = stamp;
+        return true;
+    }
+
+    private static void ReadMade(ref PacketReader r, BeaconView? v)
+    {
+        var flags = r.U8();
+        if (flags == 0)
+            return;
+        if (flags > 2)
+            throw new MalformedPacketException($"a beacon's made list flagged {flags}");
+        int n = r.U8();
+        if (n > BeaconView.MaxMade)
+            throw new MalformedPacketException($"a beacon list of {n} made kinds");
+        if (flags == 1 && v != null)
+            v.MadeN = 0;
+        for (var k = 0; k < n; k++)
+        {
+            var id = PartRef.Read(ref r);
+            var count = r.U16();
+            if (v != null && Extrusion.IsRuntimeId(id) && v.MadeN < BeaconView.MaxMade) // (a key this machine can't make reads as a catalogue stand-in: left out)
+            {
+                v.MadeDef[v.MadeN] = id;
+                v.MadeCount[v.MadeN++] = count;
+            }
+        }
     }
 
     /// <summary>A client reads <see cref="Write"/>'s bytes (bad values refused, never trusted).</summary>
@@ -1075,6 +1200,9 @@ public sealed partial class ConstructBeacons
             if (v != null)
                 v.Materials[id] = (int)amount;
         }
+        if ((flags & 1) != 0 && v != null)
+            v.MadeN = 0;
+        ReadMade(ref r, v);
         if (v == null)
             return;
         v.State = (BeaconState)state;

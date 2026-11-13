@@ -287,7 +287,7 @@ public static unsafe partial class Program
         var v = g.SandboxBeacon(g.LocalId);
         if (d.PhysicsOnly)
             return g.Local is { } me ? ConstructAid.LooseCount(g.Constructs, me.Id, d, me.Eye) : 0;
-        return g.SandboxInv.Of(g.LocalId).Count(d.Id) + (h.Held == d.Id ? 1 : 0) + (v.On ? v.Counts[d.Id] : 0);
+        return g.SandboxInv.Of(g.LocalId).Count(d.Id) + (h.Held == d.Id ? 1 : 0) + (v.On ? v.CountOf(d.Id) : 0);
     }
 
     // ---- The Replacer ---------------------------------------------------------------------------------------------
