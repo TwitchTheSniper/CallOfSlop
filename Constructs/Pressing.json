@@ -2551,7 +2551,7 @@
      "id": "crank",
      "like": "Small Crank Section",
      "label": "crank section",
-     "preset": "solid 50x50x50 steel",
+     "preset": "solid 45x45x50 steel",
      "likeBy": "nearest",
      "body": "like",
      "along": "z",
@@ -2570,7 +2570,7 @@
      "id": "flywheel",
      "like": "Small Flywheel",
      "label": "flywheel",
-     "preset": "round 50x50x40 steel",
+     "preset": "round 45x45x40 steel",
      "likeBy": "nearest",
      "body": "like",
      "along": "z",
@@ -6753,49 +6753,61 @@
    "part": "Medium Cylinder",
    "die": "cylinder",
    "pattern": "cylinder",
-   "blank": "pipe20 185x185x300 steel"
+   "blank": "pipe20 180x180x300 steel"
   },
   {
    "part": "Large Cylinder",
    "die": "cylinder",
    "pattern": "cylinder",
-   "blank": "pipe80 735x735x1200 steel"
+   "blank": "pipe80 720x720x1200 steel"
   },
   {
    "part": "Small Crank Section",
    "die": "engine",
    "pattern": "crank",
-   "blank": "solid 50x50x50 steel"
+   "blank": "solid 45x45x50 steel"
   },
   {
    "part": "Medium Crank Section",
    "die": "engine",
    "pattern": "crank",
-   "blank": "solid 200x200x200 steel"
+   "blank": "solid 180x180x200 steel"
   },
   {
    "part": "Large Crank Section",
    "die": "engine",
    "pattern": "crank",
-   "blank": "solid 800x800x800 steel"
+   "blank": "solid 720x720x800 steel"
+  },
+  {
+   "part": "Capital Crank Section",
+   "die": "engine",
+   "pattern": "crank",
+   "blank": "solid 2880x2880x3200 steel"
   },
   {
    "part": "Small Flywheel",
    "die": "engine",
    "pattern": "flywheel",
-   "blank": "round 50x50x40 steel"
+   "blank": "round 45x45x40 steel"
   },
   {
    "part": "Medium Flywheel",
    "die": "engine",
    "pattern": "flywheel",
-   "blank": "round 200x200x160 steel"
+   "blank": "round 180x180x160 steel"
   },
   {
    "part": "Large Flywheel",
    "die": "engine",
    "pattern": "flywheel",
-   "blank": "round 800x800x640 steel"
+   "blank": "round 720x720x640 steel"
+  },
+  {
+   "part": "Capital Flywheel",
+   "die": "engine",
+   "pattern": "flywheel",
+   "blank": "round 2880x2880x2560 steel"
   },
   {
    "part": "Small Carburettor",

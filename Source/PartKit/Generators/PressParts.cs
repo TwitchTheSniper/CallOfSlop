@@ -511,14 +511,14 @@ public sealed class PressParts : IPartGenerator
 
     /// <summary>A size file's preset blank on its bounds (across its two short axes' larger, length along <paramref name="along"/>), or null
     /// past what a die presses.</summary>
-    private static string? EngineBlank(string part, string section, string along)
+    private static string? EngineBlank(string part, string section, string along, Cls c)
     {
         var d = CallOfSlop.ConstructParts.Find(part) ?? throw new InvalidOperationException($"press_parts: no engine piece {part}");
         var size = d.BoundsMax - d.BoundsMin;
         var ax = along == "y" ? 1 : along == "x" ? 0 : 2;
         static int Lattice(double m) => Math.Max(10, (int)Math.Round(m * 100 / 5, MidpointRounding.AwayFromZero) * 5);
         var len = Lattice(ax == 0 ? size.X : ax == 1 ? size.Y : size.Z);
-        var across = Lattice(ax == 0 ? Math.Max(size.Y, size.Z) : ax == 1 ? Math.Max(size.X, size.Z) : Math.Max(size.X, size.Y));
+        var across = PresetAcross(Lattice(ax == 0 ? Math.Max(size.Y, size.Z) : ax == 1 ? Math.Max(size.X, size.Z) : Math.Max(size.X, size.Y)), c); // (held to its class's press, as every die's presets: a Small crank from a Small press)
         if (across > EngineAcrossMax || len > EngineLengthMax)
             return null;
         var wall = Math.Clamp(Lattice(across / 900.0), 5, 200); // (a ninth of across, to the lattice)
@@ -527,11 +527,11 @@ public sealed class PressParts : IPartGenerator
 
     /// <summary>The four plain cylinders' presets (those the Cylinder die can press).</summary>
     private static IEnumerable<(string Name, string Blank)> CylinderPresets() =>
-        EngineSizes.Select(s => ($"{s} Cylinder", EngineBlank($"{s} Cylinder", "pipe", "y"))).Where(p => p.Item2 != null).Select(p => (p.Item1, p.Item2!));
+        EngineSizes.Select((s, i) => ($"{s} Cylinder", EngineBlank($"{s} Cylinder", "pipe", "y", Classes[i]))).Where(p => p.Item2 != null).Select(p => (p.Item1, p.Item2!));
 
     /// <summary>An engine pattern's presets.</summary>
     private static IEnumerable<(string Name, string Blank)> EnginePresets(string piece, string section, string along) =>
-        EngineSizes.Select(s => ($"{s} {piece}", EngineBlank($"{s} {piece}", section, along))).Where(p => p.Item2 != null).Select(p => (p.Item1, p.Item2!));
+        EngineSizes.Select((s, i) => ($"{s} {piece}", EngineBlank($"{s} {piece}", section, along, Classes[i]))).Where(p => p.Item2 != null).Select(p => (p.Item1, p.Item2!));
 
     /// <summary>The Engine die (design 6.2): every other engine piece, a like body, its nearest preset's.</summary>
     private static PyDict EngineDie() =>
@@ -572,12 +572,6 @@ public sealed class PressParts : IPartGenerator
             Feature("pin", [-0.06, 0.4, 0.3, 1.06, 0.6, 0.45], "bare", proud: "x"));
         yield return SizedDie("Piston", ["round"], ["steel"], [10, 45], [10, 50], [0.5, 3], 5, 0.05, piston, Py.L(
             Pattern("set", "Piston Set", "piston set", "round 10x10x20 steel", bay2: Kit("bronze", false, 1, 20, "volume", 99))));
-        // Cylinder: an end cap on each end of the tube and two ports; rubber for its seals, by size across.
-        var cylinder = Py.L(
-            Feature("cap", [-0.05, -0.05, 0.0, 1.05, 1.05, 0.06], "dark", proud: "xyz"),
-            Feature("cap", [-0.05, -0.05, 0.94, 1.05, 1.05, 1.0], "dark", proud: "xyz"),
-            Feature("port", [0.4, 1.0, 0.12, 0.6, 1.12, 0.2], "bare", proud: "y"),
-            Feature("port", [0.4, 1.0, 0.8, 0.6, 1.12, 0.88], "bare", proud: "y"));
         // Sized parts phase 5: a like body (the nearest preset's cylinder stretched; its bore across, its stroke along y), Piston Sets by
         // volume; the aspect is 0.6 to 1.6 times the presets' (design 6.3: the stroke ratio's range); no die features (a like body is the file's own model).
         var cylPresets = CylinderPresets().ToList();
