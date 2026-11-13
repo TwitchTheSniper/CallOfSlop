@@ -26,6 +26,7 @@ public sealed partial class Game
     public const float StoryHomeMin = 12, StoryHomeMax = 26, StoryWorkMin = 6, StoryWorkMax = 10, StoryRoadMin = 40, StoryRoadMax = 50; // m from the place's middle
     public const double StoryArriveWalk = 20; // s: a trip here shows its body at the road's end this long before it ends
     public const double StoryBodiesEvery = 0.25; // s between looks
+    public const float StoryDeckMost = 0.4f, StoryDeckSky = 5f; // m: a deck a body stands on is at most this far over the ground, with nothing built this far over it
 
     /// <summary>The host's switch (the Story window's People tab): off, the people have no bodies and steps keep the story's clock alone.</summary>
     public bool StoryBodiesOn = true;
@@ -234,10 +235,43 @@ public sealed partial class Game
         _storyMiddleOf = World.Map;
         var sb = World.Map.Sandbox;
         var at = OpeningStoryMiddle() ?? (sb is { RackParts.Count: > 0 } ? sb.Rack : World.Map.Spawns.Count > 0 ? World.Map.Spawns[0] : Vector3.Zero); // (a survival world's colony: GameSandboxOpening.cs)
-        _storyMiddleOk = SandboxSpawnSpot(at + new Vector3(0, 0.5f, 0), out _storyMiddle) == null;
+        _storyMiddleOk = StoryStand(at, out _storyMiddle);
+        for (var tries = 0; !_storyMiddleOk && tries < 48; tries++)
+        {
+            // (the spot itself is taken, say by the covered way outside the colony's gate: the nearest open one round it)
+            var angle = tries * (MathF.Tau / 12) + tries / 12 * 0.26f;
+            var r = 3f + tries / 12 * 3f;
+            var near = at + new Vector3(MathF.Sin(angle) * r, 0, MathF.Cos(angle) * r);
+            if (World.Map.Terrain != null)
+                near.Y = World.Map.GroundHeight(near.X, near.Z);
+            _storyMiddleOk = StoryStand(near, out _storyMiddle);
+        }
         if (!_storyMiddleOk)
             Console.WriteLine($"[story] {World.Map.Name}: nowhere for the people's bodies to stand near {at}; they stay in the story only");
         return _storyMiddleOk;
+    }
+
+    /// <summary>
+    /// A spot a body can stand on near <paramref name="at"/>: open ground, or a low deck on the ground with open sky over it
+    /// (the colony's road, square and slabs; not a roof, not inside a building or under the covered way).
+    /// </summary>
+    private bool StoryStand(Vector3 at, out Vector3 feet)
+    {
+        var why = SandboxSpawnSpot(at + new Vector3(0, 0.5f, 0), out feet);
+        if (why == null)
+            return true;
+        if (!why.StartsWith("on a construct", StringComparison.Ordinal))
+            return false;
+        var up = at + new Vector3(0, 1.5f, 0);
+        if (!Constructs.Raycast(up, -Vector3.UnitY, 4f, out var hit) || hit.Normal.Y < 0.9f)
+            return false;
+        var deck = up - new Vector3(0, hit.Distance, 0);
+        if (deck.Y - feet.Y > StoryDeckMost || World.Blocked(deck + new Vector3(0, 0.05f, 0)))
+            return false;
+        if (Constructs.Raycast(deck + new Vector3(0, 0.1f, 0), Vector3.UnitY, StoryDeckSky, out _))
+            return false;
+        feet = deck;
+        return true;
     }
 
     private static ulong StoryMix(ulong x)
@@ -262,7 +296,7 @@ public sealed partial class Game
                 continue; // (off the map)
             if (World.Map.Terrain != null)
                 at.Y = World.Map.GroundHeight(at.X, at.Z);
-            if (SandboxSpawnSpot(at + new Vector3(0, 0.5f, 0), out var feet) == null)
+            if (StoryStand(at, out var feet))
                 return feet;
         }
         return _storyMiddle;
