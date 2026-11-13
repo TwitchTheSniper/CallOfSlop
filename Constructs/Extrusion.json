@@ -64,5 +64,19 @@
     { "material": "planks", "unitsPerM3": 140, "healthPerM3": 1500, "armourPerCm": 0.2, "maxArmour": 3, "class": "wood", "grip": 0.55, "offroad": 1.0, "side": 0.8, "roll": 0.03 },
     { "material": "stone", "unitsPerM3": 200, "healthPerM3": 2400, "armourPerCm": 1, "maxArmour": 30, "class": "concrete", "grip": 0.5, "offroad": 0.9, "side": 0.8, "roll": 0.04 },
     { "material": "concrete", "unitsPerM3": 200, "healthPerM3": 3000, "armourPerCm": 1.5, "maxArmour": 40, "class": "concrete", "grip": 0.5, "offroad": 0.9, "side": 0.8, "roll": 0.04 }
+  ],
+  "presets": [
+    { "part": "Wing Segment", "piece": "Extrusion wing-wing 150x0x200 steel" },
+    { "part": "Short Wing Segment", "piece": "Extrusion wing-wing 150x0x100 steel" },
+    { "part": "Swept Wing L", "piece": "Extrusion wing-swept-left 150x0x200 steel" },
+    { "part": "Swept Wing R", "piece": "Extrusion wing-swept-right 150x0x200 steel" },
+    { "part": "Medium Wing Segment", "piece": "Extrusion wing-wing 600x0x800 steel" },
+    { "part": "Medium Short Wing Segment", "piece": "Extrusion wing-wing 600x0x400 steel" },
+    { "part": "Medium Swept Wing L", "piece": "Extrusion wing-swept-left 600x0x800 steel" },
+    { "part": "Medium Swept Wing R", "piece": "Extrusion wing-swept-right 600x0x800 steel" },
+    { "part": "Large Wing Segment", "piece": "Extrusion wing-wing 2400x0x3200 steel" },
+    { "part": "Large Short Wing Segment", "piece": "Extrusion wing-wing 2400x0x1600 steel" },
+    { "part": "Large Swept Wing L", "piece": "Extrusion wing-swept-left 2400x0x3200 steel" },
+    { "part": "Large Swept Wing R", "piece": "Extrusion wing-swept-right 2400x0x3200 steel" }
   ]
 }

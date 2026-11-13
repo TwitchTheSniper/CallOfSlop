@@ -42,6 +42,11 @@ public sealed class CitySpec
     /// <summary>The elevated railway's ring (m from the centre; 0: none).</summary>
     public float Loop;
 
+    /// <summary>A metro under the central avenue (docs/planets/CITY.md "The metro"), and its platforms' depth (m).</summary>
+    public bool Metro;
+
+    public float MetroDepth = 10;
+
     public static CitySpec Parse(JsonElement e, string source)
     {
         var s = new CitySpec();
@@ -66,6 +71,8 @@ public sealed class CitySpec
                 case "lowest": s.Lowest = F(); break;
                 case "coreFalloff": s.CoreFalloff = F(); break;
                 case "loop": s.Loop = F(); break;
+                case "metro": s.Metro = F() != 0; break;
+                case "metroDepth": s.MetroDepth = Math.Clamp(F(), 7, 30); break;
                 default: throw new MapFileException($"{source}: city: unknown key \"{p.Name}\"");
             }
         }
@@ -82,7 +89,7 @@ public sealed class CitySpec
 /// <summary>The facade or surface a face is drawn with (CityRenderer's shader reads it from the vertex).</summary>
 public enum CityStyle : byte
 {
-    Glass, Grid, Brick, Ribbon, Plain, Roof, Road, Crossing, Pavement, Kerb, Court, Lamp, Metal, Neon, Beacon, Rail, Stairs, Leaves,
+    Glass, Grid, Brick, Ribbon, Plain, Roof, Road, Crossing, Pavement, Kerb, Court, Lamp, Metal, Neon, Beacon, Rail, Stairs, Leaves, TrainSide, TrainEnd, MetroWall,
 }
 
 /// <summary>A building: its middle on the plan, its turn, and the seed its looks are drawn from. Its masses stand in its frame.</summary>
@@ -166,6 +173,9 @@ public sealed class CityPlan
 
     /// <summary>The elevated railway: a closed line over the avenues (null: none).</summary>
     public CityRail? Rail;
+
+    /// <summary>The metro under the central avenue (null: none).</summary>
+    public CityMetro? Metro;
 
     /// <summary>The square in the middle (no traffic): its rectangle on the plan.</summary>
     public Vector2 SquareMin, SquareMax;
@@ -352,6 +362,8 @@ public sealed class CityPlan
                 }
             if (_s.Loop > 0)
                 plan.Rail = Rail(xs, zs);
+            if (_s.Metro)
+                plan.Metro = Metro(zs, plan.Rail);
             plan.Buildings = _buildings.ToArray();
             plan.Masses = _masses.ToArray();
             plan.Streets = _streets.ToArray();
@@ -411,6 +423,37 @@ public sealed class CityPlan
             float mx = (x0 + x1) * 0.5f, mz = (z0 + z1) * 0.5f;
             Vector2[] stations = [new(mx, z0), new(x1, mz), new(mx, z1), new(x0, mz)];
             return new CityRail { Path = pts.ToArray(), Length = length, Stations = stations };
+        }
+
+        /// <summary>The metro: under the avenue through the centre, a station under the square, one under each crossing of the
+        /// elevated loop (an interchange), and one near each end of the city where there is room.</summary>
+        private CityMetro Metro(List<Line> zs, CityRail? rail)
+        {
+            var stations = new List<float> { 0 };
+            if (rail != null)
+                foreach (var st in rail.Stations)
+                    if (MathF.Abs(st.X) < 40)
+                        stations.Add(st.Y);
+            if (stations.Count == 1)
+                stations.AddRange([-_s.Radius * 0.5f, _s.Radius * 0.5f]);
+            float lo = stations.Min(), hi = stations.Max();
+            // One more beyond each end, at a crossing (a hall wants a street over its whole length) inside the city.
+            foreach (var sign in new[] { -1, 1 })
+            {
+                var from = sign < 0 ? lo : hi;
+                var best = float.NaN;
+                foreach (var l in zs)
+                    if (MathF.Sign(l.Pos - from) == sign && MathF.Abs(l.Pos - from) > 180 && MathF.Abs(l.Pos) < _s.Radius - 70 && (float.IsNaN(best) || MathF.Abs(l.Pos - from) < MathF.Abs(best - from)))
+                        best = l.Pos;
+                if (!float.IsNaN(best))
+                    stations.Add(best);
+            }
+            stations.Sort();
+            return new CityMetro
+            {
+                X = 0, Stations = stations.ToArray(), Depth = _s.MetroDepth,
+                Z0 = stations[0] - CityMetro.HallZ - 120, Z1 = stations[^1] + CityMetro.HallZ + 120,
+            };
         }
 
         /// <summary>How tall the buildings stand round <paramref name="p"/>: the tallest in the middle, falling away to the edge.</summary>

@@ -33,7 +33,7 @@
     "surface": {
       "grass": "#e4ecf3",
       "dirt": "#c4d6e6",
-      "rock": "#7ba3c8",
+      "rock": "#5a86ad",
       "sand": "#a6c5de",
       "dirtSlope": 18,
       "rockSlope": 30,

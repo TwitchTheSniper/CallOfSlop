@@ -12,13 +12,18 @@ public sealed class LifterDef
     public float Payload; // kg
     public float PieceAcross, PieceLong; // the largest piece: its larger side across, its length (m)
     public float Speed, Handle; // m/s at the hand; seconds for a pick and a place together
+    public float Upper, Fore; // an arm's two links (m): shoulder to elbow, elbow to wrist ("arm")
+    public const float Fold = 0.6f; // the elbow never folds the wrist closer to the shoulder than this past the links' difference (no arm through itself)
+    public const float Straight = 0.98f; // ...nor reaches past this share of the two links (never stretched straight)
+    public float LinkMax => (Upper + Fore) * Straight;
+    public float LinkMin => MathF.Abs(Upper - Fore) + Fold;
 
     public static LifterDef Parse(JsonElement e, string file)
     {
         if (e.ValueKind != JsonValueKind.Object)
             throw new ConstructPartException($"{file}: \"lifter\" is an object");
         foreach (var p in e.EnumerateObject())
-            if (p.Name is not ("kind" or "base" or "reach" or "up" or "down" or "payload" or "piece" or "speed" or "handle"))
+            if (p.Name is not ("kind" or "base" or "reach" or "up" or "down" or "payload" or "piece" or "speed" or "handle" or "arm"))
                 throw new ConstructPartException($"{file}: lifter.{p.Name}: no such key");
         var kind = e.TryGetProperty("kind", out var k) && k.ValueKind == JsonValueKind.String ? k.GetString() : null;
         if (kind is not ("arm" or "bridge"))
@@ -35,6 +40,13 @@ public sealed class LifterDef
         (d.PieceAcross, d.PieceLong) = (piece[0], piece[1]);
         d.Speed = Num(e, "speed", 0.1f, 50, file);
         d.Handle = Num(e, "handle", 0, 10, file);
+        if (!d.Bridge)
+        {
+            var arm = Nums(e, "arm", 2, file);
+            (d.Upper, d.Fore) = (arm[0], arm[1]);
+            if (d.Upper < 0.3f || d.Fore < 0.3f || d.LinkMax <= d.LinkMin + 0.5f)
+                throw new ConstructPartException($"{file}: lifter.arm is [upper arm, forearm] in m, each 0.3 m or more and near enough alike to bend");
+        }
         if (d.ReachMin < 0 || d.ReachMax <= d.ReachMin || d.ReachMax > 128 || d.PieceAcross <= 0 || d.PieceLong < d.PieceAcross || d.PieceLong > 256)
             throw new ConstructPartException($"{file}: lifter: reach is [min, max] with 0 <= min < max <= 128, piece [across, long] with 0 < across <= long <= 256");
         return d;
@@ -271,13 +283,29 @@ public static class ConstructLifters
         shoulder = pos + Vector3.Transform(ld.Base, rot);
     }
 
-    /// <summary>Is a world point in the ring round the shoulder? <paramref name="far"/>: how far it is across.</summary>
-    public static bool InReach(LifterDef ld, Vector3 shoulder, Quaternion rot, Vector3 at, out float far)
+    /// <summary>
+    /// Is a piece whose origin is at a world point in reach: in the ring round the shoulder, and (an arm) its wrist, <paramref name="lift"/>
+    /// over that point, within what the two links reach, neither stretched straight nor folded through itself?
+    /// <paramref name="far"/>: how far it is across.
+    /// </summary>
+    public static bool InReach(LifterDef ld, Vector3 shoulder, Quaternion rot, Vector3 at, float lift, out float far)
     {
         var d = Vector3.Transform(at - shoulder, Quaternion.Conjugate(rot));
         far = MathF.Sqrt(d.X * d.X + d.Z * d.Z);
-        return far >= ld.ReachMin - 0.01f && far <= ld.ReachMax + 0.01f && d.Y <= ld.Up + 0.01f && d.Y >= -ld.Down - 0.01f;
+        if (far < ld.ReachMin - 0.01f || far > ld.ReachMax + 0.01f || d.Y > ld.Up + 0.01f || d.Y < -ld.Down - 0.01f)
+            return false;
+        if (ld.Bridge)
+            return true;
+        var wrist = MathF.Sqrt(far * far + (d.Y + lift) * (d.Y + lift));
+        return wrist <= ld.LinkMax && wrist >= ld.LinkMin;
     }
+
+    public const float Wrist = 0.35f; // the wrist over the gripper bar
+    public const float SafeLift = GripLift + Wrist; // an empty hand's wrist over its point
+
+    /// <summary>How far an arm's wrist can be over a piece's origin, at most, however the piece is turned.</summary>
+    public static float WristLift(ConstructPartDef? d) =>
+        d == null ? SafeLift : MathF.Max(d.BoundsMin.Length(), d.BoundsMax.Length()) + SafeLift;
 
     /// <summary>Does a part fit the hand: its mass and its size (the longest side against the length, the next against across)?</summary>
     public static bool Carries(LifterDef ld, ConstructPartDef d)
@@ -307,12 +335,14 @@ public static class ConstructLifters
                     continue;
                 // The pick: the point of the hold nearest the shoulder, a hand's height over its floor.
                 var hold = HoldPoint(sc, t, shoulder);
-                if (!InReach(ld, shoulder, lr, hold, out _))
+                if (!InReach(ld, shoulder, lr, hold, SafeLift, out _))
                     continue;
                 var k = ConstructStation.LiftOffer(j, tray, ld, shoulder, lr);
                 if (k < 0)
                     continue;
                 var d = ConstructParts.Find(j.Bp!.Steps[k].Part)!;
+                if (!InReach(ld, shoulder, lr, hold, WristLift(d), out _))
+                    continue; // (the hold's corner is too close or too far for the arm with this piece in its hand)
                 if (!world.StationTake(sc, t, tray, d))
                     continue;
                 world.CraftChanged(sc);
@@ -327,7 +357,7 @@ public static class ConstructLifters
                 l.To = Vector3.Transform(place - lp, inv);
                 l.ToRot = Quaternion.Normalize(inv * j.Rot * plan.Rot[k]);
                 l.Age = 0;
-                l.Dur = Ticks(ld, l.From, l.To, true);
+                l.Dur = Ticks(ld, l.From, l.To, true, WristLift(d));
                 l.At = ConstructConveyor.Clock;
                 l.State = LiftState.Carry;
                 LifterProbe.CarriesHeard++; // (the host counts its own; a client counts what it hears)
@@ -386,7 +416,7 @@ public static class ConstructLifters
         l.Def = 0;
         l.Paint = 0;
         l.Age = 0;
-        l.Dur = Ticks(ld, from, to, false);
+        l.Dur = Ticks(ld, from, to, false, SafeLift);
         l.At = ConstructConveyor.Clock;
         l.State = LiftState.Return;
         l.Job = null;
@@ -434,15 +464,33 @@ public static class ConstructLifters
     // ---- The path (both peers) ---------------------------------------------------------------------------------------------
 
     /// <summary>The move's length in ticks: half the handling at each end, the path at the hand's speed.</summary>
-    public static int Ticks(LifterDef ld, Vector3 from, Vector3 to, bool loaded)
+    public static int Ticks(LifterDef ld, Vector3 from, Vector3 to, bool loaded, float lift)
     {
-        var len = PathLength(ld, from, to);
+        var len = PathLength(ld, from, to, lift);
         var sec = (loaded ? ld.Handle : ld.Handle * 0.25f) + len / ld.Speed;
         return Math.Clamp((int)MathF.Ceiling(sec * World.TickRate), Every, 60 * World.TickRate);
     }
 
-    private static float CarryY(LifterDef ld, Vector3 from, Vector3 to) =>
-        MathF.Min(ld.Base.Y + ld.Up, MathF.Max(from.Y, to.Y) + CarryRise);
+    /// <summary>
+    /// The carry height: a little over the higher end, never over the ring's top, and (an arm) never so high that the wrist,
+    /// <paramref name="lift"/> over the piece, leaves the links' reach at the wider of the two ends (the ends are in reach, so
+    /// the whole path is). Never under the higher end.
+    /// </summary>
+    private static float CarryY(LifterDef ld, Vector3 from, Vector3 to, float lift)
+    {
+        var high = MathF.Max(from.Y, to.Y);
+        var h = MathF.Min(ld.Base.Y + ld.Up, high + CarryRise);
+        if (!ld.Bridge)
+        {
+            Polar(ld, from, out var r0, out _);
+            Polar(ld, to, out var r1, out _);
+            var r = MathF.Max(r0, r1);
+            var room = ld.LinkMax * ld.LinkMax - r * r;
+            if (room > 0)
+                h = MathF.Min(h, ld.Base.Y + MathF.Sqrt(room) - lift);
+        }
+        return MathF.Max(h, high);
+    }
 
     private static void Polar(LifterDef ld, Vector3 p, out float r, out float a)
     {
@@ -463,9 +511,9 @@ public static class ConstructLifters
     }
 
     /// <summary>Straight up to the carry height, round the base in angle and radius (never through the mast), straight down.</summary>
-    public static float PathLength(LifterDef ld, Vector3 from, Vector3 to)
+    public static float PathLength(LifterDef ld, Vector3 from, Vector3 to, float lift)
     {
-        var h = CarryY(ld, from, to);
+        var h = CarryY(ld, from, to, lift);
         Polar(ld, from, out var r0, out var a0);
         Polar(ld, to, out var r1, out var a1);
         var arc = MathF.Abs(Turn(a0, a1)) * (r0 + r1) * 0.5f + MathF.Abs(r1 - r0);
@@ -483,7 +531,7 @@ public static class ConstructLifters
         rot = l.FromRot;
         if (sec <= 0)
             return from;
-        var h = CarryY(ld, from, to);
+        var h = CarryY(ld, from, to, l.Def != 0 ? WristLift(ConstructParts.Get(l.Def)) : SafeLift);
         var up = MathF.Max(0, h - from.Y);
         Polar(ld, from, out var r0, out var a0);
         Polar(ld, to, out var r1, out var a1);
@@ -655,7 +703,7 @@ public static partial class ConstructStation
             var def = j.KindDef[j.StepKind[k]];
             if (ConstructCrafting.Holds(tray, def) <= 0 || ConstructParts.Get(def) is not { } d || !ConstructLifters.Carries(ld, d))
                 continue;
-            if (!ConstructLifters.InReach(ld, shoulder, rot, j.Pos + Vector3.Transform(plan.Centre[k], j.Rot), out _))
+            if (!ConstructLifters.InReach(ld, shoulder, rot, j.Pos + Vector3.Transform(plan.At[k], j.Rot), ConstructLifters.WristLift(d), out _))
                 continue;
             return k;
         }
@@ -738,5 +786,33 @@ public static class LifterProbe
         var local = new Vector3(sd.BoundsMax.X + ConstructStation.BayGap + 0.9f - centre.X, sd.BoundsMin.Y - d.BoundsMin.Y + 0.02f, sd.BoundsMin.Z - 0.9f - centre.Z);
         var made = ConstructBuild.PlaceNew(world, d, new FreePlacement { Pos = sp + Vector3.Transform(local, sr), Rot = sr });
         return made == null ? "no room for the arm" : $"a Loader Arm stands at the bay's back corner (construct {made.Id}), shoulder {ld.Base}";
+    }
+}
+
+/// <summary>
+/// An arm's pose from its hand (both peers, the same numbers from the same hand: nothing of it is sent). The turret turns to
+/// the wrist; the upper arm and the forearm solve the triangle shoulder, elbow, wrist with the elbow up, in the vertical plane
+/// through the wrist. The wrist's distance is clamped to what the links reach (<see cref="LifterDef.LinkMin"/> to
+/// <see cref="LifterDef.LinkMax"/>), so the arm is never stretched past straight or folded through itself; the reach test and
+/// the carry height keep a move inside that, so the clamp only matters for a pose the path never asks for.
+/// </summary>
+public static class ArmIk
+{
+    /// <summary>All in the lifter part's frame. <paramref name="grip"/>: where the gripper bar is wanted.</summary>
+    public static void Solve(LifterDef ld, Vector3 grip, out float yaw, out Vector3 elbow, out Vector3 wrist)
+    {
+        var want = grip + Vector3.UnitY * ConstructLifters.Wrist;
+        var v = want - ld.Base;
+        var flat = MathF.Sqrt(v.X * v.X + v.Z * v.Z);
+        yaw = flat > 1e-3f ? MathF.Atan2(v.Z, v.X) : 0f;
+        var len = v.Length();
+        var dir = len > 1e-4f ? v / len : new Vector3(1, 0, 0);
+        var d = Math.Clamp(len, ld.LinkMin, ld.LinkMax);
+        wrist = ld.Base + dir * d;
+        var cosA = Math.Clamp((ld.Upper * ld.Upper + d * d - ld.Fore * ld.Fore) / (2 * ld.Upper * d), -1f, 1f);
+        var sinA = MathF.Sqrt(1 - cosA * cosA);
+        var up = Vector3.UnitY - Vector3.Dot(Vector3.UnitY, dir) * dir; // (up, square to the shoulder-wrist line, in its vertical plane)
+        up = up.LengthSquared() > 1e-6f ? Vector3.Normalize(up) : new Vector3(-MathF.Cos(yaw), 0, -MathF.Sin(yaw)); // (wrist straight over or under: the elbow goes back)
+        elbow = ld.Base + ld.Upper * (cosA * dir + sinA * up);
     }
 }

@@ -204,7 +204,7 @@ WORLDS = [
         "name": "Glacier", "order": 3, "radius": 8000, "strength": 14,
         "ore": {"helium pocket": 2.5, "copper vein": 1.5, "sand bed": 0, "iron vein": 0.7},
         "description": "Glacier, the 8 km ice world of Frostreach (Systems/Frostreach.json): snowfields, pressure ridges of blue ice, two black nunataks and the Rent, a crevasse 9 km long. The IT Department keeps its Server Farm here, for the cooling.",
-        "surface": {"grass": "#e4ecf3", "dirt": "#c4d6e6", "rock": "#7ba3c8", "sand": "#a6c5de", "dirtSlope": 18, "rockSlope": 30, "sandBelow": -18,
+        "surface": {"grass": "#e4ecf3", "dirt": "#c4d6e6", "rock": "#5a86ad", "sand": "#a6c5de", "dirtSlope": 18, "rockSlope": 30, "sandBelow": -18,
                     # (made ground is dark cinder with snow blown over it, not the blue of the ice: the colony's bench)
                     "stone": "#3d3f44", "dusting": 0.8,
                     # (wind-scoured patches of bare blue ice on the open snow)
@@ -304,7 +304,7 @@ WORLDS = [
         ],
         "landing": 12,
         "sites": [],
-        "city": {"radius": 640, "seed": 7, "blockX": 64, "blockZ": 88, "street": 16, "avenue": 26, "avenueEvery": 3, "tallest": 230, "lowest": 14, "coreFalloff": 700, "loop": 330},
+        "city": {"radius": 640, "seed": 7, "blockX": 64, "blockZ": 88, "street": 16, "avenue": 26, "avenueEvery": 3, "tallest": 230, "lowest": 14, "coreFalloff": 700, "loop": 330, "metro": 1},
         "pole": False,
     },
 ]

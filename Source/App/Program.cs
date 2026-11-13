@@ -262,6 +262,8 @@ public static unsafe partial class Program
             return HullLoft.PanelCli([.. args.SkipWhile(a => !a.Equals("--form-panel", StringComparison.OrdinalIgnoreCase)).Skip(1).TakeWhile(a => !a.StartsWith("--", StringComparison.Ordinal))]); // a formed panel from a preset: its key, counts and checks (HullLoft.Panels.cs)
         if (args.Any(a => a.Equals("--press-part", StringComparison.OrdinalIgnoreCase)))
             return CallOfSlop.Pressed.Cli([.. args.SkipWhile(a => !a.Equals("--press-part", StringComparison.OrdinalIgnoreCase)).Skip(1)]); // a pressed part: its key, numbers and checks; list, presets, sweep (Pressed.cs)
+        if (args.Any(a => a.Equals("--former-presets", StringComparison.OrdinalIgnoreCase)))
+            return FormerPresets.Cli(); // every catalogue wing and rotor against the key a Fan or Airframe Former would cut for it (FormerPresets.cs)
         if (args.SkipWhile(a => !a.Equals("--bill", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } billOf)
             return ConstructBill.Cli(billOf); // a blueprint's bill: the pieces it needs by key with counts (WorkOrders.cs)
         if (args.Any(a => a.Equals("--bench-parts", StringComparison.OrdinalIgnoreCase)))
@@ -1134,7 +1136,7 @@ public static unsafe partial class Program
             BenchPass(1);
             DrawMovers(map); // moving platforms at this frame's pose
             StandInRender.Draw(Gfx, _session); // STAND-IN: the story's placeholder craft (Source/StandIns)
-            CityGfx.Draw(map, Gfx, Glfw.Time); // a planetoid's city: one draw a chunk (Source/Render/CityRenderer.cs)
+            CityGfx.Draw(map, Gfx, Glfw.Time, _game is { } cg ? cg.MoverRenderTick / World.TickRate : Glfw.Time); // a planetoid's city: one draw a chunk (Source/Render/CityRenderer.cs)
         }
         using (Perf.Pass(PerfArea.Terrain, PerfGpuPass.Terrain))
             TerrainGfx.Draw(Gfx, map); // terrain maps only (built once per map)

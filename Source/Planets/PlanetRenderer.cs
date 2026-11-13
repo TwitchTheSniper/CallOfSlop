@@ -210,7 +210,7 @@ public sealed unsafe partial class PlanetRenderer
             vec3 w = max(abs(n) - vec3(0.04), vec3(0.0)); // (a sliver of a plane adds nothing to see: it goes to zero smoothly, so no line shows)
             w /= (w.x + w.y + w.z);
             float ground = Tri(vTex * 0.5, w, uGroundLayer);
-            float rock = vColor.a > 0.01 ? Tri(vTex * 0.25, w, uRockLayer) : 0.0;
+            float rock = vColor.a > 0.01 ? Tri(vTex * 0.13 + 0.37, w, uRockLayer) : 0.0;
             vec3 col = vColor.rgb * mix(ground, rock, vColor.a) * 1.25;
             vec3 lit = ApplyLightAt(col, n, 0.0, vWorld);
             lit += col * (Amb(dot(n, up)) - Amb(n.y)); // the sky is above "up" here, not above world +Y
@@ -444,6 +444,7 @@ public sealed unsafe partial class PlanetRenderer
             dst.Top[q] = 0;
         }
         var surf = pl.Surface;
+        var cellSize = (float)(pl.Cell * s);
         var o = 0;
         for (var j = 0; j < PageVerts; j++)
         for (var i = 0; i < PageVerts; i++)
@@ -465,6 +466,11 @@ public sealed unsafe partial class PlanetRenderer
                 : surf.SandBelow is { } sb && h <= sb ? TerrainMaterial.Sand
                 : TerrainMaterial.Grass;
             var (col, rock) = TerrainData.ColourOf(surf, local, h, (byte)rule, (float)(px + py * 0.5), (float)(pz - py * 0.5));
+            // Hollows darken with how far they sit below their neighbours (a cheap cavity term): a crevasse reads as a
+            // crack going down into shadow, not a strip of lit wall, and gullies and dips get a little depth.
+            var cavity = (float)((wh[k - 1] + wh[k + 1] + wh[k - Apron] + wh[k + Apron]) * 0.25 - h) / cellSize;
+            if (cavity > 0)
+                col *= 1f - MathF.Min(cavity * CavityDark, 0.62f);
             var rel = new Vector3((float)(px - orx), (float)(py - ory), (float)(pz - orz));
             dst.Pos[o] = rel.X;
             dst.Pos[o + 1] = rel.Y;
@@ -745,6 +751,9 @@ public sealed unsafe partial class PlanetRenderer
         }
     }
 
+    /// <summary>How much a vertex darkens per cell of depth below its four neighbours' mean (a crevasse's floor, a gully).</summary>
+    private const float CavityDark = 0.8f;
+
     private int FreeLayer()
     {
         int best = -1, oldest = int.MaxValue;
@@ -792,7 +801,7 @@ public sealed unsafe partial class PlanetRenderer
         Native.glUniform1i(g.Pos, PosUnit);
         Native.glUniform1i(g.Nrm, NrmUnit);
         Native.glUniform1f(g.GroundLayer, (float)Material.Dirt);
-        Native.glUniform1f(g.Rock, (float)Material.Concrete);
+        Native.glUniform1f(g.Rock, (float)Material.Dirt); // (the dirt grain at another scale: the concrete layer's blocks drew a grid of mortar lines over every slope)
         var fog = gfx.FogColor;
         Native.glUniform3f(g.Fog, fog.X, fog.Y, fog.Z);
         Native.glUniform2f(g.FogRange, gfx.FogRange.X, gfx.FogRange.Y);

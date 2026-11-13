@@ -276,7 +276,7 @@ public static class PartAmbience
             switch (s.Kind)
             {
                 case Kind.Smoke:
-                    Puff(FxKind.Smoke, at, s, wind, s.Rate * Math.Clamp((Range - dist) / (Range * 0.5f), 0f, 1f) * dt, 0.75f); // (fewer puffs far off, none at the range)
+                    Puff(FxKind.Chimney, at, s, wind, s.Rate * Math.Clamp((Range - dist) / (Range * 0.5f), 0f, 1f) * dt, 1f); // (fewer puffs far off, none at the range)
                     break;
                 case Kind.Steam:
                     if (dist < 90f)

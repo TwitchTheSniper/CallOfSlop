@@ -60,7 +60,10 @@ public sealed partial class ResourceField
                     continue;
                 if (_planet != null)
                 {
-                    _drawn.Add(new FoliageInstance(FoliageType.Outcrop, SphereSpot(d.Face, x, z, size), size, yaw, rand, kind.OutcropTint * shade));
+                    var spot = SphereSpot(d.Face, x, z, size);
+                    if (NearSpawn(spot))
+                        continue; // (a planetoid's spawns are its settlement: no rocks in the yard)
+                    _drawn.Add(new FoliageInstance(FoliageType.Outcrop, spot, size, yaw, rand, kind.OutcropTint * shade));
                     left--;
                     continue;
                 }
@@ -70,5 +73,15 @@ public sealed partial class ResourceField
                 left--;
             }
         }
+    }
+
+    private const float SpawnClear = 80f; // metres round a planetoid's spawns kept free of drawn outcrops (its settlement)
+
+    private bool NearSpawn(Vector3 p)
+    {
+        foreach (var s in _map.Spawns)
+            if (Vector3.DistanceSquared(s, p) < SpawnClear * SpawnClear)
+                return true;
+        return false;
     }
 }
