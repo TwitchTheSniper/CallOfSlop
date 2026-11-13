@@ -18,6 +18,7 @@ public enum FxKind : byte
     Flash,
     Fireball,
     Steam,
+    Drift, // snow blown along the ground (PartAmbience.cs): thin white streaks
     Count,
 }
 

@@ -1200,6 +1200,7 @@ public static unsafe partial class Program
         g.SandboxSounds(now); // horns (GameSandbox.cs)
         g.ColonyAlarmSounds(now); // the penal colony's lockdown siren (GameColonyLockdown.cs)
         g.StoryBabbleSounds(now); // the story people murmur their lines (GameStoryBabble.cs)
+        PartAmbience.Frame(g.Constructs, Gfx.CameraPosition, now, g.TickAlpha, g.IsServer, g.Audio); // smoke, steam, a tannoy, snow along the ground (PartAmbience.cs)
         g.EngineAudio.Pick(g.Constructs, Gfx.CameraPosition);
         g.EngineAudio.Play(g.Audio); // (modular engines: EngineSounds.cs)
         g.SandboxBuildSounds(now); // (building: GameSandboxBuildSounds.cs)
