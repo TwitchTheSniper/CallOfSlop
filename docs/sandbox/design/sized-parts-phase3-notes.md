@@ -80,8 +80,8 @@ All in throwaway runs (`--save-dir` to a temp folder; test blueprints copied int
    - A (recommended): make them patterns in the next phase, preset blank = their construct bounds to the 5 cm lattice.
    - B: leave them catalogue only; the Receiver die stays at three patterns.
 
-Phase 2's three questions are still with the user. None changes this phase's code: question 1 (muzzle devices and reach) acts in
-`BuildStats.BarrelReach`, question 2 (shared blanks) would move barrel presets only, question 3 (a reach cap) would sit after `ScaleGun`.
+Phase 2's three questions were answered (2026-11-13, all A: devices keep changing reach, shared blanks stay, no reach cap; recorded in
+`sized-parts-phase2-notes.md`). None changes this phase's code.
 
 ## What is left of phase 3
 
