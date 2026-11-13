@@ -450,7 +450,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      line's kind is written by ConstructStorage.WriteDef (a run-time piece by its key), not as a u16 id.
     // 272: Msg.Factions ends with each story technology's standing and, per player the story knows, their standings and the
     //      technologies they know (the build menu's locks).
-    public const ushort ProtocolVersion = 272;
+    // 273: Msg.Objective (the "what next" goal line, GameObjectives.cs) at the end of Msg (269 on its branch, renumbered at the merge).
+    public const ushort ProtocolVersion = 273;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
