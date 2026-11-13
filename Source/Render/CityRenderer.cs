@@ -563,11 +563,14 @@ public sealed unsafe partial class CityRenderer
             else if (style == 20) // the metro's tiles: small glazed tiles, the line's band, the station's name frieze
             {
                 float y = vUv.y;
-                vec2 t = vec2(vUv.x / 0.15, y / 0.075);
+                // Glazed tiles 30 by 15 cm in a running bond: thin grout, a faint sheen that varies tile to tile; the grout
+                // fades well before it is too fine to draw (no checkerboard far off).
+                vec2 t = vec2(vUv.x / 0.3, y / 0.15);
                 t.x += step(0.5, fract(t.y * 0.5)) * 0.5;
                 vec2 g = abs(fract(t) - 0.5);
-                float grout = 1.0 - Band(max(g.x * 0.15 / 0.075, g.y), 0.0, 0.42, fwidth(t.y));
-                vec3 albedo = vColor * (1.0 - 0.1 * grout * clamp(1.0 - fw * 25.0, 0.0, 1.0));
+                float grout = max(1.0 - Band(g.x, 0.0, 0.48, fwidth(t.x)), 1.0 - Band(g.y, 0.0, 0.46, fwidth(t.y)));
+                float tileTone = 0.97 + 0.05 * H01(uint(floor(t.x) + 4096.0) * 7919u + uint(floor(t.y) + 4096.0));
+                vec3 albedo = vColor * tileTone * (1.0 - 0.07 * grout * clamp(1.0 - fw * 12.0, 0.0, 1.0));
                 if (seed == 2u)
                 {
                     // A suspended ceiling: 1.2 m panels in a dark grid.
