@@ -363,9 +363,16 @@ public static unsafe partial class Program
         CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
         var windowShot = WindowShotArgs(args); // --window-shot: pictures of the real window for an agent's own checking (Program.WindowShot.cs)
         if (_shotTool || perfShot || megaWindow || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)) || windowShot)
+        {
             SavePaths.UseSmokeSandbox(args);
+            // A dev build's tool runs (window shots, the bench and the tour, perf and GL checks) skip the BRUTAL logo; the smoke test and a release still show it.
+            _noSplash = !BuildInfo.IsRelease && !args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
+        }
         else
             SavePaths.Init(args);
+        // --no-splash: a dev build's test launch (host, join, a plain window) skips the logo too; a release always shows it (licence section 2.2).
+        if (!BuildInfo.IsRelease && args.Any(a => a.Equals("--no-splash", StringComparison.OrdinalIgnoreCase)))
+            _noSplash = true;
         _settings = Settings.Load();
         if (_windowShot)
             WindowShotSettings(args);
@@ -426,7 +433,8 @@ public static unsafe partial class Program
             AudioSystem.OwnGunVolume = _settings.OwnGunVolume;
             LoadAudioMix(); // audio_mix.json from the Audio mixer window, if there is one (Program.AudioMixer.cs)
             CreateWindow();
-            RunSplash(); // the BRUTAL logo before anything else, even with a command-line shortcut (licence section 2.2)
+            if (!_noSplash)
+                RunSplash(); // the BRUTAL logo before anything else, even with a command-line shortcut (licence section 2.2); test runs skip it
 
             // Command-line shortcuts skip the lobby.
             if (UrlProtocol.FindLink(plain) is { } inviteLink)
@@ -1038,6 +1046,9 @@ public static unsafe partial class Program
     /// Shows the BRUTAL logo splash (see <see cref="Splash"/>) in its own little loop before the lobby or any session.
     /// The smoke test watches it in full (no skipping) and logs that it was shown.
     /// </summary>
+    /// <summary>A test run: no logo (window-tool runs, or --no-splash in a dev build). Players always see it.</summary>
+    private static bool _noSplash;
+
     private static void RunSplash()
     {
         var shown = false;
