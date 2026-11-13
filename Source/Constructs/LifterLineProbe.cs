@@ -94,7 +94,7 @@ public static partial class LifterProbe
             sb.Append($" [pad {ps.ItemCount}{Kinds(ps)}]");
         if (world.Get(LineAsm) is { } ab && world.StoreOf(ab, 0) is { } ast)
             sb.Append($" [assembler inputs {ast.ItemCount}{Kinds(ast)}]");
-        return $"{Carries} carries begun, {Changes} lift words asked (host){sb}";
+        return $"{Carries} carries begun, {Changes} lift words asked (host){sb} [{TakeIn.Text("pad take-in")}; {PadCount.Text("pick pad count")}; bodies {world.Bodies.Count}]{PadSeen(world)}";
     }
 
     private static string Kinds(CStore st)
@@ -213,6 +213,7 @@ public static partial class LifterProbe
     public static string Reset()
     {
         (StepTicks, StepTotal, StepWorst) = (0, 0, 0);
+        (TakeIn, PadCount) = (default, default);
         return "the lifter step's cost counters start again";
     }
 }

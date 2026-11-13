@@ -1049,7 +1049,7 @@ public static unsafe partial class Program
                     var pens = lw[0] == "pen" ? LifterProbe.Pen(g.Constructs, pspot) : 0;
                     WsSay($"lifter: {lw[0]}: {moved} player(s) to {pspot:0.00}{(pens > 0 ? $", {pens} Crate Stacks round them" : "")}; {pinfo}");
                 }
-                else if (lw.Length > 0 && lw[0] is "line" or "hold" or "set" or "mains" or "points" or "base" or "flip" or "reset" && g.IsServer)
+                else if (lw.Length > 0 && lw[0] is "line" or "hold" or "set" or "mains" or "points" or "base" or "flip" or "reset" or "press" or "drop" or "pickpad" && g.IsServer)
                 {
                     // Lifters phase 4 (LifterLineProbe.cs): "lifter line [TIER]" an arm, an Assembler, a stocked rack and a pad round this player;
                     // "lifter hold NAME" that piece at the line's Assembler's out; "lifter set liftMode|carryHeight V"; "lifter mains on|off"; "lifter points".
@@ -1063,6 +1063,9 @@ public static unsafe partial class Program
                         "base" => LifterProbe.Base(g.Constructs, me.Position, rest4), // ("lifter base [TIER]": an arm welded into a powered base here; a "lifter line" after it is built round that arm)
                         "flip" => LifterProbe.Flip(g.Constructs, rest4),
                         "reset" => LifterProbe.Reset(), // ("lifter reset": the step's cost counters from now, past the first ticks' JIT)
+                        "press" => LifterProbe.Press(g.Constructs, me.Position, rest4), // (phase 5: an arm, a Press with a Button Die and its kit, a rack of blanks and a pad)
+                        "drop" => LifterProbe.Drop(g.Constructs, rest4), // (phase 5: a loose piece over the line's pad: "blank" or a part name)
+                        "pickpad" => WsFind(g, "Building Station") is ({ } ppc, var ppt) ? LifterProbe.PickPad(g.Constructs, ppc, ppt) : "pickpad: no Building Station", // (phase 5: a pick pad behind the newest arm, stocked with the job's parts)
                         _ => LifterProbe.Points(g.Constructs),
                     });
                 }

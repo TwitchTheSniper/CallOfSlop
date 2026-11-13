@@ -110,7 +110,7 @@ public sealed class PieceRackParts : IPartGenerator
         var deep = nz * c.Cell;
         p.Stats(wide * deep * 40, 300 + 30 * wide * deep, 4);
         p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(section, up)), ("length", length), ("count", count),
-            ("hold", Py.L(Py.L(Py.Round(x0 + kerb + 0.01, 3), Py.Round(top + 0.045, 3), Py.Round(z0 + kerb + 0.01, 3)), Py.L(Py.Round(x1 - kerb - 0.01, 3), Py.Round(y1 - 0.01, 3), Py.Round(z1 - kerb - 0.01, 3)))))))));
+            ("hold", Py.L(Py.L(Py.Round(x0 + kerb + 0.01, 3), Py.Round(top + 0.045, 3), Py.Round(z0 + kerb + 0.01, 3)), Py.L(Py.Round(x1 - kerb - 0.01, 3), Py.Round(y1 - 0.01, 3), Py.Round(z1 - kerb - 0.01, 3)))), ("open", true))))));
         p.Set(("ports", Py.L(
             Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(Py.Round((x0 + x1) / 2, 3), Py.Round(top + 0.05, 3), z0)), ("face", "-z"),
                 ("opening", Py.L(Math.Min(section, 2.0), Math.Min(up, 2.0)))))));

@@ -676,6 +676,7 @@ public sealed partial class ConstructPartDef
     public LifterDef? Lifter; // "lifter": a Loader Arm or a Bridge Crane, a scripted machine that carries pieces (ConstructLifters.cs)
     public bool HasRouterBoxes; // its "way" lamps or "fence" (drawn by the Router's last choice)
     public bool IsConveyorJunction; // conveyor ports in and out (a Conveyor Splitter or Join): pieces pass through it from one conveyor to the next (ConstructConveyor.cs)
+    public bool IsLayDownPad; // a Lay-down Pad (storage.pieces.open): a Piece Rack that takes in a loose piece set down on its deck (ConstructLifterPads.cs)
     public bool IsPieceRack; // a Piece Rack (ConstructConveyor.cs): holds whole pieces by kind, up to RackCount, each within RackSection x RackLength
     public bool IsCraftTerminal; // a Crafting Terminal (ConstructCrafting.cs): a Piece Rack whose hold is its tray (storage.pieces.crafting)
     public bool IsBuildStation; // a Building Station (ConstructStation.cs): a Crafting Terminal whose hold feeds a blueprint built in its bay (storage.pieces.station)

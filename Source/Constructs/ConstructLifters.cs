@@ -199,8 +199,12 @@ public static partial class ConstructLifters
     public static void Scan(ConstructWorld world, bool server)
     {
         foreach (var c in world.Bodies)
+        {
+            if (server && (c.PadStamp != c.RebuildStamp || c.PadPartCount != c.PartCount))
+                NotePads(world, c); // (phase 5: the bodies with a Lay-down Pad, ConstructLifterPads.cs; its own stamp, as a host's drawing scans this world too)
             if (c.LiftStamp != c.RebuildStamp || c.LiftPartCount != c.PartCount)
                 ScanBody(world, c, server);
+        }
         for (var k = world.LiftBodies.Count - 1; k >= 0; k--)
         {
             var lb = world.LiftBodies[k];
@@ -308,6 +312,7 @@ public static partial class ConstructLifters
         if (world.LiftTick % ScanEvery == 1)
         {
             Scan(world, server: true); // (phase 4: always, so an arm with no station open finds its carries; a body is looked at only when its parts changed)
+            PadsTakeIn(world); // (phase 5: a loose piece set down on a Lay-down Pad goes into its hold)
         }
         if (world.LiftBodies.Count == 0 || world.LiftTick % Every != 0)
             return;
@@ -535,22 +540,32 @@ public static partial class ConstructLifters
                 if (Vector3.Distance(floor, shoulder) > ld.ReachMax + bay.Length() * 0.5f + ld.Down)
                     continue;
                 // The pick: the nearest point along the hold's side the empty hand reaches, a hand's height over its floor (the user, 2026-11-13).
-                if (!HoldPick(sc, t, ld, shoulder, lr, SafeLift, SafeLift, out var hold))
+                // Phase 5: or a pick pad (a Lay-down Pad among its points) that holds the step's part, for a bay longer than the hold's side reaches.
+                var fromHold = HoldPick(sc, t, ld, shoulder, lr, SafeLift, SafeLift, out var hold);
+                if (!fromHold && (l.Points == null || world.LiftTick - l.PointsAt >= PointEvery))
+                    FindPoints(world, c, l, ld);
+                if (!fromHold && !HasPickPad(world, l))
                     continue;
                 near = true;
-                var k = ConstructStation.LiftOffer(j, tray, ld, shoulder, lr);
+                var k = ConstructStation.LiftOffer(world, l, j, tray, ld, shoulder, lr, fromHold, out var pad);
                 if (k < 0)
                     continue;
                 var d = ConstructParts.Find(j.Bp!.Steps[k].Part)!;
-                if (!HoldPick(sc, t, ld, shoulder, lr, SafeLift, WristLift(d), out hold))
-                    continue; // (no point along the hold's side suits the arm with this piece in its hand)
-                if (!world.StationTake(sc, t, tray, d))
+                Quaternion sr;
+                if (pad < 0)
+                {
+                    if (!HoldPick(sc, t, ld, shoulder, lr, SafeLift, WristLift(d), out hold))
+                        continue; // (no point along the hold's side suits the arm with this piece in its hand)
+                    if (!world.StationTake(sc, t, tray, d))
+                        continue;
+                    world.CraftChanged(sc);
+                    Freeform.PartWorld(sc, t, out _, out sr);
+                }
+                else if (!TakeFromPad(world, l, ld, shoulder, lr, pad, d, out hold, out sr))
                     continue;
-                world.CraftChanged(sc);
                 ConstructStation.LiftClaim(j, k);
                 var inv = Quaternion.Conjugate(lr);
                 var place = j.Pos + Vector3.Transform(plan.At[k], j.Rot);
-                Freeform.PartWorld(sc, t, out _, out var sr);
                 l.Def = d.Id;
                 l.Paint = k < j.Bp.StepPaint.Count ? j.Bp.StepPaint[k] : 0;
                 l.From = Vector3.Transform(hold - Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, sr) - lp, inv);
@@ -1302,10 +1317,13 @@ public static partial class ConstructStation
     /// <summary>
     /// A lifter's offer: the first unfitted, unclaimed step whose parent is in place, whose kind the hold has, whose part's middle
     /// is in the lifter's reach and whose part it carries. Looks at <see cref="OfferLooks"/> steps at most. -1: none.
+    /// Phase 5 (pick pads): with <paramref name="fromHold"/> false only steps a pick pad in the lifter's points holds; with it true,
+    /// the hold first, then a pick pad. <paramref name="pad"/>: the point it picks from (-1: the hold).
     /// </summary>
-    public static int LiftOffer(StationJob j, CStore tray, LifterDef ld, Vector3 shoulder, Quaternion rot)
+    public static int LiftOffer(ConstructWorld world, CLift l, StationJob j, CStore tray, LifterDef ld, Vector3 shoulder, Quaternion rot, bool fromHold, out int pad)
     {
-        if (j.Plan is not { } plan || j.Bp is not { } bp || plan.At.Length != j.PartOf.Length)
+        pad = -1;
+        if (j.Plan is not { } plan || j.Bp is not { } || plan.At.Length != j.PartOf.Length)
             return -1;
         var looked = 0;
         for (var k = j.Cursor; k < j.PartOf.Length && looked < OfferLooks; k++)
@@ -1316,10 +1334,15 @@ public static partial class ConstructStation
             if (!Ready(j, k) || j.StepKind[k] < 0)
                 continue;
             var def = j.KindDef[j.StepKind[k]];
-            if (ConstructCrafting.Holds(tray, def) <= 0 || ConstructParts.Get(def) is not { } d || !ConstructLifters.Carries(ld, d))
+            if (ConstructParts.Get(def) is not { } d || !ConstructLifters.Carries(ld, d))
+                continue;
+            var inHold = fromHold && ConstructCrafting.Holds(tray, def) > 0;
+            var onPad = inHold ? -1 : ConstructLifters.PickPadHolding(world, l, def);
+            if (!inHold && onPad < 0)
                 continue;
             if (!ConstructLifters.InReach(ld, shoulder, rot, j.Pos + Vector3.Transform(plan.At[k], j.Rot), ConstructLifters.WristLift(d), out _))
                 continue;
+            pad = onPad;
             return k;
         }
         return -1;
@@ -1351,9 +1374,9 @@ public static partial class ConstructStation
     /// </summary>
     private static int LiftHolds(ConstructWorld world, Construct sc, int t, ushort def)
     {
+        var n = ConstructLifters.PickPadHolds(world, sc, t, def); // (phase 5: what its arms' pick pads hold counts as held)
         if (world.LiftBusy == 0)
-            return 0;
-        var n = 0;
+            return n;
         for (var bi = 0; bi < world.LiftBodies.Count; bi++)
         {
             var lb = world.LiftBodies[bi];
@@ -1402,6 +1425,7 @@ public sealed partial class ConstructWorld
         LiftSeen.Clear();
         LiftBodies.Clear();
         LiftDirty.Clear();
+        PadBodies.Clear();
         (LiftBusy, LiftTick, FitThisTick) = (0, 0, false);
     }
 
