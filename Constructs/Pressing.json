@@ -6306,6 +6306,396 @@
       "by": "mass",
       "max": 20
      }
+    },
+    {
+     "id": "bastillelmg",
+     "like": "Bastille LMG Receiver",
+     "label": "bastille lmg",
+     "preset": "solid 15x20x75 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "bucketlauncher",
+     "like": "Bucket Launcher Receiver",
+     "label": "bucket launcher",
+     "preset": "solid 15x20x40 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "bunkerbuster",
+     "like": "Bunker Buster Receiver",
+     "label": "bunker buster",
+     "preset": "solid 25x20x65 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "couriercarbine",
+     "like": "Courier Carbine Receiver",
+     "label": "courier carbine",
+     "preset": "solid 15x15x40 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "farmhandpump",
+     "like": "Farmhand Pump Receiver",
+     "label": "farmhand pump",
+     "preset": "solid 15x15x45 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "fieldgun",
+     "like": "Field Gun Receiver",
+     "label": "field gun",
+     "preset": "solid 30x25x60 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "firebreather",
+     "like": "Firebreather Receiver",
+     "label": "firebreather",
+     "preset": "solid 20x25x45 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "gravediggerauto",
+     "like": "Gravedigger Auto Receiver",
+     "label": "gravedigger auto",
+     "preset": "solid 15x15x50 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "hammerfallautoca",
+     "like": "Hammerfall Autocannon Receiver",
+     "label": "hammerfall autocannon",
+     "preset": "solid 30x25x80 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "handmortar",
+     "like": "Hand Mortar Receiver",
+     "label": "hand mortar",
+     "preset": "solid 15x20x40 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "hellwheelrotary",
+     "like": "Hellwheel Rotary Receiver",
+     "label": "hellwheel rotary",
+     "preset": "solid 20x20x60 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "howitzer",
+     "like": "Howitzer Receiver",
+     "label": "howitzer",
+     "preset": "solid 30x25x60 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "kingpinrevolver",
+     "like": "Kingpin Revolver Receiver",
+     "label": "kingpin revolver",
+     "preset": "solid 15x20x35 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "longbowdmr",
+     "like": "Longbow DMR Receiver",
+     "label": "longbow dmr",
+     "preset": "solid 15x15x65 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "longreachbolt",
+     "like": "Longreach Bolt Receiver",
+     "label": "longreach bolt",
+     "preset": "solid 15x15x60 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "paradecannon",
+     "like": "Parade Cannon Receiver",
+     "label": "parade cannon",
+     "preset": "solid 15x20x40 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "peashooter",
+     "like": "Peashooter Receiver",
+     "label": "peashooter",
+     "preset": "solid 15x15x35 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "pepperbox",
+     "like": "Pepperbox Receiver",
+     "label": "pepperbox",
+     "preset": "solid 15x20x40 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "plinker",
+     "like": "Plinker Receiver",
+     "label": "plinker",
+     "preset": "solid 15x15x35 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "railspikecoil",
+     "like": "Railspike Coil Receiver",
+     "label": "railspike coil",
+     "preset": "solid 15x15x60 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "reaperbattlerifl",
+     "like": "Reaper Battle Rifle Receiver",
+     "label": "reaper battle rifle",
+     "preset": "solid 15x20x55 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "sawmill",
+     "like": "Sawmill Receiver",
+     "label": "sawmill",
+     "preset": "solid 20x20x75 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "sparkplugenergy",
+     "like": "Sparkplug Energy Receiver",
+     "label": "sparkplug energy",
+     "preset": "solid 15x20x50 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "stampede",
+     "like": "Stampede Receiver",
+     "label": "stampede",
+     "preset": "solid 15x15x40 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "sunbeamlance",
+     "like": "Sunbeam Lance Receiver",
+     "label": "sunbeam lance",
+     "preset": "solid 15x15x60 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "whaler",
+     "like": "Whaler Receiver",
+     "label": "whaler",
+     "preset": "solid 20x20x50 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
     }
    ]
   }
@@ -6988,6 +7378,162 @@
    "die": "receiver",
    "pattern": "shell",
    "blank": "hollow 20x20x40 steel"
+  },
+  {
+   "part": "Bastille LMG Receiver",
+   "die": "receiver",
+   "pattern": "bastillelmg",
+   "blank": "solid 15x20x75 steel"
+  },
+  {
+   "part": "Bucket Launcher Receiver",
+   "die": "receiver",
+   "pattern": "bucketlauncher",
+   "blank": "solid 15x20x40 steel"
+  },
+  {
+   "part": "Bunker Buster Receiver",
+   "die": "receiver",
+   "pattern": "bunkerbuster",
+   "blank": "solid 25x20x65 steel"
+  },
+  {
+   "part": "Courier Carbine Receiver",
+   "die": "receiver",
+   "pattern": "couriercarbine",
+   "blank": "solid 15x15x40 steel"
+  },
+  {
+   "part": "Farmhand Pump Receiver",
+   "die": "receiver",
+   "pattern": "farmhandpump",
+   "blank": "solid 15x15x45 steel"
+  },
+  {
+   "part": "Field Gun Receiver",
+   "die": "receiver",
+   "pattern": "fieldgun",
+   "blank": "solid 30x25x60 steel"
+  },
+  {
+   "part": "Firebreather Receiver",
+   "die": "receiver",
+   "pattern": "firebreather",
+   "blank": "solid 20x25x45 steel"
+  },
+  {
+   "part": "Gravedigger Auto Receiver",
+   "die": "receiver",
+   "pattern": "gravediggerauto",
+   "blank": "solid 15x15x50 steel"
+  },
+  {
+   "part": "Hammerfall Autocannon Receiver",
+   "die": "receiver",
+   "pattern": "hammerfallautoca",
+   "blank": "solid 30x25x80 steel"
+  },
+  {
+   "part": "Hand Mortar Receiver",
+   "die": "receiver",
+   "pattern": "handmortar",
+   "blank": "solid 15x20x40 steel"
+  },
+  {
+   "part": "Hellwheel Rotary Receiver",
+   "die": "receiver",
+   "pattern": "hellwheelrotary",
+   "blank": "solid 20x20x60 steel"
+  },
+  {
+   "part": "Howitzer Receiver",
+   "die": "receiver",
+   "pattern": "howitzer",
+   "blank": "solid 30x25x60 steel"
+  },
+  {
+   "part": "Kingpin Revolver Receiver",
+   "die": "receiver",
+   "pattern": "kingpinrevolver",
+   "blank": "solid 15x20x35 steel"
+  },
+  {
+   "part": "Longbow DMR Receiver",
+   "die": "receiver",
+   "pattern": "longbowdmr",
+   "blank": "solid 15x15x65 steel"
+  },
+  {
+   "part": "Longreach Bolt Receiver",
+   "die": "receiver",
+   "pattern": "longreachbolt",
+   "blank": "solid 15x15x60 steel"
+  },
+  {
+   "part": "Parade Cannon Receiver",
+   "die": "receiver",
+   "pattern": "paradecannon",
+   "blank": "solid 15x20x40 steel"
+  },
+  {
+   "part": "Peashooter Receiver",
+   "die": "receiver",
+   "pattern": "peashooter",
+   "blank": "solid 15x15x35 steel"
+  },
+  {
+   "part": "Pepperbox Receiver",
+   "die": "receiver",
+   "pattern": "pepperbox",
+   "blank": "solid 15x20x40 steel"
+  },
+  {
+   "part": "Plinker Receiver",
+   "die": "receiver",
+   "pattern": "plinker",
+   "blank": "solid 15x15x35 steel"
+  },
+  {
+   "part": "Railspike Coil Receiver",
+   "die": "receiver",
+   "pattern": "railspikecoil",
+   "blank": "solid 15x15x60 steel"
+  },
+  {
+   "part": "Reaper Battle Rifle Receiver",
+   "die": "receiver",
+   "pattern": "reaperbattlerifl",
+   "blank": "solid 15x20x55 steel"
+  },
+  {
+   "part": "Sawmill Receiver",
+   "die": "receiver",
+   "pattern": "sawmill",
+   "blank": "solid 20x20x75 steel"
+  },
+  {
+   "part": "Sparkplug Energy Receiver",
+   "die": "receiver",
+   "pattern": "sparkplugenergy",
+   "blank": "solid 15x20x50 steel"
+  },
+  {
+   "part": "Stampede Receiver",
+   "die": "receiver",
+   "pattern": "stampede",
+   "blank": "solid 15x15x40 steel"
+  },
+  {
+   "part": "Sunbeam Lance Receiver",
+   "die": "receiver",
+   "pattern": "sunbeamlance",
+   "blank": "solid 15x15x60 steel"
+  },
+  {
+   "part": "Whaler Receiver",
+   "die": "receiver",
+   "pattern": "whaler",
+   "blank": "solid 20x20x50 steel"
   }
  ]
 }
