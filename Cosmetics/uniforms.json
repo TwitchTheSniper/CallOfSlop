@@ -4,6 +4,7 @@
   "uniforms": [
     {
       "id": "ministry_inmate", "name": "Ministry Issue Boiler Suit", "faction": "Ministry of Slop", "rank": "Inmate", "tiers": [ "Inmate" ],
+      "wornBy": [ "Dot Pruett", "Wren Haskett", "Ambrose Thale", "Hester Mossop" ],
       "about": "Grade 3, wash at 40. Do not escape in it.",
       "colors": { "coat": "#857b58", "coatDark": "#686046", "sleeve": "#81774f", "collar": "#6c6447", "trim": "#e3ddcc",
         "trousers": "#7f7553", "hips": "#857b58", "boots": "#2a241d", "gloves": "#6b5a43", "cuff": "#686046" },

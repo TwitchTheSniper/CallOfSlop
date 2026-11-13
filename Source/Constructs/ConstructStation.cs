@@ -22,7 +22,7 @@ public enum StationOp : byte
 }
 
 /// <summary>A Building Station's job (<see cref="CPart.Station"/>; ConstructStation.cs). The first block is what both peers hold.</summary>
-public sealed class StationJob
+public sealed partial class StationJob
 {
     public string Name = ""; // the blueprint, by name (never an index: the list shifts)
     public StationState State;
@@ -69,7 +69,7 @@ public sealed class StationJob
 /// is an ordinary construct, frozen and <see cref="Construct.HeldBy"/> the station until done; each part goes on through
 /// <see cref="ConstructBuild.FitStep"/>, the blueprint loader's own step. Server; nothing runs while no station has a job.
 /// </summary>
-public static class ConstructStation
+public static partial class ConstructStation
 {
     public const float FitSeconds = 2f; // the core fits one part this often by itself...
     public const float FitSecondsPerKg = 0.02f; // ...plus this for its mass...
@@ -686,7 +686,7 @@ public static class ConstructStation
         var lastHeld = false;
         for (var k = j.Cursor; k < j.PartOf.Length; k++)
         {
-            if (j.PartOf[k] >= 0 || !Ready(j, k))
+            if (j.PartOf[k] != -1 || !Ready(j, k)) // (-2: claimed by a lifter, its piece in the air: ConstructLifters.cs)
                 continue;
             var def = j.StepKind[k] >= 0 ? j.KindDef[j.StepKind[k]] : None;
             if (only != None)
@@ -745,6 +745,7 @@ public static class ConstructStation
         if (kind >= 0)
             j.KindFit[kind]++;
         j.LastPart = (ushort)j.PartOf[k];
+        world.FitThisTick = true; // (one fit a tick a world, whoever fits: ConstructLifters.cs)
         j.FitSeq++;
         world.StationChanged(c);
     }
@@ -1013,6 +1014,7 @@ public static class ConstructStation
         Bay(c, t, out var floor, out var rot, out var bay);
         j.Links = (ushort)Math.Min(None - 1, bp.Wires.Count + bp.Links.Count);
         MakeKinds(j);
+        LiftCost(j, run, built); // (each step's place on the body, for the lifters: ConstructLifters.cs)
         Console.WriteLine($"[station] {j.Name}: costed in {j.CostMs:0.0} ms, worst slice {j.WorstMs:0.00} ms; {size.X:0.00} x {size.Y:0.00} x {size.Z:0.00} m, {j.KindN} kinds");
         if (j.Resume)
         {

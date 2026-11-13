@@ -1,0 +1,414 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Loader Arm",
+  "description": "Stands beside a Building Station and fits parts from its hold onto the build in the bay: one more pair of hands. Reaches 1 to 4 m round its base, carries 500 kg. Needs power.",
+  "group": "Production",
+  "section": "Lifters",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 380.0,
+  "health": 600,
+  "armour": 3,
+  "material": "steel",
+  "color": "#6b4a35",
+  "attachSeconds": 6.0,
+  "power": 600,
+  "onBreak": "disable",
+  "lifter": {
+    "kind": "arm",
+    "base": [
+      0.625,
+      1.195,
+      0.625
+    ],
+    "reach": [
+      1.0,
+      4.0
+    ],
+    "up": 3.0,
+    "down": 1.0,
+    "payload": 500,
+    "piece": [
+      1.0,
+      4.0
+    ],
+    "speed": 3.0,
+    "handle": 0.8
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.105,
+        -0.125,
+        -0.105
+      ],
+      "max": [
+        1.355,
+        0.215,
+        1.355
+      ],
+      "color": "#2f2a26"
+    },
+    {
+      "min": [
+        -0.111,
+        0.095,
+        -0.025
+      ],
+      "max": [
+        -0.099,
+        0.175,
+        1.275
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.349,
+        0.095,
+        -0.025
+      ],
+      "max": [
+        1.361,
+        0.175,
+        1.275
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.025,
+        0.095,
+        -0.111
+      ],
+      "max": [
+        1.275,
+        0.175,
+        -0.099
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.025,
+        0.095,
+        1.349
+      ],
+      "max": [
+        1.275,
+        0.175,
+        1.361
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.075,
+        0.21,
+        -0.075
+      ],
+      "max": [
+        0.065,
+        0.695,
+        0.065
+      ],
+      "color": "#9a7442",
+      "detail": true,
+      "paintable": false,
+      "finish": "wood"
+    },
+    {
+      "min": [
+        -0.075,
+        0.21,
+        1.185
+      ],
+      "max": [
+        0.065,
+        0.815,
+        1.325
+      ],
+      "color": "#9a7442",
+      "detail": true,
+      "paintable": false,
+      "finish": "wood"
+    },
+    {
+      "min": [
+        1.185,
+        0.21,
+        -0.075
+      ],
+      "max": [
+        1.325,
+        0.755,
+        0.065
+      ],
+      "color": "#9a7442",
+      "detail": true,
+      "paintable": false,
+      "finish": "wood"
+    },
+    {
+      "min": [
+        1.185,
+        0.21,
+        1.185
+      ],
+      "max": [
+        1.325,
+        0.725,
+        1.325
+      ],
+      "color": "#9a7442",
+      "detail": true,
+      "paintable": false,
+      "finish": "wood"
+    },
+    {
+      "min": [
+        0.125,
+        0.21,
+        0.125
+      ],
+      "max": [
+        1.125,
+        0.475,
+        1.125
+      ],
+      "color": "#7a4432"
+    },
+    {
+      "min": [
+        0.065,
+        0.265,
+        0.425
+      ],
+      "max": [
+        0.13,
+        0.425,
+        0.825
+      ],
+      "color": "#8b857a",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.05,
+        0.305,
+        0.385
+      ],
+      "max": [
+        0.07,
+        0.385,
+        0.865
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.445,
+        0.47,
+        0.445
+      ],
+      "max": [
+        0.805,
+        1.095,
+        0.805
+      ]
+    },
+    {
+      "min": [
+        0.385,
+        1.09,
+        0.385
+      ],
+      "max": [
+        0.865,
+        1.295,
+        0.865
+      ],
+      "color": "#8b857a",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.535,
+        1.29,
+        0.535
+      ],
+      "max": [
+        0.715,
+        1.345,
+        0.715
+      ],
+      "color": "#f07818",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y.0.0",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.2",
+      "at": [
+        0.0,
+        -0.125,
+        0.5
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.3",
+      "at": [
+        0.0,
+        -0.125,
+        0.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.5",
+      "at": [
+        0.0,
+        -0.125,
+        1.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.2.0",
+      "at": [
+        0.5,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.2.2",
+      "at": [
+        0.5,
+        -0.125,
+        0.5
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.2.3",
+      "at": [
+        0.5,
+        -0.125,
+        0.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.2.5",
+      "at": [
+        0.5,
+        -0.125,
+        1.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.3.0",
+      "at": [
+        0.75,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.3.2",
+      "at": [
+        0.75,
+        -0.125,
+        0.5
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.3.3",
+      "at": [
+        0.75,
+        -0.125,
+        0.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.3.5",
+      "at": [
+        0.75,
+        -0.125,
+        1.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.5.0",
+      "at": [
+        1.25,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.5.2",
+      "at": [
+        1.25,
+        -0.125,
+        0.5
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.5.3",
+      "at": [
+        1.25,
+        -0.125,
+        0.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.5.5",
+      "at": [
+        1.25,
+        -0.125,
+        1.25
+      ],
+      "dir": "-y"
+    }
+  ]
+}

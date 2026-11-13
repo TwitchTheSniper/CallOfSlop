@@ -118,6 +118,7 @@ public enum Msg : byte
     TalkTopics, // server -> one client, Sandbox story: the topics the person they talk to offers in their talk panel (u8 the body's player, u8 n, n u16: the topic's index in Story/Topics, top bit asked before) when they change (reliable ordered; GameStoryTopics.cs, protocol 239)
     Objective, // server -> one client, Sandbox story: their "what next" goal (u8 the goal's index in Story/Objectives.json, 255 none; i16 have, i16 need as u16) when it changes (reliable ordered; GameObjectives.cs, protocol 273)
     Labour, // server -> all and each joiner, Sandbox story: the penal colony's convict labourers, every gang (u8 n, each u8 kind, u8 inmates, u8 guards, u8 seed, u8 flags, u8 gap 10 cm, vec facing, u8 points, vec each) when they change (reliable ordered; GameLabour.cs, protocol 276)
+    LabourHands, // server -> all and each joiner, Sandbox story: the story people working among the labourers now (u8 n, each u8 player, u8 scene: their body is drawn as that gang's last inmate) when it changes (reliable ordered; GameLabourHands.cs, protocol 286)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

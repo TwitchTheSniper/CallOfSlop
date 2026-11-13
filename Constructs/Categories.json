@@ -14,7 +14,7 @@
     { "name": "Weapons", "sections": ["Guns", "Ammo boxes", "Feed chutes", "Bombs", "Ordnance racks", "Sights", "Ordnance sections", "Workbenches"] },
     { "name": "Weapon parts", "sections": ["Receivers", "Actions", "Barrels", "Muzzles", "Magazines", "Ammo", "Grips", "Stocks", "Optics", "Utility", "Upgrades", "Melee", "Grenades"] },
     { "name": "Production", "sections": ["Drills", "Saws", "Scoops", "Sawmills", "Smelters", "Foundries", "Assemblers", "Extrusion", "Presses", "Dies", "Components", "Tool upgrades"] },
-    { "name": "Storage and Logistics", "sections": ["Chests and cargo", "Shelves", "Beacons and recycling", "Hoses and leads", "Conveyors"] },
+    { "name": "Storage and Logistics", "sections": ["Chests and cargo", "Shelves", "Beacons and recycling", "Hoses and leads", "Conveyors", "Lifters"] },
     { "name": "Seats and Logic", "sections": ["Seats and helms", "Controls", "Sensors", "Displays", "Gauges", "Logic gates", "Memory", "Wireless and bus", "Timing", "Outputs", "Ship systems", "Remote and cameras"] },
     { "name": "Stations and Spawners", "sections": ["Build stations", "Spawners"] },
     { "name": "Lights and Details", "sections": ["Lights", "Body panels", "Chimneys and stacks"] }
@@ -88,6 +88,7 @@
     { "section": "Launch and landing", "to": ["Joints and Motion", "Launch and docking"] },
     { "section": "Pilot gear", "to": ["Flight", "Pilot gear"] },
 
+    { "section": "Lifters", "to": ["Storage and Logistics", "Lifters"] },
     { "section": "Scoops", "to": ["Production", "Scoops"] },
     { "section": "Presses", "to": ["Production", "Presses"] },
     { "section": "Remote", "to": ["Seats and Logic", "Remote and cameras"] },

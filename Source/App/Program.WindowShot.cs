@@ -111,7 +111,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action) || WsTourKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action) || WsTourKnown(action);
 
     private static void WsSay(string s)
     {
@@ -538,6 +538,23 @@ public static unsafe partial class Program
             case "touch":
                 WsTouch(g, me, arg);
                 return;
+            case "person": // "person NAME X,UP,Z": the eye that far from a story person's body along the world's x, up and z, looking at their chest
+            {
+                var cut = arg.LastIndexOf(' ');
+                var off = cut > 0 ? arg[(cut + 1)..].Split(',') : [];
+                var who = cut > 0 ? g.Players.Values.FirstOrDefault(q => q.Alive && q.Name.Equals(arg[..cut], StringComparison.OrdinalIgnoreCase)) : null;
+                if (who == null || off.Length != 3 || !off.All(o => float.TryParse(o, System.Globalization.CultureInfo.InvariantCulture, out _)))
+                {
+                    WsFail("person NAME X,UP,Z (someone alive by that name)");
+                    return;
+                }
+                var v = off.Select(o => float.Parse(o, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                var at = who.RenderPosition + Vector3.UnitY;
+                WsEyeTo(g, me, at + new Vector3(v[0], v[1], v[2]));
+                WsLook(g, me.Eye, at);
+                _wsWait = 3;
+                return;
+            }
             case "from": // "from PART[#n] SIDE,UP,OUT": the eye that far beside, above and in front of the part's screen (OUT negative: behind it), looking at it
             {
                 var cut = arg.LastIndexOf(' ');
@@ -826,6 +843,30 @@ public static unsafe partial class Program
                     PanelDesigns.ReadSave(new SaveReader(sw.Span.ToArray()), w3);
                     WsSay($"design: saved and loaded: {w3.Designs.Count} design(s)");
                 }
+                return;
+            }
+            case "lifter": // lifters (ConstructLifters.cs): "lifter" prints every lifter as this peer has it; "lifter place" (host) stands a Loader Arm in the station's bay's back corner
+            {
+                if (arg.Trim() == "await") // "lifter await": waits (110 s at most) until the station has fitted every part; prints the seconds since its start
+                {
+                    var (ac, apart) = WsFind(g, "Building Station");
+                    var aj = ac?.Parts[apart].Station;
+                    var secs = aj == null ? 0 : (System.Diagnostics.Stopwatch.GetTimestamp() - aj.Started) / (double)System.Diagnostics.Stopwatch.Frequency;
+                    if (aj is { Steps: > 0 } && aj.Fitted >= aj.Steps || aj == null || secs > 110)
+                    {
+                        WsSay($"lifter: await: {(aj == null ? "no job" : $"{aj.Fitted}/{aj.Steps} parts fitted {secs:0.0} s after the start")}");
+                        return;
+                    }
+                    _wsQueue.EnqueueFront("lifter await");
+                    _wsWait = 1;
+                    return;
+                }
+                if (arg.Trim() == "place" && g.IsServer)
+                {
+                    var (lc, lpart) = WsFind(g, "Building Station");
+                    WsSay("lifter: place: " + (lc == null ? "no Building Station" : LifterProbe.Place(g.Constructs, lc, lpart)));
+                }
+                WsSay("lifter: " + LifterProbe.Text(g.Constructs));
                 return;
             }
             case "station": // a Building Station: "station" prints the first one's job; then "station pick NAME", start [N], cancel, release, stock (host: the parts it lacks into its hold), hold NAME (host: that part into this player's hands), save (host: its body saved and loaded)
