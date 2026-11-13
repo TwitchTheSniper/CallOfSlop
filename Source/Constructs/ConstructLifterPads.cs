@@ -30,6 +30,7 @@ public static partial class ConstructLifters
     /// <summary>Server, once a second after the scan: each pad takes in the loose pieces resting on it. Allocates nothing.</summary>
     private static void PadsTakeIn(ConstructWorld world)
     {
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var taken = 0;
         for (var k = world.PadBodies.Count - 1; k >= 0 && taken < PadTakesAStep; k--)
         {
@@ -42,6 +43,7 @@ public static partial class ConstructLifters
                 if (c.DefOf(i).IsLayDownPad && !c.Parts[i].Broken)
                     taken += PadTakeIn(world, c, i, PadTakesAStep - taken);
         }
+        LifterProbe.Cost(ref LifterProbe.TakeIn, System.Diagnostics.Stopwatch.GetTimestamp() - t0);
     }
 
     /// <summary>One pad: up to <paramref name="most"/> loose pieces over its hold go in. How many did.</summary>
@@ -58,7 +60,9 @@ public static partial class ConstructLifters
         for (var bi = bodies.Count - 1; bi >= 0 && n < most; bi--)
         {
             var lo = bodies[bi];
-            if (lo.PartCount != 1 || lo == c || lo.Anchored || lo.HeldBy != 0 || lo.GrabbedBy != 255 || lo.CarriedBy != 0 || lo.Parts[0].Broken)
+            // The hands' rule for a loose part (Construct.Loose: one whole part, not a seat, a foundation or a core, not anchored), and
+            // nobody has it: not held by a station, grabbed, carried, nudged (the Nudge tool placing it), frozen by the physics gun or driven.
+            if (!lo.Loose || lo == c || lo.HeldBy != 0 || lo.GrabbedBy != 255 || lo.CarriedBy != 0 || lo.NudgeBy != 255 || lo.Frozen || lo.Driver != 255)
                 continue;
             if (Vector3.DistanceSquared(lo.Pos, c.Pos) > reach * reach || lo.Vel.LengthSquared() > 0.25f)
                 continue;
@@ -67,9 +71,10 @@ public static partial class ConstructLifters
                 || local.Y < d.RackHoldMin.Y - 0.25f || local.Y > d.RackHoldMax.Y)
                 continue;
             var pd = lo.DefOf(0);
-            // Not a part that holds anything (its contents would be lost: a rack holds kinds only), nor a damaged one (it would come
-            // out whole), nor what the pad or its stock target refuses.
-            if (lo.Parts[0].Store != 0 || pd.IsPieceRack || pd.Lifter != null || lo.Parts[0].Health < pd.Health * 0.999f)
+            // Not a part that holds anything (its contents would be lost: a rack holds kinds only), nor one that isn't as new (a rack
+            // keeps a kind and a count, so it would come out whole, unpainted, empty and at its default settings), nor what the pad or
+            // its stock target refuses.
+            if (lo.Parts[0].Store != 0 || pd.IsPieceRack || pd.Lifter != null || !AsNew(lo.Parts[0], pd))
                 continue;
             if (!OnDeck(lo, pd, pp, inv, d.RackHoldMin.Y))
                 continue; // (standing beside the pad on the ground, as a placed machine does: not set down on it)
@@ -153,7 +158,11 @@ public static partial class ConstructLifters
         if (kind < 0)
             return 0;
         if (!ReferenceEquals(_padJob, j) || _padTick != world.LiftTick)
+        {
+            var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             PadCounts(world, sc, t, j);
+            LifterProbe.Cost(ref LifterProbe.PadCount, System.Diagnostics.Stopwatch.GetTimestamp() - t0);
+        }
         return Math.Min(_padHeld[kind], _padReach[kind]);
     }
 
@@ -179,6 +188,8 @@ public static partial class ConstructLifters
                 var mode = (int)ConstructConfig.Get(c.Parts[l.Part], c.DefOf(l.Part), CfgKey.LiftMode, 0);
                 if (mode is 2 or 3)
                     continue; // (Carry only, Off: it fits nothing)
+                if (!CanWorkNow(world, c, l))
+                    continue; // (no power, broken, its Run held off or stuck: its pads' pieces are ordered as if it weren't there)
                 Frame(c, l.Part, ld, out _, out var lr, out var shoulder);
                 if (Vector3.Distance(floor, shoulder) > ld.ReachMax + bay.Length() * 0.5f + ld.Down)
                     continue;
@@ -221,6 +232,18 @@ public static partial class ConstructLifters
                 }
         }
     }
+
+    /// <summary>Can this arm fit from its pick pads now: powered, whole, its Run not held off, not stuck with a piece?</summary>
+    private static bool CanWorkNow(ConstructWorld world, Construct c, CLift l) =>
+        !c.Parts[l.Part].Broken && ConstructRecycler.Powered(world, c, l.Part) && !ConstructExtruder.RunHeld(c, l.Part) && l.State != LiftState.Stuck;
+
+    /// <summary>
+    /// Is the part as a new one is: whole, no rounds (a new ammo box or gun is empty), no paint, no text, its settings at their
+    /// defaults, no fluid, no queue. Only such a part goes into a pad's hold, which keeps kinds and counts and nothing else.
+    /// </summary>
+    private static bool AsNew(in CPart p, ConstructPartDef d) =>
+        p.Health >= d.Health * 0.999f && p.Rounds == 0 && p.Paint == 0 && p.Text == null && p.Text2 == null && p.Orders == null && p.Craft == null
+        && ConstructConfig.AllDefault(p, d) && ConstructFluid.Held(p, d) == null;
 
     /// <summary>Does the piece rest on the pad's deck: its lowest corner within 15 cm of the hold's floor (not below it: on the ground beside)?</summary>
     private static bool OnDeck(Construct lo, ConstructPartDef pd, Vector3 padAt, Quaternion padInv, float floor)

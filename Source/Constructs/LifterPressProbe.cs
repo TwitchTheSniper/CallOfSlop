@@ -122,3 +122,22 @@ public static partial class LifterProbe
         return $"pickpad: Lay-down Pad body {pd.Id} behind arm body {arm.Id}, {n} pieces of the job's {j.KindN} kinds on it";
     }
 }
+
+public static partial class LifterProbe
+{
+    /// <summary>A cost counter (Stopwatch ticks): calls, total, worst.</summary>
+    public struct CostCount
+    {
+        public long N, Total, Worst;
+        public readonly string Text(string name) => N == 0 ? $"{name}: not run" : $"{name}: {N} calls, {Total * 1e6 / N / System.Diagnostics.Stopwatch.Frequency:0.0} us average, worst {Worst * 1e6 / System.Diagnostics.Stopwatch.Frequency:0} us";
+    }
+
+    public static CostCount TakeIn, PadCount; // server: the pads' take-in (once a second) and a station's pick pad count (2 Hz while building)
+
+    public static void Cost(ref CostCount c, long ticks)
+    {
+        c.N++;
+        c.Total += ticks;
+        c.Worst = Math.Max(c.Worst, ticks);
+    }
+}
