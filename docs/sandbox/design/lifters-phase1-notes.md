@@ -1,7 +1,7 @@
 # Lifters phase 1: notes (2026-11-13)
 
 Branch `claude/lifters-1-f8f1dc`. The design is `arms-and-cranes.md` (revised the same day for the user's answers 2 and 6:
-pushing players is phase 3, the cab phase 8, eight phases in all). Protocol 286.
+pushing players is phase 3, the cab phase 8, eight phases in all). Protocol 286 on this branch; main has since taken 286 (Msg.LabourHands), so the merger renumbers this to 287.
 
 ## What was built
 
@@ -27,6 +27,20 @@ pushing players is phase 3, the cab phase 8, eight phases in all). Protocol 286.
 - **Window tool**: `lifter` (every lifter as this peer has it, carries seen, fits by lifters), `lifter place` (host: an arm
   in the station's bay's back corner, turned as the station is), `lifter await` (host: until every part is fitted, with
   the seconds since the start).
+
+## Tried by hand (Proving Ground, `--spawn-at 140,0,-100`, the Production Showcase's station, the Buggy, its hold stocked)
+
+- **Host, with and without the arm** (`lifter place` puts it in the bay's back corner): every part fitted 61.3 s after the
+  start with the station alone, 44.0 s with one Scrap arm, which fitted 10 of the 26 parts (the near end of the Buggy;
+  the far end is out of its 4 m reach). Links and the fill come after and were not timed.
+- **Host and joined client** (`--net host` / `join:127.0.0.1`): the client heard the same 10 carries, saw 26/26 fitted on
+  the same body, and the arm's state matched the host's at the end (Idle, 110/110 ticks).
+- **Cancel with a piece in the hand** (twice, 18 and 84 ticks into a carry): the piece went back with the job's parts
+  ("goes back: its step is no longer wanted"), the empty hand returned and went idle.
+- Not tried: a lifter removed mid-carry (its piece is set down loose: code path not run), power lost mid-carry, a Release
+  early mid-carry, a save mid-carry (known loss, below), two arms at one station, eight arms (the tick budget), a client's
+  drawing looked at with my own eyes (no pictures: the client's state lines only), late joiner mid-carry.
+- `--gen-parts all --check` and `--check-construct-parts` pass. No self-test sections run (none covers this code).
 
 ## Choices made (each can be changed)
 
