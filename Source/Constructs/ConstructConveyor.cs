@@ -244,8 +244,8 @@ public static class ConstructConveyor
         var rd = c.DefOf(part);
         if (!rd.IsPieceRack)
             return 1;
-        if (d.Role == PartRole.Storage)
-            return 2; // (a piece, or anything a press stamps that fits: not storage, whose contents would be lost)
+        if (d.Role == PartRole.Storage && !rd.IsBuildStation)
+            return 2; // (a piece, or anything a press stamps that fits: not storage, whose contents would be lost. A Building Station's hold takes any store part a blueprint names, a machine too, since a hold is a def count and what reaches it is new and empty: an order's rider, a hand, a stock; a loose loaded one in the bay is left alone, ConstructStation.TakeDropped: verification 2026-11-13c)
         ConstructRackPack.Ensure(rd, st);
         if (st.KindIndex(d.Id) < 0 && st.KindN >= CStore.MaxKinds || st.ItemCount >= rd.RackCount)
             return 4;
@@ -1210,8 +1210,8 @@ public static class ConstructConveyor
             var paint = r.U32();
             var part = r.U16();
             var def = part < names.Parts.Length ? names.Parts[part] : ConstructParts.None;
-            if (def == ConstructParts.None || !float.IsFinite(at) || ConstructParts.Get(def) is not { Role: not PartRole.Storage })
-                continue;
+            if (def == ConstructParts.None || !float.IsFinite(at) || ConstructParts.Get(def) == null)
+                continue; // (a store part rides too, new and empty, to a Building Station's hold: its order counts it as Sent, so it is kept)
             saved.Riders.Add(new CRider { Def = def, Route = route, At = MathF.Max(0, at), Health = Math.Max((byte)1, hp), Paint = paint });
             saved.Index.Add(i);
         }

@@ -1126,11 +1126,18 @@ public static unsafe partial class Program
                             return;
                         }
                         break;
-                    case "drop" when g.IsServer && ConstructParts.Find(rest) is { } loose: // a loose part set down in the bay, as the physics gun would leave it
+                    case "drop" or "droploaded" when g.IsServer && ConstructParts.Find(rest) is { } loose: // a loose part set down in the bay, as the physics gun would leave it; "droploaded": a store part with 50 units of ammo in it
                     {
                         ConstructStation.Bay(sc, spart, out var bfloor, out var bturn, out var bsize);
                         var made = ConstructBuild.PlaceNew(g.Constructs, loose, bfloor + System.Numerics.Vector3.Transform(new System.Numerics.Vector3(bsize.X * 0.3f, 0.3f, bsize.Z * 0.3f), bturn), 0);
-                        WsSay(made == null ? "station: drop: no room" : "station: a loose " + loose.Name + " lies in the bay (construct " + made.Id + ")");
+                        if (made != null && sverb == "droploaded" && g.Constructs.StoreOf(made, 0) is { } lst)
+                        {
+                            lst.Amount = 50;
+                            lst.Material = (byte)RecyclingTable.Current.IdOf(ConstructAmmo.Material);
+                            lst.Version++;
+                            g.Constructs.StoreDirty.Add(lst.Handle);
+                        }
+                        WsSay(made == null ? "station: drop: no room" : "station: a loose " + loose.Name + " lies in the bay (construct " + made.Id + (sverb == "droploaded" ? $", {g.Constructs.StoreOf(made, 0)?.Amount ?? -1} units in it" : "") + ")");
                         break;
                     }
                     case "costtop": // the biggest shipped blueprints a 64 m bay doesn't refuse from their parts, costed as a station does
