@@ -740,6 +740,14 @@ public static unsafe partial class Program
                     return;
                 }
                 var dw = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (arg == "open") // the panel opened on the first Panel Designer as the use key on its desk opens it (the aim skipped)
+                {
+                    if (WsFind(g, "Panel Designer") is ({ } oc, var op))
+                        OpenPanelDesigner(oc, op);
+                    WsSay($"design open: {(Ui.DesignerOpen ? "open" : "NOT OPEN")}");
+                    _wsWait = 5;
+                    return;
+                }
                 if (arg is "save" or "order")
                 {
                     Ui.DesignerPress(arg); // (the button, pressed at the panel's next frame)
