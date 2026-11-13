@@ -172,7 +172,7 @@ public static unsafe partial class Program
             case "fill" when g.IsServer:
             {
                 // "fill N TEMPLATE" (phase 3): N made parts into every player's count, one of each, named by TEMPLATE with {i} as 0..N-1 (and {j} as
-                // 10 + i, {k} as 100 + i), to drive the inventory message past its room; the key bytes in all are printed.
+                // 10 + i, {k} as 100 + i, {e} as 100 + 2i, {t} as 12 + i mod 29, {q} as i / 29), to drive the inventory message past its room; the key bytes in all are printed.
                 var w2 = arg.Split(' ', 3, StringSplitOptions.TrimEntries);
                 if (w2.Length < 3 || !int.TryParse(w2[1], out var n) || n < 1)
                 {
@@ -184,10 +184,10 @@ public static unsafe partial class Program
                 var scratch = new PacketWriter(1024);
                 for (var i = 0; i < n; i++)
                 {
-                    var name = w2[2].Replace("{i}", i.ToString()).Replace("{j}", (10 + i).ToString()).Replace("{k}", (100 + i).ToString());
+                    var name = w2[2].Replace("{i}", i.ToString()).Replace("{j}", (10 + i).ToString()).Replace("{k}", (100 + i).ToString()).Replace("{e}", (100 + 2 * i).ToString()).Replace("{t}", (12 + i % 29).ToString()).Replace("{q}", (i / 29).ToString());
                     if (ConstructParts.Find(name) is not { RuntimeMade: true } d)
                     {
-                        WsFail($"inv fill: no made part \"{name}\"");
+                        WsFail($"inv fill: no made part \"{name}\" ({(HullLoft.IsCutName(name) ? HullLoft.CutRefusal(name) : "")})");
                         return true;
                     }
                     scratch.Begin(Msg.CAct);

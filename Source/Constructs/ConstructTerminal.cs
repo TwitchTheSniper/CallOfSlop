@@ -372,6 +372,7 @@ public sealed partial class ConstructBeacons
         v.State = state;
         Array.Clear(v.Counts);
         Array.Clear(v.Materials);
+        v.MadeN = v.MadeOver = 0;
         v.Stores = v.Parts = v.Bulk = 0;
         if (mask != 0)
             for (var h = _head[n.Net]; h != 0; h = _next[h])
@@ -533,8 +534,8 @@ public sealed partial class ConstructEdits
         if (material ? mat == 0 || mat > RecyclingTable.Current.Materials.Length : item == null)
             return "no such item";
         var name = item?.Name ?? RecyclingTable.Current.NameOf(mat);
-        if (item is { PhysicsOnly: true })
-            return PhysicsOnlyRefusal(item, "come through a chute");
+        if (item is { PhysicsOnly: true } && !(item.RuntimeMade && hands)) // (a made piece off a Piece Rack is set down in front of you as a body: phase 3 of inventory-run-time-parts.md)
+            return item.RuntimeMade ? $"the {PartRef.Shown(item)} is a made piece: pull it to your hands, it is set down in front of you" : PhysicsOnlyRefusal(item, "come through a chute");
         if (!hands && item != null && !ConstructTerminals.TrayFits(d, item))
             return $"the {name} is too big for the tray: pull it to your hands";
         if (!hands && material && !HasChuteOut(world, c, part))
@@ -667,6 +668,8 @@ public sealed partial class ConstructEdits
 
     private void ArrivePart(ConstructWorld world, Construct c, in TerminalJob j, ConstructPartDef d, CStore st, ushort store, ConstructPartDef item, Vector3? near)
     {
+        if (item.PhysicsOnly)
+            near ??= ConstructTerminals.At(c, j.Part); // (a made piece is never a tray item: set down by the terminal, as Give drops a body)
         if (near == null && !ConstructTerminals.TrayRoom(d, st, item))
         {
             Notices.Add((j.Player, $"the {d.Name}'s tray is full: the {item.Name} stayed where it was"));

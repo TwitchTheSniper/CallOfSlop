@@ -204,6 +204,51 @@ public sealed class SlotStore : INetworkStore
     }
 }
 
+/// <summary>
+/// A Piece Rack or a Lay-down Pad on a network (docs/sandbox/design/inventory-run-time-parts.md phase 3): the pieces it holds by kind,
+/// made parts mostly (an Extruder's, a Press's, a cutter's). A piece taken goes as a body: a Smart Terminal sets it down in front of
+/// the player. Nothing is put into one through the network (its columns are packed by the conveyors and the lifters). A Crafting
+/// Terminal's hold (and a Building Station's, a Panel Designer's) is its own work, never the network's.
+/// </summary>
+public sealed class RackStore : INetworkStore
+{
+    public static readonly RackStore Instance = new();
+
+    public bool Serves(ConstructPartDef d) => d.IsPieceRack && !d.IsCraftTerminal && !d.IsBeacon && !d.IsTerminal;
+
+    public int Parts(ConstructWorld world, Construct c, int part) => world.StoreOf(c, part)?.ItemCount ?? 0;
+
+    public void Tally(ConstructWorld world, Construct c, int part, BeaconView into)
+    {
+        if (world.StoreOf(c, part) is not { } st)
+            return;
+        for (var k = 0; k < st.KindN; k++)
+            into.Add(st.KindDef![k], st.KindCount![k]);
+    }
+
+    public int Holds(ConstructWorld world, Construct c, int part, ushort id)
+    {
+        if (world.StoreOf(c, part) is not { } st)
+            return 0;
+        var k = st.KindIndex(id);
+        return k < 0 ? 0 : st.KindCount![k];
+    }
+
+    public bool TakePart(ConstructWorld world, Construct c, int part, ConstructPartDef d)
+    {
+        if (world.StoreOf(c, part) is not { } st || st.KindIndex(d.Id) < 0)
+            return false;
+        ConstructRackPack.Ensure(c.DefOf(part), st);
+        return ConstructRackPack.LastOf(st, d.Id, out var slab, out var lane) && world.RackTakeAt(c, part, slab, lane) != null;
+    }
+
+    public int TakeBulk(ConstructWorld world, Construct c, int part, byte material, int amount) => 0;
+
+    public bool PutPart(ConstructWorld world, Construct c, int part, ConstructPartDef d, bool pile) => false;
+
+    public int PutBulk(ConstructWorld world, Construct c, int part, byte material, int amount, bool same) => 0;
+}
+
 /// <summary>A Storage Volume on a network: its parts by kind and its bulk (ConstructStoreVolume.cs). One box holds one or the other.</summary>
 public sealed class VolumeStore : INetworkStore
 {
@@ -407,7 +452,7 @@ public sealed partial class ConstructBeacons
     public const int DistanceStep = 5; // metres: the out-of-range line's steps (fewer messages as a player walks)
 
     /// <summary>The kinds of store. A new one goes first if it speaks for parts the shipped kind would also take.</summary>
-    public static readonly INetworkStore[] Kinds = [VolumeStore.Instance, SlotStore.Instance];
+    public static readonly INetworkStore[] Kinds = [VolumeStore.Instance, RackStore.Instance, SlotStore.Instance]; // (phase 3 of inventory-run-time-parts.md: Piece Racks before the slots, which would serve them as storage with no slots)
 
     private struct Node
     {
