@@ -502,6 +502,16 @@ public static unsafe partial class Program
                     {
                         ref var cg = ref gc.Guns[k];
                         WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"guns: {k} {gc.DefOf(cg.Part).Name}: {(cg.Problem.Length > 0 ? cg.Problem : "fires")}, reach {cg.MaxRange:0.##} m, spread {cg.Spread * 180 / MathF.PI:0.####} deg, damage {cg.Def?.Damage ?? 0}, every {cg.Interval} ticks, {cg.Shots} a shot, {cg.PerShot} rounds a shot, magazine drawn {(cg.MagPart >= 0 ? gc.ScaleOf(cg.MagPart) : 0)}x"));
+                        if (k == gc.GunCount - 1)
+                            for (var l = 0; l < gc.LinkCount; l++) // (each gun part's link: its two sockets as drawn should meet)
+                            {
+                                ref var lk = ref gc.Links[l];
+                                if (lk.A >= gc.PartCount || lk.B >= gc.PartCount || gc.DefOf(lk.A).Role is not (PartRole.GunPart or PartRole.Gun) || gc.DefOf(lk.B).Role is not (PartRole.GunPart or PartRole.Gun))
+                                    continue;
+                                gc.SocketAt(lk.A, lk.SA, out var sa, out _);
+                                gc.SocketAt(lk.B, lk.SB, out var sb, out _);
+                                WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"guns: link {gc.DefOf(lk.A).Name} ({gc.ScaleOf(lk.A)}x) to {gc.DefOf(lk.B).Name} ({gc.ScaleOf(lk.B)}x): sockets {Vector3.Distance(sa, sb):0.###} m apart"));
+                            }
                     }
                 else
                     WsSay("guns: no spawned body");

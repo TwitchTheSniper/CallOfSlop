@@ -404,24 +404,36 @@ public static class ConstructMerge
         DeriveScales(c);
     }
 
-    /// <summary>Every gun part on a merged receiver's centre sockets, and every gun part bolted on through them, is N times bigger.</summary>
     /// <summary>
     /// A pressed receiver's catalogue gun parts are drawn round(s) times bigger (sized-parts design 4.3), as on a merge; 1 for anything
     /// else (a file receiver, or a pressed one under 1.5).
     /// </summary>
     public static byte DrawnOn(ConstructPartDef receiver) =>
-        receiver.GunScale == 1f || !receiver.IsReceiverGun ? (byte)1 : (byte)Math.Clamp((int)MathF.Round(receiver.GunScale), 1, 255);
+        receiver.GunScale == 1f || !receiver.IsReceiverGun ? (byte)1 : (byte)Math.Clamp((int)MathF.Floor(receiver.GunScale + 0.5f), 1, 255);
 
+    /// <summary>
+    /// A catalogue gun part bolted onto a pressed gun part (a muzzle device on a pressed barrel) is drawn at that part's bore, rounded: a
+    /// 0.20 m barrel's device is twice the size, whatever it hangs from (placement, <see cref="ScaleFor"/>, and drawing agree); 1 for a file part.
+    /// </summary>
+    public static byte DrawnOnSized(ConstructPartDef part) =>
+        part.GunSized is { SizeBore: > 0 } g ? (byte)Math.Clamp((int)MathF.Floor(g.SizeBore + 0.5f), 1, 255) : (byte)1;
+
+    /// <summary>
+    /// Every gun part on a merged receiver's centre sockets, and every gun part bolted on through them, is N times bigger; on a pressed
+    /// receiver's sockets, round(s) times (<see cref="DrawnOn"/>). A pressed gun part keeps its own size, and the parts on it take its bore
+    /// (<see cref="DrawnOnSized"/>).
+    /// </summary>
     public static void DeriveScales(Construct c)
     {
         c.PartScale.AsSpan().Clear();
         var any = c.MergeCount > 0;
         for (var i = 0; i < c.PartCount && !any; i++)
-            any = DrawnOn(c.Parts[i].D) > 1;
+            any = DrawnOn(c.Parts[i].D) > 1 || DrawnOnSized(c.Parts[i].D) > 1;
         if (!any)
             return;
         using var scratch = Scratch.Begin();
         Span<ushort> queue = scratch.Take<ushort>(c.PartCount);
+        for (var pass = 0; pass < 2; pass++) // (merges and pressed receivers first, so their floods win; then what hangs off a pressed part on its own)
         for (var l = 0; l < c.LinkCount; l++)
         {
             ref var link = ref c.Links[l];
@@ -435,23 +447,33 @@ public static class ConstructMerge
                 (other, n) = (link.B, na); // (a pressed receiver: its own sockets)
             else if (link.B < c.PartCount && DrawnOn(c.Parts[link.B].D) is > 1 and var nb)
                 (other, n) = (link.A, nb);
+            else if (pass == 0)
+                continue;
+            else if (link.A < c.PartCount && DrawnOnSized(c.Parts[link.A].D) is > 1 and var sa)
+                (other, n) = (link.B, sa); // (a pressed gun part's bore, wherever it hangs)
+            else if (link.B < c.PartCount && DrawnOnSized(c.Parts[link.B].D) is > 1 and var sb)
+                (other, n) = (link.A, sb);
             else
                 continue;
             if (other >= c.PartCount || c.Parts[other].D.Role != PartRole.GunPart || c.PartScale[other] != 0)
                 continue;
+            if (pass == 1 && Parts.Find(c.Parts[other].D.GunPartName) is { Category: PartCategory.Barrel or PartCategory.Splitter })
+                continue; // (the pressed barrel's parent side: a splitter keeps its own scale)
             int head = 0, tail = 0;
             c.PartScale[other] = Own(c, other, n);
             queue[tail++] = (ushort)other;
             while (head < tail)
             {
                 int at = queue[head++];
+                var d = c.Parts[at].D;
+                var next = d.GunSized != null ? DrawnOnSized(d) : c.PartScale[at]; // (past a pressed part: its bore)
                 for (var k = 0; k < c.LinkCount; k++)
                 {
                     ref var lk = ref c.Links[k];
                     var o = lk.A == at ? lk.B : lk.B == at ? lk.A : -1;
                     if (o < 0 || o >= c.PartCount || c.PartScale[o] != 0 || c.Parts[o].D.Role != PartRole.GunPart)
                         continue;
-                    c.PartScale[o] = Own(c, o, n);
+                    c.PartScale[o] = Own(c, o, next);
                     queue[tail++] = (ushort)o;
                 }
             }
@@ -529,6 +551,8 @@ public static class ConstructMerge
             return c.Merges[c.MergeOf[part] - 1].N;
         if (DrawnOn(c.DefOf(part)) is > 1 and var s)
             return s; // (a pressed receiver's own sockets)
+        if (c.DefOf(part).GunSized != null)
+            return DrawnOnSized(c.DefOf(part)); // (on a pressed gun part: its bore, as DeriveScales draws it)
         return c.PartScale[part] > 1 ? c.PartScale[part] : (byte)1;
     }
 
