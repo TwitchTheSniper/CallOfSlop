@@ -1669,6 +1669,7 @@ public static unsafe partial class Program
     private static void WindowShotKeys(bool[] down)
     {
         WindowShotHold(down); // (a key held over frames: Program.WindowShotCuts.cs)
+        WsTalkHold(down); // (keys held for real seconds, a pilot's: Program.WindowShotTalk.cs)
         if (_wsPress is { } a)
         {
             down[(int)a] = true;
