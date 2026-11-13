@@ -491,7 +491,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   (docs/sandbox/design/inventory-run-time-parts.md; 298 on its branch).
     // 300: Lifters phase 4 (carrying between points; renumbered from the branch's 296): the Lay-down Pad parts (ids move); CBodyKind.Lifts sends the
     //   piece by PartRef (a run-time piece by its key) and, per lifter, u8 put point kind, u16 its part, u8 a press bay; LiftWhy gains NoPoint, NoTaker, Carrying.
-    public const ushort ProtocolVersion = 300;
+    // 304: Smart logistics phase 5: CfgKey.FormerStrips (at the end), a new setting slot on Panel Formers (settings ride CBody by slot): a panel too wide
+    //   for the network's Extruders is formed of strips only when the player turns it on.
+    public const ushort ProtocolVersion = 304;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

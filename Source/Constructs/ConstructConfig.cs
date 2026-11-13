@@ -213,6 +213,7 @@ public enum CfgKey : byte
     FillWait, // ...on: the build waits in the bay until it is filled; off: it finishes short and says so
     LiftMode, // Loader Arm: what it works at (Auto, Station only, Carry only, Off: ConstructLifters.cs)
     CarryHeight, // Loader Arm: how high it lifts a piece over the higher end of a move before it turns (m)
+    FormerStrips, // Panel Former: a chained panel wider than every Extruder on the network makes is formed of equal strips (on) or waits for a wider one (off; StockTargets.cs)
     COUNT,
 }
 
@@ -823,6 +824,7 @@ public static class ConstructConfig
                 CfgKey.StoreKeep or CfgKey.StorePriority or CfgKey.StoreTakes => StockTargets.IsStore(d),
                 CfgKey.LiftMode or CfgKey.CarryHeight => d.Lifter != null, // (a Loader Arm: ConstructLifters.cs)
                 CfgKey.FeedPriority => d.IsCraftTerminal,
+                CfgKey.FormerStrips => d.IsPanelFormer && !d.IsLaserCutter,
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),

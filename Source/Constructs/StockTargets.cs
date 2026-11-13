@@ -55,6 +55,8 @@ public static class StockTargets
             Add(CfgKey.StorePriority, CfgType.Number, "Store priority", 1, 5, 3, "Pieces for storage go to the store with the highest priority first, then the nearest.");
             Add(CfgKey.StoreTakes, CfgType.Choice, "Takes", 0, 2, 0, "What it takes as storage. Orders and what it keeps always come in.", TakesNames);
         }
+        if (d.IsPanelFormer && !d.IsLaserCutter)
+            Add(CfgKey.FormerStrips, CfgType.Toggle, "Too wide: make strips", 0, 1, 0, "A panel wider than any Extruder on the network makes. Off: its order waits and says which Extruder or Die Frames would make it. On: it is formed of equal-width strips the widest one makes.");
         if (d.IsCraftTerminal)
             Add(CfgKey.FeedPriority, CfgType.Choice, "Order priority", 0, 2, 1, "Its orders' class: High orders take shared parts and machines first, then the oldest order.", PriorityNames);
     }
@@ -66,6 +68,9 @@ public static class StockTargets
     public static int Takes(Construct c, int part) => (int)ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.StoreTakes, TakesAnything);
 
     public static int Spill(Construct c, int part) => (int)ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.RouterSpill, SpillAuto);
+
+    /// <summary>A Panel Former forms a too-wide panel of equal strips: the player's choice, off by default (phase 5).</summary>
+    public static bool Strips(Construct c, int part) => ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.FormerStrips, 0) >= 0.5f;
 
     public static bool Hold(Construct c, int part) => ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.RouterHold, 0) >= 0.5f;
 

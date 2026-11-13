@@ -102,12 +102,12 @@ public static class ConstructLogisticsPlan
     /// What a Panel Former needs to form <paramref name="ask"/> of panel <paramref name="product"/>: extruded sheet of the panel's material
     /// sized to the panel (<see cref="SheetFor"/>), counted in pieces against what its bin holds of that material. 0 inputs: nothing to ask.
     /// </summary>
-    private static int FormerInputs(Construct c, CraftNet net, CStore st, ushort product, int ask, Span<ushort> kinds, Span<int> counts, Span<int> held)
+    private static int FormerInputs(Construct c, CraftNet net, int m, CStore st, ushort product, int ask, Span<ushort> kinds, Span<int> counts, Span<int> held)
     {
         if (ConstructParts.Get(product) is not { } pd || !HullLoft.IsFormedName(pd.Name) || HullLoft.FormedMaterial(pd.Name) is var mat && mat == 0)
             return 0;
         var one = HullLoft.FormedUnits(pd, mat);
-        if (Extrusion.Def(SheetFor(c, net, pd, mat, one)) is not { } sheet)
+        if (Extrusion.Def(SheetFor(c, net, pd, mat, one, StockTargets.Strips(c, m))) is not { } sheet)
             return 0;
         var each = SheetUnits(sheet, mat);
         var units = one * ask - st.JobAmount; // (a stroke under way has its units already)
@@ -122,24 +122,88 @@ public static class ConstructLogisticsPlan
     /// <summary>
     /// The sheet a chained Panel Former order asks for (the user, phase 3 Q1): a solid section the panel's width (5 cm steps), 10 cm
     /// thick, cut so one piece holds one panel's <paramref name="units"/> with less than a 5 cm step to spare. When no Extruder on the
-    /// network takes that width, the panel is split across into the fewest equal strips the widest one takes, each holding its share of
-    /// the units (so the count goes up); a piece longer than the best Extruder makes is cut at its most. When none takes any, the
-    /// full-width sheet is asked for and the chain line says the Extruder's refusal.
+    /// network takes that width and the Panel Former's "Too wide: make strips" is on (<paramref name="strips"/>; the user, phase 5: the
+    /// player chooses strips, a bigger Extruder or Die Frames come first), the panel is split across into the fewest equal strips the
+    /// widest one takes, each holding its share of the units (so the count goes up); a piece longer than the best Extruder makes is cut
+    /// at its most. Strips off, or none takes any: the full-width sheet is asked for and the chain line says what would make it (<see cref="TooWideText"/>).
     /// </summary>
-    public static ExtrusionKey SheetFor(Construct c, CraftNet net, ConstructPartDef panel, byte material, int units)
+    public static ExtrusionKey SheetFor(Construct c, CraftNet net, ConstructPartDef panel, byte material, int units, bool strips)
     {
-        var across = HullLoft.PanelOf(panel.Name) is { W: > 0 } sh ? sh.W
-            : (int)MathF.Round(MathF.Min(panel.BoundsMax.X - panel.BoundsMin.X, panel.BoundsMax.Z - panel.BoundsMin.Z) * 100);
-        across = Math.Clamp(across, Extrusion.MinSectionCm, Extrusion.MaxSectionCm);
+        var across = PanelAcross(panel);
         var w = StepUp(across);
         if (LongestTaken(c, net, w, SheetThickCm) is var most and >= Extrusion.StepCm)
             return SheetSized(w, material, units, most);
-        var widest = WidestTaken(c, net, SheetThickCm);
+        var widest = strips ? WidestTaken(c, net, SheetThickCm) : 0;
         if (widest < Extrusion.MinSectionCm)
             return SheetSized(w, material, units, Extrusion.MaxLengthCm);
         var n = (across + widest - 1) / widest;
         var strip = Math.Clamp(StepUp((across + n - 1) / n), Extrusion.MinSectionCm, widest);
         return SheetSized(strip, material, (units + n - 1) / n, LongestTaken(c, net, strip, SheetThickCm) is var sl and >= Extrusion.StepCm ? sl : Extrusion.MaxLengthCm);
+    }
+
+    /// <summary>A formed panel's width across (cm), the side a sheet for it spans.</summary>
+    private static int PanelAcross(ConstructPartDef panel)
+    {
+        var across = HullLoft.PanelOf(panel.Name) is { W: > 0 } sh ? sh.W
+            : (int)MathF.Round(MathF.Min(panel.BoundsMax.X - panel.BoundsMin.X, panel.BoundsMax.Z - panel.BoundsMin.Z) * 100);
+        return Math.Clamp(across, Extrusion.MinSectionCm, Extrusion.MaxSectionCm);
+    }
+
+    /// <summary>
+    /// Why a sheet <paramref name="w"/> cm wide waits, and what would make it (the user, phase 5: a bigger Extruder or Die Frames first,
+    /// strips as the player's choice): an Extruder on the network whose most section takes it but whose die is narrower wants Die Frames;
+    /// else the smallest Extruder in the catalogue that takes it; then the strips setting with the count it would make. Null when the
+    /// widest Extruder here takes it after all (the usual refusal stands). Made only when the entry's reason changes (the caller compares).
+    /// </summary>
+    private static string? TooWideText(Construct c, CraftNet net, string name, int w)
+    {
+        var widest = WidestTaken(c, net, SheetThickCm);
+        if (widest >= w)
+            return null;
+        string? frames = null;
+        for (var i = 0; i < net.MachineN && frames == null; i++)
+        {
+            var d = c.DefOf(net.Machines[i]);
+            if (IsSheetExtruder(d) && w <= MathF.Round(d.ExtMaxSection.X * 100) && SheetThickCm <= MathF.Round(d.ExtMaxSection.Y * 100))
+                frames = $"weld Die Frames on the {d.Name} (its die reaches {d.ExtMaxSection.X:0.##} m with them)";
+        }
+        if (frames == null)
+        {
+            ConstructPartDef? best = null;
+            foreach (var d in ConstructParts.All)
+                if (IsSheetExtruder(d) && w <= MathF.Round(d.ExtMaxSection.X * 100) && SheetThickCm <= MathF.Round(d.ExtMaxSection.Y * 100)
+                    && (best == null || d.ExtMaxSection.X < best.ExtMaxSection.X))
+                    best = d;
+            frames = best == null ? "no Extruder makes it that wide" : $"build a {best.Name} (dies to {best.ExtMaxSection.X:0.##} m)";
+        }
+        var strips = widest >= Extrusion.MinSectionCm ? $", or set the Panel Former to make strips ({(w + widest - 1) / widest} across)" : "";
+        var here = widest > 0 ? $"the widest Extruder here makes {widest / 100f:0.##} m" : "no Extruder here makes it";
+        return $"waiting on {name}: {w / 100f:0.##} m wide, {here}. {char.ToUpperInvariant(frames[0])}{frames[1..]}{strips}";
+    }
+
+    /// <summary>
+    /// A Panel Former's sheet link that waits with no maker follows the former's strips setting as it is now: when the sheet it would ask
+    /// for now differs (the player turned strips on, or welded Die Frames, or built a bigger Extruder), the link asks for that one instead,
+    /// the count by the units it held. Only while nothing of it is made, riding or claimed. True when it changed.
+    /// </summary>
+    private static bool Rekey(ConstructWorld world, Construct c, CraftNet net, ref ChainEntry e)
+    {
+        var dd = c.DefOf(e.Dest);
+        if (!dd.IsPanelFormer || dd.IsLaserCutter || ConstructParts.Get(e.Kind) is not { IsExtrusion: true } old || old.ExKey.H != SheetThickCm)
+            return false;
+        var panelKind = e.Parent == 0 ? RootKind(c, e.Root, e.RootId) : Find(world, e.Parent) is var p and >= 0 ? world.Chains[p].Kind : ConstructParts.None;
+        if (ConstructParts.Get(panelKind) is not { } pd || !HullLoft.IsFormedName(pd.Name) || HullLoft.FormedMaterial(pd.Name) is var mat && mat == 0)
+            return false;
+        var key = SheetFor(c, net, pd, mat, HullLoft.FormedUnits(pd, mat), StockTargets.Strips(c, e.Dest));
+        if (key == (old.ExKey with { Growing = false }) || Extrusion.Def(key) is not { } sheet)
+            return false;
+        var units = e.Asked * SheetUnits(old, mat);
+        var each = SheetUnits(sheet, mat);
+        e.Kind = (ushort)sheet.Id;
+        e.Asked = (ushort)Math.Clamp((units + each - 1) / each, 1, WorkOrders.MaxCount);
+        e.Reason = "";
+        world.CraftChanged(c);
+        return true;
     }
 
     private static int StepUp(int cm) => Math.Clamp((cm + Extrusion.StepCm - 1) / Extrusion.StepCm * Extrusion.StepCm, Extrusion.MinSectionCm, Extrusion.MaxSectionCm);
@@ -217,7 +281,7 @@ public static class ConstructLogisticsPlan
         if (md.IsPress && !md.IsLathe)
             inputs = PressInputs(c, m, st, product, ask, kinds, wants, inside);
         else if (md.IsPanelFormer && !md.IsLaserCutter) // (a cutter's blanks by chain: phase 5)
-            inputs = FormerInputs(c, net, st, product, ask, kinds, wants, inside);
+            inputs = FormerInputs(c, net, m, st, product, ask, kinds, wants, inside);
         else if (md.IsAssembler && AssemblingTable.Current.Of(product) is { Parts.Length: > 0 } r)
         {
             var batches = (ask + r.Count - 1) / r.Count;
@@ -441,7 +505,9 @@ public static class ConstructLogisticsPlan
             return;
         }
         var name = ConstructParts.Get(e.Kind)?.Name ?? "part";
-        var reason = refusal != null ? $"waiting on {name}: {refusal}" : $"waiting on {name}: nothing on the network makes it";
+        var sheet = refusal != null && c.DefOf(e.Dest) is { IsPanelFormer: true, IsLaserCutter: false } && ConstructParts.Get(e.Kind) is { IsExtrusion: true } sd && sd.ExKey.H == SheetThickCm
+            ? TooWideText(c, net, name, sd.ExKey.W) : null;
+        var reason = sheet ?? (refusal != null ? $"waiting on {name}: {refusal}" : $"waiting on {name}: nothing on the network makes it");
         if (e.Reason != reason)
             e.Reason = reason; // (made only when it changes)
     }
@@ -548,6 +614,8 @@ public static class ConstructLogisticsPlan
             var held = world.Reserve.Held(c.Parts[e.Dest].Store, e.Id);
             if (e.Maker == NoPart)
             {
+                if (e.Reason != "" && e.Made == 0 && held == 0 && Riding(c, e) == 0)
+                    Rekey(world, c, net, ref e); // (a waiting Panel Former sheet follows its strips setting and the network's Extruders)
                 var left = e.Asked - e.Made - Riding(c, e) - held;
                 if (left > 0)
                     left -= IsStock(e) && e.Depth == 1 ? 0 : FromStock(world, c, net, ref e, left); // (a target never robs a store: it only makes)
