@@ -244,8 +244,8 @@ public static class ConstructConveyor
         var rd = c.DefOf(part);
         if (!rd.IsPieceRack)
             return 1;
-        if (d.Role == PartRole.Storage)
-            return 2; // (a piece, or anything a press stamps that fits: not storage, whose contents would be lost)
+        if (d.Role == PartRole.Storage && !rd.IsBuildStation)
+            return 2; // (a piece, or anything a press stamps that fits: not storage, whose contents would be lost; a Building Station's hold takes one, since what reaches it is new and empty, an order's or a hand's, and its build needs it: verification 2026-11-13c)
         ConstructRackPack.Ensure(rd, st);
         if (st.KindIndex(d.Id) < 0 && st.KindN >= CStore.MaxKinds || st.ItemCount >= rd.RackCount)
             return 4;
