@@ -89,7 +89,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action);
 
     private static void WsSay(string s)
     {
@@ -884,6 +884,15 @@ public static unsafe partial class Program
                 _wsWait = 2;
                 return;
             }
+            case "picker": // "picker": the open recipe picker's tiles (value, or dim); "picker N": picks the tile of value N as a click does
+                if (int.TryParse(arg, out var pickValue))
+                {
+                    Ui.RecipePickerPick(pickValue);
+                    _wsWait = 3;
+                }
+                else
+                    WsSay($"picker: {Ui.RecipePickerDump()}");
+                return;
             case "ui": // what is open and who has the mouse
                 WsSay($"ui: menus {(MenusOpen ? "open" : "closed")}, crafting {(Ui.CraftingOpen ? "open" : "closed")} ({Ui.CraftingTiles} tiles), designer {(Ui.DesignerOpen ? "open" : "closed")}, mouse {(_mouseCaptured ? "captured" : "free")}");
                 return;

@@ -223,7 +223,7 @@ public static class MachineScreens
         if (d.IsPanelFormer && d.CfgSlot[(int)CfgKey.Recipe] is >= 0 and var ps && d.Config[ps].Options.Length > 0)
             card.Add(1, "Preset ").Add(1, d.Config[ps].Options[Math.Clamp((int)p.Cfg[ps], 0, d.Config[ps].Options.Length - 1)]);
         else if (d.IsFanFormer)
-            card.Add(1, "Fan");
+            card.Add(1, (int)ConstructConfig.Get(p, d, CfgKey.FanKind, 0) is var fk && fk >= 0 && fk < ExtrusionTable.Current.FanKinds.Length ? ExtrusionTable.Current.FanKinds[fk].Label : "Fan"); // (what it makes: its Recipe button's pick)
         else if (d.IsAirframeFormer)
             card.Add(1, Extrusion.AirframeOf((ushort)ConstructConfig.Get(p, d, CfgKey.WingKind, 0))?.Label ?? "Wing");
         else if (wheel)

@@ -19,7 +19,7 @@
       "key": "recipe",
       "label": "Pattern",
       "group": "Work",
-      "tooltip": "What its die makes of a blank: Auto lets the blank choose (a standard blank gives its standard part), or one of the die's patterns by its place. Its die screen's Pattern button steps through them."
+      "tooltip": "What its die makes of a blank: Auto lets the blank choose, or one of the die's patterns. On its die screen, Recipe opens a picker of them and Pattern steps through them."
     }
   ],
   "storage": {
@@ -182,6 +182,16 @@
       "up": "+y",
       "rows": 4,
       "touch": [
+        {
+          "action": "machine.recipe",
+          "at": [
+            0.44,
+            0.02,
+            0.7,
+            0.24
+          ],
+          "label": "Recipe"
+        },
         {
           "action": "press.pattern",
           "at": [
