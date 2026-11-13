@@ -23,7 +23,9 @@
     },
     "ambient": 1.25
   },
-  "storm": true,
+  "storm": {
+    "dusk": 0.85
+  },
   "planetoid": {
     "radius": 8000,
     "cell": 2,
@@ -35,7 +37,9 @@
       "sand": "#a6c5de",
       "dirtSlope": 18,
       "rockSlope": 30,
-      "sandBelow": -18
+      "sandBelow": -18,
+      "stone": "#3d3f44",
+      "dusting": 0.8
     },
     "features": [
       {

@@ -1315,7 +1315,7 @@ public sealed partial class TerrainEdits : IDigGround
             return DugShade(sf, OwnColour(c), _orig[c] - y, covered);
         var (col, rock) = (GroundKind)(_fillKind[c] - 1) switch
         {
-            GroundKind.Stone => (sf.Rock, 1f),
+            GroundKind.Stone => (sf.StoneFill, 1f),
             GroundKind.Sand => (sf.Sand, 0.2f),
             _ => (sf.Dirt, 0.25f),
         };

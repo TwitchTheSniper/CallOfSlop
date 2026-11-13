@@ -98,7 +98,7 @@ public enum CActKind : byte
     Station, // u16 body, u16 station, u8 StationOp, u16 n, text: a Building Station's Start (the blueprint's name, n repeats), Cancel, Release, Repeat or Give (protocol 256; ConstructStation.cs)
     CraftNamed, // u16 body, u16 terminal, u16 count, text name: an order for a formed panel by its key at a Crafting Terminal or a Panel Designer (protocol 260; ConstructCrafting.Place)
     PanelDesign, // u8 op (1 keep, 0 drop), text name, text key: a panel design saved to the world's shared list, or dropped from it (protocol 260; PanelDesigns.cs)
-    Celebrate, // server -> one client: text title, text name, text line: a moment in the middle of their screen (protocol 269; GameCelebrate.cs)
+    Celebrate, // server -> one client: text title, text name, text line: a moment in the middle of their screen (protocol 273; GameCelebrate.cs)
 }
 
 /// <summary>
@@ -1154,9 +1154,10 @@ public sealed partial class Game
                 var term = r.U16();
                 var count = r.U16();
                 var name = r.Text(ConstructParts.MaxRuntimeName);
-                if (!HullLoft.IsFormedName(name))
-                    return "a bad order";
-                return hands.CraftOrder(Constructs, p.Id, eye, body, term, ConstructPanelFormer.Order(name, count) with { Count = count }, 0, Constructs.Get(body) is { } cn ? SandboxConfigRefusal(cn, p.Id) : null);
+                var pressed = Pressed.IsName(name) ? WorkOrders.PressedOrder(name, count) : null; // (a pressed part by its key, Press phase 4)
+                if (!HullLoft.IsFormedName(name) && pressed == null)
+                    return Pressed.IsName(name) ? "not a pressed part" : "a bad order";
+                return hands.CraftOrder(Constructs, p.Id, eye, body, term, (pressed ?? ConstructPanelFormer.Order(name, count)) with { Count = count }, 0, Constructs.Get(body) is { } cn ? SandboxConfigRefusal(cn, p.Id) : null);
             }
             case CActKind.PanelDesign:
             {

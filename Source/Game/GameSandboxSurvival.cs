@@ -83,7 +83,7 @@ public sealed partial class Game
     {
         _sbKitBuilt = false;
         Array.Clear(_sbKitTold);
-        var kit = s.SurvivalStart ?? (SandboxSurvivalOption ? SurvivalStart.Current.Items : null);
+        IReadOnlyList<string>? kit = s.SurvivalStart ?? (SandboxSurvivalOption ? PlayedStart.Kit ?? (IReadOnlyList<string>)SurvivalStart.Current.Items : null); // (a story start's own kit, GameStoryStart.cs)
         if (kit == null)
             return;
         var from = s.RackParts.Count > 0 ? s.Rack : World.Map.Spawns.Count > 0 ? World.Map.Spawns[0] : Vector3.Zero;

@@ -580,6 +580,7 @@
     {"output": "Concrete Ramp 4x4 m", "materials": {"concrete": 1224, "steel": 306}, "seconds": 180.0},
     {"output": "Concrete Stair Flight 1.5 m", "materials": {"concrete": 115, "steel": 28}, "seconds": 22.2},
     {"output": "Concrete Straight Stair 3 m", "materials": {"concrete": 459, "steel": 114}, "seconds": 83.0},
+    {"output": "Fixed Ladder 3 m", "materials": {"steel": 9, "concrete": 2}, "seconds": 3.3},
     {"output": "Steel Railing 2 m", "materials": {"steel": 3, "concrete": 1}, "seconds": 2.5},
     {"output": "Steel Railing 4 m", "materials": {"steel": 6, "concrete": 1}, "seconds": 3.0},
     {"output": "Wood Railing 2 m", "materials": {"planks": 12, "laminate": 3}, "seconds": 2.4},

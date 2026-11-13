@@ -297,6 +297,8 @@ public static class ConstructStation
         var n = (ushort)Math.Clamp(count, 1, WorkOrders.MaxCount);
         if (HullLoft.IsFormedName(d.Name))
             return ConstructPanelFormer.Order(d.Name, n);
+        if (Pressed.IsName(d.Name) && WorkOrders.PressedOrder(d.Name, n) is { } pressed)
+            return pressed; // (a pressed part by its key: a Press's order, Press phase 4)
         if (d.Name.StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase) && Extrusion.ParseKey(d.Name) is { } key)
             return new WorkOrder { Key = key with { Growing = false }, Part = ConstructParts.None, Count = n };
         return new WorkOrder { Part = (ushort)d.Id, Count = n };

@@ -419,7 +419,8 @@ public sealed partial class Game
     /// 2 notorious; u8 s, s x (i8 the story faction's standing, u8 its technologies learnt, a bit each)); u8 m, each member
     /// (u8 owner byte, u8 faction, text name, u8 rank); u8 k, each invite (u8 player, u8 faction); u8 k, each ask (u8 player,
     /// u8 faction); u8 k, each stance (u8 a, u8 b, i8 stance); u8 s, each story faction's name; then each one's technologies
-    /// (u8 n, n x text: protocol 202); u8 p, each player who knows something (u8 slot, s x u8 learnt, a bit each: protocol 269).
+    /// (u8 n, n x text: protocol 202); each one's technologies' standings (u8 n, n x i8); u8 p, each player the story knows
+    /// (u8 player, u8 s, s x (i8 standing with their party, u8 technologies they know): protocol 272).
     /// </summary>
     private void WriteFactions(PacketWriter w)
     {
@@ -467,26 +468,26 @@ public sealed partial class Game
             for (var k = 0; k < tn; k++)
                 w.Str(techs[k]);
         }
-        byte pl = 0;
-        for (var k = 0; k < 256; k++)
-            if (PlayerKnowsAny(t, k, story))
-                pl++;
-        w.U8(pl);
-        for (var k = 0; k < 256; k++)
-            if (PlayerKnowsAny(t, k, story))
-            {
-                w.U8((byte)k);
-                for (var f = 0; f < story; f++)
-                    w.U8(t.PlayerLearnt[k * FactionTable.MaxStory + f]);
-            }
-    }
-
-    private static bool PlayerKnowsAny(FactionTable t, int slot, int story)
-    {
         for (var f = 0; f < story; f++)
-            if (t.PlayerLearnt[slot * FactionTable.MaxStory + f] != 0)
-                return true;
-        return false;
+        {
+            var needs = f < t.StoryTechNeed.Length ? t.StoryTechNeed[f] : [];
+            var tn = Math.Min(needs.Length, 8);
+            w.U8((byte)tn);
+            for (var k = 0; k < tn; k++)
+                w.U8((byte)needs[k]);
+        }
+        byte pn = 0;
+        for (var k = 0; k < 255; k++)
+            if (t.PlayerStory[k])
+                pn++;
+        w.U8(pn);
+        for (var k = 0; k < 255; k++)
+            if (t.PlayerStory[k])
+            {
+                w.U8((byte)k).U8((byte)story);
+                for (var f = 0; f < story; f++)
+                    w.U8((byte)t.PlayerStanding[k * FactionTable.MaxStory + f]).U8(t.PlayerLearnt[k * FactionTable.MaxStory + f]);
+            }
     }
 
     private static void WriteFactionPairs(PacketWriter w, byte[] of)
@@ -573,18 +574,35 @@ public sealed partial class Game
         }
         for (var f = 0; f < techs.Length; f++)
             techs[f] ??= [];
-        t.StoryTech = techs;
-        int pl = r.Has(1) ? r.U8() : 0;
-        for (var k = 0; k < pl && r.Has(1); k++)
+        var needs = new sbyte[names.Length][];
+        for (var f = 0; f < sn; f++)
         {
-            var slot = r.U8();
-            for (var f = 0; f < sn && r.Has(1); f++)
+            int tn = r.Has(1) ? r.U8() : 0;
+            var list = new sbyte[tn];
+            for (var k = 0; k < tn; k++)
+                list[k] = r.Has(1) ? (sbyte)r.U8() : (sbyte)100;
+            if (f < needs.Length)
+                needs[f] = list;
+        }
+        for (var f = 0; f < needs.Length; f++)
+            needs[f] ??= [];
+        t.StoryTechNeed = needs;
+        int pn = r.Has(1) ? r.U8() : 0;
+        for (var k = 0; k < pn && r.Has(2); k++)
+        {
+            var who = r.U8();
+            int s = r.U8();
+            if (who != 255)
+                t.PlayerStory[who] = true;
+            for (var f = 0; f < s && r.Has(2); f++)
             {
-                var mask = r.U8();
-                if (f < FactionTable.MaxStory)
-                    t.PlayerLearnt[slot * FactionTable.MaxStory + f] = mask;
+                var v = (sbyte)r.U8();
+                var learnt = r.U8();
+                if (who != 255 && f < FactionTable.MaxStory)
+                    (t.PlayerStanding[who * FactionTable.MaxStory + f], t.PlayerLearnt[who * FactionTable.MaxStory + f]) = (v, learnt);
             }
         }
+        t.StoryTech = techs;
         ConstructAssembling.TaughtBy = t.TeacherOf;
         t.Version++;
     }

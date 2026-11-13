@@ -239,13 +239,12 @@ public sealed partial class Ui
 
                 case Page.Story:
                     Title("Story - five worlds in five star systems");
-                    ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 640 * _scale);
-                    ImGui.TextColored(Dim, "You crash on Glacier, the ice world of the Frostreach system, and wake in the Ministry of Slop's penal colony. The Planetoid, Cinder, Caledon and Mille are each a Jump Drive away: each has a faction's home and a sealed data centre. One saved world holds them all."u8);
-                    ImGui.PopTextWrapPos();
-                    ImGui.Spacing();
                     var storySaved = DrawStoryWorld(s); // (UiWorlds.cs)
                     if (!storySaved)
+                    {
+                        StartPicker(s); // (which start a new world plays: GameStoryStart.cs; a saved world keeps its own)
                         DeathPicker(ref s.SandboxDeath, ref s.SandboxKeepPack); // (survival's death rules: GameSandboxDeath.cs)
+                    }
                     ImGui.Spacing();
                     if (BigButton("START"))
                     {
@@ -314,6 +313,8 @@ public sealed partial class Ui
                     }
                     if (ImGui.IsItemHovered())
                         ImGui.SetItemTooltip("The story with friends: you crash-land together, wake in the penal colony together and go through the warden's induction as a group. Opens your lobby on Survival; pick or make a saved world there. Friends join from the server browser or your invite code."u8);
+                    if (StoryStarts.All.Length > 1)
+                        CoopStartPicker(s); // (which start a new co-op world plays: GameStoryStart.cs)
                     SteamLobbyPicker(s); // who finds the Steam lobby (with Steam running)
                     if (ImGui.BeginTabBar("##mp"u8))
                     {
@@ -406,9 +407,53 @@ public sealed partial class Ui
     {
         s.Mode = GameMode.Sandbox;
         s.SandboxSurvival = true;
-        if ((Maps.Find(Game.StoryHomeMap) is { Sandbox: not null } home ? home : Maps.All.FirstOrDefault(m => m.Sandbox != null)) is { } map)
+        var start = StoryStarts.Find(s.StoryStart) ?? StoryStarts.Default; // (the start's planetoid: GameStoryStart.cs)
+        if ((Maps.Find(start.Map) is { Sandbox: not null } own ? own : Maps.Find(Game.StoryHomeMap) is { Sandbox: not null } home ? home : Maps.All.FirstOrDefault(m => m.Sandbox != null)) is { } map)
             s.MapName = map.Name;
         s.MapRandom = false;
+    }
+
+    /// <summary>
+    /// The Story page, a new world: which start it plays (Story/Starts, docs/story/STARTS.md), as radio buttons when there
+    /// is more than one, and what that start is. Co-op hosts with the same choice.
+    /// </summary>
+    private void StartPicker(Settings s)
+    {
+        var starts = StoryStarts.All;
+        var picked = StoryStarts.Find(s.StoryStart) ?? StoryStarts.Default;
+        if (starts.Length > 1)
+        {
+            ImGui.Text("Start"u8);
+            foreach (var st in starts)
+            {
+                ImGui.SameLine(0, 14 * _scale);
+                if (ImGui.RadioButton(st.Placeholder ? $"{st.Name} (placeholder)##start{st.Id}" : $"{st.Name}##start{st.Id}", st == picked))
+                    picked = st;
+            }
+            s.StoryStart = picked == StoryStarts.Default ? "" : picked.Id;
+        }
+        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 640 * _scale);
+        ImGuiSafe.TextColored(Dim, picked.About);
+        if (picked.Character.Length > 0 || picked.Background.Length > 0)
+            ImGuiSafe.TextColored(Dim, picked.Background.Length > 0 ? $"{picked.Character}: {picked.Background}" : picked.Character);
+        ImGui.TextColored(Dim, "The other worlds are each a Jump Drive away: each has a faction's home and a sealed data centre. One saved world holds them all."u8);
+        ImGui.PopTextWrapPos();
+        ImGui.Spacing();
+    }
+
+    /// <summary>Under HOST STORY CO-OP: the start a new story world plays (the Story page's choice, as a list).</summary>
+    private void CoopStartPicker(Settings s)
+    {
+        var picked = StoryStarts.Find(s.StoryStart) ?? StoryStarts.Default;
+        ImGui.SetNextItemWidth(300 * _scale);
+        if (ImGui.BeginCombo("Story start##coopstart"u8, picked.Placeholder ? $"{picked.Name} (placeholder)" : picked.Name))
+        {
+            foreach (var st in StoryStarts.All)
+                if (ImGui.Selectable(st.Placeholder ? $"{st.Name} (placeholder)" : st.Name, st == picked))
+                    s.StoryStart = st == StoryStarts.Default ? "" : st.Id;
+            ImGui.EndCombo();
+        }
+        ImGui.Spacing();
     }
 
     private void HostOpensWith(Settings s)

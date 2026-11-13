@@ -125,7 +125,7 @@ public sealed partial class Game
         if (wanted)
             return;
         var warden = OpeningWarden();
-        var script = OpeningScript.Current;
+        var script = OpScript;
         OpeningSay(by, warden is { Alive: true } ? warden : null, script.Warden.Length > 0 ? script.Warden : "The Warden",
             warden == victim ? "Assaulting the warden! Induction terminated. Guards! GUARDS!" : "Assault on a Ministry officer! Induction terminated. Sound the alarm!", now);
         Log($"[lockdown] {by.Name} hurt {victim.Name}: wanted");
