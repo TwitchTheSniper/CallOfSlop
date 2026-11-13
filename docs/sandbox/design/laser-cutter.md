@@ -97,7 +97,7 @@ to cut: a Panel Former's order"), and the Former refuses a cut panel ("a Laser C
 
 One family with formed panels: a named run-time part, made from its name the first time it is asked for
 (`HullLoft.Parse`, the one door), its id each machine's own, never in `ConstructParts.All`, on the wire and in saves by
-its key (CLAUDE.md, Gotchas, "Extrusions").
+its key (CLAUDE.md, "Lessons and gotchas": run-time parts).
 
 ```
 Cut Panel (PANEL | CUTS)

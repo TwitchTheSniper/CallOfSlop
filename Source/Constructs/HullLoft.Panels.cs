@@ -532,7 +532,7 @@ public static partial class HullLoft
             return PlateJson(name, cut, p, area, slabs);
         // Collision: up to four hidden boxes along its length, each over its strip's own height (a growing or riding panel collides by boxes, never a
         // hull). Their sides are whole centimetres just inside the drawn edges, so no hidden face shares a plane with a facet's rim and the edge
-        // sockets, which stand on them, are whole centimetres too (docs/LESSONS.md, "Generated geometry").
+        // sockets, which stand on them, are whole centimetres too (.claude/rules/generated-geometry.md).
         static float In(float v, bool up) => up ? MathF.Ceiling(v * 100 + 0.2f) / 100 : MathF.Floor(v * 100 - 0.2f) / 100;
         var strips = Math.Min(4, nu);
         var boxes = new (Vector3 Mn, Vector3 Mx)[strips];

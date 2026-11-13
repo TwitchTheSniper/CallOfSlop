@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git -c 'alias.guard=!IFS=; f=$CLAUDE_PROJECT_DIR/.claude/hooks/guard.sh; test -f $f || f=.claude/hooks/guard.sh; test -f $f || exit 0; sh $f; test $? = 42 && exit 2; exit 0' guard",
+            "timeout": 20
+          }
+        ]
+      }
+    ]
+  }
+}
