@@ -235,6 +235,7 @@ public sealed partial class Game
     {
         if (WorldSession is not { } ws || Constructs.Get(ship.Id) != ship || ship.SpaceShip == 0 || LandProblem(ship) != null)
             return;
+        FirstForRiders(ship, Milestone.Landing, to.Name); // (before the save: the records carry it to the new world; GameMilestones.cs)
         WorldSaveNow(wait: true); // (the whole world, the ship and everyone's things with it, in the world's own file)
         var from = World.Map.Name;
         var why = WorldCopy(ws, StashFolder(ws, from), c => !Aboard(ship, c)); // (the planetoid left behind, without the ship)

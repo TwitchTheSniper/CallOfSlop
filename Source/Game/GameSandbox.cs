@@ -164,6 +164,7 @@ public sealed partial class Game
         Constructs.Removed.Clear();
         Constructs.Events.Clear();
         SandboxHands.Reset();
+        FirstsReset(); // (milestones for firsts: a world's records bring theirs back, GameMilestones.cs)
         SandboxHands.Notices.Clear(); // (nothing said about the last match)
         SandboxHands.ResetPacks(); // (backpacks empty with the match)
         SandboxInv.Reset(); // (salvage: inventories reset with the match, like the constructs)
@@ -220,6 +221,7 @@ public sealed partial class Game
     internal void SandboxResetPlayer(Player p)
     {
         SandboxHands.ResetPlayer(p.Id);
+        FirstsResetPlayer(p.Id);
         SandboxInv.Clear(p.Id);
         SandboxBeaconReset(p.Id);
         SandboxTerminalReset(p.Id);
@@ -410,6 +412,7 @@ public sealed partial class Game
         SandboxFlush();
         OpeningTick(now); // (the survival opening's beats: GameSandboxOpening.cs)
         ShellTick(); // (worn robot shells keep their link: GameRobotShell.cs)
+        FirstsTick(); // (a first flight in a craft of your own: GameMilestones.cs)
         PlayAreaTick(now); // (the tutorial's play areas: out of one, the step waits; GameTutorialBounds.cs)
         QuarryTick(now); // (the first Ministry duty, the quarry: GameQuarry.cs)
         DepotTick(now); // (the Orbital Depot's steps: GameDepot.cs)

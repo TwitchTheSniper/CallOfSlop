@@ -127,6 +127,7 @@ public sealed partial class Game
         var feet = shell.ToWorld(Vector3.Zero) + GravityFrames.UpAt(shell.WorldCom) * 0.03f;
         var fwd = Vector3.Transform(-Vector3.UnitZ, shell.Rot * Rot24.Quat(sp.Rot));
         ShellWoke(p, shell);
+        FirstReached(p, Milestone.Shell); // (GameMilestones.cs)
         Constructs.Remove(shell);
         p.Teleport(feet);
         p.Yaw = MathF.Atan2(fwd.X, -fwd.Z);
