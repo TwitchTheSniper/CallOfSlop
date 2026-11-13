@@ -16,11 +16,16 @@
   ],
   "tiers": [
     { "name": "Enemy of the State", "below": -50 },
-    { "name": "Person of Interest", "below": -15 },
-    { "name": "Inmate", "below": 15 },
-    { "name": "Trusty", "below": 40 },
-    { "name": "Contractor", "below": 70 },
-    { "name": "Crown Servant" }
+    { "name": "Person of Interest", "below": -15,
+      "promotion": "Your file has been moved from the red cabinet to the beige one. This is progress, of a kind." },
+    { "name": "Inmate", "below": 15,
+      "promotion": "You are an ordinary inmate again. The Ministry has lost the paperwork on your misdeeds, for now." },
+    { "name": "Trusty", "below": 40,
+      "promotion": "Congratulations: you are trusted. Not very much. Form HM-40 (Trust, Limited) has been filed on your behalf." },
+    { "name": "Contractor", "below": 70,
+      "promotion": "You are now a Ministry Contractor. You will be paid in standing, quarterly, in arrears, subject to audit." },
+    { "name": "Crown Servant",
+      "promotion": "Welcome to the Crown's service. Sign the Act, all eleven copies. The Ministry's last word is now yours to say." }
   ],
   "deeds": [
     { "name": "Killed our staff", "verb": "Kill", "remember": "KilledOurs", "standing": -40 },

@@ -49,6 +49,7 @@ public sealed partial class Game
         StoryTracks.Clear();
         StoryStandings.Clear();
         _spFor = null;
+        StoryRanksReset(); // (the promotions' memory: GameStoryRanks.cs)
         _spNext = 0;
     }
 

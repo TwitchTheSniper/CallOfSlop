@@ -31,10 +31,14 @@
   ],
   "tiers": [
     { "name": "Do Not Call", "below": -50 },
-    { "name": "Blocked Number", "below": -15 },
-    { "name": "Cold Lead", "below": 15 },
-    { "name": "Valued Customer", "below": 45 },
-    { "name": "Premium Member" }
+    { "name": "Blocked Number", "below": -15,
+      "promotion": "You have been unblocked. A supervisor would like to talk to you about an exciting opportunity." },
+    { "name": "Cold Lead", "below": 15,
+      "promotion": "You are a lead again. Somebody somewhere has your number on a sticky note." },
+    { "name": "Valued Customer", "below": 45,
+      "promotion": "You are a Valued Customer. Your call is important to us, and so, briefly, are you." },
+    { "name": "Premium Member",
+      "promotion": "Premium Membership confirmed. You now get the scripts before the pensioners do." }
   ],
   "deeds": [
     { "name": "Killed our staff", "verb": "Kill", "remember": "KilledOurs", "standing": -40 },
