@@ -134,6 +134,32 @@ public static partial class Program
                 }
                 return;
             }
+            case "cfg": // "logi cfg PART|key|value": a setting through this peer's own configure message, as the configure tool sends it (stand in reach first)
+            {
+                var bits = rest.Split('|');
+                var (fc, part) = bits.Length == 3 ? LogiFind(g, bits[0]) : (null, -1);
+                var key = CfgKey.None;
+                for (var k = CfgKey.None + 1; k < CfgKey.COUNT; k++)
+                    if (ConstructConfig.KeyName(k) == (bits.Length == 3 ? bits[1] : ""))
+                        key = k;
+                if (fc == null || key == CfgKey.None || fc.DefOf(part).CfgSlot[(int)key] < 0 || !float.TryParse(bits[2], System.Globalization.CultureInfo.InvariantCulture, out var v))
+                {
+                    WsFail($"logi cfg: \"{rest}\" (PART|key|value, a key the part has)");
+                    return;
+                }
+                g.SandboxConfigure(fc.Id, [(ushort)part], [(byte)fc.DefOf(part).CfgSlot[(int)key]], [v]);
+                WsSay($"[logi] cfg sent {fc.DefOf(part).Name}#{part} {bits[1]} = {v}");
+                return;
+            }
+            case "get": // "logi get PART|key": a setting as this peer holds it
+            {
+                var bits = rest.Split('|');
+                var (fc, part) = bits.Length == 2 ? LogiFind(g, bits[0]) : (null, -1);
+                for (var k = CfgKey.None + 1; k < CfgKey.COUNT && fc != null; k++)
+                    if (ConstructConfig.KeyName(k) == bits[1])
+                        WsSay($"[logi] get {fc.DefOf(part).Name}#{part} {bits[1]} = {ConstructConfig.Get(fc.Parts[part], fc.DefOf(part), k, -1)}");
+                return;
+            }
             case "send": // "logi send PART@N NAME [N]": an order through this peer's own message, as the terminal's Order button sends it (stand in reach first: the host's "bring")
             {
                 var sp = rest.IndexOf(' ');

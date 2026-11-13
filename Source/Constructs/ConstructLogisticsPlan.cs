@@ -504,8 +504,9 @@ public static class ConstructLogisticsPlan
         }
         if (best >= 0 && WorkOrders.Queue(world, c, best, what) is var no && no == null)
         {
-            Ranked(world, c, best, IsStock(e) ? (byte)1 : (byte)(e.Class + 2));
-            AheadOfUsers(world, c, c.Parts[best].Orders!, e);
+            var at = Ranked(world, c, best, IsStock(e) ? (byte)1 : (byte)(e.Class + 2)); // (where the line went: AheadOfUsers moves that one, not the last)
+            if (at >= 0)
+                AheadOfUsers(world, c, c.Parts[best].Orders!, e, at);
             e.Maker = (ushort)best;
             e.Flags &= unchecked((byte)~ChainFlags.Expanded);
             e.Reason = "";
@@ -520,21 +521,21 @@ public static class ConstructLogisticsPlan
     }
 
     /// <summary>
-    /// The line just queued (the last) moves ahead of the first line in that queue it is an input for (the root's own line, or an
+    /// The line just queued (at <paramref name="at"/>, where Ranked put it) moves ahead of the first line before it that it is an input for (the root's own line, or an
     /// ancestor link's): else a machine asked for a part and for that part's input would wait on itself. That line waits for this
     /// input, so it has no batch under way (an Assembler's progress starts only with every input in), and nothing is lost.
     /// </summary>
-    private static void AheadOfUsers(ConstructWorld world, Construct c, OrderList q, in ChainEntry e)
+    private static void AheadOfUsers(ConstructWorld world, Construct c, OrderList q, in ChainEntry e, int at)
     {
         var rootKind = RootKind(c, e.Root, e.RootId);
-        for (var k = 0; k < q.Count - 1; k++)
+        for (var k = 0; k < at; k++)
         {
             ref readonly var l = ref q.Items[k];
             var uses = l.Chain == 0 ? l.Part == rootKind && !l.IsPiece : IsAncestor(world, e, l.Chain);
             if (!uses)
                 continue;
-            var mine = q.Items[q.Count - 1];
-            Array.Copy(q.Items, k, q.Items, k + 1, q.Count - 1 - k);
+            var mine = q.Items[at];
+            Array.Copy(q.Items, k, q.Items, k + 1, at - k);
             q.Items[k] = mine;
             world.OrdersChanged(c);
             return;
@@ -546,10 +547,10 @@ public static class ConstructLogisticsPlan
     /// 4 High) and moves ahead of the first line after the head that ranks below it (phase 5, design 7.3: High orders take shared
     /// machines first). The head is never passed (it may be under way), and lines of equal rank keep their age.
     /// </summary>
-    public static void Ranked(ConstructWorld world, Construct c, int maker, byte rank)
+    public static int Ranked(ConstructWorld world, Construct c, int maker, byte rank)
     {
         if (maker >= c.PartCount || c.Parts[maker].Orders is not { Bill: false, Count: > 0 } q)
-            return;
+            return -1;
         var last = q.Count - 1;
         q.Items[last].Rank = rank;
         for (var k = 1; k < last; k++)
@@ -560,8 +561,9 @@ public static class ConstructLogisticsPlan
             Array.Copy(q.Items, k, q.Items, k + 1, last - k);
             q.Items[k] = mine;
             world.OrdersChanged(c);
-            return;
+            return k;
         }
+        return last;
     }
 
     private static int RankOf(in WorkOrder o) => o.Rank == 0 ? 3 : o.Rank;
@@ -984,6 +986,7 @@ public static class ConstructLogisticsPlan
             if ((q.Items[k].Chain == 0 || q.Items[k].Chain == e.Id) && (q.Items[k].Part == e.Kind || q.Items[k].Part == ConstructParts.None && ConstructCrafting.DefOf(q.Items[k])?.Id == e.Kind)) // (a press's blank by its key, a pressed part by its name: Press phase 4)
             {
                 q.Items[k].Chain = e.Id;
+                q.Items[k].Rank = IsStock(e) ? (byte)1 : (byte)(e.Class + 2); // (its rank in the queue comes back with the link: phase 5)
                 return true;
             }
         return false;

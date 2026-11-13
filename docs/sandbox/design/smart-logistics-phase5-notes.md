@@ -63,3 +63,18 @@ Proposed, for the bigger machines and for length:
 1. Re-rank queued lines when a terminal's priority changes? **Recommend no** (it moves only new lines; simpler, predictable).
 2. Should the Crafting Terminal's list row warn "too wide" before ordering (today the note says it right after)? **Recommend yes**, next phase.
 3. The fallback retry of a blocked link is a minute: keep, or retry only on a seen change? **Recommend keep** (a safety net).
+
+## After the merge review (2026-11-13)
+- `Ranked` returns where it put the line and `AheadOfUsers` moves that line (it took the queue's last, which could be another order).
+  Tried: a stock refill queued, then a terminal's Wheel on the same Assembler: `[Caster Wheel (head), Wheel, Gun Barrel refill]`. The
+  review's case (an input queued at the machine of the line that uses it) needs a depth-2 chain, which the showcase can't make without
+  scratch recipes: not tried by hand.
+- `Rank` is not saved: the queue's save is `WorkOrders.WriteSave`'s format (another area's), and changing it would break old worlds'
+  queues. A chain line's rank comes back with its link at load (`Mark`); a terminal's own line reads Normal after a load.
+- `tools/MIGRATING.md`: strips are now off by default in loaded worlds.
+- Router name: on main the name is only in the configure tool (`UiSandboxConfig.cs` "Name" box). The Router's screen has only Spill and Hold
+  (part files and `PanelTouch`); F on a Router doesn't open a text box (`Program.SandboxControls.cs`); no wheel entry names it.
+- A joined client set `formerStrips` 1 with the configure tool in hand (window tool `logi cfg`): the host logged it and both peers read 1.
+- Sections by name (Construct configure, Assembling, Assembling network, Extruder, Extruder network, Press stock, Wheel orders, Display
+  screens, Interaction sweep): 0 failures; one earlier run failed Press stock "part-way: the client never saw the piece", which passed alone
+  twice and in the next full run of the nine (a timing flake, not looked into).

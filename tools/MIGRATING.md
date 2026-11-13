@@ -96,6 +96,10 @@ The Cut-off Saws are gone: an Extruder now cuts by itself. A saved world that ha
 
 Seventy-three parts a Press makes now (the Gear Set, brackets, plates, housings, tanks, the Frame Beam and others) left the Assembler's recipe list. An Assembler in a world saved before this version may show **another recipe** than the one you set, or none: check your Assemblers and set their recipe again. A blueprint whose Assembler names one of those parts still loads, with its recipe set to None.
 
+### Panel Formers and wide panels in a saved world (2026-11-13)
+
+A Panel Former no longer splits a panel wider than your Extruders make into strips by itself. An order for one now waits and says which bigger Extruder, or Die Frames on the one you have, would make it. To keep the old behaviour, open the Panel Former with the configure tool and turn on **Too wide: make strips** (in its Logistics settings).
+
 ### Keeping saves on a USB stick (portable mode)
 
 Put an empty file called `portable.txt` next to `CallOfSlop.exe`. The game then keeps its saves in its own folder, like the old builds did. Copy your save files into that folder yourself.
