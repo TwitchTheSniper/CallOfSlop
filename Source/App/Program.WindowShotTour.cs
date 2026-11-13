@@ -33,6 +33,7 @@ public static partial class Program
     /// <summary>Once a frame, first: a running <c>perf</c> takes this frame's time.</summary>
     private static void WsTourFrame()
     {
+        WsTalkFrame();
         var t = Stopwatch.GetTimestamp();
         if (_wsPerfLeft > 0 && _wsPerfLast != 0)
         {
@@ -74,6 +75,8 @@ public static partial class Program
                 g.OpeningSkip();
                 if (arg.Equals("induction", StringComparison.OrdinalIgnoreCase))
                     g.TutorialAsk(TutorialOp.Skip);
+                if (arg.Equals("duty", StringComparison.OrdinalIgnoreCase))
+                    g.QuarryAskSkip(); // (the first Ministry duty, as the Esc menu's button: it holds the player's storylets till it ends)
                 _wsWait = 90;
                 return true;
             case "open": // a window as its key opens it: "open logbook [Records|Paths|Technologies]", "open parts", "open factions"

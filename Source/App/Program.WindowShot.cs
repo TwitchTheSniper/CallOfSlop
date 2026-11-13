@@ -113,7 +113,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "bundle" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action) || WsTourKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "bundle" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action) || WsTourKnown(action) || WsTalkKnown(action);
 
     private static void WsSay(string s)
     {
@@ -360,6 +360,8 @@ public static unsafe partial class Program
         var verb = parts[0].ToLowerInvariant();
         var arg = parts.Length > 1 ? parts[1] : "";
         WsSay($"> {action}");
+        if (WsTalkVerb(g, me, verb, arg))
+            return; // (talking to the story's people: Program.WindowShotTalk.cs)
         if (WsTourVerb(g, me, verb, arg))
             return; // (the tour's actions: Program.WindowShotTour.cs)
         if (WsInvVerb(g, me, verb, arg))
@@ -1667,6 +1669,7 @@ public static unsafe partial class Program
     private static void WindowShotKeys(bool[] down)
     {
         WindowShotHold(down); // (a key held over frames: Program.WindowShotCuts.cs)
+        WsTalkHold(down); // (keys held for real seconds, a pilot's: Program.WindowShotTalk.cs)
         if (_wsPress is { } a)
         {
             down[(int)a] = true;
