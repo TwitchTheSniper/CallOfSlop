@@ -166,6 +166,7 @@ public sealed partial class ConstructWorld
             b.Craft = ConstructCrafting.Snapshot(c);
             b.Station = ConstructStation.Snapshot(c);
             b.Chains = ConstructLogisticsPlan.Snapshot(this, c);
+            b.Targets = global::CallOfSlop.StockTargets.Snapshot(this, c);
             b.Parts = s.PartCount;
             b.PartCount = c.PartCount;
             b.Links = s.LinkCount;
@@ -408,7 +409,7 @@ public sealed partial class ConstructWorld
         var logi = false; // (a rider with a destination: the LOGI block follows the stations' jobs)
         foreach (ref readonly var cr in (b.Conveyed ?? []).AsSpan())
             logi |= cr.Dest != 0 || cr.Flags != 0;
-        logi |= b.Chains != null;
+        logi |= b.Chains != null || b.Targets != null;
         if (conveyors || b.Orders != null || b.Craft != null || b.Station != null || logi)
             ConstructConveyor.WriteSave(w, routes, b.Conveyed ?? [], names); // (an empty one before the work orders: they follow it)
         // Work orders (WorkOrders.cs), after the conveyors: a body without any writes nothing.
@@ -428,7 +429,8 @@ public sealed partial class ConstructWorld
         {
             var riders = b.Conveyed ?? [];
             var chains = b.Chains ?? [];
-            w.U32(LogiTag).I32(4 + riders.Length * 5 + 4 + chains.Length * 16 + 4 + chains.Length * 9);
+            var targets = b.Targets ?? [];
+            w.U32(LogiTag).I32(4 + riders.Length * 5 + 4 + chains.Length * 16 + 4 + chains.Length * 9 + 4 + targets.Length * 4);
             w.I32(riders.Length);
             foreach (ref readonly var cr in riders.AsSpan())
                 w.U16(cr.Dest).U16(cr.Tag).U8(cr.Flags);
@@ -439,6 +441,10 @@ public sealed partial class ConstructWorld
             w.I32(chains.Length);
             foreach (ref readonly var e in chains.AsSpan())
                 w.U16(e.Parent).U8(e.Depth).U8(e.Class).U32(e.Stamp).U8(e.Flags);
+            // (phase 3, stock targets: i32 n, each u16 rack part, u16 kind by the save's names)
+            w.I32(targets.Length);
+            foreach (var (tp, tk) in targets)
+                w.U16(tp).U16(names.Part(tk));
         }
     }
 
@@ -767,6 +773,7 @@ public sealed partial class ConstructWorld
         var stations = craft != null ? ConstructStation.ReadSave(r, bodyEnd) : null; // (after the crafting orders, the same way)
         (ushort Dest, ushort Tag, byte Flags)[]? logi = null; // (after the stations' jobs: the riders' destinations, ConstructLogistics.cs)
         ChainEntry[]? chains = null; // (and the chained orders' links: ConstructLogisticsPlan.cs)
+        (ushort Part, ushort Kind)[]? targets = null; // (and its racks' stock targets: StockTargets.cs)
         if (stations != null && r.Has(8) && r.Pos + 8 <= bodyEnd)
         {
             var tag = r.U32();
@@ -799,6 +806,16 @@ public sealed partial class ConstructWorld
                     if (r.Pos + 4 <= end && r.I32() is var k2 && k2 == k && r.Pos + k * 9 <= end)
                         for (var i = 0; i < k; i++)
                             (chains[i].Parent, chains[i].Depth, chains[i].Class, chains[i].Stamp, chains[i].Flags) = (r.U16(), r.U8(), r.U8(), r.U32(), r.U8());
+                    if (r.Pos + 4 <= end && r.I32() is var tn && tn >= 0 && tn <= global::CallOfSlop.StockTargets.MaxTargets && r.Pos + tn * 4 <= end)
+                    {
+                        targets = new (ushort, ushort)[tn];
+                        for (var i = 0; i < tn; i++)
+                        {
+                            var tp = r.U16();
+                            var tk = r.U16();
+                            targets[i] = (tp, tk < names.Parts.Length ? names.Parts[tk] : ConstructParts.None);
+                        }
+                    }
                 }
             }
             while (r.Pos < end)
@@ -863,6 +880,8 @@ public sealed partial class ConstructWorld
                 }
         if (chains != null)
             ConstructLogisticsPlan.Apply(this, c, Array.FindAll(chains, e => e.Kind != ConstructParts.None));
+        if (targets != null)
+            global::CallOfSlop.StockTargets.Apply(this, c, targets);
         c.Root = root >= 0 && root < n ? root : 0;
         if (tracks.Count > 0)
             foreach (var t in tracks)

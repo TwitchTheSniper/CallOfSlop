@@ -455,13 +455,15 @@ public static class ConstructLogistics
             if (!m.DestStore[ds] || ds == skip || m.NodeNet[m.Dests[ds]] != net)
                 continue;
             int rack = m.NodePart[m.Dests[ds]];
-            if (world.StoreOf(c, rack) is not { } st || ConstructConveyor.RackCheck(c, rack, st, d) != 0)
-                continue;
+            if (world.StoreOf(c, rack) is not { } st || ConstructConveyor.RackCheck(c, rack, st, d) != 0 || !StockTargets.Accepts(world, c, rack, st, d))
+                continue; // (its Takes filter holds for overflow too; a store always takes what it keeps)
             if (st.ItemCount + Riding(c, st.Handle, 0, LogiFlags.Storage, LogiFlags.None) >= c.DefOf(rack).RackCount)
                 continue;
             if (WayFrom(c, m, s, ds, d) != LogiReason.None)
                 continue;
-            var dist = m.Dist[s * LogiMap.MaxDests + ds];
+            var dist = m.Dist[s * LogiMap.MaxDests + ds] - StockTargets.Priority(c, rack) * 1e4f; // (its store priority first, then the shorter way)
+            if (world.StockTargetN > 0 && StockTargets.Keeps(world, c, st.Handle, (ushort)d.Id))
+                dist -= 1e5f; // (a store that keeps this kind before any other)
             if (dist < bestDist)
             {
                 bestDist = dist;
@@ -488,8 +490,8 @@ public static class ConstructLogistics
             return LogiReason.Closed;
         if (c.DefOf(part) is { IsPieceRack: false } md)
             return (md.IsAssembler || md.IsPanelFormer || md.IsPress) && ConstructLogisticsPlan.Open(world, c, part, r.Tag) ? LogiReason.None : LogiReason.Closed; // (a machine's input waits at its door)
-        if (((LogiFlags)r.Flags & LogiFlags.Storage) == 0 && (r.Tag == 0 || c.Parts[part].Craft is not { } q || q.Find(r.Tag) < 0))
-            return LogiReason.Closed;
+        if (((LogiFlags)r.Flags & LogiFlags.Storage) == 0 && (r.Tag == 0 || c.Parts[part].Craft is not { } q || q.Find(r.Tag) < 0) && !(c.Parts[part].Craft == null && ConstructLogisticsPlan.Open(world, c, part, r.Tag)))
+            return LogiReason.Closed; // (a plain rack: its stock target's refill, phase 3)
         return ConstructConveyor.RackCheck(c, part, st, d) != 0 ? LogiReason.DestFull : LogiReason.None;
     }
 
@@ -521,10 +523,15 @@ public static class ConstructLogistics
             why = LogiReason.Loop;
             r.Hops = 0;
         }
+        int router = m.NodePart[m.Routers[s]];
+        var spill = StockTargets.Spill(c, router); // (phase 3: routerSpill pins where unordered pieces go)
+        var ordered = r.Dest != 0 && ((LogiFlags)r.Flags & LogiFlags.Storage) == 0;
+        if (ordered && why == LogiReason.NoWay && StockTargets.Hold(c, router))
+            return Held(c, ref r, why, flags0, ref changed); // (routerHold: an order's piece with no way waits here)
         if (ds < 0 || why != LogiReason.None)
         {
             if (!Reassign(world, c, m, s, ref r, d, ds, why))
-                return Stuck(c, m, s, ref r, flags0, ref changed);
+                return spill != StockTargets.SpillAuto ? Spill(c, m, s, k, lead, spill, flags0, ref changed) : Stuck(c, m, s, ref r, flags0, ref changed);
             ds = -1;
             for (var i = 0; i < m.DestN; i++)
                 if (c.Parts[m.NodePart[m.Dests[i]]].Store == r.Dest)
@@ -532,6 +539,8 @@ public static class ConstructLogistics
             if (ds < 0)
                 return Stuck(c, m, s, ref r, flags0, ref changed);
         }
+        if (spill != StockTargets.SpillAuto && ((LogiFlags)r.Flags & LogiFlags.Storage) != 0)
+            return Spill(c, m, s, k, lead, spill, flags0, ref changed); // (the pin wins for pieces going to storage; ordered pieces follow their order)
         if (!Column(c, m, ds))
         {
             changed |= r.Flags != flags0;
@@ -540,19 +549,27 @@ public static class ConstructLogistics
         var way = WayFrom(c, m, s, ds, d);
         if (way != LogiReason.None)
         {
+            if (((LogiFlags)r.Flags & LogiFlags.Storage) == 0 && StockTargets.Hold(c, router))
+                return Held(c, ref r, way, flags0, ref changed);
             if (!Reassign(world, c, m, s, ref r, d, ds, way))
                 return Stuck(c, m, s, ref r, flags0, ref changed);
             changed |= r.Flags != flags0;
             return false; // (the new way next step)
         }
         int o = m.Hop[s * LogiMap.MaxDests + ds];
+        var wasHeld = ((LogiFlags)r.Flags & LogiFlags.Stuck) != 0;
+        r.Flags &= unchecked((byte)~LogiFlags.Stuck);
         if (!ConstructConveyor.PassTo(c, k, lead, o))
         {
+            if (wasHeld)
+                r.Flags |= (byte)LogiFlags.Stuck;
             if (r.Wait < 255)
                 r.Wait++;
             if (r.Wait >= FullSteps && ((LogiFlags)r.Flags & LogiFlags.Storage) == 0)
             {
                 r.Wait = 0;
+                if (StockTargets.Hold(c, router))
+                    return Held(c, ref r, LogiReason.DestFull, flags0, ref changed);
                 if (!Reassign(world, c, m, s, ref r, d, ds, LogiReason.DestFull))
                     return Stuck(c, m, s, ref r, flags0, ref changed);
             }
@@ -561,6 +578,43 @@ public static class ConstructLogistics
         }
         Shown(c, m, s, o, in c.Conveyed[LastOn(c, o)]);
         return true;
+    }
+
+    /// <summary>routerHold: an order's piece that can't get on waits at the Router with its order kept, marked stuck (tried again every 2 s).</summary>
+    private static bool Held(Construct c, ref CRider r, LogiReason why, byte flags0, ref bool changed)
+    {
+        if (((LogiFlags)r.Flags & LogiFlags.Stuck) == 0)
+            r.Wait = 0;
+        SetReason(ref r, why);
+        r.Flags |= (byte)LogiFlags.Stuck;
+        changed |= r.Flags != flags0;
+        return false;
+    }
+
+    /// <summary>routerSpill pinned: a piece for storage (or with nowhere to go) leaves by way <paramref name="spill"/> (1 ahead, 2 and 3 the sides); else waits.</summary>
+    private static bool Spill(Construct c, LogiMap m, int s, int k, int lead, int spill, byte flags0, ref bool changed)
+    {
+        int router = m.NodePart[m.Routers[s]];
+        ref var r = ref c.Conveyed[lead];
+        r.Flags = (byte)(((LogiFlags)r.Flags & (LogiFlags.Overflow | LogiFlags.ReasonMask | LogiFlags.Storage)) | LogiFlags.Storage);
+        if (r.Dest != 0 && PartOfStore(c, r.Dest) is var dp and >= 0 && m.DestSlot(dp) is var dsl and >= 0 && !m.DestStore[dsl])
+            r.Dest = 0; // (a store keeps its destination: the next Router sends it on; anything else is dropped here)
+        for (var o = 0; o < c.RouteCount; o++)
+        {
+            if (c.Routes[o].Type != RouteType.Conveyor || c.Routes[o].From != router || WayOf(c, o) != spill)
+                continue;
+            if (!ConstructConveyor.PassTo(c, k, lead, o))
+            {
+                if (r.Wait < 255)
+                    r.Wait++;
+                changed |= r.Flags != flags0;
+                return false;
+            }
+            Shown(c, m, s, o, in c.Conveyed[LastOn(c, o)]);
+            return true;
+        }
+        changed |= r.Flags != flags0;
+        return false; // (no conveyor on that way: it waits, as a piece with nowhere to go)
     }
 
     /// <summary>A new destination after <paramref name="why"/>: an order's piece goes to storage as overflow; a stored one to another store.</summary>
