@@ -18,6 +18,7 @@ public sealed class FragmentScript
     {
         public string Id = "", Title = "", Kind = "", Hint = ""; // its id is also the story world's name of its Thing ("frag.threat"), which storylets name it by
         public string[] Text = []; // paragraphs
+        public string[] Leads = []; // leads told elsewhere (a dying convict's last words: docs/story/BREAKOUT.md) that this record answers
     }
 
     public sealed class Site
@@ -104,6 +105,14 @@ public sealed class FragmentScript
                 if (!e.TryGetProperty("text", out var tx) || tx.ValueKind != JsonValueKind.Array || tx.GetArrayLength() is 0 or > 12)
                     throw new StoryException($"{where}: fragment \"{fr.Id}\": \"text\" is a list of 1 to 12 paragraphs");
                 fr.Text = [.. tx.EnumerateArray().Select(x => Ascii(x.GetString() ?? "", where))];
+                if (e.TryGetProperty("leads", out var ld))
+                {
+                    if (ld.ValueKind != JsonValueKind.Array || ld.GetArrayLength() > 4)
+                        throw new StoryException($"{where}: fragment \"{fr.Id}\": \"leads\" is a list of at most 4 names");
+                    fr.Leads = [.. ld.EnumerateArray().Select(x => Ascii(x.GetString() ?? "", where))];
+                    if (fr.Leads.Any(x => x.Length is 0 or > 60))
+                        throw new StoryException($"{where}: fragment \"{fr.Id}\": a lead is a name of 1 to 60 characters");
+                }
                 if (frags.Exists(x => x.Id.Equals(fr.Id, StringComparison.OrdinalIgnoreCase)))
                     throw new StoryException($"{where}: two fragments are \"{fr.Id}\"");
                 frags.Add(fr);

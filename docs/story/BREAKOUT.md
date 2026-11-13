@@ -10,7 +10,7 @@ Built in slices, one PR each:
 
 1. **The crew** (this file's first part): four convicts in the gangs, talking, trust, the question.
 2. **The night**: the crew takes the Ministry's ration hauler to the spaceport ("The night" below).
-3. **The spaceport**: the guards, the deaths and their last words into the Logbook (not built yet).
+3. **The spaceport**: the guards, the deaths and their last words into the Logbook ("The spaceport" below).
 4. **The ship**: a stand-in ship the survivors board, off the planet (not built yet).
 
 ## The crew
@@ -66,4 +66,25 @@ Grassing: once Crew is 1, Sergeant Bellweather offers "Some of the inmates are p
   marker moves to the Ministry Courier on the first pad.
 - **Saves.** Nothing new is saved: a player with the lead who hasn't `Escaped` is back at the muster when the world
   loads, one who has is at the spaceport, and a convict who `Fled` is put back at the landing.
-- **Wire.** `Msg.Breakout` (protocol 287) to each player: their stage, the marker, the ride's tick and the two haulers.
+- **Wire.** `Msg.Breakout` (protocol 288) to each player: their stage, the marker, the ride's tick and the two haulers.
+
+## The spaceport
+
+`Game/GameBreakoutFight.cs`, data under `"fight"` in `Story/Opening/Breakout.json`.
+
+- **The guards.** The first time an escapee is within `wake` (90 m) of the landing, the file's guards turn out at their
+  posts round the terminal (the spaceport's frame), the first one shouting. They are bots of the hostile side like the
+  colony's riot squad, with rifles and SMGs, and go only for whoever escaped and is still within 160 m of the landing; a
+  guard holds its post until an escapee is in the fight. Killed, a guard is gone for good.
+- **The convicts** fight the guards from round the landing. The guards can't hurt them, apart from the scripted deaths,
+  so Dot and Hester always live. The moods do the rest: a friend seeing one die flies into a rage, then grieves.
+- **The deaths.** Each death in the file is due `after` seconds into the fight, or once `down` guards are, whichever
+  comes first. The convict says their `words` (one every 3 s) and is shot by the nearest guard; every escapee near
+  gains the death's `lead` (the story's Lead relation, so it is saved), which the Logbook (F1) lists until the record
+  that names it in its `leads` (Story/Fragments/Fragments.json) is found:
+  - Wren Haskett, 12 s in: the room under headquarters with five big chairs, "Wren's room with five chairs" (`frag.silence`).
+  - Ambrose Thale, 50 s in or three guards down: his gran's seat-lottery ticket, "Ambrose's lottery ticket" (`frag.threat`).
+- **Won.** When every guard is down, each escapee there gains `Stormed` and a memo goes round; the guards never come again
+  for them. A world loaded mid-fight turns the guards out again; the dead stay dead.
+- No wire change: guards are players, the words are speech.
+
