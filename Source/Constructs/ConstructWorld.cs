@@ -2061,6 +2061,7 @@ public sealed partial class ConstructWorld
     public void Step(IWorldQuery query, float dt)
     {
         _partTally = -1; // (counted again when next asked)
+        var perf = Perf.Measure(PerfArea.ConstructLogic); // the perf window's areas (Source/Perf): off, a bool test each
         StepLinks(); // couplings and wires between constructs (ConstructLinks.cs): resolved, broken when apart, their values
         StepHydraulics(); // (the circuits, a few times a second: ConstructHydraulics.cs)
         StepNoCollide(); // no-collide pairs (ConstructNoCollide.cs): each finds its parts, or goes
@@ -2092,8 +2093,12 @@ public sealed partial class ConstructWorld
         ConstructLauncher.Step(this, dt); // (catapults and arrestor gear, on the logic's signals: ConstructLauncher.cs)
         ConstructDoors.Step(this); // (event doors: the wired ones' edges and the moving ones, nothing for an idle door)
         ConstructRide.BeforePhysics(this); // (each body's acceleration: riders thrown off by a crash)
+        perf.Dispose();
+        perf = Perf.Measure(PerfArea.ConstructPhysics);
         ConstructPhysics.Step(this, query, dt);
         OverloadDamage();
+        perf.Dispose();
+        perf = Perf.Measure(PerfArea.Production);
         ConstructRecycler.Step(this); // (Recyclers take in wrecked parts left in their intakes and give back materials)
         ConstructGatherer.Step(this); // (Saw and Drill Modules gather into their bins)
         ConstructScoops.Step(this, query, dt); // (scoops dig where they are really pushed in, and pour when tipped)
@@ -2110,6 +2115,7 @@ public sealed partial class ConstructWorld
         ConstructLift.Step(this, query, ref _liftTicks); // (the gas in lift cells, burners, what wakes a craft asleep)
         LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
+        perf.Dispose();
         ConstructGravity.Refresh(this); // (gravity wells and generators as they are now: ConstructGravity.cs)
         for (var i = Bodies.Count - 1; i >= 0; i--)
         {

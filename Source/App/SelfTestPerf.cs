@@ -291,7 +291,7 @@ public static partial class SelfTest
         if (p < recorded - PerfGpu.Ring || MathF.Abs(gpu.AvgMs[(int)PerfGpuPass.Buildings] - 1f) > 1e-3f || MathF.Abs(gpu.AvgMs[(int)PerfGpuPass.Props] - 2f) > 1e-3f
             || MathF.Abs(gpu.AvgMs[(int)PerfGpuPass.Sky] - 0.5f) > 1e-3f || gpu.Samples[(int)PerfGpuPass.Terrain] != 0 || gpu.OutOfOrder != 120
             || MathF.Abs(gpu.GapAvgMs - 3f) > 1e-3f)
-            Fail($"perf GPU: {p} props samples of {recorded} timed frames; buildings {gpu.AvgMs[0]:0.000} props {gpu.AvgMs[2]:0.000} sky {gpu.AvgMs[(int)PerfGpuPass.Sky]:0.000} ms (want 1, 2, 0.5), "
+            Fail($"perf GPU: {p} props samples of {recorded} timed frames; buildings {gpu.AvgMs[(int)PerfGpuPass.Buildings]:0.000} props {gpu.AvgMs[(int)PerfGpuPass.Props]:0.000} sky {gpu.AvgMs[(int)PerfGpuPass.Sky]:0.000} ms (want 1, 2, 0.5), "
                  + $"between passes {gpu.GapAvgMs:0.000} ms (want 3: a wait before the sky's start stamp is billed to no pass), terrain samples {gpu.Samples[1]}, out of order {gpu.OutOfOrder} (want 120)");
 
         // A driver that never finishes: every slot stays pending, frames go on untimed, nothing is ever read or waited for.
