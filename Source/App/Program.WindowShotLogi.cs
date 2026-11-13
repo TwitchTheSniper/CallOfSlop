@@ -95,7 +95,10 @@ public static partial class Program
             }
             case "order" when g.IsServer:
             {
-                var (tc, t) = LogiFind(g, "Crafting Terminal");
+                var atStation = rest.StartsWith("station ", StringComparison.Ordinal); // ("logi order station NAME [N]": at the first Building Station, a chain root too)
+                if (atStation)
+                    rest = rest[8..];
+                var (tc, t) = LogiFind(g, atStation ? "Building Station" : "Crafting Terminal");
                 var cut = rest.LastIndexOf(' ');
                 var n = cut > 0 && ushort.TryParse(rest[(cut + 1)..], out var cn) ? cn : (ushort)1;
                 var name = cut > 0 && n > 0 && rest[(cut + 1)..] == n.ToString() ? rest[..cut] : rest;
@@ -168,7 +171,29 @@ public static partial class Program
                     if (c.Parts[i].Orders is { Bill: false, Count: > 0 } oq && c.DefOf(i).IsAssembler)
                         for (var k = 0; k < oq.Count; k++)
                             WsSay($"[logi]   queue {c.DefOf(i).Name}#{i}: {ConstructParts.Get(oq.Items[k].Part)?.Name} {oq.Items[k].Made}/{oq.Items[k].Count} chain {oq.Items[k].Chain}");
+                for (var i = 0; i < c.PartCount; i++) // (the Orders rows' chain lines, as this peer has them: the server's, or a client's from CBodyKind.Craft)
+                    if (c.Parts[i].Craft is { Count: > 0 } cq)
+                        for (var k = 0; k < cq.Count; k++)
+                        {
+                            WsSay($"[logi]   row {c.DefOf(i).Name}#{i} order {cq.Items[k].Id}: {ConstructCrafting.NameOf(cq.Items[k].What)} {cq.Items[k].State} \"{cq.Items[k].Note}\"");
+                            foreach (var l in cq.Items[k].Lines ?? [])
+                                WsSay($"[logi]     |{ConstructLogisticsPlan.LineText(c, l)}");
+                            if (cq.Items[k].LinesMore > 0)
+                                WsSay($"[logi]     | and {cq.Items[k].LinesMore} more");
+                        }
                 return;
+            case "tier": // a test state in this process: "logi tier Assembler 4" sets every part of that name to that tier (a two-level recipe on the showcase)
+            {
+                var sp = rest.LastIndexOf(' ');
+                if (sp < 0 || ConstructParts.Find(rest[..sp]) is not { } td || !int.TryParse(rest[(sp + 1)..], out var tier))
+                {
+                    WsFail($"logi tier NAME N: \"{rest}\"");
+                    return;
+                }
+                td.Tier = tier;
+                WsSay($"[logi] {td.Name} is tier {tier} in this run");
+                return;
+            }
             case "remove" when g.IsServer: // a part off the body (a maker gone): "logi remove PART@n"
             {
                 var (fc, part) = LogiFind(g, rest);

@@ -261,6 +261,7 @@ public static class ConstructLogisticsPlan
         }
         if (best >= 0 && WorkOrders.Queue(world, c, best, what) is var no && no == null)
         {
+            AheadOfUsers(world, c, c.Parts[best].Orders!, e);
             e.Maker = (ushort)best;
             e.Flags &= unchecked((byte)~ChainFlags.Expanded);
             e.Reason = "";
@@ -270,6 +271,43 @@ public static class ConstructLogisticsPlan
         var reason = refusal != null ? $"waiting on {name}: {refusal}" : $"waiting on {name}: nothing on the network makes it";
         if (e.Reason != reason)
             e.Reason = reason; // (made only when it changes)
+    }
+
+    /// <summary>
+    /// The line just queued (the last) moves ahead of the first line in that queue it is an input for (the root's own line, or an
+    /// ancestor link's): else a machine asked for a part and for that part's input would wait on itself. That line waits for this
+    /// input, so it has no batch under way (an Assembler's progress starts only with every input in), and nothing is lost.
+    /// </summary>
+    private static void AheadOfUsers(ConstructWorld world, Construct c, OrderList q, in ChainEntry e)
+    {
+        var rootKind = RootKind(c, e.Root, e.RootId);
+        for (var k = 0; k < q.Count - 1; k++)
+        {
+            ref readonly var l = ref q.Items[k];
+            var uses = l.Chain == 0 ? l.Part == rootKind && !l.IsPiece : IsAncestor(world, e, l.Chain);
+            if (!uses)
+                continue;
+            var mine = q.Items[q.Count - 1];
+            Array.Copy(q.Items, k, q.Items, k + 1, q.Count - 1 - k);
+            q.Items[k] = mine;
+            world.OrdersChanged(c);
+            return;
+        }
+    }
+
+    private static bool IsAncestor(ConstructWorld world, in ChainEntry e, ushort id)
+    {
+        var p = e.Parent;
+        for (var hop = 0; hop <= MaxDepth && p != 0; hop++)
+        {
+            if (p == id)
+                return true;
+            var at = Find(world, p);
+            if (at < 0)
+                return false;
+            p = world.Chains[at].Parent;
+        }
+        return false;
     }
 
     private static bool Making(OrderList q, ushort kind)
@@ -386,8 +424,9 @@ public static class ConstructLogisticsPlan
         }
         if (e.Maker >= c.PartCount || c.Parts[e.Maker].Orders is not { Bill: false } q)
             return;
+        var idle = world.StoreOf(c, e.Maker) is not { JobTicks: > 0 }; // (an Assembler's batch under way: its head is started)
         for (var k = q.Count - 1; k >= 0; k--)
-            if (q.Items[k].Chain == e.Id && q.Items[k].Made == 0 && k > 0) // (the head may be on the die: it finishes, and its piece goes to storage)
+            if (q.Items[k].Chain == e.Id && q.Items[k].Made == 0 && (k > 0 || idle)) // (a started head finishes its batch, and its piece goes to storage)
             {
                 q.RemoveAt(k);
                 world.OrdersChanged(c);
