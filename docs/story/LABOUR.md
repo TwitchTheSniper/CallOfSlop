@@ -44,6 +44,16 @@ goes through them).
 - **Kinds:** stand, shovel, pick, hammer, haul, barrow, queue, rollcall, huddle, march, sweep, paint, sit. A new kind is
   an entry at the end of `LabourKind` (a wire byte), a layout in `Spot`/`Place` and a pose in `PoseOf`.
 
+## Hands
+
+A story person can work in a gang (GameLabourHands.cs; the break-out's convicts, BREAKOUT.md). A labour post in
+`Story/Posts/PenalColony.json` (`"at": "labour", "gang": NAME`, only a gang that stays put: shovel, pick, hammer,
+huddle, sit, stand; one post a gang) sends a person on a Work step to the gang's last inmate's place. While they stand
+there working (not talking, reacting or fighting), the host lists them in `Msg.LabourHands` (protocol 286; sent only
+when it changes, and to joiners): every PC then draws them as that gang's last inmate, in their own body's look, and
+not their bot body, and the gang's own last figure stands aside. Anything else (a player says hello, they come to look
+at a stranger, the shift ends) shows the body again, and the gang is one short until they come back.
+
 ## Cost
 
 Karl wants to keep the game's thousands of frames a second.
@@ -63,7 +73,8 @@ Karl wants to keep the game's thousands of frames a second.
 
 ## Not done / ideas
 
-- They don't step aside: walk through one and you go through it. They can't be shot or talked to.
+- They don't step aside: walk through one and you go through it. They can't be shot or talked to (the story people
+  working among them can: "Hands" above).
 - The march and queues only shuffle on their spots; nobody goes into a building.
 - Murmured lines when you pass (the story people's babble, GameStoryBabble.cs) would suit the queues.
 - A gang's work could follow the story's clock (night shift, meals) instead of running all day.

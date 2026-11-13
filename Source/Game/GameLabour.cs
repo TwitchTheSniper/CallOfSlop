@@ -127,8 +127,9 @@ public sealed partial class Game
         var script = LabourScript.Current;
         LabourCount = 0;
         if (script.Problem.Length == 0 && _lbColony != 0)
-            foreach (var g in script.Scenes)
+            for (var gi = 0; gi < script.Scenes.Length; gi++)
             {
+                var g = script.Scenes[gi];
                 if (LabourCount >= LabourScenesMax)
                     break;
                 if (!LabourFrame(g, out var origin, out var ax, out var az))
@@ -143,6 +144,7 @@ public sealed partial class Game
                 s.PointCount = (byte)n;
                 var (sin, cos) = MathF.SinCos(g.Face * MathF.PI / 180f);
                 s.Facing = StandInPath.Along(ax * sin - az * cos, s.P0);
+                _lbGang[LabourCount] = (short)gi; // (which gang of the file: a labour post finds its gang by name, GameLabourHands.cs)
                 LabourScenes[LabourCount++] = s;
             }
         LabourVersion++;
@@ -225,6 +227,8 @@ public sealed partial class Game
     {
         if (LabourCount > 0)
             LabourSend(to);
+        if (LabourHandCount > 0)
+            LabourHandsSend(to); // (who works among them: GameLabourHands.cs)
     }
 
     /// <summary>Client: a <see cref="Msg.Labour"/> (after its id): the whole list again.</summary>

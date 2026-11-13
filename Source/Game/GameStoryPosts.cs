@@ -23,6 +23,8 @@ public sealed partial class Game
     private bool StoryPostAt(StoryPost post, out Vector3 stand, out Vector3 face, out ushort seatBody, out int seatPart)
     {
         (stand, face, seatBody, seatPart) = (default, default, 0, -1);
+        if (post.At == StoryPostPlace.Labour)
+            return LabourPostAt(post.Gang, out stand, out face); // (among a gang of convict labourers, working with them: GameLabourHands.cs)
         if (post.At == StoryPostPlace.Gate)
         {
             if (_opColony == 0)
@@ -259,12 +261,12 @@ public sealed partial class Game
 }
 
 /// <summary>Where a post is: a part in the guards' barracks or in the colony, or the colony's gate.</summary>
-public enum StoryPostPlace : byte { Barracks, Colony, Gate }
+public enum StoryPostPlace : byte { Barracks, Colony, Gate, Labour }
 
 /// <summary>One post (Story/Posts/PenalColony.json).</summary>
 public sealed class StoryPost
 {
-    public string Name = "", About = "", Part = "";
+    public string Name = "", About = "", Part = "", Gang = "";
     public StoryPostPlace At;
     public int Nth;
     public bool Sit;
@@ -327,27 +329,46 @@ public sealed class StoryPostsData
                 "barracks" => StoryPostPlace.Barracks,
                 "colony" => StoryPostPlace.Colony,
                 "gate" => StoryPostPlace.Gate,
-                _ => throw new FormatException($"{where} ({post.Name}): \"at\" is barracks, colony or gate"),
+                "labour" => StoryPostPlace.Labour,
+                _ => throw new FormatException($"{where} ({post.Name}): \"at\" is barracks, colony, gate or labour"),
             };
-            if (post.At != StoryPostPlace.Gate && post.Part.Length == 0)
-                throw new FormatException($"{where} ({post.Name}): a part to work at (\"part\")");
-            if (post.At != StoryPostPlace.Gate && ConstructParts.Find(post.Part) == null)
-                throw new FormatException($"{where} ({post.Name}): no such part \"{post.Part}\"");
-            post.Nth = e.TryGetProperty("nth", out var nth) && nth.TryGetInt32(out var k) ? k : 0;
-            if (post.Nth is < 0 or > 15)
-                throw new FormatException($"{where} ({post.Name}): \"nth\" is 0 to 15");
-            var does = Str("do");
-            post.Sit = does.ToLowerInvariant() switch
+            if (post.At == StoryPostPlace.Labour)
             {
-                "sit" => true,
-                "" or "stand" => false,
-                _ => throw new FormatException($"{where} ({post.Name}): \"do\" is sit or stand"),
-            };
-            if (post.Sit && post.At == StoryPostPlace.Gate)
-                throw new FormatException($"{where} ({post.Name}): nothing to sit on at the gate");
-            post.Front = e.TryGetProperty("front", out var fr) && fr.TryGetSingle(out var fv) ? fv : 0.7f;
-            if (post.Front is < -3 or > 3)
-                throw new FormatException($"{where} ({post.Name}): \"front\" is -3 to 3 m");
+                post.Gang = Str("gang");
+                if (post.Gang.Length == 0)
+                    throw new FormatException($"{where} ({post.Name}): a gang of the labour file to work in (\"gang\")");
+                if (LabourScript.Current.Scenes.FirstOrDefault(g => g.Name.Equals(post.Gang, StringComparison.OrdinalIgnoreCase)) is not { } gang)
+                    throw new FormatException($"{where} ({post.Name}): no gang \"{post.Gang}\" in Story/Labour/PenalColony.json");
+                if (!Game.LabourHandKind(gang.Kind))
+                    throw new FormatException($"{where} ({post.Name}): the gang \"{post.Gang}\" walks ({gang.Kind}); a person works only in a gang that stays put (shovel, pick, hammer, huddle, sit, stand)");
+                if (Str("do").Length > 0)
+                    throw new FormatException($"{where} ({post.Name}): a labour post does what its gang does (no \"do\")");
+                foreach (var p in o)
+                    if (p.At == StoryPostPlace.Labour && p.Gang.Equals(post.Gang, StringComparison.OrdinalIgnoreCase))
+                        throw new FormatException($"{where} ({post.Name}): one post a gang (\"{post.Gang}\" has \"{p.Name}\")");
+            }
+            else
+            {
+                if (post.At != StoryPostPlace.Gate && post.Part.Length == 0)
+                    throw new FormatException($"{where} ({post.Name}): a part to work at (\"part\")");
+                if (post.At != StoryPostPlace.Gate && ConstructParts.Find(post.Part) == null)
+                    throw new FormatException($"{where} ({post.Name}): no such part \"{post.Part}\"");
+                post.Nth = e.TryGetProperty("nth", out var nth) && nth.TryGetInt32(out var k) ? k : 0;
+                if (post.Nth is < 0 or > 15)
+                    throw new FormatException($"{where} ({post.Name}): \"nth\" is 0 to 15");
+                var does = Str("do");
+                post.Sit = does.ToLowerInvariant() switch
+                {
+                    "sit" => true,
+                    "" or "stand" => false,
+                    _ => throw new FormatException($"{where} ({post.Name}): \"do\" is sit or stand"),
+                };
+                if (post.Sit && post.At == StoryPostPlace.Gate)
+                    throw new FormatException($"{where} ({post.Name}): nothing to sit on at the gate");
+                post.Front = e.TryGetProperty("front", out var fr) && fr.TryGetSingle(out var fv) ? fv : 0.7f;
+                if (post.Front is < -3 or > 3)
+                    throw new FormatException($"{where} ({post.Name}): \"front\" is -3 to 3 m");
+            }
             if (e.TryGetProperty("who", out var who))
             {
                 if (who.ValueKind != JsonValueKind.Array)

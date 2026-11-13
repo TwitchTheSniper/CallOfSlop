@@ -2,7 +2,9 @@
   // The penal colony staff's posts (docs/story/STORY.md "Posts", Game/GameStoryPosts.cs): on a Work step at the colony
   // each person goes to a post and keeps it for the shift, scripted and shown, never told. The furniture is the Colony
   // Barracks blueprint's (the part kit's BuildingParts): moving it there moves the posts with it.
-  //   at     barracks (the guards' barracks), colony (the Penal Colony construct) or gate (just outside the colony's gate)
+  //   at     barracks (the guards' barracks), colony (the Penal Colony construct), gate (just outside the colony's gate) or
+  //          labour (in a gang of Story/Labour/PenalColony.json, "gang" by name: drawn working as one of them, GameLabourHands.cs;
+  //          only a gang that stays put, and one post a gang)
   //   part   the part worked at, by name ("nth": which of them, from 0); at the gate there is none
   //   do     sit (in that seat: every peer sees them sat there) or stand (in front of the part, facing it)
   //   front  stand: how far in front of the part, along its own z (m, -3 to 3; negative for a part that faces -z)
@@ -17,6 +19,15 @@
       "about": "guarding the kettle, as ever" },
     { "name": "Gate watch", "at": "gate",
       "who": ["Sergeant Bellweather", "Officer Crumb"],
-      "about": "on watch outside the colony gate, looking out" }
+      "about": "on watch outside the colony gate, looking out" },
+    // ---- The convicts' work, in the gangs (the break-out's people: Storylets/Breakout.json) ----
+    { "name": "Boiler coal", "at": "labour", "gang": "Coal for the boilers", "who": ["Dot Pruett"],
+      "about": "shovelling the boiler house's coal with the others" },
+    { "name": "Sick parade", "at": "labour", "gang": "Sick parade", "who": ["Wren Haskett"],
+      "about": "sat on the infirmary step with the sick, waiting to be seen" },
+    { "name": "The brazier", "at": "labour", "gang": "Round the brazier", "who": ["Ambrose Thale"],
+      "about": "hands out to the brazier on an unofficial break" },
+    { "name": "Heating main", "at": "labour", "gang": "At the heating main", "who": ["Hester Mossop"],
+      "about": "round the valve chamber, the one warm thing in the colony" }
   ]
 }
