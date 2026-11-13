@@ -90,7 +90,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action);
 
     private static void WsSay(string s)
     {
@@ -460,6 +460,16 @@ public static unsafe partial class Program
                 _wsWait = 2;
                 return;
             }
+            case "joints": // each joint of the spawned body as this peer has it: its part, type, angle (a piston's metres), limits and input
+                if (WsSpawned(g) is { } jc)
+                    for (var j = 0; j < jc.JointCount; j++)
+                    {
+                        ref var jt = ref jc.Joints[j];
+                        WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"joints: {j} {jc.DefOf(jt.Hinge).Name} {jt.Type} at {jt.Angle:0.000} ({jt.Min:0.00}..{jt.Max:0.00}) input {jt.Input:0.00} wired {jt.Wired}"));
+                    }
+                else
+                    WsSay("joints: no spawned body");
+                return;
             case "saveworld" or "loadworld": // host: the world saved under a name through the real save and copied out, or (a fresh process) that copy loaded; then the run-time parts of every body
             {
                 WsSay($"{verb}: " + (verb == "saveworld" ? g.StationSaveProbe(arg) : g.StationLoadProbe(arg)));
