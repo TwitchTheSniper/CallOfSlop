@@ -76,3 +76,14 @@ the rule); `--look-report` on the arms; a lifter removed while holding a loaded 
    side, not only its nearest corner.
 4. **Phase 1's open questions** (arms on other constructs, the Scrap arm's reach, the "no clear way" check, how a cab finds its
    lifter) are still open; this phase assumed the recommendations.
+
+## The user's answers (2026-11-13), built in phase 3's branch
+
+1. **The machine screen: B, a small screen now.** A small screen on the plinth shows what the arm is doing; its code stays in
+   the lifter files (a panel source of their own, `lifter`, as the Panel Designer desk has its own), not in `MachineScreens.cs`.
+2. **The spare part after a load: fix it.** A piece in an arm's hand counts as in the hold for the station's orders, so a save
+   and load never orders a part twice.
+3. **The pick point: both, in time.** Now: an arm picks from any point along the hold's side it reaches. Later: pick pads for
+   larger building areas, where pulling parts from the hold's side no longer makes sense (the network phase).
+
+Phase 1's open questions keep their recommendations.

@@ -120,6 +120,8 @@ public enum LiftWhy : byte
     NoPart, // a station in reach, but no part it can take now (not ready, not in the hold, too heavy or out of reach)
     Holding, // a piece in the hand (from a save) and no hold in reach takes it
     PutBack, // carrying a piece back into a station's hold (from a save)
+    Player, // its piece would pin a player against something: the move waits (ConstructLifterPush.cs)
+    PlayerStuck, // ...for over 10 s (Alarm)
 }
 
 /// <summary>
@@ -134,9 +136,10 @@ public sealed class CLift
     public uint Paint;
     public Vector3 From, To; // the piece's origin at the pick and at the place, in the lifter part's frame
     public Quaternion FromRot = Quaternion.Identity, ToRot = Quaternion.Identity; // its turn there, in the same frame
-    public int Age, Dur; // ticks into the move, and its length
-    public ushort Held; // ticks the move waited for a player (phase 3: 0 until then)
-    public double At; // ConstructConveyor.Clock when Age was last set or heard (the drawing runs on from it)
+    public int Age, Dur; // ticks into the move (server: from the clock at each step), and its length
+    public uint Start; // the server tick (the mover clock) the move began
+    public int Held; // ticks the move has waited (a player in the way, no power): the path runs on Start + Held
+    public uint WaitFrom; // the tick it stopped at while it waits (0: it runs): both peers pose it there (ConstructLifterPush.cs)
     public bool Moved; // a move has been made or heard (else the hand is drawn at its rest)
     public float Rise = ConstructLifters.CarryRise; // the carry height over the higher end, from its Carry height setting when the move began
     public LiftWhy Why; // what it waits on (the look line)
@@ -150,6 +153,7 @@ public sealed class CLift
     public StationJob.LiftPlan? Plan; // the job's step places when the step was claimed (a restart makes a new one)
     public bool Fitted; // the place happened; Return is the empty hand's way back
     public bool ToHold; // this carry ends in the station's hold, not on the build (a piece loaded in the hand)
+    public bool PlayerWait, PowerWait; // what it waits on: a player its piece would pin (ConstructLifterPush.cs), no power
 }
 
 /// <summary>A construct's lifter parts, found when its parts change (<see cref="Construct.RebuildStamp"/>).</summary>
@@ -268,6 +272,7 @@ public static class ConstructLifters
 
     private static void StepLifts(ConstructWorld world, bool fitTaken)
     {
+        Now = MoverPhysics.Clock; // (the server tick: Game.ServerTickStep sets it first)
         if (world.StationOpen.Count == 0 && world.LiftBusy == 0)
             return;
         world.LiftTick++;
@@ -277,7 +282,6 @@ public static class ConstructLifters
             return;
         var busy = 0;
         var decisions = 0;
-        var now = ConstructConveyor.Clock;
         for (var bi = 0; bi < world.LiftBodies.Count; bi++)
         {
             var lb = world.LiftBodies[bi];
@@ -290,15 +294,40 @@ public static class ConstructLifters
                     continue;
                 if (!ConstructRecycler.Powered(world, c, l.Part))
                 {
-                    Why(world, l, LiftWhy.NoPower); // (it stops where it is, and goes on when power returns; a client stops its drawing too)
+                    Why(world, l, LiftWhy.NoPower); // (it stops where it is, and goes on when power returns; a client poses it there too)
+                    if (l.State is LiftState.Carry or LiftState.Return && !l.PowerWait)
+                    {
+                        l.PowerWait = true;
+                        Freeze(world, l, Now);
+                    }
                     busy += l.State == LiftState.Idle ? 0 : 1;
                     Ports(c, l);
                     continue;
                 }
-                if (l.Why == LiftWhy.NoPower)
+                if (l.PowerWait)
                 {
-                    l.At = now;
-                    Why(world, l, l.ToHold ? LiftWhy.PutBack : LiftWhy.None);
+                    l.PowerWait = false;
+                    Thaw(world, l);
+                }
+                if (l.Why == LiftWhy.NoPower)
+                    Why(world, l, l.PlayerWait ? LiftWhy.Player : l.ToHold ? LiftWhy.PutBack : LiftWhy.None);
+                if (l.PlayerWait && l.State == LiftState.Carry && (l.ToHold || ClaimHolds(world, l)))
+                {
+                    // Waiting for a player its piece would pin (ConstructLifterPush.cs): on the tick they are clear; Stuck (Alarm) after 10 s.
+                    if (ConstructLifterPush.Clear(world, c, l, ld))
+                    {
+                        l.PlayerWait = false;
+                        Thaw(world, l);
+                        Why(world, l, l.ToHold ? LiftWhy.PutBack : LiftWhy.None);
+                    }
+                    else
+                    {
+                        if (Now - l.WaitFrom > ConstructLifterPush.StuckTicks)
+                            Why(world, l, LiftWhy.PlayerStuck);
+                        busy++;
+                        Ports(c, l);
+                        continue;
+                    }
                 }
                 switch (l.State)
                 {
@@ -329,8 +358,7 @@ public static class ConstructLifters
                     case LiftState.Carry:
                         if (l.ToHold)
                         {
-                            l.Age = Math.Min(l.Dur, l.Age + Every);
-                            l.At = now;
+                            l.Age = (int)AgeAt(l, Now);
                             if (l.Age >= l.Dur)
                             {
                                 Stow(world, c, l, ld);
@@ -344,8 +372,7 @@ public static class ConstructLifters
                             world.LiftChanged(c.Id);
                             break;
                         }
-                        l.Age = Math.Min(l.Dur, l.Age + Every);
-                        l.At = now;
+                        l.Age = (int)AgeAt(l, Now);
                         if (l.Age >= l.Dur && !fitTaken)
                         {
                             fitTaken = true;
@@ -354,8 +381,7 @@ public static class ConstructLifters
                         }
                         break;
                     case LiftState.Return:
-                        l.Age = Math.Min(l.Dur, l.Age + Every);
-                        l.At = now;
+                        l.Age = (int)AgeAt(l, Now);
                         if (l.Age >= l.Dur)
                         {
                             l.State = LiftState.Idle;
@@ -378,7 +404,7 @@ public static class ConstructLifters
     {
         ref var p = ref c.Parts[l.Part];
         var busy = l.State is LiftState.Carry or LiftState.Return && l.Why != LiftWhy.NoPower ? 1f : 0f;
-        var alarm = l.State == LiftState.Stuck ? 1f : 0f;
+        var alarm = l.State == LiftState.Stuck || l.Why == LiftWhy.PlayerStuck ? 1f : 0f; // (a player in the way over 10 s raises it too)
         if (p.Out == busy && p.Out1 == alarm && p.Mem == l.Moves)
             return;
         p.Out = p.OutNext = busy;
@@ -459,17 +485,16 @@ public static class ConstructLifters
                 ConstructStation.Bay(sc, t, out var floor, out _, out var bay);
                 if (Vector3.Distance(floor, shoulder) > ld.ReachMax + bay.Length() * 0.5f + ld.Down)
                     continue;
-                // The pick: the point of the hold nearest the shoulder, a hand's height over its floor.
-                var hold = HoldPoint(sc, t, shoulder);
-                if (!InReach(ld, shoulder, lr, hold, SafeLift, out _))
+                // The pick: the nearest point along the hold's side the empty hand reaches, a hand's height over its floor (the user, 2026-11-13).
+                if (!HoldPick(sc, t, ld, shoulder, lr, SafeLift, SafeLift, out var hold))
                     continue;
                 near = true;
                 var k = ConstructStation.LiftOffer(j, tray, ld, shoulder, lr);
                 if (k < 0)
                     continue;
                 var d = ConstructParts.Find(j.Bp!.Steps[k].Part)!;
-                if (!InReach(ld, shoulder, lr, hold, WristLift(d), out _))
-                    continue; // (the hold's corner is too close or too far for the arm with this piece in its hand)
+                if (!HoldPick(sc, t, ld, shoulder, lr, SafeLift, WristLift(d), out hold))
+                    continue; // (no point along the hold's side suits the arm with this piece in its hand)
                 if (!world.StationTake(sc, t, tray, d))
                     continue;
                 world.CraftChanged(sc);
@@ -488,7 +513,7 @@ public static class ConstructLifters
                 l.Dur = Ticks(ld, l.From, l.To, true, WristLift(d), l.Rise);
                 l.Why = LiftWhy.None;
                 l.ToHold = false;
-                l.At = ConstructConveyor.Clock;
+                Begin(l);
                 l.State = LiftState.Carry;
                 LifterProbe.CarriesHeard++; // (the host counts its own; a client counts what it hears)
                 l.Moved = true;
@@ -511,6 +536,40 @@ public static class ConstructLifters
         var x = Math.Clamp(local.X, mid + 0.3f, d.BoundsMax.X - 0.3f);
         var z = Math.Clamp(local.Z, d.BoundsMin.Z + 0.4f, d.BoundsMax.Z - 0.4f);
         return sp + Vector3.Transform(new Vector3(x, d.BoundsMin.Y + 0.9f, z), sr);
+    }
+
+    /// <summary>
+    /// The pick (the user, 2026-11-13: "picks from anywhere along the hold side"): of the points over the hold's floor, across it and
+    /// along its whole side every half metre, the nearest to the shoulder that the wrist reaches with both lifts (an empty hand's and
+    /// the piece's). Pick pads for larger building areas are to come with the network phase. Allocates nothing.
+    /// </summary>
+    public static bool HoldPick(Construct sc, int t, LifterDef ld, Vector3 shoulder, Quaternion rot, float lift, float lift2, out Vector3 at)
+    {
+        var d = sc.DefOf(t);
+        Freeform.PartWorld(sc, t, out var sp, out var sr);
+        var local = Vector3.Transform(shoulder - sp, Quaternion.Conjugate(sr));
+        var mid = (d.BoundsMin.X + d.BoundsMax.X) * 0.5f;
+        float x0 = mid + 0.3f, x1 = MathF.Max(x0, d.BoundsMax.X - 0.3f);
+        float z0 = d.BoundsMin.Z + 0.4f, z1 = MathF.Max(z0, d.BoundsMax.Z - 0.4f);
+        var zSteps = Math.Clamp((int)MathF.Ceiling((z1 - z0) / 0.5f), 1, 32);
+        var y = d.BoundsMin.Y + 0.9f;
+        var best = float.MaxValue;
+        at = HoldPoint(sc, t, shoulder);
+        for (var xi = 0; xi < 3; xi++)
+        {
+            var x = xi switch { 0 => x0, 1 => x1, _ => Math.Clamp(local.X, x0, x1) };
+            for (var zi = 0; zi <= zSteps; zi++)
+            {
+                var z = z0 + (z1 - z0) * zi / zSteps;
+                var p = sp + Vector3.Transform(new Vector3(x, y, z), sr);
+                var dist = Vector3.DistanceSquared(p, shoulder);
+                if (dist >= best || !InReach(ld, shoulder, rot, p, lift, out _) || lift2 != lift && !InReach(ld, shoulder, rot, p, lift2, out _))
+                    continue;
+                best = dist;
+                at = p;
+            }
+        }
+        return best < float.MaxValue;
     }
 
     /// <summary>Is the step this hand carries for still wanted (the same job, building, the step still claimed)?</summary>
@@ -540,7 +599,7 @@ public static class ConstructLifters
         if (sc != null && t >= 0 && t < sc.PartCount)
         {
             Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
-            to = Vector3.Transform(HoldPoint(sc, t, shoulder) - lp, Quaternion.Conjugate(lr));
+            to = Vector3.Transform((HoldPick(sc, t, ld, shoulder, lr, SafeLift, SafeLift, out var pick) ? pick : HoldPoint(sc, t, shoulder)) - lp, Quaternion.Conjugate(lr));
         }
         l.From = from;
         l.To = to;
@@ -549,7 +608,7 @@ public static class ConstructLifters
         l.Paint = 0;
         l.Age = 0;
         l.Dur = Ticks(ld, from, to, false, SafeLift, l.Rise);
-        l.At = ConstructConveyor.Clock;
+        Begin(l);
         l.State = LiftState.Return;
         l.ToHold = false;
         if (l.Why == LiftWhy.PutBack)
@@ -619,8 +678,7 @@ public static class ConstructLifters
                     continue;
                 if (ConstructConveyor.RackRefusal(sc, t, tray, d) != null)
                     continue;
-                var hold = HoldPoint(sc, t, shoulder);
-                if (!InReach(ld, shoulder, lr, hold, WristLift(d), out _))
+                if (!HoldPick(sc, t, ld, shoulder, lr, WristLift(d), WristLift(d), out var hold))
                     continue;
                 var inv = Quaternion.Conjugate(lr);
                 l.From = Pose(ld, l, l.Age, out var rot);
@@ -630,7 +688,7 @@ public static class ConstructLifters
                 l.Age = 0;
                 l.Rise = RiseOf(c, l.Part, ld);
                 l.Dur = Ticks(ld, l.From, l.To, true, WristLift(d), l.Rise);
-                l.At = ConstructConveyor.Clock;
+                Begin(l);
                 (l.State, l.ToHold, l.Why, l.Moved, l.Fitted) = (LiftState.Carry, true, LiftWhy.PutBack, true, false);
                 (l.StationBody, l.StationPart, l.Step, l.Job, l.Plan) = (sc.Id, t, -1, null, null);
                 return true;
@@ -702,7 +760,7 @@ public static class ConstructLifters
             }
             var rest = ld.Base + new Vector3(ld.ReachMin + 0.9f, -0.9f, 0);
             (l.State, l.Def, l.Paint, l.From, l.To, l.FromRot, l.ToRot) = (LiftState.Stuck, def, paint, rest, rest, Quaternion.Identity, Quaternion.Identity);
-            (l.Age, l.Dur, l.At, l.Moved, l.Why, l.Fitted, l.ToHold) = (Every, Every, ConstructConveyor.Clock, true, LiftWhy.Holding, false, false);
+            (l.Age, l.Dur, l.Start, l.Held, l.WaitFrom, l.Moved, l.Why, l.Fitted, l.ToHold) = (Every, Every, 0u, 0, 0u, true, LiftWhy.Holding, false, false);
             world.LiftBusy++; // (the step runs while a hand holds a piece)
         }
         world.LiftChanged(c.Id);
@@ -802,9 +860,63 @@ public static class ConstructLifters
         return s < down ? new Vector3(to.X, h - s, to.Z) : to;
     }
 
-    /// <summary>Ticks into the move as this peer draws it now (it runs on from the last word, to the move's end).</summary>
-    public static float AgeNow(CLift l) =>
-        l.State is LiftState.Carry or LiftState.Return && l.Why != LiftWhy.NoPower ? MathF.Min(l.Dur, l.Age + (float)((ConstructConveyor.Clock - l.At) * World.TickRate)) : l.Dur;
+    /// <summary>
+    /// Ticks into the move at a mover-clock tick (both peers, the same answer from the same word): the path is a pure function
+    /// of the server tick, as a map mover's pose is (arms-and-cranes.md 3.3); a waiting move is posed where it stopped.
+    /// </summary>
+    public static float AgeAt(CLift l, double tick)
+    {
+        if (l.State is not (LiftState.Carry or LiftState.Return))
+            return l.Dur;
+        var t = l.WaitFrom != 0 ? l.WaitFrom : tick;
+        return (float)Math.Clamp(t - l.Start - l.Held, 0, l.Dur);
+    }
+
+    /// <summary>Ticks into the move as this peer draws it this frame (<see cref="DrawTick"/>).</summary>
+    public static float AgeNow(CLift l) => AgeAt(l, DrawTick);
+
+    /// <summary>The frame's pose tick (Game.MoverRenderTick: the host's server tick, a client's predicted one), set by Program each frame.</summary>
+    public static double DrawTick;
+
+    /// <summary>Server: the mover clock at this step (the server tick).</summary>
+    public static uint Now;
+
+    /// <summary>Server: a move starts now.</summary>
+    private static void Begin(CLift l) =>
+        (l.Start, l.Held, l.WaitFrom, l.Age, l.PlayerWait, l.PowerWait) = (Now, 0, 0u, 0, false, false);
+
+    /// <summary>Server: the move stops where it is (a player in the way, no power); sent.</summary>
+    internal static void Freeze(ConstructWorld world, CLift l, uint at)
+    {
+        if (l.WaitFrom != 0)
+            return;
+        l.WaitFrom = Math.Max(1, at);
+        world.LiftChanged(l.Body);
+    }
+
+    /// <summary>
+    /// Server (ConstructLifterPush.cs): its piece would pin a player at <paramref name="tick"/>'s pose, so the move waits there
+    /// (both peers pose it at that tick) until the player is clear.
+    /// </summary>
+    internal static void Pin(ConstructWorld world, CLift l, uint tick)
+    {
+        if (l.PlayerWait || l.State != LiftState.Carry)
+            return;
+        l.PlayerWait = true;
+        Freeze(world, l, tick);
+        Why(world, l, LiftWhy.Player);
+        Console.WriteLine($"[lifter] body {l.Body} part {l.Part}: waits, a player is in the way (tick {tick}, {AgeAt(l, tick):0}/{l.Dur} into its move)");
+    }
+
+    /// <summary>Server: the move goes on from where it stopped, once nothing holds it; sent.</summary>
+    internal static void Thaw(ConstructWorld world, CLift l)
+    {
+        if (l.WaitFrom == 0 || l.PlayerWait || l.PowerWait)
+            return;
+        l.Held += unchecked((int)(Now - l.WaitFrom));
+        l.WaitFrom = 0;
+        world.LiftChanged(l.Body);
+    }
 
     private static double _fittersAt = -10;
     private static ushort _fittersBody;
@@ -837,8 +949,7 @@ public static class ConstructLifters
                 if (part >= c.PartCount || c.DefOf(part).Lifter is not { Bridge: false } ld)
                     continue;
                 Frame(c, part, ld, out _, out var lr, out var shoulder);
-                var hold = HoldPoint(sc, t, shoulder);
-                if (!InReach(ld, shoulder, lr, hold, SafeLift, out _))
+                if (!HoldPick(sc, t, ld, shoulder, lr, SafeLift, SafeLift, out var hold))
                     continue;
                 n++;
                 tiers.Append(tiers.Length > 0 ? ", " : "").Append(TierName(ld.Tier));
@@ -899,8 +1010,85 @@ public static class ConstructLifters
             };
         if (l is { Why: LiftWhy.NoPower })
             what += " - no power, stopped";
+        else if (l is { Why: LiftWhy.Player })
+            what += " - waiting: a player is in the way";
+        else if (l is { Why: LiftWhy.PlayerStuck })
+            what += " - stuck: a player has been in the way for over 10 s";
         var carries = ld.Payload >= 1000 ? $"{ld.Payload / 1000f:0.#} t" : $"{ld.Payload:0} kg";
         return $"{d.Name}: {what} - reaches {ld.ReachMin:0.#} to {ld.ReachMax:0.#} m, carries {carries}{(l is { Moves: > 0 } ? $"; {l.Moves} fitted" : "")}";
+    }
+
+    private static readonly string[] ScreenName = ["", "SCRAP ARM", "WORKSHOP ARM", "INDUSTRIAL ARM", "MILITARY ARM", "PLASMA ARM"];
+
+    /// <summary>
+    /// The <c>lifter</c> panel source: a Loader Arm's small screen on its plinth (the user, 2026-11-13). What it does or waits on,
+    /// the piece in its hand and the parts it has fitted. Either peer; allocates nothing (names and fixed words only).
+    /// </summary>
+    public static void FillPanel(ConstructWorld world, Construct c, int part, PanelDef panel, PanelCard card)
+    {
+        var d = c.DefOf(part);
+        if (d.Lifter is not { } ld)
+            return;
+        card.Add(0, ScreenName[Math.Clamp(ld.Tier, 1, 5)]);
+        if (c.Parts[part].Broken)
+        {
+            card.State = PanelState.Fault;
+            card.Add(1, "Wrecked");
+            return;
+        }
+        var l = Find(world, c.Id, part);
+        var piece = l != null && l.Def != 0 ? ConstructParts.Get(l.Def)?.Name : null;
+        if (l is { Why: LiftWhy.NoPower })
+        {
+            card.State = PanelState.Fault;
+            card.Add(1, "No power");
+            if (piece != null)
+                card.Add(2, piece);
+        }
+        else if (l is { Why: LiftWhy.Player or LiftWhy.PlayerStuck })
+        {
+            card.State = l.Why == LiftWhy.PlayerStuck ? PanelState.Refused : PanelState.Wants;
+            card.Add(1, "WAITING");
+            card.Add(2, "Player in the way");
+            if (piece != null)
+                card.Add(3, piece);
+        }
+        else if (l is { State: LiftState.Carry })
+        {
+            card.State = PanelState.Working;
+            card.Add(1, l.Why == LiftWhy.PutBack ? "Putting back" : "Fitting");
+            if (piece != null)
+                card.Add(2, piece);
+            if (l.Step >= 0)
+                card.Add(3, "Step ").Add(3, l.Step + 1);
+        }
+        else if (l is { State: LiftState.Return })
+        {
+            card.State = PanelState.Working;
+            card.Add(1, "Back to the hold");
+        }
+        else if (l is { State: LiftState.Stuck })
+        {
+            card.State = PanelState.Refused;
+            card.Add(1, "STUCK");
+            if (piece != null)
+                card.Add(2, piece);
+            card.Add(3, "No hold in reach");
+        }
+        else
+        {
+            card.State = PanelState.Idle;
+            card.Add(1, "Idle");
+            card.Add(2, l?.Why switch
+            {
+                LiftWhy.RunOff => "Held by Run",
+                LiftWhy.Off => "Works: Off",
+                LiftWhy.NoPart => "Nothing to fit",
+                LiftWhy.NoStation => "No station in reach",
+                _ => "",
+            });
+        }
+        card.Add(4, "Fitted: ").Add(4, l?.Moves ?? 0);
     }
 
     private static string JobText(ConstructWorld world, CLift l)
@@ -935,7 +1123,7 @@ public static class ConstructLifters
             Vec(w, l.To);
             Rot(w, l.FromRot);
             Rot(w, l.ToRot);
-            w.U16((ushort)Math.Min(l.Dur, ushort.MaxValue)).U16((ushort)Math.Min(l.Age, ushort.MaxValue)).U16(l.Held);
+            w.U16((ushort)Math.Min(l.Dur, ushort.MaxValue)).U32(l.Start).U32(unchecked((uint)l.Held)).U32(l.WaitFrom); // (protocol 294: the move on the mover clock, and where it waits)
             w.U16(Cm(l.Rise)).U8((byte)l.Why).U16((ushort)(l.Step + 1)).U16(l.StationBody).U16(l.Moves); // (protocol 290: the look line's and the carry height)
         }
     }
@@ -955,7 +1143,6 @@ public static class ConstructLifters
             if (!world.LiftBodies.Contains(lb))
                 world.LiftBodies.Add(lb);
         }
-        var now = ConstructConveyor.Clock;
         for (var k = 0; k < n; k++)
         {
             var part = r.U16();
@@ -967,8 +1154,10 @@ public static class ConstructLifters
             var to = new Vector3(FromCm(r.U16()), FromCm(r.U16()), FromCm(r.U16()));
             var fr = Quaternion.Normalize(new Quaternion(FromUnit(r.U16()), FromUnit(r.U16()), FromUnit(r.U16()), FromUnit(r.U16())));
             var tr = Quaternion.Normalize(new Quaternion(FromUnit(r.U16()), FromUnit(r.U16()), FromUnit(r.U16()), FromUnit(r.U16())));
-            int dur = r.U16(), age = r.U16();
-            var held = r.U16();
+            int dur = r.U16();
+            var start = r.U32();
+            var held = unchecked((int)r.U32());
+            var waitFrom = r.U32();
             var rise = FromCm(r.U16());
             var why = (LiftWhy)r.U8();
             var step = r.U16() - 1;
@@ -988,7 +1177,8 @@ public static class ConstructLifters
             }
             if (state == LiftState.Carry && (l.State != LiftState.Carry || l.Def != def))
                 LifterProbe.CarriesHeard++;
-            (l.State, l.Moved, l.Def, l.Paint, l.From, l.To, l.FromRot, l.ToRot, l.Dur, l.Age, l.Held, l.At) = (state, moved, def, paint, from, to, fr, tr, dur, age, held, now);
+            (l.State, l.Moved, l.Def, l.Paint, l.From, l.To, l.FromRot, l.ToRot, l.Dur, l.Start, l.Held, l.WaitFrom) = (state, moved, def, paint, from, to, fr, tr, dur, start, held, waitFrom);
+            l.Age = (int)AgeAt(l, MoverPhysics.Clock);
             (l.Rise, l.Why, l.Step, l.StationBody, l.Moves) = (rise, why, step, station, moves);
         }
     }
@@ -1090,6 +1280,40 @@ public static partial class ConstructStation
     }
 
     /// <summary>A lifter's place: the station's own fit, on its job, of the step it claimed.</summary>
+    /// <summary>
+    /// Server, for the station's orders (the user, 2026-11-13: "fix it"): pieces of a kind in Loader Arms' hands that are not a claimed
+    /// step (a piece loaded in a hand, stuck or on its way back into a hold) and go to this station: on their way to its hold, or
+    /// waiting where its hold is in their reach. So a save and load never orders a part twice. Claimed steps count as fitted already.
+    /// </summary>
+    private static int LiftHolds(ConstructWorld world, Construct sc, int t, ushort def)
+    {
+        if (world.LiftBusy == 0)
+            return 0;
+        var n = 0;
+        for (var bi = 0; bi < world.LiftBodies.Count; bi++)
+        {
+            var lb = world.LiftBodies[bi];
+            Construct? c = null;
+            for (var i = 0; i < lb.N; i++)
+            {
+                var l = lb.Lifts[i];
+                if (l.Def != def || l.Fitted || l.Job != null || l.State is not (LiftState.Carry or LiftState.Stuck))
+                    continue;
+                if (l.State == LiftState.Carry)
+                {
+                    n += l.ToHold && l.StationBody == sc.Id && l.StationPart == t ? 1 : 0;
+                    continue;
+                }
+                c ??= world.Get(lb.Body);
+                if (c == null || l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { } ld || ConstructParts.Get(def) is not { } d)
+                    continue;
+                ConstructLifters.Frame(c, l.Part, ld, out _, out var lr, out var shoulder);
+                n += ConstructLifters.HoldPick(sc, t, ld, shoulder, lr, ConstructLifters.WristLift(d), ConstructLifters.WristLift(d), out _) ? 1 : 0;
+            }
+        }
+        return n;
+    }
+
     public static void LiftFit(ConstructWorld world, Construct c, int t, StationJob j, int k)
     {
         j.PartOf[k] = -1;
@@ -1139,11 +1363,13 @@ public static class LifterProbe
             {
                 var l = lb.Lifts[i];
                 n++;
-                sb.Append($" [body {lb.Body} part {l.Part} {world.Get(lb.Body)?.DefOf(l.Part).Name}: {l.State} {l.Why} moves {l.Moves}{(l.Def != 0 ? " " + (ConstructParts.Get(l.Def)?.Name ?? "?") : "")} {l.Age}/{l.Dur} ticks]");
+                sb.Append($" [body {lb.Body} part {l.Part} {world.Get(lb.Body)?.DefOf(l.Part).Name}: {l.State} {l.Why} moves {l.Moves}{(l.Def != 0 ? " " + (ConstructParts.Get(l.Def)?.Name ?? "?") : "")} {l.Age}/{l.Dur} ticks{(l.WaitFrom != 0 ? $" waiting at tick {l.WaitFrom}" : "")} held {l.Held}{IkOf(world, lb.Body, l)}]");
             }
         var f = System.Diagnostics.Stopwatch.Frequency / 1e6;
         var cost = StepTicks > 0 ? $"; lifter step {StepTotal / f / StepTicks:0.0} us a tick on average, worst {StepWorst / f:0} us (with its fits) over {StepTicks} ticks" : "";
-        return $"{n} lifter(s), {CarriesHeard} carries seen, {Fits} fitted by lifters (host count){cost}{sb}";
+        if (ConstructLifterPush.BlockCalls > 0)
+            cost += $"; push {ConstructLifterPush.BlockTotal / f / ConstructLifterPush.BlockCalls:0.00} us a player tick on average, worst {ConstructLifterPush.BlockWorst / f:0.0} us over {ConstructLifterPush.BlockCalls}";
+        return $"{n} lifter(s), {CarriesHeard} carries seen, {Fits} fitted by lifters (host count), players pushed {ConstructLifterPush.Pushes} times, pinned {ConstructLifterPush.Pins} (this peer; last in the way: {ConstructLifterPush.LastBlock}){cost}{sb}";
     }
 
     /// <summary>Host: a Loader Arm on the ground behind the station's hold, inside its bay's back corner, turned as the station is.</summary>
@@ -1165,6 +1391,102 @@ public static class LifterProbe
     }
 
     public static long StepTicks, StepTotal, StepWorst; // server: the lifter step's own cost (Stopwatch ticks), for the window tool
+
+    /// <summary>
+    /// The window tool: an arm's pose over its whole move as this peer has it, posed as LifterRender poses it. The wrist's
+    /// wanted distance from the shoulder against the links' range (under 1 at LinkMin: folded; over 1 at LinkMax: stretched,
+    /// which the IK clamps), and the elbow at the move's middle tick (host and client compare it).
+    /// </summary>
+    public static string Ik(LifterDef ld, CLift l)
+    {
+        if (ld.Bridge || l.State is not (LiftState.Carry or LiftState.Return) || l.Dur <= 0)
+            return "";
+        float lo = float.MaxValue, hi = 0;
+        var clamped = 0;
+        for (var a = 0; a <= l.Dur; a += 3)
+        {
+            var grip = Grip(ld, l, a);
+            var len = (grip + Vector3.UnitY * ConstructLifters.Wrist - ld.Base).Length();
+            lo = MathF.Min(lo, len);
+            hi = MathF.Max(hi, len);
+            clamped += len < ld.LinkMin - 0.001f || len > ld.LinkMax + 0.001f ? 1 : 0;
+        }
+        ArmIk.Solve(ld, Grip(ld, l, l.Dur * 0.5f), out _, out var elbow, out _);
+        return $" ik: wrist {lo:0.00} to {hi:0.00} m of links {ld.LinkMin:0.00} to {ld.LinkMax:0.00}, {clamped} sample(s) clamped, elbow at mid-move {elbow:0.000}";
+    }
+
+    private static string IkOf(ConstructWorld world, ushort body, CLift l) =>
+        world.Get(body) is { } c && l.Part < c.PartCount && c.DefOf(l.Part).Lifter is { } ld ? Ik(ld, l) : "";
+
+    private static Vector3 Grip(LifterDef ld, CLift l, float age)
+    {
+        var origin = ConstructLifters.Pose(ld, l, age, out var turn);
+        if (l.Def == 0 || ConstructParts.Get(l.Def) is not { } d)
+            return origin + Vector3.UnitY * ConstructLifters.GripLift;
+        var top = new Vector3((d.BoundsMin.X + d.BoundsMax.X) * 0.5f, d.BoundsMax.Y, (d.BoundsMin.Z + d.BoundsMax.Z) * 0.5f);
+        return origin + Vector3.Transform(top, turn) + Vector3.UnitY * ConstructLifters.GripLift;
+    }
+
+    /// <summary>
+    /// Host (the window tool's "lifter stand" and "lifter pen"): a spot on the ground the piece of a carry that has just begun
+    /// will pass over, 60 % into its move; null while no such carry runs. <paramref name="info"/>: the piece's box there.
+    /// </summary>
+    public static Vector3? PathSpot(ConstructWorld world, out string info)
+    {
+        info = "";
+        foreach (var lb in world.LiftBodies)
+        {
+            if (world.Get(lb.Body) is not { } c)
+                continue;
+            for (var i = 0; i < lb.N; i++)
+            {
+                var l = lb.Lifts[i];
+                if (l is not { State: LiftState.Carry, ToHold: false, WaitFrom: 0 } || l.Def == 0 || l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { } ld)
+                    continue;
+                var age = ConstructLifters.AgeAt(l, ConstructLifters.Now);
+                if (age > l.Dur * 0.2f)
+                    continue;
+                // The first point from 35 % on whose ground is clear of constructs (not on the build) and where the piece is at body height.
+                for (var f = 0.25f; f <= 0.95f; f += 0.05f)
+                {
+                    if (!ConstructLifterPush.PieceBox(c, l, ld, l.Dur * f, out var centre, out var half))
+                        break;
+                    var ground = World.Map.GroundHeight(centre.X, centre.Z);
+                    var feet = new Vector3(centre.X, ground + 0.5f, centre.Z); // (over a floor plate: the build, not the bay's floor, is what rules a point out)
+                    if (centre.Y - half.Y - ground > 1.6f || world.BodyIn(feet, World.PlayerHeight - 0.5f))
+                    {
+                        info = $"the last carry's points are over a construct or above head height (at {f * 100:0} %: {centre.Y - half.Y - ground:0.00} m up)";
+                                            continue;
+                    }
+                    info = $"{ConstructParts.Get(l.Def)?.Name} of body {l.Body} part {l.Part}, {age:0}/{l.Dur} ticks in: at {f * 100:0} % its box spans {centre.Y - half.Y - ground:0.00} to {centre.Y + half.Y - ground:0.00} m over the ground, {half.X * 2:0.00} x {half.Z * 2:0.00} m across";
+                    return new Vector3(centre.X, ground, centre.Z);
+                }
+            }
+        }
+        return null;
+    }
+
+    /// <summary>Host: four Crate Stacks round a spot, their near faces 0.45 m from it (a pen a player cannot be pushed out of).</summary>
+    public static int Pen(ConstructWorld world, Vector3 spot)
+    {
+        if (ConstructParts.Find("Crate Stack") is not { } d)
+            return 0;
+        var mid = (d.BoundsMin + d.BoundsMax) * 0.5f;
+        var half = (d.BoundsMax - d.BoundsMin) * 0.5f;
+        var n = 0;
+        for (var k = 0; k < 4; k++)
+        {
+            var dir = k switch { 0 => Vector3.UnitX, 1 => -Vector3.UnitX, 2 => Vector3.UnitZ, _ => -Vector3.UnitZ };
+            var along = MathF.Abs(dir.X) * half.X + MathF.Abs(dir.Z) * half.Z;
+            var at = spot + dir * (0.45f + along) - new Vector3(mid.X, 0, mid.Z);
+            if (ConstructBuild.PlaceNew(world, d, new FreePlacement { Pos = at with { Y = spot.Y - d.BoundsMin.Y + 0.02f }, Rot = Quaternion.Identity }) is { } made)
+            {
+                made.Anchored = true;
+                n++;
+            }
+        }
+        return n;
+    }
 }
 
 /// <summary>
