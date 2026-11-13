@@ -26,6 +26,7 @@ public enum PanelDraw : byte
     Compass, // a tape of bearings past a mark (Value: of a whole turn)
     BarH, // a bar across the whole panel (Value)
     Flight, // a craft from above and from the side, an arrow per effector (Flight and its bounds)
+    Map, // a conveyor network seen from above: lines, machines, stores, Routers, pieces as dots (Plan; ConstructLogisticsMap.cs)
 }
 
 /// <summary>How a graph or a bar picks its colour along the value (<see cref="PanelCard.Ramp"/>; a display's "ramp" setting, in this order).</summary>
@@ -109,6 +110,8 @@ public sealed class PanelCard
     public int Lamps, LampBits;
     public FlightEffectors? Flight; // a Flight Diagnostic Panel's plot (it isn't copied: a card is filled and laid out at once)
     public Vector3 FlightMin, FlightMax, FlightCom;
+    public NetPlan? Plan; // the network board's plan map (it isn't copied: a card is filled and laid out at once)
+    public Vector2 PanelSize; // the panel's size in metres (PanelRender sets it before a fill: the board draws its map only on a wide one)
     public float[]? Trace; // oldest at TraceAt (it isn't copied: a card is filled and laid out at once)
     public int TraceAt;
     public float TraceLow, TraceHigh; // the graph's scale; the same: it fits the trace
@@ -140,6 +143,7 @@ public sealed class PanelCard
         Lamps = LampBits = 0;
         Trace = null;
         Flight = null;
+        Plan = null;
     }
 
     public ReadOnlySpan<char> Line(int i) => _text.AsSpan(i * MaxChars, _len[i]);
@@ -454,6 +458,8 @@ public sealed class PanelCard
         Mix((uint)Draw | (Plain ? 256u : 0) | (Fit ? 512u : 0));
         Mix((uint)(int)(Value * 720));
         Mix((uint)LampBits | (uint)Lamps << 16);
+        if (Plan != null)
+            Mix((uint)Plan.Hash ^ (uint)Plan.LinkHash);
         if (Trace != null)
         {
             Mix((uint)TraceAt);

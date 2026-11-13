@@ -79,6 +79,23 @@ public static class ConstructLogisticsBoard
             Summary(card, 0, k);
             card.Clip(0, cols);
         }
+        if (card.Rows >= MapRows && card.PanelSize.X >= MapWidth)
+        {
+            // A big sign: the plan map (design 9.2; NetPlan, drawn by PanelRender.MapPlot) between the title and a two-line caption.
+            card.Draw = PanelDraw.Map;
+            card.Plan = NetPlan.Of(world, c, m, net);
+            int l1 = card.Rows - 2, l2 = card.Rows - 1;
+            if (k.FirstStuck >= 0)
+                StuckLine(c, m, k.FirstStuck, k.FirstStuckNo, card, l1, true);
+            else
+                card.Add(l1, "All moving");
+            card.Clip(l1, cols);
+            card.Add(l2, k.Moving).Add(l2, " moving  ").Add(l2, k.Orders).Add(l2, k.Orders == 1 ? " order" : " orders");
+            if (k.Fill >= 0)
+                card.Add(l2, "  storage ").Add(l2, (int)MathF.Round(k.Fill * 100)).Add(l2, '%');
+            card.Clip(l2, cols).Dim(l2);
+            return;
+        }
         var top = 1;
         if (medium)
         {
@@ -100,6 +117,8 @@ public static class ConstructLogisticsBoard
     }
 
     private static readonly Vector3 StuckRed = new(1f, 0.25f, 0.2f), Wanting = new(1f, 0.7f, 0.2f);
+    private const int MapRows = 15; // a board this tall...
+    private const float MapWidth = 0.8f; // ...on a panel this wide (metres) is the plan map; else the list (design 9.1)
 
     /// <summary>"Network: 14 moving, 3 orders, storage 57%".</summary>
     private static void Summary(PanelCard card, int line, in Counts k)

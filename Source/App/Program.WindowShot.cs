@@ -1203,7 +1203,7 @@ public static unsafe partial class Program
 
     private static PanelCard WsFill(Game g, Construct c, int part, PanelDef panel)
     {
-        var card = new PanelCard { Touch = panel.Touch };
+        var card = new PanelCard { Touch = panel.Touch, PanelSize = panel.Size };
         var d = c.DefOf(part);
         var percent = ConstructConfig.Has(d, CfgKey.TextSize) ? ConstructConfig.Get(c.Parts[part], d, CfgKey.TextSize, 100) : 100;
         var source = panel == d.Panels[0] ? ProductionLines.MonitorSource(c, part) : -1;
@@ -1241,6 +1241,33 @@ public static unsafe partial class Program
                 for (var l = 0; l < rows; l++)
                     if (card.Length(l) > 0)
                         WsSay($"  monitor{rows} {l}| {card.Line(l)}");
+            }
+            if (d.Monitor == MonitorKind.Network)
+            {
+                // A big sign's board (16 rows on a 1.6 m panel): the plan map's data and its caption.
+                var card = new PanelCard { Rows = 16, TextRows = 16, Cols = 64, PanelSize = new Vector2(1.6f, 0.9f) };
+                ProductionLines.FillMonitor(g.Constructs, c, part, card);
+                if (card.Plan is { } plan)
+                {
+                    var kinds = new int[7];
+                    for (var i = 0; i < plan.NodeN; i++)
+                        kinds[(int)plan.NodeKind[i]]++;
+                    var cuts = 0;
+                    for (var i = 0; i < plan.LineN; i++)
+                        cuts += plan.LineCut[i] ? 1 : 0;
+                    var dots = new int[3];
+                    for (var i = 0; i < plan.DotN; i++)
+                        dots[plan.DotKind[i]]++;
+                    WsSay($"  map: axes {plan.Axis0},{plan.Axis1}, {plan.Min:0.0} to {plan.Max:0.0} m; {plan.LineN} conveyors ({cuts} cut), {plan.PointN} points; nodes: {kinds[0]} machines, {kinds[1]} stores, {kinds[2]} terminals, {kinds[3]} Routers, {kinds[4]} splitters, {kinds[5]} joins, {kinds[6]} other; dots {dots[0]} storage, {dots[1]} ordered, {dots[2]} stuck; ring {(plan.Ring >= 0 ? c.DefOf(plan.NodePart[plan.Ring]).Name : "none")}; hash {plan.Hash:x8}");
+                    for (var i = 0; i < plan.NodeN; i++)
+                        if (plan.NodeKind[i] is PlanNode.Machine or PlanNode.Store or PlanNode.Terminal)
+                            WsSay($"    {plan.NodeTag[i * 2]}{plan.NodeTag[i * 2 + 1]} {c.DefOf(plan.NodePart[i]).Name}#{plan.NodePart[i]} at {plan.NodeAt[i]:0.0}{(plan.NodeFill[i] >= 0 ? $", fill {plan.NodeFill[i]:0.00}" : "")}");
+                }
+                else
+                    WsSay("  map: none (the board drew a list)");
+                for (var l = 0; l < 16; l++)
+                    if (card.Length(l) > 0)
+                        WsSay($"  map16 {l}| {card.Line(l)}");
             }
         }
         for (var n = 0; n < d.Panels.Length; n++)

@@ -81,8 +81,23 @@ units (`HullLoft.FormedUnits`) with less than a 5 cm step to spare (units per cm
 size); if no Extruder on the network takes it (`WorkOrders.Refusal`: `ExtMaxSection`, the welded die, `ExtMaxLength`), the width
 halves down to what one takes and the count goes up; if none takes any, the chain line says the Extruder's refusal, as now.
 
-**4. The plan map: skipped.** Question 2 above has no answer recorded yet.
+**4. The plan map: built after the user's answer below** (`ConstructLogisticsMap.cs` `NetPlan`, `PanelRender.MapPlot`, `PanelDraw.Map`
+at the end of the enum; production.md "The plan map"). A board of 15 rows up on a panel 0.8 m wide or more draws the map; smaller
+ones keep the list. Tried on the showcase (L Bracket order, Hold on, way 3 cut, three pieces fed): the plan read 14 conveyors (1 cut),
+5 machines, 2 stores, the terminal, the Router, a splitter and 3 joins, the Router ringed; in the real window the new sign showed the
+lines, the tagged squares, the store boxes, the red dashed cut way, white dots and the blinking ring, with `STUCK at Router 1: L Bracket
+- no way to it ...` and `3 moving  1 order  storage 0%` under it. Not built: keep-mark ticks on stores, the Router's chosen-way stub,
+dots gliding between fills (they step at each fill), a 1,024-quad cap on the static layer (lines are capped, nodes and dots are not).
+Not measured: the fill's cost on a big network (one pass over the riders and the network's nodes, in view only).
 
-**5. A NETWORK BOARD sign on the Showcase, 6. verification items 6 and 7: not done (time).**
+**5. A NETWORK BOARD sign on the Showcase: done** (generator `NetworkBoard`): a Medium Text Sign (4 x 2 m, 16 rows) on an Adapter
+Medium to Small on a Frame Beam in the back aisle at x 44.25, wired from the Router's Data out along the aisle edge (z -8.55).
+`--gen-parts production_showcase` rewrote the blueprint; `--check-construct-parts` and `--gen-parts all --check` pass.
 
-`--check-construct-parts` and `--gen-parts all --check` pass. No self-test sections run (no game code changed outside the window tool).
+**6. Verification items 6 and 7: not done (time).** **Router names** (the user's answer below): not built; left for the next phase.
+
+No self-test sections run. No protocol change: the map is each viewer's own, from what its peer already holds.
+
+**The user's answers (2026-11-13), after phase 4b:** (question 2) the plan map **is wanted**: on big signs, the list staying on small
+ones. (Question 3) a Router **takes a name** the player sets with the sign tool's text; an unnamed one keeps its number, and the board
+and the order lines use the name ("held at North Gate").
