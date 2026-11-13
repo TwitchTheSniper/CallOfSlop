@@ -307,6 +307,12 @@ said about it: it is only shown. A world from before the furniture has none in i
 spot. Moving the furniture in the blueprint (the part kit's `BuildingParts`) needs no change here; moving the barracks'
 doorway means moving `BarracksDoorOut`/`BarracksDoorIn` too.
 
+### Convict labourers
+
+Round the named people, about eighty nameless convicts and their guards work the colony and the quarry: roll call,
+queues, coal, snow, kerb painting, a column under escort, picks and barrows (docs/story/LABOUR.md; data
+`Story/Labour/PenalColony.json`). They are pictures posed from the clock, not story people: no steps, no bodies, no AI.
+
 ### Sight
 
 What a body sees is `Source/Game/GameStorySight.cs`, in the same look. A body sees what is in front of it (about 70

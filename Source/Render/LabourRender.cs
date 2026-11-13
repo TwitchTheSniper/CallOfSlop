@@ -7,9 +7,12 @@ namespace CallOfSlop;
 /// the players' own body (<see cref="BodyModel"/>'s torso and head, the legs' boxes) in a Ministry uniform, posed by a
 /// short script per kind of work from the server tick, so every PC sees the same shovel come up at the same moment. No
 /// AI, no physics, no foot rays per frame: the ground under each spot and along each way is found once (and again a
-/// few seconds later, when the constructs have arrived). Up close the full body with mittened arms and its tool; past
-/// <see cref="FullRange"/> a body of eight boxes; past <see cref="FarRange"/>, or off screen, nothing. Nothing allocates
-/// once the figures are built (they are rebuilt only when the gangs change).
+/// few seconds later, when the constructs have arrived). Up close the full body (about 45 boxes) with mittened arms and
+/// its tool; past <see cref="FullRange"/> about 19 boxes; past <see cref="MidRange"/> seven or eight; past
+/// <see cref="FarRange"/>, or off screen, nothing. Past <see cref="EveryFrame"/> a figure's boxes are kept and drawn again
+/// until it is posed again (<see cref="NearEvery"/>, <see cref="MidEvery"/>, <see cref="FarEvery"/>), so at a high frame
+/// rate the cost is mostly handing the boxes to the batch. Nothing allocates once the figures are built (they are rebuilt
+/// only when the gangs change).
 /// </summary>
 public static class LabourRender
 {
@@ -34,7 +37,7 @@ public static class LabourRender
         public ArmColors Arms;
         public Vector3 Skin, Cap;
         public int Beat = -1; // the last cycle a sound was made on
-        public byte Extra; // 1 head bandage, 2 arm in a sling, 3 trusty's flat cap
+        public byte Extra; // 1 head bandage, 2 arm in a sling
         // The boxes of its last pose (world), drawn again until it is posed again.
         public readonly Matrix4x4[] M = new Matrix4x4[BoxCap];
         public readonly Vector3[] C = new Vector3[BoxCap];
@@ -79,23 +82,12 @@ public static class LabourRender
     private static readonly Vector3 Barrow = new(0.3f, 0.36f, 0.27f), Rust = new(0.4f, 0.24f, 0.15f), Ember = new(1f, 0.45f, 0.12f), Paint = new(0.96f, 0.96f, 0.93f);
     private static readonly Vector3 Bandage = new(0.88f, 0.86f, 0.8f), Paper = new(0.9f, 0.88f, 0.8f), Board = new(0.32f, 0.24f, 0.16f);
 
-    /// <summary>Draws every labourer the camera can see, at this frame's server tick (nothing when the game has no gangs).</summary>
-    private static long _dbgTicks, _dbgPose; private static int _dbgN, _dbgPoses, _dbgBoxes;
+    /// <summary>Draws every labourer the camera can see, at this frame's server tick (nothing when the game has no gangs), in one instanced batch.</summary>
     public static void Draw(Renderer g, Game? game)
     {
-        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         g.BeginBatch();
         DrawInner(g, game);
-        _dbgTicks += System.Diagnostics.Stopwatch.GetTimestamp() - t0;
         g.EndBatch();
-        _dbgBoxes += Boxes;
-        if (++_dbgN == 200)
-        {
-            var us = 1e6 / System.Diagnostics.Stopwatch.Frequency;
-            Console.WriteLine($"[labour] DEBUG draw {_dbgTicks * us / _dbgN:0.0} us a frame, of which posing {_dbgPose * us / _dbgN:0.0} us ({_dbgPoses / (double)_dbgN:0.0} poses, {_dbgPose * us / Math.Max(_dbgPoses, 1):0.00} us each); the rest {(_dbgTicks - _dbgPose) * us / _dbgN:0.0} us for {_dbgBoxes / (double)_dbgN:0} boxes; near {DrawnNear} far {DrawnFar}");
-            _dbgTicks = _dbgPose = 0;
-            _dbgN = _dbgPoses = _dbgBoxes = 0;
-        }
     }
 
     private static void DrawInner(Renderer g, Game? game)
@@ -143,8 +135,6 @@ public static class LabourRender
             }
             if (pose)
             {
-                var tp = System.Diagnostics.Stopwatch.GetTimestamp();
-                _dbgPoses++;
                 var up = SceneUp[f.Scene];
                 var right = Vector3.Normalize(Vector3.Cross(fwd, up));
                 var w = new Matrix4x4(right.X, right.Y, right.Z, 0, up.X, up.Y, up.Z, 0, -fwd.X, -fwd.Y, -fwd.Z, 0, pos.X, pos.Y, pos.Z, 1);
@@ -161,7 +151,6 @@ public static class LabourRender
                 _rec = null;
                 f.PosedAt = f.Lod == 0 ? raw - f.Rand * every : raw; // (the first time: spread over the interval, so they don't all pose on one frame)
                 f.Lod = lod;
-                _dbgPose += System.Diagnostics.Stopwatch.GetTimestamp() - tp;
             }
             for (var b = 0; b < f.N; b++)
                 g.Draw(f.M[b], f.C[b]);
@@ -888,12 +877,9 @@ public static class LabourRender
         if (f.Hat != null)
         {
             var hat = Matrix4x4.CreateScale(st.HeadSize.X / HatRender.ModelHeadWidth) * Matrix4x4.CreateTranslation(0, st.HeadSize.Y / 2, 0) * head;
-            foreach (var b in f.Hat.Boxes)
-            {
-                Emit(g, b.Local * hat, b.Color);
-                if (mid)
-                    break;
-            }
+            var boxes = f.Hat.Boxes;
+            for (var i = 0; i < (mid ? Math.Min(1, boxes.Count) : boxes.Count); i++) // (an index: no enumerator per frame)
+                Emit(g, boxes[i].Local * hat, boxes[i].Color);
         }
         else if (mid)
             Box(g, new Vector3(0.46f, 0.1f, 0.46f), new Vector3(0, st.HeadSize.Y * 0.5f, 0), head, f.Cap);

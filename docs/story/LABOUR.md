@@ -46,10 +46,20 @@ goes through them).
 
 ## Cost
 
-Karl wants to keep the game's thousands of frames a second. The labourers cost no server tick (one look every 2 s for
-the colony's construct ids) and no network after the one message (about 30 bytes a gang). Drawing: up to 42 m a full
-body of about 40 boxes, to 120 m a body of eight, past that or off screen nothing; all in one instanced batch. Measured
-under xvfb (llvmpipe, the container's 4 cores): see the PR for the numbers.
+Karl wants to keep the game's thousands of frames a second.
+
+- **Server and network:** no work per tick (one look every 2 s at the colony's and the quarry's construct ids) and one
+  message of about 600 bytes when the colony stands and to each joiner. Nothing after.
+- **Drawing:** all in one instanced batch. Within 13 m a full body (about 45 boxes: the players' own torso, head, legs,
+  mittened arms and the tool), to 32 m about 19, to 110 m seven or eight, past that or off screen nothing. Within 9 m a
+  figure is posed every frame; further off its boxes are kept and drawn again, and it is posed 45, 30 or 15 times a
+  second by distance. At a high frame rate the cost is handing the kept boxes to the batch.
+- **Measured** in the cloud container (one slow core shared with llvmpipe drawing the window, so slower than a desktop):
+  posing a figure 3 to 8 us; handing a box to the batch about 70 ns. In the densest views (standing in the roll call
+  with the column passing: 30 to 55 figures in view, 850 to 1,300 boxes) that is 60 to 85 us a frame plus the poses due
+  that frame. Not measured on a real GPU: the boxes are the same instanced cube the constructs use, so the GPU side
+  should be small. F4 > People (with Engine ticked) > "Convicts" turns them off for everyone, and its tooltip shows the
+  last frame's figures and boxes.
 
 ## Not done / ideas
 

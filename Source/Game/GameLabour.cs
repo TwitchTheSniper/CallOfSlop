@@ -72,6 +72,9 @@ public sealed partial class Game
     private ushort _lbColony, _lbWorks;
     private PacketWriter? _lbW;
 
+    /// <summary>The host's switch (the Story window's People tab): off, there are no labourers on any PC.</summary>
+    public bool LabourOn = true;
+
     /// <summary>Are the gangs listed this map's?</summary>
     public bool LabourOf(Map map) => _lbMap == map;
 
@@ -92,10 +95,21 @@ public sealed partial class Game
                 LabourSend(null);
             }
         }
-        var colony = _opColony;
-        var works = _qrWorks;
+        var colony = LabourOn ? _opColony : (ushort)0;
+        var works = LabourOn ? _qrWorks : (ushort)0;
         if (colony == _lbColony && works == _lbWorks)
             return;
+        if (!LabourOn)
+        {
+            _lbColony = _lbWorks = 0;
+            if (LabourCount > 0)
+            {
+                LabourCount = 0;
+                LabourVersion++;
+                LabourSend(null);
+            }
+            return;
+        }
         if (colony != 0 && Constructs.Get(colony) == null)
             colony = 0;
         if (works != 0 && Constructs.Get(works) == null)
@@ -130,7 +144,6 @@ public sealed partial class Game
                 var (sin, cos) = MathF.SinCos(g.Face * MathF.PI / 180f);
                 s.Facing = StandInPath.Along(ax * sin - az * cos, s.P0);
                 LabourScenes[LabourCount++] = s;
-                Log($"[labour] DEBUG {g.Name}: {s.P0.X:0.0},{s.P0.Y:0.0},{s.P0.Z:0.0}");
             }
         LabourVersion++;
         var people = 0;
@@ -249,6 +262,8 @@ public sealed partial class Game
             if (ok && pts > 0)
                 LabourScenes[count++] = s;
         }
+        if (count != LabourCount)
+            Log($"[labour] heard {count} gangs from the host");
         LabourCount = count;
         LabourVersion++;
         _lbMap = World.Map;
