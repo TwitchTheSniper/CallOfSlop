@@ -978,7 +978,12 @@ builds everything. The first loop:
 A party is a player's group (their player faction) or the player alone; an Assembler builds a part for its owner when the
 owner or their group has learnt it. Joining a group (or loading a save from before technologies) teaches what the
 standing already earns. The Faction window (F2) lists what each faction teaches, and with a faction of yours which it has
-learnt. What ships:
+learnt. The inventory (Tab, or an Inventory Beacon's window) shows each part the player hasn't learnt greyed with a
+padlock; its tooltip names the faction, the technology, the standing it is taught at and the player's own, and with none
+in hand it can't be taken (a beacon's window that hides what the network doesn't hold still shows them, as goals). The
+server sends each player's standings and known technologies in `Msg.Factions` (`FactionTable.PlayerStanding`,
+`PlayerLearnt`, `LockOf`; UI: `UiSandboxPartLocks.cs`), so it works per player in co-op and for a player in no faction.
+Creative worlds and worlds without a story lock nothing. What ships:
 
 | Faction | Tier | Technology | Parts |
 | --- | --- | --- | --- |
