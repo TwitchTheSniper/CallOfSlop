@@ -93,7 +93,7 @@ public sealed class BuildStationParts : IPartGenerator
         p.Set(("ports", Py.L(
             Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(Py.Round(mid, 3), Py.Round(y0 + 0.05, 3), z0)), ("face", "-z"), ("opening", Py.L(section, section))),
             Kw(("name", "Piece in 2"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(Py.Round(x0 + 0.02, 3), Py.Round(y0 + 0.05, 3), Py.Round(z0 + 0.9, 3))), ("face", "-x"), ("opening", Py.L(0.5, 0.5))),
-            Kw(("name", "Fluid in"), ("type", "pipe"), ("dir", "in"), ("at", Py.L(Py.Round(x0 + 0.002, 3), Py.Round(y0 + 0.35, 3), Py.Round(z0 + 1.55, 3))), ("face", "-x")),
+            Kw(("name", "Fluid in"), ("type", "pipe"), ("dir", "in"), ("at", Py.L(Py.Round(x0 + 0.02, 3), Py.Round(y0 + 0.35, 3), Py.Round(z0 + 1.55, 3))), ("face", "-x")),
             Kw(("name", "Chute in"), ("type", "chute"), ("dir", "in"), ("at", Py.L(Py.Round((x0 + xm) / 2, 3), Py.Round(y0 + 0.95, 3), Py.Round(z0 + 0.56, 3))), ("face", "+y")))));
         return p;
     }

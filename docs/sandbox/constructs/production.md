@@ -1257,8 +1257,8 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
 - **The part** (`Constructs/Parts/BuildingStation/BuildingStation.json`, 3 by 5 m, 150 W while it builds): a control pedestal with the screen at 1.5 m, an
   intake cabinet with a chute hopper, a hold along its right, and a mast with a boom that points at the bay. It is a Crafting Terminal by
   data (`storage.pieces.crafting` and `station`: `ConstructPartDef.IsBuildStation`), so its hold is a Piece Rack's (packed by volume, F
-  takes a stack), its ports are **Piece in**, **Piece in 2**, **Chute in** and **Orders**, and its network and orders are
-  [the terminal's](#crafting-terminal).
+  takes a stack), its ports are **Piece in**, **Piece in 2**, **Fluid in** (a pipe, phase 2), **Chute in** and **Orders**, and its
+  network and orders are [the terminal's](#crafting-terminal).
 - **The bay** is three settings on the station (configure tool, group Bay): `bayWidth` (away from the station), `bayDepth` (along it),
   `bayHeight`, 2 to 64 m in 0.5 m steps, 6 x 8 x 4 by default. It is a box on the station's +x side, 0.5 m from it, its floor at the
   station's foot (`ConstructStation.Bay`): on the ground or on a construct's floor, whichever the station stands on; nothing checks for a
@@ -1320,8 +1320,18 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   worst 5.65 ms over the last 600 frames of a build; a world saved and loaded at 11 of 26 went on to Done; a client joining at 1 of 26
   saw the same frozen body and counts to Done; Repeat started the second build only once the first was dragged out.
 
-Not in phase 1: arms and cranes; roll-out and carriers; vehicles generated on request; fluids and ammo filled from linked tanks and
-bins (a tank is as the blueprint spawns it); panels ordered from a Panel Former by the station (brought by hand); a part too big for
+- **Filling (phase 2, 2026-11-13; notes in `docs/sandbox/design/building-station-phase2-notes.md`).** In survival a part the station
+  fits holds nothing: a fuel tank adds no fuel, an ammo box no rounds, a Fluid Tank none of its blueprint's fill (creative with
+  untimed machines: full, as a spawned blueprint; `FillsFree`). After the last link a fill stage runs, a look every half second:
+  the fuel pool to full, each Fluid Tank to its step's config (fluid and percentage; not hot air, vacuum or exhaust), each ammo box
+  to full. Fuel and fluids come through intact pipes laid to the station's **Fluid in** from tanks on its construct (50 L a look; a
+  fuel tank gives from its construct's pool); rounds from bulk `ammo` in its linked bins (10 units a look, 10 rounds a unit). It
+  ends when all is full or a look moves nothing; the job is then done and the note names what wasn't filled ("not filled: fuel
+  0/40 L - pipe tanks to its Fluid in, ammo in a linked bin"). The state reads "filling its tanks". No new bytes; protocol 279
+  for the part's new port. Window tool: `link pipe FROM > TO`, `station tanks`, `station await fitted|linked|done`.
+
+Not in phase 1: arms and cranes (their own design, `docs/sandbox/design/arms-and-cranes.md`, waits on the user's answers to its
+questions 1 and 4); roll-out and carriers; vehicles generated on request; panels ordered from a Panel Former by the station (brought by hand); a part too big for
 the hold; hand delivery aimed at the build rather than the station, and of physics-only parts; a client's own saved blueprints (the
 host's folder is read); marker posts.
 

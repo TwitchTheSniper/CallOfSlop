@@ -869,7 +869,7 @@ public static class ConstructStation
         }
         var fuelHave = MathF.Min(b.Fuel, fuelWant);
         var full = fuelHave >= fuelWant - 0.01f && fluidHave >= fluidWant - 0.01f && roundsHave >= roundsWant;
-        var key = HashCode.Combine((int)fuelHave, (int)fuelWant, (int)fluidHave, (int)fluidWant, roundsHave, roundsWant);
+        var key = HashCode.Combine((int)fuelHave, (int)fuelWant, (int)fluidHave, (int)fluidWant, roundsHave, roundsWant, moved);
         if (key != j.FillKey)
         {
             j.FillKey = key;
@@ -1684,6 +1684,17 @@ public static class StationProbe
         for (var k = 0; k < c.RouteCount; k++)
             if (c.Routes[k].Type == RouteType.Pipe && c.Routes[k].To == t)
                 sb.Append($" from {c.DefOf(c.Routes[k].Source).Name}#{c.Routes[k].Source}{(c.Routes[k].FirstCut <= c.Routes[k].Count ? " (cut)" : "")}");
+        var net = ConstructCrafting.NetOf(world, c, t);
+        sb.Append("; linked bins:");
+        for (var s = 0; s < net.StoreN; s++)
+            if (world.StoreOf(c, net.Stores[s]) is { } st && st.Amount > 0)
+            {
+                var nth = 1; // (the window tool's NAME#n)
+                for (var i = 0; i < net.Stores[s]; i++)
+                    if (c.DefOf(i).Name == c.DefOf(net.Stores[s]).Name)
+                        nth++;
+                sb.Append($" {c.DefOf(net.Stores[s]).Name}#{nth} {st.Amount} {RecyclingTable.Current.NameOf(st.Material)}");
+            }
         if (c.Parts[t].Station is not { } j || world.Get(j.Body) is not { } b)
             return sb.Append("; no build").ToString();
         sb.Append($"; build {b.Id} fuel {b.Fuel:0.0}/{b.FuelCapacity():0.0} L");

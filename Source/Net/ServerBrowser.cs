@@ -457,7 +457,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 276: the penal colony's convict labourers: Msg.Labour (every gang, to all and each joiner; GameLabour.cs).
     // 277: Press rework phase 5: the single-piece Assembling rows a die presses are "pressed" markers (they take nothing and build nothing),
     //      so what a peer's Assemblers can build changed. No new bytes: the recipe setting, orders and pressed keys ride as before.
-    public const ushort ProtocolVersion = 277;
+    // 279: Building Station phase 2: the station part has a Fluid in pipe port (part data both peers must share); the build's tanks and ammo are filled from it and linked bins (no new bytes).
+    public const ushort ProtocolVersion = 279;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
