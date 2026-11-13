@@ -44,7 +44,7 @@ public static unsafe partial class Program
     private static int _wsDragLeft, _wsDragAll, _wsDragKeys;
     private static long _wsDragBytes, _wsDragAt;
     private static float? _wsYaw, _wsPitch;
-    private static int _wsFrames = 45, _wsEvery, _wsStep, _wsWait, _wsShots, _wsCount;
+    private static int _wsFrames = 45, _wsEvery, _wsStep, _wsWait, _wsShots, _wsCount, _wsLiftWaits;
     private static double _wsStart;
     private static int _wsAwait; // frames a "station await" has waited
     private static readonly Queue<string> _wsQueue = new();
@@ -856,6 +856,19 @@ public static unsafe partial class Program
                     _wsQueue.EnqueueFront("lifter await");
                     _wsWait = 1;
                     return;
+                }
+                if (arg.Trim() == "holding" && _wsLiftWaits++ < 1200) // "lifter holding": waits (20 s at most) until a hand carries a piece to a fit
+                {
+                    var held = false;
+                    foreach (var hb in g.Constructs.LiftBodies)
+                        for (var hi = 0; hi < hb.N; hi++)
+                            held |= hb.Lifts[hi] is { State: LiftState.Carry, Def: > 0, Why: LiftWhy.None } hl && hl.Age > 6 && hl.Age < hl.Dur - 12;
+                    if (!held)
+                    {
+                        _wsQueue.EnqueueFront("lifter holding");
+                        _wsWait = 1;
+                        return;
+                    }
                 }
                 if (arg.Trim().StartsWith("place", StringComparison.Ordinal) && g.IsServer) // "lifter place [TIER] [SLOT]": TIER Scrap, Workshop, Industrial, Military or Plasma; SLOT 0 to 3 round the bay
                 {

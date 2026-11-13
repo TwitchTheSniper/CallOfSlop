@@ -1109,6 +1109,14 @@ public sealed partial class ConstructWorld
     public int LiftBusy; // server: lifters not idle at the last step
     public int LiftTick;
 
+    public void LiftClear()
+    {
+        LiftSeen.Clear();
+        LiftBodies.Clear();
+        LiftDirty.Clear();
+        (LiftBusy, LiftTick, FitThisTick) = (0, 0, false);
+    }
+
     public void LiftChanged(ushort body)
     {
         if (!LiftDirty.Contains(body))
