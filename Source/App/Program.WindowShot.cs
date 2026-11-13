@@ -501,7 +501,7 @@ public static unsafe partial class Program
                     for (var k = 0; k < gc.GunCount; k++)
                     {
                         ref var cg = ref gc.Guns[k];
-                        WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"guns: {k} {gc.DefOf(cg.Part).Name}: {(cg.Problem.Length > 0 ? cg.Problem : "fires")}, reach {cg.MaxRange:0.##} m, spread {cg.Spread * 180 / MathF.PI:0.####} deg, damage {cg.Def?.Damage ?? 0}, every {cg.Interval} ticks, {cg.Shots} a shot"));
+                        WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"guns: {k} {gc.DefOf(cg.Part).Name}: {(cg.Problem.Length > 0 ? cg.Problem : "fires")}, reach {cg.MaxRange:0.##} m, spread {cg.Spread * 180 / MathF.PI:0.####} deg, damage {cg.Def?.Damage ?? 0}, every {cg.Interval} ticks, {cg.Shots} a shot, {cg.PerShot} rounds a shot, magazine drawn {(cg.MagPart >= 0 ? gc.ScaleOf(cg.MagPart) : 0)}x"));
                     }
                 else
                     WsSay("guns: no spawned body");
