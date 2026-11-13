@@ -25,6 +25,9 @@ public sealed partial class Game
     public ulong HostSteamId { get; private set; }
 
     private bool _ticketAsked, _ticketSent;
+
+    /// <summary>Host: whose ticket each Steam auth session was begun for (by Steam ID), so its verdict reaches that player.</summary>
+    private readonly Dictionary<ulong, byte> _authFor = new();
     private bool _authHooked;
 
     private void HookSteamAuth()
@@ -66,6 +69,7 @@ public sealed partial class Game
             return false;
         }
         p.SteamId = id;
+        p.SteamVerified = true; // (the connection itself names it)
         return true;
     }
 
@@ -128,8 +132,12 @@ public sealed partial class Game
                 return;
             }
             HookSteamAuth();
+            _authFor[p.SteamId] = p.Id; // (the verdict is this player's, not whoever else claims the same id; set first, as a verdict may come at once)
             if (!SteamPlatform.Auth.Begin(ticket, p.SteamId, out var error))
+            {
+                _authFor.Remove(p.SteamId);
                 KickPlayer(p.Id, $"Steam auth: {error}");
+            }
             return;
         }
         if (kind == 1)
@@ -145,11 +153,12 @@ public sealed partial class Game
     {
         if (!IsServer)
             return;
-        var p = Players.Values.FirstOrDefault(x => x.SteamId == steamId && x.Bot == null && x.Id != LocalId); // never the host itself
-        if (p == null)
+        // The player whose ticket this was (another may claim the same id over RakNet without one), never the host itself.
+        if (!_authFor.Remove(steamId, out var who) || who == LocalId || !Players.TryGetValue(who, out var p) || p.SteamId != steamId || p.Bot != null)
             return;
         if (ok)
         {
+            p.SteamVerified = true;
             Log($"Steam verified {p.Name}");
             return;
         }
@@ -196,6 +205,12 @@ public sealed partial class Game
             KickPlayer(p.Id, "banned by the host");
         return true;
     }
+
+    /// <summary>
+    /// Host: a player's Steam ID when it can be trusted (from the Steam connection, or checked by Steam), else 0. Anyone can
+    /// claim an ID over RakNet, and IDs are told to every player, so a claim alone never finds a saved world's record.
+    /// </summary>
+    internal static ulong TrustedSteamId(Player p) => p.SteamVerified ? p.SteamId : 0;
 
     /// <summary>Host: a verified-or-claimed Steam id arrived for a player; banned ids go at once.</summary>
     private void OnSteamIdClaimed(Player p)
