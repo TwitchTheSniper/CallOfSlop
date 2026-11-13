@@ -173,7 +173,7 @@ public sealed partial class Game
         if (p.Bot != null)
             id = s.World.Create(StoryKind.Person, p.Name, 0, s.Time);
         else if (WorldKnown(p))
-            id = s.World.Get(StoryKind.Player, StoryPersonKey(WorldKeyOf(p), p.SteamId, p.Name), p.Name, s.Time);
+            id = s.World.Get(StoryKind.Player, StoryPersonKey(WorldKeyOf(p), TrustedSteamId(p), p.Name), p.Name, s.Time);
         else
             return -1;
         _storyWho[p.Id] = id;

@@ -32,7 +32,7 @@ public sealed partial class Game
         if (!IsServer)
             return;
         if (Players.TryGetValue(LocalId, out var me) && me.Bot == null)
-            me.SteamId = SteamPlatform.LocalSteamId;
+            (me.SteamId, me.SteamVerified) = (SteamPlatform.LocalSteamId, true);
         var count = 0;
         foreach (var p in Players.Values)
             if (p.SteamId != 0)
@@ -67,6 +67,7 @@ public sealed partial class Game
                 return;
             }
             p.SteamId = id;
+            p.SteamVerified = fromTransport != 0; // (a claim over RakNet waits for Steam's ticket check: OnSteamVerdict)
             OnSteamIdClaimed(p); // banned ids go at once (GameSteamAuth.cs)
             BroadcastSteamIds();
             return;

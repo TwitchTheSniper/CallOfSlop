@@ -159,7 +159,7 @@ public static partial class SelfTest
     private static readonly HashSet<string> MsrPersistent = new()
     {
         // identity and what the person keeps
-        "Id", "Name", "Bot", "Prestige", "Level", "Hat", "Look", "SteamId", "TeamChoice", "TeamSwitchAt", "Ready",
+        "Id", "Name", "Bot", "Prestige", "Level", "Hat", "Look", "SteamId", "SteamVerified", "TeamChoice", "TeamSwitchAt", "Ready",
         // the loadout they chose (restored over a mode's gear by ResetForMatch) and what hangs off it
         "Primary", "Secondary", "Weapon", "PrimaryKit", "SecondaryKit", "Perks", "WantPrimary", "WantSecondary", "WantPrimaryKit", "WantSecondaryKit",
         "WantPerks", "MpPrimary", "MpSecondary", "MpPrimaryKit", "MpSecondaryKit", "Grenade", "Equipment", "WantGrenade", "WantEquipment",
