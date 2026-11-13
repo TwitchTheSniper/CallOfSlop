@@ -25,11 +25,12 @@ Close any running game first: a build fails on locked files, and a second window
 ## Run it
 
 ```
-powershell -File tools\playtest\tour.ps1 [-Out shots] [-Only colony,outpost] [-Calm] [-Frames 300] [-Size 1920x1080]
+powershell -File tools\playtest\tour.ps1 [-Out shots] [-Only colony,outpost] [-Calm] [-Frames 300] [-Size 1920x1080] [-Menus]
 ```
 
 - Output: `<Out>\tour_<spot>.png` and `<Out>\tour.txt`. The script prints the `[perf]` line of each spot (mean, fps, median, 99th percentile, worst frame) and any `fail` or `unknown action` line.
 - `-Only` takes prefixes of spot names (`-Only colony,gate`); `-Calm` leaves the cold storm out, so a site is seen whole. Run with the storm too before judging lamps and outlines: that is how a player meets them.
+- `-Menus` takes pictures of the windows a camera tour can't show (the Logbook's Technologies page, the Faction window's ranks, the parts menu with its locked parts, the Work Board) with the induction skipped: pictures only, no frame rates and no pacing.
 - A new spot is one line in the script's `$spots` table: `"name" = "TARGET | DIST,UP,BEARING"`. TARGET is a colony building's blueprint name, `outpost N`, `geo LAT,LON`, `body N` or `X,Y,Z`; the `places` action prints the names a world knows (`Source/App/Program.WindowShotTour.cs`).
 
 ## Read it
