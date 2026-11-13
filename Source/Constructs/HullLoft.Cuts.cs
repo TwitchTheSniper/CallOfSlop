@@ -689,7 +689,7 @@ public static partial class HullLoft
         {
             var backZ = sh.Kind == PanelBend ? PanelPoint(sh, backS, 0).Z : sh.L / 200f;
             var (m0, m1, _) = boxes[m];
-            p.Sock("back", new Vector3(0, m0.Y, Math.Clamp(Cm2(backZ), m0.Z, m1.Z)), "-y");
+            p.Sock("back", new Vector3(Math.Clamp(0, m0.X, m1.X), m0.Y, Math.Clamp(Cm2(backZ), m0.Z, m1.Z)), "-y"); // (on its box: a seam at the middle may leave x = 0 just off it, and the part was refused)
         }
     }
 
@@ -867,8 +867,7 @@ public static partial class HullLoft
         {
             var defer = _panelPumped && !PanelSync;
             var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-            var def = ConstructParts.Parse(PanelJson(name, plan.Sheet, 0, defer ? 0 : plan.Items, defer, plan), name);
-            AddOpeningSockets(def, plan);
+            var def = CutFirst(name, plan, defer);
             if (Adopt(def, name) is not { } made)
                 return (false, null);
             if (defer)
@@ -884,6 +883,14 @@ public static partial class HullLoft
             Console.WriteLine($"[cuts] {name}: refused, {e.Message}");
             return (false, null);
         }
+    }
+
+    /// <summary>A cut part from its plan, not yet adopted: its first part (boxes, sockets, mass, slabs drawn) when <paramref name="defer"/>, else whole.</summary>
+    private static ConstructPartDef CutFirst(string name, CutPlan plan, bool defer)
+    {
+        var def = ConstructParts.Parse(PanelJson(name, plan.Sheet, 0, defer ? 0 : plan.Items, defer, plan), name);
+        AddOpeningSockets(def, plan);
+        return def;
     }
 
     /// <summary>

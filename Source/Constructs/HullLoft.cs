@@ -268,7 +268,10 @@ public static partial class HullLoft
             if (Interned.TryGetValue(name, out var have))
             {
                 if (have != null)
+                {
                     have.Touched = Environment.TickCount64;
+                    FinishIfStandIn(have); // (a key off the wire still waiting: made now, HullLoft.FirstParts.cs)
+                }
                 return have;
             }
             var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -349,7 +352,7 @@ public static partial class HullLoft
             return Pressed.Read(name); // (protocol 258: a pressed part travels as a named run-time part does)
         if (!name.StartsWith(Prefix, StringComparison.Ordinal) && !IsPanelName(name) && !IsCutName(name))
             throw new MalformedPacketException($"a run-time part named \"{name}\"");
-        return Parse(name) is { } d ? d.Id : ConstructParts.Need("Hull Bay T").Id;
+        return (FromWire(name) ?? Parse(name)) is { } d ? d.Id : ConstructParts.Need("Hull Bay T").Id; // (many new keys at once: stand-ins past the update's budget, HullLoft.FirstParts.cs)
     }
 
     // ---- The part file -------------------------------------------------------------------------------------------
