@@ -157,7 +157,7 @@ public sealed partial class Game
     {
         _cbBuilt.Clear();
         foreach (var (name, body) in saved)
-            if (Constructs.Get(body) != null)
+            if (Constructs.Get(body) != null || body == 0 && name == SpaceportMark) // (the mark that the spaceport was built: GameSpaceport.cs)
                 _cbBuilt.Add((name, body));
         if (!listed && _opColony != 0)
             ColonyBuildingsBuild();

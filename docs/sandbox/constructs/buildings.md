@@ -159,6 +159,14 @@ The colony itself and the guards' quarters are in the same file:
 | **Penal Colony** | A yard is for being counted in: wire a guard sees through, between four concrete posts with a floodlight each. The cell block is a blind box two storeys high with one window near the top and its light switch outside the door. The warden's office is low, has the Ministry's one window at eye level (he watches the gate from his desk) and throws its roof 4 m over the muster, in front of the cell door. | A tower and a long lid inside a fence |
 | **Colony Barracks** | Guards sleep away from the door and leave by it fast: a narrow slab two storeys tall, the guardroom below (duty desk, gun rack, an open doorway with steps and a canopy), the dormitory above under a high ribbon each side, the stair at the back. | A tall narrow slab, fins down its front |
 
+The spaceport, 2 km out (`BuildingParts.Spaceport.cs`; docs/story/SPACEPORT.md):
+
+| Building | Its job, and what that made it | Outline |
+| --- | --- | --- |
+| **Spaceport Terminal** | Arrivals and customs are one hall, split across the middle by the counter: landside the queue and benches, airside the departures desk and the cargo by the door to the apron. Its flat roof inside the lid is a landing deck, up a stair from the airside half. | Low and wide, a deck on top |
+| **Spaceport Control Tower** | Controllers must see every pad and be seen in the weather: a blind shaft seven storeys high, slots up the stair, a glass cab on top (the one place the Ministry looks out), red lamps on the lid, a pad for small craft on the roof. A stair stacked storey on storey alternates sides (west flight, east flight), each under its own floor's opening, or the flight above leaves no headroom. | The tallest thing for miles |
+| **Spaceport Landing Pad** | 16 by 16 m of foundation laid flush with the hardstand, a yellow touchdown square, a lamp on each corner. | Flat |
+
 `--look-report` shows these as almost wholly "dark or grey": that is the style, not a fault. Judge them by outline, lamps
 and finish count, and in the window (`--window-shot OUT.png --blueprint "Colony Canteen" --at X,Y,Z --look-at X,Y,Z`).
 
