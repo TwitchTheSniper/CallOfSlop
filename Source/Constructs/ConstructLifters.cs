@@ -330,6 +330,7 @@ public static class ConstructLifters
                 l.Dur = Ticks(ld, l.From, l.To, true);
                 l.At = ConstructConveyor.Clock;
                 l.State = LiftState.Carry;
+                LifterProbe.CarriesHeard++; // (the host counts its own; a client counts what it hears)
                 l.Moved = true;
                 l.Fitted = false;
                 (l.StationBody, l.StationPart, l.Step, l.Job, l.Plan) = (sc.Id, t, k, j, plan);
@@ -364,6 +365,7 @@ public static class ConstructLifters
     {
         var sc = world.Get(l.StationBody)!;
         ConstructStation.LiftFit(world, sc, l.StationPart, l.Job!, l.Step);
+        LifterProbe.Fits++;
         l.Fitted = true;
         Back(c, l, ld, sc, l.StationPart);
     }
@@ -576,6 +578,8 @@ public static class ConstructLifters
                     Array.Resize(ref lb.Lifts, lb.N + 1);
                 lb.Lifts[lb.N++] = l = new CLift { Body = id, Part = part };
             }
+            if (state == LiftState.Carry && (l.State != LiftState.Carry || l.Def != def))
+                LifterProbe.CarriesHeard++;
             (l.State, l.Moved, l.Def, l.Paint, l.From, l.To, l.FromRot, l.ToRot, l.Dur, l.Age, l.Held, l.At) = (state, moved, def, paint, from, to, fr, tr, dur, age, held, now);
         }
     }
@@ -700,5 +704,39 @@ public sealed partial class ConstructWorld
     {
         if (!LiftDirty.Contains(body))
             LiftDirty.Add(body);
+    }
+}
+
+/// <summary>The window tool's "lifter" verb (Program.WindowShot.cs): every lifter as this peer has it, and an arm set beside a station.</summary>
+public static class LifterProbe
+{
+    public static int Fits; // server: steps fitted by lifters since start
+    public static int CarriesHeard; // either peer: moves seen to start (state became Carry)
+
+    public static string Text(ConstructWorld world)
+    {
+        var sb = new System.Text.StringBuilder();
+        var n = 0;
+        foreach (var lb in world.LiftBodies)
+            for (var i = 0; i < lb.N; i++)
+            {
+                var l = lb.Lifts[i];
+                n++;
+                sb.Append($" [body {lb.Body} part {l.Part}: {l.State}{(l.Def != 0 ? " " + (ConstructParts.Get(l.Def)?.Name ?? "?") : "")} {l.Age}/{l.Dur} ticks]");
+            }
+        return $"{n} lifter(s), {CarriesHeard} carries seen, {Fits} fitted by lifters (host count){sb}";
+    }
+
+    /// <summary>Host: a Loader Arm on the ground behind the station's hold, inside its bay's back corner, turned as the station is.</summary>
+    public static string Place(ConstructWorld world, Construct sc, int t)
+    {
+        if (ConstructParts.Find("Loader Arm") is not { Lifter: { } ld } d)
+            return "no Loader Arm part";
+        var sd = sc.DefOf(t);
+        Freeform.PartWorld(sc, t, out var sp, out var sr);
+        var centre = (d.BoundsMin + d.BoundsMax) * 0.5f;
+        var local = new Vector3(sd.BoundsMax.X + ConstructStation.BayGap + 0.9f - centre.X, sd.BoundsMin.Y - d.BoundsMin.Y + 0.02f, sd.BoundsMin.Z - 0.9f - centre.Z);
+        var made = ConstructBuild.PlaceNew(world, d, new FreePlacement { Pos = sp + Vector3.Transform(local, sr), Rot = sr });
+        return made == null ? "no room for the arm" : $"a Loader Arm stands at the bay's back corner (construct {made.Id}), shoulder {ld.Base}";
     }
 }
