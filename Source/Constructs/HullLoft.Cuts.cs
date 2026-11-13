@@ -181,7 +181,7 @@ public static partial class HullLoft
         return plan;
     }
 
-    /// <summary>Why an extruded piece can't be cut, or null: flat stock only, plate (a quarter of its height thick) or a solid bar lying flat, at most 10 cm thick and 6 m a side.</summary>
+    /// <summary>Why an extruded piece can't be cut, or null: flat stock only, plate (a quarter of its height thick) or a flat bar either way up (on edge, cut through its width), no thicker than the largest bed and 6 m a side.</summary>
     public static string? StockRefusal(in ExtrusionKey k)
     {
         if (k.Growing)

@@ -415,6 +415,20 @@ public static partial class HullLoft
     /// </summary>
     public static void PumpPanels(double budgetMs = 2.0)
     {
+        if (_standInsMade == 0)
+        {
+            PumpPanelsNow(budgetMs);
+            return;
+        }
+        // A batch that had stand-ins is watched until it is whole: one log line (HullLoft.FirstParts.cs).
+        var asked = _panelSpent * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        PumpPanelsNow(budgetMs);
+        NoteStandInPump(asked, System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
+    }
+
+    private static void PumpPanelsNow(double budgetMs)
+    {
         _panelPumped = true;
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var swapped = false;

@@ -61,6 +61,7 @@ public static partial class HullLoft
             Interned[name] = made;
             StandIns.Add(made);
             StandInQueue.Enqueue(made);
+            _standInsMade++;
             return made;
         }
     }
@@ -201,6 +202,22 @@ public static partial class HullLoft
         if (StandIns.Count == 0 || !StandIns.Contains(d))
             return;
         Fill(d, PanelSync || !_panelPumped);
+    }
+
+    // The batch of stand-ins being watched: how many, the worst update that asked (first parts and stand-ins), the pumps and the worst of them.
+    private static int _standInsMade, _standInPumps;
+    private static double _standInAsked, _standInWorst, _standInAll;
+
+    private static void NoteStandInPump(double asked, double ms)
+    {
+        _standInAsked = Math.Max(_standInAsked, asked);
+        _standInWorst = Math.Max(_standInWorst, ms);
+        _standInAll += ms;
+        _standInPumps++;
+        if (StandInQueue.Count > 0 || PanelsPending > 0)
+            return;
+        Console.WriteLine($"[cuts] {_standInsMade} new keys off the wire waited behind stand-ins: the worst update that asked took {_standInAsked:0.0} ms, then {_standInPumps} pumps made them whole, the worst {_standInWorst:0.0} ms, {_standInAll:0} ms in all");
+        (_standInsMade, _standInPumps, _standInAsked, _standInWorst, _standInAll) = (0, 0, 0, 0, 0);
     }
 
     /// <summary>(PumpPanels) Stand-ins made real, oldest first, until the budget is spent. Returns what is left of it.</summary>
