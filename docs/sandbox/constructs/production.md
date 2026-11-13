@@ -394,6 +394,41 @@ part on the bed; the two tiers' sizes; a timed stroke; the kit's lofts formed in
 `Formed Panel (#HASH)` with the design stored once per world and sent once per connection. Next: the designer window, the Laser Cutter
 (cut-outs), a panel drawn bending on the bed, a cheaper first part for a new key (0.3 ms each today), the kit's own lofts made in slices too, a Large former.
 
+## The Laser Cutter
+
+The machine after the former on the line (design `docs/sandbox/design/laser-cutter.md`, phase 3; notes `laser-cutter-phase3-notes.md`).
+It cuts a cut key (`Cut Panel (PANEL | CUTS)` or `Cut Plate (BLANK | CUTS)`, `HullLoft.Cuts.cs`) out of its blank: a formed panel, or a
+flat extruded piece (plate, a flat bar either way up). Code: `ConstructLaserCutter.cs`; parts from `--gen-parts laser_cutter_parts`
+(`LaserCutterParts.cs`, `Constructs/Parts/LaserCutter`), recipes by the Assembling rule, Production > Extrusion beside the formers.
+
+| Machine | Bed (longest x next x tallest) | Cutting power | Offcut bin |
+| --- | --- | --- | --- |
+| Laser Cutter | 2.5 x 1.8 x 0.6 m | 2.4 kW | 200 |
+| Medium Laser Cutter (tier 2 Assembler) | 6 x 4.5 x 2 m | 9.6 kW | 1,200 |
+
+- **Orders only.** A cut key is a named order; the cutter refuses anything else ("nothing to cut: a Panel Former's order", "too large for
+  this cutter", "too tall for the bed", the key's own rule broken). Every other machine refuses a cut key: "a cut part is a Laser Cutter's
+  order". Its Queue button adds its Order count of the head order's cut part (no design setting yet: phase 5's picker).
+- **No stock of its own.** Only the head order's blank is taken off the conveyor into Piece in (a formed panel by name, an extruded piece by
+  its key), one at a time onto its bed (`CStore.JobAmount` 1); anything else waits on the conveyor. Its screen and look line say "needs
+  BLANK on its bed". Cancel or Clear with an uncut blank on the bed drops it on the out bed as a loose part.
+- **The cut** is a timed stroke: `seconds = 2 + 0.36 x edge (m) x thickness (mm) / power (kW)` (`ConstructLaserCutter.Seconds`), the
+  edge being each cut's outline on the sheet less what runs along the sheet's own edges. Power is needed only while it cuts; no power or Run
+  held off keeps the blank on the bed and the stroke where it stopped. Done, the cut part rides out of Piece out, or drops on the out bed.
+- **The offcut** (the blank's mass less the cut part's) is counted in tenths of a unit (`CStore.InAmount` of `InMaterial`, saved and
+  sent); whole units go into its bin as they add up, which a chute empties from its **Offcut** port (chutes can't feed it). Tenths of
+  another material round to the nearest unit first. A full bin, or one holding another material, stalls it (`ExtrudeStall.OffcutFull`,
+  "offcut bin full"), the cut part waiting on the bed. A cut costs power and time, never material.
+- **Look**: a slatted bed under a gantry, the head's carriage running along the gantry and the beam's line glowing while it cuts, a fume
+  duct, the offcut hopper on the right of the out end, the control board on the left. Body `#a8365e`.
+- **Window tool**: `cutter`, `cutter order KEY [N]`, `cutter feed KEY`, `cutter await` (`Program.WindowShotCutter.cs`).
+- **Tried** (2026-11-13, Proving Ground, a former, a conveyor and a small cutter; host and a joined client): a 20 mm panel's window and
+  corner (1.61 m of edge) cut in 6.9 s, the same at 40 mm in 11.7 s, a 5 cm plate in 14.1 s and a 10 cm plate in 26.2 s, each as the law
+  says, on both peers; the tenths 0.6 + 1.1 gave a unit and 0.7 over.
+
+Next: the Panel Designer's Cut-outs mode (phase 4); chains, bills, the terminal, the Building Station, the recipe picker and the Showcase's
+cutter (phase 5); the Pane (phase 6); a loose blank let go on the in bed taken in; F taking back a blank from the bed.
+
 ## Machine tiers
 
 Each of the six machine lines comes in five tiers, one for each step of the threat ladder (zombies, bandits, military, the
