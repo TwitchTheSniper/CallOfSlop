@@ -455,7 +455,7 @@ public static class ConstructWeapons
         var sound = Weapons.Find(rec.Receiver!.SoundOf) ?? Weapons.DefaultPrimary;
         CopySound(w, sound);
         g.Spread = w.HipSpreadDeg * 0.5f * MathF.PI / 180f * (optic >= 0 ? OpticSpread : 1f);
-        g.MaxRange = d.GunMaxRange;
+        g.MaxRange = d.GunMaxRange * res.BarrelReach; // (its barrels' reach: a Long Gun Barrel carries 1.4 times as far; flame, harpoon and shell guns set their own below)
         g.Kick = d.GunKick;
         g.Fx = d.GunFx;
         g.Speed = 0;
