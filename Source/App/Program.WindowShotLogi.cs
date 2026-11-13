@@ -3,7 +3,8 @@ namespace CallOfSlop;
 /// <summary>
 /// The window tool's <c>logi</c> verbs (docs/sandbox/constructs/production.md "Smart logistics"): what the network did, as <c>[logi]</c>
 /// lines, so a run is judged without pictures. On the body spawned by <c>--blueprint</c>. Either peer: <c>riders</c>, <c>why PART#n</c>,
-/// <c>net PART#n</c>, <c>chain</c> (chained orders' links and the Assemblers' queues). Host: <c>remove PART</c>, <c>cancel ID</c> (a terminal order), <c>order NAME [N]</c> (at the first Crafting Terminal), <c>cut PART#n WAY</c> (the conveyor out of a Router's
+/// <c>net PART#n</c>, <c>chain</c> (chained orders' links, the Assemblers' queues and the Orders rows' chain lines), <c>tier NAME N</c> (a part's tier in
+/// this run: a two-level recipe on the showcase). Host: <c>remove PART</c>, <c>cancel ID</c> (a terminal order), <c>order [station] NAME [N]</c> (at the first Crafting Terminal, or Building Station), <c>cut PART#n WAY</c> (the conveyor out of a Router's
 /// way 1 to 3), <c>fill PART#n[|NAME]</c> (a Piece Rack filled with a part), <c>spawn N</c> (pieces put on every whole conveyor until
 /// N ride). A part is also found by its index on that body: <c>Piece Rack@286</c>.
 /// </summary>
