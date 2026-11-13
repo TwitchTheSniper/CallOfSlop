@@ -60,6 +60,7 @@ public sealed partial class Game
         BreakoutLocal = BreakoutNone;
         BreakoutHasTarget = false;
         BreakoutRideFrom = 0;
+        BreakoutFightReset();
     }
 
     /// <summary>Server, a storylet's hook "breakout" (GameStoryStorylets.cs): the night is on for this player.</summary>
@@ -153,7 +154,10 @@ public sealed partial class Game
         }
         _bkMuster = muster;
         if (look)
+        {
             BreakoutCrewTick(s);
+            BreakoutFightTick(s, now); // (GameBreakoutFight.cs)
+        }
     }
 
     /// <summary>Server: the hauler at the motor pool for this player (called once, shared by everyone mustering), and boarding it.</summary>
@@ -401,6 +405,26 @@ public sealed class BreakoutScript
     public string MusterTitle = "", MusterText = "", SpaceportTitle = "", SpaceportText = "";
     public string Problem = "";
 
+    /// <summary>A guard's name (a title gives the uniform: Cosmetics/uniforms.json) and post (the spaceport's frame, m).</summary>
+    public sealed class FightPlan
+    {
+        public (string Name, Vector2 At)[] Guards = [];
+        public float Wake = 120;
+        public string Shout = "", Won = "";
+        public Death[] Deaths = [];
+    }
+
+    /// <summary>A scripted death: due "after" s into the fight, or once "down" guards are, whichever is first.</summary>
+    public sealed class Death
+    {
+        public string Who = "", Lead = "";
+        public double After = 10;
+        public int Down;
+        public string[] Words = [];
+    }
+
+    public FightPlan Fight = new();
+
     private static BreakoutScript? _current;
     public static BreakoutScript Current => _current ??= Load(Path.Combine(AppFolders.Data, "Story", "Opening", "Breakout.json"));
 
@@ -455,6 +479,44 @@ public sealed class BreakoutScript
             (d.MusterTitle, d.MusterText) = (Line(m, "title"), Str(m, "text"));
         if (root.TryGetProperty("spaceport", out var sp))
             (d.SpaceportTitle, d.SpaceportText) = (Line(sp, "title"), Str(sp, "text"));
+        if (root.TryGetProperty("fight", out var fi))
+        {
+            var plan = d.Fight;
+            if (!fi.TryGetProperty("guards", out var gs) || gs.ValueKind != JsonValueKind.Array || gs.GetArrayLength() is 0 or > 12)
+                throw new FormatException("\"fight\": \"guards\" is 1 to 12 guards");
+            plan.Guards = [.. gs.EnumerateArray().Select(g =>
+            {
+                var name = Line(g, "name");
+                if (name.Length == 0 || !g.TryGetProperty("at", out var at) || at.ValueKind != JsonValueKind.Array || at.GetArrayLength() != 2)
+                    throw new FormatException("\"fight\": a guard has a \"name\" and \"at\": [x, z]");
+                return (name, new Vector2(at[0].GetSingle(), at[1].GetSingle()));
+            })];
+            if (fi.TryGetProperty("wake", out var wk))
+                plan.Wake = Math.Clamp(wk.GetSingle(), 20, 400);
+            plan.Shout = Line(fi, "shout");
+            plan.Won = Line(fi, "won");
+            if (fi.TryGetProperty("deaths", out var ds))
+                plan.Deaths = [.. ds.EnumerateArray().Select(x =>
+                {
+                    var death = new Death { Who = Line(x, "who"), Lead = Line(x, "lead") };
+                    if (death.Who.Length == 0)
+                        throw new FormatException("\"fight\": a death names \"who\"");
+                    if (x.TryGetProperty("after", out var af))
+                        death.After = Math.Clamp(af.GetDouble(), 0, 600);
+                    if (x.TryGetProperty("down", out var dn))
+                        death.Down = Math.Clamp(dn.GetInt32(), 0, 12);
+                    if (!x.TryGetProperty("words", out var ws) || ws.ValueKind != JsonValueKind.Array || ws.GetArrayLength() is 0 or > 6)
+                        throw new FormatException($"\"fight\": {death.Who}'s \"words\" are 1 to 6 lines");
+                    death.Words = [.. ws.EnumerateArray().Select(l =>
+                    {
+                        var s = l.GetString() ?? "";
+                        if (s.Length is 0 or > 110 || s.Any(ch => ch is < ' ' or > '~'))
+                            throw new FormatException($"\"fight\": {death.Who}'s words: printable ASCII, 1 to 110 characters a line");
+                        return s;
+                    })];
+                    return death;
+                })];
+        }
         return d;
     }
 }
