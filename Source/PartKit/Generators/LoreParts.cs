@@ -21,7 +21,7 @@ public sealed class LoreParts : IPartGenerator
     private const string Wood = "#6b4a2e", WoodDark = "#4a3220", WoodPale = "#9a7650", Cork = "#b08350", CorkPale = "#c9a271";
     private const string Paper = "#f2efe6", PaperOld = "#e2d6b8", Ink = "#2a2c30", Brass = "#c8a04a", BrassBright = "#efd27a";
     private const string Grey = "#7d8287", GreyDark = "#55595e", Iron = "#3a3c3f", Chalk = "#2f3a33", ChalkLine = "#d9ddd2";
-    private const string RedCover = "#7a2622", BlueCover = "#25467a", GreenCover = "#2f5a36", Light = "#f4e27a";
+    private const string RedCover = "#7a2622", Concrete = "#8a867e", ConcreteDark = "#6e6a63", Enamel = "#3d4a42", RedEnamel = "#8a1f1a", BlueCover = "#25467a", GreenCover = "#2f5a36", Light = "#f4e27a";
 
     private static PyDict NoPaint => Kw(("paintable", false));
 
@@ -277,9 +277,60 @@ public sealed class LoreParts : IPartGenerator
         return p;
     }
 
+    /// <summary>
+    /// The Ministry's work board in the colony yard (the job board: Source/UI/UiJobBoard.cs): a cast concrete hood on two
+    /// board-marked posts over a low plinth, an enamelled steel case between them under a red header plate, and four columns
+    /// of work sheets, one per faction that posts work (the Ministry's buff triplicate, the IT Department's tickets, the Call
+    /// Centre's pink flyers, Clan MacSlop's notices with a tartan tab). One sheet in a column is stamped TAKEN. Its front is +z.
+    /// </summary>
+    private static Part WorkBoard()
+    {
+        var p = new Part("Ministry Work Board", Small, Section, "WORK ALLOCATION. Every faction's jobs, posted in the yard, in triplicate.", color: Concrete, group: Group);
+        p.Add(Box([-1.08, 0, -0.22], [1.08, 0.14, 0.22], ConcreteDark)); // (the plinth)
+        foreach (var x in new[] { -1.0, 0.78 })
+        {
+            p.Add(Box([x, 0.08, -0.11], [x + 0.22, 2.2, 0.11], Concrete)); // (a post, cast in the plinth)
+            for (var k = 0; k < 5; k++) // (the shuttering's boards, 4 mm proud of its front)
+                p.Add(Box([x + 0.02, 0.3 + k * 0.38, 0.105], [x + 0.2, 0.32 + k * 0.38, 0.114], ConcreteDark, detail: true, shape: NoPaint));
+        }
+        p.Add(Box([-1.12, 2.16, -0.2], [1.12, 2.34, 0.34], Concrete)); // (the hood, out over the sheets against the snow)
+        p.Add(Box([-1.1, 2.12, 0.22], [1.1, 2.18, 0.3], ConcreteDark)); // (its drip under the front)
+        p.Add(Box([-0.79, 0.62, -0.04], [0.79, 2.02, 0.03], Enamel)); // (the steel case)
+        p.Add(Box([-0.79, 0.62, 0.025], [0.79, 0.66, 0.07], Iron)); // (its sill,)
+        p.Add(Box([-0.79, 1.98, 0.025], [0.79, 2.02, 0.07], Iron)); // (its head)
+        const double z = 0.03;
+        p.Add(Face(-0.72, 1.86, 0.72, 1.96, z, RedEnamel)); // (the header plate: WORK ALLOCATION)
+        for (var k = 0; k < 14; k++)
+            p.Add(Box([-0.62 + k * 0.09, 1.885, z + 0.002], [-0.57 + k * 0.09, 1.935, z + 0.014], Paper, detail: true, shape: NoPaint));
+        (string Sheet, string Tab)[] cols = [(PaperOld, RedEnamel), (Paper, "#2a5db0"), ("#f0b8c8", "#e8c430"), (Paper, "#2f6a3a")];
+        for (var c = 0; c < cols.Length; c++)
+        {
+            var x0 = -0.72 + c * 0.37;
+            p.Add(Face(x0, 1.76, x0 + 0.33, 1.81, z, cols[c].Tab)); // (the column's tab, the faction's colour)
+            if (c == 3)
+                for (var k = 0; k < 3; k++)
+                    p.Add(Box([x0 + 0.04 + k * 0.1, 1.76, z + 0.002], [x0 + 0.07 + k * 0.1, 1.81, z + 0.014], "#a02828", detail: true, shape: NoPaint)); // (tartan)
+            for (var s = 0; s < 3; s++)
+            {
+                var y1 = 1.7 - s * 0.35;
+                var w = s == 1 ? 0.28 : 0.31;
+                p.Add(Face(x0 + 0.01, y1 - 0.3, x0 + w, y1, z, cols[c].Sheet)); // (a sheet)
+                for (var k = 0; k < 4; k++) // (its lines)
+                    p.Add(Box([x0 + 0.04, y1 - 0.06 - k * 0.055, z + 0.002], [x0 + w - 0.04 - (k * 5 + c) % 3 * 0.03, y1 - 0.045 - k * 0.055, z + 0.014], Ink, detail: true, shape: NoPaint));
+                p.Add(Box([x0 + 0.15, y1 - 0.02, z + 0.002], [x0 + 0.17, y1, z + 0.02], Brass, detail: true, shape: NoPaint)); // (its drawing pin)
+                if ((s + c) % 3 == 1) // (one stamped TAKEN, in purple)
+                    p.Add(Box([x0 + 0.06, y1 - 0.26, z + 0.002], [x0 + 0.22, y1 - 0.22, z + 0.016], "#6a3a8a", detail: true, shape: NoPaint));
+            }
+        }
+        p.Add(Box([0.66, 0.68, 0.036], [0.69, 0.9, 0.056], Iron, detail: true, shape: NoPaint)); // (a pencil on a string, for signing)
+        Feet(p, -0.9, 0.9);
+        p.Stats(120, 400, 0, 2);
+        return p;
+    }
+
     public void Make(PartOutput o) => WriteParts(o, Out,
     [
         ("", Tally()), ("", PhotoBoard()), ("", Handbook()), ("", InTray()), ("", Noticeboard()),
-        ("", KeyBoard()), ("", Lantern()), ("", Clipboard()), ("", Schoolbooks()), ("", ShiftBoard()),
+        ("", KeyBoard()), ("", Lantern()), ("", Clipboard()), ("", Schoolbooks()), ("", ShiftBoard()), ("", WorkBoard()),
     ]);
 }
