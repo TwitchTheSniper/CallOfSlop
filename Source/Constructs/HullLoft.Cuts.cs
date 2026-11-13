@@ -518,6 +518,21 @@ public static partial class HullLoft
         plan.Rects = [.. rects];
     }
 
+    /// <summary>
+    /// (Tools: the window tool's ray and walk.) A spot on a cut part's sheet, <paramref name="u"/> cm along and <paramref name="v"/> across, in
+    /// the part's own frame on its middle plane, and the way the surface faces there. False: not a cut part, or off its sheet. Allocates.
+    /// </summary>
+    public static bool CutSpot(string name, double u, double v, out Vector3 at, out Vector3 normal)
+    {
+        (at, normal) = (default, Vector3.UnitY);
+        if (ReadCut(name, out _) is not { } plan || u < 0 || v < 0 || u > plan.Sheet.L || v > plan.Sheet.W)
+            return false;
+        at = SheetAt(plan, u, v);
+        if (!plan.Plate)
+            normal = PanelNormal(plan.Sheet, (float)(u / plan.Sheet.L), (float)(v * 2 / plan.Sheet.W - 1));
+        return true;
+    }
+
     /// <summary>A cut cuts this spot of the sheet away (within half a centimetre): a socket there is left out.</summary>
     private static bool CutAway(CutPlan plan, double u, double v)
     {
