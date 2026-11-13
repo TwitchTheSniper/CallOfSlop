@@ -268,9 +268,10 @@ public sealed unsafe partial class CityRenderer
                 winShare = (r - l) * (head - sill) / (bayW * floorH);
                 // A plant floor every so many storeys on the taller blocks: a band of louvres, no windows, no light.
                 float every = 6.0 + floor(H01(seed * 29u) * 9.0);
-                if (H01(seed * 37u) < 0.6 && mod(floorI, every) == 0.0)
+                float louvreW = fwidth(fv / 0.25); // (outside the branch: a derivative in a per-pixel branch is undefined)
+                if (H01(seed * 37u) < 0.6 && mod(floorI + 0.5, every) < 1.0) // (not == 0.0: a GPU's mod can land just under every)
                 {
-                    float louvre = Band(fract(fv / 0.25), 0.0, 0.45, fwidth(fv / 0.25)) * clamp(1.0 - fw * 10.0, 0.0, 1.0);
+                    float louvre = Band(fract(fv / 0.25), 0.0, 0.45, louvreW) * clamp(1.0 - fw * 10.0, 0.0, 1.0);
                     col = lightWall * (0.55 + 0.2 * louvre);
                     glow = vec3(0.0);
                 }
