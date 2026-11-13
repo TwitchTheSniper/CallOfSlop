@@ -572,6 +572,7 @@ public sealed partial class ConstructPartDef
     public bool EngineModular; // a modular engine's flywheel ("engine": {"modular": size}): its numbers come from the pieces on its crank (ConstructEngine.cs)
     public EnginePiece Piece; // a modular engine's piece kind (the flywheel: Output)
     public byte PieceSize; // Small 0, Medium 1, Large 2, Capital 3
+    public float PieceScale; // its scale (sized-parts design 6.1): 0 on a file piece, read as its class's (EngineRules.ScaleOf); a pressed piece's from its blank (phase 5)
     public float PiecePower = 1f, PieceThirst = 1f, PieceSpool; // a fuel system's or booster's multipliers, a turbo's lag
     public int SmokeSocket = -1; // the socket smoke leaves by (a stack's top, an exhaust's top, a head)
     public bool HasEngineBoxes; // boxes that pump or spin (the renderer skips the rest)

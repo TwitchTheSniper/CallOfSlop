@@ -39,11 +39,53 @@ public enum EngineFault : byte
 /// </summary>
 public sealed class EngineRules
 {
-    public const string Format = "call-of-slop-modular-engine/1";
+    public const string Format = "call-of-slop-modular-engine/2", Format1 = "call-of-slop-modular-engine/1"; // (/2 adds starterFrom; /1 is read with its default: a mod's)
 
     public readonly float[] Kw = [40, 800, 16000, 320000], Idle = [900, 600, 300, 150], Peak = [5000, 2800, 1400, 700], Max = [7000, 4000, 2000, 1000], Scale = [1, 4, 16, 64];
     public readonly bool[] NeedsStarter = [false, false, true, true];
     public float BurnPerKw = 0.00044f, MisfireBelow = 0.5f, MisfirePower = 0.5f, ThirstyAt = 1.15f, FrugalAt = 0.85f;
+    public float StarterFrom = 8f; // an engine whose crank's scale reaches this needs a starter (sized-parts design 6.1: half-way in log between Medium and Large)
+
+    /// <summary>
+    /// A size's numbers at any scale (sized-parts design 6.1): a straight line between the <c>sizes</c> rows in log-log (knots at their
+    /// scales), past the ends the end segment. At a knot it is the row itself, not an interpolation beside it, so every file engine keeps
+    /// its exact numbers.
+    /// </summary>
+    public void At(float scale, out float kw, out float idle, out float peak, out float max)
+    {
+        var i = 0;
+        for (var k = 0; k < Scale.Length; k++)
+            if (scale == Scale[k])
+            {
+                (kw, idle, peak, max) = (Kw[k], Idle[k], Peak[k], Max[k]);
+                return;
+            }
+        while (i < Scale.Length - 2 && scale > Scale[i + 1])
+            i++;
+        var t = (MathF.Log(MathF.Max(scale, 1e-3f)) - MathF.Log(Scale[i])) / (MathF.Log(Scale[i + 1]) - MathF.Log(Scale[i]));
+        float L(float[] v) => MathF.Exp(MathF.Log(v[i]) + t * (MathF.Log(v[i + 1]) - MathF.Log(v[i])));
+        (kw, idle, peak, max) = (L(Kw), L(Idle), L(Peak), L(Max));
+    }
+
+    /// <summary>A cylinder's (or a fuel system's or booster's) kW at this scale: <see cref="At"/>'s.</summary>
+    public float KwAt(float scale)
+    {
+        At(scale, out var kw, out _, out _, out _);
+        return kw;
+    }
+
+    /// <summary>The size class nearest a scale in log (the Engine Kit's words, the sound bank's pick, the drawn crank's speed).</summary>
+    public byte NearestSize(float scale)
+    {
+        var best = 0;
+        for (var k = 1; k < Scale.Length; k++)
+            if (MathF.Abs(MathF.Log(scale / Scale[k])) < MathF.Abs(MathF.Log(scale / Scale[best])))
+                best = k;
+        return (byte)best;
+    }
+
+    /// <summary>A piece's scale (design 6.1): its own (a pressed piece's, from its blank) or its class's row.</summary>
+    public float ScaleOf(ConstructPartDef d) => d.PieceScale > 0 ? d.PieceScale : Scale[Math.Min(d.PieceSize, (byte)(Scale.Length - 1))];
     public string Problem = ""; // why the file was refused ("" when it loaded; the defaults are used otherwise)
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "ModularEngine.json");
@@ -78,12 +120,13 @@ public sealed class EngineRules
             var root = doc.RootElement;
             if (root.ValueKind != JsonValueKind.Object)
                 throw new FormatException("the file is not a JSON object");
-            if (!root.TryGetProperty("format", out var f) || f.GetString() != Format)
+            if (!root.TryGetProperty("format", out var f) || f.GetString() is not (Format or Format1))
                 throw new FormatException($"\"format\" must be \"{Format}\"");
             foreach (var p in root.EnumerateObject())
                 switch (p.Name)
                 {
                     case "format" or "about": break;
+                    case "starterFrom": r.StarterFrom = Num(p.Value, p.Name, 0.1f, 1000); break;
                     case "burnPerKw": r.BurnPerKw = Num(p.Value, p.Name, 0, 1); break;
                     case "misfireBelow": r.MisfireBelow = Num(p.Value, p.Name, 0, 1); break;
                     case "misfirePower": r.MisfirePower = Num(p.Value, p.Name, 0, 1); break;
@@ -112,6 +155,9 @@ public sealed class EngineRules
                             if (r.Idle[i] >= r.Peak[i] || r.Peak[i] > r.Max[i])
                                 throw new FormatException($"{ConstructEngine.SizeNames[i]}: idle, peak and limiter rpm go up in that order");
                         }
+                        for (var i = 1; i < r.Scale.Length; i++)
+                            if (r.Scale[i] <= r.Scale[i - 1])
+                                throw new FormatException("the sizes' scales go up from small to capital"); // (EngineRules.At reads them as knots)
                         break;
                     default: throw new FormatException($"unknown key \"{p.Name}\"");
                 }
@@ -136,7 +182,12 @@ public sealed class ModEngine
 {
     public const int MaxEmits = 4;
     public int Output = -1; // the flywheel
-    public byte Size; // the crank's
+    public byte Size; // the size class nearest the crank's scale (the kit's words, the sound bank, the drawn crank)
+    public float Scale = 1f; // the crank's: its largest section's (sized-parts design 6.1); it sets the revs and whether it needs a starter
+    public int Starved; // the first bank (1 up) whose fuel system or booster is small for its cylinders, or 0 (design 6.4)
+    public float StarvedShare; // what that bank's fuel system feeds (0 to 1), or its booster gives of its boost when the feed is whole
+    public bool StarvedBoost; // the booster is the small one, not the fuel system
+    public ConstructPartDef? StarvedBy; // the small piece (its name for the text)
     public int Cranks, Cylinders, Wrecked, Misfiring, Banks, Boxer; // Boxer: two opposite banks
     public int Fed; // banks with a fuel system
     public float Kw, Burn, Spool;
@@ -232,8 +283,12 @@ public static class ConstructEngine
             ref var p = ref c.Parts[i];
             var e = c.ModEngines[c.EngineOf[i] - 1];
             e.HasStarter |= p.D.Piece == EnginePiece.Starter;
-            if (p.D.Piece == EnginePiece.Crank && e.Cranks++ == 0)
-                e.Size = p.D.PieceSize;
+            if (p.D.Piece == EnginePiece.Crank && (e.Cranks++ == 0 || rules.ScaleOf(p.D) > e.Scale))
+            {
+                // Sections of any sizes join into one crank; the largest sets its scale and so the revs (the heaviest to turn: design 6.1).
+                e.Scale = rules.ScaleOf(p.D);
+                e.Size = rules.NearestSize(e.Scale);
+            }
             e.HasEngine |= p.D.Piece is EnginePiece.Crank or EnginePiece.Cylinder or EnginePiece.Output or EnginePiece.Fuel or EnginePiece.Boost;
         }
         if (c.ModCount == 0)
@@ -245,7 +300,14 @@ public static class ConstructEngine
         var bankSlots = MaxEngines * MaxBanks;
         Span<Vector3> bankDir = stackalloc Vector3[bankSlots];
         Span<float> fuelMul = stackalloc float[bankSlots], fuelThirst = stackalloc float[bankSlots], boostMul = stackalloc float[bankSlots], boostThirst = stackalloc float[bankSlots];
+        Span<float> bankKw = stackalloc float[bankSlots], fuelFeed = stackalloc float[bankSlots], boostShare = stackalloc float[bankSlots]; // (a bank's largest cylinder's kW at its bore; what its fuel system feeds; its booster's share)
+        Span<int> fuelBy = stackalloc int[bankSlots], boostBy = stackalloc int[bankSlots];
         fuelMul.Clear();
+        bankKw.Clear();
+        fuelFeed.Fill(1f);
+        boostShare.Fill(1f);
+        fuelBy.Fill(-1);
+        boostBy.Fill(-1);
         boostMul.Fill(1f);
         boostThirst.Fill(1f);
         fuelThirst.Fill(1f);
@@ -267,9 +329,7 @@ public static class ConstructEngine
                     if (e.Output < 0)
                         e.Fault = EngineFault.OutputWrecked;
                 }
-                else if (pb.PieceSize != e.Size)
-                    e.Fault = EngineFault.MixedSizes;
-                else if (e.Output < 0)
+                else if (e.Output < 0) // (a flywheel of any size works: design 6.4, anything bolts on)
                 {
                     e.Output = b;
                     if (e.Fault == EngineFault.OutputWrecked)
@@ -278,12 +338,7 @@ public static class ConstructEngine
                 continue;
             }
             if (pb.Piece != EnginePiece.Cylinder)
-                continue;
-            if (pb.PieceSize != pa.PieceSize)
-            {
-                e.Fault = EngineFault.MixedSizes;
-                continue;
-            }
+                continue; // (a cylinder of any size goes on: it gives its own bore's power, design 6.4)
             var axis = c.DirToRest(c.Parts[a].Seg, Rot24.Apply(c.Parts[a].Rot, Vector3.UnitZ));
             var out1 = c.ToRest(c.Parts[b].Seg, c.Parts[b].Pos) - c.ToRest(c.Parts[a].Seg, c.Parts[a].Pos);
             out1 -= axis * Vector3.Dot(axis, out1);
@@ -306,6 +361,7 @@ public static class ConstructEngine
             if (be < 0)
                 continue;
             bank[b] = (sbyte)be;
+            bankKw[er * MaxBanks + be] = MathF.Max(bankKw[er * MaxBanks + be], rules.KwAt(rules.ScaleOf(pb))); // (the bank's scale: its largest cylinder's bore)
             c.EngineOf[b] = c.EngineOf[a]; // (a wrecked cylinder stays part of the engine: its piston stands still)
             c.EngineSlot[b] = (byte)Math.Min(255, e.Cylinders);
             e.Cylinders++;
@@ -324,18 +380,20 @@ public static class ConstructEngine
                 if (d.Piece is not (EnginePiece.Fuel or EnginePiece.Boost or EnginePiece.Exhaust) || c.Parts[b].Broken || c.EngineOf[b] != c.EngineOf[a] || c.EngineOf[b] == 0)
                     continue;
                 var e = c.ModEngines[c.EngineOf[b] - 1];
-                if (d.PieceSize != e.Size)
-                {
-                    e.Fault = e.Fault == EngineFault.None ? EngineFault.MixedSizes : e.Fault;
-                    continue;
-                }
                 bank[b] = bank[a];
                 var at = (c.EngineOf[b] - 1) * MaxBanks + bank[a];
-                if (d.Piece == EnginePiece.Fuel && d.PiecePower > fuelMul[at])
-                    (fuelMul[at], fuelThirst[at]) = (d.PiecePower, d.PieceThirst);
-                else if (d.Piece == EnginePiece.Boost && d.PiecePower > boostMul[at])
+                // Any size bolts on (design 6.4): a fuel system feeds its bank by its kW over the bank's largest cylinder's, at most all of
+                // it; a booster's gain is scaled by the same ratio and is never more than its own. Pieces of the bank's size: every ratio 1.
+                var share = bankKw[at] > 0 ? MathF.Min(1f, rules.KwAt(rules.ScaleOf(d)) / bankKw[at]) : 1f;
+                if (d.Piece == EnginePiece.Fuel && d.PiecePower * share > fuelMul[at])
                 {
-                    (boostMul[at], boostThirst[at]) = (d.PiecePower, d.PieceThirst);
+                    (fuelMul[at], fuelThirst[at]) = (d.PiecePower * share, d.PieceThirst);
+                    (fuelFeed[at], fuelBy[at]) = (share, b);
+                }
+                else if (d.Piece == EnginePiece.Boost && Gain(d.PiecePower, share) > boostMul[at])
+                {
+                    (boostMul[at], boostThirst[at]) = (Gain(d.PiecePower, share), d.PieceThirst);
+                    (boostShare[at], boostBy[at]) = (share, b);
                     e.Spool = MathF.Max(e.Spool, d.PieceSpool);
                 }
             }
@@ -352,7 +410,7 @@ public static class ConstructEngine
                 e.Misfiring++;
             if (fuelMul[at] <= 0)
                 continue;
-            var kw = rules.Kw[e.Size] * d.PiecePower * share * fuelMul[at] * boostMul[at]; // (a cylinder's own power: 1, more for a higher tier's)
+            var kw = rules.KwAt(rules.ScaleOf(d)) * d.PiecePower * share * fuelMul[at] * boostMul[at]; // (a cylinder's own power at its own bore: design 6.3; PiecePower 1, more for a tier cylinder's)
             e.Kw += kw;
             e.Burn += kw * d.PieceThirst * fuelThirst[at] * boostThirst[at] * rules.BurnPerKw;
         }
@@ -361,10 +419,20 @@ public static class ConstructEngine
             var e = c.ModEngines[k];
             for (var q = 0; q < e.Banks; q++)
             {
-                if (fuelMul[k * MaxBanks + q] > 0)
+                var at = k * MaxBanks + q;
+                if (fuelMul[at] > 0)
                     e.Fed++;
                 else if (e.FaultBank == 0)
                     e.FaultBank = q + 1;
+                if (e.Starved == 0 && fuelMul[at] > 0 && (fuelFeed[at] < 0.999f || boostShare[at] < 0.999f))
+                {
+                    // The first bank a small piece costs power: it runs, and its look line says so where a fault would be (design 6.4).
+                    e.Starved = q + 1;
+                    e.StarvedBoost = fuelFeed[at] >= 0.999f;
+                    e.StarvedShare = e.StarvedBoost ? boostShare[at] : fuelFeed[at];
+                    var by = e.StarvedBoost ? boostBy[at] : fuelBy[at];
+                    e.StarvedBy = by >= 0 ? c.Parts[by].D : null;
+                }
             }
             if (e.Banks == 2 && Vector3.Dot(bankDir[k * MaxBanks], bankDir[k * MaxBanks + 1]) < -0.7f)
                 e.Boxer = 1;
@@ -375,7 +443,7 @@ public static class ConstructEngine
                     : e.Wrecked >= e.Cylinders ? EngineFault.AllWrecked
                     : e.Fed == 0 ? EngineFault.NoFuelSystem
                     : e.Output < 0 ? EngineFault.NoOutput
-                    : rules.NeedsStarter[e.Size] && !e.HasStarter ? EngineFault.NoStarter
+                    : NeedsStarter(e, rules) && !e.HasStarter ? EngineFault.NoStarter
                     : e.Fed < e.Banks ? EngineFault.NoFuelSystem
                     : EngineFault.None;
         }
@@ -384,10 +452,21 @@ public static class ConstructEngine
 
     private static bool Joins(Construct c, int i) => c.Parts[i].D.Piece != EnginePiece.None && c.Parts[i].Working;
 
+    /// <summary>A booster's gain on a bank it feeds this share of: its own multiplier when the share is whole (exactly the file's), else 1 + (power - 1) x share.</summary>
+    private static float Gain(float power, float share) => share >= 1f ? power : 1f + (power - 1f) * share;
+
+    /// <summary>Does this engine need a starter to turn over? Its crank's scale reaches the rules' starterFrom (design 6.1).</summary>
+    public static bool NeedsStarter(ModEngine e, EngineRules rules) => e.Scale >= rules.StarterFrom;
+
     private static void Reset(ModEngine e)
     {
         e.Output = -1;
         e.Size = 0;
+        e.Scale = 1f;
+        e.Starved = 0;
+        e.StarvedShare = 1f;
+        e.StarvedBoost = false;
+        e.StarvedBy = null;
         e.Cranks = e.Cylinders = e.Wrecked = e.Misfiring = e.Banks = e.Boxer = e.Fed = e.EmitCount = e.FaultBank = 0;
         e.Kw = e.Burn = e.Spool = 0;
         e.HasStarter = e.Fuelled = e.HasEngine = false;
@@ -448,13 +527,12 @@ public static class ConstructEngine
         var e = c.ModEngines![k];
         var r = EngineRules.Current;
         var d = c.ModDef ??= new ConstructPartDef { Name = "Modular engine", Role = PartRole.Engine, EngineModular = true, Curve = EngineCurve.Petrol, FuelKind = EngineFuel.Fuel, Noise = 0.8f };
-        d.IdleRpm = r.Idle[e.Size];
-        d.PeakRpm = r.Peak[e.Size];
-        d.MaxRpm = r.Max[e.Size];
+        r.At(e.Scale, out _, out var idle, out var peak, out var max); // (the crank's scale sets the revs: design 6.1; at a size's own scale its row)
+        (d.IdleRpm, d.PeakRpm, d.MaxRpm) = (idle, peak, max);
         d.EngineTorque = e.Kw * 1000f / (d.PeakRpm / ConstructDrive.RpmPerRadS);
         d.BurnRate = e.Burn;
         d.SpoolSeconds = e.Spool;
-        d.NeedsStarter = r.NeedsStarter[e.Size];
+        d.NeedsStarter = NeedsStarter(e, r);
         c.ModActive = k;
     }
 
@@ -488,7 +566,9 @@ public static class ConstructEngine
         EngineFault.NoStarter => "needs a starter motor",
         EngineFault.NoTank => "no fuel: link a fuel tank",
         EngineFault.AllWrecked => "every cylinder is wrecked",
-        _ => "",
+        _ => e.Starved == 0 ? ""
+            : e.StarvedBoost ? $"bank {e.Starved}: the {e.StarvedBy?.Name ?? "booster"} is small for its cylinders ({e.StarvedShare * 100:0}% of its boost)"
+            : $"bank {e.Starved} starved: the {e.StarvedBy?.Name ?? "fuel system"} feeds {e.StarvedShare * 100:0.#}% of its cylinders", // (it runs on that: design 6.4)
     };
 
     /// <summary>What the pieces add up to, then what is wrong: "V8 320 kW, thirsty - no fuel: link a fuel tank".</summary>
