@@ -105,7 +105,7 @@ public sealed class ExtrusionParts : IPartGenerator
         if (lamp is not null)
             p.Boxes.Add(lamp);
         if (orders)
-            panel["touch"] = OrderButtons();
+            panel["touch"] = OrderButtons(recipe); // (an Extruder: Recipe among them, the section picker: Program.MachineRecipePicker)
         else if (recipe) // (a Fan or Airframe Former: what it makes, from the recipe picker: Program.MachineRecipePicker)
             panel["touch"] = Py.L(Kw(("action", "machine.recipe"), ("at", Py.L(0.72, 0.02, 0.98, 0.24)), ("label", "Recipe")));
         var config = p.D.Get("config") is List<object?> cfg ? new List<object?>(cfg) : [];
@@ -171,7 +171,7 @@ public sealed class ExtrusionParts : IPartGenerator
                 ("bulk", Kw(("material", "any"), ("capacity", 400), ("min", Py.L(-0.455, 0.855, -0.705)), ("max", Py.L(0.455, 0.995, -0.055)))),
                 ("extrude", Kw(("speed", 0.2), ("die", Py.L(0.5, 0.5)), ("at", Py.L(0, 0.5, 0.75)), ("maxSection", Py.L(6, 6)), ("maxLength", 48), ("pushForce", 6000))))),
             ("config", ExtruderConfig(0.5, 6, 48)));
-        WithScreen(p, orders: true, faces: ["-x"], width: 0.84);
+        WithScreen(p, orders: true, faces: ["-x"], width: 0.84, recipe: true);
         MachineLook.Skirt(p, -0.5, 0.5, -0.75, 0.75, 0, 0.14, 0.012);
         // The hopper, at the back: taller than the body, a white rim (the in side) and an arrow down each open side.
         p.Add(L([0.455, 1.0, -0.755], [0.505, 1.24, -0.045], MachineLook.Base));
@@ -268,7 +268,7 @@ public sealed class ExtrusionParts : IPartGenerator
                 ("bulk", BinOf(units, hd)),
                 ("extrude", Kw(("speed", speed), ("die", Py.L(die, die)), ("at", Py.L(cx, cy, hd.Z1)), ("maxSection", Py.L(die, die)), ("maxLength", length), ("pushForce", push))))),
             ("config", ExtruderConfig(die, die, length)));
-        return WithScreen(p, orders: true);
+        return WithScreen(p, orders: true, recipe: true);
     }
 
     private static List<object?> FanConfig(object across, object start) => Py.L(

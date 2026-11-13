@@ -69,6 +69,8 @@ public sealed partial class Ui
     /// </summary>
     public static bool RecipePickable(ConstructPartDef d)
     {
+        if (ExtruderPicks.Pickable(d))
+            return true; // (an Extruder: its section tiles and sizes, UiRecipePickerExtruder.cs)
         var slot = d.CfgSlot[(int)ProductionLines.RecipeKey(d)];
         if (slot < 0 || d.Config[slot].Options.Length == 0)
             return false;
@@ -127,6 +129,7 @@ public sealed partial class Ui
         }
         _rcp = set;
         _rcpDef = d;
+        _exOpen = false;
         _rcpFilterVersion++;
         _rcpFocusSearch = set.Tiles.Length > 12;
         RecipePickerOpen = true;
@@ -136,6 +139,7 @@ public sealed partial class Ui
     {
         RecipePickerOpen = false;
         _rcp = null;
+        _exOpen = false;
     }
 
     /// <summary>The picker belongs to the configure panel (it closes with it).</summary>
@@ -309,6 +313,8 @@ public sealed partial class Ui
     /// </summary>
     public bool DrawRecipePicker(Game game, int current, double now)
     {
+        if (RecipePickerOpen && _exOpen)
+            return DrawExtruderPicker(game);
         if (!RecipePickerOpen || _rcp is not { } set || _rcpDef is not { } d)
             return false;
         SandboxTiles.WantFew(); // (the pictures, made over a few frames if they aren't yet)
@@ -472,22 +478,8 @@ public sealed partial class Ui
         var pic = Picture(dl, t.Slot, t.Swatch, i0, new float2(i0.X + icon, i0.Y + icon), tint, t.Slot < 0 ? t.Name : null);
         var clip = new float4(at.X + 4 * _scale, at.Y, p1.X - 4 * _scale, p1.Y);
         var y = at.Y + icon + 6 * _scale;
-        // A long name ("Helicopter rotor", "Swept wing, left") is shrunk to the tile's width instead of running out of its box:
-        // measured once at 16 and scaled by what it needs, down to 11.
+        TileName(dl, t.Name, at.X, w, y, usable ? SbText : SbDim, clip);
         ImGui.PushFont(default, 16);
-        var nameW = ImGui.CalcTextSize(t.Name).X;
-        var inner = w - 14 * _scale;
-        var nameSize = nameW > inner && nameW > 0 ? MathF.Max(11f, MathF.Floor(16f * inner / nameW)) : 16f;
-        if (nameSize < 16f)
-        {
-            ImGui.PopFont();
-            ImGui.PushFont(default, nameSize);
-            DlText(dl, new float2(at.X + 7 * _scale, y + (16f - nameSize) * 0.5f * _scale), usable ? SbText : SbDim, t.Name, clip);
-            ImGui.PopFont();
-            ImGui.PushFont(default, 16);
-        }
-        else
-            DlText(dl, new float2(at.X + 7 * _scale, y), usable ? SbText : SbDim, t.Name, clip);
         if (t.Out.Length > 0)
             DlText(dl, new float2(p1.X - 7 * _scale - ImGui.CalcTextSize(t.Out).X, at.Y + 6 * _scale), usable ? SbText : SbDim, t.Out);
         ImGui.PopFont();
@@ -518,6 +510,28 @@ public sealed partial class Ui
         else if (hot && usable)
             dl.AddRect(at, p1, SbHotOutline, r, ImDrawFlags.None, 1.5f * _scale);
         return pic;
+    }
+
+    /// <summary>
+    /// A tile's name at (<paramref name="x"/>, <paramref name="y"/>) in a tile <paramref name="w"/> wide. A long name ("Helicopter rotor",
+    /// "Swept wing, left", "Symmetric foil") is shrunk to the tile's width instead of running out of its box: measured once at 16 and scaled
+    /// by what it needs, down to 11. The recipe tiles and the Extruder's section tiles share it.
+    /// </summary>
+    private void TileName(ImDrawListPtr dl, string name, float x, float w, float y, ImColor8 col, float4 clip)
+    {
+        ImGui.PushFont(default, 16);
+        var nameW = ImGui.CalcTextSize(name).X;
+        var inner = w - 14 * _scale;
+        var nameSize = nameW > inner && nameW > 0 ? MathF.Max(11f, MathF.Floor(16f * inner / nameW)) : 16f;
+        if (nameSize < 16f)
+        {
+            ImGui.PopFont();
+            ImGui.PushFont(default, nameSize);
+            DlText(dl, new float2(x + 7 * _scale, y + (16f - nameSize) * 0.5f * _scale), col, name, clip);
+        }
+        else
+            DlText(dl, new float2(x + 7 * _scale, y), col, name, clip);
+        ImGui.PopFont();
     }
 
     /// <summary>

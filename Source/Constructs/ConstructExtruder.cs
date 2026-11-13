@@ -896,6 +896,8 @@ public static class ConstructExtruder
                 sb.Append($" - {SandboxKeys.Use}: tip in {Math.Min(inv.Materials[tip], d.BulkCapacity - st.Amount)} {names.NameOf(tip)}");
             else if (st.Amount > 0)
                 sb.Append($" - {SandboxKeys.Use}: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {names.NameOf(st.Material)}");
+            if (ExtruderPicks.Pickable(d) && ConstructEdits.HasRecipeButton(d))
+                sb.Append(" - Recipe on its screen: section and size");
         }
         return sb.ToString();
     }
