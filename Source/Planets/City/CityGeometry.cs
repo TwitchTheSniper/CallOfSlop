@@ -600,7 +600,7 @@ public sealed class CityGeometry
                 {
                     var sp = centre + new Vector2(t * 2.1f + d.Range(-0.3f, 0.3f), sz * (half.Y - 1.1f));
                     var h = d.Range(0.7f, 1.2f);
-                    Prism(cb, sp, RoadLift + Kerb + 0.45f, RoadLift + Kerb + 0.45f + h, d.Range(0.6f, 0.85f), 0.35f, 7, CityPlanColours.Rgb(d.Pick(2) == 0 ? 0x3d5a2e : 0x5a6b30), Pack(CityStyle.Leaves, d.Next(), 0, 0), false, turn: d.Range(0, 1));
+                    Prism(cb, sp, RoadLift + Kerb + 0.45f, RoadLift + Kerb + 0.45f + h, d.Range(0.6f, 0.85f), 0.35f, 7, CityPlanColours.Rgb(d.Pick(2) == 0 ? 0x3d5a2eu : 0x5a6b30u), Pack(CityStyle.Leaves, d.Next(), 0, 0), false, turn: d.Range(0, 1));
                 }
         }
         // Round the fountain: benches facing the water, and a ring of trees further out.
