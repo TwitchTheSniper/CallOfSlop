@@ -94,12 +94,98 @@ public static partial class Program
                 }
                 return;
             }
+            case "cost" when g.IsServer: // "logi cost [N]": the planner's 2 Hz step (terminals, chains, stock targets) run N times and the network board's list filled N times: time and bytes each (phase 5)
+            {
+                var n = int.TryParse(rest, out var cn) && cn > 0 ? cn : 200;
+                var net = (0, 0, 0);
+                for (var i = 0; i < c.PartCount; i++)
+                    if (c.DefOf(i).IsCraftTerminal)
+                    {
+                        var cnet = ConstructCrafting.NetOf(w, c, i);
+                        net = (Math.Max(net.Item1, cnet.MachineN), Math.Max(net.Item2, cnet.StoreN), net.Item3 + 1);
+                    }
+                ConstructCrafting.Step(w); // (warm: a first step may make its lines)
+                long worstTicks = 0;
+                var a0 = GC.GetAllocatedBytesForCurrentThread();
+                var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                for (var k = 0; k < n; k++)
+                {
+                    w.CraftTicks = ConstructCrafting.StepEvery - 1;
+                    var s0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                    ConstructCrafting.Step(w);
+                    worstTicks = Math.Max(worstTicks, System.Diagnostics.Stopwatch.GetTimestamp() - s0);
+                }
+                var us = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds * 1000 / n;
+                var bytes = (GC.GetAllocatedBytesForCurrentThread() - a0) / n;
+                WsSay($"[logi] cost: planner step {us:0.0} us mean, {worstTicks * 1e6 / System.Diagnostics.Stopwatch.Frequency:0.0} us worst, {bytes} bytes a step over {n}; {w.ChainCount} links, {w.CraftOpen.Count} bodies with orders, {w.StockTargetN} stock targets; {net.Item3} terminals, biggest network {net.Item1} machines {net.Item2} stores; {c.ConveyedCount} riders");
+                var (bc, bp) = WsFind(g, "Conveyor Router");
+                if (bc != null)
+                {
+                    var card = new PanelCard { Rows = 16, TextRows = 16, Cols = 64 };
+                    ProductionLines.FillMonitor(w, bc, bp, card);
+                    a0 = GC.GetAllocatedBytesForCurrentThread();
+                    t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                    for (var k = 0; k < n; k++)
+                    {
+                        card.Clear();
+                        ProductionLines.FillMonitor(w, bc, bp, card);
+                    }
+                    WsSay($"[logi] cost: board list fill (16 rows) {System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds * 1000 / n:0.0} us, {(GC.GetAllocatedBytesForCurrentThread() - a0) / n} bytes a fill");
+                }
+                return;
+            }
+            case "cfg": // "logi cfg PART|key|value": a setting through this peer's own configure message, as the configure tool sends it (stand in reach first)
+            {
+                var bits = rest.Split('|');
+                var (fc, part) = bits.Length == 3 ? LogiFind(g, bits[0]) : (null, -1);
+                var key = CfgKey.None;
+                for (var k = CfgKey.None + 1; k < CfgKey.COUNT; k++)
+                    if (ConstructConfig.KeyName(k) == (bits.Length == 3 ? bits[1] : ""))
+                        key = k;
+                if (fc == null || key == CfgKey.None || fc.DefOf(part).CfgSlot[(int)key] < 0 || !float.TryParse(bits[2], System.Globalization.CultureInfo.InvariantCulture, out var v))
+                {
+                    WsFail($"logi cfg: \"{rest}\" (PART|key|value, a key the part has)");
+                    return;
+                }
+                g.SandboxConfigure(fc.Id, [(ushort)part], [(byte)fc.DefOf(part).CfgSlot[(int)key]], [v]);
+                WsSay($"[logi] cfg sent {fc.DefOf(part).Name}#{part} {bits[1]} = {v}");
+                return;
+            }
+            case "get": // "logi get PART|key": a setting as this peer holds it
+            {
+                var bits = rest.Split('|');
+                var (fc, part) = bits.Length == 2 ? LogiFind(g, bits[0]) : (null, -1);
+                for (var k = CfgKey.None + 1; k < CfgKey.COUNT && fc != null; k++)
+                    if (ConstructConfig.KeyName(k) == bits[1])
+                        WsSay($"[logi] get {fc.DefOf(part).Name}#{part} {bits[1]} = {ConstructConfig.Get(fc.Parts[part], fc.DefOf(part), k, -1)}");
+                return;
+            }
+            case "send": // "logi send PART@N NAME [N]": an order through this peer's own message, as the terminal's Order button sends it (stand in reach first: the host's "bring")
+            {
+                var sp = rest.IndexOf(' ');
+                var (tc, t) = sp > 0 ? LogiFind(g, rest[..sp]) : (null, -1);
+                var tail = sp > 0 ? rest[(sp + 1)..] : "";
+                var cut = tail.LastIndexOf(' ');
+                var n = cut > 0 && ushort.TryParse(tail[(cut + 1)..], out var cn) ? cn : (ushort)1;
+                var name = cut > 0 && tail[(cut + 1)..] == n.ToString() ? tail[..cut] : tail;
+                if (tc == null || ConstructParts.Find(name) is not { } pd)
+                {
+                    WsFail($"logi send: no terminal or no part in \"{rest}\"");
+                    return;
+                }
+                g.SandboxCraftOrder(tc.Id, t, ConstructStation.OrderFor(pd, n));
+                WsSay($"[logi] send {n} {name} at {tc.DefOf(t).Name}#{t}");
+                return;
+            }
             case "order" when g.IsServer:
             {
                 var atStation = rest.StartsWith("station ", StringComparison.Ordinal); // ("logi order station NAME [N]": at the first Building Station, a chain root too)
                 if (atStation)
                     rest = rest[8..];
-                var (tc, t) = LogiFind(g, atStation ? "Building Station" : "Crafting Terminal");
+                var spec = atStation ? "Building Station" : "Crafting Terminal";
+                if (rest.StartsWith('@') && rest.IndexOf(' ') is var sp and > 1) // ("logi order @N NAME [N]": at part N, a second terminal)
+                    (spec, rest) = ("x" + rest[..sp], rest[(sp + 1)..]);
+                var (tc, t) = LogiFind(g, spec);
                 var cut = rest.LastIndexOf(' ');
                 var n = cut > 0 && ushort.TryParse(rest[(cut + 1)..], out var cn) ? cn : (ushort)1;
                 var name = cut > 0 && n > 0 && rest[(cut + 1)..] == n.ToString() ? rest[..cut] : rest;

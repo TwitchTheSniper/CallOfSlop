@@ -496,7 +496,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   flags); a terminal store's pull goes u8 material then a material id (u16) or a part by PartRef (docs/sandbox/design/inventory-run-time-parts.md).
     // 302: Laser Cutter phase 4: CraftNamed carries a cut key ("Cut Panel (...)", "Cut Plate (...)") to a Crafting Terminal or a Panel Designer, and
     //   to a Laser Cutter itself (its Design button's pick, queued there); the cutters' screens gain a Design button (touch regions move).
-    public const ushort ProtocolVersion = 302;
+    // 303: Smart logistics phase 5: CfgKey.FormerStrips (at the end), a new setting slot on Panel Formers (settings ride CBody by slot): a panel too wide
+    //   for the network's Extruders is formed of strips only when the player turns it on.
+    public const ushort ProtocolVersion = 303;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
