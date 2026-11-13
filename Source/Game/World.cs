@@ -670,6 +670,7 @@ public sealed class Player
     public PlayerLook Look; // the look picked on the APPEARANCE screen (Source/Cosmetics/Appearance.cs; bots: Auto); in the roster
     public byte Uniform; // the uniform the server dresses them in (Source/Cosmetics/Uniforms.cs; 0 none, bots too: staff by name); in the roster
     public ulong SteamId; // the Steam ID they reported (0: not on Steam); cosmetic (Steam name and avatar in the menus), never trusted (GameSteam.cs)
+    public bool SteamVerified; // host: SteamId came from the Steam connection itself or passed Steam's ticket check (Game.TrustedSteamId); only then does it find a saved world's record
 
     // Throwables (server-authoritative counts, refilled on spawn)
     public ThrowableKind Grenade, Equipment, WantGrenade, WantEquipment;

@@ -169,7 +169,7 @@ public sealed partial class Game
             }
             var open = new TravelOpen { World = ws.Meta.Name, Map = to.Name, Ship = shipFile, There = there };
             foreach (var o in all)
-                open.Others.Add((o.Id, WorldKeyOf(o), o.SteamId));
+                open.Others.Add((o.Id, WorldKeyOf(o), TrustedSteamId(o)));
             place = OpenPlace(open, out var why);
             if (place == null)
             {
@@ -187,7 +187,7 @@ public sealed partial class Game
             var w = new SaveWriter();
             w.Str(to.Name).U8((byte)all.Count);
             foreach (var o in all)
-                w.U8(o.Id).U64(WorldKeyOf(o)).U64(o.SteamId).Str(o.Name);
+                w.U8(o.Id).U64(WorldKeyOf(o)).U64(TrustedSteamId(o)).Str(o.Name);
             w.I32(body).F64(rel.X).F64(rel.Y).F64(rel.Z).F64(vel.X).F64(vel.Y).F64(vel.Z);
             w.I32(shipFile.Length).Bytes(shipFile);
             place._meetIn.Add(w.Span.ToArray());
@@ -408,7 +408,7 @@ public sealed partial class Game
         Constructs.AfterLoad(Constructs.NextTagNow);
         if (skipped > 0)
             Constructs.RelinkAfterSkips();
-        var theirs = riders.Select(p => WorldTravellerIn(ws, body, WorldKeyOf(p), p.SteamId, ref lost)).ToList();
+        var theirs = riders.Select(p => WorldTravellerIn(ws, body, WorldKeyOf(p), TrustedSteamId(p), ref lost)).ToList();
         var ship = theirs.FirstOrDefault(t => t != null && idAs.ContainsKey(t.SpaceSeatBody)) is { } first ? Constructs.Get(idAs[first.SpaceSeatBody]) : null;
         ship ??= idAs.Values.Select(Constructs.Get).FirstOrDefault(c => c is { CarriedBy: 0 });
         if (ship != null)

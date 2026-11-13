@@ -37,7 +37,7 @@ public sealed partial class Game
     private ulong WorldKeyOf(Player p) => p.Id == LocalId ? LocalWorldKey : _worldKeys[p.Id];
 
     /// <summary>Do we know who this is (a person whose Hello has come)? Until then they have no record to find or make.</summary>
-    private bool WorldKnown(Player p) => p.Bot == null && (p.Id == LocalId || _worldKeys[p.Id] != 0 || p.SteamId != 0);
+    private bool WorldKnown(Player p) => p.Bot == null && (p.Id == LocalId || _worldKeys[p.Id] != 0 || TrustedSteamId(p) != 0);
 
     // ---- Choosing a world -------------------------------------------------------------------------------------------
 
@@ -278,7 +278,7 @@ public sealed partial class Game
     private void WorldCatch(Player p, WorldPlayer rec)
     {
         rec.Name = p.Name;
-        rec.SteamId = p.SteamId != 0 ? p.SteamId : rec.SteamId;
+        rec.SteamId = TrustedSteamId(p) is not 0 and var steam ? steam : rec.SteamId;
         rec.HasPlace = p.Alive && !InLobby;
         rec.Pos = p.Position;
         var riding = p.Alive && p.Sim.RideUp != default;
@@ -324,7 +324,7 @@ public sealed partial class Game
         foreach (var r in ws.Players)
             if (r.Online == p.Id)
                 return r;
-        var rec = ws.Find(WorldKeyOf(p), p.SteamId) ?? ws.Add(WorldKeyOf(p), p.SteamId, p.Name);
+        var rec = ws.Find(WorldKeyOf(p), TrustedSteamId(p)) ?? ws.Add(WorldKeyOf(p), TrustedSteamId(p), p.Name);
         rec.Online = p.Id;
         return rec;
     }
