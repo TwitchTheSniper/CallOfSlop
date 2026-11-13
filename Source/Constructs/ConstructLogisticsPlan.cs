@@ -689,7 +689,7 @@ public static class ConstructLogisticsPlan
     private static bool Mark(OrderList q, in ChainEntry e)
     {
         for (var k = 0; k < q.Count; k++)
-            if (q.Items[k].Part == e.Kind && (q.Items[k].Chain == 0 || q.Items[k].Chain == e.Id))
+            if ((q.Items[k].Chain == 0 || q.Items[k].Chain == e.Id) && (q.Items[k].Part == e.Kind || q.Items[k].Part == ConstructParts.None && ConstructCrafting.DefOf(q.Items[k])?.Id == e.Kind)) // (a press's blank by its key, a pressed part by its name: Press phase 4)
             {
                 q.Items[k].Chain = e.Id;
                 return true;
