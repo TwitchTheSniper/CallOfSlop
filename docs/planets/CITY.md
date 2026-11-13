@@ -147,6 +147,9 @@ Karl, 2026-11-13: make Slopolis destructible, the planet's ground too. Phase 1 i
   kerbs, courts, the apron) out over a dug texel, so the dug ground's own blocks show. The dig log is what saves and
   reaches a joiner, so a crater in the street is there for everyone and after a load; nothing new on the wire or in a
   save.
+- The carriageways are drawn 15 cm under the ground people and cars stand on (the kerb's step is gone underfoot);
+  a world saved on Slopolis before this finds the ground 18 cm higher. Grading and smoothing with the ground drill
+  don't cut the paving (only craters and scoops do).
 - Not yet (phase 2): buildings, lamps, the el and the furniture take no damage; a lamp post over a crater stands in the
   air; ground put back by a fill doesn't bring the paving back until the world is loaded again.
 

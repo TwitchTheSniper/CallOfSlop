@@ -671,10 +671,26 @@ public sealed unsafe partial class CityRenderer
                 continue;
             var rel = op.At - plan.PlanetCenter;
             var dist = rel.Length();
-            var a = dist - top; // (the ball's centre over the ground's top: it cuts the top within sqrt(r^2 - a^2) of it)
-            if (MathF.Abs(a) >= op.Radius)
+            // Where the op cuts the ground's top, as PlanetEdits.Ball digs a column: a scoop is a ball; a crater is squashed to
+            // CraterDepth below its centre and throws out everything over it, so a centre under the top cuts its whole
+            // radius and one over the top only where the squashed ball still reaches down to it.
+            var a = dist - top;
+            var r = op.Radius;
+            float f;
+            if (op.Kind == DigKind.Crater)
+            {
+                if (a < 0)
+                    f = -a < r ? r : 0;
+                else
+                {
+                    var k = a / TerrainEdits.CraterDepth;
+                    f = k < r ? MathF.Sqrt(r * r - k * k) : 0;
+                }
+            }
+            else
+                f = MathF.Abs(a) < r ? MathF.Sqrt(r * r - a * a) : 0;
+            if (f <= 0)
                 continue;
-            var f = MathF.Sqrt(op.Radius * op.Radius - a * a);
             var dir = rel / dist;
             var t = new Vector2(Vector3.Dot(dir, plan.East), Vector3.Dot(dir, plan.North));
             var tl = t.Length();
