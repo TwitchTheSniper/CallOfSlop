@@ -89,7 +89,7 @@ public sealed partial class Ui
     /// <summary>The crew bus scene's words: a line at the bottom while it pulls away, then "Some time later..." in the black.</summary>
     private void DrawQuarryRide(Game game)
     {
-        var t = (game.MoverRenderTick - game.QuarryRideFrom) / World.TickRate;
+        var t = (game.MoverRenderTick - game.RideFrom) / World.TickRate;
         var vp = ImGui.GetMainViewport();
         var dl = ImGui.GetForegroundDrawList();
         float2 org = vp.WorkPos, area = vp.WorkSize;
@@ -100,7 +100,7 @@ public sealed partial class Ui
         var bar = area.Y * 0.1f * (float)Math.Clamp(t / 0.5, 0, 1);
         ImDrawListExtensions.AddRectFilled(dl, in org, new float2(org.X + area.X, org.Y + bar), Hud.Colour(System.Numerics.Vector3.Zero, 1f));
         ImDrawListExtensions.AddRectFilled(dl, new float2(org.X, org.Y + area.Y - bar), new float2(org.X + area.X, org.Y + area.Y), Hud.Colour(System.Numerics.Vector3.Zero, 1f));
-        var line = t > Game.QuarryRideAway && t < Game.QuarryRideAway + Game.QuarryRideBlack + 0.6 ? "Some time later..." : "Company-approved transport. Do not touch anything.";
+        var line = t > Game.QuarryRideAway && t < Game.QuarryRideAway + Game.QuarryRideBlack + 0.6 ? "Some time later..." : game.RideCaption;
         SubtitleLine(dl, line, org.Y + area.Y * (black > 0.5f ? 0.5f : 0.8f), 22f);
     }
 

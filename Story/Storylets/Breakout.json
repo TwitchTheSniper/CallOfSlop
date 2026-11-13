@@ -10,7 +10,9 @@
   "qualities": [
     { "name": "Crew", "kind": "progress", "max": 6, "about": "how far the break-out's convicts trust a player (0 strangers, 5 in on the night)" },
     { "name": "Parcel", "kind": "progress", "max": 1, "about": "carrying Dot's parcel to Wren" },
-    { "name": "Grassed", "kind": "menace", "max": 1, "about": "told the Sergeant about the break-out" }
+    { "name": "Grassed", "kind": "menace", "max": 1, "about": "told the Sergeant about the break-out" },
+    { "name": "Escaped", "kind": "progress", "max": 1, "about": "a player who left the colony in the hauler (Game/GameBreakout.cs sets it)" },
+    { "name": "Fled", "kind": "progress", "max": 1, "about": "a convict who left the colony with them (Game/GameBreakout.cs sets it)" }
   ],
   "storylets": [
     {
@@ -116,7 +118,7 @@
     },
     {
       "id": "the-night", "title": "The night", "bucket": "A", "priority": 9, "final": true,
-      "about": "word comes: tonight, at four, the crew takes the Ministry transport to the spaceport (the escape itself is the next slice)",
+      "about": "word comes: the crew takes the Ministry's ration hauler to the spaceport (Opening/Breakout.json)",
       "needs": "?me Course 'Escapee', ?me Crew >= 5",
       "cast": "?d is Person, ?d == 'Dot Pruett'",
       "beats": [
@@ -124,9 +126,9 @@
         { "by": "?d", "to": "?me", "after": "4s", "say": [ "I drive. You ride. Nobody waves." ] }
       ],
       "ends": [
-        { "id": "word", "after": "4s", "learn": "The Night", "from": "?d",
-          "world": [ "The crew meets at the motor pool at four in the morning, story clock.",
-                     "Dot drives the Ministry transport out of the gate with the crew aboard; the alarm goes behind them.",
+        { "id": "word", "after": "4s", "learn": "The Night", "from": "?d", "hook": "breakout",
+          "world": [ "The crew walks to the ration hauler outside the gate and waits; the player boards by walking up to it.",
+                     "Dot drives it out of the gate with the crew aboard; the colony's siren goes behind them.",
                      "The ride ends at the Ministry Spaceport, where the guards are waiting (the next beat)." ] }
       ]
     },

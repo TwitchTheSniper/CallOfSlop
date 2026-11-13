@@ -9,7 +9,7 @@ them can board.
 Built in slices, one PR each:
 
 1. **The crew** (this file's first part): four convicts in the gangs, talking, trust, the question.
-2. **The night**: the crew takes the Ministry transport to the spaceport (not built yet).
+2. **The night**: the crew takes the Ministry's ration hauler to the spaceport ("The night" below).
 3. **The spaceport**: the guards, the deaths and their last words into the Logbook (not built yet).
 4. **The ship**: a stand-in ship the survivors board, off the planet (not built yet).
 
@@ -43,7 +43,27 @@ and so does saying hello now and then. Their own lines are `Story/Lines/Convicts
 5. *A seat and a stick* (Ambrose 20): he can fly them off (lead "A Pilot"): Crew 4.
 6. *Mossop's question*: in (Course Escapee, Crew 5) or out (asked again in 45 minutes). A trustee can say yes too, and
    leaves the Ministry road for it.
-7. *The night*: Dot names the time and the transport (lead "The Night"). Final until slice 2 hooks the escape to it.
+7. *The night*: Dot names the transport (lead "The Night") and its hook, `breakout`, starts the night below.
 
 Grassing: once Crew is 1, Sergeant Bellweather offers "Some of the inmates are planning something." Telling him sets
 `Grassed` (Suspicion -3, his liking up, Mossop's and Dot's grudges), and *Searched* closes the road (Crew 0).
+
+## The night
+
+`Game/GameBreakout.cs`, data `Story/Opening/Breakout.json`.
+
+- **The muster.** The crew who are alive walk to the Ministry's ration hauler (a STAND-IN hover hauler, Source/StandIns)
+  waiting outside the colony's main gate (`motorPool`, the colony's frame). The player gets a panel top left ("THE
+  BREAK-OUT") and the orange marker on the hauler. One hauler is shared by everyone mustering, and called again if it
+  tires of waiting (15 minutes).
+- **Away.** Walking up to it (6 m) is boarding: Dot says her line, the colony's siren wails behind them for 75 s (the
+  convicts kneel; no riot squad: that is the spaceport's job), and a memo goes round. Anyone else standing at the hauler
+  rides too. The ride is the crew bus's scene (Program.Quarry.cs: the camera follows the hauler away, black, and watches
+  the other come in), with the file's `caption`.
+- **The spaceport.** Everyone who rode is set down beside the second hauler at `landing` (the spaceport's frame, in
+  front of the tower), the crew round them. The story records the player's `Abscond` (the Ministry's deed "Absconded",
+  -30) and their `Escaped`, and each convict who came gets `Fled`: their bodies keep to the landing from then on. The
+  marker moves to the Ministry Courier on the first pad.
+- **Saves.** Nothing new is saved: a player with the lead who hasn't `Escaped` is back at the muster when the world
+  loads, one who has is at the spaceport, and a convict who `Fled` is put back at the landing.
+- **Wire.** `Msg.Breakout` (protocol 287) to each player: their stage, the marker, the ride's tick and the two haulers.

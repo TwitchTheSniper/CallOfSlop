@@ -104,6 +104,7 @@ public sealed partial class Game
         DepotReset(); // (and the Remote Works and the Orbital Depot: GameDepot.cs)
         ObjectivesReset(); // (and the "what next" goals: GameObjectives.cs)
         QuarryReset(); // (and the Ministry Quarry: GameQuarry.cs)
+        BreakoutReset(); // (and the break-out: GameBreakout.cs)
         FragmentsReset(); // (and the data centres: GameStoryFragments.cs)
         LoreReset(); // (and the things to look at: GameStoryLore.cs)
         OpeningLocal = OpeningStage.None;

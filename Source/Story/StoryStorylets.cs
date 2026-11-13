@@ -92,7 +92,7 @@ public sealed class StoryletRules
 {
     public const string Format = "call-of-slop-storylets/1";
     public const int MaxStorylets = 500, MaxEnds = 8, MaxNeeds = 4;
-    public static readonly string[] Hooks = ["lockdown", "depot"]; // what the game knows how to start (Game/GameStoryStorylets.cs)
+    public static readonly string[] Hooks = ["lockdown", "depot", "breakout"]; // what the game knows how to start (Game/GameStoryStorylets.cs)
 
     public StoryletDef[] Storylets = [];
     public StoryletQuality[] Qualities = [];
