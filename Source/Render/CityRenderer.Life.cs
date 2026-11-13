@@ -901,6 +901,8 @@ public sealed unsafe partial class CityRenderer
         Box(new Vector3(-0.84f, 0.82f, -2.1f), new Vector3(0.84f, 0.92f, -1.4f), 1);      // the boot's
         Box(new Vector3(-0.76f, 0.82f, -1.35f), new Vector3(0.76f, 1.3f, 0.9f), 4);       // the glasshouse
         Box(new Vector3(-0.72f, 1.3f, -1.25f), new Vector3(0.72f, 1.38f, 0.75f), 1);      // the roof
+        Box(new Vector3(-0.9f, 0.26f, 2.1f), new Vector3(0.9f, 0.5f, 2.28f), 4);          // the bumpers, dark
+        Box(new Vector3(-0.9f, 0.26f, -2.28f), new Vector3(0.9f, 0.5f, -2.1f), 4);
         foreach (var sx in new[] { -0.86f, 0.86f })
             foreach (var sz in new[] { -1.35f, 1.35f })
                 Box(new Vector3(sx - 0.13f, 0f, sz - 0.33f), new Vector3(sx + 0.13f, 0.62f, sz + 0.33f), 4);
