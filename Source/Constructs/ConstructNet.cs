@@ -1350,6 +1350,25 @@ public static partial class ConstructNet
     /// <summary>A body that needs no pose this packet: asleep or anchored without joints, its signals as last sent, its final pose sent enough times.</summary>
     private static bool Still(Construct c) => (c.Asleep || c.Anchored && c.JointCount == 0) && !ConstructPhysics.TreadMoving(c) && c.NudgeBy == 255; // (cs03: an anchored base turning its wheels sends its rpm: clients turn them)
 
+    /// <summary>Pose ticks at least between two poses a still body sends only for its fuel or charge (2 Hz).</summary>
+    public const uint StateEvery = 10;
+
+    private static byte ChargeByte(Construct c) => (byte)MathF.Round(ConstructPower.Share(c) * 255);
+
+    /// <summary>
+    /// A still body's fuel pool or charge moved since its last pose (a station or a pipe draining a parked tank, a battery
+    /// charging): both ride only the pose, so it sends one, at most every <see cref="StateEvery"/> pose ticks.
+    /// </summary>
+    private static bool StateDue(Construct c, uint poseTick) =>
+        poseTick - c.StateSentAt >= StateEvery && (MathF.Abs(c.Fuel - c.FuelSent) >= 0.01f || c.Fuel != c.FuelSent && c.Fuel == 0 || ChargeByte(c) != c.ChargeSent);
+
+    private static void StateSent(Construct c, uint poseTick)
+    {
+        c.FuelSent = c.Fuel;
+        c.ChargeSent = ChargeByte(c);
+        c.StateSentAt = poseTick;
+    }
+
     /// <summary>
     /// Server: the poses of the bodies that move, plus a few sleeping ones in turn. Returns false when there is nothing
     /// to send. More moving bodies than one packet holds take turns (<see cref="ConstructWorld.PoseCursor"/>: the next
@@ -1372,6 +1391,7 @@ public static partial class ConstructNet
             if (Still(bodies[i]))
                 sleeping++;
         var moveBudget = budget - Math.Min(sleeping, SleepingPerPacket) * (PoseBytes + 2); // (room kept for the sleeping ones' turn)
+        var pt = tick / PoseEvery;
         // cj01: what a player holds with the physics gun or drives goes in every packet, first (its holder and everyone
         // watching see it move most; taking turns with the rest made its poses arrive unevenly).
         for (var i = 0; i < count; i++)
@@ -1380,6 +1400,7 @@ public static partial class ConstructNet
             if (!Priority(c) || w.Length + PoseSize(c) > moveBudget || n == 255)
                 continue;
             WritePose(w, c);
+            StateSent(c, pt);
             n++;
             c.PoseRepeats = StillRepeats;
         }
@@ -1392,14 +1413,15 @@ public static partial class ConstructNet
             if (Priority(c))
                 continue; // (sent above)
             var still = Still(c);
-            if (still && c.SigHash == c.SigSent && c.PoseRepeats == 0)
-                continue; // still, and its signals and final pose as last sent
+            if (still && c.SigHash == c.SigSent && c.PoseRepeats == 0 && !StateDue(c, pt))
+                continue; // still, and its signals, fuel, charge and final pose as last sent
             if (w.Length + PoseSize(c) > moveBudget || n == 255)
             {
                 next = i; // (the next packet starts here)
                 break;
             }
             WritePose(w, c);
+            StateSent(c, pt);
             n++;
             c.PoseRepeats = still ? (byte)Math.Max(0, c.PoseRepeats - 1) : StillRepeats;
         }
@@ -1413,6 +1435,7 @@ public static partial class ConstructNet
             if (w.Length + PoseSize(c) > budget || n == 255)
                 break;
             WritePose(w, c);
+            StateSent(c, pt);
             n++;
         }
         w.PatchU8(countAt, (byte)n);
@@ -1451,6 +1474,10 @@ public static partial class ConstructNet
         foreach (var c in world.Bodies)
         {
             var still = Still(c) && c.SigHash == c.SigSent;
+            if (still && StateDue(c, poseTick))
+                still = false; // (its fuel or charge moved: hot for a while, so a far client hears it too)
+            if (!still)
+                StateSent(c, poseTick); // (this tick's poses carry them)
             if (!still)
                 c.PoseHot = poseTick + HotPoseTicks;
             if (!still || poseTick < c.PoseHot)

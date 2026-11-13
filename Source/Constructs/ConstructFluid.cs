@@ -32,6 +32,11 @@ public sealed partial class Construct
     public bool FluidStale; // server: a tank changed since the clients were last told
     public bool HasTankVolume; // a Tank Volume: what it holds weighs (ConstructFluid.Load)
     public bool FluidLoadChanged; // a Tank Volume's contents changed: the load step looks at it
+    // Server: the fuel pool and charge share (the pose's byte) as last sent in a pose, and the pose tick it went. Both ride
+    // only the pose, so a still body whose pool a pipe or a station drains sends one when they move (ConstructNet.StateDue).
+    public float FuelSent;
+    public byte ChargeSent;
+    public uint StateSentAt;
 
     /// <summary>The fuel its burners can reach: the pool, then the Fluid Tanks that feed them.</summary>
     public float FuelLeft => Fuel + FluidFuel;
