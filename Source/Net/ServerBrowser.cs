@@ -452,7 +452,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      technologies they know (the build menu's locks).
     // 273: Msg.Objective (the "what next" goal line, GameObjectives.cs) at the end of Msg (269 on its branch, renumbered at the merge).
     // 274: CActKind.Celebrate (server -> one client: text title, name, line): the moment in the middle of the screen (GameCelebrate.cs).
-    public const ushort ProtocolVersion = 274;
+    // 275: smart logistics phase 3 (272 on its branch, renumbered at the merge): the Logistics settings (routerSpill, routerHold, storeKeep, storePriority, storeTakes, feedPriority) are new
+    //      CfgKeys and new setting slots on Routers, Piece Racks and Crafting Terminals (settings ride CBody by slot).
+    public const ushort ProtocolVersion = 275;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

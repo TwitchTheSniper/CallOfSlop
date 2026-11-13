@@ -201,6 +201,12 @@ public enum CfgKey : byte
     BayWidth, // Building Station: its bay across, away from the station, m (ConstructStation.cs)
     BayDepth, // ...along the station
     BayHeight, // ...and up
+    RouterSpill, // Conveyor Router: where a piece with no order goes (Auto: storage by the map; Ahead, Left, Right: that way; StockTargets.cs)
+    RouterHold, // Conveyor Router: a piece with no way to its order waits here rather than going to storage
+    StoreKeep, // Piece Rack: keep this many of each kind it holds (0: off); the network makes what runs short (StockTargets.cs)
+    StorePriority, // Piece Rack: 1 to 5, which store a piece for storage goes to first
+    StoreTakes, // Piece Rack: what it takes as storage (anything, only what it holds now, nothing: orders and what it keeps only)
+    FeedPriority, // Crafting Terminal, Building Station: Low, Normal, High: its orders' class (ConstructLogisticsPlan: class, then age)
     COUNT,
 }
 
@@ -536,6 +542,7 @@ public static class ConstructConfig
         if (ConstructPanels.HasText(d) && list.Count < MaxSlots && !list.Exists(e => e.Id == CfgKey.TextSize))
             list.Add(new CConfigDef { Key = KeyName(CfgKey.TextSize), Id = CfgKey.TextSize, Type = CfgType.Number, Label = "Text size", Group = "Display", Unit = "%",
                 Min = ConstructPanels.MinTextSize, Max = ConstructPanels.MaxTextSize, Step = 25, Default = 100, Tooltip = "How big its screen's text is. Smaller shows more rows and longer lines." });
+        StockTargets.AddSettings(d, list); // (the Logistics group: after every other, so older settings keep their slots)
         Finish(d, list, file);
     }
 
@@ -806,6 +813,9 @@ public static class ConstructConfig
                 CfgKey.TextSize => ConstructPanels.HasText(d),
                 CfgKey.OrderCount => ProductionLines.IsConsole(d) || WorkOrders.TakesOrders(d),
                 CfgKey.BayWidth or CfgKey.BayDepth or CfgKey.BayHeight => d.IsBuildStation,
+                CfgKey.RouterSpill or CfgKey.RouterHold => d.IsRouter && d.IsConveyorJunction,
+                CfgKey.StoreKeep or CfgKey.StorePriority or CfgKey.StoreTakes => StockTargets.IsStore(d),
+                CfgKey.FeedPriority => d.IsCraftTerminal,
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),
