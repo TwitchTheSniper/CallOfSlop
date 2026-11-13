@@ -712,8 +712,8 @@ public static unsafe partial class Program
                     }
                     WsSay($"design {arg}: after {_wsDesignTries} waits");
                     _wsDesignTries = 0;
-                    if (arg.StartsWith("bring ", StringComparison.Ordinal))
-                        _wsQueue.EnqueueFront("bring Panel Designer");
+                    if (arg.StartsWith("bring ", StringComparison.Ordinal) && WsFind(g, "Panel Designer").Item1 != null)
+                        _wsQueue.EnqueueFront("bring Panel Designer"); // (no desk: they only had to be here)
                     _wsWait = 20;
                     return;
                 }
