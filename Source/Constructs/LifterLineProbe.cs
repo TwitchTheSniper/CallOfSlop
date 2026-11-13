@@ -56,13 +56,15 @@ public static partial class LifterProbe
 
     private static Vector3 Half(ConstructPartDef d) => (d.BoundsMax - d.BoundsMin) * 0.5f;
 
-    /// <summary>Host: a piece of a kind put in a machine's Piece out as if it had made it (the machine is the line's Assembler, or a body id).</summary>
+    /// <summary>Host: a piece of a kind dropped loose at a machine's Piece out, as a machine with no conveyor drops what it makes (the line's Assembler).</summary>
     public static string Hold(ConstructWorld world, ushort body, string piece)
     {
         if (world.Get(body) is not { } b || ConstructParts.Find(piece) is not { } d)
             return $"hold: no body {body} or no part \"{piece}\"";
-        var r = ConstructLifters.HoldOut(world, b, 0, d);
-        return $"hold: {d.Name} at body {b.Id}'s out: {(r == 1 ? "held for a lifter" : r == 2 ? "its out is full" : "no lifter serves its out")}";
+        if (!ConstructLifters.PointAt(b, new LiftPoint { Body = b.Id, Part = 0, Kind = LiftPointKind.Out }, out var at))
+            return "hold: no out";
+        var loose = ConstructEdits.DropLoose(world, d, at + new Vector3(0, (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.1f, 0), Quaternion.Identity);
+        return $"hold: {d.Name} dropped at body {b.Id}'s out{(loose == null ? ": no room" : $" (body {loose.Id})")}";
     }
 
     /// <summary>Every arm's points, ports (Busy, Alarm, Moved), settings, mains and its body's power draw while busy.</summary>
@@ -86,15 +88,13 @@ public static partial class LifterProbe
                 sb.Append(']');
             }
         }
-        foreach (var o in world.LiftOuts)
-            sb.Append($" [out body {o.Body}.{o.Part}: {o.Count} {ConstructParts.Get(o.Def)?.Name}]");
         if (world.Get(LineRack) is { } rk && world.StoreOf(rk, 0) is { } rs)
             sb.Append($" [rack {rs.ItemCount}]");
         if (world.Get(LinePad) is { } pdb && world.StoreOf(pdb, 0) is { } ps)
             sb.Append($" [pad {ps.ItemCount}{Kinds(ps)}]");
         if (world.Get(LineAsm) is { } ab && world.StoreOf(ab, 0) is { } ast)
             sb.Append($" [assembler inputs {ast.ItemCount}{Kinds(ast)}]");
-        return $"{Carries} carries begun (host){sb}";
+        return $"{Carries} carries begun, {Changes} lift words asked (host){sb}";
     }
 
     private static string Kinds(CStore st)

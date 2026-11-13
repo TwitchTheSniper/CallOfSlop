@@ -294,21 +294,6 @@ public static class ConstructExtruder
                 SetStall(world, st, ExtrudeStall.ChuteWaits);
                 return false;
             }
-            if (ConstructLifters.CutToHand(world, c, part, product) is var lifted and > 0)
-            {
-                // A Loader Arm serves its Piece out (lifters phase 4): the piece waits there for it, the machine blocked while that is full.
-                if (lifted == 1)
-                {
-                    if (forOrder)
-                        WorkOrders.Made(world, c, queue);
-                    ProductionLines.Made(world, c, part, 1);
-                    return true;
-                }
-                c.Parts[part].State |= CutPending;
-                ConstructGatherer.SetBusy(world, st, false);
-                SetStall(world, st, ExtrudeStall.Blocked);
-                return false;
-            }
             if (Cut(world, c, product) != null)
             {
                 if (forOrder)

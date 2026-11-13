@@ -216,8 +216,6 @@ public static class ConstructAssembling
     /// <summary>A body leaves at the output point, on its far side and level, its near side at the point. Why not, or None.</summary>
     internal static AsmBlock Leave(ConstructWorld world, IWorldQuery query, Construct c, int part, ConstructPartDef def)
     {
-        if (ConstructLifters.HoldOut(world, c, part, def) is var lifted and > 0) // (lifters phase 4: a Loader Arm serves its Piece out, so it holds the piece there for it)
-            return lifted == 1 ? AsmBlock.None : AsmBlock.OutputBlocked;
         if (!world.HasRoom())
             return AsmBlock.WorldFull;
         ref var p = ref c.Parts[part];

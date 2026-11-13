@@ -7,7 +7,7 @@ public enum LiftPointKind : byte
 {
     None, // (a station step or a put-back: not a carry between points)
     Rack, // a Piece Rack or a Lay-down Pad: pick (a want's piece) and put (a want, or storage)
-    Out, // a machine's Piece out with no conveyor on it: pick (the piece it holds there for a lifter)
+    Out, // a machine's Piece out with no conveyor on it: pick (the loose piece it dropped there, as it always has)
     Assembler, // an Assembler's Piece in with no conveyor: put (a part its recipe uses)
     PressBay, // a press bay's Piece in with no conveyor: put (a blank it takes, or a kit part for its hopper)
     Former, // a Panel Former's Piece in with no conveyor: put (sheet for its bin)
@@ -21,18 +21,11 @@ public struct LiftPoint
     public byte Bay; // a press bay's index
 }
 
-/// <summary>A piece a machine with no conveyor on its Piece out holds there for a lifter (server; at most one kind, <see cref="ConstructLifters.OutCap"/> of it).</summary>
-public struct LiftOut
-{
-    public ushort Body, Part, Def;
-    public byte Count, Health;
-    public uint Paint;
-}
 
 /// <summary>
 /// Lifters phase 4 (docs/sandbox/design/arms-and-cranes.md section 5, the user's answer 5): carrying between points by the Routers'
 /// rule. An idle arm with no station step looks at its points (racks, Lay-down Pads, machines' Piece in and Piece out with no
-/// conveyor on them, on any construct in its reach) about once a second: a piece a machine holds at its Piece out goes to a put point
+/// conveyor on them, on any construct in its reach) about once a second: a loose piece a machine dropped at its Piece out goes to a put point
 /// that wants it, else to storage (the nearest rack or pad with room that takes it); a piece in a rack or pad goes only to a want
 /// (never from storage to storage). A put refused at the end looks for another taker, else the piece waits in the hand (Stuck,
 /// Alarm) and is looked at again every 2 s. Server only; the wire is the lift word. Nothing allocates after a lifter's first look.
@@ -41,8 +34,14 @@ public static partial class ConstructLifters
 {
     public const int MaxPoints = 16; // a lifter's points
     public const int PointEvery = 120; // ticks between looks for a lifter's points (2 s)
-    public const int OutCap = 8; // pieces a machine holds at its Piece out for lifters
     public const int CarryLook = 6; // 10 Hz steps between an idle lifter's looks for a carry (about 1 s)
+
+    /// <summary>The idle look for a carry (about once a second): true when one began.</summary>
+    private static bool LookCarry(ConstructWorld world, Construct c, CLift l, LifterDef ld)
+    {
+        l.Look = 0;
+        return Carry(world, c, l, ld);
+    }
 
     // ---- Points ------------------------------------------------------------------------------------------------------------
 
@@ -168,92 +167,6 @@ public static partial class ConstructLifters
     private static void AddPoint(CLift l, Construct b, int part, LiftPointKind kind, byte bay) =>
         l.Points![l.PointN++] = new LiftPoint { Body = b.Id, Part = (ushort)part, Kind = kind, Bay = bay };
 
-    // ---- What a machine holds at its Piece out --------------------------------------------------------------------------------
-
-    /// <summary>Server: is a machine's Piece out one of a lifter's points (so it holds what it makes there instead of dropping it)?</summary>
-    public static bool Serves(ConstructWorld world, Construct c, int machine)
-    {
-        for (var bi = 0; bi < world.LiftBodies.Count; bi++)
-        {
-            var lb = world.LiftBodies[bi];
-            for (var i = 0; i < lb.N; i++)
-            {
-                var l = lb.Lifts[i];
-                for (var k = 0; k < l.PointN; k++)
-                    if (l.Points![k].Kind == LiftPointKind.Out && l.Points[k].Body == c.Id && l.Points[k].Part == machine)
-                        return true;
-            }
-        }
-        return false;
-    }
-
-    private static int OutIndex(ConstructWorld world, ushort body, int part)
-    {
-        for (var k = 0; k < world.LiftOuts.Count; k++)
-            if (world.LiftOuts[k].Body == body && world.LiftOuts[k].Part == part)
-                return k;
-        return -1;
-    }
-
-    /// <summary>
-    /// Server, a machine with no conveyor on its Piece out (ConstructAssembling.Leave: Assemblers and presses): 0 no lifter serves it
-    /// (it drops the piece as before), 1 the piece is held there for a lifter, 2 a lifter serves it but its out is full (it waits).
-    /// </summary>
-    public static int HoldOut(ConstructWorld world, Construct c, int machine, ConstructPartDef d, byte health = 255, uint paint = 0)
-    {
-        if (world.LiftBodies.Count == 0 || !Serves(world, c, machine))
-            return 0;
-        var k = OutIndex(world, c.Id, machine);
-        if (k < 0)
-        {
-            world.LiftOuts.Add(new LiftOut { Body = c.Id, Part = (ushort)machine, Def = (ushort)d.Id, Count = 1, Health = health, Paint = paint });
-            return 1;
-        }
-        var o = world.LiftOuts[k];
-        if (o.Def != d.Id || o.Count >= OutCap)
-            return 2;
-        o.Count++;
-        world.LiftOuts[k] = o;
-        return 1;
-    }
-
-    /// <summary>
-    /// Server, an Extruder's plain cut with no conveyor on its Piece out (ConstructExtruder): 0 no lifter serves it (it drops as before),
-    /// 1 the piece left the die into the machine's out for a lifter (the part is gone: indices moved), 2 the out is full (it waits on the die).
-    /// </summary>
-    public static int CutToHand(ConstructWorld world, Construct c, int machine, int product)
-    {
-        if (world.LiftBodies.Count == 0 || !Serves(world, c, machine))
-            return 0;
-        ref var pp = ref c.Parts[product];
-        if (Extrusion.Def(pp.D.ExKey with { Growing = false }) is not { } piece)
-            return 0;
-        var health = (byte)Math.Clamp(255 * pp.Health / MathF.Max(1, pp.D.Health), 1, 255);
-        var r = HoldOut(world, c, machine, piece, health, pp.Paint);
-        if (r == 1)
-        {
-            world.RemovePart(c, product);
-            c.Wake();
-        }
-        return r;
-    }
-
-    /// <summary>Server: a machine's held pieces when it or its body went (set down loose at its out).</summary>
-    private static void DropOuts(ConstructWorld world)
-    {
-        for (var k = world.LiftOuts.Count - 1; k >= 0; k--)
-        {
-            var o = world.LiftOuts[k];
-            var b = world.Get(o.Body);
-            if (b != null && o.Part < b.PartCount && b.DefOf(o.Part) is { } md && (md.IsAssembler || md.IsPress || md.IsExtruder))
-                continue;
-            world.LiftOuts.RemoveAt(k);
-            if (ConstructParts.Get(o.Def) is { } d && b != null)
-                for (var n = 0; n < o.Count; n++)
-                    ConstructBuild.PlaceNew(world, d, b.Pos + new Vector3(0, 2 + n * 0.5f, 0), 0);
-        }
-    }
-
     // ---- The rule ----------------------------------------------------------------------------------------------------------
 
     /// <summary>Would this point take this piece now (a want)? Racks are storage, never a want here.</summary>
@@ -354,32 +267,39 @@ public static partial class ConstructLifters
             FindPoints(world, c, l, ld);
         if (l.PointN == 0)
         {
-            Why(world, l, LiftWhy.NoPoint);
-            return false;
+            return false; // (the caller sets the idle reason)
         }
         Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
         for (var k = 0; k < l.PointN; k++)
         {
             var pt = l.Points![k];
-            if (pt.Kind != LiftPointKind.Out || OutIndex(world, pt.Body, pt.Part) is not (var oi and >= 0) || world.Get(pt.Body) is not { } b)
+            if (pt.Kind != LiftPointKind.Out || world.Get(pt.Body) is not { } b || !PointAt(b, pt, out var outAt))
                 continue;
-            var o = world.LiftOuts[oi];
-            if (ConstructParts.Get(o.Def) is not { } d || !Carries(ld, d) || !PointAt(b, pt, out var from))
-                continue;
-            from.Y += (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.05f;
-            if (!InReach(ld, shoulder, lr, from, WristLift(d), out _))
-                continue;
-            var to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: k, out var toAt);
-            if (to < 0)
-                continue;
-            o.Count--;
-            if (o.Count == 0)
-                world.LiftOuts.RemoveAt(oi);
-            else
-                world.LiftOuts[oi] = o;
-            Wake(b, pt.Part);
-            StartCarry(world, c, l, ld, lp, lr, d, o.Health, o.Paint, from, Quaternion.Identity, to, toAt);
-            return true;
+            // The piece the machine dropped at its out as before (a loose one-part body at rest there: seen, saved and
+            // takeable by hand as any loose piece); the arm takes it only when it can carry it and something in reach takes it.
+            var bodies = world.Bodies;
+            for (var bi = 0; bi < bodies.Count; bi++)
+            {
+                var lo = bodies[bi];
+                if (lo.PartCount != 1 || lo == b || lo == c || lo.HeldBy != 0 || lo.GrabbedBy != 255 || lo.CarriedBy != 0 || lo.Anchored || lo.Parts[0].Broken)
+                    continue;
+                var d = lo.DefOf(0);
+                var reach = 1f + 0.5f * MathF.Max(d.BoundsMax.X - d.BoundsMin.X, MathF.Max(d.BoundsMax.Y - d.BoundsMin.Y, d.BoundsMax.Z - d.BoundsMin.Z));
+                if (Vector3.DistanceSquared(lo.WorldCom, outAt) > reach * reach || lo.Vel.LengthSquared() > 0.25f || !Carries(ld, d) || !MadeBy(b, pt.Part, d))
+                    continue;
+                Freeform.PartWorld(lo, 0, out var pp, out var pr);
+                var from = pp + Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, pr);
+                if (!InReach(ld, shoulder, lr, from, WristLift(d), out _))
+                    continue;
+                var to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: k, out var toAt);
+                if (to < 0)
+                    continue;
+                var health = (byte)Math.Clamp(255 * lo.Parts[0].Health / MathF.Max(1, d.Health), 1, 255);
+                var paint = lo.Parts[0].Paint;
+                world.Remove(lo);
+                StartCarry(world, c, l, ld, lp, lr, d, health, paint, from, pr, to, toAt);
+                return true;
+            }
         }
         for (var k = 0; k < l.PointN; k++)
         {
@@ -403,8 +323,22 @@ public static partial class ConstructLifters
                 return true;
             }
         }
-        Why(world, l, LiftWhy.NoPoint);
+        // (the caller sets the idle reason)
         return false;
+    }
+
+    /// <summary>
+    /// Could this machine have made this piece as it is set now (an Assembler's recipe output, a press's row output, an Extruder's
+    /// piece)? A loose part someone left by a machine's out is not taken.
+    /// </summary>
+    private static bool MadeBy(Construct b, int part, ConstructPartDef d)
+    {
+        var md = b.DefOf(part);
+        if (md.IsAssembler)
+            return ConstructAssembling.RecipeOf(AssemblingTable.Current, b.Parts[part], md) is { } r && r.Output == d;
+        if (md.IsPress)
+            return ConstructPress.RowFor(ConstructPress.RowsOf(PressTable.Current, b, part), b, part) is { } row && row.Output == d;
+        return md.IsExtruder && d.IsExtrusion;
     }
 
     private static void Wake(Construct b, int part)
@@ -465,6 +399,8 @@ public static partial class ConstructLifters
                     ok = ConstructPanelFormer.TakeFromConveyor(world, b, part, d);
                     break;
             }
+            if (ok && l.ToKind != LiftPointKind.Rack && world.ChainCount > 0)
+                ConstructLogisticsPlan.Arrived(world, b, part, 0, d); // (a chained order's input: it counts for its link by kind, as a conveyor's delivery does)
             if (ok)
             {
                 world.CraftChanged(b);
@@ -518,7 +454,3 @@ public static partial class ConstructLifters
     }
 }
 
-public sealed partial class ConstructWorld
-{
-    public readonly List<LiftOut> LiftOuts = new(8); // server: pieces machines hold at their Piece out for lifters (ConstructLifterCarry.cs)
-}

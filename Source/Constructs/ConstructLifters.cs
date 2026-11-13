@@ -164,6 +164,7 @@ public sealed class CLift
     public int PointN, PointsAt = int.MinValue / 2;
     public byte Health = 255; // the piece's health share (a carry's: a press bay takes it)
     public int Look; // 10 Hz steps since its last look for a carry
+    public bool StationNear; // its last station look found a station building with its hold in reach (the idle reason)
 }
 
 /// <summary>A construct's lifter parts, found when its parts change (<see cref="Construct.RebuildStamp"/>).</summary>
@@ -287,8 +288,6 @@ public static partial class ConstructLifters
         if (world.LiftTick % ScanEvery == 1)
         {
             Scan(world, server: true); // (phase 4: always, so an arm with no station open finds its carries; a body is looked at only when its parts changed)
-            if (world.LiftOuts.Count > 0)
-                DropOuts(world);
         }
         if (world.LiftBodies.Count == 0 || world.LiftTick % Every != 0)
             return;
@@ -358,13 +357,12 @@ public static partial class ConstructLifters
                             var carry = mode != 1 && ++l.Look >= CarryLook; // (a look for a carry about once a second)
                             if (station || carry)
                                 decisions++;
+                            if (!station)
+                                l.StationNear = false;
                             if (station && Claim(world, c, l, ld))
                                 world.LiftChanged(c.Id);
-                            else if (carry)
-                            {
-                                l.Look = 0;
-                                Carry(world, c, l, ld);
-                            }
+                            else if (!(carry && LookCarry(world, c, l, ld)) && (station || carry))
+                                Why(world, l, l.StationNear ? LiftWhy.NoPart : mode == 1 ? LiftWhy.NoStation : LiftWhy.NoPoint); // (one steady reason: sent only when it changes)
                         }
                         break;
                     case LiftState.Stuck:
@@ -553,7 +551,7 @@ public static partial class ConstructLifters
                 return true;
             }
         }
-        Why(world, l, near ? LiftWhy.NoPart : LiftWhy.NoStation);
+        l.StationNear = near; // (the idle reason is set by the caller, once, from this and the carry look: never flipped step by step)
         return false;
     }
 
@@ -1385,10 +1383,15 @@ public sealed partial class ConstructWorld
         LiftBodies.Clear();
         LiftDirty.Clear();
         (LiftBusy, LiftTick, FitThisTick) = (0, 0, false);
-        LiftOuts.Clear();
     }
 
     public void LiftChanged(ushort body)
+    {
+        LifterProbe.Changes++;
+        LiftChangedBody(body);
+    }
+
+    private void LiftChangedBody(ushort body)
     {
         if (!LiftDirty.Contains(body))
             LiftDirty.Add(body);
@@ -1401,6 +1404,7 @@ public static partial class LifterProbe
     public static int Fits; // server: steps fitted by lifters since start
     public static int CarriesHeard; // either peer: moves seen to start (state became Carry)
     public static int Carries; // server: carries between points begun (phase 4)
+    public static int Changes; // server: lift words asked for (LiftChanged), for the window tool
 
     public static string Text(ConstructWorld world)
     {
