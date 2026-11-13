@@ -365,8 +365,8 @@ public static unsafe partial class Program
         if (_shotTool || perfShot || megaWindow || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)) || windowShot)
         {
             SavePaths.UseSmokeSandbox(args);
-            // Tool runs (window shots, the bench and the tour, perf and GL checks) skip the BRUTAL logo; the smoke test still watches it.
-            _noSplash = !args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
+            // A dev build's tool runs (window shots, the bench and the tour, perf and GL checks) skip the BRUTAL logo; the smoke test and a release still show it.
+            _noSplash = !BuildInfo.IsRelease && !args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
         }
         else
             SavePaths.Init(args);
