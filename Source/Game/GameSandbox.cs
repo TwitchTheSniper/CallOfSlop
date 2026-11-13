@@ -507,6 +507,9 @@ public sealed partial class Game
             ConstructStation.Write(w, c);
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
+        ConstructLifters.WriteAll(Constructs, c.Id, w, out var lifts);
+        if (lifts)
+            Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
     }
 
     private void SandboxFlush()
@@ -567,6 +570,13 @@ public sealed partial class Game
                 Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
             }
         Constructs.StationDirty.Clear();
+        foreach (var id in Constructs.LiftDirty)
+            if (Constructs.LiftSeen.TryGetValue(id, out var lb) && lb.N > 0)
+            {
+                ConstructLifters.Write(w, lb);
+                Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+            }
+        Constructs.LiftDirty.Clear();
         if (Constructs.DesignsDirty)
         {
             Constructs.DesignsDirty = false;
