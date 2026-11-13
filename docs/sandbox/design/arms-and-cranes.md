@@ -1,7 +1,8 @@
 # Arms and cranes: machines that pick up and place pieces (design)
 
 Design only (2026-11-12). No code changed, nothing built, nothing measured: every number below is a proposal or is quoted
-from the docs. Written for an Opus agent to build in six phases of 60 to 90 minutes.
+from the docs. Written for an Opus agent to build in eight phases of 60 to 90 minutes. Revised 2026-11-13 for the user's
+answers (section 12): a carried piece pushes players (3.6, phase 3) and a cab steers a lifter by hand (3.7, phase 8).
 
 The two jobs (the queue item): **speed up Building Station builds**, and **move pieces too large for a conveyor** between
 machines, stores and the station.
@@ -116,18 +117,24 @@ struct CLift            // one a lifter part, on Construct.Lifters; rebuilt with
   ushort Dest, Tag; byte Flags;                 // as a CRider's: where the piece is going, for which order
   short FromPoint, ToPoint; int Step;           // points (3.5); a station's step when it is a fit (-1: a carry)
   Vector3 From, To; Quaternion FromRot, ToRot;  // the construct's frame
-  float T, Dur;                                 // seconds into the move, and its length
+  uint Start; ushort Dur;                       // the server tick the move began, and its length in ticks
+  ushort Held;                                  // ticks the move has waited for a player (3.6): the path runs on Start + Held
 ```
+
+The path is a pure function of the server tick (`tick - Start - Held` into `Dur`), as a map mover's pose is
+(`Source/Game/Movers.cs`): both peers pose the piece at any tick without a word per tick, which is what pushing players
+needs (3.6). A move's `T` in seconds, where the text below says it, is that count over the tick rate.
 
 - **Path.** Closed form from `From`, `To` and `T`, the same on every peer. An arm: straight up to its carry height, round
   the base in angle and radius (so the piece goes round the mast, never through it), straight down. A bridge: hoist,
   travel and traverse together, lower. The turn goes from `FromRot` to `ToRot` over the middle leg. `Dur` is the path's
   length over `speed` plus `handle`; `Return` is the same path back with an empty hand.
-- **Step.** In the conveyor's 10 Hz step (`ConstructConveyor.Every`): `T += 0.1`; at `T >= Dur` the place happens (a fit, a
-  put) and the lifter starts back. A decision is made only when a lifter is idle and something in reach changed (a store's
+- **Step.** At 10 Hz (the conveyor's rate, its own counter in `ConstructLifters.cs`): when the tick passes
+  `Start + Held + Dur` the place happens (a fit, a put) and the lifter starts back. A decision is made only when a lifter is idle and something in reach changed (a store's
   version, a rider reaching a pick point, a station's ready count), else every 2 s, as a Router's stuck look.
-- **Nothing is solid.** The piece in the hand passes through players and bodies, as a riding piece does. It cannot be shot
-  off; F on it takes it out of the hand (the rider's rule and request).
+- **Only players meet it** (answer 2). The piece in the hand passes through vehicles, walls, bodies and other pieces, as
+  a riding piece does, and pushes players out of its way (3.6). It cannot be shot off; F on it takes it out of the hand
+  (the rider's rule and request).
 - **Stuck.** A lifter holding a piece nothing takes waits with it in the hand: state Stuck, its lamp red, **Alarm** 1, and
   the reason on its look line. Nothing is dropped (the Routers' rule, Q7 of smart logistics).
 - **A lifter that goes** (removed, wrecked, its construct deleted) drops its piece as a loose body where it was
@@ -175,6 +182,56 @@ A lifter never picks a loose body off the ground itself: it only knows points.
 A point out of reach, too heavy or too big for the lifter is listed with its reason and shown red in the reach view
 ("the Press's bay 1: 6.4 m away, this Arm reaches 5 m").
 
+### 3.6 Players in the way (answer 2)
+
+The carried piece is, for players and nothing else, a **moving box**: its true size, posed at a tick by the path (3.3),
+in the world through its construct's pose. Player movement resolves against it as it does against a map mover
+(`MoverPhysics`: the same overlap and push-out), on the host and in a client's own prediction:
+
+- **Where.** In the player mover's tick, after the normal sweep, beside `MoverPhysics.BeginTick` / the push (`ClassicMover`,
+  `SweptMover`). The boxes come from a world list of lifters with a piece in the air (`LiftMoving`, at most 64 a world),
+  posed at the command's tick (`InputCmd.Tick`, the mover clock), so prediction, replay and the server agree. A client poses
+  from the last `CBodyKind.Lifts` word (Start, Held, Dur) and its copy of the construct's pose.
+- **Push.** A player overlapping the box is pushed out sideways by the smallest move, or lifted onto it when it is a step
+  (feet within 0.4 m of its top) or it rose into them. The piece never carries a player: standing on it is standing on a
+  box that moves away (no parent transform; a lifter is not a platform).
+- **Pinned.** A push that would leave the player inside static geometry, a construct or another moving box is not made.
+  The server then holds the lifter: the move waits (`Held` counts up, `State` stays Carry, the look line says "waiting:
+  a player is in the way") and goes on the tick the player is clear. A held move is sent again (a new `Held`) when it
+  starts and ends waiting, never per tick. Nobody is crushed, teleported or put on top: the arm waits. A wait over 10 s
+  turns the lifter Stuck with the same reason (Alarm 1) and it goes on by itself when clear.
+- **A client** that predicts against a move the server has since held sees the piece push it for at most a round trip;
+  reconciliation puts it right, as on a map mover whose logic changed (`MoverPhysics.Invalidate`).
+- **Cost.** Per player per command tick: one distance test per moving piece (64 at most), and an oriented-box test against
+  the capsule (about 30 float operations) for those within reach of the player. Under 1 microsecond a player with eight
+  arms working beside them; nothing when no lifter moves (the list is empty). The pinned test (one `BlockedAll` with the
+  pushed feet) runs only when a push happens. Zero allocations: the posed boxes go in a fixed array.
+- **Not done:** bots (archived) and dropped items ignore the piece; a ragdoll is not pushed; a player riding a vehicle is
+  the vehicle, which the piece passes through.
+
+### 3.7 The cab (answer 6)
+
+A **Lifter Cab** part (a seat, generator `LifterParts.cs`) steers one lifter by hand. It is linked to its lifter with the
+linking tool, as a seat is linked to what it drives (a cab on a lifter's own base needs no link); one cab a lifter.
+
+- **Controls.** Seated: the move keys move the hook's target across the reach in the view's frame (W/S away and towards,
+  A/D sideways), Space and Ctrl raise and lower it; the hand follows at the lifter's `speed`, clamped to its reach. **F**
+  grabs: under the hook, within 1.5 m, a loose one-part body (within payload and piece size; "only a single piece", "too
+  heavy: 2.4 t, this Arm carries 1 t") or the piece a pick point offers. **F** again sets it down: at a put point that
+  takes it, as a put; anywhere else as a loose body at rest where it is (`ConstructGive.DropLoose`). E leaves the seat; a
+  piece in the hand stays there and the lifter's automatic work takes it on from there (3.3).
+- **Automatic work** pauses while the cab is manned: the lifter finishes the move it is in, then answers only the cab. A
+  station's claimed step is given back (`Claim` cleared) when the cab takes over.
+- **Wire.** The cab's input rides the seat's own input message (target point, grab), 20 Hz while seated. The hand's motion
+  is not a closed path now, so while steered a lifter sends its hand's position and the piece (when it changes) in
+  `CBodyKind.Lifts` at 10 Hz, about 12 bytes, and clients ease between them; players are pushed by the hand's last sent
+  pose on a client, the server's own on the host (a steered piece is a small push target, a round trip late at worst). A
+  grab of a loose body is the body's removal (as today) and a lift word. Protocol bump.
+- **Cost.** One manned cab: a move toward a target a tick (a few float operations) and the push test of 3.6. A grab looks
+  at the bodies near the hook through the world's grid once.
+- **Look.** A small enclosed chair on a swivel with a window, in the lifter's tier colours; the reach view is drawn while
+  seated, and the hook's shadow on what is below.
+
 ## 4. The station's fitters
 
 - **Where a step goes.** Costing already builds the blueprint in a scratch world. It also keeps each step's part centre
@@ -192,7 +249,7 @@ A point out of reach, too heavy or too big for the lifter is listed with its rea
   goes to `StationJob.Return` (given back as the rest is). A step the build refuses at the fit fails the job as today.
 - **The station's own boom** stays the first fitter, on its own timer and its 2 s plus mass. Nothing a player has changes
   until they add an arm.
-- **Large parts** (phase 4): a part the hold can't take is asked for as today, rides or is carried to a Lay-down Pad in a
+- **Large parts** (phase 5): a part the hold can't take is asked for as today, rides or is carried to a Lay-down Pad in a
   fitter's reach, and is fitted from the pad. The pad counts as hold for that job (`ConstructCrafting.Holds` over the hold
   and the pads its fitters reach), and the panel's bill says "on the Lay-down Pad" where it says "in the hold".
 - **The panel** gains one line: "Fitters: the station, 2 Loader Arms (Workshop, Scrap) - about 1.4 parts a second", and
@@ -206,21 +263,21 @@ in this order, each time it is idle:
 
 1. **A station's step** it can fit (section 4), oldest build first.
 2. **A wanted piece**: a piece at a pick point whose destination (`Dest`, set by `ConstructLogistics.Assign` or by a
-   terminal's fetch or a chain entry) is a put point in reach, or is reached through one (phase 4).
+   terminal's fetch or a chain entry) is a put point in reach, or is reached through one (phase 5).
 3. **A piece with no destination** at a pick point: `Assign`'s own rule, "wanted, else storage", over the put points in
    reach. So a lifter with one press on one side and one pad on the other needs no setting at all.
 
 | Phase | The rule in force |
 | --- | --- |
-| 1, 2 | 1 only |
-| 3 | 1 and 3, with the lifter's own points only: a put point that wants the kind (a press bay's blank, an Assembler's input, a station's lack), else a rack or pad with room |
-| 4 | all three, on the network: a lifter is a node of `LogiMap` and a way may pass through it. `RouteTo`, the next-hop columns and `Pass` see "lifter L from point P to point Q" as an edge whose cost is its metres plus 2 m a handling, so Routers send pieces toward a lifter's pick point, fetches and chains cross it, and overflow reaches a pad no conveyor serves |
+| 1 to 3 | 1 only |
+| 4 | 1 and 3, with the lifter's own points only: a put point that wants the kind (a press bay's blank, an Assembler's input, a station's lack), else a rack or pad with room |
+| 5 | all three, on the network: a lifter is a node of `LogiMap` and a way may pass through it. `RouteTo`, the next-hop columns and `Pass` see "lifter L from point P to point Q" as an edge whose cost is its metres plus 2 m a handling, so Routers send pieces toward a lifter's pick point, fetches and chains cross it, and overflow reaches a pad no conveyor serves |
 
 **Settings** (configure tool, group Lifter; `CfgKey` at the end): `liftMode` (Auto, Station only, Carry only, Off),
-`carryHeight` (how high it lifts before it turns, m), and from phase 6 the hand orders. **Ports**: in **Run** (as every
+`carryHeight` (how high it lifts before it turns, m), and from phase 7 the hand orders. **Ports**: in **Run** (as every
 machine), out **Busy**, **Alarm** (stuck), **Moved** (a count).
 
-**By hand** (phase 6, question 6): the lifter's panel lists its points with what each holds; a click on a kind and then on
+**By hand** (phase 7, answer 6; the cab is 3.7, phase 8): the lifter's panel lists its points with what each holds; a click on a kind and then on
 a put point is a move order ("3 Hull Plate: Lay-down Pad -> Press bay 1"), at most 8 a lifter, done before automatic
 work. That is hand control without a joystick: the same carries, asked for by a player.
 
@@ -248,18 +305,20 @@ work. That is hand control without a joystick: the same carries, asked for by a 
 | What | On the wire | A late joiner | A save |
 | --- | --- | --- | --- |
 | The parts | new part files (ids move): protocol bump | the Full | by name |
-| A move | `CBodyKind.Lifts` (new, at the end): a body's lifters that changed, each: part, state, why, the piece (`ConstructStorage.WriteDef`: an id or `Extrusion.WireMark` and its key), health, paint, from and to as cm in the construct's frame, two packed turns, `Dur` and `T` in ticks, the step, `Dest`, `Tag`, `Flags`. About 40 bytes, sent when a move starts, ends or sticks; never per tick | after the Full, with `T` as it stands | a `LIFT` block after `LOGI`, only when a hand holds a piece: part, the piece's name, health, paint, destination part plus one, tag, flags, the step |
+| A move | `CBodyKind.Lifts` (new, at the end): a body's lifters that changed, each: part, state, why, the piece (`ConstructStorage.WriteDef`: an id or `Extrusion.WireMark` and its key), health, paint, from and to as cm in the construct's frame, two packed turns, `Start` (the server tick), `Held` and `Dur` in ticks, the step, `Dest`, `Tag`, `Flags`. About 44 bytes, sent when a move starts, ends, waits for a player (3.6) or sticks; never per tick (a cab's steered hand, 3.7: 10 Hz) | after the Full, `Start` as it stands | a `LIFT` block after `LOGI`, only when a hand holds a piece: part, the piece's name, health, paint, destination part plus one, tag, flags, the step |
 | A fit by a lifter | the station's own message (`CBodyKind.Station`: `Fitted`, `LastPart`, `FitSeq`) and the body's structure, as today | as today | as today: `Claim` is not saved |
 | Points, reach, rail runs | nothing: both peers work them out on a rebuild | | nothing |
 | Settings | part settings (`liftMode`, `carryHeight`) | the Full | by key |
-| Hand orders (phase 6) | `CActKind.Lifter` (body, part, op, kind, count, from, to), checked as a finger on a console; the list rides `CBodyKind.Lifts` | with the lifts | in the `LIFT` block |
+| Hand orders (phase 7) | `CActKind.Lifter` (body, part, op, kind, count, from, to), checked as a finger on a console; the list rides `CBodyKind.Lifts` | with the lifts | in the `LIFT` block |
+| The cab (phase 8) | the seat's input (hook target, grab); the steered hand's pose in `CBodyKind.Lifts` at 10 Hz | with the lifts | the cab's link, as a seat's; nobody is seated after a load |
 
 - **A piece in the hand at a save** loads in the hand at rest, and the lifter's first decision is where it goes: the step
   if it is still unfitted and ready, else the hold or a pad. An older save has no block; an older build skips it.
-- **Protocol**: one bump in phase 1 (now 271; the merger renumbers), again in phases 2 (tier parts), 3 (pads, a held
-  piece at `outAt`), 5 (crane parts) and 6 (the action). Phase 4 changes no bytes if a lifter's edge is worked out on
+- **Protocol**: one bump in phase 1 (286; the merger renumbers; it already sends `Start`, `Held` and `Dur`), again in
+  phases 2 (tier parts), 4 (pads, a held piece at `outAt`), 6 (crane parts), 7 (the action) and 8 (the cab part and its
+  input). Phase 3 changes no bytes (both peers pose from the same word); phase 5 none if a lifter's edge is worked out on
   both peers; verify.
-- **Blueprints** keep a lifter as a part with its settings. The Production Showcase gets its arm in phase 6.
+- **Blueprints** keep a lifter as a part with its settings. The Production Showcase gets its arm in phase 7.
 
 ## 8. Performance budget
 
@@ -274,6 +333,8 @@ Targets, to be measured by the builder with a throwaway probe that is removed (n
 | `LiftMap` | on a rebuild of a construct with lifters: ports within reach, under 0.1 ms at 32 lifters | 0 after the first (fixed arrays) |
 | The wire | 40 bytes a carry: 8 Plasma arms at a station, about 400 bytes a second | 0 |
 | A client | path and IK only for lifters drawn; nothing for one out of view | 0 |
+| Players and moving pieces (3.6, phase 3) | per player per command tick: a distance test a moving piece, a box test for those near; nothing with no piece in the air | 0 |
+| A manned cab (3.7, phase 8) | a move toward the target a tick; the hand's pose 10 times a second on the wire (about 120 bytes a second) | 0 |
 
 **To measure and report:** the worst server tick during a 200-step build with 8 fitters; bytes a second to a client in
 that build, split into the lifters' and the body's own (see the first risk); bytes allocated over 600 steady ticks
@@ -283,21 +344,24 @@ that build, split into the lifters' and the body's own (see the first risk); byt
 
 Each: its own branch and worktree, WIP commits with `[skip ci]`, the final push without, a build that passes, a by-hand
 run reported with what was not verified. No self-test sections are added. `production.md` gets a "Lifters" section (listed
-in `CONSTRUCTS.md`) at the end of phases 2, 4 and 6.
+in `CONSTRUCTS.md`) at the end of phases 2, 5, 7 and 8.
 
 | # | Title | Work | Files | Stop point | Try by hand |
 | --- | --- | --- | --- | --- | --- |
 | 1 | **The lifter and the station's fitters** | `storage.lifter` parsed; `CLift`, `LiftOpen`, the 10 Hz step, the path; `StationJob.StepAt`, `Claim`, `Offer`, one fit a tick; `CBodyKind.Lifts`; the tier 1 Loader Arm from the generator with a recipe; plain drawing (the piece on its path, the boom as one box pointing at it). Protocol bump | new `Source/Constructs/ConstructLifters.cs`; `ConstructStation.cs` (`Cost`, `Orders`, `StepJob`, `Cancel`, `Release`), `ConstructParts.cs`, `ConstructNet.cs`, `ConstructWorld.cs`; new `Source/PartKit/Generators/LifterParts.cs`, `Constructs/Parts/Lifters`, `Categories.json`, `Generators/Assembling.cs`; `Render/RouteRender.cs`; `Net/ServerBrowser.cs` | A Buggy built at a station with one arm beside the bay finishes sooner than without, and a joined client sees the same carries and counts | The window tool's `station` verbs with and without the arm (times to a file); `--net host` and `join`; Cancel with a piece in the air |
 | 2 | **Look, panel, tiers, saves** | Tagged segment boxes and the IK draw; the reach view; look line, machine screen, Busy, Alarm and Moved; `liftMode`, `carryHeight`; the five tiers through `MachineTiers.cs` and `TierStyle.cs`; the station panel's Fitters line; the `LIFT` save block; power draw. Protocol bump | new `Source/Render/LifterRender.cs`; `ConstructLifters.cs`, `LifterParts.cs`, `MachineTiers.cs`, `TierStyle.cs`, `ConstructConfig.cs`, `MachineScreens.cs`, `UI/UiStation.cs`, `Worlds/WorldSaveBodies.cs`, `ConstructPower.cs`, docs | Five arms stand side by side and read as their tiers; a world saved with a piece in a hand loads and finishes its build | `--window-shot` of the five; `--gen-parts lifter_parts --check`, `--check-construct-parts`, `--look-report`; save and load mid-build |
-| 3 | **Carrying between points** | `LiftMap` (points in reach on a rebuild); the Lay-down Pad and its take-in of loose pieces (`TakeDropped` shared); a machine holds its piece at `outAt` for a lifter; puts to a press bay, an Assembler, a rack, a pad, a hold; the plain rule (wanted in reach, else storage in reach); Stuck. Protocol bump | `ConstructLifters.cs`, `ConstructConveyor.cs` (`PutMade`, the pad as a conveyor's end), `ConstructPress.cs` (the piece held at `outAt`), `ConstructStation.cs` (`TakeDropped` moved out), `Generators/PieceRackParts.cs`, `ConstructRackPack.cs` if an open hold needs it | An Extruder with no conveyor, an arm, a Press and a pad: blanks go into the bay, pressed parts onto the pad, with no link laid | That line in a window, host and client; a piece too heavy and one out of reach show their reasons; a 3 m plate set down on the pad with the physics gun is taken in |
-| 4 | **On the logistics network** | A lifter as a node and its point pairs as edges of `LogiMap`; next hops, `Assign`, `RouteTo`, chains and fetches through a lifter; a Router sends toward a lifter's pick point; the station's large parts: asked for, delivered to a pad in a fitter's reach, fitted from it; pads in `ConstructReserve` | `ConstructLogistics.cs`, `ConstructLogisticsPlan.cs`, `ConstructCrafting.cs` (`RouteTo`, `Holds`), `ConstructLifters.cs`, `ConstructStation.cs` (`Orders`, the bill's rows), `UI/UiStation.cs`, docs | A station build whose blueprint holds a part longer than the hold orders it, receives it by lifter and fits it, with nobody touching it | A scratch blueprint with one 6 m pressed plate; the terminal's order row for a part that crosses a lifter; the `logi` verbs' map dump lists the lifter's edges |
-| 5 | **The Bridge Crane** | Crane Rail and Crane Bridge parts in three classes (`LargeSystems.cs` or `LifterParts.cs`); the run walk on a rebuild; the box reach and the bridge path; its drawing (bridge, trolley, cable); its refusals. Protocol bump | `ConstructLifters.cs`, new `Source/Constructs/ConstructCraneRails.cs`, `LifterRender.cs`, the generator, `Categories.json` (the existing section Cranes and lifts), `Generators/Assembling.cs` | A Medium crane over a 16 m hall carries a 6 m plate from a Large Press to a pad and fits it at a station in its box | A window run of that hall; a rail section removed mid-carry (the crane stops, the piece stays in its hand, the reason shows); a bridge with one run |
-| 6 | **Hand orders and the Showcase** | The lifter's panel (points, what each holds, move orders), `CActKind.Lifter`, orders in the `LIFT` block; the Production Showcase gets an arm at its station and one lifter-served press; the code guide. Protocol bump | new `Source/UI/UiLifter.cs`, `App/Program.SandboxLifter.cs`, `Game/GameSandboxLifter.cs`, `ConstructLifters.cs`, `ConstructEdits` (the action), `PartKit/Generators/ProductionShowcase.cs`, docs | A player moves three plates from a pad to a press bay from the panel, on a client | `--window-shot` with `panel` and `click` on the lifter; the Showcase built and its station build timed |
+| 3 | **Pushing players** (3.6, answer 2) | `LiftMoving` (the world's pieces in the air) and their posed boxes at a tick; the push in `ClassicMover` and `SweptMover` beside the map movers', host and prediction; the pinned rule (the move waits: `Held`, its word sent at the wait's start and end, Stuck after 10 s); the look line's "waiting: a player is in the way". Wire as phase 1's | `ConstructLifters.cs`, new `Source/Constructs/ConstructLifterPush.cs`, `Physics/ClassicMover.cs`, `Physics/SweptMover.cs` (a call each) | A player standing in the bay is pushed aside by a carried part; one pinned against the station waits the arm out, unhurt, on host and client | A window run as host and as a joined client, standing in the path; `--lag=150` on the client (the push stays smooth, corrected within a round trip); one player against a wall |
+| 4 | **Carrying between points** | `LiftMap` (points in reach on a rebuild); the Lay-down Pad and its take-in of loose pieces (`TakeDropped` shared); a machine holds its piece at `outAt` for a lifter; puts to a press bay, an Assembler, a rack, a pad, a hold; the plain rule (wanted in reach, else storage in reach); Stuck. Protocol bump | `ConstructLifters.cs`, `ConstructConveyor.cs` (`PutMade`, the pad as a conveyor's end), `ConstructPress.cs` (the piece held at `outAt`), `ConstructStation.cs` (`TakeDropped` moved out), `Generators/PieceRackParts.cs`, `ConstructRackPack.cs` if an open hold needs it | An Extruder with no conveyor, an arm, a Press and a pad: blanks go into the bay, pressed parts onto the pad, with no link laid | That line in a window, host and client; a piece too heavy and one out of reach show their reasons; a 3 m plate set down on the pad with the physics gun is taken in |
+| 5 | **On the logistics network** | A lifter as a node and its point pairs as edges of `LogiMap`; next hops, `Assign`, `RouteTo`, chains and fetches through a lifter; a Router sends toward a lifter's pick point; the station's large parts: asked for, delivered to a pad in a fitter's reach, fitted from it; pads in `ConstructReserve` | `ConstructLogistics.cs`, `ConstructLogisticsPlan.cs`, `ConstructCrafting.cs` (`RouteTo`, `Holds`), `ConstructLifters.cs`, `ConstructStation.cs` (`Orders`, the bill's rows), `UI/UiStation.cs`, docs | A station build whose blueprint holds a part longer than the hold orders it, receives it by lifter and fits it, with nobody touching it | A scratch blueprint with one 6 m pressed plate; the terminal's order row for a part that crosses a lifter; the `logi` verbs' map dump lists the lifter's edges |
+| 6 | **The Bridge Crane** | Crane Rail and Crane Bridge parts in three classes (`LargeSystems.cs` or `LifterParts.cs`); the run walk on a rebuild; the box reach and the bridge path; its drawing (bridge, trolley, cable); its refusals. Protocol bump | `ConstructLifters.cs`, new `Source/Constructs/ConstructCraneRails.cs`, `LifterRender.cs`, the generator, `Categories.json` (the existing section Cranes and lifts), `Generators/Assembling.cs` | A Medium crane over a 16 m hall carries a 6 m plate from a Large Press to a pad and fits it at a station in its box | A window run of that hall; a rail section removed mid-carry (the crane stops, the piece stays in its hand, the reason shows); a bridge with one run |
+| 7 | **Hand orders and the Showcase** | The lifter's panel (points, what each holds, move orders), `CActKind.Lifter`, orders in the `LIFT` block; the Production Showcase gets an arm at its station and one lifter-served press; the code guide. Protocol bump | new `Source/UI/UiLifter.cs`, `App/Program.SandboxLifter.cs`, `Game/GameSandboxLifter.cs`, `ConstructLifters.cs`, `ConstructEdits` (the action), `PartKit/Generators/ProductionShowcase.cs`, docs | A player moves three plates from a pad to a press bay from the panel, on a client | `--window-shot` with `panel` and `click` on the lifter; the Showcase built and its station build timed |
+| 8 | **The cab** (3.7, answer 6) | The Lifter Cab part (a seat) and its link to a lifter; the seat's input (hook target, grab) and the steered hand at the server; grab a loose one-part body or a point's piece, set it down at a put point or loose; automatic work paused while manned; the hand's pose at 10 Hz; the reach view while seated. Protocol bump | `LifterParts.cs`, `ConstructLifters.cs`, new `Source/Constructs/ConstructLifterCab.cs`, `App/Program.SandboxLifter.cs` (the keys), the seat's input path (`ConstructRide*`, owned by whoever holds it then: small hooks), `LifterRender.cs`, `Categories.json`, `Generators/Assembling.cs` | A player in a cab picks a 3 m plate off the ground with an arm and sets it on a pad, and lifts one off a crane's floor onto a truck, on a client | A window run seated, host and client; a grab refused (too heavy, two parts); leaving the seat with a piece in the hand |
 
-Order: 2 needs 1; 3 needs 1; 4 needs 3; 5 needs 3; 6 needs 2 and 3. `ConstructLifters.cs` is edited in every phase and
-`ConstructStation.cs` in 1, 3 and 4: one phase at a time. Phases 3 and 4 touch `ConstructConveyor.cs`,
-`ConstructLogistics*.cs` and `ConstructPress.cs`, which smart logistics phase 3 and the Press phases also touch: start
-them only when those are on main. **Phases 1 and 2 are shippable alone** (faster station builds, nothing else changed).
+Order: 2 needs 1; 3 needs 1; 4 needs 1; 5 needs 4; 6 needs 4; 7 needs 2 and 4; 8 needs 3 and 7 (the panel's lifter
+code), and 6 for a crane cab. `ConstructLifters.cs` is edited in every phase and `ConstructStation.cs` in 1, 4 and 5: one
+phase at a time. Phases 4 and 5 touch `ConstructConveyor.cs`, `ConstructLogistics*.cs` and `ConstructPress.cs`, which
+smart logistics and the Press phases also touch: start them only when those are on main. **Phases 1 to 3 are shippable
+alone** (faster station builds, arms that push players aside, nothing else changed).
 
 ## 10. Risks
 
@@ -306,16 +370,20 @@ them only when those are on main. **Phases 1 and 2 are shippable alone** (faster
   body it may not be. Phase 1 measures it. If it is too much, a held body's structure is sent at most 4 times a second
   (the arms' carries are still shown, and the parts appear with the next send), or the fit gets a patch message of its
   own: that would be a phase of its own.
-- **Pieces through walls.** A scripted path ignores what stands between two points. The carry height and the arm's
-  round-the-base path keep it tidy in an open hall; a check on the rebuild (one ray a point from above the base: "no clear
-  way: the Sawmill stands between the Arm and the pad") is cheap and belongs in phase 3 if question 2 says so.
+- **Pieces through walls.** A scripted path ignores what stands between two points (answer 2 keeps that for everything
+  but players). The carry height and the arm's round-the-base path keep it tidy in an open hall; a check on the rebuild
+  (one ray a point from above the base: "no clear way: the Sawmill stands between the Arm and the pad") is a cheap
+  warning for phase 4, not a block (a question in `lifters-phase1-notes.md`).
+- **Players held up.** A player who stands in a path stops the arm (3.6). That is the rule, not a fault, but a player
+  idling in a bay stalls a build: the look line names the wait, and the Stuck after 10 s raises the Alarm. A griefer can
+  hold a factory's arm on a shared base; the owner's answer is the base's own permissions.
 - **Step places from the scratch build.** A step whose place depends on a joint's pose or a wheel's travel is taken at
   rest; the reach test uses the part's centre, so a long part can reach out of the ring while its centre is inside it.
   Harmless (nothing collides) but it can look stretched; the arm's IK clamps at full reach.
 - **Moving bases.** Points and paths are in the construct's frame, so a lifter works on a mothership under way; the
   station's body is frozen in the world, so a station on a moving construct is already outside what phase 1 of the
   station handles. Not made worse, not solved.
-- **A machine that holds its piece at `outAt`** (phase 3) changes what a press with no conveyor does today (it drops the
+- **A machine that holds its piece at `outAt`** (phase 4) changes what a press with no conveyor does today (it drops the
   piece as a body). The rule must apply only when a lifter has that point; with none in reach it drops as before.
 - **Two lifters, one point.** Claims are per piece and per step, and a put point's `Takes` is asked again at the place; a
   lifter that arrives at a point just filled waits Stuck for 2 s and looks again. No deadlock is possible because nothing
