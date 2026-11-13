@@ -1397,6 +1397,49 @@ a hand-delivered part fitted at once; copper and steel as the link stock, a unit
 the last part, in the blueprint's order (a link's branch and its hosts depend on that order); the frozen body refusing every edit;
 blueprints by name.
 
+## Lifters
+
+Scripted machines that carry pieces (design: `docs/sandbox/design/arms-and-cranes.md`; code `Source/Constructs/ConstructLifters.cs`,
+drawing `Source/Render/LifterRender.cs`, parts `Source/PartKit/Generators/LifterParts.cs`, `--gen-parts lifter_parts`). Nothing is
+simulated: a carried piece moves on a path worked out from the move's ends on every peer, and passes through everything.
+
+**The Loader Arm** stands beside a Building Station and is one more pair of hands: when idle and powered it asks the stations
+building in its reach for a step it can fit (the part's middle in reach, the part within its payload and size, its kind in the
+hold), takes the part out of the hold, carries it up, round its base and down, and fits it with the station's own fit. A world fits
+at most one part a tick. The station keeps fitting on its own timer; nothing changes until an arm stands beside it. Its part file
+holds only the plinth and the slewing ring; the turret, upper arm, elbow, forearm, wrist and gripper are posed each frame by two-link
+inverse kinematics from the hand (`ArmIk.Solve`), in the tier's colours (`lifter.look`).
+
+| Tier | Part | Reach | Payload | Largest piece | Hand speed | Handle | Power (while it moves) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Loader Arm | 1 to 4 m | 500 kg | 1.0 by 4 m | 3 m/s | 0.8 s | 600 W |
+| 2 | Workshop Loader Arm | 1.2 to 5 m | 1 t | 1.25 by 5 m | 4.5 m/s | 0.6 s | 1.1 kW |
+| 3 | Industrial Loader Arm | 1.5 to 6 m | 2 t | 1.5 by 6 m | 6 m/s | 0.45 s | 1.9 kW |
+| 4 | Military Loader Arm | 2 to 8 m | 4 t | 2.0 by 8 m | 9 m/s | 0.3 s | 3.4 kW |
+| 5 | Plasma Loader Arm | 2.5 to 10 m | 8 t | 2.5 by 10 m | 12 m/s | 0.2 s | 5.8 kW |
+
+Each tier grows by the machine tiers' size (x1 to x2.5) and has its look: a rusty derrick on timber props, blue cast iron with
+cream trim, a yellow hydraulic arm with its power pack, olive armour with sandbags, a dark rounded drum with a glowing ring.
+Recipes come from the Assembling generator's rule: Gear Sets at tier 1, Servo Motors from 2, a Control Unit from 3.
+
+- **Settings** (configure tool, group Lifter): **Works** (Auto, Station only, Carry only, Off; carrying between machines comes in a
+  later phase, so Carry only and Off keep it from station work) and **Carry height** (m over the higher end of a move before it
+  turns; capped so the arm never stretches straight).
+- **Ports**: in **Run** (a wire held low keeps it from starting a move); out **Busy** (a move runs), **Alarm** (it holds a piece
+  nothing takes), **Moved** (parts it fitted since the world loaded).
+- **Looking at it**: the look line says what it does or waits on ("fitting a Wheel Hub to the Buggy, step 12 of 26", "waiting:
+  nothing in the hold it can carry to a place in its reach", "no power, stopped") and its reach is drawn in amber: two rings at
+  its floor and at the top of its reach, and a post over each building station's hold, green when it reaches it.
+- **The station's panel** says who fits: "Fitters: the station, 2 Loader Arms (Scrap, Workshop) - about 1.2 light parts a second".
+- **Power**: it draws its wattage only while it moves; without power it stops where it is (the client's drawing stops too) and
+  goes on when power returns.
+- **Saves**: a piece in a hand is saved in the body's `LIFT` block (after `LOGI`) and loads in the hand; the arm's first look
+  carries it back into the hold of a station building in its reach, and the build goes on. With no such station it waits holding
+  it (Alarm). A part that is no longer a lifter sets the piece down loose.
+- **The wire**: `CBodyKind.Lifts`, a body's lifters when a move starts, ends or waits (about 53 bytes a lifter; protocol 290).
+- **Window tool**: `lifter` (every lifter: state, reason, moves, the step's cost), `lifter place [TIER] [SLOT]` (host: an arm of
+  that tier at slot 0 to 3 round the station's bay), `lifter await`, `lifter holding` (until a hand carries a piece).
+
 ## Production Showcase
 
 One shipped blueprint, **Production Showcase** (`Constructs/Blueprints/ProductionShowcase.json`, group Production), with every machine

@@ -195,6 +195,7 @@ public sealed partial class Ui
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("What is fitted becomes a normal construct to finish by hand. Orders are cancelled."u8);
             StationFillRow(game, c, part);
+            ImGuiSafe.TextColored(Dim, ConstructLifters.FittersLine(game.Constructs, c, part)); // (the lifters that reach its hold: ConstructLifters.cs)
             if (ImGui.Button("Close"u8))
                 open = false;
             ImGui.SameLine();

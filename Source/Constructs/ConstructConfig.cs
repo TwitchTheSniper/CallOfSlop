@@ -211,6 +211,8 @@ public enum CfgKey : byte
     FillAmmo, // ...its ammo boxes, Ammo Containers and fitted magazines, %
     FillCharge, // ...its batteries, from the station's power, %
     FillWait, // ...on: the build waits in the bay until it is filled; off: it finishes short and says so
+    LiftMode, // Loader Arm: what it works at (Auto, Station only, Carry only, Off: ConstructLifters.cs)
+    CarryHeight, // Loader Arm: how high it lifts a piece over the higher end of a move before it turns (m)
     COUNT,
 }
 
@@ -819,6 +821,7 @@ public static class ConstructConfig
                 CfgKey.BayWidth or CfgKey.BayDepth or CfgKey.BayHeight or (>= CfgKey.FillFuel and <= CfgKey.FillWait) => d.IsBuildStation,
                 CfgKey.RouterSpill or CfgKey.RouterHold => d.IsRouter && d.IsConveyorJunction,
                 CfgKey.StoreKeep or CfgKey.StorePriority or CfgKey.StoreTakes => StockTargets.IsStore(d),
+                CfgKey.LiftMode or CfgKey.CarryHeight => d.Lifter != null, // (a Loader Arm: ConstructLifters.cs)
                 CfgKey.FeedPriority => d.IsCraftTerminal,
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,

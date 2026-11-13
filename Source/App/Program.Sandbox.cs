@@ -337,6 +337,18 @@ public static unsafe partial class Program
             }
             g.SandboxLookText = _sbRouterText;
         }
+        if (aimed && hit.RoutePlus1 == 0 && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Body.DefOf(hit.Part).Lifter != null)
+        {
+            // A Loader Arm: what it does or waits on, and its reach drawn round it (ConstructLifters.Look, LifterRender.Look).
+            LifterRender.Look(hit.Body.Id, hit.Part);
+            var lk = ConstructLifters.LookKey(g.Constructs, hit.Body, hit.Part) ^ ((long)hit.Body.Id << 48) ^ ((long)hit.Part << 52);
+            if (lk != _sbLifterKey)
+            {
+                _sbLifterKey = lk;
+                _sbLifterText = ConstructLifters.Look(g.Constructs, hit.Body, hit.Part);
+            }
+            g.SandboxLookText = _sbLifterText;
+        }
         var terminalTook = TerminalFrame(g, me, in h, aimed, hit, storeNear); // (a Smart Terminal under the crosshair takes the wheel, the use key and reload: Program.SandboxTerminal.cs)
         var feet = me.Position;
         var nearRack = World.Map.Sandbox is { } sb && Vector3.Distance(feet with { Y = 0 }, sb.Rack) <= 4.5f;
@@ -1015,6 +1027,8 @@ public static unsafe partial class Program
 
     private static long _sbRouterKey = -1;
     private static string _sbRouterText = "";
+    private static long _sbLifterKey = -1;
+    private static string _sbLifterText = "";
 
     private static string StorageLook(Game g, Player me, in ConstructHit hit, CStore st, bool near, ConstructPartDef? held)
     {

@@ -178,6 +178,8 @@ public static class ConstructModules
             return 0; // (a Router's Data out: a link to a display, no value)
         if (p.D.WidePorts)
             return LogicBlocks.OutPort(c, part, port); // (a Data Bus's breakout)
+        if (p.D.Lifter != null)
+            return port == 2 ? p.Mem : 0; // (a lifter's Moved: ConstructLifters.Ports)
         var seat = p.Count - 1;
         if (seat < 0 || seat >= c.PartCount)
             return 0;
