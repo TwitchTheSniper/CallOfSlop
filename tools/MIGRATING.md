@@ -96,6 +96,12 @@ The Cut-off Saws are gone: an Extruder now cuts by itself. A saved world that ha
 
 Seventy-three parts a Press makes now (the Gear Set, brackets, plates, housings, tanks, the Frame Beam and others) left the Assembler's recipe list. An Assembler in a world saved before this version may show **another recipe** than the one you set, or none: check your Assemblers and set their recipe again. A blueprint whose Assembler names one of those parts still loads, with its recipe set to None.
 
+### Engine cylinders in a saved world (sized parts, 2026-11-13)
+
+Fifteen more rows left the Assembler's recipe list: the **Small, Medium and Large Cylinder** (a Press with a Cylinder Die makes them now) and the twelve **Bored, Performance and Racing Cylinders** (a bigger bore replaces them: they can't be made any more). As before, an Assembler in a world saved before this version may show **another recipe** than the one you set, or none: check your Assemblers and set their recipe again. Tier cylinders you already have, and the vehicles that carry them, keep working.
+
+A cylinder pressed before this version still loads, but it is now shaped and rated like a real cylinder of its size: its power comes from its bore and its revs from its length, so an engine built with one may give less (or more) power than before, and the model looks different. Look at the engine's readout after loading. A part or a made piece this version can't build is left out with a line in `callofslop.log`.
+
 ### Keeping saves on a USB stick (portable mode)
 
 Put an empty file called `portable.txt` next to `CallOfSlop.exe`. The game then keeps its saves in its own folder, like the old builds did. Copy your save files into that folder yourself.
