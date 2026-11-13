@@ -686,6 +686,8 @@ public sealed partial class ConstructPartDef
     public int RackCount;
     public Vector3 RackHoldMin, RackHoldMax; // ...the box its pieces pack into, in its own frame (storage.pieces.hold; ConstructRackPack.cs)
     public bool IsPanelFormer; // a Panel Former (also IsExtruder and IsWheelFormer; ConstructPanelFormer.cs): it forms named panels from its bin, by order
+    public bool IsLaserCutter; // a Laser Cutter (also IsPanelFormer, IsExtruder and IsWheelFormer; ConstructLaserCutter.cs): it cuts a formed panel or flat stock to a cut key, by order; its bin is its offcut
+    public float CutKw, CutMaxHeight; // ...its cutting power (kW, the time law's) and the tallest blank its bed takes (m)
     public bool IsWheelFormer; // a Wheel Former (also IsExtruder; ConstructExtruder.cs): its die is a hub and its piece a wheel
     public Vector2 ExtWheelMax, ExtWheelStart; // ...the biggest and the first wheel (metres wide, across)
     public bool IsExtrusion; // a piece an Extruder made (ConstructExtrusion.cs): not from a file

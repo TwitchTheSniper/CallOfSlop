@@ -532,6 +532,33 @@ public static partial class HullLoft
     }
 
     /// <summary>
+    /// A Laser Cutter's job for a cut key (ConstructLaserCutter.cs): the blank's name, a plate's extruded stock, the length of edge the
+    /// head cuts (metres: each cut's outline on the sheet, less what lies along the sheet's own edges) and the thickness cut (mm). False:
+    /// not a cut key, or refused. Allocates: read once per key, by the cutter's cache.
+    /// </summary>
+    public static bool CutJob(string name, out string blank, out bool plate, out ExtrusionKey stock, out float edgeM, out float mm)
+    {
+        (blank, plate, stock, edgeM, mm) = ("", false, default, 0, 0);
+        if (ReadCut(name, out _) is not { } plan)
+            return false;
+        double l = plan.Sheet.L, w = plan.Sheet.W, cm = 0;
+        static bool On(double a, double b, double at) => Math.Abs(a - at) < 1e-6 && Math.Abs(b - at) < 1e-6;
+        foreach (var poly in plan.Polys)
+        {
+            var on = ClipRect(poly, 0, l, 0, w);
+            for (var i = 0; i < on.Length; i++)
+            {
+                var (a, b) = (on[i], on[(i + 1) % on.Length]);
+                if (On(a.U, b.U, 0) || On(a.U, b.U, l) || On(a.V, b.V, 0) || On(a.V, b.V, w))
+                    continue; // (along the sheet's own edge: nothing to cut there)
+                cm += Math.Sqrt((b.U - a.U) * (b.U - a.U) + (b.V - a.V) * (b.V - a.V));
+            }
+        }
+        (blank, plate, stock, edgeM, mm) = (plan.Blank, plan.Plate, plan.Stock, (float)(cm / 100), plan.Thick * 1000);
+        return true;
+    }
+
+    /// <summary>
     /// (Tools: the window tool's ray and walk.) A spot on a cut part's sheet, <paramref name="u"/> cm along and <paramref name="v"/> across, in
     /// the part's own frame on its middle plane, and the way the surface faces there. False: not a cut part, or off its sheet. Allocates.
     /// </summary>
