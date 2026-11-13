@@ -39,12 +39,14 @@ public sealed partial class Game
             foreach (var sz in new[] { -1f, 1f })
                 for (var d = CityMetro.HallZ; d <= CityMetro.HallZ + CityMetro.Stub; d += 3.5f)
                     Scoop(new Vector2(m.X, z + sz * d), bed + 2.4f, 3.9f);
-            // Each flight's shaft: balls down its slope, tall enough to walk under.
+            // Each flight's shaft: balls down its slope, tall enough to walk under and no wider than the opening in the
+            // paving (the ground is the street's floor: a wider ball left a pit beside the railings), the first a metre
+            // in from the stair's head so nothing is dug behind it.
             foreach (var (stairTop, down) in m.Flights(z))
-                for (var d = 0f; d <= m.StairRun + 0.01f; d += 1.4f)
+                for (var d = 1.0f; d <= m.StairRun + 0.01f; d += 1.0f)
                 {
-                    var y = CityGeometry.RoadLift + CityGeometry.Kerb - d * MathF.Tan(33f * MathF.PI / 180);
-                    Scoop(stairTop + new Vector2(0, down * d), y + 0.9f, 1.9f);
+                    var y = CityGeometry.GroundTop - d * MathF.Tan(33f * MathF.PI / 180);
+                    Scoop(stairTop + new Vector2(0, down * d), y + 0.9f, 1.3f);
                 }
         }
         Log($"[city] the metro dug under {World.Map.Name}: {m.Stations.Length} stations, {ops} ground ops, {System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms");

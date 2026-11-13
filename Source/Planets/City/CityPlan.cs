@@ -777,6 +777,31 @@ public sealed class CityPlan
                 var at = new Vector2(d.Range(-room.X, room.X), d.Range(-room.Y, room.Y));
                 Add(id, at, hs, top - 0.05f, top + d.Range(1.4f, 3.2f), CityStyle.Plain, Plant, detail: true);
             }
+            // The roof's own kit, one or two of: a stair house with its door, a dish on a post, a mast with a red lamp,
+            // a row of humming plant units (neighbours differ: buildings.md rule 2).
+            var kit = d.Next();
+            if ((kit & 1) != 0 && half.X > 4 && half.Y > 4)
+            {
+                var at = new Vector2(d.Range(-half.X + 3, half.X - 3), d.Range(-half.Y + 3, half.Y - 3));
+                Add(id, at, new Vector2(1.6f, 1.3f), top - 0.05f, top + 2.8f, CityStyle.Plain, Rgb(0x7e7a72), detail: true);
+                Add(id, at + new Vector2(0, 1.32f), new Vector2(0.5f, 0.02f), top + 0.05f, top + 2.1f, CityStyle.Metal, Rgb(0x2a3a4a), detail: true, solid: false);
+            }
+            if ((kit & 6) == 2 && half.X > 5 && half.Y > 5)
+            {
+                var at = new Vector2(d.Range(-half.X + 2.5f, half.X - 2.5f), d.Range(-half.Y + 2.5f, half.Y - 2.5f));
+                Add(id, at, new Vector2(0.08f), top, top + 1.6f, CityStyle.Metal, Rgb(0x4a4a4a), detail: true, solid: false);
+                Add(id, at, new Vector2(0.9f), top + 1.5f, top + 1.75f, CityStyle.Plain, Rgb(0xd8d8d2), 3, 0.45f, detail: true, solid: false);
+            }
+            else if ((kit & 6) == 4)
+            {
+                var at = new Vector2(d.Range(-half.X + 1.5f, half.X - 1.5f), d.Range(-half.Y + 1.5f, half.Y - 1.5f));
+                var mh = d.Range(6, 12);
+                Add(id, at, new Vector2(0.1f), top, top + mh, CityStyle.Metal, Rgb(0x9a9a9a), detail: true, solid: false);
+                Add(id, at, new Vector2(0.22f), top + mh, top + mh + 0.35f, CityStyle.Beacon, Rgb(0xff2020), detail: false, solid: false);
+            }
+            if ((kit & 8) != 0 && half.X > 7)
+                for (var k = 0; k < 3; k++)
+                    Add(id, new Vector2(-half.X + 2.5f + k * 2.2f, -half.Y + 2.2f), new Vector2(0.9f, 0.7f), top - 0.05f, top + 1.1f, CityStyle.Plain, Rgb(0x9aa0a4), detail: true);
             if (tank && d.Chance(0.6f) && half.X > 5 && half.Y > 5)
             {
                 var at = new Vector2(d.Range(-half.X + 4, half.X - 4), d.Range(-half.Y + 4, half.Y - 4));

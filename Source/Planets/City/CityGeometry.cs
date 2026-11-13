@@ -43,6 +43,11 @@ public sealed class CityGeometry
     /// <summary>A pavement's and a block's top over the carriageway (m), and the carriageway's over the ground.</summary>
     public const float Kerb = 0.15f, RoadLift = 0.03f;
 
+    /// <summary>Where the planetoid's own ground stands under the city (m over the city's ground radius): level with the
+    /// pavements' tops, so it is what people stand on and what a blast or a drill digs (docs/planets/CITY.md "Damage").
+    /// The carriageways are drawn a kerb's height under it; the ground itself is not drawn there (PlanetRenderer.CityClip).</summary>
+    public const float GroundTop = RoadLift + Kerb;
+
     /// <summary>Lamps along a street: their spacing is about this, the first this far from the crossing (m).</summary>
     public const float LampSpacing = 24f, LampStart = 6f;
 
@@ -395,7 +400,7 @@ public sealed class CityGeometry
         {
             foreach (var (lo, hi) in Uncut(Vector2.Min(a, b), Vector2.Max(a, b)))
                 if (hi.X - lo.X > 0.01f && hi.Y - lo.Y > 0.01f)
-                    SlabCollision(c, lo, hi, RoadLift + Kerb);
+                    _ = c; // (the pavement stands on the planetoid's own ground, which is levelled to its top: GroundTop)
         }
     }
 
@@ -1160,7 +1165,6 @@ public sealed class CityGeometry
             if (b.X - a.X < 0.01f || b.Y - a.Y < 0.01f)
                 continue;
             Sheet(c, a, b, y, color, par, uv);
-            SlabCollision(c, a, b, y);
         }
     }
 

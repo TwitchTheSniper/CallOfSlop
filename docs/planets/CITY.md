@@ -139,6 +139,28 @@ three in five blocks, and fins on every second bay of half the glass towers. Cos
 
 Still to do from the look review: more roof kit on the mid-rises; the square still reads open at eye level.
 
+## Damage: the ground (phase 1)
+
+Karl, 2026-11-13: make Slopolis destructible, the planet's ground too. Phase 1 is the ground.
+
+- **The planetoid's own ground is the city's floor.** The city's flatten stands level with the pavements' tops
+  (`CityGeometry.GroundTop`, 0.18 m over the city's ground radius; make_worlds.py), and the paving, the blocks' courts
+  and the square have no colliders of their own any more: people, parts and wrecks stand on the ground itself, and a
+  blast, a drill or a shovel digs it like any other world's (docs/sandbox/TERRAIN-DIGGING.md). The carriageways are drawn
+  a kerb's height under it, the ground itself isn't drawn under the city (`PlanetRenderer.CityClip`), so the streets look
+  as before.
+- **The paving breaks where the ground is dug.** `CityRenderer.Damage` keeps a mask over the plan (1 m a texel) of where
+  the dig log's craters and scoops cut the ground's top, adding only the ops logged since it last looked (a version
+  check a frame while nothing is dug); the shader leaves the city's ground faces (carriageway, crossings, pavements,
+  kerbs, courts, the apron) out over a dug texel, so the dug ground's own blocks show. The dig log is what saves and
+  reaches a joiner, so a crater in the street is there for everyone and after a load; nothing new on the wire or in a
+  save.
+- The carriageways are drawn 15 cm under the ground people and cars stand on (the kerb's step is gone underfoot);
+  a world saved on Slopolis before this finds the ground 18 cm higher. Grading and smoothing with the ground drill
+  don't cut the paving (only craters and scoops do).
+- Not yet (phase 2): buildings, lamps, the el and the furniture take no damage; a lamp post over a crater stands in the
+  air; ground put back by a fill doesn't bring the paving back until the world is loaded again.
+
 ## The plan for the rest (slices)
 
 1. **Done: the core** (this file): streets, 790 buildings, the square, lamps, the elevated loop and its stations.

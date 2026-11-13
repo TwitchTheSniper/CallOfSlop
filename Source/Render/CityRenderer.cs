@@ -64,6 +64,11 @@ public sealed unsafe partial class CityRenderer
         uniform sampler2D uFont;   // the panels' font (PanelFontData): a signed distance field, 16 x 6 cells
         uniform sampler2D uWords;  // CitySigns.Table: a row a word, a letter a column, its length in the last
         uniform float uShopWords;  // how many of the words are shops' names
+        uniform sampler2D uMask;   // where the ground under the city has been dug (1 m a texel over the plan): CityRenderer.Damage
+        uniform float uMaskReach;  // the mask's half size on the plan (m; 0: nothing dug)
+        uniform vec3 uCityUp;      // the city's centre direction and its sheet's axes
+        uniform vec3 uCityEast;
+        uniform vec3 uCityNorth;
 
         // How much of a sign's word covers p: p.x in letters from the word's start, p.y from 0 (the letters' foot) to 1.
         float Letters(vec2 p, int word)
@@ -312,6 +317,17 @@ public sealed unsafe partial class CityRenderer
         void main()
         {
             gUnder = length(vWorld - uPlanet) < uGroundR - 2.5;
+            // Dug ground (a blast's crater, a drill's hole): the city's paving over it is gone, the dug ground shows.
+            int st0 = int(vPar.x + 0.5) & 127;
+            if (uMaskReach > 0.0 && st0 >= 6 && st0 <= 10 && length(vWorld - uPlanet) > uGroundR - 1.0)
+            {
+                vec3 dir = normalize(vWorld - uPlanet);
+                vec2 t = vec2(dot(dir, uCityEast), dot(dir, uCityNorth));
+                float tl = length(t);
+                vec2 plan = tl > 1e-7 ? t / tl * acos(clamp(dot(dir, uCityUp), -1.0, 1.0)) * uGroundR : vec2(0.0);
+                if (texture(uMask, (plan + uMaskReach) / (2.0 * uMaskReach)).r > 0.5)
+                    discard;
+            }
             gOut = gUnder ? 0.0 : 1.0;
             int style = int(vPar.x + 0.5) & 127;
             bool flag = int(vPar.x + 0.5) >= 128;
@@ -621,7 +637,119 @@ public sealed unsafe partial class CityRenderer
     private GlProgram _program;
     private GlVertexArray _vao;
     private GlBuffer _vbo, _ibo;
-    private uint _fontTex, _wordsTex;
+    private uint _fontTex, _wordsTex, _maskTex;
+    private int _locMaskReach, _locCityUp, _locCityEast, _locCityNorth;
+
+    // ---- Damage: where the ground under the city has been dug (docs/planets/CITY.md "Damage") ----------------------
+
+    /// <summary>The mask's texel (m) and its half size on the plan (the city's apron and a little over).</summary>
+    private const float MaskCell = 1f;
+
+    private float _maskReach;
+    private int _maskN, _maskOps = -1, _maskGen = -1;
+    private byte[] _mask = [];
+    private bool _maskDug;
+    private CityPlan? _maskPlan;
+
+    /// <summary>Brings the mask up to the planetoid's dig log: only the ops added since the last look (a version check a
+    /// frame while nothing is dug), each a disc where its ball cuts the ground's top.</summary>
+    private void Damage(Map map, CityPlan plan, CityGeometry geo)
+    {
+        var edits = map.Planetoid?.EditsIfMade;
+        if (_maskPlan != plan || _maskN == 0)
+        {
+            _maskPlan = plan;
+            _maskReach = geo.Reach + 8;
+            _maskN = (int)MathF.Ceiling(2 * _maskReach / MaskCell);
+            _mask = new byte[_maskN * _maskN];
+            _maskOps = 0;
+            _maskGen = edits?.Generation ?? 0;
+            _maskDug = false;
+            UploadMask(0, _maskN);
+        }
+        if (edits == null)
+            return;
+        if (edits.Generation != _maskGen || edits.Log.Count < _maskOps)
+        {
+            // (the ground was put back: start again from the whole log)
+            Array.Clear(_mask);
+            _maskOps = 0;
+            _maskGen = edits.Generation;
+            _maskDug = false;
+            UploadMask(0, _maskN);
+        }
+        if (edits.Log.Count == _maskOps)
+            return;
+        int lo = int.MaxValue, hi = -1;
+        var top = (float)plan.GroundRadius + CityGeometry.GroundTop;
+        for (var i = _maskOps; i < edits.Log.Count; i++)
+        {
+            var op = edits.Log[i];
+            if (op.Kind is not (DigKind.Crater or DigKind.Scoop))
+                continue;
+            var rel = op.At - plan.PlanetCenter;
+            var dist = rel.Length();
+            // Where the op cuts the ground's top, as PlanetEdits.Ball digs a column: a scoop is a ball; a crater is squashed to
+            // CraterDepth below its centre and throws out everything over it, so a centre under the top cuts its whole
+            // radius and one over the top only where the squashed ball still reaches down to it.
+            var a = dist - top;
+            var r = op.Radius;
+            float f;
+            if (op.Kind == DigKind.Crater)
+            {
+                if (a < 0)
+                    f = -a < r ? r : 0;
+                else
+                {
+                    var k = a / TerrainEdits.CraterDepth;
+                    f = k < r ? MathF.Sqrt(r * r - k * k) : 0;
+                }
+            }
+            else
+                f = MathF.Abs(a) < r ? MathF.Sqrt(r * r - a * a) : 0;
+            if (f <= 0)
+                continue;
+            var dir = rel / dist;
+            var t = new Vector2(Vector3.Dot(dir, plan.East), Vector3.Dot(dir, plan.North));
+            var tl = t.Length();
+            var p = tl > 1e-7f ? t / tl * MathF.Acos(Math.Clamp(Vector3.Dot(dir, plan.Up), -1, 1)) * (float)plan.GroundRadius : Vector2.Zero;
+            if (MathF.Abs(p.X) > _maskReach + f || MathF.Abs(p.Y) > _maskReach + f)
+                continue;
+            int x0 = Math.Max(0, (int)((p.X - f + _maskReach) / MaskCell)), x1 = Math.Min(_maskN - 1, (int)((p.X + f + _maskReach) / MaskCell));
+            int y0 = Math.Max(0, (int)((p.Y - f + _maskReach) / MaskCell)), y1 = Math.Min(_maskN - 1, (int)((p.Y + f + _maskReach) / MaskCell));
+            for (var y = y0; y <= y1; y++)
+                for (var x = x0; x <= x1; x++)
+                {
+                    float cx = (x + 0.5f) * MaskCell - _maskReach - p.X, cy = (y + 0.5f) * MaskCell - _maskReach - p.Y;
+                    if (cx * cx + cy * cy <= f * f)
+                        _mask[y * _maskN + x] = 255;
+                }
+            if (y0 <= y1)
+            {
+                lo = Math.Min(lo, y0);
+                hi = Math.Max(hi, y1);
+                _maskDug = true;
+            }
+        }
+        _maskOps = edits.Log.Count;
+        if (hi >= lo)
+            UploadMask(lo, hi - lo + 1);
+    }
+
+    private void UploadMask(int row, int rows)
+    {
+        Native.glBindTexture(GL_TEXTURE_2D, _maskTex);
+        Native.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        fixed (byte* p = _mask)
+        {
+            if (row == 0 && rows == _maskN)
+                Native.glTexImage2D(GL_TEXTURE_2D, 0, (int)GL_R8, _maskN, _maskN, 0, GL_RED, GL_UNSIGNED_BYTE, p);
+            else
+                Native.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, row, _maskN, rows, GL_RED, GL_UNSIGNED_BYTE, p + (nint)row * _maskN);
+        }
+        Native.glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+        Native.glBindTexture(GL_TEXTURE_2D, 0);
+    }
     private int _locVp, _locChunkRel, _locChunkWorld, _locTime, _locGlow, _locPlanet, _locGroundR, _locCam, _locFog, _locFogRange;
     private CityGeometry? _geo;
     private int[] _order = [];
@@ -714,6 +842,18 @@ public sealed unsafe partial class CityRenderer
         var pc = map.Planetoid?.Center ?? Vector3.Zero;
         Native.glUniform3f(_locPlanet, pc.X, pc.Y, pc.Z);
         Native.glUniform1f(_locGroundR, map.City is { } cityPlan ? (float)cityPlan.GroundRadius : 0f);
+        if (map.City is { } dp)
+            Damage(map, dp, geo);
+        Native.glUniform1f(_locMaskReach, _maskDug ? _maskReach : 0f);
+        if (map.City is { } up3)
+        {
+            Native.glUniform3f(_locCityUp, up3.Up.X, up3.Up.Y, up3.Up.Z);
+            Native.glUniform3f(_locCityEast, up3.East.X, up3.East.Y, up3.East.Z);
+            Native.glUniform3f(_locCityNorth, up3.North.X, up3.North.Y, up3.North.Z);
+        }
+        Native.glActiveTexture(GL_TEXTURE6);
+        Native.glBindTexture(GL_TEXTURE_2D, _maskTex);
+        Native.glActiveTexture(GL_TEXTURE0);
         _vao.Bind();
         Native.glActiveTexture(GL_TEXTURE4);
         Native.glBindTexture(GL_TEXTURE_2D, _fontTex);
@@ -846,6 +986,18 @@ public sealed unsafe partial class CityRenderer
             Native.glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
             Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (int)GL_NEAREST);
             Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (int)GL_NEAREST);
+            Native.glGenTextures(1, &tex);
+            _maskTex = tex.Id;
+            Native.glBindTexture(GL_TEXTURE_2D, _maskTex);
+            Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (int)GL_NEAREST);
+            Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (int)GL_NEAREST);
+            Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (int)GL_CLAMP_TO_EDGE);
+            Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (int)GL_CLAMP_TO_EDGE);
+            Native.glUniform1i(Uniform(_program, "uMask\0"u8), 6);
+            _locMaskReach = Uniform(_program, "uMaskReach\0"u8);
+            _locCityUp = Uniform(_program, "uCityUp\0"u8);
+            _locCityEast = Uniform(_program, "uCityEast\0"u8);
+            _locCityNorth = Uniform(_program, "uCityNorth\0"u8);
             Native.glBindTexture(GL_TEXTURE_2D, 0);
             float* rotId = stackalloc float[9] { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
             Native.glUniformMatrix3fv(_locRot, 1, false, rotId);
