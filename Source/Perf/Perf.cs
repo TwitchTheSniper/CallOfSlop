@@ -19,8 +19,18 @@ public enum PerfArea : byte
     Zombies, //       the Zombies run: rounds, spawns, the horde, boxes, drops
     Horde, //         the horde: thinking and moving every zombie
     Coop, //       the Co-op director and its soldiers
+    Sandbox, //       the Sandbox's tick (GameSandbox.cs ServerTickSandbox): hands, seats and everything below
+    Constructs, //         ConstructWorld.Step: every construct
+    ConstructLogic, //           links, hoses, power, routes, guns, the logic blocks, doors, launchers
+    ConstructPhysics, //           ConstructPhysics.Step: bodies, contacts, joints, wheels
+    Production, //           machines: recyclers, gatherers, scoops, smelters, assemblers, extruders, conveyors, beacons, cargo
+    SandboxWorld, //         the world's own: spawns, vehicles made at spawn, AI pilots, shots, debris, the flush
+    Colony, //         the colony and its duties: the opening, quarry, labourers, depot, objectives, lockdown, induction
+    Story, //         StoryTick (GameStory.cs): the story's people, plays and factions
     Projectiles, //     grenades, rockets, grenade zones
     Destruction, //     props, mines, map logic, falling building pieces
+    Space, //     the space bubble, landings and other planetoids' games (GameSpace*.cs, GameTravelPlace.cs)
+    TerrainStream, //     streamed ground made ready round the players (GameTerrainStream.cs)
     Players, //     people's moves (World.Simulate for the host and each client's inputs)
     Bots, //     bots: thinking, nav (A* and the graph build), moving
     NetSend, //     snapshots and the per-tick sends
@@ -29,6 +39,7 @@ public enum PerfArea : byte
     Audio, // voice chat, music state, the frenzy sound and visuals
     Render, // the 3D scene (the CPU side of every pass; GPU time is in PerfGpu)
     Buildings, //   buildings and the map's boxes, movers
+    City, //   a planetoid's city (CityRenderer.cs)
     Terrain, //   terrain
     Props, //   props and debris
     Meshes, //   mesh and model ops
@@ -37,6 +48,7 @@ public enum PerfArea : byte
     Sky, //   the sky
     Bodies, //   players (and your own legs)
     Entities, //   grenades, streaks, launchers, zombies, map logic, co-op soldiers
+    ConstructDraw, //   Sandbox: the constructs, the physics gun's beams, part ambience and engine sounds (Program.Sandbox.cs DrawSandbox)
     Effects, //   tracers, blasts, smoke, objectives, frenzy sparks
     Particles, //   the particle pool's step and draw (Source/Render/Fx)
     PostFx, //   bloom, heat haze, ambient occlusion (Source/Render/Fx/PostFx.cs)
@@ -90,9 +102,10 @@ public static class Perf
     public static readonly string[] Names =
     [
         "Events", "Input", "Game update", "Net receive", "Server ticks", "Match and mode", "Zombies", "Horde", "Co-op",
-        "Projectiles", "Props, logic, destruction", "Player moves", "Bots + nav", "Net send (snapshots)", "Client prediction",
-        "Frame state, sounds", "Audio, voice, frenzy", "Render (CPU)", "Buildings", "Terrain", "Props", "Meshes", "Foliage",
-        "Decals", "Sky", "Players", "Entities, zombies", "Effects", "Particles", "Post effects", "View model", "HUD (2D)", "Ragdolls", "UI (ImGui)",
+        "Sandbox tick", "Constructs", "Links, power, logic", "Construct physics", "Machines, production", "Spawns, pilots, debris", "Colony, duties", "Story",
+        "Projectiles", "Props, logic, destruction", "Space, travel", "Terrain streaming", "Player moves", "Bots + nav", "Net send (snapshots)", "Client prediction",
+        "Frame state, sounds", "Audio, voice, frenzy", "Render (CPU)", "Buildings", "City", "Terrain", "Props", "Meshes", "Foliage",
+        "Decals", "Sky", "Players", "Entities, zombies", "Constructs (draw)", "Effects", "Particles", "Post effects", "View model", "HUD (2D)", "Ragdolls", "UI (ImGui)",
         "ImGui new frame", "HUD windows", "Menus", "Dev windows", "Perf window (F9)", "ImGui draw (GL)",
         "Swap (vsync/GPU wait)", "Loading", "Frame limiter (Max FPS wait)",
     ];
@@ -110,11 +123,13 @@ public static class Perf
                 p[(int)k] = (sbyte)parent;
         }
         Under(PerfArea.Game, PerfArea.NetReceive, PerfArea.ServerTick, PerfArea.ClientTick, PerfArea.Visuals);
-        Under(PerfArea.ServerTick, PerfArea.Modes, PerfArea.Projectiles, PerfArea.Destruction, PerfArea.Players, PerfArea.Bots, PerfArea.NetSend);
-        Under(PerfArea.Modes, PerfArea.Zombies, PerfArea.Coop);
+        Under(PerfArea.ServerTick, PerfArea.Modes, PerfArea.Projectiles, PerfArea.Destruction, PerfArea.Space, PerfArea.TerrainStream, PerfArea.Players, PerfArea.Bots, PerfArea.NetSend);
+        Under(PerfArea.Modes, PerfArea.Zombies, PerfArea.Coop, PerfArea.Sandbox);
+        Under(PerfArea.Sandbox, PerfArea.Constructs, PerfArea.SandboxWorld, PerfArea.Colony, PerfArea.Story);
+        Under(PerfArea.Constructs, PerfArea.ConstructLogic, PerfArea.ConstructPhysics, PerfArea.Production);
         Under(PerfArea.Zombies, PerfArea.Horde);
-        Under(PerfArea.Render, PerfArea.Buildings, PerfArea.Terrain, PerfArea.Props, PerfArea.Meshes, PerfArea.Foliage, PerfArea.Decals, PerfArea.Sky,
-            PerfArea.Bodies, PerfArea.Entities, PerfArea.Effects, PerfArea.Particles, PerfArea.PostFx, PerfArea.ViewModel, PerfArea.Hud, PerfArea.Ragdolls);
+        Under(PerfArea.Render, PerfArea.Buildings, PerfArea.City, PerfArea.Terrain, PerfArea.Props, PerfArea.Meshes, PerfArea.Foliage, PerfArea.Decals, PerfArea.Sky,
+            PerfArea.Bodies, PerfArea.Entities, PerfArea.ConstructDraw, PerfArea.Effects, PerfArea.Particles, PerfArea.PostFx, PerfArea.ViewModel, PerfArea.Hud, PerfArea.Ragdolls);
         Under(PerfArea.Ui, PerfArea.UiNewFrame, PerfArea.UiHud, PerfArea.UiMenus, PerfArea.UiDev, PerfArea.UiPerf, PerfArea.UiDraw);
         return p;
     }
@@ -394,6 +409,8 @@ public static class Perf
         _head = (_head + 1) % History;
         if (_filled < History)
             _filled++;
+        if (PerfBench.Recording)
+            PerfBench.Sample(); // the benchmark keeps the frame (PerfBench.cs)
     }
 
     private static void ClearFrame()
