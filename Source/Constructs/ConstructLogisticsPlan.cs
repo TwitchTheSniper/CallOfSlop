@@ -155,7 +155,7 @@ public static class ConstructLogisticsPlan
     /// else the smallest Extruder in the catalogue that takes it; then the strips setting with the count it would make. Null when the
     /// widest Extruder here takes it after all (the usual refusal stands). Made only when the entry's reason changes (the caller compares).
     /// </summary>
-    private static string? TooWideText(Construct c, CraftNet net, string name, int w)
+    private static string? TooWideText(Construct c, CraftNet net, int w)
     {
         var widest = WidestTaken(c, net, SheetThickCm);
         if (widest >= w)
@@ -178,7 +178,7 @@ public static class ConstructLogisticsPlan
         }
         var strips = widest >= Extrusion.MinSectionCm ? $", or set the Panel Former to make strips ({(w + widest - 1) / widest} across)" : "";
         var here = widest > 0 ? $"the widest Extruder here makes {widest / 100f:0.##} m" : "no Extruder here makes it";
-        return $"waiting on {name}: {w / 100f:0.##} m wide, {here}. {char.ToUpperInvariant(frames[0])}{frames[1..]}{strips}";
+        return $"waiting on sheet {w / 100f:0.##} m wide: {here}. {char.ToUpperInvariant(frames[0])}{frames[1..]}{strips}";
     }
 
     /// <summary>
@@ -191,8 +191,9 @@ public static class ConstructLogisticsPlan
         var dd = c.DefOf(e.Dest);
         if (!dd.IsPanelFormer || dd.IsLaserCutter || ConstructParts.Get(e.Kind) is not { IsExtrusion: true } old || old.ExKey.H != SheetThickCm)
             return false;
-        var panelKind = e.Parent == 0 ? RootKind(c, e.Root, e.RootId) : Find(world, e.Parent) is var p and >= 0 ? world.Chains[p].Kind : ConstructParts.None;
-        if (ConstructParts.Get(panelKind) is not { } pd || !HullLoft.IsFormedName(pd.Name) || HullLoft.FormedMaterial(pd.Name) is var mat && mat == 0)
+        var pd = e.Parent != 0 ? (Find(world, e.Parent) is var p and >= 0 ? ConstructParts.Get(world.Chains[p].Kind) : null)
+            : e.Root < c.PartCount && c.Parts[e.Root].Craft is { } q && q.Find(e.RootId) is var k and >= 0 && q.Items[k].What.Name is { } pn ? ConstructParts.Find(pn) : null;
+        if (pd == null ||!HullLoft.IsFormedName(pd.Name) || HullLoft.FormedMaterial(pd.Name) is var mat && mat == 0)
             return false;
         var key = SheetFor(c, net, pd, mat, HullLoft.FormedUnits(pd, mat), StockTargets.Strips(c, e.Dest));
         if (key == (old.ExKey with { Growing = false }) || Extrusion.Def(key) is not { } sheet)
@@ -506,7 +507,7 @@ public static class ConstructLogisticsPlan
         }
         var name = ConstructParts.Get(e.Kind)?.Name ?? "part";
         var sheet = refusal != null && c.DefOf(e.Dest) is { IsPanelFormer: true, IsLaserCutter: false } && ConstructParts.Get(e.Kind) is { IsExtrusion: true } sd && sd.ExKey.H == SheetThickCm
-            ? TooWideText(c, net, name, sd.ExKey.W) : null;
+            ? TooWideText(c, net, sd.ExKey.W) : null;
         var reason = sheet ?? (refusal != null ? $"waiting on {name}: {refusal}" : $"waiting on {name}: nothing on the network makes it");
         if (e.Reason != reason)
             e.Reason = reason; // (made only when it changes)
