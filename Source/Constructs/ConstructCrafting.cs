@@ -386,7 +386,7 @@ public static class ConstructCrafting
             {
                 foreach (var r in AssemblingTable.Current.ByMachine[md.AsmMachine])
                 {
-                    if (r.MinTier > md.Tier)
+                    if (r.Pressed || r.MinTier > md.Tier)
                         continue;
                     var row = Row(new WorkOrder { Part = (ushort)r.Output.Id }, r.Output);
                     if (row.Make == 1)
@@ -576,7 +576,16 @@ public static class ConstructCrafting
     private static string? MachineMakes(Construct c, CraftNet net, ushort part)
     {
         if (AssemblingTable.Current.Of(part) is not { } r)
+        {
+            // (Press phase 5: a part a die presses, the Gear Set, the Circuit Board: a linked press with that die fitted makes it)
+            if (ConstructBill.PresetOf(ConstructParts.Get(part)) is not { } spec)
+                return null;
+            for (var i = 0; i < net.MachineN; i++)
+                if (c.DefOf(net.Machines[i]) is { IsPress: true, IsLathe: false } pd && ReferenceEquals(ConstructPress.SizedDieOf(PressTable.Current, c, net.Machines[i]), spec.Die)
+                    && Pressed.Across(spec.Blank) <= pd.PressMaxCm)
+                    return pd.Name;
             return null;
+        }
         for (var i = 0; i < net.MachineN; i++)
         {
             var d = c.DefOf(net.Machines[i]);

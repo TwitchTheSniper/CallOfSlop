@@ -220,6 +220,24 @@ public sealed partial class Ui
             for (var k = 0; k < list.Length; k++)
             {
                 var r = list[k];
+                if (r.Pressed)
+                {
+                    // (Press phase 5: a part a die presses now keeps its tile, dimmed, in a "Pressed" category: the tip says which die)
+                    if (!groupOf.TryGetValue("Pressed", out var pgi))
+                    {
+                        groupOf["Pressed"] = pgi = groups.Count;
+                        groups.Add("Pressed");
+                    }
+                    tiles.Add(new RpTile
+                    {
+                        Value = -1, Name = r.Name, Out = "press", Group = pgi,
+                        Slot = SandboxTiles.SlotOf(SandboxTiles.Kind.Part, r.Output.Id),
+                        Swatch = Col8(r.Output.Boxes.Length > 0 ? r.Output.Boxes[0].Color : new System.Numerics.Vector3(0.5f)),
+                        Search = $"{r.Name} pressed press {r.PressedDie()}".ToLowerInvariant(),
+                        Tip = $"{Cap(r.PressedText())}. A Press with that die makes it; a Crafting Terminal or Line Console orders it there.",
+                    });
+                    continue;
+                }
                 var g = SandboxCatalogue.Classify(r.Output).Group;
                 if (!groupOf.TryGetValue(g, out var gi))
                 {

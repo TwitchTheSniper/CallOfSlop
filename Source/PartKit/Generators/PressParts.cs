@@ -673,8 +673,50 @@ public sealed class PressParts : IPartGenerator
         Add("Tread Plate 1 m", "plate", "tread", "plate 100x10x100 steel");
         Add("Mesh Grate 1 m", "plate", "grate", "plate 100x10x100 steel");
         Add("Armour Plate 1 m", "plate", "armour", "plate 100x20x100 steel");
+        // Press phase 5: the phase 3b dies' patterns, each from its pattern's own preset blank (several share one: the Pattern setting or an
+        // order picks). The Beam die's patterns are all like the Frame Beam, which stays an Assembler's (a building piece: design 12, answer 3).
+        foreach (var (part, die, pattern, blank) in Presets3b)
+            Add(part, die, pattern, blank);
         return r;
     }
+
+    private static readonly (string Part, string Die, string Pattern, string Blank)[] Presets3b =
+    [
+        ("Drive Shaft 1 m", "shaft", "shaft", "round 20x20x100 steel"),
+        ("U Joint", "shaft", "ujoint", "round 15x15x25 steel"),
+        ("CV Joint", "shaft", "cv", "round 25x25x25 steel"),
+        ("Stub Axle", "shaft", "stub", "round 30x30x35 steel"),
+        ("Wheel Hub", "shaft", "hub", "round 30x30x35 steel"),
+        ("Piston 1x1 Medium", "actuator", "piston", "round 25x25x50 steel"),
+        ("Motor Hinge", "actuator", "hinge", "solid 20x25x55 steel"),
+        ("Turntable", "actuator", "turntable", "solid 65x65x20 steel"),
+        ("Free Pivot 1x1", "actuator", "pivot", "solid 30x25x30 steel"),
+        ("Suspension", "spring", "suspension", "solid 10x30x65 steel"),
+        ("Leaf Spring", "spring", "leaf", "solid 10x55x90 steel"),
+        ("Rigid Mount", "spring", "rigid", "solid 10x30x40 steel"),
+        ("Light Suspension", "spring", "light", "solid 25x25x30 steel"),
+        ("Wiring Loom", "cable", "loom", "round 10x10x30 copper"),
+        ("Copper Coil", "cable", "coil", "round 25x25x25 copper"),
+        ("Power Lead Reel", "cable", "power", "round 45x45x60 steel"),
+        ("Data Lead Reel", "cable", "data", "round 45x45x60 steel"),
+        ("Fluid Hose Reel", "cable", "hose", "round 45x45x60 steel"),
+        ("Fuel Line", "cable", "fuel", "pipe5 15x15x50 steel"),
+        ("AND Gate", "control", "and", "solid 20x20x25 laminate"),
+        ("NOT Gate", "control", "not", "solid 20x20x25 laminate"),
+        ("Timer", "control", "timer", "solid 20x20x25 laminate"),
+        ("Delay", "control", "delay", "solid 20x20x25 laminate"),
+        ("Compare", "control", "compare", "solid 20x20x25 laminate"),
+        ("Proximity Sensor", "control", "proximity", "solid 20x20x25 laminate"),
+        ("Speed Sensor", "control", "speed", "solid 20x20x25 laminate"),
+        ("Fuel Tank", "tank", "fuel", "hollow 50x50x50 steel"),
+        ("Small Fuel Tank", "tank", "small", "hollow 40x40x40 steel"),
+        ("Fuel Drum", "tank", "drum", "pipe5 45x45x90 steel"),
+        ("Fluid Tank", "tank", "fluid", "hollow 45x45x50 steel"),
+        ("Small Fluid Tank", "tank", "smallfluid", "hollow 40x40x40 steel"),
+    ];
+
+    /// <summary>Every catalogue part a die presses from a standard blank (the Assembling generator moves the single-piece ones off the Assembler).</summary>
+    internal static HashSet<string> PresetParts() => Presets().Select(p => (string)((PyDict)p!)["part"]!).ToHashSet(StringComparer.Ordinal);
 
     private static List<object?> LatheRows()
     {

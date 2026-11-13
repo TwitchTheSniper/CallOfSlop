@@ -4342,6 +4342,192 @@
    "die": "plate",
    "pattern": "armour",
    "blank": "plate 100x20x100 steel"
+  },
+  {
+   "part": "Drive Shaft 1 m",
+   "die": "shaft",
+   "pattern": "shaft",
+   "blank": "round 20x20x100 steel"
+  },
+  {
+   "part": "U Joint",
+   "die": "shaft",
+   "pattern": "ujoint",
+   "blank": "round 15x15x25 steel"
+  },
+  {
+   "part": "CV Joint",
+   "die": "shaft",
+   "pattern": "cv",
+   "blank": "round 25x25x25 steel"
+  },
+  {
+   "part": "Stub Axle",
+   "die": "shaft",
+   "pattern": "stub",
+   "blank": "round 30x30x35 steel"
+  },
+  {
+   "part": "Wheel Hub",
+   "die": "shaft",
+   "pattern": "hub",
+   "blank": "round 30x30x35 steel"
+  },
+  {
+   "part": "Piston 1x1 Medium",
+   "die": "actuator",
+   "pattern": "piston",
+   "blank": "round 25x25x50 steel"
+  },
+  {
+   "part": "Motor Hinge",
+   "die": "actuator",
+   "pattern": "hinge",
+   "blank": "solid 20x25x55 steel"
+  },
+  {
+   "part": "Turntable",
+   "die": "actuator",
+   "pattern": "turntable",
+   "blank": "solid 65x65x20 steel"
+  },
+  {
+   "part": "Free Pivot 1x1",
+   "die": "actuator",
+   "pattern": "pivot",
+   "blank": "solid 30x25x30 steel"
+  },
+  {
+   "part": "Suspension",
+   "die": "spring",
+   "pattern": "suspension",
+   "blank": "solid 10x30x65 steel"
+  },
+  {
+   "part": "Leaf Spring",
+   "die": "spring",
+   "pattern": "leaf",
+   "blank": "solid 10x55x90 steel"
+  },
+  {
+   "part": "Rigid Mount",
+   "die": "spring",
+   "pattern": "rigid",
+   "blank": "solid 10x30x40 steel"
+  },
+  {
+   "part": "Light Suspension",
+   "die": "spring",
+   "pattern": "light",
+   "blank": "solid 25x25x30 steel"
+  },
+  {
+   "part": "Wiring Loom",
+   "die": "cable",
+   "pattern": "loom",
+   "blank": "round 10x10x30 copper"
+  },
+  {
+   "part": "Copper Coil",
+   "die": "cable",
+   "pattern": "coil",
+   "blank": "round 25x25x25 copper"
+  },
+  {
+   "part": "Power Lead Reel",
+   "die": "cable",
+   "pattern": "power",
+   "blank": "round 45x45x60 steel"
+  },
+  {
+   "part": "Data Lead Reel",
+   "die": "cable",
+   "pattern": "data",
+   "blank": "round 45x45x60 steel"
+  },
+  {
+   "part": "Fluid Hose Reel",
+   "die": "cable",
+   "pattern": "hose",
+   "blank": "round 45x45x60 steel"
+  },
+  {
+   "part": "Fuel Line",
+   "die": "cable",
+   "pattern": "fuel",
+   "blank": "pipe5 15x15x50 steel"
+  },
+  {
+   "part": "AND Gate",
+   "die": "control",
+   "pattern": "and",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "NOT Gate",
+   "die": "control",
+   "pattern": "not",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Timer",
+   "die": "control",
+   "pattern": "timer",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Delay",
+   "die": "control",
+   "pattern": "delay",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Compare",
+   "die": "control",
+   "pattern": "compare",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Proximity Sensor",
+   "die": "control",
+   "pattern": "proximity",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Speed Sensor",
+   "die": "control",
+   "pattern": "speed",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Fuel Tank",
+   "die": "tank",
+   "pattern": "fuel",
+   "blank": "hollow 50x50x50 steel"
+  },
+  {
+   "part": "Small Fuel Tank",
+   "die": "tank",
+   "pattern": "small",
+   "blank": "hollow 40x40x40 steel"
+  },
+  {
+   "part": "Fuel Drum",
+   "die": "tank",
+   "pattern": "drum",
+   "blank": "pipe5 45x45x90 steel"
+  },
+  {
+   "part": "Fluid Tank",
+   "die": "tank",
+   "pattern": "fluid",
+   "blank": "hollow 45x45x50 steel"
+  },
+  {
+   "part": "Small Fluid Tank",
+   "die": "tank",
+   "pattern": "smallfluid",
+   "blank": "hollow 40x40x40 steel"
   }
  ]
 }
