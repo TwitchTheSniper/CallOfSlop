@@ -25,8 +25,8 @@ public static partial class LifterProbe
         float G(float x, float z) => World.Map.GroundHeight(x, z);
         var r = ld.ReachMax;
         var arm = ConstructBuild.PlaceNew(world, ad, at with { Y = G(at.X, at.Z) }, 0);
-        var px = at + new Vector3(r * 0.5f + Half(press).Z, 0, 0);
-        var pr = ConstructBuild.PlaceNew(world, press, px with { Y = G(px.X, px.Z) }, MathF.PI / 2);
+        var px = at + new Vector3(r * 0.45f + Half(press).X, 0, 0); // (turned so its bays face south and its out north: both ends within the arm's reach from the side)
+        var pr = ConstructBuild.PlaceNew(world, press, px with { Y = G(px.X, px.Z) }, 0);
         var rx = at + new Vector3(-(r * 0.45f + Half(rack).X), 0, 0);
         var rk = ConstructBuild.PlaceNew(world, rack, rx with { Y = G(rx.X, rx.Z) }, 0);
         var pdx = at + new Vector3(0, 0, -(1.6f + Half(pad).Z));
@@ -42,8 +42,9 @@ public static partial class LifterProbe
         var stocked = 0;
         for (var n = 0; n < 4; n++)
             stocked += world.RackPut(rk, 0, blank) ? 1 : 0;
+        ConstructLifters.PointAt(pr, new LiftPoint { Body = pr.Id, Part = 0, Kind = LiftPointKind.Out }, out var outAt);
         world.StructureDirty.Add(pr.Id);
-        return $"press: {name} body {arm.Id}, Press body {pr.Id} (die {(fitted ? die.Name : "not fitted")}, kit {kit}), Piece Rack body {rk.Id} ({stocked} {blank.Name}), Lay-down Pad body {pd.Id}";
+        return $"press: {name} body {arm.Id}, Press body {pr.Id} (out {Vector3.Distance(outAt, arm.Pos):0.0} m from the arm, reach {ld.ReachMin:0.0}-{ld.ReachMax:0.0}, up {ld.Up:0.0} down {ld.Down:0.0}; die {(fitted ? die.Name : "not fitted")}, kit {kit}), Piece Rack body {rk.Id} ({stocked} {blank.Name}), Lay-down Pad body {pd.Id}";
     }
 
     /// <summary>A loose piece let fall over the line's pad (it should be taken in within a second or two of coming to rest).</summary>
@@ -59,5 +60,26 @@ public static partial class LifterProbe
         var mid = pp + Vector3.Transform(((pdd.RackHoldMin + pdd.RackHoldMax) * 0.5f) with { Y = pdd.RackHoldMin.Y + 1.2f }, pr);
         var loose = ConstructEdits.DropLoose(world, d, mid, Quaternion.Identity);
         return $"drop: {d.Name} over the pad{(loose == null ? ": no room" : $" (body {loose.Id})")}";
+    }
+}
+
+public static partial class LifterProbe
+{
+    /// <summary>The line's pad as the take-in sees it: its list entry, and each loose one-part body within 12 m in the pad's frame.</summary>
+    public static string PadSeen(ConstructWorld world)
+    {
+        if (world.Get(LinePad) is not { } pd)
+            return "";
+        var s = $" [pads listed {world.PadBodies.Count}, this {world.PadBodies.Contains(pd.Id)}, stamp {pd.PadStamp}/{pd.RebuildStamp}";
+        Freeform.PartWorld(pd, 0, out var pp, out var pr);
+        var inv = Quaternion.Conjugate(pr);
+        var d = pd.DefOf(0);
+        foreach (var b in world.Bodies)
+            if (b.PartCount == 1 && b != pd && Vector3.Distance(b.Pos, pd.Pos) < 12)
+            {
+                var local = Vector3.Transform(b.WorldCom - pp, inv);
+                s += $"; body {b.Id} {b.DefOf(0).Name} local {local:0.00} hold {d.RackHoldMin:0.00}-{d.RackHoldMax:0.00} vel {b.Vel.Length():0.00} store {b.Parts[0].Store} health {b.Parts[0].Health:0}/{b.DefOf(0).Health:0} anchored {b.Anchored}";
+            }
+        return s + "]";
     }
 }
