@@ -80,6 +80,7 @@ public static unsafe partial class Program
         _settings.Mode = GameMode.Sandbox;
         _settings.SandboxSurvival = args.Any(a => a.Equals("--survival", StringComparison.OrdinalIgnoreCase)); // (creative by default; --survival: a survival world, with the story's colony on its home map)
         _settings.MapRandom = false;
+        _settings.StoryStart = args.SkipWhile(a => !a.Equals("--start", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() ?? ""; // (a story start by id, on its own planetoid: GameStoryStart.cs)
         _settings.Bots = 0;
         _settings.ShowFps = false;
         LoadoutStore.ReadOnly = AppearanceStore.ReadOnly = BuildStore.ReadOnly = BlueprintStore.ReadOnly = true;

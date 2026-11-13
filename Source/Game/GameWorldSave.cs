@@ -208,6 +208,7 @@ public sealed partial class Game
         s.FactionOpen = (bool[])FactionTable.Open.Clone();
         s.FactionStances = (sbyte[])FactionTable.Stance.Clone();
         s.Opening = OpeningCapture(); // (GameSandboxOpening.cs)
+        s.Start = StartCapture(); // (GameStoryStart.cs)
         s.OpCount = 0;
         s.GroundOnPlanet = World.Map.Planetoid != null;
         if (DigGroundIfMade is { } g)
@@ -456,6 +457,7 @@ public sealed partial class Game
         Constructs.Resources = World.Map.Resources;
         var r = new SaveReader(body) { Shift = WorldShift(body) };
         ushort nextTag = 1;
+        StartLoad(""); // (a world from before starts plays the default; its Start section says otherwise: GameStoryStart.cs)
         while (r.Has(8))
         {
             var tag = r.U32();
@@ -582,6 +584,9 @@ public sealed partial class Game
                 break;
             case WorldSaveWriter.QuarryTag:
                 WorldReadQuarry(r, ws); // (the first Ministry duty: GameQuarry.cs)
+                break;
+            case WorldSaveWriter.StartTag:
+                StartLoad(r.Str()); // (the story start it was made with: GameStoryStart.cs)
                 break;
             case WorldSaveWriter.Fate:
                 WorldReadDeath(r, ws); // (death and checkpoints: GameSandboxDeath.cs)

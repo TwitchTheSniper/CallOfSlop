@@ -32,6 +32,7 @@ public sealed class Settings
     public bool SnapBuild = true; // Sandbox: snappy building (connection points, the magnet, quick build in creative, hold-to-paint, undo; Constructs/SnapBuild.cs)
     public ulong WorldKey; // who this PC is to a saved world (made once, sent to the host: GameWorldSave.cs)
     public int WorldAutosaveMinutes = 5; // minutes between a saved world's autosaves (0: off)
+    public string StoryStart = ""; // the story's start (Story/Starts, by id; "": the default, the penal colony): the Story page and story co-op (GameStoryStart.cs)
     public bool SandboxSurvival; // hosting Sandbox: Survival rather than Creative (the lobby room's Match tab; GameSandboxSurvival.cs)
     public SurvivalDeath SandboxDeath = SurvivalDeath.Checkpoint; // survival's death rule for a new world (GameSandboxDeath.cs)
     public bool SandboxKeepPack; // ...and a death keeps the backpack
@@ -445,6 +446,7 @@ public sealed class Settings
                     case "world_key" when ulong.TryParse(v, NumberStyles.None, inv, out var wkey): s.WorldKey = wkey; break;
                     case "world_autosave" when int.TryParse(v, out var was): s.WorldAutosaveMinutes = Math.Clamp(was, 0, 120); break;
                     case "sandbox_survival": s.SandboxSurvival = v == "1"; break;
+                    case "story_start": s.StoryStart = v.Trim(); break;
                     case "sandbox_death" when int.TryParse(v, out var sd): s.SandboxDeath = (SurvivalDeath)Math.Clamp(sd, 0, (int)SurvivalDeath.Permadeath); break;
                     case "sandbox_keep_pack": s.SandboxKeepPack = v == "1"; break;
                     case "sandbox_max_bodies" when int.TryParse(v, out var smb): s.SandboxMaxBodies = Math.Clamp(smb, 100, ConstructWorld.MostBodies); break;
@@ -610,6 +612,7 @@ public sealed class Settings
                     $"world_key={WorldKey}",
                     $"world_autosave={WorldAutosaveMinutes}",
                     $"sandbox_survival={(SandboxSurvival ? 1 : 0)}",
+                    $"story_start={StoryStart}",
                     $"sandbox_death={(int)SandboxDeath}",
                     $"sandbox_keep_pack={(SandboxKeepPack ? 1 : 0)}",
                     $"sandbox_max_bodies={SandboxMaxBodies}",

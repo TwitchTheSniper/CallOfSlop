@@ -101,8 +101,8 @@ public sealed partial class Game
             return;
         Tutorial.EnsureLoaded();
         _tutDeferred[id] = false;
-        if (_tutState[id] != TutorialState.None || Tutorial.Steps.Length == 0)
-            return;
+        if (_tutState[id] != TutorialState.None || Tutorial.Steps.Length == 0 || !StartInduction)
+            return; // (a start without the induction: GameStoryStart.cs)
         TutorialGo(id, 0, TutorialState.Running);
     }
 
@@ -279,7 +279,7 @@ public sealed partial class Game
             var state = _tutState[id];
             if (state == TutorialState.None)
             {
-                if (TutorialAutoStart && !_tutDeferred[id] && !OpeningHas(id) && !SandboxInfiniteParts && p.Alive && now - _tutArrivedAt[id] >= TutorialAutoDelay && Phase == MatchPhase.Playing)
+                if (TutorialAutoStart && StartInduction && !_tutDeferred[id] && !OpeningHas(id) && !SandboxInfiniteParts && p.Alive && now - _tutArrivedAt[id] >= TutorialAutoDelay && Phase == MatchPhase.Playing)
                     TutorialGo(id, 0, TutorialState.Running); // (a new person in a survival world)
                 continue;
             }
@@ -438,7 +438,7 @@ public sealed partial class Game
         var state = _tutState[id];
         var held = !SandboxInfiniteParts && (state == TutorialState.Running
             ? _tutStep[id] < Tutorial.Steps.Length && !Tutorial.Steps[_tutStep[id]].PackIssued
-            : state == TutorialState.None && (TutorialAutoStart || _tutDeferred[id] || OpeningHas(id)));
+            : state == TutorialState.None && (TutorialAutoStart && StartInduction || _tutDeferred[id] || OpeningHas(id)));
         if (SandboxHands.IssuePack(id, !held))
             Console.WriteLine($"[tutorial] {p.Name}: backpack {(held ? "held back" : "issued")}");
     }

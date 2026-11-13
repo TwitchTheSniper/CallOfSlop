@@ -85,6 +85,7 @@ public sealed class WorldSnapshot
     public int SpaceWarp;
     public string SpaceSystem = "";
     public OpeningSave? Opening; // the survival opening's colony and crash site (GameSandboxOpening.cs), or null
+    public string Start = ""; // the story start the world was made with (GameStoryStart.cs; "": the default)
     public string[] FactionNames = []; // player factions by id ("": free; the players' records say who is in which)
     public uint[] FactionColours = []; // by id, with FactionTags, FactionOpen and FactionStances: the FCT2 section (GameSandboxFactions.cs)
     public string[] FactionTags = [];
