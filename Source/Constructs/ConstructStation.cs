@@ -1096,6 +1096,7 @@ public static partial class ConstructStation
             return;
         }
         Free(world, b, j);
+        CancelOrders(world, c, t); // (a part that came another way, by hand or stocked, leaves its order open: verification 2026-11-13c)
         j.State = StationState.Done;
         j.Note = "";
         var s = (Stopwatch.GetTimestamp() - j.Started) / (double)Stopwatch.Frequency;
