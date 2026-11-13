@@ -289,7 +289,8 @@ WORLDS = [
     },
     {
         "name": "Slopolis", "order": 6, "radius": 3500, "strength": 10,
-        "ore": {"iron vein": 0.5, "copper vein": 0.5},
+        # No ore: a free port's stock comes in by ship (and a deposit's rocks would stand in the streets).
+        "ore": {"iron vein": 0, "stone seam": 0, "sand bed": 0, "copper vein": 0, "gold vein": 0, "helium pocket": 0, "levite seam": 0},
         "description": "Slopolis, the free port: a 3.5 km world whose north is one city, built by everybody and owned by nobody. Towers in the middle, old brick blocks at the edge, a square at the pole with a column in it, and lamps coming on at the blue hour. Hills and old quarries beyond the last street (docs/planets/CITY.md).",
         "surface": {"grass": "#5d6b4a", "dirt": "#6b5d4c", "rock": "#5a5752", "sand": "#8c7f68", "dirtSlope": 16, "rockSlope": 30, "sandBelow": -30},
         "skybox": {"preset": "dusk", "zenith": "#16224a", "horizon": "#d98a64", "ground": "#1a1a20", "stars": 0.5, "ambient": 0.8,

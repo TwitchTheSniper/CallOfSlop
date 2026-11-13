@@ -307,6 +307,7 @@ public static unsafe class MapThumbs
                 if (map.IsDrawnBox(i))
                     gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
         MoverRender.DrawImmediate(gfx, map, 0); // movers at their start pose
+        PlanetRenderer.CityClip = default; // (no city drawn in a thumbnail: the whole ground; CityRenderer sets it again for the scene)
         TerrainR.Draw(gfx, map);
         PropR.Draw(map, gfx, now);
         MeshR.Draw(map, gfx, now);

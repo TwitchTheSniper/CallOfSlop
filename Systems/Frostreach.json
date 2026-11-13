@@ -1,6 +1,6 @@
 {
   "name": "Frostreach",
-  "description": "A white star 6.6 light-years from the Dev System, 8.1 from Ember (phase 6, docs/space/GALAXY.md): the ice world Glacier with its moon Rime, and the small Shard far out. Glacier is a map (Maps/Planetoids/Glacier.json), the IT Department's world; the others are rails and sky.",
+  "description": "A white star 6.6 light-years from the Dev System, 8.1 from Ember (phase 6, docs/space/GALAXY.md): the ice world Glacier with its moons Rime and Slopolis (the free port, a city: docs/planets/CITY.md), and the small Shard far out. Glacier is a map (Maps/Planetoids/Glacier.json), the IT Department's world; the others are rails and sky.",
   "galaxy": { "ly": [-4.4, 4.6, -1.7], "arrive": { "at": "Glacier", "km": 45 } },
   "bodies": [
     { "name": "Frostreach", "gm": 2.39e20, "radius": 1.2e9, "color": [0.8, 0.88, 1.0], "rotation": { "hours": 300, "tilt": 11 } },
@@ -18,6 +18,11 @@
       "name": "Shard", "parent": "Frostreach", "radius": 2000, "gravity": 5, "color": [0.55, 0.6, 0.66],
       "orbit": { "au": 4.0, "e": 0.08, "i": 3, "lan": 250, "argp": 80, "m0": 45 },
       "rotation": { "hours": 6.5, "tilt": 2 }
+    },
+    {
+      "name": "Slopolis", "parent": "Glacier", "radius": 3500, "gravity": 10, "map": "Slopolis", "color": [0.55, 0.5, 0.42],
+      "orbit": { "km": 140, "e": 0.02, "i": 3, "lan": 200, "argp": 40, "m0": 20 },
+      "rotation": { "hours": 26, "tilt": 0 }
     }
   ]
 }

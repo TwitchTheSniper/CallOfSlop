@@ -121,8 +121,13 @@
   "sandbox": {
     "resources": {
       "mix": {
-        "iron vein": 0.5,
-        "copper vein": 0.5
+        "iron vein": 0,
+        "stone seam": 0,
+        "sand bed": 0,
+        "copper vein": 0,
+        "gold vein": 0,
+        "helium pocket": 0,
+        "levite seam": 0
       }
     }
   },
