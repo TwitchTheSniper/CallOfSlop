@@ -76,6 +76,13 @@ The phases below were rewritten on 2026-11-13 for the user's answers (at the end
   build drops the run-time names, as it did), sent by key in `CBodyKind.Inventory`, marked by the `RuntimeParts` sweep (inventories
   are tracked like hands). The Tab inventory lists them in one "Made parts" category, sorted by kind then size, by their shown names.
   The pick goes to the server by key (protocol 298). Made parts stay physics-only: the hands, backpack, shelves and F still refuse them.
+  Done (2026-11-13; `SandboxInventory.MadeDef`/`MadeCount`, `WorldPlayer.Made` by key, `CActKind.TakeMade`, `UiSandboxMade.cs`): a made
+  part is always counted, creative too (it is never endless). `--window-shot ... --do "inv drop NAME; inv takeback NAME; inv count;
+  inv setdown NAME"` (`Program.WindowShotInv.cs`) took a pressed bracket and an I-beam back into the count with the real remove edit,
+  listed them under "Made parts" (beams before pressed parts, by their labels), kept both through `saveworld` and `loadworld` in a
+  second process, and set them down as the same parts; over RakNet a joined client saw its own count by key and set its beam down by
+  key. Not done: the Line Layer and Replacer don't pick made parts, a search doesn't find them, and the beacon network and refunds
+  that go there (phase 3) still treat them as bodies.
 - **Phase 3: the network and terminals** (answer 5). `BeaconView` counts run-time kinds in a list beside its array (sent by key); the
   Smart Terminal lists them with the rest, one row per key, and hands them out as bodies in front of the player; Inventory Beacon pulls
   and the network's refunds take them. Stores that refuse physics-only parts keep refusing, so a network holds a made part only where

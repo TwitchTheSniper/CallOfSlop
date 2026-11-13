@@ -106,7 +106,9 @@ public static class PartRef
     /// straight piece's length, since pieces of one section differ only by it.
     /// </summary>
     public static string Listed(ConstructPartDef d) =>
-        d.IsExtrusion && d.ExKey.Shape is ExShape.Section or ExShape.Round or ExShape.Pipe ? $"{Extrusion.Label(d.ExKey)}, {d.ExKey.L / 100f:0.##} m long" : Shown(d);
+        !d.IsExtrusion ? Shown(d)
+        : d.ExKey.Shape is ExShape.Section or ExShape.Round or ExShape.Pipe ? $"{Extrusion.Label(d.ExKey)}, {d.ExKey.L / 100f:0.##} m long, {RecyclingTable.Current.NameOf(d.ExKey.Material)}"
+        : $"{Extrusion.Label(d.ExKey)}, {RecyclingTable.Current.NameOf(d.ExKey.Material)}";
 
     /// <summary>A made part's kind, for sorting a list by kind then size: the extrusion's shape, else what made it.</summary>
     public static int KindOrder(ConstructPartDef d) =>

@@ -739,15 +739,15 @@ public sealed partial class ConstructEdits
             // Decision 21: the creative inventory spawns a physics-only part as a body in front of you (never into the hands).
             if (world == null || eye is not { } e)
                 return PhysicsOnlyRefusal(def, "be carried");
-            var counted = !InfiniteParts && Inventory != null;
-            if (counted && Inventory!.Of(player).Count(def.Id) == 0 && net != 0)
+            var counted = (!InfiniteParts || def.RuntimeMade) && Inventory != null; // (a made part is never endless: it comes out of the count, creative too)
+            if (counted && Inventory!.Of(player).Count(def.Id) == 0 && net != 0 && !def.RuntimeMade)
                 return PhysicsFromNetwork(world, player, def, e, yaw, net);
             if (counted && !Inventory!.Of(player).Take(def.Id))
-                return $"no {def.Name} in your inventory (salvage one)";
+                return $"no {PartRef.Shown(def)} in your inventory (salvage one)";
             var why = SpawnInFront(world, player, def, e, yaw, out _);
             if (why != null && counted)
                 Inventory!.Of(player).Add(def.Id);
-            else if (why == null && InfiniteParts)
+            else if (why == null && InfiniteParts && !def.RuntimeMade)
             {
                 h.Held = ConstructParts.None; // (creative: a new pick replaces what the hands hold; parts are endless, so it just goes back, never dropped)
                 h.Edit = EditKind.None;
