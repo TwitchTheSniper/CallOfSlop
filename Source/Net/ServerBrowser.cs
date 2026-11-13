@@ -466,9 +466,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 284: CActKind.ExtruderSection (u16 body, u16 machine, u8 profile, u16 width, height, wall in cm, u64 mask): the Extruder's recipe
     //      picker sets its section and size in one act; Extruders have a Recipe button among their queue buttons.
     // 285: Building Station phase 2: the station part has a Fluid in pipe port (part data both peers must share); the build's tanks and ammo are filled from it and linked bins (no new bytes).
-    // 286: Msg.LabourHands (u8 n, each u8 player, u8 scene): story people working among the convict labourers are drawn as one of
+    // 287: Msg.LabourHands (u8 n, each u8 player, u8 scene): story people working among the convict labourers are drawn as one of
     //      the gang (GameLabourHands.cs; the break-out's convicts).
-    public const ushort ProtocolVersion = 286;
+    // 287: Lifters phase 1: the Loader Arm part (Constructs/Parts/Lifters, ids move); CBodyKind.Lifts (at the end): a body's lifters, each its part, state, piece, path, age (ConstructLifters.Write).
+    public const ushort ProtocolVersion = 287;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
