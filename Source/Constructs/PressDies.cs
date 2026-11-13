@@ -123,6 +123,7 @@ public sealed class PressDie
     public byte[] Materials = [];
     public int AcrossMin, AcrossMax, LengthMin, LengthMax; // cm
     public float AspectMin, AspectMax;
+    public bool AspectPreset; // "aspect": "preset": a blank keeps its pattern's preset's shape, one free dimension (the Receiver die, sized-parts design 4.1)
     public float SecondsBase, SecondsPerKg;
     public PressFeature[] Features = [];
     public PressSocketSpec[] Sockets = [];
@@ -263,10 +264,15 @@ internal static class PressDies
         (d.AcrossMin, d.AcrossMax) = Range(e.GetProperty("across"), where + ".across", Extrusion.MinSectionCm, Pressed.PressMaxCm[^1]);
         (d.LengthMin, d.LengthMax) = Range(e.GetProperty("length"), where + ".length", Extrusion.StepCm, Extrusion.MaxLengthCm);
         var asp = e.GetProperty("aspect");
-        if (asp.ValueKind != JsonValueKind.Array || asp.GetArrayLength() != 2)
-            throw new FormatException($"{where}: \"aspect\" is [least, most]");
-        d.AspectMin = Num(asp[0], where + ".aspect", 0.01f, 1000);
-        d.AspectMax = Num(asp[1], where + ".aspect", d.AspectMin, 1000);
+        if (asp.ValueKind == JsonValueKind.String && asp.GetString() == "preset")
+            (d.AspectPreset, d.AspectMin, d.AspectMax) = (true, 0.01f, 1000); // (each pattern's preset's shape: Pressed.Proportioned)
+        else
+        {
+            if (asp.ValueKind != JsonValueKind.Array || asp.GetArrayLength() != 2)
+                throw new FormatException($"{where}: \"aspect\" is [least, most], or \"preset\"");
+            d.AspectMin = Num(asp[0], where + ".aspect", 0.01f, 1000);
+            d.AspectMax = Num(asp[1], where + ".aspect", d.AspectMin, 1000);
+        }
         if (e.TryGetProperty("fit", out var fit))
         {
             if (fit.ValueKind != JsonValueKind.Array || fit.GetArrayLength() != 2)

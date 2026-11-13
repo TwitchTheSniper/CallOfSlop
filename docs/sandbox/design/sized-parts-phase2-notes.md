@@ -105,3 +105,9 @@ The shipped vehicles carry these recipes. A hand-built gun changes the same way:
 3. **Four heavy-bore armoury guns now reach 507 m, and the Coil guns reach 600 m**, against 300 m before.
    - A (recommended): keep it. It follows the builder's own numbers.
    - B: cap a receiver gun's reach (for example at 1.5 x `maxRange`).
+
+## The user's answers (2026-11-13)
+
+1. **Muzzle devices keep changing a mounted gun's reach** (A): the barrel and its device are one path.
+2. **The shared preset blanks stay** (A): Sawn-Off and Stub, Squeeze Bore and Cannon Sleeve keep their blanks; the Pattern setting picks.
+3. **No cap on a gun's reach** (A): it follows the builder's own numbers.
