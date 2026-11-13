@@ -672,7 +672,7 @@ public static class StoryCli
         {
             if (t.NoticedBy.Length > 0 && !rules.People.Casts.Any(c => c.People.Any(p => p.Name.Equals(t.NoticedBy, StringComparison.OrdinalIgnoreCase))))
                 Console.WriteLine($"  warning: lore {t.Id} ({t.File}): \"noticed\": {t.NoticedBy} is in no cast, so nobody notices");
-            if (!rules.Topics.Topics.Any(o => o.IfText.Contains($"'lore {t.Id}'", StringComparison.OrdinalIgnoreCase)))
+            if (t.Opens.Length == 0 && !rules.Topics.Topics.Any(o => o.IfText.Contains($"'lore {t.Id}'", StringComparison.OrdinalIgnoreCase)))
                 Console.WriteLine($"  warning: lore {t.Id} ({t.File}): no topic asks for it (\"?them Inspected 'lore {t.Id}'\"), so looking opens nothing");
         }
         var storyletWarnings = StoryletChecks.Check(rules);

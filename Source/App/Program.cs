@@ -974,6 +974,7 @@ public static unsafe partial class Program
             DrawWeatherUi(); // the weather map (F11; Program.Weather.cs): closed one check
             DrawStoryUi(); // the Story window (F4; Program.Story.cs): closed one check
             DrawFactionUi(); // the Faction window (F2; Program.Factions.cs): closed one check
+            DrawJobBoardUi(); // the job board (the use key on the colony's work board; Program.JobBoard.cs): closed one check
             DrawLogbookUi(); // the Logbook (F1; Program.Logbook.cs): closed one check
             DrawDevTools(now); // the look-at inspector and prop editor (F6 / F10; Program.DevTools.cs): closed two checks
             uiPart.Dispose();
@@ -1162,7 +1163,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.LogbookOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen || Ui.DesignerOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.JobBoardOpen || Ui.LogbookOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen || Ui.DesignerOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -1354,6 +1355,8 @@ public static unsafe partial class Program
         if (WeatherMapKey(key)) // F11 (rebindable) or Esc: the weather map window (Program.Weather.cs)
             return;
         if (StoryKey(key)) // F4 (rebindable) or Esc: the Story window (Program.Story.cs)
+            return;
+        if (JobBoardKey(key)) // Esc or the use key: the job board (Program.JobBoard.cs)
             return;
         if (FactionKey(key)) // F2 (rebindable) or Esc: the Faction window (Program.Factions.cs)
             return;

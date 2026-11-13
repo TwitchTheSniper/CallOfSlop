@@ -28,14 +28,20 @@ public static partial class Program
         var item = Game.StoryData.Lore.ByPart(d.Name);
         if (item < 0)
             return false;
-        var reading = _loreOpen == item && _loreBody == hit.Body.Id;
+        var board = Game.StoryData.Lore.Items[item].Opens == "jobs"; // (the job board: Program.JobBoard.cs)
+        var reading = board ? Ui.JobBoardOpen : _loreOpen == item && _loreBody == hit.Body.Id;
         var key = (long)hit.Body.Id << 20 | (long)item << 1 | (reading ? 1L : 0L);
         if (key != _loreLookKey)
-            (_loreLookKey, _loreLook) = (key, SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(SandboxKeys.Use, reading ? "put it down" : "look closer")));
+            (_loreLookKey, _loreLook) = (key, SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(SandboxKeys.Use, board ? "read the jobs" : reading ? "put it down" : "look closer")));
         g.SandboxLookText = _loreLook;
         if (!Pressed(GameAction.Interact))
             return true;
-        if (reading)
+        if (board)
+        {
+            if (!reading)
+                JobBoardOpen(g, item, hit);
+        }
+        else if (reading)
             LoreClose();
         else
         {

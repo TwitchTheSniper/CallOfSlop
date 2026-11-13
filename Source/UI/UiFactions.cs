@@ -104,34 +104,12 @@ public sealed partial class Ui
         var view = game.JobsView;
         if (view.Length == 0 || !ImGui.CollapsingHeader("Jobs for the world's factions##fajobs"u8, ImGuiTreeNodeFlags.DefaultOpen))
             return;
-        ImGuiSafe.TextColored(Dim, "No money: a job pays standing, and standing is what the factions teach their technologies for. One job of each faction at a time. Supply jobs go in a Requisition Crate you own (fill its box: chute, hand, or lay a cut piece in it); the courier collects. Build jobs are inspected where they stand.");
+        ImGuiSafe.TextColored(Dim, "No money: a job pays standing, and standing is what the factions teach their technologies for. One job of each faction at a time. Supply jobs go in a Requisition Crate you own (fill its box: chute, hand, or lay a cut piece in it); the courier collects. Build jobs are inspected where they stand. The Ministry Work Board in the colony yard posts the same jobs.");
+        JobBoardBuild(game); // (the job board's rows: UiJobBoard.cs)
         for (var f = 0; f < view.Length; f++)
         {
-            var jf = view[f];
-            ImGuiSafe.TextColored(Orange, $"{jf.Name}: {jf.Tier} ({jf.Standing:+0;-0;0})");
-            for (var j = 0; j < jf.Jobs.Length; j++)
-            {
-                var row = jf.Jobs[j];
-                if (row.Held)
-                    ImGuiSafe.TextColored(new float4(0.45f, 0.9f, 0.45f, 1f), $"  [yours] {row.Name}{(row.Ticket.Length > 0 ? $" ({row.Ticket})" : "")}");
-                else
-                    ImGuiSafe.TextColored(row.Open ? new float4(1f, 1f, 1f, 1f) : Dim, $"  {row.Name}{(row.Ticket.Length > 0 ? $" ({row.Ticket})" : "")}");
-                if (row.About.Length > 0)
-                    ImGuiSafe.TextWrapped($"    {row.About}");
-                ImGuiSafe.TextWrapped($"    {row.What}. Pays {row.Pay}.");
-                if (row.Note.Length > 0)
-                    ImGuiSafe.TextColored(row.Held ? Orange : Dim, $"    {row.Note}");
-                if (row.Held)
-                {
-                    if (ImGui.Button($"Drop this job##fajd{f}_{j}"))
-                        game.JobAsk(f, -1);
-                }
-                else if (row.Open)
-                {
-                    if (ImGui.Button($"Take this job##fajt{f}_{j}"))
-                        game.JobAsk(f, j);
-                }
-            }
+            ImGui.Spacing();
+            DrawJobFaction(game, f, true);
         }
     }
 
