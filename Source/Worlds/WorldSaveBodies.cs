@@ -120,6 +120,7 @@ public sealed class WorldNamesRead
 public sealed partial class ConstructWorld
 {
     private const uint LogiTag = 0x49474F4C; // "LOGI": a body's smart logistics block (its riders' destinations)
+    private const uint LiftTag = 0x5446494C; // "LIFT": a body's lifters' hands that hold a piece (ConstructLifters.Snapshot)
 
     /// <summary>The tick's copy: every array the worker needs, in bulk.</summary>
     public void CaptureInto(WorldSnapshot s, Func<Construct, bool>? keep = null)
@@ -167,6 +168,7 @@ public sealed partial class ConstructWorld
             b.Station = ConstructStation.Snapshot(c);
             b.Chains = ConstructLogisticsPlan.Snapshot(this, c);
             b.Targets = global::CallOfSlop.StockTargets.Snapshot(this, c);
+            b.Lifts = ConstructLifters.Snapshot(this, c);
             b.Parts = s.PartCount;
             b.PartCount = c.PartCount;
             b.Links = s.LinkCount;
@@ -419,16 +421,17 @@ public sealed partial class ConstructWorld
         foreach (ref readonly var cr in (b.Conveyed ?? []).AsSpan())
             logi |= cr.Dest != 0 || cr.Flags != 0;
         logi |= b.Chains != null || b.Targets != null;
-        if (conveyors || b.Orders != null || b.Craft != null || b.Station != null || logi)
+        var lift = b.Lifts != null; // (a hand holding a piece: the LIFT block follows the LOGI block, so the blocks before it are written)
+        if (conveyors || b.Orders != null || b.Craft != null || b.Station != null || logi || lift)
             ConstructConveyor.WriteSave(w, routes, b.Conveyed ?? [], names); // (an empty one before the work orders: they follow it)
         // Work orders (WorkOrders.cs), after the conveyors: a body without any writes nothing.
-        if (b.Orders != null || b.Craft != null || b.Station != null || logi)
+        if (b.Orders != null || b.Craft != null || b.Station != null || logi || lift)
             WorkOrders.WriteSave(w, b.Orders ?? [], names); // (an empty one before the crafting orders: they follow it)
         // Crafting Terminals' orders (ConstructCrafting.cs), after the work orders the same way.
-        if (b.Craft != null || b.Station != null || logi)
+        if (b.Craft != null || b.Station != null || logi || lift)
             ConstructCrafting.WriteSave(w, b.Craft ?? [], names); // (an empty one before the stations' jobs: they follow it)
         // Building Stations' jobs (ConstructStation.cs), after the crafting orders the same way.
-        if (b.Station != null || logi)
+        if (b.Station != null || logi || lift)
             ConstructStation.WriteSave(w, b.Station ?? []);
         // Smart logistics (ConstructLogistics.cs), after the stations' jobs: "LOGI", its length, then per rider in the riders' order its
         // destination part plus one (0: none), its order and its LogiFlags; then (phase 2) the chained orders' links: i32 n, each u16 id,
@@ -454,6 +457,14 @@ public sealed partial class ConstructWorld
             w.I32(targets.Length);
             foreach (var (tp, tk) in targets)
                 w.U16(tp).U16(names.Part(tk));
+        }
+        // Lifters (ConstructLifters.cs), after the LOGI block: "LIFT", its length, i32 n, then per hand that holds a piece u16 the lifter part,
+        // u16 the piece by the save's names, u32 its paint. It loads in the hand and goes back into a station's hold in reach. An older build skips it.
+        if (b.Lifts is { } lifts)
+        {
+            w.U32(LiftTag).I32(4 + lifts.Length * 8).I32(lifts.Length);
+            foreach (var (lp, ld, lc) in lifts)
+                w.U16(lp).U16(names.Part(ld)).U32(lc);
         }
     }
 
@@ -789,14 +800,28 @@ public sealed partial class ConstructWorld
         (ushort Dest, ushort Tag, byte Flags)[]? logi = null; // (after the stations' jobs: the riders' destinations, ConstructLogistics.cs)
         ChainEntry[]? chains = null; // (and the chained orders' links: ConstructLogisticsPlan.cs)
         (ushort Part, ushort Kind)[]? targets = null; // (and its racks' stock targets: StockTargets.cs)
-        if (stations != null && r.Has(8) && r.Pos + 8 <= bodyEnd)
+        (ushort Part, ushort Def, uint Paint)[]? lifts = null; // (and its lifters' hands that hold a piece: the LIFT block, ConstructLifters.cs)
+        while (stations != null && r.Has(8) && r.Pos + 8 <= bodyEnd) // (tagged blocks: LOGI, then LIFT; an unknown one is skipped)
         {
             var tag = r.U32();
             var len = r.I32();
             if (len < 0 || r.Pos + len > bodyEnd || !r.Has(len))
                 throw new WorldFileException($"a logistics block of {len} bytes");
             var end = r.Pos + len;
-            if (tag == LogiTag && len >= 4)
+            if (tag == LiftTag && len >= 4)
+            {
+                var m = r.I32();
+                if (m < 0 || m > 4096 || 4 + m * 8 > len)
+                    throw new WorldFileException($"{m} lifters' hands");
+                lifts = new (ushort, ushort, uint)[m];
+                for (var i = 0; i < m; i++)
+                {
+                    var lp = r.U16();
+                    var lk = r.U16();
+                    lifts[i] = (lp, lk < names.Parts.Length ? names.Parts[lk] : ConstructParts.None, r.U32());
+                }
+            }
+            else if (tag == LogiTag && len >= 4)
             {
                 var m = r.I32();
                 if (m < 0 || m > Construct.MaxConveyed || 4 + m * 5 > len)
@@ -921,6 +946,8 @@ public sealed partial class ConstructWorld
             if (Get(id) is { Dirty: true } left)
                 left.Rebuild();
         }
+        if (lifts != null && Get(id) is { } lc)
+            ConstructLifters.ApplySave(this, lc, lifts);
         if (briefBytes != null)
             LoadBrief(c, briefBytes);
         return c;

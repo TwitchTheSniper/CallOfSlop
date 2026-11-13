@@ -2048,6 +2048,7 @@ public static unsafe partial class Program
         ScenePresentation.BeginFrame(MeshGfx);
         using (Perf.Measure(PerfArea.Ragdolls))
             UpdateRagdolls(now); // new bodies for the newly dead, their 60 Hz steps (Program.Ragdolls.cs); drawn with the props' debris
+        ConstructLifters.DrawTick = _game.MoverRenderTick; // (a Loader Arm's move is posed on the mover clock: ConstructLifters.AgeAt)
         AddFrameLights(now, eye, fwd); // muzzle flash and blasts light a lit map this frame (Program.Lighting.cs)
         ApplyVideoLevels();
         DrawArena();
@@ -2055,6 +2056,7 @@ public static unsafe partial class Program
 
         // ---- Players --------------------------------------------------------
         var pass = Perf.Pass(PerfArea.Bodies, PerfGpuPass.Bodies); // the perf window's passes (Source/Perf)
+        Gfx.BeginBatch(); // (every person's opaque boxes in a few instanced draws, not a GL draw each: the same pixels, Renderer.BeginBatch)
         LegAnimator.Viewer = eye; // foot IK rays only for players near the camera (Source/Render/LegAnimator.cs)
         LegAnimator.MoverTick = _game.MoverRenderTick;
         ToolRender.Hands = _game.SandboxOn ? _game.SandboxHands : null; // Sandbox: tools in everyone's hands instead of guns (Source/Render/ToolRender.cs)
@@ -2068,9 +2070,13 @@ public static unsafe partial class Program
                     ScenePresentation.DrawLocalLegs(Gfx, p, Glfw.Time); // your own legs, seen when looking down
                 continue;
             }
+            AllocProfile.Mark("people: player bodies"); // (the benchmark's --trace-frame)
             DrawPlayer(p);
         }
+        AllocProfile.Mark("people: labourers");
         LabourRender.Draw(Gfx, _game); // the penal colony's convict labourers (Source/Render/LabourRender.cs)
+        AllocProfile.Stop();
+        Gfx.EndBatch();
 
         pass.Dispose();
 

@@ -1,0 +1,493 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Workshop Loader Arm",
+  "description": "Stands beside a Building Station and fits parts from its hold onto the build in the bay: one more pair of hands. Reaches 1.2 to 5 m round its base, carries 1 t. Needs power while it moves.",
+  "group": "Production",
+  "section": "Lifters",
+  "role": "frame",
+  "tool": "welder",
+  "panels": [
+    {
+      "source": "lifter",
+      "at": [
+        0.875,
+        0.62,
+        1.752
+      ],
+      "size": [
+        0.74,
+        0.28
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 5,
+      "range": 10
+    }
+  ],
+  "mass": 570.0,
+  "health": 900,
+  "armour": 4,
+  "material": "steel",
+  "color": "#2f5f8a",
+  "attachSeconds": 7.5,
+  "tier": 2,
+  "power": 1100,
+  "onBreak": "disable",
+  "collider": "boxes",
+  "lifter": {
+    "kind": "arm",
+    "base": [
+      0.875,
+      1.525,
+      0.875
+    ],
+    "ring": 0.7,
+    "reach": [
+      1.2,
+      5.0
+    ],
+    "up": 4.0,
+    "down": 1.25,
+    "payload": 1000,
+    "piece": [
+      1.25,
+      5.0
+    ],
+    "speed": 4.5,
+    "handle": 0.6,
+    "arm": [
+      2.875,
+      2.75
+    ],
+    "look": {
+      "turret": "#2f5f8a",
+      "weight": "#2a2e33",
+      "upper": "#3f6f9c",
+      "fore": "#2f5f8a",
+      "joint": "#d8c690",
+      "pin": "#f07818"
+    }
+  },
+  "config": [
+    {
+      "key": "liftMode",
+      "type": "choice",
+      "label": "Works",
+      "group": "Lifter",
+      "options": [
+        "Auto",
+        "Station only",
+        "Carry only",
+        "Off"
+      ],
+      "default": 0,
+      "tooltip": "Auto: every job in its reach. Station only: fits parts at Building Stations. Carry only: carries between machines (to come). Off: stands still."
+    },
+    {
+      "key": "carryHeight",
+      "label": "Carry height",
+      "group": "Lifter",
+      "unit": "m",
+      "min": 0.0,
+      "max": 4.0,
+      "step": 0.1,
+      "default": 0.4,
+      "tooltip": "How high it lifts a piece over the higher end of its move before it turns. Never past what its arm reaches."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.105,
+        -0.125,
+        -0.105
+      ],
+      "max": [
+        1.855,
+        0.3,
+        1.855
+      ],
+      "color": "#2a2e33"
+    },
+    {
+      "min": [
+        -0.111,
+        0.1513,
+        -0.025
+      ],
+      "max": [
+        -0.099,
+        0.249,
+        1.775
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.849,
+        0.1513,
+        -0.025
+      ],
+      "max": [
+        1.861,
+        0.249,
+        1.775
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.025,
+        0.1513,
+        -0.111
+      ],
+      "max": [
+        1.775,
+        0.249,
+        -0.099
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.025,
+        0.1513,
+        1.849
+      ],
+      "max": [
+        1.775,
+        0.249,
+        1.861
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.25,
+        0.295,
+        0.25
+      ],
+      "max": [
+        1.5,
+        0.6175,
+        1.5
+      ],
+      "color": "#2f5f8a"
+    },
+    {
+      "min": [
+        0.325,
+        0.6125,
+        0.325
+      ],
+      "max": [
+        1.425,
+        0.7,
+        1.425
+      ],
+      "color": "#c9ced6",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.23,
+        0.4525,
+        0.23
+      ],
+      "max": [
+        1.52,
+        0.502,
+        1.52
+      ],
+      "color": "#d8c690",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.005,
+        0.296,
+        -0.005
+      ],
+      "max": [
+        0.075,
+        0.33,
+        0.075
+      ],
+      "color": "#d8c690",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.005,
+        0.296,
+        1.675
+      ],
+      "max": [
+        0.075,
+        0.33,
+        1.755
+      ],
+      "color": "#d8c690",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        1.675,
+        0.296,
+        -0.005
+      ],
+      "max": [
+        1.755,
+        0.33,
+        0.075
+      ],
+      "color": "#d8c690",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        1.675,
+        0.296,
+        1.675
+      ],
+      "max": [
+        1.755,
+        0.33,
+        1.755
+      ],
+      "color": "#d8c690",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        1.496,
+        0.34,
+        0.655
+      ],
+      "max": [
+        1.76,
+        0.64,
+        1.095
+      ],
+      "color": "#26496b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        1.756,
+        0.42,
+        0.795
+      ],
+      "max": [
+        1.8,
+        0.56,
+        0.955
+      ],
+      "color": "#c9ced6",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.475,
+        0.296,
+        1.665
+      ],
+      "max": [
+        1.275,
+        0.8,
+        1.745
+      ],
+      "color": "#3a3f46",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.495,
+        0.47,
+        1.737
+      ],
+      "max": [
+        1.255,
+        0.77,
+        1.753
+      ],
+      "color": "#10161c",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y.0.0",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.2",
+      "at": [
+        0.0,
+        -0.125,
+        0.5
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.5",
+      "at": [
+        0.0,
+        -0.125,
+        1.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.7",
+      "at": [
+        0.0,
+        -0.125,
+        1.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.2.0",
+      "at": [
+        0.5,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.2.2",
+      "at": [
+        0.5,
+        -0.125,
+        0.5
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.2.5",
+      "at": [
+        0.5,
+        -0.125,
+        1.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.2.7",
+      "at": [
+        0.5,
+        -0.125,
+        1.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.5.0",
+      "at": [
+        1.25,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.5.2",
+      "at": [
+        1.25,
+        -0.125,
+        0.5
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.5.5",
+      "at": [
+        1.25,
+        -0.125,
+        1.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.5.7",
+      "at": [
+        1.25,
+        -0.125,
+        1.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.7.0",
+      "at": [
+        1.75,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.7.2",
+      "at": [
+        1.75,
+        -0.125,
+        0.5
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.7.5",
+      "at": [
+        1.75,
+        -0.125,
+        1.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.7.7",
+      "at": [
+        1.75,
+        -0.125,
+        1.75
+      ],
+      "dir": "-y"
+    }
+  ]
+}

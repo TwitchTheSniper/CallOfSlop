@@ -20,6 +20,7 @@ public struct BodySnap
     public ChainEntry[]? Chains; // its chained orders' links, copied (ConstructLogisticsPlan.cs; written in the LOGI block)
     public (ushort Part, ushort Kind)[]? Targets; // its racks' stock targets (StockTargets.cs; written in the LOGI block's fourth part)
     public (ushort Part, StationJob Job)[]? Station; // its Building Stations' jobs, copied (ConstructStation.cs; written after the crafting orders)
+    public (ushort Part, ushort Def, uint Paint)[]? Lifts; // its lifters' hands that hold a piece (ConstructLifters.Snapshot; the LIFT block, after LOGI)
     public VehicleKit.VehicleBrief? Brief; // a generated faction vehicle's behaviour data (written after the tracks; the tick doesn't change a brief once it is on its construct)
 }
 

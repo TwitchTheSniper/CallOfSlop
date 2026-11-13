@@ -58,10 +58,11 @@ public sealed class PressParts : IPartGenerator
         ("Tank", [Small, Medium, Large, Capital], "steel", 2, "#9f4a3f"),
         ("Beam", [Small, Medium, Large, Capital], "metal", 1, "#7a7f88"),
         ("Barrel", [Small, Medium, Large], "steel", 2, "#4a4d52"),
+        ("Receiver", [Small, Medium], "steel", 2, "#4a5146"),
     ];
 
     // The dies whose stroke presses a whole blank to one part (Pressing.json "dies", the Press rework): they have no old rows.
-    private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate", "Button", "Gear", "Board", "Piston", "Cylinder", "Drive", "Shaft", "Actuator", "Spring", "Cable", "Control", "Tank", "Beam", "Barrel"];
+    private static readonly string[] SizedFamilies = ["Bracket", "Housing", "Plate", "Button", "Gear", "Board", "Piston", "Cylinder", "Drive", "Shaft", "Actuator", "Spring", "Cable", "Control", "Tank", "Beam", "Barrel", "Receiver"];
 
     private static double MaxAcross(Cls c) => c.Key switch { "small" => 0.45, "medium" => 1.8, "large" => 7.2, _ => 28.8 }; // what a class's bays take: 1.8 cells
 
@@ -537,6 +538,28 @@ public sealed class PressParts : IPartGenerator
         foreach (var die in WorkingDies3b())
             yield return die;
         yield return BarrelDie();
+        yield return ReceiverDie();
+    }
+
+    // ---- Sized gun parts, phase 3 (docs/sandbox/design/sized-gun-engine-parts.md 4): the Receiver die. One free dimension, its across: a blank
+    // keeps its preset's shape ("aspect": "preset"), and its scale s (across over the preset's) sizes the gun by the merge's law read with a
+    // real number (ReceiverMerge.json's powers; ConstructMerge.ScaleGun), so a Rifle Receiver at 40x40x80 is today's 2x2 merge. The three
+    // hand-made receivers first; the 26 generated ones are later data. Rifle and Shell share a size, so the Shell's preset is the hollow blank.
+
+    private static readonly (string Id, string Like, string Label, string Blank)[] ReceiverPatterns =
+    [
+        ("rifle", "Rifle Receiver", "rifle receiver", "solid 20x20x40 steel"),
+        ("heavy", "Heavy Receiver", "heavy receiver", "solid 25x25x50 steel"),
+        ("shell", "Shell Receiver", "shell receiver", "hollow 20x20x40 steel"),
+    ];
+
+    private static PyDict ReceiverDie()
+    {
+        var gears = Kit("Gear Set", true, 1, 0.02, "mass", 20); // (as the Drive die: the action's gearing)
+        var die = SizedDie("Receiver", ["solid", "hollow"], ["steel"], [15, 120], [30, 600], [1, 1], 4, 0.02, Py.L(),
+            ReceiverPatterns.Select(r => (object?)Pattern(r.Id, r.Like, r.Label, r.Blank, bay2: gears, along: "z")).ToList());
+        die["aspect"] = "preset";
+        return die;
     }
 
     // ---- Sized gun parts, phase 1 (docs/sandbox/design/sized-gun-engine-parts.md 3): the Barrel die and its plain pattern. A barrel's length
@@ -579,8 +602,80 @@ public sealed class PressParts : IPartGenerator
             curves.Add(Kw(("field", stat), ("by", "calibres"), ("points", points), ("clamp", Py.L(values.Min(), values.Max())), ("op", op)));
         }
         var crown = Py.L(Feature("crown", [-0.1, -0.1, 0, 1.1, 1.1, 0.04], "dark", proud: "xyz", clamp: "z", min: 1, max: 10));
-        return SizedDie("Barrel", ["round", "pipe"], ["steel"], [10, 120], [10, 1920], [1, 16], 4, 0.02, crown, Py.L(
-            Pattern("plain", "Gun Barrel", "barrel", "round 10x10x50 steel", scale: curves, along: "z")));
+        var patterns = Py.L(Pattern("plain", "Gun Barrel", "barrel", "round 10x10x50 steel", scale: curves, along: "z"));
+        // Phase 2 (design 3.3): every other catalogue barrel is a pattern with one preset, its own effects times the plain curve read at
+        // 5 x c / c_preset ("at": 5), so its preset is its file and a longer one gains range as a plain one does.
+        // Each curve is held so the barrel's own change times it stays inside the widest catalogue values (a Coil Barrel, already x2 range,
+        // gains no more range by length; it still loses it when short).
+        var plainPoints = new List<List<object?>>();
+        foreach (var (stat, op) in BarrelCurves)
+            plainPoints.Add(PlainBarrels.Select(x => (object?)Py.L(Calibres(x.Blank), EffectOf(CallOfSlop.Parts.Find(x.Builder)!, stat, op))).ToList());
+        foreach (var (id, builder, blank) in PatternBarrels())
+        {
+            var b = CallOfSlop.Parts.Find(builder)!;
+            var scale = new List<object?>();
+            for (var n = 0; n < BarrelCurves.Length; n++)
+            {
+                var (stat, op) = BarrelCurves[n];
+                var values = barrels.Select(x => EffectOf(x, stat, op)).Append(op == "mul" ? 1 : 0).ToList();
+                var own = EffectOf(b, stat, op);
+                var (lo, hi) = op == "mul" ? (values.Min() / own, values.Max() / own) : (values.Min() - own, values.Max() - own);
+                scale.Add(Kw(("field", stat), ("by", "calibres"), ("points", plainPoints[n]), ("clamp", Py.L(Py.Round(lo, 4), Py.Round(hi, 4))), ("op", op), ("at", 5)));
+            }
+            patterns.Add(Pattern(id, builder, b.Name.ToLowerInvariant(), blank, scale: scale, along: "z"));
+        }
+        // The artillery tube: its own curve through its two knots, the Howitzer Tube and the Long Gun Tube (design 3.3).
+        var tubes = new List<object?>();
+        foreach (var (stat, op) in BarrelCurves)
+        {
+            var points = new List<object?>();
+            foreach (var (builder, blank) in ArtilleryTubes)
+                points.Add(Py.L(Py.Round(Calibres(blank), 4), EffectOf(CallOfSlop.Parts.Find(builder)!, stat, op)));
+            var values = barrels.Select(b => EffectOf(b, stat, op)).Append(op == "mul" ? 1 : 0).ToList();
+            tubes.Add(Kw(("field", stat), ("by", "calibres"), ("points", points), ("clamp", Py.L(values.Min(), values.Max())), ("op", op)));
+        }
+        patterns.Add(Pattern("tube", ArtilleryTubes[0].Builder, "artillery tube", ArtilleryTubes[0].Blank, scale: tubes, along: "z"));
+        var die = SizedDie("Barrel", ["round", "pipe"], ["steel"], [10, 120], [10, 1920], [1, 16], 4, 0.02, crown, patterns);
+        die["fit"] = Py.L(0.7, 1.5); // (a barrel's bore over its receiver's: design section 5, the user's answer 4)
+        return die;
+    }
+
+    /// <summary>The artillery tube pattern's knots: builder part and preset blank (design 3.3's rule, as <see cref="PatternBarrels"/>).</summary>
+    private static (string Builder, string Blank)[] ArtilleryTubes => [("Howitzer Tube", PresetBlank("Howitzer Tube")), ("Long Gun Tube", PresetBlank("Long Gun Tube"))];
+
+    /// <summary>Not patterns: the plain three (the plain pattern's knots), the artillery tubes (their own pattern) and the Barrel of Barrels (a bundle: an assembly).</summary>
+    private static readonly string[] NotPatterns = ["Stub Barrel", "Standard Barrel", "Long Barrel", "Howitzer Tube", "Long Gun Tube", "Barrel of Barrels"];
+
+    /// <summary>Every other catalogue barrel as (pattern id, builder part, preset blank), by name.</summary>
+    private static IEnumerable<(string Id, string Builder, string Blank)> PatternBarrels() =>
+        CallOfSlop.Parts.InCategory(PartCategory.Barrel).Where(b => !NotPatterns.Contains(b.Name)).OrderBy(b => b.Name, StringComparer.Ordinal)
+            .Select(b => (PatternId(b.Name), b.Name, PresetBlank(b.Name)));
+
+    /// <summary>A barrel's pattern id: its name's letters, less "barrel" ("Needle Barrel" needle, "Sawn-Off Barrel" sawn-off).</summary>
+    private static string PatternId(string name)
+    {
+        var words = name.ToLowerInvariant().Split(' ').Where(w => w != "barrel");
+        var id = string.Join("", words.Select(w => new string(w.Where(ch => ch is >= 'a' and <= 'z' or '-').ToArray())));
+        return id.Length > 16 ? id[..16] : id;
+    }
+
+    /// <summary>
+    /// Design 3.3's preset rule: across 10 cm times its bore's barrelScale width (sizedFor; rifle 1), length 250 cm a metre of its muzzle, each
+    /// to the 5 cm lattice (at least 10 cm).
+    /// </summary>
+    private static string PresetBlank(string builder)
+    {
+        var b = CallOfSlop.Parts.Find(builder) ?? throw new InvalidOperationException($"press_parts: no builder part {builder}");
+        static int Lattice(double cm) => Math.Max(10, (int)Math.Round(cm / 5, MidpointRounding.AwayFromZero) * 5);
+        var across = Lattice(10 * CallOfSlop.Parts.Registry.ClassOf(b.SizedFor).Scale.X);
+        var length = Lattice(250 * (b.Muzzles.Length > 0 ? Math.Abs(b.Muzzles[0].Z) : 0.2));
+        return $"round {across}x{across}x{length} steel";
+    }
+
+    private static double Calibres(string blank)
+    {
+        var size = blank.Split(' ')[1].Split('x');
+        return int.Parse(size[2]) / (double)int.Parse(size[0]);
     }
 
     // ---- Phase 3b: Shaft, Actuator, Spring, Cable, Control, Tank and Beam (design section 3.2). The patterns whose behaviour lives in
@@ -732,6 +827,14 @@ public sealed class PressParts : IPartGenerator
         // Sized gun parts phase 1: the plain barrels are the Barrel die's knots. Their Assembler recipes stay until that design's phase 6.
         foreach (var (part, _, blank) in PlainBarrels)
             Add(part, "barrel", "plain", blank);
+        // Phase 2: the other barrels (their items: the builder part's name, ConstructWeaponParts) and the two artillery tubes.
+        foreach (var (id, builder, blank) in PatternBarrels())
+            Add(builder, "barrel", id, blank);
+        foreach (var (builder, blank) in ArtilleryTubes)
+            Add(builder, "barrel", "tube", blank);
+        // Phase 3: the hand-made receivers are the Receiver die's presets (their Assembler recipes stay until that design's phase 6).
+        foreach (var (id, like, _, blank) in ReceiverPatterns)
+            Add(like, "receiver", id, blank);
         return r;
     }
 

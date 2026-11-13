@@ -100,23 +100,102 @@ public static class ConstructLogisticsPlan
 
     /// <summary>
     /// What a Panel Former needs to form <paramref name="ask"/> of panel <paramref name="product"/>: extruded sheet of the panel's material
-    /// (<see cref="SheetKey"/>), counted in pieces against what its bin holds of that material. 0 inputs: nothing to ask (or not a panel).
+    /// sized to the panel (<see cref="SheetFor"/>), counted in pieces against what its bin holds of that material. 0 inputs: nothing to ask.
     /// </summary>
-    private static int FormerInputs(CStore st, ushort product, int ask, Span<ushort> kinds, Span<int> counts, Span<int> held)
+    private static int FormerInputs(Construct c, CraftNet net, CStore st, ushort product, int ask, Span<ushort> kinds, Span<int> counts, Span<int> held)
     {
         if (ConstructParts.Get(product) is not { } pd || !HullLoft.IsFormedName(pd.Name) || HullLoft.FormedMaterial(pd.Name) is var mat && mat == 0)
             return 0;
-        if (Extrusion.Def(SheetKey(mat)) is not { } sheet)
+        var one = HullLoft.FormedUnits(pd, mat);
+        if (Extrusion.Def(SheetFor(c, net, pd, mat, one)) is not { } sheet)
             return 0;
         var each = SheetUnits(sheet, mat);
-        var units = HullLoft.FormedUnits(pd, mat) * ask - st.JobAmount; // (a stroke under way has its units already)
+        var units = one * ask - st.JobAmount; // (a stroke under way has its units already)
         var inBin = st.Material == mat ? st.Amount : 0;
         (kinds[0], counts[0], held[0]) = ((ushort)sheet.Id, (Math.Max(0, units) + each - 1) / each, inBin / each);
         return 1;
     }
 
-    /// <summary>The sheet a chained Panel Former order asks for (the showcase's): a solid bar 0.5 x 0.1 m cut at 1 m, in the panel's material.</summary>
-    public static ExtrusionKey SheetKey(byte material) => new(ulong.MaxValue, 50, 10, 100, material, false, ExShape.Section);
+    /// <summary>Every sized sheet's thickness, cm: so its units per cm of length follow from its width alone.</summary>
+    public const int SheetThickCm = 10;
+
+    /// <summary>
+    /// The sheet a chained Panel Former order asks for (the user, phase 3 Q1): a solid section the panel's width (5 cm steps), 10 cm
+    /// thick, cut so one piece holds one panel's <paramref name="units"/> with less than a 5 cm step to spare. When no Extruder on the
+    /// network takes that width, the panel is split across into the fewest equal strips the widest one takes, each holding its share of
+    /// the units (so the count goes up); a piece longer than the best Extruder makes is cut at its most. When none takes any, the
+    /// full-width sheet is asked for and the chain line says the Extruder's refusal.
+    /// </summary>
+    public static ExtrusionKey SheetFor(Construct c, CraftNet net, ConstructPartDef panel, byte material, int units)
+    {
+        var across = HullLoft.PanelOf(panel.Name) is { W: > 0 } sh ? sh.W
+            : (int)MathF.Round(MathF.Min(panel.BoundsMax.X - panel.BoundsMin.X, panel.BoundsMax.Z - panel.BoundsMin.Z) * 100);
+        across = Math.Clamp(across, Extrusion.MinSectionCm, Extrusion.MaxSectionCm);
+        var w = StepUp(across);
+        if (LongestTaken(c, net, w, SheetThickCm) is var most and >= Extrusion.StepCm)
+            return SheetSized(w, material, units, most);
+        var widest = WidestTaken(c, net, SheetThickCm);
+        if (widest < Extrusion.MinSectionCm)
+            return SheetSized(w, material, units, Extrusion.MaxLengthCm);
+        var n = (across + widest - 1) / widest;
+        var strip = Math.Clamp(StepUp((across + n - 1) / n), Extrusion.MinSectionCm, widest);
+        return SheetSized(strip, material, (units + n - 1) / n, LongestTaken(c, net, strip, SheetThickCm) is var sl and >= Extrusion.StepCm ? sl : Extrusion.MaxLengthCm);
+    }
+
+    private static int StepUp(int cm) => Math.Clamp((cm + Extrusion.StepCm - 1) / Extrusion.StepCm * Extrusion.StepCm, Extrusion.MinSectionCm, Extrusion.MaxSectionCm);
+
+    /// <summary>The widest section (cm, 5 cm steps) <paramref name="h"/> cm high an Extruder on the network makes, by its most section and its die as welded; 0 when none.</summary>
+    private static int WidestTaken(Construct c, CraftNet net, int h)
+    {
+        var best = 0;
+        for (var i = 0; i < net.MachineN; i++)
+        {
+            var m = net.Machines[i];
+            var d = c.DefOf(m);
+            if (!IsSheetExtruder(d) || h > MathF.Round(d.ExtMaxSection.Y * 100))
+                continue;
+            ConstructExtruder.Die(c, m, out _, out var die);
+            if (h > MathF.Round(die.Y * 100) + 0.5f)
+                continue;
+            best = Math.Max(best, (int)MathF.Min(MathF.Round(d.ExtMaxSection.X * 100), MathF.Round(die.X * 100) + 0.5f) / Extrusion.StepCm * Extrusion.StepCm);
+        }
+        return best;
+    }
+
+    private static bool IsSheetExtruder(ConstructPartDef d) => d.IsExtruder && !d.IsWheelFormer && !d.IsPanelFormer && !WorkOrders.IsWholeFormer(d);
+
+    /// <summary>A sheet <paramref name="w"/> cm wide and as long as <paramref name="units"/> need (5 cm steps), at most <paramref name="most"/> cm.</summary>
+    private static ExtrusionKey SheetSized(int w, byte material, int units, int most)
+    {
+        // Units per cm from one metre of it (one def per width), then the least length in steps that holds them.
+        var metre = Extrusion.Def(new ExtrusionKey(ulong.MaxValue, (ushort)w, SheetThickCm, 100, material, false, ExShape.Section));
+        var perCm = metre == null ? 1f : MathF.Max(0.0001f, metre.Mass / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(material)) / 100f);
+        var cm = (int)MathF.Ceiling(units / perCm);
+        var top = Math.Max(Extrusion.StepCm, most / Extrusion.StepCm * Extrusion.StepCm);
+        var l = Math.Clamp((cm + Extrusion.StepCm - 1) / Extrusion.StepCm * Extrusion.StepCm, Extrusion.StepCm, top);
+        return new ExtrusionKey(ulong.MaxValue, (ushort)w, SheetThickCm, (ushort)l, material, false, ExShape.Section);
+    }
+
+    /// <summary>The longest piece (cm) an Extruder on the network makes of a <paramref name="w"/> x <paramref name="h"/> cm section, by its
+    /// most section, its die as welded and its most length (<see cref="WorkOrders.Refusal"/>'s size rules); 0 when none takes it.</summary>
+    private static int LongestTaken(Construct c, CraftNet net, int w, int h)
+    {
+        var best = 0;
+        for (var i = 0; i < net.MachineN; i++)
+        {
+            var m = net.Machines[i];
+            var d = c.DefOf(m);
+            if (!IsSheetExtruder(d))
+                continue;
+            if (w > MathF.Round(d.ExtMaxSection.X * 100) || h > MathF.Round(d.ExtMaxSection.Y * 100))
+                continue;
+            ConstructExtruder.Die(c, m, out _, out var die);
+            if (w > MathF.Round(die.X * 100) + 0.5f || h > MathF.Round(die.Y * 100) + 0.5f)
+                continue;
+            best = Math.Max(best, Math.Min(Extrusion.MaxLengthCm, (int)MathF.Round(d.ExtMaxLength * 100)));
+        }
+        return best;
+    }
 
     /// <summary>Units of material a sheet piece puts into a former's bin (<see cref="ConstructPanelFormer.TakeFromConveyor"/>'s count).</summary>
     public static int SheetUnits(ConstructPartDef sheet, byte material) =>
@@ -138,7 +217,7 @@ public static class ConstructLogisticsPlan
         if (md.IsPress && !md.IsLathe)
             inputs = PressInputs(c, m, st, product, ask, kinds, wants, inside);
         else if (md.IsPanelFormer)
-            inputs = FormerInputs(st, product, ask, kinds, wants, inside);
+            inputs = FormerInputs(c, net, st, product, ask, kinds, wants, inside);
         else if (md.IsAssembler && AssemblingTable.Current.Of(product) is { Parts.Length: > 0 } r)
         {
             var batches = (ask + r.Count - 1) / r.Count;
@@ -339,8 +418,8 @@ public static class ConstructLogisticsPlan
         for (var i = 0; i < net.MachineN; i++)
         {
             var mk = net.Machines[i];
-            if (mk == e.Dest || what.IsPiece != c.DefOf(mk).IsExtruder && !c.DefOf(mk).IsPress)
-                continue; // (a piece is an Extruder's or a Former's; a part an Assembler's or a Press's: Refusal says which takes it)
+            if (mk == e.Dest || what.IsPiece != c.DefOf(mk).IsExtruder && !c.DefOf(mk).IsPress && !(WorkOrders.IsWholeFormer(c.DefOf(mk)) && FormerPresets.PartOf(what) != null))
+                continue; // (a piece is an Extruder's or a Former's; a part an Assembler's, a Press's or, a preset wing or rotor, a Fan or Airframe Former's: Refusal says which)
             var why = WorkOrders.Refusal(world, c, mk, what);
             if (why != null)
             {

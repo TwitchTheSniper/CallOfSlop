@@ -210,6 +210,7 @@ public sealed class ProductionShowcase : IPartGenerator
             ChainCorner(asm); // (on the panel strip's floor: after it is laid)
 
             Monitors(refine, orders);
+            NetworkBoard(router);
 
             // ---- Hazard stripes where pieces start and end their ride. ---------------------------------------------------------
             Stripe(26.75f, Row1, true);
@@ -416,6 +417,23 @@ public sealed class ProductionShowcase : IPartGenerator
             cable.Add(V(62.75f, FloorY + 0.03f, -1.9f));
             cable.Add(V(62.75f, FromRest(Live.Parts[alarm.Index].Pos).Y, -1.9f)); // (up the mast)
             Link("data", orders, alarm, "Alarm", null, Spur, true, cable.ToArray());
+        }
+
+        /// <summary>
+        /// The network board (smart logistics phase 4b; production.md "Smart logistics"): a Medium Text Sign (4 x 2 m, so 16 rows: the plan
+        /// map) on a post in the back aisle's gap west of the Assembler, its wire from the Router's Data out laid along the aisle's edge.
+        /// </summary>
+        private void NetworkBoard(VPart router)
+        {
+            var post = On("Frame Beam", 44.25f, Posts2, Post, "end-", Assembly, "painted plating");
+            var adapter = Onto(post, "y+3", "Adapter Medium to Small", "front0.0"); // (a medium sign on a small post)
+            Paint(adapter, Assembly);
+            var board = Onto(adapter, "back", "Medium Text Sign", "back");
+            Paint(board, Board);
+            Text(board, "NETWORK BOARD");
+            var r = FromRest(Live.Parts[router.Index].Pos);
+            Link("data", router, board, "Data out", null, Assembly, true,
+                V(r.X, FloorY + 0.03f, -8.55f), V(48.75f, FloorY + 0.03f, -8.55f), V(44.25f, FloorY + 0.03f, -8.55f));
         }
 
         /// <summary>A sign post at (x, z): a Frame Beam stood up in the station's colour, a Text Sign facing the aisle, a lamp on top.</summary>

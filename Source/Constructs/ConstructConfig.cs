@@ -207,6 +207,12 @@ public enum CfgKey : byte
     StorePriority, // Piece Rack: 1 to 5, which store a piece for storage goes to first
     StoreTakes, // Piece Rack: what it takes as storage (anything, only what it holds now, nothing: orders and what it keeps only)
     FeedPriority, // Crafting Terminal, Building Station: Low, Normal, High: its orders' class (ConstructLogisticsPlan: class, then age)
+    FillFuel, // Building Station: a survival build's fuel and fluid tanks (gases too) are filled to this, % (0: none; ConstructStation.cs "The fill stage")
+    FillAmmo, // ...its ammo boxes, Ammo Containers and fitted magazines, %
+    FillCharge, // ...its batteries, from the station's power, %
+    FillWait, // ...on: the build waits in the bay until it is filled; off: it finishes short and says so
+    LiftMode, // Loader Arm: what it works at (Auto, Station only, Carry only, Off: ConstructLifters.cs)
+    CarryHeight, // Loader Arm: how high it lifts a piece over the higher end of a move before it turns (m)
     COUNT,
 }
 
@@ -812,9 +818,10 @@ public static class ConstructConfig
                 CfgKey.LinePick or CfgKey.OrderKind or CfgKey.OrderMaterial or CfgKey.LinePage or CfgKey.LineStopAfter => ProductionLines.IsConsole(d),
                 CfgKey.TextSize => ConstructPanels.HasText(d),
                 CfgKey.OrderCount => ProductionLines.IsConsole(d) || WorkOrders.TakesOrders(d),
-                CfgKey.BayWidth or CfgKey.BayDepth or CfgKey.BayHeight => d.IsBuildStation,
+                CfgKey.BayWidth or CfgKey.BayDepth or CfgKey.BayHeight or (>= CfgKey.FillFuel and <= CfgKey.FillWait) => d.IsBuildStation,
                 CfgKey.RouterSpill or CfgKey.RouterHold => d.IsRouter && d.IsConveyorJunction,
                 CfgKey.StoreKeep or CfgKey.StorePriority or CfgKey.StoreTakes => StockTargets.IsStore(d),
+                CfgKey.LiftMode or CfgKey.CarryHeight => d.Lifter != null, // (a Loader Arm: ConstructLifters.cs)
                 CfgKey.FeedPriority => d.IsCraftTerminal,
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,

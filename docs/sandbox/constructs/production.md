@@ -264,6 +264,7 @@ Design: `docs/sandbox/design/press-rework.md`. A die in `Pressing.json` `"dies"`
 - **Screens.** A 3-bay press's bay cards are lower than a Small Press's (0.5 cells, 32 columns) and every die screen is 5.8 by 1.2 cells (33 columns), so "Makes Limited-Slip Differential" fits.
 - **Presets, and what left the Assembler** (phase 5, protocol 277, and 5b; notes: `docs/sandbox/design/press-phase5-notes.md`). Every die's standard blanks are named in `Pressing.json` `"presets"`, the 3b dies' among them (`PressParts.Presets3b`), so a Gear Die press makes the catalogue **Gear Set**, a Tank die the **Fuel Tank**, a Beam die the **Frame Beam** (`i-beam 45x45x200 steel`, a Small Press), and so on. A catalogue part a die presses this way **has no Assembler recipe** (the sort is `Moved` and `PressedNow` in the part kit's `Assembling.cs`): 73 rows (brackets, housings, plates, the Gear Set, Circuit Board and Piston Set, the Button and Switch, the gearboxes and the two sized differentials, actuators, springs, cables and reels, the six tier 1 drivetrain parts, whose dies take a Gear Set in bay 2, the logic gates and sensors, the tanks, the Frame Beam). What stayed: engine pieces (the sized-engine phase), the building pieces of `Parts/Building` and `Parts/Capital`, and the Differential and Proximity Sensor (two kinds of part input). The survival start kit carries a Beam Die beside the Button, Bracket and Gear Dies, so a first frame needs only the tier 1 Press and Extruder.
 - **The rows are gone** (phase 5b: the user accepted that an Assembler saved before it may read another recipe, since the setting is `1 +` the row's place in its family's list; `tools/MIGRATING.md`). What says a part is pressed reads the presets: `AssemblingTable.PressedLine(def)` (`the Gear Set is pressed now: a Gear Die and a Round 0.15 m`) and `PressedDieOf(def)`, for a preset part no Assembler builds. The plain Assembler's recipe picker lists those dimmed under "Pressed", the die in the tip; the Technologies page and its notice say "your Presses press X"; a blueprint's or mod's `"config": {"recipe": "Gear Set"}` loads with the recipe None and a `[blueprint] ... is pressed now` line; a loot table may still hold a pressed part; and a terminal's chain treats a linked press with the right die as that kit's maker, so an order for a Clutch asks it for the Gear Set.
+- **Gun parts** (sized gun and engine parts, phases 1 to 3): the Barrel die (`fit` [0.7, 1.5], its curves by calibres) and the Receiver die (`"aspect": "preset"`: a blank keeps its pattern preset's shape, each side to the 5 cm lattice, `Pressed.Proportioned`; one free dimension, its across). Their guns: `docs/sandbox/constructs/weapons.md` "Merged receivers".
 - **Not yet:** a pipe shaft's bore in its torque, lift cells, lamps and screens (a like body drops lamps and panels).
 
 Choices made (the developer may change them): one part a press, not a frame you add bays to; a Small press has 2 bays and no recipe uses a third yet; a die only in a press of its own class, never a bigger one; a piece's size is its smaller side; a stroke's cost is a length, not a mass, so a stamped part doesn't weigh what it used; the Housing family is new, with no use yet beyond a box with sockets, and the Assembler can build them too; chutes carry pieces only from an Extruder (a shelf can't hold a piece, since a piece is physics-only); the ram strokes while it stamps (a "work" box, drawn only: [Machine look](look.md#machine-look)).
@@ -928,8 +929,9 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   stamp and flags (an older phase 2 block loads as one level).
 - **Press bays and Panel Former sheet** as chain destinations. A press's blank and part kit chain since Press phase 4 (they ride
   into the bay that takes them). A Panel Former's order now chains too: its panel's material in units, less what its bin holds of
-  that material and a stroke under way, is asked as **sheet** (`ConstructLogisticsPlan.SheetKey`: a solid bar 0.5 x 0.1 m cut at
-  1 m in the panel's material, the showcase's sheet), counted in pieces at what one puts into the bin (`SheetUnits`); a sheet that
+  that material and a stroke under way, is asked as **sheet sized to the panel** (`ConstructLogisticsPlan.SheetFor`, phase 4c: a solid
+  section the panel's width in 5 cm steps, 10 cm thick, cut so one piece holds one panel's units; when no Extruder
+  on the network takes it it is split across into the fewest equal strips the widest one takes, each holding its share), counted in pieces at what one puts into the bin (`SheetUnits`); a sheet that
   arrives counts for its link. A maker with a conveyor way to the destination (`ConstructCrafting.RouteTo`: joins and Routers) is
   chosen before one without (a Splitter's line may still bring it, in turn).
 - **Logistics settings** (phase 3, protocol 275; `Source/Constructs/StockTargets.cs`, group Logistics in the configure tool, added
@@ -961,14 +963,27 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   under headings the stuck Routers with the piece and reason, each open terminal order with its state (where it is held up in amber)
   and its chain lines (maker, or why nobody makes it), the machines with their state and head order, the stores with fill and keep,
   the Routers with their last piece and settings. A long list moves on by itself. Either peer, from what it already holds; names
-  of pieces cached once a kind. **Not yet:** the map of design 9.2 (`PanelDraw.Map`): a large panel shows the list.
+  of pieces cached once a kind. **The plan map (phase 4b, `ConstructLogisticsMap.cs`, `PanelDraw.Map`):** 15 rows up on a panel
+  0.8 m wide or more, the board is a plan from above (the two axes the network is widest on) between the title and a two-line
+  caption (the stuck spot or `All moving`; the counts): conveyors as lines (cut: red dashes), machines as squares in their lamp colour
+  with a two-letter tag, stores as boxes with a fill bar, Routers diamonds, Splitters triangles, Joins dots, pieces as dots (orange an
+  order's, white storage's, red stuck), a red ring blinking round the first stuck Router. A `NetPlan` per body and network keeps the
+  lines and nodes until the links change; dots, states and fills are made at each fill (nothing allocated). A store with a keep shows an amber tick at the fill
+  that keep of each kind it holds would make (`NetPlan.KeepMark`); a Router a bright stub along the way it last sent a piece (phase 4c;
+  a fill costs 1-2 us on the showcase, 17 nodes and 130 riders, nothing allocated). Not yet: dots gliding between fills. The Production Showcase's NETWORK BOARD (a Medium Text Sign in the
+  back aisle at x 44) shows it; the window tool's `panel Conveyor Router` prints the plan's counts.
 - **The Router's screen (phase 4, `RouterScreen.cs`, panel source `router`):** a low dark plate on each side face's frame, under
   the side ports' conveyor beds (no post: Q6). Lines: what it is doing (sent, STUCK, waiting, no power), its last piece and way and
   whether to an order or storage, the destination or the stuck reason, its settings. Buttons **Spill** (steps `routerSpill`) and
   **Hold** (toggles `routerHold`), labelled with the current value, under the configure tool's rule (`router.spill`,
   `router.hold` in `PanelTouch`); the setting rides with the body, so nothing new is on the wire. A conveyor on a side hides that
   side's plate from a standing player (the other side's stays readable).
-- **Window tool:** `panel Conveyor Router` also prints the board at 16, 6 and 1 rows; `touch LABEL @ PART /N` picks the part's
+- **A Router's name** (phase 4c, protocol 291): a Router holds one text slot (`TextSlots` 1, set for every `"router"` part), set in the
+  configure tool's **Name** box (F with Hands still presses its screen's buttons: `ControlFrame` skips Routers). An unnamed one keeps
+  its number on its network (`ConstructLogisticsBoard.RouterNo`). The board (title, stuck lines, Routers list, the map's caption), a
+  conveyor's held line (`JamText` 8) and an order's note while a piece of it is held (`ConstructLogistics.HeldNote`: "held at North
+  Gate: ...") use it. It rides as any part text does: CBody's text tail, the world save, a blueprint step's `"text"`.
+- **Window tool:** `panel Conveyor Router` also prints the board at 16, 6 and 1 rows; `logi name PART = TEXT` (a part's text through this peer's own message: stand near it first), `logi list [FILTER]` (the terminal's list rows); `touch LABEL @ PART /N` picks the part's
   N-th screen; a low screen's touch stands the player in front looking down, and a joined client lands before it aims.
 - **Not yet (phase 3's rest):** the terminal's Stock tab and `CActKind.StockTarget` (a target for a kind the rack doesn't hold),
   `feedPriority` on machines and `linePriority` on Line Consoles, a material in `storeTakes`, High chains inserted ahead in a
@@ -1074,7 +1089,9 @@ The Fan and Airframe Formers take [work orders](#work-orders) as the Wheel Forme
   Capital surfaces (too big) and every rotor (power, rpm and mass differ). Catalogue wings and rotors never had an Assembler recipe, so
   nothing moved off the Assembler. `--bill` lists a preset as `formed (Airframe Former, KEY)`.
 - **Not yet**: the Crafting Terminal lists no former's parts and a chain doesn't ask a former (`ConstructCrafting.MachineMakes`).
-
+- **The Crafting Terminal and chains** (phase 4c): the list shows each preset a linked Fan or Airframe Former takes (`ConstructCrafting.Catalogue`),
+  an order for one goes to that former, `MachineMakes` names it in a recipe's missing line, and a chain link for a preset may go to it
+  (`ConstructLogisticsPlan.FindMaker`). Catalogue wings are physics-only, so no Assembler recipe takes one and a chain never asks for one today.
 
 ## Crafting terminal
 
@@ -1369,6 +1386,17 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   0/40 L - pipe tanks to its Fluid in, ammo in a linked bin"). The state reads "filling its tanks". No new bytes; protocol 285
   for the part's new port. Window tool: `link pipe FROM > TO`, `station tanks`, `station await fitted|linked|done`.
 
+- **Fill settings (2026-11-13, the user's answers to phase 2; notes as above, "Fill settings").** The station has a **Fill** group
+  of settings, in the configure tool and on a row of its window (the window sets them with any tool in hand: `WindowSets`):
+  `fillFuel`, `fillAmmo`, `fillCharge` (0 to 100 %, default 100) and `fillWait` (default off). Each kind is filled to that share:
+  fuel pool and Fluid Tanks (a share of the blueprint's fill; gases too), ammo boxes, **fitted magazines** and **Ammo Containers**
+  (bulk ammo by the unit) from bulk `ammo` in linked bins, **gases** (hydrogen, helium, oxidiser) from bulk in linked bins as well as
+  through pipes (4 units a look, a unit a Gas Compressor's 50 L; a part-used unit's spare is lost), and **batteries**: a survival
+  build's start empty and are charged from the station construct's own charge at 50 kW plus what its power plants make (proposed).
+  With `fillWait` on, a look that moves nothing keeps the build in the bay ("waits for its fill: ..."; the screen's row 4 reads
+  WAITS FOR FILL); off, it finishes short and says so. Creative (untimed machines) comes full, batteries charged. Protocol 289 (the
+  part's settings list; no new bytes). Window tool: `station set KEY VALUE` (as the configure tool sends it, either peer).
+
 Not in phase 1: arms and cranes (their own design, `docs/sandbox/design/arms-and-cranes.md`, waits on the user's answers to its
 questions 1 and 4); roll-out and carriers; vehicles generated on request; panels ordered from a Panel Former by the station (brought by hand); a part too big for
 the hold; hand delivery aimed at the build rather than the station, and of physics-only parts; a client's own saved blueprints (the
@@ -1378,6 +1406,49 @@ Proposed (the user's to confirm): size settings rather than marker posts; the ba
 a hand-delivered part fitted at once; copper and steel as the link stock, a unit a metre, taken from linked bins; links laid after
 the last part, in the blueprint's order (a link's branch and its hosts depend on that order); the frozen body refusing every edit;
 blueprints by name.
+
+## Lifters
+
+Scripted machines that carry pieces (design: `docs/sandbox/design/arms-and-cranes.md`; code `Source/Constructs/ConstructLifters.cs`,
+drawing `Source/Render/LifterRender.cs`, parts `Source/PartKit/Generators/LifterParts.cs`, `--gen-parts lifter_parts`). Nothing is
+simulated: a carried piece moves on a path worked out from the move's ends on every peer, and passes through everything.
+
+**The Loader Arm** stands beside a Building Station and is one more pair of hands: when idle and powered it asks the stations
+building in its reach for a step it can fit (the part's middle in reach, the part within its payload and size, its kind in the
+hold), takes the part out of the hold, carries it up, round its base and down, and fits it with the station's own fit. A world fits
+at most one part a tick. The station keeps fitting on its own timer; nothing changes until an arm stands beside it. Its part file
+holds only the plinth and the slewing ring; the turret, upper arm, elbow, forearm, wrist and gripper are posed each frame by two-link
+inverse kinematics from the hand (`ArmIk.Solve`), in the tier's colours (`lifter.look`).
+
+| Tier | Part | Reach | Payload | Largest piece | Hand speed | Handle | Power (while it moves) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Loader Arm | 1 to 4 m | 500 kg | 1.0 by 4 m | 3 m/s | 0.8 s | 600 W |
+| 2 | Workshop Loader Arm | 1.2 to 5 m | 1 t | 1.25 by 5 m | 4.5 m/s | 0.6 s | 1.1 kW |
+| 3 | Industrial Loader Arm | 1.5 to 6 m | 2 t | 1.5 by 6 m | 6 m/s | 0.45 s | 1.9 kW |
+| 4 | Military Loader Arm | 2 to 8 m | 4 t | 2.0 by 8 m | 9 m/s | 0.3 s | 3.4 kW |
+| 5 | Plasma Loader Arm | 2.5 to 10 m | 8 t | 2.5 by 10 m | 12 m/s | 0.2 s | 5.8 kW |
+
+Each tier grows by the machine tiers' size (x1 to x2.5) and has its look: a rusty derrick on timber props, blue cast iron with
+cream trim, a yellow hydraulic arm with its power pack, olive armour with sandbags, a dark rounded drum with a glowing ring.
+Recipes come from the Assembling generator's rule: Gear Sets at tier 1, Servo Motors from 2, a Control Unit from 3.
+
+- **Settings** (configure tool, group Lifter): **Works** (Auto, Station only, Carry only, Off; carrying between machines comes in a
+  later phase, so Carry only and Off keep it from station work) and **Carry height** (m over the higher end of a move before it
+  turns; capped so the arm never stretches straight).
+- **Ports**: in **Run** (a wire held low keeps it from starting a move); out **Busy** (a move runs), **Alarm** (it holds a piece
+  nothing takes), **Moved** (parts it fitted since the world loaded).
+- **Looking at it**: the look line says what it does or waits on ("fitting a Wheel Hub to the Buggy, step 12 of 26", "waiting:
+  nothing in the hold it can carry to a place in its reach", "no power, stopped") and its reach is drawn in amber: two rings at
+  its floor and at the top of its reach, and a post over each building station's hold, green when it reaches it.
+- **The station's panel** says who fits: "Fitters: the station, 2 Loader Arms (Scrap, Workshop) - about 1.2 light parts a second".
+- **Power**: it draws its wattage only while it moves; without power it stops where it is (the client's drawing stops too) and
+  goes on when power returns.
+- **Saves**: a piece in a hand is saved in the body's `LIFT` block (after `LOGI`) and loads in the hand; the arm's first look
+  carries it back into the hold of a station building in its reach, and the build goes on. With no such station it waits holding
+  it (Alarm). A part that is no longer a lifter sets the piece down loose.
+- **The wire**: `CBodyKind.Lifts`, a body's lifters when a move starts, ends or waits (about 53 bytes a lifter; protocol 290).
+- **Window tool**: `lifter` (every lifter: state, reason, moves, the step's cost), `lifter place [TIER] [SLOT]` (host: an arm of
+  that tier at slot 0 to 3 round the station's bay), `lifter await`, `lifter holding` (until a hand carries a piece).
 
 ## Production Showcase
 

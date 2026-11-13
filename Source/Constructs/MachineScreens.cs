@@ -212,7 +212,11 @@ public static class MachineScreens
             if (ConstructExtruder.ProductOf(c, part) is var piece and >= 0 && c.Parts[piece].D is { IsExtrusion: true } od)
             {
                 var l = from++;
-                if (wheel)
+                if (d.IsFanFormer)
+                    card.Add(l, "Prop ").AddFixed(l, od.ExKey.H / 100f, 2).Add(l, " m");
+                else if (d.IsAirframeFormer)
+                    card.Add(l, "Span ").AddFixed(l, od.ExKey.L / 100f, 2).Add(l, " m");
+                else if (wheel)
                     card.Add(l, "Wheel ").AddFixed(l, od.ExKey.W / 100f, 2).Add(l, " x ").AddFixed(l, od.ExKey.H / 100f, 2).Add(l, " m");
                 else
                     card.Add(l, "Piece ").AddFixed(l, od.ExKey.L / 100f, 2).Add(l, " m");

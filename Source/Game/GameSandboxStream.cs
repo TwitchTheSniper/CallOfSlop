@@ -73,7 +73,7 @@ public sealed partial class Game
         if (!Constructs.UseGrid)
         {
             if (ConstructNet.WritePoses(w, Constructs, ServerTick, ref _sbSleepCursor))
-                Net.Broadcast(w.Span, PacketReliability.UnreliableSequenced);
+                Net.Broadcast(w.Span, PacketReliability.Unreliable); // (not sequenced: RakNet held those on channel 0 behind any lost reliable-ordered packet; ReadPoses drops an older tick itself)
             return;
         }
         var poseTick = ++_sbPoseCount;

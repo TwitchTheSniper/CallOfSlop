@@ -19,6 +19,33 @@ public sealed partial class BuildingParts
 
     private static int Board(Blueprint bp, int on, string sock, string text, string paint) => Look(bp, Sign(bp, on, sock, text), paint);
 
+    /// <summary>
+    /// A lattice mast stood on a pad's socket: lengths of medium truss, end on end (8 m, then 4 m pieces), with a light at the
+    /// top. The small dressing parts (a phone mast, a dish) are a vehicle's size; at 50 m in the snow an outpost is read by
+    /// what stands over it, so the mast is the outpost's outline. Returns the top piece.
+    /// </summary>
+    private static int LatticeMast(Blueprint bp, int pad, string sock, string paint, int eights, int fours, string lamp)
+    {
+        var plate = Look(bp, bp.Hang("Adapter Medium to Small", pad, sock, "front2.2"), paint, "painted steel"); // (a pad's sockets are small, a truss's medium)
+        var top = Look(bp, bp.Hang("Medium Truss 8 m", plate, "back", "-z"), paint, "painted steel");
+        for (var k = 1; k < eights; k++)
+            top = Look(bp, bp.Hang("Medium Truss 8 m", top, "+z", "-z"), paint, "painted steel");
+        for (var k = 0; k < fours; k++)
+            top = Look(bp, bp.Hang("Medium Truss 4 m", top, "+z", "-z"), paint, "painted steel");
+        Look(bp, bp.Hang("Floodlight Medium", top, "+z", "-y"), lamp);
+        return top;
+    }
+
+    /// <summary>A flagpole of `lengths` masts (3.75 m each) under its top, on a pad's socket.</summary>
+    private static int TallPole(Blueprint bp, int pad, string sock, int lengths, string paint)
+    {
+        var foot = Look(bp, bp.Hang("Flagpole Base", pad, sock, "b00"), MinWeathered, "concrete");
+        var mast = foot;
+        for (var k = 0; k < lengths; k++)
+            mast = Look(bp, bp.Hang("Flagpole Mast 3.75 m", mast, k == 0 ? "mast" : "t", "b"), paint, "worn paint");
+        return Look(bp, bp.Hang("Flagpole Top 3.75 m", mast, "t", "b"), paint, "worn paint");
+    }
+
     private static List<Blueprint> OutpostBlueprints(Dictionary<string, PyDict> defs)
     {
         var o = new List<Blueprint>();
@@ -48,9 +75,9 @@ public sealed partial class BuildingParts
         Look(bp, bp.Hang("Battery", rc[1], "kb7_10", "-z"), MinSlate);
         foreach (var (pad, sock) in new[] { (4, "t0_0"), (4, "t8_0"), (3, "t8_0") }) // the barrier line, the road left open
             Look(bp, bp.Hang("Concrete Barrier 2 m", pad, sock, "b0_0"), MinWeathered, "concrete");
-        var foot = Look(bp, bp.Hang("Flagpole Base", 4, "t4_4", "b00"), MinWeathered, "concrete");
-        var mast = Look(bp, bp.Hang("Flagpole Mast 3.75 m", foot, "mast", "b"), "#d9dcd6", "worn paint");
-        Look(bp, bp.Hang("Flagpole Top 3.75 m", mast, "t", "b"), "#d9dcd6", "worn paint");
+        TallPole(bp, 4, "t4_4", 2, "#d9dcd6");
+        // A crossing is lit like a stage: a floodlight mast over the barrier, so the road is seen from the colony at night.
+        LatticeMast(bp, 3, "t7_7", MinSlate, 1, 0, "#ffb347");
         var board = Look(bp, bp.Hang("Concrete Notice Board 2 m", 4, "t8_15", "b0"), MinWeathered, "concrete");
         Sign(bp, board, "n0", "CHECKPOINT HOURS: ALWAYS. EXCEPT LUNCH.");
         Sign(bp, board, "n1", "SMILING AT THE OFFICER IS AN OFFENCE");
@@ -67,9 +94,9 @@ public sealed partial class BuildingParts
         var box = Look(bp, bp.Hang("Pillbox", 0, "t4_4", "b0_0"), MinConcrete, "concrete");
         foreach (var sock in new[] { "t0_0", "t8_0" })
             Look(bp, bp.Hang("Sandbag Wall 2 m", 1, sock, "b0_0"), "#9a8c6c", "fabric");
-        foot = Look(bp, bp.Hang("Flagpole Base", 2, "t4_4", "b00"), MinWeathered, "concrete");
-        mast = Look(bp, bp.Hang("Flagpole Mast 3.75 m", foot, "mast", "b"), "#d9dcd6", "worn paint");
-        Look(bp, bp.Hang("Flagpole Top 3.75 m", mast, "t", "b"), "#d9dcd6", "worn paint");
+        TallPole(bp, 2, "t4_4", 2, "#d9dcd6");
+        // The walk is watched from above: a searchlight on a lattice tower over the forecourt, the outline seen first.
+        LatticeMast(bp, 1, "t7_7", MinSlate, 1, 1, "#ffb347");
         board = Look(bp, bp.Hang("Concrete Notice Board 2 m", 3, "t0_15", "b0"), MinWeathered, "concrete");
         Sign(bp, board, "n0", "SENTRY POST NINE. THE WALK BEGINS HERE.");
         Sign(bp, board, "n1", "THE WALK ALSO ENDS HERE. DO NOT WANDER.");
@@ -100,6 +127,10 @@ public sealed partial class BuildingParts
         bp.Hang("Wee Keg", 2, "t11_11", "base");
         bp.Hang("Pipe Box", 2, "t4_11", "base");
         bp.Hang("Thistle", 1, "t11_11", "base");
+        // The fire inside needs a stack: stone, against the gable on the yard side, standing over the ridge and smoking
+        // (Constructs/Ambience.json smokes a Concrete Chimney's top), so the bothy is found by its smoke.
+        var stack = Look(bp, bp.Hang("Concrete Chimney 2.75 m", 1, "t0_7", "b00"), ClanStone, "stone");
+        Look(bp, bp.Hang("Concrete Chimney 2.75 m", stack, "t00", "b00"), ClanStone, "stone");
         o.Add(bp);
 
         // IT Field Cabinet: the network has to reach the colony across the ice, so somebody put a box in the middle of it.
@@ -118,6 +149,7 @@ public sealed partial class BuildingParts
         bp.Put("Server Rack", [1.875, 0.375, 1.875], R0);
         Look(bp, bp.Hang("Battery", rc[1], "kb7_10", "-z"), ItGrey);
         bp.Hang("Wi-Fi Mast", 1, "t4_4", "base");
+        LatticeMast(bp, 1, "t8_8", ItGrey, 1, 1, ItLight);
         bp.Hang("Satellite Dish", 1, "t11_11", "base");
         bp.Hang("Cable Reel", 1, "t11_4", "base");
         o.Add(bp);
@@ -137,6 +169,7 @@ public sealed partial class BuildingParts
         Board(bp, rc[1], "fb7_5", "RELAY 0800. YOUR CALL IS IMPORTANT TO US.", CcGold);
         bp.Hang("Water Cooler", 0, "t11_11", "foot00");
         bp.Hang("Phone Mast", 1, "t4_4", "base");
+        LatticeMast(bp, 1, "t8_8", "#d8d8d8", 2, 0, CcPink);
         bp.Hang("Loudhailer", 1, "t11_4", "base");
         bp.Hang("Prize Wheel", 2, "t4_4", "base");
         bp.Hang("Gift Card Sign", 2, "t11_4", "base");
