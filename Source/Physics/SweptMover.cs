@@ -116,7 +116,9 @@ public sealed class SweptMover : IMover
         var reach = s.Velocity.Length() * dt + World.StepHeight + SnapDown + MinStepForward + 0.5f;
         var lo = Vector3.Min(s.Position, s.Position + up * World.PlayerHeight) - new Vector3(reach);
         var hi = Vector3.Max(s.Position, s.Position + up * World.PlayerHeight) + new Vector3(reach);
+        AllocProfile.Mark("move: gather"); // (the benchmark's slow-tick trace: AllocProfile.cs)
         phys.Gather(lo, hi, new QueryFilter(QueryLayers.Static | QueryLayers.Movers | QueryLayers.Boundary, _tick), _shapes);
+        AllocProfile.Mark("move: walk");
 
         // Pushed by movers (or spawned a hair inside something): get clear first.
         s.Position = Unstick(s.Position, s.Stance);

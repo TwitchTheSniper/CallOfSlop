@@ -1,11 +1,29 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Loader Arm",
-  "description": "Stands beside a Building Station and fits parts from its hold onto the build in the bay: one more pair of hands. Reaches 1 to 4 m round its base, carries 500 kg. Needs power.",
+  "description": "Stands beside a Building Station and fits parts from its hold onto the build in the bay: one more pair of hands. Reaches 1 to 4 m round its base, carries 500 kg. Needs power while it moves.",
   "group": "Production",
   "section": "Lifters",
   "role": "frame",
   "tool": "welder",
+  "panels": [
+    {
+      "source": "lifter",
+      "at": [
+        0.625,
+        0.535,
+        1.252
+      ],
+      "size": [
+        0.74,
+        0.28
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 5,
+      "range": 10
+    }
+  ],
   "mass": 380.0,
   "health": 600,
   "armour": 3,
@@ -14,6 +32,7 @@
   "attachSeconds": 6.0,
   "power": 600,
   "onBreak": "disable",
+  "collider": "boxes",
   "lifter": {
     "kind": "arm",
     "base": [
@@ -21,6 +40,7 @@
       1.195,
       0.625
     ],
+    "ring": 0.535,
     "reach": [
       1.0,
       4.0
@@ -37,8 +57,43 @@
     "arm": [
       2.3,
       2.2
-    ]
+    ],
+    "look": {
+      "turret": "#7a4432",
+      "weight": "#2f2a26",
+      "upper": "#7a4432",
+      "fore": "#6b4a35",
+      "joint": "#8b857a",
+      "pin": "#f07818"
+    }
   },
+  "config": [
+    {
+      "key": "liftMode",
+      "type": "choice",
+      "label": "Works",
+      "group": "Lifter",
+      "options": [
+        "Auto",
+        "Station only",
+        "Carry only",
+        "Off"
+      ],
+      "default": 0,
+      "tooltip": "Auto: every job in its reach. Station only: fits parts at Building Stations. Carry only: carries between machines (to come). Off: stands still."
+    },
+    {
+      "key": "carryHeight",
+      "label": "Carry height",
+      "group": "Lifter",
+      "unit": "m",
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1,
+      "default": 0.4,
+      "tooltip": "How high it lifts a piece over the higher end of its move before it turns. Never past what its arm reaches."
+    }
+  ],
   "boxes": [
     {
       "min": [
@@ -56,12 +111,12 @@
     {
       "min": [
         -0.111,
-        0.095,
+        0.096,
         -0.025
       ],
       "max": [
         -0.099,
-        0.175,
+        0.1742,
         1.275
       ],
       "color": "#f2b01e",
@@ -72,12 +127,12 @@
     {
       "min": [
         1.349,
-        0.095,
+        0.096,
         -0.025
       ],
       "max": [
         1.361,
-        0.175,
+        0.1742,
         1.275
       ],
       "color": "#f2b01e",
@@ -88,12 +143,12 @@
     {
       "min": [
         -0.025,
-        0.095,
+        0.096,
         -0.111
       ],
       "max": [
         1.275,
-        0.175,
+        0.1742,
         -0.099
       ],
       "color": "#f2b01e",
@@ -104,18 +159,47 @@
     {
       "min": [
         -0.025,
-        0.095,
+        0.096,
         1.349
       ],
       "max": [
         1.275,
-        0.175,
+        0.1742,
         1.361
       ],
       "color": "#f2b01e",
       "detail": true,
       "paintable": false,
       "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.125,
+        0.21,
+        0.125
+      ],
+      "max": [
+        1.125,
+        0.469,
+        1.125
+      ],
+      "color": "#7a4432"
+    },
+    {
+      "min": [
+        0.185,
+        0.464,
+        0.185
+      ],
+      "max": [
+        1.065,
+        0.535,
+        1.065
+      ],
+      "color": "#8b857a",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
     },
     {
       "min": [
@@ -183,19 +267,6 @@
     },
     {
       "min": [
-        0.125,
-        0.21,
-        0.125
-      ],
-      "max": [
-        1.125,
-        0.475,
-        1.125
-      ],
-      "color": "#7a4432"
-    },
-    {
-      "min": [
         0.065,
         0.265,
         0.425
@@ -227,19 +298,34 @@
     },
     {
       "min": [
-        0.185,
-        0.47,
-        0.185
+        0.225,
+        0.211,
+        1.165
       ],
       "max": [
-        1.065,
-        0.535,
-        1.065
+        1.025,
+        0.715,
+        1.245
       ],
       "color": "#8b857a",
       "detail": true,
       "paintable": false,
       "finish": "steel"
+    },
+    {
+      "min": [
+        0.245,
+        0.385,
+        1.237
+      ],
+      "max": [
+        1.005,
+        0.685,
+        1.253
+      ],
+      "color": "#10161c",
+      "detail": true,
+      "paintable": false
     }
   ],
   "sockets": [

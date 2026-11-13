@@ -291,10 +291,10 @@ public sealed partial class Ui
                     ImGuiSafe.TextColored(Orange, text);
                     break;
                 case 1:
-                    ImGuiSafe.TextColored(Green, text);
+                    ImGuiSafe.TextColoredWrapped(Green, text);
                     break;
                 default:
-                    ImGuiSafe.TextColored(Dim, text);
+                    ImGuiSafe.TextColoredWrapped(Dim, text);
                     break;
             }
         ImGui.Spacing();

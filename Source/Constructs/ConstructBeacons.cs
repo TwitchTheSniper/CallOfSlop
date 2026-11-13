@@ -274,7 +274,11 @@ public sealed class BeaconView
 
     public bool On => State == BeaconState.On;
 
-    public void Add(ushort id, int n) => Counts[id] = (ushort)Math.Min(Counts[id] + n, ushort.MaxValue);
+    public void Add(ushort id, int n)
+    {
+        if (id < Counts.Length) // (a run-time part's id is past the table: not counted yet, docs/sandbox/design/inventory-run-time-parts.md phase 3)
+            Counts[id] = (ushort)Math.Min(Counts[id] + n, ushort.MaxValue);
+    }
 
     public void AddMaterial(byte id, int n)
     {
@@ -1056,7 +1060,7 @@ public sealed partial class ConstructBeacons
         {
             var id = r.U16();
             var count = r.U16();
-            if (ConstructParts.Get(id) == null)
+            if (id >= ConstructParts.MaxTypes || ConstructParts.Get(id) == null) // (catalogue ids only: a run-time part is never counted here yet)
                 throw new MalformedPacketException($"a beacon count of part {id}");
             if (v != null)
                 v.Counts[id] = count;

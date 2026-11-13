@@ -321,9 +321,13 @@ public static class ConstructWeapons
         Span<int> muzzleParts = stackalloc int[16];
         var muzzles = 0;
         var tips = new Dictionary<BuildNode, int>(); // a barrel node -> the part its rounds leave from (its muzzle device, else the barrel)
+        // The receiver's bore (sized-parts design section 5): its merge size N, or a pressed receiver's scale s (it never merges), else 1.
+        var bore = merged ? (float)c.Merges[c.MergeOf[i] - 1].N : d.GunScale;
         if (barrel >= 0)
         {
             var bp = Parts.Find(c.Parts[barrel].D.GunPartName)!;
+            if (SizedGunParts.FitWhy(bp, bore) is { } badFit && problem.Length == 0)
+                problem = badFit;
             var node = new BuildNode(bp);
             mine[barrel] = true;
             muzzleParts[muzzles++] = barrel;
@@ -351,6 +355,12 @@ public static class ConstructWeapons
                         break;
                     }
                     var sock = bp.Sockets[at];
+                    if (SizedGunParts.FitWhy(sb, bore) is { } badFit2)
+                    {
+                        if (problem.Length == 0)
+                            problem = badFit2;
+                        continue;
+                    }
                     if (BuildRules.SocketWhy(node, sock, sb) is { } bad)
                     {
                         if (problem.Length == 0)
@@ -455,12 +465,14 @@ public static class ConstructWeapons
         var sound = Weapons.Find(rec.Receiver!.SoundOf) ?? Weapons.DefaultPrimary;
         CopySound(w, sound);
         g.Spread = w.HipSpreadDeg * 0.5f * MathF.PI / 180f * (optic >= 0 ? OpticSpread : 1f);
-        g.MaxRange = d.GunMaxRange;
+        g.MaxRange = d.GunMaxRange * res.BarrelReach; // (its barrels' reach: a Long Gun Barrel carries 1.4 times as far; flame, harpoon and shell guns set their own below)
         g.Kick = d.GunKick;
         g.Fx = d.GunFx;
         g.Speed = 0;
         if (merged)
             ConstructMerge.ScaleGun(ref g, w, c.Merges[c.MergeOf[i] - 1].N); // (N squared receivers' worth: ReceiverMerge.json)
+        else if (d.GunScale != 1f)
+            ConstructMerge.ScaleGun(ref g, w, d.GunScale); // (a pressed receiver: the merge's law with a real number, sized-parts design 4.2)
         ConstructHarpoon.GunNumbers(ref g, w); // (a flame's or a harpoon's reach, scaled by a merge: ConstructHarpoon.cs)
         if ((flags & GunEffect.Shell) != 0)
             ConstructShells.GunNumbers(ref g, w, ShellOf(root)); // (a shell's blast, speed and crater: ConstructShells.cs)

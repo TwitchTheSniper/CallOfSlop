@@ -1,0 +1,522 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Military Loader Arm",
+  "description": "Stands beside a Building Station and fits parts from its hold onto the build in the bay: one more pair of hands. Reaches 2 to 8 m round its base, carries 4 t. Needs power while it moves.",
+  "group": "Production",
+  "section": "Lifters",
+  "role": "frame",
+  "tool": "welder",
+  "panels": [
+    {
+      "source": "lifter",
+      "at": [
+        1.375,
+        0.875,
+        2.752
+      ],
+      "size": [
+        0.74,
+        0.28
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 5,
+      "range": 10
+    }
+  ],
+  "mass": 1520.0,
+  "health": 2400,
+  "armour": 9,
+  "material": "steel",
+  "color": "#4b5436",
+  "attachSeconds": 10.5,
+  "tier": 4,
+  "power": 3400,
+  "onBreak": "disable",
+  "collider": "boxes",
+  "lifter": {
+    "kind": "arm",
+    "base": [
+      1.375,
+      2.515,
+      1.375
+    ],
+    "ring": 1.195,
+    "reach": [
+      2.0,
+      8.0
+    ],
+    "up": 6.0,
+    "down": 2.0,
+    "payload": 4000,
+    "piece": [
+      2.0,
+      8.0
+    ],
+    "speed": 9.0,
+    "handle": 0.3,
+    "arm": [
+      4.6,
+      4.4
+    ],
+    "look": {
+      "turret": "#4b5436",
+      "weight": "#3e4530",
+      "upper": "#59603f",
+      "fore": "#4b5436",
+      "joint": "#6a6f60",
+      "pin": "#d9d5c0"
+    }
+  },
+  "config": [
+    {
+      "key": "liftMode",
+      "type": "choice",
+      "label": "Works",
+      "group": "Lifter",
+      "options": [
+        "Auto",
+        "Station only",
+        "Carry only",
+        "Off"
+      ],
+      "default": 0,
+      "tooltip": "Auto: every job in its reach. Station only: fits parts at Building Stations. Carry only: carries between machines (to come). Off: stands still."
+    },
+    {
+      "key": "carryHeight",
+      "label": "Carry height",
+      "group": "Lifter",
+      "unit": "m",
+      "min": 0.0,
+      "max": 6.0,
+      "step": 0.1,
+      "default": 0.4,
+      "tooltip": "How high it lifts a piece over the higher end of its move before it turns. Never past what its arm reaches."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.105,
+        -0.125,
+        -0.105
+      ],
+      "max": [
+        2.855,
+        0.555,
+        2.855
+      ],
+      "color": "#1e211c"
+    },
+    {
+      "min": [
+        -0.111,
+        0.317,
+        -0.025
+      ],
+      "max": [
+        -0.099,
+        0.4734,
+        2.775
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        2.849,
+        0.317,
+        -0.025
+      ],
+      "max": [
+        2.861,
+        0.4734,
+        2.775
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.025,
+        0.317,
+        -0.111
+      ],
+      "max": [
+        2.775,
+        0.4734,
+        -0.099
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.025,
+        0.317,
+        2.849
+      ],
+      "max": [
+        2.775,
+        0.4734,
+        2.861
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.375,
+        0.55,
+        0.375
+      ],
+      "max": [
+        2.375,
+        1.063,
+        2.375
+      ],
+      "color": "#4b5436"
+    },
+    {
+      "min": [
+        0.495,
+        1.058,
+        0.495
+      ],
+      "max": [
+        2.255,
+        1.195,
+        2.255
+      ],
+      "color": "#a8aeb4",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.129,
+        -0.085,
+        0.175
+      ],
+      "max": [
+        -0.075,
+        0.283,
+        2.575
+      ],
+      "color": "#5a6442",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        2.825,
+        -0.085,
+        0.175
+      ],
+      "max": [
+        2.879,
+        0.283,
+        2.575
+      ],
+      "color": "#5a6442",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.175,
+        -0.085,
+        -0.129
+      ],
+      "max": [
+        2.575,
+        0.283,
+        -0.075
+      ],
+      "color": "#5a6442",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.175,
+        -0.085,
+        2.825
+      ],
+      "max": [
+        2.575,
+        0.283,
+        2.879
+      ],
+      "color": "#5a6442",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.355,
+        0.667,
+        0.355
+      ],
+      "max": [
+        2.395,
+        0.7726,
+        2.395
+      ],
+      "color": "#d9d5c0",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.045,
+        0.551,
+        -0.045
+      ],
+      "max": [
+        0.555,
+        0.775,
+        0.355
+      ],
+      "color": "#9a8c62",
+      "detail": true,
+      "paintable": false,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        0.035,
+        0.771,
+        0.005
+      ],
+      "max": [
+        0.475,
+        0.955,
+        0.305
+      ],
+      "color": "#9a8c62",
+      "detail": true,
+      "paintable": false,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        2.195,
+        0.551,
+        2.395
+      ],
+      "max": [
+        2.795,
+        0.775,
+        2.795
+      ],
+      "color": "#9a8c62",
+      "detail": true,
+      "paintable": false,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        2.275,
+        0.771,
+        2.445
+      ],
+      "max": [
+        2.715,
+        0.955,
+        2.745
+      ],
+      "color": "#9a8c62",
+      "detail": true,
+      "paintable": false,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        0.975,
+        0.551,
+        2.665
+      ],
+      "max": [
+        1.775,
+        1.055,
+        2.745
+      ],
+      "color": "#3e4530",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.995,
+        0.725,
+        2.737
+      ],
+      "max": [
+        1.755,
+        1.025,
+        2.753
+      ],
+      "color": "#10161c",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y.0.0",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.4",
+      "at": [
+        0.0,
+        -0.125,
+        1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.7",
+      "at": [
+        0.0,
+        -0.125,
+        1.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.11",
+      "at": [
+        0.0,
+        -0.125,
+        2.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.4.0",
+      "at": [
+        1.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.4.4",
+      "at": [
+        1.0,
+        -0.125,
+        1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.4.7",
+      "at": [
+        1.0,
+        -0.125,
+        1.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.4.11",
+      "at": [
+        1.0,
+        -0.125,
+        2.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.7.0",
+      "at": [
+        1.75,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.7.4",
+      "at": [
+        1.75,
+        -0.125,
+        1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.7.7",
+      "at": [
+        1.75,
+        -0.125,
+        1.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.7.11",
+      "at": [
+        1.75,
+        -0.125,
+        2.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.11.0",
+      "at": [
+        2.75,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.11.4",
+      "at": [
+        2.75,
+        -0.125,
+        1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.11.7",
+      "at": [
+        2.75,
+        -0.125,
+        1.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.11.11",
+      "at": [
+        2.75,
+        -0.125,
+        2.75
+      ],
+      "dir": "-y"
+    }
+  ]
+}

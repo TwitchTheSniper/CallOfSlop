@@ -19,7 +19,7 @@ public static partial class Program
     private static long _wsPerfLast;
     private static readonly List<double> _wsPerfMs = [];
 
-    private static bool WsTourKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "places" or "view" or "perf" or "skip";
+    private static bool WsTourKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "places" or "view" or "perf" or "skip" or "open" or "what";
 
     private static void WsTourSettings(string[] args)
     {
@@ -44,6 +44,8 @@ public static partial class Program
                 var p50 = _wsPerfMs[_wsPerfMs.Count / 2];
                 WsSay($"[perf] {_wsPerfLabel}: {_wsPerfMs.Count} frames, mean {mean:0.00} ms ({1000 / mean:0} fps), median {p50:0.00} ms, 99th {p99:0.00} ms, worst {_wsPerfMs[^1]:0.00} ms"
                     + (_session is { } g ? $", bodies {g.Constructs.Bodies.Count}, players {g.Players.Count}, lamps lit {ConstructLamps.LastLit} of {ConstructLamps.LastNear}, free lights {LightGrid.DynamicFree}" : ""));
+                if (PerfBench.Recording)
+                    BenchSpotDone(PerfBench.End(keepOn: Ui.PerfMode != PerfView.Off), _session); // the profiler's breakdown, and with --bench the run's JSON (Program.Bench.cs)
             }
         }
         _wsPerfLast = t;
@@ -61,12 +63,55 @@ public static partial class Program
                 _wsPerfMs.Clear();
                 _wsPerfLast = 0;
                 _wsWait = _wsPerfAll + 2;
+                PerfBench.Begin(_wsPerfLabel); // (the profiler on over the same frames: PerfBench.cs)
                 return true;
             }
-            case "skip": // the survival opening skipped, as its key does
+            case "skip": // the survival opening skipped, as its key does; "skip induction": the induction too, as its button does
                 g.OpeningSkip();
+                if (arg.Equals("induction", StringComparison.OrdinalIgnoreCase))
+                    g.TutorialAsk(TutorialOp.Skip);
                 _wsWait = 90;
                 return true;
+            case "open": // a window as its key opens it: "open logbook [Records|Paths|Technologies]", "open parts", "open factions"
+            {
+                var sp = arg.Split(' ', 2, StringSplitOptions.TrimEntries);
+                SetLogbookOpen(false);
+                SetFactionOpen(false);
+                switch (sp[0].ToLowerInvariant())
+                {
+                    case "logbook":
+                        Ui.LogbookPick = sp.Length > 1 ? sp[1] : null;
+                        SetLogbookOpen(true);
+                        break;
+                    case "parts":
+                        Ui.OpenSandboxParts(focusSearch: false);
+                        SetMouseCaptured(false);
+                        break;
+                    case "factions":
+                        SetFactionOpen(true);
+                        break;
+                    default:
+                        WsFail("open logbook [TAB] | parts | factions");
+                        return true;
+                }
+                _wsWait = 20;
+                return true;
+            }
+            case "what": // "what [RIGHT,UP]": what the eye's ray (turned that many degrees) hits: the body and the part, how far
+            {
+                var o = arg.Split(',', StringSplitOptions.TrimEntries);
+                float dr = 0, du = 0;
+                if (o.Length == 2)
+                {
+                    float.TryParse(o[0], System.Globalization.CultureInfo.InvariantCulture, out dr);
+                    float.TryParse(o[1], System.Globalization.CultureInfo.InvariantCulture, out du);
+                }
+                var dir = g.LookDir(g.LookYaw + dr * MathF.PI / 180, g.LookPitch + du * MathF.PI / 180);
+                WsSay(g.Constructs.Raycast(me.Eye, dir, 200f, out var hit, look: true)
+                    ? $"[what] {arg}: {g.ColonyBuildingsList().FirstOrDefault(b => b.Body == hit.Body.Id).Name ?? $"construct {hit.Body.Id}"}, part {hit.Part} {hit.Body.DefOf(hit.Part).Name}, {hit.Distance:0.0} m"
+                    : $"[what] {arg}: no construct within 200 m");
+                return true;
+            }
             case "places":
             {
                 var pl = World.Map.Planetoid;

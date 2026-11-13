@@ -1,7 +1,7 @@
 {
  "format": "call-of-slop-construct-blueprint/1",
  "name": "Ministry Quarry Works",
- "description": "The Ministry Quarry's works (docs/story/DUTIES.md): a Smelter on a 4 m slab, fed from a Materials Bin and filling a second, with a Small Genset on a Fuel Tank waiting for its cable; behind them the Mine Face, which the induction has the inmate shore up with a pit prop and a lamp. The Starter Smelter's machines.",
+ "description": "The Ministry Quarry's works (docs/story/DUTIES.md): a Smelter on a 4 m slab, fed from a Materials Bin and filling a second, with a Small Genset on a Fuel Tank waiting for its cable; behind them the Mine Face, which the induction has the inmate shore up with a pit prop and a lamp. The Starter Smelter's machines. A floodlit lattice mast over the face, as every Ministry work site has: the quarry is found by it from the road.",
  "steps": [
   {
    "part": "Concrete Foundation 4x4 m"
@@ -59,6 +59,37 @@
    "on": 7,
    "socket": "t15_15",
    "by": "bottom"
+  },
+  {
+   "part": "Adapter Medium to Small",
+   "on": 8,
+   "socket": "t15_0",
+   "by": "front2.2",
+   "paint": "#4b5157",
+   "finish": "painted steel"
+  },
+  {
+   "part": "Medium Truss 8 m",
+   "on": 10,
+   "socket": "back",
+   "by": "-z",
+   "paint": "#4b5157",
+   "finish": "painted steel"
+  },
+  {
+   "part": "Medium Truss 4 m",
+   "on": 11,
+   "socket": "+z",
+   "by": "-z",
+   "paint": "#4b5157",
+   "finish": "painted steel"
+  },
+  {
+   "part": "Floodlight Medium",
+   "on": 12,
+   "socket": "+z",
+   "by": "-y",
+   "paint": "#ffb347"
   }
  ],
  "links": [

@@ -265,6 +265,7 @@ public static unsafe class PanelRender
         var d = c.DefOf(part);
         var percent = ConstructConfig.Has(d, CfgKey.TextSize) ? ConstructConfig.Get(c.Parts[part], d, CfgKey.TextSize, 100) : 100;
         var card = s.Card;
+        card.PanelSize = panel.Size;
         // A display whose input is a console's, a machine's or a rack's Data out is a production monitor (ProductionLines.Monitors.cs).
         var source = panel == d.Panels[0] ? ProductionLines.MonitorSource(c, part) : -1;
         int rows;
@@ -619,6 +620,13 @@ public static unsafe class PanelRender
             case PanelDraw.Flight:
                 FlightPlot(s, card, -hw + pad, -hh + pad, hw - pad, top, size);
                 break;
+            case PanelDraw.Map:
+            {
+                // Between the title and the two caption lines at the bottom (ConstructLogisticsBoard: the map's caption).
+                var rowH = (top - (-hh + pad)) / Math.Max(1, card.Rows - 1);
+                MapPlot(s, card, -hw + pad, -hh + pad + rowH * 2.1f, hw - pad, top - rowH * 0.1f, size);
+                break;
+            }
             case PanelDraw.Lamps:
             {
                 var side = (top - (-hh + pad)) / Math.Max(1, card.Lamps);
@@ -684,6 +692,139 @@ public static unsafe class PanelRender
     }
 
     private const int PlotArrows = 24, PlotSteps = 6;
+    private const int MapLineQuads = 1024; // the most quads the map's conveyor lines take (a bigger network's lines are thinned)
+
+    /// <summary>
+    /// The network board's plan map (<see cref="NetPlan"/>, smart logistics design 9.2) in the box (x0, y0)-(x1, y1): conveyors as lines
+    /// (cut ones red, in dashes), machines as squares in their lamp's colour with a two-letter tag when there is room, stores as boxes with
+    /// a fill bar, Routers as diamonds, Splitters as triangles, Joins as dots; pieces as dots (orange an order's, white storage's, red stuck);
+    /// a red ring blinking round the first stuck Router. Aspect kept, centred, with a margin.
+    /// </summary>
+    private static void MapPlot(Slot s, PanelCard card, float x0, float y0, float x1, float y1, Vector2 size)
+    {
+        if (card.Plan is not { } p || x1 <= x0 || y1 <= y0)
+            return;
+        var span = Vector2.Max(p.Max - p.Min, new Vector2(1f));
+        var scale = MathF.Min((x1 - x0) / (span.X * 1.08f), (y1 - y0) / (span.Y * 1.08f));
+        var mid = (p.Min + p.Max) * 0.5f;
+        var c = new Vector2((x0 + x1) * 0.5f, (y0 + y1) * 0.5f);
+        Vector2 At(Vector2 v) => c + (v - mid) * scale;
+        var line = MathF.Max(size.Y * 0.0035f, 0.002f);
+        var cell = MathF.Max(line * 3.2f, MathF.Min(scale * 0.9f, size.Y * 0.035f)); // a node's square: about its metre, within reason
+        // Conveyors.
+        var budget = MapLineQuads;
+        var conveyor = new Vector3(0.3f, 0.4f, 0.46f);
+        var cut = new Vector3(0.95f, 0.22f, 0.16f);
+        for (var l = 0; l < p.LineN && budget > 0; l++)
+        {
+            int k = p.LineRoute[l], first = p.RouteFirst[k], n = p.RouteCount[k];
+            for (var i = 1; i < n && budget > 0; i++)
+                budget -= MapLine(s, At(p.Points[first + i - 1]), At(p.Points[first + i]), line, p.LineCut[l] ? cut : conveyor, p.LineCut[l], budget);
+        }
+        // Nodes.
+        var tagH = cell * 0.62f;
+        for (var i = 0; i < p.NodeN; i++)
+        {
+            var at = At(p.NodeAt[i]);
+            var col = p.NodeColour[i];
+            var h = cell * 0.5f;
+            switch (p.NodeKind[i])
+            {
+                case PlanNode.Machine:
+                case PlanNode.Terminal:
+                case PlanNode.Other:
+                    Solid(s, at.X - h, at.Y - h, at.X + h, at.Y + h, col * (p.NodeKind[i] == PlanNode.Terminal ? 0.8f : 1f), 2);
+                    if (cell >= size.Y * 0.03f) // (the tag where a cell is big enough to read: about 10 px on a 1 m panel seen close)
+                    {
+                        var gw = tagH * CellW / CellH;
+                        Glyph(s, p.NodeTag[i * 2], at.X - gw, at.Y - tagH * 0.5f, gw, tagH, new Vector3(0.04f));
+                        Glyph(s, p.NodeTag[i * 2 + 1], at.X, at.Y - tagH * 0.5f, gw, tagH, new Vector3(0.04f));
+                    }
+                    break;
+                case PlanNode.Store:
+                {
+                    var edge = new Vector3(0.62f, 0.68f, 0.72f);
+                    Solid(s, at.X - h, at.Y - h, at.X + h, at.Y + h, edge, 2);
+                    Solid(s, at.X - h + line, at.Y - h + line, at.X + h - line, at.Y + h - line, new Vector3(0.06f, 0.08f, 0.1f), 3);
+                    if (p.NodeFill[i] > 0)
+                        Solid(s, at.X - h + line, at.Y - h + line, at.X + h - line, at.Y - h + line + (2 * h - 2 * line) * p.NodeFill[i], RampColour(PanelRamp.Level, p.NodeFill[i], edge), 4);
+                    if (p.NodeKeep[i] >= 0) // (the keep mark: an amber tick across the box, a little proud of it each side)
+                    {
+                        var ky = at.Y - h + line + (2 * h - 2 * line) * p.NodeKeep[i];
+                        Solid(s, at.X - h - line, ky - line * 0.5f, at.X + h + line, ky + line * 0.5f, new Vector3(1f, 0.72f, 0.2f), 5);
+                    }
+                    break;
+                }
+                case PlanNode.Router:
+                    for (var r = 0; r < 4; r++) // (a diamond: four bands narrowing up and down)
+                    {
+                        var w = h * (1 - r / 4f);
+                        var b = h * r / 4f;
+                        Solid(s, at.X - w, at.Y + b, at.X + w, at.Y + b + h / 4f, col, 2);
+                        Solid(s, at.X - w, at.Y - b - h / 4f, at.X + w, at.Y - b, col, 2);
+                    }
+                    if (p.NodeWay[i] != Vector2.Zero) // (the chosen way: a short bright stub out of the diamond along that conveyor)
+                        MapLine(s, at, at + p.NodeWay[i] * (cell * 1.1f), line * 1.6f, new Vector3(0.85f, 0.97f, 1f), false, 24);
+                    break;
+                case PlanNode.Splitter:
+                    for (var r = 0; r < 3; r++) // (a triangle, point up)
+                    {
+                        var w = h * 0.8f * (1 - r / 3f);
+                        Solid(s, at.X - w, at.Y - h * 0.6f + r * h * 0.4f, at.X + w, at.Y - h * 0.2f + r * h * 0.4f, col, 2);
+                    }
+                    break;
+                case PlanNode.Join:
+                    Solid(s, at.X - h * 0.35f, at.Y - h * 0.35f, at.X + h * 0.35f, at.Y + h * 0.35f, col, 2);
+                    break;
+            }
+        }
+        // Pieces.
+        var dot = line * 1.8f;
+        for (var i = 0; i < p.DotN; i++)
+        {
+            var at = At(p.Dots[i]);
+            var col = p.DotKind[i] switch { 2 => new Vector3(1f, 0.22f, 0.18f), 1 => new Vector3(1f, 0.62f, 0.15f), _ => new Vector3(0.92f) };
+            Solid(s, at.X - dot, at.Y - dot, at.X + dot, at.Y + dot, col, 5);
+        }
+        // The stuck ring.
+        if (p.Ring >= 0 && p.RingOn)
+        {
+            var at = At(p.NodeAt[p.Ring]);
+            var r = cell * 1.1f;
+            var red = new Vector3(1f, 0.2f, 0.15f);
+            Solid(s, at.X - r, at.Y + r - line, at.X + r, at.Y + r, red, 5);
+            Solid(s, at.X - r, at.Y - r, at.X + r, at.Y - r + line, red, 5);
+            Solid(s, at.X - r, at.Y - r, at.X - r + line, at.Y + r, red, 5);
+            Solid(s, at.X + r - line, at.Y - r, at.X + r, at.Y + r, red, 5);
+        }
+    }
+
+    /// <summary>A line from <paramref name="a"/> to <paramref name="b"/> of upright quads (one when it runs along an axis, a stair of short ones else; every other one when dashed). The quads it took.</summary>
+    private static int MapLine(Slot s, Vector2 a, Vector2 b, float thick, Vector3 colour, bool dashed, int budget)
+    {
+        var d = b - a;
+        var len = d.Length();
+        if (len < 1e-5f)
+            return 0;
+        var h = thick * 0.5f;
+        if (!dashed && (MathF.Abs(d.X) < thick * 0.5f || MathF.Abs(d.Y) < thick * 0.5f))
+        {
+            Solid(s, MathF.Min(a.X, b.X) - h, MathF.Min(a.Y, b.Y) - h, MathF.Max(a.X, b.X) + h, MathF.Max(a.Y, b.Y) + h, colour, 1);
+            return 1;
+        }
+        var steps = Math.Clamp((int)(len / (thick * (dashed ? 3f : 1.5f))), 1, Math.Min(32, budget));
+        var used = 0;
+        for (var t = 0; t < steps; t++)
+        {
+            if (dashed && t % 2 == 1)
+                continue;
+            var p0 = a + d * (t / (float)steps);
+            var p1 = a + d * ((t + 1) / (float)steps);
+            Solid(s, MathF.Min(p0.X, p1.X) - h, MathF.Min(p0.Y, p1.Y) - h, MathF.Max(p0.X, p1.X) + h, MathF.Max(p0.Y, p1.Y) + h, colour, 1);
+            used++;
+        }
+        return used;
+    }
 
     /// <summary>A craft from above and from the side, an arrow at each effector by the way it pushes, long and bright by what it is told, red when it has nothing to give. A fixed number of quads.</summary>
     private static void FlightPlot(Slot s, PanelCard card, float x0, float y0, float x1, float y1, Vector2 size)

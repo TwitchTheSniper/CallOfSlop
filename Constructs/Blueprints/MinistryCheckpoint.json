@@ -292,12 +292,43 @@
       "finish": "worn paint"
     },
     {
-      "part": "Flagpole Top 3.75 m",
+      "part": "Flagpole Mast 3.75 m",
       "on": 36,
       "socket": "t",
       "by": "b",
       "paint": "#d9dcd6",
       "finish": "worn paint"
+    },
+    {
+      "part": "Flagpole Top 3.75 m",
+      "on": 37,
+      "socket": "t",
+      "by": "b",
+      "paint": "#d9dcd6",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Adapter Medium to Small",
+      "on": 3,
+      "socket": "t7_7",
+      "by": "front2.2",
+      "paint": "#4b5157",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Medium Truss 8 m",
+      "on": 39,
+      "socket": "back",
+      "by": "-z",
+      "paint": "#4b5157",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Floodlight Medium",
+      "on": 40,
+      "socket": "+z",
+      "by": "-y",
+      "paint": "#ffb347"
     },
     {
       "part": "Concrete Notice Board 2 m",
@@ -309,7 +340,7 @@
     },
     {
       "part": "Text Sign",
-      "on": 38,
+      "on": 42,
       "socket": "n0",
       "by": "back",
       "text": [
@@ -319,7 +350,7 @@
     },
     {
       "part": "Text Sign",
-      "on": 38,
+      "on": 42,
       "socket": "n1",
       "by": "back",
       "text": [

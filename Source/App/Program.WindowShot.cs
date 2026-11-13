@@ -44,7 +44,8 @@ public static unsafe partial class Program
     private static int _wsDragLeft, _wsDragAll, _wsDragKeys;
     private static long _wsDragBytes, _wsDragAt;
     private static float? _wsYaw, _wsPitch;
-    private static int _wsFrames = 45, _wsEvery, _wsStep, _wsWait, _wsShots, _wsCount;
+    private static int _wsFrames = 45, _wsEvery, _wsStep, _wsWait, _wsShots, _wsCount, _wsLiftWaits;
+    private static long _wsJoinSeen; // (lifter stand others: when a joined player was first seen)
     private static double _wsStart;
     private static int _wsAwait; // frames a "station await" has waited
     private static readonly Queue<string> _wsQueue = new();
@@ -111,7 +112,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action) || WsTourKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "inv" or "fuel" or "put" or "side" or "walk" or "ray" or "guns" or "bundle" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action) || WsTourKnown(action);
 
     private static void WsSay(string s)
     {
@@ -360,6 +361,10 @@ public static unsafe partial class Program
         WsSay($"> {action}");
         if (WsTourVerb(g, me, verb, arg))
             return; // (the tour's actions: Program.WindowShotTour.cs)
+        if (WsInvVerb(g, me, verb, arg))
+            return; // (run-time parts in the hands, backpack and stores: Program.WindowShotInv.cs)
+        if (WsCutVerb(g, me, verb, arg))
+            return; // (cut parts: Program.WindowShotCuts.cs)
         if (WsGhostVerb(g, me, verb, arg))
             return; // (the blueprint ghost's actions: Program.WindowShotGhost.cs)
         switch (verb)
@@ -494,6 +499,26 @@ public static unsafe partial class Program
                 else
                     WsSay("joints: no spawned body");
                 return;
+            case "guns": // each gun of the spawned body as this peer derives it (sized parts: host and client agree): its part, problem, reach, spread, damage and rate
+                if ((WsSpawned(g) ?? g.Constructs.Bodies.OrderByDescending(b => b.GunCount).FirstOrDefault(b => b.GunCount > 0)) is { } gc) // (a client spawned nothing: the body with the most guns)
+                    for (var k = 0; k < gc.GunCount; k++)
+                    {
+                        ref var cg = ref gc.Guns[k];
+                        WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"guns: {k} {gc.DefOf(cg.Part).Name}: {(cg.Problem.Length > 0 ? cg.Problem : "fires")}, reach {cg.MaxRange:0.##} m, spread {cg.Spread * 180 / MathF.PI:0.####} deg, damage {cg.Def?.Damage ?? 0}, every {cg.Interval} ticks, {cg.Shots} a shot, {cg.PerShot} rounds a shot, magazine drawn {(cg.MagPart >= 0 ? gc.ScaleOf(cg.MagPart) : 0)}x"));
+                        if (k == gc.GunCount - 1)
+                            for (var l = 0; l < gc.LinkCount; l++) // (each gun part's link: its two sockets as drawn should meet)
+                            {
+                                ref var lk = ref gc.Links[l];
+                                if (lk.A >= gc.PartCount || lk.B >= gc.PartCount || gc.DefOf(lk.A).Role is not (PartRole.GunPart or PartRole.Gun) || gc.DefOf(lk.B).Role is not (PartRole.GunPart or PartRole.Gun))
+                                    continue;
+                                gc.SocketAt(lk.A, lk.SA, out var sa, out _);
+                                gc.SocketAt(lk.B, lk.SB, out var sb, out _);
+                                WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"guns: link {gc.DefOf(lk.A).Name} ({gc.ScaleOf(lk.A)}x) to {gc.DefOf(lk.B).Name} ({gc.ScaleOf(lk.B)}x): sockets {Vector3.Distance(sa, sb):0.###} m apart"));
+                            }
+                    }
+                else
+                    WsSay("guns: no spawned body");
+                return;
             case "saveworld" or "loadworld": // host: the world saved under a name through the real save and copied out, or (a fresh process) that copy loaded; then the run-time parts of every body
             {
                 WsSay($"{verb}: " + (verb == "saveworld" ? g.StationSaveProbe(arg) : g.StationLoadProbe(arg)));
@@ -505,6 +530,11 @@ public static unsafe partial class Program
                             made[b.DefOf(i).Name] = made.GetValueOrDefault(b.DefOf(i).Name) + 1;
                     if (made.Count > 0)
                         WsSay($"{verb}: body {b.Id} ({b.PartCount} parts): {string.Join(", ", made.Select(kv => $"{kv.Key} x{kv.Value}"))}");
+                    for (var i = 0; i < b.PartCount; i++) // (a spilled bundle's material and worth; a Line Console's Made count)
+                        if (b.DefOf(i).Name == ConstructStorage.MaterialBundle)
+                            WsSay($"{verb}: body {b.Id}: Material Bundle of {RecyclingTable.Current.NameOf(b.Parts[i].Setting)}, worth {b.Parts[i].Rounds}");
+                        else if (b.Parts[i].LineMade != 0)
+                            WsSay($"{verb}: body {b.Id}: {b.DefOf(i).Name} part {i}: Made {b.Parts[i].LineMade}");
                 }
                 _wsWait = 5;
                 return;
@@ -657,7 +687,8 @@ public static unsafe partial class Program
                     return;
                 }
                 var spot = WsPartSpot(bc, bpart, out var normal);
-                var stand = spot + (normal != Vector3.Zero ? normal : Vector3.UnitZ) * 1.8f;
+                var low = bc.DefOf(bpart).Panels is [var first, ..] && first.At.Y < 0.8f && MathF.Abs(normal.Y) < 0.5f; // (a Router's low screen: stand in a finger's reach)
+                var stand = spot + (normal != Vector3.Zero ? normal : Vector3.UnitZ) * (low ? 1.0f : 1.8f);
                 var feet = new Vector3(stand.X, World.Map.GroundHeight(stand.X, stand.Z) + 0.35f, stand.Z);
                 var n = 0;
                 foreach (var other in g.Players.Values)
@@ -861,12 +892,98 @@ public static unsafe partial class Program
                     _wsWait = 1;
                     return;
                 }
-                if (arg.Trim() == "place" && g.IsServer)
+                if (arg.Trim() == "holding" && _wsLiftWaits++ < 1200) // "lifter holding": waits (20 s at most) until a hand carries a piece to a fit
                 {
-                    var (lc, lpart) = WsFind(g, "Building Station");
-                    WsSay("lifter: place: " + (lc == null ? "no Building Station" : LifterProbe.Place(g.Constructs, lc, lpart)));
+                    var held = false;
+                    foreach (var hb in g.Constructs.LiftBodies)
+                        for (var hi = 0; hi < hb.N; hi++)
+                            held |= hb.Lifts[hi] is { State: LiftState.Carry, Def: > 0, Why: LiftWhy.None } hl && hl.Age > 6 && hl.Age < hl.Dur - 12;
+                    if (!held)
+                    {
+                        _wsQueue.EnqueueFront("lifter holding");
+                        _wsWait = 1;
+                        return;
+                    }
                 }
+                if (arg.Trim().StartsWith("place", StringComparison.Ordinal) && g.IsServer) // "lifter place [TIER] [SLOT]": TIER Scrap, Workshop, Industrial, Military or Plasma; SLOT 0 to 3 round the bay
+                {
+                    var pw = arg.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    var (lc, lpart) = WsFind(g, "Building Station");
+                    WsSay("lifter: place: " + (lc == null ? "no Building Station" : LifterProbe.Place(g.Constructs, lc, lpart, pw.Length > 1 ? pw[1] : "", pw.Length > 2 && int.TryParse(pw[2], out var ps) ? ps : 0)));
+                }
+                var lw = arg.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (lw.Length > 0 && lw[0] == "joined" && g.IsServer) // "lifter joined" (host): waits (3 minutes at most) until a joined player has been in for 15 s
+                {
+                    var inNow = g.Players.Values.Any(pl => pl.Bot == null && pl != me && pl.Alive);
+                    _wsJoinSeen = inNow ? (_wsJoinSeen == 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : _wsJoinSeen) : 0;
+                    if ((_wsJoinSeen == 0 || System.Diagnostics.Stopwatch.GetElapsedTime(_wsJoinSeen).TotalSeconds < 15) && _wsLiftWaits++ < 6000)
+                    {
+                        _wsQueue.EnqueueFront("lifter joined");
+                        _wsWait = 30;
+                        return;
+                    }
+                    _wsLiftWaits = 0;
+                }
+                else if (lw.Length > 0 && lw[0] == "screen") // "lifter screen": every lifter's screen as this peer fills it (they stand on their own foundations, outside the blueprint "panel" searches)
+                {
+                    foreach (var sb in g.Constructs.LiftBodies)
+                        if (g.Constructs.Get(sb.Body) is { } sbc)
+                            for (var si = 0; si < sb.N; si++)
+                                if (sb.Lifts[si].Part < sbc.PartCount)
+                                    WsDumpPanels(g, sbc, sb.Lifts[si].Part);
+                    return;
+                }
+                else if (lw.Length > 0 && lw[0] == "walk") // "lifter walk": this peer's player out of the window tool's flight, on its feet (a client before the host's "lifter stand others")
+                {
+                    me.NoclipWanted = false;
+                    g.NoclipShot = false;
+                }
+                else if (lw.Length > 0 && lw[0] is "stand" or "pen" && g.IsServer)
+                {
+                    // "lifter stand [me|others]" (host): the players where a carry that has just begun will pass its piece; "lifter pen
+                    // [me|others]": the same with four Crate Stacks round them, so a push can't get them out (pinned: the arm must wait).
+                    var pinfo = "";
+                    var anyJoined = g.Players.Values.Any(pl => pl.Bot == null && pl != me && pl.Alive);
+                    _wsJoinSeen = anyJoined ? (_wsJoinSeen == 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : _wsJoinSeen) : 0;
+                    var waitJoin = lw.Length > 1 && lw[1] == "others" && (_wsJoinSeen == 0 || System.Diagnostics.Stopwatch.GetElapsedTime(_wsJoinSeen).TotalSeconds < 15); // (joined 15 s ago: its window has spawned it)
+                    var pspotOr = waitJoin ? null : LifterProbe.PathSpot(g.Constructs, out pinfo);
+                    if (pspotOr is not { } pspot)
+                    {
+                        if (_wsLiftWaits++ < 40000)
+                        {
+                            _wsQueue.EnqueueFront($"lifter {arg.Trim()}");
+                            _wsWait = waitJoin ? 30 : 1; // (a join takes seconds: look again every 30 frames)
+                            return;
+                        }
+                        WsFail($"lifter: no carry began (or no player joined) in time: {(waitJoin ? "nobody joined" : pinfo)}");
+                        return;
+                    }
+                    _wsLiftWaits = 0;
+                    var who = lw.Length > 1 ? lw[1] : "me";
+                    if (who != "others")
+                    {
+                        me.NoclipWanted = false;
+                        g.NoclipShot = false;
+                    }
+                    var moved = 0;
+                    foreach (var pl in g.Players.Values)
+                        if (pl.Bot == null && (who == "others" ? pl != me : pl == me))
+                        {
+                            pl.NoclipWanted = false; // (the window tool flies every player: on their feet first)
+                            pl.Teleport(pspot + new Vector3(0, 0.05f, 0));
+                            moved++;
+                        }
+                    var pens = lw[0] == "pen" ? LifterProbe.Pen(g.Constructs, pspot) : 0;
+                    WsSay($"lifter: {lw[0]}: {moved} player(s) to {pspot:0.00}{(pens > 0 ? $", {pens} Crate Stacks round them" : "")}; {pinfo}");
+                }
+                else if (lw.Length > 0 && lw[0] == "free" && g.IsServer) // "lifter free" (host): every player 4 m north, out of a pen
+                    foreach (var pl in g.Players.Values)
+                        if (pl.Bot == null)
+                            pl.Teleport(pl.Position + new Vector3(0, 0.05f, -4f));
                 WsSay("lifter: " + LifterProbe.Text(g.Constructs));
+                foreach (var pl in g.Players.Values)
+                    if (pl.Bot == null)
+                        WsSay($"lifter: player {pl.Id}{(pl == me ? " (this peer)" : "")} feet {pl.Position:0.00}");
                 return;
             }
             case "station": // a Building Station: "station" prints the first one's job; then "station pick NAME", start [N], cancel, release, stock (host: the parts it lacks into its hold), hold NAME (host: that part into this player's hands), save (host: its body saved and loaded)
@@ -939,6 +1056,20 @@ public static unsafe partial class Program
                             return;
                         }
                         break;
+                    case "set": // "station set fillAmmo 50": one of the station's settings by its key, sent as the configure tool sends it (either peer)
+                    {
+                        var kv = rest.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        var sd = sc.DefOf(spart);
+                        var slot = kv.Length == 2 ? Array.FindIndex(sd.Config, e => e.Key == kv[0]) : -1;
+                        if (slot < 0 || !float.TryParse(kv[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var sv))
+                        {
+                            WsFail($"station set {rest}: no such setting");
+                            return;
+                        }
+                        g.SandboxConfigure(sc.Id, [(ushort)spart], [(byte)slot], [sv]);
+                        WsSay($"station: set {kv[0]} {sv}");
+                        break;
+                    }
                     case "repeat":
                         g.SandboxStation(sc.Id, spart, StationOp.Repeat, (ushort)(int.TryParse(rest, out var more) ? more : 0));
                         break;
@@ -1015,6 +1146,21 @@ public static unsafe partial class Program
                 if (Ui.StationPreview is { Ready: true } pv && sverb == "pick")
                     WsSay($"station: preview {pv.Name}: {pv.Parts} parts, cost {pv.CostMs:0.0} ms, worst slice {pv.WorstMs:0.00} ms");
                 _wsWait = 2;
+                return;
+            }
+            case "fuel": // the Building Station's body (the Showcase): its fuel pool and charge as this peer has them; "fuel N [SHARE]" (host) sets them, as a drain or a charge would (it stays still)
+            {
+                if (WsFind(g, "Building Station").C is not { } fb)
+                {
+                    WsFail("no Building Station");
+                    return;
+                }
+                var fw = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (g.IsServer && fw.Length > 0 && float.TryParse(fw[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var litres))
+                    fb.Fuel = Math.Clamp(litres, 0, fb.FuelCapacity());
+                if (g.IsServer && fw.Length > 1 && float.TryParse(fw[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var share))
+                    fb.Charge = Math.Clamp(share, 0, 1) * fb.ChargeCapacity;
+                WsSay($"fuel: body {fb.Id} fuel {fb.Fuel:0.0}/{fb.FuelCapacity():0.0} L, charge {fb.Charge:0}/{fb.ChargeCapacity:0} kJ, {(fb.Asleep ? "asleep" : "awake")}{(fb.Anchored ? ", anchored" : "")}, {fb.JointCount} joints");
                 return;
             }
             case "picker": // "picker": the open recipe picker's tiles (value, or dim); "picker N": picks the tile of value N as a click does;
@@ -1131,6 +1277,20 @@ public static unsafe partial class Program
                 _wsWait = 2;
                 return;
             }
+            case "bundle" when g.IsServer: // "bundle N MATERIAL" (host): a spilled Material Bundle of N units 2 m in front of the player, as a broken bin spills one
+            {
+                var sp = arg.IndexOf(' ');
+                var bmat = sp > 0 ? RecyclingTable.Current.IdOf(arg[(sp + 1)..]) : (byte)0;
+                if (!int.TryParse(sp > 0 ? arg[..sp] : "", out var bunits) || bmat == 0)
+                {
+                    WsFail("bundle N MATERIAL (on the host or offline)");
+                    return;
+                }
+                var bat = me.Position + new Vector3(MathF.Sin(me.Yaw), 0, MathF.Cos(me.Yaw)) * 2 + Vector3.UnitY;
+                WsSay($"bundle: {(g.Constructs.SpillBundle(bmat, bunits, bat, Vector3.Zero) ? "spilled" : "refused")} {bunits} {RecyclingTable.Current.NameOf(bmat)}");
+                _wsWait = 2;
+                return;
+            }
             case "deposit": // the nearest ground a drill of this tier taps (rings out from the player, 4 m apart): for --spawn-at
             {
                 var tier = int.TryParse(arg, out var t) ? t : 1;
@@ -1166,7 +1326,6 @@ public static unsafe partial class Program
     }
 
     /// <summary>A finger on a screen's button by its label, through the crosshair: Hands out, the eye in front of it, the view on it, then LMB.</summary>
-    private static bool _wsTouchLanded; // a joined client's touch moved it and waits to land: the next touch aims from where it stands
 
     private static void WsTouch(Game g, Player me, string arg)
     {
@@ -1209,21 +1368,33 @@ public static unsafe partial class Program
                         var right = Vector3.Cross(up, normal);
                         var r = panel.Touch[b].At;
                         var spot = centre + right * (((r.X + r.Z) * 0.5f - 0.5f) * panel.Size.X) + up * (((r.Y + r.W) * 0.5f - 0.5f) * panel.Size.Y);
-                        var moved = !_wsTouchLanded && (Vector3.Distance(me.Eye, spot) > 2.2f || Vector3.Dot(me.Eye - spot, normal) < 0.3f);
-                        _wsTouchLanded = false;
+                        var moved = Vector3.Distance(me.Eye, spot) > 2.2f || Vector3.Dot(me.Eye - spot, normal) < 0.3f;
+                        if (moved && !g.IsServer)
+                        {
+                            // (a joined client can't fly itself: the host owns its position and snaps a teleport back. It presses from where it
+                            // stands, as a player would, when that is in reach and in front; else the host brings it first: "bring PART")
+                            if (Vector3.Distance(me.Eye, spot) > ConstructBuild.UseReach - 0.1f || Vector3.Dot(me.Eye - spot, normal) < 0.1f)
+                            {
+                                WsFail($"touch: the joined client stands {Vector3.Distance(me.Eye, spot):0.0} m from that button (eye {me.Eye:0.0}); the host brings it first: bring PART");
+                                return;
+                            }
+                            moved = false;
+                        }
                         if (moved)
                             WsEyeTo(g, me, panel.At.Y < 0.8f && MathF.Abs(normal.Y) < 0.5f
                                 ? centre + normal * 0.9f + Vector3.UnitY * 1.2f // (a low screen, a Router's: read standing, looking down, as a player does)
                                 : centre + normal * 1.3f);
-                        if (moved && !g.IsServer)
-                        {
-                            // (a joined client: its move reaches the host and it lands on the ground first; then the touch again aims from there)
-                            _wsQueue.EnqueueFront(screen >= 0 ? $"touch {arg} /{screen}" : $"touch {arg}");
-                            _wsWait = 30;
-                            _wsTouchLanded = true;
-                            return;
-                        }
                         WsLook(g, me.Eye, spot);
+                        {
+                            // (what the crosshair's ray meets on the way, as the pointer will see it: the ground or a wall first, another part, or this button)
+                            var dir = g.LookDir(g.LookYaw, g.LookPitch);
+                            var wall = World.RaycastWorld(me.Eye, dir, ConstructBuild.Reach + 1);
+                            var aimed = g.Constructs.Raycast(me.Eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var th, look: true, noTracks: true);
+                            Vector2 tat = default;
+                            var tp = aimed && th.Part >= 0 && th.Part < th.Body.PartCount ? PanelTouch.Find(th.Body, th.Part, me.Eye, dir, out tat) : -1;
+                            WsSay($"touch ray: button {Vector3.Distance(me.Eye, spot):0.00} m (reach {ConstructBuild.UseReach}), ground or wall {wall:0.00} m, "
+                                + (aimed ? $"hit {th.Body.DefOf(th.Part).Name} part {th.Part} at {th.Distance:0.00} m, slot {th.SlotPlus1}, route {th.RoutePlus1}, panel {tp}{(tp >= 0 ? $" button {PanelTouch.Region(th.Body.DefOf(th.Part).Panels[tp], tat)}" : "")}" : "no part"));
+                        }
                         _wsQueue.EnqueueFront("key Fire");
                         _wsWait = 3; // (the pointer finds the button first, then the click)
                         WsSay($"touch: {d.Name} (part {part}) panel {n} button {b} \"{now}\"");
@@ -1236,7 +1407,7 @@ public static unsafe partial class Program
 
     private static PanelCard WsFill(Game g, Construct c, int part, PanelDef panel)
     {
-        var card = new PanelCard { Touch = panel.Touch };
+        var card = new PanelCard { Touch = panel.Touch, PanelSize = panel.Size };
         var d = c.DefOf(part);
         var percent = ConstructConfig.Has(d, CfgKey.TextSize) ? ConstructConfig.Get(c.Parts[part], d, CfgKey.TextSize, 100) : 100;
         var source = panel == d.Panels[0] ? ProductionLines.MonitorSource(c, part) : -1;
@@ -1274,6 +1445,43 @@ public static unsafe partial class Program
                 for (var l = 0; l < rows; l++)
                     if (card.Length(l) > 0)
                         WsSay($"  monitor{rows} {l}| {card.Line(l)}");
+            }
+            if (d.Monitor == MonitorKind.Network)
+            {
+                // A big sign's board (16 rows on a 1.6 m panel): the plan map's data and its caption.
+                var card = new PanelCard { Rows = 16, TextRows = 16, Cols = 64, PanelSize = new Vector2(1.6f, 0.9f) };
+                ProductionLines.FillMonitor(g.Constructs, c, part, card);
+                if (card.Plan is { } plan)
+                {
+                    var kinds = new int[7];
+                    for (var i = 0; i < plan.NodeN; i++)
+                        kinds[(int)plan.NodeKind[i]]++;
+                    var cuts = 0;
+                    for (var i = 0; i < plan.LineN; i++)
+                        cuts += plan.LineCut[i] ? 1 : 0;
+                    var dots = new int[3];
+                    for (var i = 0; i < plan.DotN; i++)
+                        dots[plan.DotKind[i]]++;
+                    WsSay($"  map: axes {plan.Axis0},{plan.Axis1}, {plan.Min:0.0} to {plan.Max:0.0} m; {plan.LineN} conveyors ({cuts} cut), {plan.PointN} points; nodes: {kinds[0]} machines, {kinds[1]} stores, {kinds[2]} terminals, {kinds[3]} Routers, {kinds[4]} splitters, {kinds[5]} joins, {kinds[6]} other; dots {dots[0]} storage, {dots[1]} ordered, {dots[2]} stuck; ring {(plan.Ring >= 0 ? c.DefOf(plan.NodePart[plan.Ring]).Name : "none")}; hash {plan.Hash:x8}");
+                    // The fill's cost (design 9.3): the board and its plan filled again 200 times, timed, and what it allocated.
+                    var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                    var a0 = GC.GetAllocatedBytesForCurrentThread();
+                    for (var n = 0; n < 200; n++)
+                    {
+                        card.Clear();
+                        ProductionLines.FillMonitor(g.Constructs, c, part, card);
+                    }
+                    var us = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds * 1000 / 200;
+                    WsSay($"  map fill: {us:0.0} us a fill over 200, {(GC.GetAllocatedBytesForCurrentThread() - a0) / 200} bytes a fill; {plan.NodeN} nodes, {plan.LineN} conveyors, {c.ConveyedCount} riders on the body");
+                    for (var i = 0; i < plan.NodeN; i++)
+                        if (plan.NodeKind[i] is PlanNode.Machine or PlanNode.Store or PlanNode.Terminal or PlanNode.Router)
+                            WsSay($"    {plan.NodeTag[i * 2]}{plan.NodeTag[i * 2 + 1]} {c.DefOf(plan.NodePart[i]).Name}#{plan.NodePart[i]} at {plan.NodeAt[i]:0.0}{(plan.NodeFill[i] >= 0 ? $", fill {plan.NodeFill[i]:0.00}" : "")}{(plan.NodeKeep[i] >= 0 ? $", keep mark {plan.NodeKeep[i]:0.00}" : "")}{(plan.NodeWay[i] != Vector2.Zero ? $", way stub {plan.NodeWay[i]:0.00}" : "")}");
+                }
+                else
+                    WsSay("  map: none (the board drew a list)");
+                for (var l = 0; l < 16; l++)
+                    if (card.Length(l) > 0)
+                        WsSay($"  map16 {l}| {card.Line(l)}");
             }
         }
         for (var n = 0; n < d.Panels.Length; n++)
@@ -1365,6 +1573,7 @@ public static unsafe partial class Program
     /// <summary>PollActions: the script's key, down for one frame.</summary>
     private static void WindowShotKeys(bool[] down)
     {
+        WindowShotHold(down); // (a key held over frames: Program.WindowShotCuts.cs)
         if (_wsPress is { } a)
         {
             down[(int)a] = true;

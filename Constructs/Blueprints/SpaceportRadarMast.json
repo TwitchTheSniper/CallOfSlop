@@ -1,0 +1,51 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Spaceport Radar Mast",
+  "description": "The Ministry of Slop spaceport's approach radar: a 32 m lattice tower with the radar cabin on its head.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Adapter Large to Small",
+      "on": 0,
+      "socket": "t8_8",
+      "by": "front2.2",
+      "paint": "#4b5157",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Large Truss 16 m",
+      "on": 1,
+      "socket": "back",
+      "by": "-z",
+      "paint": "#4b5157",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Large Truss 16 m",
+      "on": 2,
+      "socket": "+z",
+      "by": "-z",
+      "paint": "#4b5157",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Floodlight Large",
+      "on": 3,
+      "socket": "+z",
+      "by": "-y",
+      "paint": "#e2e4e0",
+      "finish": "painted plating"
+    },
+    {
+      "part": "Battery",
+      "on": 0,
+      "socket": "l8",
+      "by": "-z",
+      "paint": "#4b5157"
+    }
+  ]
+}

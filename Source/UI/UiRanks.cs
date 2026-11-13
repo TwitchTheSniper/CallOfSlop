@@ -90,7 +90,7 @@ public sealed partial class Ui
             else
             {
                 var next = def.Tiers[tier + 1].Name;
-                row.Bar = $"{v - lo} / {hi - lo} to {next}";
+                row.Bar = $"{hi - v} standing to {next}"; // (the bar runs across the whole tier; "15 / 30" at a standing of 0 read as half way there)
                 var brings = Game.RankUnlockLine(def, tier, tier + 1, uniforms, "Uniform", "Teaches");
                 row.Next = brings.Length > 0 ? $"  {next} at {hi:+0;-0;0}. {brings}" : $"  {next} at {hi:+0;-0;0}.";
             }

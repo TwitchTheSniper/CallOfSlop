@@ -14,6 +14,17 @@ public sealed partial class Ui
 {
     public bool LogbookOpen;
 
+    /// <summary>A page to turn to the next time the Logbook is drawn ("Technologies"), then null (the window tool's "open logbook TAB").</summary>
+    public string? LogbookPick;
+
+    private ImGuiTabItemFlags LogbookTab(string name)
+    {
+        if (LogbookPick == null || !LogbookPick.Equals(name, StringComparison.OrdinalIgnoreCase))
+            return ImGuiTabItemFlags.None;
+        LogbookPick = null;
+        return ImGuiTabItemFlags.SetSelected;
+    }
+
     public void DrawLogbook(Game? game, int bind)
     {
         if (!LogbookOpen)
@@ -26,17 +37,17 @@ public sealed partial class Ui
                 ImGuiSafe.TextWrapped("The Logbook is a Sandbox thing: start or join a Sandbox game.");
             else if (ImGui.BeginTabBar("##logbooktabs"u8))
             {
-                if (ImGui.BeginTabItem("Records"u8))
+                if (ImGui.BeginTabItem("Records"u8, LogbookTab("Records")))
                 {
                     DrawLogbookBody(game);
                     ImGui.EndTabItem();
                 }
-                if (ImGui.BeginTabItem("Paths"u8))
+                if (ImGui.BeginTabItem("Paths"u8, LogbookTab("Paths")))
                 {
                     DrawLogbookPaths(game); // (what they did and chose, and where they stand: UiLogbookPaths.cs)
                     ImGui.EndTabItem();
                 }
-                if (ImGui.BeginTabItem("Technologies"u8))
+                if (ImGui.BeginTabItem("Technologies"u8, LogbookTab("Technologies")))
                 {
                     DrawLogbookTechnologies(game); // (what the factions taught them, what is still locked, their tool upgrades: UiTechnologies.cs)
                     ImGui.EndTabItem();

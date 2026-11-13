@@ -107,7 +107,7 @@ public sealed partial class Ui
                     }
             }
             ImGui.Separator();
-            var foot = ImGui.GetFrameHeightWithSpacing() * 2 + 6 * _scale;
+            var foot = ImGui.GetFrameHeightWithSpacing() * 3 + 6 * _scale;
             if (ImGui.BeginChild("##stlist"u8, new float2(300 * _scale, -foot), ImGuiChildFlags.Borders))
             {
                 _bstSearchInput ??= new ImInputString(33);
@@ -194,6 +194,8 @@ public sealed partial class Ui
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("What is fitted becomes a normal construct to finish by hand. Orders are cancelled."u8);
+            StationFillRow(game, c, part);
+            ImGuiSafe.TextColored(Dim, ConstructLifters.FittersLine(game.Constructs, c, part)); // (the lifters that reach its hold: ConstructLifters.cs)
             if (ImGui.Button("Close"u8))
                 open = false;
             ImGui.SameLine();
@@ -227,5 +229,61 @@ public sealed partial class Ui
         if (!open)
             CloseCrafting();
         return open;
+    }
+
+    private readonly ushort[] _bstCfgPart = new ushort[1];
+    private readonly byte[] _bstCfgSlot = new byte[1];
+    private readonly float[] _bstCfgVal = new float[1];
+    private CfgKey _bstFillDrag = CfgKey.COUNT;
+    private float _bstFillHeld;
+
+    /// <summary>
+    /// The fill settings (survival: what a build is given after its links, ConstructStation "The fill stage"): fuel and tanks, ammo
+    /// and battery charge as a share, and whether a build waits for them. The part's own settings, so the configure tool shows the
+    /// same; a change goes as the configure tool's (CActKind.Configure), when a slider is let go.
+    /// </summary>
+    private void StationFillRow(Game game, Construct c, int part)
+    {
+        var d = c.DefOf(part);
+        ImGui.Text("Fill"u8);
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Survival: after its links a build is given fuel and fluids piped to Fluid in, ammo and gas from linked bins, and charge from the station's power, up to these shares. Creative: it comes full."u8);
+        StationFillSlider(game, c, part, d, CfgKey.FillFuel, "##stfuel"u8, "Fuel %.0f%%"u8);
+        StationFillSlider(game, c, part, d, CfgKey.FillAmmo, "##stammo"u8, "Ammo %.0f%%"u8);
+        StationFillSlider(game, c, part, d, CfgKey.FillCharge, "##stcharge"u8, "Charge %.0f%%"u8);
+        var slot = d.CfgSlot[(int)CfgKey.FillWait];
+        if (slot < 0)
+            return;
+        ImGui.SameLine();
+        var wait = ConstructStation.Waits(c, part);
+        if (ImGui.Checkbox("Wait until filled"u8, ref wait))
+            StationFillSend(game, c, part, slot, wait ? 1 : 0);
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("On: a build stays in the bay until it is filled. Off: it finishes with what it got and says what is short."u8);
+    }
+
+    private void StationFillSlider(Game game, Construct c, int part, ConstructPartDef d, CfgKey k, ReadOnlySpan<byte> id, ReadOnlySpan<byte> format)
+    {
+        var slot = d.CfgSlot[(int)k];
+        if (slot < 0)
+            return;
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(150 * _scale);
+        var v = _bstFillDrag == k ? _bstFillHeld : ConstructConfig.Get(c.Parts[part], d, k, 100); // (while dragged: the slider's own value, not the part's)
+        ImGui.SliderFloat(id, ref v, 0, 100, format);
+        if (ImGui.IsItemActive())
+            (_bstFillDrag, _bstFillHeld) = (k, v);
+        else if (_bstFillDrag == k)
+            _bstFillDrag = CfgKey.COUNT;
+        if (ImGui.IsItemDeactivatedAfterEdit())
+            StationFillSend(game, c, part, slot, MathF.Round(v / 5) * 5);
+    }
+
+    private void StationFillSend(Game game, Construct c, int part, int slot, float value)
+    {
+        _bstCfgPart[0] = (ushort)part;
+        _bstCfgSlot[0] = (byte)slot;
+        _bstCfgVal[0] = value;
+        game.SandboxConfigure(c.Id, _bstCfgPart, _bstCfgSlot, _bstCfgVal);
     }
 }

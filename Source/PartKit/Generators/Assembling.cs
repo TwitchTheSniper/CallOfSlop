@@ -369,6 +369,15 @@ public sealed class Assembling : IPartGenerator
                 extra["Control Unit"] = Math.Min(20, Math.Max(1, pistons / 4));
             }
         }
+        if (p.Get("lifter") is PyDict)
+        {
+            // A Loader Arm (LifterParts.cs) turns on a slewing ring and bends at two joints: Gear Sets at tier 1, Servo Motors from 2, a
+            // Control Unit from 3 (its tier's Assembler makes them).
+            var lt = Int(ptier ?? 1);
+            extra[lt == 1 ? "Gear Set" : "Servo Motor"] = Math.Min(20, 2 * lt);
+            if (lt >= 3)
+                extra["Control Unit"] = lt - 2;
+        }
         if (m.Count + extra.Count < 2 && mass >= 3)
             // Two chains at least: anything of steel has a little rubber or concrete in its fixings (fixings stay fixings on a 240 t crank).
             m[mass < 12 ? "bronze" : role != "frame" ? "rubber" : "concrete"] = Math.Min(MaxUnits / 4, Math.Max(1, RInt(mass / 25)));

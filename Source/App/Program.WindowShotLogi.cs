@@ -127,6 +127,45 @@ public static partial class Program
                 WsFail($"logi cut: no way {way} out of \"{rest}\"");
                 return;
             }
+            case "feed" when g.IsServer: // "logi feed N [NAME]": N pieces (Gear Set) with no order put on the conveyors into a Router, one at a time as room comes
+            {
+                var fb = rest.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                var left = fb.Length > 0 && int.TryParse(fb[0], out var fn) ? fn : 1;
+                var piece = ConstructParts.Find(fb.Length > 1 ? fb[1] : "Gear Set");
+                if (piece == null)
+                {
+                    WsFail($"logi feed: no part \"{fb[1]}\"");
+                    return;
+                }
+                for (var k = 0; k < c.RouteCount && left > 0; k++)
+                    if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].To < c.PartCount && c.DefOf(c.Routes[k].To).IsRouter
+                        && ConstructConveyor.PutMade(w, c, k, piece, 1, out var fwhy) && fwhy == ExtrudeStall.None)
+                        left--;
+                if (left > 0 && ++_wsSpawnTries < 300)
+                {
+                    _wsQueue.EnqueueFront($"logi feed {left} {piece.Name}");
+                    _wsWait = 30;
+                    return;
+                }
+                _wsSpawnTries = 0;
+                WsSay($"[logi] feed: {(left > 0 ? $"{left} not put (no room)" : "all put")}; {c.ConveyedCount} riding");
+                return;
+            }
+            case "mend" when g.IsServer: // "logi mend PART WAY": a cut way repaired whole, as the repair tool leaves it
+            {
+                var cut = rest.LastIndexOf(' ');
+                var (fc, part) = LogiFind(g, cut > 0 ? rest[..cut] : rest);
+                var way = cut > 0 && int.TryParse(rest[(cut + 1)..], out var wn) ? wn : 1;
+                for (var k = 0; fc != null && k < fc.RouteCount; k++)
+                    if (fc.Routes[k].Type == RouteType.Conveyor && fc.Routes[k].From == part && ConstructLogistics.WayOf(fc, k) == way)
+                    {
+                        var ok = ConstructRoutes.Repair(w, fc, k);
+                        WsSay($"[logi] mend conveyor {k} (way {way} of {fc.DefOf(part).Name}#{part}): {(ok ? "repaired" : "nothing to repair")}");
+                        return;
+                    }
+                WsFail($"logi mend: no way {way} out of \"{rest}\"");
+                return;
+            }
             case "fill" when g.IsServer:
             {
                 var fb = rest.Split('|'); // ("PART|NAME|N": at most N)
@@ -190,6 +229,35 @@ public static partial class Program
                                 WsSay($"[logi]     | and {cq.Items[k].LinesMore} more");
                         }
                 return;
+            case "name": // "logi name PART = TEXT": a part's text (a Router's name) set as the configure tool's Text box sets it, through this peer's own message
+            {
+                var sp = rest.IndexOf(" = ", StringComparison.Ordinal);
+                var (nc, np) = LogiFind(g, sp > 0 ? rest[..sp] : rest);
+                if (nc == null)
+                {
+                    WsFail($"logi name: no part \"{rest}\"");
+                    return;
+                }
+                g.SandboxPartText(nc.Id, (ushort)np, 0, sp > 0 ? rest[(sp + 3)..] : "");
+                WsSay($"[logi] name {nc.DefOf(np).Name}#{np}: sent \"{(sp > 0 ? rest[(sp + 3)..] : "")}\"");
+                return;
+            }
+            case "list": // "logi list [FILTER]": the first Crafting Terminal's list rows (name, make 0-3, its machine, what is missing), filtered by name
+            {
+                var (tc, t) = LogiFind(g, "Crafting Terminal");
+                if (tc == null)
+                {
+                    WsFail("logi list: no Crafting Terminal");
+                    return;
+                }
+                var rows = new List<CraftRow>();
+                ConstructCrafting.Catalogue(w, tc, t, rows);
+                var shown = rows.Where(r => rest.Length == 0 || r.Name.Contains(rest, StringComparison.OrdinalIgnoreCase)).ToList();
+                WsSay($"[logi] list: {rows.Count} rows, {shown.Count} shown");
+                foreach (var r in shown)
+                    WsSay($"[logi]   {r.Name}: make {r.Make} stock {r.Stock} by {(r.Machine >= 0 ? $"{tc.DefOf(r.Machine).Name}#{r.Machine}" : "-")} {r.Missing}");
+                return;
+            }
             case "tier": // a test state in this process: "logi tier Assembler 4" sets every part of that name to that tier (a two-level recipe on the showcase)
             {
                 var sp = rest.LastIndexOf(' ');

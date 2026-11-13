@@ -112,7 +112,7 @@ public static partial class Program
             MediaLook(g, c, hit.Part, d, h.Tool);
             return false;
         }
-        if (p.Broken || !keyed && d.TextSlots == 0 || h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0)
+        if (p.Broken || !keyed && (d.TextSlots == 0 || d.IsRouter) || h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0)
             return false;
         var box = keyed ? LogicInputs.KeyAt(c, hit.Part, hit.Point) : -1;
         var key = box >= 0 ? d.Boxes[box].Key : '\0';

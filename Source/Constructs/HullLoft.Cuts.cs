@@ -12,13 +12,20 @@ namespace CallOfSlop;
 /// along from the back edge and <c>V</c> across from the left, <c>A</c> long, <c>B</c> wide, each corner cut back by <c>C</c>;
 /// <c>mK,A,B</c> a triangle off corner <c>K</c> (0 back left, 1 back right, 2 nose right, 3 nose left). The part is the blank's surface
 /// with those pieces removed: each facet the cuts touch is split into convex pieces on its own quad, so a split facet meets a whole one
-/// with no crack. Phase 1: collision and sockets are still the blank's; mass and health are what is left.
+/// with no crack. Mass and health are what is left. Collision (phase 2) is the solid sheet as rectangles round each opening of 10 cm or
+/// more, so shots, bodies and players pass; an edge socket whose spot was cut away is left out, and each such opening has an <c>o</c> socket.
 /// </summary>
 public static partial class HullLoft
 {
     public const string CutPanelPrefix = "Cut Panel (", CutPlatePrefix = "Cut Plate (";
     private const string CutSplit = " | ";
-    public const int MaxCuts = 6, CutMaxFacets = 96, CutWebCm = 3, CutSnapCm = 2, CutMinCm = 5, CutMaxCm = 600, CutMaxThickMm = 100;
+    public const int MaxCuts = 6, CutMaxFacets = 96, CutWebCm = 3, CutSnapCm = 2, CutMinCm = 5, CutMaxCm = 600;
+    /// <summary>The thickest stock any cutter's bed takes (the Medium Laser Cutter's 2 m, design section 5): no rule of its own, only the bed (the user, 2026-11-13).</summary>
+    public const int CutMaxThickMm = 2000;
+    /// <summary>An opening this wide both ways or more opens its collision (shots, bodies and players pass) and gets an <c>o</c> socket; a smaller one is drawn and weighed only.</summary>
+    public const int CutOpenCm = 10;
+    /// <summary>Collision boxes a cut part: a body's collider and every ray read them (a panel has 4).</summary>
+    public const int CutMaxBoxes = 24;
     private const int PlateSection = 1, SolidSection = 0; // (Extrusion.Presets: "solid", "plate")
 
     /// <summary>One cut: an opening (<see cref="Corner"/> false: U, V, A, B, C) or a cut corner (true: U is the corner K, then A, B).</summary>
@@ -34,6 +41,7 @@ public static partial class HullLoft
     {
         public PanelShape Sheet; // the canvas; a plate's is a flat "curve" with its length and width (never a key of its own)
         public bool Plate;
+        public bool Edge; // a flat bar on edge (H over W): the sheet L by H stands in the piece's y, cut through its width W (TurnEdge)
         public ExtrusionKey Stock; // a plate's blank
         public float Thick; // m
         public string Blank = ""; // the blank's own name: "Formed Panel (...)" or "Extrusion ..."
@@ -41,7 +49,15 @@ public static partial class HullLoft
         public Vector2d[][] Polys = []; // each cut's outline on the sheet, cm, snapped to the facet lines
         public Vector2d[][]?[] Pieces = []; // [i * across + j]: null, the facet whole; else the pieces it keeps
         public int Items; // facets drawn: whole facets and pieces
+        public double[] Us = [], Vs = []; // the facet lines on the sheet, cm
+        public CutRect[] Rects = []; // the solid sheet left, as rectangles on it: one hidden box each (phase 2)
     }
+
+    /// <summary>
+    /// A rectangle of solid sheet, cm, one collision box. Its sides along the sheet (V) are always rims (the sheet's edge or an opening's);
+    /// <see cref="RimU0"/> and <see cref="RimU1"/> say whether its ends are too, or only the next rectangle's or strip's seam.
+    /// </summary>
+    internal readonly record struct CutRect(double U0, double U1, double V0, double V1, bool RimU0, bool RimU1);
 
     /// <summary>A point on the flat sheet, cm (U along, V across): doubles, so every peer's pieces come out the same.</summary>
     internal readonly record struct Vector2d(double U, double V);
@@ -96,9 +112,10 @@ public static partial class HullLoft
             }
             plan.Stock = k;
             plan.Blank = Extrusion.Prefix + blankText;
-            var mm = Extrusion.PresetOf(k.Mask) == PlateSection ? k.H * 2.5f : k.H * 10f;
+            plan.Edge = OnEdge(k);
+            var mm = StockMm(k);
             plan.Thick = mm / 1000f;
-            plan.Sheet = new PanelShape(0, k.L, k.W, 0, 0, (int)mm, RecyclingTable.Current.NameOf(k.Material));
+            plan.Sheet = new PanelShape(0, k.L, plan.Edge ? k.H : k.W, 0, 0, (int)mm, RecyclingTable.Current.NameOf(k.Material));
         }
         else
         {
@@ -155,11 +172,16 @@ public static partial class HullLoft
             why = $"too many facets ({plan.Items} of {CutMaxFacets}): fewer cut-outs, or straighter ones";
             return null;
         }
+        if (plan.Rects.Length > CutMaxBoxes)
+        {
+            why = $"too many collision boxes ({plan.Rects.Length} of {CutMaxBoxes}): line the cut-outs up, or use fewer";
+            return null;
+        }
         why = "";
         return plan;
     }
 
-    /// <summary>Why an extruded piece can't be cut, or null: flat stock only, plate (a quarter of its height thick) or a solid bar lying flat, at most 10 cm thick and 6 m a side.</summary>
+    /// <summary>Why an extruded piece can't be cut, or null: flat stock only, plate (a quarter of its height thick) or a flat bar either way up (on edge, cut through its width), no thicker than the largest bed and 6 m a side.</summary>
     public static string? StockRefusal(in ExtrusionKey k)
     {
         if (k.Growing)
@@ -175,15 +197,26 @@ public static partial class HullLoft
             label = label.Length > 1 && label[1] == '-' ? label : label.ToLowerInvariant();
             return $"a Laser Cutter cuts flat stock: plate or a flat bar, not {("aeiouAEIOUL".Contains(label[0]) ? "an" : "a")} {label}";
         }
-        var mm = section == PlateSection ? k.H * 2.5f : k.H * 10f;
-        if (section == SolidSection && k.H > k.W)
-            return "lay the bar flat: a Laser Cutter cuts through its thinner side";
+        var mm = StockMm(k);
         if (mm > CutMaxThickMm)
-            return $"too thick to cut: {mm / 10f:0.#} cm, a Laser Cutter cuts {CutMaxThickMm / 10} cm";
-        if (k.L < PanelMinCm || k.L > CutMaxCm || k.W < PanelMinCm || k.W > CutMaxCm)
-            return k.L > CutMaxCm ? $"cut it to length at the Extruder: a Laser Cutter's bed is {CutMaxCm / 100} m" : $"a cut piece is {PanelMinCm} to {CutMaxCm} cm long and wide";
+            return $"too thick for any Laser Cutter's bed: {mm / 1000f:0.##} m, the largest takes {CutMaxThickMm / 1000} m";
+        var across = OnEdge(k) ? k.H : k.W; // (a bar on edge is cut through its width: its sheet is its length by its height)
+        if (k.L < PanelMinCm || k.L > CutMaxCm || across < PanelMinCm || across > CutMaxCm)
+            return k.L > CutMaxCm ? $"cut it to length at the Extruder: a Laser Cutter's bed is {CutMaxCm / 100} m" : $"a cut piece is {PanelMinCm} to {CutMaxCm} cm long and {(OnEdge(k) ? "high" : "wide")}";
         return null;
     }
+
+    /// <summary>A flat bar standing on edge (taller than wide): cut through its width, its sheet standing in its own y (the user, 2026-11-13).</summary>
+    private static bool OnEdge(in ExtrusionKey k) => Extrusion.PresetOf(k.Mask) == SolidSection && k.H > k.W;
+
+    /// <summary>The thickness a cut goes through, mm: a plate's quarter of its height, a flat bar's height lying flat or its width on edge.</summary>
+    private static float StockMm(in ExtrusionKey k) => Extrusion.PresetOf(k.Mask) == PlateSection ? k.H * 2.5f : OnEdge(k) ? k.W * 10f : k.H * 10f;
+
+    /// <summary>
+    /// A point or a way from the sheet's frame (x across, y through, z along) into the piece's: the same for plate and a bar lying flat; a bar on
+    /// edge is turned a quarter about its length (x to y, y to -x), so its sheet stands in its y and its thickness lies across x.
+    /// </summary>
+    private static Vector3 TurnEdge(bool edge, Vector3 v) => edge ? new Vector3(-v.Y, v.X, v.Z) : v;
 
     // ---- The rules -----------------------------------------------------------------------------------------------
 
@@ -394,6 +427,308 @@ public static partial class HullLoft
                 plan.Pieces[i * nv + j] = pieces;
                 plan.Items += pieces?.Length ?? 1;
             }
+        plan.Us = us;
+        plan.Vs = vs;
+        PlanRects(plan, nu);
+    }
+
+    // ---- Collision (phase 2) -------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// The solid sheet as rectangles: the panel's strips (up to four along it, as an uncut panel's boxes) split round each hole. A hole is an
+    /// opening of <see cref="CutOpenCm"/> or more both ways, by its whole extent (the drawn metal in its cut-back corners is look only, so
+    /// nothing unseen blocks a ray), or a cut corner by the rectangle inside its triangle (half its sides: a little air there still collides).
+    /// Each strip is cut into bands at the holes' ends; a band's free spans across are rectangles, and one that carries on unchanged into
+    /// the next band is the same rectangle.
+    /// </summary>
+    private static void PlanRects(CutPlan plan, int nu)
+    {
+        const double Eps = 1e-6;
+        double l = plan.Sheet.L, w = plan.Sheet.W;
+        var holes = new List<(double U0, double U1, double V0, double V1)>(plan.Cuts.Length);
+        for (var n = 0; n < plan.Cuts.Length; n++)
+        {
+            var c = plan.Cuts[n];
+            var (mnU, mxU, mnV, mxV) = Extent(plan.Polys[n]);
+            if (!c.Corner)
+            {
+                if (c.A >= CutOpenCm && c.B >= CutOpenCm)
+                    holes.Add((Math.Max(0, mnU), Math.Min(l, mxU), Math.Max(0, mnV), Math.Min(w, mxV)));
+                continue;
+            }
+            double a = (mxU - mnU) / 2, b = (mxV - mnV) / 2;
+            holes.Add(c.U switch
+            {
+                0 => (0, a, 0, b),
+                1 => (0, a, w - b, w),
+                2 => (l - a, l, w - b, w),
+                _ => (l - a, l, 0, b),
+            });
+        }
+        holes.Sort((x, y) => x.V0.CompareTo(y.V0));
+        var rects = new List<CutRect>();
+        var open = new List<(double V0, double V1, double U0)>();
+        var next = new List<(double V0, double V1, double U0)>();
+        var rows = new List<double>();
+        var strips = Math.Min(4, nu);
+        void Close((double V0, double V1, double U0) r, double u1)
+        {
+            bool Touch(double u, bool end) // (a hole's far end at u0, or its near end at u1, beside this rectangle)
+            {
+                foreach (var h in holes)
+                    if (Math.Abs((end ? h.U0 : h.U1) - u) < Eps && h.V0 < r.V1 - Eps && h.V1 > r.V0 + Eps)
+                        return true;
+                return false;
+            }
+            rects.Add(new CutRect(r.U0, u1, r.V0, r.V1, r.U0 <= Eps || Touch(r.U0, false), u1 >= l - Eps || Touch(u1, true)));
+        }
+        for (var k = 0; k < strips; k++)
+        {
+            double sa = plan.Us[k * nu / strips], sb = plan.Us[(k + 1) * nu / strips];
+            rows.Clear();
+            rows.Add(sa);
+            rows.Add(sb);
+            foreach (var h in holes)
+                foreach (var u in (ReadOnlySpan<double>)[h.U0, h.U1])
+                    if (u > sa + Eps && u < sb - Eps)
+                        rows.Add(u);
+            rows.Sort();
+            open.Clear();
+            for (var b = 0; b + 1 < rows.Count; b++)
+            {
+                double ua = rows[b], ub = rows[b + 1];
+                if (ub - ua <= Eps)
+                    continue;
+                next.Clear();
+                var v = 0.0;
+                void Free(double v0, double v1)
+                {
+                    if (v1 - v0 <= Eps)
+                        return;
+                    for (var o = 0; o < open.Count; o++)
+                        if (Math.Abs(open[o].V0 - v0) < Eps && Math.Abs(open[o].V1 - v1) < Eps)
+                        {
+                            next.Add(open[o]);
+                            open.RemoveAt(o);
+                            return;
+                        }
+                    next.Add((v0, v1, ua));
+                }
+                foreach (var h in holes)
+                    if (h.U0 < ub - Eps && h.U1 > ua + Eps)
+                    {
+                        Free(v, h.V0);
+                        v = Math.Max(v, h.V1);
+                    }
+                Free(v, w);
+                foreach (var r in open)
+                    Close(r, ua);
+                (open, next) = (next, open);
+            }
+            foreach (var r in open)
+                Close(r, sb);
+        }
+        plan.Rects = [.. rects];
+    }
+
+    /// <summary>
+    /// (Tools: the window tool's ray and walk.) A spot on a cut part's sheet, <paramref name="u"/> cm along and <paramref name="v"/> across, in
+    /// the part's own frame on its middle plane, and the way the surface faces there. False: not a cut part, or off its sheet. Allocates.
+    /// </summary>
+    public static bool CutSpot(string name, double u, double v, out Vector3 at, out Vector3 normal)
+    {
+        (at, normal) = (default, Vector3.UnitY);
+        if (ReadCut(name, out _) is not { } plan || u < 0 || v < 0 || u > plan.Sheet.L || v > plan.Sheet.W)
+            return false;
+        at = TurnEdge(plan.Edge, SheetAt(plan, u, v));
+        if (!plan.Plate)
+            normal = PanelNormal(plan.Sheet, (float)(u / plan.Sheet.L), (float)(v * 2 / plan.Sheet.W - 1));
+        normal = TurnEdge(plan.Edge, normal);
+        return true;
+    }
+
+    /// <summary>A cut cuts this spot of the sheet away (within half a centimetre): a socket there is left out.</summary>
+    private static bool CutAway(CutPlan plan, double u, double v)
+    {
+        const double Tol = 0.5;
+        foreach (var p in plan.Polys)
+        {
+            var sign = 0.0;
+            for (var i = 0; i < p.Length; i++)
+            {
+                var (a, b) = (p[i], p[(i + 1) % p.Length]);
+                sign += a.U * b.V - b.U * a.V;
+            }
+            var inside = true;
+            for (var i = 0; i < p.Length && inside; i++)
+            {
+                var (a, b) = (p[i], p[(i + 1) % p.Length]);
+                double eu = b.U - a.U, ev = b.V - a.V, len = Math.Sqrt(eu * eu + ev * ev);
+                if (len < 1e-9)
+                    continue;
+                var d = (eu * (v - a.V) - ev * (u - a.U)) / len * Math.Sign(sign); // (positive: on the inner side)
+                inside = d >= -Tol;
+            }
+            if (inside)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>A point on the sheet (cm) on its facet's flat quad, as the pieces are drawn: bilinear in the facet's four corners.</summary>
+    private static Vector3 SheetAt(CutPlan plan, double u, double v)
+    {
+        var sh = plan.Sheet;
+        int nu = plan.Us.Length - 1, nv = plan.Vs.Length - 1, i = 0, j = 0;
+        while (i < nu - 1 && u > plan.Us[i + 1])
+            i++;
+        while (j < nv - 1 && v > plan.Vs[j + 1])
+            j++;
+        float s0 = PanelRowS(sh, i, nu), s1 = PanelRowS(sh, i + 1, nu), x0 = j * 2f / nv - 1, x1 = (j + 1) * 2f / nv - 1;
+        var a = (float)((u - plan.Us[i]) / (plan.Us[i + 1] - plan.Us[i]));
+        var b = (float)((v - plan.Vs[j]) / (plan.Vs[j + 1] - plan.Vs[j]));
+        return PanelPoint(sh, s0, x0) * ((1 - a) * (1 - b)) + PanelPoint(sh, s0, x1) * ((1 - a) * b)
+            + PanelPoint(sh, s1, x1) * (a * b) + PanelPoint(sh, s1, x0) * (a * (1 - b));
+    }
+
+    private static float CutIn(float v, bool up) => up ? MathF.Ceiling(v * 100 + 0.2f) / 100 : MathF.Floor(v * 100 - 0.2f) / 100;
+
+    private static bool Solid(Vector3 mn, Vector3 mx) => mx.X - mn.X >= 0.01f && mx.Y - mn.Y >= 0.01f && mx.Z - mn.Z >= 0.01f;
+
+    /// <summary>
+    /// A cut panel's collision and edge sockets: a hidden box over each rectangle of <see cref="CutPlan.Rects"/>, the bounds of the drawn
+    /// surface over it with its rims a whole centimetre inside the drawn edges (an uncut panel's rule, on every opening's rim too); the
+    /// blank's edge sockets by their names, each on the box under it, and those whose spot was cut away left out.
+    /// </summary>
+    private static void CutPanelCollision(Builder p, in PanelShape sh, CutPlan cut, bool slabs, string steel)
+    {
+        var boxes = new (Vector3 Mn, Vector3 Mx, bool Ok)[cut.Rects.Length];
+        for (var r = 0; r < boxes.Length; r++)
+        {
+            var c = cut.Rects[r];
+            var (mn, mx) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
+            void At(double u)
+            {
+                void One(double v)
+                {
+                    var q = SheetAt(cut, u, v);
+                    (mn, mx) = (Vector3.Min(mn, q), Vector3.Max(mx, q));
+                }
+                One(c.V0);
+                foreach (var v in cut.Vs)
+                    if (v > c.V0 && v < c.V1)
+                        One(v);
+                One(c.V1);
+            }
+            At(c.U0);
+            foreach (var u in cut.Us)
+                if (u > c.U0 && u < c.U1)
+                    At(u);
+            At(c.U1);
+            var vm = (c.V0 + c.V1) / 2;
+            var dir = SheetAt(cut, c.U1, vm) - SheetAt(cut, c.U0, vm);
+            var along = MathF.Abs(dir.Z) >= MathF.Abs(dir.Y) ? 2 : 1; // (the axis the sheet runs along here: z, or y on a fold's raised leg)
+            var thick = 3 - along;
+            var fwd = dir[along] >= 0;
+            var (lowRim, highRim) = fwd ? (c.RimU0, c.RimU1) : (c.RimU1, c.RimU0);
+            mn.X = CutIn(mn.X, true);
+            mx.X = CutIn(mx.X, false);
+            mn[along] = lowRim ? CutIn(mn[along], true) : MathF.Round(mn[along], 2);
+            mx[along] = highRim ? CutIn(mx[along], false) : MathF.Round(mx[along], 2);
+            (mn[thick], mx[thick]) = (MathF.Round(mn[thick], 2), MathF.Round(mx[thick], 2));
+            if (mx[thick] - mn[thick] < 0.03f)
+                (mn[thick], mx[thick]) = (mn[thick] - 0.01f, mn[thick] + 0.02f);
+            boxes[r] = (mn, mx, Solid(mn, mx));
+            if (!boxes[r].Ok)
+                continue; // (a web too thin for a box after its rims: drawn only)
+            p.Hide(mn, mx);
+            if (slabs)
+                p.Boxes.Add(new System.Text.Json.Nodes.JsonObject { ["min"] = V(mn.X, mn.Y, mn.Z), ["max"] = V(mx.X, mx.Y, mx.Z), ["color"] = steel, ["detail"] = true });
+        }
+        // The box under a spot of the sheet, or -1 (cut away, or only a web too thin for a box).
+        int BoxAt(double u, double v)
+        {
+            if (CutAway(cut, u, v))
+                return -1;
+            for (var r = 0; r < boxes.Length; r++)
+            {
+                var c = cut.Rects[r];
+                if (boxes[r].Ok && u >= c.U0 - 0.5 && u <= c.U1 + 0.5 && v >= c.V0 - 0.5 && v <= c.V1 + 0.5)
+                    return r;
+            }
+            return -1;
+        }
+        static float Cm2(float v) => MathF.Round(v, 2);
+        double l = sh.L, w = sh.W;
+        var along2 = Math.Clamp(sh.L / 50, 1, 6);
+        var across = Math.Clamp(sh.W / 50, 1, 6);
+        for (var k = 0; k < along2; k++)
+        {
+            var s = (k + 0.5f) / along2;
+            var z = Cm2(PanelPoint(sh, s, 0).Z);
+            if (BoxAt(s * l, w) is var e and >= 0)
+            {
+                var (mn, mx, _) = boxes[e];
+                p.Sock($"e{k}", new Vector3(mx.X, Math.Clamp(Cm2(PanelPoint(sh, s, 1).Y), mn.Y, mx.Y), Math.Clamp(z, mn.Z, mx.Z)), "+x");
+            }
+            if (BoxAt(s * l, 0) is var west and >= 0)
+            {
+                var (mn, mx, _) = boxes[west];
+                p.Sock($"w{k}", new Vector3(mn.X, Math.Clamp(Cm2(PanelPoint(sh, s, -1).Y), mn.Y, mx.Y), Math.Clamp(z, mn.Z, mx.Z)), "-x");
+            }
+        }
+        for (var k = 0; k < across; k++)
+        {
+            var x = (k + 0.5f) / across * 2 - 1;
+            var v = (x + 1) / 2 * w;
+            if (BoxAt(0, v) is var a and >= 0)
+            {
+                var (a0, a1, _) = boxes[a];
+                var ps = PanelPoint(sh, 0, x);
+                p.Sock($"s{k}", new Vector3(Math.Clamp(Cm2(ps.X), a0.X, a1.X), Math.Clamp(Cm2(ps.Y), a0.Y, a1.Y), a0.Z), "-z");
+            }
+            if (BoxAt(l, v) is var b and >= 0)
+            {
+                var (b0, b1, _) = boxes[b];
+                var pn = PanelPoint(sh, 1, x);
+                if (sh.Kind == PanelBend && Math.Abs(sh.Angle) > 45)
+                    p.Sock($"n{k}", new Vector3(Math.Clamp(Cm2(pn.X), b0.X, b1.X), sh.Angle > 0 ? b1.Y : b0.Y, Math.Clamp(Cm2(pn.Z), b0.Z, b1.Z)), sh.Angle > 0 ? "+y" : "-y");
+                else
+                    p.Sock($"n{k}", new Vector3(Math.Clamp(Cm2(pn.X), b0.X, b1.X), Math.Clamp(Cm2(pn.Y), b0.Y, b1.Y), b1.Z), "+z");
+            }
+        }
+        var (nu, _) = PanelGrid(sh);
+        var backS = sh.Kind == PanelBend ? PanelRowS(sh, 1, nu) / 2 : 0.5f;
+        if (BoxAt(backS * l, w / 2) is var m and >= 0)
+        {
+            var backZ = sh.Kind == PanelBend ? PanelPoint(sh, backS, 0).Z : sh.L / 200f;
+            var (m0, m1, _) = boxes[m];
+            p.Sock("back", new Vector3(Math.Clamp(0, m0.X, m1.X), m0.Y, Math.Clamp(Cm2(backZ), m0.Z, m1.Z)), "-y"); // (on its box: a seam at the middle may leave x = 0 just off it, and the part was refused)
+        }
+    }
+
+    /// <summary>
+    /// Each opening of <see cref="CutOpenCm"/> or more whose middle lies on the sheet: a socket <c>o0</c>.. in its middle, on the sheet's middle
+    /// plane, facing the way the surface faces there (its nearest axis), for a pane, hatch, lamp or vent. It stands in the opening's air, as
+    /// a pipe's <c>base</c> stands in its bore, so it is added to the part made from the file (which wants every socket on a face), on every peer alike.
+    /// </summary>
+    private static void AddOpeningSockets(ConstructPartDef d, CutPlan plan)
+    {
+        List<CSocket>? add = null;
+        var sh = plan.Sheet;
+        foreach (var c in plan.Cuts)
+        {
+            if (c.Corner || c.A < CutOpenCm || c.B < CutOpenCm || c.U <= 0 || c.U >= sh.L || c.V <= 0 || c.V >= sh.W)
+                continue;
+            var at = TurnEdge(plan.Edge, SheetAt(plan, c.U, c.V));
+            var n = TurnEdge(plan.Edge, plan.Plate ? Vector3.UnitY : PanelNormal(sh, c.U / (float)sh.L, c.V * 2f / sh.W - 1));
+            var axis = MathF.Abs(n.X) >= MathF.Abs(n.Y) && MathF.Abs(n.X) >= MathF.Abs(n.Z) ? 0 : MathF.Abs(n.Y) >= MathF.Abs(n.Z) ? 1 : 2;
+            var dir = (byte)(axis * 2 + (n[axis] < 0 ? 1 : 0));
+            add ??= new List<CSocket>(MaxCuts);
+            add.Add(new CSocket($"o{add.Count}", new Vector3(R(at.X), R(at.Y), R(at.Z)), dir, SocketKind.Struct, d.Class));
+        }
+        if (add != null)
+            d.Sockets = [.. d.Sockets, .. add];
     }
 
     private static Vector2d[][]? FacetPieces(Vector2d[][] polys, double u0, double u1, double v0, double v1)
@@ -546,7 +881,7 @@ public static partial class HullLoft
         {
             var defer = _panelPumped && !PanelSync;
             var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-            var def = ConstructParts.Parse(PanelJson(name, plan.Sheet, 0, defer ? 0 : plan.Items, defer, plan), name);
+            var def = CutFirst(name, plan, defer);
             if (Adopt(def, name) is not { } made)
                 return (false, null);
             if (defer)
@@ -564,6 +899,14 @@ public static partial class HullLoft
         }
     }
 
+    /// <summary>A cut part from its plan, not yet adopted: its first part (boxes, sockets, mass, slabs drawn) when <paramref name="defer"/>, else whole.</summary>
+    private static ConstructPartDef CutFirst(string name, CutPlan plan, bool defer)
+    {
+        var def = ConstructParts.Parse(PanelJson(name, plan.Sheet, 0, defer ? 0 : plan.Items, defer, plan), name);
+        AddOpeningSockets(def, plan);
+        return def;
+    }
+
     /// <summary>
     /// A cut plate's part file: its pieces (already in <paramref name="p"/>), the extrusion's own box as its collision (phase 1) and the extrusion's
     /// own sockets at their places, so a blueprint that welded the plate welds the cut plate; mass, health and armour by the extrusion's rules from what is left.
@@ -571,13 +914,39 @@ public static partial class HullLoft
     private static string PlateJson(string name, CutPlan cut, Builder p, float area, bool slabs)
     {
         var k = cut.Stock;
-        float w = k.W / 100f, len = k.L / 100f, half = cut.Thick / 2;
-        var (mn, mx) = (new Vector3(-w / 2, -half, 0), new Vector3(w / 2, half, len));
-        p.Hide(mn, mx);
-        if (slabs)
-            p.Boxes.Add(new System.Text.Json.Nodes.JsonObject { ["min"] = V(mn.X, mn.Y, mn.Z), ["max"] = V(mx.X, mx.Y, mx.Z), ["color"] = Hex(RecyclingTable.Current.ColourOf(k.Material)), ["detail"] = true });
-        foreach (var s in Extrusion.Sockets(k, w, k.H / 100f, len, mn, mx))
-            p.Sock(s.Name, s.At, ConstructParts.DirName(s.Dir));
+        int sw = cut.Sheet.W; // (the sheet's width, cm: the piece's W, or its H on edge)
+        float w = sw / 100f, len = k.L / 100f, half = cut.Thick / 2;
+        // The piece's own box (the extrusion's, for its sockets): the sheet's, turned for a bar on edge.
+        var (mn, mx) = (TurnEdge(cut.Edge, new Vector3(-w / 2, -half, 0)), TurnEdge(cut.Edge, new Vector3(w / 2, half, len)));
+        (mn, mx) = (Vector3.Min(mn, mx), Vector3.Max(mn, mx));
+        // Collision (phase 2): a box over each rectangle of solid sheet, exact at the plate's own edges (as the extrusion's box), a whole
+        // centimetre inside an opening's rim, and exact at a seam between two rectangles.
+        foreach (var c in cut.Rects)
+        {
+            float x0 = (float)(c.V0 / 100 - w / 2), x1 = (float)(c.V1 / 100 - w / 2), z0 = (float)(c.U0 / 100), z1 = (float)(c.U1 / 100);
+            if (c.V0 > 0)
+                x0 = CutIn(x0, true);
+            if (c.V1 < sw)
+                x1 = CutIn(x1, false);
+            if (c.RimU0 && c.U0 > 0)
+                z0 = CutIn(z0, true);
+            if (c.RimU1 && c.U1 < k.L)
+                z1 = CutIn(z1, false);
+            var (b0, b1) = (new Vector3(x0, -half, z0), new Vector3(x1, half, z1));
+            if (!Solid(b0, b1))
+                continue;
+            p.Hide(b0, b1); // (turned there for a bar on edge)
+            if (slabs)
+            {
+                var (t0, t1) = (TurnEdge(cut.Edge, b0), TurnEdge(cut.Edge, b1));
+                (t0, t1) = (Vector3.Min(t0, t1), Vector3.Max(t0, t1));
+                p.Boxes.Add(new System.Text.Json.Nodes.JsonObject { ["min"] = V(t0.X, t0.Y, t0.Z), ["max"] = V(t1.X, t1.Y, t1.Z), ["color"] = Hex(RecyclingTable.Current.ColourOf(k.Material)), ["detail"] = true });
+            }
+        }
+        // The extrusion's own sockets at their places (in the piece's frame), less those whose spot was cut away: on edge the sheet's V is up the piece's y.
+        foreach (var s in Extrusion.Sockets(k, k.W / 100f, k.H / 100f, len, mn, mx))
+            if (!CutAway(cut, s.At.Z * 100, ((cut.Edge ? s.At.Y : s.At.X) + w / 2) * 100))
+                p.Sock(s.Name, s.At, ConstructParts.DirName(s.Dir));
         var names = RecyclingTable.Current;
         var row = ExtrusionTable.Current.Find(k.Material)!;
         var volume = area * cut.Thick;
@@ -585,7 +954,7 @@ public static partial class HullLoft
         {
             ["format"] = "call-of-slop-construct-part/1",
             ["name"] = name,
-            ["description"] = $"A cut {(Extrusion.PresetOf(k.Mask) == PlateSection ? "plate" : "flat bar")}, {len:0.##} by {w:0.##} m of {cut.Thick * 100:0.#} cm {names.NameOf(k.Material)}, with {cut.Cuts.Length} cut-out{(cut.Cuts.Length == 1 ? "" : "s")}. Cut by a Laser Cutter; weld it by its faces.",
+            ["description"] = $"A cut {(Extrusion.PresetOf(k.Mask) == PlateSection ? "plate" : cut.Edge ? "flat bar on edge" : "flat bar")}, {len:0.##} by {w:0.##} m of {cut.Thick * 100:0.#} cm {names.NameOf(k.Material)}, with {cut.Cuts.Length} cut-out{(cut.Cuts.Length == 1 ? "" : "s")}. Cut by a Laser Cutter; weld it by its faces.",
             ["group"] = "Production",
             ["section"] = "Cut parts",
             ["role"] = "frame",

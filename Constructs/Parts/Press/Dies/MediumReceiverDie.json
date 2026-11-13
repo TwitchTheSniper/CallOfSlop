@@ -1,0 +1,57 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Receiver Die",
+  "description": "Fits a medium press and makes it press a whole piece into one receiver part, sized by the piece. A standard piece gives the standard part.",
+  "group": "Production",
+  "section": "Dies",
+  "role": "panel",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 36.0,
+  "health": 1200,
+  "armour": 24,
+  "material": "steel",
+  "color": "#2f363d",
+  "attachSeconds": 4.0,
+  "pressDie": "Receiver",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -1.2,
+        0.0,
+        -1.2
+      ],
+      "max": [
+        1.2,
+        0.45,
+        1.2
+      ]
+    },
+    {
+      "min": [
+        -0.66,
+        0.45,
+        -0.66
+      ],
+      "max": [
+        0.66,
+        0.675,
+        0.66
+      ],
+      "color": "#4a5146"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y",
+      "kind": "pressdie"
+    }
+  ]
+}

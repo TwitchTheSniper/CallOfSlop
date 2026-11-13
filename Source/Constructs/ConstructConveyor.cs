@@ -464,7 +464,7 @@ public static class ConstructConveyor
         5 => "jammed: piece too long for this rack",
         6 => "jammed: the conveyor after the junction is full",
         7 => $"jammed: the {(c.Routes[route].To < c.PartCount ? c.DefOf(c.Routes[route].To).Name : "machine")} isn't taking it",
-        8 => "held at the Router: " + StuckWhy(c, route),
+        8 => "held at " + ConstructLogisticsBoard.RouterLabel(c, c.Routes[route].To) + ": " + StuckWhy(c, route), // (its name, else its number: phase 4c)
         _ => null,
     };
 
