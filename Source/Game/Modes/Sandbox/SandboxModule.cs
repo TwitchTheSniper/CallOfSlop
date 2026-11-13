@@ -201,7 +201,7 @@ public sealed class SandboxModule : GameModeModule
 
     public override string GoalText(Game game) => $"{Name}: {Rules()}";
 
-    public override (string Big, string Sub)? ScoreBar(Game game) => ("SANDBOX", game.SandboxBarText());
+    public override bool NoMatchBar => true; // (no title card: the user, 2026-11-13, "I don't think it's necessary to tell you what game mode you're playing anymore, nor the part counts")
 
     public override void HudLines(Game game, Player me, List<HudLine> lines, ref Vector3? pointAt) => game.SandboxHud(me, lines, HudWhite, HudDim, HudOrange, HudGreen, HudRed);
 

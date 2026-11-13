@@ -2475,20 +2475,6 @@ public sealed partial class Game
 
     // ---- HUD ----------------------------------------------------------------------------------------------------------
 
-    private string _sbBar = "";
-    private int _sbBarKey = -1;
-
-    public string SandboxBarText()
-    {
-        var key = Constructs.Bodies.Count * 10000 + Constructs.TotalParts;
-        if (key != _sbBarKey)
-        {
-            _sbBarKey = key;
-            _sbBar = $"{Constructs.Bodies.Count} constructs, {Constructs.TotalParts} parts";
-        }
-        return _sbBar;
-    }
-
     /// <summary>A line of text rebuilt only when what it shows changes (the HUD runs every frame: no allocation per frame).</summary>
     private struct SbText
     {
