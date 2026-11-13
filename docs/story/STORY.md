@@ -307,6 +307,12 @@ said about it: it is only shown. A world from before the furniture has none in i
 spot. Moving the furniture in the blueprint (the part kit's `BuildingParts`) needs no change here; moving the barracks'
 doorway means moving `BarracksDoorOut`/`BarracksDoorIn` too.
 
+### Convict labourers
+
+Round the named people, about eighty nameless convicts and their guards work the colony and the quarry: roll call,
+queues, coal, snow, kerb painting, a column under escort, picks and barrows (docs/story/LABOUR.md; data
+`Story/Labour/PenalColony.json`). They are pictures posed from the clock, not story people: no steps, no bodies, no AI.
+
 ### Sight
 
 What a body sees is `Source/Game/GameStorySight.cs`, in the same look. A body sees what is in front of it (about 70
@@ -921,6 +927,8 @@ Ministry of Slop (`Ministry.json`) are data in the same shape,.
 
 - **Where they live**: a `"settlement"` stands the home on a planetoid as buildings the faction claims (docs/planets/WORLDS.md
   "Settlements").
+- **Out in the world**: outposts (docs/story/OUTPOSTS.md, `Story/Outposts/*.json`): a checkpoint, a camp, a relay, with a few of
+  the faction's people at posts or on patrol who greet, warn or shoot a player by their standing with it.
 - **Who they are**: a `"home"` (a story place, the faction's `Home`) and `"members"`: story people, `MemberOf` the faction,
   with traits as a cast's people have. For now they have no minds or bodies of their own: visits on foot come later (F3).
   `"staff"` names people of a cast who are its members too, whenever they are in the story (the penal colony's warden and

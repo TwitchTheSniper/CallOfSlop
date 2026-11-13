@@ -183,7 +183,7 @@ public sealed partial class Game
     private bool SandboxEnemies(Player a, Player b)
     {
         if (a.Team == SbPeopleTeam)
-            return StoryFightsWith(a, b);
+            return OutpostPerson(a.Id) ? OutpostFightsWith(a, b) : StoryFightsWith(a, b); // (an outpost's people: GameOutposts.cs)
         if (a.Team == SbHostileTeam && LockdownSquadOf(a))
             return LockdownWanted(b); // (the colony's riot squad fights only whoever it is after: GameColonyLockdown.cs)
         if (b.Team == SbPeopleTeam)
@@ -1004,7 +1004,8 @@ public sealed partial class Game
             return false;
         if (p.Team == SbPeopleTeam)
         {
-            StoryBodyBot(p, b, now); // (a story person's body: GameStoryBodies.cs)
+            if (!OutpostBot(p, b, now)) // (an outpost's person: GameOutposts.cs)
+                StoryBodyBot(p, b, now); // (a story person's body: GameStoryBodies.cs)
             return false;
         }
         if (LockdownSquadBot(p, b, now))

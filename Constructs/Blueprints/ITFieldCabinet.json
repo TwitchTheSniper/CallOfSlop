@@ -1,0 +1,123 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "IT Field Cabinet",
+  "description": "An IT Department network cabinet on the ice: a beige steel box, a rack, a mast and a dish.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Steel Door Corner",
+      "on": 0,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#c8c2ae",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Steel Wall Corner",
+      "on": 0,
+      "socket": "t8_0",
+      "by": "b0_7",
+      "spin": 2,
+      "paint": "#c8c2ae",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Steel Wall Corner",
+      "on": 0,
+      "socket": "t8_15",
+      "by": "b7_0",
+      "spin": 3,
+      "paint": "#c8c2ae",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Steel Wall Corner",
+      "on": 0,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1,
+      "paint": "#c8c2ae",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Steel Floor 4x4 m",
+      "on": 2,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#5a5f63",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Door Hinge",
+      "on": 2,
+      "socket": "hinge",
+      "by": "base"
+    },
+    {
+      "part": "Steel Flush Door 1.5x2.25 m",
+      "on": 7,
+      "socket": "leaf",
+      "by": "hang",
+      "paint": "#1c8c99",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "fa0_10",
+      "by": "back",
+      "config": {
+        "colour": "#cfe8ff"
+      }
+    },
+    {
+      "part": "Text Sign",
+      "on": 3,
+      "socket": "fb7_5",
+      "by": "back",
+      "text": [
+        "NC-14. HAVE YOU TRIED TURNING IT OFF AND ON?"
+      ],
+      "paint": "#1c8c99"
+    },
+    {
+      "part": "Server Rack",
+      "on": 0,
+      "socket": "t7_7",
+      "by": "foot00"
+    },
+    {
+      "part": "Battery",
+      "on": 3,
+      "socket": "kb7_10",
+      "by": "-z",
+      "paint": "#5a5f63"
+    },
+    {
+      "part": "Wi-Fi Mast",
+      "on": 1,
+      "socket": "t4_4",
+      "by": "base"
+    },
+    {
+      "part": "Satellite Dish",
+      "on": 1,
+      "socket": "t11_11",
+      "by": "base"
+    },
+    {
+      "part": "Cable Reel",
+      "on": 1,
+      "socket": "t11_4",
+      "by": "base"
+    }
+  ]
+}

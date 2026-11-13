@@ -272,6 +272,7 @@ A tunnel from a west entrance to an east one through a chamber 16 m across, a sk
 | `variation` | 0.06 | Large, soft brightness patches (0–0.5) so big fields aren't one flat colour. |
 | `stone` | the `rock` colour | Made ground: the colour of stone laid as fill (a graded bench, a player's stone). Give it on a world whose rock isn't stone: Glacier's rock is blue ice, its stone dark cinder. |
 | `dusting` | 0 | Planetoids: how much of the ground's own colour lies over made ground in wind-blown streaks, 0 to 1 (snow over a yard's cinders). Worked into the dug tops' colours when they are made: no cost a frame. |
+| `ice`, `icePatches`, `iceScale` | `#8cb8db`, 0, 70 | Patches of a second colour on gentle ground (bare blue ice where the wind scours the snow off): the colour, the share of gentle ground it covers (0 to 0.8) and about how big a patch is in metres. Drawing only, worked out with the ground's other colours: no cost a frame. |
 | `snowAbove`, `snow` | none, `#e6ebf2` | Ground above this height is drawn snowy (a ragged line that wanders about 40 m; slopes steeper than about 50° stay bare rock). Colour only: the ground keeps its material. |
 
 Each sample stores its surface type. Painted features win. Otherwise the rules apply in the order rock, dirt, sand, grass. The drawn colours blend smoothly between them.

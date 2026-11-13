@@ -78,7 +78,7 @@ out from the spans, the same on every peer.
 
 ## What it costs
 
-`--bench-dig [--map NAME]` digs a work site with the drill's own ops on the Planetoid and on Streamed Terrain and
+`--bench-dig [--map NAME] [--at LAT,LON]` (a planetoid: dig there, not by the first spawn) digs a work site with the drill's own ops on the Planetoid and on Streamed Terrain and
 prints what each op, a mesh rebuild, a collision gather, a height query and a ray cost (lines `[dig bench]` in
 `callofslop.log`; run it with `DOTNET_TieredCompilation=0`, and twice, because the cloud box is noisy). Measured
 2026-11-10 against the code before smooth tops:

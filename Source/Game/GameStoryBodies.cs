@@ -146,7 +146,7 @@ public sealed partial class Game
 
         // Players of the people's side that no body names (a load, a reset): put away.
         foreach (var p in Players.Values)
-            if (p.Team == SbPeopleTeam && p.SbSpawned && StoryBodyIndex(p.Id) < 0)
+            if (p.Team == SbPeopleTeam && p.SbSpawned && StoryBodyIndex(p.Id) < 0 && OutpostGuardIndex(p.Id) < 0) // (an outpost's people are GameOutposts.cs's)
             {
                 StoryBodyRemove(p);
                 removed = true;

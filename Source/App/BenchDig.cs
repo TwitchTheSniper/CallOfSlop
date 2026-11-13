@@ -25,7 +25,7 @@ public static partial class SelfTest
                 return 1;
             }
             for (var run = 1; run <= 2; run++)
-                BenchDigOn(map, run == 2);
+                BenchDigOn(map, run == 2, Arg("--at"));
         }
         return 0;
     }
@@ -72,7 +72,7 @@ public static partial class SelfTest
         }
     }
 
-    private static void BenchDigOn(Map map, bool print)
+    private static void BenchDigOn(Map map, bool print, string? at)
     {
         map.RestoreProps();
         World.SetMap(map);
@@ -82,6 +82,14 @@ public static partial class SelfTest
         ground.Clear();
         var phys = World.Physics;
         var spawn = map.Spawns.Count > 0 ? map.Spawns[0] : Vector3.Zero;
+        // --at LAT,LON (a planetoid): dig there instead of by the first spawn (rough ground costs more than the pole's flat)
+        if (pl != null && at?.Split(',') is [var la, var lo] && double.TryParse(la, System.Globalization.CultureInfo.InvariantCulture, out var lat)
+            && double.TryParse(lo, System.Globalization.CultureInfo.InvariantCulture, out var lon))
+        {
+            double fl = lat * Math.PI / 180, fo = lon * Math.PI / 180;
+            var dir = new Vector3((float)(Math.Cos(fl) * Math.Sin(fo)), (float)Math.Sin(fl), (float)(Math.Cos(fl) * Math.Cos(fo)));
+            spawn = pl.Center + dir * (float)(pl.Radius + pl.HeightAt(dir.X, dir.Y, dir.Z) + 1);
+        }
         Vector3 UpAt(Vector3 p) => pl != null ? Vector3.Normalize(p - pl.Center) : Vector3.UnitY;
         var up = UpAt(spawn);
         var east = Vector3.Normalize(Vector3.Cross(up, MathF.Abs(up.X) < 0.9f ? Vector3.UnitX : Vector3.UnitZ));

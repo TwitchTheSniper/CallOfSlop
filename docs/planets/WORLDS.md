@@ -40,6 +40,27 @@ Glacier has a cold storm outdoors (`"storm": true`, set in make_worlds.py): driv
 dusk (`"dusk": 0.85`): dark and blue, with the colony's lamps throwing orange pools. Made ground on Glacier is dark
 cinder with snow blown over it (the surface's `stone` and `dusting`), so the colony's bench isn't the blue of the ice.
 
+### Glacier's ground
+
+Glacier was mostly gentle snow: walking out from the colony there was nothing to steer by for kilometres. Its rough
+country (made in make_worlds.py's `glacier_terrain`, Karl 2026-11-13: "real terrain") is in two parts:
+
+- **Near the colony**, each a short walk out and none reaching within 700 m of the pole: **the Spine**, a ridge 110 m
+  high and 2.6 km long about 1.2 km out along longitude 285 (west of the pole), with passes in its crest and an **ice
+  cave** opening on its colony side (82.21, 282); **the Rucks**, a field of pressure ridges 5 to 9 m high about 1.5 km
+  out along longitude 210; **the Teeth**, a crevasse field 900 m across about 1.4 km out along longitude 150, cracks up
+  to 24 m deep with routes between them.
+- **Over the whole world**, by a seeded draw that keeps clear of the colony, the spaceport and both sites: nine more
+  ice ridges (50 to 150 m) with a cave under each of the six tallest, twelve crevasse fields, seven pressure-ridge
+  fields, and sastrugi (wind drifts half a metre high) on all the open snow from about 830 m out from the pole.
+  Patches of bare blue ice (the surface's `ice`, `icePatches`, `iceScale`: colour only) lie on gentle ground everywhere.
+
+Kept as it was: the ground within 700 m of the pole (the colony, its bench, the quarry, the stations, the colony's data
+centre), the Ministry Spaceport's ground about 2 km out along longitude 90 (only the sastrugi reach it: it grades a
+bench anyway) and the two sites (flattened last). A world saved before this keeps its builds there; one standing out
+on the open snow may find the ground a quarter of a metre higher or lower, and one where a ridge or a crack now is will
+float or sink. Caves are dug only into fresh worlds.
+
 ### Settlements
 
 A faction's file (`Story/Factions/*.json`) may hold a `"settlement"`: the planetoid's `map`, a `lat` and `lon` (its home
@@ -124,4 +145,5 @@ world's cavity (a drill on the cavity's wall taps but digs nothing).
 - **Docking in orbit** hasn't been tried with a shuttle coming back up to a ship held at the edge.
 - **Settlements.** The homes are bare ground: each faction's place is a blueprint still to be made and put there.
 - The moons and small bodies (Moonlet, Ashfall, Soot, Rime, Shard, Cairn, Skerry, Crumb, Proof) are rails and sky.
-- Colours are one set of rules per world (height and slope), so Cinder's day side is not a different colour from its night.
+- Colours are one set of rules per world (height and slope, and patches of a second colour), so Cinder's day side is not a different colour from its night.
+- Only Glacier has the rough country (ridges, crevasses, drifts, caves); the other worlds can take the same features.
