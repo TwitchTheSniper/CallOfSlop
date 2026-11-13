@@ -21,6 +21,7 @@ public enum ExtrudeStall : byte
     ConveyorCut, // its conveyor is cut: mend it
     NoOrders, // its queue of work orders is empty (WorkOrders.cs): it waits for the next
     OrderMaterial, // its bin holds another material than its head order asks for
+    OffcutFull, // a Laser Cutter: its offcut bin is full, or holds another material (ConstructLaserCutter.cs)
 }
 
 /// <summary>
@@ -206,6 +207,11 @@ public static class ConstructExtruder
     {
         ref var p = ref c.Parts[part];
         var d = p.D;
+        if (d.IsLaserCutter)
+        {
+            ConstructLaserCutter.Work(world, c, part, st); // (a cut part, by order: ConstructLaserCutter.cs)
+            return false;
+        }
         if (d.IsPanelFormer)
         {
             ConstructPanelFormer.Work(world, c, part, st); // (a panel is made whole, by order: ConstructPanelFormer.cs)
@@ -896,6 +902,8 @@ public static class ConstructExtruder
         if (st.Held)
             return Program.HeldLook;
         var d = c.Parts[part].D;
+        if (d.IsLaserCutter)
+            return ConstructLaserCutter.Status(c, part, st);
         if (d.IsPanelFormer)
             return (ExtrudeStall)st.Refused switch
             {
@@ -945,7 +953,9 @@ public static class ConstructExtruder
             sb.Append(' ').Append(names.NameOf(st.Material));
         if (d.IsPanelFormer)
         {
-            if (WorkOrders.HeadOf(p, out var ph) && ph.Name != null)
+            if (d.IsLaserCutter)
+                ConstructLaserCutter.Look(c, part, st, sb);
+            else if (WorkOrders.HeadOf(p, out var ph) && ph.Name != null)
                 sb.Append(", ").Append(ph.Name);
             sb.Append(Status(c, part, st));
         }

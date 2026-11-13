@@ -128,6 +128,7 @@ public sealed partial class Game
 
     /// <summary>Server: mode states in a row a spawned body's hand has been idle (SandboxModule.WriteState sends it three times, then stops).</summary>
     internal readonly byte[] SbHandQuiet = new byte[256];
+    internal readonly byte[] SbHandTool = new byte[256]; // the tool each spawned body's hand was last sent with (SandboxModule.WriteState)
     private int _sbZombieSpawns, _sbBotSpawns;
 
     /// <summary>Spawned bots and zombies made in all this match (self-test, logs).</summary>

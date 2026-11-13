@@ -492,6 +492,7 @@ public static partial class ProductionLines
         ExtrudeStall.ConveyorCut => "conveyor cut",
         ExtrudeStall.NoOrders => "waiting for orders",
         ExtrudeStall.OrderMaterial => "order needs other stock",
+        ExtrudeStall.OffcutFull => "offcut bin full",
         _ => "waiting",
     };
 

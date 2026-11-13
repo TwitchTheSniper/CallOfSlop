@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git -c 'alias.guard=!IFS=; f=$CLAUDE_PROJECT_DIR/.claude/hooks/guard.sh; test -f $f || f=.claude/hooks/guard.sh; test -f $f || exit 0; sh $f; test $? = 42 && exit 2; exit 0' guard",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git -c 'alias.cloudstart=!IFS=; test x$CLAUDE_CODE_REMOTE = xtrue || exit 0; f=$CLAUDE_PROJECT_DIR/.claude/hooks/cloud-start.sh; test -f $f || f=.claude/hooks/cloud-start.sh; test -f $f || exit 0; sh $f; exit 0' cloudstart",
+            "timeout": 600
+          }
+        ]
+      }
+    ]
+  }
+}

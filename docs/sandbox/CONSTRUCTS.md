@@ -132,13 +132,14 @@ Salvage and the inventory, the salvage haul, gathering, scoops.
 
 ## [Production](constructs/production.md), 82 KB
 
-Refining, extrusion, the Wheel Former, the Press, the Panel Former, machine tiers, assembling, build stations, production lines, production monitors, conveyors, smart logistics, work orders, the crafting terminal, the Panel Designer, reservations, the building station, lifters, the Production Showcase.
+Refining, extrusion, the Wheel Former, the Press, the Panel Former, the Laser Cutter, machine tiers, assembling, build stations, production lines, production monitors, conveyors, smart logistics, work orders, the crafting terminal, the Panel Designer, reservations, the building station, lifters, the Production Showcase.
 
 - Refining (decision 14)
 - Extrusion
 - The Wheel Former
 - The Press
 - The Panel Former (formed panels by name, presets, `--form-panel`, lofted hull parts get a recipe)
+- The Laser Cutter (cut panels and plates by order, the cutting time law, offcut in tenths)
 - Machine tiers
 - Assembling
 - Build stations

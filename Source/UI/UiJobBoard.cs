@@ -164,7 +164,7 @@ public sealed partial class Ui
             ImGuiSafe.TextWrapped(b.Asks[j]);
             ImGuiSafe.TextWrapped(b.Pays[j]);
             if (b.Note[j].Length > 0)
-                ImGuiSafe.TextColored(row.Held ? Orange : Dim, b.Note[j]);
+                ImGuiSafe.TextColoredWrapped(row.Held ? Orange : Dim, b.Note[j]);
             if (row.Held)
             {
                 if (ImGui.Button(b.Drop[j]))

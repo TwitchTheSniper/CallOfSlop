@@ -1215,6 +1215,7 @@ public static unsafe partial class Program
         // (a client's constructs were blended to this frame's pose in Game.UpdateSandboxSeats, before the camera was set)
         ConstructRender.Now = now;
         ConstructRender.Draw(Gfx, g.Constructs, g.TickAlpha, blendTicks: g.IsServer);
+        AllocProfile.Mark("sb: beams, sounds, ambience");
         DrawPhysGunBeams(g, now); // the physics guns' beams (Program.PhysicsGun.cs)
         g.SandboxSounds(now); // horns (GameSandbox.cs)
         g.ColonyAlarmSounds(now); // the penal colony's lockdown siren (GameColonyLockdown.cs)
@@ -1223,6 +1224,7 @@ public static unsafe partial class Program
         g.EngineAudio.Pick(g.Constructs, Gfx.CameraPosition);
         g.EngineAudio.Play(g.Audio); // (modular engines: EngineSounds.cs)
         g.SandboxBuildSounds(now); // (building: GameSandboxBuildSounds.cs)
+        AllocProfile.Stop();
     }
 
     private static ToolFrame _sbTool;

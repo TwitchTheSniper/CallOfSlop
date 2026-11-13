@@ -69,9 +69,10 @@ public static partial class Program
         if ((string?)spec["start"] is { Length: > 0 } start)
             outArgs.AddRange(["--start", start]);
         // Everything else the caller gave (--save-dir, --gl41 ...), past the bench's own flags.
+        PerfBench.TraceFrame = args.Any(a => a.Equals("--trace-frame", StringComparison.OrdinalIgnoreCase));
         PerfBench.TraceTicksMs = double.TryParse(Val("--trace-ticks"), NumberStyles.Float, CultureInfo.InvariantCulture, out var tt) ? tt : 0;
         var own = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "--out", "--frames", "--settle", "--size", "--trace-ticks" }; // (each takes a value)
-        var bare = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "--bench", "--shots", "--storm" };
+        var bare = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "--bench", "--shots", "--storm", "--trace-frame" };
         for (var i = 0; i < args.Length; i++)
         {
             if (i == at && i + 1 < args.Length && !args[i + 1].StartsWith("--", StringComparison.Ordinal))
@@ -127,8 +128,16 @@ public static partial class Program
             s.Extra["constructs"] = g.Constructs.Bodies.Count;
             s.Extra["players"] = g.Players.Count;
             s.Extra["parts"] = g.Constructs.Bodies.Sum(b => b.PartCount);
+            // The construct renderer's last frame: boxes, merged chunks drawn, parts drawn one by one, bodies culled or far.
+            s.Extra["cBoxes"] = ConstructRender.LastBoxes;
+            s.Extra["cChunks"] = ConstructRender.LastMergedChunks;
+            s.Extra["cWalked"] = ConstructRender.LastBatchWalked;
+            s.Extra["cCulled"] = ConstructRender.LastCulled;
+            s.Extra["cFar"] = ConstructRender.LastLod;
         }
         WsSay(PerfBench.Line(s));
+        if (s.FrameSections.Length > 0)
+            WsSay($"[bench] {s.Name} sections (ms a frame): {s.FrameSections}");
         foreach (var t in s.SlowTicks)
             WsSay($"[bench] {s.Name} slow {t}");
         if (_benchOut.Length == 0 || _benchMeta == null)

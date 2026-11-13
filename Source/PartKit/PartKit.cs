@@ -86,6 +86,7 @@ public static class PartKit
         new Generators.PieceRackParts(),
         new Generators.RecyclerParts(),
         new Generators.PanelFormerParts(),
+        new Generators.LaserCutterParts(),
         new Generators.ConveyorJunctionParts(),
         new Generators.CraftingTerminalParts(),
         new Generators.BuildStationParts(),

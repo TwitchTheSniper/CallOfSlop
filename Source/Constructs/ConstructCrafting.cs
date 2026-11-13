@@ -858,7 +858,7 @@ public static class ConstructCrafting
         if (d.IsExtruder && ConstructExtruder.RunHeld(c, m))
             return "its line is stopped: press Start on its console";
         if (d.IsPanelFormer)
-            return world.StoreOf(c, m) is { } fst && fst.Refused == (byte)ExtrudeStall.NoMaterial ? ConstructPanelFormer.Lacks(c, m, fst) : "";
+            return world.StoreOf(c, m) is { } fst && fst.Refused == (byte)ExtrudeStall.NoMaterial ? (d.IsLaserCutter ? ConstructLaserCutter.Lacks(c, m, fst) : ConstructPanelFormer.Lacks(c, m, fst)) : "";
         if (!d.IsExtruder || world.StoreOf(c, m) is not { } st || st.Amount > 0)
             return "";
         return "needs " + RecyclingTable.Current.NameOf(what.Key.Material);

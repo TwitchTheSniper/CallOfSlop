@@ -22,6 +22,9 @@ public static class PerfBench
     /// <summary>Server ticks at least this long (ms) are traced by section while measuring (<see cref="AllocProfile.SlowTickMs"/>; 0 off: the marks then cost a bool test).</summary>
     public static double TraceTicksMs;
 
+    /// <summary>Time every marked section of the frame while measuring (the slowest go into <see cref="Spot.FrameSections"/>; it slows the frame).</summary>
+    public static bool TraceFrame;
+
     /// <summary>A spot is being measured (<see cref="Perf.EndFrame"/> calls <see cref="Sample"/>).</summary>
     public static bool Recording;
 
@@ -62,6 +65,9 @@ public static class PerfBench
 
         /// <summary>With <see cref="TraceTicksMs"/>: the slow ticks and their slowest sections.</summary>
         public string[] SlowTicks = [];
+
+        /// <summary>With <see cref="TraceFrame"/>: the slowest marked sections, ms per frame.</summary>
+        public string FrameSections = "";
     }
 
     // ---- What else was running (the numbers aren't the game's own when another window or a build shares the machine) --
@@ -119,7 +125,12 @@ public static class PerfBench
             _gpuFrames0 = g.FramesRead;
             _gpuGaps0 = g.GapsSum;
         }
-        if (TraceTicksMs > 0)
+        if (TraceFrame)
+        {
+            AllocProfile.Reset();
+            AllocProfile.On = true;
+        }
+        else if (TraceTicksMs > 0)
         {
             AllocProfile.SlowTicks.Clear();
             AllocProfile.SlowTickMs = TraceTicksMs;
@@ -169,7 +180,13 @@ public static class PerfBench
     {
         Recording = false;
         var s = new Spot { Name = _label, Frames = _n };
-        if (TraceTicksMs > 0)
+        if (TraceFrame)
+        {
+            AllocProfile.Stop();
+            AllocProfile.On = false;
+            s.FrameSections = AllocProfile.TopTime(24, Math.Max(1, _n));
+        }
+        else if (TraceTicksMs > 0)
         {
             AllocProfile.On = false;
             AllocProfile.SlowTickMs = 0;
@@ -329,6 +346,7 @@ public static class PerfBench
                 ["world"] = extra,
                 ["cpu"] = cpu, ["gpu"] = gpu, ["worstFrames"] = worst,
                 ["slowTicks"] = new JsonArray([.. s.SlowTicks.Select(x => (JsonNode)x)]),
+                ["frameSections"] = s.FrameSections,
             });
         }
         meta["spots"] = spots;

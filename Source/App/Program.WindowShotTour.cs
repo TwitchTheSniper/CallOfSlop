@@ -9,7 +9,8 @@ namespace CallOfSlop;
 /// <c>view TARGET | DIST,UP,BEARING</c> puts the eye DIST m out from TARGET on a compass bearing (degrees from north) and UP m
 /// above it, looking at it, where TARGET is a colony building's blueprint name ("Watchtower"), <c>outpost N</c> (from 1),
 /// <c>geo LAT,LON</c> (the ground there, on a planetoid) or <c>X,Y,Z</c>; <c>perf N [LABEL]</c> times the next N frames
-/// (mean, frames a second, the 99th percentile and the worst). <c>--uncapped</c> turns VSync and every frame cap off so the
+/// (mean, frames a second, the 99th percentile and the worst); <c>pace</c> prints how long the induction and the first duty
+/// take at the least, step by step (GamePace.cs). <c>--uncapped</c> turns VSync and every frame cap off so the
 /// numbers are the game's own.
 /// </summary>
 public static partial class Program
@@ -19,7 +20,7 @@ public static partial class Program
     private static long _wsPerfLast;
     private static readonly List<double> _wsPerfMs = [];
 
-    private static bool WsTourKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "places" or "view" or "perf" or "skip" or "open";
+    private static bool WsTourKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "places" or "view" or "perf" or "skip" or "open" or "what" or "pace";
 
     private static void WsTourSettings(string[] args)
     {
@@ -66,6 +67,9 @@ public static partial class Program
                 PerfBench.Begin(_wsPerfLabel); // (the profiler on over the same frames: PerfBench.cs)
                 return true;
             }
+            case "pace": // the induction's and the first duty's floor, step by step, with no player (GamePace.cs)
+                g.PaceEstimate(WsSay);
+                return true;
             case "skip": // the survival opening skipped, as its key does; "skip induction": the induction too, as its button does
                 g.OpeningSkip();
                 if (arg.Equals("induction", StringComparison.OrdinalIgnoreCase))
@@ -95,6 +99,21 @@ public static partial class Program
                         return true;
                 }
                 _wsWait = 20;
+                return true;
+            }
+            case "what": // "what [RIGHT,UP]": what the eye's ray (turned that many degrees) hits: the body and the part, how far
+            {
+                var o = arg.Split(',', StringSplitOptions.TrimEntries);
+                float dr = 0, du = 0;
+                if (o.Length == 2)
+                {
+                    float.TryParse(o[0], System.Globalization.CultureInfo.InvariantCulture, out dr);
+                    float.TryParse(o[1], System.Globalization.CultureInfo.InvariantCulture, out du);
+                }
+                var dir = g.LookDir(g.LookYaw + dr * MathF.PI / 180, g.LookPitch + du * MathF.PI / 180);
+                WsSay(g.Constructs.Raycast(me.Eye, dir, 200f, out var hit, look: true)
+                    ? $"[what] {arg}: {g.ColonyBuildingsList().FirstOrDefault(b => b.Body == hit.Body.Id).Name ?? $"construct {hit.Body.Id}"}, part {hit.Part} {hit.Body.DefOf(hit.Part).Name}, {hit.Distance:0.0} m"
+                    : $"[what] {arg}: no construct within 200 m");
                 return true;
             }
             case "places":
