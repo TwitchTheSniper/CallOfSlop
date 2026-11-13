@@ -300,7 +300,9 @@ public sealed partial class Game : IDisposable
             {
                 using var _ = Perf.Measure(PerfArea.ServerTick);
                 var stressT0 = StressBeginTick(); // a horde stress round times its ticks for its summary (ZombiesCrowdStress.cs)
+                AllocProfile.TickStart(); // (the benchmark's slow-tick trace: AllocProfile.cs; off, a bool test)
                 ServerTickStep(now);
+                AllocProfile.TickEnd(ServerTick);
                 StressEndTick(stressT0);
             }
             else
@@ -1230,11 +1232,15 @@ public sealed partial class Game : IDisposable
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
         ServerTickBurns(now); // special ammo burns and bleeds on players (AmmoEffectsPlayers.cs)
         ServerTickFallKill(now); // fell off a void map into the clouds (GameFallKill.cs)
+        perf = Perf.Measure(PerfArea.TerrainStream);
         ServerTickTerrainStream(); // streamed ground made ready round the players (GameTerrainStream.cs)
+        perf.Dispose();
         WorldTick(); // a saved world's load, when one is due (GameWorldSave.cs)
+        perf = Perf.Measure(PerfArea.Space);
         ServerTickSpace(); // the space bubble: clock, ships, their news (GameSpace.cs)
         ServerTickLanding(now); // a landing on another planetoid, everyone aboard: the map changes (GameSpaceLanding.cs)
         KeepTick(); // free travel, a planetoid's game on the host: ships in, ships home, copies, closing (GameTravelPlace.cs)
+        perf.Dispose();
         ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 
         SepBuild(); // everyone's body before anyone moves: the soft push apart (PlayerSeparation.cs)

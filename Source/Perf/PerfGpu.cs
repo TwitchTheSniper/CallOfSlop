@@ -7,6 +7,7 @@ namespace CallOfSlop;
 public enum PerfGpuPass : byte
 {
     Buildings,
+    City,
     Terrain,
     Props,
     Meshes,
@@ -16,6 +17,7 @@ public enum PerfGpuPass : byte
     Sky,
     Bodies,
     Entities,
+    Constructs,
     Occlusion,
     Effects,
     Particles,
@@ -43,7 +45,7 @@ public sealed class PerfGpu
     public const int Count = (int)PerfGpuPass.COUNT;
 
     public static readonly string[] Names =
-        ["Buildings", "Terrain", "Props", "Meshes", "Foliage", "Decals", "Empty (timer check)", "Sky", "Players", "Entities, zombies", "Ambient occlusion", "Effects", "Particles", "Bloom, heat haze", "View model", "HUD (2D)", "UI (ImGui)"];
+        ["Buildings", "City", "Terrain", "Props", "Meshes", "Foliage", "Decals", "Empty (timer check)", "Sky", "Players", "Entities, zombies", "Constructs", "Ambient occlusion", "Effects", "Particles", "Bloom, heat haze", "View model", "HUD (2D)", "UI (ImGui)"];
 
     private readonly Func<int, IGpuStamps?> _make;
     private GpuStampRing? _ring;
@@ -56,6 +58,14 @@ public sealed class PerfGpu
 
     /// <summary>Per pass: the latest reading (ms) and its smoothed average.</summary>
     public readonly float[] LastMs = new float[Count], AvgMs = new float[Count];
+
+    /// <summary>Per pass: every reading added up (ms), for the benchmark's means over a spot (PerfBench.cs).</summary>
+    public readonly double[] SumMs = new double[Count];
+
+    /// <summary>Frames read back so far, and their gaps added up (ms).</summary>
+    public int FramesRead => _ring?.FramesRead ?? 0;
+
+    public double GapsSum => _ring?.Gaps ?? 0;
 
     /// <summary>Per pass: frames read back with the pass in them.</summary>
     public readonly int[] Samples = new int[Count];
@@ -158,6 +168,7 @@ public sealed class PerfGpu
         LastMs[pass] = f;
         AvgMs[pass] = Samples[pass] == 0 ? f : AvgMs[pass] + (f - AvgMs[pass]) * 0.1f;
         Samples[pass]++;
+        SumMs[pass] += ms;
         Readings++;
     }
 

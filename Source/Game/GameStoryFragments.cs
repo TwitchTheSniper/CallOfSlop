@@ -456,9 +456,13 @@ public sealed partial class Game
             Net.SendTo(guid, w.Span, PacketReliability.ReliableOrdered);
     }
 
-    /// <summary>A lead is found when a site it names (by its name or its "lead") gave this player its fragment.</summary>
+    /// <summary>A lead is found when a site it names (by its name or its "lead") gave this player its fragment, or the player holds the fragment that names it in its "leads".</summary>
     private bool FragmentLeadFound(StoryEngine s, int who, string name)
     {
+        foreach (var fr in FragmentScript.Current.Fragments)
+            foreach (var lead in fr.Leads)
+                if (lead.Equals(name, StringComparison.OrdinalIgnoreCase))
+                    return s.World.Find(fr.Id) is var held and >= 0 && s.World.Get(who, _fgRelFragment, held) != 0;
         foreach (var site in FragmentScript.Current.Sites)
             if (site.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || site.Lead.Equals(name, StringComparison.OrdinalIgnoreCase))
             {
