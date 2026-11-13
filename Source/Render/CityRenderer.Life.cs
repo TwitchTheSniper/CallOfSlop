@@ -146,12 +146,18 @@ public sealed unsafe partial class CityRenderer
         in vec3 vWorld;
         in vec3 vNormal;
         flat in vec3 vColor;
+        uniform vec3 uPlanet;
+        uniform float uR;
         out vec4 FragColor;
 
         void main()
         {
             vec3 n = normalize(vNormal);
-            vec3 col = ApplyLightAt(vColor, n, 0.3, vWorld) + vColor * vec3(1.0, 0.75, 0.5) * 0.3; // (the street's lamps)
+            vec3 col;
+            if (length(vWorld - uPlanet) < uR - 2.5) // (in the metro: its strip lights)
+                col = vColor * vec3(0.9, 0.95, 1.0) * (0.6 + 0.3 * max(dot(n, normalize(vWorld - uPlanet)), 0.0));
+            else
+                col = ApplyLightAt(vColor, n, 0.3, vWorld) + vColor * vec3(1.0, 0.75, 0.5) * 0.3; // (the lamps)
             FragColor = vec4(ApplyFog(col, vWorld), 1.0);
         }
         """;
@@ -170,7 +176,7 @@ public sealed unsafe partial class CityRenderer
     // The train: one car's mesh in the city's vertex format, drawn with the city's program turned by uRot.
     private GlVertexArray _carVao;
     private GlBuffer _carVbo, _carIbo;
-    private int _carIndices, _locRot;
+    private int _carIndices, _locRot, _metroFirst, _metroIndices;
 
     /// <summary>People and trains drawn in the last frame.</summary>
     public int DrawnPeople, DrawnCars;
@@ -241,7 +247,13 @@ public sealed unsafe partial class CityRenderer
             Native.glVertexAttribDivisor(a, 1);
         }
         // The car.
-        var (cv, ci) = CarMesh();
+        var (cv, ci) = CarMesh(0);
+        var (mv, mi) = CarMesh(1);
+        _metroFirst = ci.Length;
+        _metroIndices = mi.Length;
+        var baseV = (uint)cv.Length;
+        cv = [.. cv, .. mv];
+        ci = [.. ci, .. mi.Select(i => i + baseV)];
         _carVao = GenVertexArray();
         _carVao.Bind();
         _carVbo = GenBuffer();
@@ -260,7 +272,7 @@ public sealed unsafe partial class CityRenderer
         Native.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _carIbo);
         fixed (uint* p = ci)
             Native.glBufferData(GL_ELEMENT_ARRAY_BUFFER, (nint)ci.Length * 4, p, GL_STATIC_DRAW);
-        _carIndices = ci.Length;
+        _carIndices = _metroFirst;
         _lifeReady = true;
         return true;
     }
@@ -289,8 +301,10 @@ public sealed unsafe partial class CityRenderer
         var cam = gfx.CameraPosition;
         var origin = gfx.Origin;
         DrawTrains(plan, life, clock, origin);
+        DrawMetroTrains(plan, life, clock, origin);
         // People: the walkers of the near chunks straight from their buffer, then the stations' people posed here.
         PoseStations(plan, life, clock, cam);
+        PoseMetro(plan, life, clock, cam);
         _fig.Use();
         var vp = gfx.ViewProjRelative;
         Native.glUniformMatrix4fv(_fVp, 1, false, &vp.M11);
@@ -393,6 +407,142 @@ public sealed unsafe partial class CityRenderer
             }
         float* id = stackalloc float[9] { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
         Native.glUniformMatrix3fv(_locRot, 1, false, id);
+    }
+
+    // ---- The metro's trains and people --------------------------------------------------------------------------------
+
+    private void Car(Vector3 front, Vector3 back, CityPlan plan, Vector3 origin, int first, int count)
+    {
+        var centre = (front + back) * 0.5f;
+        var fwd = Vector3.Normalize(front - back);
+        var up0 = Vector3.Normalize(centre - plan.PlanetCenter);
+        var right = Vector3.Normalize(Vector3.Cross(fwd, up0));
+        var up = Vector3.Cross(right, fwd);
+        float* m = stackalloc float[9] { fwd.X, fwd.Y, fwd.Z, up.X, up.Y, up.Z, right.X, right.Y, right.Z };
+        Native.glUniformMatrix3fv(_locRot, 1, false, m);
+        var rel = centre - origin;
+        Native.glUniform3f(_locChunkRel, rel.X, rel.Y, rel.Z);
+        Native.glUniform3f(_locChunkWorld, centre.X, centre.Y, centre.Z);
+        Native.glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, (void*)((nint)first * 4));
+        DrawnCars++;
+    }
+
+    private void DrawMetroTrains(CityPlan plan, CityLife life, double clock, Vector3 origin)
+    {
+        if (plan.Metro is not { } m || life.MetroHalf <= 0)
+            return;
+        _carVao.Bind();
+        var y = -m.Depth - CityMetro.Bed + 0.03f;
+        for (var k = 0; k < 2; k++)
+        {
+            var (z, dir, _) = life.MetroTrain(clock, k);
+            var x = m.X + CityMetro.Track * dir;
+            for (var c = 0; c < CityLife.Cars; c++)
+            {
+                var mid = z + dir * ((CityLife.Cars - 1) * 0.5f - c) * CityLife.CarLength;
+                Car(plan.Ground(new Vector2(x, mid + dir * 5.5f), y), plan.Ground(new Vector2(x, mid - dir * 5.5f), y), plan, origin, _metroFirst, _metroIndices);
+            }
+        }
+        float* id = stackalloc float[9] { 1, 0, 0, 0, 1, 0, 0, 0, 1 };
+        Native.glUniformMatrix3fv(_locRot, 1, false, id);
+    }
+
+    private void PoseMetro(CityPlan plan, CityLife life, double clock, Vector3 cam)
+    {
+        if (plan.Metro is not { } m || life.MetroHalf <= 0)
+            return;
+        var top = -m.Depth;
+        var foot = CityGeometry.RoadLift + CityGeometry.Kerb;
+        var run = m.StairRun;
+        Span<(Vector2, float)> pts = stackalloc (Vector2, float)[5];
+        for (var st = 0; st < m.Stations.Length; st++)
+        {
+            var z0 = m.Stations[st];
+            if (Vector3.DistanceSquared(plan.Ground(new Vector2(m.X, z0), top), cam) > PeopleRange * PeopleRange)
+                continue;
+            for (var dir = -1; dir <= 1; dir += 2)
+            {
+                var side = (float)dir; // (trains going +z use the track and the platform on the +x side)
+                var (lastLeave, nextArrive, standing, arrived) = life.MetroTimes(clock, dir, st);
+                var interval = standing ? (lastLeave, arrived) : (lastLeave, nextArrive);
+                var salt = (uint)(st * 2 + (dir + 1) / 2) * 104729u + 77u;
+                for (var i = 0; i < Waiting; i++)
+                {
+                    var seed = Hash(salt + (uint)i + (uint)(long)Math.Floor(interval.Item1));
+                    var spotZ = z0 + (((seed >> 12) & 1023) / 1023f - 0.5f) * 2 * (CityMetro.HallZ - 6);
+                    var spotX = m.X + side * (5.0f + (seed & 1023) / 1023f * 3.4f);
+                    var spot = (new Vector2(spotX, spotZ), top);
+                    var span = interval.Item2 - interval.Item1;
+                    var reach = interval.Item1 + span * (i + 0.5) / Waiting * 0.85;
+                    var setOff = reach - 30;
+                    if (clock < setOff)
+                        continue;
+                    if (standing && clock >= arrived + 1.5 + i * 0.4)
+                    {
+                        var doorZ = NearestDoor(spotZ, z0, dir);
+                        pts[0] = spot;
+                        pts[1] = (new Vector2(m.X + side * 4.2f, doorZ), top);
+                        if (Walk(pts[..2], (float)(clock - arrived - 1.5 - i * 0.4), 1.4f, out var a, out var h, out var d, out var w))
+                            Pose(a, h, d, w, true, seed);
+                        continue;
+                    }
+                    if (clock < reach)
+                    {
+                        var (fs, ft, ff) = Flight(m, z0, side, spotZ, run);
+                        pts[0] = (fs, foot);
+                        pts[1] = (ft, foot);
+                        pts[2] = (ff, top);
+                        pts[3] = (ff + new Vector2(-side * 1.6f, 0), top);
+                        pts[4] = spot;
+                        var total = 5 + run + 1.6f + Vector2.Distance(pts[3].Item1, spot.Item1);
+                        if (Walk(pts, (float)(clock - setOff) * total / 30f, 1f, out var a, out var h, out var d, out var w))
+                            Pose(a, h, d, w, true, seed);
+                        continue;
+                    }
+                    Pose(spot.Item1, top, new Vector2(-side, 0), (float)clock * 0.02f, false, seed);
+                }
+                var lastArrive = standing ? arrived : lastLeave - CityLife.Dwell;
+                for (var j = 0; j < Alighting; j++)
+                {
+                    var seed = Hash(salt + 5000u + (uint)j + (uint)(long)Math.Floor(lastArrive));
+                    var t = (float)(clock - lastArrive - 2.0 - j * 0.7);
+                    if (t < 0)
+                        continue;
+                    var car = (int)(Hash(seed) % CityLife.Cars);
+                    var doorZ = z0 + dir * ((CityLife.Cars - 1) * 0.5f - car) * CityLife.CarLength + ((Hash(seed >> 3) & 1) == 0 ? -4f : 4f);
+                    var (fs, ft, ff) = Flight(m, z0, side, doorZ, run);
+                    pts[0] = (new Vector2(m.X + side * 3.9f, doorZ), top);
+                    pts[1] = (new Vector2(m.X + side * (6.2f + (j % 3) * 0.5f), doorZ), top);
+                    pts[2] = (ff + new Vector2(-side * 1.6f, 0), top);
+                    pts[3] = (ff, top);
+                    pts[4] = (ft, foot);
+                    if (Walk(pts, t, 1.3f, out var a, out var h, out var d, out var w))
+                        Pose(a, h, d, w, true, seed);
+                    _ = fs;
+                }
+            }
+        }
+    }
+
+    /// <summary>The flight nearer a point of the platform on one side: a point on the street behind its top, its top, its foot.</summary>
+    private static (Vector2 Street, Vector2 Top, Vector2 Foot) Flight(CityMetro m, float z0, float side, float z, float run)
+    {
+        var sz = z >= z0 ? 1f : -1f;
+        var t = new Vector2(m.X + side * CityMetro.StairX, z0 + sz * CityMetro.StairTop);
+        return (t + new Vector2(0, sz * 5), t, t + new Vector2(0, -sz * run));
+    }
+
+    /// <summary>The metro door (4 m either side of each car's middle) nearest <paramref name="z"/>, for a train standing at z0.</summary>
+    private static float NearestDoor(float z, float z0, int dir)
+    {
+        var best = z0;
+        for (var c = 0; c < CityLife.Cars * 2; c++)
+        {
+            var at = z0 + dir * ((CityLife.Cars - 1) * 0.5f - c / 2) * CityLife.CarLength + (c % 2 == 0 ? -4f : 4f);
+            if (c == 0 || MathF.Abs(at - z) < MathF.Abs(best - z))
+                best = at;
+        }
+        return best;
     }
 
     // ---- People at the stations ---------------------------------------------------------------------------------------
@@ -595,7 +745,7 @@ public sealed unsafe partial class CityRenderer
 
     /// <summary>A railway car (x along, y up from the rail, z to its right): body with its windows and doors (drawn in the
     /// shader), roof, underframe and bogies, a lamp at each end.</summary>
-    private static (CityVertex[] Verts, uint[] Idx) CarMesh()
+    private static (CityVertex[] Verts, uint[] Idx) CarMesh(uint livery)
     {
         var v = new List<CityVertex>();
         var ix = new List<uint>();
@@ -626,7 +776,7 @@ public sealed unsafe partial class CityRenderer
         }
         // The body's section (z, y), swept along x: sides, the roof's shoulders, the roof.
         ReadOnlySpan<Vector2> sec = [new(1.45f, 0.5f), new(1.45f, 3.1f), new(1.15f, 3.55f), new(-1.15f, 3.55f), new(-1.45f, 3.1f), new(-1.45f, 0.5f)];
-        var side = CityGeometry.Pack(CityStyle.TrainSide, 0, 0, 0);
+        var side = CityGeometry.Pack(CityStyle.TrainSide, livery, 0, 0);
         var plain = CityGeometry.Pack(CityStyle.Plain, 13, 0, 0);
         for (var j = 0; j + 1 < sec.Length; j++)
         {

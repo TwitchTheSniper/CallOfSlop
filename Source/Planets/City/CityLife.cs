@@ -72,6 +72,8 @@ public sealed class CityLife
                 Period += Dwell + _legTime[k];
             }
         }
+        if (plan.Metro is { Stations.Length: > 0 } metro)
+            MakeMetro(metro);
         (Walkers, WalkerChunks) = MakeWalkers(plan);
     }
 
@@ -190,6 +192,81 @@ public sealed class CityLife
         return ((tau - shift) % Period + Period) % Period;
     }
 
+    // ---- The metro ------------------------------------------------------------------------------------------------------
+
+    /// <summary>The metro's trains turn back at the tunnels' ends for this long (s), out of sight.</summary>
+    public const float Turn = 20f;
+
+    /// <summary>A metro train's run one way (s): from the tunnel's end through every station to the other end.</summary>
+    public float MetroHalf { get; private set; }
+
+    private float[] _metroArrive = [], _metroBack = [];
+
+    private void MakeMetro(CityMetro m)
+    {
+        var st = m.Stations;
+        _metroArrive = new float[st.Length];
+        var t = RunTime(st[0] - m.Z0);
+        for (var j = 0; j < st.Length; j++)
+        {
+            _metroArrive[j] = t;
+            t += Dwell + (j + 1 < st.Length ? RunTime(st[j + 1] - st[j]) : RunTime(m.Z1 - st[j]));
+        }
+        MetroHalf = t + Turn;
+        // Coming back: the same legs the other way.
+        _metroBack = new float[st.Length];
+        t = RunTime(m.Z1 - st[^1]);
+        for (var j = st.Length - 1; j >= 0; j--)
+        {
+            _metroBack[j] = t;
+            t += Dwell + (j > 0 ? RunTime(st[j] - st[j - 1]) : RunTime(st[0] - m.Z0));
+        }
+    }
+
+    /// <summary>A metro train at time t: its middle's z on the plan, which way it runs (+1: towards +z), and the station it
+    /// stands at (-1 running). Two trains, half a round apart, each going out on one track and back on the other.</summary>
+    public (float Z, int Dir, int Station) MetroTrain(double t, int k)
+    {
+        var m = Plan.Metro!;
+        var round = 2 * MetroHalf;
+        var tau = (float)((t + k * MetroHalf) % round);
+        var dir = tau < MetroHalf ? 1 : -1;
+        if (dir < 0)
+            tau -= MetroHalf;
+        // Going back the stations come in the other order: mirror the line.
+        var st = m.Stations;
+        float Z(float z) => dir > 0 ? z : m.Z0 + m.Z1 - z;
+        float SZ(int j) => dir > 0 ? st[j] : m.Z0 + m.Z1 - st[st.Length - 1 - j];
+        var prev = m.Z0;
+        var clock = 0f;
+        for (var j = 0; j < st.Length; j++)
+        {
+            var at = SZ(j);
+            var run = RunTime(at - prev);
+            if (tau < clock + run)
+                return (Z(prev + RunDistance(at - prev, tau - clock)), dir, -1);
+            clock += run;
+            if (tau < clock + Dwell)
+                return (Z(at), dir, dir > 0 ? j : st.Length - 1 - j);
+            clock += Dwell;
+            prev = at;
+        }
+        var last = RunTime(m.Z1 - prev);
+        return (Z(prev + RunDistance(m.Z1 - prev, MathF.Min(tau - clock, last))), dir, -1);
+    }
+
+    /// <summary>At metro station j for trains going <paramref name="dir"/>: the last departure, the next arrival, whether one
+    /// stands there now and when it came (as <see cref="StationTimes"/>).</summary>
+    public (double LastLeave, double NextArrive, bool Standing, double Arrived) MetroTimes(double t, int dir, int j)
+    {
+        // A train going +z reaches station j at _metroArrive[j] into its round; one going -z reaches it at the mirror's.
+        var offset = dir > 0 ? _metroArrive[j] : MetroHalf + _metroBack[j];
+        var head = MetroHalf; // (two trains half a round apart: one each way every half round)
+        var a = Math.Floor((t - offset) / head) * head + offset;
+        var standing = t < a + Dwell;
+        return (standing ? a - head + Dwell : a + Dwell, a + head, standing, a);
+    }
+
     // ---- Walkers ------------------------------------------------------------------------------------------------------
 
     private static (Vector4[], (int, int, Vector2)[]) MakeWalkers(CityPlan plan)
@@ -235,7 +312,8 @@ public sealed class CityLife
             var a = new Vector2(d.Range(smin.X, smax.X), d.Range(smin.Y, smax.Y));
             var b = new Vector2(d.Range(smin.X, smax.X), d.Range(smin.Y, smax.Y));
             Vector2 lo = Vector2.Min(a, b), hi = Vector2.Max(a, b);
-            if (hi.X - lo.X < 8 || hi.Y - lo.Y < 8 || keepOut.Any(k => Crosses(lo, hi, k.Min, k.Max)))
+            if (hi.X - lo.X < 8 || hi.Y - lo.Y < 8 || keepOut.Any(k => Crosses(lo, hi, k.Min, k.Max))
+                || (plan.Metro is { } m && m.Holes().Any(h => Crosses(lo, hi, h.Min - new Vector2(0.6f), h.Max + new Vector2(0.6f)))))
                 continue;
             Add(lo, hi, (d.Chance(0.5f) ? 1 : -1) * d.Range(0.8f, 1.3f), d.Range(0, 400), d.Next());
         }

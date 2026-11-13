@@ -57,7 +57,19 @@ public sealed unsafe partial class CityRenderer
         uniform float uTime;
         uniform float uGlow;    // 1: what is lit marks the back buffer's alpha for the bloom
         uniform vec3 uPlanet;   // the planetoid's centre: "up" is away from it
+        uniform float uGroundR; // the city's ground's radius: under it (the metro) the sun doesn't reach
         out vec4 FragColor;
+        bool gUnder = false;
+        float gOut = 1.0;
+
+        // The light on a surface: the map's sun and sky above ground, the metro's strip lights below it.
+        vec3 Lit(vec3 albedo, vec3 n, float wrap, vec3 p)
+        {
+            if (!gUnder)
+                return ApplyLightAt(albedo, n, wrap, p);
+            vec3 up = normalize(p - uPlanet);
+            return albedo * vec3(0.9, 0.95, 1.0) * (0.55 + 0.25 * max(dot(n, -up), 0.0) + 0.15 * abs(dot(n, up)));
+        }
 
         uint Hash(uint x)
         {
@@ -125,7 +137,7 @@ public sealed unsafe partial class CityRenderer
             float h = vUv.y;
             float fw = max(fwidth(u), fwidth(h));
             const float Ground = 4.8;
-            vec3 lightWall = ApplyLightAt(wall, n, 0.0, vWorld);
+            vec3 lightWall = Lit(wall, n, 0.0, vWorld);
             // Glass: tinted per building.
             float gt = H01(seed * 31u + 7u);
             vec3 tint = gt < 0.3 ? vec3(0.62, 0.78, 0.92) : gt < 0.5 ? vec3(0.35, 0.5, 0.78) : gt < 0.65 ? vec3(0.6, 0.82, 0.76) : gt < 0.82 ? vec3(0.86, 0.74, 0.58) : vec3(0.7, 0.72, 0.76);
@@ -202,7 +214,7 @@ public sealed unsafe partial class CityRenderer
                         float course = Band(fract(h / 0.075), 0.0, 0.14, fwidth(h / 0.075));
                         w *= 1.0 - 0.12 * course * clamp(1.0 - fw * 20.0, 0.0, 1.0);
                         float stone = Band(fv, head, head + 0.25, fw) * Band(fu, l - 0.15, r + 0.15, fw) + Band(fv, sill - 0.12, sill, fw) * Band(fu, l - 0.1, r + 0.1, fw);
-                        w = mix(w, ApplyLightAt(vec3(0.72, 0.68, 0.6), n, 0.0, vWorld), clamp(stone, 0.0, 1.0));
+                        w = mix(w, Lit(vec3(0.72, 0.68, 0.6), n, 0.0, vWorld), clamp(stone, 0.0, 1.0));
                     }
                 }
                 col = mix(w, glass, win);
@@ -237,6 +249,8 @@ public sealed unsafe partial class CityRenderer
 
         void main()
         {
+            gUnder = length(vWorld - uPlanet) < uGroundR - 2.5;
+            gOut = gUnder ? 0.0 : 1.0;
             int style = int(vPar.x + 0.5) & 127;
             bool flag = int(vPar.x + 0.5) >= 128;
             uint seed = uint(vPar.y + 0.5);
@@ -253,13 +267,13 @@ public sealed unsafe partial class CityRenderer
             else if (style == 4) // plain: cornices, plant rooms, parapets
             {
                 float k = 0.9 + 0.2 * Noise(vWorld.xz * 0.7 + vWorld.y * 0.3);
-                col = ApplyLightAt(vColor * k, n, 0.0, vWorld);
+                col = Lit(vColor * k, n, 0.0, vWorld);
             }
             else if (style == 5) // roofing felt and gravel
             {
                 float k = 0.82 + 0.25 * Noise(vUv * 1.7) + 0.1 * Noise(vUv * 9.0);
                 float seam = Band(fract(vUv.x / 1.2), 0.0, 0.04, fwidth(vUv.x / 1.2));
-                col = ApplyLightAt(vColor * k * (1.0 - 0.15 * seam), n, 0.0, vWorld);
+                col = Lit(vColor * k * (1.0 - 0.15 * seam), n, 0.0, vWorld);
             }
             else if (style == 6 || style == 7) // a street's carriageway, or a crossing
             {
@@ -294,11 +308,11 @@ public sealed unsafe partial class CityRenderer
                 }
                 paint *= 0.55 + 0.45 * Noise(vUv * 3.1); // worn
                 vec3 albedo = mix(asphalt, paintCol, clamp(paint, 0.0, 1.0));
-                col = ApplyLightAt(albedo, n, 0.0, vWorld);
+                col = Lit(albedo, n, 0.0, vWorld);
                 if (style == 6)
                     col += albedo * LampPools(along, across, car, vPar.w / 4.0);
                 else
-                    col += albedo * vec3(1.0, 0.72, 0.42) * 0.35;
+                    col += albedo * vec3(1.0, 0.72, 0.42) * gOut * 0.35;
             }
             else if (style == 8) // pavement: slabs
             {
@@ -307,14 +321,14 @@ public sealed unsafe partial class CityRenderer
                 float joint = 1.0 - Band(max(g.x, g.y), 0.0, 0.46, fwidth(t.x) + fwidth(t.y));
                 float k = 0.9 + 0.15 * H01(uint(floor(t.x) + 4096.0) * 7919u + uint(floor(t.y) + 4096.0)) + 0.08 * Noise(vUv * 3.0);
                 vec3 albedo = vColor * k * (1.0 - 0.3 * joint * clamp(1.0 - fw * 8.0, 0.0, 1.0));
-                col = ApplyLightAt(albedo, n, 0.0, vWorld);
+                col = Lit(albedo, n, 0.0, vWorld);
                 if (!flag)
                     col += albedo * LampPools(vUv.x, vUv.y, vPar.z / 20.0, vPar.w / 4.0);
                 else
-                    col += albedo * vec3(1.0, 0.72, 0.42) * 0.3;
+                    col += albedo * vec3(1.0, 0.72, 0.42) * gOut * 0.3;
             }
             else if (style == 9) // kerb
-                col = ApplyLightAt(vColor * (0.9 + 0.15 * Noise(vUv * 4.0)), n, 0.0, vWorld) + vColor * vec3(1.0, 0.72, 0.42) * 0.2;
+                col = Lit(vColor * (0.9 + 0.15 * Noise(vUv * 4.0)), n, 0.0, vWorld) + vColor * vec3(1.0, 0.72, 0.42) * gOut * 0.2;
             else if (style == 10) // a court or the square: big flags of stone
             {
                 float size = seed == 1u ? 2.0 : 1.2;
@@ -323,7 +337,7 @@ public sealed unsafe partial class CityRenderer
                 float joint = 1.0 - Band(max(g.x, g.y), 0.0, 0.47, fwidth(t.x) + fwidth(t.y));
                 float k = 0.88 + 0.18 * H01(uint(floor(t.x) + 4096.0) * 7919u + uint(floor(t.y) + 4096.0));
                 vec3 albedo = vColor * k * (1.0 - 0.25 * joint * clamp(1.0 - fw * 6.0, 0.0, 1.0));
-                col = ApplyLightAt(albedo, n, 0.0, vWorld) + albedo * vec3(1.0, 0.75, 0.48) * (seed == 1u ? 0.45 : 0.1);
+                col = Lit(albedo, n, 0.0, vWorld) + albedo * vec3(1.0, 0.75, 0.48) * gOut * (seed == 1u ? 0.45 : 0.1);
             }
             else if (style == 11) // a lamp's head
             {
@@ -351,7 +365,7 @@ public sealed unsafe partial class CityRenderer
                     albedo = mix(albedo, vec3(0.3, 0.29, 0.28), rail);
                     spec += rail;
                 }
-                col = ApplyLightAt(albedo, n, 0.0, vWorld) + spec * Reflection(n, v, vec3(0.7)) * 0.5;
+                col = Lit(albedo, n, 0.0, vWorld) + spec * Reflection(n, v, vec3(0.7)) * 0.5;
             }
             else if (style == 16) // stairs: treads with a pale nosing
             {
@@ -359,24 +373,25 @@ public sealed unsafe partial class CityRenderer
                 float nose = Band(fract(t), 0.0, 0.12, fwidth(t));
                 vec3 albedo = vColor * (0.9 + 0.1 * Noise(vUv * 3.0)) * (1.0 - 0.35 * step(0.5, fract(t)));
                 albedo = mix(albedo, vec3(0.85, 0.7, 0.25), nose * clamp(1.0 - fw * 4.0, 0.0, 1.0));
-                col = ApplyLightAt(albedo, n, 0.0, vWorld) + albedo * vec3(1.0, 0.75, 0.48) * 0.2;
+                col = Lit(albedo, n, 0.0, vWorld) + albedo * vec3(1.0, 0.75, 0.48) * gOut * 0.2;
             }
             else if (style == 17) // leaves: clumps lit from above, darker inside
             {
                 float k = 0.65 + 0.5 * Noise(vWorld.xz * 2.3 + vWorld.y) * Noise(vWorld.zy * 1.7);
                 vec3 albedo = vColor * k * (0.75 + 0.25 * max(dot(n, Up()), 0.0));
-                col = ApplyLightAt(albedo, n, 0.4, vWorld) + albedo * vec3(1.0, 0.72, 0.42) * 0.25;
+                col = Lit(albedo, n, 0.4, vWorld) + albedo * vec3(1.0, 0.72, 0.42) * gOut * 0.25;
             }
             else if (style == 18) // a railway car's side: livery, a band of lit windows with people in them, two doors
             {
                 float x = vUv.x, y = vUv.y;
-                vec3 paint = vColor;
-                paint = mix(paint, vec3(0.55, 0.1, 0.08), Band(y, 0.5, 1.05, fw));
-                paint = mix(paint, vec3(0.55, 0.1, 0.08), Band(y, 2.55, 2.68, fw));
+                vec3 paint = seed == 1u ? vec3(0.72, 0.74, 0.77) : vColor;
+                vec3 band = seed == 1u ? vec3(0.1, 0.32, 0.62) : vec3(0.55, 0.1, 0.08);
+                paint = mix(paint, band, Band(y, 0.5, 1.05, fw));
+                paint = mix(paint, band, Band(y, 2.55, 2.68, fw));
                 float door = Band(abs(abs(x) - 4.0), -0.65, 0.65, fw) * Band(y, 0.55, 2.45, fw);
                 float win = Band(fract((x + 100.0) / 1.9), 0.12, 0.88, fwidth(x / 1.9)) * Band(y, 1.35, 2.35, fw) * (1.0 - step(abs(abs(x) - 4.0), 0.9)) * step(abs(x), 6.9);
                 float dwin = Band(abs(abs(x) - 4.0), -0.35, 0.35, fw) * Band(y, 1.35, 2.3, fw);
-                vec3 body = ApplyLightAt(mix(paint, vec3(0.2, 0.22, 0.25), door * 0.85), n, 0.0, vWorld);
+                vec3 body = Lit(mix(paint, vec3(0.2, 0.22, 0.25), door * 0.85), n, 0.0, vWorld);
                 float w = max(win, dwin);
                 // Inside: a warm light and the riders' heads and shoulders against it.
                 float slot = floor((x + 100.0) / 0.95);
@@ -393,10 +408,37 @@ public sealed unsafe partial class CityRenderer
             else if (style == 19) // a car's end: a dark windscreen over the coupler
             {
                 float screen = Band(vUv.y, 1.6, 2.6, fw) * Band(abs(vUv.x), -1.0, 1.05, fw);
-                col = mix(ApplyLightAt(vColor, n, 0.0, vWorld), vec3(0.03) + Reflection(n, v, vec3(0.8)) * 0.4, screen);
+                col = mix(Lit(vColor, n, 0.0, vWorld), vec3(0.03) + Reflection(n, v, vec3(0.8)) * 0.4, screen);
+            }
+            else if (style == 20) // the metro's tiles: small glazed tiles, the line's band, the station's name frieze
+            {
+                float y = vUv.y;
+                vec2 t = vec2(vUv.x / 0.15, y / 0.075);
+                t.x += step(0.5, fract(t.y * 0.5)) * 0.5;
+                vec2 g = abs(fract(t) - 0.5);
+                float grout = 1.0 - Band(max(g.x * 0.15 / 0.075, g.y), 0.0, 0.42, fwidth(t.y));
+                vec3 albedo = vColor * (1.0 - 0.1 * grout * clamp(1.0 - fw * 25.0, 0.0, 1.0));
+                if (seed == 2u)
+                {
+                    // A suspended ceiling: 1.2 m panels in a dark grid.
+                    vec2 q = abs(fract(vUv / 1.2) - 0.5);
+                    float grid = 1.0 - Band(max(q.x, q.y), 0.0, 0.46, fwidth(vUv.x / 1.2) + fwidth(vUv.y / 1.2));
+                    albedo = vColor * (1.0 - 0.45 * grid);
+                }
+                if (seed == 0u)
+                {
+                    // (the hall: platform tops are 10 m down unless the map says otherwise; the band sits 2 m over them)
+                    float floorY = -10.0;
+                    albedo = mix(albedo, vec3(0.12, 0.35, 0.58), Band(y, floorY + 2.0, floorY + 2.5, fw));
+                    float panel = Band(y, floorY + 2.9, floorY + 3.7, fw) * Band(fract(vUv.x / 14.0), 0.1, 0.9, fwidth(vUv.x / 14.0));
+                    float letters = step(0.5, Noise(vec2(vUv.x * 2.4, y * 2.5))) * Band(y, floorY + 3.05, floorY + 3.55, fw) * Band(fract(vUv.x / 14.0), 0.18, 0.82, fwidth(vUv.x / 14.0));
+                    albedo = mix(albedo, vec3(0.08, 0.16, 0.3), panel);
+                    albedo = mix(albedo, vec3(0.95), letters * panel);
+                }
+                col = Lit(albedo, n, 0.0, vWorld) + Reflection(n, v, vec3(0.15)) * gOut;
             }
             else // metal and the rest
-                col = ApplyLightAt(vColor * (0.85 + 0.2 * Noise(vUv * 2.0)), n, 0.0, vWorld) + vec3(0.02);
+                col = Lit(vColor * (0.85 + 0.2 * Noise(vUv * 2.0)), n, 0.0, vWorld) + vec3(0.02);
             col += glow;
             float a = uGlow > 0.5 && dot(glow, vec3(0.3333)) > 0.35 ? 0.0 : 1.0;
             FragColor = vec4(ApplyFog(col, vWorld), a);
@@ -407,7 +449,7 @@ public sealed unsafe partial class CityRenderer
     private GlProgram _program;
     private GlVertexArray _vao;
     private GlBuffer _vbo, _ibo;
-    private int _locVp, _locChunkRel, _locChunkWorld, _locTime, _locGlow, _locPlanet, _locCam, _locFog, _locFogRange;
+    private int _locVp, _locChunkRel, _locChunkWorld, _locTime, _locGlow, _locPlanet, _locGroundR, _locCam, _locFog, _locFogRange;
     private CityGeometry? _geo;
     private int[] _order = [];
     private float[] _dist = [];
@@ -491,6 +533,7 @@ public sealed unsafe partial class CityRenderer
         Native.glUniform1f(_locGlow, gfx.MarkGlow ? 1f : 0f);
         var pc = map.Planetoid?.Center ?? Vector3.Zero;
         Native.glUniform3f(_locPlanet, pc.X, pc.Y, pc.Z);
+        Native.glUniform1f(_locGroundR, map.City is { } cityPlan ? (float)cityPlan.GroundRadius : 0f);
         _vao.Bind();
         Native.glEnable(GlCapability.CullFace);
         Native.glCullFace(GlFace.Back);
@@ -585,6 +628,7 @@ public sealed unsafe partial class CityRenderer
             _locTime = Uniform(_program, "uTime\0"u8);
             _locGlow = Uniform(_program, "uGlow\0"u8);
             _locPlanet = Uniform(_program, "uPlanet\0"u8);
+            _locGroundR = Uniform(_program, "uGroundR\0"u8);
             _locCam = Uniform(_program, "uCam\0"u8);
             _locFog = Uniform(_program, "uFog\0"u8);
             _locFogRange = Uniform(_program, "uFogRange\0"u8);
