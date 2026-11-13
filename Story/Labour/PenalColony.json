@@ -1,0 +1,62 @@
+{
+  // The penal colony's convict labourers (docs/story/LABOUR.md, Game/GameLabour.cs, Render/LabourRender.cs): the gangs the
+  // player passes on waking, on the induction, at the bus stop and at the quarry. Pictures, scripted from the server
+  // tick: no AI, no collision, nothing saved. The labour is grim; the Ministry plays it as paperwork.
+  //   at      colony (the Penal Colony construct's frame: x along its front, the gate at x 6; z back from it, the yard
+  //           from z 0 to 12, the street at z -11 to -15), a Ministry building by its blueprint (its own metres, its
+  //           front at -z), or quarry (the Mine Face's frame: x along the face, z out from it)
+  //   part    with a building: the origin is that part ("nth": which of them, from 0)
+  //   spot    [x, z] where the gang stands (a row goes to its right, a queue back behind its head, a ring round it)
+  //   way     [[x, z], ...] for those who walk: haul, barrow, sweep and paint go there and back, march goes round
+  //   face    degrees: 0 faces -z (out of the colony, towards the street; at the quarry, the face), 90 faces +x
+  //   do      stand, shovel, pick, hammer, haul, barrow, queue, rollcall, huddle, march, sweep, paint, sit
+  //   heap    snow, coal or rock: what they shovel, break or carry (heaps and boulders drawn beside them)
+  //   gap     m between them (a ring's radius); march with a gap over 1.2 m walks without the hand on the shoulder
+  //   guard   officer (default) or foreman (the works' own, with the tally)
+  "format": "call-of-slop-labour/1",
+  "gangs": [
+    // ---- The colony ------------------------------------------------------------------------------------------------
+    { "name": "Morning roll call", "at": "colony", "spot": [-1.2, -6.7], "face": 90, "do": "rollcall", "inmates": 10, "guards": 2,
+      "about": "two ranks on the muster square, each answering to a number; the sergeant has a clipboard and all morning" },
+    { "name": "Records office queue", "at": "Ministry Records Office", "spot": [3, -0.9], "face": 180, "do": "queue", "inmates": 6, "guards": 1,
+      "about": "the queue under the overhang for Form 9 (a request for Form 12); the one at the front goes round to the back" },
+    { "name": "Canteen queue", "at": "Colony Canteen", "spot": [1, -0.9], "face": 180, "do": "queue", "inmates": 7,
+      "about": "the dinner queue, stamping its feet; it moves up one every so often" },
+    { "name": "Sick parade", "at": "Colony Infirmary", "spot": [2.2, -1.0], "face": 0, "do": "sit", "inmates": 3, "gap": 0.85,
+      "about": "sat on the cold step outside the infirmary: a head bandaged, an arm in a sling, waiting to be seen" },
+    { "name": "Coal for the boilers", "at": "colony", "spot": [34.5, -19.5], "face": 0, "do": "shovel", "heap": "coal", "inmates": 2, "guards": 1,
+      "about": "shovelling the boiler house's coal from one heap to a barrow" },
+    { "name": "Coal barrow", "at": "colony", "way": [[39, -16.5], [39, -21.5]], "do": "barrow", "heap": "coal", "loaded": true, "inmates": 1,
+      "about": "the coal barrow to the boiler house door and back, full there, empty back" },
+    { "name": "Painting the kerb", "at": "colony", "way": [[-9, -10.2], [3, -10.2]], "face": 0, "do": "paint", "inmates": 3, "guards": 1,
+      "about": "on their knees painting the kerbstones white, in the snow, for visibility" },
+    { "name": "Clearing the pavement", "at": "colony", "spot": [23, -8.6], "face": 0, "do": "shovel", "heap": "snow", "inmates": 3,
+      "about": "shovelling the snow off the pavement into the street, which another gang sweeps back" },
+    { "name": "Sweeping the street", "at": "colony", "way": [[8, -11.3], [19, -11.3]], "do": "sweep", "inmates": 1,
+      "about": "sweeping the street's snow back onto the pavement" },
+    { "name": "Work detail under escort", "at": "colony", "way": [[-12, -12.6], [30, -12.6], [30, -14.2], [-12, -14.2]], "do": "march", "inmates": 8, "guards": 1, "gap": 0.8,
+      "about": "a column shuffling up and down the street, each with a hand on the shoulder in front, going nowhere on the Ministry's time" },
+    { "name": "Waiting for the crew bus", "at": "colony", "spot": [8.6, -9.6], "face": 270, "do": "queue", "inmates": 4,
+      "about": "at the bus stop by the gate; the bus never stops for them" },
+    { "name": "At the heating main", "at": "colony", "spot": [-14.75, 5.1], "do": "huddle", "inmates": 4, "gap": 1.55,
+      "about": "round the valve chamber at the end of the heating main, the one warm thing in the colony" },
+    { "name": "Round the brazier", "at": "colony", "spot": [33, -7], "do": "huddle", "brazier": true, "inmates": 4,
+      "about": "a brazier by the gate road, hands out to it, on an unofficial break" },
+    { "name": "The rock pile", "at": "colony", "way": [[18, 2], [28, 2]], "do": "haul", "heap": "rock", "inmates": 4, "guards": 1, "guard": "foreman",
+      "about": "carrying the rock pile to the other rock pile, and back; the foreman counts them both" },
+    { "name": "Waiting to be counted", "at": "colony", "spot": [4.6, 2.6], "face": 90, "do": "stand", "inmates": 3, "gap": 1.0,
+      "about": "under the muster roof in the yard, in front of the warden's wall, waiting to be counted again" },
+
+    // ---- The Ministry Quarry ---------------------------------------------------------------------------------------
+    { "name": "Picks at the rock", "at": "quarry", "spot": [-9.5, 2.0], "face": 0, "do": "pick", "heap": "rock", "inmates": 3, "gap": 1.9, "guards": 1, "guard": "foreman",
+      "about": "picks at the rock beside the mine face" },
+    { "name": "More picks", "at": "quarry", "spot": [6.6, 2.2], "face": 0, "do": "pick", "heap": "rock", "inmates": 2, "gap": 1.9,
+      "about": "picks at the rock the other side of the face" },
+    { "name": "Spoil barrows", "at": "quarry", "way": [[5.2, 3.6], [5.2, 12]], "do": "barrow", "heap": "rock", "loaded": true, "inmates": 2,
+      "about": "the spoil barrowed out from the face, full out, empty back" },
+    { "name": "Breaking rocks", "at": "quarry", "spot": [-6.5, 9], "do": "hammer", "heap": "rock", "inmates": 3,
+      "about": "sledgehammers round a heap of rocks, making small rocks" },
+    { "name": "Quarry brazier", "at": "quarry", "spot": [10.5, 8.5], "do": "huddle", "brazier": true, "inmates": 3,
+      "about": "a brazier at the quarry's edge for the ones on their break" }
+  ]
+}

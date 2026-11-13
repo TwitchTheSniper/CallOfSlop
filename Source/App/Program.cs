@@ -2059,6 +2059,7 @@ public static unsafe partial class Program
             }
             DrawPlayer(p);
         }
+        LabourRender.Draw(Gfx, _game); // the penal colony's convict labourers (Source/Render/LabourRender.cs)
 
         pass.Dispose();
 
