@@ -1125,13 +1125,22 @@ public static class ConstructCrafting
                     where = o.State == CraftState.Queued ? o.Where : NoPart;
             }
             if (state == CraftState.Waiting && o.Sent > 0)
+            {
                 state = CraftState.Riding;
+                // A piece of it held at a Router says where, by the Router's name (phase 4c), looked at every fifth step as a queued note is.
+                note = o.State == CraftState.Riding ? o.Note ?? "" : "";
+                if (o.State != CraftState.Riding || o.Age++ % 5 == 0)
+                    note = ConstructLogistics.HeldNote(c, t, o.Id) ?? "";
+                if (note != (o.Note ?? ""))
+                    changed = true;
+            }
             if (state == CraftState.Queued)
             {
                 // Why a queued order waits (its machine lacks an input), looked at every fifth step: the note is made only then.
                 note = o.Note ?? "";
                 if (o.State != CraftState.Queued || o.Age++ % 5 == 0)
-                    note = ConstructLogisticsPlan.Note(world, c, t, o.Id) // (a chained input: the link nobody makes, or who makes it)
+                    note = ConstructLogistics.HeldNote(c, t, o.Id) // (a piece of it held at a Router, by its name: phase 4c)
+                           ?? ConstructLogisticsPlan.Note(world, c, t, o.Id) // (a chained input: the link nobody makes, or who makes it)
                            ?? (where < c.PartCount ? Starved(world, c, net, where, o.What) : "");
                 if (o.Lost != 0 && note == "")
                     note = "a part went to storage: " + ConstructLogistics.ReasonText((LogiReason)o.Lost) + " - it is fetched from there";

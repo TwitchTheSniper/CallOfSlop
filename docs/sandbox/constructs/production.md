@@ -976,7 +976,12 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   **Hold** (toggles `routerHold`), labelled with the current value, under the configure tool's rule (`router.spill`,
   `router.hold` in `PanelTouch`); the setting rides with the body, so nothing new is on the wire. A conveyor on a side hides that
   side's plate from a standing player (the other side's stays readable).
-- **Window tool:** `panel Conveyor Router` also prints the board at 16, 6 and 1 rows; `touch LABEL @ PART /N` picks the part's
+- **A Router's name** (phase 4c, protocol 293): a Router holds one text slot (`TextSlots` 1, set for every `"router"` part), set in the
+  configure tool's **Name** box (F with Hands still presses its screen's buttons: `ControlFrame` skips Routers). An unnamed one keeps
+  its number on its network (`ConstructLogisticsBoard.RouterNo`). The board (title, stuck lines, Routers list, the map's caption), a
+  conveyor's held line (`JamText` 8) and an order's note while a piece of it is held (`ConstructLogistics.HeldNote`: "held at North
+  Gate: ...") use it. It rides as any part text does: CBody's text tail, the world save, a blueprint step's `"text"`.
+- **Window tool:** `panel Conveyor Router` also prints the board at 16, 6 and 1 rows; `logi name PART = TEXT` (a part's text through this peer's own message: stand near it first), `logi list [FILTER]` (the terminal's list rows); `touch LABEL @ PART /N` picks the part's
   N-th screen; a low screen's touch stands the player in front looking down, and a joined client lands before it aims.
 - **Not yet (phase 3's rest):** the terminal's Stock tab and `CActKind.StockTarget` (a target for a kind the rack doesn't hold),
   `feedPriority` on machines and `linePriority` on Line Consoles, a material in `storeTakes`, High chains inserted ahead in a

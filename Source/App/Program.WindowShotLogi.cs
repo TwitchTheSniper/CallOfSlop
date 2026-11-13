@@ -229,6 +229,19 @@ public static partial class Program
                                 WsSay($"[logi]     | and {cq.Items[k].LinesMore} more");
                         }
                 return;
+            case "name": // "logi name PART = TEXT": a part's text (a Router's name) set as the configure tool's Text box sets it, through this peer's own message
+            {
+                var sp = rest.IndexOf(" = ", StringComparison.Ordinal);
+                var (nc, np) = LogiFind(g, sp > 0 ? rest[..sp] : rest);
+                if (nc == null)
+                {
+                    WsFail($"logi name: no part \"{rest}\"");
+                    return;
+                }
+                g.SandboxPartText(nc.Id, (ushort)np, 0, sp > 0 ? rest[(sp + 3)..] : "");
+                WsSay($"[logi] name {nc.DefOf(np).Name}#{np}: sent \"{(sp > 0 ? rest[(sp + 3)..] : "")}\"");
+                return;
+            }
             case "list": // "logi list [FILTER]": the first Crafting Terminal's list rows (name, make 0-3, its machine, what is missing), filtered by name
             {
                 var (tc, t) = LogiFind(g, "Crafting Terminal");
