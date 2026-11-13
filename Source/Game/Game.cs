@@ -1079,6 +1079,9 @@ public sealed partial class Game : IDisposable
         _lastSnapTime = now;
     }
 
+    /// <summary>The most change of velocity (m/s2) a remote player is carried on with past their newest snapshot.</summary>
+    private const float MaxAheadAccel = 30f;
+
     private static void SampleSnapshots(Player p, double renderTick)
     {
         var snaps = p.Snaps;
@@ -1108,7 +1111,7 @@ public sealed partial class Game : IDisposable
         else if (renderTick >= last.Tick)
         {
             var ahead = (float)Math.Min(renderTick - last.Tick, 8) * World.TickDt;
-            var pos = last.Noclip ? last.Position + last.Velocity * ahead : World.ClampToArena(last.Position + new Vector3(last.Velocity.X, 0, last.Velocity.Z) * ahead); // (a noclip flyer: up, down and through the ground)
+            var pos = last.Noclip ? last.Position + last.Velocity * ahead : World.ClampToArena(last.Position + AheadFlat(snaps, last, ahead)); // (a noclip flyer: up, down and through the ground)
             Set(p, pos, last.Yaw, last.Pitch);
             Seat(p, last);
             if (last.RideBody != 0 && snaps.Count > 1 && snaps[^2] is var was && was.RideBody == last.RideBody && was.RideSeg == last.RideSeg && last.Tick > was.Tick)
@@ -1134,6 +1137,32 @@ public sealed partial class Game : IDisposable
                 p.RenderStance = t < 0.5f ? a.Stance : b.Stance;
                 SetMotion(p, Vector3.Lerp(a.Velocity, b.Velocity, t), t < 0.5f ? a.Grounded : b.Grounded, t < 0.5f ? a.Mantling : b.Mantling);
                 break;
+            }
+        }
+
+        // Carried on past the newest snapshot along the ground plane: at its velocity, and at the change of velocity the last
+        // two showed, never past a stop. At the last velocity alone, someone slowing (the air drag after stepping off a
+        // moving seat, stopping a run) was drawn on too far and then jumped back when the late snapshot came: the
+        // "Ride frame" watcher saw 5 cm back-steps on a loaded runner.
+        static Vector3 AheadFlat(List<Snap> snaps, in Snap last, float ahead)
+        {
+            var v = new Vector2(last.Velocity.X, last.Velocity.Z);
+            var step = v * ahead;
+            if (snaps.Count > 1 && snaps[^2] is var was && last.Tick > was.Tick && !was.Noclip)
+            {
+                var span = (last.Tick - was.Tick) * World.TickDt;
+                var acc = (v - new Vector2(was.Velocity.X, was.Velocity.Z)) / span;
+                if (acc.LengthSquared() > MaxAheadAccel * MaxAheadAccel)
+                    acc *= MaxAheadAccel / acc.Length();
+                step = new Vector2(Axis(v.X, acc.X, ahead), Axis(v.Y, acc.Y, ahead));
+            }
+            return new Vector3(step.X, 0, step.Y);
+
+            static float Axis(float v, float a, float t)
+            {
+                if (v * a < 0 && t > -v / a)
+                    t = -v / a; // (slowing: it stops there, it doesn't turn back)
+                return v * t + 0.5f * a * t * t;
             }
         }
 
