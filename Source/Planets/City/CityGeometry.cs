@@ -280,9 +280,9 @@ public sealed class CityGeometry
     }
 
     /// <summary>A solid draped slab: its top at <paramref name="top"/>, its foot under the ground, in the physics world only.</summary>
-    private void SlabCollision(Chunk c, Vector2 min, Vector2 max, float top)
+    private void SlabCollision(Chunk c, Vector2 min, Vector2 max, float top, float foot = -0.6f)
     {
-        const float Foot = -0.6f;
+        var Foot = foot;
         var nx = Math.Max(1, (int)MathF.Ceiling((max.X - min.X) / 8f));
         var nz = Math.Max(1, (int)MathF.Ceiling((max.Y - min.Y) / 8f));
         Vector2 Pt(int i, int j) => new(min.X + (max.X - min.X) * i / nx, min.Y + (max.Y - min.Y) * j / nz);
@@ -358,8 +358,18 @@ public sealed class CityGeometry
             foreach (var side in new[] { 1f, -1f })
                 Lamp(Pt(LampStart + k * spacing, side * (s.Carriage + 0.7f)), s.AlongX ? new Vector2(0, -side) : new Vector2(-side, 0));
 
-        void Rect(Vector2 a, Vector2 b, float y, uint col, uint par) => Sheet(c, Vector2.Min(a, b), Vector2.Max(a, b), y, col, par, Uv);
-        void SlabMin(Vector2 a, Vector2 b) => SlabCollision(c, Vector2.Min(a, b), Vector2.Max(a, b), RoadLift + Kerb);
+        void Rect(Vector2 a, Vector2 b, float y, uint col, uint par)
+        {
+            foreach (var (lo, hi) in y > RoadLift ? Uncut(Vector2.Min(a, b), Vector2.Max(a, b)) : [(Vector2.Min(a, b), Vector2.Max(a, b))])
+                if (hi.X - lo.X > 0.01f && hi.Y - lo.Y > 0.01f)
+                    Sheet(c, lo, hi, y, col, par, Uv);
+        }
+        void SlabMin(Vector2 a, Vector2 b)
+        {
+            foreach (var (lo, hi) in Uncut(Vector2.Min(a, b), Vector2.Max(a, b)))
+                if (hi.X - lo.X > 0.01f && hi.Y - lo.Y > 0.01f)
+                    SlabCollision(c, lo, hi, RoadLift + Kerb);
+        }
     }
 
     private void Crossing(CityCrossing x)
@@ -379,8 +389,7 @@ public sealed class CityGeometry
             {
                 var a = o + new Vector2(sx * x.CarX, sz * x.CarZ);
                 var b = o + new Vector2(sx * x.HalfX, sz * x.HalfZ);
-                Sheet(c, Vector2.Min(a, b), Vector2.Max(a, b), RoadLift + Kerb, PaveColor, pave, Uv);
-                SlabCollision(c, Vector2.Min(a, b), Vector2.Max(a, b), RoadLift + Kerb);
+                PavedSlab(c, Vector2.Min(a, b), Vector2.Max(a, b), RoadLift + Kerb, PaveColor, pave, Uv);
                 KerbFace(c, a, new Vector2(b.X, a.Y), -sz * az, KerbColor, 0);
                 KerbFace(c, a, new Vector2(a.X, b.Y), -sx * ax, KerbColor, 0);
             }
@@ -389,6 +398,8 @@ public sealed class CityGeometry
     /// <summary>A street lamp on the pavement: a post, an arm over the road towards <paramref name="toward"/>, a lit head.</summary>
     private void Lamp(Vector2 at, Vector2 toward)
     {
+        if (InHole(at, 0.6f))
+            return;
         var c = At(at);
         var (ax, az, up) = Axes(at);
         var foot = _plan.Ground(at, RoadLift + Kerb - 0.02f);
@@ -422,6 +433,8 @@ public sealed class CityGeometry
 
     private void Build()
     {
+        if (_plan.Metro is { } metro)
+            _holes.AddRange(metro.Holes());
         foreach (var m in _plan.Masses)
             Mass(m);
         foreach (var s in _plan.Streets)
@@ -433,12 +446,13 @@ public sealed class CityGeometry
             if (b.Kind == 1)
                 continue; // (under the square)
             var c = At((b.Min + b.Max) * 0.5f);
-            Sheet(c, b.Min, b.Max, RoadLift + Kerb, CourtColor, Pack(CityStyle.Court, 0, 0, 0), p => p);
-            SlabCollision(c, b.Min, b.Max, RoadLift + Kerb);
+            PavedSlab(c, b.Min, b.Max, RoadLift + Kerb, CourtColor, Pack(CityStyle.Court, 0, 0, 0), p => p);
         }
         Square();
         if (_plan.Rail is { } rail)
             Railway(rail);
+        if (_plan.Metro is { } underground)
+            Metro(underground);
         Pack();
     }
 
@@ -453,8 +467,7 @@ public sealed class CityGeometry
                 var a = new Vector2(x, z);
                 var b = Vector2.Min(max, a + new Vector2(ChunkSize * 0.5f));
                 var c = At((a + b) * 0.5f);
-                Sheet(c, a, b, RoadLift + Kerb, SquareColor, Pack(CityStyle.Court, 1, 0, 0), p => p);
-                SlabCollision(c, a, b, RoadLift + Kerb);
+                PavedSlab(c, a, b, RoadLift + Kerb, SquareColor, Pack(CityStyle.Court, 1, 0, 0), p => p);
             }
         // Lamps round its edge, facing in.
         for (var t = 6f; t < max.X - min.X - 3; t += 18f)
@@ -809,6 +822,254 @@ public sealed class CityGeometry
             var side2 = sideN * 0.03f;
             Box(c, mid, axis, Vector3.Normalize(Vector3.Cross(axis, side2)) * 0.03f, side2, Steel, Pack(CityStyle.Metal, 0, 0, 0), false);
         }
+    }
+
+    // ---- Holes in the street (the metro's stairs) ------------------------------------------------------------------------
+
+    private readonly List<(Vector2 Min, Vector2 Max)> _holes = new();
+
+    /// <summary>A rectangle less the holes that cut it: the pieces left (all of it when no hole touches it).</summary>
+    private List<(Vector2 Min, Vector2 Max)> Uncut(Vector2 min, Vector2 max)
+    {
+        var parts = new List<(Vector2 Min, Vector2 Max)> { (min, max) };
+        foreach (var (hmin, hmax) in _holes)
+        {
+            var next = new List<(Vector2 Min, Vector2 Max)>();
+            foreach (var (a, b) in parts)
+            {
+                if (hmax.X <= a.X || hmin.X >= b.X || hmax.Y <= a.Y || hmin.Y >= b.Y)
+                {
+                    next.Add((a, b));
+                    continue;
+                }
+                float x0 = MathF.Max(a.X, hmin.X), x1 = MathF.Min(b.X, hmax.X);
+                if (hmin.X > a.X)
+                    next.Add((a, new Vector2(hmin.X, b.Y)));
+                if (hmax.X < b.X)
+                    next.Add((new Vector2(hmax.X, a.Y), b));
+                if (hmin.Y > a.Y)
+                    next.Add((new Vector2(x0, a.Y), new Vector2(x1, hmin.Y)));
+                if (hmax.Y < b.Y)
+                    next.Add((new Vector2(x0, hmax.Y), new Vector2(x1, b.Y)));
+            }
+            parts = next;
+        }
+        return parts;
+    }
+
+    /// <summary>A sheet and its slab under it, less the holes.</summary>
+    private void PavedSlab(Chunk c, Vector2 min, Vector2 max, float y, uint color, uint par, Func<Vector2, Vector2> uv)
+    {
+        foreach (var (a, b) in Uncut(min, max))
+        {
+            if (b.X - a.X < 0.01f || b.Y - a.Y < 0.01f)
+                continue;
+            Sheet(c, a, b, y, color, par, uv);
+            SlabCollision(c, a, b, y);
+        }
+    }
+
+    private bool InHole(Vector2 p, float margin)
+    {
+        foreach (var (a, b) in _holes)
+            if (p.X > a.X - margin && p.X < b.X + margin && p.Y > a.Y - margin && p.Y < b.Y + margin)
+                return true;
+        return false;
+    }
+
+    // ---- The metro -----------------------------------------------------------------------------------------------------
+
+    private static readonly uint Tile = CityPlanColours.Rgb(0xe6e1d3), TileBand = CityPlanColours.Rgb(0x1f5a8a), Soffit = CityPlanColours.Rgb(0x9a968c), Tunnel = CityPlanColours.Rgb(0x141516);
+
+    /// <summary>An upright wall between two plan points, from y0 to y1 m, facing <paramref name="facing"/> (draped along the
+    /// curve every few metres); solid unless said.</summary>
+    private void Wall(Vector2 p, Vector2 q, float y0, float y1, Vector3 facing, uint color, uint par, bool solid = true, float u0 = 0)
+    {
+        var len = Vector2.Distance(p, q);
+        var n = Math.Max(1, (int)MathF.Ceiling(len / 8f));
+        for (var k = 0; k < n; k++)
+        {
+            Vector2 a = Vector2.Lerp(p, q, k / (float)n), b = Vector2.Lerp(p, q, (k + 1) / (float)n);
+            var c = At((a + b) * 0.5f);
+            float ua = u0 + len * k / n, ub = u0 + len * (k + 1) / n;
+            Vector3 a0 = _plan.Ground(a, y0), b0 = _plan.Ground(b, y0), b1 = _plan.Ground(b, y1), a1 = _plan.Ground(a, y1);
+            Quad(c, false, a0, b0, b1, a1, facing, facing, facing, facing, new Vector2(ua, y0), new Vector2(ub, y0), new Vector2(ub, y1), new Vector2(ua, y1), color, par, facing);
+            if (solid)
+            {
+                ColTri(c, a0, b0, b1, facing);
+                ColTri(c, a0, b1, a1, facing);
+            }
+        }
+    }
+
+    /// <summary>A flat ceiling over a rectangle of the plan at y, seen from below (no collision: the ground is over it).</summary>
+    private void Ceiling(Vector2 min, Vector2 max, float y, uint color, uint par)
+    {
+        foreach (var (a, b) in Uncut(min, max))
+        {
+            if (b.X - a.X < 0.01f || b.Y - a.Y < 0.01f)
+                continue;
+            var c = At((a + b) * 0.5f);
+            var first = c.V.Count;
+            var nx = Math.Max(1, (int)MathF.Ceiling((b.X - a.X) / 8f));
+            var nz = Math.Max(1, (int)MathF.Ceiling((b.Y - a.Y) / 8f));
+            for (var j = 0; j <= nz; j++)
+                for (var i = 0; i <= nx; i++)
+                {
+                    var p = new Vector2(a.X + (b.X - a.X) * i / nx, a.Y + (b.Y - a.Y) * j / nz);
+                    Vert(c, _plan.Ground(p, y), -_plan.DirOf(p), p, color, par);
+                }
+            var down = -_plan.DirOf((a + b) * 0.5f);
+            for (var j = 0; j < nz; j++)
+                for (var i = 0; i < nx; i++)
+                {
+                    uint i0 = (uint)(first + j * (nx + 1) + i), i1 = i0 + 1, i2 = i0 + (uint)(nx + 1), i3 = i2 + 1;
+                    // (both windings: a ceiling seen from under it, whichever way the sheet's axes turn here)
+                    Tri(c, false, i0, i3, i1);
+                    Tri(c, false, i0, i2, i3);
+                    Tri(c, false, i0, i1, i3);
+                    Tri(c, false, i0, i3, i2);
+                    _ = down;
+                }
+        }
+    }
+
+    private void Metro(CityMetro m)
+    {
+        var tiles = Pack(CityStyle.MetroWall, 0, 0, 0);
+        var floor = Pack(CityStyle.Pavement, 2, 0, 0, true);
+        var plain = Pack(CityStyle.Plain, 14, 0, 0, true);
+        float top = -m.Depth, bed = -m.Depth - CityMetro.Bed, ceil = -m.Depth + CityMetro.Ceiling;
+        var x0 = m.X;
+        foreach (var z in m.Stations)
+        {
+            var (ax, az, _) = Axes(new Vector2(x0, z));
+            float zl = z - CityMetro.HallZ, zh = z + CityMetro.HallZ;
+            // The platforms: concrete with a stone top, and their faces down to the track bed.
+            foreach (var sx in new[] { -1f, 1f })
+            {
+                float xa = x0 + sx * CityMetro.Edge, xb = x0 + sx * CityMetro.HallX;
+                Vector2 pmin = new(MathF.Min(xa, xb), zl), pmax = new(MathF.Max(xa, xb), zh);
+                Sheet(At(new Vector2((xa + xb) * 0.5f, z)), pmin, pmax, top, PaveColor, floor, p => new Vector2(p.Y - z, p.X - x0));
+                SlabCollision(At(new Vector2((xa + xb) * 0.5f, z)), pmin, pmax, top, bed - 0.5f);
+                // The yellow line along the edge.
+                Vector2 ymin = new(MathF.Min(xa, xa + sx * 0.5f), zl), ymax = new(MathF.Max(xa, xa + sx * 0.5f), zh);
+                Sheet(At(new Vector2(xa, z)), ymin, ymax, top + 0.008f, CityPlanColours.Rgb(0xd8b02a), Pack(CityStyle.Plain, 11, 0, 0, true), p => p, true);
+                Wall(new Vector2(xa, zl), new Vector2(xa, zh), bed, top, -sx * ax, Concrete, plain);
+                // The hall's side wall: tiles, a coloured band at head height (the line's colour), the station's frieze.
+                Wall(new Vector2(xb, zl), new Vector2(xb, zh), top - 0.02f, ceil, -sx * ax, Tile, tiles, true, zl);
+                // Benches against it.
+                for (var bz = zl + 12; bz < zh - 10; bz += 16)
+                {
+                    var cc = At(new Vector2(xb - sx * 0.6f, bz));
+                    var foot = _plan.Ground(new Vector2(xb - sx * 0.6f, bz), top);
+                    var upv = _plan.DirOf(new Vector2(xb, bz));
+                    Box(cc, foot + upv * 0.42f, ax * 0.25f, upv * 0.05f, az * 1.0f, Wood, Pack(CityStyle.Plain, 6, 0, 0, true), true);
+                    Box(cc, foot + upv * 0.19f, ax * 0.2f, upv * 0.19f, az * 0.08f, Steel, Pack(CityStyle.Metal, 0, 0, 0, true), false);
+                }
+                // Strip lights over the platform.
+                for (var lz = zl + 6; lz < zh - 4; lz += 7)
+                {
+                    var lx = x0 + sx * 8f;
+                    var cc = At(new Vector2(lx, lz));
+                    var upv = _plan.DirOf(new Vector2(lx, lz));
+                    Box(cc, _plan.Ground(new Vector2(lx, lz), ceil - 0.08f), ax * 0.12f, upv * 0.05f, az * 1.4f, CityPlanColours.Rgb(0xf4f8ff), Pack(CityStyle.Lamp, 1, 0, 0, true), false);
+                }
+            }
+            // The track bed between the platforms, with its rails.
+            var bmin = new Vector2(x0 - CityMetro.Edge, zl - CityMetro.Stub);
+            var bmax = new Vector2(x0 + CityMetro.Edge, zh + CityMetro.Stub);
+            Sheet(At(new Vector2(x0, z)), bmin, bmax, bed, Ballast, Pack(CityStyle.Rail, 0, 0, 0, true), p => new Vector2(p.Y, p.X - x0));
+            SlabCollision(At(new Vector2(x0, z)), bmin, bmax, bed, bed - 1.0f);
+            // The ceiling, less the flights' shafts.
+            var openings = _holes.Count;
+            foreach (var (ft, fd) in m.Flights(z))
+            {
+                Vector2 fa = ft + new Vector2(-CityMetro.StairW * 0.5f - 0.05f, 0), fb = ft + new Vector2(CityMetro.StairW * 0.5f + 0.05f, fd * m.StairRun);
+                _holes.Add((Vector2.Min(fa, fb), Vector2.Max(fa, fb)));
+            }
+            Ceiling(new Vector2(x0 - CityMetro.HallX, zl), new Vector2(x0 + CityMetro.HallX, zh), ceil, Soffit, Pack(CityStyle.MetroWall, 2, 0, 0, true));
+            _holes.RemoveRange(openings, _holes.Count - openings);
+            // The ends: tiled walls with the tunnel mouth over the tracks; the tunnel runs on, dark, until it bends out of sight.
+            foreach (var sz in new[] { -1f, 1f })
+            {
+                var ze = z + sz * CityMetro.HallZ;
+                var outN = -sz * az;
+                foreach (var sx in new[] { -1f, 1f })
+                    Wall(new Vector2(x0 + sx * CityMetro.Edge, ze), new Vector2(x0 + sx * CityMetro.HallX, ze), bed, ceil, outN, Tile, tiles);
+                Wall(new Vector2(x0 - CityMetro.Edge, ze), new Vector2(x0 + CityMetro.Edge, ze), top + 3.6f, ceil, outN, Tile, tiles);
+                var zt = ze + sz * CityMetro.Stub;
+                Wall(new Vector2(x0 - CityMetro.Edge, ze), new Vector2(x0 - CityMetro.Edge, zt), bed, top + 3.6f, ax, Tunnel, Pack(CityStyle.Plain, 16, 0, 0, true));
+                Wall(new Vector2(x0 + CityMetro.Edge, ze), new Vector2(x0 + CityMetro.Edge, zt), bed, top + 3.6f, -ax, Tunnel, Pack(CityStyle.Plain, 16, 0, 0, true));
+                Ceiling(new Vector2(x0 - CityMetro.Edge, MathF.Min(ze, zt)), new Vector2(x0 + CityMetro.Edge, MathF.Max(ze, zt)), top + 3.6f, Tunnel, Pack(CityStyle.Plain, 16, 0, 0, true));
+                Wall(new Vector2(x0 - CityMetro.Edge, zt), new Vector2(x0 + CityMetro.Edge, zt), bed, top + 3.6f, outN, Tunnel, Pack(CityStyle.Plain, 16, 0, 0, true));
+            }
+            // The flights from the pavements, each in its shaft.
+            foreach (var (stairTop, down) in m.Flights(z))
+                MetroStairs(m, stairTop, down);
+        }
+    }
+
+    /// <summary>A flight from the pavement down to the platform, along z towards the hall's middle, in a lined shaft with a
+    /// railing round its opening and a lamp post with the line's sign.</summary>
+    private void MetroStairs(CityMetro m, Vector2 top, float down)
+    {
+        var foot = RoadLift + Kerb;
+        var run = m.StairRun;
+        float ceil = -m.Depth + CityMetro.Ceiling, under = -0.35f;
+        const float W = CityMetro.StairW;
+        var dirZ = new Vector2(0, down);
+        var c = At(top + dirZ * run * 0.5f);
+        var (ax, az, up) = Axes(top);
+        var fwd = az * down;
+        Vector3 G(float along, float x, float y) => _plan.Ground(top + dirZ * along + new Vector2(x, 0), y);
+        var stairs = Pack(CityStyle.Stairs, 0, 0, 0, true);
+        var plain = Pack(CityStyle.Plain, 14, 0, 0, true);
+        Vector3 t0a = G(0, -W / 2, foot), t0b = G(0, W / 2, foot), t1a = G(run, -W / 2, -m.Depth), t1b = G(run, W / 2, -m.Depth);
+        Vector3 s0a = G(0, -W / 2, foot - 0.6f), s0b = G(0, W / 2, foot - 0.6f), s1a = G(run, -W / 2, -m.Depth - 0.4f), s1b = G(run, W / 2, -m.Depth - 0.4f);
+        var slopeN = Vector3.Normalize(Vector3.Cross(t1a - t0a, t0b - t0a));
+        if (Vector3.Dot(slopeN, up) < 0)
+            slopeN = -slopeN;
+        var slopeLen = Vector3.Distance(t0a, t1a);
+        Quad(c, false, t0a, t0b, t1b, t1a, slopeN, slopeN, slopeN, slopeN, new Vector2(-W / 2, 0), new Vector2(W / 2, 0), new Vector2(W / 2, slopeLen), new Vector2(-W / 2, slopeLen), PaveColor, stairs, slopeN);
+        ColTri(c, t0a, t0b, t1b, slopeN);
+        ColTri(c, t0a, t1b, t1a, slopeN);
+        ColTri(c, s0a, s0b, s1b, -slopeN);
+        ColTri(c, s0a, s1b, s1a, -slopeN);
+        ColTri(c, t1a, t1b, s1b, fwd);
+        ColTri(c, t1a, s1b, s1a, fwd);
+        // The shaft: tiled walls each side from the hall's ceiling (or the stair, below it) up to the street, a soffit under
+        // the pavement past the opening, and a wall closing its lower end.
+        foreach (var sx in new[] { -1f, 1f })
+        {
+            var x = sx * (W / 2 + 0.02f);
+            var p = top + new Vector2(x, 0);
+            var q = top + new Vector2(x, 0) + dirZ * run;
+            Wall(p, q, MathF.Min(ceil, -m.Depth) - 0.2f, foot + 0.02f, -sx * ax, Tile, Pack(CityStyle.MetroWall, 1, 0, 0, true));
+            // A handrail along it.
+            Vector3 h0 = G(0, x - sx * 0.08f, foot + 0.95f), h1 = G(run, x - sx * 0.08f, -m.Depth + 0.95f);
+            var mid = (h0 + h1) * 0.5f;
+            var axis = (h1 - h0) * 0.5f;
+            Box(c, mid, axis, Vector3.Normalize(Vector3.Cross(axis, ax)) * 0.03f, ax * 0.03f, Steel, Pack(CityStyle.Metal, 0, 0, 0, true), false);
+        }
+        var under0 = top + dirZ * CityMetro.Opening;
+        var under1 = top + dirZ * run;
+        Ceiling(Vector2.Min(under0, under1) - new Vector2(W / 2 + 0.05f, 0), Vector2.Max(under0, under1) + new Vector2(W / 2 + 0.05f, 0), under, Soffit, Pack(CityStyle.MetroWall, 2, 0, 0, true));
+        Wall(under1 + new Vector2(-W / 2, 0), under1 + new Vector2(W / 2, 0), ceil, under, -fwd, Tile, Pack(CityStyle.MetroWall, 1, 0, 0, true), false);
+        Wall(top + new Vector2(-W / 2, 0), top + new Vector2(W / 2, 0), -1.2f, foot + 0.02f, fwd, Tile, Pack(CityStyle.MetroWall, 1, 0, 0, true));
+        // Railings round the opening on the street, and the line's lamp post at its head.
+        var rail = Pack(CityStyle.Metal, 0, 0, 0);
+        var railCol = CityPlanColours.Rgb(0x2c4a3a);
+        foreach (var sx in new[] { -1f, 1f })
+        {
+            var a = G(0, sx * (W / 2 + 0.1f), foot + 0.55f);
+            var b = G(CityMetro.Opening, sx * (W / 2 + 0.1f), foot + 0.55f);
+            Box(c, (a + b) * 0.5f, (b - a) * 0.5f, up * 0.55f, ax * 0.04f, railCol, rail, true);
+        }
+        Box(c, G(-0.1f, 0, foot + 0.55f), ax * (W / 2 + 0.14f), up * 0.55f, fwd * 0.04f, railCol, rail, true);
+        var post = G(-0.5f, -W / 2 - 0.5f, foot);
+        Box(c, post + up * 1.6f, ax * 0.07f, up * 1.6f, az * 0.07f, railCol, rail, true);
+        Box(c, post + up * 3.45f, ax * 0.32f, up * 0.32f, az * 0.32f, CityPlanColours.Rgb(0x4ab0ff), Pack(CityStyle.Lamp, 2, 0, 0), false);
     }
 
     private void Pack()

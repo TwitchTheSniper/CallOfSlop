@@ -58,6 +58,25 @@ The carriageway is the ground itself.
 - **The elevated railway**: a loop over four avenues (2.4 km), a concrete box girder on steel columns, two tracks, four
   stations (side platforms, canopies with lamps, stairs down to the pavement at each end).
 
+## The metro (`CityMetro`, `GameCityMetro.cs`)
+
+A line under the central avenue (`"metro": 1`, `"metroDepth"`, default 10 m): a station under the square, one under
+each crossing of the elevated loop (interchanges: the el's stairs come down a few metres from the metro's), and one more
+beyond them each way where a street crosses inside the city (four on Slopolis now). Each station is a hall 90 by 25 m:
+two side platforms with benches and a yellow edge, tracks between, tiled walls with the line's blue band and a name
+frieze, a suspended ceiling with strip lights, and a tunnel mouth at each end with 30 m of dark tunnel behind it. Four
+flights of stairs come down from the pavements (an opening with railings and a blue lamp post on the street, a lined
+shaft under it); the pavement, the street lamps and the walkers keep clear of the openings.
+
+**Dug at a fresh world's start**, like the caves (`Game.CityMetroDig`, after `SandboxCaves`): the halls, the stubs and the
+shafts as ground drill scoops (1,224 ops, about 0.1 to 0.3 s), so they save and reach a joiner as dug ground. A world
+saved before the metro keeps its ground: its stairs lead down into rock.
+
+**Its trains** (silver and blue, three cars, two trains) run from one end of the line to the other, stopping 24 s at
+each station, turn back in the tunnel out of sight and come back on the other track: a train each way every few minutes
+(`CityLife.MetroTrain`). People come down the stairs and wait, board, and get off and go up to the street, as at the el's
+stations. Under the city's ground the city's and the figures' shaders light with the strip lights, not the sun.
+
 ## The plan for the rest (slices)
 
 1. **Done: the core** (this file): streets, 790 buildings, the square, lamps, the elevated loop and its stations.
