@@ -98,6 +98,8 @@ public static partial class HullLoft
             try
             {
                 Base = ConstructParts.ParseBody(PanelJson(name, s, 0, 0, true, _plan), name); // (with its slabs, as a deferred panel's first part: a part needs a drawn box; the facets replace them)
+                if (_plan != null)
+                    AddOpeningSockets(Base, _plan); // (a cut part's sockets in its openings, as CutFirst gives the real one: so the hashes agree)
                 var (nu, nv) = PanelGrid(s);
                 _total = _plan?.Items ?? nu * nv;
                 Made++;
