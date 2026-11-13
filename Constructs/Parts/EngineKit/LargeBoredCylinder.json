@@ -12,6 +12,7 @@
   "material": "steel",
   "color": "#3b3936",
   "tier": 3,
+  "retired": true,
   "centreSockets": false,
   "boxes": [
     {

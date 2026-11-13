@@ -485,6 +485,8 @@ public sealed class Assembling : IPartGenerator
             if (hand.Contains(name) || Py.Truthy(p.Get("stage")) || SkipNames.Contains(name) || SkipFolders.Any(s => folder.StartsWith(s, StringComparison.Ordinal))
                 || Py.Truthy(p.Get("legacy")) && (folder.StartsWith("AirWeapons", StringComparison.Ordinal) || folder.StartsWith("Ordnance", StringComparison.Ordinal)))
                 continue;
+            if (Py.Truthy(p.Get("retired"))) // (a retired part loads and runs but has no recipe: the tier cylinders, sized-parts answer 8)
+                continue;
             tail.Add(MachineOf(p, folder) != "" ? FlightRecipe(p, folder) : LongTail(p));
         }
         // (stable: a family's recipes are in file order, and the plain Assembler's keep their places)
@@ -525,8 +527,8 @@ public sealed class Assembling : IPartGenerator
     // ---- Press phase 5 (docs/sandbox/design/press-rework.md section 2, as the user's answers of section 12 cut it down)
 
     // The parts a die presses from one blank (a preset in PressParts) that leave the Assembler. Not here, and why:
-    // Differential and Proximity Sensor take two kinds of part (an assembly by the sort's rule); the engine cylinders are engine pieces, sized in
-    // their own phase (the user's answer 2, 2026-11-13). Suspension, Drive Shaft 1 m, U Joint, CV Joint, Stub Axle and Wheel Hub moved on
+    // Differential and Proximity Sensor take two kinds of part (an assembly by the sort's rule); the engine cylinders moved in sized parts phase 5 (engine pieces, sized in
+    // their own phase, the user's answer 2, 2026-11-13). Suspension, Drive Shaft 1 m, U Joint, CV Joint, Stub Axle and Wheel Hub moved on
     // 2026-11-13, once their patterns took a Gear Set in bay 2 in place of Bearings (bronze is tier 2); the Frame Beam the same day as the
     // Beam die's girder (answer 3; the start kit carries a Beam Die). The other building pieces (Parts/Building, Parts/Capital) stay.
     private static readonly HashSet<string> Moved = new(StringComparer.Ordinal)
@@ -541,6 +543,7 @@ public sealed class Assembling : IPartGenerator
         "AND Gate", "NOT Gate", "Timer", "Delay", "Compare", "Speed Sensor",
         "Fuel Tank", "Small Fuel Tank", "Fuel Drum", "Fluid Tank", "Small Fluid Tank",
         "Frame Beam",
+        "Small Cylinder", "Medium Cylinder", "Large Cylinder", // (sized parts phase 5: the Cylinder die presses them, its presets the knots of a bore curve; a Capital one is past what a die presses: Assembler)
     };
 
     /// <summary>A recipe that leaves the plain Assembler for a press: one of <see cref="Moved"/>, or a Housing (the Housing die presses all 21).</summary>

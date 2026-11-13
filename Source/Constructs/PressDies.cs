@@ -113,6 +113,39 @@ public sealed class PressPattern
     /// </summary>
     public bool LikeBody;
     public sbyte Along = -1;
+
+    /// <summary>
+    /// "likeBy": "nearest" (sized-parts design 6.2): the pattern's presets are its knots, and a blank takes the part of the one nearest it in
+    /// log of across as its like (a cylinder 3.5 times Small is the Medium one stretched). <see cref="Knots"/> are its presets by across,
+    /// <see cref="ByKnot"/> this pattern with each knot's part as its like and its blank as its preset (made at load: a press allocates nothing).
+    /// </summary>
+    public bool LikeNearest;
+    public PressPreset[] Knots = [];
+    public PressPattern[] ByKnot = [];
+
+    /// <summary>The pattern a blank is pressed by: itself, or for a likeBy-nearest one its nearest knot's.</summary>
+    public PressPattern For(in ExtrusionKey k)
+    {
+        if (!LikeNearest || Knots.Length == 0)
+            return this;
+        var a = MathF.Log(Math.Max(1, Pressed.Across(k)));
+        var best = 0;
+        for (var i = 1; i < Knots.Length; i++)
+            if (MathF.Abs(a - MathF.Log(Pressed.Across(Knots[i].Blank))) < MathF.Abs(a - MathF.Log(Pressed.Across(Knots[best].Blank))))
+                best = i;
+        return ByKnot[best];
+    }
+
+    internal PressPattern WithKnot(PressPreset knot)
+    {
+        var q = (PressPattern)MemberwiseClone();
+        q.Like = knot.Part;
+        q.Preset = knot.Blank;
+        q.LikeNearest = false;
+        q.Knots = Knots; // (kept: the engine's scale reads every knot)
+        q.ByKnot = [];
+        return q;
+    }
 }
 
 /// <summary>A die of Pressing.json format /2: what blanks it takes and the patterns it presses them into.</summary>
@@ -238,6 +271,20 @@ internal static class PressDies
                 die.Presets = [.. die.Presets, new PressPreset(blank, pat, part)];
             }
         }
+        // A likeBy-nearest pattern's knots: its presets by size across (one at least; each a part of its like part's kind).
+        foreach (var die in t.Dies)
+            foreach (var pat in die.Patterns)
+            {
+                if (!pat.LikeNearest)
+                    continue;
+                pat.Knots = die.Presets.Where(q => q.Pattern == pat).OrderBy(q => Pressed.Across(q.Blank)).ToArray();
+                if (pat.Knots.Length == 0)
+                    throw new FormatException($"{die.Family} pattern {pat.Id}: \"likeBy\": \"nearest\" needs a preset");
+                foreach (var q in pat.Knots)
+                    if (q.Part.Role != pat.Like.Role || q.Part.Piece != pat.Like.Piece)
+                        throw new FormatException($"{die.Family} pattern {pat.Id}: its preset {q.Part.Name} isn't a part of its like part's kind");
+                pat.ByKnot = pat.Knots.Select(pat.WithKnot).ToArray();
+            }
     }
 
     private static PressDie DieOf(JsonElement e, Dictionary<string, ConstructPartDef> byName, PressTable t)
@@ -319,7 +366,7 @@ internal static class PressDies
 
     private static PressPattern PatternOf(JsonElement e, string die, PressDie d, Dictionary<string, ConstructPartDef> byName, PressTable t)
     {
-        Keys(e, die + " pattern", "id", "like", "label", "preset", "blanks", "bay2", "scale", "features", "body", "along");
+        Keys(e, die + " pattern", "id", "like", "label", "preset", "blanks", "bay2", "scale", "features", "body", "along", "likeBy");
         var id = e.GetProperty("id").GetString() ?? "";
         if (id.Length is 0 or > 16 || !id.All(c => c is >= 'a' and <= 'z' or >= '0' and <= '9' or '-'))
             throw new FormatException($"{die}: a pattern's id is 1 to 16 of a-z, 0-9 and -");
@@ -339,6 +386,8 @@ internal static class PressDies
         }
         if (e.TryGetProperty("body", out var body))
             p.LikeBody = body.GetString() switch { "like" => true, "blank" => false, _ => throw new FormatException($"{where}: \"body\" is \"blank\" or \"like\"") };
+        if (e.TryGetProperty("likeBy", out var likeBy))
+            p.LikeNearest = likeBy.GetString() switch { "nearest" => true, "pattern" => false, _ => throw new FormatException($"{where}: \"likeBy\" is \"pattern\" or \"nearest\"") };
         if (e.TryGetProperty("along", out var along))
         {
             if (!p.LikeBody)

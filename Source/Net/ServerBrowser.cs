@@ -491,7 +491,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   (docs/sandbox/design/inventory-run-time-parts.md; 298 on its branch).
     // 300: Lifters phase 4 (carrying between points; renumbered from the branch's 296): the Lay-down Pad parts (ids move); CBodyKind.Lifts sends the
     //   piece by PartRef (a run-time piece by its key) and, per lifter, u8 put point kind, u16 its part, u8 a press bay; LiftWhy gains NoPoint, NoTaker, Carrying.
-    public const ushort ProtocolVersion = 300;
+    // 302: Sized parts phase 5 (engine pieces off the press): the Engine Die parts (ids move); the Cylinder die's presets on the files' bounds and the
+    //   Engine die (Pressing.json); a pressed engine piece's scale and a cylinder's stroke ratio come from its key (derived on each peer, no new bytes).
+    public const ushort ProtocolVersion = 302;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

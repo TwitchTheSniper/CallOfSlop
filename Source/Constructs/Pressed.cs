@@ -362,6 +362,53 @@ public static class Pressed
     /// <summary>The pressed part, unadopted (no id yet). Made whole: a shallow copy and a few dozen boxes.</summary>
     internal static ConstructPartDef Build(PressDie die, PressPattern p, in ExtrusionKey k, string name)
     {
+        var d = BuildOf(die, p.For(k), k, name);
+        EngineNumbers(d, p, k);
+        return d;
+    }
+
+    /// <summary>
+    /// An engine piece's scale and stroke from its blank (sized-parts design 6.1, 6.3). The scale runs through the pattern's knots (its
+    /// presets: their across against their class's scale) by a straight line in log-log, the end segment past the ends, so it rises with
+    /// across and at a preset is that part's own. A cylinder's stroke ratio is its length over its across against its nearest preset's, three
+    /// figures, held to the die's aspect; 1 at a preset's proportions. Nothing on a pattern without knots or a part that isn't an engine piece.
+    /// </summary>
+    internal static void EngineNumbers(ConstructPartDef d, PressPattern p, in ExtrusionKey k)
+    {
+        if (d.Piece == EnginePiece.None || p.Knots.Length == 0)
+            return;
+        var rules = EngineRules.Current;
+        d.PieceScale = EngineScale(p, k, rules);
+        d.PieceSize = rules.NearestSize(d.PieceScale);
+        d.PieceStroke = 0;
+        if (d.Piece == EnginePiece.Cylinder)
+        {
+            var near = p.For(k).Preset;
+            var r = Sig3(k.L / (float)Math.Max(1, Across(k)) / (near.L / (float)Math.Max(1, Across(near))));
+            d.PieceStroke = MathF.Abs(r - 1f) < 1e-4f ? 0 : r;
+        }
+    }
+
+    /// <summary>An engine piece's scale at this blank's across (see <see cref="EngineNumbers"/>).</summary>
+    public static float EngineScale(PressPattern p, in ExtrusionKey k, EngineRules rules)
+    {
+        var knots = p.Knots;
+        var a = (float)Math.Max(1, Across(k));
+        foreach (var q in knots)
+            if (Across(q.Blank) == (int)a)
+                return rules.ScaleOf(q.Part);
+        if (knots.Length == 1)
+            return Sig3(rules.ScaleOf(knots[0].Part) * a / Across(knots[0].Blank));
+        var i = 0;
+        while (i < knots.Length - 2 && a > Across(knots[i + 1].Blank))
+            i++;
+        float a0 = Across(knots[i].Blank), a1 = Across(knots[i + 1].Blank), s0 = rules.ScaleOf(knots[i].Part), s1 = rules.ScaleOf(knots[i + 1].Part);
+        var t = (MathF.Log(a) - MathF.Log(a0)) / (MathF.Log(a1) - MathF.Log(a0));
+        return Sig3(MathF.Exp(MathF.Log(s0) + t * (MathF.Log(s1) - MathF.Log(s0))));
+    }
+
+    private static ConstructPartDef BuildOf(PressDie die, PressPattern p, in ExtrusionKey k, string name)
+    {
         var names = RecyclingTable.Current;
         var mat = ExtrusionTable.Current.Find(k.Material)!;
         var materialName = names.NameOf(k.Material);
@@ -461,7 +508,7 @@ public static class Pressed
         d.PhysicsOnly = true;
         d.PhysicsWhy = "pressed to size";
         d.Stage = true; // (never offered: a pressed part comes out of a press)
-        d.Legacy = false;
+        d.Legacy = d.Retired = false;
         d.OnBreak = PartBreak.Detach;
         d.CentreOptOut = true;
         d.ColliderBoxes = k.Shape == ExShape.Pipe; // (a pipe collides as its ring of boxes, as an extruded pipe does)
@@ -659,7 +706,7 @@ public static class Pressed
         d.PhysicsOnly = true;
         d.PhysicsWhy = "pressed to size";
         d.Stage = true;
-        d.Legacy = false;
+        d.Legacy = d.Retired = false;
         d.CentreOptOut = true;
         d.Hulls = null;
         d.HullCovers = null;
@@ -963,8 +1010,19 @@ public static class Pressed
             float T(float power) => ReceiverMergeRules.Times(made.GunScale, power);
             Console.WriteLine(FormattableString.Invariant($"[press] receiver scale {made.GunScale:0.###} (the merge's law): damage x{T(r.Damage):0.###}, fire rate x{T(r.FireRate):0.###}, kick x{T(r.Recoil):0.###}, rounds a shot {Math.Max(1, (int)MathF.Round(T(r.AmmoPerShot)))}, magazine x{T(r.Magazine):0.###}; it never merges; catalogue gun parts on it drawn {ConstructMerge.DrawnOn(made)}x; its bore for a pressed barrel {made.GunScale:0.###}"));
         }
+        if (made.Piece != EnginePiece.None && p.Knots.Length > 0)
+        {
+            // The engine piece's numbers (sized-parts design 6.3): a cylinder's kW at its bore, the revs of a crank of its scale over its stroke.
+            var rules = EngineRules.Current;
+            rules.At(rules.ScaleOf(made), out var kw, out var idle, out var peak, out var max);
+            var r = made.PieceStroke > 0 ? made.PieceStroke : 1f;
+            Console.WriteLine(FormattableString.Invariant($"[press] engine {made.Piece.ToString().ToLowerInvariant()}: scale {rules.ScaleOf(made):0.###} (nearest {ConstructEngine.SizeNames[made.PieceSize]}), like {p.For(k).Like.Name}; ")
+                + (made.Piece == EnginePiece.Cylinder ? FormattableString.Invariant($"{kw * made.PiecePower:0.#} kW, stroke ratio {r:0.###}: on a crank of its scale idle {idle / r:0} rpm, peak {peak / r:0}, limiter {max / r:0}, torque at the peak {kw * made.PiecePower * 1000 / (peak / r / ConstructDrive.RpmPerRadS):0} N m")
+                    : made.Piece == EnginePiece.Crank ? FormattableString.Invariant($"a crank of it turns idle {idle:0} rpm, peak {peak:0}, limiter {max:0}{(rules.StarterAt(rules.ScaleOf(made)) ? "; it needs a starter" : "")}")
+                    : FormattableString.Invariant($"feeds or boosts {kw:0.#} kW of cylinders whole")));
+        }
         var pc = PressClass(Across(k));
-        Console.WriteLine($"[press] seconds: {string.Join(", ", Enumerable.Range(Math.Max(0, pc), 4 - Math.Max(0, pc)).Select(c => $"{ClassWord(c)} {Seconds(die!, k, c):0.##}"))}");
+        Console.WriteLine($"[press] seconds:{string.Join(", ", Enumerable.Range(Math.Max(0, pc), 4 - Math.Max(0, pc)).Select(c => $"{ClassWord(c)} {Seconds(die!, k, c):0.##}"))}");
         Console.WriteLine($"[press] {probs} problems");
         return probs;
     }
@@ -989,7 +1047,7 @@ public static class Pressed
         var hash = GeometryHash(made);
         var pc = PressClass(Across(k));
         var drawn = made.Boxes.Count(b => !b.Hidden);
-        Console.WriteLine($"[press] {made.Name}: like {p.Like.Name}; {ClassWord(pc)} Press and up, a {ClassWord(pc)} {die.Family} Die; "
+        Console.WriteLine($"[press] {made.Name}: like {p.For(k).Like.Name}; {ClassWord(pc)} Press and up, a {ClassWord(pc)} {die.Family} Die; "
             + $"{drawn} boxes drawn, {made.SolidBoxes} solid, {made.Sockets.Length} sockets; {made.Mass:0.##} kg, {made.Health:0} hp, armour {made.Armour:0.#}; "
             + $"bounds {(made.BoundsMax - made.BoundsMin).X:0.###} x {(made.BoundsMax - made.BoundsMin).Y:0.###} x {(made.BoundsMax - made.BoundsMin).Z:0.###} m; hash {hash:x8}; a make {ms:0.000} ms (least of 4; the first {first:0.000} ms), {bytes / 1024.0:0.0} KB");
         if (GeometryHash(again) != hash)

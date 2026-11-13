@@ -194,6 +194,8 @@ public sealed class ModEngine
     public int Output = -1; // the flywheel
     public byte Size; // the size class nearest the crank's scale (the kit's words, the sound bank, the drawn crank)
     public float Scale = 1f; // the crank's: its largest section's (sized-parts design 6.1); it sets the revs and whether it needs a starter
+    public float Stroke = 1f; // the cylinders' stroke ratio, their mean weighted by kW (design 6.3): rpm is the crank's over it, so a long stroke pulls from low revs at the same power
+    private float _strokeKw, _kwForStroke;
     public int Starved; // the first bank (1 up) whose fuel system or booster is small for its cylinders, or 0 (design 6.4)
     public float StarvedShare; // what that bank's fuel system feeds (0 to 1), or its booster gives of its boost when the feed is whole
     public bool StarvedBoost; // the booster is the small one, not the fuel system
@@ -206,6 +208,20 @@ public sealed class ModEngine
     public int FaultBank; // NoFuelSystem: which (1 up)
     public readonly int[] Emit = new int[MaxEmits]; // where the smoke leaves
     public int EmitCount;
+
+    /// <summary>The engine's revs: the crank's scale's (<see cref="EngineRules.At"/>) over its <see cref="Stroke"/> (design 6.3; 1 on every file cylinder).</summary>
+    public void Rpm(EngineRules rules, out float idle, out float peak, out float max)
+    {
+        rules.At(Scale, out _, out idle, out peak, out max);
+        if (Stroke != 1f)
+            (idle, peak, max) = (idle / Stroke, peak / Stroke, max / Stroke);
+    }
+
+    internal void AddStroke(float kw, float r) => (_strokeKw, _kwForStroke) = (_strokeKw + kw * r, _kwForStroke + kw);
+
+    internal void EndStroke() => Stroke = _kwForStroke > 0 && MathF.Abs(_strokeKw / _kwForStroke - 1f) > 1e-4f ? _strokeKw / _kwForStroke : 1f; // (exactly 1 when every cylinder's is: file engines keep their rows)
+
+    internal void ResetStroke() => (Stroke, _strokeKw, _kwForStroke) = (1f, 0, 0);
 
     /// <summary>It can run (maybe on less than it was built for: <see cref="Fault"/> says why).</summary>
     public bool Complete => Output >= 0 && Kw > 0 && Fault is EngineFault.None or EngineFault.NoFuelSystem or EngineFault.NoTank;
@@ -422,11 +438,13 @@ public static class ConstructEngine
                 continue;
             var kw = rules.KwAt(rules.ScaleOf(d)) * d.PiecePower * share * fuelMul[at] * boostMul[at]; // (a cylinder's own power at its own bore: design 6.3; PiecePower 1, more for a tier cylinder's)
             e.Kw += kw;
+            e.AddStroke(kw, d.PieceStroke > 0 ? d.PieceStroke : 1f);
             e.Burn += kw * d.PieceThirst * fuelThirst[at] * boostThirst[at] * rules.BurnPerKw;
         }
         for (var k = 0; k < c.ModCount; k++)
         {
             var e = c.ModEngines[k];
+            e.EndStroke();
             for (var q = 0; q < e.Banks; q++)
             {
                 var at = k * MaxBanks + q;
@@ -474,6 +492,7 @@ public static class ConstructEngine
         e.Size = 0;
         e.Scale = 1f;
         e.Starved = 0;
+        e.ResetStroke();
         e.StarvedShare = 1f;
         e.StarvedBoost = false;
         e.StarvedBy = null;
@@ -537,7 +556,7 @@ public static class ConstructEngine
         var e = c.ModEngines![k];
         var r = EngineRules.Current;
         var d = c.ModDef ??= new ConstructPartDef { Name = "Modular engine", Role = PartRole.Engine, EngineModular = true, Curve = EngineCurve.Petrol, FuelKind = EngineFuel.Fuel, Noise = 0.8f };
-        r.At(e.Scale, out _, out var idle, out var peak, out var max); // (the crank's scale sets the revs: design 6.1; at a size's own scale its row)
+        e.Rpm(r, out var idle, out var peak, out var max); // (the crank's scale sets the revs, the stroke divides them: design 6.1, 6.3; at a size's own scale and stroke 1 its row)
         (d.IdleRpm, d.PeakRpm, d.MaxRpm) = (idle, peak, max);
         d.EngineTorque = e.Kw * 1000f / (d.PeakRpm / ConstructDrive.RpmPerRadS);
         d.BurnRate = e.Burn;

@@ -480,9 +480,10 @@ public sealed partial class ConstructPartDef
     public float DamagedBelow; // below this share of its health it turns into DamagedTo (a wall losing a chunk; "damaged": {"below", "part"})
     public string DamagedName = ""; // the stage it turns into (resolved after loading)
     public int DamagedTo = -1; // ...its id, or -1
-    public bool Offered => !Legacy && !Stage && !ToolOnly; // listed in the parts menu and on racks
+    public bool Offered => !Legacy && !Retired && !Stage && !ToolOnly; // listed in the parts menu and on racks
     public bool Generated; // made at load from a weapon builder part (ConstructWeaponParts.cs), not from a file here
     public bool CreativeOnly; // offered only with infinite parts (Constructs/WeaponParts.json "creativeOnly": the Zombies-economy parts)
+    public bool Retired; // "retired": loads and runs as before (old blueprints, saves, shipped vehicles), but isn't offered and has no recipe (the tier cylinders: sized-parts answer 8)
     public bool Legacy; // replaced by a routed link (the Fuel Line, plain drive shafts): still loads and works, but isn't offered in the parts menu or on a rack
     public float BurnRate; // engine: litres a second at full throttle
     public Vector3 SeatAt; // seat: where the sitter's feet go (part frame)
@@ -573,6 +574,7 @@ public sealed partial class ConstructPartDef
     public EnginePiece Piece; // a modular engine's piece kind (the flywheel: Output)
     public byte PieceSize; // Small 0, Medium 1, Large 2, Capital 3
     public float PieceScale; // its scale (sized-parts design 6.1): 0 on a file piece, read as its class's (EngineRules.ScaleOf); a pressed piece's from its blank (phase 5)
+    public float PieceStroke; // a cylinder's stroke ratio (design 6.3): 0 (read as 1) on a file piece; a pressed one's from its blank, its length over its across against its preset's
     public float PiecePower = 1f, PieceThirst = 1f, PieceSpool; // a fuel system's or booster's multipliers, a turbo's lag
     public int SmokeSocket = -1; // the socket smoke leaves by (a stack's top, an exhaust's top, a head)
     public bool HasEngineBoxes; // boxes that pump or spin (the renderer skips the rest)
@@ -1306,7 +1308,7 @@ public static partial class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "damaged", "stage", "faces", "faceAxis", "router",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "damaged", "stage", "faces", "faceAxis", "router",
         "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
@@ -1372,6 +1374,7 @@ public static partial class ConstructParts
         d.AttachSeconds = Opt(root, "attachSeconds") is { } secs ? Num(secs, file, "attachSeconds") : hint == ConstructTool.Welder ? 2.5f : 1.5f;
         Range(d.AttachSeconds, 0.2f, MaxAttachSeconds, file, "attachSeconds");
         d.Legacy = Opt(root, "legacy") is { ValueKind: JsonValueKind.True };
+        d.Retired = Opt(root, "retired") is { ValueKind: JsonValueKind.True };
         d.IsRouter = Opt(root, "router") is { ValueKind: JsonValueKind.True };
         if (d.IsRouter && d.TextSlots == 0)
             d.TextSlots = 1; // (its name, set with the configure tool's Text box: the network board and the notes use it; smart logistics phase 4c)
