@@ -177,7 +177,9 @@ public sealed unsafe partial class CityRenderer
             vec3 refl = Reflection(n, v, tint);
             float fres = 0.08 + 0.92 * pow(1.0 - max(dot(n, v), 0.0), 5.0);
             // The bays and windows of each style: [bay width, window left, window right, sill, head] (metres in a bay and a floor).
-            float bayW = style == 0 ? 1.5 : style == 1 ? 2.4 + 0.6 * H01(seed) : style == 2 ? 3.0 : 1.25;
+            // Each building its own rhythm: bay widths vary by style and seed, so neighbours don't share one grid.
+            float vary = H01(seed * 13u + 5u);
+            float bayW = style == 0 ? 1.2 + 0.8 * vary : style == 1 ? 2.4 + 0.6 * H01(seed) : style == 2 ? 2.6 + 0.8 * vary : 1.0 + 0.5 * vary;
             float l = style == 0 ? 0.05 : style == 1 ? 0.32 : style == 2 ? bayW * 0.3 : 0.04;
             float r = style == 0 ? bayW : style == 1 ? bayW - 0.32 : style == 2 ? bayW * 0.7 : bayW;
             float sill = style == 0 ? 0.0 : style == 1 ? 0.95 : style == 2 ? 0.95 : 0.95;
@@ -264,6 +266,22 @@ public sealed unsafe partial class CityRenderer
                 col = mix(w, glass, win);
                 glow = room * win;
                 winShare = (r - l) * (head - sill) / (bayW * floorH);
+                // A plant floor every so many storeys on the taller blocks: a band of louvres, no windows, no light.
+                float every = 6.0 + floor(H01(seed * 29u) * 9.0);
+                float louvreW = fwidth(fv / 0.25); // (outside the branch: a derivative in a per-pixel branch is undefined)
+                if (H01(seed * 37u) < 0.6 && mod(floorI + 0.5, every) < 1.0) // (not == 0.0: a GPU's mod can land just under every)
+                {
+                    float louvre = Band(fract(fv / 0.25), 0.0, 0.45, louvreW) * clamp(1.0 - fw * 10.0, 0.0, 1.0);
+                    col = lightWall * (0.55 + 0.2 * louvre);
+                    glow = vec3(0.0);
+                }
+                // Glass towers: some wear fins, a deep metal rib every second bay that catches the light.
+                if (style == 0 && H01(seed * 41u) < 0.5)
+                {
+                    float fin = Band(mod(u, bayW * 2.0), -0.001, 0.16, fw);
+                    col = mix(col, Lit(wall * 1.25, n, 0.0, vWorld), fin);
+                    glow *= 1.0 - fin;
+                }
             }
             // Far off a floor is a few pixels: blend to the facade's average so it doesn't shimmer.
             float px = min(floorH, bayW) / max(fw, 1e-4);

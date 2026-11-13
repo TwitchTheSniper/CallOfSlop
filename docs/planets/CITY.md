@@ -131,6 +131,14 @@ the game at 2,670 to 2,840 fps from above, by the market and in the avenue.
 
 Cost (same PC and settings): 0.08 to 0.1 ms CPU, 0.13 ms GPU a frame for the city; 1,770 to 2,660 fps.
 
+## Facades (slice 6)
+
+Each building its own window rhythm (bay widths by style and seed), plant floors with louvres every 6 to 14 storeys on
+three in five blocks, and fins on every second bay of half the glass towers. Cost: the city's GPU time rose from about
+0.13 to 0.23 to 0.27 ms a frame (1920x1080, RTX 4070 Ti, vsync off); the game at 1,840 to 2,350 fps.
+
+Still to do from the look review: more roof kit on the mid-rises; the square still reads open at eye level.
+
 ## The plan for the rest (slices)
 
 1. **Done: the core** (this file): streets, 790 buildings, the square, lamps, the elevated loop and its stations.
