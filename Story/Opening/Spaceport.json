@@ -21,6 +21,8 @@
     { "blueprint": "Spaceport Terminal", "at": [-8, -14] },
     // The control tower east of it, 2 m clear: the third deck on its roof, 21.5 m up.
     { "blueprint": "Spaceport Control Tower", "at": [8, -15] },
+    // The approach radar beside the tower, the tallest thing on the field (its side away from the terminal and the pads).
+    { "blueprint": "Spaceport Radar Mast", "at": [8, -24] },
     // The apron: three pads behind, laid flush with the bench (a pad is 0.5 m of slab).
     { "blueprint": "Spaceport Landing Pad", "at": [-12, 8], "sink": 0.45 },
     { "blueprint": "Spaceport Landing Pad", "at": [6, 8], "sink": 0.45 },
