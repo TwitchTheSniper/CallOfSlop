@@ -5,7 +5,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The frame-rate benchmark (docs/perf/BENCHMARK.md). <c>--bench [SPOTS.json] [--out FILE.json] [--frames N] [--settle N]
-/// [--shots] [--storm]</c> turns into a window-tool run (Program.WindowShot.cs) on the spots file's world: the opening
+/// [--shots] [--storm] [--trace-ticks MS]</c> turns into a window-tool run (Program.WindowShot.cs) on the spots file's world: the opening
 /// skipped, VSync and caps off, then for each spot the camera flown there with the tour's <c>view</c>
 /// (Program.WindowShotTour.cs), <c>--settle</c> frames to let streaming and the GPU settle, and <c>perf</c> over
 /// <c>--frames</c> frames, which with <c>--bench</c> also records the profiler's whole breakdown (PerfBench.cs). After
@@ -69,7 +69,8 @@ public static partial class Program
         if ((string?)spec["start"] is { Length: > 0 } start)
             outArgs.AddRange(["--start", start]);
         // Everything else the caller gave (--save-dir, --gl41 ...), past the bench's own flags.
-        var own = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "--out", "--frames", "--settle", "--size" }; // (each takes a value)
+        PerfBench.TraceTicksMs = double.TryParse(Val("--trace-ticks"), NumberStyles.Float, CultureInfo.InvariantCulture, out var tt) ? tt : 0;
+        var own = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "--out", "--frames", "--settle", "--size", "--trace-ticks" }; // (each takes a value)
         var bare = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "--bench", "--shots", "--storm" };
         for (var i = 0; i < args.Length; i++)
         {
@@ -128,6 +129,8 @@ public static partial class Program
             s.Extra["parts"] = g.Constructs.Bodies.Sum(b => b.PartCount);
         }
         WsSay(PerfBench.Line(s));
+        foreach (var t in s.SlowTicks)
+            WsSay($"[bench] {s.Name} slow {t}");
         if (_benchOut.Length == 0 || _benchMeta == null)
             return;
         _benchMeta["gpu"] = RenderCaps.Renderer;

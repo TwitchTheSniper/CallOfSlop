@@ -300,7 +300,9 @@ public sealed partial class Game : IDisposable
             {
                 using var _ = Perf.Measure(PerfArea.ServerTick);
                 var stressT0 = StressBeginTick(); // a horde stress round times its ticks for its summary (ZombiesCrowdStress.cs)
+                AllocProfile.TickStart(); // (the benchmark's slow-tick trace: AllocProfile.cs; off, a bool test)
                 ServerTickStep(now);
+                AllocProfile.TickEnd(ServerTick);
                 StressEndTick(stressT0);
             }
             else

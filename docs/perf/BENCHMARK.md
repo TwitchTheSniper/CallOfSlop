@@ -5,7 +5,7 @@ before and after any change to what is drawn or ticked every frame, on the user'
 software renderer: its numbers say nothing about a real frame).
 
 ```
-CallOfSlop.exe --bench [SPOTS] [--out FILE.json] [--frames N] [--settle N] [--size WxH] [--shots] [--storm]
+CallOfSlop.exe --bench [SPOTS] [--out FILE.json] [--frames N] [--settle N] [--size WxH] [--shots] [--storm] [--trace-ticks MS]
 CallOfSlop.exe --bench-compare BASE.json NEW.json [--noise PCT]
 ```
 
@@ -19,6 +19,15 @@ CallOfSlop.exe --bench-compare BASE.json NEW.json [--noise PCT]
 - `--bench-compare` prints each spot side by side: median and mean fps, the 99th percentile frame, GPU ms, CPU render and
   game ms, draws, and the five CPU areas or GPU passes that moved most. A spot is **WORSE** when its median fps fell past
   the noise (5%) or its 99th percentile rose past twice that. The exit code is the number of WORSE spots.
+
+## Slow ticks: `--trace-ticks MS`
+
+`--bench --trace-ticks 2` traces every server tick of 2 ms or more while a spot is measured: its six slowest sections
+(the game's `AllocProfile.Mark` sections: the server tick's steps, each bot's think, perceive, steer and movement,
+`move: gather` and `move: walk` in the capsule mover, the Sandbox tick's parts and each machine's step) go to the log as
+`[bench] SPOT slow tick N, 8.33 ms: bot: movement 7.84, ...` and into the spot's `slowTicks`. The marks cost a bool test
+when the trace is off, but timing every one of them while it is on slows the frame: use it to find a spike, not for the
+numbers you compare. To look deeper, add an `AllocProfile.Mark("...")` where the time goes.
 
 ## Noise: run alone
 

@@ -394,8 +394,10 @@ public sealed partial class Game
         Constructs.Taught ??= AssemblerTaught; // (parts a story faction must teach first: GameStoryTech.cs)
         if (Constructs.PlayerEndCount > 0)
             SandboxHarpoonTick(); // (lines on players: their ends and who still holds them, GameSandboxHarpoon.cs)
+        AllocProfile.Mark("sandbox: constructs");
         using (Perf.Measure(PerfArea.Constructs))
             Constructs.Step(World.Query, World.TickDt);
+        AllocProfile.Mark("sandbox: after constructs");
         MegaDigTick(); // (a big crater's next band: GameSandboxMegaBlast.cs)
         if (Constructs.ShellCount > 0)
             ShellTrails(); // (artillery in the air, as drawn here: GameSandboxShells.cs)
@@ -406,6 +408,7 @@ public sealed partial class Game
         SandboxOfficeTick(now); // (the IT Department's fax line: GameSandboxOffice.cs)
         SandboxScamTick(now); // (the Scammers' adverts: GameSandboxScams.cs)
         SandboxAidsTick(); // (build stations: GameSandboxAids.cs)
+        AllocProfile.Mark("sandbox: spawns, pilots, debris");
         var perf = Perf.Measure(PerfArea.SandboxWorld);
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
         _vehicleSpawn?.Tick(); // faction vehicles made at spawn time, a slice a tick (GameSandboxVehicles.cs)
@@ -416,6 +419,7 @@ public sealed partial class Game
         SandboxFlush();
         perf.Dispose();
         perf = Perf.Measure(PerfArea.Colony);
+        AllocProfile.Mark("sandbox: colony");
         OpeningTick(now); // (the survival opening's beats: GameSandboxOpening.cs)
         ShellTick(); // (worn robot shells keep their link: GameRobotShell.cs)
         FirstsTick(); // (a first flight in a craft of your own: GameMilestones.cs)
@@ -428,6 +432,7 @@ public sealed partial class Game
         TutorialTick(now); // (the warden's induction: who starts, which steps are done; GameTutorial.cs)
         perf.Dispose();
         perf = Perf.Measure(PerfArea.Story);
+        AllocProfile.Mark("sandbox: story");
         StoryTick(now); // (the story: who came and sat down, what happened to constructs; GameStory.cs)
         perf.Dispose();
         WorldTickPlaying(now); // (the autosave, on a finished tick: GameWorldSave.cs)

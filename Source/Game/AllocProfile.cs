@@ -45,6 +45,37 @@ public static class AllocProfile
         _markTime = System.Diagnostics.Stopwatch.GetTimestamp();
     }
 
+    // ---- Slow ticks (the benchmark: PerfBench.cs) ----------------------------------------------------------------
+
+    /// <summary>A server tick at least this long (ms) is traced: its slowest sections go into <see cref="SlowTicks"/>. 0: off.</summary>
+    public static double SlowTickMs;
+
+    /// <summary>The traced slow ticks, as "tick 1234, 8.50 ms: section 7.90, ..." (allocates only when a tick was slow).</summary>
+    public static readonly List<string> SlowTicks = [];
+
+    private static long _tickT0;
+
+    /// <summary>A server tick starts: with the slow-tick trace on, the sections are counted for this tick alone.</summary>
+    public static void TickStart()
+    {
+        if (!On || SlowTickMs <= 0)
+            return;
+        Reset();
+        _tickT0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        Mark("tick start");
+    }
+
+    /// <summary>The tick ends: a slow one's slowest sections are kept.</summary>
+    public static void TickEnd(uint tick)
+    {
+        if (!On || SlowTickMs <= 0)
+            return;
+        Stop();
+        var ms = System.Diagnostics.Stopwatch.GetElapsedTime(_tickT0).TotalMilliseconds;
+        if (ms >= SlowTickMs && SlowTicks.Count < 64)
+            SlowTicks.Add($"tick {tick}, {ms:0.00} ms: {TopTime(6, 1)}");
+    }
+
     /// <summary>The running section ends (nothing is charged until the next <see cref="Mark"/>).</summary>
     public static void Stop()
     {
