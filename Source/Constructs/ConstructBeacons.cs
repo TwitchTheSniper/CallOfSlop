@@ -216,8 +216,8 @@ public sealed class RackStore : INetworkStore
 
     public bool Serves(ConstructPartDef d) => d.IsPieceRack && !d.IsCraftTerminal && !d.IsBeacon && !d.IsTerminal && !IsPad(d);
 
-    /// <summary>A Lay-down Pad (and the Large one) is a work point for the arms and the lines, not storage: never on a network (no flag of its own yet: its name).</summary>
-    public static bool IsPad(ConstructPartDef d) => d.Name.EndsWith("Lay-down Pad", StringComparison.Ordinal);
+    /// <summary>A Lay-down Pad (and the Large one) is a work point for the arms and the lines, not storage: never on a network.</summary>
+    public static bool IsPad(ConstructPartDef d) => d.IsLayDownPad;
 
     public int Parts(ConstructWorld world, Construct c, int part) => world.StoreOf(c, part)?.ItemCount ?? 0;
 
