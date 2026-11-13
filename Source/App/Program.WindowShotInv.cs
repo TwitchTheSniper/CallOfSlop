@@ -44,9 +44,8 @@ public static unsafe partial class Program
             }
             case "store" when g.IsServer:
             {
-                // "PART[#n] NAME": the store is the words before the part's name, which starts with a known prefix or is the last word.
-                var at = rest.IndexOf(" Pressed Part (", StringComparison.Ordinal) is var p and >= 0 ? p : rest.IndexOf(" Extrusion ", StringComparison.OrdinalIgnoreCase);
-                if (at < 0 || WsFind(g, rest[..at]) is not ({ } c, var part) || ConstructParts.Find(rest[(at + 1)..]) is not { } d || g.Constructs.StoreOf(c, part) is not { } st)
+                // "PART[#n] NAME": the store is the words before the part's name (the first split where both are found).
+                if (!WsSplitStore(g, rest, out var c, out var part, out var d) || g.Constructs.StoreOf(c!, part) is not { } st)
                 {
                     WsFail($"inv store: STORE[#n] NAME (\"{rest}\")");
                     return true;
@@ -54,8 +53,8 @@ public static unsafe partial class Program
                 string? why = "no slots";
                 for (var k = 0; k < st.SlotCount && why != null; k++)
                     if (st.Def[k] == ConstructParts.None)
-                        why = g.Constructs.SetIn(c, part, k, d);
-                WsSay($"inv store: {Named(d.Id)} into the {c.DefOf(part).Name}: {why ?? "stored"}");
+                        why = g.Constructs.SetIn(c!, part, k, d!);
+                WsSay($"inv store: {Named(d!.Id)} into the {c!.DefOf(part).Name}: {why ?? "stored"}");
                 return true;
             }
             case "show":
@@ -170,8 +169,135 @@ public static unsafe partial class Program
             case "reload" when g.IsServer:
                 WsSay("inv reload: " + g.StationReloadProbe());
                 return true;
+            case "fill" when g.IsServer:
+            {
+                // "fill N TEMPLATE" (phase 3): N made parts into every player's count, one of each, named by TEMPLATE with {i} as 0..N-1 (and {j} as
+                // 10 + i, {k} as 100 + i, {e} as 100 + 2i, {t} as 12 + i mod 29, {q} as i / 29), to drive the inventory message past its room; the key bytes in all are printed.
+                var w2 = arg.Split(' ', 3, StringSplitOptions.TrimEntries);
+                if (w2.Length < 3 || !int.TryParse(w2[1], out var n) || n < 1)
+                {
+                    WsFail("inv fill N TEMPLATE");
+                    return true;
+                }
+                var bytes = 0;
+                var made = 0;
+                var scratch = new PacketWriter(1024);
+                for (var i = 0; i < n; i++)
+                {
+                    var name = w2[2].Replace("{i}", i.ToString()).Replace("{j}", (10 + i).ToString()).Replace("{k}", (100 + i).ToString()).Replace("{e}", (100 + 2 * i).ToString()).Replace("{t}", (12 + i % 29).ToString()).Replace("{q}", (i / 29).ToString());
+                    if (ConstructParts.Find(name) is not { RuntimeMade: true } d)
+                    {
+                        WsFail($"inv fill: no made part \"{name}\" ({(HullLoft.IsCutName(name) ? HullLoft.CutRefusal(name) : "")})");
+                        return true;
+                    }
+                    scratch.Begin(Msg.CAct);
+                    PartRef.Write(scratch, d.Id);
+                    bytes += scratch.Length - 1 + 2;
+                    foreach (var pl in g.Players.Values)
+                        if (pl.Id < Game.MaxPeople && g.SandboxInventory(pl.Id).Add(d.Id, 1 + i % 3))
+                            made++;
+                }
+                WsSay($"inv fill: {n} kinds, {made} adds, {bytes} bytes of made entries a player (the inventory message splits past {ConstructNet.InventoryBudget})");
+                return true;
+            }
+            case "sum":
+            {
+                // One line per inventory as this peer has it: made kinds, made parts and a digest of (key, count) in order of key, to compare a host with a client.
+                foreach (var pl in g.Players.Values)
+                {
+                    if (pl.Id >= Game.MaxPeople || !g.IsServer && pl.Id != me.Id)
+                        continue;
+                    var inv = g.SandboxInventory(pl.Id);
+                    var list = new List<string>();
+                    var total = 0;
+                    for (var k = 0; k < inv.MadeN; k++)
+                    {
+                        list.Add($"{ConstructParts.Get(inv.MadeDef[k])?.Name}={inv.MadeCount[k]}");
+                        total += inv.MadeCount[k];
+                    }
+                    list.Sort(StringComparer.Ordinal);
+                    var h = 2166136261u;
+                    foreach (var s in list)
+                        foreach (var ch in s)
+                            h = (h ^ ch) * 16777619u;
+                    WsSay($"inv sum: player {pl.Id}{(pl.Id == me.Id ? " (me)" : "")} made kinds {inv.MadeN}, made parts {total}, digest {h:X8}, catalogue parts {inv.TotalParts - total}");
+                }
+                return true;
+            }
+            case "open":
+                // The Tab inventory on its "Made parts" category, as a click on the node leaves it.
+                Ui.OpenSandboxParts(false);
+                Ui.SetSandboxInventoryMade(true);
+                WsSay("inv open: Made parts");
+                return true;
+            case "icons":
+                WsSay($"inv icons: rows with a picture {Ui.SandboxMadeIcons}, swatches {Ui.SandboxMadeSwatches}; made tiles drawn {SandboxTiles.MadeRendered}, in use {SandboxTiles.MadeInUse} of {SandboxTiles.MadePool}, handed on {SandboxTiles.MadeEvicted}");
+                return true;
+            case "force" when g.IsServer:
+            {
+                // "force N STORE[#n] NAME" (a test state, as "hold" is): N of a made part put straight into the store's first empty slot past the
+                // physics-only rule, so a network lists it; marked changed as any store change is.
+                var w2 = rest.Split(' ', 2, StringSplitOptions.TrimEntries);
+                if (w2.Length < 2 || !int.TryParse(w2[0], out var n) || !WsSplitStore(g, w2[1], out var c, out var part, out var d) || g.Constructs.StoreOf(c!, part) is not { } st)
+                {
+                    WsFail($"inv force N STORE[#n] NAME (\"{rest}\")");
+                    return true;
+                }
+                for (var k = 0; k < st.SlotCount; k++)
+                    if (st.Def[k] == ConstructParts.None)
+                    {
+                        st.Def[k] = d!.Id;
+                        st.Count[k] = (byte)Math.Min(n, 255);
+                        g.Constructs.ChangedForTool(st);
+                        WsSay($"inv force: {n} x {Named(d.Id)} into the {c!.DefOf(part).Name} slot {k}{(d.PhysicsOnly ? " (PHYSICS-ONLY: a test state)" : "")}");
+                        return true;
+                    }
+                WsFail("inv force: no empty slot");
+                return true;
+            }
+            case "pull":
+            {
+                // The first made row of this peer's terminal view asked for, to the hands, as the use key at the terminal asks (a client: by key).
+                var tv = g.SandboxTerminal(me.Id);
+                foreach (var row in tv.Rows)
+                    if (!row.Material && Extrusion.IsRuntimeId(row.Id) && WsFind(g, "Smart Terminal") is ({ } tc, var tp))
+                    {
+                        g.SandboxTerminalPull(tc.Id, tp, row, hands: true);
+                        WsSay($"inv pull: asked for {row.Text} at construct {tc.Id} part {tp}");
+                        return true;
+                    }
+                WsFail("inv pull: no made row at a terminal");
+                return true;
+            }
+            case "net":
+            {
+                // What this peer's Smart Terminal view lists (the rows, made parts marked) and its beacon view's made list.
+                var tv = g.SandboxTerminal(me.Id);
+                WsSay($"inv net: terminal {tv.Handle}, state {tv.Stock.State}, {tv.Rows.Count} rows, made kinds {tv.Stock.MadeN}");
+                foreach (var row in tv.Rows)
+                    if (!row.Material && Extrusion.IsRuntimeId(row.Id))
+                        WsSay($"inv net: made row {row.Text} ({ConstructParts.Get(row.Id)?.Name})");
+                return true;
+            }
         }
-        WsFail($"inv {arg}: hold|give NAME, store STORE NAME, show [STORE], reload (host for all but show)");
+        WsFail($"inv {arg}: hold|give NAME, store STORE NAME, show [STORE], reload, drop|takeback|setdown NAME, count, fill N TEMPLATE, sum, open, icons, force N STORE NAME, net");
         return true;
+    }
+
+    /// <summary>"STORE[#n] NAME": the store is the words before the part's name, at the first space where both are found.</summary>
+    private static bool WsSplitStore(Game g, string text, out Construct? c, out int part, out ConstructPartDef? d)
+    {
+        for (var at = text.IndexOf(' '); at > 0; at = text.IndexOf(' ', at + 1))
+            if (WsFind(g, text[..at]) is ({ } body, var p) && ConstructParts.Find(text[(at + 1)..]) is { } found)
+            {
+                c = body;
+                part = p;
+                d = found;
+                return true;
+            }
+        c = null;
+        part = 0;
+        d = null;
+        return false;
     }
 }

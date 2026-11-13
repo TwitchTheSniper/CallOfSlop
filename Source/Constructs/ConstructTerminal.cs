@@ -74,6 +74,9 @@ public sealed class TerminalView
             for (var id = 0; id < Stock.Counts.Length; id++)
                 if (Stock.Counts[id] > 0 && ConstructParts.Get((ushort)id) is { } d)
                     _rows.Add(new TerminalRow(false, (ushort)id, d.Name, Stock.Counts[id]));
+            for (var k = 0; k < Stock.MadeN; k++) // (made parts with the rest, one row per key: docs/sandbox/design/inventory-run-time-parts.md phase 3)
+                if (Stock.MadeCount[k] > 0 && ConstructParts.Get(Stock.MadeDef[k]) is { } d)
+                    _rows.Add(new TerminalRow(false, d.Id, PartRef.Listed(d), Stock.MadeCount[k]));
             _rows.Sort(first, _rows.Count - first, ByName);
             return _rows;
         }
@@ -194,6 +197,8 @@ public static class ConstructTerminals
         }
         var picked = view.Picked;
         card.Add(0, "Item ").Add(0, picked + 1).Add(0, '/').Add(0, rows.Count);
+        if (view.Stock.MadeOver > 0)
+            card.Add(0, " +").Add(0, view.Stock.MadeOver); // (made kinds past the list's 64: the look line says so in words)
         var top = Math.Max(0, Math.Min(picked - 1, rows.Count - ListRows));
         for (var k = 0; k < ListRows && top + k < rows.Count; k++)
         {
@@ -236,7 +241,7 @@ public static class ConstructTerminals
         if (material)
             card.Add(line, RecyclingTable.Current.NameOf((byte)id));
         else if (ConstructParts.Get(id) is { } d)
-            card.Add(line, d.Name);
+            card.Add(line, d.RuntimeMade ? PartRef.Shown(d) : d.Name);
     }
 
     /// <summary>The look line on any peer: from its store, which carries its network's numbers.</summary>
@@ -369,6 +374,7 @@ public sealed partial class ConstructBeacons
         v.State = state;
         Array.Clear(v.Counts);
         Array.Clear(v.Materials);
+        v.MadeN = v.MadeOver = 0;
         v.Stores = v.Parts = v.Bulk = 0;
         if (mask != 0)
             for (var h = _head[n.Net]; h != 0; h = _next[h])
@@ -512,6 +518,11 @@ public sealed partial class ConstructEdits
     private readonly TerminalJob[] _jobs = new TerminalJob[ConstructTerminals.MaxJobs];
     private int _jobN;
 
+    /// <summary>Pulls under way, and the part each is bringing (None for a material): the run-time parts sweep keeps them (RuntimeParts.MarkRoots).</summary>
+    internal int TerminalJobs => _jobN;
+
+    internal ushort TerminalJobPart(int k) => _jobs[k].Material ? ConstructParts.None : _jobs[k].Id;
+
     /// <summary>Server: a player at a terminal asks for an item. <paramref name="flags"/>: 1 to the hands, 2 <paramref name="id"/> is a material. Null, or why not.</summary>
     public string? TerminalPull(ConstructWorld world, byte player, Vector3 eye, ushort body, int part, ushort id, byte flags)
     {
@@ -529,9 +540,9 @@ public sealed partial class ConstructEdits
         var mat = (byte)(material && id < SandboxInventory.MaxMaterials ? id : 0);
         if (material ? mat == 0 || mat > RecyclingTable.Current.Materials.Length : item == null)
             return "no such item";
-        var name = item?.Name ?? RecyclingTable.Current.NameOf(mat);
-        if (item is { PhysicsOnly: true })
-            return PhysicsOnlyRefusal(item, "come through a chute");
+        var name = item == null ? RecyclingTable.Current.NameOf(mat) : item.RuntimeMade ? PartRef.Shown(item) : item.Name;
+        if (item is { PhysicsOnly: true } && !(item.RuntimeMade && hands)) // (a made piece off a Piece Rack is set down in front of you as a body: phase 3 of inventory-run-time-parts.md)
+            return item.RuntimeMade ? $"the {PartRef.Shown(item)} is a made piece: pull it to your hands, it is set down in front of you" : PhysicsOnlyRefusal(item, "come through a chute");
         if (!hands && item != null && !ConstructTerminals.TrayFits(d, item))
             return $"the {name} is too big for the tray: pull it to your hands";
         if (!hands && material && !HasChuteOut(world, c, part))
@@ -641,7 +652,7 @@ public sealed partial class ConstructEdits
             near = spot;
         var item = j.Material ? null : ConstructParts.Get(j.Id);
         var mat = (byte)(j.Material ? j.Id : 0);
-        var name = item?.Name ?? RecyclingTable.Current.NameOf(mat);
+        var name = item == null ? RecyclingTable.Current.NameOf(mat) : item.RuntimeMade ? PartRef.Shown(item) : item.Name;
         // The store it was seen in may have lost it since (a chute, another player): the next nearest serves.
         var store = j.Store;
         if (!world.Beacons.StoreHas(world, store, item, mat))
@@ -664,6 +675,8 @@ public sealed partial class ConstructEdits
 
     private void ArrivePart(ConstructWorld world, Construct c, in TerminalJob j, ConstructPartDef d, CStore st, ushort store, ConstructPartDef item, Vector3? near)
     {
+        if (item.PhysicsOnly)
+            near ??= ConstructTerminals.At(c, j.Part); // (a made piece is never a tray item: set down by the terminal, as Give drops a body)
         if (near == null && !ConstructTerminals.TrayRoom(d, st, item))
         {
             Notices.Add((j.Player, $"the {d.Name}'s tray is full: the {item.Name} stayed where it was"));

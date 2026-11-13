@@ -53,7 +53,7 @@ public static partial class Program
         if (key != _tmKey)
         {
             _tmKey = key;
-            _tmText = SandboxKeys.Line(hit.Body.DefOf(hit.Part).Name, $"{view.Stock.Stores} stores, {row.Text}", null, $"Wheel: pick - {SandboxKeys.Use}: to hands - {SandboxKeys.Reload}: to chute");
+            _tmText = SandboxKeys.Line(hit.Body.DefOf(hit.Part).Name, view.Stock.MadeOver > 0 ? $"{view.Stock.Stores} stores, {row.Text} ({view.Stock.MadeOver} more made kinds not listed)" : $"{view.Stock.Stores} stores, {row.Text}", null, $"Wheel: pick - {SandboxKeys.Use}: to hands - {SandboxKeys.Reload}: to chute");
         }
         g.SandboxLookText = _tmText;
         if (Pressed(GameAction.Interact))

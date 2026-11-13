@@ -29,7 +29,7 @@ public readonly record struct TileBox(Matrix4x4 Model, Vector3 Color, ushort Sha
 /// </para>
 /// Slots: parts by id, then blueprints by index, then tool models by index (<see cref="SlotOf"/>).
 /// </summary>
-public static unsafe class SandboxTiles
+public static unsafe partial class SandboxTiles
 {
     /// <summary>A tile in the atlas (pixels), and the size it is drawn at before it is blitted down.</summary>
     public const int Tile = 128, Render = Tile * 2;
@@ -392,6 +392,7 @@ public static unsafe class SandboxTiles
         }
         _pages = [];
         _ready = [];
+        ClearMade();
         _next = _count = _resNext = _preferN = 0;
         _key = 0;
     }
@@ -401,6 +402,7 @@ public static unsafe class SandboxTiles
     {
         if (_regenerate)
             DoRegenerate();
+        PumpMade(gfx); // (made parts' tiles, asked for one by one while on screen: SandboxTiles.Made.cs)
         if (!_wanted && !_wantedFew || _glBroken)
             return;
         var all = _wanted; // (the inventory: every tile; the recipe picker and the material lists: the loose resources and the tiles on screen)
@@ -648,6 +650,12 @@ public static unsafe class SandboxTiles
             return;
         if (page >= _pages.Length)
             Array.Resize(ref _pages, page + 1);
+        _pages[page] = NewPage();
+    }
+
+    /// <summary>A new clear atlas page (a texture of <see cref="PageSize"/> pixels with its mipmaps).</summary>
+    private static uint NewPage()
+    {
         GlTexture tex = default;
         Native.glGenTextures(1, &tex);
         Native.glBindTexture(GL_TEXTURE_2D, tex.Id);
@@ -673,7 +681,7 @@ public static unsafe class SandboxTiles
         Native.glClear(GL_COLOR_BUFFER_BIT);
         Native.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
         Native.glBindFramebuffer(GL_FRAMEBUFFER, new GlFramebuffer((uint)prev));
-        _pages[page] = tex.Id;
+        return tex.Id;
     }
 
     private static void InitGl()

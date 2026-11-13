@@ -491,7 +491,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   (docs/sandbox/design/inventory-run-time-parts.md; 298 on its branch).
     // 300: Lifters phase 4 (carrying between points; renumbered from the branch's 296): the Lay-down Pad parts (ids move); CBodyKind.Lifts sends the
     //   piece by PartRef (a run-time piece by its key) and, per lifter, u8 put point kind, u16 its part, u8 a press bay; LiftWhy gains NoPoint, NoTaker, Carrying.
-    public const ushort ProtocolVersion = 300;
+    // 303: Inventories phase 3 (a network's made parts): CBodyKind.Beacon and Terminal end with the made list (u8 0 unchanged, or u8 1 whole /
+    //   2 continued; a whole list then u16 the kinds it leaves out past 64; u8 n, n x (PartRef, u16 count); split past 12000 bytes); CActKind.TerminalPull flag 4 (a made part: its PartRef after the
+    //   flags); a terminal store's pull goes u8 material then a material id (u16) or a part by PartRef (docs/sandbox/design/inventory-run-time-parts.md).
+    public const ushort ProtocolVersion = 301;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

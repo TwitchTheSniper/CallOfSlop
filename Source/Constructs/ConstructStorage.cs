@@ -831,7 +831,14 @@ public static class ConstructStorage
         if (machine)
             w.U8(s.Blocked).U16(s.RefusedPart);
         if (pull)
-            w.U16(s.PullId).U8((byte)(s.PullMaterial ? 1 : 0)).U8(s.PullWaiting).U8(s.PullSeconds);
+        {
+            w.U8((byte)(s.PullMaterial ? 1 : 0)); // (protocol 301: the flag first, then a material's id or a part by PartRef)
+            if (s.PullMaterial)
+                w.U16(s.PullId);
+            else
+                PartRef.Write(w, s.PullId);
+            w.U8(s.PullWaiting).U8(s.PullSeconds);
+        }
         if (slabs)
             ConstructRackPack.Write(w, s);
     }
@@ -944,8 +951,8 @@ public static class ConstructStorage
         }
         if ((more & 8) != 0)
         {
-            s.PullId = r.U16();
-            s.PullMaterial = r.U8() != 0;
+            s.PullMaterial = r.U8() != 0; // (protocol 301: the flag first, then a material's id or a part by PartRef: a made part by its key)
+            s.PullId = s.PullMaterial ? r.U16() : PartRef.Read(ref r);
             s.PullWaiting = r.U8();
             s.PullSeconds = r.U8();
             if (s.PullWaiting == 0 || s.PullWaiting > ConstructTerminals.MaxJobs || (s.PullMaterial ? s.PullId > RecyclingTable.Current.Materials.Length : ConstructParts.Get(s.PullId) == null))
@@ -1088,6 +1095,9 @@ public sealed partial class ConstructWorld
         StationDirty.Clear();
         Beacons.Dirty = true;
     }
+
+    /// <summary>A tool's test state written straight into a store (Program.WindowShotInv.cs): marked as any change is.</summary>
+    internal void ChangedForTool(CStore s) => Changed(s);
 
     private void Changed(CStore s)
     {
