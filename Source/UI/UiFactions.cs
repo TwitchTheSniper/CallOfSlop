@@ -67,7 +67,7 @@ public sealed partial class Ui
     /// What the world's factions teach (docs/story/STORY.md "Technologies"): the parts an Assembler builds only once a faction
     /// has taught them, at a tier of its standing. With a faction of yours, which ones it has learnt.
     /// </summary>
-    private void DrawStoryTech(FactionTable t, byte mine)
+    private void DrawStoryTech(FactionTable t, byte mine, byte self)
     {
         var any = false;
         for (var f = 0; f < t.StoryTech.Length && !any; f++)
@@ -83,7 +83,7 @@ public sealed partial class Ui
             if (techs.Length == 0)
                 continue;
             ImGuiSafe.TextColored(Orange, t.StoryNames[f]);
-            var learnt = mine != 0 ? t.StoryLearnt[mine * FactionTable.MaxStory + f] : 0;
+            var learnt = (mine != 0 ? t.StoryLearnt[mine * FactionTable.MaxStory + f] : 0) | t.PlayerLearnt[self * FactionTable.MaxStory + f]; // (yours too, alone or in it)
             for (var k = 0; k < techs.Length; k++)
             {
                 var have = (learnt & (1 << k)) != 0;
@@ -162,7 +162,7 @@ public sealed partial class Ui
             }
             DrawFactionList(game, t, me);
             DrawFactionJobs(game);
-            DrawStoryTech(t, 0);
+            DrawStoryTech(t, 0, me.Id);
             return;
         }
         var myRank = t.RankOf(me.Id);
@@ -300,7 +300,7 @@ public sealed partial class Ui
                 ImGuiSafe.TextWrapped($"{t.StoryNames[f]}: {StandingWord(v)} ({v:+0;-0;0})");
             }
             DrawFactionJobs(game);
-            DrawStoryTech(t, mine);
+            DrawStoryTech(t, mine, me.Id);
         }
 
         // ---- Give

@@ -19,14 +19,14 @@ Format `call-of-slop-objectives/1`: `voice` (the tag a memo goes out under, "MIN
 | --- | --- |
 | `standing` | the faction's standing with them (or their group) has reached the tier's lowest value |
 | `depot` | their Orbital Depot run is done (docs/story/DEPOT.md); a world with no depot: met |
-| `ship` | they own a craft with thrusters and a driving seat that isn't the lander the depot lent them |
+| `ship` | they flew a craft of their own (or their faction's) with thrusters, 15 m up from where they sat, not the depot's lander |
 | `space` | they sat in a craft out past the sky's edge (or went to another planetoid) |
 | `landing` | they stood on another planetoid (away on one the host runs, or the whole game landed elsewhere) |
-| `shell` | they own a Shell Control Chair and a Robot Shell |
+| `shell` | they woke in a robot shell |
 
 The current goal is the first one not met, so a goal met early (a ship built before the depot) is simply skipped. The firsts
-(`ship`, `space`, `landing`, `shell`) are kept while the person is here; the technologies thread's milestones, saved with the
-world, are to take them over (`ObjectiveFirst`).
+(`ship`, `space`, `landing`, `shell`) are the person's milestones, saved with the world and celebrated when reached
+(`Source/Game/GameMilestones.cs`, read by `ObjectiveFirst`).
 
 ## When it shows
 
