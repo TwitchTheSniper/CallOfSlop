@@ -305,7 +305,8 @@ step's end gets them up first. Bots don't find doorways, so a body going in or o
 outside the doorway, then the one inside (and is put in over the pad's step if it stands there for 1.5 s). Nothing is
 said about it: it is only shown. A world from before the furniture has none in its barracks, and its staff keep the work
 spot. Moving the furniture in the blueprint (the part kit's `BuildingParts`) needs no change here; moving the barracks'
-doorway means moving `BarracksDoorOut`/`BarracksDoorIn` too.
+doorway means moving `BarracksDoorOut`/`BarracksDoorIn` too. A labour post (`"at": "labour"`) puts a person into a gang of the convict
+labourers, drawn working as one of them (LABOUR.md "Hands"; the break-out's convicts, BREAKOUT.md).
 
 ### Convict labourers
 
@@ -811,7 +812,9 @@ Trustee road on (quality `Grade`, 0 to 6): *The stores key*, *Head count*, *The 
 gate* inside the colony, then memos up the ladder (*The in-tray*, *Licensed*, *New cells*, *Inspector of Works*, *The
 inspection*, *The new wing*, *The last word*, *The floor below*: the lead "Council Chamber"). A rung that hands a tiered
 job needs the technology of that tier learnt (`?me Learnt 'Explosives Licence'`, or the player's group's), so the job
-is never refused for standing.
+is never refused for standing. `Storylets/Breakout.json` is the break-out (BREAKOUT.md): four convicts in the gangs, trust
+earned beat by beat (quality `Crew`), Mossop's question (Course Escapee, open to a trustee too) and grassing to the
+Sergeant (`Grassed`).
 
 ### Paths
 

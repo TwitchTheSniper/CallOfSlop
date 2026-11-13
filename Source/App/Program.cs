@@ -2355,6 +2355,8 @@ public static unsafe partial class Program
     /// <summary>Another player's box body with its gun and arms: through the scene graph (Source/Scene/Rigs/PlayerRig.cs), or the old immediate path.</summary>
     private static void DrawPlayer(Player p)
     {
+        if (_game != null && _game.LabourHandOf(p.Id) >= 0)
+            return; // (working in a gang of convicts: drawn as one of them, Render/LabourRender.cs)
         ThirdPersonArms.ShotFlash = _game?.FlashBarrels(p.Id, Glfw.Time) ?? 0; // their gun flashes at the barrels that just fired (Program.Muzzle.cs); no game in the legs smoke
         if (ScenePresentation.Enabled)
             ScenePresentation.DrawPlayer(Gfx, p, Glfw.Time);

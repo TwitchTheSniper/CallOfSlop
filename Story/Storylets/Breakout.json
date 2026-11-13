@@ -1,0 +1,147 @@
+{
+  // The break-out (docs/story/BREAKOUT.md; Karl, 2026-11-13): a road off the main quest that opens at any point in the
+  // penal colony. Four convicts working in the gangs (Casts/PenalColony.json, Posts) mean to leave: Dot Pruett on the
+  // boiler coal, Wren Haskett at sick parade, Ambrose Thale at the brazier, Hester Mossop at the heating main. Talking
+  // to them warms them (Hello, their topics in Topics/Breakout.json); each beat here waits until one of them likes the
+  // player enough, and tests them a little. Crew is how far in the player is. Grassing to Bellweather (his topic) ends it.
+  // DRAFT words; Karl gives notes, Claude edits.
+  "format": "call-of-slop-storylets/1",
+  "about": "the convicts' break-out: earn their trust, then leave with them",
+  "qualities": [
+    { "name": "Crew", "kind": "progress", "max": 6, "about": "how far the break-out's convicts trust a player (0 strangers, 5 in on the night)" },
+    { "name": "Parcel", "kind": "progress", "max": 1, "about": "carrying Dot's parcel to Wren" },
+    { "name": "Grassed", "kind": "menace", "max": 1, "about": "told the Sergeant about the break-out" }
+  ],
+  "storylets": [
+    {
+      "id": "sized-up", "title": "Sized up", "bucket": "B", "again": "20m", "priority": 4,
+      "about": "the convict on the boiler coal decides whether the new one talks",
+      "needs": "?me Inducted, ?me Crew < 1, not ?me Grassed",
+      "cast": "?d is Person, ?d == 'Dot Pruett', ?d Likes ?me >= 10",
+      "beats": [
+        { "by": "?d", "to": "?me", "say": [ "You. New one. You talk to the guards a lot." ] },
+        { "by": "?d", "to": "?me", "after": "4s", "say": [ "So. If Crumb asks who's been at the coal, who's been at the coal?" ] }
+      ],
+      "ends": [
+        { "id": "nobody", "choice": "Nobody's been at the coal.", "then": [ "?me Crew +1", "?d Likes ?me +8" ],
+          "say": [ "Good answer. Shovel's there if you want to look busy." ], "next": "the-parcel" },
+        { "id": "cheek", "choice": "Whoever I like.", "then": [ "?d Likes ?me -6" ],
+          "say": [ "Funny. Funny is how people end up in the coal." ] },
+        { "id": "later", "after": "5m", "say": [ "Think about it. Quietly." ] }
+      ]
+    },
+    {
+      "id": "the-parcel", "title": "The parcel", "bucket": "B", "again": "20m", "priority": 4,
+      "about": "Dot asks the player to carry something to Wren at sick parade without being searched",
+      "needs": "?me Crew >= 1, ?me Crew < 2, ?me Parcel < 1, not ?me Grassed",
+      "cast": "?d is Person, ?d == 'Dot Pruett', ?d Likes ?me >= 15",
+      "beats": [
+        { "by": "?d", "to": "?me", "say": [ "Wren's at sick parade. Take her this. Don't open it and don't drop it." ] },
+        { "by": "?d", "to": "?me", "after": "4s", "say": [ "And don't get searched. Bellweather searches the ones who look nervous. Don't look nervous." ] }
+      ],
+      "ends": [
+        { "id": "taken", "choice": "Give it here.", "then": [ "?me Parcel =1", "?me Contraband =1" ],
+          "say": [ "Inside the suit. No, the other side. Go on." ], "next": "the-delivery" },
+        { "id": "refused", "choice": "Carry it yourself.", "then": [ "?d Likes ?me -4" ],
+          "say": [ "If I could walk past the infirmary, I would. Never mind." ] },
+        { "id": "later", "after": "5m", "say": [ "Offer stands. Parcel doesn't. It's going soft." ] }
+      ]
+    },
+    {
+      "id": "the-delivery", "title": "The delivery", "bucket": "B", "priority": 5,
+      "about": "the parcel reaches Wren, or it doesn't",
+      "needs": "?me Parcel >= 1",
+      "cast": "?w is Person, ?w == 'Wren Haskett'",
+      "ends": [
+        { "id": "delivered", "when": { "verb": "Chat", "actor": "?me", "target": "?w" }, "if": "?me Contraband",
+          "then": [ "?me Parcel =0", "?me Contraband =0", "?me Crew +1", "?w Likes ?me +12", "'Dot Pruett' Likes ?me +6" ],
+          "by": "?w", "say": [ "From Dot? Oh, good. It's a map. Don't look at it. I'm not looking at it." ], "next": "wrens-rota" },
+        { "id": "delivered-first", "when": { "verb": "Greet", "actor": "?me", "target": "?w" }, "if": "?me Contraband",
+          "then": [ "?me Parcel =0", "?me Contraband =0", "?me Crew +1", "?w Likes ?me +12", "'Dot Pruett' Likes ?me +6" ],
+          "by": "?w", "say": [ "You must be Dot's. Hello. Give it here, under the sling. Lovely." ], "next": "wrens-rota" },
+        { "id": "lost", "when": { "verb": "Chat", "actor": "?me", "target": "?w" },
+          "then": [ "?me Parcel =0", "'Dot Pruett' Likes ?me -10" ],
+          "by": "?w", "say": [ "Dot said there'd be a parcel. There isn't a parcel, is there. Oh dear." ] },
+        { "id": "dropped", "after": "40m", "then": [ "?me Parcel =0", "?me Contraband =0", "'Dot Pruett' Likes ?me -6" ],
+          "say": [ "[WORD ON THE YARD] Dot Pruett is asking where her parcel went." ] }
+      ]
+    },
+    {
+      "id": "wrens-rota", "title": "The rota", "bucket": "B", "again": "20m", "priority": 4,
+      "about": "Wren, who cleaned the spaceport, tells the player when its guard changes",
+      "needs": "?me Crew >= 2, ?me Crew < 3, not ?me Grassed",
+      "cast": "?w is Person, ?w == 'Wren Haskett', ?w Likes ?me >= 20",
+      "beats": [
+        { "by": "?w", "to": "?me", "say": [ "I cleaned the Ministry Spaceport for eleven years. Then I cleaned the wrong office." ] },
+        { "by": "?w", "to": "?me", "after": "4s", "say": [ "They change the guard on the hour. Except four in the morning. Nobody likes four in the morning." ] }
+      ],
+      "ends": [
+        { "id": "told", "after": "4s", "learn": "Spaceport Rota", "from": "?w", "then": [ "?me Crew +1", "?w Likes ?me +5" ],
+          "say": [ "There. Now we're both in trouble. Go and warm up at the brazier, Ambrose wants a look at you." ],
+          "next": "ambroses-sky" }
+      ]
+    },
+    {
+      "id": "ambroses-sky", "title": "A seat and a stick", "bucket": "B", "again": "20m", "priority": 4,
+      "about": "the old shipwright at the brazier says he can fly them off the planet",
+      "needs": "?me Crew >= 3, ?me Crew < 4, not ?me Grassed",
+      "cast": "?a is Person, ?a == 'Ambrose Thale', ?a Likes ?me >= 20",
+      "beats": [
+        { "by": "?a", "to": "?me", "say": [ "Wren says you can carry a parcel. Can you carry a secret? They're heavier." ] },
+        { "by": "?a", "to": "?me", "after": "4s", "say": [ "I built hulls, once. Give me a seat and a stick and I'll fly a bathtub off this rock." ] },
+        { "by": "?a", "to": "?me", "after": "5s", "say": [ "Hester decides who comes. She'll ask you once. Have an answer." ] }
+      ],
+      "ends": [
+        { "id": "pilot", "after": "4s", "learn": "A Pilot", "from": "?a", "then": [ "?me Crew +1", "?a Likes ?me +5" ], "next": "mossops-question" }
+      ]
+    },
+    {
+      "id": "mossops-question", "title": "Mossop's question", "bucket": "B", "again": "45m", "priority": 6,
+      "about": "the ringleader asks once whether the player is coming; a trustee may say yes too",
+      "needs": "?me Crew >= 4, ?me Crew < 5, not ?me Grassed",
+      "cast": "?h is Person, ?h == 'Hester Mossop', not ?h Grudge ?me >= 20",
+      "beats": [
+        { "by": "?h", "to": "?me", "say": [ "Dot vouches for you. Wren vouches for you. Ambrose would vouch for a lamp post." ] },
+        { "by": "?h", "to": "?me", "after": "5s", "say": [ "I don't vouch. I ask once. When we go, are you in the transport, or waving it off?" ] }
+      ],
+      "ends": [
+        { "id": "in", "choice": "I'm in.", "if": "not ?me Course 'Trustee'", "then": [ "?me Course 'Escapee'", "?me Crew +1", "?h Likes ?me +15" ],
+          "say": [ "Then keep your head down and your boots dry. I'll send word." ], "next": "the-night" },
+        { "id": "trustee-in", "choice": "Badge and all, I'm in.", "if": "?me Course 'Trustee'", "then": [ "?me Course 'Escapee'", "?me Crew +1", "?h Likes ?me +15" ],
+          "say": [ "A trustee. Nobody searches a trustee. You'll do." ], "next": "the-night" },
+        { "id": "out", "choice": "Count me out.", "then": [ "?h Likes ?me -5" ],
+          "say": [ "Then you never met me, and I've already forgotten you." ] },
+        { "id": "later", "after": "8m", "say": [ "Silence is an answer. Not a good one." ] }
+      ]
+    },
+    {
+      "id": "the-night", "title": "The night", "bucket": "A", "priority": 9, "final": true,
+      "about": "word comes: tonight, at four, the crew takes the Ministry transport to the spaceport (the escape itself is the next slice)",
+      "needs": "?me Course 'Escapee', ?me Crew >= 5",
+      "cast": "?d is Person, ?d == 'Dot Pruett'",
+      "beats": [
+        { "by": "?d", "to": "?me", "say": [ "Four in the morning. The ration hauler sits at the motor pool with its keys in." ] },
+        { "by": "?d", "to": "?me", "after": "4s", "say": [ "I drive. You ride. Nobody waves." ] }
+      ],
+      "ends": [
+        { "id": "word", "after": "4s", "learn": "The Night", "from": "?d",
+          "world": [ "The crew meets at the motor pool at four in the morning, story clock.",
+                     "Dot drives the Ministry transport out of the gate with the crew aboard; the alarm goes behind them.",
+                     "The ride ends at the Ministry Spaceport, where the guards are waiting (the next beat)." ] }
+      ]
+    },
+    {
+      "id": "the-coal-heap", "title": "Searched", "bucket": "B", "priority": 7, "final": true,
+      "about": "the player told Bellweather; the crew knows who did",
+      "needs": "?me Grassed",
+      "cast": "?d is Person, ?d == 'Dot Pruett'",
+      "beats": [
+        { "by": "?d", "to": "?me", "say": [ "Bellweather turned out the heating main this morning. Found nothing. Hester moved it last night." ] },
+        { "by": "?d", "to": "?me", "after": "4s", "say": [ "Funny, that. Keep shovelling, {me.first}. Somewhere else." ] }
+      ],
+      "ends": [
+        { "id": "frozen-out", "after": "3s", "then": [ "?me Crew =0", "?d Grudge ?me +30" ] }
+      ]
+    }
+  ]
+}
