@@ -671,6 +671,7 @@ public sealed partial class ConstructPartDef
     public bool IsFanFormer; // a Fan Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a whole rotor
     public bool IsAirframeFormer; // an Airframe Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a wing or a control surface, to the size it is set to
     public bool IsRouter; // "router": true: a Conveyor Router, a junction that sends each piece the way to where it is wanted (ConstructLogistics.cs)
+    public LifterDef? Lifter; // "lifter": a Loader Arm or a Bridge Crane, a scripted machine that carries pieces (ConstructLifters.cs)
     public bool HasRouterBoxes; // its "way" lamps or "fence" (drawn by the Router's last choice)
     public bool IsConveyorJunction; // conveyor ports in and out (a Conveyor Splitter or Join): pieces pass through it from one conveyor to the next (ConstructConveyor.cs)
     public bool IsPieceRack; // a Piece Rack (ConstructConveyor.cs): holds whole pieces by kind, up to RackCount, each within RackSection x RackLength
@@ -1302,7 +1303,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door",
+        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1368,6 +1369,7 @@ public static partial class ConstructParts
         Range(d.AttachSeconds, 0.2f, MaxAttachSeconds, file, "attachSeconds");
         d.Legacy = Opt(root, "legacy") is { ValueKind: JsonValueKind.True };
         d.IsRouter = Opt(root, "router") is { ValueKind: JsonValueKind.True };
+        d.Lifter = Opt(root, "lifter") is { } lifter ? LifterDef.Parse(lifter, file) : null; // (a Loader Arm or a Bridge Crane: ConstructLifters.cs)
         d.Stage = Opt(root, "stage") is { ValueKind: JsonValueKind.True };
         d.Walk = Opt(root, "walk") is { } walk ? EnumOf<WalkKind>(Str(walk, file, "walk"), file, "walk") : WalkKind.None;
         d.Boarding = Opt(root, "boarding") is { ValueKind: JsonValueKind.True }; // (a grab handle, a boarding ladder, a step plate: Use grabs on here first; ConstructRide.cs)
