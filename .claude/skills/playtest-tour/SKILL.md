@@ -5,7 +5,7 @@ description: Run the play-test tour of the Glacier story world on the Windows PC
 
 # The play-test tour
 
-`tools\playtest\tour.ps1` starts the real game once, skips the opening, flies the camera to twenty spots round the Glacier colony (the colony, the quarry, the ice, the five outposts, the spaceport), times `-Frames` frames at each with VSync and the caps off, and takes a picture. It also prints the tutorial's pacing estimate. About a minute a pass. It runs on a throwaway copy of the saves.
+`tools\playtest\tour.ps1` starts the real game once, skips the opening, flies the camera to twenty spots round the Glacier colony (the colony, the quarry, the ice, the five outposts, the spaceport), times `-Frames` frames at each with VSync and the caps off, and takes a picture. It also prints the tutorial's pacing estimate. About a minute a pass. It runs on a throwaway copy of the saves. It skips the BRUTAL logo, as every `--window-shot` and `--bench` run does; any other launch you make for testing (`host`, a plain window) adds `--no-splash`.
 
 ## Where to run it
 
