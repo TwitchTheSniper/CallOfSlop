@@ -1,0 +1,128 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Call Centre Relay",
+  "description": "The Call Centre's relay on the ice: a purple portacabin, a phone mast, a loudhailer and a prize wheel.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "f0",
+      "by": "k0"
+    },
+    {
+      "part": "Corrugated Door Corner",
+      "on": 0,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#7a2f6e",
+      "finish": "gloss paint"
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 0,
+      "socket": "t8_0",
+      "by": "b0_7",
+      "spin": 2,
+      "paint": "#7a2f6e",
+      "finish": "gloss paint"
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 0,
+      "socket": "t8_15",
+      "by": "b7_0",
+      "spin": 3,
+      "paint": "#7a2f6e",
+      "finish": "gloss paint"
+    },
+    {
+      "part": "Corrugated Window Corner",
+      "on": 0,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1,
+      "paint": "#7a2f6e",
+      "finish": "gloss paint"
+    },
+    {
+      "part": "Corrugated Roof Slope 4x4 m",
+      "on": 3,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#7a2f6e",
+      "finish": "gloss paint"
+    },
+    {
+      "part": "Door Hinge",
+      "on": 3,
+      "socket": "hinge",
+      "by": "base"
+    },
+    {
+      "part": "Wood Flush Door 1.5x2.25 m",
+      "on": 8,
+      "socket": "leaf",
+      "by": "hang",
+      "paint": "#e0b030",
+      "finish": "painted wood"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 3,
+      "socket": "fa0_10",
+      "by": "back",
+      "config": {
+        "colour": "#ffd6ef"
+      }
+    },
+    {
+      "part": "Text Sign",
+      "on": 4,
+      "socket": "fb7_5",
+      "by": "back",
+      "text": [
+        "RELAY 0800. YOUR CALL IS IMPORTANT TO US."
+      ],
+      "paint": "#e0b030"
+    },
+    {
+      "part": "Water Cooler",
+      "on": 0,
+      "socket": "t11_11",
+      "by": "foot00"
+    },
+    {
+      "part": "Phone Mast",
+      "on": 1,
+      "socket": "t4_4",
+      "by": "base"
+    },
+    {
+      "part": "Loudhailer",
+      "on": 1,
+      "socket": "t11_4",
+      "by": "base"
+    },
+    {
+      "part": "Prize Wheel",
+      "on": 2,
+      "socket": "t4_4",
+      "by": "base"
+    },
+    {
+      "part": "Gift Card Sign",
+      "on": 2,
+      "socket": "t11_4",
+      "by": "base"
+    }
+  ]
+}

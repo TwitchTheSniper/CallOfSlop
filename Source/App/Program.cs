@@ -128,6 +128,8 @@ public static unsafe partial class Program
             return Space.SpaceCli.Ships(args); // headless: demo ships flying in a star system's gravity (Source/Space/SpaceShips.cs)
         if (args.Any(a => a.Equals("--traffic-check", StringComparison.OrdinalIgnoreCase)))
             return TrafficCheck.Run(args); // headless: STAND-IN: the story world's ambient traffic, a host and a client (Source/StandIns/GameTraffic.cs)
+        if (args.Any(a => a.Equals("--outpost-check", StringComparison.OrdinalIgnoreCase)))
+            return OutpostCheck.Run(args); // headless: the factions' outposts on the story's world, visited one by one, and what they cost (GameOutposts.cs)
         if (args.Any(a => a.Equals("--travel-check", StringComparison.OrdinalIgnoreCase)))
             return GameTravelCheck.Run(args); // headless: free travel step 2, a ship handed to a client's own game and back (GameTravel.cs)
         if (args.Any(a => a.Equals("--two-planetoids", StringComparison.OrdinalIgnoreCase)))

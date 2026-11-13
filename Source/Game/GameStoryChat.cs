@@ -87,6 +87,8 @@ public sealed partial class Game
     /// <summary>Server: a player asks a person something (<see cref="CActKind.Talk"/>). Returns why not, or null.</summary>
     private string? StoryTalkAct(Player p, byte bodyPlayer, TalkAsk ask, ushort topic = 0)
     {
+        if (OutpostTalk(p, bodyPlayer, ask, out var outpostWhy))
+            return outpostWhy; // (an outpost's person: GameOutposts.cs)
         if (Story is not { } s || !Players.TryGetValue(bodyPlayer, out var body) || body.Team != SbPeopleTeam || !body.Alive
             || StoryBodyIndex(bodyPlayer) is not (var i and >= 0) || s.Agents.Of(_bodies[i].Entity) is not { Dead: false } a)
             return ask == TalkAsk.Bye ? null : "nobody to talk to";
