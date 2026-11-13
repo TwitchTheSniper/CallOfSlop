@@ -15,6 +15,7 @@ then look at it with `--check-planetoid` (docs/planets/PLANETS.md "Making a worl
 | Frostreach | Glacier | 8 km, 14 | snowfields, blue ice ridges, four nunataks, the Rent (a 9 km crevasse), the Mirror (a frozen lake), the Shelves | the IT Department: the Server Farm | data centre at the bottom of the Rent |
 | Glenmore | Caledon | 6 km, 11 | bens with snow on top, long glens, heather slopes, bog | Clan MacSlop: the Glen | data centre in a corrie under Ben Slop |
 | Hearth | Mille | 3 km, 8 | hollow: a golden crust stepped in layers, 220 m thick, round a glowing cavity | none for now (the faith was removed, 2026-11-11) | data centre inside the cavity |
+| (none yet) | Slopolis | 3.5 km, 10 | one city over the north (docs/planets/CITY.md), hills beyond | none: the free port | towers, streets, the elevated loop |
 
 ## Places kept flat
 
