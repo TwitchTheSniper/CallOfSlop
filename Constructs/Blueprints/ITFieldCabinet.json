@@ -108,6 +108,37 @@
       "by": "base"
     },
     {
+      "part": "Adapter Medium to Small",
+      "on": 1,
+      "socket": "t8_8",
+      "by": "front2.2",
+      "paint": "#5a5f63",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Medium Truss 8 m",
+      "on": 14,
+      "socket": "back",
+      "by": "-z",
+      "paint": "#5a5f63",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Medium Truss 4 m",
+      "on": 15,
+      "socket": "+z",
+      "by": "-z",
+      "paint": "#5a5f63",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Floodlight Medium",
+      "on": 16,
+      "socket": "+z",
+      "by": "-y",
+      "paint": "#cfe8ff"
+    },
+    {
       "part": "Satellite Dish",
       "on": 1,
       "socket": "t11_11",

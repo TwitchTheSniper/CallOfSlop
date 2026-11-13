@@ -218,6 +218,14 @@ the other three factions' styles start here, at outpost size: one room, and the 
 | **IT Field Cabinet** | Keeping a rack dry and running, and being found by the engineer sent to reboot it: a blind steel box with the rack in the middle, the mast and the dish on the pad beside it. | A box and a mast |
 | **Call Centre Relay** | Being heard: the mast is the tall thing, the loudhailer faces the colony, the cabin watches the road. | A cabin and a mast, loud |
 
+What stands over each outpost is what reads at 50 m in the snow, and the dressing parts (a phone mast, a dish, a prize
+wheel) are a vehicle's size, under a metre: so each outpost has a structure of its own on its pad. `LatticeMast` stands
+lengths of medium truss on a pad (through an `Adapter Medium to Small`: a pad's sockets are small) with a floodlight on
+top; `TallPole` is a flagpole of several masts. Checkpoint Four has a floodlight mast over the barrier and a two-length
+flagpole; Sentry Post Nine a searchlight tower over the forecourt; the Bothy a stone stack against its gable that
+smokes; the IT cabinet a 12 m mast with a cold light; the Relay a 16 m white mast with the pink light, the tallest thing
+on the ice. The Ministry Quarry Works (a hand-made blueprint) has the same floodlit mast over its face.
+
 ### Not done
 
 - The Remote Works and the Sealed Data Centre are still plain concrete rooms (`BuildingParts.cs`). The game finds the
