@@ -5,6 +5,19 @@ machine makes with no part file (extrusions, wheels, fan and wing pieces, formed
 ordnance designs, racks, parts of another material: `ConstructPartDef.RuntimeMade`). Its id (from `Extrusion.RuntimeBase`, 0x4000) is
 this machine's own and is freed by `RuntimeParts` when nothing holds it, so on the wire and in a save it must travel by its key.
 
+## The finding that decides the rest
+
+**Every run-time part a machine makes is physics-only** (decision 21): an extrusion, wheel, fan, blade or wing piece is
+`PhysicsWhy = "extruded"` (`Extrusion.Def`), a pressed part "pressed to size" (`Pressed.cs`), an ordnance design "built at a bench", a
+part of another material "made of another material". So the hands, the backpack, a shelf's slots, a volume's or bin's kinds and the
+counted inventory all refuse them by rule (`Give` drops one as a body, `SetIn` says "physics-only (extruded): it can't go in the Parts
+Shelf", `PickUp` refuses it), and they live as bodies: on the ground, on a Piece Rack's slabs, a conveyor, a lifter, a machine's die or
+bay, or in a cargo volume as a body. Those already go by key. The only run-time parts that can be items are those parsed through the
+part rules (`ConstructParts.Parse`): a lofted part, formed or cut panel or rack that is light, not welded and not bulky.
+
+So the holders are sound for what they hold today; what is missing is the choice to let small made parts be items (question 1), which
+the hand-held guns from pressed parts need, and the gaps below, which bite the moment that changes (and today for a light rack or panel).
+
 ## What already carries the key
 
 - **The wire, stores.** `ConstructStorage.WriteDef`/`ReadDef` (protocol 244) write a catalogue id as a U16, a run-time part as
@@ -20,21 +33,22 @@ this machine's own and is freed by `RuntimeParts` when nothing holds it, so on t
 ## The table
 
 In = it can be put in; Show = its real name and picture; Out = taken out as the same part; Save = saved and loaded; Client = a joined
-client sees the same part. "ok" means by key; a gap names what is wrong.
+client sees the same part. "ok" means by key; a gap names what is wrong. "Refused" (physics-only) applies to every machine-made part;
+the rest of the row is for a run-time part that is an item (a light rack or panel, or every made part once question 1 says so).
 
 | Holder | In | Show | Out | Save | Client |
 | --- | --- | --- | --- | --- | --- |
-| Hands (`SandboxHand.Held`) | ok (`Give`, take from a slot, rack, F pick-up) | name is the raw key text on the tool card | ok | ok (names) | **raw id in the hand state** (`SandboxModule.WriteHand`): a client shows another part, or none |
+| Hands (`SandboxHand.Held`) | refused (physics-only); an item: ok | name is the raw key text on the tool card | ok | ok (names) | **raw id in the hand state** (`SandboxModule.WriteHand`): a client shows another part, or none. Fixed in phase 1 |
 | Inventory counts (`SandboxInventory.Parts`) | **refused**: an array by catalogue id (`Add` returns false) | - | - | catalogue only (`ReadPlayer` drops ids past `MaxKinds`) | catalogue only |
-| Backpack (a `CStore`) | ok (`PackSlotFor`) | **no picture**: the icon atlas has catalogue slots only (`SandboxTiles.SlotOf`), a swatch is drawn | ok | ok | ok |
-| Shelf, storage part slots | ok (`SetIn`) | **look line shows the raw key text** (`Program.Sandbox.cs` store look); no picture | ok | ok | ok |
-| Storage volume, bin kinds | ok | same as a shelf | ok | ok | ok |
+| Backpack (a `CStore`) | refused (physics-only); an item: ok (`PackSlotFor`) | **no picture**: the icon atlas has catalogue slots only (`SandboxTiles.SlotOf`), a swatch is drawn | ok | ok | ok |
+| Shelf, storage part slots | refused (physics-only); an item: ok (`SetIn`) | **look line shows the raw key text** (`Program.Sandbox.cs` store look); no picture | ok | ok | ok |
+| Storage volume, bin kinds | refused (physics-only); an item: ok | same as a shelf | ok | ok | ok |
 | Machine trays and inputs (Assembler, Crafting Terminal, Gun Workbench) | ok (stores) | raw key text | ok | ok | ok |
 | Press, formers, Piece Rack | ok (body parts, rack slabs) | `Extrusion.Label` (logistics code) | ok | ok | ok |
-| Beacon network, Smart Terminal | in: ok (`ToNetwork` puts any non-physics part in a store) | **the tally indexes `BeaconView.Counts[id]` (4096 long) with a run-time id: an IndexOutOfRange on the server tick** | **not listed, so not taken out** | stores: ok | counts by catalogue id only |
-| Taking from the network with a run-time part in the hands | - | - | **lost**: `FromNetwork` puts the held part in the counted inventory, ignores the refusal and empties the hands | - | - |
+| Beacon network, Smart Terminal | in: an item only (`ToNetwork` puts any non-physics part in a store) | **the tally indexed `BeaconView.Counts[id]` (4096 long) with a run-time id: an IndexOutOfRange on the server tick** (guarded in phase 1) | **not listed, so not taken out** | stores: ok | counts by catalogue id only |
+| Taking from the network with a run-time part in the hands | - | - | **lost**: `FromNetwork` put the held part in the counted inventory, ignored the refusal and emptied the hands (fixed in phase 1: refused, it is given aside) | - | - |
 | Chutes (`ConstructFlexChute`, links) | carry nothing themselves: a chute network moves parts between stores (above) | - | - | - | - |
-| Loose piece (F, `PickUp`) | ok (`Give`) | look line: `Extrusion.Label` for an extrusion, raw key for the rest | ok | a body: ok | a body: ok |
+| Loose piece (F, `PickUp`) | refused (physics-only: moved with the physics gun); an item: ok (`Give`) | look line: `Extrusion.Label` for an extrusion, raw key for the rest | ok | a body: ok | a body: ok |
 | Lifters' hands (`ConstructLifters.Write`) | ok | - | ok | ok (names) | **raw `U16(l.Def)`**: the lifters session's file, reported to it |
 
 Smaller notes: `GiveResult.Inventory` (the world full) loses a run-time part, since the counts refuse it; the Tab inventory's
@@ -48,24 +62,35 @@ categories (`PartCategories.cs`) know catalogue parts only; HUD notices (`Give`,
   with a per-hand cache on the reader so a hand that holds the same part allocates nothing. The beacon tally skips run-time parts instead
   of throwing, and taking from the network with full hands never loses the held part. The store look line and the tool card show
   `Shown`.
-- **Phase 2: the counted inventory takes run-time parts.** `SandboxInventory` gets a short list of run-time kinds beside its array (key
+  Done (2026-11-13): `--window-shot ... --do "inv hold NAME; inv show; inv reload"` (`Program.WindowShotInv.cs`) put an extrusion
+  and a pressed part into the hands (forced past the physics-only rule, as a test state), and a host and a joined client over RakNet
+  printed the same part, by name, for both players.
+- **Phase 2: small made parts become items (question 1).** A made part under the hand-carry limit and not structural loses
+  `PhysicsOnly`, by the same rule as a part file (`ConstructParts.Parse`'s: welded, heavy or bulky), so it can be held, backpacked,
+  shelved and picked up with F; a blank on a die or a growing piece stays physics-only. Each holder's stack rule (`StackOf`) keys by
+  part id, which is one per key on a machine, so stacks of the same piece work as they are.
+- **Phase 3: the counted inventory takes run-time parts.** `SandboxInventory` gets a short list of run-time kinds beside its array (key
   def id and count, at most 64 kinds), saved by name in the player record (a new section so older builds skip it), sent by key in
   `CBodyKind.Inventory`, marked by the `RuntimeParts` sweep. `Add`/`Take`/`Count` work for both, so salvage, `ReturnHeld` and
-  `GiveResult.Inventory` keep run-time parts. The Tab inventory lists them under one category (question 2).
-- **Phase 3: the network and terminals.** `BeaconView` counts run-time kinds in a list beside its array (sent by key); the Smart
+  `GiveResult.Inventory` keep run-time parts. The Tab inventory lists them under one category (question 3).
+- **Phase 4: the network and terminals.** `BeaconView` counts run-time kinds in a list beside its array (sent by key); the Smart
   Terminal lists and hands them out; Inventory Beacon pulls take them.
-- **Phase 4: pictures.** Run-time icons in the atlas: a small pool of tiles past the blueprint and tool slots, drawn on demand from the
-  part's boxes and given back when the part is swept (question 3). Then the hand-held guns from pressed parts (sized-gun-engine-parts.md,
+- **Phase 5: pictures.** Run-time icons in the atlas: a small pool of tiles past the blueprint and tool slots, drawn on demand from the
+  part's boxes and given back when the part is swept (question 4). Then the hand-held guns from pressed parts (sized-gun-engine-parts.md,
   answer 7) can start.
 
 ## Questions for the user
 
-1. **Should run-time parts go into the counted inventory (Tab), or only into the hands, backpack and stores?** a) Yes, up to 64
-   run-time kinds a player (recommended: salvage and taking parts back then work the same for every part, and the hand-held guns need
-   it); b) no, they stay physical (a backpack slot or the ground).
-2. **Where do they show in the Tab inventory?** a) one "Made parts" category, sorted by kind then size (recommended); b) each in the
+1. **Every machine-made part is physics-only today. Should small ones be items?** a) Yes: a made part light enough to carry and not
+   structural can be held, backpacked, shelved and picked up with F, by the part files' own rule (recommended: the hand-held guns
+   from pressed parts need it, and a pressed bracket is a hand part); b) only pressed parts; c) no, they stay bodies (the physics gun,
+   racks and conveyors).
+2. **Should run-time parts go into the counted inventory (Tab), or only into the hands, backpack and stores?** a) Yes, up to 64
+   run-time kinds a player (recommended: salvage and taking parts back then work the same for every part); b) no, they stay physical
+   (a backpack slot or the ground).
+3. **Where do they show in the Tab inventory?** a) one "Made parts" category, sorted by kind then size (recommended); b) each in the
    category of what it is (beams with beams, wheels with wheels), by rules in `Categories.json`.
-3. **Pictures for run-time parts?** a) real icons drawn on demand, a pool of 512 tiles (recommended); b) a coloured swatch with the
+4. **Pictures for run-time parts?** a) real icons drawn on demand, a pool of 512 tiles (recommended); b) a coloured swatch with the
    shape's letter, no rendering.
-4. **A Smart Terminal and its network:** a) list run-time parts with the rest, one row per key (recommended); b) one row per shape,
+5. **A Smart Terminal and its network:** a) list run-time parts with the rest, one row per key (recommended); b) one row per shape,
    any size, the nearest size handed out.
