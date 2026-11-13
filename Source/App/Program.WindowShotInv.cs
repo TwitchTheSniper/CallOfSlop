@@ -255,6 +255,20 @@ public static unsafe partial class Program
                 WsFail("inv force: no empty slot");
                 return true;
             }
+            case "pull":
+            {
+                // The first made row of this peer's terminal view asked for, to the hands, as the use key at the terminal asks (a client: by key).
+                var tv = g.SandboxTerminal(me.Id);
+                foreach (var row in tv.Rows)
+                    if (!row.Material && Extrusion.IsRuntimeId(row.Id) && WsFind(g, "Smart Terminal") is ({ } tc, var tp))
+                    {
+                        g.SandboxTerminalPull(tc.Id, tp, row, hands: true);
+                        WsSay($"inv pull: asked for {row.Text} at construct {tc.Id} part {tp}");
+                        return true;
+                    }
+                WsFail("inv pull: no made row at a terminal");
+                return true;
+            }
             case "net":
             {
                 // What this peer's Smart Terminal view lists (the rows, made parts marked) and its beacon view's made list.

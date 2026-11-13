@@ -90,6 +90,8 @@ The phases below were rewritten on 2026-11-13 for the user's answers (at the end
 - **Phase 4: pictures** (answer 4). Run-time icons in the atlas: a pool of 512 tiles past the blueprint and tool slots, each drawn once
   from the part's boxes when first shown (cached: no per-frame work) and given back when the part is swept or the pool is full (the
   longest unseen first). The Tab inventory, the terminal's rows and the store look line use them.
+  Phases 3 and 4 done together (2026-11-13, protocol 303): `inventories-phase3-notes.md` beside this file (a pool of 512 tiles drawn on
+  demand; a network's made kinds sent by key; Piece Racks on a network; the terminal's made rows, a pull by key setting a piece down).
 - **Dropped: made parts as hand items** (answer 1). The hand-held guns from pressed parts (sized-gun-engine-parts.md, answer 7) need
   another way: a gun finished at a bench as one item, or the user asked again.
 

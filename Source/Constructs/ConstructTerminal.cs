@@ -533,7 +533,7 @@ public sealed partial class ConstructEdits
         var mat = (byte)(material && id < SandboxInventory.MaxMaterials ? id : 0);
         if (material ? mat == 0 || mat > RecyclingTable.Current.Materials.Length : item == null)
             return "no such item";
-        var name = item?.Name ?? RecyclingTable.Current.NameOf(mat);
+        var name = item == null ? RecyclingTable.Current.NameOf(mat) : item.RuntimeMade ? PartRef.Shown(item) : item.Name;
         if (item is { PhysicsOnly: true } && !(item.RuntimeMade && hands)) // (a made piece off a Piece Rack is set down in front of you as a body: phase 3 of inventory-run-time-parts.md)
             return item.RuntimeMade ? $"the {PartRef.Shown(item)} is a made piece: pull it to your hands, it is set down in front of you" : PhysicsOnlyRefusal(item, "come through a chute");
         if (!hands && item != null && !ConstructTerminals.TrayFits(d, item))
@@ -645,7 +645,7 @@ public sealed partial class ConstructEdits
             near = spot;
         var item = j.Material ? null : ConstructParts.Get(j.Id);
         var mat = (byte)(j.Material ? j.Id : 0);
-        var name = item?.Name ?? RecyclingTable.Current.NameOf(mat);
+        var name = item == null ? RecyclingTable.Current.NameOf(mat) : item.RuntimeMade ? PartRef.Shown(item) : item.Name;
         // The store it was seen in may have lost it since (a chute, another player): the next nearest serves.
         var store = j.Store;
         if (!world.Beacons.StoreHas(world, store, item, mat))
