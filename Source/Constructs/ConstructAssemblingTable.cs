@@ -160,7 +160,7 @@ public sealed class AssemblingTable
                 t.ByMachine[m] = recipes.Where(r => r.Machine == m).ToArray();
                 for (var k = 0; k < t.ByMachine[m].Length; k++)
                     t.ByMachine[m][k].Choice = k + 1;
-                t.ChoicesBy[m] = [NoRecipe, .. t.ByMachine[m].Select(r => r.Pressed ? $"{r.Name} (pressed)" : r.Name)];
+                t.ChoicesBy[m] = [NoRecipe, .. t.ByMachine[m].Select(r => r.Name)]; // (a pressed row keeps its plain name: a blueprint or mod naming it still resolves, and the machine says it is pressed now)
             }
             t.Choices = t.ChoicesBy[0];
             foreach (var r in t.Recipes)
