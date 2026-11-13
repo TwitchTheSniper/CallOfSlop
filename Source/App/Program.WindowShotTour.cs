@@ -19,7 +19,7 @@ public static partial class Program
     private static long _wsPerfLast;
     private static readonly List<double> _wsPerfMs = [];
 
-    private static bool WsTourKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "places" or "view" or "perf" or "skip" or "open";
+    private static bool WsTourKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "places" or "view" or "perf" or "skip" or "open" or "what";
 
     private static void WsTourSettings(string[] args)
     {
@@ -92,6 +92,21 @@ public static partial class Program
                         return true;
                 }
                 _wsWait = 20;
+                return true;
+            }
+            case "what": // "what [RIGHT,UP]": what the eye's ray (turned that many degrees) hits: the body and the part, how far
+            {
+                var o = arg.Split(',', StringSplitOptions.TrimEntries);
+                float dr = 0, du = 0;
+                if (o.Length == 2)
+                {
+                    float.TryParse(o[0], System.Globalization.CultureInfo.InvariantCulture, out dr);
+                    float.TryParse(o[1], System.Globalization.CultureInfo.InvariantCulture, out du);
+                }
+                var dir = g.LookDir(g.LookYaw + dr * MathF.PI / 180, g.LookPitch + du * MathF.PI / 180);
+                WsSay(g.Constructs.Raycast(me.Eye, dir, 200f, out var hit, look: true)
+                    ? $"[what] {arg}: {g.ColonyBuildingsList().FirstOrDefault(b => b.Body == hit.Body.Id).Name ?? $"construct {hit.Body.Id}"}, part {hit.Part} {hit.Body.DefOf(hit.Part).Name}, {hit.Distance:0.0} m"
+                    : $"[what] {arg}: no construct within 200 m");
                 return true;
             }
             case "places":
