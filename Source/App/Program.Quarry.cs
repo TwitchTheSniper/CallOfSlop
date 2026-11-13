@@ -41,8 +41,8 @@ public static partial class Program
         if (!_game.QuarryRiding)
             return false;
         var tick = _game.MoverRenderTick;
-        var t = (tick - _game.QuarryRideFrom) / World.TickRate;
-        var id = t < Game.QuarryRideAway + Game.QuarryRideBlack * 0.5 ? _game.QuarryRideBusA : _game.QuarryRideBusB;
+        var t = (tick - _game.RideFrom) / World.TickRate;
+        var id = t < Game.QuarryRideAway + Game.QuarryRideBlack * 0.5 ? _game.RideBusA : _game.RideBusB;
         for (var k = 0; k < _game.StandInCount; k++)
         {
             ref var c = ref _game.StandIns[k];
@@ -61,7 +61,7 @@ public static partial class Program
             var u = new Vector3(frame.M21, frame.M22, frame.M23);
             var ahead = new Vector3(frame.M31, frame.M32, frame.M33);
             var at = frame.Translation;
-            if (id == _game.QuarryRideBusA)
+            if (id == _game.RideBusA)
                 eye = at - ahead * 13f + u * 5f + right * 2f; // (behind it as it pulls away)
             else
                 eye = c.Land + StandInPath.Up(c.Land) * 3.5f + c.Way * 9f + Vector3.Cross(StandInPath.Up(c.Land), c.Way) * 7f; // (at the stop, watching it come in)

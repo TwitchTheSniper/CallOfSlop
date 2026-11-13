@@ -393,6 +393,8 @@ public sealed partial class Game
     {
         if (b.Leaving)
             return StoryRoadEnd(s, ref b, a.Doing.Place);
+        if (BreakoutGoalOf(a.Entity) is { } breakout)
+            return breakout; // (the convicts' break-out: to the hauler, or at the spaceport: GameBreakout.cs)
         var with = s.Plays.PartnerOf(a.Entity); // (in a play: beside whoever they are with in it)
         if (with < 0 && a.Busy && a.Doing.Target >= 0 && !s.Rules.People.Actions[a.Doing.Action].Road)
             with = a.Doing.Target;

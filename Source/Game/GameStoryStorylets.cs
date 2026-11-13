@@ -128,6 +128,9 @@ public sealed partial class Game
             case "depot":
                 DepotOffer(p, now);
                 break;
+            case "breakout":
+                BreakoutStart(p); // (the convicts' night: GameBreakout.cs)
+                break;
         }
         Log($"[storylet] hook {hook} for {p.Name}");
     }

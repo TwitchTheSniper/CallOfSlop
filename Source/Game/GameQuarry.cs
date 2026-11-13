@@ -58,7 +58,16 @@ public sealed partial class Game
         ? QuarryScript.Current.Steps[QuarryLocal - QuarryFirstStep] : null;
 
     /// <summary>This PC's player is in the bus scene (the camera and the input are the scene's).</summary>
-    public bool QuarryRiding => QuarryRideFrom != 0 && SandboxOn && (MoverRenderTick - QuarryRideFrom) < QuarryRideSeconds * World.TickRate + 2;
+    public bool QuarryRiding => RideFrom != 0 && SandboxOn && (MoverRenderTick - RideFrom) < QuarryRideSeconds * World.TickRate + 2;
+
+    /// <summary>
+    /// This PC's story ride, whichever it is (the quarry's crew bus, or the break-out's stolen transport: GameBreakout.cs):
+    /// the tick they boarded (0: none), the craft leaving and the craft arriving, and the words over it.
+    /// </summary>
+    public uint RideFrom => BreakoutRideFrom != 0 ? BreakoutRideFrom : QuarryRideFrom;
+    public ushort RideBusA => BreakoutRideFrom != 0 ? BreakoutRideBusA : QuarryRideBusA;
+    public ushort RideBusB => BreakoutRideFrom != 0 ? BreakoutRideBusB : QuarryRideBusB;
+    public string RideCaption => BreakoutRideFrom != 0 ? BreakoutScript.Current.Caption : "Company-approved transport. Do not touch anything.";
 
     /// <summary>Both sides, a new match (from <see cref="OpeningReset"/>): no quarry, no runs.</summary>
     private void QuarryReset()

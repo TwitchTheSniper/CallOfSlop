@@ -31,6 +31,8 @@
     { "name": "Killed our staff", "verb": "Kill", "remember": "KilledOurs", "standing": -40 },
     { "name": "Assaulted our staff", "verb": "Attack", "remember": "Grudge", "standing": -15, "every": "1m",
       "about": "laying a hand on the warden or a guard: the colony goes into lockdown and the riot squad is sent for you" },
+    { "name": "Absconded", "verb": "Abscond", "remember": "Grudge", "standing": -30,
+      "about": "breaking out of the penal colony with the convicts in the ration hauler (docs/story/BREAKOUT.md)" },
     { "name": "Stole a Ministry ship", "verb": "Commandeer", "remember": "Grudge", "standing": -35,
       "about": "taking the courier from the spaceport without Form 88 (docs/story/SPACEPORT.md)" },
     { "name": "Ran the courier's errand", "verb": "Cleared", "standing": 8,
