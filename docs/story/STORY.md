@@ -763,8 +763,8 @@ the source of truth, `--check-story` decides what is valid, and the read-only st
   off each interval it didn't rise, so a player can cool off). They are story qualities like any other, so patterns,
   lines and goals can read them too. `"spots"` are places the game counts visits to: coming within `reach` m of the
   `near` person's body adds 1 to `?me Visited 'Kettle'` (walk out of twice the reach for the next).
-- **A storylet**: `id` (letters, digits, `-`, `_`), `title`, `about`; `bucket` A (the main plot), B (the side plot) or
-  `urgent`; once per player, or `"again"` after a time; `"priority"` (higher first in its bucket); `"final"` marks an end of the road (the checks don't call
+- **A storylet**: `id` (letters, digits, `-`, `_`), `title`, `about`; `bucket` A (the main plot), B (the side plot),
+  `urgent`, or `side` (a side road in a lane of its own: one at a time beside A, B and urgent, no rest, never paused); once per player, or `"again"` after a time; `"priority"` (higher first in its bucket); `"final"` marks an end of the road (the checks don't call
   it a dead end).
 - **needs**: a query over `?me`, the player, or a list of them (any one holds): `"?me Rank >= 2, not ?me Course ?r"`.
 - **cast**: a query whose variables after `?me` are its roles. The **first leads**: a living person, free (in no play,
@@ -788,7 +788,8 @@ the source of truth, `--check-story` decides what is valid, and the read-only st
   them when an outcome is pressed; the game does nothing with them: they are the brief for whoever builds it).
 - **The runner**: per player, once a second: an urgent storylet that can play pauses the one under way (its events still
   count, its times stand still) and plays first; with none under way a paused one goes on, else the A and B plots take
-  turns, with a rest of 2 minutes after each. What is under way and what was had are relations (OnStorylet, StoryletAt,
+  turns, with a rest of 2 minutes after each. The `side` lane is looked at first and on its own (the break-out, which
+  must start while a duty holds the main lane). What is under way and what was had are relations (OnStorylet, StoryletAt,
   Played: `Story/Relations/Storylets.json`), so they save with the world; one under way when the world was saved waits for
   its ends again after a load, cast afresh (its time ends start again).
 - **Facts**: `Course` (exclusive: the road chosen), `Lead` (what a player learnt of), `Visited` (spots), the qualities
