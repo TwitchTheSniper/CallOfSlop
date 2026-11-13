@@ -2068,9 +2068,12 @@ public static unsafe partial class Program
                     ScenePresentation.DrawLocalLegs(Gfx, p, Glfw.Time); // your own legs, seen when looking down
                 continue;
             }
+            AllocProfile.Mark("people: player bodies"); // (the benchmark's --trace-frame)
             DrawPlayer(p);
         }
+        AllocProfile.Mark("people: labourers");
         LabourRender.Draw(Gfx, _game); // the penal colony's convict labourers (Source/Render/LabourRender.cs)
+        AllocProfile.Stop();
 
         pass.Dispose();
 
