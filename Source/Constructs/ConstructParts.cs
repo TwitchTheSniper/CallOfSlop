@@ -628,6 +628,7 @@ public sealed partial class ConstructPartDef
     public GunFx GunFx;
     public string GunSound = ""; // the weapon file whose report it uses
     public string GunPartName = ""; // a gun part: the weapon builder part it is
+    public PartDef? GunSized; // a pressed gun part: its own sized builder part, named by its key (SizedGunParts; Parts.Find finds it)
     // Physical storage (decision 18; ConstructStorage.cs)
     public CSlotDef[] Slots = []; // the slots parts are set into (part frame)
     public string BulkMaterial = ""; // a bin: the bulk material it holds ("any", or one of RecyclingTable.Materials)
