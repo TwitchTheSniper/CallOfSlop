@@ -631,9 +631,9 @@ public sealed class CityPlan
                 var t2 = crown * 0.7f;
                 Add(id, Vector2.Zero, t2, crownTop - 0.05f, crownTop + 5, CityStyle.Plain, Rgb(0x6a6e73), shape, shape == 1 ? MathF.Min(t2.X, t2.Y) * 0.3f : 0);
                 Add(id, Vector2.Zero, t2 * 0.6f, crownTop + 4.95f, crownTop + 9, CityStyle.Plain, Rgb(0x7a7e83), shape, shape == 1 ? MathF.Min(t2.X, t2.Y) * 0.18f : 0);
-                crownTop += 9;
+                crownTop += 1000; // (no pad: the top tier is too small for one)
             }
-            else if (kind == 2 && shape != 2)
+            else if (kind == 2 && shape == 0)
             {
                 // A pyramid roof, dark metal, a lamp at its point.
                 var ph = MathF.Min(crown.X, crown.Y) * d.Range(0.9f, 1.6f);
@@ -699,7 +699,7 @@ public sealed class CityPlan
         {
             var along = new Vector2(MathF.Abs(front.Y), MathF.Abs(front.X));
             var reach = front.X != 0 ? half.X : half.Y;
-            var deep = shops ? 1.1f : 2.4f;
+            var deep = shops ? 1.1f : 1.3f; // (posts stay by the wall: the pavement's walkers pass outside them)
             var at = front * (reach + deep * 0.5f);
             var hs = front.X != 0 ? new Vector2(deep * 0.5f, 2.2f) : new Vector2(2.2f, deep * 0.5f);
             var colour = shops ? Rgb(0x2c2f33) : Rgb(d.Pick(3) switch { 0 => 0x3a3d42, 1 => 0x6b2a2a, _ => 0x2a4a3a });
@@ -730,6 +730,8 @@ public sealed class CityPlan
         {
             if (!d.Chance(0.22f) || half.X < 7 || half.Y < 7)
                 return;
+            if (_masses.Any(m => m.Building == id && m.Shape == 3))
+                return; // (a hipped roof: nowhere flat to stand a billboard)
             var top = _masses.Where(m => m.Building == id).Max(m => m.Top);
             var colour = Rgb(d.Pick(4) switch { 0 => 0xffffff, 1 => 0xffe0b0, 2 => 0xb0e0ff, _ => 0xffb0d0 });
             var reach = (front.X != 0 ? half.X : half.Y) - 2.5f;
