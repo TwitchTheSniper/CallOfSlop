@@ -321,9 +321,13 @@ public static class ConstructWeapons
         Span<int> muzzleParts = stackalloc int[16];
         var muzzles = 0;
         var tips = new Dictionary<BuildNode, int>(); // a barrel node -> the part its rounds leave from (its muzzle device, else the barrel)
+        // The receiver's bore (sized-parts design section 5): its merge size (a pressed receiver's scale joins this in that design's phase 3).
+        var bore = merged ? (float)c.Merges[c.MergeOf[i] - 1].N : 1f;
         if (barrel >= 0)
         {
             var bp = Parts.Find(c.Parts[barrel].D.GunPartName)!;
+            if (SizedGunParts.FitWhy(bp, bore) is { } badFit && problem.Length == 0)
+                problem = badFit;
             var node = new BuildNode(bp);
             mine[barrel] = true;
             muzzleParts[muzzles++] = barrel;
@@ -351,6 +355,12 @@ public static class ConstructWeapons
                         break;
                     }
                     var sock = bp.Sockets[at];
+                    if (SizedGunParts.FitWhy(sb, bore) is { } badFit2)
+                    {
+                        if (problem.Length == 0)
+                            problem = badFit2;
+                        continue;
+                    }
                     if (BuildRules.SocketWhy(node, sock, sb) is { } bad)
                     {
                         if (problem.Length == 0)

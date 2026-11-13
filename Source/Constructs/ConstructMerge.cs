@@ -423,11 +423,11 @@ public static class ConstructMerge
             else
                 continue;
             _ = socket;
-            if (other >= c.PartCount || c.Parts[other].D.Role != PartRole.GunPart || c.PartScale[other] > 1)
+            if (other >= c.PartCount || c.Parts[other].D.Role != PartRole.GunPart || c.PartScale[other] != 0)
                 continue;
             var n = c.Merges[c.MergeOf[lead] - 1].N;
             int head = 0, tail = 0;
-            c.PartScale[other] = n;
+            c.PartScale[other] = Own(c, other, n);
             queue[tail++] = (ushort)other;
             while (head < tail)
             {
@@ -436,14 +436,17 @@ public static class ConstructMerge
                 {
                     ref var lk = ref c.Links[k];
                     var o = lk.A == at ? lk.B : lk.B == at ? lk.A : -1;
-                    if (o < 0 || o >= c.PartCount || c.PartScale[o] > 1 || c.Parts[o].D.Role != PartRole.GunPart)
+                    if (o < 0 || o >= c.PartCount || c.PartScale[o] != 0 || c.Parts[o].D.Role != PartRole.GunPart)
                         continue;
-                    c.PartScale[o] = n;
+                    c.PartScale[o] = Own(c, o, n);
                     queue[tail++] = (ushort)o;
                 }
             }
         }
     }
+
+    /// <summary>A gun part's scale on a merge of size <paramref name="n"/>: n, but 1 for a pressed (sized) one, whose size is its own (sized-parts design 4.3); 1 still marks it found.</summary>
+    private static byte Own(Construct c, int part, byte n) => c.Parts[part].D.GunSized != null ? (byte)1 : n;
 
     /// <summary>How a blueprint names a merged receiver's centre socket: this, then the receiver's own socket's name ("merged front").</summary>
     public const string CentrePrefix = "merged ";
