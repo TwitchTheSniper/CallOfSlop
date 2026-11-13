@@ -111,7 +111,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "put" or "side" or "walk" or "ray" or "guns" or "bundle" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action) || WsTourKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "fuel" or "put" or "side" or "walk" or "ray" or "guns" or "bundle" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action) || WsTourKnown(action);
 
     private static void WsSay(string s)
     {
@@ -1061,6 +1061,21 @@ public static unsafe partial class Program
                 if (Ui.StationPreview is { Ready: true } pv && sverb == "pick")
                     WsSay($"station: preview {pv.Name}: {pv.Parts} parts, cost {pv.CostMs:0.0} ms, worst slice {pv.WorstMs:0.00} ms");
                 _wsWait = 2;
+                return;
+            }
+            case "fuel": // the Building Station's body (the Showcase): its fuel pool and charge as this peer has them; "fuel N [SHARE]" (host) sets them, as a drain or a charge would (it stays still)
+            {
+                if (WsFind(g, "Building Station").C is not { } fb)
+                {
+                    WsFail("no Building Station");
+                    return;
+                }
+                var fw = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (g.IsServer && fw.Length > 0 && float.TryParse(fw[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var litres))
+                    fb.Fuel = Math.Clamp(litres, 0, fb.FuelCapacity());
+                if (g.IsServer && fw.Length > 1 && float.TryParse(fw[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var share))
+                    fb.Charge = Math.Clamp(share, 0, 1) * fb.ChargeCapacity;
+                WsSay($"fuel: body {fb.Id} fuel {fb.Fuel:0.0}/{fb.FuelCapacity():0.0} L, charge {fb.Charge:0}/{fb.ChargeCapacity:0} kJ, {(fb.Asleep ? "asleep" : "awake")}{(fb.Anchored ? ", anchored" : "")}, {fb.JointCount} joints");
                 return;
             }
             case "picker": // "picker": the open recipe picker's tiles (value, or dim); "picker N": picks the tile of value N as a click does;
