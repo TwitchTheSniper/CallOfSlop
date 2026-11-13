@@ -1,6 +1,6 @@
 # Sized gun and engine parts: phase 4 notes (2026-11-13)
 
-Branch `claude/sized-parts-4-ccd7ea`. Three steps: the Showcase press traced, the generated receivers as patterns (what phase 3 left), and
+Branch `claude/sized-parts-4-ccd7ea`. The Showcase press traced, phase 3's answers (a receiver's mass), and
 the first coherent part of phase 4 of `sized-gun-engine-parts.md` ("The engine reads scale"). **Protocol 295** (the engine's formula data
 changed: `ModularEngine.json` /2; nothing new on the wire).
 
@@ -22,23 +22,16 @@ one-part body of NAME onto that socket by the build rules (`ConstructBuild.Place
 loose body; `plate DIST` stands a Plate Steel 1 m (armour 20) up, pinned, DIST m out along the spawned body's first gun, and `plate` again
 prints its health, the gun's loaded rounds, its box and its trigger wire.
 
-## 2. The generated receivers are Receiver die patterns
+## 2. Phase 3's answers: the generated receivers stay catalogue; a pressed receiver weighs the merge's mass
 
-- `PressParts.ReceiverPatternsAll`: the three hand-made receivers, then every other builder receiver by name (26), id from its name less
-  "Receiver" (`couriercarbine`, `hammerfallautoca`), label its name less "Receiver" (at most 24 characters), like part its generated
-  construct part, preset blank `solid WxHxL steel` from that part's size (`ConstructWeaponParts.SizeOf`, a new helper the part's own text now
-  uses, at `WeaponParts.json`'s scale) on the 5 cm lattice, half up, at least 15 across and 30 long. All are also presets (their catalogue
-  part), so `--press-part presets` checks each. Several share a blank (four at `solid 15x20x40`): Auto makes the first by name, the Pattern
-  setting or an order the others, as the plates do.
-- **A receiver's scale is held to 0.75 to the merge's maxSize (6)** (`Pressed.ReceiverScaleIn`, in `Fits` and the refusal text: `a Courier
-  Carbine Receiver is pressed 0.75 to 6 times its size: 0.15 to 0.90 m across`). Without it a 15 cm preset reached s = 8 at the die's
-  120 cm, past the merge's ceiling. This also narrows phase 3's Heavy Receiver: its 15 cm blank (s = 0.6) is now refused (design 4.1 says
-  0.75).
-- **A like body's own detail boxes step apart when stretched flush** (`Pressed.SettleBody`): the Kingpin Revolver Receiver at 2x had two
-  boxes of different colours on one -Z plane. Only pairs of different looks that meet move (as the z-fight check counts them), so the
-  sweeps of every other die are unchanged: bracket, housing, plate, drive, shaft, actuator, spring, cable, control, tank, beam, cylinder,
-  barrel and receiver all 0 problems.
-- No protocol bump for this step (data rows naming existing parts, no ids move: as phase 2).
+The generated receivers were built as Receiver die patterns before the user's answers came; the answer was "No, catalogue only", so that
+commit is reverted: the Receiver die keeps its three patterns, and with it went the scale band (0.75 to 6, which only the 15 cm generated
+presets needed) and a like-body z-fight settle (only the Kingpin Revolver at 2x needed it). `Pressing.json` is as phase 3 left it
+(`--gen-parts press_parts --check` clean; `sweep receiver` 27 blanks, 0 problems).
+
+**Mass** (answer 1): a pressed receiver now weighs the catalogue file's mass times s to the merge's `partMass` power (2), with no bay 2
+mass: `receiver.rifle solid 40x40x80` 56 kg (was 82), `solid 15x15x30` 7.88 kg, `receiver.heavy solid 50x50x100` 128 kg. Health, armour
+and everything else stay the blank's. The drawn scale stays round half up (answer 2).
 
 ## 3. Phase 4: the engine reads scale (first part)
 
@@ -73,16 +66,14 @@ All in throwaway runs (`--save-dir` to a temp folder; test blueprints in `bin/` 
   plate 8 m out: plate 160 to 130 to 58 to gone, 6 a hit (26 less armour 20). The first try used an Armour Plate (armour 40): no damage,
   as the rule says.
 - A pressed `receiver.rifle solid 40x40x80` with a pressed `barrel.plain round 20x20x100`: `damage 104, every 12 ticks, 4 rounds a shot,
-  magazine drawn 2x`; the plate (160) was gone within two shots.
-- A generated receiver: catalogue Courier Carbine `damage 23, every 5 ticks`; pressed `receiver.couriercarbine solid 30x30x80` `damage 92,
-  every 10 ticks, 4 rounds a shot, magazine drawn 2x`; the joined client printed both lines the same.
+  magazine drawn 2x`; the plate (160) was gone within two shots (run before the mass change, which moves no gun number).
 - Engines, one Small crank and a Small Flywheel: Small Cylinder and Small Carburettor `I1 40 kW`; a Medium Cylinder and a Medium
   Carburettor `I1 800 kW` (rpm from the Small row: `At(1)` is the row); a Medium Cylinder and a Small Carburettor `I1 40 kW ... bank 1
   starved: the Small Carburettor feeds 5% of its cylinders`, the same on a joined client.
 - `--gen-engine` for the five ENGINEKIT.md sample rows: the 300 kW tier 1 and 5 and the 20 MW rows match the doc; the 900 N m tier 3
   (B8 480 kW) and 2000 kW tier 4 (R28 2038 kW) rows differ from it, **identically on the code before this phase** (checked by building the
   previous commit), so the doc's table is stale, not this change. `--gen-engine-parts --check`: clean.
-- `--press-part presets` 0 problems; sweeps as in section 2. Self-test sections by name: Modular engine (after the update), Construct
+- `--press-part presets` 0 problems, `sweep receiver` 0 problems (after the revert). Self-test sections by name: Modular engine (after the update), Construct
   weapons, Construct merged receivers, Sandbox weapon parts, Press stock: 0 failures.
 - `--check-construct-parts`: exit 0. `--gen-parts all --check`: every generator 0 out of date, 0 stale. `--gen-vehicles`: 238 vehicles, all
   identical to the committed files.
@@ -93,17 +84,11 @@ picture of the mixed engine (the Medium cylinder hides the Small crank and flywh
 
 ## Questions for the user (each with a recommendation; they can be asked together)
 
-1. **Phase 3's open three** were built on the recommendations: the blank's mass, round half up, the generated receivers as patterns.
-   Only the last changed code here; B on it would mean taking `ReceiverPatternsAll` back to the three.
-2. **A receiver's scale band.** A pressed receiver is now held to 0.75 to 6 times its preset (the merge's ceiling), which also refuses a
-   15 cm Heavy Receiver (s = 0.6) that phase 3 allowed.
-   - A (recommended): keep 0.75 to 6 for every receiver pattern.
-   - B: only the top (6); keep anything down to the die's 15 cm.
-3. **Mixed sockets on engines.** Pieces of other sizes now mate through their sockets whatever the class (a Medium cylinder's base on a
+1. **Mixed sockets on engines.** Pieces of other sizes now mate through their sockets whatever the class (a Medium cylinder's base on a
    Small crank's side). Nothing else changed the socket class rule.
    - A (recommended): engine pieces only, as built.
    - B: also let them auto-link to neighbours of another class (today only the placed socket links across classes).
-4. **The ENGINEKIT.md sample table** is stale (two rows) on main already.
+2. **The ENGINEKIT.md sample table** is stale (two rows) on main already.
    - A (recommended): re-record it in phase 6's docs pass.
    - B: re-record it now in a docs-only commit.
 
