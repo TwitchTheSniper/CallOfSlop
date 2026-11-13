@@ -36,7 +36,9 @@ host builds the Sealed Data Centre there the first time a story game plays the w
 another world"). Mille's stands on the cavity's wall under the Proving Bowl.
 
 Glacier has a cold storm outdoors (`"storm": true`, set in make_worlds.py): driven snow, a whiteout down to about
-45 m at its height, frost and wind, gone under a roof and above 700 m (Maps/README.md "Storm").
+45 m at its height, frost and wind, gone under a roof and above 700 m (Maps/README.md "Storm"). Under it is a polar
+dusk (`"dusk": 0.85`): dark and blue, with the colony's lamps throwing orange pools. Made ground on Glacier is dark
+cinder with snow blown over it (the surface's `stone` and `dusting`), so the colony's bench isn't the blue of the ice.
 
 ### Settlements
 

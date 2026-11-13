@@ -23,6 +23,7 @@ public static unsafe partial class Program
         var dt = _stormSeen < 0 ? 0 : now - _stormSeen;
         _stormSeen = now;
         ColdStorm.Frame(map, dt, eye, map.Light, _game.SandboxOn ? _game.Constructs : null);
+        ConstructLamps.Dark = ColdStorm.Dusk * ColdStorm.Outside; // (out in the dusk lamps throw pools of light; indoors they stay as they were)
         if (!ColdStorm.Active)
         {
             _game.Audio.StormWindStop();
@@ -40,6 +41,7 @@ public static unsafe partial class Program
             return;
         _stormSeen = -1;
         ColdStorm.Reset();
+        ConstructLamps.Dark = 0f;
         _game?.Audio.StormWindStop();
     }
 

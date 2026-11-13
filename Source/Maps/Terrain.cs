@@ -75,6 +75,21 @@ public sealed class TerrainSurface
     /// <summary>The snow line (a ragged one: it wanders by about 40 m); null: no snow.</summary>
     public double? SnowAbove;
 
+    /// <summary>
+    /// Made ground: the colour of stone laid as fill (a graded bench, a player's stone); null: the <see cref="Rock"/> colour.
+    /// A world whose "rock" isn't stone (Glacier's is blue ice) gives it, so hardcore doesn't look like the ice round it.
+    /// </summary>
+    public Vector3? Stone;
+
+    /// <summary>
+    /// How much of the ground's own top colour lies over made ground in wind-blown streaks, 0 to 1 (snow drifted over a
+    /// yard's cinders). Drawing only, worked into the dug tops' colours when they are made; planetoids only.
+    /// </summary>
+    public double Dusting;
+
+    /// <summary>The colour of stone fill: <see cref="Stone"/>, else the rock's.</summary>
+    public Vector3 StoneFill => Stone ?? Rock;
+
     public Vector3 ColorOf(TerrainMaterial m) => m switch
     {
         TerrainMaterial.Dirt => Dirt,
@@ -244,8 +259,10 @@ public sealed class TerrainSpec
                 case "variation": s.Variation = Range(Num(p.Value, where, "variation"), 0, 0.5, where, "variation"); break;
                 case "snow": s.Snow = MapFile.ToColour(p.Value, $"{where}.snow", ""); break;
                 case "snowabove": s.SnowAbove = p.Value.ValueKind == JsonValueKind.Null ? null : Num(p.Value, where, "snowAbove"); break;
+                case "stone": s.Stone = p.Value.ValueKind == JsonValueKind.Null ? null : MapFile.ToColour(p.Value, $"{where}.stone", ""); break;
+                case "dusting": s.Dusting = Range(Num(p.Value, where, "dusting"), 0, 1, where, "dusting"); break;
                 default:
-                    throw new MapFileException($"{where}: unknown field \"{p.Name}\" (it takes: grass, dirt, rock, sand, snow, dirtSlope, rockSlope, sandBelow, snowAbove, variation)");
+                    throw new MapFileException($"{where}: unknown field \"{p.Name}\" (it takes: grass, dirt, rock, sand, snow, stone, dirtSlope, rockSlope, sandBelow, snowAbove, variation, dusting)");
             }
         }
         return s;
@@ -425,6 +442,8 @@ public sealed class TerrainSpec
         + $"\"dirtSlope\": {N(s.DirtSlope)}, \"rockSlope\": {N(s.RockSlope)}, "
         + (s.SandBelow is { } sb2 ? $"\"sandBelow\": {N(sb2)}, " : "")
         + (s.SnowAbove is { } sa ? $"\"snow\": {C(s.Snow)}, \"snowAbove\": {N(sa)}, " : "")
+        + (s.Stone is { } st ? $"\"stone\": {C(st)}, " : "")
+        + (s.Dusting > 0 ? $"\"dusting\": {N(s.Dusting)}, " : "")
         + $"\"variation\": {N(s.Variation)} }}";
 
     /// <summary>A "features" list as map-file JSON, one feature a line (no newline after the closing bracket).</summary>

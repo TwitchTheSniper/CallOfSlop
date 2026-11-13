@@ -116,10 +116,12 @@ WORLDS = [
         "name": "Glacier", "order": 3, "radius": 8000, "strength": 14,
         "ore": {"helium pocket": 2.5, "copper vein": 1.5, "sand bed": 0, "iron vein": 0.7},
         "description": "Glacier, the 8 km ice world of Frostreach (Systems/Frostreach.json): snowfields, pressure ridges of blue ice, two black nunataks and the Rent, a crevasse 9 km long. The IT Department keeps its Server Farm here, for the cooling.",
-        "surface": {"grass": "#e4ecf3", "dirt": "#c4d6e6", "rock": "#7ba3c8", "sand": "#a6c5de", "dirtSlope": 18, "rockSlope": 30, "sandBelow": -18},
+        "surface": {"grass": "#e4ecf3", "dirt": "#c4d6e6", "rock": "#7ba3c8", "sand": "#a6c5de", "dirtSlope": 18, "rockSlope": 30, "sandBelow": -18,
+                    # (made ground is dark cinder with snow blown over it, not the blue of the ice: the colony's bench)
+                    "stone": "#3d3f44", "dusting": 0.8},
         "skybox": {"preset": "alpine", "zenith": "#6f9fd0", "horizon": "#dbe8f2", "ground": "#c9d6e0",
                    "sun": {"color": "#f4f8ff", "intensity": 1.05, "size": 1.2}, "haze": {"color": "#e6eef5", "strength": 0.55}, "ambient": 1.25},
-        "storm": True,  # the cold storm outdoors (Maps/README.md "Storm", docs/weather/WEATHER.md "Cold storm")
+        "storm": {"dusk": 0.85},  # the cold storm outdoors (Maps/README.md "Storm", docs/weather/WEATHER.md "Cold storm")
         "features": [
             noise(80, 4200, 5, 71),
             noise(28, 650, 4, 19, ridged=True),

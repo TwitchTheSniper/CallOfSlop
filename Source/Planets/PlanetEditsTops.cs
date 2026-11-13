@@ -67,6 +67,7 @@ public sealed partial class PlanetEdits
         if (ord < _coloursMade.Length && _coloursMade[ord])
             return;
         // The ground's own colour at the cell's corners, as the planetoid draws it, and across the cell between them.
+        var dusting = (float)_p.Surface.Dusting;
         Vector4 g00 = GroundColour(face, i, j), g10 = GroundColour(face, i + 1, j), g01 = GroundColour(face, i, j + 1), g11 = GroundColour(face, i + 1, j + 1);
         for (var b = 0; b < Sub; b++)
         for (var a = 0; a < Sub; a++)
@@ -76,6 +77,14 @@ public sealed partial class PlanetEdits
             var own = Vector4.Lerp(Vector4.Lerp(g00, g10, u), Vector4.Lerp(g01, g11, u), v);
             _ownColour[c] = new Vector3(own.X, own.Y, own.Z);
             var (col, rock) = TopShade(c, own, _spans[c][_count[c] * 2 - 1]);
+            if (dusting > 0 && _fillKind[c] != 0)
+            {
+                // The ground's own colour blown over made ground: long streaks across the face's grid, thick in places and bare in others.
+                double x = i + (a + 0.5) / Sub, z = j + (b + 0.5) / Sub;
+                var n = 0.5 + 0.5 * TerrainGen.ValueNoise(x / 1.3 + z * 0.11, z / 5.5, 7717 + face) + 0.25 * TerrainGen.ValueNoise(x / 0.45, z / 0.9, 3301 + face);
+                var t = Math.Clamp((float)((n - 0.52) / 0.22), 0f, 1f);
+                col = Vector3.Lerp(col, new Vector3(own.X, own.Y, own.Z), dusting * t * t * (3 - 2 * t));
+            }
             _topColour[c] = new Vector4(col, Math.Clamp(rock, 0f, 1f));
         }
         _coloursMade[ord] = true;

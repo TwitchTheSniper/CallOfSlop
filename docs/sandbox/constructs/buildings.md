@@ -37,8 +37,8 @@ first site is the penal colony's (`Game/GameColonySite.cs` lays it, `Story/Openi
 1. **One level.** A camp on frozen ground is founded on a bench: the land is cut and filled to one height before anything
    is built. On a fresh story world the plan's `"bench"` rectangle (68 by 62 m in the colony's own frame) is graded to
    the colony's plane with ground ops (a player's Flatten, through `Game.Dig`: it saves and reaches a joiner as dug
-   ground), a hand's breadth over the highest land so the whole bench is one surface: on Glacier, the snow scraped to
-   blue ice. Each `"ramps"` entry is a slope from its edge to the land. Every building then stands at one height; no
+   ground), a hand's breadth over the highest land so the whole bench is one surface: on Glacier, dark cinder with snow blown over it
+   (the surface's `stone` and `dusting`, Maps/README.md). Each `"ramps"` entry is a slope from its edge to the land. Every building then stands at one height; no
    building is placed on raw land at its own level. Land more than `"most"` m off the colony's level is left alone and
    the site is not laid.
 2. **Zones, as the job has them.** The yard is the secure compound (the only fence). The Ministry's street runs along
