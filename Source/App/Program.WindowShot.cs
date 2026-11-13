@@ -740,7 +740,26 @@ public static unsafe partial class Program
                     return;
                 }
                 var dw = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                if (dw.Length >= 2 && dw[0] == "name")
+                if (arg is "save" or "order")
+                {
+                    Ui.DesignerPress(arg); // (the button, pressed at the panel's next frame)
+                    _wsWait = 3;
+                    return;
+                }
+                if (arg == "parts") // every formed panel placed on a body, by name and geometry hash: two peers compare them
+                {
+                    foreach (var b in g.Constructs.Bodies)
+                        for (var i = 0; i < b.PartCount; i++)
+                            if (HullLoft.IsPanelName(b.DefOf(i).Name))
+                                WsSay($"design: placed on body {b.Id} part {i}: {b.DefOf(i).Name} hash {HullLoft.PanelHash(b.DefOf(i)):x8}");
+                    return;
+                }
+                if (dw.Length >= 2 && dw[0] == "profile" && dw[1].Split(',') is { Length: 2 } pv && int.TryParse(pv[0], out var ph) && int.TryParse(pv[1], out var pcm))
+                {
+                    Ui.DesignerProfile(ph, pcm); // "profile H,CM": a loft's handle H (0-7 the back edge, 8-15 the nose) to CM, as a drag would
+                    _wsWait = 3;
+                }
+                else if (dw.Length >= 2 && dw[0] == "name")
                     Ui.DesignerName(arg[(arg.IndexOf(' ') + 1)..].Trim());
                 else
                     if (dw.Length == 2 && int.TryParse(dw[1], out var dv))
