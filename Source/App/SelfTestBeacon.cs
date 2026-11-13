@@ -364,7 +364,7 @@ public static partial class SelfTest
     {
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
-            n += SlotStore.Instance.Serves(c.DefOf(i)) ? SlotStore.Instance.Holds(w, c, i, id) : 0;
+            n += RackStore.Instance.Serves(c.DefOf(i)) ? RackStore.Instance.Holds(w, c, i, id) : SlotStore.Instance.Serves(c.DefOf(i)) ? SlotStore.Instance.Holds(w, c, i, id) : 0; // (a Piece Rack is read as a RackStore)
         return n;
     }
 

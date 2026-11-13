@@ -774,8 +774,8 @@ the source of truth, `--check-story` decides what is valid, and the read-only st
 - **beats**: a play's beats over the cast (`?me` among them; "Plays"), acted out as a play is, with bodies meeting.
   A play broken off gives the storylet up (it may come again after a minute).
 - **job**: `"Ministry of Slop: Breaking Rocks"` hands the player that faction job ("Jobs"). **hook**: something the game
-  starts: `lockdown` (the colony's lockdown, the player wanted), `depot` (the Orbital Depot's report memo: with a
-  storylet that hooks the depot, the depot no longer follows the induction by itself).
+  starts: `lockdown` (the colony's lockdown, the player wanted), `depot` (the Orbital Depot's report memo, if the player hasn't had it yet: since 2026-11-13 the
+  depot follows the first duty whatever the storylets do).
 - **ends**: the first that happens wins, each one of: `"when"` an event (a verb and roles, a variable of the storylet's
   or a name: `{"verb": "Job", "actor": "?me", "item": "Breaking Rocks"}`, with an optional `"within"`), `"after"` a time
   (from when its beats ended; a paused storylet's clock stands still) or `"choice"` (an answer the player picks in the
@@ -1094,7 +1094,7 @@ square and the Faction window (F2) list every faction's jobs: what each asks, wh
   muster square (a concrete hood on two posts over a steel case of sheets in four colours; the part kit's lore parts) is a
   lore item with `"opens": "jobs:Ministry of Slop"`. F on it opens "Work Allocation" with the cursor free, on the
   Ministry's tab: a tab a faction (a `*` on one where your party holds a job), your standing and tier, a bar to the next
-  tier with what it teaches, and each job's asks, pay ("+5 standing: 5 of the 15 to Trusty", or "enough for Trusty"), why
+  tier with what it teaches, and each job's asks, pay ("+4 standing: 4 of the 5 to Trusty", or "enough for Trusty"), why
   it can't be taken yet or how far along yours is, with Take and Drop. F again, Esc, the X or walking 4.5 m off closes it.
   The F2 window draws the same rows. Tiers, teaching and pay are read from the faction files every peer has, so the board
   adds nothing to the wire; its words are made again only when the server's view changes.
