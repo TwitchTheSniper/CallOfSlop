@@ -957,7 +957,9 @@ public sealed class StoryStorylets
             }
             for (var n = 0; n < d.Named.Length; n++)
                 binds[d.CastVars + n] = NamedThing(d.Named[n]);
-            var paused = pair.Value == 2;
+            var paused = pair.Value == 2 && !side; // (a side storylet is never paused: one saved paused, from before the lane, just waits)
+            if (side && pair.Value == 2)
+                W.Set(player, R.OnStorylet, pair.Target, 1);
             Runs.Add(new StoryletRun
             {
                 Def = def, Player = player, Serial = ++_serial, Binds = binds, StartedAt = W.Get(player, R.StoryletAt, pair.Target), WaitFrom = now,
@@ -1132,7 +1134,8 @@ public sealed class StoryStorylets
         var r = Runs[i];
         Runs.RemoveAt(i);
         W.Set(r.Player, R.OnStorylet, Thing(r.Def), 0);
-        _player[r.Player] = (_player.GetValueOrDefault(r.Player).Last, now + DropRest);
+        if (!IsSide(r.Def)) // (the side lane never rests the A and B plots)
+            _player[r.Player] = (_player.GetValueOrDefault(r.Player).Last, now + DropRest);
         Dropped++;
         Keep(new StoryletDone(r.Def, r.Player, -1, why, r.StartedAt, now));
         Note?.Invoke($"{W.NameOf(r.Player)}: the storylet {R.Storylets[r.Def].Title} was given up: {why}");

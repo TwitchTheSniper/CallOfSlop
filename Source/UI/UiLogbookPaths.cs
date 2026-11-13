@@ -57,6 +57,14 @@ public sealed partial class Ui
         }
     }
 
+    /// <summary>A storylet's lane on the chart: A the main road, B and the side roads (the break-out) on the side, urgent its own.</summary>
+    private static int PathLaneOf(StoryletBucket b) => b switch
+    {
+        StoryletBucket.B or StoryletBucket.Side => 1,
+        StoryletBucket.Urgent => 2,
+        _ => 0,
+    };
+
     /// <summary>The chart: lanes by plot, a column per storylet in the order they came.</summary>
     private void DrawPathChart(StoryletRules sr, List<StoryPathStep> steps)
     {
@@ -65,7 +73,7 @@ public sealed partial class Ui
         Array.Clear(_pathLaneEnds);
         foreach (var st in steps)
         {
-            var lane = (int)sr.Storylets[st.Def].Bucket is var b and >= 0 and < 3 ? b : 0;
+            var lane = PathLaneOf(sr.Storylets[st.Def].Bucket);
             _pathLaneEnds[lane] = Math.Max(_pathLaneEnds[lane], Math.Max(1, sr.Storylets[st.Def].Ends.Length));
         }
         var height = pad;
@@ -103,7 +111,7 @@ public sealed partial class Ui
         for (var i = 0; i < steps.Count; i++)
         {
             var d = sr.Storylets[steps[i].Def];
-            var lane = (int)d.Bucket is var b and >= 0 and < 3 ? b : 0;
+            var lane = PathLaneOf(d.Bucket);
             var laneH = Math.Max(nodeH, _pathLaneEnds[lane] * (endH + endGap) - endGap);
             _pathNode[i] = new float2(o.X + pad + i * colW, o.Y + _pathLaneTop[lane] + 20 * _scale + (laneH - nodeH) / 2);
             _pathFrom[i] = -1;
