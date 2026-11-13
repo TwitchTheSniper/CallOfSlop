@@ -976,7 +976,7 @@ public static unsafe partial class Program
                     var pens = lw[0] == "pen" ? LifterProbe.Pen(g.Constructs, pspot) : 0;
                     WsSay($"lifter: {lw[0]}: {moved} player(s) to {pspot:0.00}{(pens > 0 ? $", {pens} Crate Stacks round them" : "")}; {pinfo}");
                 }
-                else if (lw.Length > 0 && lw[0] is "line" or "hold" or "set" or "mains" or "points" or "base" or "flip" && g.IsServer)
+                else if (lw.Length > 0 && lw[0] is "line" or "hold" or "set" or "mains" or "points" or "base" or "flip" or "reset" && g.IsServer)
                 {
                     // Lifters phase 4 (LifterLineProbe.cs): "lifter line [TIER]" an arm, an Assembler, a stocked rack and a pad round this player;
                     // "lifter hold NAME" that piece at the line's Assembler's out; "lifter set liftMode|carryHeight V"; "lifter mains on|off"; "lifter points".
@@ -989,6 +989,7 @@ public static unsafe partial class Program
                         "mains" => LifterProbe.Mains(g.Constructs, lw.Length > 1 && lw[1] == "off"),
                         "base" => LifterProbe.Base(g.Constructs, me.Position, rest4), // ("lifter base [TIER]": an arm welded into a powered base here; a "lifter line" after it is built round that arm)
                         "flip" => LifterProbe.Flip(g.Constructs, rest4),
+                        "reset" => LifterProbe.Reset(), // ("lifter reset": the step's cost counters from now, past the first ticks' JIT)
                         _ => LifterProbe.Points(g.Constructs),
                     });
                 }

@@ -87,7 +87,7 @@ public static partial class ConstructLifters
                 at = PartPoint(b, pt.Part, d.IsExtruder ? d.ExtDieAt : d.AsmOutAt + d.AsmOutDir * 0.6f);
                 return true;
             default:
-                var name = pt.Kind == LiftPointKind.PressBay && pt.Bay > 0 ? "Piece in " + (pt.Bay + 1) : "Piece in"; // (a rare look: a point's place is asked at a carry's start)
+                var name = pt.Kind == LiftPointKind.PressBay ? BayPortNames[Math.Min((int)pt.Bay, BayPortNames.Length - 1)] : "Piece in";
                 if (ConveyorPort(d, name) is not { } np)
                     return false;
                 at = PartPoint(b, pt.Part, np.At);

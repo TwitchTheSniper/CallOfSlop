@@ -207,3 +207,12 @@ public static partial class LifterProbe
         return n > 1 ? $"{n} lines; the last: {s}" : s;
     }
 }
+
+public static partial class LifterProbe
+{
+    public static string Reset()
+    {
+        (StepTicks, StepTotal, StepWorst) = (0, 0, 0);
+        return "the lifter step's cost counters start again";
+    }
+}
