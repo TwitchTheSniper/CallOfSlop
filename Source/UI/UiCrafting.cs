@@ -26,6 +26,8 @@ public sealed partial class Ui
     private ImInputString? _crSearchInput;
     private string _crSearch = "", _crSelText = "";
     private readonly string[] _crOrderText = new string[ConstructCrafting.MaxOrders];
+    private readonly string[][] _crLineText = new string[ConstructCrafting.MaxOrders][]; // (each order's chain lines, indented; a last "and 3 more")
+    private readonly bool[][] _crLineBad = new bool[ConstructCrafting.MaxOrders][];
 
     /// <summary>The tiles drawn last frame (smoke log).</summary>
     public int CraftingTiles { get; private set; }
@@ -143,7 +145,10 @@ public sealed partial class Ui
         var key = 17;
         if (q != null)
             for (var k = 0; k < q.Count; k++)
+            {
                 key = key * 31 + q.Items[k].Id * 7919 + q.Items[k].Got * 131 + (int)q.Items[k].State * 17 + q.Items[k].Where + (q.Items[k].Note?.GetHashCode() ?? 0); // (the note's text, not its length: "Gear Set 0/4 from the Assembler" becomes "1/4")
+                key = key * 31 + System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(q.Items[k].Lines ?? []) * (q.Items[k].Lines == null ? 0 : 1) + q.Items[k].LinesMore; // (a client's lines are a new array per message, the server's per change)
+            }
         if (key == _crOrdersKey)
             return;
         _crOrdersKey = key;
@@ -151,6 +156,17 @@ public sealed partial class Ui
         {
             ref readonly var o = ref q.Items[k];
             _crOrderText[k] = $"{o.Got}/{o.What.Count}  {ConstructCrafting.NameOf(o.What)}  -  {ConstructCrafting.StateText(c, o)}";
+            var n = o.Lines?.Length ?? 0;
+            var more = n > 0 && o.LinesMore > 0 ? 1 : 0;
+            _crLineText[k] = n + more == 0 ? [] : new string[n + more];
+            _crLineBad[k] = new bool[n + more];
+            for (var i = 0; i < n; i++)
+            {
+                _crLineText[k][i] = ConstructLogisticsPlan.LineText(c, o.Lines![i]);
+                _crLineBad[k][i] = o.Lines[i].Maker == ConstructLogisticsPlan.NoPart && !string.IsNullOrEmpty(o.Lines[i].Reason);
+            }
+            if (more > 0)
+                _crLineText[k][n] = $"    and {o.LinesMore} more";
         }
     }
 
@@ -299,6 +315,12 @@ public sealed partial class Ui
             ImGui.SameLine();
             var col = o.State switch { CraftState.InTray => CrGood, CraftState.Held or CraftState.Collect => CrWarn, _ => new float4(0.9f, 0.9f, 0.93f, 1f) };
             ImGuiSafe.TextColored(col, _crOrderText[k] ?? "");
+            if (_crLineText[k] is { Length: > 0 } lines)
+                for (var i = 0; i < lines.Length; i++)
+                {
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 88 * _scale); // (under the order's text, past its Cancel button)
+                    ImGuiSafe.TextColored(_crLineBad[k][i] ? StBad : Dim, lines[i]);
+                }
         }
         return cancel;
     }

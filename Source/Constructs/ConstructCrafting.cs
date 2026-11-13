@@ -30,6 +30,9 @@ public struct CraftOrder
     public bool Loose; // server: a machine with no conveyor dropped its parts beside itself, and they counted there (MadeLoose)
     public ushort Def; // server: the kind's id here (a run-time piece's is this machine's own); None until worked out
     public byte Lost; // server: why a part for it last went to storage instead (a LogiReason; its row says so until it is done)
+    public uint Stamp; // server: its age (ConstructWorld.OrderStamp when first stepped): roots compete by class, then age (not saved: stamped again in order)
+    public ChainLine[]? Lines; // its chained inputs' lines (both peers: made on the server when they change, sent in CBodyKind.Craft)
+    public byte LinesMore; // ...and how many more links than the lines show
 
     public readonly int Left => Math.Max(0, What.Count - Got);
     public readonly bool Done => Got >= What.Count;
@@ -193,7 +196,7 @@ public static class ConstructCrafting
     }
 
     /// <summary>How a part leaves store <paramref name="s"/> for terminal <paramref name="t"/>: its conveyor (through joins), -2 a chute straight in, -1 none.</summary>
-    private static short RouteTo(Construct c, int s, int t)
+    internal static short RouteTo(Construct c, int s, int t)
     {
         for (var k = 0; k < c.RouteCount; k++)
         {
@@ -773,6 +776,11 @@ public static class ConstructCrafting
             return;
         world.CraftTicks = 0;
         ConstructLogisticsPlan.Step(world); // (chained orders' links kept honest, before the terminals count on them)
+        // Roots compete by class, then age (the user, Q2): terminals are stepped oldest open order first, each followed by its chains,
+        // so the oldest claims free stock first. Every root is Normal until phase 3's priorities; stock targets will come last.
+        Span<ulong> rank = stackalloc ulong[RankedMax];
+        Span<int> rankBody = stackalloc int[RankedMax], rankPart = stackalloc int[RankedMax];
+        var n = 0;
         for (var b = world.CraftOpen.Count - 1; b >= 0; b--)
         {
             var any = false;
@@ -781,11 +789,60 @@ public static class ConstructCrafting
                     if (c.Parts[t].Craft is { Count: > 0 } q && c.Parts[t].D.IsCraftTerminal && world.StoreOf(c, t) is { } tray)
                     {
                         any = true;
-                        StepTerminal(world, c, t, tray, q);
+                        var oldest = uint.MaxValue;
+                        for (var k = 0; k < q.Count; k++)
+                        {
+                            if (q.Items[k].Stamp == 0)
+                                q.Items[k].Stamp = world.OrderStamp++;
+                            if (!q.Items[k].Done && !q.Items[k].Cancelled)
+                                oldest = Math.Min(oldest, q.Items[k].Stamp);
+                        }
+                        if (n < RankedMax)
+                        {
+                            (rank[n], rankBody[n], rankPart[n]) = ((ulong)oldest << 32 | (uint)n, c.Id, t);
+                            n++;
+                        }
+                        else
+                        {
+                            StepTerminal(world, c, t, tray, q); // (past the table: in body order)
+                            ConstructLogisticsPlan.Serve(world, c, t);
+                        }
                     }
             if (!any)
                 world.CraftOpen.RemoveAt(b);
         }
+        rank[..n].Sort();
+        for (var i = 0; i < n; i++)
+        {
+            var at = (int)(rank[i] & 0xFFFF);
+            var t = rankPart[at];
+            if (world.Get((ushort)rankBody[at]) is { } c && t < c.PartCount && c.Parts[t].Craft is { Count: > 0 } q && world.StoreOf(c, t) is { } tray)
+            {
+                StepTerminal(world, c, t, tray, q);
+                ConstructLogisticsPlan.Serve(world, c, t);
+            }
+        }
+    }
+
+    private const int RankedMax = 64;
+
+    private static readonly ChainLine[] LineBuf = new ChainLine[ConstructLogisticsPlan.MaxLines];
+
+    /// <summary>Server: the order's chain lines made again; a new array only when they changed (a steady chain allocates nothing). True: changed.</summary>
+    private static bool ChainLines(ConstructWorld world, Construct c, int t, ref CraftOrder o)
+    {
+        var more = 0;
+        var n = o.Done || o.Cancelled ? 0 : ConstructLogisticsPlan.Lines(world, c, t, o.Id, LineBuf, out more);
+        more = Math.Min(255, more);
+        var old = o.Lines;
+        var same = (old?.Length ?? 0) == n && o.LinesMore == more;
+        for (var i = 0; i < n && same; i++)
+            same = old![i].Same(LineBuf[i]);
+        if (same)
+            return false;
+        o.Lines = n == 0 ? null : LineBuf.AsSpan(0, n).ToArray();
+        o.LinesMore = (byte)more;
+        return true;
     }
 
     private static void StepTerminal(ConstructWorld world, Construct c, int t, CStore tray, CraftList q)
@@ -960,6 +1017,8 @@ public static class ConstructCrafting
             o.Where = where;
             o.Note = note;
             changed |= before != (o.State, o.Where, o.Got, o.Sent, o.Asked);
+            if (world.ChainCount > 0 || o.Lines != null)
+                changed |= ChainLines(world, c, t, ref o);
         }
         if (changed)
             world.CraftChanged(c);
@@ -1000,6 +1059,10 @@ public static class ConstructCrafting
                 else
                     w.U8((byte)key.Shape).U32((uint)key.Mask).U32((uint)(key.Mask >> 32)).U16(key.W).U16(key.H).U16(key.L).U16(key.Wall).U8(key.Material).U16(o.What.Part).U16(o.What.Count);
                 w.U16(o.Id).U16(o.Got).U8((byte)o.State).U16(o.Where).Str(o.Note ?? "");
+                var lines = o.Lines ?? [];
+                w.U8((byte)lines.Length).U8(o.LinesMore); // (protocol 268: the chain lines under its row)
+                foreach (ref readonly var l in lines.AsSpan())
+                    w.U8(l.Depth).U16(l.Kind).U16(l.Made).U16(l.Asked).U16(l.Maker).U16(l.Dest).U16(l.Stock).Str(l.Reason ?? "");
             }
             n++;
         }
@@ -1077,6 +1140,20 @@ public static class ConstructCrafting
                 var state = r.U8();
                 o.Where = r.U16();
                 o.Note = r.Text(200);
+                int ln = r.U8();
+                o.LinesMore = r.U8();
+                if (ln > ConstructLogisticsPlan.MaxLines)
+                    throw new MalformedPacketException($"an order with {ln} chain lines");
+                if (ln > 0)
+                {
+                    o.Lines = new ChainLine[ln];
+                    for (var i = 0; i < ln; i++)
+                    {
+                        o.Lines[i] = new ChainLine { Depth = r.U8(), Kind = r.U16(), Made = r.U16(), Asked = r.U16(), Maker = r.U16(), Dest = r.U16(), Stock = r.U16(), Reason = r.Text(200) };
+                        if (ConstructParts.Get(o.Lines[i].Kind) == null || o.Lines[i].Depth > ConstructLogisticsPlan.MaxDepth + 1)
+                            throw new MalformedPacketException("a bad chain line");
+                    }
+                }
                 if (shape > (byte)ExShape.Wing || state > (byte)CraftState.Held || mat > RecyclingTable.Current.Materials.Length || o.What.Part != ConstructParts.None && ConstructParts.Get(o.What.Part) == null)
                     throw new MalformedPacketException("a bad crafting order");
                 o.State = (CraftState)state;
