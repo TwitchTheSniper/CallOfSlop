@@ -145,8 +145,8 @@ public static class ConstructLogic
                 next = d.HoseCarry != HoseCarry.Data ? 0 // (a data lead: the reel takes the signal wired into it, the socket puts out what the plugged lead carries)
                     : d.HoseEnd == HoseEnd.Outlet ? count[i] > 0 ? Math.Clamp(sum[i], -MaxSignal, MaxSignal) : 0
                     : world.HoseSignal(c, i);
-            else if (d.IsRouter)
-                next = p.Out; // (a Conveyor Router's Alarm: ConstructLogistics.Refresh sets it)
+            else if (d.IsRouter || d.Lifter != null)
+                next = p.Out; // (a Conveyor Router's Alarm: ConstructLogistics.Refresh sets it; a lifter's Busy: ConstructLifters.Ports, lifters phase 4)
             else if (d.IsExtruder)
             {
                 next = p.Out; // (the length so far: ConstructExtruder.cs sets it)

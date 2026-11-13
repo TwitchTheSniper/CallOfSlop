@@ -21,7 +21,7 @@ public static partial class LifterProbe
             return "a part is missing (Loader Arm, Assembler, Piece Rack, Lay-down Pad, Gear Set)";
         float G(float x, float z) => World.Map.GroundHeight(x, z);
         var r = ld.ReachMax;
-        arm = ConstructBuild.PlaceNew(world, ad, at with { Y = G(at.X, at.Z) }, 0);
+        arm = world.Get(BaseBody) is { } based && based.DefOf(0) == ad ? based : ConstructBuild.PlaceNew(world, ad, at with { Y = G(at.X, at.Z) }, 0); // (round the powered base's arm when "lifter base" made one)
         var ax = at + new Vector3(r * 0.55f + Half(asm).X, 0, 0);
         var am = ConstructBuild.PlaceNew(world, asm, ax with { Y = G(ax.X, ax.Z) }, MathF.PI / 2);
         var rx = at + new Vector3(-(r * 0.45f + Half(rack).X), 0, 0);
@@ -80,7 +80,7 @@ public static partial class LifterProbe
                     continue;
                 ref readonly var p = ref c.Parts[l.Part];
                 var d = c.DefOf(l.Part);
-                sb.Append($" [body {c.Id} {d.Name}: Busy {p.Out:0} Alarm {p.Out1:0} Moved {p.Mem:0}; Works {ConstructConfig.Get(p, d, CfgKey.LiftMode, 0):0} Carry height {ConstructConfig.Get(p, d, CfgKey.CarryHeight, ConstructLifters.CarryRise):0.0}; mains {(c.MainsOff ? "off" : "on")}, powered {ConstructRecycler.Powered(world, c, l.Part)}, draw {(p.Out >= 0.5f ? d.PowerDraw : 0):0} W;");
+                sb.Append($" [body {c.Id} {d.Name}: {l.State} {l.Why} rise {l.Rise:0.00}; Busy {p.Out:0} Alarm {p.Out1:0} Moved {p.Mem:0}; Works {ConstructConfig.Get(p, d, CfgKey.LiftMode, 0):0} Carry height {ConstructConfig.Get(p, d, CfgKey.CarryHeight, ConstructLifters.CarryRise):0.0}; mains {(c.MainsOff ? "off" : "on")}, Run held {ConstructExtruder.RunHeld(c, l.Part)}, powered {ConstructRecycler.Powered(world, c, l.Part)}, body draws {c.PowerUse:0} W (arm {d.PowerDraw:0} W while busy);");
                 for (var k = 0; k < l.PointN; k++)
                     sb.Append($" {l.Points![k].Kind}@{l.Points[k].Body}.{l.Points[k].Part}{(l.Points[k].Kind == LiftPointKind.PressBay ? "/" + (l.Points[k].Bay + 1) : "")}");
                 sb.Append(']');
@@ -124,6 +124,57 @@ public static partial class LifterProbe
         return $"set {key} = {v} on {n} arm(s)";
     }
 
+    public static ushort BaseBody;
+    public static int BaseMains = -1, BaseRun = -1;
+
+    /// <summary>
+    /// Host: a powered base round an arm (phase 3's leftover): the arm, with a Battery and two Switches welded on its plinth's sockets as the
+    /// attach tool fits them; one Switch wired into the Battery (the mains), the other into the arm's Run. Both start on.
+    /// </summary>
+    public static string Base(ConstructWorld world, Vector3 at, string tier)
+    {
+        var name = (tier.Length > 0 && tier != "Scrap" ? tier + " " : "") + "Loader Arm";
+        if (ConstructParts.Find(name) is not { Lifter: not null } ad || ConstructParts.Find("Battery") is not { } bat || ConstructParts.Find("Switch") is not { } sw)
+            return "base: a part is missing (Loader Arm, Battery, Switch)";
+        if (ConstructBuild.PlaceNew(world, ad, at with { Y = World.Map.GroundHeight(at.X, at.Z) }, 0) is not { } arm)
+            return "base: no room";
+        arm.Anchored = true;
+        var gs = new ConstructGhost[64]; // (a probe: once)
+        int Fit(ConstructPartDef d)
+        {
+            var n = ConstructBuild.Ghosts(arm, d, gs, Vector3.Zero, 8);
+            for (var k = 0; k < n; k++)
+                if (ConstructBuild.Attach(world, arm, d, gs[k]) is var i and >= 0)
+                    return i;
+            return -1;
+        }
+        var b = Fit(bat);
+        BaseMains = Fit(sw);
+        BaseRun = Fit(sw);
+        if (b < 0 || BaseMains < 0 || BaseRun < 0)
+            return $"base: the plinth took battery {b}, switches {BaseMains}, {BaseRun}";
+        arm.Parts[BaseMains].State |= 1;
+        arm.Parts[BaseRun].State |= 1;
+        var w1 = ConstructRoutes.Add(world, arm, RouteType.Data, BaseMains, 255, 255, 0, default, default, b, 255);
+        var w2 = ConstructRoutes.Add(world, arm, RouteType.Data, BaseRun, 255, 255, 0, default, default, 0, 255);
+        arm.Dirty = true;
+        arm.Rebuild();
+        world.StructureDirty.Add(arm.Id);
+        BaseBody = arm.Id;
+        return $"base: {name} body {arm.Id} with a Battery (part {b}), a mains Switch (part {BaseMains}, wire {w1}) and a Run Switch (part {BaseRun}, wire {w2})";
+    }
+
+    /// <summary>Host: one of the base's switches flipped, as a press flips it ("mains" or "run").</summary>
+    public static string Flip(ConstructWorld world, string which)
+    {
+        var part = which == "run" ? BaseRun : BaseMains;
+        if (world.Get(BaseBody) is not { } c || part < 0 || part >= c.PartCount)
+            return "flip: no base";
+        c.Parts[part].State ^= 1;
+        c.Wake();
+        return $"flip: the {which} switch is {((c.Parts[part].State & 1) != 0 ? "on" : "off")}";
+    }
+
     /// <summary>Host: every arm's body's mains switch (the Switch's own effect: Construct.MainsOff).</summary>
     public static string Mains(ConstructWorld world, bool off)
     {
@@ -136,5 +187,23 @@ public static partial class LifterProbe
                 n++;
             }
         return $"mains {(off ? "off" : "on")} on {n} arm bod(ies)";
+    }
+}
+
+public static partial class LifterProbe
+{
+    /// <summary>"TIER [N]": N lines (a tick cost with several arms working), 25 m apart east of <paramref name="at"/>, each stocked; the last's ids kept.</summary>
+    public static string Lines(ConstructWorld world, Vector3 at, string args)
+    {
+        var w = args.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var n = w.Length > 1 && int.TryParse(w[1], out var k) ? Math.Clamp(k, 1, 8) : 1;
+        var s = "";
+        for (var i = 0; i < n; i++)
+        {
+            if (i > 0)
+                BaseBody = 0;
+            s = Line(world, at + new Vector3(25f * i, 0, 0), w.Length > 0 ? w[0] : "", out _);
+        }
+        return n > 1 ? $"{n} lines; the last: {s}" : s;
     }
 }
