@@ -418,8 +418,8 @@ public static class ConstructLogisticsPlan
         for (var i = 0; i < net.MachineN; i++)
         {
             var mk = net.Machines[i];
-            if (mk == e.Dest || what.IsPiece != c.DefOf(mk).IsExtruder && !c.DefOf(mk).IsPress)
-                continue; // (a piece is an Extruder's or a Former's; a part an Assembler's or a Press's: Refusal says which takes it)
+            if (mk == e.Dest || what.IsPiece != c.DefOf(mk).IsExtruder && !c.DefOf(mk).IsPress && !(WorkOrders.IsWholeFormer(c.DefOf(mk)) && FormerPresets.PartOf(what) != null))
+                continue; // (a piece is an Extruder's or a Former's; a part an Assembler's, a Press's or, a preset wing or rotor, a Fan or Airframe Former's: Refusal says which)
             var why = WorkOrders.Refusal(world, c, mk, what);
             if (why != null)
             {

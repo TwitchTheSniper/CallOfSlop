@@ -1082,7 +1082,9 @@ The Fan and Airframe Formers take [work orders](#work-orders) as the Wheel Forme
   Capital surfaces (too big) and every rotor (power, rpm and mass differ). Catalogue wings and rotors never had an Assembler recipe, so
   nothing moved off the Assembler. `--bill` lists a preset as `formed (Airframe Former, KEY)`.
 - **Not yet**: the Crafting Terminal lists no former's parts and a chain doesn't ask a former (`ConstructCrafting.MachineMakes`).
-
+- **The Crafting Terminal and chains** (phase 4c): the list shows each preset a linked Fan or Airframe Former takes (`ConstructCrafting.Catalogue`),
+  an order for one goes to that former, `MachineMakes` names it in a recipe's missing line, and a chain link for a preset may go to it
+  (`ConstructLogisticsPlan.FindMaker`). Catalogue wings are physics-only, so no Assembler recipe takes one and a chain never asks for one today.
 
 ## Crafting terminal
 

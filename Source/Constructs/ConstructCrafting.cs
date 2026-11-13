@@ -468,7 +468,31 @@ public static class ConstructCrafting
                 row.Make = (byte)(fed ? 1 : Bulk(world, c, net, mat, -1) > 0 ? 2 : 3);
                 row.Missing = fed ? "" : row.Make == 2 ? $"the {md.Name} needs {names.NameOf(mat)}: a linked bin holds some" : $"needs {names.NameOf(mat)} in the {md.Name}";
             }
-            if (md.IsWheelFormer)
+            if (WorkOrders.IsWholeFormer(md))
+            {
+                // A Fan or an Airframe Former (formers' work orders): each catalogue part that is its preset and that it takes, as a press
+                // lists its die's presets; its own run-time pieces come by bills and blueprints.
+                foreach (var (pname, _) in ExtrusionTable.Current.Presets)
+                {
+                    if (ConstructParts.Find(pname) is not { } pp || FormerPresets.KeyOf(pp) is not { } pk)
+                        continue;
+                    var what = new WorkOrder { Part = (ushort)pp.Id, Count = 1 };
+                    if (WorkOrders.Refusal(world, c, m, what) != null)
+                        continue;
+                    var row = Row(what, pp);
+                    if (row.Make == 1)
+                        continue;
+                    var make = (byte)(fed ? 1 : Bulk(world, c, net, pk.Material, -1) > 0 ? 2 : 3);
+                    if (row.Make == 0 || make < row.Make)
+                    {
+                        row.Make = make;
+                        row.Machine = m;
+                        row.Recipe = null;
+                        row.Missing = fed ? "" : make == 2 ? $"the {md.Name} needs {names.NameOf(pk.Material)}: a linked bin holds some" : $"needs {names.NameOf(pk.Material)} in the {md.Name}";
+                    }
+                }
+            }
+            else if (md.IsWheelFormer)
                 Piece(new ExtrusionKey(0, (ushort)MathF.Round(md.ExtWheelStart.X * 100), (ushort)MathF.Round(md.ExtWheelStart.Y * 100), 0, mat, false, ExShape.Wheel));
             else
                 foreach (var p in StdProfiles)
@@ -481,7 +505,8 @@ public static class ConstructCrafting
     private static byte FirstMaterial(ConstructPartDef d)
     {
         for (byte m = 1; m <= RecyclingTable.Current.Materials.Length; m++)
-            if (d.IsWheelFormer ? ExtrusionTable.Current.FindWheel(m) != null : ExtrusionTable.Current.Find(m) != null)
+            if (d.IsFanFormer ? ExtrusionTable.Current.FindFan(m) != null : d.IsAirframeFormer ? ExtrusionTable.Current.FindWing(m) != null
+                : d.IsWheelFormer ? ExtrusionTable.Current.FindWheel(m) != null : ExtrusionTable.Current.Find(m) != null)
                 return m;
         return 1;
     }
@@ -579,7 +604,14 @@ public static class ConstructCrafting
         {
             // (Press phase 5: a part a die presses, the Gear Set, the Circuit Board: a linked press with that die fitted makes it)
             if (ConstructBill.PresetOf(ConstructParts.Get(part)) is not { } spec)
+            {
+                // (formers' work orders: a catalogue wing or rotor that is a Fan or Airframe Former's preset, at a former it fits)
+                if (FormerPresets.KeyOf(part) is { } fk)
+                    for (var i = 0; i < net.MachineN; i++)
+                        if (c.DefOf(net.Machines[i]) is var fd && WorkOrders.IsWholeFormer(fd) && (fk.Shape == ExShape.Fan) == fd.IsFanFormer && FormerPresets.Fits(fd, fk) == null)
+                            return fd.Name;
                 return null;
+            }
             for (var i = 0; i < net.MachineN; i++)
                 if (c.DefOf(net.Machines[i]) is { IsPress: true, IsLathe: false } pd && ReferenceEquals(ConstructPress.SizedDieOf(PressTable.Current, c, net.Machines[i]), spec.Die)
                     && Pressed.Across(spec.Blank) <= pd.PressMaxCm)
@@ -702,7 +734,7 @@ public static class ConstructCrafting
 
     /// <summary>Is a machine of the order's own kind, so its refusal is the one a player reads: a Press for a pressed part, an Assembler for a catalogue part, else an Extruder or a Former.</summary>
     internal static bool Kin(ConstructPartDef md, in WorkOrder what) =>
-        what.IsPressed ? md.IsPress : md.IsPress ? Pressed.SpecOf(what) != null : md.IsAssembler != what.IsPiece;
+        what.IsPressed ? md.IsPress : md.IsPress ? Pressed.SpecOf(what) != null : FormerPresets.PartOf(what) != null ? WorkOrders.IsWholeFormer(md) : md.IsAssembler != what.IsPiece;
 
     /// <summary>Server: cancels an order: its claims go, and what it asked of a machine and wasn't begun comes off that queue.</summary>
     public static string? Cancel(ConstructWorld world, Construct c, int t, ushort id)
