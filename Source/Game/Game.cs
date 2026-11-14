@@ -2362,6 +2362,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.LabourIncident when !IsServer:
                 ReadLabourIncident(ref r); // an incident in a gang (GameLabourIncidents.cs)
                 break;
+            case (byte)Msg.Holes when !IsServer:
+                HullHoles.Read(ref r, Constructs); // plates that took holes, swapped in place (HullHoles.cs)
+                break;
             case (byte)Msg.Breakout when !IsServer:
                 ReadBreakout(ref r); // the convicts' break-out (GameBreakout.cs)
                 break;

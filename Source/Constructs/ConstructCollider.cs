@@ -181,6 +181,7 @@ internal sealed partial class ConstructCollider
                 AddCylinder(c, _wheelOf[i], i, seg);
             }
         }
+        _hullsUsed = hullAt;
         AddRough(c);
         // Group by joint, in segment order, and build each group's tree.
         var nodesNeeded = Math.Max(1, LeafCount * 2);
@@ -241,6 +242,7 @@ internal sealed partial class ConstructCollider
     }
 
     private int _hullShift;
+    private int _hullsUsed; // hull slots the leaves use (AddParts adds after them)
 
     private const int HullReuseAhead = 96; // slots looked through: a part's hulls, a few times over
 
@@ -306,14 +308,16 @@ internal sealed partial class ConstructCollider
     // ---- Parts added by the journal (ConstructRebuild.cs): a small tree of their own beside the big one ----------------
 
     /// <summary>Leaves the added parts' own group may hold before the collider is built again.</summary>
-    private const int ExtraMax = 512;
+    private const int ExtraMin = 512;
+    private int _extraMax = ExtraMin; // (a big body's share: holed plates come back through it, HullHoles.cs; set by ReserveExtra)
 
     private int _mainLeaves, _mainNodes, _extraGroup = -1;
 
-    /// <summary>Room for <see cref="ExtraMax"/> more leaves, their nodes and their group, made with the big tree (never in a tick).</summary>
+    /// <summary>Room for <see cref="_extraMax"/> more leaves (an eighth of the big tree's, 512 to 8,192), their nodes and their group, made with the big tree (never in a tick).</summary>
     private void ReserveExtra(Construct c)
     {
-        var leaves = LeafCount + ExtraMax;
+        _extraMax = Math.Clamp(LeafCount / 8, ExtraMin, 8192);
+        var leaves = LeafCount + _extraMax;
         if (Leaves.Length < leaves)
             Array.Resize(ref Leaves, leaves);
         if (Nodes.Length < leaves * 2)
@@ -327,14 +331,18 @@ internal sealed partial class ConstructCollider
     /// <summary>
     /// Plain parts <paramref name="from"/> to <paramref name="to"/> (just added) into a group of the body's own segment
     /// with a small tree of its own (the big one stays as it is). False when there's no room for them, or a part has a
-    /// convex hull: built again then.
+    /// convex hull: built again then. <paramref name="also"/>: parts whose type was swapped in place (their old leaves already gone by
+    /// <see cref="Remap"/>: a holed plate, HullHoles.cs).
     /// </summary>
-    public bool AddParts(Construct c, int from, int to)
+    public bool AddParts(Construct c, int from, int to, ReadOnlySpan<int> also = default)
     {
         if (_mainLeaves < FastMin || _mainLeaves > LeafCount)
             return false;
         for (var i = from; i < to; i++)
             if (ConstructHulls.Of(c.Parts[i].D).Length > 0 || c.Parts[i].Seg != 0)
+                return false;
+        foreach (var i in also)
+            if (c.Parts[i].Seg != 0)
                 return false;
         if (_extraGroup < 0 && (GroupCount >= Groups.Length || GroupCount > Construct.MaxJoints))
             return false;
@@ -346,17 +354,31 @@ internal sealed partial class ConstructCollider
             else
                 _dead--;
         LeafCount = at;
-        for (var i = from; i < to; i++)
+        for (var k = 0; k < to - from + also.Length; k++)
         {
+            var i = k < to - from ? from + k : also[k - (to - from)];
             var boxes = c.SolidCount(i);
-            if (LeafCount + Math.Max(1, boxes) > Math.Min(Leaves.Length, _mainLeaves + ExtraMax))
+            var hs = k < to - from || c.MergeOf[i] != 0 ? [] : ConstructHulls.Of(c.Parts[i].D); // (a swapped part's hulls: a faceted plate taking a hole)
+            if (LeafCount + Math.Max(1, boxes) + hs.Length > Math.Min(Leaves.Length, _mainLeaves + _extraMax))
                 return false;
             for (var b = 0; b < boxes; b++)
             {
+                if (hs.Length > 0 && ConstructHulls.Covered(c.Parts[i].D, b))
+                    continue;
                 c.SolidBox(i, b, out var centre, out var half);
                 Add(centre, half, Quaternion.Identity, Vector3.Zero, false, i, 0, false, -1);
             }
-            if (boxes == 0)
+            for (var h = 0; h < hs.Length; h++)
+            {
+                if (_hullsUsed >= Hulls.Length)
+                    Array.Resize(ref Hulls, Math.Max(16, Hulls.Length * 2)); // (an edit: grows now and then)
+                ref var p = ref c.Parts[i];
+                var hull = hs[h].MovedInto(Hulls[_hullsUsed], Rot24.Quat(p.Rot), p.Pos, c.ScaleOf(i));
+                hull.Bounds(out var mn, out var mx);
+                Hulls[_hullsUsed] = hull;
+                Add((mn + mx) * 0.5f, (mx - mn) * 0.5f, Quaternion.Identity, Vector3.Zero, false, i, 0, false, _hullsUsed++);
+            }
+            if (boxes == 0 && hs.Length == 0)
             {
                 c.PartBounds(i, out var mn, out var mx);
                 Add((mn + mx) * 0.5f, (mx - mn) * 0.5f, Quaternion.Identity, Vector3.Zero, false, i, 0, false, -1);

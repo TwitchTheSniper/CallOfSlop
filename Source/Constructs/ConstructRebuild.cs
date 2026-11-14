@@ -36,7 +36,9 @@ internal static class PlainParts
     public static bool Of(ConstructPartDef d)
     {
         if (d.MatBase is { } b)
-            return Of(b); // (a part of another material differs from its file part only in structural fields: PartMaterials.cs)
+            return Of(b);
+        if (HullHoles.IsHoled(d))
+            return Of(HullHoles.BaseOf(d)); // (a holed plate is its file part with fewer boxes: HullHoles.cs) // (a part of another material differs from its file part only in structural fields: PartMaterials.cs)
         if (d.Id >= ConstructParts.MaxTypes)
             return false; // (a run-time part: an extrusion, a design)
         if (!ReferenceEquals(Volatile.Read(ref _seen[d.Id]), d))
@@ -54,7 +56,33 @@ internal static class PlainParts
         return Work(d, why) ? null : string.Join(", ", why);
     }
 
-    private static bool Work(ConstructPartDef d, List<string>? why)
+    /// <summary>The fields a part's own hull shapes live in: a part plain but for them can still change type in place (<see cref="OfShape"/>).</summary>
+    private static readonly HashSet<string> ShapeOnly = [nameof(ConstructPartDef.OwnShapes), nameof(ConstructPartDef.Hulls), nameof(ConstructPartDef.HullCovers)];
+
+    private static readonly ConstructPartDef?[] _shapeSeen = new ConstructPartDef?[ConstructParts.MaxTypes];
+    private static readonly bool[] _shapePlain = new bool[ConstructParts.MaxTypes];
+
+    /// <summary>
+    /// Plain structure but for its own hull shapes (a faceted plate)? Such a part may change type in place by the journal
+    /// (<see cref="Construct.JournalSwap"/>: a plate taking a hole), its collider leaves made again alone; adds and removals still need <see cref="Of"/>.
+    /// </summary>
+    public static bool OfShape(ConstructPartDef d)
+    {
+        if (HullHoles.IsHoled(d))
+            d = HullHoles.BaseOf(d);
+        if (d.MatBase is { } b)
+            d = b;
+        if (d.Id >= ConstructParts.MaxTypes)
+            return false;
+        if (!ReferenceEquals(Volatile.Read(ref _shapeSeen[d.Id]), d))
+        {
+            _shapePlain[d.Id] = Work(d, null, ShapeOnly);
+            Volatile.Write(ref _shapeSeen[d.Id], d);
+        }
+        return _shapePlain[d.Id];
+    }
+
+    private static bool Work(ConstructPartDef d, List<string>? why, HashSet<string>? also = null)
     {
         var ok = true;
         if (d.Role is not (PartRole.Frame or PartRole.Panel))
@@ -71,7 +99,7 @@ internal static class PlainParts
             }
         foreach (var f in Fields)
         {
-            if (Structural.Contains(f.Name) || f.IsInitOnly && f.IsStatic)
+            if (Structural.Contains(f.Name) || also != null && also.Contains(f.Name) || f.IsInitOnly && f.IsStatic)
                 continue;
             if (Same(f.GetValue(d), f.GetValue(Blank)))
                 continue;
@@ -150,6 +178,9 @@ public sealed partial class Construct
     private bool _jPower; // the circuit has to be flooded again (a powered part went and its neighbours didn't meet round it)
     private bool _jBounds; // a part on the bounds went: the bounds are summed again
     private bool _jAdded; // parts were added (they go into the collider's small tree of their own)
+    private int[] _jSwap = new int[16]; // parts there at the last rebuild whose type was swapped since (a holed plate: HullHoles.cs), by index now
+    private int _jSwapCount;
+    private int[] _jKill = [];
     private int _plainCount; // plain rebuilds since the sums were summed from the parts
     private int _editSerial, _serialAtRebuild; // (what the collider and the part tree were built at)
 
@@ -197,6 +228,78 @@ public sealed partial class Construct
         if (!Journalling || i != PartCount - 1 || !IsPlainPart(i))
             return false;
         _jAdded = true;
+        DirtyPlain();
+        return true;
+    }
+
+    /// <summary>
+    /// Part <paramref name="i"/> becomes type <paramref name="def"/> in place (a plate taking a hole: HullHoles.cs), by the journal when
+    /// both types are plain and the part's links don't change: its share of the sums is swapped, its collider leaves are made again
+    /// alone, and the part tree keeps its old bounds (a hole only takes boxes away: loose, never short). False: nothing was changed,
+    /// and the caller swaps the type and marks the body <see cref="Dirty"/> itself. Not after parts were taken off in the same journal
+    /// (their numbers moved: <see cref="_jSwap"/> holds numbers now).
+    /// </summary>
+    /// <summary>Why <see cref="JournalSwap"/> would refuse part <paramref name="i"/> taking <paramref name="def"/> now (null: it wouldn't), for a bench.</summary>
+    internal string? SwapRefusal(int i, ushort def)
+    {
+        if (_needFull)
+            return "the body waits for a whole rebuild";
+        if (PartCount < IncrementalMin || _jBase < IncrementalMin)
+            return $"under {IncrementalMin} parts";
+        if (FreeformCount > 0 || MergeCount > 0 || LegCount > 0)
+            return "freeform welds, merges or legs";
+        if (_jMapped)
+            return "parts were taken off since the last rebuild";
+        if ((uint)i >= (uint)PartCount)
+            return "no such part";
+        if (!SwapShape(i))
+            return $"not plain: {PlainParts.Why(Parts[i].D) ?? "its segment, store, merge or a routed link"}";
+        if (!PlainParts.OfShape(ConstructParts.Def(def)))
+            return $"the new type isn't plain: {PlainParts.Why(ConstructParts.Def(def))}";
+        return null;
+    }
+
+    /// <summary>
+    /// Is part <paramref name="i"/> one no system looks at: plain but for its own hull shapes (<see cref="PlainParts.OfShape"/>; a faceted
+    /// hull plate is structure, which only the collider and the drawing read), on the body's segment, holding and merged with nothing.
+    /// </summary>
+    private bool SpecialFree(int i)
+    {
+        ref var p = ref Parts[i];
+        return p.Seg == 0 && p.Store == 0 && (i >= MergeOf.Length || MergeOf[i] == 0) && PlainParts.OfShape(p.D);
+    }
+
+    /// <summary>Can part <paramref name="i"/> change type in place: plain but for its hull shapes, on the body's segment, holding and merged with nothing, no routed link's end?</summary>
+    private bool SwapShape(int i)
+    {
+        ref var p = ref Parts[i];
+        return p.Seg == 0 && p.Store == 0 && (i >= MergeOf.Length || MergeOf[i] == 0) && PlainParts.OfShape(p.D) && !OnRoute(i);
+    }
+
+    internal bool JournalSwap(int i, ushort def)
+    {
+        if (!Journalling || _jMapped || (uint)i >= (uint)PartCount || !SwapShape(i) || !PlainParts.OfShape(ConstructParts.Def(def)))
+            return false;
+        var survivor = i < _jSurvivors;
+        if (survivor)
+        {
+            var dup = false;
+            for (var k = 0; k < _jSwapCount && !dup; k++)
+                dup = _jSwap[k] == i;
+            if (!dup && _jSwapCount >= _jSwap.Length)
+                Array.Resize(ref _jSwap, _jSwap.Length * 2); // (an edit, not a tick: it grows once)
+            StructBounds(i, out var mn, out var mx);
+            for (var a = 0; a < 3; a++)
+                if (mn[a] <= _sMin[a] || mx[a] >= _sMax[a])
+                    _jBounds = true; // (on the bounds: summed again, as when a part on them goes)
+            AddPartSums(i, -1);
+            Parts[i].Def = def;
+            AddPartSums(i, 1);
+            if (!dup)
+                _jSwap[_jSwapCount++] = i;
+        }
+        else
+            Parts[i].Def = def; // (came since the last rebuild: added whole by RebuildPlain)
         DirtyPlain();
         return true;
     }
@@ -253,6 +356,11 @@ public sealed partial class Construct
     {
         if (!_dirty || _needFull)
             return;
+        if (_jSwapCount > 0)
+        {
+            Dirty = true; // (swapped parts are held by their numbers, which this moves: rebuilt whole, which is rare)
+            return;
+        }
         if (!_jMapped)
         {
             if (_jMap.Length < _jBase)
@@ -279,6 +387,7 @@ public sealed partial class Construct
         _needFull = false;
         _jBase = _jSurvivors = PartCount;
         _jMapped = _jPower = _jBounds = _jAdded = false;
+        _jSwapCount = 0;
         _serialAtRebuild = _editSerial;
     }
 
@@ -286,7 +395,7 @@ public sealed partial class Construct
 
     private int[] _special = [];
 
-    /// <summary>The parts that aren't plain (<see cref="IsPlainPart"/>), in part order: the systems look only at these.</summary>
+    /// <summary>The parts that aren't plain (<see cref="IsPlainPart"/>; a faceted plate counts as plain here), in part order: the systems look only at these.</summary>
     internal int SpecialCount;
 
     internal ReadOnlySpan<int> Specials => _specialsLive ? _special.AsSpan(0, SpecialCount) : AllIndices.AsSpan(0, PartCount);
@@ -324,7 +433,7 @@ public sealed partial class Construct
             if (RouteNodes[k].Host < PartCount)
                 routed[RouteNodes[k].Host] = true;
         for (var i = 0; i < PartCount; i++)
-            if (routed[i] || !PlainShape(i))
+            if (routed[i] || !SpecialFree(i))
                 _special[SpecialCount++] = i;
         _specialsLive = true;
     }
@@ -867,12 +976,25 @@ public sealed partial class Construct
             _colliderStale = true;
             return;
         }
-        if (_colliderSerial != _serialAtRebuild || _jMapped && !_collider.Remap(_jMap, _jBase) || _jAdded && !_collider.AddParts(this, _jSurvivors, PartCount))
+        if (_colliderSerial != _serialAtRebuild || _jMapped && !_collider.Remap(_jMap, _jBase) || _jSwapCount > 0 && !_collider.Remap(KillSwapped(), _jBase)
+            || (_jAdded || _jSwapCount > 0) && !_collider.AddParts(this, _jSurvivors, PartCount, _jSwap.AsSpan(0, _jSwapCount)))
         {
             _colliderStale = true; // (built at another point of the journal, too many holes, or no room for what came)
             return;
         }
         _colliderSerial = _editSerial; // (current again: as of this rebuild)
+    }
+
+    /// <summary>The collider's map for swapped parts: every part keeps its number, a swapped one's leaves go (made again by AddParts).</summary>
+    private int[] KillSwapped()
+    {
+        if (_jKill.Length < _jBase)
+            _jKill = new int[Math.Max(_jBase, _jKill.Length * 2)];
+        for (var k = 0; k < _jBase; k++)
+            _jKill[k] = k;
+        for (var k = 0; k < _jSwapCount; k++)
+            _jKill[_jSwap[k]] = -1;
+        return _jKill;
     }
 
     /// <summary>The part tree likewise: renumbered, the parts that went left out; parts that came are handed back as loose (as before).</summary>

@@ -559,6 +559,7 @@ public sealed partial class Game
                     Constructs.StationChanged(c);
             }
         Constructs.StructureDirty.Clear();
+        SandboxHolesFlush(); // (after the structure: a body sent whole this tick has its holes already; HullHoles.cs)
         foreach (var id in Constructs.RidersDirty)
             if (Constructs.Get(id) is { } c)
             {

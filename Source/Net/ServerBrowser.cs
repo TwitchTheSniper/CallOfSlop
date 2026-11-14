@@ -530,7 +530,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 317: Incidents in the colony's gangs (docs/story/LABOUR.md "Incidents"): Msg.LabourIncident at the end of Msg (u8 scene, u8 kind,
     //   u8 inmate, u32 the tick it began).
     // 318: Holes in hull plates (docs/sandbox/design/hull-holes-spike.md): a holed part travels as a named run-time part,
-    //   its key "Holed (Base | holes)" after Extrusion.WireMark and HullLoft.WireKind (no new messages).
+    //   its key "Holed (Base | holes)" after Extrusion.WireMark and HullLoft.WireKind; Msg.Holes at the end of Msg (u16 body, u16 part count,
+    //   u8 n, n x (u16 part, the part's new type)): a big body's holes swapped in place on each peer, not its structure resent.
     public const ushort ProtocolVersion = 318;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>

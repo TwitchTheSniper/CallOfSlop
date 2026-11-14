@@ -28,7 +28,7 @@ public static partial class SelfTest
     {
         public readonly List<double> Bore = new(), Rebuild = new(), Collider = new(), Server = new(), ServerCpu = new(), Client = new();
         public readonly double[] Areas = new double[Perf.Count];
-        public int Lines, Parts, Holed, Refused, Skipped;
+        public int Lines, Parts, Holed, Refused, Skipped, Whole;
 
         /// <summary>Server: what the tick just ended spent in each area (F9's).</summary>
         public void TakeAreas()
@@ -119,7 +119,7 @@ public static partial class SelfTest
             var takes = 0;
             for (var i = 0; i < c.PartCount; i++)
                 takes += HullHoles.Refusal(c.DefOf(i)) == null ? 1 : 0;
-            Console.WriteLine($"[holes bench] {name}: {c.PartCount} parts ({takes} can take holes), {(c.LocalMax - c.LocalMin).Length():0} m across; client has it: {client.Constructs.Get(c.Id) != null}");
+            Console.WriteLine($"[holes bench] {name}: {c.PartCount} parts ({takes} can take holes), {(c.LocalMax - c.LocalMin).Length():0} m across; client has it: {client.Constructs.Get(c.Id) != null}; the journal would take a swap of part 0: {c.SwapRefusal(0, c.Parts[0].Def) ?? "yes"}, of the last: {c.SwapRefusal(c.PartCount - 1, c.Parts[c.PartCount - 1].Def) ?? "yes"}");
         }
         if (ships.Count == 0)
             return 1;
@@ -138,8 +138,10 @@ public static partial class SelfTest
                         c.Wake();
                 var sw = Stopwatch.StartNew();
                 var c0 = ThreadCpu.NowMs();
+                var sent0 = server.Net.BytesSent;
                 now += dt;
                 server.Update(now, dt);
+                idle.Bytes += server.Net.BytesSent - sent0;
                 idle.ServerCpu.Add(ThreadCpu.NowMs() - c0);
                 idle.Server.Add(sw.Elapsed.TotalMilliseconds);
                 idle.TakeAreas();
@@ -148,7 +150,7 @@ public static partial class SelfTest
                 Perf.EndFrame();
                 idle.Client.Add(sw.Elapsed.TotalMilliseconds);
             }
-            Console.WriteLine($"[holes bench] idle{(awake == 1 ? ", woken" : "")}: server update {HoleTally.Of(idle.Server)} (cpu {HoleTally.Of(idle.ServerCpu)}); client update {HoleTally.Of(idle.Client)}");
+            Console.WriteLine($"[holes bench] idle{(awake == 1 ? ", woken" : "")}: server update {HoleTally.Of(idle.Server)} (cpu {HoleTally.Of(idle.ServerCpu)}); client update {HoleTally.Of(idle.Client)}; {idle.Bytes / Math.Max(1, idle.Server.Count)} B sent a tick");
             Console.WriteLine($"[holes bench]   server areas a tick: {idle.TopAreas(idle.Server.Count)} ms");
         }
         var defs0 = HullHoles.DefsMade;
@@ -157,6 +159,12 @@ public static partial class SelfTest
         var build0 = HullHoles.BuildMs;
         var why = new Dictionary<string, int>();
         // Holes go to each ship by its share of parts that can take them, the Rust Bucket at least a tenth.
+        var plain0 = Construct.PlainRuns;
+        var full0 = Construct.FullRuns;
+        var checks0 = Construct.CheckRuns;
+        var fails0 = Construct.CheckFails;
+        var unplaced0 = HullHoles.Unplaced;
+        var holeBytes0 = HullHoles.MessageBytes;
         foreach (var (name, c) in ships)
         {
             var t = new HoleTally();
@@ -176,6 +184,7 @@ public static partial class SelfTest
                     t.Holed += r.Holed;
                     t.Refused += r.Refused;
                     t.Skipped += r.Skipped;
+                    t.Whole += r.Whole ? 1 : 0;
                     made += r.Holed;
                     if (r.Refused > 0)
                         why[HullHoles.LastRefusal] = why.GetValueOrDefault(HullHoles.LastRefusal) + r.Refused;
@@ -202,7 +211,7 @@ public static partial class SelfTest
                 Perf.EndFrame();
                 t.Client.Add(sw.Elapsed.TotalMilliseconds);
             }
-            Console.WriteLine($"[holes bench] {name}: {t.Lines} lines, {t.Holed} holes made in {t.Parts} parts crossed ({t.Refused} refused, {t.Skipped} passed), {t.Bytes / 1024} KB sent ({(t.Lines > 0 ? t.Bytes / t.Lines : 0)} B a line)");
+            Console.WriteLine($"[holes bench] {name}: {t.Lines} lines, {t.Holed} holes made in {t.Parts} parts crossed ({t.Refused} refused, {t.Skipped} passed), {t.Whole} lines rebuilt the body whole, {t.Bytes / 1024} KB sent ({(t.Lines > 0 ? t.Bytes / t.Lines : 0)} B a line)");
             Console.WriteLine($"[holes bench]   bore {HoleTally.Of(t.Bore)}; rebuild {HoleTally.Of(t.Rebuild)}; collider {HoleTally.Of(t.Collider)}");
             Console.WriteLine($"[holes bench]   server update {HoleTally.Of(t.Server)} (cpu {HoleTally.Of(t.ServerCpu)}); client update {HoleTally.Of(t.Client)}");
             Console.WriteLine($"[holes bench]   server areas a tick: {t.TopAreas(t.Server.Count)} ms");
@@ -210,6 +219,10 @@ public static partial class SelfTest
         Perf.SetOn(false);
         Pump(server, [client], 3.0, ref now, clock);
         Console.WriteLine($"[holes bench] {HullHoles.DefsMade - defs0} holed parts made ({HullHoles.BuildMs - build0:0} ms building them, {HullHoles.Refused - refused0} refused), shape table moved {PartShapes.Version - shapes0}; {HullHoles.FacetsCut} facets and {HullHoles.BoxesCut} boxes cut, {HullHoles.PiecesDropped} pieces dropped");
+        Console.WriteLine($"[holes bench] rebuilds (host and client): {Construct.PlainRuns - plain0} by the journal, {Construct.FullRuns - full0} whole; {HullHoles.Unplaced - unplaced0} holes the client couldn't place; hole messages {(HullHoles.MessageBytes - holeBytes0) / 1024} KB{(Construct.RebuildCheck ? $"; journal checked against a full rebuild {Construct.CheckRuns - checks0} times, {Construct.CheckFails - fails0} differed" : "")}");
+        if (Construct.RebuildCheck)
+            foreach (var line in Construct.CheckLog.Take(10))
+                Console.WriteLine($"[holes bench]   check: {line}");
         foreach (var (k, v) in why.OrderByDescending(x => x.Value))
             Console.WriteLine($"[holes bench]   refused {v}: {k}");
         var bad = 0;

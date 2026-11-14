@@ -559,6 +559,7 @@ public static class HullHoles
     public struct BoreReport
     {
         public int Parts, Holed, Refused, Skipped;
+        public bool Whole; // the body had to be rebuilt whole (not by the journal) and its structure resent
         public double Ms;
     }
 
@@ -568,7 +569,9 @@ public static class HullHoles
     /// <summary>
     /// The railgun's line through <paramref name="c"/> (server): every part it crosses within <paramref name="reach"/>, nearest first, takes
     /// a hole of <paramref name="radius"/> until <paramref name="power"/> is spent (each holed part's armour comes off it). Parts that can't
-    /// take a hole are passed (counted as skipped). The body is marked for a rebuild and its structure goes out, as a wall losing a chunk does.
+    /// take a hole are passed (counted as skipped). A big body takes them by the journal (<see cref="Construct.JournalSwap"/>: only the
+    /// holed plates are rebuilt) and they go out as <see cref="Msg.Holes"/>; otherwise it is marked for a whole rebuild and its structure
+    /// goes out, as a wall losing a chunk does.
     /// </summary>
     public static BoreReport Bore(ConstructWorld w, Construct c, Vector3 from, Vector3 dir, float radius, float reach, float power = 100000f)
     {
@@ -619,18 +622,85 @@ public static class HullHoles
                 rep.Refused++;
                 continue;
             }
-            p.Def = holed.Id;
+            if (c.JournalSwap(i, holed.Id))
+                w.HolesDirty.Add((c.Id, (ushort)i));
+            else
+            {
+                p.Def = holed.Id;
+                rep.Whole = true;
+            }
             rep.Holed++;
             power -= MathF.Max(1f, d.Armour);
         }
-        if (rep.Holed > 0)
+        if (rep.Whole)
         {
             c.Dirty = true;
             w.StructureDirty.Add(c.Id);
-            c.Wake();
         }
+        if (rep.Holed > 0)
+            c.Wake();
         rep.Ms = clock.Elapsed.TotalMilliseconds;
         return rep;
+    }
+
+    // ---- The wire: Msg.Holes ----------------------------------------------------------------------------------------
+
+    /// <summary>Server: <paramref name="n"/> holed parts of <paramref name="c"/> from <paramref name="list"/> (all of this body) as one message.</summary>
+    internal static void Write(PacketWriter w, Construct c, List<(ushort Body, ushort Part)> list, int from, int n)
+    {
+        w.Begin(Msg.Holes).U16(c.Id).U16((ushort)c.PartCount).U8((byte)n);
+        for (var k = from; k < from + n; k++)
+        {
+            var i = list[k].Part;
+            w.U16(i);
+            ConstructStorage.WriteDef(w, i < c.PartCount ? c.Parts[i].Def : ConstructParts.Need("Frame Beam").Id);
+        }
+        MessageBytes += w.Length;
+    }
+
+    /// <summary>Bytes of <see cref="Msg.Holes"/> written (each sent to every client), for a bench.</summary>
+    public static long MessageBytes;
+
+    /// <summary>Holes a client was told of but couldn't place (its copy differed): the body digest puts the body right.</summary>
+    public static int Unplaced;
+
+    /// <summary>
+    /// Client: each part named takes its new type in place, by the journal where it can (else the body is rebuilt whole), when the copy
+    /// has the same part count and the part is the same file part; anything else is left for the body digest (protocol 101) to resend.
+    /// </summary>
+    internal static void Read(ref PacketReader r, ConstructWorld world)
+    {
+        var id = r.U16();
+        var count = r.U16();
+        var n = r.U8();
+        var c = world.Get(id);
+        var swapped = false;
+        for (var k = 0; k < n; k++)
+        {
+            var i = r.U16();
+            var def = ConstructStorage.ReadDef(ref r);
+            if (c == null || c.PartCount != count || i >= c.PartCount)
+            {
+                Unplaced++;
+                continue;
+            }
+            var now = c.Parts[i].D;
+            if (now.Id == def)
+                continue;
+            if (BaseOf(now) != BaseOf(ConstructParts.Def(def)))
+            {
+                Unplaced++;
+                continue;
+            }
+            if (!c.JournalSwap(i, def))
+            {
+                c.Parts[i].Def = def;
+                c.Dirty = true;
+            }
+            swapped = true;
+        }
+        if (swapped && c != null)
+            c.Rebuild();
     }
 
     /// <summary>Where a ray from <paramref name="o"/> along <paramref name="d"/> enters the box within <paramref name="far"/>, or -1.</summary>

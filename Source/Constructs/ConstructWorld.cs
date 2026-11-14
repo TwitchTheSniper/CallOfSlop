@@ -93,6 +93,9 @@ public sealed partial class ConstructWorld
 
     // Network queues (server): bodies whose parts changed, bodies gone, part health changes.
     public readonly HashSet<ushort> StructureDirty = new(256);
+
+    /// <summary>Parts that took a hole by the journal since the last flush (HullHoles.cs): sent as <see cref="Msg.Holes"/>, not as the body's structure.</summary>
+    public readonly List<(ushort Body, ushort Part)> HolesDirty = new(256);
     public readonly List<ushort> Removed = new(256);
     public readonly ushort[] Resync = new ushort[64]; // client: the bodies the last body digest found wrong here (protocol 101), asked for again
     public int ResyncCount;
@@ -449,6 +452,7 @@ public sealed partial class ConstructWorld
         GridStale();
         _byId.Clear();
         StructureDirty.Clear();
+        HolesDirty.Clear();
         HealthDirty.Clear();
         ExtrudeDirty.Clear();
         AnalogDirty.Clear();
