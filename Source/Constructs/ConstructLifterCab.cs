@@ -88,10 +88,10 @@ public static partial class ConstructLifters
             CabGrab(world, query, c, l, ld);
             world.LiftChanged(c.Id);
         }
-        var cp = c.Parts[l.CabPart];
-        var keys = (Buttons)(cp.Keys & 0xFF);
+        var keys = l.CabKeys;
+
         Vector3 move = default;
-        var fwd = World.Forward(cp.AimYaw, 0);
+        var fwd = World.Forward(l.CabYaw, 0);
         fwd.Y = 0;
         fwd = fwd.LengthSquared() > 1e-6f ? Vector3.Normalize(fwd) : Vector3.UnitZ;
         var right = Vector3.Cross(fwd, Vector3.UnitY);
@@ -341,5 +341,15 @@ public sealed partial class ConstructEdits
             return "the lifter is finishing its move: a moment";
         l.GrabAsk = true;
         return null;
+    }
+}
+
+public static partial class ConstructLifters
+{
+    /// <summary>Server, each tick from the seat loop: a manned Lifter Cab's movement keys and look, for its lifter's next step.</summary>
+    public static void CabInput(ConstructWorld world, Construct c, int cab, Buttons keys, float yaw)
+    {
+        if (CabLifter(world, c, cab) is { } l)
+            (l.CabKeys, l.CabYaw) = (keys, yaw);
     }
 }

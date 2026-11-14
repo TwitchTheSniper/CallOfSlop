@@ -201,6 +201,8 @@ public sealed class CLift
     public byte OrderSeq; // server: the last order id given
     public int CabPart = -1; // (phase 8, both peers) its Lifter Cab on its construct (ConstructLifterCab.cs), or -1
     public bool Steered; // (phase 8) its cab steers it: the move is a straight step from From to To (sent)
+    public Buttons CabKeys; // (phase 8) server: the cab's movement keys and the sitter's yaw, from the seat loop
+    public float CabYaw;
     public bool GrabAsk; // (phase 8) server: F in the cab, for the next step
     public int OutTurn; // server: the point after the last out it carried from (the outs take turns)
     public int OrderLook; // server: 10 Hz steps since its last look at its orders

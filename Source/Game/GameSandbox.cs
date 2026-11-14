@@ -370,6 +370,8 @@ public sealed partial class Game
             }
             c.Parts[seat].AimYaw = p.Yaw; // (a gunner points the guns with their look; ConstructWeapons.cs)
             c.Parts[seat].AimPitch = p.Pitch;
+            if (c.Parts[seat].D.LifterCab)
+                ConstructLifters.CabInput(Constructs, c, seat, b, p.Yaw); // (a Lifter Cab's keys for its lifter's step, before the logic tick clears them: ConstructLifterCab.cs)
             if (seat == c.DriveSeat)
             {
                 c.Driver = p.Id;

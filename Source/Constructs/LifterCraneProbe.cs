@@ -222,3 +222,30 @@ public static partial class LifterProbe
                     CraneBody = lc.Id;
     }
 }
+
+public static partial class LifterProbe
+{
+    /// <summary>
+    /// "lifter cab [arm|crane]" (phase 8, host): a Lifter Cab on the ground 2.5 m north of the line's arm, joined to the arm's body (or, for
+    /// "crane", to the crane's body), so it steers that lifter.
+    /// </summary>
+    public static string Cab(ConstructWorld world, string which)
+    {
+        FindCrane(world);
+        var host = which == "crane" ? world.Get(CraneBody) : world.Get(LineArm);
+        if (host == null || ConstructParts.Find("Lifter Cab") is not { } cab || world.Get(LineArm) is not { } arm)
+            return "cab: no line, crane or Lifter Cab part (lifter press or lifter crane first)";
+        var at = arm.Pos + new Vector3(0.5f, 0, 2.5f);
+        var b = ConstructBuild.PlaceNew(world, cab, at with { Y = World.Map.GroundHeight(at.X, at.Z) }, 0);
+        if (b == null)
+            return "cab: no room";
+        if (!Into(world, host, b))
+            return $"cab: the cab (body {b.Id}) would not join body {host.Id}";
+        host.Rebuild();
+        world.StructureDirty.Add(host.Id);
+        CabBody = host.Id;
+        return $"cab: a Lifter Cab joined to body {host.Id} ({which})";
+    }
+
+    public static ushort CabBody;
+}
