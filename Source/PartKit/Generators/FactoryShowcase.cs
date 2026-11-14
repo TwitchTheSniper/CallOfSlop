@@ -17,7 +17,84 @@ public sealed class FactoryShowcase : IPartGenerator
 
     public const string File = "Constructs/Blueprints/FactoryShowcase.json";
 
-    public void Make(PartOutput o) => o.File(File, Script.Build().Text());
+    public const string RunaboutFile = "Constructs/Blueprints/WorksRunabout.json";
+
+    public void Make(PartOutput o)
+    {
+        o.File(RunaboutFile, Runabout.Build().Text());
+        o.File(File, Script.Build().Text());
+    }
+
+    /// <summary>
+    /// The Works Runabout: the vehicle the showcase's station builds, the Swing Arm Buggy's layout with every part one the factory makes.
+    /// Its rails and cross bars are extruded steel bars, its wheels the Wheel Former's, its engine the Engine Kit's pressed pieces (a
+    /// cylinder off the Cylinder die, a crank, carburettor and flywheel off the Engine die), its fuel tank and brackets pressed, its
+    /// drivetrain, seat and controls the Assembler's, its hood a formed panel, its windscreen a cut glass pane and its deck a cut panel.
+    /// </summary>
+    private sealed class Runabout : BlueprintScript
+    {
+        private Runabout() : base("Works Runabout")
+        {
+        }
+
+        public const string Rail = "Extrusion solid 25x25x200 steel", Cross = "Extrusion solid 25x25x150 steel", Stub = "Extrusion solid 25x25x50 steel";
+        public const string Wheel = "Extrusion wheel 25x60x0 rubber";
+        public const string Cylinder = "Pressed Part (cylinder.cylinder pipe10 45x45x120 steel)", Crank = "Pressed Part (engine.crank solid 45x45x60 steel)",
+            Carb = "Pressed Part (engine.carburettor hollow 50x50x25 steel)";
+
+        public static Runabout Build()
+        {
+            var s = new Runabout
+            {
+                Description = "Built at the Factory Showcase's Building Station from parts its machines make: extruded rails, formed wheels, a pressed one-cylinder engine, assembled drivetrain, a formed hood and cut panels.",
+                Group = "Production",
+            };
+            s.Lay();
+            return s;
+        }
+
+        /// <summary>Onto, and on a refusal both parts' sockets, so a step can be put right from the message.</summary>
+        private VPart Fit(VPart on, string socket, string part, string by, int? spin = null)
+        {
+            try
+            {
+                return Onto(on, socket, part, by, spin);
+            }
+            catch (VehicleKitException e)
+            {
+                throw new VehicleKitException($"{e.Message} [{on.Name}: {string.Join(" ", on.Def.Sockets.Select(x => x.Name))}] [{part}: {string.Join(" ", Def(part).Sockets.Select(x => x.Name))}]");
+            }
+        }
+
+        private void Lay()
+        {
+            var railL = Root(Rail, Vector3.Zero);
+            var front = Fit(railL, "base", Cross, "+x0", 3);
+            var railR = Fit(front, "+x1", Rail, "base");
+            var stubL = Fit(railL, "tip", Stub, "base");
+            var stubR = Fit(railR, "tip", Stub, "base");
+            var diff = Fit(stubL, "tip", "Differential", "-z0");
+            var armL = Fit(diff, "-x", "Swing Arm", "mount");
+            var armR = Fit(diff, "+x", "Swing Arm", "mount");
+            var pivL = Fit(front, "base", "Steering Pivot", "base");
+            var pivR = Fit(front, "tip", "Steering Pivot", "base");
+            var armFL = Fit(pivL, "leaf", "Swing Arm", "mount");
+            var armFR = Fit(pivR, "leaf", "Swing Arm", "mount");
+            foreach (var arm in new[] { armL, armR, armFL, armFR })
+                Fit(arm, "axle", Wheel, "axle");
+            var seat = Fit(railL, "+y1", "Seat", "bottom");
+            var gearbox = Fit(diff, "top1", "Transmission", "-y");
+            var fly = Fit(gearbox, "-z", "Small Flywheel", "+z");
+            var crank = Fit(fly, "crank", Crank, "front");
+            var cyl = Fit(crank, "+y", Cylinder, "base");
+            Fit(cyl, "head", Carb, "base");
+            var tank = Fit(railR, "+y0", "Fuel Tank", "-y");
+            var dm = Fit(seat, "-x", "Driving Module", "+x");
+            Wire(seat, dm);
+            Wire(dm, fly);
+            Link("pipe", tank, fly, "Fuel out", "Fuel in");
+        }
+    }
 
     /// <summary>The script: places in metres, x along the flow (west to east), y up, z towards the front walkway (z 0 is the front edge).</summary>
     private sealed class Script : BlueprintScript
@@ -68,6 +145,7 @@ public sealed class FactoryShowcase : IPartGenerator
             Finish(root, "concrete");
             _tiles.Add(((int)(RootX - 1) / 2, (int)(-RootZ - 1) / 2));
             Tiles(0, 55, 0, 7); // the main floor: x 0 to 110, z 0 to -14
+            Tiles(-4, 0, 0, 7); // the raw strip: x -8 to 0
             Tiles(21, 50, 7, 16); // the back floor: x 42 to 100, z -14 to -32
             PowerPlant();
             var r = Refinery();
@@ -146,8 +224,8 @@ public sealed class FactoryShowcase : IPartGenerator
         /// </summary>
         private Refined Refinery()
         {
-            var smelter = On("Smelter", 10.25f, Row1, Back, paint: Refining);
-            var steelF = On("Foundry", 18.25f, Row1, Back, paint: Refining);
+            var smelter = On("Workshop Smelter", 10.25f, Row1, Back, paint: Refining); // (the steel line is tier 2: a chute between two tier 2 machines moves 20 units a second, not 10)
+            var steelF = On("Workshop Foundry", 18.25f, Row1, Back, paint: Refining);
             var sawmill = On("Sawmill", 26.25f, Row1, Back, paint: Refining);
             var rubberF = On("Foundry", 34.25f, Row1, Back, paint: Refining);
             var copperS = On("Workshop Smelter", 10.25f, Row2, Back, paint: Refining);
@@ -155,20 +233,23 @@ public sealed class FactoryShowcase : IPartGenerator
             var clothS = On("Sawmill", 26.25f, Row2, Back, paint: Refining);
             var glassS = On("Smelter", 34.25f, Row2, Back, paint: Refining);
 
-            Feed(Heap("iron ore", 6.25f, -4.25f, 3.0f), smelter);
+            var ore = Heap("iron ore", -3.75f, -6.75f, 5.0f); // (on the raw strip west of the power plant: 6,000 ore, the whole factory's metal)
+            ChuteVia(ore, smelter, -9.5f);
             Feed(Heap("stone", 14.25f, -4.25f, 2.4f), steelF);
-            Feed(Heap("wood", 22.25f, -4.25f, 2.4f), sawmill);
+            var wood = Heap("wood", 22.25f, -4.25f, 2.4f);
+            Feed(wood, sawmill);
             Feed(Heap("sand", 30.25f, -4.25f, 2.4f), rubberF);
             Feed(Heap("copper ore", 6.25f, -10.75f, 2.4f), copperS);
+            Sign(-3.75f, Posts1, Stock, "RAW STOCK: filled in creative, empty in survival");
             Feed(Heap("sand", 30.25f, -10.75f, 2.4f), glassS);
-            Chute(smelter, steelF);
-            Chute(smelter, bronzeF);
+            ChuteVia(smelter, steelF, -7.35f);
+            ChuteVia(smelter, bronzeF, -8.2f);
             Chute(copperS, bronzeF);
             Chute(sawmill, rubberF);
             Chute(sawmill, clothS);
 
-            var steel = Bin(39.75f, -3.25f, Yard);
-            var rubber = Bin(42.25f, -3.25f, Yard);
+            var steel = Store(40.25f, -4.25f, 2.0f); // (a Storage Volume, not a bin: its chutes move what the far end takes, up to 160 a second)
+            var rubber = Bin(42.75f, -3.25f, Yard);
             var cloth = Bin(39.75f, -10.25f, Yard);
             var bronze = Bin(42.25f, -10.25f, Yard);
             var copper = Bin(39.75f, -12.75f, Yard);
@@ -213,7 +294,7 @@ public sealed class FactoryShowcase : IPartGenerator
             ChuteVia(r.Rubber, a, -7.6f);
             ChuteVia(r.Bronze, b, -13.15f);
             ChuteVia(r.Copper, b, -13.0f);
-            _steelB = Bin(44.25f, -27.75f, Yard); // (the press hall's steel: chuted on from the yard's)
+            _steelB = Store(44.25f, -27.75f, 1.8f); // (the press hall's steel: chuted on from the yard's)
             ChuteVia(r.Steel, _steelB, -7.75f);
             Feed(_steelB, b);
             var rb = On("Conveyor Router", 49.75f, -22.75f, Flow, "-y.0.0", Assembler);
@@ -262,15 +343,23 @@ public sealed class FactoryShowcase : IPartGenerator
                 Onto(p, "dieslot", dies[k], "mount");
                 Convey(routers[k], "Piece out 3", p, "Piece in", PressBlue);
             }
-            // The Cylinder's and Engine's pieces out north onto a Join, then east and up to the station line.
-            var j1 = On("Conveyor Join", 80.75f, -15.25f, Flow, "-y.0.0", PressBlue);
-            Convey(presses[3], "Piece out", j1, "Piece in", PressBlue);
-            Convey(presses[4], "Piece out", j1, "Piece in 2", PressBlue);
-            // The last Router's way ahead joins them too: a blank or a chassis bar the station ordered of this Extruder rides on to it,
-            // and one nobody ordered goes to the station line's rack (the Routers' storage).
+            // The press line: three Joins in a row along the back floor's north strip, nothing crossing. Assembler A's parts come in
+            // from the west, the Cylinder press's and the Engine press's pieces from the south, and last the blank line's way ahead (a
+            // chassis bar the station ordered of this Extruder); the line runs on into the station's back port (StationLine).
+            var ja = On("Conveyor Join", 80.75f, -17.25f, Flow, "-y.0.0", PressBlue);
+            Corner(asm.RouterA, "Piece out", ja, "Piece in", Assembler);
+            Convey(presses[3], "Piece out", ja, "Piece in 2", PressBlue);
+            var jb = On("Conveyor Join", 86.75f, -17.25f, Flow, "-y.0.0", PressBlue);
+            Convey(ja, "Piece out", jb, "Piece in", PressBlue);
+            Convey(presses[4], "Piece out", jb, "Piece in 2", PressBlue);
+            var j1 = On("Conveyor Join", 91.25f, -17.25f, Flow, "-y.0.0", PressBlue);
+            Convey(jb, "Piece out", j1, "Piece in", PressBlue);
             var lo = PortAt(prev, prevPort);
-            var li = PortAt(j1, "Piece in 3");
-            Convey(prev, prevPort, j1, "Piece in 3", PressBlue, null, Along(new[] { V(lo.X + 1.2f, 0, lo.Z), V(lo.X + 1.2f, 0, li.Z + 0.9f), V(li.X, 0, li.Z + 0.9f) }).Select(n => n with { Y = lo.Y }).ToArray());
+            var li = PortAt(j1, "Piece in 2");
+            Convey(prev, prevPort, j1, "Piece in 2", PressBlue, null, Along(new[] { V(li.X, 0, lo.Z), V(li.X, 0, li.Z - 0.9f) }).Select(n => n with { Y = lo.Y }).ToArray());
+            // A blank nobody ordered (the Routers' storage): a Piece Rack off the last Router's way 2, on the floor's south strip.
+            var spare = On("Piece Rack", 86.75f, -30.75f, Flow, "-y.0.0", PressBlue);
+            Convey(prev, "Piece out 2", spare, "Piece in", PressBlue);
             // The Engine press's kit (a Bearing for a flywheel) from Assembler B's Router, way 3.
             ConveyVia(asm.RouterB, "Piece out 3", presses[4], "Piece in 2", Assembler, -24.6f);
             // Trays: the Gear press's Gear Sets to Assembler A; the Tank press's fuel tanks and the Bracket press's brackets on to the station.
@@ -284,7 +373,7 @@ public sealed class FactoryShowcase : IPartGenerator
             Onto(cable, "dieslot", "Cable Die", "mount");
             Convey(copperEx, "Piece out", cable, "Piece in", Copper);
             ChuteVia(cable, asm.A, -24.75f);
-            Sign(62.75f, -15.25f, PressBlue, "5 PRESS HALL: blanks ride in from the south, parts out north", false);
+            Sign(62.75f, -14.75f, PressBlue, "5 PRESS HALL: blanks in from the south, parts out north", false);
             return new Presses(blank, presses[0], presses[1], presses[2], presses[3], presses[4], cable, copperEx, j1);
         }
 
@@ -333,7 +422,7 @@ public sealed class FactoryShowcase : IPartGenerator
         /// </summary>
         private (VPart Station, VPart RouterS, VPart Wheel, VPart Rack) StationLine(Refined r, Assembly asm, Presses ph, Panels pn)
         {
-            var wheel = On("Wheel Former", 62.25f, Row2, Flow, paint: Wheels);
+            var wheel = On("Wheel Former", 64.75f, Row2, Flow, paint: Wheels);
             ChuteVia(r.Rubber, wheel, -7.9f);
             var j1 = On("Conveyor Join", 68.75f, -10.75f, Flow, "-y.0.0", Wheels);
             Convey(wheel, "Piece out", j1, "Piece in", Wheels);
@@ -341,26 +430,25 @@ public sealed class FactoryShowcase : IPartGenerator
             var j2 = On("Conveyor Join", 73.75f, -10.75f, Flow, "-y.0.0", CutterRed);
             Convey(j1, "Piece out", j2, "Piece in", Wheels);
             Corner(pn.Cutter, "Piece out", j2, "Piece in 3", CutterRed);
-            var j3 = On("Conveyor Join", 78.75f, -10.75f, Flow, "-y.0.0", PressBlue);
-            Convey(j2, "Piece out", j3, "Piece in", Wheels);
-            Convey(ph.LineOut, "Piece out", j3, "Piece in 3", PressBlue);
-            var rs = On("Conveyor Router", 83.75f, -10.75f, Flow, "-y.0.0", StationTeal);
-            Convey(j3, "Piece out", rs, "Piece in", StationTeal);
+            var rs = On("Conveyor Router", 78.75f, -10.75f, Flow, "-y.0.0", StationTeal);
+            Convey(j2, "Piece out", rs, "Piece in", StationTeal);
             var station = On("Building Station", 92.25f, -9.25f, Front, "-y.0.0");
             Config(station, ("bayWidth", 6.0), ("bayDepth", 8.0), ("bayHeight", 3.5));
-            Corner(rs, "Piece out", station, "Piece in", StationTeal);
-            var ao = PortAt(asm.RouterA, "Piece out");
+            var ro = PortAt(rs, "Piece out");
             var si = PortAt(station, "Piece in 2");
-            Convey(asm.RouterA, "Piece out", station, "Piece in 2", Assembler, null, Along(new[] { V(ao.X + 1.0f, 0, ao.Z), V(ao.X + 1.0f, 0, -14.6f), V(90.75f, 0, -14.6f), V(90.75f, 0, si.Z) }).Select(n => n with { Y = ao.Y }).ToArray()); // (along the back floor's north edge, up beside the station)
+            Convey(rs, "Piece out", station, "Piece in 2", StationTeal, null, Along(new[] { V(ro.X, 0, ro.Z), V(90.75f, 0, ro.Z), V(90.75f, 0, si.Z) }).Skip(1).Select(n => n with { Y = ro.Y }).ToArray()); // (east along the row, up beside the station into its side)
+            var po = PortAt(ph.LineOut, "Piece out");
+            var sb = PortAt(station, "Piece in");
+            Convey(ph.LineOut, "Piece out", station, "Piece in", PressBlue, null, V(sb.X, po.Y, po.Z), V(sb.X, po.Y, sb.Z - 2.0f - (po.Y - sb.Y)), V(sb.X, sb.Y, sb.Z - 2.0f)); // (a 45 degree step down to the port's height; the press line: east, then north into the station's back)
             foreach (var t in _toStation)
                 ChuteVia(t, station, -14.35f - 0.15f * _toStation.IndexOf(t));
             ChuteVia(r.Copper, station, -14.05f); // (link stock: a unit of copper a metre of wire)
-            var rack = On("Long Piece Rack", 85.25f, -17.25f, Flow, "-y.0.0", StationTeal); // (on the back floor behind the Router: x 85 to 98)
+            var rack = On("Long Piece Rack", 81.25f, -13.25f, Flow, "-y.0.0", StationTeal); // (the Router's storage, along the main floor's back edge)
             Convey(rs, "Piece out 2", rack, "Piece in", StationTeal);
             On("Loader Arm", 95.75f, -10.75f, Front, "-y.0.0");
             On("Loader Arm", 95.75f, -4.25f, Front, "-y.0.0");
-            Sign(62.75f, Posts2, Wheels, "WHEELS: rubber in, a formed wheel out");
-            Sign(80.25f, Posts2, StationTeal, "ROUTER: ordered pieces to the station, the rest to the rack");
+            Sign(66.25f, Posts2, Wheels, "WHEELS: rubber in, a formed wheel out");
+            Sign(76.25f, Posts2, StationTeal, "ROUTER: ordered pieces to the station, the rest to the rack");
             Sign(90.25f, Posts1, StationTeal, "7 BUILDING STATION: F, pick Works Runabout, Start");
             return (station, rs, wheel, rack);
         }
@@ -398,7 +486,10 @@ public sealed class FactoryShowcase : IPartGenerator
                 if (m.Def.IsBuildStation || m.Def.IsCraftTerminal)
                     Link("data", console, m, null, "Orders", Control, true, null, Along(pts.ToArray()));
                 else
+                {
                     Link("data", console, m, null, "Run", Control, true, null, Along(pts.ToArray()));
+                    OrdersOnly(m); // (an empty queue: it waits for an order, never runs its own settings while the line is on)
+                }
             }
             return console;
         }
@@ -460,6 +551,17 @@ public sealed class FactoryShowcase : IPartGenerator
             var v = On("Storage Volume", x, z, Front, "-y", Stock);
             // (the box from 5 cm over the floor, size square and 2 m high: 24 % of it is the raw stock, under every open side's lip)
             Config(v, ("sizeX", size), ("sizeY", 2.0), ("sizeZ", size), ("atY", 0.35 + 0.5), ("material", material), ("fill", 24));
+            return v;
+        }
+
+        /// <summary>
+        /// An empty store at (x, z): a Storage Volume's box <paramref name="size"/> square and 1.5 m high, holding up to a quarter of it before an
+        /// open side pours (600 units at 2 m). Its chutes move what the other end takes (a Storage Volume's chute load is 160 a second).
+        /// </summary>
+        private VPart Store(float x, float z, float size)
+        {
+            var v = On("Storage Volume", x, z, Front, "-y", Yard);
+            Config(v, ("sizeX", size), ("sizeY", 1.5), ("sizeZ", size), ("atY", 0.6));
             return v;
         }
 
@@ -532,6 +634,8 @@ public sealed class FactoryShowcase : IPartGenerator
             var a = PortAt(from, fromPort);
             var b = PortAt(to, toPort);
             var nodes = Along(new[] { V(a.X, 0, a.Z), V(b.X, 0, a.Z) }).Skip(1).Select(n => n with { Y = a.Y }).ToArray(); // (a node every 7.5 m along the run)
+            if (MathF.Abs(b.Z - a.Z) < 0.5f)
+                nodes = nodes[..^1]; // (straight: the corner would be the port itself)
             Convey(from, fromPort, to, toPort, paint, size, nodes);
         }
 

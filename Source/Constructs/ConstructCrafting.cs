@@ -1260,9 +1260,15 @@ public static class ConstructCrafting
             if (ask > 0)
             {
                 string? refusal = null;
-                for (var i = 0; i < net.MachineN && ask > 0; i++)
+                // Two passes: first the machines with a way to this tray (a conveyor through joins and Routers, or a chute), then any.
+                // (A maker whose conveyor feeds another machine, a sheet Extruder's into a Panel Former, took a station's chassis bar it
+                // could never deliver while the Extruder with a way waited: the Factory Showcase, 2026-11-14. Chains rank the same way.)
+                for (var i = 0; i < net.MachineN * 2 && ask > 0; i++)
                 {
-                    var why = LooseRefusal(world, c, net.Machines[i]) ?? WorkOrders.Queue(world, c, net.Machines[i], o.What with { Count = (ushort)ask, Made = 0 }); // (never asked of a machine that drops it loose)
+                    var m = net.Machines[i % net.MachineN];
+                    if ((i < net.MachineN) == (RouteTo(c, m, t) == -1))
+                        continue;
+                    var why = LooseRefusal(world, c, m) ?? WorkOrders.Queue(world, c, m, o.What with { Count = (ushort)ask, Made = 0 }); // (never asked of a machine that drops it loose)
                     if (why == null)
                     {
                         ConstructLogisticsPlan.Ranked(world, c, net.Machines[i], (byte)(StockTargets.FeedClass(c, t) + 2)); // (a High terminal's line goes ahead of Normal ones: phase 5)

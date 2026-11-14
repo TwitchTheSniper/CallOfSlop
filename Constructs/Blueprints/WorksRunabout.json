@@ -1,0 +1,36 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Works Runabout",
+  "group": "Production",
+  "description": "Built at the Factory Showcase's Building Station from parts its machines make: extruded rails, formed wheels, a pressed one-cylinder engine, assembled drivetrain, a formed hood and cut panels.",
+  "steps": [
+    {"part": "Extrusion solid 25x25x200 steel"},
+    {"part": "Extrusion solid 25x25x150 steel", "on": 0, "socket": "base", "by": "+x0", "spin": 3},
+    {"part": "Extrusion solid 25x25x200 steel", "on": 1, "socket": "+x1", "by": "base"},
+    {"part": "Extrusion solid 25x25x50 steel", "on": 0, "socket": "tip", "by": "base"},
+    {"part": "Extrusion solid 25x25x50 steel", "on": 2, "socket": "tip", "by": "base"},
+    {"part": "Differential", "on": 3, "socket": "tip", "by": "-z0"},
+    {"part": "Swing Arm", "on": 5, "socket": "-x", "by": "mount"},
+    {"part": "Swing Arm", "on": 5, "socket": "+x", "by": "mount"},
+    {"part": "Steering Pivot", "on": 1, "socket": "base", "by": "base"},
+    {"part": "Steering Pivot", "on": 1, "socket": "tip", "by": "base"},
+    {"part": "Swing Arm", "on": 8, "socket": "leaf", "by": "mount"},
+    {"part": "Swing Arm", "on": 9, "socket": "leaf", "by": "mount"},
+    {"part": "Extrusion wheel 25x60x0 rubber", "on": 6, "socket": "axle", "by": "axle"},
+    {"part": "Extrusion wheel 25x60x0 rubber", "on": 7, "socket": "axle", "by": "axle"},
+    {"part": "Extrusion wheel 25x60x0 rubber", "on": 10, "socket": "axle", "by": "axle"},
+    {"part": "Extrusion wheel 25x60x0 rubber", "on": 11, "socket": "axle", "by": "axle"},
+    {"part": "Seat", "on": 0, "socket": "+y1", "by": "bottom"},
+    {"part": "Transmission", "on": 5, "socket": "top1", "by": "-y"},
+    {"part": "Small Flywheel", "on": 17, "socket": "-z", "by": "+z"},
+    {"part": "Pressed Part (engine.crank solid 45x45x60 steel)", "on": 18, "socket": "crank", "by": "front"},
+    {"part": "Pressed Part (cylinder.cylinder pipe10 45x45x120 steel)", "on": 19, "socket": "+y", "by": "base"},
+    {"part": "Pressed Part (engine.carburettor hollow 50x50x25 steel)", "on": 20, "socket": "head", "by": "base"},
+    {"part": "Fuel Tank", "on": 2, "socket": "+y0", "by": "-y"},
+    {"part": "Driving Module", "on": 16, "socket": "-x", "by": "+x"}
+  ],
+  "wires": [[16, 23], [23, 18]],
+  "links": [
+    {"type": "pipe", "from": 22, "to": 18, "fromPort": "Fuel out", "toPort": "Fuel in"}
+  ]
+}

@@ -100,6 +100,7 @@ public class BlueprintScript
         public uint Paint;
         public string? Finish; // (a material's name, Materials/Surfaces.json: the texture paint tool's; the interior builder's look, INTERIORS.md phase 12)
         public string[]? Text; // (a sign's messages, "text")
+        public bool OrdersOnly; // (a machine built with an empty queue: "ordersOnly")
     }
 
     private readonly List<string> _bill = new();
@@ -561,6 +562,14 @@ public class BlueprintScript
         _bill.Add($"{{\"step\": {console.Step}, \"panel\": {Quote(panel)}, \"count\": {count}}}");
     }
 
+    /// <summary>A machine that takes work orders built with an empty queue ("ordersOnly"): it waits for orders and never works its own settings.</summary>
+    public void OrdersOnly(VPart p)
+    {
+        if (!WorkOrders.TakesOrders(p.Def))
+            throw new VehicleKitException($"a {p.Name} takes no work orders, so \"ordersOnly\" means nothing on it");
+        _steps[p.Step].OrdersOnly = true;
+    }
+
     /// <summary>A step's settings by key (the configure tool's): the values are written as JSON.</summary>
     public void Config(VPart p, params (string Key, object Value)[] values) =>
         _steps[p.Step].Config = "{" + string.Join(", ", values.Select(v => $"\"{v.Key}\": {JsonValue(v.Value)}")) + "}";
@@ -698,6 +707,8 @@ public class BlueprintScript
                 sb.Append(", \"finish\": ").Append(Quote(s.Finish));
             if (s.Text != null)
                 sb.Append(", \"text\": [").Append(string.Join(", ", s.Text.Select(Quote))).Append(']');
+            if (s.OrdersOnly)
+                sb.Append(", \"ordersOnly\": true");
             sb.Append(k + 1 < _steps.Count ? "},\n" : "}\n");
         }
         sb.Append("  ]");
