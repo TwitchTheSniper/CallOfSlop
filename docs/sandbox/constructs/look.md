@@ -43,7 +43,10 @@ write the same fields; `Finish` refuses a name the tool doesn't offer, which the
 **Finishes offered** (rows 7 up whose `"offer"` isn't false): steel, painted steel, aluminium, rubber, wood, painted wood,
 copper, brass, fabric, concrete, dirty steel, rust, plastic, stone, tread plate, plated steel, painted plating, matte paint,
 gloss paint, chrome, carbon weave, deck plate, painted deck plate, grating, painted grating, wall panelling, worn paint,
-rusty paint, rubber matting, lagging, hazard paint, soot. Paint and finish are separate: a finished part keeps its paint.
+rusty paint, rubber matting, lagging, hazard paint, soot, precast concrete, ceramic tiles, lino, brickwork, terrazzo. Paint and
+finish are separate: a finished part keeps its paint. Some finishes carry a detail texture and weather (concrete is board-marked
+on its sides and broom-finished on top, streaked under its top edge and dirty at its foot; worn and rusty paint chip): see
+[docs/render/MATERIALS.md](../../render/MATERIALS.md) "Detail textures".
 
 **How lamps light.** A Lamp, Floodlight (S, M, L) or Hanging Lantern is a `lamp` logic part: lit while a wire into it is
 on. A mains lamp (Wall Light, Hall Floodlight: logic `"mains": true`) needs no wire: it is lit while a working battery's

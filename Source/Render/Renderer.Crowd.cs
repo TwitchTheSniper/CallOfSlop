@@ -156,6 +156,9 @@ public sealed unsafe partial class Renderer
         out vec3 vLocal;
         out vec3 vLocalN;
         flat out vec3 vSize;
+        out vec3 vBody;
+        flat out vec3 vBodyN;
+        flat out vec3 vUpL;
         out vec4 vColorI;
         flat out float vModeI;
         flat out float vLayerI;
@@ -186,6 +189,9 @@ public sealed unsafe partial class Renderer
             vSize = vec3(length(r0.xyz), length(r1.xyz), length(r2.xyz));
             vLocal = aPos * vSize;
             vLocalN = aNormal;
+            vBody = vLocal;
+            vBodyN = aNormal;
+            vUpL = vec3(0.0, 1.0, 0.0);
             float bright = iLook.y * 1.5;
             vec3 col = vec3(r0.w, r1.w, r2.w) * bright;
             vColorI = vec4(mix(col, (iLook.w > 0.5 ? uDbgB : uDbgA) * bright, iLook.z), 1.0);

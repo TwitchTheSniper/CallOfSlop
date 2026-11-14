@@ -4,25 +4,29 @@
   "description": "The Ministry of Slop's records office: a counter, a queue under the overhang, and the archive over both.",
   "steps": [
     {
-      "part": "Concrete Foundation 4x4 m"
+      "part": "Concrete Foundation 4x4 m",
+      "finish": "lino"
     },
     {
       "part": "Concrete Foundation 4x4 m",
       "on": 0,
       "socket": "r0",
-      "by": "l0"
+      "by": "l0",
+      "finish": "lino"
     },
     {
       "part": "Concrete Foundation 4x4 m",
       "on": 0,
       "socket": "k0",
-      "by": "f0"
+      "by": "f0",
+      "finish": "lino"
     },
     {
       "part": "Concrete Foundation 4x4 m",
       "on": 1,
       "socket": "k0",
-      "by": "f0"
+      "by": "f0",
+      "finish": "lino"
     },
     {
       "part": "Concrete Foundation 4x4 m",
@@ -144,7 +148,7 @@
       "socket": "t0_0",
       "by": "b0_0",
       "paint": "#858179",
-      "finish": "concrete"
+      "finish": "lino"
     },
     {
       "part": "Concrete Floor 4x4 m",
@@ -152,7 +156,7 @@
       "socket": "t0_0",
       "by": "b15_0",
       "paint": "#858179",
-      "finish": "concrete"
+      "finish": "lino"
     },
     {
       "part": "Concrete Floor 4x4 m",
@@ -160,7 +164,7 @@
       "socket": "t0_0",
       "by": "b0_15",
       "paint": "#858179",
-      "finish": "concrete"
+      "finish": "lino"
     },
     {
       "part": "Concrete Floor 4x4 m",
@@ -168,7 +172,7 @@
       "socket": "t0_0",
       "by": "b15_15",
       "paint": "#858179",
-      "finish": "concrete"
+      "finish": "lino"
     },
     {
       "part": "Concrete Floor 4x4 m",
@@ -176,7 +180,7 @@
       "socket": "t00",
       "by": "b0_0",
       "paint": "#858179",
-      "finish": "concrete"
+      "finish": "lino"
     },
     {
       "part": "Concrete Floor 4x4 m",
@@ -184,7 +188,7 @@
       "socket": "t10",
       "by": "b0_0",
       "paint": "#858179",
-      "finish": "concrete"
+      "finish": "lino"
     },
     {
       "part": "Concrete Wide Stair 3 m",

@@ -109,13 +109,21 @@ public sealed partial class BuildingParts
     /// <summary>A part standing on a pad's top socket: pad <paramref name="i"/>, <paramref name="j"/> (4 m squares) at its local x, z.</summary>
     private static double[] OnPad(int i, int j, double x, double z, double up = 0.375) => [4.0 * i + x, up, 4.0 * j + z];
 
-    /// <summary>The pads, the first at (0, 0) then the rest in order, each next to one already down.</summary>
-    private static void Pads(Blueprint bp, IEnumerable<(int I, int J)> pads)
+    /// <summary>The pads, the first at (0, 0) then the rest in order, each next to one already down. <paramref name="floor"/>: the
+    /// finish of the pads that are indoors (terrazzo or lino on top, plain concrete at their edges: Materials/Surfaces.json), those
+    /// <paramref name="indoors"/> picks (all when null); the rest keep the foundation's concrete.</summary>
+    private static void Pads(Blueprint bp, IEnumerable<(int I, int J)> pads, string? floor = null, Func<int, int, bool>? indoors = null)
     {
         const string Pad = "Concrete Foundation 4x4 m";
-        bp.First(Pad);
+        var first = bp.First(Pad);
+        if (floor != null && (indoors?.Invoke(0, 0) ?? true))
+            bp.Steps[first]["finish"] = floor;
         foreach (var (i, j) in pads)
-            bp.Put(Pad, Cell(16 * i, 0, 16 * j), R0);
+        {
+            var s = bp.Put(Pad, Cell(16 * i, 0, 16 * j), R0);
+            if (floor != null && (indoors?.Invoke(i, j) ?? true))
+                bp.Steps[s]["finish"] = floor;
+        }
     }
 
     /// <summary>A flat roof of 4 m slabs over cells x0.., z0.. (nx by nz), its slabs' row <paramref name="y"/>.</summary>
@@ -200,7 +208,7 @@ public sealed partial class BuildingParts
         // teleprinter, and the Wide Stair up the west wall to the archive, its foot behind the counter. The way between them is
         // the 1.1 m gap at the counter's back end, marked staff only. Upstairs the tape cabinets and more filing.
         var bp = new Blueprint("Ministry Records Office", "The Ministry of Slop's records office: a counter, a queue under the overhang, and the archive over both.", defs);
-        Pads(bp, [(1, 0), (0, 1), (1, 1), (0, -1), (1, -1)]);
+        Pads(bp, [(1, 0), (0, 1), (1, 1), (0, -1), (1, -1)], "lino", (_, j) => j >= 0); // (the queue under the overhang stands on concrete)
         var rc = RoomCorners(bp, "Concrete", 0, G, 0, 32, 32);
         var front = bp.Put("Concrete Slot Wall 2 m", Cell(8, G, 0), R0);
         var doorWall = bp.Put("Concrete Door Wall 2 m", Cell(16, G, 0), R0);
@@ -210,9 +218,9 @@ public sealed partial class BuildingParts
         Concrete(bp, rc.Concat([doorWall, front, back, west, east]));
         var cols = new[] { 0, 15, 30 }.Select(x => bp.Put("Concrete Column 2.75 m", Cell(x, G, -16), R0)).ToList();
         Concrete(bp, cols, MinWeathered);
-        Look(bp, bp.Put("Concrete Wide Stair Floor", Cell(0, Slab1, 0), R0), MinWeathered, "concrete");
+        Look(bp, bp.Put("Concrete Wide Stair Floor", Cell(0, Slab1, 0), R0), MinWeathered, "lino");
         foreach (var (x, z) in new[] { (16, 0), (0, 16), (16, 16), (0, -16), (16, -16) })
-            Look(bp, bp.Put("Concrete Floor 4x4 m", Cell(x, Slab1, z), R0), MinWeathered, "concrete");
+            Look(bp, bp.Put("Concrete Floor 4x4 m", Cell(x, Slab1, z), R0), MinWeathered, "lino"); // the archive's floor
         Look(bp, bp.Put("Concrete Wide Stair 3 m", Cell(7, G, 15), RY180), MinWeathered, "concrete"); // (foot at z 4 m, top at the front)
         var uc = RoomCorners(bp, "Concrete", 0, U, -16, 32, 48);
         var uFront = bp.Put("Concrete Slot Wall 4 m", Cell(8, U, -16), R0);
@@ -268,7 +276,7 @@ public sealed partial class BuildingParts
         // for the range, taller than everything in the street. Food comes through the servery, an opening in the wall
         // between them with a counter in it; the tables stand in rows across the hall.
         bp = new Blueprint("Colony Canteen", "The penal colony's canteen: a tall mess hall, a servery, and the kitchen and its stack behind.", defs);
-        Pads(bp, [(1, 0), (0, 1), (1, 1), (0, 2), (1, 2)]);
+        Pads(bp, [(1, 0), (0, 1), (1, 1), (0, 2), (1, 2)], "terrazzo");
         rc = RoomCorners(bp, "Concrete", 0, G, 0, 32, 32, door: 0);
         front = bp.Put("Concrete Slot Wall 4 m", Cell(8, G, 0), R0);
         var servery = bp.Put("Concrete Garage Wall 4 m", Cell(23, G, 31), RY180);
@@ -331,7 +339,7 @@ public sealed partial class BuildingParts
         // is the nurse's couch. The beds stand along the west wall under the ribbon, the aisle runs down the east side of them,
         // and the medicine cabinet and the patients' files are on the blank wall at the far end, furthest from the door.
         bp = new Blueprint("Colony Infirmary", "The penal colony's infirmary: triage at the door, a ward of iron beds and the medicine cabinet.", defs);
-        Pads(bp, [(0, 1)]);
+        Pads(bp, [(0, 1)], "terrazzo");
         rc = RoomCorners(bp, "Concrete", 0, G, 0, 16, 32, door: 0);
         west = bp.Put("Concrete Ribbon Wall 4 m", Cell(0, G, 23), RY90);
         east = bp.Put("Concrete Wall 4 m", Cell(15, G, 8), RY270);
@@ -487,13 +495,13 @@ public sealed partial class BuildingParts
         // walls of the front half and beside the stairwell, the aisle down the middle. Fins down the east front, buttresses on
         // the west, a high ribbon each side over the beds.
         bp = new Blueprint("Colony Barracks", "The Ministry of Slop's guard barracks beside the penal colony: the guardroom, and the dormitory up a wide stair.", defs);
-        Pads(bp, [(0, 1)]);
+        Pads(bp, [(0, 1)], "lino");
         rc = RoomCorners(bp, "Concrete", 0, G, 0, 16, 32, door: 1);
         west = bp.Put("Concrete Wall 4 m", Cell(0, G, 23), RY90);
         east = bp.Put("Concrete Slot Wall 4 m", Cell(15, G, 8), RY270);
         Concrete(bp, rc.Concat([west, east]));
-        Look(bp, bp.Put("Concrete Floor 4x4 m", Cell(0, Slab1, 0), R0), MinWeathered, "concrete");
-        Look(bp, bp.Put("Concrete Wide Stair Floor", Cell(15, Slab1, 31), RY180), MinWeathered, "concrete");
+        Look(bp, bp.Put("Concrete Floor 4x4 m", Cell(0, Slab1, 0), R0), MinWeathered, "lino"); // the dormitory's floor
+        Look(bp, bp.Put("Concrete Wide Stair Floor", Cell(15, Slab1, 31), RY180), MinWeathered, "lino");
         Look(bp, bp.Put("Concrete Wide Stair 3 m", Cell(8, G, 16), R0), MinWeathered, "concrete"); // (x 2 to 3.75 m, foot at z 4 m, head at the back)
         uc = RoomCorners(bp, "Concrete", 0, U, 0, 16, 32);
         var dormW = bp.Put("Concrete Ribbon Wall 4 m", Cell(0, U, 23), RY90);

@@ -148,6 +148,7 @@ public sealed unsafe partial class PlanetRenderer
         uniform float uRockLayer;
         uniform mat3 uToLocal; // world -> the camera's local frame (y = up there)
         uniform vec4 uCityClip; // a city's ground (docs/planets/CITY.md): its direction and the cosine of its reach (w 0: none)
+        uniform vec3 uCenter;   // the planetoid's middle (also the vertex stage's): the city clip measures from it
         uniform float uCityTop; // ...and the radius under which its own paving covers the ground
         uniform float uDip;    // sin of how far the limb is below level (the sky's horizon drops to it: SkyRenderer)
         out vec4 FragColor;

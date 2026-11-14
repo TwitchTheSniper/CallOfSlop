@@ -327,7 +327,7 @@ public sealed unsafe class PropRenderer
                 col *= texture(uTex, vec3(vUv, vLayer)).r * 1.25;
             float rim = 0.12 * (1.0 - abs(n.y));
             if (uSurfQ.x > 0.5 && vSurf >= 7.0) // a shared material (Surfaces.cs): a prop has no box edges to wear (size 0), and it never moves, so world space serves
-                col = SurfaceLit(col, n, vWorld, vWorld, n, vec3(0.0), vSurf) + col * rim * 0.5 * gLitAmb;
+                col = SurfaceLit(col, n, vWorld, vWorld, n, vec3(0.0), vSurf, vWorld, n, vec3(0.0, 1.0, 0.0)) + col * rim * 0.5 * gLitAmb;
             else
                 col = ApplyLightAt(col, n, 0.0, vWorld) + col * rim * gLitAmb;
             col += vColor * (ownGlow * 0.1);

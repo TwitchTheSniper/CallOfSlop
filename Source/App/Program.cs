@@ -317,6 +317,8 @@ public static unsafe partial class Program
             return WeaponSet.Export(weaponDir); // writes the loaded weapons and attachments back out as files
         if (args.SkipWhile(a => !a.Equals("--check-part", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } partFile)
             return PartTools.Check(partFile); // for part makers: does this part (fragment, base, registry) file load, and where does it fit?
+        if (args.SkipWhile(a => !a.Equals("--surface-detail", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } detailDir)
+            return SurfaceDetail.Cli(detailDir); // the materials' detail textures as pictures (SurfaceDetail.cs, docs/render/MATERIALS.md)
         if (args.Any(a => a.Equals("--look-report", StringComparison.OrdinalIgnoreCase)))
             return LookReport(args); // how finished blueprints look: paint, colours, finishes, lamps, likeness (Program.LookReport.cs, docs/sandbox/constructs/look.md)
         if (args.Any(a => a.Equals("--check-ports", StringComparison.OrdinalIgnoreCase)))
@@ -568,6 +570,7 @@ public static unsafe partial class Program
     private static void CreateWindow()
     {
         Glfw.ErrorCallback += SafeClipboard.LogGlfwError; // rate-limited (an image on the clipboard raises one per paste)
+        SurfaceDetail.Prepare(); // the materials' detail textures are drawn on the thread pool while the window opens
         if (!Glfw.Init())
             throw new Exception("Failed to initialize GLFW");
 

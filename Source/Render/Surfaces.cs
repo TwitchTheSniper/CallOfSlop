@@ -25,6 +25,9 @@ public sealed class SurfaceRow
     public byte Painted; // the row a painted box uses (itself when none is named)
     public string Category = ""; // where the texture paint tool lists it (UiSandboxTexture.cs); "" with Offer false: not listed
     public bool Offer = true; // false: the texture paint tool doesn't offer it (glass)
+    public int Texture = -1, TextureTop = -1; // detail texture layers (SurfaceDetail.Names): the sides and the faces that look up; -1 none
+    public float Tile = 2f; // metres a detail texture repeats
+    public float Weather; // 0..1: rain streaks under a box's top, dirt at its foot, blotches and dirt in its cavities
 }
 
 /// <summary>
@@ -96,6 +99,10 @@ public static class Surfaces
         uniform sampler2D uSurfTex;
         vec4 SurfRow(int row, int k) { return texelFetch(uSurfTex, ivec2(k, row), 0); }
         #endif
+
+        // The detail textures (SurfaceDetail.cs): R colour, G height, B cavity, A wear mask; layer 0 is the weathering's grime.
+        uniform sampler2DArray uSurfDetail;
+        vec4 SurfTex(vec2 tc, float layer, vec2 gx, vec2 gy) { return textureGrad(uSurfDetail, vec3(tc, layer), gx, gy); }
 
         float SurfHash(vec2 p)
         {
@@ -170,12 +177,14 @@ public static class Surfaces
         }
 
         // A surface at world point p, normal n: lp is the point in the box (metres from its middle), ln its face's normal there, size
-        // the box (0: no box edges to wear, a prop), and code the row with the box's wear in its fraction (Surfaces.Code).
+        // the box (0: no box edges to wear, a prop), and code the row with the box's wear in its fraction (Surfaces.Code). bp and bn
+        // are the point and the face's normal in the body (a detail texture runs on across a body's boxes and stays on it as it
+        // moves), and up the world's up in the box (a wall's v runs up it, and its weather hangs from its top).
         // uSurfQ.x is the setting: 1 Medium, 2 High (Low never comes here: it takes the classic light). All of it is maths on what the
         // pixel already has: no textures. Every detail is filtered by the pixel's own size (its uv's screen derivatives), so it
         // fades to its mean where it would be finer than a pixel instead of crawling as the camera moves, and fades out between
         // 18 and 60 m besides, so a far hull pays for the light and nothing else.
-        vec3 SurfaceLit(vec3 base, vec3 n, vec3 p, vec3 lp, vec3 ln, vec3 size, float code)
+        vec3 SurfaceLit(vec3 base, vec3 n, vec3 p, vec3 lp, vec3 ln, vec3 size, float code, vec3 bp, vec3 bn, vec3 up)
         {
             int row = int(code);
             float wear = fract(code) / 0.99;
@@ -197,6 +206,19 @@ public static class Surfaces
             bool yFace = an.y > an.z;
             vec2 uv = xFace ? lp.yz : yFace ? lp.xz : lp.xy;
             vec2 hs = (xFace ? size.yz : yFace ? size.xz : size.xy) * 0.5;
+            // How high on its face this point is (for the weather): the world's up along the face's two axes picks the one that runs up.
+            vec2 ug = xFace ? up.yz : yFace ? up.xz : up.xy;
+            bool uUp = abs(ug.x) > abs(ug.y);
+            float hUp = uUp ? uv.x * sign(ug.x) : uv.y * sign(ug.y);
+            float hHalf = uUp ? hs.x : hs.y;
+            float hTop = hHalf - hUp, hBot = hHalf + hUp;
+            float lu = dot(ln, up); // 1 a face that looks up, 0 a wall
+            // The detail texture's uv, in the body: v runs up the body on its sides, so boards run on from box to box. Its
+            // derivatives and the world's are taken here, before any branch that differs from pixel to pixel.
+            vec3 abn = abs(bn);
+            vec2 buv = abn.y > abn.x && abn.y > abn.z ? bp.xz : abn.x > abn.z ? vec2(bp.z, bp.y) : vec2(bp.x, bp.y);
+            vec2 bdx = dFdx(buv), bdy = dFdy(buv);
+            vec3 dpx = dFdx(p), dpy = dFdy(p);
             if (hs.y > hs.x) // (streaks and grain run the long way of the face)
             {
                 uv = uv.yx;
@@ -205,6 +227,55 @@ public static class Surfaces
             vec2 dx = dFdx(uv), dy = dFdy(uv);
             float fp = max(max(length(dx), length(dy)), 1e-5); // metres a pixel on this face (the long side of its footprint)
             vec3 nn = n;
+            float sideL = floor(rc.w) - 1.0;
+            float weather = fract(rc.w) / 0.99;
+            float topL = floor(rd.w / 100.0) - 1.0;
+            float tile = max(rd.w - (topL + 1.0) * 100.0, 0.1);
+            float layer = lu > 0.7 && topL >= 0.0 ? topL : sideL;
+            float cav = 0.0;
+            if (layer >= 0.0)
+            {
+                // A detail texture: mipmapped, so it needs no fading by distance, and it holds its look to the horizon.
+                vec2 tc = buv / tile, gx = bdx / tile, gy = bdy / tile;
+                vec4 d = SurfTex(tc, layer, gx, gy);
+                albedo *= 0.55 + 0.9 * d.r;
+                albedo = mix(albedo, rc.rgb, d.a);
+                rough = clamp(rough + (0.5 - d.g) * 0.3, 0.04, 1.0);
+                cav = d.b;
+                // Its bumps: the height's slope over a step of at least a texel and the pixel, along the texture's own axes in
+                // the world (the frame from the derivatives), so joints, holes and grain catch the light. A pixel wider than a
+                // texel takes a longer step at a blurrier mip, and the bumps fade as they should.
+                float e = max(1.0 / 512.0, max(length(gx), length(gy)));
+                float hu = SurfTex(tc + vec2(e, 0.0), layer, gx, gy).g - d.g;
+                float hv = SurfTex(tc + vec2(0.0, e), layer, gx, gy).g - d.g;
+                vec3 p2 = cross(dpy, n), p1 = cross(n, dpx);
+                vec3 tu = p2 * gx.x + p1 * gy.x, tv = p2 * gx.y + p1 * gy.y;
+                float im = inversesqrt(max(max(dot(tu, tu), dot(tv, tv)), 1e-24));
+                nn = normalize(n - (tu * hu + tv * hv) * im * (0.006 / (e * tile)));
+            }
+            if (weather > 0.0 && size.x > 0.0)
+            {
+                // Weather: rain streaks that hang from a box's top, dirt splashed up its foot, grime on what looks up and in the
+                // cavities, and big blotches that break a long wall up from far away (layer 0, in the body, so it runs on).
+                vec2 sc = vec2(3.0, 6.0);
+                vec4 gs = SurfTex(buv / sc, 0.0, bdx / sc, bdy / sc);
+                vec4 gm = SurfTex(buv / 11.0 + 0.37, 0.0, bdx / 11.0, bdy / 11.0);
+                float dirt = cav * 0.35;
+                if (abs(lu) < 0.7)
+                {
+                    // Streaks in patches (the 11 m layer's own streaks pick where), light, and gone within a metre or so.
+                    float spots = smoothstep(0.35, 0.7, gm.r);
+                    dirt += smoothstep(0.55, 0.95, gs.r) * spots * 0.6 * exp(-hTop / 1.1);
+                    dirt += (1.0 - smoothstep(0.0, 0.3 + 0.4 * gs.g, hBot)) * 0.55;
+                }
+                else if (lu > 0.7)
+                    dirt += smoothstep(0.5, 0.85, gm.g) * 0.3;
+                weather *= smoothstep(0.2, 0.6, 2.0 * min(hs.x, hs.y)); // (none on posts, rails and trims)
+                dirt = clamp(dirt * weather, 0.0, 1.0);
+                albedo *= 1.0 + (gm.b - 0.5) * 0.6 * weather;
+                albedo = mix(albedo, albedo * vec3(0.45, 0.43, 0.40), dirt);
+                rough = mix(rough, 0.95, dirt * 0.5);
+            }
             if (near > 0.0)
             {
                 vec2 off = vec2(float(row) * 3.1, dot(size, vec3(7.3, 3.7, 11.1)));
@@ -223,7 +294,7 @@ public static class Surfaces
                         float hu = SurfPattern(kind, puv + vec2(e, 0.0), rd.y, fp, hs) * rd.z * near - h;
                         float hv = SurfPattern(kind, puv + vec2(0.0, e), rd.y, fp, hs) * rd.z * near - h;
                         vec3 t = normalize(cross(n, abs(n.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0)));
-                        nn = normalize(n - (t * hu + cross(n, t) * hv) * 1.2 * (0.012 / e));
+                        nn = normalize(nn - (t * hu + cross(n, t) * hv) * 1.2 * (0.012 / e));
                     }
                 }
                 float nw = mix(0.5, SurfNoise(uv * 5.0 + off), SurfKeep(1.0, fp * 5.0));
@@ -352,6 +423,10 @@ public sealed class SurfaceFile
                     case "painted": r.PaintedName = p.Value.GetString() ?? ""; break;
                     case "category": r.Category = p.Value.GetString() ?? ""; break;
                     case "offer": r.Offer = p.Value.GetBoolean(); break;
+                    case "texture": r.Texture = DetailLayer(p.Value.GetString(), r.Name); break;
+                    case "textureTop": r.TextureTop = DetailLayer(p.Value.GetString(), r.Name); break;
+                    case "tile": r.Tile = Num(p.Value, 0.1f, 99f, r.Name); break;
+                    case "weather": r.Weather = Num(p.Value, 0, 1, r.Name); break;
                     default: throw new InvalidDataException($"{r.Name}: unknown key \"{p.Name}\"");
                 }
             if (r.Name.Length is 0 or > 32 || r.Name.Any(ch => ch < 32 || ch > 126))
@@ -376,6 +451,12 @@ public sealed class SurfaceFile
             foreach (var p in props.EnumerateObject())
                 f.Props[(int)Enum.Parse<Material>(p.Name)] = f.Need(p.Value.GetString() ?? "");
         return f;
+    }
+
+    private static int DetailLayer(string? name, string who)
+    {
+        var i = SurfaceDetail.Layer(name ?? "");
+        return i > 0 ? i : throw new InvalidDataException($"{who}: no detail texture \"{name}\" (SurfaceDetail.Names, not grime)");
     }
 
     public byte Need(string name) => ByName.TryGetValue(name, out var id) ? id : throw new InvalidDataException($"no surface \"{name}\"");
@@ -406,7 +487,10 @@ public sealed class SurfaceFile
             t[o] = r.Rough; t[o + 1] = r.Metal; t[o + 2] = r.Wear; t[o + 3] = r.Rust;
             t[o + 4] = r.Colour.X; t[o + 5] = r.Colour.Y; t[o + 6] = r.Colour.Z; t[o + 7] = r.Tint;
             t[o + 8] = r.WearColour.X; t[o + 9] = r.WearColour.Y; t[o + 10] = r.WearColour.Z;
+            // (the detail texture: the side layer + 1 with the weather in the fraction; the top layer + 1 in hundreds over the tile)
+            t[o + 11] = (r.Texture + 1) + MathF.Min(r.Weather, 1f) * 0.99f;
             t[o + 12] = r.Pattern; t[o + 13] = r.Scale; t[o + 14] = r.Amount;
+            t[o + 15] = (r.TextureTop + 1) * 100f + r.Tile;
         }
         return t;
     }
