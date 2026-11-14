@@ -93,6 +93,18 @@ public static unsafe partial class Program
                 WsSay($"ghostinfo: state {g.GhostState}, {g.GhostName}, token {g.GhostToken}, {g.GhostCount} boxes, bounds {g.GhostMax - g.GhostMin}; look \"{g.SandboxLookText}\"; notice \"{g.SandboxNotice}\"");
                 if (g.IsServer)
                     WsSay($"ghostinfo: host pending spawns {g.SpawnPendingCount}");
+                if (World.Map.Planetoid is { } gpl) // (run 7: the slope check's four ground samples round the ghost's spot, each along the ghost's up)
+                {
+                    var gs = Math.Clamp(MathF.Min(g.GhostMax.X - g.GhostMin.X, g.GhostMax.Z - g.GhostMin.Z) * 0.5f, 0.5f, 3f);
+                    var gu = Vector3.Transform(Vector3.UnitY, BgRot);
+                    var line = $"ghostinfo: spot {BgAt:0.00} ({gpl.Altitude(BgAt):0.00} m over the ground)";
+                    foreach (var dv in new[] { Vector3.UnitX, -Vector3.UnitX, Vector3.UnitZ, -Vector3.UnitZ })
+                    {
+                        var pr = BgAt + Vector3.Transform(dv, BgRot) * gs;
+                        line += $"; {dv}: ground {Vector3.Dot(ConstructWorld.Ground(World.Query, pr) - BgAt, gu):0.00} m (probe {gpl.Altitude(pr + gu):0.00} m)";
+                    }
+                    WsSay(line);
+                }
                 var bodies = g.Constructs.Bodies;
                 WsSay($"ghostinfo: {bodies.Count} bodies");
                 for (var i = Math.Max(0, bodies.Count - 3); i < bodies.Count; i++)

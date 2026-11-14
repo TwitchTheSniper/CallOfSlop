@@ -308,11 +308,11 @@ public static partial class Program
                     g.NoclipShot = false;
                     me.Teleport(floor + cup * 0.05f);
                 }
-                WsSay(string.Create(ci, $"cave: {cn} at {cf.Num("lat", 0):0.00},{cf.Num("lon", 0):0.00}: chamber middle {mid:0.0}, floor {floor:0.0} ({Vector3.Distance(mid, floor):0.0} m under it), {cpl.Altitude(floor + cup):0.00} m over the ground 1 m up; the top {cpl.SurfaceRadius(Vector3.Normalize(floor - cpl.Center), out _) - Vector3.Distance(floor, cpl.Center):0.0} m over the floor; up {cup:0.00}; dug ground: {(cpl.EditsIfMade is { } ce ? $"any {ce.Any}, version {ce.Version}, generation {ce.Generation}" : "none")}, planetoid {System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(cpl)}"));
+                WsSay(string.Create(ci, $"cave: {cn} at {cf.Num("lat", 0):0.00},{cf.Num("lon", 0):0.00}: chamber middle {mid:0.0}, floor {floor:0.0} ({Vector3.Distance(mid, floor):0.0} m under it), {cpl.Altitude(floor + cup):0.00} m over the ground 1 m up; the top {cpl.SurfaceRadius(Vector3.Normalize(floor - cpl.Center), out _) - Vector3.Distance(floor, cpl.Center):0.0} m over the floor; up {cup:0.00}; dug ground: {(cpl.EditsIfMade is { } ce ? $"any {ce.Any}, version {ce.Version}, generation {ce.Generation}" : "none")}, planetoid {System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(cpl)}; ops logged {g.DigOps}, read {g.DigOpsRead}"));
                 _wsWait = 30;
                 return true;
             }
-            case "spawnbp": // "spawnbp NAME": the parts menu's own call for that blueprint where this player stands now (on a planetoid, the --blueprint start spawns by the flat map's ground)
+            case "spawnbp": // "spawnbp NAME": CActKind.Blueprint, the direct spawn in front of this player that tools and tests use (not the parts menu's path: that is "ghost NAME", its placing ghost, then Fire)
             {
                 var all = ConstructBuild.Blueprints;
                 var bi = -1;

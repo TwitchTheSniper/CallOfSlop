@@ -250,6 +250,8 @@ public sealed partial class Game
         // the old ground there): kept, and sent again after the MatchStart, which clears a client's (run 7: a hosted world had no caves).
         var freshDug = IsServer && SandboxOn && World.Map.Sandbox != null && WorldSession is not { HasSave: true };
         World.Map.RestoreProps(ground: !freshDug); // breakable props are whole again every match
+        if (!IsServer)
+            DigOpsRead = 0; // (a client's ground is cleared here: the ops it reads from now are this match's, the server's resend among them, so the count matches the server's log)
         if (freshDug && DigGroundIfMade is { Ops.Count: > 0 } dug)
             WriteTerrainDigState(_w, dug, w => Net.Broadcast(w.Span, PacketReliability.ReliableOrdered));
         if (!IsServer)

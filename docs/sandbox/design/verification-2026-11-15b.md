@@ -70,7 +70,7 @@ New: `lifter drop pad2 blank WxHxL` (any laminate plate) and `lifter carrying NA
 ## 2. The Lifter Cab's hook floor in a cave
 
 New verbs: `cave [N]` (Glacier's N-th cave as this peer's dug ground has it; the host stands on its floor) and `spawnbp NAME` (the parts
-menu's call where the player stands). Cave 1 lies at 9.34, 70.11 (well away from the top), up `<0.93, 0.16, 0.34>`, 26 m of rock over its
+direct spawn in front, `CActKind.Blueprint`, not the menu's path). Cave 1 lies at 9.34, 70.11 (well away from the top), up `<0.93, 0.16, 0.34>`, 26 m of rock over its
 floor.
 
 - Host, `--map Glacier --calm`: `cave 1; wait 60; spawnbp VT Cab Rig; wait 120; sit Lifter Cab; wait 300; hands; hold CrouchHold 4; secs
@@ -78,6 +78,10 @@ floor.
   cave (fault 2); fixed, it stands on the cave floor. Ctrl lowered the hook along the body's up from 1.07 to 0.35 m (the arm's reach) and
   to 0.10 m where the floor rises; across the bowl it rode the floor at 0.10 m (fault 3 before); Space raised it 3 m. Never negative after
   the fix, never a jump upward. **Verified.**
+- Review: the same through the player's own path, the parts menu's ghost (`cave 1; ghost VT Cab Rig; waitghost; look 180 -40; ghostinfo; key
+  Fire; ...; sit Lifter Cab@new; hold CrouchHold 4; secs 4.5; hands`): facing the chamber wall the ghost read "too steep here", rightly (one
+  slope sample 1.3 m out lies in the wall, so its ground is the top 28 m up); facing into the chamber all four samples lay on the cave floor
+  (within 0.5 m), Fire placed it ("the VT Cab Rig is down", the server's check), on the floor at 7462.5, and the hook went down to 0.10 m.
 - Client (`--net host`): the host's world had no cave at all (fault 1: dug ground `any False, generation 1`). Fixed: host and client both
   read the cave; host `cave 1; ...; spawnbp VT Cab Rig; disown; lifter joined; bring Lifter Cab`, client `cave 1; waitnear Lifter Cab; sit
   Lifter Cab; ...`: Ctrl took the hook to 0.36 then 0.10 m along the local up. **Verified** (this client run was before fault 3's fix,

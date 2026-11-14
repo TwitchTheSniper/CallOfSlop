@@ -13,6 +13,8 @@ namespace CallOfSlop;
 public static unsafe partial class Program
 {
     private static float _bgYaw;
+    internal static Vector3 BgAt; // (the window tool's ghostinfo: where the ghost was last posed, and its turn)
+    internal static Quaternion BgRot;
     private static double _bgScroll;
     private static ushort _bgTokenSeen;
     private static bool _bgMenuWas, _bgSeen;
@@ -137,6 +139,7 @@ public static unsafe partial class Program
         else if (flat < near)
             at = ConstructWorld.Ground(World.Query, me.Position + fwd * near);
         Game.BlueprintGhostPose(at, _bgYaw, g.GhostMin, g.GhostMax, g.GhostLow, out _, out var rot, out var bodyPos);
+        (BgAt, BgRot) = (at, rot);
         var why = g.BlueprintGhostRefusal(me.Id, me.Eye, at, rot, bodyPos, g.GhostMin, g.GhostMax);
         ConstructRender.BpGhostOn = true;
         ConstructRender.BpGhostValid = why == null;

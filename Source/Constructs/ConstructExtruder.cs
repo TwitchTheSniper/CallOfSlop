@@ -391,7 +391,12 @@ public static partial class ConstructExtruder
             return ExtrudeStall.BadShape;
         if (fresh && c.PartCount >= Construct.MaxParts)
             return ExtrudeStall.Blocked;
-        switch (PathClear(query, world, c, product, next, origin, rot, p.Seg, len, steps, d.ExtPush))
+        var path = PathClear(query, world, c, product, next, origin, rot, p.Seg, len, steps, d.ExtPush);
+        if (path == Path.Blocked)
+            (LastBlockBody, LastBlockPart) = (c.Id, part); // (the window tool's note is this machine's)
+        else if (LastBlockBody == c.Id && LastBlockPart == part)
+            (LastBlockBody, LastBlockPart, LastBlock) = (0, -1, ""); // (its way is clear again)
+        switch (path)
         {
             case Path.Blocked:
                 st.JobTicks = StepMm - 1;
@@ -684,6 +689,10 @@ public static partial class ConstructExtruder
     /// </summary>
     /// <summary>For the window tool: what the last blocked step met (no allocation: fixed strings).</summary>
     public static string LastBlock = "";
+
+    /// <summary>For the window tool: the machine <see cref="LastBlock"/> is about (body, part); cleared when its way is clear again.</summary>
+    public static ushort LastBlockBody;
+    public static int LastBlockPart = -1;
 
     private static Path PathClear(IWorldQuery query, ConstructWorld world, Construct c, int product, ConstructPartDef next, Vector3 origin, byte rot, byte seg, int len, int steps, float pushForce)
     {
