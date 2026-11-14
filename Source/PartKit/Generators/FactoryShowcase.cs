@@ -39,6 +39,7 @@ public sealed class FactoryShowcase : IPartGenerator
 
         public const string Rail = "Extrusion solid 25x25x200 steel", Cross = "Extrusion solid 25x25x150 steel", Stub = "Extrusion solid 25x25x50 steel";
         public const string Wheel = "Extrusion wheel 25x60x0 rubber";
+        public const string FuelTank = "Pressed Part (tank.fuel hollow 45x45x45 steel)";
         public const string Cylinder = "Pressed Part (cylinder.cylinder pipe10 45x45x120 steel)", Crank = "Pressed Part (engine.crank solid 45x45x60 steel)",
             Carb = "Small Carburettor"; // (the kit's 0.50 m carburettor is past a small Press's 0.45 m: its preset, a 0.40 m blank)
 
@@ -88,7 +89,7 @@ public sealed class FactoryShowcase : IPartGenerator
             var crank = Fit(fly, "crank", Crank, "front");
             var cyl = Fit(crank, "+y", Cylinder, "base");
             Fit(cyl, "head", Carb, "base");
-            var tank = Fit(railR, "+y0", "Fuel Tank", "-y");
+            var tank = Fit(railR, "+y0", FuelTank, "-y"); // (a pressed tank sized for a small Press: the Fuel Tank preset's blank is 0.50 m, past its 0.45 m)
             var dm = Fit(seat, "-x", "Driving Module", "+x");
             Wire(seat, dm);
             Wire(dm, fly);
@@ -399,13 +400,24 @@ public sealed class FactoryShowcase : IPartGenerator
             var jb = On("Large Conveyor Join", 85.75f, -17.25f, Flow, "-y.0.0", PressBlue);
             Convey(ja, "Piece out", jb, "Piece in", PressBlue, Wide);
             Convey(presses[4], "Piece out", jb, "Piece in 2", PressBlue);
-            _toStation.Add(presses[1]); // (the fuel tank, by chute into the station)
-            _toStation.Add(presses[5]); // (the brackets)
             var j1 = On("Large Conveyor Join", 90.75f, -17.25f, Flow, "-y.0.0", PressBlue);
             Convey(jb, "Piece out", j1, "Piece in", PressBlue, Wide);
-            var lo = PortAt(prev, prevPort);
+            // The Tank press's pressed fuel tanks and the Bracket press's brackets are too big for a tray: with nothing on their Piece out
+            // they dropped loose in front of the press, where no order ever saw them. Each rides a conveyor along the strip between the
+            // presses and the Routers into a Join on the blank line's end, and on with the blank line's own pieces to the station.
+            var jt1 = On("Conveyor Join", 91.25f, lineZ + 0.5f, Flow, "-y.0.0", PressBlue);
+            Convey(prev, prevPort, jt1, "Piece in", PressBlue, Small);
+            var jt2 = On("Conveyor Join", 95.75f, lineZ + 0.5f, Flow, "-y.0.0", PressBlue); // (3 m on: a 2 m rail rides between them)
+            Convey(jt1, "Piece out", jt2, "Piece in", PressBlue, Small);
+            foreach (var (press, join, lane) in new[] { (presses[5], jt1, -24.95f), (presses[1], jt2, -25.2f) })
+            {
+                var po = PortAt(press, "Piece out");
+                var jn = PortAt(join, "Piece in 3");
+                Convey(press, "Piece out", join, "Piece in 3", PressBlue, Small, Along(new[] { V(po.X, 0, lane), V(jn.X, 0, lane) }).Select(n => n with { Y = po.Y }).ToArray());
+            }
+            var lo = PortAt(jt2, "Piece out");
             var li = PortAt(j1, "Piece in 2");
-            Convey(prev, prevPort, j1, "Piece in 2", PressBlue, null, Along(new[] { V(li.X, 0, lo.Z), V(li.X, 0, li.Z - 0.9f) }).Select(n => n with { Y = lo.Y }).ToArray());
+            Convey(jt2, "Piece out", j1, "Piece in 2", PressBlue, Small, Along(new[] { V(lo.X + 0.8f, 0, lo.Z), V(lo.X + 0.8f, 0, li.Z - 1.0f), V(li.X, 0, li.Z - 1.0f) }).Select(n => n with { Y = lo.Y }).ToArray());
             // (No rack of its own: a rack here had no road on, so a piece that went to it as storage waited there for ever. Every blank on
             // this line is ordered, by a press or the station; a stray one is held at its Router, which says why.)
             // The Engine press's kit (a Bearing for a flywheel) from Assembler B's Router, way 3.
@@ -614,7 +626,7 @@ public sealed class FactoryShowcase : IPartGenerator
         {
             On("Lay-down Pad", 102.25f, -10.75f, Front, "-y.0.0", Hazard);
             var former = On("Airframe Former", 108.75f, -6.75f, Toward, paint: Wheels);
-            ChuteVia(r.Steel, former, -1.0f);
+            ChuteVia(r.Steel, former, -13.95f); // (along the main floor's back edge, off the walkway)
             On("Military Loader Arm", 102.25f, -14.75f, Front, "-y.0.0");
             Sign(107.25f, Posts1, Wheels, "AIRFRAME FORMER: the wing drops on the pad; the arm fits it");
             return former;
