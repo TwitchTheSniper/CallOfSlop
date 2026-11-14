@@ -99,6 +99,7 @@ public sealed partial class Game
         Array.Clear(_opDone);
         _opOn = false;
         _opColony = 0;
+        _opShip = 0;
         LockdownReset(); // (and its barracks: GameColonyLockdown.cs)
         ColonyBuildingsReset(); // (and the Ministry's buildings round the colony: GameColonyBuildings.cs)
         DepotReset(); // (and the Remote Works and the Orbital Depot: GameDepot.cs)
@@ -135,6 +136,8 @@ public sealed partial class Game
         }
         _opOn = true;
         Log($"[opening] the {PlayedStart.Name} start on {World.Map.Name} (GameStoryStart.cs)");
+        if (script.Ship.Length > 0 && OpeningShip(script, from))
+            return from; // (aboard a ship in orbit: GameSpaceStart.cs)
         if (script.Colony.Length == 0)
             return OpeningBuildAlone(script, from);
         if (SandboxKitPiece(script.Colony, from, level: 1.2f) is not { } colony)
@@ -340,6 +343,8 @@ public sealed partial class Game
     /// <summary>Server: into the cell block, lying down (each a little to their own side, so friends don't stack).</summary>
     private void OpeningToColony(Player p)
     {
+        if (_opShip != 0 && OpeningAboard(p))
+            return; // (a ship start: aboard, in its frame: GameSpaceStart.cs)
         var side = new Vector3(MathF.Sin(p.Id * 2.39996f), 0, MathF.Cos(p.Id * 2.39996f)) * (0.4f + p.Id % 3 * 0.35f);
         var at = _opColony != 0 && Constructs.Get(_opColony) != null ? _opWake + side : SbScatter(_opGate + new Vector3(0, 0.5f, 0), 3f);
         p.Teleport(at);
@@ -459,7 +464,7 @@ public sealed partial class Game
     /// <summary>Server, taking a save: the colony and crash site (with the map they are on), or null with no opening.</summary>
     private OpeningSave? OpeningCapture() => _opOn ? new OpeningSave
     {
-        Map = World.Map.Name, Colony = _opColony, Crash = _opCrash, Barracks = _opBarracks, Works = _dpWorks, Depot = _dpDepot,
+        Map = World.Map.Name, Colony = _opColony != 0 ? _opColony : _opShip, Crash = _opCrash, Barracks = _opBarracks, Works = _dpWorks, Depot = _dpDepot,
         Sites = FragmentSitesCapture(), Quarry = _qrWorks, Buildings = ColonyBuildingsCapture(), BuildingsListed = true,
     } : null;
 
@@ -471,6 +476,15 @@ public sealed partial class Game
         _opOn = true;
         _opColony = o.Colony;
         _opCrash = o.Crash;
+        if (OpScript.Ship.Length > 0)
+        {
+            // A ship start keeps its ship where a colony start keeps the colony: late friends wake aboard it (GameSpaceStart.cs).
+            _opShip = Constructs.Get(o.Colony) != null ? o.Colony : (ushort)0;
+            _opColony = 0;
+            _opMiddle = _opGate = _opWake = o.Crash;
+            _storyMiddleOf = null;
+            return;
+        }
         if (Constructs.Get(o.Colony) is { } colony)
             OpeningSpots(colony);
         else
@@ -519,6 +533,9 @@ public sealed class OpeningScript
 
     public string Colony = "Penal Colony", Cast = "Penal Colony", Warden = "", Wreck = "Crashed Plane", Skip = "skip the opening";
     public float CrashFrom = 70, CrashTo = 140;
+    public string Ship = ""; // a ship start: the blueprint everyone wakes aboard, in orbit (GameSpaceStart.cs)
+    public float Orbit = 3000; // its height over the ground (m; at least past the sky's edge)
+    public Vector3[] Wake = []; // where people wake in it, in the ship's own metres (from its first part's middle), one each in turn
     public readonly BeatDef[] Beats = new BeatDef[(int)OpeningStage.Wake + 1];
     public string Problem = "";
 
@@ -553,6 +570,15 @@ public sealed class OpeningScript
                 throw new FormatException($"no blueprint named \"{t.Colony}\" (the colony)");
             if (t.Wreck.Length > 0 && ConstructBuild.FindBlueprint(t.Wreck) == null && ConstructParts.Find(t.Wreck) == null)
                 throw new FormatException($"no blueprint or part named \"{t.Wreck}\" (the wreck)");
+            t.Ship = Text(root, "ship", "");
+            if (t.Ship.Length > 0 && ConstructBuild.FindBlueprint(t.Ship) == null)
+                throw new FormatException($"no blueprint named \"{t.Ship}\" (the ship)");
+            if (t.Ship.Length > 0 && t.Colony.Length > 0)
+                throw new FormatException("a ship start has no colony (\"colony\": \"\")");
+            if (root.TryGetProperty("orbit", out var ob))
+                t.Orbit = Math.Clamp(ob.GetSingle(), 500, 50000);
+            if (root.TryGetProperty("wake", out var wk))
+                t.Wake = [.. wk.EnumerateArray().Select(v => v.GetArrayLength() == 3 ? new Vector3(v[0].GetSingle(), v[1].GetSingle(), v[2].GetSingle()) : throw new FormatException("\"wake\": [x, y, z] spots"))];
             var beats = root.GetProperty("beats");
             foreach (var (key, stage) in new[] { ("placeholder", OpeningStage.Out), ("wake", OpeningStage.Wake) })
             {

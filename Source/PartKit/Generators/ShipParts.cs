@@ -385,7 +385,10 @@ public sealed class ShipParts : IPartGenerator
         Sock(p, "lampEngL", Cx - InLow, 2.5, 13.2, "+x");
         Sock(p, "lampEngR", Cx + InLow, 2.5, 13.2, "-x");
         foreach (var s in new[] { -1, 1 })
+        {
             Sock(p, s < 0 ? "podL" : "podR", Cx + s * 4.75, 1.4, 14.5, s < 0 ? "-x" : "+x");
+            Sock(p, s < 0 ? "saddleL" : "saddleR", Cx + s * 4.75, SadY, SadZ, s < 0 ? "-x" : "+x");
+        }
         foreach (var (x, z, n) in new[] { (Cx - 2.6, 4.6, "legFL"), (Cx + 2.6, 4.6, "legFR"), (Cx - 2.6, 12.8, "legBL"), (Cx + 2.6, 12.8, "legBR") })
             Sock(p, n, x, -0.6, z, "-y");
         Hidden(p, Cx - 3.0, -0.6, 4.2, Cx + 3.0, -0.0, 13.2); // (the belly's keel, under the floor: the legs' sockets are on it)
@@ -503,6 +506,7 @@ public sealed class ShipParts : IPartGenerator
         Sock(p, "roof", 4.0, Ceil, 11.5, "+y");
         Sock(p, "seatL", 4.0, F1T, 2.45, "+y");
         Sock(p, "seatR", 6.0, F1T, 2.45, "+y");
+        Sock(p, "module", Cx, F1T, 1.6, "+y"); // (on the floor in the footwell, under the dashboard's overhang)
         Sock(p, "chart", 7.4, F1T + 0.475, 3.875, "-z");
         Sock(p, "bed", Cx - InHigh, F1T + 0.125, 6.0, "+x");
         Sock(p, "locker", 3.2, F1T + 0.125, 4.125, "+z");
@@ -575,36 +579,108 @@ public sealed class ShipParts : IPartGenerator
         return p.Stats(9000, 12000, 20, 12.0);
     }
 
-    // ---- the engine pods
+    // ---- the engine pods, the saddle tanks, the drives and the lift jets
 
-    private static Part Pod(int side)
+    /// <summary>An octagonal nacelle along z round (cx, cy) through the stations (z, radius), banded and patched, its ends capped.</summary>
+    private static void Nacelle(Part p, double cx, double cy, (double Z, double Rr)[] st, int band, string capFront, string capBack)
     {
-        var p = new Part(side < 0 ? "Rust Bucket Pod L" : "Rust Bucket Pod R", Small, "Rust bucket", "One of the rust bucket's engine pods: a main drive in a patched nacelle.", role: "frame", tool: "welder", material: "steel", color: HullPaint, group: Group);
-        double cx = Cx + side * 6.1, cy = 1.4, r = 0.9;
         double[] Ring(double z, double rr, int i)
         {
             var a = Math.PI / 8 + i * Math.PI / 4;
             return P(cx + rr * Math.Cos(a), cy + rr * Math.Sin(a), z);
         }
-        (double Z, double Rr)[] st = [(10.4, 0.35), (11.3, r), (16.6, r), (17.2, 0.75)];
         for (var k = 0; k < st.Length - 1; k++)
             for (var i = 0; i < 8; i++)
                 Quad(p, Ring(st[k].Z, st[k].Rr, i), Ring(st[k].Z, st[k].Rr, i + 1), Ring(st[k + 1].Z, st[k + 1].Rr, i + 1), Ring(st[k + 1].Z, st[k + 1].Rr, i),
-                    k == 1 ? (i % 3 == 0 ? Patch2 : HullPaint) : Patch, paint: k == 1 && i % 3 != 0);
-        Plate(p, [.. Enumerable.Range(0, 8).Select(i => Ring(10.4, 0.35, i))], Frame, "dirty steel");
-        // The bell: dark, wider at the back, a glow deep inside.
-        (double Z, double Rr)[] bell = [(17.2, 0.55), (17.9, 0.72)];
-        for (var i = 0; i < 8; i++)
-            Quad(p, Ring(bell[0].Z, bell[0].Rr, i), Ring(bell[0].Z, bell[0].Rr, i + 1), Ring(bell[1].Z, bell[1].Rr, i + 1), Ring(bell[1].Z, bell[1].Rr, i), "#2a2624", "soot");
-        Plate(p, [.. Enumerable.Range(0, 8).Select(i => Ring(17.2, 0.75, i))], "#2a2624", "soot");
-        Plate(p, [.. Enumerable.Range(0, 8).Select(i => Ring(17.3, 0.5, i))], "#ff8a3a", "rust");
+                    k == band ? (i % 3 == 0 ? Patch2 : HullPaint) : Patch, paint: k == band && i % 3 != 0);
+        Plate(p, [.. Enumerable.Range(0, 8).Select(i => Ring(st[0].Z, st[0].Rr, i))], Frame, capFront);
+        Plate(p, [.. Enumerable.Range(0, 8).Select(i => Ring(st[^1].Z, st[^1].Rr, i))], "#2a2624", capBack);
+    }
+
+    // The stern pods' and the saddle tanks' middles and sizes (Sx metres), the main drives' and lift jets' pushes (N).
+    private const double PodX = 6.1, PodY = 1.4, PodR = 0.9, SadX = 5.8, SadY = 1.0, SadR = 0.65, SadZ = 5.6, PodLiftZ = 14.2;
+    private const double DriveForce = 600000, LiftForce = 800000, JetBurn = 3.0; // (l/s per MN, as the shipped jets)
+
+    private static Part Pod(int side)
+    {
+        var p = new Part(side < 0 ? "Rust Bucket Pod L" : "Rust Bucket Pod R", Small, "Rust bucket", "One of the rust bucket's engine pods: a patched nacelle full of fuel, its main drive at the back and a lift jet under it.", role: "fueltank", tool: "welder", material: "steel", color: HullPaint, group: Group);
+        double cx = Cx + side * PodX, cy = PodY, r = PodR;
+        Nacelle(p, cx, cy, [(10.4, 0.35), (11.3, r), (16.6, r), (17.2, 0.75)], 1, "dirty steel", "soot");
         // The pylons to the hull, and the hidden box for the nacelle.
         double inner = Cx + side * 4.75, outer = cx - side * r * 0.9;
         foreach (var (z0, z1) in new[] { (12.2, 13.4), (15.0, 16.0) })
             Solid(p, Math.Min(inner, outer), 1.15, z0, Math.Max(inner, outer), 1.65, z1, Frame, "dirty steel");
         Hidden(p, cx - r * 0.9, cy - r * 0.9, 11.3, cx + r * 0.9, cy + r * 0.9, 17.2);
         Sock(p, "hull", inner, 1.4, 14.5, side < 0 ? "+x" : "-x");
+        Sock(p, "drive", cx, cy, 17.2, "+z");
+        Sock(p, "lift", cx, cy - r * 0.9, PodLiftZ, "-y");
+        p.Set(("fuelTank", Kw(("capacity", 2500))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(cx + side * r * 0.9, cy, 13.8).Cast<object>()], side < 0 ? "-x" : "+x", "fuel"))));
         return p.Stats(3500, 6000, 25, 10.0);
+    }
+
+    /// <summary>A saddle tank on the hull's flank forward: fuel for the forward lift jet slung under it.</summary>
+    private static Part Saddle(int side)
+    {
+        var p = new Part(side < 0 ? "Rust Bucket Saddle Tank L" : "Rust Bucket Saddle Tank R", Small, "Rust bucket", "A saddle tank on the rust bucket's flank: fuel for the forward lift jet under it.", role: "fueltank", tool: "welder", material: "steel", color: HullPaint, group: Group);
+        double cx = Cx + side * SadX, cy = SadY, r = SadR;
+        Nacelle(p, cx, cy, [(3.7, 0.22), (4.4, r), (7.3, r), (8.0, 0.3)], 1, "dirty steel", "dirty steel");
+        // Two straps round it, and the pylon to the hull on the socket.
+        foreach (var z in new[] { 4.9, 6.6 })
+            Detail(p, cx - r * 0.95, cy - r * 0.95, z - 0.05, cx + r * 0.95, cy + r * 0.95, z + 0.05, Frame, "dirty steel");
+        double inner = Cx + side * 4.75, outer = cx - side * r * 0.7;
+        Solid(p, Math.Min(inner, outer), cy - 0.2, SadZ - 0.5, Math.Max(inner, outer), cy + 0.2, SadZ + 0.5, Frame, "dirty steel");
+        Hidden(p, cx - r * 0.9, cy - r * 0.9, 4.4, cx + r * 0.9, cy + r * 0.9, 7.3);
+        Sock(p, "hull", inner, cy, SadZ, side < 0 ? "+x" : "-x");
+        Sock(p, "lift", cx, cy - r * 0.9, SadZ, "-y");
+        p.Set(("fuelTank", Kw(("capacity", 1000))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(cx + side * r * 0.9, cy, 6.4).Cast<object>()], side < 0 ? "-x" : "+x", "fuel"))));
+        return p.Stats(1200, 3000, 20, 8.0);
+    }
+
+    /// <summary>An octagon's corner (part-local, about the origin) at radius rr, height y in the xz plane (a ring across y).</summary>
+    private static double[] RingY(double rr, double y, int i)
+    {
+        var a = Math.PI / 8 + i * Math.PI / 4;
+        return [Py.Round(rr * Math.Cos(a), 4), y, Py.Round(rr * Math.Sin(a), 4)];
+    }
+
+    /// <summary>The same along z (a ring across z).</summary>
+    private static double[] RingZ(double rr, double z, int i)
+    {
+        var a = Math.PI / 8 + i * Math.PI / 4;
+        return [Py.Round(rr * Math.Cos(a), 4), Py.Round(rr * Math.Sin(a), 4), z];
+    }
+
+    /// <summary>A main drive: the bell on a pod's back, a glow deep inside. Origin on the pod's end, the bell aft along +z.</summary>
+    private static Part Drive()
+    {
+        var p = new Part("Rust Bucket Drive", Small, "Rust bucket", $"The rust bucket's main drive: {DriveForce / 1000:0} kN from the pod's fuel. Pushes away from its bell.", role: "thruster", tool: "wrench", material: "steel", color: "#2a2624", group: Group);
+        for (var i = 0; i < 8; i++)
+            Quad(p, RingZ(0.55, 0.0, i), RingZ(0.55, 0.0, i + 1), RingZ(0.72, 0.7, i + 1), RingZ(0.72, 0.7, i), "#2a2624", "soot");
+        Plate(p, [.. Enumerable.Range(0, 8).Select(i => RingZ(0.5, 0.1, i))], "#ff8a3a", glow: true);
+        p.Add(Box([-0.5, -0.5, 0], [0.5, 0.5, 0.55], hidden: true));
+        p.Sock("front", [0, 0, 0], "-z");
+        p.Set(("thruster", Kw(("force", DriveForce), ("spool", 1.2), ("exhaust", "+z"), ("at", Py.L(0, 0, 0.7)), ("burnRate", Py.Round(DriveForce / 1e6 * JetBurn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [0.5, 0, 0.3], "+x", "fuel"))));
+        return p.Stats(1800, 4000, 12, 6.0);
+    }
+
+    /// <summary>A lift jet: a shroud under a tank, its nozzle pointing down. Origin on the tank's underside.</summary>
+    private static Part LiftJet()
+    {
+        var p = new Part("Rust Bucket Lift Jet", Small, "Rust bucket", $"A lift jet: {LiftForce / 1000:0} kN straight down from the tank it hangs under.", role: "thruster", tool: "wrench", material: "steel", color: Frame, group: Group);
+        // The shroud (its top a little up inside the tank), louvres down its sides, a hazard band.
+        p.Add(Box([-0.46, -0.26, -0.5], [0.46, 0.0, 0.5], Frame, shape: Kw(("finish", "dirty steel"))));
+        foreach (var x in new[] { -0.3, -0.1, 0.1, 0.3 })
+            foreach (var s in new[] { -1, 1 })
+                p.Add(Box([x - 0.04, -0.2, s * 0.5 - 0.012], [x + 0.04, -0.04, s * 0.5 + 0.012], "#1c1b1a", detail: true));
+        p.Add(Box([-0.475, -0.25, -0.4], [0.475, -0.2, 0.4], Stripe, detail: true, shape: Kw(("finish", "hazard paint"))));
+        // The nozzle, flaring down, sooted, with the glow up inside it.
+        for (var i = 0; i < 8; i++)
+            Quad(p, RingY(0.34, -0.26, i), RingY(0.34, -0.26, i + 1), RingY(0.44, -0.55, i + 1), RingY(0.44, -0.55, i), "#2a2624", "soot");
+        Plate(p, [.. Enumerable.Range(0, 8).Select(i => RingY(0.3, -0.3, i))], "#ff8a3a", glow: true);
+        p.Add(Box([-0.44, -0.55, -0.44], [0.44, -0.26, 0.44], hidden: true));
+        p.Sock("top", [0, 0, 0], "+y");
+        p.Set(("thruster", Kw(("force", LiftForce), ("spool", 1.0), ("exhaust", "-y"), ("at", Py.L(0, -0.55, 0)), ("burnRate", Py.Round(LiftForce / 1e6 * JetBurn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [-0.46, -0.13, 0], "-x", "fuel"))));
+        return p.Stats(2500, 4000, 12, 6.0);
     }
 
     // ---- the legs
@@ -749,8 +825,14 @@ public sealed class ShipParts : IPartGenerator
         double[] zero = [0, 0, 0];
         var deck = bp.Put("Rust Bucket Deck", zero, 0);
         bp.Put("Rust Bucket Roof", zero, 0);
-        bp.Put("Rust Bucket Pod L", zero, 0);
-        bp.Put("Rust Bucket Pod R", zero, 0);
+        var pods = new[] { bp.Put("Rust Bucket Pod L", zero, 0), bp.Put("Rust Bucket Pod R", zero, 0) };
+        var saddles = new[] { bp.Put("Rust Bucket Saddle Tank L", zero, 0), bp.Put("Rust Bucket Saddle Tank R", zero, 0) };
+        foreach (var pod in pods)
+        {
+            bp.Hang("Rust Bucket Drive", pod, "drive", "front");
+            bp.Hang("Rust Bucket Lift Jet", pod, "lift", "top");
+        }
+        var foreLift = saddles.Select(t => bp.Hang("Rust Bucket Lift Jet", t, "lift", "top")).ToArray();
         foreach (var n in new[] { "legFL", "legFR", "legBL", "legBR" })
             bp.Hang("Rust Bucket Leg", keel, n, "top");
         bp.Hang("Rust Bucket Ramp", keel, "ramp", "hang");
@@ -771,9 +853,12 @@ public sealed class ShipParts : IPartGenerator
         Switch(bp, keel, "switchHoldL", Lamp(bp, keel, "lampHoldL0"), Lamp(bp, keel, "lampHoldL1"));
         Switch(bp, keel, "switchHoldR", Lamp(bp, keel, "lampHoldR0"), Lamp(bp, keel, "lampHoldR1"));
         Switch(bp, keel, "switchEng", Lamp(bp, keel, "lampEngL"), Lamp(bp, keel, "lampEngR"));
-        // The cockpit.
-        bp.Hang("Seat", deck, "seatL", "bottom");
+        // The cockpit: the pilot's seat drives through a Driving Module under the dashboard, as the Orbiter's does.
+        var pilot = bp.Hang("Seat", deck, "seatL", "bottom");
         bp.Hang("Seat", deck, "seatR", "bottom");
+        var module = bp.Hang("Driving Module", deck, "module", "-y");
+        bp.Wires.Add((pilot, module));
+        bp.Wires.Add((module, foreLift[0]));
         bp.Hang("Chart Table", deck, "chart", "back");
         // The bedroom, the bathroom.
         Paint(bp, bp.Hang("Iron Bed", deck, "bed", "wall"), "#6b4a2e", "worn paint");
@@ -799,7 +884,7 @@ public sealed class ShipParts : IPartGenerator
 
     public void Make(PartOutput o)
     {
-        List<Part> parts = [Keel(), Ramp(), DeckPart(), Roof(), Pod(-1), Pod(1), Leg(), Toilet(), Basin(), Shower(), GrowRack(), EngineBlock()];
+        List<Part> parts = [Keel(), Ramp(), DeckPart(), Roof(), Pod(-1), Pod(1), Saddle(-1), Saddle(1), Drive(), LiftJet(), Leg(), Toilet(), Basin(), Shower(), GrowRack(), EngineBlock()];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);
         foreach (var p in parts)

@@ -1,0 +1,15 @@
+{
+  // The rust bucket start (Karl, 2026-11-14: "another start in a space ship. You have a rust bucket, it has a full interior";
+  // "Can you put it in space please?"): you wake aboard your own ship in orbit round Glacier, with no colony, no warden and
+  // no induction (docs/story/STARTS.md "A ship start"). The ship is the Rust Bucket blueprint (Source/PartKit/Generators/ShipParts.cs).
+  "format": "call-of-slop-start/1",
+  "name": "Rust bucket",
+  "order": 5,
+  "character": "Spacer",
+  "background": "a tramp hauler who lives aboard a patched two-deck freighter, the only home you have",
+  "about": "You wake on the floor of your cabin aboard the Rust Bucket, a patched two-deck freighter coasting round Glacier. The hold is nearly empty, the tanks are not, and nobody down there is expecting you.",
+  "map": "Glacier",
+  "opening": "RustBucket.json", // a card, then waking aboard in orbit
+  "tutorial": "none",
+  "kit": [] // what you have is aboard: the hold's crates and racks
+}

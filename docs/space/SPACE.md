@@ -200,7 +200,9 @@ any warp. Its state is the construct's, through the bubble's frame (the ground's
 
 - **The construct stays as the ship's picture.** `Construct.SpaceShip` (the ship's id) puts its physics to sleep; every
   tick the host poses it from the ship (place, speed, a spin for clients), so its poses reach clients the usual way, its
-  riders stay seated (they can't get out in space) and see the planetoid turn below. Nothing new goes over the wire.
+  riders stay in it and see the planetoid turn below. A seated rider can stand up only onto a deck of its own under its own
+  roof (the rust bucket's decks, not the Orbiter's open top: `Game.SpaceCanStand`), and anyone standing in it lives in its
+  frame (ConstructRideMove.cs), so they go round with it and walk its decks. Nothing new goes over the wire.
 - **Flying it in space.** Its own thrusters push the ship (`ConstructPhysics.SpaceThrust`: a wire sets one, else W and S
   work those facing the seat's way, Shift those that push up; fuel and power are used as in the air), through the centre
   of mass. A and D turn it about the local up, and it is kept level over the ground below (ships have no attitude of their
@@ -258,7 +260,7 @@ Not yet: standing riders count as not aboard.
 
 Not yet: ships far from the bubble still live in the World's floats (drawn steady via the render origin, but their pose
 steps by 6 cm at 1,000 km, so very far out the whole ship moves in small jumps until the World's origin can move or the
-ship lands in another body's bubble); seen from above, clouds just fade (no cloud deck under you); players standing (not seated) on a ship when it leaves stay in the bubble's sky. The bubble's gravity stays the
+ship lands in another body's bubble); seen from above, clouds just fade (no cloud deck under you); standing riders count as not aboard for landing on another world. The bubble's gravity stays the
 surface's all the way to the edge; space's falls off with distance.
 
 ## Seeing space (phase 4): `SpaceSkyView`

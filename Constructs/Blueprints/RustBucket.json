@@ -31,6 +31,54 @@
       "by": "hull"
     },
     {
+      "part": "Rust Bucket Saddle Tank L",
+      "on": 0,
+      "socket": "saddleL",
+      "by": "hull"
+    },
+    {
+      "part": "Rust Bucket Saddle Tank R",
+      "on": 0,
+      "socket": "saddleR",
+      "by": "hull"
+    },
+    {
+      "part": "Rust Bucket Drive",
+      "on": 3,
+      "socket": "drive",
+      "by": "front"
+    },
+    {
+      "part": "Rust Bucket Lift Jet",
+      "on": 3,
+      "socket": "lift",
+      "by": "top"
+    },
+    {
+      "part": "Rust Bucket Drive",
+      "on": 4,
+      "socket": "drive",
+      "by": "front"
+    },
+    {
+      "part": "Rust Bucket Lift Jet",
+      "on": 4,
+      "socket": "lift",
+      "by": "top"
+    },
+    {
+      "part": "Rust Bucket Lift Jet",
+      "on": 5,
+      "socket": "lift",
+      "by": "top"
+    },
+    {
+      "part": "Rust Bucket Lift Jet",
+      "on": 6,
+      "socket": "lift",
+      "by": "top"
+    },
+    {
       "part": "Rust Bucket Leg",
       "on": 0,
       "socket": "legFL",
@@ -239,6 +287,12 @@
       "on": 1,
       "socket": "seatR",
       "by": "bottom"
+    },
+    {
+      "part": "Driving Module",
+      "on": 1,
+      "socket": "module",
+      "by": "-y"
     },
     {
       "part": "Chart Table",
@@ -461,60 +515,68 @@
   ],
   "wires": [
     [
-      25,
-      23
+      33,
+      31
     ],
     [
-      25,
-      24
+      33,
+      32
     ],
     [
-      28,
-      26
+      36,
+      34
     ],
     [
-      28,
-      27
+      36,
+      35
     ],
     [
-      31,
-      29
+      39,
+      37
     ],
     [
-      31,
-      30
+      39,
+      38
     ],
     [
-      57,
-      53
+      40,
+      42
     ],
     [
-      57,
-      54
+      42,
+      11
     ],
     [
-      57,
-      55
+      66,
+      62
     ],
     [
-      57,
-      56
+      66,
+      63
     ],
     [
-      62,
-      58
+      66,
+      64
     ],
     [
-      62,
-      59
+      66,
+      65
     ],
     [
-      62,
-      60
+      71,
+      67
     ],
     [
-      62,
-      61
+      71,
+      68
+    ],
+    [
+      71,
+      69
+    ],
+    [
+      71,
+      70
     ]
   ]
 }
