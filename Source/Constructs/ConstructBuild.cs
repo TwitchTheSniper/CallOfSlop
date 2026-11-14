@@ -503,34 +503,52 @@ public static class ConstructBuild
     {
         var list = new List<Blueprint>();
         var remember = BlueprintCheckCache.Enabled(mods); // (dev builds skip the build check of a file that passed it unchanged: BlueprintCheckCache.cs)
-        foreach (var df in Mods.Resolve(Mods.BaseFiles(folder, false), mods ?? [], "Constructs/Blueprints", false, refused, (t, f) =>
-                 {
-                     if (Build(new ConstructWorld(), ParseBlueprint(t, f), Vector3.Zero, Quaternion.Identity, out var why) == null)
-                         throw new ConstructPartException($"{f}: {why}");
-                 }))
+        ConstructConduit.BeginLoad(); // (a pre-built's wires are routed as it is built here, not later in a server tick)
+        try
         {
-            try
+            foreach (var df in Mods.Resolve(Mods.BaseFiles(folder, false), mods ?? [], "Constructs/Blueprints", false, refused, (t, f) =>
+                     {
+                         if (Build(new ConstructWorld(), ParseBlueprint(t, f), Vector3.Zero, Quaternion.Identity, out var why) == null)
+                             throw new ConstructPartException($"{f}: {why}");
+                     }))
             {
-                var bp = ParseBlueprint(df.Text, df.File);
-                // Build it once on a scratch world: every step must fit.
-                if (!remember || !BlueprintCheckCache.Passed(df.Text))
+                try
                 {
-                    var scratch = new ConstructWorld();
-                    if (Build(scratch, bp, Vector3.Zero, Quaternion.Identity, out var why) == null)
-                        throw new ConstructPartException($"{bp.File}: {why}");
-                    if (remember)
-                        BlueprintCheckCache.Add(df.Text);
+                    var bp = ParseBlueprint(df.Text, df.File);
+                    // Build it once on a scratch world: every step must fit (and a pre-built's wires are routed as conduit then, ConstructConduit.cs;
+                    // a dev build keeps those routes with the check's cache, so one that passed unchanged isn't built again just for them).
+                    var check = !remember || !BlueprintCheckCache.Passed(df.Text);
+                    if (!check && bp.Wires.Count > 0 && !ConstructConduit.Restore(bp, df.Text))
+                        check = ConstructConduit.Wanted(bp) || !ConstructConduit.Remember(bp, df.Text);
+                    if (check)
+                    {
+                        var scratch = new ConstructWorld();
+                        if (Build(scratch, bp, Vector3.Zero, Quaternion.Identity, out var why) == null)
+                            throw new ConstructPartException($"{bp.File}: {why}");
+                        if (remember)
+                        {
+                            BlueprintCheckCache.Add(df.Text);
+                            ConstructConduit.Remember(bp, df.Text);
+                        }
+                    }
+                    list.Add(bp);
                 }
-                list.Add(bp);
+                catch (Exception ex) when (ex is ConstructPartException or JsonException or IOException)
+                {
+                    var why = ex is ConstructPartException ? ex.Message : $"{df.File}: {ex.Message}";
+                    refused.Add(df.Mod.Length > 0 ? $"mod {df.Mod}: {why}" : why);
+                }
             }
-            catch (Exception ex) when (ex is ConstructPartException or JsonException or IOException)
+            if (remember)
             {
-                var why = ex is ConstructPartException ? ex.Message : $"{df.File}: {ex.Message}";
-                refused.Add(df.Mod.Length > 0 ? $"mod {df.Mod}: {why}" : why);
+                BlueprintCheckCache.Save();
+                ConstructConduit.SaveDisk();
             }
         }
-        if (remember)
-            BlueprintCheckCache.Save();
+        finally
+        {
+            ConstructConduit.EndLoad();
+        }
         return list;
     }
 
@@ -926,6 +944,7 @@ public static class ConstructBuild
         if (bp.Wires.Count > 0 && c.Dirty)
             c.Rebuild(); // (the wires' checks read the rebuilt body: once before them and once after, not once a wire)
         var conduit = !linked && (c.Anchored || bp.FrozenBase); // (a pre-built: its wires are laid as conduit along the walls, ConstructConduit.cs)
+        var conduitEnd = conduit && bp.Wires.Count > 0 ? ConstructConduit.Deadline() : 0;
         if (!linked) // (a Building Station laid the wires and links itself, one by one: ConstructStation.cs)
         for (var k = 0; k < bp.Wires.Count; k++)
         {
@@ -942,7 +961,7 @@ public static class ConstructBuild
                 world.Remove(c);
                 return;
             }
-            if (!conduit || !ConstructConduit.TryLay(world, c, bp, k, partOf[from], partOf[to], ConstructWorld.WirePort(c, partOf[from], partOf[to])))
+            if (!conduit || !ConstructConduit.TryLay(world, c, bp, k, partOf[from], partOf[to], ConstructWorld.WirePort(c, partOf[from], partOf[to]), conduitEnd))
                 world.AddWire(c, partOf[from], partOf[to], rebuild: false);
         }
         if (bp.Wires.Count > 0 && c.Dirty)
