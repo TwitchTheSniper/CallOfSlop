@@ -69,6 +69,14 @@ mods see that their galaxies differ, just as with different system files.
 Construct parts are not checked between peers yet. Like the shipped data, every player in a game needs the same part mods,
 because part ids go over the wire.
 
+**Pressed and sized parts.** A mod blueprint may name a pressed part by its key, as a shipped one does (`Pressed Part
+(cylinder.cylinder pipe15 60x60x105 steel)`, `Pressed Part (barrel.plain round 10x10x70 steel)`): the key is the part, made on
+each peer from `Constructs/Pressing.json`, which mods can't change. A modded part keeps its catalogue place but has no press
+pattern or preset, so a press never makes it; since sized parts phase 6 (2026-11-13) the shipped barrels, engine pieces and
+generated receivers are made on a Press, not an Assembler, so a patch to one of those part files changes what the press's preset
+gives (its look, mass and numbers) while its blank stays the same. A patch that makes a preset part heavier than its blank and
+bay 2 is not refused, but it recycles for more than it cost: `--press-part presets` lists it as OVER.
+
 ## Checking a mod
 
 `CallOfSlop --check-mods [DIR]` loads the mods in DIR (default: the game's `Mods/` folder) over the shipped data. It prints

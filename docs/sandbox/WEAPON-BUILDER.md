@@ -91,6 +91,12 @@ bores they hold. **Barrels, splitters, muzzle devices and ammo fit every receive
 
 ### Barrels and receivers (2026-10-23)
 
+**In Sandbox, barrels and receivers are sized** (docs/sandbox/design/sized-gun-engine-parts.md; weapons.md and production.md for
+the game's side): a Press with a Barrel die makes a barrel of any bore and length, its numbers on curves through these files
+(Stub, Standard and Long Barrel the plain curve's knots, every other barrel a pattern of its own); a Receiver die makes a receiver
+of any size by the merge's law. Since phase 6 (2026-11-13) every catalogue barrel and receiver here, the generated ones included, is
+a preset of those dies, so a survival player presses them. Hand-held builds at the workbench stay catalogue parts.
+
 The user: "remove typing from weapon workbench weapons so that all barrels are compatible with all receivers. The
 receiver will determine what type of modifications happen to the barrel ... if a barrel is attached to a pistol
 receiver, it'll be smaller than if it's attached to a rifle receiver or an autocannon receiver. But this should remove
