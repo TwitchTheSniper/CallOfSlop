@@ -379,18 +379,10 @@ public static class VehicleKitCli
             return 1;
         }
         var text = File.ReadAllText(file);
-        foreach (var g in VehicleRegistry.All)
-            foreach (var seed in g.Seeds)
-                if (Path.GetFileName(file).Equals(VehicleRegistry.FileName(g, seed), StringComparison.OrdinalIgnoreCase))
-                {
-                    var own = VehicleChecks.Check(text, Path.GetFileName(file), g.Checks, VehicleRegistry.Make(g, seed).Rooms);
-                    Console.WriteLine(own.ToString());
-                    return own.Passed ? 0 : 1;
-                }
         VehicleReport report;
         try
         {
-            report = VehicleChecks.Check(text, Path.GetFileName(file));
+            report = Own(text) ?? VehicleChecks.Check(text, Path.GetFileName(file));
         }
         catch (Exception ex) when (ex is ConstructPartException or System.Text.Json.JsonException)
         {
@@ -399,6 +391,16 @@ public static class VehicleKitCli
         }
         Console.WriteLine(report.ToString());
         return report.Passed ? 0 : 1;
+
+        // A shipped seed's file is checked with its generator's own checks and rooms.
+        VehicleReport? Own(string text)
+        {
+            foreach (var g in VehicleRegistry.All)
+                foreach (var seed in g.Seeds)
+                    if (Path.GetFileName(file).Equals(VehicleRegistry.FileName(g, seed), StringComparison.OrdinalIgnoreCase))
+                        return VehicleChecks.Check(text, Path.GetFileName(file), g.Checks, VehicleRegistry.Make(g, seed).Rooms);
+            return null;
+        }
     }
 
     /// <summary><c>--gen-vehicles [--out DIR]</c>: runs every generator's every seed and says which differ from the committed files (with --out, writes them there). Exit code: how many differ.</summary>
