@@ -1547,6 +1547,8 @@ public sealed partial class Game
     /// </summary>
     private bool SandboxToolGated(ref ushort part)
     {
+        if (part == (ushort)ConstructTool.None && Local is { } me && StoryUnarmed(me))
+            part = (ushort)ConstructTool.Hands; // (no gun in a story world: bare hands, shown at once as the server will; GameStoryArms.cs)
         var asked = (ConstructTool)part;
         if (TutorialToolLocal(asked) is not { } tool)
         {

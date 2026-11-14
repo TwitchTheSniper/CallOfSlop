@@ -8,8 +8,18 @@ namespace CallOfSlop;
 /// </summary>
 public partial class Game
 {
-    /// <summary>Server: does <paramref name="p"/> carry no gun here (a person in a story world with no built gun)?</summary>
-    internal bool StoryUnarmed(Player p) => _opOn && p.Bot == null && p.BuiltPrimary == null;
+    /// <summary>
+    /// Is this a story world? The server knows (the opening's colony); a client goes by the world being a survival one,
+    /// which every new survival world's opening makes a story world, so its own tool changes match the server's.
+    /// </summary>
+    private bool StoryArmsOn => IsServer ? _opOn : SandboxOn && !SandboxInfiniteParts;
+
+    /// <summary>Both sides: does <paramref name="p"/> carry no gun here (a person in a story world with no built gun)?</summary>
+    internal bool StoryUnarmed(Player p) => StoryArmsOn && p.Bot == null && p.BuiltPrimary == null && p.BuiltSecondary == null;
+
+    /// <summary>Server: is <paramref name="def"/> a stock gun a story world's person may not fire (anything but a gun they built)?</summary>
+    internal bool StoryStockGun(Player p, WeaponDef def) =>
+        StoryArmsOn && p.Bot == null && !(p.BuiltPrimary is { } a && a.Id == def.Id) && !(p.BuiltSecondary is { } b && b.Id == def.Id);
 
     /// <summary>Server: the tool a request gets once the gun is taken out of it (None, the gun, becomes bare hands).</summary>
     private ConstructTool StoryArmsTool(Player p, ConstructTool asked) =>
