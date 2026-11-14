@@ -434,3 +434,11 @@ answers, and the questions are kept as the record of what was asked.
 7. Hand-held guns **wait for the inventory project** (A).
 8. Bored, Performance and Racing Cylinders are **removed** (C, not the recommendation): bore replaces them; old blueprints
    keep the files, and their Assembler recipes go.
+
+### Answer, 2026-11-14 (bored cylinders)
+
+The user, on bored cylinders making an engine weigh about twice a plain one: "bored engine cylinders don't make sense being heavier. It literally has less material in a bored cylinder to produce more power. So it should be lighter, if anything, but easier to damage. And with the new engine size options, power has become more of a function of cylinder size, I believe."
+
+- A wider bore in a cylinder of the same outer size is less metal: lighter, and easier to damage (less health).
+- Power follows the cylinder's size (bore and stroke), not a tier or a bored flag.
+- A bored engine is never heavier than the plain one of the same outer size.
