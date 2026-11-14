@@ -131,6 +131,9 @@ public sealed partial class Game
             case "breakout":
                 BreakoutStart(p); // (the convicts' night: GameBreakout.cs)
                 break;
+            case "pcvirus":
+                ColonyPcInfect(p); // (the duty desk's computer: GameColonyPc.cs)
+                break;
         }
         Log($"[storylet] hook {hook} for {p.Name}");
     }

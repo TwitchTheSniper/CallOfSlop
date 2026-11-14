@@ -155,6 +155,26 @@ public static class OfficeParts
         (_hookedBody, _hookedPart, _hookedScam, _inboxCount) = (c.Id, part, desk.Adverts[ad].Scam, 0);
     }
 
+    /// <summary>This peer knows which computer is hooked (a client: the one its player clicked, or the one it heard from).</summary>
+    public static bool HookKnown => _hookedBody != ushort.MaxValue;
+
+    /// <summary>
+    /// A client heard a scammer's message with no advert clicked: the server hooked a computer itself (the duty desk's virus,
+    /// Game/GameColonyPc.cs). The nearest computer is taken for it, so its screen shows the pop-up as the host's does.
+    /// </summary>
+    public static void HeardAt(Construct c, int part, string text)
+    {
+        if (HookKnown || ScamDesk.Script is not { } desk || !text.StartsWith(Inbox, StringComparison.Ordinal))
+            return;
+        var body = text.AsSpan(Inbox.Length);
+        for (var s = 0; s < desk.Scams.Length; s++)
+            if (body.StartsWith(desk.Scams[s].From, StringComparison.Ordinal) && body[desk.Scams[s].From.Length..].StartsWith(": ", StringComparison.Ordinal))
+            {
+                (_hookedBody, _hookedPart, _hookedScam, _inboxCount) = (c.Id, part, s, 0);
+                return;
+            }
+    }
+
     /// <summary>A scammer's message arrived (every peer): kept for the screen. Allocates only when one arrives.</summary>
     public static void HeardInbox(string text)
     {

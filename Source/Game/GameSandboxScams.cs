@@ -46,6 +46,7 @@ public sealed partial class Game
             ScamAnswer(_scamMail[m], desk, now);
             _scamMail[m] = _scamMail[--_scamMailCount];
         }
+        ColonyPcTick(); // (the duty desk's computer mended: GameColonyPc.cs)
     }
 
     /// <summary>One hooked computer, a second on: cured if it lost power, else its next message when it is due and someone is there to read it.</summary>
@@ -66,6 +67,8 @@ public sealed partial class Game
             p.Count++;
         if (p.Rounds >= scam.Messages.Length)
         {
+            if (ColonyPcHolds(c, i, ref p))
+                return; // (the duty desk's computer starts over: GameColonyPc.cs)
             if (p.Count >= desk.EveryMin)
             {
                 p.State = 0;
@@ -141,6 +144,7 @@ public sealed partial class Game
             return;
         ScamsFallenFor++;
         StoryHooked(c, desk);
+        ColonyPcPaid(c, mail.Part);
         var left = c.Charge * (1 - reply.Take); // (UseCharge settles later, so the share is worked out here)
         if (c.ChargeCapacity > 0)
             c.UseCharge(c.Charge * reply.Take);

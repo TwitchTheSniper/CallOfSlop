@@ -6,7 +6,9 @@
   "about": "the Ministry of Slop's penal colony: rank up, or get out",
   "qualities": [
     { "name": "Rank", "kind": "progress", "max": 5, "about": "how far up the colony's ladder a player is (inmate, trusty...)" },
-    { "name": "Suspicion", "kind": "menace", "max": 10, "decay": "-1 per 30m", "about": "how closely the Ministry watches a player" }
+    { "name": "Suspicion", "kind": "menace", "max": 10, "decay": "-1 per 30m", "about": "how closely the Ministry watches a player" },
+    { "name": "Fixit", "kind": "progress", "max": 5, "about": "the duty desk's computer: 1 asked, 2 mended (a Mend), 3 thanked, 4 paid the scammers, 5 told off (Game/GameColonyPc.cs)" },
+    { "name": "Nag", "kind": "menace", "max": 2, "decay": "-1 per 10m", "about": "the duty desk wants its rotas: while it lasts nobody else brings the computer up" }
   ],
   "spots": [
     { "name": "Kettle", "near": "Officer Crumb", "reach": 5 }
@@ -116,6 +118,70 @@
       ],
       "ends": [
         { "id": "tipped", "after": "3s", "then": [ "?c Likes ?me +5" ] }
+      ]
+    },
+    // ---- The duty desk's computer (Game/GameColonyPc.cs; Karl, 2026-11-14): the barracks' computer has Tech Support's
+    //      virus. Nobody says how to mend it. It has no switch; it runs off the barracks' Battery, and cutting its power
+    //      is the cure (take the battery off with the attach tool, fit it back). Paying the scammers also cures it.
+    {
+      "id": "duty-desk", "title": "The duty desk", "bucket": "B",
+      "about": "the guard at the duty desk can't get the rotas off the computer: it says it has a virus",
+      "needs": "?me Inducted, not ?me Fixit",
+      "cast": "?d MemberOf 'Ministry of Slop', ?d is Person, not ?d Grudge ?me >= 40",
+      "prefer": "?d Honest",
+      "beats": [
+        { "by": "?d", "to": "?me", "say": [ "Inmate {me.first}. You look like you've touched a computer. Don't answer that." ] },
+        { "by": "?d", "to": "?me", "after": "4s", "say": [ "The duty desk machine says it has four thousand viruses. And not to turn it off. So nobody has." ] },
+        { "by": "?d", "to": "?me", "after": "5s", "say": [ "I need the rotas off it by Thursday. Have a look. Don't touch anything." ] }
+      ],
+      "ends": [
+        { "id": "asked", "after": "2s", "then": [ "?me Fixit =1", "?me Nag =2" ], "hook": "pcvirus",
+          "world": [ "The barracks' computer turns red with Tech Support's pop-ups, and writes to whoever stands at it." ],
+          "next": "duty-desk-mended" }
+      ]
+    },
+    {
+      "id": "duty-desk-again", "title": "Off and on again", "bucket": "B",
+      "about": "a gossip at the barracks says what IT always says, and that the machine hasn't got a switch",
+      "needs": "?me Fixit >= 1, ?me Fixit < 2, not ?me Nag",
+      "cast": "?c MemberOf 'Ministry of Slop', ?c is Person, not ?c Grudge ?me >= 40",
+      "prefer": "?c Gossipy",
+      "beats": [
+        { "by": "?c", "to": "?me", "say": [ "That machine at the duty desk is still at it. Nobody goes near it now." ] },
+        { "by": "?c", "to": "?me", "after": "4s", "say": [ "IT faxed once. Their answer to everything is off and on again. That thing hasn't got a switch." ] },
+        { "by": "?c", "to": "?me", "after": "5s", "say": [ "Nothing in the barracks has. The lights go off when the box on the wall says so." ] }
+      ],
+      "ends": [
+        { "id": "hinted", "after": "3s", "then": [ "?c Likes ?me +2" ], "next": "duty-desk-mended" }
+      ]
+    },
+    {
+      "id": "duty-desk-mended", "title": "Rotas by Thursday", "bucket": "B", "final": true, "priority": 2,
+      "about": "the computer came back clean, and the duty desk noticed",
+      "needs": "?me Fixit >= 2, ?me Fixit < 3",
+      "cast": "?d MemberOf 'Ministry of Slop', ?d is Person, not ?d Grudge ?me >= 40",
+      "prefer": "?d Honest",
+      "beats": [
+        { "by": "?d", "to": "?me", "say": [ "The duty desk machine came up clean. No viruses. Was that you, {me.first}?" ] },
+        { "by": "?d", "to": "?me", "after": "4s", "say": [ "Don't tell me how. If it's in the handbook I'd rather not know which page." ] }
+      ],
+      "ends": [
+        { "id": "thanked", "after": "3s", "then": [ "?me Fixit =3", "?d Likes ?me +10", "?me Suspicion -1" ],
+          "say": [ "Rotas are printing. I'll put a word in. A small one." ] }
+      ]
+    },
+    {
+      "id": "duty-desk-paid", "title": "Battery's code", "bucket": "B", "final": true, "priority": 2,
+      "about": "the pop-ups are gone, and so is most of the barracks' battery",
+      "needs": "?me Fixit >= 4, ?me Fixit < 5",
+      "cast": "?d MemberOf 'Ministry of Slop', ?d is Person",
+      "prefer": "?d Honest",
+      "beats": [
+        { "by": "?d", "to": "?me", "say": [ "The machine's quiet. The barracks battery is nearly flat. Somebody gave Tech Support a number." ] },
+        { "by": "?d", "to": "?me", "after": "4s", "say": [ "I'm not asking who. I'm writing it down, though." ] }
+      ],
+      "ends": [
+        { "id": "noted", "after": "3s", "then": [ "?me Fixit =5", "?me Suspicion +1" ] }
       ]
     }
   ]

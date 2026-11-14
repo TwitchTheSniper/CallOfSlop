@@ -10,6 +10,8 @@
     { "name": "Induct", "players": true, "sentence": "{actor} finished the induction at {place}", "effects": [ "actor Inducted =1" ],
       "about": "a player came to the end of the warden's induction (or skipped it)" },
     { "name": "Pilfer", "players": true, "sentence": "{actor} helped themselves from {target}", "effects": [ "actor Contraband =1" ],
-      "about": "a player took something from a crate a storylet set out (target: the crate's owner, or the storylet)" }
+      "about": "a player took something from a crate a storylet set out (target: the crate's owner, or the storylet)" },
+    { "name": "Mend", "players": true, "sentence": "{actor} got the duty desk's computer going again at {place}",
+      "about": "a player asked to mend the barracks' computer was there when it came up clean, with power (Game/GameColonyPc.cs sets their Fixit to 2)" }
   ]
 }
