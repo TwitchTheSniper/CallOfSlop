@@ -21,7 +21,7 @@ public static class LabourRender
     public const float EveryFrame = 9f; // m: nearer than this a figure is posed every frame
     public const double NearEvery = 1 / 45.0, MidEvery = 1 / 30.0, FarEvery = 1 / 15.0; // s between poses up close, in the middle distance and far off
     public const float Walk = 0.95f, Stride = 1.3f; // m/s and m per gait cycle (two steps)
-    public const float EatOut = 0.62f, Stool = 0.47f; // m: a diner's stool out from the table's middle line, and its height
+    public const float EatOut = 0.64f, Stool = 0.52f; // m: a diner's stool out from the table's middle line, and its height
     public const float PatrolSpeed = 0.9f; // m/s
 
     private enum Role : byte { Inmate, Guard, Caller, Escort }
@@ -930,7 +930,7 @@ public static class LabourRender
                 var stir = MathF.Sin(tf * 5f + r * 9) * 0.03f * (1 - lift);
                 p = Pose.Standing with
                 {
-                    PelvisY = Stool, PelvisZ = 0.02f, Lean = -0.2f + 0.1f * lift, HeadPitch = -0.45f + 0.25f * lift,
+                    PelvisY = Stool, PelvisZ = 0.02f, Lean = -0.1f + 0.08f * lift, HeadPitch = -0.35f + 0.25f * lift,
                     FootR = new(0.17f, 0.09f, -0.26f), FootL = new(-0.17f, 0.09f, -0.22f),
                     HandR = Vector3.Lerp(new Vector3(0.1f + stir, 1.25f, -0.44f), new Vector3(0.05f, 1.56f, -0.24f), lift),
                     HandL = new(-0.15f, 1.22f, -0.42f), Tool = Tool.Spoon,

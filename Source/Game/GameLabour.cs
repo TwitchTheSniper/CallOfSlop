@@ -364,7 +364,7 @@ public sealed class LabourScript
         LabourKind.March => 1.15f,
         LabourKind.Huddle => 0.95f,
         LabourKind.Hammer => 1.05f,
-        LabourKind.Eat => 0.62f,
+        LabourKind.Eat => 0.8f,
         LabourKind.Haul or LabourKind.Barrow or LabourKind.Sweep or LabourKind.Paint or LabourKind.Patrol => 0f, // (spread along the way by time)
         _ => 1.7f,
     };
