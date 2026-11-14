@@ -85,6 +85,7 @@ public static partial class ConstructLifters
                 continue; // (checked above: not reached)
             if (world.StockTargetN > 0)
                 ConstructLogisticsPlan.Arrived(world, c, part, 0, pd); // (a stock target's refill counts it, as a conveyor's delivery does)
+            PadArrived(world, c, part, 0, pd); // (phase 5b: a station's large part set down on its pick pad counts for its order)
             world.CraftChanged(c);
             Console.WriteLine($"[lifter] pad body {c.Id} part {part}: took in a loose {pd.Name}");
             n++;
@@ -136,7 +137,8 @@ public static partial class ConstructLifters
     }
 
     private const int MaxServing = 8, ReachLooks = 512;
-    private static readonly uint[] PadSeenScratch = new uint[64];
+    private static readonly uint[] _padSeen = new uint[64]; // the last count's pick pads (body << 16 | part), for the build's claims (ConstructLifterNet.cs)
+    private static int _padSeenN;
     private static readonly LifterDef[] ServeDef = new LifterDef[MaxServing];
     private static readonly Vector3[] ServeShoulder = new Vector3[MaxServing];
     private static readonly Quaternion[] ServeRot = new Quaternion[MaxServing];
@@ -201,10 +203,10 @@ public static partial class ConstructLifters
                         continue;
                     any = true;
                     var key = (uint)pt.Body << 16 | pt.Part;
-                    if (Array.IndexOf(PadSeenScratch, key, 0, seen) >= 0)
+                    if (Array.IndexOf(_padSeen, key, 0, seen) >= 0)
                         continue;
-                    if (seen < PadSeenScratch.Length)
-                        PadSeenScratch[seen++] = key;
+                    if (seen < _padSeen.Length)
+                        _padSeen[seen++] = key;
                     for (var q = 0; q < j.KindN; q++)
                         _padHeld[q] += ConstructCrafting.Holds(st, j.KindDef[q]);
                 }
@@ -212,6 +214,7 @@ public static partial class ConstructLifters
                     (ServeDef[serving], ServeShoulder[serving], ServeRot[serving], serving) = (ld, shoulder, lr, serving + 1);
             }
         }
+        _padSeenN = seen;
         if (serving == 0 || j.Plan is not { } plan || plan.At.Length != j.PartOf.Length)
             return;
         var looked = 0;
