@@ -305,6 +305,40 @@
       "finish": "concrete"
     },
     {
+      "part": "Roof Sign Frame 3 m",
+      "on": 28,
+      "socket": "t0",
+      "by": "b"
+    },
+    {
+      "part": "Sign Board 3 m",
+      "on": 38,
+      "socket": "sign",
+      "by": "back",
+      "text": [
+        "EAT WHAT YOU ARE GIVEN"
+      ],
+      "paint": "#8e2a22"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 38,
+      "socket": "lamp0",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 38,
+      "socket": "lamp1",
+      "by": "back",
+      "config": {
+        "colour": "#ffb347"
+      }
+    },
+    {
       "part": "Concrete Door Corner",
       "on": 5,
       "socket": "t8_15",
@@ -367,7 +401,7 @@
     },
     {
       "part": "Concrete Fascia 4 m",
-      "on": 43,
+      "on": 47,
       "socket": "k0",
       "by": "back15",
       "paint": "#858179",
@@ -375,7 +409,7 @@
     },
     {
       "part": "Concrete Fascia 4 m",
-      "on": 44,
+      "on": 48,
       "socket": "k0",
       "by": "back15",
       "paint": "#858179",
@@ -383,7 +417,7 @@
     },
     {
       "part": "Concrete Fascia 4 m",
-      "on": 43,
+      "on": 47,
       "socket": "l0",
       "by": "back15",
       "paint": "#858179",
@@ -391,7 +425,7 @@
     },
     {
       "part": "Concrete Fascia 4 m",
-      "on": 44,
+      "on": 48,
       "socket": "r0",
       "by": "back0",
       "paint": "#858179",
@@ -399,7 +433,7 @@
     },
     {
       "part": "Concrete Fascia Corner",
-      "on": 46,
+      "on": 50,
       "socket": "l",
       "by": "+x",
       "paint": "#858179",
@@ -407,7 +441,7 @@
     },
     {
       "part": "Concrete Fascia Corner",
-      "on": 45,
+      "on": 49,
       "socket": "r",
       "by": "+z",
       "paint": "#858179",
@@ -415,7 +449,7 @@
     },
     {
       "part": "Concrete Column 2.75 m",
-      "on": 44,
+      "on": 48,
       "socket": "t7_7",
       "by": "b00",
       "paint": "#858179",
@@ -423,7 +457,7 @@
     },
     {
       "part": "Concrete Column 2.75 m",
-      "on": 51,
+      "on": 55,
       "socket": "t00",
       "by": "b00",
       "paint": "#3a3836",
@@ -437,7 +471,7 @@
     },
     {
       "part": "Wood Flush Door 1.5x2.25 m",
-      "on": 53,
+      "on": 57,
       "socket": "leaf",
       "by": "hang",
       "paint": "#2f5a3c",
@@ -445,13 +479,13 @@
     },
     {
       "part": "Door Hinge",
-      "on": 38,
+      "on": 42,
       "socket": "hinge",
       "by": "base"
     },
     {
       "part": "Steel Flush Door 1.5x2.25 m",
-      "on": 55,
+      "on": 59,
       "socket": "leaf",
       "by": "hang",
       "paint": "#4b5157",
@@ -467,7 +501,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 57,
+      "on": 61,
       "socket": "lamp",
       "by": "back",
       "config": {
@@ -476,7 +510,7 @@
     },
     {
       "part": "Sign Board 2 m",
-      "on": 57,
+      "on": 61,
       "socket": "sign",
       "by": "back",
       "text": [
@@ -550,7 +584,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 40,
+      "on": 44,
       "socket": "f8_10",
       "by": "back",
       "config": {
@@ -743,7 +777,7 @@
     },
     {
       "part": "Strip Light",
-      "on": 40,
+      "on": 44,
       "socket": "k8_10",
       "by": "back",
       "config": {
@@ -752,7 +786,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 40,
+      "on": 44,
       "socket": "k15_5",
       "by": "back",
       "config": {
@@ -769,24 +803,24 @@
   ],
   "wires": [
     [
-      91,
-      87
+      95,
+      91
     ],
     [
-      91,
-      88
-    ],
-    [
-      91,
-      89
-    ],
-    [
-      91,
-      90
-    ],
-    [
-      93,
+      95,
       92
+    ],
+    [
+      95,
+      93
+    ],
+    [
+      95,
+      94
+    ],
+    [
+      97,
+      96
     ]
   ]
 }

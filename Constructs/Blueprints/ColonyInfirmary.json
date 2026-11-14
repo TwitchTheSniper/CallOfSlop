@@ -162,6 +162,14 @@
       "finish": "concrete"
     },
     {
+      "part": "Roof Water Tank",
+      "on": 9,
+      "socket": "t7_7",
+      "by": "b00",
+      "paint": "#d6dad3",
+      "finish": "worn paint"
+    },
+    {
       "part": "Door Hinge",
       "on": 2,
       "socket": "hinge",
@@ -169,7 +177,7 @@
     },
     {
       "part": "Wood Flush Door 1.5x2.25 m",
-      "on": 20,
+      "on": 21,
       "socket": "leaf",
       "by": "hang",
       "paint": "#2f5a3c",
@@ -185,7 +193,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 22,
+      "on": 23,
       "socket": "lamp",
       "by": "back",
       "config": {
@@ -194,7 +202,7 @@
     },
     {
       "part": "Sign Board 2 m",
-      "on": 22,
+      "on": 23,
       "socket": "sign",
       "by": "back",
       "text": [
@@ -356,12 +364,12 @@
   ],
   "wires": [
     [
-      42,
-      40
+      43,
+      41
     ],
     [
-      42,
-      41
+      43,
+      42
     ]
   ]
 }

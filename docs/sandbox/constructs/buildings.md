@@ -173,6 +173,13 @@ The spaceport, 2 km out (`BuildingParts.Spaceport.cs`; docs/story/SPACEPORT.md):
 
 Each block has a number on its name board: 1 Canteen, 2 Records, 3 Infirmary, 4 Requisitions, 5 Barracks.
 
+Each also has one thing on its roof nobody else has (`BuildingParts.Street.cs`), so the skyline tells them apart: the
+Records Office the **Tannoy Mast** (the Ministry's voice), the Canteen a **Roof Sign Frame** with a slogan in cream on red
+lit by two sodium lamps ("EAT WHAT YOU ARE GIVEN"; the warden's office has one too, to the gate), the Infirmary a **Roof
+Water Tank** on legs, Requisitions a yellow **Loading Hoist** out over the dock from the lid, the Barracks an **Air Raid
+Siren**. The `Slogan` helper puts up a frame, its board and its lamps. A roof piece stands on a slab's top socket at
+`(row + 1) * C` (a slab's row is its centre: its top is half a cell up, the piece's foot half a cell more).
+
 `--look-report` shows these as almost wholly "dark or grey": that is the style, not a fault. Judge them by outline, lamps
 and finish count, and in the window (`--window-shot OUT.png --blueprint "Colony Canteen" --at X,Y,Z --look-at X,Y,Z`).
 

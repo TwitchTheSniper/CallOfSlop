@@ -73,6 +73,17 @@ public sealed partial class BuildingParts
     /// <summary>A warning, cream on red, one line on a 2 m board.</summary>
     private static int Warning(Blueprint bp, int on, string sock, string text) => Board(BoardSize.Narrow, bp, on, sock, text, BoardRed);
 
+    /// <summary>A slogan over the street: a Roof Sign Frame by its middle foot on a lid's top socket, a 3 m board on it in cream on
+    /// Ministry red, and two sodium lamps under its hood to light it at night.</summary>
+    private static int Slogan(Blueprint bp, int lid, string sock, string text)
+    {
+        var f = bp.Hang("Roof Sign Frame 3 m", lid, sock, "b");
+        Board(BoardSize.Wide, bp, f, "sign", text, BoardRed);
+        Outside(bp, f, "lamp0");
+        Outside(bp, f, "lamp1");
+        return f;
+    }
+
     /// <summary>A mains lamp by its back on a socket, glowing <paramref name="colour"/> (lit while the building's battery reaches it).</summary>
     private static int Lamp(Blueprint bp, string part, int on, string sock, string colour)
     {
@@ -247,6 +258,7 @@ public sealed partial class BuildingParts
         var archive = new[] { Strip(bp, uEast[0], "k8_10"), Strip(bp, uEast[1], "k8_10") };
         Switch(bp, uBack, "k0_5", archive);
         bp.Put("Union Flag", [6.0, (roof2 + 0.5) * C, 6.0], R0);
+        bp.Put("Tannoy Mast", [2.0, (roof2 + 1) * C, -2.0], R0); // (the Ministry's voice, over the queue: every announcement starts here)
         Look(bp, bp.Hang("Battery", back, "k0_10", "-z"), MinSlate); // (the fuse box, high on the back wall)
         o.Add(bp);
 
@@ -272,7 +284,8 @@ public sealed partial class BuildingParts
         Concrete(bp, uc.Concat(clere));
         var hallRoof = Slab1 + WallH;
         Roof(bp, 0, 0, 32, 32, hallRoof);
-        Lid(bp, 0, 0, 32, 32, hallRoof);
+        var hallLid = Lid(bp, 0, 0, 32, 32, hallRoof);
+        Slogan(bp, hallLid[2], "t0", "EAT WHAT YOU ARE GIVEN"); // (on the tall hall's front, over the street)
         // The kitchen (z 8 to 12 m): two corners at the back, the back door in the east one, 2 m of wall each side up to the hall.
         var kDoor = bp.Put("Concrete Door Corner", Cell(31, G, 47), RY180);
         var kCorner = bp.Put("Concrete Wall Corner", Cell(0, G, 47), RY90);
@@ -326,6 +339,7 @@ public sealed partial class BuildingParts
         Concrete(bp, rc.Concat([west, east]), MinWhite);
         Roof(bp, 0, 0, 16, 32, Slab1);
         Lid(bp, 0, 0, 16, 32, Slab1);
+        Look(bp, bp.Put("Roof Water Tank", [1.75, (Slab1 + 1) * C, 5.75], R0), MinWhite, "worn paint"); // (the ward's water, on legs over the far end)
         Door(bp, rc[0]);
         Porch(bp, rc[0], "BLOCK 3 - INFIRMARY");
         Steps(bp, 0, 0);
@@ -363,6 +377,7 @@ public sealed partial class BuildingParts
         Steps(bp, 8, -16);
         Piers(bp, ButtressPart, (back, "f0_5"), (back, "f8_5"), (back, "f15_5"));
         NameBoard(bp, lid[0], "f15", "BLOCK 4 - REQUISITIONS"); // (on the lid's front, over the dock's middle)
+        bp.Hang("Loading Hoist", lid[2], "f8", "back"); // (out over the dock's east end, where a lorry backs up)
         Outside(bp, front, "f0_10");
         Outside(bp, front, "f15_10");
         // The counter: three lengths from the west wall, their closed side to the door.
@@ -446,7 +461,8 @@ public sealed partial class BuildingParts
         Concrete(bp, office);
         Roof(bp, 24, 8, 16, 16, Slab1);
         Roof(bp, 8, 8, 16, 16, Slab1); // (thrown out over the muster, on the first slab's edge, up to the cell block's wall)
-        Lid(bp, 8, 8, 32, 16, Slab1, back: false);
+        var wLid = Lid(bp, 8, 8, 32, 16, Slab1, back: false);
+        Slogan(bp, wLid[1], "t8", "THE MINISTRY PROVIDES"); // (over the warden's office, to the gate)
         Concrete(bp, [bp.Put("Concrete Fascia 4 m", Cell(39, Slab1, 25), RY180), bp.Put("Concrete Fascia Corner", Cell(41, Slab1, 25), RY180)], MinWeathered);
         Door(bp, office[1]);
         Porch(bp, office[1], "WARDEN");
@@ -487,6 +503,7 @@ public sealed partial class BuildingParts
         Concrete(bp, uc.Concat([dormW, dormE]));
         Roof(bp, 0, 0, 16, 32, roof2);
         Lid(bp, 0, 0, 16, 32, roof2);
+        bp.Put("Air Raid Siren", [2.0, (roof2 + 1) * C, 2.0], R0); // (the lockdown's call to turn out)
         Porch(bp, rc[1], "BLOCK 5 - BARRACKS");
         Look(bp, bp.Put("Concrete Entrance Steps 2 m", Cell(19, 0, 0), RY270), MinWeathered, "concrete");
         Piers(bp, FinPart, (east, "f0_5"), (east, "f8_5"), (east, "f15_5"), (dormE, "f0_5"), (dormE, "f8_5"), (dormE, "f15_5"));
