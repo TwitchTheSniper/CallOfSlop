@@ -1514,6 +1514,14 @@ a step the rules refuse fails there with their reason. It reads the part files: 
   steel sheet 0.5 x 0.1 x 1 m, a conveyor into a [Panel Former](#the-panel-former)'s Piece in, its Piece out onto a conveyor to a Long
   Piece Rack; on the orders console, whose bill gains two Hoods, two Fenders and one of the vehicle kit's lofted hoods); **crafting** (a Crafting Terminal between the two end racks, the orders console wired into its Orders port, a
   return conveyor from the Assembler's rack to its tray: "F on the screen: order a part. It arrives in the tray").
+- **Added 2026-11-13** (`showcase-repair-notes.md` in `docs/sandbox/design`): rubber chuted to the Assembler beside its steel (an
+  Ammo Container needs both); the Assembler's Router's way 2 runs to the Building Station's Piece in 2, so a part the station orders
+  of the Assembler rides into the hold; two Loader Arms at the bay's corners by the hold, on the showcase's own power; and a
+  **back strip** behind the station (x 56 to 86, z -14 to -20): an Airframe Former whose wing grows 6 m east over clear floor and drops
+  (a wing has no conveyor), and the [Laser Cutter](#the-laser-cutter)'s line, an Extruder making 0.5 x 0.1 x 1 m steel plate, a
+  Router whose way ahead takes an ordered blank to the cutter and whose way 2 racks the rest, the cutter's Piece out to its own Piece
+  Rack, all three on the orders console. Each conveyor before and after the cutter is 2 m: one shorter than the piece jams the Router
+  ("the conveyor after the junction is full").
 - **Stock** is the Storage Volume's own creative-only Material and Fill settings (`ConstructBuild.SetConfig`): a creative world fills
   each box as the blueprint builds; a survival world builds it empty, so a blueprint gives survival nothing. They are filled to 24%,
   under the 25% an open side may hold before it pours ([Sealed volumes](power-and-links.md#sealed-volumes)), so they need no walls.

@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// <c>cutter</c> prints each cutter as this peer has it (its state, offcut bin and tenths, bed, stroke, head order) and the cut parts lying
 /// loose; <c>cutter order KEY [N]</c> (host) queues an order at the first cutter that takes it, as a designer's ORDER does;
 /// <c>cutter feed KEY</c> (host) puts a blank on the conveyor into a cutter, or with none lays it on the first cutter's bed by its Piece in's
-/// own rule; <c>cutter await</c> waits (a frame at a time, 120 s at most) until the first busy cutter's cut ends, printing the seconds it took.
+/// own rule; <c>cutter await</c> waits (a tick at a time, 120 s at most) until the first busy cutter's cut ends, printing the seconds it took.
 /// </summary>
 public static unsafe partial class Program
 {
