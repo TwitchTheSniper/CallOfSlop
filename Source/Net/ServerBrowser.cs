@@ -501,7 +501,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   (Main took it as 301.)
     // 304: Sized parts phase 5 (engine pieces off the press): the Engine Die parts (ids move); the Cylinder die's presets on the files' bounds and the
     //   Engine die (Pressing.json); a pressed engine piece's scale and a cylinder's stroke ratio come from its key (derived on each peer, no new bytes).
-    public const ushort ProtocolVersion = 304;
+    // 305: Laser Cutter phase 6 (the Pane): "Cut Pane (rA,B,C tT glass)" travels as a named run-time part (a name older builds refuse), in bodies,
+    //   orders, racks and riders; and a formed glass sheet (its blank) is a part now (it threw before), so its key may ride too.
+    public const ushort ProtocolVersion = 305;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

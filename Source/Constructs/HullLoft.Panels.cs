@@ -682,7 +682,7 @@ public static partial class HullLoft
             ["tool"] = "welder",
             ["mass"] = mass,
             ["health"] = MathF.Round(Math.Clamp(volume * row.HealthPerM3, 40, 4000)),
-            ["armour"] = MathF.Round(Math.Clamp(row.ArmourPerCm * sh.Mm / 10f, 1, row.MaxArmour)),
+            ["armour"] = row.MaxArmour <= 0 ? 0 : MathF.Round(Math.Clamp(row.ArmourPerCm * sh.Mm / 10f, 1, row.MaxArmour)), // (glass has none: a clamp of 1 to 0 threw, and no glass sheet could be formed)
             ["material"] = row.Class,
             ["color"] = Steel,
             ["attachSeconds"] = 2.0,
@@ -789,6 +789,14 @@ public static partial class HullLoft
             var off = blank == null ? 0 : MathF.Round(MathF.Max(0, blank.Mass - d.Mass) / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(mat)) * 10) / 10;
             Console.WriteLine($"  cuts {plan.Cuts.Length} ({string.Join(' ', plan.Cuts.Select(c => c.Text))}), drawn pieces {plan.Items} of {CutMaxFacets}, key {name.Length} of {ConstructParts.MaxRuntimeName} characters");
             Console.WriteLine($"  blank {plan.Blank}: {blank?.Mass ?? 0:0.#} kg; offcut {off:0.0} {RecyclingTable.Current.NameOf(mat)}");
+        }
+        else if (IsPaneName(name) && CutJob(name, out var paneBlank, out _, out _, out var paneEdge, out _))
+        {
+            // A pane (phase 6): cut round its outline from a glass sheet; the rest of the sheet comes back as glass offcut.
+            var blank = ConstructParts.Find(paneBlank);
+            PumpPanels(-1);
+            var off = blank == null ? 0 : MathF.Round(MathF.Max(0, blank.Mass - d.Mass) / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(mat)) * 10) / 10;
+            Console.WriteLine($"  pane: edge {paneEdge:0.00} m; glass {d.HasGlass}; blank {paneBlank}: {blank?.Mass ?? 0:0.#} kg; offcut {off:0.0} {RecyclingTable.Current.NameOf(mat)}");
         }
         else
             Console.WriteLine($"  cost {FormedUnits(d, mat)} {RecyclingTable.Current.NameOf(mat)}; made by: {ConstructPanelFormer.TierFor(d) ?? "no Panel Former is big enough"}");
