@@ -261,7 +261,7 @@ public sealed class LifterParts : IPartGenerator
         p.Set(("config", Py.L(
             Kw(("key", "liftMode"), ("type", "choice"), ("label", "Works"), ("group", "Lifter"), ("options", Py.L("Auto", "Station only", "Carry only", "Off")), ("default", 0),
                 ("tooltip", "Auto: every job under it. Station only: fits parts at Building Stations. Carry only: carries between machines, racks and pads. Off: stands still.")),
-            Kw(("key", "carryHeight"), ("label", "Carry height"), ("group", "Lifter"), ("unit", "m"), ("min", 0.0), ("max", Py.Round(cr.Drop * 0.5, 1)), ("step", 0.1), ("default", Py.Round(0.5 * k, 1)),
+            Kw(("key", "carryHeight"), ("label", "Carry height"), ("group", "Lifter"), ("unit", "m"), ("min", 0.0), ("max", Py.Round(cr.Drop, 1)), ("step", 0.1), ("default", Py.Round(cr.Drop, 1)),
                 ("tooltip", "How high it hoists a piece over the higher end of its move before it travels. Never past the hook's highest point.")))));
         return p;
     }

@@ -355,7 +355,7 @@ public static partial class ConstructLifters
                     continue;
                 // A crane whose rails went, or no longer reach either end of the move it is in: it stops where it is, its piece in its hand,
                 // as without power, and goes on when the rails are back.
-                var railless = ld.Bridge && (ld.RailWhy != 0 || l.State is LiftState.Carry or LiftState.Return && (OffRails(ld, l.From) || OffRails(ld, l.To)));
+                var railless = ld.Bridge && (ld.RailWhy != 0 || l.State is LiftState.Carry or LiftState.Return && (OffRails(ld, l, false) || OffRails(ld, l, true)));
                 if (railless || !ConstructRecycler.Powered(world, c, l.Part))
                 {
                     Why(world, l, !railless ? LiftWhy.NoPower : ld.RailWhy == 1 ? LiftWhy.NoRail : ld.RailWhy == 2 ? LiftWhy.NoFarRail : LiftWhy.RailsShort); // (it stops where it is, and goes on when power returns; a client poses it there too)
@@ -512,7 +512,7 @@ public static partial class ConstructLifters
 
     /// <summary>The Carry height setting, as a rise over a move's higher end.</summary>
     private static float RiseOf(Construct c, int part, LifterDef ld) =>
-        Math.Clamp(ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.CarryHeight, CarryRise), 0, ld.Up);
+        Math.Clamp(ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.CarryHeight, CarryRise), 0, ld.Bridge ? ld.Down : ld.Up); // (a crane: up to its drop; CarryY caps it at the hook's top)
 
 
     /// <summary>The shoulder in the world, and the lifter part's world frame.</summary>
@@ -862,7 +862,7 @@ public static partial class ConstructLifters
                 ConstructBuild.PlaceNew(world, d, at + Vector3.UnitY * 2, 0);
                 continue;
             }
-            var rest = ld.Base + new Vector3(ld.ReachMin + 0.9f, -0.9f, 0);
+            var rest = RestOf(ld); // (a crane: on its hook, inside its box)
             (l.State, l.Def, l.Paint, l.From, l.To, l.FromRot, l.ToRot) = (LiftState.Stuck, def, paint, rest, rest, Quaternion.Identity, Quaternion.Identity);
             (l.Age, l.Dur, l.Start, l.Held, l.WaitFrom, l.Moved, l.Why, l.Fitted, l.ToHold) = (Every, Every, 0u, 0, 0u, true, LiftWhy.Holding, false, false);
             world.LiftBusy++; // (the step runs while a hand holds a piece)
@@ -871,6 +871,11 @@ public static partial class ConstructLifters
     }
 
     // ---- The path (both peers) ---------------------------------------------------------------------------------------------
+
+    /// <summary>Where a hand rests before its first move: an arm's a little out and down; a crane's on its hook, a metre under its top.</summary>
+    public static Vector3 RestOf(LifterDef ld) => ld.Bridge
+        ? ld.Base + new Vector3(ld.AcrossMin + 1f, -ld.Depth - 1f, Math.Clamp(0, ld.RunLo, MathF.Max(ld.RunLo, ld.RunHi)))
+        : ld.Base + new Vector3(ld.ReachMin + 0.9f, -0.9f, 0);
 
     /// <summary>The move's length in ticks: half the handling at each end, the path at the hand's speed.</summary>
     public static int Ticks(LifterDef ld, Vector3 from, Vector3 to, bool loaded, float lift, float rise)
@@ -1090,19 +1095,19 @@ public static partial class ConstructLifters
             for (var i = 0; i < lb.N; i++)
             {
                 var part = lb.Lifts[i].Part;
-                if (part >= c.PartCount || c.DefOf(part).Lifter is not { Bridge: false } ld)
+                if (part >= c.PartCount || DefOf(c, part) is not { } ld)
                     continue;
                 Frame(c, part, ld, out _, out var lr, out var shoulder);
                 if (!HoldPick(sc, t, ld, shoulder, lr, SafeLift, SafeLift, out var hold))
                     continue;
                 n++;
-                tiers.Append(tiers.Length > 0 ? ", " : "").Append(TierName(ld.Tier));
-                rate += 1f / (ld.Handle * 1.25f + 2 * Vector3.Distance(hold, middle) / ld.Speed);
+                tiers.Append(tiers.Length > 0 ? ", " : "").Append(ld.Bridge ? "Bridge Crane" : TierName(ld.Tier));
+                rate += 1f / (ld.Handle * 1.25f + 2 * Vector3.Distance(hold, middle) / (ld.Bridge ? MathF.Min(ld.Speed, ld.Hoist) : ld.Speed)); // (a crane: its slower of travel and hoist)
             }
         }
         _fittersText = n == 0
             ? "Fitters: the station alone. A Loader Arm whose reach takes in the hold fits parts beside it."
-            : $"Fitters: the station, {n} Loader Arm{(n == 1 ? "" : "s")} ({tiers}) - about {rate:0.0} light parts a second";
+            : $"Fitters: the station, {n} lifter{(n == 1 ? "" : "s")} ({tiers}) - about {rate:0.0} light parts a second";
         return _fittersText;
     }
 
@@ -1623,9 +1628,21 @@ public static partial class LifterProbe
     /// Host (the window tool's "lifter stand" and "lifter pen"): a spot on the ground the piece of a carry that has just begun
     /// will pass over, 60 % into its move; null while no such carry runs. <paramref name="info"/>: the piece's box there.
     /// </summary>
-    public static Vector3? PathSpot(ConstructWorld world, out string info)
+    public static Vector3? PathSpot(ConstructWorld world, out string info) => PathSpot(world, false, out info);
+
+    /// <summary>(<paramref name="put"/>: a crane hoists over heads, so where its piece comes down: its put point, the feet under the piece there.)</summary>
+    public static Vector3? PathSpot(ConstructWorld world, bool put, out string info)
     {
         info = "";
+        if (put)
+            foreach (var lb in world.LiftBodies)
+                for (var i = 0; i < lb.N; i++)
+                    if (lb.Lifts[i] is { State: LiftState.Carry, WaitFrom: 0, Def: > 0 } pl && world.Get(lb.Body) is { } pc && pl.Part < pc.PartCount && ConstructLifters.DefOf(pc, pl.Part) is { } pld
+                        && ConstructLifters.AgeAt(pl, ConstructLifters.Now) < pl.Dur * 0.5f && ConstructLifterPush.PieceBox(pc, pl, pld, pl.Dur, out var pcen, out var phalf))
+                    {
+                        info = $"{ConstructParts.Get(pl.Def)?.Name}: its put point, the piece's box {phalf.X * 2:0.00} x {phalf.Z * 2:0.00} m";
+                        return new Vector3(pcen.X, pcen.Y - phalf.Y - 0.3f, pcen.Z);
+                    }
         foreach (var lb in world.LiftBodies)
         {
             if (world.Get(lb.Body) is not { } c)

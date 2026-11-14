@@ -35,19 +35,17 @@ public static class LifterRender
                 if (l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } ld || c.Parts[l.Part].Broken)
                     continue;
                 ConstructLifters.Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
-                if (Vector3.DistanceSquared(eye, shoulder) > DrawNear * DrawNear)
+                // The hand, in the part's frame: the piece's origin and turn on the path, the gripper bar on its top.
+                var turn = Quaternion.Identity;
+                var origin = l.Moved ? ConstructLifters.Pose(ld, l, ConstructLifters.AgeNow(l), out turn) : ConstructLifters.RestOf(ld); // (at rest before its first move)
+                // Culled by the nearer of its base and its hand: a crane's bridge and piece may be 300 m along its rails from its cabinet.
+                var handAt = lp + Vector3.Transform(origin, lr);
+                if (Vector3.DistanceSquared(eye, shoulder) > DrawNear * DrawNear && Vector3.DistanceSquared(eye, handAt) > DrawNear * DrawNear)
                     continue;
                 if (_lookBody == c.Id && _lookPart == l.Part && now - _lookAt < 0.3 && ld.Bridge)
                     DrawCraneReach(gfx, ld, Matrix4x4.CreateFromQuaternion(lr) * Matrix4x4.CreateTranslation(lp));
                 else if (_lookBody == c.Id && _lookPart == l.Part && now - _lookAt < 0.3)
                     DrawReach(gfx, world, c, l.Part, ld, Matrix4x4.CreateFromQuaternion(lr) * Matrix4x4.CreateTranslation(lp), shoulder);
-                // The hand, in the part's frame: the piece's origin and turn on the path, the gripper bar on its top.
-                Vector3 origin;
-                var turn = Quaternion.Identity;
-                if (l.Moved)
-                    origin = ConstructLifters.Pose(ld, l, ConstructLifters.AgeNow(l), out turn);
-                else
-                    origin = ld.Bridge ? ld.Base + new Vector3(ld.AcrossMin + 1f, -ld.Depth - 1f, Math.Clamp(0, ld.RunLo, MathF.Max(ld.RunLo, ld.RunHi))) : ld.Base + new Vector3(ld.ReachMin + 0.9f, -0.9f, 0); // (at rest before its first move)
                 var grip = origin + Vector3.UnitY * ConstructLifters.GripLift;
                 var span = 0.35f;
                 var part = Matrix4x4.CreateFromQuaternion(lr) * Matrix4x4.CreateTranslation(lp);

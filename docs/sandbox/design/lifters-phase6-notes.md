@@ -67,3 +67,19 @@ are `lifters-phase5-notes.md` and `lifters-phase5b-notes.md`. **Protocol 311** (
 4. **Handling and power** (3/5/8 s, 6/30/120 kW, mine): A: keep. B: the user's figures.
 
 STATUS: phase 6 built to its stop point on the press line; station fit, orders through a crane and phase 5b's leftovers not tried.
+
+## After review (2026-11-14)
+
+- **Carry height**: a crane's rise was clamped to its `up` (0), so it carried at the higher end's height. Now its Carry height runs to its
+  drop (default: all the way, capped at the hook's top). Tried: a blank's hand rose from 5.8 to 2.1 m under the rails' top mid-move.
+- **Rails too short** tests the piece's middle, as its reach was (a fit's place: its origin, as the plan's).
+- **Pushes are nudges**: a shortest way out longer than `MaxEscape` (0.75 m) no longer moves the player; the lifter waits for them (Alarm
+  after 10 s). Tried with a crane's small piece lowered onto a player (stood on the put point, then penned): nudged twice, no pin; a piece
+  big enough to need the wait was not in the rig (not tried).
+- **Drawn while its hand is near**: culled by the nearer of the cabinet and the piece; a loaded crane's piece rests on its hook (`RestOf`);
+  the station panel's Fitters line counts cranes ("Bridge Crane", at its slower of travel and hoist).
+- **The rail walk** runs only when the rails' or bridges' places change (`CraneKey`), not on every shape refresh (an Extruder's step).
+  Not timed on a large body.
+- **An order through an arm** (verification 4, item 7): the press's Buttons stayed in its own tray. The arm now lifts from a press's or an
+  Assembler's output tray at its out by the same rule (a want first, else storage). Tried: `lifter net Industrial; logi order Button 2`:
+  2/2 Buttons in the terminal's tray, 4 carries. `lifter net` now stocks the Button's own blank (10 x 10 x 10 cm laminate plate).

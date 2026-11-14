@@ -1094,7 +1094,7 @@ public static unsafe partial class Program
                     var anyJoined = g.Players.Values.Any(pl => pl.Bot == null && pl != me && pl.Alive);
                     _wsJoinSeen = anyJoined ? (_wsJoinSeen == 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : _wsJoinSeen) : 0;
                     var waitJoin = lw.Length > 1 && lw[1] == "others" && (_wsJoinSeen == 0 || System.Diagnostics.Stopwatch.GetElapsedTime(_wsJoinSeen).TotalSeconds < 15); // (joined 15 s ago: its window has spawned it)
-                    var pspotOr = waitJoin ? null : LifterProbe.PathSpot(g.Constructs, out pinfo);
+                    var pspotOr = waitJoin ? null : LifterProbe.PathSpot(g.Constructs, lw.Length > 2 && lw[2] == "put", out pinfo); // ("lifter stand me put": where a crane's piece comes down)
                     if (pspotOr is not { } pspot)
                     {
                         if (WsLiftWait(180))

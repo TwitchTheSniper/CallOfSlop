@@ -8,6 +8,7 @@ public sealed partial class Construct
     internal int CraneStamp = -1, CranePartCount = -1;
     internal (ushort Part, LifterDef Def)[] CraneDefs = [];
     internal int CraneN;
+    internal long CraneKey = -1; // (what the walk read: its rails' and bridges' places; a stamp bumped by a shape refresh alone walks nothing)
 }
 
 /// <summary>
@@ -35,7 +36,16 @@ public static partial class ConstructLifters
         if (ld is not { Bridge: true })
             return ld;
         if (c.CraneStamp != c.RebuildStamp || c.CranePartCount != c.PartCount)
-            Cranes(c);
+        {
+            c.CraneStamp = c.RebuildStamp;
+            c.CranePartCount = c.PartCount;
+            var key = CraneKeyOf(c);
+            if (key != c.CraneKey)
+            {
+                c.CraneKey = key;
+                Cranes(c);
+            }
+        }
         for (var k = 0; k < c.CraneN; k++)
             if (c.CraneDefs[k].Part == part)
                 return c.CraneDefs[k].Def;
@@ -64,16 +74,42 @@ public static partial class ConstructLifters
         }
         for (var k = 0; k < n; k++)
             s += $" point {pts[k].Kind} {world.Get(pts[k].Body)?.DefOf(pts[k].Part).Name}";
+        if (Find(world, c.Id, part) is { State: LiftState.Carry or LiftState.Return } hl)
+        {
+            var hand = Pose(ld, hl, AgeAt(hl, Now), out _);
+            s += $" hand at {hand.Y - ld.Base.Y:0.0} m under the rails' top ({AgeAt(hl, Now):0}/{hl.Dur} ticks; from {hl.From.Y - ld.Base.Y:0.0}, to {hl.To.Y - ld.Base.Y:0.0}, rise {hl.Rise:0.0})";
+        }
         return $"{n} points; box x {ld.AcrossMin:0.0}..{ld.AcrossMax:0.0} z {ld.RunLo:0.0}..{ld.RunHi:0.0} y -{ld.Down:0.0}..-{ld.Depth:0.0};{s}";
     }
 
     /// <summary>Is a point of a crane's move (its part frame) past the rails it has now (a section taken out mid-move)?</summary>
-    private static bool OffRails(LifterDef ld, Vector3 p) => p.Z - ld.Base.Z < ld.RunLo - 0.05f || p.Z - ld.Base.Z > ld.RunHi + 0.05f;
+    private static bool OffRails(LifterDef ld, CLift l, bool to)
+    {
+        // (the piece's middle, as its reach was tested: InReach takes a part's middle; an empty hand's point is its own)
+        var p = to ? l.To : l.From;
+        if (l.Def != 0 && !(to && l.Step >= 0 && !l.ToHold) && ConstructParts.Get(l.Def) is { } d) // (a fit's place was tested at its origin: StationJob plan points)
+            p += Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, to ? l.ToRot : l.FromRot);
+        return p.Z - ld.Base.Z < ld.RunLo - 0.05f || p.Z - ld.Base.Z > ld.RunHi + 0.05f;
+    }
+
+    /// <summary>A hash of what a crane's reach depends on: each rail's and bridge's index, place, turn, segment and whether it is whole (no allocation).</summary>
+    private static long CraneKeyOf(Construct c)
+    {
+        var h = (long)c.PartCount * 1000003;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            var d = c.DefOf(i);
+            if (!d.CraneRail && d.Lifter is not { Bridge: true })
+                continue;
+            ref readonly var p = ref c.Parts[i];
+            var x = HashCode.Combine(i, d.Id, p.Pos, p.Rot, p.Seg, p.Broken);
+            h = h * 31 + x;
+        }
+        return h;
+    }
 
     private static void Cranes(Construct c)
     {
-        c.CraneStamp = c.RebuildStamp;
-        c.CranePartCount = c.PartCount;
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
             if (c.DefOf(i).Lifter is { Bridge: true })

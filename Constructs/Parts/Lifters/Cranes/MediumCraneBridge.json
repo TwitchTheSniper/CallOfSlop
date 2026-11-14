@@ -79,9 +79,9 @@
       "group": "Lifter",
       "unit": "m",
       "min": 0.0,
-      "max": 4.0,
+      "max": 8.0,
       "step": 0.1,
-      "default": 0.5,
+      "default": 8.0,
       "tooltip": "How high it hoists a piece over the higher end of its move before it travels. Never past the hook's highest point."
     }
   ],
