@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// switch: it runs off the barracks' Battery, and the cure is the Scammers' own (IT's): cut its power. Take the battery off with
 /// the attach tool, fit it back, and the machine comes up clean. The colony's computer never gives up on its own (a scam elsewhere
 /// closes when it runs out of messages; this one starts again). The quality Fixit carries the rest: 1 asked, 2 mended (a Mend,
-/// for a player asked who is near a clean computer with power), 3 thanked, 4 paid the scammers (they took the battery), 5 told
+/// for a player asked who is near when it comes back on clean after its power was cut), 3 thanked, 4 paid the scammers (they took the battery), 5 told
 /// off. State is the computer part's own and the story's, both saved with the world; nothing new on the wire.
 /// </summary>
 public sealed partial class Game
@@ -21,6 +21,7 @@ public sealed partial class Game
     private const int ColonyPcRestart = 90;
 
     private int _vMend = -1, _qFixit = -1;
+    private bool _colonyPcWasOff; // (seen without power since it was last on: a loaded world sees it again, so nothing is saved)
     private object? _colonyPcRules;
 
     /// <summary>The duty desk's computer: the Colony Barracks' first Computer. (null, -1): no barracks, or none in it.</summary>
@@ -64,7 +65,7 @@ public sealed partial class Game
         Log($"[colony] the duty desk computer has Tech Support's virus (for {by.Name}); its battery is the cure");
     }
 
-    /// <summary>Server, once a second (from the scams' tick): a player asked to mend the computer who is near it while it runs clean has mended it.</summary>
+    /// <summary>Server, once a second (from the scams' tick): when the computer comes back on clean after its power was cut, the players asked to mend it who are near have mended it.</summary>
     private void ColonyPcTick()
     {
         if (Story is not { } s || ColonyPc() is not ({ } c, var i))
@@ -75,8 +76,16 @@ public sealed partial class Game
             _vMend = s.Rules.VerbId("Mend");
             _qFixit = s.Rules.Quality("Fixit")?.Id ?? -1;
         }
-        if (_vMend < 0 || _qFixit < 0 || c.Parts[i].State != 0 || !OfficeParts.PluggedIn(c, i))
+        if (_vMend < 0 || _qFixit < 0)
             return;
+        if (!OfficeParts.PluggedIn(c, i))
+        {
+            _colonyPcWasOff = true; // (its power cut: the cure, when it comes back clean)
+            return;
+        }
+        if (c.Parts[i].State != 0 || !_colonyPcWasOff)
+            return; // (hooked, or clean without ever losing its power: the scammers paid, or never infected)
+        _colonyPcWasOff = false;
         var at = OfficePartAt(c, i);
         foreach (var p in Players.Values)
         {

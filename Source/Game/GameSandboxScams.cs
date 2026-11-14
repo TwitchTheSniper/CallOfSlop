@@ -79,8 +79,8 @@ public sealed partial class Game
         }
         if (p.Count < desk.DueAfter(p.Rounds, OfficeParts.Seed(p, i)) || !AnyoneNear(at, ScamHearing))
             return;
-        if (p.Rounds == 0)
-            ItNoticesMalware(at, now);
+        if (p.Rounds == 0 && !IsColonyPc(c, i))
+            ItNoticesMalware(at, now); // (the colony's computer starts over again and again: IT isn't faxed each time)
         ScamLines(at, scam, scam.Messages[p.Rounds], now);
         p.Rounds++;
         p.Count = 0;

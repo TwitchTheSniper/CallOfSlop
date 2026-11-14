@@ -211,6 +211,7 @@ public sealed partial class Game
             OfficeParts.Heard(text, ItDesk.Script?.From ?? ""); // (a fax's page, for its panel on this peer)
         else if ((flags & ChatFlags.System) != 0 && (text.StartsWith(OfficeParts.Inbox, StringComparison.Ordinal) || text.StartsWith(OfficeParts.Pc, StringComparison.Ordinal)))
         {
+            OfficeParts.ForgetStale();
             if (!IsServer && !OfficeParts.HookKnown && text.StartsWith(OfficeParts.Inbox, StringComparison.Ordinal) && Local is { } me
                 && NearestOffice(OfficeKind.Computer, me.Position, ScamHearing) is ({ } pc, var pi))
                 OfficeParts.HeardAt(pc, pi, text); // (a computer the server hooked itself: GameColonyPc.cs)

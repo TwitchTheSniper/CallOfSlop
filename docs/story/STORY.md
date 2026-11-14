@@ -1144,11 +1144,13 @@ A colony errand on the Scammers' virus (Karl, 2026-11-14; `Source/Game/GameColon
 - The colony's computer never gives up on its own: after its last message and 90 s it starts over.
 - The fix is physical. It has no switch; it runs off the barracks' Battery. Take the battery off with the attach tool
   (the barracks is nobody's, so anyone may) and the Scammers' own cure clears it; fit it back (a fitted battery comes
-  charged) and it comes up clean. A player with `Fixit` 1 within 15 m of it while it is clean and powered gets `Fixit` 2
-  and a `Mend` event.
+  charged) and it comes up clean. When it comes back on clean after its power was cut, each player with `Fixit` 1 within 15 m
+  gets `Fixit` 2 and a `Mend` event (a player elsewhere doesn't; nor does a cure the scammers were paid for). It
+  never faxes IT, however often it starts over.
 - *Off and on again* (B, once `Nag` has decayed, 20 minutes): a gossip says IT's answer to everything, that the machine
   hasn't got a switch, and that "the lights go off when the box on the wall says so".
 - *Rotas by Thursday* (B, `Fixit` 2): thanks, Likes +10, Suspicion -1, `Fixit` 3. Paying the scammers instead (typing a
   number at it: they take the battery and leave) gives `Fixit` 4 and *Battery's code*: Suspicion +1, `Fixit` 5.
 - A joined client hearing a scammer's message with no advert clicked takes the nearest computer for the hooked one
-  (`OfficeParts.HeardAt`), so its screen turns red as the host's does. Nothing new on the wire.
+  (`OfficeParts.HeardAt`), so its screen turns red as the host's does; the guess is let go after 150 s with no
+  message, so a client that walked off while it was cured sees it clean. Nothing new on the wire.
