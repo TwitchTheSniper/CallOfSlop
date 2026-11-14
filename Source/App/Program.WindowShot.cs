@@ -1196,7 +1196,7 @@ public static unsafe partial class Program
                                 WsSay($"lifter:   order {ol.Orders![oi].Id}: {ConstructLifters.OrderText(g.Constructs, ol.Orders[oi])}");
                     }
                 }
-                else if (lw.Length > 0 && lw[0] is "line" or "hold" or "set" or "mains" or "points" or "base" or "flip" or "reset" or "press" or "drop" or "pickpad" or "net" or "edges" or "bigparts" or "bigrack" or "steps" or "mapcost" or "weld" or "ride" or "crowd" or "crane" or "cranecut" or "cranes" or "cranepoints" && g.IsServer)
+                else if (lw.Length > 0 && lw[0] is "line" or "hold" or "set" or "mains" or "points" or "base" or "flip" or "reset" or "press" or "drop" or "pickpad" or "net" or "edges" or "bigparts" or "bigrack" or "steps" or "mapcost" or "weld" or "ride" or "crowd" or "crane" or "cranecut" or "cranes" or "cranepoints" or "pad2" && g.IsServer)
                 {
                     // Lifters phase 4 (LifterLineProbe.cs): "lifter line [TIER]" an arm, an Assembler, a stocked rack and a pad round this player;
                     // "lifter hold NAME" that piece at the line's Assembler's out; "lifter set liftMode|carryHeight V"; "lifter mains on|off"; "lifter points".
@@ -1225,6 +1225,7 @@ public static unsafe partial class Program
                         "crane" => LifterProbe.Crane(g.Constructs, me.Position, rest4), // (phase 6: the press line under a Bridge Crane: LifterCraneProbe.cs)
                         "cranecut" => LifterProbe.CraneCut(g.Constructs, rest4),
                         "cranepoints" => g.Constructs.Get(LifterProbe.CraneBody) is { } cpc ? ConstructLifters.CranePoints(g.Constructs, cpc, 0) : "no crane",
+                        "pad2" => LifterProbe.Pad2(g.Constructs),
                         "cranes" => LifterProbe.Cranes(g.Constructs, me.Position, int.TryParse(rest4, out var kn) ? kn : 4),
                         _ => LifterProbe.Points(g.Constructs),
                     });
@@ -1236,7 +1237,7 @@ public static unsafe partial class Program
                 WsSay("lifter: " + LifterProbe.Text(g.Constructs));
                 foreach (var pl in g.Players.Values)
                     if (pl.Bot == null)
-                        WsSay($"lifter: player {pl.Id}{(pl == me ? " (this peer)" : "")} feet {pl.Position:0.00}");
+                        WsSay($"lifter: player {pl.Id}{(pl == me ? " (this peer)" : "")} feet {pl.Position:0.00}, riding body {pl.Sim.RideBody} up {pl.Sim.RideUp:0.0}");
                 return;
             }
             case "station": // a Building Station: "station" prints the first one's job; then "station pick NAME", start [N], cancel, release, stock (host: the parts it lacks into its hold), hold NAME (host: that part into this player's hands), save (host: its body saved and loaded)

@@ -159,3 +159,21 @@ public static partial class LifterProbe
         return $"cranes: {count} placed:{s}";
     }
 }
+
+public static partial class LifterProbe
+{
+    /// <summary>"lifter pad2" (phase 7): a second Lay-down Pad north of the line's arm, under the crane: somewhere for a hand order to put a pad's piece.</summary>
+    public static string Pad2(ConstructWorld world)
+    {
+        if (world.Get(LineArm) is not { } arm || ConstructParts.Find("Lay-down Pad") is not { } pad)
+            return "pad2: no line (lifter press or lifter crane first)";
+        var padMid = (pad.BoundsMin + pad.BoundsMax) * 0.5f;
+        var at = arm.Pos + new Vector3(-padMid.X, 0, 1.6f + Half(pad).Z - padMid.Z);
+        var pd = ConstructBuild.PlaceNew(world, pad, at with { Y = World.Map.GroundHeight(at.X, at.Z) }, 0);
+        if (pd == null)
+            return "pad2: no room";
+        pd.Anchored = true;
+        world.StructureDirty.Add(pd.Id);
+        return $"pad2: Lay-down Pad body {pd.Id}";
+    }
+}

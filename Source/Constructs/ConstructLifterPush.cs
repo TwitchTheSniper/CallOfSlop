@@ -70,8 +70,16 @@ public static class ConstructLifterPush
     /// </summary>
     public static void Block(ConstructWorld world, ref MoveState s, float height, uint tick, bool server)
     {
-        if (world.LiftBodies.Count == 0 || s.RideUp != Vector3.Zero)
-            return; // (contraption space: a rider moves in its construct's frame, and a piece passes through constructs)
+        if (world.LiftBodies.Count == 0)
+            return;
+        if (s.RideUp != Vector3.Zero)
+        {
+            // Contraption space: a rider moves in its construct's frame, so a piece never moves them; but a lifter waits for one it would
+            // reach (lifters phase 7: a player on a floor slab, a pad or a prop was ridden through by a crane's lowered plate).
+            if (server)
+                PinRiders(world, s.Position, height, tick);
+            return;
+        }
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var n = Gather(world, tick, s.Position, height);
         BlockCalls++;
@@ -147,6 +155,24 @@ public static class ConstructLifterPush
             }
             if (!any)
                 break;
+        }
+        Time(t0);
+    }
+
+    /// <summary>Server: a player riding a construct whom a piece in the air reaches: that lifter waits for them (never a push in a ride frame).</summary>
+    private static void PinRiders(ConstructWorld world, Vector3 feet, float height, uint tick)
+    {
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        var n = Gather(world, tick, feet, height);
+        BlockCalls++;
+        for (var i = 0; i < n; i++)
+        {
+            ref readonly var b = ref Boxes[i];
+            if (b.Lift.WaitFrom != 0 || !Overlap(b, feet, height, World.PlayerRadius, out _))
+                continue;
+            Pins++;
+            LastBlock = "a player riding a construct";
+            ConstructLifters.Pin(world, b.Lift, tick);
         }
         Time(t0);
     }
