@@ -48,7 +48,7 @@ public sealed class ProductionShowcase : IPartGenerator
 
         public static Script Build()
         {
-            var s = new Script { Description = "Every new production machine on one floor, stocked and wired: read the signs, press Start, send the bill. Set it on flat ground: it is 84 by 20 m, and a slope through the back strip buries the panel line's Extruder." };
+            var s = new Script { Description = "Every new production machine on one floor, stocked and wired: read the signs, press Start, send the bill. Set it on flat ground: it is 86 by 20 m, and a slope through the back strip buries the panel line's Extruder." };
             s.Group = "Production";
             s.Lay();
             return s;
@@ -320,11 +320,11 @@ public sealed class ProductionShowcase : IPartGenerator
             var to = PortAt(station, "Piece in");
             Convey(kit, "Piece out", station, "Piece in", Assembly, null, V(to.X, from.Y, from.Z)); // (out of the rack's end, then straight up to the hold's back)
             Sign(68.75f, Posts1, Assembly, "F on the station: pick Swing Arm Buggy, Start. Parts ride in");
-            // Loader Arms (production.md "The Loader Arm") at the bay's four slots, as the window tool's "lifter place" puts them, but on this
-            // body: its mains power them (a placed arm is a body of its own, with no battery: "No power" in a timed world). The slots 6 m
-            // along can't reach into the hold, so they pick along its side.
-            for (var slot = 0; slot < 4; slot++)
-                On("Loader Arm", 68.75f + slot / 2 * 6f, slot % 2 == 0 ? -10.75f : -4.25f, Front, "-y.0.0");
+            // Loader Arms (production.md "The Loader Arm") at the bay's two corners by the hold (the window tool's "lifter place" slots 0 and 1),
+            // on this body: its mains power them (a placed arm is a body of its own, with no battery: "No power" in a timed world). Each picks
+            // along the hold's side. (Slots 2 and 3, 6 m further along the bay, are out of a Loader Arm's 4 m reach of the hold: "NoPoint".)
+            On("Loader Arm", 68.75f, -10.75f, Front, "-y.0.0");
+            On("Loader Arm", 68.75f, -4.25f, Front, "-y.0.0");
             return station;
         }
 
@@ -341,7 +341,7 @@ public sealed class ProductionShowcase : IPartGenerator
         }
 
         /// <summary>
-        /// The back strip (x 56 to 84, z -14 to -20, behind the station): an Airframe Former whose wing grows 6 m east from its die over
+        /// The back strip (x 56 to 86, z -14 to -20, behind the station): an Airframe Former whose wing grows 6 m east from its die over
         /// clear floor (a wing has no conveyor: it parts off and drops), and the Laser Cutter's line: an Extruder making steel plate, a
         /// Router whose way ahead takes an ordered blank to the cutter and whose way 2 racks the rest, the cutter's Piece out to its own
         /// rack. All three on the orders console, its cables along the front aisle and down the station floor's east edge.
@@ -349,7 +349,7 @@ public sealed class ProductionShowcase : IPartGenerator
         private void BackStrip(VPart orders)
         {
             for (var j = TilesZ; j < TilesZ + 3; j++)
-                for (var i = 28; i < 42; i++)
+                for (var i = 28; i < 43; i++)
                 {
                     var t = Put("Foundation", V(1 + 2 * i, 0.15f, -1 - 2 * j), Front);
                     Paint(t, j == TilesZ ? Aisle : Floor);
@@ -366,13 +366,13 @@ public sealed class ProductionShowcase : IPartGenerator
             Feed(StockOf("steel", 66.25f, line), plate);
             var split = On("Conveyor Router", 70.25f, -15.75f, Flow, "-y.0.0", Cutter);
             Convey(plate, "Piece out", split, "Piece in", Cutter);
-            var cutter = On("Laser Cutter", 73.75f, line, Flow);
+            var cutter = On("Laser Cutter", 75.25f, line, Flow); // (2 m of conveyor each side: a conveyor shorter than the piece jams the Router, "the conveyor after the junction is full")
             Convey(split, "Piece out", cutter, "Piece in", Cutter);
             var spare = On("Piece Rack", 72.25f, -18.25f, Flow, "-y.0.0", Cutter);
             var o2 = PortAt(split, "Piece out 2");
             var sIn = PortAt(spare, "Piece in");
             Convey(split, "Piece out 2", spare, "Piece in", Cutter, null, V(o2.X, o2.Y, sIn.Z));
-            var cut = On("Piece Rack", 76.25f, -15.75f, Flow, "-y.0.0", Cutter);
+            var cut = On("Piece Rack", 78.75f, -15.75f, Flow, "-y.0.0", Cutter);
             Convey(cutter, "Piece out", cut, "Piece in", Cutter);
             Sign(66.25f, -15.25f, Cutter, "LASER CUTTER: order a cut plate; blank in, cut part out", false);
 
