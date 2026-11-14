@@ -134,7 +134,6 @@ public static class LabourRender
         var raw = game.MoverRenderTick / World.TickRate;
         if (raw - _builtAt > _groundAgain)
             Ground(game, raw);
-        Shifts(game, raw, g.CameraPosition);
         // The colony's alarm: everyone stops where they are (the clock stands), the inmates kneel, hands on heads.
         var alarm = game.ColonyAlarmOn;
         if (alarm && !_alarm)
@@ -146,6 +145,7 @@ public static class LabourRender
         _flick = (float)(raw % 1000.0);
         SetFrustum(g.ViewProj);
         var cam = g.CameraPosition;
+        Shifts(game, raw, cam); // (after the frustum: this frame's view)
         Array.Clear(HandIn);
         for (var h = 0; h < game.LabourHandCount; h++)
             if (game.LabourHandScene[h] < game.LabourCount && game.Players.TryGetValue(game.LabourHandPlayer[h], out var hp) && hp.Alive)

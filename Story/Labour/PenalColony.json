@@ -18,25 +18,25 @@
   //   when    the periods of the "day" it works in (none: all day). A gang a labour post names (Story/Posts) has none, or
   //           its person has nowhere to work while it is off.
   // The day (docs/story/LABOUR.md "The day"): the periods in order, round and round from the morning count while the colony
-  // stands (not saved: a loaded world starts at the morning count). "minutes" is real time; "tannoy" is called in the chat
+  // stands (not saved: a loaded world starts at the morning count). "minutes" is real time; "tannoy" (at most 100 characters) is called in the chat
   // of everyone near the colony as the period begins. A gang comes on or goes off only while nobody can see it.
   // At most 120 people on shift at once, 220 in the file.
   "format": "call-of-slop-labour/1",
   "day": [
     { "name": "Morning count", "minutes": 4,
-      "tannoy": "Good morning. The morning count will now take place on the muster square. Those not present will be marked absent and informed." },
+      "tannoy": "Good morning. Morning count on the muster square. Those not present will be marked absent." },
     { "name": "Morning work", "minutes": 12,
-      "tannoy": "The count is complete. The count was correct. Work details to your work. Work is its own reward. There is no other." },
+      "tannoy": "The count was correct. Work details to your work. Work is its own reward. There is no other." },
     { "name": "Dinner", "minutes": 6,
-      "tannoy": "Dinner is now served in Block One. Dinner is a privilege, not a meal. Dinner will be over shortly." },
+      "tannoy": "Dinner is served in Block One. Dinner is a privilege, not a meal." },
     { "name": "Afternoon work", "minutes": 12,
-      "tannoy": "Dinner is over. Those who did not eat have eaten. Afternoon work details to your work." },
+      "tannoy": "Dinner is over. Those who did not eat have eaten. Work details to your work." },
     { "name": "Exercise", "minutes": 4,
-      "tannoy": "Exercise period. Walk round the square in the direction of walking. Standing still is not exercise and will be recorded." },
+      "tannoy": "Exercise period. Walk round the square. Standing still is not exercise and will be recorded." },
     { "name": "Evening count", "minutes": 4,
-      "tannoy": "The evening count will now take place. Stand still. Anyone seen moving will be counted twice." },
+      "tannoy": "Evening count. Stand still. Anyone seen moving will be counted twice." },
     { "name": "Lock-up", "minutes": 5,
-      "tannoy": "Lock-up. All inmates to quarters. Lights out is compulsory, as is sleep. Good night." }
+      "tannoy": "Lock-up. All inmates to quarters. Lights out is compulsory, as is sleep." }
   ],
   "gangs": [
     // ---- The colony ------------------------------------------------------------------------------------------------
@@ -80,16 +80,16 @@
     { "name": "Waiting to be counted", "at": "colony", "spot": [4.6, 2.6], "face": 90, "do": "stand", "inmates": 3, "gap": 1.0,
       "when": ["Morning count", "Exercise", "Evening count"],
       "about": "under the muster roof in the yard, in front of the warden's wall, waiting to be counted again" },
-    { "name": "Dinner, first table", "at": "Colony Canteen", "part": "Mess Table", "nth": 0, "spot": [0, 0], "face": 90, "do": "eat", "inmates": 6,
+    { "name": "Dinner, first table", "at": "Colony Canteen", "part": "Mess Table", "nth": 0, "spot": [0, 0], "face": 0, "do": "eat", "inmates": 6,
       "when": ["Dinner"],
       "about": "sat down both sides of a mess table over tin bowls, spooning, nobody talking" },
-    { "name": "Dinner, second table", "at": "Colony Canteen", "part": "Mess Table", "nth": 1, "spot": [0, 0], "face": 90, "do": "eat", "inmates": 6,
+    { "name": "Dinner, second table", "at": "Colony Canteen", "part": "Mess Table", "nth": 1, "spot": [0, 0], "face": 0, "do": "eat", "inmates": 6,
       "when": ["Dinner"],
       "about": "the second table, the same grey stew" },
-    { "name": "Dinner, third table", "at": "Colony Canteen", "part": "Mess Table", "nth": 2, "spot": [0, 0], "face": 90, "do": "eat", "inmates": 5,
+    { "name": "Dinner, third table", "at": "Colony Canteen", "part": "Mess Table", "nth": 2, "spot": [0, 0], "face": 0, "do": "eat", "inmates": 5,
       "when": ["Dinner"],
       "about": "the third table, one place empty" },
-    { "name": "Dinner, fourth table", "at": "Colony Canteen", "part": "Mess Table", "nth": 3, "spot": [0, 0], "face": 90, "do": "eat", "inmates": 6,
+    { "name": "Dinner, fourth table", "at": "Colony Canteen", "part": "Mess Table", "nth": 3, "spot": [0, 0], "face": 0, "do": "eat", "inmates": 6,
       "when": ["Dinner"],
       "about": "the fourth table, by the urn" },
     { "name": "Exercise round the square", "at": "colony", "way": [[-7, -3.6], [3, -3.6], [3, -9.8], [-7, -9.8]], "do": "march", "inmates": 12, "guards": 1, "gap": 1.9,

@@ -225,6 +225,9 @@ public static unsafe class Lighting
                     float f = (1.0 - q * q) * (1.0 - q * q);
                     dl += uDynCol[i].rgb * f * max(dot(n, l / max(d, 1e-3)) * 0.8 + 0.2, 0.0);
                 }
+                // A soft knee (2026-11-14): a lamp's pool stays strong, but a wall or a roof a metre or two from a lamp is no
+                // longer burnt white (ConstructLamps' strengths are set for it: 1 in comes out 0.69, 2 comes out 1.05).
+                dl = dl / (1.0 + 0.45 * dl);
                 return ApplyLight(albedo, n, wrap) + albedo * dl;
             }
             vec4 a;

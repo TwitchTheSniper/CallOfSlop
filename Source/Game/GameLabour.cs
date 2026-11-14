@@ -138,8 +138,6 @@ public sealed partial class Game
         _lbColony = colony;
         _lbWorks = works;
         LabourResolve();
-        LabourPeriod = -1; // (the shift worked out again for the new list, and sent)
-        LabourDayTick(now);
     }
 
     /// <summary>Server: every gang of the file whose place stands now, to every client.</summary>
@@ -178,6 +176,8 @@ public sealed partial class Game
             people += LabourScenes[i].Inmates + LabourScenes[i].Guards;
         Log($"[labour] {LabourCount} gangs, {people} people round the colony{(script.Problem.Length > 0 ? $" ({script.Problem})" : "")}");
         LabourSend(null);
+        LabourPeriod = -1; // (the shift worked out again for the new list and sent after it: a client takes every gang as on until it hears)
+        LabourDayTick(SandboxNow);
     }
 
     /// <summary>
@@ -314,6 +314,7 @@ public sealed class LabourScript
     public const int MaxPeople = 120; // on shift at once
     public const int MaxListed = 220; // in the whole file
     public const int MaxPeriods = 16;
+    public const int MaxCall = ChatRules.MaxLength - 20; // a tannoy call's characters ("[MINISTRY TANNOY]: " goes before it, in a chat line of ChatRules.MaxLength)
 
     /// <summary>A period of the colony's day: its name, how long it lasts and what the tannoy calls when it begins.</summary>
     public sealed class Period
@@ -392,6 +393,8 @@ public sealed class LabourScript
                 };
                 if (pd.Name.Length == 0)
                     throw new FormatException($"{where}: no \"name\"");
+                if (pd.Tannoy.Length > MaxCall)
+                    throw new FormatException($"{where} ({pd.Name}): \"tannoy\" at most {MaxCall} characters (the chat's line, with the speaker's name before it)");
                 if (pd.Seconds is < 30 or > 7200)
                     throw new FormatException($"{where} ({pd.Name}): \"minutes\" 0.5 to 120");
                 if (day.Exists(x => x.Name.Equals(pd.Name, StringComparison.OrdinalIgnoreCase)))
