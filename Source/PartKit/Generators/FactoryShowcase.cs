@@ -528,14 +528,14 @@ public sealed class FactoryShowcase : IPartGenerator
             Convey(js, "Piece out", ph.LineOut, "Piece in 3", StationTeal, Small, V(89.25f, ro.Y, ro.Z), V(89.25f, ro.Y, ji.Z + 1.0f), V(ji.X, ro.Y, ji.Z + 1.0f)); // (into the press line's last Join: the station's side port takes only 0.5 m, so everything enters by its back)
             // The last Router before the station (a Large one: a Differential is 1.18 m across): ahead into the station's back port, way 2
             // south into the Crafting Terminal's tray, so a part ordered there of any maker on the floor rides to it.
-            var rq = On("Large Conveyor Router", 94.25f, -17.25f, Flow, "-y.0.0", StationTeal);
+            var rq = On("Large Conveyor Router", 97.25f, -17.25f, Flow, "-y.0.0", StationTeal); // (4.5 m after the last Join: a 2 m rail rides between them)
             Convey(ph.LineOut, "Piece out", rq, "Piece in", PressBlue, Wide);
             var po = PortAt(rq, "Piece out");
             var sb = PortAt(station, "Piece in");
             Convey(rq, "Piece out", station, "Piece in", PressBlue, Wide, V(po.X + 1.0f, po.Y, po.Z), V(po.X + 1.0f, po.Y, sb.Z - 3.0f - (po.Y - sb.Y)), V(sb.X, po.Y, sb.Z - 3.0f - (po.Y - sb.Y)), V(sb.X, po.Y, sb.Z - 2.0f - (po.Y - sb.Y)), V(sb.X, sb.Y, sb.Z - 2.0f)); // (round east and up into the station's back, a 45 degree step down to its port)
-            _terminal = On("Crafting Terminal", 93.25f, -23.75f, Front, "-y.0.0");
+            _terminal = On("Crafting Terminal", 99.25f, -23.75f, Front, "-y.0.0");
             Convey(rq, "Piece out 2", _terminal, "Piece in", StationTeal, Small);
-            Sign(90.25f, -21.75f, StationTeal, "CRAFTING TERMINAL: F, order a part, it rides here", false);
+            Sign(102.75f, -21.75f, StationTeal, "CRAFTING TERMINAL: F, order a part, it rides here", false);
             foreach (var t in _toStation)
                 ChuteVia(t, station, -14.35f - 0.15f * _toStation.IndexOf(t));
             ChuteVia(r.Copper, station, -14.05f); // (link stock: a unit of copper a metre of wire)
