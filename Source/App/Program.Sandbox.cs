@@ -149,9 +149,19 @@ public static unsafe partial class Program
             ConstructRender.VolumeHotBody = null;
         if (Pressed(GameAction.Interact) && g.HarpoonTearOut())
             return true; // (a head stuck in you: F tears it out, before anything else F does)
+        if (!h.Seated)
+            LifterRender.CabBody = 0; // (phase 8: no cab's reach view)
         if (h.Seated)
         {
-            if (!LeverSeated(g, me, in h, now) && Pressed(GameAction.Interact)) // (an Analog Lever in reach takes the key: Program.SandboxLever.cs)
+            if (CabSeated(g, in h))
+            {
+                // A Lifter Cab (phase 8, Program.SandboxLifter.cs): F grabs or sets down, E (roll right) gets out.
+                if (Pressed(GameAction.Interact))
+                    g.SandboxLifter(h.SeatBody, h.SeatPart, LiftOrderOp.Grab);
+                else if (Pressed(GameAction.SeatRollRight))
+                    g.SandboxSend(CActKind.Stand);
+            }
+            else if (!LeverSeated(g, me, in h, now) && Pressed(GameAction.Interact)) // (an Analog Lever in reach takes the key: Program.SandboxLever.cs)
                 g.SandboxSend(CActKind.Stand);
             // The keys a seat's input readers can read besides the movement keys: fire, aim, reload, roll.
             var keys = (Down(GameAction.Fire) ? 1 : 0) | (Down(GameAction.Aim) ? 2 : 0) | (Down(GameAction.Reload) ? 4 : 0) | (Down(GameAction.SeatRollLeft) ? 8 : 0) | (Down(GameAction.SeatRollRight) ? 16 : 0) | (Down(GameAction.SeatHook) ? 32 : 0) | (Down(GameAction.SeatEject) ? 64 : 0);
@@ -419,6 +429,8 @@ public static unsafe partial class Program
                 Ui.OpenOrdnanceBench(g); // (the Ordnance Bench: UiOrdnanceBench.cs)
                 SetMouseCaptured(false);
             }
+            else if (aimed && !join && !hit.Body.Loose && LifterUse(hit.Body, hit.Part, hit.Distance)) // (the Welder's join first)
+                OpenLifterPanel(hit.Body, hit.Part); // (a Loader Arm or a Crane Bridge: its points and hand orders, Program.SandboxLifter.cs)
             else if (join)
                 g.SandboxSend(CActKind.Join, body: hit.Body.Id, part: (ushort)hit.Part);
             else if (aimed && hit.Distance <= ConstructBuild.UseReach && hit.Body is { Loose: true, PartCount: 1 } && ToolUpgrades.Current.ModuleOf(hit.Body.Parts[0].Def) != null)
@@ -427,6 +439,10 @@ public static unsafe partial class Program
                 g.SandboxSend(CActKind.PickUp, body: hit.Body.Id);
             else if (aimed && hit.Distance <= ConstructBuild.UseReach)
                 g.SandboxSend(CActKind.Use, body: hit.Body.Id, part: (ushort)hit.Part);
+            else if (!aimed && CraneUse(g, eye, dir))
+            {
+                // (a Crane Bridge's cabinet up on its rails, past the hands' reach: its panel is a pendant, Program.SandboxLifter.cs)
+            }
             else if (nearRack)
                 g.SandboxSend(CActKind.Rack);
         }

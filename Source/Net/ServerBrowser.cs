@@ -516,7 +516,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      LiftWhy gains NoRail and NoFarRail at the end. The crane's reach box is worked out from its rails on each peer and sends nothing.
     // 311: Bored cylinders: a pressed engine piece weighs what its size's catalogue piece does by metal, and a pressed cylinder's
     //   power follows its bore over the plain bore for its across, worked out from the key on each peer (no new bytes; mass and kW differ).
-    public const ushort ProtocolVersion = 311;
+    // 312: Arms and cranes phase 7: hand orders. CActKind.Lifter (at the end): u16 body, u16 part, u8 op, u8 id, the kind (PartRef), u8 count,
+    //   two points (u16 body, u16 part, u8 kind, u8 bay); each lifter in CBodyKind.Lifts gains u8 steered (phase 8: its Lifter Cab steers it, words
+    //   at 10 Hz while it moves), u8 the order its carry serves, u8 n and its orders. A new part file (Lifter Cab) moves part ids; op Grab is F in a cab.
+    public const ushort ProtocolVersion = 312;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

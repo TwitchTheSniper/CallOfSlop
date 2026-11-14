@@ -46,6 +46,9 @@ public static partial class ConstructLifters
         LifterProbe.Cost(ref LifterProbe.TakeIn, System.Diagnostics.Stopwatch.GetTimestamp() - t0);
     }
 
+    public const string LoadedWhy = "holds something: empty it first (a pad keeps kinds and counts, not what is in them)";
+    private static ushort _loadedSaid;
+
     /// <summary>Why pad <paramref name="part"/> doesn't take body <paramref name="lo"/> in now (a fixed text), or null when it does. Allocates nothing.</summary>
     public static string? TakeInWhy(ConstructWorld world, Construct c, int part, CStore st, Vector3 pp, Quaternion inv, float reach, Construct lo)
     {
@@ -66,8 +69,10 @@ public static partial class ConstructLifters
         // Not a part that holds anything (its contents would be lost: a rack holds kinds only), nor one that isn't as new (a rack
         // keeps a kind and a count, so it would come out whole, unpainted, empty and at its default settings), nor what the pad or
         // its stock target refuses.
-        if (lo.Parts[0].Store != 0 || pd.IsPieceRack || pd.Lifter != null)
-            return "a store or a lifter";
+        if (pd.IsPieceRack || pd.Lifter != null)
+            return "a rack or a lifter";
+        if (lo.Parts[0].Store != 0 && world.StoreOf(lo, 0) is { } held && (held.Amount > 0 || held.ItemCount > 0 || held.InAmount > 0))
+            return LoadedWhy; // (lifters phase 7: an empty store part goes in as the station's hold takes one; a loaded one would lose what it holds)
         if (!AsNew(lo.Parts[0], pd))
             return "not as new";
         if (!OnDeck(lo, pd, pp, inv, d.RackHoldMin.Y))
@@ -91,8 +96,15 @@ public static partial class ConstructLifters
         for (var bi = bodies.Count - 1; bi >= 0 && n < most; bi--)
         {
             var lo = bodies[bi];
-            if (TakeInWhy(world, c, part, st, pp, inv, reach, lo) != null)
+            if (TakeInWhy(world, c, part, st, pp, inv, reach, lo) is { } why)
+            {
+                if (ReferenceEquals(why, LoadedWhy) && _loadedSaid != lo.Id)
+                {
+                    _loadedSaid = lo.Id; // (said once a body: the look runs every second)
+                    Console.WriteLine($"[lifter] pad body {c.Id} part {part}: the loose {lo.DefOf(0).Name} on it {why}");
+                }
                 continue;
+            }
             var pd = lo.DefOf(0);
             world.Remove(lo);
             if (!world.RackPut(c, part, pd))
@@ -275,11 +287,18 @@ public static partial class ConstructLifters
     private static bool OnDeck(Construct lo, ConstructPartDef pd, Vector3 padAt, Quaternion padInv, float floor)
     {
         Freeform.PartWorld(lo, 0, out var at, out var rot);
+        // (each solid box's corners, not the bounds': an odd part lying on its side, a Drill Module on its bit, had a bounds corner
+        // through the deck and was never taken in: lifters phase 7)
         var low = float.MaxValue;
-        for (var k = 0; k < 8; k++)
+        var n = Math.Min(pd.SolidBoxes, 64);
+        for (var b = 0; b < n; b++)
         {
-            var corner = new Vector3((k & 1) != 0 ? pd.BoundsMax.X : pd.BoundsMin.X, (k & 2) != 0 ? pd.BoundsMax.Y : pd.BoundsMin.Y, (k & 4) != 0 ? pd.BoundsMax.Z : pd.BoundsMin.Z);
-            low = MathF.Min(low, Vector3.Transform(at + Vector3.Transform(corner, rot) - padAt, padInv).Y);
+            var bx = pd.Boxes[b];
+            for (var k = 0; k < 8; k++)
+            {
+                var corner = bx.Center + new Vector3((k & 1) != 0 ? bx.Half.X : -bx.Half.X, (k & 2) != 0 ? bx.Half.Y : -bx.Half.Y, (k & 4) != 0 ? bx.Half.Z : -bx.Half.Z);
+                low = MathF.Min(low, Vector3.Transform(at + Vector3.Transform(corner, rot) - padAt, padInv).Y);
+            }
         }
         return low > floor - 0.15f && low < floor + 0.5f;
     }
@@ -290,4 +309,33 @@ public sealed partial class ConstructWorld
     public readonly List<ushort> PadBodies = new(8); // server: the bodies that have a Lay-down Pad (ConstructLifterPads.cs)
     public readonly uint[] PadSeen = new uint[64]; // server: the last pick pad count's pads (body << 16 | part), for the build's claims (ConstructLifterNet.cs)
     public int PadSeenN, PadScanTick = int.MinValue; // ...how many; the tick a pick pad count last ran the lifter scan
+}
+
+public static partial class ConstructLifters
+{
+    /// <summary>
+    /// Why a lifter may not pick up loose body <paramref name="lo"/> (a fixed text), or null: the one rule for every way a lifter picks
+    /// something up (a carry from a machine's out, a hand order, a cab's F). A lifter's hand keeps a kind, its health and its paint, so
+    /// a piece must be a loose single part (<see cref="Construct.Loose"/>) that holds nothing that would be lost: no store contents, no
+    /// rounds, no fluid, no text, no queue, its settings at their defaults. Its health and paint go with it, and only a piece as new
+    /// becomes a count in a rack, a pad or a tray (<see cref="AsNewInHand"/>).
+    /// </summary>
+    public static string? PickWhy(ConstructWorld world, Construct lo)
+    {
+        if (!lo.Loose)
+            return lo.PartCount != 1 ? "only a single piece: that is a construct" : "it is fixed in place";
+        ref readonly var p = ref lo.Parts[0];
+        var d = lo.DefOf(0);
+        if (d.IsPieceRack || d.Lifter != null)
+            return "a rack or a lifter is never carried";
+        if (p.Store != 0 && world.StoreOf(lo, 0) is { } st && (st.Amount > 0 || st.ItemCount > 0 || st.InAmount > 0 || st.KindN > 0))
+            return LoadedWhy;
+        if (p.Rounds != 0 || p.Text != null || p.Text2 != null || p.Orders != null || p.Craft != null || !ConstructConfig.AllDefault(p, d)
+            || d.Role == PartRole.FluidTank && ConstructFluid.Held(p, d) != null)
+            return "it holds rounds, fluid, text or settings: empty or reset it first";
+        return null;
+    }
+
+    /// <summary>Is the piece in the hand as new (whole, unpainted)? Only then does a rack, a pad or a tray take it as a count.</summary>
+    public static bool AsNewInHand(CLift l) => l.Health >= 255 && l.Paint == 0;
 }

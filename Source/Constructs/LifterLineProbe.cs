@@ -94,7 +94,7 @@ public static partial class LifterProbe
             sb.Append($" [pad {ps.ItemCount}{Kinds(ps)}]");
         if (world.Get(LineAsm) is { } ab && world.StoreOf(ab, 0) is { } ast)
             sb.Append($" [assembler inputs {ast.ItemCount}{Kinds(ast)}]");
-        return $"{Carries} carries begun, {Changes} lift words asked (host){sb} [{TakeIn.Text("pad take-in")}; {PadCount.Text("pick pad count")}; {ScanCost.Text("scan")}; {LookCost.Text("carry look")}; {PutCost.Text("put")}; bodies {world.Bodies.Count}]{PadSeen(world)}";
+        return $"{Carries} carries begun, {Changes} lift words asked (host){sb} [{TakeIn.Text("pad take-in")}; {PadCount.Text("pick pad count")}; {ScanCost.Text("scan")}; {LookCost.Text("carry look")}; {PutCost.Text("put")}; {RailKeyCost.Text("crane key")}; {RailWalkCost.Text("rail walk")}; bodies {world.Bodies.Count}]{PadSeen(world)}";
     }
 
     private static string Kinds(CStore st)

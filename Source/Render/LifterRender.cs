@@ -42,10 +42,19 @@ public static class LifterRender
                 var handAt = lp + Vector3.Transform(origin, lr);
                 if (Vector3.DistanceSquared(eye, shoulder) > DrawNear * DrawNear && Vector3.DistanceSquared(eye, handAt) > DrawNear * DrawNear)
                     continue;
-                if (_lookBody == c.Id && _lookPart == l.Part && now - _lookAt < 0.3 && ld.Bridge)
+                var seen = _lookBody == c.Id && _lookPart == l.Part && now - _lookAt < 0.3 || CabBody == c.Id && CabPart == l.CabPart && l.CabPart >= 0; // (phase 8: and while its cab is sat in here)
+                if (seen && ld.Bridge)
                     DrawCraneReach(gfx, ld, Matrix4x4.CreateFromQuaternion(lr) * Matrix4x4.CreateTranslation(lp));
-                else if (_lookBody == c.Id && _lookPart == l.Part && now - _lookAt < 0.3)
+                else if (seen)
                     DrawReach(gfx, world, c, l.Part, ld, Matrix4x4.CreateFromQuaternion(lr) * Matrix4x4.CreateTranslation(lp), shoulder);
+                if (CabBody == c.Id && CabPart == l.CabPart && l.CabPart >= 0)
+                {
+                    // (phase 8: the hook's shadow on what is under it, for the cab: a dark square 2 cm over the first thing below)
+                    var below = World.Map.GroundHeight(handAt.X, handAt.Z);
+                    if (world.Raycast(handAt + Vector3.UnitY * 0.05f, -Vector3.UnitY, 80f, out var under, noTracks: true))
+                        below = MathF.Max(below, handAt.Y + 0.05f - under.Distance);
+                    gfx.Draw(Matrix4x4.CreateScale(0.7f, 0.01f, 0.7f) * Matrix4x4.CreateTranslation(handAt.X, below + 0.02f, handAt.Z), new Vector3(0.05f, 0.05f, 0.06f));
+                }
                 var grip = origin + Vector3.UnitY * ConstructLifters.GripLift;
                 var span = 0.35f;
                 var part = Matrix4x4.CreateFromQuaternion(lr) * Matrix4x4.CreateTranslation(lp);
@@ -74,6 +83,8 @@ public static class LifterRender
         }
     }
 
+    public static ushort CabBody; // (phase 8) the Lifter Cab this peer's player sits in (Program.SandboxLifter.cs), else 0
+    public static int CabPart = -1;
     private static ushort _lookBody;
     private static int _lookPart = -1;
     private static double _lookAt = -10;

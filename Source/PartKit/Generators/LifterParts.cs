@@ -266,6 +266,58 @@ public sealed class LifterParts : IPartGenerator
         return p;
     }
 
-    public void Make(PartOutput o) => WriteParts(o, Out, Enumerable.Range(1, 5).Select(t => ("", Arm(t)))
+    // ---- The Lifter Cab (arms-and-cranes.md 3.7, phase 8): a seat that steers one lifter by hand. ----------------------------------
+
+    /// <summary>
+    /// The Lifter Cab: a small enclosed chair on a swivel with a window, one cell wide and two deep (0.5 by 0.5 by 1 m; its seat 0.3 m up).
+    /// Stood on the same construct as a lifter, it steers the nearest one ("lifterCab": ConstructLifterCab.cs): the move keys move the
+    /// hook, Space and Ctrl raise and lower it, F grabs and sets down, E leaves.
+    /// </summary>
+    private static Part Cab()
+    {
+        var c = Small;
+        var p = new Part("Lifter Cab", c, "Lifters",
+            "A cab that steers the nearest Loader Arm or Bridge Crane on its construct by hand: move keys move the hook, Space and Ctrl raise and lower it, F grabs a loose piece or a point's piece under it and sets it down, E gets out. While it is manned the lifter does nothing else.",
+            role: "seat", tool: "wrench", color: CraneYellow, group: "Production");
+        // 0.75 m wide (x), 1.5 m high, 1 m deep (z; the window is its -z face): three, six and four cells.
+        double x0 = c.Lo(), x1 = c.Hi(3), y0 = c.Lo(), y1 = c.Hi(6), z0 = c.Lo(), z1 = c.Hi(4);
+        var whole = Box([x0, y0, z0], [x1, y1, z1], CraneBase)!;
+        whole["hidden"] = true; // (the collider and the sockets' faces)
+        p.Add(whole);
+        var fl = y0 + 0.16; // (the floor's top)
+        p.Add(Box([x0 + 0.02, y0, z0 + 0.02], [x1 - 0.02, y0 + 0.08, z1 - 0.02], CraneBase)); // (the swivel's foot)
+        p.Add(MachineLook.D([x0 + 0.16, y0 + 0.08, z0 + 0.3], [x1 - 0.16, y0 + 0.12, z1 - 0.3], CraneSteel, "steel")); // (the swivel ring)
+        p.Add(Box([x0 + 0.03, y0 + 0.118, z0 + 0.03], [x1 - 0.03, fl, z1 - 0.03], CraneYellow)); // (the floor)
+        p.Add(Box([x0 + 0.03, fl - 0.002, z1 - 0.1], [x1 - 0.03, y1 - 0.06, z1 - 0.03], CraneYellow)); // (the back wall)
+        p.Add(Box([x0 + 0.03, fl - 0.002, z0 + 0.03], [x0 + 0.08, fl + 0.5, z1 - 0.102], CraneYellow)); // (the side walls' lower halves)
+        p.Add(Box([x1 - 0.08, fl - 0.002, z0 + 0.03], [x1 - 0.03, fl + 0.5, z1 - 0.102], CraneYellow));
+        p.Add(Box([x0 + 0.03, fl - 0.002, z0 + 0.03], [x1 - 0.03, fl + 0.3, z0 + 0.08], CraneYellow)); // (the front's sill)
+        p.Add(Box([x0 + 0.03, y1 - 0.062, z0 + 0.03], [x1 - 0.03, y1 - 0.01, z1 - 0.03], CraneBase)); // (the roof)
+        foreach (var (a, b) in new[] { (x0 + 0.03, z0 + 0.03), (x1 - 0.08, z0 + 0.03) }) // (the front posts)
+            p.Add(Box([a, fl + 0.298, b], [a + 0.05, y1 - 0.06, b + 0.05], CraneYellow));
+        p.Add(Glass(MachineLook.D([x0 + 0.04, fl + 0.497, z0 + 0.09], [x0 + 0.07, y1 - 0.07, z1 - 0.11], "#9fc4d6"))); // (the side windows)
+        p.Add(Glass(MachineLook.D([x1 - 0.07, fl + 0.497, z0 + 0.09], [x1 - 0.04, y1 - 0.07, z1 - 0.11], "#9fc4d6")));
+        p.Add(Glass(MachineLook.D([x0 + 0.09, fl + 0.297, z0 + 0.04], [x1 - 0.09, y1 - 0.07, z0 + 0.07], "#9fc4d6"))); // (the front window, -z)
+        p.Add(MachineLook.D([x0 + 0.17, fl - 0.003, z1 - 0.5], [x1 - 0.17, fl + 0.4, z1 - 0.12], "#2f343a")); // (the chair's seat)
+        p.Add(MachineLook.D([x0 + 0.17, fl + 0.397, z1 - 0.22], [x1 - 0.17, fl + 0.95, z1 - 0.104], "#2f343a")); // (its back)
+        p.Add(MachineLook.D([x0 + 0.12, fl - 0.003, z0 + 0.1], [x1 - 0.12, fl + 0.55, z0 + 0.3], CraneSteel, "steel")); // (the control desk)
+        p.Add(MachineLook.D([x0 + 0.2, fl + 0.547, z0 + 0.2], [x0 + 0.23, fl + 0.7, z0 + 0.23], MachineLook.Accent)); // (the joysticks)
+        p.Add(MachineLook.D([x1 - 0.23, fl + 0.547, z0 + 0.2], [x1 - 0.2, fl + 0.7, z0 + 0.23], MachineLook.Accent));
+        MachineLook.Hazard(p, [x0 + 0.006, y0 + 0.01, z0 + 0.06], [x0 + 0.02, y0 + 0.07, z1 - 0.06]);
+        MachineLook.Hazard(p, [x1 - 0.02, y0 + 0.01, z0 + 0.06], [x1 - 0.006, y0 + 0.07, z1 - 0.06]);
+        BlockSockets(p, 3, 6, 4, faces: "y", skip: ["+y"]);
+        p.Stats(60, 160, c.Armour, seconds: Py.Round(c.Seconds, 1));
+        p.Set(("seat", Kw(("at", Py.L(Py.Round((x0 + x1) / 2, 3), Py.Round(fl + 0.4, 3), Py.Round(z1 - 0.32, 3))))), ("lifterCab", true), ("collider", "boxes"));
+        return p;
+    }
+
+    private static PyDict? Glass(PyDict? b)
+    {
+        if (b != null)
+            b["glass"] = true;
+        return b;
+    }
+
+    public void Make(PartOutput o) => WriteParts(o, Out, Enumerable.Range(1, 5).Select(t => ("", Arm(t))).Append(("", Cab()))
         .Concat(new[] { Medium, Large, Capital }.SelectMany(c => new[] { ("Cranes", Rail(c)), ("Cranes", Bridge(c)) })));
 }

@@ -148,6 +148,14 @@ public enum LiftWhy : byte
     NoRail, // (phase 6) a Bridge Crane not on a Crane Rail: stopped where it is
     NoFarRail, // (phase 6) ...its far end finds no rail a span across
     RailsShort, // (phase 6) ...its rails no longer reach an end of the move it is in (a section taken out)
+    Manned, // (phase 8) its Lifter Cab steers it
+    CabGrabbed, // (phase 8) the cab took a piece
+    CabNothing, // (phase 8) the cab found nothing to take under the hook
+    CabTooBig, // (phase 8) what is under the hook is too heavy or too big for it
+    CabPut, // (phase 8) the cab put its piece into a point
+    CabDropped, // (phase 8) the cab set its piece down loose
+    CabRefused, // (phase 8) no room to set it down there
+    CabNotNew, // (phase 8) what is under the hook holds something (a store, rounds, fluid, settings) that a hand would lose
 }
 
 /// <summary>
@@ -188,6 +196,17 @@ public sealed class CLift
     public byte Health = 255; // the piece's health share (a carry's: a press bay takes it)
     public int Look; // 10 Hz steps since its last look for a carry
     public bool StationNear; // its last station look found a station building with its hold in reach (the idle reason)
+    public LiftOrder[]? Orders; // (phase 7) the hand orders, the first one first (either peer: the server's, heard with the lifts)
+    public int OrderN;
+    public byte OrderId; // the order this carry serves (0: its own work)
+    public byte OrderSeq; // server: the last order id given
+    public int CabPart = -1; // (phase 8, both peers) its Lifter Cab on its construct (ConstructLifterCab.cs), or -1
+    public bool Steered; // (phase 8) its cab steers it: the move is a straight step from From to To (sent)
+    public Buttons CabKeys; // (phase 8) server: the cab's movement keys and the sitter's yaw, from the seat loop
+    public float CabYaw;
+    public bool GrabAsk; // (phase 8) server: F in the cab, for the next step
+    public int OutTurn; // server: the point after the last out it carried from (the outs take turns)
+    public int OrderLook; // server: 10 Hz steps since its last look at its orders
 }
 
 /// <summary>A construct's lifter parts, found when its parts change (<see cref="Construct.RebuildStamp"/>).</summary>
@@ -300,6 +319,7 @@ public static partial class ConstructLifters
                     Drop(world, c, gone, lost: true);
         lb.Lifts = fresh;
         lb.N = n;
+        FindCabs(c, lb); // (phase 8: each lifter's cab, on both peers)
         var at = world.LiftBodies.IndexOf(lb);
         if (n > 0 && at < 0)
             world.LiftBodies.Add(lb);
@@ -355,7 +375,7 @@ public static partial class ConstructLifters
                     continue;
                 // A crane whose rails went, or no longer reach either end of the move it is in: it stops where it is, its piece in its hand,
                 // as without power, and goes on when the rails are back.
-                var railless = ld.Bridge && (ld.RailWhy != 0 || l.State is LiftState.Carry or LiftState.Return && (OffRails(ld, l, false) || OffRails(ld, l, true)));
+                var railless = ld.Bridge && (ld.RailWhy != 0 || l.State is LiftState.Carry or LiftState.Return && (l.State == LiftState.Carry && OffRails(ld, l, false) || OffRails(ld, l, true))); // (an empty hook going back starts where its last piece was put, tested then)
                 if (railless || !ConstructRecycler.Powered(world, c, l.Part))
                 {
                     Why(world, l, !railless ? LiftWhy.NoPower : ld.RailWhy == 1 ? LiftWhy.NoRail : ld.RailWhy == 2 ? LiftWhy.NoFarRail : LiftWhy.RailsShort); // (it stops where it is, and goes on when power returns; a client poses it there too)
@@ -375,6 +395,12 @@ public static partial class ConstructLifters
                 }
                 if (l.Why is LiftWhy.NoPower or LiftWhy.NoRail or LiftWhy.NoFarRail or LiftWhy.RailsShort)
                     Why(world, l, l.PlayerWait ? LiftWhy.Player : l.ToHold ? LiftWhy.PutBack : l.ToKind != LiftPointKind.None ? LiftWhy.Carrying : LiftWhy.None);
+                if ((l.CabPart >= 0 || l.Steered) && CabStep(world, query, c, l, ld)) // (a cab gone or split off while manned: CabStep gives the lifter back)
+                {
+                    busy++; // (phase 8: its cab has it: nothing of its own while manned)
+                    Ports(c, l);
+                    continue;
+                }
                 if (l.PlayerWait && l.State == LiftState.Carry && (l.ToHold || l.ToKind != LiftPointKind.None || ClaimHolds(world, l)))
                 {
                     // Waiting for a player its piece would pin (ConstructLifterPush.cs): on the tick they are clear; Stuck (Alarm) after 10 s.
@@ -398,6 +424,14 @@ public static partial class ConstructLifters
                     case LiftState.Idle:
                         // Works (liftMode): 0 Auto (a station's step first, then carries: phase 4), 1 Station only, 2 Carry only, 3 Off.
                         var mode = (int)ConstructConfig.Get(c.Parts[l.Part], c.DefOf(l.Part), CfgKey.LiftMode, 0);
+                        if (l.OrderN > 0 && !ConstructExtruder.RunHeld(c, l.Part) && decisions < DecisionsAStep && ++l.OrderLook >= CarryLook)
+                        {
+                            // (phase 7: hand orders before any automatic work, in every mode: Works sets only what it does by itself)
+                            l.OrderLook = 0;
+                            decisions++;
+                            if (OrderCarry(world, c, l, ld))
+                                break;
+                        }
                         if (mode == 3)
                             Why(world, l, LiftWhy.Off);
                         else if (ConstructExtruder.RunHeld(c, l.Part))
@@ -703,6 +737,12 @@ public static partial class ConstructLifters
             Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
             to = Vector3.Transform((HoldPick(sc, t, ld, shoulder, lr, SafeLift, SafeLift, out var pick) ? pick : HoldPoint(sc, t, shoulder)) - lp, Quaternion.Conjugate(lr));
         }
+        if (ld.Bridge && ld.RunHi >= ld.RunLo)
+        {
+            // (an empty hook goes back to a place on its rails: a piece whose origin is off its middle, picked near a run's end, left the
+            // origin past the run, and the empty hand's way back read "rails no longer reach": lifters phase 7)
+            to.Z = Math.Clamp(to.Z, ld.Base.Z + ld.RunLo, ld.Base.Z + ld.RunHi);
+        }
         l.From = from;
         l.To = to;
         l.FromRot = l.ToRot;
@@ -764,6 +804,8 @@ public static partial class ConstructLifters
     /// </summary>
     private static bool PutBack(ConstructWorld world, Construct c, CLift l, LifterDef ld)
     {
+        if (!AsNewInHand(l) && ConstructParts.Get(l.Def) is { } nd)
+            return Redirect(world, c, l, ld, nd); // (a damaged or painted piece never becomes a count in a hold: the Routers' rule to a machine, else it waits)
         if (ConstructParts.Get(l.Def) is not { } d)
         {
             (l.State, l.Def, l.Why) = (LiftState.Idle, 0, LiftWhy.None);
@@ -957,6 +999,12 @@ public static partial class ConstructLifters
     /// <summary>The piece's origin (lifter part frame) and turn <paramref name="age"/> ticks into a move.</summary>
     public static Vector3 Pose(LifterDef ld, CLift l, float age, out Quaternion rot)
     {
+        if (l.Steered)
+        {
+            // (phase 8: a cab's step, a straight move over its 10 Hz step; the turn stays)
+            rot = l.ToRot;
+            return Vector3.Lerp(l.From, l.To, l.Dur > 0 ? Math.Clamp(age / l.Dur, 0, 1) : 1);
+        }
         var loaded = l.Def != 0;
         var still = (loaded ? ld.Handle : ld.Handle * 0.25f) * 0.5f;
         var sec = age / World.TickRate - still;
@@ -1160,6 +1208,18 @@ public static partial class ConstructLifters
                     _ => "idle",
                 },
             };
+        if (l is { Steered: true })
+            what = (l.Def != 0 ? $"steered from its cab, holding a {piece}" : "steered from its cab") + l.Why switch // (phase 8)
+            {
+                LiftWhy.CabGrabbed => " - took it",
+                LiftWhy.CabNothing => " - nothing to take under the hook (a single loose piece, or a rack's, pad's or tray's)",
+                LiftWhy.CabTooBig => " - what is under the hook is too heavy or too big for it",
+                LiftWhy.CabPut => " - put it in",
+                LiftWhy.CabDropped => " - set it down",
+                LiftWhy.CabRefused => " - no room to set it down there",
+                LiftWhy.CabNotNew => " - what is under the hook holds something: empty or reset it first",
+                _ => "",
+            };
         if (l is { Why: LiftWhy.NoPower })
             what += " - no power, stopped";
         else if (l is { Why: LiftWhy.Player })
@@ -1298,6 +1358,7 @@ public static partial class ConstructLifters
             w.U16((ushort)Math.Min(l.Dur, ushort.MaxValue)).U32(l.Start).U32(unchecked((uint)l.Held)).U32(l.WaitFrom); // (protocol 294: the move on the mover clock, and where it waits)
             w.U16(Cm(l.Rise)).U8((byte)l.Why).U16((ushort)(l.Step + 1)).U16(l.StationBody).U16(l.Moves); // (protocol 290: the look line's and the carry height)
             w.U8((byte)l.ToKind).U16(l.ToPart).U8(l.ToBay); // (protocol 296: a carry between points, its put point for the look line)
+            WriteOrders(w, l); // (protocol 312: the hand orders)
         }
     }
 
@@ -1340,7 +1401,10 @@ public static partial class ConstructLifters
             var toPart = r.U16();
             var toBay = r.U8();
             if (lb == null || c == null || part >= c.PartCount || c.DefOf(part).Lifter == null)
+            {
+                ReadOrders(ref r, null); // (protocol 312: read past)
                 continue;
+            }
             CLift? l = null;
             for (var i = 0; i < lb.N; i++)
                 if (lb.Lifts[i].Part == part)
@@ -1351,6 +1415,7 @@ public static partial class ConstructLifters
                     Array.Resize(ref lb.Lifts, lb.N + 1);
                 lb.Lifts[lb.N++] = l = new CLift { Body = id, Part = part };
             }
+            ReadOrders(ref r, l); // (protocol 312: the hand orders)
             if (state == LiftState.Carry && (l.State != LiftState.Carry || l.Def != def))
                 LifterProbe.CarriesHeard++;
             (l.State, l.Moved, l.Def, l.Paint, l.From, l.To, l.FromRot, l.ToRot, l.Dur, l.Start, l.Held, l.WaitFrom) = (state, moved, def, paint, from, to, fr, tr, dur, start, held, waitFrom);

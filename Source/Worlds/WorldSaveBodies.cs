@@ -183,6 +183,7 @@ public sealed partial class ConstructWorld
             b.Chains = ConstructLogisticsPlan.Snapshot(this, c);
             b.Targets = global::CallOfSlop.StockTargets.Snapshot(this, c);
             b.Lifts = ConstructLifters.Snapshot(this, c);
+            b.LiftOrders = ConstructLifters.SnapshotOrders(this, c);
             b.Parts = s.PartCount;
             b.PartCount = c.PartCount;
             b.Links = s.LinkCount;
@@ -435,7 +436,7 @@ public sealed partial class ConstructWorld
         foreach (ref readonly var cr in (b.Conveyed ?? []).AsSpan())
             logi |= cr.Dest != 0 || cr.Flags != 0;
         logi |= b.Chains != null || b.Targets != null;
-        var lift = b.Lifts != null; // (a hand holding a piece: the LIFT block follows the LOGI block, so the blocks before it are written)
+        var lift = b.Lifts != null || b.LiftOrders != null; // (a hand holding a piece: the LIFT block follows the LOGI block, so the blocks before it are written)
         if (conveyors || b.Orders != null || b.Craft != null || b.Station != null || logi || lift)
             ConstructConveyor.WriteSave(w, routes, b.Conveyed ?? [], names); // (an empty one before the work orders: they follow it)
         // Work orders (WorkOrders.cs), after the conveyors: a body without any writes nothing.
@@ -474,11 +475,22 @@ public sealed partial class ConstructWorld
         }
         // Lifters (ConstructLifters.cs), after the LOGI block: "LIFT", its length, i32 n, then per hand that holds a piece u16 the lifter part,
         // u16 the piece by the save's names, u32 its paint. It loads in the hand and goes back into a station's hold in reach. An older build skips it.
-        if (b.Lifts is { } lifts)
+        // (phase 7: then i32 n hand orders, each u16 the lifter part, u16 the kind by the save's names, u8 count, u8 done, the from and
+        // to points as u16 body (0: this body), u16 part, u8 kind, u8 bay. An older build reads the hands and skips the rest.)
+        if (b.Lifts != null || b.LiftOrders != null)
         {
-            w.U32(LiftTag).I32(4 + lifts.Length * 8).I32(lifts.Length);
+            var lifts = b.Lifts ?? [];
+            var lorders = b.LiftOrders ?? [];
+            w.U32(LiftTag).I32(4 + lifts.Length * 8 + 4 + lorders.Length * 18).I32(lifts.Length);
             foreach (var (lp, ld, lc) in lifts)
                 w.U16(lp).U16(names.Part(ld)).U32(lc);
+            w.I32(lorders.Length);
+            foreach (var (lp, o) in lorders)
+            {
+                w.U16(lp).U16(names.Part(o.Def)).U8(o.Count).U8(o.Done);
+                w.U16(o.From.Body).U16(o.From.Part).U8((byte)o.From.Kind).U8(o.From.Bay);
+                w.U16(o.To.Body).U16(o.To.Part).U8((byte)o.To.Kind).U8(o.To.Bay);
+            }
         }
     }
 
@@ -819,6 +831,7 @@ public sealed partial class ConstructWorld
         ChainEntry[]? chains = null; // (and the chained orders' links: ConstructLogisticsPlan.cs)
         (ushort Part, ushort Kind)[]? targets = null; // (and its racks' stock targets: StockTargets.cs)
         (ushort Part, ushort Def, uint Paint)[]? lifts = null; // (and its lifters' hands that hold a piece: the LIFT block, ConstructLifters.cs)
+        (ushort Lifter, LiftOrder Order)[]? lorders = null; // (and their hand orders: phase 7)
         while (stations != null && r.Has(8) && r.Pos + 8 <= bodyEnd) // (tagged blocks: LOGI, then LIFT; an unknown one is skipped)
         {
             var tag = r.U32();
@@ -837,6 +850,19 @@ public sealed partial class ConstructWorld
                     var lp = r.U16();
                     var lk = r.U16();
                     lifts[i] = (lp, lk < names.Parts.Length ? names.Parts[lk] : ConstructParts.None, r.U32());
+                }
+                if (r.Pos + 4 <= end && r.I32() is var on && on >= 0 && on <= 4096 && r.Pos + on * 18 <= end)
+                {
+                    lorders = new (ushort, LiftOrder)[on]; // (phase 7: the hand orders)
+                    for (var i = 0; i < on; i++)
+                    {
+                        var lp = r.U16();
+                        var lk = r.U16();
+                        var o = new LiftOrder { Def = lk < names.Parts.Length ? names.Parts[lk] : ConstructParts.None, Count = r.U8(), Done = r.U8() };
+                        o.From = new LiftPoint { Body = r.U16(), Part = r.U16(), Kind = (LiftPointKind)r.U8(), Bay = r.U8() };
+                        o.To = new LiftPoint { Body = r.U16(), Part = r.U16(), Kind = (LiftPointKind)r.U8(), Bay = r.U8() };
+                        lorders[i] = (lp, o);
+                    }
                 }
             }
             else if (tag == LogiTag && len >= 4)
@@ -966,6 +992,8 @@ public sealed partial class ConstructWorld
         }
         if (lifts != null && Get(id) is { } lc)
             ConstructLifters.ApplySave(this, lc, lifts);
+        if (lorders != null && Get(id) is { } loc)
+            ConstructLifters.ApplyOrders(this, loc, lorders);
         if (briefBytes != null)
             LoadBrief(c, briefBytes);
         return c;

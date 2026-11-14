@@ -237,7 +237,7 @@ public static partial class ConstructLifters
     /// Where a piece goes (the Routers' rule over this lifter's points): a put point that wants it, else (<paramref name="storage"/>)
     /// the nearest rack or pad with room that takes it. <paramref name="skip"/>: a point it came from (never back to it). -1: none.
     /// </summary>
-    private static int PutFor(ConstructWorld world, CLift l, LifterDef ld, Vector3 shoulder, Quaternion lr, ConstructPartDef d, bool storage, int skip, out Vector3 at)
+    private static int PutFor(ConstructWorld world, CLift l, LifterDef ld, Vector3 shoulder, Quaternion lr, ConstructPartDef d, bool storage, int skip, out Vector3 at, bool asNew = true)
     {
         at = default;
         var lift = WristLift(d);
@@ -245,7 +245,7 @@ public static partial class ConstructLifters
         for (var k = 0; k < l.PointN; k++)
         {
             ref readonly var pt = ref l.Points![k];
-            if (k == skip || pt.Kind == LiftPointKind.Out || world.Get(pt.Body) is not { } b)
+            if (k == skip || pt.Kind == LiftPointKind.Out || !asNew && pt.Kind is LiftPointKind.Rack or LiftPointKind.Tray || world.Get(pt.Body) is not { } b) // (a damaged or painted piece is never made a count)
                 continue;
             if (pt.Kind == LiftPointKind.Rack && (fromPad || pt.Part >= b.PartCount || !b.DefOf(pt.Part).IsLayDownPad))
                 continue; // (a rack is a want only as a station's pick pad, and never from another pad)
@@ -272,7 +272,7 @@ public static partial class ConstructLifters
         for (var k = 0; k < l.PointN; k++)
         {
             ref readonly var pt = ref l.Points![k];
-            if (k == skip || pt.Kind != LiftPointKind.Rack || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount || world.StoreOf(b, pt.Part) is not { } st)
+            if (k == skip || !asNew || pt.Kind != LiftPointKind.Rack || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount || world.StoreOf(b, pt.Part) is not { } st)
                 continue;
             if (ConstructConveyor.RackCheck(b, pt.Part, st, d) != 0 || !StockTargets.Accepts(world, b, pt.Part, st, d))
                 continue;
@@ -301,8 +301,9 @@ public static partial class ConstructLifters
             return false; // (the caller sets the idle reason)
         }
         Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
-        for (var k = 0; k < l.PointN; k++)
+        for (var j = 0; j < l.PointN; j++)
         {
+            var k = (j + l.OutTurn) % l.PointN; // (the outs take turns: lifters phase 7, a press's brackets waited behind an Extruder's every angle)
             var pt = l.Points![k];
             if (pt.Kind != LiftPointKind.Out || world.Get(pt.Body) is not { } b || !PointAt(b, pt, out var outAt))
                 continue;
@@ -316,24 +317,26 @@ public static partial class ConstructLifters
                     continue;
                 var d = lo.DefOf(0);
                 var reach = 1f + 0.5f * MathF.Max(d.BoundsMax.X - d.BoundsMin.X, MathF.Max(d.BoundsMax.Y - d.BoundsMin.Y, d.BoundsMax.Z - d.BoundsMin.Z));
-                if (Vector3.DistanceSquared(lo.WorldCom, outAt) > reach * reach || lo.Vel.LengthSquared() > 0.25f || !Carries(ld, d) || !MadeBy(b, pt.Part, d))
+                if (Vector3.DistanceSquared(lo.WorldCom, outAt) > reach * reach || lo.Vel.LengthSquared() > 0.25f || !Carries(ld, d) || !MadeBy(b, pt.Part, d) || PickWhy(world, lo) != null)
                     continue;
                 Freeform.PartWorld(lo, 0, out var pp, out var pr);
                 var from = pp + Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, pr);
                 if (!InReach(ld, shoulder, lr, from, WristLift(d), out _))
                     continue;
-                var to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: k, out var toAt);
+                var to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: k, out var toAt, lo.Parts[0].Health >= d.Health * 0.999f && lo.Parts[0].Paint == 0);
                 if (to < 0)
                     continue;
                 var health = (byte)Math.Clamp(255 * lo.Parts[0].Health / MathF.Max(1, d.Health), 1, 255);
                 var paint = lo.Parts[0].Paint;
+                l.OutTurn = k + 1;
                 world.Remove(lo);
                 StartCarry(world, c, l, ld, lp, lr, d, health, paint, from, pr, to, toAt);
                 return true;
             }
         }
-        for (var k = 0; k < l.PointN; k++)
+        for (var j = 0; j < l.PointN; j++)
         {
+            var k = (j + l.OutTurn) % l.PointN; // (the outs take turns: lifters phase 7, a press's brackets waited behind an Extruder's every angle)
             // A machine's own output tray (2026-11-14, verification 4: since sized parts phase 6 a press's preset part, a Button, goes
             // to its tray, not to the floor at its out, and an arm never lifted it, so a terminal's order served by an arm never filled):
             // what the tray holds goes on from the out point by the same rule, a want first, else storage.
@@ -351,6 +354,7 @@ public static partial class ConstructLifters
                     continue;
                 world.CraftChanged(b);
                 Wake(b, pt.Part);
+                l.OutTurn = k + 1;
                 Freeform.PartWorld(b, pt.Part, out _, out var mr);
                 StartCarry(world, c, l, ld, lp, lr, d, 255, 0, outAt, mr, to, toAt);
                 return true;
@@ -422,6 +426,7 @@ public static partial class ConstructLifters
         Quaternion toRot = fromRot;
         if (world.Get(pt.Body) is { } tb && pt.Part < tb.PartCount)
             Freeform.PartWorld(tb, pt.Part, out _, out toRot);
+        l.OrderId = 0; // (phase 7: OrderCarry sets it after, for a hand order's carry)
         l.Def = (ushort)d.Id;
         l.Paint = paint;
         l.Health = health;
@@ -444,52 +449,23 @@ public static partial class ConstructLifters
     private static void Put(ConstructWorld world, IWorldQuery? query, Construct c, CLift l, LifterDef ld)
     {
         var d = ConstructParts.Get(l.Def);
-        var ok = false;
-        if (d != null && world.Get(l.StationBody) is { } b && l.ToPart < b.PartCount)
-        {
-            int part = l.ToPart;
-            switch (l.ToKind)
-            {
-                case LiftPointKind.Rack:
-                    ok = world.RackPut(b, part, d);
-                    if (ok && world.StockTargetN > 0)
-                        ConstructLogisticsPlan.Arrived(world, b, part, 0, d); // (a stock target's refill counts it, as a conveyor's delivery does)
-                    if (ok)
-                        PadArrived(world, b, part, 0, d); // (phase 5b: a station's large part on its pick pad counts for its order)
-                    break;
-                case LiftPointKind.Tray:
-                    ok = world.RackPut(b, part, d);
-                    if (ok)
-                        ConstructCrafting.Arrived(world, b, part, d); // (phase 5b: it counts for the oldest open order of its kind, as a conveyor's delivery does)
-                    break;
-                case LiftPointKind.Assembler:
-                    ok = world.WantsPart(b, part, (ushort)d.Id) && world.FeedPart(b, part, d);
-                    break;
-                case LiftPointKind.PressBay:
-                    ok = query != null && ConstructPress.TakeFromConveyor(world, query, b, part, l.ToBay, d, l.Health / 255f, l.Paint);
-                    break;
-                case LiftPointKind.Former:
-                    ok = ConstructPanelFormer.TakeFromConveyor(world, b, part, d);
-                    break;
-            }
-            if (ok && l.ToKind is not (LiftPointKind.Rack or LiftPointKind.Tray) && world.ChainCount > 0)
-                ConstructLogisticsPlan.Arrived(world, b, part, 0, d); // (a chained order's input: it counts for its link by kind, as a conveyor's delivery does)
-            if (ok)
-            {
-                world.CraftChanged(b);
-                b.Wake();
-            }
-        }
+        var ok = d != null && world.Get(l.StationBody) is { } b && l.ToPart < b.PartCount && PutPiece(world, query, b, l.ToKind, l.ToPart, l.ToBay, d, l.Health, l.Paint);
         if (ok)
         {
             Console.WriteLine($"[lifter] body {l.Body} part {l.Part}: put a {d!.Name} into {l.ToKind} part {l.ToPart} of body {l.StationBody}");
             l.Moves++;
             l.Fitted = true;
+            OrderPutDone(world, l); // (phase 7: a hand order's piece counts for it)
             l.Why = LiftWhy.Carrying; // (kept on the way back: the look line says it goes back for the next piece)
             Back(c, l, ld, null, -1); // (the empty hand goes back to where it picked)
             l.ToKind = LiftPointKind.None;
             return;
         }
+        if (l.OrderId != 0 && l.Orders != null)
+            for (var oi = 0; oi < l.OrderN; oi++)
+                if (l.Orders[oi].Id == l.OrderId)
+                    l.Orders[oi].Why = LiftOrderWhy.Refused; // (its put point refused it at the end: the piece goes on by the Routers' rule, the order waits)
+        l.OrderId = 0;
         if (d != null && Redirect(world, c, l, ld, d))
             return;
         (l.State, l.ToHold, l.Why, l.Age, l.From, l.FromRot, l.ToKind) = (LiftState.Stuck, false, LiftWhy.NoTaker, l.Dur, l.To, l.ToRot, LiftPointKind.None);
@@ -502,7 +478,7 @@ public static partial class ConstructLifters
         if (l.Points == null || world.LiftTick - l.PointsAt >= PointEvery)
             FindPoints(world, c, l, ld);
         Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
-        var to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: -1, out var toAt);
+        var to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: -1, out var toAt, AsNewInHand(l));
         if (to < 0)
             return false;
         var hr = l.ToRot;
@@ -527,3 +503,44 @@ public static partial class ConstructLifters
     }
 }
 
+
+public static partial class ConstructLifters
+{
+    /// <summary>Server: a piece into a point by that point's own rule (a carry's end, a cab's set-down). True when it went in.</summary>
+    internal static bool PutPiece(ConstructWorld world, IWorldQuery? query, Construct b, LiftPointKind kind, int part, byte bay, ConstructPartDef d, byte health, uint paint)
+    {
+        var ok = false;
+        switch (kind)
+        {
+            case LiftPointKind.Rack:
+                ok = world.RackPut(b, part, d);
+                if (ok && world.StockTargetN > 0)
+                    ConstructLogisticsPlan.Arrived(world, b, part, 0, d); // (a stock target's refill counts it, as a conveyor's delivery does)
+                if (ok)
+                    PadArrived(world, b, part, 0, d); // (phase 5b: a station's large part on its pick pad counts for its order)
+                break;
+            case LiftPointKind.Tray:
+                ok = world.RackPut(b, part, d);
+                if (ok)
+                    ConstructCrafting.Arrived(world, b, part, d); // (phase 5b: it counts for the oldest open order of its kind, as a conveyor's delivery does)
+                break;
+            case LiftPointKind.Assembler:
+                ok = world.WantsPart(b, part, (ushort)d.Id) && world.FeedPart(b, part, d);
+                break;
+            case LiftPointKind.PressBay:
+                ok = query != null && ConstructPress.TakeFromConveyor(world, query, b, part, bay, d, health / 255f, paint);
+                break;
+            case LiftPointKind.Former:
+                ok = ConstructPanelFormer.TakeFromConveyor(world, b, part, d);
+                break;
+        }
+        if (ok && kind is not (LiftPointKind.Rack or LiftPointKind.Tray) && world.ChainCount > 0)
+            ConstructLogisticsPlan.Arrived(world, b, part, 0, d); // (a chained order's input: it counts for its link by kind, as a conveyor's delivery does)
+        if (ok)
+        {
+            world.CraftChanged(b);
+            b.Wake();
+        }
+        return ok;
+    }
+}

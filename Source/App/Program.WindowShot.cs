@@ -1156,7 +1156,99 @@ public static unsafe partial class Program
                     var pens = lw[0] == "pen" ? LifterProbe.Pen(g.Constructs, pspot) : 0;
                     WsSay($"lifter: {lw[0]}: {moved} player(s) to {pspot:0.00}{(pens > 0 ? $", {pens} Crate Stacks round them" : "")}; {pinfo}");
                 }
-                else if (lw.Length > 0 && lw[0] is "line" or "hold" or "set" or "mains" or "points" or "base" or "flip" or "reset" or "press" or "drop" or "pickpad" or "net" or "edges" or "bigparts" or "bigrack" or "steps" or "mapcost" or "weld" or "ride" or "crowd" or "crane" or "cranecut" or "cranes" or "cranepoints" && g.IsServer)
+                else if (lw.Length > 0 && lw[0] is "sit" or "cabstate")
+                {
+                    // Phase 8 (either peer): "lifter sit" sits this peer's player in the first Lifter Cab (the host straight through the
+                    // server's Use with its eye at the seat; a client sends the use key's action: the host's "bring Lifter Cab" first);
+                    // "lifter cabstate" prints the cab's lifter as this peer has it: steered, the hand, the piece, the look line.
+                    Construct? cc = null;
+                    var cpart = -1;
+                    foreach (var cb in g.Constructs.Bodies)
+                        for (var ci = 0; ci < cb.PartCount && cc == null; ci++)
+                            if (cb.DefOf(ci).LifterCab)
+                                (cc, cpart) = (cb, ci);
+                    if (cc == null)
+                        WsSay("lifter: sit: no Lifter Cab");
+                    else if (lw.Length > 1 && lw[1] == "cut" && g.IsServer)
+                    {
+                        // "lifter cabstate cut" (host): the cab taken off its construct while it is sat in (the review's case: Steered must go)
+                        g.Constructs.RemovePart(cc, cpart);
+                        cc.Rebuild();
+                        g.Constructs.StructureDirty.Add(cc.Id);
+                        WsSay($"lifter: cabstate: cut the cab off body {cc.Id}");
+                    }
+                    else if (lw.Length > 2 && lw[1] is "bait" or "baitfull" && g.IsServer && ConstructLifters.CabLifter(g.Constructs, cc, cpart) is { } bl
+                             && g.Constructs.Get(bl.Body) is { } bb && ConstructLifters.DefOf(bb, bl.Part) is { } bld && ConstructParts.Find(string.Join(' ', lw.Skip(2))) is { } bd)
+                    {
+                        // "lifter cabstate bait NAME" (host): that part loose on the ground under the cab's hook
+                        ConstructLifters.Frame(bb, bl.Part, bld, out var blp, out var blr, out _);
+                        var hw = blp + Vector3.Transform(bl.To, blr);
+                        var bait = ConstructEdits.DropLoose(g.Constructs, bd, hw with { Y = World.Map.GroundHeight(hw.X, hw.Z) + 0.3f }, Quaternion.Identity);
+                        if (lw[1] == "baitfull" && bait != null && g.Constructs.StoreOf(bait, 0) is { } bst)
+                            (bst.Amount, bst.Material) = (10, (byte)RecyclingTable.Current.IdOf("iron ore")); // ("baitfull": a store with 10 iron ore in it)
+                        WsSay($"lifter: cabstate: bait {bd.Name} at {hw:0.0}: {(bait == null ? "no room" : $"body {bait.Id}")}");
+                    }
+                    else if (lw[0] == "sit")
+                    {
+                        me.NoclipWanted = false;
+                        g.NoclipShot = false;
+                        if (g.IsServer)
+                            WsSay($"lifter: sit: {g.SandboxHands.Use(g.Constructs, me.Id, ConstructEdits.SeatFeet(cc, cpart) + Vector3.UnitY, cc.Id, cpart) ?? "seated"}");
+                        else
+                        {
+                            g.SandboxSend(CActKind.Use, body: cc.Id, part: (ushort)cpart);
+                            WsSay($"lifter: sit: asked to sit in body {cc.Id} part {cpart}");
+                        }
+                    }
+                    else
+                    {
+                        var cl = ConstructLifters.CabLifter(g.Constructs, cc, cpart);
+                        ref var ch = ref g.SandboxHands.Hand(me.Id);
+                        WsSay($"lifter: cabstate: seated {ch.Seated} (body {ch.SeatBody} part {ch.SeatPart}, seat keys {cc.Parts[cpart].Keys:x4}, yaw {cc.Parts[cpart].AimYaw:0.00}, held buttons {g.HeldButtons}); " + (cl == null ? "no lifter for the cab"
+                            : $"lifter part {cl.Part}: steered {cl.Steered}, {cl.State} {cl.Why}, hand {cl.To:0.00}, piece {(cl.Def != 0 ? ConstructParts.Get(cl.Def)?.Name : "none")}, moves {cl.Moves}; look: {g.SandboxLookText}"));
+                    }
+                }
+                else if (lw.Length > 0 && lw[0] is "panel" or "order" or "orders")
+                {
+                    // Phase 7 (either peer): "lifter panel [arm|crane]" opens that lifter's panel (the newest of the kind this peer knows) through
+                    // the use key's own call; "lifter order FROM TO N KIND" picks point FROM's KIND, point TO and N in it and presses Order the
+                    // next frame; "lifter orders" prints its points, what each holds and its orders as this peer has them.
+                    if (lw[0] == "panel")
+                    {
+                        var crane = lw.Length > 1 && lw[1] == "crane";
+                        Construct? pc = null;
+                        var pp = -1;
+                        foreach (var plb in g.Constructs.LiftBodies)
+                            if (g.Constructs.Get(plb.Body) is { } pbc)
+                                for (var pi = 0; pi < plb.N; pi++)
+                                    if (plb.Lifts[pi].Part < pbc.PartCount && ConstructLifters.DefOf(pbc, plb.Lifts[pi].Part) is { } pld && pld.Bridge == crane
+                                        && (crane || ConstructConfig.Get(pbc.Parts[plb.Lifts[pi].Part], pbc.DefOf(plb.Lifts[pi].Part), CfgKey.LiftMode, 0) != 3 || pc == null))
+                                        (pc, pp) = (pbc, plb.Lifts[pi].Part);
+                        if (pc == null)
+                            WsSay($"lifter: panel: no {(crane ? "crane" : "arm")} known here");
+                        else
+                        {
+                            OpenLifterPanel(pc, pp);
+                            WsSay($"lifter: panel: {(Ui.LifterOpen ? "open" : "NOT OPEN")} on body {pc.Id} part {pp} ({pc.DefOf(pp).Name})");
+                        }
+                    }
+                    else if (lw[0] == "order" && lw.Length >= 5 && int.TryParse(lw[1], out var of) && int.TryParse(lw[2], out var ot) && int.TryParse(lw[3], out var on))
+                    {
+                        Ui.LifterAuto = (of, string.Join(' ', lw.Skip(4)), ot, on);
+                        WsSay($"lifter: order: {on} {string.Join(' ', lw.Skip(4))} from point {of} to point {ot}, on the next frame (panel {(Ui.LifterOpen ? "open" : "NOT OPEN")})");
+                    }
+                    else
+                    {
+                        var (ob, opart) = Ui.LifterTarget;
+                        WsSay($"lifter: orders: panel {(Ui.LifterOpen ? "open" : "closed")}, last order: {Ui.LifterSaid}; {Ui.LifterPointCount} points");
+                        for (var k = 0; k < Ui.LifterPointCount; k++)
+                            WsSay("lifter:   " + Ui.LifterPointText(k));
+                        if (ConstructLifters.Find(g.Constructs, ob, opart) is { } ol)
+                            for (var oi = 0; oi < ol.OrderN; oi++)
+                                WsSay($"lifter:   order {ol.Orders![oi].Id}: {ConstructLifters.OrderText(g.Constructs, ol.Orders[oi])}");
+                    }
+                }
+                else if (lw.Length > 0 && lw[0] is "line" or "hold" or "set" or "mains" or "points" or "base" or "flip" or "reset" or "press" or "drop" or "pickpad" or "net" or "edges" or "bigparts" or "bigrack" or "steps" or "mapcost" or "weld" or "ride" or "crowd" or "crane" or "cranecut" or "cranes" or "cranepoints" or "pad2" or "stationcrane" or "cab" && g.IsServer)
                 {
                     // Lifters phase 4 (LifterLineProbe.cs): "lifter line [TIER]" an arm, an Assembler, a stocked rack and a pad round this player;
                     // "lifter hold NAME" that piece at the line's Assembler's out; "lifter set liftMode|carryHeight V"; "lifter mains on|off"; "lifter points".
@@ -1185,6 +1277,9 @@ public static unsafe partial class Program
                         "crane" => LifterProbe.Crane(g.Constructs, me.Position, rest4), // (phase 6: the press line under a Bridge Crane: LifterCraneProbe.cs)
                         "cranecut" => LifterProbe.CraneCut(g.Constructs, rest4),
                         "cranepoints" => g.Constructs.Get(LifterProbe.CraneBody) is { } cpc ? ConstructLifters.CranePoints(g.Constructs, cpc, 0) : "no crane",
+                        "pad2" => LifterProbe.Pad2(g.Constructs),
+                        "cab" => LifterProbe.Cab(g.Constructs, rest4),
+                        "stationcrane" => WsFind(g, "Building Station") is ({ } scc, var sct) ? LifterProbe.StationCrane(g.Constructs, scc, sct) : "stationcrane: no Building Station",
                         "cranes" => LifterProbe.Cranes(g.Constructs, me.Position, int.TryParse(rest4, out var kn) ? kn : 4),
                         _ => LifterProbe.Points(g.Constructs),
                     });
@@ -1196,7 +1291,7 @@ public static unsafe partial class Program
                 WsSay("lifter: " + LifterProbe.Text(g.Constructs));
                 foreach (var pl in g.Players.Values)
                     if (pl.Bot == null)
-                        WsSay($"lifter: player {pl.Id}{(pl == me ? " (this peer)" : "")} feet {pl.Position:0.00}");
+                        WsSay($"lifter: player {pl.Id}{(pl == me ? " (this peer)" : "")} feet {pl.Position:0.00}, riding body {pl.Sim.RideBody} up {pl.Sim.RideUp:0.0}");
                 return;
             }
             case "station": // a Building Station: "station" prints the first one's job; then "station pick NAME", start [N], cancel, release, stock (host: the parts it lacks into its hold), hold NAME (host: that part into this player's hands), save (host: its body saved and loaded)

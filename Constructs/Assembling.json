@@ -1391,6 +1391,7 @@
     {"output": "Large Crane Bridge", "materials": {"steel": 2000}, "parts": {"Gear Set": 4, "Bearing": 4, "Control Unit": 1}, "seconds": 578.0, "minTier": 3},
     {"output": "Medium Crane Bridge", "materials": {"steel": 96}, "parts": {"Gear Set": 4, "Bearing": 4, "Control Unit": 1}, "seconds": 16.4, "minTier": 3},
     {"output": "Industrial Loader Arm", "materials": {"steel": 171}, "parts": {"Servo Motor": 6, "Control Unit": 1}, "seconds": 27.6, "minTier": 3},
+    {"output": "Lifter Cab", "materials": {"steel": 12}, "parts": {"Tyre Carcass": 1}, "seconds": 3.8},
     {"output": "Loader Arm", "materials": {"steel": 76}, "parts": {"Gear Set": 2}, "seconds": 13.4},
     {"output": "Military Loader Arm", "materials": {"steel": 304}, "parts": {"Servo Motor": 8, "Control Unit": 2}, "seconds": 47.6, "minTier": 4},
     {"output": "Plasma Loader Arm", "materials": {"steel": 475}, "parts": {"Servo Motor": 10, "Control Unit": 3}, "seconds": 73.2, "minTier": 5},

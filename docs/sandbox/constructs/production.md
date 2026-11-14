@@ -1527,6 +1527,39 @@ claimed for it. A pad takes in a loose part at rest over its hold, as new; a dam
 [TIER] [pad]`, `lifter edges`, `lifter steps`, `lifter bigparts`, `lifter bigrack NAME`, `lifter pickpad [empty]`, `lifter crowd N`;
 `logi net` marks a way "by a lifter".
 
+**The Bridge Crane** (phase 6, `ConstructCraneRails.cs`; notes `lifters-phase6-notes.md`) is a lifter of kind `bridge`: Crane Rail
+sections laid end to end in two runs a span apart on whatever the player stands them on (Medium Columns on an Adapter Medium to Small
+on a small floor), and a Crane Bridge bolted to the outer side of one run by its +x socket. Its reach is the box between the runs, under
+the rails, down its hook's drop; everything an arm does it does in that box. Its look line, screen and Alarm say when it is off its
+rails or its far end has none. The rails are walked again only when a rail's or a bridge's place changes.
+
+**Hand orders** (phase 7, `ConstructLifterOrders.cs`, the panel `UI/UiLifter.cs`; notes `lifters-phase7-notes.md`). F on an arm, or
+on a crane's cabinet from anywhere on the floor under its rails, opens its panel: its points in reach with what each pick point holds
+(a rack's or pad's kinds, a machine's pieces at its out and in its tray), and its orders. Click a kind under a pick point, then a put
+point, set a count (1 to 99) and press Order: "3 Extrusion plate ...: Piece Rack -> Lay-down Pad". A lifter carries its orders first,
+in the order given, before any work of its own and whatever its Works setting (Off stops only its own work); at most 8 a lifter. A
+hand order may go store to store or pad to pad, which the lifter's own rule never does, but a put point's own rule still holds (a full
+pad, a press bay with a piece in it, a store that refuses the kind). An order whose piece isn't there yet, whose put point refuses it
+now or whose point is out of reach waits, its row saying why, and the lifter works on meanwhile. The server decides
+(`CActKind.Lifter`, a finger on a console's rule); the orders ride the lift word (protocol 312) and the `LIFT` block's second half,
+points on the lifter's own body saved as body 0. Window tool: `lifter panel [arm|crane]`, `lifter order FROM TO N KIND`, `lifter orders`.
+
+**The Lifter Cab** (phase 8, `ConstructLifterCab.cs`; part from `LifterParts.cs`, beside the Loader Arms in the inventory) is a seat, 0.75 by
+1.5 by 1 m, that steers the nearest Loader Arm or Bridge Crane on its own construct (one cab a lifter; no link). Sit in it (F): the
+lifter finishes the move it is in, then answers only the cab. W, A, S and D move the hook across in the view's frame, Space and Ctrl
+raise and lower it, at the lifter's speeds (a crane's travel and hoist), kept in its reach and never under the ground. **F** takes
+what is under the hook (within 1.5 m across): a loose single part within its payload and size ("too heavy: 603 kg, it carries
+500 kg", "only a single piece"), else a rack's, pad's or press's piece; **F** again puts it into a point there that takes it, else
+sets it down loose where it hangs. **E** gets out; a piece left in the hand goes on by the lifter's own rule. While seated the look
+line says what it did, its reach is drawn and the hook's shadow falls on what is under it. The hand's moves are lift words at 10 Hz
+while it moves; a client eases between them. Window tool: `lifter cab [arm|crane]`, `lifter sit`, `lifter cabstate [bait NAME]`.
+
+**Players in the way**: a piece pushes a player aside by at most 0.75 m; a bigger one waits for them (Alarm after 10 s), and so does
+any piece that reaches a player standing on a construct (a floor slab, a pad, a deck: they ride its frame, so nothing moves them).
+**Store parts on a pad**: a Lay-down Pad takes a store part (a Drill Module, an Ammo Container) as a station's hold does: by conveyor,
+arm or fetch as a new, empty one, and set down loose only when it holds nothing ("holds something: empty it first"). A Drill Module
+is 2.2 m tall: a Large pad, not a Medium one.
+
 ## Production Showcase
 
 One shipped blueprint, **Production Showcase** (`Constructs/Blueprints/ProductionShowcase.json`, group Production), with every machine
@@ -1535,6 +1568,11 @@ tried the moment it is spawned from the creative blueprint list. Made by the par
 (`Source/PartKit/Generators/ProductionShowcase.cs`), which builds it step by step through the game's own rules (`BlueprintScript`), so
 a step the rules refuse fails there with their reason. It reads the part files: run it after the part generators.
 
+- **The crane bay** (arms and cranes phase 7): its own floor behind the refining row (x 0 to 22, z -14 to -22), a Medium Bridge Crane
+  on two 16 m runs 6 m up on Medium Columns, and under it a line with no conveyor: an Extruder making metal angles (unwired: it runs
+  while its stock lasts), a Press with a Bracket Die, a Lay-down Pad. The crane takes each angle into the press's bay and each bracket
+  to the pad (about 8 s a carry and 6 s back at its 1 m carry height; in a minute: two angles in, a bracket out) and takes hand orders at its
+  cabinet. The whole blueprint is now 86 by 22 m.
 - **The layout**, left to right as material flows, a 2 m walkway along the front and one behind the first row, every screen, status lamp
   and sign facing a walkway: **power** (a Small Genset on two Fuel Tanks, a Battery, the main Switch with a Charge Gauge); **stock**
   (Storage Volumes, each beside the machine it feeds); **refining** (Smelter on iron ore, Sawmill on wood, Foundry on metal and stone,

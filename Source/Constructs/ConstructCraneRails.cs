@@ -39,11 +39,15 @@ public static partial class ConstructLifters
         {
             c.CraneStamp = c.RebuildStamp;
             c.CranePartCount = c.PartCount;
+            var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             var key = CraneKeyOf(c);
+            var t1 = System.Diagnostics.Stopwatch.GetTimestamp();
+            LifterProbe.Cost(ref LifterProbe.RailKeyCost, t1 - t0); // (phase 7: the key's cost on each rebuild of a body with a bridge, and the walk's when it runs)
             if (key != c.CraneKey)
             {
                 c.CraneKey = key;
                 Cranes(c);
+                LifterProbe.Cost(ref LifterProbe.RailWalkCost, System.Diagnostics.Stopwatch.GetTimestamp() - t1);
             }
         }
         for (var k = 0; k < c.CraneN; k++)
@@ -95,7 +99,7 @@ public static partial class ConstructLifters
     /// <summary>A hash of what a crane's reach depends on: each rail's and bridge's index, place, turn, segment and whether it is whole (no allocation).</summary>
     private static long CraneKeyOf(Construct c)
     {
-        var h = (long)c.PartCount * 1000003;
+        var h = 1000003L; // (not the part count: an Extruder's growing piece on the body changed it every cut, and each change walked the rails again: lifters phase 7)
         for (var i = 0; i < c.PartCount; i++)
         {
             var d = c.DefOf(i);
