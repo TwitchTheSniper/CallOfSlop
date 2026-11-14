@@ -7,13 +7,13 @@ namespace CallOfSlop;
 /// The window tool's verbs for cut parts (docs/sandbox/design/laser-cutter.md, phase 2), each placed by a spot on the part's flat sheet
 /// (U cm along it, V cm across, as a cut key places its cuts):
 /// <c>ray PART[#n] U,V [M]</c> a bullet's construct ray at that spot, square to the sheet from M metres out (default 2), printing what it hits;
-/// <c>walk PART[#n] U,V M FRAMES</c> the player, noclip off, on the ground M metres out from that spot, holding Forward towards the sheet
-/// for that many frames (a client waits until the host has put it there: <c>put PART[#n] U,V M</c> on the host), then <c>side PART[#n] U,V</c>,
+/// <c>walk PART[#n] U,V M TICKS</c> the player, noclip off, on the ground M metres out from that spot, holding Forward towards the sheet
+/// for that many simulation ticks of real time, whatever the frame rate (a client waits until the host has put it there: <c>put PART[#n] U,V M</c> on the host), then <c>side PART[#n] U,V</c>,
 /// which prints which side of the sheet the player stands on.
 /// </summary>
 public static unsafe partial class Program
 {
-    private static int _wsHoldFrames; // frames the held key stays down (walk)
+    private static long _wsHoldUntil; // (walk: the Stopwatch stamp the held key comes up at)
     private static GameAction _wsHold;
     private static int _wsPutWait; // (a client's walk waiting for the host's put)
 
@@ -59,7 +59,7 @@ public static unsafe partial class Program
             {
                 if (rest.Length < 2)
                 {
-                    WsFail("walk PART[#n] U,V M FRAMES");
+                    WsFail("walk PART[#n] U,V M TICKS");
                     return true;
                 }
                 var flat = Vector3.Normalize(new Vector3(n.X, 0, n.Z) + new Vector3(1e-5f, 0, 0));
@@ -83,9 +83,9 @@ public static unsafe partial class Program
                 _wsPutWait = 0;
                 g.LookYaw = MathF.Atan2(-flat.X, flat.Z);
                 g.LookPitch = 0;
-                WsSay($"walk: from {stand:0.00}, {rest[0]:0.0} m out, towards the sheet for {rest[1]:0} frames");
+                WsSay($"walk: from {stand:0.00}, {rest[0]:0.0} m out, towards the sheet for {rest[1]:0} ticks");
                 _wsHold = GameAction.MoveForward;
-                _wsHoldFrames = (int)rest[1];
+                _wsHoldUntil = System.Diagnostics.Stopwatch.GetTimestamp() + (long)(rest[1] / World.TickRate * System.Diagnostics.Stopwatch.Frequency);
                 _wsWait = (int)rest[1] + 10;
                 _wsQueue.EnqueueFront("side " + string.Join(' ', words[..(at + 1)]));
                 return true;
@@ -125,9 +125,13 @@ public static unsafe partial class Program
     /// <summary>PollActions: the walk verb's held key.</summary>
     private static void WindowShotHold(bool[] down)
     {
-        if (_wsHoldFrames <= 0)
+        if (_wsHoldUntil == 0)
             return;
+        if (System.Diagnostics.Stopwatch.GetTimestamp() >= _wsHoldUntil)
+        {
+            _wsHoldUntil = 0;
+            return;
+        }
         down[(int)_wsHold] = true;
-        _wsHoldFrames--;
     }
 }
