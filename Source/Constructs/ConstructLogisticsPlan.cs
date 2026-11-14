@@ -452,23 +452,52 @@ public static class ConstructLogisticsPlan
         return got;
     }
 
-    private const string StrandedTail = " link a conveyor or an arm from it";
+    private const string LyingTail = " a hand can't load it";
 
-    /// <summary>A store on the network where a piece claimed for this entry lies with no conveyor way on to its destination, or -1. Allocates nothing.</summary>
-    private static int Stranded(ConstructWorld world, Construct c, CraftNet net, in ChainEntry e)
+    /// <summary>"no conveyor or arm from the Long Piece Rack to the Laser Cutter: link one (a hand can't load it)": the text ends in <see cref="LyingTail"/>.</summary>
+    private static string NoWayText(Construct c, int store, int dest) =>
+        $"no conveyor or arm from the {c.DefOf(store).Name} to the {c.DefOf(dest).Name}: link one,{LyingTail}";
+
+    /// <summary>
+    /// Where a maker's line ends short of the machine its piece is for, said when it is asked (the order's row): the Piece Rack its only
+    /// conveyor ends at, when that rack has no conveyor way and no lifter's edge on to <paramref name="dest"/>; else -1 (it gets there, or its
+    /// line goes through a Splitter or a Router, which may send it on).
+    /// </summary>
+    private static int EndsShort(Construct c, int maker, int dest)
     {
-        var res = world.Reserve;
-        var owner = c.Parts[e.Dest].Store;
-        for (var i = 0; i < res.Count; i++)
+        if (ConstructCrafting.RouteTo(c, maker, dest) != -1)
+            return -1;
+        var end = -1;
+        for (var k = 0; k < c.RouteCount; k++)
+            if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].Source == maker && c.Routes[k].FedEnd)
+            {
+                if (end >= 0)
+                    return -1; // (two lines out: not judged)
+                end = c.Routes[k].To;
+            }
+        return end >= 0 && end < c.PartCount && c.DefOf(end).IsPieceRack && end != dest && ConstructCrafting.RouteTo(c, end, dest) == -1 && !ConstructLifters.LiftsTo(c, end, dest) ? end : -1;
+    }
+
+    /// <summary>
+    /// Free pieces of the entry's kind in stores on its network with no conveyor way to its destination and no lifter's edge to it (a
+    /// chute's store brings its own, a lifter's pick rack counts as riding): the first such store in <paramref name="store"/>. Allocates nothing.
+    /// </summary>
+    private static int Lying(ConstructWorld world, Construct c, CraftNet net, in ChainEntry e, out int store)
+    {
+        store = -1;
+        var n = 0;
+        for (var s = 0; s < net.StoreN; s++)
         {
-            ref readonly var r = ref res.Items[i];
-            if (r.Owner != owner || r.OwnerId != e.Id)
+            var sp = net.Stores[s];
+            if (sp == e.Dest || world.StoreOf(c, sp) is not { } st || ConstructCrafting.Available(world, st, e.Kind) is not (var free and > 0))
                 continue;
-            for (var j = 0; j < net.StoreN; j++)
-                if (c.Parts[net.Stores[j]].Store == r.Store)
-                    return ConstructCrafting.RouteTo(c, net.Stores[j], e.Dest) < 0 ? net.Stores[j] : -1;
+            if (ConstructCrafting.RouteTo(c, sp, e.Dest) != -1 || ConstructLifters.LiftsTo(c, sp, e.Dest))
+                continue;
+            n += free;
+            if (store < 0)
+                store = sp;
         }
-        return -1;
+        return n;
     }
 
     /// <summary>One claimed piece leaves its store for the entry's destination (one a step an entry, as a terminal's fetch).</summary>
@@ -665,7 +694,7 @@ public static class ConstructLogisticsPlan
             }
             var riding = Riding(world, c!, e);
             var held = world.Reserve.Held(c!.Parts[e.Dest].Store, e.Id);
-            if (e.Maker != NoPart && (e.Maker >= c.PartCount || !QueuedAt(c, e.Maker, e.Id)) && (riding + held + e.Made < e.Asked || held > 0 && !IsStock(e))) // (or its pieces are claimed in a store: the maker is done, Serve sends them or says why not)
+            if (e.Maker != NoPart && (e.Maker >= c.PartCount || !QueuedAt(c, e.Maker, e.Id)) && riding + held + e.Made < e.Asked)
             {
                 if (IsStock(e) && e.Depth == 1 && riding == 0)
                 {
@@ -701,21 +730,33 @@ public static class ConstructLogisticsPlan
                 // A link nobody would make is asked again only when its network looks different (phase 5: each machine's refusal is
                 // text, so asking every step allocated about 300 bytes a machine), or after RetrySteps as a fallback.
                 var look = e.Reason != "" && (ushort)(world.ChainStepNo - e.Tried) < RetrySteps && e.Seen == Seen(world, c, net);
-                if (!look && e.Reason != "" && e.Made == 0 && held == 0 && Riding(world, c, e) == 0)
+                var lies = -1;
+                var lying = IsStock(e) && e.Depth == 1 ? 0 : Lying(world, c, net, e, out lies); // (a target never robs a store: it only makes)
+                if (!look && e.Reason != "" && e.Made == 0 && held == 0 && lying == 0 && Riding(world, c, e) == 0)
                     Rekey(world, c, net, ref e); // (a waiting Panel Former sheet follows its strips setting and the network's Extruders)
                 var left = e.Asked - e.Made - Riding(world, c, e) - held;
                 if (left > 0)
-                    left -= IsStock(e) && e.Depth == 1 ? 0 : FromStock(world, c, net, ref e, left); // (a target never robs a store: it only makes)
-                if (left > 0 && !look)
+                    left -= IsStock(e) && e.Depth == 1 ? 0 : FromStock(world, c, net, ref e, left);
+                var waits = false;
+                if (left > 0 && lying > 0)
+                {
+                    // Its kind lies in a store with no way on to the machine (the Production Showcase's Panel Former's line ends at a Long
+                    // Piece Rack): counted as there, not made again (verification 2026-11-14b: a blank a minute into that rack, and the
+                    // cutter never fed). Counted from what the store holds, so a load or a piece taken out by hand needs no claim kept.
+                    left -= lying;
+                    if (left <= 0 && !e.Reason.EndsWith(LyingTail, StringComparison.Ordinal)) // (made once, not every step)
+                        e.Reason = $"the {ConstructParts.Get(e.Kind)?.Name} waits in the {c.DefOf(lies).Name}: {NoWayText(c, lies, e.Dest)}";
+                    waits = left <= 0;
+                }
+                if (waits)
+                {
+                    // (its row keeps that reason; nothing is asked of a maker)
+                }
+                else if (left > 0 && !look)
                 {
                     FindMaker(world, c, net, ref e, left);
                     if (e.Maker == NoPart)
                         (e.Seen, e.Tried) = (Seen(world, c, net), world.ChainStepNo);
-                }
-                else if (left <= 0 && held > 0 && Stranded(world, c, net, e) is var lies and >= 0)
-                {
-                    if (!e.Reason.EndsWith(StrandedTail, StringComparison.Ordinal)) // (made once, not every step)
-                        e.Reason = $"the {ConstructParts.Get(e.Kind)?.Name} lies in the {c.DefOf(lies).Name}, which has no conveyor way to the {c.DefOf(e.Dest).Name}: carry it there, or{StrandedTail}";
                 }
                 else if (left <= 0)
                     e.Reason = ConstructLifters.PickBlocked(world, c, e.Dest, e.Kind) ?? ""; // (its pieces wait at a lifter's pick point: an arm that can't work now is named on its row, lifters phase 5)
@@ -915,21 +956,6 @@ public static class ConstructLogisticsPlan
     public static void Arrived(ConstructWorld world, Construct c, int dest, ushort tag, ConstructPartDef d)
     {
         var at = tag != 0 ? Find(world, tag) : -1;
-        if (at >= 0 && world.Chains[at].Body == c.Id && world.Chains[at].Dest != dest)
-        {
-            // A piece made for this link that a plain conveyor brought to another store (its maker's line ends at a rack with no way on: the
-            // Production Showcase's Panel Former into its Long Piece Rack). Claimed there for the link: else its maker's order ended with
-            // nothing riding, held or arrived, and Step asked the maker again for good (verification 2026-11-14b: a blank a minute into the
-            // rack, the Laser Cutter never cut). The claim goes on when a way is linked (SendOne); the row says why it waits (Serve).
-            // Not at a lifter's pick rack for it: AtPicks counts those as riding, and an arm never carries a claimed piece.
-            ref var e = ref world.Chains[at];
-            if (e.Kind == d.Id && e.Dest < c.PartCount && e.Made < e.Asked && world.StoreOf(c, dest) is { } st && !ConstructLifters.LiftsTo(c, dest, e.Dest)
-                && world.Reserve.Add(st, d.Id, 1, c.Parts[e.Dest].Store, e.Id))
-            {
-                world.CraftChanged(c);
-                return;
-            }
-        }
         if (at >= 0 && (world.Chains[at].Dest != dest || world.Chains[at].Body != c.Id))
             at = -1; // (a piece tagged for another machine that a plain conveyor brought here)
         for (var i = 0; i < world.ChainCount && at < 0; i++)
@@ -958,9 +984,12 @@ public static class ConstructLogisticsPlan
         if (first < 0)
             return null;
         ref var f = ref world.Chains[first];
-        var key = ((uint)f.Kind * 31 + f.Made) * 65599u ^ (uint)f.Asked << 16 ^ f.Maker; // (the note is made again only when one of these changes: phase 5)
+        var key = ((uint)f.Kind * 31 + f.Made) * 65599u ^ (uint)f.Asked << 16 ^ f.Maker ^ (uint)c.RebuildStamp * 2654435761u; // (the note is made again only when one of these changes: phase 5; the links too, for the short line's warning)
         if (f.NoteText == null || f.NoteKey != key)
-            (f.NoteText, f.NoteKey) = ($"{ConstructParts.Get(f.Kind)?.Name} {f.Made}/{f.Asked} {(f.Maker == NoPart ? "from stock" : $"from the {c.DefOf(f.Maker).Name}")}", key);
+        {
+            var end = f.Maker == NoPart || f.Dest >= c.PartCount ? -1 : EndsShort(c, f.Maker, f.Dest);
+            (f.NoteText, f.NoteKey) = ($"{ConstructParts.Get(f.Kind)?.Name} {f.Made}/{f.Asked} {(f.Maker == NoPart ? "from stock" : $"from the {c.DefOf(f.Maker).Name}")}{(end >= 0 ? "; " + NoWayText(c, end, f.Dest) : "")}", key);
+        }
         return f.NoteText;
     }
 

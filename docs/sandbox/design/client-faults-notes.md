@@ -6,7 +6,7 @@ before and after the change. Throwaway save folders only.
 
 | # | Doubt | Cause | Where | Fixed in |
 | --- | --- | --- | --- | --- |
-| 1 | A client's cut panel ordered, never cut | Two: the host's Start after `design bring` did nothing (the tool, item 3a); and **a game fault**: the chained blank was made again and again | `ConstructLogisticsPlan.Arrived` and `Step` | the game, and the tool |
+| 1 | A client's cut panel ordered, never cut | Two: the host's Start after `design bring` did nothing (the tool, item 3a); and **a game fault**: the chained blank was made again and again | `ConstructLogisticsPlan.Arrived`, `Step`, `Serve` | the game, and the tool |
 | 2 | The Line Console's Down does nothing | The tool's `panel` dump filled a fresh card, so it read `scroll 0/4` whatever was drawn; in two-window runs the press itself was lost too (3a). A player's Down works on host and client | `Program.WindowShot.cs` `WsFill` | the tool |
 | 3 | A client "never left its spawn", "held keys never reached the seat" | The tool, four ways (below). A real client walks, presses panel buttons, sits and drives | `Program.WindowShot.cs` | the tool |
 
@@ -25,20 +25,25 @@ so it counted as neither riding, held nor arrived, and `Step` (the maker check, 
 short and asked the Panel Former again: a new blank into the rack every pass, the cutter never fed, no word on the row. A player building a
 line whose maker's out has no way to the machine would hit the same.
 
-**Fix (game).** `Arrived`: a chained piece that lands in a store other than its link's is claimed there for its link (`world.Reserve`), unless
-that store is a lifter's pick rack for the machine (`ConstructLifters.LiftsTo`; `AtPicks` counts those as riding, and an arm never carries a
-claimed piece). `Step` lets a finished maker go when the link's pieces are claimed in a store, and `Serve` gives the row its reason when the
-store has no conveyor way on (`Stranded`): `the Formed Panel (...) lies in the Long Piece Rack, which has no conveyor way to the Laser Cutter:
-carry it there, or link a conveyor or an arm from it`. When a way is linked later, `SendOne` sends the claimed piece as it does stock. No wire
-change (the row is the text the Orders row already carries).
+**Fix (game), after the merge review.** No claim is kept (a first version claimed the stranded blank in `world.Reserve`, which is never
+saved, so a load made it again; it also covered stock refills that `Step` never closed). `ConstructLogisticsPlan.Serve` now counts free
+pieces of the link's kind that lie in a store on its network with no conveyor way and no lifter's edge on to the machine (`Lying`; a lifter's
+pick rack counts as riding already, `AtPicks`) before it asks a maker, from what the stores hold, so a load needs nothing kept. The row says
+why: `the Formed Panel (...) waits in the Long Piece Rack: no conveyor or arm from the Long Piece Rack to the Laser Cutter: link one, a hand
+can't load it` (a Laser Cutter takes its blank only by conveyor: there is no hand path onto its bed, so "carry it there" would be wrong). And
+the plan says it when it asks: while the maker works, the row reads `Formed Panel (...) 0/1 from the Panel Former; no conveyor or arm from the
+Long Piece Rack to the Laser Cutter: link one, ...` (`EndsShort`: the maker's only conveyor ends at a rack with no way on). Stock targets are
+left as before (a refill never counts a piece elsewhere). When a way is linked later, `FromStock` claims the piece and sends it. No wire change.
 
 **After.** Offline and on host and client: one blank made, `stock: Long Piece Rack: Formed Panel (curve 50x50 ...) x1` and nothing more riding;
-both peers' rows read the reason above. A blank then fed to the cutter (`cutter feed`, standing in for a player carrying one) was cut in 4.2 s;
-both peers read `Collect` and `stock: Piece Rack: Cut Panel (curve 50x50 c10 r0 t20 steel | r25,25,20,20,5) x1`. The chain closed (0 links).
+both peers' rows read the reason. Saved (`saveworld`) and loaded in a fresh process: after 50 s still one blank, nothing made, the same row.
+The blank lifted out of the rack (`logi take`): the Panel Former made exactly one more, then the row waited again (a blank taken away is gone
+for this order: no hand can load it). A blank fed to the cutter by conveyor (`cutter feed`) was cut in 4.2 s; both peers read `Collect` and
+`stock: Piece Rack: Cut Panel (curve 50x50 c10 r0 t20 steel | r25,25,20,20,5) x1` (tried with the first version; the cut path is unchanged).
 
 **Not done.** The showcase's own gap (no way from the Panel Former to the cutter) is a generator change (`ProductionShowcase.cs`) and
-is left to its owner: until then a designer's cut panel on the showcase waits with that reason. The client did not walk to the rack and pick
-the panel up. A claimed piece taken out of the rack by hand drops its claim (as stock does) and the link may ask its maker again.
+is left to its owner: until then a designer's cut panel on the showcase waits with that reason. A free piece of that kind a player keeps in
+an unlinked rack also counts (the row names the rack), and two links of one kind and machine count the same piece.
 
 ## 2. The Line Console's Down
 
@@ -80,6 +85,6 @@ ground there, not confirmed).
 
 ## Files
 
-Game: `Source/Constructs/ConstructLogisticsPlan.cs` (`Arrived`, `Step`, `Serve`, `Stranded`), `Source/Constructs/ConstructLifterNet.cs`
+Game: `Source/Constructs/ConstructLogisticsPlan.cs` (`Serve`, `Lying`, `EndsShort`, `Note`), `Source/Constructs/ConstructLifterNet.cs`
 (`LiftsTo`). Tool: `Source/App/Program.WindowShot.cs` (`WsGrabMouse`, `WsFind`, `WsSeenSpot`, `waitnear`, `WsFill`, `ui`, `WsEyeTo`),
 `Source/App/Program.WindowShotTalk.cs` (`seat`: one line), `Source/Render/PanelRender.cs` (`ViewOf`).
