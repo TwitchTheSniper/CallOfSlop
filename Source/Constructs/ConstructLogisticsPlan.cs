@@ -314,10 +314,14 @@ public static class ConstructLogisticsPlan
         else if (md.IsAssembler && AssemblingTable.Current.Of(product) is { Parts.Length: > 0 } r)
         {
             var batches = (ask + r.Count - 1) / r.Count;
+            // What its input holds counts only when no other order is queued ahead of this one: else that order uses it first. (A station
+            // orders every lacking part at once, so a Swing Arm queued behind a Differential counted the Differential's Bearings as its
+            // own, was asked short, and waited for one Bearing for good: the Factory Showcase, 2026-11-14.)
+            var ahead = c.Parts[m].Orders is { Bill: false, Count: > 1 };
             foreach (var (rp, rn) in r.Parts)
                 if (inputs < kinds.Length)
                 {
-                    (kinds[inputs], wants[inputs], inside[inputs]) = ((ushort)rp.Id, rn * batches, ConstructCrafting.Holds(st, rp.Id));
+                    (kinds[inputs], wants[inputs], inside[inputs]) = ((ushort)rp.Id, rn * batches, ahead ? 0 : ConstructCrafting.Holds(st, rp.Id));
                     inputs++;
                 }
         }
@@ -327,9 +331,11 @@ public static class ConstructLogisticsPlan
             if (part == null)
                 continue;
             var coming = 0;
+            var parentId = parent.Depth == 0 ? (ushort)0 : parent.Id;
             for (var i = 0; i < world.ChainCount; i++)
-                if (world.Chains[i].Body == c.Id && world.Chains[i].Dest == m && world.Chains[i].Kind == part.Id)
-                    coming += world.Chains[i].Asked - world.Chains[i].Made;
+                if (world.Chains[i].Body == c.Id && world.Chains[i].Dest == m && world.Chains[i].Kind == part.Id
+                    && world.Chains[i].Root == parent.Root && world.Chains[i].RootId == parent.RootId && world.Chains[i].Parent == parentId)
+                    coming += world.Chains[i].Asked - world.Chains[i].Made; // (this order's own inputs on their way: another order's are its own)
             var shortBy = wants[j] - inside[j] - coming; // (one root a machine at a time: its head order uses what it holds)
             if (shortBy <= 0)
                 continue;

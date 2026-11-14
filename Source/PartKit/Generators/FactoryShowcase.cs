@@ -437,15 +437,11 @@ public sealed class FactoryShowcase : IPartGenerator
             var ja = On("Conveyor Join", 47.75f, -17.25f, Flow, "-y.0.0", Assembler);
             Convey(ja, "Piece out", a, "Piece in", Assembler, Small);
             var ji = PortAt(ja, "Piece in 2");
-            // The Assembler's own store: its Router's way 3 runs into a Piece Rack north of it, whose Piece out runs back into the Join. A part it
-            // makes for itself waits there and is fetched for the order that wants it; and Bearings and Gear Sets are kept in stock there (a
-            // stock target, refilled by the Assembler and the Gear press), so one order using up another's inputs in its hopper doesn't stall it.
-            var own = On("Piece Rack", 55.75f, -15.25f, Toward, "-y.0.0", Assembler);
-            Convey(ra, "Piece out 3", own, "Piece in", Assembler, Small);
-            Convey(own, "Piece out", ja, "Piece in 3", Assembler, Small);
-            Config(own, ("storeKeep", 8));
-            Store(own, -1, "Bearing", 8);
-            Store(own, -1, "Gear Set", 4);
+            // The loop: its Router's way 3 back round the north side into the Join, a part it makes for its own next order (a Servo Motor
+            // for a Steering Pivot, a Bearing for a Swing Arm). (A rack on the loop broke its road to itself: a rack isn't a junction.)
+            var a3 = PortAt(ra, "Piece out 3");
+            var jn = PortAt(ja, "Piece in 3");
+            Convey(ra, "Piece out 3", ja, "Piece in 3", Assembler, Small, Along(new[] { V(a3.X, 0, -15.6f), V(jn.X, 0, -15.6f) }).Select(n => n with { Y = a3.Y }).ToArray());
             var g = PortAt(_gear!, "Piece out");
             Convey(_gear!, "Piece out", ja, "Piece in 2", PressBlue, Small, Along(new[] { V(g.X, 0, -20.0f), V(ji.X, 0, -20.0f) }).Select(n => n with { Y = g.Y }).ToArray());
             Convey(_cable!, "Piece out", ja, "Piece in", Copper, Small);
