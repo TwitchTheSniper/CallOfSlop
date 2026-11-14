@@ -501,9 +501,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   (Main took it as 301.)
     // 304: Sized parts phase 5 (engine pieces off the press): the Engine Die parts (ids move); the Cylinder die's presets on the files' bounds and the
     //   Engine die (Pressing.json); a pressed engine piece's scale and a cylinder's stroke ratio come from its key (derived on each peer, no new bytes).
-    // 306: Sized parts phase 6: Pressing.json changes what a pressed part is on both peers: 26 Receiver die patterns (the generated receivers),
-    //      the Barrel die's steel liner and the Receiver die's Gear Sets in bay 2, 30 older presets on longer or thicker blanks (patterns' presets with
-    //      them), and a like body's faces spread in Pressed.BuildLike; 41 Assembling rows go (barrels and engine pieces). No message changes.
+    // 306: Sized parts phase 6: Pressing.json gains 22 Receiver die patterns (the generated receivers with no recipe, never Auto's: a pattern's
+    //      "auto": false) and their presets, and a like body's faces settle in Pressed.BuildLike (both peers make pressed parts from it);
+    //      41 Assembling rows go (barrels and engine pieces); the recycler holds a preset part's yield to its press cost. No message changes.
     public const ushort ProtocolVersion = 306;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>

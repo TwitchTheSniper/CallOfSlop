@@ -65,6 +65,9 @@ public sealed class Assembling : IPartGenerator
         return r;
     }
 
+    /// <summary>The parts the hand recipes make (sized parts phase 6: a generated receiver with one stays the Assembler's, at its tier).</summary>
+    internal static HashSet<string> HandOutputs() => Hand().Select(r => (string)r["output"]!).ToHashSet(StringComparer.Ordinal);
+
     // Every one of these draws on at least two chains (ore to metal to steel; wood to planks to rubber and cloth; copper; sand to glass; gold).
     private static List<PyDict> Hand() =>
     [

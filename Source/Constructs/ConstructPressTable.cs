@@ -85,6 +85,30 @@ public sealed class PressTable
     /// <summary>The pressed key a catalogue part is the preset of (the first listed), or null.</summary>
     public string? PresetKeyOf(ConstructPartDef d) => PresetKeyById.GetValueOrDefault(d.Id);
 
+    private readonly Dictionary<ushort, float> _costCap = new();
+
+    /// <summary>
+    /// What pressing a catalogue part costs, as mass (its cheapest preset's blank and bay 2: <see cref="Pressed.CostMass"/>), or 0 when no die
+    /// presses it. The recycler holds a part's yield to it, so a preset part never recycles for more than went in (sized parts phase 6: 36
+    /// files weigh more than their preset's blank and kit, a Gear Set 6 kg from 1.33 kg; the review kept their blanks, as saves name them).
+    /// Worked out on first asking (a recycle, not a tick).
+    /// </summary>
+    public float CostCapOf(ConstructPartDef d)
+    {
+        if (d.RuntimeMade || !PresetKeyById.ContainsKey(d.Id))
+            return 0;
+        if (_costCap.TryGetValue(d.Id, out var cap))
+            return cap;
+        cap = float.MaxValue;
+        foreach (var die in Dies)
+            foreach (var p in die.Presets)
+                if (ReferenceEquals(p.Part, d))
+                    cap = MathF.Min(cap, Pressed.CostMass(p.Pattern, p.Blank));
+        cap = cap == float.MaxValue ? 0 : cap;
+        _costCap[d.Id] = cap;
+        return cap;
+    }
+
     /// <summary>
     /// A press's Pattern setting (its "recipe" key): 0 Auto (the blank picks: PressDie.PatternFor), else 1 + a pattern of the fitted die, by its
     /// place in the die's list, so a saved press keeps its pattern when dies gain patterns at the end. The panel shows the pattern's own label.

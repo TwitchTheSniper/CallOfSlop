@@ -75,7 +75,7 @@ each peer from `Constructs/Pressing.json`, which mods can't change. A modded par
 pattern or preset, so a press never makes it; since sized parts phase 6 (2026-11-13) the shipped barrels, engine pieces and
 generated receivers are made on a Press, not an Assembler, so a patch to one of those part files changes what the press's preset
 gives (its look, mass and numbers) while its blank stays the same. A patch that makes a preset part heavier than its blank and
-bay 2 is not refused, but it recycles for more than it cost: `--press-part presets` lists it as OVER.
+bay 2 is not refused: the recycler gives back no more than pressing it took, and `--press-part presets` lists it as OVER.
 
 ## Checking a mod
 

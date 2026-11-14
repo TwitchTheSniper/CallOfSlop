@@ -11,20 +11,19 @@ message changes; no part ids move).
   kinds in four sizes, less the Capital Smokestack, past the dies). Receivers are assemblies by the sort's rule (role `gun`): the
   Rifle, Heavy and Shell Receiver keep their Assembler recipes beside their presets. `PressParts.PresetParts(dies)` names a die's
   presets.
-- **The 26 generated receivers are Receiver die patterns** (`PressParts.AllReceiverPatterns`), after the hand-made three: each preset
-  its part's bounds on the 5 cm lattice (across the wider of x and y, length z), solid. Eleven share a blank with an earlier preset
-  (a Bucket Launcher's 20x20x40 is a Rifle Receiver's): Auto makes the earlier one, the Pattern setting or an order this one, as
-  the barrels already did. A label over 24 characters drops "receiver".
+- **The 22 generated receivers with no recipe are Receiver die patterns** (`PressParts.AllReceiverPatterns`), after the hand-made three
+  (the Firebreather, Whaler, Field Gun and Howitzer keep their hand Assembler recipes at their tiers, and get no preset): each preset its
+  part's bounds on the 5 cm lattice (across the wider of x and y, length z), solid. They are `"auto": false` (`PressPattern.Auto`):
+  `PressDie.PatternFor` skips them, so Auto makes of every blank what it made on main, and the Pattern setting or an order reaches them.
+  Their order is the loaded table's, new ones appended by name (a Press saves its Pattern setting as 1 + the place). A label over 24
+  characters drops "receiver".
 - **`--bill`**: of Bandit Gun Wagon 1 and Bandit Giant Truck 1, before and after (scratch files): the Bucket Launcher Receiver went
   from "no recipe" to pressed. The three left (Full-Auto Sear, Lob Trigger, Single Breech) are an action, a trigger and a breech,
   which the design leaves without a recipe (section 9: feeds, actions, muzzles... unchanged).
-- **Presets weigh their cost** (question 5, answer A): `PressParts.Weighty` grows a preset blank (5 cm longer; a plate thicker; past the
-  die's length or aspect, the section thicker) until its blank and bay 2, reckoned as `Pressed.CostMass` does, weigh at least the
-  catalogue part. 30 presets moved (every Housing to 4 m, the Gear and Piston Sets, three differentials, three plates, the Leaf Spring, three tanks, two L Brackets and a Gusset; housings the most: a Steel Housing 0.5 m is
-  `hollow 45x45x115`). A pattern whose preset was the old blank moves with it (`PressParts.Make`), so its scale law stays continuous
-  at the catalogue part. The Barrel and Receiver dies are left alone (a Gun Barrel's 5 calibres and a Rifle Receiver's 20 cm are the
-  knots of their curves and of `s`): the Barrel die gains a **steel liner** in bay 2 (`0.6 x blank mass` units, at least 1) and the
-  Receiver die **one Gear Set per 10 kg** of blank (was 50 kg). `--press-part presets` now fails on any OVER line: 0.
+- **Presets never recycle for more than they cost** (question 5): `PressTable.CostCapOf` is a preset part's cheapest preset's blank
+  and bay 2 (`Pressed.CostMass`), and `RecyclingTable.YieldOf` gives no more than that. Every preset blank, bay 2 kit and pattern
+  preset is main's (the first try moved 30 blanks and added a barrel liner: the merge review, section 5). `--press-part presets` lists
+  the 35 heavier ones as OVER notes, not faults (the engine dies' stay faults, as phase 5 had them).
 - **Like bodies spread their faces** (question 1, answer A): `Pressed.SpreadLike`, in `BuildLike` before the features. A like body's
   end boxes (those reaching either end along its length) step in from the side bounds by the gap, so a pressed piece the size of its
   neighbour never lays a face on the neighbour's; then any drawn box whose face came within 2 mm of an earlier one's (scaling shrinks a
@@ -83,7 +82,22 @@ Throwaway runs with `--save-dir` to a scratch folder; test blueprints copied int
    lighter than plain for their power.
    - A (recommended): leave it; bore is the way to more power per cylinder, not per kilogram, and tiers 3 to 5 keep their boosters.
    - B: let a cylinder pattern weigh less than its blank (a bored-out hollow), so bores are light again.
-2. **Presets that grew a long way** (a Housing 0.25 m is now `hollow 25x25x95`; the Gear Set `round 20x20x50`). The catalogue part's
-   mass sets it.
-   - A (recommended): keep it, as the data says what the part weighs.
-   - B: lower those catalogue parts' masses to their old blanks' (a vehicle with housings gets lighter).
+2. **Preset parts heavier than their blank** (35: a Gear Set 6 kg from a 1.33 kg rod). The recycler now holds them to their cost.
+   - A (recommended): keep it; a part found on a wreck gives back less than its mass says, which few players will notice.
+   - B: lower those catalogue parts' masses to their blanks' (vehicles carrying them get lighter).
+
+## 5. Merge review (2026-11-13)
+
+The review's rule: a pressed piece saved before this branch loads as the piece it was, and a saved Press setting keeps its meaning.
+1. Saved keys that became presets (30 moved blanks) loaded as catalogue parts; 2. pattern presets that moved shifted every saved
+piece's scaled numbers; 3. the barrel liner added mass to every saved pressed barrel: all three went with the moved blanks and the
+liner (the recycler cap instead, section 1). 4. New receiver patterns kept in the loaded order, appended. 5. Auto: the new receiver
+patterns are never Auto's. 6. The four generated receivers with Assembler recipes get no preset. 7. Protocol 306 left for the merger.
+
+Tried: `--press-part` of six keys saved on main (`housing.housing hollow 45x45x115 steel`, `tank.drum pipe5 45x45x125 steel`,
+`barrel.plain round 10x10x70 steel`, `receiver.heavy solid 30x30x60 steel`, `plate.armour plate 100x40x100 steel`, `gear.set round
+20x20x50 steel`) on the branch base and here: the same part, mass, health, armour, bounds, every scaled number and the tank's
+capacity (only the geometry hash and timing differ). A world saved by the branch base's build with a pressed drum, housing and barrel
+on a Rifle Receiver (`saveworld`) loaded here (`loadworld`) with the same three keys. `Pressing.json` against main: lines added only.
+Not tried: a Press with a receiver pattern set, through a save (the first three patterns keep their places, so its index means the
+same); a tank's fuel level through the save (its capacity is unchanged).

@@ -1213,7 +1213,7 @@
      "id": "l",
      "like": "L Bracket",
      "label": "L bracket",
-     "preset": "l-angle 15x15x20 steel",
+     "preset": "l-angle 15x15x15 steel",
      "blanks": [
       "l-angle",
       "solid"
@@ -1486,7 +1486,7 @@
      "id": "housing",
      "like": "Housing 0.5 m",
      "label": "housing",
-     "preset": "hollow 45x45x115 metal"
+     "preset": "hollow 45x45x50 metal"
     }
    ]
   },
@@ -1598,13 +1598,13 @@
      "id": "plate",
      "like": "Plate Steel 1 m",
      "label": "plate",
-     "preset": "plate 100x20x100 steel"
+     "preset": "plate 100x10x100 steel"
     },
     {
      "id": "steel",
      "like": "Steel Plate",
      "label": "steel plate",
-     "preset": "plate 50x30x50 steel"
+     "preset": "plate 50x10x50 steel"
     },
     {
      "id": "tread",
@@ -1826,7 +1826,7 @@
      "id": "armour",
      "like": "Armour Plate 1 m",
      "label": "armour plate",
-     "preset": "plate 100x40x100 steel",
+     "preset": "plate 100x20x100 steel",
      "features": [
       {
        "tag": "rivet",
@@ -2199,7 +2199,7 @@
      "id": "set",
      "like": "Gear Set",
      "label": "gear set",
-     "preset": "round 20x20x50 steel"
+     "preset": "round 15x15x15 steel"
     }
    ]
   },
@@ -2461,7 +2461,7 @@
      "id": "set",
      "like": "Piston Set",
      "label": "piston set",
-     "preset": "round 20x20x45 steel",
+     "preset": "round 10x10x20 steel",
      "bay2": {
       "material": "bronze",
       "base": 1.0,
@@ -2934,7 +2934,7 @@
      "id": "diff",
      "like": "Differential",
      "label": "differential",
-     "preset": "hollow 50x50x70 steel",
+     "preset": "hollow 50x50x60 steel",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
@@ -2955,7 +2955,7 @@
      "id": "lsd",
      "like": "Limited-Slip Differential",
      "label": "limited-slip diff",
-     "preset": "hollow 50x50x85 steel",
+     "preset": "hollow 50x50x55 steel",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
@@ -2976,7 +2976,7 @@
      "id": "locking",
      "like": "Locking Differential",
      "label": "locking diff",
-     "preset": "hollow 50x50x95 steel",
+     "preset": "hollow 50x50x50 steel",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
@@ -3448,7 +3448,7 @@
      "id": "leaf",
      "like": "Leaf Spring",
      "label": "leaf spring",
-     "preset": "solid 10x55x155 steel",
+     "preset": "solid 10x55x90 steel",
      "body": "like",
      "along": "z",
      "bay2": {
@@ -4085,7 +4085,7 @@
      "id": "fuel",
      "like": "Fuel Tank",
      "label": "fuel tank",
-     "preset": "hollow 50x50x55 steel",
+     "preset": "hollow 50x50x50 steel",
      "scale": [
       {
        "field": "fuelCapacity",
@@ -4113,7 +4113,7 @@
      "id": "drum",
      "like": "Fuel Drum",
      "label": "fuel drum",
-     "preset": "pipe5 45x45x125 steel",
+     "preset": "pipe5 45x45x90 steel",
      "blanks": [
       "pipe"
      ],
@@ -4130,7 +4130,7 @@
      "id": "fluid",
      "like": "Fluid Tank",
      "label": "fluid tank",
-     "preset": "hollow 45x45x70 steel",
+     "preset": "hollow 45x45x50 steel",
      "scale": [
       {
        "field": "fuelCapacity",
@@ -4346,13 +4346,6 @@
      "preset": "round 10x10x50 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -4455,13 +4448,6 @@
      "preset": "round 15x15x125 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -4568,13 +4554,6 @@
      "preset": "round 10x10x60 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -4681,13 +4660,6 @@
      "preset": "round 15x15x50 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -4794,13 +4766,6 @@
      "preset": "round 10x10x75 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -4907,13 +4872,6 @@
      "preset": "round 10x10x80 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -5020,13 +4978,6 @@
      "preset": "round 15x15x65 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -5133,13 +5084,6 @@
      "preset": "round 10x10x80 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -5246,13 +5190,6 @@
      "preset": "round 10x10x85 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -5359,13 +5296,6 @@
      "preset": "round 15x15x85 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -5472,13 +5402,6 @@
      "preset": "round 10x10x65 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -5585,13 +5508,6 @@
      "preset": "round 10x10x65 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -5698,13 +5614,6 @@
      "preset": "round 25x25x65 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -5811,13 +5720,6 @@
      "preset": "round 10x10x125 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -5924,13 +5826,6 @@
      "preset": "round 10x10x110 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -6037,13 +5932,6 @@
      "preset": "round 10x10x55 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -6150,13 +6038,6 @@
      "preset": "round 10x10x20 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -6263,13 +6144,6 @@
      "preset": "round 15x15x75 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -6376,13 +6250,6 @@
      "preset": "round 10x10x75 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -6489,13 +6356,6 @@
      "preset": "round 20x20x105 steel",
      "body": "like",
      "along": "z",
-     "bay2": {
-      "material": "steel",
-      "base": 0.0,
-      "rate": 0.6,
-      "by": "mass",
-      "max": 99
-     },
      "scale": [
       {
        "field": "rangeM",
@@ -6616,7 +6476,7 @@
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6631,7 +6491,7 @@
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6646,7 +6506,7 @@
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6656,12 +6516,13 @@
      "like": "Bastille LMG Receiver",
      "label": "bastille lmg receiver",
      "preset": "solid 20x20x75 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6671,12 +6532,13 @@
      "like": "Bucket Launcher Receiver",
      "label": "bucket launcher receiver",
      "preset": "solid 20x20x40 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6686,12 +6548,13 @@
      "like": "Bunker Buster Receiver",
      "label": "bunker buster receiver",
      "preset": "solid 25x25x65 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6701,12 +6564,13 @@
      "like": "Courier Carbine Receiver",
      "label": "courier carbine receiver",
      "preset": "solid 15x15x40 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6716,42 +6580,13 @@
      "like": "Farmhand Pump Receiver",
      "label": "farmhand pump receiver",
      "preset": "solid 15x15x45 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
-      "by": "mass",
-      "max": 20
-     }
-    },
-    {
-     "id": "fieldgun",
-     "like": "Field Gun Receiver",
-     "label": "field gun receiver",
-     "preset": "solid 30x30x60 steel",
-     "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.1,
-      "by": "mass",
-      "max": 20
-     }
-    },
-    {
-     "id": "firebreather",
-     "like": "Firebreather Receiver",
-     "label": "firebreather receiver",
-     "preset": "solid 25x25x45 steel",
-     "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6761,12 +6596,13 @@
      "like": "Gravedigger Auto Receiver",
      "label": "gravedigger auto",
      "preset": "solid 15x15x50 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6776,12 +6612,13 @@
      "like": "Hammerfall Autocannon Receiver",
      "label": "hammerfall autocannon",
      "preset": "solid 30x30x80 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6791,12 +6628,13 @@
      "like": "Hand Mortar Receiver",
      "label": "hand mortar receiver",
      "preset": "solid 20x20x40 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6806,27 +6644,13 @@
      "like": "Hellwheel Rotary Receiver",
      "label": "hellwheel rotary",
      "preset": "solid 20x20x60 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
-      "by": "mass",
-      "max": 20
-     }
-    },
-    {
-     "id": "howitzer",
-     "like": "Howitzer Receiver",
-     "label": "howitzer receiver",
-     "preset": "solid 30x30x60 steel",
-     "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6836,12 +6660,13 @@
      "like": "Kingpin Revolver Receiver",
      "label": "kingpin revolver",
      "preset": "solid 20x20x35 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6851,12 +6676,13 @@
      "like": "Longbow DMR Receiver",
      "label": "longbow dmr receiver",
      "preset": "solid 15x15x65 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6866,12 +6692,13 @@
      "like": "Longreach Bolt Receiver",
      "label": "longreach bolt receiver",
      "preset": "solid 15x15x60 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6881,12 +6708,13 @@
      "like": "Parade Cannon Receiver",
      "label": "parade cannon receiver",
      "preset": "solid 20x20x40 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6896,12 +6724,13 @@
      "like": "Peashooter Receiver",
      "label": "peashooter receiver",
      "preset": "solid 15x15x35 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6911,12 +6740,13 @@
      "like": "Pepperbox Receiver",
      "label": "pepperbox receiver",
      "preset": "solid 20x20x40 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6926,12 +6756,13 @@
      "like": "Plinker Receiver",
      "label": "plinker receiver",
      "preset": "solid 15x15x35 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6941,12 +6772,13 @@
      "like": "Railspike Coil Receiver",
      "label": "railspike coil receiver",
      "preset": "solid 15x15x60 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6956,12 +6788,13 @@
      "like": "Reaper Battle Rifle Receiver",
      "label": "reaper battle rifle",
      "preset": "solid 20x20x55 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6971,12 +6804,13 @@
      "like": "Sawmill Receiver",
      "label": "sawmill receiver",
      "preset": "solid 20x20x75 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -6986,12 +6820,13 @@
      "like": "Sparkplug Energy Receiver",
      "label": "sparkplug energy",
      "preset": "solid 20x20x50 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -7001,12 +6836,13 @@
      "like": "Stampede Receiver",
      "label": "stampede receiver",
      "preset": "solid 15x15x40 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -7016,27 +6852,13 @@
      "like": "Sunbeam Lance Receiver",
      "label": "sunbeam lance receiver",
      "preset": "solid 15x15x60 steel",
+     "auto": false,
      "body": "like",
      "along": "z",
      "bay2": {
       "part": "Gear Set",
       "base": 1.0,
-      "rate": 0.1,
-      "by": "mass",
-      "max": 20
-     }
-    },
-    {
-     "id": "whaler",
-     "like": "Whaler Receiver",
-     "label": "whaler receiver",
-     "preset": "solid 20x20x50 steel",
-     "body": "like",
-     "along": "z",
-     "bay2": {
-      "part": "Gear Set",
-      "base": 1.0,
-      "rate": 0.1,
+      "rate": 0.02,
       "by": "mass",
       "max": 20
      }
@@ -7049,7 +6871,7 @@
    "part": "L Bracket",
    "die": "bracket",
    "pattern": "l",
-   "blank": "l-angle 15x15x20 steel"
+   "blank": "l-angle 15x15x15 steel"
   },
   {
    "part": "Corner Bracket",
@@ -7073,7 +6895,7 @@
    "part": "L Bracket",
    "die": "bracket",
    "pattern": "l",
-   "blank": "l-angle 15x15x25 metal"
+   "blank": "l-angle 15x15x15 metal"
   },
   {
    "part": "Corner Bracket",
@@ -7085,7 +6907,7 @@
    "part": "Gusset 0.25 m",
    "die": "bracket",
    "pattern": "gusset",
-   "blank": "plate 25x15x25 metal"
+   "blank": "plate 25x10x25 metal"
   },
   {
    "part": "Gusset 0.5 m",
@@ -7121,91 +6943,91 @@
    "part": "Housing 0.25 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 25x25x95 metal"
+   "blank": "hollow 25x25x25 metal"
   },
   {
    "part": "Steel Housing 0.25 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 25x25x95 steel"
+   "blank": "hollow 25x25x25 steel"
   },
   {
    "part": "Bronze Housing 0.25 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 25x25x90 bronze"
+   "blank": "hollow 25x25x25 bronze"
   },
   {
    "part": "Housing 0.5 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 45x45x115 metal"
+   "blank": "hollow 45x45x50 metal"
   },
   {
    "part": "Steel Housing 0.5 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 45x45x115 steel"
+   "blank": "hollow 45x45x50 steel"
   },
   {
    "part": "Bronze Housing 0.5 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 45x45x110 bronze"
+   "blank": "hollow 45x45x50 bronze"
   },
   {
    "part": "Housing 1 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 100x100x185 metal"
+   "blank": "hollow 100x100x100 metal"
   },
   {
    "part": "Steel Housing 1 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 100x100x185 steel"
+   "blank": "hollow 100x100x100 steel"
   },
   {
    "part": "Bronze Housing 1 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 100x100x175 bronze"
+   "blank": "hollow 100x100x100 bronze"
   },
   {
    "part": "Housing 2 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 180x180x230 metal"
+   "blank": "hollow 180x180x200 metal"
   },
   {
    "part": "Steel Housing 2 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 180x180x230 steel"
+   "blank": "hollow 180x180x200 steel"
   },
   {
    "part": "Bronze Housing 2 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 180x180x215 bronze"
+   "blank": "hollow 180x180x200 bronze"
   },
   {
    "part": "Housing 4 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 400x400x460 metal"
+   "blank": "hollow 400x400x400 metal"
   },
   {
    "part": "Steel Housing 4 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 400x400x460 steel"
+   "blank": "hollow 400x400x400 steel"
   },
   {
    "part": "Bronze Housing 4 m",
    "die": "housing",
    "pattern": "housing",
-   "blank": "hollow 400x400x430 bronze"
+   "blank": "hollow 400x400x400 bronze"
   },
   {
    "part": "Housing 8 m",
@@ -7259,7 +7081,7 @@
    "part": "Gear Set",
    "die": "gear",
    "pattern": "set",
-   "blank": "round 20x20x50 steel"
+   "blank": "round 15x15x15 steel"
   },
   {
    "part": "Circuit Board",
@@ -7271,7 +7093,7 @@
    "part": "Piston Set",
    "die": "piston",
    "pattern": "set",
-   "blank": "round 20x20x45 steel"
+   "blank": "round 10x10x20 steel"
   },
   {
    "part": "Small Cylinder",
@@ -7529,25 +7351,25 @@
    "part": "Differential",
    "die": "drive",
    "pattern": "diff",
-   "blank": "hollow 50x50x70 steel"
+   "blank": "hollow 50x50x60 steel"
   },
   {
    "part": "Limited-Slip Differential",
    "die": "drive",
    "pattern": "lsd",
-   "blank": "hollow 50x50x85 steel"
+   "blank": "hollow 50x50x55 steel"
   },
   {
    "part": "Locking Differential",
    "die": "drive",
    "pattern": "locking",
-   "blank": "hollow 50x50x95 steel"
+   "blank": "hollow 50x50x50 steel"
   },
   {
    "part": "Steel Plate",
    "die": "plate",
    "pattern": "steel",
-   "blank": "plate 50x30x50 steel"
+   "blank": "plate 50x10x50 steel"
   },
   {
    "part": "Sheet Steel 1 m",
@@ -7559,7 +7381,7 @@
    "part": "Plate Steel 1 m",
    "die": "plate",
    "pattern": "plate",
-   "blank": "plate 100x20x100 steel"
+   "blank": "plate 100x10x100 steel"
   },
   {
    "part": "Tread Plate 1 m",
@@ -7577,7 +7399,7 @@
    "part": "Armour Plate 1 m",
    "die": "plate",
    "pattern": "armour",
-   "blank": "plate 100x40x100 steel"
+   "blank": "plate 100x20x100 steel"
   },
   {
    "part": "Drive Shaft 1 m",
@@ -7643,7 +7465,7 @@
    "part": "Leaf Spring",
    "die": "spring",
    "pattern": "leaf",
-   "blank": "solid 10x55x155 steel"
+   "blank": "solid 10x55x90 steel"
   },
   {
    "part": "Rigid Mount",
@@ -7739,7 +7561,7 @@
    "part": "Fuel Tank",
    "die": "tank",
    "pattern": "fuel",
-   "blank": "hollow 50x50x55 steel"
+   "blank": "hollow 50x50x50 steel"
   },
   {
    "part": "Small Fuel Tank",
@@ -7751,13 +7573,13 @@
    "part": "Fuel Drum",
    "die": "tank",
    "pattern": "drum",
-   "blank": "pipe5 45x45x125 steel"
+   "blank": "pipe5 45x45x90 steel"
   },
   {
    "part": "Fluid Tank",
    "die": "tank",
    "pattern": "fluid",
-   "blank": "hollow 45x45x70 steel"
+   "blank": "hollow 45x45x50 steel"
   },
   {
    "part": "Small Fluid Tank",
@@ -7958,18 +7780,6 @@
    "blank": "solid 15x15x45 steel"
   },
   {
-   "part": "Field Gun Receiver",
-   "die": "receiver",
-   "pattern": "fieldgun",
-   "blank": "solid 30x30x60 steel"
-  },
-  {
-   "part": "Firebreather Receiver",
-   "die": "receiver",
-   "pattern": "firebreather",
-   "blank": "solid 25x25x45 steel"
-  },
-  {
    "part": "Gravedigger Auto Receiver",
    "die": "receiver",
    "pattern": "gravediggerauto",
@@ -7992,12 +7802,6 @@
    "die": "receiver",
    "pattern": "hellwheelrotary",
    "blank": "solid 20x20x60 steel"
-  },
-  {
-   "part": "Howitzer Receiver",
-   "die": "receiver",
-   "pattern": "howitzer",
-   "blank": "solid 30x30x60 steel"
   },
   {
    "part": "Kingpin Revolver Receiver",
@@ -8076,12 +7880,6 @@
    "die": "receiver",
    "pattern": "sunbeamlance",
    "blank": "solid 15x15x60 steel"
-  },
-  {
-   "part": "Whaler Receiver",
-   "die": "receiver",
-   "pattern": "whaler",
-   "blank": "solid 20x20x50 steel"
   }
  ]
 }

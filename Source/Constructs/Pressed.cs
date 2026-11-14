@@ -1046,19 +1046,26 @@ public static class Pressed
                 // A preset comes out as the catalogue part, at its file's mass: never more than the blank and bay 2 that went in, or it
                 // would recycle for more than it cost (review, 2026-11-13).
                 var pat = d.Pattern(key[(Prefix.Length + d.Id.Length + 1)..key.IndexOf(' ', Prefix.Length)]);
-                // Every die's presets are held to it as a problem (sized parts phase 6: the older dies' blanks settled by the generator,
-                // PressParts.Weighty; they were OVER lines that didn't fail).
+                // The engine dies' presets (sized parts phase 5) are held to it as a problem. The older dies' blanks stay where saves name
+                // them (sized parts phase 6's review): the recycler holds those parts' yield to this cost (PressTable.CostCapOf), so an OVER
+                // line is a note, not a fault.
                 if (why.Length == 0 && pat != null && part.Mass > CostMass(pat, blank) + 0.01f)
                 {
-                    over++;
-                    why = $": OVER: weighs {part.Mass:0.##} kg, more than its blank and bay 2 ({CostMass(pat, blank):0.##} kg): it recycles for more than it cost";
+                    var text = $": weighs {part.Mass:0.##} kg, more than its blank and bay 2 ({CostMass(pat, blank):0.##} kg): the recycler gives back {CostMass(pat, blank):0.##} kg of it";
+                    if (d.Id is "engine" or "cylinder")
+                        why = text;
+                    else
+                    {
+                        over++;
+                        Console.WriteLine($"[press] OVER {part.Name,-24} {key}{text}");
+                    }
                 }
                 ok = why.Length == 0;
             }
             bad += ok ? 0 : 1;
             Console.WriteLine($"[press] {(ok ? "ok " : "BAD")} {part.Name,-24} {key}{press}{why}");
         }
-        Console.WriteLine($"[press] presets: {bad} problems ({over} of them OVER: heavier than their blank and bay 2)");
+        Console.WriteLine($"[press] presets: {bad} problems; {over} presets weigh more than their blank and bay 2 (OVER lines: the recycler holds their yield to that)");
         return bad;
     }
 
