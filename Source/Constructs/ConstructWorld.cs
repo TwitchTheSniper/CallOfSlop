@@ -1263,6 +1263,24 @@ public sealed partial class ConstructWorld
     // ---- Ray tests -------------------------------------------------------------------------------------------------
 
     /// <summary>The nearest construct part along a ray (before <paramref name="maxDist"/>). Uses the drawn pose on a client when <paramref name="drawn"/>.</summary>
+    /// <summary>
+    /// Is solid box <paramref name="bi"/> glass to a round: a glass box, or a hidden box of a part whose every drawn box is glass (a pane with
+    /// cut corners is a glass hull drawn over a hidden box: it behaves as a square pane does, rounds pass and break it; leftovers 3). A part
+    /// with any drawn box that isn't glass (a frame, a cab) keeps its hidden boxes solid. Allocates nothing.
+    /// </summary>
+    private static bool GlassBox(ConstructPartDef d, int bi)
+    {
+        ref readonly var b = ref d.Boxes[bi];
+        if (b.IsGlass)
+            return true;
+        if (!b.Hidden || !d.HasGlass)
+            return false;
+        for (var k = 0; k < d.Boxes.Length; k++)
+            if (!d.Boxes[k].Hidden && !d.Boxes[k].IsGlass)
+                return false;
+        return true;
+    }
+
     public bool Raycast(Vector3 origin, Vector3 dir, float maxDist, out ConstructHit hit, Construct? ignore = null, bool look = false, bool noTracks = false, Construct? only = null, bool ignoreCargo = false)
     {
         hit = default;
@@ -1313,7 +1331,7 @@ public sealed partial class ConstructWorld
                         hit.Normal = Vector3.Transform(Geometry.BoxEntryNormal(centre - half, centre + half, lo, ld, d), q);
                         hit.SlotPlus1 = 0;
                         hit.RoutePlus1 = hit.TrackPlus1 = 0;
-                        hit.Glass = bi < p.D.SolidBoxes && p.D.Boxes[bi].IsGlass; // (solid boxes come first: the same index; a lift cell's envelope is after them)
+                        hit.Glass = bi < p.D.SolidBoxes && GlassBox(p.D, bi); // (solid boxes come first: the same index; a lift cell's envelope is after them)
                         blade = -1;
                     }
                 }

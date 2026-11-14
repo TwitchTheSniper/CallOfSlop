@@ -501,7 +501,8 @@ public static class ConstructLogisticsPlan
     }
 
     /// <summary>
-    /// A machine on the root's network (not the one that needs it) takes <paramref name="count"/>: one already making the kind first, else
+    /// A machine on the root's network (not the one that needs it, unless its own Piece out comes back round to its Piece in: leftovers 3,
+    /// a Wheel and its Tyre Carcass on one Assembler, where AheadOfUsers puts the input's line first) takes <paramref name="count"/>: one already making the kind first, else
     /// the shortest queue; queued there, marked with the entry. Nobody: the entry's reason.
     /// </summary>
     private static void FindMaker(ConstructWorld world, Construct c, CraftNet net, ref ChainEntry e, int count)
@@ -514,7 +515,7 @@ public static class ConstructLogisticsPlan
         for (var i = 0; i < net.MachineN; i++)
         {
             var mk = net.Machines[i];
-            if (mk == e.Dest || what.IsPiece != c.DefOf(mk).IsExtruder && !c.DefOf(mk).IsPress && !(WorkOrders.IsWholeFormer(c.DefOf(mk)) && FormerPresets.PartOf(what) != null) && !(what.IsPanel && !what.IsPressed && c.DefOf(mk).IsPanelFormer))
+            if (mk == e.Dest && ConstructCrafting.RouteTo(c, mk, mk) < 0 || what.IsPiece != c.DefOf(mk).IsExtruder && !c.DefOf(mk).IsPress && !(WorkOrders.IsWholeFormer(c.DefOf(mk)) && FormerPresets.PartOf(what) != null) && !(what.IsPanel && !what.IsPressed && c.DefOf(mk).IsPanelFormer))
                 continue; // (a piece is an Extruder's or a Former's; a part an Assembler's, a Press's or, a preset wing or rotor, a Fan or Airframe Former's; a formed or cut panel a Panel Former's or a Laser Cutter's: Refusal says which)
             var why = WorkOrders.Refusal(world, c, mk, what);
             if (why != null)

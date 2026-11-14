@@ -128,7 +128,7 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
 
   | Machine | Die | Longest piece | Speed | Bin | Power |
   | --- | --- | --- | --- | --- | --- |
-  | Extruder (Small) | 0.5 m, Die Frames to 6 x 6 m | 48 m | 0.2 m/s | 400 | 900 W |
+  | Extruder (Small) | 0.5 m, Die Frames to 8 x 8 m | 48 m | 0.2 m/s | 400 | 900 W |
   | Medium Extruder | 8 x 8 m | 64 m | 0.4 m/s | 2,000 | 3.6 kW |
   | Large Extruder | 16 x 16 m | 128 m | 0.8 m/s | 8,000 | 14.4 kW |
   | Capital Extruder | 32 x 32 m | 192 m | 1.6 m/s | 32,000 | 57.6 kW |

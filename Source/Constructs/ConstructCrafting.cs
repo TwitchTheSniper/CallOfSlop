@@ -434,6 +434,7 @@ public static class ConstructCrafting
             var st = world.StoreOf(c, m);
             var fed = st is { Amount: > 0 };
             var mat = fed ? st!.Material : FirstMaterial(md);
+            var loose = md.IsExtruder ? LooseRefusal(world, c, m) : null; // (a piece it drops loose never reaches a tray: the row says so and Place refuses it)
             if (md.IsLaserCutter)
             {
                 // A Laser Cutter (laser cutter phase 4): the world's cut designs it takes; now when the blank is in linked stock or on its
@@ -498,8 +499,8 @@ public static class ConstructCrafting
                 if (row.Make == 1)
                     return;
                 row.Machine = m;
-                row.Make = (byte)(fed ? 1 : Bulk(world, c, net, mat, -1) > 0 ? 2 : 3);
-                row.Missing = fed ? "" : row.Make == 2 ? $"the {md.Name} needs {names.NameOf(mat)}: a linked bin holds some" : $"needs {names.NameOf(mat)} in the {md.Name}";
+                row.Make = (byte)(loose != null ? 3 : fed ? 1 : Bulk(world, c, net, mat, -1) > 0 ? 2 : 3);
+                row.Missing = loose ?? (fed ? "" : row.Make == 2 ? $"the {md.Name} needs {names.NameOf(mat)}: a linked bin holds some" : $"needs {names.NameOf(mat)} in the {md.Name}");
             }
             if (WorkOrders.IsWholeFormer(md))
             {
@@ -515,13 +516,13 @@ public static class ConstructCrafting
                     var row = Row(what, pp);
                     if (row.Make == 1)
                         continue;
-                    var make = (byte)(fed ? 1 : Bulk(world, c, net, pk.Material, -1) > 0 ? 2 : 3);
+                    var make = (byte)(loose != null ? 3 : fed ? 1 : Bulk(world, c, net, pk.Material, -1) > 0 ? 2 : 3);
                     if (row.Make == 0 || make < row.Make)
                     {
                         row.Make = make;
                         row.Machine = m;
                         row.Recipe = null;
-                        row.Missing = fed ? "" : make == 2 ? $"the {md.Name} needs {names.NameOf(pk.Material)}: a linked bin holds some" : $"needs {names.NameOf(pk.Material)} in the {md.Name}";
+                        row.Missing = loose != null ? loose : fed ? "" : make == 2 ? $"the {md.Name} needs {names.NameOf(pk.Material)}: a linked bin holds some" : $"needs {names.NameOf(pk.Material)} in the {md.Name}";
                     }
                 }
             }
@@ -755,6 +756,9 @@ public static class ConstructCrafting
         };
     }
 
+    private const string RidingToHold = "riding to the hold";
+    private const string LooseHeld = "held, cancel it: "; // (its own prefix: the step keeps this note without making it again)
+
     private static readonly string[] StateWords = ["waiting", "fetching", "queued", "riding", "in tray", "collect", "held"];
 
     /// <summary>The terminal's own screen (panel source <c>craft</c>): what it sees and its first orders. Either peer; allocates nothing.</summary>
@@ -812,7 +816,7 @@ public static class ConstructCrafting
         var ok = Stock(world, c, net, (ushort)kind.Id) > 0;
         for (var i = 0; i < net.MachineN && !ok; i++)
         {
-            var why = WorkOrders.Refusal(world, c, net.Machines[i], what);
+            var why = WorkOrders.Refusal(world, c, net.Machines[i], what) ?? LooseRefusal(world, c, net.Machines[i]);
             ok = why == null;
             if (why != null && (refusal == null || Kin(c.DefOf(net.Machines[i]), what)))
                 refusal = why;
@@ -830,6 +834,48 @@ public static class ConstructCrafting
         StepTerminal(world, c, t, tray, q);
         world.CraftChanged(c);
         return null;
+    }
+
+    /// <summary>
+    /// Why a terminal can't ask machine <paramref name="m"/> for a piece, or null: an Extruder or a Former with no conveyor out of its Piece out
+    /// (nor a chute into a press) parts its piece off loose at the die (ConstructExtruder.Cut, CutAs), which no tray ever sees, so an order
+    /// placed there would wait for ever (leftovers 3: the showcase's Airframe Former's wing). The reason says where it would lie.
+    /// </summary>
+    internal static string? LooseRefusal(ConstructWorld world, Construct c, int m) =>
+        DropsLoose(world, c, m) ? $"the {c.DefOf(m).Name} drops it loose, no conveyor to the tray: order it on its panel, collect it there" : null;
+
+    /// <summary>The test of <see cref="LooseRefusal"/>, allocating nothing. A Panel Former or a Laser Cutter is no such machine: its out-bed drop completes a terminal's order (MadeLoose).</summary>
+    private static bool DropsLoose(ConstructWorld world, Construct c, int m)
+    {
+        var md = c.DefOf(m);
+        if (!md.IsExtruder || md.IsPanelFormer || md.IsLaserCutter || ConstructConveyor.Out(c, m) >= 0 || ConstructPress.ChutesToPress(world, c, m))
+            return false;
+        if (c.Logi is { LiftN: > 0 } lm)
+            for (var e = 0; e < lm.LiftN; e++)
+                if (lm.Lifts[e].From == m)
+                    return false; // (an arm lifts it from the die's floor and puts it on: lifters phase 5b)
+        return true;
+    }
+
+    /// <summary>
+    /// A queued order's line at a machine that drops it loose (an order saved before leftovers 3, or a conveyor cut since), or -1: it would wait
+    /// for ever, so it is held with the reason. Looks for its own unstarted line (as Cancel matches it); allocates nothing.
+    /// </summary>
+    private static int LooseMaker(ConstructWorld world, Construct c, CraftNet net, in CraftOrder o)
+    {
+        for (var i = 0; i < net.MachineN; i++)
+        {
+            var m = net.Machines[i];
+            if (c.Parts[m].Orders is not { Bill: false, Count: > 0 } mq || !DropsLoose(world, c, m))
+                continue;
+            for (var j = 0; j < mq.Count; j++)
+            {
+                ref readonly var mo = ref mq.Items[j];
+                if (mo.Chain == 0 && mo.Part == o.What.Part && mo.Name == o.What.Name && (!mo.IsPiece || mo.Key == o.What.Key))
+                    return m;
+            }
+        }
+        return -1;
     }
 
     /// <summary>Is a machine of the order's own kind, so its refusal is the one a player reads: a Press for a pressed part, an Assembler for a catalogue part, else an Extruder or a Former.</summary>
@@ -1216,7 +1262,7 @@ public static class ConstructCrafting
                 string? refusal = null;
                 for (var i = 0; i < net.MachineN && ask > 0; i++)
                 {
-                    var why = WorkOrders.Queue(world, c, net.Machines[i], o.What with { Count = (ushort)ask, Made = 0 });
+                    var why = LooseRefusal(world, c, net.Machines[i]) ?? WorkOrders.Queue(world, c, net.Machines[i], o.What with { Count = (ushort)ask, Made = 0 }); // (never asked of a machine that drops it loose)
                     if (why == null)
                     {
                         ConstructLogisticsPlan.Ranked(world, c, net.Machines[i], (byte)(StockTargets.FeedClass(c, t) + 2)); // (a High terminal's line goes ahead of Normal ones: phase 5)
@@ -1240,6 +1286,23 @@ public static class ConstructCrafting
                 state = CraftState.Queued;
                 if (where == NoPart)
                     where = o.State == CraftState.Queued ? o.Where : NoPart;
+                if (o.State == CraftState.Held && o.Note.StartsWith(LooseHeld, StringComparison.Ordinal))
+                    (state, note) = (CraftState.Held, o.Note); // (said once below: kept, no text a step)
+                else if ((o.State != CraftState.Queued || o.Age % 5 == 0) && LooseMaker(world, c, net, o) is var lm and >= 0)
+                {
+                    state = CraftState.Held;
+                    where = (ushort)lm;
+                    note = LooseHeld + LooseRefusal(world, c, lm);
+                }
+            }
+            if (state == CraftState.Queued && o.Sent == 0 && held == 0 && ConstructLogistics.RidingFor(c, owner, o.Id) is var riders and > 0 && riders >= o.Asked)
+            {
+                // What its machine made for it is on the conveyors to this tray (leftovers 3: a station's note still read "queued at the
+                // Assembler" while the container rode): said as riding, as a fetched piece is, until Arrived counts it in.
+                state = CraftState.Riding;
+                note = ConstructLogistics.HeldNote(c, t, o.Id) ?? (c.DefOf(t).IsBuildStation ? RidingToHold : "");
+                if (note != (o.Note ?? ""))
+                    changed = true;
             }
             if (state == CraftState.Waiting && o.Sent > 0)
             {
@@ -1247,7 +1310,7 @@ public static class ConstructCrafting
                 // A piece of it held at a Router says where, by the Router's name (phase 4c), looked at every fifth step as a queued note is.
                 note = o.State == CraftState.Riding ? o.Note ?? "" : "";
                 if (o.State != CraftState.Riding || o.Age++ % 5 == 0)
-                    note = ConstructLogistics.HeldNote(c, t, o.Id) ?? "";
+                    note = ConstructLogistics.HeldNote(c, t, o.Id) ?? (c.DefOf(t).IsBuildStation ? RidingToHold : "");
                 if (note != (o.Note ?? ""))
                     changed = true;
             }

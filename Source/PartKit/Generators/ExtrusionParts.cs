@@ -170,8 +170,8 @@ public sealed class ExtrusionParts : IPartGenerator
         p.Stats(380, 600, 6, 4);
         p.Set(("power", 900), ("storage", Kw(
                 ("bulk", Kw(("material", "any"), ("capacity", 400), ("min", Py.L(-0.455, 0.855, -0.705)), ("max", Py.L(0.455, 0.995, -0.055)))),
-                ("extrude", Kw(("speed", 0.2), ("die", Py.L(0.5, 0.5)), ("at", Py.L(0, 0.5, 0.75)), ("maxSection", Py.L(6, 6)), ("maxLength", 48), ("pushForce", 6000), ("growLength", 64))))),
-            ("config", ExtruderConfig(0.5, 6, 64)));
+                ("extrude", Kw(("speed", 0.2), ("die", Py.L(0.5, 0.5)), ("at", Py.L(0, 0.5, 0.75)), ("maxSection", Py.L(8, 8)), ("maxLength", 48), ("pushForce", 6000), ("growLength", 64))))), // (Die Frames reach 8 m: a framed Small matches a plain Medium, leftovers 3)
+            ("config", ExtruderConfig(0.5, 8, 64)));
         WithScreen(p, orders: true, faces: ["-x"], width: 0.84, recipe: true);
         MachineLook.Skirt(p, -0.5, 0.5, -0.75, 0.75, 0, 0.14, 0.012);
         // The hopper, at the back: taller than the body, a white rim (the in side) and an arrow down each open side.
@@ -417,7 +417,7 @@ public sealed class ExtrusionParts : IPartGenerator
     // (class, die with Die Extensions, longest with tables, a Die Extension's row, a table's length, a Die Extension's kg, a table's kg)
     private static readonly (Cls Cls, double Section, double Length, double Step, double Table, int ExtKg, int TableKg)[] Growth =
     [
-        (Small, 6, 64, 0, 8, 0, 450),
+        (Small, 8, 64, 0, 8, 0, 450),
         (Medium, 16, 128, 2, 16, 3000, 4000),
         (Large, 32, 192, 4, 16, 30000, 40000),
     ];
@@ -527,7 +527,7 @@ public sealed class ExtrusionParts : IPartGenerator
         parts.AddRange(Formers.Select(r => ("", Former(r))));
         parts.AddRange(FanFormers.Select(r => ("", Former(r, fan: true))));
         parts.AddRange(AirframeFormers.Select(r => ("", Former(r, air: true))));
-        parts.Add(("", DieFrame("Die Frame", 0.25, 0.5, "Attach it to an Extruder to widen the die, up to 6 x 6 m.", 90, 300, 6, 3, 0.3)));
+        parts.Add(("", DieFrame("Die Frame", 0.25, 0.5, "Attach it to an Extruder to widen the die, up to 8 x 8 m.", 90, 300, 6, 3, 0.3)));
         parts.Add(("", DieFrame("Large Die Frame", 0.5, 1, "Attach it to an Extruder: 1 x 2 m more die.", 280, 700, 8, 5, 0.6)));
         parts.AddRange(Growth.Where(g => g.Step > 0).Select(g => ("", DieExtension(g))));
         parts.AddRange(Growth.Select(g => ("", RunOutTable(g))));

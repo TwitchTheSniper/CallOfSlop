@@ -1103,8 +1103,7 @@ public static partial class ConstructStation
         Free(world, b, j);
         j.State = StationState.Done;
         j.Note = "";
-        if (world.StoreOf(c, t) is { } done)
-            world.Reserve.Release(world, done.Handle, ConstructLifters.PadClaim); // (its claims on its arms' pick pads: lifters phase 5)
+        CancelOrders(world, c, t); // (every part is in: what it still had ordered is closed, its unstarted lines off their machines' queues, and its pad claims go: leftovers 3, a cut panel's order left open after `station stock`)
         var s = (Stopwatch.GetTimestamp() - j.Started) / (double)Stopwatch.Frequency;
         Console.WriteLine($"[station] {j.Name}: done in {s:0.0} s ({j.Steps} parts, {j.Links} links); costing {j.CostMs:0.0} ms, worst slice {j.WorstMs:0.00} ms");
         world.StationChanged(c);
