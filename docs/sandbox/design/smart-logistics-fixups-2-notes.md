@@ -81,3 +81,24 @@ same (16 entries). `logi cost 400` with a starved Ammo Container order: 40 B a s
 
 Files outside this round's three: `ConstructConveyor.cs` (`SetOff`; `RackCheck` lets a terminal's tray take a store part), `RouterScreen.cs` (the set-off Alarm),
 `WorkOrders.cs` (the ranks in the save), `Program.WindowShotLogi.cs` (`logi stow`, `logi mix`, `logi steps`, rank in `logi chain`).
+
+## After the merge review (five points)
+1. **The set-off is bounded.** At most `LogiMap.PileMax` (4) pieces lie beside a Router; then the piece waits, stuck, and its machine
+   stalls as before, the look line `holding Ammo Container - stuck: no Piece Rack takes a store part (a rack holds pieces), and 4 set off
+   beside it already: take them away`, the screen `STUCK / Holds Ammo Container / pile beside it full: take it away`. Spots are found in
+   the body's own up, either side of the line and up to four rows back, each tested clear of every body's solid boxes (the Router's own
+   included: `ConstructConveyor.SpotClear`). The pile is kept by body id and spot; a piece gone or moved 1.5 m leaves it
+   (`ConstructLogistics.Piles`, each conveyor step, only for bodies with a pile); the Alarm stays on while any lies there. Tried
+   (window tool `logi haul PART|N` takes loose bodies away): 50 fed, 4 set off and the line waited; 2 hauled, 2 more set off; all hauled,
+   the rest set off and, the last pile hauled, the Alarm 0. The same on Redrock (a planetoid). A rack added beside the Router: not
+   tried (the showcase's own rack and conveyors there were cleared).
+   Found doing it, **fixed**: a stuck piece's wait count stopped at 255 (not a multiple of the 2 s retry), so a piece stuck over 25 s
+   never looked again, even once a rack had room. It wraps now.
+2. **A tray takes a store part only as its order's rider** (`RackCheck(..., ordered)`: the conveyor's delivery and the Router's check
+   pass it for a rider with an order's tag). Every other caller keeps the default and is refused: arms (`ConstructLifterCarry`,
+   `ConstructLifterPads`), the hand stow (`ConstructEditsRack`), chutes and a fetch (`ConstructCrafting`), the station's drop. Tried: the
+   ordered container reached the tray; `logi fill Crafting Terminal|Ammo Container|1` (RackPut's default) put 0.
+3. **The too-wide row warns without blocking:** its make state stays what the bin and the network give (sheet fed by hand works at
+   any width); the warning is added: `make 2 ... needs 10 steel sheet in the Panel Former - too wide: sheet 1.5 m wide: ...`.
+4. The row's and the chain line's texts are built from one part (`TooWideAdvice`), not by cutting a prefix.
+5. A rebuild carries each Router's pile and Alarm over by its part, as its shown way is; nothing clears them but the pile going.

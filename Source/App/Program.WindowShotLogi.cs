@@ -291,6 +291,28 @@ public static partial class Program
                 WsSay($"[logi] stow {sd.Name} in {sc.DefOf(part).Name}#{part}: {w.PutPart(sc, part, sd) ?? "stowed"}");
                 return;
             }
+            case "haul" when g.IsServer: // "logi haul PART|N": N loose one-part bodies within 6 m of a part taken out of the world (hauled away, as a player would; fix-ups 2's pile)
+            {
+                var hb = rest.Split('|');
+                var (hc, part) = LogiFind(g, hb[0]);
+                var most = hb.Length > 1 && int.TryParse(hb[1], out var hn) ? hn : 99;
+                if (hc == null)
+                {
+                    WsFail($"logi haul: \"{rest}\"");
+                    return;
+                }
+                hc.WorldFrame(hc.Parts[part].Seg, out var hq, out var ht);
+                var near = ht + System.Numerics.Vector3.Transform(hc.Parts[part].Pos, hq);
+                var gone = 0;
+                for (var bi = w.Bodies.Count - 1; bi >= 0 && gone < most; bi--)
+                    if (w.Bodies[bi] is { PartCount: 1 } lb && lb != hc && System.Numerics.Vector3.Distance(lb.WorldCom, near) < 6f)
+                    {
+                        w.Remove(lb);
+                        gone++;
+                    }
+                WsSay($"[logi] haul: {gone} loose bodies taken from near {hc.DefOf(part).Name}#{part}");
+                return;
+            }
             case "mix" when g.IsServer: // "logi mix PART|MATERIAL|N": N units of a material into an Assembler's mixed input (a recipe's second material)
             {
                 var mb = rest.Split('|');

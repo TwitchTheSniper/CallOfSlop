@@ -46,7 +46,7 @@ public static class RouterScreen
             card.State = PanelState.Fault;
             card.Add(0, "STUCK");
             card.Add(1, "Holds ").Add(1, ConstructLogisticsBoard.Names.Piece(m.ShowStuckDef[s]));
-            card.Add(2, ConstructLogistics.ReasonText((LogiReason)m.ShowReason[s]));
+            card.Add(2, m.OffN[s] >= LogiMap.PileMax ? "pile beside it full: take it away" : ConstructLogistics.ReasonText((LogiReason)m.ShowReason[s]));
         }
         else if (p.Out > 0.5f)
         {
