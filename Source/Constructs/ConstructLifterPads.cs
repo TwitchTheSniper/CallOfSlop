@@ -158,7 +158,7 @@ public static partial class ConstructLifters
     private static readonly Quaternion[] ServeRot = new Quaternion[MaxServing];
     private static int[] _padHeld = new int[16], _padReach = new int[16];
     private static StationJob? _padJob;
-    private static int _padTick = int.MinValue;
+    private static int _padTick = int.MinValue, _padScanTick = int.MinValue;
 
     /// <summary>
     /// Server, for a station's orders: pieces of a kind on the pick pads of the arms that serve this station (within reach of its bay,
@@ -168,7 +168,14 @@ public static partial class ConstructLifters
     /// </summary>
     public static int PickPadHolds(ConstructWorld world, Construct sc, int t, ushort def)
     {
-        if (world.PadBodies.Count == 0 || world.LiftBodies.Count == 0 || sc.Parts[t].Station is not { } j)
+        if (sc.Parts[t].Station is not { } j)
+            return 0;
+        if (_padScanTick != world.LiftTick)
+        {
+            _padScanTick = world.LiftTick;
+            Scan(world, server: true); // (bodies whose parts changed only: the stations step before the lifters, and a loaded world's first orders would see no arm and no pad)
+        }
+        if (world.PadBodies.Count == 0 || world.LiftBodies.Count == 0)
             return 0;
         var kind = Array.IndexOf(j.KindDef, def, 0, j.KindN);
         if (kind < 0)
@@ -199,7 +206,11 @@ public static partial class ConstructLifters
             for (var i = 0; i < lb.N; i++)
             {
                 var l = lb.Lifts[i];
-                if (l.PointN == 0 || (c ??= world.Get(lb.Body)) == null || l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { } ld)
+                if ((c ??= world.Get(lb.Body)) == null || l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { } ld)
+                    continue;
+                if (l.Points == null)
+                    FindPoints(world, c, l, ld); // (just loaded or placed: its points now, or the station's first orders miss its pads' pieces)
+                if (l.PointN == 0)
                     continue;
                 var mode = (int)ConstructConfig.Get(c.Parts[l.Part], c.DefOf(l.Part), CfgKey.LiftMode, 0);
                 if (mode is 2 or 3)
@@ -252,7 +263,7 @@ public static partial class ConstructLifters
 
     /// <summary>Can this arm fit from its pick pads now: powered, whole, its Run not held off, not stuck with a piece?</summary>
     private static bool CanWorkNow(ConstructWorld world, Construct c, CLift l) =>
-        !c.Parts[l.Part].Broken && ConstructRecycler.Powered(world, c, l.Part) && !ConstructExtruder.RunHeld(c, l.Part) && l.State != LiftState.Stuck;
+        !c.Parts[l.Part].Broken && ConstructRecycler.Powered(world, c, l.Part) && !ConstructExtruder.RunHeld(c, l.Part) && (l.State != LiftState.Stuck || l.Why == LiftWhy.Holding); // (a hand loaded from a save holds its piece only until its first look: phase 5b)
 
     /// <summary>
     /// Is the part as a new one is: whole, no rounds (a new ammo box or gun is empty), no paint, no text, its settings at their

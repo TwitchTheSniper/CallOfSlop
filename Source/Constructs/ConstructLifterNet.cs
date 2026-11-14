@@ -112,6 +112,29 @@ public static partial class ConstructLifters
         return true;
     }
 
+    /// <summary>
+    /// Server: pieces of a kind on their way to machine <paramref name="dest"/> by a lifter: lying at a pick rack or pad whose lifter puts
+    /// to it, or in a hand bound for it. A chained order counts them as riding (a piece that reached a pick point lost its rider's tag),
+    /// so it doesn't send more while the arm brings them.
+    /// </summary>
+    public static int AtPicks(ConstructWorld world, Construct c, int dest, ushort kind)
+    {
+        if (c.Logi is not { LiftN: > 0 } m)
+            return 0;
+        var n = 0;
+        for (var e = 0; e < m.LiftN; e++)
+        {
+            if (m.Lifts[e].To != dest || m.Lifts[e].From >= c.PartCount || !c.DefOf(m.Lifts[e].From).IsPieceRack)
+                continue;
+            var dup = false;
+            for (var o = 0; o < e && !dup; o++)
+                dup = m.Lifts[o].To == dest && m.Lifts[o].From == m.Lifts[e].From;
+            if (!dup && world.StoreOf(c, m.Lifts[e].From) is { } st)
+                n += ConstructCrafting.Holds(st, kind);
+        }
+        return n + (world.LiftBusy > 0 ? HandsTo(world, c.Id, dest, kind) : 0);
+    }
+
     /// <summary>Has the body a lifter part? (A cheap test before the edges are worked out.)</summary>
     public static bool HasLifter(Construct c)
     {
@@ -185,8 +208,10 @@ public static partial class ConstructLifters
             for (var i = 0; i < lb.N; i++)
             {
                 var l = lb.Lifts[i];
-                if (l.PointN == 0 || (c ??= world.Get(lb.Body)) == null || l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { } ld)
+                if ((c ??= world.Get(lb.Body)) == null || l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { } ld)
                     continue;
+                if (l.Points == null)
+                    FindPoints(world, c, l, ld); // (just loaded or placed)
                 var at = -1;
                 for (var k = 0; k < l.PointN && at < 0; k++)
                     if (l.Points![k].Body == padBody && l.Points[k].Part == pad && l.Points[k].Kind == LiftPointKind.Rack)

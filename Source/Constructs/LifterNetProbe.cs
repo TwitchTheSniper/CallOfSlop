@@ -33,8 +33,10 @@ public static partial class LifterProbe
         return world.Merge(a, plan);
     }
 
-    public static string Net(ConstructWorld world, Vector3 at, string tier)
+    public static string Net(ConstructWorld world, Vector3 at, string args)
     {
+        var feedPad = args.EndsWith("pad", StringComparison.Ordinal); // ("lifter net [TIER] pad": the Router feeds the pad by conveyor too)
+        var tier = feedPad ? args[..^3].Trim() : args;
         var line = Press(world, at, tier);
         if (world.Get(LineArm) is not { } arm || world.Get(LinePress) is not { } pr || world.Get(LineRack) is not { } rk || world.Get(LinePad) is not { } pd)
             return "net: " + line;
@@ -44,9 +46,8 @@ public static partial class LifterProbe
         float G(float x, float z) => World.Map.GroundHeight(x, z);
         // The pick rack is emptied: what the press gets comes by the Router.
         if (world.StoreOf(rk, 0) is { } pst)
-            while (ConstructCrafting.Holds(pst, (ushort)blank.Id) > 0 && ConstructCrafting.TakeOne(world, rk, 0, pst, blank))
-            {
-            }
+            for (var n = 0; n < 8; n++)
+                ConstructCrafting.TakeOne(world, rk, 0, pst, blank);
         var tm = (term.BoundsMin + term.BoundsMax) * 0.5f;
         var tx = at + new Vector3(-tm.X, 0, ld.ReachMax * 0.45f + Half(term).Z - tm.Z);
         var tb = ConstructBuild.PlaceNew(world, term, tx with { Y = G(tx.X, tx.Z) }, 0);
@@ -71,10 +72,24 @@ public static partial class LifterProbe
         int pPress = idx[0], pRack = idx[1], pPad = idx[2], pTerm = idx[3], pRouter = idx[4], pStock = idx[5];
         var k1 = ConstructRoutes.Add(world, arm, RouteType.Conveyor, pStock, Port(arm.DefOf(pStock), true), 255, 0, default, ReadOnlySpan<CRouteNode>.Empty, pRouter, Port(router, false));
         var k2 = ConstructRoutes.Add(world, arm, RouteType.Conveyor, pRouter, Port(router, true), 255, 0, default, ReadOnlySpan<CRouteNode>.Empty, pRack, Port(arm.DefOf(pRack), false));
+        var k3 = -1;
+        if (feedPad)
+        {
+            byte second = 255;
+            var outs = 0;
+            foreach (var np in router.NamedPorts)
+                if (np.Type == RouteType.Conveyor && np.Out && ++outs == 2)
+                    second = np.Byte;
+            k3 = ConstructRoutes.Add(world, arm, RouteType.Conveyor, pRouter, second, 255, 0, default, ReadOnlySpan<CRouteNode>.Empty, pPad, Port(arm.DefOf(pPad), false));
+        }
         arm.Dirty = true;
         arm.Rebuild();
         world.StructureDirty.Add(arm.Id);
         NetBody = arm.Id;
+        if (world.StoreOf(arm, pRack) is { } left && left.ItemCount > 0)
+            line += $" (the pick rack still holds {left.ItemCount})";
+        if (feedPad)
+            line += $"; conveyor {k3} (Router to pad)";
         LinePad = arm.Id; // (the pad is on this body now: "lifter drop" finds it by its first pad)
         return $"net: one body {arm.Id}: arm 0, Press {pPress}, pick rack {pRack}, pad {pPad}, terminal {pTerm}, Router {pRouter}, stock rack {pStock} ({stocked} {blank.Name}); conveyors {k1} (stock to Router), {k2} (Router to pick rack); {line}";
     }

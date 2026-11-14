@@ -134,6 +134,7 @@ public static partial class LifterProbe
     }
 
     public static CostCount TakeIn, PadCount; // server: the pads' take-in (once a second) and a station's pick pad count (2 Hz while building)
+    public static CostCount ScanCost, LookCost, PutCost; // server: the lifter scan (once a second), an idle arm's look for a carry, a carry's put (phase 5b)
 
     public static void Cost(ref CostCount c, long ticks)
     {
