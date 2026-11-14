@@ -1,0 +1,11 @@
+{
+  // The errands' own (docs/story/DUTIES.md "Errands"; Game/GameErrands.cs). An errand teaches one of the works yard's
+  // machines: what it teaches is a Thing named in its file's "fact" ("the Foundry"). All saved with the story.
+  "relations": [
+    { "name": "Taught", "about": "a player and a machine someone showed them how to work (an errand done)" },
+    { "name": "OnErrand", "about": "a player and the machine of the errand under way for them (it starts again after a load)", "exclusive": true }
+  ],
+  "qualities": [
+    { "name": "FirstShift", "about": "a player whose first Ministry duty (the quarry) is done or skipped: the errands wait for it (Game/GameErrands.cs sets it)" }
+  ]
+}

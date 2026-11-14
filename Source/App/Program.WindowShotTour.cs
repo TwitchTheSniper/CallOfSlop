@@ -20,7 +20,7 @@ public static partial class Program
     private static long _wsPerfLast;
     private static readonly List<double> _wsPerfMs = [];
 
-    private static bool WsTourKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "places" or "view" or "perf" or "skip" or "open" or "what" or "pace";
+    private static bool WsTourKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "places" or "view" or "perf" or "skip" or "open" or "what" or "pace" or "errand";
 
     private static void WsTourSettings(string[] args)
     {
@@ -70,6 +70,29 @@ public static partial class Program
             }
             case "pace": // the induction's and the first duty's floor, step by step, with no player (GamePace.cs)
                 g.PaceEstimate(WsSay);
+                return true;
+            case "errand": // "errand ID": host, an errand started as its storylet's hook starts it (GameErrands.cs); "errand": where it stands; "errand at": the eye 2.5 m from its marker
+                if (arg.Equals("at", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!g.ErrandHasTarget || g.Local is not { } em)
+                    {
+                        WsFail("errand at: no marker");
+                        return true;
+                    }
+                    var t = g.ErrandTarget;
+                    var from = t + Vector3.Normalize(new Vector3(em.Eye.X - t.X, 0, em.Eye.Z - t.Z) + new Vector3(1e-4f, 0, 0)) * 2.5f + new Vector3(0, 1.2f, 0);
+                    WsEyeTo(g, em, from);
+                    WsLook(g, from, t);
+                    _wsWait = 3;
+                    return true;
+                }
+                if (arg.Length > 0 && !g.ErrandDevStart(arg))
+                {
+                    WsFail($"errand: no errand \"{arg}\", or not the host");
+                    return true;
+                }
+                WsSay($"[ws] errand: {g.ErrandDevState()}");
+                _wsWait = 30;
                 return true;
             case "skip": // the survival opening skipped, as its key does; "skip induction": the induction too, as its button does
                 g.OpeningSkip();

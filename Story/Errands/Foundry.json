@@ -1,0 +1,43 @@
+{
+  // An errand (docs/story/DUTIES.md "Errands"; Game/GameErrands.cs): Ambrose built hulls once, and shows the new one the
+  // colony's Foundry. Asked by Storylets/Errands.json ("hook": "errand:foundry"). Text is ASCII; {Action} is the player's own key.
+  "format": "call-of-slop-errand/1",
+  "id": "foundry",
+  "title": "Steel for Ambrose",
+  "giver": "Ambrose Thale",
+  "machine": "Foundry",
+  "fact": "the Foundry",
+  "thanks": "Steel. I built hulls out of that, once. Big ones. Keep it: you'll want it before I do.",
+  "gone": "Never mind. Someone's had the Foundry away. They do that.",
+  "steps": [
+    {
+      "id": "walk",
+      "cue": "reach",
+      "spot": "machine",
+      "amount": 7,
+      "title": "The Foundry",
+      "text": "Go to the Foundry in the works yard.",
+      "say": "The Foundry, in the works yard. The big one with two chimneys. Nobody here knows what to put in it."
+    },
+    {
+      "id": "feed",
+      "cue": "feed",
+      "spot": "machine",
+      "title": "Metal and stone",
+      "text": "{Interact} on the Foundry tips in what you carry: once for the metal, once for the stone.",
+      "say": "Two of metal to one of stone. Same as the yards at home. Here, have mine.",
+      "hint": "Aim at the Foundry (the orange marker) and press {Interact}, then again. Each press tips in one thing you carry that it takes. The bins beside it feed it too.",
+      "give": { "metal": 20, "stone": 10 }
+    },
+    {
+      "id": "steel",
+      "cue": "carry",
+      "material": "steel",
+      "spot": "out",
+      "title": "Take the steel",
+      "text": "{Interact} on the last bin takes the steel out.",
+      "say": "Hear that? Give her a few seconds. Then fetch it out of the far bin.",
+      "hint": "Give it a few seconds (if nothing comes, it has lost its power: a cable from the genset with the linking tool, {Streak2}). The steel comes down the chute into the last bin (the orange marker): aim at it and press {Interact}."
+    }
+  ]
+}

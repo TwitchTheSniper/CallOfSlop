@@ -1,0 +1,43 @@
+{
+  // An errand (docs/story/DUTIES.md "Errands"; Game/GameErrands.cs): Hester wants planks and won't say what for (the
+  // break-out, Storylets/Breakout.json, though nobody says so). Asked by Storylets/Errands.json ("hook": "errand:sawmill").
+  "format": "call-of-slop-errand/1",
+  "id": "sawmill",
+  "title": "Planks for Hester",
+  "giver": "Hester Mossop",
+  "machine": "Sawmill",
+  "fact": "the Sawmill",
+  "thanks": "Good. That's enough. For now. You didn't make them.",
+  "gone": "Sawmill's gone. Forget I asked.",
+  "steps": [
+    {
+      "id": "walk",
+      "cue": "reach",
+      "spot": "machine",
+      "amount": 7,
+      "title": "The Sawmill",
+      "text": "Go to the Sawmill in the works yard.",
+      "say": "Sawmill. Works yard. The one with the blade."
+    },
+    {
+      "id": "feed",
+      "cue": "feed",
+      "spot": "machine",
+      "title": "Feed it the wood",
+      "text": "{Interact} on the Sawmill tips in the wood.",
+      "say": "Wood. Don't ask where from.",
+      "hint": "Aim at the Sawmill (the orange marker) and press {Interact}. The first bin beside it feeds it too.",
+      "give": { "wood": 20 }
+    },
+    {
+      "id": "planks",
+      "cue": "carry",
+      "material": "planks",
+      "spot": "out",
+      "title": "Take the planks",
+      "text": "{Interact} on the far bin takes the planks out.",
+      "say": "Two planks a log. Bring them. Don't run.",
+      "hint": "A few seconds (no planks: no power, so a cable from the genset with the linking tool, {Streak2}). The planks come down the chute into the second bin (the orange marker): aim at it and press {Interact}."
+    }
+  ]
+}

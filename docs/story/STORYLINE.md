@@ -87,6 +87,10 @@ Officer, Inspector of Works (whose first inspection is the colony and its warden
 whose keys include a floor that is not on the plans: the council chamber of `frag.silence`. Not built: the ride out
 of the gate and somewhere for the released player to live; the end says so in its `world` lines.
 
+Side errands (Karl, 2026-11-14; `Story/Storylets/Errands.json`, [DUTIES.md](DUTIES.md) "Errands"): after the first shift,
+people in the colony ask for small jobs that teach the works yard's machines one at a time: Ambrose the Foundry, then
+Nettles the Assembler and Hester the Sawmill. Draft words.
+
 The Escapee road can be joined at any point in the colony (Karl, 2026-11-13; `Story/Storylets/Breakout.json`,
 [BREAKOUT.md](BREAKOUT.md)): four convicts working in the gangs, won over slowly, ask the player to leave with them:
 the Ministry transport to the spaceport, a fight there in which some of them die, and a ship off the planet. Their last

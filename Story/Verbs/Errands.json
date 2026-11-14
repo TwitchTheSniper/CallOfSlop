@@ -1,0 +1,8 @@
+{
+  // The errands' event (docs/story/DUTIES.md "Errands"; Game/GameErrands.cs records it when the last step is done).
+  "verbs": [
+    { "name": "Errand", "players": true, "sentence": "{actor} learnt to work {item} for {target}",
+      "about": "a player finished an errand on a works yard machine (item: the machine taught, target: who asked)",
+      "effects": [ "actor Taught item =1", "target Likes actor +8" ] }
+  ]
+}

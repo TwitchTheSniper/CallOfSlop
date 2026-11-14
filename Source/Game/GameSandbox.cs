@@ -102,6 +102,7 @@ public enum CActKind : byte
     ExtruderSection, // u16 body, u16 machine, u8 profile, u16 width, height, wall (cm), u64 mask: the Extruder's picker sets its section at once (protocol 284; ConstructExtruderPick.cs)
     TakeMade, // a part by PartRef (a made part's key): set down in front of the player from their Tab inventory (protocol 299; docs/sandbox/design/inventory-run-time-parts.md phase 2)
     Lifter, // u16 body, u16 part, u8 LiftOrderOp, u8 order id, the kind (PartRef), u8 count, from and to (u16 body, u16 part, u8 kind, u8 bay): a hand order at a lifter's panel (protocol 312; GameSandboxLifter.cs)
+    ErrandDrop, // nothing: drop the errand under way (protocol 314; GameErrands.cs)
 }
 
 /// <summary>
@@ -431,6 +432,7 @@ public sealed partial class Game
         PlayAreaTick(now); // (the tutorial's play areas: out of one, the step waits; GameTutorialBounds.cs)
         QuarryTick(now); // (the first Ministry duty, the quarry: GameQuarry.cs)
         BreakoutTick(now); // (the convicts' break-out: GameBreakout.cs)
+        ErrandTick(now); // (errands on the works yard's machines: GameErrands.cs)
         LabourTick(now); // (the colony's convict labourers: GameLabour.cs)
         DepotTick(now); // (the Orbital Depot's steps: GameDepot.cs)
         ObjectivesTick(now); // (the "what next" goal line: GameObjectives.cs)
@@ -947,6 +949,9 @@ public sealed partial class Game
                 return OpeningSkipAct(p); // the survival opening (GameSandboxOpening.cs)
             case CActKind.QuarrySkip:
                 QuarrySkip(p); // the first Ministry duty (GameQuarry.cs)
+                return null;
+            case CActKind.ErrandDrop:
+                ErrandDrop(p); // an errand on a works yard machine (GameErrands.cs)
                 return null;
             case CActKind.ShellLeave:
                 return ShellLeaveAct(p); // robot shells (GameRobotShell.cs)

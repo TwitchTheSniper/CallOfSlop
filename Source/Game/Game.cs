@@ -2357,6 +2357,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.Breakout when !IsServer:
                 ReadBreakout(ref r); // the convicts' break-out (GameBreakout.cs)
                 break;
+            case (byte)Msg.Errand when !IsServer:
+                ReadErrand(ref r); // an errand on a works yard machine (GameErrands.cs)
+                break;
             case (byte)Msg.Fragments when !IsServer:
                 ReadFragments(ref r); // the old records' fragments and the leads (GameStoryFragments.cs)
                 break;

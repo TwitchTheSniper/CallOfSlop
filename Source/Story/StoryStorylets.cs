@@ -98,6 +98,7 @@ public sealed class StoryletRules
     public const string Format = "call-of-slop-storylets/1";
     public const int MaxStorylets = 500, MaxEnds = 8, MaxNeeds = 4;
     public static readonly string[] Hooks = ["lockdown", "depot", "breakout"]; // what the game knows how to start (Game/GameStoryStorylets.cs)
+    public const string ErrandHook = "errand:"; // and "errand:ID": an errand in Story/Errands (Game/GameErrands.cs; --check-story checks the id)
 
     public StoryletDef[] Storylets = [];
     public StoryletQuality[] Qualities = [];
@@ -470,7 +471,8 @@ public sealed class StoryletRules
     }
 
     private static string HookName(string hook, string where) =>
-        hook.Length == 0 || Array.IndexOf(Hooks, hook) >= 0 ? hook : throw new StoryException($"{where}: \"hook\": \"{hook}\" isn't one the game knows ({string.Join(", ", Hooks)})");
+        hook.Length == 0 || Array.IndexOf(Hooks, hook) >= 0 || hook.StartsWith(ErrandHook, StringComparison.Ordinal) && hook.Length > ErrandHook.Length ? hook
+            : throw new StoryException($"{where}: \"hook\": \"{hook}\" isn't one the game knows ({string.Join(", ", Hooks)}, {ErrandHook}ID)");
 
     internal static int NamedSlot(string name, List<string> named, int castVars)
     {
