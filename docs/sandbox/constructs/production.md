@@ -1627,4 +1627,45 @@ production machine doing real work on the way. Made by `--gen-parts factory_show
 with the Runabout's blueprint, `WorksRunabout.json`, beside it). Notes, the machine list and the numbers:
 `docs/sandbox/design/showcase-new-notes.md`. (The older [Production Showcase](#production-showcase) is a row of separate demos.)
 
-(Section finished at the end of the work.)
+- **Spawn it** from the creative blueprint list (group Production) on flat ground: it is 118 by 32 m. On the Proving Ground the oval's
+  infield holds it: stand at (-30, 40) facing north (yaw 0) and spawn it; it goes down 65 m ahead, its west end at x -93, its east end at
+  x 25, z -12 to -44, clear of the banks. The window tool: `--spawn-at -30,0,40 --spawn-yaw 0`.
+- **Start it.** Press Start on the refinery's console (sign 2, at the west end) and on the orders console (the yellow desk by the yard,
+  "ORDERS: Start runs every maker"). F on the Building Station (sign 7, east end), pick Works Runabout, Start. In creative the Runabout
+  is built in about four minutes: every part it lacks is ordered at once, made on the floor and fitted as it arrives.
+- **The walk-through**, west to east along the front walkway, then back along the back floor:
+  1. **Power**: a Small Genset on two fuel tanks, a battery, the main switch (off: every machine No power) and its charge gauge.
+  2. **Raw stock and the refinery**: two iron ore heaps, copper ore, stone, wood and sand (Storage Volumes, filled in creative, empty in
+     survival) chuted into eight refiners in two rows: Workshop Smelter (ore to metal) and Workshop Foundry (metal and stone to steel;
+     tier 2, so their chutes move 20 a second), Sawmill (wood to planks), Foundry (planks and sand to rubber), Workshop Smelter (copper),
+     Workshop Foundry (bronze), Sawmill (planks to cloth), Smelter (sand to glass). A Recycler at the west end turns a dropped wreck into
+     metal for the steel Foundry. A Number Readout shows the refinery console's line.
+  3. **The yard**: every refined material in a bin (steel in a Storage Volume), a Smart Terminal and an Inventory Beacon on its chutes.
+  4. **Assembly** (back floor, west): one Workshop Assembler makes every catalogue part (seat, Driving Module, gearbox, differential,
+     swing arms, Servo Motors, Steering Pivots, its own Bearings). Its inputs ride in through one Join: Gear Sets from the Gear press,
+     Copper Coils from the Cable press (fed by a copper Extruder), and its own Router's loop.
+  5. **The press hall** (back floor): the blank Extruder makes each press's ordered blank and five Routers send it north into the press
+     that asked: Gear, Tank, Piston (bronze by chute in its kit hopper; its Piston Sets ride into the Cylinder press), Cylinder,
+     Engine (Bearing kits from the Assembler's Router), Bracket. The Runabout's extruded rails and bars come off the same Extruder. Every
+     press's output rides a conveyor (a Large Join where a 1.18 m Differential must pass) into the station's back port.
+  6. **The tool room** (back floor, south): an orders-only Extruder, a Die Lathe set to Bracket Dies, a die stock rack and a Die Rack. Its
+     own console's bill is one bar: Bill, then Send, and it cuts one spare Bracket Die (a Die Lathe takes no work orders).
+  7. **Panels and the cutter** (main floor, row 1): an Extruder with a Die Frame (a 1 m die) makes sheet sized to each panel for the
+     Panel Former (the hood); Router P sends a panel the cutter ordered through a Join into the Laser Cutter (the windscreen frame's
+     opening), the rest south to the station line. A second Panel Former fed glass forms the pane's blank, cut there too.
+  8. **Wheels and the station line** (row 2): the Wheel Former's wheels, the panels and the cut parts meet through Joins at Router S,
+     whose way ahead runs into the press line's last Join and the station, way 2 into a rack that feeds back, way 3 to Router T: the
+     Crafting Terminal (order any part made here) and the Panel Designer (design a panel; the Panel Former forms it).
+  9. **The Building Station** with its 6 x 8 m bay, two Loader Arms fitting from its hold, and east of the bay the wing corner: the
+     Airframe Former's wing grows over a Lay-down Pad and drops on it; a Military Loader Arm fits it from the pad onto the build. A fuel
+     tank on the body's pool is piped into the station's Fluid in. A Medium Text Sign over Router S is the network board.
+- **The Works Runabout** (`WorksRunabout.json`, the Swing Arm Buggy's layout): extruded steel rails and bars, four formed rubber wheels,
+  a pressed one-cylinder engine (cylinder, crank, Small Carburettor, Small Flywheel), a pressed fuel tank, the Assembler's drivetrain,
+  seat and controls, a formed hood, a cut windscreen frame with its cut glass pane, two pressed L Brackets and a formed spoiler. It
+  drives (11 m/s on the drive check) and steers.
+- **Orders-only machines.** A blueprint step may say `"ordersOnly": true`: the machine is built with an empty queue, so it waits for an
+  order and never runs its own settings while its line is on (`BlueprintScript.OrdersOnly`, `ConstructBuild.SetConfig`). Every maker on
+  the orders console is built so.
+- **Measured** (2026-11-14, host, creative, the window tool): Start to Done in under four minutes, 30 of 30 parts and 3 of 3 links; the
+  server tick median 0.14 ms, worst 0.72 ms over the sampled frames while it built (`station measure`); the station's own step worst
+  3.3 ms in one tick (its costing), 0.4 MB over the build. Notes: `docs/sandbox/design/showcase-new-notes.md`.
