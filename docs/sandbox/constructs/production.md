@@ -874,7 +874,7 @@ Code: `Source/Constructs/ConstructConveyor.cs`; drawing in `RouteRender.Conveyor
   rails (the paint), steel rollers every 0.3 m and amber chevrons on the rails pointing the way the pieces go.
 - **Riding.** A cut at the die (the Cut input or Cut every) with a conveyor out of Piece out puts the finished piece on it whole:
   the part leaves the construct and becomes a rider (`CRider`: its def, link, front in metres, health share, paint). Riders move at
-  0.5 m/s, front first, never closer than 10 cm, and the lead one goes into the rack at the end. The machine waits, the piece on its
+  1 m/s (`ConstructConveyor.Speed`; 0.5 until 2026-11-14, when the user found parts took too long: protocol 316), front first, never closer than 10 cm, and the lead one goes into the rack at the end. The machine waits, the piece on its
   die, when the piece is too wide for the link ("conveyor too narrow: 0.10 m, piece needs 0.30 m - aim the linking tool at it: wheel
   or R to widen"; the screen says "Conveyor too narrow"), when there
   is no room at the start ("blocked: its conveyor is full": a full rack backs the pieces up to the machine) or when the link is cut.
@@ -916,7 +916,7 @@ Code: `Source/Constructs/ConstructConveyor.cs`; drawing in `RouteRender.Conveyor
   200 riders on 20 links with 5 splitters, 0.05 ms a step (max 0.15 ms); a client's step 0.003 ms. Racks draw only when they hold
   something (their list is made with the caches).
 
-Proposed (the user's to confirm): the wheel on the linking tool for the size (links have no configure panel); 0.5 m/s and a 10 cm
+Proposed (the user's to confirm): the wheel on the linking tool for the size (links have no configure panel); 1 m/s (was 0.5) and a 10 cm
 gap; junctions as parts rather than branches of a link; three ways at a junction; the rack storing pieces by kind rather than as
 fitted parts, drawing at most 24; F dropping the piece loose by the rack; riders passing through players (not reached: a piece as
 a solid box against a player near it is the next step); a piece longer than its whole link refused.
@@ -1394,8 +1394,8 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
 - **The job** (`CPart.Station`, a `StationJob`; server). Start costs the blueprint in a scratch world, 1.5 ms a tick: its bounds (the fit
   is checked again here and refused with the numbers), each link's length, its kinds. Then, at 2 Hz, each kind the build lacks (need
   less fitted, held and asked) becomes a craft order: linked stock is reserved and fetched first, the rest dealt to the wired consoles'
-  machines. A kind is asked for when a step of it can go on, and a few kinds ahead while the hold is nearly empty, so the hold never
-  fills with parts that can't be fitted yet. What nothing holds or makes is named on the screen with the reason; only what hangs off it waits.
+  machines. Every part the build lacks is asked for at once (2026-11-14, the user: no waiting for one part before the next order starts; four new orders a look), so the machines work side by side; a part that can't be fitted yet waits in the hold, or in a Router's storage while the hold is full. A terminal's or station's ask goes first to a machine with a way to it (a conveyor through Joins and Routers, or a chute), then to any (`ConstructCrafting.StepTerminal`).
+  What nothing holds or makes is named on the screen with the reason; only what hangs off it waits.
 - **Fitting.** The vehicle is an ordinary construct, frozen at its final pose in the bay and `HeldBy` the station: no physics, and every
   edit, grab and seat refuses ("a Building Station is building it"). The station fits one part every `FitSeconds` (2 s) plus 0.02 s a kg,
   10 s at most: the first unfitted step, in the blueprint's order, whose parent step (and the steps its `"also"` names) is in place and
@@ -1424,8 +1424,8 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   its length. **A fit told without building**: `ConstructStation.QuickRefusal` walks the steps' part files (a part longer than the bay,
   or boxes adding up to over one and a half times its volume) before any costing, at Start and in the panel; the costing itself is
   the blueprint's steps only (`StepsOnly`: no finish), 1 ms a tick, the bounds from the parts' boxes (`PartBounds`), so one slice
-  is as long as its longest single step (a freeform weld on a big body rebuilds it). **Orders follow what can be fitted**: a kind is
-  asked for only while a step of it has its parent in place, so the hold holds what the next fits take. **A loose part lying in the
+  is as long as its longest single step (a freeform weld on a big body rebuilds it). **Orders** (until 2026-11-14 a kind was
+  asked for only while a step of it had its parent in place; now every lacking part is asked at once, above). **A loose part lying in the
   bay** (a body of one part: set down, or dropped there with the physics gun) that the build lacks is taken at the next look, fitted
   at once or into the hold: the way to supply a physics-only part, which hands don't carry. **Start** refuses while the last build
   stands in the bay ("the bay isn't clear"). **Power**: the station draws its 150 W while it costs or builds and nothing idle
@@ -1618,3 +1618,13 @@ a step the rules refuse fails there with their reason. It reads the part files: 
   JIT), p99 0.8 to 1.3 ms, 58 MB allocated (both peers), no generation-1 collection; the bill again, warm: worst 4.8 to 6.6 ms, p99
   0.9 to 1.9 ms, no collection. Before the fix the Wheel Former's growing wheel made a convex hull for each 5 cm (see [Wheel Former](#the-wheel-former)):
   ticks of 8 to 83 ms twice a second, 199 MB and a generation-1 collection.
+
+## Factory Showcase
+
+One shipped blueprint, **Factory Showcase** (`Constructs/Blueprints/FactoryShowcase.json`, group Production): a single connected
+factory on one body, raw ore, wood, stone and sand in at the west end and the **Works Runabout** built at the east end, every
+production machine doing real work on the way. Made by `--gen-parts factory_showcase` (`Source/PartKit/Generators/FactoryShowcase.cs`,
+with the Runabout's blueprint, `WorksRunabout.json`, beside it). Notes, the machine list and the numbers:
+`docs/sandbox/design/showcase-new-notes.md`. (The older [Production Showcase](#production-showcase) is a row of separate demos.)
+
+(Section finished at the end of the work.)

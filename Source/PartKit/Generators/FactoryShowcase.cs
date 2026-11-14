@@ -93,6 +93,34 @@ public sealed class FactoryShowcase : IPartGenerator
             Wire(seat, dm);
             Wire(dm, fly);
             Link("pipe", tank, fly, "Fuel out", "Fuel in");
+
+            // The body, welded on: a formed hood over the front, a cut windscreen frame before the seat with its glass pane in the
+            // opening, pressed brackets at the front corners and a formed spoiler over the back axle.
+            var at = (VPart p) => FromRest(Live.Parts[p.Index].Pos);
+            var s = at(seat);
+            var f = at(front);
+            var d = at(diff);
+            Flat(Hood, railL, V3((f.X + at(railR).X) * 0.5f, f.Y + 0.55f, f.Z + 0.35f), up: true);
+            var frame = Flat(Frame, railL, V3((s.X + at(railR).X) * 0.5f, s.Y + 0.75f, s.Z - 0.55f), up: false);
+            Fit(frame, "o0", Pane, "back");
+            Weld("L Bracket", front, V3(f.X - 0.05f, f.Y + 0.2f, f.Z + 0.01f), default, 0, 0, 0); // (10 mm off the bar's faces: no coplanar faces)
+            Weld("L Bracket", front, V3(at(railR).X + 0.05f, f.Y + 0.2f, f.Z + 0.01f), default, 0, 0, 0);
+            Weld("Short Wing Segment", diff, V3(d.X, d.Y + 1.0f, d.Z + 0.3f), default, 0, 90, 0);
+        }
+
+        public const string Hood = "Formed Panel (curve 130x80 c10 r0 t20 steel)";
+        public const string Frame = "Cut Panel (curve 130x70 c0 r0 t20 steel | r65,35,90,40,5)";
+        public const string Pane = "Cut Pane (r90,40,5 t12 glass)";
+
+        private static Vector3 V3(float x, float y, float z) => new(x, y, z);
+
+        /// <summary>A panel welded with its thinnest side up (<paramref name="up"/>) or facing along z, its centre at <paramref name="centre"/>.</summary>
+        private VPart Flat(string part, VPart on, Vector3 centre, bool up)
+        {
+            var size = Def(part).BoundsMax - Def(part).BoundsMin;
+            var thinY = size.Y <= size.X && size.Y <= size.Z; // (else the thin side is z)
+            var pitch = up == thinY ? 0 : 90; // (a quarter turn about x swaps y and z)
+            return Weld(part, on, centre, default, pitch, 0, 0);
         }
     }
 
@@ -111,7 +139,7 @@ public sealed class FactoryShowcase : IPartGenerator
         // Paint by section (look.md): a warm concrete floor, steel-blue walkways, one accent a stage, yellow controls.
         private const string Floor = "#8c8576", Aisle = "#4f6578", Hazard = "#d8a020", Board = "#23272b", Control = "#e0b020";
         private const string Power = "#b5452b", Stock = "#c9a24a", Refining = "#d17a22", Yard = "#9a7b3a", Assembler = "#2f8f8a", PressBlue = "#2f5f8f";
-        private const string Copper = "#b8733a", PanelGreen = "#5d7f3c", CutterRed = "#a8365e", GlassBlue = "#6aa6b8", Wheels = "#8050a8", StationTeal = "#3f8f5a";
+        private const string ToolGrey = "#6f7378", Copper = "#b8733a", PanelGreen = "#5d7f3c", CutterRed = "#a8365e", GlassBlue = "#6aa6b8", Wheels = "#8050a8", StationTeal = "#3f8f5a";
 
         private static readonly Orient Front = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, Vector3.UnitZ); // own +z to the front walkway
         private static readonly Orient Back = new(Vector3.UnitY, Vector3.UnitY, -Vector3.UnitZ, Vector3.UnitZ); // own -z to the front (a refiner's screen)
@@ -153,7 +181,10 @@ public sealed class FactoryShowcase : IPartGenerator
             var ph = PressHall(asm, r);
             var pn = PanelHall(r);
             var st = StationLine(r, asm, ph, pn);
-            var orders = OrdersConsole(pn.Sheet, pn.Former, pn.Glass, pn.Cutter, st.Wheel, asm.A, asm.B, ph.Blank, ph.Gear, ph.Tank, ph.Bracket, ph.Cylinder, ph.Engine, ph.CopperEx, ph.Cable, st.Station);
+            ToolRoom(ph);
+            var hand = HandOrders(st.RouterS);
+            ScrapAndSpares(r);
+            var orders = OrdersConsole(pn.Sheet, pn.Former, pn.Glass, pn.Cutter, st.Wheel, asm.A, asm.B, ph.Blank, ph.Gear, ph.Tank, ph.Piston, ph.Bracket, ph.Cylinder, ph.Engine, ph.CopperEx, ph.Cable, st.Station, hand.Terminal, hand.Designer);
             foreach (var lamp in _lamps)
                 Lamp(lamp);
         }
@@ -213,7 +244,7 @@ public sealed class FactoryShowcase : IPartGenerator
 
         // ---- 2. The refinery ------------------------------------------------------------------------------------------------------
 
-        private sealed record Refined(VPart Steel, VPart Rubber, VPart Cloth, VPart Bronze, VPart Copper, VPart Glass, VPart Console);
+        private sealed record Refined(VPart Steel, VPart Rubber, VPart Cloth, VPart Bronze, VPart Copper, VPart Glass, VPart Console, VPart SteelFoundry);
 
         /// <summary>
         /// Eight refiners in two rows, 8 m apart (x 8 to 36), raw stock heaped beside each: row 1 Smelter (iron ore to metal), Foundry
@@ -230,6 +261,8 @@ public sealed class FactoryShowcase : IPartGenerator
             var rubberF = On("Foundry", 34.25f, Row1, Back, paint: Refining);
             var copperS = On("Workshop Smelter", 10.25f, Row2, Back, paint: Refining);
             var bronzeF = On("Workshop Foundry", 18.25f, Row2, Back, paint: Refining);
+            Config(steelF, ("recipe", RecipeOf(steelF, "steel"))); // (set, not Auto: metal alone in the input would otherwise wait for either fellow)
+            Config(bronzeF, ("recipe", RecipeOf(bronzeF, "bronze")));
             var clothS = On("Sawmill", 26.25f, Row2, Back, paint: Refining);
             var glassS = On("Smelter", 34.25f, Row2, Back, paint: Refining);
 
@@ -272,7 +305,7 @@ public sealed class FactoryShowcase : IPartGenerator
             Sign(14.25f, Posts2, Refining, "Copper ore to copper; copper and metal to bronze");
             Sign(30.25f, Posts2, Refining, "Planks to cloth; sand to glass");
             Sign(41.25f, Posts1, Yard, "3 THE YARD: every refined material, in bins");
-            return new Refined(steel, rubber, cloth, bronze, copper, glass, console);
+            return new Refined(steel, rubber, cloth, bronze, copper, glass, console, steelF);
         }
 
         // ---- 4. Assembly (the back floor's west end) ------------------------------------------------------------------------------
@@ -293,24 +326,35 @@ public sealed class FactoryShowcase : IPartGenerator
             ChuteVia(r.Cloth, a, -13.3f);
             ChuteVia(r.Rubber, a, -7.6f);
             ChuteVia(r.Bronze, b, -13.15f);
-            ChuteVia(r.Copper, b, -13.0f);
-            _steelB = Store(44.25f, -27.75f, 1.8f); // (the press hall's steel: chuted on from the yard's)
+            ChuteVia(r.Bronze, a, -13.45f); // (both make Bearings: the planner asks whichever has a way to the part that needs them)
+            _steelB = Bin(44.25f, -27.75f, Yard); // (the press hall's steel, chuted on from the yard's: a bin, so its chute moves 10 a second and the yard's store isn't emptied into it)
             ChuteVia(r.Steel, _steelB, -7.75f);
             Feed(_steelB, b);
             var rb = On("Conveyor Router", 49.75f, -22.75f, Flow, "-y.0.0", Assembler);
-            Convey(b, "Piece out", rb, "Piece in", Assembler);
-            Convey(rb, "Piece out", a, "Piece in", Assembler);
+            Convey(b, "Piece out", rb, "Piece in", Assembler, Wide);
+            Convey(rb, "Piece out", a, "Piece in", Assembler, Wide);
             var ra = On("Conveyor Router", 55.75f, -17.25f, Flow, "-y.0.0", Assembler);
-            Convey(a, "Piece out", ra, "Piece in", Assembler);
-            Sign(48.75f, -15.25f, Assembler, "4 ASSEMBLY: B makes bearings and servos for A", false);
+            Convey(a, "Piece out", ra, "Piece in", Assembler, Wide);
+            // Each serves the other: B's Router ahead into A, A's Router way 2 round the south side into B.
+            var a2 = PortAt(ra, "Piece out 2");
+            var bi = PortAt(b, "Piece in");
+            Convey(ra, "Piece out 2", b, "Piece in", Assembler, Wide, Along(new[] { V(a2.X, 0, -25.75f), V(bi.X - 1.2f, 0, -25.75f), V(bi.X - 1.2f, 0, bi.Z) }).Select(n => n with { Y = a2.Y }).ToArray());
+            // The presses' trays (Gear Sets, Copper Coils) chute into a parts store; each Assembler takes from it what its recipe needs.
+            // (A Parts Shelf's bins filled with one stroke's 20 coils and blocked both trays: a store packs by volume.)
+            _shelf = Store(49.75f, -26.25f, 1.6f);
+            Feed(_shelf, a);
+            Feed(_shelf, b);
+            Sign(48.75f, -15.25f, Assembler, "4 ASSEMBLY: two Assemblers, each feeds the other", false);
             return new Assembly(a, b, ra, rb);
         }
 
-        private VPart? _steelB;
+        private VPart? _steelB, _shelf;
 
         // ---- 5. The press hall (the back floor) -----------------------------------------------------------------------------------
 
-        private sealed record Presses(VPart Blank, VPart Gear, VPart Tank, VPart Bracket, VPart Cylinder, VPart Engine, VPart Cable, VPart CopperEx, VPart LineOut);
+        private sealed record Presses(VPart Blank, VPart Gear, VPart Tank, VPart Bracket, VPart Cylinder, VPart Engine, VPart Cable, VPart CopperEx, VPart LineOut, VPart Piston);
+
+        private static readonly Vector2 Wide = new(1.0f, 1.0f); // (the Assemblers' conveyors and the press line: a Differential or a gearbox is wider than a narrow conveyor)
 
         /// <summary>
         /// The blank line along the back floor's south side: an Extruder makes each press's ordered blank (pipe, round, hollow, angle) and
@@ -327,54 +371,58 @@ public sealed class FactoryShowcase : IPartGenerator
             var routers = new List<VPart>();
             VPart prev = blank;
             var prevPort = "Piece out";
-            foreach (var x in new[] { 59.75f, 65.75f, 71.75f, 77.75f, 83.75f })
+            foreach (var x in new[] { 59.75f, 65.25f, 70.75f, 76.25f, 81.75f, 87.25f })
             {
                 var rt = On("Conveyor Router", x, lineZ + 0.5f, Flow, "-y.0.0", PressBlue);
                 Convey(prev, prevPort, rt, "Piece in", PressBlue);
                 routers.Add(rt);
                 (prev, prevPort) = (rt, "Piece out");
             }
-            var dies = new[] { "Gear Die", "Tank Die", "Bracket Die", "Cylinder Die", "Engine Die" };
-            var presses = new VPart[5];
-            for (var k = 0; k < 5; k++)
+            var dies = new[] { "Gear Die", "Tank Die", "Piston Die", "Cylinder Die", "Engine Die", null }; // (the Bracket press's die comes from the tool room's lathe)
+            var presses = new VPart[6];
+            for (var k = 0; k < 6; k++)
             {
                 var at = FromRest(Live.Parts[routers[k].Index].Pos);
                 var p = presses[k] = On("Press", at.X + 1.5f, pressZ, Back, "-y.0.0", PressBlue);
-                Onto(p, "dieslot", dies[k], "mount");
+                if (dies[k] is { } die)
+                    Onto(p, "dieslot", die, "mount");
                 Convey(routers[k], "Piece out 3", p, "Piece in", PressBlue);
             }
             // The press line: three Joins in a row along the back floor's north strip, nothing crossing. Assembler A's parts come in
             // from the west, the Cylinder press's and the Engine press's pieces from the south, and last the blank line's way ahead (a
             // chassis bar the station ordered of this Extruder); the line runs on into the station's back port (StationLine).
-            var ja = On("Conveyor Join", 80.75f, -17.25f, Flow, "-y.0.0", PressBlue);
-            Corner(asm.RouterA, "Piece out", ja, "Piece in", Assembler);
+            var ja = On("Conveyor Join", 80.25f, -17.25f, Flow, "-y.0.0", PressBlue);
+            Corner(asm.RouterA, "Piece out", ja, "Piece in", Assembler, Wide);
             Convey(presses[3], "Piece out", ja, "Piece in 2", PressBlue);
-            var jb = On("Conveyor Join", 86.75f, -17.25f, Flow, "-y.0.0", PressBlue);
-            Convey(ja, "Piece out", jb, "Piece in", PressBlue);
+            // The Piston press: a steel round in bay 1, bronze by chute in its kit hopper; its Piston Sets chute into the Cylinder press's hopper.
+            ChuteVia(r.Bronze, presses[2], -23.9f);
+            Link("chute", presses[2], presses[3], null, null, PressBlue);
+            var jb = On("Conveyor Join", 85.75f, -17.25f, Flow, "-y.0.0", PressBlue);
+            Convey(ja, "Piece out", jb, "Piece in", PressBlue, Wide);
             Convey(presses[4], "Piece out", jb, "Piece in 2", PressBlue);
-            var j1 = On("Conveyor Join", 91.25f, -17.25f, Flow, "-y.0.0", PressBlue);
-            Convey(jb, "Piece out", j1, "Piece in", PressBlue);
+            var j1 = On("Conveyor Join", 90.75f, -17.25f, Flow, "-y.0.0", PressBlue);
+            Convey(jb, "Piece out", j1, "Piece in", PressBlue, Wide);
             var lo = PortAt(prev, prevPort);
             var li = PortAt(j1, "Piece in 2");
             Convey(prev, prevPort, j1, "Piece in 2", PressBlue, null, Along(new[] { V(li.X, 0, lo.Z), V(li.X, 0, li.Z - 0.9f) }).Select(n => n with { Y = lo.Y }).ToArray());
             // A blank nobody ordered (the Routers' storage): a Piece Rack off the last Router's way 2, on the floor's south strip.
-            var spare = On("Piece Rack", 86.75f, -30.75f, Flow, "-y.0.0", PressBlue);
+            var spare = On("Piece Rack", 89.25f, -30.75f, Flow, "-y.0.0", PressBlue);
             Convey(prev, "Piece out 2", spare, "Piece in", PressBlue);
             // The Engine press's kit (a Bearing for a flywheel) from Assembler B's Router, way 3.
             ConveyVia(asm.RouterB, "Piece out 3", presses[4], "Piece in 2", Assembler, -24.6f);
             // Trays: the Gear press's Gear Sets to Assembler A; the Tank press's fuel tanks and the Bracket press's brackets on to the station.
-            ChuteVia(presses[0], asm.A, -19.75f);
+            ChuteVia(presses[0], _shelf!, -24.25f);
             _toStation.Add(presses[1]);
-            _toStation.Add(presses[2]);
+            _toStation.Add(presses[5]);
             // Copper: its own Extruder and the Cable press, the coils by chute to Assembler A (a Servo Motor's).
             var copperEx = On("Extruder", 44.25f, -18.25f, Back, paint: Copper);
             ChuteVia(r.Copper, copperEx, -13.45f);
             var cable = On("Press", 44.75f, -21.25f, Back, "-y.0.0", Copper);
             Onto(cable, "dieslot", "Cable Die", "mount");
             Convey(copperEx, "Piece out", cable, "Piece in", Copper);
-            ChuteVia(cable, asm.A, -24.75f);
+            Feed(cable, _shelf!);
             Sign(62.75f, -14.75f, PressBlue, "5 PRESS HALL: blanks in from the south, parts out north", false);
-            return new Presses(blank, presses[0], presses[1], presses[2], presses[3], presses[4], cable, copperEx, j1);
+            return new Presses(blank, presses[0], presses[1], presses[5], presses[3], presses[4], cable, copperEx, j1, presses[2]);
         }
 
         private readonly List<VPart> _toStation = new(); // (machines whose trays chute into the station's Chute in)
@@ -439,7 +487,7 @@ public sealed class FactoryShowcase : IPartGenerator
             Convey(rs, "Piece out", station, "Piece in 2", StationTeal, null, Along(new[] { V(ro.X, 0, ro.Z), V(90.75f, 0, ro.Z), V(90.75f, 0, si.Z) }).Skip(1).Select(n => n with { Y = ro.Y }).ToArray()); // (east along the row, up beside the station into its side)
             var po = PortAt(ph.LineOut, "Piece out");
             var sb = PortAt(station, "Piece in");
-            Convey(ph.LineOut, "Piece out", station, "Piece in", PressBlue, null, V(sb.X, po.Y, po.Z), V(sb.X, po.Y, sb.Z - 2.0f - (po.Y - sb.Y)), V(sb.X, sb.Y, sb.Z - 2.0f)); // (a 45 degree step down to the port's height; the press line: east, then north into the station's back)
+            Convey(ph.LineOut, "Piece out", station, "Piece in", PressBlue, Wide, V(sb.X, po.Y, po.Z), V(sb.X, po.Y, sb.Z - 2.0f - (po.Y - sb.Y)), V(sb.X, sb.Y, sb.Z - 2.0f)); // (a 45 degree step down to the port's height; the press line: east, then north into the station's back)
             foreach (var t in _toStation)
                 ChuteVia(t, station, -14.35f - 0.15f * _toStation.IndexOf(t));
             ChuteVia(r.Copper, station, -14.05f); // (link stock: a unit of copper a metre of wire)
@@ -451,6 +499,73 @@ public sealed class FactoryShowcase : IPartGenerator
             Sign(76.25f, Posts2, StationTeal, "ROUTER: ordered pieces to the station, the rest to the rack");
             Sign(90.25f, Posts1, StationTeal, "7 BUILDING STATION: F, pick Works Runabout, Start");
             return (station, rs, wheel, rack);
+        }
+
+        // ---- 9. The tool room: dies made on the floor ----------------------------------------------------------------------------
+
+        /// <summary>
+        /// The back floor's south strip (x 58 to 72): an Extruder making 0.25 m steel bars on its own settings (no orders: a Die Lathe
+        /// takes none), the Die Lathe set to cut Bracket Dies, a Die Rack its dies chute into, and a chute from the rack to the Bracket
+        /// press, which is built with an empty die slot: its die comes from here.
+        /// </summary>
+        private void ToolRoom(Presses ph)
+        {
+            var bar = On("Extruder", 60.25f, -30.75f, Flow, paint: ToolGrey);
+            Config(bar, ("profile", "Solid bar"), ("width", 0.25), ("height", 0.25), ("cutLength", 0.5));
+            ChuteVia(_steelB!, bar, -31.6f);
+            var lathe = On("Die Lathe", 64.25f, -31.25f, Flow, "-y.0.0", ToolGrey);
+            Config(lathe, ("recipe", LatheRecipe(lathe, "Bracket Die")));
+            Convey(bar, "Piece out", lathe, "Piece in", ToolGrey);
+            var rack = On("Die Rack", 68.75f, -31.25f, Flow, "-y.0.0", ToolGrey);
+            Link("chute", lathe, rack, null, null, ToolGrey);
+            ChuteVia(rack, ph.Bracket, -24.1f);
+            Sign(66.25f, -28.75f, ToolGrey, "TOOL ROOM: the lathe cuts the bracket press's die", false);
+        }
+
+        /// <summary>A Die Lathe's Recipe setting for <paramref name="die"/>: its option's number (0 is None).</summary>
+        private static int LatheRecipe(VPart lathe, string die)
+        {
+            var opts = lathe.Def.Config[lathe.Def.CfgSlot[(int)CfgKey.Recipe]].Options;
+            var k = Array.FindIndex(opts, o => o.StartsWith(die, StringComparison.Ordinal));
+            return k > 0 ? k : throw new VehicleKitException($"a {lathe.Name} cuts no {die} ({string.Join(", ", opts)})");
+        }
+
+        // ---- 10. Scrap in, spares out ------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// The Recycler at the west end (scrap in: a wreck dropped in its mouth becomes metal for the steel Foundry); the Smart Terminal
+        /// and Inventory Beacon on the Parts Shelf's chutes (a player pulls a spare Gear Set or Coil there; the beacon lists the shelf to
+        /// players near it in survival).
+        /// </summary>
+        private void ScrapAndSpares(Refined r)
+        {
+            var rec = On("Recycler", 2.25f, -11.25f, Front, paint: Refining);
+            ChuteVia(rec, r.SteelFoundry, -8.1f);
+            Sign(2.25f, Posts2, Refining, "RECYCLER: drop a wreck in; its metal goes to steel", false);
+            var term = On("Smart Terminal", 52.25f, -28.75f, Front, paint: Assembler);
+            Link("chute", term, _shelf!, "Network", null, Assembler);
+            var beacon = On("Inventory Beacon", 47.75f, -28.75f, Front, paint: Assembler);
+            Link("chute", beacon, _shelf!, null, null, Assembler);
+        }
+
+        // ---- 11. Hand orders: the Crafting Terminal and the Panel Designer -------------------------------------------------------
+
+        /// <summary>
+        /// Router S's way 3 runs north to Router T (main floor, row 1, x 78 to 88): ahead into the Crafting Terminal's tray (order a part:
+        /// it is made on the line and rides here), way 2 into the Panel Designer's (design a panel: the Panel Former forms it). Both are on
+        /// the orders console's wire, so they see every maker.
+        /// </summary>
+        private (VPart Terminal, VPart Designer) HandOrders(VPart rs)
+        {
+            var rt = On("Conveyor Router", 78.25f, -7.25f, Front, "-y.0.0", StationTeal);
+            Convey(rs, "Piece out 3", rt, "Piece in", StationTeal);
+            var term = On("Crafting Terminal", 77.75f, -2.75f, Back, "-y.0.0");
+            Convey(rt, "Piece out", term, "Piece in", StationTeal);
+            var desk = On("Panel Designer", 86.25f, -6.25f, Back, "-y.0.0");
+            Convey(rt, "Piece out 2", desk, "Piece in", PanelGreen);
+            Sign(75.75f, Posts1, StationTeal, "CRAFTING TERMINAL: F, order a part, it rides here");
+            Sign(86.25f, Posts1, PanelGreen, "PANEL DESIGNER: design a panel; it is formed for you");
+            return (term, desk);
         }
 
         // ---- 8. The orders console ----------------------------------------------------------------------------------------------------
@@ -567,6 +682,14 @@ public sealed class FactoryShowcase : IPartGenerator
 
         /// <summary>A Materials Bin (600 units of one material) on the floor at (x, z).</summary>
         private VPart Bin(float x, float z, string paint) => On("Materials Bin", x, z, Front, paint: paint);
+
+        /// <summary>A refiner's Recipe setting for the recipe that makes <paramref name="output"/>: its option's number (0 is Auto).</summary>
+        private static int RecipeOf(VPart refiner, string output)
+        {
+            var opts = refiner.Def.Config[refiner.Def.CfgSlot[(int)CfgKey.Recipe]].Options;
+            var k = Array.FindIndex(opts, o => o.StartsWith(output + " ", StringComparison.Ordinal) || o.EndsWith(" to " + output, StringComparison.Ordinal));
+            return k > 0 ? k : throw new VehicleKitException($"a {refiner.Name} has no recipe making {output} ({string.Join(", ", opts)})");
+        }
 
         private void Feed(VPart from, VPart machine) => Link("chute", from, machine, OutPort(from), InPort(machine), Stock);
 

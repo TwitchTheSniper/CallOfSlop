@@ -525,7 +525,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   CActKind.ErrandDrop at the end of CActKind (no bytes).
     // 315: Msg.Shell carries the chair (u16 construct, u16 seat) after its on byte: every peer draws a shell wearer's body
     //   sitting in the chair (GameRobotShell.cs ShellBodyOf).
-    public const ushort ProtocolVersion = 315;
+    // 316: conveyors run at 1 m/s (ConstructConveyor.Speed, was 0.5): both peers step riders by it, so an older peer would draw them
+    //   at half the speed between messages. No new bytes.
+    public const ushort ProtocolVersion = 316;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

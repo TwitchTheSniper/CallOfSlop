@@ -177,7 +177,7 @@ public sealed partial class ConstructWorld
 public static class ConstructConveyor
 {
     public const int Every = 6; // ticks between steps (10 Hz)
-    public const float Speed = 0.5f; // metres a second a piece rides (proposed)
+    public const float Speed = 1.0f; // metres a second a piece rides (the user, 2026-11-14: twice the first 0.5, "parts just take forever to get places"; both peers step riders by it: protocol 316)
     public const float Gap = 0.1f; // the least room between two pieces
     public const float BedTop = 0.06f; // a piece's underside above the link's line
     public const int MinSizeCm = 10, StepCm = 5;

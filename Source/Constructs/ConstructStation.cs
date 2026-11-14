@@ -373,8 +373,8 @@ public static partial class ConstructStation
                     q.RemoveAt(k);
                     world.CraftChanged(c);
                 }
-        // What can go on now: a kind is asked for when a step of it has its parent in place, so the hold never fills with parts that
-        // can't be fitted yet; a part that came early (by hand, or left over) waits there.
+        // Every lacking part is asked for at once (below); KindReady still names what the build waits on first. A part that came early
+        // (ordered ahead, by hand, or left over) waits in the hold.
         TakeDropped(world, c, t, tray, j);
         if (j.State != StationState.Building)
             return;
@@ -400,7 +400,10 @@ public static partial class ConstructStation
             lacking += lack;
             var d = ConstructParts.Get(def);
             var asked = Asked(c.Parts[t].Craft, def);
-            var want = Math.Clamp(j.KindReady[i] - held, 0, lack);
+            // Every part the build lacks is asked for at once (the user, 2026-11-14: "place as many orders as it can at once, so that you're
+            // not sitting around waiting for a part to be delivered before the next order starts"): the machines work side by side, and a
+            // part that can't be fitted yet waits in the hold, or in the Router's storage while the hold is full, until its parent is in.
+            var want = lack;
             if (want > asked && d != null && placed < OrdersAStep && (c.Parts[t].Craft?.Count ?? 0) < ConstructCrafting.MaxOrders)
             {
                 placed++;
