@@ -21,9 +21,9 @@
     { "blueprint": "Lamp Post", "at": [-11, -9.8] },
     { "blueprint": "Lamp Post", "at": [21, -9.8] },
     { "blueprint": "Lamp Post", "at": [29, -9.8] },
-    // Watchtowers off the yard's back corners.
-    { "blueprint": "Watchtower", "at": [-4, 15] },
-    { "blueprint": "Watchtower", "at": [16, 15] },
+    // Watchtowers off the yard's back corners (the Ministry's own: concrete, BuildingParts.Ministry.cs).
+    { "blueprint": "Ministry Watchtower", "at": [-4, 15] },
+    { "blueprint": "Ministry Watchtower", "at": [16, 15] },
 
     // ---- The site (Game/GameColonySite.cs; docs/sandbox/constructs/buildings.md "The site") --------------------------
     // "elsewhere": a building another file builds, stood here when the colony has its bench (else it looks for level

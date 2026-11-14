@@ -347,7 +347,7 @@
       "socket": "fb7_5",
       "by": "back",
       "text": [
-        "CELL BLOCK A - THERE IS NO CELL BLOCK B"
+        "BLOCK A (NO B)"
       ],
       "paint": "#d8d1b4"
     },
@@ -531,7 +531,7 @@
       "socket": "fb7_5",
       "by": "back",
       "text": [
-        "ROLL CALL 05:00. AND 05:10. AND 05:20."
+        "COUNTS EVERY 10 MIN"
       ],
       "paint": "#d8d1b4"
     },

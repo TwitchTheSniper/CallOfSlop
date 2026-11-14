@@ -102,9 +102,9 @@ public sealed partial class BuildingParts
         bp.Hang("Cast Iron Radiator", sides[3][1], "k0_0", "back"); // (behind the stair's foot)
         bp.Hang("Cast Iron Radiator", sides[1][0], "k8_0", "back");
         bp.Hang("Wall Clock", sides[0][1], "k8_5", "back");
-        Sign(bp, sides[0][0], "k8_5", "CUSTOMS: DECLARE EVERYTHING. THEN DECLARE IT AGAIN");
+        Sign(bp, sides[0][0], "k8_5", "DECLARE IT ALL. TWICE.");
         Warning(bp, sides[2][2], "k8_5", "DEPARTURES: NONE WITHOUT FORM 88");
-        Sign(bp, sides[0][2], "k8_5", "THIS QUEUE IS NOT MOVING. NEITHER ARE YOU");
+        Sign(bp, sides[0][2], "k8_5", "NOT MOVING? GOOD.");
         // The strip lights down each side, each side's switch on its own wall by the front (a wire reaches 8 m).
         Switch(bp, sides[3][0], "k15_5", Strip(bp, sides[3][0], "k8_10"), Strip(bp, sides[3][1], "k0_10"));
         Switch(bp, sides[1][0], "k0_5", Strip(bp, sides[1][0], "k8_10"), Strip(bp, sides[1][1], "k0_10"));

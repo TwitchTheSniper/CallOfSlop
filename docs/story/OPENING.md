@@ -96,7 +96,7 @@ The colony doesn't stand alone: the Ministry of Slop's street is built with it o
 - **By the gate**: the **Colony Gatehouse** (the gate clerk's post, its roof thrown 4 m towards the gate; a Belisha beacon
   and the phone box); **lamp posts** down the street and the stock **Watchtowers** off the yard's back corners.
 - Every building has a battery (a fuse box high on a wall) so its mains lamps are lit, and signs in the Ministry's
-  voice ("ESCAPEES ALSO REPORT HERE", "FORM 27B: NOTICE OF INTENT TO BE ILL").
+  voice ("FLED? REPORT HERE", "BE ILL ON FORM 27B"; a notice board holds three lines of seven letters).
 - **Where**: `Story/Opening/ColonyBuildings.json`: each building's blueprint, where its middle stands in the colony's
   own frame (x along the front, the gate at x 6; negative z out in front of the gate), its turn and how level its ground
   must be. A spot that is taken or too steep moves the building to the nearest clear, level spot within `"slack"` metres

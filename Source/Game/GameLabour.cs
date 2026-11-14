@@ -101,6 +101,7 @@ public sealed partial class Game
             return;
         _lbAt = now;
         LabourDayTick(now);
+        IncidentTick(now); // (now and then something happens in a gang: GameLabourIncidents.cs)
         if (_lbMap != World.Map)
         {
             _lbMap = World.Map;
@@ -145,6 +146,7 @@ public sealed partial class Game
     {
         var script = LabourScript.Current;
         LabourCount = 0;
+        IncidentsClear();
         if (script.Problem.Length == 0 && _lbColony != 0)
             for (var gi = 0; gi < script.Scenes.Length; gi++)
             {
@@ -267,6 +269,7 @@ public sealed partial class Game
         var n = Math.Min((int)r.U8(), LabourScenesMax);
         var count = 0;
         LabourShift = ulong.MaxValue; // (until the host says which are on shift: Msg.LabourDay follows the list)
+        IncidentsClear();
         for (var i = 0; i < n; i++)
         {
             if (!r.Has(19))

@@ -1,0 +1,156 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Roof Searchlight",
+  "description": "A searchlight on a pedestal: in a storm its beam sweeps the ground.",
+  "group": "Building",
+  "section": "Site works",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 90.0,
+  "health": 260,
+  "armour": 6,
+  "material": "steel",
+  "color": "#5b625f",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.125
+      ],
+      "max": [
+        0.375,
+        0.125,
+        0.375
+      ],
+      "color": "#858179"
+    },
+    {
+      "min": [
+        0.075,
+        0.125,
+        0.075
+      ],
+      "max": [
+        0.175,
+        0.695,
+        0.175
+      ]
+    },
+    {
+      "min": [
+        -0.105,
+        0.675,
+        0.077
+      ],
+      "max": [
+        0.355,
+        0.735,
+        0.173
+      ],
+      "detail": true
+    },
+    {
+      "min": [
+        -0.105,
+        0.735,
+        0.075
+      ],
+      "max": [
+        -0.055,
+        1.035,
+        0.175
+      ],
+      "detail": true
+    },
+    {
+      "min": [
+        0.305,
+        0.735,
+        0.075
+      ],
+      "max": [
+        0.355,
+        1.035,
+        0.175
+      ],
+      "detail": true
+    },
+    {
+      "min": [
+        -0.045,
+        0.755,
+        -0.245
+      ],
+      "max": [
+        0.295,
+        1.095,
+        0.435
+      ],
+      "color": "#3e4442"
+    },
+    {
+      "min": [
+        -0.065,
+        0.735,
+        -0.285
+      ],
+      "max": [
+        0.315,
+        1.115,
+        -0.235
+      ],
+      "color": "#2e3331",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.025,
+        0.775,
+        -0.2935
+      ],
+      "max": [
+        0.275,
+        1.075,
+        -0.2775
+      ],
+      "color": "#e9edd6",
+      "detail": true,
+      "glass": true
+    },
+    {
+      "min": [
+        0.015,
+        1.095,
+        -0.025
+      ],
+      "max": [
+        0.235,
+        1.145,
+        0.275
+      ],
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "b00",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "b11",
+      "at": [
+        0.25,
+        -0.125,
+        0.25
+      ],
+      "dir": "-y"
+    }
+  ]
+}
