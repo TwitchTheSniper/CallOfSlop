@@ -757,6 +757,7 @@ public static class ConstructCrafting
     }
 
     private const string RidingToHold = "riding to the hold";
+    private const string LooseHeld = "held, cancel it: "; // (its own prefix: the step keeps this note without making it again)
 
     private static readonly string[] StateWords = ["waiting", "fetching", "queued", "riding", "in tray", "collect", "held"];
 
@@ -840,16 +841,41 @@ public static class ConstructCrafting
     /// (nor a chute into a press) parts its piece off loose at the die (ConstructExtruder.Cut, CutAs), which no tray ever sees, so an order
     /// placed there would wait for ever (leftovers 3: the showcase's Airframe Former's wing). The reason says where it would lie.
     /// </summary>
-    internal static string? LooseRefusal(ConstructWorld world, Construct c, int m)
+    internal static string? LooseRefusal(ConstructWorld world, Construct c, int m) =>
+        DropsLoose(world, c, m) ? $"the {c.DefOf(m).Name} drops it loose, no conveyor to the tray: order it on its panel, collect it there" : null;
+
+    /// <summary>The test of <see cref="LooseRefusal"/>, allocating nothing. A Panel Former or a Laser Cutter is no such machine: its out-bed drop completes a terminal's order (MadeLoose).</summary>
+    private static bool DropsLoose(ConstructWorld world, Construct c, int m)
     {
         var md = c.DefOf(m);
-        if (!md.IsExtruder || ConstructConveyor.Out(c, m) >= 0 || ConstructPress.ChutesToPress(world, c, m))
-            return null;
+        if (!md.IsExtruder || md.IsPanelFormer || md.IsLaserCutter || ConstructConveyor.Out(c, m) >= 0 || ConstructPress.ChutesToPress(world, c, m))
+            return false;
         if (c.Logi is { LiftN: > 0 } lm)
             for (var e = 0; e < lm.LiftN; e++)
                 if (lm.Lifts[e].From == m)
-                    return null; // (an arm lifts it from the die's floor and puts it on: lifters phase 5b)
-        return $"the {md.Name} drops it loose, no conveyor to the tray: order it on its panel, collect it there";
+                    return false; // (an arm lifts it from the die's floor and puts it on: lifters phase 5b)
+        return true;
+    }
+
+    /// <summary>
+    /// A queued order's line at a machine that drops it loose (an order saved before leftovers 3, or a conveyor cut since), or -1: it would wait
+    /// for ever, so it is held with the reason. Looks for its own unstarted line (as Cancel matches it); allocates nothing.
+    /// </summary>
+    private static int LooseMaker(ConstructWorld world, Construct c, CraftNet net, in CraftOrder o)
+    {
+        for (var i = 0; i < net.MachineN; i++)
+        {
+            var m = net.Machines[i];
+            if (c.Parts[m].Orders is not { Bill: false, Count: > 0 } mq || !DropsLoose(world, c, m))
+                continue;
+            for (var j = 0; j < mq.Count; j++)
+            {
+                ref readonly var mo = ref mq.Items[j];
+                if (mo.Chain == 0 && mo.Part == o.What.Part && mo.Name == o.What.Name && (!mo.IsPiece || mo.Key == o.What.Key))
+                    return m;
+            }
+        }
+        return -1;
     }
 
     /// <summary>Is a machine of the order's own kind, so its refusal is the one a player reads: a Press for a pressed part, an Assembler for a catalogue part, else an Extruder or a Former.</summary>
@@ -1260,6 +1286,14 @@ public static class ConstructCrafting
                 state = CraftState.Queued;
                 if (where == NoPart)
                     where = o.State == CraftState.Queued ? o.Where : NoPart;
+                if (o.State == CraftState.Held && o.Note.StartsWith(LooseHeld, StringComparison.Ordinal))
+                    (state, note) = (CraftState.Held, o.Note); // (said once below: kept, no text a step)
+                else if ((o.State != CraftState.Queued || o.Age % 5 == 0) && LooseMaker(world, c, net, o) is var lm and >= 0)
+                {
+                    state = CraftState.Held;
+                    where = (ushort)lm;
+                    note = LooseHeld + LooseRefusal(world, c, lm);
+                }
             }
             if (state == CraftState.Queued && o.Sent == 0 && held == 0 && ConstructLogistics.RidingFor(c, owner, o.Id) is var riders and > 0 && riders >= o.Asked)
             {

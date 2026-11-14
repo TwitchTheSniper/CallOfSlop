@@ -75,3 +75,9 @@ A joined client's view of item 3 and 7; item 8 with a real round (the ray's glas
 
 Shared files touched: `ConstructLogistics.cs` (`RidingFor`), `ConstructWorld.cs` (`GlassBox`), `Program.WindowShotCuts.cs` (the pane aim),
 `SelfTestPressStock.cs`, `docs/MANUAL.md`, `docs/sandbox/constructs/production.md`, the two generated part files.
+
+## After the merge review (three points)
+1. The "Extruder" section's bad file replaced the literal `"maxSection": [6, 6]`, which is 8 now: the text is built from the def's `ExtMaxSection`. "Extruder" alone: 0 failures.
+2. `LooseRefusal` no longer counts a Panel Former or a Laser Cutter (their out-bed drop completes an order, `MadeLoose`). Tried: a formed panel ordered at a terminal linked by a Router to a Panel Former with no Piece out: `made: on the Panel Former's out bed`, 1/1.
+3. A queued order whose own unstarted line sits at a machine that drops it loose (`LooseMaker`, every fifth step; an order saved before this) is held, `held, cancel it: the Airframe Former drops it loose ...`. Read, not tried: no old save at hand (a cut out conveyor takes the machine off the terminal's network, another case).
+`--gen-parts all --check`: no change.
