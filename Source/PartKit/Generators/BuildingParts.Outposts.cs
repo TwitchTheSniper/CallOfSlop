@@ -65,8 +65,8 @@ public sealed partial class BuildingParts
         Lid(bp, 16, 0, 16, 16, Slab1);
         Door(bp, rc[0]);
         Porch(bp, rc[0], "CHECKPOINT FOUR");
-        Sign(bp, rc[1], "fb7_5", "HALT. PAPERS READY. NO PAPERS, NO PASSAGE");
-        Sign(bp, rc[3], "fa7_5", "LOST YOUR PAPERS? APPLY IN PERSON, WITH PAPERS");
+        Sign(bp, rc[1], "fb7_5", "HALT. PAPERS READY.");
+        Sign(bp, rc[3], "fa7_5", "NO PAPERS NO WAY");
         Outside(bp, rc[3], "fa0_10");
         bp.Put("Computer", [5.5, 0.375, 2.0], RY180); // the clerk's terminal, facing the road
         bp.Hang("Cast Iron Radiator", rc[2], "ka7_0", "back");

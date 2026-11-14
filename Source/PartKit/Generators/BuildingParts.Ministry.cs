@@ -233,7 +233,7 @@ public sealed partial class BuildingParts
         Door(bp, doorWall);
         Piers(bp, ButtressPart, (west, "f0_5"), (west, "f8_5"), (east, "f0_5"), (east, "f8_5"));
         NameBoard(bp, uFront, "f8_5", "BLOCK 2 - MINISTRY RECORDS");
-        Notice(bp, rc[0], "fa7_5", "QUEUE HERE. QUEUE QUIETLY. QUEUE.");
+        Notice(bp, rc[0], "fa7_5", "QUEUE HERE QUIETLY");
         Outside(bp, doorWall, "f0_10");
         Outside(bp, doorWall, "f7_10");
         // The counter: three lengths down the hall from the front, their closed side to the public (east).
@@ -247,7 +247,7 @@ public sealed partial class BuildingParts
         bp.Hang("Waiting Bench 2 m", east, "k8_0", "wall");
         bp.Hang("Wall Clock", east, "k8_5", "back");
         bp.Hang("Cast Iron Radiator", rc[1], "ka7_0", "back");
-        Notice(bp, east, "k0_5", "FORMS ARE AVAILABLE ON REQUEST. REQUESTS ON FORM 1.");
+        Notice(bp, east, "k0_5", "FORM 1 FOR FORMS");
         // The clerks' side: the filing down the back wall, the teleprinter by the stair, a desk and its lamp.
         bp.Hang("Teleprinter", back, "k15_0", "wall");
         bp.Hang("Filing Cabinet", rc[3], "ka7_0", "wall");
@@ -322,7 +322,7 @@ public sealed partial class BuildingParts
         bp.Put("Tea Urn", OnPad(0, 2, 1.875, 2.0), RY180); // (in the kitchen, at the end of the range)
         foreach (var x in new[] { 4.0, 6.0 })
             Look(bp, bp.Put("Galley Stove", [x, 0.375, 10.0], RY180), MinSlate);
-        Sign(bp, servery, "k8_10", "GRUEL 12:00 TO 12:05");
+        Sign(bp, servery, "k8_10", "GRUEL LASTS 5 MINUTES");
         Sign(bp, west, "k8_5", "NO SECONDS");
         bp.Hang("Cast Iron Radiator", west, "k0_0", "back");
         bp.Hang("Cast Iron Radiator", east, "k8_0", "back");
@@ -352,7 +352,7 @@ public sealed partial class BuildingParts
         Steps(bp, 0, 0);
         Piers(bp, ButtressPart, (east, "f0_5"), (east, "f8_5"), (east, "f15_5"));
         Piers(bp, FinPart, (west, "f0_5"), (west, "f8_5"));
-        Notice(bp, west, "k15_5", "FORM 27B: NOTICE OF INTENT TO BE ILL");
+        Notice(bp, west, "k15_5", "BE ILL ON FORM 27B");
         Warning(bp, rc[1], "kb7_5", "NO MALINGERING");
         Look(bp, bp.Put("Medical Station", OnPad(0, 0, 2.75, 2.75), R0), MinWhite); // (triage: by the door, its foot to the ward)
         foreach (var sock in new[] { "k8_0", "k0_0" }) // (the ward: z 3 to 7 m, under the ribbon)
@@ -392,7 +392,7 @@ public sealed partial class BuildingParts
         var ctr2 = bp.Hang("Service Counter 2 m", ctr, "+x", "-x");
         bp.Hang("Service Counter 1.5 m", ctr2, "+x", "-x"); // (the storekeeper's way round: 1.4 m at the east end)
         bp.Hang("Teapot", ctr, "top", "base");
-        Notice(bp, rc[0], "ka7_5", "ALL ISSUES ON FORM R-12, IN TRIPLICATE");
+        Notice(bp, rc[0], "ka7_5", "ISSUES: FORM R-12");
         Warning(bp, rc[1], "ka7_5", "STAFF ONLY");
         // The store: shelving against the back wall, the files on the west wall, the clock between the shelves.
         foreach (var sock in new[] { "k0_0", "k15_0" })
@@ -419,8 +419,8 @@ public sealed partial class BuildingParts
         Lid(bp, -16, 0, 32, 16, Slab1);
         Door(bp, rc[0]);
         Steps(bp, 0, -16);
-        Sign(bp, rc[1], "fb7_5", "PENAL COLONY 7 - ALL VISITORS REPORT HERE");
-        Sign(bp, rc[3], "fa7_5", "ESCAPEES ALSO REPORT HERE");
+        Sign(bp, rc[1], "fb7_5", "GUESTS REPORT HERE");
+        Sign(bp, rc[3], "fa7_5", "FLED? REPORT HERE");
         Outside(bp, rc[0], "fa0_10");
         Outside(bp, rc[3], "fa0_10");
         bp.Put("Computer", [1.5, 0.375, 2.0], RY180);
@@ -461,7 +461,7 @@ public sealed partial class BuildingParts
         Roof(bp, 8, 24, 16, 16, Slab1 + WallH);
         Lid(bp, 8, 24, 16, 16, Slab1 + WallH);
         Door(bp, cells[0], "Steel Flush Door 1.5x2.25 m", MinSlate);
-        Sign(bp, cellsUp[1], "fb7_5", "CELL BLOCK A - THERE IS NO CELL BLOCK B");
+        Sign(bp, cellsUp[1], "fb7_5", "BLOCK A (NO B)");
         Switch(bp, cells[1], "fb7_5", Strip(bp, cellsUp[3], "ka7_0")); // (the switch is outside: lights out is the guard's)
         // The warden's office and the muster's roof.
         var office = RoomCorners(bp, "Concrete", 24, G, 8, 16, 16, door: 1, window: 0);
@@ -472,7 +472,7 @@ public sealed partial class BuildingParts
         Concrete(bp, [bp.Put("Concrete Fascia 4 m", Cell(39, Slab1, 25), RY180), bp.Put("Concrete Fascia Corner", Cell(41, Slab1, 25), RY180)], MinWeathered);
         Door(bp, office[1]);
         Porch(bp, office[1], "WARDEN");
-        Sign(bp, office[0], "fb7_5", "ROLL CALL 05:00. AND 05:10. AND 05:20.");
+        Sign(bp, office[0], "fb7_5", "COUNTS EVERY 10 MIN");
         Outside(bp, office[0], "fb0_10");
         Outside(bp, office[3], "fa7_10");
         bp.Put("Computer", [7.75, 0.375, 4.0], RY90); // the warden's desk, facing his door
@@ -530,7 +530,7 @@ public sealed partial class BuildingParts
         bp.Hang("Cast Iron Radiator", rc[0], "ka7_0", "back");
         Look(bp, bp.Hang("Locker", west, "k0_0", "wall"), MinGreen, "worn paint");
         bp.Hang("Wall Clock", east, "k0_5", "back");
-        Notice(bp, west, "k8_5", "KIT CLEAN. BOOTS CLEAN. CONSCIENCE OPTIONAL.");
+        Notice(bp, west, "k8_5", "KIT AND BOOTS CLEAN");
         Switch(bp, rc[1], "kb7_5", Strip(bp, east, "k8_10"));
         Look(bp, bp.Hang("Battery", west, "k15_10", "-z"), MinSlate);
         // The dormitory: two iron beds down the west wall and one on the east in the front half, a locker on the front wall,

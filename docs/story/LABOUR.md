@@ -57,6 +57,33 @@ always somewhere; a post's gang that is off shift has no place, `LabourSceneOf`)
   seconds), and `gang NAME SIDE,UP,OUT` puts the eye beside a gang looking at it:
   `--window-shot OUT.png --survival --calm --map Glacier --do "key Jump; wait 40; period Dinner; gang Dinner, first table 0.3,0.6,2.2; wait 5"`.
 
+## Incidents
+
+Now and then something happens in a gang in front of you (Karl, 2026-11-14: make the colony interesting). Shown, not
+told: the gang's place stands still while it plays (a walking file halts, a queue stops shuffling), the others turn
+their heads, and the guard says one thing to those within 22 m, then a second.
+
+- **Collapse** (21 s): one inmate goes to their knees and sits slumped in the snow, rocking; the guard walks over and
+  stands over them pointing ("On your feet."); they get up and the gang goes on. Roll call, queues, standing, shovels,
+  picks, hammers and the march.
+- **Scuffle** (17 s): two side by side turn and shove each other; the guard comes between them, and they stand with
+  hands on heads until let go. Roll call, queues, standing and huddles (two or more inmates).
+- **Search** (17 s): the guard walks up, pats one down (arms out), holds something up to the light, pockets it.
+  Roll call, queues, standing, huddles and the march.
+- **When:** the host looks every 2 s; once 75 to 140 s have passed since the last (60 s after the colony stands), it
+  picks for one player the nearest gang within 24 m in front of them (dot 0.55) that is on shift, has a guard, has no
+  story person working in it and isn't already in one. Never during the alarm (the break-out) or in the opening's
+  scenes.
+- **The guards' words** are `Story/Labour/Incidents.json` (`call-of-slop-incidents/1`): per kind a "first" list and a
+  "then" list, one line picked by the incident's tick, 1 to 100 ASCII characters. The speaker is "Sergeant" at the roll
+  call, "Foreman" for a foreman's gang, else "Officer". A bad file is refused with a `[labour]` line and there are no
+  incidents.
+- **Wire:** one `Msg.LabourIncident` (u8 scene, u8 kind, u8 slot, u32 the tick it began) to everyone; every PC poses
+  from it (Render/LabourRender.cs `IncidentPlace`, `IncidentPose`). A joiner during one sees the gang as normal. Nothing
+  saved.
+- **Trying it:** the window tool's `incident GANG KIND` starts one now:
+  `--do "skip induction; skip duty; period Morning count; wait 200; incident Roll call collapse; wait 300; gang Roll call 0.5,4.5,2.5; wait 2; shot"`.
+
 ## How it works
 
 They are pictures, like the stand-in craft: no AI, no bot, no physics, no collision, nothing saved, no hit boxes (a shot
@@ -94,9 +121,11 @@ at a stranger, the shift ends) shows the body again, and the gang is one short u
 
 Karl wants to keep the game's thousands of frames a second.
 
-- **Server and network:** no work per tick (one look every 2 s at the colony's and the quarry's construct ids and the
-  day's period) and one message of about 800 bytes when the colony stands and to each joiner; then 10 bytes at each
-  change of period.
+- **Server and network:** no work per tick (one look every 2 s at the colony's and the quarry's construct ids, the
+  day's period and, once a minute or two, the gangs in front of each player for an incident) and one message of about
+  800 bytes when the colony stands and to each joiner; then 10 bytes at each change of period and 8 at an incident.
+- **Incidents:** the three to five figures in one are posed every frame within 32 m while it plays (17 to 21 s); the
+  rest of the gang as before.
 - **Drawing:** all in one instanced batch. Within 13 m a full body (about 45 boxes: the players' own torso, head, legs,
   mittened arms and the tool), to 32 m about 19, to 110 m seven or eight, past that or off screen nothing. Within 9 m a
   figure is posed every frame; further off its boxes are kept and drawn again, and it is posed 45, 30 or 15 times a

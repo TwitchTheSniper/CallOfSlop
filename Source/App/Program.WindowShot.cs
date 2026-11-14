@@ -12,7 +12,7 @@ namespace CallOfSlop;
 /// parts menu's own call (CActKind.Blueprint), flies the player (noclip) to the camera, runs a short script of actions through the real input
 /// paths, waits <c>--frames</c> frames and saves the frame (with <c>--every N</c> a numbered series over those frames), prints the paths and quits.
 /// Exit code: 0, or 1 when the window, the world or an action failed (the reason is printed).
-/// Actions (<see cref="WsActions"/>): aim PART[#n], near PART[#n] [m], use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, gang NAME SIDE,UP,OUT, period NAME, panel PART[#n], shot [NAME], deposit [TIER], fill PART[#n] N MATERIAL, link FROM[#n] > TO[#m].
+/// Actions (<see cref="WsActions"/>): aim PART[#n], near PART[#n] [m], use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, gang NAME SIDE,UP,OUT, period NAME, incident GANG KIND, panel PART[#n], shot [NAME], deposit [TIER], fill PART[#n] N MATERIAL, link FROM[#n] > TO[#m].
 /// </summary>
 public static unsafe partial class Program
 {
@@ -115,7 +115,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "waitnear" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" || WsGhostKnown(action) || WsTourKnown(action) || WsTalkKnown(action) || WsPlayKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "waitnear" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" or "incident" || WsGhostKnown(action) || WsTourKnown(action) || WsTalkKnown(action) || WsPlayKnown(action);
 
     private static void WsSay(string s)
     {
@@ -567,6 +567,13 @@ public static unsafe partial class Program
                 WsEyeTo(g, me, at + right * v[0] + up * v[1] + gf * v[2]);
                 WsLook(g, me.Eye, at);
                 _wsWait = 3;
+                return;
+            }
+            case "incident": // "incident GANG KIND": that incident begins now in that gang (GameLabourIncidents.cs)
+            {
+                var cut = arg.LastIndexOf(' ');
+                if ((cut > 0 ? g.IncidentStartNamed(arg[..cut], arg[(cut + 1)..]) : "incident GANG KIND") is { } why)
+                    WsFail(why);
                 return;
             }
             case "period": // "period NAME": the colony's day jumps to that period (GameLabourDay.cs)
