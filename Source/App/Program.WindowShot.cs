@@ -210,7 +210,7 @@ public static unsafe partial class Program
                                 index = k;
                         if (index < 0)
                         {
-                            WsFail($"no blueprint \"{_wsBlueprint}\"");
+                            WsFail($"no blueprint \"{_wsBlueprint}\"{string.Concat(ConstructBuild.RefusedBlueprints.Select(r => $"; refused: {r}"))}"); // (a scratch blueprint refused at load says why)
                             return;
                         }
                         if (_wsSpawnAt is { } sp)

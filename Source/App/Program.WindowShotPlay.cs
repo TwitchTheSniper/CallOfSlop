@@ -138,7 +138,7 @@ public static partial class Program
                 var d = c.DefOf(part);
                 ref var p = ref c.Parts[part];
                 var (mat, amount) = RecyclingTable.Current.YieldOf(p);
-                WsSay(string.Create(ci, $"partinfo: {d.Name}{(d.RuntimeMade ? $" [{d.ExKey}]" : "")} (body {c.Id} part {part}): mass {c.PartMass(part):0.##} kg (def {d.Mass:0.##}), health {p.Health:0.#} of {d.Health:0.#}, armour {d.Armour:0.#}{(p.Broken ? ", wrecked" : "")}; recycles to {amount} {RecyclingTable.Current.NameOf(mat)}; cost cap {PressTable.Current.CostCapOf(d):0.##} kg; recipe {AssemblingTable.Current.Of(d.Id)?.Batch ?? "none"}; body {c.PartCount} parts, {c.Mass:0} kg"));
+                WsSay(string.Create(ci, $"partinfo: {d.Name}{(d.RuntimeMade ? " (made)" : "")} (body {c.Id} part {part}): mass {c.PartMass(part):0.##} kg (def {d.Mass:0.##}), health {p.Health:0.#} of {d.Health:0.#}, armour {d.Armour:0.#}{(p.Broken ? ", wrecked" : "")}; recycles to {amount} {RecyclingTable.Current.NameOf(mat)}; cost cap {PressTable.Current.CostCapOf(d):0.##} kg; recipe {AssemblingTable.Current.Of(d.Id)?.Batch ?? "none"}; body {c.PartCount} parts, {c.Mass:0} kg"));
                 if (c.ModEngines is { } mes)
                     for (var k = 0; k < c.ModCount; k++)
                     {
@@ -166,16 +166,14 @@ public static partial class Program
         var inv = g.SandboxInventory(me.Id);
         switch (w[0].ToLowerInvariant())
         {
+            case "copy" or "paste" when hands.Hand(me.Id).Tool != ConstructTool.Selector && !_wsClipToolAsked:
+                g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Selector); // (the tool wheel's pick: the selector, which both need)
+                _wsClipToolAsked = true;
+                _wsQueue.EnqueueFront($"clip {arg}");
+                _wsWait = 10;
+                return;
             case "copy":
             {
-                if (hands.Hand(me.Id).Tool != ConstructTool.Selector && !_wsClipToolAsked)
-                {
-                    g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Selector); // (the tool wheel's pick)
-                    _wsClipToolAsked = true;
-                    _wsQueue.EnqueueFront($"clip {arg}");
-                    _wsWait = 10;
-                    return;
-                }
                 _wsClipToolAsked = false;
                 var range = rest.LastIndexOf(' ') is var sp and > 0 && rest[(sp + 1)..].Split('-') is [var a, var b] && int.TryParse(a, out var from) && int.TryParse(b, out var to) ? (from, to) : (0, int.MaxValue);
                 var spec = range.Item2 != int.MaxValue ? rest[..rest.LastIndexOf(' ')] : rest;
@@ -196,10 +194,12 @@ public static partial class Program
             }
             case "paste":
             {
+                _wsClipToolAsked = false;
                 var bits = rest.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 var dist = bits.Length > 0 && float.TryParse(bits[0], System.Globalization.CultureInfo.InvariantCulture, out var dd) ? dd : 4f;
                 var upBy = bits.Length > 1 && float.TryParse(bits[1], System.Globalization.CultureInfo.InvariantCulture, out var uu) ? uu : 1f;
-                var fwd = new Vector3(MathF.Sin(g.LookYaw), 0, -MathF.Cos(g.LookYaw));
+                var yaw = g.LookYaw + (bits.Length > 2 && float.TryParse(bits[2], System.Globalization.CultureInfo.InvariantCulture, out var turn) ? turn * MathF.PI / 180 : 0); // (degrees right of the look)
+                var fwd = new Vector3(MathF.Sin(yaw), 0, -MathF.Cos(yaw));
                 var spot = me.Position + fwd * dist;
                 spot.Y = World.Map.GroundHeight(spot.X, spot.Z) + upBy;
                 _wsClipParts = new int[inv.Parts.Length];
