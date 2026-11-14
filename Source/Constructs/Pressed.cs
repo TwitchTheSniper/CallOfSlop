@@ -371,7 +371,8 @@ public static class Pressed
     /// An engine piece's scale and stroke from its blank (sized-parts design 6.1, 6.3). The scale runs through the pattern's knots (its
     /// presets: their across against their class's scale) by a straight line in log-log, the end segment past the ends, so it rises with
     /// across and at a preset is that part's own. A cylinder's stroke ratio is its length over its across against its nearest preset's, three
-    /// figures, held to 0.6 to 1.6; 1 at a preset's proportions. Nothing on a pattern without knots or a part that isn't an engine piece.
+    /// figures, held to 0.6 to 1.6 (the crank's throw: a blank longer than that is more metal and mass but no more stroke); 1 at a preset's proportions; its kW is times it
+    /// (<see cref="EngineRules.CylinderKw"/>). Nothing on a pattern without knots or a part that isn't an engine piece.
     /// </summary>
     public const float MinStroke = 0.6f, MaxStroke = 1.6f; // a cylinder's stroke ratio (design 6.3)
 
@@ -406,7 +407,7 @@ public static class Pressed
     /// A cylinder's scale by its bore (bored cylinders, 2026-11-14: the user, "power has become more of a function of cylinder size"): its
     /// across's scale (as every engine piece's, so at its plain bore it is exactly what it was) times its bore over the plain bore for its
     /// across (<see cref="PlainBore"/>). A thinner wall than plain is a wider bore and more power by the same law as a wider cylinder; a
-    /// thicker one, less. Stroke stays the revs' (answer 5: it trades revs for torque at the same power).
+    /// thicker one, less. Stroke multiplies the power after it (stroke power, 2026-11-14: <see cref="EngineRules.CylinderKw"/>) and divides the revs.
     /// </summary>
     public static float BoreScale(PressPattern p, in ExtrusionKey k, EngineRules rules)
     {
@@ -1180,9 +1181,9 @@ public static class Pressed
         }
         if (made.Piece != EnginePiece.None && p.Knots.Length > 0)
         {
-            // The engine piece's numbers (sized-parts design 6.3): a cylinder's kW at its bore, the revs of a crank of its scale over its stroke.
+            // The engine piece's numbers (sized-parts design 6.3, stroke power 2026-11-14): a cylinder's kW by its bore and stroke, the revs of a crank of its scale over its stroke.
             var rules = EngineRules.Current;
-            rules.At(rules.ScaleOf(made), out var kw, out _, out _, out _);
+            var kw = made.Piece == EnginePiece.Cylinder ? rules.CylinderKw(made) : rules.KwAt(rules.ScaleOf(made)); // (a cylinder: by its bore and stroke, its displacement)
             rules.At(made.Piece == EnginePiece.Cylinder ? EngineScale(p, k, rules) : rules.ScaleOf(made), out _, out var idle, out var peak, out var max); // (a cylinder: its kW at its bore, its revs on a crank of its across)
             var r = made.PieceStroke > 0 ? made.PieceStroke : 1f;
             Console.WriteLine(FormattableString.Invariant($"[press] engine {made.Piece.ToString().ToLowerInvariant()}: scale {rules.ScaleOf(made):0.###}{(made.Piece == EnginePiece.Cylinder ? FormattableString.Invariant($" by its bore {BoreOf(k):0.#} cm") : "")} (nearest {ConstructEngine.SizeNames[made.PieceSize]}), like {p.For(k).Like.Name}; ")

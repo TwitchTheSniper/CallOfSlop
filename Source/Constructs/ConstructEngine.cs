@@ -92,6 +92,35 @@ public sealed class EngineRules
 
     /// <summary>A piece's scale (design 6.1): its own (a pressed piece's, from its blank) or its class's row.</summary>
     public float ScaleOf(ConstructPartDef d) => d.PieceScale > 0 ? d.PieceScale : Scale[Math.Min(d.PieceSize, (byte)(Scale.Length - 1))];
+
+    /// <summary>A cylinder's stroke ratio (design 6.3): a pressed one's from its blank (0.6 to 1.6), 1 on a file cylinder.</summary>
+    public static float StrokeOf(ConstructPartDef d) => d.PieceStroke > 0 ? d.PieceStroke : 1f;
+
+    /// <summary>
+    /// A cylinder's kW by its displacement (stroke power, the user 2026-11-14: "stroke adds power too"): its bore's kW (<see cref="KwAt"/> of its scale, so
+    /// about bore squared, main's rule) times its stroke ratio, so power goes with bore squared times stroke. At the plain stroke (1, every file
+    /// cylinder and every preset's proportions) exactly what it was. Its tier multiplier (<c>PiecePower</c>) is the caller's.
+    /// </summary>
+    public float CylinderKw(ConstructPartDef d) => KwAt(ScaleOf(d)) * StrokeOf(d);
+
+    /// <summary>The scale whose <see cref="KwAt"/> is <paramref name="kw"/> (the inverse, by the same lines in log-log): the size of fuel system or booster that feeds a cylinder of this power whole.</summary>
+    public float ScaleForKw(float kw)
+    {
+        for (var k = 0; k < Scale.Length; k++)
+            if (kw == Kw[k])
+                return Scale[k];
+        var i = 0;
+        while (i < Scale.Length - 2 && kw > Kw[i + 1])
+            i++;
+        var t = (MathF.Log(MathF.Max(kw, 1e-3f)) - MathF.Log(Kw[i])) / (MathF.Log(Kw[i + 1]) - MathF.Log(Kw[i]));
+        return MathF.Exp(MathF.Log(Scale[i]) + t * (MathF.Log(Scale[i + 1]) - MathF.Log(Scale[i])));
+    }
+
+    /// <summary>
+    /// An engine whose crank is this scale and whose cylinders have this stroke needs a starter: its displacement's scale, the crank's times the cube
+    /// root of the stroke (a long stroke is more to turn over), reaches <see cref="StarterFrom"/>. At stroke 1 it is <see cref="StarterAt(float)"/>.
+    /// </summary>
+    public bool StarterAt(float scale, float stroke) => StarterAt(stroke == 1f ? scale : scale * MathF.Cbrt(stroke));
     public string Problem = ""; // why the file was refused ("" when it loaded; the defaults are used otherwise)
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "ModularEngine.json");
@@ -194,7 +223,7 @@ public sealed class ModEngine
     public int Output = -1; // the flywheel
     public byte Size; // the size class nearest the crank's scale (the kit's words, the sound bank, the drawn crank)
     public float Scale = 1f; // the crank's: its largest section's (sized-parts design 6.1); it sets the revs and whether it needs a starter
-    public float Stroke = 1f; // the cylinders' stroke ratio, their mean weighted by kW (design 6.3): rpm is the crank's over it, so a long stroke pulls from low revs at the same power
+    public float Stroke = 1f; // the cylinders' stroke ratio, their mean weighted by kW (design 6.3): rpm is the crank's over it; each cylinder's kW is already times its own (stroke power), so a long stroke gives more power at lower revs, torque by its square
     private float _strokeKw, _kwForStroke;
     public int Starved; // the first bank (1 up) whose fuel system or booster is small for its cylinders, or 0 (design 6.4)
     public float StarvedShare; // what that bank's fuel system feeds (0 to 1), or its booster gives of its boost when the feed is whole
@@ -387,7 +416,7 @@ public static class ConstructEngine
             if (be < 0)
                 continue;
             bank[b] = (sbyte)be;
-            bankKw[er * MaxBanks + be] = MathF.Max(bankKw[er * MaxBanks + be], rules.KwAt(rules.ScaleOf(pb))); // (the bank's scale: its largest cylinder's bore)
+            bankKw[er * MaxBanks + be] = MathF.Max(bankKw[er * MaxBanks + be], rules.CylinderKw(pb)); // (the bank's kW: its largest cylinder's, by its bore and stroke)
             c.EngineOf[b] = c.EngineOf[a]; // (a wrecked cylinder stays part of the engine: its piston stands still)
             c.EngineSlot[b] = (byte)Math.Min(255, e.Cylinders);
             e.Cylinders++;
@@ -436,9 +465,9 @@ public static class ConstructEngine
                 e.Misfiring++;
             if (fuelMul[at] <= 0)
                 continue;
-            var kw = rules.KwAt(rules.ScaleOf(d)) * d.PiecePower * share * fuelMul[at] * boostMul[at]; // (a cylinder's own power at its own bore: design 6.3; PiecePower 1, more for a tier cylinder's)
+            var kw = rules.CylinderKw(d) * d.PiecePower * share * fuelMul[at] * boostMul[at]; // (a cylinder's own power by its bore and stroke, its displacement: stroke power 2026-11-14; PiecePower 1, more for a tier cylinder's)
             e.Kw += kw;
-            e.AddStroke(kw, d.PieceStroke > 0 ? d.PieceStroke : 1f);
+            e.AddStroke(kw, EngineRules.StrokeOf(d));
             e.Burn += kw * d.PieceThirst * fuelThirst[at] * boostThirst[at] * rules.BurnPerKw;
         }
         for (var k = 0; k < c.ModCount; k++)
@@ -483,8 +512,8 @@ public static class ConstructEngine
     /// <summary>A booster's gain on a bank it feeds this share of: its own multiplier when the share is whole (exactly the file's), else 1 + (power - 1) x share.</summary>
     private static float Gain(float power, float share) => share >= 1f ? power : 1f + (power - 1f) * share;
 
-    /// <summary>Does this engine need a starter to turn over? Its crank's scale reaches the rules' starterFrom (design 6.1).</summary>
-    public static bool NeedsStarter(ModEngine e, EngineRules rules) => rules.StarterAt(e.Scale);
+    /// <summary>Does this engine need a starter to turn over? Its crank's scale, with its stroke's cube root (its displacement), reaches the rules' starterFrom (design 6.1; stroke power).</summary>
+    public static bool NeedsStarter(ModEngine e, EngineRules rules) => rules.StarterAt(e.Scale, e.Stroke);
 
     private static void Reset(ModEngine e)
     {
