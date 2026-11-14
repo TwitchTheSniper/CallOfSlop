@@ -149,7 +149,9 @@ public static class WorkOrders
                 return $"the {d.Name} can't extrude {mat}: takes {ExtrusionTable.Current.Takes()}";
             // (the user, 2026-11-13: what would make it fit names an expansion piece on this machine first, then the bigger Extruder)
             ConstructExtruder.Reach(c, part, out _, out var die, out var longest);
-            if (k.W > MathF.Round(die.X * 100) + 0.5f || k.H > MathF.Round(die.Y * 100) + 0.5f)
+            if (k.W < Extrusion.MinSectionCm || k.H < Extrusion.MinSectionCm) // (no piece is thinner: Extrusion.Valid; queued, it stalled as "too many different pieces")
+                return $"a section {k.W / 100f:0.##} x {k.H / 100f:0.##} m: the {d.Name} makes sections {Extrusion.MinSectionCm / 100f:0.##} m a side or more";
+            if (k.W >MathF.Round(die.X * 100) + 0.5f || k.H > MathF.Round(die.Y * 100) + 0.5f)
                 return $"a section {k.W / 100f:0.##} x {k.H / 100f:0.##} m is wider than the {d.Name}'s die ({die.X:0.##} x {die.Y:0.##} m): {ConstructExtruder.WideFix(d, k.W, k.H)}";
             var most = Math.Min(Extrusion.MaxLengthCm, (int)MathF.Round(longest * 100));
             if (k.L < Extrusion.StepCm || k.L % Extrusion.StepCm != 0)
