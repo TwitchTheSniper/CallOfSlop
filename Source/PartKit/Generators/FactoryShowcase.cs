@@ -276,7 +276,7 @@ public sealed class FactoryShowcase : IPartGenerator
             var wood = Heap("wood", 22.25f, -4.25f, 2.4f);
             Feed(wood, sawmill);
             Feed(Heap("sand", 30.25f, -4.25f, 2.4f), rubberF);
-            Feed(Heap("copper ore", 6.25f, -10.75f, 2.4f), copperS);
+            Feed(Heap("copper ore", 6.25f, -10.75f, 3.2f), copperS); // (3.2 m square: copper for wire stock, bronze and coils)
             Sign(-7.25f, Posts1, Stock, "RAW STOCK: filled in creative, empty in survival");
             Feed(Heap("sand", 30.25f, -10.75f, 2.4f), glassS);
             ChuteVia(smelter, steelF, -7.35f);
@@ -324,31 +324,26 @@ public sealed class FactoryShowcase : IPartGenerator
         /// </summary>
         private Assembly AssemblyHall(Refined r)
         {
-            var b = On("Workshop Assembler", 46.25f, -23.25f, Flow, paint: Assembler);
             var a = On("Workshop Assembler", 52.25f, -17.75f, Flow, paint: Assembler);
             ChuteVia(r.Steel, a, -7.45f);
             ChuteVia(r.Cloth, a, -13.3f);
             ChuteVia(r.Rubber, a, -7.6f);
-            ChuteVia(r.Bronze, b, -13.15f);
-            ChuteVia(r.Bronze, a, -13.45f); // (A makes a Bearing itself when the store has none: its Router's way 2 loops back into it)
+            ChuteVia(r.Bronze, a, -13.45f); // (it makes its own Bearings: its Router's way 2 loops back into it)
             _steelB = Bin(44.25f, -27.75f, Yard); // (the press hall's steel, chuted on from the yard's: a bin, so its chute moves 10 a second and the yard's store isn't emptied into it)
             ChuteVia(r.Steel, _steelB, -7.75f);
-            // B is the bearing shop: set to Bearings and on no console (an Assembler works one recipe at a time, so B asked for a Servo
-            // Motor once refused the bronze for the Bearings the Servo waited on), its tray chuting into the parts store as it fills.
-            Config(b, ("recipe", AsmRecipe(b, "Bearing")));
             _shelf = Store(49.75f, -26.25f, 1.6f);
-            Feed(b, _shelf);
             var ra = On("Large Conveyor Router", 55.75f, -17.25f, Flow, "-y.0.0", Assembler); // (a Large one: a Differential is 1.18 m across, a small junction opens 1 m)
             Convey(a, "Piece out", ra, "Piece in", Assembler, Wide);
             // A's Router way 2 loops back into A's own Piece in: a part A makes for its own next recipe (a Servo for a Steering Pivot).
             var a2 = PortAt(ra, "Piece out 2");
             var ai = PortAt(a, "Piece in");
             Convey(ra, "Piece out 2", a, "Piece in", Assembler, Wide, Along(new[] { V(a2.X, 0, -20.25f), V(ai.X - 1.2f, 0, -20.25f), V(ai.X - 1.2f, 0, ai.Z) }).Select(n => n with { Y = a2.Y }).ToArray());
-            // The presses' trays (Gear Sets, Copper Coils) and B's Bearings chute into a parts store; A takes from it what its recipe needs.
+            // The presses' trays (Gear Sets, Copper Coils) chute into a parts store; the Assembler takes from it what its recipe needs.
+            // (One Assembler: a second, set to Bearings on its own, ate the copper and bronze with 298 spare Bearings.)
             // (A Parts Shelf's bins filled with one stroke's 20 coils and blocked both trays: a store packs by volume.)
             Feed(_shelf, a);
-            Sign(48.75f, -15.25f, Assembler, "4 ASSEMBLY: A builds the parts, B makes bearings", false);
-            return new Assembly(a, b, ra, ra);
+            Sign(48.75f, -15.25f, Assembler, "4 ASSEMBLY: every catalogue part, its own bearings too", false);
+            return new Assembly(a, a, ra, ra);
         }
 
         private VPart? _steelB, _shelf;
@@ -411,7 +406,7 @@ public sealed class FactoryShowcase : IPartGenerator
             // (No rack of its own: a rack here had no road on, so a piece that went to it as storage waited there for ever. Every blank on
             // this line is ordered, by a press or the station; a stray one is held at its Router, which says why.)
             // The Engine press's kit (a Bearing for a flywheel) from Assembler B's Router, way 3.
-            ChuteVia(_shelf!, presses[4], -24.6f); // (the Engine press's kit, a Bearing for a flywheel or a crank, from the parts store)
+            ConveyVia(asm.RouterA, "Piece out 3", presses[4], "Piece in 2", Assembler, -24.6f); // (the Engine press's kit, a Bearing for a flywheel or a crank, from the Assembler's Router, way 3)
             // Trays: the Gear press's Gear Sets to Assembler A; the Tank press's fuel tanks and the Bracket press's brackets on to the station.
             ChuteVia(presses[0], _shelf!, -24.25f);
             _toStation.Add(presses[1]);
