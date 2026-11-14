@@ -115,8 +115,7 @@ design plandrag 20,0.5 35,0.5; design plandrag 0.5,20 0.5,30; design plan; desig
   - **Fault (fixed):** my first order was 5 x 5 cm: `extr Extruder 5 5 5000` read `takes it` and the order queued, then the Extruder stalled
     for good with `too many different pieces in this game`. No section under `Extrusion.MinSectionCm` (10 cm) has a def (`Extrusion.Valid`,
     `ConstructExtrusion.cs` 391), and `WorkOrders.Refusal` (`WorkOrders.cs`, the Extruder's branch) checked the die's top but no bottom, so the
-    order was taken and `Extrusion.Def` returned null every step (`ConstructExtruder.cs` 383, shown by line 895's fallback text). Fixed: the
-    refusal now says `a section 0.05 x 0.05 m: the Extruder makes sections 0.1 m a side or more` (tried: same command). Players' sliders may
+    order was taken and `Extrusion.Def` returned null every step (`ConstructExtruder.cs` 383, shown by line 895's fallback text). Fixed after review: `WorkOrders.Refusal` now refuses every key `Extrusion.Valid` refuses, by `Extrusion.KeyRefusal` (too thin or wide, a round or pipe not square, a pipe's wall, a section with a wall), which covers a client's `CraftOrder` too (`ConstructCrafting.Place` asks it per machine); a stalled order already queued names its key's reason (`ConstructExtruder.StallShape`). Tried: `extr queue Extruder 5 5 500`: `a section 0.05 x 0.05 m: sections are 0.1 to 32 m a side`; 10 x 10 takes it. Players' sliders may
     clamp above 10 cm already; a terminal bill, a mod or a client message could send one.
 
 ## Not run
