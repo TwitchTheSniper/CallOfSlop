@@ -207,6 +207,7 @@ public sealed partial class Game
         var rider = ConstructRide.RiderRot(q, Vector3.Normalize(up));
         p.RenderRide = true;
         p.RenderRideRot = rider;
+        p.RenderRideFeet = Vector3.Transform(p.RenderPosition - t, Quaternion.Conjugate(rider));
         if (p.Id == LocalId)
         {
             RideLookSync();
