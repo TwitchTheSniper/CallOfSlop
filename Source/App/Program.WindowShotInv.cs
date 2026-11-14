@@ -371,18 +371,38 @@ public static unsafe partial class Program
                     WsFail($"inv line N PART[#n] NAME (\"{rest}\")");
                     return true;
                 }
+                // The part of that name nearest this player's eye, on any body (a map's own kit may have one too).
+                var named = c!.DefOf(part).Name;
+                var near = float.MaxValue;
+                foreach (var b in g.Constructs.Bodies)
+                    for (var i = 0; i < b.PartCount; i++)
+                        if (b.DefOf(i).Name == named && System.Numerics.Vector3.Distance(b.SegToWorld(b.Parts[i].Seg, b.Parts[i].Pos), me.Eye) is var pd && pd < near)
+                        {
+                            near = pd;
+                            c = b;
+                            part = i;
+                        }
+                // The free socket and turn whose ghost is nearest this player's eye (the server checks reach from there).
+                int bs = -1, bv = 0;
+                var best = float.MaxValue;
                 for (var s = 0; s < c!.SocketCount(part); s++)
                     for (var v = 0; v < d!.Sockets.Length * 4 && v < 256; v++)
-                        if (ConstructBuild.Place(c, part, s, d, v / 4, v % 4, out var gh) == null)
+                        if (ConstructBuild.Place(c, part, s, d, v / 4, v % 4, out var g0) == null && System.Numerics.Vector3.Distance(c.SegToWorld(g0.Seg, g0.Pos), me.Eye) is var dist && dist < best)
+                        {
+                            best = dist;
+                            bs = s;
+                            bv = v;
+                        }
+                if (bs >= 0 && ConstructBuild.Place(c, part, bs, d!, bv / 4, bv % 4, out var gh) == null)
                         {
                             var dir = (byte)0;
                             var pitch = ConstructLine.Pitch(c, d, gh.Rot, gh, dir);
                             var pw = g.SandboxAidBegin(BuildAidOp.Line);
                             pw.U16(c.Id).U16((ushort)part);
                             PartRef.Write(pw, d.Id);
-                            pw.U8((byte)s).U8((byte)v).U8(dir).F32(pitch).U16((ushort)n).U8(2).F32(1).U16(1);
+                            pw.U8((byte)bs).U8((byte)bv).U8(dir).F32(pitch).U16((ushort)n).U8(2).F32(1).U16(1);
                             g.SandboxAidSend(pw);
-                            WsSay($"inv line: {n} x {Named(d.Id)} from socket {s} of the {c.DefOf(part).Name}, variant {v}, pitch {pitch:0.###} m");
+                            WsSay($"inv line: {n} x {Named(d.Id)} from socket {bs} of the {c.DefOf(part).Name}, variant {bv}, pitch {pitch:0.###} m, ghost {System.Numerics.Vector3.Distance(c.SegToWorld(gh.Seg, gh.Pos), me.Eye):0.0} m from the eye at {me.Eye}");
                             return true;
                         }
                 WsFail($"inv line: no socket of the {c.DefOf(part).Name} takes the {Named(d!.Id)}");
