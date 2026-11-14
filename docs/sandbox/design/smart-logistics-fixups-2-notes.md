@@ -24,7 +24,7 @@ back-pressure of a full store, as before. A piece no rack will ever take (a stor
 no rack reachable) is **set off the line beside the Router** as a loose body (`ConstructConveyor.SetOff`: to the right of its way
 in, clear of the Router), and the line runs on. The Router's Alarm stays on until the next piece crosses it or the network changes
 (`LogiMap.OffDef`, server); its look line says `ALARM - set Ammo Container off the line beside it: no Piece Rack takes a store part
-(a rack holds pieces)`; the server's event line `Ammo Container set off the line beside Router 1: ...`. A joined client hears the
+(a rack holds pieces)`, its screen `ALARM / Set off Ammo Container / no Piece Rack takes it`; the server's event line `Ammo Container set off the line beside Router 1: ...`. A joined client hears the
 Alarm as the Router's signal: its lamp lights and its look line reads `ALARM - a piece waits here or was set off the line beside it`
 (the reason is the server's: no wire change). Tried: a Gear Set fed after it crossed to the Piece Rack and the Alarm went to 0; with
 every rack full of Gear Sets a Gear Set still waits stuck (no change). Not seen in a picture: where the loose container lies.
@@ -79,5 +79,5 @@ same (16 entries). `logi cost 400` with a starved Ammo Container order: 40 B a s
   run, so it is unclear which), and the loose container's resting place.
 - `CouldWait` with a rack's Takes filter refusing (the code path is shared with storage choice).
 
-Files outside this round's three: `ConstructConveyor.cs` (`SetOff`; `RackCheck` lets a terminal's tray take a store part),
+Files outside this round's three: `ConstructConveyor.cs` (`SetOff`; `RackCheck` lets a terminal's tray take a store part), `RouterScreen.cs` (the set-off Alarm),
 `WorkOrders.cs` (the ranks in the save), `Program.WindowShotLogi.cs` (`logi stow`, `logi mix`, `logi steps`, rank in `logi chain`).
