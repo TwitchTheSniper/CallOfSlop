@@ -126,3 +126,23 @@ inv select delete 0 6 Foundation; wait 300; stock Piece Rack; inv bodies; inv co
   this way. The host's `tool Welder` passed (the host's test state). Not a fault of this branch.
 - A blueprint that doesn't build (my first try, the Line Layer on the rack's spot) made the window run fail `no blueprint "VT Beacon Rack"`
   with no REFUSED or reason line in `callofslop.log`; only `--check-vehicle` named the step. Small; a lesson for the blueprint loader's log.
+
+## 6. Extruder expansion: verified (the mid-piece stall read from code, not waited out)
+
+No blueprint; machines and pieces stood on the ground with `extr build NAME X Z` and fitted with `fitpart` (Place and Attach, the hand's path).
+- **A Die Extension lets a refused piece print.** `extr build Medium Extruder 0 14; extr build Medium Die Extension 10 4; extr Medium Extruder 900 10 100;
+  fitpart Medium Die Extension | Medium Extruder -x.4.5; extr Medium Extruder 900 10 100; fill Medium Extruder 2000 steel; extr queue Medium Extruder 900 10 100; wait 900; extr made`:
+  before, `a section 9 x 0.1 m is wider than the Medium Extruder's die (8 x 8 m): weld Medium Die Extensions ...`; after, die `10 x 8 m at 3,4`,
+  `takes it`, and `made #1 Solid bar 9 x 0.1 m 900x10x100 cm`.
+- **A Run-out Table lets a refused piece queue, and a table shot off.** Medium Extruder + Medium Run-out Table on `outBed`: a 66 m bar
+  `longer than the Medium Extruder makes (64 m): add Medium Run-out Tables ...` before, `takes it` after (longest 80 m). Shot off while the
+  piece was at 8 m (`extr shoot Medium Run-out Table`): longest back to 64 m, the piece went on growing (8.4 m), as the review's rule says (never
+  cut short; it stalls at the cap). Not waited out (64 m at 0.4 m/s is over two minutes). With a 2 m order at the head and the 66 m one behind
+  it, the table shot during the first: `its order is 66 m long, it makes 64 m now: add Medium Run-out Tables to its out bed (to 128 m with them), or Cancel it`,
+  the screen `Order too long`.
+- **A full-height section with frames and a table.** Small Extruder, three Die Frames chained up from `top` (die 1 x 1.25, 1.5 x 1.5, then
+  1.75 x 2 m), a Run-out Table on `outBed` (longest 56 m); an order of the whole die, `175 x 200 x 200` cm: `takes it`, fed 2000 steel five times,
+  `made #1 Solid bar 1.75 x 2 m 175x200x200 cm` (it took about 9000 steel). Joined client: the same die and length, `takes it`, and the made piece.
+  (Each frame adds 0.25 to 0.5 m: the 6 m cap would take a dozen; not built.) An order queued before any material reads `needs metal for its order, holds steel`.
+- **A save with extensions fitted.** The frames-and-table Extruder mid-piece, `saveworld VT6X`; a fresh process `loadworld VT6X; extr Extruder`:
+  `die 1.75 x 2 m at -0.38,1.25; longest 56 m; parts 6; growing 55 cm`, the same as before the save, and the order still `takes it`.
