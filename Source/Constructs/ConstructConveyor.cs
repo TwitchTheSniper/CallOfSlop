@@ -1050,6 +1050,36 @@ public static class ConstructConveyor
         world.Events.Add($"a {d.Name} dropped off its conveyor");
     }
 
+    /// <summary>
+    /// Server: rider <paramref name="i"/>, the lead piece at a Router that no rack can take, comes off the line as a loose body set
+    /// down to the right of its way in, clear of the Router and the conveyor (<see cref="ConstructLogistics"/> NoPlace). False: the world
+    /// is full (it stays on the line).
+    /// </summary>
+    public static bool SetOff(ConstructWorld world, Construct c, int i, ConstructPartDef d)
+    {
+        var r = c.Conveyed[i];
+        if (r.Route >= c.RouteCount)
+            return false;
+        WorldPose(c, r.Route, r, d, out var centre, out var rot);
+        var back = r;
+        back.At = MathF.Max(0, r.At - 0.25f);
+        WorldPose(c, r.Route, back, d, out var behind, out _);
+        var side = Vector3.Cross(centre - behind, Vector3.UnitY);
+        side = side.LengthSquared() > 1e-6f ? Vector3.Normalize(side) : Vector3.UnitX;
+        Size(d, out var across, out var up, out _);
+        centre += side * (0.9f + MathF.Max(across, up)) + Vector3.UnitY * 0.2f; // (beside the Router: half a Router, the piece, a gap)
+        if (ConstructEdits.DropLoose(world, d, centre, rot) is not { } body)
+            return false;
+        Remove(c, i);
+        body.Owner = c.Owner;
+        body.Vel = c.PointVel(centre);
+        body.AngVel = c.AngVel;
+        ref var np = ref body.Parts[0];
+        np.Health = MathF.Max(1, d.Health * r.Health / 255f);
+        np.Paint = r.Paint;
+        return true;
+    }
+
     /// <summary>Drops every rider of a body (it is going: its link with it).</summary>
     public static void DropAll(ConstructWorld world, Construct c)
     {

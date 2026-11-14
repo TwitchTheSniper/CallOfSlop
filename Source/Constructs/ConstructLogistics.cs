@@ -53,6 +53,8 @@ public sealed class LogiMap
     public readonly ushort[] ShowDef = new ushort[MaxRouters], ShowDest = new ushort[MaxRouters], ShowTag = new ushort[MaxRouters];
     public readonly bool[] ShowStuck = new bool[MaxRouters];
     public readonly byte[] ShowReason = new byte[MaxRouters];
+    public readonly ushort[] OffDef = new ushort[MaxRouters]; // server: the last piece set off the line beside the Router (no rack could take it), 0 none; its Alarm stays on until a piece crosses
+    public readonly byte[] OffReason = new byte[MaxRouters];
     public readonly ushort[] ShowStuckDef = new ushort[MaxRouters];
     public int ShowVersion; // goes up when any Router's show changes (a look line's key)
     public bool AnyOut; // server: a Router's Alarm or Moving output is set
@@ -537,7 +539,7 @@ public static class ConstructLogistics
         if (ds < 0 || why != LogiReason.None)
         {
             if (!Reassign(world, c, m, s, ref r, d, ds, why))
-                return spill != StockTargets.SpillAuto ? Spill(c, m, s, k, lead, spill, flags0, ref changed) : Stuck(c, m, s, ref r, flags0, ref changed);
+                return spill != StockTargets.SpillAuto ? Spill(c, m, s, k, lead, spill, flags0, ref changed) : NoPlace(world, c, m, s, lead, d, flags0, ref changed);
             ds = -1;
             for (var i = 0; i < m.DestN; i++)
                 if (c.Parts[m.NodePart[m.Dests[i]]].Store == r.Dest)
@@ -558,7 +560,7 @@ public static class ConstructLogistics
             if (((LogiFlags)r.Flags & LogiFlags.Storage) == 0 && StockTargets.Hold(c, router))
                 return Held(c, ref r, way, flags0, ref changed);
             if (!Reassign(world, c, m, s, ref r, d, ds, way))
-                return Stuck(c, m, s, ref r, flags0, ref changed);
+                return NoPlace(world, c, m, s, lead, d, flags0, ref changed);
             changed |= r.Flags != flags0;
             return false; // (the new way next step)
         }
@@ -577,7 +579,7 @@ public static class ConstructLogistics
                 if (StockTargets.Hold(c, router))
                     return Held(c, ref r, LogiReason.DestFull, flags0, ref changed);
                 if (!Reassign(world, c, m, s, ref r, d, ds, LogiReason.DestFull))
-                    return Stuck(c, m, s, ref r, flags0, ref changed);
+                    return NoPlace(world, c, m, s, lead, d, flags0, ref changed);
             }
             changed |= r.Flags != flags0;
             return false;
@@ -638,6 +640,45 @@ public static class ConstructLogistics
         return Assign(world, c, m, s, ref r, d, why == LogiReason.None ? -1 : lost);
     }
 
+    /// <summary>
+    /// The lead piece has no destination. It waits at the Router (stuck, tried again every 2 s) only while a plain Piece Rack on its
+    /// network could take it once it has room; a piece none ever will (a store part, a piece too big or filtered out everywhere, no
+    /// rack reachable) never blocks the line: it is set off the line beside the Router as a loose body, and the Router's Alarm stays
+    /// on, with the reason in its look line, until the next piece crosses it (verification 2026-11-13c, fault 2). True: it went.
+    /// </summary>
+    private static bool NoPlace(ConstructWorld world, Construct c, LogiMap m, int s, int lead, ConstructPartDef d, byte flags0, ref bool changed)
+    {
+        ref var r = ref c.Conveyed[lead];
+        if (CouldWait(world, c, m, s, d) || !ConstructConveyor.SetOff(world, c, lead, d))
+            return Stuck(c, m, s, ref r, flags0, ref changed);
+        m.OffDef[s] = (ushort)d.Id;
+        m.OffReason[s] = d.Role == PartRole.Storage ? OffStore : OffNone;
+        world.Events.Add($"a {d.Name} was set off the line beside {ConstructLogisticsBoard.RouterLabel(c, m.NodePart[m.Routers[s]])}: {OffText(m.OffReason[s])}");
+        changed = true;
+        return true;
+    }
+
+    private const byte OffNone = 0, OffStore = 1;
+
+    private static string OffText(byte why) => why == OffStore ? "no Piece Rack takes a store part (a rack holds pieces)" : "no Piece Rack on its network can take it";
+
+    /// <summary>Could a plain rack on Router slot <paramref name="s"/>'s network, by a way that takes the piece, hold it once it has room?</summary>
+    private static bool CouldWait(ConstructWorld world, Construct c, LogiMap m, int s, ConstructPartDef d)
+    {
+        var net = m.NodeNet[m.Routers[s]];
+        for (var ds = 0; ds < m.DestN; ds++)
+        {
+            if (!m.DestStore[ds] || m.NodeNet[m.Dests[ds]] != net)
+                continue;
+            int rack = m.NodePart[m.Dests[ds]];
+            if (world.StoreOf(c, rack) is not { } st || ConstructConveyor.RackCheck(c, rack, st, d) is not (0 or 4) || !StockTargets.Accepts(world, c, rack, st, d))
+                continue;
+            if (WayFrom(c, m, s, ds, d) == LogiReason.None)
+                return true;
+        }
+        return false;
+    }
+
     private static bool Stuck(Construct c, LogiMap m, int s, ref CRider r, byte flags0, ref bool changed)
     {
         if (((LogiFlags)r.Flags & LogiFlags.Stuck) == 0)
@@ -693,6 +734,7 @@ public static class ConstructLogistics
         m.ShowDef[s] = r.Def;
         m.ShowDest[s] = r.Dest;
         m.ShowTag[s] = r.Tag;
+        m.OffDef[s] = 0; // (a piece crossed: a set-off piece's Alarm ends)
         m.ShowVersion++;
     }
 
@@ -760,7 +802,7 @@ public static class ConstructLogistics
             if (!server)
                 continue;
             ref var p = ref c.Parts[m.NodePart[m.Routers[s]]];
-            var alarm = stuck[s] ? 1f : 0f;
+            var alarm = stuck[s] || m.OffDef[s] != 0 ? 1f : 0f;
             float move = moving[m.NodeNet[m.Routers[s]]];
             if (p.Out != alarm || p.Out1 != move)
             {
@@ -785,7 +827,7 @@ public static class ConstructLogistics
         var s = m.RouterSlot(part);
         if (s < 0)
             return false;
-        (way, state, stuck) = (m.ShowWay[s], m.ShowState[s], m.ShowStuck[s]);
+        (way, state, stuck) = (m.ShowWay[s], m.ShowState[s], m.ShowStuck[s] || c.Parts[part].Out > 0.5f); // (its Alarm: a client hears it as a signal, a set-off piece's too)
         var to = Angle(way);
         var t = (float)Math.Clamp((ConstructConveyor.Clock - m.ShowAt[s]) / 0.3, 0, 1);
         fence = Angle(m.ShowFrom[s]) + (to - Angle(m.ShowFrom[s])) * (t * t * (3 - 2 * t));
@@ -861,6 +903,10 @@ public static class ConstructLogistics
             return $"{d.Name}: not on a conveyor";
         if (m.ShowStuck[s])
             return $"{d.Name}: holding {PieceName(m.ShowStuckDef[s])} - stuck: {ReasonText((LogiReason)m.ShowReason[s])}";
+        if (m.OffDef[s] != 0)
+            return $"{d.Name}: ALARM - set {PieceName(m.OffDef[s])} off the line beside it: {OffText(m.OffReason[s])}";
+        if (c.Parts[part].Out > 0.5f)
+            return $"{d.Name}: ALARM - set a piece no rack takes off the line beside it"; // (a client: the reason is the server's)
         var net = m.NodeNet[m.Routers[s]];
         int ways = 0, dests = 0, stores = 0;
         for (var k = 0; k < c.RouteCount; k++)
