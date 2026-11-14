@@ -334,6 +334,30 @@ public static partial class ConstructLifters
         }
         for (var k = 0; k < l.PointN; k++)
         {
+            // A machine's own output tray (2026-11-14, verification 4: since sized parts phase 6 a press's preset part, a Button, goes
+            // to its tray, not to the floor at its out, and an arm never lifted it, so a terminal's order served by an arm never filled):
+            // what the tray holds goes on from the out point by the same rule, a want first, else storage.
+            var pt = l.Points![k];
+            if (pt.Kind != LiftPointKind.Out || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount || world.StoreOf(b, pt.Part) is not { } st
+                || !b.DefOf(pt.Part).IsPress && !b.DefOf(pt.Part).IsAssembler || !PointAt(b, pt, out var outAt))
+                continue;
+            for (var q = 0; q < st.SlotCount; q++)
+            {
+                if (st.Count[q] <= 0 || st.Def[q] == ConstructParts.None || ConstructParts.Get(st.Def[q]) is not { } d || !Carries(ld, d)
+                    || ConstructCrafting.Available(world, st, (ushort)d.Id) <= 0 || !InReach(ld, shoulder, lr, outAt, WristLift(d), out _))
+                    continue;
+                var to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: k, out var toAt);
+                if (to < 0 || !ConstructCrafting.TakeOne(world, b, pt.Part, st, d))
+                    continue;
+                world.CraftChanged(b);
+                Wake(b, pt.Part);
+                Freeform.PartWorld(b, pt.Part, out _, out var mr);
+                StartCarry(world, c, l, ld, lp, lr, d, 255, 0, outAt, mr, to, toAt);
+                return true;
+            }
+        }
+        for (var k = 0; k < l.PointN; k++)
+        {
             var pt = l.Points![k];
             if (pt.Kind != LiftPointKind.Rack || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount || world.StoreOf(b, pt.Part) is not { ItemCount: > 0 } st || st.KindDef == null)
                 continue;

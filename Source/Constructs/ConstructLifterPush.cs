@@ -111,6 +111,16 @@ public static class ConstructLifterPush
                     Pushes++;
                     continue;
                 }
+                if (push.X * push.X + push.Z * push.Z > MaxEscape * MaxEscape)
+                {
+                    // A nudge, never a throw (the user's rule): a piece so big that its shortest way out is longer than MaxEscape (a crane's
+                    // plate lowered onto a player) does not move them; on the server the lifter waits for them, Alarm after 10 s.
+                    Pins++;
+                    LastBlock = "too far to nudge";
+                    if (server)
+                        ConstructLifters.Pin(world, b.Lift, tick);
+                    continue;
+                }
                 if (!Free(world, s.Position + push, height, tick, i, n) && !Escape(world, b, s.Position, height, tick, i, n, ref push))
                 {
                     Pins++;
@@ -174,7 +184,7 @@ public static class ConstructLifterPush
                 if (l.State != LiftState.Carry || l.Def == 0)
                     continue;
                 c ??= world.Get(lb.Body);
-                if (c == null || l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { } ld)
+                if (c == null || l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } ld)
                     break;
                 ConstructLifters.Frame(c, l.Part, ld, out _, out _, out var shoulder);
                 var range = ld.ReachMax + ld.PieceLong + ld.Up + height + 1f; // (cheap: no piece of this lifter is further)

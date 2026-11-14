@@ -204,7 +204,7 @@ public static partial class ConstructLifters
             for (var i = 0; i < lb.N; i++)
             {
                 var l = lb.Lifts[i];
-                if ((c ??= world.Get(lb.Body)) == null || l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { } ld)
+                if ((c ??= world.Get(lb.Body)) == null || l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } ld)
                     continue;
                 if (l.Points == null)
                     FindPoints(world, c, l, ld); // (just loaded or placed: its points now, or the station's first orders miss its pads' pieces)

@@ -1,0 +1,270 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Crane Bridge",
+  "description": "An overhead crane over a 64 m span: bolt it to the outer side of a run of Capital Crane Rails with a second run 64 m across. Carries 3000 t between machines, racks and pads under it, and fits parts at a Building Station. Needs power while it moves.",
+  "group": "Production",
+  "section": "Bridge cranes",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "panels": [
+    {
+      "source": "lifter",
+      "at": [
+        -7.216,
+        1.92,
+        0.0
+      ],
+      "size": [
+        9.6,
+        4.48
+      ],
+      "face": "-x",
+      "up": "+y",
+      "rows": 5,
+      "range": 160.0
+    }
+  ],
+  "mass": 768000.0,
+  "health": 460800,
+  "armour": 40,
+  "material": "steel",
+  "color": "#f0c21a",
+  "attachSeconds": 30.0,
+  "power": 120000,
+  "onBreak": "disable",
+  "collider": "boxes",
+  "lifter": {
+    "kind": "bridge",
+    "base": [
+      16.0,
+      8.0,
+      0.0
+    ],
+    "span": 64.0,
+    "depth": 9.6,
+    "reach": [
+      11.2,
+      52.8
+    ],
+    "up": 0.0,
+    "down": 48.0,
+    "payload": 3000000,
+    "piece": [
+      28.8,
+      128.0
+    ],
+    "speed": 1.0,
+    "hoist": 0.5,
+    "handle": 8.0
+  },
+  "config": [
+    {
+      "key": "liftMode",
+      "type": "choice",
+      "label": "Works",
+      "group": "Lifter",
+      "options": [
+        "Auto",
+        "Station only",
+        "Carry only",
+        "Off"
+      ],
+      "default": 0,
+      "tooltip": "Auto: every job under it. Station only: fits parts at Building Stations. Carry only: carries between machines, racks and pads. Off: stands still."
+    },
+    {
+      "key": "carryHeight",
+      "label": "Carry height",
+      "group": "Lifter",
+      "unit": "m",
+      "min": 0.0,
+      "max": 48.0,
+      "step": 0.1,
+      "default": 48.0,
+      "tooltip": "How high it hoists a piece over the higher end of its move before it travels. Never past the hook's highest point."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ],
+      "color": "#22262b",
+      "hidden": true
+    },
+    {
+      "min": [
+        -7.68,
+        -8.0,
+        -7.68
+      ],
+      "max": [
+        7.52,
+        -6.08,
+        7.68
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        -7.04,
+        -6.144,
+        -7.04
+      ],
+      "max": [
+        7.04,
+        6.4,
+        7.04
+      ],
+      "color": "#f0c21a"
+    },
+    {
+      "min": [
+        -4.8,
+        -5.12,
+        -7.104
+      ],
+      "max": [
+        4.8,
+        4.8,
+        -6.976
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -7.744,
+        -7.52,
+        -6.4
+      ],
+      "max": [
+        -7.616,
+        -6.4,
+        6.4
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -6.4,
+        -7.52,
+        7.616
+      ],
+      "max": [
+        6.4,
+        -6.4,
+        7.744
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -6.4,
+        6.336,
+        -6.4
+      ],
+      "max": [
+        6.4,
+        7.36,
+        6.4
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -6.08,
+        7.296,
+        -1.6
+      ],
+      "max": [
+        -4.8,
+        8.0,
+        -0.32
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -7.168,
+        -0.64,
+        -5.44
+      ],
+      "max": [
+        -7.04,
+        4.48,
+        5.44
+      ],
+      "color": "#10161c",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

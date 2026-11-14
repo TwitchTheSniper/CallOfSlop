@@ -512,7 +512,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   SocketKind.RunOut; the grown die and length are read from the construct on each peer (no new bytes).
     // 309: Lifters phase 5b (on the logistics network): a lift word's put point may be a Crafting Terminal's tray (LiftPointKind.Tray, a new
     //   value at the end). The map's lifter edges are worked out on each peer from the parts (no new bytes).
-    public const ushort ProtocolVersion = 309;
+    // 311: Arms and cranes phase 6 (the Bridge Crane): new part files (Crane Rail and Crane Bridge, Medium, Large and Capital) move part ids;
+    //      LiftWhy gains NoRail and NoFarRail at the end. The crane's reach box is worked out from its rails on each peer and sends nothing.
+    public const ushort ProtocolVersion = 310;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -178,5 +178,94 @@ public sealed class LifterParts : IPartGenerator
         return p;
     }
 
-    public void Make(PartOutput o) => WriteParts(o, Out, Enumerable.Range(1, 5).Select(t => ("", Arm(t))));
+    // ---- The Bridge Crane (arms-and-cranes.md 3.4, phase 6): Crane Rail sections and the Crane Bridge, in three size classes.
+
+    /// <summary>The design's table: span, rail section, hook drop, payload kg, piece across and long, travel and hoist m/s, handling s, power W.</summary>
+    private static (double Span, int Rail, double Drop, int Payload, double Across, double Long, double Travel, double Hoist, double Handle, int Power) Crane(Cls c) => c.Key switch
+    {
+        "medium" => (8, 4, 8, 30_000, 7.2, 16, 2.0, 1.0, 3.0, 6000),
+        "large" => (32, 16, 24, 300_000, 28.8, 64, 1.5, 0.75, 5.0, 30_000),
+        _ => (64, 32, 48, 3_000_000, 28.8, 128, 1.0, 0.5, 8.0, 120_000),
+    };
+
+    private const string CraneBase = "#22262b", CraneSteel = "#98a1a9", CraneYellow = "#f0c21a", CraneWeb = "#5e6266";
+
+    /// <summary>
+    /// A Crane Rail section: a runway girder along +z, one cell across, an I-beam (bottom flange, web, top flange) with a steel rail
+    /// on top, whose top is the cell's top: the line a bridge's trucks run on. Sections in line end to end make a run (ConstructCraneRails.cs).
+    /// </summary>
+    private static Part Rail(Cls c)
+    {
+        var cr = Crane(c);
+        var n = c.N(cr.Rail);
+        var k = c.Cell;
+        var p = new Part($"Crane Rail {c.Name} {cr.Rail} m", c, "Bridge cranes",
+            $"A {cr.Rail} m section of crane runway. Lay two runs of them {cr.Span:0} m apart, in line end to end, on columns or walls; a {c.Name} Crane Bridge bolted to one runs over both.",
+            role: "frame", color: CraneBase);
+        double z0 = c.Lo(), z1 = c.Hi(n), h = 0.5 * k;
+        var cell = Box([-h, -h, z0], [h, h, z1], CraneBase)!;
+        cell["hidden"] = true; // (the collider and the sockets' faces: the I-beam inside it is drawn)
+        p.Add(cell);
+        p.Add(Box([-0.42 * k, -h + 0.004 * k, z0 + 0.004 * k], [0.42 * k, -0.36 * k, z1 - 0.004 * k], CraneBase)); // (the bottom flange)
+        p.Add(Box([-0.08 * k, -0.365 * k, z0 + 0.008 * k], [0.08 * k, 0.385 * k, z1 - 0.008 * k], CraneWeb)); // (the web)
+        p.Add(Box([-0.36 * k, 0.38 * k, z0 + 0.004 * k], [0.36 * k, 0.455 * k, z1 - 0.004 * k], CraneBase)); // (the top flange)
+        p.Add(MachineLook.D([-0.09 * k, 0.452 * k, z0 + 0.002 * k], [0.09 * k, h, z1 - 0.002 * k], CraneSteel, "steel")); // (the rail its trucks run on)
+        // Hazard paint on the bottom flange's edges: a runway is overhead work.
+        p.Add(MachineLook.D([-0.425 * k, -0.47 * k, z0 + 0.05 * k], [-0.416 * k, -0.39 * k, z1 - 0.05 * k], CraneYellow, "hazard paint"));
+        p.Add(MachineLook.D([0.416 * k, -0.47 * k, z0 + 0.05 * k], [0.425 * k, -0.39 * k, z1 - 0.05 * k], CraneYellow, "hazard paint"));
+        BlockSockets(p, 1, 1, n);
+        var mass = cr.Rail * c.KgM2 * 1.6 * k; // (a girder a cell deep: about 130 kg a metre at Medium)
+        p.Stats(mass, cr.Rail * c.HealthM2 * k * 2, c.Armour, seconds: Py.Round(c.Seconds * 1.5, 1));
+        p.Set(("craneRail", true), ("collider", "boxes"));
+        return p;
+    }
+
+    /// <summary>
+    /// The Crane Bridge: the lifter part (kind "bridge"). What stands still is its drive and power cabinet, a cell bolted to the outer
+    /// side of a rail by its +x socket; the bridge (end trucks, double girder), the trolley, the cable and the hook are drawn from the
+    /// hook's place (LifterRender.DrawCrane). Its frame: +x across the span through the near rail, +z along the rails; <c>base</c> is the
+    /// near rail's top line beside it.
+    /// </summary>
+    private static Part Bridge(Cls c)
+    {
+        var cr = Crane(c);
+        var k = c.Cell;
+        var carries = cr.Payload >= 1000 ? $"{cr.Payload / 1000:0} t" : $"{cr.Payload} kg";
+        var p = new Part($"{c.Name} Crane Bridge", c, "Bridge cranes",
+            $"An overhead crane over a {cr.Span:0} m span: bolt it to the outer side of a run of {c.Name} Crane Rails with a second run {cr.Span:0} m across. Carries {carries} between machines, racks and pads under it, and fits parts at a Building Station. Needs power while it moves.",
+            role: "frame", color: CraneYellow, group: "Production");
+        double lo = c.Lo(), hi = c.Hi(1);
+        var whole = Box([lo, lo, lo], [hi, hi, hi], CraneBase)!;
+        whole["hidden"] = true; // (the collider and the sockets' faces)
+        p.Add(whole);
+        // The cabinet: a dark skirt, the yellow body, a steel door, hazard bands round its foot, a lamp mast with the festoon's arm.
+        p.Add(Box([lo + 0.02 * k, lo, lo + 0.02 * k], [hi - 0.03 * k, lo + 0.12 * k, hi - 0.02 * k], CraneBase));
+        p.Add(Box([lo + 0.06 * k, lo + 0.116 * k, lo + 0.06 * k], [hi - 0.06 * k, hi - 0.1 * k, hi - 0.06 * k], CraneYellow));
+        p.Add(MachineLook.D([lo + 0.2 * k, lo + 0.18 * k, lo + 0.056 * k], [hi - 0.2 * k, hi - 0.2 * k, lo + 0.064 * k], CraneSteel, "steel")); // (its door, -z)
+        MachineLook.Hazard(p, [lo + 0.016 * k, lo + 0.03 * k, lo + 0.1 * k], [lo + 0.024 * k, lo + 0.1 * k, hi - 0.1 * k]);
+        MachineLook.Hazard(p, [lo + 0.1 * k, lo + 0.03 * k, hi - 0.024 * k], [hi - 0.1 * k, lo + 0.1 * k, hi - 0.016 * k]);
+        p.Add(MachineLook.D([lo + 0.1 * k, hi - 0.104 * k, lo + 0.1 * k], [hi - 0.1 * k, hi - 0.04 * k, hi - 0.1 * k], CraneBase)); // (its lid)
+        p.Add(MachineLook.D([lo + 0.12 * k, hi - 0.044 * k, lo + 0.4 * k], [lo + 0.2 * k, hi, lo + 0.48 * k], MachineLook.Accent)); // (the beacon's foot)
+        // Its screen on the -x face (away from the rail: the aisle side), the middle about 1.5 m up at Medium.
+        double sx = lo + 0.056 * k, sy = lo + 0.62 * k;
+        p.Add(MachineLook.D([sx - 0.004 * k, sy - 0.16 * k, lo + 0.16 * k], [sx + 0.004 * k, sy + 0.16 * k, hi - 0.16 * k], Screen));
+        p.Set(("panels", Py.L(Kw(("source", "lifter"), ("at", Py.L(Py.Round(sx - 0.007 * k, 3), Py.Round(sy, 3), 0.0)), ("size", Py.L(Py.Round(0.6 * k, 3), Py.Round(0.28 * k, 3))),
+            ("face", "-x"), ("up", "+y"), ("rows", 5), ("range", Py.Round(10 * k, 1))))));
+        BlockSockets(p, 1, 1, 1, faces: "xyz", skip: ["+y"]);
+        p.Stats(c.KgM2 * 6 * k * k, c.HealthM2 * 6 * k * k, c.Armour, seconds: Py.Round(c.Seconds * 2, 1));
+        p.Set(("power", cr.Power), ("onBreak", "disable"), ("collider", "boxes"));
+        var margin = 0.7 * k;
+        p.Set(("lifter", Kw(("kind", "bridge"), ("base", Py.L(Py.Round(k, 3), Py.Round(hi, 3), 0.0)), ("span", cr.Span), ("depth", Py.Round(0.6 * k, 3)),
+            ("reach", Py.L(Py.Round(margin, 3), Py.Round(cr.Span - margin, 3))), ("up", 0.0), ("down", cr.Drop), ("payload", cr.Payload), ("piece", Py.L(cr.Across, cr.Long)),
+            ("speed", cr.Travel), ("hoist", cr.Hoist), ("handle", cr.Handle))));
+        p.Set(("config", Py.L(
+            Kw(("key", "liftMode"), ("type", "choice"), ("label", "Works"), ("group", "Lifter"), ("options", Py.L("Auto", "Station only", "Carry only", "Off")), ("default", 0),
+                ("tooltip", "Auto: every job under it. Station only: fits parts at Building Stations. Carry only: carries between machines, racks and pads. Off: stands still.")),
+            Kw(("key", "carryHeight"), ("label", "Carry height"), ("group", "Lifter"), ("unit", "m"), ("min", 0.0), ("max", Py.Round(cr.Drop, 1)), ("step", 0.1), ("default", Py.Round(cr.Drop, 1)),
+                ("tooltip", "How high it hoists a piece over the higher end of its move before it travels. Never past the hook's highest point.")))));
+        return p;
+    }
+
+    public void Make(PartOutput o) => WriteParts(o, Out, Enumerable.Range(1, 5).Select(t => ("", Arm(t)))
+        .Concat(new[] { Medium, Large, Capital }.SelectMany(c => new[] { ("Cranes", Rail(c)), ("Cranes", Bridge(c)) })));
 }

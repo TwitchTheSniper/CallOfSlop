@@ -58,9 +58,12 @@ public static partial class LifterProbe
         var sb = ConstructBuild.PlaceNew(world, rack, so with { Y = G(so.X, so.Z) }, 0);
         if (tb == null || rb == null || sb == null)
             return "net: no room for the terminal, the Router or the stock rack";
+        // The stock: the Button preset's own blank (2026-11-14: since sized parts phase 6 an order of Buttons asks a 10 x 10 x 10 cm
+        // laminate plate, not the 30 x 30 x 50 the press line's rack holds), so an order through the arm finds it.
+        var stockBlank = Extrusion.Def(new ExtrusionKey(Extrusion.Presets[1].Mask, 10, 10, 10, RecyclingTable.Current.IdOf("laminate"), false)) ?? blank;
         var stocked = 0;
         for (var n = 0; n < 6; n++)
-            stocked += world.RackPut(sb, 0, blank) ? 1 : 0;
+            stocked += world.RackPut(sb, 0, stockBlank) ? 1 : 0;
         var parts = new[] { pr, rk, pd, tb, rb, sb };
         var idx = new int[parts.Length];
         for (var i = 0; i < parts.Length; i++)
@@ -91,7 +94,7 @@ public static partial class LifterProbe
         if (feedPad)
             line += $"; conveyor {k3} (Router to pad)";
         LinePad = arm.Id; // (the pad is on this body now: "lifter drop" finds it by its first pad)
-        return $"net: one body {arm.Id}: arm 0, Press {pPress}, pick rack {pRack}, pad {pPad}, terminal {pTerm}, Router {pRouter}, stock rack {pStock} ({stocked} {blank.Name}); conveyors {k1} (stock to Router), {k2} (Router to pick rack); {line}";
+        return $"net: one body {arm.Id}: arm 0, Press {pPress}, pick rack {pRack}, pad {pPad}, terminal {pTerm}, Router {pRouter}, stock rack {pStock} ({stocked} {stockBlank.Name}); conveyors {k1} (stock to Router), {k2} (Router to pick rack); {line}";
     }
 
     /// <summary>Host: an unordered laminate plate blank CM long onto the net rig's first conveyor (stock rack to Router): "lifter ride CM".</summary>
@@ -240,7 +243,7 @@ public static partial class LifterProbe
         foreach (var lb in world.LiftBodies)
             if (lb.N > 0 && (ac == null || lb.Body > ac.Id) && world.Get(lb.Body) is { } b)
                 (l, ac) = (lb.Lifts[0], b);
-        if (l == null || ac == null || ac.DefOf(l.Part).Lifter is not { } ld)
+        if (l == null || ac == null || ConstructLifters.DefOf(ac, l.Part) is not { } ld)
             return "steps: no arm";
         ConstructLifters.Frame(ac, l.Part, ld, out _, out var lr, out var sh);
         Freeform.PartWorld(sc, t, out var stp, out _);

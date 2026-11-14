@@ -89,6 +89,7 @@
     { "section": "Pilot gear", "to": ["Flight", "Pilot gear"] },
 
     { "section": "Lifters", "to": ["Storage and Logistics", "Lifters"] },
+    { "section": "Bridge cranes", "to": ["Joints and Motion", "Cranes and lifts"] },
     { "section": "Scoops", "to": ["Production", "Scoops"] },
     { "section": "Presses", "to": ["Production", "Presses"] },
     { "section": "Remote", "to": ["Seats and Logic", "Remote and cameras"] },

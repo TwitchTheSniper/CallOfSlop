@@ -1126,7 +1126,7 @@ public static unsafe partial class Program
                     var anyJoined = g.Players.Values.Any(pl => pl.Bot == null && pl != me && pl.Alive);
                     _wsJoinSeen = anyJoined ? (_wsJoinSeen == 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : _wsJoinSeen) : 0;
                     var waitJoin = lw.Length > 1 && lw[1] == "others" && (_wsJoinSeen == 0 || System.Diagnostics.Stopwatch.GetElapsedTime(_wsJoinSeen).TotalSeconds < 15); // (joined 15 s ago: its window has spawned it)
-                    var pspotOr = waitJoin ? null : LifterProbe.PathSpot(g.Constructs, out pinfo);
+                    var pspotOr = waitJoin ? null : LifterProbe.PathSpot(g.Constructs, lw.Length > 2 && lw[2] == "put", out pinfo); // ("lifter stand me put": where a crane's piece comes down)
                     if (pspotOr is not { } pspot)
                     {
                         if (WsLiftWait(180))
@@ -1156,7 +1156,7 @@ public static unsafe partial class Program
                     var pens = lw[0] == "pen" ? LifterProbe.Pen(g.Constructs, pspot) : 0;
                     WsSay($"lifter: {lw[0]}: {moved} player(s) to {pspot:0.00}{(pens > 0 ? $", {pens} Crate Stacks round them" : "")}; {pinfo}");
                 }
-                else if (lw.Length > 0 && lw[0] is "line" or "hold" or "set" or "mains" or "points" or "base" or "flip" or "reset" or "press" or "drop" or "pickpad" or "net" or "edges" or "bigparts" or "bigrack" or "steps" or "mapcost" or "weld" or "ride" or "crowd" && g.IsServer)
+                else if (lw.Length > 0 && lw[0] is "line" or "hold" or "set" or "mains" or "points" or "base" or "flip" or "reset" or "press" or "drop" or "pickpad" or "net" or "edges" or "bigparts" or "bigrack" or "steps" or "mapcost" or "weld" or "ride" or "crowd" or "crane" or "cranecut" or "cranes" or "cranepoints" && g.IsServer)
                 {
                     // Lifters phase 4 (LifterLineProbe.cs): "lifter line [TIER]" an arm, an Assembler, a stocked rack and a pad round this player;
                     // "lifter hold NAME" that piece at the line's Assembler's out; "lifter set liftMode|carryHeight V"; "lifter mains on|off"; "lifter points".
@@ -1182,6 +1182,10 @@ public static unsafe partial class Program
                         "weld" => WsFind(g, "Building Station") is ({ } wdc, _) ? LifterProbe.Weld(g.Constructs, wdc) : "weld: no Building Station",
                         "ride" => LifterProbe.Ride(g.Constructs, rest4), // (phase 5b review: an unordered long blank onto the rig's stock conveyor)
                         "crowd" => LifterProbe.Crowd(g.Constructs, me.Position, int.TryParse(rest4, out var cn) ? cn : 300),
+                        "crane" => LifterProbe.Crane(g.Constructs, me.Position, rest4), // (phase 6: the press line under a Bridge Crane: LifterCraneProbe.cs)
+                        "cranecut" => LifterProbe.CraneCut(g.Constructs, rest4),
+                        "cranepoints" => g.Constructs.Get(LifterProbe.CraneBody) is { } cpc ? ConstructLifters.CranePoints(g.Constructs, cpc, 0) : "no crane",
+                        "cranes" => LifterProbe.Cranes(g.Constructs, me.Position, int.TryParse(rest4, out var kn) ? kn : 4),
                         _ => LifterProbe.Points(g.Constructs),
                     });
                 }
