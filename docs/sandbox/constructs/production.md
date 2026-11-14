@@ -428,12 +428,20 @@ flat extruded piece (plate, a flat bar either way up). Code: `ConstructLaserCutt
   (`Bill.Cut`, its blank a Panel Former's or an Extruder's line; a bill line `{"step": n, "cut": "Cut Panel (...)", "count": 2}`; `--bill`
   prints "Cut panels"); a Building Station's step (`OrderFor`). A cut order at a cutter chains its blank (`ConstructLogisticsPlan.CutterInputs`):
   a formed panel asked of a linked Panel Former, a plate or flat bar of a linked Extruder, riding to the cutter tagged for it.
-- **Window tool**: `cutter`, `cutter order KEY [N]`, `cutter feed KEY`, `cutter await` (`Program.WindowShotCutter.cs`). The designer's `design cut rU,V,A,B,C | mK,A,B | clear | drop N`.
+- **The Pane** (phase 6, `HullLoft.Pane.cs`; notes `laser-cutter-phase6-notes.md`): `Cut Pane (rA,B,C tT glass)`, glass cut to an
+  opening's own outline (`A` along, `B` across, corners cut back `C`, `T` mm, 12 to 40), 2 mm short all round. Its blank is the smallest
+  flat formed glass sheet that holds it (`Formed Panel (curve LxW c0 r0 tT glass)`, sides rounded up to 5 cm, at least 20); the head cuts
+  its whole outline. It welds by its one socket, `back` (the middle of its back face), to an opening's `o` socket, its front `T` mm out on
+  the side the sheet faces. A square-cornered pane is one solid glass box (rounds pass it and break it); one with cut corners is a glass hull
+  over a hidden box (a round stops on it and breaks it). The designer's **Glazed** box on an opening of 10 cm or more makes ORDER add one
+  pane per glazed opening per panel (not saved with the design: a design is its cut key). A cut part like the others: an order, a bill's
+  `Bill.Cut` line, a rack's kind, a Building Station's step, all by key.
+- **Window tool**: `cutter`, `cutter order KEY [N]`, `cutter feed KEY`, `cutter await` (`Program.WindowShotCutter.cs`). The designer's `design cut rU,V,A,B,C | mK,A,B | clear | drop N | glaze N`; `ray PART U,V M D` deals D damage to what the ray hits (host).
 - **Tried** (2026-11-13, Proving Ground, a former, a conveyor and a small cutter; host and a joined client): a 20 mm panel's window and
   corner (1.61 m of edge) cut in 6.9 s, the same at 40 mm in 11.7 s, a 5 cm plate in 14.1 s and a 10 cm plate in 26.2 s, each as the law
   says, on both peers; the tenths 0.6 + 1.1 gave a unit and 0.7 over.
 
-Next: the designer's drawn plan of the sheet (cuts dragged by mouse) and cut plates designed there; the Showcase's cutter; the Pane (phase 6); a loose blank let go on the in bed taken in; F taking back a blank from the bed.
+Next: the designer's drawn plan of the sheet (cuts dragged by mouse) and cut plates designed there; the Showcase's cutter; a loose blank let go on the in bed taken in; F taking back a blank from the bed.
 
 ## Machine tiers
 
