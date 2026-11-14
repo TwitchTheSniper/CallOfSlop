@@ -112,11 +112,7 @@ public static partial class LifterProbe
     /// <summary>"lifter cranecut": the far run's middle section out of the crane (its reach goes; a piece in its hand stays there).</summary>
     public static string CraneCut(ConstructWorld world, string arg = "")
     {
-        if (world.Get(CraneBody) == null) // (phase 7: no rig: the first body with a crane, the Production Showcase's)
-            foreach (var lb in world.LiftBodies)
-                for (var li = 0; li < lb.N; li++)
-                    if (world.Get(lb.Body) is { } lc && lb.Lifts[li].Part < lc.PartCount && ConstructLifters.DefOf(lc, lb.Lifts[li].Part) is { Bridge: true })
-                    CraneBody = lc.Id;
+        FindCrane(world);
         if (world.Get(CraneBody) is not { } c)
             return "cranecut: no crane (lifter crane first)";
         if (arg == "pad")
@@ -181,5 +177,48 @@ public static partial class LifterProbe
         Pad2Body = pd.Id;
         world.StructureDirty.Add(pd.Id);
         return $"pad2: Lay-down Pad body {pd.Id}";
+    }
+}
+
+public static partial class LifterProbe
+{
+    /// <summary>
+    /// "lifter stationcrane" (phase 7): a Medium crane over a Building Station's bay (a body of its own, pinned, as "lifter crane" builds),
+    /// every Loader Arm on the station's body set to Off, so the station's fits that a lifter makes are the crane's.
+    /// </summary>
+    public static string StationCrane(ConstructWorld world, Construct sc, int t)
+    {
+        ConstructStation.Bay(sc, t, out var floor, out _, out var bay);
+        var arms = 0;
+        for (var i = 0; i < sc.PartCount; i++)
+            if (sc.DefOf(i).Lifter is { Bridge: false })
+            {
+                ConstructConfig.Put(ref sc.Parts[i], sc.DefOf(i), CfgKey.LiftMode, 3);
+                arms++;
+            }
+        world.StructureDirty.Add(sc.Id);
+        Freeform.PartWorld(sc, t, out var hold, out _);
+        var mid = (floor + hold) * 0.5f;
+        var made = Build(world, "Medium", mid with { Y = 0 }, MathF.Abs(floor.X - hold.X) + bay.X, MathF.Abs(floor.Z - hold.Z) + bay.Z, 0, out var crane, out var why);
+        if (crane == null)
+            return "stationcrane: " + why;
+        StationCraneBody = crane.Id;
+        return $"stationcrane: {made}; {arms} arm(s) set to Off; bay floor {floor:0.0}, the station at {hold:0.0}";
+    }
+
+    public static ushort StationCraneBody;
+}
+
+public static partial class LifterProbe
+{
+    /// <summary>No rig built: the first body with a crane on it (the Production Showcase's) is the crane the verbs work on.</summary>
+    public static void FindCrane(ConstructWorld world)
+    {
+        if (world.Get(CraneBody) != null)
+            return;
+        foreach (var lb in world.LiftBodies)
+            for (var li = 0; li < lb.N; li++)
+                if (lb.Body != StationCraneBody && world.Get(lb.Body) is { } lc && lb.Lifts[li].Part < lc.PartCount && ConstructLifters.DefOf(lc, lb.Lifts[li].Part) is { Bridge: true })
+                    CraneBody = lc.Id;
     }
 }

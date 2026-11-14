@@ -179,7 +179,8 @@ public static partial class LifterProbe
     /// <summary>The body's lifter edges as its map has them, and each Router's ways to the machines and trays.</summary>
     public static string Edges(ConstructWorld world)
     {
-        if (world.Get(NetBody) is not { } c)
+        FindCrane(world);
+        if ((world.Get(NetBody) ?? world.Get(CraneBody)) is not { } c) // (phase 7: else the crane's body: the Production Showcase)
             return "edges: no net body (lifter net first)";
         var m = ConstructLogistics.Map(c);
         var s = $"edges: body {c.Id}, {m.LiftN} lifter edges, {m.NodeN} nodes, {m.DestN} destinations";
