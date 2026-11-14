@@ -311,7 +311,9 @@ public static partial class ConstructLifters
         world.LiftTick++;
         if (world.LiftTick % ScanEvery == 1)
         {
+            var s0 = System.Diagnostics.Stopwatch.GetTimestamp();
             Scan(world, server: true); // (phase 4: always, so an arm with no station open finds its carries; a body is looked at only when its parts changed)
+            LifterProbe.Cost(ref LifterProbe.ScanCost, System.Diagnostics.Stopwatch.GetTimestamp() - s0);
             PadsTakeIn(world); // (phase 5: a loose piece set down on a Lay-down Pad goes into its hold)
         }
         if (world.LiftBodies.Count == 0 || world.LiftTick % Every != 0)
@@ -384,9 +386,13 @@ public static partial class ConstructLifters
                                 decisions++;
                             if (!station)
                                 l.StationNear = false;
-                            if (station && Claim(world, c, l, ld))
+                            var l0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                            var claimed = station && Claim(world, c, l, ld);
+                            var carried = !claimed && carry && LookCarry(world, c, l, ld);
+                            LifterProbe.Cost(ref LifterProbe.LookCost, System.Diagnostics.Stopwatch.GetTimestamp() - l0);
+                            if (claimed)
                                 world.LiftChanged(c.Id);
-                            else if (!(carry && LookCarry(world, c, l, ld)) && (station || carry))
+                            else if (!carried && (station || carry))
                                 Why(world, l, l.StationNear ? LiftWhy.NoPart : mode == 1 ? LiftWhy.NoStation : LiftWhy.NoPoint); // (one steady reason: sent only when it changes)
                         }
                         break;
@@ -405,7 +411,9 @@ public static partial class ConstructLifters
                             l.Age = (int)AgeAt(l, Now);
                             if (l.Age >= l.Dur)
                             {
+                                var p0 = System.Diagnostics.Stopwatch.GetTimestamp();
                                 Put(world, query, c, l, ld);
+                                LifterProbe.Cost(ref LifterProbe.PutCost, System.Diagnostics.Stopwatch.GetTimestamp() - p0);
                                 world.LiftChanged(c.Id);
                             }
                             break;
@@ -1347,6 +1355,9 @@ public static partial class ConstructStation
         }
         return -1;
     }
+
+    /// <summary>Is a step's parent in place (the window tool's step list)?</summary>
+    internal static bool ReadyStep(StationJob j, int k) => Ready(j, k);
 
     /// <summary>A step claimed: out of the station's and a hand's reach, and counted as fitted for the orders (its part has left the hold).</summary>
     public static void LiftClaim(StationJob j, int k)

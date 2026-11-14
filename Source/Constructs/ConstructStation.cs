@@ -378,6 +378,7 @@ public static partial class ConstructStation
         TakeDropped(world, c, t, tray, j);
         if (j.State != StationState.Building)
             return;
+        ConstructLifters.PadClaims(world, c, t, tray, j); // (what its arms' pick pads hold for it is claimed for the build: lifters phase 5)
         Array.Clear(j.KindReady);
         while (j.Cursor < j.PartOf.Length && j.PartOf[j.Cursor] >= 0)
             j.Cursor++;
@@ -551,6 +552,8 @@ public static partial class ConstructStation
 
     private static void CancelOrders(ConstructWorld world, Construct c, int t)
     {
+        if (world.StoreOf(c, t) is { } hold)
+            world.Reserve.Release(world, hold.Handle, ConstructLifters.PadClaim); // (its claims on its arms' pick pads: lifters phase 5)
         if (c.Parts[t].Craft is not { } q)
             return;
         Span<ushort> ids = stackalloc ushort[ConstructCrafting.MaxOrders];
@@ -1100,6 +1103,8 @@ public static partial class ConstructStation
         Free(world, b, j);
         j.State = StationState.Done;
         j.Note = "";
+        if (world.StoreOf(c, t) is { } done)
+            world.Reserve.Release(world, done.Handle, ConstructLifters.PadClaim); // (its claims on its arms' pick pads: lifters phase 5)
         var s = (Stopwatch.GetTimestamp() - j.Started) / (double)Stopwatch.Frequency;
         Console.WriteLine($"[station] {j.Name}: done in {s:0.0} s ({j.Steps} parts, {j.Links} links); costing {j.CostMs:0.0} ms, worst slice {j.WorstMs:0.00} ms");
         world.StationChanged(c);

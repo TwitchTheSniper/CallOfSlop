@@ -643,7 +643,7 @@ public static class ConstructLogisticsPlan
                 Remove(world, i);
                 continue;
             }
-            var riding = Riding(c!, e);
+            var riding = Riding(world, c!, e);
             var held = world.Reserve.Held(c!.Parts[e.Dest].Store, e.Id);
             if (e.Maker != NoPart && (e.Maker >= c.PartCount || !QueuedAt(c, e.Maker, e.Id)) && riding + held + e.Made < e.Asked)
             {
@@ -681,9 +681,9 @@ public static class ConstructLogisticsPlan
                 // A link nobody would make is asked again only when its network looks different (phase 5: each machine's refusal is
                 // text, so asking every step allocated about 300 bytes a machine), or after RetrySteps as a fallback.
                 var look = e.Reason != "" && (ushort)(world.ChainStepNo - e.Tried) < RetrySteps && e.Seen == Seen(world, c, net);
-                if (!look && e.Reason != "" && e.Made == 0 && held == 0 && Riding(c, e) == 0)
+                if (!look && e.Reason != "" && e.Made == 0 && held == 0 && Riding(world, c, e) == 0)
                     Rekey(world, c, net, ref e); // (a waiting Panel Former sheet follows its strips setting and the network's Extruders)
-                var left = e.Asked - e.Made - Riding(c, e) - held;
+                var left = e.Asked - e.Made - Riding(world, c, e) - held;
                 if (left > 0)
                     left -= IsStock(e) && e.Depth == 1 ? 0 : FromStock(world, c, net, ref e, left); // (a target never robs a store: it only makes)
                 if (left > 0 && !look)
@@ -692,8 +692,8 @@ public static class ConstructLogisticsPlan
                     if (e.Maker == NoPart)
                         (e.Seen, e.Tried) = (Seen(world, c, net), world.ChainStepNo);
                 }
-                else if (left <= 0 && e.Reason != "")
-                    e.Reason = "";
+                else if (left <= 0)
+                    e.Reason = ConstructLifters.PickBlocked(world, c, e.Dest, e.Kind) ?? ""; // (its pieces wait at a lifter's pick point: an arm that can't work now is named on its row, lifters phase 5)
             }
             if (held > 0 || e.Maker == NoPart)
                 SendOne(world, c, net, e);
@@ -787,14 +787,14 @@ public static class ConstructLogisticsPlan
         return n;
     }
 
-    private static int Riding(Construct c, in ChainEntry e)
+    private static int Riding(ConstructWorld world, Construct c, in ChainEntry e)
     {
         var h = c.Parts[e.Dest].Store;
         var n = 0;
         for (var i = 0; i < c.ConveyedCount; i++)
             if (c.Conveyed[i].Dest == h && c.Conveyed[i].Tag == e.Id)
                 n++;
-        return n;
+        return n + ConstructLifters.AtPicks(world, c, e.Dest, e.Kind); // (and what waits at a lifter's pick point for it: lifters phase 5)
     }
 
     /// <summary>An entry leaving: its unstarted work order leaves its maker's queue (a started one finishes its piece), its claims go.</summary>
@@ -839,7 +839,7 @@ public static class ConstructLogisticsPlan
 
     /// <summary>Still wanted from makers: asked, less arrived, riding and claimed from stock.</summary>
     private static bool Wants(ConstructWorld world, Construct c, in ChainEntry e) =>
-        e.Made + Riding(c, e) + world.Reserve.Held(c.Parts[e.Dest].Store, e.Id) < e.Asked;
+        e.Made + Riding(world, c, e) + world.Reserve.Held(c.Parts[e.Dest].Store, e.Id) < e.Asked;
 
     /// <summary>The entry a piece of kind <paramref name="d"/> could serve at machine <paramref name="dest"/> (from <paramref name="maker"/> first): its id, or 0. Best rank first.</summary>
     public static ushort WantAt(ConstructWorld world, Construct c, int dest, ConstructPartDef d, int maker)

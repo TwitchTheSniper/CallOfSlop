@@ -79,7 +79,8 @@ public static partial class LifterProbe
             if (b.PartCount == 1 && b != pd && Vector3.Distance(b.Pos, pd.Pos) < 12)
             {
                 var local = Vector3.Transform(b.WorldCom - pp, inv);
-                s += $"; body {b.Id} {b.DefOf(0).Name} local {local:0.00} hold {d.RackHoldMin:0.00}-{d.RackHoldMax:0.00} vel {b.Vel.Length():0.00} store {b.Parts[0].Store} health {b.Parts[0].Health:0}/{b.DefOf(0).Health:0} anchored {b.Anchored}";
+                s += $"; body {b.Id} {b.DefOf(0).Name} local {local:0.00} hold {d.RackHoldMin:0.00}-{d.RackHoldMax:0.00} vel {b.Vel.Length():0.00} store {b.Parts[0].Store} health {b.Parts[0].Health:0}/{b.DefOf(0).Health:0} anchored {b.Anchored}"
+                    + (world.StoreOf(pd, 0) is { } pst ? $" take-in: {ConstructLifters.TakeInWhy(world, pd, 0, pst, pp, inv, pd.Radius + Vector3.Distance(pd.Pos, pp) + 2f, b) ?? "yes"}" : "");
             }
         return s + "]";
     }
@@ -91,7 +92,7 @@ public static partial class LifterProbe
     /// Host: a Lay-down Pad behind the newest arm (away from the station's bay, its long side along the bay), stocked with what the
     /// station's job still needs: a pick pad for an arm that doesn't reach the hold (phase 5).
     /// </summary>
-    public static string PickPad(ConstructWorld world, Construct sc, int t)
+    public static string PickPad(ConstructWorld world, Construct sc, int t, bool stock = true)
     {
         if (ConstructParts.Find("Lay-down Pad") is not { } pad)
             return "pickpad: no Lay-down Pad part";
@@ -115,7 +116,7 @@ public static partial class LifterProbe
         pd.Anchored = true;
         LinePad = pd.Id;
         var n = 0;
-        for (var i = 0; i < j.KindN; i++)
+        for (var i = 0; i < j.KindN && stock; i++)
             if (ConstructParts.Get(j.KindDef[i]) is { } d)
                 for (var m = j.KindFit[i]; m < j.KindNeed[i]; m++)
                     n += world.RackPut(pd, 0, d) ? 1 : 0;
@@ -133,6 +134,7 @@ public static partial class LifterProbe
     }
 
     public static CostCount TakeIn, PadCount; // server: the pads' take-in (once a second) and a station's pick pad count (2 Hz while building)
+    public static CostCount ScanCost, LookCost, PutCost; // server: the lifter scan (once a second), an idle arm's look for a carry, a carry's put (phase 5b)
 
     public static void Cost(ref CostCount c, long ticks)
     {

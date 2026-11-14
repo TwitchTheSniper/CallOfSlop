@@ -510,7 +510,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   part can be laid or fitted by kind.
     // 308: Extruder expansion pieces: Die Extensions and Run-out Tables (new part files, ids move), an outBed socket on the Extruders and
     //   SocketKind.RunOut; the grown die and length are read from the construct on each peer (no new bytes).
-    public const ushort ProtocolVersion = 308;
+    // 309: Lifters phase 5b (on the logistics network): a lift word's put point may be a Crafting Terminal's tray (LiftPointKind.Tray, a new
+    //   value at the end). The map's lifter edges are worked out on each peer from the parts (no new bytes).
+    public const ushort ProtocolVersion = 309;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

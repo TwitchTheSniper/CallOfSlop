@@ -11,6 +11,7 @@ public enum LiftPointKind : byte
     Assembler, // an Assembler's Piece in with no conveyor: put (a part its recipe uses)
     PressBay, // a press bay's Piece in with no conveyor: put (a blank it takes, or a kit part for its hopper)
     Former, // a Panel Former's Piece in with no conveyor: put (sheet for its bin)
+    Tray, // (phase 5b) a Crafting Terminal's tray: put (a part one of its open orders still waits for)
 }
 
 /// <summary>A point in a lifter's reach (server; found every <see cref="ConstructLifters.PointEvery"/> ticks, never per tick).</summary>
@@ -130,42 +131,57 @@ public static partial class ConstructLifters
             var b = bodies[bi];
             if (Vector3.Distance(b.Pos, shoulder) > ld.ReachMax + ld.Up + ld.Down + b.Radius)
                 continue;
-            for (var i = 0; i < b.PartCount && l.PointN < MaxPoints; i++)
+            PointsOn(b, b == c ? l.Part : -1, ld, shoulder, lr, l.Points, ref l.PointN);
+        }
+    }
+
+    /// <summary>
+    /// The points on body <paramref name="b"/> a lifter reaches with an empty hand (<paramref name="self"/>: its own part on that body,
+    /// else -1), added to <paramref name="pts"/> while there is room. Either peer: the logistics map's lifter edges use it too (phase 5b).
+    /// </summary>
+    private static void PointsOn(Construct b, int self, LifterDef ld, Vector3 shoulder, Quaternion lr, LiftPoint[] pts, ref int n)
+    {
+        var far = ld.ReachMax + MathF.Max(ld.Up, ld.Down);
+        var local = Vector3.Transform(shoulder - b.Pos, Quaternion.Conjugate(b.Rot)); // (the shoulder in the body's frame: a cheap cut for parts on it)
+        for (var i = 0; i < b.PartCount && n < pts.Length; i++)
+        {
+            if (i == self || b.Parts[i].Broken)
+                continue;
+            var d = b.DefOf(i);
+            if (!d.IsPieceRack && !d.IsAssembler && !d.IsPress && !d.IsExtruder && !d.IsPanelFormer)
+                continue;
+            ref readonly var p = ref b.Parts[i];
+            var half = (d.BoundsMax - d.BoundsMin).Length() * 0.5f + 0.5f;
+            if (p.Seg == 0 && Vector3.DistanceSquared(p.Pos + Rot24.Apply(p.Rot, (d.BoundsMin + d.BoundsMax) * 0.5f), local) > (far + half) * (far + half))
+                continue; // (a big body's far parts; one on a moving segment is tested whole)
+            if (d.IsPieceRack)
             {
-                if (b == c && i == l.Part || b.Parts[i].Broken)
-                    continue;
-                var d = b.DefOf(i);
-                if (d.IsPieceRack)
-                {
-                    if (!d.IsBuildStation && !d.IsCraftTerminal && RackSpot(b, i, ld, shoulder, lr, SafeLift, SafeLift, out _))
-                        AddPoint(l, b, i, LiftPointKind.Rack, 0);
-                    continue;
-                }
-                var maker = d.IsAssembler || d.IsPress || d.IsExtruder && !d.IsPanelFormer;
-                if (maker && ConstructConveyor.Out(b, i) < 0 && PointAt(b, new LiftPoint { Body = b.Id, Part = (ushort)i, Kind = LiftPointKind.Out }, out var o)
-                    && InReach(ld, shoulder, lr, o, SafeLift, out _))
-                    AddPoint(l, b, i, LiftPointKind.Out, 0);
-                if (d.IsAssembler || d.IsPanelFormer)
-                    TryIn(l, b, i, d, d.IsAssembler ? LiftPointKind.Assembler : LiftPointKind.Former, 0, "Piece in", ld, shoulder, lr);
-                else if (d.IsPress)
-                    for (var bay = 0; bay < d.PressBays.Length && bay < 8; bay++)
-                        TryIn(l, b, i, d, LiftPointKind.PressBay, bay, bay == 0 ? "Piece in" : BayPortNames[bay], ld, shoulder, lr);
+                // A rack or a pad: pick and put. A Crafting Terminal's tray (phase 5b): put only, for its orders. A station's hold: its claims only.
+                if (!d.IsBuildStation && RackSpot(b, i, ld, shoulder, lr, SafeLift, SafeLift, out _))
+                    pts[n++] = new LiftPoint { Body = b.Id, Part = (ushort)i, Kind = d.IsCraftTerminal ? LiftPointKind.Tray : LiftPointKind.Rack };
+                continue;
             }
+            var maker = d.IsAssembler || d.IsPress || d.IsExtruder && !d.IsPanelFormer;
+            if (maker && ConstructConveyor.Out(b, i) < 0 && PointAt(b, new LiftPoint { Body = b.Id, Part = (ushort)i, Kind = LiftPointKind.Out }, out var o)
+                && InReach(ld, shoulder, lr, o, SafeLift, out _))
+                pts[n++] = new LiftPoint { Body = b.Id, Part = (ushort)i, Kind = LiftPointKind.Out };
+            if (d.IsAssembler || d.IsPanelFormer)
+                TryIn(pts, ref n, b, i, d, d.IsAssembler ? LiftPointKind.Assembler : LiftPointKind.Former, 0, "Piece in", ld, shoulder, lr);
+            else if (d.IsPress)
+                for (var bay = 0; bay < d.PressBays.Length && bay < 8; bay++)
+                    TryIn(pts, ref n, b, i, d, LiftPointKind.PressBay, bay, bay == 0 ? "Piece in" : BayPortNames[bay], ld, shoulder, lr);
         }
     }
 
     private static readonly string[] BayPortNames = ["Piece in", "Piece in 2", "Piece in 3", "Piece in 4", "Piece in 5", "Piece in 6", "Piece in 7", "Piece in 8"];
 
-    private static void TryIn(CLift l, Construct b, int i, ConstructPartDef d, LiftPointKind kind, int bay, string port, LifterDef ld, Vector3 shoulder, Quaternion lr)
+    private static void TryIn(LiftPoint[] pts, ref int n, Construct b, int i, ConstructPartDef d, LiftPointKind kind, int bay, string port, LifterDef ld, Vector3 shoulder, Quaternion lr)
     {
-        if (l.PointN >= MaxPoints || ConveyorPort(d, port) is not { } np || ConveyorInto(b, i, np.Byte))
+        if (n >= pts.Length || ConveyorPort(d, port) is not { } np || ConveyorInto(b, i, np.Byte))
             return;
         if (InReach(ld, shoulder, lr, PartPoint(b, i, np.At), SafeLift, out _))
-            AddPoint(l, b, i, kind, (byte)bay);
+            pts[n++] = new LiftPoint { Body = b.Id, Part = (ushort)i, Kind = kind, Bay = (byte)bay };
     }
-
-    private static void AddPoint(CLift l, Construct b, int part, LiftPointKind kind, byte bay) =>
-        l.Points![l.PointN++] = new LiftPoint { Body = b.Id, Part = (ushort)part, Kind = kind, Bay = bay };
 
     // ---- The rule ----------------------------------------------------------------------------------------------------------
 
@@ -190,6 +206,10 @@ public static partial class ConstructLifters
                     return false;
                 var units = Math.Max(1, (int)MathF.Round(d.Mass / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(d.ExKey.Material))));
                 return (st.Amount == 0 || st.Material == d.ExKey.Material) && st.Amount + units <= b.DefOf(pt.Part).BulkCapacity;
+            case LiftPointKind.Tray:
+                return TrayWant(world, b, pt.Part, d) != 0; // (phase 5b: an open order of its kind still waits for it)
+            case LiftPointKind.Rack:
+                return PadWant(world, b, pt.Part, d) != 0; // (phase 5b: a station's large part, to a pick pad its arms fit from)
             default:
                 return false;
         }
@@ -198,8 +218,8 @@ public static partial class ConstructLifters
     /// <summary>Is another hand already bound for this put point (a press bay or a machine's input: one at a time)?</summary>
     private static bool Bound(ConstructWorld world, CLift self, in LiftPoint pt)
     {
-        if (pt.Kind == LiftPointKind.Rack)
-            return false;
+        if (pt.Kind is LiftPointKind.Rack or LiftPointKind.Tray)
+            return false; // (their wants count the hands bound for them)
         for (var bi = 0; bi < world.LiftBodies.Count; bi++)
         {
             var lb = world.LiftBodies[bi];
@@ -221,12 +241,23 @@ public static partial class ConstructLifters
     {
         at = default;
         var lift = WristLift(d);
+        var fromPad = skip >= 0 && l.Points![skip].Kind == LiftPointKind.Rack && world.Get(l.Points[skip].Body) is { } sb && l.Points[skip].Part < sb.PartCount && sb.DefOf(l.Points[skip].Part).IsLayDownPad;
         for (var k = 0; k < l.PointN; k++)
         {
             ref readonly var pt = ref l.Points![k];
-            if (k == skip || pt.Kind is LiftPointKind.Rack or LiftPointKind.Out || world.Get(pt.Body) is not { } b)
+            if (k == skip || pt.Kind == LiftPointKind.Out || world.Get(pt.Body) is not { } b)
                 continue;
-            if (!Wants(world, b, pt, d) || Bound(world, l, pt) || !PointAt(b, pt, out var p))
+            if (pt.Kind == LiftPointKind.Rack && (fromPad || pt.Part >= b.PartCount || !b.DefOf(pt.Part).IsLayDownPad))
+                continue; // (a rack is a want only as a station's pick pad, and never from another pad)
+            if (!Wants(world, b, pt, d) || Bound(world, l, pt))
+                continue;
+            Vector3 p;
+            if (pt.Kind is LiftPointKind.Rack or LiftPointKind.Tray)
+            {
+                if (!RackSpot(b, pt.Part, ld, shoulder, lr, lift, lift, out p))
+                    continue;
+            }
+            else if (!PointAt(b, pt, out p))
                 continue;
             p.Y += (d.BoundsMax.Y - d.BoundsMin.Y) * 0.5f + 0.05f;
             if (!InReach(ld, shoulder, lr, p, lift, out _))
@@ -309,7 +340,7 @@ public static partial class ConstructLifters
             for (var q = 0; q < st.KindN; q++)
             {
                 var def = st.KindDef[q];
-                if (ConstructCrafting.Holds(st, def) <= 0 || ConstructParts.Get(def) is not { } d || !Carries(ld, d))
+                if (ConstructCrafting.Available(world, st, def) <= 0 || ConstructParts.Get(def) is not { } d || !Carries(ld, d)) // (phase 5b: never what an order or a build has claimed)
                     continue;
                 var to = PutFor(world, l, ld, shoulder, lr, d, storage: false, skip: k, out var toAt);
                 if (to < 0 || !RackSpot(b, pt.Part, ld, shoulder, lr, SafeLift, WristLift(d), out var from))
@@ -399,6 +430,13 @@ public static partial class ConstructLifters
                     ok = world.RackPut(b, part, d);
                     if (ok && world.StockTargetN > 0)
                         ConstructLogisticsPlan.Arrived(world, b, part, 0, d); // (a stock target's refill counts it, as a conveyor's delivery does)
+                    if (ok)
+                        PadArrived(world, b, part, 0, d); // (phase 5b: a station's large part on its pick pad counts for its order)
+                    break;
+                case LiftPointKind.Tray:
+                    ok = world.RackPut(b, part, d);
+                    if (ok)
+                        ConstructCrafting.Arrived(world, b, part, d); // (phase 5b: it counts for the oldest open order of its kind, as a conveyor's delivery does)
                     break;
                 case LiftPointKind.Assembler:
                     ok = world.WantsPart(b, part, (ushort)d.Id) && world.FeedPart(b, part, d);
@@ -410,7 +448,7 @@ public static partial class ConstructLifters
                     ok = ConstructPanelFormer.TakeFromConveyor(world, b, part, d);
                     break;
             }
-            if (ok && l.ToKind != LiftPointKind.Rack && world.ChainCount > 0)
+            if (ok && l.ToKind is not (LiftPointKind.Rack or LiftPointKind.Tray) && world.ChainCount > 0)
                 ConstructLogisticsPlan.Arrived(world, b, part, 0, d); // (a chained order's input: it counts for its link by kind, as a conveyor's delivery does)
             if (ok)
             {
@@ -458,7 +496,7 @@ public static partial class ConstructLifters
         var name = world.Get(l.StationBody) is { } b && l.ToPart < b.PartCount ? b.DefOf(l.ToPart).Name : "a machine";
         return l.ToKind switch
         {
-            LiftPointKind.Rack => $"the {name}",
+            LiftPointKind.Rack or LiftPointKind.Tray => $"the {name}",
             LiftPointKind.PressBay => $"the {name}'s bay {l.ToBay + 1}",
             _ => $"the {name}'s Piece in",
         };

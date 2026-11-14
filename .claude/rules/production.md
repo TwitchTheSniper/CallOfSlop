@@ -12,7 +12,7 @@ paths:
   - "Source/Constructs/ConstructCrafting.cs"
   - "Source/Constructs/ConstructTerminal.cs"
   - "Source/Constructs/ConstructStation.cs"
-  - "Source/Constructs/ConstructLifters.cs"
+  - "Source/Constructs/ConstructLifter*.cs"
   - "Source/Constructs/ConstructModules.cs"
   - "Source/Constructs/ConstructPower.cs"
   - "Source/Constructs/ConstructLogic.cs"
@@ -51,5 +51,8 @@ Each line is a past failure's rule. Add a new one at the end: date, what went wr
 - 2026-11-13: arms never lifted a press's output (lifters phase 4 marked it done): `MadeBy` asked the press's rows, which only a lathe has since presses went to sized dies. A check of what a machine makes asks its current path (`SizedDieOf`: presets and `Pressed` keys) and is tried with the machine running, not read.
 - 2026-11-13: a Building Station's build with an Ammo Container never finished: `ConstructConveyor.RackCheck` refused every storage part for every rack, the station's hold included, so the order's part could never arrive and the window tool's stock was refused. A new kind of part a build may need is tried through each way into the station's hold (an order, a hand, a stock), not only the parts the showcase builds.
 - 2026-11-13: a small pressed receiver weighed (and recycled for) more than its blank and Gear Sets: the merge's mass rule had no cap. A pressed piece's mass never passes `Pressed.CostMass`; `--press-part sweep` reports one that does.
+- 2026-11-13: a Lay-down Pad's take-in crashed the server on a loose Swept Wing (lifters phase 5's "as new" test called `ConstructFluid.Held`, which reads a Fluid Tank's own setting slots: index -1 on any other part). A helper that reads one role's settings is called only for that role; try a check that loops over loose parts with an odd part (a wing, a beam), not only the piece it was written for.
+- 2026-11-13: a chained order sent a third blank through a Loader Arm when two were asked: a piece that reached a lifter's pick rack has lost its rider's tag, so the planner's `Riding` stopped counting it and sent another. Whatever carries a piece on after a store (an arm, later a crane) counts as riding for the order it serves (`ConstructLifters.AtPicks`).
+- 2026-11-13: a world loaded mid-build ordered parts already on the station's pick pad: the station's first order pass ran before the lifters' scan (no arm, no pad known yet), and arms loaded with a piece are Stuck, which the pad count skipped. A count that depends on another system's scan makes it run first (`PickPadHolds` scans), and a state a load gives on purpose (`LiftWhy.Holding`) isn't read as a fault.
 - 2026-11-13: the Production Showcase's first Laser Cutter never got its blank: the conveyor from the Router into the cutter was 0.6 m and the blank 1 m, so the Router read "the conveyor after the junction is full" and sent the blank to overflow. A conveyor after a junction or into a machine is at least as long as the longest piece that rides it; read `logi why` on the Router when an ordered piece goes to storage.
 - 2026-11-13: an unordered Ammo Container stuck at a Router blocked its line for good, and an ordered one was turned from a terminal's tray as "full": `RackCheck` refuses store parts and both callers read any refusal as "no room". A refusal code is read by its meaning (full waits; never-fits goes elsewhere or off the line), and a piece with no destination never blocks a line (`ConstructLogistics.NoPlace`).

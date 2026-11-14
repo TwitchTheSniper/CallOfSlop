@@ -993,6 +993,8 @@ public static class ConstructConveyor
                 ConstructCrafting.Arrived(world, c, to, d); // (it counts for the oldest open order of its kind)
             else if (world.StockTargetN > 0 || r.Tag != 0)
                 ConstructLogisticsPlan.Arrived(world, c, to, r.Tag, d); // (a stock target's refill: it counts for its link)
+            if (td.IsLayDownPad)
+                ConstructLifters.PadArrived(world, c, to, ((LogiFlags)r.Flags & LogiFlags.Storage) == 0 ? r.Tag : (ushort)0, d); // (a station's large part on its pick pad: lifters phase 5)
             return true;
         }
         if (td.IsPanelFormer)

@@ -83,14 +83,14 @@ public static partial class Program
                     if (m.NodeNet[m.Dests[ds]] == net && ConstructLogistics.Column(fc, m, ds, force: true))
                         cols++;
                 var colMs = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
-                WsSay($"[logi] net {rest}: {m.NodeN} nodes, {m.RouterN} routers, {m.DestN} destinations, routes {fc.RouteCount}; map built in {build:0.000} ms, {cols} columns in {colMs:0.000} ms");
+                WsSay($"[logi] net {rest}: {m.NodeN} nodes, {m.RouterN} routers, {m.DestN} destinations, {m.LiftN} lifter edges, routes {fc.RouteCount}; map built in {build:0.000} ms, {cols} columns in {colMs:0.000} ms");
                 for (var ds = 0; ds < m.DestN && s >= 0; ds++)
                 {
                     if (m.NodeNet[m.Dests[ds]] != net)
                         continue;
                     var at = s * LogiMap.MaxDests + ds;
                     int dp = m.NodePart[m.Dests[ds]];
-                    WsSay($"[logi]   -> {fc.DefOf(dp).Name}#{dp}{(m.DestStore[ds] ? " (storage)" : "")}: {(m.Hop[at] == LogiMap.None ? "no way" : $"way {ConstructLogistics.WayOf(fc, m.Hop[at])} by conveyor {m.Hop[at]}, {m.Dist[at]:0.0} m, {m.Narrow[at] * ConstructConveyor.StepCm} cm")}");
+                    WsSay($"[logi]   -> {fc.DefOf(dp).Name}#{dp}{(m.DestStore[ds] ? " (storage)" : "")}: {(m.Hop[at] == LogiMap.None ? "no way" : $"way {ConstructLogistics.WayOf(fc, m.Hop[at])} by conveyor {m.Hop[at]}, {m.Dist[at]:0.0} m, {m.Narrow[at] * ConstructConveyor.StepCm} cm{(m.ViaLift[at] ? ", by a lifter" : "")}")}");
                 }
                 return;
             }

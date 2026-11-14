@@ -120,6 +120,8 @@ public static class ConstructCrafting
             h = (h ^ r.To) * 16777619u;
             h = (h ^ (r.FedEnd ? 1u : 0u)) * 16777619u;
         }
+        if (ConstructLifters.HasLifter(c))
+            h = (h ^ (uint)ConstructLogistics.Map(c).LiftHash) * 16777619u; // (a lifter's edges join machines too: lifters phase 5)
         return h == 0 ? 1 : h;
     }
 
@@ -173,6 +175,7 @@ public static class ConstructCrafting
                 if (other >= 0 && n < seen.Length && !seen[..n].Contains(other))
                     seen[n++] = other;
             }
+            n = ConstructLifters.Joined(c, at, seen, n); // (and what a lifter carries between: lifters phase 5)
         }
         for (var q = 1; q < n; q++)
         {
@@ -187,7 +190,7 @@ public static class ConstructCrafting
                 if (net.RefinerN < CraftNet.MaxRefiners)
                     net.Refiners[net.RefinerN++] = seen[q];
             }
-            else if (IsStore(d) && c.Parts[seen[q]].Store != 0 && net.StoreN < CraftNet.MaxStores)
+            else if (IsStore(d) && c.Parts[seen[q]].Store != 0 && net.StoreN < CraftNet.MaxStores && !ConstructLifters.LiftOnly(c, seen[q]))
             {
                 net.Via[net.StoreN] = RouteTo(c, seen[q], t);
                 net.Stores[net.StoreN++] = seen[q];
@@ -1076,8 +1079,8 @@ public static class ConstructCrafting
         // Claims are cut to what their stores still hold (a part taken by hand), and what was collected by hand at a store with no route counts.
         for (var i = res.Count - 1; i >= 0; i--)
         {
-            if (res.Items[i].Owner != owner)
-                continue;
+            if (res.Items[i].Owner != owner || res.Items[i].OwnerId == ConstructLifters.PadClaim)
+                continue; // (a station's claims on its pick pads are its build's, kept by ConstructLifters.PadClaims)
             var st = world.StoreByHandle(res.Items[i].Store);
             var k = q.Find(res.Items[i].OwnerId);
             var held = st == null ? 0 : Holds(st, res.Items[i].Def);
@@ -1159,6 +1162,22 @@ public static class ConstructCrafting
                 }
                 state = CraftState.Fetching;
                 var fits = ConstructConveyor.RackCheck(c, t, tray, d);
+                var toPad = fits == 3 && via >= 0 && c.DefOf(t).IsBuildStation && net.Stores[s] is var sp && !c.DefOf(sp).IsLayDownPad ? ConstructLifters.PickPadFor(world, c, t, d, via) : -1; // (a pad that takes it, on its way: else as before)
+                if (toPad >= 0)
+                {
+                    // (a station's large part: it rides to a pick pad its arms fit from, lifters phase 5; a Router on the way sends it there)
+                    if (via >= 0 && via < c.RouteCount && world.StoreOf(c, net.Stores[s]) is { } pst && ConstructConveyor.PutMade(world, c, via, d, 1, out _, c.Parts[toPad].Store, o.Id))
+                    {
+                        if (TakeOne(world, c, net.Stores[s], pst, d))
+                        {
+                            o.Sent++;
+                            held--;
+                            res.Shrink(i, 1, pst);
+                        }
+                        break;
+                    }
+                    continue;
+                }
                 if (fits == 3)
                 {
                     // (a panel folded taller than the tray: it stays claimed at its rack for the player, as with no route)
