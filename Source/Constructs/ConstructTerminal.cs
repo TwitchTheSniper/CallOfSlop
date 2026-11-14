@@ -691,7 +691,7 @@ public sealed partial class ConstructEdits
             world.TrayAdd(st, d, item);
             c.Wake();
         }
-        Done.Add($"player {j.Player}: pulled a {item.Name} through the {d.Name} (construct {c.Id})");
+        Done.Add($"player {j.Player}: pulled a {PartRef.Shown(item)} through the {d.Name} (construct {c.Id})");
     }
 
     private void ArriveBulk(ConstructWorld world, Construct c, in TerminalJob j, CStore st, ushort store, byte mat, string name, bool hands)

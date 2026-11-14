@@ -238,8 +238,33 @@ public static unsafe partial class Program
                 Ui.SetSandboxInventoryMade(true);
                 WsSay("inv open: Made parts");
                 return true;
+            case "tiles":
+            {
+                // "tiles FROM N TEMPLATE": the pictures of N made parts asked for in one frame, as rows on screen ask ({i} counts from FROM, the
+                // rest of the template as "fill"); with the pool full, the longest unseen slots are handed on. Prints how many show a picture now.
+                var w2 = rest.Split(' ', 3, StringSplitOptions.TrimEntries);
+                if (w2.Length < 3 || !int.TryParse(w2[0], out var from) || !int.TryParse(w2[1], out var n))
+                {
+                    WsFail("inv tiles FROM N TEMPLATE");
+                    return true;
+                }
+                var shown = 0;
+                for (var i = from; i < from + n; i++)
+                {
+                    var name = w2[2].Replace("{i}", i.ToString()).Replace("{f}", (100 + 5 * (i % 60)).ToString()).Replace("{s}", (20 + 5 * (i / 60)).ToString()); // ({f} a length in 5 cm steps, {s} a section that moves on every 60)
+                    if (ConstructParts.Find(name) is not { RuntimeMade: true } d)
+                    {
+                        WsFail($"inv tiles: no made part \"{name}\"");
+                        return true;
+                    }
+                    if (SandboxTiles.TryGetPart(d.Id, out _, out _, out _))
+                        shown++;
+                }
+                WsSay($"inv tiles: {from}..{from + n - 1}: {shown} with a picture; in use {SandboxTiles.MadeInUse} of {SandboxTiles.MadePool}, drawn {SandboxTiles.MadeRendered}, handed on {SandboxTiles.MadeEvicted}");
+                return true;
+            }
             case "icons":
-                WsSay($"inv icons: rows with a picture {Ui.SandboxMadeIcons}, swatches {Ui.SandboxMadeSwatches}; made tiles drawn {SandboxTiles.MadeRendered}, in use {SandboxTiles.MadeInUse} of {SandboxTiles.MadePool}, handed on {SandboxTiles.MadeEvicted}");
+                WsSay($"inv icons: rows with a picture {Ui.SandboxMadeIcons}, swatches {Ui.SandboxMadeSwatches}; made tiles drawn {SandboxTiles.MadeRendered}, in use {SandboxTiles.MadeInUse} of {SandboxTiles.MadePool}, handed on {SandboxTiles.MadeEvicted}, drawn again for new boxes {SandboxTiles.MadeRedrawn}, waits for a stand-in {SandboxTiles.MadeStandInWaits}, an id made again {SandboxTiles.MadeIdRemade}");
                 return true;
             case "force" when g.IsServer:
             {
@@ -321,6 +346,54 @@ public static unsafe partial class Program
                 g.SurvivalForTool(rest != "off");
                 WsSay($"inv survival: infinite parts {g.SandboxInfiniteParts}, survival {g.SandboxHands.Survival}");
                 return true;
+            case "rackforce" when g.IsServer:
+            {
+                // "rackforce N TEMPLATE" (a test state, as "force" is): N made kinds, one of each, counted on the first Piece Rack's kinds
+                // past its packing (TEMPLATE as "fill" reads it), to drive a network's made list past a message's room; the key bytes are printed.
+                var w2 = arg.Split(' ', 3, StringSplitOptions.TrimEntries);
+                if (w2.Length < 3 || !int.TryParse(w2[1], out var n) || WsFind(g, "Piece Rack") is not ({ } rc, var rp) || g.Constructs.StoreOf(rc, rp) is not { } rst)
+                {
+                    WsFail("inv rackforce N TEMPLATE (and a Piece Rack)");
+                    return true;
+                }
+                var bytes = 0;
+                var scratch = new PacketWriter(1024);
+                for (var i = 0; i < n; i++)
+                {
+                    var name = w2[2].Replace("{i}", i.ToString()).Replace("{j}", (10 + i).ToString()).Replace("{k}", (100 + i).ToString()).Replace("{e}", (100 + 2 * i).ToString()).Replace("{t}", (12 + i % 29).ToString()).Replace("{q}", (i / 29).ToString());
+                    if (ConstructParts.Find(name) is not { RuntimeMade: true } d)
+                    {
+                        WsFail($"inv rackforce: no made part \"{name}\" ({(HullLoft.IsCutName(name) ? HullLoft.CutRefusal(name) : "")})");
+                        return true;
+                    }
+                    scratch.Begin(Msg.CAct);
+                    PartRef.Write(scratch, d.Id);
+                    bytes += scratch.Length - 1 + 2;
+                    rst.AddKind(d.Id, 1);
+                }
+                g.Constructs.ChangedForTool(rst);
+                WsSay($"inv rackforce: {n} kinds on the Piece Rack, {bytes} bytes of made entries (a beacon message's made list goes on in the next past {ConstructBeacons.MadeBudget})");
+                return true;
+            }
+            case "madesum":
+            {
+                // This peer's beacon view's made list as a digest of (key, count), to compare a host with a client.
+                var bv = g.SandboxBeacon(me.Id);
+                var list = new List<string>();
+                var total = 0;
+                for (var k = 0; k < bv.MadeN; k++)
+                {
+                    list.Add($"{ConstructParts.Get(bv.MadeDef[k])?.Name}={bv.MadeCount[k]}");
+                    total += bv.MadeCount[k];
+                }
+                list.Sort(StringComparer.Ordinal);
+                var h = 2166136261u;
+                foreach (var s in list)
+                    foreach (var ch in s)
+                        h = (h ^ ch) * 16777619u;
+                WsSay($"inv madesum: player {me.Id} network made kinds {bv.MadeN} (+{bv.MadeOver}), parts {total}, digest {h:X8}");
+                return true;
+            }
             case "made":
             {
                 // This peer's "Made parts" rows (the count's and the network's), their tooltips, and its beacon view's made list.
