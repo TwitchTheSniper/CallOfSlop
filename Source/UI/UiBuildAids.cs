@@ -29,12 +29,32 @@ public sealed partial class Ui
         foreach (var d in ConstructParts.All)
             if (d.Offered && d.Class == cls && ConstructReplace.Plan(game.Constructs, c, part, d, out _) == null)
                 _rpFits.Add(d);
+        // Made parts the player has (their count, a rack on their network: inventories phase 4) that meet its connections, by key.
+        var inv = game.SandboxInv.Of(game.LocalId);
+        for (var k = 0; k < inv.MadeN; k++)
+            RpMade(game, c, part, inv.MadeDef[k]);
+        if (game.SandboxBeaconOn && game.SandboxBeacon(game.LocalId) is var bv)
+            for (var k = 0; k < bv.MadeN; k++)
+                RpMade(game, c, part, bv.MadeDef[k]);
         _rpLoose.Clear();
         if (game.Local is { } me)
             foreach (var d in _rpFits)
                 if (d.PhysicsOnly)
                     _rpLoose[d.Id] = ConstructAid.LooseCount(game.Constructs, me.Id, d, me.Eye);
-        _rpFits.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
+        _rpFits.Sort((a, b) => string.Compare(RpName(a), RpName(b), StringComparison.Ordinal));
+        _rpNames.Clear();
+        foreach (var d in _rpFits)
+            _rpNames.Add(RpName(d));
+    }
+
+    private readonly List<string> _rpNames = []; // (each fit's name, made once: a made part's is its listed label)
+
+    private static string RpName(ConstructPartDef d) => d.RuntimeMade ? PartRef.Listed(d) : d.Name;
+
+    private void RpMade(Game game, Construct c, int part, ushort id)
+    {
+        if (ConstructParts.Get(id) is { RuntimeMade: true } d && !_rpFits.Contains(d) && ConstructReplace.Plan(game.Constructs, c, part, d, out _) == null)
+            _rpFits.Add(d);
     }
 
     public void CloseReplacePicker()
@@ -67,13 +87,16 @@ public sealed partial class Ui
             ImGui.BeginChild("fits"u8);
             var inv = game.SandboxInv.Of(game.LocalId);
             var beacon = game.SandboxBeacon(game.LocalId);
-            foreach (var d in _rpFits)
+            for (var i = 0; i < _rpFits.Count && i < _rpNames.Count; i++)
             {
-                if (find.Length > 0 && d.Name.IndexOf(find, StringComparison.OrdinalIgnoreCase) < 0)
+                var d = _rpFits[i];
+                var name = _rpNames[i];
+                if (find.Length > 0 && name.IndexOf(find, StringComparison.OrdinalIgnoreCase) < 0)
                     continue;
-                var have = game.SandboxInfiniteParts ? -1 : d.PhysicsOnly ? _rpLoose.GetValueOrDefault(d.Id) : inv.Count(d.Id) + (beacon.On ? beacon.CountOf(d.Id) : 0);
+                var have = d.RuntimeMade ? inv.Count(d.Id) + (beacon.On ? beacon.CountOf(d.Id) : 0) + _rpLoose.GetValueOrDefault(d.Id) // (a made part is never endless)
+                    : game.SandboxInfiniteParts ? -1 : d.PhysicsOnly ? _rpLoose.GetValueOrDefault(d.Id) : inv.Count(d.Id) + (beacon.On ? beacon.CountOf(d.Id) : 0);
                 ImGui.BeginDisabled(have == 0);
-                if (ImGui.Selectable(have < 0 ? d.Name : $"{d.Name}  ({have})"))
+                if (ImGui.Selectable(have < 0 ? name : $"{name}  ({have})##rp{i}"))
                 {
                     Program.SandboxReplaceSend(game, _rpBody, _rpPart, d.Id);
                     open = false;

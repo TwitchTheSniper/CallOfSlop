@@ -200,10 +200,14 @@ public static class RuntimeParts
 
     private static bool[] _reshape = [];
 
+    /// <summary>The part the local player picked for a Line Layer or a Replacer (Program.SandboxAids.cs): kept while it is picked.</summary>
+    public static ushort Pinned = ConstructParts.None;
+
     private static void MarkRoots()
     {
         lock (TrackGate)
         {
+            Mark(Pinned);
             foreach (var r in Worlds)
                 if (r.TryGetTarget(out var w))
                     MarkWorld(w);

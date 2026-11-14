@@ -254,7 +254,7 @@ public sealed partial class ConstructEdits
         for (var k = 0; k < s.Total; k++)
         {
             var d = c.DefOf(s.Items[k]);
-            if (d.PhysicsOnly || c.Parts[s.Items[k]].Broken || net == 0)
+            if (d.PhysicsOnly && !d.RuntimeMade || c.Parts[s.Items[k]].Broken || net == 0) // (a made part goes back onto a rack on the network: inventories phase 4)
             {
                 stay[k] = true;
                 stays++;
@@ -666,7 +666,7 @@ public sealed partial class ConstructEdits
             if (Stopwatch.GetTimestamp() >= until)
                 return;
             var (def, n) = job.Need[job.Cursor];
-            if (def.PhysicsOnly && !InfiniteParts)
+            if (def.PhysicsOnly && !def.RuntimeMade && !InfiniteParts) // (a made part: TakeForAid, the count, a rack, a loose piece)
             {
                 job.Took = 0;
                 foreach (var b in world.Bodies)
@@ -708,7 +708,9 @@ public sealed partial class ConstructEdits
     {
         var net = NetworkOf(world, player, eye);
         foreach (var (id, at) in job.Paid)
-            if (ConstructParts.Get(id) is { } d && (net == 0 || d.PhysicsOnly || world.Beacons.PutPart(world, this, player, net, d) == null))
+            if (ConstructParts.Get(id) is { RuntimeMade: true } m)
+                ReturnMade(world, player, m, eye, at); // (a rack on the network, the count, else a body: inventories phase 4)
+            else if (ConstructParts.Get(id) is { } d && (net == 0 || d.PhysicsOnly || world.Beacons.PutPart(world, this, player, net, d) == null))
                 Give(world, player, d, at);
         job.Paid.Clear();
     }
@@ -860,14 +862,22 @@ public sealed partial class ConstructEdits
                 return;
             }
             var (def, at, hand) = job.Refund[job.Cursor++];
-            if (!hand && !def.PhysicsOnly && net != 0 && world.Beacons.PutPart(world, this, player, net, def) != null)
+            if (!hand && (!def.PhysicsOnly || def.RuntimeMade) && net != 0 && world.Beacons.PutPart(world, this, player, net, def) != null)
             {
-                job.Back++;
+                job.Back++; // (a made part back onto a rack on the network: inventories phase 4)
                 continue;
             }
             job.Dropped++;
             if (job.Dropped > MaxDrops && Inventory != null && Inventory.Of(player).Add(def.Id))
                 continue; // (a full network: counted on the player, not a heap of bodies)
+            if (def.RuntimeMade)
+            {
+                if (DropLoose(world, def, at, Quaternion.Identity) is { } freed)
+                    freed.Owner = player; // (a made part is a body, never handed: the user's answer 1)
+                else
+                    Done.Add($"player {player}: the world is full: a refunded {PartRef.Shown(def)} is lost");
+                continue;
+            }
             Give(world, player, def, at);
         }
     }
