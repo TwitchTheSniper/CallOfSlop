@@ -16,7 +16,7 @@ public static partial class Program
     private static int _wsClipBodies, _wsClipLoose;
     private static bool _wsClipToolAsked;
 
-    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake";
+    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup";
 
     private static bool WsPlayVerb(Game g, Player me, string verb, string arg)
     {
@@ -277,6 +277,16 @@ public static partial class Program
                 WsLook(g, me.Eye, imid);
                 WsSay(string.Create(ci, $"aimintake: the intake's middle at {imid:0.00}, {Vector3.Distance(me.Eye, imid):0.0} m from the eye"));
                 _wsWait = 2;
+                return true;
+            }
+            case "feetup": // "feetup UP": this player's feet UP m higher, out of the tool's flight, to fall onto whatever is below (a pad's deck: riding it)
+            {
+                var upBy = float.TryParse(arg, System.Globalization.NumberStyles.Float, ci, out var fu) ? fu : 0.5f;
+                me.NoclipWanted = false;
+                g.NoclipShot = false;
+                me.Teleport(me.Position + GravityFrames.UpAt(me.Position) * upBy);
+                WsSay(string.Create(ci, $"feetup: feet to {me.Position:0.00}"));
+                _wsWait = 30;
                 return true;
             }
             case "partlook":
