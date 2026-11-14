@@ -512,7 +512,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   SocketKind.RunOut; the grown die and length are read from the construct on each peer (no new bytes).
     // 309: Lifters phase 5b (on the logistics network): a lift word's put point may be a Crafting Terminal's tray (LiftPointKind.Tray, a new
     //   value at the end). The map's lifter edges are worked out on each peer from the parts (no new bytes).
-    public const ushort ProtocolVersion = 309;
+    // 312: Bored cylinders: a pressed engine piece weighs and holds what its size's catalogue piece does by metal, and a pressed cylinder's
+    //   power follows its bore (its across less its walls), worked out from the key on each peer (no new bytes; mass, health and kW differ).
+    public const ushort ProtocolVersion = 312;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

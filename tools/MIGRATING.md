@@ -111,6 +111,10 @@ Forty-one more rows left the Assembler's recipe list: the **Gun Barrel, Long Gun
 
 Pressed pieces in a saved world keep their key and load as the same piece: same size, numbers and mass (their models settle by a few millimetres so no two faces flicker). A Press's Pattern setting keeps its meaning, and a Press set to Auto makes what it made before: the receivers a Receiver Die can now make (22 that had no recipe, the Bucket Launcher and Courier Carbine among them) come only from its Pattern setting or an order. Recycling a part a Press makes from a preset (a Gear Set, a Housing, a Gun Barrel and others) now gives back at most what pressing it took: less than before for 35 of them.
 
+### Pressed engine pieces in a saved world (bored cylinders, 2026-11-14)
+
+Pressed engine pieces (cylinders, crank sections, flywheels, fuel systems, boosters, starters, outlets) keep their key and load as the same piece, the same size and shape, but they now weigh and hold what the catalogue piece of their size does for their metal: most are a half to a third of their old mass and health, so a vehicle with a pressed engine gets lighter and its engine is easier to damage. A pressed cylinder's power now comes from its **bore** (its width less both walls), not its outside width: a thinner wall is more power and less metal, a thicker one less power. Its revs are unchanged. An engine built from the Engine Kit's old "bored" cylinders (`pipe10 50x50x85`, `pipe10 55x55x95`, `pipe15 60x60x105` for a Small one) gives less power than before (a Small B16 of the last kind: 1991 kW before, 1482 kW now); look at the engine's readout after loading. Catalogue engine pieces, and pieces pressed at a catalogue preset, are unchanged. Nothing is dropped.
+
 ### Keeping saves on a USB stick (portable mode)
 
 Put an empty file called `portable.txt` next to `CallOfSlop.exe`. The game then keeps its saves in its own folder, like the old builds did. Copy your save files into that folder yourself.

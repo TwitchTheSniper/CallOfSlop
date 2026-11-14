@@ -250,6 +250,7 @@ public static class EngineKit
                     boosts.Add(null); // (the booster asked for is past the tier: none, and the note says so)
                 if (bore.Cylinder is not { } cyl || bore.Crank is not { } crank || fuels.Count == 0)
                     continue;
+                var frail = bore.Ratio == 1 || Part($"{sw} Cylinder") is not { } plainCyl ? 0f : Math.Clamp(1 - cyl.Health / MathF.Max(1, plainCyl.Health), 0f, 1f);
                 rules.At(rules.ScaleOf(cyl), out var cylKw, out _, out _, out _); // (a file cylinder's is its size's row exactly)
                 foreach (var layout in Layouts)
                 {
@@ -270,7 +271,7 @@ public static class EngineKit
                                            + (r.Exhausts && exhaust != null ? (cylinders - banks.Length) * exhaust.Mass : 0)
                                            + (rules.StarterFor(size) && starter != null ? starter.Mass : 0);
                                 var dims = Estimate(banks, n, boost != null, rules.StarterFor(size), s) * new Vector3(bore.Pitch, 1, 1); // (a bored cylinder keeps its across and length: only the crank may grow)
-                                plans.Add(Score(r, size, layout, n, cyl.Name, fuel.Name, boost?.Name, kw, mass, dims, target, peakW, rules.Peak[size], tier, Math.Max(bore.Tier, Math.Max(TierOf(fuel), boost != null ? TierOf(boost) : 1))) with { Crank = crank.Name, Grade = bore.Word });
+                                plans.Add(Score(r, size, layout, n, cyl.Name, fuel.Name, boost?.Name, kw, mass, dims, target, peakW, rules.Peak[size], tier, Math.Max(bore.Tier, Math.Max(TierOf(fuel), boost != null ? TierOf(boost) : 1)), frail) with { Crank = crank.Name, Grade = bore.Word });
                             }
                 }
             }
@@ -297,7 +298,7 @@ public static class EngineKit
 
     /// <summary>Lower is better: the power's miss (short counts three times over), the torque's and rpm's, then mass and bulk, and a seeded hair to part ties.</summary>
     private static EnginePlan Score(EngineRequest r, int size, EngineLayout layout, int n, string cyl, string fuel, string? boost, float kw, float mass, Vector3 dims,
-        float target, float peakW, float peakRpm, int tier, int usedTier)
+        float target, float peakW, float peakRpm, int tier, int usedTier, float frail = 0)
     {
         var why = "";
         var miss = kw < target ? 3 * (target - kw) / target : (kw - target) / target;
@@ -312,6 +313,7 @@ public static class EngineKit
         score += 0.15f * mass / MathF.Max(1, target * 2.5f); // (about 2.5 kg a kW is a plain small engine's)
         score += 0.02f * (dims.X * dims.Y * dims.Z) / MathF.Max(1e-3f, MathF.Pow(target / 100f, 1f)); // (bulk, lightly)
         score += 0.03f * (tier - usedTier); // (a tier's engine leans on its own pieces)
+        score += 0.1f * frail; // (a bored cylinder's thinner wall is easier to damage: frail is the health it gives up against the plain one, 0 to 1)
         score += 0.01f * Hash01(r.Seed, size, (int)layout, n, cyl.Length * 31 + fuel.Length * 7 + (boost?.Length ?? 0));
         var feasible = true;
         if (r.Fit.X > 0 && dims.X > r.Fit.X || r.Fit.Y > 0 && dims.Y > r.Fit.Y || r.Fit.Z > 0 && dims.Z > r.Fit.Z)
