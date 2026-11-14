@@ -53,3 +53,12 @@ menu, Construct configure, Display screens, Interaction sweep: 0 failures.
    the choice, and a passive part's draw needs the power step to learn about it.
 2. Small Extruder: Die Frames stop at 6 m, the Medium's die is 8 m. Raise the frames' cap to 8 m so every class reaches the next? **Recommend yes**, a one-number change.
 3. A Capital piece does nothing today (both of its limits are the game's). Leave the Capital without pieces? **Recommend yes**.
+
+## After the merge review (2026-11-13)
+
+1. A machine's own expansion pieces (tables, Die Extensions, Die Frames) no longer block its piece (`Hits(..., own: true)` in `PathClear`; any such piece
+   on the body counts, not only this machine's). Tried: a small Extruder with a Die Frame and a table, a 1 x 1 m section: it grew over the table.
+2. Cut every past what the machine reaches now cuts at its cap (`CutDueCm`): Cut every 100 m on a plain Medium made a 64 m piece and started the next. A
+   queued order longer than the machine makes now (a table shot off) stalls with the new `ExtrudeStall.OrderTooLong` and says what would fit it (host and
+   client: `its order is 70 m long, it makes 64 m now: add Medium Run-out Tables to its out bed (to 128 m with them), or Cancel it`); a piece is never cut short of its order.
+3. The `Piece out` port opens to the grown reach (`MostSection`: 16 x 16 m on a Medium).

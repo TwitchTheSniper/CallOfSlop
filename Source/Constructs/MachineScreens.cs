@@ -228,6 +228,7 @@ public static class MachineScreens
                 case ExtrudeStall.ConveyorCut: Say(card, PanelState.Fault, "Conveyor cut"); break;
                 case ExtrudeStall.NoOrders: Say(card, PanelState.Idle, "Waiting for orders"); break;
                 case ExtrudeStall.OrderMaterial: Say(card, PanelState.Wants, "Order needs other stock"); break;
+                case ExtrudeStall.OrderTooLong: Say(card, PanelState.Refused, "Order too long"); break;
                 default:
                     if (st.Busy)
                         Say(card, PanelState.Working, wheel ? "Forming" : "Extruding");

@@ -53,6 +53,24 @@ public static unsafe partial class Program
                 _wsWait = 3;
                 return true;
             }
+            case "set" when g.IsServer: // "extr set PART[#n]|key|value": a setting as the configure tool sets it
+            {
+                var bits = rest.Split('|');
+                var (fc, part) = bits.Length == 3 ? WsFind(g, bits[0]) : (null, -1);
+                var key = CfgKey.None;
+                for (var k = CfgKey.None + 1; k < CfgKey.COUNT; k++)
+                    if (bits.Length == 3 && ConstructConfig.KeyName(k) == bits[1])
+                        key = k;
+                if (fc == null || key == CfgKey.None || !float.TryParse(bits[2], System.Globalization.CultureInfo.InvariantCulture, out var v))
+                {
+                    WsFail($"extr set: \"{rest}\"");
+                    return true;
+                }
+                ConstructConfig.Put(ref fc.Parts[part], fc.DefOf(part), key, v);
+                w.StructureDirty.Add(fc.Id);
+                WsSay($"extr: set {fc.DefOf(part).Name} {bits[1]} = {ConstructConfig.Get(fc.Parts[part], fc.DefOf(part), key, -1)}");
+                return true;
+            }
             case "made":
             {
                 var n = 0;
@@ -73,6 +91,8 @@ public static unsafe partial class Program
                 var product = ConstructExtruder.ProductOf(c, part);
                 WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture,
                     $"extr: {(g.IsServer ? "host" : "client")} {d.Name}#{part}: die {die.X:0.##} x {die.Y:0.##} m at {centre.X:0.##},{centre.Y:0.##}; longest {longest:0.#} m; parts {c.PartCount}; growing {(product >= 0 ? c.DefOf(product).ExKey.L + " cm" : "none")}"));
+                var port = Array.Find(d.NamedPorts, x => x.Name == "Piece out");
+                WsSay($"extr: status{(w.StoreOf(c, part) is { } est ? ConstructExtruder.Status(c, part, est) : " none")}; Piece out opens {port.Opening.X:0.##} x {port.Opening.Y:0.##} m");
                 if (o.Key.W > 0)
                     WsSay($"extr: order {o.Key.W}x{o.Key.H}x{o.Key.L}: {WorkOrders.Refusal(w, c, part, o) ?? "takes it"}");
                 return true;

@@ -22,6 +22,7 @@ public enum ExtrudeStall : byte
     NoOrders, // its queue of work orders is empty (WorkOrders.cs): it waits for the next
     OrderMaterial, // its bin holds another material than its head order asks for
     OffcutFull, // a Laser Cutter: its offcut bin is full, or holds another material (ConstructLaserCutter.cs)
+    OrderTooLong, // its head order is longer than the machine makes now (a Run-out Table gone): add tables, or Cancel it (ConstructExtruderGrowth.cs)
 }
 
 /// <summary>
@@ -219,7 +220,7 @@ public static partial class ConstructExtruder
         p.Out = p.OutNext = product < 0 ? 0 : (d.IsWheelFormer ? depth ? size : c.Parts[product].D.ExKey.W : len) / 100f; // (its output: the length so far, a wheel's size in this mode)
         if (whole && queue == null && product >= 0 && size >= TargetCm(p, d))
             asked = true; // (a Fan or an Airframe Former parts a piece off when it reaches the size asked; with a queue, its order's size)
-        if (product >= 0 && !p.Broken && (asked || CutAtCm(p, d) is var every and > 0 && len >= every) && ConstructRecycler.Powered(world, c, part))
+        if (product >= 0 && !p.Broken && (asked || CutDueCm(c, part, p, d) is var every and > 0 && len >= every) && ConstructRecycler.Powered(world, c, part))
         {
             if (forOrder && FormerPresets.PartOf(head) is { } made)
             {
@@ -294,6 +295,16 @@ public static partial class ConstructExtruder
     private static int CutAtCm(in CPart p, ConstructPartDef d) =>
         p.Orders is { Bill: false } q ? (q.Count > 0 && !d.IsWheelFormer ? q.Head.Key.L : 0) : CutLengthCm(p, d);
 
+    /// <summary>Where Cut every parts a piece now: past what the machine reaches (a Run-out Table shot off, or set for tables it hasn't got) it cuts at
+    /// its cap; an order's length is never cut short (<see cref="ExtrudeStall.OrderTooLong"/>).</summary>
+    private static int CutDueCm(Construct c, int part, in CPart p, ConstructPartDef d)
+    {
+        var every = CutAtCm(p, d);
+        if (every <= 0 || p.Orders is { Bill: false } || d.IsWheelFormer || d.ExtGrowLength <= d.ExtMaxLength || every <= (int)MathF.Round(d.ExtMaxLength * 100))
+            return every;
+        return Math.Min(every, MaxLengthCm(c, part));
+    }
+
     /// <summary>Does the Run wire hold the machine off? Its other inputs don't count.</summary>
     internal static bool RunHeld(Construct c, int part)
     {
@@ -321,6 +332,8 @@ public static partial class ConstructExtruder
                 return ExtrudeStall.NoMaterial;
             if (order && st.Material != head.Key.Material)
                 return ExtrudeStall.OrderMaterial;
+            if (order && head.Key.L > MaxLengthCm(c, part))
+                return ExtrudeStall.OrderTooLong; // (longer than it makes now: its Run-out Tables gone since it was queued)
             if (ExtrusionTable.Current.Find(st.Material) == null)
                 return ExtrudeStall.BadMaterial;
             Section(c, part, out var mask, out var w, out var h, out var centre, out var shape, out var wall);
@@ -344,10 +357,10 @@ public static partial class ConstructExtruder
         var limit = Math.Min(Extrusion.MaxLengthCm, (int)MathF.Round(d.ExtMaxLength * 100));
         if (d.ExtGrowLength > d.ExtMaxLength && len + 100 >= limit)
             limit = MaxLengthCm(c, part); // (its Run-out Tables: walked only near the plain cap, a step grows at most 16 cm)
-        if (CutAtCm(p, d) is var every and >= Extrusion.StepCm && every < limit)
+        if (CutDueCm(c, part, p, d) is var every and >= Extrusion.StepCm && every < limit)
             limit = every; // (a piece stops at its length, whatever the speed)
         if (len >= limit)
-            return ExtrudeStall.AtCap;
+            return order && head.Key.L > limit ? ExtrudeStall.OrderTooLong : ExtrudeStall.AtCap; // (a table gone under a longer order: say so, never cut it short)
         var row = ExtrusionTable.Current.Find(key.Material);
         if (row == null)
             return ExtrudeStall.BadMaterial;
@@ -686,7 +699,7 @@ public static partial class ConstructExtruder
                 var other = near[k];
                 if (other.Dirty)
                     other.Rebuild();
-                if (!Hits(other, other == c ? product : -1, obb))
+                if (!Hits(other, other == c ? product : -1, obb, own: other == c))
                     continue;
                 if (other == c || other.Anchored || other.CarriedBy != 0)
                     return Path.Blocked;
@@ -701,15 +714,15 @@ public static partial class ConstructExtruder
     public static bool DueOff(Construct c, int part, int product)
     {
         ref var p = ref c.Parts[part];
-        return (p.State & CutPending) != 0 || CutAtCm(p, p.D) is var every and > 0 && c.Parts[product].D.ExKey.L >= every;
+        return (p.State & CutPending) != 0 || CutDueCm(c, part, p, p.D) is var every and > 0 && c.Parts[product].D.ExKey.L >= every;
     }
 
-    internal static bool Hits(Construct b, int skip, in Obb obb)
+    internal static bool Hits(Construct b, int skip, in Obb obb, bool own = false)
     {
         var reach = obb.Half.Length();
         for (var i = 0; i < b.PartCount; i++)
         {
-            if (i == skip)
+            if (i == skip || own && b.Parts[i].D is { ExtRunOut: > 0 } or { ExtGrowStep: > 0 } or { IsDieFrame: true }) // (an Extruder's own expansion pieces never block its piece)
                 continue;
             b.WorldFrame(b.Parts[i].Seg, out var q, out var t);
             b.PartBounds(i, out var mn, out var mx);
@@ -889,6 +902,7 @@ public static partial class ConstructExtruder
             ExtrudeStall.ConveyorCut => " - blocked: its conveyor is cut: mend it",
             ExtrudeStall.NoOrders => ", waiting for orders (Clear on its screen: back to its own settings)",
             ExtrudeStall.OrderMaterial => $" - needs {(c.Parts[part].Orders is { Count: > 0 } q ? RecyclingTable.Current.NameOf(q.Head.Key.Material) : "another material")} for its order, holds {RecyclingTable.Current.NameOf(st.Material)}",
+            ExtrudeStall.OrderTooLong => c.Parts[part].Orders is { Count: > 0 } lq ? $" - its order is {lq.Head.Key.L / 100f:0.##} m long, it makes {MaxLengthCm(c, part) / 100f:0.##} m now: {LongFix(d, lq.Head.Key.L, lq.Head.Key.W, lq.Head.Key.H)}, or Cancel it" : " - its order is longer than it makes now",
             _ => st.Busy ? (wheel ? ", forming" : ", extruding") : ", waiting",
         };
     }
