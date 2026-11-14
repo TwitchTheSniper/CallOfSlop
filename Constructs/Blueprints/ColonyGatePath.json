@@ -163,14 +163,14 @@
       "finish": "concrete"
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 11,
       "socket": "f8",
       "by": "back",
       "text": [
         "INMATES KEEP LEFT. STAFF KEEP INMATES LEFT."
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
       "part": "Bulkhead Light",

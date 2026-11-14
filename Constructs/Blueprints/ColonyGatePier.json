@@ -16,24 +16,24 @@
       }
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 0,
       "socket": "sign",
       "by": "back",
       "text": [
         "MINISTRY OF SLOP - PENAL COLONY 7"
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 0,
       "socket": "sign2",
       "by": "back",
       "text": [
         "NO WAY OUT. NO WAY IN EITHER."
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
       "part": "Battery",

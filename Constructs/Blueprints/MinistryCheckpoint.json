@@ -169,34 +169,34 @@
       }
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 20,
       "socket": "sign",
       "by": "back",
       "text": [
         "CHECKPOINT FOUR"
       ],
-      "paint": "#1f2b45"
+      "paint": "#2f5a3c"
     },
     {
-      "part": "Text Sign",
+      "part": "Notice Board",
       "on": 6,
       "socket": "fb7_5",
       "by": "back",
       "text": [
         "HALT. PAPERS READY. NO PAPERS, NO PASSAGE"
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
-      "part": "Text Sign",
+      "part": "Notice Board",
       "on": 8,
       "socket": "fa7_5",
       "by": "back",
       "text": [
         "LOST YOUR PAPERS? APPLY IN PERSON, WITH PAPERS"
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
       "part": "Bulkhead Light",
@@ -339,24 +339,24 @@
       "finish": "concrete"
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 42,
       "socket": "n0",
       "by": "back",
       "text": [
         "CHECKPOINT HOURS: ALWAYS. EXCEPT LUNCH."
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 42,
       "socket": "n1",
       "by": "back",
       "text": [
         "SMILING AT THE OFFICER IS AN OFFENCE"
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
       "part": "Queue Post",

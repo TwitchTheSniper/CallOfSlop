@@ -95,7 +95,16 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Stair Floor 4x4 m",
+      "part": "Concrete Wide Stair Floor",
+      "on": 6,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "spin": 3,
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
       "on": 4,
       "socket": "t0_0",
       "by": "b0_0",
@@ -119,25 +128,16 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Floor 4x4 m",
-      "on": 6,
-      "socket": "t0_0",
-      "by": "b15_15",
-      "paint": "#858179",
-      "finish": "concrete"
-    },
-    {
-      "part": "Concrete Straight Stair 3 m",
-      "on": 0,
-      "socket": "t4_4",
-      "by": "b0_11",
-      "spin": 3,
+      "part": "Concrete Wide Stair 3 m",
+      "on": 3,
+      "socket": "t8_0",
+      "by": "b0_0",
       "paint": "#858179",
       "finish": "concrete"
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 12,
+      "on": 13,
       "socket": "t0_0",
       "by": "b0_0",
       "paint": "#a29e94",
@@ -145,7 +145,7 @@
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 13,
+      "on": 14,
       "socket": "t8_0",
       "by": "b0_7",
       "spin": 2,
@@ -154,16 +154,16 @@
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 15,
-      "socket": "t8_15",
-      "by": "b7_0",
+      "on": 12,
+      "socket": "t0_0",
+      "by": "b0_0",
       "spin": 3,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 14,
+      "on": 15,
       "socket": "t0_8",
       "by": "b7_0",
       "spin": 1,
@@ -172,7 +172,7 @@
     },
     {
       "part": "Concrete Slot Wall 4 m",
-      "on": 12,
+      "on": 13,
       "socket": "t8_0",
       "by": "b0",
       "paint": "#a29e94",
@@ -180,16 +180,16 @@
     },
     {
       "part": "Concrete Wall 4 m",
-      "on": 14,
-      "socket": "t8_15",
-      "by": "b15",
+      "on": 12,
+      "socket": "t8_0",
+      "by": "b0",
       "spin": 3,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
       "part": "Concrete Slot Wall 4 m",
-      "on": 12,
+      "on": 13,
       "socket": "t0_8",
       "by": "b15",
       "spin": 1,
@@ -198,24 +198,15 @@
     },
     {
       "part": "Concrete Wall 4 m",
-      "on": 13,
-      "socket": "t15_8",
-      "by": "b0",
+      "on": 12,
+      "socket": "t0_8",
+      "by": "b15",
       "spin": 2,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
-      "part": "Concrete Stair Floor 4x4 m",
-      "on": 19,
-      "socket": "t0_0",
-      "by": "b0_0",
-      "spin": 3,
-      "paint": "#858179",
-      "finish": "concrete"
-    },
-    {
-      "part": "Concrete Floor 4x4 m",
+      "part": "Concrete Wide Stair Floor",
       "on": 17,
       "socket": "t0_0",
       "by": "b0_0",
@@ -239,16 +230,25 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Straight Stair 3 m",
-      "on": 24,
-      "socket": "k8_0",
-      "by": "r0",
+      "part": "Concrete Floor 4x4 m",
+      "on": 19,
+      "socket": "t0_0",
+      "by": "b15_15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wide Stair 3 m",
+      "on": 13,
+      "socket": "t7_15",
+      "by": "b0_0",
+      "spin": 3,
       "paint": "#858179",
       "finish": "concrete"
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 26,
+      "on": 25,
       "socket": "t0_0",
       "by": "b0_0",
       "paint": "#a29e94",
@@ -256,7 +256,7 @@
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 27,
+      "on": 26,
       "socket": "t8_0",
       "by": "b0_7",
       "spin": 2,
@@ -265,16 +265,16 @@
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 25,
-      "socket": "t0_0",
-      "by": "b0_0",
+      "on": 28,
+      "socket": "t8_15",
+      "by": "b7_0",
       "spin": 3,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 28,
+      "on": 27,
       "socket": "t0_8",
       "by": "b7_0",
       "spin": 1,
@@ -283,7 +283,7 @@
     },
     {
       "part": "Concrete Slot Wall 4 m",
-      "on": 26,
+      "on": 25,
       "socket": "t8_0",
       "by": "b0",
       "paint": "#a29e94",
@@ -291,16 +291,16 @@
     },
     {
       "part": "Concrete Wall 4 m",
-      "on": 25,
-      "socket": "t8_0",
-      "by": "b0",
+      "on": 27,
+      "socket": "t8_15",
+      "by": "b15",
       "spin": 3,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
       "part": "Concrete Slot Wall 4 m",
-      "on": 26,
+      "on": 25,
       "socket": "t0_8",
       "by": "b15",
       "spin": 1,
@@ -309,15 +309,24 @@
     },
     {
       "part": "Concrete Wall 4 m",
-      "on": 25,
-      "socket": "t0_8",
-      "by": "b15",
+      "on": 26,
+      "socket": "t15_8",
+      "by": "b0",
       "spin": 2,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
-      "part": "Concrete Stair Floor 4x4 m",
+      "part": "Concrete Wide Stair Floor",
+      "on": 32,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "spin": 3,
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
       "on": 30,
       "socket": "t0_0",
       "by": "b0_0",
@@ -341,24 +350,16 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Floor 4x4 m",
-      "on": 32,
-      "socket": "t0_0",
-      "by": "b15_15",
-      "paint": "#858179",
-      "finish": "concrete"
-    },
-    {
-      "part": "Concrete Straight Stair 3 m",
-      "on": 36,
-      "socket": "k8_0",
-      "by": "r0",
+      "part": "Concrete Wide Stair 3 m",
+      "on": 28,
+      "socket": "t8_0",
+      "by": "b0_0",
       "paint": "#858179",
       "finish": "concrete"
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 38,
+      "on": 39,
       "socket": "t0_0",
       "by": "b0_0",
       "paint": "#a29e94",
@@ -366,7 +367,7 @@
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 39,
+      "on": 40,
       "socket": "t8_0",
       "by": "b0_7",
       "spin": 2,
@@ -375,16 +376,16 @@
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 41,
-      "socket": "t8_15",
-      "by": "b7_0",
+      "on": 38,
+      "socket": "t0_0",
+      "by": "b0_0",
       "spin": 3,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 40,
+      "on": 41,
       "socket": "t0_8",
       "by": "b7_0",
       "spin": 1,
@@ -393,7 +394,7 @@
     },
     {
       "part": "Concrete Slot Wall 4 m",
-      "on": 38,
+      "on": 39,
       "socket": "t8_0",
       "by": "b0",
       "paint": "#a29e94",
@@ -401,16 +402,16 @@
     },
     {
       "part": "Concrete Wall 4 m",
-      "on": 40,
-      "socket": "t8_15",
-      "by": "b15",
+      "on": 38,
+      "socket": "t8_0",
+      "by": "b0",
       "spin": 3,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
       "part": "Concrete Slot Wall 4 m",
-      "on": 38,
+      "on": 39,
       "socket": "t0_8",
       "by": "b15",
       "spin": 1,
@@ -419,34 +420,25 @@
     },
     {
       "part": "Concrete Wall 4 m",
-      "on": 39,
-      "socket": "t15_8",
-      "by": "b0",
+      "on": 38,
+      "socket": "t0_8",
+      "by": "b15",
       "spin": 2,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 3 m",
       "on": 47,
       "socket": "f8_5",
       "by": "back",
       "text": [
         "MINISTRY OF SLOP - SPACEPORT"
       ],
-      "paint": "#1f2b45"
+      "paint": "#2f5a3c"
     },
     {
-      "part": "Concrete Stair Floor 4x4 m",
-      "on": 45,
-      "socket": "t0_0",
-      "by": "b0_0",
-      "spin": 3,
-      "paint": "#858179",
-      "finish": "concrete"
-    },
-    {
-      "part": "Concrete Floor 4x4 m",
+      "part": "Concrete Wide Stair Floor",
       "on": 43,
       "socket": "t0_0",
       "by": "b0_0",
@@ -470,16 +462,25 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Straight Stair 3 m",
-      "on": 50,
-      "socket": "k8_0",
-      "by": "r0",
+      "part": "Concrete Floor 4x4 m",
+      "on": 45,
+      "socket": "t0_0",
+      "by": "b15_15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wide Stair 3 m",
+      "on": 39,
+      "socket": "t7_15",
+      "by": "b0_0",
+      "spin": 3,
       "paint": "#858179",
       "finish": "concrete"
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 53,
+      "on": 52,
       "socket": "t0_0",
       "by": "b0_0",
       "paint": "#a29e94",
@@ -487,7 +488,7 @@
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 54,
+      "on": 53,
       "socket": "t8_0",
       "by": "b0_7",
       "spin": 2,
@@ -496,16 +497,16 @@
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 52,
-      "socket": "t0_0",
-      "by": "b0_0",
+      "on": 55,
+      "socket": "t8_15",
+      "by": "b7_0",
       "spin": 3,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 55,
+      "on": 54,
       "socket": "t0_8",
       "by": "b7_0",
       "spin": 1,
@@ -514,7 +515,7 @@
     },
     {
       "part": "Concrete Slot Wall 4 m",
-      "on": 53,
+      "on": 52,
       "socket": "t8_0",
       "by": "b0",
       "paint": "#a29e94",
@@ -522,16 +523,16 @@
     },
     {
       "part": "Concrete Wall 4 m",
-      "on": 52,
-      "socket": "t8_0",
-      "by": "b0",
+      "on": 54,
+      "socket": "t8_15",
+      "by": "b15",
       "spin": 3,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
       "part": "Concrete Slot Wall 4 m",
-      "on": 53,
+      "on": 52,
       "socket": "t0_8",
       "by": "b15",
       "spin": 1,
@@ -540,15 +541,24 @@
     },
     {
       "part": "Concrete Wall 4 m",
-      "on": 52,
-      "socket": "t0_8",
-      "by": "b15",
+      "on": 53,
+      "socket": "t15_8",
+      "by": "b0",
       "spin": 2,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
-      "part": "Concrete Stair Floor 4x4 m",
+      "part": "Concrete Wide Stair Floor",
+      "on": 59,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "spin": 3,
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
       "on": 57,
       "socket": "t0_0",
       "by": "b0_0",
@@ -572,24 +582,16 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Floor 4x4 m",
-      "on": 59,
-      "socket": "t0_0",
-      "by": "b15_15",
-      "paint": "#858179",
-      "finish": "concrete"
-    },
-    {
-      "part": "Concrete Straight Stair 3 m",
-      "on": 63,
-      "socket": "k8_0",
-      "by": "r0",
+      "part": "Concrete Wide Stair 3 m",
+      "on": 55,
+      "socket": "t8_0",
+      "by": "b0_0",
       "paint": "#858179",
       "finish": "concrete"
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 65,
+      "on": 66,
       "socket": "t0_0",
       "by": "b0_0",
       "paint": "#a29e94",
@@ -597,7 +599,7 @@
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 66,
+      "on": 67,
       "socket": "t8_0",
       "by": "b0_7",
       "spin": 2,
@@ -606,16 +608,16 @@
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 68,
-      "socket": "t8_15",
-      "by": "b7_0",
+      "on": 65,
+      "socket": "t0_0",
+      "by": "b0_0",
       "spin": 3,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 67,
+      "on": 68,
       "socket": "t0_8",
       "by": "b7_0",
       "spin": 1,
@@ -624,7 +626,7 @@
     },
     {
       "part": "Concrete Slot Wall 4 m",
-      "on": 65,
+      "on": 66,
       "socket": "t8_0",
       "by": "b0",
       "paint": "#a29e94",
@@ -632,16 +634,16 @@
     },
     {
       "part": "Concrete Wall 4 m",
-      "on": 67,
-      "socket": "t8_15",
-      "by": "b15",
+      "on": 65,
+      "socket": "t8_0",
+      "by": "b0",
       "spin": 3,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
       "part": "Concrete Slot Wall 4 m",
-      "on": 65,
+      "on": 66,
       "socket": "t0_8",
       "by": "b15",
       "spin": 1,
@@ -650,24 +652,15 @@
     },
     {
       "part": "Concrete Wall 4 m",
-      "on": 66,
-      "socket": "t15_8",
-      "by": "b0",
+      "on": 65,
+      "socket": "t0_8",
+      "by": "b15",
       "spin": 2,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
-      "part": "Concrete Stair Floor 4x4 m",
-      "on": 72,
-      "socket": "t0_0",
-      "by": "b0_0",
-      "spin": 3,
-      "paint": "#858179",
-      "finish": "concrete"
-    },
-    {
-      "part": "Concrete Floor 4x4 m",
+      "part": "Concrete Wide Stair Floor",
       "on": 70,
       "socket": "t0_0",
       "by": "b0_0",
@@ -691,16 +684,25 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Straight Stair 3 m",
-      "on": 77,
-      "socket": "k8_0",
-      "by": "r0",
+      "part": "Concrete Floor 4x4 m",
+      "on": 72,
+      "socket": "t0_0",
+      "by": "b15_15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Wide Stair 3 m",
+      "on": 66,
+      "socket": "t7_15",
+      "by": "b0_0",
+      "spin": 3,
       "paint": "#858179",
       "finish": "concrete"
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 79,
+      "on": 78,
       "socket": "t0_0",
       "by": "b0_0",
       "paint": "#a29e94",
@@ -708,7 +710,7 @@
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 80,
+      "on": 79,
       "socket": "t8_0",
       "by": "b0_7",
       "spin": 2,
@@ -717,16 +719,16 @@
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 78,
-      "socket": "t0_0",
-      "by": "b0_0",
+      "on": 81,
+      "socket": "t8_15",
+      "by": "b7_0",
       "spin": 3,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
       "part": "Concrete Wall Corner",
-      "on": 81,
+      "on": 80,
       "socket": "t0_8",
       "by": "b7_0",
       "spin": 1,
@@ -735,7 +737,7 @@
     },
     {
       "part": "Concrete Window Wall 4 m",
-      "on": 79,
+      "on": 78,
       "socket": "t8_0",
       "by": "b0",
       "paint": "#a29e94",
@@ -743,16 +745,16 @@
     },
     {
       "part": "Concrete Window Wall 4 m",
-      "on": 78,
-      "socket": "t8_0",
-      "by": "b0",
+      "on": 80,
+      "socket": "t8_15",
+      "by": "b15",
       "spin": 3,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
       "part": "Concrete Window Wall 4 m",
-      "on": 79,
+      "on": 78,
       "socket": "t0_8",
       "by": "b15",
       "spin": 1,
@@ -761,15 +763,24 @@
     },
     {
       "part": "Concrete Window Wall 4 m",
-      "on": 78,
-      "socket": "t0_8",
-      "by": "b15",
+      "on": 79,
+      "socket": "t15_8",
+      "by": "b0",
       "spin": 2,
       "paint": "#a29e94",
       "finish": "concrete"
     },
     {
-      "part": "Concrete Stair Floor 4x4 m",
+      "part": "Concrete Wide Stair Floor",
+      "on": 85,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "spin": 3,
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
       "on": 83,
       "socket": "t0_0",
       "by": "b0_0",
@@ -793,34 +804,10 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Floor 4x4 m",
-      "on": 85,
-      "socket": "t0_0",
-      "by": "b15_15",
-      "paint": "#858179",
-      "finish": "concrete"
-    },
-    {
-      "part": "Concrete Straight Stair 3 m",
-      "on": 89,
-      "socket": "k8_0",
-      "by": "r0",
-      "paint": "#858179",
-      "finish": "concrete"
-    },
-    {
-      "part": "Concrete Fascia 4 m",
-      "on": 91,
-      "socket": "f0",
-      "by": "back0",
-      "paint": "#858179",
-      "finish": "concrete"
-    },
-    {
-      "part": "Concrete Fascia 4 m",
-      "on": 93,
-      "socket": "k0",
-      "by": "back15",
+      "part": "Concrete Wide Stair 3 m",
+      "on": 81,
+      "socket": "t8_0",
+      "by": "b0_0",
       "paint": "#858179",
       "finish": "concrete"
     },
@@ -842,23 +829,23 @@
     },
     {
       "part": "Concrete Fascia 4 m",
+      "on": 93,
+      "socket": "f0",
+      "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
       "on": 91,
-      "socket": "l0",
-      "by": "back15",
+      "socket": "f0",
+      "by": "back0",
       "paint": "#858179",
       "finish": "concrete"
     },
     {
       "part": "Concrete Fascia 4 m",
       "on": 92,
-      "socket": "r0",
-      "by": "back0",
-      "paint": "#858179",
-      "finish": "concrete"
-    },
-    {
-      "part": "Concrete Fascia 4 m",
-      "on": 93,
       "socket": "l0",
       "by": "back15",
       "paint": "#858179",
@@ -866,9 +853,25 @@
     },
     {
       "part": "Concrete Fascia 4 m",
-      "on": 94,
+      "on": 93,
       "socket": "r0",
       "by": "back0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 94,
+      "socket": "l0",
+      "by": "back15",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Concrete Fascia 4 m",
+      "on": 91,
+      "socket": "l0",
+      "by": "back15",
       "paint": "#858179",
       "finish": "concrete"
     },
@@ -972,14 +975,14 @@
       }
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 114,
       "socket": "sign",
       "by": "back",
       "text": [
         "CONTROL TOWER - NO ADMITTANCE"
       ],
-      "paint": "#1f2b45"
+      "paint": "#2f5a3c"
     },
     {
       "part": "Concrete Entrance Steps 2 m",
@@ -991,19 +994,19 @@
     },
     {
       "part": "Computer",
-      "on": 80,
-      "socket": "t7_8",
+      "on": 78,
+      "socket": "t15_8",
       "by": "foot00"
     },
     {
       "part": "Seat",
-      "on": 80,
-      "socket": "t8_15",
+      "on": 79,
+      "socket": "t0_15",
       "by": "bottom"
     },
     {
       "part": "Wall Clock",
-      "on": 83,
+      "on": 86,
       "socket": "ka7_5",
       "by": "back"
     },
@@ -1027,8 +1030,8 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 85,
-      "socket": "kb7_5",
+      "on": 83,
+      "socket": "ka7_5",
       "by": "back",
       "config": {
         "startOn": true

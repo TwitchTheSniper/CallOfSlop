@@ -120,24 +120,24 @@
       "finish": "concrete"
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 15,
       "socket": "n0",
       "by": "back",
       "text": [
         "SENTRY POST NINE. THE WALK BEGINS HERE."
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 15,
       "socket": "n1",
       "by": "back",
       "text": [
         "THE WALK ALSO ENDS HERE. DO NOT WANDER."
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
       "part": "Traffic Cone",

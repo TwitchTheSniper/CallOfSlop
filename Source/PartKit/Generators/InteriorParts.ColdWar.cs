@@ -141,6 +141,103 @@ public sealed partial class InteriorParts
         return p.Set(("power", 200));
     }
 
+    private const string CounterWood = "#6b4a2e", Lino = "#33463b", DeskGrey = "#7d8178";
+
+    /// <summary>A counter between the public and the files (buildings.md "Laying out a building"): a closed panel on the public's
+    /// side (-z, its back), open shelves on the clerk's (+z), a lino top at 1.05 m. Against a hatch's wall by its "wall" socket, or
+    /// standing free on a floor socket by its "bottom"; two side by side on their "+x"/"-x".</summary>
+    private static Part ServiceCounter(double w)
+    {
+        double h = 1.05, d = 0.6;
+        var p = Furniture($"Service Counter {w:0.#} m", "A counter between the public and the files. Wait to be called; you will not be called.", "storage", w, h, d, CounterWood, mass: 90, health: 260, finish: "worn paint");
+        p.Add(B([-w / 2, 0, -d / 2], [w / 2, h - 0.04, -d / 2 + 0.04], CounterWood)); // the public's side, closed
+        foreach (var sx in new[] { -1, 1 })
+            p.Add(B([sx < 0 ? -w / 2 : w / 2 - 0.04, 0, -d / 2 + 0.04], [sx < 0 ? -w / 2 + 0.04 : w / 2, h - 0.04, d / 2 - 0.02], CounterWood));
+        p.Add(B([-w / 2 + 0.04, 0, -d / 2 + 0.04], [w / 2 - 0.04, 0.1, d / 2 - 0.06], "#3a2a1c")); // the plinth, set back
+        p.Add(B([-w / 2 + 0.04, 0.42, -d / 2 + 0.04], [w / 2 - 0.04, 0.45, d / 2 - 0.02], CounterWood)); // the shelf
+        p.Add(B([-w / 2, h - 0.04, -d / 2 - 0.04], [w / 2, h, d / 2 + 0.01], Lino, false, ("finish", "plastic"))); // the top, over the public's side
+        p.Add(B([-w / 2 + 0.1, 0.5, -d / 2 - 0.006], [w / 2 - 0.1, 0.56, -d / 2], "#2a2420", true, ("paintable", false))); // a kick rail's scuffs
+        var e = w / 2 - 0.08;
+        p.Set(("storage", Storage([Slot([-e, 0.11, -0.24], [-0.02, 0.41, 0.26], "shelf", 6), Slot([0.02, 0.11, -0.24], [e, 0.41, 0.26], "shelf", 6),
+            Slot([-e, 0.46, -0.24], [-0.02, 0.98, 0.26], "shelf", 6), Slot([0.02, 0.46, -0.24], [e, 0.98, 0.26], "shelf", 6)])));
+        return p;
+    }
+
+    /// <summary>A grey steel desk with a pedestal of drawers: where a clerk or a warden sits facing the door.</summary>
+    private static Part SteelDesk()
+    {
+        double w = 1.4, h = 0.76, d = 0.7;
+        var p = Furniture("Steel Desk", "A grey steel desk, a pedestal of drawers and a blotter. Put a telephone on it nobody answers.", "frame", w, h, d, DeskGrey, mass: 55, health: 220, finish: "worn paint");
+        p.Add(B([-w / 2, h - 0.035, -d / 2], [w / 2, h, d / 2], DeskGrey)); // the top
+        p.Add(B([0.25, 0, -d / 2], [w / 2, h - 0.035, d / 2], DeskGrey)); // the pedestal
+        p.Add(B([-w / 2, 0, -d / 2], [-w / 2 + 0.04, h - 0.035, d / 2], DeskGrey)); // the other end
+        p.Add(B([-w / 2 + 0.04, 0.3, -d / 2], [0.25, h - 0.035, -d / 2 + 0.025], DeskGrey)); // the modesty panel
+        foreach (var y in new[] { 0.06, 0.29, 0.52 })
+        {
+            p.Add(B([0.28, y, d / 2], [w / 2 - 0.03, y + 0.19, d / 2 + 0.008], DeskGrey, true)); // a drawer
+            p.Add(B([0.4, y + 0.13, d / 2 + 0.008], [0.54, y + 0.15, d / 2 + 0.022], "#b9bcbd", true, ("paintable", false), ("finish", "steel")));
+        }
+        p.Add(B([-0.55, h, -0.2], [0.1, h + 0.012, 0.2], "#3c5a46", true, ("paintable", false), ("finish", "plastic"))); // the blotter
+        return p;
+    }
+
+    /// <summary>A slatted bench against a wall: where the public waits to be told to come back tomorrow.</summary>
+    private static Part WaitingBench()
+    {
+        double w = 2.0, h = 0.82, d = 0.45;
+        var p = Furniture("Waiting Bench 2 m", "A slatted bench against the wall. Sit; the wait is part of the service.", "seat", w, h, d, CounterWood, mass: 30, health: 120, finish: "worn paint");
+        foreach (var x in new[] { -w / 2, w / 2 - 0.05 })
+            p.Add(B([x, 0, -d / 2], [x + 0.05, 0.42, d / 2], CastIron, false, ("finish", "dirty steel"))); // the ends
+        for (var k = 0; k < 3; k++) // the seat's slats
+            p.Add(B([-w / 2, 0.42, -d / 2 + 0.02 + k * 0.14], [w / 2, 0.45, -d / 2 + 0.13 + k * 0.14], CounterWood));
+        foreach (var y in new[] { 0.55, 0.72 }) // the back's slats, against the wall
+            p.Add(B([-w / 2, y, -d / 2], [w / 2, y + 0.1, -d / 2 + 0.03], CounterWood));
+        p.Add(B([-w / 2 + 0.05, 0.45, -d / 2], [-w / 2 + 0.09, h - 0.08, -d / 2 + 0.03], CastIron, true, ("paintable", false)));
+        p.Add(B([w / 2 - 0.09, 0.45, -d / 2], [w / 2 - 0.05, h - 0.08, -d / 2 + 0.03], CastIron, true, ("paintable", false)));
+        return p.Set(("seat", new PyDict { ["at"] = new List<object?> { 0.0, -0.5, 0.0 } }));
+    }
+
+    /// <summary>An iron bedstead along a wall: a barracks' or a ward's bed, where a body wakes after it dies (a Bunk in every way but its
+    /// looks). Hung on a wall's bottom face socket by its "wall" socket, on its long side, so the room's middle stays the aisle.</summary>
+    private static Part IronBed()
+    {
+        double w = 1.95, h = 0.9, d = 0.85;
+        var p = Furniture("Iron Bed", "An iron bedstead and a thin mattress. Lie in it and, in survival, it is where you wake after you die.", "seat", w, h, d, CastIron, mass: 45, health: 140, finish: "worn paint");
+        foreach (var x in new[] { -w / 2, w / 2 - 0.05 })
+        {
+            p.Add(B([x, 0, -d / 2], [x + 0.05, x < 0 ? h : 0.7, d / 2], CastIron)); // the head and the foot
+            p.Add(B([x - 0.008, x < 0 ? h - 0.12 : 0.58, -d / 2 + 0.05], [x + 0.058, x < 0 ? h - 0.08 : 0.62, d / 2 - 0.05], "#2c2e30", true, ("paintable", false))); // the rail across
+        }
+        p.Add(B([-w / 2 + 0.05, 0.3, -d / 2], [w / 2 - 0.05, 0.34, d / 2], CastIron)); // the frame
+        p.Add(B([-w / 2 + 0.06, 0.34, -d / 2 + 0.02], [w / 2 - 0.06, 0.46, d / 2 - 0.02], "#8a8f74", false, ("finish", "fabric"))); // the mattress, army green
+        p.Add(B([-w / 2 + 0.08, 0.46, -d / 2 + 0.08], [-w / 2 + 0.45, 0.53, d / 2 - 0.08], "#d8d4c4", true, ("paintable", false), ("finish", "fabric"))); // the pillow
+        p.Add(B([-w / 2 + 0.5, 0.46, -d / 2 + 0.03], [w / 2 - 0.08, 0.49, d / 2 - 0.03], "#5a5f4a", true, ("paintable", false), ("finish", "fabric"))); // the blanket, folded square
+        return p.Set(("seat", new PyDict { ["at"] = new List<object?> { 0.0, -0.4, 0.0 }, ["bunk"] = true }));
+    }
+
+    /// <summary>Steel shelving, 2 m by 2 m, against a store's wall: bins of what the Ministry issues, and what it doesn't.</summary>
+    private static Part StoreShelving()
+    {
+        double w = 2.0, h = 2.0, d = 0.5;
+        var p = Furniture("Store Shelving 2 m", "Steel shelving: four shelves of whatever was requisitioned, in triplicate.", "storage", w, h, d, DeskGrey, mass: 60, health: 220, finish: "dirty steel");
+        foreach (var x in new[] { -w / 2, w / 2 - 0.04 })
+            foreach (var z in new[] { -d / 2, d / 2 - 0.04 })
+                p.Add(B([x, 0, z], [x + 0.04, h, z + 0.04], DeskGrey)); // the uprights
+        var slots = new List<PyDict>();
+        foreach (var y in new[] { 0.08, 0.55, 1.02, 1.49, 1.96 })
+        {
+            p.Add(B([-w / 2 + 0.04, y - 0.025, -d / 2], [w / 2 - 0.04, y + 0.015, d / 2], DeskGrey)); // a shelf
+            if (y < 1.9)
+            {
+                slots.Add(Slot([-0.94, y + 0.02, -0.22], [-0.02, y + 0.43, 0.22], "shelf", 4));
+                slots.Add(Slot([0.02, y + 0.02, -0.22], [0.94, y + 0.43, 0.22], "shelf", 4));
+            }
+        }
+        p.Add(B([-w / 2 + 0.04, 0.1, -d / 2], [w / 2 - 0.04, h - 0.06, -d / 2 + 0.02], "#5d615b", true, ("paintable", false))); // the back's mesh
+        p.Set(("storage", Storage([.. slots])));
+        return p;
+    }
+
     /// <summary>A "wall" socket low on a piece of furniture's back: on a wall's bottom face socket (0.125 m up) it stands on the
     /// floor against the wall, where the floor's own sockets would leave it a metre out.</summary>
     private static Part Walled(Part p, double d)
@@ -151,5 +248,6 @@ public sealed partial class InteriorParts
 
     private static List<Part> ColdWarDressing() => [BakeliteSwitch(), StripLight(), BulkheadLight(), Radiator(), WallClock()];
 
-    private static List<Part> ColdWarFurniture() => [Walled(FilingCabinet(), 0.62), Walled(Teleprinter(), 0.5), Walled(TapeCabinet(), 0.6)];
+    private static List<Part> ColdWarFurniture() => [Walled(FilingCabinet(), 0.62), Walled(Teleprinter(), 0.5), Walled(TapeCabinet(), 0.6),
+        Walled(ServiceCounter(2.0), 0.6), Walled(ServiceCounter(1.5), 0.6), Walled(SteelDesk(), 0.7), Walled(WaitingBench(), 0.45), Walled(StoreShelving(), 0.5), Walled(IronBed(), 0.85)];
 }

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Colony Barracks",
-  "description": "The Ministry of Slop's guard barracks beside the penal colony.",
+  "description": "The Ministry of Slop's guard barracks beside the penal colony: the guardroom, and the dormitory up a wide stair.",
   "steps": [
     {
       "part": "Concrete Foundation 4x4 m"
@@ -74,7 +74,7 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Stair Floor 4x4 m",
+      "part": "Concrete Wide Stair Floor",
       "on": 4,
       "socket": "t0_0",
       "by": "b0_0",
@@ -83,10 +83,10 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Straight Stair 3 m",
+      "part": "Concrete Wide Stair 3 m",
       "on": 1,
-      "socket": "t11_11",
-      "by": "b0_11",
+      "socket": "t8_0",
+      "by": "b0_0",
       "paint": "#858179",
       "finish": "concrete"
     },
@@ -257,14 +257,14 @@
       }
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 29,
       "socket": "sign",
       "by": "back",
       "text": [
-        "BARRACKS"
+        "BLOCK 5 - BARRACKS"
       ],
-      "paint": "#1f2b45"
+      "paint": "#2f5a3c"
     },
     {
       "part": "Concrete Entrance Steps 2 m",
@@ -347,14 +347,14 @@
       "finish": "concrete"
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 12,
       "socket": "fb7_5",
       "by": "back",
       "text": [
         "GUARDS ONLY. GUARDS, THIS MEANS YOU"
       ],
-      "paint": "#1f2b45"
+      "paint": "#8e2a22"
     },
     {
       "part": "Bulkhead Light",
@@ -376,43 +376,33 @@
     },
     {
       "part": "Bolt Deck 1x2 m",
-      "on": 1,
+      "on": 0,
       "socket": "t7_8",
-      "by": "back00",
-      "spin": 3
+      "by": "back34"
     },
     {
       "part": "Computer",
       "on": 45,
       "socket": "front01",
-      "by": "foot00",
-      "spin": 3
+      "by": "foot00"
     },
     {
       "part": "Seat",
       "on": 45,
       "socket": "front14",
-      "by": "bottom",
-      "spin": 3
+      "by": "bottom"
     },
     {
       "part": "Tea Urn",
       "on": 0,
-      "socket": "t7_7",
-      "by": "foot00"
-    },
-    {
-      "part": "Locker",
-      "on": 6,
-      "socket": "k15_0",
-      "by": "wall",
-      "paint": "#2f5a3c",
-      "finish": "worn paint"
+      "socket": "t7_15",
+      "by": "foot00",
+      "spin": 3
     },
     {
       "part": "Gun Rack",
-      "on": 5,
-      "socket": "ka7_0",
+      "on": 2,
+      "socket": "kb7_0",
       "by": "wall"
     },
     {
@@ -422,10 +412,28 @@
       "by": "back"
     },
     {
+      "part": "Locker",
+      "on": 6,
+      "socket": "k0_0",
+      "by": "wall",
+      "paint": "#2f5a3c",
+      "finish": "worn paint"
+    },
+    {
       "part": "Wall Clock",
       "on": 7,
       "socket": "k0_5",
       "by": "back"
+    },
+    {
+      "part": "Notice Board",
+      "on": 6,
+      "socket": "k8_5",
+      "by": "back",
+      "text": [
+        "KIT CLEAN. BOOTS CLEAN. CONSCIENCE OPTIONAL."
+      ],
+      "paint": "#d8d1b4"
     },
     {
       "part": "Strip Light",
@@ -447,31 +455,34 @@
     },
     {
       "part": "Battery",
-      "on": 7,
+      "on": 6,
       "socket": "k15_10",
       "by": "-z",
       "paint": "#4b5157"
     },
     {
-      "part": "Bunk",
-      "on": 8,
-      "socket": "t8_7",
-      "by": "bottom",
-      "spin": 1
+      "part": "Iron Bed",
+      "on": 11,
+      "socket": "kb7_0",
+      "by": "wall",
+      "paint": "#2f5a3c",
+      "finish": "worn paint"
     },
     {
-      "part": "Bunk",
-      "on": 8,
-      "socket": "t8_15",
-      "by": "bottom",
-      "spin": 1
+      "part": "Iron Bed",
+      "on": 15,
+      "socket": "k8_0",
+      "by": "wall",
+      "paint": "#2f5a3c",
+      "finish": "worn paint"
     },
     {
-      "part": "Bunk",
-      "on": 9,
-      "socket": "t7_8",
-      "by": "bottom",
-      "spin": 1
+      "part": "Iron Bed",
+      "on": 12,
+      "socket": "ka7_0",
+      "by": "wall",
+      "paint": "#2f5a3c",
+      "finish": "worn paint"
     },
     {
       "part": "Locker",
@@ -482,17 +493,9 @@
       "finish": "worn paint"
     },
     {
-      "part": "Locker",
-      "on": 14,
-      "socket": "kb7_0",
-      "by": "wall",
-      "paint": "#2f5a3c",
-      "finish": "worn paint"
-    },
-    {
       "part": "Cast Iron Radiator",
       "on": 15,
-      "socket": "k15_0",
+      "socket": "k0_0",
       "by": "back"
     },
     {
@@ -505,9 +508,18 @@
       }
     },
     {
+      "part": "Strip Light",
+      "on": 16,
+      "socket": "k8_10",
+      "by": "back",
+      "config": {
+        "colour": "#e4f2dc"
+      }
+    },
+    {
       "part": "Bakelite Switch",
-      "on": 13,
-      "socket": "kb7_5",
+      "on": 15,
+      "socket": "k0_5",
       "by": "back",
       "config": {
         "startOn": true
@@ -516,12 +528,16 @@
   ],
   "wires": [
     [
-      54,
-      53
+      55,
+      54
     ],
     [
-      63,
+      64,
       62
+    ],
+    [
+      64,
+      63
     ]
   ]
 }

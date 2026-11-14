@@ -323,6 +323,8 @@ public static unsafe partial class Program
             return PortMounts.Cli(args); // does every link port sit on something drawn? (Source/Constructs/PortMounts.cs)
         if (args.Any(a => a.Equals("--check-starts", StringComparison.OrdinalIgnoreCase)))
             return StoryStarts.Check(); // the story's starts (Story/Starts): what each holds, what's refused and why (docs/story/STARTS.md)
+        if (args.SkipWhile(a => !a.Equals("--check-building", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } buildingNames)
+            return BuildingWalkCheck.Cli(buildingNames); // can a standing person use the building? (BuildingWalkCheck.cs)
         if (args.Any(a => a.Equals("--check-construct-parts", StringComparison.OrdinalIgnoreCase)))
             return ConstructParts.CheckCli(); // Sandbox construct parts and blueprints: what loads, what's refused and why (Source/Constructs)
         if (args.Any(a => a.Equals("--check-mods", StringComparison.OrdinalIgnoreCase)))

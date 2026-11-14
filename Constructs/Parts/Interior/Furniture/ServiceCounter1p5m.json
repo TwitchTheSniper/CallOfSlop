@@ -1,0 +1,228 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Service Counter 1.5 m",
+  "description": "A counter between the public and the files. Wait to be called; you will not be called.",
+  "group": "Interior",
+  "section": "Furniture",
+  "role": "storage",
+  "tool": "wrench",
+  "finish": "worn paint",
+  "mass": 90.0,
+  "health": 260,
+  "armour": 4,
+  "material": "steel",
+  "color": "#6b4a2e",
+  "attachSeconds": 2.0,
+  "storage": {
+    "slots": [
+      {
+        "min": [
+          -0.67,
+          0.11,
+          -0.24
+        ],
+        "max": [
+          -0.02,
+          0.41,
+          0.26
+        ],
+        "label": "shelf",
+        "stack": 6
+      },
+      {
+        "min": [
+          0.02,
+          0.11,
+          -0.24
+        ],
+        "max": [
+          0.67,
+          0.41,
+          0.26
+        ],
+        "label": "shelf",
+        "stack": 6
+      },
+      {
+        "min": [
+          -0.67,
+          0.46,
+          -0.24
+        ],
+        "max": [
+          -0.02,
+          0.98,
+          0.26
+        ],
+        "label": "shelf",
+        "stack": 6
+      },
+      {
+        "min": [
+          0.02,
+          0.46,
+          -0.24
+        ],
+        "max": [
+          0.67,
+          0.98,
+          0.26
+        ],
+        "label": "shelf",
+        "stack": 6
+      }
+    ]
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.75,
+        0.0,
+        -0.3
+      ],
+      "max": [
+        0.75,
+        1.01,
+        -0.26
+      ],
+      "color": "#6b4a2e"
+    },
+    {
+      "min": [
+        -0.75,
+        0.0,
+        -0.26
+      ],
+      "max": [
+        -0.71,
+        1.01,
+        0.28
+      ],
+      "color": "#6b4a2e"
+    },
+    {
+      "min": [
+        0.71,
+        0.0,
+        -0.26
+      ],
+      "max": [
+        0.75,
+        1.01,
+        0.28
+      ],
+      "color": "#6b4a2e"
+    },
+    {
+      "min": [
+        -0.71,
+        0.0,
+        -0.26
+      ],
+      "max": [
+        0.71,
+        0.1,
+        0.24
+      ],
+      "color": "#3a2a1c"
+    },
+    {
+      "min": [
+        -0.71,
+        0.42,
+        -0.26
+      ],
+      "max": [
+        0.71,
+        0.45,
+        0.28
+      ],
+      "color": "#6b4a2e"
+    },
+    {
+      "min": [
+        -0.75,
+        1.01,
+        -0.34
+      ],
+      "max": [
+        0.75,
+        1.05,
+        0.31
+      ],
+      "color": "#33463b",
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.65,
+        0.5,
+        -0.311
+      ],
+      "max": [
+        0.65,
+        0.56,
+        -0.295
+      ],
+      "color": "#2a2420",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        1.05,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.525,
+        -0.3
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.75,
+        0.525,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.75,
+        0.525,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        -0.3
+      ],
+      "dir": "-z"
+    }
+  ]
+}

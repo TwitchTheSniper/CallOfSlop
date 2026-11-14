@@ -17,7 +17,7 @@ public sealed partial class BuildingParts
     // The Call Centre: gloss purple portacabins, gift-card gold, and a pink glow nobody asked for.
     private const string CcPurple = "#7a2f6e", CcGold = "#e0b030", CcPink = "#ffd6ef";
 
-    private static int Board(Blueprint bp, int on, string sock, string text, string paint) => Look(bp, Sign(bp, on, sock, text), paint);
+    private static int Board(Blueprint bp, int on, string sock, string text, string paint) => Look(bp, TextSign(bp, on, sock, text), paint);
 
     /// <summary>
     /// A lattice mast stood on a pad's socket: lengths of medium truss, end on end (8 m, then 4 m pieces), with a light at the
@@ -79,8 +79,8 @@ public sealed partial class BuildingParts
         // A crossing is lit like a stage: a floodlight mast over the barrier, so the road is seen from the colony at night.
         LatticeMast(bp, 3, "t7_7", MinSlate, 1, 0, "#ffb347");
         var board = Look(bp, bp.Hang("Concrete Notice Board 2 m", 4, "t8_15", "b0"), MinWeathered, "concrete");
-        Sign(bp, board, "n0", "CHECKPOINT HOURS: ALWAYS. EXCEPT LUNCH.");
-        Sign(bp, board, "n1", "SMILING AT THE OFFICER IS AN OFFENCE");
+        Sign(bp, board, "n0", "CHECKPOINT HOURS: ALWAYS. EXCEPT LUNCH.", BoardSize.Narrow);
+        Sign(bp, board, "n1", "SMILING AT THE OFFICER IS AN OFFENCE", BoardSize.Narrow);
         foreach (var sock in new[] { "t4_11", "t11_11" })
             bp.Hang("Queue Post", 3, sock, "base");
         bp.Hang("Belisha Beacon", 2, "t0_7", "base");
@@ -98,8 +98,8 @@ public sealed partial class BuildingParts
         // The walk is watched from above: a searchlight on a lattice tower over the forecourt, the outline seen first.
         LatticeMast(bp, 1, "t7_7", MinSlate, 1, 1, "#ffb347");
         board = Look(bp, bp.Hang("Concrete Notice Board 2 m", 3, "t0_15", "b0"), MinWeathered, "concrete");
-        Sign(bp, board, "n0", "SENTRY POST NINE. THE WALK BEGINS HERE.");
-        Sign(bp, board, "n1", "THE WALK ALSO ENDS HERE. DO NOT WANDER.");
+        Sign(bp, board, "n0", "SENTRY POST NINE. THE WALK BEGINS HERE.", BoardSize.Narrow);
+        Sign(bp, board, "n1", "THE WALK ALSO ENDS HERE. DO NOT WANDER.", BoardSize.Narrow);
         bp.Hang("Traffic Cone", 3, "t11_4", "base");
         bp.Hang("Tea Urn", 2, "t11_11", "foot00");
         o.Add(bp);

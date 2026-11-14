@@ -475,14 +475,14 @@
       }
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 57,
       "socket": "sign",
       "by": "back",
       "text": [
-        "CANTEEN"
+        "BLOCK 1 - CANTEEN"
       ],
-      "paint": "#1f2b45"
+      "paint": "#2f5a3c"
     },
     {
       "part": "Concrete Entrance Steps 2 m",
@@ -659,24 +659,24 @@
       "paint": "#4b5157"
     },
     {
-      "part": "Text Sign",
+      "part": "Notice Board",
       "on": 11,
       "socket": "k8_10",
       "by": "back",
       "text": [
         "GRUEL 12:00 TO 12:05"
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
-      "part": "Text Sign",
+      "part": "Notice Board",
       "on": 12,
       "socket": "k8_5",
       "by": "back",
       "text": [
         "SECOND HELPINGS BY WRITTEN REQUEST ONLY"
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
       "part": "Cast Iron Radiator",

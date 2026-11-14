@@ -53,12 +53,6 @@
       "by": "l1"
     },
     {
-      "part": "Sandbag Wall 1 m",
-      "on": 6,
-      "socket": "k7",
-      "by": "r1"
-    },
-    {
       "part": "Door Hinge",
       "on": 2,
       "socket": "hinge",
@@ -66,7 +60,7 @@
     },
     {
       "part": "Steel Flush Door 1.5x2.25 m",
-      "on": 9,
+      "on": 8,
       "socket": "leaf",
       "by": "hang"
     }

@@ -137,8 +137,12 @@ Nothing inside is newer than the building. The fittings are the part kit's (`Int
 - **Filing Cabinet** (storage, four drawers), **Teleprinter**, **Tape Cabinet** (the Ministry's computer: reels and
   lamps). These, the Locker and the Gun Rack have a `"wall"` socket low on the back: hung on a wall's bottom face socket (`k8_0`) they stand on the
   floor against the wall, where a pad's own sockets (0, 1.75, 2 and 3.75 m) would leave them a metre out.
-- With them, the older parts that fit: Mess Table (a counter), Locker, Parts Shelf, Medical Station, Bunk, Galley Stove,
-  Tea Urn, Computer, Fax Machine, Phone Box, Pillar Box, Queue Post, Belisha Beacon, Employee of the Month.
+- **Service Counter 2 m / 1.5 m** (a wooden counter, closed side to the public, a shelf on the staff's; lengths chain on
+  `+x`/`-x`), **Steel Desk**, **Waiting Bench 2 m** (a seat), **Iron Bed** (a seat that is a Bunk: a body wakes there),
+  **Store Shelving 2 m** (storage): all on the `"wall"` socket, so they stand against a wall.
+- With them, the older parts that fit: Locker, Parts Shelf, Medical Station, Bunk, Galley Stove, Tea Urn, Computer, Fax
+  Machine, Phone Box, Pillar Box, Queue Post, Belisha Beacon, Employee of the Month. A Mess Table is a canteen's table,
+  not a counter.
 
 Colours inside: cream, Ministry green, cast-iron grey, brown Bakelite; `worn paint` on everything painted.
 
@@ -157,7 +161,7 @@ The colony itself and the guards' quarters are in the same file:
 | Building | Its job, and what that made it | Outline |
 | --- | --- | --- |
 | **Penal Colony** | A yard is for being counted in: wire a guard sees through, between four concrete posts with a floodlight each. The cell block is a blind box two storeys high with one window near the top and its light switch outside the door. The warden's office is low, has the Ministry's one window at eye level (he watches the gate from his desk) and throws its roof 4 m over the muster, in front of the cell door. | A tower and a long lid inside a fence |
-| **Colony Barracks** | Guards sleep away from the door and leave by it fast: a narrow slab two storeys tall, the guardroom below (duty desk, gun rack, an open doorway with steps and a canopy), the dormitory above under a high ribbon each side, the stair at the back. | A tall narrow slab, fins down its front |
+| **Colony Barracks** | Guards sleep away from the door and leave by it fast: a narrow slab two storeys tall, the guardroom below (duty desk, gun rack, an open doorway with steps and a canopy), the dormitory of iron beds above under a high ribbon each side, the wide stair up the east wall from just inside the doorway. | A tall narrow slab, fins down its front |
 
 The spaceport, 2 km out (`BuildingParts.Spaceport.cs`; docs/story/SPACEPORT.md):
 
@@ -167,6 +171,8 @@ The spaceport, 2 km out (`BuildingParts.Spaceport.cs`; docs/story/SPACEPORT.md):
 | **Spaceport Control Tower** | Controllers must see every pad and be seen in the weather: a blind shaft seven storeys high, slots up the stair, a glass cab on top (the one place the Ministry looks out), red lamps on the lid, a pad for small craft on the roof. A stair stacked storey on storey alternates sides (west flight, east flight), each under its own floor's opening, or the flight above leaves no headroom. | The tallest thing for miles |
 | **Spaceport Landing Pad** | 16 by 16 m of foundation laid flush with the hardstand, a yellow touchdown square, a lamp on each corner. | Flat |
 
+Each block has a number on its name board: 1 Canteen, 2 Records, 3 Infirmary, 4 Requisitions, 5 Barracks.
+
 `--look-report` shows these as almost wholly "dark or grey": that is the style, not a fault. Judge them by outline, lamps
 and finish count, and in the window (`--window-shot OUT.png --blueprint "Colony Canteen" --at X,Y,Z --look-at X,Y,Z`).
 
@@ -175,7 +181,7 @@ and finish count, and in the window (`--window-shot OUT.png --blueprint "Colony 
 The helpers in `BuildingParts.Ministry.cs` do the repeated work: `Roof` and `Lid` (slabs and their fascias; `front:
 false` where a taller part stands), `Porch` (canopy, lamp, name), `Steps`, `Piers` (fins or buttresses on a wall's face
 sockets), `Outside` and `Strip` (lamps in the two colours), `Switch` (a Bakelite Switch wired to its lamps: a wire
-reaches 8 m), `Sign`, `Door`. A blueprint holds up to 128 steps.
+reaches 8 m), `NameBoard`, `Notice`, `Warning` and `Sign` (the signs, below), `Door`. A blueprint holds up to 128 steps.
 
 What the game's build check taught (the generator's mirror doesn't know what is in the way: run
 `--check-construct-parts`, which builds every blueprint, after `--gen-parts building_parts` and a build):
@@ -186,15 +192,50 @@ What the game's build check taught (the generator's mirror doesn't know what is 
   pieces (their plinth band would share a plane) and off a door's leg.
 - Walls stand on walls for a tall hall (no floor between); a slab that meets a wall from outside at an upper storey's
   foot is why the corners' plinth band starts 4 mm up.
-- The west wall upstairs over a `Concrete Stair Floor`'s opening (x 0.1 to 1.1 m, z 0.9 to 3.9 m) is the stairwell's.
+- The west wall upstairs over a `Concrete Wide Stair Floor`'s opening (x 0.25 to 2 m, z 0.5 to 4 m) is the stairwell's.
 - Furniture on the `"wall"` socket: two on neighbouring sockets (`k7_0`, `k8_0`) overlap; use `k0`, `k8`, `k15`.
 - A room that things are stood in at run time (the lore's items, Story/Lore: a wake spot, a post) keeps those spots
-  clear: the build check can't see them. Read the file's `"at"`s for the building before furnishing it, and after a
-  throwaway story world (`--traffic-check 5`) look for `[lore]` lines in the log.
+  clear: the build check can't see them, `--check-building` can (it stands the lore's items in and says when one is
+  inside a part or out of reach). After a throwaway story world (`--traffic-check 5`) look for `[lore]` lines in the log.
 - A 4 by 4 m room is four corners, which take no fin or buttress: give it height or a thrown roof instead. `Lid(...,
   back: false)` leaves the +z side off where a roof runs into a taller wall; close the rest by hand.
-- A stair in a 4 m wide room: `Concrete Stair Floor 4x4 m` turned `RY180` at `Cell(15, slab, z + 15)` with the stair
-  `R0` at `Cell(11, G, z)` puts it along the east wall, rising to the back.
+- A stair in a 4 m wide room: `Concrete Wide Stair Floor` turned `RY180` at `Cell(15, slab, z + 31)` with the
+  `Concrete Wide Stair 3 m` `R0` at `Cell(8, G, z + 16)` puts it along the east wall, rising to the back (the Barracks);
+  the floor `R0` at `Cell(0, slab, z)` with the stair `RY180` at `Cell(7, G, z + 15)` puts it along the west wall,
+  rising to the front (the Records Office). Its head ends at the wall: a person steps off it sideways.
+
+### Laying out a building
+
+Karl's report (2026-11-14): the stairs had to be crouched and tables stood in the way. The rules that fixed it, which
+`--check-building NAME[,NAME...]|all` checks (a standing body, 0.4 m round and 1.8 m tall, stepping up 0.55 m at most,
+as the game walks it and as the colony's people path; `BuildingWalkCheck.cs`, maps of each level in `building-walk.txt`):
+
+1. **Stairs are Wide Stairs.** `Concrete/Steel/Wood Wide Stair 3 m` (1.75 m wide, 12 steps of 25 cm over 3.5 m) under a
+   `... Wide Stair Floor` (an opening of 1.75 by 3.5 m). The old Straight Stair is 1 m wide under a 1 m opening: a
+   standing head clears the slab's edge by 10 cm, so a player crouched. Leave 1 m clear at the foot, and a side to step
+   off at the head.
+2. **Order the rooms by who goes where.** The public's side by the door (a queue, a bench, the forms), the counter
+   across between them and the staff's side, the staff's way round at one end of the counter (1.1 m at least) marked
+   STAFF ONLY, the stair's foot on the staff's side. Sleeping away from the door; triage at it.
+3. **Furniture stands against walls**, on the `"wall"` socket, never across a doorway, a stair's foot or head, or the
+   room's one way through. A way between two things is 0.9 m at least (the people's paths need it), 1.1 m to pass
+   without brushing.
+4. **Everything used is reachable**: every seat, store, switch and lore item within 1.6 m of somewhere a person can
+   stand and leave from. A switch over a stairwell is out of reach; put it at the stair's head.
+5. **A doorway opens onto floor**, not onto a flight's head: in a shaft of stacked flights the ground floor's goes up the
+   side away from the door.
+
+Run it after `--gen-parts building_parts` and a build, with `--check-construct-parts`. It changes nothing; the exit code
+is the number of buildings with a failure.
+
+### Signs
+
+A penal colony's signs are signwritten boards, not screens (the other factions keep their lit Text Signs): the part
+kit's `Sign Board 3 m`, `Sign Board 2 m` and `Notice Board` (`ControlParts.cs`), whose painted colour is the board and
+whose words are drawn in cream on a dark board, black on a light one, shrunk to fit and wrapped on the notice. In the
+generator: `NameBoard` (cream on Ministry green, "BLOCK 4 - REQUISITIONS", 2 m on a canopy), `Notice` and `Sign` (black
+on cream, three lines of rules), `Warning` (cream on red, one line: "STAFF ONLY"). Every block has a number; every
+notice is a rule nobody can keep.
 
 ## Out on the ice: the factions' outposts (`BuildingParts.Outposts.cs`)
 
