@@ -141,11 +141,19 @@ public static partial class ConstructLifters
     /// </summary>
     private static void PointsOn(Construct b, int self, LifterDef ld, Vector3 shoulder, Quaternion lr, LiftPoint[] pts, ref int n)
     {
+        var far = ld.ReachMax + MathF.Max(ld.Up, ld.Down);
+        var local = Vector3.Transform(shoulder - b.Pos, Quaternion.Conjugate(b.Rot)); // (the shoulder in the body's frame: a cheap cut for parts on it)
         for (var i = 0; i < b.PartCount && n < pts.Length; i++)
         {
             if (i == self || b.Parts[i].Broken)
                 continue;
             var d = b.DefOf(i);
+            if (!d.IsPieceRack && !d.IsAssembler && !d.IsPress && !d.IsExtruder && !d.IsPanelFormer)
+                continue;
+            ref readonly var p = ref b.Parts[i];
+            var half = (d.BoundsMax - d.BoundsMin).Length() * 0.5f + 0.5f;
+            if (p.Seg == 0 && Vector3.DistanceSquared(p.Pos + Rot24.Apply(p.Rot, (d.BoundsMin + d.BoundsMax) * 0.5f), local) > (far + half) * (far + half))
+                continue; // (a big body's far parts; one on a moving segment is tested whole)
             if (d.IsPieceRack)
             {
                 // A rack or a pad: pick and put. A Crafting Terminal's tray (phase 5b): put only, for its orders. A station's hold: its claims only.

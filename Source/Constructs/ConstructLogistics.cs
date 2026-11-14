@@ -38,6 +38,12 @@ public sealed class LogiMap
     public readonly LiftEdge[] Lifts = new LiftEdge[ConstructLifters.MaxEdges];
     public int LiftN;
     public ulong LiftHash; // the edges, folded (a terminal's network follows them: ConstructCrafting.KeyOf)
+    public const int MaxLiftParts = 32;
+    public readonly ushort[] LiftParts = new ushort[MaxLiftParts]; // the body's lifter parts when the map was made...
+    public readonly byte[] LiftModes = new byte[MaxLiftParts]; // ...and their Works settings (a change makes the map again: a setting is no rebuild)
+    public int LiftPartN;
+    public ulong LiftKey; // what the edges were worked out from (ConstructLifters.EdgeKey)...
+    public int LiftKeyN = -1; // ...and how many there were
     public readonly bool[] LiftPick = new bool[MaxNodes]; // a lifter picks at this node (a rack or a pad): a way may go on from it by the lifter
     public readonly bool[] DestPick = new bool[MaxDests]; // a Lay-down Pad: a station's large parts are sent to it (ConstructLifters.PadWant)
     public readonly bool[] ViaLift = new bool[MaxRouters * MaxDests]; // the way crosses a lifter (never for overflow: a lifter carries no storage to storage)
@@ -110,7 +116,7 @@ public static class ConstructLogistics
     public static LogiMap Map(Construct c)
     {
         var m = c.Logi ??= new LogiMap();
-        if (m.Stamp == c.RebuildStamp && m.SizeStamp == c.LogiStamp && m.PartCount == c.PartCount && m.RouteCount == c.RouteCount)
+        if (m.Stamp == c.RebuildStamp && m.SizeStamp == c.LogiStamp && m.PartCount == c.PartCount && m.RouteCount == c.RouteCount && (m.LiftPartN == 0 || !ConstructLifters.ModesChanged(c, m)))
             return m;
         Build(c, m);
         return m;
@@ -181,7 +187,23 @@ public static class ConstructLogistics
         // and what the Routers show stay as they are. A lifter's edges count as links (worked out here, from the parts: either peer).
         var hash = LinkHash(c);
         Span<LiftEdge> lifts = stackalloc LiftEdge[ConstructLifters.MaxEdges];
-        var liftN = ConstructLifters.HasLifter(c) ? ConstructLifters.MapEdges(c, lifts) : 0;
+        var hasLift = ConstructLifters.HasLifter(c);
+        if (hasLift)
+            ConstructLifters.NoteModes(c, m);
+        else
+            m.LiftPartN = 0;
+        var liftN = 0;
+        var key = hasLift ? ConstructLifters.EdgeKey(c) : 0UL;
+        if (hasLift && key == m.LiftKey && m.LiftKeyN == m.LiftN)
+        {
+            liftN = m.LiftN; // (nothing the edges follow changed: kept, as worked out last time)
+            m.Lifts.AsSpan(0, liftN).CopyTo(lifts);
+        }
+        else if (hasLift)
+        {
+            liftN = ConstructLifters.MapEdges(c, lifts);
+            (m.LiftKey, m.LiftKeyN) = (key, liftN);
+        }
         var liftHash = 0UL;
         for (var e = 0; e < liftN; e++)
             liftHash = (liftHash ^ lifts[e].Lifter ^ (ulong)lifts[e].From << 16 ^ (ulong)lifts[e].To << 32 ^ (ulong)lifts[e].Narrow << 48 ^ 0xA5UL << 56) * 1099511628211UL;

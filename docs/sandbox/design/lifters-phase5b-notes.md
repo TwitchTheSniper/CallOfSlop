@@ -97,3 +97,21 @@ joined by a lifter only, the claim sweep skips pad claims, a station's large fet
    as the station's hold does (a pad's piece goes only to a fit). B: such a build stays the station's own, by hand.
 3. **Carrying into a terminal's tray** (built here so a terminal's order served by an arm arrives): A (recommended, built): an arm
    fills a tray for an order that asked for it; B: trays only by conveyor.
+
+## After review (2026-11-13)
+
+- **Works setting changes the map** (a setting is no rebuild): the map keeps each lifter's Works setting and is made again when one
+  changes (`NoteModes`, `ModesChanged`). Tried with `lifter set liftMode`: the host's Router lost all 8 lifter edges at Off and had
+  them back at Auto; a joined client read 8, then 0, then 8.
+- **An arm that can't work holds a chain up by name**: pieces at its pick point count as riding only if nobody claimed them
+  (`Available`), and the chained order's row says why they don't move ("waiting on the Loader Arm: no power", its Run held off, its
+  Works setting, stuck, broken; `PickBlocked`). Tried with `timed` (the rig unpowered): 2 blanks at the pick rack, 4 left in stock,
+  the row read "waiting on the Loader Arm: no power".
+- **A station's large fetch goes to a pad only when the pad takes the piece and the conveyor's way reaches it** (straight, through
+  Joins or a Router with a way there; `PickPadFor`, `WayReaches`); a chute or no way: as before. Tried: the Showcase's Long Piece Rack
+  (no route to the station) with an arm and a pad joined into the station's body: the order said "collect it there" and the piece
+  stayed in stock. Not tried: a conveyor straight into the hold with a pad on the body, and the case where it does reach the pad.
+- **Cost on the biggest body with a terminal** (the 474-part Showcase with an arm joined in): its lifter edges 36 us to work out (a
+  distance cut and a body-frame test first); kept when nothing they follow changed (`EdgeKey`): the whole map made again 18 us; a
+  terminal's network look 0.6 us (`HasLifter` kept on the body until its parts change).
+- The pick pad count's pre-scan tick and its pads list live on the world (`PadScanTick`, `PadSeen`), not in statics.

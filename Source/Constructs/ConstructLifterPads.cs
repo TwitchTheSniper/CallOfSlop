@@ -151,14 +151,12 @@ public static partial class ConstructLifters
     }
 
     private const int MaxServing = 8, ReachLooks = 512;
-    private static readonly uint[] _padSeen = new uint[64]; // the last count's pick pads (body << 16 | part), for the build's claims (ConstructLifterNet.cs)
-    private static int _padSeenN;
     private static readonly LifterDef[] ServeDef = new LifterDef[MaxServing];
     private static readonly Vector3[] ServeShoulder = new Vector3[MaxServing];
     private static readonly Quaternion[] ServeRot = new Quaternion[MaxServing];
     private static int[] _padHeld = new int[16], _padReach = new int[16];
     private static StationJob? _padJob;
-    private static int _padTick = int.MinValue, _padScanTick = int.MinValue;
+    private static int _padTick = int.MinValue;
 
     /// <summary>
     /// Server, for a station's orders: pieces of a kind on the pick pads of the arms that serve this station (within reach of its bay,
@@ -170,9 +168,9 @@ public static partial class ConstructLifters
     {
         if (sc.Parts[t].Station is not { } j)
             return 0;
-        if (_padScanTick != world.LiftTick)
+        if (world.PadScanTick != world.LiftTick)
         {
-            _padScanTick = world.LiftTick;
+            world.PadScanTick = world.LiftTick;
             Scan(world, server: true); // (bodies whose parts changed only: the stations step before the lifters, and a loaded world's first orders would see no arm and no pad)
         }
         if (world.PadBodies.Count == 0 || world.LiftBodies.Count == 0)
@@ -228,10 +226,10 @@ public static partial class ConstructLifters
                         continue;
                     any = true;
                     var key = (uint)pt.Body << 16 | pt.Part;
-                    if (Array.IndexOf(_padSeen, key, 0, seen) >= 0)
+                    if (Array.IndexOf(world.PadSeen, key, 0, seen) >= 0)
                         continue;
-                    if (seen < _padSeen.Length)
-                        _padSeen[seen++] = key;
+                    if (seen < world.PadSeen.Length)
+                        world.PadSeen[seen++] = key;
                     for (var q = 0; q < j.KindN; q++)
                         _padHeld[q] += ConstructCrafting.Holds(st, j.KindDef[q]);
                 }
@@ -239,7 +237,7 @@ public static partial class ConstructLifters
                     (ServeDef[serving], ServeShoulder[serving], ServeRot[serving], serving) = (ld, shoulder, lr, serving + 1);
             }
         }
-        _padSeenN = seen;
+        world.PadSeenN = seen;
         if (serving == 0 || j.Plan is not { } plan || plan.At.Length != j.PartOf.Length)
             return;
         var looked = 0;
@@ -290,4 +288,6 @@ public static partial class ConstructLifters
 public sealed partial class ConstructWorld
 {
     public readonly List<ushort> PadBodies = new(8); // server: the bodies that have a Lay-down Pad (ConstructLifterPads.cs)
+    public readonly uint[] PadSeen = new uint[64]; // server: the last pick pad count's pads (body << 16 | part), for the build's claims (ConstructLifterNet.cs)
+    public int PadSeenN, PadScanTick = int.MinValue; // ...how many; the tick a pick pad count last ran the lifter scan
 }

@@ -1125,7 +1125,7 @@ public static class ConstructCrafting
                 }
                 state = CraftState.Fetching;
                 var fits = ConstructConveyor.RackCheck(c, t, tray, d);
-                var toPad = fits == 3 && c.DefOf(t).IsBuildStation && net.Stores[s] is var sp && !c.DefOf(sp).IsLayDownPad ? ConstructLifters.PickPadFor(world, c, t) : -1;
+                var toPad = fits == 3 && via >= 0 && c.DefOf(t).IsBuildStation && net.Stores[s] is var sp && !c.DefOf(sp).IsLayDownPad ? ConstructLifters.PickPadFor(world, c, t, d, via) : -1; // (a pad that takes it, on its way: else as before)
                 if (toPad >= 0)
                 {
                     // (a station's large part: it rides to a pick pad its arms fit from, lifters phase 5; a Router on the way sends it there)

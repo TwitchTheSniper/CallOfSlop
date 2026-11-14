@@ -1065,7 +1065,7 @@ public static unsafe partial class Program
                     var pens = lw[0] == "pen" ? LifterProbe.Pen(g.Constructs, pspot) : 0;
                     WsSay($"lifter: {lw[0]}: {moved} player(s) to {pspot:0.00}{(pens > 0 ? $", {pens} Crate Stacks round them" : "")}; {pinfo}");
                 }
-                else if (lw.Length > 0 && lw[0] is "line" or "hold" or "set" or "mains" or "points" or "base" or "flip" or "reset" or "press" or "drop" or "pickpad" or "net" or "edges" or "bigparts" or "bigrack" or "steps" or "crowd" && g.IsServer)
+                else if (lw.Length > 0 && lw[0] is "line" or "hold" or "set" or "mains" or "points" or "base" or "flip" or "reset" or "press" or "drop" or "pickpad" or "net" or "edges" or "bigparts" or "bigrack" or "steps" or "mapcost" or "weld" or "crowd" && g.IsServer)
                 {
                     // Lifters phase 4 (LifterLineProbe.cs): "lifter line [TIER]" an arm, an Assembler, a stocked rack and a pad round this player;
                     // "lifter hold NAME" that piece at the line's Assembler's out; "lifter set liftMode|carryHeight V"; "lifter mains on|off"; "lifter points".
@@ -1087,6 +1087,8 @@ public static unsafe partial class Program
                         "bigparts" => WsFind(g, "Building Station") is ({ } bpc, var bpt) ? LifterProbe.BigParts(g.Constructs, bpc, bpt) : "bigparts: no Building Station",
                         "bigrack" => WsFind(g, "Building Station") is ({ } brc, var brt) ? LifterProbe.BigRack(g.Constructs, brc, brt, rest4) : "bigrack: no Building Station",
                         "steps" => WsFind(g, "Building Station") is ({ } stc, var stt) ? LifterProbe.Steps(g.Constructs, stc, stt) : "steps: no Building Station",
+                        "mapcost" => WsFind(g, "Building Station") is ({ } mcc, _) ? LifterProbe.MapCost(g.Constructs, mcc) : "mapcost: no Building Station",
+                        "weld" => WsFind(g, "Building Station") is ({ } wdc, _) ? LifterProbe.Weld(g.Constructs, wdc) : "weld: no Building Station",
                         "crowd" => LifterProbe.Crowd(g.Constructs, me.Position, int.TryParse(rest4, out var cn) ? cn : 300),
                         _ => LifterProbe.Points(g.Constructs),
                     });

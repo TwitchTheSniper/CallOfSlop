@@ -686,8 +686,8 @@ public static class ConstructLogisticsPlan
                     if (e.Maker == NoPart)
                         (e.Seen, e.Tried) = (Seen(world, c, net), world.ChainStepNo);
                 }
-                else if (left <= 0 && e.Reason != "")
-                    e.Reason = "";
+                else if (left <= 0)
+                    e.Reason = ConstructLifters.PickBlocked(world, c, e.Dest, e.Kind) ?? ""; // (its pieces wait at a lifter's pick point: an arm that can't work now is named on its row, lifters phase 5)
             }
             if (held > 0 || e.Maker == NoPart)
                 SendOne(world, c, net, e);

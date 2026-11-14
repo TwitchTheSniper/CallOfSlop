@@ -27,7 +27,7 @@ public static partial class LifterProbe
     {
         var inv = Quaternion.Conjugate(a.Rot);
         var turn = Rot24.Nearest(inv * b.Rot, out var match);
-        if (match < 0.999f || world.CanMerge(a, b) != null)
+        if (match < 0.99f || world.CanMerge(a, b) != null) // (a probe: an arm a little tilted by the ground is squared by the join)
             return false;
         var plan = new JoinPlan { Other = b, PartA = 0, SockA = 0, PartB = 0, SockB = 0, Turn = turn, Offset = Vector3.Transform(b.Pos - a.Pos, inv) };
         return world.Merge(a, plan);
@@ -92,6 +92,65 @@ public static partial class LifterProbe
             line += $"; conveyor {k3} (Router to pad)";
         LinePad = arm.Id; // (the pad is on this body now: "lifter drop" finds it by its first pad)
         return $"net: one body {arm.Id}: arm 0, Press {pPress}, pick rack {pRack}, pad {pPad}, terminal {pTerm}, Router {pRouter}, stock rack {pStock} ({stocked} {blank.Name}); conveyors {k1} (stock to Router), {k2} (Router to pick rack); {line}";
+    }
+
+    /// <summary>Host: the newest arm and the probe's pad joined into the station's body (a pick pad on the station's own network).</summary>
+    public static string Weld(ConstructWorld world, Construct sc)
+    {
+        Construct? arm = null;
+        foreach (var b in world.Bodies)
+            if (b.PartCount == 1 && b.DefOf(0).Lifter != null && (arm == null || b.Id > arm.Id))
+                arm = b;
+        var s = "weld:";
+        if (arm != null)
+            s += Into(world, sc, arm) ? $" arm joined as part {sc.PartCount - 1};" : " the arm would not join;";
+        if (world.Get(LinePad) is { PartCount: 1 } pd && pd != sc)
+            s += Into(world, sc, pd) ? $" pad joined as part {sc.PartCount - 1}" : " the pad would not join";
+        return s;
+    }
+
+    /// <summary>
+    /// Host: the newest arm joined into the station's body, then the cost of what a rebuild of a big body with a lifter pays: the lifter
+    /// edges (MapEdges), the whole map made again, and a terminal's network key (each NetOf look).
+    /// </summary>
+    public static string MapCost(ConstructWorld world, Construct sc)
+    {
+        Construct? arm = null;
+        foreach (var b in world.Bodies)
+            if (b.PartCount == 1 && b.DefOf(0).Lifter != null && (arm == null || b.Id > arm.Id))
+                arm = b;
+        if (arm != null && !Into(world, sc, arm))
+            return $"mapcost: the arm would not join the station's body ({world.CanMerge(sc, arm) ?? "not square to it"}; turn match {Rot24.Nearest(Quaternion.Conjugate(sc.Rot) * arm.Rot, out var mt)} {mt:0.0000})";
+        Span<LiftEdge> edges = stackalloc LiftEdge[ConstructLifters.MaxEdges];
+        var f = System.Diagnostics.Stopwatch.Frequency / 1e6;
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        var n = 0;
+        for (var k = 0; k < 100; k++)
+            n = ConstructLifters.MapEdges(sc, edges);
+        var edgesUs = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) / f / 100;
+        t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        for (var k = 0; k < 20; k++)
+        {
+            sc.LogiStamp++;
+            if (sc.Logi != null)
+                sc.Logi.LinkHash = 0;
+            ConstructLogistics.Map(sc);
+        }
+        var mapUs = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) / f / 20;
+        var term = -1;
+        for (var i = 0; i < sc.PartCount && term < 0; i++)
+            if (sc.DefOf(i).IsCraftTerminal)
+                term = i;
+        var keyUs = 0.0;
+        if (term >= 0)
+        {
+            ConstructCrafting.NetOf(world, sc, term);
+            t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            for (var k = 0; k < 1000; k++)
+                ConstructCrafting.NetOf(world, sc, term);
+            keyUs = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) / f / 1000;
+        }
+        return $"mapcost: body {sc.Id} ({sc.PartCount} parts, {sc.RouteCount} links): {n} lifter edges in {edgesUs:0.0} us; the map made whole {mapUs:0.0} us; a terminal's NetOf look {keyUs:0.00} us";
     }
 
     /// <summary>The body's lifter edges as its map has them, and each Router's ways to the machines and trays.</summary>

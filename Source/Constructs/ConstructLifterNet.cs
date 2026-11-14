@@ -2,6 +2,12 @@ using System.Numerics;
 
 namespace CallOfSlop;
 
+public sealed partial class Construct
+{
+    internal int HasLiftStamp = int.MinValue, HasLiftParts = -1; // (ConstructLifters.HasLifter: the parts it was worked out for)
+    internal bool HasLift;
+}
+
 /// <summary>One lifter edge of the logistics map (<see cref="LogiMap"/>): the lifter part carries from a pick part to a put part.</summary>
 public struct LiftEdge
 {
@@ -130,17 +136,98 @@ public static partial class ConstructLifters
             for (var o = 0; o < e && !dup; o++)
                 dup = m.Lifts[o].To == dest && m.Lifts[o].From == m.Lifts[e].From;
             if (!dup && world.StoreOf(c, m.Lifts[e].From) is { } st)
-                n += ConstructCrafting.Holds(st, kind);
+                n += ConstructCrafting.Available(world, st, kind); // (what nobody claimed: an arm never carries a claimed piece)
         }
         return n + (world.LiftBusy > 0 ? HandsTo(world, c.Id, dest, kind) : 0);
     }
 
-    /// <summary>Has the body a lifter part? (A cheap test before the edges are worked out.)</summary>
+    /// <summary>
+    /// Server: why the pieces waiting at the pick points for machine <paramref name="dest"/> don't move: every lifter whose edge puts to
+    /// it can't work now (a fixed text for the chained order's row: "waiting on the Loader Arm: no power"), or null (one can, or none waits).
+    /// </summary>
+    public static string? PickBlocked(ConstructWorld world, Construct c, int dest, ushort kind)
+    {
+        if (c.Logi is not { LiftN: > 0 } m || !world.LiftSeen.TryGetValue(c.Id, out var lb))
+            return null;
+        string? why = null;
+        for (var e = 0; e < m.LiftN; e++)
+        {
+            if (m.Lifts[e].To != dest || m.Lifts[e].From >= c.PartCount || world.StoreOf(c, m.Lifts[e].From) is not { } st || ConstructCrafting.Available(world, st, kind) == 0)
+                continue;
+            int part = m.Lifts[e].Lifter;
+            CLift? l = null;
+            for (var i = 0; i < lb.N && l == null; i++)
+                if (lb.Lifts[i].Part == part)
+                    l = lb.Lifts[i];
+            if (l == null || part >= c.PartCount)
+                continue;
+            var mode = (int)ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.LiftMode, 0);
+            var now = c.Parts[part].Broken ? "waiting on the Loader Arm: it is broken"
+                : !ConstructRecycler.Powered(world, c, part) ? "waiting on the Loader Arm: no power"
+                : ConstructExtruder.RunHeld(c, part) ? "waiting on the Loader Arm: its Run is held off"
+                : mode is 1 or 3 ? "waiting on the Loader Arm: its Works setting keeps it from carrying"
+                : l.State == LiftState.Stuck && l.Why != LiftWhy.Holding ? "waiting on the Loader Arm: it is stuck with a piece nothing takes"
+                : null;
+            if (now == null)
+                return null; // (one that puts here can work: the pieces move)
+            why ??= now;
+        }
+        return why;
+    }
+
+    /// <summary>Has the body a lifter part? Kept on the body until its parts change (a terminal's network key asks on every look).</summary>
     public static bool HasLifter(Construct c)
     {
+        if (c.HasLiftStamp == c.RebuildStamp && c.HasLiftParts == c.PartCount)
+            return c.HasLift;
+        (c.HasLiftStamp, c.HasLiftParts, c.HasLift) = (c.RebuildStamp, c.PartCount, false);
+        for (var i = 0; i < c.PartCount && !c.HasLift; i++)
+            c.HasLift = c.DefOf(i).Lifter != null;
+        return c.HasLift;
+    }
+
+    /// <summary>
+    /// Either peer: a hash of what a body's lifter edges follow from (each lifter's and each possible point's part, kind, place, whether
+    /// broken, and a lifter's Works setting), so a rebuild that changed none of them keeps the edges (a machine's piece leaving the body).
+    /// </summary>
+    public static ulong EdgeKey(Construct c)
+    {
+        var h = 14695981039346656037UL ^ (ulong)c.PartCount;
         for (var i = 0; i < c.PartCount; i++)
+        {
+            var d = c.DefOf(i);
+            if (d.Lifter == null && !d.IsPieceRack && !d.IsAssembler && !d.IsPress && !d.IsExtruder && !d.IsPanelFormer)
+                continue;
+            ref readonly var p = ref c.Parts[i];
+            h = (h ^ (ulong)i ^ (ulong)d.Id << 16 ^ (ulong)p.Rot << 40 ^ (ulong)p.Seg << 48 ^ (p.Broken ? 1UL << 56 : 0)) * 1099511628211UL;
+            h = (h ^ (ulong)BitConverter.SingleToUInt32Bits(p.Pos.X) ^ (ulong)BitConverter.SingleToUInt32Bits(p.Pos.Y) << 21 ^ (ulong)BitConverter.SingleToUInt32Bits(p.Pos.Z) << 42) * 1099511628211UL;
+            if (d.Lifter != null)
+                h = (h ^ (ulong)ConstructConfig.Get(p, d, CfgKey.LiftMode, 0) ^ 0x5A00) * 1099511628211UL;
+            for (var k = 0; k < c.RouteCount && !d.IsPieceRack && d.Lifter == null; k++)
+                if (c.Routes[k].Type == RouteType.Conveyor && (c.Routes[k].From == i || c.Routes[k].To == i))
+                    h = (h ^ (ulong)k << 8 ^ c.Routes[k].FromPort ^ (ulong)c.Routes[k].ToPort << 32) * 1099511628211UL; // (a machine's port with a conveyor on it is no point)
+        }
+        return h;
+    }
+
+    /// <summary>Either peer, when the map is made: each lifter part on the body and its Works setting, to see a setting change (a setting is no rebuild).</summary>
+    public static void NoteModes(Construct c, LogiMap m)
+    {
+        m.LiftPartN = 0;
+        for (var i = 0; i < c.PartCount && m.LiftPartN < LogiMap.MaxLiftParts; i++)
             if (c.DefOf(i).Lifter != null)
+                (m.LiftParts[m.LiftPartN], m.LiftModes[m.LiftPartN++]) = ((ushort)i, (byte)ConstructConfig.Get(c.Parts[i], c.DefOf(i), CfgKey.LiftMode, 0));
+    }
+
+    /// <summary>Either peer, each time the map is asked for: did a lifter's Works setting change since it was made (its edges come or go)?</summary>
+    public static bool ModesChanged(Construct c, LogiMap m)
+    {
+        for (var k = 0; k < m.LiftPartN; k++)
+        {
+            int i = m.LiftParts[k];
+            if (i >= c.PartCount || c.DefOf(i).Lifter == null || (byte)ConstructConfig.Get(c.Parts[i], c.DefOf(i), CfgKey.LiftMode, 0) != m.LiftModes[k])
                 return true;
+        }
         return false;
     }
 
@@ -323,15 +410,43 @@ public static partial class ConstructLifters
         }
     }
 
-    /// <summary>Server: a Lay-down Pad on the station's body that one of its arms fits from (a fetch of a large part rides there), or -1.</summary>
-    public static int PickPadFor(ConstructWorld world, Construct sc, int t)
+    /// <summary>
+    /// Server: a Lay-down Pad on the station's body that one of its arms fits from, that takes a piece of kind <paramref name="d"/> now,
+    /// and that conveyor <paramref name="via"/> reaches (straight, through Joins, or a Router with a way there): a fetch of a large part
+    /// rides there. -1: none (the fetch goes as before).
+    /// </summary>
+    public static int PickPadFor(ConstructWorld world, Construct sc, int t, ConstructPartDef d, int via)
     {
-        if (world.LiftBodies.Count == 0)
+        if (world.LiftBodies.Count == 0 || via < 0 || via >= sc.RouteCount)
             return -1;
         for (var i = 0; i < sc.PartCount; i++)
-            if (sc.DefOf(i).IsLayDownPad && !sc.Parts[i].Broken && ServesPad(world, sc, t, sc.Id, i))
+            if (sc.DefOf(i).IsLayDownPad && !sc.Parts[i].Broken && world.StoreOf(sc, i) is { } st && ConstructConveyor.RackCheck(sc, i, st, d) == 0
+                && WayReaches(sc, via, i) && ServesPad(world, sc, t, sc.Id, i))
                 return i;
         return -1;
+    }
+
+    /// <summary>Does a piece put on conveyor <paramref name="via"/> reach part <paramref name="to"/>: its end, through Joins, or a Router with a way there?</summary>
+    private static bool WayReaches(Construct c, int via, int to)
+    {
+        int at = c.Routes[via].To;
+        for (var hop = 0; hop < 8; hop++)
+        {
+            if (at == to)
+                return true;
+            if (at >= c.PartCount)
+                return false;
+            if (c.DefOf(at).IsRouter)
+                return ConstructLogistics.Reaches(c, at, to);
+            int next = -1, outs = 0;
+            for (var k = 0; k < c.RouteCount; k++)
+                if (c.Routes[k].Type == RouteType.Conveyor && c.Routes[k].From == at && c.Routes[k].FedEnd)
+                    (next, outs) = (c.Routes[k].To, outs + 1);
+            if (outs != 1 || !c.DefOf(at).IsConveyorJunction)
+                return false; // (a splitter deals in turn: no way)
+            at = next;
+        }
+        return false;
     }
 
     // ---- What lies on the pick pads for a build is reserved for it ---------------------------------------------------------
@@ -352,9 +467,9 @@ public static partial class ConstructLifters
         {
             for (var q = 0; q < j.KindN; q++)
                 ClaimLeft[q] = PickPadHolds(world, sc, t, j.KindDef[q]); // (worked out once for all kinds: PadCounts)
-            for (var s = 0; s < _padSeenN && want < MaxPadClaims; s++)
+            for (var s = 0; s < world.PadSeenN && want < MaxPadClaims; s++)
             {
-                if (world.Get((ushort)(_padSeen[s] >> 16)) is not { } b || world.StoreOf(b, (int)(_padSeen[s] & 0xFFFF)) is not { } st)
+                if (world.Get((ushort)(world.PadSeen[s] >> 16)) is not { } b || world.StoreOf(b, (int)(world.PadSeen[s] & 0xFFFF)) is not { } st)
                     continue;
                 for (var q = 0; q < j.KindN && want < MaxPadClaims; q++)
                 {
