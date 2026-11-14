@@ -104,6 +104,17 @@ public static partial class ConstructLifters
         return n;
     }
 
+    /// <summary>Does a lifter's edge carry from store <paramref name="from"/> to machine <paramref name="to"/> (what lies there counts as riding to it: <see cref="AtPicks"/>)?</summary>
+    public static bool LiftsTo(Construct c, int from, int to)
+    {
+        if (c.Logi is not { LiftN: > 0 } m)
+            return false;
+        for (var e = 0; e < m.LiftN; e++)
+            if (m.Lifts[e].From == from && m.Lifts[e].To == to)
+                return true;
+        return false;
+    }
+
     /// <summary>
     /// Is a store joined to the rest by lifters only (no conveyor or chute touches it)? It is not a terminal's stock: it would be
     /// claimed to be collected by hand, and an arm never carries what is claimed.

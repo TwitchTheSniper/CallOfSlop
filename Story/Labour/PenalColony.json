@@ -18,7 +18,7 @@
     // ---- The colony ------------------------------------------------------------------------------------------------
     { "name": "Morning roll call", "at": "colony", "spot": [-1.2, -6.7], "face": 90, "do": "rollcall", "inmates": 10, "guards": 2,
       "about": "two ranks on the muster square, each answering to a number; the sergeant has a clipboard and all morning" },
-    { "name": "Records office queue", "at": "Ministry Records Office", "spot": [3, -0.9], "face": 180, "do": "queue", "inmates": 6, "guards": 1,
+    { "name": "Records office queue", "at": "Ministry Records Office", "spot": [5, -0.9], "face": 180, "do": "queue", "inmates": 6, "guards": 1,
       "about": "the queue under the overhang for Form 9 (a request for Form 12); the one at the front goes round to the back" },
     { "name": "Canteen queue", "at": "Colony Canteen", "spot": [1, -0.9], "face": 180, "do": "queue", "inmates": 7,
       "about": "the dinner queue, stamping its feet; it moves up one every so often" },

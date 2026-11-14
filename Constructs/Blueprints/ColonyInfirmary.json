@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Colony Infirmary",
-  "description": "The penal colony's infirmary: triage at the door, a ward of two beds and the medicine cabinet.",
+  "description": "The penal colony's infirmary: triage at the door, a ward of iron beds and the medicine cabinet.",
   "steps": [
     {
       "part": "Concrete Foundation 4x4 m"
@@ -193,14 +193,14 @@
       }
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 22,
       "socket": "sign",
       "by": "back",
       "text": [
-        "INFIRMARY"
+        "BLOCK 3 - INFIRMARY"
       ],
-      "paint": "#1f2b45"
+      "paint": "#2f5a3c"
     },
     {
       "part": "Concrete Entrance Steps 2 m",
@@ -251,36 +251,47 @@
       "finish": "concrete"
     },
     {
-      "part": "Text Sign",
-      "on": 7,
+      "part": "Notice Board",
+      "on": 6,
       "socket": "k15_5",
       "by": "back",
       "text": [
         "FORM 27B: NOTICE OF INTENT TO BE ILL"
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
+    },
+    {
+      "part": "Sign Board 2 m",
+      "on": 3,
+      "socket": "kb7_5",
+      "by": "back",
+      "text": [
+        "NO MALINGERING"
+      ],
+      "paint": "#8e2a22"
     },
     {
       "part": "Medical Station",
       "on": 0,
-      "socket": "t8_8",
+      "socket": "t11_11",
       "by": "bottom",
-      "spin": 1,
       "paint": "#d6dad3"
     },
     {
-      "part": "Bunk",
-      "on": 1,
-      "socket": "t8_0",
-      "by": "bottom",
-      "spin": 1
+      "part": "Iron Bed",
+      "on": 6,
+      "socket": "k8_0",
+      "by": "wall",
+      "paint": "#d6dad3",
+      "finish": "worn paint"
     },
     {
-      "part": "Bunk",
-      "on": 1,
-      "socket": "t8_7",
-      "by": "bottom",
-      "spin": 1
+      "part": "Iron Bed",
+      "on": 6,
+      "socket": "k0_0",
+      "by": "wall",
+      "paint": "#d6dad3",
+      "finish": "worn paint"
     },
     {
       "part": "Medicine Cabinet",
@@ -292,14 +303,14 @@
     {
       "part": "Filing Cabinet",
       "on": 7,
-      "socket": "k0_0",
+      "socket": "k15_0",
       "by": "wall",
       "paint": "#d6dad3"
     },
     {
       "part": "Cast Iron Radiator",
-      "on": 6,
-      "socket": "k8_0",
+      "on": 4,
+      "socket": "ka7_0",
       "by": "back"
     },
     {
@@ -345,12 +356,12 @@
   ],
   "wires": [
     [
-      41,
-      39
+      42,
+      40
     ],
     [
-      41,
-      40
+      42,
+      41
     ]
   ]
 }

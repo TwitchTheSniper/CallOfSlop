@@ -638,6 +638,8 @@ public sealed class Player
     public bool Alive = true;
     [MatchState]
     public bool InShell; // wearing a robot shell: drawn as a robot (GameRobotShell.cs; every peer hears it)
+    [MatchState]
+    public ushort ShellChair, ShellSeat; // in a shell: the chair's construct and seat part, where their own body is drawn sitting (0: none)
     public ushort Kills;
     public ushort Deaths;
     public byte Team = Game.NoTeam; // team modes: 0 (Blue) or 1 (Red); replicated in the mode state
@@ -741,6 +743,7 @@ public sealed class Player
         Sim.Gear = Sim.Canopy = Sim.GearDelay = 0;
         SbSpawned = false;
         InShell = false; // (the server ends any shell run at a new match: ShellResetAll)
+        ShellChair = ShellSeat = 0;
         SbOwner = 255;
         SbBody = SbTag = SbBoarding = 0;
         SbPart = 0;

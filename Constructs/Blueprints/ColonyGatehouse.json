@@ -166,24 +166,24 @@
       "finish": "concrete"
     },
     {
-      "part": "Text Sign",
+      "part": "Notice Board",
       "on": 3,
       "socket": "fb7_5",
       "by": "back",
       "text": [
         "PENAL COLONY 7 - ALL VISITORS REPORT HERE"
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
-      "part": "Text Sign",
+      "part": "Notice Board",
       "on": 5,
       "socket": "fa7_5",
       "by": "back",
       "text": [
         "ESCAPEES ALSO REPORT HERE"
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
       "part": "Bulkhead Light",

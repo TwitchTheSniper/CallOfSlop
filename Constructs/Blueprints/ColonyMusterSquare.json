@@ -69,24 +69,24 @@
       "finish": "concrete"
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 9,
       "socket": "n0",
       "by": "back",
       "text": [
         "MUSTER 0600. LATENESS IS THEFT OF MINISTRY TIME."
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 9,
       "socket": "n1",
       "by": "back",
       "text": [
         "STANDING ORDERS: 1. STAND."
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
       "part": "Concrete Notice Board 2 m",
@@ -97,24 +97,24 @@
       "finish": "concrete"
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 12,
       "socket": "n0",
       "by": "back",
       "text": [
         "HEATING: ON (SEE FORM 9 FOR EXEMPTIONS)"
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 12,
       "socket": "n1",
       "by": "back",
       "text": [
         "LOST PROPERTY IS MINISTRY PROPERTY"
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     }
   ]
 }

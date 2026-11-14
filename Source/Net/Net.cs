@@ -107,7 +107,7 @@ public enum Msg : byte
     Fate, // server -> one client: Sandbox survival, where that player wakes after a death and whether they are dead for good (u8: 0x80 | 0x40 dead for good | RespawnSpot) when it changes (reliable ordered; GameSandboxDeath.cs, protocol 207)
     ColonyAlarm, // server -> all, Sandbox: the penal colony's lockdown alarm (u8 on, vec where it sounds) when it changes (reliable ordered), and again every 3 s while on (unreliable) for anyone who joined (GameColonyLockdown.cs, protocol 208)
     Corpse, // server -> all and each joiner: a body the host's ragdolls settled (u8 1, u16 its number, u8 owner, u16 zombie id, u8 look, vec, 14 x 3 i16 mm), or bodies that went (u8 2, u8 n, u16 each) (reliable ordered; GameCorpses.cs, protocol 210)
-    Shell, // server -> all and each joiner, Sandbox: a player wakes in a robot shell or is back in their body (u8 player, u8 on) (reliable ordered; GameRobotShell.cs, protocol 213)
+    Shell, // server -> all and each joiner, Sandbox: a player wakes in a robot shell or is back in their body (u8 player, u8 on, u16 chair, u16 seat: where their body sits, protocol 315) (reliable ordered; GameRobotShell.cs, protocol 213)
     Depot, // server -> one client, Sandbox story: that player's Orbital Depot state (u8 state, u8 has a target, vec the target) when it changes (reliable ordered; GameDepot.cs, protocol 214)
     TalkChoices, // server -> one client, Sandbox story: the answers a storylet offers in their talk panel (u8 the body's player, u8 n, n texts) when they change (reliable ordered; GameStoryStorylets.cs, protocol 222)
     Fragments, // server -> one client, Sandbox story: what they hold of the old records and their leads (u8 sites, u16 each site's construct; u8 held, (u8 fragment, str source) each; u8 leads, (str name, u8 found) each) when it changes (reliable ordered; GameStoryFragments.cs, protocol 227)
@@ -120,6 +120,7 @@ public enum Msg : byte
     Labour, // server -> all and each joiner, Sandbox story: the penal colony's convict labourers, every gang (u8 n, each u8 kind, u8 inmates, u8 guards, u8 seed, u8 flags, u8 gap 10 cm, vec facing, u8 points, vec each) when they change (reliable ordered; GameLabour.cs, protocol 276)
     LabourHands, // server -> all and each joiner, Sandbox story: the story people working among the labourers now (u8 n, each u8 player, u8 scene: their body is drawn as that gang's last inmate) when it changes (reliable ordered; GameLabourHands.cs, protocol 286)
     Breakout, // server -> one client, Sandbox story: their place in the convicts' break-out (u8 stage, u8 has a target, vec target, u32 the tick they boarded the hauler (0: not riding), u16 hauler leaving, u16 hauler arriving) when it changes (reliable ordered; GameBreakout.cs, protocol 288)
+    Errand, // server -> one client, Sandbox story: their errand on a works yard machine (u8 errand + 1 in Story/Errands, 0 none; u8 step, 255 done; u8 has a target, vec target) when it changes (reliable ordered; GameErrands.cs, protocol 314)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

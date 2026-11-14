@@ -521,7 +521,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   at 10 Hz while it moves), u8 the order its carry serves, u8 n and its orders. A new part file (Lifter Cab) moves part ids; op Grab is F in a cab.
     // 313: Stroke power: a cylinder's kW is its bore's times its stroke ratio (its displacement), and an engine needs a starter by its crank's
     //   scale times the stroke's cube root, worked out on each peer (no new bytes; a long-stroke engine's kW, torque and starter differ).
-    public const ushort ProtocolVersion = 313;
+    // 314: Errands (docs/story/DUTIES.md "Errands"): Msg.Errand at the end of Msg (u8 errand + 1, u8 step, u8 has a target, vec target),
+    //   CActKind.ErrandDrop at the end of CActKind (no bytes).
+    // 315: Msg.Shell carries the chair (u16 construct, u16 seat) after its on byte: every peer draws a shell wearer's body
+    //   sitting in the chair (GameRobotShell.cs ShellBodyOf).
+    public const ushort ProtocolVersion = 315;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

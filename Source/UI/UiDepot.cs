@@ -18,6 +18,8 @@ public sealed partial class Ui
         if (!game.SandboxOn || PauseOpen || MenuOpen || game.TutorialCurrent != null || game.QuarryLocal is not (Game.QuarryNone or Game.QuarryDone))
             return;
         var state = game.DepotLocal;
+        if (state == Game.DepotReport && ErrandShowing(game))
+            return; // (an errand first: the posting's report waits, UiErrand.cs)
         var since = Brutal.GlfwApi.Glfw.Time - game.DepotChangedAt;
         if (state == Game.DepotNone || state == Game.DepotDone && since > 8)
             return;

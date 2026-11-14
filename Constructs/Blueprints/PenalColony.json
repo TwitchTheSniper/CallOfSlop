@@ -342,14 +342,14 @@
       "finish": "worn paint"
     },
     {
-      "part": "Text Sign",
+      "part": "Notice Board",
       "on": 32,
       "socket": "fb7_5",
       "by": "back",
       "text": [
         "CELL BLOCK A - THERE IS NO CELL BLOCK B"
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
       "part": "Strip Light",
@@ -516,24 +516,24 @@
       }
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 65,
       "socket": "sign",
       "by": "back",
       "text": [
         "WARDEN"
       ],
-      "paint": "#1f2b45"
+      "paint": "#2f5a3c"
     },
     {
-      "part": "Text Sign",
+      "part": "Notice Board",
       "on": 49,
       "socket": "fb7_5",
       "by": "back",
       "text": [
         "ROLL CALL 05:00. AND 05:10. AND 05:20."
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
       "part": "Bulkhead Light",

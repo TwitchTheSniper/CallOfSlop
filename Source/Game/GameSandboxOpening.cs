@@ -105,6 +105,7 @@ public sealed partial class Game
         ObjectivesReset(); // (and the "what next" goals: GameObjectives.cs)
         QuarryReset(); // (and the Ministry Quarry: GameQuarry.cs)
         BreakoutReset(); // (and the break-out: GameBreakout.cs)
+        ErrandReset(); // (and the errands: GameErrands.cs)
         FragmentsReset(); // (and the data centres: GameStoryFragments.cs)
         LoreReset(); // (and the things to look at: GameStoryLore.cs)
         OpeningLocal = OpeningStage.None;

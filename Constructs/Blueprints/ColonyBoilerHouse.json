@@ -252,14 +252,14 @@
       }
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 29,
       "socket": "sign",
       "by": "back",
       "text": [
         "BOILER HOUSE"
       ],
-      "paint": "#1f2b45"
+      "paint": "#2f5a3c"
     },
     {
       "part": "Concrete Entrance Steps 2 m",
@@ -286,14 +286,14 @@
       "finish": "concrete"
     },
     {
-      "part": "Text Sign",
+      "part": "Notice Board",
       "on": 4,
       "socket": "fb7_5",
       "by": "back",
       "text": [
         "HEAT IS ISSUED, NOT OWED"
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
       "part": "Concrete Chimney 2.75 m",

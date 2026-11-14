@@ -265,9 +265,33 @@ public sealed class ControlParts : IPartGenerator
         return ("", p);
     }
 
+    /// <summary>
+    /// A painted sign board (buildings.md "Signs"): a flat board in its paint (Ministry green unless painted) whose words are
+    /// signwritten on it, centred and as big as the board takes: one row holds the whole line, made narrower to fit, never wrapped.
+    /// Hung by its back on a wall's face socket, a fascia's front or a canopy's sign socket.
+    /// </summary>
+    private static (string, Part) SignBoard(string name, string desc, double w, double h, int rows)
+    {
+        const double t = 0.03;
+        var p = new Part(name, Small, "Displays", desc, role: "logic", tool: "wrench", color: "#2f5a3c", group: "Logic");
+        p.Add(Box([-w / 2, -h / 2, -t], [w / 2, h / 2, t]));
+        p.Add(Box([-w / 2 - 0.012, -h / 2 - 0.012, -t - 0.004], [w / 2 + 0.012, h / 2 + 0.012, -t + 0.012], "#2b2e30", detail: true)); // (the batten frame behind it)
+        FrontSockets(p, w / 2, h / 2, t);
+        p.Stats(2 + 4 * w * h, 40, 0, SmallSeconds(Small));
+        p.Set(("logic", D(("kind", "display"), ("text", 2))),
+            ("panels", Py.L(D(("source", "logic.sign"), ("at", Py.L(0, 0, t + 0.003)), ("size", Py.L(Py.Round(w - 0.01, 3), Py.Round(h - 0.01, 3))), ("face", "+z"), ("up", "+y"), ("rows", rows), ("board", true)))));
+        p.Set(("config", new List<object?> { Ink }));
+        return ("", p);
+    }
+
     private static List<(string, Part)> Displays()
     {
-        var o = new List<(string, Part)>();
+        var o = new List<(string, Part)>
+        {
+            SignBoard("Sign Board 2 m", "A painted board: one line of words, signwritten to fit. Paint it for its colour.", 2.0, 0.4, 1),
+            SignBoard("Sign Board 3 m", "A painted board: one line of words, signwritten to fit. Paint it for its colour.", 3.0, 0.5, 1),
+            SignBoard("Notice Board", "A painted board of rules: three lines of words. Paint it for its colour.", 1.2, 0.8, 3),
+        };
         List<object?> Readout() => Py.L(Decimals, Unit);
         List<object?> Scale() => Py.L(Decimals, Unit, Low, High);
         List<object?> Plot() => Py.L(Low, High, Ramp); // (no number on these: the whole screen is the bar or the line)

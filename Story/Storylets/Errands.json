@@ -1,0 +1,70 @@
+{
+  // Errands (docs/story/DUTIES.md "Errands"; Karl, 2026-11-14: side quests that teach the machines at the bases). Someone at
+  // the colony asks for a small job on one of the works yard's machines; "Show me" starts it ("hook": "errand:ID",
+  // Story/Errands/ID.json), and the game records an Errand when it is done (the player is Taught the machine, the one who
+  // asked Likes them more: Story/Verbs/Errands.json). Optional and in the side lane, so a duty doesn't hold them up; one at
+  // a time (OnErrand); they wait for the first shift (FirstShift, the quarry done), and the rest wait for the Foundry, so
+  // the machines come in stages. Declined or dropped, they ask again later. Words are draft.
+  "format": "call-of-slop-storylets/1",
+  "storylets": [
+    {
+      "id": "errand-foundry",
+      "title": "Ambrose's hands",
+      "bucket": "side",
+      "again": "20m",
+      "priority": 2,
+      "about": "the old hull-builder shows the new one the works yard's Foundry: steel",
+      "needs": "?me FirstShift, not ?me Taught 'the Foundry', not ?me OnErrand ?e",
+      "cast": "?a is Person, ?a == 'Ambrose Thale'",
+      "beats": [
+        { "by": "?a", "to": "?me", "say": [ "You. The one who knows which end of a cable is which. Got a minute?" ] },
+        { "by": "?a", "to": "?me", "after": "4s", "say": [ "There's a Foundry in the works yard nobody here can work. I can. My hands can't, any more." ] }
+      ],
+      "ends": [
+        { "id": "yes", "choice": "Show me.", "hook": "errand:foundry", "next": "errand-assembler", "say": [ "Come on, then. Mind the ice." ] },
+        { "id": "no", "choice": "Not now.", "say": [ "It'll keep. It's kept twenty years." ] },
+        { "id": "drift", "after": "3m", "say": [ "Another time, then." ] }
+      ]
+    },
+    {
+      "id": "errand-assembler",
+      "title": "Requisition 41-B",
+      "final": true,
+      "bucket": "side",
+      "again": "20m",
+      "priority": 1,
+      "about": "Officer Nettles has a form that says an inmate makes a wall clock: the Assembler",
+      "needs": "?me Taught 'the Foundry', not ?me Taught 'the Assembler', not ?me OnErrand ?e",
+      "cast": "?n is Person, ?n == 'Officer Nettles'",
+      "beats": [
+        { "by": "?n", "to": "?me", "say": [ "Inmate! Sorry. Hello. You're the one who's good with the Foundry?" ] },
+        { "by": "?n", "to": "?me", "after": "4s", "say": [ "I've got a form. It needs a wall clock making. By an inmate. Specifically." ] }
+      ],
+      "ends": [
+        { "id": "yes", "choice": "Show me the form.", "hook": "errand:assembler", "say": [ "Oh, good. Works yard. The Assembler. I'll follow you. Officially." ] },
+        { "id": "no", "choice": "Not now, officer.", "say": [ "Right! Yes. I'll file you under later." ] },
+        { "id": "drift", "after": "3m", "say": [ "I'll come back. With the form." ] }
+      ]
+    },
+    {
+      "id": "errand-sawmill",
+      "title": "Hester's planks",
+      "final": true,
+      "bucket": "side",
+      "again": "20m",
+      "priority": 1,
+      "about": "Hester wants planks off the Sawmill and won't say what for",
+      "needs": "?me Taught 'the Foundry', not ?me Taught 'the Sawmill', not ?me OnErrand ?e",
+      "cast": "?h is Person, ?h == 'Hester Mossop', not ?h Grudge ?me >= 20",
+      "beats": [
+        { "by": "?h", "to": "?me", "say": [ "You can work the machines." ] },
+        { "by": "?h", "to": "?me", "after": "4s", "say": [ "I need planks. The Sawmill makes them. I don't go near it." ] }
+      ],
+      "ends": [
+        { "id": "yes", "choice": "I'll do it.", "hook": "errand:sawmill", "say": [ "Good. Quietly." ] },
+        { "id": "why", "choice": "What for?", "then": [ "?h Likes ?me -3" ], "say": [ "That's a no, then." ] },
+        { "id": "drift", "after": "3m" }
+      ]
+    }
+  ]
+}

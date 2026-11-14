@@ -7,14 +7,14 @@
       "part": "Heating Valve Chamber"
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 0,
       "socket": "f",
       "by": "back",
       "text": [
         "VALVE. DO NOT TURN. DO NOT ASK WHO DID."
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     }
   ]
 }

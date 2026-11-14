@@ -323,6 +323,8 @@ public static unsafe partial class Program
             return PortMounts.Cli(args); // does every link port sit on something drawn? (Source/Constructs/PortMounts.cs)
         if (args.Any(a => a.Equals("--check-starts", StringComparison.OrdinalIgnoreCase)))
             return StoryStarts.Check(); // the story's starts (Story/Starts): what each holds, what's refused and why (docs/story/STARTS.md)
+        if (args.SkipWhile(a => !a.Equals("--check-building", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } buildingNames)
+            return BuildingWalkCheck.Cli(buildingNames); // can a standing person use the building? (BuildingWalkCheck.cs)
         if (args.Any(a => a.Equals("--check-construct-parts", StringComparison.OrdinalIgnoreCase)))
             return ConstructParts.CheckCli(); // Sandbox construct parts and blueprints: what loads, what's refused and why (Source/Constructs)
         if (args.Any(a => a.Equals("--check-mods", StringComparison.OrdinalIgnoreCase)))
@@ -2096,6 +2098,7 @@ public static unsafe partial class Program
             AllocProfile.Mark("people: player bodies"); // (the benchmark's --trace-frame)
             DrawPlayer(p);
         }
+        DrawShellBodies();
         AllocProfile.Mark("people: labourers");
         LabourRender.Draw(Gfx, _game); // the penal colony's convict labourers (Source/Render/LabourRender.cs)
         AllocProfile.Stop();
@@ -2402,6 +2405,27 @@ public static unsafe partial class Program
         else
             PlayerRender.DrawImmediate(Gfx, p, Glfw.Time);
         ThirdPersonArms.ShotFlash = 0;
+    }
+
+    /// <summary>Everyone wearing a robot shell, your own too: their body sits in the chair while the robot walks about (Karl, 2026-11-14).</summary>
+    private static void DrawShellBodies()
+    {
+        if (_game == null || !_game.SandboxOn)
+            return;
+        var hands = ToolRender.Hands;
+        ToolRender.Hands = null; // (the hands are the shell's now: the body in the chair holds nothing)
+        foreach (var p in _game.Players.Values)
+        {
+            if (!p.InShell || _game.ShellBodyOf(p) is not { } body)
+                continue;
+            LegAnimator.SwapShellBody(p.Id);
+            if (ScenePresentation.Enabled)
+                ScenePresentation.DrawShellBody(Gfx, body, Glfw.Time);
+            else
+                PlayerRender.DrawImmediate(Gfx, body, Glfw.Time);
+            LegAnimator.SwapShellBody(p.Id);
+        }
+        ToolRender.Hands = hands;
     }
 
     private static readonly ViewModelAnimator _vmAnim = new();

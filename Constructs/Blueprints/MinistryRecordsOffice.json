@@ -72,7 +72,7 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Door Wall 2 m",
+      "part": "Concrete Slot Wall 2 m",
       "on": 0,
       "socket": "t8_0",
       "by": "b0",
@@ -80,7 +80,7 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Slot Wall 2 m",
+      "part": "Concrete Door Wall 2 m",
       "on": 1,
       "socket": "t0_0",
       "by": "b0",
@@ -139,7 +139,7 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Stair Floor 4x4 m",
+      "part": "Concrete Wide Stair Floor",
       "on": 6,
       "socket": "t0_0",
       "by": "b0_0",
@@ -187,10 +187,10 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Straight Stair 3 m",
+      "part": "Concrete Wide Stair 3 m",
       "on": 0,
-      "socket": "t4_4",
-      "by": "b0_11",
+      "socket": "t7_15",
+      "by": "b0_0",
       "spin": 3,
       "paint": "#858179",
       "finish": "concrete"
@@ -445,7 +445,7 @@
     },
     {
       "part": "Door Hinge",
-      "on": 10,
+      "on": 11,
       "socket": "hinge",
       "by": "base"
     },
@@ -490,28 +490,28 @@
       "finish": "concrete"
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 3 m",
       "on": 29,
       "socket": "f8_5",
       "by": "back",
       "text": [
-        "MINISTRY OF SLOP"
+        "BLOCK 2 - MINISTRY RECORDS"
       ],
-      "paint": "#1f2b45"
+      "paint": "#2f5a3c"
     },
     {
-      "part": "Text Sign",
-      "on": 7,
-      "socket": "fb7_5",
+      "part": "Notice Board",
+      "on": 6,
+      "socket": "fa7_5",
       "by": "back",
       "text": [
-        "RECORDS OFFICE - QUEUE HERE"
+        "QUEUE HERE. QUEUE QUIETLY. QUEUE."
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
       "part": "Bulkhead Light",
-      "on": 10,
+      "on": 11,
       "socket": "f0_10",
       "by": "back",
       "config": {
@@ -528,22 +528,25 @@
       }
     },
     {
-      "part": "Mess Table",
-      "on": 3,
-      "socket": "t0_0",
+      "part": "Service Counter 2 m",
+      "on": 0,
+      "socket": "t15_7",
       "by": "bottom",
-      "spin": 3,
-      "paint": "#4b5157",
-      "finish": "wood"
+      "spin": 2,
+      "paint": "#6b4a2e",
+      "finish": "worn paint"
     },
     {
-      "part": "Mess Table",
-      "on": 3,
-      "socket": "t8_0",
-      "by": "bottom",
-      "spin": 3,
-      "paint": "#4b5157",
-      "finish": "wood"
+      "part": "Service Counter 2 m",
+      "on": 65,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Service Counter 2 m",
+      "on": 66,
+      "socket": "+x",
+      "by": "-x"
     },
     {
       "part": "Employee of the Month",
@@ -558,46 +561,60 @@
       "by": "base"
     },
     {
-      "part": "Filing Cabinet",
+      "part": "Sign Board 2 m",
       "on": 12,
-      "socket": "k0_0",
-      "by": "wall"
+      "socket": "k15_5",
+      "by": "back",
+      "text": [
+        "STAFF ONLY BEYOND THIS POINT"
+      ],
+      "paint": "#8e2a22"
     },
     {
-      "part": "Filing Cabinet",
-      "on": 12,
-      "socket": "k7_0",
-      "by": "wall"
-    },
-    {
-      "part": "Filing Cabinet",
-      "on": 12,
-      "socket": "k15_0",
-      "by": "wall"
-    },
-    {
-      "part": "Teleprinter",
+      "part": "Waiting Bench 2 m",
       "on": 14,
       "socket": "k8_0",
       "by": "wall"
     },
     {
+      "part": "Wall Clock",
+      "on": 14,
+      "socket": "k8_5",
+      "by": "back"
+    },
+    {
       "part": "Cast Iron Radiator",
-      "on": 13,
+      "on": 7,
+      "socket": "ka7_0",
+      "by": "back"
+    },
+    {
+      "part": "Notice Board",
+      "on": 14,
+      "socket": "k0_5",
+      "by": "back",
+      "text": [
+        "FORMS ARE AVAILABLE ON REQUEST. REQUESTS ON FORM 1."
+      ],
+      "paint": "#d8d1b4"
+    },
+    {
+      "part": "Teleprinter",
+      "on": 12,
+      "socket": "k15_0",
+      "by": "wall"
+    },
+    {
+      "part": "Filing Cabinet",
+      "on": 9,
+      "socket": "ka7_0",
+      "by": "wall"
+    },
+    {
+      "part": "Cast Iron Radiator",
+      "on": 12,
       "socket": "k0_0",
       "by": "back"
-    },
-    {
-      "part": "Wall Clock",
-      "on": 10,
-      "socket": "k0_5",
-      "by": "back"
-    },
-    {
-      "part": "Office Plant",
-      "on": 1,
-      "socket": "t7_7",
-      "by": "base"
     },
     {
       "part": "Strip Light",
@@ -611,7 +628,7 @@
     {
       "part": "Strip Light",
       "on": 14,
-      "socket": "k8_10",
+      "socket": "k0_10",
       "by": "back",
       "config": {
         "colour": "#e4f2dc"
@@ -628,7 +645,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 10,
+      "on": 11,
       "socket": "k7_5",
       "by": "back",
       "config": {
@@ -637,25 +654,19 @@
     },
     {
       "part": "Queue Post",
-      "on": 4,
-      "socket": "t7_7",
-      "by": "base"
-    },
-    {
-      "part": "Queue Post",
-      "on": 4,
-      "socket": "t15_7",
-      "by": "base"
-    },
-    {
-      "part": "Queue Post",
       "on": 5,
       "socket": "t0_7",
       "by": "base"
     },
     {
-      "part": "Pillar Box",
+      "part": "Queue Post",
       "on": 5,
+      "socket": "t7_7",
+      "by": "base"
+    },
+    {
+      "part": "Pillar Box",
+      "on": 4,
       "socket": "t8_7",
       "by": "foot00"
     },
@@ -738,24 +749,24 @@
   ],
   "wires": [
     [
-      79,
-      76
-    ],
-    [
-      79,
-      77
-    ],
-    [
-      79,
+      81,
       78
     ],
     [
-      92,
-      90
+      81,
+      79
     ],
     [
-      92,
+      81,
+      80
+    ],
+    [
+      93,
       91
+    ],
+    [
+      93,
+      92
     ]
   ]
 }

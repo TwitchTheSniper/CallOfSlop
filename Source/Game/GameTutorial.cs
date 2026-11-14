@@ -245,9 +245,12 @@ public sealed partial class Game
                 SandboxHands.Notices.Add((id, $"{who} issues you a backpack"));
         }
         else if (state is TutorialState.Finished or TutorialState.Skipped && (_tutWasRunning[id] || !SandboxHands.HasPack(id) && !SandboxInfiniteParts))
+        {
+            var what = StoryUnarmed(p) ? "tools" : "gun and tools"; // (a story world issues no gun: GameStoryArms.cs)
             SandboxHands.Notices.Add((id, !SandboxHands.HasPack(id) && !SandboxInfiniteParts
-                ? $"{WardenName} gives you back your gun and tools, and issues you a backpack"
-                : $"{WardenName} gives you back your gun and tools"));
+                ? $"{WardenName} gives you back your {what}, and issues you a backpack"
+                : $"{WardenName} gives you back your {what}"));
+        }
         _tutWasRunning[id] = state == TutorialState.Running;
     }
 
