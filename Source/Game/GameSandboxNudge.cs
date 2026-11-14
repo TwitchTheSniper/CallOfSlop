@@ -64,7 +64,11 @@ public sealed partial class Game
                 Span<ushort> bodies = stackalloc ushort[n];
                 for (var i = 0; i < n; i++)
                     bodies[i] = r.U16();
-                return hands.NudgeBegin(Constructs, p.Id, eye, bodies, r.Vec());
+                // The sent pivot is the client's copies' centre (Program.SandboxNudge.cs, its only sender), and a copy can be
+                // centimetres behind just after a drag: the turn goes about the bodies' centre as the server has them, or
+                // a 120 degree arc swings that centre by 1.7 times the lag (CI 2026-11-14: 58 mm).
+                var sent = r.Vec();
+                return hands.NudgeBegin(Constructs, p.Id, eye, bodies, ConstructEdits.NudgeCentre(Constructs, bodies) ?? sent);
             }
             case CActKind.NudgeSteer:
             {

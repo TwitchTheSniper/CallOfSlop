@@ -37,7 +37,7 @@ are `lifters-phase5-notes.md` and `lifters-phase5b-notes.md`. **Protocol 310** (
 ## Tried by hand (Proving Ground, creative, `--save-dir` to a temp folder)
 
 - **Host**: the Medium crane over the press line found 5 points (the press's out and two bays, the rack, the pad) and carried laminate
-  blanks from the rack into the press's bay and the pressed Buttons to storage: 6 carries, 3 Buttons on the pad, about 6.4 s a carry.
+  blanks from the rack into the press's bay and the pressed Buttons to storage: 6 carries, 3 Buttons on the pad. (Verification run 7: a carry takes the law `ConstructLifters.Ticks`, the handle time plus the legs across at the crane's speed and up and down at its hoist, not a fixed time: 14.0 s for a blank from this rig's rack to the press, 9.8 s pad to pad, 7.5 to 8 s on the Production Showcase; the 6.4 s first written here was a loose average.)
 - **Joined client** (`--net host:60631`, `join:127.0.0.1:60631`, `--no-upnp`): it heard the carries, held the same crane state and read
   2 Buttons on the pad. Two later client runs on other ports could not reach the host at all; on 60631 again it joined.
 - **A rail section removed mid-carry** (the near run's section under the bridge): the crane stopped holding its blank, "not on a rail",

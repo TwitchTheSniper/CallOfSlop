@@ -16,9 +16,20 @@ public static partial class Program
     private static (Construct? C, int Part) LogiFind(Game g, string spec)
     {
         var at = spec.LastIndexOf('@');
-        if (at > 0 && int.TryParse(spec[(at + 1)..], out var idx) && (WsSpawned(g) ?? WsFind(g, "Conveyor Router").C) is { } c && idx >= 0 && idx < c.PartCount)
+        if (at > 0 && int.TryParse(spec[(at + 1)..], out var idx) && LogiBody(g) is { } c && idx >= 0 && idx < c.PartCount)
             return (c, idx);
         return WsFind(g, spec);
+    }
+
+    /// <summary>The spawned blueprint, or on a joined client (which spawns nothing) the body with a Router, a terminal or a cutter (run 7: a scratch cut line).</summary>
+    private static Construct? LogiBody(Game g)
+    {
+        if (WsSpawned(g) is { } s)
+            return s;
+        foreach (var n in new[] { "Conveyor Router", "Crafting Terminal", "Laser Cutter", "Panel Former" })
+            if (WsFind(g, n).C is { } c)
+                return c;
+        return null;
     }
 
     private static void WsLogi(Game g, string arg)
@@ -26,7 +37,7 @@ public static partial class Program
         var words = arg.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
         var verb = words.Length > 0 ? words[0] : "riders";
         var rest = words.Length > 1 ? words[1] : "";
-        var c = WsSpawned(g) ?? (WsFind(g, "Conveyor Router") is ({ } rc, _) ? rc : WsFind(g, "Crafting Terminal") is ({ } ctc, _) ? ctc : null); // (a joined client spawns nothing: the body with a Router, or a terminal)
+        var c = LogiBody(g); // (a joined client spawns nothing: the body with a Router, or a terminal)
         if (c == null)
         {
             WsFail("logi: no spawned blueprint and no Router");

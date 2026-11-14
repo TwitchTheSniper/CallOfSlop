@@ -317,7 +317,7 @@ public static class ConstructLaserCutter
 
     /// <summary>What its look line and screen say it lacks: "needs Formed Panel (...) on its bed".</summary>
     public static string Lacks(Construct c, int part, CStore st) =>
-        WorkOrders.HeadOf(c.Parts[part], out var head) && head.Name != null && JobOf(head.Name) is { } j ? $"needs {j.Blank} on its bed" : "needs its blank";
+        WorkOrders.HeadOf(c.Parts[part], out var head) && head.Name != null && JobOf(head.Name) is { } j ? $"needs {j.Blank} on its bed{(c.RoutesInto(part, RouteType.Conveyor, 255) > 0 ? "" : ": only a conveyor into its Piece in brings it (a hand can't load the bed)")}" : "needs its blank"; // (run 7: a player with the blank in hand had no word that it can't be put on)
 
     /// <summary>What it is doing, or why not (the look line's end).</summary>
     public static string Status(Construct c, int part, CStore st) => (ExtrudeStall)st.Refused switch

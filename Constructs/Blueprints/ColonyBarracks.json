@@ -240,6 +240,12 @@
       "finish": "concrete"
     },
     {
+      "part": "Air Raid Siren",
+      "on": 17,
+      "socket": "t8_8",
+      "by": "b00"
+    },
+    {
       "part": "Concrete Canopy 2 m",
       "on": 3,
       "socket": "fa7_10",
@@ -249,7 +255,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 29,
+      "on": 30,
       "socket": "lamp",
       "by": "back",
       "config": {
@@ -258,7 +264,7 @@
     },
     {
       "part": "Sign Board 2 m",
-      "on": 29,
+      "on": 30,
       "socket": "sign",
       "by": "back",
       "text": [
@@ -382,13 +388,13 @@
     },
     {
       "part": "Computer",
-      "on": 45,
+      "on": 46,
       "socket": "front01",
       "by": "foot00"
     },
     {
       "part": "Seat",
-      "on": 45,
+      "on": 46,
       "socket": "front14",
       "by": "bottom"
     },
@@ -528,16 +534,16 @@
   ],
   "wires": [
     [
-      55,
-      54
+      56,
+      55
     ],
     [
-      64,
-      62
-    ],
-    [
-      64,
+      65,
       63
+    ],
+    [
+      65,
+      64
     ]
   ]
 }

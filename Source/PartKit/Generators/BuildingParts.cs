@@ -1567,6 +1567,7 @@ public sealed partial class BuildingParts : IPartGenerator
         }
         o.AddRange(BrutalistParts()); // (fins, buttresses, canopies, fascias, slot and ribbon walls: BuildingParts.Brutalist.cs)
         o.AddRange(SiteParts()); // (road slabs, heating mains, the stack, gate piers, the flag, notice boards: BuildingParts.Site.cs)
+        o.AddRange(StreetParts()); // (what the Ministry puts on its roofs: the tannoy, slogan frames, a water tank, a hoist, the siren: BuildingParts.Street.cs)
         return o;
     }
 

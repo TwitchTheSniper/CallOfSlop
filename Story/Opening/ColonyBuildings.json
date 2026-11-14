@@ -15,7 +15,8 @@
     { "blueprint": "Colony Infirmary", "at": [-9, -20], "yaw": 180 },
     { "blueprint": "Ministry Records Office", "at": [2, -22], "yaw": 180 },
     { "blueprint": "Colony Canteen", "at": [14.5, -22.5], "yaw": 180 },
-    { "blueprint": "Requisitions Store", "at": [26, -20.5], "yaw": 180 },
+    // (The store's spot is its bounds' middle, and the hoist over its dock reaches 2.55 m out past the steps: -19.225 keeps its walls where -20.5 put them before.)
+    { "blueprint": "Requisitions Store", "at": [26, -19.225], "yaw": 180 },
     // Lamps along the street's north kerb, for the dark and the weather (off the carriageway: the site's slabs lie at z -14.9 to -10.9).
     { "blueprint": "Lamp Post", "at": [-11, -9.8] },
     { "blueprint": "Lamp Post", "at": [21, -9.8] },

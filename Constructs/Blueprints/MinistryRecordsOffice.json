@@ -740,6 +740,12 @@
       "by": "base"
     },
     {
+      "part": "Tannoy Mast",
+      "on": 35,
+      "socket": "t8_8",
+      "by": "b00"
+    },
+    {
       "part": "Battery",
       "on": 12,
       "socket": "k0_10",
