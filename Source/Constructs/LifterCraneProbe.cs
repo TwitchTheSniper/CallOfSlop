@@ -11,7 +11,7 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class LifterProbe
 {
-    public static ushort CraneBody;
+    public static ushort CraneBody, Pad2Body;
     private static bool _padCut;
     public const float Height = 6f;
 
@@ -173,6 +173,7 @@ public static partial class LifterProbe
         if (pd == null)
             return "pad2: no room";
         pd.Anchored = true;
+        Pad2Body = pd.Id;
         world.StructureDirty.Add(pd.Id);
         return $"pad2: Lay-down Pad body {pd.Id}";
     }

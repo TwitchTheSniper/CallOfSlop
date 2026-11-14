@@ -360,7 +360,7 @@ public static partial class ConstructLifters
                     continue;
                 // A crane whose rails went, or no longer reach either end of the move it is in: it stops where it is, its piece in its hand,
                 // as without power, and goes on when the rails are back.
-                var railless = ld.Bridge && (ld.RailWhy != 0 || l.State is LiftState.Carry or LiftState.Return && (OffRails(ld, l, false) || OffRails(ld, l, true)));
+                var railless = ld.Bridge && (ld.RailWhy != 0 || l.State is LiftState.Carry or LiftState.Return && (l.State == LiftState.Carry && OffRails(ld, l, false) || OffRails(ld, l, true))); // (an empty hook going back starts where its last piece was put, tested then)
                 if (railless || !ConstructRecycler.Powered(world, c, l.Part))
                 {
                     Why(world, l, !railless ? LiftWhy.NoPower : ld.RailWhy == 1 ? LiftWhy.NoRail : ld.RailWhy == 2 ? LiftWhy.NoFarRail : LiftWhy.RailsShort); // (it stops where it is, and goes on when power returns; a client poses it there too)
@@ -715,6 +715,12 @@ public static partial class ConstructLifters
         {
             Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
             to = Vector3.Transform((HoldPick(sc, t, ld, shoulder, lr, SafeLift, SafeLift, out var pick) ? pick : HoldPoint(sc, t, shoulder)) - lp, Quaternion.Conjugate(lr));
+        }
+        if (ld.Bridge && ld.RunHi >= ld.RunLo)
+        {
+            // (an empty hook goes back to a place on its rails: a piece whose origin is off its middle, picked near a run's end, left the
+            // origin past the run, and the empty hand's way back read "rails no longer reach": lifters phase 7)
+            to.Z = Math.Clamp(to.Z, ld.Base.Z + ld.RunLo, ld.Base.Z + ld.RunHi);
         }
         l.From = from;
         l.To = to;

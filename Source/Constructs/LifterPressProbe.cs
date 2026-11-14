@@ -54,12 +54,15 @@ public static partial class LifterProbe
     /// <summary>A loose piece let fall over the line's pad (it should be taken in within a second or two of coming to rest).</summary>
     public static string Drop(ConstructWorld world, string piece)
     {
-        if (world.Get(LinePad) is not { } pd)
+        var onPad2 = piece.StartsWith("pad2 ", StringComparison.Ordinal); // ("drop pad2 NAME": over the second pad, phase 7)
+        if (onPad2)
+            piece = piece[5..];
+        if (world.Get(onPad2 ? Pad2Body : LinePad) is not { } pd)
             return "drop: no pad (lifter line or lifter press first)";
         var loaded = piece.StartsWith("loaded ", StringComparison.Ordinal); // ("drop loaded NAME": a store part with 10 iron ore in it, phase 7)
         if (loaded)
             piece = piece[7..];
-        var d =piece == "blank" ? Blank() : ConstructParts.Find(piece);
+        var d = piece == "blank" ? Blank() : piece.StartsWith("blank ", StringComparison.Ordinal) && int.TryParse(piece[6..], out var bcm) ? Blank(bcm) : ConstructParts.Find(piece); // ("blank 400": a 4 m one)
         if (d == null)
             return $"drop: no part \"{piece}\"";
         Freeform.PartWorld(pd, 0, out var pp, out var pr);
