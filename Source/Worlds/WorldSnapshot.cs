@@ -18,7 +18,10 @@ public struct BodySnap
     public (ushort Part, OrderList List)[]? Orders; // its work-order queues and bills, copied (WorkOrders.cs; written after the conveyors)
     public (ushort Part, CraftList List)[]? Craft; // its Crafting Terminals' open orders, copied (ConstructCrafting.cs; written after the work orders)
     public ChainEntry[]? Chains; // its chained orders' links, copied (ConstructLogisticsPlan.cs; written in the LOGI block)
+    public (ushort Part, ushort Kind)[]? Targets; // its racks' stock targets (StockTargets.cs; written in the LOGI block's fourth part)
     public (ushort Part, StationJob Job)[]? Station; // its Building Stations' jobs, copied (ConstructStation.cs; written after the crafting orders)
+    public (ushort Part, ushort Def, uint Paint)[]? Lifts; // its lifters' hands that hold a piece (ConstructLifters.Snapshot; the LIFT block, after LOGI)
+    public (ushort Lifter, LiftOrder Order)[]? LiftOrders; // its lifters' hand orders (ConstructLifters.SnapshotOrders; the LIFT block's second half, phase 7)
     public VehicleKit.VehicleBrief? Brief; // a generated faction vehicle's behaviour data (written after the tracks; the tick doesn't change a brief once it is on its construct)
 }
 
@@ -85,6 +88,7 @@ public sealed class WorldSnapshot
     public int SpaceWarp;
     public string SpaceSystem = "";
     public OpeningSave? Opening; // the survival opening's colony and crash site (GameSandboxOpening.cs), or null
+    public string Start = ""; // the story start the world was made with (GameStoryStart.cs; "": the default)
     public string[] FactionNames = []; // player factions by id ("": free; the players' records say who is in which)
     public uint[] FactionColours = []; // by id, with FactionTags, FactionOpen and FactionStances: the FCT2 section (GameSandboxFactions.cs)
     public string[] FactionTags = [];
@@ -120,6 +124,7 @@ public sealed class WorldPlayer
     public ConstructTool Tool;
     public ushort Held = ConstructParts.None; // the part in the hands (this run's id)
     public (ushort Def, ushort Count)[] Parts = [];
+    public (string Key, ushort Count)[] Made = []; // made parts counted in the inventory, by key (an id could be swept while they are away: inventory-run-time-parts.md phase 2)
     public (byte Material, ushort Count)[] Materials = [];
     public CStore Pack = new();
     public string[] Builds = []; // the built weapons in their slots, as text ("": none)
@@ -144,6 +149,7 @@ public sealed class WorldPlayer
     public ushort BunkBody; // their checkpoint: the bunk they last lay in (its construct, stable in a save; 0: none), segment and place in its rest frame
     public byte BunkSeg;
     public Vector3 BunkPos;
+    public ushort Firsts; // their milestones for firsts, a bit each (GameMilestones.cs; saved in the Firsts section)
     public byte[] Upgrades = []; // their tool upgrade levels, a byte a ToolStat (ConstructEditsUpgrades.cs; saved in the Tools section)
 
     public WorldPlayer Copy()
@@ -232,6 +238,7 @@ public static class WorldStores
         to.JobTicks = from.JobTicks;
         to.JobFull = from.JobFull;
         to.JobAmount = from.JobAmount;
+        to.OnBed = from.OnBed;
         to.JobMaterial = from.JobMaterial;
         to.MixN = from.MixN;
         if (from.MixN > 0)

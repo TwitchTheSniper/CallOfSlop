@@ -30,6 +30,9 @@ public struct CraftOrder
     public bool Loose; // server: a machine with no conveyor dropped its parts beside itself, and they counted there (MadeLoose)
     public ushort Def; // server: the kind's id here (a run-time piece's is this machine's own); None until worked out
     public byte Lost; // server: why a part for it last went to storage instead (a LogiReason; its row says so until it is done)
+    public uint Stamp; // server: its age (ConstructWorld.OrderStamp when first stepped): roots compete by class, then age (not saved: stamped again in order)
+    public ChainLine[]? Lines; // its chained inputs' lines (both peers: made on the server when they change, sent in CBodyKind.Craft)
+    public byte LinesMore; // ...and how many more links than the lines show
 
     public readonly int Left => Math.Max(0, What.Count - Got);
     public readonly bool Done => Got >= What.Count;
@@ -117,6 +120,8 @@ public static class ConstructCrafting
             h = (h ^ r.To) * 16777619u;
             h = (h ^ (r.FedEnd ? 1u : 0u)) * 16777619u;
         }
+        if (ConstructLifters.HasLifter(c))
+            h = (h ^ (uint)ConstructLogistics.Map(c).LiftHash) * 16777619u; // (a lifter's edges join machines too: lifters phase 5)
         return h == 0 ? 1 : h;
     }
 
@@ -170,6 +175,7 @@ public static class ConstructCrafting
                 if (other >= 0 && n < seen.Length && !seen[..n].Contains(other))
                     seen[n++] = other;
             }
+            n = ConstructLifters.Joined(c, at, seen, n); // (and what a lifter carries between: lifters phase 5)
         }
         for (var q = 1; q < n; q++)
         {
@@ -184,7 +190,7 @@ public static class ConstructCrafting
                 if (net.RefinerN < CraftNet.MaxRefiners)
                     net.Refiners[net.RefinerN++] = seen[q];
             }
-            else if (IsStore(d) && c.Parts[seen[q]].Store != 0 && net.StoreN < CraftNet.MaxStores)
+            else if (IsStore(d) && c.Parts[seen[q]].Store != 0 && net.StoreN < CraftNet.MaxStores && !ConstructLifters.LiftOnly(c, seen[q]))
             {
                 net.Via[net.StoreN] = RouteTo(c, seen[q], t);
                 net.Stores[net.StoreN++] = seen[q];
@@ -193,7 +199,7 @@ public static class ConstructCrafting
     }
 
     /// <summary>How a part leaves store <paramref name="s"/> for terminal <paramref name="t"/>: its conveyor (through joins), -2 a chute straight in, -1 none.</summary>
-    private static short RouteTo(Construct c, int s, int t)
+    internal static short RouteTo(Construct c, int s, int t)
     {
         for (var k = 0; k < c.RouteCount; k++)
         {
@@ -310,13 +316,13 @@ public static class ConstructCrafting
     }
 
     /// <summary>An order's kind as a def here (a piece's def is made the first time its key is asked for), or null.</summary>
-    public static ConstructPartDef? DefOf(in WorkOrder o) => o.Name != null ? (HullLoft.IsFormedName(o.Name) ? ConstructParts.Find(o.Name) : null) : o.IsPiece ? Extrusion.Def(o.Key) : ConstructParts.Get(o.Part);
+    public static ConstructPartDef? DefOf(in WorkOrder o) => o.Name != null ? (HullLoft.IsFormedName(o.Name) || HullLoft.IsCutName(o.Name) ? ConstructParts.Find(o.Name) : Pressed.IsName(o.Name) ? Pressed.Parse(o.Name) : null) : o.IsPiece ? Extrusion.Def(o.Key) : ConstructParts.Get(o.Part);
 
     /// <summary>"Gear Set", "L-angle 0.2 x 0.2 m, 1 m, metal".</summary>
     public static string NameOf(in WorkOrder o)
     {
         if (o.Name != null)
-            return HullLoft.PanelLabel(o.Name);
+            return Pressed.IsName(o.Name) ? Pressed.Label(o.Name) : HullLoft.PanelLabel(o.Name);
         if (!o.IsPiece)
             return ConstructParts.Get(o.Part)?.Name ?? "part";
         var k = o.Key;
@@ -359,9 +365,10 @@ public static class ConstructCrafting
                 if (ConstructParts.Get(def) is not { } d)
                     return;
                 var named = Extrusion.IsRuntimeId(def) && d.ExKey.W == 0;
-                if (named && !HullLoft.IsFormedName(d.Name))
+                var pressed = named && Pressed.IsName(d.Name) ? WorkOrders.PressedOrder(d.Name, 1) : null; // (a pressed part in stock: listed by its key, Press phase 4)
+                if (named && !HullLoft.IsFormedName(d.Name) && !HullLoft.IsCutName(d.Name) && pressed == null)
                     return; // (another named run-time part: nothing here orders those)
-                var what = named ? ConstructPanelFormer.Order(d.Name, 1) : Extrusion.IsRuntimeId(def) ? new WorkOrder { Key = d.ExKey, Part = ConstructParts.None } : new WorkOrder { Part = def };
+                var what = pressed ?? (named ? ConstructPanelFormer.Order(d.Name, 1) : Extrusion.IsRuntimeId(def) ? new WorkOrder { Key = d.ExKey, Part = ConstructParts.None } : new WorkOrder { Part = def });
                 var row = Row(what, d);
                 row.Def ??= d;
                 row.Stock = Stock(world, c, net, def); // (the whole network's, so a kind in two stores isn't added twice)
@@ -382,7 +389,7 @@ public static class ConstructCrafting
             {
                 foreach (var r in AssemblingTable.Current.ByMachine[md.AsmMachine])
                 {
-                    if (r.MinTier > md.Tier)
+                    if (r.Pressed || r.MinTier > md.Tier)
                         continue;
                     var row = Row(new WorkOrder { Part = (ushort)r.Output.Id }, r.Output);
                     if (row.Make == 1)
@@ -399,9 +406,61 @@ public static class ConstructCrafting
                 }
                 continue;
             }
+            if (md.IsPress)
+            {
+                // A Press (Press phase 4): its fitted die's presets, by their catalogue parts. Parts "to size" come by bills and blueprints.
+                if (ConstructPress.SizedDieOf(PressTable.Current, c, m) is not { } die)
+                    continue;
+                foreach (var pr in die.Presets)
+                {
+                    var what = new WorkOrder { Part = (ushort)pr.Part.Id, Count = 1 };
+                    if (WorkOrders.Refusal(world, c, m, what) != null)
+                        continue;
+                    var row = Row(what, pr.Part);
+                    if (row.Make == 1)
+                        continue;
+                    var missing = PressMissing(world, c, net, m, pr.Pattern, pr.Blank, out var chain);
+                    var make = (byte)(missing.Length == 0 ? 1 : chain ? 2 : 3);
+                    if (row.Make == 0 || make < row.Make)
+                    {
+                        row.Make = make;
+                        row.Missing = missing;
+                        row.Machine = m;
+                        row.Recipe = null;
+                    }
+                }
+                continue;
+            }
             var st = world.StoreOf(c, m);
             var fed = st is { Amount: > 0 };
             var mat = fed ? st!.Material : FirstMaterial(md);
+            var loose = md.IsExtruder ? LooseRefusal(world, c, m) : null; // (a piece it drops loose never reaches a tray: the row says so and Place refuses it)
+            if (md.IsLaserCutter)
+            {
+                // A Laser Cutter (laser cutter phase 4): the world's cut designs it takes; now when the blank is in linked stock or on its
+                // bed, through a chain when a linked machine makes the blank.
+                foreach (var dsg in world.Designs)
+                {
+                    if (!HullLoft.IsCutName(dsg.Key))
+                        continue;
+                    var what = ConstructPanelFormer.Order(dsg.Key, 1);
+                    if (WorkOrders.Refusal(world, c, m, what) != null || ConstructLaserCutter.JobOf(dsg.Key) is not { } job || ConstructParts.Find(dsg.Key) is not { } cd)
+                        continue;
+                    var row = Row(what, cd);
+                    row.Name = $"{dsg.Name} ({HullLoft.PanelLabel(dsg.Key)})";
+                    if (row.Make == 1)
+                        continue;
+                    var make = CutterMissing(world, c, net, m, job, out var missing);
+                    if (row.Make == 0 || make < row.Make)
+                    {
+                        row.Make = make;
+                        row.Missing = missing;
+                        row.Machine = m;
+                        row.Recipe = null;
+                    }
+                }
+                continue;
+            }
             if (md.IsPanelFormer)
             {
                 // A Panel Former: each preset at its own size and the world's shared designs, in what it is fed (steel when empty).
@@ -420,6 +479,10 @@ public static class ConstructCrafting
                     row.Machine = m;
                     row.Make = (byte)(fed && st!.Amount >= units ? 1 : Bulk(world, c, net, what.Key.Material, -1) > 0 ? 2 : 3);
                     row.Missing = row.Make == 1 ? "" : $"needs {units} {names.NameOf(what.Key.Material)} sheet in the {md.Name}{(fed ? $", holds {st!.Amount}" : "")}";
+                    if (row.Make != 1 && !md.IsLaserCutter && ConstructLogisticsPlan.TooWideRow(c, net, pd, what.Key.Material, m) is { } wide)
+                    {
+                        row.Missing = row.Missing + " - " + wide; // (warned before the order, not only after; it stays orderable: sheet fed by hand works at any width)
+                    }
                 }
                 for (var k = 0; k < HullLoft.PanelPresets.Length; k++)
                     Panel(HullLoft.PanelKey(HullLoft.PanelDefault(k, sheet)), "");
@@ -436,10 +499,34 @@ public static class ConstructCrafting
                 if (row.Make == 1)
                     return;
                 row.Machine = m;
-                row.Make = (byte)(fed ? 1 : Bulk(world, c, net, mat, -1) > 0 ? 2 : 3);
-                row.Missing = fed ? "" : row.Make == 2 ? $"the {md.Name} needs {names.NameOf(mat)}: a linked bin holds some" : $"needs {names.NameOf(mat)} in the {md.Name}";
+                row.Make = (byte)(loose != null ? 3 : fed ? 1 : Bulk(world, c, net, mat, -1) > 0 ? 2 : 3);
+                row.Missing = loose ?? (fed ? "" : row.Make == 2 ? $"the {md.Name} needs {names.NameOf(mat)}: a linked bin holds some" : $"needs {names.NameOf(mat)} in the {md.Name}");
             }
-            if (md.IsWheelFormer)
+            if (WorkOrders.IsWholeFormer(md))
+            {
+                // A Fan or an Airframe Former (formers' work orders): each catalogue part that is its preset and that it takes, as a press
+                // lists its die's presets; its own run-time pieces come by bills and blueprints.
+                foreach (var (pname, _) in ExtrusionTable.Current.Presets)
+                {
+                    if (ConstructParts.Find(pname) is not { } pp || FormerPresets.KeyOf(pp) is not { } pk)
+                        continue;
+                    var what = new WorkOrder { Part = (ushort)pp.Id, Count = 1 };
+                    if (WorkOrders.Refusal(world, c, m, what) != null)
+                        continue;
+                    var row = Row(what, pp);
+                    if (row.Make == 1)
+                        continue;
+                    var make = (byte)(loose != null ? 3 : fed ? 1 : Bulk(world, c, net, pk.Material, -1) > 0 ? 2 : 3);
+                    if (row.Make == 0 || make < row.Make)
+                    {
+                        row.Make = make;
+                        row.Machine = m;
+                        row.Recipe = null;
+                        row.Missing = loose != null ? loose : fed ? "" : make == 2 ? $"the {md.Name} needs {names.NameOf(pk.Material)}: a linked bin holds some" : $"needs {names.NameOf(pk.Material)} in the {md.Name}";
+                    }
+                }
+            }
+            else if (md.IsWheelFormer)
                 Piece(new ExtrusionKey(0, (ushort)MathF.Round(md.ExtWheelStart.X * 100), (ushort)MathF.Round(md.ExtWheelStart.Y * 100), 0, mat, false, ExShape.Wheel));
             else
                 foreach (var p in StdProfiles)
@@ -449,10 +536,45 @@ public static class ConstructCrafting
         }
     }
 
+    /// <summary>
+    /// What cutter <paramref name="m"/> lacks for a cut (laser cutter phase 4): 1 with its blank on the bed or in linked stock, 2 when a linked
+    /// machine makes the blank (a chain asks it), else 3; <paramref name="missing"/> says which.
+    /// </summary>
+    internal static byte CutterMissing(ConstructWorld world, Construct c, CraftNet net, int m, ConstructLaserCutter.Job j, out string missing)
+    {
+        missing = "";
+        var blank = j.Plate ? Extrusion.Def(j.Stock) : ConstructParts.Find(j.Blank);
+        if (blank == null)
+        {
+            missing = $"its blank is no part this build makes: {j.Blank}";
+            return 3;
+        }
+        if (world.StoreOf(c, m) is { JobAmount: > 0 } bed && WorkOrders.HeadOf(c.Parts[m], out var head) && head.Name != null
+            && ConstructLaserCutter.JobOf(head.Name) is { } hj && hj.Blank == j.Blank || Stock(world, c, net, (ushort)blank.Id) > 0)
+            return 1;
+        var order = j.Plate ? new WorkOrder { Key = j.Stock, Part = ConstructParts.None, Count = 1 } : ConstructPanelFormer.Order(j.Blank, 1);
+        string? why = null;
+        for (var i = 0; i < net.MachineN; i++)
+        {
+            var mk = net.Machines[i];
+            if (mk == m || c.DefOf(mk).IsLaserCutter)
+                continue;
+            if (WorkOrders.Refusal(world, c, mk, order) is not { } no)
+            {
+                missing = $"its blank, {NameOf(order)}, from the {c.DefOf(mk).Name}";
+                return 2;
+            }
+            why ??= no;
+        }
+        missing = $"needs {NameOf(order)}: {(why ?? (j.Plate ? "no Extruder linked makes it" : "no Panel Former linked forms it"))}";
+        return 3;
+    }
+
     private static byte FirstMaterial(ConstructPartDef d)
     {
         for (byte m = 1; m <= RecyclingTable.Current.Materials.Length; m++)
-            if (d.IsWheelFormer ? ExtrusionTable.Current.FindWheel(m) != null : ExtrusionTable.Current.Find(m) != null)
+            if (d.IsFanFormer ? ExtrusionTable.Current.FindFan(m) != null : d.IsAirframeFormer ? ExtrusionTable.Current.FindWing(m) != null
+                : d.IsWheelFormer ? ExtrusionTable.Current.FindWheel(m) != null : ExtrusionTable.Current.Find(m) != null)
                 return m;
         return 1;
     }
@@ -460,7 +582,42 @@ public static class ConstructCrafting
     /// <summary>What a batch of a recipe on machine <paramref name="m"/> lacks ("4 steel, 1 Gear Set"), empty when nothing; <paramref name="chain"/>: every lack is itself made by a linked machine or refiner.</summary>
     private static string Missing(ConstructWorld world, Construct c, CraftNet net, int m, AssembleRecipe r, out bool chain)
     {
+        // What it lacks, as a fingerprint first (no text): the same lack on the same machine and recipe as a recent call gives that call's
+        // text again, so a queued order's note, looked at every fifth step, allocates only when what it lacks changes (fix-ups 2: ~125 B a step).
         chain = true;
+        var fp = 14695981039346656037UL;
+        var ms0 = world.StoreOf(c, m);
+        foreach (var (mat, units) in r.Materials)
+            if (Bulk(world, c, net, mat, m) < units)
+            {
+                var made = RefinerMakes(c, net, mat);
+                chain &= made != null;
+                fp = (fp ^ (ulong)(mat * 1000003 + units)) * 1099511628211UL ^ (ulong)(made?.GetHashCode() ?? 0);
+            }
+        foreach (var (part, count) in r.Parts)
+            if (Stock(world, c, net, (ushort)part.Id) + (ms0 != null ? Holds(ms0, (ushort)part.Id) : 0) < count)
+            {
+                var made = MachineMakes(c, net, (ushort)part.Id);
+                chain &= made != null;
+                fp = (fp ^ (ulong)(part.Id * 1000003 + count + 7)) * 1099511628211UL ^ (ulong)(made?.GetHashCode() ?? 0);
+            }
+        if (fp == 14695981039346656037UL)
+            return "";
+        for (var i = 0; i < MissedN; i++)
+            if (Missed[i].Fp == fp && Missed[i].M == m && Missed[i].Body == c.Id && ReferenceEquals(Missed[i].R, r))
+                return Missed[i].Text;
+        var text = MissingText(world, c, net, m, r);
+        Missed[_missedNext] = (c.Id, m, r, fp, text);
+        _missedNext = (_missedNext + 1) % Missed.Length;
+        MissedN = Math.Max(MissedN, _missedNext == 0 ? Missed.Length : _missedNext);
+        return text;
+    }
+
+    private static readonly (int Body, int M, AssembleRecipe? R, ulong Fp, string Text)[] Missed = new (int, int, AssembleRecipe?, ulong, string)[16];
+    private static int MissedN, _missedNext;
+
+    private static string MissingText(ConstructWorld world, Construct c, CraftNet net, int m, AssembleRecipe r)
+    {
         System.Text.StringBuilder? sb = null;
         var names = RecyclingTable.Current;
         var ms = world.StoreOf(c, m);
@@ -469,7 +626,6 @@ public static class ConstructCrafting
             if (Bulk(world, c, net, mat, m) >= units)
                 continue;
             var made = RefinerMakes(c, net, mat);
-            chain &= made != null;
             (sb ??= new()).Append(sb.Length > 0 ? ", " : "").Append(units).Append(' ').Append(names.NameOf(mat));
             if (made != null)
                 sb.Append(" (the ").Append(made).Append(" can make it)");
@@ -480,10 +636,53 @@ public static class ConstructCrafting
             if (have >= count)
                 continue;
             var made = MachineMakes(c, net, (ushort)part.Id);
-            chain &= made != null;
             (sb ??= new()).Append(sb.Length > 0 ? ", " : "").Append(count).Append(' ').Append(part.Name);
             if (made != null)
                 sb.Append(" (the ").Append(made).Append(" can make it)");
+        }
+        return sb == null ? "" : "needs " + sb;
+    }
+
+    /// <summary>
+    /// What press <paramref name="m"/> lacks to press one part of this pattern from this blank ("needs a solid 0.5 x 0.5 m, 0.75 m, steel
+    /// blank (the Extruder can make it), 3 Gear Set"), empty when nothing; <paramref name="chain"/>: every lack is made by a linked machine.
+    /// The one-level chain rule (design section 7): the blank from stock, a bay or a linked Extruder; the kit from the hopper, stock or a maker.
+    /// </summary>
+    private static string PressMissing(ConstructWorld world, Construct c, CraftNet net, int m, PressPattern pattern, in ExtrusionKey blank, out bool chain)
+    {
+        chain = true;
+        System.Text.StringBuilder? sb = null;
+        var names = RecyclingTable.Current;
+        var have = Extrusion.Def(blank) is { } bd ? Stock(world, c, net, (ushort)bd.Id) : 0;
+        var md = c.DefOf(m);
+        for (var b = 0; b < md.PressBays.Length && have == 0; b++)
+            if (b != ConstructPress.HopperBay && ConstructPress.PieceIn(c, m, b) is var i and >= 0 && (c.Parts[i].D.ExKey with { Growing = false }) == blank)
+                have = 1;
+        if (have == 0)
+        {
+            var piece = new WorkOrder { Key = blank, Part = ConstructParts.None, Count = 1 };
+            string? maker = null;
+            for (var i = 0; i < net.MachineN && maker == null; i++)
+                if (c.DefOf(net.Machines[i]).IsExtruder && WorkOrders.Refusal(world, c, net.Machines[i], piece) == null)
+                    maker = c.DefOf(net.Machines[i]).Name;
+            chain &= maker != null;
+            (sb ??= new()).Append("a ").Append(NameOf(piece)).Append(" blank");
+            if (maker != null)
+                sb.Append(" (the ").Append(maker).Append(" can make it)");
+        }
+        if (pattern.Bay2 is { } kit && Pressed.Bay2For(pattern, blank) is var need and > 0)
+        {
+            var ms = world.StoreOf(c, m);
+            var held = ms != null ? ConstructPress.KitHeld(ms, kit) : 0;
+            held += kit.Part != null ? Stock(world, c, net, (ushort)kit.Part.Id) : Bulk(world, c, net, kit.Material, -1);
+            if (held < need)
+            {
+                var made = kit.Part != null ? MachineMakes(c, net, (ushort)kit.Part.Id) : RefinerMakes(c, net, kit.Material);
+                chain &= made != null;
+                (sb ??= new()).Append(sb.Length > 0 ? ", " : "").Append(need).Append(' ').Append(kit.What).Append(" in bay 2");
+                if (made != null)
+                    sb.Append(" (the ").Append(made).Append(" can make it)");
+            }
         }
         return sb == null ? "" : "needs " + sb;
     }
@@ -503,7 +702,23 @@ public static class ConstructCrafting
     private static string? MachineMakes(Construct c, CraftNet net, ushort part)
     {
         if (AssemblingTable.Current.Of(part) is not { } r)
+        {
+            // (Press phase 5: a part a die presses, the Gear Set, the Circuit Board: a linked press with that die fitted makes it)
+            if (ConstructBill.PresetOf(ConstructParts.Get(part)) is not { } spec)
+            {
+                // (formers' work orders: a catalogue wing or rotor that is a Fan or Airframe Former's preset, at a former it fits)
+                if (FormerPresets.KeyOf(part) is { } fk)
+                    for (var i = 0; i < net.MachineN; i++)
+                        if (c.DefOf(net.Machines[i]) is var fd && WorkOrders.IsWholeFormer(fd) && (fk.Shape == ExShape.Fan) == fd.IsFanFormer && FormerPresets.Fits(fd, fk) == null)
+                            return fd.Name;
+                return null;
+            }
+            for (var i = 0; i < net.MachineN; i++)
+                if (c.DefOf(net.Machines[i]) is { IsPress: true, IsLathe: false } pd && ReferenceEquals(ConstructPress.SizedDieOf(PressTable.Current, c, net.Machines[i]), spec.Die)
+                    && Pressed.Across(spec.Blank) <= pd.PressMaxCm)
+                    return pd.Name;
             return null;
+        }
         for (var i = 0; i < net.MachineN; i++)
         {
             var d = c.DefOf(net.Machines[i]);
@@ -540,6 +755,9 @@ public static class ConstructCrafting
             _ => "waiting",
         };
     }
+
+    private const string RidingToHold = "riding to the hold";
+    private const string LooseHeld = "held, cancel it: "; // (its own prefix: the step keeps this note without making it again)
 
     private static readonly string[] StateWords = ["waiting", "fetching", "queued", "riding", "in tray", "collect", "held"];
 
@@ -598,9 +816,9 @@ public static class ConstructCrafting
         var ok = Stock(world, c, net, (ushort)kind.Id) > 0;
         for (var i = 0; i < net.MachineN && !ok; i++)
         {
-            var why = WorkOrders.Refusal(world, c, net.Machines[i], what);
+            var why = WorkOrders.Refusal(world, c, net.Machines[i], what) ?? LooseRefusal(world, c, net.Machines[i]);
             ok = why == null;
-            if (why != null && (refusal == null || c.DefOf(net.Machines[i]).IsAssembler != what.IsPiece))
+            if (why != null && (refusal == null || Kin(c.DefOf(net.Machines[i]), what)))
                 refusal = why;
         }
         if (!ok)
@@ -617,6 +835,52 @@ public static class ConstructCrafting
         world.CraftChanged(c);
         return null;
     }
+
+    /// <summary>
+    /// Why a terminal can't ask machine <paramref name="m"/> for a piece, or null: an Extruder or a Former with no conveyor out of its Piece out
+    /// (nor a chute into a press) parts its piece off loose at the die (ConstructExtruder.Cut, CutAs), which no tray ever sees, so an order
+    /// placed there would wait for ever (leftovers 3: the showcase's Airframe Former's wing). The reason says where it would lie.
+    /// </summary>
+    internal static string? LooseRefusal(ConstructWorld world, Construct c, int m) =>
+        DropsLoose(world, c, m) ? $"the {c.DefOf(m).Name} drops it loose, no conveyor to the tray: order it on its panel, collect it there" : null;
+
+    /// <summary>The test of <see cref="LooseRefusal"/>, allocating nothing. A Panel Former or a Laser Cutter is no such machine: its out-bed drop completes a terminal's order (MadeLoose).</summary>
+    private static bool DropsLoose(ConstructWorld world, Construct c, int m)
+    {
+        var md = c.DefOf(m);
+        if (!md.IsExtruder || md.IsPanelFormer || md.IsLaserCutter || ConstructConveyor.Out(c, m) >= 0 || ConstructPress.ChutesToPress(world, c, m))
+            return false;
+        if (c.Logi is { LiftN: > 0 } lm)
+            for (var e = 0; e < lm.LiftN; e++)
+                if (lm.Lifts[e].From == m)
+                    return false; // (an arm lifts it from the die's floor and puts it on: lifters phase 5b)
+        return true;
+    }
+
+    /// <summary>
+    /// A queued order's line at a machine that drops it loose (an order saved before leftovers 3, or a conveyor cut since), or -1: it would wait
+    /// for ever, so it is held with the reason. Looks for its own unstarted line (as Cancel matches it); allocates nothing.
+    /// </summary>
+    private static int LooseMaker(ConstructWorld world, Construct c, CraftNet net, in CraftOrder o)
+    {
+        for (var i = 0; i < net.MachineN; i++)
+        {
+            var m = net.Machines[i];
+            if (c.Parts[m].Orders is not { Bill: false, Count: > 0 } mq || !DropsLoose(world, c, m))
+                continue;
+            for (var j = 0; j < mq.Count; j++)
+            {
+                ref readonly var mo = ref mq.Items[j];
+                if (mo.Chain == 0 && mo.Part == o.What.Part && mo.Name == o.What.Name && (!mo.IsPiece || mo.Key == o.What.Key))
+                    return m;
+            }
+        }
+        return -1;
+    }
+
+    /// <summary>Is a machine of the order's own kind, so its refusal is the one a player reads: a Press for a pressed part, an Assembler for a catalogue part, else an Extruder or a Former.</summary>
+    internal static bool Kin(ConstructPartDef md, in WorkOrder what) =>
+        what.IsPressed ? md.IsPress : md.IsPress ? Pressed.SpecOf(what) != null : FormerPresets.PartOf(what) != null ? WorkOrders.IsWholeFormer(md) : md.IsAssembler != what.IsPiece;
 
     /// <summary>Server: cancels an order: its claims go, and what it asked of a machine and wasn't begun comes off that queue.</summary>
     public static string? Cancel(ConstructWorld world, Construct c, int t, ushort id)
@@ -735,10 +999,12 @@ public static class ConstructCrafting
         var d = c.DefOf(m);
         if (d.IsAssembler)
             return !what.IsPiece && AssemblingTable.Current.Of(what.Part) is { } r ? Missing(world, c, net, m, r, out _) : "";
+        if (d.IsPress)
+            return Pressed.SpecOf(what) is { } spec ? PressMissing(world, c, net, m, spec.Pattern, spec.Blank, out _) : "";
         if (d.IsExtruder && ConstructExtruder.RunHeld(c, m))
             return "its line is stopped: press Start on its console";
         if (d.IsPanelFormer)
-            return world.StoreOf(c, m) is { } fst && fst.Refused == (byte)ExtrudeStall.NoMaterial ? ConstructPanelFormer.Lacks(c, m, fst) : "";
+            return world.StoreOf(c, m) is { } fst && fst.Refused == (byte)ExtrudeStall.NoMaterial ? (d.IsLaserCutter ? ConstructLaserCutter.Lacks(c, m, fst) : ConstructPanelFormer.Lacks(c, m, fst)) : "";
         if (!d.IsExtruder || world.StoreOf(c, m) is not { } st || st.Amount > 0)
             return "";
         return "needs " + RecyclingTable.Current.NameOf(what.Key.Material);
@@ -769,10 +1035,20 @@ public static class ConstructCrafting
     /// <summary>Server, 2 Hz: every terminal with open orders. A world with none does nothing.</summary>
     public static void Step(ConstructWorld world)
     {
-        if (world.CraftOpen.Count == 0 && world.ChainCount == 0 || ++world.CraftTicks < StepEvery)
+        if (++world.StockScan >= StockTargets.ScanTicks)
+        {
+            world.StockScan = 0;
+            StockTargets.Scan(world); // (racks whose keep setting changed: phase 3's stock targets)
+        }
+        if (world.CraftOpen.Count == 0 && world.ChainCount == 0 && world.StockTargetN == 0 || ++world.CraftTicks < StepEvery)
             return;
         world.CraftTicks = 0;
         ConstructLogisticsPlan.Step(world); // (chained orders' links kept honest, before the terminals count on them)
+        // Roots compete by class, then age (the user, Q2): terminals are stepped best class first (their Order priority setting), then
+        // oldest open order first, each followed by its chains, so the oldest claims free stock first; stock targets come last.
+        Span<ulong> rank = stackalloc ulong[RankedMax];
+        Span<int> rankBody = stackalloc int[RankedMax], rankPart = stackalloc int[RankedMax];
+        var n = 0;
         for (var b = world.CraftOpen.Count - 1; b >= 0; b--)
         {
             var any = false;
@@ -781,11 +1057,63 @@ public static class ConstructCrafting
                     if (c.Parts[t].Craft is { Count: > 0 } q && c.Parts[t].D.IsCraftTerminal && world.StoreOf(c, t) is { } tray)
                     {
                         any = true;
-                        StepTerminal(world, c, t, tray, q);
+                        var oldest = uint.MaxValue;
+                        for (var k = 0; k < q.Count; k++)
+                        {
+                            if (q.Items[k].Stamp == 0)
+                                q.Items[k].Stamp = world.OrderStamp++;
+                            if (!q.Items[k].Done && !q.Items[k].Cancelled)
+                                oldest = Math.Min(oldest, q.Items[k].Stamp);
+                        }
+                        if (n < RankedMax)
+                        {
+                            var cls = StockTargets.FeedClass(c, t);
+                            (rank[n], rankBody[n], rankPart[n]) = ((ulong)(ConstructLogisticsPlan.ClassHigh - cls) << 60 | (ulong)oldest << 16 | (uint)n, c.Id, t);
+                            n++;
+                        }
+                        else
+                        {
+                            StepTerminal(world, c, t, tray, q); // (past the table: in body order)
+                            ConstructLogisticsPlan.Serve(world, c, t);
+                        }
                     }
             if (!any)
                 world.CraftOpen.RemoveAt(b);
         }
+        rank[..n].Sort();
+        for (var i = 0; i < n; i++)
+        {
+            var at = (int)(rank[i] & 0xFFFF);
+            var t = rankPart[at];
+            if (world.Get((ushort)rankBody[at]) is { } c && t < c.PartCount && c.Parts[t].Craft is { Count: > 0 } q && world.StoreOf(c, t) is { } tray)
+            {
+                StepTerminal(world, c, t, tray, q);
+                ConstructLogisticsPlan.Serve(world, c, t);
+            }
+        }
+        if (world.StockTargetN > 0)
+            StockTargets.Step(world); // (after every order: a refill never starves a build)
+    }
+
+    private const int RankedMax = 64;
+
+    private static readonly ChainLine[] LineBuf = new ChainLine[ConstructLogisticsPlan.MaxLines];
+
+    /// <summary>Server: the order's chain lines made again; a new array only when they changed (a steady chain allocates nothing). True: changed.</summary>
+    private static bool ChainLines(ConstructWorld world, Construct c, int t, ref CraftOrder o)
+    {
+        var more = 0;
+        var n = o.Done || o.Cancelled ? 0 : ConstructLogisticsPlan.Lines(world, c, t, o.Id, LineBuf, out more);
+        more = Math.Min(255, more);
+        var old = o.Lines;
+        var same = (old?.Length ?? 0) == n && o.LinesMore == more;
+        for (var i = 0; i < n && same; i++)
+            same = old![i].Same(LineBuf[i]);
+        if (same)
+            return false;
+        o.Lines = n == 0 ? null : LineBuf.AsSpan(0, n).ToArray();
+        o.LinesMore = (byte)more;
+        return true;
     }
 
     private static void StepTerminal(ConstructWorld world, Construct c, int t, CStore tray, CraftList q)
@@ -797,8 +1125,8 @@ public static class ConstructCrafting
         // Claims are cut to what their stores still hold (a part taken by hand), and what was collected by hand at a store with no route counts.
         for (var i = res.Count - 1; i >= 0; i--)
         {
-            if (res.Items[i].Owner != owner)
-                continue;
+            if (res.Items[i].Owner != owner || res.Items[i].OwnerId == ConstructLifters.PadClaim)
+                continue; // (a station's claims on its pick pads are its build's, kept by ConstructLifters.PadClaims)
             var st = world.StoreByHandle(res.Items[i].Store);
             var k = q.Find(res.Items[i].OwnerId);
             var held = st == null ? 0 : Holds(st, res.Items[i].Def);
@@ -880,6 +1208,22 @@ public static class ConstructCrafting
                 }
                 state = CraftState.Fetching;
                 var fits = ConstructConveyor.RackCheck(c, t, tray, d);
+                var toPad = fits == 3 && via >= 0 && c.DefOf(t).IsBuildStation && net.Stores[s] is var sp && !c.DefOf(sp).IsLayDownPad ? ConstructLifters.PickPadFor(world, c, t, d, via) : -1; // (a pad that takes it, on its way: else as before)
+                if (toPad >= 0)
+                {
+                    // (a station's large part: it rides to a pick pad its arms fit from, lifters phase 5; a Router on the way sends it there)
+                    if (via >= 0 && via < c.RouteCount && world.StoreOf(c, net.Stores[s]) is { } pst && ConstructConveyor.PutMade(world, c, via, d, 1, out _, c.Parts[toPad].Store, o.Id))
+                    {
+                        if (TakeOne(world, c, net.Stores[s], pst, d))
+                        {
+                            o.Sent++;
+                            held--;
+                            res.Shrink(i, 1, pst);
+                        }
+                        break;
+                    }
+                    continue;
+                }
                 if (fits == 3)
                 {
                     // (a panel folded taller than the tray: it stays claimed at its rack for the player, as with no route)
@@ -890,7 +1234,7 @@ public static class ConstructCrafting
                 if (fits != 0)
                 {
                     state = CraftState.Held;
-                    note = "held: the tray is full - take parts out";
+                    note = fits == 4 ? "held: the tray is full - take parts out" : "held: the tray can't hold it"; // (4 full; 3 is above; a store part fits a tray since fix-ups 2)
                     continue;
                 }
                 if (via < 0 || via >= c.RouteCount || world.StoreOf(c, net.Stores[s]) is not { } st)
@@ -918,16 +1262,17 @@ public static class ConstructCrafting
                 string? refusal = null;
                 for (var i = 0; i < net.MachineN && ask > 0; i++)
                 {
-                    var why = WorkOrders.Queue(world, c, net.Machines[i], o.What with { Count = (ushort)ask, Made = 0 });
+                    var why = LooseRefusal(world, c, net.Machines[i]) ?? WorkOrders.Queue(world, c, net.Machines[i], o.What with { Count = (ushort)ask, Made = 0 }); // (never asked of a machine that drops it loose)
                     if (why == null)
                     {
+                        ConstructLogisticsPlan.Ranked(world, c, net.Machines[i], (byte)(StockTargets.FeedClass(c, t) + 2)); // (a High terminal's line goes ahead of Normal ones: phase 5)
                         ConstructLogisticsPlan.Asked(world, c, net, t, o, net.Machines[i], ask); // (the parts its recipe needs: asked of other machines)
                         o.Asked += (ushort)ask;
                         ask = 0;
                         if (state == CraftState.Waiting)
                             where = (ushort)net.Machines[i];
                     }
-                    else if (refusal == null || c.DefOf(net.Machines[i]).IsAssembler != o.What.IsPiece)
+                    else if (refusal == null || Kin(c.DefOf(net.Machines[i]), o.What))
                         refusal = why;
                 }
                 if (ask > 0 && state == CraftState.Waiting)
@@ -941,15 +1286,41 @@ public static class ConstructCrafting
                 state = CraftState.Queued;
                 if (where == NoPart)
                     where = o.State == CraftState.Queued ? o.Where : NoPart;
+                if (o.State == CraftState.Held && o.Note.StartsWith(LooseHeld, StringComparison.Ordinal))
+                    (state, note) = (CraftState.Held, o.Note); // (said once below: kept, no text a step)
+                else if ((o.State != CraftState.Queued || o.Age % 5 == 0) && LooseMaker(world, c, net, o) is var lm and >= 0)
+                {
+                    state = CraftState.Held;
+                    where = (ushort)lm;
+                    note = LooseHeld + LooseRefusal(world, c, lm);
+                }
+            }
+            if (state == CraftState.Queued && o.Sent == 0 && held == 0 && ConstructLogistics.RidingFor(c, owner, o.Id) is var riders and > 0 && riders >= o.Asked)
+            {
+                // What its machine made for it is on the conveyors to this tray (leftovers 3: a station's note still read "queued at the
+                // Assembler" while the container rode): said as riding, as a fetched piece is, until Arrived counts it in.
+                state = CraftState.Riding;
+                note = ConstructLogistics.HeldNote(c, t, o.Id) ?? (c.DefOf(t).IsBuildStation ? RidingToHold : "");
+                if (note != (o.Note ?? ""))
+                    changed = true;
             }
             if (state == CraftState.Waiting && o.Sent > 0)
+            {
                 state = CraftState.Riding;
+                // A piece of it held at a Router says where, by the Router's name (phase 4c), looked at every fifth step as a queued note is.
+                note = o.State == CraftState.Riding ? o.Note ?? "" : "";
+                if (o.State != CraftState.Riding || o.Age++ % 5 == 0)
+                    note = ConstructLogistics.HeldNote(c, t, o.Id) ?? (c.DefOf(t).IsBuildStation ? RidingToHold : "");
+                if (note != (o.Note ?? ""))
+                    changed = true;
+            }
             if (state == CraftState.Queued)
             {
                 // Why a queued order waits (its machine lacks an input), looked at every fifth step: the note is made only then.
                 note = o.Note ?? "";
                 if (o.State != CraftState.Queued || o.Age++ % 5 == 0)
-                    note = ConstructLogisticsPlan.Note(world, c, t, o.Id) // (a chained input: the link nobody makes, or who makes it)
+                    note = ConstructLogistics.HeldNote(c, t, o.Id) // (a piece of it held at a Router, by its name: phase 4c)
+                           ?? ConstructLogisticsPlan.Note(world, c, t, o.Id) // (a chained input: the link nobody makes, or who makes it)
                            ?? (where < c.PartCount ? Starved(world, c, net, where, o.What) : "");
                 if (o.Lost != 0 && note == "")
                     note = "a part went to storage: " + ConstructLogistics.ReasonText((LogiReason)o.Lost) + " - it is fetched from there";
@@ -960,6 +1331,8 @@ public static class ConstructCrafting
             o.Where = where;
             o.Note = note;
             changed |= before != (o.State, o.Where, o.Got, o.Sent, o.Asked);
+            if (world.ChainCount > 0 || o.Lines != null)
+                changed |= ChainLines(world, c, t, ref o);
         }
         if (changed)
             world.CraftChanged(c);
@@ -1000,6 +1373,14 @@ public static class ConstructCrafting
                 else
                     w.U8((byte)key.Shape).U32((uint)key.Mask).U32((uint)(key.Mask >> 32)).U16(key.W).U16(key.H).U16(key.L).U16(key.Wall).U8(key.Material).U16(o.What.Part).U16(o.What.Count);
                 w.U16(o.Id).U16(o.Got).U8((byte)o.State).U16(o.Where).Str(o.Note ?? "");
+                var lines = o.Lines ?? [];
+                w.U8((byte)lines.Length).U8(o.LinesMore); // (protocol 268: the chain lines under its row)
+                foreach (ref readonly var l in lines.AsSpan())
+                {
+                    w.U8(l.Depth);
+                    ConstructStorage.WriteDef(w, l.Kind); // (by key, protocol 271: a press's blank is a run-time piece)
+                    w.U16(l.Made).U16(l.Asked).U16(l.Maker).U16(l.Dest).U16(l.Stock).Str(l.Reason ?? "");
+                }
             }
             n++;
         }
@@ -1057,7 +1438,7 @@ public static class ConstructCrafting
                     mat = r.U8();
                     var cnt = r.U16();
                     var nm = r.Text(ConstructParts.MaxRuntimeName);
-                    if (!HullLoft.IsFormedName(nm))
+                    if (!HullLoft.IsFormedName(nm) && !HullLoft.IsCutName(nm) && !Pressed.IsName(nm))
                         throw new MalformedPacketException("a bad panel order");
                     o = new CraftOrder { What = new WorkOrder { Key = new ExtrusionKey(0, 0, 0, 0, mat, false, ExShape.Section), Part = ConstructParts.None, Count = cnt, Name = nm } };
                     shape = 0;
@@ -1077,6 +1458,20 @@ public static class ConstructCrafting
                 var state = r.U8();
                 o.Where = r.U16();
                 o.Note = r.Text(200);
+                int ln = r.U8();
+                o.LinesMore = r.U8();
+                if (ln > ConstructLogisticsPlan.MaxLines)
+                    throw new MalformedPacketException($"an order with {ln} chain lines");
+                if (ln > 0)
+                {
+                    o.Lines = new ChainLine[ln];
+                    for (var i = 0; i < ln; i++)
+                    {
+                        o.Lines[i] = new ChainLine { Depth = r.U8(), Kind = ConstructStorage.ReadDef(ref r), Made = r.U16(), Asked = r.U16(), Maker = r.U16(), Dest = r.U16(), Stock = r.U16(), Reason = r.Text(200) };
+                        if (ConstructParts.Get(o.Lines[i].Kind) == null || o.Lines[i].Depth > ConstructLogisticsPlan.MaxDepth + 1)
+                            throw new MalformedPacketException("a bad chain line");
+                    }
+                }
                 if (shape > (byte)ExShape.Wing || state > (byte)CraftState.Held || mat > RecyclingTable.Current.Materials.Length || o.What.Part != ConstructParts.None && ConstructParts.Get(o.What.Part) == null)
                     throw new MalformedPacketException("a bad crafting order");
                 o.State = (CraftState)state;
@@ -1146,9 +1541,10 @@ public static class ConstructCrafting
                     var ncnt = r.U16();
                     var nm = r.Str();
                     var (nid, ngot, nasked, nsent) = (r.U16(), r.U16(), r.U16(), r.U16());
-                    if (ncnt is 0 or > WorkOrders.MaxCount || !HullLoft.IsFormedName(nm) || nm.Length > ConstructParts.MaxRuntimeName || q.Count >= MaxOrders)
+                    var pressedWhat = Pressed.IsName(nm) ? WorkOrders.PressedOrder(nm, ncnt) : null; // (a pressed part's order, Press phase 4)
+                    if (ncnt is 0 or > WorkOrders.MaxCount || !HullLoft.IsFormedName(nm) && !HullLoft.IsCutName(nm) && pressedWhat == null || nm.Length > ConstructParts.MaxRuntimeName || q.Count >= MaxOrders)
                         continue;
-                    q.Items[q.Count++] = new CraftOrder { What = ConstructPanelFormer.Order(nm, ncnt), Id = nid, Got = Math.Min(ncnt, ngot), Sent = nsent, Asked = nasked, Where = NoPart, Note = "", Def = ConstructParts.None };
+                    q.Items[q.Count++] = new CraftOrder { What = pressedWhat ?? ConstructPanelFormer.Order(nm, ncnt), Id = nid, Got = Math.Min(ncnt, ngot), Sent = nsent, Asked = nasked, Where = NoPart, Note = "", Def = ConstructParts.None };
                     continue;
                 }
                 var mask = r.U64();

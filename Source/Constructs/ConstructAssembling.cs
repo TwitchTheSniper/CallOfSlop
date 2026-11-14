@@ -14,6 +14,7 @@ public enum AsmState : byte
     Ready,
     Untaught, // a story faction hasn't taught its owner this part yet (AsmBlock.Untaught)
     NoOrders, // it has a queue of work orders, empty: it waits for the next (WorkOrders.cs)
+    Pressed, // (dead since Press phase 5b dropped the marker rows: nothing sets it; kept while MachineScreens.cs, another session's, names it)
 }
 
 /// <summary>Why a finished batch can't leave an Assembler (<see cref="CStore.Blocked"/>).</summary>

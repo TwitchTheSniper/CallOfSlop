@@ -128,6 +128,7 @@ public sealed partial class Game
 
     /// <summary>Server: mode states in a row a spawned body's hand has been idle (SandboxModule.WriteState sends it three times, then stops).</summary>
     internal readonly byte[] SbHandQuiet = new byte[256];
+    internal readonly byte[] SbHandTool = new byte[256]; // the tool each spawned body's hand was last sent with (SandboxModule.WriteState)
     private int _sbZombieSpawns, _sbBotSpawns;
 
     /// <summary>Spawned bots and zombies made in all this match (self-test, logs).</summary>
@@ -183,9 +184,11 @@ public sealed partial class Game
     private bool SandboxEnemies(Player a, Player b)
     {
         if (a.Team == SbPeopleTeam)
-            return StoryFightsWith(a, b);
+            return OutpostPerson(a.Id) ? OutpostFightsWith(a, b) : StoryFightsWith(a, b) || BreakoutCrewFights(a, b); // (an outpost's people: GameOutposts.cs; the break-out's convicts: GameBreakoutFight.cs)
         if (a.Team == SbHostileTeam && LockdownSquadOf(a))
             return LockdownWanted(b); // (the colony's riot squad fights only whoever it is after: GameColonyLockdown.cs)
+        if (a.Team == SbHostileTeam && BreakoutGuardOf(a))
+            return BreakoutGuardFights(b); // (the spaceport's guards fight only the escapees: GameBreakoutFight.cs)
         if (b.Team == SbPeopleTeam)
             return a.Team != SbFriendlyTeam;
         var fa = a.Team == SbFriendlyTeam;
@@ -1004,11 +1007,18 @@ public sealed partial class Game
             return false;
         if (p.Team == SbPeopleTeam)
         {
-            StoryBodyBot(p, b, now); // (a story person's body: GameStoryBodies.cs)
+            AllocProfile.Mark("bot: outpost person");
+            if (!OutpostBot(p, b, now)) // (an outpost's person: GameOutposts.cs)
+            {
+                AllocProfile.Mark("bot: story body");
+                StoryBodyBot(p, b, now); // (a story person's body: GameStoryBodies.cs)
+            }
             return false;
         }
         if (LockdownSquadBot(p, b, now))
             return false; // (the penal colony's riot squad: GameColonyLockdown.cs)
+        if (BreakoutGuardBot(p, b, now))
+            return false; // (the spaceport's guards: GameBreakoutFight.cs)
         if (p.Team == SbFriendlyTeam && Horde.Count > 0)
         {
             for (var i = 0; i < Horde.Count; i++)

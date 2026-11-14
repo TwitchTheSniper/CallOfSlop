@@ -37,7 +37,39 @@ public sealed partial class Game
             StoryTeachEarned(s, who); // (what their standing already earns: a group just joined, a save from before technologies; GameStoryTech.cs)
         }
         StoryStandingsTick(s, t);
+        StoryPlayerTechTick(s, t);
+        StoryRanksTick(s); // (each player's standings and promotions: GameStoryRanks.cs)
         StoryTaughtTick(s);
+    }
+
+    /// <summary>
+    /// Once a second: each player's own standings and the technologies they know (theirs or their faction's), into the table
+    /// for the build menu's locks (Ui: UiSandboxParts.cs), so a player in no faction sees theirs too. No allocation.
+    /// </summary>
+    private void StoryPlayerTechTick(StoryEngine s, FactionTable t)
+    {
+        var count = Math.Min(s.Factions.Count, FactionTable.MaxStory);
+        var changed = false;
+        for (var id = 0; id < 255; id++)
+        {
+            var who = Players.TryGetValue((byte)id, out var p) && p.Bot == null ? _storyWho[id] : -1;
+            changed |= t.PlayerStory[id] != who >= 0;
+            t.PlayerStory[id] = who >= 0;
+            if (who < 0)
+                continue;
+            var party = s.Factions.Party(who);
+            for (var f = 0; f < count; f++)
+            {
+                var v = (sbyte)Math.Clamp(s.Factions.Standing(f, party), -100, 100);
+                var learnt = (byte)(s.Factions.LearntMask(who, f) | (party != who ? s.Factions.LearntMask(party, f) : 0));
+                ref var at = ref t.PlayerStanding[id * FactionTable.MaxStory + f];
+                ref var lm = ref t.PlayerLearnt[id * FactionTable.MaxStory + f];
+                changed |= at != v || lm != learnt;
+                (at, lm) = (v, learnt);
+            }
+        }
+        if (changed)
+            t.Version++;
     }
 
     /// <summary>
@@ -52,13 +84,16 @@ public sealed partial class Game
         {
             var names = new string[count];
             var techs = new string[count][];
+            var needs = new sbyte[count][];
             for (var f = 0; f < count; f++)
             {
                 var def = s.Factions.Def(f);
                 names[f] = def.Name;
                 techs[f] = def.Teaches.Select(x => $"{x.Name} ({def.Tiers[x.Tier].Name}): {string.Join(", ", x.Parts)}").ToArray();
+                needs[f] = def.Teaches.Select(x => (sbyte)Math.Clamp(x.Tier > 0 ? def.Tiers[x.Tier - 1].Below : -FactionRules.MaxStanding, -100, 100)).ToArray();
             }
             t.StoryNames = names;
+            t.StoryTechNeed = needs;
             t.StoryTech = techs;
             ConstructAssembling.TaughtBy = t.TeacherOf;
             changed = true;

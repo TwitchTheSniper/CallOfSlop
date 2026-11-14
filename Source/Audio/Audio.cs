@@ -95,6 +95,7 @@ public enum Sfx
     BuildDrop, // the physics gun lets go
     ColonyAlarm, // the penal colony's lockdown siren (SynthAlarm.cs, played by Game.ColonyAlarmSounds): one wail, up and down
     Babble, // one murmured syllable of a story person's talk (SynthBabble.cs, played by Game.StoryBabbleSounds): "ma", "ga", "na"...
+    Tannoy, // a loudspeaker on a pole: two chimes and a garbled announcement (SynthAlarm.cs, played by PartAmbience)
     COUNT,
 }
 

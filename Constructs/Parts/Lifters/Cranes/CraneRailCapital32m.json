@@ -1,0 +1,213 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Crane Rail Capital 32 m",
+  "description": "A 32 m section of crane runway. Lay two runs of them 64 m apart, in line end to end, on columns or walls; a Capital Crane Bridge bolted to one runs over both.",
+  "group": "Capital",
+  "section": "Bridge cranes",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "mass": 409600.0,
+  "health": 307200,
+  "armour": 40,
+  "material": "steel",
+  "color": "#22262b",
+  "attachSeconds": 22.5,
+  "craneRail": true,
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        24.0
+      ],
+      "color": "#22262b",
+      "hidden": true
+    },
+    {
+      "min": [
+        -6.72,
+        -7.936,
+        -7.936
+      ],
+      "max": [
+        6.72,
+        -5.76,
+        23.936
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        -1.28,
+        -5.84,
+        -7.872
+      ],
+      "max": [
+        1.28,
+        6.16,
+        23.872
+      ],
+      "color": "#5e6266"
+    },
+    {
+      "min": [
+        -5.76,
+        6.08,
+        -7.936
+      ],
+      "max": [
+        5.76,
+        7.28,
+        23.936
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        -1.44,
+        7.232,
+        -7.968
+      ],
+      "max": [
+        1.44,
+        8.0,
+        23.968
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -6.8,
+        -7.52,
+        -7.2
+      ],
+      "max": [
+        -6.656,
+        -6.24,
+        23.2
+      ],
+      "color": "#f0c21a",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        6.656,
+        -7.52,
+        -7.2
+      ],
+      "max": [
+        6.8,
+        -6.24,
+        23.2
+      ],
+      "color": "#f0c21a",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x.0.0",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.0.1",
+      "at": [
+        -8.0,
+        0.0,
+        16.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x.0.0",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.0.1",
+      "at": [
+        8.0,
+        0.0,
+        16.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-y.0.0",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.1",
+      "at": [
+        0.0,
+        -8.0,
+        16.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y.0.0",
+      "at": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.0.1",
+      "at": [
+        0.0,
+        8.0,
+        16.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        24.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

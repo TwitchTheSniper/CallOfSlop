@@ -339,8 +339,8 @@ wheel on it: the half shaft ends here"; a shaft that drives nothing says why on 
 Build your own engine from parts that snap together; the game recognises it as one engine, with no wiring puzzle. Code:
 `Source/Constructs/ConstructEngine.cs` (recognising it, the sums, the readout), `Source/Render/EngineFx.cs` (pistons, shake,
 smoke), `Source/Audio/SynthEngine.cs`, `EngineSounds.cs`, `Audio.Engine.cs` (the sound). Data: `Constructs/Parts/ModularEngine`
-(40 parts) and `Constructs/ModularEngine.json` (the sums' numbers), both written by `tools/constructs/engine_parts.py`:
-change its `SIZES` table and run it, never the output. Self-test: "Modular engine", "Modular engine network".
+(40 parts) and `Constructs/ModularEngine.json` (the sums' numbers), both written by the part kit (`--gen-parts engine_parts`,
+`Source/PartKit/Generators/EngineParts.cs`): change it, never the output. Self-test: "Modular engine", "Modular engine network".
 
 ### The pieces
 
@@ -366,19 +366,36 @@ piped into its fuel system or flywheel ("Fuel in" ports).
 - **Layout**: cylinders are grouped into **banks** by which way they point from the crank: one bank is inline (I4), two at right
   angles a V (V8), two opposite a boxer (B4), three a W (W12), four a radial (R16). Sockets are square to the part, so a V is
   90 degrees; a freeform attachment can set any angle.
-- **Power** is the sum over the cylinders of the size's kW (40, 800, 16,000, 320,000) times the bank's best fuel system times
-  its best booster. Torque is that power at the peak rpm (5000, 2800, 1400, 700; limiter 7000, 4000, 2000, 1000): big
-  engines turn slowly. The curve is the petrol curve and the limiter is the soft limit. Fuel at full throttle is 0.00044 l/s
-  a kW times the thirsts.
-- **A cylinder's own power**: a cylinder may carry `enginePiece.power` and `thirst` (1 if not); the Engine Kit's tier 3 to 5 cylinders
-  (Bored x1.3, Performance x1.6, Racing x2) do (docs/vehiclekit/ENGINEKIT.md). Its kW and burn are multiplied by them.
+- **Power** is the sum over the cylinders of each one's kW by its own **bore and stroke**, its displacement: its bore's kW (its scale: 1, 4, 16, 64 for the four files, a
+  pressed one's its across's scale times its bore, its across less both walls, over the plain bore for its across; `EngineRules.At`, 40 x scale^2.161 between the rows) times its stroke ratio (stroke power, 2026-11-14: docs/sandbox/design/stroke-power-notes.md), times the bank's best fuel system times
+  its best booster. Torque is that power at the peak rpm (5000, 2800, 1400, 700 at the four scales; limiter 7000, 4000, 2000,
+  1000): big engines turn slowly. The revs are the **crank's** scale's (its largest section), divided by the cylinders' mean
+  **stroke** (length over across, against the preset's, 0.6 to 1.6): a long stroke gives more power at lower revs, so its torque goes
+  with the stroke squared (1.6 times the power at 0.625 of the revs: 2.56 times the torque), for 1.6 times the metal and fuel at full
+  power; a short one spins for less. A fuel system feeds by power, so a long-stroke bank needs a wider one. A starter is needed
+  when the crank's scale times the cube root of the stroke reaches `starterFrom` (8). A stroke past 1.6 (the crank's throw) is metal only. The curve is the petrol curve and the limiter is the soft limit. Fuel at full throttle is 0.00044 l/s a kW times
+  the thirsts.
+- **Sized pieces** (docs/sandbox/design/sized-gun-engine-parts.md 6): every piece but the Capital Smokestack comes off a Press,
+  the cylinders on the Cylinder die and the rest on the Engine die, at any size between its presets (the four files). **Anything
+  bolts on**: a cylinder gives its own bore and stroke's power; a fuel system or booster smaller than its bank feeds or boosts it by the kW
+  ratio and the readout says so ("bank 1 starved: the Small Carburettor feeds 5% of its cylinders"); flywheel, starter and
+  stacks work at any size. **A wider bore** (a thinner wall in the same across; the bore counts up to 0.9 of the across) is how
+  a cylinder of one size gets more power: the plain bore is the presets' share of the across (Small 0.56, Medium and Large 0.78),
+  and a Small `pipe8`, `pipe7` or `pipe5 45x45x75` gives 1.38, 1.59 or 2.07 times the plain one. **Mass** of a pressed engine piece
+  is its metal times what a cubic metre of metal weighs in the catalogue piece of its size (through the presets in log of across):
+  a preset is the file's part, a bigger piece is heavier, a wider bore lighter. **Health** is its blank's metal times the
+  material's, so a wider bore has less (the Small `pipe5`: 236 hp against the plain wall's 412). Bored cylinders, 2026-11-14:
+  docs/sandbox/design/bored-cylinders-notes.md.
+- **A cylinder's own power**: a cylinder may carry `enginePiece.power` and `thirst` (1 if not). The Engine Kit's Bored,
+  Performance and Racing Cylinders (x1.3, x1.6, x2) do; they are **retired** (no recipe, not in the build catalogue) and still
+  load and run where a save or an old blueprint holds one.
 - **One fuel piece a bank** is enough, on any cylinder of the bank. A bank with none gives nothing and the readout says which.
 
 ### The readout
 
 The look line on any piece, with any tool in hand, says what the pieces add up to and what is missing: "V8 320 kW, thirsty",
 "V8 160 kW - no fuel system on bank 2", "no output: fit a flywheel on the end of the crank", "no starter: an engine this big
-needs a starter motor", "no fuel: link a fuel tank", "mixed sizes: every piece of an engine is one size". Driving, the HUD's
+needs a starter motor", "no fuel: link a fuel tank", "bank 1 starved: the Small Carburettor feeds 5% of its cylinders". Driving, the HUD's
 red line gives the same reason. "thirsty" is 1.15 times the plain burn a kW or more, "frugal" 0.85 or less.
 
 ### How it is recognised
@@ -420,7 +437,10 @@ All on the rpm and load every peer has (the load is the top three bits of the po
 6. Only modular engines make the new sound; fixed engines stay silent as they were. `EngineSounds.Pick` is where to change it.
 7. Capital pieces needed `MaxPartReach` 50 m and a 500 t mass limit. Pieces from Medium up have the size class's sockets (`sizeClass`):
    they bolt to that class's frames, gearboxes and bunkers, or to smaller ones through a size adapter.
-8. Pieces of different sizes never mate, and forced on they say so.
+8. Pieces of any sizes make one engine (sized parts, the user's answer 6, 2026-11-13): `EngineFault.MixedSizes` is no longer
+   raised. Starters are needed from crank scale 8 (`starterFrom` in `ModularEngine.json`), half-way between Medium and Large.
+9. Making them: an Assembler made every piece until sized parts phase 6; now the Cylinder and Engine dies press them (their presets
+   are the files), and only the Capital Cylinder and Capital Smokestack, past what a die presses, keep an Assembler recipe.
 
 ## Tracks
 

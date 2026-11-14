@@ -149,9 +149,19 @@ public static unsafe partial class Program
             ConstructRender.VolumeHotBody = null;
         if (Pressed(GameAction.Interact) && g.HarpoonTearOut())
             return true; // (a head stuck in you: F tears it out, before anything else F does)
+        if (!h.Seated)
+            LifterRender.CabBody = 0; // (phase 8: no cab's reach view)
         if (h.Seated)
         {
-            if (!LeverSeated(g, me, in h, now) && Pressed(GameAction.Interact)) // (an Analog Lever in reach takes the key: Program.SandboxLever.cs)
+            if (CabSeated(g, in h))
+            {
+                // A Lifter Cab (phase 8, Program.SandboxLifter.cs): F grabs or sets down, E (roll right) gets out.
+                if (Pressed(GameAction.Interact))
+                    g.SandboxLifter(h.SeatBody, h.SeatPart, LiftOrderOp.Grab);
+                else if (Pressed(GameAction.SeatRollRight))
+                    g.SandboxSend(CActKind.Stand);
+            }
+            else if (!LeverSeated(g, me, in h, now) && Pressed(GameAction.Interact)) // (an Analog Lever in reach takes the key: Program.SandboxLever.cs)
                 g.SandboxSend(CActKind.Stand);
             // The keys a seat's input readers can read besides the movement keys: fire, aim, reload, roll.
             var keys = (Down(GameAction.Fire) ? 1 : 0) | (Down(GameAction.Aim) ? 2 : 0) | (Down(GameAction.Reload) ? 4 : 0) | (Down(GameAction.SeatRollLeft) ? 8 : 0) | (Down(GameAction.SeatRollRight) ? 16 : 0) | (Down(GameAction.SeatHook) ? 32 : 0) | (Down(GameAction.SeatEject) ? 64 : 0);
@@ -292,6 +302,7 @@ public static unsafe partial class Program
                     PartRole.Logic => SandboxKeys.Line(d.Name, SandboxKeys.Join(setting, signal), unpowered),
                     PartRole.Gun when hit.Body.GunOf(hit.Part) is var gk and >= 0 => GunLook(hit.Body, gk, part),
                     PartRole.AmmoBox => SandboxKeys.Line(d.Name, SandboxKeys.Join($"{part.Rounds} rounds", wrecked), part.Burn > 0 ? "ON FIRE" : null),
+                    _ when d.LadderTop > 0 && near && !hit.Body.Loose => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, "climb")), // (a vertical ladder: up from its foot, down from its top)
                     _ when part.Burn > 0 => SandboxKeys.Line(d.Name, hp, "ON FIRE"),
                     _ when hit.Body.Loose && near && h.Tool != ConstructTool.Hands && ToolUpgrades.Current.ModuleOf(d.Id) is { } up => UpgradeLook(g, me, hit.Body, d, up.Stat, up.Level),
                     _ when hit.Body.Loose && d.PhysicsOnly => SandboxKeys.Line(d.Name, carriedIn, "physics gun only"),
@@ -335,6 +346,18 @@ public static unsafe partial class Program
                 _sbRouterText = ConstructLogistics.Look(g.Constructs, hit.Body, hit.Part);
             }
             g.SandboxLookText = _sbRouterText;
+        }
+        if (aimed && hit.RoutePlus1 == 0 && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Body.DefOf(hit.Part).Lifter != null)
+        {
+            // A Loader Arm: what it does or waits on, and its reach drawn round it (ConstructLifters.Look, LifterRender.Look).
+            LifterRender.Look(hit.Body.Id, hit.Part);
+            var lk = ConstructLifters.LookKey(g.Constructs, hit.Body, hit.Part) ^ ((long)hit.Body.Id << 48) ^ ((long)hit.Part << 52);
+            if (lk != _sbLifterKey)
+            {
+                _sbLifterKey = lk;
+                _sbLifterText = ConstructLifters.Look(g.Constructs, hit.Body, hit.Part);
+            }
+            g.SandboxLookText = _sbLifterText;
         }
         var terminalTook = TerminalFrame(g, me, in h, aimed, hit, storeNear); // (a Smart Terminal under the crosshair takes the wheel, the use key and reload: Program.SandboxTerminal.cs)
         var feet = me.Position;
@@ -406,6 +429,8 @@ public static unsafe partial class Program
                 Ui.OpenOrdnanceBench(g); // (the Ordnance Bench: UiOrdnanceBench.cs)
                 SetMouseCaptured(false);
             }
+            else if (aimed && !join && !hit.Body.Loose && LifterUse(hit.Body, hit.Part, hit.Distance)) // (the Welder's join first)
+                OpenLifterPanel(hit.Body, hit.Part); // (a Loader Arm or a Crane Bridge: its points and hand orders, Program.SandboxLifter.cs)
             else if (join)
                 g.SandboxSend(CActKind.Join, body: hit.Body.Id, part: (ushort)hit.Part);
             else if (aimed && hit.Distance <= ConstructBuild.UseReach && hit.Body is { Loose: true, PartCount: 1 } && ToolUpgrades.Current.ModuleOf(hit.Body.Parts[0].Def) != null)
@@ -414,6 +439,10 @@ public static unsafe partial class Program
                 g.SandboxSend(CActKind.PickUp, body: hit.Body.Id);
             else if (aimed && hit.Distance <= ConstructBuild.UseReach)
                 g.SandboxSend(CActKind.Use, body: hit.Body.Id, part: (ushort)hit.Part);
+            else if (!aimed && CraneUse(g, eye, dir))
+            {
+                // (a Crane Bridge's cabinet up on its rails, past the hands' reach: its panel is a pendant, Program.SandboxLifter.cs)
+            }
             else if (nearRack)
                 g.SandboxSend(CActKind.Rack);
         }
@@ -1014,6 +1043,8 @@ public static unsafe partial class Program
 
     private static long _sbRouterKey = -1;
     private static string _sbRouterText = "";
+    private static long _sbLifterKey = -1;
+    private static string _sbLifterText = "";
 
     private static string StorageLook(Game g, Player me, in ConstructHit hit, CStore st, bool near, ConstructPartDef? held)
     {
@@ -1029,6 +1060,8 @@ public static unsafe partial class Program
             key ^= (long)ConstructPress.LookKey(hit.Body, hit.Part) * 2654435761L; // (what is in its bays and die slot: parts, not the store)
         if (hit.Body.DefOf(hit.Part).IsPieceRack)
             key ^= ((long)hit.RackPlus1 << 8 | hit.RackLane) * 2654435761L; // (which stack is looked at: its kind names the piece F takes)
+        if (StockTargets.IsStore(hit.Body.DefOf(hit.Part)))
+            key ^= StockTargets.LookKey(hit.Body, hit.Part) * 0x9E3779B97F4AL; // (its Logistics settings: what it keeps and takes)
         if (hit.Body.DefOf(hit.Part).IsCraftTerminal)
             key ^= (long)((hit.Body.Parts[hit.Part].Craft?.Count ?? 0) + 1 + hit.Body.RouteCount * 64) * 40503L; // (its orders and the body's links: what its line says)
         if (hit.Body.DefOf(hit.Part).IsBuildStation)
@@ -1047,10 +1080,13 @@ public static unsafe partial class Program
             return _sbStoreText = ConstructTerminals.Look(cd, st, hit.Body.Parts[hit.Part].Broken);
         if (cd.IsVolumeStore)
             return _sbStoreText = ConstructStoreVolume.Look(hit.Body, hit.Part, st, near, inv, held);
+        if (cd.IsPanelDesigner && hit.RackPlus1 == 0)
+            return _sbStoreText = SandboxKeys.Line(cd.Name, $"{hit.Body.Parts[hit.Part].Craft?.Count ?? 0} order(s), {st.ItemCount} in the tray", null,
+                SandboxKeys.Do(SandboxKeys.Use, st.ItemCount > 0 ? "on the tray: take a panel; elsewhere: design a panel" : "design a panel")); // (the desk is a terminal, but F opens the designer)
         if (cd.IsCraftTerminal && hit.RackPlus1 == 0 && _game is { } cg)
             return _sbStoreText = ConstructCrafting.Look(cg.Constructs, hit.Body, hit.Part, st, near);
         if (cd.IsPieceRack)
-            return _sbStoreText = ConstructConveyor.Look(cd, st, near, hit.RackPlus1 > 0 && hit.RackPlus1 <= st.SlabN ? ConstructParts.Get(st.Slabs![hit.RackPlus1 - 1].Def) : null);
+            return _sbStoreText = ConstructConveyor.Look(cd, st, near, hit.RackPlus1 > 0 && hit.RackPlus1 <= st.SlabN ? ConstructParts.Get(st.Slabs![hit.RackPlus1 - 1].Def) : null) is var rl && StockTargets.Look(hit.Body, hit.Part) is { Length: > 0 } kl ? rl + " - " + kl : rl;
         if (cd.IsRefiner)
             return _sbStoreText = ConstructRefining.Look(cd, st, near, inv, ConstructRefining.SetOf(hit.Body.Parts[hit.Part], cd));
         if (cd.IsAssembler && hit.SlotPlus1 == 0)
@@ -1084,7 +1120,7 @@ public static unsafe partial class Program
             var pile = most > 1 ? $"{st.Count[k]}/{most}" : "";
             var hurt = st.Health[k] < 0.995f ? $"{st.Health[k] * 100:0}% health" : "";
             var take = !near ? "" : held != null ? "hands full" : "";
-            return _sbStoreText = SandboxKeys.Line(d.Name, SandboxKeys.Join(pile, hurt), take, !near || held != null ? null : SandboxKeys.Do(hands ? SandboxKeys.Fire : SandboxKeys.Use, most > 1 ? "take one" : "take"));
+            return _sbStoreText = SandboxKeys.Line(PartRef.Shown(d), SandboxKeys.Join(pile, hurt), take, !near || held != null ? null : SandboxKeys.Do(hands ? SandboxKeys.Fire : SandboxKeys.Use, most > 1 ? "take one" : "take"));
         }
         var used = 0;
         for (var k = 0; k < st.SlotCount; k++)
@@ -1195,13 +1231,16 @@ public static unsafe partial class Program
         // (a client's constructs were blended to this frame's pose in Game.UpdateSandboxSeats, before the camera was set)
         ConstructRender.Now = now;
         ConstructRender.Draw(Gfx, g.Constructs, g.TickAlpha, blendTicks: g.IsServer);
+        AllocProfile.Mark("sb: beams, sounds, ambience");
         DrawPhysGunBeams(g, now); // the physics guns' beams (Program.PhysicsGun.cs)
         g.SandboxSounds(now); // horns (GameSandbox.cs)
         g.ColonyAlarmSounds(now); // the penal colony's lockdown siren (GameColonyLockdown.cs)
         g.StoryBabbleSounds(now); // the story people murmur their lines (GameStoryBabble.cs)
+        PartAmbience.Frame(g.Constructs, Gfx.CameraPosition, now, g.TickAlpha, g.IsServer, g.Audio); // smoke, steam, a tannoy, snow along the ground (PartAmbience.cs)
         g.EngineAudio.Pick(g.Constructs, Gfx.CameraPosition);
         g.EngineAudio.Play(g.Audio); // (modular engines: EngineSounds.cs)
         g.SandboxBuildSounds(now); // (building: GameSandboxBuildSounds.cs)
+        AllocProfile.Stop();
     }
 
     private static ToolFrame _sbTool;

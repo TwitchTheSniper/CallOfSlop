@@ -846,6 +846,168 @@
      "use": 8.0
     }
    ]
+  },
+  {
+   "output": "Barrel Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Barrel Die",
+   "seconds": 60,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
+    }
+   ]
+  },
+  {
+   "output": "Large Barrel Die",
+   "seconds": 90,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 4.0,
+     "maxAcross": 7.2,
+     "use": 4.0
+    }
+   ]
+  },
+  {
+   "output": "Receiver Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Receiver Die",
+   "seconds": 60,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
+    }
+   ]
+  },
+  {
+   "output": "Engine Die",
+   "seconds": 45,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Engine Die",
+   "seconds": 90,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 1.0,
+     "maxAcross": 1.8,
+     "use": 1.0
+    }
+   ]
+  },
+  {
+   "output": "Large Engine Die",
+   "seconds": 135,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 4.0,
+     "maxAcross": 7.2,
+     "use": 4.0
+    }
+   ]
+  },
+  {
+   "output": "Capital Engine Die",
+   "seconds": 180,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 8.0,
+     "maxAcross": 28.8,
+     "use": 8.0
+    }
+   ]
   }
  ],
  "strength": {
@@ -2334,74 +2496,206 @@
     "base": 6.0,
     "perKg": 0.01
    },
-   "features": [
-    {
-     "tag": "cap",
-     "box": [
-      -0.05,
-      -0.05,
-      0.0,
-      1.05,
-      1.05,
-      0.06
-     ],
-     "proud": "xyz",
-     "look": "dark"
-    },
-    {
-     "tag": "cap",
-     "box": [
-      -0.05,
-      -0.05,
-      0.94,
-      1.05,
-      1.05,
-      1.0
-     ],
-     "proud": "xyz",
-     "look": "dark"
-    },
-    {
-     "tag": "port",
-     "box": [
-      0.4,
-      1.0,
-      0.12,
-      0.6,
-      1.12,
-      0.2
-     ],
-     "proud": "y",
-     "look": "bare"
-    },
-    {
-     "tag": "port",
-     "box": [
-      0.4,
-      1.0,
-      0.8,
-      0.6,
-      1.12,
-      0.88
-     ],
-     "proud": "y",
-     "look": "bare"
-    }
-   ],
+   "features": [],
    "sockets": [],
    "patterns": [
     {
      "id": "cylinder",
      "like": "Small Cylinder",
      "label": "cylinder",
-     "preset": "pipe5 30x30x30 steel",
+     "preset": "pipe10 45x45x75 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "y",
      "bay2": {
-      "material": "rubber",
+      "part": "Piston Set",
       "base": 1.0,
-      "rate": 6.0,
-      "by": "across",
-      "max": 999
+      "rate": 20.0,
+      "by": "volume",
+      "max": 20
      }
+    }
+   ]
+  },
+  {
+   "die": "Engine",
+   "blanks": [
+    "solid",
+    "round",
+    "hollow",
+    "pipe"
+   ],
+   "materials": [
+    "steel"
+   ],
+   "across": [
+    20,
+    2880
+   ],
+   "length": [
+    10,
+    3200
+   ],
+   "aspect": [
+    0.25,
+    6.0
+   ],
+   "seconds": {
+    "base": 4.0,
+    "perKg": 0.01
+   },
+   "features": [],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "crank",
+     "like": "Small Crank Section",
+     "label": "crank section",
+     "preset": "solid 45x45x50 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "solid"
+     ],
+     "bay2": {
+      "part": "Bearing",
+      "base": 2.0,
+      "rate": 0.5,
+      "by": "length",
+      "max": 20
+     }
+    },
+    {
+     "id": "flywheel",
+     "like": "Small Flywheel",
+     "label": "flywheel",
+     "preset": "round 45x45x45 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Bearing",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "length",
+      "max": 1
+     }
+    },
+    {
+     "id": "carburettor",
+     "like": "Small Carburettor",
+     "label": "carburettor",
+     "preset": "hollow 40x40x25 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "hollow"
+     ]
+    },
+    {
+     "id": "injector",
+     "like": "Small Injector Rail",
+     "label": "injector rail",
+     "preset": "solid 40x40x25 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "solid"
+     ],
+     "bay2": {
+      "part": "Circuit Board",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "length",
+      "max": 1
+     }
+    },
+    {
+     "id": "turbo",
+     "like": "Small Turbo",
+     "label": "turbo",
+     "preset": "hollow 40x40x40 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "hollow"
+     ],
+     "bay2": {
+      "part": "Bearing",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "length",
+      "max": 2
+     }
+    },
+    {
+     "id": "supercharger",
+     "like": "Small Supercharger",
+     "label": "supercharger",
+     "preset": "round 40x40x30 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Bearing",
+      "base": 2.0,
+      "rate": 0.0,
+      "by": "length",
+      "max": 2
+     }
+    },
+    {
+     "id": "starter",
+     "like": "Small Starter Motor",
+     "label": "starter motor",
+     "preset": "round 30x30x35 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "round"
+     ],
+     "bay2": {
+      "part": "Copper Coil",
+      "base": 1.0,
+      "rate": 0.0,
+      "by": "length",
+      "max": 1
+     }
+    },
+    {
+     "id": "exhaust",
+     "like": "Small Exhaust Outlet",
+     "label": "exhaust outlet",
+     "preset": "pipe10 40x40x25 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "y",
+     "blanks": [
+      "pipe"
+     ]
+    },
+    {
+     "id": "stack",
+     "like": "Small Smokestack",
+     "label": "smokestack",
+     "preset": "pipe10 30x30x150 steel",
+     "likeBy": "nearest",
+     "body": "like",
+     "along": "z",
+     "blanks": [
+      "pipe"
+     ]
     }
    ]
   },
@@ -2569,8 +2863,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2591,8 +2884,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2613,8 +2905,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2635,8 +2926,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2657,8 +2947,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2679,8 +2968,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2701,8 +2989,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     }
@@ -2779,8 +3066,8 @@
      "body": "like",
      "along": "z",
      "bay2": {
-      "part": "Bearing",
-      "base": 2.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 0.5,
       "by": "length",
       "max": 12
@@ -2790,8 +3077,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2803,8 +3089,8 @@
      "body": "like",
      "along": "x",
      "bay2": {
-      "part": "Bearing",
-      "base": 2.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 0.5,
       "by": "length",
       "max": 12
@@ -2814,8 +3100,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2827,8 +3112,8 @@
      "body": "like",
      "along": "x",
      "bay2": {
-      "part": "Bearing",
-      "base": 2.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 0.5,
       "by": "length",
       "max": 12
@@ -2838,8 +3123,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     },
@@ -2851,8 +3135,8 @@
      "body": "like",
      "along": "z",
      "bay2": {
-      "part": "Bearing",
-      "base": 2.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 0.5,
       "by": "length",
       "max": 12
@@ -2866,8 +3150,8 @@
      "body": "like",
      "along": "z",
      "bay2": {
-      "part": "Bearing",
-      "base": 2.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 0.5,
       "by": "length",
       "max": 12
@@ -2877,8 +3161,7 @@
        "field": "maxTorque",
        "by": "across",
        "power": 3.0,
-       "strength": true,
-       "ref": 900.0
+       "strength": true
       }
      ]
     }
@@ -3146,8 +3429,8 @@
      "body": "like",
      "along": "y",
      "bay2": {
-      "part": "Bearing",
-      "base": 1.0,
+      "part": "Gear Set",
+      "base": 0.0,
       "rate": 2.0,
       "by": "across",
       "max": 16
@@ -4010,6 +4293,2577 @@
      ]
     }
    ]
+  },
+  {
+   "die": "Barrel",
+   "blanks": [
+    "round",
+    "pipe"
+   ],
+   "materials": [
+    "steel"
+   ],
+   "across": [
+    10,
+    120
+   ],
+   "length": [
+    10,
+    1920
+   ],
+   "aspect": [
+    1.0,
+    16.0
+   ],
+   "seconds": {
+    "base": 4.0,
+    "perKg": 0.02
+   },
+   "features": [
+    {
+     "tag": "crown",
+     "box": [
+      -0.1,
+      -0.1,
+      0.0,
+      1.1,
+      1.1,
+      0.04
+     ],
+     "proud": "xyz",
+     "clamp": "z",
+     "minCm": 1.0,
+     "maxCm": 10.0,
+     "look": "dark"
+    }
+   ],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "plain",
+     "like": "Gun Barrel",
+     "label": "barrel",
+     "preset": "round 10x10x50 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2,
+         0.7
+        ],
+        [
+         5,
+         1.0
+        ],
+        [
+         9,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul"
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2,
+         1.15
+        ],
+        [
+         5,
+         1.0
+        ],
+        [
+         9,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul"
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2,
+         -0.02
+        ],
+        [
+         5,
+         0.0
+        ],
+        [
+         9,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add"
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2,
+         0.02
+        ],
+        [
+         5,
+         0.0
+        ],
+        [
+         9,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add"
+      }
+     ]
+    },
+    {
+     "id": "bigiron",
+     "like": "Big Iron Barrel",
+     "label": "big iron barrel",
+     "preset": "round 15x15x125 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.3438,
+        1.25
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.6875,
+        2.25
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "bloat",
+     "like": "Bloat Barrel",
+     "label": "bloat barrel",
+     "preset": "round 10x10x60 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.5,
+        1.6364
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.07,
+        0.03
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "blunderbussbell",
+     "like": "Blunderbuss Bell",
+     "label": "blunderbuss bell",
+     "preset": "round 15x15x50 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.9167,
+        3.3333
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.3438,
+        1.125
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "cannonsleeve",
+     "like": "Cannon Sleeve",
+     "label": "cannon sleeve",
+     "preset": "round 10x10x75 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.4583,
+        1.5
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.1,
+        0.0
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        0.0,
+        0.08
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "coil",
+     "like": "Coil Barrel",
+     "label": "coil barrel",
+     "preset": "round 10x10x80 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.275,
+        1.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "flamenozzle",
+     "like": "Flame Nozzle",
+     "label": "flame nozzle",
+     "preset": "round 15x15x65 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "flechettesleeve",
+     "like": "Flechette Sleeve",
+     "label": "flechette sleeve",
+     "preset": "round 10x10x80 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.9167,
+        3.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "flutedmatch",
+     "like": "Fluted Match Barrel",
+     "label": "fluted match barrel",
+     "preset": "round 10x10x85 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.3667,
+        1.3333
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.7857,
+        2.5714
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "harpoontube",
+     "like": "Harpoon Tube",
+     "label": "harpoon tube",
+     "preset": "round 15x15x85 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "heatsink",
+     "like": "Heatsink Barrel",
+     "label": "heatsink barrel",
+     "preset": "round 10x10x65 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.5238,
+        1.7143
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "heavybore",
+     "like": "Heavy Bore Barrel",
+     "label": "heavy bore barrel",
+     "preset": "round 10x10x65 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "launchertube",
+     "like": "Launcher Tube",
+     "label": "launcher tube",
+     "preset": "round 25x25x65 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "marksman",
+     "like": "Marksman Barrel",
+     "label": "marksman barrel",
+     "preset": "round 10x10x125 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        1.0,
+        3.2727
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.09,
+        0.01
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.01,
+        0.07
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "needle",
+     "like": "Needle Barrel",
+     "label": "needle barrel",
+     "preset": "round 10x10x110 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.7333,
+        2.4
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.06,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "ported",
+     "like": "Ported Barrel",
+     "label": "ported barrel",
+     "preset": "round 10x10x55 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.5978,
+        2.1739
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "sawn-off",
+     "like": "Sawn-Off Barrel",
+     "label": "sawn-off barrel",
+     "preset": "round 10x10x20 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        1.0,
+        3.6364
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.3056,
+        1.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        0.0,
+        0.1
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.08,
+        0.0
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "scattermouth",
+     "like": "Scattermouth Barrel",
+     "label": "scattermouth barrel",
+     "preset": "round 15x15x75 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "squeezebore",
+     "like": "Squeeze Bore Barrel",
+     "label": "squeeze bore barrel",
+     "preset": "round 10x10x75 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.7
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         1.4
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         1.15
+        ],
+        [
+         5.0,
+         1.0
+        ],
+        [
+         9.0,
+         0.85
+        ]
+       ],
+       "clamp": [
+        0.6111,
+        2.0
+       ],
+       "op": "mul",
+       "at": 5
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         -0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         0.03
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add",
+       "at": 5
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         2.0,
+         0.02
+        ],
+        [
+         5.0,
+         0.0
+        ],
+        [
+         9.0,
+         -0.02
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add",
+       "at": 5
+      }
+     ]
+    },
+    {
+     "id": "tube",
+     "like": "Howitzer Tube",
+     "label": "artillery tube",
+     "preset": "round 20x20x105 steel",
+     "body": "like",
+     "along": "z",
+     "scale": [
+      {
+       "field": "rangeM",
+       "by": "calibres",
+       "points": [
+        [
+         5.25,
+         1.0
+        ],
+        [
+         8.25,
+         1.5
+        ]
+       ],
+       "clamp": [
+        0.55,
+        2.0
+       ],
+       "op": "mul"
+      },
+      {
+       "field": "hipSpreadDeg",
+       "by": "calibres",
+       "points": [
+        [
+         5.25,
+         1.0
+        ],
+        [
+         8.25,
+         0.8
+        ]
+       ],
+       "clamp": [
+        0.55,
+        1.8
+       ],
+       "op": "mul"
+      },
+      {
+       "field": "adsTime",
+       "by": "calibres",
+       "points": [
+        [
+         5.25,
+         0.0
+        ],
+        [
+         8.25,
+         0.0
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.06
+       ],
+       "op": "add"
+      },
+      {
+       "field": "mobility",
+       "by": "calibres",
+       "points": [
+        [
+         5.25,
+         0.0
+        ],
+        [
+         8.25,
+         0.0
+        ]
+       ],
+       "clamp": [
+        -0.04,
+        0.04
+       ],
+       "op": "add"
+      }
+     ]
+    }
+   ],
+   "fit": [
+    0.7,
+    1.5
+   ]
+  },
+  {
+   "die": "Receiver",
+   "blanks": [
+    "solid",
+    "hollow"
+   ],
+   "materials": [
+    "steel"
+   ],
+   "across": [
+    15,
+    120
+   ],
+   "length": [
+    30,
+    600
+   ],
+   "aspect": "preset",
+   "seconds": {
+    "base": 4.0,
+    "perKg": 0.02
+   },
+   "features": [],
+   "sockets": [],
+   "patterns": [
+    {
+     "id": "rifle",
+     "like": "Rifle Receiver",
+     "label": "rifle receiver",
+     "preset": "solid 20x20x40 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "heavy",
+     "like": "Heavy Receiver",
+     "label": "heavy receiver",
+     "preset": "solid 25x25x50 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "shell",
+     "like": "Shell Receiver",
+     "label": "shell receiver",
+     "preset": "hollow 20x20x40 steel",
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "bastillelmg",
+     "like": "Bastille LMG Receiver",
+     "label": "bastille lmg receiver",
+     "preset": "solid 20x20x75 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "bucketlauncher",
+     "like": "Bucket Launcher Receiver",
+     "label": "bucket launcher receiver",
+     "preset": "solid 20x20x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "bunkerbuster",
+     "like": "Bunker Buster Receiver",
+     "label": "bunker buster receiver",
+     "preset": "solid 25x25x65 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "couriercarbine",
+     "like": "Courier Carbine Receiver",
+     "label": "courier carbine receiver",
+     "preset": "solid 15x15x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "farmhandpump",
+     "like": "Farmhand Pump Receiver",
+     "label": "farmhand pump receiver",
+     "preset": "solid 15x15x45 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "gravediggerauto",
+     "like": "Gravedigger Auto Receiver",
+     "label": "gravedigger auto",
+     "preset": "solid 15x15x50 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "hammerfallautoca",
+     "like": "Hammerfall Autocannon Receiver",
+     "label": "hammerfall autocannon",
+     "preset": "solid 30x30x80 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "handmortar",
+     "like": "Hand Mortar Receiver",
+     "label": "hand mortar receiver",
+     "preset": "solid 20x20x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "hellwheelrotary",
+     "like": "Hellwheel Rotary Receiver",
+     "label": "hellwheel rotary",
+     "preset": "solid 20x20x60 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "kingpinrevolver",
+     "like": "Kingpin Revolver Receiver",
+     "label": "kingpin revolver",
+     "preset": "solid 20x20x35 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "longbowdmr",
+     "like": "Longbow DMR Receiver",
+     "label": "longbow dmr receiver",
+     "preset": "solid 15x15x65 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "longreachbolt",
+     "like": "Longreach Bolt Receiver",
+     "label": "longreach bolt receiver",
+     "preset": "solid 15x15x60 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "paradecannon",
+     "like": "Parade Cannon Receiver",
+     "label": "parade cannon receiver",
+     "preset": "solid 20x20x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "peashooter",
+     "like": "Peashooter Receiver",
+     "label": "peashooter receiver",
+     "preset": "solid 15x15x35 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "pepperbox",
+     "like": "Pepperbox Receiver",
+     "label": "pepperbox receiver",
+     "preset": "solid 20x20x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "plinker",
+     "like": "Plinker Receiver",
+     "label": "plinker receiver",
+     "preset": "solid 15x15x35 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "railspikecoil",
+     "like": "Railspike Coil Receiver",
+     "label": "railspike coil receiver",
+     "preset": "solid 15x15x60 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "reaperbattlerifl",
+     "like": "Reaper Battle Rifle Receiver",
+     "label": "reaper battle rifle",
+     "preset": "solid 20x20x55 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "sawmill",
+     "like": "Sawmill Receiver",
+     "label": "sawmill receiver",
+     "preset": "solid 20x20x75 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "sparkplugenergy",
+     "like": "Sparkplug Energy Receiver",
+     "label": "sparkplug energy",
+     "preset": "solid 20x20x50 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "stampede",
+     "like": "Stampede Receiver",
+     "label": "stampede receiver",
+     "preset": "solid 15x15x40 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    },
+    {
+     "id": "sunbeamlance",
+     "like": "Sunbeam Lance Receiver",
+     "label": "sunbeam lance receiver",
+     "preset": "solid 15x15x60 steel",
+     "auto": false,
+     "body": "like",
+     "along": "z",
+     "bay2": {
+      "part": "Gear Set",
+      "base": 1.0,
+      "rate": 0.02,
+      "by": "mass",
+      "max": 20
+     }
+    }
+   ]
   }
  ],
  "presets": [
@@ -4245,25 +7099,229 @@
    "part": "Small Cylinder",
    "die": "cylinder",
    "pattern": "cylinder",
-   "blank": "pipe5 30x30x30 steel"
+   "blank": "pipe10 45x45x75 steel"
   },
   {
    "part": "Medium Cylinder",
    "die": "cylinder",
    "pattern": "cylinder",
-   "blank": "pipe10 100x100x100 steel"
+   "blank": "pipe20 180x180x300 steel"
   },
   {
    "part": "Large Cylinder",
    "die": "cylinder",
    "pattern": "cylinder",
-   "blank": "pipe40 400x400x400 steel"
+   "blank": "pipe80 720x720x1200 steel"
   },
   {
-   "part": "Capital Cylinder",
-   "die": "cylinder",
-   "pattern": "cylinder",
-   "blank": "pipe160 1600x1600x1600 steel"
+   "part": "Small Crank Section",
+   "die": "engine",
+   "pattern": "crank",
+   "blank": "solid 45x45x50 steel"
+  },
+  {
+   "part": "Medium Crank Section",
+   "die": "engine",
+   "pattern": "crank",
+   "blank": "solid 180x180x200 steel"
+  },
+  {
+   "part": "Large Crank Section",
+   "die": "engine",
+   "pattern": "crank",
+   "blank": "solid 720x720x800 steel"
+  },
+  {
+   "part": "Capital Crank Section",
+   "die": "engine",
+   "pattern": "crank",
+   "blank": "solid 2880x2880x3200 steel"
+  },
+  {
+   "part": "Small Flywheel",
+   "die": "engine",
+   "pattern": "flywheel",
+   "blank": "round 45x45x45 steel"
+  },
+  {
+   "part": "Medium Flywheel",
+   "die": "engine",
+   "pattern": "flywheel",
+   "blank": "round 180x180x160 steel"
+  },
+  {
+   "part": "Large Flywheel",
+   "die": "engine",
+   "pattern": "flywheel",
+   "blank": "round 720x720x640 steel"
+  },
+  {
+   "part": "Capital Flywheel",
+   "die": "engine",
+   "pattern": "flywheel",
+   "blank": "round 2880x2880x2560 steel"
+  },
+  {
+   "part": "Small Carburettor",
+   "die": "engine",
+   "pattern": "carburettor",
+   "blank": "hollow 40x40x25 steel"
+  },
+  {
+   "part": "Medium Carburettor",
+   "die": "engine",
+   "pattern": "carburettor",
+   "blank": "hollow 160x160x100 steel"
+  },
+  {
+   "part": "Large Carburettor",
+   "die": "engine",
+   "pattern": "carburettor",
+   "blank": "hollow 640x640x400 steel"
+  },
+  {
+   "part": "Capital Carburettor",
+   "die": "engine",
+   "pattern": "carburettor",
+   "blank": "hollow 2560x2560x1600 steel"
+  },
+  {
+   "part": "Small Injector Rail",
+   "die": "engine",
+   "pattern": "injector",
+   "blank": "solid 40x40x25 steel"
+  },
+  {
+   "part": "Medium Injector Rail",
+   "die": "engine",
+   "pattern": "injector",
+   "blank": "solid 170x170x100 steel"
+  },
+  {
+   "part": "Large Injector Rail",
+   "die": "engine",
+   "pattern": "injector",
+   "blank": "solid 670x670x400 steel"
+  },
+  {
+   "part": "Capital Injector Rail",
+   "die": "engine",
+   "pattern": "injector",
+   "blank": "solid 2690x2690x1600 steel"
+  },
+  {
+   "part": "Small Turbo",
+   "die": "engine",
+   "pattern": "turbo",
+   "blank": "hollow 40x40x40 steel"
+  },
+  {
+   "part": "Medium Turbo",
+   "die": "engine",
+   "pattern": "turbo",
+   "blank": "hollow 160x160x100 steel"
+  },
+  {
+   "part": "Large Turbo",
+   "die": "engine",
+   "pattern": "turbo",
+   "blank": "hollow 640x640x400 steel"
+  },
+  {
+   "part": "Capital Turbo",
+   "die": "engine",
+   "pattern": "turbo",
+   "blank": "hollow 2560x2560x1600 steel"
+  },
+  {
+   "part": "Small Supercharger",
+   "die": "engine",
+   "pattern": "supercharger",
+   "blank": "round 40x40x30 steel"
+  },
+  {
+   "part": "Medium Supercharger",
+   "die": "engine",
+   "pattern": "supercharger",
+   "blank": "round 160x160x100 steel"
+  },
+  {
+   "part": "Large Supercharger",
+   "die": "engine",
+   "pattern": "supercharger",
+   "blank": "round 640x640x400 steel"
+  },
+  {
+   "part": "Capital Supercharger",
+   "die": "engine",
+   "pattern": "supercharger",
+   "blank": "round 2560x2560x1600 steel"
+  },
+  {
+   "part": "Small Starter Motor",
+   "die": "engine",
+   "pattern": "starter",
+   "blank": "round 30x30x35 steel"
+  },
+  {
+   "part": "Medium Starter Motor",
+   "die": "engine",
+   "pattern": "starter",
+   "blank": "round 120x120x120 steel"
+  },
+  {
+   "part": "Large Starter Motor",
+   "die": "engine",
+   "pattern": "starter",
+   "blank": "round 480x480x480 steel"
+  },
+  {
+   "part": "Capital Starter Motor",
+   "die": "engine",
+   "pattern": "starter",
+   "blank": "round 1920x1920x1920 steel"
+  },
+  {
+   "part": "Small Exhaust Outlet",
+   "die": "engine",
+   "pattern": "exhaust",
+   "blank": "pipe10 40x40x25 steel"
+  },
+  {
+   "part": "Medium Exhaust Outlet",
+   "die": "engine",
+   "pattern": "exhaust",
+   "blank": "pipe20 160x160x100 steel"
+  },
+  {
+   "part": "Large Exhaust Outlet",
+   "die": "engine",
+   "pattern": "exhaust",
+   "blank": "pipe70 640x640x400 steel"
+  },
+  {
+   "part": "Capital Exhaust Outlet",
+   "die": "engine",
+   "pattern": "exhaust",
+   "blank": "pipe200 2560x2560x1600 steel"
+  },
+  {
+   "part": "Small Smokestack",
+   "die": "engine",
+   "pattern": "stack",
+   "blank": "pipe10 30x30x150 steel"
+  },
+  {
+   "part": "Medium Smokestack",
+   "die": "engine",
+   "pattern": "stack",
+   "blank": "pipe15 120x120x600 steel"
+  },
+  {
+   "part": "Large Smokestack",
+   "die": "engine",
+   "pattern": "stack",
+   "blank": "pipe55 480x480x2400 steel"
   },
   {
    "part": "5-Speed Gearbox",
@@ -4342,6 +7400,486 @@
    "die": "plate",
    "pattern": "armour",
    "blank": "plate 100x20x100 steel"
+  },
+  {
+   "part": "Drive Shaft 1 m",
+   "die": "shaft",
+   "pattern": "shaft",
+   "blank": "round 20x20x100 steel"
+  },
+  {
+   "part": "U Joint",
+   "die": "shaft",
+   "pattern": "ujoint",
+   "blank": "round 15x15x25 steel"
+  },
+  {
+   "part": "CV Joint",
+   "die": "shaft",
+   "pattern": "cv",
+   "blank": "round 25x25x25 steel"
+  },
+  {
+   "part": "Stub Axle",
+   "die": "shaft",
+   "pattern": "stub",
+   "blank": "round 30x30x35 steel"
+  },
+  {
+   "part": "Wheel Hub",
+   "die": "shaft",
+   "pattern": "hub",
+   "blank": "round 30x30x35 steel"
+  },
+  {
+   "part": "Piston 1x1 Medium",
+   "die": "actuator",
+   "pattern": "piston",
+   "blank": "round 25x25x50 steel"
+  },
+  {
+   "part": "Motor Hinge",
+   "die": "actuator",
+   "pattern": "hinge",
+   "blank": "solid 20x25x55 steel"
+  },
+  {
+   "part": "Turntable",
+   "die": "actuator",
+   "pattern": "turntable",
+   "blank": "solid 65x65x20 steel"
+  },
+  {
+   "part": "Free Pivot 1x1",
+   "die": "actuator",
+   "pattern": "pivot",
+   "blank": "solid 30x25x30 steel"
+  },
+  {
+   "part": "Suspension",
+   "die": "spring",
+   "pattern": "suspension",
+   "blank": "solid 10x30x65 steel"
+  },
+  {
+   "part": "Leaf Spring",
+   "die": "spring",
+   "pattern": "leaf",
+   "blank": "solid 10x55x90 steel"
+  },
+  {
+   "part": "Rigid Mount",
+   "die": "spring",
+   "pattern": "rigid",
+   "blank": "solid 10x30x40 steel"
+  },
+  {
+   "part": "Light Suspension",
+   "die": "spring",
+   "pattern": "light",
+   "blank": "solid 25x25x30 steel"
+  },
+  {
+   "part": "Wiring Loom",
+   "die": "cable",
+   "pattern": "loom",
+   "blank": "round 10x10x30 copper"
+  },
+  {
+   "part": "Copper Coil",
+   "die": "cable",
+   "pattern": "coil",
+   "blank": "round 25x25x25 copper"
+  },
+  {
+   "part": "Power Lead Reel",
+   "die": "cable",
+   "pattern": "power",
+   "blank": "round 45x45x60 steel"
+  },
+  {
+   "part": "Data Lead Reel",
+   "die": "cable",
+   "pattern": "data",
+   "blank": "round 45x45x60 steel"
+  },
+  {
+   "part": "Fluid Hose Reel",
+   "die": "cable",
+   "pattern": "hose",
+   "blank": "round 45x45x60 steel"
+  },
+  {
+   "part": "Fuel Line",
+   "die": "cable",
+   "pattern": "fuel",
+   "blank": "pipe5 15x15x50 steel"
+  },
+  {
+   "part": "AND Gate",
+   "die": "control",
+   "pattern": "and",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "NOT Gate",
+   "die": "control",
+   "pattern": "not",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Timer",
+   "die": "control",
+   "pattern": "timer",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Delay",
+   "die": "control",
+   "pattern": "delay",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Compare",
+   "die": "control",
+   "pattern": "compare",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Proximity Sensor",
+   "die": "control",
+   "pattern": "proximity",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Speed Sensor",
+   "die": "control",
+   "pattern": "speed",
+   "blank": "solid 20x20x25 laminate"
+  },
+  {
+   "part": "Fuel Tank",
+   "die": "tank",
+   "pattern": "fuel",
+   "blank": "hollow 50x50x50 steel"
+  },
+  {
+   "part": "Small Fuel Tank",
+   "die": "tank",
+   "pattern": "small",
+   "blank": "hollow 40x40x40 steel"
+  },
+  {
+   "part": "Fuel Drum",
+   "die": "tank",
+   "pattern": "drum",
+   "blank": "pipe5 45x45x90 steel"
+  },
+  {
+   "part": "Fluid Tank",
+   "die": "tank",
+   "pattern": "fluid",
+   "blank": "hollow 45x45x50 steel"
+  },
+  {
+   "part": "Small Fluid Tank",
+   "die": "tank",
+   "pattern": "smallfluid",
+   "blank": "hollow 40x40x40 steel"
+  },
+  {
+   "part": "Frame Beam",
+   "die": "beam",
+   "pattern": "girder",
+   "blank": "i-beam 45x45x200 steel"
+  },
+  {
+   "part": "Stub Barrel",
+   "die": "barrel",
+   "pattern": "plain",
+   "blank": "round 10x10x20 steel"
+  },
+  {
+   "part": "Gun Barrel",
+   "die": "barrel",
+   "pattern": "plain",
+   "blank": "round 10x10x50 steel"
+  },
+  {
+   "part": "Long Gun Barrel",
+   "die": "barrel",
+   "pattern": "plain",
+   "blank": "round 10x10x90 steel"
+  },
+  {
+   "part": "Big Iron Barrel",
+   "die": "barrel",
+   "pattern": "bigiron",
+   "blank": "round 15x15x125 steel"
+  },
+  {
+   "part": "Bloat Barrel",
+   "die": "barrel",
+   "pattern": "bloat",
+   "blank": "round 10x10x60 steel"
+  },
+  {
+   "part": "Blunderbuss Bell",
+   "die": "barrel",
+   "pattern": "blunderbussbell",
+   "blank": "round 15x15x50 steel"
+  },
+  {
+   "part": "Cannon Sleeve",
+   "die": "barrel",
+   "pattern": "cannonsleeve",
+   "blank": "round 10x10x75 steel"
+  },
+  {
+   "part": "Coil Barrel",
+   "die": "barrel",
+   "pattern": "coil",
+   "blank": "round 10x10x80 steel"
+  },
+  {
+   "part": "Flame Nozzle",
+   "die": "barrel",
+   "pattern": "flamenozzle",
+   "blank": "round 15x15x65 steel"
+  },
+  {
+   "part": "Flechette Sleeve",
+   "die": "barrel",
+   "pattern": "flechettesleeve",
+   "blank": "round 10x10x80 steel"
+  },
+  {
+   "part": "Fluted Match Barrel",
+   "die": "barrel",
+   "pattern": "flutedmatch",
+   "blank": "round 10x10x85 steel"
+  },
+  {
+   "part": "Harpoon Tube",
+   "die": "barrel",
+   "pattern": "harpoontube",
+   "blank": "round 15x15x85 steel"
+  },
+  {
+   "part": "Heatsink Barrel",
+   "die": "barrel",
+   "pattern": "heatsink",
+   "blank": "round 10x10x65 steel"
+  },
+  {
+   "part": "Heavy Bore Barrel",
+   "die": "barrel",
+   "pattern": "heavybore",
+   "blank": "round 10x10x65 steel"
+  },
+  {
+   "part": "Launcher Tube",
+   "die": "barrel",
+   "pattern": "launchertube",
+   "blank": "round 25x25x65 steel"
+  },
+  {
+   "part": "Marksman Barrel",
+   "die": "barrel",
+   "pattern": "marksman",
+   "blank": "round 10x10x125 steel"
+  },
+  {
+   "part": "Needle Barrel",
+   "die": "barrel",
+   "pattern": "needle",
+   "blank": "round 10x10x110 steel"
+  },
+  {
+   "part": "Ported Barrel",
+   "die": "barrel",
+   "pattern": "ported",
+   "blank": "round 10x10x55 steel"
+  },
+  {
+   "part": "Sawn-Off Barrel",
+   "die": "barrel",
+   "pattern": "sawn-off",
+   "blank": "round 10x10x20 steel"
+  },
+  {
+   "part": "Scattermouth Barrel",
+   "die": "barrel",
+   "pattern": "scattermouth",
+   "blank": "round 15x15x75 steel"
+  },
+  {
+   "part": "Squeeze Bore Barrel",
+   "die": "barrel",
+   "pattern": "squeezebore",
+   "blank": "round 10x10x75 steel"
+  },
+  {
+   "part": "Howitzer Tube",
+   "die": "barrel",
+   "pattern": "tube",
+   "blank": "round 20x20x105 steel"
+  },
+  {
+   "part": "Long Gun Tube",
+   "die": "barrel",
+   "pattern": "tube",
+   "blank": "round 20x20x165 steel"
+  },
+  {
+   "part": "Rifle Receiver",
+   "die": "receiver",
+   "pattern": "rifle",
+   "blank": "solid 20x20x40 steel"
+  },
+  {
+   "part": "Heavy Receiver",
+   "die": "receiver",
+   "pattern": "heavy",
+   "blank": "solid 25x25x50 steel"
+  },
+  {
+   "part": "Shell Receiver",
+   "die": "receiver",
+   "pattern": "shell",
+   "blank": "hollow 20x20x40 steel"
+  },
+  {
+   "part": "Bastille LMG Receiver",
+   "die": "receiver",
+   "pattern": "bastillelmg",
+   "blank": "solid 20x20x75 steel"
+  },
+  {
+   "part": "Bucket Launcher Receiver",
+   "die": "receiver",
+   "pattern": "bucketlauncher",
+   "blank": "solid 20x20x40 steel"
+  },
+  {
+   "part": "Bunker Buster Receiver",
+   "die": "receiver",
+   "pattern": "bunkerbuster",
+   "blank": "solid 25x25x65 steel"
+  },
+  {
+   "part": "Courier Carbine Receiver",
+   "die": "receiver",
+   "pattern": "couriercarbine",
+   "blank": "solid 15x15x40 steel"
+  },
+  {
+   "part": "Farmhand Pump Receiver",
+   "die": "receiver",
+   "pattern": "farmhandpump",
+   "blank": "solid 15x15x45 steel"
+  },
+  {
+   "part": "Gravedigger Auto Receiver",
+   "die": "receiver",
+   "pattern": "gravediggerauto",
+   "blank": "solid 15x15x50 steel"
+  },
+  {
+   "part": "Hammerfall Autocannon Receiver",
+   "die": "receiver",
+   "pattern": "hammerfallautoca",
+   "blank": "solid 30x30x80 steel"
+  },
+  {
+   "part": "Hand Mortar Receiver",
+   "die": "receiver",
+   "pattern": "handmortar",
+   "blank": "solid 20x20x40 steel"
+  },
+  {
+   "part": "Hellwheel Rotary Receiver",
+   "die": "receiver",
+   "pattern": "hellwheelrotary",
+   "blank": "solid 20x20x60 steel"
+  },
+  {
+   "part": "Kingpin Revolver Receiver",
+   "die": "receiver",
+   "pattern": "kingpinrevolver",
+   "blank": "solid 20x20x35 steel"
+  },
+  {
+   "part": "Longbow DMR Receiver",
+   "die": "receiver",
+   "pattern": "longbowdmr",
+   "blank": "solid 15x15x65 steel"
+  },
+  {
+   "part": "Longreach Bolt Receiver",
+   "die": "receiver",
+   "pattern": "longreachbolt",
+   "blank": "solid 15x15x60 steel"
+  },
+  {
+   "part": "Parade Cannon Receiver",
+   "die": "receiver",
+   "pattern": "paradecannon",
+   "blank": "solid 20x20x40 steel"
+  },
+  {
+   "part": "Peashooter Receiver",
+   "die": "receiver",
+   "pattern": "peashooter",
+   "blank": "solid 15x15x35 steel"
+  },
+  {
+   "part": "Pepperbox Receiver",
+   "die": "receiver",
+   "pattern": "pepperbox",
+   "blank": "solid 20x20x40 steel"
+  },
+  {
+   "part": "Plinker Receiver",
+   "die": "receiver",
+   "pattern": "plinker",
+   "blank": "solid 15x15x35 steel"
+  },
+  {
+   "part": "Railspike Coil Receiver",
+   "die": "receiver",
+   "pattern": "railspikecoil",
+   "blank": "solid 15x15x60 steel"
+  },
+  {
+   "part": "Reaper Battle Rifle Receiver",
+   "die": "receiver",
+   "pattern": "reaperbattlerifl",
+   "blank": "solid 20x20x55 steel"
+  },
+  {
+   "part": "Sawmill Receiver",
+   "die": "receiver",
+   "pattern": "sawmill",
+   "blank": "solid 20x20x75 steel"
+  },
+  {
+   "part": "Sparkplug Energy Receiver",
+   "die": "receiver",
+   "pattern": "sparkplugenergy",
+   "blank": "solid 20x20x50 steel"
+  },
+  {
+   "part": "Stampede Receiver",
+   "die": "receiver",
+   "pattern": "stampede",
+   "blank": "solid 15x15x40 steel"
+  },
+  {
+   "part": "Sunbeam Lance Receiver",
+   "die": "receiver",
+   "pattern": "sunbeamlance",
+   "blank": "solid 15x15x60 steel"
   }
  ]
 }

@@ -87,6 +87,12 @@ Officer, Inspector of Works (whose first inspection is the colony and its warden
 whose keys include a floor that is not on the plans: the council chamber of `frag.silence`. Not built: the ride out
 of the gate and somewhere for the released player to live; the end says so in its `world` lines.
 
+The Escapee road can be joined at any point in the colony (Karl, 2026-11-13; `Story/Storylets/Breakout.json`,
+[BREAKOUT.md](BREAKOUT.md)): four convicts working in the gangs, won over slowly, ask the player to leave with them:
+the Ministry transport to the spaceport, a fight there in which some of them die, and a ship off the planet. Their last
+words are leads: Wren cleaned the room under headquarters (`frag.silence`), Ambrose's gran kept a seat-lottery ticket
+(`frag.threat`).
+
 ## Open
 
 - Where `frag.reading` is found. An idea, not settled: a place about the forgetting, the Vigil's First Lamp Hall,

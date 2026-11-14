@@ -305,7 +305,14 @@ step's end gets them up first. Bots don't find doorways, so a body going in or o
 outside the doorway, then the one inside (and is put in over the pad's step if it stands there for 1.5 s). Nothing is
 said about it: it is only shown. A world from before the furniture has none in its barracks, and its staff keep the work
 spot. Moving the furniture in the blueprint (the part kit's `BuildingParts`) needs no change here; moving the barracks'
-doorway means moving `BarracksDoorOut`/`BarracksDoorIn` too.
+doorway means moving `BarracksDoorOut`/`BarracksDoorIn` too. A labour post (`"at": "labour"`) puts a person into a gang of the convict
+labourers, drawn working as one of them (LABOUR.md "Hands"; the break-out's convicts, BREAKOUT.md).
+
+### Convict labourers
+
+Round the named people, about eighty nameless convicts and their guards work the colony and the quarry: roll call,
+queues, coal, snow, kerb painting, a column under escort, picks and barrows (docs/story/LABOUR.md; data
+`Story/Labour/PenalColony.json`). They are pictures posed from the clock, not story people: no steps, no bodies, no AI.
 
 ### Sight
 
@@ -580,10 +587,13 @@ is somebody's, nothing explains it, and noticing it is how a new question opens 
   at the left of the screen (no mouse; F again, Esc or walking 4.5 m off puts it down) and sends the ordinary use act,
   so no protocol of its own. The host counts it as the relation `Inspected` (a player towards the Thing "lore ID",
   `Story/Relations/Talk.json`), saved with the world, and a topic or storylet reads it: `"?them Inspected 'lore edie-tally'"`.
+- **Opens**: `"opens": "jobs:FACTION"` (or `"jobs"`) makes the item a job board: the use key ("F: read the jobs") opens
+  the job board window ("Jobs", "The job board") with the item's title and text over it, on that faction's tab, and the
+  look is counted as any other.
 - **Checks**: `--check-story` lists the items and warns of a `noticed` person in no cast and an item no topic asks for;
   `--talk-sim --inspected edie-tally,page-nine` has the player look at items first.
 
-Shipped: `Lore/PenalColony.json`, ten items, each opening a topic in `Topics/Colony.json`. In the cell block, the
+Shipped: `Lore/PenalColony.json`, ten items and the Ministry Work Board on the muster square (the job board), each opening a topic in `Topics/Colony.json`. In the cell block, the
 scratched tally board (Bellweather: whose tally?) and the photo board with year three's gap (Crumb names Edie Marsh,
 which opens Bellweather's "Who was Edie Marsh?"). In the Warden's office, the handbook open at rule 212 (the Light and
 a count of ten), the brass storm lantern from the Brine Flats (a way into his lighthouse thread) and the in-tray with
@@ -753,8 +763,8 @@ the source of truth, `--check-story` decides what is valid, and the read-only st
   off each interval it didn't rise, so a player can cool off). They are story qualities like any other, so patterns,
   lines and goals can read them too. `"spots"` are places the game counts visits to: coming within `reach` m of the
   `near` person's body adds 1 to `?me Visited 'Kettle'` (walk out of twice the reach for the next).
-- **A storylet**: `id` (letters, digits, `-`, `_`), `title`, `about`; `bucket` A (the main plot), B (the side plot) or
-  `urgent`; once per player, or `"again"` after a time; `"priority"` (higher first in its bucket); `"final"` marks an end of the road (the checks don't call
+- **A storylet**: `id` (letters, digits, `-`, `_`), `title`, `about`; `bucket` A (the main plot), B (the side plot),
+  `urgent`, or `side` (a side road in a lane of its own: one at a time beside A, B and urgent, no rest, never paused); once per player, or `"again"` after a time; `"priority"` (higher first in its bucket); `"final"` marks an end of the road (the checks don't call
   it a dead end).
 - **needs**: a query over `?me`, the player, or a list of them (any one holds): `"?me Rank >= 2, not ?me Course ?r"`.
 - **cast**: a query whose variables after `?me` are its roles. The **first leads**: a living person, free (in no play,
@@ -764,8 +774,8 @@ the source of truth, `--check-story` decides what is valid, and the read-only st
 - **beats**: a play's beats over the cast (`?me` among them; "Plays"), acted out as a play is, with bodies meeting.
   A play broken off gives the storylet up (it may come again after a minute).
 - **job**: `"Ministry of Slop: Breaking Rocks"` hands the player that faction job ("Jobs"). **hook**: something the game
-  starts: `lockdown` (the colony's lockdown, the player wanted), `depot` (the Orbital Depot's report memo: with a
-  storylet that hooks the depot, the depot no longer follows the induction by itself).
+  starts: `lockdown` (the colony's lockdown, the player wanted), `depot` (the Orbital Depot's report memo, if the player hasn't had it yet: since 2026-11-13 the
+  depot follows the first duty whatever the storylets do).
 - **ends**: the first that happens wins, each one of: `"when"` an event (a verb and roles, a variable of the storylet's
   or a name: `{"verb": "Job", "actor": "?me", "item": "Breaking Rocks"}`, with an optional `"within"`), `"after"` a time
   (from when its beats ended; a paused storylet's clock stands still) or `"choice"` (an answer the player picks in the
@@ -778,7 +788,8 @@ the source of truth, `--check-story` decides what is valid, and the read-only st
   them when an outcome is pressed; the game does nothing with them: they are the brief for whoever builds it).
 - **The runner**: per player, once a second: an urgent storylet that can play pauses the one under way (its events still
   count, its times stand still) and plays first; with none under way a paused one goes on, else the A and B plots take
-  turns, with a rest of 2 minutes after each. What is under way and what was had are relations (OnStorylet, StoryletAt,
+  turns, with a rest of 2 minutes after each. The `side` lane is looked at first and on its own (the break-out, which
+  must start while a duty holds the main lane). What is under way and what was had are relations (OnStorylet, StoryletAt,
   Played: `Story/Relations/Storylets.json`), so they save with the world; one under way when the world was saved waits for
   its ends again after a load, cast afresh (its time ends start again).
 - **Facts**: `Course` (exclusive: the road chosen), `Lead` (what a player learnt of), `Visited` (spots), the qualities
@@ -802,7 +813,9 @@ Trustee road on (quality `Grade`, 0 to 6): *The stores key*, *Head count*, *The 
 gate* inside the colony, then memos up the ladder (*The in-tray*, *Licensed*, *New cells*, *Inspector of Works*, *The
 inspection*, *The new wing*, *The last word*, *The floor below*: the lead "Council Chamber"). A rung that hands a tiered
 job needs the technology of that tier learnt (`?me Learnt 'Explosives Licence'`, or the player's group's), so the job
-is never refused for standing.
+is never refused for standing. `Storylets/Breakout.json` is the break-out (BREAKOUT.md): four convicts in the gangs, trust
+earned beat by beat (quality `Crew`), Mossop's question (Course Escapee, open to a trustee too) and grassing to the
+Sergeant (`Grassed`).
 
 ### Paths
 
@@ -841,6 +854,11 @@ in play yet (the F4 Story tab's End buttons stand in).
 ## Fragments
 
 The old records the main storyline is told through, found in any order, and the sealed data centres that hold them: [FRAGMENTS.md](FRAGMENTS.md). A fragment is a Thing named by its id (`frag.threat`), held through the `Fragment` relation; the Logbook (F1) shows them.
+
+## The spaceport
+
+The Ministry's spaceport 2 km from the colony, Captain Fairweather and his courier, the first way off the planet
+(stolen, or handed over for carrying his Form 88 to the warden and back): [SPACEPORT.md](SPACEPORT.md).
 
 ## Scenarios
 
@@ -913,6 +931,8 @@ Ministry of Slop (`Ministry.json`) are data in the same shape,.
 
 - **Where they live**: a `"settlement"` stands the home on a planetoid as buildings the faction claims (docs/planets/WORLDS.md
   "Settlements").
+- **Out in the world**: outposts (docs/story/OUTPOSTS.md, `Story/Outposts/*.json`): a checkpoint, a camp, a relay, with a few of
+  the faction's people at posts or on patrol who greet, warn or shoot a player by their standing with it.
 - **Who they are**: a `"home"` (a story place, the faction's `Home`) and `"members"`: story people, `MemberOf` the faction,
   with traits as a cast's people have. For now they have no minds or bodies of their own: visits on foot come later (F3).
   `"staff"` names people of a cast who are its members too, whenever they are in the story (the penal colony's warden and
@@ -934,6 +954,7 @@ Ministry of Slop (`Ministry.json`) are data in the same shape,.
   so queries, patterns, the drama manager and the fax read it like any feeling (`?us Grudge ?them >= 16`). `"tiers"`
   name its bands from the worst up (IT: Blacklisted below -50, Flagged below -15, Unregistered, Registered from 15, Admin
   from 50); coming to a new one is a Rate event ("IT Department now rates Rook: Flagged"), and the desk can fax a notice.
+  A tier's optional `"promotion"` (200 ASCII characters at most) is what the faction says on the promotion moment (Ranks).
 - **Groups**: standing is kept for a player's group: the player faction they are in (`Source/Constructs/Factions.cs`,
   a Faction entity `"group:NAME"` the game keeps them `MemberOf`, once a second), or themselves when in none. A deed
   counts towards both the doer and their group; a group's is the one the fax reads.
@@ -978,7 +999,21 @@ builds everything. The first loop:
 A party is a player's group (their player faction) or the player alone; an Assembler builds a part for its owner when the
 owner or their group has learnt it. Joining a group (or loading a save from before technologies) teaches what the
 standing already earns. The Faction window (F2) lists what each faction teaches, and with a faction of yours which it has
-learnt. What ships:
+learnt. The inventory (Tab, or an Inventory Beacon's window) shows each part the player hasn't learnt greyed with a
+padlock; its tooltip names the faction, the technology, the standing it is taught at and the player's own, and with none
+in hand it can't be taken (a beacon's window that hides what the network doesn't hold still shows them, as goals). The
+server sends each player's standings and known technologies in `Msg.Factions` (`FactionTable.PlayerStanding`,
+`PlayerLearnt`, `LockOf`; UI: `UiSandboxPartLocks.cs`), so it works per player in co-op and for a player in no faction.
+Creative worlds and worlds without a story lock nothing.
+
+**What you have learnt, and the moment you learn it** (`Source/UI/UiTechnologies.cs`). It reads the same
+`FactionTable.PlayerLearnt`, so every peer knows its own. The Logbook (F1) has a Technologies page: each
+faction's technologies, learnt or locked with the tier that teaches them, then the player's tool upgrades. When a new bit
+appears (or a tool upgrade's level rises), a short celebration plays in the middle of the screen with the LevelUp sound:
+title, name in story-text size and colour, what it unlocks. The first four seconds in a game are taken as already known (a
+join, a load). Other code celebrates through `Game.Celebrate(player, title, name, line)` on the server (a client gets
+`CActKind.Celebrate`) or `Game.CelebrateHere` on a peer (`Source/Game/GameCelebrate.cs`). They queue one at a time and
+wait out the opening, a story ride, the workbench and the menus. What ships:
 
 | Faction | Tier | Technology | Parts |
 | --- | --- | --- | --- |
@@ -1003,12 +1038,27 @@ Karl keeps `Learnt` after wrecking the Ministry's own vans takes him to Enemy of
 Standing is also earned by **jobs** (below); each faction's first jobs say which technology its next tier brings, and
 when it teaches one it says so in its own voice too.
 
+## Ranks
+
+Rising through a faction is shown, not just counted (`Source/Game/GameStoryRanks.cs`, `Source/UI/UiRanks.cs`). The
+Faction window (F2) draws a bar per story faction from the standings every peer has (`FactionTable.PlayerStanding`), from
+where the player's tier begins to where the next one does ("5 / 25 to Contractor"), and what the next tier brings: the
+uniform it issues (when this world issues uniforms by standing, as `GameUniforms.cs` does in the story's opening), the
+technologies it teaches and the jobs it opens. A bar under the tier a party starts in is red, the top tier gold.
+
+When a player's standing rises into a higher tier, they get the promotion moment: "PROMOTED", the tier and faction, then
+what it brings ("Issued: Trusty's Boiler Suit and Flat Cap. Now teaches: Explosives Licence. New work: ..."), and the
+tier's `"promotion"` words in their chat in the faction's voice (on the moment itself when the tier brings nothing). A rise that is still below the starting tier (out of a grudge) is "RECONSIDERED". A player's
+first look, a change of group (joining or leaving a player faction) and a new story are taken quietly, so loading a save
+or joining a well-liked faction is no promotion. It goes through the shared celebration (`Game.Celebrate`, GameCelebrate.cs),
+which waits out the opening, rides and menus; each technology then gets its own moment from the technologies' side.
+
 ## Jobs
 
 Work for a faction (code: the engine's side `Source/Story/StoryFactionJobs.cs`, the game's `Source/Game/GameStoryJobs.cs`, the
-window `Source/UI/UiFactions.cs`; data `"jobs"` in `Story/Factions/*.json`). No money: a job pays standing, and standing is
-what a faction teaches its technologies for. The Faction window (F2) lists every faction's jobs under "Jobs for the world's
-factions": what each asks, what it pays, and why one can't be taken yet.
+window `Source/UI/UiFactions.cs` and the job board `Source/UI/UiJobBoard.cs`; data `"jobs"` in `Story/Factions/*.json`). No
+money: a job pays standing, and standing is what a faction teaches its technologies for. The job board on the colony's muster
+square and the Faction window (F2) list every faction's jobs: what each asks, what it pays, and why one can't be taken yet.
 
 - **Who holds one**: a party (the player's faction, or the player alone) holds one job of each faction at a time, taken and
   dropped in the window by any member. A job may want a tier (`"tier"`: offered from that tier up); one with none is offered
@@ -1040,6 +1090,14 @@ factions": what each asks, what it pays, and why one can't be taken yet.
 - **State**: a party holds a job as `OnJob` towards its Thing (`"job:FACTION:NAME"`), with `JobAgain` (the story minute it
   may be taken again) and `JobRefused` (the paperwork); all saved with the story. How far along a job is is worked out again
   every two seconds and isn't saved: a sealed crate is sealed again after a load.
+- **The job board** (`Source/UI/UiJobBoard.cs`, `Source/App/Program.JobBoard.cs`): the Ministry Work Board on the colony's
+  muster square (a concrete hood on two posts over a steel case of sheets in four colours; the part kit's lore parts) is a
+  lore item with `"opens": "jobs:Ministry of Slop"`. F on it opens "Work Allocation" with the cursor free, on the
+  Ministry's tab: a tab a faction (a `*` on one where your party holds a job), your standing and tier, a bar to the next
+  tier with what it teaches, and each job's asks, pay ("+4 standing: 4 of the 5 to Trusty", or "enough for Trusty"), why
+  it can't be taken yet or how far along yours is, with Take and Drop. F again, Esc, the X or walking 4.5 m off closes it.
+  The F2 window draws the same rows. Tiers, teaching and pay are read from the faction files every peer has, so the board
+  adds nothing to the wire; its words are made again only when the server's view changes.
 - **Network (protocol 203)**: `Msg.Jobs` carries a take or a drop from a client, and to each player their window when it
   changes (checked once a second against a key of their party, the standings, the jobs held and their progress, and the minute).
 

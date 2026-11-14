@@ -1,0 +1,161 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Die Extension",
+  "description": "Weld it to a Large Extruder's side, flush with its die face: 4 m more die that way, up to 32 x 32 m. Chain them out.",
+  "group": "Production",
+  "section": "Extrusion",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "mass": 30000.0,
+  "health": 15000,
+  "armour": 32,
+  "material": "steel",
+  "color": "#b5452b",
+  "attachSeconds": 8.0,
+  "dieExtension": 4.0,
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        0.004,
+        -10.0,
+        -2.0
+      ],
+      "max": [
+        4.0,
+        10.0,
+        2.0
+      ]
+    },
+    {
+      "min": [
+        0.4,
+        -8.8,
+        -2.03
+      ],
+      "max": [
+        3.6,
+        8.8,
+        -2.0
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.004,
+        9.36,
+        -2.036
+      ],
+      "max": [
+        4.0,
+        9.84,
+        -2.006
+      ],
+      "color": "#f07818",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.004,
+        -9.92,
+        -2.036
+      ],
+      "max": [
+        4.0,
+        -9.36,
+        -2.006
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.4,
+        -8.8,
+        2.0
+      ],
+      "max": [
+        3.6,
+        8.8,
+        2.03
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.004,
+        9.36,
+        2.006
+      ],
+      "max": [
+        4.0,
+        9.84,
+        2.036
+      ],
+      "color": "#f07818",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.004,
+        -9.92,
+        2.006
+      ],
+      "max": [
+        4.0,
+        -9.36,
+        2.036
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        3.6,
+        -9.997,
+        -1.6
+      ],
+      "max": [
+        4.03,
+        9.997,
+        1.6
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "in",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "out",
+      "at": [
+        4.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    }
+  ]
+}

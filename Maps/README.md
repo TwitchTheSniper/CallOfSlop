@@ -270,6 +270,9 @@ A tunnel from a west entrance to an east one through a chamber 16 m across, a sk
 | `rockSlope` | 38 | Slopes from this many degrees are rock (players can walk terrain up to 45°). |
 | `sandBelow` | none | Gentle ground at or below this height is sand: beaches and river beds. |
 | `variation` | 0.06 | Large, soft brightness patches (0–0.5) so big fields aren't one flat colour. |
+| `stone` | the `rock` colour | Made ground: the colour of stone laid as fill (a graded bench, a player's stone). Give it on a world whose rock isn't stone: Glacier's rock is blue ice, its stone dark cinder. |
+| `dusting` | 0 | Planetoids: how much of the ground's own colour lies over made ground in wind-blown streaks, 0 to 1 (snow over a yard's cinders). Worked into the dug tops' colours when they are made: no cost a frame. |
+| `ice`, `icePatches`, `iceScale` | `#8cb8db`, 0, 70 | Patches of a second colour on gentle ground (bare blue ice where the wind scours the snow off): the colour, the share of gentle ground it covers (0 to 0.8) and about how big a patch is in metres. Drawing only, worked out with the ground's other colours: no cost a frame. |
 | `snowAbove`, `snow` | none, `#e6ebf2` | Ground above this height is drawn snowy (a ragged line that wanders about 40 m; slopes steeper than about 50° stay bare rock). Colour only: the ground keeps its material. |
 
 Each sample stores its surface type. Painted features win. Otherwise the rules apply in the order rock, dirt, sand, grass. The drawn colours blend smoothly between them.
@@ -1339,6 +1342,7 @@ high above the ground. Looks and sound only, worked out on each PC: not part of 
 | `wind` | 16 | The wind at its height, m/s (0 to 60): how fast the snow goes past. |
 | `color` | [0.8, 0.85, 0.9] | The whiteout in full daylight; the day's light dims it at dusk and night. |
 | `ceiling` | 700 | Metres above the ground where it is gone (it thins from half of that), so a ship climbing out leaves it. |
+| `dusk` | 0 | How dark it is under the storm, 0 to 1: a polar dusk, the sun all but gone and the light left blue, so lamps carry the colour. Out in it, lamps on builds are lit from 60 m (not 16), reach 10 m (not 4.5) and turn sodium orange; indoors they are as ever. Glacier has 0.85. |
 
 ## Testing a map
 

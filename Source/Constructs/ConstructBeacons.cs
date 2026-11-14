@@ -184,8 +184,8 @@ public sealed class SlotStore : INetworkStore
 
     public bool PutPart(ConstructWorld world, Construct c, int part, ConstructPartDef d, bool pile)
     {
-        if (world.StoreOf(c, part) is not { } st)
-            return false;
+        if (d.RuntimeMade || world.StoreOf(c, part) is not { } st)
+            return false; // (a made part is a body, never a slot item: the user's answer 1; it goes back onto a rack, RackStore)
         var cd = c.DefOf(part);
         for (var k = 0; k < st.SlotCount; k++)
             if ((st.Def[k] == d.Id) == pile && ConstructStorage.Check(cd, st, k, d, out _) == SlotCheck.Ok)
@@ -202,6 +202,59 @@ public sealed class SlotStore : INetworkStore
             return 0; // (a machine's bin is its output: nothing is tipped into that)
         return world.Deposit(c, part, amount, material);
     }
+}
+
+/// <summary>
+/// A Piece Rack on a network (docs/sandbox/design/inventory-run-time-parts.md phase 3; a Lay-down Pad is a work point, left out): the pieces it holds by kind,
+/// made parts mostly (an Extruder's, a Press's, a cutter's). A piece taken goes as a body: a Smart Terminal sets it down in front of
+/// the player. Nothing is put into one through the network (its columns are packed by the conveyors and the lifters). A Crafting
+/// Terminal's hold (and a Building Station's, a Panel Designer's) is its own work, never the network's.
+/// </summary>
+public sealed class RackStore : INetworkStore
+{
+    public static readonly RackStore Instance = new();
+
+    public bool Serves(ConstructPartDef d) => d.IsPieceRack && !d.IsCraftTerminal && !d.IsBeacon && !d.IsTerminal && !IsPad(d);
+
+    /// <summary>A Lay-down Pad (and the Large one) is a work point for the arms and the lines, not storage: never on a network.</summary>
+    public static bool IsPad(ConstructPartDef d) => d.IsLayDownPad;
+
+    public int Parts(ConstructWorld world, Construct c, int part) => world.StoreOf(c, part)?.ItemCount ?? 0;
+
+    public void Tally(ConstructWorld world, Construct c, int part, BeaconView into)
+    {
+        if (world.StoreOf(c, part) is not { } st)
+            return;
+        for (var k = 0; k < st.KindN; k++)
+            into.Add(st.KindDef![k], st.KindCount![k]);
+    }
+
+    public int Holds(ConstructWorld world, Construct c, int part, ushort id)
+    {
+        if (world.StoreOf(c, part) is not { } st)
+            return 0;
+        var k = st.KindIndex(id);
+        return k < 0 ? 0 : st.KindCount![k];
+    }
+
+    public bool TakePart(ConstructWorld world, Construct c, int part, ConstructPartDef d)
+    {
+        if (world.StoreOf(c, part) is not { } st || st.KindIndex(d.Id) < 0)
+            return false;
+        ConstructRackPack.Ensure(c.DefOf(part), st);
+        return ConstructRackPack.LastOf(st, d.Id, out var slab, out var lane) && world.RackTakeAt(c, part, slab, lane) != null;
+    }
+
+    public int TakeBulk(ConstructWorld world, Construct c, int part, byte material, int amount) => 0;
+
+    /// <summary>
+    /// A made part back onto a rack (a refund, a part taken off in reach of a beacon: inventories phase 4): a rack already holding its
+    /// kind first, then any with room, by the conveyors' own packing. A catalogue part never goes onto a rack through the network.
+    /// </summary>
+    public bool PutPart(ConstructWorld world, Construct c, int part, ConstructPartDef d, bool pile) =>
+        d.RuntimeMade && world.StoreOf(c, part) is { } st && st.KindIndex(d.Id) >= 0 == pile && world.RackPut(c, part, d);
+
+    public int PutBulk(ConstructWorld world, Construct c, int part, byte material, int amount, bool same) => 0;
 }
 
 /// <summary>A Storage Volume on a network: its parts by kind and its bulk (ConstructStoreVolume.cs). One box holds one or the other.</summary>
@@ -237,7 +290,7 @@ public sealed class VolumeStore : INetworkStore
         world.StoreOf(c, part) is { } st && st.Material == material ? world.Withdraw(c, part, amount) : 0;
 
     public bool PutPart(ConstructWorld world, Construct c, int part, ConstructPartDef d, bool pile) =>
-        world.StoreOf(c, part) is { } st && st.KindIndex(d.Id) >= 0 == pile && world.PutPart(c, part, d) == null;
+        !d.RuntimeMade && world.StoreOf(c, part) is { } st && st.KindIndex(d.Id) >= 0 == pile && world.PutPart(c, part, d) == null;
 
     public int PutBulk(ConstructWorld world, Construct c, int part, byte material, int amount, bool same)
     {
@@ -272,9 +325,81 @@ public sealed class BeaconView
     internal int Epoch = -1;
     internal bool IsTerminal; // a Smart Terminal's list, not a beacon's: its own message (ConstructTerminal.cs)
 
+    // Made parts (run-time ids: docs/sandbox/design/inventory-run-time-parts.md phase 3): a short list beside the table, by this
+    // machine's id, sent by key (PartRef). Past MaxMade kinds the rest are left out of the list (MadeOver says how many).
+    public const int MaxMade = 64;
+    public readonly ushort[] MadeDef = new ushort[MaxMade];
+    public readonly ushort[] MadeCount = new ushort[MaxMade];
+    public int MadeN, MadeOver;
+    internal uint SentMade; // server: the made list's stamp as last sent whole (0: nothing sent)
+    internal int MadeCursor; // server: the next made entry of a list split over messages (0: none under way)
+    internal uint MadeSending; // server: the stamp of the list being split
+    private readonly ushort[] _overIds = new ushort[MaxMade];
+    private static bool _overLogged;
+
+    public BeaconView() => RuntimeParts.Track(this); // (its made ids keep their parts while it lists them)
+
     public bool On => State == BeaconState.On;
 
-    public void Add(ushort id, int n) => Counts[id] = (ushort)Math.Min(Counts[id] + n, ushort.MaxValue);
+    public void Add(ushort id, int n)
+    {
+        if (id < Counts.Length)
+        {
+            Counts[id] = (ushort)Math.Min(Counts[id] + n, ushort.MaxValue);
+            return;
+        }
+        if (!Extrusion.IsRuntimeId(id) || n <= 0)
+            return;
+        for (var k = 0; k < MadeN; k++)
+            if (MadeDef[k] == id)
+            {
+                MadeCount[k] = (ushort)Math.Min(MadeCount[k] + n, ushort.MaxValue);
+                return;
+            }
+        if (MadeN == MaxMade)
+        {
+            // Left out of the list: counted once a kind (the first MaxMade of them told apart; past that every store's adds),
+            // sent with the list and shown at the terminal; logged once a run.
+            for (var k = 0; k < MadeOver && k < MaxMade; k++)
+                if (_overIds[k] == id)
+                    return;
+            if (MadeOver < MaxMade)
+                _overIds[MadeOver] = id;
+            MadeOver++;
+            if (!_overLogged)
+            {
+                _overLogged = true;
+                Console.WriteLine($"[beacons] a network holds more than {MaxMade} kinds of made part: the rest are not listed (a Smart Terminal says how many)");
+            }
+            return;
+        }
+        MadeDef[MadeN] = id;
+        MadeCount[MadeN++] = (ushort)Math.Min(n, ushort.MaxValue);
+    }
+
+    /// <summary>How many of a part this view lists: the table for a catalogue part, the made list for a run-time one.</summary>
+    public int CountOf(ushort id)
+    {
+        if (id < Counts.Length)
+            return Counts[id];
+        for (var k = 0; k < MadeN; k++)
+            if (MadeDef[k] == id)
+                return MadeCount[k];
+        return 0;
+    }
+
+    /// <summary>The made list's stamp (ids, keys and counts, in order; never 0). Allocates nothing.</summary>
+    internal uint MadeStamp()
+    {
+        var h = 2166136261u ^ (uint)MadeN ^ (uint)MadeOver << 16; // (the kinds left out are sent too)
+        for (var k = 0; k < MadeN; k++)
+        {
+            h = (h ^ MadeDef[k]) * 16777619u;
+            h = (h ^ (uint)(ConstructParts.Get(MadeDef[k])?.Name.GetHashCode() ?? 0)) * 16777619u; // (an id freed and made again for another key reads as a change)
+            h = (h ^ MadeCount[k]) * 16777619u;
+        }
+        return h | 1;
+    }
 
     public void AddMaterial(byte id, int n)
     {
@@ -287,6 +412,7 @@ public sealed class BeaconView
     {
         Array.Clear(Counts);
         Array.Clear(Materials);
+        MadeN = MadeOver = 0;
         State = BeaconState.None;
         Stores = Parts = Bulk = 0;
         Range = Distance = 0;
@@ -300,6 +426,8 @@ public sealed class BeaconView
     {
         Array.Clear(SentCounts);
         Array.Clear(SentMaterials);
+        SentMade = 0;
+        MadeCursor = 0;
         SentState = BeaconState.None;
         SentStores = SentParts = SentBulk = 0;
         SentRange = SentDistance = 0;
@@ -346,7 +474,7 @@ public sealed partial class ConstructBeacons
     public const int DistanceStep = 5; // metres: the out-of-range line's steps (fewer messages as a player walks)
 
     /// <summary>The kinds of store. A new one goes first if it speaks for parts the shipped kind would also take.</summary>
-    public static readonly INetworkStore[] Kinds = [VolumeStore.Instance, SlotStore.Instance];
+    public static readonly INetworkStore[] Kinds = [VolumeStore.Instance, RackStore.Instance, SlotStore.Instance]; // (phase 3 of inventory-run-time-parts.md: Piece Racks before the slots, which would serve them as storage with no slots)
 
     private struct Node
     {
@@ -554,7 +682,8 @@ public sealed partial class ConstructBeacons
         return (byte)net;
     }
 
-    private static int KindOf(ConstructPartDef d)
+    /// <summary>The kind of network store that speaks for a part (-1: none). Public for checks.</summary>
+    public static int KindOf(ConstructPartDef d)
     {
         for (var k = 0; k < Kinds.Length; k++)
             if (Kinds[k].Serves(d))
@@ -879,6 +1008,7 @@ public sealed partial class ConstructBeacons
         v.Distance = bucket;
         Array.Clear(v.Counts);
         Array.Clear(v.Materials);
+        v.MadeN = v.MadeOver = 0;
         v.Stores = v.Parts = v.Bulk = 0;
         for (var net = 0; net < _nets; net++)
         {
@@ -1029,7 +1159,79 @@ public sealed partial class ConstructBeacons
                 mats++;
             }
         w.PatchU8(at, (byte)mats);
-        v.Unsent = !whole; // (more to say next tick)
+        var madeMore = WriteMade(w, v, reset);
+        v.Unsent = !whole || madeMore; // (more to say next tick)
+    }
+
+    /// <summary>The bytes a beacon or terminal message fills before its made list goes on in the next (the writers' buffers hold 16384; a made entry is under 300).</summary>
+    public const int MadeBudget = 12000;
+
+    /// <summary>
+    /// The made list (protocol 301): u8 0 when it is as last sent; else u8 1 (a whole list starts: the client empties its own) or 2 (the
+    /// same list goes on), u8 n and n made parts (PartRef, u16 count). A list past <see cref="MadeBudget"/> goes on in the next message.
+    /// True when some of it is still to go.
+    /// </summary>
+    private static bool WriteMade(PacketWriter w, BeaconView v, bool reset)
+    {
+        if (reset)
+            v.SentMade = 0; // (the client empties its copy on a reset: the list goes again whole)
+        var stamp = v.MadeStamp();
+        if (v.MadeCursor > 0 && stamp != v.MadeSending)
+            v.MadeCursor = 0; // (it changed half way: again from the start)
+        if (v.MadeCursor == 0 && stamp == v.SentMade)
+        {
+            w.U8(0);
+            return false;
+        }
+        w.U8((byte)(v.MadeCursor == 0 ? 1 : 2));
+        if (v.MadeCursor == 0)
+            w.U16((ushort)Math.Min(v.MadeOver, ushort.MaxValue)); // (a whole list: how many kinds past MaxMade it leaves out)
+        var at = w.Length;
+        w.U8(0);
+        var n = 0;
+        var k = v.MadeCursor;
+        for (; k < v.MadeN && (n == 0 || w.Length < MadeBudget); k++, n++)
+        {
+            PartRef.Write(w, v.MadeDef[k]);
+            w.U16(v.MadeCount[k]);
+        }
+        w.PatchU8(at, (byte)n);
+        if (k >= v.MadeN)
+        {
+            v.SentMade = stamp;
+            v.MadeCursor = 0;
+            return false;
+        }
+        v.MadeCursor = k;
+        v.MadeSending = stamp;
+        return true;
+    }
+
+    private static void ReadMade(ref PacketReader r, BeaconView? v)
+    {
+        var flags = r.U8();
+        if (flags == 0)
+            return;
+        if (flags > 2)
+            throw new MalformedPacketException($"a beacon's made list flagged {flags}");
+        var over = flags == 1 ? r.U16() : -1;
+        if (over >= 0 && v != null)
+            v.MadeOver = over;
+        int n = r.U8();
+        if (n > BeaconView.MaxMade)
+            throw new MalformedPacketException($"a beacon list of {n} made kinds");
+        if (flags == 1 && v != null)
+            v.MadeN = 0;
+        for (var k = 0; k < n; k++)
+        {
+            var id = PartRef.Read(ref r);
+            var count = r.U16();
+            if (v != null && Extrusion.IsRuntimeId(id) && v.MadeN < BeaconView.MaxMade) // (a key this machine can't make reads as a catalogue stand-in: left out)
+            {
+                v.MadeDef[v.MadeN] = id;
+                v.MadeCount[v.MadeN++] = count;
+            }
+        }
     }
 
     /// <summary>A client reads <see cref="Write"/>'s bytes (bad values refused, never trusted).</summary>
@@ -1056,7 +1258,7 @@ public sealed partial class ConstructBeacons
         {
             var id = r.U16();
             var count = r.U16();
-            if (ConstructParts.Get(id) == null)
+            if (id >= ConstructParts.MaxTypes || ConstructParts.Get(id) == null) // (catalogue ids only: a run-time part is never counted here yet)
                 throw new MalformedPacketException($"a beacon count of part {id}");
             if (v != null)
                 v.Counts[id] = count;
@@ -1071,6 +1273,9 @@ public sealed partial class ConstructBeacons
             if (v != null)
                 v.Materials[id] = (int)amount;
         }
+        if ((flags & 1) != 0 && v != null)
+            v.MadeN = v.MadeOver = 0;
+        ReadMade(ref r, v);
         if (v == null)
             return;
         v.State = (BeaconState)state;

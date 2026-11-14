@@ -42,7 +42,12 @@ public static class MachineScreens
         else if (d.IsAssembler)
             Assembler(p, d, st, card);
         else if (d.IsExtruder)
-            Extruder(c, part, d, st, card);
+        {
+            if (d.IsLaserCutter)
+                Cutter(c, part, st, card);
+            else
+                Extruder(c, part, d, st, card);
+        }
         else if (d.IsRecycler)
             Recycler(world, c, part, d, st, card);
         for (var l = 0; l < PanelCard.MaxLines; l++)
@@ -121,6 +126,7 @@ public static class MachineScreens
                 case AsmState.NoRecipe: Say(card, PanelState.Wants, "No recipe set"); break; // (why it sits idle, plainly; line 1 says how to set one)
                 case AsmState.NoOrders: Say(card, PanelState.Idle, "Waiting for orders"); break;
                 case AsmState.TierLow: card.State = PanelState.Refused; card.Add(0, "Needs tier ").Add(0, r!.MinTier); break;
+                case AsmState.Pressed: card.State = PanelState.Refused; card.Add(0, "Pressed now"); card.Add(2, "Use a Press: ").Add(2, r!.PressedDie()); line = 3; break;
                 case AsmState.Untaught: card.State = PanelState.Refused; card.Add(0, "Not taught"); card.Add(2, "A faction teaches it (F2)"); line = 3; break;
                 case AsmState.Short:
                     Say(card, PanelState.Wants, "Needs input");
@@ -168,6 +174,37 @@ public static class MachineScreens
         card.Bar = st.Busy ? st.Progress / 100f : 0;
     }
 
+    /// <summary>A Laser Cutter's screen (ConstructLaserCutter.cs): its state, the offcut bin and its tenths, the blank on the bed, then the queue.</summary>
+    private static void Cutter(Construct c, int part, CStore st, PanelCard card)
+    {
+        ref var p = ref c.Parts[part];
+        if (st.Held)
+            Say(card, PanelState.Idle, "Held off");
+        else
+            switch ((ExtrudeStall)st.Refused)
+            {
+                case ExtrudeStall.NoPower: Say(card, PanelState.Fault, "No power"); break;
+                case ExtrudeStall.NoMaterial: Say(card, PanelState.Wants, "Needs its blank"); break;
+                case ExtrudeStall.BadShape: Say(card, PanelState.Refused, "Not a cut part"); break;
+                case ExtrudeStall.OffcutFull: Say(card, PanelState.Wants, "Offcut bin full"); break;
+                case ExtrudeStall.Blocked: Say(card, PanelState.Wants, "Blocked"); break;
+                case ExtrudeStall.ConveyorSmall: Say(card, PanelState.Refused, "Conveyor too narrow"); break;
+                case ExtrudeStall.ConveyorFull: Say(card, PanelState.Wants, "Conveyor full"); break;
+                case ExtrudeStall.ConveyorCut: Say(card, PanelState.Fault, "Conveyor cut"); break;
+                case ExtrudeStall.NoOrders: Say(card, PanelState.Idle, "Waiting for orders"); break;
+                default: Say(card, st.Busy ? PanelState.Working : PanelState.Idle, st.Busy ? "Cutting" : "Waiting"); break;
+            }
+        Amount(card, 1, "Offcut ", st.Amount, RecyclingTable.Current.NameOf(st.Material));
+        if (st.InAmount > 0)
+            card.Add(1, " +0.").Add(1, st.InAmount);
+        card.Add(2, st.OnBed ? "Blank on the bed" : "Bed empty");
+        if (p.Orders != null)
+            WorkOrders.FillQueue(p, card, 3);
+        else
+            card.Add(3, "No orders: a designer, a terminal or a bill");
+        card.Bar = st.Busy ? st.Progress / 100f : -1;
+    }
+
     private static void Extruder(Construct c, int part, ConstructPartDef d, CStore st, PanelCard card)
     {
         ref var p = ref c.Parts[part];
@@ -191,6 +228,7 @@ public static class MachineScreens
                 case ExtrudeStall.ConveyorCut: Say(card, PanelState.Fault, "Conveyor cut"); break;
                 case ExtrudeStall.NoOrders: Say(card, PanelState.Idle, "Waiting for orders"); break;
                 case ExtrudeStall.OrderMaterial: Say(card, PanelState.Wants, "Order needs other stock"); break;
+                case ExtrudeStall.OrderTooLong: Say(card, PanelState.Refused, "Order too long"); break;
                 default:
                     if (st.Busy)
                         Say(card, PanelState.Working, wheel ? "Forming" : "Extruding");
@@ -211,7 +249,11 @@ public static class MachineScreens
             if (ConstructExtruder.ProductOf(c, part) is var piece and >= 0 && c.Parts[piece].D is { IsExtrusion: true } od)
             {
                 var l = from++;
-                if (wheel)
+                if (d.IsFanFormer)
+                    card.Add(l, "Prop ").AddFixed(l, od.ExKey.H / 100f, 2).Add(l, " m");
+                else if (d.IsAirframeFormer)
+                    card.Add(l, "Span ").AddFixed(l, od.ExKey.L / 100f, 2).Add(l, " m");
+                else if (wheel)
                     card.Add(l, "Wheel ").AddFixed(l, od.ExKey.W / 100f, 2).Add(l, " x ").AddFixed(l, od.ExKey.H / 100f, 2).Add(l, " m");
                 else
                     card.Add(l, "Piece ").AddFixed(l, od.ExKey.L / 100f, 2).Add(l, " m");
@@ -223,7 +265,7 @@ public static class MachineScreens
         if (d.IsPanelFormer && d.CfgSlot[(int)CfgKey.Recipe] is >= 0 and var ps && d.Config[ps].Options.Length > 0)
             card.Add(1, "Preset ").Add(1, d.Config[ps].Options[Math.Clamp((int)p.Cfg[ps], 0, d.Config[ps].Options.Length - 1)]);
         else if (d.IsFanFormer)
-            card.Add(1, "Fan");
+            card.Add(1, (int)ConstructConfig.Get(p, d, CfgKey.FanKind, 0) is var fk && fk >= 0 && fk < ExtrusionTable.Current.FanKinds.Length ? ExtrusionTable.Current.FanKinds[fk].Label : "Fan"); // (what it makes: its Recipe button's pick)
         else if (d.IsAirframeFormer)
             card.Add(1, Extrusion.AirframeOf((ushort)ConstructConfig.Get(p, d, CfgKey.WingKind, 0))?.Label ?? "Wing");
         else if (wheel)
@@ -241,7 +283,7 @@ public static class MachineScreens
             }
             else
             {
-                var most = MathF.Min(d.ExtMaxLength, Extrusion.MaxLengthCm / 100f);
+                var most = ConstructExtruder.MaxLength(c, part);
                 card.AddFixed(3, on.ExKey.L / 100f, 2).Add(3, " of ").AddFixed(3, most, 0).Add(3, " m");
                 card.Bar = Math.Clamp(on.ExKey.L / 100f / MathF.Max(0.01f, most), 0, 1);
             }

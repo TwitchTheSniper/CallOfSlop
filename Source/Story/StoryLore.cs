@@ -24,6 +24,8 @@ public sealed class LoreDef
     public string[] NoticedSay = []; // {me} the person, {them} the player
     public StoryEffect[] NoticedThen = []; // slots: ?me the person, ?them the player
     public StoryQuery? NoticedIf; // over ?me (the person) and ?them (the player)
+    public string Opens = ""; // "jobs": the use key opens the job board (UI/UiJobBoard.cs) with the text above it, not the words alone
+    public string OpensOn = ""; // "jobs:FACTION": the board opens on that faction's tab (the one that posts it)
 }
 
 /// <summary>The lore items from Story/Lore/*.json (format <see cref="Format"/>). A bad file is refused whole with a reason.</summary>
@@ -42,7 +44,7 @@ public sealed class LoreRules
     public LoreDef? Find(string id) => Array.Find(Items, t => t.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
 
     private static readonly string[] FileKeys = ["format", "about", "items"];
-    private static readonly string[] ItemKeys = ["id", "part", "title", "text", "in", "at", "yaw", "then", "learn", "noticed"];
+    private static readonly string[] ItemKeys = ["id", "part", "title", "text", "in", "at", "yaw", "then", "learn", "noticed", "opens"];
     private static readonly string[] NoticedKeys = ["by", "reach", "if", "say", "then"];
 
     /// <summary>Story/Lore/*.json under <paramref name="folder"/>. Errors go to the rules' list.</summary>
@@ -120,6 +122,16 @@ public sealed class LoreRules
             t.At = at.EnumerateArray().Select(v => (float)v.GetDouble()).ToArray();
             if (t.In.Length == 0)
                 throw new StoryException($"{where}: \"at\" wants \"in\", the building it stands in");
+        }
+        var opens = StoryRules.Str(e, "opens", where);
+        if (opens.Length > 0)
+        {
+            var colon = opens.IndexOf(':');
+            (t.Opens, t.OpensOn) = colon < 0 ? (opens, "") : (opens[..colon].Trim(), opens[(colon + 1)..].Trim());
+            if (t.Opens != "jobs")
+                throw new StoryException($"{where}: \"opens\" is \"jobs\" or \"jobs:FACTION\" (the job board, on that faction's tab) or left out");
+            if (t.OpensOn.Length > 0 && rules.Factions.Find(t.OpensOn) == null)
+                throw new StoryException($"{where}: \"opens\": there is no faction \"{t.OpensOn}\" (Story/Factions)");
         }
         if (e.TryGetProperty("yaw", out var yaw))
             t.Yaw = yaw.ValueKind == JsonValueKind.Number && yaw.GetDouble() is var y and >= -360 and <= 360 ? (float)y : throw new StoryException($"{where}: \"yaw\" is degrees, -360 to 360");

@@ -76,7 +76,7 @@ public static partial class ProductionLines
         return (ExtrudeStall)st.Refused switch
         {
             ExtrudeStall.NoMaterial or ExtrudeStall.OrderMaterial or ExtrudeStall.Mixed => LineState.Starved,
-            ExtrudeStall.BadMaterial or ExtrudeStall.BadShape or ExtrudeStall.ConveyorSmall => LineState.Fault,
+            ExtrudeStall.BadMaterial or ExtrudeStall.BadShape or ExtrudeStall.ConveyorSmall or ExtrudeStall.OrderTooLong => LineState.Fault,
             ExtrudeStall.NoPower => LineState.NoPower,
             ExtrudeStall.None or ExtrudeStall.NoOrders => LineState.Idle,
             _ => LineState.Blocked, // (at its cap, blocked, too heavy to push, a chute or a conveyor waiting)
@@ -369,6 +369,8 @@ public static partial class ProductionLines
             // Why it waits in its screen's words ("Bays need pieces"), else what it does.
             if (world.StoreOf(c, m) is { } pst)
                 card.Add(line, s == LineState.Running ? md.IsLathe ? "cutting" : "stamping" : ConstructPress.StallText((PressStall)pst.Refused));
+            if (WorkOrders.HeadOf(mp, out var head))
+                card.Add(line, ", order ").Add(line, head.Made).Add(line, '/').Add(line, head.Count); // (its head order: Press phase 4)
             return;
         }
         if (md.IsRecycler || md.IsGatherer)
@@ -490,6 +492,8 @@ public static partial class ProductionLines
         ExtrudeStall.ConveyorCut => "conveyor cut",
         ExtrudeStall.NoOrders => "waiting for orders",
         ExtrudeStall.OrderMaterial => "order needs other stock",
+        ExtrudeStall.OrderTooLong => "order longer than it makes",
+        ExtrudeStall.OffcutFull => "offcut bin full",
         _ => "waiting",
     };
 
@@ -594,11 +598,17 @@ public static partial class ProductionLines
             if (m != machine && (!all || c.Parts[m].Def != def))
                 continue;
             ref var mp = ref c.Parts[m];
-            ConstructConfig.Put(ref mp, mp.D, CfgKey.Recipe, value);
+            ConstructConfig.Put(ref mp, mp.D, RecipeKey(mp.D), value);
         }
         c.Wake();
         return null;
     }
+
+    /// <summary>
+    /// The setting the recipe picker sets on machine kind <paramref name="md"/>: a Fan Former's Makes, an Airframe Former's Cuts, else its
+    /// recipe setting (an Assembler's or refiner's recipe, a Panel Former's preset, a press's Pattern, a Die Lathe's Cuts).
+    /// </summary>
+    public static CfgKey RecipeKey(ConstructPartDef md) => md.IsFanFormer ? CfgKey.FanKind : md.IsAirframeFormer ? CfgKey.WingKind : CfgKey.Recipe;
 
     /// <summary>
     /// Why machine kind <paramref name="md"/> can't take recipe value <paramref name="value"/> from the recipe picker (its recipe setting's value: 0 Auto
@@ -606,13 +616,16 @@ public static partial class ProductionLines
     /// </summary>
     public static string? RecipeRefusal(ConstructPartDef md, int value)
     {
-        if (!ConstructConfig.Has(md, CfgKey.Recipe) || md.CfgSlot[(int)CfgKey.Recipe] < 0)
+        var key = RecipeKey(md);
+        if (!ConstructConfig.Has(md, key) || md.CfgSlot[(int)key] < 0)
             return $"the {md.Name} has no recipe to pick";
-        var options = md.Config[md.CfgSlot[(int)CfgKey.Recipe]].Options.Length;
+        var options = md.Config[md.CfgSlot[(int)key]].Options.Length;
         if (value < 0 || value >= options || md.IsRefiner && value > md.RefineChoices.Length)
             return $"the {md.Name} has no such recipe";
         if (md.IsAssembler && value >= 1 && AssemblingTable.Current.ByMachine[md.AsmMachine] is var asm && value <= asm.Length && asm[value - 1].MinTier > md.Tier)
             return $"{asm[value - 1].Name} needs a tier {asm[value - 1].MinTier} assembler";
+        if (md.IsLathe && value >= 1 && PressTable.Current.Lathe is var lathe && value <= lathe.Length && !ConstructPress.LatheCuts(md, lathe[value - 1]))
+            return $"a {md.Name} cuts dies of its own size, not a {lathe[value - 1].Output.Name}";
         return null;
     }
 

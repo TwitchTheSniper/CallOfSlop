@@ -27,8 +27,10 @@ public sealed partial class ConstructEdits
     /// </summary>
     public bool TakeForAid(ConstructWorld world, byte player, ConstructPartDef def, Vector3 eye, ushort notBody = 0)
     {
-        if (InfiniteParts)
+        if (InfiniteParts && !def.RuntimeMade)
             return true;
+        if (def.RuntimeMade)
+            return TakeMade(world, player, def, eye, notBody); // (never endless: the count, a rack on the network, a loose piece; ConstructEditsBeacon.cs)
         if (def.PhysicsOnly)
         {
             if (ConstructAid.LoosePiece(world, player, def, eye, notBody) is not { } piece)
@@ -50,6 +52,11 @@ public sealed partial class ConstructEdits
     /// <summary>A part an aid took off comes back, as one taken off by hand does: the network, the inventory, or to the player.</summary>
     internal void ReturnFromAid(ConstructWorld world, byte player, ConstructPartDef def, Vector3 eye, Vector3 where)
     {
+        if (def.RuntimeMade)
+        {
+            ReturnMade(world, player, def, eye, where); // (a rack on the network, the count, else a body)
+            return;
+        }
         if (InfiniteParts)
             return;
         if (def.PhysicsOnly)

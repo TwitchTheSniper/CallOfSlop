@@ -553,11 +553,16 @@ public static partial class SelfTest
         };
         Action<int> wakeArm = _ => arm.Wake();
         hold(0);
+        AllocProfile.Reset();
+        AllocProfile.On = true; // (where, if it allocates: the world step's sections, for the failure line)
         var before = GC.GetAllocatedBytesForCurrentThread();
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         StepJoints(w, q, 120, hold);
         var ms = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds / 120;
         var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        AllocProfile.Stop();
+        AllocProfile.On = false;
+        var where = bytes > 0 ? AllocProfile.Top(6, 120) : "";
         // The arm alone: its own tick cost.
         tower.Asleep = true;
         var alone = System.Diagnostics.Stopwatch.StartNew();
@@ -574,7 +579,7 @@ public static partial class SelfTest
         if (drift > 0.001f)
             bad.Add("a ten-joint arm below its ratings didn't hold its tip still");
         if (bytes > 0)
-            bad.Add($"{bytes} bytes allocated in 120 ticks of stacked actuators (should be none)");
+            bad.Add($"{bytes} bytes allocated in 120 ticks of stacked actuators (should be none; by section: {where})");
         if (msArm > 1.0)
             bad.Add($"{msArm:0.00} ms a tick for a ten-joint arm (budget 1 ms of the 8 ms tick)");
         foreach (var x in bad)

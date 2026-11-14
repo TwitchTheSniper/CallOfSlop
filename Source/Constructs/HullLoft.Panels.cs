@@ -31,20 +31,83 @@ public static partial class HullLoft
         new("roofbow", "Roof bow", 200, 180, 22, 6, "a roof: flat in the middle, rolled down at the sides, arched along by its rake"),
         new("cowl", "Cowl", 60, 150, 30, 12, "a round cowl between a hood and a screen, rising by its rake"),
         new("bend", "Bent panel", 200, 100, 0, 0, "a flat sheet folded along a line across it: its angle, where along the sheet, and how tight"),
+        new("loft", "Lofted panel", 200, 120, 0, 0, "a sheet ruled between two edge profiles: eight heights across its back edge and eight across its nose, the nose its own width"),
     ];
 
     /// <summary>A panel's key, read: its preset, sizes in cm, thickness in mm and material.</summary>
-    public readonly record struct PanelShape(int Kind, int L, int W, int Crown, int Rake, int Mm, string Material, int Angle = 0, int At = 0, int Radius = 0);
+    public readonly record struct PanelShape(int Kind, int L, int W, int Crown, int Rake, int Mm, string Material, int Angle = 0, int At = 0, int Radius = 0,
+        int NoseW = 0, ulong Back = 0, ulong Nose = 0);
 
     /// <summary>The bent panel's preset (its key has three more words: <c>a</c> the fold's angle in degrees, up positive; <c>p</c> where its middle lies along the sheet, cm; <c>b</c> its inside radius, cm).</summary>
     public const int PanelBend = 7, PanelMaxAngle = 90, PanelMinRadiusCm = 2, PanelMaxRadiusCm = 100;
+
+    /// <summary>
+    /// The lofted panel's preset (phase 3): a sheet ruled between two edge profiles. Its key: <c>Formed Panel (loft LxWxN tT bH,H,.. fH,H,.. MATERIAL)</c>,
+    /// <c>N</c> the nose's width (cm), <c>b</c> the back edge's eight heights across it and <c>f</c> the nose's (cm, -99 to 99, from the left
+    /// side to the right). The heights ride in <see cref="PanelShape.Back"/> and <see cref="PanelShape.Nose"/>, a signed byte each (<see cref="ProfileAt"/>),
+    /// so the shape stays a plain value. Crown and rake are 0: the profiles are the shape. At most 102 characters and the material's name.
+    /// </summary>
+    public const int PanelLoft = 8, PanelProfilePoints = 8, PanelMaxProfileCm = 99;
+
+    /// <summary>A loft profile's height <paramref name="k"/> (0 the left side, 7 the right), cm.</summary>
+    public static int ProfileAt(ulong profile, int k) => (sbyte)(byte)(profile >> (8 * k));
+
+    /// <summary>A loft profile with height <paramref name="k"/> set to <paramref name="cm"/> (clamped to the range).</summary>
+    public static ulong ProfileSet(ulong profile, int k, int cm) =>
+        profile & ~(0xFFUL << (8 * k)) | (ulong)(byte)(sbyte)Math.Clamp(cm, -PanelMaxProfileCm, PanelMaxProfileCm) << (8 * k);
+
+    /// <summary>A profile from its heights, cm (the left side first).</summary>
+    public static ulong Profile(params ReadOnlySpan<int> cm)
+    {
+        var p = 0UL;
+        for (var k = 0; k < PanelProfilePoints && k < cm.Length; k++)
+            p = ProfileSet(p, k, cm[k]);
+        return p;
+    }
+
+    public static string ProfileText(ulong p)
+    {
+        var sb = new StringBuilder(32);
+        for (var k = 0; k < PanelProfilePoints; k++)
+            sb.Append(k == 0 ? "" : ",").Append(ProfileAt(p, k).ToString(CultureInfo.InvariantCulture));
+        return sb.ToString();
+    }
+
+    public static bool ProfileRead(string s, out ulong p)
+    {
+        p = 0;
+        var w = s.Split(',');
+        if (w.Length != PanelProfilePoints)
+            return false;
+        for (var k = 0; k < PanelProfilePoints; k++)
+        {
+            if (!int.TryParse(w[k], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var v) || Math.Abs(v) > PanelMaxProfileCm)
+                return false;
+            p = ProfileSet(p, k, v);
+        }
+        return true;
+    }
+
+    /// <summary>A profile's height x across (-1 the left side, 1 the right), metres: a Catmull-Rom curve through its eight heights, evenly spaced.</summary>
+    public static float ProfileHeight(ulong p, float x)
+    {
+        var t = Math.Clamp((x + 1) * 0.5f, 0, 1) * (PanelProfilePoints - 1);
+        var i = Math.Min((int)t, PanelProfilePoints - 2);
+        var f = t - i;
+        float H(int k) => k < 0 ? 2 * ProfileAt(p, 0) - ProfileAt(p, 1) : k >= PanelProfilePoints ? 2 * ProfileAt(p, PanelProfilePoints - 1) - ProfileAt(p, PanelProfilePoints - 2) : ProfileAt(p, k);
+        float p0 = H(i - 1), p1 = H(i), p2 = H(i + 1), p3 = H(i + 2);
+        var v = 0.5f * (2 * p1 + (-p0 + p2) * f + (2 * p0 - 5 * p1 + 4 * p2 - p3) * f * f + (-p0 + 3 * p1 - 3 * p2 + p3) * f * f * f);
+        return v / 100f;
+    }
 
     public static bool IsPanelName(string name) => name.StartsWith(PanelPrefix, StringComparison.Ordinal);
 
     /// <summary>A named part a Panel Former makes: a formed panel or one of the vehicle kit's lofted parts.</summary>
     public static bool IsFormedName(string name) => IsPanelName(name) || name.StartsWith(Prefix, StringComparison.Ordinal);
 
-    public static string PanelKey(in PanelShape s) => s.Kind == PanelBend
+    public static string PanelKey(in PanelShape s) => s.Kind == PanelLoft
+        ? string.Create(CultureInfo.InvariantCulture, $"{PanelPrefix}loft {s.L}x{s.W}x{s.NoseW} t{s.Mm} b{ProfileText(s.Back)} f{ProfileText(s.Nose)} {s.Material})")
+        : s.Kind == PanelBend
         ? string.Create(CultureInfo.InvariantCulture, $"{PanelPrefix}{PanelPresets[s.Kind].Word} {s.L}x{s.W} c{s.Crown} r{s.Rake} t{s.Mm} a{s.Angle} p{s.At} b{s.Radius} {s.Material})")
         : string.Create(CultureInfo.InvariantCulture, $"{PanelPrefix}{PanelPresets[s.Kind].Word} {s.L}x{s.W} c{s.Crown} r{s.Rake} t{s.Mm} {s.Material})");
 
@@ -53,7 +116,9 @@ public static partial class HullLoft
     {
         var p = PanelPresets[Math.Clamp(kind, 0, PanelPresets.Length - 1)];
         kind = Math.Clamp(kind, 0, PanelPresets.Length - 1);
-        return kind == PanelBend ? new PanelShape(kind, p.L, p.W, p.Crown, p.Rake, 20, material, 45, p.L / 2, 10) : new PanelShape(kind, p.L, p.W, p.Crown, p.Rake, 20, material);
+        return kind == PanelBend ? new PanelShape(kind, p.L, p.W, p.Crown, p.Rake, 20, material, 45, p.L / 2, 10)
+            : kind == PanelLoft ? new PanelShape(kind, p.L, p.W, 0, 0, 20, material, NoseW: 100, Back: Profile(0, 8, 13, 15, 15, 13, 8, 0), Nose: Profile(-6, 0, 4, 6, 6, 4, 0, -6))
+            : new PanelShape(kind, p.L, p.W, p.Crown, p.Rake, 20, material);
     }
 
     /// <summary>Why a panel can't be made, or null. A key past a range is refused, never clamped, so every peer makes the same part or none.</summary>
@@ -71,6 +136,18 @@ public static partial class HullLoft
             return $"a panel is {PanelMinMm} to {PanelMaxMm} mm thick";
         if (s.Kind != PanelBend && (s.Angle != 0 || s.At != 0 || s.Radius != 0))
             return "only a bent panel has a fold";
+        if (s.Kind != PanelLoft && (s.NoseW != 0 || s.Back != 0 || s.Nose != 0))
+            return "only a lofted panel has edge profiles";
+        if (s.Kind == PanelLoft)
+        {
+            if (s.Crown != 0 || s.Rake != 0)
+                return "a lofted panel has no crown or rake: its profiles are its shape";
+            if (s.NoseW < PanelMinCm || s.NoseW > PanelMaxCm || s.NoseW % PanelStepCm != 0)
+                return $"a lofted panel's nose is {PanelMinCm} to {PanelMaxCm} cm wide, in {PanelStepCm} cm steps";
+            for (var k = 0; k < PanelProfilePoints; k++)
+                if (Math.Abs(ProfileAt(s.Back, k)) > PanelMaxProfileCm || Math.Abs(ProfileAt(s.Nose, k)) > PanelMaxProfileCm)
+                    return $"a profile's heights are within {PanelMaxProfileCm} cm";
+        }
         if (s.Kind == PanelBend)
         {
             if (s.Rake != 0)
@@ -86,6 +163,8 @@ public static partial class HullLoft
         }
         if (RecyclingTable.Current.IdOf(s.Material) is var m && (m == 0 || ExtrusionTable.Current.Find(m) == null))
             return $"a panel can't be formed of {s.Material}: takes {ExtrusionTable.Current.Takes()}";
+        if (s.Kind == PanelLoft && PanelKey(s).Length > ConstructParts.MaxRuntimeName)
+            return "that key is too long for a part's name";
         return null;
     }
 
@@ -100,6 +179,16 @@ public static partial class HullLoft
         var kind = Array.FindIndex(PanelPresets, p => p.Word == w[0]);
         var size = w[1].Split('x');
         static bool Int(string s, out int v) => int.TryParse(s, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out v);
+        if (kind == PanelLoft)
+        {
+            if (size.Length != 3 || !Int(size[0], out var ll) || !Int(size[1], out var lw) || !Int(size[2], out var ln)
+                || w[2].Length < 2 || w[2][0] != 't' || !Int(w[2][1..], out var lmm)
+                || w[3].Length < 2 || w[3][0] != 'b' || !ProfileRead(w[3][1..], out var back)
+                || w[4].Length < 2 || w[4][0] != 'f' || !ProfileRead(w[4][1..], out var nose))
+                return null;
+            var ls = new PanelShape(kind, ll, lw, 0, 0, lmm, string.Join(' ', w[5..]), NoseW: ln, Back: back, Nose: nose);
+            return PanelRefusal(ls) == null && PanelKey(ls) == name ? ls : null;
+        }
         if (kind < 0 || size.Length != 2 || !Int(size[0], out var l) || !Int(size[1], out var wd)
             || w[2].Length < 2 || w[2][0] != 'c' || !Int(w[2][1..], out var crown)
             || w[3].Length < 2 || w[3][0] != 'r' || !Int(w[3][1..], out var rake)
@@ -119,7 +208,7 @@ public static partial class HullLoft
 
     /// <summary>The material a formed part is made of: a panel's own, steel for the kit's lofts (0: this build has no such material).</summary>
     public static byte FormedMaterial(string name) =>
-        RecyclingTable.Current.IdOf(PanelOf(name) is { } s ? s.Material : "steel");
+        IsCutName(name) ? CutMaterial(name) : RecyclingTable.Current.IdOf(PanelOf(name) is { } s ? s.Material : "steel");
 
     /// <summary>What a formed part costs in units of its material: its mass at the material's weight, so it weighs what went in.</summary>
     public static int FormedUnits(ConstructPartDef d, byte material) =>
@@ -139,17 +228,28 @@ public static partial class HullLoft
             4 => c * bow + r * 0.25f * (x + 1) * (x + 1), // door: x = 1 is its top edge
             5 => c * (1 - x * x * x * x) + r * 4 * s * (1 - s), // roofbow
             PanelBend => c * bow, // (the fold is in PanelPoint: it moves the sheet along as well as up)
+            PanelLoft => ProfileHeight(p.Back, x) * (1 - s) + ProfileHeight(p.Nose, x) * s, // ruled: a straight line from each back point to its nose point
             _ => c * MathF.Sqrt(MathF.Max(0, 1 - x * x * 0.96f)) + r * s, // cowl
         };
     }
 
-    private static float PanelHalf(in PanelShape p, float s) => p.W / 200f * (p.Kind == 2 ? 1 - 0.18f * s * s : 1);
+    private static float PanelHalf(in PanelShape p, float s) => p.Kind == PanelLoft ? (p.W * (1 - s) + p.NoseW * s) / 200f : p.W / 200f * (p.Kind == 2 ? 1 - 0.18f * s * s : 1);
 
     /// <summary>The facets a key takes: (along, across).</summary>
     public static (int Along, int Across) PanelGrid(in PanelShape p)
     {
         if (p.Kind == PanelBend)
             return (BendRows(p, null), p.Crown > 0 ? Math.Clamp(p.W / 20, 4, PanelMaxAcross) : 1);
+        if (p.Kind == PanelLoft)
+        {
+            // Across: a facet between each two of the eight heights (both profiles straight: one). Along: the rulings are straight, so one
+            // facet when the two edges are alike or both straight, else rows enough for the twist between them (at most 6: 42 facets).
+            var flat = true;
+            for (var k = 0; k < PanelProfilePoints; k++)
+                flat &= ProfileAt(p.Back, k) == ProfileAt(p.Back, 0) && ProfileAt(p.Nose, k) == ProfileAt(p.Nose, 0);
+            var alike = p.Back == p.Nose && p.NoseW == p.W;
+            return (alike || flat ? 1 : Math.Clamp(p.L / 30, 2, 6), flat ? 1 : PanelProfilePoints - 1);
+        }
         var bent = p.Rake != 0 && p.Kind is not (4 or 6);
         var along = bent ? Math.Clamp(p.L / 20, 5, PanelMaxAlong) : p.Kind == 2 ? 4 : 1;
         var across = p.Crown > 0 || p.Kind == 4 && p.Rake != 0 ? Math.Clamp(p.W / 20, 4, PanelMaxAcross) : 1;
@@ -253,6 +353,7 @@ public static partial class HullLoft
     {
         public required ConstructPartDef Def;
         public PanelShape Shape;
+        public CutPlan? Cut; // (a cut part: HullLoft.Cuts.cs)
         public int Next, Total;
         public readonly List<CPartBox> Facets = new(PanelMaxAlong * PanelMaxAcross);
         public readonly List<ushort> Shapes = new(PanelMaxAlong * PanelMaxAcross);
@@ -282,7 +383,7 @@ public static partial class HullLoft
             var (nu, nv) = PanelGrid(sh);
             var defer = _panelPumped && !PanelSync;
             var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-            var def = ConstructParts.Parse(PanelJson(name, sh, 0, defer ? 0 : nu * nv, defer), name);
+            var def = PanelFirst(name, sh, defer);
             if (Adopt(def, name) is not { } made)
                 return (false, null);
             if (defer)
@@ -300,6 +401,13 @@ public static partial class HullLoft
         }
     }
 
+    /// <summary>A formed panel, not yet adopted: its first part (boxes, sockets, mass, slabs drawn) when <paramref name="defer"/>, else whole.</summary>
+    private static ConstructPartDef PanelFirst(string name, in PanelShape sh, bool defer)
+    {
+        var (nu, nv) = PanelGrid(sh);
+        return ConstructParts.Parse(PanelJson(name, sh, 0, defer ? 0 : nu * nv, defer), name);
+    }
+
     /// <summary>
     /// Once a tick or a frame (Game.Update): slices of the waiting panels' facets, oldest first, until <paramref name="budgetMs"/> is spent
     /// (every key that came in one packet shares it); a finished panel's facets are swapped in for its slabs and the bodies that draw it are
@@ -307,13 +415,27 @@ public static partial class HullLoft
     /// </summary>
     public static void PumpPanels(double budgetMs = 2.0)
     {
+        if (_standInsMade == 0)
+        {
+            PumpPanelsNow(budgetMs);
+            return;
+        }
+        // A batch that had stand-ins is watched until it is whole: one log line (HullLoft.FirstParts.cs).
+        var asked = _panelSpent * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        PumpPanelsNow(budgetMs);
+        NoteStandInPump(asked, System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
+    }
+
+    private static void PumpPanelsNow(double budgetMs)
+    {
         _panelPumped = true;
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var swapped = false;
         if (budgetMs >= 0)
             lock (PanelJobs)
             {
-                if (PanelJobs.Count == 0)
+                if (PanelJobs.Count == 0 && StandInQueue.Count == 0) // (the stand-ins' count read without their lock: at worst a pump late)
                 {
                     _panelSpent = 0;
                     return;
@@ -324,6 +446,13 @@ public static partial class HullLoft
                 if (budgetMs <= 0)
                     return;
             }
+        // Keys off the wire that got a stand-in: their real parts first, oldest first (HullLoft.FirstParts.cs).
+        if (StandInQueue.Count > 0)
+        {
+            PumpStandIns(t0, budgetMs);
+            if (budgetMs >= 0 && System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds >= budgetMs)
+                return;
+        }
         while (true)
         {
             PanelJob? job;
@@ -339,7 +468,7 @@ public static partial class HullLoft
                 var outer = PartShapes.BeginCollect();
                 try
                 {
-                    var part = ConstructParts.ParseBody(PanelJson(job.Def.Name, job.Shape, job.Next, to, false), job.Def.Name);
+                    var part = ConstructParts.ParseBody(PanelJson(job.Def.Name, job.Shape, job.Next, to, false, job.Cut, facetsOnly: true), job.Def.Name);
                     for (var k = part.SolidBoxes; k < part.Boxes.Length; k++)
                         job.Facets.Add(part.Boxes[k]);
                 }
@@ -382,12 +511,16 @@ public static partial class HullLoft
     /// <paramref name="from"/> up to <paramref name="to"/>. <paramref name="slabs"/>: a plain drawn slab over each hidden box, the look of a
     /// panel whose facets aren't made yet. The same floats in the same order whatever the range, so a part made whole and one made in slices are equal.
     /// </summary>
-    private static string PanelJson(string name, in PanelShape sh, int from, int to, bool slabs)
+    private static string PanelJson(string name, in PanelShape sh, int from, int to, bool slabs, CutPlan? cut = null, bool facetsOnly = false)
     {
-        var p = new Builder();
+        var p = new Builder { Edge = cut is { Edge: true } }; // (a bar on edge: everything written turned into the piece's frame, HullLoft.Cuts.cs)
         var (nu, nv) = PanelGrid(sh);
-        var t = sh.Mm / 1000f;
+        if (cut != null && cut.Pieces.Length != nu * nv)
+            throw new ConstructPartException($"{name}: its cut plan's facets ({cut.Pieces.Length}) aren't this sheet's ({nu * nv})"); // (a key paired with another frame's shape: refused, never read past)
+        var t = cut?.Thick ?? sh.Mm / 1000f;
         var area = 0f;
+        var item = 0; // (a cut part: whole facets and pieces counted in one run, so its slices are ranges of it)
+        var face = cut is { Plate: true } ? Hex(RecyclingTable.Current.ColourOf(cut.Stock.Material)) : null;
         var grid = new Vector3[nu + 1, nv + 1];
         var normal = new Vector3[nu + 1, nv + 1];
         for (var i = 0; i <= nu; i++)
@@ -403,15 +536,57 @@ public static partial class HullLoft
                 Vector3[] q = [grid[i, j], grid[i, j + 1], grid[i + 1, j + 1], grid[i + 1, j]];
                 Vector3[] off = [normal[i, j], normal[i, j + 1], normal[i + 1, j + 1], normal[i + 1, j]]; // (neighbours share each corner's offset: the seams close)
                 var n = Vector3.Cross(q[2] - q[0], q[1] - q[3]);
-                area += n.Length() / 2;
                 // Rows shade a little by height, as a loft's, so a paint's tone shows the shape.
-                var tone = (i + j) % 2 == 0 ? Steel : SteelHigh;
-                if (i * nv + j >= from && i * nv + j < to)
-                    p.Facet(q, n.LengthSquared() < 1e-12f ? Vector3.UnitY : n, nv == 1 && nu == 1 ? Steel : tone, t, off: off);
+                var tone = face ?? ((i + j) % 2 == 0 ? Steel : SteelHigh);
+                if (cut?.Pieces[i * nv + j] is { } pieces)
+                {
+                    // A facet the cuts touch: the pieces it keeps, each on its own quad, and only their area.
+                    double u0 = i == nu ? sh.L : PanelRowS(sh, i, nu) * (double)sh.L, u1 = i + 1 == nu ? sh.L : PanelRowS(sh, i + 1, nu) * (double)sh.L;
+                    double v0 = j * (double)sh.W / nv, v1 = (j + 1) * (double)sh.W / nv;
+                    foreach (var piece in pieces)
+                    {
+                        PieceOnQuad(piece, u0, u1, v0, v1, q, off, out var pts, out var offs);
+                        area += PolyArea(pts);
+                        if (item >= from && item < to)
+                            p.Facet(pts, n.LengthSquared() < 1e-12f ? Vector3.UnitY : n, nv == 1 && nu == 1 ? face ?? Steel : tone, t, off: offs);
+                        item++;
+                    }
+                    continue;
+                }
+                area += n.Length() / 2;
+                if (cut != null ? item >= from && item < to : i * nv + j >= from && i * nv + j < to)
+                    p.Facet(q, n.LengthSquared() < 1e-12f ? Vector3.UnitY : n, nv == 1 && nu == 1 ? face ?? Steel : tone, t, off: off);
+                item++;
             }
+        if (facetsOnly)
+        {
+            // A slice for the pump: only its facets are kept, so the collision, sockets and numbers (a third of a slice's parse) are one
+            // stand-in box and socket. The part's colour is the real one's: a facet's tone is judged against it.
+            p.Hide(new Vector3(-0.05f), new Vector3(0.05f));
+            p.Sock("back", new Vector3(0, -0.05f, 0), "-y");
+            return new JsonObject
+            {
+                ["format"] = "call-of-slop-construct-part/1", ["name"] = name, ["role"] = "frame", ["tool"] = "welder", ["mass"] = 1, ["health"] = 1,
+                ["color"] = cut is { Plate: true } ? Hex(RecyclingTable.Current.ColourOf(cut.Stock.Material)) : Steel, ["stage"] = true, ["centreSockets"] = false,
+                ["boxes"] = p.Boxes, ["sockets"] = p.Sockets,
+            }.ToJsonString();
+        }
+        if (cut is { Plate: true })
+            return PlateJson(name, cut, p, area, slabs);
+        if (cut != null)
+            CutPanelCollision(p, sh, cut, slabs, Steel); // (a cut panel: its boxes round the openings, its edge sockets less those cut away)
+        else
+            PanelCollision(p, sh, nu, grid, slabs);
+        return PanelNumbers(name, sh, cut, p, area, t);
+    }
+
+    /// <summary>An uncut panel's collision and sockets: up to four hidden boxes along its length, and its edge sockets on them.</summary>
+    private static void PanelCollision(Builder p, in PanelShape sh, int nu, Vector3[,] grid, bool slabs)
+    {
+        var nv = grid.GetLength(1) - 1;
         // Collision: up to four hidden boxes along its length, each over its strip's own height (a growing or riding panel collides by boxes, never a
         // hull). Their sides are whole centimetres just inside the drawn edges, so no hidden face shares a plane with a facet's rim and the edge
-        // sockets, which stand on them, are whole centimetres too (docs/LESSONS.md, "Generated geometry").
+        // sockets, which stand on them, are whole centimetres too (.claude/rules/generated-geometry.md).
         static float In(float v, bool up) => up ? MathF.Ceiling(v * 100 + 0.2f) / 100 : MathF.Floor(v * 100 - 0.2f) / 100;
         var strips = Math.Min(4, nu);
         var boxes = new (Vector3 Mn, Vector3 Mx)[strips];
@@ -484,6 +659,11 @@ public static partial class HullLoft
         var backZ = sh.Kind == PanelBend ? PanelPoint(sh, PanelRowS(sh, 1, nu) / 2, 0).Z : sh.L / 200f; // (a bent panel: under the middle of its first flat)
         var (m0, m1) = boxes[sh.Kind == PanelBend ? 0 : StripAt(backZ)];
         p.Sock("back", new Vector3(0, m0.Y, Math.Clamp(Cm2(backZ), m0.Z, m1.Z)), "-y");
+    }
+
+    /// <summary>A panel's (or cut panel's) part file from its drawn boxes, collision and sockets: mass and health by the area drawn.</summary>
+    private static string PanelNumbers(string name, in PanelShape sh, CutPlan? cut, Builder p, float area, float t)
+    {
         var mat = RecyclingTable.Current.IdOf(sh.Material);
         var row = ExtrusionTable.Current.Find(mat)!;
         var volume = area * t;
@@ -493,14 +673,16 @@ public static partial class HullLoft
         {
             ["format"] = "call-of-slop-construct-part/1",
             ["name"] = name,
-            ["description"] = $"{preset.Label}, {sh.L / 100f:0.##} by {sh.W / 100f:0.##} m of {sh.Mm} mm {sh.Material}: {preset.What}. Formed by a Panel Former; weld it by its edges.",
+            ["description"] = cut != null
+                ? $"{preset.Label}, {sh.L / 100f:0.##} by {sh.W / 100f:0.##} m of {sh.Mm} mm {sh.Material}, with {cut.Cuts.Length} cut-out{(cut.Cuts.Length == 1 ? "" : "s")}. Cut by a Laser Cutter; weld it by its edges."
+                : $"{preset.Label}, {sh.L / 100f:0.##} by {sh.W / 100f:0.##} m of {sh.Mm} mm {sh.Material}: {preset.What}. Formed by a Panel Former; weld it by its edges.",
             ["group"] = "Vehicle Body",
-            ["section"] = "Formed panels",
+            ["section"] = cut != null ? "Cut parts" : "Formed panels",
             ["role"] = "panel",
             ["tool"] = "welder",
             ["mass"] = mass,
             ["health"] = MathF.Round(Math.Clamp(volume * row.HealthPerM3, 40, 4000)),
-            ["armour"] = MathF.Round(Math.Clamp(row.ArmourPerCm * sh.Mm / 10f, 1, row.MaxArmour)),
+            ["armour"] = row.MaxArmour <= 0 ? 0 : MathF.Round(Math.Clamp(row.ArmourPerCm * sh.Mm / 10f, 1, row.MaxArmour)), // (glass has none: a clamp of 1 to 0 threw, and no glass sheet could be formed)
             ["material"] = row.Class,
             ["color"] = Steel,
             ["attachSeconds"] = 2.0,
@@ -525,7 +707,7 @@ public static partial class HullLoft
             return 0;
         }
         string name;
-        if (IsFormedName(args[0]))
+        if (IsFormedName(args[0]) || IsCutName(args[0]))
             name = args[0];
         else
         {
@@ -555,6 +737,9 @@ public static partial class HullLoft
                     case "angle" when num: s = s with { Angle = v }; break;
                     case "at" when num: s = s with { At = v }; break;
                     case "radius" when num: s = s with { Radius = v }; break;
+                    case "nose" when num: s = s with { NoseW = v }; break;
+                    case "back" when ProfileRead(kv[1], out var bp): s = s with { Back = bp }; break;
+                    case "front" when ProfileRead(kv[1], out var fp): s = s with { Nose = fp }; break;
                     case "material": s = s with { Material = kv[1] }; break;
                     default:
                         Console.WriteLine($"\"{a}\": key=value (length, width, crown, rake in cm; thick in mm; material)");
@@ -569,6 +754,11 @@ public static partial class HullLoft
             name = PanelKey(s);
         }
         var made0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (IsCutName(name) && CutRefusal(name) is { } cutWhy)
+        {
+            Console.WriteLine($"refused: {cutWhy}");
+            return 1;
+        }
         if (Parse(name) is not { } d)
         {
             Console.WriteLine($"refused: \"{name}\" is not a panel any machine makes");
@@ -590,7 +780,26 @@ public static partial class HullLoft
         Console.WriteLine(name);
         Console.WriteLine($"  facets {facets}, collision boxes {hidden}, sockets {d.Sockets.Length} ({string.Join(' ', d.Sockets.Select(s => s.Name))})");
         Console.WriteLine($"  bounds {size.X:0.00} x {size.Y:0.00} x {size.Z:0.00} m, mass {d.Mass:0.#} kg, health {d.Health:0}, armour {d.Armour:0}");
-        Console.WriteLine($"  cost {FormedUnits(d, mat)} {RecyclingTable.Current.NameOf(mat)}; made by: {ConstructPanelFormer.TierFor(d) ?? "no Panel Former is big enough"}");
+        if (IsCutName(name) && ReadCut(name, out _) is { } plan)
+        {
+            // What the cut takes away comes back as offcut (phase 3's bin): the blank's mass less the cut part's, in units of its material, to the
+            // nearest tenth (the user, 2026-11-13: the cutter counts its offcut in tenths and hands out whole units as they add up).
+            var blank = ConstructParts.Find(plan.Blank);
+            PumpPanels(-1);
+            var off = blank == null ? 0 : MathF.Round(MathF.Max(0, blank.Mass - d.Mass) / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(mat)) * 10) / 10;
+            Console.WriteLine($"  cuts {plan.Cuts.Length} ({string.Join(' ', plan.Cuts.Select(c => c.Text))}), drawn pieces {plan.Items} of {CutMaxFacets}, key {name.Length} of {ConstructParts.MaxRuntimeName} characters");
+            Console.WriteLine($"  blank {plan.Blank}: {blank?.Mass ?? 0:0.#} kg; offcut {off:0.0} {RecyclingTable.Current.NameOf(mat)}");
+        }
+        else if (IsPaneName(name) && CutJob(name, out var paneBlank, out _, out _, out var paneEdge, out _))
+        {
+            // A pane (phase 6): cut round its outline from a glass sheet; the rest of the sheet comes back as glass offcut.
+            var blank = ConstructParts.Find(paneBlank);
+            PumpPanels(-1);
+            var off = blank == null ? 0 : MathF.Round(MathF.Max(0, blank.Mass - d.Mass) / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(mat)) * 10) / 10;
+            Console.WriteLine($"  pane: edge {paneEdge:0.00} m; glass {d.HasGlass}; blank {paneBlank}: {blank?.Mass ?? 0:0.#} kg; offcut {off:0.0} {RecyclingTable.Current.NameOf(mat)}");
+        }
+        else
+            Console.WriteLine($"  cost {FormedUnits(d, mat)} {RecyclingTable.Current.NameOf(mat)}; made by: {ConstructPanelFormer.TierFor(d) ?? "no Panel Former is big enough"}");
         Console.WriteLine($"  hash {PanelHash(d):x8} (boxes, sockets, mass and health: the same on every peer); first make {madeMs:0.0} ms (the first part a process makes also pays the JIT)");
         // A second make from the name alone (the table forgotten) gives the same part.
         var first = PanelHash(d);
@@ -608,6 +817,11 @@ public static partial class HullLoft
         }
         else
             Console.WriteLine($"  a second make from the name, in slices: its first part {firstPart:0.0} ms, {System.Diagnostics.Stopwatch.GetElapsedTime(made0).TotalMilliseconds:0.0} ms in all, the same part");
+        if (IsCutName(name) && facets > CutMaxFacets)
+        {
+            Console.WriteLine($"  PROBLEM: {facets} facets, over {CutMaxFacets}");
+            bad++;
+        }
         if (IsPanelName(name) && facets > PanelMaxAlong * PanelMaxAcross)
         {
             Console.WriteLine($"  PROBLEM: {facets} facets, over {PanelMaxAlong * PanelMaxAcross}");

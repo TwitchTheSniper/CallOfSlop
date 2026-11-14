@@ -257,6 +257,7 @@ public enum SocketKind : byte
     Die, // an Extruder's output: only the piece growing on it goes there (ConstructExtruder.cs)
     Port, // only what a shaft port stands on (a suspension's Drive in, on its moving hub): nothing bolts here
     PressDie, // a press's die slot and a die's mount: only a die of its size class goes there (ConstructPress.cs)
+    RunOut, // an Extruder's out bed and a Run-out Table's ends: only a Run-out Table of its size class goes there (ConstructExtruderGrowth.cs)
 }
 
 /// <summary>
@@ -475,13 +476,15 @@ public sealed partial class ConstructPartDef
     public Fluid TankFluid; // what the tank holds (hoses and world links only move it between tanks that hold the same)
     public bool Stage; // a damage stage of another part ("stage": true): what a wall turns into as it loses chunks; not offered in the parts menu or on a rack
     public bool Boarding; // a preferred boarding point ("boarding": true): Use near it grabs on and climbs aboard (ConstructRide.GrabOn)
+    public float LadderTop; // a vertical ladder ("ladder": its landing's height in the part's frame, m; 0: not one): Use climbs it up or down (ConstructRide.ClimbLadder)
     public WalkKind Walk; // building pieces: walked on ("walk": floor, stairs, ramp, ladder): players step up onto it, bots may path over it
     public float DamagedBelow; // below this share of its health it turns into DamagedTo (a wall losing a chunk; "damaged": {"below", "part"})
     public string DamagedName = ""; // the stage it turns into (resolved after loading)
     public int DamagedTo = -1; // ...its id, or -1
-    public bool Offered => !Legacy && !Stage && !ToolOnly; // listed in the parts menu and on racks
+    public bool Offered => !Legacy && !Retired && !Stage && !ToolOnly; // listed in the parts menu and on racks
     public bool Generated; // made at load from a weapon builder part (ConstructWeaponParts.cs), not from a file here
     public bool CreativeOnly; // offered only with infinite parts (Constructs/WeaponParts.json "creativeOnly": the Zombies-economy parts)
+    public bool Retired; // "retired": loads and runs as before (old blueprints, saves, shipped vehicles), but isn't offered and has no recipe (the tier cylinders: sized-parts answer 8)
     public bool Legacy; // replaced by a routed link (the Fuel Line, plain drive shafts): still loads and works, but isn't offered in the parts menu or on a rack
     public float BurnRate; // engine: litres a second at full throttle
     public Vector3 SeatAt; // seat: where the sitter's feet go (part frame)
@@ -571,6 +574,8 @@ public sealed partial class ConstructPartDef
     public bool EngineModular; // a modular engine's flywheel ("engine": {"modular": size}): its numbers come from the pieces on its crank (ConstructEngine.cs)
     public EnginePiece Piece; // a modular engine's piece kind (the flywheel: Output)
     public byte PieceSize; // Small 0, Medium 1, Large 2, Capital 3
+    public float PieceScale; // its scale (sized-parts design 6.1): 0 on a file piece, read as its class's (EngineRules.ScaleOf); a pressed piece's from its blank (phase 5)
+    public float PieceStroke; // a cylinder's stroke ratio (design 6.3): 0 (read as 1) on a file piece; a pressed one's from its blank, its length over its across against its preset's
     public float PiecePower = 1f, PieceThirst = 1f, PieceSpool; // a fuel system's or booster's multipliers, a turbo's lag
     public int SmokeSocket = -1; // the socket smoke leaves by (a stack's top, an exhaust's top, a head)
     public bool HasEngineBoxes; // boxes that pump or spin (the renderer skips the rest)
@@ -627,6 +632,8 @@ public sealed partial class ConstructPartDef
     public GunFx GunFx;
     public string GunSound = ""; // the weapon file whose report it uses
     public string GunPartName = ""; // a gun part: the weapon builder part it is
+    public PartDef? GunSized; // a pressed gun part: its own sized builder part, named by its key (SizedGunParts; Parts.Find finds it)
+    public float GunScale = 1f; // a pressed receiver: its across over its preset's (sized-parts design 4.2, the merge's law with a real number); 1 on files
     // Physical storage (decision 18; ConstructStorage.cs)
     public CSlotDef[] Slots = []; // the slots parts are set into (part frame)
     public string BulkMaterial = ""; // a bin: the bulk material it holds ("any", or one of RecyclingTable.Materials)
@@ -661,16 +668,24 @@ public sealed partial class ConstructPartDef
     public bool IsExtruder; // an Extruder (ConstructExtruder.cs): its bulk bin feeds what grows out of its die
     public float ExtSpeed; // an Extruder: metres a second ("speed" in storage.extrude)
     public Vector2 ExtDie, ExtMaxSection; // ...its own die and the most Die Frames can make of it (metres across, up the face)
+    public Vector2 ExtGrowSection; // ...the most die its expansion pieces make (Die Frames or Die Extensions; "growSection", else maxSection)
+    public float ExtGrowLength; // ...the longest piece with its Run-out Tables ("growLength", else maxLength)
     public Vector3 ExtDieAt; // ...the die's centre on its output face (part frame; the piece grows along +z from here)
     public float ExtMaxLength, ExtPush; // ...the longest piece (m), and how hard it pushes what is in the way (N)
     public int ExtDieSocket = -1; // ...its socket of kind "die"
     public bool IsRequisition; // a Requisition Crate ("requisition": true): a story faction's courier collects a Supply job from its box (Game/GameStoryJobs.cs)
     public bool IsDieFrame; // a Die Frame ("dieFrame": true): the die of an Extruder it is joined to reaches across it
+    public float ExtGrowStep; // a Die Extension ("dieExtension": metres): flush with the die face of an Extruder of its size class, it adds a row or column of that much die (ExtruderGrowth.cs)
+    public float ExtRunOut; // a Run-out Table ("runOut": metres): joined to an Extruder of its size class (or another such table), it adds that much to the longest piece
     public bool IsFanFormer; // a Fan Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a whole rotor
     public bool IsAirframeFormer; // an Airframe Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a wing or a control surface, to the size it is set to
     public bool IsRouter; // "router": true: a Conveyor Router, a junction that sends each piece the way to where it is wanted (ConstructLogistics.cs)
+    public LifterDef? Lifter; // "lifter": a Loader Arm or a Bridge Crane, a scripted machine that carries pieces (ConstructLifters.cs)
+    public bool CraneRail; // "craneRail": true: a Crane Rail section, along its +z (a Bridge Crane runs on two runs of them: ConstructCraneRails.cs)
+    public bool LifterCab; // "lifterCab": true: a seat that steers the nearest lifter on its construct by hand (ConstructLifterCab.cs, arms and cranes phase 8)
     public bool HasRouterBoxes; // its "way" lamps or "fence" (drawn by the Router's last choice)
     public bool IsConveyorJunction; // conveyor ports in and out (a Conveyor Splitter or Join): pieces pass through it from one conveyor to the next (ConstructConveyor.cs)
+    public bool IsLayDownPad; // a Lay-down Pad (storage.pieces.open): a Piece Rack that takes in a loose piece set down on its deck (ConstructLifterPads.cs)
     public bool IsPieceRack; // a Piece Rack (ConstructConveyor.cs): holds whole pieces by kind, up to RackCount, each within RackSection x RackLength
     public bool IsCraftTerminal; // a Crafting Terminal (ConstructCrafting.cs): a Piece Rack whose hold is its tray (storage.pieces.crafting)
     public bool IsBuildStation; // a Building Station (ConstructStation.cs): a Crafting Terminal whose hold feeds a blueprint built in its bay (storage.pieces.station)
@@ -682,6 +697,8 @@ public sealed partial class ConstructPartDef
     public int RackCount;
     public Vector3 RackHoldMin, RackHoldMax; // ...the box its pieces pack into, in its own frame (storage.pieces.hold; ConstructRackPack.cs)
     public bool IsPanelFormer; // a Panel Former (also IsExtruder and IsWheelFormer; ConstructPanelFormer.cs): it forms named panels from its bin, by order
+    public bool IsLaserCutter; // a Laser Cutter (also IsPanelFormer, IsExtruder and IsWheelFormer; ConstructLaserCutter.cs): it cuts a formed panel or flat stock to a cut key, by order; its bin is its offcut
+    public float CutKw, CutMaxHeight; // ...its cutting power (kW, the time law's) and the tallest blank its bed takes (m)
     public bool IsWheelFormer; // a Wheel Former (also IsExtruder; ConstructExtruder.cs): its die is a hub and its piece a wheel
     public Vector2 ExtWheelMax, ExtWheelStart; // ...the biggest and the first wheel (metres wide, across)
     public bool IsExtrusion; // a piece an Extruder made (ConstructExtrusion.cs): not from a file
@@ -890,7 +907,7 @@ public static partial class ConstructParts
     public const float MaxPartMass = 50_000_000f, MaxPartHealth = 16_000_000f; // (kg, hp, which three bytes carry; a capital chassis deck)
     public const float MaxAttachSeconds = 60f, MaxPistonTravel = 64f, MaxHitchReach = 64f;
     public const int MaxName = 32; // a part file's name (a sanity check: the inventory's tiles and lists show it whole)
-    public const int MaxRuntimeName = 128; // a part made at run time ("stage": the Ordnance Rack's shapes): its name is its key in saves and blueprints, never a fixed-width field (a save's names are length-prefixed, a packet's text is at most 255 bytes)
+    public const int MaxRuntimeName = 240; // (128 until protocol 283: a cut panel's key is longer) a part made at run time ("stage": the Ordnance Rack's shapes): its name is its key in saves and blueprints, never a fixed-width field (a save's names are length-prefixed, a packet's text is at most 255 bytes)
 
     // The size classes (docs/sandbox/CONSTRUCTS.md, "Size classes"; the part kit's PartScale.cs): wire and file values of a socket's class.
     public const byte Small = 0, Medium = 1, Large = 2, Capital = 3;
@@ -1188,7 +1205,7 @@ public static partial class ConstructParts
             return Extrusion.Parse(name); // (a piece names itself: a blueprint's extrusion)
         if (name.StartsWith(Pressed.Prefix, StringComparison.Ordinal))
             return Pressed.Parse(name); // (a pressed part names itself, a preset's key its catalogue part: Pressed.cs)
-        if (name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal) || HullLoft.IsPanelName(name))
+        if (name.StartsWith(HullLoft.Prefix, StringComparison.Ordinal) || HullLoft.IsPanelName(name) || HullLoft.IsCutName(name))
             return HullLoft.Parse(name); // (a lofted hull bay names itself too: HullLoft.cs)
         if (name.StartsWith(ModularRack.Prefix, StringComparison.OrdinalIgnoreCase) || name.StartsWith(ModularRack.LegacyPrefix, StringComparison.OrdinalIgnoreCase))
             return ModularRack.Parse(name); // (a rack of a shape no file has names itself too, an old Modular Bomb Rack's as well)
@@ -1299,8 +1316,8 @@ public static partial class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "damaged", "stage", "faces", "faceAxis", "router",
+        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1365,10 +1382,17 @@ public static partial class ConstructParts
         d.AttachSeconds = Opt(root, "attachSeconds") is { } secs ? Num(secs, file, "attachSeconds") : hint == ConstructTool.Welder ? 2.5f : 1.5f;
         Range(d.AttachSeconds, 0.2f, MaxAttachSeconds, file, "attachSeconds");
         d.Legacy = Opt(root, "legacy") is { ValueKind: JsonValueKind.True };
+        d.Retired = Opt(root, "retired") is { ValueKind: JsonValueKind.True };
         d.IsRouter = Opt(root, "router") is { ValueKind: JsonValueKind.True };
+        if (d.IsRouter && d.TextSlots == 0)
+            d.TextSlots = 1; // (its name, set with the configure tool's Text box: the network board and the notes use it; smart logistics phase 4c)
+        d.Lifter = Opt(root, "lifter") is { } lifter ? LifterDef.Parse(lifter, file) : null; // (a Loader Arm or a Bridge Crane: ConstructLifters.cs)
+        d.CraneRail = Opt(root, "craneRail") is { ValueKind: JsonValueKind.True };
+        d.LifterCab = Opt(root, "lifterCab") is { ValueKind: JsonValueKind.True } && d.Role == PartRole.Seat;
         d.Stage = Opt(root, "stage") is { ValueKind: JsonValueKind.True };
         d.Walk = Opt(root, "walk") is { } walk ? EnumOf<WalkKind>(Str(walk, file, "walk"), file, "walk") : WalkKind.None;
         d.Boarding = Opt(root, "boarding") is { ValueKind: JsonValueKind.True }; // (a grab handle, a boarding ladder, a step plate: Use grabs on here first; ConstructRide.cs)
+        d.LadderTop = Opt(root, "ladder") is { } ladder ? Num(ladder, file, "ladder") : 0f; // (a vertical ladder: its landing's height, climbed with Use)
         if (Opt(root, "damaged") is { } dmg)
         {
             if (dmg.ValueKind != JsonValueKind.Object)
@@ -1381,6 +1405,12 @@ public static partial class ConstructParts
         d.Class = Opt(root, "sizeClass") is { } szc ? ClassOf(Str(szc, file, "sizeClass"), file, "sizeClass") : Small;
         d.Tier = Opt(root, "tier") is { } tier ? (int)Num(tier, file, "tier") : 1;
         Range(d.Tier, 1, MaxTier, file, "tier");
+        if (d.Lifter != null)
+        {
+            d.Lifter.Tier = d.Tier; // (its drawn half's dressing)
+            d.DataIn = [ConstructGatherer.RunPort];
+            d.DataOut = ConstructLifters.OutPorts; // (Busy, Alarm, Moved: ConstructLifters.Ports)
+        }
         d.Mass = Num(Need(root, "mass", file), file, "mass");
         Range(d.Mass, 0.5f, MaxPartMass, file, "mass"); // (building pieces: a 4 m concrete pad is about 14 t; a Capital flywheel 280 t)
         // Decision 21: what can't be carried as an item, by the tool that fits it and its mass (so every new welder or heavy part follows without a list).
@@ -1607,6 +1637,16 @@ public static partial class ConstructParts
         d.Sockets = socks.ToArray();
         d.CentreOptOut = Opt(root, "centreSockets") is { ValueKind: JsonValueKind.False };
         d.IsDieFrame = Opt(root, "dieFrame") is { ValueKind: JsonValueKind.True };
+        if (Opt(root, "dieExtension") is { } dext)
+        {
+            d.ExtGrowStep = Num(dext, file, "dieExtension");
+            Range(d.ExtGrowStep, 0.25f, 8, file, "dieExtension");
+        }
+        if (Opt(root, "runOut") is { } rout)
+        {
+            d.ExtRunOut = Num(rout, file, "runOut");
+            Range(d.ExtRunOut, 1, 64, file, "runOut");
+        }
         d.IsRequisition = Opt(root, "requisition") is { ValueKind: JsonValueKind.True };
 
         // Role data
@@ -1855,8 +1895,6 @@ public static partial class ConstructParts
         OfficeParts.Parse(d, root, file); // (the fax and the computer, after their panels: OfficeParts.cs)
         ConstructPress.ParseDie(d, root, file);
         ProductionLines.MonitorPorts(d); // (after the panels and the machines: a console's, a machine's or a rack's Data out)
-        if (d.IsRouter)
-            d.DataOut = ConstructLogistics.RouterOut; // (Alarm: a piece stuck at it; Moving: pieces riding its network)
         if (d.IsTerminal && !ConstructTerminals.HasPorts(d))
             throw new ConstructPartException($"{file}: a terminal names two chute ports: \"{ConstructTerminals.NetworkPort}\" (both ways) and \"{ConstructTerminals.OutPort}\" (out only)");
         ParseSystems(d, root, file); // (docks, catapults, conveyors: ConstructSystems.cs)

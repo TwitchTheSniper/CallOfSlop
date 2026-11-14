@@ -33,17 +33,21 @@ public sealed partial class Map
     public readonly List<int> SolidMeshes = new();
 
     private List<IMeshCollider>? _solidColliders;
+    private int _solidCollidersOf;
 
     /// <summary>The solid meshes' colliders (built once, on first use, in world space).</summary>
     public IReadOnlyList<IMeshCollider> SolidColliders
     {
         get
         {
-            if (_solidColliders != null && _solidColliders.Count == SolidMeshes.Count)
+            if (_solidColliders != null && _solidCollidersOf == SolidMeshes.Count)
                 return _solidColliders;
             var list = new List<IMeshCollider>(SolidMeshes.Count);
             foreach (var i in SolidMeshes)
                 list.Add(TriangleMeshCollider.FromMesh(MeshPlacements[i].BuildCollision(), Matrix4x4.Identity));
+            if (CityGeometry is { } city)
+                list.AddRange(city.Colliders); // a planetoid's city: its buildings, pavements and lamp posts (docs/planets/CITY.md)
+            _solidCollidersOf = SolidMeshes.Count;
             return _solidColliders = list;
         }
     }

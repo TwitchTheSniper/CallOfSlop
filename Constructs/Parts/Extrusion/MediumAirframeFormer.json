@@ -87,6 +87,16 @@
       "tooltip": "How long. It parts off by itself at this length. Weld pieces along their span for a longer wing."
     },
     {
+      "key": "orderCount",
+      "label": "Order count",
+      "group": "Orders",
+      "min": 1,
+      "max": 999,
+      "step": 1,
+      "default": 1,
+      "tooltip": "Pieces the Queue button on its screen asks for: one order of its settings as they stand."
+    },
+    {
       "key": "ink",
       "type": "colour",
       "label": "Screen colour",
@@ -101,7 +111,7 @@
       "source": "machine",
       "at": [
         -0.5627,
-        2.8495,
+        2.7689,
         1.5
       ],
       "size": [
@@ -110,8 +120,70 @@
       ],
       "face": "-x",
       "up": "+y",
-      "rows": 4,
-      "range": 30
+      "rows": 8,
+      "range": 30,
+      "touch": [
+        {
+          "action": "orders.queue",
+          "at": [
+            0.02,
+            0.02,
+            0.2,
+            0.12
+          ],
+          "label": "Queue"
+        },
+        {
+          "action": "orders.cancel",
+          "at": [
+            0.21,
+            0.02,
+            0.39,
+            0.12
+          ],
+          "label": "Cancel"
+        },
+        {
+          "action": "orders.clear",
+          "at": [
+            0.4,
+            0.02,
+            0.56,
+            0.12
+          ],
+          "label": "Clear"
+        },
+        {
+          "action": "machine.recipe",
+          "at": [
+            0.57,
+            0.02,
+            0.75,
+            0.12
+          ],
+          "label": "Recipe"
+        },
+        {
+          "action": "view.up",
+          "at": [
+            0.76,
+            0.02,
+            0.87,
+            0.12
+          ],
+          "label": "Up"
+        },
+        {
+          "action": "view.down",
+          "at": [
+            0.88,
+            0.02,
+            0.98,
+            0.12
+          ],
+          "label": "Down"
+        }
+      ]
     }
   ],
   "boxes": [
@@ -476,16 +548,107 @@
     {
       "min": [
         -0.5587,
-        2.1275,
+        2.0469,
         -0.377
       ],
       "max": [
         -0.4684,
-        3.5715,
+        3.8779,
         3.377
       ],
       "color": "#14181c",
       "detail": true
+    },
+    {
+      "min": [
+        -0.9341,
+        1.7466,
+        -0.377
+      ],
+      "max": [
+        -0.5387,
+        1.9343,
+        3.377
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.859,
+        1.9343,
+        -0.0767
+      ],
+      "max": [
+        -0.6338,
+        2.0094,
+        0.3738
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.859,
+        1.9343,
+        0.6741
+      ],
+      "max": [
+        -0.6338,
+        2.0094,
+        1.1246
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.859,
+        1.9343,
+        1.4249
+      ],
+      "max": [
+        -0.6338,
+        2.0094,
+        1.8754
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.8966,
+        1.9343,
+        2.5586
+      ],
+      "max": [
+        -0.5962,
+        2.0544,
+        3.1443
+      ],
+      "color": "#d02a1e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.6232,
+        3.4909,
+        -0.3
+      ],
+      "max": [
+        -0.5393,
+        3.8009,
+        3.3
+      ],
+      "color": "#2b3036",
+      "detail": true,
+      "paintable": false,
+      "status": true
     }
   ],
   "sockets": [

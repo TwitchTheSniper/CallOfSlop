@@ -33,7 +33,7 @@ public sealed partial class Game
     public int TalkChoiceCount;
     public byte TalkChoicesBody = 255;
 
-    /// <summary>Does a storylet start the Orbital Depot ("hook": "depot")? Then the depot's memo waits for it, instead of following the induction.</summary>
+    /// <summary>Does a storylet start the Orbital Depot ("hook": "depot")? (The memo no longer waits for it: it follows the first duty, GameDepot.cs.)</summary>
     public static bool DepotByStorylet => _depotByStorylet ??= StoryData.Storylets.Storylets.Any(d => d.Hook == "depot" || d.Ends.Any(e => e.Hook == "depot"));
     private static bool? _depotByStorylet;
 
@@ -127,6 +127,9 @@ public sealed partial class Game
                 break;
             case "depot":
                 DepotOffer(p, now);
+                break;
+            case "breakout":
+                BreakoutStart(p); // (the convicts' night: GameBreakout.cs)
                 break;
         }
         Log($"[storylet] hook {hook} for {p.Name}");

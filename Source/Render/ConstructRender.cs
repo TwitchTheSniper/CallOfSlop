@@ -234,6 +234,7 @@ public static partial class ConstructRender
         var loopT0 = System.Diagnostics.Stopwatch.GetTimestamp();
         foreach (var c in world.Bodies)
         {
+            AllocProfile.Mark("cr: cull, flames"); // (the benchmark's --trace-frame: AllocProfile.cs; off, a bool test)
             if (AwayOnly != 0 ? c.Id != AwayOnly : c.SpaceAway != 0)
                 continue; // (phase 6: a ship in another star system is seen only by its own riders, who see nothing else: GameSpaceJump.cs)
             var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
@@ -262,6 +263,7 @@ public static partial class ConstructRender
                 lod++;
                 continue;
             }
+            AllocProfile.Mark("cr: body parts");
             if (!merge || !DrawMergedBody(gfx, world, c, body, blendTicks ? alpha : 1f, cull, ref n)) // (too few static boxes, or merging off: part by part)
                 for (var i = 0; i < c.PartCount; i++)
                 {
@@ -269,6 +271,7 @@ public static partial class ConstructRender
                     if (c.Parts[i].Store != 0)
                         n += DrawStored(gfx, world, c, i, body, blendTicks ? alpha : 1f);
                 }
+            AllocProfile.Mark("cr: panels, volumes, wheel");
             if (c.PanelParts.Length > 0 && !CameraFeeds.InPass)
                 PanelRender.Gather(gfx, world, c, body, blendTicks ? alpha : 1f, cull ? _planes : default, Now); // (display panels near the eye and facing it)
             if (c.HasLogic || c.HasVolumeStore)
@@ -292,11 +295,13 @@ public static partial class ConstructRender
             gfx.Relative = false;
             n += DrawWheel(gfx, c, alpha, blendTicks); // (from the seat's world pose)
         }
+        AllocProfile.Mark("cr: flush");
         var loopT1 = System.Diagnostics.Stopwatch.GetTimestamp();
         FlushMerged(gfx);
         gfx.EndBatch();
         LoopMs += System.Diagnostics.Stopwatch.GetElapsedTime(loopT0, loopT1).TotalMilliseconds;
         FlushMs += System.Diagnostics.Stopwatch.GetElapsedTime(loopT1).TotalMilliseconds;
+        AllocProfile.Mark("cr: sweep, links, tracks, routes, panels");
         BatchSweep(gfx, world);
         LastCulled = culled;
         LastLod = lod;
@@ -324,6 +329,7 @@ public static partial class ConstructRender
             n++;
         }
         LastBoxes = n;
+        AllocProfile.Stop();
     }
 
     /// <summary>Milliseconds spent walking the bodies (culling, merged chunks queued, other parts drawn box by box) and in the

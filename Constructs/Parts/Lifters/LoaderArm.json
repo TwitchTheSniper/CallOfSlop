@@ -1,0 +1,477 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Loader Arm",
+  "description": "Stands beside a Building Station and fits parts from its hold onto the build in the bay: one more pair of hands. Reaches 1 to 4 m round its base, carries 500 kg. Needs power while it moves.",
+  "group": "Production",
+  "section": "Lifters",
+  "role": "frame",
+  "tool": "welder",
+  "panels": [
+    {
+      "source": "lifter",
+      "at": [
+        0.625,
+        0.535,
+        1.252
+      ],
+      "size": [
+        0.74,
+        0.28
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 5,
+      "range": 10
+    }
+  ],
+  "mass": 380.0,
+  "health": 600,
+  "armour": 3,
+  "material": "steel",
+  "color": "#6b4a35",
+  "attachSeconds": 6.0,
+  "power": 600,
+  "onBreak": "disable",
+  "collider": "boxes",
+  "lifter": {
+    "kind": "arm",
+    "base": [
+      0.625,
+      1.195,
+      0.625
+    ],
+    "ring": 0.535,
+    "reach": [
+      1.0,
+      4.0
+    ],
+    "up": 3.0,
+    "down": 1.62,
+    "payload": 500,
+    "piece": [
+      1.0,
+      4.0
+    ],
+    "speed": 3.0,
+    "handle": 0.8,
+    "arm": [
+      2.3,
+      2.2
+    ],
+    "look": {
+      "turret": "#7a4432",
+      "weight": "#2f2a26",
+      "upper": "#7a4432",
+      "fore": "#6b4a35",
+      "joint": "#8b857a",
+      "pin": "#f07818"
+    }
+  },
+  "config": [
+    {
+      "key": "liftMode",
+      "type": "choice",
+      "label": "Works",
+      "group": "Lifter",
+      "options": [
+        "Auto",
+        "Station only",
+        "Carry only",
+        "Off"
+      ],
+      "default": 0,
+      "tooltip": "Auto: every job in its reach. Station only: fits parts at Building Stations. Carry only: carries between machines (to come). Off: stands still."
+    },
+    {
+      "key": "carryHeight",
+      "label": "Carry height",
+      "group": "Lifter",
+      "unit": "m",
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1,
+      "default": 0.4,
+      "tooltip": "How high it lifts a piece over the higher end of its move before it turns. Never past what its arm reaches."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.105,
+        -0.125,
+        -0.105
+      ],
+      "max": [
+        1.355,
+        0.215,
+        1.355
+      ],
+      "color": "#2f2a26"
+    },
+    {
+      "min": [
+        -0.111,
+        0.096,
+        -0.025
+      ],
+      "max": [
+        -0.099,
+        0.1742,
+        1.275
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.349,
+        0.096,
+        -0.025
+      ],
+      "max": [
+        1.361,
+        0.1742,
+        1.275
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.025,
+        0.096,
+        -0.111
+      ],
+      "max": [
+        1.275,
+        0.1742,
+        -0.099
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.025,
+        0.096,
+        1.349
+      ],
+      "max": [
+        1.275,
+        0.1742,
+        1.361
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.125,
+        0.21,
+        0.125
+      ],
+      "max": [
+        1.125,
+        0.469,
+        1.125
+      ],
+      "color": "#7a4432"
+    },
+    {
+      "min": [
+        0.185,
+        0.464,
+        0.185
+      ],
+      "max": [
+        1.065,
+        0.535,
+        1.065
+      ],
+      "color": "#8b857a",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.075,
+        0.21,
+        -0.075
+      ],
+      "max": [
+        0.065,
+        0.695,
+        0.065
+      ],
+      "color": "#9a7442",
+      "detail": true,
+      "paintable": false,
+      "finish": "wood"
+    },
+    {
+      "min": [
+        -0.075,
+        0.21,
+        1.185
+      ],
+      "max": [
+        0.065,
+        0.815,
+        1.325
+      ],
+      "color": "#9a7442",
+      "detail": true,
+      "paintable": false,
+      "finish": "wood"
+    },
+    {
+      "min": [
+        1.185,
+        0.21,
+        -0.075
+      ],
+      "max": [
+        1.325,
+        0.755,
+        0.065
+      ],
+      "color": "#9a7442",
+      "detail": true,
+      "paintable": false,
+      "finish": "wood"
+    },
+    {
+      "min": [
+        1.185,
+        0.21,
+        1.185
+      ],
+      "max": [
+        1.325,
+        0.725,
+        1.325
+      ],
+      "color": "#9a7442",
+      "detail": true,
+      "paintable": false,
+      "finish": "wood"
+    },
+    {
+      "min": [
+        0.065,
+        0.265,
+        0.425
+      ],
+      "max": [
+        0.13,
+        0.425,
+        0.825
+      ],
+      "color": "#8b857a",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.05,
+        0.305,
+        0.385
+      ],
+      "max": [
+        0.07,
+        0.385,
+        0.865
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.225,
+        0.211,
+        1.165
+      ],
+      "max": [
+        1.025,
+        0.715,
+        1.245
+      ],
+      "color": "#8b857a",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.245,
+        0.385,
+        1.237
+      ],
+      "max": [
+        1.005,
+        0.685,
+        1.253
+      ],
+      "color": "#10161c",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y.0.0",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.2",
+      "at": [
+        0.0,
+        -0.125,
+        0.5
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.3",
+      "at": [
+        0.0,
+        -0.125,
+        0.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.5",
+      "at": [
+        0.0,
+        -0.125,
+        1.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.2.0",
+      "at": [
+        0.5,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.2.2",
+      "at": [
+        0.5,
+        -0.125,
+        0.5
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.2.3",
+      "at": [
+        0.5,
+        -0.125,
+        0.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.2.5",
+      "at": [
+        0.5,
+        -0.125,
+        1.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.3.0",
+      "at": [
+        0.75,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.3.2",
+      "at": [
+        0.75,
+        -0.125,
+        0.5
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.3.3",
+      "at": [
+        0.75,
+        -0.125,
+        0.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.3.5",
+      "at": [
+        0.75,
+        -0.125,
+        1.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.5.0",
+      "at": [
+        1.25,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.5.2",
+      "at": [
+        1.25,
+        -0.125,
+        0.5
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.5.3",
+      "at": [
+        1.25,
+        -0.125,
+        0.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.5.5",
+      "at": [
+        1.25,
+        -0.125,
+        1.25
+      ],
+      "dir": "-y"
+    }
+  ]
+}

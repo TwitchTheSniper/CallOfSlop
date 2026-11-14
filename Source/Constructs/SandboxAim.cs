@@ -105,7 +105,7 @@ public static class SandboxAim
         if (hands.Can)
             return hands;
         var use = Use(ConstructTool.None, in t);
-        if (!use.Show && !hands.Show && t.Body.DefOf(t.Part).Boarding && !t.Body.Loose && t.Distance <= ConstructBuild.UseReach)
+        if (!use.Show && !hands.Show && (t.Body.DefOf(t.Part).Boarding || t.Body.DefOf(t.Part).LadderTop > 0) && !t.Body.Loose && t.Distance <= ConstructBuild.UseReach)
             return AimCall.Ok; // (a grab handle, a boarding ladder, a step plate: F grabs on; a vehicle's bare side does too, and doesn't glow)
         return use.Show ? use : hands;
     }

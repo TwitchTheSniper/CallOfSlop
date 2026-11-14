@@ -15,6 +15,10 @@ public sealed class AssembleRecipe
     public byte Machine; // which family of Assembler builds it: an index of AssemblingTable.Machines
     public int Choice; // its value of the recipe setting: 1 + its index in its family's list (AssemblingTable.ByMachine)
     public string Batch = ""; // "4 steel + 2 copper + 1 Gear Set" (made once)
+    // (Phase 5b dropped the "pressed" marker rows: no recipe is pressed. These two stay only so ConstructCrafting.MachineMakes and the
+    // MachineScreens "Pressed now" card, other sessions' files, still compile; remove them with those branches. press-phase5-notes.md.)
+    public bool Pressed => false;
+    public string PressedDie() => AssemblingTable.PressedDieOf(Output) ?? "no die";
 
     /// <summary>The ticks a batch takes at speed 1.</summary>
     public int Ticks => (int)MathF.Ceiling(Seconds * World.TickRate - 0.001f);
@@ -62,6 +66,21 @@ public sealed class AssemblingTable
 
     /// <summary>The recipe that makes a part, or null.</summary>
     public AssembleRecipe? Of(ushort part) => ByOutput.TryGetValue(part, out var r) ? r : null;
+
+    /// <summary>
+    /// A part that left the Assembler for a press (Press phase 5: a die presses it from a standard blank, a preset of Pressing.json, and no
+    /// Assembler builds it): "the Gear Set is pressed now: a Gear Die and a steel round 15x15x15", or null. For the picker, a blueprint
+    /// that names it as a recipe and an order's refusal; made on demand (menus and loads, never per tick).
+    /// </summary>
+    public static string? PressedLine(ConstructPartDef d) => PressedSpec(d) is { } s
+        ? $"the {d.Name} is pressed now: a {s.Die.Family} Die and a {Extrusion.Label(s.Blank)}{(s.Pattern.Bay2 is { } kit ? $", with {kit.What} in bay 2" : "")}"
+        : null;
+
+    /// <summary>The die that presses such a part ("Gear Die"), or null.</summary>
+    public static string? PressedDieOf(ConstructPartDef d) => PressedSpec(d) is { } s ? $"{s.Die.Family} Die" : null;
+
+    private static Pressed.OrderSpec? PressedSpec(ConstructPartDef d) =>
+        Current.Of((ushort)d.Id) == null && PressTable.Current.PresetKeyOf(d) is { } key ? Pressed.SpecOf(key) : null;
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "Assembling.json");
 
@@ -140,7 +159,7 @@ public sealed class AssemblingTable
                     throw new FormatException($"recipe {recipes.Count + 1}: {r.Name} already has a recipe: one recipe a part");
                 recipes.Add(r);
             }
-            var t = new AssemblingTable { Recipes = recipes.ToArray() };
+            var t = new AssemblingTable { Recipes = [.. recipes] };
             for (var m = 0; m < Machines.Length; m++)
             {
                 t.ByMachine[m] = recipes.Where(r => r.Machine == m).ToArray();
@@ -149,7 +168,7 @@ public sealed class AssemblingTable
                 t.ChoicesBy[m] = [NoRecipe, .. t.ByMachine[m].Select(r => r.Name)];
             }
             t.Choices = t.ChoicesBy[0];
-            foreach (var r in recipes)
+            foreach (var r in t.Recipes)
                 t.ByOutput[(ushort)r.Output.Id] = r;
             return t;
         }

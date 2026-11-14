@@ -36,6 +36,7 @@ public enum CBodyKind : byte
     Craft, // protocol 254: one body's Crafting Terminals' orders and its stores' reserved parts (ConstructCrafting.Write)
     Station, // protocol 256: one body's Building Stations' jobs (ConstructStation.Write)
     Designs, // protocol 260: the world's shared panel designs, the whole list: u8 n, each a name and a key (PanelDesigns.Write)
+    Lifts, // protocol 287: one body's lifters, the whole list: u8 n, each its part, state, piece, path and age (ConstructLifters.Write)
 }
 
 /// <summary>
@@ -612,57 +613,95 @@ public static partial class ConstructNet
     }
 
     /// <summary>
-    /// A player's own inventory, whole (it is small): flags (1: infinite parts), then each part kind held (id,
-    /// count) and each material held (id, count). About 4 bytes plus 4 a kind (protocol 106: no scrap).
+    /// A player's own inventory: flags (1: infinite parts; 2: a continuation, made parts only), then each part kind held (id,
+    /// count), each material held (id, count) and each made part (protocol 299: PartRef, count). About 4 bytes plus 4 a kind
+    /// (protocol 106: no scrap). Made keys can be long (up to about 250 bytes each, 64 kinds), so the made list stops at
+    /// <see cref="InventoryBudget"/> bytes and the rest go in continuations: call again with the returned index until it is
+    /// <see cref="SandboxInventory.MadeN"/>.
     /// </summary>
-    public static void WriteInventory(PacketWriter w, SandboxInventory inv)
+    public static int WriteInventory(PacketWriter w, SandboxInventory inv, int fromMade = 0)
     {
-        w.Begin(Msg.CBody).U8((byte)CBodyKind.Inventory).U8((byte)(inv.Infinite ? 1 : 0));
-        var at = w.Length;
-        w.U8(0);
-        var n = 0;
-        for (var i = 0; i < inv.Parts.Length && n < 255; i++)
-            if (inv.Parts[i] > 0)
-            {
-                w.U16((ushort)i).U16(inv.Parts[i]);
-                n++;
-            }
-        w.PatchU8(at, (byte)n);
+        var more = fromMade > 0;
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Inventory).U8((byte)((inv.Infinite ? 1 : 0) | (more ? 2 : 0)));
+        int at, n;
+        if (!more)
+        {
+            at = w.Length;
+            w.U8(0);
+            n = 0;
+            for (var i = 0; i < inv.Parts.Length && n < 255; i++)
+                if (inv.Parts[i] > 0)
+                {
+                    w.U16((ushort)i).U16(inv.Parts[i]);
+                    n++;
+                }
+            w.PatchU8(at, (byte)n);
+            at = w.Length;
+            w.U8(0);
+            n = 0;
+            for (var i = 0; i < inv.Materials.Length; i++)
+                if (inv.Materials[i] > 0)
+                {
+                    w.U8((byte)i).U16(inv.Materials[i]);
+                    n++;
+                }
+            w.PatchU8(at, (byte)n);
+        }
         at = w.Length;
-        w.U8(0);
+        w.U8(0); // (protocol 299: made parts by key, at most 64 kinds; docs/sandbox/design/inventory-run-time-parts.md)
         n = 0;
-        for (var i = 0; i < inv.Materials.Length; i++)
-            if (inv.Materials[i] > 0)
-            {
-                w.U8((byte)i).U16(inv.Materials[i]);
-                n++;
-            }
+        var k = fromMade;
+        for (; k < inv.MadeN && (n == 0 || w.Length < InventoryBudget); k++, n++)
+        {
+            PartRef.Write(w, inv.MadeDef[k]);
+            w.U16(inv.MadeCount[k]);
+        }
         w.PatchU8(at, (byte)n);
+        return k;
     }
+
+    /// <summary>The bytes an inventory message fills before its made list goes on in another (the writers' buffers hold 16384; a made entry is under 300).</summary>
+    public const int InventoryBudget = 12000;
 
     private static void ReadInventory(ref PacketReader r, SandboxInventory? inv)
     {
         var flags = r.U8();
-        int kinds = r.U8();
-        inv?.Clear();
-        for (var k = 0; k < kinds; k++)
+        var more = (flags & 2) != 0;
+        if (!more)
         {
-            var id = r.U16();
-            var count = r.U16();
-            if (ConstructParts.Get(id) == null || count > SandboxInventory.MaxCount)
-                throw new MalformedPacketException($"an inventory of {count} of part {id}");
-            if (inv != null)
-                inv.Parts[id] = count;
+            int kinds = r.U8();
+            inv?.Clear();
+            for (var k = 0; k < kinds; k++)
+            {
+                var id = r.U16();
+                var count = r.U16();
+                if (ConstructParts.Get(id) == null || count > SandboxInventory.MaxCount)
+                    throw new MalformedPacketException($"an inventory of {count} of part {id}");
+                if (inv != null)
+                    inv.Parts[id] = count;
+            }
+            int mats = r.U8();
+            for (var k = 0; k < mats; k++)
+            {
+                var id = r.U8();
+                var count = r.U16();
+                if (id >= SandboxInventory.MaxMaterials || count > SandboxInventory.MaxCount)
+                    throw new MalformedPacketException($"an inventory of {count} of material {id}");
+                if (inv != null)
+                    inv.Materials[id] = count;
+            }
         }
-        int mats = r.U8();
-        for (var k = 0; k < mats; k++)
+        int made = r.U8();
+        if (made > SandboxInventory.MaxMadeKinds)
+            throw new MalformedPacketException($"an inventory of {made} kinds of made part");
+        for (var k = 0; k < made; k++)
         {
-            var id = r.U8();
+            var id = PartRef.Read(ref r);
             var count = r.U16();
-            if (id >= SandboxInventory.MaxMaterials || count > SandboxInventory.MaxCount)
-                throw new MalformedPacketException($"an inventory of {count} of material {id}");
-            if (inv != null)
-                inv.Materials[id] = count;
+            if (count > SandboxInventory.MaxCount)
+                throw new MalformedPacketException($"an inventory of {count} of made part {id}");
+            if (Extrusion.IsRuntimeId(id))
+                inv?.Set(id, count); // (a key this machine can't make reads as a catalogue stand-in: left out, never over a catalogue count)
         }
         if (inv == null)
             return;
@@ -887,6 +926,9 @@ public static partial class ConstructNet
                 break;
             case CBodyKind.Craft:
                 ConstructCrafting.Read(ref r, world);
+                break;
+            case CBodyKind.Lifts:
+                ConstructLifters.Read(ref r, world);
                 break;
             case CBodyKind.Station:
                 ConstructStation.Read(ref r, world);
@@ -1170,8 +1212,11 @@ public static partial class ConstructNet
         if (newer)
             c.Asleep = (flags & 4) != 0;
         c.Root = root < parts ? root : 0;
-        c.Fuel = fuel;
-        c.Charge = float.IsFinite(charge) ? charge : 0;
+        if (newer) // (an older Full, a big body's kept base on a resync, keeps the newer pose's fuel and charge too: a still body sends no other)
+        {
+            c.Fuel = fuel;
+            c.Charge = float.IsFinite(charge) ? charge : 0;
+        }
         SetPower(c, power, gear);
         SetDrive(c, rpm, note);
         c.ThrustShow = thrust;
@@ -1346,6 +1391,25 @@ public static partial class ConstructNet
     /// <summary>A body that needs no pose this packet: asleep or anchored without joints, its signals as last sent, its final pose sent enough times.</summary>
     private static bool Still(Construct c) => (c.Asleep || c.Anchored && c.JointCount == 0) && !ConstructPhysics.TreadMoving(c) && c.NudgeBy == 255; // (cs03: an anchored base turning its wheels sends its rpm: clients turn them)
 
+    /// <summary>Pose ticks at least between two poses a still body sends only for its fuel or charge (2 Hz).</summary>
+    public const uint StateEvery = 10;
+
+    private static byte ChargeByte(Construct c) => (byte)MathF.Round(ConstructPower.Share(c) * 255);
+
+    /// <summary>
+    /// A still body's fuel pool or charge moved since its last pose (a station or a pipe draining a parked tank, a battery
+    /// charging): both ride only the pose, so it sends one, at most every <see cref="StateEvery"/> pose ticks.
+    /// </summary>
+    private static bool StateDue(Construct c, uint poseTick) =>
+        poseTick - c.StateSentAt >= StateEvery && (MathF.Abs(c.Fuel - c.FuelSent) >= 0.01f || c.Fuel != c.FuelSent && c.Fuel == 0 || ChargeByte(c) != c.ChargeSent);
+
+    private static void StateSent(Construct c, uint poseTick)
+    {
+        c.FuelSent = c.Fuel;
+        c.ChargeSent = ChargeByte(c);
+        c.StateSentAt = poseTick;
+    }
+
     /// <summary>
     /// Server: the poses of the bodies that move, plus a few sleeping ones in turn. Returns false when there is nothing
     /// to send. More moving bodies than one packet holds take turns (<see cref="ConstructWorld.PoseCursor"/>: the next
@@ -1368,6 +1432,7 @@ public static partial class ConstructNet
             if (Still(bodies[i]))
                 sleeping++;
         var moveBudget = budget - Math.Min(sleeping, SleepingPerPacket) * (PoseBytes + 2); // (room kept for the sleeping ones' turn)
+        var pt = tick / PoseEvery;
         // cj01: what a player holds with the physics gun or drives goes in every packet, first (its holder and everyone
         // watching see it move most; taking turns with the rest made its poses arrive unevenly).
         for (var i = 0; i < count; i++)
@@ -1376,6 +1441,7 @@ public static partial class ConstructNet
             if (!Priority(c) || w.Length + PoseSize(c) > moveBudget || n == 255)
                 continue;
             WritePose(w, c);
+            StateSent(c, pt);
             n++;
             c.PoseRepeats = StillRepeats;
         }
@@ -1388,14 +1454,15 @@ public static partial class ConstructNet
             if (Priority(c))
                 continue; // (sent above)
             var still = Still(c);
-            if (still && c.SigHash == c.SigSent && c.PoseRepeats == 0)
-                continue; // still, and its signals and final pose as last sent
+            if (still && c.SigHash == c.SigSent && c.PoseRepeats == 0 && !StateDue(c, pt))
+                continue; // still, and its signals, fuel, charge and final pose as last sent
             if (w.Length + PoseSize(c) > moveBudget || n == 255)
             {
                 next = i; // (the next packet starts here)
                 break;
             }
             WritePose(w, c);
+            StateSent(c, pt);
             n++;
             c.PoseRepeats = still ? (byte)Math.Max(0, c.PoseRepeats - 1) : StillRepeats;
         }
@@ -1409,6 +1476,7 @@ public static partial class ConstructNet
             if (w.Length + PoseSize(c) > budget || n == 255)
                 break;
             WritePose(w, c);
+            StateSent(c, pt);
             n++;
         }
         w.PatchU8(countAt, (byte)n);
@@ -1447,6 +1515,10 @@ public static partial class ConstructNet
         foreach (var c in world.Bodies)
         {
             var still = Still(c) && c.SigHash == c.SigSent;
+            if (still && StateDue(c, poseTick))
+                still = false; // (its fuel or charge moved: hot for a while, so a far client hears it too)
+            if (!still)
+                StateSent(c, poseTick); // (this tick's poses carry them)
             if (!still)
                 c.PoseHot = poseTick + HotPoseTicks;
             if (!still || poseTick < c.PoseHot)

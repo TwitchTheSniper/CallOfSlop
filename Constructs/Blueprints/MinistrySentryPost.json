@@ -1,0 +1,155 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Ministry Sentry Post",
+  "description": "A Ministry of Slop sentry post: a pillbox behind sandbags, where the foot patrol starts.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "f0",
+      "by": "k0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 1,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Pillbox",
+      "on": 0,
+      "socket": "t4_4",
+      "by": "b0_0",
+      "paint": "#a29e94",
+      "finish": "concrete"
+    },
+    {
+      "part": "Sandbag Wall 2 m",
+      "on": 1,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#9a8c6c",
+      "finish": "fabric"
+    },
+    {
+      "part": "Sandbag Wall 2 m",
+      "on": 1,
+      "socket": "t8_0",
+      "by": "b0_0",
+      "paint": "#9a8c6c",
+      "finish": "fabric"
+    },
+    {
+      "part": "Flagpole Base",
+      "on": 2,
+      "socket": "t4_4",
+      "by": "b00",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Flagpole Mast 3.75 m",
+      "on": 7,
+      "socket": "mast",
+      "by": "b",
+      "paint": "#d9dcd6",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Flagpole Mast 3.75 m",
+      "on": 8,
+      "socket": "t",
+      "by": "b",
+      "paint": "#d9dcd6",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Flagpole Top 3.75 m",
+      "on": 9,
+      "socket": "t",
+      "by": "b",
+      "paint": "#d9dcd6",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Adapter Medium to Small",
+      "on": 1,
+      "socket": "t7_7",
+      "by": "front2.2",
+      "paint": "#4b5157",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Medium Truss 8 m",
+      "on": 11,
+      "socket": "back",
+      "by": "-z",
+      "paint": "#4b5157",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Medium Truss 4 m",
+      "on": 12,
+      "socket": "+z",
+      "by": "-z",
+      "paint": "#4b5157",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Floodlight Medium",
+      "on": 13,
+      "socket": "+z",
+      "by": "-y",
+      "paint": "#ffb347"
+    },
+    {
+      "part": "Concrete Notice Board 2 m",
+      "on": 3,
+      "socket": "t0_15",
+      "by": "b0",
+      "paint": "#858179",
+      "finish": "concrete"
+    },
+    {
+      "part": "Text Sign",
+      "on": 15,
+      "socket": "n0",
+      "by": "back",
+      "text": [
+        "SENTRY POST NINE. THE WALK BEGINS HERE."
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Text Sign",
+      "on": 15,
+      "socket": "n1",
+      "by": "back",
+      "text": [
+        "THE WALK ALSO ENDS HERE. DO NOT WANDER."
+      ],
+      "paint": "#1f2b45"
+    },
+    {
+      "part": "Traffic Cone",
+      "on": 3,
+      "socket": "t11_4",
+      "by": "base"
+    },
+    {
+      "part": "Tea Urn",
+      "on": 2,
+      "socket": "t11_11",
+      "by": "foot00"
+    }
+  ]
+}

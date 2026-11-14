@@ -79,6 +79,8 @@ public sealed partial class Game
             Size = size == 255 ? -1 : size,
             Fit = new Vector3(fx, fy, fz),
             Seed = seed,
+            // (the car bay is a car's: its stock gearbox is geared for the Small limiter, so a long stroke's lower one would cap it near 26 m/s, as EngineKitVehicle.Plan)
+            MinLimiterRpm = Vector3.Distance(new Vector3(fx, fy, fz), EngineKitVehicle.Bay) < 0.02f ? EngineRules.Current.Max[0] : 0,
         };
         var fwd = GravityFrames.FlatForward(p.Position, p.Yaw);
         var ground = ConstructWorld.Ground(World.Query, p.Position + fwd * 6f);
@@ -106,7 +108,7 @@ public sealed partial class Game
         Constructs.Events.Add($"player {who} made {name} as construct {c.Id} (Engine Kit)");
         Console.WriteLine($"[engines] made {(res != null ? res.ToString() : name)} as construct {c.Id}, {c.PartCount} parts");
         var text = res == null ? $"{name} is ready" : string.Create(CultureInfo.InvariantCulture,
-            $"{name}: {res.Kw:0} kW, {res.Mass:0} kg, {res.Dims.X:0.0} x {res.Dims.Y:0.0} x {res.Dims.Z:0.0} m; it needs a fuel tank and a gearbox{(res.Note.Length > 0 ? "; " + res.Note : "")}");
+            $"{name}: {res.Kw:0} kW, {res.TorqueNm:0} N m at {res.PeakRpm:0} rpm (limiter {res.MaxRpm:0}), {res.Mass:0} kg, {res.Dims.X:0.0} x {res.Dims.Y:0.0} x {res.Dims.Z:0.0} m; it needs a fuel tank and a gearbox{(res.Note.Length > 0 ? "; " + res.Note : "")}");
         SandboxHands.Notices.Add((who, EngineText(text)));
     }
 

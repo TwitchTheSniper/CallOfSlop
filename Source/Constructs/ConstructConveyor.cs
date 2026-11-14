@@ -153,9 +153,9 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>A piece into a Piece Rack, if it takes it: in the place packing gives it. Server.</summary>
-    public bool RackPut(Construct c, int part, ConstructPartDef d)
+    public bool RackPut(Construct c, int part, ConstructPartDef d, bool ordered = false)
     {
-        if (StoreOf(c, part) is not { } st || ConstructConveyor.RackCheck(c, part, st, d) != 0)
+        if (StoreOf(c, part) is not { } st || ConstructConveyor.RackCheck(c, part, st, d, ordered) != 0)
             return false;
         ConstructRackPack.Place(c.DefOf(part), st, d, false, out _, out _);
         st.AddKind(d.Id, 1);
@@ -239,13 +239,13 @@ public static class ConstructConveyor
     // ---- The rack ------------------------------------------------------------------------------------------------
 
     /// <summary>Whether a Piece Rack takes <paramref name="d"/>: 0, or 1 not a rack, 2 not a piece, 3 too big for it, 4 full (no text: the step asks every time the lead piece waits; <see cref="RackRefusal"/> says it).</summary>
-    public static int RackCheck(Construct c, int part, CStore st, ConstructPartDef d)
+    public static int RackCheck(Construct c, int part, CStore st, ConstructPartDef d, bool ordered = false)
     {
         var rd = c.DefOf(part);
         if (!rd.IsPieceRack)
             return 1;
-        if (d.Role == PartRole.Storage)
-            return 2; // (a piece, or anything a press stamps that fits: not storage, whose contents would be lost)
+        if (d.Role == PartRole.Storage && !rd.IsBuildStation && !rd.IsLayDownPad && !(ordered && rd.IsCraftTerminal)) // (lifters phase 7: a Lay-down Pad takes a store part as the hold does: a def, new and empty; a loaded loose one is refused at its take-in, ConstructLifters.TakeInWhy) // (a terminal's tray only for its order's rider, a def, new and empty (<paramref name="ordered"/>, logistics fix-ups 2): an arm, a hand, a chute or a fetch is refused, so a loaded store never becomes a count)
+            return 2; // (a piece, or anything a press stamps that fits: not storage, whose contents would be lost. A Building Station's hold takes any store part a blueprint names, a machine too, since a hold is a def count and what reaches it is new and empty: an order's rider, a hand, a stock; a loose loaded one in the bay is left alone, ConstructStation.TakeDropped: verification 2026-11-13c)
         ConstructRackPack.Ensure(rd, st);
         if (st.KindIndex(d.Id) < 0 && st.KindN >= CStore.MaxKinds || st.ItemCount >= rd.RackCount)
             return 4;
@@ -464,7 +464,7 @@ public static class ConstructConveyor
         5 => "jammed: piece too long for this rack",
         6 => "jammed: the conveyor after the junction is full",
         7 => $"jammed: the {(c.Routes[route].To < c.PartCount ? c.DefOf(c.Routes[route].To).Name : "machine")} isn't taking it",
-        8 => "held at the Router: " + StuckWhy(c, route),
+        8 => "held at " + ConstructLogisticsBoard.RouterLabel(c, c.Routes[route].To) + ": " + StuckWhy(c, route), // (its name, else its number: phase 4c)
         _ => null,
     };
 
@@ -852,6 +852,8 @@ public static class ConstructConveyor
         for (var ci = 0; ci < bodies.Count; ci++)
         {
             var c = bodies[ci];
+            if (c.Logi is { OffAny: > 0 })
+                ConstructLogistics.Piles(world, c); // (a pile set off beside a Router: the pieces taken away leave it, the last ends its Alarm)
             if (c.ConveyedCount == 0)
             {
                 if (c.Logi is { AnyOut: true } && !c.Dirty)
@@ -985,14 +987,23 @@ public static class ConstructConveyor
         var td = c.DefOf(to);
         if (td.IsPieceRack)
         {
-            if (!world.RackPut(c, to, d))
+            if (!world.RackPut(c, to, d, ordered: r.Tag != 0 && ((LogiFlags)r.Flags & LogiFlags.Storage) == 0))
                 return false;
             if (td.IsCraftTerminal)
                 ConstructCrafting.Arrived(world, c, to, d); // (it counts for the oldest open order of its kind)
+            else if (world.StockTargetN > 0 || r.Tag != 0)
+                ConstructLogisticsPlan.Arrived(world, c, to, r.Tag, d); // (a stock target's refill: it counts for its link)
+            if (td.IsLayDownPad)
+                ConstructLifters.PadArrived(world, c, to, ((LogiFlags)r.Flags & LogiFlags.Storage) == 0 ? r.Tag : (ushort)0, d); // (a station's large part on its pick pad: lifters phase 5)
             return true;
         }
         if (td.IsPanelFormer)
-            return ConstructPanelFormer.TakeFromConveyor(world, c, to, d); // (extruded sheet into its bin)
+        {
+            if (!(td.IsLaserCutter ? ConstructLaserCutter.TakeFromConveyor(world, c, to, d) : ConstructPanelFormer.TakeFromConveyor(world, c, to, d))) // (extruded sheet into its bin; a cutter's blank onto its bed)
+                return false;
+            ConstructLogisticsPlan.Arrived(world, c, to, r.Tag, d); // (a chained panel order's sheet: it counts for its link)
+            return true;
+        }
         if (td.IsAssembler)
         {
             // A part its recipe uses, while it has room: the chute's own test (a part it doesn't use waits at its door).
@@ -1004,7 +1015,10 @@ public static class ConstructConveyor
         if (td.IsPress && ConstructRoutes.PortOf(td, RouteType.Conveyor, c.Routes[route].ToPort) is { } port)
         {
             var bay = port.Name.Length > 9 && int.TryParse(port.Name.AsSpan(9), out var nb) ? nb - 1 : 0; // ("Piece in", "Piece in 2"...)
-            return ConstructPress.TakeFromConveyor(world, query, c, to, bay, d, r.Health / 255f, r.Paint);
+            if (!ConstructPress.TakeFromConveyor(world, query, c, to, bay, d, r.Health / 255f, r.Paint))
+                return false;
+            ConstructLogisticsPlan.Arrived(world, c, to, r.Tag, d); // (a chained press order's blank or kit: it counts for its link, Press phase 4)
+            return true;
         }
         return false;
     }
@@ -1038,6 +1052,60 @@ public static class ConstructConveyor
         np.Health = MathF.Max(1, d.Health * r.Health / 255f);
         np.Paint = r.Paint;
         world.Events.Add($"a {d.Name} dropped off its conveyor");
+    }
+
+    /// <summary>
+    /// Server: rider <paramref name="i"/>, the lead piece at a Router that no rack can take, comes off the line as a loose body set
+    /// down beside its way in at the first clear spot (either side of the line, up to four rows back along it, the body's own up), clear
+    /// of every body's solid boxes the Router's own included (<see cref="ConstructLogistics"/> NoPlace). The new body's id, or 0: no clear
+    /// spot, or the world is full (it stays on the line).
+    /// </summary>
+    public static ushort SetOff(ConstructWorld world, Construct c, int i, ConstructPartDef d, out Vector3 spot)
+    {
+        spot = default;
+        var r = c.Conveyed[i];
+        if (r.Route >= c.RouteCount)
+            return 0;
+        WorldPose(c, r.Route, r, d, out var centre, out var rot);
+        var back = r;
+        back.At = MathF.Max(0, r.At - 0.25f);
+        WorldPose(c, r.Route, back, d, out var behind, out _);
+        var bodyUp = Vector3.Transform(Vector3.UnitY, c.Rot); // (the body's own up: a base on a planetoid stands on its ground)
+        var travel = centre - behind;
+        travel -= bodyUp * Vector3.Dot(travel, bodyUp);
+        travel = travel.LengthSquared() > 1e-6f ? Vector3.Normalize(travel) : Vector3.Transform(Vector3.UnitZ, c.Rot);
+        var side = Vector3.Normalize(Vector3.Cross(travel, bodyUp));
+        Size(d, out var across, out var up, out var along);
+        var wide = MathF.Max(across, up);
+        var found = false;
+        for (var k = 0; k < 8 && !found; k++)
+        {
+            var at = centre + side * ((k & 1) == 0 ? 1 : -1) * (0.9f + wide) - travel * (k >> 1) * (along + 0.3f) + bodyUp * 0.2f; // (beside the Router: half a Router, the piece, a gap; then rows back)
+            if (SpotClear(world, at, travel, along, wide * 0.5f))
+                (spot, found) = (at, true);
+        }
+        if (!found || ConstructEdits.DropLoose(world, d, spot, rot) is not { } body)
+            return 0;
+        Remove(c, i);
+        body.Owner = c.Owner;
+        body.Vel = c.PointVel(centre);
+        body.AngVel = c.AngVel;
+        ref var np = ref body.Parts[0];
+        np.Health = MathF.Max(1, d.Health * r.Health / 255f);
+        np.Paint = r.Paint;
+        return body.Id;
+    }
+
+    /// <summary>Is a piece <paramref name="along"/> long and <paramref name="r"/> round at <paramref name="at"/> clear of every body's solid boxes? (A rare path: a set-off.)</summary>
+    private static bool SpotClear(ConstructWorld world, Vector3 at, Vector3 travel, float along, float r)
+    {
+        var a = at - travel * MathF.Max(0, along * 0.5f - r);
+        var b = at + travel * MathF.Max(0, along * 0.5f - r);
+        r = MathF.Max(0.05f, r);
+        foreach (var o in world.Bodies)
+            if (Vector3.DistanceSquared(o.WorldCom, at) < (o.Radius + along + r + 1) * (o.Radius + along + r + 1) && !world.CapsuleClear(o, a, b + (a == b ? new Vector3(0, 1e-3f, 0) : default), r))
+                return false;
+        return true;
     }
 
     /// <summary>Drops every rider of a body (it is going: its link with it).</summary>
@@ -1200,8 +1268,8 @@ public static class ConstructConveyor
             var paint = r.U32();
             var part = r.U16();
             var def = part < names.Parts.Length ? names.Parts[part] : ConstructParts.None;
-            if (def == ConstructParts.None || !float.IsFinite(at) || ConstructParts.Get(def) is not { Role: not PartRole.Storage })
-                continue;
+            if (def == ConstructParts.None || !float.IsFinite(at) || ConstructParts.Get(def) == null)
+                continue; // (a store part rides too, new and empty, to a Building Station's hold: its order counts it as Sent, so it is kept)
             saved.Riders.Add(new CRider { Def = def, Route = route, At = MathF.Max(0, at), Health = Math.Max((byte)1, hp), Paint = paint });
             saved.Index.Add(i);
         }

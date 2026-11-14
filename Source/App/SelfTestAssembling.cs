@@ -29,7 +29,7 @@ public static partial class SelfTest
             foreach (var (m, _) in r.Materials)
                 want(raw.Contains(names.NameOf(m)), $"{r.Name}: nothing makes {names.NameOf(m)}");
             foreach (var (p, _) in r.Parts)
-                want(!p.PhysicsOnly && t.Recipes.Any(o => o.Output == p), $"{r.Name}: {p.Name} can't be fed or built");
+                want(!p.PhysicsOnly && (t.Recipes.Any(o => o.Output == p) || PressTable.Current.PresetKeyOf(p) != null), $"{r.Name}: {p.Name} can't be fed or built"); // (an Assembler's, or a die's preset: Press phase 5)
             want(r.Batch.All(c => c is >= ' ' and <= '~'), $"{r.Name}'s text");
             if (r.Output.Tier == 1 && (r.Output.IsRefiner || r.Output.IsAssembler || r.Output.IsGatherer))
                 want(r.MinTier == 1, $"{r.Name} is a tier 1 machine that a tier 1 Assembler can't make (minTier {r.MinTier}): survival couldn't start");
@@ -415,12 +415,12 @@ public static partial class SelfTest
 
         // ---- An item: on the tray, down a chute to the Chest; F takes one; a beacon's network sees the tray and can't fill it.
         var slot = (byte)def.CfgSlot[(int)CfgKey.Recipe];
-        ConstructConfig.Set(ref bay.Parts[asm], def, slot, Array.IndexOf(AssemblingTable.Current.Choices, "Gear Set"));
+        ConstructConfig.Set(ref bay.Parts[asm], def, slot, Array.IndexOf(AssemblingTable.Current.Choices, "Wall Clock"));
         Run(0.2f);
-        var gear = ConstructParts.Need("Gear Set");
+        var gear = ConstructParts.Need("Wall Clock");
         var chest = PartNamed(bay, "Chest");
-        Want(ConstructAssembling.OutputOf(def, st, Recipe()!) == AsmOut.Tray, "a Gear Set should go on the tray");
-        w.FeedAssembler(bay, asm, 20, steel);
+        Want(ConstructAssembling.OutputOf(def, st, Recipe()!) == AsmOut.Tray, "a Wall Clock should go on the tray");
+        w.FeedAssembler(bay, asm, 2, steel); // (two batches of the Wall Clock, 1 steel each; the Gear Set it was took 5 of 20)
         var machineLoad = st.MixOf(steel) * names.WeightOf(steel);
         Run(ConstructWorld.LoadEvery / (float)World.TickRate * 2);
         Run(0.1f);
@@ -428,7 +428,7 @@ public static partial class SelfTest
         for (var t = 0; t < 8; t++)
             Run(1);
         var chestStore = w.StoreOf(bay, chest)!;
-        Want(chestStore.Items + st.Items >= 2 && st.Items + chestStore.Items <= 4, $"Gear Sets on the tray ({st.Items}) and down the chute ({chestStore.Items})");
+        Want(chestStore.Items + st.Items >= 2 && st.Items + chestStore.Items <= 4, $"Wall Clocks on the tray ({st.Items}) and down the chute ({chestStore.Items})");
         Want(chestStore.Items >= 1, $"the chute took nothing off the tray ({chestStore.Items})");
         Want(SlotStore.Instance.Serves(def) && SlotStore.Instance.Parts(w, bay, asm) == st.Items, "a beacon's network reads the tray");
         Want(!SlotStore.Instance.PutPart(w, bay, asm, gear, false) && !SlotStore.Instance.PutPart(w, bay, asm, gear, true), "a beacon's network filled an Assembler's tray");
@@ -473,9 +473,9 @@ public static partial class SelfTest
             Want(false, "no room for a Plasma Smelter");
 
         // ---- Creative: instant and unpowered; a broken machine spills its input.
-        ConstructConfig.Set(ref bay.Parts[asm], def, slot, Array.IndexOf(AssemblingTable.Current.Choices, "Gear Set"));
+        ConstructConfig.Set(ref bay.Parts[asm], def, slot, Array.IndexOf(AssemblingTable.Current.Choices, "Wall Clock"));
         Run(0.2f);
-        w.FeedAssembler(bay, asm, 10, steel);
+        w.FeedAssembler(bay, asm, 2, steel); // (two batches of the Wall Clock, 1 steel each)
         bay.Charge = 0;
         w.CreativeRecycling = true;
         Run(0.25f);
@@ -588,8 +588,8 @@ public static partial class SelfTest
             var centre = ft + Vector3.Transform(bay.Parts[asm].Pos, fq);
             sp.Teleport(centre + new Vector3(-1.6f, 0.05f, 0));
             Pump(server, [a], 0.2, ref now, clock);
-            a.SandboxConfigure(bay.Id, [(byte)asm], [(byte)def.CfgSlot[(int)CfgKey.Recipe]], [Array.IndexOf(recipes.Choices, "Steel Plate")]);
-            if (!Await(() => RecipeOn(a)?.Name == "Steel Plate" && RecipeOn(server)?.Name == "Steel Plate", 3, [a]))
+            a.SandboxConfigure(bay.Id, [(byte)asm], [(byte)def.CfgSlot[(int)CfgKey.Recipe]], [Array.IndexOf(recipes.Choices, "Fuel Canister")]);
+            if (!Await(() => RecipeOn(a)?.Name == "Fuel Canister" && RecipeOn(server)?.Name == "Fuel Canister", 3, [a]))
                 Fail($"assembling network: the recipe didn't reach both ends ({RecipeOn(server)?.Name}, {RecipeOn(a)?.Name}, \"{a.SandboxNotice}\")");
 
             // F over the wire: carried steel goes in; the client sees the mixed input, the work and the tray.
@@ -601,7 +601,7 @@ public static partial class SelfTest
             if (!Await(() => Store(a) is { } s && (s.MixOf(steel) > 0 || s.Busy), 3, [a]))
                 Fail($"assembling network: the client never saw its input (\"{LookOf(a)}\")");
             if (!Await(() => Store(a) is { Items: >= 2 } || w.StoreOf(bay, PartNamed(bay, "Chest")) is { Items: >= 1 }, 8, [a]))
-                Fail($"assembling network: no Steel Plates on the tray (\"{LookOf(a)}\", host tray {st.Items})");
+                Fail($"assembling network: no Fuel Canisters on the tray (\"{LookOf(a)}\", host tray {st.Items})");
 
             // An Engine, part way: three stores' worth of state: materials and parts in the input, seen by a late joiner too.
             a.SandboxConfigure(bay.Id, [(byte)asm], [(byte)def.CfgSlot[(int)CfgKey.Recipe]], [Array.IndexOf(recipes.Choices, "Engine")]);

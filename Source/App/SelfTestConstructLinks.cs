@@ -600,13 +600,22 @@ public static partial class SelfTest
             Tick(t); // (warm up: the engines start, first-time paths run)
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var before = GC.GetAllocatedBytesForCurrentThread();
+        int allocTicks = 0, firstTick = -1;
+        long worstTick = 0;
         for (var t = 60; t < 180; t++)
+        {
+            var b0 = GC.GetAllocatedBytesForCurrentThread();
             Tick(t);
+            var b = GC.GetAllocatedBytesForCurrentThread() - b0;
+            if (b > 0 && allocTicks++ == 0)
+                firstTick = t;
+            worstTick = Math.Max(worstTick, b);
+        }
         var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
         var ms = sw.Elapsed.TotalMilliseconds / 120;
         Line($"budget: {w.Bodies.Count} constructs ({w.CouplingCount} coupling, {w.XWireCount} cross wire, {w.Bodies.Count(b => b.Electrical)} electrical), {ConstructPhysics.LastContacts} contacts a tick; {bytes} bytes allocated in 120 ticks, {ms:0.000} ms a tick");
         if (bytes > 0)
-            Fail($"construct links: {bytes} bytes allocated in 120 ticks (should be none)");
+            Fail($"construct links: {bytes} bytes allocated in 120 ticks (should be none; {allocTicks} ticks allocated, the first {firstTick}, the most {worstTick} B)"); // (CI saw 592 B once, never seen here: the split tells a one-off from a steady cost)
         if (ms > 2.5)
             Fail($"construct links: {ms:0.00} ms a tick (budget 2.5 ms of the 8 ms tick)");
     }

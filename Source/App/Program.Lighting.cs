@@ -28,6 +28,8 @@ public static unsafe partial class Program
         if (World.Map.LightBake == null)
         {
             if (_game.SandboxOn)
+                PartAmbience.AddLights(_game.Constructs, eye, now, _game.TickAlpha, _game.IsServer); // (a searchlight's sweep, in the dark: PartAmbience.cs)
+            if (_game.SandboxOn)
                 ConstructLamps.AddLights(_game.Constructs, eye, _game.TickAlpha, _game.IsServer); // (phase 7b: lamps on constructs light an unlit map too; nothing else does)
             return;
         }
@@ -45,6 +47,8 @@ public static unsafe partial class Program
             LightGrid.AddDynamic(b.Pos + new Vector3(0, 0.5f, 0), tint * (3f * (1f - age / 0.5f)), MathF.Max(b.Radius * 2.5f, 6f));
         }
         MegaBlastFx.AddLights(now); // a massive blast's fireball (Source/Render/Fx/MegaBlastFx.cs)
+        if (_game.SandboxOn)
+            PartAmbience.AddLights(_game.Constructs, eye, now, _game.TickAlpha, _game.IsServer);
         if (_game.SandboxOn)
             ConstructLamps.AddLights(_game.Constructs, eye, _game.TickAlpha, _game.IsServer); // (phase 7b: the lights left over go to lamps on constructs, nearest first)
     }

@@ -34,6 +34,20 @@ public sealed class LogiMap
     public int NodeN;
     public readonly float[] EdgeLen = new float[Construct.MaxRoutes]; // each conveyor's length (walked once here, never per step)
 
+    // Lifters (arms and cranes phase 5, ConstructLifterNet.cs): each pick-to-put pair of a lifter's points on this body is an edge.
+    public readonly LiftEdge[] Lifts = new LiftEdge[ConstructLifters.MaxEdges];
+    public int LiftN;
+    public ulong LiftHash; // the edges, folded (a terminal's network follows them: ConstructCrafting.KeyOf)
+    public const int MaxLiftParts = 32;
+    public readonly ushort[] LiftParts = new ushort[MaxLiftParts]; // the body's lifter parts when the map was made...
+    public readonly byte[] LiftModes = new byte[MaxLiftParts]; // ...and their Works settings (a change makes the map again: a setting is no rebuild)
+    public int LiftPartN;
+    public ulong LiftKey; // what the edges were worked out from (ConstructLifters.EdgeKey)...
+    public int LiftKeyN = -1; // ...and how many there were
+    public readonly bool[] LiftPick = new bool[MaxNodes]; // a lifter picks at this node (a rack or a pad): a way may go on from it by the lifter
+    public readonly bool[] DestPick = new bool[MaxDests]; // a Lay-down Pad: a station's large parts are sent to it (ConstructLifters.PadWant)
+    public readonly bool[] ViaLift = new bool[MaxRouters * MaxDests]; // the way crosses a lifter (never for overflow: a lifter carries no storage to storage)
+
     public readonly ushort[] Routers = new ushort[MaxRouters]; // node of each Router
     public int RouterN;
     public readonly ushort[] Dests = new ushort[MaxDests]; // node of each destination (a Piece Rack's hold or a terminal's tray)
@@ -53,6 +67,15 @@ public sealed class LogiMap
     public readonly ushort[] ShowDef = new ushort[MaxRouters], ShowDest = new ushort[MaxRouters], ShowTag = new ushort[MaxRouters];
     public readonly bool[] ShowStuck = new bool[MaxRouters];
     public readonly byte[] ShowReason = new byte[MaxRouters];
+    // Server: the pile of pieces no rack takes set off beside each Router (ConstructLogistics.NoPlace): at most PileMax, then the line waits.
+    // Its Alarm stays on while any of them still lies where it was set down (ConstructLogistics.Piles, each conveyor step).
+    public const int PileMax = 4;
+    public readonly ushort[] OffDef = new ushort[MaxRouters]; // the last piece set off, 0 none
+    public readonly byte[] OffReason = new byte[MaxRouters];
+    public readonly byte[] OffN = new byte[MaxRouters];
+    public readonly ushort[] OffBody = new ushort[MaxRouters * PileMax]; // each one's body id
+    public readonly Vector3[] OffAt = new Vector3[MaxRouters * PileMax]; // ...and where it was set down
+    public int OffAny; // Routers with a pile
     public readonly ushort[] ShowStuckDef = new ushort[MaxRouters];
     public int ShowVersion; // goes up when any Router's show changes (a look line's key)
     public bool AnyOut; // server: a Router's Alarm or Moving output is set
@@ -88,7 +111,8 @@ public static class ConstructLogistics
     public const int FullSteps = 50; // conveyor steps (5 s) a piece waits for its way before it goes to storage instead
     public const int RetrySteps = 20; // a stuck piece looks again every 2 s
     public const float JunctionCost = 2f; // metres a way is charged for each junction it crosses
-    public static readonly string[] RouterOut = ["Alarm", "Moving"]; // a Router's outputs: its Out and Out1 (Refresh)
+    public static readonly string[] RouterOut = ["Alarm", "Moving", "Data out"]; // a Router's outputs: its Out and Out1 (Refresh), then the network board
+    public const int PortBoard = 2; // Data out's port: a display linked to it is the network board (ConstructLogisticsBoard.cs)
 
     private static int _columnsLeft = ColumnsPerStep;
 
@@ -101,7 +125,7 @@ public static class ConstructLogistics
     public static LogiMap Map(Construct c)
     {
         var m = c.Logi ??= new LogiMap();
-        if (m.Stamp == c.RebuildStamp && m.SizeStamp == c.LogiStamp && m.PartCount == c.PartCount && m.RouteCount == c.RouteCount)
+        if (m.Stamp == c.RebuildStamp && m.SizeStamp == c.LogiStamp && m.PartCount == c.PartCount && m.RouteCount == c.RouteCount && (m.LiftPartN == 0 || !ConstructLifters.ModesChanged(c, m)))
             return m;
         Build(c, m);
         return m;
@@ -169,8 +193,31 @@ public static class ConstructLogistics
         m.PartCount = c.PartCount;
         m.RouteCount = c.RouteCount;
         // A rebuild that changed no link (a machine's finished piece left the body, a part elsewhere was placed): the map, its columns
-        // and what the Routers show stay as they are.
+        // and what the Routers show stay as they are. A lifter's edges count as links (worked out here, from the parts: either peer).
         var hash = LinkHash(c);
+        Span<LiftEdge> lifts = stackalloc LiftEdge[ConstructLifters.MaxEdges];
+        var hasLift = ConstructLifters.HasLifter(c);
+        if (hasLift)
+            ConstructLifters.NoteModes(c, m);
+        else
+            m.LiftPartN = 0;
+        var liftN = 0;
+        var key = hasLift ? ConstructLifters.EdgeKey(c) : 0UL;
+        if (hasLift && key == m.LiftKey && m.LiftKeyN == m.LiftN)
+        {
+            liftN = m.LiftN; // (nothing the edges follow changed: kept, as worked out last time)
+            m.Lifts.AsSpan(0, liftN).CopyTo(lifts);
+        }
+        else if (hasLift)
+        {
+            liftN = ConstructLifters.MapEdges(c, lifts);
+            (m.LiftKey, m.LiftKeyN) = (key, liftN);
+        }
+        var liftHash = 0UL;
+        for (var e = 0; e < liftN; e++)
+            liftHash = (liftHash ^ lifts[e].Lifter ^ (ulong)lifts[e].From << 16 ^ (ulong)lifts[e].To << 32 ^ (ulong)lifts[e].Narrow << 48 ^ 0xA5UL << 56) * 1099511628211UL;
+        hash ^= liftHash;
+        m.LiftHash = liftHash;
         if (hash == m.LinkHash && m.NodeOf.Length >= c.PartCount)
         {
             for (var n = 0; n < m.NodeN; n++)
@@ -192,6 +239,14 @@ public static class ConstructLogistics
         m.ShowDef.AsSpan(0, was).CopyTo(wasDef);
         m.ShowDest.AsSpan(0, was).CopyTo(wasDest);
         m.ShowTag.AsSpan(0, was).CopyTo(wasTag);
+        Span<ushort> wasOffDef = stackalloc ushort[LogiMap.MaxRouters], wasOffBody = stackalloc ushort[LogiMap.MaxRouters * LogiMap.PileMax];
+        Span<byte> wasOffN = stackalloc byte[LogiMap.MaxRouters], wasOffWhy = stackalloc byte[LogiMap.MaxRouters];
+        Span<Vector3> wasOffAt = stackalloc Vector3[LogiMap.MaxRouters * LogiMap.PileMax];
+        m.OffDef.AsSpan(0, was).CopyTo(wasOffDef);
+        m.OffReason.AsSpan(0, was).CopyTo(wasOffWhy);
+        m.OffN.AsSpan(0, was).CopyTo(wasOffN);
+        m.OffBody.AsSpan(0, was * LogiMap.PileMax).CopyTo(wasOffBody);
+        m.OffAt.AsSpan(0, was * LogiMap.PileMax).CopyTo(wasOffAt);
         if (m.NodeOf.Length < c.PartCount)
             m.NodeOf = new short[Math.Max(c.PartCount, m.NodeOf.Length * 2)];
         m.NodeOf.AsSpan(0, c.PartCount).Fill(-1);
@@ -215,6 +270,21 @@ public static class ConstructLogistics
             else if (r.Type == RouteType.Chute && r.FedEnd && r.Source < c.PartCount && r.To < c.PartCount)
                 Union(m, NodeFor(c, m, r.Source), NodeFor(c, m, r.To));
         }
+        // A lifter joins what it carries between (phase 5): its pick and put points are nodes of one network, each pair an edge.
+        m.LiftN = 0;
+        for (var e = 0; e < liftN; e++)
+        {
+            var a = NodeFor(c, m, lifts[e].From);
+            var b = NodeFor(c, m, lifts[e].To);
+            if (a < 0 || b < 0)
+                continue;
+            Union(m, a, b);
+            m.Lifts[m.LiftN++] = lifts[e];
+        }
+        m.LiftPick.AsSpan(0, m.NodeN).Clear();
+        for (var e = 0; e < m.LiftN; e++)
+            if (c.DefOf(m.Lifts[e].From).IsPieceRack)
+                m.LiftPick[m.NodeOf[m.Lifts[e].From]] = true; // (a machine's out is no node a piece rides into)
         m.NetHasRouter.AsSpan(0, m.NodeN).Clear();
         for (var n = 0; n < m.NodeN; n++)
         {
@@ -228,11 +298,12 @@ public static class ConstructLogistics
             }
             else if (d.IsConveyorJunction)
                 m.Through[n] = outs[n] == 1; // (a Join; a Splitter deals in turn, so a way through it is no way)
-            else if ((d.IsPieceRack || d.IsAssembler || d.IsPanelFormer) && m.DestN < LogiMap.MaxDests && c.Parts[m.NodePart[n]].Store != 0)
+            else if ((d.IsPieceRack || d.IsAssembler || d.IsPanelFormer || d.IsPress && !d.IsLathe) && m.DestN < LogiMap.MaxDests && c.Parts[m.NodePart[n]].Store != 0)
             {
-                // A rack or a tray; an Assembler's Piece in (a chained order's inputs); a Panel Former's (no wants yet: phase 3's sheet needs).
+                // A rack or a tray; an Assembler's Piece in (a chained order's inputs); a Panel Former's (a chained panel order's sheet); a press's bays.
                 m.DestOfNode[n] = (short)m.DestN;
                 m.DestStore[m.DestN] = d.IsPieceRack && !d.IsCraftTerminal;
+                m.DestPick[m.DestN] = d.IsLayDownPad;
                 m.Dests[m.DestN++] = (ushort)n;
             }
         }
@@ -242,10 +313,20 @@ public static class ConstructLogistics
         m.ShowWay.AsSpan().Clear();
         m.ShowState.AsSpan().Clear();
         m.ShowStuck.AsSpan().Clear();
+        m.OffN.AsSpan().Clear();
+        m.OffDef.AsSpan().Clear();
+        m.OffAny = 0;
         for (var s = 0; s < m.RouterN; s++)
             for (var o = 0; o < was; o++)
                 if (wasPart[o] == m.NodePart[m.Routers[s]])
+                {
                     (m.ShowWay[s], m.ShowState[s], m.ShowDef[s], m.ShowDest[s], m.ShowTag[s]) = (wasWay[o], wasState[o], wasDef[o], wasDest[o], wasTag[o]);
+                    (m.OffDef[s], m.OffReason[s], m.OffN[s]) = (wasOffDef[o], wasOffWhy[o], wasOffN[o]); // (its pile and Alarm go with the Router: a rebuild changes neither)
+                    wasOffBody.Slice(o * LogiMap.PileMax, LogiMap.PileMax).CopyTo(m.OffBody.AsSpan(s * LogiMap.PileMax));
+                    wasOffAt.Slice(o * LogiMap.PileMax, LogiMap.PileMax).CopyTo(m.OffAt.AsSpan(s * LogiMap.PileMax));
+                    if (m.OffN[s] > 0)
+                        m.OffAny++;
+                }
         m.ShowVersion++;
     }
 
@@ -266,10 +347,19 @@ public static class ConstructLogistics
         var dn = m.Dests[ds];
         Span<float> dist = stackalloc float[m.NodeN];
         Span<byte> narrow = stackalloc byte[m.NodeN];
+        // A way on from a lifter's pick point is by the lifter only (a rack forwards nothing by conveyor): its own distances. A plain
+        // store's column has none (overflow is never carried store to store); a machine's, a tray's or a pick pad's has.
+        var lifts = m.LiftN > 0 && (!m.DestStore[ds] || m.DestPick[ds]);
+        Span<float> liftDist = stackalloc float[lifts ? m.NodeN : 0];
+        Span<byte> liftNarrow = stackalloc byte[lifts ? m.NodeN : 0];
+        Span<bool> via = stackalloc bool[m.NodeN]; // (the way on from a node crosses a lifter)
         dist.Fill(float.MaxValue);
         narrow.Fill(255);
+        liftDist.Fill(float.MaxValue);
+        liftNarrow.Fill(255);
+        via.Clear();
         dist[dn] = 0;
-        // Relax every conveyor until nothing improves (a few passes on a real factory; at most one per node).
+        // Relax every conveyor (and lifter) until nothing improves (a few passes on a real factory; at most one per node).
         for (var pass = 0; pass < m.NodeN; pass++)
         {
             var changed = false;
@@ -279,13 +369,28 @@ public static class ConstructLogistics
                 if (!Usable(c, r))
                     continue;
                 int u = m.NodeOf[r.From], v = m.NodeOf[r.To];
-                if (u < 0 || v < 0 || dist[v] == float.MaxValue || v != dn && !m.Through[v])
+                if (u < 0 || v < 0 || !Onward(m, dn, v, dist, narrow, liftDist, liftNarrow, via, out var dv, out var nv, out var vl))
                     continue;
-                var cost = dist[v] + m.EdgeLen[k] + (v == dn ? 0 : JunctionCost);
+                var cost = dv + m.EdgeLen[k] + (v == dn ? 0 : JunctionCost);
                 if (cost < dist[u])
                 {
                     dist[u] = cost;
-                    narrow[u] = (byte)Math.Min(v == dn ? 255 : narrow[v], r.ConvW / ConstructConveyor.StepCm);
+                    narrow[u] = (byte)Math.Min(nv, r.ConvW / ConstructConveyor.StepCm);
+                    via[u] = vl;
+                    changed = true;
+                }
+            }
+            for (var e = 0; lifts && e < m.LiftN; e++)
+            {
+                ref readonly var le = ref m.Lifts[e];
+                int u = m.NodeOf[le.From], v = m.NodeOf[le.To];
+                if (u < 0 || v < 0 || !m.LiftPick[u] || u == dn || !Onward(m, dn, v, dist, narrow, liftDist, liftNarrow, via, out var dv, out var nv, out _))
+                    continue;
+                var cost = dv + le.Len + JunctionCost; // (its metres there and back, and a handling)
+                if (cost < liftDist[u])
+                {
+                    liftDist[u] = cost;
+                    liftNarrow[u] = Math.Min(nv, le.Narrow);
                     changed = true;
                 }
             }
@@ -298,6 +403,7 @@ public static class ConstructLogistics
             m.Hop[at] = LogiMap.None;
             m.Dist[at] = float.MaxValue;
             m.Narrow[at] = 0;
+            m.ViaLift[at] = false;
             int rn = m.Routers[s];
             for (var k = 0; k < c.RouteCount; k++)
             {
@@ -305,19 +411,43 @@ public static class ConstructLogistics
                 if (!Usable(c, r) || m.NodeOf[r.From] != rn)
                     continue;
                 int v = m.NodeOf[r.To];
-                if (v < 0 || dist[v] == float.MaxValue || v != dn && !m.Through[v] || v == rn)
+                if (v < 0 || v == rn || !Onward(m, dn, v, dist, narrow, liftDist, liftNarrow, via, out var dv, out var nv, out var vl))
                     continue;
-                var cost = dist[v] + m.EdgeLen[k] + (v == dn ? 0 : JunctionCost);
+                var cost = dv + m.EdgeLen[k] + (v == dn ? 0 : JunctionCost);
                 if (cost < m.Dist[at])
                 {
                     m.Dist[at] = cost;
                     m.Hop[at] = (byte)k;
-                    m.Narrow[at] = (byte)Math.Min(v == dn ? 255 : narrow[v], r.ConvW / ConstructConveyor.StepCm);
+                    m.Narrow[at] = (byte)Math.Min(nv, r.ConvW / ConstructConveyor.StepCm);
+                    m.ViaLift[at] = vl;
                 }
             }
         }
         m.Ready[ds] = true;
         return true;
+    }
+
+    /// <summary>
+    /// The way on from node <paramref name="v"/> toward destination node <paramref name="dn"/> as worked out so far: none there; through a
+    /// Router or a Join by conveyor; or from a lifter's pick point by the lifter (<paramref name="viaLift"/> then, or when the way on crosses one).
+    /// </summary>
+    private static bool Onward(LogiMap m, int dn, int v, Span<float> dist, Span<byte> narrow, Span<float> liftDist, Span<byte> liftNarrow, Span<bool> via,
+        out float dv, out byte nv, out bool viaLift)
+    {
+        (dv, nv, viaLift) = (0, 255, false);
+        if (v == dn)
+            return true;
+        if (m.Through[v] && dist[v] != float.MaxValue)
+        {
+            (dv, nv, viaLift) = (dist[v], narrow[v], via[v]);
+            return true;
+        }
+        if (liftDist.Length > 0 && m.LiftPick[v] && liftDist[v] != float.MaxValue)
+        {
+            (dv, nv, viaLift) = (liftDist[v], liftNarrow[v], true);
+            return true;
+        }
+        return false;
     }
 
     /// <summary>Does Router <paramref name="router"/> have a way to part <paramref name="dest"/> (a terminal's fetch through it)? Either peer.</summary>
@@ -348,14 +478,25 @@ public static class ConstructLogistics
         return n;
     }
 
+    /// <summary>Pieces riding to store <paramref name="handle"/> for order <paramref name="tag"/> (a terminal's or a station's): either peer; allocates nothing.</summary>
+    public static int RidingFor(Construct c, ushort handle, ushort tag) => tag == 0 ? 0 : Riding(c, handle, tag, LogiFlags.None, LogiFlags.Storage);
+
     /// <summary>The order a piece of kind <paramref name="d"/> could serve at terminal destination <paramref name="ds"/>: its id, or 0. Prefers one asked of <paramref name="maker"/>.</summary>
     private static ushort WantAt(ConstructWorld world, Construct c, LogiMap m, int ds, ConstructPartDef d, int maker)
     {
         int t = m.NodePart[m.Dests[ds]];
-        if (c.DefOf(t).IsAssembler)
+        if (m.DestPick[ds])
+            return ConstructLifters.PadWant(world, c, t, d); // (a station's large part to a pick pad its arms fit from: lifters phase 5)
+        if (c.DefOf(t).IsLaserCutter)
+            return ConstructLogisticsPlan.WantAt(world, c, t, d, maker) is var link and > 0 ? link // (its chained order's blank)
+                : maker >= 0 && OlderAsked(c, maker, d, uint.MaxValue) ? (ushort)0 // (a terminal ordered this panel from that machine: never the cutter's)
+                : ConstructLaserCutter.Wants(world, c, t, d) && world.StoreOf(c, t) is { } bed && Riding(c, bed.Handle, 0, LogiFlags.None, LogiFlags.None) == 0 ? ConstructLaserCutter.BedTag : (ushort)0; // (its head order's blank, one riding at a time)
+        if (c.DefOf(t) is { IsAssembler: true } or { IsPanelFormer: true } or { IsPress: true, IsLathe: false })
             return ConstructLogisticsPlan.WantAt(world, c, t, d, maker); // (a chained order's input)
         if (c.Parts[t].Craft is not { Count: > 0 } q || world.StoreOf(c, t) is not { } tray)
             return 0;
+        if (c.DefOf(t).IsBuildStation && ConstructLifters.TooBigForHold(c, t, tray, d))
+            return 0; // (it goes to a pick pad: PadWant)
         ushort any = 0;
         for (var k = 0; k < q.Count; k++)
         {
@@ -378,26 +519,44 @@ public static class ConstructLogistics
     /// </summary>
     public static void AtSource(ConstructWorld world, Construct c, int machine, ref CRider r, ConstructPartDef d)
     {
-        if (world.ChainCount > 0 && ConstructLogisticsPlan.FromMaker(world, c, machine, d, out var into) is var link and > 0)
+        int into = -1;
+        uint stamp = 0;
+        var link = world.ChainCount > 0 ? ConstructLogisticsPlan.FromMaker(world, c, machine, d, out into, out stamp) : (ushort)0;
+        if (link > 0 && !OlderAsked(c, machine, d, stamp))
         {
             (r.Dest, r.Tag, r.Flags) = (c.Parts[into].Store, link, 0); // (made for a chained order: to the machine that needs it, Router or not)
             return;
         }
-        if (!world.CraftOpen.Contains(c.Id))
-            return;
-        var m = Map(c);
-        var net = m.NetOf(machine);
-        if (net < 0 || !m.NetHasRouter[net])
-            return;
-        for (var ds = 0; ds < m.DestN; ds++)
+        var m = world.CraftOpen.Contains(c.Id) ? Map(c) : null;
+        var net = m?.NetOf(machine) ?? -1;
+        for (var ds = 0; m != null && net >= 0 && m.NetHasRouter[net] && ds < m.DestN; ds++)
         {
-            if (m.DestStore[ds] || m.NodeNet[m.Dests[ds]] != net || WantAt(world, c, m, ds, d, machine) is not (var id and > 0))
+            if (m.DestStore[ds] && !m.DestPick[ds] || m.NodeNet[m.Dests[ds]] != net || WantAt(world, c, m, ds, d, machine) is not (var id and > 0))
                 continue;
             r.Dest = c.Parts[m.NodePart[m.Dests[ds]]].Store;
             r.Tag = id;
             r.Flags = 0;
             return;
         }
+        if (link > 0)
+            (r.Dest, r.Tag, r.Flags) = (c.Parts[into].Store, link, 0); // (the older terminal order had no way to be served here: the chain takes it)
+    }
+
+    /// <summary>Did a terminal order older than <paramref name="stamp"/> ask machine <paramref name="machine"/> for this kind (it goes first: class, then age)?</summary>
+    private static bool OlderAsked(Construct c, int machine, ConstructPartDef d, uint stamp)
+    {
+        for (var t = 0; t < c.PartCount; t++)
+        {
+            if (c.Parts[t].Craft is not { Count: > 0 } q)
+                continue;
+            for (var k = 0; k < q.Count; k++)
+            {
+                ref var o = ref q.Items[k];
+                if (o.Asked > 0 && o.Where == machine && o.Stamp < stamp && !o.Done && !o.Cancelled && ConstructCrafting.KindOf(ref o) == d.Id)
+                    return true;
+            }
+        }
+        return false;
     }
 
     /// <summary>Does the way from Router slot <paramref name="s"/> to destination <paramref name="ds"/> exist and take a piece this wide?</summary>
@@ -421,7 +580,7 @@ public static class ConstructLogistics
         if (((LogiFlags)r.Flags & LogiFlags.Overflow) == 0)
             for (var ds = 0; ds < m.DestN; ds++)
             {
-                if (m.DestStore[ds] || ds == skip || m.NodeNet[m.Dests[ds]] != net || WantAt(world, c, m, ds, d, -1) is not (var id and > 0))
+                if (m.DestStore[ds] && !m.DestPick[ds] || ds == skip || m.NodeNet[m.Dests[ds]] != net || WantAt(world, c, m, ds, d, -1) is not (var id and > 0))
                     continue;
                 if (WayFrom(c, m, s, ds, d) != LogiReason.None)
                     continue;
@@ -437,13 +596,15 @@ public static class ConstructLogistics
             if (!m.DestStore[ds] || ds == skip || m.NodeNet[m.Dests[ds]] != net)
                 continue;
             int rack = m.NodePart[m.Dests[ds]];
-            if (world.StoreOf(c, rack) is not { } st || ConstructConveyor.RackCheck(c, rack, st, d) != 0)
-                continue;
+            if (world.StoreOf(c, rack) is not { } st || ConstructConveyor.RackCheck(c, rack, st, d) != 0 || !StockTargets.Accepts(world, c, rack, st, d))
+                continue; // (its Takes filter holds for overflow too; a store always takes what it keeps)
             if (st.ItemCount + Riding(c, st.Handle, 0, LogiFlags.Storage, LogiFlags.None) >= c.DefOf(rack).RackCount)
                 continue;
-            if (WayFrom(c, m, s, ds, d) != LogiReason.None)
-                continue;
-            var dist = m.Dist[s * LogiMap.MaxDests + ds];
+            if (WayFrom(c, m, s, ds, d) != LogiReason.None || m.ViaLift[s * LogiMap.MaxDests + ds])
+                continue; // (no way, or only by a lifter, which carries no overflow store to store)
+            var dist = m.Dist[s * LogiMap.MaxDests + ds] - StockTargets.Priority(c, rack) * 1e4f; // (its store priority first, then the shorter way)
+            if (world.StockTargetN > 0 && StockTargets.Keeps(world, c, st.Handle, (ushort)d.Id))
+                dist -= 1e5f; // (a store that keeps this kind before any other)
             if (dist < bestDist)
             {
                 bestDist = dist;
@@ -469,10 +630,13 @@ public static class ConstructLogistics
         if (world.StoreOf(c, part) is not { } st)
             return LogiReason.Closed;
         if (c.DefOf(part) is { IsPieceRack: false } md)
-            return md.IsAssembler && ConstructLogisticsPlan.Open(world, c, part, r.Tag) ? LogiReason.None : LogiReason.Closed; // (a machine's input waits at its door)
-        if (((LogiFlags)r.Flags & LogiFlags.Storage) == 0 && (r.Tag == 0 || c.Parts[part].Craft is not { } q || q.Find(r.Tag) < 0))
-            return LogiReason.Closed;
-        return ConstructConveyor.RackCheck(c, part, st, d) != 0 ? LogiReason.DestFull : LogiReason.None;
+            return md.IsLaserCutter ? (ConstructLaserCutter.Wants(world, c, part, d) ? LogiReason.None : LogiReason.Closed) // (a cutter: while it still wants this blank)
+                : (md.IsAssembler || md.IsPanelFormer || md.IsPress) && ConstructLogisticsPlan.Open(world, c, part, r.Tag) ? LogiReason.None : LogiReason.Closed; // (a machine's input waits at its door)
+        if (((LogiFlags)r.Flags & LogiFlags.Storage) == 0 && r.Tag != 0 && m.DestPick[ds] && ConstructLifters.PadOrderOpen(world, c, part, r.Tag, d))
+            return ConstructConveyor.RackCheck(c, part, st, d) != 0 ? LogiReason.DestFull : LogiReason.None; // (a station's large part to its pick pad: lifters phase 5)
+        if (((LogiFlags)r.Flags & LogiFlags.Storage) == 0 && (r.Tag == 0 || c.Parts[part].Craft is not { } q || q.Find(r.Tag) < 0) && !(c.Parts[part].Craft == null && ConstructLogisticsPlan.Open(world, c, part, r.Tag)))
+            return LogiReason.Closed; // (a plain rack: its stock target's refill, phase 3)
+        return ConstructConveyor.RackCheck(c, part, st, d, ordered: r.Tag != 0 && ((LogiFlags)r.Flags & LogiFlags.Storage) == 0) != 0 ? LogiReason.DestFull : LogiReason.None;
     }
 
     /// <summary>
@@ -487,8 +651,7 @@ public static class ConstructLogistics
         var flags0 = r.Flags;
         if (((LogiFlags)r.Flags & LogiFlags.Stuck) != 0)
         {
-            if (r.Wait < 255)
-                r.Wait++;
+            r.Wait = (byte)(r.Wait % (RetrySteps * 12) + 1); // (it wraps: held at 255 it never looked again after 25 s, fix-ups 2)
             if (r.Wait % RetrySteps != 0)
                 return false;
         }
@@ -503,10 +666,15 @@ public static class ConstructLogistics
             why = LogiReason.Loop;
             r.Hops = 0;
         }
+        int router = m.NodePart[m.Routers[s]];
+        var spill = StockTargets.Spill(c, router); // (phase 3: routerSpill pins where unordered pieces go)
+        var ordered = r.Dest != 0 && ((LogiFlags)r.Flags & LogiFlags.Storage) == 0;
+        if (ordered && why == LogiReason.NoWay && StockTargets.Hold(c, router))
+            return Held(c, ref r, why, flags0, ref changed); // (routerHold: an order's piece with no way waits here)
         if (ds < 0 || why != LogiReason.None)
         {
             if (!Reassign(world, c, m, s, ref r, d, ds, why))
-                return Stuck(c, m, s, ref r, flags0, ref changed);
+                return spill != StockTargets.SpillAuto ? Spill(c, m, s, k, lead, spill, flags0, ref changed) : NoPlace(world, c, m, s, lead, d, flags0, ref changed);
             ds = -1;
             for (var i = 0; i < m.DestN; i++)
                 if (c.Parts[m.NodePart[m.Dests[i]]].Store == r.Dest)
@@ -514,6 +682,8 @@ public static class ConstructLogistics
             if (ds < 0)
                 return Stuck(c, m, s, ref r, flags0, ref changed);
         }
+        if (spill != StockTargets.SpillAuto && ((LogiFlags)r.Flags & LogiFlags.Storage) != 0)
+            return Spill(c, m, s, k, lead, spill, flags0, ref changed); // (the pin wins for pieces going to storage; ordered pieces follow their order)
         if (!Column(c, m, ds))
         {
             changed |= r.Flags != flags0;
@@ -522,27 +692,72 @@ public static class ConstructLogistics
         var way = WayFrom(c, m, s, ds, d);
         if (way != LogiReason.None)
         {
+            if (((LogiFlags)r.Flags & LogiFlags.Storage) == 0 && StockTargets.Hold(c, router))
+                return Held(c, ref r, way, flags0, ref changed);
             if (!Reassign(world, c, m, s, ref r, d, ds, way))
-                return Stuck(c, m, s, ref r, flags0, ref changed);
+                return NoPlace(world, c, m, s, lead, d, flags0, ref changed);
             changed |= r.Flags != flags0;
             return false; // (the new way next step)
         }
         int o = m.Hop[s * LogiMap.MaxDests + ds];
+        var wasHeld = ((LogiFlags)r.Flags & LogiFlags.Stuck) != 0;
+        r.Flags &= unchecked((byte)~LogiFlags.Stuck);
         if (!ConstructConveyor.PassTo(c, k, lead, o))
         {
+            if (wasHeld)
+                r.Flags |= (byte)LogiFlags.Stuck;
             if (r.Wait < 255)
                 r.Wait++;
             if (r.Wait >= FullSteps && ((LogiFlags)r.Flags & LogiFlags.Storage) == 0)
             {
                 r.Wait = 0;
+                if (StockTargets.Hold(c, router))
+                    return Held(c, ref r, LogiReason.DestFull, flags0, ref changed);
                 if (!Reassign(world, c, m, s, ref r, d, ds, LogiReason.DestFull))
-                    return Stuck(c, m, s, ref r, flags0, ref changed);
+                    return NoPlace(world, c, m, s, lead, d, flags0, ref changed);
             }
             changed |= r.Flags != flags0;
             return false;
         }
         Shown(c, m, s, o, in c.Conveyed[LastOn(c, o)]);
         return true;
+    }
+
+    /// <summary>routerHold: an order's piece that can't get on waits at the Router with its order kept, marked stuck (tried again every 2 s).</summary>
+    private static bool Held(Construct c, ref CRider r, LogiReason why, byte flags0, ref bool changed)
+    {
+        if (((LogiFlags)r.Flags & LogiFlags.Stuck) == 0)
+            r.Wait = 0;
+        SetReason(ref r, why);
+        r.Flags |= (byte)LogiFlags.Stuck;
+        changed |= r.Flags != flags0;
+        return false;
+    }
+
+    /// <summary>routerSpill pinned: a piece for storage (or with nowhere to go) leaves by way <paramref name="spill"/> (1 ahead, 2 and 3 the sides); else waits.</summary>
+    private static bool Spill(Construct c, LogiMap m, int s, int k, int lead, int spill, byte flags0, ref bool changed)
+    {
+        int router = m.NodePart[m.Routers[s]];
+        ref var r = ref c.Conveyed[lead];
+        r.Flags = (byte)(((LogiFlags)r.Flags & (LogiFlags.Overflow | LogiFlags.ReasonMask | LogiFlags.Storage)) | LogiFlags.Storage);
+        if (r.Dest != 0 && PartOfStore(c, r.Dest) is var dp and >= 0 && m.DestSlot(dp) is var dsl and >= 0 && !m.DestStore[dsl])
+            r.Dest = 0; // (a store keeps its destination: the next Router sends it on; anything else is dropped here)
+        for (var o = 0; o < c.RouteCount; o++)
+        {
+            if (c.Routes[o].Type != RouteType.Conveyor || c.Routes[o].From != router || WayOf(c, o) != spill)
+                continue;
+            if (!ConstructConveyor.PassTo(c, k, lead, o))
+            {
+                if (r.Wait < 255)
+                    r.Wait++;
+                changed |= r.Flags != flags0;
+                return false;
+            }
+            Shown(c, m, s, o, in c.Conveyed[LastOn(c, o)]);
+            return true;
+        }
+        changed |= r.Flags != flags0;
+        return false; // (no conveyor on that way: it waits, as a piece with nowhere to go)
     }
 
     /// <summary>A new destination after <paramref name="why"/>: an order's piece goes to storage as overflow; a stored one to another store.</summary>
@@ -558,6 +773,85 @@ public static class ConstructLogistics
         r.Tag = 0;
         r.Flags &= unchecked((byte)~(LogiFlags.Storage | LogiFlags.Fetched));
         return Assign(world, c, m, s, ref r, d, why == LogiReason.None ? -1 : lost);
+    }
+
+    /// <summary>
+    /// The lead piece has no destination. It waits at the Router (stuck, tried again every 2 s) only while a plain Piece Rack on its
+    /// network could take it once it has room; a piece none ever will (a store part, a piece too big or filtered out everywhere, no
+    /// rack reachable) is set off the line beside the Router as a loose body at a clear spot, up to <see cref="LogiMap.PileMax"/> of
+    /// them; then it waits, stuck, and its machine stalls as before. The Router's Alarm stays on, with the reason in its look line and
+    /// screen, while any of the pile still lies where it was set down (verification 2026-11-13c, fault 2; the merge review). True: it went.
+    /// </summary>
+    private static bool NoPlace(ConstructWorld world, Construct c, LogiMap m, int s, int lead, ConstructPartDef d, byte flags0, ref bool changed)
+    {
+        ref var r = ref c.Conveyed[lead];
+        if (CouldWait(world, c, m, s, d))
+            return Stuck(c, m, s, ref r, flags0, ref changed);
+        PileLeft(world, m, s);
+        if (m.OffN[s] >= LogiMap.PileMax || ConstructConveyor.SetOff(world, c, lead, d, out var spot) is not (var id and > 0))
+            return Stuck(c, m, s, ref r, flags0, ref changed); // (the pile is full, or no clear spot: the line waits until it is taken)
+        if (m.OffN[s] == 0)
+            m.OffAny++;
+        (m.OffBody[s * LogiMap.PileMax + m.OffN[s]], m.OffAt[s * LogiMap.PileMax + m.OffN[s]]) = (id, spot);
+        m.OffN[s]++;
+        m.OffDef[s] = (ushort)d.Id;
+        m.OffReason[s] = d.Role == PartRole.Storage ? OffStore : OffNone;
+        world.Events.Add($"{d.Name} set off the line beside {ConstructLogisticsBoard.RouterLabel(c, m.NodePart[m.Routers[s]])}: {OffText(m.OffReason[s])}");
+        changed = true;
+        return true;
+    }
+
+    private const byte OffNone = 0, OffStore = 1;
+
+    /// <summary>Router slot <paramref name="s"/>'s pile less the pieces taken away (gone, or moved more than 1.5 m from where they were set down).</summary>
+    private static bool PileLeft(ConstructWorld world, LogiMap m, int s)
+    {
+        var n = 0;
+        var at = s * LogiMap.PileMax;
+        for (var k = 0; k < m.OffN[s]; k++)
+            if (world.Get(m.OffBody[at + k]) is { PartCount: 1 } b && Vector3.DistanceSquared(b.WorldCom, m.OffAt[at + k]) < 1.5f * 1.5f)
+                (m.OffBody[at + n], m.OffAt[at + n++]) = (m.OffBody[at + k], m.OffAt[at + k]);
+        if (n == m.OffN[s])
+            return false;
+        m.OffN[s] = (byte)n;
+        if (n == 0)
+        {
+            m.OffDef[s] = 0;
+            m.OffAny--;
+        }
+        return true;
+    }
+
+    /// <summary>Server, each conveyor step for a body with a pile beside a Router: the pieces taken away leave it; the last one taken ends its Alarm.</summary>
+    public static void Piles(ConstructWorld world, Construct c)
+    {
+        if (c.Logi is not { OffAny: > 0 } m || m.Stamp != c.RebuildStamp)
+            return;
+        var changed = false;
+        for (var s = 0; s < m.RouterN; s++)
+            if (m.OffN[s] > 0)
+                changed |= PileLeft(world, m, s);
+        if (changed)
+            Refresh(c, server: true);
+    }
+
+    private static string OffText(byte why) => why == OffStore ? "no Piece Rack takes a store part (a rack holds pieces)" : "no Piece Rack on its network can take it";
+
+    /// <summary>Could a plain rack on Router slot <paramref name="s"/>'s network, by a way that takes the piece, hold it once it has room?</summary>
+    private static bool CouldWait(ConstructWorld world, Construct c, LogiMap m, int s, ConstructPartDef d)
+    {
+        var net = m.NodeNet[m.Routers[s]];
+        for (var ds = 0; ds < m.DestN; ds++)
+        {
+            if (!m.DestStore[ds] || m.NodeNet[m.Dests[ds]] != net)
+                continue;
+            int rack = m.NodePart[m.Dests[ds]];
+            if (world.StoreOf(c, rack) is not { } st || ConstructConveyor.RackCheck(c, rack, st, d) is not (0 or 4) || !StockTargets.Accepts(world, c, rack, st, d))
+                continue;
+            if (WayFrom(c, m, s, ds, d) == LogiReason.None && !m.ViaLift[s * LogiMap.MaxDests + ds]) // (a store only a lifter reaches is no place: overflow is never carried store to store, lifters phase 5)
+                return true;
+        }
+        return false;
     }
 
     private static bool Stuck(Construct c, LogiMap m, int s, ref CRider r, byte flags0, ref bool changed)
@@ -682,7 +976,7 @@ public static class ConstructLogistics
             if (!server)
                 continue;
             ref var p = ref c.Parts[m.NodePart[m.Routers[s]]];
-            var alarm = stuck[s] ? 1f : 0f;
+            var alarm = stuck[s] || m.OffN[s] > 0 ? 1f : 0f;
             float move = moving[m.NodeNet[m.Routers[s]]];
             if (p.Out != alarm || p.Out1 != move)
             {
@@ -707,7 +1001,7 @@ public static class ConstructLogistics
         var s = m.RouterSlot(part);
         if (s < 0)
             return false;
-        (way, state, stuck) = (m.ShowWay[s], m.ShowState[s], m.ShowStuck[s]);
+        (way, state, stuck) = (m.ShowWay[s], m.ShowState[s], m.ShowStuck[s] || c.Parts[part].Out > 0.5f); // (its Alarm: a client hears it as a signal, a set-off piece's too)
         var to = Angle(way);
         var t = (float)Math.Clamp((ConstructConveyor.Clock - m.ShowAt[s]) / 0.3, 0, 1);
         fence = Angle(m.ShowFrom[s]) + (to - Angle(m.ShowFrom[s])) * (t * t * (3 - 2 * t));
@@ -755,6 +1049,22 @@ public static class ConstructLogistics
         return $"-> {name} (order {r.Tag})";
     }
 
+    /// <summary>
+    /// "held at North Gate: no way to it ..." when a piece of terminal <paramref name="t"/>'s order <paramref name="order"/> waits stuck at
+    /// a Router (by its name, else its number: phase 4c); null when none does. Allocates only when one is held.
+    /// </summary>
+    public static string? HeldNote(Construct c, int t, ushort order)
+    {
+        for (var i = 0; i < c.ConveyedCount; i++)
+        {
+            ref readonly var r = ref c.Conveyed[i];
+            if (((LogiFlags)r.Flags & LogiFlags.Stuck) == 0 || r.Tag != order || r.Route >= c.RouteCount || PartOfStore(c, r.Dest) != t)
+                continue;
+            return "held at " + ConstructLogisticsBoard.RouterLabel(c, c.Routes[r.Route].To) + ": " + ReasonText(ReasonOf(r));
+        }
+        return null;
+    }
+
     /// <summary>A Router's look line: its last piece and where it went, the piece it holds and why, or its ways and destinations.</summary>
     public static string Look(ConstructWorld world, Construct c, int part)
     {
@@ -766,7 +1076,11 @@ public static class ConstructLogistics
         if (s < 0)
             return $"{d.Name}: not on a conveyor";
         if (m.ShowStuck[s])
-            return $"{d.Name}: holding {PieceName(m.ShowStuckDef[s])} - stuck: {ReasonText((LogiReason)m.ShowReason[s])}";
+            return $"{d.Name}: holding {PieceName(m.ShowStuckDef[s])} - stuck: {(m.OffN[s] >= LogiMap.PileMax ? $"{OffText(m.OffReason[s])}, and {m.OffN[s]} set off beside it already: take them away" : ReasonText((LogiReason)m.ShowReason[s]))}";
+        if (m.OffN[s] > 0)
+            return $"{d.Name}: ALARM - set {m.OffN[s]} off the line beside it, the last {PieceName(m.OffDef[s])}: {OffText(m.OffReason[s])} (take them away)";
+        if (c.Parts[part].Out > 0.5f)
+            return $"{d.Name}: ALARM - a piece waits here or was set off the line beside it"; // (a client hears only the Alarm: which, and why, is the server's)
         var net = m.NodeNet[m.Routers[s]];
         int ways = 0, dests = 0, stores = 0;
         for (var k = 0; k < c.RouteCount; k++)

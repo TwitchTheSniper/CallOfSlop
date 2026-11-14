@@ -445,7 +445,7 @@ meets, and the next storey's corners stand on the slab.
 | Floors | wood, steel, concrete, reinforced: 2x2, 2x4, 4x4 m; hatch floor (1 by 2 m hatch for a ship ladder), stair floor (1 by 3 m opening a cell in from one side), stairwell floor (2 by 2.5 m) |
 | Foundations | concrete 2x2 and 4x4 m pads (0.5 m), stepped (its back half 0.5 m deeper, for slopes), deep (four piers 1 m down), reinforced 4x4 m |
 | Roofs | roof slopes 4x4 and 2x4 m (wood, corrugated; 1 m rise), corrugated lean-tos, ridge roofs 4x4 m (one piece, closed ends), gable walls (close a ridge made of two slopes) |
-| Stairs and access | straight stairs 3 m (wood, steel, concrete: eight 0.375 m steps over 3 m), stair flights 1.5 m, half-turn stairs (2 by 2.5 m, a storey), Ship Ladder 3 m (steep: 0.375 m steps over 0.25 m), landings 2x2 m at 1.5 m, ramps (concrete 2x4 and 4x4, steel 2x4, wood 1x3 m), railings 2 and 4 m (steel, wood) |
+| Stairs and access | straight stairs 3 m (wood, steel, concrete: eight 0.375 m steps over 3 m), stair flights 1.5 m, half-turn stairs (2 by 2.5 m, a storey), Ship Ladder 3 m (steep: 0.375 m steps over 0.25 m), Fixed Ladder 3 m (straight up: F climbs it), landings 2x2 m at 1.5 m, ramps (concrete 2x4 and 4x4, steel 2x4, wood 1x3 m), railings 2 and 4 m (steel, wood) |
 | Doors and gates | Wood and Steel Door 1.25 m, Garage Door Leaf, Fence Gate: door-role leaves hung on the existing **Hinge** (so Interact and logic open them; a hinge's base goes on a jamb's socket). The flush doors for these openings are in [Doors](big-systems.md#doors) |
 | Defences | sandbag walls 2 m, 1 m, low 2 m, corner; Concrete Barrier 2 m; Blast Wall 2 m (3 m T-wall); wire-topped Wire Fences 2 and 4 m (seen and shot through, not walked through); Bunker Module (4 by 4 by 3 m, slits, a back doorway) and Pillbox (3 by 3 m), both foundations that anchor themselves |
 | Watchtower | Tower Platform 2x2 m (parapet on three sides), Tower Brace, Tower Post 1.25 m, Tower Roof; the legs are Wood Posts |
@@ -476,6 +476,11 @@ boxes of anchored constructs and of parts marked `"walk"` once the player's disc
 (0.55 m) above where the feet were that tick, as the map's own steps are: stairs, ramps, the ship ladder, onto a pad or a
 low sandbag wall. A box whose top is below the feet no longer pushes (so walking from one floor slab or step onto the
 next never snags). Loose and free constructs are unchanged (a parked car still blocks you).
+
+**Fixed ladders.** A part with `"ladder"` (its landing's height in its own frame, m: up +y, climbed from its front, -z) is a
+vertical ladder: F at its foot climbs it to the landing behind its top, F at its top climbs down to its foot, at 2.4 m/s
+(`ConstructRide.ClimbLadder`, a climb in the construct's frame like a grab-on, so no wire change). The Fixed Ladder 3 m
+climbs the watchtowers (and the Orbital Depot's stores tower) from the pad to the platform.
 
 **What bots still need** (the sandbox-spawns work owns bot navigation over constructs): today bots walk up stairs and
 through doorways only when they already walk that way (their nav graph is the map's). For paths into and through

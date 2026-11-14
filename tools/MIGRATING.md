@@ -92,6 +92,33 @@ The workbench now has a **blueprint library** (`blueprints.txt` in your save fol
 
 The Cut-off Saws are gone: an Extruder now cuts by itself. A saved world that has one loads without it, and `callofslop.log` says how many were left out. Wire what fed the saw into the Extruder's **Cut** input, or set its **Cut every**.
 
+### Assemblers in a saved world (2026-11-13)
+
+Seventy-three parts a Press makes now (the Gear Set, brackets, plates, housings, tanks, the Frame Beam and others) left the Assembler's recipe list. An Assembler in a world saved before this version may show **another recipe** than the one you set, or none: check your Assemblers and set their recipe again. A blueprint whose Assembler names one of those parts still loads, with its recipe set to None.
+
+### Panel Formers and wide panels in a saved world (2026-11-13)
+
+A Panel Former no longer splits a panel wider than your Extruders make into strips by itself. An order for one now waits and says which bigger Extruder, or Die Frames on the one you have, would make it. To keep the old behaviour, open the Panel Former with the configure tool and turn on **Too wide: make strips** (in its Logistics settings).
+### Engine cylinders in a saved world (sized parts, 2026-11-13)
+
+Fifteen more rows left the Assembler's recipe list: the **Small, Medium and Large Cylinder** (a Press with a Cylinder Die makes them now) and the twelve **Bored, Performance and Racing Cylinders** (a bigger bore replaces them: they can't be made any more). As before, an Assembler in a world saved before this version may show **another recipe** than the one you set, or none: check your Assemblers and set their recipe again. Tier cylinders you already have, and the vehicles that carry them, keep working.
+
+A cylinder pressed before this version still loads, but it is now shaped and rated like a real cylinder of its size: its power comes from its bore and its revs from its length, so an engine built with one may give less (or more) power than before, and the model looks different. Look at the engine's readout after loading. A part or a made piece this version can't build is left out with a line in `callofslop.log`.
+
+### Barrels, engine pieces and presses in a saved world (sized parts, 2026-11-13)
+
+Forty-one more rows left the Assembler's recipe list: the **Gun Barrel, Long Gun Barrel, Flame Nozzle, Harpoon Tube, Howitzer Tube and Long Gun Tube** (a Press with a Barrel Die makes them) and every **crank section, flywheel, carburettor, injector rail, turbo, supercharger, starter motor, exhaust outlet and smokestack** except the Capital Smokestack (a Press with an Engine Die makes them). As before, an Assembler in a world saved before this version may show **another recipe** than the one you set, or none: check your Assemblers and set their recipe again.
+
+Pressed pieces in a saved world keep their key and load as the same piece: same size, numbers and mass (their models settle by a few millimetres so no two faces flicker). A Press's Pattern setting keeps its meaning, and a Press set to Auto makes what it made before: the receivers a Receiver Die can now make (22 that had no recipe, the Bucket Launcher and Courier Carbine among them) come only from its Pattern setting or an order. Recycling a part a Press makes from a preset (a Gear Set, a Housing, a Gun Barrel and others) now gives back at most what pressing it took: less than before for 35 of them.
+
+### Pressed engine pieces in a saved world (bored cylinders, 2026-11-14)
+
+Pressed engine pieces (cylinders, crank sections, flywheels, fuel systems, boosters, starters, outlets) keep their key and load as the same piece, the same size, shape and health, but they now weigh what the catalogue piece of their size weighs for their metal: most are a third to a half of their old mass, so a vehicle with a pressed engine gets lighter, and **recycling one gives back its new, lower mass**. A pressed cylinder's power now also follows its **bore** (its width less both walls): a cylinder with the usual wall for its width gives what it gave before; a thinner wall gives more, a thicker one less. Its revs are unchanged. The Engine Kit's old bored cylinders: `pipe10 50x50x85` now 56 kW (was 50), `pipe10 55x55x95` 74 kW (was 62), `pipe15 60x60x105` 51 kW (was 74, its wall is thick). Their old pressed fuel systems now feed most but not all of the extra (an old Small B16 Bored engine reads 981 kW, was 962; a Performance one 1222 kW, was 1180; a racing one less than before). Look at the engine's readout after loading. Catalogue engine pieces and pieces pressed at a catalogue preset are unchanged. Nothing is dropped.
+
+### Long and short strokes in a saved world (stroke power, 2026-11-14)
+
+A pressed cylinder's **stroke** (its length against its width) now adds power as well as lowering revs: a cylinder 1.6 times the usual length gives 1.6 times the power at 0.625 of the revs, so 2.56 times the torque; a short one gives less. Every piece keeps its key, size, mass and health. Catalogue cylinders, pressed cylinders of the usual length, and every engine the Engine Kit made before this version (all of the usual length) are unchanged. An engine you built with long-stroke cylinders keeps its revs (they were already the lower ones) and **never loses power**: a fuel system feeds by power, so its old one now feeds only part of the bigger cylinders, and the engine gives its old power times whichever is less, the stroke or what the fuel system had to spare. With a fuel system just the cylinders' size that is **the same power as before**, and the readout says "bank 1 starved: ... feeds 62.5% of its cylinders" (six Small cylinders 1.2 m long on two Small Carburettors: 240 kW, as before); one a size up gives more (a kit-made I4 turbo engine whose 50 cm carburettor had a sixth to spare: 309 kW before, 363 kW now). Press a wider carburettor or injector for that bank to get it all (about 55 cm across for Small cylinders at a 1.6 stroke: those six give 384 kW). A turbo or supercharger is sized by the cylinders' bore, so it boosts them whole at any stroke. A short-stroke engine gives less power than before at the same revs. An engine with long strokes on a crank a little smaller than the first size that needs a starter (from about 0.85 of it) may now ask for a starter motor. Look at the engine's readout after loading.
+
 ### Keeping saves on a USB stick (portable mode)
 
 Put an empty file called `portable.txt` next to `CallOfSlop.exe`. The game then keeps its saves in its own folder, like the old builds did. Copy your save files into that folder yourself.

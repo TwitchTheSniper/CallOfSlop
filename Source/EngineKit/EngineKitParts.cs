@@ -19,7 +19,7 @@ public static class EngineKitParts
     public const string Folder = "Constructs/Parts/EngineKit";
     public const string PlainFolder = "Constructs/Parts/ModularEngine";
 
-    /// <summary>A tier's cylinder: its name's word, tier, power and thirst a kW (times the plain one's), mass and health factors, and its head's colour.</summary>
+    /// <summary>A tier's cylinder: its name's word, tier, power and thirst a kW (times the plain one's), mass and health factors, its head's colour. Since the tier cylinders were retired (sized parts phase 6) the Engine Kit plans a plain cylinder with the thinner wall whose wider bore gives the grade's power (bored cylinders, 2026-11-14).</summary>
     public readonly record struct Grade(string Word, int Tier, float Power, float Thirst, float Mass, float Health, string Head, string What);
 
     /// <summary>The plain cylinder is tiers 1 and 2; these are 3, 4 and 5.</summary>
@@ -86,6 +86,7 @@ public static class EngineKitParts
             ["material"] = root["material"]!.GetValue<string>(),
             ["color"] = root["color"]!.GetValue<string>(),
             ["tier"] = g.Tier,
+            ["retired"] = true, // (bore replaces them: sized-parts answer 8; old blueprints, saves and shipped vehicles keep working)
             ["centreSockets"] = false,
         };
         var boxes = root["boxes"]!.DeepClone().AsArray();

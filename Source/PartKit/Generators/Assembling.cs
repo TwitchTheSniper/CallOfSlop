@@ -65,6 +65,9 @@ public sealed class Assembling : IPartGenerator
         return r;
     }
 
+    /// <summary>The parts the hand recipes make (sized parts phase 6: a generated receiver with one stays the Assembler's, at its tier).</summary>
+    internal static HashSet<string> HandOutputs() => Hand().Select(r => (string)r["output"]!).ToHashSet(StringComparer.Ordinal);
+
     // Every one of these draws on at least two chains (ore to metal to steel; wood to planks to rubber and cloth; copper; sand to glass; gold).
     private static List<PyDict> Hand() =>
     [
@@ -243,7 +246,14 @@ public sealed class Assembling : IPartGenerator
         Rec("Frame Block", 4, 1, m: [("steel", 6)]),
         Rec("Frame Beam", 6, 1, m: [("steel", 14)]),
         Rec("Panel", 3, 1, m: [("steel", 4)]),
-        Rec("Wood Panel", 2, 1, m: [("laminate", 4)])
+        Rec("Wood Panel", 2, 1, m: [("laminate", 4)]),
+        // Extruder expansion pieces (ExtrusionParts.Growth): each about 30% of the next machine's recipe, so a row or a table is cheaper than the
+        // next Extruder and the whole jump to its size dearer (docs/sandbox/design/extruder-expansion-notes.md).
+        Rec("Run-out Table", 60, 1, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 2)]),
+        Rec("Medium Run-out Table", 120, 2, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 4), ("Bearing", 2)]),
+        Rec("Large Run-out Table", 180, 3, m: [("steel", 600), ("rubber", 150)], p: [("Bearing", 4), ("Control Unit", 1)]),
+        Rec("Medium Die Extension", 120, 2, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 2), ("Wiring Loom", 2)]),
+        Rec("Large Die Extension", 180, 3, m: [("steel", 600), ("rubber", 150)], p: [("Wiring Loom", 4), ("Control Unit", 1)])
     ];
 
     /// <summary>
@@ -369,6 +379,22 @@ public sealed class Assembling : IPartGenerator
                 extra["Control Unit"] = Math.Min(20, Math.Max(1, pistons / 4));
             }
         }
+        if (p.Get("lifter") is PyDict lif && lif.Get("kind") as string == "bridge")
+        {
+            // A Bridge Crane (LifterParts.cs): its hoist drum and travel drives (Gear Sets), the trolley's wheels (Bearings), a Control Unit.
+            extra["Gear Set"] = 4;
+            extra["Bearing"] = 4;
+            extra["Control Unit"] = 1;
+        }
+        else if (p.Get("lifter") is PyDict)
+        {
+            // A Loader Arm (LifterParts.cs) turns on a slewing ring and bends at two joints: Gear Sets at tier 1, Servo Motors from 2, a
+            // Control Unit from 3 (its tier's Assembler makes them).
+            var lt = Int(ptier ?? 1);
+            extra[lt == 1 ? "Gear Set" : "Servo Motor"] = Math.Min(20, 2 * lt);
+            if (lt >= 3)
+                extra["Control Unit"] = lt - 2;
+        }
         if (m.Count + extra.Count < 2 && mass >= 3)
             // Two chains at least: anything of steel has a little rubber or concrete in its fixings (fixings stay fixings on a 240 t crank).
             m[mass < 12 ? "bronze" : role != "frame" ? "rubber" : "concrete"] = Math.Min(MaxUnits / 4, Math.Max(1, RInt(mass / 25)));
@@ -476,6 +502,8 @@ public sealed class Assembling : IPartGenerator
             if (hand.Contains(name) || Py.Truthy(p.Get("stage")) || SkipNames.Contains(name) || SkipFolders.Any(s => folder.StartsWith(s, StringComparison.Ordinal))
                 || Py.Truthy(p.Get("legacy")) && (folder.StartsWith("AirWeapons", StringComparison.Ordinal) || folder.StartsWith("Ordnance", StringComparison.Ordinal)))
                 continue;
+            if (Py.Truthy(p.Get("retired"))) // (a retired part loads and runs but has no recipe: the tier cylinders, sized-parts answer 8)
+                continue;
             tail.Add(MachineOf(p, folder) != "" ? FlightRecipe(p, folder) : LongTail(p));
         }
         // (stable: a family's recipes are in file order, and the plain Assembler's keep their places)
@@ -497,8 +525,48 @@ public sealed class Assembling : IPartGenerator
                 if (!byName.TryGetValue(q, out var qp) || !IsItem(qp))
                     throw new InvalidOperationException($"assembling: {r["output"]}: {q} isn't an item part");
         }
+        // Press phase 5: a single-piece part a die presses leaves the Assembler. Its row goes (phase 5b, the user's answer 4: an Assembler's
+        // recipe setting is saved as 1 + its place in its family's list, so a saved Assembler past a removed row reads another recipe; accepted,
+        // tools/MIGRATING.md). The picker, the Technologies page and a blueprint naming it find the die from the presets instead.
+        var presets = PressParts.PresetParts();
+        var sized = PressParts.PresetParts("barrel", "engine"); // (sized parts phase 6: the gun and engine pieces held back from press phase 5)
+        for (var k = recipes.Count - 1; k >= 0; k--)
+        {
+            var output = (string)recipes[k]["output"]!;
+            if (!PressedNow(output, recipes[k], sized))
+                continue;
+            if (!presets.Contains(output))
+                throw new InvalidOperationException($"assembling: {output} is to be pressed, but no die has a preset for it (PressParts.Presets)");
+            recipes.RemoveAt(k);
+        }
         o.File("Constructs/Assembling.json", Layout(recipes));
     }
+
+    // ---- Press phase 5 (docs/sandbox/design/press-rework.md section 2, as the user's answers of section 12 cut it down)
+
+    // The parts a die presses from one blank (a preset in PressParts) that leave the Assembler. Not here, and why:
+    // Differential and Proximity Sensor take two kinds of part (an assembly by the sort's rule); the engine cylinders moved in sized parts phase 5 (engine pieces, sized in
+    // their own phase, the user's answer 2, 2026-11-13). Suspension, Drive Shaft 1 m, U Joint, CV Joint, Stub Axle and Wheel Hub moved on
+    // 2026-11-13, once their patterns took a Gear Set in bay 2 in place of Bearings (bronze is tier 2); the Frame Beam the same day as the
+    // Beam die's girder (answer 3; the start kit carries a Beam Die). The other building pieces (Parts/Building, Parts/Capital) stay.
+    private static readonly HashSet<string> Moved = new(StringComparer.Ordinal)
+    {
+        "L Bracket", "Corner Bracket", "Gusset 0.25 m", "Gusset 0.5 m",
+        "Button", "Switch", "Gear Set", "Circuit Board", "Piston Set",
+        "5-Speed Gearbox", "CVT", "Automatic Gearbox", "Reversing Gearbox", "Limited-Slip Differential", "Locking Differential",
+        "Steel Plate", "Sheet Steel 1 m", "Plate Steel 1 m", "Tread Plate 1 m", "Mesh Grate 1 m", "Armour Plate 1 m",
+        "Piston 1x1 Medium", "Motor Hinge", "Turntable", "Free Pivot 1x1", "Leaf Spring", "Rigid Mount", "Light Suspension",
+        "Suspension", "Drive Shaft 1 m", "U Joint", "CV Joint", "Stub Axle", "Wheel Hub",
+        "Wiring Loom", "Copper Coil", "Power Lead Reel", "Data Lead Reel", "Fluid Hose Reel", "Fuel Line",
+        "AND Gate", "NOT Gate", "Timer", "Delay", "Compare", "Speed Sensor",
+        "Fuel Tank", "Small Fuel Tank", "Fuel Drum", "Fluid Tank", "Small Fluid Tank",
+        "Frame Beam",
+        "Small Cylinder", "Medium Cylinder", "Large Cylinder", // (sized parts phase 5: the Cylinder die presses them, its presets the knots of a bore curve; a Capital one is past what a die presses: Assembler)
+    };
+
+    /// <summary>A recipe that leaves the plain Assembler for a press: one of <see cref="Moved"/>; a Barrel or Engine die preset with at most one kind of part input (sized parts phase 6: every barrel, the plain three and the builder ones, and every engine piece but the Capital Smokestack, past the dies; receivers are assemblies by the sort and keep theirs beside their presets); or a Housing (the Housing die presses all 21).</summary>
+    private static bool PressedNow(string output, PyDict r, HashSet<string> sized) =>
+        r.Get("machine") == null && (Moved.Contains(output) || sized.Contains(output) && ((r.Get("parts") as PyDict)?.Count ?? 0) <= 1 ||output.EndsWith(" m", StringComparison.Ordinal) && output.Contains("Housing ", StringComparison.Ordinal));
 
     /// <summary>The weapon builder's parts (Parts/*/*.json outside _*, Builds and Tables): made into Sandbox items at load, so a hand
     /// recipe may name one with no file in Constructs/Parts.</summary>

@@ -1,0 +1,59 @@
+{
+  // The convicts' break-out (docs/story/BREAKOUT.md, Game/GameBreakout.cs): the night itself. It starts when a player
+  // learns "lead" (the storylet "The night", hook "breakout"). The crew (the driver first) walk to the Ministry's ration
+  // hauler waiting at "motorPool" (the colony's frame: x along its front, out of the main gate past x 44; the street at z -11 to
+  // -15); walking up to it is boarding, and the hauler sets them down at "landing" (the spaceport's frame: its front, -z,
+  // to the colony). The colony's siren goes behind them; "memo" goes to everyone ({name}: who broke out).
+  "format": "call-of-slop-breakout/1",
+  "crew": [ "Dot Pruett", "Wren Haskett", "Ambrose Thale", "Hester Mossop" ],
+  "lead": "The Night",
+  "motorPool": [ 52, -13 ],
+  "landing": [ 22, -24 ],
+  "caption": "Ministry ration hauler, borrowed. Nobody waves.",
+  "driverSays": "In. Heads down. Nobody waves.",
+  "memo": "[MINISTRY MEMO] {name} and others have left the colony without a Form 12. Sirens will continue.",
+  "muster": { "title": "The night",
+              "text": "The crew is at the ration hauler outside the gate. Walk up to it and you're away. There's no coming back." },
+  "spaceport": { "title": "The spaceport",
+                 "text": "The Ministry Spaceport. The courier sits on the first pad, behind the terminal. Get the crew aboard." },
+  // The ship (Game/GameBreakoutShip.cs): an escapee who sits in the Ministry Courier takes the convicts alive within
+  // 40 m aboard (each says "aboard"); 1.5 km from the spaceport they are away: each one aboard says their "away" line,
+  // "memo" goes round ({name}: the pilot) and the panel shows "title" and "text" for half a minute.
+  "ship": {
+    "aboard": "Budge up. Mind the stick.",
+    "away": [
+      { "who": "Dot Pruett", "says": "Nobody waved. Told you." },
+      { "who": "Hester Mossop", "says": "For them that didn't make it. Now fly, and don't tell me where. I'll sleep." }
+    ],
+    "memo": "[MINISTRY MEMO] Ministry Courier missing from the spaceport. Captain Fairweather is filling in the form.",
+    "title": "Away",
+    "text": "The colony is behind you and the crew is aboard. The courier is yours now. Where it goes is up to you."
+  },
+  // The fight (Game/GameBreakoutFight.cs): an escapee within "wake" m of the landing turns the guards out at their posts
+  // (the spaceport's frame, as "landing"), the first shouting; they go for whoever escaped, never the convicts, apart
+  // from "deaths": each is due "after" s into the fight or once "down" guards are, whichever is first. The convict says
+  // "words" (one every 3 s) and dies; every escapee near gains "lead", which the Logbook lists until the record that
+  // names it (Story/Fragments, "leads") is found. "won" goes to everyone when the last guard is down.
+  "fight": {
+    "wake": 90,
+    "guards": [
+      { "name": "Sergeant Vell", "at": [ -12, -22 ] },
+      { "name": "Officer Pike", "at": [ -4, -23 ] },
+      { "name": "Officer Brack", "at": [ 4, -22 ] },
+      { "name": "Officer Dunmore", "at": [ 0, -2 ] },
+      { "name": "Officer Quarrie", "at": [ 16, 2 ] }
+    ],
+    "shout": "Halt! Ministry property! Hands where we can see them!",
+    "won": "[MINISTRY MEMO] Spaceport security reports an incident. Further memos will follow.",
+    "deaths": [
+      { "who": "Wren Haskett", "after": 12, "lead": "Wren's room with five chairs",
+        "words": [ "Oh. Oh, I think that one was mine.",
+                   "Listen. Under headquarters, the floor that isn't on the plans. I cleaned it. Five big chairs.",
+                   "Minutes on the table, older than anything. Somebody decided something in that room. Find out what." ] },
+      { "who": "Ambrose Thale", "after": 50, "down": 3, "lead": "Ambrose's lottery ticket",
+        "words": [ "Ah. Hull's breached, I think. Don't fuss.",
+                   "My gran's purse. A lottery ticket, a seat number. For a ship that never flew, she said.",
+                   "They built a yard for it once. Rows of hulls. Find it. Fly one for me." ] }
+    ]
+  }
+}

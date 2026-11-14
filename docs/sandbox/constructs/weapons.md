@@ -562,6 +562,11 @@ rules: `Constructs/ReceiverMerge.json`; self-test: "Construct merged receivers".
   and the vehicle kit's merged turret guns use them (docs/vehiclekit/VEHICLEKIT.md, "The armoury").
 - The merged receiver's reach beyond its members is solid to building (nothing can be fitted into it) but not to rounds
   or the world: rounds hit the members and the gun parts.
+- **Pressed receivers** (sized parts phase 3, `docs/sandbox/design/sized-gun-engine-parts.md` 4): the Receiver die presses a Rifle, Heavy or Shell Receiver at any
+  across (15 to 120 cm, in its preset's shape). Its scale s (across over the preset's, `ConstructPartDef.GunScale`) sizes the gun by these same powers read with a
+  real number (`ConstructMerge.ScaleGun`), so a 40x40x80 Rifle Receiver is a 2x2 merge. A pressed receiver never merges; catalogue gun parts on it are drawn
+  round(s) times bigger, and its bore for a pressed barrel is s. A catalogue part on a pressed gun part (a muzzle device on a pressed barrel) is drawn at that
+  barrel's bore, rounded.
 
 ### Decisions made for merged receivers (the developer may change them)
 

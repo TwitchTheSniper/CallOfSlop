@@ -91,6 +91,12 @@ public sealed partial class Ui
                 ImGuiSafe.SetItemTooltip($"The story world's ambient traffic (Story/Traffic/Traffic.json): placeholder craft on rounds between the colony, the quarry and placeholder stations, faction ships that land to trade, and ships passing overhead. {game.TrafficTrips} trips and {game.TrafficRadioLines} radio lines this session.\n\n{string.Join("\n", _stTraffic)}");
             }
             ImGui.SameLine();
+            var convicts = game.LabourOn;
+            if (ImGui.Checkbox("Convicts"u8, ref convicts))
+                game.LabourOn = convicts;
+            if (ImGui.IsItemHovered())
+                ImGuiSafe.SetItemTooltip($"The penal colony's convict labourers (Story/Labour/PenalColony.json, docs/story/LABOUR.md): {game.LabourCount} gangs at work round the colony and the quarry, pictures posed from the clock (no AI, no collision). Last frame: {LabourRender.DrawnNear} drawn near, {LabourRender.DrawnFar} far, {LabourRender.Boxes} boxes. Off: nobody (for every player).");
+            ImGui.SameLine();
             var talk = s.Talk.On;
             if (ImGui.Checkbox("Talk"u8, ref talk))
                 s.Talk.On = talk;

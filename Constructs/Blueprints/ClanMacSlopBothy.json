@@ -1,0 +1,170 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Clan MacSlop Bothy",
+  "description": "Clan MacSlop's watch on the Ministry: a stone bothy under a tin roof, casks and the saltire.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "paint": "#8a8072",
+      "finish": "stone"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "f0",
+      "by": "k0",
+      "paint": "#8a8072",
+      "finish": "stone"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 1,
+      "socket": "r0",
+      "by": "l0",
+      "paint": "#8a8072",
+      "finish": "stone"
+    },
+    {
+      "part": "Concrete Door Corner",
+      "on": 0,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#8a8072",
+      "finish": "stone"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 0,
+      "socket": "t8_0",
+      "by": "b0_7",
+      "spin": 2,
+      "paint": "#8a8072",
+      "finish": "stone"
+    },
+    {
+      "part": "Concrete Window Corner",
+      "on": 0,
+      "socket": "t8_15",
+      "by": "b7_0",
+      "spin": 3,
+      "paint": "#8a8072",
+      "finish": "stone"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 0,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1,
+      "paint": "#8a8072",
+      "finish": "stone"
+    },
+    {
+      "part": "Corrugated Ridge Roof 4x4 m",
+      "on": 3,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#6e3324",
+      "finish": "rusty paint"
+    },
+    {
+      "part": "Door Hinge",
+      "on": 3,
+      "socket": "hinge",
+      "by": "base"
+    },
+    {
+      "part": "Wood Flush Door 1.5x2.25 m",
+      "on": 8,
+      "socket": "leaf",
+      "by": "hang",
+      "paint": "#3b2a1c",
+      "finish": "painted wood"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 3,
+      "socket": "fa0_10",
+      "by": "back",
+      "config": {
+        "colour": "#ff8a3c"
+      }
+    },
+    {
+      "part": "Text Sign",
+      "on": 4,
+      "socket": "fb7_5",
+      "by": "back",
+      "text": [
+        "MACSLOP BOTHY. SASSENACHS KNOCK TWICE."
+      ],
+      "paint": "#1f4f9a"
+    },
+    {
+      "part": "Bunk",
+      "on": 0,
+      "socket": "t7_8",
+      "by": "bottom"
+    },
+    {
+      "part": "Sandbag Wall 2 m",
+      "on": 1,
+      "socket": "t0_0",
+      "by": "b0_0",
+      "paint": "#8c7a5a",
+      "finish": "fabric"
+    },
+    {
+      "part": "Saltire Flag",
+      "on": 1,
+      "socket": "t15_7",
+      "by": "base"
+    },
+    {
+      "part": "Whisky Cask",
+      "on": 2,
+      "socket": "t4_4",
+      "by": "foot00"
+    },
+    {
+      "part": "Whisky Cask",
+      "on": 2,
+      "socket": "t11_4",
+      "by": "foot00"
+    },
+    {
+      "part": "Wee Keg",
+      "on": 2,
+      "socket": "t11_11",
+      "by": "base"
+    },
+    {
+      "part": "Pipe Box",
+      "on": 2,
+      "socket": "t4_11",
+      "by": "base"
+    },
+    {
+      "part": "Thistle",
+      "on": 1,
+      "socket": "t11_11",
+      "by": "base"
+    },
+    {
+      "part": "Concrete Chimney 2.75 m",
+      "on": 1,
+      "socket": "t0_7",
+      "by": "b00",
+      "paint": "#8a8072",
+      "finish": "stone"
+    },
+    {
+      "part": "Concrete Chimney 2.75 m",
+      "on": 20,
+      "socket": "t00",
+      "by": "b00",
+      "paint": "#8a8072",
+      "finish": "stone"
+    }
+  ]
+}

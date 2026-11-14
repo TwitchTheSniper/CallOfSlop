@@ -91,36 +91,63 @@ leaves out "no fuel tank".
 | --- | --- | --- | --- |
 | 1 | Cylinder (x1) | Carburettor (x1) | - |
 | 2 | | Injector Rail (x1.2, x0.8 fuel) | - |
-| 3 | Bored Cylinder (x1.3, x1.05 fuel) | | Supercharger (x1.25) |
-| 4 | Performance Cylinder (x1.6, x1.1 fuel) | | Turbo (x1.4, 1.5 s lag) |
-| 5 | Racing Cylinder (x2, x1.2 fuel) | | |
+| 3 | bored to about x1.3 (a thinner wall) | | Supercharger (x1.25) |
+| 4 | bored to about x1.6 | | Turbo (x1.4, 1.5 s lag) |
+| 5 | bored to about x2 | | |
 
-A tier may use every piece below it. At the top, a Small cylinder gives 40 x 2 x 1.2 x 1.4 = 134 kW against tier 1's 40: a
-tier 5 engine of the same power is about a third the size and mass. Samples (`--gen-engine`, seed 0):
+A tier may use every piece below it. **Bores** (bored cylinders, 2026-11-14; docs/sandbox/design/bored-cylinders-notes.md): the
+Bored, Performance and Racing Cylinders are retired (design answer 8), so a tier 3 to 5 bore is the plain cylinder's preset
+pressed with a thinner wall, the same across and length: a wider bore, more power, less metal (`EngineKit.BoredAt`: the thickest
+whole-cm wall that gives the grade's `Power`, else the thinnest that adds any; the plan is named by the grade it reaches). A Small
+one is `pipe8`, `pipe7` or `pipe5 45x45x75` (x1.38, x1.59, x2.07; 23.7, 21.3 and 16.0 kg against the plain 28). A Medium preset's
+wall is already thin (its bore 0.78 of its across, the Small's 0.56, and the bore counts up to 0.9), so a Medium or Large bore
+reaches about x1.37 at most and is a "Bored" one. Its fuel system and booster are pressed wider to the cylinder's scale, rounded
+up, at their own length (so the bank is never starved and stands no taller); the crank sections are pressed longer only when one of
+those is wider than the section (`solid 45x45x65` under a Small racing bank's 60 cm injector: the same across, so the same revs).
+Cylinders keep their across, so a V, W or radial of bores builds. A bored plan's score pays a little for the health it gives up
+(`0.1 x` the share of the plain wall's metal removed), so the kit leans on it where it needs the power or the mass.
+
+**Strokes** (stroke power, 2026-11-14; docs/sandbox/design/stroke-power-notes.md): a cylinder's kW is its bore's times its stroke
+ratio (length over across against the preset's, 0.6 to 1.6) and the revs are the crank's over it, so a long stroke gives more power
+at lower revs and torque by the square. Each bore is planned at strokes 1, 1.33 and 1.6 (`EngineKit.Strokes`: the preset's length
+times that, to 5 cm), and 0.8 only when the request asks for revs above the size's peak (a short stroke spins faster for less
+power). The fuel system is pressed wide enough to feed the cylinder's kW whole, by bore and stroke, and the booster to its kW at its
+bore alone, which is what the engine scales a booster's share by (`FeedFor`: in 5 cm steps until they do, so no bank is built starved; the kit reads a starved bank back as the game's fault text). A plan's torque, peak rpm and starter
+are its own stroke's; a long stroke's cylinders stand taller in the estimate. `MinLimiterRpm` holds a request to strokes that keep
+a limiter: a vehicle's request sets the Small limiter, since its stock gearbox is geared for it (a 1.6 stroke's 4375 rpm would cap a
+car's top gear at 26 m/s), so vehicles keep the plain stroke. A long stroke wins where torque or mass is asked. Samples
+(`--gen-engine`, seed 0, 2026-11-14, with strokes):
 
 | Request | Built |
 | --- | --- |
 | 300 kW, tier 1 | Small R8 (two cranks, four banks) 320 kW, 391 kg, 1.40 x 2.49 x 2.49 m |
-| 300 kW, tier 5 | Small I3 racing, supercharged, 300 kW, 280 kg |
-| 900 N m, tier 3 | Small B6 bored, injected, supercharged, 468 kW, 894 N m, 398 kg |
-| 2000 kW, tier 4 | Small W21 performance, supercharged, 2016 kW, 1203 kg, 3.9 x 3.0 x 1.95 m |
+| 300 kW, tier 5 | Small B4 performance bore, injected, 306 kW, 222 kg |
+| 2000 kW, tier 4 | Small V14 performance bore, long stroke (1.33), turbo, 1992 kW, 5059 N m at 3759 rpm, 896 kg (before strokes: W21, 988 kg) |
+| 2000 kW, tier 5 | Small R20 racing bore, injected, 1986 kW, 748 kg (before strokes: W21, 988 kg) |
+| 900 kW, tier 5, W | Small W9 performance bore, long stroke (1.33), injected, 915 kW, 2323 N m at 3759 rpm, 496 kg |
+| 3000 N m, tier 5 | Small I5 racing bore, long stroke (1.6), supercharged, 993 kW, 3035 N m at 3125 rpm, 492 kg (before strokes: B14, 1622 kW, 729 kg) |
+| 300 kW peak 3000 rpm, tier 2 | Small V4 long stroke (1.6), injected, 307 kW, 939 N m at 3125 rpm, 323 kg |
+| 300 kW peak 8000 rpm, tier 2 | Small R8 short stroke (0.8), injected, 307 kW, 469 N m at 6250 rpm, 338 kg |
 | 20000 kW, tier 2 | Medium W21 20.2 MW, 20.6 t, 15.6 x 10 x 6.8 m |
-| 500 kW under 300 kg, tier 1 | Small B4 160 kW, with "160 kW is short of 500 kW: the most within the limits at this tier" |
+| 20000 kW, tier 5, Medium | Medium V12 bored, injected, turbo, 20.4 MW, 11.4 t |
+| 400 MW, tier 5, Large | Large B10 bored, long stroke (1.33), turbo, 407 MW at 1053 rpm, 217 t (before strokes: B12, 232 t) |
+| 50000 N m, tier 1, Medium | Medium I7 long stroke (1.6), 8.96 MW, 48892 N m at 1750 rpm, 13 t |
+| 500 kW under 300 kg, tier 5 | Small W6 racing bore, 497 kW, 277 kg |
+| 500 kW under 300 kg, tier 1 | Small R4 long stroke (1.6) 256 kW, 292 kg, with "256 kW is short of 500 kW: the most within the limits at this tier" (before strokes: V4 160 kW) |
 | 120 kW inline in 2.5 x 0.8 x 1.6 m | Small I3 120 kW at 1.70 m high, with "nothing ... meets the limits; nearest" (an inline's bank and the flywheel under the crank need 1.7 m) |
 
 ## The parts
 
-The kit reuses the modular engine's 40 pieces and their rules (`Constructs/ModularEngine.json`). New: the tier 3 to 5 cylinders in
-each size, `Constructs/Parts/EngineKit/{Size}{Bored,Performance,Racing}Cylinder.json`, written by C#: `EngineKitParts.cs`,
-`--gen-engine-parts [--check]` (from the repo root; then build, or copy the folder next to the DLL). Each is the plain cylinder's
-file with the same boxes and sockets (so the geometry the z-fight corrector settled), a head of the tier's colour (the head already
-differs from every box it touches, so no coplanar pair appears), `"tier"`, more mass and health, and `enginePiece.power` and
-`thirst`: a cylinder may now carry them (`ConstructDriveParts.ParseEnginePiece`), and `ConstructEngine.Build` multiplies its kW and
-burn by them (1 for every older cylinder, so nothing shipped changes).
+The kit uses the modular engine's 40 pieces and their rules (`Constructs/ModularEngine.json`), catalogue or pressed (a pressed key
+is a part name a blueprint step may give: `Pressed Part (cylinder.cylinder pipe15 60x60x105 steel)`). The retired tier 3 to 5
+cylinders in each size, `Constructs/Parts/EngineKit/{Size}{Bored,Performance,Racing}Cylinder.json`, are still written by C#:
+`EngineKitParts.cs`, `--gen-engine-parts [--check]` (from the repo root; then build, or copy the folder next to the DLL), so a save,
+an old blueprint or a shipped vehicle holding one keeps working. Each is the plain cylinder's file with the same boxes and sockets, a
+head of the tier's colour, `"tier"`, `"retired": true`, more mass and health, and `enginePiece.power` and `thirst`
+(`ConstructEngine.Build` multiplies its kW and burn by them).
 
-**Survival.** Each has an Assembling recipe by rule (the part kit's `--gen-parts assembling`, `long_tail`): the plain cylinder's steel and
-Piston Sets, plus bronze and Bearings (Bored, tier 3 Assembler), then copper and a Circuit Board (Performance, tier 4), or gold and a
-Control Unit (Racing, tier 5); Large and Capital ones need at least the size class's Assembler as every part does.
+**Survival.** The plain pieces come off a Press (the Cylinder and Engine dies; their presets are the files): only the Capital Cylinder
+and Capital Smokestack, past what a die presses, have an Assembler recipe. The retired cylinders have none.
 
 ## Callers
 
@@ -128,18 +155,18 @@ Control Unit (Racing, tier 5); Large and Capital ones need at least the size cla
   [--fuel F] [--layout inline|v|flat|w|radial] [--boost none|supercharger|turbo] [--size small|medium|large|capital] [--tier 1-5]
   [--seed S] [--plans N] [--again] [--out FILE]`. Prints (to `callofslop.log`, as the other tools do) the request, the built engine's
   numbers and the note; `--plans N` lists the best plans, `--again` times a warm second request and checks it builds the same
-  blueprint. The presets are 120, 300, 800 and 3000 kW. A first request in a process costs about 2 s of warm-up (JIT); a warm one 5
-  to 10 ms.
+  blueprint. `--gen-engine --read FILE` builds a blueprint on a flat floor and prints each engine's numbers as the game works them out (a saved or old engine's, before and after a change). The presets are 120, 300, 800 and 3000 kW. A first request in a process costs about 2 s of warm-up (JIT); a warm one 15
+  to 50 ms (about 7,400 plans in 18 to 27 ms, three times main's 2,640 since strokes; it yields every 1,024 plans and before each bore and stroke's pieces are pressed; `--slice-vehicle engine [--power KW] [--tier T] [--size 0-3]` times one in 2.5 ms slices: a first Medium or Large tier 5 request in a process runs 9 to 29 ms of kit over 4 to 6 slices, its longest span 2.6 ms; the one long slice measured, 16 ms, was a garbage collection with 1.9 ms of kit in it).
 - **The vehicle kit / dynamic spawn**: an `EngineWish` (below, "In a vehicle"): `--gen-vehicle NAME --engine-tier N [--top-speed V]
   [--accel A]`, `--slice-vehicle NAME --engine-tier N [--top-speed V]` (as the game's spawn makes it, in slices), and
   `new VehicleGenJob(..., engine: wish)` in the game. Nothing in the game passes one yet.
 - **The player** (creative): the inventory's **Engine** tab (`UI/UiSandboxEngine.cs`): power (presets 120 / 300 / 800 / 3000 kW), tech
   tier, layout, booster, size, an optional bay (length, width, height; "Car bay" is `EngineKitVehicle.Bay`) and a seed; MAKE ENGINE sends
   `CActKind.MakeEngine` (protocol 242; fixed fields: u16 kW, u8 tier, layout, boost, size, 3 x u16 bay in cm, u32 seed). The host
-  (`Game/GameSandboxEngines.cs`) refuses with a reason anything out of range (1 to 50,000 kW, tier 1-5, a bay side 0 or 0.3-100 m),
+  (`Game/GameSandboxEngines.cs`; with the Car bay it holds the request to the Small limiter, as a vehicle's, since a car's stock gearbox is geared for it) refuses with a reason anything out of range (1 to 50,000 kW, tier 1-5, a bay side 0 or 0.3-100 m),
   outside creative or in a seat, and queues the request on the vehicle spawner (`VehicleSpawner.RequestEngine`): the kit runs in the
   generation's slices (`VehicleGenJob(EngineRequest)`, 1-8 ms over 1-3 ticks warm) and the engine is set down in front of the player
-  as their construct, never rerolled. The player's notice gives its name, kW, mass and size, "it needs a fuel tank and a gearbox", and
+  as their construct, never rerolled. The player's notice gives its name, kW, torque at its peak rpm and its limiter, mass and size, "it needs a fuel tank and a gearbox", and
   the kit's note. Clients never run the kit: the engine arrives as bodies. Tried 2026-11-11 with a host and a client over the real
   transport (80 ms, 2% loss): a 120 kW tier 1 inline in the car bay, 300 kW tier 3, 2000 kW tier 5 V turbo and 20 MW tier 2 (a Medium
   W21, set down in slices), each the same parts and hash on both ends, the engine complete but for its tank; the first big set-down

@@ -37,7 +37,7 @@ public sealed partial class Game
     private ulong WorldKeyOf(Player p) => p.Id == LocalId ? LocalWorldKey : _worldKeys[p.Id];
 
     /// <summary>Do we know who this is (a person whose Hello has come)? Until then they have no record to find or make.</summary>
-    private bool WorldKnown(Player p) => p.Bot == null && (p.Id == LocalId || _worldKeys[p.Id] != 0 || p.SteamId != 0);
+    private bool WorldKnown(Player p) => p.Bot == null && (p.Id == LocalId || _worldKeys[p.Id] != 0 || TrustedSteamId(p) != 0);
 
     // ---- Choosing a world -------------------------------------------------------------------------------------------
 
@@ -208,6 +208,7 @@ public sealed partial class Game
         s.FactionOpen = (bool[])FactionTable.Open.Clone();
         s.FactionStances = (sbyte[])FactionTable.Stance.Clone();
         s.Opening = OpeningCapture(); // (GameSandboxOpening.cs)
+        s.Start = StartCapture(); // (GameStoryStart.cs)
         s.OpCount = 0;
         s.GroundOnPlanet = World.Map.Planetoid != null;
         if (DigGroundIfMade is { } g)
@@ -277,7 +278,7 @@ public sealed partial class Game
     private void WorldCatch(Player p, WorldPlayer rec)
     {
         rec.Name = p.Name;
-        rec.SteamId = p.SteamId != 0 ? p.SteamId : rec.SteamId;
+        rec.SteamId = TrustedSteamId(p) is not 0 and var steam ? steam : rec.SteamId;
         rec.HasPlace = p.Alive && !InLobby;
         rec.Pos = p.Position;
         var riding = p.Alive && p.Sim.RideUp != default;
@@ -297,6 +298,10 @@ public sealed partial class Game
             if (inv.Parts[i] > 0)
                 parts.Add(((ushort)i, inv.Parts[i]));
         rec.Parts = parts.ToArray();
+        var made = new (string, ushort)[inv.MadeN];
+        for (var k = 0; k < inv.MadeN; k++)
+            made[k] = (ConstructParts.Def(inv.MadeDef[k]).Name, inv.MadeCount[k]); // (made parts by key: a run-time part's name is its key)
+        rec.Made = made;
         var mats = new List<(byte, ushort)>();
         for (var i = 0; i < inv.Materials.Length; i++)
             if (inv.Materials[i] > 0)
@@ -309,6 +314,7 @@ public sealed partial class Game
         DepotCatch(p, rec); // (the Orbital Depot's run: GameDepot.cs)
         QuarryCatch(p, rec); // (the first Ministry duty: GameQuarry.cs)
         UpgradesCatch(p, rec); // (tool upgrades: GameSandboxUpgrades.cs)
+        FirstsCatch(p, rec); // (milestones for firsts: GameMilestones.cs)
         rec.Builds = ZPlayers.TryGetValue(p.Id, out var zp) ? zp.Slots.Select(b => b?.ToText() ?? "").ToArray() : [];
     }
 
@@ -318,7 +324,7 @@ public sealed partial class Game
         foreach (var r in ws.Players)
             if (r.Online == p.Id)
                 return r;
-        var rec = ws.Find(WorldKeyOf(p), p.SteamId) ?? ws.Add(WorldKeyOf(p), p.SteamId, p.Name);
+        var rec = ws.Find(WorldKeyOf(p), TrustedSteamId(p)) ?? ws.Add(WorldKeyOf(p), TrustedSteamId(p), p.Name);
         rec.Online = p.Id;
         return rec;
     }
@@ -456,6 +462,7 @@ public sealed partial class Game
         Constructs.Resources = World.Map.Resources;
         var r = new SaveReader(body) { Shift = WorldShift(body) };
         ushort nextTag = 1;
+        StartLoad(""); // (a world from before starts plays the default; its Start section says otherwise: GameStoryStart.cs)
         while (r.Has(8))
         {
             var tag = r.U32();
@@ -583,11 +590,17 @@ public sealed partial class Game
             case WorldSaveWriter.QuarryTag:
                 WorldReadQuarry(r, ws); // (the first Ministry duty: GameQuarry.cs)
                 break;
+            case WorldSaveWriter.StartTag:
+                StartLoad(r.Str()); // (the story start it was made with: GameStoryStart.cs)
+                break;
             case WorldSaveWriter.Fate:
                 WorldReadDeath(r, ws); // (death and checkpoints: GameSandboxDeath.cs)
                 break;
             case WorldSaveWriter.ToolsTag:
                 WorldReadUpgrades(r, ws); // (tool upgrades: GameSandboxUpgrades.cs)
+                break;
+            case WorldSaveWriter.FirstsTag:
+                WorldReadFirsts(r, ws); // (milestones for firsts: GameMilestones.cs)
                 break;
             case WorldSaveWriter.FactionsTag:
                 WorldReadFactions(r, ws); // (GameSandboxFactions.cs)
@@ -876,10 +889,16 @@ public sealed partial class Game
         DepotArrive(p, rec); // (where they were on the Orbital Depot's run: GameDepot.cs)
         QuarryArrive(p, rec); // (where they were on the first Ministry duty: GameQuarry.cs)
         UpgradesArrive(p, rec); // (their tool upgrades: GameSandboxUpgrades.cs)
+        FirstsArrive(p, rec); // (their firsts: GameMilestones.cs)
         var inv = SandboxInv.Of(p.Id);
         inv.Clear();
         foreach (var (def, count) in rec.Parts)
             inv.Parts[def] = count;
+        foreach (var (key, count) in rec.Made)
+            if (ConstructParts.Find(key) is { } made)
+                inv.Set(made.Id, count); // (made again from its key if it was swept; past 64 kinds the rest are left out)
+            else
+                Console.WriteLine($"[worlds] player {p.Id}: left out {count} x {key} from the inventory: this build doesn't make it");
         foreach (var (material, count) in rec.Materials)
             inv.Materials[material] = count;
         inv.Version++;

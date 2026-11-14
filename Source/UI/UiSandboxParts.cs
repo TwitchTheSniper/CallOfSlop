@@ -78,6 +78,8 @@ public sealed partial class Ui
         public ConstructPartDef? Part;
         public ConstructTool Tool;
         public bool Usable = true;
+        public bool Locked; // a technology the player hasn't learnt (UiSandboxPartLocks.cs); LockF/LockK: the faction and technology nearest their reach
+        public int LockF = -1, LockK = -1;
         public ImColor8 Color, Color2, ToolColor;
     }
 
@@ -228,6 +230,7 @@ public sealed partial class Ui
     {
         _sbGroupSel = group;
         _sbSectionSel = section;
+        _sbMadeSel = false;
         _sbFilterVersion++;
     }
 
@@ -447,6 +450,8 @@ public sealed partial class Ui
     /// </summary>
     public void SandboxPartsPick(Game game, ConstructPartDef def)
     {
+        if (SbPickLocked(game, def))
+            return; // (a technology not learnt, none in hand: the note says who teaches it; UiSandboxPartLocks.cs)
         if (Program.AidPick(game, def))
         {
             CloseSandboxParts(); // (a Line Layer's or Replacer's part: picked, not spawned; Program.SandboxAids.cs)
@@ -530,6 +535,7 @@ public sealed partial class Ui
         }
         SbNetFrame(game, me.Id);
         SbBuildRows();
+        SbLocksFrame(game, me.Id);
         SandboxTiles.Want(); // (the atlas is made over the next frames if it isn't yet)
         _sbSearchInput ??= new ImInputString(33);
         var vp = ImGui.GetMainViewport();
@@ -635,7 +641,11 @@ public sealed partial class Ui
                 var below = ImGui.GetFrameHeightWithSpacing() * (_sbOptionsOpen ? 10.5f : 3.2f);
                 var treeH = ImGui.GetContentRegionAvail().Y - below;
                 if (ImGui.BeginChild("##sbtree"u8, new float2(0, MathF.Max(60 * _scale, treeH)), ImGuiChildFlags.None))
-                    SbDrawTree();
+                    {
+                        SbDrawTree();
+                        if (_sbTab == SbTab.Parts)
+                            SbDrawMadeNode(game, _sbSearch.Length > 0); // (UiSandboxMade.cs)
+                    }
                 ImGui.EndChild();
                 ImGui.Separator();
                 _sbOptionsOpen = ImGui.CollapsingHeader("Options"u8);
@@ -729,7 +739,11 @@ public sealed partial class Ui
                     SandboxPartsPick(game, picked.Part);
                 picked = null;
             }
-            var gridPicked = SbDrawGrid(game, me.Id, settings);
+            SbItem? gridPicked = null;
+            if (_sbTab == SbTab.Parts && _sbMadeSel && _sbSearch.Length == 0)
+                SbDrawMade(game, me.Id); // (the made parts the player counts: UiSandboxMade.cs)
+            else
+                gridPicked = SbDrawGrid(game, me.Id, settings);
             picked ??= gridPicked;
             ImGui.EndGroup();
             if (picked != null)
@@ -750,7 +764,7 @@ public sealed partial class Ui
         if (notice.Length > 0)
             ImGuiSafe.TextColored(new float4(1f, 0.55f, 0.4f, 1f), notice);
         else
-            ImGuiSafe.TextColored(new float4(0.5f, 0.9f, 0.5f, 1f), _sbSpawnNote);
+            ImGuiSafe.TextColored(_sbSpawnNote.StartsWith("Locked", StringComparison.Ordinal) ? new float4(1f, 0.62f, 0.25f, 1f) : new float4(0.5f, 0.9f, 0.5f, 1f), _sbSpawnNote);
     }
 
     private static readonly string[] SbRecentIds = ["##sbrecent0", "##sbrecent1", "##sbrecent2", "##sbrecent3", "##sbrecent4", "##sbrecent5", "##sbrecent6", "##sbrecent7"];
@@ -993,7 +1007,8 @@ public sealed partial class Ui
                 }
                 v = end;
             }
-            if (_sbVisibleCount == 0)
+            var madeHits = _sbTab == SbTab.Parts && _sbSearch.Length > 0 ? SbDrawMadeHits(game, me) : 0; // (made parts that match, after the catalogue's: UiSandboxMade.cs)
+            if (_sbVisibleCount == 0 && madeHits == 0)
                 ImGui.TextColored(Dim, _sbSearch.Length > 0 ? "Nothing matches the search."u8 : "Nothing of this size here."u8);
         }
         ImGui.EndChild();
@@ -1012,7 +1027,7 @@ public sealed partial class Ui
         var i0 = new float2(at.X + pad, at.Y + pad);
         var i1 = new float2(at.X + size - pad, at.Y + size - pad);
         var pic = SandboxTiles.TryGet(it.Slot, out var tex, out var uv0, out var uv1);
-        var tint = it.Usable && !SbNetMissing(it) ? new ImColor8(255, 255, 255, 255) : new ImColor8(140, 140, 150, 150); // (a beacon's window: grey for what the network doesn't hold)
+        var tint = it.Usable && !it.Locked && !SbNetMissing(it) ? new ImColor8(255, 255, 255, 255) : new ImColor8(140, 140, 150, 150); // (a beacon's window: grey for what the network doesn't hold)
         if (pic)
             dl.AddImage(new ImTextureRef { _TexID = new ImTextureID((nint)tex) }, i0, i1, new float2(uv0.X, uv0.Y), new float2(uv1.X, uv1.Y), tint);
         else
@@ -1025,6 +1040,8 @@ public sealed partial class Ui
         }
         if (it.Tool != ConstructTool.None)
             dl.AddCircleFilled(new float2(at.X + 9 * _scale, at.Y + 9 * _scale), 3.5f * _scale, it.ToolColor);
+        if (it.Locked)
+            SbDrawLock(dl, at);
         if (it.Part is { PhysicsOnly: true })
         {
             // Decision 21: a physics-only part (never an item): a small box outline in the top right corner.
@@ -1036,7 +1053,7 @@ public sealed partial class Ui
         {
             var clip = new float4(at.X + 4 * _scale, at.Y, p1.X - 4 * _scale, p1.Y);
             ImGui.PushFont(default, 15);
-            DlText(dl, new float2(at.X + 6 * _scale, at.Y + size - 2 * _scale), it.Usable ? SbText : SbDim, it.Name, clip);
+            DlText(dl, new float2(at.X + 6 * _scale, at.Y + size - 2 * _scale), it.Usable && !it.Locked ? SbText : SbDim, it.Name, clip);
             ImGui.PopFont();
         }
         if (selected)
@@ -1084,6 +1101,7 @@ public sealed partial class Ui
             var n = SandboxCounts?.PartCount(game, me, it.Part.Id) ?? -1;
             if (n >= 0)
                 ImGuiSafe.TextColored(Dim, _sbNet != null ? $"On the network: {n}" : $"You have: {n}");
+            SbLockTooltip(game, me, it);
         }
         if (it.Description.Length > 0)
             ImGuiSafe.TextDisabled(it.Description);

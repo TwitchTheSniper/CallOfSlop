@@ -44,6 +44,9 @@ public sealed class BuildStationParts : IPartGenerator
         // The second way in, on the sorter's side: a white band round the mouth and a hazard sill.
         p.Add(MachineLook.D([x0 + 0.006, y0 + 0.02, z0 + 0.6], [x0 + 0.022, y0 + 0.5, z0 + 1.2], MachineLook.In));
         MachineLook.Hazard(p, [x0 + 0.002, y0 + 0.0, z0 + 0.62], [x0 + 0.024, y0 + 0.018, z0 + 1.18]);
+        // The fluid inlet beside it: a steel flange with a white ring, what a pipe from a tank is laid to (the build's tanks are filled from it).
+        p.Add(MachineLook.D([x0 + 0.006, y0 + 0.24, z0 + 1.44], [x0 + 0.03, y0 + 0.46, z0 + 1.66], MachineLook.Steel, "steel"));
+        p.Add(MachineLook.D([x0 + 0.002, y0 + 0.3, z0 + 1.5], [x0 + 0.008, y0 + 0.4, z0 + 1.6], MachineLook.In));
         // ---- The tray, along the right: runners, slats, accent rails; parts ride in at the back and are taken at the front.
         const double runner = 0.12, high = 0.12, post = 0.07, rail = 0.06, top = 1.4;
         p.Add(Box([xm, y0, z0], [xm + runner, y0 + high, z1], MachineLook.Base));
@@ -83,13 +86,21 @@ public sealed class BuildStationParts : IPartGenerator
         p.Set(("power", 150), ("onBreak", "disable"));
         p.Set(("panels", Py.L(Kw(("source", "station"), ("at", Py.L(Py.Round((x0 + xm) / 2, 3), Py.Round(y0 + MachineLook.EyeY, 3), Py.Round(dz0 + 0.171, 3))), ("size", Py.L(0.74, 0.5)), ("face", "+z"), ("up", "+y"), ("rows", 8), ("range", 12)))));
         const double section = 1.8, length = 4.8;
+        static PyDict Fill(string key, string label, string tip) => Kw(("key", key), ("label", label), ("group", "Fill"), ("min", 0), ("max", 100), ("step", 5), ("default", 100), ("unit", "%"),
+            ("tooltip", "Survival: a build is filled to this share. " + tip + " 0: none, 100: full."));
         static PyDict Bay(string key, string label, double def, string tip) => Kw(("key", key), ("label", label), ("group", "Bay"), ("min", 2), ("max", 64), ("step", 0.5), ("default", def), ("unit", "m"), ("tooltip", tip));
-        p.Set(("config", Py.L(Bay("bayWidth", "Bay width", 6, "The bay's size across, away from the station."), Bay("bayDepth", "Bay depth", 8, "The bay's size along the station."), Bay("bayHeight", "Bay height", 4, "The bay's height. A blueprint is built only if it fits the bay."))));
+        p.Set(("config", Py.L(Bay("bayWidth", "Bay width", 6, "The bay's size across, away from the station."), Bay("bayDepth", "Bay depth", 8, "The bay's size along the station."), Bay("bayHeight", "Bay height", 4, "The bay's height. A blueprint is built only if it fits the bay."),
+            Fill("fillFuel", "Fuel and tanks", "Fuel and fluid tanks, gases too: from tanks piped to Fluid in, gas from linked bins."),
+            Fill("fillAmmo", "Ammo", "Ammo boxes, Ammo Containers and fitted magazines: from bulk ammo in linked bins."),
+            Fill("fillCharge", "Battery charge", "Batteries: charged from the station's own power, which takes time."),
+            Kw(("key", "fillWait"), ("label", "Wait until filled"), ("group", "Fill"), ("type", "toggle"), ("default", false),
+                ("tooltip", "On: a build stays in the bay until it is filled. Off: it finishes with what it got and says what is short.")))));
         p.Set(("storage", Kw(("pieces", Kw(("section", Py.L(section, 1.25)), ("length", length), ("count", 400), ("crafting", true), ("station", true),
             ("hold", Py.L(Py.L(Py.Round(xm + 0.1, 3), Py.Round(y0 + 0.133, 3), Py.Round(z0 + 0.074, 3)), Py.L(Py.Round(x1 - 0.1, 3), Py.Round(y0 + top - 0.01, 3), Py.Round(z1 - 0.06, 3)))))))));
         p.Set(("ports", Py.L(
             Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(Py.Round(mid, 3), Py.Round(y0 + 0.05, 3), z0)), ("face", "-z"), ("opening", Py.L(section, section))),
             Kw(("name", "Piece in 2"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(Py.Round(x0 + 0.02, 3), Py.Round(y0 + 0.05, 3), Py.Round(z0 + 0.9, 3))), ("face", "-x"), ("opening", Py.L(0.5, 0.5))),
+            Kw(("name", "Fluid in"), ("type", "pipe"), ("dir", "in"), ("at", Py.L(Py.Round(x0 + 0.02, 3), Py.Round(y0 + 0.35, 3), Py.Round(z0 + 1.55, 3))), ("face", "-x")),
             Kw(("name", "Chute in"), ("type", "chute"), ("dir", "in"), ("at", Py.L(Py.Round((x0 + xm) / 2, 3), Py.Round(y0 + 0.95, 3), Py.Round(z0 + 0.56, 3))), ("face", "+y")))));
         return p;
     }

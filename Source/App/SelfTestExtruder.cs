@@ -62,7 +62,7 @@ public static partial class SelfTest
         [
             ("\"speed\": 0.2", "\"speed\": 90", "speed"),
             ("\"kind\": \"die\"", "\"kind\": \"struct\"", "die"),
-            ("\"maxSection\": [\n        6,\n        6\n      ]", "\"maxSection\": [0.2, 0.2]", "maxSection"),
+            (string.Create(System.Globalization.CultureInfo.InvariantCulture, $"\"maxSection\": [\n        {extruder.ExtMaxSection.X:0.##},\n        {extruder.ExtMaxSection.Y:0.##}\n      ]"), "\"maxSection\": [0.2, 0.2]", "maxSection"), // (the file's own numbers, from its def: leftovers 3 took the frames to 8 m)
             ("\"extrude\": {", "\"extrude\": { \"haste\": 2, ", "haste"),
             ("\"material\": \"any\"", "\"material\": \"metal\"", "any"),
         ];

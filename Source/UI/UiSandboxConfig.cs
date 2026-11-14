@@ -510,7 +510,7 @@ public sealed partial class Ui
         if (d.TextSlots == 0 || part < 0 || part >= c.PartCount)
             return;
         var key = (long)c.Id << 20 | (uint)part;
-        ImGui.SeparatorText("Text"u8);
+        ImGui.SeparatorText(d.IsRouter ? "Name"u8 : "Text"u8);
         for (var slot = 0; slot < d.TextSlots; slot++)
         {
             _cfText[slot] ??= new ImInputString(LogicText.MaxChars + 1);
@@ -521,7 +521,7 @@ public sealed partial class Ui
             if (ImGui.IsItemDeactivatedAfterEdit())
                 game.SandboxPartText(c.Id, part, slot, ImGuiSafe.Text(_cfText[slot]!));
             if (ImGui.IsItemHovered())
-                ImGuiSafe.SetTooltip(d.TextSlots == 2 ? slot == 0 ? "Shown with its wire off." : "Shown with its wire on." : "Labels, comma-separated.");
+                ImGuiSafe.SetTooltip(d.IsRouter ? "Its name on the network board and in order notes (empty: its number)." : d.TextSlots == 2 ? slot == 0 ? "Shown with its wire off." : "Shown with its wire on." : "Labels, comma-separated.");
         }
         _cfTextKey = key;
     }
@@ -605,12 +605,12 @@ public sealed partial class Ui
             {
                 ImGui.SetNextItemWidth(fieldW);
                 var idx = (int)Math.Clamp(v, 0, Math.Max(0, e.Options.Length - 1));
-                if (e.Id == CfgKey.Recipe && RecipePickable(d) && e.Options.Length > 0)
+                if (e.Id == ProductionLines.RecipeKey(d) && RecipePickable(d) && e.Options.Length > 0)
                 {
                     // A refiner's or an Assembler's recipe: the picker's tiles (UiRecipePicker.cs) in place of the list; it sets the
                     // row through SandboxConfigSet, as the list would.
                     if (ImGui.Button(e.Options[idx], new float2(fieldW, 0)) && !CfLocked(game, e))
-                        OpenRecipePickerConfig(_cfBody, _cfPart, d, s);
+                        OpenRecipePickerConfig(_cfBody, _cfPart, d, s, game.Constructs.Get(_cfBody) is { } rc && _cfPart < rc.PartCount ? RecipeVariant(rc, _cfPart) : "");
                     if (ImGui.IsItemHovered())
                         ImGui.SetTooltip("Pick a recipe from its picture, inputs and time."u8);
                     break;
@@ -755,7 +755,19 @@ public sealed partial class Ui
     private void SandboxConfigCells(Game game, ConstructPartDef d, double now)
     {
         var mask = SandboxConfigMask(d);
-        var cell = 20 * _scale;
+        var clicked = SectionCells(mask, 20 * _scale);
+        if (clicked >= 0)
+            SandboxConfigFlipCell(game, clicked, now);
+        if (Extrusion.ShapeOf((int)_cfVals[d.CfgSlot[(int)CfgKey.Profile]]) == ExShape.Section)
+            SectionCellsRefusal(mask);
+    }
+
+    /// <summary>
+    /// An Extruder's 8 by 8 section grid as buttons, top row first (the configure panel's and the Extruder's recipe picker's): the cell
+    /// clicked this frame, or -1. What a click does is the caller's: both flip that cell of the section shown.
+    /// </summary>
+    private int SectionCells(ulong mask, float cell)
+    {
         var clicked = -1;
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new float2(2 * _scale, 2 * _scale));
         for (var y = Extrusion.Grid - 1; y >= 0; y--)
@@ -772,10 +784,16 @@ public sealed partial class Ui
                 ImGui.PopStyleColor(2);
             }
         ImGui.PopStyleVar();
-        if (clicked >= 0)
-            SandboxConfigFlipCell(game, clicked, now);
-        if (Extrusion.ShapeOf((int)_cfVals[d.CfgSlot[(int)CfgKey.Profile]]) == ExShape.Section && Extrusion.Refusal(mask) is { } why)
-            ImGuiSafe.TextColored(new float4(0.94f, 0.43f, 0.35f, 1), why);
+        return clicked;
+    }
+
+    /// <summary>Why a drawn section can't be made (<see cref="Extrusion.Refusal"/>: one piece, few enough boxes), in red under its grid; true when it can.</summary>
+    private static bool SectionCellsRefusal(ulong mask)
+    {
+        if (Extrusion.Refusal(mask) is not { } why)
+            return true;
+        ImGuiSafe.TextColored(new float4(0.94f, 0.43f, 0.35f, 1), why);
+        return false;
     }
 
     private int _cfRackCapKey = -1;

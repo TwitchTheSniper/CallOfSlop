@@ -235,6 +235,7 @@ public sealed partial class Game
     {
         if (WorldSession is not { } ws || Constructs.Get(ship.Id) != ship || ship.SpaceShip == 0 || LandProblem(ship) != null)
             return;
+        FirstForRiders(ship, Milestone.Landing, to.Name); // (before the save: the records carry it to the new world; GameMilestones.cs)
         WorldSaveNow(wait: true); // (the whole world, the ship and everyone's things with it, in the world's own file)
         var from = World.Map.Name;
         var why = WorldCopy(ws, StashFolder(ws, from), c => !Aboard(ship, c)); // (the planetoid left behind, without the ship)
@@ -355,7 +356,7 @@ public sealed partial class Game
         // People: the travellers sit in the ship again; anyone away from the game comes back at a spawn.
         var here = new HashSet<WorldPlayer>();
         foreach (var p in Players.Values)
-            if (WorldKnown(p) && ws.Find(WorldKeyOf(p), p.SteamId) is { } rec)
+            if (WorldKnown(p) && ws.Find(WorldKeyOf(p), TrustedSteamId(p)) is { } rec)
                 here.Add(rec);
         foreach (var rec in ws.Players)
         {

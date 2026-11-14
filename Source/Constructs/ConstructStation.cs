@@ -22,7 +22,7 @@ public enum StationOp : byte
 }
 
 /// <summary>A Building Station's job (<see cref="CPart.Station"/>; ConstructStation.cs). The first block is what both peers hold.</summary>
-public sealed class StationJob
+public sealed partial class StationJob
 {
     public string Name = ""; // the blueprint, by name (never an index: the list shifts)
     public StationState State;
@@ -45,6 +45,7 @@ public sealed class StationJob
     public Quaternion Rot = Quaternion.Identity;
     public Vector3 Size; // the blueprint's bounds
     public int FitTicks, OrderTicks, NoteKey;
+    public int FillKey; // the fill stage's counts as its note last said them
     public int Cursor; // every step before it is fitted
     public ushort[] KindDef = [], KindNeed = [], KindFit = [];
     public string?[] KindWhy = []; // why nothing linked holds or makes it (null: ordered or held)
@@ -68,7 +69,7 @@ public sealed class StationJob
 /// is an ordinary construct, frozen and <see cref="Construct.HeldBy"/> the station until done; each part goes on through
 /// <see cref="ConstructBuild.FitStep"/>, the blueprint loader's own step. Server; nothing runs while no station has a job.
 /// </summary>
-public static class ConstructStation
+public static partial class ConstructStation
 {
     public const float FitSeconds = 2f; // the core fits one part this often by itself...
     public const float FitSecondsPerKg = 0.02f; // ...plus this for its mass...
@@ -78,6 +79,10 @@ public static class ConstructStation
     public const int OrderEvery = 30; // ticks between looks at what to order (2 Hz)
     public const int OrdersAStep = 4; // craft orders placed in one look
     public const int ReturnAStep = 8; // parts given back in one look
+    public const float FillLitresALook = 50f; // fuel and fluids given the build in one look (2 Hz): 100 L a second (proposed)
+    public const int AmmoUnitsALook = 10; // units of bulk ammo in one look: 200 rounds a second
+    public const int GasUnitsALook = 4; // units of bulk gas from the linked bins in one look: 400 L a second (proposed)
+    public const float ChargeKW = 50f; // a build's batteries charged at this, plus what the station's power plants make, from its own charge (proposed)
     public const float BayGap = 0.5f; // between the station's side and its bay
     public const string WireStock = "copper", PipeStock = "steel"; // link stock by the metre (proposed): wires and cables; pipes, chutes, shafts, feeds, conveyors
     public const string HeldText = "a Building Station is building it: Cancel or Release early at the station";
@@ -206,7 +211,7 @@ public static class ConstructStation
     public static string StateText(StationJob? j) => j == null ? "idle" : j.State switch
     {
         StationState.Costing => $"{j.Name}: working out its bill",
-        StationState.Building => j.Fitted < j.Steps ? $"{j.Name}: {j.Fitted} of {j.Steps} parts" : $"{j.Name}: link {j.LinksDone} of {j.Links}",
+        StationState.Building => j.Fitted < j.Steps ? $"{j.Name}: {j.Fitted} of {j.Steps} parts" : j.LinksDone < j.Links ? $"{j.Name}: link {j.LinksDone} of {j.Links}" : $"{j.Name}: filling its tanks",
         StationState.Done => $"{j.Name}: done - drive it out",
         StationState.Failed => $"{j.Name}: stopped",
         _ => "idle",
@@ -267,7 +272,10 @@ public static class ConstructStation
             case StationState.Building:
                 card.Add(2, "Parts ").Add(2, j.Fitted).Add(2, '/').Add(2, j.Steps);
                 card.Add(3, "Links ").Add(3, j.LinksDone).Add(3, '/').Add(3, j.Links);
-                card.Add(4, "Hold: ").Add(4, st.ItemCount);
+                if (j.Fitted >= j.Steps && j.LinksDone >= j.Links)
+                    card.Add(4, j.Note.StartsWith("waits", StringComparison.Ordinal) ? "WAITS FOR FILL" : "Filling");
+                else
+                    card.Add(4, "Hold: ").Add(4, st.ItemCount);
                 break;
             case StationState.Done:
                 card.Add(2, "DONE");
@@ -295,8 +303,10 @@ public static class ConstructStation
     public static WorkOrder OrderFor(ConstructPartDef d, int count)
     {
         var n = (ushort)Math.Clamp(count, 1, WorkOrders.MaxCount);
-        if (HullLoft.IsFormedName(d.Name))
+        if (HullLoft.IsFormedName(d.Name) || HullLoft.IsCutName(d.Name)) // (a cut part by its key: a Laser Cutter's order)
             return ConstructPanelFormer.Order(d.Name, n);
+        if (Pressed.IsName(d.Name) && WorkOrders.PressedOrder(d.Name, n) is { } pressed)
+            return pressed; // (a pressed part by its key: a Press's order, Press phase 4)
         if (d.Name.StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase) && Extrusion.ParseKey(d.Name) is { } key)
             return new WorkOrder { Key = key with { Growing = false }, Part = ConstructParts.None, Count = n };
         return new WorkOrder { Part = (ushort)d.Id, Count = n };
@@ -368,6 +378,7 @@ public static class ConstructStation
         TakeDropped(world, c, t, tray, j);
         if (j.State != StationState.Building)
             return;
+        ConstructLifters.PadClaims(world, c, t, tray, j); // (what its arms' pick pads hold for it is claimed for the build: lifters phase 5)
         Array.Clear(j.KindReady);
         while (j.Cursor < j.PartOf.Length && j.PartOf[j.Cursor] >= 0)
             j.Cursor++;
@@ -379,7 +390,7 @@ public static class ConstructStation
         for (var i = 0; i < j.KindN; i++)
         {
             var def = j.KindDef[i];
-            var held = ConstructCrafting.Holds(tray, def);
+            var held = ConstructCrafting.Holds(tray, def) + LiftHolds(world, c, t, def); // (a piece in a Loader Arm's hand counts as in the hold: ConstructLifters.cs)
             var lack = j.KindNeed[i] - j.KindFit[i] - held;
             if (lack <= 0)
             {
@@ -455,6 +466,8 @@ public static class ConstructStation
             var kind = KindOf(j, b.Parts[0].Def);
             if (kind < 0 || j.KindFit[kind] + ConstructCrafting.Holds(tray, b.Parts[0].Def) >= j.KindNeed[kind])
                 continue;
+            if (world.StoreOf(b, 0) is { } held && (held.Amount > 0 || held.ItemCount > 0 || held.InAmount > 0))
+                continue; // (a loaded container, a bin with something in it: taking it would lose what it holds, so it lies there for the player to empty)
             found = b;
             break;
         }
@@ -539,6 +552,8 @@ public static class ConstructStation
 
     private static void CancelOrders(ConstructWorld world, Construct c, int t)
     {
+        if (world.StoreOf(c, t) is { } hold)
+            world.Reserve.Release(world, hold.Handle, ConstructLifters.PadClaim); // (its claims on its arms' pick pads: lifters phase 5)
         if (c.Parts[t].Craft is not { } q)
             return;
         Span<ushort> ids = stackalloc ushort[ConstructCrafting.MaxOrders];
@@ -681,7 +696,7 @@ public static class ConstructStation
         var lastHeld = false;
         for (var k = j.Cursor; k < j.PartOf.Length; k++)
         {
-            if (j.PartOf[k] >= 0 || !Ready(j, k))
+            if (j.PartOf[k] != -1 || !Ready(j, k)) // (-2: claimed by a lifter, its piece in the air: ConstructLifters.cs)
                 continue;
             var def = j.StepKind[k] >= 0 ? j.KindDef[j.StepKind[k]] : None;
             if (only != None)
@@ -716,6 +731,8 @@ public static class ConstructStation
             b.Owner = c.Owner;
             j.Body = b.Id;
         }
+        var fuel0 = b.Fuel;
+        var charge0 = b.Charge;
         if (ConstructBuild.FitStep(world, b, bp, k, j.PartOf) is { } why)
         {
             if (j.PartOf[k] >= 0 && b.PartCount == j.Fitted + 1)
@@ -731,14 +748,286 @@ public static class ConstructStation
         b.Dirty = true;
         b.Rebuild();
         b.PrevPos = b.NetPos = b.NetFromPos = b.Pos = j.Pos;
+        if (!FillsFree(world))
+            Empty(world, b, j.PartOf[k], fuel0, charge0);
         world.StructureDirty.Add(b.Id);
         j.Fitted++;
         var kind = KindOf(j, (ushort)p.Def);
         if (kind >= 0)
             j.KindFit[kind]++;
         j.LastPart = (ushort)j.PartOf[k];
+        world.FitThisTick = true; // (one fit a tick a world, whoever fits: ConstructLifters.cs)
         j.FitSeq++;
         world.StationChanged(c);
+    }
+
+    /// <summary>Creative (machines untimed): the build's tanks and boxes come full, as a spawned blueprint's do.</summary>
+    private static bool FillsFree(ConstructWorld world) => world.Creative && !world.TimedMachines;
+
+    /// <summary>
+    /// Survival: a part the station fits holds nothing (a fuel tank adds no fuel, an ammo box no rounds, a Fluid Tank none of its
+    /// blueprint's fill); the fill stage (<see cref="Fill"/>) gives it what is piped to the station and what its linked bins hold.
+    /// </summary>
+    private static void Empty(ConstructWorld world, Construct b, int i, float fuel0, float charge0)
+    {
+        b.Fuel = MathF.Min(b.Fuel, fuel0); // (AddPart and the first rebuild fill a new tank: the pool stays what it was)
+        b.Charge = MathF.Min(b.Charge, charge0); // (and the first rebuild charges the batteries)
+        var d = b.DefOf(i);
+        if (d.Role == PartRole.AmmoBox && b.Parts[i].Rounds > 0)
+        {
+            b.Parts[i].Rounds = 0;
+            world.NoteAmmo(b, i);
+        }
+        else if (d.Role == PartRole.FluidTank && ConstructFluid.Held(b.Parts[i], d) != null)
+            ConstructFluid.Lost(b, i);
+    }
+
+    /// <summary>What step <paramref name="k"/>'s Fluid Tank holds in its blueprint: the fluid and the litres (false: nothing a pipe carries).</summary>
+    private static bool FluidWant(ConstructBuild.Blueprint bp, int k, Construct b, int i, ConstructPartDef d, out Fluid fluid, out float litres)
+    {
+        fluid = default;
+        litres = 0;
+        if (k >= bp.StepConfig.Count || bp.StepConfig[k] is not { } values)
+            return false;
+        int fluidSlot = d.CfgSlot[(int)CfgKey.Fluid], fillSlot = d.CfgSlot[(int)CfgKey.Fill];
+        float f = 0, fill = 0;
+        foreach (var (slot, value) in values)
+            if (slot == fluidSlot)
+                f = value;
+            else if (slot == fillSlot)
+                fill = value;
+        if (f < 1 || fill <= 0 || (Fluid)((int)f - 1) is Fluid.HotAir or Fluid.Vacuum or Fluid.Exhaust)
+            return false;
+        fluid = (Fluid)((int)f - 1);
+        litres = MathF.Min(fill / 100f * ConstructFluid.Capacity(b.Parts[i], d), ConstructFluid.Limit(b.Parts[i], d));
+        return litres > 0.01f;
+    }
+
+    /// <summary>Up to <paramref name="litres"/> of <paramref name="fluid"/> into part <paramref name="to"/> of the build, through the intact pipes laid to the station's Fluid in.</summary>
+    private static float FromPipes(Construct c, int t, Fluid fluid, Construct b, int to, float litres)
+    {
+        var moved = 0f;
+        for (var k = 0; k < c.RouteCount && moved < litres; k++)
+        {
+            ref var r = ref c.Routes[k];
+            if (r.Type != RouteType.Pipe || r.To != t || r.Source >= c.PartCount || r.FirstCut <= r.Count || !r.FedEnd
+                || !ConstructFluid.Holds(c, r.Source, out var f, out _) || f != fluid)
+                continue;
+            moved += ConstructFluid.Move(c, r.Source, b, to, litres - moved);
+        }
+        return moved;
+    }
+
+    /// <summary>
+    /// The fill stage, a look every half second after the last link (survival), each kind to the station's fill setting
+    /// (<see cref="CfgKey.FillFuel"/>, <see cref="CfgKey.FillAmmo"/>, <see cref="CfgKey.FillCharge"/>): the build's fuel pool and
+    /// Fluid Tanks (to that share of their blueprint's fill) from tanks piped to the station's Fluid in, and gases from bulk
+    /// hydrogen, helium and oxidiser in its linked bins; its ammo boxes, Ammo Containers and fitted magazines from bulk ammo in its
+    /// linked bins; its batteries from the station construct's own charge. True while the stage goes on: something moved, or nothing
+    /// did and the station waits (<see cref="CfgKey.FillWait"/>). What is still short is named in the note.
+    /// </summary>
+    private static bool Fill(ConstructWorld world, Construct c, int t, StationJob j, Construct b)
+    {
+        var bp = j.Bp!;
+        var fuelShare = Share(c, t, CfgKey.FillFuel);
+        var ammoShare = Share(c, t, CfgKey.FillAmmo);
+        var chargeShare = Share(c, t, CfgKey.FillCharge);
+        var budget = FillLitresALook;
+        var gasUnits = GasUnitsALook;
+        float fluidWant = 0, fluidHave = 0;
+        var moved = false;
+        var fuelTank = -1;
+        var ammo = RecyclingTable.Current.IdOf(ConstructAmmo.Material);
+        var units = AmmoUnitsALook;
+        int roundsWant = 0, roundsHave = 0;
+        for (var k = 0; k < bp.Steps.Count && k < j.PartOf.Length; k++)
+        {
+            var i = j.PartOf[k];
+            if (i < 0 || i >= b.PartCount || !b.Parts[i].Working)
+                continue;
+            var d = b.DefOf(i);
+            if (d.Role == PartRole.FuelTank)
+                fuelTank = fuelTank < 0 ? i : fuelTank;
+            else if (d.Role == PartRole.AmmoBox && d.BoxRounds > 0)
+            {
+                var want = (int)(d.BoxRounds * ammoShare);
+                var need = want - b.Parts[i].Rounds;
+                if (need > 0 && units > 0)
+                {
+                    var got = TakeLinked(world, c, t, ammo, Math.Min(units, (need + ConstructAmmo.RoundsPerUnit - 1) / ConstructAmmo.RoundsPerUnit));
+                    if (got > 0)
+                    {
+                        units -= got;
+                        b.Parts[i].Rounds = (ushort)Math.Min(want, b.Parts[i].Rounds + got * ConstructAmmo.RoundsPerUnit);
+                        world.NoteAmmo(b, i);
+                        moved = true;
+                    }
+                }
+                roundsWant += want;
+                roundsHave += Math.Min(want, (int)b.Parts[i].Rounds);
+            }
+            else if (ConstructAmmo.IsMagazine(d))
+            {
+                // A fitted magazine: its rounds and type in one ushort (ConstructAmmo.Pack); a station's comes empty, of the first type.
+                var want = (int)(ConstructAmmo.Capacity(d) * ammoShare);
+                var pack = b.Parts[i].Rounds;
+                var have = ConstructAmmo.PackRounds(pack);
+                if (want - have > 0 && units > 0)
+                {
+                    var got = TakeLinked(world, c, t, ammo, Math.Min(units, (want - have + ConstructAmmo.RoundsPerUnit - 1) / ConstructAmmo.RoundsPerUnit));
+                    if (got > 0)
+                    {
+                        units -= got;
+                        have = Math.Min(want, have + got * ConstructAmmo.RoundsPerUnit);
+                        b.Parts[i].Rounds = ConstructAmmo.Pack(have, ConstructAmmo.PackType(pack));
+                        world.NoteAmmo(b, i);
+                        moved = true;
+                    }
+                }
+                roundsWant += want;
+                roundsHave += Math.Min(want, have);
+            }
+            else if (d.AmmoStore && world.StoreOf(b, i) is { } st)
+            {
+                // An Ammo Container: bulk ammo by the unit, as its bins hold it (nothing else in it: a store holds one material).
+                var want = (int)(ConstructStorage.Capacity(b, i) * ammoShare);
+                var mine = st.KindN == 0 && (st.Amount == 0 || st.Material == ammo);
+                var have = mine ? st.Amount : want;
+                if (mine && want - have > 0 && units > 0)
+                {
+                    var got = TakeLinked(world, c, t, ammo, Math.Min(units, want - have));
+                    if (got > 0)
+                    {
+                        units -= got;
+                        have += got;
+                        world.SetBulk(st, (byte)ammo, have);
+                        moved = true;
+                    }
+                }
+                roundsWant += want * ConstructAmmo.RoundsPerUnit;
+                roundsHave += Math.Min(want, have) * ConstructAmmo.RoundsPerUnit;
+            }
+            else if (d.Role == PartRole.FluidTank && FluidWant(bp, k, b, i, d, out var fluid, out var want))
+            {
+                want *= fuelShare;
+                var held = ConstructFluid.Held(b.Parts[i], d);
+                var have = held == fluid ? ConstructFluid.Litres(b.Parts[i], d) : held == null ? 0 : want; // (another fluid got in: left as it is)
+                if (want - have > 0.01f && budget > 0)
+                {
+                    var got = FromPipes(c, t, fluid, b, i, MathF.Min(want - have, budget));
+                    budget -= got;
+                    have += got;
+                    moved |= got > 0;
+                }
+                if (want - have > 0.01f && gasUnits > 0 && GasMaterial(fluid) is var gas and > 0)
+                {
+                    // A gas from the linked bins, as a Gas Compressor makes it: a unit is GasLitres (a part-used last unit's spare is lost).
+                    var per = GasLitres;
+                    var got = TakeLinked(world, c, t, gas, Math.Min(gasUnits, (int)MathF.Ceiling((want - have) / per)));
+                    if (got > 0)
+                    {
+                        gasUnits -= got;
+                        var litres = MathF.Min(got * per, MathF.Min(want - have, ConstructFluid.Room(b, i, fluid)));
+                        ConstructFluid.Give(b, i, fluid, litres);
+                        have += litres;
+                        moved = true;
+                    }
+                }
+                fluidWant += want;
+                fluidHave += MathF.Min(have, want);
+            }
+        }
+        var fuelWant = fuelTank < 0 ? 0 : b.FuelCapacity() * fuelShare;
+        if (fuelTank >= 0 && fuelWant - b.Fuel > 0.01f && budget > 0)
+        {
+            var got = FromPipes(c, t, b.DefOf(fuelTank).TankFluid, b, fuelTank, MathF.Min(fuelWant - b.Fuel, budget));
+            moved |= got > 0;
+        }
+        var fuelHave = MathF.Min(b.Fuel, fuelWant);
+        // The batteries: from the station construct's own charge, at most ChargeKW plus what its power plants make now.
+        var chargeWant = b.ChargeCapacity * chargeShare;
+        if (chargeWant - b.Charge > 0.5f && c.PowerOn && c.Charge > 0)
+        {
+            var kj = MathF.Min((ChargeKW + MathF.Max(0, c.PlantOut)) * OrderEvery / World.TickRate, MathF.Min(c.Charge, chargeWant - b.Charge));
+            if (kj > 0)
+            {
+                c.UseCharge(kj);
+                b.Charge += kj;
+                moved = true;
+            }
+        }
+        var chargeHave = MathF.Min(b.Charge, chargeWant);
+        var full = fuelHave >= fuelWant - 0.01f && fluidHave >= fluidWant - 0.01f && roundsHave >= roundsWant && chargeHave >= chargeWant - 0.5f;
+        var waits = !full && !moved && Waits(c, t);
+        var key = HashCode.Combine((int)fuelHave, (int)fuelWant, (int)fluidHave, (int)fluidWant, roundsHave, roundsWant, (int)chargeHave, moved ? 1 : waits ? 2 : 0);
+        if (key != j.FillKey)
+        {
+            j.FillKey = key;
+            j.Note = full ? "" : (moved ? "filling: " : waits ? "waits for its fill: " : "not filled: ")
+                + FillText(fuelHave, fuelWant, fluidHave, fluidWant, roundsHave, roundsWant, chargeHave, chargeWant)
+                + (moved ? "" : " - pipe tanks to its Fluid in, ammo and gas in a linked bin, power for batteries");
+            world.StationChanged(c);
+        }
+        return !full && (moved || waits);
+    }
+
+    /// <summary>Are these only a station's fill settings (its window sets them with any tool in hand: ConstructEdits.Configure)?</summary>
+    public static bool WindowSets(ConstructPartDef d, ReadOnlySpan<byte> slots)
+    {
+        if (!d.IsBuildStation || slots.Length == 0)
+            return false;
+        foreach (var s in slots)
+            if (s >= d.Config.Length || d.Config[s].Id is < CfgKey.FillFuel or > CfgKey.FillWait)
+                return false;
+        return true;
+    }
+
+    /// <summary>A fill setting of the station, as a share (0 to 1; 1 when the part has no such setting).</summary>
+    private static float Share(Construct c, int t, CfgKey k) => Math.Clamp(ConstructConfig.Get(c.Parts[t], c.DefOf(t), k, 100) / 100f, 0, 1);
+
+    /// <summary>Does the station hold a build in its bay until it is filled (<see cref="CfgKey.FillWait"/>)?</summary>
+    public static bool Waits(Construct c, int t) => ConstructConfig.Get(c.Parts[t], c.DefOf(t), CfgKey.FillWait, 0) >= 0.5f;
+
+    /// <summary>The bulk material a gas comes from in a bin (0: none, a liquid).</summary>
+    private static int GasMaterial(Fluid f) => f switch
+    {
+        Fluid.Hydrogen => RecyclingTable.Current.IdOf("hydrogen"),
+        Fluid.Helium => RecyclingTable.Current.IdOf("helium"),
+        Fluid.Oxidiser => RecyclingTable.Current.IdOf("oxidiser"),
+        _ => 0,
+    };
+
+    /// <summary>Litres of gas a bulk unit makes: a Gas Compressor's (50 l), read once.</summary>
+    private static float GasLitres => _gasLitres > 0 ? _gasLitres : _gasLitres = ConstructParts.Find("Gas Compressor") is { GasLitres: > 0 } g ? g.GasLitres : 50f;
+    private static float _gasLitres;
+
+    private static string FillText(float fuelHave, float fuelWant, float fluidHave, float fluidWant, int roundsHave, int roundsWant, float chargeHave, float chargeWant)
+    {
+        var s = "";
+        if (fuelHave < fuelWant - 0.01f)
+            s = $"fuel {fuelHave:0}/{fuelWant:0} L";
+        if (fluidHave < fluidWant - 0.01f)
+            s += (s.Length > 0 ? ", " : "") + $"tanks {fluidHave:0}/{fluidWant:0} L";
+        if (roundsHave < roundsWant)
+            s += (s.Length > 0 ? ", " : "") + $"ammo {roundsHave}/{roundsWant} rounds";
+        if (chargeHave < chargeWant - 0.5f)
+            s += (s.Length > 0 ? ", " : "") + $"charge {chargeHave:0}/{chargeWant:0} kJ";
+        return s;
+    }
+
+    /// <summary>Up to <paramref name="units"/> of a bulk material from the station's linked bins; what was taken.</summary>
+    private static int TakeLinked(ConstructWorld world, Construct c, int t, int material, int units)
+    {
+        var net = ConstructCrafting.NetOf(world, c, t);
+        var got = 0;
+        for (var s = 0; s < net.StoreN && got < units; s++)
+            if (world.StoreOf(c, net.Stores[s]) is { Amount: > 0 } st && st.Material == material)
+            {
+                var take = Math.Min(units - got, st.Amount);
+                world.TakeBulk(st, take);
+                got += take;
+            }
+        return got;
     }
 
     private static int FitTicksFor(ConstructPartDef d) =>
@@ -814,6 +1103,7 @@ public static class ConstructStation
         Free(world, b, j);
         j.State = StationState.Done;
         j.Note = "";
+        CancelOrders(world, c, t); // (every part is in: what it still had ordered is closed, its unstarted lines off their machines' queues, and its pad claims go: leftovers 3, a cut panel's order left open after `station stock`)
         var s = (Stopwatch.GetTimestamp() - j.Started) / (double)Stopwatch.Frequency;
         Console.WriteLine($"[station] {j.Name}: done in {s:0.0} s ({j.Steps} parts, {j.Links} links); costing {j.CostMs:0.0} ms, worst slice {j.WorstMs:0.00} ms");
         world.StationChanged(c);
@@ -847,6 +1137,7 @@ public static class ConstructStation
         Bay(c, t, out var floor, out var rot, out var bay);
         j.Links = (ushort)Math.Min(None - 1, bp.Wires.Count + bp.Links.Count);
         MakeKinds(j);
+        LiftCost(j, run, built); // (each step's place on the body, for the lifters: ConstructLifters.cs)
         Console.WriteLine($"[station] {j.Name}: costed in {j.CostMs:0.0} ms, worst slice {j.WorstMs:0.00} ms; {size.X:0.00} x {size.Y:0.00} x {size.Z:0.00} m, {j.KindN} kinds");
         if (j.Resume)
         {
@@ -996,7 +1287,7 @@ public static class ConstructStation
                 j.LinkAt = j.Cursor = 0;
                 j.Fitted = j.LinksDone = 0;
                 j.LastPart = None;
-                j.NoteKey = 0;
+                j.NoteKey = j.FillKey = 0;
                 j.Started = Stopwatch.GetTimestamp();
                 j.State = StationState.Building;
                 j.Note = "";
@@ -1037,7 +1328,12 @@ public static class ConstructStation
                 j.FitTicks = (int)(LinkSeconds * World.TickRate);
             return true;
         }
+        if (!FillsFree(world) && Fill(world, c, t, j, b))
+            return true; // (a look every half second while something moves)
+        var left = j.Note; // (what the fill couldn't give: said after Done)
         Finish(world, c, t, j, b);
+        if (j.State == StationState.Done && left.Length > 0)
+            j.Note = left;
         return j.State == StationState.Done && j.Repeat > 0;
     }
 
@@ -1359,11 +1655,11 @@ public sealed class StationPreview
             for (var i = 0; i < names.Count; i++)
             {
                 var d = ConstructParts.Find(names[i]);
-                var g = HullLoft.IsFormedName(names[i]) ? 1 : names[i].StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase) ? 0 : 2;
+                var g = HullLoft.IsFormedName(names[i]) || HullLoft.IsCutName(names[i]) ? 1 : names[i].StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase) ? 0 : 2;
                 if (g != group)
                     continue;
                 if (!head)
-                    Lines.Add((group == 0 ? "PIECES (an Extruder's, a Former's)" : group == 1 ? "PANELS (a Panel Former's)" : "CATALOGUE PARTS", 0));
+                    Lines.Add((group == 0 ? "PIECES (an Extruder's, a Former's)" : group == 1 ? "PANELS (a Panel Former's, a Laser Cutter's)" : "CATALOGUE PARTS", 0));
                 head = true;
                 if (d == null)
                 {
@@ -1421,7 +1717,7 @@ public sealed class StationPreview
             Stock(world, c, net, ConstructStation.PipeStock, "pipes, chutes, shafts and feeds", pipe);
         }
         Lines.Add(("FLUIDS AND AMMO", 0));
-        Lines.Add(("not filled by the station yet: tanks and magazines are as the blueprint spawns them", 1));
+        Lines.Add(("survival: filled after the links, to the Fill settings below: fuel and tanks through pipes to Fluid in (gases from linked bins too), ammo from bulk ammo in linked bins, batteries from the station's power", 1));
     }
 
     private void Stock(ConstructWorld world, Construct c, CraftNet net, string material, string what, float metres)
@@ -1495,7 +1791,11 @@ public static class StationProbe
                 }
         }
         world.CraftChanged(c);
-        return $"{put} part(s) into the hold{(refused > 0 ? $", {refused} refused ({first})" : "")}";
+        var used = 0;
+        for (var s = 0; s < tray.SlabN; s++)
+            used = Math.Max(used, tray.Slabs![s].Z0Mm + tray.Slabs[s].LenMm);
+        ConstructRackPack.Hold(c.DefOf(t), out var hlo, out var hhi);
+        return $"{put} part(s) into the hold{(refused > 0 ? $", {refused} refused ({first})" : "")}; the hold: {tray.SlabN} column(s) of {tray.KindN} kind(s) over {used / 1000f:0.00} of {hhi.Z - hlo.Z:0.00} m";
     }
 
     /// <summary>A job in one line, for the window tool's dump.</summary>
@@ -1504,6 +1804,42 @@ public static class StationProbe
         var j = c.Parts[t].Station;
         var b = j == null ? null : world.Get(j.Body);
         return (ConstructRecycler.Powered(world, c, t) ? "" : "NO POWER ") + (j == null ? "no job" : $"{j.State} \"{j.Name}\" parts {j.Fitted}/{j.Steps} links {j.LinksDone}/{j.Links} repeat {j.Repeat} body {j.Body} ({(b == null ? "none" : $"{b.PartCount} parts, {b.RouteCount} links, {(b.Frozen ? "frozen" : "free")}{(b.Anchored ? " anchored" : "")}{(b.Asleep ? " asleep" : " awake")}, wheels {b.WheelCount}, at {b.Pos.X:0.0},{b.Pos.Y:0.00},{b.Pos.Z:0.0}")}) reserved {Reserved(world, c, t)} hold {world.StoreOf(c, t)?.ItemCount ?? -1} orders {c.Parts[t].Craft?.Count ?? 0} note \"{j.Note}\"");
+    }
+
+    /// <summary>The build's fuel, Fluid Tanks and ammo boxes, and the station construct's fuel pool and the pipes into the station (the window tool's dump).</summary>
+    public static string Tanks(ConstructWorld world, Construct c, int t)
+    {
+        var sb = new System.Text.StringBuilder($"station floor fuel {c.Fuel:0.0}/{c.FuelCapacity():0.0} L, pipes in:");
+        for (var k = 0; k < c.RouteCount; k++)
+            if (c.Routes[k].Type == RouteType.Pipe && c.Routes[k].To == t)
+                sb.Append($" from {c.DefOf(c.Routes[k].Source).Name}#{c.Routes[k].Source}{(c.Routes[k].FirstCut <= c.Routes[k].Count ? " (cut)" : "")}");
+        var net = ConstructCrafting.NetOf(world, c, t);
+        sb.Append("; linked bins:");
+        for (var s = 0; s < net.StoreN; s++)
+            if (world.StoreOf(c, net.Stores[s]) is { } st && st.Amount > 0)
+            {
+                var nth = 1; // (the window tool's NAME#n)
+                for (var i = 0; i < net.Stores[s]; i++)
+                    if (c.DefOf(i).Name == c.DefOf(net.Stores[s]).Name)
+                        nth++;
+                sb.Append($" {c.DefOf(net.Stores[s]).Name}#{nth} {st.Amount} {RecyclingTable.Current.NameOf(st.Material)}");
+            }
+        if (c.Parts[t].Station is not { } j || world.Get(j.Body) is not { } b)
+            return sb.Append("; no build").ToString();
+        sb.Append($"; build {b.Id} fuel {b.Fuel:0.0}/{b.FuelCapacity():0.0} L, charge {b.Charge:0}/{b.ChargeCapacity:0} kJ; station charge {c.Charge:0}/{c.ChargeCapacity:0} kJ");
+        for (var i = 0; i < b.PartCount; i++)
+        {
+            var d = b.DefOf(i);
+            if (d.Role == PartRole.AmmoBox)
+                sb.Append($", {d.Name}#{i} {b.Parts[i].Rounds}/{d.BoxRounds}");
+            else if (d.Role == PartRole.FluidTank)
+                sb.Append($", {d.Name}#{i} {ConstructFluid.State(b.Parts[i], d)}");
+            else if (ConstructAmmo.IsMagazine(d))
+                sb.Append($", {d.Name}#{i} {ConstructAmmo.PackRounds(b.Parts[i].Rounds)}/{ConstructAmmo.Capacity(d)}");
+            else if (d.AmmoStore && world.StoreOf(b, i) is { } ast)
+                sb.Append($", {d.Name}#{i} {ast.Amount}/{ConstructStorage.Capacity(b, i)} units");
+        }
+        return sb.ToString();
     }
 }
 

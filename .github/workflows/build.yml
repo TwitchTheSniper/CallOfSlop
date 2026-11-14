@@ -6,7 +6,7 @@ name: Build and self-test
 # Which jobs run: main runs BOTH Linux and Windows on every push (the repo is public, so Actions minutes are free, and some
 # checks - CPU-time tick work, GC pauses, stuck spots - only measure on Windows, so they must be caught at merge, not at
 # release). Branch pushes run Linux only, for speed; add [windows ci] to a branch commit message (Windows only) or run the
-# workflow by hand (both) to test Windows there. Docs-only and tool-script-only pushes don't run, a newer push to the same
+# workflow by hand (both) to test Windows there. Docs-only, tool-script-only and agent-setup-only (.claude/) pushes don't run, a newer push to the same
 # branch cancels the older run, and a commit message containing [skip ci] skips the run.
 #
 # Focused tests: on a push to a branch other than main, a "[tests: Section A, Section B]" tag in the head commit's message
@@ -26,6 +26,7 @@ on:
       - '**.md'
       - 'docs/**'
       - 'tools/**'
+      - '.claude/**'
   workflow_dispatch:
     inputs:
       tests:

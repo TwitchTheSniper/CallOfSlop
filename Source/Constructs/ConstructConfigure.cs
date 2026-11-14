@@ -18,8 +18,8 @@ public sealed partial class ConstructEdits
         ref var h = ref Hands[player];
         if (h.Seated)
             return "get out of the seat first";
-        if (h.Tool != ConstructTool.Configure)
-            return "take out the configure tool (the tool wheel) to change settings";
+        if (h.Tool != ConstructTool.Configure && !(parts.Length == 1 && world.Get(body) is { } sb && parts[0] < sb.PartCount && ConstructStation.WindowSets(sb.DefOf(parts[0]), slots)))
+            return "take out the configure tool (the tool wheel) to change settings"; // (a Building Station's own window sets its fill settings with any tool)
         if (world.Get(body) is not { } c)
             return "that construct is gone";
         if (Contested(c, player) is { } defended)

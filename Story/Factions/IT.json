@@ -46,10 +46,14 @@
   ],
   "tiers": [
     { "name": "Blacklisted", "below": -50 },
-    { "name": "Flagged", "below": -15 },
-    { "name": "Unregistered", "below": 15 },
-    { "name": "Registered", "below": 50 },
-    { "name": "Admin" }
+    { "name": "Flagged", "below": -15,
+      "promotion": "Your account has been unsuspended pending a review that will not take place." },
+    { "name": "Unregistered", "below": 15,
+      "promotion": "Your ticket has been closed as resolved. Nobody knows what you did, which is how IT likes it." },
+    { "name": "Registered", "below": 50,
+      "promotion": "You are now a Registered User. Please do not share your password with anyone except us." },
+    { "name": "Admin",
+      "promotion": "You have been granted Admin rights. With great privilege comes a pager that never stops." }
   ],
   "deeds": [
     { "name": "Killed our staff", "verb": "Kill", "remember": "KilledOurs", "standing": -40, "wants": { "Respect": -20 } },

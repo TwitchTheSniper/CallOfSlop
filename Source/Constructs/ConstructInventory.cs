@@ -27,7 +27,28 @@ public sealed class SandboxInventory
     /// <summary>Goes up on every change, so a window can rebuild its text only when something changed.</summary>
     public int Version;
 
-    public int Count(ushort part) => part < Parts.Length ? Parts[part] : 0; // (an extrusion's run-time id is off the table: none are counted)
+    /// <summary>
+    /// Made parts (run-time ids: extrusions, pressed, formed or cut parts...; docs/sandbox/design/inventory-run-time-parts.md phase 2):
+    /// a short list beside <see cref="Parts"/>, by this machine's id, which is one per key here; at most <see cref="MaxMadeKinds"/> kinds.
+    /// The first <see cref="MadeN"/> entries are live (a count of 0 is never kept). On the wire and in a save they go by key.
+    /// </summary>
+    public const int MaxMadeKinds = 64;
+
+    public readonly ushort[] MadeDef = new ushort[MaxMadeKinds];
+    public readonly ushort[] MadeCount = new ushort[MaxMadeKinds];
+    public int MadeN;
+
+    public SandboxInventory() => RuntimeParts.Track(this); // (what an inventory counts keeps its run-time part: RuntimeParts.cs)
+
+    private int MadeAt(ushort part)
+    {
+        for (var k = 0; k < MadeN; k++)
+            if (MadeDef[k] == part)
+                return k;
+        return -1;
+    }
+
+    public int Count(ushort part) => part < Parts.Length ? Parts[part] : MadeAt(part) is var k and >= 0 ? MadeCount[k] : 0;
 
     /// <summary>How many parts in all (every kind).</summary>
     public int TotalParts
@@ -37,6 +58,8 @@ public sealed class SandboxInventory
             var n = 0;
             foreach (var c in Parts)
                 n += c;
+            for (var k = 0; k < MadeN; k++)
+                n += MadeCount[k];
             return n;
         }
     }
@@ -46,7 +69,7 @@ public sealed class SandboxInventory
     {
         get
         {
-            var n = 0;
+            var n = MadeN;
             foreach (var c in Parts)
                 if (c > 0)
                     n++;
@@ -56,7 +79,28 @@ public sealed class SandboxInventory
 
     public bool Add(ushort part, int n = 1)
     {
-        if (part == ConstructParts.None || part >= Parts.Length || n <= 0 || Parts[part] >= MaxCount)
+        if (part == ConstructParts.None || n <= 0)
+            return false;
+        if (part >= Parts.Length)
+        {
+            if (!Extrusion.IsRuntimeId(part) || ConstructParts.Get(part) == null)
+                return false;
+            var k = MadeAt(part);
+            if (k < 0)
+            {
+                if (MadeN >= MaxMadeKinds)
+                    return false; // (64 kinds of made part: the 65th stays a body)
+                k = MadeN++;
+                MadeDef[k] = part;
+                MadeCount[k] = 0;
+            }
+            else if (MadeCount[k] >= MaxCount)
+                return false;
+            MadeCount[k] = (ushort)Math.Min(MaxCount, MadeCount[k] + n);
+            Version++;
+            return true;
+        }
+        if (Parts[part] >= MaxCount)
             return false;
         Parts[part] = (ushort)Math.Min(MaxCount, Parts[part] + n);
         Version++;
@@ -65,11 +109,55 @@ public sealed class SandboxInventory
 
     public bool Take(ushort part)
     {
-        if (part == ConstructParts.None || part >= Parts.Length || Parts[part] == 0)
+        if (part == ConstructParts.None)
+            return false;
+        if (part >= Parts.Length)
+        {
+            var k = MadeAt(part);
+            if (k < 0)
+                return false;
+            if (--MadeCount[k] == 0)
+                MadeRemoveAt(k);
+            Version++;
+            return true;
+        }
+        if (Parts[part] == 0)
             return false;
         Parts[part]--;
         Version++;
         return true;
+    }
+
+    /// <summary>Sets a count outright (a save or a packet being read; 0 drops the kind). False when there is no room for another made kind.</summary>
+    public bool Set(ushort part, ushort count)
+    {
+        if (part == ConstructParts.None)
+            return false;
+        if (part < Parts.Length)
+        {
+            Parts[part] = Math.Min(count, MaxCount);
+            return true;
+        }
+        var k = MadeAt(part);
+        if (k >= 0)
+        {
+            if (count > 0)
+                MadeCount[k] = Math.Min(count, MaxCount);
+            else
+                MadeRemoveAt(k);
+            return true;
+        }
+        return count == 0 || Add(part, count);
+    }
+
+    private void MadeRemoveAt(int k)
+    {
+        MadeN--;
+        for (var i = k; i < MadeN; i++)
+        {
+            MadeDef[i] = MadeDef[i + 1];
+            MadeCount[i] = MadeCount[i + 1];
+        }
     }
 
     /// <summary>Takes up to <paramref name="n"/> of a material out (tipped into a bin); returns how much.</summary>
@@ -141,6 +229,7 @@ public sealed class SandboxInventory
     public void Clear()
     {
         Array.Clear(Parts);
+        MadeN = 0;
         Array.Clear(Materials);
         Array.Clear(_bits);
         Version++;

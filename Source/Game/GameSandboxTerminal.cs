@@ -71,6 +71,17 @@ public sealed partial class Game
     }
 
     /// <summary>Client (or host): ask the terminal for a row's item, to the hands or its output.</summary>
-    public void SandboxTerminalPull(ushort body, int part, in TerminalRow row, bool hands) =>
-        SandboxSend(CActKind.TerminalPull, body: body, part: (ushort)part, body2: row.Id, socket: (byte)((hands ? 1 : 0) | (row.Material ? 2 : 0)));
+    public void SandboxTerminalPull(ushort body, int part, in TerminalRow row, bool hands)
+    {
+        if (row.Material || !Extrusion.IsRuntimeId(row.Id))
+        {
+            SandboxSend(CActKind.TerminalPull, body: body, part: (ushort)part, body2: row.Id, socket: (byte)((hands ? 1 : 0) | (row.Material ? 2 : 0)));
+            return;
+        }
+        // A made part's row: flag 4 and its key after the flags (its id is this machine's own; protocol 301).
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.TerminalPull).U16(body).U16((ushort)part).U16(ConstructParts.None).U8((byte)((hands ? 1 : 0) | 4));
+        PartRef.Write(w, row.Id);
+        SandboxSendBuilt(w);
+    }
 }

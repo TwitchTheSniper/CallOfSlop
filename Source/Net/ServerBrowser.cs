@@ -441,7 +441,87 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      so a conveyor link may end on a port an older build doesn't have. Chained orders themselves are server only (the order's note says it).
     // 267: the Press rework's phase 3: PressStall gains Bay2Short, BayRefuse gains Pattern, Hopper and Kit (both ride the press's store bytes);
     //      a press has a Pattern setting (its recipe key); bay 2 is a kit hopper (the store's mixed input and kinds); new die parts move part ids.
-    public const ushort ProtocolVersion = 267;
+    // 268: smart logistics phase 2b: each crafting order in CBodyKind.Craft ends with its chain lines (u8 n, u8 more, each u8 depth,
+    //      u16 kind, made, asked, maker part, dest part, stock claimed, a reason): the Orders tab's indented lines on both peers.
+    // 270: lofted panels (feat/panel-designer-3; 269 left to the Press's phase 4): a formed panel's name may be the loft kind
+    //      ("loft LxWxN tT bH,.. fH,.. MATERIAL": HullLoft.Panels.cs); a peer on an older protocol would refuse the name.
+    // 271: the Press rework's phase 4 (269 on its branch, renumbered at the merge): work orders, crafting orders and CraftNamed carry a pressed part by its key ("Pressed Part (...)", the
+    //      named shape 255 as a panel's); PressStall gains WantsOrder, BayRefuse gains Order (both ride the press's store bytes); a chain
+    //      line's kind is written by ConstructStorage.WriteDef (a run-time piece by its key), not as a u16 id.
+    // 272: Msg.Factions ends with each story technology's standing and, per player the story knows, their standings and the
+    //      technologies they know (the build menu's locks).
+    // 273: Msg.Objective (the "what next" goal line, GameObjectives.cs) at the end of Msg (269 on its branch, renumbered at the merge).
+    // 274: CActKind.Celebrate (server -> one client: text title, name, line): the moment in the middle of the screen (GameCelebrate.cs).
+    // 275: smart logistics phase 3 (272 on its branch, renumbered at the merge): the Logistics settings (routerSpill, routerHold, storeKeep, storePriority, storeTakes, feedPriority) are new
+    //      CfgKeys and new setting slots on Routers, Piece Racks and Crafting Terminals (settings ride CBody by slot).
+    // 276: the penal colony's convict labourers: Msg.Labour (every gang, to all and each joiner; GameLabour.cs).
+    // 277: Press rework phase 5: the single-piece Assembling rows a die presses are "pressed" markers (they take nothing and build nothing),
+    //      so what a peer's Assemblers can build changed. No new bytes: the recipe setting, orders and pressed keys ride as before.
+    // 281: Press phase 5b: the 73 pressed marker rows left Assembling.json and the Frame Beam is pressed, so an Assembler's recipe value
+    //      (1 + its row's place in its family's list) names another recipe than on 277. No new bytes.
+    // 282: sized gun parts phase 1: the Barrel die (three die part files move part ids) and its plain pattern; a pressed barrel's gun
+    //      numbers are derived from its key on every peer. No new bytes.
+    // 283: Laser Cutter phase 1: cut parts, "Cut Panel (...)" and "Cut Plate (...)", travel as named run-time parts, and a run-time
+    //      part's name may be 240 characters (was 128): older builds refuse both. No new bytes.
+    // 284: CActKind.ExtruderSection (u16 body, u16 machine, u8 profile, u16 width, height, wall in cm, u64 mask): the Extruder's recipe
+    //      picker sets its section and size in one act; Extruders have a Recipe button among their queue buttons.
+    // 285: Building Station phase 2: the station part has a Fluid in pipe port (part data both peers must share); the build's tanks and ammo are filled from it and linked bins (no new bytes).
+    // 286: Msg.LabourHands (u8 n, each u8 player, u8 scene): story people working among the convict labourers are drawn as one of
+    //      the gang (GameLabourHands.cs; the break-out's convicts).
+    // 287: Lifters phase 1: the Loader Arm part (Constructs/Parts/Lifters, ids move); CBodyKind.Lifts (at the end): a body's lifters, each its part, state, piece, path, age (ConstructLifters.Write).
+    // 288: Msg.Breakout (u8 stage, u8 has a target, vec target, u32 ride tick, u16 hauler, u16 hauler): a player's place in the
+    //      convicts' break-out and its ride (GameBreakout.cs).
+    // 289: Building Station fill settings: the station part has four more settings (fillFuel, fillAmmo, fillCharge, fillWait; CfgKey at the end), part data both peers must share; no new bytes.
+    // 290: Lifters phase 2: the Loader Arm in five tiers (Constructs/Parts/Lifters, ids move); CBodyKind.Lifts adds per lifter u16 carry rise (cm),
+    //   u8 why, u16 step plus one, u16 station body, u16 moves (ConstructLifters.Write); CfgKey.LiftMode and CarryHeight (at the end).
+    // 291: Smart logistics 4c: a Conveyor Router takes a name (its part text, TextSlots 1), so CBody's text tail may carry one; an older peer refuses it as malformed. No new bytes.
+    // 292: run-time parts in the hands by key: the Sandbox hand state's held part is PartRef.WriteCached (a U16 id, or WireMark,
+    //      u8 length and the key's bytes); docs/sandbox/design/inventory-run-time-parts.md phase 1.
+    // 293: Sized parts phase 3: the Receiver die (two die part files, ids move); a pressed receiver sizes its gun by the merge's law (derived on each peer, no new bytes).
+    // 294: Lifters phase 3 (a carried piece pushes players): CBodyKind.Lifts sends the move on the mover clock: u32 start tick, u32 held ticks and
+    //   u32 the tick it waits at (0: it runs) in place of u16 age and u16 held (ConstructLifters.Write); LiftWhy gains Player, PlayerStuck.
+    // 295: Msg.Breakout's stage gains 3 (away in the Ministry Courier, GameBreakoutShip.cs); no new bytes.
+    // 296: Laser Cutter phase 3: the Laser Cutter and Medium Laser Cutter (two part files, ids move); ExtrudeStall.OffcutFull (16) in a
+    //   machine's stall byte; a cutter's offcut tenths ride in the store's input amount (ConstructLaserCutter.cs).
+    // 297: Laser Cutter phase 3 fixes: a store's second flags byte gains 64, a Laser Cutter's blank on its bed (no bytes; ConstructStorage.Write).
+    // 298: Sized parts phase 4: the engine reads scale (ModularEngine.json /2, starterFrom); engine pieces of any sizes make one engine,
+    //      each cylinder at its own bore's kW, a small fuel system or booster feeding its bank by the kW ratio (derived on each peer, no new bytes).
+    // 299: Inventories phase 2 (made parts counted in the Tab inventory): CBodyKind.Inventory ends with u8 n and n made parts (PartRef, u16 count),
+    //   at most 64 kinds, split over several messages past a packet's room; CActKind.TakeMade (a PartRef) sets one down in front of the player
+    //   (docs/sandbox/design/inventory-run-time-parts.md; 298 on its branch).
+    // 300: Lifters phase 4 (carrying between points; renumbered from the branch's 296): the Lay-down Pad parts (ids move); CBodyKind.Lifts sends the
+    //   piece by PartRef (a run-time piece by its key) and, per lifter, u8 put point kind, u16 its part, u8 a press bay; LiftWhy gains NoPoint, NoTaker, Carrying.
+    // 301: Inventories phase 3 (a network's made parts): CBodyKind.Beacon and Terminal end with the made list (u8 0 unchanged, or u8 1 whole /
+    //   2 continued; a whole list then u16 the kinds it leaves out past 64; u8 n, n x (PartRef, u16 count); split past 12000 bytes); CActKind.TerminalPull flag 4 (a made part: its PartRef after the
+    //   flags); a terminal store's pull goes u8 material then a material id (u16) or a part by PartRef (docs/sandbox/design/inventory-run-time-parts.md).
+    // 302: Laser Cutter phase 4: CraftNamed carries a cut key ("Cut Panel (...)", "Cut Plate (...)") to a Crafting Terminal or a Panel Designer, and
+    //   to a Laser Cutter itself (its Design button's pick, queued there); the cutters' screens gain a Design button (touch regions move).
+    // 303: Smart logistics phase 5: CfgKey.FormerStrips (at the end), a new setting slot on Panel Formers (settings ride CBody by slot): a panel too wide
+    //   for the network's Extruders is formed of strips only when the player turns it on.
+    //   (Main took it as 301.)
+    // 304: Sized parts phase 5 (engine pieces off the press): the Engine Die parts (ids move); the Cylinder die's presets on the files' bounds and the
+    //   Engine die (Pressing.json); a pressed engine piece's scale and a cylinder's stroke ratio come from its key (derived on each peer, no new bytes).
+    // 305: Laser Cutter phase 6 (the Pane): "Cut Pane (rA,B,C tT glass)" travels as a named run-time part (a name older builds refuse), in bodies,
+    //   orders, racks and riders; and a formed glass sheet (its blank) is a part now (it threw before), so its key may ride too.
+    // 306: Sized parts phase 6: Pressing.json gains 22 Receiver die patterns (the generated receivers with no recipe, never Auto's: a pattern's
+    //      "auto": false) and their presets, and a like body's faces settle in Pressed.BuildLike (both peers make pressed parts from it);
+    //      41 Assembling rows go (barrels and engine pieces); the recycler holds a preset part's yield to its press cost. No message changes.
+    // 307: Inventories phase 4: the Line Layer's stroke and the Replacer's swap name their part by PartRef (a made part by its key), so a made
+    //   part can be laid or fitted by kind.
+    // 308: Extruder expansion pieces: Die Extensions and Run-out Tables (new part files, ids move), an outBed socket on the Extruders and
+    //   SocketKind.RunOut; the grown die and length are read from the construct on each peer (no new bytes).
+    // 309: Lifters phase 5b (on the logistics network): a lift word's put point may be a Crafting Terminal's tray (LiftPointKind.Tray, a new
+    //   value at the end). The map's lifter edges are worked out on each peer from the parts (no new bytes).
+    // 310: Arms and cranes phase 6 (the Bridge Crane): new part files (Crane Rail and Crane Bridge, Medium, Large and Capital) move part ids;
+    //      LiftWhy gains NoRail and NoFarRail at the end. The crane's reach box is worked out from its rails on each peer and sends nothing.
+    // 311: Bored cylinders: a pressed engine piece weighs what its size's catalogue piece does by metal, and a pressed cylinder's
+    //   power follows its bore over the plain bore for its across, worked out from the key on each peer (no new bytes; mass and kW differ).
+    // 312: Arms and cranes phase 7: hand orders. CActKind.Lifter (at the end): u16 body, u16 part, u8 op, u8 id, the kind (PartRef), u8 count,
+    //   two points (u16 body, u16 part, u8 kind, u8 bay); each lifter in CBodyKind.Lifts gains u8 steered (phase 8: its Lifter Cab steers it, words
+    //   at 10 Hz while it moves), u8 the order its carry serves, u8 n and its orders. A new part file (Lifter Cab) moves part ids; op Grab is F in a cab.
+    // 313: Stroke power: a cylinder's kW is its bore's times its stroke ratio (its displacement), and an engine needs a starter by its crank's
+    //   scale times the stroke's cube root, worked out on each peer (no new bytes; a long-stroke engine's kW, torque and starter differ).
+    public const ushort ProtocolVersion = 313;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

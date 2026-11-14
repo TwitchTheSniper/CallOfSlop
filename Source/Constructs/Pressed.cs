@@ -82,8 +82,23 @@ public static class Pressed
         if (across < die.AcrossMin || across > die.AcrossMax || k.L < die.LengthMin || k.L > die.LengthMax)
             return false;
         var aspect = k.L / (float)across;
-        return aspect >= die.AspectMin - 1e-4f && aspect <= die.AspectMax + 1e-4f && PressClass(across) >= 0;
+        return aspect >= die.AspectMin - 1e-4f && aspect <= die.AspectMax + 1e-4f && PressClass(across) >= 0 && (!die.AspectPreset || p.Preset.W == 0 || Proportioned(p, k) == (k.W, k.H, k.L));
     }
+
+    /// <summary>
+    /// The blank a die with <c>"aspect": "preset"</c> takes at this one's across (sized-parts design 4.1): the pattern's preset blank times
+    /// across over the preset's across, each side to the 5 cm lattice. One free dimension: a Rifle Receiver (20x20x40) is 15x15x30, 25x25x50...
+    /// </summary>
+    public static (int W, int H, int L) Proportioned(PressPattern p, in ExtrusionKey k)
+    {
+        var s = Across(k) / (float)Math.Max(1, Across(p.Preset));
+        static int Lattice(float cm) => Math.Max(MinCm, (int)MathF.Round(cm / Extrusion.StepCm, MidpointRounding.AwayFromZero) * Extrusion.StepCm);
+        return (Lattice(p.Preset.W * s), Lattice(p.Preset.H * s), Lattice(p.Preset.L * s));
+    }
+
+    /// <summary>A pressed receiver's scale (sized-parts design 4.2): its across over its pattern's preset's; 1 for anything else.</summary>
+    public static float ReceiverScale(PressPattern p, in ExtrusionKey k) =>
+        p.Like.IsReceiverGun ? Across(k) / (float)Math.Max(1, Across(p.Preset)) : 1f;
 
     /// <summary>Why a die and pattern can't press this blank (bay card text), or null.</summary>
     public static string? Refusal(PressDie die, PressPattern p, in ExtrusionKey k)
@@ -103,6 +118,8 @@ public static class Pressed
         var aspect = k.L / (float)across;
         if (aspect < die.AspectMin - 1e-4f || aspect > die.AspectMax + 1e-4f)
             return $"the blank is {aspect:0.##} times as long as it is across: a {die.Family} die takes {die.AspectMin:0.##} to {die.AspectMax:0.##}";
+        if (die.AspectPreset && p.Preset.W > 0 && Proportioned(p, k) is var want && want != (k.W, k.H, k.L))
+            return $"a {p.Like.Name} blank keeps its shape ({p.Preset.W}x{p.Preset.H}x{p.Preset.L}): {want.W / 100f:0.00} x {want.H / 100f:0.00} x {want.L / 100f:0.00} m";
         if (PressClass(across) < 0)
             return "too large for any press";
         return null;
@@ -175,6 +192,48 @@ public static class Pressed
         }
     }
 
+    /// <summary>A key read for a work order: its die, pattern and blank (no def is made), or null when it isn't a pressed key.</summary>
+    public sealed record OrderSpec(PressDie Die, PressPattern Pattern, ExtrusionKey Blank, ConstructPartDef? Preset);
+
+    private static readonly Dictionary<string, OrderSpec?> OrderSpecs = new(StringComparer.Ordinal);
+    private static PressTable? _orderTable;
+
+    /// <summary>
+    /// What a press needs to work an order for this key (Press phase 4): read once, then looked up, so a press asking every step allocates
+    /// nothing. Null: not a pressed key. A preset's key gives its catalogue part as <see cref="OrderSpec.Preset"/>.
+    /// </summary>
+    public static OrderSpec? SpecOf(string key)
+    {
+        var t = PressTable.Current;
+        lock (OrderSpecs)
+        {
+            if (!ReferenceEquals(_orderTable, t) || OrderSpecs.Count > 4096)
+            {
+                OrderSpecs.Clear(); // (a table read again: its dies are new objects)
+                _orderTable = t;
+            }
+            if (OrderSpecs.TryGetValue(key, out var have))
+                return have;
+            OrderSpec? spec = null;
+            if (TryParse(key, out var die, out var pattern, out var blank, out _))
+                spec = new OrderSpec(die!, pattern!, blank, t.PresetByKey.GetValueOrDefault(key));
+            OrderSpecs[key] = spec;
+            return spec;
+        }
+    }
+
+    /// <summary>A work order a press makes: a pressed key by name, or a catalogue part that is a die's preset. Null: neither.</summary>
+    public static OrderSpec? SpecOf(in WorkOrder o) =>
+        o.Name != null ? (o.Name.StartsWith(Prefix, StringComparison.Ordinal) ? SpecOf(o.Name) : null)
+        : !o.IsPiece && ConstructParts.Get(o.Part) is { } d && PressTable.Current.PresetKeyOf(d) is { } key ? SpecOf(key) : null;
+
+    /// <summary>Is this an order's name for a pressed part (its key's prefix)?</summary>
+    public static bool IsName(string? name) => name != null && name.StartsWith(Prefix, StringComparison.Ordinal);
+
+    /// <summary>"CVT 0.50 x 0.50 x 0.75 m steel" for a key; the key itself when it doesn't read.</summary>
+    public static string Label(string key) =>
+        SpecOf(key) is { } s ? s.Preset?.Name ?? $"{s.Pattern.Label} {s.Blank.W / 100f:0.##} x {s.Blank.H / 100f:0.##} x {s.Blank.L / 100f:0.##} m {RecyclingTable.Current.NameOf(s.Blank.Material)}" : key;
+
     /// <summary>(RuntimeParts) Drops the doomed parts from the key table, and the keys that made nothing.</summary>
     internal static void Forget(Func<ConstructPartDef, bool> doomed)
     {
@@ -205,12 +264,24 @@ public static class Pressed
             PressMeasure.Across => Across(k) / 100f,
             PressMeasure.Area => MathF.Max(w * l, MathF.Max(h * l, w * h)),
             PressMeasure.Volume => VolumeMass(k).Volume,
+            PressMeasure.Calibres => k.L / (float)Math.Max(1, Across(k)),
             _ => VolumeMass(k).Mass,
         };
     }
 
     /// <summary>What bay 2 must hold for this blank (D4), or 0 when the pattern takes nothing there.</summary>
     public static int Bay2For(PressPattern p, in ExtrusionKey k) => p.Bay2 is { } a ? a.For(Measure(a.By, k)) : 0;
+
+    /// <summary>What a pressed piece cost to make, as mass: its blank and what bay 2 took. A piece never weighs more (it would recycle for more).</summary>
+    public static float CostMass(PressPattern p, in ExtrusionKey k) => VolumeMass(k).Mass + Bay2Mass(p, k);
+
+    /// <summary>
+    /// A pressed receiver's mass: the merge's (the file's times s squared, so it weighs what the merge it equals does; the user, 2026-11-13,
+    /// phase 3 question 1), held to what it cost (<see cref="CostMass"/>): a small or hollow blank's merge mass can pass its blank and Gear
+    /// Sets, and it would recycle for more than it cost.
+    /// </summary>
+    public static float ReceiverMass(PressPattern p, in ExtrusionKey k, float scale) =>
+        Math.Clamp(MathF.Min(p.Like.Mass * ReceiverMergeRules.Times(scale, ReceiverMergeRules.Current.PartMass), CostMass(p, k)), 0.1f, ConstructParts.MaxPartMass);
 
     private static float Bay2Mass(PressPattern p, in ExtrusionKey k)
     {
@@ -232,6 +303,8 @@ public static class Pressed
     /// <summary>One scaled number for this blank (the law of section 5), from the like value; three significant figures.</summary>
     public static float Scaled(PressScale s, float likeValue, PressPattern p, in ExtrusionKey k)
     {
+        if (s.Points != null)
+            return Sig3(s.At(s.ReadAt > 0 ? s.ReadAt * Measure(s.By, k) / MathF.Max(Measure(s.By, p.Preset), 1e-6f) : Measure(s.By, k))); // (a curve through catalogue parts: its value is the number itself; "at": read relative to the pattern's preset)
         var like = likeValue == 0 ? s.Ref : likeValue;
         if (like == 0)
             return 0;
@@ -242,7 +315,7 @@ public static class Pressed
         return Sig3(like * ratio);
     }
 
-    private static float Sig3(float v)
+    internal static float Sig3(float v)
     {
         if (v == 0 || !float.IsFinite(v))
             return 0;
@@ -288,6 +361,132 @@ public static class Pressed
 
     /// <summary>The pressed part, unadopted (no id yet). Made whole: a shallow copy and a few dozen boxes.</summary>
     internal static ConstructPartDef Build(PressDie die, PressPattern p, in ExtrusionKey k, string name)
+    {
+        var d = BuildOf(die, p.For(k), k, name);
+        EngineNumbers(d, p, k);
+        return d;
+    }
+
+    /// <summary>
+    /// An engine piece's scale and stroke from its blank (sized-parts design 6.1, 6.3). The scale runs through the pattern's knots (its
+    /// presets: their across against their class's scale) by a straight line in log-log, the end segment past the ends, so it rises with
+    /// across and at a preset is that part's own. A cylinder's stroke ratio is its length over its across against its nearest preset's, three
+    /// figures, held to 0.6 to 1.6 (the crank's throw: a blank longer than that is more metal and mass but no more stroke); 1 at a preset's proportions; its kW is times it
+    /// (<see cref="EngineRules.CylinderKw"/>). Nothing on a pattern without knots or a part that isn't an engine piece.
+    /// </summary>
+    public const float MinStroke = 0.6f, MaxStroke = 1.6f; // a cylinder's stroke ratio (design 6.3)
+
+    internal static void EngineNumbers(ConstructPartDef d, PressPattern p, in ExtrusionKey k)
+    {
+        if (d.Piece == EnginePiece.None || p.Knots.Length == 0)
+            return;
+        var rules = EngineRules.Current;
+        d.PieceScale = d.Piece == EnginePiece.Cylinder ? BoreScale(p, k, rules) : EngineScale(p, k, rules);
+        d.PieceSize = rules.NearestSize(d.PieceScale);
+        d.PieceStroke = 0;
+        if (d.Piece == EnginePiece.Cylinder)
+        {
+            var near = p.For(k).Preset;
+            var r = Math.Clamp(Sig3(k.L / (float)Math.Max(1, Across(k)) / (near.L / (float)Math.Max(1, Across(near)))), MinStroke, MaxStroke); // (the die takes longer and shorter blanks, every key made before phase 5; the stroke stops at design 6.3's range)
+            d.PieceStroke = MathF.Abs(r - 1f) < 1e-4f ? 0 : r;
+        }
+        PieceMass(d, p, k);
+    }
+
+    /// <summary>
+    /// The widest bore that gives power, as a share of a cylinder's across (bored cylinders, 2026-11-14): a wall under a twentieth of the
+    /// across makes the cylinder lighter and weaker but no stronger. The Small preset's bore is 0.56 of its across, the Medium and Large 0.78.
+    /// </summary>
+    public const float MaxBoreShare = 0.9f;
+
+    /// <summary>A cylinder blank's bore (cm): its across less both walls, held to <see cref="MaxBoreShare"/> of the across; a blank with no hole, its across.</summary>
+    public static float BoreOf(in ExtrusionKey k) =>
+        k.Shape == ExShape.Pipe ? MathF.Max(1, MathF.Min(k.W - 2f * k.Wall, MaxBoreShare * k.W)) : Math.Max(1, Across(k));
+
+    /// <summary>
+    /// A cylinder's scale by its bore (bored cylinders, 2026-11-14: the user, "power has become more of a function of cylinder size"): its
+    /// across's scale (as every engine piece's, so at its plain bore it is exactly what it was) times its bore over the plain bore for its
+    /// across (<see cref="PlainBore"/>). A thinner wall than plain is a wider bore and more power by the same law as a wider cylinder; a
+    /// thicker one, less. Stroke multiplies the power after it (stroke power, 2026-11-14: <see cref="EngineRules.CylinderKw"/>) and divides the revs.
+    /// </summary>
+    public static float BoreScale(PressPattern p, in ExtrusionKey k, EngineRules rules)
+    {
+        var across = EngineScale(p, k, rules);
+        var plain = PlainBore(p, k);
+        return plain > 0 && k.Shape == ExShape.Pipe ? Sig3(across * BoreOf(k) / plain) : across;
+    }
+
+    /// <summary>The plain bore (cm) for this blank's across: the presets' share of their across (Small 0.56, Medium and Large 0.78), read through them in log of across, the ends held.</summary>
+    public static float PlainBore(PressPattern p, in ExtrusionKey k)
+    {
+        var knots = p.Knots;
+        if (knots.Length == 0)
+            return 0;
+        static float Share(in ExtrusionKey b) => BoreOf(b) / Math.Max(1, Across(b));
+        if (knots.Length == 1)
+            return Share(knots[0].Blank) * Across(k);
+        var a = MathF.Log(Math.Max(1, Across(k)));
+        var i = 0;
+        while (i < knots.Length - 2 && a > MathF.Log(Across(knots[i + 1].Blank)))
+            i++;
+        float a0 = MathF.Log(Across(knots[i].Blank)), a1 = MathF.Log(Across(knots[i + 1].Blank));
+        var t = a1 > a0 ? Math.Clamp((a - a0) / (a1 - a0), 0f, 1f) : 0f;
+        float s0 = Share(knots[i].Blank), s1 = Share(knots[i + 1].Blank);
+        return MathF.Exp(MathF.Log(s0) + t * (MathF.Log(s1) - MathF.Log(s0))) * Across(k);
+    }
+
+    /// <summary>An engine piece's scale at this blank's across (see <see cref="EngineNumbers"/>).</summary>
+    public static float EngineScale(PressPattern p, in ExtrusionKey k, EngineRules rules) => ScaleBy(p.Knots, Math.Max(1, Across(k)), static b => Across(b), rules);
+
+    private static float ScaleBy(PressPreset[] knots, float a, Func<ExtrusionKey, float> measure, EngineRules rules)
+    {
+        foreach (var q in knots)
+            if (MathF.Abs(measure(q.Blank) - a) < 1e-3f)
+                return rules.ScaleOf(q.Part);
+        if (knots.Length == 1)
+            return Sig3(rules.ScaleOf(knots[0].Part) * a / measure(knots[0].Blank));
+        var i = 0;
+        while (i < knots.Length - 2 && a > measure(knots[i + 1].Blank))
+            i++;
+        float a0 = measure(knots[i].Blank), a1 = measure(knots[i + 1].Blank), s0 = rules.ScaleOf(knots[i].Part), s1 = rules.ScaleOf(knots[i + 1].Part);
+        var t = (MathF.Log(a) - MathF.Log(a0)) / (MathF.Log(a1) - MathF.Log(a0));
+        return Sig3(MathF.Exp(MathF.Log(s0) + t * (MathF.Log(s1) - MathF.Log(s0))));
+    }
+
+    /// <summary>
+    /// An engine piece's mass (bored cylinders, 2026-11-14): its metal (the blank's solid volume) times what a cubic metre of metal weighs
+    /// in the catalogue piece of its size, read through the knots in log of across (the ends held), so at a preset it is the catalogue part's
+    /// own, a bigger piece is heavier because it is bigger, and a wider bore in the same across is less metal and lighter. Before, a pressed
+    /// piece weighed its whole blank and bay 2 (a Small Cylinder's preset 77 kg against the file's 28), so anything off a preset weighed
+    /// about three times its catalogue neighbour and the kit's bores never paid. Never more than its blank and bay 2 cost. Health stays the
+    /// blank's (its metal times the material's, as before): a save's health is absolute, and a thinner wall already has less of it.
+    /// </summary>
+    private static void PieceMass(ConstructPartDef d, PressPattern p, in ExtrusionKey k)
+    {
+        var knots = p.Knots;
+        var volume = VolumeMass(k).Volume;
+        if (volume <= 0)
+            return;
+        static float Per(in PressPreset q) => q.Part.Mass / MathF.Max(1e-6f, VolumeMass(q.Blank).Volume);
+        float massPer;
+        var a = MathF.Log(Math.Max(1, Across(k)));
+        var i = 0;
+        while (i < knots.Length - 2 && a > MathF.Log(Across(knots[i + 1].Blank)))
+            i++;
+        if (knots.Length == 1)
+        {
+            massPer = Per(knots[0]);
+        }
+        else
+        {
+            float a0 = MathF.Log(Across(knots[i].Blank)), a1 = MathF.Log(Across(knots[i + 1].Blank));
+            var t = a1 > a0 ? Math.Clamp((a - a0) / (a1 - a0), 0f, 1f) : 0f;
+            massPer = MathF.Exp(MathF.Log(Per(knots[i])) + t * (MathF.Log(Per(knots[i + 1])) - MathF.Log(Per(knots[i]))));
+        }
+        d.Mass = Math.Clamp(MathF.Min(volume * massPer, CostMass(p.For(k), k)), 0.1f, ConstructParts.MaxPartMass);
+    }
+
+    private static ConstructPartDef BuildOf(PressDie die, PressPattern p, in ExtrusionKey k, string name)
     {
         var names = RecyclingTable.Current;
         var mat = ExtrusionTable.Current.Find(k.Material)!;
@@ -388,7 +587,7 @@ public static class Pressed
         d.PhysicsOnly = true;
         d.PhysicsWhy = "pressed to size";
         d.Stage = true; // (never offered: a pressed part comes out of a press)
-        d.Legacy = false;
+        d.Legacy = d.Retired = false;
         d.OnBreak = PartBreak.Detach;
         d.CentreOptOut = true;
         d.ColliderBoxes = k.Shape == ExShape.Pipe; // (a pipe collides as its ring of boxes, as an extruded pipe does)
@@ -412,6 +611,15 @@ public static class Pressed
         d.NamedPorts = MapPorts(p.Like.NamedPorts, (p.Like.BoundsMin + p.Like.BoundsMax) * 0.5f, (max - min) / Vector3.Max(likeSize, new Vector3(1e-3f)), (min + max) * 0.5f);
         foreach (var s in p.Scale)
             SetField(d, s.Field, Scaled(s, Field(p.Like, s.Field), p, k));
+        d.GunSized = null;
+        if (p.Like.Role == PartRole.GunPart && Parts.Find(p.Like.GunPartName) is { } builder)
+        {
+            d.GunSized = SizedGunParts.Make(builder, die, p, k, name);
+            d.GunPartName = name;
+        }
+        d.GunScale = ReceiverScale(p, k);
+        if (p.Like.IsReceiverGun)
+            d.Mass = ReceiverMass(p, k, d.GunScale);
         return d;
     }
 
@@ -534,6 +742,7 @@ public static class Pressed
             lo[i] = c - hh;
             hi[i] = c + hh;
         }
+        SpreadLike(like, lo, hi, nb, Map(like.BoundsMin), Map(like.BoundsMax), axes, Gap(MathF.Max(w, MathF.Max(h, len))));
         var centre = Map((like.BoundsMin + like.BoundsMax) * 0.5f);
         PlaceFeatures(die, p, section, new Vector3(w, h, len), lo, hi, proud, looks, nb, axes, centre);
         Settle(lo, hi, proud, nb, Gap(MathF.Max(w, MathF.Max(h, len))));
@@ -577,7 +786,7 @@ public static class Pressed
         d.PhysicsOnly = true;
         d.PhysicsWhy = "pressed to size";
         d.Stage = true;
-        d.Legacy = false;
+        d.Legacy = d.Retired = false;
         d.CentreOptOut = true;
         d.Hulls = null;
         d.HullCovers = null;
@@ -614,7 +823,88 @@ public static class Pressed
             d.Travel = like.Travel * Get(s, along);
         foreach (var sc in p.Scale)
             SetField(d, sc.Field, Scaled(sc, Field(like, sc.Field), p, k));
+        // A gun part is a sized builder part too (sized-gun-engine-parts.md 3.4): the gun code finds it by the key (Parts.Find).
+        d.GunSized = null;
+        if (like.Role == PartRole.GunPart && Parts.Find(like.GunPartName) is { } builder)
+        {
+            d.GunSized = SizedGunParts.Make(builder, die, p, k, name);
+            d.GunPartName = name;
+        }
+        d.GunScale = ReceiverScale(p, k);
+        if (p.Like.IsReceiverGun)
+            d.Mass = ReceiverMass(p, k, d.GunScale);
         return d;
+    }
+
+    /// <summary>
+    /// Keeps a stretched like body's faces apart (sized parts phase 6; CLAUDE.md "No coplanar faces"). First its end boxes (those reaching
+    /// either end along its length) step in by the gap from the side bounds, so a pressed piece the size of its neighbour never lays a face
+    /// on the neighbour's (a 50 cm pressed crank's flange on a Small Flywheel's 50 cm face). Then any drawn box whose face scaling brought
+    /// within 2 mm of an earlier drawn box's same-facing face, with overlap, moves off it by the gap (inward while it stays thick enough):
+    /// a like part's own small gaps shrink with it, and a stretch along one axis can close them. Sockets and bounds stay the blank's.
+    /// </summary>
+    private static void SpreadLike(ConstructPartDef like, Span<Vector3> lo, Span<Vector3> hi, int nb, Vector3 bmin, Vector3 bmax, ReadOnlySpan<int> axes, float gap)
+    {
+        const float eps = 1e-4f, near = 0.002f;
+        var along = axes[2];
+        for (var i = 0; i < nb; i++)
+        {
+            if (like.Boxes[i].Hidden)
+                continue;
+            if (Get(lo[i], along) > Get(bmin, along) + eps && Get(hi[i], along) < Get(bmax, along) - eps)
+                continue; // (not an end box)
+            for (var j = 0; j < 2; j++)
+            {
+                var ax = axes[j];
+                if (Get(hi[i], ax) - Get(lo[i], ax) < 4 * gap)
+                    continue;
+                if (Get(hi[i], ax) >= Get(bmax, ax) - eps)
+                    hi[i] = With(hi[i], ax, Get(hi[i], ax) - gap);
+                if (Get(lo[i], ax) <= Get(bmin, ax) + eps)
+                    lo[i] = With(lo[i], ax, Get(lo[i], ax) + gap);
+            }
+        }
+        for (var i = 1; i < nb; i++)
+        {
+            if (like.Boxes[i].Hidden)
+                continue;
+            for (var ax = 0; ax < 3; ax++)
+                for (var s = -1; s <= 1; s += 2)
+                {
+                    var at = s < 0 ? Get(lo[i], ax) : Get(hi[i], ax);
+                    if (!NearShares(like, lo, hi, i, ax, s, at, near))
+                        continue;
+                    var thick = Get(hi[i], ax) - Get(lo[i], ax);
+                    for (var k = 1; k <= 8; k++) // (the nearest clear plane: in while it stays thick enough, else out)
+                    {
+                        var step = (k + 1) / 2 * gap;
+                        var plane = k % 2 == 1 && thick - step >= gap ? at - s * step : at + s * step;
+                        if (NearShares(like, lo, hi, i, ax, s, plane, near))
+                            continue;
+                        if (s < 0)
+                            lo[i] = With(lo[i], ax, plane);
+                        else
+                            hi[i] = With(hi[i], ax, plane);
+                        break;
+                    }
+                }
+        }
+    }
+
+    // Does drawn like box i's face on axis ax, side s, put on this plane, come within `near` of an earlier drawn box's face that faces the same way, with overlap?
+    private static bool NearShares(ConstructPartDef like, ReadOnlySpan<Vector3> lo, ReadOnlySpan<Vector3> hi, int i, int ax, int s, float plane, float near)
+    {
+        int b = (ax + 1) % 3, c = (ax + 2) % 3;
+        for (var j = 0; j < i; j++)
+        {
+            if (like.Boxes[j].Hidden || MathF.Abs(plane - (s < 0 ? Get(lo[j], ax) : Get(hi[j], ax))) >= near)
+                continue;
+            var ob = MathF.Min(Get(hi[i], b), Get(hi[j], b)) - MathF.Max(Get(lo[i], b), Get(lo[j], b));
+            var oc = MathF.Min(Get(hi[i], c), Get(hi[j], c)) - MathF.Max(Get(lo[i], c), Get(lo[j], c));
+            if (ob > 0 && oc > 0 && ob * oc >= 1e-5f)
+                return true;
+        }
+        return false;
     }
 
     /// <summary>
@@ -801,6 +1091,7 @@ public static class Pressed
     private static int Presets(PressTable t, string? die)
     {
         var bad = 0;
+        var over = 0;
         foreach (var (key, part) in t.PresetByKey)
         {
             if (die != null && !key.StartsWith($"{Prefix}{die.ToLowerInvariant()}.", StringComparison.Ordinal))
@@ -829,12 +1120,29 @@ public static class Pressed
                 }
                 else
                     press = $" (a {ClassWord(cls)} Press)";
+                // A preset comes out as the catalogue part, at its file's mass: never more than the blank and bay 2 that went in, or it
+                // would recycle for more than it cost (review, 2026-11-13).
+                var pat = d.Pattern(key[(Prefix.Length + d.Id.Length + 1)..key.IndexOf(' ', Prefix.Length)]);
+                // The engine dies' presets (sized parts phase 5) are held to it as a problem. The older dies' blanks stay where saves name
+                // them (sized parts phase 6's review): the recycler holds those parts' yield to this cost (PressTable.CostCapOf), so an OVER
+                // line is a note, not a fault.
+                if (why.Length == 0 && pat != null && part.Mass > CostMass(pat, blank) + 0.01f)
+                {
+                    var text = $": weighs {part.Mass:0.##} kg, more than its blank and bay 2 ({CostMass(pat, blank):0.##} kg): the recycler gives back {CostMass(pat, blank):0.##} kg of it";
+                    if (d.Id is "engine" or "cylinder")
+                        why = text;
+                    else
+                    {
+                        over++;
+                        Console.WriteLine($"[press] OVER {part.Name,-24} {key}{text}");
+                    }
+                }
                 ok = why.Length == 0;
             }
             bad += ok ? 0 : 1;
             Console.WriteLine($"[press] {(ok ? "ok " : "BAD")} {part.Name,-24} {key}{press}{why}");
         }
-        Console.WriteLine($"[press] presets: {bad} problems");
+        Console.WriteLine($"[press] presets: {bad} problems; {over} presets weigh more than their blank and bay 2 (OVER lines: the recycler holds their yield to that)");
         return bad;
     }
 
@@ -860,9 +1168,31 @@ public static class Pressed
         else
             Console.WriteLine("[press] bay 2: nothing");
         foreach (var s in p.Scale)
-            Console.WriteLine($"[press] {s.Field} {Field(made, s.Field):0.###} (preset {(Field(p.Like, s.Field) == 0 ? s.Ref : Field(p.Like, s.Field)):0.###} at {Measure(s.By, p.Preset):0.###} {s.By.ToString().ToLowerInvariant()})");
+            if (s.Op.Length == 0)
+                Console.WriteLine($"[press] {s.Field} {Field(made, s.Field):0.###} (preset {(Field(p.Like, s.Field) == 0 ? s.Ref : Field(p.Like, s.Field)):0.###} at {Measure(s.By, p.Preset):0.###} {s.By.ToString().ToLowerInvariant()})");
+        if (made.GunSized is { } gun)
+            foreach (var line in SizedGunParts.Lines(gun, Parts.Find(p.Like.GunPartName)!, p, k))
+                Console.WriteLine($"[press] {line}");
+        if (made.GunScale != 1f)
+        {
+            var r = ReceiverMergeRules.Current;
+            float T(float power) => ReceiverMergeRules.Times(made.GunScale, power);
+            Console.WriteLine(FormattableString.Invariant($"[press] receiver scale {made.GunScale:0.###} (the merge's law): damage x{T(r.Damage):0.###}, fire rate x{T(r.FireRate):0.###}, kick x{T(r.Recoil):0.###}, rounds a shot {Math.Max(1, (int)MathF.Round(T(r.AmmoPerShot)))}, magazine x{T(r.Magazine):0.###}; it never merges; catalogue gun parts on it drawn {ConstructMerge.DrawnOn(made)}x; its bore for a pressed barrel {made.GunScale:0.###}"));
+        }
+        if (made.Piece != EnginePiece.None && p.Knots.Length > 0)
+        {
+            // The engine piece's numbers (sized-parts design 6.3, stroke power 2026-11-14): a cylinder's kW by its bore and stroke, the revs of a crank of its scale over its stroke.
+            var rules = EngineRules.Current;
+            var kw = made.Piece == EnginePiece.Cylinder ? rules.CylinderKw(made) : rules.KwAt(rules.ScaleOf(made)); // (a cylinder: by its bore and stroke, its displacement)
+            rules.At(made.Piece == EnginePiece.Cylinder ? EngineScale(p, k, rules) : rules.ScaleOf(made), out _, out var idle, out var peak, out var max); // (a cylinder: its kW at its bore, its revs on a crank of its across)
+            var r = made.PieceStroke > 0 ? made.PieceStroke : 1f;
+            Console.WriteLine(FormattableString.Invariant($"[press] engine {made.Piece.ToString().ToLowerInvariant()}: scale {rules.ScaleOf(made):0.###}{(made.Piece == EnginePiece.Cylinder ? FormattableString.Invariant($" by its bore {BoreOf(k):0.#} cm") : "")} (nearest {ConstructEngine.SizeNames[made.PieceSize]}), like {p.For(k).Like.Name}; ")
+                + (made.Piece == EnginePiece.Cylinder ? FormattableString.Invariant($"{kw * made.PiecePower:0.#} kW, stroke ratio {r:0.###}: on a crank of its across idle {idle / r:0} rpm, peak {peak / r:0}, limiter {max / r:0}, torque at the peak {kw * made.PiecePower * 1000 / (peak / r / ConstructDrive.RpmPerRadS):0} N m")
+                    : made.Piece == EnginePiece.Crank ? FormattableString.Invariant($"a crank of it turns idle {idle:0} rpm, peak {peak:0}, limiter {max:0}{(rules.StarterAt(rules.ScaleOf(made)) ? "; it needs a starter" : "")}")
+                    : FormattableString.Invariant($"feeds or boosts {kw:0.#} kW of cylinders whole")));
+        }
         var pc = PressClass(Across(k));
-        Console.WriteLine($"[press] seconds: {string.Join(", ", Enumerable.Range(Math.Max(0, pc), 4 - Math.Max(0, pc)).Select(c => $"{ClassWord(c)} {Seconds(die!, k, c):0.##}"))}");
+        Console.WriteLine($"[press] seconds:{string.Join(", ", Enumerable.Range(Math.Max(0, pc), 4 - Math.Max(0, pc)).Select(c => $"{ClassWord(c)} {Seconds(die!, k, c):0.##}"))}");
         Console.WriteLine($"[press] {probs} problems");
         return probs;
     }
@@ -887,7 +1217,7 @@ public static class Pressed
         var hash = GeometryHash(made);
         var pc = PressClass(Across(k));
         var drawn = made.Boxes.Count(b => !b.Hidden);
-        Console.WriteLine($"[press] {made.Name}: like {p.Like.Name}; {ClassWord(pc)} Press and up, a {ClassWord(pc)} {die.Family} Die; "
+        Console.WriteLine($"[press] {made.Name}: like {p.For(k).Like.Name}; {ClassWord(pc)} Press and up, a {ClassWord(pc)} {die.Family} Die; "
             + $"{drawn} boxes drawn, {made.SolidBoxes} solid, {made.Sockets.Length} sockets; {made.Mass:0.##} kg, {made.Health:0} hp, armour {made.Armour:0.#}; "
             + $"bounds {(made.BoundsMax - made.BoundsMin).X:0.###} x {(made.BoundsMax - made.BoundsMin).Y:0.###} x {(made.BoundsMax - made.BoundsMin).Z:0.###} m; hash {hash:x8}; a make {ms:0.000} ms (least of 4; the first {first:0.000} ms), {bytes / 1024.0:0.0} KB");
         if (GeometryHash(again) != hash)
@@ -902,6 +1232,11 @@ public static class Pressed
         if (made.Sockets.Length > PressTable.MaxSockets + 40 || made.Sockets.Select(s => s.Name).Distinct().Count() != made.Sockets.Length)
         {
             Console.WriteLine("[press] PROBLEM: its sockets repeat a name or are too many");
+            probs++;
+        }
+        if (made.Mass > CostMass(p, k) + 0.01f) // (a piece never recycles for more than it cost to make: its blank and bay 2)
+        {
+            Console.WriteLine($"[press] PROBLEM: it weighs {made.Mass:0.##} kg, more than its blank and bay 2 ({CostMass(p, k):0.##} kg): it would recycle for more than it cost");
             probs++;
         }
         if (name.Length >= 80)
@@ -979,16 +1314,24 @@ public static class Pressed
 
     private static string KeyFor(PressDie die, PressPattern p, int section, int across, int length, byte material)
     {
+        var k = KeyAt(section, across, length, material);
+        if (die.AspectPreset && Proportioned(p, k) is var (w, h, l)) // (one free dimension: the preset's shape at this across)
+            k = k with { W = (ushort)w, H = (ushort)h, L = (ushort)Math.Clamp(l, Extrusion.StepCm, Extrusion.MaxLengthCm) };
+        return KeyOf(die, p, k);
+    }
+
+    private static ExtrusionKey KeyAt(int section, int across, int length, byte material)
+    {
         var len = (ushort)Math.Clamp(length, Extrusion.StepCm, Extrusion.MaxLengthCm);
         if (section == PressBaySpec.RoundSection)
-            return KeyOf(die, p, new ExtrusionKey(0, (ushort)across, (ushort)across, len, material, false, ExShape.Round));
+            return new ExtrusionKey(0, (ushort)across, (ushort)across, len, material, false, ExShape.Round);
         if (section == PressBaySpec.PipeSection)
-            return KeyOf(die, p, new ExtrusionKey(0, (ushort)across, (ushort)across, len, material, false, ExShape.Pipe, (ushort)Math.Max(Extrusion.StepCm, across / 50 * Extrusion.StepCm)));
+            return new ExtrusionKey(0, (ushort)across, (ushort)across, len, material, false, ExShape.Pipe, (ushort)Math.Max(Extrusion.StepCm, across / 50 * Extrusion.StepCm));
         var plate = section == PlateSection;
         int w = across, h = plate ? MinCm : across;
         if (section == PlateSection && across < MinCm)
             w = MinCm;
-        return KeyOf(die, p, new ExtrusionKey(Extrusion.Presets[section].Mask, (ushort)w, (ushort)h, (ushort)Math.Clamp(length, Extrusion.StepCm, Extrusion.MaxLengthCm), material, false));
+        return new ExtrusionKey(Extrusion.Presets[section].Mask, (ushort)w, (ushort)h, len, material, false);
     }
 
     private static int Step(int cm) => Math.Max(MinCm, cm / Extrusion.StepCm * Extrusion.StepCm);

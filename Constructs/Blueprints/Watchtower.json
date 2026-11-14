@@ -9,25 +9,25 @@
     {
       "part": "Wood Post 2.75 m",
       "on": 0,
-      "socket": "t8_8",
+      "socket": "t4_4",
       "by": "b00"
     },
     {
       "part": "Wood Post 2.75 m",
       "on": 0,
-      "socket": "t15_8",
+      "socket": "t11_4",
       "by": "b00"
     },
     {
       "part": "Wood Post 2.75 m",
       "on": 0,
-      "socket": "t8_15",
+      "socket": "t4_11",
       "by": "b00"
     },
     {
       "part": "Wood Post 2.75 m",
       "on": 0,
-      "socket": "t15_15",
+      "socket": "t11_11",
       "by": "b00"
     },
     {
@@ -55,10 +55,10 @@
       "by": "b0_0"
     },
     {
-      "part": "Ship Ladder 3 m",
+      "part": "Fixed Ladder 3 m",
       "on": 8,
-      "socket": "front4",
-      "by": "k2_11"
+      "socket": "front3",
+      "by": "k0_11"
     },
     {
       "part": "Tower Post 1.25 m",

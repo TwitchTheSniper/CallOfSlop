@@ -300,7 +300,9 @@ public sealed partial class Game : IDisposable
             {
                 using var _ = Perf.Measure(PerfArea.ServerTick);
                 var stressT0 = StressBeginTick(); // a horde stress round times its ticks for its summary (ZombiesCrowdStress.cs)
+                AllocProfile.TickStart(); // (the benchmark's slow-tick trace: AllocProfile.cs; off, a bool test)
                 ServerTickStep(now);
+                AllocProfile.TickEnd(ServerTick);
                 StressEndTick(stressT0);
             }
             else
@@ -915,7 +917,9 @@ public sealed partial class Game : IDisposable
 
     private void Log(string line, bool mine = false)
     {
-        Feed.Add(new FeedEntry(Brutal.GlfwApi.Glfw.Time, line, mine));
+        // A tagged line ("[outpost] ...", "[tutorial] ...") is the log's, not the player's: it stays off the HUD's feed.
+        if (!(line.Length > 2 && line[0] == '[' && char.IsAsciiLetterLower(line[1])))
+            Feed.Add(new FeedEntry(Brutal.GlfwApi.Glfw.Time, line, mine));
         Console.WriteLine(line);
     }
 
@@ -1079,6 +1083,9 @@ public sealed partial class Game : IDisposable
         _lastSnapTime = now;
     }
 
+    /// <summary>The most change of velocity (m/s2) a remote player is carried on with past their newest snapshot.</summary>
+    private const float MaxAheadAccel = 30f;
+
     private static void SampleSnapshots(Player p, double renderTick)
     {
         var snaps = p.Snaps;
@@ -1108,7 +1115,7 @@ public sealed partial class Game : IDisposable
         else if (renderTick >= last.Tick)
         {
             var ahead = (float)Math.Min(renderTick - last.Tick, 8) * World.TickDt;
-            var pos = last.Noclip ? last.Position + last.Velocity * ahead : World.ClampToArena(last.Position + new Vector3(last.Velocity.X, 0, last.Velocity.Z) * ahead); // (a noclip flyer: up, down and through the ground)
+            var pos = last.Noclip ? last.Position + last.Velocity * ahead : World.ClampToArena(last.Position + AheadFlat(snaps, last, ahead)); // (a noclip flyer: up, down and through the ground)
             Set(p, pos, last.Yaw, last.Pitch);
             Seat(p, last);
             if (last.RideBody != 0 && snaps.Count > 1 && snaps[^2] is var was && was.RideBody == last.RideBody && was.RideSeg == last.RideSeg && last.Tick > was.Tick)
@@ -1134,6 +1141,32 @@ public sealed partial class Game : IDisposable
                 p.RenderStance = t < 0.5f ? a.Stance : b.Stance;
                 SetMotion(p, Vector3.Lerp(a.Velocity, b.Velocity, t), t < 0.5f ? a.Grounded : b.Grounded, t < 0.5f ? a.Mantling : b.Mantling);
                 break;
+            }
+        }
+
+        // Carried on past the newest snapshot along the ground plane: at its velocity, and at the change of velocity the last
+        // two showed, never past a stop. At the last velocity alone, someone slowing (the air drag after stepping off a
+        // moving seat, stopping a run) was drawn on too far and then jumped back when the late snapshot came: the
+        // "Ride frame" watcher saw 5 cm back-steps on a loaded runner.
+        static Vector3 AheadFlat(List<Snap> snaps, in Snap last, float ahead)
+        {
+            var v = new Vector2(last.Velocity.X, last.Velocity.Z);
+            var step = v * ahead;
+            if (snaps.Count > 1 && snaps[^2] is var was && last.Tick > was.Tick && !was.Noclip)
+            {
+                var span = (last.Tick - was.Tick) * World.TickDt;
+                var acc = (v - new Vector2(was.Velocity.X, was.Velocity.Z)) / span;
+                if (acc.LengthSquared() > MaxAheadAccel * MaxAheadAccel)
+                    acc *= MaxAheadAccel / acc.Length();
+                step = new Vector2(Axis(v.X, acc.X, ahead), Axis(v.Y, acc.Y, ahead));
+            }
+            return new Vector3(step.X, 0, step.Y);
+
+            static float Axis(float v, float a, float t)
+            {
+                if (v * a < 0 && t > -v / a)
+                    t = -v / a; // (slowing: it stops there, it doesn't turn back)
+                return v * t + 0.5f * a * t * t;
             }
         }
 
@@ -1199,11 +1232,15 @@ public sealed partial class Game : IDisposable
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
         ServerTickBurns(now); // special ammo burns and bleeds on players (AmmoEffectsPlayers.cs)
         ServerTickFallKill(now); // fell off a void map into the clouds (GameFallKill.cs)
+        perf = Perf.Measure(PerfArea.TerrainStream);
         ServerTickTerrainStream(); // streamed ground made ready round the players (GameTerrainStream.cs)
+        perf.Dispose();
         WorldTick(); // a saved world's load, when one is due (GameWorldSave.cs)
+        perf = Perf.Measure(PerfArea.Space);
         ServerTickSpace(); // the space bubble: clock, ships, their news (GameSpace.cs)
         ServerTickLanding(now); // a landing on another planetoid, everyone aboard: the map changes (GameSpaceLanding.cs)
         KeepTick(); // free travel, a planetoid's game on the host: ships in, ships home, copies, closing (GameTravelPlace.cs)
+        perf.Dispose();
         ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 
         SepBuild(); // everyone's body before anyone moves: the soft push apart (PlayerSeparation.cs)
@@ -1553,7 +1590,10 @@ public sealed partial class Game : IDisposable
         if (victim.Health > 0)
         {
             if (victim.Team == SbPeopleTeam)
+            {
                 StoryBodyHurt(victim, attacker); // (a story person says so: GameStoryTalk.cs)
+                OutpostHurt(victim, attacker, now); // (an outpost's person, and their mates: GameOutposts.cs)
+            }
             return false;
         }
         if (victim.Perks.Has(PerkId.LastStand) && !victim.LastStandUsed && kind != DamageKind.Melee) // melee always kills (Melee.cs)
@@ -2000,6 +2040,7 @@ public sealed partial class Game : IDisposable
                 SendSpaceState(sender); // the space bubble and its clock (GameSpace.cs)
                 SendLogicState(sender); // map logic: doors, lamps, levers, controlled movers (GameLogic.cs)
                 SendCorpseState(sender); // the bodies lying about (GameCorpses.cs)
+                SendLabourState(sender); // the penal colony's convict labourers (GameLabour.cs)
                 Module.OnClientJoined(this, sender); // the active mode's own state (Sandbox: every construct)
                 if (VoteOpen)
                 {
@@ -2309,6 +2350,15 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.StandIn when !IsServer:
                 ReadStandIn(ref r); // STAND-IN: the story's placeholder craft (Source/StandIns/GameStandIns.cs)
                 break;
+            case (byte)Msg.Labour when !IsServer:
+                ReadLabour(ref r); // the penal colony's convict labourers (GameLabour.cs)
+                break;
+            case (byte)Msg.LabourHands when !IsServer:
+                ReadLabourHands(ref r); // the story people working among them (GameLabourHands.cs)
+                break;
+            case (byte)Msg.Breakout when !IsServer:
+                ReadBreakout(ref r); // the convicts' break-out (GameBreakout.cs)
+                break;
             case (byte)Msg.Fragments when !IsServer:
                 ReadFragments(ref r); // the old records' fragments and the leads (GameStoryFragments.cs)
                 break;
@@ -2323,6 +2373,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Depot when !IsServer && r.Has(14):
                 ReadDepot(ref r); // the Orbital Depot's steps (GameDepot.cs)
+                break;
+            case (byte)Msg.Objective when !IsServer && r.Has(5):
+                ReadObjective(ref r); // the "what next" goal (GameObjectives.cs)
                 break;
             case (byte)Msg.ColonyAlarm when !IsServer:
                 ReadColonyAlarm(ref r); // the penal colony's alarm (GameColonyLockdown.cs)

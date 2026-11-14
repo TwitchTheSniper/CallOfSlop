@@ -1,0 +1,274 @@
+{
+  // The factions out on the ice round the penal colony on Glacier (docs/story/OUTPOSTS.md; Game/GameOutposts.cs). Each
+  // outpost is a faction's: its buildings are built once, the first time the story comes to the world, and its people
+  // have bodies only while a player is within "wake" m of it (they go once nobody is within "sleep").
+  //
+  //   from, bearing, distance  "colony": degrees from north round the colony's gate, and m out (or "lat" and "lon")
+  //   flat                     m: the ground within this of the middle should be level; the spot moves a little until it is
+  //   buildings                blueprints at [x, z] in the outpost's frame: x to the right, z towards the colony;
+  //                            yaw 0 turns a blueprint's front (its -z side) to the colony
+  //   people                   a "post" [x, z] (facing "face" degrees off the colony) or a "route" of spots walked round
+  //                            for ever, standing "stand" s at each. A title first ("Officer ", "Sergeant ") dresses them.
+  //   lines                    by the player's standing tier with the faction: "hostile" (the lowest: warned, then shot
+  //                            at), "cold" (the next), "neutral" (the middle, where a stranger starts), "friendly" (above);
+  //                            "idle" now and then, "hurt" when shot; the talk panel's "place", "self", "advice", "news",
+  //                            and "snub" for someone they'd rather shoot. {name} is the player's name.
+  //   relief                   s before someone killed is replaced (while nobody is near)
+  "format": "call-of-slop-outposts/1",
+  "map": "Glacier",
+  "wake": 150,
+  "sleep": 200,
+  "sites": [
+    {
+      "name": "Checkpoint Four", "faction": "Ministry of Slop",
+      "about": "the Ministry's road check east of the colony, where anyone walking out is asked for papers nobody issues",
+      "from": "colony", "bearing": 95, "distance": 600, "flat": 9,
+      "buildings": [ { "blueprint": "Ministry Checkpoint", "x": 0, "z": 0, "yaw": 0 } ],
+      "people": [
+        { "name": "Sergeant Loame", "about": "twenty years on the barrier", "post": [ 2, 6 ], "face": 0,
+          "self": [ "Twenty years on this barrier. I've raised it twice. Both times by accident." ] },
+        { "name": "Officer Tidy", "about": "checks the papers", "post": [ 6, 2.5 ], "face": -20,
+          "self": [ "I check the papers. The Sergeant checks I've checked them. Nobody checks the Sergeant." ] }
+      ],
+      "lines": {
+        "hostile": [
+          "Enemy of the State at Checkpoint Four! Stop, or we fill in a form. Then we shoot.",
+          "{name}! You're on the list. The short list. Hands where I can stamp them!",
+          "Halt! You're wanted. Not by anyone nice."
+        ],
+        "cold": [
+          "A Person of Interest. You're very interesting to us, {name}. Move along. Slowly.",
+          "Papers. No? Then I'm writing you down. Twice."
+        ],
+        "neutral": [
+          "Halt. Papers? Inmate papers, I see. You're a long way from your bunk.",
+          "Checkpoint Four. State your business. Quietly.",
+          "An inmate out on the ice. Work detail or escape? Either way, there's a form."
+        ],
+        "friendly": [
+          "Trusty {name}. Go through, and don't touch the barrier.",
+          "Ah, one of ours. Mind the ice. It isn't Ministry property. Yet.",
+          "Good morning. Or evening. The clocks are under review."
+        ],
+        "idle": [
+          "Forty years at this barrier and not one person has had their papers in order.",
+          "Lovely weather for a checkpoint.",
+          "If anyone comes, look busy. If nobody comes, look busier.",
+          "Is it lunch? It is not lunch. Lunch has been moved to Tuesday."
+        ],
+        "hurt": [
+          "Assaulting an officer of the Ministry! That's a Form Twelve!",
+          "Ow! Right. You've done it now.",
+          "Sergeant! We're being resisted!"
+        ],
+        "place": [ "Checkpoint Four. There was a Checkpoint Three, but it was found to be unnecessary, so they kept this one." ],
+        "advice": [
+          "Keep your papers dry. Out here wet paper is an offence.",
+          "Don't go past the flags. There are no flags. Don't go past them anyway."
+        ],
+        "news": [
+          "The Clan's been seen to the south-west. Waving at us. Rudely.",
+          "Some IT lot put a box out on the ice to the south. It hums. We've filed a noise complaint.",
+          "Somebody keeps ringing the barrier phone. There is no barrier phone."
+        ],
+        "snub": [ "I don't talk to Enemies of the State. I arrest them." ]
+      }
+    },
+    {
+      "name": "Sentry Post Nine", "faction": "Ministry of Slop",
+      "about": "where the Ministry's perimeter walk starts and ends, north-west of the colony",
+      "from": "colony", "bearing": 300, "distance": 750, "flat": 9,
+      "buildings": [ { "blueprint": "Ministry Sentry Post", "x": 0, "z": 0, "yaw": 0 } ],
+      "people": [
+        { "name": "Sergeant Pike", "about": "in charge of the walk, from the sandbags", "post": [ 3, 2.5 ], "face": 0,
+          "self": [ "I run the perimeter walk. From here. Somebody has to be at the start when they get back." ] },
+        { "name": "Officer Plum", "about": "walks the perimeter", "route": [ [ 2, -6 ], [ -55, -40 ], [ -25, -110 ], [ 45, -70 ] ], "stand": 8,
+          "self": [ "I walk the perimeter. Eleven kilometres a day. The perimeter's four. Nobody knows why." ] },
+        { "name": "Officer Gorse", "about": "walks the perimeter, the other way round", "route": [ [ 6, -6 ], [ 45, -70 ], [ -25, -110 ], [ -55, -40 ] ], "stand": 8,
+          "self": [ "I walk the perimeter the other way. So we meet in the middle and say hello. It's the best part." ] }
+      ],
+      "lines": {
+        "hostile": [
+          "Enemy of the State on the perimeter! Apprehend! Gently! No, firmly!",
+          "{name}! Stop where you are! And then stop again!"
+        ],
+        "cold": [ "Person of Interest on the perimeter. Stay where we can see you, which out here is everywhere." ],
+        "neutral": [
+          "Perimeter patrol. Inmate, you're outside the perimeter. Or we are. It's hard to tell out here.",
+          "Halt. Carry on. Halt again. Right, that's procedure done.",
+          "Evening, inmate. Seen anything suspicious? Apart from yourself."
+        ],
+        "friendly": [
+          "Trusty. Carry on, and if you see the Clan, wave. They hate that.",
+          "Ah, you're on our books. Good books. Mostly."
+        ],
+        "idle": [
+          "Left, right, left, right. I miss the bit where we sit down.",
+          "Footprints. Ours. From yesterday. Lovely.",
+          "Perimeter secure. Perimeter cold. Perimeter still there.",
+          "Nothing to report. Reporting it anyway."
+        ],
+        "hurt": [ "Ow! That's an assault on the perimeter!", "Officer down! Slightly!", "Right! Nobody shoots the perimeter walk!" ],
+        "place": [ "Sentry Post Nine. The walk starts here, goes round, and comes back here, which is why it's a walk and not an escape." ],
+        "advice": [
+          "Don't follow our footprints. We go round in circles.",
+          "If you hear pipes, that's the Clan. If you hear a phone ring, that's worse."
+        ],
+        "news": [
+          "The Clan's camped south-west. We're told to watch them. They're told to watch us. Everyone's very watched.",
+          "The Call Centre rang the sentry post last night. We don't have a phone."
+        ],
+        "snub": [ "No talking to Enemies of the State. It's in the orders. Page one." ]
+      }
+    },
+    {
+      "name": "The Wee Watch", "faction": "Clan MacSlop",
+      "about": "Clan MacSlop's camp south-west of the colony, where they watch the Ministry and the Ministry watches them",
+      "from": "colony", "bearing": 228, "distance": 1050, "flat": 9,
+      "buildings": [ { "blueprint": "Clan MacSlop Bothy", "x": 0, "z": 0, "yaw": 0 } ],
+      "people": [
+        { "name": "Dougie MacSlop", "about": "the lookout", "post": [ 1, 6 ], "face": 0,
+          "self": [ "Lookout. I look out. The Ministry looks back. It's a living." ] },
+        { "name": "Wee Wullie MacSlop", "about": "the piper, who goes round and round the camp", "route": [ [ 12, 0 ], [ 2, -14 ], [ -10, 0 ], [ 2, 14 ] ], "stand": 20,
+          "self": [ "Piper. They say the pipes are an acquired taste. I'm still acquiring it." ] },
+        { "name": "Kirsty MacSlop", "about": "minds the casks", "post": [ 9.5, 2 ], "face": 40,
+          "self": [ "I mind the casks. Somebody has to, or Dougie does." ] }
+      ],
+      "lines": {
+        "hostile": [
+          "Blood feud! It's {name}! Wullie, get the pipes, we're going to war!",
+          "You've a nerve coming here after what you did. Have at ye!"
+        ],
+        "cold": [
+          "A Sassenach. Keep walking, and keep your hands where we can see them.",
+          "We're watching you, same as we watch the Ministry. Closer, if anything."
+        ],
+        "neutral": [
+          "Aye? You're no Ministry, are you? You've not got the face for it.",
+          "A stranger. You'll be wanting to know what we're doing here. Watching. That's all. For now.",
+          "Come for a look at the colony? Best view on the ice, this. Bring your own whisky."
+        ],
+        "friendly": [
+          "{name}! A friend of the clan! Sit, warm yourself, and mind the casks.",
+          "There's a dram here with your name on it. Well, Dougie's name. He'll not miss it."
+        ],
+        "idle": [
+          "See that colony? Built on clan land. Every brick of it.",
+          "If that tune gets played once more, the pipes are going in the cask.",
+          "The Ministry counted us yesterday. Got it wrong. We moved.",
+          "Cold enough to freeze the whisky. Nearly."
+        ],
+        "hurt": [ "Och! That's how it is, is it?", "You'll regret that, pal.", "Ye wee rat! Clan! To me!" ],
+        "place": [ "The Wee Watch. The clan keeps an eye on the Ministry from here. Both eyes, when we're sober." ],
+        "advice": [
+          "If the Ministry asks, you never saw us. If they ask twice, tell them we're everywhere.",
+          "Walk on the dark ice, not the white. Or the other way. Dougie knows. Ask Dougie."
+        ],
+        "news": [
+          "Hamish says the Ministry owes us a castle. We're here to collect it, a brick at a time.",
+          "Somebody's selling phone contracts out on the ice. On the ICE.",
+          "The Ministry's walk goes round the north side. You could set a clock by it. If you had a clock."
+        ],
+        "snub": [ "I've nothing to say to you that a claymore wouldn't say better." ]
+      }
+    },
+    {
+      "name": "Relay 0800", "faction": "The Call Centre",
+      "about": "The Call Centre's phone mast north-east of the colony, and the portacabin that keeps it ringing",
+      "from": "colony", "bearing": 32, "distance": 850, "flat": 9,
+      "buildings": [ { "blueprint": "Call Centre Relay", "x": 0, "z": 0, "yaw": 0 } ],
+      "people": [
+        { "name": "Darren from Accounts", "about": "the senior advisor, by the loudhailer", "post": [ 6, 3 ], "face": 0,
+          "self": [ "Senior Advisor. I advise you, seniorly, to sign here." ] },
+        { "name": "Tracey from Retention", "about": "walks out to whoever passes", "route": [ [ 3, 9 ], [ 28, 32 ], [ 3, 9 ], [ -22, 32 ] ], "stand": 12,
+          "self": [ "Customer Retention. Nobody leaves. Not without filling in a form, anyway." ] }
+      ],
+      "lines": {
+        "hostile": [
+          "On the Do Not Call list, {name}? We don't call. We come round.",
+          "Your account is in arrears. Collections will see you now."
+        ],
+        "cold": [
+          "Your number's blocked, so I'm telling you in person: your warranty is expiring.",
+          "Blocked us, did you? That's alright. We know where the ice is."
+        ],
+        "neutral": [
+          "Hello! Am I speaking with the account holder? Lovely. You've won a cruise.",
+          "Hi there, quick survey, only takes forty minutes. Do you own a planet?",
+          "Congratulations, you've been selected! For what? I'll need your security code first."
+        ],
+        "friendly": [
+          "{name}! A valued customer! Have you thought about upgrading? You're Premium. Upgrade again.",
+          "A free spin on the wheel for you. It's never paid out, but it's free."
+        ],
+        "idle": [
+          "Hello? Hello? They've gone. Mark it as a sale.",
+          "The wheel's stuck on Try Again. Again.",
+          "Signal's great out here. Nobody to call, mind.",
+          "Your call is important to us. Somebody please call."
+        ],
+        "hurt": [ "Ow! I'm putting you down as not interested!", "That's assault AND a cancelled contract!", "Customer complaint! Customer complaint!" ],
+        "place": [ "Relay 0800. We carry calls across the ice. Mostly ours. Sometimes other people's, by accident, on purpose." ],
+        "advice": [
+          "Never read your card number out loud. Write it down and hand it to me.",
+          "If someone offers you a free prize, ask what it costs. Then ask me. I'll beat it."
+        ],
+        "news": [
+          "IT have a cabinet out to the south. Lovely people. Terrible security.",
+          "The Ministry rang us. We put them on hold. They're still on hold.",
+          "The Clan wanted a phone deal. They paid in whisky. Accounts are confused."
+        ],
+        "snub": [ "We're not taking your call at this time. Or any time." ]
+      }
+    },
+    {
+      "name": "Field Cabinet NC-14", "faction": "IT Department",
+      "about": "the IT Department's network cabinet south-east of the colony, carrying the network to the Server Farm",
+      "from": "colony", "bearing": 140, "distance": 720, "flat": 8,
+      "buildings": [ { "blueprint": "IT Field Cabinet", "x": 0, "z": 0, "yaw": 0 } ],
+      "people": [
+        { "name": "Gary from Networks", "about": "first line, at the cabinet door", "post": [ 1, 2 ], "face": 0,
+          "self": [ "First line. I take the calls. Then I don't answer them." ] },
+        { "name": "Priya from Second Line", "about": "walks the cable looking for faults", "route": [ [ 7, 4 ], [ 7, -50 ], [ -12, -110 ], [ 7, -50 ] ], "stand": 15,
+          "self": [ "Second line. I walk the cable looking for where it's chewed. Nothing out here chews. It's still chewed." ] }
+      ],
+      "lines": {
+        "hostile": [
+          "You're blacklisted, {name}. Access denied. Permanently. With force.",
+          "Security incident at NC-14! Escalating to... me. With this."
+        ],
+        "cold": [
+          "You're flagged. Don't touch anything with a cable on it.",
+          "We have your details. All of them. Move along."
+        ],
+        "neutral": [
+          "Hi, have you raised a ticket? You haven't? Then I can't see you.",
+          "Unregistered user detected. Please stand still while nothing happens.",
+          "This is NC-14. If you've come about the network, it's working. If it isn't, it's the user."
+        ],
+        "friendly": [
+          "Ah, {name}, a registered user! Lovely. Don't touch anything anyway.",
+          "Admin rights suit you. Mind the cable, it's load-bearing."
+        ],
+        "idle": [
+          "Four hundred metres of cable and it's still not long enough.",
+          "Ping's down. Pong's fine.",
+          "Somebody's watching videos of cats on the colony network. Where did they find a cat?",
+          "Reboot scheduled. Reboot postponed. Reboot rescheduled. Reboot."
+        ],
+        "hurt": [ "Ow! I'm logging that!", "That's a priority one incident, that is!", "Security! I am security. Ow!" ],
+        "place": [ "Field Cabinet NC-14. It carries the colony's network to the Server Farm. Very slowly." ],
+        "advice": [
+          "Never give your password to anyone ringing from that mast up north. Or anyone. Or me.",
+          "If it's broken, turn it off and on again. If it's you that's broken, same advice."
+        ],
+        "news": [
+          "The Call Centre put a mast up on our side of the ice. We're treating it as a virus.",
+          "The Ministry asked for faster internet. We sent them a form. They sent us a form. Stalemate.",
+          "The Server Farm says the whole planet needs a reboot. We're waiting for a quiet moment."
+        ],
+        "snub": [ "Your ticket has been closed. So has this conversation." ]
+      }
+    }
+  ]
+}

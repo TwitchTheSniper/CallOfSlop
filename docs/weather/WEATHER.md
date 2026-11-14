@@ -108,5 +108,12 @@ players see the same kind of storm but not the same gusts. Nothing goes on the w
 - `Source/App/Program.Storm.cs`: the frame's glue (after the map's fog is set), the frost drawn at the screen's edges
   under the HUD, and the stop when no world has been drawn for 0.3 s (the menus).
 
+**Dusk (2026-11-13).** `"dusk"` (Glacier: 0.85) makes it a polar dusk under the storm: `ColdStorm.Dusk` (the setting,
+lifting with the height like the storm, in steps of 1/40) dims the sun, the ambient, the sky and the whiteout by
+`DuskTint`, all inside `ColdStorm.Light` and the storm's colour, so nothing new is drawn or sent a frame. Out in it
+`ConstructLamps.Dark` (dusk times `Outside`) lets lamps on builds be lit from 60 m and reach 10 m in sodium orange:
+the same four dynamic lights as before, only nearer the eye more of the time. Indoors lamps keep their plain reach (a
+lamp a metre from a wall burnt it white at the long range).
+
 Cost: about ten rays a second and a few dozen uniforms a frame on the CPU, no allocations per frame; on the GPU one
 small instanced draw (10,000 thin quads at High) and one full-screen triangle where the sky shows.

@@ -52,7 +52,7 @@ public sealed partial class Ui
                 var pad = side * 0.08f;
                 var i0 = new float2(a.X + pad, a.Y + pad);
                 var i1 = new float2(b.X - pad, b.Y - pad);
-                if (SandboxTiles.TryGet(SandboxTiles.SlotOf(SandboxTiles.Kind.Part, d.Id), out var tex, out var uv0, out var uv1))
+                if (SandboxTiles.TryGetPart(d.Id, out var tex, out var uv0, out var uv1)) // (a made part: its tile on demand)
                     dl.AddImage(new ImTextureRef { _TexID = new ImTextureID((nint)tex) }, i0, i1, new float2(uv0.X, uv0.Y), new float2(uv1.X, uv1.Y), new ImColor8(255, 255, 255, 255));
                 else
                 {

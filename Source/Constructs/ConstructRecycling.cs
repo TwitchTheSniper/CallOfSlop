@@ -194,7 +194,8 @@ public sealed class RecyclingTable
         var cls = Roles.TryGetValue(RoleName(d.Role), out var r) ? r : d.Material;
         if (!Classes.TryGetValue(cls, out var c) && !Classes.TryGetValue(d.Material, out c))
             return ((byte)0, 0);
-        return (IdOf(c.Gives), Math.Max(1, (int)MathF.Round(d.Mass * c.PerKg)));
+        var kg = PressTable.Current.CostCapOf(d) is var cap and > 0 ? MathF.Min(d.Mass, cap) : d.Mass; // (a press preset part gives no more than its blank and kit cost: sized parts phase 6)
+        return (IdOf(c.Gives), Math.Max(1, (int)MathF.Round(kg * c.PerKg)));
     }
 
     private static readonly string[] RoleNames = Enum.GetNames<PartRole>().Select(n => n.ToLowerInvariant()).ToArray();

@@ -65,6 +65,47 @@
       "default": 4.0,
       "unit": "m",
       "tooltip": "The bay's height. A blueprint is built only if it fits the bay."
+    },
+    {
+      "key": "fillFuel",
+      "label": "Fuel and tanks",
+      "group": "Fill",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 100,
+      "unit": "%",
+      "tooltip": "Survival: a build is filled to this share. Fuel and fluid tanks, gases too: from tanks piped to Fluid in, gas from linked bins. 0: none, 100: full."
+    },
+    {
+      "key": "fillAmmo",
+      "label": "Ammo",
+      "group": "Fill",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 100,
+      "unit": "%",
+      "tooltip": "Survival: a build is filled to this share. Ammo boxes, Ammo Containers and fitted magazines: from bulk ammo in linked bins. 0: none, 100: full."
+    },
+    {
+      "key": "fillCharge",
+      "label": "Battery charge",
+      "group": "Fill",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "default": 100,
+      "unit": "%",
+      "tooltip": "Survival: a build is filled to this share. Batteries: charged from the station's own power, which takes time. 0: none, 100: full."
+    },
+    {
+      "key": "fillWait",
+      "label": "Wait until filled",
+      "group": "Fill",
+      "type": "toggle",
+      "default": false,
+      "tooltip": "On: a build stays in the bay until it is filled. Off: it finishes with what it got and says what is short."
     }
   ],
   "storage": {
@@ -121,6 +162,17 @@
         0.5,
         0.5
       ]
+    },
+    {
+      "name": "Fluid in",
+      "type": "pipe",
+      "dir": "in",
+      "at": [
+        -0.105,
+        0.225,
+        1.425
+      ],
+      "face": "-x"
     },
     {
       "name": "Chute in",
@@ -352,6 +404,37 @@
       "detail": true,
       "paintable": false,
       "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.119,
+        0.115,
+        1.315
+      ],
+      "max": [
+        -0.095,
+        0.335,
+        1.535
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.128,
+        0.175,
+        1.375
+      ],
+      "max": [
+        -0.112,
+        0.275,
+        1.475
+      ],
+      "color": "#ecebe4",
+      "detail": true,
+      "paintable": false
     },
     {
       "min": [

@@ -58,7 +58,7 @@ public enum CActKind : byte
     Connector, // u8 op: 0 new (u8 kind, u8 size, 255 by the parts; two ends: u16 body, u16 part, vec point), 1 delete (u16 id), 2 set (u16 id, 4 x f32 length, rating, stiffness, damping) (protocol 134; GameSandboxConnectors.cs)
     Track, // u8 TrackOp, u16 body, then its fields: the track tool (protocol 136; ConstructEditsTracks.cs)
     FreezePiece, // u16 body, u8 segment (0: the base): the physics gun freezes or unfreezes one piece of a mechanism (protocol 139)
-    TerminalPull, // u16 body, u16 part, u16 id, u8 flags (1: to the hands, 2: id is a material): a Smart Terminal pulls an item off its network (protocol 142; ConstructTerminal.cs)
+    TerminalPull, // u16 body, u16 part, u16 id, u8 flags (1: to the hands, 2: id is a material, 4: a made part, its PartRef follows; protocol 301): a Smart Terminal pulls an item off its network (protocol 142; ConstructTerminal.cs)
     Harpoon, // u8 op: 0 cut the line you hold, 1 reel in, 2 stop reeling, 3 tear out the head stuck in you (protocol 148; GameSandboxHarpoon.cs)
     KeyPress, // u16 body, u16 part, u8 key ('0'-'9', 'C', 'E'): a key of a Numpad or Code Lock (protocol 153; LogicInputs.cs)
     PartText, // u16 body, u16 part, u8 slot, text: a sign's message, a lamp bank's labels (protocol 153; LogicText.cs)
@@ -98,6 +98,10 @@ public enum CActKind : byte
     Station, // u16 body, u16 station, u8 StationOp, u16 n, text: a Building Station's Start (the blueprint's name, n repeats), Cancel, Release, Repeat or Give (protocol 256; ConstructStation.cs)
     CraftNamed, // u16 body, u16 terminal, u16 count, text name: an order for a formed panel by its key at a Crafting Terminal or a Panel Designer (protocol 260; ConstructCrafting.Place)
     PanelDesign, // u8 op (1 keep, 0 drop), text name, text key: a panel design saved to the world's shared list, or dropped from it (protocol 260; PanelDesigns.cs)
+    Celebrate, // server -> one client: text title, text name, text line: a moment in the middle of their screen (protocol 274; GameCelebrate.cs)
+    ExtruderSection, // u16 body, u16 machine, u8 profile, u16 width, height, wall (cm), u64 mask: the Extruder's picker sets its section at once (protocol 284; ConstructExtruderPick.cs)
+    TakeMade, // a part by PartRef (a made part's key): set down in front of the player from their Tab inventory (protocol 299; docs/sandbox/design/inventory-run-time-parts.md phase 2)
+    Lifter, // u16 body, u16 part, u8 LiftOrderOp, u8 order id, the kind (PartRef), u8 count, from and to (u16 body, u16 part, u8 kind, u8 bay): a hand order at a lifter's panel (protocol 312; GameSandboxLifter.cs)
 }
 
 /// <summary>
@@ -163,6 +167,7 @@ public sealed partial class Game
         Constructs.Removed.Clear();
         Constructs.Events.Clear();
         SandboxHands.Reset();
+        FirstsReset(); // (milestones for firsts: a world's records bring theirs back, GameMilestones.cs)
         SandboxHands.Notices.Clear(); // (nothing said about the last match)
         SandboxHands.ResetPacks(); // (backpacks empty with the match)
         SandboxInv.Reset(); // (salvage: inventories reset with the match, like the constructs)
@@ -187,6 +192,8 @@ public sealed partial class Game
         }
         if (SandboxOn && World.Map.Sandbox is { } sandbox && WorldSession is not { HasSave: true })
         {
+            SandboxCaves(); // (a planetoid's caves, dug into the fresh ground before anything stands on it: GameSandboxCaves.cs)
+            CityMetroDig(); // (a city's metro halls and stairs, the same way: GameCityMetro.cs)
             Constructs.Populate(sandbox, World.Query); // (their structure goes out on the first playing tick)
             SandboxStartKit(sandbox); // (survival: what a fresh world can't make for itself; GameSandboxSurvival.cs)
         }
@@ -219,6 +226,7 @@ public sealed partial class Game
     internal void SandboxResetPlayer(Player p)
     {
         SandboxHands.ResetPlayer(p.Id);
+        FirstsResetPlayer(p.Id);
         SandboxInv.Clear(p.Id);
         SandboxBeaconReset(p.Id);
         SandboxTerminalReset(p.Id);
@@ -299,6 +307,7 @@ public sealed partial class Game
 
     internal void ServerTickSandbox(double now)
     {
+        using var perfAll = Perf.Measure(PerfArea.Sandbox); // the perf window's areas (Source/Perf): off, a bool test each
         if (ServerTick % World.TickRate == 0)
         {
             ConstructMedia.Tick(Constructs, ServerTick); // (the game's own tracks end by the clock)
@@ -361,7 +370,9 @@ public sealed partial class Game
             }
             c.Parts[seat].AimYaw = p.Yaw; // (a gunner points the guns with their look; ConstructWeapons.cs)
             c.Parts[seat].AimPitch = p.Pitch;
-            if (seat == c.DriveSeat)
+            if (c.Parts[seat].D.LifterCab)
+                ConstructLifters.CabInput(Constructs, c, seat, b, p.Yaw); // (a Lifter Cab's keys for its lifter's step, before the logic tick clears them: ConstructLifterCab.cs)
+            if (seat == c.DriveSeat && !c.Parts[seat].D.LifterCab) // (a Lifter Cab never drives: its keys move the hook, even linked to a Driving Module)
             {
                 c.Driver = p.Id;
                 c.DriverSeat = seat;
@@ -388,8 +399,10 @@ public sealed partial class Game
         Constructs.Taught ??= AssemblerTaught; // (parts a story faction must teach first: GameStoryTech.cs)
         if (Constructs.PlayerEndCount > 0)
             SandboxHarpoonTick(); // (lines on players: their ends and who still holds them, GameSandboxHarpoon.cs)
-        using (Perf.Measure(PerfArea.Players))
+        AllocProfile.Mark("sandbox: constructs");
+        using (Perf.Measure(PerfArea.Constructs))
             Constructs.Step(World.Query, World.TickDt);
+        AllocProfile.Mark("sandbox: after constructs");
         MegaDigTick(); // (a big crater's next band: GameSandboxMegaBlast.cs)
         if (Constructs.ShellCount > 0)
             ShellTrails(); // (artillery in the air, as drawn here: GameSandboxShells.cs)
@@ -400,6 +413,8 @@ public sealed partial class Game
         SandboxOfficeTick(now); // (the IT Department's fax line: GameSandboxOffice.cs)
         SandboxScamTick(now); // (the Scammers' adverts: GameSandboxScams.cs)
         SandboxAidsTick(); // (build stations: GameSandboxAids.cs)
+        AllocProfile.Mark("sandbox: spawns, pilots, debris");
+        var perf = Perf.Measure(PerfArea.SandboxWorld);
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
         _vehicleSpawn?.Tick(); // faction vehicles made at spawn time, a slice a tick (GameSandboxVehicles.cs)
         SpawnHeldTick(); // pending spawns of the dead, the gone and the forgotten go (GameSandboxBlueprintGhost.cs)
@@ -407,15 +422,26 @@ public sealed partial class Game
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
         SandboxDebris(now);
         SandboxFlush();
+        perf.Dispose();
+        perf = Perf.Measure(PerfArea.Colony);
+        AllocProfile.Mark("sandbox: colony");
         OpeningTick(now); // (the survival opening's beats: GameSandboxOpening.cs)
         ShellTick(); // (worn robot shells keep their link: GameRobotShell.cs)
+        FirstsTick(); // (a first flight in a craft of your own: GameMilestones.cs)
         PlayAreaTick(now); // (the tutorial's play areas: out of one, the step waits; GameTutorialBounds.cs)
         QuarryTick(now); // (the first Ministry duty, the quarry: GameQuarry.cs)
+        BreakoutTick(now); // (the convicts' break-out: GameBreakout.cs)
+        LabourTick(now); // (the colony's convict labourers: GameLabour.cs)
         DepotTick(now); // (the Orbital Depot's steps: GameDepot.cs)
+        ObjectivesTick(now); // (the "what next" goal line: GameObjectives.cs)
         LockdownTick(now); // (the penal colony's lockdown: GameColonyLockdown.cs)
         StoryArmsTick(); // (no stock gun in a story world: GameStoryArms.cs)
         TutorialTick(now); // (the warden's induction: who starts, which steps are done; GameTutorial.cs)
+        perf.Dispose();
+        perf = Perf.Measure(PerfArea.Story);
+        AllocProfile.Mark("sandbox: story");
         StoryTick(now); // (the story: who came and sat down, what happened to constructs; GameStory.cs)
+        perf.Dispose();
         WorldTickPlaying(now); // (the autosave, on a finished tick: GameWorldSave.cs)
     }
 
@@ -493,6 +519,9 @@ public sealed partial class Game
             ConstructStation.Write(w, c);
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
+        ConstructLifters.WriteAll(Constructs, c.Id, w, out var lifts);
+        if (lifts)
+            Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
     }
 
     private void SandboxFlush()
@@ -553,6 +582,13 @@ public sealed partial class Game
                 Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
             }
         Constructs.StationDirty.Clear();
+        foreach (var id in Constructs.LiftDirty)
+            if (Constructs.LiftSeen.TryGetValue(id, out var lb) && lb.N > 0)
+            {
+                ConstructLifters.Write(w, lb);
+                Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+            }
+        Constructs.LiftDirty.Clear();
         if (Constructs.DesignsDirty)
         {
             Constructs.DesignsDirty = false;
@@ -811,6 +847,8 @@ public sealed partial class Game
                     SandboxSay(r.Text(120));
                     BuildSounds.Play(BuildSound.Refuse, default);
                 }
+                else if (actKind == (byte)CActKind.Celebrate)
+                    CelebrateRead(ref r); // (GameCelebrate.cs)
                 break;
         }
     }
@@ -1088,6 +1126,8 @@ public sealed partial class Game
                     return hoseWhy; // (a hose part: take, plug, unplug or hang back its hose; GameSandboxWorldLinks.cs)
                 if (Constructs.Get(body) is { Loose: true, PartCount: 1 } module && ToolUpgrades.Current.ModuleOf(module.Parts[0].Def) != null)
                     return hands.FitUpgrade(Constructs, p.Id, eye, module); // (a tool upgrade: fitted, ConstructEditsUpgrades.cs)
+                if (Constructs.Get(body) is { } lc && part < lc.PartCount && lc.DefOf(part).LadderTop > 0)
+                    return SandboxGrabOn(p, lc, part, ladder: true); // (a vertical ladder: climbed up or down, ConstructRide.ClimbLadder)
                 if (Constructs.Get(body) is { } bc && part < bc.PartCount && bc.DefOf(part).Boarding)
                     return SandboxGrabOn(p, bc, part); // (a grab handle, a boarding ladder, a step plate: ba01)
                 var used = hands.Use(Constructs, p.Id, eye, body, part);
@@ -1126,6 +1166,17 @@ public sealed partial class Game
                 var flags = r.U8();
                 return hands.LineRecipe(Constructs, p.Id, eye, body, console, machine, value, (flags & 1) != 0, Constructs.Get(body) is { } lc ? SandboxConfigRefusal(lc, p.Id) : null);
             }
+            case CActKind.ExtruderSection:
+            {
+                var body = r.U16();
+                var machine = r.U16();
+                var profile = r.U8();
+                var ew = r.U16();
+                var eh = r.U16();
+                var ewall = r.U16();
+                var mask = (ulong)r.U32() | (ulong)r.U32() << 32;
+                return hands.ExtruderSection(Constructs, p.Id, eye, body, machine, new ExtruderPick(profile, ew, eh, ewall, mask), Constructs.Get(body) is { } ec ? SandboxConfigRefusal(ec, p.Id) : null);
+            }
             case CActKind.CraftOrder:
             {
                 var body = r.U16();
@@ -1150,9 +1201,10 @@ public sealed partial class Game
                 var term = r.U16();
                 var count = r.U16();
                 var name = r.Text(ConstructParts.MaxRuntimeName);
-                if (!HullLoft.IsFormedName(name))
-                    return "a bad order";
-                return hands.CraftOrder(Constructs, p.Id, eye, body, term, ConstructPanelFormer.Order(name, count) with { Count = count }, 0, Constructs.Get(body) is { } cn ? SandboxConfigRefusal(cn, p.Id) : null);
+                var pressed = Pressed.IsName(name) ? WorkOrders.PressedOrder(name, count) : null; // (a pressed part by its key, Press phase 4)
+                if (!HullLoft.IsFormedName(name) && !HullLoft.IsCutName(name) && pressed == null) // (a cut part by its key: a Laser Cutter's, laser cutter phase 4)
+                    return Pressed.IsName(name) ? "not a pressed part" : "a bad order";
+                return hands.CraftOrder(Constructs, p.Id, eye, body, term, (pressed ?? ConstructPanelFormer.Order(name, count)) with { Count = count }, 0, Constructs.Get(body) is { } cn ? SandboxConfigRefusal(cn, p.Id) : null);
             }
             case CActKind.PanelDesign:
             {
@@ -1170,6 +1222,8 @@ public sealed partial class Game
             }
             case CActKind.Station:
                 return SandboxStationAct(ref r, p, eye);
+            case CActKind.Lifter:
+                return SandboxLifterAct(ref r, p, eye); // (GameSandboxLifter.cs)
             case CActKind.WebState:
             {
                 var body = r.U16();
@@ -1216,6 +1270,13 @@ public sealed partial class Game
             {
                 var pick = r.U16(); // (protocol 90: part ids are two bytes)
                 return pick == 0 ? hands.TakeFromRack(World.Map.Sandbox, p.Id, p.Position, Constructs, eye, p.Yaw) : hands.TakePart(SandboxPartsMenu ? World.Map.Sandbox : null, p.Id, (ushort)(pick - 1), Constructs, eye, p.Yaw);
+            }
+            case CActKind.TakeMade:
+            {
+                var made = PartRef.Read(ref r); // (protocol 299: a made part from the Tab inventory, by key)
+                if (!Extrusion.IsRuntimeId(made) || SandboxInv.Of(p.Id).Count(made) == 0 && SandboxBeacon(p.Id).CountOf(made) == 0)
+                    return "you hold none of that made part"; // (only a key the player's count holds, or their network lists: inventories phase 4)
+                return hands.TakePart(SandboxPartsMenu ? World.Map.Sandbox : null, p.Id, made, Constructs, eye, p.Yaw);
             }
             case CActKind.Blueprint:
                 return SandboxSpawnBlueprint(p, r.U16()); // (protocol 227: two bytes, past 255 blueprints)
@@ -1282,7 +1343,14 @@ public sealed partial class Game
                 var body = r.U16();
                 var part = r.U16();
                 var id = r.U16();
-                return hands.TerminalPull(Constructs, p.Id, eye, body, part, id, r.U8());
+                var pullFlags = r.U8();
+                if ((pullFlags & 4) != 0)
+                {
+                    id = PartRef.Read(ref r); // (protocol 301: a made part's row, by key)
+                    if (!Extrusion.IsRuntimeId(id) || (pullFlags & 2) != 0)
+                        return "no such item";
+                }
+                return hands.TerminalPull(Constructs, p.Id, eye, body, part, id, (byte)(pullFlags & 3));
             }
             case CActKind.Stow:
                 return hands.Stow(p.Id);
@@ -1596,6 +1664,28 @@ public sealed partial class Game
         Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
     }
 
+    /// <summary>
+    /// Client (or the host itself): the Extruder's picker sets machine <paramref name="machine"/>'s Profile, Width, Height, Pipe wall and (Custom)
+    /// cells in one act. The server checks it as a finger on the machine's Recipe button, and the sizes against its die.
+    /// </summary>
+    public void SandboxExtruderSection(ushort body, int machine, in ExtruderPick pick)
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.ExtruderSection).U16(body).U16((ushort)machine).U8(pick.Profile).U16(pick.W).U16(pick.H).U16(pick.Wall)
+            .U32((uint)pick.Mask).U32((uint)(pick.Mask >> 32));
+        if (IsServer)
+        {
+            if (Local is { } me)
+            {
+                var r = new PacketReader(w.Span[1..]);
+                if (SandboxActGuarded(me, ref r) is { } why)
+                    SandboxSay(why);
+            }
+            return;
+        }
+        Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
+    }
+
     /// <summary>Client (or the host itself): an order at a Crafting Terminal (ConstructCrafting.cs). The server checks reach, power and the network, and says why not.</summary>
     public void SandboxCraftOrder(ushort body, int terminal, in WorkOrder what)
     {
@@ -1746,7 +1836,19 @@ public sealed partial class Game
     // ---- The debug parts menu (UiSandboxParts.cs) ------------------------------------------------------------------
 
     /// <summary>Client (or host): ask for a part by id from the debug parts menu (the rack's request with a part id).</summary>
-    public void SandboxTakePart(ushort id) => SandboxSend(CActKind.Rack, body: (ushort)(id + 1));
+    public void SandboxTakePart(ushort id)
+    {
+        if (!Extrusion.IsRuntimeId(id))
+        {
+            SandboxSend(CActKind.Rack, body: (ushort)(id + 1));
+            return;
+        }
+        // A made part from the Tab inventory: by its key (its id is this machine's own; protocol 299).
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.TakeMade);
+        PartRef.Write(w, id);
+        SandboxSendBuilt(w);
+    }
 
     /// <summary>
     /// Server: the debug parts menu's blueprint button: the blueprint is built standing on the ground in front of the
@@ -1888,6 +1990,8 @@ public sealed partial class Game
             return;
         }
         Constructs.BlockPlayer(ref s, World.HeightOf(s.Stance), IsServer, p.Id, frame: p.Bot == null);
+        if (Constructs.LiftBodies.Count > 0 && p.Bot == null)
+            ConstructLifterPush.Block(Constructs, ref s, World.HeightOf(s.Stance), _sepAtTick != 0 ? _sepAtTick : MoverPhysics.Clock, IsServer); // (a Loader Arm's piece in the air pushes them aside, or waits for them: ConstructLifterPush.cs)
         if (IsServer && Constructs.LastHitSpeed > RunOverSpeed && Constructs.LastHitBody is { } car)
             SandboxRunOver(p, ref s, car);
     }
@@ -1896,7 +2000,7 @@ public sealed partial class Game
     /// Board item ba01's grab-on (server): Use at a construct's side or a boarding part latches the player on in its frame
     /// and pulls them up onto the nearest top (ConstructRide.GrabOn; the climb runs in the shared movement step).
     /// </summary>
-    internal string? SandboxGrabOn(Player p, Construct c, int part)
+    internal string? SandboxGrabOn(Player p, Construct c, int part, bool ladder = false)
     {
         if (!p.Alive)
             return "you are dead";
@@ -1906,7 +2010,8 @@ public sealed partial class Game
             return "not while noclipping";
         // (it moved on since the player aimed: a little more reach the faster it goes)
         var slack = c.Anchored || c.Asleep ? 0 : MathF.Min((c.Vel - p.Sim.Velocity).Length(), 12f) * 0.15f;
-        var why = ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack, frame: p.Bot == null);
+        var why = ladder ? ConstructRide.ClimbLadder(ref p.Sim, c, part, World.HeightOf(Stance.Stand), frame: p.Bot == null)
+            : ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack, frame: p.Bot == null);
         if (why == null)
             Constructs.Events.Add($"player {p.Id} grabbed on to construct {c.Id}");
         return why;
@@ -2402,20 +2507,6 @@ public sealed partial class Game
     }
 
     // ---- HUD ----------------------------------------------------------------------------------------------------------
-
-    private string _sbBar = "";
-    private int _sbBarKey = -1;
-
-    public string SandboxBarText()
-    {
-        var key = Constructs.Bodies.Count * 10000 + Constructs.TotalParts;
-        if (key != _sbBarKey)
-        {
-            _sbBarKey = key;
-            _sbBar = $"{Constructs.Bodies.Count} constructs, {Constructs.TotalParts} parts";
-        }
-        return _sbBar;
-    }
 
     /// <summary>A line of text rebuilt only when what it shows changes (the HUD runs every frame: no allocation per frame).</summary>
     private struct SbText

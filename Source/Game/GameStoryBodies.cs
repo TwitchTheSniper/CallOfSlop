@@ -21,11 +21,13 @@ public sealed partial class Game
     /// <summary>The story people's team (the Sandbox's sides: GameSandboxSpawns.cs).</summary>
     public const byte SbPeopleTeam = 12;
 
-    public const int StoryBodiesMax = 8;
+    public const int StoryBodiesMax = 12; // (the colony's staff, the break-out's convicts and a visitor or two)
+    public const float StoryStationReach = 30f; // m: a body kept to a station goes no further from it to meet anyone
     public const float StoryMeetReach = 4f, StoryBeside = 1.3f; // m: two bodies this close are together; one goes this far from the other
     public const float StoryHomeMin = 12, StoryHomeMax = 26, StoryWorkMin = 6, StoryWorkMax = 10, StoryRoadMin = 40, StoryRoadMax = 50; // m from the place's middle
     public const double StoryArriveWalk = 20; // s: a trip here shows its body at the road's end this long before it ends
     public const double StoryBodiesEvery = 0.25; // s between looks
+    public const float StoryDeckMost = 0.4f, StoryDeckSky = 5f; // m: a deck a body stands on is at most this far over the ground, with nothing built this far over it
 
     /// <summary>The host's switch (the Story window's People tab): off, the people have no bodies and steps keep the story's clock alone.</summary>
     public bool StoryBodiesOn = true;
@@ -54,6 +56,7 @@ public sealed partial class Game
         public double PostStuck; // game time: since when they have been near the post's seat without sitting (-1: not)
         public bool PostSat; // sat in the post's seat
         public double DoorSince = -1; // game time: since when they have stood at the barracks' doorway step on the way in (-1: not)
+        public bool Station; // keeps to Home (the spaceport's pilot, 2 km from the colony: GameSpaceport.cs), never walks off to anyone far
 
         public StoryBody() { }
     }
@@ -127,9 +130,14 @@ public sealed partial class Game
             }
             if (!p.Alive)
                 continue; // (lying there: the spawns tick takes it away, GameSandboxSpawns.cs)
+            // Empty hands (the sidearm stays away) until they fight: Karl's convicts were walking round the colony pistol in hand.
+            ref var hand = ref SandboxHands.Hand(p.Id);
+            var tool = b.Fight == StoryFighting || BreakoutCrewArmed(b.Entity) ? ConstructTool.None : ConstructTool.Hands;
+            if (hand.Tool != tool && !hand.Seated)
+                hand.Tool = tool;
             var leaving = StoryLeaving(s, a, place);
             b.Leaving = leaving;
-            var gone = !on || a.Dead || !(ag.Where(a.Entity) == place || StoryArriving(s, a, place, clock) || leaving);
+            var gone = !on || a.Dead || !(ag.Where(a.Entity) == place || StoryArriving(s, a, place, clock) || leaving) || BreakoutAboard(a.Entity);
             if (!gone && leaving && Flat2(p.Position - StoryRoadEnd(s, ref b, a.Doing.Place)) < 3f * 3f)
                 gone = StandInMayBoard(a.Entity); // (at the road's end: off they go; STAND-IN: once their craft has landed, Source/StandIns)
             if (gone)
@@ -143,7 +151,7 @@ public sealed partial class Game
 
         // Players of the people's side that no body names (a load, a reset): put away.
         foreach (var p in Players.Values)
-            if (p.Team == SbPeopleTeam && p.SbSpawned && StoryBodyIndex(p.Id) < 0)
+            if (p.Team == SbPeopleTeam && p.SbSpawned && StoryBodyIndex(p.Id) < 0 && OutpostGuardIndex(p.Id) < 0) // (an outpost's people are GameOutposts.cs's)
             {
                 StoryBodyRemove(p);
                 removed = true;
@@ -154,8 +162,8 @@ public sealed partial class Game
         if (on && _bodyCount < StoryBodiesMax && place >= 0)
             foreach (var a in ag.All)
             {
-                if (a.Dead || StoryBodyIndexOf(a.Entity) >= 0)
-                    continue;
+                if (a.Dead || StoryBodyIndexOf(a.Entity) >= 0 || BreakoutAboard(a.Entity))
+                    continue; // (riding in the courier: GameBreakoutShip.cs)
                 var here = ag.Where(a.Entity) == place;
                 var arriving = !here && StoryArriving(s, a, place, clock);
                 if (!here && !arriving)
@@ -180,6 +188,7 @@ public sealed partial class Game
             }
         }
         StoryTalkTick(s, now); // (what they say, and who hears it: GameStoryTalk.cs)
+        LabourHandsTick(now); // (who of them stands working in a gang of convicts: GameLabourHands.cs)
     }
 
     private static float Flat2(Vector3 v) => v.X * v.X + v.Z * v.Z;
@@ -234,10 +243,43 @@ public sealed partial class Game
         _storyMiddleOf = World.Map;
         var sb = World.Map.Sandbox;
         var at = OpeningStoryMiddle() ?? (sb is { RackParts.Count: > 0 } ? sb.Rack : World.Map.Spawns.Count > 0 ? World.Map.Spawns[0] : Vector3.Zero); // (a survival world's colony: GameSandboxOpening.cs)
-        _storyMiddleOk = SandboxSpawnSpot(at + new Vector3(0, 0.5f, 0), out _storyMiddle) == null;
+        _storyMiddleOk = StoryStand(at, out _storyMiddle);
+        for (var tries = 0; !_storyMiddleOk && tries < 48; tries++)
+        {
+            // (the spot itself is taken, say by the covered way outside the colony's gate: the nearest open one round it)
+            var angle = tries * (MathF.Tau / 12) + tries / 12 * 0.26f;
+            var r = 3f + tries / 12 * 3f;
+            var near = at + new Vector3(MathF.Sin(angle) * r, 0, MathF.Cos(angle) * r);
+            if (World.Map.Terrain != null)
+                near.Y = World.Map.GroundHeight(near.X, near.Z);
+            _storyMiddleOk = StoryStand(near, out _storyMiddle);
+        }
         if (!_storyMiddleOk)
             Console.WriteLine($"[story] {World.Map.Name}: nowhere for the people's bodies to stand near {at}; they stay in the story only");
         return _storyMiddleOk;
+    }
+
+    /// <summary>
+    /// A spot a body can stand on near <paramref name="at"/>: open ground, or a low deck on the ground with open sky over it
+    /// (the colony's road, square and slabs; not a roof, not inside a building or under the covered way).
+    /// </summary>
+    private bool StoryStand(Vector3 at, out Vector3 feet)
+    {
+        var why = SandboxSpawnSpot(at + new Vector3(0, 0.5f, 0), out feet);
+        if (why == null)
+            return true;
+        if (!why.StartsWith("on a construct", StringComparison.Ordinal))
+            return false;
+        var up = at + new Vector3(0, 1.5f, 0);
+        if (!Constructs.Raycast(up, -Vector3.UnitY, 4f, out var hit) || hit.Normal.Y < 0.9f)
+            return false;
+        var deck = up - new Vector3(0, hit.Distance, 0);
+        if (deck.Y - feet.Y > StoryDeckMost || World.Blocked(deck + new Vector3(0, 0.05f, 0)))
+            return false;
+        if (Constructs.Raycast(deck + new Vector3(0, 0.1f, 0), Vector3.UnitY, StoryDeckSky, out _))
+            return false;
+        feet = deck;
+        return true;
     }
 
     private static ulong StoryMix(ulong x)
@@ -262,7 +304,7 @@ public sealed partial class Game
                 continue; // (off the map)
             if (World.Map.Terrain != null)
                 at.Y = World.Map.GroundHeight(at.X, at.Z);
-            if (SandboxSpawnSpot(at + new Vector3(0, 0.5f, 0), out var feet) == null)
+            if (StoryStand(at, out var feet))
                 return feet;
         }
         return _storyMiddle;
@@ -311,6 +353,8 @@ public sealed partial class Game
         }
         else
             b.Work = b.Home;
+        if (SpaceportKeeper(name) && SpaceportKeeperSpot() is { } station)
+            (b.Home, b.Work, b.Station) = (station, station, true); // (the courier's pilot keeps to his apron: GameSpaceport.cs)
         var at = arriving ? StoryRoadEnd(s, ref b, a.DoingFromPlace) : StoryStepSpot(s, a, ref b);
         var bot = new Player
         {
@@ -354,6 +398,8 @@ public sealed partial class Game
     {
         if (b.Leaving)
             return StoryRoadEnd(s, ref b, a.Doing.Place);
+        if (BreakoutGoalOf(a.Entity) is { } breakout)
+            return breakout; // (the convicts' break-out: to the hauler, or at the spaceport: GameBreakout.cs)
         var with = s.Plays.PartnerOf(a.Entity); // (in a play: beside whoever they are with in it)
         if (with < 0 && a.Busy && a.Doing.Target >= 0 && !s.Rules.People.Actions[a.Doing.Action].Road)
             with = a.Doing.Target;
@@ -362,9 +408,19 @@ public sealed partial class Game
             // Beside the one they're with (on this side of them): a body, or a player.
             if (StoryPosOf(with) is { } them)
             {
+                if (b.Station && Vector3.DistanceSquared(them, b.Home) > StoryStationReach * StoryStationReach)
+                    return b.Home; // (whoever it is, they can come to him)
                 var off = new Vector3(p.Position.X - them.X, 0, p.Position.Z - them.Z);
                 var len = off.Length();
-                return len < StoryBeside ? p.Position : them + off / len * StoryBeside;
+                if (len < StoryBeside)
+                    return p.Position;
+                // Each round them on a spot of their own (a turn and a step by who they are), so a few come up to the same
+                // person in a ring, not in one clump through each other.
+                var turn = ((a.Entity * 37 % 9) - 4) * 0.3f;
+                var (sin, cos) = MathF.SinCos(turn);
+                var dir = off / len;
+                dir = new Vector3(dir.X * cos - dir.Z * sin, 0, dir.X * sin + dir.Z * cos);
+                return them + dir * (StoryBeside + a.Entity % 3 * 0.55f);
             }
             return p.Position;
         }

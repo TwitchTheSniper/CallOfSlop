@@ -51,6 +51,8 @@ public static class PanelTouch
         ["orders.preset"] = (w, c, part, player, tick) => ConstructPanelFormer.NextPreset(w, c, part), // (a Panel Former's fourth button)
         ["press.pattern"] = (w, c, part, player, tick) => ConstructPress.NextPattern(w, c, part), // (a press's die screen: the next pattern of its die)
         ["machine.recipe"] = (w, c, part, player, tick) => ConstructEdits.NextRecipe(c, part), // (a machine's Recipe button: the picker opens on this PC, Program.MachineRecipePicker; this step only where it can't)
+        ["router.spill"] = (w, c, part, player, tick) => RouterScreen.NextSpill(c, part), // (a Router's screen: where a piece with no order goes)
+        ["router.hold"] = (w, c, part, player, tick) => RouterScreen.ToggleHold(c, part),
         ["office.advert2"] = (w, c, part, player, tick) => OfficeParts.ClickAdvert(c, part, 1),
         ["view.up"] = (w, c, part, player, tick) => null, // (a list's Up and Down are this PC's own: Program.PointerFrame scrolls the panel and sends nothing)
         ["view.down"] = (w, c, part, player, tick) => null,
@@ -176,7 +178,13 @@ public sealed partial class ConstructEdits
             return "that console is gone";
         var d = c.DefOf(console);
         if (console == machine)
-            return OwnRecipe(c, machine, player, eye, value, refusal); // (the machine's own Recipe button: same bytes, its own screen for the console)
+        {
+            // (the machine's own Recipe button: same bytes, its own screen for the console; its setting goes to the clients with the structure)
+            var own = OwnRecipe(c, machine, player, eye, value, refusal);
+            if (own == null)
+                world.StructureDirty.Add(c.Id);
+            return own;
+        }
         if (!ConstructConfig.Has(d, CfgKey.LinePick))
             return $"a {d.Name} runs no line";
         if (Contested(c, player) is { } defended)
@@ -224,7 +232,7 @@ public sealed partial class ConstructEdits
             return $"the {d.Name} has no power";
         if (ProductionLines.RecipeRefusal(d, value) is { } why)
             return why;
-        ConstructConfig.Put(ref p, d, CfgKey.Recipe, value);
+        ConstructConfig.Put(ref p, d, ProductionLines.RecipeKey(d), value);
         c.Wake();
         Done.Add($"player {player}: recipe {value} on part {machine} of construct {c.Id} (its own button)");
         return null;
@@ -235,15 +243,16 @@ public sealed partial class ConstructEdits
     {
         ref var p = ref c.Parts[part];
         var d = p.D;
-        var slot = d.CfgSlot[(int)CfgKey.Recipe];
+        var key = ProductionLines.RecipeKey(d);
+        var slot = d.CfgSlot[(int)key];
         if (slot < 0 || d.Config[slot].Options.Length == 0)
             return $"the {d.Name} has no recipe to pick";
         var n = d.Config[slot].Options.Length;
-        var v = (int)ConstructConfig.Get(p, d, CfgKey.Recipe, 0);
+        var v = (int)ConstructConfig.Get(p, d, key, 0);
         for (var k = 1; k <= n; k++)
             if (ProductionLines.RecipeRefusal(d, (v + k) % n) == null)
             {
-                ConstructConfig.Put(ref p, d, CfgKey.Recipe, (v + k) % n);
+                ConstructConfig.Put(ref p, d, key, (v + k) % n);
                 c.Wake();
                 return null;
             }
@@ -259,6 +268,21 @@ public sealed partial class ConstructEdits
         if (world.Get(body) is not { } c || terminal >= c.PartCount)
             return "that terminal is gone";
         var d = c.DefOf(terminal);
+        if (d.IsLaserCutter && cancel == 0 && what.Name != null && HullLoft.IsCutName(what.Name))
+        {
+            // A cut design picked at a Laser Cutter's own Design button (laser cutter phase 4): queued at that cutter.
+            if (Contested(c, player) is { } held)
+                return held;
+            if (refusal != null)
+                return refusal;
+            if (Vector3.Distance(eye, ReachPoint(c, terminal, eye)) > ConstructConfig.Reach)
+                return "too far away";
+            if (WorkOrders.Queue(world, c, terminal, what) is { } no)
+                return no;
+            var maker = ConstructLaserCutter.AskBlanks(world, c, terminal, what.Name, what.Count); // (its blanks, from a linked former or Extruder)
+            Done.Add($"player {player}: queued {what.Count} {what.Name} at part {terminal} of construct {c.Id}; blanks {(maker != null ? $"from the {maker}" : "asked of nobody")}");
+            return null;
+        }
         if (!d.IsCraftTerminal)
             return $"a {d.Name} takes no such orders";
         if (Contested(c, player) is { } defended)

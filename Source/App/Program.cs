@@ -41,6 +41,7 @@ public static unsafe partial class Program
     private static readonly FoliageRenderer FoliageGfx = new();
     private static readonly PropRenderer PropGfx = new();
     private static readonly MeshRenderer MeshGfx = new();
+    private static readonly CityRenderer CityGfx = new(); // a planetoid's city (docs/planets/CITY.md)
     private static readonly BuildingRenderer BuildingGfx = new();
     private static readonly DecalRenderer DecalGfx = new();
     private static readonly TerrainRenderer TerrainGfx = new();
@@ -78,6 +79,11 @@ public static unsafe partial class Program
 
     public static int Main(string[] args)
     {
+        // Started from a clicked callofslop:// link (UrlProtocol.cs registers "exe" "%1"): the link is the only argument
+        // honoured. A crafted link with quotes or spaces in it could otherwise smuggle in options of its own
+        // (--save-dir, a tool that writes files), and a link never needs any.
+        if (args.Length > 1 && UrlProtocol.FindLink(args.Take(1)) != null)
+            args = [args[0]];
         // A release build's game restarts itself once with .NET crash dumps on, unless its launcher set them (CrashDumps.cs).
         if (CrashDumps.Relaunch(args) is { } exitCode)
             return exitCode;
@@ -128,6 +134,8 @@ public static unsafe partial class Program
             return Space.SpaceCli.Ships(args); // headless: demo ships flying in a star system's gravity (Source/Space/SpaceShips.cs)
         if (args.Any(a => a.Equals("--traffic-check", StringComparison.OrdinalIgnoreCase)))
             return TrafficCheck.Run(args); // headless: STAND-IN: the story world's ambient traffic, a host and a client (Source/StandIns/GameTraffic.cs)
+        if (args.Any(a => a.Equals("--outpost-check", StringComparison.OrdinalIgnoreCase)))
+            return OutpostCheck.Run(args); // headless: the factions' outposts on the story's world, visited one by one, and what they cost (GameOutposts.cs)
         if (args.Any(a => a.Equals("--travel-check", StringComparison.OrdinalIgnoreCase)))
             return GameTravelCheck.Run(args); // headless: free travel step 2, a ship handed to a client's own game and back (GameTravel.cs)
         if (args.Any(a => a.Equals("--two-planetoids", StringComparison.OrdinalIgnoreCase)))
@@ -259,8 +267,12 @@ public static unsafe partial class Program
             return HullLoft.PanelCli([.. args.SkipWhile(a => !a.Equals("--form-panel", StringComparison.OrdinalIgnoreCase)).Skip(1).TakeWhile(a => !a.StartsWith("--", StringComparison.Ordinal))]); // a formed panel from a preset: its key, counts and checks (HullLoft.Panels.cs)
         if (args.Any(a => a.Equals("--press-part", StringComparison.OrdinalIgnoreCase)))
             return CallOfSlop.Pressed.Cli([.. args.SkipWhile(a => !a.Equals("--press-part", StringComparison.OrdinalIgnoreCase)).Skip(1)]); // a pressed part: its key, numbers and checks; list, presets, sweep (Pressed.cs)
+        if (args.Any(a => a.Equals("--former-presets", StringComparison.OrdinalIgnoreCase)))
+            return FormerPresets.Cli(); // every catalogue wing and rotor against the key a Fan or Airframe Former would cut for it (FormerPresets.cs)
         if (args.SkipWhile(a => !a.Equals("--bill", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } billOf)
             return ConstructBill.Cli(billOf); // a blueprint's bill: the pieces it needs by key with counts (WorkOrders.cs)
+        if (args.Any(a => a.Equals("--bench-compare", StringComparison.OrdinalIgnoreCase)))
+            return BenchCompare(args); // two frame-rate benchmark runs side by side (Program.Bench.cs, docs/perf/BENCHMARK.md)
         if (args.Any(a => a.Equals("--bench-parts", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BenchParts(args); // run-time parts and part shapes over many generated vehicles, offline and host + client (Source/App/BenchParts.cs)
         if (args.Any(a => a.Equals("--bench-material", StringComparison.OrdinalIgnoreCase)))
@@ -309,6 +321,8 @@ public static unsafe partial class Program
             return LookReport(args); // how finished blueprints look: paint, colours, finishes, lamps, likeness (Program.LookReport.cs, docs/sandbox/constructs/look.md)
         if (args.Any(a => a.Equals("--check-ports", StringComparison.OrdinalIgnoreCase)))
             return PortMounts.Cli(args); // does every link port sit on something drawn? (Source/Constructs/PortMounts.cs)
+        if (args.Any(a => a.Equals("--check-starts", StringComparison.OrdinalIgnoreCase)))
+            return StoryStarts.Check(); // the story's starts (Story/Starts): what each holds, what's refused and why (docs/story/STARTS.md)
         if (args.Any(a => a.Equals("--check-construct-parts", StringComparison.OrdinalIgnoreCase)))
             return ConstructParts.CheckCli(); // Sandbox construct parts and blueprints: what loads, what's refused and why (Source/Constructs)
         if (args.Any(a => a.Equals("--check-mods", StringComparison.OrdinalIgnoreCase)))
@@ -331,6 +345,7 @@ public static unsafe partial class Program
 
         // Saves live in %APPDATA%\CallOfSlop (or portable.txt / --save-dir) so they carry over between builds (SavePaths.cs).
         // The smoke test works on a throwaway copy and never touches the real save folder.
+        args = BenchArgs(args); // --bench: the frame-rate benchmark is a window-tool run over a spots file (Program.Bench.cs)
         _shotTool = args.Any(a => a.Equals("--light-shots", StringComparison.OrdinalIgnoreCase)); // (Program.LightShots.cs)
         var perfShot = args.Any(a => a.Equals("--perf-shot", StringComparison.OrdinalIgnoreCase)); // (Program.Perf.cs)
         var megaWindow = args.Any(a => a.Equals("--mega-host", StringComparison.OrdinalIgnoreCase) || a.Equals("--mega-client", StringComparison.OrdinalIgnoreCase)
@@ -348,9 +363,16 @@ public static unsafe partial class Program
         CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
         var windowShot = WindowShotArgs(args); // --window-shot: pictures of the real window for an agent's own checking (Program.WindowShot.cs)
         if (_shotTool || perfShot || megaWindow || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)) || windowShot)
+        {
             SavePaths.UseSmokeSandbox(args);
+            // A dev build's tool runs (window shots, the bench and the tour, perf and GL checks) skip the BRUTAL logo; the smoke test and a release still show it.
+            _noSplash = !BuildInfo.IsRelease && !args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
+        }
         else
             SavePaths.Init(args);
+        // --no-splash: a dev build's test launch (host, join, a plain window) skips the logo too; a release always shows it (licence section 2.2).
+        if (!BuildInfo.IsRelease && args.Any(a => a.Equals("--no-splash", StringComparison.OrdinalIgnoreCase)))
+            _noSplash = true;
         _settings = Settings.Load();
         if (_windowShot)
             WindowShotSettings(args);
@@ -411,7 +433,8 @@ public static unsafe partial class Program
             AudioSystem.OwnGunVolume = _settings.OwnGunVolume;
             LoadAudioMix(); // audio_mix.json from the Audio mixer window, if there is one (Program.AudioMixer.cs)
             CreateWindow();
-            RunSplash(); // the BRUTAL logo before anything else, even with a command-line shortcut (licence section 2.2)
+            if (!_noSplash)
+                RunSplash(); // the BRUTAL logo before anything else, even with a command-line shortcut (licence section 2.2); test runs skip it
 
             // Command-line shortcuts skip the lobby.
             if (UrlProtocol.FindLink(plain) is { } inviteLink)
@@ -794,7 +817,8 @@ public static unsafe partial class Program
             {
                 if (game.Disconnected && _link == null) // (a visit that ended goes back to the link: Program.Travel.cs)
                 {
-                    EndSession(game.Status);
+                    if (!WsRejoin(game.Status, now)) // (the window tool's joined client: its host may still be starting up)
+                        EndSession(game.Status);
                 }
                 else
                 {
@@ -887,6 +911,9 @@ public static unsafe partial class Program
                     DrawFriendlyHitText(g, now); // "FRIENDLY" under the friendly hit marker (Program.FriendlyHit.cs)
                     Ui.DrawHud(g, now, _joinAddress, _settings);
                 }
+                // What the player has just learnt, in the middle of the screen; it waits out the opening, a ride and the bench (UiTechnologies.cs).
+                if (Ui.DrawCelebration(g, now, benchCovers || g.OpeningActive || g.QuarryRiding, _settings.Bind(GameAction.Logbook)))
+                    AudioSystem.Effect(Sfx.LevelUp, 0.6f);
                 uiPart.Dispose();
                 uiPart = Perf.Measure(PerfArea.UiMenus);
                 DrawBenchInMatch(now); // a Zombies workbench, open over the match (Program.Zombies.cs)
@@ -972,6 +999,7 @@ public static unsafe partial class Program
             DrawWeatherUi(); // the weather map (F11; Program.Weather.cs): closed one check
             DrawStoryUi(); // the Story window (F4; Program.Story.cs): closed one check
             DrawFactionUi(); // the Faction window (F2; Program.Factions.cs): closed one check
+            DrawJobBoardUi(); // the job board (the use key on the colony's work board; Program.JobBoard.cs): closed one check
             DrawLogbookUi(); // the Logbook (F1; Program.Logbook.cs): closed one check
             DrawDevTools(now); // the look-at inspector and prop editor (F6 / F10; Program.DevTools.cs): closed two checks
             uiPart.Dispose();
@@ -1018,6 +1046,9 @@ public static unsafe partial class Program
     /// Shows the BRUTAL logo splash (see <see cref="Splash"/>) in its own little loop before the lobby or any session.
     /// The smoke test watches it in full (no skipping) and logs that it was shown.
     /// </summary>
+    /// <summary>A test run: no logo (window-tool runs, or --no-splash in a dev build). Players always see it.</summary>
+    private static bool _noSplash;
+
     private static void RunSplash()
     {
         var shown = false;
@@ -1125,6 +1156,8 @@ public static unsafe partial class Program
             DrawMovers(map); // moving platforms at this frame's pose
             StandInRender.Draw(Gfx, _session); // STAND-IN: the story's placeholder craft (Source/StandIns)
         }
+        using (Perf.Pass(PerfArea.City, PerfGpuPass.City))
+            CityGfx.Draw(map, Gfx, Glfw.Time, _game is { } cg ? cg.MoverRenderTick / World.TickRate : Glfw.Time); // a planetoid's city: one draw a chunk (Source/Render/CityRenderer.cs)
         using (Perf.Pass(PerfArea.Terrain, PerfGpuPass.Terrain))
             TerrainGfx.Draw(Gfx, map); // terrain maps only (built once per map)
         BenchPass(2);
@@ -1160,7 +1193,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.LogbookOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen || Ui.DesignerOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.JobBoardOpen || Ui.LogbookOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen || Ui.DesignerOpen || Ui.LifterOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -1226,6 +1259,13 @@ public static unsafe partial class Program
         if (key == GlfwKey.Escape && Ui.DesignerOpen)
         {
             Ui.CloseDesigner(); // Esc closes the Panel Designer's panel (back to the desk)
+            if (!MenusOpen)
+                SetMouseCaptured(true);
+            return;
+        }
+        if (key == GlfwKey.Escape && Ui.LifterOpen)
+        {
+            Ui.CloseLifter(); // Esc closes a lifter's panel (back to the arm or crane)
             if (!MenusOpen)
                 SetMouseCaptured(true);
             return;
@@ -1352,6 +1392,8 @@ public static unsafe partial class Program
         if (WeatherMapKey(key)) // F11 (rebindable) or Esc: the weather map window (Program.Weather.cs)
             return;
         if (StoryKey(key)) // F4 (rebindable) or Esc: the Story window (Program.Story.cs)
+            return;
+        if (JobBoardKey(key)) // Esc or the use key: the job board (Program.JobBoard.cs)
             return;
         if (FactionKey(key)) // F2 (rebindable) or Esc: the Faction window (Program.Factions.cs)
             return;
@@ -2029,6 +2071,7 @@ public static unsafe partial class Program
         ScenePresentation.BeginFrame(MeshGfx);
         using (Perf.Measure(PerfArea.Ragdolls))
             UpdateRagdolls(now); // new bodies for the newly dead, their 60 Hz steps (Program.Ragdolls.cs); drawn with the props' debris
+        ConstructLifters.DrawTick = _game.MoverRenderTick; // (a Loader Arm's move is posed on the mover clock: ConstructLifters.AgeAt)
         AddFrameLights(now, eye, fwd); // muzzle flash and blasts light a lit map this frame (Program.Lighting.cs)
         ApplyVideoLevels();
         DrawArena();
@@ -2036,6 +2079,7 @@ public static unsafe partial class Program
 
         // ---- Players --------------------------------------------------------
         var pass = Perf.Pass(PerfArea.Bodies, PerfGpuPass.Bodies); // the perf window's passes (Source/Perf)
+        Gfx.BeginBatch(); // (every person's opaque boxes in a few instanced draws, not a GL draw each: the same pixels, Renderer.BeginBatch)
         LegAnimator.Viewer = eye; // foot IK rays only for players near the camera (Source/Render/LegAnimator.cs)
         LegAnimator.MoverTick = _game.MoverRenderTick;
         ToolRender.Hands = _game.SandboxOn ? _game.SandboxHands : null; // Sandbox: tools in everyone's hands instead of guns (Source/Render/ToolRender.cs)
@@ -2049,8 +2093,13 @@ public static unsafe partial class Program
                     ScenePresentation.DrawLocalLegs(Gfx, p, Glfw.Time); // your own legs, seen when looking down
                 continue;
             }
+            AllocProfile.Mark("people: player bodies"); // (the benchmark's --trace-frame)
             DrawPlayer(p);
         }
+        AllocProfile.Mark("people: labourers");
+        LabourRender.Draw(Gfx, _game); // the penal colony's convict labourers (Source/Render/LabourRender.cs)
+        AllocProfile.Stop();
+        Gfx.EndBatch();
 
         pass.Dispose();
 
@@ -2082,6 +2131,8 @@ public static unsafe partial class Program
         DrawZombiesWorld(now); // push carts and the slot station (Program.Workbench.cs); nothing in normal matches
         DrawZombiesMode(now); // the Zombies mode: zombies, doors, windows, buyables (Program.Zombies.cs); nothing on other maps
         DrawLogic(now); // map logic: doors, lamps, buttons, levers, plates (Program.Logic.cs); nothing on maps without a "logic" section
+        pass.Dispose();
+        pass = Perf.Pass(PerfArea.ConstructDraw, PerfGpuPass.Constructs); // (the next two draw nothing in Sandbox)
         DrawSandbox(now); // Sandbox: the constructs (Program.Sandbox.cs); nothing in other modes
         DrawAmmoFx(now); // special ammo flashes, in any mode (Program.Zombies.cs)
         DrawPveEnemies(now, eye, fwd); // co-op enemy soldiers, with level of detail (Program.Pve.cs); nothing outside Co-op
@@ -2343,6 +2394,8 @@ public static unsafe partial class Program
     /// <summary>Another player's box body with its gun and arms: through the scene graph (Source/Scene/Rigs/PlayerRig.cs), or the old immediate path.</summary>
     private static void DrawPlayer(Player p)
     {
+        if (_game != null && _game.LabourHandOf(p.Id) >= 0)
+            return; // (working in a gang of convicts: drawn as one of them, Render/LabourRender.cs)
         ThirdPersonArms.ShotFlash = _game?.FlashBarrels(p.Id, Glfw.Time) ?? 0; // their gun flashes at the barrels that just fired (Program.Muzzle.cs); no game in the legs smoke
         if (ScenePresentation.Enabled)
             ScenePresentation.DrawPlayer(Gfx, p, Glfw.Time);
@@ -2514,3 +2567,4 @@ public static unsafe partial class Program
     }
 
 }
+

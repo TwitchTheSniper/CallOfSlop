@@ -715,6 +715,9 @@ public sealed partial class BuildingParts : IPartGenerator
         foreach (var x in Mods(nx))
             foreach (var z in Mods(nz))
                 p.CSock($"t{x}_{z}", (x, 1, z), "+y");
+        if (kind == "pad4")
+            foreach (var (x, z) in new[] { (4, 4), (11, 4), (4, 11), (11, 11) })
+                p.CSock($"t{x}_{z}", (x, 1, z), "+y"); // (a 2 m frame in the middle of the pad: a watchtower's legs)
         foreach (var v in Mods(nx))
         {
             p.CSock($"l{v}", (0, 1, v), "-x");
@@ -924,6 +927,30 @@ public sealed partial class BuildingParts : IPartGenerator
         }
         p.Extra["walk"] = "ladder";
         return p.Stats(90, 260, 20, 2.5);
+    }
+
+    /// <summary>
+    /// A fixed ladder straight up (1 m above its landing, for a hand hold): Use at its foot climbs it, Use at its top climbs
+    /// down (ConstructRide.ClimbLadder). It hangs off a deck's front edge by its back sockets at the landing's level, or stands
+    /// on a floor. Rungs and stiles are drawn; one hidden box is what is solid (and what the crosshair finds).
+    /// </summary>
+    private static BPart FixedLadder()
+    {
+        const double W = 0.5, Rise = 3.0, Tall = Rise + 1.0;
+        var p = new BPart("Fixed Ladder 3 m", SectionStairs, "Straight up to a deck, a tower or a roof: F climbs it, up or down.", role: "frame", tool: "welder", material: "steel", color: "#4a5157");
+        p.FBox(0, 0, 0.06, W, Tall, 2 * H, hidden: true);
+        foreach (var x in new[] { 0.03, W - 0.09 })
+            p.FBox(x, 0.004, 0.08, x + 0.06, Tall - 0.02, 0.16, "#4a5157", detail: true); // (the stiles)
+        for (var y = 0.3; y < Rise - 0.05; y += 0.3)
+            p.FBox(0.07, y - 0.016, 0.10, W - 0.07, y + 0.016, 0.14, "#646b71", detail: true); // (the rungs, into the stiles)
+        foreach (var x in new[] { 0, 1 })
+        {
+            p.CSock($"b{x}", (x, 0, 0), "-y");
+            foreach (var y in new[] { 0, 11 })
+                p.CSock($"k{x}_{y}", (x, y, 0), "+z");
+        }
+        p.Extra["ladder"] = Rise - H; // (the landing's height in the part's frame: cell 0's floor is at -H)
+        return p.Stats(45, 220, 12, 2.0);
     }
 
     private static BPart Landing(string key)
@@ -1277,6 +1304,7 @@ public sealed partial class BuildingParts : IPartGenerator
     {
         var p = new BPart("Tower Platform 2x2 m", SectionTower, "Lookout on four Wood Posts, open for a Ship Ladder.", role: "frame", tool: "wrench", material: "wood", color: "#7a5a38");
         p.CBox(0, 0, 0, 8, 1, 8);
+        p.FBox(0.26, -0.25, 0.26, 1.74, 0.003, 1.74); // (Karl, 2026-11-13: a thicker deck under the boards, 0.5 m in all; clear of the corner cells and their sockets and posts, 3 mm into the boards: no shared face)
         p.CBox(0, 1, 7, 8, 5, 8);
         p.CBox(0, 1, 0, 1, 5, 7);
         p.CBox(7, 1, 0, 8, 5, 7);
@@ -1489,6 +1517,7 @@ public sealed partial class BuildingParts : IPartGenerator
             o.Add(("50-Stairs", HalfTurn(key)));
         }
         o.Add(("50-Stairs", ShipLadder()));
+        o.Add(("50-Stairs", FixedLadder()));
         foreach (var key in new[] { "wood", "steel" })
             o.Add(("50-Stairs", Landing(key)));
         o.Add(("50-Stairs", Ramp("concrete", 8, 16, 4)));
@@ -1810,20 +1839,21 @@ public sealed partial class BuildingParts : IPartGenerator
         bp.Hang("Steel Flush Door 1.5x2.25 m", hb, "leaf", "hang");
         o.Add(bp);
 
-        // Watchtower: a pad, four legs, braces, the platform, a ship ladder, posts and a roof.
+        // Watchtower: a pad, four legs, braces, the platform, a fixed ladder straight up its open front, posts and a roof. The
+        // tower stands in the middle of its pad (legs at cells 4 and 11 of 16), the ladder in the middle of its front.
         bp = new Blueprint("Watchtower", "Wooden lookout tower with a ladder and roof.", defs);
         bp.First(Pad);
-        (int, int)[] legs = [(8, 8), (15, 8), (8, 15), (15, 15)]; // (module points of the pad)
+        (int, int)[] legs = [(4, 4), (11, 4), (4, 11), (11, 11)]; // (cells of the pad)
         foreach (var (x, z) in legs)
             bp.Put("Wood Post 2.75 m", Cell(x, 2, z), R0);
-        bp.Put("Tower Brace", Cell(9, 2, 15), R0); // back
-        bp.Put("Tower Brace", Cell(8, 2, 14), RY90); // west side (along -z from 14 to 9)
-        bp.Put("Tower Brace", Cell(15, 2, 9), RY270); // east side
-        bp.Put("Tower Platform 2x2 m", Cell(8, 2 + WallH, 8), R0);
-        bp.Put("Ship Ladder 3 m", Cell(10, 2, 0), R0);
+        bp.Put("Tower Brace", Cell(5, 2, 11), R0); // back
+        bp.Put("Tower Brace", Cell(4, 2, 10), RY90); // west side (along -z from 10 to 5)
+        bp.Put("Tower Brace", Cell(11, 2, 5), RY270); // east side
+        bp.Put("Tower Platform 2x2 m", Cell(4, 2 + WallH, 4), R0);
+        bp.Put("Fixed Ladder 3 m", Cell(7, 2, 3), R0);
         foreach (var (x, z) in legs)
             bp.Put("Tower Post 1.25 m", Cell(x, 2 + WallH + 5, z), R0);
-        bp.Put("Tower Roof 2x2 m", Cell(8, 2 + WallH + 5 + 5 + 2, 8), Turn("+x", "+z"));
+        bp.Put("Tower Roof 2x2 m", Cell(4, 2 + WallH + 5 + 5 + 2, 4), Turn("+x", "+z"));
         o.Add(bp);
 
         // Small Outpost: a corrugated hut with a door, a fenced yard with a gate, a sandbag wall at the front.
@@ -1885,7 +1915,7 @@ public sealed partial class BuildingParts : IPartGenerator
 
         // Orbital Depot: the Ministry's station high over the Remote Works, where a new inmate first wakes in a robot shell. A 16 by
         // 12 m deck: the shell bay (a corrugated hut, its door to the deck) at the back left, the stores tower at the back right (a
-        // watchtower's frame and platform, climbed by a ship ladder: the Driving Module waits on top) and the open hangar deck in
+        // watchtower's frame and platform, climbed by a fixed ladder: the Driving Module waits on top) and the open hangar deck in
         // front, with no rail at its edge. The game hangs it in the sky and puts the shells, the module and the landers on it.
         bp = new Blueprint("Orbital Depot", "The Ministry of Slop's orbital depot: a shell bay, a stores tower and a hangar deck.", defs);
         bp.First(Pad);
@@ -1896,16 +1926,18 @@ public sealed partial class BuildingParts : IPartGenerator
         RoomCorners(bp, "Corrugated", 0, 2, 32, 16, 16, door: 1);
         bp.Put("Corrugated Roof Slope 4x4 m", Cell(0, 2 + WallH, 32), R0);
         int ox = 48, oz = 32;
-        foreach (var (x, z) in legs)
+        foreach (var (x, z) in new[] { (8, 8), (15, 8), (8, 15), (15, 15) })
             bp.Put("Wood Post 2.75 m", Cell(ox + x, 2, oz + z), R0);
         bp.Put("Tower Brace", Cell(ox + 9, 2, oz + 15), R0);
         bp.Put("Tower Brace", Cell(ox + 8, 2, oz + 14), RY90);
         bp.Put("Tower Brace", Cell(ox + 15, 2, oz + 9), RY270);
         bp.Put("Tower Platform 2x2 m", Cell(ox + 8, 2 + WallH, oz + 8), R0);
-        bp.Put("Ship Ladder 3 m", Cell(ox + 10, 2, oz), R0);
+        bp.Put("Fixed Ladder 3 m", Cell(ox + 11, 2, oz + 7), R0); // (straight up the platform's open front)
         o.Add(bp);
         o.AddRange(MinistryBlueprints(defs)); // (the Ministry's buildings round the penal colony: BuildingParts.Ministry.cs)
+        o.AddRange(SpaceportBlueprints(defs)); // (the Ministry's spaceport on Glacier, 2 km from the colony: BuildingParts.Spaceport.cs)
         o.AddRange(SiteBlueprints(defs)); // (the penal colony's site: its street, square, covered way and heating mains: BuildingParts.Site.cs)
+        o.AddRange(OutpostBlueprints(defs)); // (the factions' outposts beyond the colony: BuildingParts.Outposts.cs)
         return o;
     }
 

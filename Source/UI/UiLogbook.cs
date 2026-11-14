@@ -6,13 +6,24 @@ namespace CallOfSlop;
 /// <summary>
 /// The Logbook (F1 in Sandbox by default; docs/story/FRAGMENTS.md): the old records' fragments this player holds, each with where it
 /// came from, a "?" for each one still out there, and the leads they have heard of, a "?" until what the lead points to is found.
-/// Its second page, Paths, is UiLogbookPaths.cs.
+/// Its second page, Paths, is UiLogbookPaths.cs; its third, Technologies, UiTechnologies.cs.
 /// It reads what the host sent (Game.FragmentsHeld, Game.FragmentLeads) and the texts every peer has (Story/Fragments). Closed, it
 /// costs one bool check.
 /// </summary>
 public sealed partial class Ui
 {
     public bool LogbookOpen;
+
+    /// <summary>A page to turn to the next time the Logbook is drawn ("Technologies"), then null (the window tool's "open logbook TAB").</summary>
+    public string? LogbookPick;
+
+    private ImGuiTabItemFlags LogbookTab(string name)
+    {
+        if (LogbookPick == null || !LogbookPick.Equals(name, StringComparison.OrdinalIgnoreCase))
+            return ImGuiTabItemFlags.None;
+        LogbookPick = null;
+        return ImGuiTabItemFlags.SetSelected;
+    }
 
     public void DrawLogbook(Game? game, int bind)
     {
@@ -26,14 +37,19 @@ public sealed partial class Ui
                 ImGuiSafe.TextWrapped("The Logbook is a Sandbox thing: start or join a Sandbox game.");
             else if (ImGui.BeginTabBar("##logbooktabs"u8))
             {
-                if (ImGui.BeginTabItem("Records"u8))
+                if (ImGui.BeginTabItem("Records"u8, LogbookTab("Records")))
                 {
                     DrawLogbookBody(game);
                     ImGui.EndTabItem();
                 }
-                if (ImGui.BeginTabItem("Paths"u8))
+                if (ImGui.BeginTabItem("Paths"u8, LogbookTab("Paths")))
                 {
                     DrawLogbookPaths(game); // (what they did and chose, and where they stand: UiLogbookPaths.cs)
+                    ImGui.EndTabItem();
+                }
+                if (ImGui.BeginTabItem("Technologies"u8, LogbookTab("Technologies")))
+                {
+                    DrawLogbookTechnologies(game); // (what the factions taught them, what is still locked, their tool upgrades: UiTechnologies.cs)
                     ImGui.EndTabItem();
                 }
                 ImGui.EndTabBar();

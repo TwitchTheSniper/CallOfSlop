@@ -1,0 +1,270 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Crane Bridge",
+  "description": "An overhead crane over a 32 m span: bolt it to the outer side of a run of Large Crane Rails with a second run 32 m across. Carries 300 t between machines, racks and pads under it, and fits parts at a Building Station. Needs power while it moves.",
+  "group": "Production",
+  "section": "Bridge cranes",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "panels": [
+    {
+      "source": "lifter",
+      "at": [
+        -1.804,
+        0.48,
+        0.0
+      ],
+      "size": [
+        2.4,
+        1.12
+      ],
+      "face": "-x",
+      "up": "+y",
+      "rows": 5,
+      "range": 40.0
+    }
+  ],
+  "mass": 19200.0,
+  "health": 23040,
+  "armour": 32,
+  "material": "steel",
+  "color": "#f0c21a",
+  "attachSeconds": 16.0,
+  "power": 30000,
+  "onBreak": "disable",
+  "collider": "boxes",
+  "lifter": {
+    "kind": "bridge",
+    "base": [
+      4.0,
+      2.0,
+      0.0
+    ],
+    "span": 32.0,
+    "depth": 2.4,
+    "reach": [
+      2.8,
+      29.2
+    ],
+    "up": 0.0,
+    "down": 24.0,
+    "payload": 300000,
+    "piece": [
+      28.8,
+      64.0
+    ],
+    "speed": 1.5,
+    "hoist": 0.75,
+    "handle": 5.0
+  },
+  "config": [
+    {
+      "key": "liftMode",
+      "type": "choice",
+      "label": "Works",
+      "group": "Lifter",
+      "options": [
+        "Auto",
+        "Station only",
+        "Carry only",
+        "Off"
+      ],
+      "default": 0,
+      "tooltip": "Auto: every job under it. Station only: fits parts at Building Stations. Carry only: carries between machines, racks and pads. Off: stands still."
+    },
+    {
+      "key": "carryHeight",
+      "label": "Carry height",
+      "group": "Lifter",
+      "unit": "m",
+      "min": 0.0,
+      "max": 24.0,
+      "step": 0.1,
+      "default": 24.0,
+      "tooltip": "How high it hoists a piece over the higher end of its move before it travels. Never past the hook's highest point."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "color": "#22262b",
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.92,
+        -2.0,
+        -1.92
+      ],
+      "max": [
+        1.88,
+        -1.52,
+        1.92
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        -1.76,
+        -1.536,
+        -1.76
+      ],
+      "max": [
+        1.76,
+        1.6,
+        1.76
+      ],
+      "color": "#f0c21a"
+    },
+    {
+      "min": [
+        -1.2,
+        -1.28,
+        -1.776
+      ],
+      "max": [
+        1.2,
+        1.2,
+        -1.744
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -1.936,
+        -1.88,
+        -1.6
+      ],
+      "max": [
+        -1.904,
+        -1.6,
+        1.6
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.6,
+        -1.88,
+        1.904
+      ],
+      "max": [
+        1.6,
+        -1.6,
+        1.936
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.6,
+        1.584,
+        -1.6
+      ],
+      "max": [
+        1.6,
+        1.84,
+        1.6
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.52,
+        1.824,
+        -0.4
+      ],
+      "max": [
+        -1.2,
+        2.0,
+        -0.08
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.792,
+        -0.16,
+        -1.36
+      ],
+      "max": [
+        -1.76,
+        1.12,
+        1.36
+      ],
+      "color": "#10161c",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x",
+      "at": [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -2.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

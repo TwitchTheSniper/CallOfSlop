@@ -42,9 +42,10 @@ public sealed partial class Ui
 
     public bool RecipePickerOpen { get; private set; }
 
-    private readonly Dictionary<ConstructPartDef, RpSet> _rcpSets = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<(ConstructPartDef, string), RpSet> _rcpSets = new(); // (by machine kind and variant: a press's fitted die)
     private RpSet? _rcp;
     private ConstructPartDef? _rcpDef;
+    private string _rcpVariant = "";
     private ushort _rcpBody;
     private int _rcpConsole = -1, _rcpMachine = -1, _rcpSlot = -1, _rcpSame;
     private bool _rcpAll, _rcpFromConfig;
@@ -61,15 +62,34 @@ public sealed partial class Ui
 
     public int RecipePickerPictures { get; private set; }
 
-    /// <summary>Machines the picker serves: a refiner with recipes to choose, an Assembler, a Panel Former (its presets).</summary>
-    public static bool RecipePickable(ConstructPartDef d) =>
-        d.CfgSlot[(int)CfgKey.Recipe] >= 0 && (d.IsRefiner && d.RefineChoices.Length > 0 || d.IsPanelFormer && d.Config[d.CfgSlot[(int)CfgKey.Recipe]].Options.Length > 0
-            || d.IsAssembler && AssemblingTable.Current.ByMachine[d.AsmMachine].Length > 0);
+    /// <summary>
+    /// Machines the picker serves: a refiner with recipes to choose, an Assembler, a Panel Former (its presets), a press (its die's patterns),
+    /// a Die Lathe (the dies it cuts), a Fan Former (what it makes) and an Airframe Former (what it cuts). The setting it sets is
+    /// <see cref="ProductionLines.RecipeKey"/>.
+    /// </summary>
+    public static bool RecipePickable(ConstructPartDef d)
+    {
+        if (ExtruderPicks.Pickable(d))
+            return true; // (an Extruder: its section tiles and sizes, UiRecipePickerExtruder.cs)
+        var slot = d.CfgSlot[(int)ProductionLines.RecipeKey(d)];
+        if (slot < 0 || d.Config[slot].Options.Length == 0)
+            return false;
+        return d.IsRefiner && d.RefineChoices.Length > 0 || d.IsPanelFormer && !d.IsLaserCutter || d.IsFanFormer || d.IsAirframeFormer
+            || d.IsLathe && PressTable.Current.Lathe.Length > 0 || d.IsPress && !d.IsLathe && PressTable.Current.Dies.Length > 0
+            || d.IsAssembler && AssemblingTable.Current.ByMachine[d.AsmMachine].Length > 0;
+    }
+
+    /// <summary>What a machine's tiles depend on beyond its kind: a press's fitted die (its family), else "".</summary>
+    public static string RecipeVariant(Construct c, int part) =>
+        c.DefOf(part) is { IsPress: true, IsLathe: false } && ConstructPress.DieIn(c, part) is var die and >= 0 ? c.DefOf(die).DieFamily : "";
+
+    /// <summary>The variant the open picker was made for (it closes when its machine's changes: a die fitted or taken out).</summary>
+    public string RecipePickerVariant => _rcpVariant;
 
     /// <summary>Opens the picker for a Line Console's machine (<paramref name="same"/>: machines of its kind on the line, itself counted).</summary>
-    public void OpenRecipePicker(ushort body, int console, int machine, ConstructPartDef d, int same)
+    public void OpenRecipePicker(ushort body, int console, int machine, ConstructPartDef d, int same, string variant = "")
     {
-        Open(d);
+        Open(d, variant);
         _rcpBody = body;
         _rcpConsole = console;
         _rcpMachine = machine;
@@ -79,12 +99,12 @@ public sealed partial class Ui
     }
 
     /// <summary>Opens the picker from a machine's own Recipe button (the pick goes as <see cref="CActKind.LineRecipe"/> with the machine as its console).</summary>
-    public void OpenRecipePickerMachine(ushort body, int machine, ConstructPartDef d) => OpenRecipePicker(body, machine, machine, d, 1);
+    public void OpenRecipePickerMachine(ushort body, int machine, ConstructPartDef d, string variant = "") => OpenRecipePicker(body, machine, machine, d, 1, variant);
 
     /// <summary>Opens the picker for the configure panel's recipe row (its selection gets the pick, as the row would).</summary>
-    public void OpenRecipePickerConfig(ushort body, int part, ConstructPartDef d, int slot)
+    public void OpenRecipePickerConfig(ushort body, int part, ConstructPartDef d, int slot, string variant = "")
     {
-        Open(d);
+        Open(d, variant);
         _rcpBody = body;
         _rcpConsole = -1;
         _rcpMachine = part;
@@ -94,13 +114,74 @@ public sealed partial class Ui
         _rcpAllLabel = "";
     }
 
-    private void Open(ConstructPartDef d)
+    private bool _rcpCut; // the open picker is a Laser Cutter's: a tile orders that cut design at it (CActKind.CraftNamed)
+    private readonly List<string> _rcpCutKeys = new();
+    private int _rcpCutCount = 1;
+
+    /// <summary>The open picker is a Laser Cutter's design list (laser cutter phase 4).</summary>
+    public bool RecipePickerCut => RecipePickerOpen && _rcpCut;
+
+    /// <summary>
+    /// Opens the picker on a Laser Cutter's Design button (laser cutter phase 4): a tile for each of the world's cut designs, dim when this cutter
+    /// can't take it (its bed, a cut it refuses); a pick orders <paramref name="count"/> (its Order count) at the cutter.
+    /// </summary>
+    public void OpenCutterPicker(ushort body, int machine, ConstructPartDef d, IReadOnlyList<PanelDesign> designs, int count)
     {
-        var key = SandboxTiles.Key();
-        if (!_rcpSets.TryGetValue(d, out var set) || set.Key != key)
-            _rcpSets[d] = set = MakeRecipeSet(d, key);
-        if (_rcpDef != d)
+        _rcpCutKeys.Clear();
+        var tiles = new List<RpTile>();
+        foreach (var dsg in designs)
         {
+            if (!HullLoft.IsCutName(dsg.Key))
+                continue;
+            var job = ConstructLaserCutter.JobOf(dsg.Key);
+            var fits = job != null && ConstructLaserCutter.Fits(d, job);
+            var label = HullLoft.PanelLabel(dsg.Key);
+            tiles.Add(new RpTile
+            {
+                Value = fits ? _rcpCutKeys.Count : -1,
+                Name = dsg.Name,
+                Out = job != null ? $"{job.EdgeM:0.#} m cut" : "",
+                Time = job != null ? Secs(ConstructLaserCutter.Seconds(job, d)) : "",
+                Search = $"{dsg.Name} {label}".ToLowerInvariant(),
+                Tip = job == null ? $"{dsg.Name}: {HullLoft.CutRefusal(dsg.Key) ?? "its blank is no part this build makes"}."
+                    : fits ? $"{dsg.Name}: {label}. Cut from {job.Blank}; {count} ordered at this {d.Name}."
+                    : $"{dsg.Name}: {label}. Too big for this {d.Name}'s bed: {ConstructLaserCutter.TierFor(job) ?? "no Laser Cutter"} takes it.",
+                Swatch = new ImColor8(168, 54, 94, 255),
+            });
+            _rcpCutKeys.Add(dsg.Key);
+        }
+        if (tiles.Count == 0)
+            tiles.Add(new RpTile { Value = -1, Name = "No cut designs", Search = "", Tip = "No cut designs in this world yet: draw one at a Panel Designer (Cut-outs) and Save it.", Swatch = new ImColor8(70, 76, 88, 255) });
+        _rcp = new RpSet { Tiles = tiles.ToArray(), Groups = ["All"], Title = $"Cut design: {d.Name}###rpick", Key = SandboxTiles.Key() };
+        _rcpDef = d;
+        _rcpVariant = "";
+        _rcpGroup = 0;
+        _rcpSearch = "";
+        if (_rcpSearchInput != null)
+            ImGuiSafe.SetInput(_rcpSearchInput, "");
+        _exOpen = false;
+        _rcpFilterVersion++;
+        _rcpFocusSearch = tiles.Count > 12;
+        RecipePickerOpen = true;
+        _rcpBody = body;
+        _rcpConsole = machine;
+        _rcpMachine = machine;
+        _rcpSame = 1;
+        _rcpFromConfig = false;
+        _rcpAllLabel = "";
+        _rcpCut = true;
+        _rcpCutCount = Math.Clamp(count, 1, WorkOrders.MaxCount);
+    }
+
+    private void Open(ConstructPartDef d, string variant)
+    {
+        _rcpCut = false;
+        var key = SandboxTiles.Key();
+        if (!_rcpSets.TryGetValue((d, variant), out var set) || set.Key != key)
+            _rcpSets[(d, variant)] = set = MakeRecipeSet(d, key, variant);
+        if (_rcpDef != d || _rcpVariant != variant)
+        {
+            _rcpVariant = variant;
             _rcpGroup = 0;
             _rcpSearch = "";
             if (_rcpSearchInput != null)
@@ -108,6 +189,7 @@ public sealed partial class Ui
         }
         _rcp = set;
         _rcpDef = d;
+        _exOpen = false;
         _rcpFilterVersion++;
         _rcpFocusSearch = set.Tiles.Length > 12;
         RecipePickerOpen = true;
@@ -117,6 +199,7 @@ public sealed partial class Ui
     {
         RecipePickerOpen = false;
         _rcp = null;
+        _exOpen = false;
     }
 
     /// <summary>The picker belongs to the configure panel (it closes with it).</summary>
@@ -132,8 +215,10 @@ public sealed partial class Ui
     private static string Secs(float s) => s >= 10 ? $"{s:0} s" : s >= 1 ? $"{s:0.#} s" : $"{s:0.##} s";
 
     /// <summary>A machine kind's tiles, made once (the texts, the icons' slots, the categories).</summary>
-    private static RpSet MakeRecipeSet(ConstructPartDef d, int key)
+    private static RpSet MakeRecipeSet(ConstructPartDef d, int key, string variant)
     {
+        if (d.IsPress || d.IsFanFormer || d.IsAirframeFormer)
+            return MakeMakerSet(d, key, variant);
         var names = RecyclingTable.Current;
         var speed = MathF.Max(0.01f, d.RefineWork / (float)ConstructRefining.BaseWork);
         var tiles = new List<RpTile>();
@@ -145,7 +230,7 @@ public sealed partial class Ui
             t.InSwatch = ins.Select(i => i.Swatch).ToArray();
         }
         (int, string, ImColor8) Mat(byte m, int units) => (SandboxTiles.ResourceSlot(m), $"{units}", Col8(names.ColourOf(m)));
-        if (d.IsPanelFormer)
+        if (d.IsPanelFormer && !d.IsLaserCutter)
         {
             // A Panel Former's presets (HullLoft.PanelPresets, the Preset setting's options): a swatch each, its size and what it is.
             var opts = d.Config[d.CfgSlot[(int)CfgKey.Recipe]].Options;
@@ -226,8 +311,38 @@ public sealed partial class Ui
                     : $"{r.Name}: needs a tier {r.MinTier} assembler; this one is tier {d.Tier}.";
                 tiles.Add(t);
             }
+            if (d.AsmMachine == 0)
+                PressedTiles(tiles, groups);
         }
         return new RpSet { Tiles = tiles.ToArray(), Groups = groups.ToArray(), Title = $"Recipe: {d.Name}###rpick", Key = key };
+    }
+
+    /// <summary>
+    /// The parts that left the Assembler for a press (Press phase 5: a die's preset, no Assembler recipe), dimmed in a "Pressed" category of
+    /// the plain Assembler's picker, the die in the tip. From the presets, once per picker set (it is cached by machine kind).
+    /// </summary>
+    private static void PressedTiles(List<RpTile> tiles, List<string> groups)
+    {
+        var seen = new HashSet<int>();
+        var gi = -1;
+        foreach (var pd in PressTable.Current.PresetByKey.Values)
+        {
+            if (!seen.Add(pd.Id) || AssemblingTable.PressedLine(pd) is not { } line)
+                continue;
+            if (gi < 0)
+            {
+                gi = groups.Count;
+                groups.Add("Pressed");
+            }
+            tiles.Add(new RpTile
+            {
+                Value = -1, Name = pd.Name, Out = "press", Group = gi,
+                Slot = SandboxTiles.SlotOf(SandboxTiles.Kind.Part, pd.Id),
+                Swatch = Col8(pd.Boxes.Length > 0 ? pd.Boxes[0].Color : new System.Numerics.Vector3(0.5f)),
+                Search = $"{pd.Name} pressed press {AssemblingTable.PressedDieOf(pd)}".ToLowerInvariant(),
+                Tip = $"{Cap(line)}. A Press with that die makes it; a Crafting Terminal or Line Console orders it there.",
+            });
+        }
     }
 
     private void RecipeFilter()
@@ -258,6 +373,8 @@ public sealed partial class Ui
     /// </summary>
     public bool DrawRecipePicker(Game game, int current, double now)
     {
+        if (RecipePickerOpen && _exOpen)
+            return DrawExtruderPicker(game);
         if (!RecipePickerOpen || _rcp is not { } set || _rcpDef is not { } d)
             return false;
         SandboxTiles.WantFew(); // (the pictures, made over a few frames if they aren't yet)
@@ -332,10 +449,21 @@ public sealed partial class Ui
             }
         }
         ImGui.End();
+        if (_rcpTestPick >= 0)
+        {
+            if (Array.Exists(set.Tiles, t => t.Value == _rcpTestPick))
+                picked = _rcpTestPick; // (a window shot's "picker N": as a click on that tile)
+            _rcpTestPick = -1;
+        }
         if (picked >= 0)
         {
             // After the drawing: the pick goes to the server (or the configure panel), and the picker closes.
-            if (_rcpFromConfig)
+            if (_rcpCut)
+            {
+                if (picked < _rcpCutKeys.Count)
+                    game.SandboxCraftOrder(_rcpBody, _rcpMachine, ConstructPanelFormer.Order(_rcpCutKeys[picked], _rcpCutCount)); // (queued at the cutter)
+            }
+            else if (_rcpFromConfig)
                 SandboxConfigSet(game, _rcpSlot, picked, now);
             else
                 game.SandboxLineRecipe(_rcpBody, _rcpConsole, _rcpMachine, picked, _rcpAll && _rcpSame > 1);
@@ -415,8 +543,8 @@ public sealed partial class Ui
         var pic = Picture(dl, t.Slot, t.Swatch, i0, new float2(i0.X + icon, i0.Y + icon), tint, t.Slot < 0 ? t.Name : null);
         var clip = new float4(at.X + 4 * _scale, at.Y, p1.X - 4 * _scale, p1.Y);
         var y = at.Y + icon + 6 * _scale;
+        TileName(dl, t.Name, at.X, w, y, usable ? SbText : SbDim, clip);
         ImGui.PushFont(default, 16);
-        DlText(dl, new float2(at.X + 7 * _scale, y), usable ? SbText : SbDim, t.Name, clip);
         if (t.Out.Length > 0)
             DlText(dl, new float2(p1.X - 7 * _scale - ImGui.CalcTextSize(t.Out).X, at.Y + 6 * _scale), usable ? SbText : SbDim, t.Out);
         ImGui.PopFont();
@@ -450,6 +578,28 @@ public sealed partial class Ui
     }
 
     /// <summary>
+    /// A tile's name at (<paramref name="x"/>, <paramref name="y"/>) in a tile <paramref name="w"/> wide. A long name ("Helicopter rotor",
+    /// "Swept wing, left", "Symmetric foil") is shrunk to the tile's width instead of running out of its box: measured once at 16 and scaled
+    /// by what it needs, down to 11. The recipe tiles and the Extruder's section tiles share it.
+    /// </summary>
+    private void TileName(ImDrawListPtr dl, string name, float x, float w, float y, ImColor8 col, float4 clip)
+    {
+        ImGui.PushFont(default, 16);
+        var nameW = ImGui.CalcTextSize(name).X;
+        var inner = w - 14 * _scale;
+        var nameSize = nameW > inner && nameW > 0 ? MathF.Max(11f, MathF.Floor(16f * inner / nameW)) : 16f;
+        if (nameSize < 16f)
+        {
+            ImGui.PopFont();
+            ImGui.PushFont(default, nameSize);
+            DlText(dl, new float2(x + 7 * _scale, y + (16f - nameSize) * 0.5f * _scale), col, name, clip);
+        }
+        else
+            DlText(dl, new float2(x + 7 * _scale, y), col, name, clip);
+        ImGui.PopFont();
+    }
+
+    /// <summary>
     /// A tile picture from the atlas into a rectangle, or (until it is made, or with no slot) a plain swatch; <paramref name="letter"/>
     /// on a swatch with no picture (Auto, None). True when the picture was drawn.
     /// </summary>
@@ -465,10 +615,41 @@ public sealed partial class Ui
         dl.AddRectFilled(new float2(p0.X + inset, p0.Y + inset), new float2(p1.X - inset, p1.Y - inset), swatch, 4 * _scale);
         if (letter != null)
         {
+            // A whole name stands in for a picture the atlas hasn't got (the Fan and Airframe Formers' kinds): long ones
+            // ("Helicopter rotor", "Swept wing, left") are shrunk to the swatch and wrapped at a space, so none runs out of its box.
+            const float least = 10f; // (smaller than this is unreadable: the swatch is left plain and the tile's name row carries it)
+            var room = p1.X - p0.X - 2 * inset;
+            var box = new float4(p0.X + inset, p0.Y + inset, p1.X - inset, p1.Y - inset);
             ImGui.PushFont(default, 22);
-            var ts = ImGui.CalcTextSize(letter);
-            DlText(dl, new float2((p0.X + p1.X - ts.X) * 0.5f, (p0.Y + p1.Y - ts.Y) * 0.5f), SbText, letter);
+            var full = ImGui.CalcTextSize(letter).X;
+            var one = letter;
+            var two = "";
+            if (letter.IndexOf(' ') is var brk && brk > 0)
+            {
+                one = letter[..brk].TrimEnd(',');
+                two = letter[(brk + 1)..].TrimEnd(',');
+            }
+            var wide = two.Length > 0 ? MathF.Max(ImGui.CalcTextSize(one).X, ImGui.CalcTextSize(two).X) : full;
             ImGui.PopFont();
+            var size = full > room && full > 0 ? MathF.Floor(22f * room / full) : 22f; // one line
+            var pair = wide > room && wide > 0 ? MathF.Floor(22f * room / wide) : 22f; // two lines
+            if (size >= least)
+            {
+                ImGui.PushFont(default, size);
+                var ts = ImGui.CalcTextSize(letter);
+                DlText(dl, new float2((p0.X + p1.X - ts.X) * 0.5f, (p0.Y + p1.Y - ts.Y) * 0.5f), SbText, letter, box);
+                ImGui.PopFont();
+            }
+            else if (two.Length > 0 && pair >= least)
+            {
+                ImGui.PushFont(default, pair);
+                var s1 = ImGui.CalcTextSize(one);
+                var s2 = ImGui.CalcTextSize(two);
+                var mid = (p0.Y + p1.Y) * 0.5f;
+                DlText(dl, new float2((p0.X + p1.X - s1.X) * 0.5f, mid - s1.Y), SbText, one, box);
+                DlText(dl, new float2((p0.X + p1.X - s2.X) * 0.5f, mid), SbText, two, box);
+                ImGui.PopFont();
+            }
         }
         return false;
     }

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-ambience/1",
+  "about": "Movement and sound about a place (Source/Render/PartAmbience.cs, docs/sandbox/constructs/buildings.md 'Ambience'): a part named here does something on any build, on any world. Looks and sound only, worked out on each PC; nothing is sent or saved. kind: smoke (rate puffs a second of size m, living life s, rising at rise m/s and bent by a storm's wind; top: only the highest part of its name on a body, so a stack smokes from its top), steam (the same, but it vents for burst s every every s), searchlight (in a storm's dusk a pool of light width m across sweeps the ground up to reach m out; the nearest one only), tannoy (an announcement about every every s, heard within reach m).",
+  "parts": {
+    "Concrete Chimney 2.75 m": { "kind": "smoke", "top": true, "rate": 11, "size": 2.4, "life": 11, "rise": 2.6 },
+    "Heating Valve Chamber": { "kind": "steam", "rate": 9, "size": 0.45, "life": 2.2, "rise": 1.4, "every": 11, "burst": 2.5 },
+    "Tower Roof 2x2 m": { "kind": "searchlight", "reach": 20, "width": 8 },
+    "Flagpole Top 3.75 m": { "kind": "tannoy", "every": 95, "reach": 130 }
+  }
+}

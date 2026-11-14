@@ -18,6 +18,8 @@ public static class EngineKitCli
     {
         string? Arg(string name) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
         float F(string name) => Arg(name) is { } v && float.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out var f) ? f : 0;
+        if (Arg("--read") is { } readFile)
+            return Read(readFile);
         var power = F("--power");
         if (power <= 0 && Arg("--preset") is { } preset)
             power = Presets.FirstOrDefault(p => p.Name.Equals(preset, StringComparison.OrdinalIgnoreCase)).Kw;
@@ -52,7 +54,7 @@ public static class EngineKitCli
         if (F("--plans") is > 0 and var np)
             foreach (var p in EngineKit.Plans(r).Take((int)np))
                 Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
-                    $"  plan {EngineKit.SizeWords[p.Size]} {EngineKit.LayoutName(p.Layout, p.Cylinders)} x{p.Cranks}: {p.Kw:0} kW, {p.Mass:0} kg, ~{p.Dims.X:0.00}x{p.Dims.Y:0.00}x{p.Dims.Z:0.00} m, {p.Cylinder} / {p.FuelPart} / {p.BoostPart ?? "-"}, score {p.Score:0.000}{(p.Feasible ? "" : " (over: " + p.Why + ")")}"));
+                    $"  plan {EngineKit.SizeWords[p.Size]} {EngineKit.LayoutName(p.Layout, p.Cylinders)} x{p.Cranks}: {p.Kw:0} kW, {p.TorqueNm:0} N m at {p.PeakRpm:0} rpm (stroke {p.Stroke:0.00}), {p.Mass:0} kg, ~{p.Dims.X:0.00}x{p.Dims.Y:0.00}x{p.Dims.Z:0.00} m, {p.Cylinder} / {p.FuelPart} / {p.BoostPart ?? "-"}, score {p.Score:0.000}{(p.Feasible ? "" : " (over: " + p.Why + ")")}"));
         var res = EngineKit.Request(r);
         Console.WriteLine(res.ToString());
         Console.WriteLine($"  {System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds:0} ms");
@@ -70,5 +72,24 @@ public static class EngineKitCli
             Console.WriteLine($"  wrote {outFile}");
         }
         return res.Built ? 0 : 1;
+    }
+    /// <summary><c>--gen-engine --read FILE</c>: builds a blueprint on a flat floor and prints each modular engine's numbers as the game works them out (a saved or old engine's, for a before and after).</summary>
+    public static int Read(string file)
+    {
+        var bp = ConstructBuild.ParseBlueprint(File.ReadAllText(file), Path.GetFileNameWithoutExtension(file));
+        var c = ConstructBuild.BuildOnGround(new ConstructWorld(), bp, Vector3.Zero, 0, out var why);
+        if (c == null)
+        {
+            Console.WriteLine($"read {file}: doesn't build: {why}");
+            return 1;
+        }
+        var rules = EngineRules.Current;
+        for (var k = 0; k < c.ModCount; k++)
+        {
+            var e = c.ModEngines![k];
+            e.Rpm(rules, out var idle, out var peak, out var max);
+            Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"read {Path.GetFileName(file)} engine {k}: {ConstructEngine.Readout(e)}; {e.Kw:0.#} kW, {e.Kw * 1000 / (peak / ConstructDrive.RpmPerRadS):0} N m at {peak:0} rpm (idle {idle:0}, limiter {max:0}), stroke {e.Stroke:0.###}, starter {(ConstructEngine.NeedsStarter(e, rules) ? "needed" : "no")}; {ConstructEngine.StarvedText(e)}"));
+        }
+        return 0;
     }
 }

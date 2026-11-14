@@ -21,12 +21,36 @@ public static unsafe partial class Program
     private static string _wsOut = "", _wsMap = "Proving Ground", _wsBlueprint = "";
     private static Vector3? _wsAt, _wsLookAt, _wsSpawnAt;
     private static string _wsNet = "", _wsNotice = "";
+    private static double _wsJoinTry; // (when a joining client last tried the host: it may still be loading)
+
+    /// <summary>
+    /// The window tool's joined client (<c>--net join:IP</c>), whose session has just been dropped: true when it joins again
+    /// instead. Two windows started together reach RakNet before the host is listening (a headless start is 15-20 s of data and
+    /// maps), and RakNet gives up after a few seconds with "Could not reach host": the client keeps trying while the host comes up.
+    /// </summary>
+    private static bool WsRejoin(string status, double now)
+    {
+        if (!_windowShot || !_wsNet.StartsWith("join:", StringComparison.OrdinalIgnoreCase) || _quit || now - _wsStart > 180)
+            return false;
+        if (now - _wsJoinTry < 2)
+            return true; // (the session stays as it is for a moment: the next frame tries again)
+        _wsJoinTry = now;
+        WsSay($"joining again at {now - _wsStart:0} s ({status})");
+        StartSession(LobbyAction.Join);
+        _wsStep = 1;
+        return true;
+    }
     private static int _wsDesignTries;
     private static int _wsDragLeft, _wsDragAll, _wsDragKeys;
     private static long _wsDragBytes, _wsDragAt;
     private static float? _wsYaw, _wsPitch;
+    private static Construct? _wsPlate; // (the "plate" step's target)
     private static int _wsFrames = 45, _wsEvery, _wsStep, _wsWait, _wsShots, _wsCount;
+    private static int _wsWaitSeen, _wsWaitFrames; // (WsWaiting: the wait being timed and the frames it has run)
+    private static long _wsWaitSince, _wsLiftSince, _wsSetDownSince; // (Stopwatch stamps: the wait's start, a polling verb's first look, the blueprint's order)
+    private static long _wsJoinSeen; // (lifter stand others: when a joined player was first seen)
     private static double _wsStart;
+    private static int _wsAwait; // frames a "station await" has waited
     private static readonly Queue<string> _wsQueue = new();
     private static readonly List<string> _wsSaved = [];
     private static string? _wsShotPath; // saved at the end of this frame, after the UI
@@ -80,8 +104,10 @@ public static unsafe partial class Program
         _settings.Mode = GameMode.Sandbox;
         _settings.SandboxSurvival = args.Any(a => a.Equals("--survival", StringComparison.OrdinalIgnoreCase)); // (creative by default; --survival: a survival world, with the story's colony on its home map)
         _settings.MapRandom = false;
+        _settings.StoryStart = args.SkipWhile(a => !a.Equals("--start", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() ?? ""; // (a story start by id, on its own planetoid: GameStoryStart.cs)
         _settings.Bots = 0;
         _settings.ShowFps = false;
+        WsTourSettings(args);
         LoadoutStore.ReadOnly = AppearanceStore.ReadOnly = BuildStore.ReadOnly = BlueprintStore.ReadOnly = true;
     }
 
@@ -89,7 +115,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "drag" or "mousemove" or "station" or "aim" or "near" or "from" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action) || WsTourKnown(action) || WsTalkKnown(action);
 
     private static void WsSay(string s)
     {
@@ -113,6 +139,7 @@ public static unsafe partial class Program
             return;
         }
         _wsCount++;
+        WsTourFrame();
         switch (_wsStep)
         {
             case 0: // start the world
@@ -194,8 +221,8 @@ public static unsafe partial class Program
                     _wsStep = 2;
                     _wsWait = 0;
                 }
-                else if (now - _wsStart > 40)
-                    WsFail($"the world didn't reach play (phase {g.Phase}, alive {g.Local?.Alive}, menu {Ui.MenuOpen})");
+                else if (now - _wsStart > (_wsNet.StartsWith("join:", StringComparison.OrdinalIgnoreCase) ? 180 : 40)) // (a joined client waits out the host's own start-up: two windows loading at once take a minute and more on the Windows PC)
+                    WsFail($"the world didn't reach play (phase {g.Phase}, alive {g.Local?.Alive}, menu {Ui.MenuOpen}{(g.Disconnected ? $", {g.Status}" : "")})");
                 return;
             case 2: // the blueprint down, then the camera
                 if (_session is not { Local: { } p } game)
@@ -211,7 +238,9 @@ public static unsafe partial class Program
                             made = b;
                     if (made == null)
                     {
-                        if (++_wsWait > 600)
+                        if (_wsSetDownSince == 0)
+                            _wsSetDownSince = System.Diagnostics.Stopwatch.GetTimestamp();
+                        if (System.Diagnostics.Stopwatch.GetElapsedTime(_wsSetDownSince).TotalSeconds > 10)
                             WsFail($"the {_wsBlueprint} wasn't set down ({string.Join("; ", game.SandboxHands.Notices.Select(n => n.Item2))})");
                         return;
                     }
@@ -242,11 +271,8 @@ public static unsafe partial class Program
                 if (_session is { } sg && sg.SandboxNotice is { Length: > 0 } said && said != _wsNotice)
                     WsSay($"notice: {said}"); // (a refusal or a hint on the HUD)
                 _wsNotice = _session?.SandboxNotice ?? "";
-                if (_wsWait > 0)
-                {
-                    _wsWait--;
+                if (WsWaiting())
                     return;
-                }
                 if (_wsQueue.Count == 0)
                 {
                     _wsStep = 4;
@@ -272,6 +298,60 @@ public static unsafe partial class Program
                 _wsStep = 6;
                 return;
         }
+    }
+
+    /// <summary>
+    /// A wait on the simulation (<c>wait</c>, <c>put</c>, <c>walk</c>, the polling lifter and cutter verbs): N simulation ticks
+    /// (<see cref="World.TickRate"/> a second) of real time and at least min(N, 3) frames, so a script lasts as long at 60 fps as
+    /// uncapped (counted in frames, at 160 fps a host's "wait 600" ended before its client joined). Every other <c>_wsWait</c> is
+    /// frames, as before: the bench, the tour's <c>perf</c>, <c>design drag</c> and <c>station await</c> measure frames.
+    /// </summary>
+    private static void WsWaitTicks(int n)
+    {
+        _wsWait = n;
+        _wsWaitInTicks = true;
+    }
+
+    private static bool _wsWaitInTicks;
+
+    /// <summary>Once a frame in the script: true while the last wait runs (frames, or ticks after <see cref="WsWaitTicks"/>).</summary>
+    private static bool WsWaiting()
+    {
+        if (_wsWait <= 0)
+        {
+            _wsWaitSeen = 0;
+            _wsWaitInTicks = false;
+            return false;
+        }
+        if (!_wsWaitInTicks)
+        {
+            _wsWait--;
+            return true;
+        }
+        if (_wsWait != _wsWaitSeen)
+        {
+            _wsWaitSeen = _wsWait;
+            _wsWaitSince = System.Diagnostics.Stopwatch.GetTimestamp();
+            _wsWaitFrames = 0;
+        }
+        _wsWaitFrames++;
+        if (System.Diagnostics.Stopwatch.GetElapsedTime(_wsWaitSince).TotalSeconds * World.TickRate < _wsWait || _wsWaitFrames < Math.Min(_wsWait, 3))
+            return true;
+        _wsWait = 0;
+        _wsWaitSeen = 0;
+        _wsWaitInTicks = false;
+        return false;
+    }
+
+    /// <summary>A polling verb (it puts itself back on the queue) may look again: true until <paramref name="seconds"/> real seconds after its first look.</summary>
+    private static bool WsLiftWait(double seconds)
+    {
+        if (_wsLiftSince == 0)
+            _wsLiftSince = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (System.Diagnostics.Stopwatch.GetElapsedTime(_wsLiftSince).TotalSeconds < seconds)
+            return true;
+        _wsLiftSince = 0;
+        return false;
     }
 
     private static Construct? WsSpawned(Game g) => _wsBlueprint.Length > 0 ? g.Constructs.Get(_wsBody) : null;
@@ -335,12 +415,20 @@ public static unsafe partial class Program
         var verb = parts[0].ToLowerInvariant();
         var arg = parts.Length > 1 ? parts[1] : "";
         WsSay($"> {action}");
+        if (WsTalkVerb(g, me, verb, arg))
+            return; // (talking to the story's people: Program.WindowShotTalk.cs)
+        if (WsTourVerb(g, me, verb, arg))
+            return; // (the tour's actions: Program.WindowShotTour.cs)
+        if (WsInvVerb(g, me, verb, arg))
+            return; // (run-time parts in the hands, backpack and stores: Program.WindowShotInv.cs)
+        if (WsCutVerb(g, me, verb, arg))
+            return; // (cut parts: Program.WindowShotCuts.cs)
         if (WsGhostVerb(g, me, verb, arg))
             return; // (the blueprint ghost's actions: Program.WindowShotGhost.cs)
         switch (verb)
         {
             case "wait":
-                _wsWait = int.TryParse(arg, out var w) ? Math.Max(0, w) : 30;
+                WsWaitTicks(int.TryParse(arg, out var w) ? Math.Max(0, w) : 30);
                 return;
             case "aim" or "near" or "panel":
             {
@@ -459,6 +547,117 @@ public static unsafe partial class Program
                 _wsWait = 2;
                 return;
             }
+            case "joints": // each joint of the spawned body as this peer has it: its part, type, angle (a piston's metres), limits and input
+                if (WsSpawned(g) is { } jc)
+                    for (var j = 0; j < jc.JointCount; j++)
+                    {
+                        ref var jt = ref jc.Joints[j];
+                        WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"joints: {j} {jc.DefOf(jt.Hinge).Name} {jt.Type} at {jt.Angle:0.000} ({jt.Min:0.00}..{jt.Max:0.00}) input {jt.Input:0.00} wired {jt.Wired}"));
+                    }
+                else
+                    WsSay("joints: no spawned body");
+                return;
+            case "engines": // each modular engine of the spawned body as this peer derives it (sized parts phase 5: host and client agree): its readout, scale, stroke, revs and whether it runs
+                if ((WsSpawned(g) ?? g.Constructs.Bodies.FirstOrDefault(b => b.ModCount > 0)) is { ModEngines: { } mes } ec)
+                    for (var k = 0; k < ec.ModCount; k++)
+                    {
+                        var me2 = mes[k];
+                        me2.Rpm(EngineRules.Current, out var idle, out var peak, out var max);
+                        WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"engines: {k} {ConstructEngine.Readout(me2)}; scale {me2.Scale:0.###} ({ConstructEngine.SizeNames[me2.Size]}), stroke {me2.Stroke:0.###}, {me2.Kw:0.#} kW, idle {idle:0} rpm, peak {peak:0}, limiter {max:0}, {me2.Kw * 1000 / (peak / ConstructDrive.RpmPerRadS):0} N m; fault {me2.Fault}; running {ec.EngineRunning}, rpm now {ec.Rpm:0}"));
+                    }
+                else
+                    WsSay("engines: no body with a modular engine");
+                return;
+            case "guns": // each gun of the spawned body as this peer derives it (sized parts: host and client agree): its part, problem, reach, spread, damage and rate
+                if ((WsSpawned(g) ?? g.Constructs.Bodies.OrderByDescending(b => b.GunCount).FirstOrDefault(b => b.GunCount > 0)) is { } gc) // (a client spawned nothing: the body with the most guns)
+                    for (var k = 0; k < gc.GunCount; k++)
+                    {
+                        ref var cg = ref gc.Guns[k];
+                        WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"guns: {k} {gc.DefOf(cg.Part).Name}: {(cg.Problem.Length > 0 ? cg.Problem : "fires")}, reach {cg.MaxRange:0.##} m, spread {cg.Spread * 180 / MathF.PI:0.####} deg, damage {cg.Def?.Damage ?? 0}, every {cg.Interval} ticks, {cg.Shots} a shot, {cg.PerShot} rounds a shot, magazine drawn {(cg.MagPart >= 0 ? gc.ScaleOf(cg.MagPart) : 0)}x"));
+                        if (k == gc.GunCount - 1)
+                            for (var l = 0; l < gc.LinkCount; l++) // (each gun part's link: its two sockets as drawn should meet)
+                            {
+                                ref var lk = ref gc.Links[l];
+                                if (lk.A >= gc.PartCount || lk.B >= gc.PartCount || gc.DefOf(lk.A).Role is not (PartRole.GunPart or PartRole.Gun) || gc.DefOf(lk.B).Role is not (PartRole.GunPart or PartRole.Gun))
+                                    continue;
+                                gc.SocketAt(lk.A, lk.SA, out var sa, out _);
+                                gc.SocketAt(lk.B, lk.SB, out var sb, out _);
+                                WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"guns: link {gc.DefOf(lk.A).Name} ({gc.ScaleOf(lk.A)}x) to {gc.DefOf(lk.B).Name} ({gc.ScaleOf(lk.B)}x): sockets {Vector3.Distance(sa, sb):0.###} m apart"));
+                            }
+                    }
+                else
+                    WsSay("guns: no spawned body");
+                return;
+            case "fitpart" when g.IsServer: // host: "fitpart NAME | PART[#n] SOCKET": the nearest loose one-part body of NAME fitted onto that socket by the build rules (Place, Attach), its own matching socket first, as the hand's fit does; the loose body goes
+            {
+                var bar = arg.IndexOf('|');
+                var rest = bar < 0 ? "" : arg[(bar + 1)..].Trim();
+                var sp = rest.LastIndexOf(' ');
+                var (fc, fpart) = sp > 0 ? WsFind(g, rest[..sp]) : (null, 0);
+                if (bar < 0 || fc == null)
+                {
+                    WsFail("fitpart NAME | PART[#n] SOCKET (on the host)");
+                    return;
+                }
+                var name = arg[..bar].Trim();
+                var at = WsPartSpot(fc, fpart, out _);
+                Construct? loose = null;
+                foreach (var b in g.Constructs.Bodies)
+                    if (b != fc && b.PartCount == 1 && b.DefOf(0).Name == name && (loose == null || Vector3.Distance(b.WorldCom, at) < Vector3.Distance(loose.WorldCom, at)))
+                        loose = b;
+                var socket = Array.FindIndex(fc.DefOf(fpart).Sockets, s => s.Name == rest[(sp + 1)..]);
+                if (loose == null || socket < 0)
+                {
+                    WsFail($"fitpart: {(loose == null ? $"no loose \"{name}\"" : $"no socket \"{rest[(sp + 1)..]}\"")}");
+                    return;
+                }
+                var def = loose.DefOf(0);
+                string? why = "no socket of its fits";
+                var first = true;
+                foreach (var ds in Enumerable.Range(0, def.Sockets.Length).OrderBy(s => def.Sockets[s].Name == "back" ? 0 : 1)) // (a gun part's "back" first: it goes on by its rear)
+                {
+                    if (why == null)
+                        break;
+                    var pw = ConstructBuild.Place(fc, fpart, socket, def, ds, 0, out var ghost);
+                    if (pw == null)
+                        why = ConstructBuild.Attach(g.Constructs, fc, def, ghost) >= 0 ? null : "attach refused";
+                    else if (first)
+                        why = pw;
+                    first = false;
+                }
+                if (why == null)
+                    g.Constructs.Remove(loose);
+                WsSay($"fitpart: {name} onto {fc.DefOf(fpart).Name} {rest[(sp + 1)..]}: {why ?? "fitted"}");
+                _wsWait = 3;
+                return;
+            }
+            case "plate" when g.IsServer: // host: "plate DIST": a Plate Steel 1 m (armour 20) stood up DIST m out from the spawned body's first gun along its aim, as a body of its own; "plate" again prints its health
+            {
+                if (_wsPlate != null && g.Constructs.Bodies.Contains(_wsPlate))
+                {
+                    WsSay($"plate: at {_wsPlate.WorldCom.X:0.0},{_wsPlate.WorldCom.Y:0.0},{_wsPlate.WorldCom.Z:0.0}, health {_wsPlate.Parts[0].Health:0.#} of {_wsPlate.DefOf(0).Health:0.#}{(_wsPlate.Parts[0].Broken ? ", wrecked" : "")}{(WsSpawned(g) is { GunCount: > 0 } gb && gb.Guns[0].Part < gb.PartCount ? $"; the gun holds {gb.Parts[gb.Guns[0].Part].Rounds} rounds, {gb.Guns[0].BoxCount} ammo box(es) reach it, the first holding {(gb.Guns[0].BoxCount > 0 ? gb.Parts[gb.GunBoxes[0]].Rounds : 0)}, reload {gb.Parts[gb.Guns[0].Part].Reload}, trigger in {gb.Parts[gb.Guns[0].Part].In:0.##} of {gb.Parts[gb.Guns[0].Part].InCount} wire(s), body asleep {gb.Asleep}" : "")}");
+                    return;
+                }
+                if (_wsPlate != null && arg.Length == 0)
+                {
+                    WsSay("plate: gone (shot to pieces)");
+                    return;
+                }
+                if (WsSpawned(g) is not { GunCount: > 0 } pc || ConstructParts.Find("Plate Steel 1 m") is not { } pd || !float.TryParse(arg, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var dist))
+                {
+                    WsFail("plate DIST (on the host, a spawned body with a gun)");
+                    return;
+                }
+                ref var cg = ref pc.Guns[0];
+                pc.WorldFrame(pc.Parts[cg.Part].Seg, out var q, out var t);
+                var from = t + Vector3.Transform(cg.Muzzle, q);
+                var aim = Vector3.Normalize(Vector3.Transform(cg.Forward, q) with { Y = 0 });
+                var spot = from + aim * dist;
+                _wsPlate = ConstructBuild.PlaceNew(g.Constructs, pd, new FreePlacement { Pos = spot - new Vector3(0, 0.4f, 0), Rot = Quaternion.CreateFromAxisAngle(Vector3.UnitY, MathF.Atan2(aim.X, aim.Z)) * Quaternion.CreateFromAxisAngle(Vector3.UnitX, -MathF.PI / 2), Anchor = true }); // (stood up across the line of fire, pinned)
+                WsSay($"plate: {(_wsPlate == null ? "not placed" : $"body {_wsPlate.Id} at {spot.X:0.0},{spot.Y:0.0},{spot.Z:0.0}, health {_wsPlate.Parts[0].Health:0.#}")}; the muzzle at {from.X:0.0},{from.Y:0.0},{from.Z:0.0} aims {aim.X:0.00},{aim.Z:0.00}");
+                _wsWait = 3;
+                return;
+            }
             case "saveworld" or "loadworld": // host: the world saved under a name through the real save and copied out, or (a fresh process) that copy loaded; then the run-time parts of every body
             {
                 WsSay($"{verb}: " + (verb == "saveworld" ? g.StationSaveProbe(arg) : g.StationLoadProbe(arg)));
@@ -470,6 +669,11 @@ public static unsafe partial class Program
                             made[b.DefOf(i).Name] = made.GetValueOrDefault(b.DefOf(i).Name) + 1;
                     if (made.Count > 0)
                         WsSay($"{verb}: body {b.Id} ({b.PartCount} parts): {string.Join(", ", made.Select(kv => $"{kv.Key} x{kv.Value}"))}");
+                    for (var i = 0; i < b.PartCount; i++) // (a spilled bundle's material and worth; a Line Console's Made count)
+                        if (b.DefOf(i).Name == ConstructStorage.MaterialBundle)
+                            WsSay($"{verb}: body {b.Id}: Material Bundle of {RecyclingTable.Current.NameOf(b.Parts[i].Setting)}, worth {b.Parts[i].Rounds}");
+                        else if (b.Parts[i].LineMade != 0)
+                            WsSay($"{verb}: body {b.Id}: {b.DefOf(i).Name} part {i}: Made {b.Parts[i].LineMade}");
                 }
                 _wsWait = 5;
                 return;
@@ -503,6 +707,23 @@ public static unsafe partial class Program
             case "touch":
                 WsTouch(g, me, arg);
                 return;
+            case "person": // "person NAME X,UP,Z": the eye that far from a story person's body along the world's x, up and z, looking at their chest
+            {
+                var cut = arg.LastIndexOf(' ');
+                var off = cut > 0 ? arg[(cut + 1)..].Split(',') : [];
+                var who = cut > 0 ? g.Players.Values.FirstOrDefault(q => q.Alive && q.Name.Equals(arg[..cut], StringComparison.OrdinalIgnoreCase)) : null;
+                if (who == null || off.Length != 3 || !off.All(o => float.TryParse(o, System.Globalization.CultureInfo.InvariantCulture, out _)))
+                {
+                    WsFail("person NAME X,UP,Z (someone alive by that name)");
+                    return;
+                }
+                var v = off.Select(o => float.Parse(o, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+                var at = who.RenderPosition + Vector3.UnitY;
+                WsEyeTo(g, me, at + new Vector3(v[0], v[1], v[2]));
+                WsLook(g, me.Eye, at);
+                _wsWait = 3;
+                return;
+            }
             case "from": // "from PART[#n] SIDE,UP,OUT": the eye that far beside, above and in front of the part's screen (OUT negative: behind it), looking at it
             {
                 var cut = arg.LastIndexOf(' ');
@@ -547,6 +768,7 @@ public static unsafe partial class Program
                     WsFail($"click X,Y: \"{arg}\"");
                     return;
                 }
+                Ui.ToolMouse = true; // (from now the tool owns the mouse: a real cursor outside the window would undo its moves)
                 var io = Brutal.ImGuiApi.ImGui.GetIO();
                 io.AddMousePosEvent(px, py);
                 io.AddMouseButtonEvent(0, true);
@@ -563,6 +785,7 @@ public static unsafe partial class Program
                     WsFail($"drag X1,Y1 X2,Y2: \"{arg}\"");
                     return;
                 }
+                Ui.ToolMouse = true;
                 var dio = Brutal.ImGuiApi.ImGui.GetIO();
                 dio.AddMousePosEvent(x1, y1);
                 dio.AddMouseButtonEvent(0, true);
@@ -605,7 +828,8 @@ public static unsafe partial class Program
                     return;
                 }
                 var spot = WsPartSpot(bc, bpart, out var normal);
-                var stand = spot + (normal != Vector3.Zero ? normal : Vector3.UnitZ) * 1.8f;
+                var low = bc.DefOf(bpart).Panels is [var first, ..] && first.At.Y < 0.8f && MathF.Abs(normal.Y) < 0.5f; // (a Router's low screen: stand in a finger's reach)
+                var stand = spot + (normal != Vector3.Zero ? normal : Vector3.UnitZ) * (low ? 1.0f : 1.8f);
                 var feet = new Vector3(stand.X, World.Map.GroundHeight(stand.X, stand.Z) + 0.35f, stand.Z);
                 var n = 0;
                 foreach (var other in g.Players.Values)
@@ -677,7 +901,8 @@ public static unsafe partial class Program
                     read.Read(new SaveReader(nameBytes.Span.ToArray()));
                     var w2 = new ConstructWorld();
                     var loaded = w2.ReadBody(new SaveReader(body.Span.ToArray()), read, _ => 0);
-                    WsSay($"craft: saved and loaded: {(loaded == null ? "NO BODY" : $"{loaded.Parts[cpart].Craft?.Count ?? 0} order(s), {w2.StoreOf(loaded, cpart)?.ItemCount ?? -1} in the tray")}");
+                    // (the body alone: the tray is a store, saved in the world's stores section, so it isn't in this round trip; saveworld covers it)
+                    WsSay($"craft: saved and loaded: {(loaded == null ? "NO BODY" : $"{loaded.Parts[cpart].Craft?.Count ?? 0} order(s) (the tray is saved with the world's stores, not the body)")}");
                 }
                 return;
             }
@@ -687,11 +912,11 @@ public static unsafe partial class Program
                 {
                     // Two windows keep no common clock: wait for the other side instead of counting frames. "await": press use until the designer's
                     // panel is open; "held": until a store holds a formed panel; "bring N": until N other players are here, then bring them to the desk.
-                    var others = g.Players.Count - 1;
+                    var others = g.Players.Values.Count(pl => pl != me && pl.Bot == null && pl.Alive); // (alive: a joined player is listed before it spawns, and a body brought then is left behind when it spawns at its own spawn point)
                     var held = false;
                     foreach (var hs in g.Constructs.Stores)
                         for (var k = 0; hs is { Live: true } && k < hs.KindN; k++)
-                            held |= ConstructParts.Get(hs.KindDef![k]) is { } hd && HullLoft.IsPanelName(hd.Name) && hs.KindCount![k] > 0;
+                            held |= ConstructParts.Get(hs.KindDef![k]) is { } hd && (HullLoft.IsPanelName(hd.Name) || HullLoft.IsCutName(hd.Name)) && hs.KindCount![k] > 0;
                     var ready = arg == "await" ? Ui.DesignerOpen : arg == "held" ? held : int.TryParse(arg[6..], out var need) && others >= need;
                     if (!ready)
                     {
@@ -712,8 +937,8 @@ public static unsafe partial class Program
                     }
                     WsSay($"design {arg}: after {_wsDesignTries} waits");
                     _wsDesignTries = 0;
-                    if (arg.StartsWith("bring ", StringComparison.Ordinal))
-                        _wsQueue.EnqueueFront("bring Panel Designer");
+                    if (arg.StartsWith("bring ", StringComparison.Ordinal) && WsFind(g, "Panel Designer").Item1 != null)
+                        _wsQueue.EnqueueFront("bring Panel Designer"); // (no desk: they only had to be here)
                     _wsWait = 20;
                     return;
                 }
@@ -740,7 +965,69 @@ public static unsafe partial class Program
                     return;
                 }
                 var dw = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                if (dw.Length >= 2 && dw[0] == "name")
+                if (arg == "open") // the panel opened on the first Panel Designer as the use key on its desk opens it (the aim skipped)
+                {
+                    if (WsFind(g, "Panel Designer") is ({ } oc, var op))
+                        OpenPanelDesigner(oc, op);
+                    WsSay($"design open: {(Ui.DesignerOpen ? "open" : "NOT OPEN")}");
+                    _wsWait = 5;
+                    return;
+                }
+                if (arg is "save" or "order")
+                {
+                    Ui.DesignerPress(arg); // (the button, pressed at the panel's next frame)
+                    _wsWait = 3;
+                    return;
+                }
+                if (arg == "parts") // every formed panel placed on a body, by name and geometry hash: two peers compare them
+                {
+                    foreach (var b in g.Constructs.Bodies)
+                        for (var i = 0; i < b.PartCount; i++)
+                            if (HullLoft.IsPanelName(b.DefOf(i).Name) || HullLoft.IsCutName(b.DefOf(i).Name))
+                                WsSay($"design: placed on body {b.Id} part {i}: {b.DefOf(i).Name} hash {HullLoft.PanelHash(b.DefOf(i)):x8} at {b.Parts[i].Pos.X:0.0000},{b.Parts[i].Pos.Y:0.0000},{b.Parts[i].Pos.Z:0.0000} rot {b.Parts[i].Rot}; sockets o: {string.Join(" ", b.DefOf(i).Sockets.Where(s => s.Name.StartsWith('o')).Select(s => $"{s.Name} {s.At.X:0.0000},{s.At.Y:0.0000},{s.At.Z:0.0000}"))}");
+                    return;
+                }
+                if (arg == "players") // every player as this peer has them: who is local, alive, where (a joined client's reach to the desk)
+                {
+                    foreach (var pl in g.Players.Values)
+                        WsSay($"design players: #{pl.Id}{(pl == me ? " (local)" : "")} alive {pl.Alive} at {pl.Position:0.0}; designer {(Ui.DesignerOpen ? "open" : "closed")}");
+                    return;
+                }
+                if (dw.Length >= 1 && dw[0] is "plan" or "plandrag" or "planclick")
+                {
+                    // The flat plan (the designer's flat plan phase), by the real mouse through ImGui: "plandrag U1,V1 U2,V2" drags from one point of
+                    // the sheet (cm) to another, "planclick U,V" presses there; "plan" reports the cuts, the selected one, the red ones and why.
+                    if (dw[0] != "plan")
+                    {
+                        var pts = new List<Brutal.Numerics.float2>();
+                        foreach (var word in dw.Skip(1))
+                            if (word.Split(',') is [var su, var sv] && double.TryParse(su, System.Globalization.CultureInfo.InvariantCulture, out var pu)
+                                && double.TryParse(sv, System.Globalization.CultureInfo.InvariantCulture, out var pvv) && Ui.DesignerPlanPoint(pu, pvv) is { } pp)
+                                pts.Add(pp);
+                        if (pts.Count != (dw[0] == "plandrag" ? 2 : 1))
+                        {
+                            WsFail($"design {arg}: no plan drawn, or not U,V cm points");
+                            return;
+                        }
+                        var ci = System.Globalization.CultureInfo.InvariantCulture;
+                        _wsQueue.EnqueueFront("design plan");
+                        _wsQueue.EnqueueFront(dw[0] == "plandrag" ? string.Create(ci, $"drag {pts[0].X:0.#},{pts[0].Y:0.#} {pts[1].X:0.#},{pts[1].Y:0.#}") : string.Create(ci, $"click {pts[0].X:0.#},{pts[0].Y:0.#}"));
+                        return;
+                    }
+                    WsSay($"design plan: {Ui.DesignerPlanText}; key {Ui.DesignerKey}; preview {Ui.DesignerPreview.ShownCut ?? "(uncut)"}{(Ui.DesignerPreview.Shown is { } psh ? $" hash {HullLoft.PanelHash(psh):x8}" : "")}");
+                    return;
+                }
+                if (dw.Length >= 2 && dw[0] == "profile" && dw[1].Split(',') is { Length: 2 } pv && int.TryParse(pv[0], out var ph) && int.TryParse(pv[1], out var pcm))
+                {
+                    Ui.DesignerProfile(ph, pcm); // "profile H,CM": a loft's handle H (0-7 the back edge, 8-15 the nose) to CM, as a drag would
+                    _wsWait = 3;
+                }
+                else if (dw.Length == 2 && dw[0] == "cut" || arg.StartsWith("cut drop ", StringComparison.Ordinal) || arg.StartsWith("cut glaze ", StringComparison.Ordinal))
+                {
+                    WsSay($"design cut: {Ui.DesignerCut(arg[4..].Trim())}; panes [{Ui.DesignerPaneText}]"); // "cut r70,60,40,50,5", "cut m0,30,30", "cut clear", "cut drop N" (laser cutter phase 4), "cut glaze N" (phase 6: toggles opening N's Glazed box)
+                    _wsWait = 3;
+                }
+                else if (dw.Length >= 2 && dw[0] == "name")
                     Ui.DesignerName(arg[(arg.IndexOf(' ') + 1)..].Trim());
                 else
                     if (dw.Length == 2 && int.TryParse(dw[1], out var dv))
@@ -749,11 +1036,11 @@ public static unsafe partial class Program
                     _wsWait = 3;
                 }
                 var ds = Ui.DesignerShape;
-                WsSay($"design: {(Ui.DesignerOpen ? "open" : "closed")}; {(HullLoft.PanelRefusal(ds) ?? HullLoft.PanelKey(ds))}; preview {(Ui.DesignerPreview.Shown == null ? "none" : $"{HullLoft.PanelKey(Ui.DesignerPreview.ShownShape)} hash {HullLoft.PanelHash(Ui.DesignerPreview.Shown):x8}")}{(Ui.DesignerPreview.Building ? " (building)" : "")}, {Ui.DesignerPreview.Made} keys previewed; library {Ui.DesignerDesigns}; world designs [{string.Join("; ", g.Constructs.Designs.Select(x => $"{x.Name} = {x.Key}"))}]");
+                WsSay($"design: {(Ui.DesignerOpen ? "open" : "closed")}; {(HullLoft.PanelRefusal(ds) ?? Ui.DesignerKey)}; cuts {Ui.DesignerCuts}{(Ui.DesignerCuts > 0 && HullLoft.CutRefusal(Ui.DesignerKey) is { } cw ? $" (refused: {cw})" : "")}; preview {(Ui.DesignerPreview.Shown == null ? "none" : $"{Ui.DesignerPreview.ShownCut ?? HullLoft.PanelKey(Ui.DesignerPreview.ShownShape)} hash {HullLoft.PanelHash(Ui.DesignerPreview.Shown):x8}")}{(Ui.DesignerPreview.Building ? " (building)" : "")}, {Ui.DesignerPreview.Made} keys previewed; links {Ui.DesignerLinks}; library {Ui.DesignerDesigns}; world designs [{string.Join("; ", g.Constructs.Designs.Select(x => $"{x.Name} = {x.Key}"))}]");
                 WsSay($"design: {RuntimeParts.Line()}");
                 foreach (var st in g.Constructs.Stores)
                     for (var k = 0; st is { Live: true } && k < st.KindN; k++)
-                        if (ConstructParts.Get(st.KindDef![k]) is { } fd && HullLoft.IsPanelName(fd.Name))
+                        if (ConstructParts.Get(st.KindDef![k]) is { } fd && (HullLoft.IsPanelName(fd.Name) || HullLoft.IsCutName(fd.Name)))
                             WsSay($"design:   held {st.KindCount![k]} x {fd.Name} hash {HullLoft.PanelHash(fd):x8}");
                 if (g.IsServer && g.Constructs.Designs.Count > 0)
                 {
@@ -763,6 +1050,248 @@ public static unsafe partial class Program
                     PanelDesigns.ReadSave(new SaveReader(sw.Span.ToArray()), w3);
                     WsSay($"design: saved and loaded: {w3.Designs.Count} design(s)");
                 }
+                return;
+            }
+            case "lifter": // lifters (ConstructLifters.cs): "lifter" prints every lifter as this peer has it; "lifter place" (host) stands a Loader Arm in the station's bay's back corner
+            {
+                if (arg.Trim() == "await") // "lifter await": waits (110 s at most) until the station has fitted every part; prints the seconds since its start
+                {
+                    var (ac, apart) = WsFind(g, "Building Station");
+                    var aj = ac?.Parts[apart].Station;
+                    var secs = aj == null ? 0 : (System.Diagnostics.Stopwatch.GetTimestamp() - aj.Started) / (double)System.Diagnostics.Stopwatch.Frequency;
+                    if (aj is { Steps: > 0 } && aj.Fitted >= aj.Steps || aj == null || secs > 110)
+                    {
+                        WsSay($"lifter: await: {(aj == null ? "no job" : $"{aj.Fitted}/{aj.Steps} parts fitted {secs:0.0} s after the start")}");
+                        return;
+                    }
+                    _wsQueue.EnqueueFront("lifter await");
+                    _wsWait = 1;
+                    return;
+                }
+                if (arg.Trim() == "holding" && WsLiftWait(20)) // "lifter holding": waits (20 s at most) until a hand carries a piece to a fit
+                {
+                    var held = false;
+                    foreach (var hb in g.Constructs.LiftBodies)
+                        for (var hi = 0; hi < hb.N; hi++)
+                            held |= hb.Lifts[hi] is { State: LiftState.Carry, Def: > 0, Why: LiftWhy.None } hl && hl.Age > 6 && hl.Age < hl.Dur - 12;
+                    if (!held)
+                    {
+                        _wsQueue.EnqueueFront("lifter holding");
+                        WsWaitTicks(1);
+                        return;
+                    }
+                    _wsLiftSince = 0;
+                }
+                if (arg.Trim().StartsWith("place", StringComparison.Ordinal) && g.IsServer) // "lifter place [TIER] [SLOT]": TIER Scrap, Workshop, Industrial, Military or Plasma; SLOT 0 to 3 round the bay
+                {
+                    var pw = arg.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    var (lc, lpart) = WsFind(g, "Building Station");
+                    var builtIn = false; // (the Production Showcase has its own arms at slots 0 and 1: a placed one defaults to slot 2, beside them, not into them)
+                    for (var bi = 0; lc != null && bi < lc.PartCount && !builtIn; bi++)
+                        builtIn = lc.DefOf(bi).Lifter != null;
+                    WsSay("lifter: place: " + (lc == null ? "no Building Station" : LifterProbe.Place(g.Constructs, lc, lpart, pw.Length > 1 ? pw[1] : "", pw.Length > 2 && int.TryParse(pw[2], out var ps) ? ps : builtIn ? 2 : 0)));
+                }
+                var lw = arg.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (lw.Length > 0 && lw[0] == "joined" && g.IsServer) // "lifter joined" (host): waits (3 minutes at most) until a joined player has been in for 15 s
+                {
+                    var inNow = g.Players.Values.Any(pl => pl.Bot == null && pl != me && pl.Alive);
+                    _wsJoinSeen = inNow ? (_wsJoinSeen == 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : _wsJoinSeen) : 0;
+                    if ((_wsJoinSeen == 0 || System.Diagnostics.Stopwatch.GetElapsedTime(_wsJoinSeen).TotalSeconds < 15) && WsLiftWait(180))
+                    {
+                        _wsQueue.EnqueueFront("lifter joined");
+                        WsWaitTicks(30);
+                        return;
+                    }
+                    _wsLiftSince = 0;
+                }
+                else if (lw.Length > 0 && lw[0] == "screen") // "lifter screen": every lifter's screen as this peer fills it (they stand on their own foundations, outside the blueprint "panel" searches)
+                {
+                    foreach (var sb in g.Constructs.LiftBodies)
+                        if (g.Constructs.Get(sb.Body) is { } sbc)
+                            for (var si = 0; si < sb.N; si++)
+                                if (sb.Lifts[si].Part < sbc.PartCount)
+                                    WsDumpPanels(g, sbc, sb.Lifts[si].Part);
+                    return;
+                }
+                else if (lw.Length > 0 && lw[0] == "walk") // "lifter walk": this peer's player out of the window tool's flight, on its feet (a client before the host's "lifter stand others")
+                {
+                    me.NoclipWanted = false;
+                    g.NoclipShot = false;
+                }
+                else if (lw.Length > 0 && lw[0] is "stand" or "pen" && g.IsServer)
+                {
+                    // "lifter stand [me|others]" (host): the players where a carry that has just begun will pass its piece; "lifter pen
+                    // [me|others]": the same with four Crate Stacks round them, so a push can't get them out (pinned: the arm must wait).
+                    var pinfo = "";
+                    var anyJoined = g.Players.Values.Any(pl => pl.Bot == null && pl != me && pl.Alive);
+                    _wsJoinSeen = anyJoined ? (_wsJoinSeen == 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : _wsJoinSeen) : 0;
+                    var waitJoin = lw.Length > 1 && lw[1] == "others" && (_wsJoinSeen == 0 || System.Diagnostics.Stopwatch.GetElapsedTime(_wsJoinSeen).TotalSeconds < 15); // (joined 15 s ago: its window has spawned it)
+                    var pspotOr = waitJoin ? null : LifterProbe.PathSpot(g.Constructs, lw.Length > 2 && lw[2] == "put", out pinfo); // ("lifter stand me put": where a crane's piece comes down)
+                    if (pspotOr is not { } pspot)
+                    {
+                        if (WsLiftWait(180))
+                        {
+                            _wsQueue.EnqueueFront($"lifter {arg.Trim()}");
+                            WsWaitTicks(waitJoin ? 30 : 1); // (a join takes seconds: look again every half second)
+                            return;
+                        }
+                        WsFail($"lifter: no carry began (or no player joined) in time: {(waitJoin ? "nobody joined" : pinfo)}");
+                        return;
+                    }
+                    _wsLiftSince = 0;
+                    var who = lw.Length > 1 ? lw[1] : "me";
+                    if (who != "others")
+                    {
+                        me.NoclipWanted = false;
+                        g.NoclipShot = false;
+                    }
+                    var moved = 0;
+                    foreach (var pl in g.Players.Values)
+                        if (pl.Bot == null && (who == "others" ? pl != me : pl == me))
+                        {
+                            pl.NoclipWanted = false; // (the window tool flies every player: on their feet first)
+                            pl.Teleport(pspot + new Vector3(0, 0.05f, 0));
+                            moved++;
+                        }
+                    var pens = lw[0] == "pen" ? LifterProbe.Pen(g.Constructs, pspot) : 0;
+                    WsSay($"lifter: {lw[0]}: {moved} player(s) to {pspot:0.00}{(pens > 0 ? $", {pens} Crate Stacks round them" : "")}; {pinfo}");
+                }
+                else if (lw.Length > 0 && lw[0] is "sit" or "cabstate")
+                {
+                    // Phase 8 (either peer): "lifter sit" sits this peer's player in the first Lifter Cab (the host straight through the
+                    // server's Use with its eye at the seat; a client sends the use key's action: the host's "bring Lifter Cab" first);
+                    // "lifter cabstate" prints the cab's lifter as this peer has it: steered, the hand, the piece, the look line.
+                    Construct? cc = null;
+                    var cpart = -1;
+                    foreach (var cb in g.Constructs.Bodies)
+                        for (var ci = 0; ci < cb.PartCount && cc == null; ci++)
+                            if (cb.DefOf(ci).LifterCab)
+                                (cc, cpart) = (cb, ci);
+                    if (cc == null)
+                        WsSay("lifter: sit: no Lifter Cab");
+                    else if (lw.Length > 1 && lw[1] == "cut" && g.IsServer)
+                    {
+                        // "lifter cabstate cut" (host): the cab taken off its construct while it is sat in (the review's case: Steered must go)
+                        g.Constructs.RemovePart(cc, cpart);
+                        cc.Rebuild();
+                        g.Constructs.StructureDirty.Add(cc.Id);
+                        WsSay($"lifter: cabstate: cut the cab off body {cc.Id}");
+                    }
+                    else if (lw.Length > 2 && lw[1] is "bait" or "baitfull" && g.IsServer && ConstructLifters.CabLifter(g.Constructs, cc, cpart) is { } bl
+                             && g.Constructs.Get(bl.Body) is { } bb && ConstructLifters.DefOf(bb, bl.Part) is { } bld && ConstructParts.Find(string.Join(' ', lw.Skip(2))) is { } bd)
+                    {
+                        // "lifter cabstate bait NAME" (host): that part loose on the ground under the cab's hook
+                        ConstructLifters.Frame(bb, bl.Part, bld, out var blp, out var blr, out _);
+                        var hw = blp + Vector3.Transform(bl.To, blr);
+                        var bait = ConstructEdits.DropLoose(g.Constructs, bd, hw with { Y = World.Map.GroundHeight(hw.X, hw.Z) + 0.3f }, Quaternion.Identity);
+                        if (lw[1] == "baitfull" && bait != null && g.Constructs.StoreOf(bait, 0) is { } bst)
+                            (bst.Amount, bst.Material) = (10, (byte)RecyclingTable.Current.IdOf("iron ore")); // ("baitfull": a store with 10 iron ore in it)
+                        WsSay($"lifter: cabstate: bait {bd.Name} at {hw:0.0}: {(bait == null ? "no room" : $"body {bait.Id}")}");
+                    }
+                    else if (lw[0] == "sit")
+                    {
+                        me.NoclipWanted = false;
+                        g.NoclipShot = false;
+                        if (g.IsServer)
+                            WsSay($"lifter: sit: {g.SandboxHands.Use(g.Constructs, me.Id, ConstructEdits.SeatFeet(cc, cpart) + Vector3.UnitY, cc.Id, cpart) ?? "seated"}");
+                        else
+                        {
+                            g.SandboxSend(CActKind.Use, body: cc.Id, part: (ushort)cpart);
+                            WsSay($"lifter: sit: asked to sit in body {cc.Id} part {cpart}");
+                        }
+                    }
+                    else
+                    {
+                        var cl = ConstructLifters.CabLifter(g.Constructs, cc, cpart);
+                        ref var ch = ref g.SandboxHands.Hand(me.Id);
+                        WsSay($"lifter: cabstate: seated {ch.Seated} (body {ch.SeatBody} part {ch.SeatPart}, seat keys {cc.Parts[cpart].Keys:x4}, yaw {cc.Parts[cpart].AimYaw:0.00}, held buttons {g.HeldButtons}); " + (cl == null ? "no lifter for the cab"
+                            : $"lifter part {cl.Part}: steered {cl.Steered}, {cl.State} {cl.Why}, hand {cl.To:0.00}, piece {(cl.Def != 0 ? ConstructParts.Get(cl.Def)?.Name : "none")}, moves {cl.Moves}; look: {g.SandboxLookText}"));
+                    }
+                }
+                else if (lw.Length > 0 && lw[0] is "panel" or "order" or "orders")
+                {
+                    // Phase 7 (either peer): "lifter panel [arm|crane]" opens that lifter's panel (the newest of the kind this peer knows) through
+                    // the use key's own call; "lifter order FROM TO N KIND" picks point FROM's KIND, point TO and N in it and presses Order the
+                    // next frame; "lifter orders" prints its points, what each holds and its orders as this peer has them.
+                    if (lw[0] == "panel")
+                    {
+                        var crane = lw.Length > 1 && lw[1] == "crane";
+                        Construct? pc = null;
+                        var pp = -1;
+                        foreach (var plb in g.Constructs.LiftBodies)
+                            if (g.Constructs.Get(plb.Body) is { } pbc)
+                                for (var pi = 0; pi < plb.N; pi++)
+                                    if (plb.Lifts[pi].Part < pbc.PartCount && ConstructLifters.DefOf(pbc, plb.Lifts[pi].Part) is { } pld && pld.Bridge == crane
+                                        && (crane || ConstructConfig.Get(pbc.Parts[plb.Lifts[pi].Part], pbc.DefOf(plb.Lifts[pi].Part), CfgKey.LiftMode, 0) != 3 || pc == null))
+                                        (pc, pp) = (pbc, plb.Lifts[pi].Part);
+                        if (pc == null)
+                            WsSay($"lifter: panel: no {(crane ? "crane" : "arm")} known here");
+                        else
+                        {
+                            OpenLifterPanel(pc, pp);
+                            WsSay($"lifter: panel: {(Ui.LifterOpen ? "open" : "NOT OPEN")} on body {pc.Id} part {pp} ({pc.DefOf(pp).Name})");
+                        }
+                    }
+                    else if (lw[0] == "order" && lw.Length >= 5 && int.TryParse(lw[1], out var of) && int.TryParse(lw[2], out var ot) && int.TryParse(lw[3], out var on))
+                    {
+                        Ui.LifterAuto = (of, string.Join(' ', lw.Skip(4)), ot, on);
+                        WsSay($"lifter: order: {on} {string.Join(' ', lw.Skip(4))} from point {of} to point {ot}, on the next frame (panel {(Ui.LifterOpen ? "open" : "NOT OPEN")})");
+                    }
+                    else
+                    {
+                        var (ob, opart) = Ui.LifterTarget;
+                        WsSay($"lifter: orders: panel {(Ui.LifterOpen ? "open" : "closed")}, last order: {Ui.LifterSaid}; {Ui.LifterPointCount} points");
+                        for (var k = 0; k < Ui.LifterPointCount; k++)
+                            WsSay("lifter:   " + Ui.LifterPointText(k));
+                        if (ConstructLifters.Find(g.Constructs, ob, opart) is { } ol)
+                            for (var oi = 0; oi < ol.OrderN; oi++)
+                                WsSay($"lifter:   order {ol.Orders![oi].Id}: {ConstructLifters.OrderText(g.Constructs, ol.Orders[oi])}");
+                    }
+                }
+                else if (lw.Length > 0 && lw[0] is "line" or "hold" or "set" or "mains" or "points" or "base" or "flip" or "reset" or "press" or "drop" or "pickpad" or "net" or "edges" or "bigparts" or "bigrack" or "steps" or "mapcost" or "weld" or "ride" or "crowd" or "crane" or "cranecut" or "cranes" or "cranepoints" or "pad2" or "stationcrane" or "cab" && g.IsServer)
+                {
+                    // Lifters phase 4 (LifterLineProbe.cs): "lifter line [TIER]" an arm, an Assembler, a stocked rack and a pad round this player;
+                    // "lifter hold NAME" that piece at the line's Assembler's out; "lifter set liftMode|carryHeight V"; "lifter mains on|off"; "lifter points".
+                    var rest4 = lw.Length > 1 ? string.Join(' ', lw.Skip(1)) : "";
+                    WsSay("lifter: " + lw[0] switch
+                    {
+                        "line" => LifterProbe.Lines(g.Constructs, me.Position, rest4),
+                        "hold" => LifterProbe.Hold(g.Constructs, LifterProbe.LineAsm, rest4),
+                        "set" => LifterProbe.Set(g.Constructs, lw.Length > 1 ? lw[1] : "", lw.Length > 2 && float.TryParse(lw[2], System.Globalization.CultureInfo.InvariantCulture, out var sv) ? sv : 0),
+                        "mains" => LifterProbe.Mains(g.Constructs, lw.Length > 1 && lw[1] == "off"),
+                        "base" => LifterProbe.Base(g.Constructs, me.Position, rest4), // ("lifter base [TIER]": an arm welded into a powered base here; a "lifter line" after it is built round that arm)
+                        "flip" => LifterProbe.Flip(g.Constructs, rest4),
+                        "reset" => LifterProbe.Reset(), // ("lifter reset": the step's cost counters from now, past the first ticks' JIT)
+                        "press" => LifterProbe.Press(g.Constructs, me.Position, rest4), // (phase 5: an arm, a Press with a Button Die and its kit, a rack of blanks and a pad)
+                        "drop" => LifterProbe.Drop(g.Constructs, rest4), // (phase 5: a loose piece over the line's pad: "blank" or a part name)
+                        "pickpad" => WsFind(g, "Building Station") is ({ } ppc, var ppt) ? LifterProbe.PickPad(g.Constructs, ppc, ppt, rest4 != "empty") : "pickpad: no Building Station", // (phase 5: a pick pad behind the newest arm, stocked with the job's parts)
+                        "net" => LifterProbe.Net(g.Constructs, me.Position, rest4), // (phase 5b: the press line on one body, fed by a Router, with a terminal: LifterNetProbe.cs)
+                        "edges" => LifterProbe.Edges(g.Constructs),
+                        "bigparts" => WsFind(g, "Building Station") is ({ } bpc, var bpt) ? LifterProbe.BigParts(g.Constructs, bpc, bpt) : "bigparts: no Building Station",
+                        "bigrack" => WsFind(g, "Building Station") is ({ } brc, var brt) ? LifterProbe.BigRack(g.Constructs, brc, brt, rest4) : "bigrack: no Building Station",
+                        "steps" => WsFind(g, "Building Station") is ({ } stc, var stt) ? LifterProbe.Steps(g.Constructs, stc, stt) : "steps: no Building Station",
+                        "mapcost" => WsFind(g, "Building Station") is ({ } mcc, _) ? LifterProbe.MapCost(g.Constructs, mcc) : "mapcost: no Building Station",
+                        "weld" => WsFind(g, "Building Station") is ({ } wdc, _) ? LifterProbe.Weld(g.Constructs, wdc) : "weld: no Building Station",
+                        "ride" => LifterProbe.Ride(g.Constructs, rest4), // (phase 5b review: an unordered long blank onto the rig's stock conveyor)
+                        "crowd" => LifterProbe.Crowd(g.Constructs, me.Position, int.TryParse(rest4, out var cn) ? cn : 300),
+                        "crane" => LifterProbe.Crane(g.Constructs, me.Position, rest4), // (phase 6: the press line under a Bridge Crane: LifterCraneProbe.cs)
+                        "cranecut" => LifterProbe.CraneCut(g.Constructs, rest4),
+                        "cranepoints" => g.Constructs.Get(LifterProbe.CraneBody) is { } cpc ? ConstructLifters.CranePoints(g.Constructs, cpc, 0) : "no crane",
+                        "pad2" => LifterProbe.Pad2(g.Constructs),
+                        "cab" => LifterProbe.Cab(g.Constructs, rest4),
+                        "stationcrane" => WsFind(g, "Building Station") is ({ } scc, var sct) ? LifterProbe.StationCrane(g.Constructs, scc, sct) : "stationcrane: no Building Station",
+                        "cranes" => LifterProbe.Cranes(g.Constructs, me.Position, int.TryParse(rest4, out var kn) ? kn : 4),
+                        _ => LifterProbe.Points(g.Constructs),
+                    });
+                }
+                else if (lw.Length > 0 && lw[0] == "free" && g.IsServer) // "lifter free" (host): every player 4 m north, out of a pen
+                    foreach (var pl in g.Players.Values)
+                        if (pl.Bot == null)
+                            pl.Teleport(pl.Position + new Vector3(0, 0.05f, -4f));
+                WsSay("lifter: " + LifterProbe.Text(g.Constructs));
+                foreach (var pl in g.Players.Values)
+                    if (pl.Bot == null)
+                        WsSay($"lifter: player {pl.Id}{(pl == me ? " (this peer)" : "")} feet {pl.Position:0.00}, riding body {pl.Sim.RideBody} up {pl.Sim.RideUp:0.0}");
                 return;
             }
             case "station": // a Building Station: "station" prints the first one's job; then "station pick NAME", start [N], cancel, release, stock (host: the parts it lacks into its hold), hold NAME (host: that part into this player's hands), save (host: its body saved and loaded)
@@ -812,11 +1341,18 @@ public static unsafe partial class Program
                             return;
                         }
                         break;
-                    case "drop" when g.IsServer && ConstructParts.Find(rest) is { } loose: // a loose part set down in the bay, as the physics gun would leave it
+                    case "drop" or "droploaded" when g.IsServer && ConstructParts.Find(rest) is { } loose: // a loose part set down in the bay, as the physics gun would leave it; "droploaded": a store part with 50 units of ammo in it
                     {
                         ConstructStation.Bay(sc, spart, out var bfloor, out var bturn, out var bsize);
                         var made = ConstructBuild.PlaceNew(g.Constructs, loose, bfloor + System.Numerics.Vector3.Transform(new System.Numerics.Vector3(bsize.X * 0.3f, 0.3f, bsize.Z * 0.3f), bturn), 0);
-                        WsSay(made == null ? "station: drop: no room" : "station: a loose " + loose.Name + " lies in the bay (construct " + made.Id + ")");
+                        if (made != null && sverb == "droploaded" && g.Constructs.StoreOf(made, 0) is { } lst)
+                        {
+                            lst.Amount = 50;
+                            lst.Material = (byte)RecyclingTable.Current.IdOf(ConstructAmmo.Material);
+                            lst.Version++;
+                            g.Constructs.StoreDirty.Add(lst.Handle);
+                        }
+                        WsSay(made == null ? "station: drop: no room" : "station: a loose " + loose.Name + " lies in the bay (construct " + made.Id + (sverb == "droploaded" ? $", {g.Constructs.StoreOf(made, 0)?.Amount ?? -1} units in it" : "") + ")");
                         break;
                     }
                     case "costtop": // the biggest shipped blueprints a 64 m bay doesn't refuse from their parts, costed as a station does
@@ -835,8 +1371,56 @@ public static unsafe partial class Program
                             return;
                         }
                         break;
+                    case "set": // "station set fillAmmo 50": one of the station's settings by its key, sent as the configure tool sends it (either peer)
+                    {
+                        var kv = rest.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        var sd = sc.DefOf(spart);
+                        var slot = kv.Length == 2 ? Array.FindIndex(sd.Config, e => e.Key == kv[0]) : -1;
+                        if (slot < 0 || !float.TryParse(kv[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var sv))
+                        {
+                            WsFail($"station set {rest}: no such setting");
+                            return;
+                        }
+                        g.SandboxConfigure(sc.Id, [(ushort)spart], [(byte)slot], [sv]);
+                        WsSay($"station: set {kv[0]} {sv}");
+                        break;
+                    }
                     case "repeat":
                         g.SandboxStation(sc.Id, spart, StationOp.Repeat, (ushort)(int.TryParse(rest, out var more) ? more : 0));
+                        break;
+                    case "await": // "station await fitted|linked|done": the script waits (a frame at a time, 100 s at most: no long runs) until the job gets there
+                    {
+                        var aj = sc.Parts[spart].Station;
+                        var met = rest switch
+                        {
+                            "fitted" => aj is { Steps: > 0 } && aj.Fitted >= aj.Steps,
+                            "linked" => aj is { Steps: > 0 } && aj.Fitted >= aj.Steps && aj.LinksDone >= aj.Links,
+                            "done" => aj is { State: StationState.Done or StationState.Failed },
+                            _ => true,
+                        };
+                        if (!met && _wsAwait++ < 60 * 100)
+                        {
+                            _wsQueue.EnqueueFront("station await " + rest);
+                            _wsWait = 1;
+                            return;
+                        }
+                        var waited = _wsAwait;
+                        _wsAwait = 0;
+                        if (!met)
+                        {
+                            WsFail($"station await {rest}: not reached after {waited} frames ({StationProbe.Text(g.Constructs, sc, spart)})");
+                            return;
+                        }
+                        WsSay($"station: await {rest}: reached after {waited} frames");
+                        break;
+                    }
+                    case "tanks": // the build's fuel, Fluid Tanks and ammo boxes as this peer has them, and the station's own source
+                        WsSay("station: tanks: " + StationProbe.Tanks(g.Constructs, sc, spart));
+                        break;
+                    case "cutpipe" or "mendpipe" when g.IsServer: // every pipe into the station cut through (as a blast leaves it), or repaired whole
+                        for (var k = 0; k < sc.RouteCount; k++)
+                            if (sc.Routes[k].Type == RouteType.Pipe && sc.Routes[k].To == spart)
+                                WsSay($"station: {sverb} pipe {k}: " + (sverb == "cutpipe" ? (ConstructRoutes.Damage(g.Constructs, sc, k, 0, 1e9f) ? "cut" : "not cut") : ConstructRoutes.Repair(g.Constructs, sc, k) ? "repaired" : "nothing to repair"));
                         break;
                     case "clear" when g.IsServer && sc.Parts[spart].Station is { } cj && g.Constructs.Get(cj.Body) is { HeldBy: 0 } built: // the finished vehicle is dragged 14 m out of the bay
                         ConstructStation.Bay(sc, spart, out _, out var brot, out _);
@@ -884,6 +1468,43 @@ public static unsafe partial class Program
                 _wsWait = 2;
                 return;
             }
+            case "fuel": // the Building Station's body (the Showcase): its fuel pool and charge as this peer has them; "fuel N [SHARE]" (host) sets them, as a drain or a charge would (it stays still)
+            {
+                if (WsFind(g, "Building Station").C is not { } fb)
+                {
+                    WsFail("no Building Station");
+                    return;
+                }
+                var fw = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (g.IsServer && fw.Length > 0 && float.TryParse(fw[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var litres))
+                    fb.Fuel = Math.Clamp(litres, 0, fb.FuelCapacity());
+                if (g.IsServer && fw.Length > 1 && float.TryParse(fw[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var share))
+                    fb.Charge = Math.Clamp(share, 0, 1) * fb.ChargeCapacity;
+                WsSay($"fuel: body {fb.Id} fuel {fb.Fuel:0.0}/{fb.FuelCapacity():0.0} L, charge {fb.Charge:0}/{fb.ChargeCapacity:0} kJ, {(fb.Asleep ? "asleep" : "awake")}{(fb.Anchored ? ", anchored" : "")}, {fb.JointCount} joints");
+                return;
+            }
+            case "picker": // "picker": the open recipe picker's tiles (value, or dim); "picker N": picks the tile of value N as a click does;
+                // "picker @PART[#n]": opens it on that machine as its Recipe button does (a joined window, whose eye a touch can't fly)
+                if (arg.StartsWith('@'))
+                {
+                    var (pc, pp) = WsFind(g, arg[1..].Trim());
+                    WsSay(pc != null && MachineRecipePicker(pc, pp) ? $"picker: opened on {pc.DefOf(pp).Name} (part {pp})" : $"picker: not opened on {arg[1..].Trim()}");
+                    _wsWait = 3;
+                }
+                else if (arg.Length > 0 && char.IsLetter(arg[0]))
+                {
+                    // An Extruder's picker (UiRecipePickerExtruder.cs): "picker size W H [WALL]" (cm), "picker cell N", "picker set".
+                    WsSay($"picker: {Ui.ExtruderPickerDo(arg) ?? "no Extruder picker open"}");
+                    _wsWait = 3;
+                }
+                else if (int.TryParse(arg, out var pickValue))
+                {
+                    Ui.RecipePickerPick(pickValue);
+                    _wsWait = 3;
+                }
+                else
+                    WsSay($"picker: {Ui.RecipePickerDump()}");
+                return;
             case "ui": // what is open and who has the mouse
                 WsSay($"ui: menus {(MenusOpen ? "open" : "closed")}, crafting {(Ui.CraftingOpen ? "open" : "closed")} ({Ui.CraftingTiles} tiles), designer {(Ui.DesignerOpen ? "open" : "closed")}, mouse {(_mouseCaptured ? "captured" : "free")}");
                 return;
@@ -891,9 +1512,10 @@ public static unsafe partial class Program
                 WsShot(arg.Length > 0 ? arg : $"{_wsShots:000}");
                 _wsWait = 1;
                 return;
-            case "link": // a data link FROM's Data out (or only output) to TO, as the linking tool sends it: "link Materials Bin#1 > Text Sign#3"
+            case "link": // a data link FROM's Data out (or only output) to TO, as the linking tool sends it: "link Materials Bin#1 > Text Sign#3"; "link pipe Fuel Tank#1 > Building Station": a straight pipe from FROM's first pipe out to TO's first pipe in
             {
-                var ends = arg.Split('>', StringSplitOptions.TrimEntries);
+                var pipe = arg.StartsWith("pipe ", StringComparison.Ordinal);
+                var ends = (pipe ? arg[5..] : arg).Split('>', StringSplitOptions.TrimEntries);
                 var (c, from) = ends.Length == 2 ? WsFind(g, ends[0]) : (null, -1);
                 var (c2, to) = ends.Length == 2 ? WsFind(g, ends[1]) : (null, -1);
                 if (c == null || c2 != c)
@@ -910,6 +1532,42 @@ public static unsafe partial class Program
                 }
                 var spot = WsPartSpot(c, to, out _);
                 WsEyeTo(g, me, spot + new Vector3(0, 1.2f, 0) + Vector3.Normalize(new Vector3(me.Eye.X - spot.X, 0, me.Eye.Z - spot.Z) + new Vector3(1e-4f, 0, 0)) * 1.5f);
+                if (pipe)
+                {
+                    byte outP = 255, inP = 255;
+                    foreach (var np in c.DefOf(from).NamedPorts)
+                        if (np.Type == RouteType.Pipe && np.Out && outP == 255)
+                            outP = np.Byte;
+                    foreach (var np in c.DefOf(to).NamedPorts)
+                        if (np.Type == RouteType.Pipe && np.In && inP == 255)
+                            inP = np.Byte;
+                    if (!g.IsServer)
+                    {
+                        WsFail("link pipe: on the host (a test state, laid without the tool's reach)");
+                        return;
+                    }
+                    // Out of each port half a metre, straight up 5 m (over the machines), and across in steps of at most 4 m.
+                    var up = new Vector3(0, 5f, 0);
+                    var pa = ConstructRoutes.PortPoint(c, from, outP, RouteType.Pipe) + ConstructRoutes.PortDir(c, from, outP, RouteType.Pipe) * 0.5f;
+                    var pb = ConstructRoutes.PortPoint(c, to, inP, RouteType.Pipe) + ConstructRoutes.PortDir(c, to, inP, RouteType.Pipe) * 0.5f;
+                    var segs = Math.Max(1, (int)MathF.Ceiling(Vector3.Distance(pa, pb) / 4f));
+                    var pnodes = new CRouteNode[segs + 3];
+                    pnodes[0] = new CRouteNode { Host = (ushort)from, Pos = pa };
+                    for (var s = 0; s <= segs; s++)
+                        pnodes[s + 1] = new CRouteNode { Host = (ushort)(s * 2 < segs ? from : to), Pos = Vector3.Lerp(pa, pb, s / (float)segs) + up };
+                    pnodes[segs + 2] = new CRouteNode { Host = (ushort)to, Pos = pb };
+                    var bad = ConstructRoutes.Check(g.Constructs, c, RouteType.Pipe, from, outP, 255, 0, default, pnodes, to, inP);
+                    if (bad == null && ConstructRoutes.Add(g.Constructs, c, RouteType.Pipe, from, outP, 255, 0, default, pnodes, to, inP) < 0)
+                        bad = "no room for another link";
+                    if (bad == null)
+                    {
+                        c.Rebuild();
+                        g.Constructs.StructureDirty.Add(c.Id);
+                    }
+                    WsSay($"link: pipe {c.DefOf(from).Name}#{from} > {c.DefOf(to).Name}#{to}: {bad ?? "laid"}");
+                    _wsWait = 5;
+                    return;
+                }
                 var port = c.DefOf(from).DataOut is { Length: > 1 } outs ? ConstructRoutes.DataPortByte(Array.IndexOf(outs, "Data out")) : (byte)255;
                 g.SandboxSendRoute(c.Id, RouteType.Data, from, port, 255, 0, default, ReadOnlySpan<CRouteNode>.Empty, to, 255);
                 _wsWait = 5;
@@ -936,6 +1594,20 @@ public static unsafe partial class Program
                 st.Material = st.Amount > 0 ? mat : (byte)0;
                 st.Version++;
                 g.Constructs.StoreDirty.Add(st.Handle);
+                _wsWait = 2;
+                return;
+            }
+            case "bundle" when g.IsServer: // "bundle N MATERIAL" (host): a spilled Material Bundle of N units 2 m in front of the player, as a broken bin spills one
+            {
+                var sp = arg.IndexOf(' ');
+                var bmat = sp > 0 ? RecyclingTable.Current.IdOf(arg[(sp + 1)..]) : (byte)0;
+                if (!int.TryParse(sp > 0 ? arg[..sp] : "", out var bunits) || bmat == 0)
+                {
+                    WsFail("bundle N MATERIAL (on the host or offline)");
+                    return;
+                }
+                var bat = me.Position + new Vector3(MathF.Sin(me.Yaw), 0, MathF.Cos(me.Yaw)) * 2 + Vector3.UnitY;
+                WsSay($"bundle: {(g.Constructs.SpillBundle(bmat, bunits, bat, Vector3.Zero) ? "spilled" : "refused")} {bunits} {RecyclingTable.Current.NameOf(bmat)}");
                 _wsWait = 2;
                 return;
             }
@@ -974,8 +1646,12 @@ public static unsafe partial class Program
     }
 
     /// <summary>A finger on a screen's button by its label, through the crosshair: Hands out, the eye in front of it, the view on it, then LMB.</summary>
+
     private static void WsTouch(Game g, Player me, string arg)
     {
+        var screen = -1; // "Hold: Off @ Conveyor Router /1": that part's second screen only (a part with a screen each side)
+        if (arg.LastIndexOf(" /", StringComparison.Ordinal) is var sl and > 0 && int.TryParse(arg[(sl + 2)..], out var sn))
+            (arg, screen) = (arg[..sl], sn);
         var on = arg.IndexOf('@'); // "Bill @ Line Console#2": that part's button only
         var label = on > 0 ? arg[..on].Trim() : arg;
         var (only, onlyPart) = on > 0 ? WsFind(g, arg[(on + 1)..]) : (null, -1);
@@ -992,6 +1668,8 @@ public static unsafe partial class Program
                 var d = c.DefOf(part);
                 for (var n = 0; n < d.Panels.Length; n++)
                 {
+                    if (screen >= 0 && n != screen)
+                        continue;
                     var panel = d.Panels[n];
                     var card = WsFill(g, c, part, panel);
                     for (var b = 0; b < panel.Touch.Length; b++)
@@ -1002,7 +1680,7 @@ public static unsafe partial class Program
                         if (g.SandboxHands.Hand(me.Id).Tool != ConstructTool.Hands)
                         {
                             g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Hands);
-                            _wsQueue.EnqueueFront($"touch {arg}");
+                            _wsQueue.EnqueueFront(screen >= 0 ? $"touch {arg} /{screen}" : $"touch {arg}");
                             _wsWait = 5;
                             return;
                         }
@@ -1010,9 +1688,33 @@ public static unsafe partial class Program
                         var right = Vector3.Cross(up, normal);
                         var r = panel.Touch[b].At;
                         var spot = centre + right * (((r.X + r.Z) * 0.5f - 0.5f) * panel.Size.X) + up * (((r.Y + r.W) * 0.5f - 0.5f) * panel.Size.Y);
-                        if (Vector3.Distance(me.Eye, spot) > 2.2f || Vector3.Dot(me.Eye - spot, normal) < 0.3f)
-                            WsEyeTo(g, me, centre + normal * 1.3f);
+                        var moved = Vector3.Distance(me.Eye, spot) > 2.2f || Vector3.Dot(me.Eye - spot, normal) < 0.3f;
+                        if (moved && !g.IsServer)
+                        {
+                            // (a joined client can't fly itself: the host owns its position and snaps a teleport back. It presses from where it
+                            // stands, as a player would, when that is in reach and in front; else the host brings it first: "bring PART")
+                            if (Vector3.Distance(me.Eye, spot) > ConstructBuild.UseReach - 0.1f || Vector3.Dot(me.Eye - spot, normal) < 0.1f)
+                            {
+                                WsFail($"touch: the joined client stands {Vector3.Distance(me.Eye, spot):0.0} m from that button (eye {me.Eye:0.0}); the host brings it first: bring PART");
+                                return;
+                            }
+                            moved = false;
+                        }
+                        if (moved)
+                            WsEyeTo(g, me, panel.At.Y < 0.8f && MathF.Abs(normal.Y) < 0.5f
+                                ? centre + normal * 0.9f + Vector3.UnitY * 1.2f // (a low screen, a Router's: read standing, looking down, as a player does)
+                                : centre + normal * 1.3f);
                         WsLook(g, me.Eye, spot);
+                        {
+                            // (what the crosshair's ray meets on the way, as the pointer will see it: the ground or a wall first, another part, or this button)
+                            var dir = g.LookDir(g.LookYaw, g.LookPitch);
+                            var wall = World.RaycastWorld(me.Eye, dir, ConstructBuild.Reach + 1);
+                            var aimed = g.Constructs.Raycast(me.Eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var th, look: true, noTracks: true);
+                            Vector2 tat = default;
+                            var tp = aimed && th.Part >= 0 && th.Part < th.Body.PartCount ? PanelTouch.Find(th.Body, th.Part, me.Eye, dir, out tat) : -1;
+                            WsSay($"touch ray: button {Vector3.Distance(me.Eye, spot):0.00} m (reach {ConstructBuild.UseReach}), ground or wall {wall:0.00} m, "
+                                + (aimed ? $"hit {th.Body.DefOf(th.Part).Name} part {th.Part} at {th.Distance:0.00} m, slot {th.SlotPlus1}, route {th.RoutePlus1}, panel {tp}{(tp >= 0 ? $" button {PanelTouch.Region(th.Body.DefOf(th.Part).Panels[tp], tat)}" : "")}" : "no part"));
+                        }
                         _wsQueue.EnqueueFront("key Fire");
                         _wsWait = 3; // (the pointer finds the button first, then the click)
                         WsSay($"touch: {d.Name} (part {part}) panel {n} button {b} \"{now}\"");
@@ -1025,7 +1727,7 @@ public static unsafe partial class Program
 
     private static PanelCard WsFill(Game g, Construct c, int part, PanelDef panel)
     {
-        var card = new PanelCard { Touch = panel.Touch };
+        var card = new PanelCard { Touch = panel.Touch, PanelSize = panel.Size };
         var d = c.DefOf(part);
         var percent = ConstructConfig.Has(d, CfgKey.TextSize) ? ConstructConfig.Get(c.Parts[part], d, CfgKey.TextSize, 100) : 100;
         var source = panel == d.Panels[0] ? ProductionLines.MonitorSource(c, part) : -1;
@@ -1053,16 +1755,53 @@ public static unsafe partial class Program
         WsSay($"  logic: out {c.Parts[part].Out:0.##}, in {c.Parts[part].In:0.##}, state {c.Parts[part].State}, count {c.Parts[part].Count}; the body: {c.WireCount} wires, logic {c.HasLogic}, powered {c.Parts[part].Powered}");
         if (g.Constructs.StoreOf(c, part) is { } st)
             WsSay($"  store: line state {(ProductionLines.Raw(g.Constructs, c, part, st) is { } s ? ProductionLines.Word(s) : "-")}, busy {st.Busy}, held {st.Held}, blocked {st.Blocked}, {st.Amount} {RecyclingTable.Current.NameOf(st.Material)}, {st.ItemCount} items, mains off {c.MainsOff}; creative {g.Constructs.CreativeRecycling} (parts {g.SandboxInfiniteParts}, survival option {g.SandboxSurvivalOption}, map {World.Map.Name})");
-        if (d.Monitor != MonitorKind.None && (d.Panels.Length == 0 || d.Monitor == MonitorKind.Store))
+        if (d.Monitor != MonitorKind.None && (d.Panels.Length == 0 || d.Monitor is MonitorKind.Store or MonitorKind.Network))
         {
-            // What a display on its Data out shows: a medium one (6 rows of 24) and a tiny one (a line).
-            foreach (var rows in (ReadOnlySpan<int>)[6, 1])
+            // What a display on its Data out shows: a medium one (6 rows of 24) and a tiny one (a line); a Router's board also as a 14-row one of 40.
+            foreach (var rows in d.Monitor == MonitorKind.Network ? (ReadOnlySpan<int>)[16, 6, 1] : [6, 1])
             {
-                var card = new PanelCard { Rows = rows, TextRows = rows, Cols = 24 };
+                var card = new PanelCard { Rows = rows, TextRows = rows, Cols = rows > 6 ? 64 : 24 };
                 ProductionLines.FillMonitor(g.Constructs, c, part, card);
                 for (var l = 0; l < rows; l++)
                     if (card.Length(l) > 0)
                         WsSay($"  monitor{rows} {l}| {card.Line(l)}");
+            }
+            if (d.Monitor == MonitorKind.Network)
+            {
+                // A big sign's board (16 rows on a 1.6 m panel): the plan map's data and its caption.
+                var card = new PanelCard { Rows = 16, TextRows = 16, Cols = 64, PanelSize = new Vector2(1.6f, 0.9f) };
+                ProductionLines.FillMonitor(g.Constructs, c, part, card);
+                if (card.Plan is { } plan)
+                {
+                    var kinds = new int[7];
+                    for (var i = 0; i < plan.NodeN; i++)
+                        kinds[(int)plan.NodeKind[i]]++;
+                    var cuts = 0;
+                    for (var i = 0; i < plan.LineN; i++)
+                        cuts += plan.LineCut[i] ? 1 : 0;
+                    var dots = new int[3];
+                    for (var i = 0; i < plan.DotN; i++)
+                        dots[plan.DotKind[i]]++;
+                    WsSay($"  map: axes {plan.Axis0},{plan.Axis1}, {plan.Min:0.0} to {plan.Max:0.0} m; {plan.LineN} conveyors ({cuts} cut), {plan.PointN} points; nodes: {kinds[0]} machines, {kinds[1]} stores, {kinds[2]} terminals, {kinds[3]} Routers, {kinds[4]} splitters, {kinds[5]} joins, {kinds[6]} other; dots {dots[0]} storage, {dots[1]} ordered, {dots[2]} stuck; ring {(plan.Ring >= 0 ? c.DefOf(plan.NodePart[plan.Ring]).Name : "none")}; hash {plan.Hash:x8}");
+                    // The fill's cost (design 9.3): the board and its plan filled again 200 times, timed, and what it allocated.
+                    var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                    var a0 = GC.GetAllocatedBytesForCurrentThread();
+                    for (var n = 0; n < 200; n++)
+                    {
+                        card.Clear();
+                        ProductionLines.FillMonitor(g.Constructs, c, part, card);
+                    }
+                    var us = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds * 1000 / 200;
+                    WsSay($"  map fill: {us:0.0} us a fill over 200, {(GC.GetAllocatedBytesForCurrentThread() - a0) / 200} bytes a fill; {plan.NodeN} nodes, {plan.LineN} conveyors, {c.ConveyedCount} riders on the body");
+                    for (var i = 0; i < plan.NodeN; i++)
+                        if (plan.NodeKind[i] is PlanNode.Machine or PlanNode.Store or PlanNode.Terminal or PlanNode.Router)
+                            WsSay($"    {plan.NodeTag[i * 2]}{plan.NodeTag[i * 2 + 1]} {c.DefOf(plan.NodePart[i]).Name}#{plan.NodePart[i]} at {plan.NodeAt[i]:0.0}{(plan.NodeFill[i] >= 0 ? $", fill {plan.NodeFill[i]:0.00}" : "")}{(plan.NodeKeep[i] >= 0 ? $", keep mark {plan.NodeKeep[i]:0.00}" : "")}{(plan.NodeWay[i] != Vector2.Zero ? $", way stub {plan.NodeWay[i]:0.00}" : "")}");
+                }
+                else
+                    WsSay("  map: none (the board drew a list)");
+                for (var l = 0; l < 16; l++)
+                    if (card.Length(l) > 0)
+                        WsSay($"  map16 {l}| {card.Line(l)}");
             }
         }
         for (var n = 0; n < d.Panels.Length; n++)
@@ -1154,6 +1893,8 @@ public static unsafe partial class Program
     /// <summary>PollActions: the script's key, down for one frame.</summary>
     private static void WindowShotKeys(bool[] down)
     {
+        WindowShotHold(down); // (a key held over frames: Program.WindowShotCuts.cs)
+        WsTalkHold(down); // (keys held for real seconds, a pilot's: Program.WindowShotTalk.cs)
         if (_wsPress is { } a)
         {
             down[(int)a] = true;

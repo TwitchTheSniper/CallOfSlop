@@ -18,6 +18,8 @@ public enum FxKind : byte
     Flash,
     Fireball,
     Steam,
+    Drift, // snow blown along the ground (PartAmbience.cs): thin white streaks
+    Chimney, // a stack's coal smoke (PartAmbience.cs): paler and fuller than a fire's, so it shows against a storm's dusk
     Count,
 }
 

@@ -24,6 +24,7 @@ public static class RuntimeParts
 
     private static readonly List<WeakReference<ConstructWorld>> Worlds = new();
     private static readonly List<WeakReference<ConstructEdits>> Hands = new();
+    private static readonly List<WeakReference<SandboxInventory>> Counted = new(); // (players' counted inventories: made parts by id, phase 2 of inventory-run-time-parts.md)
     private static readonly object TrackGate = new();
     private static bool[] _mark = [];
     private static long _nextSweep, _nextCheck, _lastWarn = -WarnEveryMs;
@@ -35,6 +36,12 @@ public static class RuntimeParts
     internal static void Track(ConstructWorld w) => Add(Worlds, w);
 
     internal static void Track(ConstructEdits e) => Add(Hands, e);
+
+    internal static void Track(SandboxInventory inv) => Add(Counted, inv);
+
+    internal static void Track(BeaconView v) => Add(Views, v);
+
+    private static readonly List<WeakReference<BeaconView>> Views = new(); // (beacon and terminal views: made parts a network lists, phase 3)
 
     private static void Add<T>(List<WeakReference<T>> list, T item) where T : class
     {
@@ -161,10 +168,46 @@ public static class RuntimeParts
                         c.RebuildStamp++;
     }
 
+    /// <summary>
+    /// Stand-ins were made into their real parts in place (HullLoft.FirstParts.cs): their solid boxes, bounds, sockets and mass changed. Every body
+    /// that holds one is marked for a full rebuild (each in its own world's tick) and the caches that know a part are emptied. A few times after
+    /// a packet of many new keys.
+    /// </summary>
+    internal static void Reshaped(List<ConstructPartDef> defs)
+    {
+        Forgotten();
+        if (_reshape.Length < Extrusion.MaxDefs)
+            _reshape = new bool[Extrusion.MaxDefs];
+        foreach (var d in defs)
+            _reshape[d.Id - Extrusion.RuntimeBase] = true;
+        lock (TrackGate)
+            foreach (var r in Worlds)
+                if (r.TryGetTarget(out var w))
+                    foreach (var c in w.Bodies)
+                        for (var i = 0; i < c.PartCount; i++)
+                        {
+                            var k = c.Parts[i].Def - Extrusion.RuntimeBase;
+                            if (k >= 0 && k < _reshape.Length && _reshape[k])
+                            {
+                                c.Dirty = true;
+                                c.RebuildStamp++;
+                                break;
+                            }
+                        }
+        foreach (var d in defs)
+            _reshape[d.Id - Extrusion.RuntimeBase] = false;
+    }
+
+    private static bool[] _reshape = [];
+
+    /// <summary>The part the local player picked for a Line Layer or a Replacer (Program.SandboxAids.cs): kept while it is picked.</summary>
+    public static ushort Pinned = ConstructParts.None;
+
     private static void MarkRoots()
     {
         lock (TrackGate)
         {
+            Mark(Pinned);
             foreach (var r in Worlds)
                 if (r.TryGetTarget(out var w))
                     MarkWorld(w);
@@ -176,6 +219,18 @@ public static class RuntimeParts
                         Mark(h.HeldGone);
                         Mark(h.MagFor);
                     }
+            foreach (var r in Hands)
+                if (r.TryGetTarget(out var e))
+                    for (var k = 0; k < e.TerminalJobs; k++)
+                        Mark(e.TerminalJobPart(k)); // (a Smart Terminal's pull on its way: the piece may be taken by someone else meanwhile)
+            foreach (var r in Counted)
+                if (r.TryGetTarget(out var inv))
+                    for (var k = 0; k < inv.MadeN; k++)
+                        Mark(inv.MadeDef[k]);
+            foreach (var r in Views)
+                if (r.TryGetTarget(out var v))
+                    for (var k = 0; k < v.MadeN; k++)
+                        Mark(v.MadeDef[k]);
         }
     }
 
@@ -192,6 +247,8 @@ public static class RuntimeParts
                 Mark(s.Def[k]);
             for (var k = 0; k < s.KindN; k++)
                 Mark(s.KindDef![k]);
+            if (s.PullWaiting > 0 && !s.PullMaterial)
+                Mark(s.PullId); // (a terminal's screen names what it is bringing, on every peer, by key)
         }
     }
 

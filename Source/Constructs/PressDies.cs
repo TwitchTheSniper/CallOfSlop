@@ -4,8 +4,11 @@ using System.Text.Json;
 
 namespace CallOfSlop;
 
-/// <summary>What a bay 2 amount or a scaled number is measured by: the blank's length (m), its size across (m), its largest face (m2), its volume (m3) or its mass (kg).</summary>
-public enum PressMeasure : byte { Length, Across, Area, Volume, Mass }
+/// <summary>
+/// What a bay 2 amount or a scaled number is measured by: the blank's length (m), its size across (m), its largest face (m2), its volume (m3),
+/// its mass (kg), or its length in calibres (its length over its size across: a barrel's, docs/sandbox/design/sized-gun-engine-parts.md 3.2).
+/// </summary>
+public enum PressMeasure : byte { Length, Across, Area, Volume, Mass, Calibres }
 
 /// <summary>
 /// A die's feature: a box in the blank's unit frame (x across its width, y its height, z its length, each 0 to 1), so it stretches with
@@ -47,7 +50,12 @@ public sealed class PressAmount
     public string What => Part?.Name ?? RecyclingTable.Current.NameOf(Material);
 }
 
-/// <summary>One number scaled by the law of docs section 5: <c>like x (measure / preset's)^power x (S / preset's S)</c>.</summary>
+/// <summary>
+/// One number scaled by the law of docs section 5: <c>like x (measure / preset's)^power x (S / preset's S)</c>; or, with <see cref="Points"/>,
+/// a curve whose knots are catalogue parts (sized-gun-engine-parts.md 7): the value read off it, a straight line between knots (in log-log
+/// with <see cref="Log"/>), the end segment past the ends, then held to <see cref="Lo"/>..<see cref="Hi"/>. A builder stat (a weapon
+/// builder part's "stats" name) is a curve's, and <see cref="Op"/> says how the gun takes it ("mul" or "add").
+/// </summary>
 public sealed class PressScale
 {
     public string Field = "";
@@ -55,6 +63,36 @@ public sealed class PressScale
     public float Power;
     public bool Strength;
     public float Ref; // the like value when the like part's own is 0 ("no limit")
+    public Vector2[]? Points; // (measure, value), measure rising
+    public bool Log;
+    public float Lo = float.MinValue, Hi = float.MaxValue;
+    public string Op = ""; // a builder stat's: "mul" or "add"
+    public float ReadAt; // ("at") above 0: the curve is read at At x (the blank's measure / the preset's), so a pattern's preset sits at the curve's At (a Needle Barrel on the plain barrel's curve: 5)
+
+    /// <summary>The curve's value at a measure (Points only): no allocation, at most a few knots.</summary>
+    public float At(float x)
+    {
+        var p = Points!;
+        if (p.Length == 1)
+            return Math.Clamp(p[0].Y, Lo, Hi);
+        var k = 0;
+        while (k < p.Length - 2 && x > p[k + 1].X)
+            k++;
+        Vector2 a = p[k], b = p[k + 1];
+        float v;
+        if (Log)
+        {
+            var t = (MathF.Log(MathF.Max(x, 1e-6f)) - MathF.Log(a.X)) / (MathF.Log(b.X) - MathF.Log(a.X));
+            v = MathF.Exp(MathF.Log(a.Y) + t * (MathF.Log(b.Y) - MathF.Log(a.Y)));
+        }
+        else
+            v = a.Y + (x - a.X) / (b.X - a.X) * (b.Y - a.Y);
+        // (at a knot, the knot itself: never an interpolation that lands a last digit beside it)
+        foreach (var q in p)
+            if (MathF.Abs(q.X - x) < 1e-5f)
+                v = q.Y;
+        return Math.Clamp(v, Lo, Hi);
+    }
 }
 
 /// <summary>What a stroke makes of a blank: the behaviour of <see cref="Like"/>, sized by the blank.</summary>
@@ -75,6 +113,40 @@ public sealed class PressPattern
     /// </summary>
     public bool LikeBody;
     public sbyte Along = -1;
+
+    /// <summary>
+    /// "likeBy": "nearest" (sized-parts design 6.2): the pattern's presets are its knots, and a blank takes the part of the one nearest it in
+    /// log of across as its like (a cylinder 3.5 times Small is the Medium one stretched). <see cref="Knots"/> are its presets by across,
+    /// <see cref="ByKnot"/> this pattern with each knot's part as its like and its blank as its preset (made at load: a press allocates nothing).
+    /// </summary>
+    public bool LikeNearest;
+    public bool Auto = true; // "auto": false: never what a press set to Auto makes, by a preset's blank or the nearest (the Pattern setting or an order picks it: the generated receivers, sized parts phase 6)
+    public PressPreset[] Knots = [];
+    public PressPattern[] ByKnot = [];
+
+    /// <summary>The pattern a blank is pressed by: itself, or for a likeBy-nearest one its nearest knot's.</summary>
+    public PressPattern For(in ExtrusionKey k)
+    {
+        if (!LikeNearest || Knots.Length == 0)
+            return this;
+        var a = MathF.Log(Math.Max(1, Pressed.Across(k)));
+        var best = 0;
+        for (var i = 1; i < Knots.Length; i++)
+            if (MathF.Abs(a - MathF.Log(Pressed.Across(Knots[i].Blank))) < MathF.Abs(a - MathF.Log(Pressed.Across(Knots[best].Blank))))
+                best = i;
+        return ByKnot[best];
+    }
+
+    internal PressPattern WithKnot(PressPreset knot)
+    {
+        var q = (PressPattern)MemberwiseClone();
+        q.Like = knot.Part;
+        q.Preset = knot.Blank;
+        q.LikeNearest = false;
+        q.Knots = Knots; // (kept: the engine's scale reads every knot)
+        q.ByKnot = [];
+        return q;
+    }
 }
 
 /// <summary>A die of Pressing.json format /2: what blanks it takes and the patterns it presses them into.</summary>
@@ -85,11 +157,13 @@ public sealed class PressDie
     public byte[] Materials = [];
     public int AcrossMin, AcrossMax, LengthMin, LengthMax; // cm
     public float AspectMin, AspectMax;
+    public bool AspectPreset; // "aspect": "preset": a blank keeps its pattern's preset's shape, one free dimension (the Receiver die, sized-parts design 4.1)
     public float SecondsBase, SecondsPerKg;
     public PressFeature[] Features = [];
     public PressSocketSpec[] Sockets = [];
     public PressPattern[] Patterns = [];
     public PressPreset[] Presets = []; // this die's presets, in the file's order
+    public float FitLo, FitHi; // a gun part's band: its bore over its receiver's (0, 0: no band; the Barrel die's [0.7, 1.5], sized-parts design section 5)
 
     public PressPattern? Pattern(string id) => Array.Find(Patterns, p => p.Id == id);
 
@@ -108,7 +182,7 @@ public sealed class PressDie
         if (Pressed.SectionOf(k) is not (var section and >= 0))
             return null;
         foreach (var p in Presets)
-            if (p.Blank == k && Takes(p.Pattern, section))
+            if (p.Blank == k && p.Pattern.Auto && Takes(p.Pattern, section))
             {
                 preset = p.Part;
                 return p.Pattern;
@@ -116,13 +190,15 @@ public sealed class PressDie
         PressPattern? best = null;
         var dist = int.MaxValue;
         foreach (var p in Presets)
-            Nearer(p.Pattern, p.Blank, k, section, ref best, ref dist);
+            if (p.Pattern.Auto)
+                Nearer(p.Pattern, p.Blank, k, section, ref best, ref dist);
         foreach (var p in Patterns)
-            Nearer(p, p.Preset, k, section, ref best, ref dist);
+            if (p.Auto)
+                Nearer(p, p.Preset, k, section, ref best, ref dist);
         if (best != null)
             return best;
         foreach (var p in Patterns)
-            if (Takes(p, section))
+            if (p.Auto && Takes(p, section))
                 return p;
         return null;
     }
@@ -148,7 +224,7 @@ internal static class PressDies
 {
     private static readonly string[] Dirs = ["+x", "-x", "+y", "-y", "+z", "-z"];
     private static readonly string[] Looks = ["blank", "bare", "dark", "accent"];
-    private static readonly string[] Measures = ["length", "across", "area", "volume", "mass"];
+    private static readonly string[] Measures = ["length", "across", "area", "volume", "mass", "calibres"];
 
     public static void Read(JsonElement root, Dictionary<string, ConstructPartDef> byName, PressTable t)
     {
@@ -198,11 +274,25 @@ internal static class PressDies
                 die.Presets = [.. die.Presets, new PressPreset(blank, pat, part)];
             }
         }
+        // A likeBy-nearest pattern's knots: its presets by size across (one at least; each a part of its like part's kind).
+        foreach (var die in t.Dies)
+            foreach (var pat in die.Patterns)
+            {
+                if (!pat.LikeNearest)
+                    continue;
+                pat.Knots = die.Presets.Where(q => q.Pattern == pat).OrderBy(q => Pressed.Across(q.Blank)).ToArray();
+                if (pat.Knots.Length == 0)
+                    throw new FormatException($"{die.Family} pattern {pat.Id}: \"likeBy\": \"nearest\" needs a preset");
+                foreach (var q in pat.Knots)
+                    if (q.Part.Role != pat.Like.Role || q.Part.Piece != pat.Like.Piece)
+                        throw new FormatException($"{die.Family} pattern {pat.Id}: its preset {q.Part.Name} isn't a part of its like part's kind");
+                pat.ByKnot = pat.Knots.Select(pat.WithKnot).ToArray();
+            }
     }
 
     private static PressDie DieOf(JsonElement e, Dictionary<string, ConstructPartDef> byName, PressTable t)
     {
-        Keys(e, "a die", "die", "blanks", "materials", "across", "length", "aspect", "seconds", "features", "sockets", "patterns");
+        Keys(e, "a die", "die", "blanks", "materials", "across", "length", "aspect", "seconds", "features", "sockets", "patterns", "fit");
         var family = e.GetProperty("die").GetString() ?? "";
         if (family.Length is 0 or > 16 || !family.All(char.IsAsciiLetter))
             throw new FormatException($"die \"{family}\": a family is 1 to 16 letters");
@@ -224,10 +314,22 @@ internal static class PressDies
         (d.AcrossMin, d.AcrossMax) = Range(e.GetProperty("across"), where + ".across", Extrusion.MinSectionCm, Pressed.PressMaxCm[^1]);
         (d.LengthMin, d.LengthMax) = Range(e.GetProperty("length"), where + ".length", Extrusion.StepCm, Extrusion.MaxLengthCm);
         var asp = e.GetProperty("aspect");
-        if (asp.ValueKind != JsonValueKind.Array || asp.GetArrayLength() != 2)
-            throw new FormatException($"{where}: \"aspect\" is [least, most]");
-        d.AspectMin = Num(asp[0], where + ".aspect", 0.01f, 1000);
-        d.AspectMax = Num(asp[1], where + ".aspect", d.AspectMin, 1000);
+        if (asp.ValueKind == JsonValueKind.String && asp.GetString() == "preset")
+            (d.AspectPreset, d.AspectMin, d.AspectMax) = (true, 0.01f, 1000); // (each pattern's preset's shape: Pressed.Proportioned)
+        else
+        {
+            if (asp.ValueKind != JsonValueKind.Array || asp.GetArrayLength() != 2)
+                throw new FormatException($"{where}: \"aspect\" is [least, most], or \"preset\"");
+            d.AspectMin = Num(asp[0], where + ".aspect", 0.01f, 1000);
+            d.AspectMax = Num(asp[1], where + ".aspect", d.AspectMin, 1000);
+        }
+        if (e.TryGetProperty("fit", out var fit))
+        {
+            if (fit.ValueKind != JsonValueKind.Array || fit.GetArrayLength() != 2)
+                throw new FormatException($"{where}: \"fit\" is [least, most] of a gun part's bore over its receiver's");
+            d.FitLo = Num(fit[0], where + ".fit", 0.1f, 1);
+            d.FitHi = Num(fit[1], where + ".fit", 1, 10);
+        }
         var sec = e.GetProperty("seconds");
         Keys(sec, where + ".seconds", "base", "perKg");
         d.SecondsBase = Num(sec.GetProperty("base"), where + ".seconds.base", 0.1f, 600);
@@ -267,7 +369,7 @@ internal static class PressDies
 
     private static PressPattern PatternOf(JsonElement e, string die, PressDie d, Dictionary<string, ConstructPartDef> byName, PressTable t)
     {
-        Keys(e, die + " pattern", "id", "like", "label", "preset", "blanks", "bay2", "scale", "features", "body", "along");
+        Keys(e, die + " pattern", "id", "like", "label", "preset", "blanks", "bay2", "scale", "features", "body", "along", "likeBy", "auto");
         var id = e.GetProperty("id").GetString() ?? "";
         if (id.Length is 0 or > 16 || !id.All(c => c is >= 'a' and <= 'z' or >= '0' and <= '9' or '-'))
             throw new FormatException($"{die}: a pattern's id is 1 to 16 of a-z, 0-9 and -");
@@ -287,6 +389,10 @@ internal static class PressDies
         }
         if (e.TryGetProperty("body", out var body))
             p.LikeBody = body.GetString() switch { "like" => true, "blank" => false, _ => throw new FormatException($"{where}: \"body\" is \"blank\" or \"like\"") };
+        if (e.TryGetProperty("auto", out var auto))
+            p.Auto = auto.ValueKind switch { JsonValueKind.True => true, JsonValueKind.False => false, _ => throw new FormatException($"{where}: \"auto\" is true or false") };
+        if (e.TryGetProperty("likeBy", out var likeBy))
+            p.LikeNearest = likeBy.GetString() switch { "nearest" => true, "pattern" => false, _ => throw new FormatException($"{where}: \"likeBy\" is \"pattern\" or \"nearest\"") };
         if (e.TryGetProperty("along", out var along))
         {
             if (!p.LikeBody)
@@ -318,10 +424,36 @@ internal static class PressDies
             var rows = new List<PressScale>();
             foreach (var s in sc.EnumerateArray())
             {
-                Keys(s, where + ".scale", "field", "by", "power", "strength", "ref");
-                var row = new PressScale { Field = s.GetProperty("field").GetString() ?? "", By = MeasureOf(s, where + ".scale"), Power = Num(s.GetProperty("power"), where + ".scale.power", -4, 4) };
-                if (!Pressed.Scalable(row.Field))
-                    throw new FormatException($"{where}: \"{row.Field}\" isn't a number the press scales ({string.Join(", ", Pressed.ScaledFields)})");
+                Keys(s, where + ".scale", "field", "by", "power", "strength", "ref", "points", "log", "clamp", "op", "at");
+                var row = new PressScale { Field = s.GetProperty("field").GetString() ?? "", By = MeasureOf(s, where + ".scale") };
+                var builder = SizedGunParts.IsStat(row.Field);
+                if (!Pressed.Scalable(row.Field) && !builder)
+                    throw new FormatException($"{where}: \"{row.Field}\" isn't a number the press scales ({string.Join(", ", Pressed.ScaledFields)}, or a weapon builder stat)");
+                if (s.TryGetProperty("points", out var pts))
+                    row.Points = Points(pts, $"{where}.scale {row.Field}");
+                else if (builder)
+                    throw new FormatException($"{where}: a builder stat ({row.Field}) is scaled by a curve: give \"points\"");
+                else
+                    row.Power = Num(s.GetProperty("power"), where + ".scale.power", -4, 4);
+                row.Log = s.TryGetProperty("log", out var lg) && lg.ValueKind == JsonValueKind.True;
+                if (row.Log && row.Points!.Any(q => q.X <= 0 || q.Y <= 0))
+                    throw new FormatException($"{where}.scale {row.Field}: a \"log\" curve's points are above 0");
+                if (s.TryGetProperty("clamp", out var cl))
+                {
+                    if (cl.ValueKind != JsonValueKind.Array || cl.GetArrayLength() != 2)
+                        throw new FormatException($"{where}.scale {row.Field}: \"clamp\" is [least, most]");
+                    row.Lo = Num(cl[0], where + ".scale.clamp", -1e9f, 1e9f);
+                    row.Hi = Num(cl[1], where + ".scale.clamp", row.Lo, 1e9f);
+                }
+                row.Op = s.TryGetProperty("op", out var op) ? op.GetString() ?? "" : "";
+                if (s.TryGetProperty("at", out var at))
+                {
+                    if (row.Points == null)
+                        throw new FormatException($"{where}.scale {row.Field}: \"at\" reads a curve (\"points\") relative to the preset");
+                    row.ReadAt = Num(at, where + ".scale.at", 1e-3f, 1e6f);
+                }
+                if (builder != (row.Op is "mul" or "add"))
+                    throw new FormatException($"{where}.scale {row.Field}: \"op\" (\"mul\" or \"add\") is for a builder stat, and a builder stat has one");
                 row.Strength = s.TryGetProperty("strength", out var sg) && sg.ValueKind == JsonValueKind.True;
                 row.Ref = s.TryGetProperty("ref", out var rf) ? Num(rf, where + ".scale.ref", 0, 1e9f) : 0;
                 rows.Add(row);
@@ -414,6 +546,23 @@ internal static class PressDies
         if (sections.Count == 0)
             throw new FormatException($"{where}: it lists blanks");
         return sections.ToArray();
+    }
+
+    private static Vector2[] Points(JsonElement e, string where)
+    {
+        if (e.ValueKind != JsonValueKind.Array || e.GetArrayLength() is 0 or > 8)
+            throw new FormatException($"{where}: \"points\" is 1 to 8 [measure, value] pairs");
+        var r = new Vector2[e.GetArrayLength()];
+        for (var i = 0; i < r.Length; i++)
+        {
+            var q = e[i];
+            if (q.ValueKind != JsonValueKind.Array || q.GetArrayLength() != 2)
+                throw new FormatException($"{where}: a point is [measure, value]");
+            r[i] = new Vector2(Num(q[0], where, -1e9f, 1e9f), Num(q[1], where, -1e9f, 1e9f));
+            if (i > 0 && r[i].X <= r[i - 1].X)
+                throw new FormatException($"{where}: the points' measures rise");
+        }
+        return r;
     }
 
     private static PressMeasure MeasureOf(JsonElement e, string where)

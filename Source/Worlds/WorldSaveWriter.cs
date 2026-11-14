@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// </summary>
 public static class WorldSaveWriter
 {
-    public const uint Names = 0x53454D41, Players = 0x53594C50, Stores = 0x53524F54, Bodies = 0x53594442, Links = 0x534B4E4C, Ground = 0x53444E47, Resources = 0x53435352, Space = 0x53435053, Misc = 0x4353494D, Riders = 0x53524452, Connectors = 0x534E4E43, NoCollide = 0x4C4F434E, Story = 0x59525453, SpaceAway = 0x59415753, SpaceSeats = 0x54455353, Origin = 0x4E494752, FactionsTag = 0x4E544346, FactionLooks = 0x32544346, Opening = 0x4E45504F, TutorialTag = 0x52545554, Fate = 0x45544146, DepotTag = 0x4F504544, ToolsTag = 0x4C4F4F54, QuarryTag = 0x52415551, DesignsTag = 0x4E475344;
+    public const uint Names = 0x53454D41, Players = 0x53594C50, Stores = 0x53524F54, Bodies = 0x53594442, Links = 0x534B4E4C, Ground = 0x53444E47, Resources = 0x53435352, Space = 0x53435053, Misc = 0x4353494D, Riders = 0x53524452, Connectors = 0x534E4E43, NoCollide = 0x4C4F434E, Story = 0x59525453, SpaceAway = 0x59415753, SpaceSeats = 0x54455353, Origin = 0x4E494752, FactionsTag = 0x4E544346, FactionLooks = 0x32544346, Opening = 0x4E45504F, TutorialTag = 0x52545554, Fate = 0x45544146, DepotTag = 0x4F504544, ToolsTag = 0x4C4F4F54, FirstsTag = 0x54535246, QuarryTag = 0x52415551, DesignsTag = 0x4E475344, StartTag = 0x54525453;
 
     /// <summary>Makes and writes the file. Null when it's on disk, else why not.</summary>
     public static string? Run(string folder, WorldSnapshot s)
@@ -129,6 +129,8 @@ public static class WorldSaveWriter
                 for (var k = 0; k < op.Buildings.Length && k < 255; k++)
                     w.Str(op.Buildings[k].Name).U16(op.Buildings[k].Body);
             });
+        if (s.Start.Length > 0)
+            w.Section(StartTag, () => w.Str(s.Start)); // (the story start, GameStoryStart.cs: a section of its own, only for a start that isn't the default, so an older reader skips it)
         if (Array.Exists(s.Players, p => p.TutorialState != TutorialState.None))
             w.Section(TutorialTag, () =>
             {
@@ -176,6 +178,15 @@ public static class WorldSaveWriter
                     foreach (var v in p.Upgrades)
                         w.U8(v);
                 }
+            });
+        if (Array.Exists(s.Players, p => p.Firsts != 0))
+            w.Section(FirstsTag, () =>
+            {
+                // (milestones for firsts, GameMilestones.cs: a section of its own, so an older reader skips it)
+                var those = Array.FindAll(s.Players, p => p.Firsts != 0);
+                w.I32(those.Length);
+                foreach (var p in those)
+                    w.U64(p.Key).U64(p.SteamId).U16(p.Firsts);
             });
         w.Section(Stores, () =>
         {
@@ -251,9 +262,11 @@ public static class WorldSaveWriter
     {
         w.U64(p.Key).U64(p.SteamId).Str(p.Name).U8((byte)(p.HasPlace ? 1 : 0)).Vec(p.Pos).F32(p.Yaw).F32(p.Pitch).F32(p.Health);
         w.Str(p.Tool.ToString()).U16(names.Part(p.Held));
-        w.I32(p.Parts.Length);
+        w.I32(p.Parts.Length + p.Made.Length);
         foreach (var (def, count) in p.Parts)
             w.U16(names.Part(def)).U16(count);
+        foreach (var (key, count) in p.Made)
+            w.U16(names.PartNamed(key)).U16(count); // (made parts in the same list, by key: an older build drops them, as it did)
         w.I32(p.Materials.Length);
         foreach (var (material, count) in p.Materials)
             w.U8(material).U16(count);
@@ -273,14 +286,18 @@ public static class WorldSaveWriter
         p.Held = names.Part(r.U16(), "a player's hands");
         var n = r.Count(4);
         var parts = new List<(ushort, ushort)>();
+        List<(string, ushort)>? made = null;
         for (var k = 0; k < n; k++)
         {
             var def = names.Part(r.U16(), "an inventory");
             var count = r.U16();
             if (def != ConstructParts.None && def < SandboxInventory.MaxKinds)
-                parts.Add((def, count)); // (an extrusion is a body, never counted: its id is past the inventory's)
+                parts.Add((def, count));
+            else if (def != ConstructParts.None && Extrusion.IsRuntimeId(def))
+                (made ??= new()).Add((ConstructParts.Def(def).Name, count)); // (a made part, by its key: inventory-run-time-parts.md phase 2)
         }
         p.Parts = parts.ToArray();
+        p.Made = made?.ToArray() ?? [];
         n = r.Count(3);
         var mats = new List<(byte, ushort)>();
         for (var k = 0; k < n; k++)

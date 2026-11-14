@@ -128,7 +128,7 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
 
   | Machine | Die | Longest piece | Speed | Bin | Power |
   | --- | --- | --- | --- | --- | --- |
-  | Extruder (Small) | 0.5 m, Die Frames to 6 x 6 m | 48 m | 0.2 m/s | 400 | 900 W |
+  | Extruder (Small) | 0.5 m, Die Frames to 8 x 8 m | 48 m | 0.2 m/s | 400 | 900 W |
   | Medium Extruder | 8 x 8 m | 64 m | 0.4 m/s | 2,000 | 3.6 kW |
   | Large Extruder | 16 x 16 m | 128 m | 0.8 m/s | 8,000 | 14.4 kW |
   | Capital Extruder | 32 x 32 m | 192 m | 1.6 m/s | 32,000 | 57.6 kW |
@@ -138,6 +138,21 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
 - **Die Frames** (`"dieFrame": true`; Die Frame 0.5 x 1 m, Large Die Frame 1 x 2 m). The small Extruder starts with a 0.5 by 0.5 m die. Attach frames to it (and
   to each other) on any side: the die reaches across every working frame joined to it, up to 6 by 6 m, and its centre moves with
   them (`ConstructExtruder.Die`). The section is held to the die, and the look line says to add frames.
+- **Expansion pieces** (the user, 2026-11-13: build a bigger Extruder, or add pieces to it, to print bigger things; `ConstructExtruderGrowth.cs`,
+  made by `ExtrusionParts.Growth`). A piece counts only on a machine of its own size class, joined to it directly or through others of its kind, and not broken;
+  everything is read from the construct's parts and links (`ConstructExtruder.Reach`: the die and the longest piece in one walk), so a client agrees with the host
+  after one is welded on or shot off.
+  - **Die Extensions** (Medium 2 m, Large 4 m; `"dieExtension"`): welded to the machine's side on the die face's row of sockets (`-x.4.5` on the Medium), flush with
+    the die face (one standing further back doesn't count). Each adds its row on that side of the die, chained outward, up to the machine's `growSection` (the next
+    class's die: 16 and 32 m); the die's centre moves with them. The Capital takes none (32 m is `Extrusion.MaxSectionCm`).
+  - **Run-out Tables** (Small 8 m, Medium and Large 16 m; `"runOut"`): roller beds under the die on the machine's `outBed` socket (kind `runOut`: nothing else fits),
+    the next on the last one's far end. Each adds to the longest piece up to `growLength` (64, 128, 192 m); their tops stand below the die's foot so a piece rides over.
+    The Capital takes none (192 m is `Extrusion.MaxLengthCm`). The step walks the tables only within 1 m of the plain cap.
+  - **What would make it fit.** An order too wide or too long for the machine as built (`WorkOrders.Refusal`, the picker, the look line, the Panel Former's sheet
+    link) names an expansion piece on this machine first, then the smallest Extruder that takes it (`ConstructExtruder.WideFix`, `LongFix`, `Bigger`), then, for a
+    Panel Former's sheet, strips. The recipe picker says the die and the longest piece as built and what the pieces make of them; the screen's length bar reads the grown cap.
+  - **Cost**: each piece about 30% of the next machine's recipe (600 steel, 150 rubber and parts; tier of its class), so one row or table is cheaper than the next
+    Extruder and the whole jump to its size dearer (docs/sandbox/design/extruder-expansion-notes.md).
 - **Growing.** The piece is a part of the machine's own construct, linked to its `die` socket (kind `die`: nothing else fits), its origin
   at its base end, so it rides with the machine (a mothership included), counts in its mass and is solid. Everything is found from that link
   (`ProductOf`), so nothing has to be kept in step through renumbering, splits or the wire. At 10 Hz the step adds up
@@ -262,9 +277,44 @@ Design: `docs/sandbox/design/press-rework.md`. A die in `Pressing.json` `"dies"`
 
 - **Like bodies** (`"body": "like"`, `"along"`; `Pressed.BuildLike`). Where behaviour lives in a part's geometry (a joint's base and leaf boxes, pivot and leaf socket, a suspension's axle socket, a shaft's end ports, a reel's hose point), the part is its like part's boxes and sockets stretched per axis to the blank's size, the blank's length along the like part's `along` axis; the die's features are drawn on it; mass, health and armour are the blank's. Pistons' travel and suspensions' travel stretch with it. A like part must be plain boxes (no hull, no screen). Other patterns are blank bodies; their like part's named ports are moved onto the blank's faces.
 - **Screens.** A 3-bay press's bay cards are lower than a Small Press's (0.5 cells, 32 columns) and every die screen is 5.8 by 1.2 cells (33 columns), so "Makes Limited-Slip Differential" fits.
-- **Not yet:** presets for the 3b dies (each makes sized parts only; the catalogue parts keep their Assembler recipes), a pipe shaft's bore in its torque, lift cells, lamps and screens (a like body drops lamps and panels).
+- **Presets, and what left the Assembler** (phase 5, protocol 277, and 5b; notes: `docs/sandbox/design/press-phase5-notes.md`). Every die's standard blanks are named in `Pressing.json` `"presets"`, the 3b dies' among them (`PressParts.Presets3b`), so a Gear Die press makes the catalogue **Gear Set**, a Tank die the **Fuel Tank**, a Beam die the **Frame Beam** (`i-beam 45x45x200 steel`, a Small Press), and so on. A catalogue part a die presses this way **has no Assembler recipe** (the sort is `Moved` and `PressedNow` in the part kit's `Assembling.cs`): 73 rows (brackets, housings, plates, the Gear Set, Circuit Board and Piston Set, the Button and Switch, the gearboxes and the two sized differentials, actuators, springs, cables and reels, the six tier 1 drivetrain parts, whose dies take a Gear Set in bay 2, the logic gates and sensors, the tanks, the Frame Beam). What stayed: engine pieces (the sized-engine phase), the building pieces of `Parts/Building` and `Parts/Capital`, and the Differential and Proximity Sensor (two kinds of part input). The survival start kit carries a Beam Die beside the Button, Bracket and Gear Dies, so a first frame needs only the tier 1 Press and Extruder.
+- **The rows are gone** (phase 5b: the user accepted that an Assembler saved before it may read another recipe, since the setting is `1 +` the row's place in its family's list; `tools/MIGRATING.md`). What says a part is pressed reads the presets: `AssemblingTable.PressedLine(def)` (`the Gear Set is pressed now: a Gear Die and a Round 0.15 m`) and `PressedDieOf(def)`, for a preset part no Assembler builds. The plain Assembler's recipe picker lists those dimmed under "Pressed", the die in the tip; the Technologies page and its notice say "your Presses press X"; a blueprint's or mod's `"config": {"recipe": "Gear Set"}` loads with the recipe None and a `[blueprint] ... is pressed now` line; a loot table may still hold a pressed part; and a terminal's chain treats a linked press with the right die as that kit's maker, so an order for a Clutch asks it for the Gear Set.
+- **Gun parts** (sized gun and engine parts, phases 1 to 3): the Barrel die (`fit` [0.7, 1.5], its curves by calibres) and the Receiver die (`"aspect": "preset"`: a blank keeps its pattern preset's shape, each side to the 5 cm lattice, `Pressed.Proportioned`; one free dimension, its across). Their guns: `docs/sandbox/constructs/weapons.md` "Merged receivers".
+- **Not yet:** a pipe shaft's bore in its torque, lift cells, lamps and screens (a like body drops lamps and panels).
 
 Choices made (the developer may change them): one part a press, not a frame you add bays to; a Small press has 2 bays and no recipe uses a third yet; a die only in a press of its own class, never a bigger one; a piece's size is its smaller side; a stroke's cost is a length, not a mass, so a stamped part doesn't weigh what it used; the Housing family is new, with no use yet beyond a box with sockets, and the Assembler can build them too; chutes carry pieces only from an Extruder (a shelf can't hold a piece, since a piece is physics-only); the ram strokes while it stamps (a "work" box, drawn only: [Machine look](look.md#machine-look)).
+
+### A press's orders (Press rework phase 4)
+
+A Press (not a Die Lathe) takes [work orders](#work-orders) (`WorkOrders.PressRefusal`, the press's side in `ConstructPress.SizedRefusal`
+and `WorkSized`). Notes and open choices: `docs/sandbox/design/press-phase4-notes.md`. Protocol 269.
+
+- **An order** is a pressed part by its key (`WorkOrder.Name` = `Pressed Part (...)`, the named shape 255 on the wire and in saves, as a
+  panel's; `WorkOrders.PressedOrder`), or a catalogue part that is a die's preset (by its id, as an Assembler's). `Pressed.SpecOf` reads a
+  key once into its die, pattern, blank and preset, then looks it up, so a press asks every step and allocates nothing.
+- **Refusals:** `the Press has no die: this order needs a Bracket Die`, `the Press holds a Button Die: this order needs a Drive Die`,
+  `a Medium Press's order: the blank is 0.80 m across`, `not a pressed part`, a full queue. An Extruder or an Assembler given a pressed key:
+  `the Extruder presses nothing: L bracket 0.2 x 0.2 x 0.3 m metal is a Press's order`.
+- **The head order rules the press:** its pattern (the press's own Pattern setting is left as it is), and a bay takes only its blank
+  (`BayRefuse.Order`, "not its order"); the bay card names that blank and says "For its order". Each part pressed counts on the head
+  order (`WorkOrders.Made`) and on its console's Made count. A press has no Clear button, so a queue that runs out goes and the press is
+  back on its own Pattern (`PressStall.WantsOrder` shows only for a moment). The line console's detail line adds `, order 1/2`.
+- **The kit hopper** wants the head order's kit before its blank comes (`KitWanted`), and a kit part riding in at any bay's Piece in goes
+  to the hopper (`TakeFromConveyor`).
+- **The Crafting Terminal** lists, per linked press, its fitted die's presets by their catalogue parts (`now` when the blank is in linked
+  stock or a bay and the kit is in the hopper or stock; `through a chain` when a linked Extruder can make the blank and the kit's maker is
+  linked: `ConstructCrafting.PressMissing`). Parts "to size" are not listed: bills and blueprints order those. Pressed parts in linked
+  stores are listed by key ("in stock"). A queued order's row says what the press lacks, the same text.
+- **Chains** (`ConstructLogisticsPlan.PressInputs`): a terminal's order queued at a press asks for its blank (a piece line at an Extruder,
+  by key) and, when the kit is a part, its kit (at an Assembler); both ride to the press, tagged, and count on arrival. Bulk kits are not
+  ordered (they come by chute, as an Assembler's materials). A chain line's kind goes on the wire by `ConstructStorage.WriteDef`, so a
+  run-time blank reaches a client by its key.
+- **Bills** (`ConstructBill`): `Bill.Pressed` (pressed keys and counts), each one's blank added to `Pieces` and its kit to `Kits`; a
+  catalogue part with a preset and no Assembler recipe adds its blank and kit too and goes to the console as a Press's order. Blueprint bill
+  line: `{"step": n, "pressed": "Pressed Part (bracket.l l-angle 20x20x30 metal)", "count": 3}`. `--bill` prints a "Pressed" group (die,
+  pattern, press class, blank, bay 2, seconds), a "Kits (bay 2)" line, and catalogue lines `pressed (Bracket Die, blank ...)`.
+- **The recipe picker** on a press is unchanged: its tiles set the press's Pattern (phase 3b's Recipe button). Orders come from a
+  terminal, a console's bill or a building station (`ConstructStation.OrderFor` gives a pressed key its press order).
 
 ## The Panel Former
 
@@ -280,7 +330,7 @@ the parts come from the part kit's `--gen-parts panel_former_parts`. Phase 1 (fe
 
   | Word | What | Range |
   | --- | --- | --- |
-  | `KIND` | the preset: `curve`, `sbend`, `hood`, `fender`, `door`, `roofbow`, `cowl` | |
+  | `KIND` | the preset: `curve`, `sbend`, `hood`, `fender`, `door`, `roofbow`, `cowl` (and `bend`, `loft`, whose keys differ: [Panel Designer](#panel-designer)) | |
   | `LxW` | length and width, cm | 20 to 600, 5 cm steps |
   | `c` | crown: how far the middle stands proud across the width, cm | 0 to 80, at most half the width |
   | `r` | rake, the kind's second number, cm: a curve's or a roof bow's arch along its length, an S-bend's step, a hood's nose drop, a fender's arch height, a door's turn-in at the top, a cowl's rise | -200 to 200, within its length |
@@ -358,6 +408,55 @@ Proposed (the user's to confirm): the seven presets and their ranges; cost by ma
 part on the bed; the two tiers' sizes; a timed stroke; the kit's lofts formed in steel only; for the designer's free shapes, a key
 `Formed Panel (#HASH)` with the design stored once per world and sent once per connection. Next: the designer window, the Laser Cutter
 (cut-outs), a panel drawn bending on the bed, a cheaper first part for a new key (0.3 ms each today), the kit's own lofts made in slices too, a Large former.
+
+## The Laser Cutter
+
+The machine after the former on the line (design `docs/sandbox/design/laser-cutter.md`, phase 3; notes `laser-cutter-phase3-notes.md`).
+It cuts a cut key (`Cut Panel (PANEL | CUTS)` or `Cut Plate (BLANK | CUTS)`, `HullLoft.Cuts.cs`) out of its blank: a formed panel, or a
+flat extruded piece (plate, a flat bar either way up). Code: `ConstructLaserCutter.cs`; parts from `--gen-parts laser_cutter_parts`
+(`LaserCutterParts.cs`, `Constructs/Parts/LaserCutter`), recipes by the Assembling rule, Production > Extrusion beside the formers.
+
+| Machine | Bed (longest x next x tallest) | Cutting power | Offcut bin |
+| --- | --- | --- | --- |
+| Laser Cutter | 2.5 x 1.8 x 0.6 m | 2.4 kW | 200 |
+| Medium Laser Cutter (tier 2 Assembler) | 6 x 4.5 x 2 m | 9.6 kW | 1,200 |
+
+- **Orders only.** A cut key is a named order; the cutter refuses anything else ("nothing to cut: a Panel Former's order", "too large for
+  this cutter", "too tall for the bed", the key's own rule broken). Every other machine refuses a cut key: "a cut part is a Laser Cutter's
+  order". Its Queue button adds its Order count of the head order's cut part; its **Design** button opens the recipe picker on the world's
+  cut designs, and a pick orders that design at it (`CActKind.CraftNamed` with the cutter as its terminal).
+- **No stock of its own.** Only the head order's blank is taken off the conveyor into Piece in (a formed panel by name, an extruded piece by
+  its key), one at a time onto its bed (`CStore.JobAmount` 1); anything else waits on the conveyor. Its screen and look line say "needs
+  BLANK on its bed". Cancel or Clear with an uncut blank on the bed drops it on the out bed as a loose part.
+- **The cut** is a timed stroke: `seconds = 2 + 0.36 x edge (m) x thickness (mm) / power (kW)` (`ConstructLaserCutter.Seconds`), the
+  edge being each cut's outline on the sheet less what runs along the sheet's own edges. Power is needed only while it cuts; no power or Run
+  held off keeps the blank on the bed and the stroke where it stopped. Done, the cut part rides out of Piece out, or drops on the out bed.
+- **The offcut** (the blank's mass less the cut part's) is counted in tenths of a unit (`CStore.InAmount` of `InMaterial`, saved and
+  sent); whole units go into its bin as they add up, which a chute empties from its **Offcut** port (chutes can't feed it). Tenths of
+  another material round to the nearest unit first. A full bin, or one holding another material, stalls it (`ExtrudeStall.OffcutFull`,
+  "offcut bin full"), the cut part waiting on the bed. A cut costs power and time, never material.
+- **Look**: a slatted bed under a gantry, the head's carriage running along the gantry and the beam's line glowing while it cuts, a fume
+  duct, the offcut hopper on the right of the out end, the control board on the left. Body `#a8365e`.
+- **Where orders come from** (phase 4): the Panel Designer's **Cut-outs** (openings and cut corners on the panel's sliders, up to six;
+  a refused cut turns the readout red and holds ORDER), saved as a cut design and ORDERed like a panel; a Crafting Terminal's list (each
+  linked cutter's cut designs: now with the blank in stock or on the bed, through a chain when a linked machine makes it); a blueprint's bill
+  (`Bill.Cut`, its blank a Panel Former's or an Extruder's line; a bill line `{"step": n, "cut": "Cut Panel (...)", "count": 2}`; `--bill`
+  prints "Cut panels"); a Building Station's step (`OrderFor`). A cut order at a cutter chains its blank (`ConstructLogisticsPlan.CutterInputs`):
+  a formed panel asked of a linked Panel Former, a plate or flat bar of a linked Extruder, riding to the cutter tagged for it.
+- **The Pane** (phase 6, `HullLoft.Pane.cs`; notes `laser-cutter-phase6-notes.md`): `Cut Pane (rA,B,C tT glass)`, glass cut to an
+  opening's own outline (`A` along, `B` across, corners cut back `C`, `T` mm, 12 to 40), 7 mm short all round (an opening's socket is on the whole centimetre, up to 5 mm from its true middle). Its blank is the smallest
+  flat formed glass sheet that holds it (`Formed Panel (curve LxW c0 r0 tT glass)`, sides rounded up to 5 cm, at least 20); the head cuts
+  its whole outline. It welds by its one socket, `back` (the middle of its back face), to an opening's `o` socket, its front `T` mm out on
+  the side the sheet faces. A square-cornered pane is one solid glass box (rounds pass it and break it); one with cut corners is a glass hull
+  over a hidden box (a round stops on it and breaks it). The designer's **Glazed** box, only on an opening of 10 cm or more wholly inside the sheet, makes ORDER add one
+  pane per glazed opening per panel (not saved with the design: a design is its cut key). A cut part like the others: an order, a bill's
+  `Bill.Cut` line, a rack's kind, a Building Station's step, all by key.
+- **Window tool**: `cutter`, `cutter order KEY [N]`, `cutter feed KEY`, `cutter await` (`Program.WindowShotCutter.cs`). The designer's `design cut rU,V,A,B,C | mK,A,B | clear | drop N | glaze N`; `ray PART U,V M D` deals D damage to what the ray hits (host).
+- **Tried** (2026-11-13, Proving Ground, a former, a conveyor and a small cutter; host and a joined client): a 20 mm panel's window and
+  corner (1.61 m of edge) cut in 6.9 s, the same at 40 mm in 11.7 s, a 5 cm plate in 14.1 s and a 10 cm plate in 26.2 s, each as the law
+  says, on both peers; the tenths 0.6 + 1.1 gave a unit and 0.7 over.
+
+Next: the designer's drawn plan of the sheet (cuts dragged by mouse) and cut plates designed there; the Showcase's cutter; a loose blank let go on the in bed taken in; F taking back a blank from the bed.
 
 ## Machine tiers
 
@@ -447,7 +546,7 @@ The step after refining: an **Assembler** builds parts from what the chains make
 
 - **The part** (`Constructs/Parts/Assembling`, attach tool, physics-only, five tiers: [Machine tiers](#machine-tiers)): an open gantry 2 to 6 m wide, with a low hopper at the back (its input), a tray at the front (its output) and an arm. `storage.assemble` holds `capacity` (the fill's scale), `speed`, `chuteLoad`, `batches` (how many batches of each input it buffers: 4 a tier), and `outAt`, `outDir`, where a body leaves. Its `slots` are the tray.
 - **The recipe** is a setting (`"config": [{"key": "recipe"}]`): a choice filled from the table as the parts load, so the configure tool lists every recipe (a filter box stands over a long list) and a blueprint step names one (`"config": {"recipe": "Engine"}`). 0 is none.
-- **The table** (`Constructs/Assembling.json`, format `call-of-slop-assembling/1`; `AssemblingTable`). Each recipe gives `output` (a part), `count` (default 1), `materials` (material: units), `parts` (part: count), `seconds` (at speed 1) and optionally `minTier`. At most 6 inputs, one recipe a part. A physics-only part can't be an input, since no chute or hands can bring one, so a chain goes through **components**. A refused file gives no recipes and the reason (`--check-construct-parts`).
+- **The table** (`Constructs/Assembling.json`, format `call-of-slop-assembling/1`; `AssemblingTable`). Each recipe gives `output` (a part), `count` (default 1), `materials` (material: units), `parts` (part: count), `seconds` (at speed 1) and optionally `minTier`. At most 6 inputs, one recipe a part. A physics-only part can't be an input, since no chute or hands can bring one, so a chain goes through **components**. A refused file gives no recipes and the reason (`--check-construct-parts`). A part a die presses from a standard blank has no row: it is pressed, not assembled ([The Press](#the-press)).
 - **Components** (`Constructs/Parts/Components`, items, in the parts menu's Production category): Gear Set, Bearing, Piston Set, Copper Coil, Wiring Loom, Circuit Board, Control Unit, Servo Motor, Tyre Carcass, Steel Plate, Lens.
 - **Written and generated.** the part kit's `--gen-parts assembling` holds 46 recipes by hand (every component, and what a player reaches for first) and generates 437 for the long tail from the part files, by rule: half a part's mass in its class's material, what its role must have (an engine's Piston Sets, a gearbox's Gear Sets, an actuator's Servo Motors, a logic part's Circuit Board), and a tier from what that needs. Spawners, the Construct Core, a chest's lid and damage stages have none, nor do the weapon builder's generated parts. Fix the tool, not its output (`--check` compares).
 
@@ -650,6 +749,19 @@ the part kit's `control_parts` (the console).
   the input makes) or "Recipe Auto"; a Panel Former's "Preset Hood". Another machine adopts it with one data line, a `machine.recipe`
   button on its screen, and its list in the picker (`Ui.RecipePickable`, `MakeRecipeSet`). The Assembler table no longer writes its
   recipe names over a Panel Former's preset list (`AssemblingTable.Fill`), which had left its Preset at the first preset.
+- **The makers adopt it** (2026-11-12, `UiRecipePickerMakers.cs`). The setting a pick sets is `ProductionLines.RecipeKey`: a Fan
+  Former's Makes (`fanKind`), an Airframe Former's Cuts (`wingKind`), else the recipe setting, so the same `CActKind.LineRecipe` serves
+  them all (no protocol change). Every **Press** has **Recipe** beside **Pattern** on its die screen: the picker shows Auto, the fitted
+  die's patterns (the part each is like, a kit icon when bay 2 wants one, "P2" for its Pattern number), then the patterns of every other
+  die of its size, dim, one category tab per die ("Bracket (fitted)" first): what it could make with another die fitted. Its tiles are
+  made per kind and fitted die (`Ui.RecipeVariant`); the picker closes when the die changes. Pattern still steps through them, and the
+  bay cards are as they were. A **Die Lathe**'s die screen has Recipe: None, then every die of the lathe list with its time and its
+  block's material; a die of another size is dim and refused (`ConstructPress.LatheCuts`, as its WrongClass stall). A **Fan Former**
+  (all sizes) and an **Airframe Former** have a Recipe button on their four-row screens: the kinds, as swatches; size, blades and
+  chord stay the configure tool's. The Fan Former's screen now names its kind ("Ducted fan"). The pick from a machine's own button
+  marks its body dirty, so a client's screen shows it (it had stayed on the host until something else changed). For window shots,
+  `picker` prints the open picker's tiles, `picker N` picks value N as a click does (a scripted click doesn't reach ImGui on a Windows
+  desktop: the real cursor wins), `picker @PART` opens it on a part as its button does (a joined window can't fly its eye to a screen).
 - **Resource icons** (`Source/Render/ResourceIcons.cs`). Every loose material has an icon: a small 3D stack of its family's shape in
   its colour, drawn from boxes and part shapes into the inventory's tile atlas (`SandboxTiles`, slots of `Kind.Resource`, made first
   and in a few frames; no image files). The family is `Recycling.json`'s `"shapes"` (ore, ingot, plank, log, heap, drum, gas, block,
@@ -853,15 +965,96 @@ where they are wanted, else to storage.** Code: `Source/Constructs/ConstructLogi
   root's entries go and their unstarted orders leave their makers (a head order on the die finishes; its part goes to storage at the
   next Router). A link nobody makes stays open and the order's row says "waiting on Gear Set: nothing on the network makes it" (else
   "Gear Set 1/2 from the Assembler"). Loose material is not ordered (the user's answer: kept by levels). Entries are saved in the
-  LOGI block after the riders (an entry's maker order is marked again on load, so nothing is asked twice); no new wire data: the row
+  LOGI block after the riders (an entry's maker order is marked again on load, so nothing is asked twice); the row
   travels as the order's note. An order whose part went to storage says why in its row ("a part went to storage: ... - it is fetched
   from there"). Assemblers and Panel Formers are Router destinations (an Assembler's for its chained inputs; a Panel Former has no
   wants yet).
-- **Not yet** (phase 2's rest, written plan in the coordinator's notes): deeper chains (a maker's own inputs), stock before making for
-  chained inputs, priorities between roots, the Building Station as a root, the Orders tab's indented chain lines, press bays as
-  destinations (a pressed part's maker waits for the Press's orders).
+- **Deeper chains, stock first, rank** (phase 2b, the same file). From the step after an entry's maker takes its order, that maker's
+  own recipe inputs are asked the same way (one level a step), at most `MaxDepth` (6) levels below the root ("waiting on X: chain too
+  deep (6 levels)"), never a kind the root or an ancestor link is (a recipe loop: "recipe loop: the X needs itself"); an entry knows
+  its `Parent` and `Depth`, and a link whose parent finished, went or changed maker goes with its unstarted order. Before a maker is
+  asked, free stock of the kind in the root's network's stores with a conveyor way to the destination (`ConstructCrafting.RouteTo`,
+  joins and Routers) is claimed for it (a `ConstructReserve` claim owned by the destination's store, id the entry's) and sent one
+  piece a step with the entry as its destination; only the rest is made (a chute into the machine brings what it wants by itself,
+  so stock behind a chute is not claimed). A maker is the Assembler already making that kind, else the shortest queue; the chained
+  line goes ahead of the first line in that queue it is an input for (else a machine asked for a part and for that part's input
+  would wait on itself; that line has no batch under way, an Assembler starts one only with every input in). Cancelling drops a
+  chained head line too when its Assembler has no batch under way. **Rank:** roots compete by priority class, then age (the user,
+  Q2): every crafting order gets an age stamp when first stepped (`CraftOrder.Stamp`, server, not saved: stamped again in order),
+  terminals and stations are stepped oldest open order first, each followed by its own chains (`ConstructLogisticsPlan.Serve`), so
+  the oldest claims stock first; the entry table is kept in rank order (class, then the root's stamp), so a maker's piece goes to the
+  best-ranked link, and a terminal's own order that asked the same machine for that kind earlier is served first. Every root is
+  Normal until phase 3's priorities; stock targets will rank below Low. **The Building Station** is a root like a terminal (it is
+  one by data): its craft orders chain the same way, and its panel lists the chained orders' lines under its note.
+- **Chain lines** (protocol 268). Each order's chain is made into at most 6 lines on the server (`ChainLine`: depth, kind, arrived,
+  asked, maker, destination, stock claimed, the reason; "and N more"), only when they change, and sent with the order in
+  `CBodyKind.Craft`; the Orders tab draws them indented under the order's row on both peers (`ConstructLogisticsPlan.LineText`), a
+  link nobody makes in the fault colour. The LOGI block gains a third part after the entries: per entry its parent, depth, class,
+  stamp and flags (an older phase 2 block loads as one level).
+- **Press bays and Panel Former sheet** as chain destinations. A press's blank and part kit chain since Press phase 4 (they ride
+  into the bay that takes them). A Panel Former's order now chains too: its panel's material in units, less what its bin holds of
+  that material and a stroke under way, is asked as **sheet sized to the panel** (`ConstructLogisticsPlan.SheetFor`, phase 4c: a solid
+  section the panel's width in 5 cm steps, 10 cm thick, cut so one piece holds one panel's units; when no Extruder
+  on the network takes it, phase 5: the link waits and says what would make it, Die Frames on an Extruder whose most section takes it or the smallest bigger Extruder (`TooWideText`), and only with the Panel Former's **"Too wide: make strips"** (`formerStrips`, off by default, protocol 303) is it split across into the fewest equal strips the widest one takes, each holding its share; a waiting link follows the setting as it changes, `Rekey`), counted in pieces at what one puts into the bin (`SheetUnits`); a sheet that
+  arrives counts for its link. A maker with a conveyor way to the destination (`ConstructCrafting.RouteTo`: joins and Routers) is
+  chosen before one without (a Splitter's line may still bring it, in turn).
+- **Logistics settings** (phase 3, protocol 275; `Source/Constructs/StockTargets.cs`, group Logistics in the configure tool, added
+  by code after every other setting so older slots keep their place). Piece Rack (not a tray): `storeKeep` "Keep what it holds" (0
+  to 200, 0 off), `storePriority` (1 to 5, default 3), `storeTakes` (Anything, Only what it holds now, Nothing). Conveyor Router:
+  `routerSpill` (Auto, Ahead, Left, Right), `routerHold` (off, on). Crafting Terminal and Building Station: `feedPriority` "Order
+  priority" (Low, Normal, High). The rack's look line ends with them: "keeps 6 of each kind it holds (refills at 4); takes only
+  what it holds; store priority 5" (either peer: made from the settings).
+  Phase 5: a terminal's line queued at a shared maker goes ahead of unstarted lines of a lower class after the head (`ConstructLogisticsPlan.Ranked`; `WorkOrder.Rank`, server only: 1 a refill, 2 Low, 3 Normal, 4 High, a player's own line as Normal); a later change of the setting doesn't re-rank queued lines. A chain link nobody makes is asked again only when its network's look changes (`Seen`: links, rebuilds, each machine's queue, bin and settings) or after a minute (`RetrySteps`).
+- **Stock targets** (design section 6). Within 2 s of a rack's `storeKeep` going above 0 (a scan of every body's racks every 2 s,
+  `StockTargets.Scan`), each kind it holds becomes a target (at most 8; an empty rack waits for its first piece). The low mark is
+  keep less a quarter rounded up, at least one (keep 20: 15; keep 6: 4). At or below it, with nothing riding to it and no refill
+  open, the target asks one maker for keep less held and riding (no more than the rack's room) as a chain link flagged `Stock`
+  whose root and destination are the rack (`ConstructLogisticsPlan.AskStock`); it never takes stock from other stores, only makes;
+  its own inputs chain as an order's do. A refill closes when its pieces arrive, or when its maker is done or dropped it and nothing
+  rides; the next opens no sooner than 5 s later. `storeKeep` 0 ends the targets and their unstarted orders. Targets are stepped
+  after every terminal (2 Hz) and rank below every order (`Better`: Stock last, then class, then age). Saved in the LOGI block's
+  fourth part (rack part, kind by name); a loaded refill is taken up again by its target, not asked twice.
+- **Storage choice** with settings: a rack's `storeTakes` filter holds for storage and overflow (a store always takes a kind it
+  keeps); the highest `storePriority` wins, a store that keeps the kind before any other, then the shorter way. A rack is a
+  destination for its refill's pieces (they ride tagged to it, Router or not).
+- **At a Router:** `routerSpill` pinned sends a piece for storage, or one with nowhere to go, out by that way (it waits if that way
+  has no conveyor); ordered pieces follow their order. `routerHold` on: an ordered piece whose way is cut, too narrow or full waits
+  at the Router with its order kept, marked stuck (red lamps), tried again every 2 s, instead of going to storage.
+- **Order priority:** terminals are stepped best class first, then oldest open order; a root's links take its terminal's class.
+- **The network board (phase 4, `ConstructLogisticsBoard.cs`):** a Router's third output, **Data out** (after Alarm and Moving;
+  `ConstructLogistics.PortBoard`, `MonitorKind.Network`), linked to any display makes it the board of that Router's network, by the
+  monitor bands: one line (`Network: 6 moving, 1 order, storage 57%`, or `STUCK at Router 1: Gear Set - no Piece Rack ...` in red);
+  2-6 rows: a title, the stuck spots, the open orders, the stores; 7 rows up: the counts (`Moving Orders Stuck Running n/m`), then
+  under headings the stuck Routers with the piece and reason, each open terminal order with its state (where it is held up in amber)
+  and its chain lines (maker, or why nobody makes it), the machines with their state and head order, the stores with fill and keep,
+  the Routers with their last piece and settings. A long list moves on by itself. Either peer, from what it already holds; names
+  of pieces cached once a kind. **The plan map (phase 4b, `ConstructLogisticsMap.cs`, `PanelDraw.Map`):** 15 rows up on a panel
+  0.8 m wide or more, the board is a plan from above (the two axes the network is widest on) between the title and a two-line
+  caption (the stuck spot or `All moving`; the counts): conveyors as lines (cut: red dashes), machines as squares in their lamp colour
+  with a two-letter tag, stores as boxes with a fill bar, Routers diamonds, Splitters triangles, Joins dots, pieces as dots (orange an
+  order's, white storage's, red stuck), a red ring blinking round the first stuck Router. A `NetPlan` per body and network keeps the
+  lines and nodes until the links change; dots, states and fills are made at each fill (nothing allocated). A store with a keep shows an amber tick at the fill
+  that keep of each kind it holds would make (`NetPlan.KeepMark`); a Router a bright stub along the way it last sent a piece (phase 4c;
+  a fill costs 1-2 us on the showcase, 17 nodes and 130 riders, nothing allocated). Not yet: dots gliding between fills. The Production Showcase's NETWORK BOARD (a Medium Text Sign in the
+  back aisle at x 44) shows it; the window tool's `panel Conveyor Router` prints the plan's counts.
+- **The Router's screen (phase 4, `RouterScreen.cs`, panel source `router`):** a low dark plate on each side face's frame, under
+  the side ports' conveyor beds (no post: Q6). Lines: what it is doing (sent, STUCK, waiting, no power), its last piece and way and
+  whether to an order or storage, the destination or the stuck reason, its settings. Buttons **Spill** (steps `routerSpill`) and
+  **Hold** (toggles `routerHold`), labelled with the current value, under the configure tool's rule (`router.spill`,
+  `router.hold` in `PanelTouch`); the setting rides with the body, so nothing new is on the wire. A conveyor on a side hides that
+  side's plate from a standing player (the other side's stays readable).
+- **A Router's name** (phase 4c, protocol 291): a Router holds one text slot (`TextSlots` 1, set for every `"router"` part), set in the
+  configure tool's **Name** box (F with Hands still presses its screen's buttons: `ControlFrame` skips Routers). An unnamed one keeps
+  its number on its network (`ConstructLogisticsBoard.RouterNo`). The board (title, stuck lines, Routers list, the map's caption), a
+  conveyor's held line (`JamText` 8) and an order's note while a piece of it is held (`ConstructLogistics.HeldNote`: "held at North
+  Gate: ...") use it. It rides as any part text does: CBody's text tail, the world save, a blueprint step's `"text"`.
+- **Window tool:** `panel Conveyor Router` also prints the board at 16, 6 and 1 rows; `logi name PART = TEXT` (a part's text through this peer's own message: stand near it first), `logi list [FILTER]` (the terminal's list rows); `touch LABEL @ PART /N` picks the part's
+  N-th screen; a low screen's touch stands the player in front looking down, and a joined client lands before it aims.
+- **Not yet (phase 3's rest):** the terminal's Stock tab and `CActKind.StockTarget` (a target for a kind the rack doesn't hold),
+  `feedPriority` on machines and `linePriority` on Line Consoles, a material in `storeTakes`, High chains inserted ahead in a
+  maker's queue, rounding a refill to the maker's batch, targets on bins (bulk: phase 5), blueprint `"targets"`, store monitors' rows.
 - **Not in phase 1:** chains (orders pull their inputs), stock targets and overrides, the Router's settings (`routerSpill`,
-  `routerHold`) and screen, the network board, press bays and the Panel Former as destinations, the source's own "no storage" stall
+  `routerHold`) and screen, the network board (all since added: phases 2 to 4), press bays and the Panel Former as destinations, the source's own "no storage" stall
   (a full network backs up to the Router, stuck, and the line behind it backs up to the machine as today).
 - **Showcase:** the Assembler's Piece out runs to a Router; its way ahead to the part rack (storage), its way 3 to a Join before the
   Crafting Terminal's side. Line A keeps its plain Splitter (the press is fed in turn until Press phase 2 gives it orders). A second Assembler on the panel strip's floor feeds the first's Piece in: "ORDER A CLUTCH: THIS ASSEMBLER MAKES ITS GEAR SET".
@@ -898,12 +1091,12 @@ and how many to make; a Line Console holds a **bill** and deals it to the machin
   cancelled) is cut off as it is. Pieces leave by the Piece out conveyor, or drop as before. Run held (the console stopped) holds the
   queue.
 - **Accepting.** `WorkOrders.Refusal` gives one reason and a refused order is never queued: the wrong family (an Extruder takes
-  sections, rounds and pipes; a Wheel Former wheels; Fan and Airframe Formers take no orders yet), a size past the die as it stands
+  sections, rounds and pipes; a Wheel Former wheels; a Fan Former props; an Airframe Former wings and its presets: [below](#a-formers-orders)), a size past the die as it stands
   (Die Frames counted) or the machine, a length off the 5 cm step or past `maxLength`, a wheel smaller than the machine's first, a
   section that can't be meshed, a material its table hasn't, a full queue, and **another material**: a machine fed metal refuses an
   order in wood ("the Extruder is fed metal: an order in wood is another line"). An empty bin takes any; it then waits Starved with
   "needs metal for its order" until its chute brings it.
-- **At the machine.** Every Extruder and Wheel Former has a status lamp over its screen (the line's colours) and three buttons under
+- **At the machine.** Every Extruder and Wheel, Fan and Airframe Former has a status lamp over its screen (the line's colours) and three buttons under
   it: **Queue** (one order of its settings as they stand and its **Order count**: an Extruder's section and Cut every, a Wheel Former's
   Order width and Order diameter; the material its bin holds), **Cancel** (the head) and **Clear**. The screen shows stock, the piece so
   far, the orders and pieces to go and the next three, the head marked.
@@ -937,8 +1130,33 @@ Proposed (the user's to confirm): the Line Console holding the bill rather than 
 a machine with a queue working orders only, Clear going back to its settings; an empty bin accepting any material; whole lines dealt
 round robin rather than counts split across machines; the queue and bill bounds (255 orders, 999 a line); a cancelled head's piece cut
 off as it is; blueprints carrying no orders; an Assembler's order counting parts made by whole batches; with a Piece out conveyor linked, every
-batch riding it (a part too wide goes to the tray if it fits there). Next: the Fan and Airframe Formers, and the
-building station issuing a blueprint's bill.
+batch riding it (a part too wide goes to the tray if it fits there). Next: the building station issuing a blueprint's bill.
+
+### A former's orders
+
+The Fan and Airframe Formers take [work orders](#work-orders) as the Wheel Former does (2026-11-13; notes and open choices:
+`docs/sandbox/design/formers-work-orders-notes.md`). Code: `WorkOrders.FormerRefusal`, `ConstructExtruder.GrowWhole` and `CutAs`,
+`FormerPresets.cs`. No wire change.
+
+- **An order** is a prop by its key (`Extrusion fan0.straight.3 0x220x0 steel`: kind, blade style, blades, diameter) or a wing by its key
+  (`Extrusion wing-aileron 50x0x200 steel`: kind, chord, span), or a catalogue part that is a **preset**. The head order replaces the
+  settings: the piece starts at its kind, blades or chord and parts off at the order's diameter or span. Refusals: the other former's
+  shape, a material its table hasn't, a size past or under the machine, off the 5 cm step, a full queue, a bin fed another material.
+- **At the machine**: lamp, queue, Queue, Cancel, Clear, Recipe, Up, Down and an Order count (part kit `extrusion_parts`). Queue orders its
+  settings in the bin's material. A Line Console's bill deals fan and wing lines and preset parts to them; a blueprint's bill line may name a
+  fan or wing piece or a preset part.
+- **Presets** (`Extrusion.json` `"presets"`, `{"part", "piece"}`): a catalogue wing a former makes exactly, by the same flight numbers and
+  mass from its key. An order for it grows the key's piece, paid by volume, and at the cut the **catalogue part itself** comes off in its
+  place (by the Piece out conveyor as a made part, else dropped where the piece lay), so blueprints keep the part they name. Twelve: the
+  Wing Segment, Short Wing Segment and Swept Wing L and R, Small (tier 1 Airframe Former), Medium and Large. `--former-presets` compares
+  every catalogue wing, control surface and rotor with the key a former would cut and fails when the list is wrong. What stayed (no
+  recipe, from wrecks, as before): control surfaces, fins and tail planes (mass differs), Narrow and Fabric segments (aspect, lift),
+  Capital surfaces (too big) and every rotor (power, rpm and mass differ). Catalogue wings and rotors never had an Assembler recipe, so
+  nothing moved off the Assembler. `--bill` lists a preset as `formed (Airframe Former, KEY)`.
+- **Not yet**: the Crafting Terminal lists no former's parts and a chain doesn't ask a former (`ConstructCrafting.MachineMakes`).
+- **The Crafting Terminal and chains** (phase 4c): the list shows each preset a linked Fan or Airframe Former takes (`ConstructCrafting.Catalogue`),
+  an order for one goes to that former, `MachineMakes` names it in a recipe's missing line, and a chain link for a preset may go to it
+  (`ConstructLogisticsPlan.FindMaker`). Catalogue wings are physics-only, so no Assembler recipe takes one and a chain never asks for one today.
 
 ## Crafting terminal
 
@@ -1096,14 +1314,26 @@ Terminal's own code for everything else; the part from the part kit's `panel_des
   up, through ImGui's queue): Length 200 to 60 cm with 13 panels previewed on the way, Fold angle 45 to 90. Host and a joined client:
   the client folded a panel to 90 degrees by mouse, saved it as "Flange" and ordered it; the host held it racked with hash `7f0cfbd5`,
   the client's preview the same hash; the design on both and through the host's save and load.
-- **Loft: the plan** (not built). A lofted panel is two edge profiles (the back edge and the nose edge, each up to 8 heights across the
-  width, cm) and the sheet between them, ruled or eased. It will not fit a readable key under 128 characters with every range, so:
-  `Formed Panel (#HASH)` with the design (kind, sizes, the two profiles, material) stored once per world beside the named designs
-  (`ConstructWorld.Designs` gains a body; section `DSGN` a second list) and sent before any body that names it; `HullLoft.Parse` asks
-  the world's store for the hash, so every peer makes the same floats. The designer gets a profile editor: eight drag handles an edge
-  in a side view, mirrored by default. Geometry is `PanelPoint` with the height read from the two profiles (Catmull-Rom across, lerp or
-  smoothstep along); rows and strips as today. Open: a blueprint file must carry the design's body (a `"designs"` block), and a hash
-  with no body on a peer is a refused part, not a guess.
+- **Lofted panels** (phase 3, feat/panel-designer-3; protocol 270). A ninth preset, `loft`: a sheet ruled between two edge profiles.
+  Its key carries the whole design, so it travels, saves and bills as every other formed panel (no world store):
+  `Formed Panel (loft 200x120x100 t20 b0,8,13,15,15,13,8,0 f-6,0,4,6,6,4,0,-6 steel)`: length x back width x nose width (cm, 5 cm
+  steps), thickness, `b` the back edge's eight heights across it and `f` the nose's (whole cm, -99 to 99, left to right). At most 102
+  characters and the material's name (the plan's `#HASH` key with a per-world body was not needed: `docs/sandbox/design/panel-designer-3-notes.md`).
+  Crown and rake are 0. Geometry: each edge a Catmull-Rom curve through its eight heights, the width and height straight between the
+  edges (`HullLoft.ProfileHeight`, `PanelHalf`); 7 facets across (one when both edges are straight), 1 along when the edges are alike,
+  else `L/30` clamped 2 to 6 (at most 42). The heights ride in `PanelShape.Back` and `Nose`, a signed byte each, so the shape stays a value.
+  The designer shows Back width, Nose width, **Mirrored** (on by default; a lopsided design loads with it off) and two profile editors,
+  eight drag handles each over the curve the former follows. `--form-panel loft [nose=cm] [back=h,h,h,h,h,h,h,h] [front=...]`. Every
+  other kind's key, floats and hash are as they were (hood `d6421922`). The default loft: 42 facets, 13 sockets, 22.9 kg, hash `6be2b55e`;
+  the largest (6 x 4.5 m, nose 2 m, laminate) 25 sockets, Medium Panel Former only.
+- **Seen (2026-11-12, phase 3, this PC).** *Phase 2's late joiner:* a host with a bent panel and a loft welded to a foundation, a client
+  joining afterwards: both parts by name and hash on the client as on the host (bend `b5a9ad44`, loft `6be2b55e`), and the body's save
+  and load kept both names. *The loft end to end, a host and a late client (two windows):* the designer opened on the showcase, the loft
+  preset, two handles dragged (mirrored), the nose narrowed to 80 cm, saved as "Scoop" and ordered; the Panel Former formed it and the
+  return conveyor brought it to the tray, hash `7487f415` as the preview's; a client joining after got the design and the tray's panel
+  with the same hash; the world saved, and loaded in a fresh process, kept both. The window tool gained `design open|save|order|parts|
+  profile H,CM|nose N|mirror 0/1`. Not seen: the panel opened by F on the showcase's designer in this run's tool (the tool's `aim; use`
+  found the screen's pointer instead; `design open` calls the same opening), the handles dragged by a real mouse.
 
 - **Seen and measured** (2026-11-12, `--window-shot` on the showcase; the 2-core box at a load average of 11 to 24, so times are upper
   bounds). *Host alone:* every preset in the preview (its hash the same as `--form-panel` gives: hood `d6421922`); a design saved, ordered,
@@ -1120,8 +1350,8 @@ Terminal's own code for everything else; the part from the part kit's `panel_des
   welded edge to edge were refused ("something is in the way": their hidden boxes overlap at the seam).
 
 Proposed (the user's to confirm): the designer being a Crafting Terminal; panels collected at the former's rack unless a conveyor returns
-them; any player may order, replace or delete a shared design; 64 designs a world, 128 a library. Next: loft between
-outlines (a `Formed Panel (#HASH)` key with the design stored per world), player-added sockets, cut-outs with the Laser Cutter.
+them; any player may order, replace or delete a shared design; 64 designs a world, 128 a library; a loft's key in whole cm within 99 cm,
+ruled, eight heights an edge (the notes file above). Next: player-added sockets, cut-outs with the Laser Cutter, an eased loft.
 
 ## Reservations
 
@@ -1148,8 +1378,8 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
 - **The part** (`Constructs/Parts/BuildingStation/BuildingStation.json`, 3 by 5 m, 150 W while it builds): a control pedestal with the screen at 1.5 m, an
   intake cabinet with a chute hopper, a hold along its right, and a mast with a boom that points at the bay. It is a Crafting Terminal by
   data (`storage.pieces.crafting` and `station`: `ConstructPartDef.IsBuildStation`), so its hold is a Piece Rack's (packed by volume, F
-  takes a stack), its ports are **Piece in**, **Piece in 2**, **Chute in** and **Orders**, and its network and orders are
-  [the terminal's](#crafting-terminal).
+  takes a stack), its ports are **Piece in**, **Piece in 2**, **Fluid in** (a pipe, phase 2), **Chute in** and **Orders**, and its
+  network and orders are [the terminal's](#crafting-terminal).
 - **The bay** is three settings on the station (configure tool, group Bay): `bayWidth` (away from the station), `bayDepth` (along it),
   `bayHeight`, 2 to 64 m in 0.5 m steps, 6 x 8 x 4 by default. It is a box on the station's +x side, 0.5 m from it, its floor at the
   station's foot (`ConstructStation.Bay`): on the ground or on a construct's floor, whichever the station stands on; nothing checks for a
@@ -1211,8 +1441,29 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   worst 5.65 ms over the last 600 frames of a build; a world saved and loaded at 11 of 26 went on to Done; a client joining at 1 of 26
   saw the same frozen body and counts to Done; Repeat started the second build only once the first was dragged out.
 
-Not in phase 1: arms and cranes; roll-out and carriers; vehicles generated on request; fluids and ammo filled from linked tanks and
-bins (a tank is as the blueprint spawns it); panels ordered from a Panel Former by the station (brought by hand); a part too big for
+- **Filling (phase 2, 2026-11-13; notes in `docs/sandbox/design/building-station-phase2-notes.md`).** In survival a part the station
+  fits holds nothing: a fuel tank adds no fuel, an ammo box no rounds, a Fluid Tank none of its blueprint's fill (creative with
+  untimed machines: full, as a spawned blueprint; `FillsFree`). After the last link a fill stage runs, a look every half second:
+  the fuel pool to full, each Fluid Tank to its step's config (fluid and percentage; not hot air, vacuum or exhaust), each ammo box
+  to full. Fuel and fluids come through intact pipes laid to the station's **Fluid in** from tanks on its construct (50 L a look; a
+  fuel tank gives from its construct's pool); rounds from bulk `ammo` in its linked bins (10 units a look, 10 rounds a unit). It
+  ends when all is full or a look moves nothing; the job is then done and the note names what wasn't filled ("not filled: fuel
+  0/40 L - pipe tanks to its Fluid in, ammo in a linked bin"). The state reads "filling its tanks". No new bytes; protocol 285
+  for the part's new port. Window tool: `link pipe FROM > TO`, `station tanks`, `station await fitted|linked|done`.
+
+- **Fill settings (2026-11-13, the user's answers to phase 2; notes as above, "Fill settings").** The station has a **Fill** group
+  of settings, in the configure tool and on a row of its window (the window sets them with any tool in hand: `WindowSets`):
+  `fillFuel`, `fillAmmo`, `fillCharge` (0 to 100 %, default 100) and `fillWait` (default off). Each kind is filled to that share:
+  fuel pool and Fluid Tanks (a share of the blueprint's fill; gases too), ammo boxes, **fitted magazines** and **Ammo Containers**
+  (bulk ammo by the unit) from bulk `ammo` in linked bins, **gases** (hydrogen, helium, oxidiser) from bulk in linked bins as well as
+  through pipes (4 units a look, a unit a Gas Compressor's 50 L; a part-used unit's spare is lost), and **batteries**: a survival
+  build's start empty and are charged from the station construct's own charge at 50 kW plus what its power plants make (proposed).
+  With `fillWait` on, a look that moves nothing keeps the build in the bay ("waits for its fill: ..."; the screen's row 4 reads
+  WAITS FOR FILL); off, it finishes short and says so. Creative (untimed machines) comes full, batteries charged. Protocol 289 (the
+  part's settings list; no new bytes). Window tool: `station set KEY VALUE` (as the configure tool sends it, either peer).
+
+Not in phase 1: arms and cranes (their own design, `docs/sandbox/design/arms-and-cranes.md`, waits on the user's answers to its
+questions 1 and 4); roll-out and carriers; vehicles generated on request; panels ordered from a Panel Former by the station (brought by hand); a part too big for
 the hold; hand delivery aimed at the build rather than the station, and of physics-only parts; a client's own saved blueprints (the
 host's folder is read); marker posts.
 
@@ -1220,6 +1471,94 @@ Proposed (the user's to confirm): size settings rather than marker posts; the ba
 a hand-delivered part fitted at once; copper and steel as the link stock, a unit a metre, taken from linked bins; links laid after
 the last part, in the blueprint's order (a link's branch and its hosts depend on that order); the frozen body refusing every edit;
 blueprints by name.
+
+## Lifters
+
+Scripted machines that carry pieces (design: `docs/sandbox/design/arms-and-cranes.md`; code `Source/Constructs/ConstructLifters.cs`,
+drawing `Source/Render/LifterRender.cs`, parts `Source/PartKit/Generators/LifterParts.cs`, `--gen-parts lifter_parts`). Nothing is
+simulated: a carried piece moves on a path worked out from the move's ends on every peer, and passes through everything.
+
+**The Loader Arm** stands beside a Building Station and is one more pair of hands: when idle and powered it asks the stations
+building in its reach for a step it can fit (the part's middle in reach, the part within its payload and size, its kind in the
+hold), takes the part out of the hold, carries it up, round its base and down, and fits it with the station's own fit. A world fits
+at most one part a tick. The station keeps fitting on its own timer; nothing changes until an arm stands beside it. Its part file
+holds only the plinth and the slewing ring; the turret, upper arm, elbow, forearm, wrist and gripper are posed each frame by two-link
+inverse kinematics from the hand (`ArmIk.Solve`), in the tier's colours (`lifter.look`).
+
+| Tier | Part | Reach | Payload | Largest piece | Hand speed | Handle | Power (while it moves) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | Loader Arm | 1 to 4 m | 500 kg | 1.0 by 4 m | 3 m/s | 0.8 s | 600 W |
+| 2 | Workshop Loader Arm | 1.2 to 5 m | 1 t | 1.25 by 5 m | 4.5 m/s | 0.6 s | 1.1 kW |
+| 3 | Industrial Loader Arm | 1.5 to 6 m | 2 t | 1.5 by 6 m | 6 m/s | 0.45 s | 1.9 kW |
+| 4 | Military Loader Arm | 2 to 8 m | 4 t | 2.0 by 8 m | 9 m/s | 0.3 s | 3.4 kW |
+| 5 | Plasma Loader Arm | 2.5 to 10 m | 8 t | 2.5 by 10 m | 12 m/s | 0.2 s | 5.8 kW |
+
+Each tier grows by the machine tiers' size (x1 to x2.5) and has its look: a rusty derrick on timber props, blue cast iron with
+cream trim, a yellow hydraulic arm with its power pack, olive armour with sandbags, a dark rounded drum with a glowing ring.
+Recipes come from the Assembling generator's rule: Gear Sets at tier 1, Servo Motors from 2, a Control Unit from 3.
+
+- **Settings** (configure tool, group Lifter): **Works** (Auto, Station only, Carry only, Off; carrying between machines comes in a
+  later phase, so Carry only and Off keep it from station work) and **Carry height** (m over the higher end of a move before it
+  turns; capped so the arm never stretches straight).
+- **Ports**: in **Run** (a wire held low keeps it from starting a move); out **Busy** (a move runs), **Alarm** (it holds a piece
+  nothing takes), **Moved** (parts it fitted since the world loaded).
+- **Looking at it**: the look line says what it does or waits on ("fitting a Wheel Hub to the Buggy, step 12 of 26", "waiting:
+  nothing in the hold it can carry to a place in its reach", "no power, stopped") and its reach is drawn in amber: two rings at
+  its floor and at the top of its reach, and a post over each building station's hold, green when it reaches it.
+- **The station's panel** says who fits: "Fitters: the station, 2 Loader Arms (Scrap, Workshop) - about 1.2 light parts a second".
+- **Power**: it draws its wattage only while it moves; without power it stops where it is (the client's drawing stops too) and
+  goes on when power returns.
+- **Saves**: a piece in a hand is saved in the body's `LIFT` block (after `LOGI`) and loads in the hand; the arm's first look
+  carries it back into the hold of a station building in its reach, and the build goes on. With no such station it waits holding
+  it (Alarm). A part that is no longer a lifter sets the piece down loose.
+- **The wire**: `CBodyKind.Lifts`, a body's lifters when a move starts, ends or waits (about 53 bytes a lifter; protocol 290).
+- **Window tool**: `lifter` (every lifter: state, reason, moves, the step's cost), `lifter place [TIER] [SLOT]` (host: an arm of
+  that tier at slot 0 to 3 round the station's bay), `lifter await`, `lifter holding` (until a hand carries a piece).
+
+**On the logistics network** (phase 5, `ConstructLifterNet.cs`; notes `docs/sandbox/design/lifters-phase5b-notes.md`). An arm also
+carries between the points it reaches with no conveyor on them: racks, Lay-down Pads, a machine's Piece out, an Assembler's, a press
+bay's or a Panel Former's Piece in, and a Crafting Terminal's tray. On its body's logistics map each pick-to-put pair is an edge
+(its metres out and back plus a handling, worked out on each peer from the parts), so a Conveyor Router sends a piece toward the
+arm's pick rack or pad when its way goes on by the arm, a chained order or a fetch from stock crosses it, and a terminal's network
+reaches the machines an arm serves. Overflow is never carried store to store. A **pick pad** is a Lay-down Pad among an arm's
+points: a station's part too big for its hold is asked for as before and delivered to the pad (a Router sends it there, an arm
+brings it, a fetch rides there, or a player sets it down on it), and the arm fits it from there; what the pads hold for a build is
+claimed for it. A pad takes in a loose part at rest over its hold, as new; a damaged one is left lying. Window tool: `lifter net
+[TIER] [pad]`, `lifter edges`, `lifter steps`, `lifter bigparts`, `lifter bigrack NAME`, `lifter pickpad [empty]`, `lifter crowd N`;
+`logi net` marks a way "by a lifter".
+
+**The Bridge Crane** (phase 6, `ConstructCraneRails.cs`; notes `lifters-phase6-notes.md`) is a lifter of kind `bridge`: Crane Rail
+sections laid end to end in two runs a span apart on whatever the player stands them on (Medium Columns on an Adapter Medium to Small
+on a small floor), and a Crane Bridge bolted to the outer side of one run by its +x socket. Its reach is the box between the runs, under
+the rails, down its hook's drop; everything an arm does it does in that box. Its look line, screen and Alarm say when it is off its
+rails or its far end has none. The rails are walked again only when a rail's or a bridge's place changes.
+
+**Hand orders** (phase 7, `ConstructLifterOrders.cs`, the panel `UI/UiLifter.cs`; notes `lifters-phase7-notes.md`). F on an arm, or
+on a crane's cabinet from anywhere on the floor under its rails, opens its panel: its points in reach with what each pick point holds
+(a rack's or pad's kinds, a machine's pieces at its out and in its tray), and its orders. Click a kind under a pick point, then a put
+point, set a count (1 to 99) and press Order: "3 Extrusion plate ...: Piece Rack -> Lay-down Pad". A lifter carries its orders first,
+in the order given, before any work of its own and whatever its Works setting (Off stops only its own work); at most 8 a lifter. A
+hand order may go store to store or pad to pad, which the lifter's own rule never does, but a put point's own rule still holds (a full
+pad, a press bay with a piece in it, a store that refuses the kind). An order whose piece isn't there yet, whose put point refuses it
+now or whose point is out of reach waits, its row saying why, and the lifter works on meanwhile. The server decides
+(`CActKind.Lifter`, a finger on a console's rule); the orders ride the lift word (protocol 312) and the `LIFT` block's second half,
+points on the lifter's own body saved as body 0. Window tool: `lifter panel [arm|crane]`, `lifter order FROM TO N KIND`, `lifter orders`.
+
+**The Lifter Cab** (phase 8, `ConstructLifterCab.cs`; part from `LifterParts.cs`, beside the Loader Arms in the inventory) is a seat, 0.75 by
+1.5 by 1 m, that steers the nearest Loader Arm or Bridge Crane on its own construct (one cab a lifter; no link). Sit in it (F): the
+lifter finishes the move it is in, then answers only the cab. W, A, S and D move the hook across in the view's frame, Space and Ctrl
+raise and lower it, at the lifter's speeds (a crane's travel and hoist), kept in its reach and never under the ground. **F** takes
+what is under the hook (within 1.5 m across): a loose single part within its payload and size ("too heavy: 603 kg, it carries
+500 kg", "only a single piece"), else a rack's, pad's or press's piece; **F** again puts it into a point there that takes it, else
+sets it down loose where it hangs. **E** gets out; a piece left in the hand goes on by the lifter's own rule. While seated the look
+line says what it did, its reach is drawn and the hook's shadow falls on what is under it. The hand's moves are lift words at 10 Hz
+while it moves; a client eases between them. Window tool: `lifter cab [arm|crane]`, `lifter sit`, `lifter cabstate [bait NAME]`.
+
+**Players in the way**: a piece pushes a player aside by at most 0.75 m; a bigger one waits for them (Alarm after 10 s), and so does
+any piece that reaches a player standing on a construct (a floor slab, a pad, a deck: they ride its frame, so nothing moves them).
+**Store parts on a pad**: a Lay-down Pad takes a store part (a Drill Module, an Ammo Container) as a station's hold does: by conveyor,
+arm or fetch as a new, empty one, and set down loose only when it holds nothing ("holds something: empty it first"). A Drill Module
+is 2.2 m tall: a Large pad, not a Medium one.
 
 ## Production Showcase
 
@@ -1229,6 +1568,11 @@ tried the moment it is spawned from the creative blueprint list. Made by the par
 (`Source/PartKit/Generators/ProductionShowcase.cs`), which builds it step by step through the game's own rules (`BlueprintScript`), so
 a step the rules refuse fails there with their reason. It reads the part files: run it after the part generators.
 
+- **The crane bay** (arms and cranes phase 7): its own floor behind the refining row (x 0 to 22, z -14 to -22), a Medium Bridge Crane
+  on two 16 m runs 6 m up on Medium Columns, and under it a line with no conveyor: an Extruder making metal angles (unwired: it runs
+  while its stock lasts), a Press with a Bracket Die, a Lay-down Pad. The crane takes each angle into the press's bay and each bracket
+  to the pad (about 8 s a carry and 6 s back at its 1 m carry height; in a minute: two angles in, a bracket out) and takes hand orders at its
+  cabinet. The whole blueprint is now 86 by 22 m.
 - **The layout**, left to right as material flows, a 2 m walkway along the front and one behind the first row, every screen, status lamp
   and sign facing a walkway: **power** (a Small Genset on two Fuel Tanks, a Battery, the main Switch with a Charge Gauge); **stock**
   (Storage Volumes, each beside the machine it feeds); **refining** (Smelter on iron ore, Sawmill on wood, Foundry on metal and stone,
@@ -1243,6 +1587,14 @@ a step the rules refuse fails there with their reason. It reads the part files: 
   steel sheet 0.5 x 0.1 x 1 m, a conveyor into a [Panel Former](#the-panel-former)'s Piece in, its Piece out onto a conveyor to a Long
   Piece Rack; on the orders console, whose bill gains two Hoods, two Fenders and one of the vehicle kit's lofted hoods); **crafting** (a Crafting Terminal between the two end racks, the orders console wired into its Orders port, a
   return conveyor from the Assembler's rack to its tray: "F on the screen: order a part. It arrives in the tray").
+- **Added 2026-11-13** (`showcase-repair-notes.md` in `docs/sandbox/design`): rubber chuted to the Assembler beside its steel (an
+  Ammo Container needs both); the Assembler's Router's way 2 runs to the Building Station's Piece in 2, so a part the station orders
+  of the Assembler rides into the hold; two Loader Arms at the bay's corners by the hold, on the showcase's own power; and a
+  **back strip** behind the station (x 56 to 86, z -14 to -20): an Airframe Former whose wing grows 6 m east over clear floor and drops
+  (a wing has no conveyor), and the [Laser Cutter](#the-laser-cutter)'s line, an Extruder making 0.5 x 0.1 x 1 m steel plate, a
+  Router whose way ahead takes an ordered blank to the cutter and whose way 2 racks the rest, the cutter's Piece out to its own Piece
+  Rack, all three on the orders console. Each conveyor before and after the cutter is 2 m: one shorter than the piece jams the Router
+  ("the conveyor after the junction is full").
 - **Stock** is the Storage Volume's own creative-only Material and Fill settings (`ConstructBuild.SetConfig`): a creative world fills
   each box as the blueprint builds; a survival world builds it empty, so a blueprint gives survival nothing. They are filled to 24%,
   under the 25% an open side may hold before it pours ([Sealed volumes](power-and-links.md#sealed-volumes)), so they need no walls.

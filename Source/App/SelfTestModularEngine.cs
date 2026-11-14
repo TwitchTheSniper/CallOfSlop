@@ -151,8 +151,8 @@ public static partial class SelfTest
         var end = Array.FindIndex(c.DefOf(2).Sockets, s => s.Name == "back");
         var own = Array.FindIndex(cyl.Sockets, s => s.Name == "base");
         if (!SnapBuild.SinglePurpose(cyl) || SnapBuild.SinglePurpose(c.DefOf(2)) || !SnapBuild.CanMate(c, cyl, own, 2, side) || SnapBuild.CanMate(c, cyl, own, 2, end)
-            || SnapBuild.CanMate(c, carb, Array.FindIndex(carb.Sockets, s => s.Name == "base"), 2, side) || SnapBuild.CanMate(c, big, own, 2, side))
-            Fail("modular engine: the ghost rules are wrong (a cylinder takes a crank's side, not its end; a carburettor takes a head; sizes don't mix)");
+            || SnapBuild.CanMate(c, carb, Array.FindIndex(carb.Sockets, s => s.Name == "base"), 2, side) || !SnapBuild.CanMate(c, big, own, 2, side))
+            Fail("modular engine: the ghost rules are wrong (a cylinder takes a crank's side, not its end; a carburettor takes a head; any size bolts on)");
         if (!SnapBuild.Fit(c, ConstructParts.Need("Small Starter Motor"), 2, side, -1, out _))
             Fail("modular engine: a starter doesn't fit a crank's side");
     }
@@ -276,16 +276,27 @@ public static partial class SelfTest
             return;
         MeFit(w, end, 2, "front", MeCyl, "base");
         MeExpect(end, "a cylinder goes on the crank's side, not its end", "a cylinder on the end");
-        // Sizes don't mix: a medium socket refuses a small part, and forced on (a weld ignores classes) it says so.
+        // Anything bolts on (sized-parts design 6.4, the user's answer 6): a small cylinder on a medium crank gives its own 40 kW; a medium
+        // cylinder on a small crank gives its 800 kW, and a small carburettor feeds it 5% of that and says so.
         if (Bed(1, true, "Medium ") is not { } mixed)
             return;
-        if (FitTurned(w, mixed, 2, "+y", MeCyl, "base", _ => true) >= 0)
-            Fail("modular engine: a small cylinder fits a medium crank's socket");
-        var smallDef = ConstructParts.Need(MeCyl);
-        var small = w.AddPart(mixed, smallDef, mixed.Parts[2].Pos + new Vector3(0, 1.5f, 0), 0);
-        w.AddLink(mixed, 2, Array.FindIndex(mixed.DefOf(2).Sockets, k => k.Name == "+y"), small, Array.FindIndex(smallDef.Sockets, k => k.Name == "base"));
-        mixed.Rebuild();
-        MeExpect(mixed, "mixed sizes: use one size", "a small cylinder on a medium crank");
+        var small = FitTurned(w, mixed, 2, "+y", MeCyl, "base", _ => true);
+        if (small < 0)
+            Fail("modular engine: a small cylinder doesn't go on a medium crank's side (anything bolts on)");
+        else
+        {
+            MeFit(w, mixed, small, "head", "Medium Carburettor", "base");
+            if (!MeRead(mixed).StartsWith("I1 40 kW", StringComparison.Ordinal))
+                Fail($"modular engine (a small cylinder on a medium crank): the readout says \"{MeRead(mixed)}\", not I1 40 kW");
+        }
+        if (Bed(1, true) is not { } starved)
+            return;
+        if (MeFit(w, starved, 2, "+y", "Medium Cylinder", "base") is var mc and >= 0)
+        {
+            MeFit(w, starved, mc, "head", MeCarb, "base");
+            if (!MeRead(starved).StartsWith("I1 40 kW", StringComparison.Ordinal) || !MeRead(starved).Contains("bank 1 starved: the Small Carburettor feeds 5% of its cylinders", StringComparison.Ordinal))
+                Fail($"modular engine (a medium cylinder, a small carburettor): the readout says \"{MeRead(starved)}\"");
+        }
         // A Large engine needs a starter and, with it, a battery.
         if (Bed(1, false, "Large ") is not { } large)
             return;

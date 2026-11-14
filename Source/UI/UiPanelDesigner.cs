@@ -15,6 +15,9 @@ public sealed partial class Ui
 {
     public bool DesignerOpen { get; private set; }
 
+    /// <summary>(Tools: the window tool's design report) The linked formers as the window counts them, its size limit's words and the fit list.</summary>
+    public string DesignerLinks => $"{_pdFormers} former(s); {_pdLimit}; fits [{string.Join("; ", _pdFits)}]";
+
     /// <summary>The preview's rectangle in window points (min, max) as drawn last frame; zero size: none.</summary>
     public (float2 Min, float2 Max) DesignerView { get; private set; }
 
@@ -31,19 +34,44 @@ public sealed partial class Ui
     public (ushort Body, int Part) DesignerTarget => (_pdBody, _pdPart);
 
     /// <summary>Probes: the shape on the sliders, the designs listed and the text under the sliders.</summary>
-    public HullLoft.PanelShape DesignerShape => _pdKind == HullLoft.PanelBend
+    public HullLoft.PanelShape DesignerShape => _pdPlate
+        ? new(0, _pdL, _pdW, 0, 0, Math.Clamp((int)PlateMm, HullLoft.PanelMinMm, HullLoft.PanelMaxMm), RecyclingTable.Current.NameOf(_pdMat)) // (a plate: its flat sheet, the frame its cuts and the preview are on)
+        : _pdKind == HullLoft.PanelBend
         ? new(_pdKind, _pdL, _pdW, _pdCrown, 0, _pdMm, RecyclingTable.Current.NameOf(_pdMat), _pdAngle, _pdFoldAt, _pdRadius)
+        : _pdKind == HullLoft.PanelLoft
+        ? new(_pdKind, _pdL, _pdW, 0, 0, _pdMm, RecyclingTable.Current.NameOf(_pdMat), NoseW: _pdNoseW, Back: _pdBack, Nose: _pdNose)
         : new(_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm, RecyclingTable.Current.NameOf(_pdMat));
+
+    // A lofted panel's nose width and its two edge profiles (HullLoft.Profile: eight heights a ulong); mirrored, a handle moves its twin too.
+    private int _pdNoseW = 100, _pdDragH = -1;
+    private ulong _pdBack = HullLoft.PanelDefault(HullLoft.PanelLoft).Back, _pdNose = HullLoft.PanelDefault(HullLoft.PanelLoft).Nose;
+    private bool _pdMirror = true;
+
+    /// <summary>Probes and the window tool: a loft's profile handle (0-7 the back edge's, 8-15 the nose's, left to right) to <paramref name="cm"/>, as a drag would (mirrored when the box is ticked).</summary>
+    public void DesignerProfile(int handle, int cm)
+    {
+        if ((uint)handle >= 2 * HullLoft.PanelProfilePoints)
+            return;
+        var nose = handle >= HullLoft.PanelProfilePoints;
+        ref var p = ref nose ? ref _pdNose : ref _pdBack;
+        p = ProfileMove(p, handle % HullLoft.PanelProfilePoints, cm, _pdMirror);
+    }
+
+    private static ulong ProfileMove(ulong p, int k, int cm, bool mirror)
+    {
+        p = HullLoft.ProfileSet(p, k, cm);
+        return mirror ? HullLoft.ProfileSet(p, HullLoft.PanelProfilePoints - 1 - k, cm) : p;
+    }
     public int DesignerDesigns => _pdMine.Count;
     public string DesignerNote => _pdWhy;
 
     private ushort _pdBody;
-    private int _pdPart = -1, _pdKind, _pdL = 150, _pdW = 100, _pdCrown = 10, _pdRake, _pdMm = 20, _pdCount = 1, _pdAngle = 45, _pdFoldAt = 100, _pdRadius = 10;
+    private int _pdPart = -1, _pdKind, _pdL = 150, _pdW = 100, _pdCrown = 10, _pdRake, _pdMm = 20, _pdCount = 1, _pdAngle = 45, _pdFoldAt = 100, _pdRadius = 10, _pdExtruders;
     private byte _pdMat;
     private int _pdStamp, _pdTextKey, _pdMaxL = HullLoft.PanelMaxCm, _pdMaxW = HullLoft.PanelMaxCm, _pdFormers, _pdMineSel = -1;
     private double _pdBuiltAt;
     private bool _pdBuilt;
-    private string _pdKey = "", _pdNumbers = "", _pdWhy = "", _pdSaved = "", _pdLimit = "", _pdAt = "", _pdBig = "";
+    private string _pdKey = "", _pdNumbers = "", _pdWhy = "", _pdSaved = "", _pdLimit = "", _pdAt = "", _pdBig = "", _pdPlateText = "";
     private readonly List<string> _pdFits = new(8);
     private readonly List<bool> _pdFitOk = new(8);
     private readonly List<byte> _pdMats = new(8);
@@ -79,6 +107,8 @@ public sealed partial class Ui
             return;
         DesignerOpen = false;
         DesignerView = default;
+        _pdDrag = -1;
+        _pdPlanS = 0;
         DesignerPreview.Release(); // (every shape the preview made goes back)
     }
 
@@ -96,8 +126,363 @@ public sealed partial class Ui
             case "angle": _pdAngle = value; break;
             case "at": _pdFoldAt = value; break;
             case "radius": _pdRadius = value; break;
+            case "nose": _pdNoseW = value; break;
+            case "mirror": _pdMirror = value != 0; break;
+            case "blank": _pdPlate = value != 0; break; // (0 a formed panel, 1 an extruded plate)
+            case "plateh": _pdPlateH = value; break;
+            case "select": _pdSel = value < _pdCuts.Count ? value : -1; break;
         }
         DesignerClamp();
+    }
+
+    // ---- Cut-outs (laser cutter phase 4): openings and cut corners on the sheet, ordered at a linked Laser Cutter -----------------------
+
+    private readonly List<HullLoft.Cut> _pdCuts = new(HullLoft.MaxCuts);
+    private readonly List<bool> _pdGlazed = new(HullLoft.MaxCuts); // (laser cutter phase 6: each cut's Glazed box, by the same index; ORDER adds a pane for each)
+    private string _pdPaneNote = "";
+    private int _pdPaneMax; // (the most panes of one key a panel takes: the Order count is capped so their order fits WorkOrders.MaxCount)
+    private string _pdCutWhy = "";
+    private int _pdCutters;
+    private readonly List<string> _pdCutFits = new(4);
+    private readonly List<bool> _pdCutFitOk = new(4);
+
+    /// <summary>The cuts as they stand (the window tool and probes read them).</summary>
+    public int DesignerCuts => _pdCuts.Count;
+
+    // ---- The Blank (the user, 2026-11-13: "Blank: formed panel / extruded plate") ------------------------------------------------------
+    // An extruded plate is the Extruder's Plate section: W wide, H high (a quarter of it thick: HullLoft.StockMm), L long. Its sheet is L by W,
+    // the same frame as a panel's, so the plan, the sliders and the cuts work on it unchanged; its key is a Cut Plate's (phase 1), ordered as one.
+    private bool _pdPlate;
+    private int _pdPlateH = 20;
+    public const int PlateMinH = Extrusion.MinSectionCm, PlateMaxH = (int)(HullLoft.CutMaxThickMm / 2.5f); // (10 cm: 25 mm thick; 800 cm: the 2 m bed)
+    private static readonly int PlatePreset = Array.FindIndex(Extrusion.Presets, p => p.Id == "plate");
+
+    /// <summary>True when the design's blank is an extruded plate, not a formed panel.</summary>
+    public bool DesignerPlate => _pdPlate;
+
+    /// <summary>The plate's thickness, mm: a quarter of its section's height.</summary>
+    private float PlateMm => _pdPlateH * 2.5f;
+
+    /// <summary>The thickness the sheet is cut through, mm (a pane's thickness follows it).</summary>
+    private int SheetMm => _pdPlate ? (int)PlateMm : _pdMm;
+
+    /// <summary>The plate blank as the Extruder names it: "Extrusion plate 200x20x300 steel".</summary>
+    private string PlateBlank => Extrusion.Name(new ExtrusionKey(Extrusion.Presets[PlatePreset].Mask, (ushort)_pdW, (ushort)_pdPlateH, (ushort)_pdL, _pdMat, false));
+
+    /// <summary>The design's key: the formed panel's, or with cuts the cut panel's (its blank that panel); a plate's is always a cut plate's (with no cuts, its blank's name: no design).</summary>
+    public string DesignerKey => _pdPlate ? _pdCuts.Count == 0 ? PlateBlank : CutKeyOf(DesignerShape)
+        : _pdCuts.Count == 0 ? HullLoft.PanelKey(DesignerShape) : CutKeyOf(DesignerShape);
+
+    private string CutKeyOf(in HullLoft.PanelShape s)
+    {
+        if (_pdPlate)
+            return HullLoft.CutKey(true, PlateBlank[Extrusion.Prefix.Length..], _pdCuts);
+        var blank = HullLoft.PanelKey(s);
+        return HullLoft.CutKey(false, blank[HullLoft.PanelPrefix.Length..^1], _pdCuts);
+    }
+
+    /// <summary>Probes and the window tool: a cut by its key text ("r70,60,40,50,5" an opening, "m0,30,30" a corner), "clear" or "drop N".</summary>
+    public string DesignerCut(string text)
+    {
+        if (text == "clear")
+        {
+            _pdCuts.Clear();
+            _pdGlazed.Clear();
+            _pdSel = _pdDrag = -1;
+            return "cuts cleared";
+        }
+        if (text.StartsWith("drop ", StringComparison.Ordinal) && int.TryParse(text.AsSpan(5), out var at))
+        {
+            if (at < 0 || at >= _pdCuts.Count)
+                return "no such cut";
+            CutApply(at, 0);
+            return $"cut {at} dropped";
+        }
+        if (text.StartsWith("glaze ", StringComparison.Ordinal) && int.TryParse(text.AsSpan(6), out var gz))
+        {
+            if (gz < 0 || gz >= _pdCuts.Count)
+                return "no opening there a pane fits";
+            if (HullLoft.PaneWhy(_pdCuts[gz], _pdL, _pdW) is { } noPane)
+                return noPane;
+            _pdGlazed[gz] = !_pdGlazed[gz];
+            return $"opening {gz} {(_pdGlazed[gz] ? "glazed" : "open")}";
+        }
+        if (_pdCuts.Count >= HullLoft.MaxCuts)
+            return $"a panel takes {HullLoft.MaxCuts} cuts";
+        var corner = text.StartsWith('m');
+        if (!corner && !text.StartsWith('r'))
+            return "a cut is rU,V,A,B,C or mK,A,B";
+        var nums = text[1..].Split(',');
+        var v = new int[nums.Length];
+        for (var k = 0; k < nums.Length; k++)
+            if (!int.TryParse(nums[k], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out v[k]))
+                return "a cut's numbers are whole cm";
+        if (corner ? v.Length != 3 : v.Length != 5)
+            return "a cut is rU,V,A,B,C or mK,A,B";
+        _pdCuts.Add(corner ? new HullLoft.Cut(true, v[0], 0, v[1], v[2], 0) : new HullLoft.Cut(false, v[0], v[1], v[2], v[3], v[4]));
+        _pdGlazed.Add(false);
+        return $"{_pdCuts.Count} cut(s)";
+    }
+
+    /// <summary>
+    /// Opening <paramref name="k"/>'s Glazed box (phase 6), in its slider rows and under the plan when it is selected: ORDER adds a glass pane cut
+    /// to its outline. Only an opening wholly inside the sheet (the merge review: one through an edge may have no socket, and its pane would
+    /// overhang); why not is read from <see cref="_pdNoPane"/>, made when the cuts or the sheet change, never a frame.
+    /// </summary>
+    private void GlazedBox(int k)
+    {
+        if (k >= _pdGlazed.Count || k >= _pdCuts.Count)
+            return;
+        var noPane = k < _pdNoPane.Length ? _pdNoPane[k] : null;
+        var glazed = noPane == null && _pdGlazed[k];
+        ImGui.BeginDisabled(noPane != null);
+        if (ImGui.Checkbox("Glazed"u8, ref glazed))
+            _pdGlazed[k] = glazed;
+        ImGui.EndDisabled();
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            ImGuiSafe.SetTooltip(noPane ?? "ORDER also orders a glass pane cut to this opening; weld it into the opening's socket by its back.");
+        if (noPane != null && _pdGlazed[k])
+        {
+            ImGui.SameLine();
+            ImGui.TextColored(CrWarn, "no pane"u8); // (it was glazed: ORDER leaves its pane out until the opening is inside the sheet again)
+        }
+    }
+
+    /// <summary>Why each cut takes no pane (capitalised, a sentence), or null; by the cuts' index, made with the readouts.</summary>
+    private readonly string?[] _pdNoPane = new string?[HullLoft.MaxCuts];
+
+    private void NoPaneTexts()
+    {
+        for (var k = 0; k < _pdNoPane.Length; k++)
+            _pdNoPane[k] = k < _pdCuts.Count && HullLoft.PaneWhy(_pdCuts[k], _pdL, _pdW) is { } why ? char.ToUpperInvariant(why[0]) + why[1..] + "." : null;
+    }
+
+    /// <summary>The cuts' editor, under the sliders: a row of sliders each, Add, Mirror and Clear.</summary>
+    private void CutEditor(ref int dropCut, ref int addCut)
+    {
+        ImGui.Spacing();
+        ImGui.TextColored(PdHead, "Cut-outs"u8);
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Openings and cut corners a Laser Cutter cuts out of the formed panel. Openings of 10 cm and more open for real."u8);
+        for (var k = 0; k < _pdCuts.Count; k++)
+        {
+            var cut = _pdCuts[k];
+            ImGui.PushID(4000 + k);
+            if (ImGui.SmallButton("x"u8))
+                dropCut = k;
+            ImGui.SameLine();
+            ImGuiSafe.TextColored((_pdBadMask >> k & 1) != 0 ? CrWarn : k == _pdSel ? PdHead : Dim, cut.Corner ? $"Corner {k + 1}" : $"Opening {k + 1}"); // (red as on the plan; the selected one as its handles)
+            if (ImGui.IsItemClicked())
+                _pdSel = k;
+            ImGui.PushItemWidth(190 * _scale);
+            int u = cut.U, vv = cut.V, a = cut.A, b = cut.B, cc = cut.C;
+            if (cut.Corner)
+            {
+                ImGui.SliderInt("Corner"u8, ref u, 0, 3, "%d"u8);
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Which corner: 0 back left, 1 back right, 2 nose right, 3 nose left."u8);
+                ImGui.SliderInt("Along"u8, ref a, HullLoft.CutMinCm, Math.Max(HullLoft.CutMinCm, _pdL - HullLoft.CutMinCm), "%d cm"u8);
+                ImGui.SliderInt("Across"u8, ref b, HullLoft.CutMinCm, Math.Max(HullLoft.CutMinCm, _pdW - HullLoft.CutMinCm), "%d cm"u8);
+            }
+            else
+            {
+                ImGui.SliderInt("Middle along"u8, ref u, 0, _pdL, "%d cm"u8);
+                ImGui.SliderInt("Middle across"u8, ref vv, 0, _pdW, "%d cm"u8);
+                ImGui.SliderInt("Long"u8, ref a, HullLoft.CutMinCm, Math.Max(HullLoft.CutMinCm, _pdL), "%d cm"u8);
+                ImGui.SliderInt("Wide"u8, ref b, HullLoft.CutMinCm, Math.Max(HullLoft.CutMinCm, _pdW), "%d cm"u8);
+                ImGui.SliderInt("Corners cut"u8, ref cc, 0, Math.Max(0, Math.Min(a, b) / 2), "%d cm"u8);
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("How far each corner of the opening is cut back: 0 square, about 0.29 of its side an eight-sided round."u8);
+                // Glazed (phase 6): ORDER adds a glass pane cut to this opening's outline, to weld into its socket.
+                // Only an opening wholly inside the sheet (the merge review: one through an edge may have no socket, and its pane would overhang).
+                GlazedBox(k);
+            }
+            ImGui.PopItemWidth();
+            var now = new HullLoft.Cut(cut.Corner, u, vv, a, b, cut.Corner ? 0 : Math.Clamp(cc, 0, Math.Min(a, b) / 2));
+            if (now != cut)
+                _pdCuts[k] = now;
+            ImGui.PopID();
+        }
+        ImGui.BeginDisabled(_pdCuts.Count >= HullLoft.MaxCuts);
+        if (ImGui.Button("+ Opening"u8))
+            addCut = 1;
+        ImGui.SameLine();
+        if (ImGui.Button("+ Corner"u8))
+            addCut = 2;
+        ImGui.SameLine();
+        if (ImGui.Button("Mirror"u8))
+            addCut = 3;
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Adds a twin of the last cut across the sheet's centre line."u8);
+        ImGui.EndDisabled();
+        if (_pdCuts.Count > 0)
+        {
+            ImGui.SameLine();
+            if (ImGui.Button("Clear"u8))
+                addCut = 4;
+        }
+        ImGuiSafe.TextColored(Dim, $"Cuts {_pdCuts.Count} of {HullLoft.MaxCuts}");
+        if (_pdCutWhy.Length > 0)
+        {
+            ImGui.PushTextWrapPos(0);
+            ImGuiSafe.TextColored(CrWarn, _pdCutWhy);
+            ImGui.PopTextWrapPos();
+        }
+        else if (_pdPaneNote.Length > 0)
+        {
+            ImGui.PushTextWrapPos(0);
+            ImGuiSafe.TextColored(Dim, _pdPaneNote);
+            ImGui.PopTextWrapPos();
+        }
+    }
+
+    /// <summary>The panes ORDER adds for one panel: one per glazed opening a pane fits, equal ones counted together. Allocates: at ORDER and on a change only.</summary>
+    private List<(string Key, int Count)> DesignerPanes()
+    {
+        var list = new List<(string Key, int Count)>(HullLoft.MaxCuts);
+        for (var k = 0; k < _pdCuts.Count && k < _pdGlazed.Count; k++)
+            if (_pdGlazed[k] && HullLoft.PaneFor(_pdCuts[k], SheetMm, _pdL, _pdW) is { } pane) // (never a pane without its socket: PaneWhy)
+            {
+                var at = list.FindIndex(x => x.Key == pane);
+                if (at < 0)
+                    list.Add((pane, 1));
+                else
+                    list[at] = (pane, list[at].Count + 1);
+            }
+        return list;
+    }
+
+    /// <summary>The window tool: the panes ORDER would add, by key and count per panel.</summary>
+    public string DesignerPaneText => string.Join("; ", DesignerPanes().Select(p => $"{p.Count} x {p.Key}"));
+
+    /// <summary>
+    /// What the Glazed boxes order, and a note for each glazed opening the sheet curves over by more than 2 cm (a pane is flat: it sits flat in
+    /// the opening). From the cut key's spots on its sheet (HullLoft.CutSpot): read only when the shape, the cuts or the boxes change.
+    /// </summary>
+    private void DesignerPaneNote(string key)
+    {
+        var sb = new System.Text.StringBuilder();
+        var panes = DesignerPanes();
+        _pdPaneMax = 0;
+        foreach (var p in panes)
+            _pdPaneMax = Math.Max(_pdPaneMax, p.Count);
+        if (panes.Count > 0)
+            sb.Append($"With each panel: {string.Join(", ", panes.Select(p => $"{p.Count} {HullLoft.PanelLabel(p.Key)}"))}. Weld each into its opening's socket by its back.");
+        if (_pdPaneMax > 1)
+            sb.Append($" An order is at most {WorkOrders.MaxCount / _pdPaneMax} panels, so their panes fit one order of {WorkOrders.MaxCount}.");
+        for (var k = 0; k < _pdCuts.Count && k < _pdGlazed.Count; k++)
+        {
+            var c = _pdCuts[k];
+            if (!_pdGlazed[k] || c.Corner || !HullLoft.CutSpot(key, c.U, c.V, out var mid, out var n))
+                continue;
+            var sag = 0f;
+            foreach (var (du, dv) in (ReadOnlySpan<(int, int)>)[(-1, -1), (1, -1), (1, 1), (-1, 1), (0, -1), (0, 1), (-1, 0), (1, 0)])
+                if (HullLoft.CutSpot(key, c.U + du * c.A / 2.0, c.V + dv * c.B / 2.0, out var at, out _))
+                    sag = MathF.Max(sag, MathF.Abs(System.Numerics.Vector3.Dot(at - mid, n)));
+            if (sag > 0.02f)
+                sb.Append($" Opening {k + 1}: the sheet curves {sag * 100:0} cm over it; its pane sits flat.");
+        }
+        _pdPaneNote = sb.ToString();
+    }
+
+    private int _pdPrevHash;
+    private string? _pdPrevCut;
+
+    /// <summary>
+    /// The cut key the preview shows for this frame's shape and cuts, or null (no cuts, or the key refused): made again only when they change,
+    /// so the key and the shape it is built on always come from the same frame.
+    /// </summary>
+    private string? PreviewCut(in HullLoft.PanelShape shape)
+    {
+        if (_pdCuts.Count == 0 || HullLoft.PanelRefusal(shape) != null)
+            return null;
+        var h = HashCode.Combine(shape.GetHashCode(), _pdPlate, _pdPlateH, _pdMat); // (a plate's key holds its section's height, which its flat sheet doesn't)
+        for (var k = 0; k < _pdCuts.Count; k++)
+            h = h * 31 + _pdCuts[k].GetHashCode();
+        if (h == _pdPrevHash && _pdPrevCut != null)
+            return _pdPrevCut.Length > 0 ? _pdPrevCut : null;
+        _pdPrevHash = h;
+        var key = CutKeyOf(shape);
+        _pdPrevCut = HullLoft.CutRefusal(key) == null ? key : "";
+        return _pdPrevCut.Length > 0 ? _pdPrevCut : null;
+    }
+
+    private void CutApply(int dropCut, int addCut)
+    {
+        if (dropCut >= 0 && dropCut < _pdCuts.Count)
+        {
+            _pdCuts.RemoveAt(dropCut);
+            _pdGlazed.RemoveAt(dropCut);
+            _pdSel = _pdSel == dropCut ? -1 : _pdSel > dropCut ? _pdSel - 1 : _pdSel;
+            _pdDrag = -1;
+        }
+        if (addCut == 4)
+        {
+            _pdCuts.Clear();
+            _pdGlazed.Clear();
+            _pdSel = _pdDrag = -1;
+        }
+        if (addCut is < 1 or > 6 or 4 || _pdCuts.Count >= HullLoft.MaxCuts || addCut == 3 && _pdCuts.Count == 0)
+            return;
+        // The tools (the plan's and the rows' buttons): 1 a rectangle, 5 a round, 6 a slot, each in the sheet's middle on the 5 cm snap;
+        // 2 a cut corner on the first corner not yet cut; 3 a twin of the selected cut (else the last) across the centre line, glazed as it.
+        static int Snap5(int v) => Math.Max(HullLoft.CutMinCm, v / HullLoft.PanelStepCm * HullLoft.PanelStepCm);
+        int mu = _pdL / 2 / 5 * 5, mv = _pdW / 2 / 5 * 5;
+        var twin = _pdSel >= 0 && _pdSel < _pdCuts.Count ? _pdSel : _pdCuts.Count - 1;
+        var glaze = false;
+        HullLoft.Cut add;
+        switch (addCut)
+        {
+            case 1:
+                add = new HullLoft.Cut(false, mu, mv, Snap5(_pdL / 4), Snap5(_pdW / 4), 0);
+                break;
+            case 5:
+            {
+                var d = Snap5(Math.Min(_pdL, _pdW) / 4);
+                add = new HullLoft.Cut(false, mu, mv, d, d, Math.Min(d / 2, (int)MathF.Round(d * 0.29f))); // (eight sides: HullLoft.Cut's own words)
+                break;
+            }
+            case 6:
+                add = new HullLoft.Cut(false, mu, mv, Snap5(_pdL / 3), HullLoft.CutOpenCm, HullLoft.CutOpenCm / 2);
+                break;
+            case 2:
+            {
+                var k = 0;
+                while (k < 4 && CornerCut(k))
+                    k++;
+                if (k == 4)
+                    return; // (every corner is cut: the button says so)
+                add = new HullLoft.Cut(true, k, 0, Snap5(_pdL / 5), Snap5(_pdW / 5), 0);
+                break;
+            }
+            default:
+            {
+                var last = _pdCuts[twin];
+                add = last.Corner ? last with { U = last.U switch { 0 => 1, 1 => 0, 2 => 3, _ => 2 } } : last with { V = _pdW - last.V };
+                glaze = twin < _pdGlazed.Count && _pdGlazed[twin];
+                break;
+            }
+        }
+        _pdCuts.Add(add);
+        _pdGlazed.Add(glaze);
+        _pdSel = _pdCuts.Count - 1;
+    }
+
+    private bool CornerCut(int k)
+    {
+        foreach (var c in _pdCuts)
+            if (c.Corner && c.U == k)
+                return true;
+        return false;
+    }
+
+    private bool _pdPressSave, _pdPressOrder;
+
+    /// <summary>The window tool: Save design or ORDER, pressed at the panel's next frame.</summary>
+    public void DesignerPress(string what)
+    {
+        _pdPressSave |= what == "save";
+        _pdPressOrder |= what == "order";
     }
 
     /// <summary>Probes and the window tool: the name in the Save box, as if typed.</summary>
@@ -113,26 +498,76 @@ public sealed partial class Ui
         (_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm) = (s.Kind, s.L, s.W, s.Crown, s.Rake, s.Mm);
         if (s.Kind == HullLoft.PanelBend)
             (_pdAngle, _pdFoldAt, _pdRadius) = (s.Angle, s.At, s.Radius);
+        if (s.Kind == HullLoft.PanelLoft)
+            (_pdNoseW, _pdBack, _pdNose) = (s.NoseW, s.Back, s.Nose);
         _pdMineSel = -1;
+        _pdPlate = false; // (a preset is a formed panel's)
     }
 
     private void DesignerLoad(in PanelDesign d)
     {
-        if (HullLoft.PanelOf(d.Key) is not { } s)
+        // A cut design (laser cutter phase 4): its blank's shape and its cuts. A cut plate's (the flat plan's phase): its plate's sizes and material;
+        // a flat bar's design (a bill's or a terminal's) isn't drawn here: the designer's blank is a panel or the Extruder's Plate section.
+        var cuts = HullLoft.IsCutName(d.Key) ? HullLoft.ReadCut(d.Key, out _) : null;
+        if (cuts is { Plate: true })
+        {
+            if (Extrusion.PresetOf(cuts.Stock.Mask) != PlatePreset)
+            {
+                _pdSaved = "A flat bar's design is ordered by its key; the designer draws a formed panel or an extruded plate.";
+                return;
+            }
+            LoadCuts(cuts.Cuts);
+            (_pdPlate, _pdL, _pdW, _pdPlateH, _pdMat) = (true, cuts.Stock.L, cuts.Stock.W, cuts.Stock.H, cuts.Stock.Material);
+            _pdName ??= new ImInputString(PlayerBlueprints.MaxName + 1);
+            ImGuiSafe.SetInput(_pdName, d.Name);
             return;
+        }
+        if ((cuts != null ? HullLoft.PanelOf(cuts.Blank) : HullLoft.PanelOf(d.Key)) is not { } s)
+            return;
+        _pdPlate = false;
+        LoadCuts(cuts?.Cuts ?? []);
+        LoadShape(s);
+        _pdName ??= new ImInputString(PlayerBlueprints.MaxName + 1);
+        ImGuiSafe.SetInput(_pdName, d.Name);
+    }
+
+    private void LoadCuts(HullLoft.Cut[] cuts)
+    {
+        _pdCuts.Clear();
+        _pdCuts.AddRange(cuts);
+        _pdGlazed.Clear();
+        for (var k = 0; k < _pdCuts.Count; k++)
+            _pdGlazed.Add(false); // (a design is its cut key: glazing is chosen at ORDER, not saved)
+        _pdSel = _pdDrag = -1;
+    }
+
+    private void LoadShape(in HullLoft.PanelShape s)
+    {
         (_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm) = (s.Kind, s.L, s.W, s.Crown, s.Rake, s.Mm);
         if (s.Kind == HullLoft.PanelBend)
             (_pdAngle, _pdFoldAt, _pdRadius) = (s.Angle, s.At, s.Radius);
+        if (s.Kind == HullLoft.PanelLoft)
+        {
+            (_pdNoseW, _pdBack, _pdNose) = (s.NoseW, s.Back, s.Nose);
+            _pdMirror = s.Back == Mirrored(s.Back) && s.Nose == Mirrored(s.Nose); // (a design drawn lopsided opens with the mirror off)
+        }
         if (RecyclingTable.Current.IdOf(s.Material) is var m and not 0)
             _pdMat = m;
-        _pdName ??= new ImInputString(PlayerBlueprints.MaxName + 1);
-        ImGuiSafe.SetInput(_pdName, d.Name);
     }
 
     /// <summary>The sliders' values into what a key takes and the largest linked former makes; <see cref="_pdLimit"/> says which limit holds.</summary>
     private void DesignerClamp()
     {
         static int Step(int v) => (int)MathF.Round(v / (float)HullLoft.PanelStepCm) * HullLoft.PanelStepCm;
+        if (_pdPlate)
+        {
+            // A plate: the Extruder's lengths go in 5 cm steps, and a Laser Cutter's bed takes 20 cm to 6 m a side (HullLoft.StockRefusal);
+            // its section's height, whole cm, is four times its thickness, up to the largest bed's 2 m.
+            _pdL = Math.Clamp(Step(_pdL), HullLoft.PanelMinCm, HullLoft.CutMaxCm);
+            _pdW = Math.Clamp(Step(_pdW), HullLoft.PanelMinCm, HullLoft.CutMaxCm);
+            _pdPlateH = Math.Clamp(_pdPlateH, PlateMinH, PlateMaxH);
+            return;
+        }
         // The former takes a panel whose longest side is within its length and the next within its width: the shorter of the two sliders has the width's limit.
         var longMax = Math.Min(HullLoft.PanelMaxCm, _pdMaxL);
         var shortMax = Math.Min(HullLoft.PanelMaxCm, _pdMaxW);
@@ -146,6 +581,15 @@ public sealed partial class Ui
                 _pdW = shortMax;
         }
         _pdCrown = Math.Clamp(_pdCrown, 0, Math.Min(HullLoft.PanelMaxCrownCm, _pdW / 2));
+        // A loft's nose is a width too: within the same limits, and the wider of its two ends is what the former must take.
+        _pdNoseW = Math.Clamp(Step(_pdNoseW), HullLoft.PanelMinCm, longMax);
+        if (_pdKind == HullLoft.PanelLoft && Math.Min(_pdL, _pdNoseW) > shortMax)
+        {
+            if (_pdL <= _pdNoseW)
+                _pdL = shortMax;
+            else
+                _pdNoseW = shortMax;
+        }
         var rake = Math.Min(HullLoft.PanelMaxRakeCm, _pdL);
         _pdRake = Math.Clamp(_pdRake, -rake, rake);
         _pdMm = Math.Clamp(_pdMm, HullLoft.PanelMinMm, HullLoft.PanelMaxMm);
@@ -168,6 +612,10 @@ public sealed partial class Ui
         _pdTextKey = 0;
         var net = ConstructCrafting.NetOf(world, c, part);
         _pdFormers = 0;
+        _pdExtruders = 0;
+        for (var i = 0; i < net.MachineN; i++)
+            if (ConstructLogisticsPlan.IsSheetExtruder(c.DefOf(net.Machines[i]))) // (formers and cutters carry IsExtruder too: only an Extruder makes a plate)
+                _pdExtruders++;
         float maxL = 0, maxW = 0;
         _pdMats.Clear();
         _pdMatFed.Clear();
@@ -175,7 +623,7 @@ public sealed partial class Ui
         for (var i = 0; i < net.MachineN; i++)
         {
             var d = c.DefOf(net.Machines[i]);
-            if (!d.IsPanelFormer)
+            if (!d.IsPanelFormer || d.IsLaserCutter) // (a cutter forms nothing: phase 4 lists it for cut designs)
                 continue;
             _pdFormers++;
             if (d.ExtWheelMax.Y > maxL)
@@ -206,9 +654,11 @@ public sealed partial class Ui
     /// <summary>The readouts for the shape as it stands, made again only when it or the network changed.</summary>
     private void DesignerTexts(ConstructWorld world, Construct c, int part)
     {
-        var key = HashCode.Combine(_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm, _pdMat, _pdStamp) * 31 + DesignerPreview.Made + HashCode.Combine(_pdAngle, _pdFoldAt, _pdRadius);
+        var key = HashCode.Combine(_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm, _pdMat, _pdStamp) * 31 + DesignerPreview.Made + HashCode.Combine(_pdAngle, _pdFoldAt, _pdRadius, _pdNoseW, _pdBack, _pdNose, _pdPlate, _pdPlateH);
+        for (var k = 0; k < _pdCuts.Count; k++)
+            key = key * 31 + _pdCuts[k].GetHashCode() + (k < _pdGlazed.Count && _pdGlazed[k] ? 7 : 0);
         var bd = DesignerPreview.Base;
-        key = key * 31 + (bd == null ? 0 : 1);
+        key = key * 31 + (bd == null ? 0 : 1) + (ImGui.IsMouseDown(ImGuiMouseButton.Left) ? 2 : 0);
         if (key == _pdTextKey)
             return;
         _pdTextKey = key;
@@ -233,9 +683,13 @@ public sealed partial class Ui
         if (_pdMm <= HullLoft.PanelMinMm || _pdMm >= HullLoft.PanelMaxMm)
             at.Append($"Sheet is {HullLoft.PanelMinMm} to {HullLoft.PanelMaxMm} mm thick. ");
         _pdAt = at.ToString();
-        _pdKey = _pdWhy.Length == 0 ? HullLoft.PanelKey(shape) : "";
+        if (_pdPlate)
+            _pdAt = ""; // (a plate has no crown, rake or fold: its limits are said under its sliders)
+        _pdPlateText = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"A {PlateMm / 10:0.##} cm plate: {PlateBlank[Extrusion.Prefix.Length..]}");
+        _pdKey = _pdWhy.Length > 0 ? "" : _pdPlate ? PlateBlank : HullLoft.PanelKey(shape); // (a plate with cuts: its cut key, below)
         _pdFits.Clear();
         _pdFitOk.Clear();
+        DesignerCutTexts(world, c, part, shape);
         if (bd == null || _pdWhy.Length > 0)
         {
             _pdNumbers = "";
@@ -243,14 +697,42 @@ public sealed partial class Ui
         }
         var (nu, nv) = HullLoft.PanelGrid(shape);
         var size = bd.BoundsMax - bd.BoundsMin;
-        _pdNumbers = $"{size.Z:0.00} x {size.X:0.00} x {size.Y:0.00} m, {bd.Mass:0.#} kg\nSheet: {HullLoft.FormedUnits(bd, _pdMat)} {RecyclingTable.Current.NameOf(_pdMat)}\nFacets {nu * nv} of {HullLoft.PanelMaxAlong * HullLoft.PanelMaxAcross}, sockets {bd.Sockets.Length} of 25";
         var net = ConstructCrafting.NetOf(world, c, part);
+        if (_pdPlate)
+        {
+            // A plate: its blank is the Extruder's, so the readouts are the plate's and the linked Extruders', never a former's.
+            _pdNumbers = _pdCuts.Count > 0 && _pdCutWhy.Length == 0
+                ? $"{size.Z:0.00} x {size.X:0.00} x {size.Y:0.00} m, {bd.Mass:0.#} kg as cut\nBlank: {PlateBlank[Extrusion.Prefix.Length..]}, {PlateMm / 10:0.#} cm thick, from an Extruder"
+                : $"Blank: {PlateBlank[Extrusion.Prefix.Length..]}, {PlateMm / 10:0.#} cm thick";
+            if (_pdExtruders == 0)
+            {
+                _pdFits.Add("No Extruder linked: a cut plate's blank is extruded. Link one by a conveyor or a Line Console's wire into Orders.");
+                _pdFitOk.Add(false);
+                return;
+            }
+            // Each linked Extruder's answer to the plate's blank, in the words its order would get (WorkOrders.Refusal: its die and length
+            // with its expansion pieces, the piece or the bigger Extruder that would make it, the material it is fed).
+            var blankOrder = new WorkOrder { Key = Extrusion.ParseKey(PlateBlank)!.Value, Part = ConstructParts.None, Count = 1 };
+            var nth = 0;
+            for (var i = 0; i < net.MachineN && _pdFits.Count < 4; i++)
+            {
+                var d = c.DefOf(net.Machines[i]);
+                if (!ConstructLogisticsPlan.IsSheetExtruder(d))
+                    continue;
+                nth++;
+                var why = WorkOrders.Refusal(world, c, net.Machines[i], blankOrder);
+                _pdFits.Add(why == null ? $"{d.Name} {nth}: yes, it extrudes the plate" : $"{d.Name} {nth}: {why}");
+                _pdFitOk.Add(why == null);
+            }
+            return;
+        }
+        _pdNumbers = $"{size.Z:0.00} x {size.X:0.00} x {size.Y:0.00} m, {bd.Mass:0.#} kg\nSheet: {HullLoft.FormedUnits(bd, _pdMat)} {RecyclingTable.Current.NameOf(_pdMat)}\nFacets {nu * nv} of {HullLoft.PanelMaxAlong * HullLoft.PanelMaxAcross}, sockets {bd.Sockets.Length} of 25";
         var seen = 0;
         for (var i = 0; i < net.MachineN && _pdFits.Count < 6; i++)
         {
             var m = net.Machines[i];
             var d = c.DefOf(m);
-            if (!d.IsPanelFormer)
+            if (!d.IsPanelFormer || d.IsLaserCutter)
                 continue;
             seen++;
             string? why = null;
@@ -268,7 +750,153 @@ public sealed partial class Ui
         }
     }
 
+    private readonly List<HullLoft.Cut> _pdTmpCuts = new(HullLoft.MaxCuts);
+
+    /// <summary>
+    /// Which cuts a refused key's words are about, a bit each, so the plan marks those red with the words at their handles: a cut is to blame
+    /// when the key passes without it; failing that (a limit the cuts reach together), each cut that is refused alone; failing that, every cut.
+    /// Allocates (a key each): only when the cuts or the sheet change and the key is refused.
+    /// </summary>
+    private ulong BadCuts(in HullLoft.PanelShape shape)
+    {
+        var blank = _pdPlate ? PlateBlank[Extrusion.Prefix.Length..] : HullLoft.PanelKey(shape)[HullLoft.PanelPrefix.Length..^1];
+        ulong mask = 0;
+        for (var pass = 0; pass < 2 && mask == 0; pass++)
+            for (var k = 0; k < _pdCuts.Count; k++)
+            {
+                _pdTmpCuts.Clear();
+                for (var q = 0; q < _pdCuts.Count; q++)
+                    if (pass == 0 ? q != k : q == k)
+                        _pdTmpCuts.Add(_pdCuts[q]);
+                var refused = _pdTmpCuts.Count > 0 && HullLoft.CutRefusal(HullLoft.CutKey(_pdPlate, blank, _pdTmpCuts)) != null;
+                if (pass == 0 ? !refused : refused)
+                    mask |= 1UL << k;
+            }
+        return mask != 0 ? mask : (1UL << _pdCuts.Count) - 1;
+    }
+
+    /// <summary>The cuts' refusal and each linked Laser Cutter's answer (laser cutter phase 4); the key shown becomes the cut panel's.</summary>
+    private void DesignerCutTexts(ConstructWorld world, Construct c, int part, in HullLoft.PanelShape shape)
+    {
+        _pdCutWhy = "";
+        _pdPaneNote = "";
+        _pdPaneMax = 0;
+        _pdCutFits.Clear();
+        _pdCutFitOk.Clear();
+        _pdCutters = 0;
+        var net = ConstructCrafting.NetOf(world, c, part);
+        for (var i = 0; i < net.MachineN; i++)
+            if (c.DefOf(net.Machines[i]).IsLaserCutter)
+                _pdCutters++;
+        _pdBadMask = 0;
+        NoPaneTexts();
+        if (_pdPlate && _pdCuts.Count == 0)
+        {
+            _pdCutWhy = "An extruded plate with no cuts is an Extruder's piece: add a cut, or order the plate at an Extruder.";
+            return;
+        }
+        if (_pdCuts.Count == 0 || _pdWhy.Length > 0)
+            return;
+        var key = CutKeyOf(shape);
+        if (HullLoft.CutRefusal(key) is { } why)
+        {
+            _pdCutWhy = char.ToUpperInvariant(why[0]) + why[1..] + ".";
+            // Which cuts the words are about: twelve keys read at most, so only once the mouse is up (a drag or a slider held marks the cut it moves, or
+            // all of them, and the release reads them again: the held state is in the readouts' key).
+            _pdBadMask = !ImGui.IsMouseDown(ImGuiMouseButton.Left) ? BadCuts(shape) : _pdDrag >= 0 && _pdDrag < _pdCuts.Count ? 1UL << _pdDrag : (1UL << _pdCuts.Count) - 1;
+            return;
+        }
+        _pdKey = key;
+        DesignerPaneNote(key);
+        if (_pdCutters == 0)
+        {
+            _pdCutFits.Add("No Laser Cutter linked: this design has cut-outs. Link one by a conveyor or a Line Console's wire into Orders.");
+            _pdCutFitOk.Add(false);
+            return;
+        }
+        // (read from the key and the preview's bounds: no run-time part is made for a key the sliders pass through)
+        if (!HullLoft.CutJob(key, out _, out _, out _, out var edge, out var mm) || DesignerPreview.Base is not { } bd)
+            return;
+        var s = bd.BoundsMax - bd.BoundsMin;
+        var job = new ConstructLaserCutter.Job { EdgeM = edge, Mm = mm, Longest = MathF.Max(s.X, MathF.Max(s.Y, s.Z)), Least = MathF.Min(s.X, MathF.Min(s.Y, s.Z)) };
+        job.Next = s.X + s.Y + s.Z - job.Longest - job.Least;
+        var seen = 0;
+        for (var i = 0; i < net.MachineN && _pdCutFits.Count < 4; i++)
+        {
+            var d = c.DefOf(net.Machines[i]);
+            if (!d.IsLaserCutter)
+                continue;
+            seen++;
+            var ok = ConstructLaserCutter.Fits(d, job);
+            _pdCutFitOk.Add(ok);
+            _pdCutFits.Add(ok ? $"{d.Name} {seen}: yes, {ConstructLaserCutter.Seconds(job, d):0.#} s a cut ({edge:0.##} m of edge through {mm:0} mm)"
+                : job.Least > d.CutMaxHeight + 0.005f ? $"{d.Name} {seen}: too tall for its bed: {job.Least:0.##} m" : $"{d.Name} {seen}: too large for its bed: {job.Longest:0.##} x {job.Next:0.##} m");
+        }
+    }
+
     private static readonly float4 PdHead = new(0.62f, 0.8f, 1f, 1f);
+
+    private static ulong Mirrored(ulong p)
+    {
+        var m = 0UL;
+        for (var k = 0; k < HullLoft.PanelProfilePoints; k++)
+            m = HullLoft.ProfileSet(m, k, HullLoft.ProfileAt(p, HullLoft.PanelProfilePoints - 1 - k));
+        return m;
+    }
+
+    /// <summary>
+    /// A loft edge's profile, seen along the panel: its eight heights as handles over a line at 0 (the left side on the left), the curve the
+    /// former follows through them. Drag a handle up or down (the nearest across where the drag starts); mirrored, its twin moves with it.
+    /// </summary>
+    private void ProfileEditor(string label, int handleBase, ref ulong profile)
+    {
+        ImGuiSafe.TextColored(Dim, label);
+        var dl = ImGui.GetWindowDrawList();
+        var at = ImGui.GetCursorScreenPos();
+        var size = new float2(MathF.Max(120 * _scale, ImGui.GetContentRegionAvail().X - 8 * _scale), 64 * _scale);
+        ImGui.PushID(handleBase + 7000);
+        ImGui.InvisibleButton("##pdprof"u8, size);
+        ImGui.PopID();
+        var active = ImGui.IsItemActive();
+        var pad = 10 * _scale;
+        float X(int k) => at.X + pad + (size.X - 2 * pad) * k / (HullLoft.PanelProfilePoints - 1);
+        float Y(float cm) => at.Y + size.Y * 0.5f - cm / HullLoft.PanelMaxProfileCm * (size.Y * 0.5f - 6 * _scale);
+        var mouse = ImGui.GetIO().MousePos;
+        if (active)
+        {
+            if (_pdDragH < 0 || _pdDragH / HullLoft.PanelProfilePoints != handleBase / HullLoft.PanelProfilePoints)
+            {
+                var best = 0;
+                for (var k = 1; k < HullLoft.PanelProfilePoints; k++)
+                    if (MathF.Abs(X(k) - mouse.X) < MathF.Abs(X(best) - mouse.X))
+                        best = k;
+                _pdDragH = handleBase + best;
+            }
+            var cm = (int)MathF.Round((at.Y + size.Y * 0.5f - mouse.Y) / (size.Y * 0.5f - 6 * _scale) * HullLoft.PanelMaxProfileCm);
+            profile = ProfileMove(profile, _pdDragH - handleBase, cm, _pdMirror);
+        }
+        else if (_pdDragH >= handleBase && _pdDragH < handleBase + HullLoft.PanelProfilePoints)
+            _pdDragH = -1;
+        dl.AddRectFilled(at, new float2(at.X + size.X, at.Y + size.Y), new ImColor8(34, 40, 50, 255), 4 * _scale);
+        dl.AddLine(new float2(at.X + pad, Y(0)), new float2(at.X + size.X - pad, Y(0)), new ImColor8(90, 100, 115, 255), 1);
+        var prev = default(float2);
+        const int Steps = 28;
+        for (var i = 0; i <= Steps; i++)
+        {
+            var x = i * 2f / Steps - 1;
+            var pt = new float2(at.X + pad + (size.X - 2 * pad) * (x + 1) / 2, Y(HullLoft.ProfileHeight(profile, x) * 100));
+            if (i > 0)
+                dl.AddLine(prev, pt, new ImColor8(160, 200, 255, 255), 2 * _scale);
+            prev = pt;
+        }
+        for (var k = 0; k < HullLoft.PanelProfilePoints; k++)
+        {
+            var c = new float2(X(k), Y(HullLoft.ProfileAt(profile, k)));
+            ImDrawListExtensions.AddCircleFilled(dl, in c, 4.5f * _scale, _pdDragH == handleBase + k ? new ImColor8(255, 200, 90, 255) : new ImColor8(230, 236, 245, 255), 12);
+        }
+        if (ImGui.IsItemHovered() && !active)
+            ImGui.SetTooltip("Drag a point up or down: the edge's height there, -99 to 99 cm."u8);
+    }
 
     /// <summary>The panel (between NewFrame and Render). True while it stays open. Orders, saves and deletes go out after the drawing.</summary>
     public bool DrawDesigner(Game game, Construct c, int part, double now)
@@ -280,7 +908,7 @@ public sealed partial class Ui
         DesignerBuild(world, c, part, now);
         var shape = DesignerShape;
         var pt0 = System.Diagnostics.Stopwatch.GetTimestamp();
-        DesignerPreview.Want(shape);
+        DesignerPreview.Want(shape, PreviewCut(shape)); // (with its cuts once they pass: laser cutter phase 4)
         DesignerPreview.Pump();
         var pms = System.Diagnostics.Stopwatch.GetElapsedTime(pt0).TotalMilliseconds;
         DesignerSpentMs += pms;
@@ -290,9 +918,10 @@ public sealed partial class Ui
         CraftingOrders(c, q);
         var open = true;
         bool order = false, save = false, share = true;
-        int cancel = 0, preset = -1, loadMine = -1, loadWorld = -1, delMine = -1;
+        int cancel = 0, preset = -1, loadMine = -1, loadWorld = -1, delMine = -1, dropCut = -1, addCut = 0, blank = -1, plateH = _pdPlateH;
         var mat = _pdMat;
-        int l = _pdL, w = _pdW, crown = _pdCrown, rake = _pdRake, mm = _pdMm, angle = _pdAngle, bendAt = _pdFoldAt, radius = _pdRadius;
+        int l = _pdL, w = _pdW, crown = _pdCrown, rake = _pdRake, mm = _pdMm, angle = _pdAngle, bendAt = _pdFoldAt, radius = _pdRadius, noseW = _pdNoseW;
+        ulong back = _pdBack, nose = _pdNose;
         var vp = ImGui.GetMainViewport();
         var ww = MathF.Min(1180 * _scale, vp.WorkSize.X * 0.96f);
         var wh = MathF.Min(690 * _scale, vp.WorkSize.Y * 0.94f);
@@ -329,7 +958,7 @@ public sealed partial class Ui
                     var hot = ImGui.IsItemHovered();
                     if (hot)
                         ImGuiSafe.WrappedTooltip(_pdTiles[k].Tip, 360 * _scale);
-                    RecipeTile(dl, _pdTiles[k], at, tw, th, icon, k == _pdKind, hot, setMark: false);
+                    RecipeTile(dl, _pdTiles[k], at, tw, th, icon, k == _pdKind && !_pdPlate, hot, setMark: false);
                 }
                 ImGui.Spacing();
                 ImGui.TextColored(PdHead, "Your designs"u8);
@@ -377,7 +1006,8 @@ public sealed partial class Ui
                 ImGui.TextColored(Dim, DesignerPreview.Building ? "forming the preview..."u8 : "drag to turn, wheel to zoom"u8);
                 var p0 = ImGui.GetCursorScreenPos();
                 var sz = ImGui.GetContentRegionAvail();
-                sz.Y -= ImGui.GetTextLineHeightWithSpacing();
+                var planH = MathF.Max(150 * _scale, sz.Y * 0.46f); // (the flat plan under the preview: both seen while a handle is dragged)
+                sz.Y -= ImGui.GetTextLineHeightWithSpacing() + planH;
                 if (sz.X > 8 && sz.Y > 8)
                 {
                     ImGui.InvisibleButton("##pdview"u8, sz);
@@ -397,22 +1027,62 @@ public sealed partial class Ui
                     view = (p0, new float2(p0.X + sz.X, p0.Y + sz.Y));
                     ImGui.TextColored(Dim, "The bar on the floor is 1 m; the figure is a player (1.8 m)."u8);
                 }
+                FlatPlan(ref dropCut, ref addCut);
             }
             ImGui.EndChild();
             ImGui.SameLine();
             // ---- Right: the sliders, the materials, the readouts.
             if (ImGui.BeginChild("##pdright"u8, new float2(rightW, bodyH), ImGuiChildFlags.Borders))
             {
-                ImGuiSafe.TextColored(PdHead, HullLoft.PanelPresets[_pdKind].Label);
+                // The Blank (the user, 2026-11-13): a formed panel from a Panel Former, or the Extruder's plate.
+                ImGui.TextColored(Dim, "Blank:"u8);
+                ImGui.SameLine();
+                if (ImGui.RadioButton("formed panel"u8, !_pdPlate))
+                    blank = 0;
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("A Panel Former forms the blank from bulk sheet, any preset's shape; a Laser Cutter cuts it when it has cuts."u8);
+                ImGui.SameLine();
+                if (ImGui.RadioButton("extruded plate"u8, _pdPlate))
+                    blank = 1;
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("An Extruder's flat plate, a Laser Cutter cutting it through its thickness: a cut plate welds by the plate's own face sockets."u8);
+                ImGuiSafe.TextColored(PdHead, _pdPlate ? "Extruded plate" : HullLoft.PanelPresets[_pdKind].Label);
                 ImGui.PushItemWidth(190 * _scale);
                 var longMax = Math.Min(HullLoft.PanelMaxCm, _pdMaxL);
+                if (_pdPlate)
+                {
+                    ImGui.SliderInt("Length"u8, ref l, HullLoft.PanelMinCm, HullLoft.CutMaxCm, "%d cm"u8);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("Along the plate, as the Extruder makes it: 20 cm to the largest Laser Cutter's 6 m bed."u8);
+                    ImGui.SliderInt("Width"u8, ref w, HullLoft.PanelMinCm, HullLoft.CutMaxCm, "%d cm"u8);
+                    ImGui.SliderInt("Section height"u8, ref plateH, PlateMinH, Math.Min(PlateMaxH, 160), "%d cm"u8);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("The Extruder's Plate section is a quarter of its height thick: 10 cm makes a 2.5 cm plate, 40 cm a 10 cm plate. A thicker plate cuts slower."u8);
+                    ImGuiSafe.TextColored(Dim, _pdPlateText);
+                }
+                else
+                {
                 ImGui.SliderInt("Length"u8, ref l, HullLoft.PanelMinCm, longMax, "%d cm"u8);
-                ImGui.SliderInt("Width"u8, ref w, HullLoft.PanelMinCm, longMax, "%d cm"u8);
-                ImGui.SliderInt("Crown"u8, ref crown, 0, Math.Max(1, Math.Min(HullLoft.PanelMaxCrownCm, _pdW / 2)), "%d cm"u8);
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("How far the middle stands proud across the width: at most half the width, 80 cm."u8);
+                ImGui.SliderInt(_pdKind == HullLoft.PanelLoft ? "Back width"u8 : "Width"u8, ref w, HullLoft.PanelMinCm, longMax, "%d cm"u8);
+                if (_pdKind != HullLoft.PanelLoft)
+                {
+                    ImGui.SliderInt("Crown"u8, ref crown, 0, Math.Max(1, Math.Min(HullLoft.PanelMaxCrownCm, _pdW / 2)), "%d cm"u8);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("How far the middle stands proud across the width: at most half the width, 80 cm."u8);
+                }
                 var rakeMax = Math.Min(HullLoft.PanelMaxRakeCm, _pdL);
-                if (_pdKind == HullLoft.PanelBend)
+                if (_pdKind == HullLoft.PanelLoft)
+                {
+                    ImGui.SliderInt("Nose width"u8, ref noseW, HullLoft.PanelMinCm, longMax, "%d cm"u8);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("How wide the nose edge is: the sheet tapers or flares straight from the back edge to it."u8);
+                    ImGui.Checkbox("Mirrored"u8, ref _pdMirror);
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("A handle moves its twin on the other side too, so the panel stays even."u8);
+                    ProfileEditor("Back edge", 0, ref back);
+                    ProfileEditor("Nose edge", HullLoft.PanelProfilePoints, ref nose);
+                }
+                else if (_pdKind == HullLoft.PanelBend)
                 {
                     ImGui.SliderInt("Fold angle"u8, ref angle, -HullLoft.PanelMaxAngle, HullLoft.PanelMaxAngle, "%d deg"u8);
                     if (ImGui.IsItemHovered())
@@ -431,9 +1101,14 @@ public sealed partial class Ui
                     ImGui.SetTooltip("The preset's second number: a curve's or a roof's arch along its length, an S-bend's step, a hood's nose drop, a fender's arch, a door's turn-in, a cowl's rise. Within the panel's length, 200 cm."u8);
                 }
                 ImGui.SliderInt("Thickness"u8, ref mm, HullLoft.PanelMinMm, HullLoft.PanelMaxMm, "%d mm"u8);
+                }
                 ImGui.PopItemWidth();
+                CutEditor(ref dropCut, ref addCut);
                 ImGui.PushTextWrapPos(0);
-                ImGuiSafe.TextColored(_pdFormers == 0 ? CrWarn : Dim, _pdLimit);
+                if (_pdPlate)
+                    ImGui.TextColored(Dim, "A cut plate is 20 to 600 cm long and wide, cut on a Laser Cutter's bed; its blank is the Extruder's Plate section."u8);
+                else
+                    ImGuiSafe.TextColored(_pdFormers == 0 ? CrWarn : Dim, _pdLimit);
                 if (_pdAt.Length > 0)
                     ImGuiSafe.TextColored(CrWarn, _pdAt);
                 ImGui.PopTextWrapPos();
@@ -472,6 +1147,8 @@ public sealed partial class Ui
                     ImGuiSafe.TextColored(Dim, _pdNumbers);
                     for (var k = 0; k < _pdFits.Count; k++)
                         ImGuiSafe.TextColored(_pdFitOk[k] ? CrGood : CrWarn, _pdFits[k]);
+                    for (var k = 0; k < _pdCutFits.Count; k++)
+                        ImGuiSafe.TextColored(_pdCutFitOk[k] ? CrGood : CrWarn, _pdCutFits[k]);
                 }
                 ImGui.PopTextWrapPos();
             }
@@ -481,7 +1158,7 @@ public sealed partial class Ui
             ImGui.SetNextItemWidth(220 * _scale);
             ImGui.InputTextWithHint("##pdname"u8, "Design name..."u8, _pdName);
             ImGui.SameLine();
-            save = ImGui.Button("Save design"u8, new float2(120 * _scale, 0));
+            save = ImGui.Button("Save design"u8, new float2(120 * _scale, 0)) | _pdPressSave;
             if (ImGui.IsItemHovered())
                 ImGui.SetTooltip("Keeps it in your library and shares it with this world: anyone here can order it, and the world's save keeps it."u8);
             ImGui.SameLine(0, 24 * _scale);
@@ -493,18 +1170,21 @@ public sealed partial class Ui
             ImGui.SameLine();
             if (ImGui.Button("+"u8, new float2(28 * _scale, 0)))
                 _pdCount++;
-            _pdCount = Math.Clamp(_pdCount, 1, WorkOrders.MaxCount);
+            _pdCount = Math.Clamp(_pdCount, 1, _pdCuts.Count > 0 && _pdPaneMax > 1 ? WorkOrders.MaxCount / _pdPaneMax : WorkOrders.MaxCount); // (its panes in one order: the readout says so)
             ImGui.SameLine();
             ImGui.PushStyleColor(ImGuiCol.Button, CrTabOn);
-            ImGui.BeginDisabled(_pdWhy.Length > 0);
-            order = ImGui.Button("ORDER"u8, new float2(130 * _scale, 0));
+            ImGui.BeginDisabled(_pdWhy.Length > 0 || _pdCutWhy.Length > 0);
+            order = ImGui.Button("ORDER"u8, new float2(130 * _scale, 0)) | _pdPressOrder;
+            _pdPressSave = _pdPressOrder = false;
             ImGui.EndDisabled();
             ImGui.PopStyleColor();
             ImGui.SameLine();
             if (_pdSaved.Length > 0)
                 ImGuiSafe.TextColored(CrGood, _pdSaved);
+            else if (_pdPlate)
+                ImGui.TextColored(Dim, "Cut by a linked Laser Cutter from an extruded plate; collect it at its rack or in this tray."u8);
             else
-                ImGui.TextColored(Dim, "Formed by a linked Panel Former; collect it at its rack or in this tray."u8);
+                ImGui.TextColored(Dim, _pdCuts.Count > 0 ? "Cut by a linked Laser Cutter from a formed blank; collect it at its rack or in this tray."u8 : "Formed by a linked Panel Former; collect it at its rack or in this tray."u8);
             if (ImGui.BeginChild("##pdorders"u8, new float2(0, -ImGui.GetFrameHeightWithSpacing()), ImGuiChildFlags.Borders))
             {
                 if (q is { Count: > 0 })
@@ -532,8 +1212,16 @@ public sealed partial class Ui
         {
             (_pdL, _pdW, _pdCrown, _pdRake, _pdMm, _pdMat) = (l, w, crown, rake, mm, mat);
             (_pdAngle, _pdFoldAt, _pdRadius) = (angle, bendAt, radius);
+            (_pdNoseW, _pdBack, _pdNose) = (noseW, back, nose);
+            _pdPlateH = plateH;
+            if (blank >= 0 && blank == 1 != _pdPlate)
+            {
+                _pdPlate = blank == 1; // (the cuts stay: a panel and a plate share the sheet's frame, and a cut that no longer fits turns red)
+                _pdMineSel = -1;
+            }
             share = false;
         }
+        CutApply(dropCut, addCut);
         DesignerClamp();
         if (delMine >= 0 && delMine < _pdMine.Count)
         {
@@ -544,8 +1232,10 @@ public sealed partial class Ui
         if (save && !share)
         {
             var name = ImGuiSafe.Text(_pdName!).Trim();
-            var key = HullLoft.PanelKey(DesignerShape);
-            if (PanelDesigns.Refusal(name, key) is { } why)
+            var key = DesignerKey;
+            if (_pdPlate && _pdCuts.Count == 0)
+                _pdSaved = "Not saved: a plate design has at least one cut";
+            else if (PanelDesigns.Refusal(name, key) is { } why)
                 _pdSaved = "Not saved: " + why;
             else
             {
@@ -562,9 +1252,13 @@ public sealed partial class Ui
                 }
             }
         }
-        if (order && !share && HullLoft.PanelRefusal(DesignerShape) == null)
+        if (order && !share && _pdCutWhy.Length == 0 && HullLoft.PanelRefusal(DesignerShape) == null && (_pdCuts.Count == 0 ? !_pdPlate : HullLoft.CutRefusal(DesignerKey) == null))
         {
-            game.SandboxCraftOrder(_pdBody, _pdPart, ConstructPanelFormer.Order(HullLoft.PanelKey(DesignerShape), _pdCount));
+            game.SandboxCraftOrder(_pdBody, _pdPart, ConstructPanelFormer.Order(DesignerKey, _pdCount));
+            // (phase 6) One pane per glazed opening for each panel: equal openings share one order.
+            if (_pdCuts.Count > 0)
+                foreach (var (pane, n) in DesignerPanes())
+                    game.SandboxCraftOrder(_pdBody, _pdPart, ConstructPanelFormer.Order(pane, Math.Min(WorkOrders.MaxCount, n * _pdCount)));
             _pdSaved = "";
         }
         if (cancel != 0)

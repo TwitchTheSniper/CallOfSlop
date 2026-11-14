@@ -29,10 +29,11 @@ public static unsafe partial class Program
     /// <summary>The inventory's click, with a mode on: a physics-only piece is picked for the aid. True when it took the click.</summary>
     internal static bool AidPick(Game g, ConstructPartDef d)
     {
-        if (_buildMode == BuildMode.Place || !d.PhysicsOnly || d.IsExtrusion)
+        if (_buildMode == BuildMode.Place || !d.PhysicsOnly && !d.RuntimeMade) // (a made part by its key, from the count, a rack or a loose piece: inventories phase 4)
             return false;
         _aidPick = d.Id;
-        g.SandboxSay($"{(_buildMode == BuildMode.Line ? "Line" : "Replace")}: {d.Name} - take out the attach tool");
+        RuntimeParts.Pinned = d.Id; // (kept from the sweep while picked)
+        g.SandboxSay($"{(_buildMode == BuildMode.Line ? "Line" : "Replace")}: {PartRef.Shown(d)} - take out the attach tool");
         return true;
     }
 
@@ -42,7 +43,7 @@ public static unsafe partial class Program
         if (_buildMode == BuildMode.Place || hit.Part < 0 || hit.Part >= hit.Body.PartCount)
             return false;
         var d = hit.Body.DefOf(hit.Part);
-        if (!d.PhysicsOnly || d.IsExtrusion)
+        if (!d.PhysicsOnly && !d.RuntimeMade)
             return false;
         return AidPick(g, d);
     }
@@ -118,7 +119,7 @@ public static unsafe partial class Program
             return;
         }
         _buildMode = mode;
-        _aidPick = ConstructParts.None;
+        _aidPick = RuntimeParts.Pinned = ConstructParts.None;
         _ln.Active = false;
     }
 
@@ -255,7 +256,9 @@ public static unsafe partial class Program
         if (!Down(GameAction.Fire))
         {
             var pw = g.SandboxAidBegin(BuildAidOp.Line);
-            pw.U16(l.Body).U16(l.Part).U16(l.Def).U8(l.Socket).U8(l.Variant).U8(l.DirU).F32(LinePitch(l, l.DirU)).U16((ushort)l.CountU).U8(l.DirV).F32(LinePitch(l, l.DirV)).U16((ushort)l.CountV);
+            pw.U16(l.Body).U16(l.Part);
+            PartRef.Write(pw, l.Def); // (protocol 307: a made part by its key)
+            pw.U8(l.Socket).U8(l.Variant).U8(l.DirU).F32(LinePitch(l, l.DirU)).U16((ushort)l.CountU).U8(l.DirV).F32(LinePitch(l, l.DirV)).U16((ushort)l.CountV);
             g.SandboxAidSend(pw);
             l.Active = false;
             _swallowClick = false;
@@ -279,15 +282,17 @@ public static unsafe partial class Program
     private static int _lnShown;
     private static string _lnText = "";
 
-    /// <summary>How many of a part the player can lay hands on (-1: creative, no limit).</summary>
+    /// <summary>How many of a part the player can lay hands on (-1: creative, no limit). A made part is never endless: as the host takes it (ConstructEdits.TakeMade).</summary>
     private static int AidHave(Game g, in SandboxHand h, ConstructPartDef d)
     {
+        var v = g.SandboxBeacon(g.LocalId);
+        if (d.RuntimeMade)
+            return g.SandboxInv.Of(g.LocalId).Count(d.Id) + (g.SandboxBeaconOn ? v.CountOf(d.Id) : 0) + (g.Local is { } m ? ConstructAid.LooseCount(g.Constructs, m.Id, d, m.Eye) : 0);
         if (g.SandboxInfiniteParts)
             return -1;
-        var v = g.SandboxBeacon(g.LocalId);
         if (d.PhysicsOnly)
             return g.Local is { } me ? ConstructAid.LooseCount(g.Constructs, me.Id, d, me.Eye) : 0;
-        return g.SandboxInv.Of(g.LocalId).Count(d.Id) + (h.Held == d.Id ? 1 : 0) + (v.On ? v.Counts[d.Id] : 0);
+        return g.SandboxInv.Of(g.LocalId).Count(d.Id) + (h.Held == d.Id ? 1 : 0) + (v.On ? v.CountOf(d.Id) : 0);
     }
 
     // ---- The Replacer ---------------------------------------------------------------------------------------------
@@ -341,7 +346,8 @@ public static unsafe partial class Program
     internal static void SandboxReplaceSend(Game g, ushort body, int part, ushort id)
     {
         var w = g.SandboxAidBegin(BuildAidOp.Replace);
-        w.U16(body).U16((ushort)part).U16(id);
+        w.U16(body).U16((ushort)part);
+        PartRef.Write(w, id); // (protocol 307: a made part by its key)
         g.SandboxAidSend(w);
     }
 
@@ -349,7 +355,7 @@ public static unsafe partial class Program
     private static void SandboxAidsLocalReset()
     {
         _buildMode = BuildMode.Place;
-        _aidPick = ConstructParts.None;
+        _aidPick = RuntimeParts.Pinned = ConstructParts.None;
         _ln.Active = false;
         _mirrorKey = _replaceKey = long.MinValue;
         GantryLeave();
