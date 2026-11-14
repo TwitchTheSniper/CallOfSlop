@@ -1492,6 +1492,18 @@ Recipes come from the Assembling generator's rule: Gear Sets at tier 1, Servo Mo
 - **Window tool**: `lifter` (every lifter: state, reason, moves, the step's cost), `lifter place [TIER] [SLOT]` (host: an arm of
   that tier at slot 0 to 3 round the station's bay), `lifter await`, `lifter holding` (until a hand carries a piece).
 
+**On the logistics network** (phase 5, `ConstructLifterNet.cs`; notes `docs/sandbox/design/lifters-phase5b-notes.md`). An arm also
+carries between the points it reaches with no conveyor on them: racks, Lay-down Pads, a machine's Piece out, an Assembler's, a press
+bay's or a Panel Former's Piece in, and a Crafting Terminal's tray. On its body's logistics map each pick-to-put pair is an edge
+(its metres out and back plus a handling, worked out on each peer from the parts), so a Conveyor Router sends a piece toward the
+arm's pick rack or pad when its way goes on by the arm, a chained order or a fetch from stock crosses it, and a terminal's network
+reaches the machines an arm serves. Overflow is never carried store to store. A **pick pad** is a Lay-down Pad among an arm's
+points: a station's part too big for its hold is asked for as before and delivered to the pad (a Router sends it there, an arm
+brings it, a fetch rides there, or a player sets it down on it), and the arm fits it from there; what the pads hold for a build is
+claimed for it. A pad takes in a loose part at rest over its hold, as new; a damaged one is left lying. Window tool: `lifter net
+[TIER] [pad]`, `lifter edges`, `lifter steps`, `lifter bigparts`, `lifter bigrack NAME`, `lifter pickpad [empty]`, `lifter crowd N`;
+`logi net` marks a way "by a lifter".
+
 ## Production Showcase
 
 One shipped blueprint, **Production Showcase** (`Constructs/Blueprints/ProductionShowcase.json`, group Production), with every machine

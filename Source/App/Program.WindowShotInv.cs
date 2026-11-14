@@ -57,6 +57,10 @@ public static unsafe partial class Program
                 WsSay($"inv store: {Named(d!.Id)} into the {c!.DefOf(part).Name}: {why ?? "stored"}");
                 return true;
             }
+            case "letgo": // "inv letgo": this peer's player drops what it holds, as the drop key sends it (a joined client's own action)
+                g.SandboxSend(CActKind.Drop);
+                WsSay($"inv letgo: sent, holding {Named(hands.Hand(me.Id).Held)} at {me.Position:0.00}");
+                return true;
             case "show":
             {
                 foreach (var pl in g.Players.Values)
