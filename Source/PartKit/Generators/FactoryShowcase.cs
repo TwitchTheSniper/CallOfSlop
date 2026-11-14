@@ -436,10 +436,16 @@ public sealed class FactoryShowcase : IPartGenerator
             var (ra, a) = _loop;
             var ja = On("Conveyor Join", 47.75f, -17.25f, Flow, "-y.0.0", Assembler);
             Convey(ja, "Piece out", a, "Piece in", Assembler, Small);
-            var a3 = PortAt(ra, "Piece out 3");
             var ji = PortAt(ja, "Piece in 2");
-            var jn = PortAt(ja, "Piece in 3");
-            Convey(ra, "Piece out 3", ja, "Piece in 3", Assembler, Small, Along(new[] { V(a3.X, 0, -15.6f), V(jn.X, 0, -15.6f) }).Select(n => n with { Y = a3.Y }).ToArray()); // (north of the Assembler, back round into the Join)
+            // The Assembler's own store: its Router's way 3 runs into a Piece Rack north of it, whose Piece out runs back into the Join. A part it
+            // makes for itself waits there and is fetched for the order that wants it; and Bearings and Gear Sets are kept in stock there (a
+            // stock target, refilled by the Assembler and the Gear press), so one order using up another's inputs in its hopper doesn't stall it.
+            var own = On("Piece Rack", 55.75f, -15.25f, Toward, "-y.0.0", Assembler);
+            Convey(ra, "Piece out 3", own, "Piece in", Assembler, Small);
+            Convey(own, "Piece out", ja, "Piece in 3", Assembler, Small);
+            Config(own, ("storeKeep", 8));
+            Store(own, -1, "Bearing", 8);
+            Store(own, -1, "Gear Set", 4);
             var g = PortAt(_gear!, "Piece out");
             Convey(_gear!, "Piece out", ja, "Piece in 2", PressBlue, Small, Along(new[] { V(g.X, 0, -20.0f), V(ji.X, 0, -20.0f) }).Select(n => n with { Y = g.Y }).ToArray());
             Convey(_cable!, "Piece out", ja, "Piece in", Copper, Small);
@@ -505,8 +511,8 @@ public sealed class FactoryShowcase : IPartGenerator
             var js = On("Conveyor Join", 87.25f, -10.75f, Flow, "-y.0.0", StationTeal);
             Convey(rs, "Piece out", js, "Piece in", StationTeal, Small);
             var ro = PortAt(js, "Piece out");
-            var si = PortAt(station, "Piece in 2");
-            Convey(js, "Piece out", station, "Piece in 2", StationTeal, Small, V(90.75f, ro.Y, ro.Z), V(90.75f, ro.Y, si.Z)); // (east, up beside the station into its side)
+            var ji = PortAt(ph.LineOut, "Piece in 3");
+            Convey(js, "Piece out", ph.LineOut, "Piece in 3", StationTeal, Small, V(89.25f, ro.Y, ro.Z), V(89.25f, ro.Y, ji.Z + 1.0f), V(ji.X, ro.Y, ji.Z + 1.0f)); // (into the press line's last Join: the station's side port takes only 0.5 m, so everything enters by its back)
             var po = PortAt(ph.LineOut, "Piece out");
             var sb = PortAt(station, "Piece in");
             Convey(ph.LineOut, "Piece out", station, "Piece in", PressBlue, Wide, V(sb.X, po.Y, po.Z), V(sb.X, po.Y, sb.Z - 2.0f - (po.Y - sb.Y)), V(sb.X, sb.Y, sb.Z - 2.0f)); // (a 45 degree step down to the port's height; the press line: east, then north into the station's back)
@@ -575,7 +581,7 @@ public sealed class FactoryShowcase : IPartGenerator
             var rec = On("Recycler", 2.25f, -11.25f, Front, paint: Refining);
             ChuteVia(rec, r.SteelFoundry, -8.1f);
             Sign(2.25f, Posts2, Refining, "RECYCLER: drop a wreck in; its metal goes to steel", false);
-            var term = On("Smart Terminal", 44.25f, -1.25f, Back, paint: Assembler); // (by the yard, on its chute network: a player pulls steel here)
+            var term = On("Smart Terminal", 43.75f, -8.25f, Front, paint: Assembler); // (by the yard, on its chute network: a player pulls steel here)
             Link("chute", term, r.Steel, "Network", null, Assembler);
             var beacon = On("Inventory Beacon", 38.25f, -7.75f, Front, paint: Assembler);
             Link("chute", beacon, r.Steel, null, null, Assembler);
