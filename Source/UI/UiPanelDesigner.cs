@@ -131,6 +131,8 @@ public sealed partial class Ui
     // ---- Cut-outs (laser cutter phase 4): openings and cut corners on the sheet, ordered at a linked Laser Cutter -----------------------
 
     private readonly List<HullLoft.Cut> _pdCuts = new(HullLoft.MaxCuts);
+    private readonly List<bool> _pdGlazed = new(HullLoft.MaxCuts); // (laser cutter phase 6: each cut's Glazed box, by the same index; ORDER adds a pane for each)
+    private string _pdPaneNote = "";
     private string _pdCutWhy = "";
     private int _pdCutters;
     private readonly List<string> _pdCutFits = new(4);
@@ -154,6 +156,7 @@ public sealed partial class Ui
         if (text == "clear")
         {
             _pdCuts.Clear();
+            _pdGlazed.Clear();
             return "cuts cleared";
         }
         if (text.StartsWith("drop ", StringComparison.Ordinal) && int.TryParse(text.AsSpan(5), out var at))
@@ -161,7 +164,15 @@ public sealed partial class Ui
             if (at < 0 || at >= _pdCuts.Count)
                 return "no such cut";
             _pdCuts.RemoveAt(at);
+            _pdGlazed.RemoveAt(at);
             return $"cut {at} dropped";
+        }
+        if (text.StartsWith("glaze ", StringComparison.Ordinal) && int.TryParse(text.AsSpan(6), out var gz))
+        {
+            if (gz < 0 || gz >= _pdCuts.Count || HullLoft.PaneFor(_pdCuts[gz], _pdMm) == null)
+                return "no opening there a pane fits";
+            _pdGlazed[gz] = !_pdGlazed[gz];
+            return $"opening {gz} {(_pdGlazed[gz] ? "glazed" : "open")}";
         }
         if (_pdCuts.Count >= HullLoft.MaxCuts)
             return $"a panel takes {HullLoft.MaxCuts} cuts";
@@ -176,6 +187,7 @@ public sealed partial class Ui
         if (corner ? v.Length != 3 : v.Length != 5)
             return "a cut is rU,V,A,B,C or mK,A,B";
         _pdCuts.Add(corner ? new HullLoft.Cut(true, v[0], 0, v[1], v[2], 0) : new HullLoft.Cut(false, v[0], v[1], v[2], v[3], v[4]));
+        _pdGlazed.Add(false);
         return $"{_pdCuts.Count} cut(s)";
     }
 
@@ -213,6 +225,15 @@ public sealed partial class Ui
                 ImGui.SliderInt("Corners cut"u8, ref cc, 0, Math.Max(0, Math.Min(a, b) / 2), "%d cm"u8);
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip("How far each corner of the opening is cut back: 0 square, about 0.29 of its side an eight-sided round."u8);
+                // Glazed (phase 6): ORDER adds a glass pane cut to this opening's outline, to weld into its socket.
+                var fits = a >= HullLoft.CutOpenCm && b >= HullLoft.CutOpenCm;
+                var glazed = fits && k < _pdGlazed.Count && _pdGlazed[k];
+                ImGui.BeginDisabled(!fits);
+                if (ImGui.Checkbox("Glazed"u8, ref glazed) && k < _pdGlazed.Count)
+                    _pdGlazed[k] = glazed;
+                ImGui.EndDisabled();
+                if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                    ImGui.SetTooltip(fits ? "ORDER also orders a glass pane cut to this opening; weld it into the opening's socket by its back."u8 : "An opening under 10 cm a side has no socket for a pane."u8);
             }
             ImGui.PopItemWidth();
             var now = new HullLoft.Cut(cut.Corner, u, vv, a, b, cut.Corner ? 0 : Math.Clamp(cc, 0, Math.Min(a, b) / 2));
@@ -245,6 +266,56 @@ public sealed partial class Ui
             ImGuiSafe.TextColored(CrWarn, _pdCutWhy);
             ImGui.PopTextWrapPos();
         }
+        else if (_pdPaneNote.Length > 0)
+        {
+            ImGui.PushTextWrapPos(0);
+            ImGuiSafe.TextColored(Dim, _pdPaneNote);
+            ImGui.PopTextWrapPos();
+        }
+    }
+
+    /// <summary>The panes ORDER adds for one panel: one per glazed opening a pane fits, equal ones counted together. Allocates: at ORDER and on a change only.</summary>
+    private List<(string Key, int Count)> DesignerPanes()
+    {
+        var list = new List<(string Key, int Count)>(HullLoft.MaxCuts);
+        for (var k = 0; k < _pdCuts.Count && k < _pdGlazed.Count; k++)
+            if (_pdGlazed[k] && HullLoft.PaneFor(_pdCuts[k], _pdMm) is { } pane)
+            {
+                var at = list.FindIndex(x => x.Key == pane);
+                if (at < 0)
+                    list.Add((pane, 1));
+                else
+                    list[at] = (pane, list[at].Count + 1);
+            }
+        return list;
+    }
+
+    /// <summary>The window tool: the panes ORDER would add, by key and count per panel.</summary>
+    public string DesignerPaneText => string.Join("; ", DesignerPanes().Select(p => $"{p.Count} x {p.Key}"));
+
+    /// <summary>
+    /// What the Glazed boxes order, and a note for each glazed opening the sheet curves over by more than 2 cm (a pane is flat: it sits flat in
+    /// the opening). From the cut key's spots on its sheet (HullLoft.CutSpot): read only when the shape, the cuts or the boxes change.
+    /// </summary>
+    private void DesignerPaneNote(string key)
+    {
+        var sb = new System.Text.StringBuilder();
+        var panes = DesignerPanes();
+        if (panes.Count > 0)
+            sb.Append($"With each panel: {string.Join(", ", panes.Select(p => $"{p.Count} {HullLoft.PanelLabel(p.Key)}"))}. Weld each into its opening's socket by its back.");
+        for (var k = 0; k < _pdCuts.Count && k < _pdGlazed.Count; k++)
+        {
+            var c = _pdCuts[k];
+            if (!_pdGlazed[k] || c.Corner || !HullLoft.CutSpot(key, c.U, c.V, out var mid, out var n))
+                continue;
+            var sag = 0f;
+            foreach (var (du, dv) in (ReadOnlySpan<(int, int)>)[(-1, -1), (1, -1), (1, 1), (-1, 1), (0, -1), (0, 1), (-1, 0), (1, 0)])
+                if (HullLoft.CutSpot(key, c.U + du * c.A / 2.0, c.V + dv * c.B / 2.0, out var at, out _))
+                    sag = MathF.Max(sag, MathF.Abs(System.Numerics.Vector3.Dot(at - mid, n)));
+            if (sag > 0.02f)
+                sb.Append($" Opening {k + 1}: the sheet curves {sag * 100:0} cm over it; its pane sits flat.");
+        }
+        _pdPaneNote = sb.ToString();
     }
 
     private int _pdPrevHash;
@@ -272,11 +343,20 @@ public sealed partial class Ui
     private void CutApply(int dropCut, int addCut)
     {
         if (dropCut >= 0 && dropCut < _pdCuts.Count)
+        {
             _pdCuts.RemoveAt(dropCut);
+            _pdGlazed.RemoveAt(dropCut);
+        }
         if (addCut == 4)
+        {
             _pdCuts.Clear();
-        if (addCut is < 1 or > 3 || _pdCuts.Count >= HullLoft.MaxCuts)
+            _pdGlazed.Clear();
+        }
+        if (addCut is < 1 or > 3 || _pdCuts.Count >= HullLoft.MaxCuts || addCut == 3 && _pdCuts.Count == 0)
             return;
+        _pdGlazed.Add(false); // (the cut added below; a mirrored opening is glazed as its twin)
+        if (addCut == 3 && _pdCuts.Count > 0)
+            _pdGlazed[^1] = _pdGlazed[^2];
         if (addCut == 1)
             _pdCuts.Add(new HullLoft.Cut(false, _pdL / 2, _pdW / 2, Math.Max(HullLoft.CutMinCm, _pdL / 4), Math.Max(HullLoft.CutMinCm, _pdW / 4), 0));
         else if (addCut == 2)
@@ -324,6 +404,9 @@ public sealed partial class Ui
         _pdCuts.Clear();
         if (cuts != null)
             _pdCuts.AddRange(cuts.Cuts);
+        _pdGlazed.Clear();
+        for (var k = 0; k < _pdCuts.Count; k++)
+            _pdGlazed.Add(false); // (a design is its cut key: glazing is chosen at ORDER, not saved)
         (_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm) = (s.Kind, s.L, s.W, s.Crown, s.Rake, s.Mm);
         if (s.Kind == HullLoft.PanelBend)
             (_pdAngle, _pdFoldAt, _pdRadius) = (s.Angle, s.At, s.Radius);
@@ -426,7 +509,7 @@ public sealed partial class Ui
     {
         var key = HashCode.Combine(_pdKind, _pdL, _pdW, _pdCrown, _pdRake, _pdMm, _pdMat, _pdStamp) * 31 + DesignerPreview.Made + HashCode.Combine(_pdAngle, _pdFoldAt, _pdRadius, _pdNoseW, _pdBack, _pdNose);
         for (var k = 0; k < _pdCuts.Count; k++)
-            key = key * 31 + _pdCuts[k].GetHashCode();
+            key = key * 31 + _pdCuts[k].GetHashCode() + (k < _pdGlazed.Count && _pdGlazed[k] ? 7 : 0);
         var bd = DesignerPreview.Base;
         key = key * 31 + (bd == null ? 0 : 1);
         if (key == _pdTextKey)
@@ -493,6 +576,7 @@ public sealed partial class Ui
     private void DesignerCutTexts(ConstructWorld world, Construct c, int part, in HullLoft.PanelShape shape)
     {
         _pdCutWhy = "";
+        _pdPaneNote = "";
         _pdCutFits.Clear();
         _pdCutFitOk.Clear();
         _pdCutters = 0;
@@ -509,6 +593,7 @@ public sealed partial class Ui
             return;
         }
         _pdKey = key;
+        DesignerPaneNote(key);
         if (_pdCutters == 0)
         {
             _pdCutFits.Add("No Laser Cutter linked: this design has cut-outs. Link one by a conveyor or a Line Console's wire into Orders.");
@@ -915,6 +1000,10 @@ public sealed partial class Ui
         if (order && !share && HullLoft.PanelRefusal(DesignerShape) == null && (_pdCuts.Count == 0 || HullLoft.CutRefusal(DesignerKey) == null))
         {
             game.SandboxCraftOrder(_pdBody, _pdPart, ConstructPanelFormer.Order(DesignerKey, _pdCount));
+            // (phase 6) One pane per glazed opening for each panel: equal openings share one order.
+            if (_pdCuts.Count > 0)
+                foreach (var (pane, n) in DesignerPanes())
+                    game.SandboxCraftOrder(_pdBody, _pdPart, ConstructPanelFormer.Order(pane, Math.Min(WorkOrders.MaxCount, n * _pdCount)));
             _pdSaved = "";
         }
         if (cancel != 0)

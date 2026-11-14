@@ -935,9 +935,9 @@ public static unsafe partial class Program
                     Ui.DesignerProfile(ph, pcm); // "profile H,CM": a loft's handle H (0-7 the back edge, 8-15 the nose) to CM, as a drag would
                     _wsWait = 3;
                 }
-                else if (dw.Length == 2 && dw[0] == "cut" || arg.StartsWith("cut drop ", StringComparison.Ordinal))
+                else if (dw.Length == 2 && dw[0] == "cut" || arg.StartsWith("cut drop ", StringComparison.Ordinal) || arg.StartsWith("cut glaze ", StringComparison.Ordinal))
                 {
-                    WsSay($"design cut: {Ui.DesignerCut(arg[4..].Trim())}"); // "cut r70,60,40,50,5", "cut m0,30,30", "cut clear", "cut drop N" (laser cutter phase 4)
+                    WsSay($"design cut: {Ui.DesignerCut(arg[4..].Trim())}; panes [{Ui.DesignerPaneText}]"); // "cut r70,60,40,50,5", "cut m0,30,30", "cut clear", "cut drop N" (laser cutter phase 4), "cut glaze N" (phase 6: toggles opening N's Glazed box)
                     _wsWait = 3;
                 }
                 else if (dw.Length >= 2 && dw[0] == "name")
