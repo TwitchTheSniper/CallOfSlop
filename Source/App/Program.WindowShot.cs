@@ -301,16 +301,32 @@ public static unsafe partial class Program
     }
 
     /// <summary>
-    /// Once a frame in the script: true while the last wait runs. A wait of N is N simulation ticks (<see cref="World.TickRate"/> a
-    /// second) of real time and at least min(N, 3) frames, so a script lasts as long at 60 fps as uncapped (it counted frames, and at
-    /// 160 fps a host's "wait 600" ended before its client joined) and a short wait still lets a panel draw.
+    /// A wait on the simulation (<c>wait</c>, <c>put</c>, <c>walk</c>, the polling lifter and cutter verbs): N simulation ticks
+    /// (<see cref="World.TickRate"/> a second) of real time and at least min(N, 3) frames, so a script lasts as long at 60 fps as
+    /// uncapped (counted in frames, at 160 fps a host's "wait 600" ended before its client joined). Every other <c>_wsWait</c> is
+    /// frames, as before: the bench, the tour's <c>perf</c>, <c>design drag</c> and <c>station await</c> measure frames.
     /// </summary>
+    private static void WsWaitTicks(int n)
+    {
+        _wsWait = n;
+        _wsWaitInTicks = true;
+    }
+
+    private static bool _wsWaitInTicks;
+
+    /// <summary>Once a frame in the script: true while the last wait runs (frames, or ticks after <see cref="WsWaitTicks"/>).</summary>
     private static bool WsWaiting()
     {
         if (_wsWait <= 0)
         {
             _wsWaitSeen = 0;
+            _wsWaitInTicks = false;
             return false;
+        }
+        if (!_wsWaitInTicks)
+        {
+            _wsWait--;
+            return true;
         }
         if (_wsWait != _wsWaitSeen)
         {
@@ -323,6 +339,7 @@ public static unsafe partial class Program
             return true;
         _wsWait = 0;
         _wsWaitSeen = 0;
+        _wsWaitInTicks = false;
         return false;
     }
 
@@ -411,7 +428,7 @@ public static unsafe partial class Program
         switch (verb)
         {
             case "wait":
-                _wsWait = int.TryParse(arg, out var w) ? Math.Max(0, w) : 30;
+                WsWaitTicks(int.TryParse(arg, out var w) ? Math.Max(0, w) : 30);
                 return;
             case "aim" or "near" or "panel":
             {
@@ -1028,7 +1045,7 @@ public static unsafe partial class Program
                     if (!held)
                     {
                         _wsQueue.EnqueueFront("lifter holding");
-                        _wsWait = 1;
+                        WsWaitTicks(1);
                         return;
                     }
                     _wsLiftSince = 0;
@@ -1037,7 +1054,10 @@ public static unsafe partial class Program
                 {
                     var pw = arg.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
                     var (lc, lpart) = WsFind(g, "Building Station");
-                    WsSay("lifter: place: " + (lc == null ? "no Building Station" : LifterProbe.Place(g.Constructs, lc, lpart, pw.Length > 1 ? pw[1] : "", pw.Length > 2 && int.TryParse(pw[2], out var ps) ? ps : 0)));
+                    var builtIn = false; // (the Production Showcase has its own arms at slots 0 and 1: a placed one defaults to slot 2, beside them, not into them)
+                    for (var bi = 0; lc != null && bi < lc.PartCount && !builtIn; bi++)
+                        builtIn = lc.DefOf(bi).Lifter != null;
+                    WsSay("lifter: place: " + (lc == null ? "no Building Station" : LifterProbe.Place(g.Constructs, lc, lpart, pw.Length > 1 ? pw[1] : "", pw.Length > 2 && int.TryParse(pw[2], out var ps) ? ps : builtIn ? 2 : 0)));
                 }
                 var lw = arg.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 if (lw.Length > 0 && lw[0] == "joined" && g.IsServer) // "lifter joined" (host): waits (3 minutes at most) until a joined player has been in for 15 s
@@ -1047,7 +1067,7 @@ public static unsafe partial class Program
                     if ((_wsJoinSeen == 0 || System.Diagnostics.Stopwatch.GetElapsedTime(_wsJoinSeen).TotalSeconds < 15) && WsLiftWait(180))
                     {
                         _wsQueue.EnqueueFront("lifter joined");
-                        _wsWait = 30;
+                        WsWaitTicks(30);
                         return;
                     }
                     _wsLiftSince = 0;
@@ -1080,7 +1100,7 @@ public static unsafe partial class Program
                         if (WsLiftWait(180))
                         {
                             _wsQueue.EnqueueFront($"lifter {arg.Trim()}");
-                            _wsWait = waitJoin ? 30 : 1; // (a join takes seconds: look again every half second)
+                            WsWaitTicks(waitJoin ? 30 : 1); // (a join takes seconds: look again every half second)
                             return;
                         }
                         WsFail($"lifter: no carry began (or no player joined) in time: {(waitJoin ? "nobody joined" : pinfo)}");

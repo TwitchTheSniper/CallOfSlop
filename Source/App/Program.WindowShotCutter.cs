@@ -113,7 +113,7 @@ public static unsafe partial class Program
                     return true;
                 }
                 _wsQueue.EnqueueFront("cutter await");
-                _wsWait = 1;
+                WsWaitTicks(1);
                 return true;
             }
         }

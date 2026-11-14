@@ -77,7 +77,7 @@ public static unsafe partial class Program
                         return true;
                     }
                     _wsQueue.EnqueueFront($"{verb} {arg}");
-                    _wsWait = 10;
+                    WsWaitTicks(10);
                     return true;
                 }
                 _wsPutWait = 0;
@@ -86,7 +86,7 @@ public static unsafe partial class Program
                 WsSay($"walk: from {stand:0.00}, {rest[0]:0.0} m out, towards the sheet for {rest[1]:0} ticks");
                 _wsHold = GameAction.MoveForward;
                 _wsHoldUntil = System.Diagnostics.Stopwatch.GetTimestamp() + (long)(rest[1] / World.TickRate * System.Diagnostics.Stopwatch.Frequency);
-                _wsWait = (int)rest[1] + 10;
+                WsWaitTicks((int)rest[1] + 10);
                 _wsQueue.EnqueueFront("side " + string.Join(' ', words[..(at + 1)]));
                 return true;
             }
@@ -104,7 +104,7 @@ public static unsafe partial class Program
                 if (count == 0 && ++_wsPutWait < 360) // (no one has joined yet: try again, up to a minute)
                 {
                     _wsQueue.EnqueueFront($"{verb} {arg}");
-                    _wsWait = 10;
+                    WsWaitTicks(10);
                     return true;
                 }
                 _wsPutWait = 0;
