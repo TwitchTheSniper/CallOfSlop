@@ -859,6 +859,15 @@ public static partial class ConstructExtruder
         return $": {c.Routes[k].ConvW / 100f:0.00} m{(needs > 0 ? $", piece needs {needs:0.00} m" : "")}";
     }
 
+    /// <summary>Why a piece can't be made (<see cref="ExtrudeStall.BadShape"/>): the head order's key as <see cref="Extrusion.KeyRefusal"/>
+    /// reads it (an order saved or queued before the order check refused such keys), else the die's own section; null when neither says.</summary>
+    private static string? StallShape(Construct c, int part, ConstructPartDef d, bool roundOrWheel)
+    {
+        if (WorkOrders.HeadOf(c.Parts[part], out var head) && head.IsPiece && Extrusion.KeyRefusal(head.Key) is { } bad)
+            return bad;
+        return roundOrWheel ? null : Extrusion.Refusal(MaskOf(c.Parts[part], d));
+    }
+
     /// <summary>What it is doing, or why not. Read by the look line on either side.</summary>
     public static string Status(Construct c, int part, CStore st)
     {
@@ -892,7 +901,7 @@ public static partial class ConstructExtruder
             ExtrudeStall.NoMaterial => $" - needs material: takes {takes}",
             ExtrudeStall.BadMaterial => $" - can't {(wheel ? "form" : "extrude")} {RecyclingTable.Current.NameOf(st.Material)}: takes {takes}",
             ExtrudeStall.Mixed => $" - holds {RecyclingTable.Current.NameOf(st.Material)}, the piece on its {(wheel ? "hub" : "die")} is another material: cut it or take it off",
-            ExtrudeStall.BadShape => " - " + ((wheel || round ? null : Extrusion.Refusal(MaskOf(c.Parts[part], d))) ?? "too many different pieces in this game"),
+            ExtrudeStall.BadShape => " - " + (StallShape(c, part, d, wheel || round) ?? "too many different pieces in this game"),
             ExtrudeStall.AtCap => wheel ? " - the wheel is as big as this mode goes: change mode or send Cut" : " - the piece is as long as it can be: cut it or take it off",
             ExtrudeStall.Blocked => wheel ? " - blocked: the wheel has no room to grow" : " - blocked: something fixed in the piece's path (a wall, the ground)",
             ExtrudeStall.TooHeavy => " - what is in the piece's path is too heavy to push",

@@ -375,6 +375,31 @@ public static class Extrusion
         return FanBladesOf(k.Wall) * r * chord * chord * 0.12f * StyleRow(FanStyleOf(k.Wall)).Area + r * r * MathF.Min(r, 4) * 0.02f; // (a hub past 4 m of radius grows with its disc, not its volume)
     }
 
+    /// <summary>Null when a def can be made for this key (<see cref="Valid"/>), else why not in a player's words: an order check refuses
+    /// what this refuses, or the machine stalls on the order for good.</summary>
+    public static string? KeyRefusal(in ExtrusionKey k)
+    {
+        if (Valid(k))
+            return null;
+        if (k.Shape is not (ExShape.Section or ExShape.Round or ExShape.Pipe))
+            return $"no such {k.Shape.ToString().ToLowerInvariant()} piece can be made";
+        if (k.W is < MinSectionCm or > MaxSectionCm || k.H is < MinSectionCm or > MaxSectionCm)
+            return $"a section {k.W / 100f:0.##} x {k.H / 100f:0.##} m: sections are {MinSectionCm / 100f:0.##} to {MaxSectionCm / 100f:0.##} m a side";
+        if (k.L is < StepCm or > MaxLengthCm || k.L % StepCm != 0)
+            return $"a piece {k.L / 100f:0.##} m long: pieces are {StepCm / 100f:0.##} to {MaxLengthCm / 100f:0.##} m, in {StepCm} cm steps";
+        if (ExtrusionTable.Current.Find(k.Material) == null)
+            return $"no Extruder takes {RecyclingTable.Current.NameOf(k.Material)}: takes {ExtrusionTable.Current.Takes()}";
+        return k.Shape switch
+        {
+            ExShape.Section => k.Wall != 0 ? "a section has no wall" : Refusal(k.Mask) ?? "not a section an Extruder makes",
+            ExShape.Round when k.W != k.H => "a round bar is as wide as it is high",
+            ExShape.Round => "a round bar has no wall or cut-outs",
+            ExShape.Pipe when k.W != k.H => "a pipe is as wide as it is high",
+            ExShape.Pipe => $"a pipe's wall is 1 to {MaxWallCm} cm and leaves a bore of at least {MinBoreCm} cm",
+            _ => "not a piece an Extruder makes",
+        };
+    }
+
     private static bool Valid(in ExtrusionKey k)
     {
         if (k.Shape == ExShape.Fan)

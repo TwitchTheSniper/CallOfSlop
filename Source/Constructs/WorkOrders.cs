@@ -157,6 +157,9 @@ public static class WorkOrders
             if (k.L > most)
                 return $"a piece {k.L / 100f:0.##} m long is longer than the {d.Name} makes ({most / 100f:0.##} m): {ConstructExtruder.LongFix(d, k.L, k.W, k.H)}";
         }
+        // Whatever no def can be made for (too thin, a round or pipe not square, a pipe's wall, a section with a wall): taken, it would stall for good.
+        if (Extrusion.KeyRefusal(k) is { } invalid)
+            return invalid;
         if (world.StoreOf(c, part) is { Amount: > 0 } st && st.Material != k.Material)
             return $"the {d.Name} is fed {names.NameOf(st.Material)}: an order in {mat} is another line";
         return null;
