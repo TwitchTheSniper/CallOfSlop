@@ -16,7 +16,7 @@ public static partial class Program
     private static int _wsClipBodies, _wsClipLoose;
     private static bool _wsClipToolAsked;
 
-    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands";
+    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage";
 
     private static bool WsPlayVerb(Game g, Player me, string verb, string arg)
     {
@@ -166,6 +166,52 @@ public static partial class Program
                             WsSay(string.Create(ci, $"hands: {hb.DefOf(l.Part).Name} (body {hb.Id}): {l.State} {l.Why}, piece origin at {hw:0.00}, {hw.Y - ground:0.00} m over the ground under it{(piece != null ? $", holding {piece.Name} ({piece.BoundsMax.Y - piece.BoundsMin.Y:0.00} m tall)" : "")}, moves {l.Moves}"));
                         }
                 return true;
+            case "cabto": // "cabto PART[#n]": seated in a Lifter Cab, the look turned toward that part (as the mouse turns it) and W held until the hook is within 0.25 m of over it (20 s at most)
+            {
+                ref var h = ref g.SandboxHands.Hand(me.Id);
+                var (tc, tp) = WsFind(g, arg);
+                if (!h.Seated || g.Constructs.Get(h.SeatBody) is not { } cc || h.SeatPart >= cc.PartCount || ConstructLifters.CabLifter(g.Constructs, cc, h.SeatPart) is not { } cl
+                    || g.Constructs.Get(cl.Body) is not { } lb || ConstructLifters.DefOf(lb, cl.Part) is not { } ld || tc == null)
+                {
+                    WsFail($"cabto: not seated in a Lifter Cab with a lifter, or no part \"{arg}\"");
+                    return true;
+                }
+                ConstructLifters.Frame(lb, cl.Part, ld, out var lp, out var lr, out _);
+                var hook = lp + Vector3.Transform(cl.Moved ? ConstructLifters.Pose(ld, cl, ConstructLifters.AgeNow(cl), out _) : ConstructLifters.RestOf(ld), lr);
+                var target = WsPartSpot(tc, tp, out _);
+                var off = new Vector3(target.X - hook.X, 0, target.Z - hook.Z);
+                if (off.Length() < 0.25f || !WsLiftWait(20))
+                {
+                    _wsKeys.Clear();
+                    _wsLiftSince = 0;
+                    WsSay(string.Create(ci, $"cabto: the hook at {hook:0.00}, {off.Length():0.00} m across from over the {tc.DefOf(tp).Name} at {target:0.00}"));
+                    _wsWait = 10;
+                    return true;
+                }
+                WsLook(g, me.Eye, me.Eye + off); // (the mouse's turn: W moves the hook along the sitter's look)
+                _wsKeys.Clear();
+                _wsKeys.Add(GameAction.MoveForward);
+                _wsKeysUntil = System.Diagnostics.Stopwatch.GetTimestamp() + System.Diagnostics.Stopwatch.Frequency / 10 * (off.Length() < 1 ? 1 : 3); // (short taps near it)
+                _wsQueue.EnqueueFront($"cabto {arg}");
+                _wsWait = off.Length() < 1 ? 8 : 12;
+                return true;
+            }
+            case "damage" when g.IsServer: // host: "damage PART[#n] HP": that damage dealt to the part as a round's hit deals it (armour first; at 0 it is wrecked, breaks off or stops)
+            {
+                var sp = arg.LastIndexOf(' ');
+                var (dc, dp) = sp > 0 ? WsFind(g, arg[..sp]) : (null, -1);
+                if (dc == null || !float.TryParse(arg[(sp + 1)..], System.Globalization.NumberStyles.Float, ci, out var hp))
+                {
+                    WsFail($"damage PART[#n] HP (on the host): \"{arg}\"");
+                    return true;
+                }
+                var name = dc.DefOf(dp).Name;
+                var before = dc.Parts[dp].Health;
+                var broke = g.Constructs.DamagePart(dc, dp, hp, out var dealt);
+                WsSay(string.Create(ci, $"damage: {name} (body {dc.Id} part {dp}): {dealt:0.#} dealt of {hp:0.#}, health {before:0.#} -> {(broke ? 0 : dc.Parts[dp].Health):0.#}{(broke ? ", wrecked or broken off" : "")}"));
+                _wsWait = 3;
+                return true;
+            }
             case "partlook":
                 WsSay($"partinfo: look: {g.SandboxLookText}");
                 return true;
