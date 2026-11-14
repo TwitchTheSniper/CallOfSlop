@@ -24,6 +24,39 @@ labour grim and the Ministry's way with it absurd.
 - **The alarm:** while the colony's lockdown alarm sounds (GameColonyLockdown.cs) every inmate kneels with their hands on
   their head and the guards stand ready; work picks up where it stopped when it ends.
 
+## The day
+
+Karl (2026-11-14: make the colony interesting): the colony keeps a timetable, so it changes as you play. The file's
+`"day"` lists the periods in order, each with its length in real minutes and the tannoy's call; it runs round from the
+morning count while the colony stands (47 minutes a round today):
+
+| Period | Minutes | Who is out |
+| --- | --- | --- |
+| Morning count | 4 | the roll call on the muster square, those waiting to be counted, the records office queue, the bus stop |
+| Morning work | 12 | the work gangs: kerbs, snow, the street, the escorted column, the rock pile, the records office queue, the bus stop |
+| Dinner | 6 | the canteen queue, and inside four mess tables of diners on stools over tin bowls |
+| Afternoon work | 12 | as the morning |
+| Exercise | 4 | single file round the muster square, a pace apart, hands behind their backs; those waiting to be counted |
+| Evening count | 4 | the roll call again |
+| Lock-up | 5 | nobody but two night patrols with torches, one up and down the street and one round the inside of the wire |
+
+A gang names its periods in `"when"`; one without works all day (the quarry's, and every gang a labour post names in
+`Story/Posts`: the boiler coal, the sick parade, the brazier and the heating main, so the story people working there are
+always somewhere; a post's gang that is off shift has no place, `LabourSceneOf`).
+
+- **The host** (`Source/Game/GameLabourDay.cs`) works out the period at each of its looks (every 2 s), and at a change
+  sends `Msg.LabourDay` (protocol 316: the period and a bit per scene on shift, also to each joiner) and the tannoy's
+  call as a line in the chat of everyone within 140 m of the colony who is past the opening's scenes. Every PC's
+  nearest loudspeaker chimes (`PartAmbience.AnnounceSoon`).
+- **Every PC** (`LabourRender.Shifts`) lets a gang go off, or come on, only while no part of it could be in view: its
+  bounds outside the view or past the far range. Look away and the colony has moved on; nobody pops in or out in front
+  of you. Just after the list arrives (a joiner) the shift is taken at once.
+- Nothing is saved: a loaded world starts at the morning count.
+- At most 120 people on shift at once and 220 in the file (the parser says which period is over).
+- **Trying it:** the window tool's `period NAME` jumps the day to a period (and lets the gangs change in view for a few
+  seconds), and `gang NAME SIDE,UP,OUT` puts the eye beside a gang looking at it:
+  `--window-shot OUT.png --survival --calm --map Glacier --do "key Jump; wait 40; period Dinner; gang Dinner, first table 0.3,0.6,2.2; wait 5"`.
+
 ## How it works
 
 They are pictures, like the stand-in craft: no AI, no bot, no physics, no collision, nothing saved, no hit boxes (a shot
@@ -41,8 +74,11 @@ goes through them).
   the server tick by a short script per kind (keys eased between), so every PC sees the same stroke at the same moment.
   The ground under each spot and along each way is found once by a short ray (and again at 3, 12 and 40 s, for the
   constructs that arrive after the list); nothing casts per frame.
-- **Kinds:** stand, shovel, pick, hammer, haul, barrow, queue, rollcall, huddle, march, sweep, paint, sit. A new kind is
-  an entry at the end of `LabourKind` (a wire byte), a layout in `Spot`/`Place` and a pose in `PoseOf`.
+- **Kinds:** stand, shovel, pick, hammer, haul, barrow, queue, rollcall, huddle, march, sweep, paint, sit, eat (down both
+  sides of a table given by `"part": "Mess Table"`, its length along the gang's right: a stool, a bowl and a spoon each)
+  and patrol (officers only, round a way with a torch whose lens is drawn lit). A march with a gap over 1.2 m walks with
+  hands behind the back instead of a hand on the shoulder in front. A new kind is an entry at the end of `LabourKind` (a
+  wire byte), a layout in `Spot`/`Place` and a pose in `PoseOf`.
 
 ## Hands
 
@@ -58,8 +94,9 @@ at a stranger, the shift ends) shows the body again, and the gang is one short u
 
 Karl wants to keep the game's thousands of frames a second.
 
-- **Server and network:** no work per tick (one look every 2 s at the colony's and the quarry's construct ids) and one
-  message of about 600 bytes when the colony stands and to each joiner. Nothing after.
+- **Server and network:** no work per tick (one look every 2 s at the colony's and the quarry's construct ids and the
+  day's period) and one message of about 800 bytes when the colony stands and to each joiner; then 10 bytes at each
+  change of period.
 - **Drawing:** all in one instanced batch. Within 13 m a full body (about 45 boxes: the players' own torso, head, legs,
   mittened arms and the tool), to 32 m about 19, to 110 m seven or eight, past that or off screen nothing. Within 9 m a
   figure is posed every frame; further off its boxes are kept and drawn again, and it is posed 45, 30 or 15 times a
@@ -77,6 +114,7 @@ Karl wants to keep the game's thousands of frames a second.
   barrow no longer runs through a wall; a gang's spot isn't moved.
 - They don't step aside: walk through one and you go through it. They can't be shot or talked to (the story people
   working among them can: "Hands" above).
-- The march and queues only shuffle on their spots; nobody goes into a building.
+- The march and queues only shuffle on their spots; nobody walks into a building (the diners are there when you look
+  in, the queue gone when you look out).
 - Murmured lines when you pass (the story people's babble, GameStoryBabble.cs) would suit the queues.
-- A gang's work could follow the story's clock (night shift, meals) instead of running all day.
+- The story people's own posts don't follow the day yet (the warden's duty desk is kept through the night).

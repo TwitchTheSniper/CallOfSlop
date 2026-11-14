@@ -12,14 +12,14 @@ namespace CallOfSlop;
 public static class ConstructLamps
 {
     /// <summary>How far from the eye a lamp is lit, and how far its light reaches.</summary>
-    public const float Reach = 16f, Range = 4.5f, Strength = 1.1f;
+    public const float Reach = 16f, Range = 4.5f, Strength = 1.4f; // (the strengths go through the shader's soft knee on an unlit map: Lighting.cs ApplyLightAt)
 
     /// <summary>
     /// In the dark (a storm's dusk: <see cref="ColdStorm.Dusk"/>) lamps are lit from further off and throw their light further
     /// and harder: pools of light on the ground. The same few lights as by day (<see cref="LightGrid.MaxDynamic"/>), so a
     /// pixel costs what it did; only their numbers change.
     /// </summary>
-    public const float DarkReach = 60f, DarkRange = 15f, DarkStrength = 2.2f;
+    public const float DarkReach = 60f, DarkRange = 15f, DarkStrength = 2.6f;
 
     /// <summary>A plain lamp's light in the dark: the orange of an old sodium lamp, against the dusk's blue.</summary>
     public static readonly Vector3 DarkColour = new(1f, 0.74f, 0.36f);

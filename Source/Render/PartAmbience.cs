@@ -40,6 +40,7 @@ public static class PartAmbience
     private static Dictionary<string, Spec>? _table;
     private static uint _seed = 9176;
     private static double _last = -1, _nextGround, _nextTannoy = 12; // (the first announcement soon after the game starts)
+    private const float SearchlightUp = 3.5f, SearchlightStrength = 1.5f; // a searchlight's pool: its light this high over the ground it falls on, this strong
     private static float _eyeHeight = 1.6f;
 
     /// <summary>Particles and sounds asked for so far (the smoke log, a check by hand).</summary>
@@ -248,8 +249,9 @@ public static class PartAmbience
             _nextDrop = now + 0.1;
             _drop = World.RaycastWorld(over, -up, 40f);
         }
+        // (3.5 m over what it falls on, a softer middle than 2.2 m gave, and through the shader's soft knee: no white disc burnt into a roof or the snow, 2026-11-14)
         if (_drop < 40f)
-            LightGrid.AddDynamic(over - up * (_drop - 2.2f), new Vector3(0.85f, 0.95f, 1.15f) * (1.5f * fade), l.Spec.Width);
+            LightGrid.AddDynamic(over - up * (_drop - SearchlightUp), new Vector3(0.85f, 0.95f, 1.15f) * (SearchlightStrength * fade), l.Spec.Width);
     }
 
     /// <summary>Once a frame while a Sandbox world is drawn: the smoke, the steam, the tannoy and the snow along the ground.</summary>
@@ -302,6 +304,9 @@ public static class PartAmbience
             Puffs++;
         }
     }
+
+    /// <summary>The next frame's tannoy in earshot speaks now (the colony's day calls a new period: GameLabourDay.cs).</summary>
+    public static void AnnounceSoon() => _nextTannoy = double.NegativeInfinity;
 
     /// <summary>One announcement now and then, from the first tannoy in earshot that the frame comes to.</summary>
     private static void Announce(Audio audio, Vector3 at, Spec s, double now)

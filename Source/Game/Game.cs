@@ -2356,6 +2356,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.LabourHands when !IsServer:
                 ReadLabourHands(ref r); // the story people working among them (GameLabourHands.cs)
                 break;
+            case (byte)Msg.LabourDay when !IsServer:
+                ReadLabourDay(ref r); // the colony's day: the period and the gangs on shift (GameLabourDay.cs)
+                break;
             case (byte)Msg.Breakout when !IsServer:
                 ReadBreakout(ref r); // the convicts' break-out (GameBreakout.cs)
                 break;

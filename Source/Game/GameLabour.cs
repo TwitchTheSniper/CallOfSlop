@@ -8,6 +8,8 @@ namespace CallOfSlop;
 public enum LabourKind : byte
 {
     Stand, Shovel, Pick, Hammer, Haul, Barrow, Queue, RollCall, Huddle, March, Sweep, Paint, Sit,
+    Eat, // sat on stools down both sides of a table, spooning from a bowl (the canteen at dinner)
+    Patrol, // officers only, walking a way round and round with a torch (lock-up)
     Count,
 }
 
@@ -60,8 +62,9 @@ public struct LabourScene
 /// </summary>
 public sealed partial class Game
 {
-    public const int LabourScenesMax = 32;
+    public const int LabourScenesMax = 48; // (at most 64: the gangs on shift go as one u64)
     public const double LabourLookEvery = 2; // s between the host's looks for the colony and the quarry
+    public const float LabourCallReach = 140; // m from the colony: the tannoy's call is heard (in the chat) this far
 
     /// <summary>The gangs now (both sides: the host's own, or what a client heard). <see cref="LabourVersion"/> changes with them.</summary>
     public readonly LabourScene[] LabourScenes = new LabourScene[LabourScenesMax];
@@ -75,6 +78,19 @@ public sealed partial class Game
     /// <summary>The host's switch (the Story window's People tab): off, there are no labourers on any PC.</summary>
     public bool LabourOn = true;
 
+    /// <summary>
+    /// The colony's day (both sides): the timetable's period now (Story/Labour/PenalColony.json "day"; -1 before the colony
+    /// stands) and which gangs are on shift in it, a bit per scene. <see cref="LabourDayVersion"/> changes with them.
+    /// </summary>
+    public int LabourPeriod { get; private set; } = -1;
+    public ulong LabourShift { get; private set; } = ulong.MaxValue;
+    public int LabourDayVersion { get; private set; }
+    private double _lbDayFrom; // server: when the day began (the colony stood: its first period)
+    private PacketWriter? _lbDayW;
+
+    /// <summary>Is that scene's gang on shift now (both sides)?</summary>
+    public bool LabourOnShift(int scene) => (uint)scene < 64 && (LabourShift >> scene & 1) != 0;
+
     /// <summary>Are the gangs listed this map's?</summary>
     public bool LabourOf(Map map) => _lbMap == map;
 
@@ -84,6 +100,7 @@ public sealed partial class Game
         if (now - _lbAt < LabourLookEvery)
             return;
         _lbAt = now;
+        LabourDayTick(now);
         if (_lbMap != World.Map)
         {
             _lbMap = World.Map;
@@ -116,6 +133,8 @@ public sealed partial class Game
             works = 0;
         if (colony == _lbColony && works == _lbWorks)
             return;
+        if (colony != 0 && _lbColony == 0)
+            _lbDayFrom = now; // (the colony stands: its day begins with the morning count)
         _lbColony = colony;
         _lbWorks = works;
         LabourResolve();
@@ -144,7 +163,7 @@ public sealed partial class Game
                 s.PointCount = (byte)n;
                 _nsGang = g.Name;
                 if (n >= 2)
-                    if (LabourRoute(ref s, s.Kind == LabourKind.March)) // (round the buildings, once the paths' graph is built: GameNavSites.cs)
+                    if (LabourRoute(ref s, s.Kind is LabourKind.March or LabourKind.Patrol)) // (round the buildings, once the paths' graph is built: GameNavSites.cs)
                         Log($"[paths] {g.Name}: its way fitted round the buildings ({n} points, now {s.PointCount})");
                 var (sin, cos) = MathF.SinCos(g.Face * MathF.PI / 180f);
                 s.Facing = StandInPath.Along(ax * sin - az * cos, s.P0);
@@ -157,6 +176,8 @@ public sealed partial class Game
             people += LabourScenes[i].Inmates + LabourScenes[i].Guards;
         Log($"[labour] {LabourCount} gangs, {people} people round the colony{(script.Problem.Length > 0 ? $" ({script.Problem})" : "")}");
         LabourSend(null);
+        LabourPeriod = -1; // (the shift worked out again for the new list and sent after it: a client takes every gang as on until it hears)
+        LabourDayTick(SandboxNow);
     }
 
     /// <summary>
@@ -230,7 +251,10 @@ public sealed partial class Game
     private void SendLabourState(RakNetGUID to)
     {
         if (LabourCount > 0)
+        {
             LabourSend(to);
+            LabourDaySend(to); // (which of them are on shift: GameLabourDay.cs)
+        }
         if (LabourHandCount > 0)
             LabourHandsSend(to); // (who works among them: GameLabourHands.cs)
     }
@@ -242,6 +266,7 @@ public sealed partial class Game
             return;
         var n = Math.Min((int)r.U8(), LabourScenesMax);
         var count = 0;
+        LabourShift = ulong.MaxValue; // (until the host says which are on shift: Msg.LabourDay follows the list)
         for (var i = 0; i < n; i++)
         {
             if (!r.Has(19))
@@ -286,7 +311,17 @@ public sealed class LabourScript
 {
     public const string Format = "call-of-slop-labour/1";
     public const byte MaxPerGang = 16;
-    public const int MaxPeople = 120;
+    public const int MaxPeople = 120; // on shift at once
+    public const int MaxListed = 220; // in the whole file
+    public const int MaxPeriods = 16;
+    public const int MaxCall = ChatRules.MaxLength - 20; // a tannoy call's characters ("[MINISTRY TANNOY]: " goes before it, in a chat line of ChatRules.MaxLength)
+
+    /// <summary>A period of the colony's day: its name, how long it lasts and what the tannoy calls when it begins.</summary>
+    public sealed class Period
+    {
+        public string Name = "", Tannoy = "";
+        public double Seconds;
+    }
 
     public sealed class Scene
     {
@@ -296,9 +331,11 @@ public sealed class LabourScript
         public byte Inmates, Guards, Flags;
         public float Face, Gap;
         public Vector2[] Points = [];
+        public uint Periods = uint.MaxValue; // the day's periods it works in, a bit each (all: no "when")
     }
 
     public Scene[] Scenes = [];
+    public Period[] Day = []; // (none: every gang works all the time)
     public string Problem = "";
 
     private static LabourScript? _current;
@@ -327,7 +364,8 @@ public sealed class LabourScript
         LabourKind.March => 1.15f,
         LabourKind.Huddle => 0.95f,
         LabourKind.Hammer => 1.05f,
-        LabourKind.Haul or LabourKind.Barrow or LabourKind.Sweep or LabourKind.Paint => 0f, // (spread along the way by time)
+        LabourKind.Eat => 0.8f,
+        LabourKind.Haul or LabourKind.Barrow or LabourKind.Sweep or LabourKind.Paint or LabourKind.Patrol => 0f, // (spread along the way by time)
         _ => 1.7f,
     };
 
@@ -339,6 +377,33 @@ public sealed class LabourScript
             throw new FormatException($"format must be \"{Format}\"");
         if (!root.TryGetProperty("gangs", out var list) || list.ValueKind != JsonValueKind.Array)
             throw new FormatException("no \"gangs\" list");
+        var day = new List<Period>();
+        if (root.TryGetProperty("day", out var dl))
+        {
+            if (dl.ValueKind != JsonValueKind.Array)
+                throw new FormatException("\"day\" is a list of periods");
+            foreach (var e in dl.EnumerateArray())
+            {
+                var where = $"day[{day.Count}]";
+                var pd = new Period
+                {
+                    Name = e.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String ? n.GetString() ?? "" : "",
+                    Tannoy = e.TryGetProperty("tannoy", out var tn) && tn.ValueKind == JsonValueKind.String ? tn.GetString() ?? "" : "",
+                    Seconds = (e.TryGetProperty("minutes", out var m) && m.ValueKind == JsonValueKind.Number ? m.GetDouble() : 0) * 60,
+                };
+                if (pd.Name.Length == 0)
+                    throw new FormatException($"{where}: no \"name\"");
+                if (pd.Tannoy.Length > MaxCall)
+                    throw new FormatException($"{where} ({pd.Name}): \"tannoy\" at most {MaxCall} characters (the chat's line, with the speaker's name before it)");
+                if (pd.Seconds is < 30 or > 7200)
+                    throw new FormatException($"{where} ({pd.Name}): \"minutes\" 0.5 to 120");
+                if (day.Exists(x => x.Name.Equals(pd.Name, StringComparison.OrdinalIgnoreCase)))
+                    throw new FormatException($"{where}: a second period called \"{pd.Name}\"");
+                day.Add(pd);
+            }
+            if (day.Count > MaxPeriods)
+                throw new FormatException($"at most {MaxPeriods} periods in the day");
+        }
         var scenes = new List<Scene>();
         var people = 0;
         foreach (var e in list.EnumerateArray())
@@ -354,10 +419,11 @@ public sealed class LabourScript
             if (!Enum.TryParse(kind, true, out g.Kind) || int.TryParse(kind, out _) || g.Kind == LabourKind.Count)
                 throw new FormatException($"{where}: no such \"do\" \"{kind}\" ({string.Join(", ", Enum.GetNames<LabourKind>()[..^1]).ToLowerInvariant()})");
             g.Nth = (int)Num("nth", 0);
-            var inmates = Num("inmates", 1);
-            var guards = Num("guards", 0);
-            if (inmates is < 1 or > MaxPerGang || guards is < 0 or > 4)
-                throw new FormatException($"{where}: inmates 1 to {MaxPerGang}, guards 0 to 4");
+            var patrol = g.Kind == LabourKind.Patrol;
+            var inmates = Num("inmates", patrol ? 0 : 1);
+            var guards = Num("guards", patrol ? 2 : 0);
+            if (patrol ? inmates != 0 || guards is < 1 or > 4 : inmates is < 1 or > MaxPerGang || guards is < 0 or > 4)
+                throw new FormatException(patrol ? $"{where}: a patrol is officers only: guards 1 to 4, no inmates" : $"{where}: inmates 1 to {MaxPerGang}, guards 0 to 4");
             g.Inmates = (byte)inmates;
             g.Guards = (byte)guards;
             people += g.Inmates + g.Guards;
@@ -375,7 +441,7 @@ public sealed class LabourScript
                 throw new FormatException($"{where}: no \"spot\" or \"way\"");
             if (pts.Count > LabourScene.MaxPoints)
                 throw new FormatException($"{where}: at most {LabourScene.MaxPoints} points");
-            var walks = g.Kind is LabourKind.Haul or LabourKind.Barrow or LabourKind.March or LabourKind.Sweep or LabourKind.Paint;
+            var walks = g.Kind is LabourKind.Haul or LabourKind.Barrow or LabourKind.March or LabourKind.Sweep or LabourKind.Paint or LabourKind.Patrol;
             if (walks && pts.Count < 2)
                 throw new FormatException($"{where}: \"{kind}\" walks a way: give \"way\" (two points or more)");
             g.Points = [.. pts];
@@ -397,13 +463,36 @@ public sealed class LabourScript
                 throw new FormatException($"{where}: guard is officer or foreman");
             if (e.TryGetProperty("loaded", out var ld) && ld.ValueKind == JsonValueKind.True)
                 g.Flags |= LabourScene.FlagLoaded;
+            if (e.TryGetProperty("when", out var wh))
+            {
+                if (wh.ValueKind != JsonValueKind.Array || wh.GetArrayLength() == 0)
+                    throw new FormatException($"{where}: \"when\" is a list of the day's periods");
+                g.Periods = 0;
+                foreach (var w in wh.EnumerateArray())
+                {
+                    var name = w.ValueKind == JsonValueKind.String ? w.GetString() ?? "" : "";
+                    var k = day.FindIndex(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+                    if (k < 0)
+                        throw new FormatException($"{where}: \"when\" names \"{name}\", which isn't a period of the \"day\"");
+                    g.Periods |= 1u << k;
+                }
+            }
             scenes.Add(g);
         }
         if (scenes.Count > Game.LabourScenesMax)
             throw new FormatException($"at most {Game.LabourScenesMax} gangs");
-        if (people > MaxPeople)
-            throw new FormatException($"at most {MaxPeople} people in all (there are {people})");
-        return new LabourScript { Scenes = [.. scenes] };
+        if (people > MaxListed)
+            throw new FormatException($"at most {MaxListed} people in the file (there are {people})");
+        for (var k = 0; k < Math.Max(day.Count, 1); k++)
+        {
+            var at = 0;
+            foreach (var g in scenes)
+                if ((g.Periods >> k & 1) != 0)
+                    at += g.Inmates + g.Guards;
+            if (at > MaxPeople)
+                throw new FormatException($"at most {MaxPeople} people at once ({(day.Count > 0 ? day[k].Name : "all day")} has {at})");
+        }
+        return new LabourScript { Scenes = [.. scenes], Day = [.. day] };
     }
 
     private static Vector2 Vec2(JsonElement e, string where)

@@ -323,7 +323,7 @@ public sealed partial class BuildingParts
         foreach (var x in new[] { 4.0, 6.0 })
             Look(bp, bp.Put("Galley Stove", [x, 0.375, 10.0], RY180), MinSlate);
         Sign(bp, servery, "k8_10", "GRUEL 12:00 TO 12:05");
-        Sign(bp, west, "k8_5", "SECOND HELPINGS BY WRITTEN REQUEST ONLY");
+        Sign(bp, west, "k8_5", "NO SECONDS");
         bp.Hang("Cast Iron Radiator", west, "k0_0", "back");
         bp.Hang("Cast Iron Radiator", east, "k8_0", "back");
         bp.Hang("Wall Clock", servery, "k0_5", "back");

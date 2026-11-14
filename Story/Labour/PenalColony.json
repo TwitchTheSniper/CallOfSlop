@@ -9,18 +9,45 @@
   //   spot    [x, z] where the gang stands (a row goes to its right, a queue back behind its head, a ring round it)
   //   way     [[x, z], ...] for those who walk: haul, barrow, sweep and paint go there and back, march goes round
   //   face    degrees: 0 faces -z (out of the colony, towards the street; at the quarry, the face), 90 faces +x
-  //   do      stand, shovel, pick, hammer, haul, barrow, queue, rollcall, huddle, march, sweep, paint, sit
+  //   do      stand, shovel, pick, hammer, haul, barrow, queue, rollcall, huddle, march, sweep, paint, sit, eat (on stools
+  //           down both sides of a table: give "part": "Mess Table"; its length along the gang's right), patrol (officers
+  //           only, "guards" 1 to 4, round a way with torches)
   //   heap    snow, coal or rock: what they shovel, break or carry (heaps and boulders drawn beside them)
   //   gap     m between them (a ring's radius); march with a gap over 1.2 m walks without the hand on the shoulder
   //   guard   officer (default) or foreman (the works' own, with the tally)
+  //   when    the periods of the "day" it works in (none: all day). A gang a labour post names (Story/Posts) has none, or
+  //           its person has nowhere to work while it is off.
+  // The day (docs/story/LABOUR.md "The day"): the periods in order, round and round from the morning count while the colony
+  // stands (not saved: a loaded world starts at the morning count). "minutes" is real time; "tannoy" (at most 100 characters) is called in the chat
+  // of everyone near the colony as the period begins. A gang comes on or goes off only while nobody can see it.
+  // At most 120 people on shift at once, 220 in the file.
   "format": "call-of-slop-labour/1",
+  "day": [
+    { "name": "Morning count", "minutes": 4,
+      "tannoy": "Good morning. Morning count on the muster square. Those not present will be marked absent." },
+    { "name": "Morning work", "minutes": 12,
+      "tannoy": "The count was correct. Work details to your work. Work is its own reward. There is no other." },
+    { "name": "Dinner", "minutes": 6,
+      "tannoy": "Dinner is served in Block One. Dinner is a privilege, not a meal." },
+    { "name": "Afternoon work", "minutes": 12,
+      "tannoy": "Dinner is over. Those who did not eat have eaten. Work details to your work." },
+    { "name": "Exercise", "minutes": 4,
+      "tannoy": "Exercise period. Walk round the square. Standing still is not exercise and will be recorded." },
+    { "name": "Evening count", "minutes": 4,
+      "tannoy": "Evening count. Stand still. Anyone seen moving will be counted twice." },
+    { "name": "Lock-up", "minutes": 5,
+      "tannoy": "Lock-up. All inmates to quarters. Lights out is compulsory, as is sleep." }
+  ],
   "gangs": [
     // ---- The colony ------------------------------------------------------------------------------------------------
-    { "name": "Morning roll call", "at": "colony", "spot": [-1.2, -6.7], "face": 90, "do": "rollcall", "inmates": 10, "guards": 2,
-      "about": "two ranks on the muster square, each answering to a number; the sergeant has a clipboard and all morning" },
+    { "name": "Roll call", "at": "colony", "spot": [-1.2, -6.7], "face": 90, "do": "rollcall", "inmates": 10, "guards": 2,
+      "when": ["Morning count", "Evening count"],
+      "about": "two ranks on the muster square, each answering to a number; the sergeant has a clipboard and all morning (and again in the evening)" },
     { "name": "Records office queue", "at": "Ministry Records Office", "spot": [5, -0.9], "face": 180, "do": "queue", "inmates": 6, "guards": 1,
+      "when": ["Morning count", "Morning work", "Afternoon work"],
       "about": "the queue under the overhang for Form 9 (a request for Form 12); the one at the front goes round to the back" },
     { "name": "Canteen queue", "at": "Colony Canteen", "spot": [1, -0.9], "face": 180, "do": "queue", "inmates": 7,
+      "when": ["Dinner"],
       "about": "the dinner queue, stamping its feet; it moves up one every so often" },
     { "name": "Sick parade", "at": "Colony Infirmary", "spot": [2.2, -1.0], "face": 0, "do": "sit", "inmates": 3, "gap": 0.85,
       "about": "sat on the cold step outside the infirmary: a head bandaged, an arm in a sling, waiting to be seen" },
@@ -29,23 +56,51 @@
     { "name": "Coal barrow", "at": "colony", "way": [[39, -16.5], [39, -21.5]], "do": "barrow", "heap": "coal", "loaded": true, "inmates": 1,
       "about": "the coal barrow to the boiler house door and back, full there, empty back" },
     { "name": "Painting the kerb", "at": "colony", "way": [[-9, -10.2], [3, -10.2]], "face": 0, "do": "paint", "inmates": 3, "guards": 1,
+      "when": ["Morning work", "Afternoon work"],
       "about": "on their knees painting the kerbstones white, in the snow, for visibility" },
     { "name": "Clearing the pavement", "at": "colony", "spot": [23, -8.6], "face": 0, "do": "shovel", "heap": "snow", "inmates": 3,
+      "when": ["Morning work", "Afternoon work"],
       "about": "shovelling the snow off the pavement into the street, which another gang sweeps back" },
     { "name": "Sweeping the street", "at": "colony", "way": [[8, -11.3], [19, -11.3]], "do": "sweep", "inmates": 1,
+      "when": ["Morning work", "Afternoon work"],
       "about": "sweeping the street's snow back onto the pavement" },
     { "name": "Work detail under escort", "at": "colony", "way": [[-12, -12.6], [30, -12.6], [30, -14.2], [-12, -14.2]], "do": "march", "inmates": 8, "guards": 1, "gap": 0.95,
+      "when": ["Morning work", "Afternoon work"],
       "about": "a column shuffling up and down the street, each with a hand on the shoulder in front, going nowhere on the Ministry's time" },
     { "name": "Waiting for the crew bus", "at": "colony", "spot": [8.6, -9.6], "face": 270, "do": "queue", "inmates": 4,
+      "when": ["Morning count", "Morning work", "Afternoon work"],
       "about": "at the bus stop by the gate; the bus never stops for them" },
     { "name": "At the heating main", "at": "colony", "spot": [-14.75, 5.1], "do": "huddle", "inmates": 4, "gap": 1.55,
       "about": "round the valve chamber at the end of the heating main, the one warm thing in the colony" },
     { "name": "Round the brazier", "at": "colony", "spot": [33, -7], "do": "huddle", "brazier": true, "inmates": 4,
       "about": "a brazier by the gate road, hands out to it, on an unofficial break" },
     { "name": "The rock pile", "at": "colony", "way": [[18, 2], [28, 2]], "do": "haul", "heap": "rock", "inmates": 4, "guards": 1, "guard": "foreman",
+      "when": ["Morning work", "Afternoon work"],
       "about": "carrying the rock pile to the other rock pile, and back; the foreman counts them both" },
     { "name": "Waiting to be counted", "at": "colony", "spot": [4.6, 2.6], "face": 90, "do": "stand", "inmates": 3, "gap": 1.0,
+      "when": ["Morning count", "Exercise", "Evening count"],
       "about": "under the muster roof in the yard, in front of the warden's wall, waiting to be counted again" },
+    { "name": "Dinner, first table", "at": "Colony Canteen", "part": "Mess Table", "nth": 0, "spot": [0, 0], "face": 0, "do": "eat", "inmates": 4,
+      "when": ["Dinner"],
+      "about": "sat down both sides of a mess table over tin bowls, spooning, nobody talking" },
+    { "name": "Dinner, second table", "at": "Colony Canteen", "part": "Mess Table", "nth": 1, "spot": [0, 0], "face": 0, "do": "eat", "inmates": 4,
+      "when": ["Dinner"],
+      "about": "the second table, the same grey stew" },
+    { "name": "Dinner, third table", "at": "Colony Canteen", "part": "Mess Table", "nth": 2, "spot": [0, 0], "face": 0, "do": "eat", "inmates": 3,
+      "when": ["Dinner"],
+      "about": "the third table, one place empty" },
+    { "name": "Dinner, fourth table", "at": "Colony Canteen", "part": "Mess Table", "nth": 3, "spot": [0, 0], "face": 0, "do": "eat", "inmates": 4,
+      "when": ["Dinner"],
+      "about": "the fourth table, by the urn" },
+    { "name": "Exercise round the square", "at": "colony", "way": [[-7, -3.6], [3, -3.6], [3, -9.8], [-7, -9.8]], "do": "march", "inmates": 10, "guards": 1, "gap": 2.3,
+      "when": ["Exercise"],
+      "about": "round and round the muster square in single file, hands in pockets, a pace apart, in the direction of walking" },
+    { "name": "Night patrol, the street", "at": "colony", "way": [[-12, -10.4], [34, -10.4], [34, -15.4], [-12, -15.4]], "do": "patrol", "guards": 2,
+      "when": ["Lock-up"],
+      "about": "two officers up and down the empty street with torches" },
+    { "name": "Night patrol, the wire", "at": "colony", "way": [[-18, -34], [42.5, -34], [42.5, 18], [-18, 18]], "do": "patrol", "guards": 2,
+      "when": ["Lock-up"],
+      "about": "two officers round the inside of the fence, torches on the wire" },
 
     // ---- The Ministry Quarry ---------------------------------------------------------------------------------------
     { "name": "Picks at the rock", "at": "quarry", "spot": [-9.5, 2.0], "face": 0, "do": "pick", "heap": "rock", "inmates": 3, "gap": 1.9, "guards": 1, "guard": "foreman",
