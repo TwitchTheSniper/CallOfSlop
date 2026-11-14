@@ -142,6 +142,10 @@ public sealed partial class Game
                     s.SetPoint(i, StandInPath.Ground(w + StandInPath.Up(w) * 30f));
                 }
                 s.PointCount = (byte)n;
+                _nsGang = g.Name;
+                if (n >= 2)
+                    if (LabourRoute(ref s, s.Kind == LabourKind.March)) // (round the buildings, once the paths' graph is built: GameNavSites.cs)
+                        Log($"[paths] {g.Name}: its way fitted round the buildings ({n} points, now {s.PointCount})");
                 var (sin, cos) = MathF.SinCos(g.Face * MathF.PI / 180f);
                 s.Facing = StandInPath.Along(ax * sin - az * cos, s.P0);
                 _lbGang[LabourCount] = (short)gi; // (which gang of the file: a labour post finds its gang by name, GameLabourHands.cs)

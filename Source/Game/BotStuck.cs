@@ -349,7 +349,9 @@ public sealed partial class Game
     {
         if (nav.Nodes.Length == 0)
             return BotStuckCause.None;
-        if (pos.Y < nav.MinNodeY - 10f && !NavGraph.InDugColumn(pos))
+        if (nav.Sites.Length > 0 && nav.SiteOf(pos, 2f) < 0)
+            return BotStuckCause.None; // (a planetoid's site graph, NavSites.cs: off the sites is open ground, and a world's height isn't its y)
+        if (nav.Sites.Length == 0 && pos.Y < nav.MinNodeY - 10f && !NavGraph.InDugColumn(pos))
             return BotStuckCause.Void;
         var n = nav.Nearest(pos, needSight: false);
         if (n < 0)

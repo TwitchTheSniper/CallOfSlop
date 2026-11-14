@@ -38,7 +38,8 @@ public sealed partial class Game
         _botPathBudget = BotSearchesPerTick;
         _botScanBudget = Math.Max(BotScansPerTick, Players.Count / 5); // see TakeBotScan
         NavGraph.Pump(BotNavBuildMs);
-        VantageMap.Ensure(World.Map, NavGraph.Current); // the map's vantage points, on a worker thread (once per nav graph)
+        if (NavGraph.Current.Sites.Length == 0) // (a planetoid's site graph has no perches to look for: NavSites.cs)
+            VantageMap.Ensure(World.Map, NavGraph.Current); // the map's vantage points, on a worker thread (once per nav graph)
         World.Map.PrepareFoliageCover(); // bot sight through foliage: built once per map on a worker thread (FoliageCover.cs)
         SquadTickShared(now); // Insane squads: roster and one squad's plan (SquadPlanner.cs)
     }
@@ -280,8 +281,19 @@ public sealed partial class Game
         b.CurEdge = -1;
         var start = nav.Nearest(p.Position);
         var end = nav.Nearest(goal, needSight: false);
+        if (nav.Sites.Length > 0 && (start < 0 || end < 0))
+        {
+            // A planetoid's sites (NavSites.cs): off them a bot steers straight. Leaving one, it makes for the site's edge
+            // towards the goal; still off one, it looks again shortly (it may have walked onto one).
+            if (start >= 0)
+                end = nav.NearestToward(p.Position, goal);
+            else
+                b.NeedPath = true;
+        }
         if (start < 0 || end < 0)
             return;
+        if (nav.Sites.Length > 0 && nav.Component[end] != nav.Component[start] && nav.NearestJoined(goal, start, 12f) is var near and >= 0)
+            end = near; // (a site's room the way doesn't reach: as near as it goes)
         b.GoalTrapped = nav.IsTrapped(end) && !nav.IsTrapped(start);
         if (b.GoalTrapped)
             end = NearestOpen(nav, goal); // a goal in a one-way spot (a pit): go as near as the main area gets, never in
@@ -293,6 +305,14 @@ public sealed partial class Game
         if (b.Squad != null)
             SquadBeforeSearch(b);
         b.PathLen = _botSearch.Find(nav, start, end, b.Path, b.EdgePenaltyFn);
+        if (b.PathLen == 0 && nav.Sites.Length > 0 && nav.Component[start] != nav.MainComponent && NearestOpen(nav, p.Position) is var open and >= 0)
+        {
+            // A planetoid's site graph (NavSites.cs): in a corner the graph has no way out of (a room walled off by its
+            // furniture, which a body may still squeeze into), make straight for the nearest spot that has one, then plan again.
+            b.RescueAt = nav.At(open);
+            b.RescueUntil = now + 4;
+            b.NeedPath = true;
+        }
         if (b.Squad != null)
             SquadAfterSearch(b);
         // Already past the first node (it's behind us on the way)? Start with the second.

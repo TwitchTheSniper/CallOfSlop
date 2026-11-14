@@ -226,6 +226,16 @@ public static partial class World
         !Physics.OverlapCapsule(SweptMover.CapsuleAt(feet + up * 0.02f, Stance.Stand, up), new QueryFilter(QueryLayers.Nav & ~QueryLayers.MoverSweeps));
 
     /// <summary>
+    /// Is there room for a body at <paramref name="feet"/> above the step height (what <see cref="CanWalkCurved"/> asks at each
+    /// sample: a sill, a skirting or a lip underfoot is stepped over, not a wall)? The site graphs' nodes (NavSites.cs).
+    /// </summary>
+    public static bool BodyFitsOverStep(Vector3 feet, Vector3 up)
+    {
+        var body = SweptMover.CapsuleAt(feet + up * (StepHeight + 0.02f), Stance.Crouch, up);
+        return !Physics.OverlapCapsule(new Capsule(body.A, feet + up * (PlayerHeight - PlayerRadius), body.Radius), new QueryFilter(QueryLayers.Nav & ~QueryLayers.Doors));
+    }
+
+    /// <summary>
     /// Could a player walk from <paramref name="from"/> to <paramref name="to"/> (feet on a planet) along the surface? Every
     /// ~0.6 m along the arc between them: ground below within a step, rising or falling no more than the step height from the
     /// last sample, walkable against the local up, and room for the body above the step height. Bots and the nav graph.
@@ -245,26 +255,57 @@ public static partial class World
         for (var k = 1; k <= n; k++)
         {
             var f = k / (float)n;
-            var up = Slerp(ua, ub, f);
-            var guess = float.Lerp(ra, rb, f);
-            var probeTop = MathF.Max(guess, prevH) + StepHeight + 0.05f;
-            var start = c + up * probeTop;
-            var depth = StepHeight * 2 + 0.6f;
-            if (!Physics.Raycast(start, -up, depth, QueryFilter.Navigation, out var hit))
-                return false; // nothing underfoot: a hole or a cliff
-            if (hit.Distance < 0.001f)
-                return false; // the probe started inside something: a wall
-            var h = probeTop - hit.Distance;
-            if (MathF.Abs(h - prevH) > StepHeight || Vector3.Dot(hit.Normal, up) < MinWalkNormalY)
+            if (!WalkProbe(c, ua, ub, ra, rb, f, prevH, out var h, out var ok))
                 return false;
-            var feet = c + up * h;
-            // Room for the body above the step height.
-            var body = SweptMover.CapsuleAt(feet + up * (StepHeight + 0.02f), Stance.Crouch, up);
-            if (Physics.OverlapCapsule(new Capsule(body.A, feet + up * (PlayerHeight - PlayerRadius), body.Radius), new QueryFilter(QueryLayers.Nav & ~QueryLayers.Doors)))
-                return false;
+            if (!ok)
+            {
+                // A rise over a step between two samples: a stair whose treads are short (two samples apart can span three
+                // risers). Look between them, a quarter of the way at a time, before calling it a wall.
+                var mid = prevH;
+                for (var j = 1; j <= 4; j++)
+                {
+                    if (!WalkProbe(c, ua, ub, ra, rb, (k - 1 + j / 4f) / n, mid, out mid, out ok) || !ok)
+                        return false;
+                }
+                h = mid;
+            }
             prevH = h;
         }
         return MathF.Abs(prevH - rb) < 0.6f;
+    }
+
+    /// <summary>
+    /// One sample of <see cref="CanWalkCurved"/> at <paramref name="f"/> of the way: false if there's no ground or the probe
+    /// starts in a wall, the slope is too steep or the body has no room; <paramref name="ok"/> false if only the rise from
+    /// <paramref name="prevH"/> is over a step (<paramref name="h"/> is then still where the ground is).
+    /// </summary>
+    private static bool WalkProbe(Vector3 c, Vector3 ua, Vector3 ub, float ra, float rb, float f, float prevH, out float h, out bool ok)
+    {
+        h = prevH;
+        ok = false;
+        // (Not Slerp: across a few metres of a planet the two ups' dot rounds to 1 in floats, and Slerp then gives the first
+        // up all the way, so every sample was taken over the start: no stair was ever climbed, 2026-11-14.)
+        var up = Vector3.Normalize(Vector3.Lerp(ua, ub, f));
+        var guess = float.Lerp(ra, rb, f);
+        var probeTop = MathF.Max(guess, prevH) + StepHeight + 0.05f;
+        var start = c + up * probeTop;
+        var depth = StepHeight * 2 + 0.6f;
+        if (!Physics.Raycast(start, -up, depth, QueryFilter.Navigation, out var hit))
+            return false; // nothing underfoot: a hole or a cliff
+        if (hit.Distance < 0.001f)
+            return false; // the probe started inside something: a wall
+        h = probeTop - hit.Distance;
+        if (MathF.Abs(h - prevH) > StepHeight)
+            return true; // (the caller looks closer)
+        if (Vector3.Dot(hit.Normal, up) < MinWalkNormalY)
+            return false;
+        var feet = c + up * h;
+        // Room for the body above the step height.
+        var body = SweptMover.CapsuleAt(feet + up * (StepHeight + 0.02f), Stance.Crouch, up);
+        if (Physics.OverlapCapsule(new Capsule(body.A, feet + up * (PlayerHeight - PlayerRadius), body.Radius), new QueryFilter(QueryLayers.Nav & ~QueryLayers.Doors)))
+            return false;
+        ok = true;
+        return true;
     }
 
     /// <summary>

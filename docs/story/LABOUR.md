@@ -73,6 +73,8 @@ Karl wants to keep the game's thousands of frames a second.
 
 ## Not done / ideas
 
+- The walking gangs' ways are routed round the buildings on the bots' site graph once it is built (PATHS.md), so a
+  barrow no longer runs through a wall; a gang's spot isn't moved.
 - They don't step aside: walk through one and you go through it. They can't be shot or talked to (the story people
   working among them can: "Hands" above).
 - The march and queues only shuffle on their spots; nobody goes into a building.
