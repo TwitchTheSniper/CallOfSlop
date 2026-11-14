@@ -36,7 +36,11 @@ public static unsafe partial class Program
         var (c, part) = WsFind(g, string.Join(' ', words[..at]));
         var uv = words[at].Split(',').Select(x => double.Parse(x, CultureInfo.InvariantCulture)).ToArray();
         var rest = words[(at + 1)..].Select(x => float.Parse(x, CultureInfo.InvariantCulture)).ToArray();
-        if (c == null || uv.Length != 2 || !HullLoft.CutSpot(c.DefOf(part).Name, uv[0], uv[1], out var local, out var localN))
+        var local = Vector3.Zero;
+        var localN = Vector3.UnitY;
+        if (c != null && uv.Length == 2 && HullLoft.IsPaneName(c.DefOf(part).Name) && c.DefOf(part) is var pd)
+            local = new Vector3((pd.BoundsMin.X + pd.BoundsMax.X) * 0.5f + (float)uv[0] / 100f, pd.BoundsMax.Y, (pd.BoundsMin.Z + pd.BoundsMax.Z) * 0.5f + (float)uv[1] / 100f); // (a pane has no plan: U,V in cm from its middle, along its face)
+        else if (c == null || uv.Length != 2 || !HullLoft.CutSpot(c.DefOf(part).Name, uv[0], uv[1], out local, out localN))
         {
             WsFail($"{verb}: no cut part \"{string.Join(' ', words[..at])}\" on the spawned blueprint, or that spot is off its sheet");
             return true;
