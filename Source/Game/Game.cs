@@ -1619,6 +1619,8 @@ public sealed partial class Game : IDisposable
         // Validation against the weapon's real stats.
         if (!shooter.Alive || !shooter.Owns(def.Id))
             return;
+        if (SandboxOn && StoryUnarmed(shooter))
+            return; // a story world's person has no gun until they build one (GameStoryArms.cs)
         if (def.IsLauncher)
         {
             ServerLauncherShot(shooter, def, origin, dir, spread, seed, now); // rockets and grenades fly for real (GameLaunchers.cs)

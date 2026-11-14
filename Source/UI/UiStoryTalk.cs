@@ -40,6 +40,7 @@ public sealed partial class Ui
     {
         TalkAsk? asked = null;
         topic = 0;
+        (_talkPanelFor, _talkPanelAt) = (person.Id, now); // (their words show here, not over their head: UiChat.cs DrawSpeech)
         if (_talkTitleFor != person.Id || !_talkTitle.EndsWith(person.Name, StringComparison.Ordinal))
             (_talkTitleFor, _talkTitle) = (person.Id, person.Name.ToUpperInvariant());
         if (held != _talkHeldFor || _talkTradeLabel.Length == 0)

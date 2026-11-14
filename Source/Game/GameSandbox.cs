@@ -413,6 +413,7 @@ public sealed partial class Game
         QuarryTick(now); // (the first Ministry duty, the quarry: GameQuarry.cs)
         DepotTick(now); // (the Orbital Depot's steps: GameDepot.cs)
         LockdownTick(now); // (the penal colony's lockdown: GameColonyLockdown.cs)
+        StoryArmsTick(); // (no stock gun in a story world: GameStoryArms.cs)
         TutorialTick(now); // (the warden's induction: who starts, which steps are done; GameTutorial.cs)
         StoryTick(now); // (the story: who came and sat down, what happened to constructs; GameStory.cs)
         WorldTickPlaying(now); // (the autosave, on a finished tick: GameWorldSave.cs)
@@ -942,7 +943,7 @@ public sealed partial class Game
             {
                 var asked = ConstructToolWire.From(r.U8());
                 return TutorialToolFor(p.Id, asked) is { } tool // (the warden's induction holds tools until their step: GameTutorial.cs)
-                    ? hands.SetTool(p.Id, tool, Constructs, eye, p.Yaw)
+                    ? hands.SetTool(p.Id, StoryArmsTool(p, tool), Constructs, eye, p.Yaw) // (no gun in a story world: GameStoryArms.cs)
                     : Tutorial.NotIssued(asked);
             }
             case CActKind.NudgeBegin:
