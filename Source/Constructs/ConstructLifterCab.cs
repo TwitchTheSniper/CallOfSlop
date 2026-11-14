@@ -318,8 +318,27 @@ public static partial class ConstructLifters
             loose.Parts[0].Health = pd.Health * l.Health / 255f;
         loose.Parts[0].Paint = l.Paint;
         l.Moves++;
-        CabSay(l, LiftWhy.CabDropped, $"set the {pd.Name} down");
+        if (PadUnder(world, l, mid) is { } pad)
+            CabSay(l, LiftWhy.CabPut, $"set the {pd.Name} down on the {pad}: it takes it in once it rests"); // (the pad's take-in, a second later: the look line says "put it in", not "set it down"; no new Why byte, so no wire change)
+        else
+            CabSay(l, LiftWhy.CabDropped, $"set the {pd.Name} down");
         CabEmpty(l);
+    }
+
+    /// <summary>The Lay-down Pad among the cab's lifter's points whose hold is under <paramref name="at"/> (its name), or null.</summary>
+    private static string? PadUnder(ConstructWorld world, CLift l, Vector3 at)
+    {
+        for (var k = 0; k < l.PointN; k++)
+        {
+            var pt = l.Points![k];
+            if (world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount || b.DefOf(pt.Part) is not { IsLayDownPad: true } d)
+                continue;
+            Freeform.PartWorld(b, pt.Part, out var pp, out var pr);
+            var local = Vector3.Transform(at - pp, Quaternion.Conjugate(pr));
+            if (local.X >= d.RackHoldMin.X && local.X <= d.RackHoldMax.X && local.Z >= d.RackHoldMin.Z && local.Z <= d.RackHoldMax.Z && local.Y >= d.RackHoldMin.Y - 0.25f)
+                return d.Name;
+        }
+        return null;
     }
 
     private static void CabHold(CLift l, ConstructPartDef d, Vector3 origin, Quaternion rot)

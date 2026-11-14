@@ -19,7 +19,7 @@ public sealed partial class Ui
 
     private void DrawObjective(Game game, float2 pos, float2 size, Settings settings)
     {
-        if (!game.SandboxOn || PauseOpen || MenuOpen || game.QuarryRiding || game.ObjectiveNow is not { } goal)
+        if (!game.SandboxOn || PauseOpen || MenuOpen || game.QuarryRiding || ErrandShowing(game) || game.ObjectiveNow is not { } goal)
             return;
         // Only where no story panel is up (the server holds the goal back while one runs; these cover their closing seconds).
         var t = Brutal.GlfwApi.Glfw.Time;

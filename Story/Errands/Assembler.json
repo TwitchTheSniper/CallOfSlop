@@ -1,0 +1,54 @@
+{
+  // An errand (docs/story/DUTIES.md "Errands"; Game/GameErrands.cs): Officer Nettles has a requisition form that says an
+  // inmate makes a wall clock, and the Assembler is how. After the Foundry (it wants steel). Storylets/Errands.json
+  // ("hook": "errand:assembler").
+  "format": "call-of-slop-errand/1",
+  "id": "assembler",
+  "title": "Nettles' requisition",
+  "giver": "Officer Nettles",
+  "machine": "Assembler",
+  "fact": "the Assembler",
+  "thanks": "One wall clock! The form says made, not delivered, so it's yours. I'm putting you down as helpful. In pen.",
+  "gone": "Oh. The Assembler's gone. I'll make a note. Of that.",
+  "steps": [
+    {
+      "id": "walk",
+      "cue": "reach",
+      "spot": "machine",
+      "amount": 7,
+      "title": "The Assembler",
+      "text": "Go to the Assembler in the works yard.",
+      "say": "Requisition 41-B: one wall clock, Ministry pattern, made by an inmate. That's you! The Assembler's in the works yard. The one with the arm."
+    },
+    {
+      "id": "recipe",
+      "cue": "recipe",
+      "recipe": "Wall Clock",
+      "spot": "machine",
+      "title": "Pick the recipe",
+      "text": "Configure tool ({ToolWheel}): {Fire} on the Assembler and pick the Wall Clock.",
+      "say": "The form says select the recipe. I've underlined it. Twice.",
+      "hint": "Hold {ToolWheel}, flick to the configure tool and let go. Aim at the Assembler (the orange marker) and press {Fire}: in its window open Recipe, type clock and pick Wall Clock."
+    },
+    {
+      "id": "feed",
+      "cue": "feed",
+      "spot": "machine",
+      "title": "Give it steel",
+      "text": "{Interact} on the Assembler tips in the steel.",
+      "say": "It wants steel. One, the form says. I got you more, in case of mistakes. Mine, mostly.",
+      "hint": "Aim at the Assembler (the orange marker) and press {Interact}: it takes what its recipe wants from what you carry. Tipping it into the Materials Bin beside it works too: the chute carries it over.",
+      "give": { "steel": 5 }
+    },
+    {
+      "id": "clock",
+      "cue": "part",
+      "part": "Wall Clock",
+      "spot": "machine",
+      "title": "Take the clock",
+      "text": "{Interact} on the Assembler takes the clock off its tray.",
+      "say": "It's making it! It's actually making it. I'm writing this down.",
+      "hint": "Give it a few seconds (nothing: no power, so a cable from the genset with the linking tool, {Streak2}). {Interact} on the Assembler (the orange marker) takes the clock off the tray; if the tray is empty, the chute has put it in the Chest beside it."
+    }
+  ]
+}

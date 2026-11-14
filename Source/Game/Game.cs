@@ -1659,6 +1659,8 @@ public sealed partial class Game : IDisposable
         // Validation against the weapon's real stats.
         if (!shooter.Alive || !shooter.Owns(def.Id))
             return;
+        if (SandboxOn && StoryStockGun(shooter, def))
+            return; // a story world's person has no gun until they build one (GameStoryArms.cs)
         if (def.IsLauncher)
         {
             ServerLauncherShot(shooter, def, origin, dir, spread, seed, now); // rockets and grenades fly for real (GameLaunchers.cs)
@@ -2356,6 +2358,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Breakout when !IsServer:
                 ReadBreakout(ref r); // the convicts' break-out (GameBreakout.cs)
+                break;
+            case (byte)Msg.Errand when !IsServer:
+                ReadErrand(ref r); // an errand on a works yard machine (GameErrands.cs)
                 break;
             case (byte)Msg.Fragments when !IsServer:
                 ReadFragments(ref r); // the old records' fragments and the leads (GameStoryFragments.cs)

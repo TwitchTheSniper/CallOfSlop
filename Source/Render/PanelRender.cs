@@ -318,6 +318,14 @@ public static unsafe class PanelRender
         return true;
     }
 
+    /// <summary>This PC's own place in a panel's list as last drawn (the window tool's readout fills with it): false when it isn't drawn.</summary>
+    public static bool ViewOf(long key, out int scroll, out int follow)
+    {
+        var on = _slots.TryGetValue(key, out var s);
+        (scroll, follow) = on ? (s!.Scroll, s.Follow) : (0, -1);
+        return on;
+    }
+
     /// <summary>Does this panel show a list longer than it is (the wheel scrolls it)?</summary>
     public static bool Scrollable(long key) => _slots.TryGetValue(key, out var s) && s.ScrollMax > 0;
 
