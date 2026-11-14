@@ -244,7 +244,7 @@ public static class ConstructConveyor
         var rd = c.DefOf(part);
         if (!rd.IsPieceRack)
             return 1;
-        if (d.Role == PartRole.Storage && !rd.IsBuildStation)
+        if (d.Role == PartRole.Storage && !rd.IsBuildStation && !rd.IsCraftTerminal) // (a terminal's tray too: what reaches it is an order's part, new and empty: logistics fix-ups 2)
             return 2; // (a piece, or anything a press stamps that fits: not storage, whose contents would be lost. A Building Station's hold takes any store part a blueprint names, a machine too, since a hold is a def count and what reaches it is new and empty: an order's rider, a hand, a stock; a loose loaded one in the bay is left alone, ConstructStation.TakeDropped: verification 2026-11-13c)
         ConstructRackPack.Ensure(rd, st);
         if (st.KindIndex(d.Id) < 0 && st.KindN >= CStore.MaxKinds || st.ItemCount >= rd.RackCount)

@@ -1132,7 +1132,7 @@ public static class ConstructCrafting
                 if (fits != 0)
                 {
                     state = CraftState.Held;
-                    note = "held: the tray is full - take parts out";
+                    note = fits == 4 ? "held: the tray is full - take parts out" : "held: the tray can't hold it"; // (4 full; 3 is above; a store part fits a tray since fix-ups 2)
                     continue;
                 }
                 if (via < 0 || via >= c.RouteCount || world.StoreOf(c, net.Stores[s]) is not { } st)

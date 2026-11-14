@@ -252,6 +252,34 @@ public static partial class Program
                 WsFail($"logi mend: no way {way} out of \"{rest}\"");
                 return;
             }
+            case "stow" when g.IsServer: // "logi stow PART|NAME": one part into a Storage Volume's crates (stock a terminal may fetch: fix-ups 2)
+            {
+                var sb = rest.Split('|');
+                var (sc, part) = LogiFind(g, sb[0]);
+                if (sc == null || sb.Length < 2 || ConstructParts.Find(sb[1]) is not { } sd)
+                {
+                    WsFail($"logi stow: \"{rest}\"");
+                    return;
+                }
+                WsSay($"[logi] stow {sd.Name} in {sc.DefOf(part).Name}#{part}: {w.PutPart(sc, part, sd) ?? "stowed"}");
+                return;
+            }
+            case "mix" when g.IsServer: // "logi mix PART|MATERIAL|N": N units of a material into an Assembler's mixed input (a recipe's second material)
+            {
+                var mb = rest.Split('|');
+                var (mc, part) = LogiFind(g, mb[0]);
+                var mat = mb.Length > 1 ? RecyclingTable.Current.IdOf(mb[1]) : (byte)0;
+                if (mc == null || mat == 0 || w.StoreOf(mc, part) is not { } ms)
+                {
+                    WsFail($"logi mix: \"{rest}\"");
+                    return;
+                }
+                ms.AddMix(mat, mb.Length > 2 && int.TryParse(mb[2], out var mn) ? mn : 20);
+                ms.Version++;
+                w.StoreDirty.Add(ms.Handle);
+                WsSay($"[logi] mix {mc.DefOf(part).Name}#{part}: {ms.MixOf(mat)} {mb[1]}");
+                return;
+            }
             case "fill" when g.IsServer:
             {
                 var fb = rest.Split('|'); // ("PART|NAME|N": at most N)
