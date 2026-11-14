@@ -7,7 +7,7 @@ namespace CallOfSlop;
 /// <summary>
 /// The Pane (docs/sandbox/design/laser-cutter.md section 4.5, phase 6): glass a Laser Cutter cuts to an opening's own outline, its key the
 /// outline and its thickness, <c>Cut Pane (rA,B,C tT glass)</c>: <c>A</c> cm along (the panel's z), <c>B</c> across (its x), each corner cut back
-/// by <c>C</c>, <c>T</c> mm thick. It is flat, one convex piece, drawn 2 mm short of the outline all round so its rim never meets the cut's; its
+/// by <c>C</c>, <c>T</c> mm thick. It is flat, one convex piece, drawn 7 mm short of the outline all round (PaneGap) so its rim never meets the cut's; its
 /// blank is the smallest formed glass sheet that holds it (<see cref="PaneBlank"/>), the rest coming back as offcut. It welds by one socket,
 /// <c>back</c>, in the middle of its back face, to an opening's <c>o</c> socket. A cut part like the others (<see cref="IsCutName"/>): an
 /// order, a bill line and a rack's kind by its key; made at once (one box or two), never sliced and never a stand-in off the wire.
@@ -15,8 +15,12 @@ namespace CallOfSlop;
 public static partial class HullLoft
 {
     public const string CutPanePrefix = "Cut Pane (", PaneMaterial = "glass";
-    /// <summary>How far short of the opening's outline a pane is drawn and collides, all round (m).</summary>
-    public const float PaneGap = 0.002f;
+    /// <summary>
+    /// How far short of the opening's outline a pane is drawn and collides, all round (m): an opening's socket is on the whole centimetre
+    /// (<see cref="AddOpeningSockets"/>), up to 5 mm from the opening's true middle (a 105 cm sheet's middle is on a half centimetre, a crowned
+    /// sheet's surface anywhere), so 5 mm of that and 2 mm clear of the rim (the merge review, 2026-11-13: 2 mm let a pane's rim cut into the edge).
+    /// </summary>
+    public const float PaneGap = 0.007f;
     private const string PaneTint = "#9fc6d6"; // (the shipped Glass Panes' and the cab panes' tint)
 
     /// <summary>A pane's outline (cm) and thickness (mm).</summary>
@@ -26,9 +30,19 @@ public static partial class HullLoft
 
     public static string PaneKey(in PaneSize p) => string.Create(CultureInfo.InvariantCulture, $"{CutPanePrefix}r{p.A},{p.B},{p.C} t{p.Mm} {PaneMaterial})");
 
-    /// <summary>The pane for an opening of a cut panel <paramref name="mm"/> thick (its own thickness, kept within a pane's), or null: a cut corner, or an opening too small to have a socket.</summary>
-    public static string? PaneFor(in Cut c, int mm) =>
-        c.Corner || c.A < CutOpenCm || c.B < CutOpenCm ? null : PaneKey(new PaneSize(c.A, c.B, c.C, Math.Clamp(mm, PanelMinMm, PanelMaxMm)));
+    /// <summary>
+    /// The pane for an opening of a cut panel <paramref name="mm"/> thick (its own thickness, kept within a pane's) on a sheet <paramref name="l"/>
+    /// by <paramref name="w"/> cm, or null when <see cref="PaneWhy"/> says no: never a pane for an opening with no socket, or one it would overhang.
+    /// </summary>
+    public static string? PaneFor(in Cut c, int mm, int l, int w) =>
+        PaneWhy(c, l, w) != null ? null : PaneKey(new PaneSize(c.A, c.B, c.C, Math.Clamp(mm, PanelMinMm, PanelMaxMm)));
+
+    /// <summary>Why an opening takes no pane, or null: a pane fits only an opening of 10 cm or more both ways lying wholly inside the sheet (an opening through an edge is a notch: its socket may be gone, and a pane would overhang).</summary>
+    public static string? PaneWhy(in Cut c, int l, int w) =>
+        c.Corner ? "a cut corner takes no pane"
+        : c.A < CutOpenCm || c.B < CutOpenCm ? $"an opening under {CutOpenCm} cm a side has no socket for a pane"
+        : c.U * 2 - c.A <= 0 || c.U * 2 + c.A >= l * 2 || c.V * 2 - c.B <= 0 || c.V * 2 + c.B >= w * 2 ? "this opening runs through the sheet's edge: a pane fits only an opening wholly inside the sheet"
+        : null;
 
     /// <summary>A pane key read and checked; null with <paramref name="why"/> (never clamped: every peer makes the same pane or none).</summary>
     public static PaneSize? PaneOf(string name, out string why)

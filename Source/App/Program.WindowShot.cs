@@ -927,7 +927,7 @@ public static unsafe partial class Program
                     foreach (var b in g.Constructs.Bodies)
                         for (var i = 0; i < b.PartCount; i++)
                             if (HullLoft.IsPanelName(b.DefOf(i).Name) || HullLoft.IsCutName(b.DefOf(i).Name))
-                                WsSay($"design: placed on body {b.Id} part {i}: {b.DefOf(i).Name} hash {HullLoft.PanelHash(b.DefOf(i)):x8}");
+                                WsSay($"design: placed on body {b.Id} part {i}: {b.DefOf(i).Name} hash {HullLoft.PanelHash(b.DefOf(i)):x8} at {b.Parts[i].Pos.X:0.0000},{b.Parts[i].Pos.Y:0.0000},{b.Parts[i].Pos.Z:0.0000} rot {b.Parts[i].Rot}; sockets o: {string.Join(" ", b.DefOf(i).Sockets.Where(s => s.Name.StartsWith('o')).Select(s => $"{s.Name} {s.At.X:0.0000},{s.At.Y:0.0000},{s.At.Z:0.0000}"))}");
                     return;
                 }
                 if (dw.Length >= 2 && dw[0] == "profile" && dw[1].Split(',') is { Length: 2 } pv && int.TryParse(pv[0], out var ph) && int.TryParse(pv[1], out var pcm))

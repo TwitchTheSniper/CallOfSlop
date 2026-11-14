@@ -760,7 +760,8 @@ public static partial class HullLoft
             var axis = MathF.Abs(n.X) >= MathF.Abs(n.Y) && MathF.Abs(n.X) >= MathF.Abs(n.Z) ? 0 : MathF.Abs(n.Y) >= MathF.Abs(n.Z) ? 1 : 2;
             var dir = (byte)(axis * 2 + (n[axis] < 0 ? 1 : 0));
             add ??= new List<CSocket>(MaxCuts);
-            add.Add(new CSocket($"o{add.Count}", new Vector3(R(at.X), R(at.Y), R(at.Z)), dir, SocketKind.Struct, d.Class));
+            static float Cm(float v) => MathF.Round(v * 100) / 100; // (on the whole centimetre, as a part's place is: what welds here lands on it exactly, a pane within PaneGap of the true middle)
+            add.Add(new CSocket($"o{add.Count}", new Vector3(Cm(at.X), Cm(at.Y), Cm(at.Z)), dir, SocketKind.Struct, d.Class));
         }
         if (add != null)
             d.Sockets = [.. d.Sockets, .. add];

@@ -133,6 +133,7 @@ public sealed partial class Ui
     private readonly List<HullLoft.Cut> _pdCuts = new(HullLoft.MaxCuts);
     private readonly List<bool> _pdGlazed = new(HullLoft.MaxCuts); // (laser cutter phase 6: each cut's Glazed box, by the same index; ORDER adds a pane for each)
     private string _pdPaneNote = "";
+    private int _pdPaneMax; // (the most panes of one key a panel takes: the Order count is capped so their order fits WorkOrders.MaxCount)
     private string _pdCutWhy = "";
     private int _pdCutters;
     private readonly List<string> _pdCutFits = new(4);
@@ -169,8 +170,10 @@ public sealed partial class Ui
         }
         if (text.StartsWith("glaze ", StringComparison.Ordinal) && int.TryParse(text.AsSpan(6), out var gz))
         {
-            if (gz < 0 || gz >= _pdCuts.Count || HullLoft.PaneFor(_pdCuts[gz], _pdMm) == null)
+            if (gz < 0 || gz >= _pdCuts.Count)
                 return "no opening there a pane fits";
+            if (HullLoft.PaneWhy(_pdCuts[gz], _pdL, _pdW) is { } noPane)
+                return noPane;
             _pdGlazed[gz] = !_pdGlazed[gz];
             return $"opening {gz} {(_pdGlazed[gz] ? "glazed" : "open")}";
         }
@@ -226,14 +229,20 @@ public sealed partial class Ui
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip("How far each corner of the opening is cut back: 0 square, about 0.29 of its side an eight-sided round."u8);
                 // Glazed (phase 6): ORDER adds a glass pane cut to this opening's outline, to weld into its socket.
-                var fits = a >= HullLoft.CutOpenCm && b >= HullLoft.CutOpenCm;
-                var glazed = fits && k < _pdGlazed.Count && _pdGlazed[k];
-                ImGui.BeginDisabled(!fits);
+                // Only an opening wholly inside the sheet (the merge review: one through an edge may have no socket, and its pane would overhang).
+                var noPane = HullLoft.PaneWhy(new HullLoft.Cut(false, u, vv, a, b, cc), _pdL, _pdW);
+                var glazed = noPane == null && k < _pdGlazed.Count && _pdGlazed[k];
+                ImGui.BeginDisabled(noPane != null);
                 if (ImGui.Checkbox("Glazed"u8, ref glazed) && k < _pdGlazed.Count)
                     _pdGlazed[k] = glazed;
                 ImGui.EndDisabled();
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                    ImGui.SetTooltip(fits ? "ORDER also orders a glass pane cut to this opening; weld it into the opening's socket by its back."u8 : "An opening under 10 cm a side has no socket for a pane."u8);
+                    ImGuiSafe.SetTooltip(noPane == null ? "ORDER also orders a glass pane cut to this opening; weld it into the opening's socket by its back." : char.ToUpperInvariant(noPane[0]) + noPane[1..] + ".");
+                if (noPane != null && k < _pdGlazed.Count && _pdGlazed[k])
+                {
+                    ImGui.SameLine();
+                    ImGui.TextColored(CrWarn, "no pane"u8); // (it was glazed: ORDER leaves its pane out until the opening is inside the sheet again)
+                }
             }
             ImGui.PopItemWidth();
             var now = new HullLoft.Cut(cut.Corner, u, vv, a, b, cut.Corner ? 0 : Math.Clamp(cc, 0, Math.Min(a, b) / 2));
@@ -279,7 +288,7 @@ public sealed partial class Ui
     {
         var list = new List<(string Key, int Count)>(HullLoft.MaxCuts);
         for (var k = 0; k < _pdCuts.Count && k < _pdGlazed.Count; k++)
-            if (_pdGlazed[k] && HullLoft.PaneFor(_pdCuts[k], _pdMm) is { } pane)
+            if (_pdGlazed[k] && HullLoft.PaneFor(_pdCuts[k], _pdMm, _pdL, _pdW) is { } pane) // (never a pane without its socket: PaneWhy)
             {
                 var at = list.FindIndex(x => x.Key == pane);
                 if (at < 0)
@@ -301,8 +310,13 @@ public sealed partial class Ui
     {
         var sb = new System.Text.StringBuilder();
         var panes = DesignerPanes();
+        _pdPaneMax = 0;
+        foreach (var p in panes)
+            _pdPaneMax = Math.Max(_pdPaneMax, p.Count);
         if (panes.Count > 0)
             sb.Append($"With each panel: {string.Join(", ", panes.Select(p => $"{p.Count} {HullLoft.PanelLabel(p.Key)}"))}. Weld each into its opening's socket by its back.");
+        if (_pdPaneMax > 1)
+            sb.Append($" An order is at most {WorkOrders.MaxCount / _pdPaneMax} panels, so their panes fit one order of {WorkOrders.MaxCount}.");
         for (var k = 0; k < _pdCuts.Count && k < _pdGlazed.Count; k++)
         {
             var c = _pdCuts[k];
@@ -577,6 +591,7 @@ public sealed partial class Ui
     {
         _pdCutWhy = "";
         _pdPaneNote = "";
+        _pdPaneMax = 0;
         _pdCutFits.Clear();
         _pdCutFitOk.Clear();
         _pdCutters = 0;
@@ -925,7 +940,7 @@ public sealed partial class Ui
             ImGui.SameLine();
             if (ImGui.Button("+"u8, new float2(28 * _scale, 0)))
                 _pdCount++;
-            _pdCount = Math.Clamp(_pdCount, 1, WorkOrders.MaxCount);
+            _pdCount = Math.Clamp(_pdCount, 1, _pdCuts.Count > 0 && _pdPaneMax > 1 ? WorkOrders.MaxCount / _pdPaneMax : WorkOrders.MaxCount); // (its panes in one order: the readout says so)
             ImGui.SameLine();
             ImGui.PushStyleColor(ImGuiCol.Button, CrTabOn);
             ImGui.BeginDisabled(_pdWhy.Length > 0 || _pdCutWhy.Length > 0);

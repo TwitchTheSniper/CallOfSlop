@@ -9,7 +9,7 @@ The user-facing summary is `docs/sandbox/constructs/production.md` "The Laser Cu
 - **The part** (new `Source/Constructs/HullLoft.Pane.cs`): `Cut Pane (rA,B,C tT glass)`. `A` cm along (the panel's z), `B` across (x),
   corners cut back `C`, `T` mm (12 to 40, a formed panel's), material always glass. `A`, `B` 10 to 600 (an opening under 10 cm has no
   socket), `C` at most half the smaller side; a key past a range or spelt another way is refused, never clamped. The outline is the
-  opening's less 2 mm all round. Its back face is on y = 0 and its one socket `back` is there, so welded to `o0` its back face lies on the
+  opening's less 7 mm all round (was 2: see the fixes below). Its back face is on y = 0 and its one socket `back` is there, so welded to `o0` its back face lies on the
   opening's middle plane and its front `T` mm out on the side the sheet faces. A rectangle (`C` 0) is one solid glass box, as the shipped
   Glass Panes: rounds pass it and break it. With cut corners it is an eight-cornered glass hull (detail, drawn in the blended pass by
   `ConstructRender.DrawGlass`) over a hidden box of the outline's bounds; a round stops on that box and breaks it (see question 2). Mass and
@@ -89,3 +89,17 @@ Shared files touched: `UiPanelDesigner.cs`, `HullLoft.Cuts.cs`, `HullLoft.Panels
    - A (recommended): keep it (one socket, the design's rule).
    - B: centre it in the sheet's thickness (the pane's socket moved to its middle plane, which the build rules allow only on a face: it
      would need a pad).
+
+## Fixes after review (2026-11-13)
+
+1. **Glazed only where a pane fits** (`HullLoft.PaneWhy`, `PaneFor` takes the sheet): an opening of 10 cm or more lying wholly inside the
+   sheet. One through an edge (whose socket may be gone, and whose pane would overhang) has its box off, the reason in its tooltip, and
+   "no pane" in red if it was glazed before a slider moved it; ORDER never orders a pane without its socket. Tried: `design cut glaze 2` on
+   an opening through the nose edge answered "this opening runs through the sheet's edge ..." and its pane was left out.
+2. **A pane clear of its rim on any sheet**: an opening's `o` socket is now on the whole centimetre (a part's place is), so a pane lands
+   exactly on it, and the pane is 7 mm short of the outline (`PaneGap`, was 2): the socket is at most 5 mm from the opening's true middle,
+   leaving 2 mm. Tried: on a 105 cm sheet the socket and the pane are both at x -0.010 (the true middle -0.005; before, the socket was at
+   -0.005 and the pane landed at 0.000, 5 mm off with a 2 mm gap); on a crowned sheet both at y 0.270. `--check-vehicle` on each: 0 coplanar
+   faces, 0 slivers. This moves the `o` sockets of existing cut keys by up to 5 mm (same on every peer).
+3. **Panes always match the panels**: with glazed openings, the Order count is capped at 999 over the most equal panes a panel takes
+   (two equal glazed openings: 499 panels), and the readout says so. Not seen on screen (the readout was scrolled out of the picture).

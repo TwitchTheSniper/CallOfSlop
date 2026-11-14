@@ -429,11 +429,11 @@ flat extruded piece (plate, a flat bar either way up). Code: `ConstructLaserCutt
   prints "Cut panels"); a Building Station's step (`OrderFor`). A cut order at a cutter chains its blank (`ConstructLogisticsPlan.CutterInputs`):
   a formed panel asked of a linked Panel Former, a plate or flat bar of a linked Extruder, riding to the cutter tagged for it.
 - **The Pane** (phase 6, `HullLoft.Pane.cs`; notes `laser-cutter-phase6-notes.md`): `Cut Pane (rA,B,C tT glass)`, glass cut to an
-  opening's own outline (`A` along, `B` across, corners cut back `C`, `T` mm, 12 to 40), 2 mm short all round. Its blank is the smallest
+  opening's own outline (`A` along, `B` across, corners cut back `C`, `T` mm, 12 to 40), 7 mm short all round (an opening's socket is on the whole centimetre, up to 5 mm from its true middle). Its blank is the smallest
   flat formed glass sheet that holds it (`Formed Panel (curve LxW c0 r0 tT glass)`, sides rounded up to 5 cm, at least 20); the head cuts
   its whole outline. It welds by its one socket, `back` (the middle of its back face), to an opening's `o` socket, its front `T` mm out on
   the side the sheet faces. A square-cornered pane is one solid glass box (rounds pass it and break it); one with cut corners is a glass hull
-  over a hidden box (a round stops on it and breaks it). The designer's **Glazed** box on an opening of 10 cm or more makes ORDER add one
+  over a hidden box (a round stops on it and breaks it). The designer's **Glazed** box, only on an opening of 10 cm or more wholly inside the sheet, makes ORDER add one
   pane per glazed opening per panel (not saved with the design: a design is its cut key). A cut part like the others: an order, a bill's
   `Bill.Cut` line, a rack's kind, a Building Station's step, all by key.
 - **Window tool**: `cutter`, `cutter order KEY [N]`, `cutter feed KEY`, `cutter await` (`Program.WindowShotCutter.cs`). The designer's `design cut rU,V,A,B,C | mK,A,B | clear | drop N | glaze N`; `ray PART U,V M D` deals D damage to what the ray hits (host).
