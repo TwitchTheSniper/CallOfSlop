@@ -160,7 +160,7 @@ public sealed partial class NavGraph
             _bakeKey = null;
         }
         // A baked or cached graph for exactly this map (BotNavBake.cs): read on a worker, so a tick never waits on the disk.
-        if (_builder == null && NavBake.Enabled)
+        if (_builder == null && NavBake.Enabled && !SitesAsked(map)) // (a site graph is the world's, never baked: NavSites.cs)
         {
             if (_bakeMap == null)
             {
@@ -193,7 +193,7 @@ public sealed partial class NavGraph
         if (_builder == null)
         {
             _builderMap = map;
-            _builderChanging = map.HasChangingBoxes || map.Sandbox != null; // (a Sandbox world's copy has no generated trees: they aren't map data)
+            _builderChanging = map.HasChangingBoxes || map.Sandbox != null || SitesAsked(map); // (a Sandbox world's copy has no generated trees: they aren't map data; a site build adds the constructs to its copy)
             _builderPhysics = null;
             _builder = BuildSteps(map).GetEnumerator();
         }
@@ -317,9 +317,15 @@ public sealed partial class NavGraph
     {
         if (!ReferenceEquals(World.Map, map))
             throw new InvalidOperationException("NavGraph.Build needs the map to be the current World.Map");
+        if (map.Planetoid != null && SitesAsked(map))
+        {
+            foreach (var step in BuildSiteSteps(map)) // the game's sites on it, the colony and the quarry (NavSites.cs)
+                yield return step;
+            yield break;
+        }
         if (map.Planetoid != null)
         {
-            // A planetoid (Source/Planets): kilometres of ground all round, no nav graph yet; bots steer straight.
+            // A planetoid (Source/Planets): kilometres of ground all round, no nav graph but on its sites; bots steer straight.
             var none = CreateEmpty();
             none.MapName = map.Name;
             none.MapHash = HashOf(map);
@@ -1101,6 +1107,12 @@ public sealed partial class NavGraph
         return -1;
     }
 
+    /// <summary>
+    /// While a site graph is in use (NavSites.cs): is the way between two feet positions clear of constructs too? (They aren't
+    /// in the map's collision world, so <see cref="Clear"/> alone would let a bot cut a corner through a building.) Set by the game.
+    /// </summary>
+    public static Func<Vector3, Vector3, bool>? ConstructsClear;
+
     /// <summary>Straight-line sight at knee and chest height between two feet positions.</summary>
     public static bool Clear(Vector3 a, Vector3 b)
     {
@@ -1111,7 +1123,8 @@ public sealed partial class NavGraph
             return len < 0.01f || World.Query.Raycast(from, d / len, len, QueryFilter.Navigation) >= len - 0.05f;
         }
         if (GravityFrames.Curved)
-            return Ray(GravityFrames.Above(a, 0.6f), GravityFrames.Above(b, 0.6f)) && Ray(GravityFrames.Above(a, 1.3f), GravityFrames.Above(b, 1.3f));
+            return Ray(GravityFrames.Above(a, 0.6f), GravityFrames.Above(b, 0.6f)) && Ray(GravityFrames.Above(a, 1.3f), GravityFrames.Above(b, 1.3f))
+                && (ConstructsClear == null || World.NavBuildAsBuilt || Current.Sites.Length == 0 || ConstructsClear(a, b)); // (a site graph's buildings: NavSites.cs)
         var knee = new Vector3(0, 0.6f, 0);
         var chest = new Vector3(0, 1.3f, 0);
         return Ray(a + knee, b + knee) && Ray(a + chest, b + chest);

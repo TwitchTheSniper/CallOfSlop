@@ -226,6 +226,16 @@ public static partial class World
         !Physics.OverlapCapsule(SweptMover.CapsuleAt(feet + up * 0.02f, Stance.Stand, up), new QueryFilter(QueryLayers.Nav & ~QueryLayers.MoverSweeps));
 
     /// <summary>
+    /// Is there room for a body at <paramref name="feet"/> above the step height (what <see cref="CanWalkCurved"/> asks at each
+    /// sample: a sill, a skirting or a lip underfoot is stepped over, not a wall)? The site graphs' nodes (NavSites.cs).
+    /// </summary>
+    public static bool BodyFitsOverStep(Vector3 feet, Vector3 up)
+    {
+        var body = SweptMover.CapsuleAt(feet + up * (StepHeight + 0.02f), Stance.Crouch, up);
+        return !Physics.OverlapCapsule(new Capsule(body.A, feet + up * (PlayerHeight - PlayerRadius), body.Radius), new QueryFilter(QueryLayers.Nav & ~QueryLayers.Doors));
+    }
+
+    /// <summary>
     /// Could a player walk from <paramref name="from"/> to <paramref name="to"/> (feet on a planet) along the surface? Every
     /// ~0.6 m along the arc between them: ground below within a step, rising or falling no more than the step height from the
     /// last sample, walkable against the local up, and room for the body above the step height. Bots and the nav graph.

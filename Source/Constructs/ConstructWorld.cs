@@ -1579,12 +1579,13 @@ public sealed partial class ConstructWorld
     /// (then carried along with it: the body's motion and any joint's under it, a lift, a turntable). Returns the body
     /// stood on, or null. Players never move constructs, except doors: a player walking into a door leaf swings it. On
     /// the server (<paramref name="server"/>) it also notes who stands where (pressure plates, the load on a joint) and
-    /// the hardest push a moving part gave (<see cref="LastHitSpeed"/>: run-over damage, GameSandbox.cs).
+    /// the hardest push a moving part gave (<see cref="LastHitSpeed"/>: run-over damage, GameSandbox.cs). <paramref name="doors"/>
+    /// false: this body doesn't swing door leaves (people on a site's paths open doors as F does and rub past an open leaf: PATHS.md).
     /// </summary>
-    public Construct? BlockPlayer(ref MoveState s, float height, bool server, byte who = 255, bool frame = true)
+    public Construct? BlockPlayer(ref MoveState s, float height, bool server, byte who = 255, bool frame = true, bool doors = true)
     {
         ConstructRide.Bodies = this;
-        var pushDoors = server;
+        var pushDoors = server && doors;
         Construct? standing = null;
         var standSeg = 0;
         var gripUp = Vector3.Zero;

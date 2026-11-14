@@ -230,7 +230,7 @@ public sealed partial class Game
     /// <summary>A random node in the main walkable area (or a map waypoint if the graph is empty).</summary>
     private Vector3 RandomNode(NavGraph nav, Player p)
     {
-        if (nav.MainNodes.Length == 0)
+        if (nav.MainNodes.Length == 0 || OffSites(nav, p))
         {
             var w = World.Map.Waypoints;
             return w.Count > 0 ? w[_rng.Next(w.Count)] : p.Position + Noise(10);
@@ -246,9 +246,12 @@ public sealed partial class Game
     }
 
     /// <summary>Best-scoring of a couple of dozen random main-area nodes (cheap, and a little different every time).</summary>
+    /// <summary>A planetoid's site graph (NavSites.cs) and the bot away from its sites: it roams where it is, as with no graph.</summary>
+    private static bool OffSites(NavGraph nav, Player p) => nav.Sites.Length > 0 && nav.SiteOf(p.Position, 10f) < 0;
+
     private Vector3 PickSpot(NavGraph nav, Player p, Func<int, float> score)
     {
-        if (nav.MainNodes.Length == 0)
+        if (nav.MainNodes.Length == 0 || OffSites(nav, p))
             return RandomNode(nav, p);
         var best = -1;
         var bestScore = float.MinValue;

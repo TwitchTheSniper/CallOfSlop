@@ -432,6 +432,7 @@ public sealed partial class Game
         QuarryTick(now); // (the first Ministry duty, the quarry: GameQuarry.cs)
         BreakoutTick(now); // (the convicts' break-out: GameBreakout.cs)
         LabourTick(now); // (the colony's convict labourers: GameLabour.cs)
+        NavSitesTick(now); // (the bots' paths round the colony and the quarry: GameNavSites.cs)
         DepotTick(now); // (the Orbital Depot's steps: GameDepot.cs)
         ObjectivesTick(now); // (the "what next" goal line: GameObjectives.cs)
         LockdownTick(now); // (the penal colony's lockdown: GameColonyLockdown.cs)
@@ -1988,7 +1989,7 @@ public sealed partial class Game
             ConstructRide.Clear(ref s); // (a seat is its own frame)
             return;
         }
-        Constructs.BlockPlayer(ref s, World.HeightOf(s.Stance), IsServer, p.Id, frame: p.Bot == null);
+        Constructs.BlockPlayer(ref s, World.HeightOf(s.Stance), IsServer, p.Id, frame: p.Bot == null, doors: p.Bot == null || NavGraph.Current.SiteDoors.Length == 0);
         if (Constructs.LiftBodies.Count > 0 && p.Bot == null)
             ConstructLifterPush.Block(Constructs, ref s, World.HeightOf(s.Stance), _sepAtTick != 0 ? _sepAtTick : MoverPhysics.Clock, IsServer); // (a Loader Arm's piece in the air pushes them aside, or waits for them: ConstructLifterPush.cs)
         if (IsServer && Constructs.LastHitSpeed > RunOverSpeed && Constructs.LastHitBody is { } car)
