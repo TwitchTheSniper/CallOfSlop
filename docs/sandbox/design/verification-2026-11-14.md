@@ -104,3 +104,25 @@ Container on `+y0`), `VT Gas Rig` (the beam + a Fluid Tank set to hydrogen 100 %
   the same for the Gear Set (1.33 of 6 kg) and Gun Barrel (1.96 of 4 kg); before phase 6 the same lines read `it recycles for more than it cost`.
   `RecyclingTable.YieldOf` (`ConstructRecycling.cs` 197) caps at `CostCapOf`. **Not driven:** a wrecked preset part put in a Recycler's
   intake (the window tool has no verb that sets a wreck in an intake).
+
+## 5. Inventories phase 4: verified on the host; the paste itself not driven; the client partly
+
+Scratch blueprint `VT Beacon Rack`: a Foundation with an Inventory Beacon (`top00`), a Battery (`top30`), a Piece Rack (`top03` by `-y.0.0`),
+a second Foundation on `z-0` with a Line Layer, chutes beacon -> rack and Line Layer -> rack. `N` = `Extrusion solid 50x10x100 steel`. Script:
+`wait 60; inv survival on; inv rack 5 Piece Rack N; near Inventory Beacon 2; wait 60; inv beacon; tool Welder; wait 10; inv mode line; inv line 2 Foundation N;
+wait 180; stock Piece Rack; inv drop N; wait 120; inv takeback N; wait 300; stock Piece Rack; inv bodies; inv select need 0 0 Foundation; wait 30;
+inv select delete 0 6 Foundation; wait 300; stock Piece Rack; inv bodies; inv count; inv select need 0 0 Foundation`.
+- **Building from made parts on a rack (survival):** `Line: 2 placed`, the rack 5 -> 3, the body's made parts the two bars. (Without the Line
+  Layer: `needs a Line Layer in range`; without its chute: `Line Layer: off - no chute network`; without the Welder: `needs the attach tool`. All right.)
+- **A refund back to a rack:** a loose made bar taken apart with the remove edit: `Solid bar 0.5 x 0.1 m into the network (Piece Rack)`, rack 3 -> 4.
+- **A selection delete:** the body's 6 shipped parts kept, the 2 laid bars deleted: `2 parts back on the network`, rack 4 -> 6, the body 6 parts
+  with no made part, no loose bar: neither duplicated nor lost.
+- **A survival paste paid from made parts: partly.** The paste's survival check on a copy of the 8-part body with the two bars in it:
+  `6 of 8 parts missing: Foundation x2, Piece Rack x1, Battery x1, Inventory Beacon x1, ...`: the two bars count as there (4 on the rack). The
+  paste itself (the parts taken) is not something the window tool can do; not driven.
+- **Joined client** (host `disown; inv survival on; inv rack 5 ...; inv players 1; bring Inventory Beacon`; the client `inv survival on; near Inventory Beacon 2;
+  tool Welder; inv mode line; inv line 2 Foundation N`): the client's row `5 on the network`; its stroke refused `needs the attach tool`, since
+  survival's tools are the story's (`Warden Pettigrew hasn't issued you the attach tool yet`), so a client's survival stroke is not reachable
+  this way. The host's `tool Welder` passed (the host's test state). Not a fault of this branch.
+- A blueprint that doesn't build (my first try, the Line Layer on the rack's spot) made the window run fail `no blueprint "VT Beacon Rack"`
+  with no REFUSED or reason line in `callofslop.log`; only `--check-vehicle` named the step. Small; a lesson for the blueprint loader's log.
