@@ -56,7 +56,10 @@ public sealed partial class Game
     {
         Array.Clear(_sh);
         foreach (var p in Players.Values)
+        {
             p.InShell = false;
+            p.ShellChair = p.ShellSeat = 0;
+        }
     }
 
     /// <summary>Server, a sitter's tick in a shell chair (from the seated loop): after the link-up, into the nearest free shell.</summary>
@@ -134,6 +137,7 @@ public sealed partial class Game
         p.Pitch = 0;
         p.Health = World.MaxHealth;
         p.InShell = true;
+        (p.ShellChair, p.ShellSeat) = (chair.Id, (ushort)seat); // (their body is drawn sitting there: ShellBodyOf)
         ShellBroadcast(p);
         SandboxHands.Notices.Add((p.Id, "You wake in the robot shell. Your body is safe in the chair: Esc menu > Leave the shell."));
         Log($"[shell] {p.Name} wakes in a shell (chair {chair.Id}, channel {run.Channel})");
@@ -196,6 +200,7 @@ public sealed partial class Game
         p.Pitch = run.Pitch;
         p.Health = Math.Clamp(run.Health, 1, World.MaxHealth);
         p.InShell = false;
+        p.ShellChair = p.ShellSeat = 0;
         run.On = false;
         run.Spent = true; // (still in the chair: they stand up before it links again)
         run.Pack = null;
@@ -271,13 +276,13 @@ public sealed partial class Game
 
     // ---- The wire ---------------------------------------------------------------------------------------------------
 
-    /// <summary>Server: who wears a shell, to everyone (<see cref="Msg.Shell"/>: u8 player, u8 on).</summary>
+    /// <summary>Server: who wears a shell, to everyone (<see cref="Msg.Shell"/>: u8 player, u8 on, u16 chair, u16 seat).</summary>
     private void ShellBroadcast(Player p)
     {
         if (Net.IsOffline)
             return;
         var w = SbW;
-        w.Begin(Msg.Shell).U8(p.Id).U8(p.InShell ? (byte)1 : (byte)0);
+        w.Begin(Msg.Shell).U8(p.Id).U8(p.InShell ? (byte)1 : (byte)0).U16(p.ShellChair).U16(p.ShellSeat);
         Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
     }
 
@@ -288,7 +293,7 @@ public sealed partial class Game
             if (p.InShell)
             {
                 var w = SbW;
-                w.Begin(Msg.Shell).U8(p.Id).U8(1);
+                w.Begin(Msg.Shell).U8(p.Id).U8(1).U16(p.ShellChair).U16(p.ShellSeat);
                 Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
             }
     }
@@ -298,8 +303,43 @@ public sealed partial class Game
     {
         var id = r.U8();
         var on = r.U8() != 0;
+        var chair = r.U16();
+        var seat = r.U16();
         if (Players.TryGetValue(id, out var p))
+        {
             p.InShell = on;
+            (p.ShellChair, p.ShellSeat) = on ? (chair, seat) : ((ushort)0, (ushort)0);
+        }
+    }
+
+    private readonly Player?[] _shBodies = new Player?[256]; // (drawing only: each shell wearer's own body, sitting in the chair)
+
+    /// <summary>
+    /// Every frame, host and clients (Karl, 2026-11-14): a player wearing a shell, their own body as it is drawn sitting in
+    /// the chair they linked from (null: not in a shell, or the chair isn't here). One stand-in per player id, made once and
+    /// reused: nothing allocates in a steady frame. The robot itself is the player.
+    /// </summary>
+    public Player? ShellBodyOf(Player p)
+    {
+        if (!p.InShell || !SandboxOn || Constructs.Get(p.ShellChair) is not { } c || p.ShellSeat >= c.PartCount || c.Parts[p.ShellSeat].D.Role != PartRole.Seat)
+            return null;
+        var b = _shBodies[p.Id] ??= new Player();
+        ConstructRender.SeatPose(c, p.ShellSeat, _alpha, IsServer, out var q, out var feet);
+        b.Id = p.Id;
+        b.Name = p.Name;
+        b.Team = p.Team;
+        b.Look = p.Look;
+        b.Uniform = p.Uniform;
+        b.Alive = true;
+        b.InShell = false;
+        b.RenderSeat = b.RenderSeatWas = c.SeatKindOf(p.ShellSeat);
+        b.RenderSeatRot = q;
+        b.RenderPosition = feet;
+        b.RenderStance = Stance.Stand;
+        b.RenderGrounded = true;
+        b.RenderYaw = SeatYaw(q);
+        b.RenderPitch = 0;
+        return b;
     }
 
     /// <summary>The Esc menu's button: leave the shell and wake in the chair.</summary>

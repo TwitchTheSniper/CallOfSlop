@@ -24,6 +24,7 @@ public static class ScenePresentation
     private static readonly DrawList List = new();
     private static ViewModelRig? _vm;
     private static readonly PlayerRig?[] Players = new PlayerRig?[256];
+    private static readonly PlayerRig?[] ShellBodies = new PlayerRig?[256]; // (a shell wearer's own body in the chair: its own rig, as the robot has theirs)
     private static readonly TurretRig?[] Turrets = new TurretRig?[256];
     private static readonly DroneRig?[] Drones = new DroneRig?[256];
     private static MoverRigSet? _movers;
@@ -124,6 +125,15 @@ public static class ScenePresentation
         BodyBloodRender.Bind(g); // the body's blood marks paint in its own draws (no extra draw calls)
         Draw(g, rig.Root, t0);
         BodyBloodRender.Unbind(g);
+    }
+
+    /// <summary>A robot shell wearer's own body, sitting in the chair they linked from (Game.ShellBodyOf).</summary>
+    public static void DrawShellBody(Renderer g, Player body, double time)
+    {
+        var t0 = Start();
+        var rig = ShellBodies[body.Id] ??= NewPlayer(body.Id);
+        rig.Pose(body, time);
+        Draw(g, rig.Root, t0);
     }
 
     /// <summary>Show your own legs in first person (looking down). Off with CALLOFSLOP_FPLEGS=0.</summary>

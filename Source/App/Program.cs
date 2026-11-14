@@ -2096,6 +2096,7 @@ public static unsafe partial class Program
             AllocProfile.Mark("people: player bodies"); // (the benchmark's --trace-frame)
             DrawPlayer(p);
         }
+        DrawShellBodies();
         AllocProfile.Mark("people: labourers");
         LabourRender.Draw(Gfx, _game); // the penal colony's convict labourers (Source/Render/LabourRender.cs)
         AllocProfile.Stop();
@@ -2402,6 +2403,25 @@ public static unsafe partial class Program
         else
             PlayerRender.DrawImmediate(Gfx, p, Glfw.Time);
         ThirdPersonArms.ShotFlash = 0;
+    }
+
+    /// <summary>Everyone wearing a robot shell, your own too: their body sits in the chair while the robot walks about (Karl, 2026-11-14).</summary>
+    private static void DrawShellBodies()
+    {
+        if (_game == null || !_game.SandboxOn)
+            return;
+        var hands = ToolRender.Hands;
+        ToolRender.Hands = null; // (the hands are the shell's now: the body in the chair holds nothing)
+        foreach (var p in _game.Players.Values)
+        {
+            if (!p.InShell || _game.ShellBodyOf(p) is not { } body)
+                continue;
+            if (ScenePresentation.Enabled)
+                ScenePresentation.DrawShellBody(Gfx, body, Glfw.Time);
+            else
+                PlayerRender.DrawImmediate(Gfx, body, Glfw.Time);
+        }
+        ToolRender.Hands = hands;
     }
 
     private static readonly ViewModelAnimator _vmAnim = new();
