@@ -282,12 +282,14 @@ public static unsafe partial class Program
     private static int _lnShown;
     private static string _lnText = "";
 
-    /// <summary>How many of a part the player can lay hands on (-1: creative, no limit).</summary>
+    /// <summary>How many of a part the player can lay hands on (-1: creative, no limit). A made part is never endless: as the host takes it (ConstructEdits.TakeMade).</summary>
     private static int AidHave(Game g, in SandboxHand h, ConstructPartDef d)
     {
+        var v = g.SandboxBeacon(g.LocalId);
+        if (d.RuntimeMade)
+            return g.SandboxInv.Of(g.LocalId).Count(d.Id) + (g.SandboxBeaconOn ? v.CountOf(d.Id) : 0) + (g.Local is { } m ? ConstructAid.LooseCount(g.Constructs, m.Id, d, m.Eye) : 0);
         if (g.SandboxInfiniteParts)
             return -1;
-        var v = g.SandboxBeacon(g.LocalId);
         if (d.PhysicsOnly)
             return g.Local is { } me ? ConstructAid.LooseCount(g.Constructs, me.Id, d, me.Eye) : 0;
         return g.SandboxInv.Of(g.LocalId).Count(d.Id) + (h.Held == d.Id ? 1 : 0) + (v.On ? v.CountOf(d.Id) : 0);

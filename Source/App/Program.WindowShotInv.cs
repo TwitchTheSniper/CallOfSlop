@@ -341,6 +341,37 @@ public static unsafe partial class Program
                 _wsInvTries = 0;
                 return true;
             }
+            case "select" when g.IsServer:
+            {
+                // "select delete|need BROKEN KEEP PART[#n]" (host, a test state): the body of that part selected but its first KEEP parts, the last BROKEN catalogue
+                // parts wrecked, then deleted as the selector does, or copied and the paste's survival check run (what is missing).
+                var w2 = rest.Split(' ', 4, StringSplitOptions.TrimEntries);
+                if (w2.Length < 4 || w2[0] is not ("delete" or "need") || !int.TryParse(w2[1], out var broken) || !int.TryParse(w2[2], out var keep) || WsFind(g, w2[3]) is not ({ } sc, _))
+                {
+                    WsFail($"inv select delete|need BROKEN KEEP PART[#n] (\"{rest}\")");
+                    return true;
+                }
+                var parts = sc.PartCount;
+                var why = hands.SelectForTool(g.Constructs, me.Id, me.Eye, sc, w2[0] == "delete", broken, keep);
+                WsSay($"inv select {w2[0]}: construct {sc.Id}, {parts} parts, {broken} wrecked: {why ?? "ok"}");
+                return true;
+            }
+            case "bodies":
+            {
+                // Every body near this player that holds a made part: its id, parts and the made ones by name (a refund's leftovers).
+                foreach (var b in g.Constructs.Bodies)
+                {
+                    if (System.Numerics.Vector3.Distance(b.WorldCom, me.Eye) > 30)
+                        continue;
+                    var made = new List<string>();
+                    for (var i = 0; i < b.PartCount; i++)
+                        if (b.DefOf(i).RuntimeMade)
+                            made.Add(PartRef.Listed(b.DefOf(i)));
+                    if (made.Count > 0)
+                        WsSay($"inv bodies: construct {b.Id}, {b.PartCount} parts, made: {string.Join("; ", made)}");
+                }
+                return true;
+            }
             case "survival":
                 // "survival on|off" (a test state, run on each peer): the rules switched after the blueprint went down through the menu, so beacons work.
                 g.SurvivalForTool(rest != "off");
@@ -439,7 +470,7 @@ public static unsafe partial class Program
             {
                 // "line N PART[#n] NAME": a Line Layer stroke of N of a part along +x from the first socket of PART that takes it, sent as the drag's release sends it.
                 var w2 = rest.Split(' ', 2, StringSplitOptions.TrimEntries);
-                if (w2.Length < 2 || !int.TryParse(w2[0], out var n) || !WsSplitStore(g, w2[1], out var c, out var part, out var d))
+                if (w2.Length < 2 || !int.TryParse(w2[0].Split('x')[0], out var n) || !WsSplitStore(g, w2[1], out var c, out var part, out var d))
                 {
                     WsFail($"inv line N PART[#n] NAME (\"{rest}\")");
                     return true;
@@ -473,7 +504,8 @@ public static unsafe partial class Program
                             var pw = g.SandboxAidBegin(BuildAidOp.Line);
                             pw.U16(c.Id).U16((ushort)part);
                             PartRef.Write(pw, d.Id);
-                            pw.U8((byte)bs).U8((byte)bv).U8(dir).F32(pitch).U16((ushort)n).U8(2).F32(1).U16(1);
+                            var rows = w2[0].Split('x') is [_, var mv] && int.TryParse(mv, out var mm) ? Math.Max(1, mm) : 1; // ("NxM": a field, M rows along +z)
+                            pw.U8((byte)bs).U8((byte)bv).U8(dir).F32(pitch).U16((ushort)n).U8(4).F32(ConstructLine.Pitch(c, d, gh.Rot, gh, 4)).U16((ushort)rows);
                             g.SandboxAidSend(pw);
                             WsSay($"inv line: {n} x {Named(d.Id)} from socket {bs} of the {c.DefOf(part).Name}, variant {bv}, pitch {pitch:0.###} m, ghost {System.Numerics.Vector3.Distance(c.SegToWorld(gh.Seg, gh.Pos), me.Eye):0.0} m from the eye at {me.Eye}");
                             return true;

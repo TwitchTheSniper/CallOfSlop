@@ -92,8 +92,6 @@ public static unsafe partial class SandboxTiles
         {
             s = stale; // (the id was freed and made again for another key: its slot is drawn again)
             MadeIdRemade++;
-            if (MadeIdRemade <= 4)
-                Console.WriteLine($"[tiles] made part {id} is another def now ({_madeDef[s]?.Name} was drawn, {d.Name} asked; reclaimed {_madeDef[s]?.Reclaimed}): drawn again");
         }
         else if (_madeUsed < MadePool)
             s = _madeUsed++;

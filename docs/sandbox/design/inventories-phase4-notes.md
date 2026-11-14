@@ -66,3 +66,13 @@ Notes of 2026-11-13 for `inventory-run-time-parts.md` (the design and the user's
    without loss): not this branch's code; worth a look by whoever owns joining.
 
 STATUS: built; tried on host and a joined client; named sections pass.
+
+## After the merge review (2026-11-13)
+
+- A selection's delete with more than `MaxDrops` kept parts no longer keeps a made part in the left body as well as refunding it (the kept
+  rule is the refund list's). Tried: survival, beacon in reach, 40 wrecked parts and two made beams deleted: the beams went onto the rack,
+  the 40 stayed as one body with no beam.
+- A paste's survival check (`ClipHave`) counts a made part as the paying path takes it: the count, a rack on the network, loose pieces.
+  Tried: two made beams in a clip: missing with none, "all there" with two on the rack, one short then all there with one and two counted.
+- The Line Layer's HUD number counts a made part the same way (creative included: made parts are never endless).
+- Tool steps: `inv select delete|need BROKEN KEEP PART`, `inv bodies`, `inv line NxM ...` (a field).
