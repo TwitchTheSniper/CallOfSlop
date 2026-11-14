@@ -434,6 +434,7 @@ public static class ConstructCrafting
             var st = world.StoreOf(c, m);
             var fed = st is { Amount: > 0 };
             var mat = fed ? st!.Material : FirstMaterial(md);
+            var loose = md.IsExtruder ? LooseRefusal(world, c, m) : null; // (a piece it drops loose never reaches a tray: the row says so and Place refuses it)
             if (md.IsLaserCutter)
             {
                 // A Laser Cutter (laser cutter phase 4): the world's cut designs it takes; now when the blank is in linked stock or on its
@@ -498,8 +499,8 @@ public static class ConstructCrafting
                 if (row.Make == 1)
                     return;
                 row.Machine = m;
-                row.Make = (byte)(fed ? 1 : Bulk(world, c, net, mat, -1) > 0 ? 2 : 3);
-                row.Missing = fed ? "" : row.Make == 2 ? $"the {md.Name} needs {names.NameOf(mat)}: a linked bin holds some" : $"needs {names.NameOf(mat)} in the {md.Name}";
+                row.Make = (byte)(loose != null ? 3 : fed ? 1 : Bulk(world, c, net, mat, -1) > 0 ? 2 : 3);
+                row.Missing = loose ?? (fed ? "" : row.Make == 2 ? $"the {md.Name} needs {names.NameOf(mat)}: a linked bin holds some" : $"needs {names.NameOf(mat)} in the {md.Name}");
             }
             if (WorkOrders.IsWholeFormer(md))
             {
@@ -515,13 +516,13 @@ public static class ConstructCrafting
                     var row = Row(what, pp);
                     if (row.Make == 1)
                         continue;
-                    var make = (byte)(fed ? 1 : Bulk(world, c, net, pk.Material, -1) > 0 ? 2 : 3);
+                    var make = (byte)(loose != null ? 3 : fed ? 1 : Bulk(world, c, net, pk.Material, -1) > 0 ? 2 : 3);
                     if (row.Make == 0 || make < row.Make)
                     {
                         row.Make = make;
                         row.Machine = m;
                         row.Recipe = null;
-                        row.Missing = fed ? "" : make == 2 ? $"the {md.Name} needs {names.NameOf(pk.Material)}: a linked bin holds some" : $"needs {names.NameOf(pk.Material)} in the {md.Name}";
+                        row.Missing = loose != null ? loose : fed ? "" : make == 2 ? $"the {md.Name} needs {names.NameOf(pk.Material)}: a linked bin holds some" : $"needs {names.NameOf(pk.Material)} in the {md.Name}";
                     }
                 }
             }
@@ -812,7 +813,7 @@ public static class ConstructCrafting
         var ok = Stock(world, c, net, (ushort)kind.Id) > 0;
         for (var i = 0; i < net.MachineN && !ok; i++)
         {
-            var why = WorkOrders.Refusal(world, c, net.Machines[i], what);
+            var why = WorkOrders.Refusal(world, c, net.Machines[i], what) ?? LooseRefusal(world, c, net.Machines[i]);
             ok = why == null;
             if (why != null && (refusal == null || Kin(c.DefOf(net.Machines[i]), what)))
                 refusal = why;
@@ -830,6 +831,23 @@ public static class ConstructCrafting
         StepTerminal(world, c, t, tray, q);
         world.CraftChanged(c);
         return null;
+    }
+
+    /// <summary>
+    /// Why a terminal can't ask machine <paramref name="m"/> for a piece, or null: an Extruder or a Former with no conveyor out of its Piece out
+    /// (nor a chute into a press) parts its piece off loose at the die (ConstructExtruder.Cut, CutAs), which no tray ever sees, so an order
+    /// placed there would wait for ever (leftovers 3: the showcase's Airframe Former's wing). The reason says where it would lie.
+    /// </summary>
+    internal static string? LooseRefusal(ConstructWorld world, Construct c, int m)
+    {
+        var md = c.DefOf(m);
+        if (!md.IsExtruder || ConstructConveyor.Out(c, m) >= 0 || ConstructPress.ChutesToPress(world, c, m))
+            return null;
+        if (c.Logi is { LiftN: > 0 } lm)
+            for (var e = 0; e < lm.LiftN; e++)
+                if (lm.Lifts[e].From == m)
+                    return null; // (an arm lifts it from the die's floor and puts it on: lifters phase 5b)
+        return $"the {md.Name} drops what it makes beside it, with no conveyor to the tray: order it on the {md.Name}'s own panel and collect it there";
     }
 
     /// <summary>Is a machine of the order's own kind, so its refusal is the one a player reads: a Press for a pressed part, an Assembler for a catalogue part, else an Extruder or a Former.</summary>
@@ -1216,7 +1234,7 @@ public static class ConstructCrafting
                 string? refusal = null;
                 for (var i = 0; i < net.MachineN && ask > 0; i++)
                 {
-                    var why = WorkOrders.Queue(world, c, net.Machines[i], o.What with { Count = (ushort)ask, Made = 0 });
+                    var why = LooseRefusal(world, c, net.Machines[i]) ?? WorkOrders.Queue(world, c, net.Machines[i], o.What with { Count = (ushort)ask, Made = 0 }); // (never asked of a machine that drops it loose)
                     if (why == null)
                     {
                         ConstructLogisticsPlan.Ranked(world, c, net.Machines[i], (byte)(StockTargets.FeedClass(c, t) + 2)); // (a High terminal's line goes ahead of Normal ones: phase 5)
