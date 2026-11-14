@@ -1544,6 +1544,16 @@ now or whose point is out of reach waits, its row saying why, and the lifter wor
 (`CActKind.Lifter`, a finger on a console's rule); the orders ride the lift word (protocol 312) and the `LIFT` block's second half,
 points on the lifter's own body saved as body 0. Window tool: `lifter panel [arm|crane]`, `lifter order FROM TO N KIND`, `lifter orders`.
 
+**The Lifter Cab** (phase 8, `ConstructLifterCab.cs`; part from `LifterParts.cs`, beside the Loader Arms in the inventory) is a seat, 0.75 by
+1.5 by 1 m, that steers the nearest Loader Arm or Bridge Crane on its own construct (one cab a lifter; no link). Sit in it (F): the
+lifter finishes the move it is in, then answers only the cab. W, A, S and D move the hook across in the view's frame, Space and Ctrl
+raise and lower it, at the lifter's speeds (a crane's travel and hoist), kept in its reach and never under the ground. **F** takes
+what is under the hook (within 1.5 m across): a loose single part within its payload and size ("too heavy: 603 kg, it carries
+500 kg", "only a single piece"), else a rack's, pad's or press's piece; **F** again puts it into a point there that takes it, else
+sets it down loose where it hangs. **E** gets out; a piece left in the hand goes on by the lifter's own rule. While seated the look
+line says what it did, its reach is drawn and the hook's shadow falls on what is under it. The hand's moves are lift words at 10 Hz
+while it moves; a client eases between them. Window tool: `lifter cab [arm|crane]`, `lifter sit`, `lifter cabstate [bait NAME]`.
+
 **Players in the way**: a piece pushes a player aside by at most 0.75 m; a bigger one waits for them (Alarm after 10 s), and so does
 any piece that reaches a player standing on a construct (a floor slab, a pad, a deck: they ride its frame, so nothing moves them).
 **Store parts on a pad**: a Lay-down Pad takes a store part (a Drill Module, an Ammo Container) as a station's hold does: by conveyor,

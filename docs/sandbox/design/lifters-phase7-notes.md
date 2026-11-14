@@ -1,8 +1,8 @@
-# Arms and cranes phase 7: notes (2026-11-14)
+# Arms and cranes phases 7 and 8: notes (2026-11-14)
 
 Branch `claude/lifters-7-be7af9`. The design is `arms-and-cranes.md` (section 5 "By hand", section 9 row 7, the user's answer 6); phase 6
-is `lifters-phase6-notes.md`. **Protocol 312** (`CActKind.Lifter` at the end; each lifter in `CBodyKind.Lifts` gains its orders). The
-cab is phase 8, not here. The player's guide is production.md "Lifters" (Bridge Crane, Hand orders, players in the way, store parts on
+is `lifters-phase6-notes.md`. **Protocol 312** (`CActKind.Lifter` at the end; each lifter in `CBodyKind.Lifts` gains its orders and, phase 8,
+a steered byte; the Lifter Cab part moves ids). Phase 8 (the cab) is its own section below, and with it the design's phase list is done. The player's guide is production.md "Lifters" (Bridge Crane, Hand orders, players in the way, store parts on
 a pad) and "Production Showcase" (the crane bay).
 
 ## What was built
@@ -81,4 +81,55 @@ a pad) and "Production Showcase" (the crane bay).
    it came from.
 4. **Repeat orders** ("keep this press fed"): A: (recommended) not now; the lifter's own rule already does it. B: an order that never ends.
 
-STATUS: phase 7 built: hand orders on host and client at an arm and a crane, the Showcase's crane works its line; three phase 6 faults fixed.
+## Phase 8: the cab
+
+Built (design 3.7, section 9 row 8; the user's answer 6):
+
+- **The Lifter Cab** (`LifterParts.Cab`, `--gen-parts lifter_parts`; Constructs/Parts/Lifters/LifterCab.json; recipe from the Assembling
+  generator's seat rule): a seat 0.75 x 1.5 x 1 m, a chair on a swivel in a yellow cab with windows on three sides, a desk with two
+  sticks, hazard bands round its foot; `"lifterCab": true` (one field in `ConstructParts.cs`). It steers the nearest lifter on its own
+  construct, found on each peer when the body's parts change (`FindCabs`: one cab a lifter, no link).
+- **Manned** (`ConstructLifterCab.cs`): the lifter finishes its move, then the cab has it (`Steered`, Why `Manned`): a station claim or a
+  hand order isn't started while it is manned. At the 10 Hz step the hook moves by the cab's keys (W/S along the sitter's look, A/D
+  across it, Space/Ctrl up and down) at its speed (a crane: travel, hoist), clamped to the reach (an arm: its ring, height and links; a
+  crane: its box) and kept off the ground. The keys come from the seat loop (`CabInput`), since the logic tick clears a seat's keys
+  before the lifter step.
+- **F** (`CActKind.Lifter`, op Grab, the cab's body and part; the server checks the player sits in it): an empty hand takes the nearest
+  loose single part within 1.5 m across under the hook (its payload and size, "too heavy: 603 kg, it carries 500 kg", "only a single
+  piece: that is a construct"), else a rack's, pad's or press's/Assembler's tray piece near the hook; a full hand puts into a point near it
+  that takes it (`PutPiece`, shared with a carry's end now), else sets it down loose (`DropLoose`, its health and paint kept). The result
+  is on the look line ("took it", "nothing to take under the hook", "put it in", "set it down").
+- **E** (roll right, in a seat) gets out; a piece in the hand goes on by the Routers' rule (`Redirect`), else waits with it (Alarm).
+- **Wire**: a steered lifter's move is a straight 10 Hz step (From to To over 6 ticks) in the ordinary lift word, sent while it moves
+  (about 60 bytes a word, 10 a second); `Pose` eases it on every peer, so a client's push and drawing use it. A steered byte joins the word.
+- **Seated view**: the look line names what it does and the keys; the reach view is drawn and the hook's shadow (a dark square 2 cm over
+  the first thing below it) while the player sits there (`LifterRender.CabBody`).
+- **Window tool**: `lifter cab [arm|crane]` (host: a cab joined to the rig's arm or crane), `lifter sit` (host through the server's Use; a
+  client sends the use key's action after the host's `bring Lifter Cab`), `lifter cabstate [bait NAME]` (bait: that part loose under the
+  hook); steering through the real keys with `hold MoveForward 2` and `key Interact`.
+
+Tried by hand:
+
+- **Host, arm**: sat in, W moved the hand 1.4 m, Ctrl lowered it, F took a loose Plate Steel 0.5 m, Space and A carried it over the pad,
+  F put it into the pad (the pad held it), E got out (Idle). A Medium Column 4 m: "too heavy: 603 kg, it carries 500 kg".
+- **Host, crane**: Ctrl lowered the hook from 1.1 to 5.4 m under the rails, where the ground stopped it; F took the plate; Space and W, then
+  F with nothing under it set it down loose.
+- **Joined client, crane** (`--net host:60631`/`join`): the client sat in (host's `bring Lifter Cab`), lowered the hook 6.4 m and moved it
+  (host and client read the same hand to the centimetre); F found nothing under the hook (the hook had gone under the ground: fixed
+  since), a second F took an Engine lying near, and E left it to the crane, which carried it on by its own rule (1 moved). One earlier
+  client run's held keys never reached the seat (the hook stood still on both peers); the next two runs worked. Not looked into.
+- Build passes; `--gen-parts lifter_parts --check`: up to date; `--check-construct-parts`: no REFUSED lines (the Lifter Cab: OK).
+
+Not tried: a cab with `--lag`; a piece in a steered hand pushing a player (the push poses it as any carry); a cab and a crane on a slope;
+the cab seen in a window by anyone; a save with someone in a cab (nobody is seated after a load; a held piece saves as any held piece).
+
+Open questions (each with a recommendation):
+
+5. **Which lifter a cab steers.** A: (recommended, built) the nearest on its own construct, one cab a lifter. B: the linking tool links a
+   cab to any lifter (the design's wording), for a cab on another body: a `Route`-kind link and a refusal text more.
+6. **E to get out** (roll right): A: (recommended, built) as the design says. B: F gets out as in every other seat and the cab's grab
+   moves to G (Seat hook).
+7. **The station panel's bill "on the Lay-down Pad"** (phase 5b's leftover, design section 4): not done here: `ConstructStation.cs` and
+   `UiStation.cs` belong to the logistics builder this round. Recommend the next station round.
+
+STATUS: phases 7 and 8 built: hand orders and the cab on host and client, the Showcase's crane works its line; the design's phase list is done.
