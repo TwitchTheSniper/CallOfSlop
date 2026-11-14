@@ -380,7 +380,7 @@ public static class Pressed
         if (d.Piece == EnginePiece.None || p.Knots.Length == 0)
             return;
         var rules = EngineRules.Current;
-        d.PieceScale = EngineScale(p, k, rules);
+        d.PieceScale = d.Piece == EnginePiece.Cylinder ? BoreScale(p, k, rules) : EngineScale(p, k, rules);
         d.PieceSize = rules.NearestSize(d.PieceScale);
         d.PieceStroke = 0;
         if (d.Piece == EnginePiece.Cylinder)
@@ -389,24 +389,78 @@ public static class Pressed
             var r = Math.Clamp(Sig3(k.L / (float)Math.Max(1, Across(k)) / (near.L / (float)Math.Max(1, Across(near)))), MinStroke, MaxStroke); // (the die takes longer and shorter blanks, every key made before phase 5; the stroke stops at design 6.3's range)
             d.PieceStroke = MathF.Abs(r - 1f) < 1e-4f ? 0 : r;
         }
+        PieceMass(d, p, k);
     }
 
+    /// <summary>
+    /// The widest bore that gives power, as a share of a cylinder's across (bored cylinders, 2026-11-14): a wall under a twentieth of the
+    /// across makes the cylinder lighter and weaker but no stronger. The Small preset's bore is 0.56 of its across, the Medium and Large 0.78.
+    /// </summary>
+    public const float MaxBoreShare = 0.9f;
+
+    /// <summary>A cylinder blank's bore (cm): its across less both walls, held to <see cref="MaxBoreShare"/> of the across; a blank with no hole, its across.</summary>
+    public static float BoreOf(in ExtrusionKey k) =>
+        k.Shape == ExShape.Pipe ? MathF.Max(1, MathF.Min(k.W - 2f * k.Wall, MaxBoreShare * k.W)) : Math.Max(1, Across(k));
+
+    /// <summary>
+    /// A cylinder's scale by its bore (bored cylinders, 2026-11-14: the user, "power has become more of a function of cylinder size"): through
+    /// the knots' bores (Small 25 cm, Medium 140, Large 560: each preset's scale) by a straight line in log-log, the end segment past the ends,
+    /// so at a preset it is that part's own, and in a cylinder of one across a thinner wall is a wider bore and more power. Stroke stays
+    /// the revs' (answer 5: it trades revs for torque at the same power).
+    /// </summary>
+    public static float BoreScale(PressPattern p, in ExtrusionKey k, EngineRules rules) => ScaleBy(p.Knots, BoreOf(k), static b => BoreOf(b), rules);
+
     /// <summary>An engine piece's scale at this blank's across (see <see cref="EngineNumbers"/>).</summary>
-    public static float EngineScale(PressPattern p, in ExtrusionKey k, EngineRules rules)
+    public static float EngineScale(PressPattern p, in ExtrusionKey k, EngineRules rules) => ScaleBy(p.Knots, Math.Max(1, Across(k)), static b => Across(b), rules);
+
+    private static float ScaleBy(PressPreset[] knots, float a, Func<ExtrusionKey, float> measure, EngineRules rules)
     {
-        var knots = p.Knots;
-        var a = (float)Math.Max(1, Across(k));
         foreach (var q in knots)
-            if (Across(q.Blank) == (int)a)
+            if (MathF.Abs(measure(q.Blank) - a) < 1e-3f)
                 return rules.ScaleOf(q.Part);
         if (knots.Length == 1)
-            return Sig3(rules.ScaleOf(knots[0].Part) * a / Across(knots[0].Blank));
+            return Sig3(rules.ScaleOf(knots[0].Part) * a / measure(knots[0].Blank));
         var i = 0;
-        while (i < knots.Length - 2 && a > Across(knots[i + 1].Blank))
+        while (i < knots.Length - 2 && a > measure(knots[i + 1].Blank))
             i++;
-        float a0 = Across(knots[i].Blank), a1 = Across(knots[i + 1].Blank), s0 = rules.ScaleOf(knots[i].Part), s1 = rules.ScaleOf(knots[i + 1].Part);
+        float a0 = measure(knots[i].Blank), a1 = measure(knots[i + 1].Blank), s0 = rules.ScaleOf(knots[i].Part), s1 = rules.ScaleOf(knots[i + 1].Part);
         var t = (MathF.Log(a) - MathF.Log(a0)) / (MathF.Log(a1) - MathF.Log(a0));
         return Sig3(MathF.Exp(MathF.Log(s0) + t * (MathF.Log(s1) - MathF.Log(s0))));
+    }
+
+    /// <summary>
+    /// An engine piece's mass and health (bored cylinders, 2026-11-14): its metal (the blank's solid volume) times what a cubic metre of
+    /// metal weighs and holds in the catalogue piece of its size, read through the knots in log of across (the ends held), so at a preset
+    /// it is the catalogue part's own, a bigger piece is heavier because it is bigger, and a wider bore in the same across is less metal:
+    /// lighter and easier to damage. Before, a pressed piece weighed its whole blank and bay 2 (a Small Cylinder's preset 77 kg against the
+    /// file's 28), so anything off a preset weighed about three times its catalogue neighbour. Never more than its blank and bay 2 cost.
+    /// </summary>
+    private static void PieceMass(ConstructPartDef d, PressPattern p, in ExtrusionKey k)
+    {
+        var knots = p.Knots;
+        var volume = VolumeMass(k).Volume;
+        if (volume <= 0)
+            return;
+        float Per(in PressPreset q, bool health) => (health ? q.Part.Health : q.Part.Mass) / MathF.Max(1e-6f, VolumeMass(q.Blank).Volume);
+        float massPer, healthPer;
+        var a = MathF.Log(Math.Max(1, Across(k)));
+        var i = 0;
+        while (i < knots.Length - 2 && a > MathF.Log(Across(knots[i + 1].Blank)))
+            i++;
+        if (knots.Length == 1)
+        {
+            massPer = Per(knots[0], false);
+            healthPer = Per(knots[0], true);
+        }
+        else
+        {
+            float a0 = MathF.Log(Across(knots[i].Blank)), a1 = MathF.Log(Across(knots[i + 1].Blank));
+            var t = a1 > a0 ? Math.Clamp((a - a0) / (a1 - a0), 0f, 1f) : 0f;
+            massPer = MathF.Exp(MathF.Log(Per(knots[i], false)) + t * (MathF.Log(Per(knots[i + 1], false)) - MathF.Log(Per(knots[i], false))));
+            healthPer = MathF.Exp(MathF.Log(Per(knots[i], true)) + t * (MathF.Log(Per(knots[i + 1], true)) - MathF.Log(Per(knots[i], true))));
+        }
+        d.Mass = Math.Clamp(MathF.Min(volume * massPer, CostMass(p.For(k), k)), 0.1f, ConstructParts.MaxPartMass);
+        d.Health = Math.Clamp(volume * healthPer, 10, ConstructParts.MaxPartHealth);
     }
 
     private static ConstructPartDef BuildOf(PressDie die, PressPattern p, in ExtrusionKey k, string name)
@@ -1106,10 +1160,11 @@ public static class Pressed
         {
             // The engine piece's numbers (sized-parts design 6.3): a cylinder's kW at its bore, the revs of a crank of its scale over its stroke.
             var rules = EngineRules.Current;
-            rules.At(rules.ScaleOf(made), out var kw, out var idle, out var peak, out var max);
+            rules.At(rules.ScaleOf(made), out var kw, out _, out _, out _);
+            rules.At(made.Piece == EnginePiece.Cylinder ? EngineScale(p, k, rules) : rules.ScaleOf(made), out _, out var idle, out var peak, out var max); // (a cylinder: its kW at its bore, its revs on a crank of its across)
             var r = made.PieceStroke > 0 ? made.PieceStroke : 1f;
-            Console.WriteLine(FormattableString.Invariant($"[press] engine {made.Piece.ToString().ToLowerInvariant()}: scale {rules.ScaleOf(made):0.###} (nearest {ConstructEngine.SizeNames[made.PieceSize]}), like {p.For(k).Like.Name}; ")
-                + (made.Piece == EnginePiece.Cylinder ? FormattableString.Invariant($"{kw * made.PiecePower:0.#} kW, stroke ratio {r:0.###}: on a crank of its scale idle {idle / r:0} rpm, peak {peak / r:0}, limiter {max / r:0}, torque at the peak {kw * made.PiecePower * 1000 / (peak / r / ConstructDrive.RpmPerRadS):0} N m")
+            Console.WriteLine(FormattableString.Invariant($"[press] engine {made.Piece.ToString().ToLowerInvariant()}: scale {rules.ScaleOf(made):0.###}{(made.Piece == EnginePiece.Cylinder ? FormattableString.Invariant($" by its bore {BoreOf(k):0.#} cm") : "")} (nearest {ConstructEngine.SizeNames[made.PieceSize]}), like {p.For(k).Like.Name}; ")
+                + (made.Piece == EnginePiece.Cylinder ? FormattableString.Invariant($"{kw * made.PiecePower:0.#} kW, stroke ratio {r:0.###}: on a crank of its across idle {idle / r:0} rpm, peak {peak / r:0}, limiter {max / r:0}, torque at the peak {kw * made.PiecePower * 1000 / (peak / r / ConstructDrive.RpmPerRadS):0} N m")
                     : made.Piece == EnginePiece.Crank ? FormattableString.Invariant($"a crank of it turns idle {idle:0} rpm, peak {peak:0}, limiter {max:0}{(rules.StarterAt(rules.ScaleOf(made)) ? "; it needs a starter" : "")}")
                     : FormattableString.Invariant($"feeds or boosts {kw:0.#} kW of cylinders whole")));
         }
