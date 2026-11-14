@@ -625,7 +625,7 @@ public sealed class FactoryShowcase : IPartGenerator
         private VPart WingCorner(Refined r)
         {
             On("Lay-down Pad", 102.25f, -10.75f, Front, "-y.0.0", Hazard);
-            var former = On("Airframe Former", 108.75f, -6.75f, Toward, paint: Wheels);
+            var former = On("Airframe Former", 107.25f, -6.75f, Toward, paint: Wheels); // (its die over the pad's east end: the wing grows west over the pad)
             ChuteVia(r.Steel, former, -13.95f); // (along the main floor's back edge, off the walkway)
             On("Military Loader Arm", 102.25f, -14.75f, Front, "-y.0.0");
             Sign(107.25f, Posts1, Wheels, "AIRFRAME FORMER: the wing drops on the pad; the arm fits it");
