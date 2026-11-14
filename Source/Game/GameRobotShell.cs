@@ -323,7 +323,7 @@ public sealed partial class Game
 
     public const double LinkHelmetSeconds = 0.8; // the helmet coming down
     public const double LinkGiveUpSeconds = ShellLinkSeconds + 2.0; // no shell by then (none free, out of reach): the helmet lifts
-    private double _lkFrom = -1, _lkWoke = -1, _lkLift = -1;
+    private double _lkFrom = -1, _lkWoke = -1, _lkLift = -1, _lkOut = -1;
     private bool _lkSpent, _lkWasShell;
 
     /// <summary>
@@ -350,14 +350,21 @@ public sealed partial class Game
             _lkWasShell = false;
             _lkWoke = -1;
             ref var h = ref SandboxHands.Hand(me.Id);
-            var inChair = h.SeatBody != 0 && Constructs.Get(h.SeatBody) is { } c && h.SeatPart < c.PartCount && c.Parts[h.SeatPart].D.ShellRange > 0;
+            var inChair = !OpeningActive && h.SeatBody != 0 && Constructs.Get(h.SeatBody) is { } c && h.SeatPart < c.PartCount && c.Parts[h.SeatPart].D.ShellRange > 0;
             if (!inChair)
             {
-                _lkSpent = false; // (they stood up: the next sit links again, as on the server)
+                if (_lkOut < 0)
+                    _lkOut = now;
+                if (now - _lkOut > 0.5)
+                    _lkSpent = false; // (they stood up: the next sit links again, as on the server; after a moment, since a client hears the seat back after the shell flag)
                 _lkFrom = _lkLift = -1;
             }
-            else if (!_lkSpent && _lkFrom < 0)
-                _lkFrom = now;
+            else
+            {
+                _lkOut = -1;
+                if (!_lkSpent && _lkFrom < 0)
+                    _lkFrom = now;
+            }
         }
         if (_lkWoke >= 0)
         {

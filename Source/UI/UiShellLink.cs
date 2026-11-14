@@ -21,8 +21,8 @@ public sealed partial class Ui
     private void DrawShellLink(Game game)
     {
         var now = Brutal.GlfwApi.Glfw.Time;
-        if (!game.ShellLinkView(now, out var helmet, out var dark))
-            return;
+        if (!game.ShellLinkView(now, out var helmet, out var dark) || PauseOpen || MenuOpen)
+            return; // (the Esc menu shows over it: the link-up goes on underneath)
         var size = ImGui.GetIO().DisplaySize;
         var dl = ImGui.GetForegroundDrawList();
         var black = new ImColor8(4, 5, 7, 255);
