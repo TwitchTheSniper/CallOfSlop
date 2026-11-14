@@ -210,7 +210,13 @@ public sealed partial class Game
         if ((flags & ChatFlags.System) != 0 && text.StartsWith(OfficeParts.Prefix, StringComparison.Ordinal))
             OfficeParts.Heard(text, ItDesk.Script?.From ?? ""); // (a fax's page, for its panel on this peer)
         else if ((flags & ChatFlags.System) != 0 && (text.StartsWith(OfficeParts.Inbox, StringComparison.Ordinal) || text.StartsWith(OfficeParts.Pc, StringComparison.Ordinal)))
-            OfficeParts.HeardInbox(text); // (a scammer's message, for the hooked computer's screen: GameSandboxScams.cs)
+        {
+            OfficeParts.ForgetStale();
+            if (!IsServer && !OfficeParts.HookKnown && text.StartsWith(OfficeParts.Inbox, StringComparison.Ordinal) && Local is { } me
+                && NearestOffice(OfficeKind.Computer, me.Position, ScamHearing) is ({ } pc, var pi))
+                OfficeParts.HeardAt(pc, pi, text); // (a computer the server hooked itself: GameColonyPc.cs)
+            OfficeParts.HeardInbox(text);
+        } // (a scammer's message, for the hooked computer's screen: GameSandboxScams.cs)
         Chat.Add(new ChatLine(now, from, name, text, flags, team));
         while (Chat.Count > ChatRules.Keep)
             Chat.RemoveAt(0);

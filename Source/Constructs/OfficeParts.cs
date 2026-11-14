@@ -150,9 +150,49 @@ public static class OfficeParts
     /// <summary>A client's player clicked an advert on this computer (a guess until the scammers write: the server may refuse).</summary>
     public static void Clicked(Construct c, int part, int slot)
     {
+        _hookGuessed = false;
         if (ScamDesk.Script is not { } desk || desk.AdvertAt(Seed(c.Parts[part], part), slot) is not (>= 0 and var ad))
             return;
         (_hookedBody, _hookedPart, _hookedScam, _inboxCount) = (c.Id, part, desk.Adverts[ad].Scam, 0);
+    }
+
+    /// <summary>This peer knows which computer is hooked (a client: the one its player clicked, or the one it heard from).</summary>
+    public static bool HookKnown => _hookedBody != ushort.MaxValue;
+
+    /// <summary>A guessed hook (<see cref="HeardAt"/>) is let go when no scammer has written for this long (ms): longer than the
+    /// colony computer's quiet between rounds, so a client that walked off while the host cured it sees the screen it should.</summary>
+    private const long GuessLasts = 150_000;
+
+    private static bool _hookGuessed;
+    private static long _inboxAtMs;
+
+    public static void ForgetStale() => ForgetStaleGuess();
+
+    private static void ForgetStaleGuess()
+    {
+        if (_hookGuessed && Environment.TickCount64 - _inboxAtMs > GuessLasts)
+        {
+            (_hookedBody, _hookedPart, _hookedScam, _inboxCount) = (ushort.MaxValue, -1, -1, 0);
+            _hookGuessed = false;
+        }
+    }
+
+    /// <summary>
+    /// A client heard a scammer's message with no advert clicked: the server hooked a computer itself (the duty desk's virus,
+    /// Game/GameColonyPc.cs). The nearest computer is taken for it, so its screen shows the pop-up as the host's does.
+    /// </summary>
+    public static void HeardAt(Construct c, int part, string text)
+    {
+        if (HookKnown || ScamDesk.Script is not { } desk || !text.StartsWith(Inbox, StringComparison.Ordinal))
+            return;
+        var body = text.AsSpan(Inbox.Length);
+        for (var s = 0; s < desk.Scams.Length; s++)
+            if (body.StartsWith(desk.Scams[s].From, StringComparison.Ordinal) && body[desk.Scams[s].From.Length..].StartsWith(": ", StringComparison.Ordinal))
+            {
+                (_hookedBody, _hookedPart, _hookedScam, _inboxCount) = (c.Id, part, s, 0);
+                _hookGuessed = true;
+                return;
+            }
     }
 
     /// <summary>A scammer's message arrived (every peer): kept for the screen. Allocates only when one arrives.</summary>
@@ -161,10 +201,12 @@ public static class OfficeParts
         if (text.StartsWith(Pc, StringComparison.Ordinal))
         {
             (_hookedBody, _hookedPart, _hookedScam, _inboxCount) = (ushort.MaxValue, -1, -1, 0); // (the scam is over)
+            _hookGuessed = false;
             return;
         }
         if (!text.StartsWith(Inbox, StringComparison.Ordinal))
             return;
+        _inboxAtMs = Environment.TickCount64;
         var body = text[Inbox.Length..];
         var colon = body.IndexOf(": ", StringComparison.Ordinal);
         if (colon > 0 && colon < 40 && ScamDesk.Script is { } desk && desk.Scams.Any(s => body.StartsWith(s.From + ": ", StringComparison.Ordinal)))
@@ -203,7 +245,9 @@ public static class OfficeParts
                 card.TouchLabels[t] = desk.AdvertAt(Seed(p, part), t) is (>= 0 and var ad) ? desk.Adverts[ad].Label : "";
         else
             Blank(card);
-        // Hooked: the host knows from the part; a client from the advert its player clicked here.
+        // Hooked: the host knows from the part; a client from the advert its player clicked here (or the computer it heard).
+        if (!Host)
+            ForgetStaleGuess();
         var scam = Host ? p.State - 1 : c.Id == _hookedBody && part == _hookedPart ? _hookedScam : -1;
         if (desk != null && scam >= 0 && scam < desk.Scams.Length)
         {

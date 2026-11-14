@@ -774,7 +774,7 @@ the source of truth, `--check-story` decides what is valid, and the read-only st
 - **beats**: a play's beats over the cast (`?me` among them; "Plays"), acted out as a play is, with bodies meeting.
   A play broken off gives the storylet up (it may come again after a minute).
 - **job**: `"Ministry of Slop: Breaking Rocks"` hands the player that faction job ("Jobs"). **hook**: something the game
-  starts: `lockdown` (the colony's lockdown, the player wanted), `depot` (the Orbital Depot's report memo, if the player hasn't had it yet: since 2026-11-13 the
+  starts: `lockdown` (the colony's lockdown, the player wanted), `pcvirus` (the duty desk's computer catches the Scammers' virus: "The duty desk" below), `depot` (the Orbital Depot's report memo, if the player hasn't had it yet: since 2026-11-13 the
   depot follows the first duty whatever the storylets do), `breakout`, and `errand:ID` (an errand on a works yard machine,
   Story/Errands: docs/story/DUTIES.md "Errands").
 - **ends**: the first that happens wins, each one of: `"when"` an event (a verb and roles, a variable of the storylet's
@@ -1133,3 +1133,25 @@ The Scammers (The Call Centre) live in the Computer's adverts. Code: `Source/Sto
   heard; a `[PC]` line ends it there.
 
 Its vehicles are the vehicle kit's Call Centre style (docs/vehiclekit/VEHICLEKIT.md, "The Call Centre style").
+
+### The duty desk
+
+A colony errand on the Scammers' virus (Karl, 2026-11-14; `Source/Game/GameColonyPc.cs`, the words in
+`Storylets/Colony.json`). Nobody says how to mend it: the hints are what people grumble about and what the machine says.
+
+- *The duty desk* (B): a guard (the most honest one free) says the duty desk machine has four thousand viruses "and not
+  to turn it off. So nobody has." Its end sets `Fixit` 1 and `Nag` 2 and starts the hook `pcvirus`: the Colony Barracks'
+  first Computer is hooked with the `support` scam (red screen, `[INBOX]` lines to whoever stands at it).
+- The colony's computer never gives up on its own: after its last message and 90 s it starts over.
+- The fix is physical. It has no switch; it runs off the barracks' Battery. Take the battery off with the attach tool
+  (the barracks is nobody's, so anyone may) and the Scammers' own cure clears it; fit it back (a fitted battery comes
+  charged) and it comes up clean. When it comes back on clean after its power was cut, each player with `Fixit` 1 within 15 m
+  gets `Fixit` 2 and a `Mend` event (a player elsewhere doesn't; nor does a cure the scammers were paid for). It
+  never faxes IT, however often it starts over.
+- *Off and on again* (B, once `Nag` has decayed, 20 minutes): a gossip says IT's answer to everything, that the machine
+  hasn't got a switch, and that "the lights go off when the box on the wall says so".
+- *Rotas by Thursday* (B, `Fixit` 2): thanks, Likes +10, Suspicion -1, `Fixit` 3. Paying the scammers instead (typing a
+  number at it: they take the battery and leave) gives `Fixit` 4 and *Battery's code*: Suspicion +1, `Fixit` 5.
+- A joined client hearing a scammer's message with no advert clicked takes the nearest computer for the hooked one
+  (`OfficeParts.HeardAt`), so its screen turns red as the host's does; the guess is let go after 150 s with no
+  message, so a client that walked off while it was cured sees it clean. Nothing new on the wire.

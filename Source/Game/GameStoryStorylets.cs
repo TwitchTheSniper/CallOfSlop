@@ -131,6 +131,9 @@ public sealed partial class Game
             case "breakout":
                 BreakoutStart(p); // (the convicts' night: GameBreakout.cs)
                 break;
+            case "pcvirus":
+                ColonyPcInfect(p); // (the duty desk's computer: GameColonyPc.cs)
+                break;
             default:
                 if (hook.StartsWith(StoryletRules.ErrandHook, StringComparison.Ordinal))
                     ErrandOffer(p, hook[StoryletRules.ErrandHook.Length..], now); // (a works yard machine: GameErrands.cs)

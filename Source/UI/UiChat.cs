@@ -40,6 +40,8 @@ public sealed partial class Ui
     private static readonly System.Numerics.Vector3 SayChat = new(1f, 0.92f, 0.76f), RadioChat = new(0.55f, 0.95f, 0.65f); // a story person's words, the radio
     public const double SpeechSeconds = 6; // a spoken line shows over its speaker's head this long
     private readonly bool[] _speechShown = new bool[256];
+    private int _talkPanelFor = -1; // the person the talk panel last showed (UiStoryTalk.cs), and when
+    private double _talkPanelAt = -10;
 
     /// <summary>Opens the chat line (Program, on the chat keys). Focus goes to the box a frame later (so the key's own character isn't typed).</summary>
     public void OpenChat(bool team)
@@ -119,9 +121,17 @@ public sealed partial class Ui
             if (ImGui.Begin("##hudchat"u8, Overlay))
             {
                 ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + width);
-                var first = Math.Max(0, Math.Min(lines.Count, chat.Count) - ChatHudLines);
-                for (var i = first; i < lines.Count && i < chat.Count; i++)
+                // A person's words said aloud aren't repeated here: they show over the speaker's head, or in the talk panel
+                // while you talk to them (Karl, 2026-11-14: one place each). The open chat box's history still has them.
+                var end = Math.Min(lines.Count, chat.Count);
+                var first = end;
+                for (var kept = 0; first > 0 && kept < ChatHudLines; first--)
+                    if (!SaidAloud(chat[first - 1]))
+                        kept++;
+                for (var i = first; i < end; i++)
                 {
+                    if (SaidAloud(chat[i]))
+                        continue;
                     var age = now - chat[i].Time;
                     if (age > ChatRules.ShowSeconds || age < -1)
                         continue;
@@ -143,6 +153,9 @@ public sealed partial class Ui
         DrawMicIndicator(world ?? game, now, s, pos, size);
     }
 
+    /// <summary>A line a person said aloud in the world (not the radio, not a system line): it shows over their head.</summary>
+    private static bool SaidAloud(in ChatLine c) => (c.Flags & ChatFlags.Say) != 0 && (c.Flags & (ChatFlags.Radio | ChatFlags.System)) == 0;
+
     /// <summary>
     /// Lines said aloud in the world (<see cref="ChatFlags.Say"/>: the story people's words) over their speaker's head for
     /// <see cref="SpeechSeconds"/>: the newest per speaker, fading out, within earshot. No allocations.
@@ -159,6 +172,8 @@ public sealed partial class Ui
                 break; // (older lines only get older)
             if ((c.Flags & ChatFlags.Say) == 0 || age < -1 || _speechShown[c.From] || !game.Players.TryGetValue(c.From, out var p) || !p.Alive)
                 continue;
+            if (c.From == _talkPanelFor && now - _talkPanelAt < 0.25)
+                continue; // (the person you're talking to: their words are in the talk panel, UiStoryTalk.cs)
             _speechShown[c.From] = true;
             var alpha = (float)Math.Clamp((SpeechSeconds - age) / 1.5, 0, 1);
             Hud.WorldLabel(GravityFrames.Above(p.Position, World.PlayerHeight + 0.75f), c.Text, _subRgb, alpha, SubtitlePx(15f), Game.StoryHearing); // (the story text's size and colour: UiSubtitles.cs)
