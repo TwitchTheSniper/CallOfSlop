@@ -990,7 +990,7 @@ public static class ConstructLogisticsPlan
         if (f.NoteText == null || f.NoteKey != key)
         {
             var end = f.Maker == NoPart || f.Dest >= c.PartCount ? -1 : EndsShort(c, f.Maker, f.Dest);
-            (f.NoteText, f.NoteKey) = ($"{ConstructParts.Get(f.Kind)?.Name} {f.Made}/{f.Asked} {(f.Maker == NoPart ? "from stock" : $"from the {c.DefOf(f.Maker).Name}")}{(held >= 0 ? $"; the {c.DefOf(held).Name} is held off by the wire into its Run (a line console stopped: press Start)" : "")}{(end >= 0 ? "; " + NoWayText(c, end, f.Dest) : "")}", key);
+            (f.NoteText, f.NoteKey) = ($"{ConstructParts.Get(f.Kind)?.Name} {f.Made}/{f.Asked} {(f.Maker == NoPart ? "from stock" : $"from the {c.DefOf(f.Maker).Name}")}{(held >= 0 ? $"; the {c.DefOf(held).Name} is held off: press Start on its line console" : "")}{(end >= 0 ? "; " + NoWayText(c, end, f.Dest) : "")}", key);
         }
         return f.NoteText;
     }

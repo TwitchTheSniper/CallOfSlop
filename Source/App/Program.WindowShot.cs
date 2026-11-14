@@ -396,6 +396,15 @@ public static unsafe partial class Program
         Construct? only = null; // ("NAME@bN": on body N, past the spawned blueprint; "NAME@w": the newest wrecked loose one of that name)
         if (spec.LastIndexOf("@b", StringComparison.Ordinal) is var ab and > 0 && ushort.TryParse(spec[(ab + 2)..], out var bid))
             (only, spec) = (g.Constructs.Get(bid), spec[..ab]);
+        else if (spec.EndsWith("@new", StringComparison.Ordinal)) // ("NAME@new": the newest body holding a part of that name, run 7: one just built by a test step)
+        {
+            spec = spec[..^4];
+            foreach (var b in g.Constructs.Bodies)
+                if ((only == null || b.Id > only.Id) && WsCount(b, spec.Trim()) > 0)
+                    only = b;
+            if (only == null)
+                return (null, -1);
+        }
         else if (spec.EndsWith("@w", StringComparison.Ordinal))
         {
             spec = spec[..^2];

@@ -1457,7 +1457,7 @@ public static class ConstructCrafting
                 o.Got = r.U16();
                 var state = r.U8();
                 o.Where = r.U16();
-                o.Note = r.Text(200);
+                o.Note = r.Text(255); // (the writer's Str cap: run 7, a row with two reasons lost its second on a client at 200)
                 int ln = r.U8();
                 o.LinesMore = r.U8();
                 if (ln > ConstructLogisticsPlan.MaxLines)
