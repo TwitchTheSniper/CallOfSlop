@@ -806,13 +806,20 @@ public sealed partial class Game
             Audio.Effect3DSmall(sfx, e.At, e.Volume, e.Range);
     }
 
+    /// <summary>
+    /// A map's text to this machine's player: the centre of the screen for a few seconds (Ui.cs), once. It was the feed's line
+    /// as well, which drew it twice. The same text again is shown again (a trailing space makes it a change, as Program.cs does).
+    /// </summary>
+    private void LogicNotice(string text)
+    {
+        LoadoutNotice = LoadoutNotice == text ? text + " " : text;
+        Console.WriteLine($"[logic] {text}");
+    }
+
     private void LogicNoticeTo(Player p, string text)
     {
         if (p.Id == LocalId)
-        {
-            LoadoutNotice = text;
-            Log(text, false);
-        }
+            LogicNotice(text);
         else if (p.Bot == null && !Net.IsOffline && GuidOf(p) is { } g)
         {
             _w.Begin(Msg.Logic).U8((byte)LogicMsgKind.Notice).Str(text);
@@ -1096,8 +1103,7 @@ public sealed partial class Game
                 break;
             }
             case LogicMsgKind.Notice when r.Has(1):
-                LoadoutNotice = r.Str();
-                Log(LoadoutNotice, false); // (the top right, as on the host: the loadout screen, where the notice shows, is mostly shut)
+                LogicNotice(r.Str());
                 break;
         }
     }
