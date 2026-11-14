@@ -136,6 +136,36 @@ FINISHED           the Works Runabout, built in the bay; a hand-ordered part in 
 - The self-test (not run, by the rules). Sections naming the changed code: "Building station", "Crafting terminal", "Smart logistics",
   "Press", "Assembling", "Conveyors" (`--selftest-list`). Conveyor speed doubled: any section that times a ride may need its numbers.
 
+## Seen in passing
+
+What the runs showed that they weren't testing. Not chased, except the first (fixed: its cause was certain and the fix one line).
+
+1. **Fixed.** Every Wheel, Fan and Airframe Former z-fought with the floor under it: the hopper arrow's centre arguments were swapped,
+   so it sat half in the floor. `--check-vehicle Constructs/Blueprints/FactoryShowcase.json` ("FAIL z-fighting ... Wheel Former [0.3 x
+   0.051 x 0.012 ...] share a +Y face plane"). `Source/PartKit/Generators/ExtrusionParts.cs:391`; the three part files regenerated.
+2. `[gl] error (high, id 1281): GL_INVALID_VALUE ... ObjectLabel: unknown buffer object` twice at every start (after `[props] meshes`
+   and after `[render] merged meshes ready`), on host and client; the same 0x501 is then reported as their own by `[foliage]`,
+   `[frenzyfx]` and `[terrain]` ("GL error 0x501 while setting up"). Any `--window-shot` on the Proving Ground; `callofslop.log`.
+   Guess: a debug label set on a buffer name before it is created (the props mesh upload and the merged-mesh renderer).
+3. Pictures from high up show two big blue boxes in front of the camera (the first-person hands drawn at the flying camera).
+   `--window-shot ... --at -30,70,-5 --look-at -30,0,-6`, scratch `p1_top.png`, `pic_overview.png`. Guess: the view model in the window
+   tool's noclip camera (`Program.WindowShot.cs`).
+4. `BlueprintScript.Config` writes any value: a refiner's `"recipe": "steel"` passed the generator and the loader refused the whole
+   blueprint ("steps[684]: \"recipe\" isn't a value a Workshop Foundry's recipe takes"). `--gen-parts factory_showcase`, then a window
+   run. Guess: `Source/VehicleKit/VehicleCore.cs` Config should parse through `ConstructConfig.ParseValues`.
+5. A link `BlueprintScript` lays is checked only against the parts placed before it: a sign post placed later in its path passed the
+   generator and the loader refused the blueprint ("links[56]: ... it would pass through the Frame Beam"). `--check-vehicle` on the
+   output. Guess: `VehicleCore.cs` Link; check every link again when the text is written.
+6. A line console shows idle orders-only makers as "Stopped" while its line runs ("Running 0/16", rows "Stopped no orders"): it reads
+   as held off. `panel Line Console#3` in any build run. Guess: `Source/Constructs/ProductionLines.cs` near 402 (a word like Waiting).
+7. The station's step allocates 262 KB in one tick at Start (its costing). `station measure`: "worst tick 262488 bytes". Guess:
+   `ConstructStation` costing (`StationPreview`, the cost slice).
+8. One Copper Coil order of 2 drew a round that pressed into about 20 coils a stroke (197 in all before the re-asking was fixed).
+   `stock Storage Volume#9` in run b26 ("Copper Coil x197"). Guess: the cable die's coil count scales with the blank in
+   `Constructs/Pressing.json` / `Pressed.cs`; worth a look whether a stroke should make what was ordered.
+9. `partinfo PART` printed an empty look line when the player stood far from the part, with no word why. `partinfo Workshop Foundry#1`
+   without `near` first (run b17). Guess: `Program.WindowShot.cs` partinfo should say "not in view".
+
 ## Open questions (with a recommendation)
 
 1. **The Fan Former** isn't in the flow. Recommendation: leave it out until a showcase product flies.

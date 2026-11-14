@@ -388,7 +388,7 @@ public sealed class ExtrusionParts : IPartGenerator
         p.Add(L([-0.612, 2.08, -0.762], [0.612, 2.19, -0.75], MachineLook.In));
         p.Add(L([0.6, 2.08, -0.75], [0.612, 2.19, -0.05], MachineLook.In));
         p.Add(L([-0.612, 2.08, -0.75], [-0.6, 2.19, -0.05], MachineLook.In));
-        MachineLook.Arrow(p, 2, -0.75, -1, 1, -1, 0, 1.8, 0.3, 0.3, MachineLook.In);
+        MachineLook.Arrow(p, 2, -0.75, -1, 1, -1, 1.8, 0, 0.3, 0.3, MachineLook.In); // (down into the hopper, under its rim: y 1.8, x 0. The two were swapped until 2026-11-14, so the arrow sat half in the floor at x 1.8, its top on the floor's plane)
         // The drive on the right: a dark motor and a guard.
         p.Add(L([0.6, 1.3, -0.6], [0.72, 1.9, -0.1], MachineLook.Base));
         p.Add(L([0.6, 0.2, -0.36], [0.63, 1.3, -0.3], MachineLook.Base));
