@@ -387,7 +387,16 @@ public static class VehicleKitCli
                     Console.WriteLine(own.ToString());
                     return own.Passed ? 0 : 1;
                 }
-        var report = VehicleChecks.Check(text, Path.GetFileName(file));
+        VehicleReport report;
+        try
+        {
+            report = VehicleChecks.Check(text, Path.GetFileName(file));
+        }
+        catch (Exception ex) when (ex is ConstructPartException or System.Text.Json.JsonException)
+        {
+            Console.WriteLine($"REFUSED {Path.GetFileName(file)}: {ex.Message}"); // (a bad blueprint is refused with its reason, not a crash)
+            return 1;
+        }
         Console.WriteLine(report.ToString());
         return report.Passed ? 0 : 1;
     }

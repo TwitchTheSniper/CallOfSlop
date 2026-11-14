@@ -16,7 +16,7 @@ public static partial class Program
     private static int _wsClipBodies, _wsClipLoose;
     private static bool _wsClipToolAsked;
 
-    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage";
+    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine";
 
     private static bool WsPlayVerb(Game g, Player me, string verb, string arg)
     {
@@ -210,6 +210,20 @@ public static partial class Program
                 var broke = g.Constructs.DamagePart(dc, dp, hp, out var dealt);
                 WsSay(string.Create(ci, $"damage: {name} (body {dc.Id} part {dp}): {dealt:0.#} dealt of {hp:0.#}, health {before:0.#} -> {(broke ? 0 : dc.Parts[dp].Health):0.#}{(broke ? ", wrecked or broken off" : "")}"));
                 _wsWait = 3;
+                return true;
+            }
+            case "makeengine": // "makeengine KW TIER [car|any]": the creative Engine tab's request (its MAKE call, without the placing ghost): "car" is the tab's Car bay ticked, the default
+            {
+                var bits = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (bits.Length < 2 || !int.TryParse(bits[0], out var kw) || !int.TryParse(bits[1], out var tier))
+                {
+                    WsFail($"makeengine KW TIER [car|any] (\"{arg}\")");
+                    return true;
+                }
+                var bay = bits.Length < 3 || bits[2] == "car" ? EngineKit.EngineKitVehicle.Bay : Vector3.Zero;
+                g.SandboxMakeEngine(kw, tier, default, default, -1, bay, 0);
+                WsSay(string.Create(ci, $"makeengine: asked for {kw} kW, tier {tier}, {(bay == Vector3.Zero ? "no bay" : $"the Car bay {bay.X:0.00} x {bay.Y:0.00} x {bay.Z:0.00} m")}"));
+                _wsWait = 10;
                 return true;
             }
             case "partlook":
