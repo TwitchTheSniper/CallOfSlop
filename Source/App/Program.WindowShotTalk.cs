@@ -164,6 +164,7 @@ public static partial class Program
                 WsEyeTo(g, me, spot + up * 1.4f);
                 g.LookFrame = me.Position;
                 (g.LookYaw, g.LookPitch) = GravityFrames.Curved ? GravityFrames.Angles(me.Position, spot - me.Eye) : (g.LookYaw, -1.2f);
+                WsGrabMouse();
                 _wsPress = GameAction.Interact;
                 _wsWait = 30;
                 WsSay($"[seat] {arg} part {part}, {Vector3.Distance(me.Eye, spot):0.0} m");
