@@ -442,3 +442,4 @@ The user, on bored cylinders making an engine weigh about twice a plain one: "bo
 - A wider bore in a cylinder of the same outer size is less metal: lighter, and easier to damage (less health).
 - Power follows the cylinder's size (bore and stroke), not a tier or a bored flag.
 - A bored engine is never heavier than the plain one of the same outer size.
+- Built 2026-11-14 (docs/sandbox/design/bored-cylinders-notes.md): a pressed cylinder's power follows its bore (across less both walls), a pressed engine piece weighs and holds its size's catalogue piece by metal, and the Engine Kit bores by thinning the wall. This replaces 6.3's "Mass, health: the blank's" row and its "about twice the steel" line for engine pieces.

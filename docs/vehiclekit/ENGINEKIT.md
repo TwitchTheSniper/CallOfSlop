@@ -91,28 +91,32 @@ leaves out "no fuel tank".
 | --- | --- | --- | --- |
 | 1 | Cylinder (x1) | Carburettor (x1) | - |
 | 2 | | Injector Rail (x1.2, x0.8 fuel) | - |
-| 3 | bored 1.13 times its crank (about x1.3) | | Supercharger (x1.25) |
-| 4 | bored 1.24 times (about x1.6) | | Turbo (x1.4, 1.5 s lag) |
-| 5 | bored 1.38 times (about x2) | | |
+| 3 | bored to about x1.3 (a thinner wall) | | Supercharger (x1.25) |
+| 4 | bored to about x1.6 | | Turbo (x1.4, 1.5 s lag) |
+| 5 | bored to about x2 | | |
 
-A tier may use every piece below it. **Bores** (sized parts phase 6): the Bored, Performance and Racing Cylinders are retired
-(design answer 8), so a tier 3 to 5 bore is a plain cylinder pressed wider than its crank's scale: its preset blank times the
-grade's ratio (`EngineKitParts.Grades`' `Bore`) on the 5 cm lattice, a Small one `pipe10 50x50x85`, `pipe10 55x55x95` or
-`pipe15 60x60x105` (x1.25, x1.54, x1.87 by `EngineRules.At`, a little under the old grades' for the lattice). Its fuel system and
-booster are pressed to the cylinder's scale too, rounded up, so the bank is never starved; its crank sections are its size's
-preset pressed longer when the bore is wider than the section (`solid 45x45x55` or `x65` for a Small one: the same across, so the
-same revs), and the plan's length grows with them. Bored pieces weigh their blanks, about twice the steel of a plain bank of the
-same power, so the kit picks them only where the plain pieces can't reach the power in the limits; a V, W or radial of wide bores
-is refused (the banks meet at the crank) and gives way to a flat or inline one. Samples (`--gen-engine`, seed 0, 2026-11-13):
+A tier may use every piece below it. **Bores** (bored cylinders, 2026-11-14; docs/sandbox/design/bored-cylinders-notes.md): the
+Bored, Performance and Racing Cylinders are retired (design answer 8), so a tier 3 to 5 bore is the plain cylinder's preset
+pressed with a thinner wall, the same across and length: a wider bore, more power, less metal (`EngineKit.BoredAt`: the thickest
+whole-cm wall that gives the grade's `Power`, else the thinnest that adds any). A Small one is `pipe8`, `pipe6` or `pipe4 45x45x75`
+(x1.30, x1.62, x1.98; 23.7, 18.7 and 13.1 kg against the plain 28, and 152, 120 and 84 hp against 180). A Medium preset's wall is
+already thin (its bore 0.78 of its across, the Small's 0.56), so a Medium or Large bore reaches about x1.33 to x1.37 at most. Its
+fuel system and booster are pressed to the cylinder's scale, rounded up, so the bank is never starved; the crank sections are
+pressed longer only when one of those is wider than the section (`solid 45x45x60` under a Small racing bank's 55 cm carburettor:
+the same across, so the same revs). Cylinders keep their across, so a V, W or radial of bores builds. A bored plan's score pays a
+little for the health it gives up (`0.1 x` the share lost), so the kit leans on it where it needs the power or the mass.
+Samples (`--gen-engine`, seed 0, 2026-11-14):
 
 | Request | Built |
 | --- | --- |
 | 300 kW, tier 1 | Small R8 (two cranks, four banks) 320 kW, 391 kg, 1.40 x 2.49 x 2.49 m |
-| 300 kW, tier 5 | Small V6 supercharged 300 kW, 385 kg (plain bores: lighter) |
-| 900 N m, tier 3 | Small R8 injected, supercharged, 480 kW, 917 N m, 455 kg |
-| 2000 kW, tier 4 | Small R32 injected, turbo, 2150 kW, 1531 kg, 4.4 x 3.0 x 3.0 m |
-| 2000 kW, tier 5 | Small B16 racing bore, injected, turbo, 1991 kW, 3857 kg, 5.6 x 4.4 x 0.9 m (pressed pieces) |
+| 300 kW, tier 5 | Small I3 racing bore, supercharged, 296 kW, 259 kg (before: V6 plain, 385 kg) |
+| 900 N m, tier 3 | Small W6 bored, supercharged, 469 kW, 895 N m, 385 kg (before: R8 plain, 455 kg) |
+| 2000 kW, tier 4 | Small R32 bored, injected, 2000 kW, 1374 kg (before: plain turbo, 1531 kg) |
+| 2000 kW, tier 5 | Small W21 performance bore, supercharged, 2006 kW, 967 kg (before: B16 of wide pressed bores, 3857 kg) |
 | 20000 kW, tier 2 | Medium W21 20.2 MW, 20.6 t, 15.6 x 10 x 6.8 m |
+| 20000 kW, tier 5, Medium | Medium B14 bored, turbo, 19.8 MW, 13.4 t (before: W15 plain, 15.7 t) |
+| 500 kW under 300 kg, tier 5 | Small V4 racing bore, turbo, 522 kW, 265 kg (before: 269 kW, "short of 500 kW") |
 | 500 kW under 300 kg, tier 1 | Small V4 160 kW, with "160 kW is short of 500 kW: the most within the limits at this tier" |
 | 120 kW inline in 2.5 x 0.8 x 1.6 m | Small I3 120 kW at 1.70 m high, with "nothing ... meets the limits; nearest" (an inline's bank and the flywheel under the crank need 1.7 m) |
 
