@@ -4,13 +4,15 @@
   "description": "The Ministry of Slop's guard barracks beside the penal colony: the guardroom, and the dormitory up a wide stair.",
   "steps": [
     {
-      "part": "Concrete Foundation 4x4 m"
+      "part": "Concrete Foundation 4x4 m",
+      "finish": "lino"
     },
     {
       "part": "Concrete Foundation 4x4 m",
       "on": 0,
       "socket": "k0",
-      "by": "f0"
+      "by": "f0",
+      "finish": "lino"
     },
     {
       "part": "Concrete Wall Corner",
@@ -71,7 +73,7 @@
       "socket": "t0_0",
       "by": "b0_0",
       "paint": "#858179",
-      "finish": "concrete"
+      "finish": "lino"
     },
     {
       "part": "Concrete Wide Stair Floor",
@@ -80,7 +82,7 @@
       "by": "b0_0",
       "spin": 3,
       "paint": "#858179",
-      "finish": "concrete"
+      "finish": "lino"
     },
     {
       "part": "Concrete Wide Stair 3 m",

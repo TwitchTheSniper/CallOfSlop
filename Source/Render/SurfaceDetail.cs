@@ -153,38 +153,42 @@ public static unsafe class SurfaceDetail
     private static Rgba Grime(float u, float v) =>
         new(Contrast(Fbm(u, v, 20, 2, 4, 61), 1.8f), Fbm(u, v, 10, 10, 3, 62), Contrast(Fbm(u, v, 3, 3, 4, 63), 1.4f), Fbm(u, v, 48, 48, 2, 64));
 
-    // Board-marked concrete, the Ministry's: 24 boards up a repeat (15 cm on a 3.6 m tile), each a run of 1.8 m with its butt joint
-    // staggered, the wood's grain printed in it, a ridge where two boards met, tie holes on a 60 cm grid and blowholes.
+    // Board-marked concrete, the Ministry's: 24 boards up a repeat (15 cm on a 3.6 m tile) in form panels 1.2 m square (three
+    // across, eight boards up), their joints lined up: a fine ridge where two boards met, a stronger line where two panels did,
+    // the wood's grain printed in, tie holes on a 60 cm grid and a few small blowholes.
     private static Rgba Board(float u, float v, float px)
     {
         const int rows = 24;
         var bv = v * rows;
         var row = (int)MathF.Floor(bv);
         var fv = bv - row;
-        var stagger = Hash(row, 0, 11);
-        var bu = u * 2f + stagger; // two runs a repeat
-        var seg = Mod((int)MathF.Floor(bu), 2);
-        var fu = bu - MathF.Floor(bu);
-        var tone = (Hash(row, seg, 12) - 0.5f) * 0.07f;
+        var pu3 = u * 3f; // three panels across
+        var panelX = (int)MathF.Floor(pu3);
+        var fu = pu3 - panelX;
+        var panelY = row / 8;
+        var tone = (Hash(row, panelX, 12) - 0.5f) * 0.05f + (Hash(panelX, panelY, 18) - 0.5f) * 0.06f;
         var grain = Fbm(u, v, 3, rows * 5, 3, 13) - 0.5f;
         var rings = MathF.Sin((fv * 5f + (Fbm(u, v, 5, rows, 2, 14) - 0.5f) * 9f) * MathF.PI) * 0.5f;
         var pv = px * rows; // a texel in board heights
-        var joint = 1f - Smooth(0.4f * pv, 1.6f * pv, MathF.Min(fv, 1f - fv));
-        var pu = px * 2f;
-        var butt = 1f - Smooth(0.4f * pu, 1.4f * pu, MathF.Min(fu, 1f - fu));
+        var joint = 1f - Smooth(0.3f * pv, 1.2f * pv, MathF.Min(fv, 1f - fv));
+        var pb = bv - MathF.Floor(bv / 8f) * 8f; // boards up a panel
+        var pjoint = 1f - Smooth(0.5f * pv, 1.6f * pv, MathF.Min(pb, 8f - pb));
+        var pu = px * 3f;
+        var vjoint = 1f - Smooth(0.5f * pu, 1.6f * pu, MathF.Min(fu, 1f - fu));
+        var seam = MathF.Max(pjoint, vjoint);
         var blot = Fbm(u, v, 3, 3, 4, 15) - 0.5f;
         var lime = Fbm(u, v, 12, 12, 3, 17) - 0.5f; // the pour's own cloudiness, across the boards
-        var pit = Pits(u, v, 46, 0.0022f, 0.22f, 16);
+        var pit = Pits(u, v, 46, 0.0016f, 0.12f, 16);
         // Tie holes, 6 by 6 (60 cm), each a dark hole in a plug a little paler than the wall.
         float tx = u * 6f, ty = v * 6f;
         var dx = (tx - MathF.Floor(tx) - 0.5f) / 6f;
         var dy = (ty - MathF.Floor(ty) - 0.5f) / 6f;
         var d = MathF.Sqrt(dx * dx + dy * dy);
-        var hole = 1f - Smooth(0.0024f, 0.0024f + px * 1.2f, d);
-        var plug = (1f - Smooth(0.0055f, 0.0055f + px, d)) * (1f - hole);
-        var r = 0.5f + tone + grain * 0.05f + rings * 0.025f + blot * 0.2f + lime * 0.08f - joint * 0.08f - butt * 0.05f - pit * 0.18f - hole * 0.3f + plug * 0.05f;
-        var g = 0.5f + grain * 0.18f + rings * 0.06f + joint * 0.28f - butt * 0.2f - pit * 0.42f - hole * 0.5f;
-        var b = MathF.Max(MathF.Max(joint * 0.45f, butt * 0.6f), MathF.Max(pit * 0.8f, hole));
+        var hole = 1f - Smooth(0.0022f, 0.0022f + px * 1.2f, d);
+        var plug = (1f - Smooth(0.005f, 0.005f + px, d)) * (1f - hole);
+        var r = 0.5f + tone + grain * 0.045f + rings * 0.02f + blot * 0.18f + lime * 0.07f - joint * 0.06f - seam * 0.1f - pit * 0.12f - hole * 0.28f + plug * 0.05f;
+        var g = 0.5f + grain * 0.16f + rings * 0.05f + joint * 0.22f + pjoint * 0.1f - vjoint * 0.25f - pit * 0.35f - hole * 0.5f;
+        var b = MathF.Max(MathF.Max(joint * 0.3f, seam * 0.55f), MathF.Max(pit * 0.6f, hole));
         return new(r, g, b, 0f);
     }
 
@@ -205,10 +209,10 @@ public static unsafe class SurfaceDetail
         var grit = Fbm(u, v, 128, 128, 2, 35) - 0.5f;
         var stain = Fbm(u, v, 3, 3, 4, 32) - 0.5f;
         var (f1, f2, cell) = Worley(u, v, 5, 33);
-        var crack = (1f - Smooth(0.15f * px, 1.3f * px, f2 - f1)) * (Hash(cell, 1, 34) < 0.35f ? 1f : 0f) * Smooth(0.45f, 0.6f, Fbm(u, v, 6, 6, 2, 36));
+        var crack = (1f - Smooth(0.15f * px, 1.1f * px, f2 - f1)) * (Hash(cell, 1, 34) < 0.25f ? 1f : 0f) * Smooth(0.45f, 0.6f, Fbm(u, v, 6, 6, 2, 36));
         var (s1, _, sc) = Worley(u, v, 7, 37);
-        var spot = Hash(sc, 2, 38) < 0.12f ? (1f - Smooth(0.015f, 0.05f, s1 + (Fbm(u, v, 24, 24, 2, 39) - 0.5f) * 0.05f)) * 0.7f : 0f;
-        return new(0.5f + broom * 0.08f + grit * 0.08f + stain * 0.22f - crack * 0.3f - spot * 0.18f,
+        var spot = Hash(sc, 2, 38) < 0.06f ? (1f - Smooth(0.015f, 0.05f, s1 + (Fbm(u, v, 24, 24, 2, 39) - 0.5f) * 0.05f)) * 0.7f : 0f;
+        return new(0.5f + broom * 0.08f + grit * 0.08f + stain * 0.13f - crack * 0.16f - spot * 0.12f,
             0.5f + broom * 0.25f + grit * 0.15f - crack * 0.5f, MathF.Max(crack, spot * 0.5f), 0f);
     }
 
@@ -226,8 +230,8 @@ public static unsafe class SurfaceDetail
         var peel = Fbm(u, v, 64, 64, 2, 51) - 0.5f;
         var blot = Fbm(u, v, 3, 3, 3, 53) - 0.5f;
         var m = Fbm(u, v, 6, 6, 5, 52);
-        var chip = Smooth(0.635f - px * 4f, 0.635f + px * 4f, m);
-        var rim = Smooth(0.6f, 0.635f, m) * (1f - chip);
+        var chip = Smooth(0.665f - px * 4f, 0.665f + px * 4f, m);
+        var rim = Smooth(0.635f, 0.665f, m) * (1f - chip);
         return new(0.5f + peel * 0.05f + blot * 0.07f - rim * 0.08f, 0.5f + 0.15f * (1f - chip) + peel * 0.08f, rim * 0.5f, chip);
     }
 
@@ -254,7 +258,7 @@ public static unsafe class SurfaceDetail
         float fu = tu - cx, fv = tv - cy;
         var edge = MathF.Min(MathF.Min(fu, 1f - fu), MathF.Min(fv, 1f - fv));
         var seam = 1f - Smooth(px * 4f * 0.5f, px * 4f * 1.5f, edge);
-        var check = ((cx + cy) & 1) == 0 ? 0.42f : 0.58f;
+        var check = ((cx + cy) & 1) == 0 ? 0.455f : 0.545f;
         var warp = Fbm(u, v, 4, 4, 2, 57);
         var marble = Fbm(u + warp * 0.08f, v, 6, 6, 4, 58) - 0.5f;
         var scuff = Fbm(u, v, 40, 3, 2, 59) - 0.5f;

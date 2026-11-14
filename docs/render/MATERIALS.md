@@ -64,7 +64,9 @@ and nothing is licensed, so a layer is changed in that file). `--surface-detail 
   over the tile).
 - **Mapped in the body**, not the box: the vertex shaders hand `SurfaceLit` the point and face normal in the body (`vBody`,
   `vBodyN`) and the world's up in the box (`vUpL`), so boards and blotches run on across a wall of separate pieces, stay on a
-  moving body, and v runs up a wall. The per-box draw knows no body and maps in the box. Props map in the world.
+  moving body, and v runs up a wall. That is the merged path (a body's static boxes, so every building); the per-box
+  draw and the instanced batch (moving, lit and loose parts, whose matrices are world ones from the render origin) map in the box,
+  so nothing slides on a moving hull or far from the map's middle. Props map in the world.
 - **Bumps**: two more taps of the height along the texture's own world axes (a frame from the derivatives), with a step of at least
   a texel and the pixel, so joints and holes catch the light on Medium too and fade with the mip.
 - **Weather** (any row with `"weather"`, on box faces): rain streaks hanging from the box's top (grime R, stretched 3 by 6 m),

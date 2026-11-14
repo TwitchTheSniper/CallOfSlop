@@ -44,9 +44,9 @@
     { "name": "soot", "category": "Other", "rough": 0.95, "metal": 0.1, "tint": 0.35, "colour": "#1d1c1b", "pattern": "speckle", "scale": 16, "amount": 0.4, "wear": 0.3, "wearColour": "#3a3836", "rust": 0.8 },
     { "name": "precast concrete", "category": "Stone", "rough": 0.88, "wear": 0.4, "wearColour": "#c8c4ba", "rust": 0.6, "texture": "precast concrete", "textureTop": "slab", "tile": 2.4, "weather": 0.6 },
     { "name": "ceramic tiles", "category": "Stone", "rough": 0.22, "wear": 0.2, "wearColour": "#9d998f", "rust": 0.3, "texture": "tiles", "tile": 1.2, "weather": 0.25 },
-    { "name": "lino", "category": "Other", "rough": 0.5, "wear": 0.3, "wearColour": "#6e6a62", "rust": 0.4, "texture": "lino", "tile": 1.2, "weather": 0.3 },
+    { "name": "lino", "category": "Other", "rough": 0.5, "wear": 0.3, "wearColour": "#6e6a62", "rust": 0.4, "texture": "precast concrete", "textureTop": "lino", "tile": 1.2, "weather": 0.3 },
     { "name": "brickwork", "category": "Stone", "rough": 0.9, "wear": 0.3, "wearColour": "#b5afa3", "rust": 0.5, "texture": "brick", "tile": 0.9, "weather": 0.6 },
-    { "name": "terrazzo", "category": "Stone", "rough": 0.3, "wear": 0.2, "wearColour": "#c9c4b8", "rust": 0.3, "texture": "terrazzo", "tile": 1.0, "weather": 0.2 }
+    { "name": "terrazzo", "category": "Stone", "rough": 0.3, "wear": 0.2, "wearColour": "#c9c4b8", "rust": 0.3, "texture": "precast concrete", "textureTop": "terrazzo", "tile": 1.0, "weather": 0.2 }
   ],
   "rules": [
     { "glass": true, "surface": "glass" },

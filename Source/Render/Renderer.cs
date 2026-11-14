@@ -540,8 +540,10 @@ public sealed unsafe partial class Renderer
                     vSize = vec3(length(iM0.xyz), length(iM1.xyz), length(iM2.xyz));
                     vLocal = aPos * vSize;
                     vLocalN = aNormal;
-                    vBody = (inst * vec4(aPos, 1.0)).xyz;
-                    vBodyN = mat3(inst) * aNormal;
+                    // (the batch's instances are world matrices from the render origin, not body ones: a moving or far box would
+                    // slide through its texture, so this path maps in the box, as a lone draw does; merged bodies map in the body)
+                    vBody = vLocal;
+                    vBodyN = aNormal;
                     vUpL = vec3(model[0].y, model[1].y, model[2].y) / max(vSize, vec3(1e-6));
                     vColorI = iColor;
                     vModeI = iModeLayer.x;

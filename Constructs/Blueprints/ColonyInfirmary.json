@@ -4,13 +4,15 @@
   "description": "The penal colony's infirmary: triage at the door, a ward of iron beds and the medicine cabinet.",
   "steps": [
     {
-      "part": "Concrete Foundation 4x4 m"
+      "part": "Concrete Foundation 4x4 m",
+      "finish": "terrazzo"
     },
     {
       "part": "Concrete Foundation 4x4 m",
       "on": 0,
       "socket": "k0",
-      "by": "f0"
+      "by": "f0",
+      "finish": "terrazzo"
     },
     {
       "part": "Concrete Door Corner",

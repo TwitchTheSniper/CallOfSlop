@@ -260,16 +260,19 @@ public static class Surfaces
                 vec2 sc = vec2(3.0, 6.0);
                 vec4 gs = SurfTex(buv / sc, 0.0, bdx / sc, bdy / sc);
                 vec4 gm = SurfTex(buv / 11.0 + 0.37, 0.0, bdx / 11.0, bdy / 11.0);
-                float dirt = cav * 0.5;
+                float dirt = cav * 0.35;
                 if (abs(lu) < 0.7)
                 {
-                    dirt += smoothstep(0.55, 0.95, gs.r) * (0.12 + 0.55 * exp(-hTop / 1.2));
-                    dirt += (1.0 - smoothstep(0.0, 0.3 + 0.4 * gs.g, hBot)) * 0.6;
+                    // Streaks in patches (the 11 m layer's own streaks pick where), light, and gone within a metre or so.
+                    float spots = smoothstep(0.35, 0.7, gm.r);
+                    dirt += smoothstep(0.55, 0.95, gs.r) * spots * 0.6 * exp(-hTop / 1.1);
+                    dirt += (1.0 - smoothstep(0.0, 0.3 + 0.4 * gs.g, hBot)) * 0.55;
                 }
                 else if (lu > 0.7)
-                    dirt += smoothstep(0.45, 0.85, gm.g) * 0.5;
+                    dirt += smoothstep(0.5, 0.85, gm.g) * 0.3;
+                weather *= smoothstep(0.2, 0.6, 2.0 * min(hs.x, hs.y)); // (none on posts, rails and trims)
                 dirt = clamp(dirt * weather, 0.0, 1.0);
-                albedo *= 1.0 + (gm.b - 0.5) * 0.45 * weather;
+                albedo *= 1.0 + (gm.b - 0.5) * 0.6 * weather;
                 albedo = mix(albedo, albedo * vec3(0.45, 0.43, 0.40), dirt);
                 rough = mix(rough, 0.95, dirt * 0.5);
             }
