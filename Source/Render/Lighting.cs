@@ -317,6 +317,7 @@ public static unsafe class Lighting
             Programs.Add(program.Id);
         LightGrid.Register(program); // the baked light's block and textures (LightGrid.cs)
         SurfaceGpu.Register(program); // the shared material table (Surfaces.cs)
+        SurfaceDetail.Register(program); // the materials' detail textures (SurfaceDetail.cs)
         Send(program.Id, Current);
         // A neutral sky until the first SetFog, so menus drawn before any map (gun previews) aren't tinted.
         Native.glUniform3f(Loc(program.Id, "uFog\0"u8), DefaultSky.X, DefaultSky.Y, DefaultSky.Z);

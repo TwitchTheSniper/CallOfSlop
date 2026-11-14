@@ -24,6 +24,9 @@ public sealed unsafe partial class Renderer
         out vec3 vLocal;       // the point in the box, metres from its middle (a material's detail stays on a moving part)
         out vec3 vLocalN;      // the box's own face normal
         flat out vec3 vSize;   // the box's size (a material's edge wear)
+        out vec3 vBody;        // the point in the body (a material's detail texture runs on across boxes): this draw knows no body, so the box
+        flat out vec3 vBodyN;
+        flat out vec3 vUpL;    // the world's up in the box (a material's weather)
         void main()
         {
             vWorld = (uModel * vec4(aPos, 1.0)).xyz + uOrigin;
@@ -31,6 +34,9 @@ public sealed unsafe partial class Renderer
             vSize = vec3(length(uModel[0].xyz), length(uModel[1].xyz), length(uModel[2].xyz));
             vLocal = aPos * vSize;
             vLocalN = aNormal;
+            vBody = vLocal;
+            vBodyN = aNormal;
+            vUpL = vec3(uModel[0].y, uModel[1].y, uModel[2].y) / max(vSize, vec3(1e-6));
             gl_Position = uMVP * vec4(aPos, 1.0);
         }
         """;
@@ -45,6 +51,9 @@ public sealed unsafe partial class Renderer
         in vec3 vLocal;
         in vec3 vLocalN;
         flat in vec3 vSize;
+        in vec3 vBody;
+        flat in vec3 vBodyN;
+        flat in vec3 vUpL;
         uniform vec4 uColor;
         uniform float uMode;
         uniform float uLayer;
@@ -112,7 +121,7 @@ public sealed unsafe partial class Renderer
             // Hemisphere ambient + sun, plus a little rim light on the sides so box edges read.
             float rim = 0.12 * (1.0 - abs(n.y));
             if (uSurfQ.x > 0.5 && uLayer >= 7.0 && uMode < 0.5) // a shared material (Surfaces.cs); Low, the rows of the old textures and everything else: the classic light
-                col = SurfaceLit(col, n, vWorld, vLocal, vLocalN, vSize, uLayer) + col * rim * 0.5 * gLitAmb;
+                col = SurfaceLit(col, n, vWorld, vLocal, vLocalN, vSize, uLayer, vBody, vBodyN, normalize(vUpL)) + col * rim * 0.5 * gLitAmb;
             else
                 col = ApplyLightAt(col, n, 0.0, vWorld) + col * rim * gLitAmb;
             // Distance haze towards the sky colour, so big maps fade out instead of ending abruptly.
@@ -515,18 +524,25 @@ public sealed unsafe partial class Renderer
                 out vec3 vLocal;
                 out vec3 vLocalN;
                 flat out vec3 vSize;
+                out vec3 vBody;
+                flat out vec3 vBodyN;
+                flat out vec3 vUpL;
                 out vec4 vColorI;
                 flat out float vModeI;
                 flat out float vLayerI;
                 void main()
                 {
-                    mat4 model = uBody * mat4(iM0, iM1, iM2, iM3);
+                    mat4 inst = mat4(iM0, iM1, iM2, iM3);
+                    mat4 model = uBody * inst;
                     vec4 w = model * vec4(aPos, 1.0);
                     vWorld = w.xyz + uOrigin;
                     vNormal = mat3(model) * aNormal;
                     vSize = vec3(length(iM0.xyz), length(iM1.xyz), length(iM2.xyz));
                     vLocal = aPos * vSize;
                     vLocalN = aNormal;
+                    vBody = (inst * vec4(aPos, 1.0)).xyz;
+                    vBodyN = mat3(inst) * aNormal;
+                    vUpL = vec3(model[0].y, model[1].y, model[2].y) / max(vSize, vec3(1e-6));
                     vColorI = iColor;
                     vModeI = iModeLayer.x;
                     vLayerI = iModeLayer.y;
