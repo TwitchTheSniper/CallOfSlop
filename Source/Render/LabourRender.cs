@@ -164,18 +164,24 @@ public static class LabourRender
             var lod = d2 < DetailRange * DetailRange ? (byte)4 : d2 < FullRange * FullRange ? (byte)3 : d2 < MidRange * MidRange ? (byte)2 : (byte)1;
             var every = d2 < EveryFrame * EveryFrame ? 0 : lod >= 3 ? NearEvery : lod == 2 ? MidEvery : FarEvery;
             // An incident (GameLabourIncidents.cs): the gang's place stands still while it plays; who is in it moves every frame.
+            // After one it carries on from where it stood (the time it stood is lost, the same on every PC).
             var inc = alarm ? LabourIncidentKind.None : game.LabourIncident[f.Scene];
             var it = 0f;
-            var tAt = t;
+            var tAt = t - game.LabourIncidentLost[f.Scene];
             if (inc != LabourIncidentKind.None)
             {
                 var from = game.LabourIncidentTick[f.Scene] / (double)World.TickRate;
                 it = (float)(raw - from);
-                if (it < 0 || it >= Game.IncidentSeconds(inc))
+                if (it < 0)
                     inc = LabourIncidentKind.None;
+                else if (it >= Game.IncidentSeconds(inc))
+                {
+                    tAt -= Game.IncidentSeconds(inc);
+                    inc = LabourIncidentKind.None;
+                }
                 else
                 {
-                    tAt = Math.Min(t, from - _paused);
+                    tAt = Math.Min(tAt, from - _paused - game.LabourIncidentLost[f.Scene]);
                     if (lod >= 2 && InIncident(f, s, inc, game.LabourIncidentSlot[f.Scene]))
                         every = 0;
                 }

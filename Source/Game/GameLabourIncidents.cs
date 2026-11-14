@@ -31,6 +31,8 @@ public sealed partial class Game
     public readonly LabourIncidentKind[] LabourIncident = new LabourIncidentKind[LabourScenesMax];
     public readonly byte[] LabourIncidentSlot = new byte[LabourScenesMax];
     public readonly uint[] LabourIncidentTick = new uint[LabourScenesMax];
+    /// <summary>Each scene's time stood still in its incidents so far (s, both sides, from the ticks): its gang carries on from where it stopped.</summary>
+    public readonly double[] LabourIncidentLost = new double[LabourScenesMax];
     private double _liNext = 60, _liThenAt = double.PositiveInfinity;
     private int _liThenScene = -1;
     private PacketWriter? _liW;
@@ -52,12 +54,15 @@ public sealed partial class Game
         _ => 10.5f,
     };
 
-    /// <summary>Which incidents a gang of that kind can have (none for those that walk off, sit or eat).</summary>
+    /// <summary>
+    /// Which incidents a gang of that kind can have: none for those that walk (the host knows only a march's first point, not
+    /// where the column is), sit or eat; no scuffle in a queue (its places turn round, so two numbers apart aren't neighbours).
+    /// </summary>
     public static bool IncidentFits(LabourIncidentKind i, in LabourScene s) => s.Guards > 0 && i switch
     {
-        LabourIncidentKind.Collapse => s.Kind is LabourKind.RollCall or LabourKind.Queue or LabourKind.Stand or LabourKind.Shovel or LabourKind.Pick or LabourKind.Hammer or LabourKind.March,
-        LabourIncidentKind.Scuffle => s.Inmates >= 2 && s.Kind is LabourKind.RollCall or LabourKind.Queue or LabourKind.Stand or LabourKind.Huddle,
-        LabourIncidentKind.Search => s.Kind is LabourKind.RollCall or LabourKind.Queue or LabourKind.Stand or LabourKind.Huddle or LabourKind.March,
+        LabourIncidentKind.Collapse => s.Kind is LabourKind.RollCall or LabourKind.Queue or LabourKind.Stand or LabourKind.Shovel or LabourKind.Pick or LabourKind.Hammer,
+        LabourIncidentKind.Scuffle => s.Inmates >= 2 && s.Kind is LabourKind.RollCall or LabourKind.Stand or LabourKind.Huddle,
+        LabourIncidentKind.Search => s.Kind is LabourKind.RollCall or LabourKind.Queue or LabourKind.Stand or LabourKind.Huddle,
         _ => false,
     };
 
@@ -71,7 +76,8 @@ public sealed partial class Game
     {
         if (_liThenScene >= 0 && now >= _liThenAt)
         {
-            IncidentSay(_liThenScene, then: true, now);
+            if (!ColonyAlarmOn) // (the siren has the colony's attention now)
+                IncidentSay(_liThenScene, then: true, now);
             _liThenScene = -1;
         }
         if (now < _liNext || LabourCount == 0 || ColonyAlarmOn || LabourIncidents.Current.Problem.Length > 0)
@@ -119,8 +125,9 @@ public sealed partial class Game
     {
         ref readonly var g = ref LabourScenes[scene];
         var slot = g.Inmates <= 1 ? 0 : _rng.Next(kind == LabourIncidentKind.Scuffle ? g.Inmates - 1 : g.Inmates);
-        if (g.Kind == LabourKind.Queue && slot == 0 && g.Inmates > 2)
-            slot = 1; // (not the one at the front, who is about to go round)
+        if (kind == LabourIncidentKind.Scuffle && g.Kind == LabourKind.RollCall && slot % 5 == 4)
+            slot--; // (the two side by side in one rank: the roll call's ranks are five wide, LabourRender.Place)
+        IncidentLose(scene, ServerTick);
         LabourIncident[scene] = kind;
         LabourIncidentSlot[scene] = (byte)slot;
         LabourIncidentTick[scene] = ServerTick;
@@ -203,13 +210,26 @@ public sealed partial class Game
         var tick = r.U32();
         if (scene >= LabourScenesMax || kind >= (byte)LabourIncidentKind.Count)
             return;
+        IncidentLose(scene, tick);
         LabourIncident[scene] = (LabourIncidentKind)kind;
         LabourIncidentSlot[scene] = slot;
         LabourIncidentTick[scene] = tick;
     }
 
+    /// <summary>Both sides, as a new incident begins at <paramref name="tick"/>: the time the scene's last one stood still is lost.</summary>
+    private void IncidentLose(int scene, uint tick)
+    {
+        if (LabourIncident[scene] is not (var old and not LabourIncidentKind.None) || tick <= LabourIncidentTick[scene])
+            return;
+        LabourIncidentLost[scene] += Math.Min(IncidentSeconds(old), (tick - LabourIncidentTick[scene]) / (double)World.TickRate);
+    }
+
     /// <summary>Both sides, a new gang list: no incidents.</summary>
-    private void IncidentsClear() => Array.Clear(LabourIncident);
+    private void IncidentsClear()
+    {
+        Array.Clear(LabourIncident);
+        Array.Clear(LabourIncidentLost);
+    }
 }
 
 /// <summary>

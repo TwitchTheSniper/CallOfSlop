@@ -60,20 +60,23 @@ always somewhere; a post's gang that is off shift has no place, `LabourSceneOf`)
 ## Incidents
 
 Now and then something happens in a gang in front of you (Karl, 2026-11-14: make the colony interesting). Shown, not
-told: the gang's place stands still while it plays (a walking file halts, a queue stops shuffling), the others turn
-their heads, and the guard says one thing to those within 22 m, then a second.
+told: the gang's place stands still while it plays (a queue stops shuffling, the sergeant stops calling), the others
+turn their heads, and the guard says one thing to those within 22 m, then a second. Afterwards the gang carries on from
+where it stood (each scene keeps the time lost, the same on every PC from the incidents' ticks), so nobody jumps.
 
 - **Collapse** (21 s): one inmate goes to their knees and sits slumped in the snow, rocking; the guard walks over and
   stands over them pointing ("On your feet."); they get up and the gang goes on. Roll call, queues, standing, shovels,
-  picks, hammers and the march.
+  picks and hammers.
 - **Scuffle** (17 s): two side by side turn and shove each other; the guard comes between them, and they stand with
-  hands on heads until let go. Roll call, queues, standing and huddles (two or more inmates).
+  hands on heads until let go. Roll call (two in one rank), standing and huddles (two or more inmates); not queues, whose
+  places turn round, so two numbers apart may not be neighbours.
 - **Search** (17 s): the guard walks up, pats one down (arms out), holds something up to the light, pockets it.
-  Roll call, queues, standing, huddles and the march.
+  Roll call, queues, standing and huddles.
 - **When:** the host looks every 2 s; once 75 to 140 s have passed since the last (60 s after the colony stands), it
   picks for one player the nearest gang within 24 m in front of them (dot 0.55) that is on shift, has a guard, has no
-  story person working in it and isn't already in one. Never during the alarm (the break-out) or in the opening's
-  scenes.
+  story person working in it and isn't already in one. Never during the alarm (the break-out, nor its second line) or
+  in the opening's scenes. Walking gangs have none: the host knows a march by its first point only, not where the
+  column is.
 - **The guards' words** are `Story/Labour/Incidents.json` (`call-of-slop-incidents/1`): per kind a "first" list and a
   "then" list, one line picked by the incident's tick, 1 to 100 ASCII characters. The speaker is "Sergeant" at the roll
   call, "Foreman" for a foreman's gang, else "Officer". A bad file is refused with a `[labour]` line and there are no

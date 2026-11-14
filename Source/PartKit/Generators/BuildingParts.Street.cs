@@ -104,6 +104,25 @@ public sealed partial class BuildingParts
         return p.Stats(110, 300, 6, 3.0);
     }
 
+    /// <summary>A searchlight on a tower's lid: a foot, a pedestal, a yoke and the drum with its lens to the front (-z). In a
+    /// storm's dusk its pool of light sweeps the ground below (Constructs/Ambience.json).</summary>
+    private static BPart RoofSearchlight()
+    {
+        var p = new BPart("Roof Searchlight", SectionSite, "A searchlight on a pedestal: in a storm its beam sweeps the ground.", tool: "wrench", color: StreetSteel);
+        p.CBox(0, 0, 0, 2, 1, 2, MinWeathered); // the foot
+        p.FBox(0.2, 0.25, 0.2, 0.3, 0.82, 0.3); // the pedestal
+        p.FBox(0.02, 0.8, 0.2, 0.48, 0.86, 0.3, detail: true); // the yoke's cross-bar and arms
+        p.FBox(0.02, 0.86, 0.2, 0.07, 1.16, 0.3, detail: true);
+        p.FBox(0.43, 0.86, 0.2, 0.48, 1.16, 0.3, detail: true);
+        p.FBox(0.08, 0.88, -0.12, 0.42, 1.22, 0.56, "#3e4442"); // the drum
+        p.FBox(0.06, 0.86, -0.16, 0.44, 1.24, -0.11, "#2e3331", detail: true); // (its rim)
+        p.FBox(0.1, 0.9, -0.163, 0.4, 1.2, -0.158, "#e9edd6", detail: true, glass: true); // (the lens)
+        p.FBox(0.14, 1.22, 0.1, 0.36, 1.27, 0.4, detail: true); // (the vent on top)
+        p.CSock("b00", (0, 0, 0), "-y", must: true);
+        p.CSock("b11", (1, 0, 1), "-y", must: true);
+        return p.Stats(90, 260, 6, 3.0);
+    }
+
     private static IEnumerable<(string, BPart)> StreetParts()
     {
         const string folder = "96-Site";
@@ -112,5 +131,6 @@ public sealed partial class BuildingParts
         yield return (folder, RoofWaterTank());
         yield return (folder, LoadingHoist());
         yield return (folder, AirRaidSiren());
+        yield return (folder, RoofSearchlight());
     }
 }

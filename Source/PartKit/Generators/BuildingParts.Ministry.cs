@@ -431,6 +431,34 @@ public sealed partial class BuildingParts
         Switch(bp, rc[0], "kb7_5", Strip(bp, rc[2], "ka7_10"));
         Look(bp, bp.Hang("Battery", rc[1], "kb7_10", "-z"), MinSlate);
         o.Add(bp);
+
+        // Ministry Watchtower: the yard's back corners are watched day and night, in any weather, by one guard who must see
+        // over the wire and be seen from every bunk. So it is a blind concrete shaft with nothing to climb on the outside, a
+        // steel door at its foot under a canopy, and a fixed ladder up through the hatch to the lookout: a chest-high parapet
+        // open all round under a heavy slab carried on four corner columns, the guard plain to see against the sky, and the
+        // searchlight on the slab. One storey of shaft only: a fixed ladder lands behind its top, and a floor over another has
+        // no socket to stand a second one under its hatch. (The stock Watchtower is wood: the other factions' camps keep it.)
+        bp = new Blueprint("Ministry Watchtower", "A Ministry of Slop watchtower: a blind concrete shaft, an open lookout under a heavy slab, a searchlight on top.", defs);
+        Pads(bp, []);
+        var shaft = RoomCorners(bp, "Concrete", 0, G, 0, 16, 16, door: 0);
+        Concrete(bp, shaft);
+        Look(bp, bp.Put("Concrete Hatch Floor 4x4 m", Cell(0, Slab1, 0), R0), MinWeathered, "concrete");
+        int[] turns = [R0, RY270, RY180, RY90]; // (as RoomCorners turns its corners)
+        (int X, int Z)[] spots = [(0, 0), (15, 0), (15, 15), (0, 15)];
+        var parapet = Enumerable.Range(0, 4).Select(k => bp.Put("Concrete Parapet Corner", Cell(spots[k].X, U, spots[k].Z), turns[k])).ToList();
+        Concrete(bp, parapet, MinWeathered);
+        Concrete(bp, parapet.Select(k => bp.Hang("Concrete Column 2.75 m", k, "t0_0", "b00")).ToList(), MinWeathered);
+        // The ladder up through the hatch (x 1.5 to 2.5 m, z 1.5 to 3.5 m): its back to the hatch's front edge, climbed from
+        // under the hatch, stepped off forwards onto the lookout's floor behind the front parapet.
+        Look(bp, bp.Put("Fixed Ladder 3 m", Cell(8, G, 7), RY180), MinSlate, "worn paint");
+        const int Slab = U + 3 + WallH; // (the slab on the columns: the parapet is 3 cells, a column a storey)
+        Roof(bp, 0, 0, 16, 16, Slab);
+        Lid(bp, 0, 0, 16, 16, Slab);
+        Door(bp, shaft[0], "Steel Flush Door 1.5x2.25 m");
+        Porch(bp, shaft[0], "WATCHTOWER");
+        bp.Put("Roof Searchlight", [1.75, (Slab + 1) * C, 1.75], R0);
+        Look(bp, bp.Hang("Battery", shaft[3], "kb7_10", "-z"), MinSlate);
+        o.Add(bp);
         // Penal Colony: the Ministry's holding pen where a survival world's players wake (docs/story/OPENING.md), and a yard
         // is a place to be counted in. Nine pads (12 by 12 m) inside a wire fence a guard can see through, between four
         // concrete posts with a floodlight on each; the gateway (x 4 to 8 m) is in the front, z 0. Two masses stand in it.
