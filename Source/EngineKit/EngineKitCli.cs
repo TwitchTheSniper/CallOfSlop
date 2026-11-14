@@ -52,7 +52,7 @@ public static class EngineKitCli
         if (F("--plans") is > 0 and var np)
             foreach (var p in EngineKit.Plans(r).Take((int)np))
                 Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
-                    $"  plan {EngineKit.SizeWords[p.Size]} {EngineKit.LayoutName(p.Layout, p.Cylinders)} x{p.Cranks}: {p.Kw:0} kW, {p.TorqueNm:0} N m at {p.PeakRpm:0} rpm (stroke {p.Stroke:0.:0.00}x{p.Dims.Y:0.00}x{p.Dims.Z:0.00} m, {p.Cylinder} / {p.FuelPart} / {p.BoostPart ?? "-"}, score {p.Score:0.000}{(p.Feasible ? "" : " (over: " + p.Why + ")")}"));
+                    $"  plan {EngineKit.SizeWords[p.Size]} {EngineKit.LayoutName(p.Layout, p.Cylinders)} x{p.Cranks}: {p.Kw:0} kW, {p.TorqueNm:0} N m at {p.PeakRpm:0} rpm (stroke {p.Stroke:0.00}), {p.Mass:0} kg, ~{p.Dims.X:0.00}x{p.Dims.Y:0.00}x{p.Dims.Z:0.00} m, {p.Cylinder} / {p.FuelPart} / {p.BoostPart ?? "-"}, score {p.Score:0.000}{(p.Feasible ? "" : " (over: " + p.Why + ")")}"));
         var res = EngineKit.Request(r);
         Console.WriteLine(res.ToString());
         Console.WriteLine($"  {System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds:0} ms");

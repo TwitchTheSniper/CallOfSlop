@@ -128,11 +128,30 @@ public static class EngineKit
     /// and grade word, and <see cref="Of"/> for the fuel system and booster pressed to the cylinder's scale (a small carburettor would starve a
     /// bored bank: sized-parts design 6.4).
     /// </summary>
-    private readonly record struct Bore(float Ratio, int Tier, string Word, ConstructPartDef? Cylinder, ConstructPartDef? Crank, float Pitch, float Frail = 0, float Stroke = 1f)
+    private readonly record struct Bore(float Ratio, int Tier, string Word, ConstructPartDef? Cylinder, ConstructPartDef? Crank, float Pitch, float Frail = 0, float Stroke = 1f, float Kw = 0)
     {
-        // (Ratio: the scale a fuel system or booster needs to feed the cylinder whole, over the plain one's: its kW's, by bore and stroke. Wider to
+        // (Ratio: the scale a fuel system or booster needs to feed the cylinder's Kw whole, over the plain one's: by bore and stroke. Wider to
         // feed it, no taller: its across sets its scale, and a vehicle's bay is low.)
-        public string? Of(string part) => Ratio == 1 ? part : PressedAt(part, Ratio, up: true, keepLength: true);
+        public string? Of(string part) => Ratio == 1 ? part : FeedFor(part, Ratio, Kw);
+    }
+
+    /// <summary>
+    /// <paramref name="part"/> (a catalogue fuel system or booster) pressed wider, from <paramref name="ratio"/> times its preset up in 5 cm steps, until its kW
+    /// reaches <paramref name="kw"/> (a scale's three figures can leave the first one a hair short, and a bank fed 99.5% is starved: design 6.4).
+    /// </summary>
+    private static string? FeedFor(string part, float ratio, float kw)
+    {
+        var rules = EngineRules.Current;
+        string? made = null;
+        for (var x = ratio; x < ratio * 1.25f; x *= 1.02f)
+        {
+            if (PressedAt(part, x, up: true, keepLength: true) is not { } pk || Part(pk) is not { } d)
+                continue;
+            made = pk;
+            if (kw <= 0 || rules.KwAt(rules.ScaleOf(d)) >= kw * 0.9995f)
+                return pk;
+        }
+        return made;
     }
 
     /// <summary>The strokes the kit plans with (stroke power, 2026-11-14): short, plain and two long, as ratios of the preset's length (5 cm steps; the die's range is 0.6 to 1.6).</summary>
@@ -250,10 +269,10 @@ public static class EngineKit
                 var across = MathF.Max((cyl.BoundsMax - cyl.BoundsMin).X, (cyl.BoundsMax - cyl.BoundsMin).Z);
                 if (ratio != 1f)
                     foreach (var piece in new[] { "Carburettor", "Injector Rail", "Supercharger", "Turbo" })
-                        if (PressedAt($"{sw} {piece}", ratio, up: true, keepLength: true) is { } pk && Part(pk) is { } pd)
+                        if (FeedFor($"{sw} {piece}", ratio, kw) is { } pk && Part(pk) is { } pd)
                             across = MathF.Max(across, MathF.Max((pd.BoundsMax - pd.BoundsMin).X, (pd.BoundsMax - pd.BoundsMin).Z));
                 var crank = across + 2 * CallOfSlop.Pressed.Gap(across) <= pitch + 1e-3f ? crank0 : Crank(sw, across + 2 * CallOfSlop.Pressed.Gap(across));
-                yield return new Bore(ratio, b.Tier, b.Word, cyl, crank, crank == null ? 1 : (crank.BoundsMax - crank.BoundsMin).Z / pitch, b.Frail, EngineRules.StrokeOf(cyl));
+                yield return new Bore(ratio, b.Tier, b.Word, cyl, crank, crank == null ? 1 : (crank.BoundsMax - crank.BoundsMin).Z / pitch, b.Frail, EngineRules.StrokeOf(cyl), kw);
             }
     }
 
@@ -283,6 +302,10 @@ public static class EngineKit
             // power is a plain cylinder pressed wider than its crank's scale, with its fuel system and booster pressed to match).
             foreach (var bore in Bores(sw, tier))
             {
+                // (A long stroke's limiter may be under what the request allows; a short stroke only spins faster for less power, so it is planned only when revs
+                // above the size's peak are asked for.)
+                if (r.MinLimiterRpm > 0 && rules.Max[size] / bore.Stroke < r.MinLimiterRpm * 0.999f || bore.Stroke < 1f && !(r.PeakRpm > rules.Peak[size]))
+                    continue;
                 var fuels = new[] { $"{sw} Carburettor", $"{sw} Injector Rail" }.Where(f => Part(f) is { } d && TierOf(d) <= tier).Select(f => bore.Of(f)).Where(f => f != null).Select(f => Part(f!)!).ToList();
                 var boosts = new List<ConstructPartDef?>();
                 if (r.Boost is EngineBoost.Auto or EngineBoost.None)
@@ -298,8 +321,6 @@ public static class EngineKit
                 var frail = bore.Frail; // (the share of the plain wall's metal, so of its health, the bore gives up)
                 var cylKw = rules.CylinderKw(cyl); // (by its bore and stroke; a file cylinder's is its size's row exactly)
                 var peakRpm = rules.Peak[size] / bore.Stroke; // (the revs fall with the stroke: ModEngine.Rpm)
-                if (r.MinLimiterRpm > 0 && rules.Max[size] / bore.Stroke < r.MinLimiterRpm * 0.999f)
-                    continue;
                 var needsStarter = rules.StarterAt(s, bore.Stroke);
                 var tallerCyl = Taller(cyl, $"{sw} Cylinder"); // (a long stroke stands further out from the crank)
                 foreach (var layout in Layouts)
@@ -488,7 +509,7 @@ public static class EngineKit
         (res.IdleRpm, res.PeakRpm, res.MaxRpm) = (idle, peak, max);
         res.TorqueNm = e.Kw * 1000 / (res.PeakRpm / ConstructDrive.RpmPerRadS);
         res.Layout = LayoutName(p.Layout, e.Cylinders);
-        res.Fault = e.Fault is EngineFault.None or EngineFault.NoTank ? "" : e.Fault.ToString();
+        res.Fault = e.Fault is EngineFault.None or EngineFault.NoTank ? e.Starved != 0 ? ConstructEngine.StarvedText(e) : "" : e.Fault.ToString(); // (a starved bank is no fault, but the plan meant to feed it whole: say so)
         res.Mass = 0;
         Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
         for (var i = 0; i < live.PartCount; i++)
