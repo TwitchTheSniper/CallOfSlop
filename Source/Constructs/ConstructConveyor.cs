@@ -987,8 +987,9 @@ public static class ConstructConveyor
         var td = c.DefOf(to);
         if (td.IsPieceRack)
         {
-            if (!world.RackPut(c, to, d, ordered: r.Tag != 0 && ((LogiFlags)r.Flags & LogiFlags.Storage) == 0))
-                return false;
+            var ordered = r.Tag != 0 && ((LogiFlags)r.Flags & LogiFlags.Storage) == 0;
+            if (!world.RackPut(c, to, d, ordered) && !(td.IsBuildStation && ConstructStation.MakeRoomFor(world, c, to, d) && world.RackPut(c, to, d, ordered)))
+                return false; // (a station's full hold makes room for a part the build can fit now: ConstructStation.MakeRoomFor)
             if (td.IsCraftTerminal)
                 ConstructCrafting.Arrived(world, c, to, d); // (it counts for the oldest open order of its kind)
             else if (world.StockTargetN > 0 || r.Tag != 0)

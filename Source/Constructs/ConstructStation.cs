@@ -1193,6 +1193,45 @@ public static partial class ConstructStation
         return MathF.Abs(local.X) > bay.X * 0.5f + r || MathF.Abs(local.Z) > bay.Z * 0.5f + r || local.Y > bay.Y + r || local.Y < -r;
     }
 
+    /// <summary>
+    /// Server, a conveyor's delivery into a full hold: when a step of <paramref name="d"/>'s kind can be fitted now, one part of a kind no
+    /// step can take yet moves out to a Piece Rack on the station's network (its linked stock: fetched back when its step comes), so the
+    /// piece the build waits on gets in. True when room was made. Every lacking part is ordered at once, so the hold can fill with parts
+    /// whose parents aren't in: without this, the next part to fit waited at the door for good (the Factory Showcase, 2026-11-14).
+    /// </summary>
+    public static bool MakeRoomFor(ConstructWorld world, Construct c, int t, ConstructPartDef d)
+    {
+        if (c.Parts[t].Station is not { State: StationState.Building } j || world.StoreOf(c, t) is not { } tray)
+            return false;
+        var want = Array.IndexOf(j.KindDef, (ushort)d.Id);
+        if (want < 0 || want >= j.KindReady.Length || j.KindReady[want] <= 0)
+            return false;
+        var net = ConstructCrafting.NetOf(world, c, t);
+        for (var i = 0; i < j.KindN; i++)
+        {
+            if (i == want || j.KindReady[i] > 0 || tray.KindIndex(j.KindDef[i]) < 0 || ConstructParts.Get(j.KindDef[i]) is not { } spare)
+                continue;
+            for (var s = 0; s < net.StoreN; s++)
+            {
+                var rack = net.Stores[s];
+                if (rack == t || !c.DefOf(rack).IsPieceRack || c.DefOf(rack).IsCraftTerminal || ConstructCrafting.RouteTo(c, rack, t) == -1 || world.StoreOf(c, rack) is not { } rs
+                    || ConstructConveyor.RackCheck(c, rack, rs, spare) != 0)
+                    continue;
+                ConstructRackPack.Ensure(c.DefOf(t), tray);
+                if (!ConstructRackPack.LastOf(tray, spare.Id, out var slab, out var lane) || world.RackTakeAt(c, t, slab, lane) is not { } moved)
+                    break; // (its stack: off the top, as a hand takes it)
+                if (!world.RackPut(c, rack, moved))
+                {
+                    world.RackPut(c, t, moved); // (it went back where it was)
+                    continue;
+                }
+                world.StationChanged(c);
+                return true;
+            }
+        }
+        return false;
+    }
+
     /// <summary>Parts given back: a rack with room on the network, else the hold, else loose beside the bay.</summary>
     private static void GiveBack(ConstructWorld world, Construct c, int t, StationJob j)
     {
