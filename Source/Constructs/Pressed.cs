@@ -403,12 +403,36 @@ public static class Pressed
         k.Shape == ExShape.Pipe ? MathF.Max(1, MathF.Min(k.W - 2f * k.Wall, MaxBoreShare * k.W)) : Math.Max(1, Across(k));
 
     /// <summary>
-    /// A cylinder's scale by its bore (bored cylinders, 2026-11-14: the user, "power has become more of a function of cylinder size"): through
-    /// the knots' bores (Small 25 cm, Medium 140, Large 560: each preset's scale) by a straight line in log-log, the end segment past the ends,
-    /// so at a preset it is that part's own, and in a cylinder of one across a thinner wall is a wider bore and more power. Stroke stays
-    /// the revs' (answer 5: it trades revs for torque at the same power).
+    /// A cylinder's scale by its bore (bored cylinders, 2026-11-14: the user, "power has become more of a function of cylinder size"): its
+    /// across's scale (as every engine piece's, so at its plain bore it is exactly what it was) times its bore over the plain bore for its
+    /// across (<see cref="PlainBore"/>). A thinner wall than plain is a wider bore and more power by the same law as a wider cylinder; a
+    /// thicker one, less. Stroke stays the revs' (answer 5: it trades revs for torque at the same power).
     /// </summary>
-    public static float BoreScale(PressPattern p, in ExtrusionKey k, EngineRules rules) => ScaleBy(p.Knots, BoreOf(k), static b => BoreOf(b), rules);
+    public static float BoreScale(PressPattern p, in ExtrusionKey k, EngineRules rules)
+    {
+        var across = EngineScale(p, k, rules);
+        var plain = PlainBore(p, k);
+        return plain > 0 && k.Shape == ExShape.Pipe ? Sig3(across * BoreOf(k) / plain) : across;
+    }
+
+    /// <summary>The plain bore (cm) for this blank's across: the presets' share of their across (Small 0.56, Medium and Large 0.78), read through them in log of across, the ends held.</summary>
+    public static float PlainBore(PressPattern p, in ExtrusionKey k)
+    {
+        var knots = p.Knots;
+        if (knots.Length == 0)
+            return 0;
+        static float Share(in ExtrusionKey b) => BoreOf(b) / Math.Max(1, Across(b));
+        if (knots.Length == 1)
+            return Share(knots[0].Blank) * Across(k);
+        var a = MathF.Log(Math.Max(1, Across(k)));
+        var i = 0;
+        while (i < knots.Length - 2 && a > MathF.Log(Across(knots[i + 1].Blank)))
+            i++;
+        float a0 = MathF.Log(Across(knots[i].Blank)), a1 = MathF.Log(Across(knots[i + 1].Blank));
+        var t = a1 > a0 ? Math.Clamp((a - a0) / (a1 - a0), 0f, 1f) : 0f;
+        float s0 = Share(knots[i].Blank), s1 = Share(knots[i + 1].Blank);
+        return MathF.Exp(MathF.Log(s0) + t * (MathF.Log(s1) - MathF.Log(s0))) * Across(k);
+    }
 
     /// <summary>An engine piece's scale at this blank's across (see <see cref="EngineNumbers"/>).</summary>
     public static float EngineScale(PressPattern p, in ExtrusionKey k, EngineRules rules) => ScaleBy(p.Knots, Math.Max(1, Across(k)), static b => Across(b), rules);
@@ -429,11 +453,12 @@ public static class Pressed
     }
 
     /// <summary>
-    /// An engine piece's mass and health (bored cylinders, 2026-11-14): its metal (the blank's solid volume) times what a cubic metre of
-    /// metal weighs and holds in the catalogue piece of its size, read through the knots in log of across (the ends held), so at a preset
-    /// it is the catalogue part's own, a bigger piece is heavier because it is bigger, and a wider bore in the same across is less metal:
-    /// lighter and easier to damage. Before, a pressed piece weighed its whole blank and bay 2 (a Small Cylinder's preset 77 kg against the
-    /// file's 28), so anything off a preset weighed about three times its catalogue neighbour. Never more than its blank and bay 2 cost.
+    /// An engine piece's mass (bored cylinders, 2026-11-14): its metal (the blank's solid volume) times what a cubic metre of metal weighs
+    /// in the catalogue piece of its size, read through the knots in log of across (the ends held), so at a preset it is the catalogue part's
+    /// own, a bigger piece is heavier because it is bigger, and a wider bore in the same across is less metal and lighter. Before, a pressed
+    /// piece weighed its whole blank and bay 2 (a Small Cylinder's preset 77 kg against the file's 28), so anything off a preset weighed
+    /// about three times its catalogue neighbour and the kit's bores never paid. Never more than its blank and bay 2 cost. Health stays the
+    /// blank's (its metal times the material's, as before): a save's health is absolute, and a thinner wall already has less of it.
     /// </summary>
     private static void PieceMass(ConstructPartDef d, PressPattern p, in ExtrusionKey k)
     {
@@ -441,26 +466,23 @@ public static class Pressed
         var volume = VolumeMass(k).Volume;
         if (volume <= 0)
             return;
-        float Per(in PressPreset q, bool health) => (health ? q.Part.Health : q.Part.Mass) / MathF.Max(1e-6f, VolumeMass(q.Blank).Volume);
-        float massPer, healthPer;
+        static float Per(in PressPreset q) => q.Part.Mass / MathF.Max(1e-6f, VolumeMass(q.Blank).Volume);
+        float massPer;
         var a = MathF.Log(Math.Max(1, Across(k)));
         var i = 0;
         while (i < knots.Length - 2 && a > MathF.Log(Across(knots[i + 1].Blank)))
             i++;
         if (knots.Length == 1)
         {
-            massPer = Per(knots[0], false);
-            healthPer = Per(knots[0], true);
+            massPer = Per(knots[0]);
         }
         else
         {
             float a0 = MathF.Log(Across(knots[i].Blank)), a1 = MathF.Log(Across(knots[i + 1].Blank));
             var t = a1 > a0 ? Math.Clamp((a - a0) / (a1 - a0), 0f, 1f) : 0f;
-            massPer = MathF.Exp(MathF.Log(Per(knots[i], false)) + t * (MathF.Log(Per(knots[i + 1], false)) - MathF.Log(Per(knots[i], false))));
-            healthPer = MathF.Exp(MathF.Log(Per(knots[i], true)) + t * (MathF.Log(Per(knots[i + 1], true)) - MathF.Log(Per(knots[i], true))));
+            massPer = MathF.Exp(MathF.Log(Per(knots[i])) + t * (MathF.Log(Per(knots[i + 1])) - MathF.Log(Per(knots[i]))));
         }
         d.Mass = Math.Clamp(MathF.Min(volume * massPer, CostMass(p.For(k), k)), 0.1f, ConstructParts.MaxPartMass);
-        d.Health = Math.Clamp(volume * healthPer, 10, ConstructParts.MaxPartHealth);
     }
 
     private static ConstructPartDef BuildOf(PressDie die, PressPattern p, in ExtrusionKey k, string name)

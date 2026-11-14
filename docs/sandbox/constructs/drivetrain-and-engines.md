@@ -367,7 +367,7 @@ piped into its fuel system or flywheel ("Fuel in" ports).
   angles a V (V8), two opposite a boxer (B4), three a W (W12), four a radial (R16). Sockets are square to the part, so a V is
   90 degrees; a freeform attachment can set any angle.
 - **Power** is the sum over the cylinders of each one's kW at its own **bore** (its scale: 1, 4, 16, 64 for the four files, a
-  pressed one's from its bore, its across less both walls, through the presets' bores 25, 140 and 560 cm; `EngineRules.At`, 40 x scale^2.161 between the rows) times the bank's best fuel system times
+  pressed one's its across's scale times its bore, its across less both walls, over the plain bore for its across; `EngineRules.At`, 40 x scale^2.161 between the rows) times the bank's best fuel system times
   its best booster. Torque is that power at the peak rpm (5000, 2800, 1400, 700 at the four scales; limiter 7000, 4000, 2000,
   1000): big engines turn slowly. The revs are the **crank's** scale's (its largest section), divided by the cylinders' mean
   **stroke** (length over across, against the preset's, 0.6 to 1.6): a long stroke pulls from low revs at the same power, a short
@@ -378,11 +378,12 @@ piped into its fuel system or flywheel ("Fuel in" ports).
   bolts on**: a cylinder gives its own bore's power; a fuel system or booster smaller than its bank feeds or boosts it by the kW
   ratio and the readout says so ("bank 1 starved: the Small Carburettor feeds 5% of its cylinders"); flywheel, starter and
   stacks work at any size. **A wider bore** (a thinner wall in the same across; the bore counts up to 0.9 of the across) is how
-  a cylinder of one size gets more power: a Small `pipe8`, `pipe6` or `pipe4 45x45x75` gives 1.3, 1.6 or 2 times the plain one.
-  **Mass and health** of a pressed engine piece are its metal times what a cubic metre of metal weighs and holds in the catalogue
-  piece of its size (through the presets in log of across): a preset is the file's part, a bigger piece is heavier, and a wider
-  bore is lighter and easier to damage (the Small `pipe4` above: 13 kg and 84 hp against 28 kg and 180 hp). Bored cylinders,
-  2026-11-14: docs/sandbox/design/bored-cylinders-notes.md.
+  a cylinder of one size gets more power: the plain bore is the presets' share of the across (Small 0.56, Medium and Large 0.78),
+  and a Small `pipe8`, `pipe7` or `pipe5 45x45x75` gives 1.38, 1.59 or 2.07 times the plain one. **Mass** of a pressed engine piece
+  is its metal times what a cubic metre of metal weighs in the catalogue piece of its size (through the presets in log of across):
+  a preset is the file's part, a bigger piece is heavier, a wider bore lighter. **Health** is its blank's metal times the
+  material's, so a wider bore has less (the Small `pipe5`: 236 hp against the plain wall's 412). Bored cylinders, 2026-11-14:
+  docs/sandbox/design/bored-cylinders-notes.md.
 - **A cylinder's own power**: a cylinder may carry `enginePiece.power` and `thirst` (1 if not). The Engine Kit's Bored,
   Performance and Racing Cylinders (x1.3, x1.6, x2) do; they are **retired** (no recipe, not in the build catalogue) and still
   load and run where a save or an old blueprint holds one.
