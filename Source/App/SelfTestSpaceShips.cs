@@ -340,10 +340,10 @@ public static partial class SelfTest
         // step's few-centimetre-per-orbit accuracy in a low orbit the moonlet tugs, so they part by a metre or so in 2 h.
         if (worst > 3 || worstRel > 1e-3)
             Fail($"space ships: the predicted path is {worst:0.0000} m from the flight ({worstRel:0.0000} m in the Planetoid's frame)");
-        // No allocation once warmed up.
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        ships.Predict(s, 100, ecl, frame, rel);
-        var alloc = GC.GetAllocatedBytesForCurrentThread() - before;
+        // No allocation once warmed up: the least of identical rounds (SteadyAllocBytes), as a one-off on this thread (JIT
+        // tier-up, a lazily made runtime structure) landed in the single measured call once on Windows CI (7152 B,
+        // 2026-11-14) and never here in thousands of calls: a real per-call allocation shows in every round.
+        var alloc = SteadyAllocBytes(() => ships.Predict(s, 100, ecl, frame, rel));
         if (alloc > 0)
             Fail($"space ships: the predictor allocated {alloc} B");
     }

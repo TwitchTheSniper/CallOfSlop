@@ -304,6 +304,9 @@ public static partial class SelfTest
         Program.SweepNudgeModes.Angle = 15f;
         var rot0 = block.Rot;
         var com0 = block.WorldCom;
+        // Taken straight after the put-back drag, while the client's copy may still be centimetres behind: the turn is about
+        // the body's own centre as the server has it, whatever the copy showed (CI 2026-11-14: 58 mm off on a 120 degree arc).
+        var lag = 0f;
         var taken = false;
         for (var k = 0; k < 24 && !taken; k++)
         {
@@ -316,6 +319,7 @@ public static partial class SelfTest
             if (NudgeRender.Hot == 2)
             {
                 PwLook(a, me, NudgeRender.ArcPoint(2, i));
+                lag = Vector3.Distance(Program.NudgeTestPivot, block.WorldCom);
                 run.Frame(PwFire);
                 taken = Program.NudgeTestDrag == 2;
             }
@@ -328,9 +332,24 @@ public static partial class SelfTest
         var whole = MathF.Abs(deg / 15f - MathF.Round(deg / 15f)) < 0.02f;
         var delta = Quaternion.Normalize(block.Rot * Quaternion.Conjugate(rot0));
         var about = MathF.Abs(MathF.Abs(delta.Y) / MathF.Max(MathF.Sqrt(delta.X * delta.X + delta.Y * delta.Y + delta.Z * delta.Z), 1e-5f) - 1) < 0.01f;
-        Line($"nudge online: the Z arc: taken {taken}, turned {deg:0.00} deg about up {about}, the centre stayed {Vector3.Distance(block.WorldCom, com0) * 1000:0.0} mm");
+        Line($"nudge online: the Z arc: taken {taken}, turned {deg:0.00} deg about up {about}, the centre stayed {Vector3.Distance(block.WorldCom, com0) * 1000:0.0} mm (the client's pivot was {lag * 1000:0.00} mm off it)");
         if (!turnedOk || !whole || !about || Vector3.Distance(block.WorldCom, com0) > 0.005f)
-            problems.Add($"online: the arc's turn went wrong (taken {taken}, {deg:0.00} deg, about Z {about})");
+            problems.Add($"online: the arc's turn went wrong (taken {taken}, landed {turnedOk}, {deg:0.00} deg, about Z {about}, the centre moved {Vector3.Distance(block.WorldCom, com0) * 1000:0.0} mm)");
+        // The CI case made sure of: a client whose copy is 30 mm off the server's (as CI's was just after a drag) begins a
+        // 120 degree turn through the real messages; the body still turns about its own centre (it swung 52 mm before).
+        var com1 = block.WorldCom;
+        var rot1 = block.Rot;
+        Program.NudgeTestForget();
+        a.SandboxNudgeBegin([cb], cb.WorldCom + new Vector3(0.03f, 0, 0));
+        a.SandboxNudgeEnd(Vector3.Zero, Quaternion.CreateFromAxisAngle(Vector3.UnitY, MathF.PI * 2 / 3));
+        var offOk = WaitFor(() => block.NudgeBy == 255 && Nudge.Angle(block.Rot, rot1) > 0.01f, 3);
+        Pump(server, [a, v], 0.2, ref now, clock);
+        var offMoved = Vector3.Distance(block.WorldCom, com1);
+        var offDeg = Nudge.Angle(block.Rot, rot1) * 180f / MathF.PI;
+        Line($"nudge online: a turn begun 30 mm off the server's centre: landed {offOk}, {offDeg:0.00} deg, the centre moved {offMoved * 1000:0.0} mm");
+        if (!offOk || MathF.Abs(offDeg - 120) > 0.5f || offMoved > 0.005f)
+            problems.Add($"online: a turn begun off the server's centre didn't go about it (landed {offOk}, {offDeg:0.00} deg, the centre moved {offMoved * 1000:0.0} mm)");
+        a.SandboxNudgeForget();
         Program.SweepNudgeModes.Mode = SandboxNudgeModes.Option.Move;
         a.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.None);
         run.Frame([]);

@@ -160,6 +160,40 @@ public sealed partial class ConstructEdits
         return null;
     }
 
+    /// <summary>The bodies' mass-weighted centre, as the client makes its pivot (Program.SandboxNudge.cs); null if one is gone (the begin then says so).</summary>
+    public static Vector3? NudgeCentre(ConstructWorld world, ReadOnlySpan<ushort> bodies)
+    {
+        var sum = Vector3.Zero;
+        var mass = 0f;
+        foreach (var id in bodies)
+        {
+            if (world.Get(id) is not { PartCount: > 0 } c)
+                return null;
+            NudgeWeigh(world, c, ref sum, ref mass);
+        }
+        return mass > 0 ? sum / mass : null;
+    }
+
+    /// <summary>
+    /// A body's share of a nudge's centre, the same on the server and a client: its mass at its centre, and what its
+    /// frozen cargo volumes carry. The server counts cargo in the body's own mass (<see cref="Construct.CargoCount"/>);
+    /// a client's copy never has a cargo list (ConstructCargo.Step is the server's), so it adds the carried bodies here.
+    /// </summary>
+    public static void NudgeWeigh(ConstructWorld world, Construct c, ref Vector3 sum, ref float mass)
+    {
+        sum += c.WorldCom * MathF.Max(c.Mass, 0.01f);
+        mass += MathF.Max(c.Mass, 0.01f);
+        if (c.CargoCount > 0 || !c.HasLogic)
+            return; // (its cargo is in its mass, or it has no cargo volume to carry any)
+        var n = 0;
+        foreach (var b in world.Bodies)
+            if (b.CarriedBy == c.Id && n++ < ConstructCargo.MaxPerConstruct)
+            {
+                sum += b.WorldCom * b.Mass;
+                mass += b.Mass;
+            }
+    }
+
     /// <summary>What the drag asks for now: the whole move and turn since it began.</summary>
     public void NudgeSteer(byte player, Vector3 move, Quaternion turn)
     {
