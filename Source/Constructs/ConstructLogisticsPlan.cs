@@ -170,12 +170,25 @@ public static class ConstructLogisticsPlan
     }
 
     /// <summary>
+    /// A Crafting Terminal's list row for a formed panel, before the player orders (fix-ups 2, phase 5 Q2): the too-wide text when no
+    /// Extruder on the network makes the sheet the order would ask for (its strips setting as now); null when one does. The list only (it allocates).
+    /// </summary>
+    public static string? TooWideRow(Construct c, CraftNet net, ConstructPartDef panel, byte material, int former)
+    {
+        var key = SheetFor(c, net, panel, material, HullLoft.FormedUnits(panel, material), StockTargets.Strips(c, former));
+        return LongestTaken(c, net, key.W, SheetThickCm) >= Extrusion.StepCm || TooWideAdvice(c, net, key.W) is not { } advice ? null : $"too wide: sheet {key.W / 100f:0.##} m wide: {advice}"; // (built from its parts, as the chain line is)
+    }
+
+    /// <summary>
     /// Why a sheet <paramref name="w"/> cm wide waits, and what would make it (the user, phase 5: a bigger Extruder or Die Frames first,
     /// strips as the player's choice): an Extruder on the network whose most section takes it but whose die is narrower wants Die Frames;
     /// else the smallest Extruder in the catalogue that takes it; then the strips setting with the count it would make. Null when the
     /// widest Extruder here takes it after all (the usual refusal stands). Made only when the entry's reason changes (the caller compares).
     /// </summary>
-    private static string? TooWideText(Construct c, CraftNet net, int w)
+    private static string? TooWideText(Construct c, CraftNet net, int w) => TooWideAdvice(c, net, w) is { } advice ? $"waiting on sheet {w / 100f:0.##} m wide: {advice}" : null;
+
+    /// <summary>What a sheet <paramref name="w"/> cm wide needs ("the widest Extruder here makes 0.5 m. Weld Die Frames ..."), or null: the chain line's and the list row's shared part.</summary>
+    private static string? TooWideAdvice(Construct c, CraftNet net, int w)
     {
         var widest = WidestTaken(c, net, SheetThickCm);
         if (widest >= w)
@@ -198,7 +211,7 @@ public static class ConstructLogisticsPlan
         }
         var strips = widest >= Extrusion.MinSectionCm ? $", or set the Panel Former to make strips ({(w + widest - 1) / widest} across)" : "";
         var here = widest > 0 ? $"the widest Extruder here makes {widest / 100f:0.##} m" : "no Extruder here makes it";
-        return $"waiting on sheet {w / 100f:0.##} m wide: {here}. {char.ToUpperInvariant(frames[0])}{frames[1..]}{strips}";
+        return $"{here}. {char.ToUpperInvariant(frames[0])}{frames[1..]}{strips}";
     }
 
     /// <summary>

@@ -46,7 +46,18 @@ public static class RouterScreen
             card.State = PanelState.Fault;
             card.Add(0, "STUCK");
             card.Add(1, "Holds ").Add(1, ConstructLogisticsBoard.Names.Piece(m.ShowStuckDef[s]));
-            card.Add(2, ConstructLogistics.ReasonText((LogiReason)m.ShowReason[s]));
+            card.Add(2, m.OffN[s] >= LogiMap.PileMax ? "pile beside it full: take it away" : ConstructLogistics.ReasonText((LogiReason)m.ShowReason[s]));
+        }
+        else if (p.Out > 0.5f)
+        {
+            // Its Alarm with nothing held: a piece no rack takes was set off the line beside it (logistics fix-ups 2; a client hears only the Alarm)
+            card.State = PanelState.Fault;
+            card.Add(0, "ALARM");
+            if (m.OffDef[s] != 0)
+                card.Add(1, "Set off ").Add(1, ConstructLogisticsBoard.Names.Piece(m.OffDef[s]));
+            else
+                card.Add(1, "A piece set off");
+            card.Add(2, "no Piece Rack takes it");
         }
         else if (m.ShowWay[s] == 0)
         {

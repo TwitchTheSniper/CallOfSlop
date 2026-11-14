@@ -134,6 +134,33 @@ public static partial class Program
                 }
                 return;
             }
+            case "steps" when g.IsServer: // "logi steps [N]": the conveyor step (riders, Routers' passes) run N times as it is now: time and bytes a step, riders and stuck ones (fix-ups 2)
+            {
+                var n = int.TryParse(rest, out var sn) && sn > 0 ? sn : 100;
+                int riders0 = 0, stuck0 = 0;
+                foreach (var b in w.Bodies)
+                {
+                    riders0 += b.ConveyedCount;
+                    for (var i = 0; i < b.ConveyedCount; i++)
+                        if (((LogiFlags)b.Conveyed[i].Flags & LogiFlags.Stuck) != 0)
+                            stuck0++;
+                }
+                w.ConveyorTicks = ConstructConveyor.Every - 1;
+                ConstructConveyor.Step(w, World.Query); // (warm)
+                long worstTicks = 0;
+                var a0 = GC.GetAllocatedBytesForCurrentThread();
+                var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                for (var k = 0; k < n; k++)
+                {
+                    w.ConveyorTicks = ConstructConveyor.Every - 1;
+                    var s0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                    ConstructConveyor.Step(w, World.Query);
+                    worstTicks = Math.Max(worstTicks, System.Diagnostics.Stopwatch.GetTimestamp() - s0);
+                }
+                var us = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds * 1000 / n;
+                WsSay($"[logi] steps: conveyor step {us:0.0} us mean, {worstTicks * 1e6 / System.Diagnostics.Stopwatch.Frequency:0.0} us worst, {(GC.GetAllocatedBytesForCurrentThread() - a0) / n} bytes a step over {n}; {riders0} riders ({stuck0} stuck) before, {c.ConveyedCount} on this body after");
+                return;
+            }
             case "cfg": // "logi cfg PART|key|value": a setting through this peer's own configure message, as the configure tool sends it (stand in reach first)
             {
                 var bits = rest.Split('|');
@@ -252,6 +279,56 @@ public static partial class Program
                 WsFail($"logi mend: no way {way} out of \"{rest}\"");
                 return;
             }
+            case "stow" when g.IsServer: // "logi stow PART|NAME": one part into a Storage Volume's crates (stock a terminal may fetch: fix-ups 2)
+            {
+                var sb = rest.Split('|');
+                var (sc, part) = LogiFind(g, sb[0]);
+                if (sc == null || sb.Length < 2 || ConstructParts.Find(sb[1]) is not { } sd)
+                {
+                    WsFail($"logi stow: \"{rest}\"");
+                    return;
+                }
+                WsSay($"[logi] stow {sd.Name} in {sc.DefOf(part).Name}#{part}: {w.PutPart(sc, part, sd) ?? "stowed"}");
+                return;
+            }
+            case "haul" when g.IsServer: // "logi haul PART|N": N loose one-part bodies within 6 m of a part taken out of the world (hauled away, as a player would; fix-ups 2's pile)
+            {
+                var hb = rest.Split('|');
+                var (hc, part) = LogiFind(g, hb[0]);
+                var most = hb.Length > 1 && int.TryParse(hb[1], out var hn) ? hn : 99;
+                if (hc == null)
+                {
+                    WsFail($"logi haul: \"{rest}\"");
+                    return;
+                }
+                hc.WorldFrame(hc.Parts[part].Seg, out var hq, out var ht);
+                var near = ht + System.Numerics.Vector3.Transform(hc.Parts[part].Pos, hq);
+                var gone = 0;
+                for (var bi = w.Bodies.Count - 1; bi >= 0 && gone < most; bi--)
+                    if (w.Bodies[bi] is { PartCount: 1 } lb && lb != hc && System.Numerics.Vector3.Distance(lb.WorldCom, near) < 6f)
+                    {
+                        w.Remove(lb);
+                        gone++;
+                    }
+                WsSay($"[logi] haul: {gone} loose bodies taken from near {hc.DefOf(part).Name}#{part}");
+                return;
+            }
+            case "mix" when g.IsServer: // "logi mix PART|MATERIAL|N": N units of a material into an Assembler's mixed input (a recipe's second material)
+            {
+                var mb = rest.Split('|');
+                var (mc, part) = LogiFind(g, mb[0]);
+                var mat = mb.Length > 1 ? RecyclingTable.Current.IdOf(mb[1]) : (byte)0;
+                if (mc == null || mat == 0 || w.StoreOf(mc, part) is not { } ms)
+                {
+                    WsFail($"logi mix: \"{rest}\"");
+                    return;
+                }
+                ms.AddMix(mat, mb.Length > 2 && int.TryParse(mb[2], out var mn) ? mn : 20);
+                ms.Version++;
+                w.StoreDirty.Add(ms.Handle);
+                WsSay($"[logi] mix {mc.DefOf(part).Name}#{part}: {ms.MixOf(mat)} {mb[1]}");
+                return;
+            }
             case "fill" when g.IsServer:
             {
                 var fb = rest.Split('|'); // ("PART|NAME|N": at most N)
@@ -297,7 +374,7 @@ public static partial class Program
                 for (var i = 0; i < c.PartCount; i++)
                     if (c.Parts[i].Orders is { Bill: false, Count: > 0 } oq && WorkOrders.TakesOrders(c.DefOf(i)))
                         for (var k = 0; k < oq.Count; k++)
-                            WsSay($"[logi]   queue {c.DefOf(i).Name}#{i} ({(w.StoreOf(c, i) is { } qst ? ProductionLines.Raw(w, c, i, qst) : null)}, stall {w.StoreOf(c, i)?.Refused}): {ConstructCrafting.NameOf(oq.Items[k])} {oq.Items[k].Made}/{oq.Items[k].Count} chain {oq.Items[k].Chain}");
+                            WsSay($"[logi]   queue {c.DefOf(i).Name}#{i} ({(w.StoreOf(c, i) is { } qst ? ProductionLines.Raw(w, c, i, qst) : null)}, stall {w.StoreOf(c, i)?.Refused}): {ConstructCrafting.NameOf(oq.Items[k])} {oq.Items[k].Made}/{oq.Items[k].Count} chain {oq.Items[k].Chain} rank {oq.Items[k].Rank}");
                 for (var i = 0; i < c.PartCount; i++) // (a press's bays and stall: Press phase 4's chained blanks)
                     if (c.DefOf(i) is { IsPress: true, IsLathe: false } pdef && w.StoreOf(c, i) is { } pst)
                     {

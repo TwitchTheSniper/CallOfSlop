@@ -475,6 +475,10 @@ public static class ConstructCrafting
                     row.Machine = m;
                     row.Make = (byte)(fed && st!.Amount >= units ? 1 : Bulk(world, c, net, what.Key.Material, -1) > 0 ? 2 : 3);
                     row.Missing = row.Make == 1 ? "" : $"needs {units} {names.NameOf(what.Key.Material)} sheet in the {md.Name}{(fed ? $", holds {st!.Amount}" : "")}";
+                    if (row.Make != 1 && !md.IsLaserCutter && ConstructLogisticsPlan.TooWideRow(c, net, pd, what.Key.Material, m) is { } wide)
+                    {
+                        row.Missing = row.Missing + " - " + wide; // (warned before the order, not only after; it stays orderable: sheet fed by hand works at any width)
+                    }
                 }
                 for (var k = 0; k < HullLoft.PanelPresets.Length; k++)
                     Panel(HullLoft.PanelKey(HullLoft.PanelDefault(k, sheet)), "");
@@ -574,7 +578,42 @@ public static class ConstructCrafting
     /// <summary>What a batch of a recipe on machine <paramref name="m"/> lacks ("4 steel, 1 Gear Set"), empty when nothing; <paramref name="chain"/>: every lack is itself made by a linked machine or refiner.</summary>
     private static string Missing(ConstructWorld world, Construct c, CraftNet net, int m, AssembleRecipe r, out bool chain)
     {
+        // What it lacks, as a fingerprint first (no text): the same lack on the same machine and recipe as a recent call gives that call's
+        // text again, so a queued order's note, looked at every fifth step, allocates only when what it lacks changes (fix-ups 2: ~125 B a step).
         chain = true;
+        var fp = 14695981039346656037UL;
+        var ms0 = world.StoreOf(c, m);
+        foreach (var (mat, units) in r.Materials)
+            if (Bulk(world, c, net, mat, m) < units)
+            {
+                var made = RefinerMakes(c, net, mat);
+                chain &= made != null;
+                fp = (fp ^ (ulong)(mat * 1000003 + units)) * 1099511628211UL ^ (ulong)(made?.GetHashCode() ?? 0);
+            }
+        foreach (var (part, count) in r.Parts)
+            if (Stock(world, c, net, (ushort)part.Id) + (ms0 != null ? Holds(ms0, (ushort)part.Id) : 0) < count)
+            {
+                var made = MachineMakes(c, net, (ushort)part.Id);
+                chain &= made != null;
+                fp = (fp ^ (ulong)(part.Id * 1000003 + count + 7)) * 1099511628211UL ^ (ulong)(made?.GetHashCode() ?? 0);
+            }
+        if (fp == 14695981039346656037UL)
+            return "";
+        for (var i = 0; i < MissedN; i++)
+            if (Missed[i].Fp == fp && Missed[i].M == m && Missed[i].Body == c.Id && ReferenceEquals(Missed[i].R, r))
+                return Missed[i].Text;
+        var text = MissingText(world, c, net, m, r);
+        Missed[_missedNext] = (c.Id, m, r, fp, text);
+        _missedNext = (_missedNext + 1) % Missed.Length;
+        MissedN = Math.Max(MissedN, _missedNext == 0 ? Missed.Length : _missedNext);
+        return text;
+    }
+
+    private static readonly (int Body, int M, AssembleRecipe? R, ulong Fp, string Text)[] Missed = new (int, int, AssembleRecipe?, ulong, string)[16];
+    private static int MissedN, _missedNext;
+
+    private static string MissingText(ConstructWorld world, Construct c, CraftNet net, int m, AssembleRecipe r)
+    {
         System.Text.StringBuilder? sb = null;
         var names = RecyclingTable.Current;
         var ms = world.StoreOf(c, m);
@@ -583,7 +622,6 @@ public static class ConstructCrafting
             if (Bulk(world, c, net, mat, m) >= units)
                 continue;
             var made = RefinerMakes(c, net, mat);
-            chain &= made != null;
             (sb ??= new()).Append(sb.Length > 0 ? ", " : "").Append(units).Append(' ').Append(names.NameOf(mat));
             if (made != null)
                 sb.Append(" (the ").Append(made).Append(" can make it)");
@@ -594,7 +632,6 @@ public static class ConstructCrafting
             if (have >= count)
                 continue;
             var made = MachineMakes(c, net, (ushort)part.Id);
-            chain &= made != null;
             (sb ??= new()).Append(sb.Length > 0 ? ", " : "").Append(count).Append(' ').Append(part.Name);
             if (made != null)
                 sb.Append(" (the ").Append(made).Append(" can make it)");
@@ -1132,7 +1169,7 @@ public static class ConstructCrafting
                 if (fits != 0)
                 {
                     state = CraftState.Held;
-                    note = "held: the tray is full - take parts out";
+                    note = fits == 4 ? "held: the tray is full - take parts out" : "held: the tray can't hold it"; // (4 full; 3 is above; a store part fits a tray since fix-ups 2)
                     continue;
                 }
                 if (via < 0 || via >= c.RouteCount || world.StoreOf(c, net.Stores[s]) is not { } st)
