@@ -94,12 +94,24 @@ public static class BuildingWalkCheck
             fails.Add($"it doesn't build: {why}");
             return (fails, notes);
         }
+        // A ramp or a hatch (an event door turning about a level axis: the rust bucket's chin) is walked on: it is opened and kept.
+        var walked = new HashSet<int>();
+        c.EnsureDoors();
+        for (var k = 0; k < c.DoorCount; k++)
+        {
+            var dp = c.Doors[k].Part;
+            if (c.Parts[dp].D.Door is { Slide: false } dd && MathF.Abs(Rot24.Apply(c.Parts[dp].Rot, ConstructParts.DirVector(dd.Axis)).Y) < 0.5f)
+            {
+                ConstructDoors.Settle(c, k, true);
+                walked.Add(dp);
+            }
+        }
         var boxes = new List<Box>();
         var lo = new Vector3(float.MaxValue);
         var hi = new Vector3(float.MinValue);
         for (var i = 0; i < c.PartCount; i++)
         {
-            if (c.DefOf(i).Role == PartRole.Door)
+            if (c.DefOf(i).Role == PartRole.Door && !walked.Contains(i))
                 continue; // (F opens it)
             c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
             var m = Matrix4x4.CreateFromQuaternion(q);
@@ -417,7 +429,7 @@ public static class BuildingWalkCheck
         // 2. Doorways: a person stands on both sides of every door leaf.
         for (var i = 0; i < c.PartCount; i++)
         {
-            if (c.DefOf(i).Role != PartRole.Door)
+            if (c.DefOf(i).Role != PartRole.Door || walked.Contains(i))
                 continue;
             c.ShapeBounds(i, out var dmin, out var dmax);
             c.WorldFrame(c.Parts[i].Seg, out var q, out var t);

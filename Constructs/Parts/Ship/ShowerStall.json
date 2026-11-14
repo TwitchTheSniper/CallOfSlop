@@ -1,0 +1,147 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Shower Stall",
+  "description": "A one-person shower: a tray, a curtain rail and a head that spits.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 60.0,
+  "health": 150,
+  "armour": 3,
+  "material": "steel",
+  "color": "#c8ccc6",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.45,
+        0.0,
+        -0.45
+      ],
+      "max": [
+        0.45,
+        0.08,
+        0.45
+      ],
+      "color": "#c8ccc6",
+      "finish": "ceramic tiles"
+    },
+    {
+      "min": [
+        -0.45,
+        0.08,
+        -0.45
+      ],
+      "max": [
+        -0.42,
+        2.1,
+        0.45
+      ],
+      "color": "#c8ccc6",
+      "finish": "ceramic tiles"
+    },
+    {
+      "min": [
+        0.42,
+        0.08,
+        -0.45
+      ],
+      "max": [
+        0.45,
+        2.1,
+        0.45
+      ],
+      "color": "#c8ccc6",
+      "finish": "ceramic tiles"
+    },
+    {
+      "min": [
+        -0.42,
+        2.06,
+        0.4
+      ],
+      "max": [
+        0.42,
+        2.1,
+        0.44
+      ],
+      "color": "#8a8e8a",
+      "detail": true,
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.42,
+        0.3,
+        0.41
+      ],
+      "max": [
+        -0.1,
+        2.06,
+        0.43
+      ],
+      "color": "#9fb8a8",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.06,
+        1.9,
+        -0.43
+      ],
+      "max": [
+        0.06,
+        1.98,
+        -0.3
+      ],
+      "color": "#c8ccc6",
+      "detail": true,
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.1,
+        0.081,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        0.095,
+        0.1
+      ],
+      "color": "#30302e",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        2.1,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        -0.45
+      ],
+      "dir": "-z"
+    }
+  ]
+}

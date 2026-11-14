@@ -40,8 +40,9 @@ public static partial class Program
         var t = (float)(_game.OpeningNow - _game.OpeningLocalFrom);
         var length = MathF.Max(0.1f, _game.OpeningLocalTime);
         var feet = local.RenderPosition;
-        var u = GravityFrames.UpAt(feet);
-        var focus = _game.OpeningLocalFocus;
+        var riding = local.Sim.RideUp != Vector3.Zero; // (waking aboard a ship: its up, and their own look, since it moves under any world point)
+        var u = riding ? local.Sim.RideUpW : GravityFrames.UpAt(feet);
+        var focus = riding ? feet + u * OpeningLieEye + fwd * 3f + u * 1.2f : _game.OpeningLocalFocus;
         switch (stage)
         {
             case OpeningStage.Out:

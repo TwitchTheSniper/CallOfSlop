@@ -1,0 +1,133 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ship Basin",
+  "description": "A small steel basin with a mirror. The cold tap works.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 20.0,
+  "health": 80,
+  "armour": 3,
+  "material": "steel",
+  "color": "#c8ccc6",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.3,
+        0.75,
+        -0.22
+      ],
+      "max": [
+        0.3,
+        0.9,
+        0.18
+      ],
+      "color": "#c8ccc6",
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.05,
+        0.0,
+        -0.22
+      ],
+      "max": [
+        0.05,
+        0.75,
+        -0.12
+      ],
+      "color": "#8a8e8a",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.25,
+        0.86,
+        -0.17
+      ],
+      "max": [
+        0.25,
+        0.91,
+        0.13
+      ],
+      "color": "#5c6a70",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.03,
+        0.9,
+        -0.2
+      ],
+      "max": [
+        0.03,
+        1.05,
+        -0.12
+      ],
+      "color": "#c8ccc6",
+      "detail": true,
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.28,
+        1.15,
+        -0.22
+      ],
+      "max": [
+        0.28,
+        1.7,
+        -0.19
+      ],
+      "color": "#a8c0c8",
+      "detail": true,
+      "glass": true
+    },
+    {
+      "min": [
+        -0.048,
+        -0.002,
+        -0.218
+      ],
+      "max": [
+        0.048,
+        0.02,
+        -0.122
+      ],
+      "color": "#8a8e8a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.9,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        -0.22
+      ],
+      "dir": "-z"
+    }
+  ]
+}

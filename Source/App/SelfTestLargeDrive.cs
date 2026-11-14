@@ -155,7 +155,8 @@ public static partial class SelfTest
             if (ConstructParts.PortProblems(p) is { Count: > 0 } why)
                 Fail($"large drive: {p.Name}: {string.Join("; ", why)}");
         // The classes grow: a capital plant out-powers a large one, a capital mass stays inside the part limit, and every class of thruster is stronger.
-        var force = big.Where(p => p.Role == PartRole.Thruster && p.ThrustFuel == EngineFuel.Fuel && p.ThrustKind == ThrustKind.Plain).Select(p => p.ThrustForce).OrderBy(f => f).ToList();
+        // (the shipped jets' ladder, section Thrusters: a ship's own drives, the rust bucket's, sit outside it)
+        var force = big.Where(p => p.Role == PartRole.Thruster && p.ThrustFuel == EngineFuel.Fuel && p.ThrustKind == ThrustKind.Plain && p.Section == "Thrusters").Select(p => p.ThrustForce).OrderBy(f => f).ToList();
         for (var k = 1; k < force.Count; k++)
             if (force[k] < force[k - 1] * 3)
                 Fail($"large drive: thruster sizes too close: {force[k - 1]} and {force[k]} N");

@@ -16,6 +16,10 @@ section, finishes, lamps, detail, the authoring fields, a detail budget, and the
 Read before authoring a building: what every building needs (the job gives the shape, an outline that reads at 50 m, a
 marked way in), then each faction's style. The Ministry of Slop: Brutalism, cold-war fittings, the colony's street.
 
+## [The rust bucket](constructs/ship.md), 3 KB
+
+The walkable two-deck ship of the rust bucket start: its hull parts, rooms, engines and how it flies.
+
 Each file below lists its `## ` sections with their headings exactly as they were in the old single file, so a code
 comment such as `CONSTRUCTS.md "Extrusion"` is found by searching this index for the heading. To look inside a file,
 `grep -n '^## ' docs/sandbox/constructs/FILE.md` and read the section you need. New text goes into the file that holds

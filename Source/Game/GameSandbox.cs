@@ -1270,8 +1270,8 @@ public sealed partial class Game
                 return hands.AnalogSet(Constructs, p.Id, eye, body, part, AnalogLever.FromWire(value), AnalogLever.FromWire(y), final);
             }
             case CActKind.Stand:
-                if (SpaceSeated(p))
-                    return "you can't get out in space: fly back down first"; // (GameSpaceLaunch.cs)
+                if (SpaceSeated(p) && !SpaceCanStand(p))
+                    return "you can't get out in space: there's no deck to stand on"; // (onto a deck of the ship's own only: GameSpaceStart.cs)
                 SandboxStand(p, teleport: true);
                 return null;
             case CActKind.Rack:

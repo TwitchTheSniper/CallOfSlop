@@ -22,6 +22,14 @@ saved world keep. Text is ASCII.
 | `faction`, `standing` | a faction (Story/Factions, by name) and the standing each player starts on with it as they wake, when it isn't 0 and the faction has made nothing of them yet |
 | `kit` | the start kit by blueprint or part name; left out: the shipped one (`Constructs/SurvivalStart.json`). A map's own `"survivalStart"` still wins |
 
+## A ship start
+
+An opening (Story/Opening) whose `"ship"` names a blueprint (and whose `"colony"` is `""`) builds it in orbit over the start
+(`"orbit"`: m over the ground, at least the sky's edge plus 400 m), going round at a circular orbit's speed, and everyone
+wakes standing in its frame at the `"wake"` spots (`[x, y, z]` in the ship's own metres from its first part's middle, one
+each in turn). The next space tick makes it a ship (docs/space/SPACE.md). The save keeps the ship where a colony start keeps
+the colony, so friends who join later wake aboard it too. Code: `Source/Game/GameSpaceStart.cs`.
+
 ## How a world picks its start
 
 - **New world**: the host's choice (the Story page's Start row, or the Story start list under HOST STORY CO-OP), on that
@@ -35,5 +43,7 @@ saved world keep. Text is ASCII.
 ## The starts now
 
 - `PenalColony` (default): Ministry convict on Glacier, the crash card, waking in the colony, the induction.
+- `RustBucket`: a tramp hauler waking on the floor of their cabin aboard the Rust Bucket (docs/sandbox/constructs/ship.md)
+  in orbit 3 km over Glacier; no colony, no tutorial, no faction, the kit aboard (`"kit": []`).
 - `Castaway` (PLACEHOLDER, only proves starts work): Highland castaway on Caledon, a card, waking beside the wreck alone, no
   tutorial, Clan MacSlop standing 20 ("Friend of the Clan"). Replace or remove it when a real second start is written.
