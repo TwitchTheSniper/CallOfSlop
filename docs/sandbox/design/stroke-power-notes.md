@@ -129,3 +129,29 @@ window or picture.
    - B: plan strokes only for the best bores (about half the cost).
 5. **A blank past 1.6** is metal for nothing. A (recommended): leave it (old keys load); B: refuse longer cylinder blanks at the die
    for new keys.
+
+## 7. Merge review, round 1 (2026-11-14)
+
+1. **Boosters by bore.** A bank's booster share was its kW over the bank's kW by bore and stroke, so a bank-sized Turbo on 1.6 strokes
+   gave 1.25 instead of 1.4 (about 11% less power on load; a Supercharger about 7.5%). Now a booster's share is over the bank's
+   largest cylinder's kW at its **bore alone** (`boreKw` in `ConstructEngine.Build`): a booster sized for its bank boosts it whole at
+   any stroke; the fuel system still feeds by bore and stroke. The kit presses boosters by the bore (`Bore.OfBoost`). A kit I4 bored
+   turbo engine saved by main (`--gen-engine --read`, on main and here), its cylinders swapped for 1.2 m ones: main 309 kW 943 N m;
+   here 363 kW 1109 N m, its 50 cm carburettor (a sixth to spare on main) feeding 73.5%; with a 60 cm one, 494 kW. A saved engine never
+   loses power: it gives its old kW times the lesser of the stroke and its fuel system's headroom. MIGRATING says so.
+2. **The creative Engine tab's Car bay** now holds the request to the Small limiter (`MinLimiterRpm`, as a vehicle's), and the notice
+   gives torque at peak rpm and the limiter. Not tried in a running game (read and built only).
+3. **The starter by the engine as built.** `NeedsStarter` read the kW-weighted stroke of the cylinders giving power, so wrecking a
+   plain one on a mixed engine near `starterFrom` could raise it past and stop the engine. Now it reads `ModEngine.BuiltStroke`, the
+   same mean over every cylinder as built (wrecked and unfed too). Settled by reading; no mixed engine near the starter size was built.
+4. **The kit's slices.** `Bores` yields before each bore and stroke's pieces are pressed, and presses short strokes only when revs above
+   the size's peak are asked. `--slice-vehicle engine` (new) after the game's warm-up: a first Medium tier 5 20 MW request 9 ms of kit
+   over 4 slices, longest span 1.6 ms; a first Large 400 MW 29 ms over 6, longest span 2.6 ms. The one long slice (14 to 16 ms) holds
+   1.9 ms of kit and a garbage collection ("[vehicles] slice ... a garbage collection ran"); warm requests 6 to 7 ms, longest slice
+   3.4 ms. The warm-up still warms a Small tier 3 request only (a Large one there would cost its 30 ms at every start).
+
+Samples after the round (`--gen-engine`, seed 0): boosters now pressed by the bore are smaller, so some picks moved: 2000 kW tier 5
+a B12 racing long-stroke supercharged, 1986 kW, 6070 N m at 3125 rpm, 822 kg; 20 MW tier 5 Medium a B10 bored long-stroke turbo,
+20.4 MW at 2105 rpm, 10.5 t; 500 kW under 300 kg an I3 racing long-stroke supercharged, 495 kW, 296 kg. No built sample has a starved
+bank. `--gen-vehicles` 238 identical; the four kit vehicles' `--speed-test` unchanged; `--gen-engine-parts --check`, `--press-part
+presets` and `--check-construct-parts` clean.

@@ -111,8 +111,8 @@ Cylinders keep their across, so a V, W or radial of bores builds. A bored plan's
 ratio (length over across against the preset's, 0.6 to 1.6) and the revs are the crank's over it, so a long stroke gives more power
 at lower revs and torque by the square. Each bore is planned at strokes 1, 1.33 and 1.6 (`EngineKit.Strokes`: the preset's length
 times that, to 5 cm), and 0.8 only when the request asks for revs above the size's peak (a short stroke spins faster for less
-power). The fuel system and booster are pressed wide enough to feed the cylinder's kW whole (`FeedFor`: in 5 cm steps until they
-do, so no bank is built starved; the kit reads a starved bank back as the game's fault text). A plan's torque, peak rpm and starter
+power). The fuel system is pressed wide enough to feed the cylinder's kW whole, by bore and stroke, and the booster to its kW at its
+bore alone, which is what the engine scales a booster's share by (`FeedFor`: in 5 cm steps until they do, so no bank is built starved; the kit reads a starved bank back as the game's fault text). A plan's torque, peak rpm and starter
 are its own stroke's; a long stroke's cylinders stand taller in the estimate. `MinLimiterRpm` holds a request to strokes that keep
 a limiter: a vehicle's request sets the Small limiter, since its stock gearbox is geared for it (a 1.6 stroke's 4375 rpm would cap a
 car's top gear at 26 m/s), so vehicles keep the plain stroke. A long stroke wins where torque or mass is asked. Samples
@@ -155,18 +155,18 @@ and Capital Smokestack, past what a die presses, have an Assembler recipe. The r
   [--fuel F] [--layout inline|v|flat|w|radial] [--boost none|supercharger|turbo] [--size small|medium|large|capital] [--tier 1-5]
   [--seed S] [--plans N] [--again] [--out FILE]`. Prints (to `callofslop.log`, as the other tools do) the request, the built engine's
   numbers and the note; `--plans N` lists the best plans, `--again` times a warm second request and checks it builds the same
-  blueprint. The presets are 120, 300, 800 and 3000 kW. A first request in a process costs about 2 s of warm-up (JIT); a warm one 15
-  to 50 ms (about 7,400 plans in 18 to 27 ms, three times main's 2,640 since strokes; it yields every 1,024 plans, so a game slice stays short).
+  blueprint. `--gen-engine --read FILE` builds a blueprint on a flat floor and prints each engine's numbers as the game works them out (a saved or old engine's, before and after a change). The presets are 120, 300, 800 and 3000 kW. A first request in a process costs about 2 s of warm-up (JIT); a warm one 15
+  to 50 ms (about 7,400 plans in 18 to 27 ms, three times main's 2,640 since strokes; it yields every 1,024 plans and before each bore and stroke's pieces are pressed; `--slice-vehicle engine [--power KW] [--tier T] [--size 0-3]` times one in 2.5 ms slices: a first Medium or Large tier 5 request in a process runs 9 to 29 ms of kit over 4 to 6 slices, its longest span 2.6 ms; the one long slice measured, 16 ms, was a garbage collection with 1.9 ms of kit in it).
 - **The vehicle kit / dynamic spawn**: an `EngineWish` (below, "In a vehicle"): `--gen-vehicle NAME --engine-tier N [--top-speed V]
   [--accel A]`, `--slice-vehicle NAME --engine-tier N [--top-speed V]` (as the game's spawn makes it, in slices), and
   `new VehicleGenJob(..., engine: wish)` in the game. Nothing in the game passes one yet.
 - **The player** (creative): the inventory's **Engine** tab (`UI/UiSandboxEngine.cs`): power (presets 120 / 300 / 800 / 3000 kW), tech
   tier, layout, booster, size, an optional bay (length, width, height; "Car bay" is `EngineKitVehicle.Bay`) and a seed; MAKE ENGINE sends
   `CActKind.MakeEngine` (protocol 242; fixed fields: u16 kW, u8 tier, layout, boost, size, 3 x u16 bay in cm, u32 seed). The host
-  (`Game/GameSandboxEngines.cs`) refuses with a reason anything out of range (1 to 50,000 kW, tier 1-5, a bay side 0 or 0.3-100 m),
+  (`Game/GameSandboxEngines.cs`; with the Car bay it holds the request to the Small limiter, as a vehicle's, since a car's stock gearbox is geared for it) refuses with a reason anything out of range (1 to 50,000 kW, tier 1-5, a bay side 0 or 0.3-100 m),
   outside creative or in a seat, and queues the request on the vehicle spawner (`VehicleSpawner.RequestEngine`): the kit runs in the
   generation's slices (`VehicleGenJob(EngineRequest)`, 1-8 ms over 1-3 ticks warm) and the engine is set down in front of the player
-  as their construct, never rerolled. The player's notice gives its name, kW, mass and size, "it needs a fuel tank and a gearbox", and
+  as their construct, never rerolled. The player's notice gives its name, kW, torque at its peak rpm and its limiter, mass and size, "it needs a fuel tank and a gearbox", and
   the kit's note. Clients never run the kit: the engine arrives as bodies. Tried 2026-11-11 with a host and a client over the real
   transport (80 ms, 2% loss): a 120 kW tier 1 inline in the car bay, 300 kW tier 3, 2000 kW tier 5 V turbo and 20 MW tier 2 (a Medium
   W21, set down in slices), each the same parts and hash on both ends, the engine complete but for its tank; the first big set-down

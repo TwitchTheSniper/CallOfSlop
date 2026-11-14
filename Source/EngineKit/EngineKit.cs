@@ -128,11 +128,14 @@ public static class EngineKit
     /// and grade word, and <see cref="Of"/> for the fuel system and booster pressed to the cylinder's scale (a small carburettor would starve a
     /// bored bank: sized-parts design 6.4).
     /// </summary>
-    private readonly record struct Bore(float Ratio, int Tier, string Word, ConstructPartDef? Cylinder, ConstructPartDef? Crank, float Pitch, float Frail = 0, float Stroke = 1f, float Kw = 0)
+    private readonly record struct Bore(float Ratio, int Tier, string Word, ConstructPartDef? Cylinder, ConstructPartDef? Crank, float Pitch, float Frail = 0, float Stroke = 1f, float Kw = 0, float BoostRatio = 1f, float BoostKw = 0)
     {
         // (Ratio: the scale a fuel system or booster needs to feed the cylinder's Kw whole, over the plain one's: by bore and stroke. Wider to
         // feed it, no taller: its across sets its scale, and a vehicle's bay is low.)
         public string? Of(string part) => Ratio == 1 ? part : FeedFor(part, Ratio, Kw);
+
+        /// <summary>A booster for the bank: sized by the cylinder's bore alone (its kW at its bore: the engine scales a booster's share by that, whatever the stroke).</summary>
+        public string? OfBoost(string part) => BoostRatio == 1 ? part : FeedFor(part, BoostRatio, BoostKw);
     }
 
     /// <summary>
@@ -234,7 +237,7 @@ public static class EngineKit
     /// The cylinders a tier allows: the plain bore, then each tier grade's (the plain cylinder with the thinner wall that gives its grade's power), each at every
     /// stroke in <see cref="Strokes"/> (stroke power, 2026-11-14: a longer stroke is more displacement, so more power at lower revs, for more metal).
     /// </summary>
-    private static IEnumerable<Bore> Bores(string sw, int tier)
+    private static IEnumerable<Bore> Bores(string sw, int tier, bool shortToo)
     {
         var plain = Part($"{sw} Cylinder");
         if (plain == null || Part($"{sw} Crank Section") is not { } crank0)
@@ -257,24 +260,30 @@ public static class EngineKit
         }
         var plainKw = rules.CylinderKw(plain);
         var pitch = (crank0.BoundsMax - crank0.BoundsMin).Z;
+        var plainBoreKw = rules.KwAt(rules.ScaleOf(plain));
         foreach (var b in bores)
             foreach (var st in Strokes)
             {
-                if (Stroked(b.Cyl, st) is not { } cyl)
+                if (st < 1f && !shortToo || Stroked(b.Cyl, st) is not { } cyl)
                     continue;
-                // The bank's pieces pressed to feed the cylinder's kW whole (by bore and stroke: a small carburettor starves a long-stroke bank, design 6.4):
-                // the widest of them (and the cylinder) sets the crank's pitch, so neighbours clear by the z-fighting gap.
+                VehicleGenJob.Yield(); // (each stroke presses up to a dozen pieces the first time: a slice of its own in a generation)
+                // The fuel system pressed to feed the cylinder's kW whole (by bore and stroke: a small carburettor starves a long-stroke bank, design
+                // 6.4), the booster to its kW at its bore (the engine scales a booster's share by that); the widest of them (and the cylinder) sets the
+                // crank's pitch, so neighbours clear by the z-fighting gap.
                 var kw = rules.CylinderKw(cyl);
+                var boreKw = rules.KwAt(rules.ScaleOf(cyl));
                 var ratio = MathF.Abs(kw / plainKw - 1f) < 1e-4f ? 1f : rules.ScaleForKw(kw) / rules.ScaleOf(plain);
+                var boostRatio = MathF.Abs(boreKw / plainBoreKw - 1f) < 1e-4f ? 1f : rules.ScaleOf(cyl) / rules.ScaleOf(plain);
                 var across = MathF.Max((cyl.BoundsMax - cyl.BoundsMin).X, (cyl.BoundsMax - cyl.BoundsMin).Z);
-                if (ratio != 1f)
-                    foreach (var piece in new[] { "Carburettor", "Injector Rail", "Supercharger", "Turbo" })
-                        if (FeedFor($"{sw} {piece}", ratio, kw) is { } pk && Part(pk) is { } pd)
-                            across = MathF.Max(across, MathF.Max((pd.BoundsMax - pd.BoundsMin).X, (pd.BoundsMax - pd.BoundsMin).Z));
+                foreach (var (piece, boost) in Feeders)
+                    if ((boost ? boostRatio : ratio) != 1f && FeedFor($"{sw} {piece}", boost ? boostRatio : ratio, boost ? boreKw : kw) is { } pk && Part(pk) is { } pd)
+                        across = MathF.Max(across, MathF.Max((pd.BoundsMax - pd.BoundsMin).X, (pd.BoundsMax - pd.BoundsMin).Z));
                 var crank = across + 2 * CallOfSlop.Pressed.Gap(across) <= pitch + 1e-3f ? crank0 : Crank(sw, across + 2 * CallOfSlop.Pressed.Gap(across));
-                yield return new Bore(ratio, b.Tier, b.Word, cyl, crank, crank == null ? 1 : (crank.BoundsMax - crank.BoundsMin).Z / pitch, b.Frail, EngineRules.StrokeOf(cyl), kw);
+                yield return new Bore(ratio, b.Tier, b.Word, cyl, crank, crank == null ? 1 : (crank.BoundsMax - crank.BoundsMin).Z / pitch, b.Frail, EngineRules.StrokeOf(cyl), kw, boostRatio, boreKw);
             }
     }
+
+    private static readonly (string Piece, bool Boost)[] Feeders = [("Carburettor", false), ("Injector Rail", false), ("Supercharger", true), ("Turbo", true)];
 
     /// <summary>Every plan the request allows, best first (feasible ones before the rest).</summary>
     public static List<EnginePlan> Plans(EngineRequest r)
@@ -300,7 +309,7 @@ public static class EngineKit
                 continue;
             // The plain bore (tiers 1 and 2) and each tier's bore (sized parts phase 6: the tier cylinders are retired, so a tier's extra
             // power is a plain cylinder pressed wider than its crank's scale, with its fuel system and booster pressed to match).
-            foreach (var bore in Bores(sw, tier))
+            foreach (var bore in Bores(sw, tier, r.PeakRpm > rules.Peak[size])) // (short strokes only when revs above the size's peak are asked)
             {
                 // (A long stroke's limiter may be under what the request allows; a short stroke only spins faster for less power, so it is planned only when revs
                 // above the size's peak are asked for.)
@@ -310,9 +319,9 @@ public static class EngineKit
                 var boosts = new List<ConstructPartDef?>();
                 if (r.Boost is EngineBoost.Auto or EngineBoost.None)
                     boosts.Add(null);
-                if (r.Boost is EngineBoost.Auto or EngineBoost.Supercharger && Part($"{sw} Supercharger") is { } sc && TierOf(sc) <= tier && bore.Of(sc.Name) is { } scb)
+                if (r.Boost is EngineBoost.Auto or EngineBoost.Supercharger && Part($"{sw} Supercharger") is { } sc && TierOf(sc) <= tier && bore.OfBoost(sc.Name) is { } scb)
                     boosts.Add(Part(scb));
-                if (r.Boost is EngineBoost.Auto or EngineBoost.Turbo && Part($"{sw} Turbo") is { } tu && TierOf(tu) <= tier && bore.Of(tu.Name) is { } tub)
+                if (r.Boost is EngineBoost.Auto or EngineBoost.Turbo && Part($"{sw} Turbo") is { } tu && TierOf(tu) <= tier && bore.OfBoost(tu.Name) is { } tub)
                     boosts.Add(Part(tub));
                 if (r.Boost is EngineBoost.Supercharger or EngineBoost.Turbo && boosts.Count == 0)
                     boosts.Add(null); // (the booster asked for is past the tier: none, and the note says so)
