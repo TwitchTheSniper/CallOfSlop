@@ -115,7 +115,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "waitnear" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action) || WsTourKnown(action) || WsTalkKnown(action) || WsPlayKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "inside" or "person" or "use" or "waitnear" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action) || WsTourKnown(action) || WsTalkKnown(action) || WsPlayKnown(action);
 
     private static void WsSay(string s)
     {
@@ -895,6 +895,30 @@ public static unsafe partial class Program
                     normal = Vector3.UnitZ;
                 WsEyeTo(g, me, spot + Vector3.Cross(Vector3.UnitY, normal) * v[0] + Vector3.UnitY * v[1] + normal * v[2]);
                 WsLook(g, me.Eye, spot);
+                _wsWait = 3;
+                return;
+            }
+            case "inside": // "inside PART[#n] X,Y,Z LX,LY,LZ": the eye at a point in the part's own frame, looking at another (a room in a big hull piece)
+            {
+                var bits = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                float[]? Vec(string t)
+                {
+                    var q = t.Split(',');
+                    var o = new float[3];
+                    return q.Length == 3 && q.Select((x, i) => float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out o[i])).All(b => b) ? o : null;
+                }
+                var (c, part) = bits.Length >= 3 ? WsFind(g, string.Join(' ', bits[..^2])) : (null, -1);
+                if (c == null || Vec(bits[^2]) is not { } e || Vec(bits[^1]) is not { } l)
+                {
+                    WsFail("inside PART[#n] X,Y,Z LX,LY,LZ");
+                    return;
+                }
+                var seg = c.Parts[part].Seg;
+                Vector3 W(float[] v) => c.SegToWorld(seg, c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, new Vector3(v[0], v[1], v[2])));
+                g.NoclipShot = true;
+                me.NoclipWanted = g.NoclipAllowed(me);
+                WsEyeTo(g, me, W(e));
+                WsLook(g, me.Eye, W(l));
                 _wsWait = 3;
                 return;
             }

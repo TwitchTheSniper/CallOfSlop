@@ -1,0 +1,520 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Rust Bucket",
+  "description": "Your ship: a patched two-deck tramp with a cockpit, two cabins, hydroponics, a galley, a hold and an engine room.",
+  "steps": [
+    {
+      "part": "Rust Bucket Keel"
+    },
+    {
+      "part": "Rust Bucket Deck",
+      "on": 0,
+      "socket": "deck",
+      "by": "keel"
+    },
+    {
+      "part": "Rust Bucket Roof",
+      "on": 1,
+      "socket": "roof",
+      "by": "deck"
+    },
+    {
+      "part": "Rust Bucket Pod L",
+      "on": 0,
+      "socket": "podL",
+      "by": "hull"
+    },
+    {
+      "part": "Rust Bucket Pod R",
+      "on": 0,
+      "socket": "podR",
+      "by": "hull"
+    },
+    {
+      "part": "Rust Bucket Leg",
+      "on": 0,
+      "socket": "legFL",
+      "by": "top"
+    },
+    {
+      "part": "Rust Bucket Leg",
+      "on": 0,
+      "socket": "legFR",
+      "by": "top"
+    },
+    {
+      "part": "Rust Bucket Leg",
+      "on": 0,
+      "socket": "legBL",
+      "by": "top"
+    },
+    {
+      "part": "Rust Bucket Leg",
+      "on": 0,
+      "socket": "legBR",
+      "by": "top"
+    },
+    {
+      "part": "Rust Bucket Ramp",
+      "on": 0,
+      "socket": "ramp",
+      "by": "hang"
+    },
+    {
+      "part": "Steel Wide Stair 3 m",
+      "on": 0,
+      "socket": "stair",
+      "by": "b0_0"
+    },
+    {
+      "part": "Store Shelving 2 m",
+      "on": 0,
+      "socket": "shelfL0",
+      "by": "wall",
+      "paint": "#6b6f5a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Store Shelving 2 m",
+      "on": 0,
+      "socket": "shelfL1",
+      "by": "wall",
+      "paint": "#6b6f5a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Store Shelving 2 m",
+      "on": 0,
+      "socket": "shelfL2",
+      "by": "wall",
+      "paint": "#6b6f5a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Tool Rack",
+      "on": 0,
+      "socket": "rackR",
+      "by": "back"
+    },
+    {
+      "part": "Locker",
+      "on": 0,
+      "socket": "lockerR",
+      "by": "wall",
+      "paint": "#5d7468",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 0,
+      "socket": "crate0",
+      "by": "-y"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 0,
+      "socket": "crate1",
+      "by": "-y"
+    },
+    {
+      "part": "Ship Engine Block",
+      "on": 0,
+      "socket": "engine",
+      "by": "bottom"
+    },
+    {
+      "part": "Engineer's Panel",
+      "on": 0,
+      "socket": "panelEng",
+      "by": "back"
+    },
+    {
+      "part": "Power Board",
+      "on": 0,
+      "socket": "boardEng",
+      "by": "back"
+    },
+    {
+      "part": "Pipe Bank",
+      "on": 0,
+      "socket": "pipesEngL",
+      "by": "back"
+    },
+    {
+      "part": "Battery",
+      "on": 0,
+      "socket": "battery",
+      "by": "-z",
+      "paint": "#3a3d3f"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 0,
+      "socket": "lampHoldL0",
+      "by": "back",
+      "config": {
+        "colour": "#f2e6c0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 0,
+      "socket": "lampHoldL1",
+      "by": "back",
+      "config": {
+        "colour": "#f2e6c0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 0,
+      "socket": "switchHoldL",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 0,
+      "socket": "lampHoldR0",
+      "by": "back",
+      "config": {
+        "colour": "#f2e6c0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 0,
+      "socket": "lampHoldR1",
+      "by": "back",
+      "config": {
+        "colour": "#f2e6c0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 0,
+      "socket": "switchHoldR",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 0,
+      "socket": "lampEngL",
+      "by": "back",
+      "config": {
+        "colour": "#f2e6c0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 0,
+      "socket": "lampEngR",
+      "by": "back",
+      "config": {
+        "colour": "#f2e6c0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 0,
+      "socket": "switchEng",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Seat",
+      "on": 1,
+      "socket": "seatL",
+      "by": "bottom"
+    },
+    {
+      "part": "Seat",
+      "on": 1,
+      "socket": "seatR",
+      "by": "bottom"
+    },
+    {
+      "part": "Chart Table",
+      "on": 1,
+      "socket": "chart",
+      "by": "back"
+    },
+    {
+      "part": "Iron Bed",
+      "on": 1,
+      "socket": "bed",
+      "by": "wall",
+      "paint": "#6b4a2e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Locker",
+      "on": 1,
+      "socket": "locker",
+      "by": "wall",
+      "paint": "#8c7b52",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Steel Desk",
+      "on": 1,
+      "socket": "desk",
+      "by": "wall"
+    },
+    {
+      "part": "Shower Stall",
+      "on": 1,
+      "socket": "shower",
+      "by": "wall"
+    },
+    {
+      "part": "Ship Basin",
+      "on": 1,
+      "socket": "basin",
+      "by": "wall"
+    },
+    {
+      "part": "Ship Toilet",
+      "on": 1,
+      "socket": "toilet",
+      "by": "wall"
+    },
+    {
+      "part": "Grow Rack 2 m",
+      "on": 1,
+      "socket": "growL0",
+      "by": "wall"
+    },
+    {
+      "part": "Grow Rack 2 m",
+      "on": 1,
+      "socket": "growL1",
+      "by": "wall"
+    },
+    {
+      "part": "Grow Rack 2 m",
+      "on": 1,
+      "socket": "growM0",
+      "by": "wall"
+    },
+    {
+      "part": "Grow Rack 2 m",
+      "on": 1,
+      "socket": "growM1",
+      "by": "wall"
+    },
+    {
+      "part": "Galley Stove",
+      "on": 1,
+      "socket": "stove",
+      "by": "back"
+    },
+    {
+      "part": "Mess Table",
+      "on": 1,
+      "socket": "table",
+      "by": "back"
+    },
+    {
+      "part": "Medicine Cabinet",
+      "on": 1,
+      "socket": "cabinet",
+      "by": "back"
+    },
+    {
+      "part": "Steel Swing Door 1.5x2.25 m",
+      "on": 1,
+      "socket": "doorCockpit",
+      "by": "hang",
+      "paint": "#5d7468",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Steel Swing Door 1.5x2.25 m",
+      "on": 1,
+      "socket": "doorBed",
+      "by": "hang",
+      "paint": "#5d7468",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Steel Swing Door 1.5x2.25 m",
+      "on": 1,
+      "socket": "doorBath",
+      "by": "hang",
+      "paint": "#c9ccc4",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Steel Swing Door 1.5x2.25 m",
+      "on": 1,
+      "socket": "doorHydro",
+      "by": "hang",
+      "paint": "#5d7468",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Steel Swing Door 1.5x2.25 m",
+      "on": 1,
+      "socket": "doorGalley",
+      "by": "hang",
+      "paint": "#5d7468",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 1,
+      "socket": "lampCockpit",
+      "by": "back",
+      "config": {
+        "colour": "#f2e6c0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 1,
+      "socket": "lampBed",
+      "by": "back",
+      "config": {
+        "colour": "#f2e6c0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 1,
+      "socket": "lampBath",
+      "by": "back",
+      "config": {
+        "colour": "#f2e6c0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 1,
+      "socket": "lampCorrA",
+      "by": "back",
+      "config": {
+        "colour": "#f2e6c0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 1,
+      "socket": "switchFwd",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 1,
+      "socket": "lampHydroA",
+      "by": "back",
+      "config": {
+        "colour": "#f0c8f0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 1,
+      "socket": "lampHydroB",
+      "by": "back",
+      "config": {
+        "colour": "#f0c8f0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 1,
+      "socket": "lampCorrB",
+      "by": "back",
+      "config": {
+        "colour": "#f2e6c0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 1,
+      "socket": "lampGalley",
+      "by": "back",
+      "config": {
+        "colour": "#f2e6c0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 1,
+      "socket": "switchAft",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    }
+  ],
+  "wires": [
+    [
+      25,
+      23
+    ],
+    [
+      25,
+      24
+    ],
+    [
+      28,
+      26
+    ],
+    [
+      28,
+      27
+    ],
+    [
+      31,
+      29
+    ],
+    [
+      31,
+      30
+    ],
+    [
+      57,
+      53
+    ],
+    [
+      57,
+      54
+    ],
+    [
+      57,
+      55
+    ],
+    [
+      57,
+      56
+    ],
+    [
+      62,
+      58
+    ],
+    [
+      62,
+      59
+    ],
+    [
+      62,
+      60
+    ],
+    [
+      62,
+      61
+    ]
+  ]
+}
