@@ -26,6 +26,23 @@
     { "id": "pettigrew-light", "who": "Warden Pettigrew", "ask": "Steered by the Light?", "after": "pettigrew-lighthouse", "priority": 9,
       "answers": [
         { "then": [ "?me Likes ?them +2" ], "say": [ "The bright one, at night. She couldn't stand it. Said it never blinks. Lamps blink, she said." ] } ] },
+    { "id": "pettigrew-remember", "who": "Warden Pettigrew", "ask": "I can't remember who I am.", "priority": 7,
+      "answers": [
+        { "then": [ "?me Likes ?them +1" ],
+          "say": [ "No. Nor can your file. It came in with you: credentials, very old ones. Wiped." ] } ] },
+    { "id": "pettigrew-nothing", "who": "Warden Pettigrew", "ask": "So there's nothing there?", "after": "pettigrew-remember", "priority": 8,
+      "answers": [
+        { "say": [ "Nothing. A seal, a stamp saying 'honour the bearer', and a blank where you should be." ] } ] },
+    { "id": "pettigrew-papers", "who": "Warden Pettigrew", "ask": "Why do I get to keep my tools?", "priority": 6,
+      "answers": [
+        { "if": "?me Grudge ?them >= 30", "keep": true, "say": [ "Keep asking and we'll see how long you keep them." ] },
+        { "then": [ "?me Likes ?them +1" ],
+          "say": [ "Your credentials, {them.first}. The Ministry honours the old kind. Nobody has ever dared repeal that rule." ] } ] },
+    { "id": "pettigrew-papers-old", "who": "Warden Pettigrew", "ask": "How old are my credentials?", "after": [ "pettigrew-nothing", "pettigrew-papers" ], "priority": 7,
+      "answers": [
+        { "if": "?me Likes ?them < 5", "keep": true, "say": [ "Old enough that I'd rather not say. Run along." ] },
+        { "then": [ "?me Likes ?them +2" ],
+          "say": [ "The seal is older than the Ministry. Records says that cannot be. Records also lost my pension." ] } ] },
     { "id": "pettigrew-memos", "who": "Warden Pettigrew", "ask": "Who gives you your orders?", "if": "?them Inducted", "priority": 3,
       "answers": [
         { "if": "?me Grudge ?them >= 30", "keep": true, "say": [ "Not you. That will do." ] },
@@ -149,6 +166,10 @@
         { "if": "?them Rank >= 2", "say": [ "'Good worker. Makes quota. Possibly a nice person.' I've crossed out 'possibly'." ] },
         { "if": "?them Inducted", "say": [ "'Did the mine shift. Propped a wall. Didn't fall off the bus.' It's early days." ] },
         { "say": [ "'New inmate. Confused. Hair like a startled hedge.' I'll revise it. Probably." ] } ] },
+    { "id": "nettles-who-am-i", "who": "Officer Nettles", "ask": "Do you know who I am?", "priority": 5,
+      "answers": [
+        { "then": [ "?me Likes ?them +1" ],
+          "say": [ "Your file's only your credentials, and they're wiped. Half the letters left aren't letters. I drew them." ] } ] },
     { "id": "nettles-volunteer", "who": "Officer Nettles", "ask": "Why did you volunteer for this?", "priority": 3,
       "answers": [
         { "then": [ "?me Likes ?them +2" ], "say": [ "Character-building, they said. And somebody back home might notice. So far I've built mostly worry." ] } ] },
