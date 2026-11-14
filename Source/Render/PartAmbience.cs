@@ -303,6 +303,9 @@ public static class PartAmbience
         }
     }
 
+    /// <summary>The next frame's tannoy in earshot speaks now (the colony's day calls a new period: GameLabourDay.cs).</summary>
+    public static void AnnounceSoon() => _nextTannoy = double.NegativeInfinity;
+
     /// <summary>One announcement now and then, from the first tannoy in earshot that the frame comes to.</summary>
     private static void Announce(Audio audio, Vector3 at, Spec s, double now)
     {

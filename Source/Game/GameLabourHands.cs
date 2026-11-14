@@ -38,13 +38,13 @@ public sealed partial class Game
         return -1;
     }
 
-    /// <summary>Server: the scene of the gang of that name, or -1 (its place isn't built yet: the quarry before the first duty).</summary>
+    /// <summary>Server: the scene of the gang of that name, or -1 (its place isn't built yet: the quarry before the first duty; or it is off shift).</summary>
     private int LabourSceneOf(string gang)
     {
         var script = LabourScript.Current.Scenes;
         for (var i = 0; i < LabourCount; i++)
             if (_lbGang[i] >= 0 && _lbGang[i] < script.Length && script[_lbGang[i]].Name.Equals(gang, StringComparison.OrdinalIgnoreCase))
-                return i;
+                return LabourOnShift(i) ? i : -1; // (a gang off shift has no place to work in: GameLabourDay.cs)
         return -1;
     }
 

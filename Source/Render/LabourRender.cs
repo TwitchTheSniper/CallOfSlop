@@ -16,11 +16,13 @@ namespace CallOfSlop;
 /// </summary>
 public static class LabourRender
 {
-    public const int MaxFigures = LabourScript.MaxPeople + Game.LabourScenesMax * 4;
+    public const int MaxFigures = LabourScript.MaxListed + Game.LabourScenesMax * 4;
     public const float DetailRange = 8f, FullRange = 13f, MidRange = 32f, FarRange = 110f, ToolRange = 60f, HeardRange = 16f;
     public const float EveryFrame = 9f; // m: nearer than this a figure is posed every frame
     public const double NearEvery = 1 / 45.0, MidEvery = 1 / 30.0, FarEvery = 1 / 15.0; // s between poses up close, in the middle distance and far off
     public const float Walk = 0.95f, Stride = 1.3f; // m/s and m per gait cycle (two steps)
+    public const float EatOut = 0.62f, Stool = 0.47f; // m: a diner's stool out from the table's middle line, and its height
+    public const float PatrolSpeed = 0.9f; // m/s
 
     private enum Role : byte { Inmate, Guard, Caller, Escort }
 
@@ -45,6 +47,7 @@ public static class LabourRender
         public byte Lod; // 0 not posed yet, 1 far, 2 mid, 3 near, 4 near with details
         public double PosedAt;
         public Vector3 Drawn;
+        public Vector3 Lens, LensDir; // a patrol's torch: its lens and the way it shines, as last posed (drawn lit apart from the kept boxes)
     }
 
     private const int BoxCap = 96;
@@ -87,6 +90,15 @@ public static class LabourRender
     private static int _count;
     private static readonly Way?[] Ways = new Way?[Game.LabourScenesMax];
     private static readonly Vector3[] SceneUp = new Vector3[Game.LabourScenesMax], SceneRight = new Vector3[Game.LabourScenesMax], SceneFwd = new Vector3[Game.LabourScenesMax];
+    // The colony's day (GameLabourDay.cs): which gangs this PC draws now, and each gang's bounds, for coming and going unseen.
+    private static readonly bool[] Shown = new bool[Game.LabourScenesMax];
+    private static readonly Vector3[] SceneMid = new Vector3[Game.LabourScenesMax];
+    private static readonly float[] SceneReach = new float[Game.LabourScenesMax];
+    public const double SnapShift = 2; // s after the list arrives: the shift heard with it is taken at once
+    private static double _snapAsked, _snapUntil;
+
+    /// <summary>The window tool's "period": for the next few seconds the gangs come and go even in view (a picture's set-up).</summary>
+    public static void SnapShifts(double seconds) => _snapAsked = seconds;
     private static int _version = -1;
     private static Game? _built;
     private static double _builtAt, _groundAgain;
@@ -122,6 +134,7 @@ public static class LabourRender
         var raw = game.MoverRenderTick / World.TickRate;
         if (raw - _builtAt > _groundAgain)
             Ground(game, raw);
+        Shifts(game, raw, g.CameraPosition);
         // The colony's alarm: everyone stops where they are (the clock stands), the inmates kneel, hands on heads.
         var alarm = game.ColonyAlarmOn;
         if (alarm && !_alarm)
@@ -140,6 +153,8 @@ public static class LabourRender
         for (var i = 0; i < _count; i++)
         {
             var f = Figures[i];
+            if (!Shown[f.Scene])
+                continue; // (off shift: GameLabourDay.cs)
             ref readonly var s = ref game.LabourScenes[f.Scene];
             if (HandIn[f.Scene] && f.Role == Role.Inmate && f.Slot == Math.Max((int)s.Inmates, 1) - 1)
                 continue; // (stood aside for the story person working in their place: DrawHands)
@@ -194,7 +209,42 @@ public static class LabourRender
         }
         DrawHands(g, game, t, raw, cam, alarm);
         for (var k = 0; k < game.LabourCount; k++)
-            DrawProps(g, game.LabourScenes[k], k, cam);
+            if (Shown[k])
+                DrawProps(g, game.LabourScenes[k], k, cam);
+    }
+
+    /// <summary>
+    /// The colony's day: a gang coming on shift appears, and one going off goes, only while no part of it could be in view
+    /// (outside the frustum, or past the far range), so nobody sees anyone pop in or out. Just after the list arrives the
+    /// shift heard with it is taken at once.
+    /// </summary>
+    private static void Shifts(Game game, double raw, Vector3 cam)
+    {
+        if (_snapAsked > 0)
+        {
+            _snapUntil = raw + _snapAsked;
+            _snapAsked = 0;
+        }
+        var snap = raw - _builtAt < SnapShift || raw < _snapUntil;
+        for (var k = 0; k < game.LabourCount; k++)
+        {
+            var want = game.LabourOnShift(k);
+            if (Shown[k] == want)
+                continue;
+            if (!snap)
+            {
+                var far = MathF.Max(0, Vector3.Distance(SceneMid[k], cam) - SceneReach[k]) > FarRange;
+                if (!far && Visible(SceneMid[k], SceneReach[k]))
+                    continue; // (in view: the change waits until you look away)
+            }
+            Shown[k] = want;
+            for (var i = 0; i < _count; i++)
+                if (Figures[i].Scene == k)
+                {
+                    Figures[i].N = 0; // (posed afresh when drawn again)
+                    Figures[i].Beat = -1;
+                }
+        }
     }
 
     /// <summary>
@@ -303,7 +353,17 @@ public static class LabourRender
             SceneUp[k] = up;
             SceneFwd[k] = StandInPath.Along(s.Facing, s.P0);
             SceneRight[k] = Vector3.Normalize(Vector3.Cross(SceneFwd[k], up));
-            Ways[k] = s.PointCount >= 2 ? MakeWay(s, s.Kind == LabourKind.March) : null;
+            Ways[k] = s.PointCount >= 2 ? MakeWay(s, s.Kind is LabourKind.March or LabourKind.Patrol) : null;
+            var mid = Vector3.Zero;
+            for (var i = 0; i < s.PointCount; i++)
+                mid += s.Point(i);
+            mid /= Math.Max((int)s.PointCount, 1);
+            var reach = 0f;
+            for (var i = 0; i < s.PointCount; i++)
+                reach = MathF.Max(reach, Vector3.Distance(mid, s.Point(i)));
+            SceneMid[k] = mid + up * 1f;
+            SceneReach[k] = reach + Math.Max((int)s.Inmates, 1) * MathF.Max(s.Gap, 0.6f) + 4f;
+            Shown[k] = game.LabourOnShift(k);
             var rng = new Random(s.Seed * 7919 + k);
             for (var i = 0; i < s.Inmates + s.Guards && _count < MaxFigures; i++)
             {
@@ -482,6 +542,15 @@ public static class LabourRender
             case LabourKind.Queue:
                 pos = p0 - fwd * (i * gap);
                 return;
+            case LabourKind.Eat:
+            {
+                // Down both sides of the table (its middle at the spot, its length along the gang's right), facing it.
+                var cols = (n + 1) / 2;
+                var side = (i & 1) == 0 ? -1f : 1f;
+                pos = p0 + right * ((i / 2 - (cols - 1) * 0.5f) * gap) + fwd * (side * EatOut);
+                fwd *= -side;
+                return;
+            }
             default:
             {
                 // A row along the gang's right, each turned a little their own way.
@@ -556,6 +625,15 @@ public static class LabourRender
                     return;
                 }
             }
+        if (s.Kind == LabourKind.Patrol && way != null)
+        {
+            // Officers round and round their beat, spread evenly along it.
+            var d = (float)(t * PatrolSpeed % way.Length) + way.Length * f.Slot / Math.Max((int)s.Guards, 1);
+            pos = Along(way, d, out fwd);
+            moving = PatrolSpeed;
+            phase = d / Stride + f.Rand;
+            return;
+        }
         if (f.Role == Role.Escort && way != null)
         {
             // The march's escort walks beside the middle of the column, on its right.
@@ -659,7 +737,7 @@ public static class LabourRender
 
     // ---- Poses -----------------------------------------------------------------------------------------------------
 
-    private enum Tool : byte { None, Shovel, Pick, Hammer, Broom, Brush, Clipboard, Rock, Barrow, Sling }
+    private enum Tool : byte { None, Shovel, Pick, Hammer, Broom, Brush, Clipboard, Rock, Barrow, Sling, Spoon, Torch }
 
     /// <summary>
     /// A body's pose: the hips (height, forward), the upper body's lean (negative forward), twist and roll about the hips,
@@ -775,6 +853,12 @@ public static class LabourRender
             p.HeadYaw = 0.45f * MathF.Sin(tf * 0.27f + r * 20);
             if (f.Role == Role.Caller || ((s.Flags & LabourScene.FlagForeman) != 0 && f.Slot == 0))
                 p = p with { HandL = new(-0.08f, 1.15f, -0.34f), HandR = new(0.1f, 1.2f, -0.3f), Tool = Tool.Clipboard, HeadPitch = -0.2f, HeadYaw = 0, Lean = 0 };
+            if (s.Kind == LabourKind.Patrol)
+            {
+                // A torch held out ahead, swung slowly over the ground; the other hand behind the back.
+                var sweep = MathF.Sin(tf * 0.7f + r * 11);
+                p = p with { HandR = new(0.16f + 0.1f * sweep, 1.12f, -0.38f), HandL = new(-0.12f, 0.98f, 0.24f), Tool = Tool.Torch, HeadYaw = 0.3f * sweep, HeadPitch = -0.12f };
+            }
             if (walks)
                 Gait(ref p, phase, 1f);
             else
@@ -838,6 +922,24 @@ public static class LabourRender
                     p = p with { HandR = new(-0.04f, 1.18f, -0.24f), Tool = Tool.Sling };
                 return p;
             }
+            case LabourKind.Eat:
+            {
+                // Sat on a stool, bent over the bowl: the spoon down to it and up, now and then a stop to look round.
+                var u = (tf / 3.4f + r * 3) % 1f;
+                var lift = u < 0.3f ? 0f : u < 0.5f ? Smooth((u - 0.3f) / 0.2f) : u < 0.62f ? 1f : u < 0.8f ? 1f - Smooth((u - 0.62f) / 0.18f) : 0f;
+                var stir = MathF.Sin(tf * 5f + r * 9) * 0.03f * (1 - lift);
+                p = Pose.Standing with
+                {
+                    PelvisY = Stool, PelvisZ = 0.02f, Lean = -0.2f + 0.1f * lift, HeadPitch = -0.45f + 0.25f * lift,
+                    FootR = new(0.17f, 0.09f, -0.26f), FootL = new(-0.17f, 0.09f, -0.22f),
+                    HandR = Vector3.Lerp(new Vector3(0.1f + stir, 1.25f, -0.44f), new Vector3(0.05f, 1.56f, -0.24f), lift),
+                    HandL = new(-0.15f, 1.22f, -0.42f), Tool = Tool.Spoon,
+                };
+                var slot = (int)(tf / 9f + f.Rand2 * 5);
+                if ((slot * 3 + (int)(f.Rand * 17)) % 5 == 0 && tf / 9f + f.Rand2 * 5 - slot < 0.3f)
+                    p = p with { HeadYaw = 0.5f * (f.Rand2 > 0.5f ? 1 : -1), HeadPitch = -0.1f, HandR = new(0.1f, 1.25f, -0.4f) }; // (a look along the table)
+                return p;
+            }
             case LabourKind.RollCall:
             {
                 p = Pose.Standing with { FootR = new(0.12f, 0.09f, 0f), FootL = new(-0.12f, 0.09f, 0f), HandR = new(0.31f, 0.86f, 0f), HandL = new(-0.31f, 0.86f, 0f) };
@@ -860,6 +962,8 @@ public static class LabourRender
                 p = Pose.Standing with { Lean = -0.1f, HeadPitch = -0.3f, HandL = new(-0.3f, 0.88f + 0.05f * MathF.Sin(phase * MathF.Tau), 0.1f * MathF.Sin(phase * MathF.Tau)) };
                 // A hand on the shoulder of the one in front (the first in the column has none).
                 p.HandR = f.Slot > 0 ? new Vector3(0.26f, 1.36f, -0.72f) : new Vector3(0.3f, 0.88f + 0.05f * MathF.Sin(phase * MathF.Tau + MathF.PI), -0.1f * MathF.Sin(phase * MathF.Tau));
+                if (s.Gap > 1.2f)
+                    p = p with { HandR = new(0.1f, 0.98f, 0.24f), HandL = new(-0.1f, 0.98f, 0.24f), HeadPitch = -0.2f }; // (spaced out: hands clasped behind the back, an exercise yard's walk)
                 Gait(ref p, phase, 1f);
                 return p;
             }
@@ -1088,6 +1192,15 @@ public static class LabourRender
             case Tool.Sling:
                 Box(g, new Vector3(0.26f, 0.13f, 0.14f), new Vector3(-0.05f, 1.12f, -0.24f), uw, Bandage);
                 break;
+            case Tool.Spoon:
+                Box(g, new Vector3(0.022f, 0.012f, 0.16f), new Vector3(-0.02f, 0.02f, -0.1f), At(w, r), Steel * 1.3f);
+                break;
+            case Tool.Torch:
+                Box(g, new Vector3(0.055f, 0.055f, 0.22f), new Vector3(0, 0.01f, -0.08f), At(w, r), new Vector3(0.12f, 0.12f, 0.13f));
+                Box(g, new Vector3(0.08f, 0.08f, 0.05f), new Vector3(0, 0.01f, -0.205f), At(w, r), new Vector3(0.2f, 0.2f, 0.21f));
+                f.Lens = Vector3.Transform(new Vector3(0, 0.01f, -0.232f), At(w, r));
+                f.LensDir = Vector3.Normalize(Vector3.TransformNormal(-Vector3.UnitZ, w));
+                break;
             case Tool.Barrow:
             {
                 // Lifted by the handles and pushed: the grips in the mittens, the legs off the ground, the weight on the wheel.
@@ -1216,6 +1329,38 @@ public static class LabourRender
                     var m = Frame(at + dir * (e == 0 ? -0.9f : 0.9f), dir, up);
                     Box(g, new Vector3(1.05f, 0.42f, 0.9f), new Vector3(0, 0.17f, 0), m, col);
                     Box(g, new Vector3(0.62f, 0.32f, 0.56f), new Vector3(-0.1f, 0.47f, 0.06f), Matrix4x4.CreateRotationY(0.6f + e) * m, dark);
+                }
+                return;
+            }
+            case LabourKind.Eat:
+            {
+                // A stool under each diner and a tin bowl on the table in front of them (the table is the canteen's own).
+                if (Vector3.DistanceSquared(s.P0, cam) > MidRange * MidRange)
+                    return;
+                for (var i = 0; i < _count; i++)
+                {
+                    var f = Figures[i];
+                    if (f.Scene != k || f.Role != Role.Inmate || !f.Grounded)
+                        continue;
+                    var m = Frame(f.Pos, f.Fwd, up);
+                    Box(g, new Vector3(0.34f, 0.04f, 0.32f), new Vector3(0, Stool - 0.07f, 0.03f), m, Wood);
+                    Box(g, new Vector3(0.05f, Stool - 0.09f, 0.05f), new Vector3(0, (Stool - 0.09f) * 0.5f, 0.03f), m, Steel * 0.7f);
+                    Box(g, new Vector3(0.24f, 0.04f, 0.2f), new Vector3(0, 0.02f, 0.03f), m, Steel * 0.7f);
+                    Box(g, new Vector3(0.17f, 0.06f, 0.17f), new Vector3(0.02f, 0.783f, -(EatOut - 0.2f)), m, Steel * 1.2f);
+                    Box(g, new Vector3(0.13f, 0.012f, 0.13f), new Vector3(0.02f, 0.81f, -(EatOut - 0.2f)), m, new Vector3(0.5f, 0.42f, 0.3f)); // (whatever it is)
+                }
+                return;
+            }
+            case LabourKind.Patrol:
+            {
+                // The torches' lenses, lit (not kept with the figure: drawn bright, as the brazier's coals are).
+                for (var i = 0; i < _count; i++)
+                {
+                    var f = Figures[i];
+                    if (f.Scene != k || f.N == 0 || f.Lod < 2 || Vector3.DistanceSquared(f.Drawn, cam) > MidRange * MidRange)
+                        continue;
+                    g.Draw(Matrix4x4.CreateScale(0.065f, 0.065f, 0.012f) * Frame(f.Lens, f.LensDir, up), new Vector3(1f, 0.92f, 0.7f) * 1.6f, 1f, mode: 2);
+                    Boxes++;
                 }
                 return;
             }
