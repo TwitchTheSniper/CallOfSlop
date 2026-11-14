@@ -614,11 +614,46 @@ public sealed class PressParts : IPartGenerator
         ("shell", "Shell Receiver", "shell receiver", "hollow 20x20x40 steel"),
     ];
 
+    /// <summary>
+    /// Sized parts phase 6: the generated receivers (ConstructWeaponParts: a builder receiver at twice its handheld size, no recipe) as
+    /// patterns after the hand-made three, by name. Each preset is its part's own bounds on the 5 cm lattice (across the wider of x and y,
+    /// length along z), held to the die's ranges; a solid blank, or hollow when an earlier preset already has that solid one (Auto takes the
+    /// first preset of a blank; the Pattern setting or an order the others).
+    /// </summary>
+    private static List<(string Id, string Like, string Label, string Blank)> AllReceiverPatterns()
+    {
+        var all = ReceiverPatterns.ToList();
+        var taken = all.Select(r => r.Blank).ToHashSet(StringComparer.Ordinal);
+        var ids = all.Select(r => r.Id).ToHashSet(StringComparer.Ordinal);
+        static int Lattice(double m) => Math.Max(5, (int)Math.Round(m * 100 / 5, MidpointRounding.AwayFromZero) * 5);
+        var hand = ReceiverPatterns.Select(r => CallOfSlop.ConstructParts.Find(r.Like)?.GunReceiver ?? "").ToHashSet(StringComparer.Ordinal);
+        foreach (var d in CallOfSlop.ConstructParts.All.Where(d => d.Generated && d.IsReceiverGun && !hand.Contains(d.GunReceiver)).OrderBy(d => d.Name, StringComparer.Ordinal))
+        {
+            var size = d.BoundsMax - d.BoundsMin;
+            var across = Math.Clamp(Lattice(Math.Max(size.X, size.Y)), 15, 120);
+            var len = Math.Clamp(Lattice(size.Z), Math.Max(30, across), 600);
+            var blank = $"solid {across}x{across}x{len} steel";
+            if (taken.Contains(blank))
+                blank = $"hollow {across}x{across}x{len} steel";
+            taken.Add(blank);
+            var words = d.Name.ToLowerInvariant().Split(' ').Where(w => w != "receiver");
+            var id = string.Join("", words.Select(w => new string(w.Where(ch => ch is >= 'a' and <= 'z' or '-').ToArray())));
+            id = id.Length > 16 ? id[..16] : id;
+            for (var n = 2; !ids.Add(id); n++)
+                id = (id.Length > 14 ? id[..14] : id) + n;
+            var label = d.Name.ToLowerInvariant(); // (1 to 24 characters: "gravedigger auto receiver" loses its last word)
+            if (label.Length > 24)
+                label = label.Replace(" receiver", "");
+            all.Add((id, d.Name, label.Length > 24 ? label[..24].TrimEnd() : label, blank));
+        }
+        return all;
+    }
+
     private static PyDict ReceiverDie()
     {
         var gears = Kit("Gear Set", true, 1, 0.02, "mass", 20); // (as the Drive die: the action's gearing)
         var die = SizedDie("Receiver", ["solid", "hollow"], ["steel"], [15, 120], [30, 600], [1, 1], 4, 0.02, Py.L(),
-            ReceiverPatterns.Select(r => (object?)Pattern(r.Id, r.Like, r.Label, r.Blank, bay2: gears, along: "z")).ToList());
+            AllReceiverPatterns().Select(r => (object?)Pattern(r.Id, r.Like, r.Label, r.Blank, bay2: gears, along: "z")).ToList());
         die["aspect"] = "preset";
         return die;
     }
@@ -870,7 +905,7 @@ public sealed class PressParts : IPartGenerator
         Add("Piston Set", "piston", "set", "round 10x10x20 steel");
         foreach (var (name, blank) in CylinderPresets())
             Add(name, "cylinder", "cylinder", blank);
-        // Sized parts phase 5: the Engine die's presets (they keep their Assembler recipes until that design's phase 6).
+        // Sized parts phase 5: the Engine die's presets (phase 6: their Assembler recipes go, Assembling.PressedNow).
         foreach (var p in EnginePatterns)
             foreach (var (name, blank) in EnginePresets(p.Piece, p.Section, p.Along))
                 Add(name, "engine", p.Id, blank);
@@ -889,7 +924,7 @@ public sealed class PressParts : IPartGenerator
         // The Frame Beam is the Beam die's girder (the user, 2026-11-13, phase 5 question 3): a 2 m I-beam held to what a Small Press takes
         // (45 cm), so a start's first frame needs no tier 2 press. The other building pieces stay on the Assembler.
         Add("Frame Beam", "beam", "girder", $"i-beam {PresetAcross(50, Small)}x{PresetAcross(50, Small)}x200 steel");
-        // Sized gun parts phase 1: the plain barrels are the Barrel die's knots. Their Assembler recipes stay until that design's phase 6.
+        // Sized gun parts phase 1: the plain barrels are the Barrel die's knots (phase 6: their Assembler recipes go).
         foreach (var (part, _, blank) in PlainBarrels)
             Add(part, "barrel", "plain", blank);
         // Phase 2: the other barrels (their items: the builder part's name, ConstructWeaponParts) and the two artillery tubes.
@@ -897,8 +932,9 @@ public sealed class PressParts : IPartGenerator
             Add(builder, "barrel", id, blank);
         foreach (var (builder, blank) in ArtilleryTubes)
             Add(builder, "barrel", "tube", blank);
-        // Phase 3: the hand-made receivers are the Receiver die's presets (their Assembler recipes stay until that design's phase 6).
-        foreach (var (id, like, _, blank) in ReceiverPatterns)
+        // Phase 3: the hand-made receivers are the Receiver die's presets; phase 6 the generated ones (their first recipe). A receiver is an
+        // assembly by the sort's rule (role gun), so the hand-made three keep their Assembler recipes beside their presets.
+        foreach (var (id, like, _, blank) in AllReceiverPatterns())
             Add(like, "receiver", id, blank);
         return r;
     }
@@ -940,6 +976,10 @@ public sealed class PressParts : IPartGenerator
 
     /// <summary>Every catalogue part a die presses from a standard blank (the Assembling generator moves the single-piece ones off the Assembler).</summary>
     internal static HashSet<string> PresetParts() => Presets().Select(p => (string)((PyDict)p!)["part"]!).ToHashSet(StringComparer.Ordinal);
+
+    /// <summary>The catalogue parts the named dies press from a preset (sized parts phase 6: the Barrel and Engine dies' leave the Assembler).</summary>
+    internal static HashSet<string> PresetParts(params string[] dies) =>
+        Presets().Cast<PyDict>().Where(p => dies.Contains((string)p["die"]!)).Select(p => (string)p["part"]!).ToHashSet(StringComparer.Ordinal);
 
     private static List<object?> LatheRows()
     {
