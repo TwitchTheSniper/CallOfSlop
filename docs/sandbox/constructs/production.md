@@ -1654,8 +1654,9 @@ with the Runabout's blueprint, `WorksRunabout.json`, beside it). Notes, the mach
      Panel Former (the hood); Router P sends a panel the cutter ordered through a Join into the Laser Cutter (the windscreen frame's
      opening), the rest south to the station line. A second Panel Former fed glass forms the pane's blank, cut there too.
   8. **Wheels and the station line** (row 2): the Wheel Former's wheels, the panels and the cut parts meet through Joins at Router S,
-     whose way ahead runs into the press line's last Join and the station, way 2 into a rack that feeds back, way 3 to Router T: the
-     Crafting Terminal (order any part made here) and the Panel Designer (design a panel; the Panel Former forms it).
+     whose way ahead runs into the press line's last Join, way 2 into a rack that feeds back, way 3 to Router T and the Panel Designer
+     (design a panel; the Panel Former forms it). Past the last Join a Large Router sends a part ordered at the Crafting Terminal (any
+     part made here) to its tray, and everything else into the station's back port.
   9. **The Building Station** with its 6 x 8 m bay, two Loader Arms fitting from its hold, and east of the bay the wing corner: the
      Airframe Former's wing grows over a Lay-down Pad and drops on it; a Military Loader Arm fits it from the pad onto the build. A fuel
      tank on the body's pool is piped into the station's Fluid in. A Medium Text Sign over Router S is the network board.
