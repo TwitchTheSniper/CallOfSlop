@@ -435,6 +435,7 @@ public sealed partial class Game
         DepotTick(now); // (the Orbital Depot's steps: GameDepot.cs)
         ObjectivesTick(now); // (the "what next" goal line: GameObjectives.cs)
         LockdownTick(now); // (the penal colony's lockdown: GameColonyLockdown.cs)
+        StoryArmsTick(); // (no stock gun in a story world: GameStoryArms.cs)
         TutorialTick(now); // (the warden's induction: who starts, which steps are done; GameTutorial.cs)
         perf.Dispose();
         perf = Perf.Measure(PerfArea.Story);
@@ -980,7 +981,7 @@ public sealed partial class Game
             {
                 var asked = ConstructToolWire.From(r.U8());
                 return TutorialToolFor(p.Id, asked) is { } tool // (the warden's induction holds tools until their step: GameTutorial.cs)
-                    ? hands.SetTool(p.Id, tool, Constructs, eye, p.Yaw)
+                    ? hands.SetTool(p.Id, StoryArmsTool(p, tool), Constructs, eye, p.Yaw) // (no gun in a story world: GameStoryArms.cs)
                     : Tutorial.NotIssued(asked);
             }
             case CActKind.NudgeBegin:
@@ -1546,6 +1547,8 @@ public sealed partial class Game
     /// </summary>
     private bool SandboxToolGated(ref ushort part)
     {
+        if (part == (ushort)ConstructTool.None && Local is { } me && StoryUnarmed(me))
+            part = (ushort)ConstructTool.Hands; // (no gun in a story world: bare hands, shown at once as the server will; GameStoryArms.cs)
         var asked = (ConstructTool)part;
         if (TutorialToolLocal(asked) is not { } tool)
         {
