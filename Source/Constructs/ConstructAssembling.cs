@@ -533,6 +533,27 @@ public sealed partial class ConstructWorld
         return true;
     }
 
+    /// <summary>
+    /// Server, a conveyor's delivery: a part one of its queued orders (not the head's) uses, into its input while that order's recipe has
+    /// room. Parts ride to an Assembler first in, first out on its one Piece in, so a part for a later order at the front (a Copper Coil
+    /// for a Servo Motor) refused while the head (a Differential) waited for what rode behind it (its Gear Sets) stopped the machine for
+    /// good: the Factory Showcase, 2026-11-14. Input parts are kept across recipes, so nothing is lost.
+    /// </summary>
+    public bool FeedQueuedPart(Construct c, int part, ConstructPartDef item)
+    {
+        if (StoreOf(c, part) is not { } st || c.DefOf(part) is not { IsAssembler: true } d || c.Parts[part].Orders is not { Bill: false, Count: > 1 } q)
+            return false;
+        var table = AssemblingTable.Current;
+        for (var k = 1; k < q.Count; k++)
+            if (!q.Items[k].IsPiece && table.Of(q.Items[k].Part) is { } r && r.Machine == d.AsmMachine && r.MinTier <= d.Tier && r.CountOf(item.Id) > 0
+                && ConstructAssembling.RoomFor(d, st, r, item.Id) > 0)
+            {
+                AddInputPart(st, item.Id, 1);
+                return true;
+            }
+        return false;
+    }
+
     /// <summary>Would this Assembler take a part now? (For a chute looking through its source: nothing is noted.)</summary>
     public bool WantsPart(Construct c, int part, ushort item)
     {

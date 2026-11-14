@@ -1007,7 +1007,8 @@ public static class ConstructConveyor
         if (td.IsAssembler)
         {
             // A part its recipe uses, while it has room: the chute's own test (a part it doesn't use waits at its door).
-            if (!world.WantsPart(c, to, d.Id) || !world.FeedPart(c, to, d))
+            // (or a part a later order of its queue uses: else one waiting at the front stops all that rides behind it)
+            if (!(world.WantsPart(c, to, d.Id) && world.FeedPart(c, to, d)) && !world.FeedQueuedPart(c, to, d))
                 return false;
             ConstructLogisticsPlan.Arrived(world, c, to, r.Tag, d); // (a chained order's input: it counts for its link)
             return true;
