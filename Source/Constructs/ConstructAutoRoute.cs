@@ -19,6 +19,8 @@ public struct RouteAsk
     public byte ToPort;
     public Vector3 OpenAt;
     public ushort OpenHost;
+    public byte ConduitGap; // ... and the closest its lattice keeps planes, cm (0: RouteSearch.ConduitGap)
+    public float Conduit; // a pre-built's wiring (ConstructConduit.cs), above 1: the cost a metre off every surface, so it runs along walls, floors and ceilings like conduit (0: the tool's own route)
 }
 
 /// <summary>
@@ -53,6 +55,9 @@ public sealed class RouteSearch
     // (a bend costs more than a surface or a neighbour saves: hugging and lying beside break ties between routes of the same turns, they never buy a turn; route-ends, 2026-11-11)
     private const float BendCost = 0.8f, HugFactor = 0.95f, BesideFactor = 0.85f, SoftFactor = 2.5f, HugGap = 0.03f, ShaftBendCost = 1.2f, SideCost = 2.5f;
     private const float StubMin = 0.1f; // a run at least this long between bends
+    public const float ConduitClear = 0.25f; // a conduit's centreline off a surface, in radii (the tool's own routes keep one radius)
+    public const float ConduitWeight = 1.5f; // a conduit's A* weight (above)
+    public const int ConduitGap = 3; // cm: a conduit's lattice keeps planes this close (the tool's own thins to 5 cm, which can leave a wall's plane out)
     private const float BedCap = 0.5f; // the widest conveyor bed the 12 m looks plan turns for
 
     /// <summary>What a search came to: its state, the nodes it adds to the link and why it failed.</summary>
@@ -108,6 +113,8 @@ public sealed class RouteSearch
     private long _key;
     private int _stage, _partN, _partAt, _stackN, _heapN, _stateN, _expanded, _tgtN, _analytic;
     private float _radius, _clear, _maxLen, _alongSoFar;
+    private float _hWeight = 1f; // the guess's weight: a conduit's searches more than the tool's (dear air makes the plain guess weak), so it leans toward the goal, at most this much dearer than the best route
+    private float _air = 1f; // the cost a metre off every surface (a conduit's RouteAsk.Conduit)
     private float _hFactor = 0.92f; // the search's guess of the cost a metre: lower with runs to lie beside, or it would never look at the way round to them
     private Vector3 _s, _g, _sDir, _gDir, _min, _max;
     private bool _closed, _flat, _hasPrev, _longWay, _gaveUp;
@@ -223,7 +230,7 @@ public sealed class RouteSearch
         var h = Mix(Mix(Mix(1234567L, a.C.Id), a.C.RebuildStamp), (long)a.Type);
         h = Mix(Mix(Mix(Mix(h, a.From), a.FromPort), a.Parent), a.ParentSeg);
         h = Mix(Mix(Mix(Mix(h, a.Junction), a.Count), a.To), a.ToPort);
-        h = Mix(Mix(Mix(h, a.OpenAt), a.OpenHost), a.C.RouteCount);
+        h = Mix(Mix(Mix(Mix(h, a.OpenAt), a.OpenHost), a.C.RouteCount), BitConverter.SingleToInt32Bits(a.Conduit) + a.ConduitGap * 7919L);
         for (var i = 0; i < a.Count; i++)
             h = Mix(Mix(h, a.Nodes[i].Pos), a.Nodes[i].Host);
         return h == 0 ? 1 : h;
@@ -291,7 +298,9 @@ public sealed class RouteSearch
         _width = a.Type == RouteType.Conveyor && a.Parent == 255 ? ConstructRoutes.ConveyorWidth(c, a.From, a.FromPort, a.To >= 0 ? a.To : -1, a.ToPort) : 0f;
         _startHost = a.Parent != 255 ? ConstructRoutes.HostOf(c, a.Parent, a.ParentSeg) : a.From;
         _goalHost = _closed ? a.To : a.OpenHost;
-        _stage = 0;
+        _stage = a.Conduit > 0f && _flat ? 1 : 0; // (conduit: from a 4 m look, so the walls and ceiling round the ends are in it)
+        _air = a.Conduit > 0f && _flat ? MathF.Max(a.Conduit, 1f) : 1f;
+        _hWeight = a.Conduit > 0f && _flat ? ConduitWeight : 1f;
         _lastWhy = null;
         _longWay = _gaveUp = false;
         if (_startHost < 0 || _startHost >= c.PartCount || _goalHost < 0 || _goalHost >= c.PartCount)
@@ -351,6 +360,8 @@ public sealed class RouteSearch
             _firstExit = ConstructRoutes.ExitAlongIn(c, _startHost, first, ToWork(c.Parts[Math.Min((int)a.Nodes[0].Host, c.PartCount - 1)].Seg, a.Nodes[0].Pos), _frame == 0 && c.FreeformCount > 0);
         _g = _closed ? ToWork(c.Parts[a.To].Seg, ConstructRoutes.PortPoint(c, a.To, a.ToPort, a.Type)) : ToWork(c.Parts[a.OpenHost].Seg, a.OpenAt);
         _gDir = _closed ? PortDirWork(a.To, a.ToPort) : Vector3.Zero;
+        if (a.Conduit > 0f && _flat)
+            _sDir = _gDir = Vector3.Zero; // (conduit leaves a switch and meets a lamp any way, so it can go flat to the wall at once, out of the box's top or side)
         if (Vector3.Distance(_s, _g) > _maxLen)
         {
             Done(RouteSearchState.Failed, _half ? $"too far: half shaft reaches {ConstructRoutes.HalfShaftReach(c.DefOf(a.To)):0.#} m" : TooFarToSearch);
@@ -383,6 +394,8 @@ public sealed class RouteSearch
         var c = _ask.C;
         var margin = _flat ? FlatStages[_stage].Margin : ShaftStages[_stage].Margin;
         _clear = _flat ? FlatStages[_stage].Clear * _radius : _radius + 0.01f;
+        if (_ask.Conduit > 0f && _flat)
+            _clear = MathF.Min(_clear, ConduitClear * _radius); // (conduit lies on the wall: a switch's centre is already beside it, no jog out and back)
         _hFactor = c.RouteCount > 0 || c.TrayCount > 0 ? BesideFactor : HugFactor;
         _min = ConstructWorld.Quantise(Vector3.Min(_s, _g) - new Vector3(margin)); // (on the 1 cm grid: so are the planes)
         _max = ConstructWorld.Quantise(Vector3.Max(_s, _g) + new Vector3(margin));
@@ -481,7 +494,7 @@ public sealed class RouteSearch
     /// <summary>The marked planes as coordinates, thinned (the closest first, the ends' always stay) until the lattice fits.</summary>
     private bool MakeLattice()
     {
-        for (var gap = FlatStages[_stage].Gap; gap < 4096; gap = gap * 3 / 2 + 1)
+        for (var gap = _ask.Conduit > 0f ? (_ask.ConduitGap > 0 ? _ask.ConduitGap : ConduitGap) : FlatStages[_stage].Gap; gap < 4096; gap = gap * 3 / 2 + 1) // (conduit: every wall's own plane, or a run along it may sit off it, out of the hug)
         {
             var total = 1L;
             var fits = true;
@@ -1128,7 +1141,7 @@ public sealed class RouteSearch
         var dy = MathF.Abs(_lat[1][y] - _g.Y);
         var dz = MathF.Abs(_lat[2][z] - _g.Z);
         var bends = (dx > 0.01f ? 1 : 0) + (dy > 0.01f ? 1 : 0) + (dz > 0.01f ? 1 : 0) - 1;
-        return (dx + dy + dz) * _hFactor + MathF.Max(bends, 0) * _bend;
+        return ((dx + dy + dz) * _hFactor + MathF.Max(bends, 0) * _bend) * _hWeight;
     }
 
     /// <summary>A slice of the square search: true found, false nothing there, null out of time.</summary>
@@ -1213,7 +1226,7 @@ public sealed class RouteSearch
                     _longWay = true;
                     continue;
                 }
-                var cost = len * ((bits & (SoftBit << axis)) != 0 ? SoftFactor : (bits & (BesideBit << axis)) != 0 ? BesideFactor : (bits & (HugBit << axis)) != 0 ? HugFactor : 1f);
+                var cost = len * ((bits & (SoftBit << axis)) != 0 ? SoftFactor : (bits & (BesideBit << axis)) != 0 ? BesideFactor : (bits & (HugBit << axis)) != 0 ? HugFactor : _air);
                 var ng = g + cost + (turn ? _bend : 0f);
                 var st = StateOf(q * 6 + d, out var fresh);
                 if (st < 0)
@@ -1421,9 +1434,10 @@ public sealed class RouteSearch
         n = Collapse(_path, n);
         // The ends, solved again by hand: the search's lattice turns where its planes are, so a few cm between the last run and a
         // port (or a waypoint) came out as two or three short jogs. Each end is tried as "the path, at most two turns, the port".
-        if (_closed && _gDir != Vector3.Zero)
+        // (not a conduit's: its ends hug the wall they meet, and a shape with fewer turns would leave it for the air)
+        if (_closed && _gDir != Vector3.Zero && _ask.Conduit <= 0f)
             n = TidyEnd(n, false);
-        if (_ask.Parent == 255 && (_hasPrev || _sDir != Vector3.Zero))
+        if (_ask.Parent == 255 && (_hasPrev || _sDir != Vector3.Zero) && _ask.Conduit <= 0f)
             n = TidyEnd(n, true);
         return Nodes(n, true);
     }

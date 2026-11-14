@@ -925,9 +925,11 @@ public static class ConstructBuild
         // The wires, through the linking tool's rules.
         if (bp.Wires.Count > 0 && c.Dirty)
             c.Rebuild(); // (the wires' checks read the rebuilt body: once before them and once after, not once a wire)
+        var conduit = !linked && (c.Anchored || bp.FrozenBase); // (a pre-built: its wires are laid as conduit along the walls, ConstructConduit.cs)
         if (!linked) // (a Building Station laid the wires and links itself, one by one: ConstructStation.cs)
-        foreach (var (from, to) in bp.Wires)
+        for (var k = 0; k < bp.Wires.Count; k++)
         {
+            var (from, to) = bp.Wires[k];
             if (from < 0 || from >= bp.Steps.Count || to < 0 || to >= bp.Steps.Count)
             {
                 run.Why = $"wire {from} -> {to}: no such step";
@@ -940,7 +942,8 @@ public static class ConstructBuild
                 world.Remove(c);
                 return;
             }
-            world.AddWire(c, partOf[from], partOf[to], rebuild: false);
+            if (!conduit || !ConstructConduit.TryLay(world, c, bp, k, partOf[from], partOf[to], ConstructWorld.WirePort(c, partOf[from], partOf[to])))
+                world.AddWire(c, partOf[from], partOf[to], rebuild: false);
         }
         if (bp.Wires.Count > 0 && c.Dirty)
             c.Rebuild();
