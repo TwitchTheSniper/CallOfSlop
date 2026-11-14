@@ -76,9 +76,21 @@ public static partial class SelfTest
             var plate = Extrusion.Presets[1].Mask;
             bool Await(Func<bool> done, double seconds = 3)
             {
-                var until = clock.Elapsed.TotalSeconds + seconds;
-                while (!done() && clock.Elapsed.TotalSeconds < until)
-                    Pump(server, [a], 0.05, ref now, clock);
+                // Waits for <seconds> of simulation, not of wall clock: each update moves at most 0.1 s of game time, so under load (other
+                // sections, other builds) 3 s of wall clock could be well under 3 s of game and the client's resend not in yet (leftovers 3).
+                // The wall cap only stops a hang.
+                var sim = 0.0;
+                var cap = clock.Elapsed.TotalSeconds + seconds * 20 + 10;
+                while (!done() && sim < seconds && clock.Elapsed.TotalSeconds < cap)
+                {
+                    var t = clock.Elapsed.TotalSeconds;
+                    var dt = Math.Clamp(t - now, 0.001, 0.1);
+                    now = t;
+                    server.Update(now, dt);
+                    a.Update(now, dt);
+                    sim += dt;
+                    Thread.Sleep(2);
+                }
                 return done();
             }
             void Tap(Game g, GameAction key)
