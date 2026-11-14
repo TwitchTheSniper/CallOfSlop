@@ -16,7 +16,7 @@ public static partial class Program
     private static int _wsClipBodies, _wsClipLoose;
     private static bool _wsClipToolAsked;
 
-    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon";
+    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake";
 
     private static bool WsPlayVerb(Game g, Player me, string verb, string arg)
     {
@@ -213,7 +213,7 @@ public static partial class Program
                 _wsWait = 3;
                 return true;
             }
-            case "makeengine": // "makeengine KW TIER [car|any]": the creative Engine tab's request (its MAKE call, without the placing ghost): "car" is the tab's Car bay ticked, the default
+            case "makeengine": // "makeengine KW TIER [car|any]": the creative Engine tab's MAKE (the same call: prepared, then its placing ghost; then "waitghost; key Fire"): "car" is the tab's Car bay ticked, the default
             {
                 var bits = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 if (bits.Length < 2 || !int.TryParse(bits[0], out var kw) || !int.TryParse(bits[1], out var tier))
@@ -222,7 +222,7 @@ public static partial class Program
                     return true;
                 }
                 var bay = bits.Length < 3 || bits[2] == "car" ? EngineKit.EngineKitVehicle.Bay : Vector3.Zero;
-                g.SandboxMakeEngine(kw, tier, default, default, -1, bay, 0);
+                g.SandboxMakeEngine(kw, tier, default, default, -1, bay, 0, ghost: true); // (the tab's MAKE: prepared on the host, then a placing ghost; place it with "waitghost; key Fire")
                 WsSay(string.Create(ci, $"makeengine: asked for {kw} kW, tier {tier}, {(bay == Vector3.Zero ? "no bay" : $"the Car bay {bay.X:0.00} x {bay.Y:0.00} x {bay.Z:0.00} m")}"));
                 _wsWait = 10;
                 return true;
@@ -259,6 +259,24 @@ public static partial class Program
                 }
                 WsSay($"standon: {sd.Name} on {tc.DefOf(tp).Name} {bits[^2]}: {(body == null ? "refused" : $"body {body.Id} (a separate construct, {g.Constructs.Bodies.Count} bodies)")}");
                 _wsWait = 5;
+                return true;
+            }
+            case "aimintake": // "aimintake [UP]": the look turned to UP m over the middle of the first Recycler's intake (as the mouse turns it: a physics gun's held piece follows the look)
+            {
+                var upBy = float.TryParse(arg, System.Globalization.NumberStyles.Float, ci, out var ub) ? ub : 0f;
+                var (ic, ip) = WsFind(g, "Recycler");
+                if (ic == null || !ic.DefOf(ip).IsRecycler)
+                {
+                    WsFail($"aimintake: no Recycler \"{arg}\"");
+                    return true;
+                }
+                ref var ipart = ref ic.Parts[ip];
+                ic.WorldFrame(ipart.Seg, out var iq, out var it);
+                var imid = it + Vector3.Transform(ipart.Pos + Rot24.Apply(ipart.Rot, (ic.DefOf(ip).IntakeMin + ic.DefOf(ip).IntakeMax) * 0.5f), iq);
+                imid += GravityFrames.UpAt(imid) * upBy;
+                WsLook(g, me.Eye, imid);
+                WsSay(string.Create(ci, $"aimintake: the intake's middle at {imid:0.00}, {Vector3.Distance(me.Eye, imid):0.0} m from the eye"));
+                _wsWait = 2;
                 return true;
             }
             case "partlook":

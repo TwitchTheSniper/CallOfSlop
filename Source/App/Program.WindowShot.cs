@@ -378,9 +378,18 @@ public static unsafe partial class Program
     /// <summary>The n-th part (from 1) of a name on the spawned blueprint ("Extruder#2"), or any body when nothing was spawned.</summary>
     private static (Construct? C, int Part) WsFind(Game g, string spec)
     {
-        Construct? only = null; // ("NAME@bN": on body N, past the spawned blueprint)
+        Construct? only = null; // ("NAME@bN": on body N, past the spawned blueprint; "NAME@w": the newest wrecked loose one of that name)
         if (spec.LastIndexOf("@b", StringComparison.Ordinal) is var ab and > 0 && ushort.TryParse(spec[(ab + 2)..], out var bid))
             (only, spec) = (g.Constructs.Get(bid), spec[..ab]);
+        else if (spec.EndsWith("@w", StringComparison.Ordinal))
+        {
+            spec = spec[..^2];
+            foreach (var b in g.Constructs.Bodies)
+                if (b.PartCount == 1 && b.Parts[0].Broken && b.DefOf(0).Name.Equals(spec.Trim(), StringComparison.OrdinalIgnoreCase) && (only == null || b.Id > only.Id))
+                    only = b;
+            if (only == null)
+                return (null, -1);
+        }
         var hash = spec.LastIndexOf('#');
         var name = hash > 0 ? spec[..hash].Trim() : spec.Trim();
         var nth = hash > 0 && int.TryParse(spec[(hash + 1)..], out var n) ? n : 1;
