@@ -768,6 +768,7 @@ public static unsafe partial class Program
                     WsFail($"click X,Y: \"{arg}\"");
                     return;
                 }
+                Ui.ToolMouse = true; // (from now the tool owns the mouse: a real cursor outside the window would undo its moves)
                 var io = Brutal.ImGuiApi.ImGui.GetIO();
                 io.AddMousePosEvent(px, py);
                 io.AddMouseButtonEvent(0, true);
@@ -784,6 +785,7 @@ public static unsafe partial class Program
                     WsFail($"drag X1,Y1 X2,Y2: \"{arg}\"");
                     return;
                 }
+                Ui.ToolMouse = true;
                 var dio = Brutal.ImGuiApi.ImGui.GetIO();
                 dio.AddMousePosEvent(x1, y1);
                 dio.AddMouseButtonEvent(0, true);
@@ -910,7 +912,7 @@ public static unsafe partial class Program
                 {
                     // Two windows keep no common clock: wait for the other side instead of counting frames. "await": press use until the designer's
                     // panel is open; "held": until a store holds a formed panel; "bring N": until N other players are here, then bring them to the desk.
-                    var others = g.Players.Count - 1;
+                    var others = g.Players.Values.Count(pl => pl != me && pl.Bot == null && pl.Alive); // (alive: a joined player is listed before it spawns, and a body brought then is left behind when it spawns at its own spawn point)
                     var held = false;
                     foreach (var hs in g.Constructs.Stores)
                         for (var k = 0; hs is { Live: true } && k < hs.KindN; k++)
@@ -983,6 +985,36 @@ public static unsafe partial class Program
                         for (var i = 0; i < b.PartCount; i++)
                             if (HullLoft.IsPanelName(b.DefOf(i).Name) || HullLoft.IsCutName(b.DefOf(i).Name))
                                 WsSay($"design: placed on body {b.Id} part {i}: {b.DefOf(i).Name} hash {HullLoft.PanelHash(b.DefOf(i)):x8} at {b.Parts[i].Pos.X:0.0000},{b.Parts[i].Pos.Y:0.0000},{b.Parts[i].Pos.Z:0.0000} rot {b.Parts[i].Rot}; sockets o: {string.Join(" ", b.DefOf(i).Sockets.Where(s => s.Name.StartsWith('o')).Select(s => $"{s.Name} {s.At.X:0.0000},{s.At.Y:0.0000},{s.At.Z:0.0000}"))}");
+                    return;
+                }
+                if (arg == "players") // every player as this peer has them: who is local, alive, where (a joined client's reach to the desk)
+                {
+                    foreach (var pl in g.Players.Values)
+                        WsSay($"design players: #{pl.Id}{(pl == me ? " (local)" : "")} alive {pl.Alive} at {pl.Position:0.0}; designer {(Ui.DesignerOpen ? "open" : "closed")}");
+                    return;
+                }
+                if (dw.Length >= 1 && dw[0] is "plan" or "plandrag" or "planclick")
+                {
+                    // The flat plan (the designer's flat plan phase), by the real mouse through ImGui: "plandrag U1,V1 U2,V2" drags from one point of
+                    // the sheet (cm) to another, "planclick U,V" presses there; "plan" reports the cuts, the selected one, the red ones and why.
+                    if (dw[0] != "plan")
+                    {
+                        var pts = new List<Brutal.Numerics.float2>();
+                        foreach (var word in dw.Skip(1))
+                            if (word.Split(',') is [var su, var sv] && double.TryParse(su, System.Globalization.CultureInfo.InvariantCulture, out var pu)
+                                && double.TryParse(sv, System.Globalization.CultureInfo.InvariantCulture, out var pvv) && Ui.DesignerPlanPoint(pu, pvv) is { } pp)
+                                pts.Add(pp);
+                        if (pts.Count != (dw[0] == "plandrag" ? 2 : 1))
+                        {
+                            WsFail($"design {arg}: no plan drawn, or not U,V cm points");
+                            return;
+                        }
+                        var ci = System.Globalization.CultureInfo.InvariantCulture;
+                        _wsQueue.EnqueueFront("design plan");
+                        _wsQueue.EnqueueFront(dw[0] == "plandrag" ? string.Create(ci, $"drag {pts[0].X:0.#},{pts[0].Y:0.#} {pts[1].X:0.#},{pts[1].Y:0.#}") : string.Create(ci, $"click {pts[0].X:0.#},{pts[0].Y:0.#}"));
+                        return;
+                    }
+                    WsSay($"design plan: {Ui.DesignerPlanText}; key {Ui.DesignerKey}; preview {Ui.DesignerPreview.ShownCut ?? "(uncut)"}{(Ui.DesignerPreview.Shown is { } psh ? $" hash {HullLoft.PanelHash(psh):x8}" : "")}");
                     return;
                 }
                 if (dw.Length >= 2 && dw[0] == "profile" && dw[1].Split(',') is { Length: 2 } pv && int.TryParse(pv[0], out var ph) && int.TryParse(pv[1], out var pcm))

@@ -253,7 +253,7 @@ public static class ConstructLogisticsPlan
         return best;
     }
 
-    private static bool IsSheetExtruder(ConstructPartDef d) => d.IsExtruder && !d.IsWheelFormer && !d.IsPanelFormer && !WorkOrders.IsWholeFormer(d);
+    internal static bool IsSheetExtruder(ConstructPartDef d) => d.IsExtruder && !d.IsWheelFormer && !d.IsPanelFormer && !WorkOrders.IsWholeFormer(d);
 
     /// <summary>A sheet <paramref name="w"/> cm wide and as long as <paramref name="units"/> need (5 cm steps), at most <paramref name="most"/> cm.</summary>
     private static ExtrusionKey SheetSized(int w, byte material, int units, int most)
