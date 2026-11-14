@@ -25,7 +25,7 @@ public sealed partial class Game
     private NavGraph? _nsLabourFor, _nsDoorsFor; // the graph the gangs' ways were last routed on
     private Func<Vector3, Vector3, bool>? _nsClear;
     private readonly List<Construct> _nsNear = new(256);
-    private readonly (int Door, double At)[] _nsOpened = new (int, double)[16]; // doors a bot opened (NavGraph.SiteDoors), to shut again
+    private (int Door, double At)[] _nsOpened = []; // doors a bot opened (NavGraph.SiteDoors), to shut again: one each at most
     private int _nsOpenedCount;
     private float[] _nsSeen = []; // per site door: the short angle its leaf stood at in the last look (NaN: none)
 
@@ -41,6 +41,7 @@ public sealed partial class Game
         {
             _nsDoorsFor = nav;
             _nsOpenedCount = 0; // (they were the old graph's doors)
+            _nsOpened = new (int, double)[nav.SiteDoors.Length];
             _nsSeen = new float[nav.SiteDoors.Length];
             Array.Fill(_nsSeen, float.NaN);
         }
@@ -127,8 +128,8 @@ public sealed partial class Game
     {
         long key = 17;
         foreach (var c in Constructs.Bodies)
-            if ((c.Anchored || c.Pinned) && Vector3.DistanceSquared(c.WorldCom, at) < reach * reach)
-                key = key * 1_000_003L + c.Id * 7919L + c.PartCount;
+            if ((c.Anchored || c.Pinned || c.Frozen) && Vector3.DistanceSquared(c.WorldCom, at) < reach * reach)
+                key = key * 1_000_003L + c.Id * 7919L + c.PartCount; // (as the build takes them: NavSites.cs)
         return key;
     }
 
@@ -210,9 +211,20 @@ public sealed partial class Game
             if (!onWay || Constructs.Get(doors[i].Body) is not { } c || !NavDoor(c, doors[i], out var shut) || !shut)
                 continue;
             NavDoorSet(c, doors[i], true);
-            if (_nsOpenedCount < _nsOpened.Length)
-                _nsOpened[_nsOpenedCount++] = (i, now);
+            NavDoorOpened(i, now);
         }
+    }
+
+    private void NavDoorOpened(int door, double now)
+    {
+        for (var k = 0; k < _nsOpenedCount; k++)
+            if (_nsOpened[k].Door == door)
+            {
+                _nsOpened[k].At = now;
+                return;
+            }
+        if (_nsOpenedCount < _nsOpened.Length)
+            _nsOpened[_nsOpenedCount++] = (door, now);
     }
 
     /// <summary>Is the door still the one the graph was built with, and is it shut (and free to open: not locked, not wrecked, no wire running it)?</summary>
@@ -302,9 +314,9 @@ public sealed partial class Game
                 continue;
             }
             _nsSeen[i] = float.NaN;
-            if (NavGraph.LeafStands.TryGetValue((d.Body, d.Joint), out var known) && MathF.Abs(known - jt.Angle) < 0.1f)
+            if (NavGraph.LeafStands.TryGetValue((World.Map, d.Body, d.Joint), out var known) && MathF.Abs(known - jt.Angle) < 0.1f)
                 continue; // (learnt already: the graph with it is on its way)
-            NavGraph.LeafStands[(d.Body, d.Joint)] = jt.Angle;
+            NavGraph.LeafStands[(World.Map, d.Body, d.Joint)] = jt.Angle;
             NavGraph.LeafStandsVersion++;
             Log($"[paths] a door of {ColonySiteName(c)} stands open at {jt.Angle * 180 / MathF.PI:0} degrees, not {d.Stands * 180 / MathF.PI:0}: the graph is built again with it there");
         }

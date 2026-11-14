@@ -72,30 +72,37 @@ public sealed partial class NavGraph
         return ms;
     }
 
-    private static Map? _siteMap;
-
     /// <summary>
     /// Hinged doors seen standing open short of where a build put them (something the build doesn't hold stops them: the
     /// ground at the leaf's foot, a contact): (body id, joint) to the angle, used by the next build. GameNavSites.cs learns
     /// them; <see cref="LeafStandsVersion"/> counts the changes, so the host's look sees one and builds again.
     /// </summary>
-    public static readonly Dictionary<(ushort Body, int Joint), float> LeafStands = new();
+    public static readonly Dictionary<(Map Map, ushort Body, int Joint), float> LeafStands = new();
     public static int LeafStandsVersion;
-    private static NavSite[] _siteAsk = [];
-    private static ConstructWorld? _siteWorld;
+
+    /// <summary>The sites asked for, per map (each world the host runs asks for its own: route 1), and whose constructs stand there.</summary>
+    private static readonly Dictionary<Map, (NavSite[] Sites, ConstructWorld World)> _siteAsks = new();
+
+    /// <summary>A map's site graph from before the build asked for since, still walked meanwhile (<see cref="Current"/>).</summary>
+    private static NavGraph? _staleGraph;
+    private static Map? _staleMap;
 
     /// <summary>
     /// Asks for a graph over <paramref name="sites"/> of <paramref name="map"/> (a planetoid), from the ground and the anchored
-    /// constructs of <paramref name="world"/> there. The graph the bots have now is dropped, and the new one is built a slice
-    /// per tick (bots steer straight meanwhile). No sites: the planetoid has no graph again.
+    /// constructs of <paramref name="world"/> there. The new graph is built a slice per tick; the bots walk the old site graph
+    /// meanwhile, if there is one. No sites: the planetoid has no graph again.
     /// </summary>
     public static void RequestSites(Map map, NavSite[] sites, ConstructWorld world)
     {
-        if (!ReferenceEquals(_siteMap, map) && sites.Length > 0)
-            LeafStands.Clear(); // (another world's bodies)
-        _siteMap = sites.Length > 0 ? map : null;
-        _siteAsk = sites;
-        _siteWorld = world;
+        if (sites.Length > 0)
+            _siteAsks[map] = (sites, world);
+        else
+            _siteAsks.Remove(map);
+        var now = Cache.TryGetValue((map.Name, HashOf(map)), out var had) ? had : null;
+        if (sites.Length > 0 && now is { Sites.Length: > 0 })
+            (_staleGraph, _staleMap) = (now, map);
+        else if (ReferenceEquals(_staleMap, map) || _staleMap == null)
+            (_staleGraph, _staleMap) = (null, null);
         if (ReferenceEquals(_builderMap, map))
         {
             _builder = null;
@@ -105,7 +112,7 @@ public sealed partial class NavGraph
     }
 
     /// <summary>Is a site graph asked for on <paramref name="map"/>?</summary>
-    private static bool SitesAsked(Map map) => ReferenceEquals(_siteMap, map) && _siteAsk.Length > 0;
+    private static bool SitesAsked(Map map) => _siteAsks.ContainsKey(map);
 
     /// <summary>The site holding <paramref name="p"/> (within <paramref name="margin"/> m), or -1.</summary>
     public int SiteOf(Vector3 p, float margin = 0)
@@ -179,8 +186,7 @@ public sealed partial class NavGraph
     {
         var work = 0.0;
         var t0 = Stopwatch.GetTimestamp();
-        var sites = _siteAsk;
-        var world = _siteWorld;
+        var (sites, world) = _siteAsks[map];
         var g = new NavGraph { MapName = map.Name, MapHash = HashOf(map), DestructionAtStart = DestructionStamp(map), Origin = "sites", Sites = sites };
         var planet = GravityFrames.Point;
         if (planet == null || world == null || !World.NavBuildAsBuilt)
@@ -222,15 +228,23 @@ public sealed partial class NavGraph
         work += g.Slice(t0);
         yield return null;
         t0 = Stopwatch.GetTimestamp();
-        // Doors and gates as they stand open: swung as far as F swings them, or to where they first meet something (a wall,
-        // a bench, the ground), as the physics stops them; then the tree is built again with them.
-        foreach (var (c, j) in leaves)
+        // The world's doors and gates as they stand open: swung as far as F swings them, or to where they first meet
+        // something (a wall, a bench, the ground), as the physics stops them; anything else on a hinge as it stands. Every
+        // angle is found on the tree as it is (no leaf in it yet), then the leaves go in and the tree is built again.
+        var stands = new float[leaves.Count];
+        for (var n = 0; n < leaves.Count; n++)
         {
-            boxes += AddLeaf(World.Physics, c, j, out var stands);
-            for (var k = 0; k < doors.Count; k++)
+            var (c, j) = leaves[n];
+            var door = -1;
+            for (var k = 0; k < doors.Count && door < 0; k++)
                 if (doors[k].Body == c.Id && doors[k].Joint == j)
-                    doors[k] = doors[k] with { Stands = stands };
+                    door = k;
+            stands[n] = door < 0 ? c.Joints[j].Angle : LeafStandsAt(World.Physics, map, c, j);
+            if (door >= 0)
+                doors[door] = doors[door] with { Stands = stands[n] };
         }
+        for (var n = 0; n < leaves.Count; n++)
+            boxes += AddLeaf(World.Physics, leaves[n].C, leaves[n].Joint, stands[n]);
         g.SiteBoxes = boxes;
         g.SiteBodies = bodies;
         g.SiteDoors = doors.ToArray();
@@ -405,15 +419,16 @@ public sealed partial class NavGraph
             var seg = c.MoveSeg(c.Parts[i].Seg);
             if (seg > 0 && c.Joints[seg - 1].Type == JointType.Passive)
             {
-                if (ConstructDoor.JointOf(c, i) == seg - 1 && !HasDoor(doors, c.Id, seg - 1))
+                if (c.Owner == 255 && ConstructDoor.JointOf(c, i) == seg - 1 && !HasDoor(doors, c.Id, seg - 1))
                     AddDoor(c, i, (short)(seg - 1), sites, doors);
-                // What hangs on a hinge is a door or a gate, a way through: the bots open it. It goes in as it stands open
-                // (a leaf swung out past the wall: AddLeaf, once every construct is in), so a path doesn't hug the jamb it opens against.
+                // What hangs on a world's hinge is a door or a gate, a way through: the bots open it. It goes in as it stands
+                // open (a leaf swung out past the wall: AddLeaf, once every construct is in), so a path doesn't hug the jamb it
+                // opens against. A player's doors are theirs: the bots leave them as they stand.
                 if (!leaves.Contains((c, seg - 1)))
                     leaves.Add((c, seg - 1));
                 continue;
             }
-            else if (c.DoorOf(i) is var d and >= 0)
+            else if (c.DoorOf(i) is var d and >= 0 && c.Owner == 255)
             {
                 if (c.Doors[d].Part == i)
                     AddDoor(c, i, -1, sites, doors);
@@ -443,19 +458,19 @@ public sealed partial class NavGraph
     /// <summary>
     /// A passive hinge's segment as it stands open: F drives it to 0.95 of its far limit (ConstructPhysics), and it stops
     /// short where it first meets something solid (its boxes a little smaller, so the jamb it hangs on doesn't count),
-    /// tried every 0.1 radians. Its boxes go into the build there; parts on joints beyond it are left out.
+    /// tried every 0.1 radians (or where it was seen standing: <see cref="LeafStands"/>).
     /// </summary>
-    private static int AddLeaf(PhysicsWorld into, Construct c, int joint, out float angle)
+    private static float LeafStandsAt(PhysicsWorld into, Map map, Construct c, int joint)
     {
         ref var jt = ref c.Joints[joint];
         var far = jt.Locked ? jt.Angle : OpenAngle(jt);
         if (!float.IsFinite(far))
             far = jt.Angle;
-        if (!jt.Locked && LeafStands.TryGetValue((c.Id, joint), out var seen))
+        if (!jt.Locked && LeafStands.TryGetValue((map, c.Id, joint), out var seen))
             far = seen; // (seen standing there)
         var filter = new QueryFilter(QueryLayers.Nav & ~QueryLayers.Doors);
         var steps = Math.Clamp((int)MathF.Ceiling(MathF.Abs(far) / 0.1f), 1, 32);
-        angle = far;
+        var angle = far;
         for (var k = 1; k <= steps && !jt.Locked; k++)
         {
             var a = far * k / steps;
@@ -465,6 +480,12 @@ public sealed partial class NavGraph
                 break;
             }
         }
+        return angle;
+    }
+
+    /// <summary>A hinge's segment's boxes into the build, swung to <paramref name="angle"/>.</summary>
+    private static int AddLeaf(PhysicsWorld into, Construct c, int joint, float angle)
+    {
         LeafPose(c, joint, angle, out var q, out var t);
         var added = 0;
         for (var i = 0; i < c.PartCount; i++)

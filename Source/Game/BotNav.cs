@@ -110,7 +110,7 @@ public sealed partial class NavGraph
             if (_last != null && ReferenceEquals(_lastMap, map))
                 return _last;
             if (!Cache.TryGetValue((map.Name, HashOf(map)), out var cached))
-                return Empty;
+                return _staleGraph != null && ReferenceEquals(_staleMap, map) ? _staleGraph : Empty; // (a site graph being built again: the old one meanwhile, NavSites.cs)
             _lastMap = map;
             _last = cached;
             return cached;
@@ -149,7 +149,7 @@ public sealed partial class NavGraph
         var map = World.Map;
         if (_last != null && ReferenceEquals(_lastMap, map))
             return;
-        if (Current != Empty)
+        if (Current is var cur && cur != Empty && cur != _staleGraph)
             return;
         if (_builder != null && !ReferenceEquals(_builderMap, map))
             _builder = null; // the map changed under it
@@ -271,6 +271,8 @@ public sealed partial class NavGraph
             g.Tainted = true;
         }
         Cache[(map.Name, HashOf(map))] = g;
+        if (ReferenceEquals(_staleMap, map))
+            (_staleGraph, _staleMap) = (null, null); // (the new one is in)
         // A graph built here from the map as built goes to the cache for next time (written on a worker; the bytes are taken
         // now, before any destruction patch changes the graph).
         if (g.Origin == "built" && !g.Tainted && NavBake.Enabled && ReferenceEquals(_bakeMap, map) && _bakeKey != null && g.Nodes.Length > 0)
