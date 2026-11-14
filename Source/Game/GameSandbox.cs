@@ -101,6 +101,7 @@ public enum CActKind : byte
     Celebrate, // server -> one client: text title, text name, text line: a moment in the middle of their screen (protocol 274; GameCelebrate.cs)
     ExtruderSection, // u16 body, u16 machine, u8 profile, u16 width, height, wall (cm), u64 mask: the Extruder's picker sets its section at once (protocol 284; ConstructExtruderPick.cs)
     TakeMade, // a part by PartRef (a made part's key): set down in front of the player from their Tab inventory (protocol 299; docs/sandbox/design/inventory-run-time-parts.md phase 2)
+    Lifter, // u16 body, u16 part, u8 LiftOrderOp, u8 order id, the kind (PartRef), u8 count, from and to (u16 body, u16 part, u8 kind, u8 bay): a hand order at a lifter's panel (protocol 312; GameSandboxLifter.cs)
 }
 
 /// <summary>
@@ -1218,6 +1219,8 @@ public sealed partial class Game
             }
             case CActKind.Station:
                 return SandboxStationAct(ref r, p, eye);
+            case CActKind.Lifter:
+                return SandboxLifterAct(ref r, p, eye); // (GameSandboxLifter.cs)
             case CActKind.WebState:
             {
                 var body = r.U16();

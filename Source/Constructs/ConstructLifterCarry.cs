@@ -422,6 +422,7 @@ public static partial class ConstructLifters
         Quaternion toRot = fromRot;
         if (world.Get(pt.Body) is { } tb && pt.Part < tb.PartCount)
             Freeform.PartWorld(tb, pt.Part, out _, out toRot);
+        l.OrderId = 0; // (phase 7: OrderCarry sets it after, for a hand order's carry)
         l.Def = (ushort)d.Id;
         l.Paint = paint;
         l.Health = health;
@@ -485,11 +486,17 @@ public static partial class ConstructLifters
             Console.WriteLine($"[lifter] body {l.Body} part {l.Part}: put a {d!.Name} into {l.ToKind} part {l.ToPart} of body {l.StationBody}");
             l.Moves++;
             l.Fitted = true;
+            OrderPutDone(world, l); // (phase 7: a hand order's piece counts for it)
             l.Why = LiftWhy.Carrying; // (kept on the way back: the look line says it goes back for the next piece)
             Back(c, l, ld, null, -1); // (the empty hand goes back to where it picked)
             l.ToKind = LiftPointKind.None;
             return;
         }
+        if (l.OrderId != 0 && l.Orders != null)
+            for (var oi = 0; oi < l.OrderN; oi++)
+                if (l.Orders[oi].Id == l.OrderId)
+                    l.Orders[oi].Why = LiftOrderWhy.Refused; // (its put point refused it at the end: the piece goes on by the Routers' rule, the order waits)
+        l.OrderId = 0;
         if (d != null && Redirect(world, c, l, ld, d))
             return;
         (l.State, l.ToHold, l.Why, l.Age, l.From, l.FromRot, l.ToKind) = (LiftState.Stuck, false, LiftWhy.NoTaker, l.Dur, l.To, l.ToRot, LiftPointKind.None);

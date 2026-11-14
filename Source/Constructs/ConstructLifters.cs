@@ -188,6 +188,11 @@ public sealed class CLift
     public byte Health = 255; // the piece's health share (a carry's: a press bay takes it)
     public int Look; // 10 Hz steps since its last look for a carry
     public bool StationNear; // its last station look found a station building with its hold in reach (the idle reason)
+    public LiftOrder[]? Orders; // (phase 7) the hand orders, the first one first (either peer: the server's, heard with the lifts)
+    public int OrderN;
+    public byte OrderId; // the order this carry serves (0: its own work)
+    public byte OrderSeq; // server: the last order id given
+    public int OrderLook; // server: 10 Hz steps since its last look at its orders
 }
 
 /// <summary>A construct's lifter parts, found when its parts change (<see cref="Construct.RebuildStamp"/>).</summary>
@@ -398,6 +403,14 @@ public static partial class ConstructLifters
                     case LiftState.Idle:
                         // Works (liftMode): 0 Auto (a station's step first, then carries: phase 4), 1 Station only, 2 Carry only, 3 Off.
                         var mode = (int)ConstructConfig.Get(c.Parts[l.Part], c.DefOf(l.Part), CfgKey.LiftMode, 0);
+                        if (l.OrderN > 0 && !ConstructExtruder.RunHeld(c, l.Part) && decisions < DecisionsAStep && ++l.OrderLook >= CarryLook)
+                        {
+                            // (phase 7: hand orders before any automatic work, in every mode: Works sets only what it does by itself)
+                            l.OrderLook = 0;
+                            decisions++;
+                            if (OrderCarry(world, c, l, ld))
+                                break;
+                        }
                         if (mode == 3)
                             Why(world, l, LiftWhy.Off);
                         else if (ConstructExtruder.RunHeld(c, l.Part))
@@ -1298,6 +1311,7 @@ public static partial class ConstructLifters
             w.U16((ushort)Math.Min(l.Dur, ushort.MaxValue)).U32(l.Start).U32(unchecked((uint)l.Held)).U32(l.WaitFrom); // (protocol 294: the move on the mover clock, and where it waits)
             w.U16(Cm(l.Rise)).U8((byte)l.Why).U16((ushort)(l.Step + 1)).U16(l.StationBody).U16(l.Moves); // (protocol 290: the look line's and the carry height)
             w.U8((byte)l.ToKind).U16(l.ToPart).U8(l.ToBay); // (protocol 296: a carry between points, its put point for the look line)
+            WriteOrders(w, l); // (protocol 312: the hand orders)
         }
     }
 
@@ -1340,7 +1354,10 @@ public static partial class ConstructLifters
             var toPart = r.U16();
             var toBay = r.U8();
             if (lb == null || c == null || part >= c.PartCount || c.DefOf(part).Lifter == null)
+            {
+                ReadOrders(ref r, null); // (protocol 312: read past)
                 continue;
+            }
             CLift? l = null;
             for (var i = 0; i < lb.N; i++)
                 if (lb.Lifts[i].Part == part)
@@ -1351,6 +1368,7 @@ public static partial class ConstructLifters
                     Array.Resize(ref lb.Lifts, lb.N + 1);
                 lb.Lifts[lb.N++] = l = new CLift { Body = id, Part = part };
             }
+            ReadOrders(ref r, l); // (protocol 312: the hand orders)
             if (state == LiftState.Carry && (l.State != LiftState.Carry || l.Def != def))
                 LifterProbe.CarriesHeard++;
             (l.State, l.Moved, l.Def, l.Paint, l.From, l.To, l.FromRot, l.ToRot, l.Dur, l.Start, l.Held, l.WaitFrom) = (state, moved, def, paint, from, to, fr, tr, dur, start, held, waitFrom);
