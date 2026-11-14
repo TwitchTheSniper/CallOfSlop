@@ -55,7 +55,7 @@ None of the cutter, logistics, crafting, lifter or wire files.
 
 ## Not done, not verified
 
-- **A joined client**: not seen. In every two-window run here the client's player stayed at its spawn (-166, 0, -154), 280 m from the
+- **A joined client**: see the fixes below (the window tool brought the player before it spawned).
   showcase, whatever the host's `bring` or the client's `near` did, so the designer closed on the distance check and `design await` never
   opened it. (The first runs also joined another session's host on 27961; 27993 was free.) The client side of this change is UI only and
   sends the same `CraftNamed` and `PanelDesign` as phases 4 and 6, which were tried on a client then; a cut plate's key goes by the same path.
@@ -64,6 +64,23 @@ None of the cutter, logistics, crafting, lifter or wire files.
 - The cut part reaching the designer's own tray (the showcase's cutter outputs to its rack).
 - Delete and Backspace keys over the plan, Shift's 1 cm snap, the Round and Slot buttons by mouse (by code reading only; the tool added cuts by key).
 - A loft's tapering nose on the plan (the plan draws the L by W frame the cuts are placed in; the taper is the preview's).
+
+## Fixes after review (2026-11-14)
+
+1. **Only real Extruders count for a plate.** Panel Formers and Laser Cutters carry `IsExtruder` too; the plate's readouts now use
+   `ConstructLogisticsPlan.IsSheetExtruder` (made `internal`).
+2. **The plate against each Extruder's reach.** The readout lists each linked Extruder's answer to the plate's blank in the order's own words
+   (`WorkOrders.Refusal`: its die and length with expansion pieces, the piece or the bigger Extruder that would make it, the material it is
+   fed), red when refused. Tried: a 150 x 100 plate beside 0.5 m Extruders reads "a section 1 x 0.1 m is wider than the Extruder's die
+   (0.5 x 0.5 m): attach Die Frames to its sides ...", and the order queued anyway reads the same at the terminal ("queued at the Laser
+   Cutter: waiting on Extrusion plate ...: ..."). ORDER is not held (as a panel too large for a linked former isn't): an Extruder may be
+   added or widened later.
+3. **The joined client: the window tool's, not the game's.** `design bring N` counted the joined player before it had spawned (alive false
+   on the host), teleported that body, and the client then spawned at its own spawn point, 280 m off, so the designer closed on its distance
+   check (the same in verification run 4). It now waits for N alive players. `design players` lists every player, alive and where. The
+   client's `aim; use` still doesn't open the desk in this tool (it isn't looking at the screen); `design open` after being brought does.
+   Tried: the client brought to the desk, opened the designer, drew a plate and a panel by plan drags and ORDERed both; the host queued both
+   at the cutter, cut the plate (fed by hand) into the cutter's Piece Rack, and the panel's order waited for its blank.
 
 ## Questions (the first option is the recommendation)
 

@@ -614,7 +614,7 @@ public sealed partial class Ui
         _pdFormers = 0;
         _pdExtruders = 0;
         for (var i = 0; i < net.MachineN; i++)
-            if (c.DefOf(net.Machines[i]).IsExtruder)
+            if (ConstructLogisticsPlan.IsSheetExtruder(c.DefOf(net.Machines[i]))) // (formers and cutters carry IsExtruder too: only an Extruder makes a plate)
                 _pdExtruders++;
         float maxL = 0, maxW = 0;
         _pdMats.Clear();
@@ -708,11 +708,21 @@ public sealed partial class Ui
             {
                 _pdFits.Add("No Extruder linked: a cut plate's blank is extruded. Link one by a conveyor or a Line Console's wire into Orders.");
                 _pdFitOk.Add(false);
+                return;
             }
-            else
+            // Each linked Extruder's answer to the plate's blank, in the words its order would get (WorkOrders.Refusal: its die and length
+            // with its expansion pieces, the piece or the bigger Extruder that would make it, the material it is fed).
+            var blankOrder = new WorkOrder { Key = Extrusion.ParseKey(PlateBlank)!.Value, Part = ConstructParts.None, Count = 1 };
+            var nth = 0;
+            for (var i = 0; i < net.MachineN && _pdFits.Count < 4; i++)
             {
-                _pdFits.Add($"{_pdExtruders} linked Extruder(s): the cutter's order asks one for the plate");
-                _pdFitOk.Add(true);
+                var d = c.DefOf(net.Machines[i]);
+                if (!ConstructLogisticsPlan.IsSheetExtruder(d))
+                    continue;
+                nth++;
+                var why = WorkOrders.Refusal(world, c, net.Machines[i], blankOrder);
+                _pdFits.Add(why == null ? $"{d.Name} {nth}: yes, it extrudes the plate" : $"{d.Name} {nth}: {why}");
+                _pdFitOk.Add(why == null);
             }
             return;
         }

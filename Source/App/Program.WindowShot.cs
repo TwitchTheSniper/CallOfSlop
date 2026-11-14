@@ -912,7 +912,7 @@ public static unsafe partial class Program
                 {
                     // Two windows keep no common clock: wait for the other side instead of counting frames. "await": press use until the designer's
                     // panel is open; "held": until a store holds a formed panel; "bring N": until N other players are here, then bring them to the desk.
-                    var others = g.Players.Count - 1;
+                    var others = g.Players.Values.Count(pl => pl != me && pl.Bot == null && pl.Alive); // (alive: a joined player is listed before it spawns, and a body brought then is left behind when it spawns at its own spawn point)
                     var held = false;
                     foreach (var hs in g.Constructs.Stores)
                         for (var k = 0; hs is { Live: true } && k < hs.KindN; k++)
@@ -985,6 +985,12 @@ public static unsafe partial class Program
                         for (var i = 0; i < b.PartCount; i++)
                             if (HullLoft.IsPanelName(b.DefOf(i).Name) || HullLoft.IsCutName(b.DefOf(i).Name))
                                 WsSay($"design: placed on body {b.Id} part {i}: {b.DefOf(i).Name} hash {HullLoft.PanelHash(b.DefOf(i)):x8} at {b.Parts[i].Pos.X:0.0000},{b.Parts[i].Pos.Y:0.0000},{b.Parts[i].Pos.Z:0.0000} rot {b.Parts[i].Rot}; sockets o: {string.Join(" ", b.DefOf(i).Sockets.Where(s => s.Name.StartsWith('o')).Select(s => $"{s.Name} {s.At.X:0.0000},{s.At.Y:0.0000},{s.At.Z:0.0000}"))}");
+                    return;
+                }
+                if (arg == "players") // every player as this peer has them: who is local, alive, where (a joined client's reach to the desk)
+                {
+                    foreach (var pl in g.Players.Values)
+                        WsSay($"design players: #{pl.Id}{(pl == me ? " (local)" : "")} alive {pl.Alive} at {pl.Position:0.0}; designer {(Ui.DesignerOpen ? "open" : "closed")}");
                     return;
                 }
                 if (dw.Length >= 1 && dw[0] is "plan" or "plandrag" or "planclick")
