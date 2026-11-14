@@ -160,6 +160,21 @@ public sealed partial class ConstructEdits
         return null;
     }
 
+    /// <summary>The bodies' mass-weighted centre, as the client makes its pivot (Program.SandboxNudge.cs); null if one is gone (the begin then says so).</summary>
+    public static Vector3? NudgeCentre(ConstructWorld world, ReadOnlySpan<ushort> bodies)
+    {
+        var sum = Vector3.Zero;
+        var mass = 0f;
+        foreach (var id in bodies)
+        {
+            if (world.Get(id) is not { PartCount: > 0 } c)
+                return null;
+            sum += c.WorldCom * MathF.Max(c.Mass, 0.01f);
+            mass += MathF.Max(c.Mass, 0.01f);
+        }
+        return mass > 0 ? sum / mass : null;
+    }
+
     /// <summary>What the drag asks for now: the whole move and turn since it began.</summary>
     public void NudgeSteer(byte player, Vector3 move, Quaternion turn)
     {

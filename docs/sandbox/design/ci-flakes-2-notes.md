@@ -4,26 +4,31 @@ Two checks failed once each on main's CI on merges that did not touch their code
 
 ## Nudge tool, online: "the arc's turn went wrong (taken True, 120.00 deg, about Z True)"
 
-Linux, shard 1 of 3. The angle was a whole step and about the right axis, so the failing condition was the centre
-(it must stay within 5 mm) or the server's landing.
+Linux, shard 1 of 3 (run 43610258169, job linux (1)). Its line: "turned 120.00 deg about up True, the centre stayed
+58.2 mm". The landing was seen; the failure was the centre (limit 5 mm).
 
-Cause: the client makes the turn's pivot from its own copy's centre of mass (`Program.SandboxNudge.cs`, "The pivot")
-and sends it in `NudgeBegin`; the server turns its own bodies about that point (`ConstructEdits.NudgeBegin`,
-`hold.Pivot`). The arc is taken straight after the check's RMB put-back, which waits only for the server's block; the
-client's copy was then still 0.1-1.3 mm behind on this PC (measured, 25 runs), and a 120 degree turn about a point d off
-the centre moves the centre 2 sin(60) d = 1.7 d. Here that reached 2.2 mm; a slower, loaded CI runner (40 ms lag, 5 %
-loss in the check) passes 2.9 mm of lag and 5 mm of swing.
+Cause, a game fault a joined client's player sees: the client makes the arc's pivot from its own copy's mass centre
+(`Program.SandboxNudge.cs`, "The pivot") and sends it in `NudgeBegin`; the server turned its own bodies about that
+point (`ConstructEdits.NudgeBegin`, `hold.Pivot`). Just after a drag the copy can be centimetres behind (the client's
+prediction stops within 5 mm of the target, then the copy shows interpolated poses still on their way back), and a
+turn of angle a about a point d off the centre moves the centre 2 sin(a/2) d: 1.7 d at 120 degrees. CI's 58 mm is a
+copy about 34 mm behind; here the copy was 0.1-1.3 mm behind (25 runs) and the centre moved up to 2.2 mm.
 
-Fix (test only, `SelfTestNudge.cs`): before taking the arc, wait (3 s deadline, a problem if it never comes) until the
-client's copy is within 0.5 mm and 0.5 mrad of the server's pose. The 5 mm limit is unchanged. The copy caught up in
-0-0.2 s in every run.
+Fix, in the game (`GameSandboxNudge.cs`, the server's `NudgeBegin` handler; `ConstructEdits.NudgeCentre`): a nudge
+begun over the network turns about the bodies' mass-weighted centre as the server has them. The sent pivot is only ever
+that centre (the client's one sender), so the wire format and its meaning are unchanged (no ProtocolVersion bump).
+`NudgeBegin` itself still takes any pivot (the offline part turns about one off to one side).
 
-Runs, this PC, "Nudge tool" alone: before 25 runs, no arc failure, centre swing up to 2.2 mm (copy lag up to 1.26 mm);
-after 25 runs beside six loaded copies, no failure, swing at most 0.7 mm.
+The check is back to the hard case: the arc taken straight after the put-back drag, no wait, the 5 mm limit as before;
+its line now gives the client's pivot's offset, and its failure message the landing and the centre's move.
 
-Not changed: the pivot is an API (the offline part turns about a pivot off to one side), so the server can't simply use
-its own centre. A player who grabs an arc while their copy lags still gets a sub-mm to few-mm swing. A real fix sends the
-pivot relative to the first body (a wire change, ProtocolVersion bump): a follow-up for the Nudge tool's owner.
+Runs, this PC, "Nudge tool" alone: before 25 runs, no arc failure, the centre moved 1.7 times the client's offset (up to
+2.2 mm); after 20 runs, no failure, the centre moved 0.0 mm in every run with the client's pivot 0.02-0.25 mm off.
+Not tried in a window by hand: the window tool has no Nudge verbs; the section's online part drives the real tool
+(aim, clicks, mouse drag) on a joined client under 40 ms lag and 5 % loss.
+
+Left: the client's own prediction still starts from its copy's stale pose and pivot, so during such a drag its drawn
+body can sit a few cm from the server's until the server's poses take over (no effect on where it lands).
 
 Seen once in the before runs, unrelated: "the drag isn't smooth: holder 3.8 mm, 42 back" (1 of 25).
 
