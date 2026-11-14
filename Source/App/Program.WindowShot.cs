@@ -985,6 +985,30 @@ public static unsafe partial class Program
                                 WsSay($"design: placed on body {b.Id} part {i}: {b.DefOf(i).Name} hash {HullLoft.PanelHash(b.DefOf(i)):x8} at {b.Parts[i].Pos.X:0.0000},{b.Parts[i].Pos.Y:0.0000},{b.Parts[i].Pos.Z:0.0000} rot {b.Parts[i].Rot}; sockets o: {string.Join(" ", b.DefOf(i).Sockets.Where(s => s.Name.StartsWith('o')).Select(s => $"{s.Name} {s.At.X:0.0000},{s.At.Y:0.0000},{s.At.Z:0.0000}"))}");
                     return;
                 }
+                if (dw.Length >= 1 && dw[0] is "plan" or "plandrag" or "planclick")
+                {
+                    // The flat plan (the designer's flat plan phase), by the real mouse through ImGui: "plandrag U1,V1 U2,V2" drags from one point of
+                    // the sheet (cm) to another, "planclick U,V" presses there; "plan" reports the cuts, the selected one, the red ones and why.
+                    if (dw[0] != "plan")
+                    {
+                        var pts = new List<Brutal.Numerics.float2>();
+                        foreach (var word in dw.Skip(1))
+                            if (word.Split(',') is [var su, var sv] && double.TryParse(su, System.Globalization.CultureInfo.InvariantCulture, out var pu)
+                                && double.TryParse(sv, System.Globalization.CultureInfo.InvariantCulture, out var pvv) && Ui.DesignerPlanPoint(pu, pvv) is { } pp)
+                                pts.Add(pp);
+                        if (pts.Count != (dw[0] == "plandrag" ? 2 : 1))
+                        {
+                            WsFail($"design {arg}: no plan drawn, or not U,V cm points");
+                            return;
+                        }
+                        var ci = System.Globalization.CultureInfo.InvariantCulture;
+                        _wsQueue.EnqueueFront("design plan");
+                        _wsQueue.EnqueueFront(dw[0] == "plandrag" ? string.Create(ci, $"drag {pts[0].X:0.#},{pts[0].Y:0.#} {pts[1].X:0.#},{pts[1].Y:0.#}") : string.Create(ci, $"click {pts[0].X:0.#},{pts[0].Y:0.#}"));
+                        return;
+                    }
+                    WsSay($"design plan: {Ui.DesignerPlanText}; key {Ui.DesignerKey}; preview {Ui.DesignerPreview.ShownCut ?? "(uncut)"}{(Ui.DesignerPreview.Shown is { } psh ? $" hash {HullLoft.PanelHash(psh):x8}" : "")}");
+                    return;
+                }
                 if (dw.Length >= 2 && dw[0] == "profile" && dw[1].Split(',') is { Length: 2 } pv && int.TryParse(pv[0], out var ph) && int.TryParse(pv[1], out var pcm))
                 {
                     Ui.DesignerProfile(ph, pcm); // "profile H,CM": a loft's handle H (0-7 the back edge, 8-15 the nose) to CM, as a drag would

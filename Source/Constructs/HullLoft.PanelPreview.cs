@@ -111,8 +111,10 @@ public static partial class HullLoft
             _wantCut = cut;
             _has = true;
             _plan = cut != null ? ReadCut(cut, out _) : null;
-            if (_plan is { Plate: true })
-                _plan = null; // (a cut plate isn't a panel sheet: shown uncut)
+            if (_plan is { Plate: true, Edge: true })
+                _plan = null; // (a flat bar on edge stands in its own y: the designer never draws one, so it is shown as the wanted sheet)
+            // (a cut plate, the designer's extruded plate: built from its own plan and sheet by the same PanelJson as the real part, PlateJson's
+            // boxes and sockets, so its hash is the made part's; the wanted shape is only its flat sheet, the frame its cuts were drawn on)
             _sheet = _plan?.Sheet ?? s; // (a cut key is built on its own sheet, never on another frame's shape)
             if (PanelRefusal(s) != null)
                 return;
