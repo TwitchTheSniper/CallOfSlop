@@ -112,6 +112,11 @@ public static partial class LifterProbe
     /// <summary>"lifter cranecut": the far run's middle section out of the crane (its reach goes; a piece in its hand stays there).</summary>
     public static string CraneCut(ConstructWorld world, string arg = "")
     {
+        if (world.Get(CraneBody) == null) // (phase 7: no rig: the first body with a crane, the Production Showcase's)
+            foreach (var lb in world.LiftBodies)
+                for (var li = 0; li < lb.N; li++)
+                    if (world.Get(lb.Body) is { } lc && lb.Lifts[li].Part < lc.PartCount && ConstructLifters.DefOf(lc, lb.Lifts[li].Part) is { Bridge: true })
+                    CraneBody = lc.Id;
         if (world.Get(CraneBody) is not { } c)
             return "cranecut: no crane (lifter crane first)";
         if (arg == "pad")
