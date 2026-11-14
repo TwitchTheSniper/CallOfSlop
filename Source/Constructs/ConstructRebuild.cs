@@ -288,13 +288,14 @@ public sealed partial class Construct
                 dup = _jSwap[k] == i;
             if (!dup && _jSwapCount >= _jSwap.Length)
                 Array.Resize(ref _jSwap, _jSwap.Length * 2); // (an edit, not a tick: it grows once)
-            StructBounds(i, out var mn, out var mx);
-            for (var a = 0; a < 3; a++)
-                if (mn[a] <= _sMin[a] || mx[a] >= _sMax[a])
-                    _jBounds = true; // (on the bounds: summed again, as when a part on them goes)
+            if (OnBounds(i))
+                _jBounds = true; // (the old shape was the last on a face: summed again, as when a part on them goes)
             AddPartSums(i, -1);
             Parts[i].Def = def;
             AddPartSums(i, 1);
+            StructBounds(i, out var mn, out var mx);
+            if (!_jBounds)
+                GrowBounds(mn, mx); // (the new shape counted back on: a hole that leaves the part's extent alone moves no face)
             if (!dup)
                 _jSwap[_jSwapCount++] = i;
         }

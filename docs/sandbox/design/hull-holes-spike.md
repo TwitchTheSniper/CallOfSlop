@@ -82,10 +82,47 @@ Holes once made cost almost nothing to draw (+1.5% frame, +243 KB on the GPU). M
 spends about 22 ms a frame: 3 to 5 ms of it in the drawing's own chunk rebuilds ("bodies"), the rest in the body's rebuild and the cut
 done in the frame (not split further). The GPU doesn't notice.
 
+## Without rebuilding the whole ship (2026-11-14, second pass)
+
+Karl asked whether a hit has to rebuild the whole ship. It doesn't: a holed part now goes through the plain-edit journal as a swap in place.
+
+- `Construct.JournalSwap(i, def)` (ConstructRebuild.cs): the part's mass taken off and put back, its bounds counted off and on (a face
+  is summed again only when the old shape was the last on it), the collider's leaves for that part dropped (`Remap`) and added again
+  (`AddParts`, which now takes swapped parts with hull leaves), and `RebuildPlain` instead of a full rebuild. A swap the journal can't
+  take (a merged, stored, routed or jointed part, a body under 1024 parts) falls back to the full rebuild as before.
+- Faceted plates (`OwnShapes`, `Hulls`, `HullCovers`) count as plain for a swap (`PlainParts.OfShape`), and are no longer kept as special
+  parts (`SpecialFree`): before this every plate on a capital hull was one, and each plain rebuild walked all 12,000.
+- The collider's spare group for added leaves grows with the body (`Math.Clamp(LeafCount / 8, 512, 8192)`), so a run of holes doesn't
+  fill it and force a rebuild.
+- Clients get `Msg.Holes` (body, part count, then each part's number and its def as `ConstructStorage.WriteDef` writes it, 32 a
+  message) instead of the whole structure patch; they swap the same way. A part whose count or base differs is left (counted as
+  `Unplaced`) and the structure digest resyncs the body.
+- `CALLOFSLOP_REBUILD_CHECK=1` compares each journalled rebuild with a full one: 114 of 114 matched, and the client matched the host
+  part for part with 0 holes unplaced.
+
+12,000-part capital hull, one line a tick:
+
+| Per hit tick | Before (PC) | Karl's PC | Cloud box, bounds fix |
+| --- | --- | --- | --- |
+| Bore | 2.80 ms | 0.11 ms (p95 2.06) | 0.10 ms (p95 0.72) |
+| Rebuild | 4.54 ms | 3.18 ms (p95 6.49) | 1.14 ms (p95 2.14) |
+| Collider | 5.35 ms | 0 (worst 6.75) | 0 (worst 9.69) |
+| Server update | 0.46 ms | 0.41 ms | 0.27 ms |
+| Client update | 0.05 / 9.07 ms p95 | 0.05 / 6.61 ms p95 | 0.02 / 2.00 ms p95 |
+| Hole messages | 9.6 KB a line (patch) | 1.3 KB a line | 1.2 KB a line |
+
+About 13 ms a hit tick becomes about 3.5 ms on the PC (before the bounds fix: every capital plate sits on the hull's top face, so each
+swap summed the bounds of all 12,000 parts) and about 1.5 ms on the cloud box after it. The collider's rare worst ticks are its spare
+group being rebuilt once it fills.
+
+GL bench on the PC (journal, before the bounds fix): 1,000 holes standing cost 1.73 ms a frame (CPU 0.67); a new line through each ship
+every frame cost 6.8 ms of CPU (was 22.2), 3.4 to 4.9 ms of it the drawing's own chunk rebuilds ("bodies"). Those chunks are the next
+thing to make local.
+
 ## For phase 1
 
-- Make a holed part a local edit: the journalled rebuild taking a def swap, the collider, part tree and merged-mesh chunks patched for
-  the parts that changed, on the host and on clients. That is the whole gap between this spike and the battle size Karl confirmed
-  (about 10 capital ships, 300 penetrating hits a second).
+- The host and client side of a local edit is done (above). Left: the drawing's merged-mesh chunks rebuilt for the parts that changed,
+  not the whole body's (hits on one body in a tick already share one `RebuildPlain`). Then the battle size Karl confirmed (about 10 capital
+  ships, 300 penetrating hits a second) is measured again.
 - Keep holes per ship, not in the part's key.
 - Round the openings for breaches big enough to board through.
