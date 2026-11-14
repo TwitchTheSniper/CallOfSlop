@@ -523,12 +523,39 @@ public static unsafe partial class Program
                 made++;
             }
         }
+        if (FlagAfter(args, "--bench-holes", 0) is var holes and > 0)
+        {
+            // --bench-holes N: about N railgun holes (0.15 m) through the bodies before the timing, each body by its share of the parts
+            // (holes through ships, the spike: docs/sandbox/design/hull-holes-spike.md); --bench-holes-live K: K more lines a frame while drawn.
+            var rng = new Random(7);
+            var all = _benchWorld.Bodies.Where(b => b.PartCount > 8).ToList();
+            var total = Math.Max(1, all.Sum(b => b.PartCount));
+            var clock = Stopwatch.StartNew();
+            var have = 0;
+            foreach (var c in all)
+            {
+                var goal = Math.Max(1, holes * c.PartCount / total);
+                for (int got = 0, dry = 0; got < goal && dry < 200; )
+                {
+                    var r = SelfTest.BoreAtRandom(_benchWorld, c, rng, 0.15f);
+                    got += r.Holed;
+                    dry = r.Holed > 0 ? 0 : dry + 1;
+                }
+                c.Rebuild();
+            }
+            foreach (var c in all)
+                for (var i = 0; i < c.PartCount; i++)
+                    have += HullHoles.IsHoled(c.DefOf(i)) ? 1 : 0;
+            Console.WriteLine($"[glbench] holes: {have} parts holed ({HullHoles.DefsMade} made, {HullHoles.Refused} refused, {HullHoles.FacetsCut} facets and {HullHoles.BoxesCut} boxes cut) in {clock.Elapsed.TotalMilliseconds:0} ms");
+        }
+        _benchHolesLive = Math.Clamp(FlagAfter(args, "--bench-holes-live", 0), 0, 50);
         var boxes = ConstructParts.All.Sum(d => d.Boxes.Length);
         Console.WriteLine($"[glbench] constructs: {made} bodies, {parts} parts");
         Console.WriteLine($"[glbench] materials: {ConstructParts.All.Count} part types, {boxes} boxes at {System.Runtime.CompilerServices.Unsafe.SizeOf<CPartBox>()} B a box, {BoxLooks.Count} looks at {System.Runtime.CompilerServices.Unsafe.SizeOf<BoxLooks.Row>()} B a look, {Surfaces.File.Rows.Length} materials ({SurfaceGpu.Bytes} B on the GPU); merged mesh slot {(Renderer.MergeXformFloats + Renderer.MergeLookFloats) * sizeof(float)} B");
     }
 
-    private static int _benchEdit, _benchEdited = -1;
+    private static int _benchEdit, _benchEdited = -1, _benchHolesLive;
+    private static readonly Random _benchHoleRng = new(11);
 
     /// <summary>
     /// <c>--bench-edit</c>: the constructs change as they are drawn, the same way in every configuration (frame by frame, until
@@ -540,6 +567,19 @@ public static unsafe partial class Program
         if (_benchWorld == null || frame < 0 || frame >= _benchEdit || frame == _benchEdited)
             return;
         _benchEdited = frame; // (once a frame, whichever configuration draws it first)
+        if (_benchHolesLive > 0)
+        {
+            // --bench-holes-live K: K railgun lines a frame through each body instead of the paint and damage (the holes as they are made)
+            foreach (var c in _benchWorld.Bodies)
+                if (c.PartCount > 8)
+                {
+                    for (var line = 0; line < _benchHolesLive; line++)
+                        SelfTest.BoreAtRandom(_benchWorld, c, _benchHoleRng, 0.15f);
+                    if (c.Dirty)
+                        c.Rebuild();
+                }
+            return;
+        }
         var k = 0;
         foreach (var c in _benchWorld.Bodies)
         {

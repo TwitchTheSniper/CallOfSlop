@@ -529,7 +529,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   LabourKind gains Eat and Patrol at the end (Msg.Labour's kind byte).
     // 317: Incidents in the colony's gangs (docs/story/LABOUR.md "Incidents"): Msg.LabourIncident at the end of Msg (u8 scene, u8 kind,
     //   u8 inmate, u32 the tick it began).
-    public const ushort ProtocolVersion = 317;
+    // 318: Holes in hull plates (docs/sandbox/design/hull-holes-spike.md): a holed part travels as a named run-time part,
+    //   its key "Holed (Base | holes)" after Extrusion.WireMark and HullLoft.WireKind (no new messages).
+    public const ushort ProtocolVersion = 318;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

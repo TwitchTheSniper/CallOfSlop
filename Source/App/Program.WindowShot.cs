@@ -115,7 +115,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "inside" or "me" or "person" or "use" or "waitnear" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" or "incident" || WsGhostKnown(action) || WsTourKnown(action) || WsTalkKnown(action) || WsPlayKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "inside" or "me" or "person" or "use" or "waitnear" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" or "period" or "gang" or "incident" or "bore" or "holes" || WsGhostKnown(action) || WsTourKnown(action) || WsTalkKnown(action) || WsPlayKnown(action);
 
     private static void WsSay(string s)
     {
@@ -494,16 +494,20 @@ public static unsafe partial class Program
     private static (Construct? C, int Part) WsNth(Construct c, string name, int nth)
     {
         for (var i = 0; i < c.PartCount; i++)
-            if (c.DefOf(i).Name.Equals(name, StringComparison.OrdinalIgnoreCase) && --nth == 0)
+            if (WsNameIs(c.DefOf(i), name) && --nth == 0)
                 return (c, i);
         return (null, -1);
     }
+
+    /// <summary>A part answers to its own name, and a holed one to its file part's too (HullHoles.cs).</summary>
+    private static bool WsNameIs(ConstructPartDef d, string name) => d.Name.Equals(name, StringComparison.OrdinalIgnoreCase)
+        || HullHoles.IsHoled(d) && HullHoles.BaseOf(d).Name.Equals(name, StringComparison.OrdinalIgnoreCase);
 
     private static int WsCount(Construct c, string name)
     {
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
-            if (c.DefOf(i).Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+            if (WsNameIs(c.DefOf(i), name))
                 n++;
         return n;
     }
@@ -542,6 +546,8 @@ public static unsafe partial class Program
             return; // (run-time parts in the hands, backpack and stores: Program.WindowShotInv.cs)
         if (WsCutVerb(g, me, verb, arg))
             return; // (cut parts: Program.WindowShotCuts.cs)
+        if (WsHoleVerb(g, me, verb, arg))
+            return; // (holes through ships: Program.WindowShotHoles.cs)
         if (WsGhostVerb(g, me, verb, arg))
             return; // (the blueprint ghost's actions: Program.WindowShotGhost.cs)
         if (WsPlayVerb(g, me, verb, arg))

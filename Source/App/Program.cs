@@ -277,6 +277,8 @@ public static unsafe partial class Program
             return SelfTest.BenchParts(args); // run-time parts and part shapes over many generated vehicles, offline and host + client (Source/App/BenchParts.cs)
         if (args.Any(a => a.Equals("--bench-material", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BenchMaterial(args); // the material painter: parts of other materials, round trips, a client's requests over RakNet (Source/App/BenchMaterial.cs)
+        if (args.Any(a => a.Equals("--bench-holes", StringComparison.OrdinalIgnoreCase)))
+            return SelfTest.BenchHoles(args); // railgun holes through the Rust Bucket and a capital hull, host and client (Source/App/BenchHoles.cs)
         if (args.Any(a => a.Equals("--bench-cookoff", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.BenchCookOff(args); // an ordnance rack's cook-off chain and bombs set off in the air (Source/App/BenchCookOff.cs)
         if (args.Any(a => a.Equals("--bench-fuelblast", StringComparison.OrdinalIgnoreCase)))

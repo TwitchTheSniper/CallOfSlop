@@ -124,6 +124,7 @@ public static class RuntimeParts
             return true;
         }
         HullLoft.Forget(Doomed);
+        HullHoles.Forget(Doomed);
         Pressed.Forget(Doomed);
         Ordnance.Forget(Doomed);
         ModularRack.Forget(Doomed);

@@ -350,6 +350,8 @@ public static partial class HullLoft
         var name = r.Str();
         if (name.StartsWith(Pressed.Prefix, StringComparison.Ordinal))
             return Pressed.Read(name); // (protocol 258: a pressed part travels as a named run-time part does)
+        if (name.StartsWith(HullHoles.Prefix, StringComparison.Ordinal))
+            return HullHoles.Read(name); // (protocol 318: a holed plate travels the same way)
         if (!name.StartsWith(Prefix, StringComparison.Ordinal) && !IsPanelName(name) && !IsCutName(name))
             throw new MalformedPacketException($"a run-time part named \"{name}\"");
         return (FromWire(name) ?? Parse(name)) is { } d ? d.Id : ConstructParts.Need("Hull Bay T").Id; // (many new keys at once: stand-ins past the update's budget, HullLoft.FirstParts.cs)
