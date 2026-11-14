@@ -147,6 +147,7 @@ public enum LiftWhy : byte
     Carrying, // (phase 4) carrying between points
     NoRail, // (phase 6) a Bridge Crane not on a Crane Rail: stopped where it is
     NoFarRail, // (phase 6) ...its far end finds no rail a span across
+    RailsShort, // (phase 6) ...its rails no longer reach an end of the move it is in (a section taken out)
 }
 
 /// <summary>
@@ -352,10 +353,12 @@ public static partial class ConstructLifters
                 var l = lb.Lifts[i];
                 if (l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } ld)
                     continue;
-                var railless = ld.Bridge && ld.RailWhy != 0; // (a crane whose rails went: it stops where it is, its piece in its hand, as without power)
+                // A crane whose rails went, or no longer reach either end of the move it is in: it stops where it is, its piece in its hand,
+                // as without power, and goes on when the rails are back.
+                var railless = ld.Bridge && (ld.RailWhy != 0 || l.State is LiftState.Carry or LiftState.Return && (OffRails(ld, l.From) || OffRails(ld, l.To)));
                 if (railless || !ConstructRecycler.Powered(world, c, l.Part))
                 {
-                    Why(world, l, !railless ? LiftWhy.NoPower : ld.RailWhy == 1 ? LiftWhy.NoRail : LiftWhy.NoFarRail); // (it stops where it is, and goes on when power returns; a client poses it there too)
+                    Why(world, l, !railless ? LiftWhy.NoPower : ld.RailWhy == 1 ? LiftWhy.NoRail : ld.RailWhy == 2 ? LiftWhy.NoFarRail : LiftWhy.RailsShort); // (it stops where it is, and goes on when power returns; a client poses it there too)
                     if (l.State is LiftState.Carry or LiftState.Return && !l.PowerWait)
                     {
                         l.PowerWait = true;
@@ -370,7 +373,7 @@ public static partial class ConstructLifters
                     l.PowerWait = false;
                     Thaw(world, l);
                 }
-                if (l.Why is LiftWhy.NoPower or LiftWhy.NoRail or LiftWhy.NoFarRail)
+                if (l.Why is LiftWhy.NoPower or LiftWhy.NoRail or LiftWhy.NoFarRail or LiftWhy.RailsShort)
                     Why(world, l, l.PlayerWait ? LiftWhy.Player : l.ToHold ? LiftWhy.PutBack : l.ToKind != LiftPointKind.None ? LiftWhy.Carrying : LiftWhy.None);
                 if (l.PlayerWait && l.State == LiftState.Carry && (l.ToHold || l.ToKind != LiftPointKind.None || ClaimHolds(world, l)))
                 {
@@ -488,8 +491,8 @@ public static partial class ConstructLifters
     private static void Ports(Construct c, CLift l)
     {
         ref var p = ref c.Parts[l.Part];
-        var busy = l.State is LiftState.Carry or LiftState.Return && l.Why is not (LiftWhy.NoPower or LiftWhy.NoRail or LiftWhy.NoFarRail) ? 1f : 0f;
-        var alarm = l.State == LiftState.Stuck || l.Why == LiftWhy.PlayerStuck ? 1f : 0f; // (a player in the way over 10 s raises it too)
+        var busy = l.State is LiftState.Carry or LiftState.Return && l.Why is not (LiftWhy.NoPower or LiftWhy.NoRail or LiftWhy.NoFarRail or LiftWhy.RailsShort) ? 1f : 0f;
+        var alarm = l.State == LiftState.Stuck || l.Why is LiftWhy.PlayerStuck or LiftWhy.NoRail or LiftWhy.NoFarRail or LiftWhy.RailsShort ? 1f : 0f; // (a player in the way over 10 s raises it too; a crane off its rails)
         if (p.Out == busy && p.Out1 == alarm && p.Mem == l.Moves)
             return;
         p.Out = p.OutNext = busy;
@@ -1160,6 +1163,8 @@ public static partial class ConstructLifters
             what += " - stuck: a player has been in the way for over 10 s";
         if (ld.Bridge && ld.RailWhy != 0)
             what += ld.RailWhy == 1 ? " - stopped: it is not on a Crane Rail" : " - stopped: its far end has no rail";
+        else if (l is { Why: LiftWhy.RailsShort })
+            what += " - stopped: its rails no longer reach where it was going";
         var carries = ld.Payload >= 1000 ? $"{ld.Payload / 1000f:0.#} t" : $"{ld.Payload:0} kg";
         if (ld.Bridge)
             return $"{d.Name}: {what} - spans {ld.Span:0.#} m over {MathF.Max(0, ld.RunHi - ld.RunLo):0.#} m of rail, hook drop {ld.Down:0.#} m, carries {carries}{(l is { Moves: > 0 } ? $"; {l.Moves} moved" : "")}";
@@ -1186,10 +1191,10 @@ public static partial class ConstructLifters
         }
         var l = Find(world, c.Id, part);
         var piece = l != null && l.Def != 0 ? ConstructParts.Get(l.Def)?.Name : null;
-        if (l is { Why: LiftWhy.NoRail or LiftWhy.NoFarRail })
+        if (l is { Why: LiftWhy.NoRail or LiftWhy.NoFarRail or LiftWhy.RailsShort })
         {
             card.State = PanelState.Fault;
-            card.Add(1, l.Why == LiftWhy.NoRail ? "Not on a rail" : "Far end: no rail");
+            card.Add(1, l.Why == LiftWhy.NoRail ? "Not on a rail" : l.Why == LiftWhy.NoFarRail ? "Far end: no rail" : "Rails too short");
             if (piece != null)
                 card.Add(2, piece);
         }

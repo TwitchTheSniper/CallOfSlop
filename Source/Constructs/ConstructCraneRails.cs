@@ -42,6 +42,34 @@ public static partial class ConstructLifters
         return ld; // (its own def has RailWhy 1: no reach)
     }
 
+    /// <summary>The window tool's "lifter cranepoints": the points a crane reaches, and each nearby part's middle in its box's frame.</summary>
+    public static string CranePoints(ConstructWorld world, Construct c, int part)
+    {
+        if (DefOf(c, part) is not { Bridge: true } ld)
+            return "not a crane";
+        var pts = new LiftPoint[MaxPoints];
+        var n = 0;
+        Frame(c, part, ld, out _, out var lr, out var shoulder);
+        var s = "";
+        foreach (var b in world.Bodies)
+        {
+            if (Vector3.Distance(b.Pos, shoulder) > ld.ReachMax + ld.Up + ld.Down + b.Radius)
+                continue;
+            PointsOn(b, b == c ? part : -1, ld, shoulder, lr, pts, ref n);
+            if (b != c)
+            {
+                var d = Vector3.Transform(b.Pos - shoulder, Quaternion.Conjugate(lr));
+                s += $" [{b.DefOf(0).Name} body {b.Id} at {d.X:0.0},{d.Y:0.0},{d.Z:0.0}]";
+            }
+        }
+        for (var k = 0; k < n; k++)
+            s += $" point {pts[k].Kind} {world.Get(pts[k].Body)?.DefOf(pts[k].Part).Name}";
+        return $"{n} points; box x {ld.AcrossMin:0.0}..{ld.AcrossMax:0.0} z {ld.RunLo:0.0}..{ld.RunHi:0.0} y -{ld.Down:0.0}..-{ld.Depth:0.0};{s}";
+    }
+
+    /// <summary>Is a point of a crane's move (its part frame) past the rails it has now (a section taken out mid-move)?</summary>
+    private static bool OffRails(LifterDef ld, Vector3 p) => p.Z - ld.Base.Z < ld.RunLo - 0.05f || p.Z - ld.Base.Z > ld.RunHi + 0.05f;
+
     private static void Cranes(Construct c)
     {
         c.CraneStamp = c.RebuildStamp;
