@@ -13,6 +13,8 @@ namespace CallOfSlop;
 /// </summary>
 public static unsafe partial class Program
 {
+    private static int _wsInvTries; // ("inv players" and "inv beacon": waits so far)
+
     private static bool WsInvVerb(Game g, Player me, string verb, string arg)
     {
         if (verb != "inv")
@@ -288,6 +290,30 @@ public static unsafe partial class Program
                 while (put < n && g.Constructs.RackPut(c!, part, d!))
                     put++;
                 WsSay($"inv rack: {put} of {n} x {Named(d!.Id)} onto the {c!.DefOf(part).Name}");
+                return true;
+            }
+            case "players" or "beacon":
+            {
+                // Two windows keep no common clock: "players N" waits until N other players are alive here; "beacon" until this peer's beacon
+                // view is on (its network theirs). Each tries again every 30 frames, 600 times at most.
+                var others = 0;
+                foreach (var pl in g.Players.Values)
+                    if (pl.Id != me.Id && pl.Alive)
+                        others++;
+                var ready = sub == "beacon" ? g.SandboxBeaconOn : int.TryParse(rest, out var need) && others >= need;
+                if (!ready)
+                {
+                    if (++_wsInvTries > 6000)
+                    {
+                        WsFail($"inv {arg}: never happened");
+                        return true;
+                    }
+                    _wsQueue.EnqueueFront("inv " + arg);
+                    _wsWait = 30;
+                    return true;
+                }
+                WsSay($"inv {arg}: after {_wsInvTries} waits");
+                _wsInvTries = 0;
                 return true;
             }
             case "survival":

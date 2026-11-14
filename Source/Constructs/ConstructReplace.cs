@@ -303,8 +303,8 @@ public sealed partial class ConstructEdits
             else
                 ReturnFromAid(world, player, d, eye, where);
         }
-        Notices.Add((player, $"Replace: {PartRef.Shown(d)} is now a {PartRef.Shown(e)}"));
-        Done.Add($"player {player}: replaced {PartRef.Shown(d)} with {PartRef.Shown(e)} on construct {c.Id}");
+        Notices.Add((player, $"Replace: {PartRef.Listed(d)} is now a {PartRef.Listed(e)}"));
+        Done.Add($"player {player}: replaced {PartRef.Listed(d)} with {PartRef.Listed(e)} on construct {c.Id}");
         return null;
     }
 }
