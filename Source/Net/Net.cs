@@ -120,6 +120,7 @@ public enum Msg : byte
     Labour, // server -> all and each joiner, Sandbox story: the penal colony's convict labourers, every gang (u8 n, each u8 kind, u8 inmates, u8 guards, u8 seed, u8 flags, u8 gap 10 cm, vec facing, u8 points, vec each) when they change (reliable ordered; GameLabour.cs, protocol 276)
     LabourHands, // server -> all and each joiner, Sandbox story: the story people working among the labourers now (u8 n, each u8 player, u8 scene: their body is drawn as that gang's last inmate) when it changes (reliable ordered; GameLabourHands.cs, protocol 286)
     Breakout, // server -> one client, Sandbox story: their place in the convicts' break-out (u8 stage, u8 has a target, vec target, u32 the tick they boarded the hauler (0: not riding), u16 hauler leaving, u16 hauler arriving) when it changes (reliable ordered; GameBreakout.cs, protocol 288)
+    Errand, // server -> one client, Sandbox story: their errand on a works yard machine (u8 errand + 1 in Story/Errands, 0 none; u8 step, 255 done; u8 has a target, vec target) when it changes (reliable ordered; GameErrands.cs, protocol 314)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

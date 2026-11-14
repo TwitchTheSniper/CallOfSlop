@@ -713,6 +713,18 @@ public static class StoryCli
             {
                 errors.Add(ex.Message);
             }
+        // The errands (Errands/*.json, Game/GameErrands.cs): each loads, its giver is someone in a cast, and every "errand:ID" hook names one.
+        var errands = ErrandScript.LoadFolder(Path.Combine(folder, ErrandScript.FolderName), errors);
+        foreach (var e in errands)
+        {
+            Console.WriteLine($"  errand {e.Id} ({e.File}): {e.Title}, asked by {e.Giver}, on the {e.Machine}; teaches \"{e.Fact}\"; {string.Join(", ", e.Steps.Select(s => $"{s.Id} ({s.Cue.ToString().ToLowerInvariant()})"))}");
+            if (!rules.People.Casts.Any(c => c.People.Any(p => p.Name.Equals(e.Giver, StringComparison.OrdinalIgnoreCase))))
+                Console.WriteLine($"  warning: errand {e.Id} ({e.File}): \"giver\": {e.Giver} is in no cast, so nobody is thanked");
+        }
+        foreach (var d in sl.Storylets)
+            foreach (var hook in d.Ends.Select(x => x.Hook).Append(d.Hook))
+                if (hook.StartsWith(StoryletRules.ErrandHook, StringComparison.Ordinal) && !errands.Any(e => e.Id.Equals(hook[StoryletRules.ErrandHook.Length..], StringComparison.OrdinalIgnoreCase)))
+                    errors.Add($"storylet {d.Id} ({d.File}): \"hook\": \"{hook}\" names no errand in Story/Errands");
         var scamFile = Path.Combine(folder, "Office", "Scammers.json");
         if (File.Exists(scamFile))
             try

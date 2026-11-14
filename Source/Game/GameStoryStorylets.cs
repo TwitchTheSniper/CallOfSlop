@@ -8,7 +8,7 @@ namespace CallOfSlop;
 /// The game's side of the storylets (docs/story/STORY.md "Storylets"; the engine is Source/Story/StoryStorylets.cs):
 /// the induction's end recorded as an Induct, a player's visits to a storylet spot (near a person's body) counted in
 /// Visited, the hooks a storylet starts ("lockdown": the colony's lockdown with the player wanted; "depot": the Orbital
-/// Depot's report memo), a line nobody says sent as a notice, and the choices a storylet offers shown in the talk panel
+/// Depot's report memo; "errand:ID": an errand on a works yard machine, GameErrands.cs), a line nobody says sent as a notice, and the choices a storylet offers shown in the talk panel
 /// of the person who asks (<see cref="Msg.TalkChoices"/>: the host sends them, the player's pick comes back as a
 /// <see cref="TalkAsk"/> from <see cref="TalkAsk.Choose"/> up). Host only; nothing allocates in a steady tick.
 /// </summary>
@@ -133,6 +133,10 @@ public sealed partial class Game
                 break;
             case "pcvirus":
                 ColonyPcInfect(p); // (the duty desk's computer: GameColonyPc.cs)
+                break;
+            default:
+                if (hook.StartsWith(StoryletRules.ErrandHook, StringComparison.Ordinal))
+                    ErrandOffer(p, hook[StoryletRules.ErrandHook.Length..], now); // (a works yard machine: GameErrands.cs)
                 break;
         }
         Log($"[storylet] hook {hook} for {p.Name}");

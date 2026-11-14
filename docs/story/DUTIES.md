@@ -48,7 +48,42 @@ real vehicles carry players, a real crew bus driven by Ministry staff replaces t
 tick they boarded (0: not riding), u16 the leaving bus, u16 the arriving bus, u8 outside the step's play area (protocol 258). `CActKind.QuarrySkip` from a client. Each
 person's state is saved in the world's `QuarryTag` section (`WorldPlayer.QuarryState`); a ride under way resumes its step.
 
+## Errands
+
+Karl, 2026-11-14: more side quests that teach the machines at the bases. An errand is a small optional job someone at the
+colony asks for, on one of the works yard's start kit machines (the Starter Foundry, Sawmill and Assembler stand inside the
+fence, `GameColonySite.ColonySiteKit`). Code `Source/Game/GameErrands.cs` (host runner and wire), `Source/Game/Errands.cs`
+(the files), panel `Source/UI/UiErrand.cs`; words `Story/Errands/*.json` (format `call-of-slop-errand/1`, one errand a file).
+
+- **Who asks.** A storylet in `Story/Storylets/Errands.json` (the `side` lane, so a duty or the break-out doesn't hold it up):
+  Ambrose Thale and the Foundry (steel) once the first shift is done (`FirstShift`, which the game sets when the quarry duty is
+  done or skipped); then Officer Nettles and the Assembler (a wall clock for her requisition form) and Hester Mossop and the
+  Sawmill (planks, and she won't say what for), both after the Foundry, so the machines come in stages. Its choice "Show me"
+  ends it with `"hook": "errand:ID"`; "Not now" or no answer, and it asks again after 20 minutes.
+- **The steps** are judged four times a second from how things stand, not from one action: `reach` (within `amount` m of
+  the spot), `power` (the machine has power), `feed` (everything the step's `give` handed over has gone from the pack: into
+  the machine or its bin), `recipe` (the Assembler set to `recipe`), `carry` (more of `material` than when the step began),
+  `part` (more of `part`, in the pack or the hands), `wait`. Spots are on the machine's own construct: `machine`, `genset`,
+  `in` (its first plain bin), `out` (its last). `give` is `{"material": units}`, topped up to the units. The giver says each
+  step's `say`; `thanks` at the end, `gone` if the machine is taken away (the nearest other of its kind is used first).
+  The start kit's machines are powered through their slabs as built, so no errand has a power step; a `carry` hint says what
+  to do if the power has gone.
+- **The machine** is the nearest working part named `machine` to the colony's middle (within `reach`, 300 m), never the
+  quarry's works.
+- **What it leaves.** Done, the story records an `Errand` (`Story/Verbs/Errands.json`): the player is `Taught` the machine
+  (the file's `fact`, "the Foundry", a Thing the storylets ask for), and the giver `Likes` them 8 more, which also counts
+  towards the break-out's trust. One at a time: the one under way is the exclusive relation `OnErrand`
+  (`Story/Relations/Errands.json`), so it saves with the story and starts again from its first step after a load or a rejoin.
+- **The panel** sits where the duties' panels do and waits while the induction, the quarry, the break-out or the depot's
+  steps hold that place; the depot's report memo and the "what next" goal wait for it. Esc menu: "Drop this errand".
+- **Wire (protocol 314).** `Msg.Errand`, server to one client: u8 errand + 1 (its index in `Story/Errands` by file name, 0
+  none), u8 step (255 done), u8 has a target, vec target. `CActKind.ErrandDrop` from a client.
+- **Checks.** `--check-story` loads the errands, warns when a giver is in no cast and refuses a storylet whose `errand:` hook
+  names no errand. The window tool's `errand ID` starts one on the host, `errand` prints where it stands, `errand at` looks
+  at its marker.
+
 ## Next
 
-More duties in the same pattern, each teaching a machine: the foundry (steel), the Assembler, refining, the Requisition
-Crate and faction jobs. Standing with the Ministry for a duty done is not paid yet.
+More duties in the same pattern, each teaching a machine: refining, the Requisition Crate and faction jobs (the Foundry,
+the Sawmill and the Assembler are errands now, above). Errands not written yet: the Drill Rig (a vein to stand it over), the
+Press and its dies, the Saw Rig. Standing with the Ministry for a duty done is not paid yet.

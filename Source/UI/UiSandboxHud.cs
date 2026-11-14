@@ -50,6 +50,7 @@ public sealed partial class Ui
         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + MenuButtonWidth * _scale);
         DrawPauseTutorial(game); // skip, resume or replay the induction (UiTutorial.cs)
         DrawPauseQuarry(game); // skip the quarry duty (UiQuarry.cs)
+        DrawPauseErrand(game); // drop an errand (UiErrand.cs)
         if (game.ShellLocal)
         {
             ImGui.Spacing();

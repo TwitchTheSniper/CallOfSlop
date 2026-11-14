@@ -775,7 +775,8 @@ the source of truth, `--check-story` decides what is valid, and the read-only st
   A play broken off gives the storylet up (it may come again after a minute).
 - **job**: `"Ministry of Slop: Breaking Rocks"` hands the player that faction job ("Jobs"). **hook**: something the game
   starts: `lockdown` (the colony's lockdown, the player wanted), `pcvirus` (the duty desk's computer catches the Scammers' virus: "The duty desk" below), `depot` (the Orbital Depot's report memo, if the player hasn't had it yet: since 2026-11-13 the
-  depot follows the first duty whatever the storylets do).
+  depot follows the first duty whatever the storylets do), `breakout`, and `errand:ID` (an errand on a works yard machine,
+  Story/Errands: docs/story/DUTIES.md "Errands").
 - **ends**: the first that happens wins, each one of: `"when"` an event (a verb and roles, a variable of the storylet's
   or a name: `{"verb": "Job", "actor": "?me", "item": "Breaking Rocks"}`, with an optional `"within"`), `"after"` a time
   (from when its beats ended; a paused storylet's clock stands still) or `"choice"` (an answer the player picks in the
