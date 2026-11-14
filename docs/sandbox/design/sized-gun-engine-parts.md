@@ -449,3 +449,5 @@ The user, on bored cylinders making an engine weigh about twice a plain one: "bo
 
 - **The bore trade stays as built** (the user): on a Small cylinder the widest bore doubles the power for 43% less health and mass.
 - **Stroke adds power too** (the user): power follows displacement, bore and stroke; a longer stroke also lowers revs. This replaces "stroke trades revs for torque" at the same power. Built 2026-11-14 (docs/sandbox/design/stroke-power-notes.md): a cylinder's kW is its bore's times its stroke ratio, the revs over it as before, so torque goes with the stroke squared; the fuel system feeds by that power; a starter by the crank's scale times the stroke's cube root; the Engine Kit plans strokes 1, 1.33 and 1.6 (0.8 when revs are asked) and keeps vehicles to strokes that keep their limiter.
+
+- **A long stroke's cost stays as built** (the user, 2026-11-14): more metal and a lower rev limit; no extra toughness cost and no narrower range.
