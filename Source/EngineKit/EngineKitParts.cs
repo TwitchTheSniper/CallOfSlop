@@ -19,15 +19,15 @@ public static class EngineKitParts
     public const string Folder = "Constructs/Parts/EngineKit";
     public const string PlainFolder = "Constructs/Parts/ModularEngine";
 
-    /// <summary>A tier's cylinder: its name's word, tier, power and thirst a kW (times the plain one's), mass and health factors, and its head's colour.</summary>
-    public readonly record struct Grade(string Word, int Tier, float Power, float Thirst, float Mass, float Health, string Head, string What);
+    /// <summary>A tier's cylinder: its name's word, tier, power and thirst a kW (times the plain one's), mass and health factors, its head's colour, and the bore (times its crank's scale) that gives the same power from a plain cylinder: the Engine Kit plans that since the tier cylinders were retired (sized parts phase 6; ratio^2.161 = power).</summary>
+    public readonly record struct Grade(string Word, int Tier, float Power, float Thirst, float Mass, float Health, string Head, string What, float Bore);
 
     /// <summary>The plain cylinder is tiers 1 and 2; these are 3, 4 and 5.</summary>
     public static readonly Grade[] Grades =
     [
-        new("Bored", 3, 1.3f, 1.05f, 1.1f, 1.0f, "#4d6a7a", "A bored-out cylinder: +30% power, a little thirstier. Tier 3."),
-        new("Performance", 4, 1.6f, 1.1f, 1.2f, 1.1f, "#2f5f9e", "A performance cylinder: +60% power for its size. Tier 4."),
-        new("Racing", 5, 2.0f, 1.2f, 1.3f, 1.2f, "#a32a2a", "A racing cylinder: twice the power for its size, thirsty. Tier 5."),
+        new("Bored", 3, 1.3f, 1.05f, 1.1f, 1.0f, "#4d6a7a", "A bored-out cylinder: +30% power, a little thirstier. Tier 3.", 1.13f),
+        new("Performance", 4, 1.6f, 1.1f, 1.2f, 1.1f, "#2f5f9e", "A performance cylinder: +60% power for its size. Tier 4.", 1.24f),
+        new("Racing", 5, 2.0f, 1.2f, 1.3f, 1.2f, "#a32a2a", "A racing cylinder: twice the power for its size, thirsty. Tier 5.", 1.38f),
     ];
 
     public static readonly string[] Sizes = ["Small", "Medium", "Large", "Capital"];

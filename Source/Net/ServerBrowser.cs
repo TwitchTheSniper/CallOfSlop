@@ -503,7 +503,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   Engine die (Pressing.json); a pressed engine piece's scale and a cylinder's stroke ratio come from its key (derived on each peer, no new bytes).
     // 305: Laser Cutter phase 6 (the Pane): "Cut Pane (rA,B,C tT glass)" travels as a named run-time part (a name older builds refuse), in bodies,
     //   orders, racks and riders; and a formed glass sheet (its blank) is a part now (it threw before), so its key may ride too.
-    public const ushort ProtocolVersion = 305;
+    // 306: Sized parts phase 6: Pressing.json gains 22 Receiver die patterns (the generated receivers with no recipe, never Auto's: a pattern's
+    //      "auto": false) and their presets, and a like body's faces settle in Pressed.BuildLike (both peers make pressed parts from it);
+    //      41 Assembling rows go (barrels and engine pieces); the recycler holds a preset part's yield to its press cost. No message changes.
+    public const ushort ProtocolVersion = 306;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

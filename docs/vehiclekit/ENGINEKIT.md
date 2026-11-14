@@ -91,36 +91,43 @@ leaves out "no fuel tank".
 | --- | --- | --- | --- |
 | 1 | Cylinder (x1) | Carburettor (x1) | - |
 | 2 | | Injector Rail (x1.2, x0.8 fuel) | - |
-| 3 | Bored Cylinder (x1.3, x1.05 fuel) | | Supercharger (x1.25) |
-| 4 | Performance Cylinder (x1.6, x1.1 fuel) | | Turbo (x1.4, 1.5 s lag) |
-| 5 | Racing Cylinder (x2, x1.2 fuel) | | |
+| 3 | bored 1.13 times its crank (about x1.3) | | Supercharger (x1.25) |
+| 4 | bored 1.24 times (about x1.6) | | Turbo (x1.4, 1.5 s lag) |
+| 5 | bored 1.38 times (about x2) | | |
 
-A tier may use every piece below it. At the top, a Small cylinder gives 40 x 2 x 1.2 x 1.4 = 134 kW against tier 1's 40: a
-tier 5 engine of the same power is about a third the size and mass. Samples (`--gen-engine`, seed 0):
+A tier may use every piece below it. **Bores** (sized parts phase 6): the Bored, Performance and Racing Cylinders are retired
+(design answer 8), so a tier 3 to 5 bore is a plain cylinder pressed wider than its crank's scale: its preset blank times the
+grade's ratio (`EngineKitParts.Grades`' `Bore`) on the 5 cm lattice, a Small one `pipe10 50x50x85`, `pipe10 55x55x95` or
+`pipe15 60x60x105` (x1.25, x1.54, x1.87 by `EngineRules.At`, a little under the old grades' for the lattice). Its fuel system and
+booster are pressed to the cylinder's scale too, rounded up, so the bank is never starved; its crank sections are its size's
+preset pressed longer when the bore is wider than the section (`solid 45x45x55` or `x65` for a Small one: the same across, so the
+same revs), and the plan's length grows with them. Bored pieces weigh their blanks, about twice the steel of a plain bank of the
+same power, so the kit picks them only where the plain pieces can't reach the power in the limits; a V, W or radial of wide bores
+is refused (the banks meet at the crank) and gives way to a flat or inline one. Samples (`--gen-engine`, seed 0, 2026-11-13):
 
 | Request | Built |
 | --- | --- |
 | 300 kW, tier 1 | Small R8 (two cranks, four banks) 320 kW, 391 kg, 1.40 x 2.49 x 2.49 m |
-| 300 kW, tier 5 | Small I3 racing, supercharged, 300 kW, 280 kg |
-| 900 N m, tier 3 | Small B6 bored, injected, supercharged, 468 kW, 894 N m, 398 kg |
-| 2000 kW, tier 4 | Small W21 performance, supercharged, 2016 kW, 1203 kg, 3.9 x 3.0 x 1.95 m |
+| 300 kW, tier 5 | Small V6 supercharged 300 kW, 385 kg (plain bores: lighter) |
+| 900 N m, tier 3 | Small R8 injected, supercharged, 480 kW, 917 N m, 455 kg |
+| 2000 kW, tier 4 | Small R32 injected, turbo, 2150 kW, 1531 kg, 4.4 x 3.0 x 3.0 m |
+| 2000 kW, tier 5 | Small B16 racing bore, injected, turbo, 1991 kW, 3857 kg, 5.6 x 4.4 x 0.9 m (pressed pieces) |
 | 20000 kW, tier 2 | Medium W21 20.2 MW, 20.6 t, 15.6 x 10 x 6.8 m |
-| 500 kW under 300 kg, tier 1 | Small B4 160 kW, with "160 kW is short of 500 kW: the most within the limits at this tier" |
+| 500 kW under 300 kg, tier 1 | Small V4 160 kW, with "160 kW is short of 500 kW: the most within the limits at this tier" |
 | 120 kW inline in 2.5 x 0.8 x 1.6 m | Small I3 120 kW at 1.70 m high, with "nothing ... meets the limits; nearest" (an inline's bank and the flywheel under the crank need 1.7 m) |
 
 ## The parts
 
-The kit reuses the modular engine's 40 pieces and their rules (`Constructs/ModularEngine.json`). New: the tier 3 to 5 cylinders in
-each size, `Constructs/Parts/EngineKit/{Size}{Bored,Performance,Racing}Cylinder.json`, written by C#: `EngineKitParts.cs`,
-`--gen-engine-parts [--check]` (from the repo root; then build, or copy the folder next to the DLL). Each is the plain cylinder's
-file with the same boxes and sockets (so the geometry the z-fight corrector settled), a head of the tier's colour (the head already
-differs from every box it touches, so no coplanar pair appears), `"tier"`, more mass and health, and `enginePiece.power` and
-`thirst`: a cylinder may now carry them (`ConstructDriveParts.ParseEnginePiece`), and `ConstructEngine.Build` multiplies its kW and
-burn by them (1 for every older cylinder, so nothing shipped changes).
+The kit uses the modular engine's 40 pieces and their rules (`Constructs/ModularEngine.json`), catalogue or pressed (a pressed key
+is a part name a blueprint step may give: `Pressed Part (cylinder.cylinder pipe15 60x60x105 steel)`). The retired tier 3 to 5
+cylinders in each size, `Constructs/Parts/EngineKit/{Size}{Bored,Performance,Racing}Cylinder.json`, are still written by C#:
+`EngineKitParts.cs`, `--gen-engine-parts [--check]` (from the repo root; then build, or copy the folder next to the DLL), so a save,
+an old blueprint or a shipped vehicle holding one keeps working. Each is the plain cylinder's file with the same boxes and sockets, a
+head of the tier's colour, `"tier"`, `"retired": true`, more mass and health, and `enginePiece.power` and `thirst`
+(`ConstructEngine.Build` multiplies its kW and burn by them).
 
-**Survival.** Each has an Assembling recipe by rule (the part kit's `--gen-parts assembling`, `long_tail`): the plain cylinder's steel and
-Piston Sets, plus bronze and Bearings (Bored, tier 3 Assembler), then copper and a Circuit Board (Performance, tier 4), or gold and a
-Control Unit (Racing, tier 5); Large and Capital ones need at least the size class's Assembler as every part does.
+**Survival.** The plain pieces come off a Press (the Cylinder and Engine dies; their presets are the files): only the Capital Cylinder
+and Capital Smokestack, past what a die presses, have an Assembler recipe. The retired cylinders have none.
 
 ## Callers
 
