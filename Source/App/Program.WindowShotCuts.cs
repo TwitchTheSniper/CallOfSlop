@@ -49,7 +49,18 @@ public static unsafe partial class Program
                 var m = rest.Length > 0 ? rest[0] : 2f;
                 var o = spot + n * m;
                 if (g.Constructs.Raycast(o, -n, m * 2, out var hit))
-                    WsSay($"ray at {uv[0]:0},{uv[1]:0}: hits {hit.Body.DefOf(hit.Part).Name} (part {hit.Part}) at {hit.Distance:0.00} m of {m * 2:0.#} (the sheet is at {m:0.00})");
+                {
+                    WsSay($"ray at {uv[0]:0},{uv[1]:0}: hits {hit.Body.DefOf(hit.Part).Name} (part {hit.Part}{(hit.Glass ? ", glass" : "")}) at {hit.Distance:0.00} m of {m * 2:0.#} (the sheet is at {m:0.00})");
+                    if (rest.Length > 1 && rest[1] > 0 && g.IsServer)
+                    {
+                        // "ray PART U,V M D" (phase 6): D damage dealt to the part hit, as a round's hit deals it; the body's part count after.
+                        var body = hit.Body;
+                        var before = body.PartCount;
+                        var name = body.DefOf(hit.Part).Name;
+                        g.Constructs.DamagePart(body, hit.Part, rest[1], out var dealt);
+                        WsSay($"ray: {dealt:0} damage to {name}; the body has {body.PartCount} parts (had {before}): {string.Join(", ", Enumerable.Range(0, body.PartCount).Select(i => body.DefOf(i).Name))}");
+                    }
+                }
                 else
                     WsSay($"ray at {uv[0]:0},{uv[1]:0}: passes, no part within {m * 2:0.#} m");
                 _wsWait = 2;
