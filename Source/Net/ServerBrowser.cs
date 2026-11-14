@@ -516,7 +516,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      LiftWhy gains NoRail and NoFarRail at the end. The crane's reach box is worked out from its rails on each peer and sends nothing.
     // 311: Bored cylinders: a pressed engine piece weighs what its size's catalogue piece does by metal, and a pressed cylinder's
     //   power follows its bore over the plain bore for its across, worked out from the key on each peer (no new bytes; mass and kW differ).
-    public const ushort ProtocolVersion = 311;
+    // 314: Stroke power: a cylinder's kW is its bore's times its stroke ratio (its displacement), and an engine needs a starter by its crank's
+    //   scale times the stroke's cube root, worked out on each peer (no new bytes; a long-stroke engine's kW, torque and starter differ).
+    public const ushort ProtocolVersion = 314;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

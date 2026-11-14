@@ -105,19 +105,35 @@ reaches about x1.37 at most and is a "Bored" one. Its fuel system and booster ar
 up, at their own length (so the bank is never starved and stands no taller); the crank sections are pressed longer only when one of
 those is wider than the section (`solid 45x45x65` under a Small racing bank's 60 cm injector: the same across, so the same revs).
 Cylinders keep their across, so a V, W or radial of bores builds. A bored plan's score pays a little for the health it gives up
-(`0.1 x` the share of the plain wall's metal removed), so the kit leans on it where it needs the power or the mass. Samples
-(`--gen-engine`, seed 0, 2026-11-14):
+(`0.1 x` the share of the plain wall's metal removed), so the kit leans on it where it needs the power or the mass.
+
+**Strokes** (stroke power, 2026-11-14; docs/sandbox/design/stroke-power-notes.md): a cylinder's kW is its bore's times its stroke
+ratio (length over across against the preset's, 0.6 to 1.6) and the revs are the crank's over it, so a long stroke gives more power
+at lower revs and torque by the square. Each bore is planned at strokes 1, 1.33 and 1.6 (`EngineKit.Strokes`: the preset's length
+times that, to 5 cm), and 0.8 only when the request asks for revs above the size's peak (a short stroke spins faster for less
+power). The fuel system and booster are pressed wide enough to feed the cylinder's kW whole (`FeedFor`: in 5 cm steps until they
+do, so no bank is built starved; the kit reads a starved bank back as the game's fault text). A plan's torque, peak rpm and starter
+are its own stroke's; a long stroke's cylinders stand taller in the estimate. `MinLimiterRpm` holds a request to strokes that keep
+a limiter: a vehicle's request sets the Small limiter, since its stock gearbox is geared for it (a 1.6 stroke's 4375 rpm would cap a
+car's top gear at 26 m/s), so vehicles keep the plain stroke. A long stroke wins where torque or mass is asked. Samples
+(`--gen-engine`, seed 0, 2026-11-14, with strokes):
 
 | Request | Built |
 | --- | --- |
 | 300 kW, tier 1 | Small R8 (two cranks, four banks) 320 kW, 391 kg, 1.40 x 2.49 x 2.49 m |
-| 300 kW, tier 5 | Small V4 performance bore, injected, 306 kW, 222 kg (before: V6 plain, 385 kg) |
-| 2000 kW, tier 4 or 5 | Small W21 performance bore, supercharged, 2006 kW, 988 kg (before: tier 5 a B16 of wide pressed bores, 3857 kg) |
-| 900 kW, tier 5, W | Small W9 racing bore, supercharged, 931 kW, 486 kg (before: W15 plain, 797 kg) |
+| 300 kW, tier 5 | Small B4 performance bore, injected, 306 kW, 222 kg |
+| 2000 kW, tier 4 | Small V14 performance bore, long stroke (1.33), turbo, 1992 kW, 5059 N m at 3759 rpm, 896 kg (before strokes: W21, 988 kg) |
+| 2000 kW, tier 5 | Small R20 racing bore, injected, 1986 kW, 748 kg (before strokes: W21, 988 kg) |
+| 900 kW, tier 5, W | Small W9 performance bore, long stroke (1.33), injected, 915 kW, 2323 N m at 3759 rpm, 496 kg |
+| 3000 N m, tier 5 | Small I5 racing bore, long stroke (1.6), supercharged, 993 kW, 3035 N m at 3125 rpm, 492 kg (before strokes: B14, 1622 kW, 729 kg) |
+| 300 kW peak 3000 rpm, tier 2 | Small V4 long stroke (1.6), injected, 307 kW, 939 N m at 3125 rpm, 323 kg |
+| 300 kW peak 8000 rpm, tier 2 | Small R8 short stroke (0.8), injected, 307 kW, 469 N m at 6250 rpm, 338 kg |
 | 20000 kW, tier 2 | Medium W21 20.2 MW, 20.6 t, 15.6 x 10 x 6.8 m |
-| 20000 kW, tier 5, Medium | Medium B14 bored, turbo, 19.8 MW, 13.2 t (before: W15 plain, 15.7 t) |
-| 500 kW under 300 kg, tier 5 | Small V4 racing bore, supercharged, 497 kW, 277 kg (before: 269 kW, "short of 500 kW") |
-| 500 kW under 300 kg, tier 1 | Small V4 160 kW, with "160 kW is short of 500 kW: the most within the limits at this tier" |
+| 20000 kW, tier 5, Medium | Medium V12 bored, injected, turbo, 20.4 MW, 11.4 t |
+| 400 MW, tier 5, Large | Large B10 bored, long stroke (1.33), turbo, 407 MW at 1053 rpm, 217 t (before strokes: B12, 232 t) |
+| 50000 N m, tier 1, Medium | Medium I7 long stroke (1.6), 8.96 MW, 48892 N m at 1750 rpm, 13 t |
+| 500 kW under 300 kg, tier 5 | Small W6 racing bore, 497 kW, 277 kg |
+| 500 kW under 300 kg, tier 1 | Small R4 long stroke (1.6) 256 kW, 292 kg, with "256 kW is short of 500 kW: the most within the limits at this tier" (before strokes: V4 160 kW) |
 | 120 kW inline in 2.5 x 0.8 x 1.6 m | Small I3 120 kW at 1.70 m high, with "nothing ... meets the limits; nearest" (an inline's bank and the flywheel under the crank need 1.7 m) |
 
 ## The parts
@@ -139,8 +155,8 @@ and Capital Smokestack, past what a die presses, have an Assembler recipe. The r
   [--fuel F] [--layout inline|v|flat|w|radial] [--boost none|supercharger|turbo] [--size small|medium|large|capital] [--tier 1-5]
   [--seed S] [--plans N] [--again] [--out FILE]`. Prints (to `callofslop.log`, as the other tools do) the request, the built engine's
   numbers and the note; `--plans N` lists the best plans, `--again` times a warm second request and checks it builds the same
-  blueprint. The presets are 120, 300, 800 and 3000 kW. A first request in a process costs about 2 s of warm-up (JIT); a warm one 5
-  to 10 ms.
+  blueprint. The presets are 120, 300, 800 and 3000 kW. A first request in a process costs about 2 s of warm-up (JIT); a warm one 15
+  to 50 ms (about 7,400 plans in 18 to 27 ms, three times main's 2,640 since strokes; it yields every 1,024 plans, so a game slice stays short).
 - **The vehicle kit / dynamic spawn**: an `EngineWish` (below, "In a vehicle"): `--gen-vehicle NAME --engine-tier N [--top-speed V]
   [--accel A]`, `--slice-vehicle NAME --engine-tier N [--top-speed V]` (as the game's spawn makes it, in slices), and
   `new VehicleGenJob(..., engine: wish)` in the game. Nothing in the game passes one yet.

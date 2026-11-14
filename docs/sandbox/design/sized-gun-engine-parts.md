@@ -227,18 +227,19 @@ bigger bore (section 9).
 
 | Number | Formula | Anchor |
 | --- | --- | --- |
-| A cylinder's kW | `At(boreScale).Kw x PiecePower x share x fuel x boost`, with `boreScale` = its across / the Small preset's | the four cylinder files give 40, 800, 16,000, 320,000 |
+| A cylinder's kW | `At(boreScale).Kw x r x PiecePower x share x fuel x boost` (stroke power, 2026-11-14: by displacement, bore and stroke), with `boreScale` = its across / the Small preset's | the four cylinder files give 40, 800, 16,000, 320,000 |
 | Stroke ratio `r` | (its length / the Small preset's length) / its own bore scale; 0.6 to 1.6 (the die's range) | 1 for every file cylinder |
 | Engine rpm (idle, peak, limiter) | `At(crankScale).Rpm / r`, `r` the cylinders' mean weighted by their kW | the table's rows at `r` = 1 |
-| A bank's feed | `min(1, At(fuel scale).Kw / At(bank scale).Kw)`, the bank's scale its largest cylinder's bore scale; the bank's kW times it | 1 when the fuel system is the cylinders' size, as on every file engine |
+| A bank's feed | `min(1, At(fuel scale).Kw / the bank's kW)`, the bank's kW its largest cylinder's (`At(boreScale).Kw x r`); the bank's kW times it | 1 when the fuel system is the cylinders' size, as on every file engine |
 | A booster's gain | `1 + (PiecePower - 1) x min(1, At(booster scale).Kw / At(bank scale).Kw)` | the file's multiplier at its own size |
-| Torque at the peak | power / peak rpm, as today: so it rises with `r` | unchanged at `r` = 1 |
+| Torque at the peak | power / peak rpm: so it rises with `r` squared (power times `r`, revs over it) | unchanged at `r` = 1 |
 | Fuel | `kW x PieceThirst x thirsts x burnPerKw`, as today | unchanged |
 | Fuel system, booster | their multipliers, unscaled | unchanged |
 | Mass, health | the blank's, as every pressed part | preset: the file's |
 
-Bore gives power; stroke trades revs for torque at the same power (a long-stroke engine pulls from low revs, a short one
-spins). A bore above the crank's scale is a "bored" cylinder, the way to more power now that the tier cylinders are gone:
+Bore and stroke give power (stroke power, 2026-11-14, which replaces "stroke trades revs for torque at the same power"): a long
+stroke gives more power at lower revs and its torque by the square, a short one spins for less; a starter is needed when the crank's
+scale times the cube root of `r` reaches `starterFrom` (docs/sandbox/design/stroke-power-notes.md). A bore above the crank's scale is a "bored" cylinder, the way to more power now that the tier cylinders are gone:
 1.38 times the crank's scale gives twice the power for about twice the steel and Piston Sets. Nothing caps it but the
 press: a cylinder of 4 times the crank's scale bolts on and gives a Medium cylinder's 800 kW at a Small crank's revs.
 
@@ -249,7 +250,7 @@ wire) and `SnapBuild` no longer refuses a piece of another class. What a mismatc
 
 | Piece | Of another size | Look line when it costs power |
 | --- | --- | --- |
-| Cylinder | gives its own bore's kW; its stroke joins the engine's weighted `r` | none |
+| Cylinder | gives its own bore and stroke's kW; its stroke joins the engine's weighted `r` | none |
 | Crank section | joins the crank; the largest sets the crank's scale and so the revs | none |
 | Carburettor, Injector Rail | feeds its bank by the feed ratio (6.3): a Small carburettor on a bank of Medium cylinders feeds 5% | `bank 1 starved: the 0.30 m carburettor feeds 5% of 0.90 m cylinders` |
 | Turbo, Supercharger | its gain scaled by the same ratio; a bigger one gives no more than its own multiplier | `bank 1: the turbo is small for its cylinders (40% of its boost)` |
@@ -447,4 +448,4 @@ The user, on bored cylinders making an engine weigh about twice a plain one: "bo
 ### Answers, 2026-11-14 (after the bored-cylinder change)
 
 - **The bore trade stays as built** (the user): on a Small cylinder the widest bore doubles the power for 43% less health and mass.
-- **Stroke adds power too** (the user): power follows displacement, bore and stroke; a longer stroke also lowers revs. This replaces "stroke trades revs for torque" at the same power.
+- **Stroke adds power too** (the user): power follows displacement, bore and stroke; a longer stroke also lowers revs. This replaces "stroke trades revs for torque" at the same power. Built 2026-11-14 (docs/sandbox/design/stroke-power-notes.md): a cylinder's kW is its bore's times its stroke ratio, the revs over it as before, so torque goes with the stroke squared; the fuel system feeds by that power; a starter by the crank's scale times the stroke's cube root; the Engine Kit plans strokes 1, 1.33 and 1.6 (0.8 when revs are asked) and keeps vehicles to strokes that keep their limiter.
