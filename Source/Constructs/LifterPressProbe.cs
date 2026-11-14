@@ -18,9 +18,12 @@ public static partial class LifterProbe
 
     public static string Press(ConstructWorld world, Vector3 at, string tier)
     {
+        var padName = tier == "largepad" ? "Large Lay-down Pad" : "Lay-down Pad"; // ("lifter press largepad": the Large pad, phase 7)
+        if (tier == "largepad")
+            tier = "";
         var name = (tier.Length > 0 && tier != "Scrap" ? tier + " " : "") + "Loader Arm";
         if (ConstructParts.Find(name) is not { Lifter: { } ld } ad || ConstructParts.Find("Press") is not { } press || ConstructParts.Find("Button Die") is not { } die
-            || ConstructParts.Find("Piece Rack") is not { } rack || ConstructParts.Find("Lay-down Pad") is not { } pad || Blank() is not { } blank)
+            || ConstructParts.Find("Piece Rack") is not { } rack || ConstructParts.Find(padName) is not { } pad || Blank() is not { } blank)
             return "press: a part is missing (Loader Arm, Press, Button Die, Piece Rack, Lay-down Pad, a laminate blank)";
         float G(float x, float z) => World.Map.GroundHeight(x, z);
         var r = ld.ReachMax;
@@ -53,13 +56,18 @@ public static partial class LifterProbe
     {
         if (world.Get(LinePad) is not { } pd)
             return "drop: no pad (lifter line or lifter press first)";
-        var d = piece == "blank" ? Blank() : ConstructParts.Find(piece);
+        var loaded = piece.StartsWith("loaded ", StringComparison.Ordinal); // ("drop loaded NAME": a store part with 10 iron ore in it, phase 7)
+        if (loaded)
+            piece = piece[7..];
+        var d =piece == "blank" ? Blank() : ConstructParts.Find(piece);
         if (d == null)
             return $"drop: no part \"{piece}\"";
         Freeform.PartWorld(pd, 0, out var pp, out var pr);
         var pdd = pd.DefOf(0);
         var mid = pp + Vector3.Transform(((pdd.RackHoldMin + pdd.RackHoldMax) * 0.5f) with { Y = pdd.RackHoldMin.Y + 1.2f }, pr);
         var loose = ConstructEdits.DropLoose(world, d, mid, Quaternion.Identity);
+        if (loaded && loose != null && world.StoreOf(loose, 0) is { } ls)
+            (ls.Amount, ls.Material) = (10, (byte)RecyclingTable.Current.IdOf("iron ore"));
         return $"drop: {d.Name} over the pad{(loose == null ? ": no room" : $" (body {loose.Id})")}";
     }
 }

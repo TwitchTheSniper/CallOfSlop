@@ -244,7 +244,7 @@ public static class ConstructConveyor
         var rd = c.DefOf(part);
         if (!rd.IsPieceRack)
             return 1;
-        if (d.Role == PartRole.Storage && !rd.IsBuildStation && !(ordered && rd.IsCraftTerminal)) // (a terminal's tray only for its order's rider, a def, new and empty (<paramref name="ordered"/>, logistics fix-ups 2): an arm, a hand, a chute or a fetch is refused, so a loaded store never becomes a count)
+        if (d.Role == PartRole.Storage && !rd.IsBuildStation && !rd.IsLayDownPad && !(ordered && rd.IsCraftTerminal)) // (lifters phase 7: a Lay-down Pad takes a store part as the hold does: a def, new and empty; a loaded loose one is refused at its take-in, ConstructLifters.TakeInWhy) // (a terminal's tray only for its order's rider, a def, new and empty (<paramref name="ordered"/>, logistics fix-ups 2): an arm, a hand, a chute or a fetch is refused, so a loaded store never becomes a count)
             return 2; // (a piece, or anything a press stamps that fits: not storage, whose contents would be lost. A Building Station's hold takes any store part a blueprint names, a machine too, since a hold is a def count and what reaches it is new and empty: an order's rider, a hand, a stock; a loose loaded one in the bay is left alone, ConstructStation.TakeDropped: verification 2026-11-13c)
         ConstructRackPack.Ensure(rd, st);
         if (st.KindIndex(d.Id) < 0 && st.KindN >= CStore.MaxKinds || st.ItemCount >= rd.RackCount)

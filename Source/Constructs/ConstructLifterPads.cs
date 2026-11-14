@@ -46,6 +46,9 @@ public static partial class ConstructLifters
         LifterProbe.Cost(ref LifterProbe.TakeIn, System.Diagnostics.Stopwatch.GetTimestamp() - t0);
     }
 
+    public const string LoadedWhy = "holds something: empty it first (a pad keeps kinds and counts, not what is in them)";
+    private static ushort _loadedSaid;
+
     /// <summary>Why pad <paramref name="part"/> doesn't take body <paramref name="lo"/> in now (a fixed text), or null when it does. Allocates nothing.</summary>
     public static string? TakeInWhy(ConstructWorld world, Construct c, int part, CStore st, Vector3 pp, Quaternion inv, float reach, Construct lo)
     {
@@ -66,8 +69,10 @@ public static partial class ConstructLifters
         // Not a part that holds anything (its contents would be lost: a rack holds kinds only), nor one that isn't as new (a rack
         // keeps a kind and a count, so it would come out whole, unpainted, empty and at its default settings), nor what the pad or
         // its stock target refuses.
-        if (lo.Parts[0].Store != 0 || pd.IsPieceRack || pd.Lifter != null)
-            return "a store or a lifter";
+        if (pd.IsPieceRack || pd.Lifter != null)
+            return "a rack or a lifter";
+        if (lo.Parts[0].Store != 0 && world.StoreOf(lo, 0) is { } held && (held.Amount > 0 || held.ItemCount > 0 || held.InAmount > 0))
+            return LoadedWhy; // (lifters phase 7: an empty store part goes in as the station's hold takes one; a loaded one would lose what it holds)
         if (!AsNew(lo.Parts[0], pd))
             return "not as new";
         if (!OnDeck(lo, pd, pp, inv, d.RackHoldMin.Y))
@@ -91,8 +96,15 @@ public static partial class ConstructLifters
         for (var bi = bodies.Count - 1; bi >= 0 && n < most; bi--)
         {
             var lo = bodies[bi];
-            if (TakeInWhy(world, c, part, st, pp, inv, reach, lo) != null)
+            if (TakeInWhy(world, c, part, st, pp, inv, reach, lo) is { } why)
+            {
+                if (ReferenceEquals(why, LoadedWhy) && _loadedSaid != lo.Id)
+                {
+                    _loadedSaid = lo.Id; // (said once a body: the look runs every second)
+                    Console.WriteLine($"[lifter] pad body {c.Id} part {part}: the loose {lo.DefOf(0).Name} on it {why}");
+                }
                 continue;
+            }
             var pd = lo.DefOf(0);
             world.Remove(lo);
             if (!world.RackPut(c, part, pd))
@@ -275,11 +287,18 @@ public static partial class ConstructLifters
     private static bool OnDeck(Construct lo, ConstructPartDef pd, Vector3 padAt, Quaternion padInv, float floor)
     {
         Freeform.PartWorld(lo, 0, out var at, out var rot);
+        // (each solid box's corners, not the bounds': an odd part lying on its side, a Drill Module on its bit, had a bounds corner
+        // through the deck and was never taken in: lifters phase 7)
         var low = float.MaxValue;
-        for (var k = 0; k < 8; k++)
+        var n = Math.Min(pd.SolidBoxes, 64);
+        for (var b = 0; b < n; b++)
         {
-            var corner = new Vector3((k & 1) != 0 ? pd.BoundsMax.X : pd.BoundsMin.X, (k & 2) != 0 ? pd.BoundsMax.Y : pd.BoundsMin.Y, (k & 4) != 0 ? pd.BoundsMax.Z : pd.BoundsMin.Z);
-            low = MathF.Min(low, Vector3.Transform(at + Vector3.Transform(corner, rot) - padAt, padInv).Y);
+            var bx = pd.Boxes[b];
+            for (var k = 0; k < 8; k++)
+            {
+                var corner = bx.Center + new Vector3((k & 1) != 0 ? bx.Half.X : -bx.Half.X, (k & 2) != 0 ? bx.Half.Y : -bx.Half.Y, (k & 4) != 0 ? bx.Half.Z : -bx.Half.Z);
+                low = MathF.Min(low, Vector3.Transform(at + Vector3.Transform(corner, rot) - padAt, padInv).Y);
+            }
         }
         return low > floor - 0.15f && low < floor + 0.5f;
     }
