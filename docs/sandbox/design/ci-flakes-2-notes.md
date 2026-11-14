@@ -30,6 +30,18 @@ Not tried in a window by hand: the window tool has no Nudge verbs; the section's
 Left: the client's own prediction still starts from its copy's stale pose and pivot, so during such a drag its drawn
 body can sit a few cm from the server's until the server's poses take over (no effect on where it lands).
 
+Review round 2:
+- The check now makes the CI case itself: after the GUI arc, the client sends a `NudgeBegin` through the real message
+  path with a pivot 30 mm off the server's centre and a 120 degree turn; the centre must stay within the same 5 mm.
+  With the server handler put back to the sent pivot: 3 of 3 runs fail (the centre moved 51.8-52.8 mm). With the fix:
+  20 of 20 pass, 0.0 mm.
+- A client's copy and the server agree on the centre: bin loads reach the copy (`LoadStep(server: false)`,
+  `GameSandbox.cs`), but a carrier's cargo list is the server's alone (`ConstructCargo.Step` runs in the server's
+  `Constructs.Step`), so a client's carrier had no cargo in its centre. `ConstructEdits.NudgeWeigh` now gives the client
+  the server's sum (its mass, plus what its frozen cargo volumes carry when it has no cargo list), and both the client's
+  pivot (`Program.SandboxNudge.cs`) and the server's centre use it. Tank fluid and lift gas, also in `BuildMass`, were
+  not traced to the client. No wire change.
+
 Seen once in the before runs, unrelated: "the drag isn't smooth: holder 3.8 mm, 42 back" (1 of 25).
 
 ## Space ships: "the predictor allocated 7152 B"

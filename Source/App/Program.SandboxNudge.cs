@@ -178,14 +178,12 @@ public static partial class Program
         var c0 = _ndList[0];
         if (!NudgeDragging)
         {
-            // The pivot: the one body's centre of mass, or the mass-weighted centre of them all.
+            // The pivot: the one body's centre of mass, or the mass-weighted centre of them all, cargo in, as the server
+            // works it out (ConstructEdits.NudgeCentre: the server turns about its own, this one draws and predicts).
             var sum = Vector3.Zero;
             var mass = 0f;
             for (var i = 0; i < _ndCount; i++)
-            {
-                sum += _ndList[i].WorldCom * MathF.Max(_ndList[i].Mass, 0.01f);
-                mass += MathF.Max(_ndList[i].Mass, 0.01f);
-            }
+                ConstructEdits.NudgeWeigh(g.Constructs, _ndList[i], ref sum, ref mass);
             _ndPivot = sum / mass;
             Nudge.Axes(ConstructGravity.GravityFor(c0, _ndPivot), _nudgeModes.Local, c0.Rot, out _ndAxes[0], out _ndAxes[1], out _ndAxes[2]);
         }
