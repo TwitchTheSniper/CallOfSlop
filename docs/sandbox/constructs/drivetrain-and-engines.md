@@ -366,16 +366,18 @@ piped into its fuel system or flywheel ("Fuel in" ports).
 - **Layout**: cylinders are grouped into **banks** by which way they point from the crank: one bank is inline (I4), two at right
   angles a V (V8), two opposite a boxer (B4), three a W (W12), four a radial (R16). Sockets are square to the part, so a V is
   90 degrees; a freeform attachment can set any angle.
-- **Power** is the sum over the cylinders of each one's kW at its own **bore** (its scale: 1, 4, 16, 64 for the four files, a
-  pressed one's its across's scale times its bore, its across less both walls, over the plain bore for its across; `EngineRules.At`, 40 x scale^2.161 between the rows) times the bank's best fuel system times
+- **Power** is the sum over the cylinders of each one's kW by its own **bore and stroke**, its displacement: its bore's kW (its scale: 1, 4, 16, 64 for the four files, a
+  pressed one's its across's scale times its bore, its across less both walls, over the plain bore for its across; `EngineRules.At`, 40 x scale^2.161 between the rows) times its stroke ratio (stroke power, 2026-11-14: docs/sandbox/design/stroke-power-notes.md), times the bank's best fuel system times
   its best booster. Torque is that power at the peak rpm (5000, 2800, 1400, 700 at the four scales; limiter 7000, 4000, 2000,
   1000): big engines turn slowly. The revs are the **crank's** scale's (its largest section), divided by the cylinders' mean
-  **stroke** (length over across, against the preset's, 0.6 to 1.6): a long stroke pulls from low revs at the same power, a short
-  one spins. The curve is the petrol curve and the limiter is the soft limit. Fuel at full throttle is 0.00044 l/s a kW times
+  **stroke** (length over across, against the preset's, 0.6 to 1.6): a long stroke gives more power at lower revs, so its torque goes
+  with the stroke squared (1.6 times the power at 0.625 of the revs: 2.56 times the torque), for 1.6 times the metal and fuel at full
+  power; a short one spins for less. A fuel system feeds by power, so a long-stroke bank needs a wider one. A starter is needed
+  when the crank's scale times the cube root of the stroke reaches `starterFrom` (8). A stroke past 1.6 (the crank's throw) is metal only. The curve is the petrol curve and the limiter is the soft limit. Fuel at full throttle is 0.00044 l/s a kW times
   the thirsts.
 - **Sized pieces** (docs/sandbox/design/sized-gun-engine-parts.md 6): every piece but the Capital Smokestack comes off a Press,
   the cylinders on the Cylinder die and the rest on the Engine die, at any size between its presets (the four files). **Anything
-  bolts on**: a cylinder gives its own bore's power; a fuel system or booster smaller than its bank feeds or boosts it by the kW
+  bolts on**: a cylinder gives its own bore and stroke's power; a fuel system or booster smaller than its bank feeds or boosts it by the kW
   ratio and the readout says so ("bank 1 starved: the Small Carburettor feeds 5% of its cylinders"); flywheel, starter and
   stacks work at any size. **A wider bore** (a thinner wall in the same across; the bore counts up to 0.9 of the across) is how
   a cylinder of one size gets more power: the plain bore is the presets' share of the across (Small 0.56, Medium and Large 0.78),

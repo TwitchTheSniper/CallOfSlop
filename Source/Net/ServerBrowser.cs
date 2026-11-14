@@ -519,7 +519,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 312: Arms and cranes phase 7: hand orders. CActKind.Lifter (at the end): u16 body, u16 part, u8 op, u8 id, the kind (PartRef), u8 count,
     //   two points (u16 body, u16 part, u8 kind, u8 bay); each lifter in CBodyKind.Lifts gains u8 steered (phase 8: its Lifter Cab steers it, words
     //   at 10 Hz while it moves), u8 the order its carry serves, u8 n and its orders. A new part file (Lifter Cab) moves part ids; op Grab is F in a cab.
-    public const ushort ProtocolVersion = 312;
+    // 313: Stroke power: a cylinder's kW is its bore's times its stroke ratio (its displacement), and an engine needs a starter by its crank's
+    //   scale times the stroke's cube root, worked out on each peer (no new bytes; a long-stroke engine's kW, torque and starter differ).
+    public const ushort ProtocolVersion = 313;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -103,6 +103,7 @@ public static class EngineKitVehicle
             Paint = paint,
             Seed = seed,
             PowerKw = EngineWish.PowerFor(dryMass + 250, w.Top, w.Accel),
+            MinLimiterRpm = EngineRules.Current.Max[0], // (the stock gearbox is geared for a Small engine's limiter: a long stroke's lower one would cap the top speed, so a vehicle keeps the plain stroke or a short one)
         };
         EnginePlan? p = null;
         for (var round = 0; round < 2; round++)

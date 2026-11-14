@@ -455,6 +455,8 @@ public sealed class VehicleGenJob
     /// </summary>
     public static int SliceReport(string name, string[] args)
     {
+        if (name.Equals("engine", StringComparison.OrdinalIgnoreCase))
+            return EngineSliceReport(args);
         if (VehicleRegistry.Find(name) is not { } g)
         {
             Console.WriteLine($"no vehicle generator named \"{name}\"");
@@ -491,6 +493,37 @@ public sealed class VehicleGenJob
             Console.WriteLine($"  span {f0}:{l0} to {f1}:{l1}: longest {max:0.00} ms, {cnt} times, {total:0} ms in all");
         foreach (var ((f0, l0, f1, l1), (cnt, total, max)) in SpanTrace.OrderByDescending(x => x.Value.Total).Take(top))
             Console.WriteLine($"  total {f0}:{l0} to {f1}:{l1}: {total:0} ms in all, {cnt} times, longest {max:0.00} ms");
+        SpanTrace = null;
+        return 0;
+    }
+
+    /// <summary>
+    /// <c>--slice-vehicle engine [--power KW] [--tier T] [--size 0-3]</c>: after the game's warm-up, an Engine Kit request made as the creative Engine tab's is
+    /// (<see cref="VehicleGenJob(EngineKit.EngineRequest)"/>, 2.5 ms slices), twice: the first in the process (its pieces pressed the first time) and a warm one,
+    /// with its slices, longest slice and longest span (the part no slice can split).
+    /// </summary>
+    private static int EngineSliceReport(string[] args)
+    {
+        string? Flag(string f) => args.SkipWhile(a => !a.Equals(f, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+        var ask = new EngineKit.EngineRequest
+        {
+            PowerKw = float.TryParse(Flag("--power"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var kw) ? kw : 20000,
+            Tier = int.TryParse(Flag("--tier"), out var t) ? t : 5,
+            Size = int.TryParse(Flag("--size"), out var s) ? s : 1,
+        };
+        Warm();
+        SpanTrace = new();
+        for (var round = 0; round < 2; round++)
+        {
+            var clock = Stopwatch.StartNew();
+            var job = new VehicleGenJob(ask);
+            while (!job.Step(2.5))
+            {
+            }
+            Console.WriteLine($"slice-engine {(round == 0 ? "first" : "warm")} {ask}: {(job.Blueprint == null ? "FAILED: " + job.Error : job.Name)}, {clock.Elapsed.TotalMilliseconds:0} ms, kit {job.CpuMs:0} ms over {job.Slices} slices, longest slice {job.WorstSliceMs:0.0} ms, longest span {job.WorstSpanMs:0.0} ms ({job.WorstSpanAt})");
+        }
+        foreach (var ((f0, l0, f1, l1), (cnt, total, max)) in SpanTrace.OrderByDescending(x => x.Value.Max).Take(6))
+            Console.WriteLine($"  span {f0}:{l0} to {f1}:{l1}: longest {max:0.00} ms, {cnt} times, {total:0} ms in all");
         SpanTrace = null;
         return 0;
     }
