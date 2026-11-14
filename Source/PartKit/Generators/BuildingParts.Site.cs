@@ -420,7 +420,7 @@ public sealed partial class BuildingParts
         Porch(bp, rc[0], "BOILER HOUSE");
         Steps(bp, 0, 0);
         Piers(bp, ButtressPart, (west, "f0_5"), (west, "f8_5"));
-        Sign(bp, rc[1], "fb7_5", "HEAT IS ISSUED, NOT OWED");
+        Sign(bp, rc[1], "fb7_5", "HEAT IS ISSUED, NOT DUE");
         for (var k = 0; k < 4; k++)
             Look(bp, bp.Put("Concrete Chimney 2.75 m", Cell(23, G + WallH * k, 23), R0), k == 3 ? MinSoot : MinWeathered, k == 3 ? "soot" : "concrete");
         bp.Put("Lancashire Boiler", Cell(2, G, 18), R0); // (its fire doors to the door, the stack beside its far end)

@@ -210,6 +210,11 @@ What the game's build check taught (the generator's mirror doesn't know what is 
   `Concrete Wide Stair 3 m` `R0` at `Cell(8, G, z + 16)` puts it along the east wall, rising to the back (the Barracks);
   the floor `R0` at `Cell(0, slab, z)` with the stair `RY180` at `Cell(7, G, z + 15)` puts it along the west wall,
   rising to the front (the Records Office). Its head ends at the wall: a person steps off it sideways.
+- A tower's way up is a `Fixed Ladder 3 m` through a `Concrete Hatch Floor 4x4 m`'s hatch (x 1.5 to 2.5 m, z 1.5 to
+  3.5 m): turned `RY180` at `Cell(8, G, 7)` on the pad's middle socket, its back to the hatch's front edge, climbed from
+  under the hatch and stepped off forwards (a fixed ladder lands behind its top). Only a pad or a plain floor has middle
+  sockets, so a second ladder can't stand on a hatch floor: one storey of shaft (the Ministry Watchtower).
+- A Notice Board holds three lines of seven letters (`PanelRender.Columns`): a longer notice is cut mid-word.
 
 ### Laying out a building
 
@@ -231,6 +236,8 @@ as the game walks it and as the colony's people path; `BuildingWalkCheck.cs`, ma
    stand and leave from. A switch over a stairwell is out of reach; put it at the stair's head.
 5. **A doorway opens onto floor**, not onto a flight's head: in a shaft of stacked flights the ground floor's goes up the
    side away from the door.
+6. **A fixed ladder joins its foot and the landing behind its top** (both need room to stand), as `ConstructRide.ClimbLadder`
+   climbs it; a ship ladder walks as a stair.
 
 Run it after `--gen-parts building_parts` and a build, with `--check-construct-parts`. It changes nothing; the exit code
 is the number of buildings with a failure.

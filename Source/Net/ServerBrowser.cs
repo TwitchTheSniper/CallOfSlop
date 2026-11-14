@@ -525,7 +525,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   CActKind.ErrandDrop at the end of CActKind (no bytes).
     // 315: Msg.Shell carries the chair (u16 construct, u16 seat) after its on byte: every peer draws a shell wearer's body
     //   sitting in the chair (GameRobotShell.cs ShellBodyOf).
-    public const ushort ProtocolVersion = 315;
+    // 316: The colony's day (docs/story/LABOUR.md "The day"): Msg.LabourDay at the end of Msg (u8 period + 1, u64 the scenes on shift);
+    //   LabourKind gains Eat and Patrol at the end (Msg.Labour's kind byte).
+    // 317: Incidents in the colony's gangs (docs/story/LABOUR.md "Incidents"): Msg.LabourIncident at the end of Msg (u8 scene, u8 kind,
+    //   u8 inmate, u32 the tick it began).
+    public const ushort ProtocolVersion = 317;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

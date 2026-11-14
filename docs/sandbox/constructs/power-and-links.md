@@ -310,7 +310,7 @@ power cable sparks. The the attach tool (Fire, nothing in hand) mends a link; th
 again from its output.
 
 **Edit modes** (options on the tool wheel's outer ring round the linking tool): delete a link (and its branches), move a node, re-route a link, highlight
-all (every link bright through the parts). Data and power cables are dimmer unless the linking tool is out.
+all (every link bright through the parts). Data and power cables are dimmer unless the linking tool is out. A straight data cable from part to part (no nodes) on an anchored build counts as wired in the walls and is drawn only while the linking tool is out (`RouteRender.Concealed`: a building's light switch no longer strings a cable across the room); route it through nodes to show it.
 
 **Migration**: logic wires are data links routed straight (a blueprint's `"wires"` still work); when a blueprint is built,
 each chain of Fuel Line parts between a tank and an engine becomes a fuel pipe along the same path, and each chain of

@@ -266,6 +266,49 @@ public static class BuildingWalkCheck
             return best >= 0 && n[best].Fit ? best : -1;
         }
         ReadOnlySpan<(int, int)> dirs = [(1, 0), (-1, 0), (0, 1), (0, -1)];
+        // A fixed ladder joins the floor at its foot (in front of it) and the landing behind its top, both ways, as
+        // ConstructRide.ClimbLadder takes a body up and down it.
+        var ladders = new List<((int Col, int K) Foot, (int Col, int K) Top)>();
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            ref var lp = ref c.Parts[i];
+            var ld = lp.D;
+            if (ld.LadderTop <= 0)
+                continue;
+            c.WorldFrame(lp.Seg, out var lq, out var lt);
+            var stand = World.PlayerRadius + 0.12f;
+            var cx = (ld.BoundsMin.X + ld.BoundsMax.X) * 0.5f;
+            var footAt = lt + Vector3.Transform(lp.Pos + Rot24.Apply(lp.Rot, new Vector3(cx, ld.BoundsMin.Y + 0.02f, ld.BoundsMin.Z - stand)), lq);
+            var topAt = lt + Vector3.Transform(lp.Pos + Rot24.Apply(lp.Rot, new Vector3(cx, ld.LadderTop + 0.02f, ld.BoundsMax.Z + stand)), lq);
+            (int, int) NodeAt(Vector3 at)
+            {
+                int ix = (int)((at.X - x0) / G), iz = (int)((at.Z - z0) / G);
+                if (ix < 0 || iz < 0 || ix >= nx || iz >= nz)
+                    return (-1, -1);
+                var col = ix * nz + iz;
+                var best = -1;
+                for (var k = 0; k < cols[col].Length; k++)
+                    if (cols[col][k].Top <= at.Y + World.StepHeight && cols[col][k].Top >= at.Y - World.StepHeight)
+                        best = k;
+                return best >= 0 && cols[col][best].Fit ? (col, best) : (-1, -1);
+            }
+            if (NodeAt(footAt) is var f && f.Item1 >= 0 && NodeAt(topAt) is var u && u.Item1 >= 0)
+                ladders.Add((f, u));
+            else
+                notes.Add($"the {ld.Name} has no room to stand at its foot or its top");
+        }
+        void Climb(Queue<(int, int)> q, (int, int) at, int bit)
+        {
+            foreach (var (foot, top) in ladders)
+            {
+                var other = at == foot ? top : at == top ? foot : (-1, -1);
+                if (other.Item1 >= 0 && (cols[other.Item1][other.Item2].Reach & bit) == 0)
+                {
+                    cols[other.Item1][other.Item2].Reach |= (byte)bit;
+                    q.Enqueue(other);
+                }
+            }
+        }
         // Forward: from the ground round the edge. Back: the reverse edges, into the same edge.
         var fwd = new Queue<(int, int)>();
         for (var ix = 0; ix < nx; ix++)
@@ -298,6 +341,7 @@ public static class BuildingWalkCheck
                     fwd.Enqueue((nc, nk));
                 }
             }
+            Climb(fwd, (col, k), 1);
         }
         while (back.Count > 0)
         {
@@ -316,6 +360,7 @@ public static class BuildingWalkCheck
                         back.Enqueue((nc, nk));
                     }
             }
+            Climb(back, (col, k), 2);
         }
         bool Usable(in Node n) => n.Fit && n.Reach == 3;
 

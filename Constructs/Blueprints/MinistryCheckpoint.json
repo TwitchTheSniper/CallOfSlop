@@ -184,7 +184,7 @@
       "socket": "fb7_5",
       "by": "back",
       "text": [
-        "HALT. PAPERS READY. NO PAPERS, NO PASSAGE"
+        "HALT. PAPERS READY."
       ],
       "paint": "#d8d1b4"
     },
@@ -194,7 +194,7 @@
       "socket": "fa7_5",
       "by": "back",
       "text": [
-        "LOST YOUR PAPERS? APPLY IN PERSON, WITH PAPERS"
+        "NO PAPERS NO WAY"
       ],
       "paint": "#d8d1b4"
     },

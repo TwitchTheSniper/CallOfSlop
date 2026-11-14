@@ -171,7 +171,7 @@
       "socket": "fb7_5",
       "by": "back",
       "text": [
-        "PENAL COLONY 7 - ALL VISITORS REPORT HERE"
+        "GUESTS REPORT HERE"
       ],
       "paint": "#d8d1b4"
     },
@@ -181,7 +181,7 @@
       "socket": "fa7_5",
       "by": "back",
       "text": [
-        "ESCAPEES ALSO REPORT HERE"
+        "FLED? REPORT HERE"
       ],
       "paint": "#d8d1b4"
     },

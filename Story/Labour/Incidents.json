@@ -1,0 +1,42 @@
+{
+  // What the guards say in the colony gangs' incidents (docs/story/LABOUR.md "Incidents", Game/GameLabourIncidents.cs): heard
+  // in the chat of those within 22 m, "first" as it begins and "then" later; one of each is picked. The speaker is the gang's
+  // guard: "Officer", the roll call's "Sergeant" or the works' "Foreman". At most 100 ASCII characters a line.
+  "format": "call-of-slop-incidents/1",
+  "collapse": {
+    "first": [
+      "Nobody said you could sit down.",
+      "On your feet. The snow is Ministry property.",
+      "Get up. You can be ill in your own time."
+    ],
+    "then": [
+      "Up you get. That's a mark against you, and one against me for watching.",
+      "There. Fit for work. I'll put it down as a rest.",
+      "Back in line. Nobody saw that, least of all the infirmary."
+    ]
+  },
+  "scuffle": {
+    "first": [
+      "Oi! Break it up!",
+      "Pack that in, the pair of you!",
+      "Stop that. Fighting is a privilege and neither of you has earned it."
+    ],
+    "then": [
+      "Hands on heads. Both of you. Until I forget you.",
+      "Hands on heads. You can finish it on Form 30, in triplicate.",
+      "Hands on heads. That's double the count for this line."
+    ]
+  },
+  "search": {
+    "first": [
+      "You. Arms out.",
+      "Random search. Arms out. It's always random.",
+      "Stand still, arms out. This won't take long if you've nothing."
+    ],
+    "then": [
+      "What's this, then? Confiscated.",
+      "Contraband. I'll see it's destroyed. Eventually.",
+      "Tobacco. That's mine now. As evidence."
+    ]
+  }
+}

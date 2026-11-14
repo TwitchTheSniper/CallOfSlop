@@ -45,6 +45,14 @@ public static class RouteRender
         AimRoute = -1;
     }
 
+    /// <summary>
+    /// A straight data cable from part to part (no nodes, not a branch) on an anchored build: wired in the walls, so drawn only
+    /// while the linking tool is out, as wires were before routed links. A building's light switch wired to its lamps no
+    /// longer strings a cable across the room in mid air (the colony's canteen, 2026-11-14). A cable routed through nodes,
+    /// and every cable on a vehicle, is drawn as always.
+    /// </summary>
+    public static bool Concealed(Construct c, in CRoute r) => r.Type == RouteType.Data && r.Count == 0 && r.Parent == 255 && c.Anchored;
+
     /// <summary>Every link of every construct (lit, instanced).</summary>
     public static void Draw(Renderer gfx, ConstructWorld world, float alpha, bool blendTicks)
     {
@@ -65,6 +73,8 @@ public static class RouteRender
             for (var k = 0; k < c.RouteCount; k++)
             {
                 ref var r = ref c.Routes[k];
+                if (Concealed(c, r) && !ConstructRender.ShowWires)
+                    continue; // (wired in the walls: seen with the linking tool)
                 var radius = ConstructRoutes.Radius(r.Type);
                 var a = At(c, k, -1);
                 var dirPrev = Vector3.Zero;
