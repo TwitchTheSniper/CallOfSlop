@@ -175,6 +175,17 @@ public static class ConstructLogisticsPlan
     /// else the smallest Extruder in the catalogue that takes it; then the strips setting with the count it would make. Null when the
     /// widest Extruder here takes it after all (the usual refusal stands). Made only when the entry's reason changes (the caller compares).
     /// </summary>
+    /// <summary>
+    /// A Crafting Terminal's list row for a formed panel, before the player orders (fix-ups 2, phase 5 Q2): the too-wide text when no
+    /// Extruder on the network makes the sheet the order would ask for (its strips setting as now); null when one does. The list only (it allocates).
+    /// </summary>
+    public static string? TooWideRow(Construct c, CraftNet net, ConstructPartDef panel, byte material, int former)
+    {
+        var key = SheetFor(c, net, panel, material, HullLoft.FormedUnits(panel, material), StockTargets.Strips(c, former));
+        return LongestTaken(c, net, key.W, SheetThickCm) >= Extrusion.StepCm || TooWideText(c, net, key.W) is not { } text ? null
+            : "too wide: " + (text.StartsWith("waiting on ", StringComparison.Ordinal) ? text[11..] : text); // ("too wide: sheet 1.5 m wide: the widest Extruder here ...")
+    }
+
     private static string? TooWideText(Construct c, CraftNet net, int w)
     {
         var widest = WidestTaken(c, net, SheetThickCm);

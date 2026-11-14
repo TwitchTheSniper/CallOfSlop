@@ -475,6 +475,11 @@ public static class ConstructCrafting
                     row.Machine = m;
                     row.Make = (byte)(fed && st!.Amount >= units ? 1 : Bulk(world, c, net, what.Key.Material, -1) > 0 ? 2 : 3);
                     row.Missing = row.Make == 1 ? "" : $"needs {units} {names.NameOf(what.Key.Material)} sheet in the {md.Name}{(fed ? $", holds {st!.Amount}" : "")}";
+                    if (row.Make != 1 && !md.IsLaserCutter && ConstructLogisticsPlan.TooWideRow(c, net, pd, what.Key.Material, m) is { } wide)
+                    {
+                        row.Make = 3; // (no Extruder here makes its sheet: said before the order, not only after)
+                        row.Missing = wide;
+                    }
                 }
                 for (var k = 0; k < HullLoft.PanelPresets.Length; k++)
                     Panel(HullLoft.PanelKey(HullLoft.PanelDefault(k, sheet)), "");

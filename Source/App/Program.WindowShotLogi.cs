@@ -325,7 +325,7 @@ public static partial class Program
                 for (var i = 0; i < c.PartCount; i++)
                     if (c.Parts[i].Orders is { Bill: false, Count: > 0 } oq && WorkOrders.TakesOrders(c.DefOf(i)))
                         for (var k = 0; k < oq.Count; k++)
-                            WsSay($"[logi]   queue {c.DefOf(i).Name}#{i} ({(w.StoreOf(c, i) is { } qst ? ProductionLines.Raw(w, c, i, qst) : null)}, stall {w.StoreOf(c, i)?.Refused}): {ConstructCrafting.NameOf(oq.Items[k])} {oq.Items[k].Made}/{oq.Items[k].Count} chain {oq.Items[k].Chain}");
+                            WsSay($"[logi]   queue {c.DefOf(i).Name}#{i} ({(w.StoreOf(c, i) is { } qst ? ProductionLines.Raw(w, c, i, qst) : null)}, stall {w.StoreOf(c, i)?.Refused}): {ConstructCrafting.NameOf(oq.Items[k])} {oq.Items[k].Made}/{oq.Items[k].Count} chain {oq.Items[k].Chain} rank {oq.Items[k].Rank}");
                 for (var i = 0; i < c.PartCount; i++) // (a press's bays and stall: Press phase 4's chained blanks)
                     if (c.DefOf(i) is { IsPress: true, IsLathe: false } pdef && w.StoreOf(c, i) is { } pst)
                     {
