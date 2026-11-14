@@ -982,7 +982,7 @@ public static unsafe partial class Program
                     foreach (var b in g.Constructs.Bodies)
                         for (var i = 0; i < b.PartCount; i++)
                             if (HullLoft.IsPanelName(b.DefOf(i).Name) || HullLoft.IsCutName(b.DefOf(i).Name))
-                                WsSay($"design: placed on body {b.Id} part {i}: {b.DefOf(i).Name} hash {HullLoft.PanelHash(b.DefOf(i)):x8}");
+                                WsSay($"design: placed on body {b.Id} part {i}: {b.DefOf(i).Name} hash {HullLoft.PanelHash(b.DefOf(i)):x8} at {b.Parts[i].Pos.X:0.0000},{b.Parts[i].Pos.Y:0.0000},{b.Parts[i].Pos.Z:0.0000} rot {b.Parts[i].Rot}; sockets o: {string.Join(" ", b.DefOf(i).Sockets.Where(s => s.Name.StartsWith('o')).Select(s => $"{s.Name} {s.At.X:0.0000},{s.At.Y:0.0000},{s.At.Z:0.0000}"))}");
                     return;
                 }
                 if (dw.Length >= 2 && dw[0] == "profile" && dw[1].Split(',') is { Length: 2 } pv && int.TryParse(pv[0], out var ph) && int.TryParse(pv[1], out var pcm))
@@ -990,9 +990,9 @@ public static unsafe partial class Program
                     Ui.DesignerProfile(ph, pcm); // "profile H,CM": a loft's handle H (0-7 the back edge, 8-15 the nose) to CM, as a drag would
                     _wsWait = 3;
                 }
-                else if (dw.Length == 2 && dw[0] == "cut" || arg.StartsWith("cut drop ", StringComparison.Ordinal))
+                else if (dw.Length == 2 && dw[0] == "cut" || arg.StartsWith("cut drop ", StringComparison.Ordinal) || arg.StartsWith("cut glaze ", StringComparison.Ordinal))
                 {
-                    WsSay($"design cut: {Ui.DesignerCut(arg[4..].Trim())}"); // "cut r70,60,40,50,5", "cut m0,30,30", "cut clear", "cut drop N" (laser cutter phase 4)
+                    WsSay($"design cut: {Ui.DesignerCut(arg[4..].Trim())}; panes [{Ui.DesignerPaneText}]"); // "cut r70,60,40,50,5", "cut m0,30,30", "cut clear", "cut drop N" (laser cutter phase 4), "cut glaze N" (phase 6: toggles opening N's Glazed box)
                     _wsWait = 3;
                 }
                 else if (dw.Length >= 2 && dw[0] == "name")

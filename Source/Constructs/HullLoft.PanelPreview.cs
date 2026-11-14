@@ -20,6 +20,8 @@ public static partial class HullLoft
     {
         if (!IsCutName(name))
             return null;
+        if (IsPaneName(name))
+            return PaneLabel(name);
         var plate = name.StartsWith(CutPlatePrefix, StringComparison.Ordinal);
         var start = (plate ? CutPlatePrefix : CutPanelPrefix).Length;
         var bar = name.IndexOf(" | ", start, StringComparison.Ordinal);

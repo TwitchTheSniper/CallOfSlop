@@ -26,7 +26,7 @@ public static partial class Program
         var words = arg.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
         var verb = words.Length > 0 ? words[0] : "riders";
         var rest = words.Length > 1 ? words[1] : "";
-        var c = WsSpawned(g) ?? (WsFind(g, "Conveyor Router") is ({ } rc, _) ? rc : null); // (a joined client spawns nothing: the body with a Router)
+        var c = WsSpawned(g) ?? (WsFind(g, "Conveyor Router") is ({ } rc, _) ? rc : WsFind(g, "Crafting Terminal") is ({ } ctc, _) ? ctc : null); // (a joined client spawns nothing: the body with a Router, or a terminal)
         if (c == null)
         {
             WsFail("logi: no spawned blueprint and no Router");
