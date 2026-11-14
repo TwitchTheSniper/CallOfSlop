@@ -1,4 +1,4 @@
-using System.Numerics;
+﻿using System.Numerics;
 using Brutal.GlfwApi;
 using Brutal.ImGuiApi;
 using Brutal.OpenGlApi;
@@ -1212,6 +1212,23 @@ public static unsafe partial class Program
                     }
                     _wsQueue.EnqueueFront("lifter await");
                     _wsWait = 1;
+                    return;
+                }
+                if (arg.Trim().StartsWith("carrying ", StringComparison.Ordinal) && WsLiftWait(60)) // "lifter carrying NAME": waits (60 s at most) until a lifter carries a piece whose name holds NAME, in the first third of its move (run 7: then "lifter stand me put")
+                {
+                    var want = arg.Trim()[9..];
+                    var seen = false;
+                    foreach (var hb in g.Constructs.LiftBodies)
+                        for (var hi = 0; hi < hb.N; hi++)
+                            seen |= hb.Lifts[hi] is { State: LiftState.Carry, Def: > 0 } hl && hl.Age < hl.Dur / 3 && ConstructParts.Get(hl.Def)?.Name.Contains(want, StringComparison.OrdinalIgnoreCase) == true;
+                    if (!seen)
+                    {
+                        _wsQueue.EnqueueFront(arg.Trim().Length > 0 ? "lifter " + arg.Trim() : "lifter");
+                        WsWaitTicks(1);
+                        return;
+                    }
+                    _wsLiftSince = 0;
+                    WsSay($"lifter: carrying {want}: seen");
                     return;
                 }
                 if (arg.Trim() == "holding" && WsLiftWait(20)) // "lifter holding": waits (20 s at most) until a hand carries a piece to a fit
