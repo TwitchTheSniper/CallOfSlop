@@ -419,6 +419,8 @@ public static unsafe partial class Program
                 Ui.OpenOrdnanceBench(g); // (the Ordnance Bench: UiOrdnanceBench.cs)
                 SetMouseCaptured(false);
             }
+            else if (aimed && !hit.Body.Loose && LifterUse(hit.Body, hit.Part, hit.Distance))
+                OpenLifterPanel(hit.Body, hit.Part); // (a Loader Arm or a Crane Bridge: its points and hand orders, Program.SandboxLifter.cs)
             else if (join)
                 g.SandboxSend(CActKind.Join, body: hit.Body.Id, part: (ushort)hit.Part);
             else if (aimed && hit.Distance <= ConstructBuild.UseReach && hit.Body is { Loose: true, PartCount: 1 } && ToolUpgrades.Current.ModuleOf(hit.Body.Parts[0].Def) != null)
@@ -427,6 +429,10 @@ public static unsafe partial class Program
                 g.SandboxSend(CActKind.PickUp, body: hit.Body.Id);
             else if (aimed && hit.Distance <= ConstructBuild.UseReach)
                 g.SandboxSend(CActKind.Use, body: hit.Body.Id, part: (ushort)hit.Part);
+            else if (!aimed && CraneUse(g, eye, dir))
+            {
+                // (a Crane Bridge's cabinet up on its rails, past the hands' reach: its panel is a pendant, Program.SandboxLifter.cs)
+            }
             else if (nearRack)
                 g.SandboxSend(CActKind.Rack);
         }
