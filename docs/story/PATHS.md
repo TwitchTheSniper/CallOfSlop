@@ -49,8 +49,15 @@ are constructs, which the map's collision world (what a nav graph is built from)
 Once per graph, for each colony building some of whose floor can't be walked to from outside:
 `[paths] Colony Infirmary: 7 of 33 spots on the ground floor and 0 of 0 above it (roofs too) can be walked to from
 outside`. A spot is cut off by furniture, a doorway too tight, a step over 0.55 m (`World.StepHeight`) or a stair a
-body can't climb standing. On 2026-11-14 no upper floor could be reached (the stairs), and most of the infirmary was
-behind something 0.6 m tall across its hall.
+body can't climb standing. Roofs count as "above", so a single-storey building's line always shows some cut off.
+`--check-building` (BuildingWalkCheck.cs) walks a blueprint alone with the same body and should agree. On 2026-11-14,
+after the wide stairs (PR #190) and the walk check's fix below: the Records Office's upper floor 150 of 150, the
+Barracks' 40 of 42, the Canteen's ground floor 159 of 168, the Infirmary and the Requisitions Store all of it.
+
+The walk check (`World.CanWalkCurved`) took every sample over the link's start until then: across a few metres of a
+planet the two ups' dot rounds to 1 in floats and `World.Slerp` gave the first up all the way, so no stair was ever
+climbed and a link was judged by its start alone. Samples now follow the link (a normalised lerp), and where two
+samples rise more than a step (short treads) it looks between them a quarter at a time.
 
 ## How well it walks
 

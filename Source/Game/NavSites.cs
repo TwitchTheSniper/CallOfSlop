@@ -269,9 +269,18 @@ public sealed partial class NavGraph
                 var from = nodes.Count;
                 var col = ColumnNodes(planet, site.At(x, z), nodes, fine, from, s * 0.6f, false);
                 // Under a roof (rooms, furniture, doorways) or on a wall: the cell's quarters too, half a spacing apart.
+                // A quarter in a wall is moved along it in small steps (a doorway barely wider than a body has room only
+                // near its middle: BuildingWalkCheck finds the same ways through).
                 if ((col & (ColumnFloor | ColumnRoofed)) != ColumnFloor)
                     for (var k = 0; k < 4; k++)
-                        col |= ColumnNodes(planet, site.At(x + ((k & 1) - 0.5f) * s * 0.5f, z + ((k >> 1) - 0.5f) * s * 0.5f), nodes, fine, from, s * 0.3f, true);
+                    {
+                        var qx = x + ((k & 1) - 0.5f) * s * 0.5f;
+                        var qz = z + ((k >> 1) - 0.5f) * s * 0.5f;
+                        var q = ColumnNodes(planet, site.At(qx, qz), nodes, fine, from, s * 0.3f, true);
+                        for (var m = 0; m < QuarterNudges.Length && (q & ColumnFloor) == 0; m++)
+                            q |= ColumnNodes(planet, site.At(qx + QuarterNudges[m].X, qz + QuarterNudges[m].Y), nodes, fine, from, s * 0.3f, true);
+                        col |= q;
+                    }
                 // Still no node on the lowest floor (a wall or a door jamb there, a table over it, a body that doesn't fit so
                 // near a wall)? Look round the cell for a spot that has.
                 for (var k = 0; k < nudges.Length && (col & ColumnFloor) == 0; k++)
@@ -343,6 +352,11 @@ public sealed partial class NavGraph
     private bool SiteCounted(ushort id) => !_siteCounted.Add(id);
 
     /// <summary>Where a grid point's column is looked at again when its lowest floor has no node (a share of the spacing).</summary>
+    private static readonly Vector2[] QuarterNudges = // m
+    [
+        new(0.125f, 0), new(-0.125f, 0), new(0, 0.125f), new(0, -0.125f), new(0.25f, 0), new(-0.25f, 0), new(0, 0.25f), new(0, -0.25f),
+    ];
+
     private static readonly Vector2[] SiteNudges =
     [
         new(0.5f, 0), new(-0.5f, 0), new(0, 0.5f), new(0, -0.5f), new(0.25f, 0), new(-0.25f, 0), new(0, 0.25f), new(0, -0.25f),
