@@ -304,6 +304,13 @@ public static partial class SelfTest
         Program.SweepNudgeModes.Angle = 15f;
         var rot0 = block.Rot;
         var com0 = block.WorldCom;
+        // The client turns about its copy's centre (Program.SandboxNudge.cs), which the server takes as the pivot: wait
+        // until the copy has the put-back pose, or an arc about a point a few mm off the server's centre swings that
+        // centre by 1.7 times as much (CI, 2026-11-14: "the arc's turn went wrong" at 120 degrees). 0.5 mm here is at
+        // most 0.9 mm of that swing, against the 5 mm the check allows.
+        var lag = Vector3.Distance(cb.WorldCom, block.WorldCom);
+        if (!WaitFor(() => Vector3.Distance(cb.WorldCom, block.WorldCom) < 5e-4f && Nudge.Angle(cb.Rot, block.Rot) < 5e-4f, 3))
+            problems.Add($"online: the client's copy never took the put-back pose ({Vector3.Distance(cb.WorldCom, block.WorldCom) * 1000:0.00} mm off, {lag * 1000:0.00} mm before)");
         var taken = false;
         for (var k = 0; k < 24 && !taken; k++)
         {
@@ -328,7 +335,7 @@ public static partial class SelfTest
         var whole = MathF.Abs(deg / 15f - MathF.Round(deg / 15f)) < 0.02f;
         var delta = Quaternion.Normalize(block.Rot * Quaternion.Conjugate(rot0));
         var about = MathF.Abs(MathF.Abs(delta.Y) / MathF.Max(MathF.Sqrt(delta.X * delta.X + delta.Y * delta.Y + delta.Z * delta.Z), 1e-5f) - 1) < 0.01f;
-        Line($"nudge online: the Z arc: taken {taken}, turned {deg:0.00} deg about up {about}, the centre stayed {Vector3.Distance(block.WorldCom, com0) * 1000:0.0} mm");
+        Line($"nudge online: the Z arc: taken {taken}, turned {deg:0.00} deg about up {about}, the centre stayed {Vector3.Distance(block.WorldCom, com0) * 1000:0.0} mm (the copy was {lag * 1000:0.00} mm behind before the wait)");
         if (!turnedOk || !whole || !about || Vector3.Distance(block.WorldCom, com0) > 0.005f)
             problems.Add($"online: the arc's turn went wrong (taken {taken}, {deg:0.00} deg, about Z {about})");
         Program.SweepNudgeModes.Mode = SandboxNudgeModes.Option.Move;
