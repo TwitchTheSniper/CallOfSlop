@@ -40,6 +40,7 @@ public sealed class FactoryShowcase : IPartGenerator
         public const string Rail = "Extrusion solid 25x25x200 steel", Cross = "Extrusion solid 25x25x150 steel", Stub = "Extrusion solid 25x25x50 steel";
         public const string Wheel = "Extrusion wheel 25x60x0 rubber";
         public const string FuelTank = "Pressed Part (tank.fuel hollow 45x45x45 steel)";
+        private const string Body = "#c4472b", Chassis = "#3b4046", Trim = "#e0b020"; // (look.md: one body colour, a dark chassis, a trim accent)
         public const string Cylinder = "Pressed Part (cylinder.cylinder pipe10 45x45x120 steel)", Crank = "Pressed Part (engine.crank solid 45x45x60 steel)",
             Carb = "Small Carburettor"; // (the kit's 0.50 m carburettor is past a small Press's 0.45 m: its preset, a 0.40 m blank)
 
@@ -74,6 +75,8 @@ public sealed class FactoryShowcase : IPartGenerator
             var railR = Fit(front, "+x1", Rail, "base");
             var stubL = Fit(railL, "tip", Stub, "base");
             var stubR = Fit(railR, "tip", Stub, "base");
+            foreach (var bar in new[] { railL, front, railR, stubL, stubR })
+                Paint(bar, Chassis);
             var diff = Fit(stubL, "tip", "Differential", "-z0");
             var armL = Fit(diff, "-x", "Swing Arm", "mount");
             var armR = Fit(diff, "+x", "Swing Arm", "mount");
@@ -101,12 +104,13 @@ public sealed class FactoryShowcase : IPartGenerator
             var s = at(seat);
             var f = at(front);
             var d = at(diff);
-            Flat(Hood, railL, V3((f.X + at(railR).X) * 0.5f, f.Y + 0.55f, f.Z + 0.35f), up: true);
+            Paint(Flat(Hood, railL, V3((f.X + at(railR).X) * 0.5f, f.Y + 0.55f, f.Z + 0.35f), up: true), Body);
             var frame = Flat(Frame, railL, V3((s.X + at(railR).X) * 0.5f, s.Y + 0.75f, s.Z - 0.55f), up: false);
+            Paint(frame, Body);
             Fit(frame, "o0", Pane, "back");
-            Weld("L Bracket", front, V3(f.X - 0.05f, f.Y + 0.2f, f.Z + 0.01f), default, 0, 0, 0); // (10 mm off the bar's faces: no coplanar faces)
-            Weld("L Bracket", front, V3(at(railR).X + 0.05f, f.Y + 0.2f, f.Z + 0.01f), default, 0, 0, 0);
-            Weld("Short Wing Segment", diff, V3(d.X, d.Y + 1.0f, d.Z + 0.3f), default, 0, 90, 0);
+            Paint(Weld("L Bracket", front, V3(f.X - 0.05f, f.Y + 0.2f, f.Z + 0.01f), default, 0, 0, 0), Trim); // (10 mm off the bar's faces: no coplanar faces)
+            Paint(Weld("L Bracket", front, V3(at(railR).X + 0.05f, f.Y + 0.2f, f.Z + 0.01f), default, 0, 0, 0), Trim);
+            Paint(Weld("Short Wing Segment", diff, V3(d.X, d.Y + 1.0f, d.Z + 0.3f), default, 0, 90, 0), Body);
         }
 
         public const string Hood = "Formed Panel (curve 130x80 c10 r0 t20 steel)";
