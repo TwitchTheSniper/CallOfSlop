@@ -245,6 +245,7 @@ public static class ConstructLogistics
         m.ShowWay.AsSpan().Clear();
         m.ShowState.AsSpan().Clear();
         m.ShowStuck.AsSpan().Clear();
+        m.OffDef.AsSpan().Clear(); // (a set-off piece's Alarm ends when the network changes too)
         for (var s = 0; s < m.RouterN; s++)
             for (var o = 0; o < was; o++)
                 if (wasPart[o] == m.NodePart[m.Routers[s]])
@@ -653,7 +654,7 @@ public static class ConstructLogistics
             return Stuck(c, m, s, ref r, flags0, ref changed);
         m.OffDef[s] = (ushort)d.Id;
         m.OffReason[s] = d.Role == PartRole.Storage ? OffStore : OffNone;
-        world.Events.Add($"a {d.Name} was set off the line beside {ConstructLogisticsBoard.RouterLabel(c, m.NodePart[m.Routers[s]])}: {OffText(m.OffReason[s])}");
+        world.Events.Add($"{d.Name} set off the line beside {ConstructLogisticsBoard.RouterLabel(c, m.NodePart[m.Routers[s]])}: {OffText(m.OffReason[s])}");
         changed = true;
         return true;
     }
@@ -906,7 +907,7 @@ public static class ConstructLogistics
         if (m.OffDef[s] != 0)
             return $"{d.Name}: ALARM - set {PieceName(m.OffDef[s])} off the line beside it: {OffText(m.OffReason[s])}";
         if (c.Parts[part].Out > 0.5f)
-            return $"{d.Name}: ALARM - set a piece no rack takes off the line beside it"; // (a client: the reason is the server's)
+            return $"{d.Name}: ALARM - a piece waits here or was set off the line beside it"; // (a client hears only the Alarm: which, and why, is the server's)
         var net = m.NodeNet[m.Routers[s]];
         int ways = 0, dests = 0, stores = 0;
         for (var k = 0; k < c.RouteCount; k++)

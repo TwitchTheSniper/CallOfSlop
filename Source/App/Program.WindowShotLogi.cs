@@ -134,6 +134,33 @@ public static partial class Program
                 }
                 return;
             }
+            case "steps" when g.IsServer: // "logi steps [N]": the conveyor step (riders, Routers' passes) run N times as it is now: time and bytes a step, riders and stuck ones (fix-ups 2)
+            {
+                var n = int.TryParse(rest, out var sn) && sn > 0 ? sn : 100;
+                int riders0 = 0, stuck0 = 0;
+                foreach (var b in w.Bodies)
+                {
+                    riders0 += b.ConveyedCount;
+                    for (var i = 0; i < b.ConveyedCount; i++)
+                        if (((LogiFlags)b.Conveyed[i].Flags & LogiFlags.Stuck) != 0)
+                            stuck0++;
+                }
+                w.ConveyorTicks = ConstructConveyor.Every - 1;
+                ConstructConveyor.Step(w, World.Query); // (warm)
+                long worstTicks = 0;
+                var a0 = GC.GetAllocatedBytesForCurrentThread();
+                var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                for (var k = 0; k < n; k++)
+                {
+                    w.ConveyorTicks = ConstructConveyor.Every - 1;
+                    var s0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                    ConstructConveyor.Step(w, World.Query);
+                    worstTicks = Math.Max(worstTicks, System.Diagnostics.Stopwatch.GetTimestamp() - s0);
+                }
+                var us = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds * 1000 / n;
+                WsSay($"[logi] steps: conveyor step {us:0.0} us mean, {worstTicks * 1e6 / System.Diagnostics.Stopwatch.Frequency:0.0} us worst, {(GC.GetAllocatedBytesForCurrentThread() - a0) / n} bytes a step over {n}; {riders0} riders ({stuck0} stuck) before, {c.ConveyedCount} on this body after");
+                return;
+            }
             case "cfg": // "logi cfg PART|key|value": a setting through this peer's own configure message, as the configure tool sends it (stand in reach first)
             {
                 var bits = rest.Split('|');
