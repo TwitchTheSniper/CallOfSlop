@@ -246,7 +246,12 @@ public sealed partial class Game
 
     private void OnMatchStarted()
     {
-        World.Map.RestoreProps(); // breakable props are whole again every match
+        // A fresh Sandbox world's server dug its caves, metro and site benches in the reset just before (GameSandbox.cs, after clearing
+        // the old ground there): kept, and sent again after the MatchStart, which clears a client's (run 7: a hosted world had no caves).
+        var freshDug = IsServer && SandboxOn && World.Map.Sandbox != null && WorldSession is not { HasSave: true };
+        World.Map.RestoreProps(ground: !freshDug); // breakable props are whole again every match
+        if (freshDug && DigGroundIfMade is { Ops.Count: > 0 } dug)
+            WriteTerrainDigState(_w, dug, w => Net.Broadcast(w.Span, PacketReliability.ReliableOrdered));
         if (!IsServer)
             ResetLogicForMatch(); // map logic as the map starts it (the server resets on its next tick and sends the state)
         if (!IsServer)

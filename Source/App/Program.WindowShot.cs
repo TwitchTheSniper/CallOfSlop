@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using Brutal.GlfwApi;
 using Brutal.ImGuiApi;
 using Brutal.OpenGlApi;
@@ -976,7 +976,9 @@ public static unsafe partial class Program
                 var spot = WsPartSpot(bc, bpart, out var normal);
                 var low = bc.DefOf(bpart).Panels is [var first, ..] && first.At.Y < 0.8f && MathF.Abs(normal.Y) < 0.5f; // (a Router's low screen: stand in a finger's reach)
                 var stand = spot + (normal != Vector3.Zero ? normal : Vector3.UnitZ) * (low ? 1.0f : 1.8f);
-                var feet = new Vector3(stand.X, World.Map.GroundHeight(stand.X, stand.Z) + 0.35f, stand.Z);
+                var feet = World.Map.Planetoid != null // (on a planetoid: the ground under the spot along its up, a cave's floor under a roof; run 7: the flat height put a client 4 km up)
+                    ? ConstructWorld.Ground(World.Query, stand) + GravityFrames.UpAt(stand) * 0.35f
+                    : new Vector3(stand.X, World.Map.GroundHeight(stand.X, stand.Z) + 0.35f, stand.Z);
                 var n = 0;
                 foreach (var other in g.Players.Values)
                     if (other != me)

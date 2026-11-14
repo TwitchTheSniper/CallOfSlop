@@ -16,7 +16,7 @@ public static partial class Program
     private static int _wsClipBodies, _wsClipLoose;
     private static bool _wsClipToolAsked;
 
-    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup";
+    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp";
 
     private static bool WsPlayVerb(Game g, Player me, string verb, string arg)
     {
@@ -287,6 +287,46 @@ public static partial class Program
                 me.Teleport(me.Position + GravityFrames.UpAt(me.Position) * upBy);
                 WsSay(string.Create(ci, $"feetup: feet to {me.Position:0.00}"));
                 _wsWait = 30;
+                return true;
+            }
+            case "cave": // "cave [N]": the planetoid's N-th cave (0 first) as this peer's ground has it; the host stands its player on its floor, out of the flight (run 7: a Lifter Cab under a roof)
+            {
+                var cw = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var cn = cw.Length > 0 && int.TryParse(cw[0], out var cnn) ? cnn : 0;
+                if (World.Map.Planetoid is not { } cpl || PlanetCaves.Of(cpl).Skip(cn).FirstOrDefault() is not { } cf)
+                {
+                    WsFail($"cave: no cave {cn} on {World.Map.Name}");
+                    return true;
+                }
+                var plan = PlanetCaves.Dig(cpl, cf);
+                var mid = plan.Chamber;
+                var floor = cpl.GroundUnder(mid); // (the dug floor under the chamber's middle, not the world's top)
+                var cup = GravityFrames.UpAt(floor);
+                if (g.IsServer)
+                {
+                    me.NoclipWanted = false;
+                    g.NoclipShot = false;
+                    me.Teleport(floor + cup * 0.05f);
+                }
+                WsSay(string.Create(ci, $"cave: {cn} at {cf.Num("lat", 0):0.00},{cf.Num("lon", 0):0.00}: chamber middle {mid:0.0}, floor {floor:0.0} ({Vector3.Distance(mid, floor):0.0} m under it), {cpl.Altitude(floor + cup):0.00} m over the ground 1 m up; the top {cpl.SurfaceRadius(Vector3.Normalize(floor - cpl.Center), out _) - Vector3.Distance(floor, cpl.Center):0.0} m over the floor; up {cup:0.00}; dug ground: {(cpl.EditsIfMade is { } ce ? $"any {ce.Any}, version {ce.Version}, generation {ce.Generation}" : "none")}, planetoid {System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(cpl)}"));
+                _wsWait = 30;
+                return true;
+            }
+            case "spawnbp": // "spawnbp NAME": the parts menu's own call for that blueprint where this player stands now (on a planetoid, the --blueprint start spawns by the flat map's ground)
+            {
+                var all = ConstructBuild.Blueprints;
+                var bi = -1;
+                for (var k = 0; k < all.Count && bi < 0; k++)
+                    if (all[k].Name.Equals(arg.Trim(), StringComparison.OrdinalIgnoreCase))
+                        bi = k;
+                if (bi < 0)
+                {
+                    WsFail($"spawnbp: no blueprint \"{arg.Trim()}\"");
+                    return true;
+                }
+                g.SandboxSend(CActKind.Blueprint, part: (ushort)bi);
+                WsSay($"spawnbp: {all[bi].Name} asked for, feet {me.Position:0.00}");
+                _wsWait = 60;
                 return true;
             }
             case "partlook":
