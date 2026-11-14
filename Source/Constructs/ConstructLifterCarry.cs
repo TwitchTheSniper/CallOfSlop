@@ -449,42 +449,7 @@ public static partial class ConstructLifters
     private static void Put(ConstructWorld world, IWorldQuery? query, Construct c, CLift l, LifterDef ld)
     {
         var d = ConstructParts.Get(l.Def);
-        var ok = false;
-        if (d != null && world.Get(l.StationBody) is { } b && l.ToPart < b.PartCount)
-        {
-            int part = l.ToPart;
-            switch (l.ToKind)
-            {
-                case LiftPointKind.Rack:
-                    ok = world.RackPut(b, part, d);
-                    if (ok && world.StockTargetN > 0)
-                        ConstructLogisticsPlan.Arrived(world, b, part, 0, d); // (a stock target's refill counts it, as a conveyor's delivery does)
-                    if (ok)
-                        PadArrived(world, b, part, 0, d); // (phase 5b: a station's large part on its pick pad counts for its order)
-                    break;
-                case LiftPointKind.Tray:
-                    ok = world.RackPut(b, part, d);
-                    if (ok)
-                        ConstructCrafting.Arrived(world, b, part, d); // (phase 5b: it counts for the oldest open order of its kind, as a conveyor's delivery does)
-                    break;
-                case LiftPointKind.Assembler:
-                    ok = world.WantsPart(b, part, (ushort)d.Id) && world.FeedPart(b, part, d);
-                    break;
-                case LiftPointKind.PressBay:
-                    ok = query != null && ConstructPress.TakeFromConveyor(world, query, b, part, l.ToBay, d, l.Health / 255f, l.Paint);
-                    break;
-                case LiftPointKind.Former:
-                    ok = ConstructPanelFormer.TakeFromConveyor(world, b, part, d);
-                    break;
-            }
-            if (ok && l.ToKind is not (LiftPointKind.Rack or LiftPointKind.Tray) && world.ChainCount > 0)
-                ConstructLogisticsPlan.Arrived(world, b, part, 0, d); // (a chained order's input: it counts for its link by kind, as a conveyor's delivery does)
-            if (ok)
-            {
-                world.CraftChanged(b);
-                b.Wake();
-            }
-        }
+        var ok = d != null && world.Get(l.StationBody) is { } b && l.ToPart < b.PartCount && PutPiece(world, query, b, l.ToKind, l.ToPart, l.ToBay, d, l.Health, l.Paint);
         if (ok)
         {
             Console.WriteLine($"[lifter] body {l.Body} part {l.Part}: put a {d!.Name} into {l.ToKind} part {l.ToPart} of body {l.StationBody}");
@@ -538,3 +503,44 @@ public static partial class ConstructLifters
     }
 }
 
+
+public static partial class ConstructLifters
+{
+    /// <summary>Server: a piece into a point by that point's own rule (a carry's end, a cab's set-down). True when it went in.</summary>
+    internal static bool PutPiece(ConstructWorld world, IWorldQuery? query, Construct b, LiftPointKind kind, int part, byte bay, ConstructPartDef d, byte health, uint paint)
+    {
+        var ok = false;
+        switch (kind)
+        {
+            case LiftPointKind.Rack:
+                ok = world.RackPut(b, part, d);
+                if (ok && world.StockTargetN > 0)
+                    ConstructLogisticsPlan.Arrived(world, b, part, 0, d); // (a stock target's refill counts it, as a conveyor's delivery does)
+                if (ok)
+                    PadArrived(world, b, part, 0, d); // (phase 5b: a station's large part on its pick pad counts for its order)
+                break;
+            case LiftPointKind.Tray:
+                ok = world.RackPut(b, part, d);
+                if (ok)
+                    ConstructCrafting.Arrived(world, b, part, d); // (phase 5b: it counts for the oldest open order of its kind, as a conveyor's delivery does)
+                break;
+            case LiftPointKind.Assembler:
+                ok = world.WantsPart(b, part, (ushort)d.Id) && world.FeedPart(b, part, d);
+                break;
+            case LiftPointKind.PressBay:
+                ok = query != null && ConstructPress.TakeFromConveyor(world, query, b, part, bay, d, health / 255f, paint);
+                break;
+            case LiftPointKind.Former:
+                ok = ConstructPanelFormer.TakeFromConveyor(world, b, part, d);
+                break;
+        }
+        if (ok && kind is not (LiftPointKind.Rack or LiftPointKind.Tray) && world.ChainCount > 0)
+            ConstructLogisticsPlan.Arrived(world, b, part, 0, d); // (a chained order's input: it counts for its link by kind, as a conveyor's delivery does)
+        if (ok)
+        {
+            world.CraftChanged(b);
+            b.Wake();
+        }
+        return ok;
+    }
+}

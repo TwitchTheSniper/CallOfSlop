@@ -16,7 +16,9 @@ public sealed partial class Game
         var count = r.U8();
         var from = new LiftPoint { Body = r.U16(), Part = r.U16(), Kind = (LiftPointKind)r.U8(), Bay = r.U8() };
         var to = new LiftPoint { Body = r.U16(), Part = r.U16(), Kind = (LiftPointKind)r.U8(), Bay = r.U8() };
-        if (op > (byte)LiftOrderOp.Clear || (byte)from.Kind > (byte)LiftPointKind.Tray || (byte)to.Kind > (byte)LiftPointKind.Tray)
+        if (op == (byte)LiftOrderOp.Grab)
+            return SandboxHands.CabGrab(Constructs, p.Id, body, part); // (phase 8: F in a Lifter Cab)
+        if (op > (byte)LiftOrderOp.Grab || (byte)from.Kind > (byte)LiftPointKind.Tray || (byte)to.Kind > (byte)LiftPointKind.Tray)
             return "a bad action";
         return SandboxHands.LifterAct(Constructs, p.Id, eye, body, part, (LiftOrderOp)op, id, def, count, from, to, Constructs.Get(body) is { } c ? SandboxConfigRefusal(c, p.Id) : null);
     }

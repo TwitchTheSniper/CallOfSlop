@@ -28,6 +28,7 @@ public enum LiftOrderOp : byte
     Add,
     Cancel, // the order with this id
     Clear, // all of them
+    Grab, // (phase 8) F in a Lifter Cab: body and part are the cab's
 }
 
 /// <summary>
@@ -373,6 +374,7 @@ public static partial class ConstructLifters
 
     private static void WriteOrders(PacketWriter w, CLift l)
     {
+        w.U8((byte)(l.Steered ? 1 : 0)); // (phase 8: its cab steers it)
         w.U8(l.OrderId).U8((byte)l.OrderN);
         for (var oi = 0; oi < l.OrderN; oi++)
         {
@@ -388,11 +390,13 @@ public static partial class ConstructLifters
     /// <summary>A lifter's orders off the wire (into <paramref name="l"/> when it is one this peer knows, else read past).</summary>
     private static void ReadOrders(ref PacketReader r, CLift? l)
     {
+        var steered = r.U8() != 0; // (phase 8)
         var run = r.U8();
         int n = r.U8();
         if (l != null)
         {
             l.OrderId = run;
+            l.Steered = steered;
             l.OrderN = 0;
             if (n > 0)
                 l.Orders ??= new LiftOrder[MaxOrders];

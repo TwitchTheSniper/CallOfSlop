@@ -148,6 +148,13 @@ public enum LiftWhy : byte
     NoRail, // (phase 6) a Bridge Crane not on a Crane Rail: stopped where it is
     NoFarRail, // (phase 6) ...its far end finds no rail a span across
     RailsShort, // (phase 6) ...its rails no longer reach an end of the move it is in (a section taken out)
+    Manned, // (phase 8) its Lifter Cab steers it
+    CabGrabbed, // (phase 8) the cab took a piece
+    CabNothing, // (phase 8) the cab found nothing to take under the hook
+    CabTooBig, // (phase 8) what is under the hook is too heavy or too big for it
+    CabPut, // (phase 8) the cab put its piece into a point
+    CabDropped, // (phase 8) the cab set its piece down loose
+    CabRefused, // (phase 8) no room to set it down there
 }
 
 /// <summary>
@@ -192,6 +199,9 @@ public sealed class CLift
     public int OrderN;
     public byte OrderId; // the order this carry serves (0: its own work)
     public byte OrderSeq; // server: the last order id given
+    public int CabPart = -1; // (phase 8, both peers) its Lifter Cab on its construct (ConstructLifterCab.cs), or -1
+    public bool Steered; // (phase 8) its cab steers it: the move is a straight step from From to To (sent)
+    public bool GrabAsk; // (phase 8) server: F in the cab, for the next step
     public int OutTurn; // server: the point after the last out it carried from (the outs take turns)
     public int OrderLook; // server: 10 Hz steps since its last look at its orders
 }
@@ -306,6 +316,7 @@ public static partial class ConstructLifters
                     Drop(world, c, gone, lost: true);
         lb.Lifts = fresh;
         lb.N = n;
+        FindCabs(c, lb); // (phase 8: each lifter's cab, on both peers)
         var at = world.LiftBodies.IndexOf(lb);
         if (n > 0 && at < 0)
             world.LiftBodies.Add(lb);
@@ -381,6 +392,12 @@ public static partial class ConstructLifters
                 }
                 if (l.Why is LiftWhy.NoPower or LiftWhy.NoRail or LiftWhy.NoFarRail or LiftWhy.RailsShort)
                     Why(world, l, l.PlayerWait ? LiftWhy.Player : l.ToHold ? LiftWhy.PutBack : l.ToKind != LiftPointKind.None ? LiftWhy.Carrying : LiftWhy.None);
+                if (l.CabPart >= 0 && CabStep(world, query, c, l, ld))
+                {
+                    busy++; // (phase 8: its cab has it: nothing of its own while manned)
+                    Ports(c, l);
+                    continue;
+                }
                 if (l.PlayerWait && l.State == LiftState.Carry && (l.ToHold || l.ToKind != LiftPointKind.None || ClaimHolds(world, l)))
                 {
                     // Waiting for a player its piece would pin (ConstructLifterPush.cs): on the tick they are clear; Stuck (Alarm) after 10 s.
@@ -977,6 +994,12 @@ public static partial class ConstructLifters
     /// <summary>The piece's origin (lifter part frame) and turn <paramref name="age"/> ticks into a move.</summary>
     public static Vector3 Pose(LifterDef ld, CLift l, float age, out Quaternion rot)
     {
+        if (l.Steered)
+        {
+            // (phase 8: a cab's step, a straight move over its 10 Hz step; the turn stays)
+            rot = l.ToRot;
+            return Vector3.Lerp(l.From, l.To, l.Dur > 0 ? Math.Clamp(age / l.Dur, 0, 1) : 1);
+        }
         var loaded = l.Def != 0;
         var still = (loaded ? ld.Handle : ld.Handle * 0.25f) * 0.5f;
         var sec = age / World.TickRate - still;
@@ -1179,6 +1202,17 @@ public static partial class ConstructLifters
                     LiftWhy.NoPart => "waiting: nothing in the hold it can carry to a place in its reach",
                     _ => "idle",
                 },
+            };
+        if (l is { Steered: true })
+            what = (l.Def != 0 ? $"steered from its cab, holding a {piece}" : "steered from its cab") + l.Why switch // (phase 8)
+            {
+                LiftWhy.CabGrabbed => " - took it",
+                LiftWhy.CabNothing => " - nothing to take under the hook (a single loose piece, or a rack's, pad's or tray's)",
+                LiftWhy.CabTooBig => " - what is under the hook is too heavy or too big for it",
+                LiftWhy.CabPut => " - put it in",
+                LiftWhy.CabDropped => " - set it down",
+                LiftWhy.CabRefused => " - no room to set it down there",
+                _ => "",
             };
         if (l is { Why: LiftWhy.NoPower })
             what += " - no power, stopped";

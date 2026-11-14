@@ -57,3 +57,33 @@ public static partial class Program
         return true;
     }
 }
+
+public static partial class Program
+{
+    private static long _cabKey = -1;
+    private static string _cabText = "";
+
+    /// <summary>
+    /// Seated: is it a Lifter Cab? Then its lifter's reach view and the hook's shadow are drawn (LifterRender), and the look line says what
+    /// it does and which keys steer it (made again only when the lifter's state changes).
+    /// </summary>
+    private static bool CabSeated(Game g, in SandboxHand h)
+    {
+        if (g.Constructs.Get(h.SeatBody) is not { } c || h.SeatPart >= c.PartCount || !c.DefOf(h.SeatPart).LifterCab)
+        {
+            LifterRender.CabBody = 0;
+            return false;
+        }
+        (LifterRender.CabBody, LifterRender.CabPart) = (c.Id, h.SeatPart);
+        var l = ConstructLifters.CabLifter(g.Constructs, c, h.SeatPart);
+        var key = l == null ? -2 : ConstructLifters.LookKey(g.Constructs, c, l.Part) ^ ((long)c.Id << 52) ^ (l.Steered ? 1L << 62 : 0);
+        if (key != _cabKey)
+        {
+            _cabKey = key;
+            _cabText = l == null ? "Lifter Cab: no Loader Arm or Bridge Crane on this construct to steer - E to get out"
+                : ConstructLifters.Look(g.Constructs, c, l.Part) + " - W A S D move the hook, Space and Ctrl up and down, F grab or set down, E get out";
+        }
+        g.SandboxLookText = _cabText;
+        return true;
+    }
+}
