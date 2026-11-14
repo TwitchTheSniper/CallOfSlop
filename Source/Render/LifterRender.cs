@@ -32,12 +32,14 @@ public static class LifterRender
             for (var i = 0; i < lb.N; i++)
             {
                 var l = lb.Lifts[i];
-                if (l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { Bridge: false } ld || c.Parts[l.Part].Broken)
+                if (l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } ld || c.Parts[l.Part].Broken)
                     continue;
                 ConstructLifters.Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
                 if (Vector3.DistanceSquared(eye, shoulder) > DrawNear * DrawNear)
                     continue;
-                if (_lookBody == c.Id && _lookPart == l.Part && now - _lookAt < 0.3)
+                if (_lookBody == c.Id && _lookPart == l.Part && now - _lookAt < 0.3 && ld.Bridge)
+                    DrawCraneReach(gfx, ld, Matrix4x4.CreateFromQuaternion(lr) * Matrix4x4.CreateTranslation(lp));
+                else if (_lookBody == c.Id && _lookPart == l.Part && now - _lookAt < 0.3)
                     DrawReach(gfx, world, c, l.Part, ld, Matrix4x4.CreateFromQuaternion(lr) * Matrix4x4.CreateTranslation(lp), shoulder);
                 // The hand, in the part's frame: the piece's origin and turn on the path, the gripper bar on its top.
                 Vector3 origin;
@@ -45,7 +47,7 @@ public static class LifterRender
                 if (l.Moved)
                     origin = ConstructLifters.Pose(ld, l, ConstructLifters.AgeNow(l), out turn);
                 else
-                    origin = ld.Base + new Vector3(ld.ReachMin + 0.9f, -0.9f, 0); // (at rest before its first move)
+                    origin = ld.Bridge ? ld.Base + new Vector3(ld.AcrossMin + 1f, -ld.Depth - 1f, Math.Clamp(0, ld.RunLo, MathF.Max(ld.RunLo, ld.RunHi))) : ld.Base + new Vector3(ld.ReachMin + 0.9f, -0.9f, 0); // (at rest before its first move)
                 var grip = origin + Vector3.UnitY * ConstructLifters.GripLift;
                 var span = 0.35f;
                 var part = Matrix4x4.CreateFromQuaternion(lr) * Matrix4x4.CreateTranslation(lp);
@@ -62,6 +64,11 @@ public static class LifterRender
                     var top = new Vector3((d.BoundsMin.X + d.BoundsMax.X) * 0.5f, d.BoundsMax.Y, (d.BoundsMin.Z + d.BoundsMax.Z) * 0.5f);
                     grip = origin + Vector3.Transform(top, turn) + Vector3.UnitY * ConstructLifters.GripLift;
                     span = Math.Clamp(MathF.Min(d.BoundsMax.X - d.BoundsMin.X, d.BoundsMax.Z - d.BoundsMin.Z) * 0.8f, 0.25f, 1.2f);
+                }
+                if (ld.Bridge)
+                {
+                    DrawCrane(gfx, ld, part, grip);
+                    continue;
                 }
                 ArmIk.Solve(ld, grip, out var yaw, out var elbow, out var wrist);
                 DrawArm(gfx, ld, part, yaw, elbow, wrist, span);
@@ -159,6 +166,61 @@ public static class LifterRender
         Box(gfx, part, turret, bar + Vector3.UnitY * 0.04f, new Vector3(0.14f, 0.08f, span + 0.12f), Out);
         for (var e = -1; e <= 1; e += 2)
             Box(gfx, part, turret, bar + side * (e * (span * 0.5f + 0.03f)) - Vector3.UnitY * 0.1f, new Vector3(0.1f, 0.24f, 0.04f), Out);
+    }
+
+    private static readonly Vector3 CraneYellow = new(0.94f, 0.76f, 0.1f), CraneDark = new(0.133f, 0.149f, 0.169f), CraneSteel = new(0.6f, 0.63f, 0.66f);
+
+    /// <summary>
+    /// A Bridge Crane's moving half (arms-and-cranes.md 3.4, section 6), in the part's frame from the hook's place: an end truck on each
+    /// rail, a double girder across the span over them, the trolley on the girders over the hook, the cable down between the girders
+    /// and the hook block with its orange hook on the piece's top. The rails are the parts. Its size follows the hook's depth (the class).
+    /// </summary>
+    private static void DrawCrane(Renderer gfx, LifterDef ld, Matrix4x4 part, Vector3 grip)
+    {
+        var k = MathF.Max(0.25f, ld.Depth / 0.6f); // (Medium 1, Large 4, Capital 16)
+        var b = ld.Base;
+        var hz = grip.Z;
+        var id = Matrix4x4.Identity;
+        // The end trucks, sat 5 mm over the rails' top; the girders on them; the trolley on the girders.
+        for (var e = 0; e < 2; e++)
+        {
+            var x = b.X + e * ld.Span;
+            Box(gfx, part, id, new Vector3(x, b.Y + 0.155f * k, hz), new Vector3(0.6f, 0.3f, 1.8f) * k, CraneDark);
+            Box(gfx, part, id, new Vector3(x + (e == 0 ? -0.305f : 0.305f) * k, b.Y + 0.155f * k, hz), new Vector3(0.012f, 0.1f, 1.2f) * k, MachineAccent); // (hazard on its outer face)
+        }
+        var gl = ld.Span + 0.6f * k;
+        for (var s = -1; s <= 1; s += 2)
+            Box(gfx, part, id, new Vector3(b.X + ld.Span * 0.5f, b.Y + 0.545f * k, hz + s * 0.4f * k), new Vector3(gl, 0.5f * k, 0.26f * k), CraneYellow);
+        var hx = grip.X;
+        Box(gfx, part, id, new Vector3(hx, b.Y + 0.999f * k, hz), new Vector3(1.0f, 0.4f, 1.24f) * k, CraneDark);
+        Box(gfx, part, id, new Vector3(hx + 0.3f * k, b.Y + 1.25f * k, hz), new Vector3(0.36f, 0.12f, 0.5f) * k, CraneSteel); // (its hoist drum's housing)
+        // The cable: two falls between the girders down to the hook block.
+        var block = grip + Vector3.UnitY * (0.22f * k);
+        for (var s = -1; s <= 1; s += 2)
+            Beam(gfx, part, new Vector3(hx, b.Y + 0.8f * k, hz + s * 0.08f * k), block + new Vector3(0, 0.1f * k, s * 0.08f * k), 0.035f * k, CraneDark);
+        Box(gfx, part, id, block, new Vector3(0.3f, 0.36f, 0.34f) * k, Out);
+        Box(gfx, part, id, block + new Vector3(0.152f * k, 0, 0), new Vector3(0.004f, 0.3f, 0.26f) * k, CraneDark); // (a dark band on the block)
+        Beam(gfx, part, block - Vector3.UnitY * 0.18f * k, grip + Vector3.UnitY * 0.01f, 0.06f * k, CraneSteel); // (the hook's shank to the piece)
+    }
+
+    private static readonly Vector3 MachineAccent = new(0.95f, 0.69f, 0.12f);
+
+    /// <summary>A crane's reach view: its box's edges in amber, under the rails from the hook's highest point to its drop.</summary>
+    private static void DrawCraneReach(Renderer gfx, LifterDef ld, Matrix4x4 frame)
+    {
+        if (ld.RailWhy != 0)
+            return;
+        var amber = new Vector3(1f, 0.72f, 0.15f);
+        const float t = 0.05f;
+        var b = ld.Base;
+        float x0 = b.X + ld.AcrossMin, x1 = b.X + ld.AcrossMax, y0 = b.Y - ld.Down, y1 = b.Y - ld.Depth, z0 = b.Z + ld.RunLo, z1 = b.Z + ld.RunHi;
+        for (var i = 0; i < 4; i++)
+        {
+            float y = (i & 1) == 0 ? y0 : y1, z = (i & 2) == 0 ? z0 : z1, x = (i & 2) == 0 ? x0 : x1;
+            gfx.Draw(Matrix4x4.CreateScale(x1 - x0, t, t) * Matrix4x4.CreateTranslation((x0 + x1) * 0.5f, y, z) * frame, amber, 0.8f);
+            gfx.Draw(Matrix4x4.CreateScale(t, t, z1 - z0) * Matrix4x4.CreateTranslation(x, y, (z0 + z1) * 0.5f) * frame, amber, 0.8f);
+            gfx.Draw(Matrix4x4.CreateScale(t, y1 - y0, t) * Matrix4x4.CreateTranslation((i & 1) == 0 ? x0 : x1, (y0 + y1) * 0.5f, z) * frame, amber, 0.8f);
+        }
     }
 
     private static void Box(Renderer gfx, Matrix4x4 part, Matrix4x4 turn, Vector3 at, Vector3 size, Vector3 colour) =>

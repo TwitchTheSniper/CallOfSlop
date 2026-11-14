@@ -47,7 +47,7 @@ public static partial class ConstructLifters
         for (var i = 0; i < c.PartCount && n < edges.Length; i++)
         {
             var d = c.DefOf(i);
-            if (d.Lifter is not { } ld || c.Parts[i].Broken)
+            if (d.Lifter == null || c.Parts[i].Broken || DefOf(c, i) is not { } ld)
                 continue;
             var mode = (int)ConstructConfig.Get(c.Parts[i], d, CfgKey.LiftMode, 0);
             if (mode is 1 or 3)
@@ -141,6 +141,15 @@ public static partial class ConstructLifters
         return n + (world.LiftBusy > 0 ? HandsTo(world, c.Id, dest, kind) : 0);
     }
 
+    private static readonly string[] Blocked =
+    [
+        "waiting on the Loader Arm: it is broken", "waiting on the Loader Arm: no power", "waiting on the Loader Arm: its Run is held off",
+        "waiting on the Loader Arm: its Works setting keeps it from carrying", "waiting on the Loader Arm: it is stuck with a piece nothing takes",
+        "waiting on the Bridge Crane: it is off its rails", "waiting on the Bridge Crane: it is broken", "waiting on the Bridge Crane: no power",
+        "waiting on the Bridge Crane: its Run is held off", "waiting on the Bridge Crane: its Works setting keeps it from carrying",
+        "waiting on the Bridge Crane: it is stuck with a piece nothing takes",
+    ];
+
     /// <summary>
     /// Server: why the pieces waiting at the pick points for machine <paramref name="dest"/> don't move: every lifter whose edge puts to
     /// it can't work now (a fixed text for the chained order's row: "waiting on the Loader Arm: no power"), or null (one can, or none waits).
@@ -162,11 +171,13 @@ public static partial class ConstructLifters
             if (l == null || part >= c.PartCount)
                 continue;
             var mode = (int)ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.LiftMode, 0);
-            var now = c.Parts[part].Broken ? "waiting on the Loader Arm: it is broken"
-                : !ConstructRecycler.Powered(world, c, part) ? "waiting on the Loader Arm: no power"
-                : ConstructExtruder.RunHeld(c, part) ? "waiting on the Loader Arm: its Run is held off"
-                : mode is 1 or 3 ? "waiting on the Loader Arm: its Works setting keeps it from carrying"
-                : l.State == LiftState.Stuck && l.Why != LiftWhy.Holding ? "waiting on the Loader Arm: it is stuck with a piece nothing takes"
+            var w = DefOf(c, part) is { Bridge: true } bd ? (bd.RailWhy != 0 ? 5 : 6) : 0; // (fixed texts: an arm's, a crane's)
+            var now = c.Parts[part].Broken ? Blocked[w]
+                : w == 5 ? Blocked[5]
+                : !ConstructRecycler.Powered(world, c, part) ? Blocked[w == 6 ? 7 : 1]
+                : ConstructExtruder.RunHeld(c, part) ? Blocked[w == 6 ? 8 : 2]
+                : mode is 1 or 3 ? Blocked[w == 6 ? 9 : 3]
+                : l.State == LiftState.Stuck && l.Why != LiftWhy.Holding ? Blocked[w == 6 ? 10 : 4]
                 : null;
             if (now == null)
                 return null; // (one that puts here can work: the pieces move)
@@ -295,7 +306,7 @@ public static partial class ConstructLifters
             for (var i = 0; i < lb.N; i++)
             {
                 var l = lb.Lifts[i];
-                if ((c ??= world.Get(lb.Body)) == null || l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { } ld)
+                if ((c ??= world.Get(lb.Body)) == null || l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } ld)
                     continue;
                 if (l.Points == null)
                     FindPoints(world, c, l, ld); // (just loaded or placed)

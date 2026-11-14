@@ -17,6 +17,17 @@ public sealed class LifterDef
     public float Ring; // the slewing ring's top in the part's frame, where the drawn turret stands ("ring"; default 0.66 m under the shoulder)
     public Vector3 Turret = new(0.478f, 0.267f, 0.196f), Weight = new(0.184f, 0.165f, 0.149f), UpperCol = new(0.478f, 0.267f, 0.196f),
         ForeCol = new(0.42f, 0.29f, 0.21f), Joint = new(0.545f, 0.522f, 0.478f), Pin = new(0.94f, 0.47f, 0.09f); // the drawn half's colours ("look")
+    // ---- A Bridge Crane (kind "bridge", phase 6: ConstructCraneRails.cs). Its frame: +x across the span from the near rail's top
+    // line (Base) to the far one's, +z along the rails, +y up. Reach across is [ReachMin, ReachMax], along the rails [RunLo, RunHi]
+    // (worked out from the rail runs on each rebuild into a copy of the def for that part: ConstructLifters.DefOf), down to Down.
+    public float Span; // "span": near rail to far rail (m)
+    public float Hoist = 1; // "hoist": m/s up and down (Speed is the travel and traverse together)
+    public float Depth; // "depth": the hook's highest point under the rails' top line
+    public float RunLo, RunHi; // (a copy's) the rails both runs share, along +z from Base
+    public float AcrossMin, AcrossMax; // (a copy's) the reach across, from the file's "reach" (ReachMin and ReachMax become the box's horizontal radius)
+    public byte RailWhy = 1; // (a copy's) 0: on its rails; 1: not on a crane rail; 2: its far end has no rail
+    public LifterDef? Of; // (a copy's) the part file's own def
+    public LifterDef CraneCopy() => (LifterDef)MemberwiseClone();
     public const float Fold = 0.6f; // the elbow never folds the wrist closer to the shoulder than this past the links' difference (no arm through itself)
     public const float Straight = 0.98f; // ...nor reaches past this share of the two links (never stretched straight)
     public float LinkMax => (Upper + Fore) * Straight;
@@ -27,7 +38,7 @@ public sealed class LifterDef
         if (e.ValueKind != JsonValueKind.Object)
             throw new ConstructPartException($"{file}: \"lifter\" is an object");
         foreach (var p in e.EnumerateObject())
-            if (p.Name is not ("kind" or "base" or "reach" or "up" or "down" or "payload" or "piece" or "speed" or "handle" or "arm" or "ring" or "look"))
+            if (p.Name is not ("kind" or "base" or "reach" or "up" or "down" or "payload" or "piece" or "speed" or "handle" or "arm" or "ring" or "look" or "span" or "hoist" or "depth"))
                 throw new ConstructPartException($"{file}: lifter.{p.Name}: no such key");
         var kind = e.TryGetProperty("kind", out var k) && k.ValueKind == JsonValueKind.String ? k.GetString() : null;
         if (kind is not ("arm" or "bridge"))
@@ -44,7 +55,16 @@ public sealed class LifterDef
         (d.PieceAcross, d.PieceLong) = (piece[0], piece[1]);
         d.Speed = Num(e, "speed", 0.1f, 50, file);
         d.Handle = Num(e, "handle", 0, 10, file);
-        if (!d.Bridge)
+        if (d.Bridge)
+        {
+            d.Span = Num(e, "span", 1, 128, file);
+            d.Hoist = Num(e, "hoist", 0.05f, 50, file);
+            d.Depth = Num(e, "depth", 0, 32, file);
+            (d.AcrossMin, d.AcrossMax) = (d.ReachMin, d.ReachMax);
+            if (d.ReachMax > d.Span)
+                throw new ConstructPartException($"{file}: lifter.reach (across a bridge) ends inside its span");
+        }
+        else
         {
             var arm = Nums(e, "arm", 2, file);
             (d.Upper, d.Fore) = (arm[0], arm[1]);
@@ -125,6 +145,8 @@ public enum LiftWhy : byte
     NoPoint, // (phase 4) idle: nothing in reach to carry
     NoTaker, // (phase 4) holding a piece whose put was refused, and nothing in reach takes it (Alarm)
     Carrying, // (phase 4) carrying between points
+    NoRail, // (phase 6) a Bridge Crane not on a Crane Rail: stopped where it is
+    NoFarRail, // (phase 6) ...its far end finds no rail a span across
 }
 
 /// <summary>
@@ -328,11 +350,12 @@ public static partial class ConstructLifters
             for (var i = 0; i < lb.N; i++)
             {
                 var l = lb.Lifts[i];
-                if (l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { } ld)
+                if (l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } ld)
                     continue;
-                if (!ConstructRecycler.Powered(world, c, l.Part))
+                var railless = ld.Bridge && ld.RailWhy != 0; // (a crane whose rails went: it stops where it is, its piece in its hand, as without power)
+                if (railless || !ConstructRecycler.Powered(world, c, l.Part))
                 {
-                    Why(world, l, LiftWhy.NoPower); // (it stops where it is, and goes on when power returns; a client poses it there too)
+                    Why(world, l, !railless ? LiftWhy.NoPower : ld.RailWhy == 1 ? LiftWhy.NoRail : LiftWhy.NoFarRail); // (it stops where it is, and goes on when power returns; a client poses it there too)
                     if (l.State is LiftState.Carry or LiftState.Return && !l.PowerWait)
                     {
                         l.PowerWait = true;
@@ -347,7 +370,7 @@ public static partial class ConstructLifters
                     l.PowerWait = false;
                     Thaw(world, l);
                 }
-                if (l.Why == LiftWhy.NoPower)
+                if (l.Why is LiftWhy.NoPower or LiftWhy.NoRail or LiftWhy.NoFarRail)
                     Why(world, l, l.PlayerWait ? LiftWhy.Player : l.ToHold ? LiftWhy.PutBack : l.ToKind != LiftPointKind.None ? LiftWhy.Carrying : LiftWhy.None);
                 if (l.PlayerWait && l.State == LiftState.Carry && (l.ToHold || l.ToKind != LiftPointKind.None || ClaimHolds(world, l)))
                 {
@@ -465,7 +488,7 @@ public static partial class ConstructLifters
     private static void Ports(Construct c, CLift l)
     {
         ref var p = ref c.Parts[l.Part];
-        var busy = l.State is LiftState.Carry or LiftState.Return && l.Why != LiftWhy.NoPower ? 1f : 0f;
+        var busy = l.State is LiftState.Carry or LiftState.Return && l.Why is not (LiftWhy.NoPower or LiftWhy.NoRail or LiftWhy.NoFarRail) ? 1f : 0f;
         var alarm = l.State == LiftState.Stuck || l.Why == LiftWhy.PlayerStuck ? 1f : 0f; // (a player in the way over 10 s raises it too)
         if (p.Out == busy && p.Out1 == alarm && p.Mem == l.Moves)
             return;
@@ -505,6 +528,10 @@ public static partial class ConstructLifters
     {
         var d = Vector3.Transform(at - shoulder, Quaternion.Conjugate(rot));
         far = MathF.Sqrt(d.X * d.X + d.Z * d.Z);
+        if (ld.Bridge)
+            // A crane's box (phase 6): across between its rails, along what both runs share, under the hook's highest point.
+            return ld.RailWhy == 0 && d.X >= ld.AcrossMin - 0.01f && d.X <= ld.AcrossMax + 0.01f && d.Z >= ld.RunLo - 0.01f && d.Z <= ld.RunHi + 0.01f
+                && d.Y + lift <= -ld.Depth + 0.01f && d.Y >= -ld.Down - 0.01f;
         if (far < ld.ReachMin - 0.01f || far > ld.ReachMax + 0.01f || d.Y > ld.Up + 0.01f || d.Y < -ld.Down - 0.01f)
             return false;
         if (ld.Bridge)
@@ -710,14 +737,14 @@ public static partial class ConstructLifters
             j.Return.Add((l.Def, 1, false)); // (given back as the rest is: ConstructStation.GiveBack)
             world.StationOpened(sc);
         }
-        else if (d != null && c != null && l.Part < c.PartCount && c.DefOf(l.Part).Lifter is { } ld)
+        else if (d != null && c != null && l.Part < c.PartCount && ConstructLifters.DefOf(c, l.Part) is { } ld)
         {
             Frame(c, l.Part, ld, out var lp, out var lr, out _);
             var at = lp + Vector3.Transform(Pose(ld, l, l.Age, out _), lr);
             ConstructBuild.PlaceNew(world, d, at, 0);
         }
         Console.WriteLine($"[lifter] body {l.Body} part {l.Part}: its {d?.Name ?? "piece"} {(lost ? "was set down: the lifter went" : "goes back: its step is no longer wanted")}");
-        if (lost || c == null || l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { } lf)
+        if (lost || c == null || l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } lf)
         {
             l.State = LiftState.Idle;
             l.Def = 0;
@@ -826,7 +853,7 @@ public static partial class ConstructLifters
             for (var i = 0; i < lb.N; i++)
                 if (lb.Lifts[i].Part == part)
                     l = lb.Lifts[i];
-            if (l == null || c.DefOf(part).Lifter is not { } ld)
+            if (l == null || ConstructLifters.DefOf(c, part) is not { } ld)
             {
                 Freeform.PartWorld(c, Math.Min(part, c.PartCount - 1), out var at, out _);
                 ConstructBuild.PlaceNew(world, d, at + Vector3.UnitY * 2, 0);
@@ -845,9 +872,15 @@ public static partial class ConstructLifters
     /// <summary>The move's length in ticks: half the handling at each end, the path at the hand's speed.</summary>
     public static int Ticks(LifterDef ld, Vector3 from, Vector3 to, bool loaded, float lift, float rise)
     {
-        var len = PathLength(ld, from, to, lift, rise);
-        var sec = (loaded ? ld.Handle : ld.Handle * 0.25f) + len / ld.Speed;
-        return Math.Clamp((int)MathF.Ceiling(sec * World.TickRate), Every, 60 * World.TickRate);
+        float sec;
+        if (ld.Bridge)
+        {
+            BridgeLegs(ld, from, to, lift, rise, out _, out var up, out var across, out var down);
+            sec = (loaded ? ld.Handle : ld.Handle * 0.25f) + across / ld.Speed + (up + down) / ld.Hoist;
+        }
+        else
+            sec = (loaded ? ld.Handle : ld.Handle * 0.25f) + PathLength(ld, from, to, lift, rise) / ld.Speed;
+        return Math.Clamp((int)MathF.Ceiling(sec * World.TickRate), Every, (ld.Bridge ? 600 : 60) * World.TickRate); // (a Capital crane crosses 64 m at 1 m/s and hoists 48 m at 0.5)
     }
 
     /// <summary>
@@ -858,7 +891,7 @@ public static partial class ConstructLifters
     private static float CarryY(LifterDef ld, Vector3 from, Vector3 to, float lift, float rise)
     {
         var high = MathF.Max(from.Y, to.Y);
-        var h = MathF.Min(ld.Base.Y + ld.Up, high + rise);
+        var h = MathF.Min(ld.Bridge ? ld.Base.Y - ld.Depth - lift : ld.Base.Y + ld.Up, high + rise);
         if (!ld.Bridge)
         {
             Polar(ld, from, out var r0, out _);
@@ -889,9 +922,23 @@ public static partial class ConstructLifters
         return d;
     }
 
+    /// <summary>A crane's legs: the carry height, the hoist up, the straight run across (travel and traverse together), the lowering.</summary>
+    private static void BridgeLegs(LifterDef ld, Vector3 from, Vector3 to, float lift, float rise, out float h, out float up, out float across, out float down)
+    {
+        h = CarryY(ld, from, to, lift, rise);
+        up = MathF.Max(0, h - from.Y);
+        down = MathF.Max(0, h - to.Y);
+        across = MathF.Sqrt((to.X - from.X) * (to.X - from.X) + (to.Z - from.Z) * (to.Z - from.Z));
+    }
+
     /// <summary>Straight up to the carry height, round the base in angle and radius (never through the mast), straight down.</summary>
     public static float PathLength(LifterDef ld, Vector3 from, Vector3 to, float lift, float rise)
     {
+        if (ld.Bridge)
+        {
+            BridgeLegs(ld, from, to, lift, rise, out _, out var u, out var a, out var dn);
+            return u + a + dn;
+        }
         var h = CarryY(ld, from, to, lift, rise);
         Polar(ld, from, out var r0, out var a0);
         Polar(ld, to, out var r1, out var a1);
@@ -910,6 +957,26 @@ public static partial class ConstructLifters
         rot = l.FromRot;
         if (sec <= 0)
             return from;
+        if (ld.Bridge)
+        {
+            // A crane: hoist, travel and traverse together in a straight line at the carry height, lower (arms-and-cranes.md 3.3).
+            BridgeLegs(ld, from, to, l.Def != 0 ? WristLift(ConstructParts.Get(l.Def)) : SafeLift, l.Rise, out var bh, out var bu, out var ba, out var bd);
+            var tu = bu / ld.Hoist;
+            if (sec < tu)
+                return new Vector3(from.X, from.Y + sec * ld.Hoist, from.Z);
+            sec -= tu;
+            var ta = ba / ld.Speed;
+            if (sec < ta && ba > 1e-4f)
+            {
+                var f = sec / ta;
+                rot = Quaternion.Slerp(l.FromRot, l.ToRot, f);
+                return new Vector3(from.X + (to.X - from.X) * f, bh, from.Z + (to.Z - from.Z) * f);
+            }
+            sec -= ta;
+            rot = l.ToRot;
+            var dn = sec * ld.Hoist;
+            return dn < bd ? new Vector3(to.X, bh - dn, to.Z) : to;
+        }
         var h = CarryY(ld, from, to, l.Def != 0 ? WristLift(ConstructParts.Get(l.Def)) : SafeLift, l.Rise);
         var up = MathF.Max(0, h - from.Y);
         Polar(ld, from, out var r0, out var a0);
@@ -1059,7 +1126,7 @@ public static partial class ConstructLifters
     public static string Look(ConstructWorld world, Construct c, int part)
     {
         var d = c.DefOf(part);
-        if (d.Lifter is not { } ld)
+        if (DefOf(c, part) is not { } ld)
             return d.Name;
         var l = Find(world, c.Id, part);
         var piece = l != null && l.Def != 0 ? ConstructParts.Get(l.Def)?.Name ?? "piece" : "piece";
@@ -1091,7 +1158,11 @@ public static partial class ConstructLifters
             what += " - waiting: a player is in the way";
         else if (l is { Why: LiftWhy.PlayerStuck })
             what += " - stuck: a player has been in the way for over 10 s";
+        if (ld.Bridge && ld.RailWhy != 0)
+            what += ld.RailWhy == 1 ? " - stopped: it is not on a Crane Rail" : " - stopped: its far end has no rail";
         var carries = ld.Payload >= 1000 ? $"{ld.Payload / 1000f:0.#} t" : $"{ld.Payload:0} kg";
+        if (ld.Bridge)
+            return $"{d.Name}: {what} - spans {ld.Span:0.#} m over {MathF.Max(0, ld.RunHi - ld.RunLo):0.#} m of rail, hook drop {ld.Down:0.#} m, carries {carries}{(l is { Moves: > 0 } ? $"; {l.Moves} moved" : "")}";
         return $"{d.Name}: {what} - reaches {ld.ReachMin:0.#} to {ld.ReachMax:0.#} m, carries {carries}{(l is { Moves: > 0 } ? $"; {l.Moves} moved" : "")}";
     }
 
@@ -1106,7 +1177,7 @@ public static partial class ConstructLifters
         var d = c.DefOf(part);
         if (d.Lifter is not { } ld)
             return;
-        card.Add(0, ScreenName[Math.Clamp(ld.Tier, 1, 5)]);
+        card.Add(0, ld.Bridge ? "BRIDGE CRANE" : ScreenName[Math.Clamp(ld.Tier, 1, 5)]);
         if (c.Parts[part].Broken)
         {
             card.State = PanelState.Fault;
@@ -1115,7 +1186,14 @@ public static partial class ConstructLifters
         }
         var l = Find(world, c.Id, part);
         var piece = l != null && l.Def != 0 ? ConstructParts.Get(l.Def)?.Name : null;
-        if (l is { Why: LiftWhy.NoPower })
+        if (l is { Why: LiftWhy.NoRail or LiftWhy.NoFarRail })
+        {
+            card.State = PanelState.Fault;
+            card.Add(1, l.Why == LiftWhy.NoRail ? "Not on a rail" : "Far end: no rail");
+            if (piece != null)
+                card.Add(2, piece);
+        }
+        else         if (l is { Why: LiftWhy.NoPower })
         {
             card.State = PanelState.Fault;
             card.Add(1, "No power");
@@ -1165,6 +1243,8 @@ public static partial class ConstructLifters
                 LiftWhy.NoPart => "Nothing to fit",
                 LiftWhy.NoStation => "No station in reach",
                 LiftWhy.NoPoint => "Nothing to carry",
+                LiftWhy.NoRail => "Not on a rail",
+                LiftWhy.NoFarRail => "Far end: no rail",
                 _ => "",
             });
         }
@@ -1403,7 +1483,7 @@ public static partial class ConstructStation
                     continue;
                 }
                 c ??= world.Get(lb.Body);
-                if (c == null || l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { } ld || ConstructParts.Get(def) is not { } d)
+                if (c == null || l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } ld || ConstructParts.Get(def) is not { } d)
                     continue;
                 ConstructLifters.Frame(c, l.Part, ld, out _, out var lr, out var shoulder);
                 n += ConstructLifters.HoldPick(sc, t, ld, shoulder, lr, ConstructLifters.WristLift(d), ConstructLifters.WristLift(d), out _) ? 1 : 0;
@@ -1523,7 +1603,7 @@ public static partial class LifterProbe
     }
 
     private static string IkOf(ConstructWorld world, ushort body, CLift l) =>
-        world.Get(body) is { } c && l.Part < c.PartCount && c.DefOf(l.Part).Lifter is { } ld ? Ik(ld, l) : "";
+        world.Get(body) is { } c && l.Part < c.PartCount && ConstructLifters.DefOf(c, l.Part) is { } ld ? Ik(ld, l) : "";
 
     private static Vector3 Grip(LifterDef ld, CLift l, float age)
     {
@@ -1548,7 +1628,7 @@ public static partial class LifterProbe
             for (var i = 0; i < lb.N; i++)
             {
                 var l = lb.Lifts[i];
-                if (l is not { State: LiftState.Carry, ToHold: false, WaitFrom: 0 } || l.Def == 0 || l.Part >= c.PartCount || c.DefOf(l.Part).Lifter is not { } ld)
+                if (l is not { State: LiftState.Carry, ToHold: false, WaitFrom: 0 } || l.Def == 0 || l.Part >= c.PartCount || ConstructLifters.DefOf(c, l.Part) is not { } ld)
                     continue;
                 var age = ConstructLifters.AgeAt(l, ConstructLifters.Now);
                 if (age > l.Dur * 0.2f)

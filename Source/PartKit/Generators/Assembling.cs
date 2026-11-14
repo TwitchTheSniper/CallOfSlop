@@ -379,7 +379,14 @@ public sealed class Assembling : IPartGenerator
                 extra["Control Unit"] = Math.Min(20, Math.Max(1, pistons / 4));
             }
         }
-        if (p.Get("lifter") is PyDict)
+        if (p.Get("lifter") is PyDict lif && lif.Get("kind") as string == "bridge")
+        {
+            // A Bridge Crane (LifterParts.cs): its hoist drum and travel drives (Gear Sets), the trolley's wheels (Bearings), a Control Unit.
+            extra["Gear Set"] = 4;
+            extra["Bearing"] = 4;
+            extra["Control Unit"] = 1;
+        }
+        else if (p.Get("lifter") is PyDict)
         {
             // A Loader Arm (LifterParts.cs) turns on a slewing ring and bends at two joints: Gear Sets at tier 1, Servo Motors from 2, a
             // Control Unit from 3 (its tier's Assembler makes them).

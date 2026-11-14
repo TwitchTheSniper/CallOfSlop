@@ -240,7 +240,7 @@ public static partial class LifterProbe
         foreach (var lb in world.LiftBodies)
             if (lb.N > 0 && (ac == null || lb.Body > ac.Id) && world.Get(lb.Body) is { } b)
                 (l, ac) = (lb.Lifts[0], b);
-        if (l == null || ac == null || ac.DefOf(l.Part).Lifter is not { } ld)
+        if (l == null || ac == null || ConstructLifters.DefOf(ac, l.Part) is not { } ld)
             return "steps: no arm";
         ConstructLifters.Frame(ac, l.Part, ld, out _, out var lr, out var sh);
         Freeform.PartWorld(sc, t, out var stp, out _);
