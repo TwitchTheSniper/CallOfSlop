@@ -617,13 +617,12 @@ public sealed class PressParts : IPartGenerator
     /// <summary>
     /// Sized parts phase 6: the generated receivers (ConstructWeaponParts: a builder receiver at twice its handheld size, no recipe) as
     /// patterns after the hand-made three, by name. Each preset is its part's own bounds on the 5 cm lattice (across the wider of x and y,
-    /// length along z), held to the die's ranges; a solid blank, or hollow when an earlier preset already has that solid one (Auto takes the
-    /// first preset of a blank; the Pattern setting or an order the others).
+    /// length along z), held to the die's ranges, solid; where an earlier preset has that blank,
+    /// Auto makes the earlier one and the Pattern setting or an order this one.
     /// </summary>
     private static List<(string Id, string Like, string Label, string Blank)> AllReceiverPatterns()
     {
         var all = ReceiverPatterns.ToList();
-        var taken = all.Select(r => r.Blank).ToHashSet(StringComparer.Ordinal);
         var ids = all.Select(r => r.Id).ToHashSet(StringComparer.Ordinal);
         static int Lattice(double m) => Math.Max(5, (int)Math.Round(m * 100 / 5, MidpointRounding.AwayFromZero) * 5);
         var hand = ReceiverPatterns.Select(r => CallOfSlop.ConstructParts.Find(r.Like)?.GunReceiver ?? "").ToHashSet(StringComparer.Ordinal);
@@ -632,10 +631,7 @@ public sealed class PressParts : IPartGenerator
             var size = d.BoundsMax - d.BoundsMin;
             var across = Math.Clamp(Lattice(Math.Max(size.X, size.Y)), 15, 120);
             var len = Math.Clamp(Lattice(size.Z), Math.Max(30, across), 600);
-            var blank = $"solid {across}x{across}x{len} steel";
-            if (taken.Contains(blank))
-                blank = $"hollow {across}x{across}x{len} steel";
-            taken.Add(blank);
+            var blank = $"solid {across}x{across}x{len} steel"; // (solid: a hollow one came out heavier than its blank and Gear Sets; a size another preset has is made with the Pattern setting, as the barrels')
             var words = d.Name.ToLowerInvariant().Split(' ').Where(w => w != "receiver");
             var id = string.Join("", words.Select(w => new string(w.Where(ch => ch is >= 'a' and <= 'z' or '-').ToArray())));
             id = id.Length > 16 ? id[..16] : id;
@@ -651,7 +647,7 @@ public sealed class PressParts : IPartGenerator
 
     private static PyDict ReceiverDie()
     {
-        var gears = Kit("Gear Set", true, 1, 0.02, "mass", 20); // (as the Drive die: the action's gearing)
+        var gears = Kit("Gear Set", true, 1, 0.1, "mass", 20); // (the action's gearing: one a stroke and one per 10 kg of blank, phase 6: the Heavy Receiver at 0.02 recycled for more than it cost)
         var die = SizedDie("Receiver", ["solid", "hollow"], ["steel"], [15, 120], [30, 600], [1, 1], 4, 0.02, Py.L(),
             AllReceiverPatterns().Select(r => (object?)Pattern(r.Id, r.Like, r.Label, r.Blank, bay2: gears, along: "z")).ToList());
         die["aspect"] = "preset";
@@ -698,7 +694,7 @@ public sealed class PressParts : IPartGenerator
             curves.Add(Kw(("field", stat), ("by", "calibres"), ("points", points), ("clamp", Py.L(values.Min(), values.Max())), ("op", op)));
         }
         var crown = Py.L(Feature("crown", [-0.1, -0.1, 0, 1.1, 1.1, 0.04], "dark", proud: "xyz", clamp: "z", min: 1, max: 10));
-        var patterns = Py.L(Pattern("plain", "Gun Barrel", "barrel", "round 10x10x50 steel", scale: curves, along: "z"));
+        var patterns = Py.L(Pattern("plain", "Gun Barrel", "barrel", "round 10x10x50 steel", bay2: BarrelLiner(), scale: curves, along: "z"));
         // Phase 2 (design 3.3): every other catalogue barrel is a pattern with one preset, its own effects times the plain curve read at
         // 5 x c / c_preset ("at": 5), so its preset is its file and a longer one gains range as a plain one does.
         // Each curve is held so the barrel's own change times it stays inside the widest catalogue values (a Coil Barrel, already x2 range,
@@ -718,7 +714,7 @@ public sealed class PressParts : IPartGenerator
                 var (lo, hi) = op == "mul" ? (values.Min() / own, values.Max() / own) : (values.Min() - own, values.Max() - own);
                 scale.Add(Kw(("field", stat), ("by", "calibres"), ("points", plainPoints[n]), ("clamp", Py.L(Py.Round(lo, 4), Py.Round(hi, 4))), ("op", op), ("at", 5)));
             }
-            patterns.Add(Pattern(id, builder, b.Name.ToLowerInvariant(), blank, scale: scale, along: "z"));
+            patterns.Add(Pattern(id, builder, b.Name.ToLowerInvariant(), blank, bay2: BarrelLiner(), scale: scale, along: "z"));
         }
         // The artillery tube: its own curve through its two knots, the Howitzer Tube and the Long Gun Tube (design 3.3).
         var tubes = new List<object?>();
@@ -730,7 +726,7 @@ public sealed class PressParts : IPartGenerator
             var values = barrels.Select(b => EffectOf(b, stat, op)).Append(op == "mul" ? 1 : 0).ToList();
             tubes.Add(Kw(("field", stat), ("by", "calibres"), ("points", points), ("clamp", Py.L(values.Min(), values.Max())), ("op", op)));
         }
-        patterns.Add(Pattern("tube", ArtilleryTubes[0].Builder, "artillery tube", ArtilleryTubes[0].Blank, scale: tubes, along: "z"));
+        patterns.Add(Pattern("tube", ArtilleryTubes[0].Builder, "artillery tube", ArtilleryTubes[0].Blank, bay2: BarrelLiner(), scale: tubes, along: "z"));
         var die = SizedDie("Barrel", ["round", "pipe"], ["steel"], [10, 120], [10, 1920], [1, 16], 4, 0.02, crown, patterns);
         die["fit"] = Py.L(0.7, 1.5); // (a barrel's bore over its receiver's: design section 5, the user's answer 4)
         return die;
@@ -883,7 +879,7 @@ public sealed class PressParts : IPartGenerator
     private static List<object?> Presets()
     {
         var r = new List<object?>();
-        void Add(string part, string die, string pattern, string blank) => r.Add(Kw(("part", part), ("die", die), ("pattern", pattern), ("blank", blank)));
+        void Add(string part, string die, string pattern, string blank) => r.Add(Kw(("part", part), ("die", die), ("pattern", pattern), ("blank", Weighty(part, die, pattern, blank))));
         foreach (var m in new[] { "steel", "metal", "bronze" })
         {
             Add("L Bracket", "bracket", "l", $"l-angle 15x15x15 {m}");
@@ -938,6 +934,78 @@ public sealed class PressParts : IPartGenerator
             Add(like, "receiver", id, blank);
         return r;
     }
+
+    // ---- Sized parts phase 6 (phase 5 notes, question 5): a preset comes out as its catalogue part at the file's mass, so its blank and
+    // bay 2 must weigh at least that (Pressed.CostMass), or the part recycles for more than it cost. The presets that didn't (35: housings,
+    // plates, the Gear and Piston Sets, differentials, tanks, springs, brackets in metal) grow here: longer by 5 cm steps, a plate thicker,
+    // and past the die's length or aspect thicker. Not the Barrel and Receiver dies: their presets' sizes are the knots of their curves and
+    // scale (a Gun Barrel is 5 calibres, a Rifle Receiver's s is 1 at 20 cm), so their bay 2 makes up the cost instead (BarrelLiner, the
+    // Receiver die's Gear Sets). A pattern whose preset was the old blank moves with it (Make), so its law stays continuous at the part.
+
+    private static readonly System.Text.RegularExpressions.Regex BlankRx = new(@"^(\S+) (\d+)x(\d+)x(\d+) (\S+)$");
+    private static readonly Dictionary<(string Part, string Old), string> Grown = new();
+    private static Dictionary<string, PyDict>? _dies;
+
+    private static PyDict DieOf(string die)
+    {
+        _dies ??= SizedDies().Cast<PyDict>().ToDictionary(d => ((string)d["die"]!).ToLowerInvariant());
+        return _dies[die];
+    }
+
+    private static int[] Ints(object? v) => ((List<object?>)v!).Select(x => (int)Py.D(x)).ToArray();
+
+    /// <summary>What bay 2 holds for this blank, as mass (Pressed.Bay2Mass on the generator's own pattern).</summary>
+    private static float Bay2Kg(PyDict? kit, in CallOfSlop.ExtrusionKey k)
+    {
+        if (kit == null)
+            return 0;
+        var by = Enum.Parse<CallOfSlop.PressMeasure>((string)kit["by"]!, true);
+        var n = Math.Clamp((int)Math.Ceiling(Py.D(kit["base"]) + Py.D(kit["rate"]) * CallOfSlop.Pressed.Measure(by, k) - 1e-4), 1, kit.Has("max") ? (int)Py.D(kit["max"]) : 9999);
+        return kit.Get("part") is string part ? (CallOfSlop.ConstructParts.Find(part)?.Mass ?? 0) * n
+            : CallOfSlop.RecyclingTable.Current.WeightOf(CallOfSlop.RecyclingTable.Current.IdOf((string)kit["material"]!)) * n;
+    }
+
+    private static string Weighty(string part, string die, string pattern, string blank)
+    {
+        if (die is "barrel" or "receiver" or "engine" or "cylinder" || CallOfSlop.ConstructParts.Find(part) is not { } d || BlankRx.Match(blank) is not { Success: true } m)
+            return blank;
+        var (section, material) = (m.Groups[1].Value, m.Groups[5].Value);
+        int w = int.Parse(m.Groups[2].Value), h = int.Parse(m.Groups[3].Value), l = int.Parse(m.Groups[4].Value);
+        var dd = DieOf(die);
+        int[] across = Ints(dd["across"]), length = Ints(dd["length"]);
+        var aspect = ((List<object?>)dd["aspect"]!).Select(Py.D).ToArray();
+        var kit = ((List<object?>)dd["patterns"]!).Cast<PyDict>().First(p => (string)p["id"]! == pattern).Get("bay2") as PyDict;
+        string Text() => $"{section} {w}x{h}x{l} {material}";
+        float Cost() => CallOfSlop.Pressed.ParseBlank(Text()) is { } k ? CallOfSlop.Pressed.VolumeMass(k).Mass + Bay2Kg(kit, k) : float.MaxValue;
+        var byWidth = section is "plate" or "round" || section.StartsWith("pipe", StringComparison.Ordinal);
+        int Across() => byWidth ? w : Math.Min(w, h); // (as Pressed.Across: a plate, round or pipe by its width, a section by its thinner side)
+        while (Cost() < d.Mass - 0.005f)
+        {
+            if (section == "plate" && h + 5 <= Math.Min(w, l))
+                h += 5; // (a plate: thicker, its face the part's)
+            else if (section != "plate" && l + 5 <= length[1] && l + 5 <= Across() * aspect[1])
+                l += 5;
+            else if (Across() + 5 <= across[1])
+            {
+                if (section is "round" || section.StartsWith("pipe", StringComparison.Ordinal) || w == h)
+                    (w, h) = (w + 5, h + 5); // (a square or round section stays so)
+                else if (w < h)
+                    w += 5; // (a flat section thickens)
+                else
+                    h += 5;
+                l = Math.Max(l, (int)Math.Ceiling(Across() * aspect[0] / 5) * 5);
+            }
+            else
+                throw new InvalidOperationException($"press_parts: {part}'s preset can't weigh its {d.Mass} kg on the {die} die ({Text()})");
+        }
+        if (Text() != blank)
+            Grown[(part, blank)] = Text();
+        return Text();
+    }
+
+    /// <summary>The Barrel die's bay 2: a steel liner by the blank's mass, so a barrel costs about twice its blank (sized parts phase 6: the
+    /// Gun Barrel's 4 kg came from a 1.96 kg rod).</summary>
+    private static PyDict BarrelLiner() => Kit("steel", false, 0, 0.6, "mass", 99);
 
     private static readonly (string Part, string Die, string Pattern, string Blank)[] Presets3b =
     [
@@ -1025,8 +1093,14 @@ public sealed class PressParts : IPartGenerator
             foreach (var t in MaterialTiers)
                 parts.Add(("Housings", Housing(side, c, n, t)));
         WriteParts(o, Out, parts);
+        var presets = Presets();
+        var dies = SizedDies();
+        foreach (var die in dies.Cast<PyDict>()) // (a pattern whose preset grew moves with it: Weighty)
+            foreach (var p in ((List<object?>)die["patterns"]!).Cast<PyDict>())
+                if (Grown.TryGetValue(((string)p["like"]!, (string)p["preset"]!), out var grown))
+                    p["preset"] = grown;
         var table = Kw(("format", Format), ("about", About), ("lathe", LatheRows()),
-            ("strength", Kw(("of", "healthPerM3"), ("ref", 5000))), ("dies", SizedDies()), ("presets", Presets()));
+            ("strength", Kw(("of", "healthPerM3"), ("ref", 5000))), ("dies", dies), ("presets", presets));
         o.File(Table, PyJson.Dumps(table, 1) + "\n");
         o.File(Blueprint, PyJson.Dumps(Line(), 2) + "\n");
     }

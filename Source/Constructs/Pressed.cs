@@ -665,6 +665,7 @@ public static class Pressed
             lo[i] = c - hh;
             hi[i] = c + hh;
         }
+        SpreadLike(like, lo, hi, nb, Map(like.BoundsMin), Map(like.BoundsMax), axes, Gap(MathF.Max(w, MathF.Max(h, len))));
         var centre = Map((like.BoundsMin + like.BoundsMax) * 0.5f);
         PlaceFeatures(die, p, section, new Vector3(w, h, len), lo, hi, proud, looks, nb, axes, centre);
         Settle(lo, hi, proud, nb, Gap(MathF.Max(w, MathF.Max(h, len))));
@@ -756,6 +757,77 @@ public static class Pressed
         if (p.Like.IsReceiverGun)
             d.Mass = ReceiverMass(p, k, d.GunScale);
         return d;
+    }
+
+    /// <summary>
+    /// Keeps a stretched like body's faces apart (sized parts phase 6; CLAUDE.md "No coplanar faces"). First its end boxes (those reaching
+    /// either end along its length) step in by the gap from the side bounds, so a pressed piece the size of its neighbour never lays a face
+    /// on the neighbour's (a 50 cm pressed crank's flange on a Small Flywheel's 50 cm face). Then any drawn box whose face scaling brought
+    /// within 2 mm of an earlier drawn box's same-facing face, with overlap, moves off it by the gap (inward while it stays thick enough):
+    /// a like part's own small gaps shrink with it, and a stretch along one axis can close them. Sockets and bounds stay the blank's.
+    /// </summary>
+    private static void SpreadLike(ConstructPartDef like, Span<Vector3> lo, Span<Vector3> hi, int nb, Vector3 bmin, Vector3 bmax, ReadOnlySpan<int> axes, float gap)
+    {
+        const float eps = 1e-4f, near = 0.002f;
+        var along = axes[2];
+        for (var i = 0; i < nb; i++)
+        {
+            if (like.Boxes[i].Hidden)
+                continue;
+            if (Get(lo[i], along) > Get(bmin, along) + eps && Get(hi[i], along) < Get(bmax, along) - eps)
+                continue; // (not an end box)
+            for (var j = 0; j < 2; j++)
+            {
+                var ax = axes[j];
+                if (Get(hi[i], ax) - Get(lo[i], ax) < 4 * gap)
+                    continue;
+                if (Get(hi[i], ax) >= Get(bmax, ax) - eps)
+                    hi[i] = With(hi[i], ax, Get(hi[i], ax) - gap);
+                if (Get(lo[i], ax) <= Get(bmin, ax) + eps)
+                    lo[i] = With(lo[i], ax, Get(lo[i], ax) + gap);
+            }
+        }
+        for (var i = 1; i < nb; i++)
+        {
+            if (like.Boxes[i].Hidden)
+                continue;
+            for (var ax = 0; ax < 3; ax++)
+                for (var s = -1; s <= 1; s += 2)
+                {
+                    var at = s < 0 ? Get(lo[i], ax) : Get(hi[i], ax);
+                    if (!NearShares(like, lo, hi, i, ax, s, at, near))
+                        continue;
+                    var thick = Get(hi[i], ax) - Get(lo[i], ax);
+                    for (var k = 1; k <= 8; k++) // (the nearest clear plane: in while it stays thick enough, else out)
+                    {
+                        var step = (k + 1) / 2 * gap;
+                        var plane = k % 2 == 1 && thick - step >= gap ? at - s * step : at + s * step;
+                        if (NearShares(like, lo, hi, i, ax, s, plane, near))
+                            continue;
+                        if (s < 0)
+                            lo[i] = With(lo[i], ax, plane);
+                        else
+                            hi[i] = With(hi[i], ax, plane);
+                        break;
+                    }
+                }
+        }
+    }
+
+    // Does drawn like box i's face on axis ax, side s, put on this plane, come within `near` of an earlier drawn box's face that faces the same way, with overlap?
+    private static bool NearShares(ConstructPartDef like, ReadOnlySpan<Vector3> lo, ReadOnlySpan<Vector3> hi, int i, int ax, int s, float plane, float near)
+    {
+        int b = (ax + 1) % 3, c = (ax + 2) % 3;
+        for (var j = 0; j < i; j++)
+        {
+            if (like.Boxes[j].Hidden || MathF.Abs(plane - (s < 0 ? Get(lo[j], ax) : Get(hi[j], ax))) >= near)
+                continue;
+            var ob = MathF.Min(Get(hi[i], b), Get(hi[j], b)) - MathF.Max(Get(lo[i], b), Get(lo[j], b));
+            var oc = MathF.Min(Get(hi[i], c), Get(hi[j], c)) - MathF.Max(Get(lo[i], c), Get(lo[j], c));
+            if (ob > 0 && oc > 0 && ob * oc >= 1e-5f)
+                return true;
+        }
+        return false;
     }
 
     /// <summary>
@@ -974,25 +1046,19 @@ public static class Pressed
                 // A preset comes out as the catalogue part, at its file's mass: never more than the blank and bay 2 that went in, or it
                 // would recycle for more than it cost (review, 2026-11-13).
                 var pat = d.Pattern(key[(Prefix.Length + d.Id.Length + 1)..key.IndexOf(' ', Prefix.Length)]);
-                // The engine dies' presets (sized parts phase 5) are held to it as a problem; the older dies' are reported as "over" until their
-                // blanks are settled (sized-parts-phase5-notes.md, question 5).
+                // Every die's presets are held to it as a problem (sized parts phase 6: the older dies' blanks settled by the generator,
+                // PressParts.Weighty; they were OVER lines that didn't fail).
                 if (why.Length == 0 && pat != null && part.Mass > CostMass(pat, blank) + 0.01f)
                 {
-                    var text = $": weighs {part.Mass:0.##} kg, more than its blank and bay 2 ({CostMass(pat, blank):0.##} kg): it recycles for more than it cost";
-                    if (d.Id is "engine" or "cylinder")
-                        why = text;
-                    else
-                    {
-                        over++;
-                        Console.WriteLine($"[press] OVER {part.Name,-24} {key}{text}");
-                    }
+                    over++;
+                    why = $": OVER: weighs {part.Mass:0.##} kg, more than its blank and bay 2 ({CostMass(pat, blank):0.##} kg): it recycles for more than it cost";
                 }
                 ok = why.Length == 0;
             }
             bad += ok ? 0 : 1;
             Console.WriteLine($"[press] {(ok ? "ok " : "BAD")} {part.Name,-24} {key}{press}{why}");
         }
-        Console.WriteLine($"[press] presets: {bad} problems; {over} older presets come out heavier than their blank and bay 2 (OVER lines)");
+        Console.WriteLine($"[press] presets: {bad} problems ({over} of them OVER: heavier than their blank and bay 2)");
         return bad;
     }
 
