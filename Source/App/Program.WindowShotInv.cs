@@ -129,7 +129,13 @@ public static unsafe partial class Program
                     taken.Add(best.Id);
                     ref var h = ref hands.Hands[pl.Id];
                     h.Tool = d.Tool == ConstructTool.None ? ConstructTool.Welder : d.Tool;
-                    var why = hands.BeginRemove(g.Constructs, pl.Id, best.WorldCom + new System.Numerics.Vector3(0, 1, 0), best.Id, 0, g.SandboxNow);
+                    var eye = best.WorldCom + new System.Numerics.Vector3(0, 1, 0);
+                    var why = hands.BeginRemove(g.Constructs, pl.Id, eye, best.Id, 0, g.SandboxNow);
+                    if (why == null && h.Edit == EditKind.Remove)
+                    {
+                        h.Start = g.SandboxNow - h.Duration; // (survival's timed edit done now, as holding fire to its end does: the tool holds no button)
+                        hands.Tick(g.Constructs, g.SandboxNow, _ => eye);
+                    }
                     WsSay($"inv takeback: player {pl.Id}: {Named(d.Id)} construct {best.Id}: {why ?? "begun"} (edit {h.Edit}, {h.Duration:0.0} s)");
                 }
                 return true;
@@ -267,6 +273,106 @@ public static unsafe partial class Program
                         return true;
                     }
                 WsFail("inv pull: no made row at a terminal");
+                return true;
+            }
+            case "rack" when g.IsServer:
+            {
+                // "rack N RACK[#n] NAME" (phase 4): N of a made part onto a Piece Rack by the conveyors' own packing (as a line would leave them).
+                var w2 = rest.Split(' ', 2, StringSplitOptions.TrimEntries);
+                if (w2.Length < 2 || !int.TryParse(w2[0], out var n) || !WsSplitStore(g, w2[1], out var c, out var part, out var d))
+                {
+                    WsFail($"inv rack N RACK[#n] NAME (\"{rest}\")");
+                    return true;
+                }
+                var put = 0;
+                while (put < n && g.Constructs.RackPut(c!, part, d!))
+                    put++;
+                WsSay($"inv rack: {put} of {n} x {Named(d!.Id)} onto the {c!.DefOf(part).Name}");
+                return true;
+            }
+            case "survival":
+                // "survival on|off" (a test state, run on each peer): the rules switched after the blueprint went down through the menu, so beacons work.
+                g.SurvivalForTool(rest != "off");
+                WsSay($"inv survival: infinite parts {g.SandboxInfiniteParts}, survival {g.SandboxHands.Survival}");
+                return true;
+            case "made":
+            {
+                // This peer's "Made parts" rows (the count's and the network's), their tooltips, and its beacon view's made list.
+                var bv = g.SandboxBeacon(me.Id);
+                WsSay($"inv made: beacon {bv.State}, on {g.SandboxBeaconOn}, made kinds on the network {bv.MadeN}{(bv.MadeOver > 0 ? $" (+{bv.MadeOver})" : "")}");
+                for (var k = 0; k < bv.MadeN; k++)
+                    WsSay($"inv made: network {Named(bv.MadeDef[k])} x{bv.MadeCount[k]}");
+                var r = 0;
+                foreach (var (id, text) in Ui.SandboxInventoryMadeRows(g))
+                {
+                    WsSay($"inv made: row {text.Split("##")[0]} ({ConstructParts.Get(id)?.Name}) tip: {Ui.SandboxInventoryMadeTip(r).Replace('\n', '|')}");
+                    r++;
+                }
+                return true;
+            }
+            case "search":
+                // "search TEXT": the Tab inventory's search as typed; the next frames draw it (then "inv hits").
+                Ui.OpenSandboxParts(false);
+                Ui.SetSandboxPartsSearch(rest);
+                WsSay($"inv search: \"{rest}\"");
+                return true;
+            case "hits":
+                WsSay($"inv hits: made rows found {Ui.SandboxMadeSearchHits}, pictures {Ui.SandboxMadeIcons}, swatches {Ui.SandboxMadeSwatches}");
+                return true;
+            case "mode":
+                // "mode line|replace|place": the build mode as its key leaves it (no station check: a test state), for a made row's click.
+                _buildMode = rest == "line" ? BuildMode.Line : rest == "replace" ? BuildMode.Replace : BuildMode.Place;
+                WsSay($"inv mode: {_buildMode}");
+                return true;
+            case "aidpick":
+            {
+                // "aidpick NAME": the Made parts row's click with a mode on (picked for the aid, not set down).
+                if (ConstructParts.Find(rest) is not { } d)
+                {
+                    WsFail($"inv aidpick: no part \"{rest}\"");
+                    return true;
+                }
+                Ui.SandboxMadePick(g, d);
+                WsSay($"inv aidpick: picked {Named(_aidPick)}, mode {_buildMode}, pinned {RuntimeParts.Pinned == d.Id}");
+                return true;
+            }
+            case "line":
+            {
+                // "line N PART[#n] NAME": a Line Layer stroke of N of a part along +x from the first socket of PART that takes it, sent as the drag's release sends it.
+                var w2 = rest.Split(' ', 2, StringSplitOptions.TrimEntries);
+                if (w2.Length < 2 || !int.TryParse(w2[0], out var n) || !WsSplitStore(g, w2[1], out var c, out var part, out var d))
+                {
+                    WsFail($"inv line N PART[#n] NAME (\"{rest}\")");
+                    return true;
+                }
+                for (var s = 0; s < c!.SocketCount(part); s++)
+                    for (var v = 0; v < d!.Sockets.Length * 4 && v < 256; v++)
+                        if (ConstructBuild.Place(c, part, s, d, v / 4, v % 4, out var gh) == null)
+                        {
+                            var dir = (byte)0;
+                            var pitch = ConstructLine.Pitch(c, d, gh.Rot, gh, dir);
+                            var pw = g.SandboxAidBegin(BuildAidOp.Line);
+                            pw.U16(c.Id).U16((ushort)part);
+                            PartRef.Write(pw, d.Id);
+                            pw.U8((byte)s).U8((byte)v).U8(dir).F32(pitch).U16((ushort)n).U8(2).F32(1).U16(1);
+                            g.SandboxAidSend(pw);
+                            WsSay($"inv line: {n} x {Named(d.Id)} from socket {s} of the {c.DefOf(part).Name}, variant {v}, pitch {pitch:0.###} m");
+                            return true;
+                        }
+                WsFail($"inv line: no socket of the {c.DefOf(part).Name} takes the {Named(d!.Id)}");
+                return true;
+            }
+            case "replace":
+            {
+                // "replace PART[#n] NAME": the Replacer's swap of that part for NAME, as its click (or its picker) sends it.
+                if (!WsSplitStore(g, rest, out var c, out var part, out var d))
+                {
+                    WsFail($"inv replace PART[#n] NAME (\"{rest}\")");
+                    return true;
+                }
+                var plan = ConstructReplace.Plan(g.Constructs, c!, part, d!, out _);
+                SandboxReplaceSend(g, c!.Id, part, d!.Id);
+                WsSay($"inv replace: the {Named(c.Parts[part].Def)} for {Named(d.Id)} (this peer's plan: {plan ?? "fits"})");
                 return true;
             }
             case "net":
