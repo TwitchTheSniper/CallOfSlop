@@ -25,7 +25,7 @@
     {"part": "Small Flywheel", "on": 17, "socket": "-z", "by": "+z"},
     {"part": "Pressed Part (engine.crank solid 45x45x60 steel)", "on": 18, "socket": "crank", "by": "front"},
     {"part": "Pressed Part (cylinder.cylinder pipe10 45x45x120 steel)", "on": 19, "socket": "+y", "by": "base"},
-    {"part": "Pressed Part (engine.carburettor hollow 50x50x25 steel)", "on": 20, "socket": "head", "by": "base"},
+    {"part": "Small Carburettor", "on": 20, "socket": "head", "by": "base"},
     {"part": "Fuel Tank", "on": 2, "socket": "+y0", "by": "-y"},
     {"part": "Driving Module", "on": 16, "socket": "-x", "by": "+x"},
     {"part": "Formed Panel (curve 130x80 c10 r0 t20 steel)", "weld": {"on": 0, "pos": [0.18, 0.48, -0.42], "rot": [0, 0, 0, 1]}},

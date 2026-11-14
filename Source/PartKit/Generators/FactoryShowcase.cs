@@ -40,7 +40,7 @@ public sealed class FactoryShowcase : IPartGenerator
         public const string Rail = "Extrusion solid 25x25x200 steel", Cross = "Extrusion solid 25x25x150 steel", Stub = "Extrusion solid 25x25x50 steel";
         public const string Wheel = "Extrusion wheel 25x60x0 rubber";
         public const string Cylinder = "Pressed Part (cylinder.cylinder pipe10 45x45x120 steel)", Crank = "Pressed Part (engine.crank solid 45x45x60 steel)",
-            Carb = "Pressed Part (engine.carburettor hollow 50x50x25 steel)";
+            Carb = "Small Carburettor"; // (the kit's 0.50 m carburettor is past a small Press's 0.45 m: its preset, a 0.40 m blank)
 
         public static Runabout Build()
         {
@@ -399,6 +399,8 @@ public sealed class FactoryShowcase : IPartGenerator
             var jb = On("Large Conveyor Join", 85.75f, -17.25f, Flow, "-y.0.0", PressBlue);
             Convey(ja, "Piece out", jb, "Piece in", PressBlue, Wide);
             Convey(presses[4], "Piece out", jb, "Piece in 2", PressBlue);
+            _toStation.Add(presses[1]); // (the fuel tank, by chute into the station)
+            _toStation.Add(presses[5]); // (the brackets)
             var j1 = On("Large Conveyor Join", 90.75f, -17.25f, Flow, "-y.0.0", PressBlue);
             Convey(jb, "Piece out", j1, "Piece in", PressBlue, Wide);
             var lo = PortAt(prev, prevPort);
@@ -410,8 +412,6 @@ public sealed class FactoryShowcase : IPartGenerator
             ConveyVia(asm.RouterA, "Piece out 2", presses[4], "Piece in 2", Assembler, -24.6f); // (the Engine press's kit, a Bearing for a flywheel or a crank, from the Assembler's Router, way 2)
             // Trays: the Gear press's Gear Sets to Assembler A; the Tank press's fuel tanks and the Bracket press's brackets on to the station.
             _gear = presses[0]; // (its Gear Sets ride a conveyor into the Assembler: AssemblyFeeds)
-            _toStation.Add(presses[1]);
-            _toStation.Add(presses[5]);
             // Copper: its own Extruder and the Cable press, the coils by chute to Assembler A (a Servo Motor's).
             var copperEx = On("Extruder", 44.25f, -18.25f, Back, paint: Copper);
             ChuteVia(r.Copper, copperEx, -13.45f);
