@@ -570,6 +570,7 @@ public static unsafe partial class Program
     private static void CreateWindow()
     {
         Glfw.ErrorCallback += SafeClipboard.LogGlfwError; // rate-limited (an image on the clipboard raises one per paste)
+        SurfaceDetail.Prepare(); // the materials' detail textures are drawn on the thread pool while the window opens
         if (!Glfw.Init())
             throw new Exception("Failed to initialize GLFW");
 

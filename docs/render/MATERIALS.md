@@ -46,7 +46,37 @@ already has, with no textures:
 - A part's health comes in the fraction of the row's code (`Surfaces.Code`): rust and scorch grow from noise as it falls.
 
 Low skips all of this (`uSurfQ.x`, in `LitFrame`) and draws what the game always drew. High adds a second noise octave and tilts the
-normal by the pattern. Terrain, buildings and map boxes aren't in it.
+normal by the pattern (a detail texture's bumps are drawn on Medium too). Terrain, buildings and map boxes aren't in it.
+
+### Detail textures (user request, 2026-11-14)
+
+Karl found the colony "incredibly bland": the patterns are fine grit that fades by 60 m, so a Brutalist block read as one flat
+colour. A row can now name a **detail texture**: tileable pictures the game draws for itself at start-up
+(`Source/Render/SurfaceDetail.cs`, a 512x512 RGBA8 texture array with mipmaps on unit 19, about 14 MB; nothing is read from disk
+and nothing is licensed, so a layer is changed in that file). `--surface-detail DIR` writes each layer as a PNG to look at.
+
+- **Layers**: board concrete (24 boards a repeat with staggered butt joints, the grain printed in, a ridge where boards met, tie
+  holes on a 60 cm grid, blowholes), precast concrete, slab (broom marks, stains, the odd crack and oil spot), rust, chipped paint,
+  tiles, lino, brick, terrazzo; layer 0, grime, is the weather's. Channels: R colour (0.5 keeps it), G height, B cavity, A wear
+  mask (the row's `wearColour` shows through: chips, grout, mortar).
+- **Row keys**: `"texture"` (the sides), `"textureTop"` (faces that look up), `"tile"` (metres a repeat), `"weather"` (0..1). They
+  ride in the table's two spare floats (`rc.w`: side layer + 1 with the weather in the fraction; `rd.w`: top layer + 1 in hundreds
+  over the tile).
+- **Mapped in the body**, not the box: the vertex shaders hand `SurfaceLit` the point and face normal in the body (`vBody`,
+  `vBodyN`) and the world's up in the box (`vUpL`), so boards and blotches run on across a wall of separate pieces, stay on a
+  moving body, and v runs up a wall. The per-box draw knows no body and maps in the box. Props map in the world.
+- **Bumps**: two more taps of the height along the texture's own world axes (a frame from the derivatives), with a step of at least
+  a texel and the pixel, so joints and holes catch the light on Medium too and fade with the mip.
+- **Weather** (any row with `"weather"`, on box faces): rain streaks hanging from the box's top (grime R, stretched 3 by 6 m),
+  dirt splashed up its foot, grime on faces that look up and in the texture's cavities, and blotches 11 m across that keep a
+  long wall from reading flat at any distance. Everything is sampled with `textureGrad` from derivatives taken before any branch,
+  so mipmaps filter it and nothing crawls; there is no distance fade.
+- **Who has it**: `concrete` (board concrete, slab on top, 3.6 m, weather 0.6: every building, fence, pad and road slab),
+  `worn paint` and `rusty paint` (chipped paint), and new rows for the texture paint tool and interiors: precast concrete,
+  ceramic tiles, lino, brickwork, terrazzo. Rows the vehicle kit uses (painted steel, steel, aluminium, rust, dirty steel) are
+  left alone.
+- Low draws none of it, as before. Cost: up to five texture taps a pixel on a textured row (three of the texture, two of the
+  grime); measured on the Windows PC in the colony (see the pull request).
 
 ### Shimmer and the grid (user report, 2026-11-07)
 

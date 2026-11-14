@@ -35,6 +35,10 @@ public static unsafe class SurfaceDetail
 
     private static bool _ready;
     private static uint _tex;
+    private static Task<byte[]>? _building;
+
+    /// <summary>Starts drawing the layers on the thread pool (the window calls it as it opens), so the first scene program doesn't wait the whole time.</summary>
+    public static void Prepare() => _building ??= Task.Run(() => Build(Size));
 
     /// <summary>Called with <see cref="SurfaceGpu.Register"/> for every scene program: the array exists and the sampler reads its unit.</summary>
     public static void Register(GlProgram program)
@@ -54,7 +58,9 @@ public static unsafe class SurfaceDetail
             return;
         _ready = true;
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        var pixels = Build(Size);
+        Prepare();
+        var pixels = _building!.Result;
+        _building = null; // (the texels live on the GPU from here)
         GlTexture t = default;
         Native.glGenTextures(1, &t);
         _tex = t.Id;
@@ -71,7 +77,7 @@ public static unsafe class SurfaceDetail
         RenderCaps.Anisotropy(GL_TEXTURE_2D_ARRAY, 8f);
         Native.glActiveTexture(GL_TEXTURE0);
         GlDebug.Label(GL_TEXTURE, _tex, "SurfaceDetail.layers");
-        Console.WriteLine($"[surfaces] detail textures: {Names.Length} layers of {Size}x{Size} in {sw.ElapsedMilliseconds} ms");
+        Console.WriteLine($"[surfaces] detail textures: {Names.Length} layers of {Size}x{Size}, {sw.ElapsedMilliseconds} ms waited at the first scene shader");
     }
 
     /// <summary>Every layer's texels, RGBA8, layer after layer (no GL: <c>--surface-detail</c> writes them out to look at).</summary>

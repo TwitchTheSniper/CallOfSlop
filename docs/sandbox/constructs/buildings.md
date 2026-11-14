@@ -275,7 +275,9 @@ on the ice. The Ministry Quarry Works (a hand-made blueprint) has the same flood
 - The site (level ground, paving, what joins the buildings) is another piece of work: see "The site" when it lands.
 - No storm porch: a door opens straight to the weather (a canopy and steps only). An inner lobby needs a wall piece that
   stands off the 2 m module.
-- No board-marked finish: the walls use `concrete`. A `Materials/Surfaces.json` row with a plank pattern would do it.
+- Board-marked concrete is the `concrete` finish itself since 2026-11-14 (a generated detail texture with tie holes, rain
+  streaks and dirt at the foot: docs/render/MATERIALS.md "Detail textures"). Interior floors can take `terrazzo`, `lino` or
+  `ceramic tiles`.
 - The windows have no glass, as every building piece's.
 - The settlements of the Call Centre, the IT Department and Clan MacSlop share four unpainted blueprints: their styles are
   above now ("Out on the ice"); their homes still want buildings in them.
