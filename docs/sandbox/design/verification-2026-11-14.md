@@ -11,11 +11,11 @@ Container on `+y0`), `VT Gas Rig` (the beam + a Fluid Tank set to hydrogen 100 %
 | --- | --- | --- |
 | 1 | Production Showcase repair | **Verified** on host and client (line 2's rows 5 to 8 not read; line 1 reached only from another spawn) |
 | 2 | Smart logistics fix-ups 2 | **Verified** on host (set-off pile, save while riding, rank); client reads the Alarm |
-| 3 | Laser Cutter phase 6 | |
-| 4 | Sized parts phase 6 | |
-| 5 | Inventories phase 4 | |
-| 6 | Extruder expansion | |
-| 7 | Lifters phase 5b | |
+| 3 | Laser Cutter phase 6 | **Verified** on host (order, pane welded, 105 cm clearance, pane count); **not** on the client (the designer won't stay open there) |
+| 4 | Sized parts phase 6 | **Verified** (old world loaded, pattern kept, numbers equal); the recycler not driven |
+| 5 | Inventories phase 4 | **Verified** on host; the paste only its check (**partly**); client reads the rows |
+| 6 | Extruder expansion | **Verified** on host and client (the mid-piece stall not waited out) |
+| 7 | Lifters phase 5b | **Partly**: routes and Off verified on both; **fault**: the pressed Buttons never leave the press for the tray; station pad not reached |
 
 ## 1. The repaired Production Showcase: verified
 
@@ -146,3 +146,40 @@ No blueprint; machines and pieces stood on the ground with `extr build NAME X Z`
   (Each frame adds 0.25 to 0.5 m: the 6 m cap would take a dozen; not built.) An order queued before any material reads `needs metal for its order, holds steel`.
 - **A save with extensions fitted.** The frames-and-table Extruder mid-piece, `saveworld VT6X`; a fresh process `loadworld VT6X; extr Extruder`:
   `die 1.75 x 2 m at -0.38,1.25; longest 56 m; parts 6; growing 55 cm`, the same as before the save, and the order still `takes it`.
+
+## 7. Lifters phase 5b: partly (the arm's routing and Off verified; the order's parts never reach the tray; the station's pad not reached)
+
+- **An order routed through an arm.** `lifter net Industrial; wait 120; logi net Conveyor Router; logi order Button 2; wait 1800; logi chain; lifter`:
+  the map `8 lifter edges`, the press, pad and terminal `by a lifter`. **Fault 1 (the rig):** the order's chain asks
+  `Extrusion plate 10x10x10 laminate` (the Button's preset blank) and the rig's stock rack holds only `plate 30x30x50 laminate`, so
+  `nothing on the network makes it` and nothing moves. The rig (`LifterNetProbe`, `lifter net`) stocks the old blank; since sized parts phase 6
+  the Button is a preset of its own blank. Window tool only.
+  With 4 of the right blank put on the stock rack (`inv rack 4 Piece Rack#2 Extrusion plate 10x10x10 laminate`): two fetched (`dest Press#1 ... Fetched`),
+  ridden to the pick rack, `2 carries seen`, both in the Press's bay, the kit 40 -> 36, the press screen `Press, tray 2`. **Fault 2: the two Buttons stay
+  in the Press's own tray.** The arm stands `Idle NoPoint`, the press's queue is empty, the terminal's order stays `#1 0/2 Button: queued at the Press`
+  (30 s and 70 s after; the same on a joined client: `Button Queued "Extrusion plate 10x10x10 laminate 0/2 from stock"`, then the same carries).
+  The phase notes saw the Buttons carried from the press's out to the terminal's tray. Likely cause: since phase 6 the Button the press makes is the
+  catalogue preset part, not a run-time pressed key, and the arm's pick from a press's out, or the tray want (`TrayWant`,
+  `Source/Constructs/ConstructLifterNet.cs` 264), no longer matches it to the order; not traced (a builder's file this round). See again:
+  `lifter net Industrial; wait 120; inv rack 4 Piece Rack#2 Extrusion plate 10x10x10 laminate; logi order Button 2; wait 2700; logi chain; lifter; panel Press; craft Crafting Terminal`.
+- **An arm switched Off drops out of the routes.** `lifter set liftMode 3` (Off): `logi net Conveyor Router` from `6 nodes ... 8 lifter edges` (press, pad,
+  terminal `by a lifter`) to `3 nodes, 1 routers, 2 destinations, 0 lifter edges`; `liftMode 0` (Auto): 8 again. The joined client's map the same
+  (8, then 0) and its arm `Idle Off`. (`liftMode 1`, Station only, also drops all edges, as it should.)
+- **A station's large part to a pick pad: not reached.** On the showcase (`lifter place Industrial 1; lifter pickpad empty; inv rack 1 Long Piece Rack Heating Main 2 m;
+  ... station pick Heating Branch 3 m; station start`): `lifter pickpad` says `no arm, or the station has no job` before the start, and the
+  order reads `no route from the Long Piece Rack: collect it there`: no conveyor reaches a pad there, and the `lifter net` rig has no station.
+  A Router sending a station's order to a pad needs a scratch layout with both; not built (as the phase notes said).
+
+## Faults and gaps, in short
+
+| # | Where | What | See again |
+| --- | --- | --- | --- |
+| 1 | Lifters (`ConstructLifterNet.cs` ~264, or the arm's pick at a press out) | An arm-served press's Buttons stay in its tray; the terminal's order never fills | section 7 |
+| 2 | Window tool (`LifterNetProbe`, `lifter net`) | The rig stocks `plate 30x30x50`, the Button's blank is `plate 10x10x10` | section 7 |
+| 3 | Panel Designer on a joined client (`Program.SandboxPanelDesigner.cs` 31 to 33, likely) | Opens and closes at once; a client can't order | section 3 |
+| 4 | Showcase layout (`ProductionShowcase.cs`) | The Panel Former's blanks go to a rack with no way to the Laser Cutter; Line Console #1 is past the arena edge at `--spawn-at 140,0,-100` | sections 1, 3 |
+| 5 | Window tool | `logi take` and `fitpart` split on `|`, so no cut key can be named; `stock` reads nothing in a Storage Volume; `touch Down` doesn't scroll a Line Console | sections 1, 3 |
+| 6 | Blueprint loading | A scratch blueprint that doesn't build is dropped with no line in `callofslop.log` | section 5 |
+| 7 | Station (known) | The job's note says `queued at the Assembler` while the ordered part rides | section 1 |
+
+Not run, by the rules: the self-test. No code changed. The build passes.
