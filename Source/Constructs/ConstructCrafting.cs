@@ -1271,14 +1271,14 @@ public static class ConstructCrafting
                     var why = LooseRefusal(world, c, m) ?? WorkOrders.Queue(world, c, m, o.What with { Count = (ushort)ask, Made = 0 }); // (never asked of a machine that drops it loose)
                     if (why == null)
                     {
-                        ConstructLogisticsPlan.Ranked(world, c, net.Machines[i], (byte)(StockTargets.FeedClass(c, t) + 2)); // (a High terminal's line goes ahead of Normal ones: phase 5)
-                        ConstructLogisticsPlan.Asked(world, c, net, t, o, net.Machines[i], ask); // (the parts its recipe needs: asked of other machines)
+                        ConstructLogisticsPlan.Ranked(world, c, m, (byte)(StockTargets.FeedClass(c, t) + 2)); // (a High terminal's line goes ahead of Normal ones: phase 5)
+                        ConstructLogisticsPlan.Asked(world, c, net, t, o, m, ask); // (the parts its recipe needs: asked of other machines)
                         o.Asked += (ushort)ask;
                         ask = 0;
                         if (state == CraftState.Waiting)
-                            where = (ushort)net.Machines[i];
+                            where = (ushort)m;
                     }
-                    else if (refusal == null || Kin(c.DefOf(net.Machines[i]), o.What))
+                    else if (refusal == null || Kin(c.DefOf(m), o.What))
                         refusal = why;
                 }
                 if (ask > 0 && state == CraftState.Waiting)
