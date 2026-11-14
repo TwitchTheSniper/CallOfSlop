@@ -235,9 +235,7 @@ public sealed partial class Ui
             dl.AddRectFilled(new float2(tx - 3, ty - 1), new float2(tx + _pdWhyW + 3, ty + ImGui.GetTextLineHeight() + 1), PlanTextBack, 3 * _scale);
             dl.AddText(new float2(tx, ty), PlanBad, _pdCutWhy);
         }
-        if (hovered && !active)
-            ImGui.SetTooltip("Drag a cut to move it and its handles to size it: a 5 cm snap, 1 cm with Shift. Delete removes the selected cut."u8);
-        ImGui.TextColored(Dim, "Seen from above: the back edge on the left, the nose on the right. Grid 5 cm."u8);
+        ImGui.TextColored(Dim, "From above, back edge left. Drag a cut to move it, its handles to size it: 5 cm snap, 1 cm with Shift; Delete."u8);
     }
 
     /// <summary>Is the point (cm on the sheet) inside cut <paramref name="k"/>'s outline (an opening's box, a corner's triangle)?</summary>

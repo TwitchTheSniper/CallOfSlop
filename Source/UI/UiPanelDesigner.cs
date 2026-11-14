@@ -658,7 +658,7 @@ public sealed partial class Ui
         for (var k = 0; k < _pdCuts.Count; k++)
             key = key * 31 + _pdCuts[k].GetHashCode() + (k < _pdGlazed.Count && _pdGlazed[k] ? 7 : 0);
         var bd = DesignerPreview.Base;
-        key = key * 31 + (bd == null ? 0 : 1);
+        key = key * 31 + (bd == null ? 0 : 1) + (ImGui.IsMouseDown(ImGuiMouseButton.Left) ? 2 : 0);
         if (key == _pdTextKey)
             return;
         _pdTextKey = key;
@@ -791,7 +791,9 @@ public sealed partial class Ui
         if (HullLoft.CutRefusal(key) is { } why)
         {
             _pdCutWhy = char.ToUpperInvariant(why[0]) + why[1..] + ".";
-            _pdBadMask = BadCuts(shape);
+            // Which cuts the words are about: twelve keys read at most, so only once the mouse is up (a drag or a slider held marks the cut it moves, or
+            // all of them, and the release reads them again: the held state is in the readouts' key).
+            _pdBadMask = !ImGui.IsMouseDown(ImGuiMouseButton.Left) ? BadCuts(shape) : _pdDrag >= 0 && _pdDrag < _pdCuts.Count ? 1UL << _pdDrag : (1UL << _pdCuts.Count) - 1;
             return;
         }
         _pdKey = key;
@@ -946,7 +948,7 @@ public sealed partial class Ui
                     var hot = ImGui.IsItemHovered();
                     if (hot)
                         ImGuiSafe.WrappedTooltip(_pdTiles[k].Tip, 360 * _scale);
-                    RecipeTile(dl, _pdTiles[k], at, tw, th, icon, k == _pdKind, hot, setMark: false);
+                    RecipeTile(dl, _pdTiles[k], at, tw, th, icon, k == _pdKind && !_pdPlate, hot, setMark: false);
                 }
                 ImGui.Spacing();
                 ImGui.TextColored(PdHead, "Your designs"u8);
