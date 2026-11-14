@@ -161,9 +161,9 @@ public static partial class Program
                                 continue;
                             ConstructLifters.Frame(hb, l.Part, ld, out var lp, out var lr, out _);
                             var hw = lp + Vector3.Transform(l.Moved ? ConstructLifters.Pose(ld, l, ConstructLifters.AgeNow(l), out _) : ConstructLifters.RestOf(ld), lr); // (where the piece is now, as it is drawn)
-                            var ground = World.Map.GroundHeight(hw.X, hw.Z);
+                            var over = ConstructLifters.Altitude(hw, out var upAt); // (the ground under it along its up: a planetoid's curve, a terrain's floor)
                             var piece = l.Def != 0 ? ConstructParts.Def(l.Def) : null;
-                            WsSay(string.Create(ci, $"hands: {hb.DefOf(l.Part).Name} (body {hb.Id}): {l.State} {l.Why}, piece origin at {hw:0.00}, {hw.Y - ground:0.00} m over the ground under it{(piece != null ? $", holding {piece.Name} ({piece.BoundsMax.Y - piece.BoundsMin.Y:0.00} m tall)" : "")}, moves {l.Moves}"));
+                            WsSay(string.Create(ci, $"hands: {hb.DefOf(l.Part).Name} (body {hb.Id}): {l.State} {l.Why}, piece origin at {hw:0.00}, {over:0.00} m over the ground under it (up {upAt:0.00}{(World.Map.Planetoid != null ? $", planetoid {World.Map.Name}" : "")}){(piece != null ? $", holding {piece.Name} ({piece.BoundsMax.Y - piece.BoundsMin.Y:0.00} m tall)" : "")}, moves {l.Moves}"));
                         }
                 return true;
             case "cabto": // "cabto PART[#n]": seated in a Lifter Cab, the look turned toward that part (as the mouse turns it) and W held until the hook is within 0.25 m of over it (20 s at most)
