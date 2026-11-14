@@ -230,7 +230,9 @@ public static class LogicDisplays
 
     public static void Sign(ConstructWorld world, Construct c, int part, PanelDef panel, PanelCard card)
     {
-        if (!Live(c, part, card))
+        if (panel.Board)
+            Ink(c.Parts[part], c.Parts[part].D, card); // (a painted board needs no power: it reads the same with the battery flat)
+        else if (!Live(c, part, card))
             return;
         ref var p = ref c.Parts[part];
         card.State = PanelState.Idle;
