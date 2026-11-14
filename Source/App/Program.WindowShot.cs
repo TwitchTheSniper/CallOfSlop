@@ -210,7 +210,7 @@ public static unsafe partial class Program
                                 index = k;
                         if (index < 0)
                         {
-                            WsFail($"no blueprint \"{_wsBlueprint}\"");
+                            WsFail($"no blueprint \"{_wsBlueprint}\"{string.Concat(ConstructBuild.RefusedBlueprints.Select(r => $"; refused: {r}"))}"); // (a scratch blueprint refused at load says why)
                             return;
                         }
                         if (_wsSpawnAt is { } sp)
@@ -393,9 +393,23 @@ public static unsafe partial class Program
     /// <summary>The n-th part (from 1) of a name on the spawned blueprint ("Extruder#2"), or any body when nothing was spawned.</summary>
     private static (Construct? C, int Part) WsFind(Game g, string spec)
     {
+        Construct? only = null; // ("NAME@bN": on body N, past the spawned blueprint; "NAME@w": the newest wrecked loose one of that name)
+        if (spec.LastIndexOf("@b", StringComparison.Ordinal) is var ab and > 0 && ushort.TryParse(spec[(ab + 2)..], out var bid))
+            (only, spec) = (g.Constructs.Get(bid), spec[..ab]);
+        else if (spec.EndsWith("@w", StringComparison.Ordinal))
+        {
+            spec = spec[..^2];
+            foreach (var b in g.Constructs.Bodies)
+                if (b.PartCount == 1 && b.Parts[0].Broken && b.DefOf(0).Name.Equals(spec.Trim(), StringComparison.OrdinalIgnoreCase) && (only == null || b.Id > only.Id))
+                    only = b;
+            if (only == null)
+                return (null, -1);
+        }
         var hash = spec.LastIndexOf('#');
         var name = hash > 0 ? spec[..hash].Trim() : spec.Trim();
         var nth = hash > 0 && int.TryParse(spec[(hash + 1)..], out var n) ? n : 1;
+        if (only != null)
+            return WsNth(only, name, nth);
         if (WsSpawned(g) is { } s)
             return WsNth(s, name, nth);
         if (g.IsServer || g.Local is not { } me)
@@ -521,6 +535,8 @@ public static unsafe partial class Program
             return; // (cut parts: Program.WindowShotCuts.cs)
         if (WsGhostVerb(g, me, verb, arg))
             return; // (the blueprint ghost's actions: Program.WindowShotGhost.cs)
+        if (WsPlayVerb(g, me, verb, arg))
+            return; // (seats, the recycler, copy and paste, a part's numbers: Program.WindowShotPlay.cs)
         switch (verb)
         {
             case "wait":

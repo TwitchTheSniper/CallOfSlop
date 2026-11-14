@@ -326,11 +326,23 @@ public static class ConstructEngine
             if (ra != rb)
                 up[Math.Max(ra, rb)] = Math.Min(ra, rb);
         }
+        // A group of feed pieces alone (a fuel system or a booster left on a wrecked cylinder) is no engine: it takes no slot and says no "no crank".
+        Span<byte> kind = scratch.Take<byte>(n); // (by group root: 1 a feed piece, 2 a crank, cylinder or flywheel)
+        kind.Clear();
+        for (var i = 0; i < n; i++)
+            if (Joins(c, i))
+            {
+                var piece = c.Parts[i].D.Piece;
+                ref var k = ref kind[Find(up, i)];
+                k = piece is EnginePiece.Crank or EnginePiece.Cylinder or EnginePiece.Output ? (byte)2 : piece is EnginePiece.Fuel or EnginePiece.Boost && k == 0 ? (byte)1 : k;
+            }
         for (var i = 0; i < n; i++)
         {
             if (!Joins(c, i))
                 continue;
             var root = Find(up, i);
+            if (kind[root] == 1)
+                continue; // (orphaned feed pieces: EngineOf stays 0)
             if (c.EngineOf[root] == 0 && c.ModCount >= MaxEngines && Joins(c, root))
                 Caps.Hit("modular engines a construct", MaxEngines);
             if (c.EngineOf[root] == 0 && c.ModCount < MaxEngines)

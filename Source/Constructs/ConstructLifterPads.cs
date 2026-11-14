@@ -82,6 +82,24 @@ public static partial class ConstructLifters
         return StockTargets.Accepts(world, c, part, st, pd) ? null : "its stock target refuses it";
     }
 
+    /// <summary>
+    /// The lifter panel (any peer, 2 Hz): a loose piece resting over pad <paramref name="part"/>'s hold that the pad won't take, and why
+    /// ("a Drill Module on it: holds something: empty it first ..."), or null. A piece only passing, far or held says nothing.
+    /// </summary>
+    public static string? PadRefusedNote(ConstructWorld world, Construct c, int part)
+    {
+        if (part >= c.PartCount || !c.DefOf(part).IsLayDownPad || world.StoreOf(c, part) is not { } st)
+            return null;
+        Freeform.PartWorld(c, part, out var pp, out var pr);
+        var inv = Quaternion.Conjugate(pr);
+        var reach = c.Radius + Vector3.Distance(c.Pos, pp) + 2f;
+        foreach (var lo in world.Bodies)
+            if (lo != c && lo.PartCount == 1 && TakeInWhy(world, c, part, st, pp, inv, reach, lo) is { } why
+                && why is not ("not loose" or "someone has it" or "far or moving" or "not over the hold" or "not on the deck"))
+                return $"a {lo.DefOf(0).Name} on it: {why}";
+        return null;
+    }
+
     /// <summary>One pad: up to <paramref name="most"/> loose pieces over its hold go in. How many did.</summary>
     private static int PadTakeIn(ConstructWorld world, Construct c, int part, int most)
     {

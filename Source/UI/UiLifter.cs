@@ -22,6 +22,7 @@ public sealed partial class Ui
     private readonly int[][] _lfCounts = new int[ConstructLifters.MaxPoints][];
     private readonly int[] _lfKinds = new int[ConstructLifters.MaxPoints];
     private readonly string[][] _lfKindText = new string[ConstructLifters.MaxPoints][];
+    private readonly string?[] _lfNote = new string?[ConstructLifters.MaxPoints]; // (a pad's: a piece on it that it won't take, and why)
     private double _lfFilledAt;
     private int _lfFrom = -1, _lfKind = -1, _lfTo = -1, _lfCount = 1;
     private string _lfLook = "";
@@ -32,7 +33,7 @@ public sealed partial class Ui
 
     public (ushort Body, int Part) LifterTarget => (_lfBody, _lfPart);
     public int LifterPointCount => _lfN;
-    public string LifterPointText(int k) => k >= 0 && k < _lfN ? $"{k}: {_lfNames[k]}{(_lfKinds[k] > 0 ? " holds " + string.Join(", ", _lfKindText[k].Take(_lfKinds[k])) : "")}" : "";
+    public string LifterPointText(int k) => k >= 0 && k < _lfN ? $"{k}: {_lfNames[k]}{(_lfKinds[k] > 0 ? " holds " + string.Join(", ", _lfKindText[k].Take(_lfKinds[k])) : "")}{(_lfNote[k] is { } note ? " - " + note : "")}" : "";
 
     public void OpenLifter(ushort body, int part)
     {
@@ -54,6 +55,7 @@ public sealed partial class Ui
             _lfKindText[k] ??= new string[12];
             _lfNames[k] = ConstructLifters.PointName(world, _lfPoints[k]);
             _lfKinds[k] = ConstructLifters.Picks(_lfPoints[k].Kind) ? ConstructLifters.PointHolds(world, _lfPoints[k], _lfDefs[k], _lfCounts[k]) : 0;
+            _lfNote[k] = world.Get(_lfPoints[k].Body) is { } pb ? ConstructLifters.PadRefusedNote(world, pb, _lfPoints[k].Part) : null;
             for (var q = 0; q < _lfKinds[k]; q++)
                 _lfKindText[k][q] = $"{_lfCounts[k][q]} {ConstructParts.Get(_lfDefs[k][q])?.Name ?? "part"}";
         }
@@ -102,6 +104,8 @@ public sealed partial class Ui
                     ImGuiSafe.TextColored(Dim, _lfNames[k]);
                     if (_lfKinds[k] == 0)
                         ImGuiSafe.TextColored(Dim, "    (empty)");
+                    if (_lfNote[k] is { } note)
+                        ImGuiSafe.TextColored(StWarn, "    " + note); // (it lies there but can't be ordered: the pad's reason)
                     for (var q = 0; q < _lfKinds[k]; q++)
                     {
                         ImGui.PushID(k * 16 + q);
@@ -171,7 +175,7 @@ public sealed partial class Ui
                 if (_lfKind < 0 && (ConstructParts.Get(_lfDefs[auto.From][q])?.Name ?? "").Contains(auto.Kind, StringComparison.OrdinalIgnoreCase))
                     _lfKind = q;
             order = _lfFrom >= 0 && _lfFrom < _lfN && _lfKind >= 0 && _lfTo >= 0 && _lfTo < _lfN;
-            LifterSaid = order ? "ordered" : $"no such pick (from {auto.From}, kind {auto.Kind}, to {auto.To}; {_lfN} points)";
+            LifterSaid = order ? "ordered" : $"no such pick (from {auto.From}, kind {auto.Kind}, to {auto.To}; {_lfN} points){(auto.From >= 0 && auto.From < _lfN && _lfNote[auto.From] is { } why ? ": " + why : "")}";
         }
         if (order && _lfFrom >= 0 && _lfKind >= 0 && _lfTo >= 0)
             game.SandboxLifter(_lfBody, _lfPart, LiftOrderOp.Add, 0, _lfDefs[_lfFrom][_lfKind], _lfCount, _lfPoints[_lfFrom], _lfPoints[_lfTo]);
