@@ -60,3 +60,47 @@ Container on `+y0`), `VT Gas Rig` (the beam + a Fluid Tank set to hydrogen 100 %
   Ammo Container 0/2 chain 0 rank 4`. Process 2 (no blueprint): `loadworld VT4S; wait 30; timed; logi riders; logi chain; station await done; station`:
   `Ammo Container on 41 ... at 2.70 ... (order 2)` (the rider kept), the queue `Ammo Container 1/2 chain 0 rank 4` (the High terminal's rank
   kept), the build `Done "VT Ammo Rig" parts 2/2`, the terminal's order `InTray`.
+
+## 3. Laser Cutter phase 6: verified on the host; the joined client's glazed order not reached
+
+- **A glazed opening ordered** (the showcase's designer): `timed; touch Start @ Line Console#2; near Panel Designer 2; design open; design crown 0;
+  design width 45; design length 50; design cut r25,22,30,20,4; design cut glaze 0; design order; wait 60; esc; cutter feed Formed Panel (curve 30x20 c0 r0 t20 glass);
+  cutter await; wait 120; cutter feed Formed Panel (curve 50x45 c0 r0 t20 steel); cutter await; wait 600; logi chain; stock Piece Rack#5`:
+  `panes [1 x Cut Pane (r30,20,4 t20 glass)]`, the cutter queued the panel and the pane, cut the pane in 4.9 s and the panel in 5.0 s, both
+  in Piece Rack #5 (the cutter's), the designer's rows `Collect`. Blanks fed by hand, because on the showcase:
+  - **The cut panel's blank never reaches the cutter.** The chain asks the Panel Former (`#1 Formed Panel (curve 50x45 ...) for Laser Cutter#502 by
+    Panel Former#422`), the former makes it, and it rides `Panel Former#422 -> Long Piece Rack#423` (`dest Laser Cutter#502`, order 1): that
+    rack has no way on to the cutter, which is fed only by its own plate Extruder. Showcase layout (`Source/PartKit/Generators/ProductionShowcase.cs`),
+    the same gap as fix-ups 2's point 3. The glass blank has no maker at all (`the Extruder is fed metal`), as the phase 6 notes say.
+  - A 105 cm sheet can't be fed: `cutter feed Formed Panel (curve 100x105 c0 r0 t20 steel)`: `not put (ConveyorSmall)`, and its chain
+    reads `waiting on sheet 1.05 m wide: the widest Extruder here makes 0.5 m ...` (correct).
+- **The pane welded in.** No `--blueprint`: `inv drop Cut Pane (r30,20,4 t20 glass); wait 120; from Cut Pane (r30,20,4 t20 glass) 5,1,0; inv drop Cut Panel (curve 50x45 c0 r0 t20 steel | r25,22,30,20,4);
+  wait 120; fitpart Cut Pane (r30,20,4 t20 glass) | Cut Panel (curve 50x45 c0 r0 t20 steel | r25,22,30,20,4) o0; inv bodies; design parts`: `fitted`, one body of
+  2 parts, the pane at `-0.0100,0.0000,0.2500`, on `o0`. (The rack's pieces could not be taken: `logi take` and `fitpart` split on `|`, which every
+  cut key holds, so loose copies were dropped. A dropped pane under the ground at the arena's edge is lost at once; on open ground it stays.)
+- **The 105 cm panel's pane clear of its opening.** The same with `Cut Panel (curve 100x105 c0 r0 t20 steel | r50,52,40,30,5)` and
+  `Cut Pane (r40,30,5 t20 glass)`: fitted, `o0` and the pane both at x `-0.0100` (the opening's true middle -0.005; the pane 7 mm short
+  all round leaves 2 mm). Scratch blueprints of that panel with the pane on `o0` by `back`, flat and crowned (`c10`): `--check-vehicle`:
+  `coplanar faces between parts: 0 among 9 boxes, and 0 slivers` (15 boxes crowned, 0 and 0).
+- **The pane count in the designer.** `design cut glaze 0` then `glaze 1` on two equal openings: `panes [1 x ...]`, then `panes [2 x Cut Pane (r30,20,4 t20 glass)]`;
+  an opening across the panel's middle on a 45 cm sheet: `no opening there a pane fits`. The 499 cap's readout line was not read (the tool prints the pane list only).
+- **Joined client: not reached. The Panel Designer won't stay open on a joined client** in four runs (ports 28015 to 28019): `design await`
+  (aim and use, 400 tries) never opened it; `design open` printed `open` and the next line `design: closed; ... links 0 former(s); fits []; library 0`;
+  `near Panel Designer 1.5; use` left `designer closed`. So the client's ORDER sent nothing (host `cutter: ... orders 0`). The phase 6 notes saw a
+  client open it. Likely `DrawDesignerInMatch`'s close test (`Source/App/Program.SandboxPanelDesigner.cs` 31 to 33: `_mouseCaptured`, or the
+  local player not alive yet) on the client; not traced (the designer is a builder's file this round). See again: host
+  `wait 60; disown; design bring 1; wait 6000; cutter`, client `wait 1500; near Panel Designer 1.5; use; wait 30; ui`.
+
+## 4. Sized parts phase 6: verified (the recycler not driven)
+
+- **A world from before phase 6.** The commit before the merge (`19a8d9c5d`, `c34119294^1`) built in a scratch worktree. There:
+  `logi set Press|recipe|3` (`Pattern: gusset`), four pressed pieces dropped (`inv drop Pressed Part (engine.crank solid 45x45x65 steel)`, `(cylinder.cylinder pipe15
+  60x60x105 steel)`, `(barrel.plain round 10x10x70 steel)`, `(housing.housing hollow 45x45x115 steel)`; the preset keys of phase 6's list,
+  such as `piston.set round 10x10x20`, are already catalogue parts there), `saveworld OLD6`. Here: `loadworld OLD6; logi get Press|recipe; panel Press`:
+  25 bodies, the four pieces by the same keys, `recipe = 3`, `Pattern: gusset` (the saved pattern keeps its meaning).
+- **Size, numbers and mass**, `--press-part KEY` on both builds: identical boxes (drawn, solid), sockets, mass (70.31, 183.33, 2.75, 50.94 kg),
+  health, armour, bounds and the engine numbers; only the geometry hash of the crank, cylinder and barrel differs (`SpreadLike`), the housing's the same.
+- **Preset yield against cost:** `--press-part presets`: `Piston Set ... weighs 12 kg, more than its blank and bay 2 (6.79 kg): the recycler gives back 6.79 kg of it`,
+  the same for the Gear Set (1.33 of 6 kg) and Gun Barrel (1.96 of 4 kg); before phase 6 the same lines read `it recycles for more than it cost`.
+  `RecyclingTable.YieldOf` (`ConstructRecycling.cs` 197) caps at `CostCapOf`. **Not driven:** a wrecked preset part put in a Recycler's
+  intake (the window tool has no verb that sets a wreck in an intake).
