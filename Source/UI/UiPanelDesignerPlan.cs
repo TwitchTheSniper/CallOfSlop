@@ -48,6 +48,7 @@ public sealed partial class Ui
                 sb.Append($"; [{k}] {_pdCuts[k].Text}{((_pdBadMask >> k & 1) != 0 ? " RED" : "")}{(k < _pdGlazed.Count && _pdGlazed[k] ? " glazed" : "")}");
             if (_pdCutWhy.Length > 0)
                 sb.Append($"; why: {_pdCutWhy}");
+            sb.Append("; readouts [").Append(string.Join(" | ", _pdFits.Concat(_pdCutFits))).Append("]; ").Append(_pdNumbers.Replace('\n', ' '));
             return sb.ToString();
         }
     }

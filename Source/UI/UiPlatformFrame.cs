@@ -23,6 +23,9 @@ public sealed partial class Ui
     /// <summary>Use the backend's own NewFrame every frame (<c>--imgui-backend-frame</c>; the old path, for comparisons).</summary>
     public static bool BackendNewFrame;
 
+    /// <summary>The window tool drives the mouse through ImGui's event queue (its click and drag verbs): the real cursor outside the window is not fed over it.</summary>
+    public static bool ToolMouse;
+
     private double _uiTime = -1;
     private int _platformFrames;
 
@@ -55,7 +58,7 @@ public sealed partial class Ui
             if (io.WantSetMousePos)
                 window.CursorPos = new double2(io.MousePos.X, io.MousePos.Y);
             var c = window.CursorPos;
-            if (c.X < 0 || c.Y < 0 || c.X >= size.X || c.Y >= size.Y)
+            if (!ToolMouse && (c.X < 0 || c.Y < 0 || c.X >= size.X || c.Y >= size.Y))
                 io.AddMousePosEvent((float)c.X, (float)c.Y);
         }
         _mouseCursor!(); // the cursor shape (the backend's own, private, method: bound once)

@@ -768,6 +768,7 @@ public static unsafe partial class Program
                     WsFail($"click X,Y: \"{arg}\"");
                     return;
                 }
+                Ui.ToolMouse = true; // (from now the tool owns the mouse: a real cursor outside the window would undo its moves)
                 var io = Brutal.ImGuiApi.ImGui.GetIO();
                 io.AddMousePosEvent(px, py);
                 io.AddMouseButtonEvent(0, true);
@@ -784,6 +785,7 @@ public static unsafe partial class Program
                     WsFail($"drag X1,Y1 X2,Y2: \"{arg}\"");
                     return;
                 }
+                Ui.ToolMouse = true;
                 var dio = Brutal.ImGuiApi.ImGui.GetIO();
                 dio.AddMousePosEvent(x1, y1);
                 dio.AddMouseButtonEvent(0, true);

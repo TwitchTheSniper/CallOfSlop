@@ -702,7 +702,7 @@ public sealed partial class Ui
         {
             // A plate: its blank is the Extruder's, so the readouts are the plate's and the linked Extruders', never a former's.
             _pdNumbers = _pdCuts.Count > 0 && _pdCutWhy.Length == 0
-                ? $"{size.Z:0.00} x {size.X:0.00} x {size.Y:0.00} m, {bd.Mass:0.#} kg as cut\nBlank: {HullLoft.PanelLabel(_pdKey)}"
+                ? $"{size.Z:0.00} x {size.X:0.00} x {size.Y:0.00} m, {bd.Mass:0.#} kg as cut\nBlank: {PlateBlank[Extrusion.Prefix.Length..]}, {PlateMm / 10:0.#} cm thick, from an Extruder"
                 : $"Blank: {PlateBlank[Extrusion.Prefix.Length..]}, {PlateMm / 10:0.#} cm thick";
             if (_pdExtruders == 0)
             {
