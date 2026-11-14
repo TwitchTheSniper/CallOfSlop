@@ -295,9 +295,8 @@ public sealed partial class BuildingParts
         Concrete(bp, [kDoor, kCorner, kBack, kWest, kEast]);
         Roof(bp, 0, 32, 32, 16, Slab1);
         Lid(bp, 0, 32, 32, 16, Slab1, front: false);
-        var stack = Look(bp, bp.Put("Concrete Column 2.75 m", Cell(23, Slab1 + 1, 39), R0), MinWeathered, "concrete");
-        Look(bp, bp.Put("Concrete Column 2.75 m", Cell(23, Slab1 + 1 + WallH, 39), R0), MinSoot, "soot");
-        _ = stack;
+        var stack = Look(bp, bp.Put("Concrete Chimney 2.75 m", Cell(23, Slab1 + 1, 39), R0), MinWeathered, "concrete"); // (the range's stack: it smokes)
+        Look(bp, bp.Hang("Concrete Chimney 2.75 m", stack, "t00", "b00"), MinSoot, "soot");
         Door(bp, rc[0]);
         Door(bp, kDoor, "Steel Flush Door 1.5x2.25 m", MinSlate);
         Porch(bp, rc[0], "BLOCK 1 - CANTEEN");
@@ -461,8 +460,7 @@ public sealed partial class BuildingParts
         Concrete(bp, office);
         Roof(bp, 24, 8, 16, 16, Slab1);
         Roof(bp, 8, 8, 16, 16, Slab1); // (thrown out over the muster, on the first slab's edge, up to the cell block's wall)
-        var wLid = Lid(bp, 8, 8, 32, 16, Slab1, back: false);
-        Slogan(bp, wLid[1], "t8", "THE MINISTRY PROVIDES"); // (over the warden's office, to the gate)
+        Lid(bp, 8, 8, 32, 16, Slab1, back: false);
         Concrete(bp, [bp.Put("Concrete Fascia 4 m", Cell(39, Slab1, 25), RY180), bp.Put("Concrete Fascia Corner", Cell(41, Slab1, 25), RY180)], MinWeathered);
         Door(bp, office[1]);
         Porch(bp, office[1], "WARDEN");

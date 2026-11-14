@@ -16,10 +16,11 @@ public sealed partial class BuildingParts
     {
         var p = new BPart("Tannoy Mast", SectionSite, "A pole of horn loudspeakers: the Ministry's voice, at all hours.", tool: "wrench", color: StreetSteel);
         p.CBox(0, 0, 0, 2, 1, 2, MinWeathered); // the foot
-        p.FBox(0.2, 0.25, 0.2, 0.3, 3.2, 0.3); // the pole
-        p.FBox(0.16, 3.2, 0.16, 0.34, 3.26, 0.34, detail: true); // (its cap)
+        p.FBox(0.19, 0.25, 0.19, 0.31, 3.9, 0.31); // the pole (tall: from the street it is the tallest thing on the Records Office)
+        p.FBox(0.16, 3.9, 0.16, 0.34, 3.96, 0.34, detail: true); // (its cap)
+        p.FBox(-0.1, 3.3, 0.2, 0.6, 3.36, 0.3, detail: true); // (the cross-arm the cables run along)
         // The horns: a throat out from the pole and a wide mouth, each way, a little apart in height so no two share a plane.
-        foreach (var (dx, dz, y) in new[] { (0, -1, 2.9), (0, 1, 2.92), (-1, 0, 2.94), (1, 0, 2.96) })
+        foreach (var (dx, dz, y) in new[] { (0, -1, 3.6), (0, 1, 3.62), (-1, 0, 3.64), (1, 0, 3.66) })
         {
             double cx = 0.25 + dx * 0.05, cz = 0.25 + dz * 0.05;
             double tx = 0.25 + dx * 0.22, tz = 0.25 + dz * 0.22, mx = 0.25 + dx * 0.36, mz = 0.25 + dz * 0.36;
@@ -49,38 +50,40 @@ public sealed partial class BuildingParts
         return p.Stats(120, 300, 6, 4.0);
     }
 
-    /// <summary>A steel water tank, 2 by 2 m and 1.5 m deep, on four legs a metre high, banded, with a ladder up one side.</summary>
+    /// <summary>A steel water tank, 2 by 2 m and 1.5 m deep, on four legs 1.75 m high, banded, with a ladder up one side.</summary>
     private static BPart RoofWaterTank()
     {
         var p = new BPart("Roof Water Tank", SectionSite, "A tank on legs over a roof: the building's water, frozen till noon.", tool: "welder", color: StreetTank);
         foreach (var (x, z) in new[] { (0, 0), (7, 0), (0, 7), (7, 7) })
-            p.CBox(x, 0, z, x + 1, 4, z + 1, StreetSteel); // the legs
-        p.CBox(0, 4, 0, 8, 10, 8); // the tank
-        foreach (var y in new[] { 1.4, 2.0 }) // (its bands)
+            p.CBox(x, 0, z, x + 1, 7, z + 1, StreetSteel); // the legs (high: the sky shows under it)
+        p.CBox(0, 7, 0, 8, 13, 8); // the tank
+        foreach (var y in new[] { 2.15, 2.75 }) // (its bands)
             p.FBox(-0.015, y, -0.015, 2.015, y + 0.06, 2.015, StreetSteel, detail: true);
-        p.FBox(0.1, 2.5, 0.1, 1.9, 2.55, 1.9, StreetSteel, detail: true); // (the hatch's curb)
+        p.FBox(0.1, 3.25, 0.1, 1.9, 3.3, 1.9, StreetSteel, detail: true); // (the hatch's curb)
         foreach (var x in new[] { 0.7, 1.25 }) // the ladder's rails, up the front (-z)
-            p.FBox(x, 0.0, -0.2, x + 0.04, 2.6, -0.16, StreetSteel, detail: true);
-        foreach (var y in new[] { 0.5, 1.1, 1.7, 2.3 })
+            p.FBox(x, 0.0, -0.2, x + 0.04, 3.35, -0.16, StreetSteel, detail: true);
+        foreach (var y in new[] { 0.6, 1.4, 2.2, 3.0 })
             p.FBox(0.74, y, -0.19, 1.25, y + 0.03, -0.17, StreetSteel, detail: true);
         foreach (var (x, z) in new[] { (0, 0), (7, 0), (0, 7), (7, 7) })
             p.CSock($"b{x}{z}", (x, 0, z), "-y", must: true);
         return p.Stats(900, 1200, 10, 6.0);
     }
 
-    /// <summary>A hoist beam out over a dock: a plate on the lid's front (its back is +z), a yellow beam 1.8 m out, the trolley,
+    /// <summary>A hoist beam out over a dock: a plate on the lid's front (its back is +z), a yellow beam 3 m out under a tie, the trolley,
     /// the chain block and its hook.</summary>
     private static BPart LoadingHoist()
     {
         var p = new BPart("Loading Hoist", SectionSite, "A beam and a chain block out over the dock: crates up, crates down.", tool: "wrench", color: StreetHazard);
         p.FBox(0.0, 0.0, 0.2, 0.5, 0.75, 0.25, StreetSteel); // the plate
-        p.FBox(0.15, 0.55, -1.6, 0.35, 0.75, 0.2); // the beam
-        p.FBox(0.15, 0.48, -1.55, 0.35, 0.55, 0.2, detail: true); // (its bottom flange, a shade wider than nothing)
-        p.FBox(0.1, 0.4, -1.5, 0.4, 0.48, -1.2, StreetSteel, detail: true); // the trolley
-        p.FBox(0.23, -0.6, -1.38, 0.27, 0.4, -1.32, "#2c2e30", detail: true); // the chain
-        p.FBox(0.15, -0.9, -1.45, 0.35, -0.6, -1.25, StreetHazard, detail: true); // the block
-        p.FBox(0.22, -1.15, -1.37, 0.28, -0.9, -1.33, "#2c2e30", detail: true); // the hook's shank
-        p.FBox(0.22, -1.18, -1.37, 0.36, -1.12, -1.33, "#2c2e30", detail: true); // and its bill
+        p.FBox(0.15, 0.55, -2.8, 0.35, 0.75, 0.2); // the beam, well out past the lid
+        p.FBox(0.13, 0.75, -0.6, 0.37, 1.35, 0.2); // the king post over the plate
+        p.FBox(0.2, 1.3, -2.75, 0.3, 1.36, -0.6, StreetSteel, detail: true); // (the tie from its head to the beam's end)
+        p.FBox(0.2, 0.75, -2.75, 0.3, 1.3, -2.69, StreetSteel, detail: true);
+        p.FBox(0.1, 0.4, -2.5, 0.4, 0.55, -2.2, StreetSteel, detail: true); // the trolley
+        p.FBox(0.23, -1.0, -2.38, 0.27, 0.4, -2.32, "#2c2e30", detail: true); // the chain
+        p.FBox(0.15, -1.3, -2.45, 0.35, -1.0, -2.25, StreetHazard, detail: true); // the block
+        p.FBox(0.22, -1.55, -2.37, 0.28, -1.3, -2.33, "#2c2e30", detail: true); // the hook's shank
+        p.FBox(0.22, -1.58, -2.37, 0.36, -1.52, -2.33, "#2c2e30", detail: true); // and its bill
         p.Sock("back", [0.25 - H, 0.375 - H, 0.25 - H], "+z");
         return p.Stats(150, 400, 8, 4.0);
     }
@@ -90,12 +93,12 @@ public sealed partial class BuildingParts
     {
         var p = new BPart("Air Raid Siren", SectionSite, "A louvred drum on a mast: when it winds up, the guards turn out.", tool: "wrench", color: "#8a9196");
         p.CBox(0, 0, 0, 2, 1, 2, MinWeathered); // the foot
-        p.FBox(0.2, 0.25, 0.2, 0.3, 2.0, 0.3, StreetSteel); // the mast
-        p.FBox(0.05, 2.0, 0.05, 0.45, 2.36, 0.45); // the drum
-        p.FBox(0.035, 2.08, 0.035, 0.465, 2.27, 0.465, "#5d6366", detail: true); // (its louvres)
-        p.FBox(0.12, 2.1, -0.25, 0.38, 2.25, 0.05, detail: true); // the horns
-        p.FBox(0.12, 2.11, 0.45, 0.38, 2.26, 0.75, detail: true);
-        p.FBox(0.15, 2.36, 0.15, 0.35, 2.46, 0.35, StreetSteel, detail: true); // (the motor's cap)
+        p.FBox(0.19, 0.25, 0.19, 0.31, 3.0, 0.31, StreetSteel); // the mast, clear of the lid in profile
+        p.FBox(-0.05, 3.0, -0.05, 0.55, 3.5, 0.55); // the drum
+        p.FBox(-0.065, 3.1, -0.065, 0.565, 3.4, 0.565, "#5d6366", detail: true); // (its louvres)
+        p.FBox(0.08, 3.12, -0.45, 0.42, 3.38, -0.05, detail: true); // the horns
+        p.FBox(0.08, 3.13, 0.55, 0.42, 3.39, 0.95, detail: true);
+        p.FBox(0.12, 3.5, 0.12, 0.38, 3.62, 0.38, StreetSteel, detail: true); // (the motor's cap)
         p.CSock("b00", (0, 0, 0), "-y", must: true);
         p.CSock("b11", (1, 0, 1), "-y", must: true);
         return p.Stats(110, 300, 6, 3.0);

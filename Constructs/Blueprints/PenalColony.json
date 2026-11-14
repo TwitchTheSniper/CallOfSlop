@@ -469,40 +469,6 @@
       "finish": "concrete"
     },
     {
-      "part": "Roof Sign Frame 3 m",
-      "on": 56,
-      "socket": "t8",
-      "by": "b"
-    },
-    {
-      "part": "Sign Board 3 m",
-      "on": 61,
-      "socket": "sign",
-      "by": "back",
-      "text": [
-        "THE MINISTRY PROVIDES"
-      ],
-      "paint": "#8e2a22"
-    },
-    {
-      "part": "Bulkhead Light",
-      "on": 61,
-      "socket": "lamp0",
-      "by": "back",
-      "config": {
-        "colour": "#ffb347"
-      }
-    },
-    {
-      "part": "Bulkhead Light",
-      "on": 61,
-      "socket": "lamp1",
-      "by": "back",
-      "config": {
-        "colour": "#ffb347"
-      }
-    },
-    {
       "part": "Concrete Fascia 4 m",
       "on": 53,
       "socket": "k0",
@@ -526,7 +492,7 @@
     },
     {
       "part": "Wood Flush Door 1.5x2.25 m",
-      "on": 67,
+      "on": 63,
       "socket": "leaf",
       "by": "hang",
       "paint": "#2f5a3c",
@@ -542,7 +508,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 69,
+      "on": 65,
       "socket": "lamp",
       "by": "back",
       "config": {
@@ -551,7 +517,7 @@
     },
     {
       "part": "Sign Board 2 m",
-      "on": 69,
+      "on": 65,
       "socket": "sign",
       "by": "back",
       "text": [
@@ -656,8 +622,8 @@
       47
     ],
     [
-      80,
-      79
+      76,
+      75
     ]
   ]
 }

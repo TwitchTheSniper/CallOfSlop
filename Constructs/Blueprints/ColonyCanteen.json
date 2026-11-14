@@ -448,7 +448,7 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Column 2.75 m",
+      "part": "Concrete Chimney 2.75 m",
       "on": 48,
       "socket": "t7_7",
       "by": "b00",
@@ -456,7 +456,7 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Column 2.75 m",
+      "part": "Concrete Chimney 2.75 m",
       "on": 55,
       "socket": "t00",
       "by": "b00",
