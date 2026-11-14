@@ -58,7 +58,7 @@ public static unsafe partial class Program
     private static ushort _wsBody; // the spawned blueprint
     private static TextWriter? _wsStdout;
 
-    private const string WsActions = "aim PART[#n], near PART[#n] [m], from PART[#n] SIDE,UP,OUT, use, key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME], deposit [TIER], fill PART[#n] N MATERIAL, link FROM[#n] > TO[#m], saveload";
+    private const string WsActions = "aim PART[#n], near PART[#n] [m], from PART[#n] SIDE,UP,OUT, use, waitnear PART[#n] [m], key ACTION, touch LABEL[@PART#n], wheel N, wait N, tool NAME, mains off|on, panel PART[#n], shot [NAME], deposit [TIER], fill PART[#n] N MATERIAL, link FROM[#n] > TO[#m], saveload";
 
     /// <summary>Reads the flags (before the window): the size and a throwaway save folder are set here.</summary>
     private static bool WindowShotArgs(string[] args)
@@ -115,7 +115,7 @@ public static unsafe partial class Program
         s.Split(',') is [var x, var y, var z] && float.TryParse(x, System.Globalization.CultureInfo.InvariantCulture, out var a)
         && float.TryParse(y, System.Globalization.CultureInfo.InvariantCulture, out var b) && float.TryParse(z, System.Globalization.CultureInfo.InvariantCulture, out var c) ? new Vector3(a, b, c) : null;
 
-    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action) || WsTourKnown(action) || WsTalkKnown(action);
+    private static bool WsKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "design" or "extr" or "plate" or "fitpart" or "inv" or "fuel" or "cutter" or "put" or "side" or "walk" or "ray" or "guns" or "engines" or "bundle" or "drag" or "mousemove" or "station" or "lifter" or "aim" or "near" or "from" or "person" or "use" or "waitnear" or "key" or "touch" or "wheel" or "wait" or "tool" or "mains" or "panel" or "shot" or "deposit" or "fill" or "link" or "click" or "clickup" or "esc" or "ui" or "picker" or "bring" or "craft" or "disown" or "saveload" or "stock" or "feed" or "kit" or "poke" or "joints" or "timed" or "saveworld" or "loadworld" or "logi" || WsGhostKnown(action) || WsTourKnown(action) || WsTalkKnown(action);
 
     private static void WsSay(string s)
     {
@@ -375,6 +375,8 @@ public static unsafe partial class Program
         var feet = eye - (p.Eye - p.Position);
         if (Vector3.DistanceSquared(World.ClampToArena(feet), feet) > 0.01f)
             WsSay($"note: {feet:0.0} is outside {World.Map.Name}'s arena or under its ground: the player stops at the edge (a bigger map: --map)");
+        if (!g.IsServer && Vector3.Distance(feet, p.Position) > 1f && _wsClientFlown++ == 0)
+            WsSay("note: a joined client's player is the host's to place: a jump here is taken back. The host brings it (bring PART), or it walks (hold MoveForward 2; secs 2)");
         p.Teleport(feet);
     }
 
@@ -394,12 +396,93 @@ public static unsafe partial class Program
         var hash = spec.LastIndexOf('#');
         var name = hash > 0 ? spec[..hash].Trim() : spec.Trim();
         var nth = hash > 0 && int.TryParse(spec[(hash + 1)..], out var n) ? n : 1;
-        var bodies = WsSpawned(g) is { } s ? [s] : g.Constructs.Bodies;
-        foreach (var c in bodies)
-            for (var i = 0; i < c.PartCount; i++)
-                if (c.DefOf(i).Name.Equals(name, StringComparison.OrdinalIgnoreCase) && --nth == 0)
-                    return (c, i);
+        if (WsSpawned(g) is { } s)
+            return WsNth(s, name, nth);
+        if (g.IsServer || g.Local is not { } me)
+        {
+            foreach (var c in g.Constructs.Bodies)
+                if (WsNth(c, name, nth) is { C: not null } on)
+                    return on;
+                else
+                    nth -= WsCount(c, name);
+            return (null, -1);
+        }
+        // A joined client spawned nothing, and other bodies hold parts of the same names (a vehicle by the spawn has a Seat too): the n-th
+        // on the body nearest this player that has that many, so "Seat" is the host's buggy it was brought to, not the first in the list.
+        (Construct? C, int Part) best = (null, -1);
+        var bestD = float.MaxValue;
+        var holders = 0;
+        foreach (var c in g.Constructs.Bodies)
+            if (WsNth(c, name, nth) is { C: not null } on)
+            {
+                holders++;
+                var dist = Vector3.Distance(c.WorldCom, me.Position) - c.Radius;
+                if (dist < bestD)
+                    (best, bestD) = (on, dist);
+            }
+        if (holders > 1 && best.C != null && WsNoted.Add((best.C.Id, name)))
+            WsSay($"note: {holders} bodies hold \"{spec}\": the nearest, construct {best.C.Id} ({best.C.PartCount} parts, {MathF.Max(0, bestD):0.0} m away)");
+        return best;
+    }
+
+    /// <summary>
+    /// Where to aim at a part from this eye: its middle when the crosshair's ray meets the part there, else the first of 26 points over its box
+    /// (corners, edges, faces, pulled a tenth in) that it does meet, as a player leans to see a seat past a car's hood. A joined client stands
+    /// where the host brought it and can't move its eye to a clear view, so the middle alone was often behind another part.
+    /// </summary>
+    private static Vector3 WsSeenSpot(Game g, Vector3 eye, Construct c, int part, Vector3 spot)
+    {
+        bool Meets(Vector3 at)
+        {
+            var d = at - eye;
+            var len = d.Length();
+            if (len < 1e-3f)
+                return false;
+            d /= len;
+            var wall = World.RaycastWorld(eye, d, ConstructBuild.Reach + 1);
+            return g.Constructs.Raycast(eye, d, MathF.Min(wall, ConstructBuild.Reach + 1), out var h, look: true, noTracks: true) && h.Body == c && h.Part == part;
+        }
+        if (Meets(spot))
+            return spot;
+        c.PartBounds(part, out var mn, out var mx);
+        var mid = (mn + mx) * 0.5f;
+        var half = (mx - mn) * 0.45f;
+        c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
+        for (var x = -1; x <= 1; x++)
+            for (var y = 1; y >= -1; y--) // (the top first: a seat is seen from above)
+                for (var z = -1; z <= 1; z++)
+                {
+                    if (x == 0 && y == 0 && z == 0)
+                        continue;
+                    var at = t + Vector3.Transform(mid + half * new Vector3(x, y, z), q);
+                    if (Meets(at))
+                    {
+                        WsSay($"aim: the middle of {c.DefOf(part).Name} is hidden from here; aimed at a point of it in view");
+                        return at;
+                    }
+                }
+        WsSay($"aim: no point of {c.DefOf(part).Name} in view from {eye:0.0} (another part or the ground is in front)");
+        return spot;
+    }
+
+    private static readonly HashSet<(ushort, string)> WsNoted = [];
+    private static int _wsClientFlown;
+
+    private static (Construct? C, int Part) WsNth(Construct c, string name, int nth)
+    {
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i).Name.Equals(name, StringComparison.OrdinalIgnoreCase) && --nth == 0)
+                return (c, i);
         return (null, -1);
+    }
+
+    private static int WsCount(Construct c, string name)
+    {
+        var n = 0;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i).Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                n++;
+        return n;
     }
 
     /// <summary>Where a part is looked at: the middle of its first screen, else the middle of the part.</summary>
@@ -447,6 +530,13 @@ public static unsafe partial class Program
             {
                 var spec = verb == "near" && arg.LastIndexOf(' ') is var sp and > 0 && float.TryParse(arg[(sp + 1)..], System.Globalization.CultureInfo.InvariantCulture, out _) ? arg[..sp] : arg;
                 var (c, part) = WsFind(g, spec);
+                if (c == null && !g.IsServer && WsLiftWait(30))
+                {
+                    _wsQueue.EnqueueFront(action); // (a joined client: the host's bodies may not have reached it yet; looks again for 30 s)
+                    _wsWait = 30;
+                    return;
+                }
+                _wsLiftSince = 0;
                 if (c == null)
                 {
                     WsFail($"no part \"{spec}\"");
@@ -464,7 +554,7 @@ public static unsafe partial class Program
                     WsDumpPanels(g, c, part);
                     return;
                 }
-                WsLook(g, me.Eye, spot);
+                WsLook(g, me.Eye, WsSeenSpot(g, me.Eye, c, part, spot));
                 _wsWait = 3;
                 return;
             }
@@ -689,6 +779,30 @@ public static unsafe partial class Program
                             WsSay($"{verb}: body {b.Id}: {b.DefOf(i).Name} part {i}: Made {b.Parts[i].LineMade}");
                 }
                 _wsWait = 5;
+                return;
+            }
+            case "waitnear": // "waitnear PART[#n] [M]": the script waits (up to 90 s) until this player stands within M m (the use reach) of the part: a joined client waits for the host's "bring", or its own walk, before it aims
+            {
+                var cut = arg.LastIndexOf(' ');
+                var wm = 0f;
+                var hasM = cut > 0 && float.TryParse(arg[(cut + 1)..], System.Globalization.CultureInfo.InvariantCulture, out wm);
+                var within = hasM ? wm : ConstructBuild.UseReach;
+                var (nc, npart) = WsFind(g, hasM ? arg[..cut] : arg);
+                var gap = nc != null ? Vector3.Distance(me.Eye, WsPartSpot(nc, npart, out _)) : float.MaxValue;
+                if (gap > within && WsLiftWait(90))
+                {
+                    _wsQueue.EnqueueFront(action);
+                    _wsWait = 15;
+                    return;
+                }
+                _wsLiftSince = 0;
+                if (gap > within)
+                {
+                    WsFail($"waitnear: {(nc == null ? "no such part" : $"still {gap:0.0} m from it")} after 90 s (eye {me.Eye:0.0})");
+                    return;
+                }
+                WsSay($"waitnear: {gap:0.0} m from {nc!.DefOf(npart).Name} of construct {nc.Id}");
+                _wsWait = 10; // (the host's placing settles)
                 return;
             }
             case "use":
@@ -1523,6 +1637,12 @@ public static unsafe partial class Program
                 return;
             case "ui": // what is open and who has the mouse
                 WsSay($"ui: menus {(MenusOpen ? "open" : "closed")}, crafting {(Ui.CraftingOpen ? "open" : "closed")} ({Ui.CraftingTiles} tiles), designer {(Ui.DesignerOpen ? "open" : "closed")}, mouse {(_mouseCaptured ? "captured" : "free")}");
+                {
+                    // What the crosshair meets as the game's aim sees it, and the HUD's look line (a client's refused press says why here).
+                    var dir = g.LookDir(g.LookYaw, g.LookPitch);
+                    var hitOn = g.Constructs.Raycast(me.Eye, dir, MathF.Min(World.RaycastWorld(me.Eye, dir, ConstructBuild.Reach + 1), ConstructBuild.Reach + 1), out var uh, look: true, noTracks: true);
+                    WsSay($"ui: eye {me.Eye:0.0}, aim {(hitOn && uh.Part >= 0 && uh.Part < uh.Body.PartCount ? $"{uh.Body.DefOf(uh.Part).Name} part {uh.Part} of {uh.Body.Id} at {uh.Distance:0.00} m" : "nothing")}; look line \"{g.SandboxLookText}\"; seated {g.SandboxHands.Hand(me.Id).Seated}");
+                }
                 return;
             case "shot":
                 WsShot(arg.Length > 0 ? arg : $"{_wsShots:000}");

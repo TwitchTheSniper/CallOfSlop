@@ -452,6 +452,25 @@ public static class ConstructLogisticsPlan
         return got;
     }
 
+    private const string StrandedTail = " link a conveyor or an arm from it";
+
+    /// <summary>A store on the network where a piece claimed for this entry lies with no conveyor way on to its destination, or -1. Allocates nothing.</summary>
+    private static int Stranded(ConstructWorld world, Construct c, CraftNet net, in ChainEntry e)
+    {
+        var res = world.Reserve;
+        var owner = c.Parts[e.Dest].Store;
+        for (var i = 0; i < res.Count; i++)
+        {
+            ref readonly var r = ref res.Items[i];
+            if (r.Owner != owner || r.OwnerId != e.Id)
+                continue;
+            for (var j = 0; j < net.StoreN; j++)
+                if (c.Parts[net.Stores[j]].Store == r.Store)
+                    return ConstructCrafting.RouteTo(c, net.Stores[j], e.Dest) < 0 ? net.Stores[j] : -1;
+        }
+        return -1;
+    }
+
     /// <summary>One claimed piece leaves its store for the entry's destination (one a step an entry, as a terminal's fetch).</summary>
     private static void SendOne(ConstructWorld world, Construct c, CraftNet net, in ChainEntry e)
     {
@@ -646,7 +665,7 @@ public static class ConstructLogisticsPlan
             }
             var riding = Riding(world, c!, e);
             var held = world.Reserve.Held(c!.Parts[e.Dest].Store, e.Id);
-            if (e.Maker != NoPart && (e.Maker >= c.PartCount || !QueuedAt(c, e.Maker, e.Id)) && riding + held + e.Made < e.Asked)
+            if (e.Maker != NoPart && (e.Maker >= c.PartCount || !QueuedAt(c, e.Maker, e.Id)) && (riding + held + e.Made < e.Asked || held > 0 && !IsStock(e))) // (or its pieces are claimed in a store: the maker is done, Serve sends them or says why not)
             {
                 if (IsStock(e) && e.Depth == 1 && riding == 0)
                 {
@@ -692,6 +711,11 @@ public static class ConstructLogisticsPlan
                     FindMaker(world, c, net, ref e, left);
                     if (e.Maker == NoPart)
                         (e.Seen, e.Tried) = (Seen(world, c, net), world.ChainStepNo);
+                }
+                else if (left <= 0 && held > 0 && Stranded(world, c, net, e) is var lies and >= 0)
+                {
+                    if (!e.Reason.EndsWith(StrandedTail, StringComparison.Ordinal)) // (made once, not every step)
+                        e.Reason = $"the {ConstructParts.Get(e.Kind)?.Name} lies in the {c.DefOf(lies).Name}, which has no conveyor way to the {c.DefOf(e.Dest).Name}: carry it there, or{StrandedTail}";
                 }
                 else if (left <= 0)
                     e.Reason = ConstructLifters.PickBlocked(world, c, e.Dest, e.Kind) ?? ""; // (its pieces wait at a lifter's pick point: an arm that can't work now is named on its row, lifters phase 5)
@@ -891,6 +915,21 @@ public static class ConstructLogisticsPlan
     public static void Arrived(ConstructWorld world, Construct c, int dest, ushort tag, ConstructPartDef d)
     {
         var at = tag != 0 ? Find(world, tag) : -1;
+        if (at >= 0 && world.Chains[at].Body == c.Id && world.Chains[at].Dest != dest)
+        {
+            // A piece made for this link that a plain conveyor brought to another store (its maker's line ends at a rack with no way on: the
+            // Production Showcase's Panel Former into its Long Piece Rack). Claimed there for the link: else its maker's order ended with
+            // nothing riding, held or arrived, and Step asked the maker again for good (verification 2026-11-14b: a blank a minute into the
+            // rack, the Laser Cutter never cut). The claim goes on when a way is linked (SendOne); the row says why it waits (Serve).
+            // Not at a lifter's pick rack for it: AtPicks counts those as riding, and an arm never carries a claimed piece.
+            ref var e = ref world.Chains[at];
+            if (e.Kind == d.Id && e.Dest < c.PartCount && e.Made < e.Asked && world.StoreOf(c, dest) is { } st && !ConstructLifters.LiftsTo(c, dest, e.Dest)
+                && world.Reserve.Add(st, d.Id, 1, c.Parts[e.Dest].Store, e.Id))
+            {
+                world.CraftChanged(c);
+                return;
+            }
+        }
         if (at >= 0 && (world.Chains[at].Dest != dest || world.Chains[at].Body != c.Id))
             at = -1; // (a piece tagged for another machine that a plain conveyor brought here)
         for (var i = 0; i < world.ChainCount && at < 0; i++)
