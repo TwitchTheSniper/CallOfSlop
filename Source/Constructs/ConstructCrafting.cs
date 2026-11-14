@@ -849,7 +849,7 @@ public static class ConstructCrafting
             for (var e = 0; e < lm.LiftN; e++)
                 if (lm.Lifts[e].From == m)
                     return null; // (an arm lifts it from the die's floor and puts it on: lifters phase 5b)
-        return $"the {md.Name} drops what it makes beside it, with no conveyor to the tray: order it on the {md.Name}'s own panel and collect it there";
+        return $"the {md.Name} drops it loose, no conveyor to the tray: order it on its panel, collect it there";
     }
 
     /// <summary>Is a machine of the order's own kind, so its refusal is the one a player reads: a Press for a pressed part, an Assembler for a catalogue part, else an Extruder or a Former.</summary>
