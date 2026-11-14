@@ -138,6 +138,21 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
 - **Die Frames** (`"dieFrame": true`; Die Frame 0.5 x 1 m, Large Die Frame 1 x 2 m). The small Extruder starts with a 0.5 by 0.5 m die. Attach frames to it (and
   to each other) on any side: the die reaches across every working frame joined to it, up to 6 by 6 m, and its centre moves with
   them (`ConstructExtruder.Die`). The section is held to the die, and the look line says to add frames.
+- **Expansion pieces** (the user, 2026-11-13: build a bigger Extruder, or add pieces to it, to print bigger things; `ConstructExtruderGrowth.cs`,
+  made by `ExtrusionParts.Growth`). A piece counts only on a machine of its own size class, joined to it directly or through others of its kind, and not broken;
+  everything is read from the construct's parts and links (`ConstructExtruder.Reach`: the die and the longest piece in one walk), so a client agrees with the host
+  after one is welded on or shot off.
+  - **Die Extensions** (Medium 2 m, Large 4 m; `"dieExtension"`): welded to the machine's side on the die face's row of sockets (`-x.4.5` on the Medium), flush with
+    the die face (one standing further back doesn't count). Each adds its row on that side of the die, chained outward, up to the machine's `growSection` (the next
+    class's die: 16 and 32 m); the die's centre moves with them. The Capital takes none (32 m is `Extrusion.MaxSectionCm`).
+  - **Run-out Tables** (Small 8 m, Medium and Large 16 m; `"runOut"`): roller beds under the die on the machine's `outBed` socket (kind `runOut`: nothing else fits),
+    the next on the last one's far end. Each adds to the longest piece up to `growLength` (64, 128, 192 m); their tops stand below the die's foot so a piece rides over.
+    The Capital takes none (192 m is `Extrusion.MaxLengthCm`). The step walks the tables only within 1 m of the plain cap.
+  - **What would make it fit.** An order too wide or too long for the machine as built (`WorkOrders.Refusal`, the picker, the look line, the Panel Former's sheet
+    link) names an expansion piece on this machine first, then the smallest Extruder that takes it (`ConstructExtruder.WideFix`, `LongFix`, `Bigger`), then, for a
+    Panel Former's sheet, strips. The recipe picker says the die and the longest piece as built and what the pieces make of them; the screen's length bar reads the grown cap.
+  - **Cost**: each piece about 30% of the next machine's recipe (600 steel, 150 rubber and parts; tier of its class), so one row or table is cheaper than the next
+    Extruder and the whole jump to its size dearer (docs/sandbox/design/extruder-expansion-notes.md).
 - **Growing.** The piece is a part of the machine's own construct, linked to its `die` socket (kind `die`: nothing else fits), its origin
   at its base end, so it rides with the machine (a mothership included), counts in its mass and is solid. Everything is found from that link
   (`ProductOf`), so nothing has to be kept in step through renumbering, splits or the wire. At 10 Hz the step adds up

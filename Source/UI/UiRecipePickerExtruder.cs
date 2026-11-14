@@ -18,7 +18,7 @@ public sealed partial class Ui
     private ExtruderPick _exPick, _exSet; // the pick being made; the machine's settings when it opened (that tile says "set")
     private string[] _exNames = [];
     private string _exTitle = "";
-    private int _exDieW, _exDieH, _exTestSet;
+    private int _exDieW, _exDieH, _exLongCm, _exTestSet;
     private string _exLabel = "", _exDieText = "";
     private string? _exWhy;
     private ExtruderPick _exLabelOf = new(255, 0, 0, 0, 0);
@@ -68,6 +68,7 @@ public sealed partial class Ui
         var (dw, dh) = ExtruderPicks.DieCm(c, _rcpMachine); // (Die Frames welded on or shot off while it is open)
         _exDieW = dw;
         _exDieH = dh;
+        _exLongCm = ConstructExtruder.MaxLengthCm(c, _rcpMachine); // (and Run-out Tables)
         if (_rcpTestPick >= 0)
         {
             if (_rcpTestPick < _exNames.Length)
@@ -185,12 +186,14 @@ public sealed partial class Ui
             if (_exWhy != null)
                 _exWhy = Cap(_exWhy) + ".";
         }
-        var dieKey = _exDieW * 10000 + _exDieH;
+        var dieKey = HashCode.Combine(_exDieW, _exDieH, _exLongCm);
         if (dieKey != _exDieOf)
         {
             _exDieOf = dieKey;
             _exDieText = $"Its die makes up to {_exDieW / 100f:0.##} x {_exDieH / 100f:0.##} m"
-                + (_exDieW < (int)MathF.Round(d.ExtMaxSection.X * 100) ? $"; Die Frames on its face widen it to {d.ExtMaxSection.X:0.##} m." : ".");
+                + (ConstructExtruder.WidenWith(d) is { } widen && _exDieW < (int)MathF.Round(ConstructExtruder.MostSection(d).X * 100) ? $"; {widen} widen it to {ConstructExtruder.MostSection(d).X:0.##} m" : "")
+                + $". Pieces up to {_exLongCm / 100f:0.#} m"
+                + (ConstructExtruder.LengthenWith(d) is { } longer && _exLongCm < (int)MathF.Round(ConstructExtruder.MostLength(d) * 100) ? $"; {longer} make them {ConstructExtruder.MostLength(d):0.#} m." : ".");
             _exLabelOf = new ExtruderPick(255, 0, 0, 0, 0); // (the refusal follows the die)
         }
     }

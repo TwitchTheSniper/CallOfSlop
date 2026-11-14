@@ -197,18 +197,11 @@ public static class ConstructLogisticsPlan
         for (var i = 0; i < net.MachineN && frames == null; i++)
         {
             var d = c.DefOf(net.Machines[i]);
-            if (IsSheetExtruder(d) && w <= MathF.Round(d.ExtMaxSection.X * 100) && SheetThickCm <= MathF.Round(d.ExtMaxSection.Y * 100))
-                frames = $"weld Die Frames on the {d.Name} (its die reaches {d.ExtMaxSection.X:0.##} m with them)";
+            if (IsSheetExtruder(d) && w <= MathF.Round(ConstructExtruder.MostSection(d).X * 100) && SheetThickCm <= MathF.Round(ConstructExtruder.MostSection(d).Y * 100) && ConstructExtruder.WidenWith(d) is { } with)
+                frames = $"weld {with} on the {d.Name} (its die reaches {ConstructExtruder.MostSection(d).X:0.##} m with them)";
         }
         if (frames == null)
-        {
-            ConstructPartDef? best = null;
-            foreach (var d in ConstructParts.All)
-                if (IsSheetExtruder(d) && w <= MathF.Round(d.ExtMaxSection.X * 100) && SheetThickCm <= MathF.Round(d.ExtMaxSection.Y * 100)
-                    && (best == null || d.ExtMaxSection.X < best.ExtMaxSection.X))
-                    best = d;
-            frames = best == null ? "no Extruder makes it that wide" : $"build a {best.Name} (dies to {best.ExtMaxSection.X:0.##} m)";
-        }
+            frames = ConstructExtruder.Bigger(w, SheetThickCm, 0) is { } best ? ConstructExtruder.BuildText(best, false) : "no Extruder makes it that wide";
         var strips = widest >= Extrusion.MinSectionCm ? $", or set the Panel Former to make strips ({(w + widest - 1) / widest} across)" : "";
         var here = widest > 0 ? $"the widest Extruder here makes {widest / 100f:0.##} m" : "no Extruder here makes it";
         return $"{here}. {char.ToUpperInvariant(frames[0])}{frames[1..]}{strips}";
@@ -250,12 +243,12 @@ public static class ConstructLogisticsPlan
         {
             var m = net.Machines[i];
             var d = c.DefOf(m);
-            if (!IsSheetExtruder(d) || h > MathF.Round(d.ExtMaxSection.Y * 100))
+            if (!IsSheetExtruder(d) || h > MathF.Round(ConstructExtruder.MostSection(d).Y * 100))
                 continue;
             ConstructExtruder.Die(c, m, out _, out var die);
             if (h > MathF.Round(die.Y * 100) + 0.5f)
                 continue;
-            best = Math.Max(best, (int)MathF.Min(MathF.Round(d.ExtMaxSection.X * 100), MathF.Round(die.X * 100) + 0.5f) / Extrusion.StepCm * Extrusion.StepCm);
+            best = Math.Max(best, (int)MathF.Min(MathF.Round(ConstructExtruder.MostSection(d).X * 100), MathF.Round(die.X * 100) + 0.5f) / Extrusion.StepCm * Extrusion.StepCm);
         }
         return best;
     }
@@ -285,12 +278,12 @@ public static class ConstructLogisticsPlan
             var d = c.DefOf(m);
             if (!IsSheetExtruder(d))
                 continue;
-            if (w > MathF.Round(d.ExtMaxSection.X * 100) || h > MathF.Round(d.ExtMaxSection.Y * 100))
+            if (w > MathF.Round(ConstructExtruder.MostSection(d).X * 100) || h > MathF.Round(ConstructExtruder.MostSection(d).Y * 100))
                 continue;
-            ConstructExtruder.Die(c, m, out _, out var die);
+            ConstructExtruder.Reach(c, m, out _, out var die, out var longest);
             if (w > MathF.Round(die.X * 100) + 0.5f || h > MathF.Round(die.Y * 100) + 0.5f)
                 continue;
-            best = Math.Max(best, Math.Min(Extrusion.MaxLengthCm, (int)MathF.Round(d.ExtMaxLength * 100)));
+            best = Math.Max(best, Math.Min(Extrusion.MaxLengthCm, (int)MathF.Round(longest * 100)));
         }
         return best;
     }

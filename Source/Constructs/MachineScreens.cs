@@ -228,6 +228,7 @@ public static class MachineScreens
                 case ExtrudeStall.ConveyorCut: Say(card, PanelState.Fault, "Conveyor cut"); break;
                 case ExtrudeStall.NoOrders: Say(card, PanelState.Idle, "Waiting for orders"); break;
                 case ExtrudeStall.OrderMaterial: Say(card, PanelState.Wants, "Order needs other stock"); break;
+                case ExtrudeStall.OrderTooLong: Say(card, PanelState.Refused, "Order too long"); break;
                 default:
                     if (st.Busy)
                         Say(card, PanelState.Working, wheel ? "Forming" : "Extruding");
@@ -282,7 +283,7 @@ public static class MachineScreens
             }
             else
             {
-                var most = MathF.Min(d.ExtMaxLength, Extrusion.MaxLengthCm / 100f);
+                var most = ConstructExtruder.MaxLength(c, part);
                 card.AddFixed(3, on.ExKey.L / 100f, 2).Add(3, " of ").AddFixed(3, most, 0).Add(3, " m");
                 card.Bar = Math.Clamp(on.ExKey.L / 100f / MathF.Max(0.01f, most), 0, 1);
             }

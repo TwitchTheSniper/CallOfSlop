@@ -508,7 +508,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //      41 Assembling rows go (barrels and engine pieces); the recycler holds a preset part's yield to its press cost. No message changes.
     // 307: Inventories phase 4: the Line Layer's stroke and the Replacer's swap name their part by PartRef (a made part by its key), so a made
     //   part can be laid or fitted by kind.
-    public const ushort ProtocolVersion = 307;
+    // 308: Extruder expansion pieces: Die Extensions and Run-out Tables (new part files, ids move), an outBed socket on the Extruders and
+    //   SocketKind.RunOut; the grown die and length are read from the construct on each peer (no new bytes).
+    public const ushort ProtocolVersion = 308;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
