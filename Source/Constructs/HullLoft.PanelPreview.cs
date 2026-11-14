@@ -15,7 +15,7 @@ public static partial class HullLoft
     public static string PanelLabel(string name) =>
         PanelOf(name) is { } s ? $"{PanelPresets[s.Kind].Label} {s.L} x {s.W} cm, {s.Material}" : CutLabel(name) ?? (name.Length <= 40 ? name : name[..38] + "..");
 
-    /// <summary>"Door 110 x 120 cm, steel, 2 cuts" or "Cut plate 200 x 20 x 300 cm, steel, 1 cut" for a cut key; null for any other name.</summary>
+    /// <summary>"Cut door 110 x 120 cm, steel, 2 openings" or "Cut plate 200 x 20 x 300 cm, steel, 1 opening, 1 corner" for a cut key; null for any other name.</summary>
     public static string? CutLabel(string name)
     {
         if (!IsCutName(name))
@@ -25,14 +25,31 @@ public static partial class HullLoft
         var bar = name.IndexOf(" | ", start, StringComparison.Ordinal);
         if (bar < 0)
             return null;
-        var cuts = 1;
+        // Inventories phase 4: rows of one blank told apart by what was cut, openings and corners counted apart (the key is in the tooltip).
+        int openings = 0, corners = 0;
         for (var i = bar + 3; i < name.Length; i++)
-            if (name[i] == ' ')
-                cuts++;
+            if (i == bar + 3 || name[i - 1] == ' ')
+            {
+                if (name[i] == 'r')
+                    openings++;
+                else if (name[i] == 'm')
+                    corners++;
+            }
         var blank = name[start..bar];
-        var what = plate ? "Cut " + (blank.StartsWith("Extrusion ", StringComparison.Ordinal) ? blank[10..] : blank)
+        var what = plate ? "Cut " + PlateWords(blank.StartsWith("Extrusion ", StringComparison.Ordinal) ? blank[10..] : blank)
             : PanelOf(PanelPrefix + blank + ")") is { } b ? $"Cut {PanelPresets[b.Kind].Label.ToLowerInvariant()} {b.L} x {b.W} cm, {b.Material}" : "Cut panel";
-        return $"{what}, {cuts} cut{(cuts == 1 ? "" : "s")}";
+        var cut = openings > 0 && corners > 0 ? $"{openings} opening{(openings == 1 ? "" : "s")}, {corners} corner{(corners == 1 ? "" : "s")}"
+            : corners > 0 ? $"{corners} corner{(corners == 1 ? "" : "s")} cut" : $"{openings} opening{(openings == 1 ? "" : "s")}";
+        return $"{what}, {cut}";
+    }
+
+    /// <summary>A plate blank's words for a player: "plate 200x20x300 steel" as "plate 200 x 20 x 300 cm, steel"; anything else as it is.</summary>
+    private static string PlateWords(string blank)
+    {
+        var sp = blank.Split(' ');
+        if (sp.Length != 3 || sp[1].Split('x') is not { Length: 3 } dims || !Array.TrueForAll(dims, s => s.Length > 0 && s.All(char.IsAsciiDigit)))
+            return blank;
+        return $"{sp[0]} {dims[0]} x {dims[1]} x {dims[2]} cm, {sp[2]}";
     }
 
     public sealed class PanelPreview
