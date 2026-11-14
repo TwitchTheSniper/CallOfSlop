@@ -45,7 +45,9 @@ public static unsafe partial class Program
     private static long _wsDragBytes, _wsDragAt;
     private static float? _wsYaw, _wsPitch;
     private static Construct? _wsPlate; // (the "plate" step's target)
-    private static int _wsFrames = 45, _wsEvery, _wsStep, _wsWait, _wsShots, _wsCount, _wsLiftWaits;
+    private static int _wsFrames = 45, _wsEvery, _wsStep, _wsWait, _wsShots, _wsCount;
+    private static int _wsWaitSeen, _wsWaitFrames; // (WsWaiting: the wait being timed and the frames it has run)
+    private static long _wsWaitSince, _wsLiftSince, _wsSetDownSince; // (Stopwatch stamps: the wait's start, a polling verb's first look, the blueprint's order)
     private static long _wsJoinSeen; // (lifter stand others: when a joined player was first seen)
     private static double _wsStart;
     private static int _wsAwait; // frames a "station await" has waited
@@ -236,7 +238,9 @@ public static unsafe partial class Program
                             made = b;
                     if (made == null)
                     {
-                        if (++_wsWait > 600)
+                        if (_wsSetDownSince == 0)
+                            _wsSetDownSince = System.Diagnostics.Stopwatch.GetTimestamp();
+                        if (System.Diagnostics.Stopwatch.GetElapsedTime(_wsSetDownSince).TotalSeconds > 10)
                             WsFail($"the {_wsBlueprint} wasn't set down ({string.Join("; ", game.SandboxHands.Notices.Select(n => n.Item2))})");
                         return;
                     }
@@ -267,11 +271,8 @@ public static unsafe partial class Program
                 if (_session is { } sg && sg.SandboxNotice is { Length: > 0 } said && said != _wsNotice)
                     WsSay($"notice: {said}"); // (a refusal or a hint on the HUD)
                 _wsNotice = _session?.SandboxNotice ?? "";
-                if (_wsWait > 0)
-                {
-                    _wsWait--;
+                if (WsWaiting())
                     return;
-                }
                 if (_wsQueue.Count == 0)
                 {
                     _wsStep = 4;
@@ -297,6 +298,60 @@ public static unsafe partial class Program
                 _wsStep = 6;
                 return;
         }
+    }
+
+    /// <summary>
+    /// A wait on the simulation (<c>wait</c>, <c>put</c>, <c>walk</c>, the polling lifter and cutter verbs): N simulation ticks
+    /// (<see cref="World.TickRate"/> a second) of real time and at least min(N, 3) frames, so a script lasts as long at 60 fps as
+    /// uncapped (counted in frames, at 160 fps a host's "wait 600" ended before its client joined). Every other <c>_wsWait</c> is
+    /// frames, as before: the bench, the tour's <c>perf</c>, <c>design drag</c> and <c>station await</c> measure frames.
+    /// </summary>
+    private static void WsWaitTicks(int n)
+    {
+        _wsWait = n;
+        _wsWaitInTicks = true;
+    }
+
+    private static bool _wsWaitInTicks;
+
+    /// <summary>Once a frame in the script: true while the last wait runs (frames, or ticks after <see cref="WsWaitTicks"/>).</summary>
+    private static bool WsWaiting()
+    {
+        if (_wsWait <= 0)
+        {
+            _wsWaitSeen = 0;
+            _wsWaitInTicks = false;
+            return false;
+        }
+        if (!_wsWaitInTicks)
+        {
+            _wsWait--;
+            return true;
+        }
+        if (_wsWait != _wsWaitSeen)
+        {
+            _wsWaitSeen = _wsWait;
+            _wsWaitSince = System.Diagnostics.Stopwatch.GetTimestamp();
+            _wsWaitFrames = 0;
+        }
+        _wsWaitFrames++;
+        if (System.Diagnostics.Stopwatch.GetElapsedTime(_wsWaitSince).TotalSeconds * World.TickRate < _wsWait || _wsWaitFrames < Math.Min(_wsWait, 3))
+            return true;
+        _wsWait = 0;
+        _wsWaitSeen = 0;
+        _wsWaitInTicks = false;
+        return false;
+    }
+
+    /// <summary>A polling verb (it puts itself back on the queue) may look again: true until <paramref name="seconds"/> real seconds after its first look.</summary>
+    private static bool WsLiftWait(double seconds)
+    {
+        if (_wsLiftSince == 0)
+            _wsLiftSince = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (System.Diagnostics.Stopwatch.GetElapsedTime(_wsLiftSince).TotalSeconds < seconds)
+            return true;
+        _wsLiftSince = 0;
+        return false;
     }
 
     private static Construct? WsSpawned(Game g) => _wsBlueprint.Length > 0 ? g.Constructs.Get(_wsBody) : null;
@@ -373,7 +428,7 @@ public static unsafe partial class Program
         switch (verb)
         {
             case "wait":
-                _wsWait = int.TryParse(arg, out var w) ? Math.Max(0, w) : 30;
+                WsWaitTicks(int.TryParse(arg, out var w) ? Math.Max(0, w) : 30);
                 return;
             case "aim" or "near" or "panel":
             {
@@ -981,7 +1036,7 @@ public static unsafe partial class Program
                     _wsWait = 1;
                     return;
                 }
-                if (arg.Trim() == "holding" && _wsLiftWaits++ < 1200) // "lifter holding": waits (20 s at most) until a hand carries a piece to a fit
+                if (arg.Trim() == "holding" && WsLiftWait(20)) // "lifter holding": waits (20 s at most) until a hand carries a piece to a fit
                 {
                     var held = false;
                     foreach (var hb in g.Constructs.LiftBodies)
@@ -990,28 +1045,32 @@ public static unsafe partial class Program
                     if (!held)
                     {
                         _wsQueue.EnqueueFront("lifter holding");
-                        _wsWait = 1;
+                        WsWaitTicks(1);
                         return;
                     }
+                    _wsLiftSince = 0;
                 }
                 if (arg.Trim().StartsWith("place", StringComparison.Ordinal) && g.IsServer) // "lifter place [TIER] [SLOT]": TIER Scrap, Workshop, Industrial, Military or Plasma; SLOT 0 to 3 round the bay
                 {
                     var pw = arg.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
                     var (lc, lpart) = WsFind(g, "Building Station");
-                    WsSay("lifter: place: " + (lc == null ? "no Building Station" : LifterProbe.Place(g.Constructs, lc, lpart, pw.Length > 1 ? pw[1] : "", pw.Length > 2 && int.TryParse(pw[2], out var ps) ? ps : 0)));
+                    var builtIn = false; // (the Production Showcase has its own arms at slots 0 and 1: a placed one defaults to slot 2, beside them, not into them)
+                    for (var bi = 0; lc != null && bi < lc.PartCount && !builtIn; bi++)
+                        builtIn = lc.DefOf(bi).Lifter != null;
+                    WsSay("lifter: place: " + (lc == null ? "no Building Station" : LifterProbe.Place(g.Constructs, lc, lpart, pw.Length > 1 ? pw[1] : "", pw.Length > 2 && int.TryParse(pw[2], out var ps) ? ps : builtIn ? 2 : 0)));
                 }
                 var lw = arg.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 if (lw.Length > 0 && lw[0] == "joined" && g.IsServer) // "lifter joined" (host): waits (3 minutes at most) until a joined player has been in for 15 s
                 {
                     var inNow = g.Players.Values.Any(pl => pl.Bot == null && pl != me && pl.Alive);
                     _wsJoinSeen = inNow ? (_wsJoinSeen == 0 ? System.Diagnostics.Stopwatch.GetTimestamp() : _wsJoinSeen) : 0;
-                    if ((_wsJoinSeen == 0 || System.Diagnostics.Stopwatch.GetElapsedTime(_wsJoinSeen).TotalSeconds < 15) && _wsLiftWaits++ < 6000)
+                    if ((_wsJoinSeen == 0 || System.Diagnostics.Stopwatch.GetElapsedTime(_wsJoinSeen).TotalSeconds < 15) && WsLiftWait(180))
                     {
                         _wsQueue.EnqueueFront("lifter joined");
-                        _wsWait = 30;
+                        WsWaitTicks(30);
                         return;
                     }
-                    _wsLiftWaits = 0;
+                    _wsLiftSince = 0;
                 }
                 else if (lw.Length > 0 && lw[0] == "screen") // "lifter screen": every lifter's screen as this peer fills it (they stand on their own foundations, outside the blueprint "panel" searches)
                 {
@@ -1038,16 +1097,16 @@ public static unsafe partial class Program
                     var pspotOr = waitJoin ? null : LifterProbe.PathSpot(g.Constructs, out pinfo);
                     if (pspotOr is not { } pspot)
                     {
-                        if (_wsLiftWaits++ < 40000)
+                        if (WsLiftWait(180))
                         {
                             _wsQueue.EnqueueFront($"lifter {arg.Trim()}");
-                            _wsWait = waitJoin ? 30 : 1; // (a join takes seconds: look again every 30 frames)
+                            WsWaitTicks(waitJoin ? 30 : 1); // (a join takes seconds: look again every half second)
                             return;
                         }
                         WsFail($"lifter: no carry began (or no player joined) in time: {(waitJoin ? "nobody joined" : pinfo)}");
                         return;
                     }
-                    _wsLiftWaits = 0;
+                    _wsLiftSince = 0;
                     var who = lw.Length > 1 ? lw[1] : "me";
                     if (who != "others")
                     {
