@@ -69,6 +69,7 @@ public static unsafe class SkyRenderer
         uniform float uStars;
         uniform float uSpace;     // 1 on a planet map: no horizon, stars and the sun and moon all round
         uniform float uDip;       // a planetoid: sin of how far its limb is below level from the camera (the sky's horizon drops to it)
+        uniform float uAir;       // how much air is over the camera: 1 on the ground, 0 in space (AirAt): the sky goes black with stars
         uniform float uTime;
         uniform int uBodyCount;     // far bodies of a star system (SpaceSky, phase 4), farthest first
         uniform vec4 uBodyPos[8];   // direction, angular radius (radians)
@@ -109,6 +110,16 @@ public static unsafe class SkyRenderer
             if (uDip > 0.0)
                 d = normalize(vec3(d.x, (d.y + uDip) / (1.0 + uDip), d.z));
             vec3 col;
+            // Thin air high over a planetoid (uAir < 1): the sky goes black, keeping a band of air glowing over the limb
+            // (d.y = 0 there after the dip). The band's width follows the planetoid's size in view: 1 - dip shrinks with
+            // height as the planetoid does, so from orbit it is a thin rim, on the ground the whole horizon-to-zenith blend.
+            float airK = 1.0;
+            float limb = 0.0;
+            if (uAir < 1.0)
+            {
+                limb = exp(-max(d.y, 0.0) / max(0.3 * (1.0 - uDip), 0.002));
+                airK = mix(limb, 1.0, uAir);
+            }
         #if SKY_VARIANT >= 2
             // Image skies: a cube map or an equirectangular panorama, turned round the vertical axis.
             vec3 r = vec3(d.x * uRot.x - d.z * uRot.y, d.y, d.x * uRot.y + d.z * uRot.x);
@@ -117,15 +128,16 @@ public static unsafe class SkyRenderer
         #else
             vec3 t = texture(uPano, vec2(atan(r.x, -r.z) * 0.15915494 + 0.5, acos(clamp(r.y, -1.0, 1.0)) * 0.31830989)).rgb;
         #endif
-            col = uHdr > 0.5 ? vec3(1.0) - exp(-t * uExposure) : t * uExposure;
+            col = (uHdr > 0.5 ? vec3(1.0) - exp(-t * uExposure) : t * uExposure) * airK;
         #else
             float above = max(smoothstep(-0.015, 0.015, d.y), uSpace);
-            vec3 sky = SkyGradient(d); // (once: the clouds' haze uses it too)
+            vec3 sky = SkyGradient(d) * airK; // (once: the clouds' haze uses it too)
             col = sky;
 
         #if SKY_VARIANT == 0
             // Stars: a sparse hash on a grid of directions, twinkling a little; behind everything else.
-            if (uStars > 0.0 && (d.y > 0.0 || uSpace > 0.5))
+            float stars = max(uStars, (1.0 - uAir) * (1.0 - limb)); // (out of the air the stars show by day, but not through the limb's glow)
+            if (stars > 0.0 && (d.y > 0.0 || uSpace > 0.5))
             {
                 vec3 sp = d * 260.0;
                 float h = Hash13(floor(sp));
@@ -134,7 +146,7 @@ public static unsafe class SkyRenderer
                     float r = length(fract(sp) - 0.5);
                     float tw = 0.7 + 0.3 * sin(uTime * (1.3 + h * 4.0) + h * 300.0);
                     float b = 0.25 + 0.75 * fract(h * 917.0);
-                    col += vec3(0.88, 0.93, 1.0) * (smoothstep(0.36, 0.06, r) * b * tw * uStars * max(smoothstep(0.0, 0.3, d.y), uSpace));
+                    col += vec3(0.88, 0.93, 1.0) * (smoothstep(0.36, 0.06, r) * b * tw * stars * max(smoothstep(0.0, 0.3, d.y), uSpace));
                 }
             }
         #endif
@@ -160,7 +172,7 @@ public static unsafe class SkyRenderer
 
             // Sun: halo, then the disc.
             float sd = max(dot(dt, uSunPos), 0.0);
-            col += uSunGlow * (pow(sd, 700.0) * 0.9 + pow(sd, 48.0) * 0.22 + pow(sd, 6.0) * 0.06) * above;
+            col += uSunGlow * (pow(sd, 700.0) * 0.9 + (pow(sd, 48.0) * 0.22 + pow(sd, 6.0) * 0.06) * (0.2 + 0.8 * uAir)) * above; // (the wide glow is the air's)
             if (uSunDisc.w > 0.0)
             {
                 float aa = max(fwidth(sd), 1e-5);
@@ -288,12 +300,12 @@ public static unsafe class SkyRenderer
     public static readonly string[] UniformNames =
         ["uInvVP", "uHdr", "uExposure", "uRot", "uSunPos", "uSunDisc", "uSunGlow", "uMoonPos", "uMoon", "uStars", "uSpace", "uTime",
          "uCloud", "uCloudCol", "uCloudShade", "uWind", "uWind2", "uWeather", "uWxCam", "uDip",
-         "uBodyCount", "uBodyPos", "uBodyCol", "uBodySun", "uBodyRot", "uShipCount", "uShips", "uPixel", "uStarCount", "uStarPts", "uStarCol", "uNoise", "uCube", "uPano", "uWx0", "uWx1"];
+         "uBodyCount", "uBodyPos", "uBodyCol", "uBodySun", "uBodyRot", "uShipCount", "uShips", "uPixel", "uStarCount", "uStarPts", "uStarCol", "uAir", "uNoise", "uCube", "uPano", "uWx0", "uWx1"];
 
     // Indices into a program's uniform locations: UniformNames in order, up to the samplers (set once at link).
     private const int UInvVP = 0, UHdr = 1, UExposure = 2, URot = 3, USunPos = 4, USunDisc = 5, USunGlow = 6, UMoonPos = 7, UMoon = 8, UStars = 9,
         USpace = 10, UTime = 11, UCloud = 12, UCloudCol = 13, UCloudShade = 14, UWind = 15, UWind2 = 16, UWeather = 17, UWxCam = 18, UDip = 19,
-        UBodyCount = 20, UBodyPos = 21, UBodyCol = 22, UBodySun = 23, UBodyRot = 24, UShipCount = 25, UShips = 26, UPixel = 27, UStarCount = 28, UStarPts = 29, UStarCol = 30, ULocs = 31;
+        UBodyCount = 20, UBodyPos = 21, UBodyCol = 22, UBodySun = 23, UBodyRot = 24, UShipCount = 25, UShips = 26, UPixel = 27, UStarCount = 28, UStarPts = 29, UStarCol = 30, UAir = 31, ULocs = 32;
 
     /// <summary>The vertex shader source (for the self-test's shader check).</summary>
     public static string VertexSource => VertexSrc;
@@ -436,6 +448,7 @@ public static unsafe class SkyRenderer
                 Native.glUniform3f(Native.glGetUniformLocation(Programs[variant], name), haze.X, haze.Y, haze.Z);
         }
         Native.glUniform1f(Locs[l + UDip], map.Planetoid is { } dp ? PlanetRenderer.HorizonDip(dp, g.CameraPosition) : 0f);
+        Native.glUniform1f(Locs[l + UAir], SpaceSky.Away ? 0f : map.Planetoid is { } ap ? AirAt(map, ap, g.CameraPosition) : 1f);
         PerfCounters.Draw(3); // the perf window's counters (Source/Perf/PerfCounters.cs)
         Native.glDrawArrays(GL_TRIANGLES, 0, 3);
         DepthMask(true);
@@ -448,6 +461,21 @@ public static unsafe class SkyRenderer
         }
         if (timed)
             Timer.End();
+    }
+
+    /// <summary>
+    /// How much air is over <paramref name="cam"/> above a planetoid, for the sky's colour: 1 up to halfway to where space
+    /// starts (Game.SpaceEdge: the map's half size, or 500 m over the radius), falling to 0 (black, stars by day) by four
+    /// times that height. Glacier: space starts 2.6 km up, the sky darkens from 1.3 km and is black from 10.4 km.
+    /// </summary>
+    public static float AirAt(Map map, Planetoid pl, Vector3 cam)
+    {
+        var ground = (float)(pl.Radius + pl.Base);
+        var edge = MathF.Max(MathF.Max(map.HalfX, map.HalfZ), (float)pl.Radius + 500f) - ground;
+        if (edge <= 0f)
+            return 1f;
+        var t = Math.Clamp(((cam - pl.Center).Length() - ground - 0.5f * edge) / (3.5f * edge), 0f, 1f);
+        return (1f - t) * (1f - t);
     }
 
     /// <summary>
