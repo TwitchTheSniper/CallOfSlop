@@ -178,7 +178,7 @@ No blueprint; machines and pieces stood on the ground with `extr build NAME X Z`
 | 2 | Window tool (`LifterNetProbe`, `lifter net`) | The rig stocks `plate 30x30x50`, the Button's blank is `plate 10x10x10` | section 7 |
 | 3 | Panel Designer on a joined client (`Program.SandboxPanelDesigner.cs` 31 to 33, likely) | Opens and closes at once; a client can't order | section 3 |
 | 4 | Showcase layout (`ProductionShowcase.cs`) | The Panel Former's blanks go to a rack with no way to the Laser Cutter; Line Console #1 is past the arena edge at `--spawn-at 140,0,-100` | sections 1, 3 |
-| 5 | Window tool | `logi take` and `fitpart` split on `|`, so no cut key can be named; `stock` reads nothing in a Storage Volume; `touch Down` doesn't scroll a Line Console | sections 1, 3 |
+| 5 | Window tool | `logi take` and `fitpart` split on the bar character, which every cut key holds, so no cut key can be named; `stock` reads nothing in a Storage Volume; `touch Down` doesn't scroll a Line Console | sections 1, 3 |
 | 6 | Blueprint loading | A scratch blueprint that doesn't build is dropped with no line in `callofslop.log` | section 5 |
 | 7 | Station (known) | The job's note says `queued at the Assembler` while the ordered part rides | section 1 |
 
