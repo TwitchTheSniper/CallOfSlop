@@ -92,7 +92,7 @@ public static unsafe partial class Program
                 WsSay(string.Create(System.Globalization.CultureInfo.InvariantCulture,
                     $"extr: {(g.IsServer ? "host" : "client")} {d.Name}#{part}: die {die.X:0.##} x {die.Y:0.##} m at {centre.X:0.##},{centre.Y:0.##}; longest {longest:0.#} m; parts {c.PartCount}; growing {(product >= 0 ? c.DefOf(product).ExKey.L + " cm" : "none")}"));
                 var port = Array.Find(d.NamedPorts, x => x.Name == "Piece out");
-                WsSay($"extr: status{(w.StoreOf(c, part) is { } est ? ConstructExtruder.Status(c, part, est) : " none")}; Piece out opens {port.Opening.X:0.##} x {port.Opening.Y:0.##} m");
+                WsSay($"extr: status{(w.StoreOf(c, part) is { } est ? ConstructExtruder.Status(c, part, est) : " none")}; Piece out opens {port.Opening.X:0.##} x {port.Opening.Y:0.##} m; last blocked by: {ConstructExtruder.LastBlock}");
                 if (o.Key.W > 0)
                     WsSay($"extr: order {o.Key.W}x{o.Key.H}x{o.Key.L}: {WorkOrders.Refusal(w, c, part, o) ?? "takes it"}");
                 return true;

@@ -984,11 +984,13 @@ public static class ConstructLogisticsPlan
         if (first < 0)
             return null;
         ref var f = ref world.Chains[first];
-        var key = ((uint)f.Kind * 31 + f.Made) * 65599u ^ (uint)f.Asked << 16 ^ f.Maker ^ (uint)c.RebuildStamp * 2654435761u; // (the note is made again only when one of these changes: phase 5; the links too, for the short line's warning)
+        // (run 7: a maker or its machine held off by a wire into Run, a line console stopped, said nothing on the row: the player saw only "0/1")
+        var held = f.Maker != NoPart && f.Maker < c.PartCount && ConstructExtruder.RunHeld(c, f.Maker) ? f.Maker : f.Dest < c.PartCount && ConstructExtruder.RunHeld(c, f.Dest) ? f.Dest : -1;
+        var key = ((uint)f.Kind * 31 + f.Made) * 65599u ^ (uint)f.Asked << 16 ^ f.Maker ^ (uint)c.RebuildStamp * 2654435761u ^ (uint)(held + 1) << 24; // (the note is made again only when one of these changes: phase 5; the links too, for the short line's warning)
         if (f.NoteText == null || f.NoteKey != key)
         {
             var end = f.Maker == NoPart || f.Dest >= c.PartCount ? -1 : EndsShort(c, f.Maker, f.Dest);
-            (f.NoteText, f.NoteKey) = ($"{ConstructParts.Get(f.Kind)?.Name} {f.Made}/{f.Asked} {(f.Maker == NoPart ? "from stock" : $"from the {c.DefOf(f.Maker).Name}")}{(end >= 0 ? "; " + NoWayText(c, end, f.Dest) : "")}", key);
+            (f.NoteText, f.NoteKey) = ($"{ConstructParts.Get(f.Kind)?.Name} {f.Made}/{f.Asked} {(f.Maker == NoPart ? "from stock" : $"from the {c.DefOf(f.Maker).Name}")}{(held >= 0 ? $"; the {c.DefOf(held).Name} is held off by the wire into its Run (a line console stopped: press Start)" : "")}{(end >= 0 ? "; " + NoWayText(c, end, f.Dest) : "")}", key);
         }
         return f.NoteText;
     }

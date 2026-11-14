@@ -653,7 +653,10 @@ public static partial class ConstructExtruder
             var half = Vector3.Max(box.Half - new Vector3(0.01f), new Vector3(0.004f));
             var obb = new Obb(centre, half, turn);
             if (query.OverlapBox(obb, QueryFilter.All))
+            {
+                LastBlock = "the map (ground or a wall)";
                 return Path.Blocked;
+            }
             var near = world.Near(centre, half.Length() + 0.5f, _near);
             for (var k = 0; k < near.Count; k++)
             {
@@ -663,7 +666,10 @@ public static partial class ConstructExtruder
                 if (!Hits(other, other == c ? product : -1, obb))
                     continue;
                 if (other == c || other.Anchored || other.CarriedBy != 0)
+                {
+                    LastBlock = other == c ? "its own construct" : other.Anchored ? "an anchored construct" : "a carried construct";
                     return Path.Blocked;
+                }
                 var away = other.WorldCom - hub;
                 Push(other, away.LengthSquared() > 1e-4f ? Vector3.Normalize(away) : Vector3.UnitY, pushForce);
                 result = Path.Pushing;
@@ -676,6 +682,9 @@ public static partial class ConstructExtruder
     /// Is the room the new length takes free? The ground and fixed things stop it; a free body in the way is pushed along the
     /// path (<paramref name="pushForce"/>, newtons) and growth waits for it to go, so nothing is ever grown into.
     /// </summary>
+    /// <summary>For the window tool: what the last blocked step met (no allocation: fixed strings).</summary>
+    public static string LastBlock = "";
+
     private static Path PathClear(IWorldQuery query, ConstructWorld world, Construct c, int product, ConstructPartDef next, Vector3 origin, byte rot, byte seg, int len, int steps, float pushForce)
     {
         c.WorldFrame(seg, out var q, out var t);
@@ -692,7 +701,10 @@ public static partial class ConstructExtruder
             var half = Vector3.Max(box.Half with { Z = depth * 0.5f } - new Vector3(0.01f), new Vector3(0.004f));
             var obb = new Obb(centre, half, turn);
             if (query.OverlapBox(obb, QueryFilter.All))
+            {
+                LastBlock = "the map (ground or a wall)";
                 return Path.Blocked;
+            }
             var near = world.Near(centre, half.Length() + 0.5f, _near);
             for (var k = 0; k < near.Count; k++)
             {
@@ -702,7 +714,10 @@ public static partial class ConstructExtruder
                 if (!Hits(other, other == c ? product : -1, obb, own: other == c))
                     continue;
                 if (other == c || other.Anchored || other.CarriedBy != 0)
+                {
+                    LastBlock = other == c ? "its own construct" : other.Anchored ? "an anchored construct" : "a carried construct";
                     return Path.Blocked;
+                }
                 Push(other, axis, pushForce);
                 result = Path.Pushing;
             }
