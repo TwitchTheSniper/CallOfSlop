@@ -623,6 +623,7 @@ public sealed partial class BuildingParts : IPartGenerator
             "plain" => $"{m.Name} Floor {F(W)}x{F(D)} m",
             "hatch" => $"{m.Name} Hatch Floor {F(W)}x{F(D)} m",
             "stair" => $"{m.Name} Stair Floor {F(W)}x{F(D)} m",
+            "wide" => $"{m.Name} Wide Stair Floor", // (no size: "Reinforced ... 4x4 m" passes the 32 letters)
             _ => $"{m.Name} Stairwell Floor {F(W)}x{F(D)} m",
         };
         var desc = kind switch
@@ -630,6 +631,7 @@ public sealed partial class BuildingParts : IPartGenerator
             "plain" => "Floor on the walls' tops.",
             "hatch" => "Floor with a hatch for a Ship Ladder.",
             "stair" => "Floor with an opening over a Straight Stair.",
+            "wide" => "Floor with a 1.75 by 3.5 m opening over a Wide Stair.",
             _ => "Floor with a stairwell over a Half-Turn Stair.",
         };
         var p = new BPart(name, SectionFloors, $"{desc} {FloorWords[key]}", role: "frame", tool: m.Tool, material: m.Material, color: m.Colour);
@@ -645,6 +647,11 @@ public sealed partial class BuildingParts : IPartGenerator
         {
             holes = [(1, 4, 5, 16)];
             rects = [(0, 0, 16, 4), (0, 4, 1, 16), (5, 4, 16, 16)];
+        }
+        else if (kind == "wide")
+        {
+            holes = [(1, 2, 8, 16)];
+            rects = [(0, 0, 16, 2), (0, 2, 1, 16), (8, 2, 16, 16)];
         }
         else
         {
@@ -845,14 +852,18 @@ public sealed partial class BuildingParts : IPartGenerator
                     p.FBox(x0, top - 0.05, z0, x1, top, z1, treadColour, detail: true);
     }
 
-    private static BPart StraightStair(string key, int rise = Storey, int run = 12, int width = 4, string label = "Straight Stair")
+    /// <summary>A straight flight: <paramref name="count"/> steps (0: 8 for a storey, 4 for half) over <paramref name="run"/> cells,
+    /// <paramref name="width"/> cells wide. The Wide Stair (12 steps of 0.25 m over 3.5 m, 1.75 m wide) is the one a person walks up
+    /// standing without thinking about it: the old 1 m flight under a 1 m opening leaves a body 10 cm a side, and a head that drifts
+    /// meets the opening's edge (buildings.md "Laying out a building").</summary>
+    private static BPart StraightStair(string key, int rise = Storey, int run = 12, int width = 4, string label = "Straight Stair", int count = 0)
     {
         var s = StairMats[key];
-        var n = rise == Storey ? 8 : 4;
+        var n = count > 0 ? count : rise == Storey ? 8 : 4;
         var stepr = rise * C / n;
         var stepz = run * C / n;
         double Rm = rise * C, Dm = run * C, Wm = width * C;
-        var p = new BPart($"{s.Nm} {label} {F(Rm)} m", SectionStairs, $"{n} steps{(rise == Storey ? ": a storey, under a Stair Floor" : ": half a storey, onto a Landing")}.",
+        var p = new BPart($"{s.Nm} {label} {F(Rm)} m", SectionStairs, $"{n} steps{(rise != Storey ? ": half a storey, onto a Landing" : width > 4 ? ", easy and wide: a storey, under a Wide Stair Floor" : ": a storey, under a Stair Floor")}.",
             role: "frame", tool: s.Tool, material: s.Material, color: s.Colour);
         var steps = Enumerable.Range(0, n).Select(k => (stepz * k, stepz * (k + 1), stepr * (k + 1))).ToList();
         StepBoxes(p, steps, 0, Wm, key == "concrete", s.Dark);
@@ -1493,7 +1504,7 @@ public sealed partial class BuildingParts : IPartGenerator
             var folder = $"20-Floors/{k + 1}0-{FloorMats[key].Name}";
             foreach (var (nx, nz) in new[] { (8, 8), (8, 16), (16, 16) })
                 o.Add((folder, Slab(key, nx, nz)));
-            foreach (var kind in new[] { "hatch", "stair", "well" })
+            foreach (var kind in new[] { "hatch", "stair", "well", "wide" })
                 o.Add((folder, Slab(key, 16, 16, kind)));
         }
         foreach (var kind in new[] { "pad2", "pad4", "step", "deep" })
@@ -1510,7 +1521,10 @@ public sealed partial class BuildingParts : IPartGenerator
         o.Add(("40-Roofs", Gable("wood")));
         o.Add(("40-Roofs", Gable("concrete")));
         foreach (var key in new[] { "wood", "steel", "concrete" })
+        {
             o.Add(("50-Stairs", StraightStair(key)));
+            o.Add(("50-Stairs", StraightStair(key, run: 14, width: 7, label: "Wide Stair", count: 12)));
+        }
         foreach (var key in new[] { "steel", "concrete" })
         {
             o.Add(("50-Stairs", StraightStair(key, rise: 6, run: 6, label: "Stair Flight")));
@@ -1804,10 +1818,12 @@ public sealed partial class BuildingParts : IPartGenerator
         RoomCorners(bp, "Concrete", 0, g, 0, 16, 32, door: 1);
         bp.Put("Concrete Window Wall 4 m", Cell(0, g, 23), RY90); // west, along +z from z 8 to 23 (turned: its +x along -z)
         bp.Put("Concrete Window Wall 4 m", Cell(15, g, 8), RY270); // east
-        // The stair: along the west wall, rising to -z (from z 15 up to z 4), under the stair floor's opening.
-        bp.Put("Concrete Straight Stair 3 m", Cell(4, g, 15), RY180);
+        // The stair: a Wide Stair along the west wall, rising to -z (from z 4 m up to the front), under the wide opening; a
+        // person climbs it standing and steps off its head to the east (the 1 m Straight Stair under its 1 m opening
+        // leaves a standing head 10 cm, so it had to be crouched).
+        bp.Put("Concrete Wide Stair 3 m", Cell(7, g, 15), RY180);
         var f = g + WallH; // the first floor slab's row
-        bp.Put("Concrete Stair Floor 4x4 m", Cell(0, f, 0), R0);
+        bp.Put("Concrete Wide Stair Floor", Cell(0, f, 0), R0);
         bp.Put("Concrete Floor 4x4 m", Cell(0, f, 16), R0);
         var u = f + 1;
         RoomCorners(bp, "Concrete", 0, u, 0, 16, 32, window: 3);
@@ -1833,8 +1849,7 @@ public sealed partial class BuildingParts : IPartGenerator
         bp.Put("Sandbag Wall 2 m", Cell(0, 2, 31), RY90);
         bp.Put("Sandbag Wall 2 m", Cell(15, 2, 16), RY270);
         bp.Put("Sandbag Wall 2 m", Cell(15, 2, 24), RY270);
-        bp.Put("Sandbag Wall 2 m", Cell(2, 2, 30), R0);
-        bp.Put("Sandbag Wall 1 m", Cell(10, 2, 30), R0);
+        bp.Put("Sandbag Wall 2 m", Cell(2, 2, 30), R0); // (the back's east metre left open: the yard's way in, or the bunker is a box nobody reaches)
         var hb = bp.Hang("Door Hinge", bk, "hinge", "base");
         bp.Hang("Steel Flush Door 1.5x2.25 m", hb, "leaf", "hang");
         o.Add(bp);

@@ -1,0 +1,204 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Waiting Bench 2 m",
+  "description": "A slatted bench against the wall. Sit; the wait is part of the service.",
+  "group": "Interior",
+  "section": "Furniture",
+  "role": "seat",
+  "tool": "wrench",
+  "finish": "worn paint",
+  "mass": 30.0,
+  "health": 120,
+  "armour": 4,
+  "material": "steel",
+  "color": "#6b4a2e",
+  "attachSeconds": 2.0,
+  "seat": {
+    "at": [
+      0.0,
+      -0.5,
+      0.0
+    ]
+  },
+  "boxes": [
+    {
+      "min": [
+        -1.0,
+        0.0,
+        -0.225
+      ],
+      "max": [
+        -0.95,
+        0.42,
+        0.225
+      ],
+      "color": "#4a4d4f",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.95,
+        0.0,
+        -0.225
+      ],
+      "max": [
+        1.0,
+        0.42,
+        0.225
+      ],
+      "color": "#4a4d4f",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -1.0,
+        0.42,
+        -0.205
+      ],
+      "max": [
+        1.0,
+        0.45,
+        -0.095
+      ],
+      "color": "#6b4a2e"
+    },
+    {
+      "min": [
+        -1.0,
+        0.42,
+        -0.065
+      ],
+      "max": [
+        1.0,
+        0.45,
+        0.045
+      ],
+      "color": "#6b4a2e"
+    },
+    {
+      "min": [
+        -1.0,
+        0.42,
+        0.075
+      ],
+      "max": [
+        1.0,
+        0.45,
+        0.185
+      ],
+      "color": "#6b4a2e"
+    },
+    {
+      "min": [
+        -1.0,
+        0.55,
+        -0.221
+      ],
+      "max": [
+        1.0,
+        0.65,
+        -0.193
+      ],
+      "color": "#6b4a2e"
+    },
+    {
+      "min": [
+        -1.0,
+        0.72,
+        -0.225
+      ],
+      "max": [
+        1.0,
+        0.82,
+        -0.195
+      ],
+      "color": "#6b4a2e"
+    },
+    {
+      "min": [
+        -0.95,
+        0.45,
+        -0.223
+      ],
+      "max": [
+        -0.91,
+        0.74,
+        -0.197
+      ],
+      "color": "#4a4d4f",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.91,
+        0.45,
+        -0.223
+      ],
+      "max": [
+        0.95,
+        0.74,
+        -0.197
+      ],
+      "color": "#4a4d4f",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.82,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.41,
+        -0.225
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        1.0,
+        0.41,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.0,
+        0.41,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        -0.225
+      ],
+      "dir": "-z"
+    }
+  ]
+}

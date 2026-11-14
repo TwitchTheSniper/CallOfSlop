@@ -54,14 +54,14 @@
       "spin": 2
     },
     {
-      "part": "Concrete Straight Stair 3 m",
+      "part": "Concrete Wide Stair 3 m",
       "on": 0,
-      "socket": "t4_4",
-      "by": "b0_11",
+      "socket": "t7_15",
+      "by": "b0_0",
       "spin": 3
     },
     {
-      "part": "Concrete Stair Floor 4x4 m",
+      "part": "Concrete Wide Stair Floor",
       "on": 2,
       "socket": "t0_0",
       "by": "b0_0"

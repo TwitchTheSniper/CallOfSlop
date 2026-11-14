@@ -35,8 +35,12 @@ public sealed partial class BuildingParts
             Look(bp, s, paint, "concrete");
     }
 
-    /// <summary>A Text Sign by its back on a face socket (a small socket: a bigger sign needs an adapter), saying <paramref name="text"/>.</summary>
-    private static int Sign(Blueprint bp, int on, string sock, string text)
+    /// <summary>A notice in the colony's style (cream board, black letters, three lines), or a one-line cream strip where a
+    /// notice board's height doesn't fit (<paramref name="size"/> Narrow), by its back on a face socket.</summary>
+    private static int Sign(Blueprint bp, int on, string sock, string text, BoardSize size = BoardSize.Notice) => Board(size, bp, on, sock, text, BoardCream);
+
+    /// <summary>A lit Text Sign by its back on a face socket (the other factions' signs: screens, not boards), saying <paramref name="text"/>.</summary>
+    private static int TextSign(Blueprint bp, int on, string sock, string text)
     {
         if (text.Length > 60 || text.Any(c => c < ' ' || c > '~'))
             throw new InvalidOperationException($"{bp.Name}: sign text \"{text}\" (60 ASCII characters at most)");
@@ -44,6 +48,30 @@ public sealed partial class BuildingParts
         bp.Steps[s]["text"] = new List<object?> { text };
         return Look(bp, s, MinNavy);
     }
+
+    // The penal colony's signs (buildings.md "Signs"): signwritten boards, not screens. A block's name in cream on Ministry
+    // green; the rules in black on cream; a warning in cream on red. Every block has a number.
+    private const string BoardGreen = "#2f5a3c", BoardCream = "#d8d1b4", BoardRed = "#8e2a22";
+
+    private static int Board(BoardSize bl, Blueprint bp, int on, string sock, string text, string paint)
+    {
+        if (text.Length > 60 || text.Any(c => c < ' ' || c > '~'))
+            throw new InvalidOperationException($"{bp.Name}: sign text \"{text}\" (60 ASCII characters at most)");
+        var s = bp.Hang(bl switch { BoardSize.Wide => "Sign Board 3 m", BoardSize.Narrow => "Sign Board 2 m", _ => "Notice Board" }, on, sock, "back");
+        bp.Steps[s]["text"] = new List<object?> { text };
+        return Look(bp, s, paint);
+    }
+
+    private enum BoardSize { Wide, Narrow, Notice }
+
+    /// <summary>A block's name board, 3 m (or 2 m where it hangs on a canopy): "BLOCK 4 - REQUISITIONS".</summary>
+    private static int NameBoard(Blueprint bp, int on, string sock, string text, bool narrow = false) => Board(narrow ? BoardSize.Narrow : BoardSize.Wide, bp, on, sock, text, BoardGreen);
+
+    /// <summary>A notice of rules, black on cream, three lines.</summary>
+    private static int Notice(Blueprint bp, int on, string sock, string text) => Board(BoardSize.Notice, bp, on, sock, text, BoardCream);
+
+    /// <summary>A warning, cream on red, one line on a 2 m board.</summary>
+    private static int Warning(Blueprint bp, int on, string sock, string text) => Board(BoardSize.Narrow, bp, on, sock, text, BoardRed);
 
     /// <summary>A mains lamp by its back on a socket, glowing <paramref name="colour"/> (lit while the building's battery reaches it).</summary>
     private static int Lamp(Blueprint bp, string part, int on, string sock, string colour)
@@ -134,7 +162,7 @@ public sealed partial class BuildingParts
     {
         var c = Look(bp, bp.Hang("Concrete Canopy 2 m", doorCorner, "fa7_10", "back7"), MinWeathered, "concrete");
         Outside(bp, c, "lamp");
-        Sign(bp, c, "sign", name);
+        NameBoard(bp, c, "sign", name, narrow: true);
     }
 
     private static int Steps(Blueprint bp, int x, int z) => Look(bp, bp.Put("Concrete Entrance Steps 2 m", Cell(x, 0, z - 4), R0), MinWeathered, "concrete");
@@ -153,27 +181,28 @@ public sealed partial class BuildingParts
         const int U = Slab1 + 1; // an upper storey's first row
         var roof2 = U + WallH; // the roof slab's row over two storeys
 
-        // Ministry Records Office: the street's monument. An 8 by 8 m hall with the archive over it: a blind concrete box 12 m
-        // long that oversails the forecourt on three columns, so the queue stands under cover and the files stand over
-        // everybody. Paper wants no daylight: the archive has slots, the hall a high ribbon each side. The door is in the
-        // front wall under the overhang (x 2.25 to 3.75 m); inside, the counter crosses the hall at z 4 with the filing, the
-        // teleprinter and the stair up (along the west wall, staff only) behind or beside it; upstairs the tape cabinets and
-        // more filing. The west wall's inside is left bare for notices.
+        // Ministry Records Office (Block 2): the street's monument. An 8 by 8 m hall with the archive over it: a blind concrete
+        // box 12 m long that oversails the forecourt on three columns, so the queue stands under cover and the files stand over
+        // everybody. Paper wants no daylight: the archive has slots, the hall a high ribbon each side. The hall is split down its
+        // length by the counter (x 3.5 to 4 m): the public's side (east) is the door's (x 4 to 6 m in the front wall), with the
+        // benches along the east wall and the clock over them; the clerks' side (west) has the filing along the back, the
+        // teleprinter, and the Wide Stair up the west wall to the archive, its foot behind the counter. The way between them is
+        // the 1.1 m gap at the counter's back end, marked staff only. Upstairs the tape cabinets and more filing.
         var bp = new Blueprint("Ministry Records Office", "The Ministry of Slop's records office: a counter, a queue under the overhang, and the archive over both.", defs);
         Pads(bp, [(1, 0), (0, 1), (1, 1), (0, -1), (1, -1)]);
         var rc = RoomCorners(bp, "Concrete", 0, G, 0, 32, 32);
-        var doorWall = bp.Put("Concrete Door Wall 2 m", Cell(8, G, 0), R0);
-        var front = bp.Put("Concrete Slot Wall 2 m", Cell(16, G, 0), R0);
+        var front = bp.Put("Concrete Slot Wall 2 m", Cell(8, G, 0), R0);
+        var doorWall = bp.Put("Concrete Door Wall 2 m", Cell(16, G, 0), R0);
         var back = bp.Put("Concrete Wall 4 m", Cell(23, G, 31), RY180);
         var west = bp.Put("Concrete Ribbon Wall 4 m", Cell(0, G, 23), RY90);
         var east = bp.Put("Concrete Ribbon Wall 4 m", Cell(31, G, 8), RY270);
         Concrete(bp, rc.Concat([doorWall, front, back, west, east]));
         var cols = new[] { 0, 15, 30 }.Select(x => bp.Put("Concrete Column 2.75 m", Cell(x, G, -16), R0)).ToList();
         Concrete(bp, cols, MinWeathered);
-        Look(bp, bp.Put("Concrete Stair Floor 4x4 m", Cell(0, Slab1, 0), R0), MinWeathered, "concrete");
+        Look(bp, bp.Put("Concrete Wide Stair Floor", Cell(0, Slab1, 0), R0), MinWeathered, "concrete");
         foreach (var (x, z) in new[] { (16, 0), (0, 16), (16, 16), (0, -16), (16, -16) })
             Look(bp, bp.Put("Concrete Floor 4x4 m", Cell(x, Slab1, z), R0), MinWeathered, "concrete");
-        Look(bp, bp.Put("Concrete Straight Stair 3 m", Cell(4, G, 15), RY180), MinWeathered, "concrete");
+        Look(bp, bp.Put("Concrete Wide Stair 3 m", Cell(7, G, 15), RY180), MinWeathered, "concrete"); // (foot at z 4 m, top at the front)
         var uc = RoomCorners(bp, "Concrete", 0, U, -16, 32, 48);
         var uFront = bp.Put("Concrete Slot Wall 4 m", Cell(8, U, -16), R0);
         var uBack = bp.Put("Concrete Wall 4 m", Cell(23, U, 31), RY180);
@@ -184,31 +213,37 @@ public sealed partial class BuildingParts
         Lid(bp, 0, -16, 32, 48, roof2);
         Door(bp, doorWall);
         Piers(bp, ButtressPart, (west, "f0_5"), (west, "f8_5"), (east, "f0_5"), (east, "f8_5"));
-        Sign(bp, uFront, "f8_5", "MINISTRY OF SLOP");
-        Sign(bp, rc[1], "fb7_5", "RECORDS OFFICE - QUEUE HERE");
+        NameBoard(bp, uFront, "f8_5", "BLOCK 2 - MINISTRY RECORDS");
+        Notice(bp, rc[0], "fa7_5", "QUEUE HERE. QUEUE QUIETLY. QUEUE.");
         Outside(bp, doorWall, "f0_10");
-        Outside(bp, front, "f7_10");
-        // The hall: the counter, the clerk's things on it, the filing along the back wall, the teleprinter.
-        var counter = new[] { 4.0, 6.0 }.Select(x => Look(bp, bp.Put("Mess Table", [x, 0.375, 4.0], RY180), MinSlate, "wood")).ToList();
-        bp.Hang("Employee of the Month", counter[0], "top", "base");
-        bp.Hang("Teapot", counter[1], "top", "base"); // (the clerk's)
-        foreach (var s in new[] { "k0_0", "k7_0", "k15_0" })
-            bp.Hang("Filing Cabinet", back, s, "wall");
-        bp.Hang("Teleprinter", east, "k8_0", "wall");
-        bp.Hang("Cast Iron Radiator", west, "k0_0", "back");
-        bp.Hang("Wall Clock", doorWall, "k0_5", "back");
-        bp.Put("Office Plant", OnPad(1, 0, 1.75, 1.75), R0);
-        var hall = new[] { Strip(bp, west, "k8_10"), Strip(bp, east, "k8_10"), Strip(bp, back, "k8_10") };
+        Outside(bp, doorWall, "f7_10");
+        // The counter: three lengths down the hall from the front, their closed side to the public (east).
+        var counter = Look(bp, bp.Put("Service Counter 2 m", OnPad(0, 0, 3.75, 1.75), RY270), "#6b4a2e", "worn paint");
+        var c2 = bp.Hang("Service Counter 2 m", counter, "+x", "-x");
+        bp.Hang("Service Counter 2 m", c2, "+x", "-x");
+        bp.Hang("Employee of the Month", counter, "top", "base");
+        bp.Hang("Teapot", c2, "top", "base"); // (the clerk's)
+        Warning(bp, back, "k15_5", "STAFF ONLY BEYOND THIS POINT");
+        // The public's side: a bench along the east wall, the clock over it, the forms on the front wall.
+        bp.Hang("Waiting Bench 2 m", east, "k8_0", "wall");
+        bp.Hang("Wall Clock", east, "k8_5", "back");
+        bp.Hang("Cast Iron Radiator", rc[1], "ka7_0", "back");
+        Notice(bp, east, "k0_5", "FORMS ARE AVAILABLE ON REQUEST. REQUESTS ON FORM 1.");
+        // The clerks' side: the filing down the back wall, the teleprinter by the stair, a desk and its lamp.
+        bp.Hang("Teleprinter", back, "k15_0", "wall");
+        bp.Hang("Filing Cabinet", rc[3], "ka7_0", "wall");
+        bp.Hang("Cast Iron Radiator", back, "k0_0", "back"); // (the public's end of the back wall)
+        var hall = new[] { Strip(bp, west, "k8_10"), Strip(bp, east, "k0_10"), Strip(bp, back, "k8_10") };
         Switch(bp, doorWall, "k7_5", hall);
-        foreach (var x in new[] { 1.75, 3.75, 4.0 }) // the queue posts along the forecourt, under the overhang
-            bp.Put("Queue Post", OnPad(0, -1, x, 1.75), R0);
-        bp.Put("Pillar Box", OnPad(1, -1, 2.125, 1.75), R0);
+        foreach (var x in new[] { 4.0, 4.0 + 1.75 }) // the queue posts along the forecourt, under the overhang, to the door
+            bp.Put("Queue Post", OnPad(1, -1, x - 4.0, 1.75), R0);
+        bp.Put("Pillar Box", OnPad(0, -1, 2.125, 1.75), R0);
         // The archive: tape cabinets against the back wall, filing down the east side, strip lights and their switch.
-        foreach (var s in new[] { "k7_0", "k15_0" })
-            bp.Hang("Tape Cabinet", uBack, s, "wall");
+        foreach (var sock in new[] { "k7_0", "k15_0" })
+            bp.Hang("Tape Cabinet", uBack, sock, "wall");
         foreach (var w in uEast) // (the west side is the stairwell's)
-            foreach (var s in new[] { "k0_0", "k8_0" })
-                bp.Hang("Filing Cabinet", w, s, "wall");
+            foreach (var sock in new[] { "k0_0", "k8_0" })
+                bp.Hang("Filing Cabinet", w, sock, "wall");
         var archive = new[] { Strip(bp, uEast[0], "k8_10"), Strip(bp, uEast[1], "k8_10") };
         Switch(bp, uBack, "k0_5", archive);
         bp.Put("Union Flag", [6.0, (roof2 + 0.5) * C, 6.0], R0);
@@ -252,7 +287,7 @@ public sealed partial class BuildingParts
         _ = stack;
         Door(bp, rc[0]);
         Door(bp, kDoor, "Steel Flush Door 1.5x2.25 m", MinSlate);
-        Porch(bp, rc[0], "CANTEEN");
+        Porch(bp, rc[0], "BLOCK 1 - CANTEEN");
         Steps(bp, 0, 0);
         Piers(bp, ButtressPart, (west, "f0_5"), (west, "f8_5"), (east, "f0_5"), (east, "f8_5"));
         Piers(bp, FinPart, (front, "f0_5"), (front, "f8_5"), (front, "f15_5"));
@@ -278,11 +313,12 @@ public sealed partial class BuildingParts
         Look(bp, bp.Hang("Battery", east, "k0_10", "-z"), MinSlate);
         o.Add(bp);
 
-        // Colony Infirmary: long and low, 4 by 8 m, one ward down its length. The weather side (east) is a blank wall on
-        // three buttresses; the west has a high ribbon over the beds, so the sick get daylight and no draught. Triage is at
-        // the door (the medical station), the two beds beyond it, and the medicine cabinet and the patients' files on the
-        // blank wall at the far end, furthest from the door.
-        bp = new Blueprint("Colony Infirmary", "The penal colony's infirmary: triage at the door, a ward of two beds and the medicine cabinet.", defs);
+        // Colony Infirmary (Block 3): long and low, 4 by 8 m, one ward down its length. The weather side (east) is a blank wall
+        // on three buttresses; the west has a high ribbon over the beds, so the sick get daylight and no draught. The door is in
+        // the front's west half: triage is the medical station just inside it, on the east side, so the first thing anyone sees
+        // is the nurse's couch. The beds stand along the west wall under the ribbon, the aisle runs down the east side of them,
+        // and the medicine cabinet and the patients' files are on the blank wall at the far end, furthest from the door.
+        bp = new Blueprint("Colony Infirmary", "The penal colony's infirmary: triage at the door, a ward of iron beds and the medicine cabinet.", defs);
         Pads(bp, [(0, 1)]);
         rc = RoomCorners(bp, "Concrete", 0, G, 0, 16, 32, door: 0);
         west = bp.Put("Concrete Ribbon Wall 4 m", Cell(0, G, 23), RY90);
@@ -291,27 +327,30 @@ public sealed partial class BuildingParts
         Roof(bp, 0, 0, 16, 32, Slab1);
         Lid(bp, 0, 0, 16, 32, Slab1);
         Door(bp, rc[0]);
-        Porch(bp, rc[0], "INFIRMARY");
+        Porch(bp, rc[0], "BLOCK 3 - INFIRMARY");
         Steps(bp, 0, 0);
         Piers(bp, ButtressPart, (east, "f0_5"), (east, "f8_5"), (east, "f15_5"));
         Piers(bp, FinPart, (west, "f0_5"), (west, "f8_5"));
-        Sign(bp, east, "k15_5", "FORM 27B: NOTICE OF INTENT TO BE ILL");
-        Look(bp, bp.Put("Medical Station", OnPad(0, 0, 2.0, 2.0), RY90), MinWhite);
-        bp.Put("Bunk", OnPad(0, 1, 2.0, 0.0), RY90);
-        bp.Put("Bunk", OnPad(0, 1, 2.0, 1.75), RY90);
+        Notice(bp, west, "k15_5", "FORM 27B: NOTICE OF INTENT TO BE ILL");
+        Warning(bp, rc[1], "kb7_5", "NO MALINGERING");
+        Look(bp, bp.Put("Medical Station", OnPad(0, 0, 2.75, 2.75), R0), MinWhite); // (triage: by the door, its foot to the ward)
+        foreach (var sock in new[] { "k8_0", "k0_0" }) // (the ward: z 3 to 7 m, under the ribbon)
+            Look(bp, bp.Hang("Iron Bed", west, sock, "wall"), MinWhite, "worn paint");
         Look(bp, bp.Hang("Medicine Cabinet", east, "k8_5", "back"), MinWhite);
-        Look(bp, bp.Hang("Filing Cabinet", east, "k0_0", "wall"), MinWhite);
-        bp.Hang("Cast Iron Radiator", west, "k8_0", "back");
+        Look(bp, bp.Hang("Filing Cabinet", east, "k15_0", "wall"), MinWhite);
+        bp.Hang("Cast Iron Radiator", rc[2], "ka7_0", "back");
         bp.Hang("Wall Clock", west, "k8_5", "back");
         Switch(bp, rc[0], "kb7_5", Strip(bp, west, "k0_10"), Strip(bp, west, "k15_10"));
         Look(bp, bp.Hang("Battery", east, "k0_10", "-z"), MinSlate);
         o.Add(bp);
 
-        // Requisitions Store: a store is a dock and a counter. The roof runs 4 m out over a loading dock at lorry-bed
-        // height (the pads), on two columns, with steps up one end; goods and people both stop at the counter in the wide
-        // opening and nobody but the storekeeper goes in. The store behind has slots, not windows: light, and nothing
-        // passed out through them. The form number is on the back wall.
-        bp = new Blueprint("Requisitions Store", "The Ministry's requisitions store: a covered loading dock, a counter and the shelves behind it.", defs);
+        // Requisitions Store (Block 4): a store is a dock and a counter. The roof runs 4 m out over a loading dock at lorry-bed
+        // height (the pads), on two columns, with steps up one end and the crates waiting on the other. The goods door (the
+        // garage opening, x 2 to 6 m) stands open with nothing in it: inside, the issue counter runs across the store 1.3 m in
+        // from the front (z 1.45 to 2.05 m), so whoever comes in for a form stands in the strip in front of it; the storekeeper's
+        // way round is the gap at its east end, marked staff only. Behind it the shelving stands against the back wall with an
+        // aisle in front of it, the files against the west wall. Slots, not windows: light, and nothing passed out through them.
+        bp = new Blueprint("Requisitions Store", "The Ministry's requisitions store: a covered loading dock, an issue counter across the store and the shelving behind it.", defs);
         Pads(bp, [(1, 0), (0, -1), (1, -1)]);
         rc = RoomCorners(bp, "Concrete", 0, G, 0, 32, 16);
         front = bp.Put("Concrete Garage Wall 4 m", Cell(8, G, 0), R0);
@@ -323,16 +362,21 @@ public sealed partial class BuildingParts
         var lid = Lid(bp, 0, -16, 32, 32, Slab1);
         Steps(bp, 8, -16);
         Piers(bp, ButtressPart, (back, "f0_5"), (back, "f8_5"), (back, "f15_5"));
-        Sign(bp, lid[0], "f15", "REQUISITIONS"); // (on the lid's front, over the dock's middle)
-        Sign(bp, back, "k8_5", "ALL ISSUES ON FORM R-12, IN TRIPLICATE");
+        NameBoard(bp, lid[0], "f15", "BLOCK 4 - REQUISITIONS"); // (on the lid's front, over the dock's middle)
         Outside(bp, front, "f0_10");
         Outside(bp, front, "f15_10");
-        Look(bp, bp.Put("Mess Table", [4.0, 0.375, 0.0], R0), MinSlate, "steel"); // the counter, in the opening
-        Look(bp, bp.Put("Parts Shelf", OnPad(0, 0, 2.0, 2.0), RY180), MinSlate);
-        Look(bp, bp.Put("Parts Shelf", OnPad(1, 0, 2.0, 2.0), RY180), MinSlate);
-        bp.Hang("Filing Cabinet", back, "k0_0", "wall");
-        bp.Hang("Teleprinter", back, "k15_0", "wall");
-        bp.Hang("Wall Clock", back, "k15_5", "back");
+        // The counter: three lengths from the west wall, their closed side to the door.
+        var ctr = Look(bp, bp.Put("Service Counter 2 m", OnPad(0, 0, 1.75, 1.75), R0), "#6b4a2e", "worn paint");
+        var ctr2 = bp.Hang("Service Counter 2 m", ctr, "+x", "-x");
+        bp.Hang("Service Counter 1.5 m", ctr2, "+x", "-x"); // (the storekeeper's way round: 1.4 m at the east end)
+        bp.Hang("Teapot", ctr, "top", "base");
+        Notice(bp, rc[0], "ka7_5", "ALL ISSUES ON FORM R-12, IN TRIPLICATE");
+        Warning(bp, rc[1], "ka7_5", "STAFF ONLY");
+        // The store: shelving against the back wall, the files on the west wall, the clock between the shelves.
+        foreach (var sock in new[] { "k0_0", "k15_0" })
+            Look(bp, bp.Hang("Store Shelving 2 m", back, sock, "wall"), MinSlate);
+        bp.Hang("Filing Cabinet", rc[3], "ka7_0", "wall");
+        bp.Hang("Wall Clock", back, "k8_5", "back");
         var crate = bp.Hang("Requisition Crate", 3, "t8_8", "-y"); // (three crates in a huddle on the dock)
         bp.Hang("Requisition Crate", crate, "+x", "-x");
         bp.Hang("Requisition Crate", crate, "-z", "+z");
@@ -419,56 +463,60 @@ public sealed partial class BuildingParts
             bp.Put("Bunk", [1.75, 0.375, z], R0);
         o.Add(bp);
 
-        // Colony Barracks: the guards' quarters beside the penal colony, where the lockdown squad turns out from
+        // Colony Barracks (Block 5): the guards' quarters beside the penal colony, where the lockdown squad turns out from
         // (Game/GameColonyLockdown.cs). Guards sleep away from the door and leave by it fast, so it is a narrow slab two
-        // storeys tall, 4 by 8 m: the guardroom below (the duty desk, the gun rack, a locker, an open doorway in the east
-        // wall with no door, because the squad comes out of it without stopping, steps and a canopy outside it), the
-        // dormitory above, up a stair along the east wall at the back, with a high ribbon each side over the bunks. Fins
-        // down the east front, buttresses on the west. The lore's items keep the west and back walls downstairs.
-        bp = new Blueprint("Colony Barracks", "The Ministry of Slop's guard barracks beside the penal colony.", defs);
+        // storeys tall, 4 by 8 m: the guardroom below, the dormitory above. The open doorway is in the east wall at the front,
+        // with no door, because the squad comes out of it without stopping, and the Wide Stair runs up the east wall from
+        // just inside it to the back, so a guard comes down and is out in four strides. The guardroom's front half is the
+        // duty desk (facing the doorway), the tea urn and the gun rack on the west wall; its back half, beside the stair, is the
+        // guards' own: a locker, and the lore's noticeboard and crate (Story/Lore). Upstairs the iron beds stand along the
+        // walls of the front half and beside the stairwell, the aisle down the middle. Fins down the east front, buttresses on
+        // the west, a high ribbon each side over the beds.
+        bp = new Blueprint("Colony Barracks", "The Ministry of Slop's guard barracks beside the penal colony: the guardroom, and the dormitory up a wide stair.", defs);
         Pads(bp, [(0, 1)]);
         rc = RoomCorners(bp, "Concrete", 0, G, 0, 16, 32, door: 1);
         west = bp.Put("Concrete Wall 4 m", Cell(0, G, 23), RY90);
         east = bp.Put("Concrete Slot Wall 4 m", Cell(15, G, 8), RY270);
         Concrete(bp, rc.Concat([west, east]));
         Look(bp, bp.Put("Concrete Floor 4x4 m", Cell(0, Slab1, 0), R0), MinWeathered, "concrete");
-        Look(bp, bp.Put("Concrete Stair Floor 4x4 m", Cell(15, Slab1, 31), RY180), MinWeathered, "concrete");
-        Look(bp, bp.Put("Concrete Straight Stair 3 m", Cell(11, G, 16), R0), MinWeathered, "concrete");
+        Look(bp, bp.Put("Concrete Wide Stair Floor", Cell(15, Slab1, 31), RY180), MinWeathered, "concrete");
+        Look(bp, bp.Put("Concrete Wide Stair 3 m", Cell(8, G, 16), R0), MinWeathered, "concrete"); // (x 2 to 3.75 m, foot at z 4 m, head at the back)
         uc = RoomCorners(bp, "Concrete", 0, U, 0, 16, 32);
         var dormW = bp.Put("Concrete Ribbon Wall 4 m", Cell(0, U, 23), RY90);
         var dormE = bp.Put("Concrete Ribbon Wall 4 m", Cell(15, U, 8), RY270);
         Concrete(bp, uc.Concat([dormW, dormE]));
         Roof(bp, 0, 0, 16, 32, roof2);
         Lid(bp, 0, 0, 16, 32, roof2);
-        Porch(bp, rc[1], "BARRACKS");
+        Porch(bp, rc[1], "BLOCK 5 - BARRACKS");
         Look(bp, bp.Put("Concrete Entrance Steps 2 m", Cell(19, 0, 0), RY270), MinWeathered, "concrete");
         Piers(bp, FinPart, (east, "f0_5"), (east, "f8_5"), (east, "f15_5"), (dormE, "f0_5"), (dormE, "f8_5"), (dormE, "f15_5"));
         Piers(bp, ButtressPart, (west, "f0_5"), (west, "f8_5"), (west, "f15_5"));
-        Sign(bp, uc[1], "fb7_5", "GUARDS ONLY. GUARDS, THIS MEANS YOU");
+        Warning(bp, uc[1], "fb7_5", "GUARDS ONLY. GUARDS, THIS MEANS YOU");
         Outside(bp, rc[0], "fa7_10");
         Outside(bp, rc[2], "fa7_10");
-        // The guardroom.
-        // The duty desk where a guard sits doing the admin (the staff's posts: Story/Posts/PenalColony.json,
-        // Game/GameStoryPosts.cs): a bolt deck as its floor (top sockets every 0.25 m, which the pad hasn't) with the computer
-        // facing the back wall and a seat at it, and the tea urn on its trolley in the front half, its tap to the room's front.
-        // A body comes to the seat from behind, off the deck: bodies don't step up onto it.
-        bp.Put("Bolt Deck 1x2 m", [1.75, 0.5, 6.0], RY180);
-        bp.Put("Computer", [1.5, 0.425, 5.75], RY180);
-        bp.Put("Seat", [1.5, 0.425, 5.0], RY180);
-        bp.Put("Tea Urn", [1.875, 0.375, 1.75], R0);
-        Look(bp, bp.Hang("Locker", west, "k15_0", "wall"), MinGreen, "worn paint");
-        bp.Hang("Gun Rack", rc[3], "ka7_0", "wall");
+        // The guardroom. The duty desk where a guard sits doing the admin (the staff's posts: Story/Posts/PenalColony.json,
+        // Game/GameStoryPosts.cs): a bolt deck as its floor (top sockets every 0.25 m, which the pad hasn't) in the front
+        // west corner, the computer against the front wall and the seat behind it, the gun rack on the wall at the guard's
+        // back. The tea urn stands at the desk's end with its tap to the back of the room, so whoever is at it stands out of
+        // the way to the stair.
+        bp.Put("Bolt Deck 1x2 m", OnPad(0, 0, 1.0, 1.0, 0.5), R0);
+        bp.Put("Computer", OnPad(0, 0, 1.25, 1.25, 0.425), R0);
+        bp.Put("Seat", OnPad(0, 0, 1.25, 2.0, 0.425), R0);
+        bp.Put("Tea Urn", OnPad(0, 0, 1.625, 3.75), RY180);
+        bp.Hang("Gun Rack", rc[0], "kb7_0", "wall");
         bp.Hang("Cast Iron Radiator", rc[0], "ka7_0", "back");
+        Look(bp, bp.Hang("Locker", west, "k0_0", "wall"), MinGreen, "worn paint");
         bp.Hang("Wall Clock", east, "k0_5", "back");
+        Notice(bp, west, "k8_5", "KIT CLEAN. BOOTS CLEAN. CONSCIENCE OPTIONAL.");
         Switch(bp, rc[1], "kb7_5", Strip(bp, east, "k8_10"));
-        Look(bp, bp.Hang("Battery", east, "k15_10", "-z"), MinSlate);
-        // The dormitory: three bunks across the room, a locker at each end, the switch at the stair's head.
-        foreach (var z in new[] { 1.75, 3.75, 5.75 })
-            bp.Put("Bunk", [2.0, (Slab1 + 0.5) * C, z], RY90);
+        Look(bp, bp.Hang("Battery", west, "k15_10", "-z"), MinSlate);
+        // The dormitory: two iron beds down the west wall and one on the east in the front half, a locker on the front wall,
+        // the radiator and the light switch on the west wall beside the stair's head.
+        foreach (var (on, sock) in new[] { (uc[0], "kb7_0"), (dormW, "k8_0"), (uc[1], "ka7_0") })
+            Look(bp, bp.Hang("Iron Bed", on, sock, "wall"), MinGreen, "worn paint");
         Look(bp, bp.Hang("Locker", uc[0], "ka7_0", "wall"), MinGreen, "worn paint");
-        Look(bp, bp.Hang("Locker", uc[3], "kb7_0", "wall"), MinGreen, "worn paint");
-        bp.Hang("Cast Iron Radiator", dormW, "k15_0", "back");
-        Switch(bp, uc[2], "kb7_5", Strip(bp, dormW, "k8_10"));
+        bp.Hang("Cast Iron Radiator", dormW, "k0_0", "back");
+        Switch(bp, dormW, "k0_5", Strip(bp, dormW, "k8_10"), Strip(bp, dormE, "k8_10"));
         o.Add(bp);
         return o;
     }

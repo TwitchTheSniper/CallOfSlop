@@ -361,6 +361,11 @@ public static unsafe class PanelRender
         var hh = h * 0.5f;
         var edge = h * 0.025f;
         var pad = edge + h * 0.03f;
+        if (card.HasBoard)
+        {
+            BoardLayout(s, card, size, rows);
+            return;
+        }
         var state = StateColour(card.State);
         Solid(s, -hw, -hh, hw, hh, new Vector3(0.03f, 0.045f, 0.055f), 0);
         Solid(s, -hw, hh - edge, hw, hh, state, 1);
@@ -434,6 +439,47 @@ public static unsafe class PanelRender
         }
         if (card.Draw != PanelDraw.None)
             Shapes(s, card, size, pad, card.Draw is PanelDraw.Lamps or PanelDraw.Graph ? hh - pad : bottom + (rows - 1) * row, state);
+    }
+
+    /// <summary>
+    /// A painted board (a sign board's panel): the board's own colour, a darker rule round its edge, and each line centred in
+    /// stencil capitals as tall as its row lets it be, smaller only when the line wouldn't fit across. Light text on a dark
+    /// board and dark on a light one, unless the sign's ink says otherwise.
+    /// </summary>
+    private static void BoardLayout(Slot s, PanelCard card, Vector2 size, int rows)
+    {
+        var hw = size.X * 0.5f;
+        var hh = size.Y * 0.5f;
+        var b = card.Board;
+        var light = 0.299f * b.X + 0.587f * b.Y + 0.114f * b.Z > 0.45f;
+        Solid(s, -hw, -hh, hw, hh, b, 0);
+        var rule = MathF.Min(size.X, size.Y) * 0.05f;
+        var line = light ? b * 0.25f : Vector3.Min(b * 0.5f + new Vector3(0.45f, 0.43f, 0.38f), Vector3.One);
+        var ink = card.HasInk ? card.Ink : light ? new Vector3(0.07f, 0.07f, 0.08f) : new Vector3(0.93f, 0.91f, 0.84f);
+        // The rule: a painted line in from the edge, as a signwriter frames a board.
+        Solid(s, -hw + rule, hh - rule * 2, hw - rule, hh - rule, line, 1);
+        Solid(s, -hw + rule, -hh + rule, hw - rule, -hh + rule * 2, line, 1);
+        Solid(s, -hw + rule, -hh + rule * 2, -hw + rule * 2, hh - rule * 2, line, 1);
+        Solid(s, hw - rule * 2, -hh + rule * 2, hw - rule, hh - rule * 2, line, 1);
+        var pad = rule * 3.5f;
+        var row = (size.Y - 2 * pad) / rows;
+        for (var l = 0; l < rows && l < PanelCard.MaxLines; l++)
+        {
+            var text = card.Line(l);
+            var n = text.Length;
+            while (n > 0 && text[n - 1] == ' ')
+                n--;
+            if (n == 0)
+                continue;
+            var gh = row * 0.8f;
+            var gw = MathF.Min(gh * CellW / CellH, (size.X - 2 * pad) / n);
+            gh = MathF.Min(gh, gw * CellH / CellW * 1.15f); // (squeezed across: a little taller than the font's own shape, as stencils are)
+            var x = -gw * n * 0.5f;
+            var y = -hh + pad + (rows - 1 - l) * row + (row - gh) * 0.5f;
+            for (var k = 0; k < n; k++)
+                if (text[k] > 32)
+                    Glyph(s, text[k], x + k * gw, y, gw, gh, ink);
+        }
     }
 
     /// <summary>A touch button: its plate, lit when aimed at, and its label in the middle, as big as fits.</summary>

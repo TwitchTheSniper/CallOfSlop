@@ -48,7 +48,7 @@ public sealed partial class BuildingParts
     {
         var o = new List<Blueprint>();
         const string Wall = "Concrete Wall 4 m", Slot = "Concrete Slot Wall 4 m", Ribbon = "Concrete Ribbon Wall 4 m";
-        const string Floor = "Concrete Floor 4x4 m", StairFloor = "Concrete Stair Floor 4x4 m", Stair = "Concrete Straight Stair 3 m";
+        const string Floor = "Concrete Floor 4x4 m", StairFloor = "Concrete Wide Stair Floor", Stair = "Concrete Wide Stair 3 m";
 
         // Spaceport Terminal: arrivals and departures are one hall, 16 by 12 m, split across the middle by the customs
         // counter: the landside half at the front (the door from the road under its canopy, the queue, the benches, the
@@ -67,7 +67,7 @@ public sealed partial class BuildingParts
             for (var x = 0; x < 64; x += 16)
                 if (x != 0 || z != 16)
                     Look(bp, bp.Put(Floor, Cell(x, Slab1, z), R0), MinWeathered, "concrete");
-        Look(bp, bp.Put(Stair, Cell(4, G, 31), RY180), MinWeathered, "concrete");
+        Look(bp, bp.Put(Stair, Cell(7, G, 31), RY180), MinWeathered, "concrete"); // (x 0.25 to 2 m, foot at z 8 m)
         var lid = Lid(bp, 0, 0, 64, 48, Slab1);
         Door(bp, rc[0], "Steel Flush Door 1.5x2.25 m", MinGreen);
         Door(bp, rc[2], "Steel Flush Door 1.5x2.25 m", MinSlate);
@@ -83,13 +83,15 @@ public sealed partial class BuildingParts
         // The landside half: the queue posts to the counter, benches along the east wall, the phone and the clock.
         foreach (var x in new[] { 5.75, 7.75, 9.75 })
             bp.Put("Queue Post", OnPad(x < 8 ? 1 : 2, 0, x < 8 ? x - 4 : x - 8, 3.75), R0);
-        foreach (var z in new[] { 1.75, 3.75, 5.75 })
-            bp.Put("Seat", OnPad(3, z < 4 ? 0 : 1, 2.0, z < 4 ? z : z - 4), RY90); // (facing west, at the queue)
+        foreach (var sock in new[] { "k0_0", "k15_0" }) // (facing west, at the queue, the radiator between them)
+            bp.Hang("Waiting Bench 2 m", sides[1][0], sock, "wall");
         bp.Put("Phone Box", OnPad(0, 0, 2.125, 3.75), R0);
-        // The counter across the middle (z 6 m), x 6 to 10 m, with a way past each end for those cleared.
-        var counter = new[] { (1, 2.0), (2, 0.0), (2, 2.0) }.Select(t => Look(bp, bp.Put("Mess Table", OnPad(t.Item1, 1, t.Item2, 2.0), RY180), MinSlate, "wood")).ToList();
-        bp.Hang("Employee of the Month", counter[0], "top", "base");
-        bp.Hang("Teapot", counter[2], "top", "base"); // (the customs officer's)
+        // The customs counter across the middle (z 6 m), x 6.75 to 10.75 m, its closed side to the queue, with a way past
+        // each end for those cleared.
+        var counter = Look(bp, bp.Put("Service Counter 2 m", OnPad(1, 1, 3.75, 2.0), R0), "#6b4a2e", "worn paint");
+        var counter2 = Look(bp, bp.Hang("Service Counter 2 m", counter, "+x", "-x"), "#6b4a2e", "worn paint");
+        bp.Hang("Employee of the Month", counter, "top", "base");
+        bp.Hang("Teapot", counter2, "top", "base"); // (the customs officer's)
         // The airside half: the departures desk's paper on the back wall, the cargo by the door out.
         foreach (var s in new[] { "k0_0", "k15_0" })
             Look(bp, bp.Hang("Filing Cabinet", sides[2][1], s, "wall"), MinGreen, "worn paint");
@@ -101,7 +103,7 @@ public sealed partial class BuildingParts
         bp.Hang("Cast Iron Radiator", sides[1][0], "k8_0", "back");
         bp.Hang("Wall Clock", sides[0][1], "k8_5", "back");
         Sign(bp, sides[0][0], "k8_5", "CUSTOMS: DECLARE EVERYTHING. THEN DECLARE IT AGAIN");
-        Sign(bp, sides[2][2], "k8_5", "DEPARTURES: NONE WITHOUT FORM 88");
+        Warning(bp, sides[2][2], "k8_5", "DEPARTURES: NONE WITHOUT FORM 88");
         Sign(bp, sides[0][2], "k8_5", "THIS QUEUE IS NOT MOVING. NEITHER ARE YOU");
         // The strip lights down each side, each side's switch on its own wall by the front (a wire reaches 8 m).
         Switch(bp, sides[3][0], "k15_5", Strip(bp, sides[3][0], "k8_10"), Strip(bp, sides[3][1], "k0_10"));
@@ -112,7 +114,7 @@ public sealed partial class BuildingParts
         // Spaceport Control Tower: the controllers must see every pad and be seen from far off in the weather, so it is
         // the tall one, a blind shaft 8 by 8 m and seven storeys high (slots to light the stair, nothing else) with the
         // cab on top glazed all round, and a pad for small craft on its roof inside the lid, red lamps on the lid's
-        // corners. The stair goes up the shaft in alternate flights, west then east, each under its own floor's opening,
+        // corners. The stair goes up the shaft in alternate flights, east then west, each under its own floor's opening,
         // so every flight has a storey of headroom; the last flight goes up from the cab through the roof's hatch.
         bp = new Blueprint("Spaceport Control Tower", "The Ministry of Slop spaceport's control tower: a concrete shaft, a glass cab and a pad for small craft on its roof.", defs);
         Pads(bp, [(1, 0), (0, 1), (1, 1)]);
@@ -128,16 +130,17 @@ public sealed partial class BuildingParts
             if (k == 0)
                 first = tc;
             if (k == 3)
-                Sign(bp, walls[0][0], "f8_5", "MINISTRY OF SLOP - SPACEPORT");
-            // This storey's flight: west, rising to -z under an opening in the floor over it at the front-west slab
-            // (even storeys), or east, rising to +z under one at the back-east slab (odd ones).
-            var west = k % 2 == 0;
+                NameBoard(bp, walls[0][0], "f8_5", "MINISTRY OF SLOP - SPACEPORT");
+            // This storey's flight: east, rising to +z under an opening in the floor over it at the back-east slab (even
+            // storeys: the ground floor's, so the door in the front's west half opens onto the floor, not a flight's head),
+            // or west, rising to -z under one at the front-west slab (odd ones).
+            var west = k % 2 == 1;
             var slab = y + WallH;
             Look(bp, west ? bp.Put(StairFloor, Cell(0, slab, 0), R0) : bp.Put(StairFloor, Cell(31, slab, 31), RY180), MinWeathered, "concrete");
             foreach (var (x, z) in new[] { (0, 0), (16, 0), (0, 16), (16, 16) })
                 if (west ? x != 0 || z != 0 : x != 16 || z != 16)
                     Look(bp, bp.Put(Floor, Cell(x, slab, z), R0), MinWeathered, "concrete");
-            Look(bp, west ? bp.Put(Stair, Cell(4, y, 15), RY180) : bp.Put(Stair, Cell(27, y, 16), R0), MinWeathered, "concrete");
+            Look(bp, west ? bp.Put(Stair, Cell(7, y, 15), RY180) : bp.Put(Stair, Cell(24, y, 16), R0), MinWeathered, "concrete");
         }
         var roofRow = G + (Floors - 1) * Storey + WallH;
         var tlid = Lid(bp, 0, 0, 32, 32, roofRow);
@@ -149,10 +152,10 @@ public sealed partial class BuildingParts
         // The cab: the controller's desk at the front glass (the seat behind it, facing out), the clock, the strip lights
         // and their switch, and the fuse box that also feeds the beacons.
         var cabFloor = (G + (Floors - 2) * Storey + WallH + 0.5) * C;
-        bp.Put("Computer", [6.0, cabFloor, 2.0], R0);
-        bp.Put("Seat", [6.0, cabFloor, 3.75], R0);
-        bp.Hang("Wall Clock", tc[0], "ka7_5", "back");
-        Switch(bp, tc[2], "kb7_5", Strip(bp, tc[1], "ka7_10"), Strip(bp, tc[3], "ka7_10"));
+        bp.Put("Computer", [4.0, cabFloor, 2.0], R0); // (in the middle, clear of the stair's head and of the last flight's foot)
+        bp.Put("Seat", [4.0, cabFloor, 3.75], R0);
+        bp.Hang("Wall Clock", tc[3], "ka7_5", "back");
+        Switch(bp, tc[0], "ka7_5", Strip(bp, tc[1], "ka7_10"), Strip(bp, tc[3], "ka7_10"));
         Look(bp, bp.Hang("Battery", tc[1], "kb7_10", "-z"), MinSlate);
         o.Add(bp);
 

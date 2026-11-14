@@ -56,6 +56,7 @@ public sealed class PanelDef
     public Vector4 Picture = new(0, 0, 1, 1); // where a page's picture sits: shares of the panel, from its bottom left
     public PanelTouchDef[] Touch = []; // its buttons (PanelTouch.cs)
     public float TouchTop; // the top of the buttons along its bottom, a share of its height (text rows stay above it)
+    public bool Board; // a painted board, not a screen: the part's paint behind, the text centred and as big as its row lets it be, no lit frame ("board": true)
 }
 
 /// <summary>Fills a panel's card from the part as it is on this peer. Runs at <see cref="PanelRender.FillHz"/> for panels in range and in view; must not allocate in a steady state.</summary>
@@ -106,6 +107,8 @@ public sealed class PanelCard
     public PanelRamp Ramp;
     public bool Plain; // every line in the body colour, none as a title
     public bool Fit; // one line as big as the panel takes: a readout
+    public bool HasBoard; // drawn as a painted board in Board (a sign board's panel: PanelDef.Board)
+    public Vector3 Board;
     public float Value; // 0 to 1: what Draw shows
     public int Lamps, LampBits;
     public FlightEffectors? Flight; // a Flight Diagnostic Panel's plot (it isn't copied: a card is filled and laid out at once)
@@ -139,6 +142,8 @@ public sealed class PanelCard
         Ramp = PanelRamp.Solid;
         Plain = false;
         Fit = false;
+        HasBoard = false;
+        Board = default;
         Value = 0;
         Lamps = LampBits = 0;
         Trace = null;
@@ -456,6 +461,8 @@ public sealed class PanelCard
             Mix((uint)(Ink.X * 255) | (uint)(Ink.Y * 255) << 8 | (uint)(Ink.Z * 255) << 16 | 1u << 24);
         Mix((uint)Ramp);
         Mix((uint)Draw | (Plain ? 256u : 0) | (Fit ? 512u : 0));
+        if (HasBoard)
+            Mix((uint)(Board.X * 255) | (uint)(Board.Y * 255) << 8 | (uint)(Board.Z * 255) << 16 | 2u << 24);
         Mix((uint)(int)(Value * 720));
         Mix((uint)LampBits | (uint)Lamps << 16);
         if (Plan != null)
@@ -536,7 +543,7 @@ public static class ConstructPanels
         foreach (var e in list.EnumerateArray())
         {
             var where = $"panels[{n++}]";
-            ConstructParts.Known(e, ["source", "slot", "at", "size", "face", "up", "rows", "range", "picture", "touch"], $"{file}, {where}");
+            ConstructParts.Known(e, ["source", "slot", "at", "size", "face", "up", "rows", "range", "picture", "touch", "board"], $"{file}, {where}");
             var p = new PanelDef { Source = ConstructParts.Str(ConstructParts.Need(e, "source", $"{file}, {where}"), file, where + ".source") };
             p.Fill = PanelSources.Find(p.Source) ?? throw new ConstructPartException($"{file}: {where}.source \"{p.Source}\" isn't one of {PanelSources.Names}");
             p.Slot = ConstructParts.Opt(e, "slot") is { } sl ? (int)ConstructParts.Num(sl, file, where + ".slot") : 0;
@@ -559,6 +566,14 @@ public static class ConstructPanels
             p.Range = ConstructParts.Opt(e, "range") is { } g ? ConstructParts.Num(g, file, where + ".range") : Math.Clamp(row * 400, 12, 120);
             ConstructParts.Range(p.Range, 1, 400, file, where + ".range");
             PanelTouch.Parse(p, e, file, where);
+            if (ConstructParts.Opt(e, "board") is { } bd)
+            {
+                if (bd.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                    throw new ConstructPartException($"{file}: {where}.board is true or false");
+                p.Board = bd.ValueKind == JsonValueKind.True;
+                if (p.Board && p.Source != "logic.sign")
+                    throw new ConstructPartException($"{file}: {where}.board is for a sign's panel (\"logic.sign\")");
+            }
             foreach (var t in p.Touch)
                 if (t.At.Y < 0.25f)
                     p.TouchTop = MathF.Max(p.TouchTop, t.At.W);

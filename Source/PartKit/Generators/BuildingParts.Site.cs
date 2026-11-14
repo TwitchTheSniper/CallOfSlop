@@ -318,7 +318,7 @@ public sealed partial class BuildingParts
         var wayRoof = 1 + WallH;
         Roof(bp, 0, 0, 16, 32, wayRoof);
         var lid = Lid(bp, 0, 0, 16, 32, wayRoof);
-        Sign(bp, lid[0], "f8", "INMATES KEEP LEFT. STAFF KEEP INMATES LEFT.");
+        Sign(bp, lid[0], "f8", "INMATES KEEP LEFT. STAFF KEEP INMATES LEFT.", BoardSize.Narrow);
         Outside(bp, cols[2], "r0_10");
         Outside(bp, cols[3], "l0_10");
         Look(bp, bp.Hang("Battery", cols[4], "r0_10", "-z"), MinSlate);
@@ -334,11 +334,11 @@ public sealed partial class BuildingParts
         var mast = Look(bp, bp.Hang("Flagpole Mast 3.75 m", foot, "mast", "b"), "#d9dcd6", "worn paint");
         Look(bp, bp.Hang("Flagpole Top 3.75 m", mast, "t", "b"), "#d9dcd6", "worn paint");
         var board = Look(bp, bp.Put("Concrete Notice Board 2 m", Cell(0, 1, 31), R0), MinWeathered, "concrete");
-        Sign(bp, board, "n0", "MUSTER 0600. LATENESS IS THEFT OF MINISTRY TIME.");
-        Sign(bp, board, "n1", "STANDING ORDERS: 1. STAND.");
+        Sign(bp, board, "n0", "MUSTER 0600. LATENESS IS THEFT OF MINISTRY TIME.", BoardSize.Narrow);
+        Sign(bp, board, "n1", "STANDING ORDERS: 1. STAND.", BoardSize.Narrow);
         board = Look(bp, bp.Put("Concrete Notice Board 2 m", Cell(40, 1, 31), R0), MinWeathered, "concrete");
-        Sign(bp, board, "n0", "HEATING: ON (SEE FORM 9 FOR EXEMPTIONS)");
-        Sign(bp, board, "n1", "LOST PROPERTY IS MINISTRY PROPERTY");
+        Sign(bp, board, "n0", "HEATING: ON (SEE FORM 9 FOR EXEMPTIONS)", BoardSize.Narrow);
+        Sign(bp, board, "n1", "LOST PROPERTY IS MINISTRY PROPERTY", BoardSize.Narrow);
         o.Add(bp);
 
         // The heating mains, in the lengths the site plan lays end to end.
@@ -387,15 +387,15 @@ public sealed partial class BuildingParts
         o.Add(bp);
 
         bp = new Blueprint("Heating Valve Chamber", "A valve chamber on the colony's heating mains.", defs);
-        Sign(bp, bp.First("Heating Valve Chamber"), "f", "VALVE. DO NOT TURN. DO NOT ASK WHO DID.");
+        Sign(bp, bp.First("Heating Valve Chamber"), "f", "VALVE. DO NOT TURN. DO NOT ASK WHO DID.", BoardSize.Narrow);
         o.Add(bp);
 
         // A gate pier: the lamp, the colony's name and the Ministry's welcome on the side a visitor comes from.
         bp = new Blueprint("Colony Gate Pier", "A pier at the way in to the penal colony.", defs);
         var pier = bp.First("Concrete Gate Pier");
         Outside(bp, pier, "lamp");
-        Sign(bp, pier, "sign", "MINISTRY OF SLOP - PENAL COLONY 7");
-        Sign(bp, pier, "sign2", "NO WAY OUT. NO WAY IN EITHER.");
+        Sign(bp, pier, "sign", "MINISTRY OF SLOP - PENAL COLONY 7", BoardSize.Narrow);
+        Sign(bp, pier, "sign2", "NO WAY OUT. NO WAY IN EITHER.", BoardSize.Narrow);
         Look(bp, bp.Hang("Battery", pier, "back", "-z"), MinSlate);
         o.Add(bp);
 

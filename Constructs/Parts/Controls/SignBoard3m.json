@@ -1,0 +1,122 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Sign Board 3 m",
+  "description": "A painted board: one line of words, signwritten to fit. Paint it for its colour.",
+  "group": "Logic",
+  "section": "Displays",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 8.0,
+  "health": 40,
+  "armour": 0,
+  "material": "steel",
+  "color": "#2f5a3c",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "display",
+    "text": 2
+  },
+  "panels": [
+    {
+      "source": "logic.sign",
+      "at": [
+        0,
+        0,
+        0.033
+      ],
+      "size": [
+        2.99,
+        0.49
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 1,
+      "board": true
+    }
+  ],
+  "config": [
+    {
+      "key": "ink",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Display",
+      "default": "#000000",
+      "tooltip": "The colour of what it shows. Black: its own colours."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -1.5,
+        -0.25,
+        -0.03
+      ],
+      "max": [
+        1.5,
+        0.25,
+        0.03
+      ]
+    },
+    {
+      "min": [
+        -1.512,
+        -0.262,
+        -0.034
+      ],
+      "max": [
+        1.512,
+        0.262,
+        -0.018
+      ],
+      "color": "#2b2e30",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.03
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        1.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.25,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.25,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

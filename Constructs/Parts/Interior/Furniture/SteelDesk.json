@@ -1,0 +1,232 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Steel Desk",
+  "description": "A grey steel desk, a pedestal of drawers and a blotter. Put a telephone on it nobody answers.",
+  "group": "Interior",
+  "section": "Furniture",
+  "role": "frame",
+  "tool": "wrench",
+  "finish": "worn paint",
+  "mass": 55.0,
+  "health": 220,
+  "armour": 4,
+  "material": "steel",
+  "color": "#7d8178",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.7,
+        0.725,
+        -0.35
+      ],
+      "max": [
+        0.7,
+        0.76,
+        0.35
+      ],
+      "color": "#7d8178"
+    },
+    {
+      "min": [
+        0.25,
+        0.0,
+        -0.35
+      ],
+      "max": [
+        0.7,
+        0.725,
+        0.35
+      ],
+      "color": "#7d8178"
+    },
+    {
+      "min": [
+        -0.7,
+        0.0,
+        -0.35
+      ],
+      "max": [
+        -0.66,
+        0.725,
+        0.35
+      ],
+      "color": "#7d8178"
+    },
+    {
+      "min": [
+        -0.66,
+        0.3,
+        -0.35
+      ],
+      "max": [
+        0.25,
+        0.725,
+        -0.325
+      ],
+      "color": "#7d8178"
+    },
+    {
+      "min": [
+        0.28,
+        0.06,
+        0.346
+      ],
+      "max": [
+        0.67,
+        0.25,
+        0.362
+      ],
+      "color": "#7d8178",
+      "detail": true
+    },
+    {
+      "min": [
+        0.4,
+        0.19,
+        0.358
+      ],
+      "max": [
+        0.54,
+        0.21,
+        0.372
+      ],
+      "color": "#b9bcbd",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.28,
+        0.29,
+        0.346
+      ],
+      "max": [
+        0.67,
+        0.48,
+        0.362
+      ],
+      "color": "#7d8178",
+      "detail": true
+    },
+    {
+      "min": [
+        0.4,
+        0.42,
+        0.358
+      ],
+      "max": [
+        0.54,
+        0.44,
+        0.372
+      ],
+      "color": "#b9bcbd",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.28,
+        0.52,
+        0.346
+      ],
+      "max": [
+        0.67,
+        0.71,
+        0.362
+      ],
+      "color": "#7d8178",
+      "detail": true
+    },
+    {
+      "min": [
+        0.4,
+        0.65,
+        0.358
+      ],
+      "max": [
+        0.54,
+        0.67,
+        0.372
+      ],
+      "color": "#b9bcbd",
+      "detail": true,
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.55,
+        0.76,
+        -0.2
+      ],
+      "max": [
+        0.1,
+        0.772,
+        0.2
+      ],
+      "color": "#3c5a46",
+      "detail": true,
+      "paintable": false,
+      "finish": "plastic"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.76,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.38,
+        -0.35
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.7,
+        0.38,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.7,
+        0.38,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        -0.35
+      ],
+      "dir": "-z"
+    }
+  ]
+}

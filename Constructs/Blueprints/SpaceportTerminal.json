@@ -195,7 +195,7 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Stair Floor 4x4 m",
+      "part": "Concrete Wide Stair Floor",
       "on": 22,
       "socket": "t0",
       "by": "b0_7",
@@ -291,10 +291,10 @@
       "finish": "concrete"
     },
     {
-      "part": "Concrete Straight Stair 3 m",
+      "part": "Concrete Wide Stair 3 m",
       "on": 4,
-      "socket": "t4_4",
-      "by": "b0_11",
+      "socket": "t7_15",
+      "by": "b0_0",
       "spin": 3,
       "paint": "#858179",
       "finish": "concrete"
@@ -489,14 +489,14 @@
       }
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 61,
       "socket": "sign",
       "by": "back",
       "text": [
         "ARRIVALS AND DEPARTURES"
       ],
-      "paint": "#1f2b45"
+      "paint": "#2f5a3c"
     },
     {
       "part": "Concrete Canopy 2 m",
@@ -516,14 +516,14 @@
       }
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 64,
       "socket": "sign",
       "by": "back",
       "text": [
         "AIRSIDE"
       ],
-      "paint": "#1f2b45"
+      "paint": "#2f5a3c"
     },
     {
       "part": "Concrete Entrance Steps 2 m",
@@ -676,25 +676,16 @@
       "by": "base"
     },
     {
-      "part": "Seat",
-      "on": 3,
-      "socket": "t8_7",
-      "by": "bottom",
-      "spin": 1
+      "part": "Waiting Bench 2 m",
+      "on": 23,
+      "socket": "k0_0",
+      "by": "wall"
     },
     {
-      "part": "Seat",
-      "on": 3,
-      "socket": "t8_15",
-      "by": "bottom",
-      "spin": 1
-    },
-    {
-      "part": "Seat",
-      "on": 7,
-      "socket": "t8_7",
-      "by": "bottom",
-      "spin": 1
+      "part": "Waiting Bench 2 m",
+      "on": 23,
+      "socket": "k15_0",
+      "by": "wall"
     },
     {
       "part": "Phone Box",
@@ -703,41 +694,30 @@
       "by": "foot00"
     },
     {
-      "part": "Mess Table",
+      "part": "Service Counter 2 m",
       "on": 5,
-      "socket": "t8_8",
+      "socket": "t15_8",
       "by": "bottom",
-      "spin": 3,
-      "paint": "#4b5157",
-      "finish": "wood"
+      "paint": "#6b4a2e",
+      "finish": "worn paint"
     },
     {
-      "part": "Mess Table",
-      "on": 6,
-      "socket": "t0_8",
-      "by": "bottom",
-      "spin": 3,
-      "paint": "#4b5157",
-      "finish": "wood"
-    },
-    {
-      "part": "Mess Table",
-      "on": 6,
-      "socket": "t8_8",
-      "by": "bottom",
-      "spin": 3,
-      "paint": "#4b5157",
-      "finish": "wood"
+      "part": "Service Counter 2 m",
+      "on": 89,
+      "socket": "+x",
+      "by": "-x",
+      "paint": "#6b4a2e",
+      "finish": "worn paint"
     },
     {
       "part": "Employee of the Month",
-      "on": 90,
+      "on": 89,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Teapot",
-      "on": 92,
+      "on": 90,
       "socket": "top",
       "by": "base"
     },
@@ -771,13 +751,13 @@
     },
     {
       "part": "Requisition Crate",
-      "on": 98,
+      "on": 96,
       "socket": "-x",
       "by": "+x"
     },
     {
       "part": "Requisition Crate",
-      "on": 98,
+      "on": 96,
       "socket": "-z",
       "by": "+z"
     },
@@ -800,34 +780,34 @@
       "by": "back"
     },
     {
-      "part": "Text Sign",
+      "part": "Notice Board",
       "on": 16,
       "socket": "k8_5",
       "by": "back",
       "text": [
         "CUSTOMS: DECLARE EVERYTHING. THEN DECLARE IT AGAIN"
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 2 m",
       "on": 21,
       "socket": "k8_5",
       "by": "back",
       "text": [
         "DEPARTURES: NONE WITHOUT FORM 88"
       ],
-      "paint": "#1f2b45"
+      "paint": "#8e2a22"
     },
     {
-      "part": "Text Sign",
+      "part": "Notice Board",
       "on": 20,
       "socket": "k8_5",
       "by": "back",
       "text": [
         "THIS QUEUE IS NOT MOVING. NEITHER ARE YOU"
       ],
-      "paint": "#1f2b45"
+      "paint": "#d8d1b4"
     },
     {
       "part": "Strip Light",
@@ -893,20 +873,20 @@
   ],
   "wires": [
     [
-      109,
-      107
+      107,
+      105
     ],
     [
-      109,
+      107,
+      106
+    ],
+    [
+      110,
       108
     ],
     [
-      112,
-      110
-    ],
-    [
-      112,
-      111
+      110,
+      109
     ]
   ]
 }

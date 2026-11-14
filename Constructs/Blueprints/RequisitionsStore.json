@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Requisitions Store",
-  "description": "The Ministry's requisitions store: a covered loading dock, a counter and the shelves behind it.",
+  "description": "The Ministry's requisitions store: a covered loading dock, an issue counter across the store and the shelving behind it.",
   "steps": [
     {
       "part": "Concrete Foundation 4x4 m"
@@ -253,24 +253,14 @@
       "finish": "concrete"
     },
     {
-      "part": "Text Sign",
+      "part": "Sign Board 3 m",
       "on": 16,
       "socket": "f15",
       "by": "back",
       "text": [
-        "REQUISITIONS"
+        "BLOCK 4 - REQUISITIONS"
       ],
-      "paint": "#1f2b45"
-    },
-    {
-      "part": "Text Sign",
-      "on": 9,
-      "socket": "k8_5",
-      "by": "back",
-      "text": [
-        "ALL ISSUES ON FORM R-12, IN TRIPLICATE"
-      ],
-      "paint": "#1f2b45"
+      "paint": "#2f5a3c"
     },
     {
       "part": "Bulkhead Light",
@@ -291,45 +281,75 @@
       }
     },
     {
-      "part": "Mess Table",
-      "on": 1,
-      "socket": "t0_0",
+      "part": "Service Counter 2 m",
+      "on": 0,
+      "socket": "t7_7",
       "by": "bottom",
-      "paint": "#4b5157",
-      "finish": "steel"
+      "paint": "#6b4a2e",
+      "finish": "worn paint"
     },
     {
-      "part": "Parts Shelf",
-      "on": 0,
-      "socket": "t8_8",
-      "by": "bottom",
-      "spin": 3,
+      "part": "Service Counter 2 m",
+      "on": 35,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Service Counter 1.5 m",
+      "on": 36,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Teapot",
+      "on": 35,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Notice Board",
+      "on": 4,
+      "socket": "ka7_5",
+      "by": "back",
+      "text": [
+        "ALL ISSUES ON FORM R-12, IN TRIPLICATE"
+      ],
+      "paint": "#d8d1b4"
+    },
+    {
+      "part": "Sign Board 2 m",
+      "on": 5,
+      "socket": "ka7_5",
+      "by": "back",
+      "text": [
+        "STAFF ONLY"
+      ],
+      "paint": "#8e2a22"
+    },
+    {
+      "part": "Store Shelving 2 m",
+      "on": 9,
+      "socket": "k0_0",
+      "by": "wall",
       "paint": "#4b5157"
     },
     {
-      "part": "Parts Shelf",
-      "on": 1,
-      "socket": "t8_8",
-      "by": "bottom",
-      "spin": 3,
+      "part": "Store Shelving 2 m",
+      "on": 9,
+      "socket": "k15_0",
+      "by": "wall",
       "paint": "#4b5157"
     },
     {
       "part": "Filing Cabinet",
-      "on": 9,
-      "socket": "k0_0",
-      "by": "wall"
-    },
-    {
-      "part": "Teleprinter",
-      "on": 9,
-      "socket": "k15_0",
+      "on": 7,
+      "socket": "ka7_0",
       "by": "wall"
     },
     {
       "part": "Wall Clock",
       "on": 9,
-      "socket": "k15_5",
+      "socket": "k8_5",
       "by": "back"
     },
     {
@@ -340,13 +360,13 @@
     },
     {
       "part": "Requisition Crate",
-      "on": 42,
+      "on": 45,
       "socket": "+x",
       "by": "-x"
     },
     {
       "part": "Requisition Crate",
-      "on": 42,
+      "on": 45,
       "socket": "-z",
       "by": "+z"
     },
@@ -378,8 +398,8 @@
   ],
   "wires": [
     [
-      46,
-      45
+      49,
+      48
     ]
   ]
 }

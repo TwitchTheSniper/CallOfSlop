@@ -1,0 +1,122 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Notice Board",
+  "description": "A painted board of rules: three lines of words. Paint it for its colour.",
+  "group": "Logic",
+  "section": "Displays",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 5.8,
+  "health": 40,
+  "armour": 0,
+  "material": "steel",
+  "color": "#2f5a3c",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "display",
+    "text": 2
+  },
+  "panels": [
+    {
+      "source": "logic.sign",
+      "at": [
+        0,
+        0,
+        0.033
+      ],
+      "size": [
+        1.19,
+        0.79
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 3,
+      "board": true
+    }
+  ],
+  "config": [
+    {
+      "key": "ink",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Display",
+      "default": "#000000",
+      "tooltip": "The colour of what it shows. Black: its own colours."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.6,
+        -0.4,
+        -0.03
+      ],
+      "max": [
+        0.6,
+        0.4,
+        0.03
+      ]
+    },
+    {
+      "min": [
+        -0.612,
+        -0.412,
+        -0.034
+      ],
+      "max": [
+        0.612,
+        0.412,
+        -0.018
+      ],
+      "color": "#2b2e30",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.03
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.6,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.6,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.4,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.4,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}
