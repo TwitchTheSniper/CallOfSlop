@@ -501,7 +501,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   (Main took it as 301.)
     // 304: Sized parts phase 5 (engine pieces off the press): the Engine Die parts (ids move); the Cylinder die's presets on the files' bounds and the
     //   Engine die (Pressing.json); a pressed engine piece's scale and a cylinder's stroke ratio come from its key (derived on each peer, no new bytes).
-    public const ushort ProtocolVersion = 304;
+    // 309: Lifters phase 5b (on the logistics network): a lift word's put point may be a Crafting Terminal's tray (LiftPointKind.Tray, a new
+    //   value at the end). The map's lifter edges are worked out on each peer from the parts (no new bytes).
+    public const ushort ProtocolVersion = 309;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

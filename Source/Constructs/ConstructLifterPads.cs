@@ -46,6 +46,37 @@ public static partial class ConstructLifters
         LifterProbe.Cost(ref LifterProbe.TakeIn, System.Diagnostics.Stopwatch.GetTimestamp() - t0);
     }
 
+    /// <summary>Why pad <paramref name="part"/> doesn't take body <paramref name="lo"/> in now (a fixed text), or null when it does. Allocates nothing.</summary>
+    public static string? TakeInWhy(ConstructWorld world, Construct c, int part, CStore st, Vector3 pp, Quaternion inv, float reach, Construct lo)
+    {
+        var d = c.DefOf(part);
+        // The hands' rule for a loose part (Construct.Loose: one whole part, not a seat, a foundation or a core, not anchored), and
+        // nobody has it: not held by a station, grabbed, carried, nudged (the Nudge tool placing it), frozen by the physics gun or driven.
+        if (!lo.Loose || lo == c)
+            return "not loose";
+        if (lo.HeldBy != 0 || lo.GrabbedBy != 255 || lo.CarriedBy != 0 || lo.NudgeBy != 255 || lo.Frozen || lo.Driver != 255)
+            return "someone has it";
+        if (Vector3.DistanceSquared(lo.Pos, c.Pos) > reach * reach || lo.Vel.LengthSquared() > 0.25f)
+            return "far or moving";
+        var local = Vector3.Transform(lo.WorldCom - pp, inv);
+        if (local.X < d.RackHoldMin.X || local.X > d.RackHoldMax.X || local.Z < d.RackHoldMin.Z || local.Z > d.RackHoldMax.Z
+            || local.Y < d.RackHoldMin.Y - 0.25f || local.Y > d.RackHoldMax.Y)
+            return "not over the hold";
+        var pd = lo.DefOf(0);
+        // Not a part that holds anything (its contents would be lost: a rack holds kinds only), nor one that isn't as new (a rack
+        // keeps a kind and a count, so it would come out whole, unpainted, empty and at its default settings), nor what the pad or
+        // its stock target refuses.
+        if (lo.Parts[0].Store != 0 || pd.IsPieceRack || pd.Lifter != null)
+            return "a store or a lifter";
+        if (!AsNew(lo.Parts[0], pd))
+            return "not as new";
+        if (!OnDeck(lo, pd, pp, inv, d.RackHoldMin.Y))
+            return "not on the deck"; // (standing beside the pad on the ground, as a placed machine does: not set down on it)
+        if (ConstructConveyor.RackCheck(c, part, st, pd) is var rc and not 0)
+            return rc == 3 ? "too big for the pad" : rc == 4 ? "pad full" : "the pad refuses it";
+        return StockTargets.Accepts(world, c, part, st, pd) ? null : "its stock target refuses it";
+    }
+
     /// <summary>One pad: up to <paramref name="most"/> loose pieces over its hold go in. How many did.</summary>
     private static int PadTakeIn(ConstructWorld world, Construct c, int part, int most)
     {
@@ -60,26 +91,9 @@ public static partial class ConstructLifters
         for (var bi = bodies.Count - 1; bi >= 0 && n < most; bi--)
         {
             var lo = bodies[bi];
-            // The hands' rule for a loose part (Construct.Loose: one whole part, not a seat, a foundation or a core, not anchored), and
-            // nobody has it: not held by a station, grabbed, carried, nudged (the Nudge tool placing it), frozen by the physics gun or driven.
-            if (!lo.Loose || lo == c || lo.HeldBy != 0 || lo.GrabbedBy != 255 || lo.CarriedBy != 0 || lo.NudgeBy != 255 || lo.Frozen || lo.Driver != 255)
-                continue;
-            if (Vector3.DistanceSquared(lo.Pos, c.Pos) > reach * reach || lo.Vel.LengthSquared() > 0.25f)
-                continue;
-            var local = Vector3.Transform(lo.WorldCom - pp, inv);
-            if (local.X < d.RackHoldMin.X || local.X > d.RackHoldMax.X || local.Z < d.RackHoldMin.Z || local.Z > d.RackHoldMax.Z
-                || local.Y < d.RackHoldMin.Y - 0.25f || local.Y > d.RackHoldMax.Y)
+            if (TakeInWhy(world, c, part, st, pp, inv, reach, lo) != null)
                 continue;
             var pd = lo.DefOf(0);
-            // Not a part that holds anything (its contents would be lost: a rack holds kinds only), nor one that isn't as new (a rack
-            // keeps a kind and a count, so it would come out whole, unpainted, empty and at its default settings), nor what the pad or
-            // its stock target refuses.
-            if (lo.Parts[0].Store != 0 || pd.IsPieceRack || pd.Lifter != null || !AsNew(lo.Parts[0], pd))
-                continue;
-            if (!OnDeck(lo, pd, pp, inv, d.RackHoldMin.Y))
-                continue; // (standing beside the pad on the ground, as a placed machine does: not set down on it)
-            if (ConstructConveyor.RackCheck(c, part, st, pd) != 0 || !StockTargets.Accepts(world, c, part, st, pd))
-                continue;
             world.Remove(lo);
             if (!world.RackPut(c, part, pd))
                 continue; // (checked above: not reached)
@@ -246,9 +260,9 @@ public static partial class ConstructLifters
     /// </summary>
     private static bool AsNew(in CPart p, ConstructPartDef d) =>
         p.Health >= d.Health * 0.999f && p.Rounds == 0 && p.Paint == 0 && p.Text == null && p.Text2 == null && p.Orders == null && p.Craft == null
-        && ConstructConfig.AllDefault(p, d) && ConstructFluid.Held(p, d) == null;
+        && ConstructConfig.AllDefault(p, d) && (d.Role != PartRole.FluidTank || ConstructFluid.Held(p, d) == null); // (Held reads a tank's own settings: only a tank has them)
 
-    /// <summary>Does the piece rest on the pad's deck: its lowest corner within 15 cm of the hold's floor (not below it: on the ground beside)?</summary>
+    /// <summary>Does the piece rest on the pad: its lowest corner from 15 cm under the hold's floor to 50 cm over it (on its rails or on another piece; never below: on the ground beside)?</summary>
     private static bool OnDeck(Construct lo, ConstructPartDef pd, Vector3 padAt, Quaternion padInv, float floor)
     {
         Freeform.PartWorld(lo, 0, out var at, out var rot);
@@ -258,7 +272,7 @@ public static partial class ConstructLifters
             var corner = new Vector3((k & 1) != 0 ? pd.BoundsMax.X : pd.BoundsMin.X, (k & 2) != 0 ? pd.BoundsMax.Y : pd.BoundsMin.Y, (k & 4) != 0 ? pd.BoundsMax.Z : pd.BoundsMin.Z);
             low = MathF.Min(low, Vector3.Transform(at + Vector3.Transform(corner, rot) - padAt, padInv).Y);
         }
-        return low > floor - 0.15f && low < floor + 0.15f;
+        return low > floor - 0.15f && low < floor + 0.5f;
     }
 }
 

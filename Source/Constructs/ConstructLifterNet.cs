@@ -82,8 +82,7 @@ public static partial class ConstructLifters
 
     /// <summary>
     /// A terminal's network walk (ConstructCrafting.Build): what part <paramref name="at"/> is joined to by a lifter edge, added to
-    /// <paramref name="seen"/>. Machines and trays only: a store a lifter alone reaches is not the terminal's stock (it would be
-    /// claimed for collecting by hand, and an arm never carries what is claimed). The new count.
+    /// <paramref name="seen"/>, so the walk goes on past it (a pick rack's conveyors and their Routers and stores). The new count.
     /// </summary>
     public static int Joined(Construct c, int at, Span<int> seen, int n)
     {
@@ -92,11 +91,25 @@ public static partial class ConstructLifters
         for (var e = 0; e < m.LiftN && n < seen.Length; e++)
         {
             int other = m.Lifts[e].From == at ? m.Lifts[e].To : m.Lifts[e].To == at ? m.Lifts[e].From : -1;
-            if (other < 0 || other >= c.PartCount || c.DefOf(other) is { IsPieceRack: true, IsCraftTerminal: false } || seen[..n].Contains(other))
+            if (other < 0 || other >= c.PartCount || seen[..n].Contains(other))
                 continue;
             seen[n++] = other;
         }
         return n;
+    }
+
+    /// <summary>
+    /// Is a store joined to the rest by lifters only (no conveyor or chute touches it)? It is not a terminal's stock: it would be
+    /// claimed to be collected by hand, and an arm never carries what is claimed.
+    /// </summary>
+    public static bool LiftOnly(Construct c, int part)
+    {
+        if (c.Logi is not { LiftN: > 0 })
+            return false;
+        for (var k = 0; k < c.RouteCount; k++)
+            if (c.Routes[k].Type is RouteType.Conveyor or RouteType.Chute && (c.Routes[k].Source == part || c.Routes[k].To == part))
+                return false;
+        return true;
     }
 
     /// <summary>Has the body a lifter part? (A cheap test before the edges are worked out.)</summary>
@@ -233,24 +246,33 @@ public static partial class ConstructLifters
         if (world.StationOpen.Count == 0 || world.LiftBodies.Count == 0 || pad >= b.PartCount || !b.DefOf(pad).IsLayDownPad || world.StoreOf(b, pad) is not { } ps)
             return 0;
         int si = 0, t = -1;
-        while (NextStation(world, ref si, ref t, out var sc, out _, out var tray))
-        {
-            if (!TooBigForHold(sc, t, tray, d) || OrderOf(sc, t, (ushort)d.Id, 0) is not (var k and >= 0) || !ServesPad(world, sc, t, b.Id, pad))
-                continue;
-            ref var o = ref sc.Parts[t].Craft!.Items[k];
-            if (o.Asked + o.Sent - RidingTo(b, ps.Handle, 0) - HandsTo(world, b.Id, pad, (ushort)d.Id) > 0)
-                return o.Id;
-        }
+        while (NextStation(world, ref si, ref t, out var sc, out var j, out var tray))
+            if (PadLack(world, b, pad, ps, sc, t, j, tray, d) > 0)
+                return OrderOf(sc, t, (ushort)d.Id, 0) is var k and >= 0 ? sc.Parts[t].Craft!.Items[k].Id : PadClaim; // (no order: nothing linked makes it, but an arm may bring it)
         return 0;
     }
 
-    /// <summary>Server: is a rider's order (<paramref name="tag"/>) for a station's large part on this pad still open?</summary>
+    /// <summary>
+    /// How many more of a kind station <paramref name="t"/> wants on this pad: it is too big for the hold, an arm that fits from the pad
+    /// serves the station, and the build lacks it (needed, less fitted, on its arms' pick pads, riding or carried to the pad).
+    /// </summary>
+    private static int PadLack(ConstructWorld world, Construct b, int pad, CStore ps, Construct sc, int t, StationJob j, CStore tray, ConstructPartDef d)
+    {
+        var kind = Array.IndexOf(j.KindDef, (ushort)d.Id, 0, j.KindN);
+        if (kind < 0 || !TooBigForHold(sc, t, tray, d) || !ServesPad(world, sc, t, b.Id, pad))
+            return 0;
+        return j.KindNeed[kind] - j.KindFit[kind] - PickPadHolds(world, sc, t, (ushort)d.Id) - RidingTo(b, ps.Handle, 0) - HandsTo(world, b.Id, pad, (ushort)d.Id);
+    }
+
+    /// <summary>Server: is a rider's way to this pad (a station's large part) still wanted? Its order, or the build's lack.</summary>
     public static bool PadOrderOpen(ConstructWorld world, Construct b, int pad, ushort tag, ConstructPartDef d)
     {
+        if (world.StoreOf(b, pad) is not { } ps)
+            return false;
         int si = 0, t = -1;
-        while (NextStation(world, ref si, ref t, out var sc, out _, out var tray))
-            if (OrderOf(sc, t, (ushort)d.Id, tag) >= 0 && TooBigForHold(sc, t, tray, d) && ServesPad(world, sc, t, b.Id, pad))
-                return true;
+        while (NextStation(world, ref si, ref t, out var sc, out var j, out var tray))
+            if (TooBigForHold(sc, t, tray, d) && ServesPad(world, sc, t, b.Id, pad) && (OrderOf(sc, t, (ushort)d.Id, tag) >= 0 || PadLack(world, b, pad, ps, sc, t, j, tray, d) + 1 > 0))
+                return true; // (+1: this rider is one of those riding there)
         return false;
     }
 

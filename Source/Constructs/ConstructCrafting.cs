@@ -190,7 +190,7 @@ public static class ConstructCrafting
                 if (net.RefinerN < CraftNet.MaxRefiners)
                     net.Refiners[net.RefinerN++] = seen[q];
             }
-            else if (IsStore(d) && c.Parts[seen[q]].Store != 0 && net.StoreN < CraftNet.MaxStores)
+            else if (IsStore(d) && c.Parts[seen[q]].Store != 0 && net.StoreN < CraftNet.MaxStores && !ConstructLifters.LiftOnly(c, seen[q]))
             {
                 net.Via[net.StoreN] = RouteTo(c, seen[q], t);
                 net.Stores[net.StoreN++] = seen[q];

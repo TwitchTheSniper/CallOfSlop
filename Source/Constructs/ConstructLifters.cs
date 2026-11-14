@@ -1348,6 +1348,9 @@ public static partial class ConstructStation
         return -1;
     }
 
+    /// <summary>Is a step's parent in place (the window tool's step list)?</summary>
+    internal static bool ReadyStep(StationJob j, int k) => Ready(j, k);
+
     /// <summary>A step claimed: out of the station's and a hand's reach, and counted as fitted for the orders (its part has left the hold).</summary>
     public static void LiftClaim(StationJob j, int k)
     {
