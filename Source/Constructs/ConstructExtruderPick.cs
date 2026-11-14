@@ -87,7 +87,7 @@ public static class ExtruderPicks
         if (pick.W % 5 != 0 || pick.H % 5 != 0 || pick.W < Extrusion.MinSectionCm || pick.H < Extrusion.MinSectionCm)
             return "sizes go in 5 cm steps from 0.1 m";
         if (pick.W > dw || shape == ExShape.Section && pick.H > dh)
-            return $"the die makes at most {dw / 100f:0.##} x {dh / 100f:0.##} m{(d.ExtDie.X < d.ExtMaxSection.X ? ": attach Die Frames for more" : "")}";
+            return $"the die makes at most {dw / 100f:0.##} x {dh / 100f:0.##} m: {ConstructExtruder.WideFix(d, pick.W, shape == ExShape.Section ? pick.H : pick.W)}";
         if (shape == ExShape.Pipe && (pick.Wall < 1 || pick.Wall > MaxWallCm(pick.W)))
             return $"a {pick.W / 100f:0.##} m pipe takes a wall of 1 to {MaxWallCm(pick.W)} cm";
         if (pick.Profile == Extrusion.Presets.Length && Extrusion.Refusal(pick.Mask) is { } cells)

@@ -92,6 +92,8 @@ The phases below were rewritten on 2026-11-13 for the user's answers (at the end
   longest unseen first). The Tab inventory, the terminal's rows and the store look line use them.
   Phases 3 and 4 done together (2026-11-13, protocol 301): `inventories-phase3-notes.md` beside this file (a pool of 512 tiles drawn on
   demand; a network's made kinds sent by key; Piece Racks on a network; the terminal's made rows, a pull by key setting a piece down).
+  Phase 4, the leftovers (2026-11-13, protocol 307): `inventories-phase4-notes.md` beside this file (beacon pulls and refunds of made parts
+  through Piece Racks, the Line Layer and Replacer by key, the search, made rows' labels, the tiles drawn twice).
 - **Dropped: made parts as hand items** (answer 1). The hand-held guns from pressed parts (sized-gun-engine-parts.md, answer 7) need
   another way: a gun finished at a bench as one item, or the user asked again.
 

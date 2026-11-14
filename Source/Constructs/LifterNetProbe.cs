@@ -94,6 +94,26 @@ public static partial class LifterProbe
         return $"net: one body {arm.Id}: arm 0, Press {pPress}, pick rack {pRack}, pad {pPad}, terminal {pTerm}, Router {pRouter}, stock rack {pStock} ({stocked} {blank.Name}); conveyors {k1} (stock to Router), {k2} (Router to pick rack); {line}";
     }
 
+    /// <summary>Host: an unordered laminate plate blank CM long onto the net rig's first conveyor (stock rack to Router): "lifter ride CM".</summary>
+    public static string Ride(ConstructWorld world, string cm)
+    {
+        var shut = cm.EndsWith("shut", StringComparison.Ordinal); // ("lifter ride CM shut": the pick rack takes nothing as storage first)
+        cm = shut ? cm[..^4].Trim() : cm;
+        if (world.Get(NetBody) is not { RouteCount: > 0 } c || Blank(int.TryParse(cm, out var n) ? n : 300) is not { } d)
+            return "ride: no net rig (lifter net first)";
+        var ok = ConstructConveyor.PutMade(world, c, 0, d, 1, out var why);
+        var rack = -1;
+        for (var i = 0; i < c.PartCount && rack < 0; i++)
+            if (c.DefOf(i).IsPieceRack && !c.DefOf(i).IsLayDownPad && !c.DefOf(i).IsCraftTerminal)
+                rack = i;
+        if (shut && rack >= 0)
+        {
+            ConstructConfig.Put(ref c.Parts[rack], c.DefOf(rack), CfgKey.StoreTakes, StockTargets.TakesNothing);
+            world.StructureDirty.Add(c.Id);
+        }
+        return $"ride: {d.Name} {(ok ? "rides" : $"refused ({why})")}{(shut ? $", the pick rack (part {rack}) takes nothing as storage" : "")}; a Piece Rack {(rack >= 0 && world.StoreOf(c, rack) is { } st ? ConstructConveyor.RackRefusal(c, rack, st, d) ?? "takes it" : "?")}";
+    }
+
     /// <summary>Host: the newest arm and the probe's pad joined into the station's body (a pick pad on the station's own network).</summary>
     public static string Weld(ConstructWorld world, Construct sc)
     {

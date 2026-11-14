@@ -120,6 +120,7 @@ public sealed class PressPattern
     /// <see cref="ByKnot"/> this pattern with each knot's part as its like and its blank as its preset (made at load: a press allocates nothing).
     /// </summary>
     public bool LikeNearest;
+    public bool Auto = true; // "auto": false: never what a press set to Auto makes, by a preset's blank or the nearest (the Pattern setting or an order picks it: the generated receivers, sized parts phase 6)
     public PressPreset[] Knots = [];
     public PressPattern[] ByKnot = [];
 
@@ -181,7 +182,7 @@ public sealed class PressDie
         if (Pressed.SectionOf(k) is not (var section and >= 0))
             return null;
         foreach (var p in Presets)
-            if (p.Blank == k && Takes(p.Pattern, section))
+            if (p.Blank == k && p.Pattern.Auto && Takes(p.Pattern, section))
             {
                 preset = p.Part;
                 return p.Pattern;
@@ -189,13 +190,15 @@ public sealed class PressDie
         PressPattern? best = null;
         var dist = int.MaxValue;
         foreach (var p in Presets)
-            Nearer(p.Pattern, p.Blank, k, section, ref best, ref dist);
+            if (p.Pattern.Auto)
+                Nearer(p.Pattern, p.Blank, k, section, ref best, ref dist);
         foreach (var p in Patterns)
-            Nearer(p, p.Preset, k, section, ref best, ref dist);
+            if (p.Auto)
+                Nearer(p, p.Preset, k, section, ref best, ref dist);
         if (best != null)
             return best;
         foreach (var p in Patterns)
-            if (Takes(p, section))
+            if (p.Auto && Takes(p, section))
                 return p;
         return null;
     }
@@ -366,7 +369,7 @@ internal static class PressDies
 
     private static PressPattern PatternOf(JsonElement e, string die, PressDie d, Dictionary<string, ConstructPartDef> byName, PressTable t)
     {
-        Keys(e, die + " pattern", "id", "like", "label", "preset", "blanks", "bay2", "scale", "features", "body", "along", "likeBy");
+        Keys(e, die + " pattern", "id", "like", "label", "preset", "blanks", "bay2", "scale", "features", "body", "along", "likeBy", "auto");
         var id = e.GetProperty("id").GetString() ?? "";
         if (id.Length is 0 or > 16 || !id.All(c => c is >= 'a' and <= 'z' or >= '0' and <= '9' or '-'))
             throw new FormatException($"{die}: a pattern's id is 1 to 16 of a-z, 0-9 and -");
@@ -386,6 +389,8 @@ internal static class PressDies
         }
         if (e.TryGetProperty("body", out var body))
             p.LikeBody = body.GetString() switch { "like" => true, "blank" => false, _ => throw new FormatException($"{where}: \"body\" is \"blank\" or \"like\"") };
+        if (e.TryGetProperty("auto", out var auto))
+            p.Auto = auto.ValueKind switch { JsonValueKind.True => true, JsonValueKind.False => false, _ => throw new FormatException($"{where}: \"auto\" is true or false") };
         if (e.TryGetProperty("likeBy", out var likeBy))
             p.LikeNearest = likeBy.GetString() switch { "nearest" => true, "pattern" => false, _ => throw new FormatException($"{where}: \"likeBy\" is \"pattern\" or \"nearest\"") };
         if (e.TryGetProperty("along", out var along))

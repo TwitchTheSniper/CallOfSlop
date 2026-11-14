@@ -501,6 +501,15 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   (Main took it as 301.)
     // 304: Sized parts phase 5 (engine pieces off the press): the Engine Die parts (ids move); the Cylinder die's presets on the files' bounds and the
     //   Engine die (Pressing.json); a pressed engine piece's scale and a cylinder's stroke ratio come from its key (derived on each peer, no new bytes).
+    // 305: Laser Cutter phase 6 (the Pane): "Cut Pane (rA,B,C tT glass)" travels as a named run-time part (a name older builds refuse), in bodies,
+    //   orders, racks and riders; and a formed glass sheet (its blank) is a part now (it threw before), so its key may ride too.
+    // 306: Sized parts phase 6: Pressing.json gains 22 Receiver die patterns (the generated receivers with no recipe, never Auto's: a pattern's
+    //      "auto": false) and their presets, and a like body's faces settle in Pressed.BuildLike (both peers make pressed parts from it);
+    //      41 Assembling rows go (barrels and engine pieces); the recycler holds a preset part's yield to its press cost. No message changes.
+    // 307: Inventories phase 4: the Line Layer's stroke and the Replacer's swap name their part by PartRef (a made part by its key), so a made
+    //   part can be laid or fitted by kind.
+    // 308: Extruder expansion pieces: Die Extensions and Run-out Tables (new part files, ids move), an outBed socket on the Extruders and
+    //   SocketKind.RunOut; the grown die and length are read from the construct on each peer (no new bytes).
     // 309: Lifters phase 5b (on the logistics network): a lift word's put point may be a Crafting Terminal's tray (LiftPointKind.Tray, a new
     //   value at the end). The map's lifter edges are worked out on each peer from the parts (no new bytes).
     public const ushort ProtocolVersion = 309;

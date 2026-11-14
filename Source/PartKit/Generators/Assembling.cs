@@ -65,6 +65,9 @@ public sealed class Assembling : IPartGenerator
         return r;
     }
 
+    /// <summary>The parts the hand recipes make (sized parts phase 6: a generated receiver with one stays the Assembler's, at its tier).</summary>
+    internal static HashSet<string> HandOutputs() => Hand().Select(r => (string)r["output"]!).ToHashSet(StringComparer.Ordinal);
+
     // Every one of these draws on at least two chains (ore to metal to steel; wood to planks to rubber and cloth; copper; sand to glass; gold).
     private static List<PyDict> Hand() =>
     [
@@ -243,7 +246,14 @@ public sealed class Assembling : IPartGenerator
         Rec("Frame Block", 4, 1, m: [("steel", 6)]),
         Rec("Frame Beam", 6, 1, m: [("steel", 14)]),
         Rec("Panel", 3, 1, m: [("steel", 4)]),
-        Rec("Wood Panel", 2, 1, m: [("laminate", 4)])
+        Rec("Wood Panel", 2, 1, m: [("laminate", 4)]),
+        // Extruder expansion pieces (ExtrusionParts.Growth): each about 30% of the next machine's recipe, so a row or a table is cheaper than the
+        // next Extruder and the whole jump to its size dearer (docs/sandbox/design/extruder-expansion-notes.md).
+        Rec("Run-out Table", 60, 1, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 2)]),
+        Rec("Medium Run-out Table", 120, 2, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 4), ("Bearing", 2)]),
+        Rec("Large Run-out Table", 180, 3, m: [("steel", 600), ("rubber", 150)], p: [("Bearing", 4), ("Control Unit", 1)]),
+        Rec("Medium Die Extension", 120, 2, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 2), ("Wiring Loom", 2)]),
+        Rec("Large Die Extension", 180, 3, m: [("steel", 600), ("rubber", 150)], p: [("Wiring Loom", 4), ("Control Unit", 1)])
     ];
 
     /// <summary>
@@ -512,10 +522,11 @@ public sealed class Assembling : IPartGenerator
         // recipe setting is saved as 1 + its place in its family's list, so a saved Assembler past a removed row reads another recipe; accepted,
         // tools/MIGRATING.md). The picker, the Technologies page and a blueprint naming it find the die from the presets instead.
         var presets = PressParts.PresetParts();
+        var sized = PressParts.PresetParts("barrel", "engine"); // (sized parts phase 6: the gun and engine pieces held back from press phase 5)
         for (var k = recipes.Count - 1; k >= 0; k--)
         {
             var output = (string)recipes[k]["output"]!;
-            if (!PressedNow(output, recipes[k]))
+            if (!PressedNow(output, recipes[k], sized))
                 continue;
             if (!presets.Contains(output))
                 throw new InvalidOperationException($"assembling: {output} is to be pressed, but no die has a preset for it (PressParts.Presets)");
@@ -546,9 +557,9 @@ public sealed class Assembling : IPartGenerator
         "Small Cylinder", "Medium Cylinder", "Large Cylinder", // (sized parts phase 5: the Cylinder die presses them, its presets the knots of a bore curve; a Capital one is past what a die presses: Assembler)
     };
 
-    /// <summary>A recipe that leaves the plain Assembler for a press: one of <see cref="Moved"/>, or a Housing (the Housing die presses all 21).</summary>
-    private static bool PressedNow(string output, PyDict r) =>
-        r.Get("machine") == null && (Moved.Contains(output) || output.EndsWith(" m", StringComparison.Ordinal) && output.Contains("Housing ", StringComparison.Ordinal));
+    /// <summary>A recipe that leaves the plain Assembler for a press: one of <see cref="Moved"/>; a Barrel or Engine die preset with at most one kind of part input (sized parts phase 6: every barrel, the plain three and the builder ones, and every engine piece but the Capital Smokestack, past the dies; receivers are assemblies by the sort and keep theirs beside their presets); or a Housing (the Housing die presses all 21).</summary>
+    private static bool PressedNow(string output, PyDict r, HashSet<string> sized) =>
+        r.Get("machine") == null && (Moved.Contains(output) || sized.Contains(output) && ((r.Get("parts") as PyDict)?.Count ?? 0) <= 1 ||output.EndsWith(" m", StringComparison.Ordinal) && output.Contains("Housing ", StringComparison.Ordinal));
 
     /// <summary>The weapon builder's parts (Parts/*/*.json outside _*, Builds and Tables): made into Sandbox items at load, so a hand
     /// recipe may name one with no file in Constructs/Parts.</summary>

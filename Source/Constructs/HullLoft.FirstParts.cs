@@ -37,7 +37,7 @@ public static partial class HullLoft
     /// <summary>(Read, under no lock) A key from the wire: the part, made now while the update's budget lasts, else a stand-in. Null: not one of these keys.</summary>
     private static ConstructPartDef? FromWire(string name)
     {
-        if (!_panelPumped || PanelSync || !(IsCutName(name) || IsPanelName(name)) || !name.EndsWith(')') || name.Length > ConstructParts.MaxRuntimeName)
+        if (!_panelPumped || PanelSync || !(IsCutName(name) || IsPanelName(name)) || IsPaneName(name) || !name.EndsWith(')') || name.Length > ConstructParts.MaxRuntimeName)
             return null;
         lock (Interned)
         {

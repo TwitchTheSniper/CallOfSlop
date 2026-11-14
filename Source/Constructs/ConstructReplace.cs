@@ -286,11 +286,13 @@ public sealed partial class ConstructEdits
         var rot = q * Rot24.Quat(c.Parts[part].Rot);
         // Taken before the swap: having none changes nothing. (Plan's scratch stays: this takes no plan.)
         if (!TakeForAid(world, player, e, eye, c.Id))
-            return $"no {e.Name} left";
+            return $"no {PartRef.Shown(e)} left";
         if (h.Held == ConstructParts.None && !e.PhysicsOnly)
             Refill(world, player, ref h, e, eye);
         ConstructReplace.Apply(world, c, part, e, swap);
-        if (!InfiniteParts)
+        if (d.RuntimeMade)
+            ReturnFromAid(world, player, d, eye, where + Vector3.Transform(Vector3.UnitY, q) * (d.BoundsMax - d.BoundsMin).Length()); // (a made part comes back by kind, creative too: a rack on the network, the count, else a body over the new part)
+        else if (!InfiniteParts)
         {
             if (d.PhysicsOnly)
             {
@@ -301,8 +303,8 @@ public sealed partial class ConstructEdits
             else
                 ReturnFromAid(world, player, d, eye, where);
         }
-        Notices.Add((player, $"Replace: {d.Name} is now a {e.Name}"));
-        Done.Add($"player {player}: replaced {d.Name} with {e.Name} on construct {c.Id}");
+        Notices.Add((player, $"Replace: {PartRef.Listed(d)} is now a {PartRef.Listed(e)}"));
+        Done.Add($"player {player}: replaced {PartRef.Listed(d)} with {PartRef.Listed(e)} on construct {c.Id}");
         return null;
     }
 }

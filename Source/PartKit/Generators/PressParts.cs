@@ -350,9 +350,11 @@ public sealed class PressParts : IPartGenerator
         return f;
     }
 
-    private static PyDict Pattern(string id, string like, string label, string preset, string[]? blanks = null, List<object?>? features = null, PyDict? bay2 = null, List<object?>? scale = null, string? along = null, bool nearest = false)
+    private static PyDict Pattern(string id, string like, string label, string preset, string[]? blanks = null, List<object?>? features = null, PyDict? bay2 = null, List<object?>? scale = null, string? along = null, bool nearest = false, bool auto = true)
     {
         var p = Kw(("id", id), ("like", like), ("label", label), ("preset", preset));
+        if (!auto) // (never Auto's: the Pattern setting or an order reaches it, sized parts phase 6)
+            p["auto"] = false;
         if (nearest) // (its presets are knots: a blank takes the nearest one's part as its like, sized-parts design 6.2)
             p["likeBy"] = "nearest";
         if (along != null) // (a like body: the like part's own boxes stretched to the blank, its length along this axis of the part; "" its longest)
@@ -614,11 +616,48 @@ public sealed class PressParts : IPartGenerator
         ("shell", "Shell Receiver", "shell receiver", "hollow 20x20x40 steel"),
     ];
 
+    /// <summary>
+    /// Sized parts phase 6: the generated receivers with no recipe (ConstructWeaponParts: a builder receiver at twice its handheld size;
+    /// the Firebreather, Whaler, Field Gun and Howitzer have hand Assembler recipes at their tiers, so they stay the Assembler's) as patterns
+    /// after the hand-made three. Each preset is its part's own bounds on the 5 cm lattice (across the wider of x and y, length along z),
+    /// held to the die's ranges, solid. They are never Auto's ("auto": false): Auto makes of a blank what it made before, and the Pattern
+    /// setting or an order reaches these. Their order is the loaded table's, new ones appended by name, since a Press saves its Pattern
+    /// setting as 1 + the pattern's place (review, 2026-11-13).
+    /// </summary>
+    private static List<(string Id, string Like, string Label, string Blank, bool Auto)> AllReceiverPatterns()
+    {
+        var all = ReceiverPatterns.Select(r => (r.Id, r.Like, r.Label, r.Blank, true)).ToList();
+        var ids = all.Select(r => r.Id).ToHashSet(StringComparer.Ordinal);
+        static int Lattice(double m) => Math.Max(5, (int)Math.Round(m * 100 / 5, MidpointRounding.AwayFromZero) * 5);
+        var hand = ReceiverPatterns.Select(r => CallOfSlop.ConstructParts.Find(r.Like)?.GunReceiver ?? "").ToHashSet(StringComparer.Ordinal);
+        var made = Assembling.HandOutputs();
+        var was = CallOfSlop.PressTable.Current.Die("receiver")?.Patterns.Select(p => p.Like.Name).ToList() ?? [];
+        int Place(string name) => was.IndexOf(name) is var i and >= 0 ? i : int.MaxValue;
+        foreach (var d in CallOfSlop.ConstructParts.All.Where(d => d.Generated && d.IsReceiverGun && !hand.Contains(d.GunReceiver) && !made.Contains(d.Name))
+                     .OrderBy(d => Place(d.Name)).ThenBy(d => d.Name, StringComparer.Ordinal))
+        {
+            var size = d.BoundsMax - d.BoundsMin;
+            var across = Math.Clamp(Lattice(Math.Max(size.X, size.Y)), 15, 120);
+            var len = Math.Clamp(Lattice(size.Z), Math.Max(30, across), 600);
+            var blank = $"solid {across}x{across}x{len} steel";
+            var words = d.Name.ToLowerInvariant().Split(' ').Where(w => w != "receiver");
+            var id = string.Join("", words.Select(w => new string(w.Where(ch => ch is >= 'a' and <= 'z' or '-').ToArray())));
+            id = id.Length > 16 ? id[..16] : id;
+            for (var n = 2; !ids.Add(id); n++)
+                id = (id.Length > 14 ? id[..14] : id) + n;
+            var label = d.Name.ToLowerInvariant(); // (1 to 24 characters: "gravedigger auto receiver" loses its last word)
+            if (label.Length > 24)
+                label = label.Replace(" receiver", "");
+            all.Add((id, d.Name, label.Length > 24 ? label[..24].TrimEnd() : label, blank, false));
+        }
+        return all;
+    }
+
     private static PyDict ReceiverDie()
     {
         var gears = Kit("Gear Set", true, 1, 0.02, "mass", 20); // (as the Drive die: the action's gearing)
         var die = SizedDie("Receiver", ["solid", "hollow"], ["steel"], [15, 120], [30, 600], [1, 1], 4, 0.02, Py.L(),
-            ReceiverPatterns.Select(r => (object?)Pattern(r.Id, r.Like, r.Label, r.Blank, bay2: gears, along: "z")).ToList());
+            AllReceiverPatterns().Select(r => (object?)Pattern(r.Id, r.Like, r.Label, r.Blank, bay2: gears, along: "z", auto: r.Auto)).ToList());
         die["aspect"] = "preset";
         return die;
     }
@@ -870,7 +909,7 @@ public sealed class PressParts : IPartGenerator
         Add("Piston Set", "piston", "set", "round 10x10x20 steel");
         foreach (var (name, blank) in CylinderPresets())
             Add(name, "cylinder", "cylinder", blank);
-        // Sized parts phase 5: the Engine die's presets (they keep their Assembler recipes until that design's phase 6).
+        // Sized parts phase 5: the Engine die's presets (phase 6: their Assembler recipes go, Assembling.PressedNow).
         foreach (var p in EnginePatterns)
             foreach (var (name, blank) in EnginePresets(p.Piece, p.Section, p.Along))
                 Add(name, "engine", p.Id, blank);
@@ -889,7 +928,7 @@ public sealed class PressParts : IPartGenerator
         // The Frame Beam is the Beam die's girder (the user, 2026-11-13, phase 5 question 3): a 2 m I-beam held to what a Small Press takes
         // (45 cm), so a start's first frame needs no tier 2 press. The other building pieces stay on the Assembler.
         Add("Frame Beam", "beam", "girder", $"i-beam {PresetAcross(50, Small)}x{PresetAcross(50, Small)}x200 steel");
-        // Sized gun parts phase 1: the plain barrels are the Barrel die's knots. Their Assembler recipes stay until that design's phase 6.
+        // Sized gun parts phase 1: the plain barrels are the Barrel die's knots (phase 6: their Assembler recipes go).
         foreach (var (part, _, blank) in PlainBarrels)
             Add(part, "barrel", "plain", blank);
         // Phase 2: the other barrels (their items: the builder part's name, ConstructWeaponParts) and the two artillery tubes.
@@ -897,8 +936,9 @@ public sealed class PressParts : IPartGenerator
             Add(builder, "barrel", id, blank);
         foreach (var (builder, blank) in ArtilleryTubes)
             Add(builder, "barrel", "tube", blank);
-        // Phase 3: the hand-made receivers are the Receiver die's presets (their Assembler recipes stay until that design's phase 6).
-        foreach (var (id, like, _, blank) in ReceiverPatterns)
+        // Phase 3: the hand-made receivers are the Receiver die's presets; phase 6 the generated ones (their first recipe). A receiver is an
+        // assembly by the sort's rule (role gun), so the hand-made three keep their Assembler recipes beside their presets.
+        foreach (var (id, like, _, blank, _) in AllReceiverPatterns())
             Add(like, "receiver", id, blank);
         return r;
     }
@@ -940,6 +980,10 @@ public sealed class PressParts : IPartGenerator
 
     /// <summary>Every catalogue part a die presses from a standard blank (the Assembling generator moves the single-piece ones off the Assembler).</summary>
     internal static HashSet<string> PresetParts() => Presets().Select(p => (string)((PyDict)p!)["part"]!).ToHashSet(StringComparer.Ordinal);
+
+    /// <summary>The catalogue parts the named dies press from a preset (sized parts phase 6: the Barrel and Engine dies' leave the Assembler).</summary>
+    internal static HashSet<string> PresetParts(params string[] dies) =>
+        Presets().Cast<PyDict>().Where(p => dies.Contains((string)p["die"]!)).Select(p => (string)p["part"]!).ToHashSet(StringComparer.Ordinal);
 
     private static List<object?> LatheRows()
     {
@@ -985,8 +1029,10 @@ public sealed class PressParts : IPartGenerator
             foreach (var t in MaterialTiers)
                 parts.Add(("Housings", Housing(side, c, n, t)));
         WriteParts(o, Out, parts);
+        var presets = Presets();
+        var dies = SizedDies();
         var table = Kw(("format", Format), ("about", About), ("lathe", LatheRows()),
-            ("strength", Kw(("of", "healthPerM3"), ("ref", 5000))), ("dies", SizedDies()), ("presets", Presets()));
+            ("strength", Kw(("of", "healthPerM3"), ("ref", 5000))), ("dies", dies), ("presets", presets));
         o.File(Table, PyJson.Dumps(table, 1) + "\n");
         o.File(Blueprint, PyJson.Dumps(Line(), 2) + "\n");
     }

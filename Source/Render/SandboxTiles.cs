@@ -381,8 +381,8 @@ public static unsafe partial class SandboxTiles
 
     // ---- Drawing (GL) ----------------------------------------------------------------------------------------------
 
-    /// <summary>Forgets the atlas (it is made again when next wanted).</summary>
-    public static void Invalidate()
+    /// <summary>Forgets the atlas (it is made again when next wanted), and the made parts' tiles unless <paramref name="made"/> is false.</summary>
+    public static void Invalidate(bool made = true)
     {
         foreach (var t in _pages)
         {
@@ -392,7 +392,8 @@ public static unsafe partial class SandboxTiles
         }
         _pages = [];
         _ready = [];
-        ClearMade();
+        if (made)
+            ClearMade(); // (a catalogue remake keeps them: their pages are their own, inventories phase 4)
         _next = _count = _resNext = _preferN = 0;
         _key = 0;
     }
@@ -572,7 +573,7 @@ public static unsafe partial class SandboxTiles
         }
         if (_count > 0 && ++_remakes == 4)
             Why($"atlas remade 4 times in a minute: its key keeps changing ({ConstructParts.All.Count} parts, {ConstructBuild.Blueprints.Count} blueprints, {ConstructTools.All.Count} tools, {_next} of {_count} drawn)");
-        Invalidate();
+        Invalidate(made: false); // (the made parts' pool has pages of its own: a new key for the catalogue doesn't redraw it)
         _key = key;
         _count = Count;
         _ready = new bool[_count];

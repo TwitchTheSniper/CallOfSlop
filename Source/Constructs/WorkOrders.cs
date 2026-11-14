@@ -13,7 +13,7 @@ public struct WorkOrder
     public ushort Part; // a catalogue part's id (a file part's, never a run-time one), or ConstructParts.None for a piece
     public ushort Count, Made;
     public ushort Chain; // server: the chained order's link it serves (ConstructLogisticsPlan; 0: the player's own); saved in the LOGI block, never sent
-    public byte Rank; // server: its order's rank in the queue (ConstructLogisticsPlan.Ranked: 1 a stock refill, 2 Low, 3 Normal, 4 High; 0 the player's own line, as Normal); never sent; not saved: a chain line's comes back with its link at load (ConstructLogisticsPlan.Mark), a terminal's own line reads Normal
+    public byte Rank; // server: its order's rank in the queue (ConstructLogisticsPlan.Ranked: 1 a stock refill, 2 Low, 3 Normal, 4 High; 0 the player's own line, as Normal); never sent; saved with its line (fix-ups 2: an older save reads 0, Normal), and a chain line's is set again with its link at load (ConstructLogisticsPlan.Mark)
     public string? Name; // a formed panel or a lofted hull part by its name, which is its key (HullLoft.Panels.cs): a Panel Former's order; Key holds its material only
 
     public readonly bool IsPiece => Part == ConstructParts.None && Name == null;
@@ -147,14 +147,15 @@ public static class WorkOrders
                 return bad;
             if (ExtrusionTable.Current.Find(k.Material) == null)
                 return $"the {d.Name} can't extrude {mat}: takes {ExtrusionTable.Current.Takes()}";
-            if (k.W > MathF.Round(d.ExtMaxSection.X * 100) || k.H > MathF.Round(d.ExtMaxSection.Y * 100))
-                return $"a section {k.W / 100f:0.##} x {k.H / 100f:0.##} m is beyond the {d.Name} ({d.ExtMaxSection.X:0.##} x {d.ExtMaxSection.Y:0.##} m)";
-            ConstructExtruder.Die(c, part, out _, out var die);
+            // (the user, 2026-11-13: what would make it fit names an expansion piece on this machine first, then the bigger Extruder)
+            ConstructExtruder.Reach(c, part, out _, out var die, out var longest);
             if (k.W > MathF.Round(die.X * 100) + 0.5f || k.H > MathF.Round(die.Y * 100) + 0.5f)
-                return $"a section {k.W / 100f:0.##} x {k.H / 100f:0.##} m is wider than the {d.Name}'s die ({die.X:0.##} x {die.Y:0.##} m): weld on Die Frames";
-            var most = Math.Min(Extrusion.MaxLengthCm, (int)MathF.Round(d.ExtMaxLength * 100));
-            if (k.L < Extrusion.StepCm || k.L > most || k.L % Extrusion.StepCm != 0)
+                return $"a section {k.W / 100f:0.##} x {k.H / 100f:0.##} m is wider than the {d.Name}'s die ({die.X:0.##} x {die.Y:0.##} m): {ConstructExtruder.WideFix(d, k.W, k.H)}";
+            var most = Math.Min(Extrusion.MaxLengthCm, (int)MathF.Round(longest * 100));
+            if (k.L < Extrusion.StepCm || k.L % Extrusion.StepCm != 0)
                 return $"a piece {k.L / 100f:0.##} m long: the {d.Name} makes {Extrusion.StepCm / 100f:0.##} to {most / 100f:0.##} m, in {Extrusion.StepCm} cm steps";
+            if (k.L > most)
+                return $"a piece {k.L / 100f:0.##} m long is longer than the {d.Name} makes ({most / 100f:0.##} m): {ConstructExtruder.LongFix(d, k.L, k.W, k.H)}";
         }
         if (world.StoreOf(c, part) is { Amount: > 0 } st && st.Material != k.Material)
             return $"the {d.Name} is fed {names.NameOf(st.Material)}: an order in {mat} is another line";
@@ -824,10 +825,11 @@ public static class WorkOrders
         w.U16((ushort)lists.Length);
         foreach (var (part, q) in lists)
         {
-            w.U16(part).U8((byte)(q.Bill ? 1 : 0)).U16((ushort)q.Count);
+            w.U16(part).U8((byte)((q.Bill ? 1 : 0) | SavedRanks)).U16((ushort)q.Count);
             for (var k = 0; k < q.Count; k++)
             {
                 ref readonly var o = ref q.Items[k];
+                w.U8(o.Rank); // (each line's rank first: the list's SavedRanks bit says so, an older save has none and reads Normal)
                 var key = o.Key;
                 if (o.Name != null)
                 {
@@ -848,42 +850,56 @@ public static class WorkOrders
         for (var j = 0; j < n; j++)
         {
             var part = r.U16();
-            var bill = (r.U8() & 1) != 0;
+            var flags = r.U8();
+            var bill = (flags & 1) != 0;
+            var ranked = (flags & SavedRanks) != 0;
             int count = r.U16();
             if (count > MaxOrders)
                 throw new WorldFileException($"{count} work orders");
             var q = new OrderList { Bill = bill };
             for (var k = 0; k < count; k++)
             {
-                var shape = r.U8();
-                if (shape == NamedShape)
-                {
-                    var pc = r.U16();
-                    var pm = r.U16();
-                    var pn2 = r.Str();
-                    if (pc is >= 1 and <= MaxCount && (HullLoft.IsFormedName(pn2) || HullLoft.IsCutName(pn2)) && pn2.Length <= ConstructParts.MaxRuntimeName && HullLoft.FormedMaterial(pn2) != 0)
-                        q.Add(ConstructPanelFormer.Order(pn2, pc) with { Made = Math.Min(pm, pc) });
-                    else if (pc is >= 1 and <= MaxCount && Pressed.IsName(pn2) && PressedOrder(pn2, pc) is { } pressed)
-                        q.Add(pressed with { Made = Math.Min(pm, pc) }); // (a pressed part's order, Press phase 4: a key this build can't read is left out)
-                    continue;
-                }
-                var mask = r.U64();
-                var w = r.U16();
-                var h = r.U16();
-                var l = r.U16();
-                var wall = r.U16();
-                var mat = names.Material(r.U8());
-                var pn = r.U16();
-                var def = pn == ushort.MaxValue ? ConstructParts.None : names.Part(pn, "a work order");
-                var cnt = r.U16();
-                var made = r.U16();
-                if (shape > (byte)ExShape.Wing || cnt is 0 or > MaxCount || pn != ushort.MaxValue && def == ConstructParts.None || pn == ushort.MaxValue && mat == 0)
-                    continue; // (what this build can't make or name is left out)
-                q.Add(new WorkOrder { Key = new ExtrusionKey(mask, w, h, l, mat, false, (ExShape)shape, wall), Part = def, Count = cnt, Made = Math.Min(made, cnt) });
+                var rank = ranked ? r.U8() : (byte)0;
+                var before = q.Count;
+                ReadOne(r, q, names);
+                if (q.Count > before)
+                    q.Items[q.Count - 1].Rank = rank <= 4 ? rank : (byte)0;
             }
             lists.Add((part, q));
         }
         return lists.ToArray();
+    }
+
+    private const byte SavedRanks = 2; // a list's flags byte: each line's rank precedes it (logistics fix-ups 2; bit 0 is Bill)
+
+    /// <summary>One saved line onto <paramref name="q"/>, or nothing when this build can't make or name it.</summary>
+    private static void ReadOne(SaveReader r, OrderList q, WorldNamesRead names)
+    {
+        var shape = r.U8();
+        if (shape == NamedShape)
+        {
+            var pc = r.U16();
+            var pm = r.U16();
+            var pn2 = r.Str();
+            if (pc is >= 1 and <= MaxCount && (HullLoft.IsFormedName(pn2) || HullLoft.IsCutName(pn2)) && pn2.Length <= ConstructParts.MaxRuntimeName && HullLoft.FormedMaterial(pn2) != 0)
+                q.Add(ConstructPanelFormer.Order(pn2, pc) with { Made = Math.Min(pm, pc) });
+            else if (pc is >= 1 and <= MaxCount && Pressed.IsName(pn2) && PressedOrder(pn2, pc) is { } pressed)
+                q.Add(pressed with { Made = Math.Min(pm, pc) }); // (a pressed part's order, Press phase 4: a key this build can't read is left out)
+            return;
+        }
+        var mask = r.U64();
+        var w = r.U16();
+        var h = r.U16();
+        var l = r.U16();
+        var wall = r.U16();
+        var mat = names.Material(r.U8());
+        var pn = r.U16();
+        var def = pn == ushort.MaxValue ? ConstructParts.None : names.Part(pn, "a work order");
+        var cnt = r.U16();
+        var made = r.U16();
+        if (shape > (byte)ExShape.Wing || cnt is 0 or > MaxCount || pn != ushort.MaxValue && def == ConstructParts.None || pn == ushort.MaxValue && mat == 0)
+            return; // (what this build can't make or name is left out)
+        q.Add(new WorkOrder { Key = new ExtrusionKey(mask, w, h, l, mat, false, (ExShape)shape, wall), Part = def, Count = cnt, Made = Math.Min(made, cnt) });
     }
 
     /// <summary>Puts a save's lists on the body's parts (one on a part that can't hold it is left out).</summary>

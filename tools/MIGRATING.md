@@ -105,6 +105,12 @@ Fifteen more rows left the Assembler's recipe list: the **Small, Medium and Larg
 
 A cylinder pressed before this version still loads, but it is now shaped and rated like a real cylinder of its size: its power comes from its bore and its revs from its length, so an engine built with one may give less (or more) power than before, and the model looks different. Look at the engine's readout after loading. A part or a made piece this version can't build is left out with a line in `callofslop.log`.
 
+### Barrels, engine pieces and presses in a saved world (sized parts, 2026-11-13)
+
+Forty-one more rows left the Assembler's recipe list: the **Gun Barrel, Long Gun Barrel, Flame Nozzle, Harpoon Tube, Howitzer Tube and Long Gun Tube** (a Press with a Barrel Die makes them) and every **crank section, flywheel, carburettor, injector rail, turbo, supercharger, starter motor, exhaust outlet and smokestack** except the Capital Smokestack (a Press with an Engine Die makes them). As before, an Assembler in a world saved before this version may show **another recipe** than the one you set, or none: check your Assemblers and set their recipe again.
+
+Pressed pieces in a saved world keep their key and load as the same piece: same size, numbers and mass (their models settle by a few millimetres so no two faces flicker). A Press's Pattern setting keeps its meaning, and a Press set to Auto makes what it made before: the receivers a Receiver Die can now make (22 that had no recipe, the Bucket Launcher and Courier Carbine among them) come only from its Pattern setting or an order. Recycling a part a Press makes from a preset (a Gear Set, a Housing, a Gun Barrel and others) now gives back at most what pressing it took: less than before for 35 of them.
+
 ### Keeping saves on a USB stick (portable mode)
 
 Put an empty file called `portable.txt` next to `CallOfSlop.exe`. The game then keeps its saves in its own folder, like the old builds did. Copy your save files into that folder yourself.

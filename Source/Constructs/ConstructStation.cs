@@ -1792,7 +1792,11 @@ public static class StationProbe
                 }
         }
         world.CraftChanged(c);
-        return $"{put} part(s) into the hold{(refused > 0 ? $", {refused} refused ({first})" : "")}";
+        var used = 0;
+        for (var s = 0; s < tray.SlabN; s++)
+            used = Math.Max(used, tray.Slabs![s].Z0Mm + tray.Slabs[s].LenMm);
+        ConstructRackPack.Hold(c.DefOf(t), out var hlo, out var hhi);
+        return $"{put} part(s) into the hold{(refused > 0 ? $", {refused} refused ({first})" : "")}; the hold: {tray.SlabN} column(s) of {tray.KindN} kind(s) over {used / 1000f:0.00} of {hhi.Z - hlo.Z:0.00} m";
     }
 
     /// <summary>A job in one line, for the window tool's dump.</summary>

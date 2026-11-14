@@ -1007,7 +1007,8 @@ public sealed partial class Ui
                 }
                 v = end;
             }
-            if (_sbVisibleCount == 0)
+            var madeHits = _sbTab == SbTab.Parts && _sbSearch.Length > 0 ? SbDrawMadeHits(game, me) : 0; // (made parts that match, after the catalogue's: UiSandboxMade.cs)
+            if (_sbVisibleCount == 0 && madeHits == 0)
                 ImGui.TextColored(Dim, _sbSearch.Length > 0 ? "Nothing matches the search."u8 : "Nothing of this size here."u8);
         }
         ImGui.EndChild();

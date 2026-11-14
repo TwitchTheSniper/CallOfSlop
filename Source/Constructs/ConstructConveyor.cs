@@ -153,9 +153,9 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>A piece into a Piece Rack, if it takes it: in the place packing gives it. Server.</summary>
-    public bool RackPut(Construct c, int part, ConstructPartDef d)
+    public bool RackPut(Construct c, int part, ConstructPartDef d, bool ordered = false)
     {
-        if (StoreOf(c, part) is not { } st || ConstructConveyor.RackCheck(c, part, st, d) != 0)
+        if (StoreOf(c, part) is not { } st || ConstructConveyor.RackCheck(c, part, st, d, ordered) != 0)
             return false;
         ConstructRackPack.Place(c.DefOf(part), st, d, false, out _, out _);
         st.AddKind(d.Id, 1);
@@ -239,12 +239,12 @@ public static class ConstructConveyor
     // ---- The rack ------------------------------------------------------------------------------------------------
 
     /// <summary>Whether a Piece Rack takes <paramref name="d"/>: 0, or 1 not a rack, 2 not a piece, 3 too big for it, 4 full (no text: the step asks every time the lead piece waits; <see cref="RackRefusal"/> says it).</summary>
-    public static int RackCheck(Construct c, int part, CStore st, ConstructPartDef d)
+    public static int RackCheck(Construct c, int part, CStore st, ConstructPartDef d, bool ordered = false)
     {
         var rd = c.DefOf(part);
         if (!rd.IsPieceRack)
             return 1;
-        if (d.Role == PartRole.Storage && !rd.IsBuildStation)
+        if (d.Role == PartRole.Storage && !rd.IsBuildStation && !(ordered && rd.IsCraftTerminal)) // (a terminal's tray only for its order's rider, a def, new and empty (<paramref name="ordered"/>, logistics fix-ups 2): an arm, a hand, a chute or a fetch is refused, so a loaded store never becomes a count)
             return 2; // (a piece, or anything a press stamps that fits: not storage, whose contents would be lost. A Building Station's hold takes any store part a blueprint names, a machine too, since a hold is a def count and what reaches it is new and empty: an order's rider, a hand, a stock; a loose loaded one in the bay is left alone, ConstructStation.TakeDropped: verification 2026-11-13c)
         ConstructRackPack.Ensure(rd, st);
         if (st.KindIndex(d.Id) < 0 && st.KindN >= CStore.MaxKinds || st.ItemCount >= rd.RackCount)
@@ -852,6 +852,8 @@ public static class ConstructConveyor
         for (var ci = 0; ci < bodies.Count; ci++)
         {
             var c = bodies[ci];
+            if (c.Logi is { OffAny: > 0 })
+                ConstructLogistics.Piles(world, c); // (a pile set off beside a Router: the pieces taken away leave it, the last ends its Alarm)
             if (c.ConveyedCount == 0)
             {
                 if (c.Logi is { AnyOut: true } && !c.Dirty)
@@ -985,7 +987,7 @@ public static class ConstructConveyor
         var td = c.DefOf(to);
         if (td.IsPieceRack)
         {
-            if (!world.RackPut(c, to, d))
+            if (!world.RackPut(c, to, d, ordered: r.Tag != 0 && ((LogiFlags)r.Flags & LogiFlags.Storage) == 0))
                 return false;
             if (td.IsCraftTerminal)
                 ConstructCrafting.Arrived(world, c, to, d); // (it counts for the oldest open order of its kind)
@@ -1050,6 +1052,60 @@ public static class ConstructConveyor
         np.Health = MathF.Max(1, d.Health * r.Health / 255f);
         np.Paint = r.Paint;
         world.Events.Add($"a {d.Name} dropped off its conveyor");
+    }
+
+    /// <summary>
+    /// Server: rider <paramref name="i"/>, the lead piece at a Router that no rack can take, comes off the line as a loose body set
+    /// down beside its way in at the first clear spot (either side of the line, up to four rows back along it, the body's own up), clear
+    /// of every body's solid boxes the Router's own included (<see cref="ConstructLogistics"/> NoPlace). The new body's id, or 0: no clear
+    /// spot, or the world is full (it stays on the line).
+    /// </summary>
+    public static ushort SetOff(ConstructWorld world, Construct c, int i, ConstructPartDef d, out Vector3 spot)
+    {
+        spot = default;
+        var r = c.Conveyed[i];
+        if (r.Route >= c.RouteCount)
+            return 0;
+        WorldPose(c, r.Route, r, d, out var centre, out var rot);
+        var back = r;
+        back.At = MathF.Max(0, r.At - 0.25f);
+        WorldPose(c, r.Route, back, d, out var behind, out _);
+        var bodyUp = Vector3.Transform(Vector3.UnitY, c.Rot); // (the body's own up: a base on a planetoid stands on its ground)
+        var travel = centre - behind;
+        travel -= bodyUp * Vector3.Dot(travel, bodyUp);
+        travel = travel.LengthSquared() > 1e-6f ? Vector3.Normalize(travel) : Vector3.Transform(Vector3.UnitZ, c.Rot);
+        var side = Vector3.Normalize(Vector3.Cross(travel, bodyUp));
+        Size(d, out var across, out var up, out var along);
+        var wide = MathF.Max(across, up);
+        var found = false;
+        for (var k = 0; k < 8 && !found; k++)
+        {
+            var at = centre + side * ((k & 1) == 0 ? 1 : -1) * (0.9f + wide) - travel * (k >> 1) * (along + 0.3f) + bodyUp * 0.2f; // (beside the Router: half a Router, the piece, a gap; then rows back)
+            if (SpotClear(world, at, travel, along, wide * 0.5f))
+                (spot, found) = (at, true);
+        }
+        if (!found || ConstructEdits.DropLoose(world, d, spot, rot) is not { } body)
+            return 0;
+        Remove(c, i);
+        body.Owner = c.Owner;
+        body.Vel = c.PointVel(centre);
+        body.AngVel = c.AngVel;
+        ref var np = ref body.Parts[0];
+        np.Health = MathF.Max(1, d.Health * r.Health / 255f);
+        np.Paint = r.Paint;
+        return body.Id;
+    }
+
+    /// <summary>Is a piece <paramref name="along"/> long and <paramref name="r"/> round at <paramref name="at"/> clear of every body's solid boxes? (A rare path: a set-off.)</summary>
+    private static bool SpotClear(ConstructWorld world, Vector3 at, Vector3 travel, float along, float r)
+    {
+        var a = at - travel * MathF.Max(0, along * 0.5f - r);
+        var b = at + travel * MathF.Max(0, along * 0.5f - r);
+        r = MathF.Max(0.05f, r);
+        foreach (var o in world.Bodies)
+            if (Vector3.DistanceSquared(o.WorldCom, at) < (o.Radius + along + r + 1) * (o.Radius + along + r + 1) && !world.CapsuleClear(o, a, b + (a == b ? new Vector3(0, 1e-3f, 0) : default), r))
+                return false;
+        return true;
     }
 
     /// <summary>Drops every rider of a body (it is going: its link with it).</summary>

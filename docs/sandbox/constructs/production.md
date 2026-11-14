@@ -138,6 +138,21 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
 - **Die Frames** (`"dieFrame": true`; Die Frame 0.5 x 1 m, Large Die Frame 1 x 2 m). The small Extruder starts with a 0.5 by 0.5 m die. Attach frames to it (and
   to each other) on any side: the die reaches across every working frame joined to it, up to 6 by 6 m, and its centre moves with
   them (`ConstructExtruder.Die`). The section is held to the die, and the look line says to add frames.
+- **Expansion pieces** (the user, 2026-11-13: build a bigger Extruder, or add pieces to it, to print bigger things; `ConstructExtruderGrowth.cs`,
+  made by `ExtrusionParts.Growth`). A piece counts only on a machine of its own size class, joined to it directly or through others of its kind, and not broken;
+  everything is read from the construct's parts and links (`ConstructExtruder.Reach`: the die and the longest piece in one walk), so a client agrees with the host
+  after one is welded on or shot off.
+  - **Die Extensions** (Medium 2 m, Large 4 m; `"dieExtension"`): welded to the machine's side on the die face's row of sockets (`-x.4.5` on the Medium), flush with
+    the die face (one standing further back doesn't count). Each adds its row on that side of the die, chained outward, up to the machine's `growSection` (the next
+    class's die: 16 and 32 m); the die's centre moves with them. The Capital takes none (32 m is `Extrusion.MaxSectionCm`).
+  - **Run-out Tables** (Small 8 m, Medium and Large 16 m; `"runOut"`): roller beds under the die on the machine's `outBed` socket (kind `runOut`: nothing else fits),
+    the next on the last one's far end. Each adds to the longest piece up to `growLength` (64, 128, 192 m); their tops stand below the die's foot so a piece rides over.
+    The Capital takes none (192 m is `Extrusion.MaxLengthCm`). The step walks the tables only within 1 m of the plain cap.
+  - **What would make it fit.** An order too wide or too long for the machine as built (`WorkOrders.Refusal`, the picker, the look line, the Panel Former's sheet
+    link) names an expansion piece on this machine first, then the smallest Extruder that takes it (`ConstructExtruder.WideFix`, `LongFix`, `Bigger`), then, for a
+    Panel Former's sheet, strips. The recipe picker says the die and the longest piece as built and what the pieces make of them; the screen's length bar reads the grown cap.
+  - **Cost**: each piece about 30% of the next machine's recipe (600 steel, 150 rubber and parts; tier of its class), so one row or table is cheaper than the next
+    Extruder and the whole jump to its size dearer (docs/sandbox/design/extruder-expansion-notes.md).
 - **Growing.** The piece is a part of the machine's own construct, linked to its `die` socket (kind `die`: nothing else fits), its origin
   at its base end, so it rides with the machine (a mothership included), counts in its mass and is solid. Everything is found from that link
   (`ProductOf`), so nothing has to be kept in step through renumbering, splits or the wire. At 10 Hz the step adds up
@@ -428,12 +443,20 @@ flat extruded piece (plate, a flat bar either way up). Code: `ConstructLaserCutt
   (`Bill.Cut`, its blank a Panel Former's or an Extruder's line; a bill line `{"step": n, "cut": "Cut Panel (...)", "count": 2}`; `--bill`
   prints "Cut panels"); a Building Station's step (`OrderFor`). A cut order at a cutter chains its blank (`ConstructLogisticsPlan.CutterInputs`):
   a formed panel asked of a linked Panel Former, a plate or flat bar of a linked Extruder, riding to the cutter tagged for it.
-- **Window tool**: `cutter`, `cutter order KEY [N]`, `cutter feed KEY`, `cutter await` (`Program.WindowShotCutter.cs`). The designer's `design cut rU,V,A,B,C | mK,A,B | clear | drop N`.
+- **The Pane** (phase 6, `HullLoft.Pane.cs`; notes `laser-cutter-phase6-notes.md`): `Cut Pane (rA,B,C tT glass)`, glass cut to an
+  opening's own outline (`A` along, `B` across, corners cut back `C`, `T` mm, 12 to 40), 7 mm short all round (an opening's socket is on the whole centimetre, up to 5 mm from its true middle). Its blank is the smallest
+  flat formed glass sheet that holds it (`Formed Panel (curve LxW c0 r0 tT glass)`, sides rounded up to 5 cm, at least 20); the head cuts
+  its whole outline. It welds by its one socket, `back` (the middle of its back face), to an opening's `o` socket, its front `T` mm out on
+  the side the sheet faces. A square-cornered pane is one solid glass box (rounds pass it and break it); one with cut corners is a glass hull
+  over a hidden box (a round stops on it and breaks it). The designer's **Glazed** box, only on an opening of 10 cm or more wholly inside the sheet, makes ORDER add one
+  pane per glazed opening per panel (not saved with the design: a design is its cut key). A cut part like the others: an order, a bill's
+  `Bill.Cut` line, a rack's kind, a Building Station's step, all by key.
+- **Window tool**: `cutter`, `cutter order KEY [N]`, `cutter feed KEY`, `cutter await` (`Program.WindowShotCutter.cs`). The designer's `design cut rU,V,A,B,C | mK,A,B | clear | drop N | glaze N`; `ray PART U,V M D` deals D damage to what the ray hits (host).
 - **Tried** (2026-11-13, Proving Ground, a former, a conveyor and a small cutter; host and a joined client): a 20 mm panel's window and
   corner (1.61 m of edge) cut in 6.9 s, the same at 40 mm in 11.7 s, a 5 cm plate in 14.1 s and a 10 cm plate in 26.2 s, each as the law
   says, on both peers; the tenths 0.6 + 1.1 gave a unit and 0.7 over.
 
-Next: the designer's drawn plan of the sheet (cuts dragged by mouse) and cut plates designed there; the Showcase's cutter; the Pane (phase 6); a loose blank let go on the in bed taken in; F taking back a blank from the bed.
+Next: the designer's drawn plan of the sheet (cuts dragged by mouse) and cut plates designed there; the Showcase's cutter; a loose blank let go on the in bed taken in; F taking back a blank from the bed.
 
 ## Machine tiers
 
@@ -1526,6 +1549,14 @@ a step the rules refuse fails there with their reason. It reads the part files: 
   steel sheet 0.5 x 0.1 x 1 m, a conveyor into a [Panel Former](#the-panel-former)'s Piece in, its Piece out onto a conveyor to a Long
   Piece Rack; on the orders console, whose bill gains two Hoods, two Fenders and one of the vehicle kit's lofted hoods); **crafting** (a Crafting Terminal between the two end racks, the orders console wired into its Orders port, a
   return conveyor from the Assembler's rack to its tray: "F on the screen: order a part. It arrives in the tray").
+- **Added 2026-11-13** (`showcase-repair-notes.md` in `docs/sandbox/design`): rubber chuted to the Assembler beside its steel (an
+  Ammo Container needs both); the Assembler's Router's way 2 runs to the Building Station's Piece in 2, so a part the station orders
+  of the Assembler rides into the hold; two Loader Arms at the bay's corners by the hold, on the showcase's own power; and a
+  **back strip** behind the station (x 56 to 86, z -14 to -20): an Airframe Former whose wing grows 6 m east over clear floor and drops
+  (a wing has no conveyor), and the [Laser Cutter](#the-laser-cutter)'s line, an Extruder making 0.5 x 0.1 x 1 m steel plate, a
+  Router whose way ahead takes an ordered blank to the cutter and whose way 2 racks the rest, the cutter's Piece out to its own Piece
+  Rack, all three on the orders console. Each conveyor before and after the cutter is 2 m: one shorter than the piece jams the Router
+  ("the conveyor after the junction is full").
 - **Stock** is the Storage Volume's own creative-only Material and Fill settings (`ConstructBuild.SetConfig`): a creative world fills
   each box as the blueprint builds; a survival world builds it empty, so a blueprint gives survival nothing. They are filled to 24%,
   under the 25% an open side may hold before it pours ([Sealed volumes](power-and-links.md#sealed-volumes)), so they need no walls.

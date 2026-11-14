@@ -62,7 +62,7 @@ public static partial class HullLoft
     /// <summary>A point on the flat sheet, cm (U along, V across): doubles, so every peer's pieces come out the same.</summary>
     internal readonly record struct Vector2d(double U, double V);
 
-    public static bool IsCutName(string name) => name.StartsWith(CutPanelPrefix, StringComparison.Ordinal) || name.StartsWith(CutPlatePrefix, StringComparison.Ordinal);
+    public static bool IsCutName(string name) => name.StartsWith(CutPanelPrefix, StringComparison.Ordinal) || name.StartsWith(CutPlatePrefix, StringComparison.Ordinal) || IsPaneName(name);
 
     /// <summary>The key for a blank and its cuts, the cuts in their one order (openings by U, V, A, B, C; then corners by K).</summary>
     public static string CutKey(bool plate, string blankText, IEnumerable<Cut> cuts)
@@ -78,14 +78,14 @@ public static partial class HullLoft
     }
 
     /// <summary>Why a name is not a cut part a Laser Cutter would make, or null. Allocates: a key is read once, when its part is first made.</summary>
-    public static string? CutRefusal(string name) => ReadCut(name, out var why) == null ? why : null;
+    public static string? CutRefusal(string name) => IsPaneName(name) ? (PaneOf(name, out var pw) == null ? pw : null) : ReadCut(name, out var why) == null ? why : null;
 
     /// <summary>A cut key read, checked and planned; null with <paramref name="why"/> when it is refused (never clamped: every peer makes the same part or none).</summary>
     internal static CutPlan? ReadCut(string name, out string why)
     {
         why = "not a cut part";
-        if (!IsCutName(name) || !name.EndsWith(')'))
-            return null;
+        if (IsPaneName(name) || !IsCutName(name) || !name.EndsWith(')'))
+            return null; // (a pane has no plan: PaneOf, HullLoft.Pane.cs)
         if (name.Length > ConstructParts.MaxRuntimeName)
         {
             why = "too many cuts for this part's key";
@@ -539,6 +539,14 @@ public static partial class HullLoft
     public static bool CutJob(string name, out string blank, out bool plate, out ExtrusionKey stock, out float edgeM, out float mm)
     {
         (blank, plate, stock, edgeM, mm) = ("", false, default, 0, 0);
+        if (IsPaneName(name))
+        {
+            // A pane (phase 6): cut round its whole outline from its glass sheet.
+            if (PaneOf(name, out _) is not { } pane)
+                return false;
+            (blank, edgeM, mm) = (PaneBlank(pane), PanePerimeter(pane), pane.Mm);
+            return true;
+        }
         if (ReadCut(name, out _) is not { } plan)
             return false;
         double l = plan.Sheet.L, w = plan.Sheet.W, cm = 0;
@@ -752,7 +760,8 @@ public static partial class HullLoft
             var axis = MathF.Abs(n.X) >= MathF.Abs(n.Y) && MathF.Abs(n.X) >= MathF.Abs(n.Z) ? 0 : MathF.Abs(n.Y) >= MathF.Abs(n.Z) ? 1 : 2;
             var dir = (byte)(axis * 2 + (n[axis] < 0 ? 1 : 0));
             add ??= new List<CSocket>(MaxCuts);
-            add.Add(new CSocket($"o{add.Count}", new Vector3(R(at.X), R(at.Y), R(at.Z)), dir, SocketKind.Struct, d.Class));
+            static float Cm(float v) => MathF.Round(v * 100) / 100; // (on the whole centimetre, as a part's place is: what welds here lands on it exactly, a pane within PaneGap of the true middle)
+            add.Add(new CSocket($"o{add.Count}", new Vector3(Cm(at.X), Cm(at.Y), Cm(at.Z)), dir, SocketKind.Struct, d.Class));
         }
         if (add != null)
             d.Sockets = [.. d.Sockets, .. add];
@@ -899,6 +908,8 @@ public static partial class HullLoft
     {
         if (!IsCutName(name))
             return null;
+        if (IsPaneName(name))
+            return MakePane(name); // (a pane: one or two boxes, made at once: HullLoft.Pane.cs)
         if (ReadCut(name, out var why) is not { } plan)
         {
             Console.WriteLine($"[cuts] {name}: refused, {why}");
@@ -1003,6 +1014,8 @@ public static partial class HullLoft
     /// <summary>The material a cut part is made of (0: not a cut part).</summary>
     private static byte CutMaterial(string name)
     {
+        if (IsPaneName(name))
+            return PaneOf(name, out _) != null ? RecyclingTable.Current.IdOf(PaneMaterial) : (byte)0;
         var plate = name.StartsWith(CutPlatePrefix, StringComparison.Ordinal);
         var inner = name[(plate ? CutPlatePrefix : CutPanelPrefix).Length..];
         var split = inner.IndexOf(CutSplit, StringComparison.Ordinal);

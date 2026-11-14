@@ -115,3 +115,9 @@ joined by a lifter only, the claim sweep skips pad claims, a station's large fet
   distance cut and a body-frame test first); kept when nothing they follow changed (`EdgeKey`): the whole map made again 18 us; a
   terminal's network look 0.6 us (`HasLifter` kept on the body until its parts change).
 - The pick pad count's pre-scan tick and its pads list live on the world (`PadScanTick`, `PadSeen`), not in statics.
+- **Merged with main at protocol 308** (this change is 309). A Router's `CouldWait` (main's fix-ups) counts no store reachable only
+  across a lifter (overflow is never carried store to store), so a piece whose only place lies across an arm is set off beside the
+  Router. Tried (`lifter ride 300 shut`: the pick rack takes nothing as storage, only the pad across the arm would): set off at once,
+  Alarm on, with the arm working and with it set to Off; a joined client read the Alarm. An unpowered arm with a powered Router was
+  not tried (the rig has no power source); the rule doesn't read the arm's state. Main's network takers skip pads (`RackStore.IsPad`);
+  a pick rack's count taken from under an arm moves `AtPicks` (by `Available`) and the pad claims (kept at 2 Hz) with it.

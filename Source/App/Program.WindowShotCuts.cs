@@ -7,18 +7,20 @@ namespace CallOfSlop;
 /// The window tool's verbs for cut parts (docs/sandbox/design/laser-cutter.md, phase 2), each placed by a spot on the part's flat sheet
 /// (U cm along it, V cm across, as a cut key places its cuts):
 /// <c>ray PART[#n] U,V [M]</c> a bullet's construct ray at that spot, square to the sheet from M metres out (default 2), printing what it hits;
-/// <c>walk PART[#n] U,V M FRAMES</c> the player, noclip off, on the ground M metres out from that spot, holding Forward towards the sheet
-/// for that many frames (a client waits until the host has put it there: <c>put PART[#n] U,V M</c> on the host), then <c>side PART[#n] U,V</c>,
+/// <c>walk PART[#n] U,V M TICKS</c> the player, noclip off, on the ground M metres out from that spot, holding Forward towards the sheet
+/// for that many simulation ticks of real time, whatever the frame rate (a client waits until the host has put it there: <c>put PART[#n] U,V M</c> on the host), then <c>side PART[#n] U,V</c>,
 /// which prints which side of the sheet the player stands on.
 /// </summary>
 public static unsafe partial class Program
 {
-    private static int _wsHoldFrames; // frames the held key stays down (walk)
+    private static long _wsHoldUntil; // (walk: the Stopwatch stamp the held key comes up at)
     private static GameAction _wsHold;
     private static int _wsPutWait; // (a client's walk waiting for the host's put)
 
     private static bool WsCutVerb(Game g, Player me, string verb, string arg)
     {
+        if (WsExtrVerb(g, me, verb, arg))
+            return true; // (Extruder expansion pieces: Program.WindowShotExtr.cs)
         if (WsCutterVerb(g, verb, arg))
             return true; // (the Laser Cutter: Program.WindowShotCutter.cs)
         if (verb is not ("ray" or "walk" or "side" or "put"))
@@ -49,7 +51,18 @@ public static unsafe partial class Program
                 var m = rest.Length > 0 ? rest[0] : 2f;
                 var o = spot + n * m;
                 if (g.Constructs.Raycast(o, -n, m * 2, out var hit))
-                    WsSay($"ray at {uv[0]:0},{uv[1]:0}: hits {hit.Body.DefOf(hit.Part).Name} (part {hit.Part}) at {hit.Distance:0.00} m of {m * 2:0.#} (the sheet is at {m:0.00})");
+                {
+                    WsSay($"ray at {uv[0]:0},{uv[1]:0}: hits {hit.Body.DefOf(hit.Part).Name} (part {hit.Part}{(hit.Glass ? ", glass" : "")}) at {hit.Distance:0.00} m of {m * 2:0.#} (the sheet is at {m:0.00})");
+                    if (rest.Length > 1 && rest[1] > 0 && g.IsServer)
+                    {
+                        // "ray PART U,V M D" (phase 6): D damage dealt to the part hit, as a round's hit deals it; the body's part count after.
+                        var body = hit.Body;
+                        var before = body.PartCount;
+                        var name = body.DefOf(hit.Part).Name;
+                        g.Constructs.DamagePart(body, hit.Part, rest[1], out var dealt);
+                        WsSay($"ray: {dealt:0} damage to {name}; the body has {body.PartCount} parts (had {before}): {string.Join(", ", Enumerable.Range(0, body.PartCount).Select(i => body.DefOf(i).Name))}");
+                    }
+                }
                 else
                     WsSay($"ray at {uv[0]:0},{uv[1]:0}: passes, no part within {m * 2:0.#} m");
                 _wsWait = 2;
@@ -59,7 +72,7 @@ public static unsafe partial class Program
             {
                 if (rest.Length < 2)
                 {
-                    WsFail("walk PART[#n] U,V M FRAMES");
+                    WsFail("walk PART[#n] U,V M TICKS");
                     return true;
                 }
                 var flat = Vector3.Normalize(new Vector3(n.X, 0, n.Z) + new Vector3(1e-5f, 0, 0));
@@ -77,16 +90,16 @@ public static unsafe partial class Program
                         return true;
                     }
                     _wsQueue.EnqueueFront($"{verb} {arg}");
-                    _wsWait = 10;
+                    WsWaitTicks(10);
                     return true;
                 }
                 _wsPutWait = 0;
                 g.LookYaw = MathF.Atan2(-flat.X, flat.Z);
                 g.LookPitch = 0;
-                WsSay($"walk: from {stand:0.00}, {rest[0]:0.0} m out, towards the sheet for {rest[1]:0} frames");
+                WsSay($"walk: from {stand:0.00}, {rest[0]:0.0} m out, towards the sheet for {rest[1]:0} ticks");
                 _wsHold = GameAction.MoveForward;
-                _wsHoldFrames = (int)rest[1];
-                _wsWait = (int)rest[1] + 10;
+                _wsHoldUntil = System.Diagnostics.Stopwatch.GetTimestamp() + (long)(rest[1] / World.TickRate * System.Diagnostics.Stopwatch.Frequency);
+                WsWaitTicks((int)rest[1] + 10);
                 _wsQueue.EnqueueFront("side " + string.Join(' ', words[..(at + 1)]));
                 return true;
             }
@@ -104,7 +117,7 @@ public static unsafe partial class Program
                 if (count == 0 && ++_wsPutWait < 360) // (no one has joined yet: try again, up to a minute)
                 {
                     _wsQueue.EnqueueFront($"{verb} {arg}");
-                    _wsWait = 10;
+                    WsWaitTicks(10);
                     return true;
                 }
                 _wsPutWait = 0;
@@ -125,9 +138,13 @@ public static unsafe partial class Program
     /// <summary>PollActions: the walk verb's held key.</summary>
     private static void WindowShotHold(bool[] down)
     {
-        if (_wsHoldFrames <= 0)
+        if (_wsHoldUntil == 0)
             return;
+        if (System.Diagnostics.Stopwatch.GetTimestamp() >= _wsHoldUntil)
+        {
+            _wsHoldUntil = 0;
+            return;
+        }
         down[(int)_wsHold] = true;
-        _wsHoldFrames--;
     }
 }

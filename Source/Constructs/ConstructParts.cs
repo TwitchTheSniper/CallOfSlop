@@ -257,6 +257,7 @@ public enum SocketKind : byte
     Die, // an Extruder's output: only the piece growing on it goes there (ConstructExtruder.cs)
     Port, // only what a shaft port stands on (a suspension's Drive in, on its moving hub): nothing bolts here
     PressDie, // a press's die slot and a die's mount: only a die of its size class goes there (ConstructPress.cs)
+    RunOut, // an Extruder's out bed and a Run-out Table's ends: only a Run-out Table of its size class goes there (ConstructExtruderGrowth.cs)
 }
 
 /// <summary>
@@ -667,11 +668,15 @@ public sealed partial class ConstructPartDef
     public bool IsExtruder; // an Extruder (ConstructExtruder.cs): its bulk bin feeds what grows out of its die
     public float ExtSpeed; // an Extruder: metres a second ("speed" in storage.extrude)
     public Vector2 ExtDie, ExtMaxSection; // ...its own die and the most Die Frames can make of it (metres across, up the face)
+    public Vector2 ExtGrowSection; // ...the most die its expansion pieces make (Die Frames or Die Extensions; "growSection", else maxSection)
+    public float ExtGrowLength; // ...the longest piece with its Run-out Tables ("growLength", else maxLength)
     public Vector3 ExtDieAt; // ...the die's centre on its output face (part frame; the piece grows along +z from here)
     public float ExtMaxLength, ExtPush; // ...the longest piece (m), and how hard it pushes what is in the way (N)
     public int ExtDieSocket = -1; // ...its socket of kind "die"
     public bool IsRequisition; // a Requisition Crate ("requisition": true): a story faction's courier collects a Supply job from its box (Game/GameStoryJobs.cs)
     public bool IsDieFrame; // a Die Frame ("dieFrame": true): the die of an Extruder it is joined to reaches across it
+    public float ExtGrowStep; // a Die Extension ("dieExtension": metres): flush with the die face of an Extruder of its size class, it adds a row or column of that much die (ExtruderGrowth.cs)
+    public float ExtRunOut; // a Run-out Table ("runOut": metres): joined to an Extruder of its size class (or another such table), it adds that much to the longest piece
     public bool IsFanFormer; // a Fan Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a whole rotor
     public bool IsAirframeFormer; // an Airframe Former (also IsWheelFormer: ConstructExtruder.cs): its piece is a wing or a control surface, to the size it is set to
     public bool IsRouter; // "router": true: a Conveyor Router, a junction that sends each piece the way to where it is wanted (ConstructLogistics.cs)
@@ -1310,7 +1315,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter",
+        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1628,6 +1633,16 @@ public static partial class ConstructParts
         d.Sockets = socks.ToArray();
         d.CentreOptOut = Opt(root, "centreSockets") is { ValueKind: JsonValueKind.False };
         d.IsDieFrame = Opt(root, "dieFrame") is { ValueKind: JsonValueKind.True };
+        if (Opt(root, "dieExtension") is { } dext)
+        {
+            d.ExtGrowStep = Num(dext, file, "dieExtension");
+            Range(d.ExtGrowStep, 0.25f, 8, file, "dieExtension");
+        }
+        if (Opt(root, "runOut") is { } rout)
+        {
+            d.ExtRunOut = Num(rout, file, "runOut");
+            Range(d.ExtRunOut, 1, 64, file, "runOut");
+        }
         d.IsRequisition = Opt(root, "requisition") is { ValueKind: JsonValueKind.True };
 
         // Role data

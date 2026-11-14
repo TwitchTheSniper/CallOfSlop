@@ -76,7 +76,7 @@ public static partial class ProductionLines
         return (ExtrudeStall)st.Refused switch
         {
             ExtrudeStall.NoMaterial or ExtrudeStall.OrderMaterial or ExtrudeStall.Mixed => LineState.Starved,
-            ExtrudeStall.BadMaterial or ExtrudeStall.BadShape or ExtrudeStall.ConveyorSmall => LineState.Fault,
+            ExtrudeStall.BadMaterial or ExtrudeStall.BadShape or ExtrudeStall.ConveyorSmall or ExtrudeStall.OrderTooLong => LineState.Fault,
             ExtrudeStall.NoPower => LineState.NoPower,
             ExtrudeStall.None or ExtrudeStall.NoOrders => LineState.Idle,
             _ => LineState.Blocked, // (at its cap, blocked, too heavy to push, a chute or a conveyor waiting)
@@ -492,6 +492,7 @@ public static partial class ProductionLines
         ExtrudeStall.ConveyorCut => "conveyor cut",
         ExtrudeStall.NoOrders => "waiting for orders",
         ExtrudeStall.OrderMaterial => "order needs other stock",
+        ExtrudeStall.OrderTooLong => "order longer than it makes",
         ExtrudeStall.OffcutFull => "offcut bin full",
         _ => "waiting",
     };
