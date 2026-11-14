@@ -317,6 +317,90 @@ public sealed partial class Game
         }
     }
 
+    // ---- The link-up as this PC's player sees it (Karl, 2026-11-14) ---------------------------------------------------
+    // Sitting down in a chair, the helmet comes down over their eyes, everything goes black but for a few small lamps, then
+    // they open their eyes as the robot. Worked out on each peer from its own seat and the shell flag: no bytes on the wire.
+
+    public const double LinkHelmetSeconds = 0.8; // the helmet coming down
+    public const double LinkGiveUpSeconds = ShellLinkSeconds + 2.0; // no shell by then (none free, out of reach): the helmet lifts
+    private double _lkFrom = -1, _lkWoke = -1, _lkLift = -1;
+    private bool _lkSpent, _lkWasShell;
+
+    /// <summary>
+    /// Every frame, host and clients: this PC's player's link-up. <paramref name="helmet"/> is how far down the helmet is
+    /// (0 up, 1 over the eyes), <paramref name="dark"/> how black the view is (the lamps show in it). False: nothing to draw.
+    /// </summary>
+    public bool ShellLinkView(double now, out float helmet, out float dark)
+    {
+        helmet = dark = 0;
+        if (!SandboxOn || Local is not { } me || !me.Alive)
+        {
+            _lkFrom = _lkWoke = _lkLift = -1;
+            return false;
+        }
+        if (me.InShell)
+        {
+            if (!_lkWasShell)
+                _lkWoke = now; // (the link took: they open their eyes as the robot)
+            _lkWasShell = _lkSpent = true;
+            _lkFrom = -1;
+        }
+        else
+        {
+            _lkWasShell = false;
+            _lkWoke = -1;
+            ref var h = ref SandboxHands.Hand(me.Id);
+            var inChair = h.SeatBody != 0 && Constructs.Get(h.SeatBody) is { } c && h.SeatPart < c.PartCount && c.Parts[h.SeatPart].D.ShellRange > 0;
+            if (!inChair)
+            {
+                _lkSpent = false; // (they stood up: the next sit links again, as on the server)
+                _lkFrom = _lkLift = -1;
+            }
+            else if (!_lkSpent && _lkFrom < 0)
+                _lkFrom = now;
+        }
+        if (_lkWoke >= 0)
+        {
+            var t = (float)(now - _lkWoke);
+            dark = t < 0.25f ? 1 : 1 - (t - 0.25f) / 0.6f; // (a moment of black, then the robot's view comes up)
+            helmet = 0;
+            if (dark <= 0)
+            {
+                _lkWoke = -1;
+                return false;
+            }
+            return true;
+        }
+        if (_lkFrom < 0)
+        {
+            if (_lkLift < 0)
+                return false;
+            var t = (float)(now - _lkLift); // (no link: the helmet goes back up)
+            helmet = 1 - t / (float)LinkHelmetSeconds;
+            dark = 0;
+            if (helmet <= 0)
+            {
+                _lkLift = -1;
+                return false;
+            }
+            return true;
+        }
+        var since = now - _lkFrom;
+        if (since >= LinkGiveUpSeconds)
+        {
+            _lkSpent = true;
+            _lkFrom = -1;
+            _lkLift = now;
+            helmet = 1;
+            return true;
+        }
+        helmet = Math.Min(1f, (float)(since / LinkHelmetSeconds));
+        dark = since < LinkHelmetSeconds ? 0 : Math.Min(1f, (float)((since - LinkHelmetSeconds) / 0.3));
+        if (since > LinkGiveUpSeconds - 0.4)
+            dark *= (float)((LinkGiveUpSeconds - since) / 0.4); // (the lamps fade as the link gives up)
+        return true;
+    }
+
     private readonly Player?[] _shBodies = new Player?[256]; // (drawing only: each shell wearer's own body, sitting in the chair)
 
     /// <summary>

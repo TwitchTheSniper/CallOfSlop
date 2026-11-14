@@ -241,6 +241,7 @@ public sealed partial class Ui : IDisposable
             DrawErrand(game, pos, size, settings); // an errand on a works yard machine, when none of those holds the place (UiErrand.cs)
             DrawDepot(game, pos, size, settings); // the Orbital Depot's steps, there once the quarry is done (UiDepot.cs)
             DrawObjective(game, pos, size, settings); // the "what next" goal, there when none of those is (UiObjectives.cs)
+            DrawShellLink(game); // the robot shell chair's helmet coming down, black and its lamps (UiShellLink.cs)
         }
 
         // ---- Top-left: session info -------------------------------------------------
