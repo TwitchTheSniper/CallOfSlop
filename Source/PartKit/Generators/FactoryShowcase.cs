@@ -268,14 +268,16 @@ public sealed class FactoryShowcase : IPartGenerator
             var clothS = On("Sawmill", 26.25f, Row2, Back, paint: Refining);
             var glassS = On("Smelter", 34.25f, Row2, Back, paint: Refining);
 
-            var ore = Heap("iron ore", -3.75f, -6.75f, 5.0f); // (on the raw strip west of the power plant: 6,000 ore, the whole factory's metal)
+            var ore = Heap("iron ore", -3.75f, -4.25f, 5.0f); // (two heaps on the raw strip west of the power plant: the whole factory's metal)
+            var ore2 = Heap("iron ore", -3.75f, -10.25f, 5.0f);
+            ChuteVia(ore2, smelter, -9.6f);
             ChuteVia(ore, smelter, -9.5f);
             Feed(Heap("stone", 14.25f, -4.25f, 2.4f), steelF);
             var wood = Heap("wood", 22.25f, -4.25f, 2.4f);
             Feed(wood, sawmill);
             Feed(Heap("sand", 30.25f, -4.25f, 2.4f), rubberF);
             Feed(Heap("copper ore", 6.25f, -10.75f, 2.4f), copperS);
-            Sign(-3.75f, Posts1, Stock, "RAW STOCK: filled in creative, empty in survival");
+            Sign(-7.25f, Posts1, Stock, "RAW STOCK: filled in creative, empty in survival");
             Feed(Heap("sand", 30.25f, -10.75f, 2.4f), glassS);
             ChuteVia(smelter, steelF, -7.35f);
             ChuteVia(smelter, bronzeF, -8.2f);
@@ -482,17 +484,22 @@ public sealed class FactoryShowcase : IPartGenerator
             Convey(j2, "Piece out", rs, "Piece in", StationTeal);
             var station = On("Building Station", 92.25f, -9.25f, Front, "-y.0.0");
             Config(station, ("bayWidth", 6.0), ("bayDepth", 8.0), ("bayHeight", 3.5));
-            var ro = PortAt(rs, "Piece out");
+            // Router S ahead through Join S into the station's side; S's storage rack (way 2) runs back into Join S's south side, so a piece
+            // stored there is fetched on to the station (a rack with no way on left a Wheel at "Collect" for good).
+            var js = On("Conveyor Join", 87.25f, -10.75f, Flow, "-y.0.0", StationTeal);
+            Convey(rs, "Piece out", js, "Piece in", StationTeal);
+            var ro = PortAt(js, "Piece out");
             var si = PortAt(station, "Piece in 2");
-            Convey(rs, "Piece out", station, "Piece in 2", StationTeal, null, Along(new[] { V(ro.X, 0, ro.Z), V(90.75f, 0, ro.Z), V(90.75f, 0, si.Z) }).Skip(1).Select(n => n with { Y = ro.Y }).ToArray()); // (east along the row, up beside the station into its side)
+            Convey(js, "Piece out", station, "Piece in 2", StationTeal, null, V(90.75f, ro.Y, ro.Z), V(90.75f, ro.Y, si.Z)); // (east, up beside the station into its side)
             var po = PortAt(ph.LineOut, "Piece out");
             var sb = PortAt(station, "Piece in");
             Convey(ph.LineOut, "Piece out", station, "Piece in", PressBlue, Wide, V(sb.X, po.Y, po.Z), V(sb.X, po.Y, sb.Z - 2.0f - (po.Y - sb.Y)), V(sb.X, sb.Y, sb.Z - 2.0f)); // (a 45 degree step down to the port's height; the press line: east, then north into the station's back)
             foreach (var t in _toStation)
                 ChuteVia(t, station, -14.35f - 0.15f * _toStation.IndexOf(t));
             ChuteVia(r.Copper, station, -14.05f); // (link stock: a unit of copper a metre of wire)
-            var rack = On("Long Piece Rack", 81.25f, -13.25f, Flow, "-y.0.0", StationTeal); // (the Router's storage, along the main floor's back edge)
+            var rack = On("Piece Rack", 79.75f, -13.25f, Flow, "-y.0.0", StationTeal); // (the Router's storage, along the main floor's back edge)
             Convey(rs, "Piece out 2", rack, "Piece in", StationTeal);
+            Convey(rack, "Piece out", js, "Piece in 2", StationTeal);
             On("Loader Arm", 95.75f, -10.75f, Front, "-y.0.0");
             On("Loader Arm", 95.75f, -4.25f, Front, "-y.0.0");
             Sign(66.25f, Posts2, Wheels, "WHEELS: rubber in, a formed wheel out");
