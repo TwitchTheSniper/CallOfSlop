@@ -478,6 +478,9 @@ public static class ConstructLogistics
         return n;
     }
 
+    /// <summary>Pieces riding to store <paramref name="handle"/> for order <paramref name="tag"/> (a terminal's or a station's): either peer; allocates nothing.</summary>
+    public static int RidingFor(Construct c, ushort handle, ushort tag) => tag == 0 ? 0 : Riding(c, handle, tag, LogiFlags.None, LogiFlags.Storage);
+
     /// <summary>The order a piece of kind <paramref name="d"/> could serve at terminal destination <paramref name="ds"/>: its id, or 0. Prefers one asked of <paramref name="maker"/>.</summary>
     private static ushort WantAt(ConstructWorld world, Construct c, LogiMap m, int ds, ConstructPartDef d, int maker)
     {

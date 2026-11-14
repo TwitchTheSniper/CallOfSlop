@@ -756,6 +756,8 @@ public static class ConstructCrafting
         };
     }
 
+    private const string RidingToHold = "riding to the hold";
+
     private static readonly string[] StateWords = ["waiting", "fetching", "queued", "riding", "in tray", "collect", "held"];
 
     /// <summary>The terminal's own screen (panel source <c>craft</c>): what it sees and its first orders. Either peer; allocates nothing.</summary>
@@ -1259,13 +1261,22 @@ public static class ConstructCrafting
                 if (where == NoPart)
                     where = o.State == CraftState.Queued ? o.Where : NoPart;
             }
+            if (state == CraftState.Queued && o.Sent == 0 && held == 0 && ConstructLogistics.RidingFor(c, owner, o.Id) is var riders and > 0 && riders >= o.Asked)
+            {
+                // What its machine made for it is on the conveyors to this tray (leftovers 3: a station's note still read "queued at the
+                // Assembler" while the container rode): said as riding, as a fetched piece is, until Arrived counts it in.
+                state = CraftState.Riding;
+                note = ConstructLogistics.HeldNote(c, t, o.Id) ?? (c.DefOf(t).IsBuildStation ? RidingToHold : "");
+                if (note != (o.Note ?? ""))
+                    changed = true;
+            }
             if (state == CraftState.Waiting && o.Sent > 0)
             {
                 state = CraftState.Riding;
                 // A piece of it held at a Router says where, by the Router's name (phase 4c), looked at every fifth step as a queued note is.
                 note = o.State == CraftState.Riding ? o.Note ?? "" : "";
                 if (o.State != CraftState.Riding || o.Age++ % 5 == 0)
-                    note = ConstructLogistics.HeldNote(c, t, o.Id) ?? "";
+                    note = ConstructLogistics.HeldNote(c, t, o.Id) ?? (c.DefOf(t).IsBuildStation ? RidingToHold : "");
                 if (note != (o.Note ?? ""))
                     changed = true;
             }
