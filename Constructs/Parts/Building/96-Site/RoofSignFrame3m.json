@@ -1,0 +1,116 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Roof Sign Frame 3 m",
+  "description": "A frame for a slogan where the whole street reads it.",
+  "group": "Building",
+  "section": "Site works",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 120.0,
+  "health": 300,
+  "armour": 6,
+  "material": "steel",
+  "color": "#5b625f",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.025
+      ],
+      "max": [
+        -0.005,
+        1.595,
+        0.125
+      ]
+    },
+    {
+      "min": [
+        2.755,
+        -0.125,
+        -0.025
+      ],
+      "max": [
+        2.875,
+        1.595,
+        0.125
+      ]
+    },
+    {
+      "min": [
+        1.315,
+        -0.125,
+        -0.025
+      ],
+      "max": [
+        1.435,
+        0.575,
+        0.125
+      ]
+    },
+    {
+      "min": [
+        -0.175,
+        0.575,
+        -0.075
+      ],
+      "max": [
+        2.925,
+        1.475,
+        -0.025
+      ],
+      "color": "#4b5157"
+    },
+    {
+      "min": [
+        -0.185,
+        1.595,
+        -0.375
+      ],
+      "max": [
+        2.935,
+        1.655,
+        0.145
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "b",
+      "at": [
+        1.375,
+        -0.125,
+        0.05
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "sign",
+      "at": [
+        1.375,
+        1.025,
+        -0.075
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "lamp0",
+      "at": [
+        0.375,
+        1.595,
+        -0.275
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "lamp1",
+      "at": [
+        2.375,
+        1.595,
+        -0.275
+      ],
+      "dir": "-y"
+    }
+  ]
+}

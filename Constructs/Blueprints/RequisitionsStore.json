@@ -263,6 +263,12 @@
       "paint": "#2f5a3c"
     },
     {
+      "part": "Loading Hoist",
+      "on": 18,
+      "socket": "f8",
+      "by": "back"
+    },
+    {
       "part": "Bulkhead Light",
       "on": 8,
       "socket": "f0_10",
@@ -290,19 +296,19 @@
     },
     {
       "part": "Service Counter 2 m",
-      "on": 35,
-      "socket": "+x",
-      "by": "-x"
-    },
-    {
-      "part": "Service Counter 1.5 m",
       "on": 36,
       "socket": "+x",
       "by": "-x"
     },
     {
+      "part": "Service Counter 1.5 m",
+      "on": 37,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
       "part": "Teapot",
-      "on": 35,
+      "on": 36,
       "socket": "top",
       "by": "base"
     },
@@ -360,13 +366,13 @@
     },
     {
       "part": "Requisition Crate",
-      "on": 45,
+      "on": 46,
       "socket": "+x",
       "by": "-x"
     },
     {
       "part": "Requisition Crate",
-      "on": 45,
+      "on": 46,
       "socket": "-z",
       "by": "+z"
     },
@@ -398,8 +404,8 @@
   ],
   "wires": [
     [
-      49,
-      48
+      50,
+      49
     ]
   ]
 }
