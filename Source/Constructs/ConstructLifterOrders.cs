@@ -122,7 +122,8 @@ public static partial class ConstructLifters
         for (var bi = 0; bi < bodies.Count; bi++)
         {
             var lo = bodies[bi];
-            if (lo.PartCount != 1 || lo == fb || lo == c || lo.Parts[0].Def != o.Def || lo.HeldBy != 0 || lo.GrabbedBy != 255 || lo.CarriedBy != 0 || lo.Anchored || lo.Parts[0].Broken)
+            if (lo.PartCount != 1 || lo == fb || lo == c || lo.Parts[0].Def != o.Def || lo.HeldBy != 0 || lo.GrabbedBy != 255 || lo.CarriedBy != 0 || lo.Anchored || lo.Parts[0].Broken || PickWhy(world, lo) != null
+                || o.To.Kind is LiftPointKind.Rack or LiftPointKind.Tray && (lo.Parts[0].Health < d.Health * 0.999f || lo.Parts[0].Paint != 0)) // (the one pick rule; a damaged or painted piece never becomes a count)
                 continue;
             var reach = 1f + 0.5f * MathF.Max(d.BoundsMax.X - d.BoundsMin.X, MathF.Max(d.BoundsMax.Y - d.BoundsMin.Y, d.BoundsMax.Z - d.BoundsMin.Z));
             if (Vector3.DistanceSquared(lo.WorldCom, outAt) > reach * reach || lo.Vel.LengthSquared() > 0.25f)
@@ -151,11 +152,11 @@ public static partial class ConstructLifters
     }
 
     /// <summary>Does this put point take the piece now, and where does its middle go?</summary>
-    private static bool OrderPut(ConstructWorld world, CLift l, LifterDef ld, Vector3 shoulder, Quaternion lr, Construct b, in LiftPoint pt, ConstructPartDef d, out Vector3 at)
+    private static bool OrderPut(ConstructWorld world, CLift l, LifterDef ld, Vector3 shoulder, Quaternion lr, Construct b, in LiftPoint pt, ConstructPartDef d, out Vector3 at, bool asNew = true)
     {
         at = default;
         var lift = WristLift(d);
-        if (pt.Part >= b.PartCount || b.Parts[pt.Part].Broken)
+        if (pt.Part >= b.PartCount || b.Parts[pt.Part].Broken || !asNew && pt.Kind is LiftPointKind.Rack or LiftPointKind.Tray)
             return false;
         if (pt.Kind == LiftPointKind.Rack)
         {

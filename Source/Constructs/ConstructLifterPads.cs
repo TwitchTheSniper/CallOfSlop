@@ -310,3 +310,32 @@ public sealed partial class ConstructWorld
     public readonly uint[] PadSeen = new uint[64]; // server: the last pick pad count's pads (body << 16 | part), for the build's claims (ConstructLifterNet.cs)
     public int PadSeenN, PadScanTick = int.MinValue; // ...how many; the tick a pick pad count last ran the lifter scan
 }
+
+public static partial class ConstructLifters
+{
+    /// <summary>
+    /// Why a lifter may not pick up loose body <paramref name="lo"/> (a fixed text), or null: the one rule for every way a lifter picks
+    /// something up (a carry from a machine's out, a hand order, a cab's F). A lifter's hand keeps a kind, its health and its paint, so
+    /// a piece must be a loose single part (<see cref="Construct.Loose"/>) that holds nothing that would be lost: no store contents, no
+    /// rounds, no fluid, no text, no queue, its settings at their defaults. Its health and paint go with it, and only a piece as new
+    /// becomes a count in a rack, a pad or a tray (<see cref="AsNewInHand"/>).
+    /// </summary>
+    public static string? PickWhy(ConstructWorld world, Construct lo)
+    {
+        if (!lo.Loose)
+            return lo.PartCount != 1 ? "only a single piece: that is a construct" : "it is fixed in place";
+        ref readonly var p = ref lo.Parts[0];
+        var d = lo.DefOf(0);
+        if (d.IsPieceRack || d.Lifter != null)
+            return "a rack or a lifter is never carried";
+        if (p.Store != 0 && world.StoreOf(lo, 0) is { } st && (st.Amount > 0 || st.ItemCount > 0 || st.InAmount > 0 || st.KindN > 0))
+            return LoadedWhy;
+        if (p.Rounds != 0 || p.Text != null || p.Text2 != null || p.Orders != null || p.Craft != null || !ConstructConfig.AllDefault(p, d)
+            || d.Role == PartRole.FluidTank && ConstructFluid.Held(p, d) != null)
+            return "it holds rounds, fluid, text or settings: empty or reset it first";
+        return null;
+    }
+
+    /// <summary>Is the piece in the hand as new (whole, unpainted)? Only then does a rack, a pad or a tray take it as a count.</summary>
+    public static bool AsNewInHand(CLift l) => l.Health >= 255 && l.Paint == 0;
+}

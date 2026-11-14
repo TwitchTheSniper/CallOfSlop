@@ -237,7 +237,7 @@ public static partial class ConstructLifters
     /// Where a piece goes (the Routers' rule over this lifter's points): a put point that wants it, else (<paramref name="storage"/>)
     /// the nearest rack or pad with room that takes it. <paramref name="skip"/>: a point it came from (never back to it). -1: none.
     /// </summary>
-    private static int PutFor(ConstructWorld world, CLift l, LifterDef ld, Vector3 shoulder, Quaternion lr, ConstructPartDef d, bool storage, int skip, out Vector3 at)
+    private static int PutFor(ConstructWorld world, CLift l, LifterDef ld, Vector3 shoulder, Quaternion lr, ConstructPartDef d, bool storage, int skip, out Vector3 at, bool asNew = true)
     {
         at = default;
         var lift = WristLift(d);
@@ -245,7 +245,7 @@ public static partial class ConstructLifters
         for (var k = 0; k < l.PointN; k++)
         {
             ref readonly var pt = ref l.Points![k];
-            if (k == skip || pt.Kind == LiftPointKind.Out || world.Get(pt.Body) is not { } b)
+            if (k == skip || pt.Kind == LiftPointKind.Out || !asNew && pt.Kind is LiftPointKind.Rack or LiftPointKind.Tray || world.Get(pt.Body) is not { } b) // (a damaged or painted piece is never made a count)
                 continue;
             if (pt.Kind == LiftPointKind.Rack && (fromPad || pt.Part >= b.PartCount || !b.DefOf(pt.Part).IsLayDownPad))
                 continue; // (a rack is a want only as a station's pick pad, and never from another pad)
@@ -272,7 +272,7 @@ public static partial class ConstructLifters
         for (var k = 0; k < l.PointN; k++)
         {
             ref readonly var pt = ref l.Points![k];
-            if (k == skip || pt.Kind != LiftPointKind.Rack || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount || world.StoreOf(b, pt.Part) is not { } st)
+            if (k == skip || !asNew || pt.Kind != LiftPointKind.Rack || world.Get(pt.Body) is not { } b || pt.Part >= b.PartCount || world.StoreOf(b, pt.Part) is not { } st)
                 continue;
             if (ConstructConveyor.RackCheck(b, pt.Part, st, d) != 0 || !StockTargets.Accepts(world, b, pt.Part, st, d))
                 continue;
@@ -317,13 +317,13 @@ public static partial class ConstructLifters
                     continue;
                 var d = lo.DefOf(0);
                 var reach = 1f + 0.5f * MathF.Max(d.BoundsMax.X - d.BoundsMin.X, MathF.Max(d.BoundsMax.Y - d.BoundsMin.Y, d.BoundsMax.Z - d.BoundsMin.Z));
-                if (Vector3.DistanceSquared(lo.WorldCom, outAt) > reach * reach || lo.Vel.LengthSquared() > 0.25f || !Carries(ld, d) || !MadeBy(b, pt.Part, d))
+                if (Vector3.DistanceSquared(lo.WorldCom, outAt) > reach * reach || lo.Vel.LengthSquared() > 0.25f || !Carries(ld, d) || !MadeBy(b, pt.Part, d) || PickWhy(world, lo) != null)
                     continue;
                 Freeform.PartWorld(lo, 0, out var pp, out var pr);
                 var from = pp + Vector3.Transform((d.BoundsMin + d.BoundsMax) * 0.5f, pr);
                 if (!InReach(ld, shoulder, lr, from, WristLift(d), out _))
                     continue;
-                var to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: k, out var toAt);
+                var to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: k, out var toAt, lo.Parts[0].Health >= d.Health * 0.999f && lo.Parts[0].Paint == 0);
                 if (to < 0)
                     continue;
                 var health = (byte)Math.Clamp(255 * lo.Parts[0].Health / MathF.Max(1, d.Health), 1, 255);
@@ -478,7 +478,7 @@ public static partial class ConstructLifters
         if (l.Points == null || world.LiftTick - l.PointsAt >= PointEvery)
             FindPoints(world, c, l, ld);
         Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
-        var to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: -1, out var toAt);
+        var to = PutFor(world, l, ld, shoulder, lr, d, storage: true, skip: -1, out var toAt, AsNewInHand(l));
         if (to < 0)
             return false;
         var hr = l.ToRot;

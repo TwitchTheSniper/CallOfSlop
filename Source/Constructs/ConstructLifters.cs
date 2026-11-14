@@ -155,6 +155,7 @@ public enum LiftWhy : byte
     CabPut, // (phase 8) the cab put its piece into a point
     CabDropped, // (phase 8) the cab set its piece down loose
     CabRefused, // (phase 8) no room to set it down there
+    CabNotNew, // (phase 8) what is under the hook holds something (a store, rounds, fluid, settings) that a hand would lose
 }
 
 /// <summary>
@@ -394,7 +395,7 @@ public static partial class ConstructLifters
                 }
                 if (l.Why is LiftWhy.NoPower or LiftWhy.NoRail or LiftWhy.NoFarRail or LiftWhy.RailsShort)
                     Why(world, l, l.PlayerWait ? LiftWhy.Player : l.ToHold ? LiftWhy.PutBack : l.ToKind != LiftPointKind.None ? LiftWhy.Carrying : LiftWhy.None);
-                if (l.CabPart >= 0 && CabStep(world, query, c, l, ld))
+                if ((l.CabPart >= 0 || l.Steered) && CabStep(world, query, c, l, ld)) // (a cab gone or split off while manned: CabStep gives the lifter back)
                 {
                     busy++; // (phase 8: its cab has it: nothing of its own while manned)
                     Ports(c, l);
@@ -803,6 +804,8 @@ public static partial class ConstructLifters
     /// </summary>
     private static bool PutBack(ConstructWorld world, Construct c, CLift l, LifterDef ld)
     {
+        if (!AsNewInHand(l) && ConstructParts.Get(l.Def) is { } nd)
+            return Redirect(world, c, l, ld, nd); // (a damaged or painted piece never becomes a count in a hold: the Routers' rule to a machine, else it waits)
         if (ConstructParts.Get(l.Def) is not { } d)
         {
             (l.State, l.Def, l.Why) = (LiftState.Idle, 0, LiftWhy.None);
@@ -1214,6 +1217,7 @@ public static partial class ConstructLifters
                 LiftWhy.CabPut => " - put it in",
                 LiftWhy.CabDropped => " - set it down",
                 LiftWhy.CabRefused => " - no room to set it down there",
+                LiftWhy.CabNotNew => " - what is under the hook holds something: empty or reset it first",
                 _ => "",
             };
         if (l is { Why: LiftWhy.NoPower })

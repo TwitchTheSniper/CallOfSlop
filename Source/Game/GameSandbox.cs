@@ -372,7 +372,7 @@ public sealed partial class Game
             c.Parts[seat].AimPitch = p.Pitch;
             if (c.Parts[seat].D.LifterCab)
                 ConstructLifters.CabInput(Constructs, c, seat, b, p.Yaw); // (a Lifter Cab's keys for its lifter's step, before the logic tick clears them: ConstructLifterCab.cs)
-            if (seat == c.DriveSeat)
+            if (seat == c.DriveSeat && !c.Parts[seat].D.LifterCab) // (a Lifter Cab never drives: its keys move the hook, even linked to a Driving Module)
             {
                 c.Driver = p.Id;
                 c.DriverSeat = seat;

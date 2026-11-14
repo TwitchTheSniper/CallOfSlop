@@ -107,7 +107,7 @@ public static partial class ConstructLifters
         if (move.LengthSquared() > 1e-6f)
             move = Vector3.Normalize(move) * ld.Speed * dt;
         var vertical = (keys & Buttons.Jump) != 0 ? 1f : (keys & (Buttons.Crouch | Buttons.Prone)) != 0 ? -1f : 0f;
-        move.Y = vertical * (ld.Bridge ? ld.Hoist : ld.Speed) * dt;
+        move.Y = vertical * (ld.Bridge ? ld.Hoist : ld.Speed) * dt; // (up and down along the lifter's own up, below)
         if (l.PlayerWait)
         {
             if (!ConstructLifterPush.Clear(world, c, l, ld))
@@ -120,11 +120,16 @@ public static partial class ConstructLifters
         if (move != default)
         {
             Frame(c, l.Part, ld, out var lp, out var lr, out _);
-            next = Clamp(ld, l, was + Vector3.Transform(move, Quaternion.Conjugate(lr)));
+            var local = Vector3.Transform(move with { Y = 0 }, Quaternion.Conjugate(lr)); // (across in the lifter's frame, flat in it: a lifter on a planetoid away from its top)
+            var flat = new Vector3(local.X, 0, local.Z);
+            if (flat.LengthSquared() > 1e-8f)
+                flat = Vector3.Normalize(flat) * new Vector2(move.X, move.Z).Length();
+            next = Clamp(ld, l, was + flat + Vector3.UnitY * move.Y);
             var wn = lp + Vector3.Transform(next, lr); // (never under the ground: the hook stops on it)
-            var floor = World.Map.GroundHeight(wn.X, wn.Z) + (l.Def != 0 && ConstructParts.Get(l.Def) is { } hd ? MathF.Max(0, -hd.BoundsMin.Y) : 0.1f);
-            if (wn.Y < floor && move.Y < 0)
-                next = Clamp(ld, l, Vector3.Transform(wn with { Y = floor } - lp, Quaternion.Conjugate(lr)));
+            var clear = l.Def != 0 && ConstructParts.Get(l.Def) is { } hd ? MathF.Max(0, -hd.BoundsMin.Y) : 0.1f; // (the piece's bottom under its origin)
+            var alt = Altitude(wn, out var up);
+            if (alt < clear && move.Y < 0)
+                next = Clamp(ld, l, Vector3.Transform(wn + up * (clear - alt) - lp, Quaternion.Conjugate(lr)));
         }
         var moving = Vector3.DistanceSquared(next, was) > 1e-8f;
         if (moving || Vector3.DistanceSquared(l.From, l.To) > 1e-8f)
@@ -228,6 +233,11 @@ public static partial class ConstructLifters
             if (best != null)
             {
                 var d = best.DefOf(0);
+                if (PickWhy(world, best) is { } pw)
+                {
+                    CabSay(l, LiftWhy.CabNotNew, pw); // (the one pick rule: what it holds would be lost)
+                    return;
+                }
                 if (!Carries(ld, d))
                 {
                     CabSay(l, LiftWhy.CabTooBig, CarryRefusal(ld, d));
@@ -289,7 +299,7 @@ public static partial class ConstructLifters
         for (var k = 0; k < l.PointN; k++)
         {
             var pt = l.Points![k];
-            if (!Puts(pt.Kind) || world.Get(pt.Body) is not { } b || !OrderPut(world, l, ld, shoulder, lr, b, pt, pd, out var at) || Vector3.Distance(at, mid) > CabGrabReach + 1f)
+            if (!Puts(pt.Kind) || world.Get(pt.Body) is not { } b || !OrderPut(world, l, ld, shoulder, lr, b, pt, pd, out var at, AsNewInHand(l)) || Vector3.Distance(at, mid) > CabGrabReach + 1f)
                 continue;
             if (!PutPiece(world, query, b, pt.Kind, pt.Part, pt.Bay, pd, l.Health, l.Paint))
                 continue;
@@ -358,5 +368,24 @@ public static partial class ConstructLifters
     {
         if (CabLifter(world, c, cab) is { } l)
             (l.CabKeys, l.CabYaw) = (keys, yaw);
+    }
+}
+
+public static partial class ConstructLifters
+{
+    /// <summary>
+    /// How high a world point is over the ground under it, along the ground's up there (<paramref name="up"/>): a planetoid's curve and
+    /// its caves, a map's terrain with its voids (the floor under the point, not the top), else the flat height.
+    /// </summary>
+    public static float Altitude(Vector3 p, out Vector3 up)
+    {
+        var map = World.Map;
+        if (map.Planetoid is { } pl)
+        {
+            up = GravityFrames.UpAt(p);
+            return pl.Altitude(p);
+        }
+        up = Vector3.UnitY;
+        return map.Terrain is { } t ? p.Y - t.GroundBelow(p.X, p.Z, p.Y) : p.Y - map.GroundHeight(p.X, p.Z);
     }
 }
