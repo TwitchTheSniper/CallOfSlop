@@ -144,6 +144,10 @@ public static class LegAnimator
     }
 
     private static readonly State[] States = new State[256];
+    private static readonly State[] ShellBodyStates = new State[256]; // (a robot shell wearer's body in the chair: legs of its own, so the robot's stride and steps are left alone)
+
+    /// <summary>Before and after drawing a shell wearer's body in the chair (Program.DrawShellBodies): swaps in its own leg state.</summary>
+    public static void SwapShellBody(byte id) => (States[id], ShellBodyStates[id]) = (ShellBodyStates[id], States[id]);
 
     // ---- Stats ----
     private static long _ticks;

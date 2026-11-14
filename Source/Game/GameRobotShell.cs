@@ -230,6 +230,11 @@ public sealed partial class Game
             var range = chair.Parts[seat].D.ShellRange;
             if (Vector3.DistanceSquared(p.Position, chair.WorldCom) > range * range)
                 ShellReturn(p, lost: false, $"The link dropped: the shell went more than {range / 1000:0.#} km from the chair.");
+            else if (seat != p.ShellSeat)
+            {
+                p.ShellSeat = (ushort)seat; // (the chair's construct lost a part and its parts moved up: the body is drawn in the right seat)
+                ShellBroadcast(p);
+            }
         }
     }
 

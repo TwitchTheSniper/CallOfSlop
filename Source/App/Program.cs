@@ -2416,10 +2416,12 @@ public static unsafe partial class Program
         {
             if (!p.InShell || _game.ShellBodyOf(p) is not { } body)
                 continue;
+            LegAnimator.SwapShellBody(p.Id);
             if (ScenePresentation.Enabled)
                 ScenePresentation.DrawShellBody(Gfx, body, Glfw.Time);
             else
                 PlayerRender.DrawImmediate(Gfx, body, Glfw.Time);
+            LegAnimator.SwapShellBody(p.Id);
         }
         ToolRender.Hands = hands;
     }
