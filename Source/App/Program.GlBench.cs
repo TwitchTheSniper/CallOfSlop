@@ -523,10 +523,10 @@ public static unsafe partial class Program
                 made++;
             }
         }
-        if (FlagAfter(args, "--bench-holes", 0) is var holes and > 0)
+        if (FlagAfter(args, "--gl-holes", 0) is var holes and > 0)
         {
-            // --bench-holes N: about N railgun holes (0.15 m) through the bodies before the timing, each body by its share of the parts
-            // (holes through ships, the spike: docs/sandbox/design/hull-holes-spike.md); --bench-holes-live K: K more lines a frame while drawn.
+            // --gl-holes N: about N railgun holes (0.15 m) through the bodies before the timing, each body by its share of the parts
+            // (holes through ships, the spike: docs/sandbox/design/hull-holes-spike.md); --gl-holes-live K: K more lines a frame while drawn.
             var rng = new Random(7);
             var all = _benchWorld.Bodies.Where(b => b.PartCount > 8).ToList();
             var total = Math.Max(1, all.Sum(b => b.PartCount));
@@ -548,7 +548,7 @@ public static unsafe partial class Program
                     have += HullHoles.IsHoled(c.DefOf(i)) ? 1 : 0;
             Console.WriteLine($"[glbench] holes: {have} parts holed ({HullHoles.DefsMade} made, {HullHoles.Refused} refused, {HullHoles.FacetsCut} facets and {HullHoles.BoxesCut} boxes cut) in {clock.Elapsed.TotalMilliseconds:0} ms");
         }
-        _benchHolesLive = Math.Clamp(FlagAfter(args, "--bench-holes-live", 0), 0, 50);
+        _benchHolesLive = Math.Clamp(FlagAfter(args, "--gl-holes-live", 0), 0, 50);
         var boxes = ConstructParts.All.Sum(d => d.Boxes.Length);
         Console.WriteLine($"[glbench] constructs: {made} bodies, {parts} parts");
         Console.WriteLine($"[glbench] materials: {ConstructParts.All.Count} part types, {boxes} boxes at {System.Runtime.CompilerServices.Unsafe.SizeOf<CPartBox>()} B a box, {BoxLooks.Count} looks at {System.Runtime.CompilerServices.Unsafe.SizeOf<BoxLooks.Row>()} B a look, {Surfaces.File.Rows.Length} materials ({SurfaceGpu.Bytes} B on the GPU); merged mesh slot {(Renderer.MergeXformFloats + Renderer.MergeLookFloats) * sizeof(float)} B");
@@ -569,7 +569,7 @@ public static unsafe partial class Program
         _benchEdited = frame; // (once a frame, whichever configuration draws it first)
         if (_benchHolesLive > 0)
         {
-            // --bench-holes-live K: K railgun lines a frame through each body instead of the paint and damage (the holes as they are made)
+            // --gl-holes-live K: K railgun lines a frame through each body instead of the paint and damage (the holes as they are made)
             foreach (var c in _benchWorld.Bodies)
                 if (c.PartCount > 8)
                 {
