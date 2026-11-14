@@ -1169,13 +1169,23 @@ public static unsafe partial class Program
                                 (cc, cpart) = (cb, ci);
                     if (cc == null)
                         WsSay("lifter: sit: no Lifter Cab");
-                    else if (lw.Length > 2 && lw[1] == "bait" && g.IsServer && ConstructLifters.CabLifter(g.Constructs, cc, cpart) is { } bl
+                    else if (lw.Length > 1 && lw[1] == "cut" && g.IsServer)
+                    {
+                        // "lifter cabstate cut" (host): the cab taken off its construct while it is sat in (the review's case: Steered must go)
+                        g.Constructs.RemovePart(cc, cpart);
+                        cc.Rebuild();
+                        g.Constructs.StructureDirty.Add(cc.Id);
+                        WsSay($"lifter: cabstate: cut the cab off body {cc.Id}");
+                    }
+                    else if (lw.Length > 2 && lw[1] is "bait" or "baitfull" && g.IsServer && ConstructLifters.CabLifter(g.Constructs, cc, cpart) is { } bl
                              && g.Constructs.Get(bl.Body) is { } bb && ConstructLifters.DefOf(bb, bl.Part) is { } bld && ConstructParts.Find(string.Join(' ', lw.Skip(2))) is { } bd)
                     {
                         // "lifter cabstate bait NAME" (host): that part loose on the ground under the cab's hook
                         ConstructLifters.Frame(bb, bl.Part, bld, out var blp, out var blr, out _);
                         var hw = blp + Vector3.Transform(bl.To, blr);
                         var bait = ConstructEdits.DropLoose(g.Constructs, bd, hw with { Y = World.Map.GroundHeight(hw.X, hw.Z) + 0.3f }, Quaternion.Identity);
+                        if (lw[1] == "baitfull" && bait != null && g.Constructs.StoreOf(bait, 0) is { } bst)
+                            (bst.Amount, bst.Material) = (10, (byte)RecyclingTable.Current.IdOf("iron ore")); // ("baitfull": a store with 10 iron ore in it)
                         WsSay($"lifter: cabstate: bait {bd.Name} at {hw:0.0}: {(bait == null ? "no room" : $"body {bait.Id}")}");
                     }
                     else if (lw[0] == "sit")

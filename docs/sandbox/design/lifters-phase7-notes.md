@@ -132,4 +132,23 @@ Open questions (each with a recommendation):
 7. **The station panel's bill "on the Lay-down Pad"** (phase 5b's leftover, design section 4): not done here: `ConstructStation.cs` and
    `UiStation.cs` belong to the logistics builder this round. Recommend the next station round.
 
+## After review (2026-11-14)
+
+- **One pick rule** (`ConstructLifters.PickWhy`, in the pads' file): every way a lifter picks up a loose body (a carry from a machine's
+  out, a hand order's out, the cab's F) takes only a loose single part (`Construct.Loose`) that holds nothing a hand would lose: no
+  store contents, rounds, fluid, text, queue or changed settings, else it is refused with its reason ("holds something: empty it first").
+  Its health and paint go with it, and only a piece as new (`AsNewInHand`) becomes a count in a rack, pad, tray or station hold
+  (`PutFor`, `OrderPut`, `PutBack`); a damaged or painted one goes to a machine or is set down as itself. Tried: a Drill Module with
+  10 iron ore under a crane's hook, F: refused, the module left lying.
+- **A cab taken off while manned**: the step now runs the cab's check for a lifter still `Steered` whose cab went, and gives it back.
+  Tried: `lifter cabstate cut` mid-steer: "its cab was left", Idle.
+- **The hook's floor** is the ground under the hook (`ConstructLifters.Altitude`: a planetoid's altitude and up, a terrain's floor under
+  the point through its voids), and the cab's moves are flat in the lifter's own frame. Not tried on a planetoid.
+- **A cab never drives**: linked to a Driving Module as its drive seat, its keys still move only the hook (the seat loop skips driving).
+- **The Welder's join** on a lifter part comes before its panel.
+- **The client run whose keys never arrived**: a window that loses focus lets the mouse go, and a client builds its movement buttons
+  only while the mouse is held, so the window tool's `hold` in the unfocused client window sent nothing. A player at their own window
+  is not affected; `hold` now takes the mouse first. Tried: the failing sequence again on a joined client: lowered, grabbed, set down, out.
+- `--gen-parts all --check`: up to date; `--check-construct-parts`: no REFUSED lines.
+
 STATUS: phases 7 and 8 built: hand orders and the cab on host and client, the Showcase's crane works its line; the design's phase list is done.

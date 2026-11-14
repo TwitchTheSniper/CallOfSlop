@@ -127,6 +127,8 @@ public static partial class Program
                 return true;
             case "hold": // "hold MoveForward+Jump 5": those keys down for 5 real seconds (the script goes on meanwhile: add "secs 5" to wait)
             {
+                if (!MenusOpen)
+                    SetMouseCaptured(true); // (movement keys are built only while the mouse is held: a window that lost focus to the other one had let it go, so a joined client's held keys never reached its seat)
                 var sp = arg.Split(' ', 2, StringSplitOptions.TrimEntries);
                 _wsKeys.Clear();
                 foreach (var name in sp[0].Split('+'))
