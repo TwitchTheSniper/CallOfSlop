@@ -501,7 +501,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   (Main took it as 301.)
     // 304: Sized parts phase 5 (engine pieces off the press): the Engine Die parts (ids move); the Cylinder die's presets on the files' bounds and the
     //   Engine die (Pressing.json); a pressed engine piece's scale and a cylinder's stroke ratio come from its key (derived on each peer, no new bytes).
-    public const ushort ProtocolVersion = 304;
+    // 310: Extruder expansion pieces: Die Extensions and Run-out Tables (new part files, ids move), an outBed socket on the Extruders and
+    //   SocketKind.RunOut; the grown die and length are read from the construct on each peer (no new bytes).
+    public const ushort ProtocolVersion = 310;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

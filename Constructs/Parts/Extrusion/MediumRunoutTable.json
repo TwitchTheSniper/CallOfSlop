@@ -1,0 +1,320 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Run-out Table",
+  "description": "Fit it under a Medium Extruder's die, or on another table: 16 m longer pieces, up to 128 m.",
+  "group": "Production",
+  "section": "Extrusion",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 4000.0,
+  "health": 2000,
+  "armour": 24,
+  "material": "steel",
+  "color": "#b5452b",
+  "attachSeconds": 4.0,
+  "runOut": 16.0,
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -4.5,
+        -0.246,
+        0.004
+      ],
+      "max": [
+        4.5,
+        0.0662,
+        16.0
+      ]
+    },
+    {
+      "min": [
+        -4.5,
+        0.0662,
+        0.004
+      ],
+      "max": [
+        -4.3662,
+        0.2,
+        16.0
+      ]
+    },
+    {
+      "min": [
+        4.3662,
+        0.0662,
+        0.004
+      ],
+      "max": [
+        4.5,
+        0.2,
+        16.0
+      ]
+    },
+    {
+      "min": [
+        -4.5223,
+        -0.246,
+        -0.0183
+      ],
+      "max": [
+        4.5223,
+        -0.1345,
+        0.004
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -4.5223,
+        -0.246,
+        16.0
+      ],
+      "max": [
+        4.5223,
+        -0.1345,
+        16.0223
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -4.5223,
+        -0.246,
+        0.004
+      ],
+      "max": [
+        -4.5,
+        -0.1345,
+        16.0
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        4.5,
+        -0.246,
+        0.004
+      ],
+      "max": [
+        4.5223,
+        -0.1345,
+        16.0
+      ],
+      "color": "#22262b",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -4.3622,
+        0.0127,
+        0.9465
+      ],
+      "max": [
+        4.3622,
+        0.1197,
+        1.0535
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -4.3622,
+        0.0127,
+        2.9465
+      ],
+      "max": [
+        4.3622,
+        0.1197,
+        3.0535
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -4.3622,
+        0.0127,
+        4.9465
+      ],
+      "max": [
+        4.3622,
+        0.1197,
+        5.0535
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -4.3622,
+        0.0127,
+        6.9465
+      ],
+      "max": [
+        4.3622,
+        0.1197,
+        7.0535
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -4.3622,
+        0.0127,
+        8.9465
+      ],
+      "max": [
+        4.3622,
+        0.1197,
+        9.0535
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -4.3622,
+        0.0127,
+        10.9465
+      ],
+      "max": [
+        4.3622,
+        0.1197,
+        11.0535
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -4.3622,
+        0.0127,
+        12.9465
+      ],
+      "max": [
+        4.3622,
+        0.1197,
+        13.0535
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -4.3622,
+        0.0127,
+        14.9465
+      ],
+      "max": [
+        4.3622,
+        0.1197,
+        15.0535
+      ],
+      "color": "#98a1a9",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "paintable": false,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -4.52,
+        0.0885,
+        0.1
+      ],
+      "max": [
+        -4.5,
+        0.1777,
+        15.9
+      ],
+      "color": "#f07818",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        4.5,
+        0.0885,
+        0.1
+      ],
+      "max": [
+        4.52,
+        0.1777,
+        15.9
+      ],
+      "color": "#f07818",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "in",
+      "at": [
+        0.0,
+        0.0,
+        0.004
+      ],
+      "dir": "-z",
+      "kind": "runOut"
+    },
+    {
+      "name": "out",
+      "at": [
+        0.0,
+        0.0,
+        16.0
+      ],
+      "dir": "+z",
+      "kind": "runOut"
+    }
+  ]
+}

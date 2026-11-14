@@ -45,7 +45,12 @@
         8
       ],
       "maxLength": 64,
-      "pushForce": 24000
+      "pushForce": 24000,
+      "growSection": [
+        16.0,
+        16.0
+      ],
+      "growLength": 128.0
     }
   },
   "config": [
@@ -79,10 +84,10 @@
       "group": "Shape",
       "unit": "m",
       "min": 0.1,
-      "max": 8,
+      "max": 16.0,
       "step": 0.05,
       "default": 0.25,
-      "tooltip": "Across the section (a Round's or a Pipe's diameter). The die must be at least this wide."
+      "tooltip": "Across the section (a Round's or a Pipe's diameter). The die must be at least this wide: weld on Medium Die Extensions."
     },
     {
       "key": "height",
@@ -90,10 +95,10 @@
       "group": "Shape",
       "unit": "m",
       "min": 0.1,
-      "max": 8,
+      "max": 16.0,
       "step": 0.05,
       "default": 0.25,
-      "tooltip": "Up the section. The die must be at least this tall."
+      "tooltip": "Up the section. The die must be at least this tall: weld on Medium Die Extensions."
     },
     {
       "key": "maskA",
@@ -133,7 +138,7 @@
       "group": "Cutting",
       "unit": "m",
       "min": 0,
-      "max": 64,
+      "max": 128.0,
       "step": 0.05,
       "default": 0,
       "tooltip": "Cuts the piece off at the die by itself when it is this long. 0: only when a signal comes into Cut."
@@ -1128,6 +1133,16 @@
       ],
       "dir": "+z",
       "kind": "die"
+    },
+    {
+      "name": "outBed",
+      "at": [
+        4.0,
+        -0.25,
+        5.5
+      ],
+      "dir": "+z",
+      "kind": "runOut"
     }
   ]
 }

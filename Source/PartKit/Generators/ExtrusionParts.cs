@@ -117,9 +117,9 @@ public sealed class ExtrusionParts : IPartGenerator
     }
 
     /// <summary>An Extruder's settings. (A new one goes on the end: a saved setting is found by its key.)</summary>
-    private static List<object?> ExtruderConfig(double die, object section, object length)
+    private static List<object?> ExtruderConfig(double die, object section, object length, string pieces = "Die Frames")
     {
-        var frames = die < Py.D(section) ? ": weld on Die Frames." : ".";
+        var frames = die < Py.D(section) ? $": weld on {pieces}." : ".";
         return Py.L(
             Kw(("key", "profile"), ("label", "Profile"), ("group", "Shape"), ("options", Profiles()), ("default", 0),
                 ("tooltip", "The cross-section. Custom is the cell grid below; clicking a cell starts one from what is shown. Round and Pipe take their diameter from Width.")),
@@ -166,11 +166,12 @@ public sealed class ExtrusionParts : IPartGenerator
         p.Sock("top", [0, 1, 0.35], "+y");
         p.Sock("back", [0, 0.5, -0.75], "-z");
         p.Sock("die", [0, 0.5, 0.75], "+z", kind: "die");
+        p.Sock("outBed", [0, 0.1, 0.75], "+z", kind: "runOut"); // (a Run-out Table: under the die, ExpansionParts)
         p.Stats(380, 600, 6, 4);
         p.Set(("power", 900), ("storage", Kw(
                 ("bulk", Kw(("material", "any"), ("capacity", 400), ("min", Py.L(-0.455, 0.855, -0.705)), ("max", Py.L(0.455, 0.995, -0.055)))),
-                ("extrude", Kw(("speed", 0.2), ("die", Py.L(0.5, 0.5)), ("at", Py.L(0, 0.5, 0.75)), ("maxSection", Py.L(6, 6)), ("maxLength", 48), ("pushForce", 6000))))),
-            ("config", ExtruderConfig(0.5, 6, 48)));
+                ("extrude", Kw(("speed", 0.2), ("die", Py.L(0.5, 0.5)), ("at", Py.L(0, 0.5, 0.75)), ("maxSection", Py.L(6, 6)), ("maxLength", 48), ("pushForce", 6000), ("growLength", 64))))),
+            ("config", ExtruderConfig(0.5, 6, 64)));
         WithScreen(p, orders: true, faces: ["-x"], width: 0.84, recipe: true);
         MachineLook.Skirt(p, -0.5, 0.5, -0.75, 0.75, 0, 0.14, 0.012);
         // The hopper, at the back: taller than the body, a white rim (the in side) and an arrow down each open side.
@@ -263,11 +264,13 @@ public sealed class ExtrusionParts : IPartGenerator
         p.Add(MachineLook.D([cx - dh, cy - dh - cw, hd.Z1], [cx + dh, cy - dh, hd.Z1 + cm], MachineLook.Steel, "steel"));
         BlockSockets(p, nx, ny, nz, limit: Lim5(), skip: ["+z"]);
         p.Sock("die", [cx, cy, hd.Z1], "+z", kind: "die");
+        if (Grow(c) is not null)
+            p.Sock("outBed", [cx, c.Lo() / 2, hd.Z1], "+z", kind: "runOut"); // (a Run-out Table: under the die, ExpansionParts)
         p.Stats(mass, health, c.Armour);
         p.Set(("power", power), ("storage", Kw(
                 ("bulk", BinOf(units, hd)),
-                ("extrude", Kw(("speed", speed), ("die", Py.L(die, die)), ("at", Py.L(cx, cy, hd.Z1)), ("maxSection", Py.L(die, die)), ("maxLength", length), ("pushForce", push))))),
-            ("config", ExtruderConfig(die, die, length)));
+                ("extrude", GrowKeys(c, Kw(("speed", speed), ("die", Py.L(die, die)), ("at", Py.L(cx, cy, hd.Z1)), ("maxSection", Py.L(die, die)), ("maxLength", length), ("pushForce", push)))))),
+            ("config", Grow(c) is { } gc ? ExtruderConfig(die, gc.Section, gc.Length, NameOf(c, "Die Extensions")) : ExtruderConfig(die, die, length)));
         return WithScreen(p, orders: true, recipe: true);
     }
 
@@ -408,6 +411,102 @@ public sealed class ExtrusionParts : IPartGenerator
         return p;
     }
 
+    // ---- Expansion pieces (the user, 2026-11-13: build a bigger Extruder, or add expansion pieces to it, to print bigger things).
+    // A big machine's Die Extensions add a row or column of die up to the next class's die; Run-out Tables add to its longest piece up
+    // to the next class's. The Capital takes neither: its 32 m die and 192 m piece are the game's limits (Extrusion.MaxSectionCm, MaxLengthCm).
+    // (class, die with Die Extensions, longest with tables, a Die Extension's row, a table's length, a Die Extension's kg, a table's kg)
+    private static readonly (Cls Cls, double Section, double Length, double Step, double Table, int ExtKg, int TableKg)[] Growth =
+    [
+        (Small, 6, 64, 0, 8, 0, 450),
+        (Medium, 16, 128, 2, 16, 3000, 4000),
+        (Large, 32, 192, 4, 16, 30000, 40000),
+    ];
+
+    private static (double Section, double Length)? Grow(Cls c) =>
+        c != Small && Growth.FirstOrDefault(g => g.Cls == c) is { Cls: not null } g ? (g.Section, g.Length) : null;
+
+    private static PyDict GrowKeys(Cls c, PyDict extrude)
+    {
+        if (Grow(c) is { } g)
+            extrude.Update(("growSection", Py.L(g.Section, g.Section)), ("growLength", g.Length));
+        return extrude;
+    }
+
+    /// <summary>
+    /// A Die Extension: a slab welded to a big Extruder's side, flush with its die face (the side's socket on the die face's row of cells).
+    /// Its in socket faces the machine, its out socket takes another one further out. Both faces along the die read as die: bare steel inserts
+    /// in a dark frame, an orange band (the out side) and hazard paint at the foot.
+    /// </summary>
+    private static Part DieExtension((Cls Cls, double Section, double Length, double Step, double Table, int ExtKg, int TableKg) g)
+    {
+        var c = g.Cls;
+        var machine = Extruders.First(r => r.Item1 == c);
+        var cells = machine.Item10;
+        var thick = g.Step;
+        var hy = cells[1] * c.Cell / 2; // (as tall as the machine's side)
+        var hz = c.Half; // (one cell deep: the die face's row)
+        var t = c.Cell * 0.1;
+        var p = new Part(NameOf(c, "Die Extension"), c, Section,
+            $"Weld it to a {NameOf(c, "Extruder")}'s side, flush with its die face: {thick:0.#} m more die that way, up to {g.Section:0.#} x {g.Section:0.#} m. Chain them out.",
+            group: "Production", color: Red);
+        p.Add(Box([0.004, -hy, -hz], [thick, hy, hz]));
+        foreach (var s in new[] { -1, 1 })
+        {
+            var z0 = s > 0 ? hz : -hz - 0.03;
+            var z1 = s > 0 ? hz + 0.03 : -hz;
+            p.Add(MachineLook.D([t, -hy + t * 3, z0], [thick - t, hy - t * 3, z1], MachineLook.Steel, "steel")); // (the die insert)
+            p.Add(MachineLook.D([0.004, hy - t * 1.6, z0 + s * 0.006], [thick, hy - t * 0.4, z1 + s * 0.006], MachineLook.Out));
+            MachineLook.Hazard(p, [0.004, -hy + t * 0.2, z0 + s * 0.006], [thick, -hy + t * 1.6, z1 + s * 0.006]);
+        }
+        p.Add(MachineLook.D([thick - t, -hy, -hz + t], [thick + 0.03, hy, hz - t], MachineLook.Base)); // (the outer frame rail)
+        p.Sock("in", [0, 0, 0], "-x");
+        p.Sock("out", [thick, 0, 0], "+x");
+        p.Stats(g.ExtKg, g.ExtKg / 2, c.Armour);
+        p.Set(("dieExtension", thick), ("centreSockets", false));
+        return p;
+    }
+
+    /// <summary>
+    /// A Run-out Table: a roller bed under an Extruder's die (its "outBed" socket), its top below the die's foot so a piece rides over it;
+    /// another table goes on its far end. Each adds its length to the machine's longest piece, up to the next class's.
+    /// </summary>
+    private static Part RunOutTable((Cls Cls, double Section, double Length, double Step, double Table, int ExtKg, int TableKg) g)
+    {
+        var c = g.Cls;
+        var len = g.Table;
+        // The bed's width and the drop from the socket to its top: the machine's width, and its foot below the die (Extruders above).
+        double hx, below, top;
+        if (c == Small)
+            (hx, below, top) = (0.5, 0.096, 0.1);
+        else
+        {
+            var cells = Extruders.First(r => r.Item1 == c).Item10;
+            hx = cells[0] * c.Cell / 2;
+            below = c.Half / 2 - 0.004;
+            top = c.Half / 2 - c.Half * 0.1;
+        }
+        var p = new Part(NameOf(c, "Run-out Table"), c, Section,
+            $"Fit it under a {NameOf(c, "Extruder")}'s die, or on another table: {len:0.#} m longer pieces, up to {g.Length:0.#} m.",
+            group: "Production", color: Red);
+        var h = top + below;
+        p.Add(Box([-hx, -below, 0.004], [hx, top - h * 0.3, len]));
+        p.Add(Box([-hx, top - h * 0.3, 0.004], [-hx + h * 0.3, top, len])); // (the bed's two side rails; the rollers between them)
+        p.Add(Box([hx - h * 0.3, top - h * 0.3, 0.004], [hx, top, len]));
+        MachineLook.Skirt(p, -hx, hx, 0.004, len, -below, -below + h * 0.25, Math.Min(h * 0.05, 0.03));
+        var step = c == Small ? 1.0 : 2.0;
+        var r = h * 0.12;
+        for (var z = step / 2; z < len; z += step)
+            p.Add(MachineLook.D([-hx + h * 0.3 + 0.004, top - h * 0.3 - r, z - r], [hx - h * 0.3 - 0.004, top - h * 0.3 + r, z + r], MachineLook.Steel, "steel",
+                shape: Kw(("shape", "cylinder"), ("segments", 12), ("front", "+x"))));
+        p.Add(MachineLook.D([-hx - 0.02, top - h * 0.25, 0.1], [-hx, top - h * 0.05, len - 0.1], MachineLook.Out));
+        p.Add(MachineLook.D([hx, top - h * 0.25, 0.1], [hx + 0.02, top - h * 0.05, len - 0.1], MachineLook.Out));
+        p.Sock("in", [0, 0, 0.004], "-z", kind: "runOut");
+        p.Sock("out", [0, 0, len], "+z", kind: "runOut");
+        p.Stats(g.TableKg, g.TableKg / 2, c.Armour);
+        p.Set(("runOut", len), ("centreSockets", false));
+        return p;
+    }
+
     /// <summary>The Extruder Line: a Timer wired to the Extruder's Cut, so a 2 m piece comes off every 10 s.</summary>
     private static PyDict Line() => Kw(
         ("format", "call-of-slop-construct-blueprint/1"),
@@ -430,6 +529,8 @@ public sealed class ExtrusionParts : IPartGenerator
         parts.AddRange(AirframeFormers.Select(r => ("", Former(r, air: true))));
         parts.Add(("", DieFrame("Die Frame", 0.25, 0.5, "Attach it to an Extruder to widen the die, up to 6 x 6 m.", 90, 300, 6, 3, 0.3)));
         parts.Add(("", DieFrame("Large Die Frame", 0.5, 1, "Attach it to an Extruder: 1 x 2 m more die.", 280, 700, 8, 5, 0.6)));
+        parts.AddRange(Growth.Where(g => g.Step > 0).Select(g => ("", DieExtension(g))));
+        parts.AddRange(Growth.Select(g => ("", RunOutTable(g))));
         WriteParts(o, Out, parts);
         o.File(Blueprint, PyJson.Dumps(Line(), 2) + "\n");
     }

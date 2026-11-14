@@ -243,7 +243,14 @@ public sealed class Assembling : IPartGenerator
         Rec("Frame Block", 4, 1, m: [("steel", 6)]),
         Rec("Frame Beam", 6, 1, m: [("steel", 14)]),
         Rec("Panel", 3, 1, m: [("steel", 4)]),
-        Rec("Wood Panel", 2, 1, m: [("laminate", 4)])
+        Rec("Wood Panel", 2, 1, m: [("laminate", 4)]),
+        // Extruder expansion pieces (ExtrusionParts.Growth): each about 30% of the next machine's recipe, so a row or a table is cheaper than the
+        // next Extruder and the whole jump to its size dearer (docs/sandbox/design/extruder-expansion-notes.md).
+        Rec("Run-out Table", 60, 1, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 2)]),
+        Rec("Medium Run-out Table", 120, 2, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 4), ("Bearing", 2)]),
+        Rec("Large Run-out Table", 180, 3, m: [("steel", 600), ("rubber", 150)], p: [("Bearing", 4), ("Control Unit", 1)]),
+        Rec("Medium Die Extension", 120, 2, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 2), ("Wiring Loom", 2)]),
+        Rec("Large Die Extension", 180, 3, m: [("steel", 600), ("rubber", 150)], p: [("Wiring Loom", 4), ("Control Unit", 1)])
     ];
 
     /// <summary>

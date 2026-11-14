@@ -282,7 +282,7 @@ public static class MachineScreens
             }
             else
             {
-                var most = MathF.Min(d.ExtMaxLength, Extrusion.MaxLengthCm / 100f);
+                var most = ConstructExtruder.MaxLength(c, part);
                 card.AddFixed(3, on.ExKey.L / 100f, 2).Add(3, " of ").AddFixed(3, most, 0).Add(3, " m");
                 card.Bar = Math.Clamp(on.ExKey.L / 100f / MathF.Max(0.01f, most), 0, 1);
             }
