@@ -354,6 +354,19 @@ public static unsafe partial class Program
         return false;
     }
 
+    /// <summary>
+    /// Before a verb that presses the game's keys: the mouse held again, as a player's click into their window holds it. Two windows (host and
+    /// join) take the focus from each other, and a window that loses it lets the mouse go (Program.cs, OnFocus); the game reads no tool, use or
+    /// panel key while the mouse is free (SandboxInput), so a press then did nothing and said nothing. Not while a menu or a talk has the mouse.
+    /// </summary>
+    private static void WsGrabMouse()
+    {
+        if (_mouseCaptured || MenusOpen || _talkTo != 255)
+            return;
+        SetMouseCaptured(true);
+        WsSay(_mouseCaptured ? "mouse: held again (the window had lost the focus to another)" : "mouse: can't be held (a screen has it)");
+    }
+
     private static Construct? WsSpawned(Game g) => _wsBlueprint.Length > 0 ? g.Constructs.Get(_wsBody) : null;
 
     /// <summary>The player's eye to a place (noclip holds them there).</summary>
@@ -679,6 +692,7 @@ public static unsafe partial class Program
                 return;
             }
             case "use":
+                WsGrabMouse();
                 _wsPress = GameAction.Interact;
                 _wsWait = 3;
                 return;
@@ -688,10 +702,12 @@ public static unsafe partial class Program
                     WsFail($"no action \"{arg}\" ({string.Join(", ", Enum.GetNames<GameAction>())})");
                     return;
                 }
+                WsGrabMouse();
                 _wsPress = ga;
                 _wsWait = 3;
                 return;
             case "wheel":
+                WsGrabMouse(); // (the wheel's game uses read the held mouse: OnScroll)
                 ScrollInput(int.TryParse(arg, out var by) ? by : 1);
                 _wsWait = 2;
                 return;
@@ -1729,6 +1745,8 @@ public static unsafe partial class Program
     {
         var card = new PanelCard { Touch = panel.Touch, PanelSize = panel.Size };
         var d = c.DefOf(part);
+        if (PanelRender.ViewOf(PanelRender.Key(c.Id, part, Array.IndexOf(d.Panels, panel)), out var scroll, out var follow))
+            (card.Scroll, card.Follow) = (scroll, follow); // (a list's place is this PC's own, moved by Up and Down: read as drawn, not from the top)
         var percent = ConstructConfig.Has(d, CfgKey.TextSize) ? ConstructConfig.Get(c.Parts[part], d, CfgKey.TextSize, 100) : 100;
         var source = panel == d.Panels[0] ? ProductionLines.MonitorSource(c, part) : -1;
         if (source >= 0)
