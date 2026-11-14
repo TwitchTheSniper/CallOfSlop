@@ -56,6 +56,7 @@ public sealed record EnginePlan(int Size, EngineLayout Layout, int Cranks, strin
     public int Banks => EngineKit.BankSockets(Layout).Length;
     public int Cylinders => Cranks * Banks;
     public string Crank { get; init; } = ""; // (the crank section's name: "" the size's catalogue one; a bored engine's is pressed longer)
+    public string Grade { get; init; } = ""; // (a bored plan's word, "Racing": the grade whose power its thinner wall gives; "" plain)
 }
 
 /// <summary>What the kit made: the blueprint, and the numbers the game itself works out for it (<see cref="ConstructEngine"/>).</summary>
@@ -117,28 +118,62 @@ public static class EngineKit
     };
 
     /// <summary>
-    /// A bore the kit plans with: the cylinder (its catalogue part, or a pressed key bored <see cref="Ratio"/> times its preset), the crank
-    /// section it stands on (pressed longer when the bored cylinder is wider than the catalogue section's pitch, so neighbours clear; its
-    /// across, so its scale and revs, stay the size's), the length's stretch, the tier, and <see cref="Of"/> for the fuel system and booster
-    /// pressed to the same ratio (a small carburettor would starve a bored bank: sized-parts design 6.4).
+    /// A bore the kit plans with: the cylinder (its catalogue part, or the plain one's preset pressed with a thinner wall, so a wider bore in the
+    /// same across: bored cylinders, 2026-11-14), the crank section it stands on (pressed longer only when the fuel system or booster the bank
+    /// needs is wider than the catalogue section's pitch; its across, so its scale and revs, stay the size's), the length's stretch, the tier
+    /// and grade word, and <see cref="Of"/> for the fuel system and booster pressed to the cylinder's scale (a small carburettor would starve a
+    /// bored bank: sized-parts design 6.4).
     /// </summary>
-    private readonly record struct Bore(float Ratio, int Tier, string Word, ConstructPartDef? Cylinder, ConstructPartDef? Crank, float Pitch)
+    private readonly record struct Bore(float Ratio, int Tier, string Word, ConstructPartDef? Cylinder, ConstructPartDef? Crank, float Pitch, float Frail = 0)
     {
-        public string? Of(string part) => Ratio == 1 ? part : PressedAt(part, Ratio, up: true);
+        public string? Of(string part) => Ratio == 1 ? part : PressedAt(part, Ratio, up: true, keepLength: true); // (wider to feed the bore, no taller: its across sets its scale, and a vehicle's bay is low)
     }
 
     private static readonly System.Text.RegularExpressions.Regex PresetKey = new(@"^(Pressed Part \(\S+ )(round|solid|hollow|pipe)(\d*) (\d+)x(\d+)x(\d+) (\S+)\)$");
 
     /// <summary>A catalogue part's preset blank times <paramref name="ratio"/> on each side (a pipe's wall too), to the 5 cm lattice, as a pressed key; null when no die presses it.</summary>
-    private static string? PressedAt(string part, float ratio, bool up = false)
+    private static string? PressedAt(string part, float ratio, bool up = false, bool keepLength = false)
     {
         if (Part(part) is not { } d || PressTable.Current.PresetKeyOf(d) is not { } key || PresetKey.Match(key) is not { Success: true } m)
             return null;
         int L5(float cm) => Math.Max(5, (up ? (int)MathF.Ceiling(cm / 5 - 1e-3f) : (int)MathF.Round(cm / 5, MidpointRounding.AwayFromZero)) * 5); // (up: a fuel system or booster never smaller than its bank, or it starves it)
         var wall = m.Groups[3].Value.Length > 0 ? L5(int.Parse(m.Groups[3].Value, CultureInfo.InvariantCulture) * ratio).ToString(CultureInfo.InvariantCulture) : "";
-        int w = L5(int.Parse(m.Groups[4].Value, CultureInfo.InvariantCulture) * ratio), h = L5(int.Parse(m.Groups[5].Value, CultureInfo.InvariantCulture) * ratio), l = L5(int.Parse(m.Groups[6].Value, CultureInfo.InvariantCulture) * ratio);
+        int w = L5(int.Parse(m.Groups[4].Value, CultureInfo.InvariantCulture) * ratio), h = L5(int.Parse(m.Groups[5].Value, CultureInfo.InvariantCulture) * ratio), l = keepLength ? int.Parse(m.Groups[6].Value, CultureInfo.InvariantCulture) : L5(int.Parse(m.Groups[6].Value, CultureInfo.InvariantCulture) * ratio);
         var made = string.Create(CultureInfo.InvariantCulture, $"{m.Groups[1].Value}{m.Groups[2].Value}{wall} {w}x{h}x{l} {m.Groups[7].Value})");
         return Part(made) != null ? made : null;
+    }
+
+    /// <summary>
+    /// The plain cylinder's preset with the thickest wall (whole cm) that gives at least <paramref name="power"/> times its kW, the same across
+    /// and length; the thinnest wall that still adds power when none reaches it; null when no thinner wall adds power (or no die presses it).
+    /// With it, the power it gives (times the plain one's) and the share of the plain wall's metal, so of its health, it gives up.
+    /// </summary>
+    private static (ConstructPartDef Cylinder, float Power, float Frail)? BoredAt(ConstructPartDef plain, float power)
+    {
+        if (PressTable.Current.PresetKeyOf(plain) is not { } key || PresetKey.Match(key) is not { Success: true } m || m.Groups[2].Value != "pipe" || m.Groups[3].Value.Length == 0)
+            return null;
+        var rules = EngineRules.Current;
+        var plainKw = rules.KwAt(rules.ScaleOf(plain));
+        var wall0 = int.Parse(m.Groups[3].Value, CultureInfo.InvariantCulture);
+        var across = int.Parse(m.Groups[4].Value, CultureInfo.InvariantCulture);
+        float Metal(int wall) => across * (float)across - (across - 2f * wall) * (across - 2f * wall); // (a ring's area over pi/4: the same across and length)
+        (ConstructPartDef, float, float)? best = null;
+        var bestKw = plainKw * 1.001f;
+        for (var wall = wall0 - 1; wall >= 1; wall--)
+        {
+            if (Part(string.Create(CultureInfo.InvariantCulture, $"{m.Groups[1].Value}pipe{wall} {m.Groups[4].Value}x{m.Groups[5].Value}x{m.Groups[6].Value} {m.Groups[7].Value})")) is not { } d)
+                continue;
+            var kw = rules.KwAt(rules.ScaleOf(d));
+            var got = (d, kw / plainKw, 1 - Metal(wall) / Metal(wall0));
+            if (kw >= plainKw * power * 0.97f)
+                return got;
+            if (kw > bestKw)
+            {
+                best = got;
+                bestKw = kw;
+            }
+        }
+        return best;
     }
 
     /// <summary>A crank section of the size at least <paramref name="pitchM"/> long: the catalogue one, or its preset pressed longer (5 cm steps, the same across).</summary>
@@ -155,23 +190,35 @@ public static class EngineKit
         return Part(string.Create(CultureInfo.InvariantCulture, $"{m.Groups[1].Value}{m.Groups[2].Value}{m.Groups[3].Value} {m.Groups[4].Value}x{m.Groups[5].Value}x{cm} {m.Groups[7].Value})"));
     }
 
-    /// <summary>The bores a tier allows: the plain one, then each tier grade's (EngineKitParts.Grades' bore ratios).</summary>
+    /// <summary>The bores a tier allows: the plain one, then each tier grade's (the plain cylinder with the thinner wall that gives its grade's power).</summary>
     private static IEnumerable<Bore> Bores(string sw, int tier)
     {
         var plain = Part($"{sw} Cylinder");
         yield return new Bore(1, 1, "", plain, Part($"{sw} Crank Section"), 1);
-        if (plain == null)
+        if (plain == null || Part($"{sw} Crank Section") is not { } crank0)
             yield break;
-        foreach (var g in EngineKitParts.Grades)
+        var rules = EngineRules.Current;
+        ConstructPartDef? last = null;
+        foreach (var g0 in EngineKitParts.Grades)
         {
-            if (g.Tier > tier || PressedAt(plain.Name, g.Bore) is not { } key || Part(key) is not { } cyl)
+            if (g0.Tier > tier || BoredAt(plain, g0.Power) is not { } bored || bored.Cylinder == last)
                 continue;
-            var crank0 = Part($"{sw} Crank Section")!;
+            var cyl = bored.Cylinder;
+            last = cyl;
+            // Named by what it reaches, not what was asked (a Medium or Large preset's wall is already thin: its best is about x1.37, a "Bored" one).
+            var reached = Array.FindLastIndex(EngineKitParts.Grades, x => bored.Power >= x.Power * 0.97f);
+            if (reached < 0)
+                continue;
+            var g = EngineKitParts.Grades[reached];
+            var ratio = rules.ScaleOf(cyl) / rules.ScaleOf(plain);
+            // The bank's pieces pressed to the cylinder's scale: the widest of them (and the cylinder) sets the crank's pitch, so neighbours clear by the z-fighting gap.
             var pitch = (crank0.BoundsMax - crank0.BoundsMin).Z;
             var across = MathF.Max((cyl.BoundsMax - cyl.BoundsMin).X, (cyl.BoundsMax - cyl.BoundsMin).Z);
-            var crank = Crank(sw, across + 2 * CallOfSlop.Pressed.Gap(across)); // (the bored cylinders clear each other by the z-fighting gap)
-            yield return new Bore(EngineRules.Current.ScaleOf(cyl) / EngineRules.Current.ScaleOf(plain), g.Tier, g.Word, cyl, crank,
-                crank == null ? 1 : (crank.BoundsMax - crank.BoundsMin).Z / pitch);
+            foreach (var piece in new[] { "Carburettor", "Injector Rail", "Supercharger", "Turbo" })
+                if (PressedAt($"{sw} {piece}", ratio, up: true, keepLength: true) is { } pk && Part(pk) is { } pd)
+                    across = MathF.Max(across, MathF.Max((pd.BoundsMax - pd.BoundsMin).X, (pd.BoundsMax - pd.BoundsMin).Z));
+            var crank = across + 2 * CallOfSlop.Pressed.Gap(across) <= pitch + 1e-3f ? crank0 : Crank(sw, across + 2 * CallOfSlop.Pressed.Gap(across));
+            yield return new Bore(ratio, g.Tier, g.Word, cyl, crank, crank == null ? 1 : (crank.BoundsMax - crank.BoundsMin).Z / pitch, Math.Clamp(bored.Frail, 0f, 1f));
         }
     }
 
@@ -213,6 +260,7 @@ public static class EngineKit
                     boosts.Add(null); // (the booster asked for is past the tier: none, and the note says so)
                 if (bore.Cylinder is not { } cyl || bore.Crank is not { } crank || fuels.Count == 0)
                     continue;
+                var frail = bore.Frail; // (the share of the plain wall's metal, so of its health, the bore gives up)
                 rules.At(rules.ScaleOf(cyl), out var cylKw, out _, out _, out _); // (a file cylinder's is its size's row exactly)
                 foreach (var layout in Layouts)
                 {
@@ -232,8 +280,8 @@ public static class EngineKit
                                 var mass = n * crank.Mass + cylinders * cyl.Mass + banks.Length * (fuel.Mass + (boost?.Mass ?? 0)) + fly.Mass
                                            + (r.Exhausts && exhaust != null ? (cylinders - banks.Length) * exhaust.Mass : 0)
                                            + (rules.StarterFor(size) && starter != null ? starter.Mass : 0);
-                                var dims = Estimate(banks, n, boost != null, rules.StarterFor(size), s) * new Vector3(bore.Pitch, bore.Ratio, bore.Ratio);
-                                plans.Add(Score(r, size, layout, n, cyl.Name, fuel.Name, boost?.Name, kw, mass, dims, target, peakW, rules.Peak[size], tier, Math.Max(bore.Tier, Math.Max(TierOf(fuel), boost != null ? TierOf(boost) : 1))) with { Crank = crank.Name });
+                                var dims = Estimate(banks, n, boost != null, rules.StarterFor(size), s, (Taller(fuel, fuel.PiecePower > 1 ? $"{sw} Injector Rail" : $"{sw} Carburettor") + (boost == null ? 0 : Taller(boost, boost.PieceSpool > 0 ? $"{sw} Turbo" : $"{sw} Supercharger"))) / s) * new Vector3(bore.Pitch, 1, 1); // (a bored cylinder keeps its across and length: only the crank, the fuel system and booster may grow)
+                                plans.Add(Score(r, size, layout, n, cyl.Name, fuel.Name, boost?.Name, kw, mass, dims, target, peakW, rules.Peak[size], tier, Math.Max(bore.Tier, Math.Max(TierOf(fuel), boost != null ? TierOf(boost) : 1)), frail) with { Crank = crank.Name, Grade = bore.Word });
                             }
                 }
             }
@@ -247,9 +295,9 @@ public static class EngineKit
     /// socket, a fuel system or outlet 0.25 m on the head and a booster 0.25 m on that, the flywheel 0.9 m across and 0.4 m past the crank's end, a starter
     /// 0.32 m out on a free side; all times the size's scale. The kit measures the built one again.
     /// </summary>
-    private static Vector3 Estimate(string[] banks, int n, bool boost, bool starter, float s)
+    private static Vector3 Estimate(string[] banks, int n, bool boost, bool starter, float s, float taller = 0)
     {
-        var bank = 0.25f + 0.75f + 0.25f + (boost ? 0.25f : 0);
+        var bank = 0.25f + 0.75f + 0.25f + (boost ? 0.25f : 0) + taller; // (taller: how much a pressed fuel system and booster stand above the catalogue ones, at scale 1: Taller)
         float Side(string d) => banks.Contains(d) ? bank : 0.45f;
         var w = Side("+x") + Side("-x");
         var h = Side("+y") + Side("-y");
@@ -258,9 +306,17 @@ public static class EngineKit
         return new Vector3(n * 0.5f + 0.4f, w, h) * s;
     }
 
+    /// <summary>How much further a bank's pressed piece stands out than the catalogue one it stands in for (m: its blank's length, which runs out from the head, over the catalogue preset's; 0 for the catalogue piece).</summary>
+    private static float Taller(ConstructPartDef d, string catalogue)
+    {
+        if (Part(catalogue) is not { } c || c == d || PresetKey.Match(d.Name) is not { Success: true } m || PressTable.Current.PresetKeyOf(c) is not { } ck || PresetKey.Match(ck) is not { Success: true } cm)
+            return 0f;
+        return MathF.Max(0, (int.Parse(m.Groups[6].Value, CultureInfo.InvariantCulture) - int.Parse(cm.Groups[6].Value, CultureInfo.InvariantCulture)) / 100f);
+    }
+
     /// <summary>Lower is better: the power's miss (short counts three times over), the torque's and rpm's, then mass and bulk, and a seeded hair to part ties.</summary>
     private static EnginePlan Score(EngineRequest r, int size, EngineLayout layout, int n, string cyl, string fuel, string? boost, float kw, float mass, Vector3 dims,
-        float target, float peakW, float peakRpm, int tier, int usedTier)
+        float target, float peakW, float peakRpm, int tier, int usedTier, float frail = 0)
     {
         var why = "";
         var miss = kw < target ? 3 * (target - kw) / target : (kw - target) / target;
@@ -275,6 +331,7 @@ public static class EngineKit
         score += 0.15f * mass / MathF.Max(1, target * 2.5f); // (about 2.5 kg a kW is a plain small engine's)
         score += 0.02f * (dims.X * dims.Y * dims.Z) / MathF.Max(1e-3f, MathF.Pow(target / 100f, 1f)); // (bulk, lightly)
         score += 0.03f * (tier - usedTier); // (a tier's engine leans on its own pieces)
+        score += 0.1f * frail; // (a bored cylinder's thinner wall is easier to damage: frail is the health it gives up against the plain one, 0 to 1)
         score += 0.01f * Hash01(r.Seed, size, (int)layout, n, cyl.Length * 31 + fuel.Length * 7 + (boost?.Length ?? 0));
         var feasible = true;
         if (r.Fit.X > 0 && dims.X > r.Fit.X || r.Fit.Y > 0 && dims.Y > r.Fit.Y || r.Fit.Z > 0 && dims.Z > r.Fit.Z)
@@ -365,8 +422,7 @@ public static class EngineKit
         var sw = SizeWords[p.Size];
         var rules = EngineRules.Current;
         var layoutName = LayoutName(p.Layout, p.Cylinders);
-        var grade = EngineKitParts.Grades.FirstOrDefault(g => PressedAt($"{sw} Cylinder", g.Bore) == p.Cylinder); // (a tier's bore: sized parts phase 6)
-        var name = r.Name.Length > 0 ? r.Name : $"{sw} {layoutName}{(grade.Word != null ? " " + grade.Word : "")}{(p.BoostPart != null ? Part(p.BoostPart)?.PieceSpool > 0 ? " Turbo" : " Supercharged" : "")}"; // (a turbo spools: a pressed one names its key, not "Turbo")
+        var name = r.Name.Length > 0 ? r.Name : $"{sw} {layoutName}{(p.Grade.Length > 0 ? " " + p.Grade : "")}{(p.BoostPart != null ? Part(p.BoostPart)?.PieceSpool > 0 ? " Turbo" : " Supercharged" : "")}"; // (a turbo spools: a pressed one names its key, not "Turbo")
         var s = new BlueprintScript(name) { Group = "Engine Kit", Description = $"Made by the Engine Kit for {r}." };
         try
         {

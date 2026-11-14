@@ -111,6 +111,10 @@ Forty-one more rows left the Assembler's recipe list: the **Gun Barrel, Long Gun
 
 Pressed pieces in a saved world keep their key and load as the same piece: same size, numbers and mass (their models settle by a few millimetres so no two faces flicker). A Press's Pattern setting keeps its meaning, and a Press set to Auto makes what it made before: the receivers a Receiver Die can now make (22 that had no recipe, the Bucket Launcher and Courier Carbine among them) come only from its Pattern setting or an order. Recycling a part a Press makes from a preset (a Gear Set, a Housing, a Gun Barrel and others) now gives back at most what pressing it took: less than before for 35 of them.
 
+### Pressed engine pieces in a saved world (bored cylinders, 2026-11-14)
+
+Pressed engine pieces (cylinders, crank sections, flywheels, fuel systems, boosters, starters, outlets) keep their key and load as the same piece, the same size, shape and health, but they now weigh what the catalogue piece of their size weighs for their metal: most are a third to a half of their old mass, so a vehicle with a pressed engine gets lighter, and **recycling one gives back its new, lower mass**. A pressed cylinder's power now also follows its **bore** (its width less both walls): a cylinder with the usual wall for its width gives what it gave before; a thinner wall gives more, a thicker one less. Its revs are unchanged. The Engine Kit's old bored cylinders: `pipe10 50x50x85` now 56 kW (was 50), `pipe10 55x55x95` 74 kW (was 62), `pipe15 60x60x105` 51 kW (was 74, its wall is thick). Their old pressed fuel systems now feed most but not all of the extra (an old Small B16 Bored engine reads 981 kW, was 962; a Performance one 1222 kW, was 1180; a racing one less than before). Look at the engine's readout after loading. Catalogue engine pieces and pieces pressed at a catalogue preset are unchanged. Nothing is dropped.
+
 ### Keeping saves on a USB stick (portable mode)
 
 Put an empty file called `portable.txt` next to `CallOfSlop.exe`. The game then keeps its saves in its own folder, like the old builds did. Copy your save files into that folder yourself.

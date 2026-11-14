@@ -616,7 +616,11 @@ public sealed partial class ConstructWorld
         for (var i = 0; i < n; i++)
             parts[i].Seg = r.U8();
         for (var i = 0; i < n; i++)
+        {
             parts[i].Health = r.F32();
+            if (parts[i].Health > parts[i].D.Health && parts[i].D.File.Length == 0) // (a run-time piece whose numbers moved since the save: never above its whole; bored cylinders, 2026-11-14)
+                parts[i].Health = parts[i].D.Health;
+        }
         for (var i = 0; i < n; i++)
             parts[i].Broken = r.U8() != 0;
         for (var i = 0; i < n; i++)
