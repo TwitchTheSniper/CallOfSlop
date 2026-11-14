@@ -184,8 +184,8 @@ public sealed class SlotStore : INetworkStore
 
     public bool PutPart(ConstructWorld world, Construct c, int part, ConstructPartDef d, bool pile)
     {
-        if (world.StoreOf(c, part) is not { } st)
-            return false;
+        if (d.RuntimeMade || world.StoreOf(c, part) is not { } st)
+            return false; // (a made part is a body, never a slot item: the user's answer 1; it goes back onto a rack, RackStore)
         var cd = c.DefOf(part);
         for (var k = 0; k < st.SlotCount; k++)
             if ((st.Def[k] == d.Id) == pile && ConstructStorage.Check(cd, st, k, d, out _) == SlotCheck.Ok)
@@ -247,7 +247,12 @@ public sealed class RackStore : INetworkStore
 
     public int TakeBulk(ConstructWorld world, Construct c, int part, byte material, int amount) => 0;
 
-    public bool PutPart(ConstructWorld world, Construct c, int part, ConstructPartDef d, bool pile) => false;
+    /// <summary>
+    /// A made part back onto a rack (a refund, a part taken off in reach of a beacon: inventories phase 4): a rack already holding its
+    /// kind first, then any with room, by the conveyors' own packing. A catalogue part never goes onto a rack through the network.
+    /// </summary>
+    public bool PutPart(ConstructWorld world, Construct c, int part, ConstructPartDef d, bool pile) =>
+        d.RuntimeMade && world.StoreOf(c, part) is { } st && st.KindIndex(d.Id) >= 0 == pile && world.RackPut(c, part, d);
 
     public int PutBulk(ConstructWorld world, Construct c, int part, byte material, int amount, bool same) => 0;
 }
@@ -285,7 +290,7 @@ public sealed class VolumeStore : INetworkStore
         world.StoreOf(c, part) is { } st && st.Material == material ? world.Withdraw(c, part, amount) : 0;
 
     public bool PutPart(ConstructWorld world, Construct c, int part, ConstructPartDef d, bool pile) =>
-        world.StoreOf(c, part) is { } st && st.KindIndex(d.Id) >= 0 == pile && world.PutPart(c, part, d) == null;
+        !d.RuntimeMade && world.StoreOf(c, part) is { } st && st.KindIndex(d.Id) >= 0 == pile && world.PutPart(c, part, d) == null;
 
     public int PutBulk(ConstructWorld world, Construct c, int part, byte material, int amount, bool same)
     {

@@ -39,6 +39,13 @@ public sealed partial class Game
         MarkLobbyDirty();
     }
 
+    /// <summary>The window tool's "inv survival" (a test state, on each peer by its own step): the rules switched mid-world, after a blueprint went down through the menu.</summary>
+    internal void SurvivalForTool(bool survival)
+    {
+        SandboxSurvivalOption = survival;
+        SandboxShareRules();
+    }
+
     /// <summary>Client: what the host's Welcome or lobby state says.</summary>
     private void HearSandboxSurvival(bool survival)
     {

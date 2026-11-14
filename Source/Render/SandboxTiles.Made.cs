@@ -20,6 +20,7 @@ public static unsafe partial class SandboxTiles
 
     private static readonly ConstructPartDef?[] _madeDef = new ConstructPartDef?[MadePool];
     private static readonly ushort[] _madeId = new ushort[MadePool];
+    private static readonly CPartBox[]?[] _madeBoxes = new CPartBox[]?[MadePool]; // (the boxes a tile was drawn from: a formed or cut panel's facets come after its first part, swapped in place)
     private static readonly long[] _madeSeen = new long[MadePool];
     private static readonly byte[] _madeState = new byte[MadePool]; // 0 waiting, 1 drawn, 2 no picture (no boxes, or its data threw): a swatch
     private static readonly Dictionary<ushort, int> _madeAt = new(MadePool * 2);
@@ -31,6 +32,13 @@ public static unsafe partial class SandboxTiles
     public static int MadeRendered { get; private set; }
 
     public static int MadeEvicted { get; private set; }
+
+    /// <summary>Tiles drawn again because their part's boxes were swapped in place (a panel's facets), and waits for a stand-in (tools, checks).</summary>
+    public static int MadeRedrawn { get; private set; }
+
+    public static int MadeStandInWaits { get; private set; }
+
+    public static int MadeIdRemade { get; private set; }
 
     /// <summary>Made-part tiles in use now.</summary>
     public static int MadeInUse => _madeUsed;
@@ -60,7 +68,14 @@ public static unsafe partial class SandboxTiles
                 return false;
         }
         _madeSeen[s] = _madeFrame;
-        if (_madeState[s] != 1)
+        if (_madeState[s] == 1 && !ReferenceEquals(_madeBoxes[s], d.Boxes))
+        {
+            // Its boxes were swapped since it was drawn (a panel's facets arrived): drawn again in the same slot, the old picture shown meanwhile.
+            _madeState[s] = 0;
+            _madePending++;
+            MadeRedrawn++;
+        }
+        if (_madeBoxes[s] == null)
             return false;
         Place(s, out var page, out var x, out var y);
         texture = _madePages[page];
@@ -74,7 +89,10 @@ public static unsafe partial class SandboxTiles
     {
         int s;
         if (_madeAt.TryGetValue(id, out var stale))
+        {
             s = stale; // (the id was freed and made again for another key: its slot is drawn again)
+            MadeIdRemade++;
+        }
         else if (_madeUsed < MadePool)
             s = _madeUsed++;
         else
@@ -96,6 +114,7 @@ public static unsafe partial class SandboxTiles
         if (_madeDef[s] != null && _madeState[s] == 0)
             _madePending--;
         _madeDef[s] = d;
+        _madeBoxes[s] = null; // (no picture of this part yet: a swatch until it is drawn)
         _madeId[s] = id;
         _madeState[s] = 0;
         _madeAt[id] = s;
@@ -114,6 +133,7 @@ public static unsafe partial class SandboxTiles
             _madePages[p] = 0;
         }
         Array.Clear(_madeDef);
+        Array.Clear(_madeBoxes);
         Array.Clear(_madeState);
         Array.Clear(_madeSeen);
         _madeAt.Clear();
@@ -146,6 +166,11 @@ public static unsafe partial class SandboxTiles
             {
                 if (_madeState[s] != 0 || _madeDef[s] is not { } d)
                     continue;
+                if (HullLoft.IsStandIn(d))
+                {
+                    MadeStandInWaits++; // (a panel still being made from its key: drawn once it is, not as its stand-in)
+                    continue;
+                }
                 _madePending--;
                 if (d.Reclaimed)
                 {
@@ -160,11 +185,14 @@ public static unsafe partial class SandboxTiles
                 Native.glClear(GL_COLOR_BUFFER_BIT);
                 SkyRenderer.UseDefaultLight();
                 n++;
+                var boxes = d.Boxes;
                 if (!DrawMade(gfx, d))
                 {
                     _madeState[s] = 2;
+                    _madeBoxes[s] = null;
                     continue;
                 }
+                _madeBoxes[s] = boxes;
                 Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, _tileFbo);
                 Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _pageFbo);
                 Native.glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _madePages[page], 0);

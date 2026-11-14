@@ -90,14 +90,14 @@ public sealed partial class Game
             }
             case BuildAidOp.Line:
             {
-                var s = new LineSpec { Body = r.U16(), Part = r.U16(), Id = r.U16(), Socket = r.U8(), Variant = r.U8(), DirU = r.U8(), PitchU = r.F32(), CountU = r.U16(), DirV = r.U8(), PitchV = r.F32(), CountV = r.U16() };
+                var s = new LineSpec { Body = r.U16(), Part = r.U16(), Id = PartRef.Read(ref r), Socket = r.U8(), Variant = r.U8(), DirU = r.U8(), PitchU = r.F32(), CountU = r.U16(), DirV = r.U8(), PitchV = r.F32(), CountV = r.U16() };
                 return hands.BuildLine(Constructs, p.Id, eye, s);
             }
             case BuildAidOp.Replace:
             {
                 var body = r.U16();
                 var part = r.U16();
-                return hands.ReplacePart(Constructs, p.Id, eye, body, part, r.U16());
+                return hands.ReplacePart(Constructs, p.Id, eye, body, part, PartRef.Read(ref r)); // (protocol 307: by key, a made part too)
             }
             case BuildAidOp.Gantry:
                 return hands.Gantry(Constructs, p.Id, eye, r.U16());

@@ -99,7 +99,7 @@ public sealed partial class ConstructEdits
             return off;
         if (h.Seated)
             return "get out of the seat first";
-        if (ConstructParts.Get(s.Id) is not { IsExtrusion: false } def)
+        if (ConstructParts.Get(s.Id) is not { } def) // (a made part too, by its key on the wire: inventories phase 4)
             return "no such part";
         if (!ConstructBuild.ToolFits(h.Tool, def))
             return $"the {def.Name} needs the {def.Tool.Label()}";
@@ -162,7 +162,7 @@ public sealed partial class ConstructEdits
         if (h.Held == ConstructParts.None && !def.PhysicsOnly)
             Refill(world, player, ref h, def, eye);
         Notices.Add((player, SandboxKeys.Line("Line", $"{placed} placed{(mirrored ? " and mirrored" : "")}", SandboxKeys.Join(shortOf > 0 ? $"{shortOf} short" : "", blocked > 0 ? $"{blocked} didn't fit" : ""))));
-        Done.Add($"player {player}: line of {placed} {def.Name} on construct {c.Id}, {shortOf} short, {blocked} didn't fit");
+        Done.Add($"player {player}: line of {placed} {PartRef.Shown(def)} on construct {c.Id}, {shortOf} short, {blocked} didn't fit");
         return null;
     }
 }

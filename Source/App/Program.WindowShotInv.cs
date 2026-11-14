@@ -13,6 +13,8 @@ namespace CallOfSlop;
 /// </summary>
 public static unsafe partial class Program
 {
+    private static int _wsInvTries; // ("inv players" and "inv beacon": waits so far)
+
     private static bool WsInvVerb(Game g, Player me, string verb, string arg)
     {
         if (verb != "inv")
@@ -129,7 +131,13 @@ public static unsafe partial class Program
                     taken.Add(best.Id);
                     ref var h = ref hands.Hands[pl.Id];
                     h.Tool = d.Tool == ConstructTool.None ? ConstructTool.Welder : d.Tool;
-                    var why = hands.BeginRemove(g.Constructs, pl.Id, best.WorldCom + new System.Numerics.Vector3(0, 1, 0), best.Id, 0, g.SandboxNow);
+                    var eye = best.WorldCom + new System.Numerics.Vector3(0, 1, 0);
+                    var why = hands.BeginRemove(g.Constructs, pl.Id, eye, best.Id, 0, g.SandboxNow);
+                    if (why == null && h.Edit == EditKind.Remove)
+                    {
+                        h.Start = g.SandboxNow - h.Duration; // (survival's timed edit done now, as holding fire to its end does: the tool holds no button)
+                        hands.Tick(g.Constructs, g.SandboxNow, _ => eye);
+                    }
                     WsSay($"inv takeback: player {pl.Id}: {Named(d.Id)} construct {best.Id}: {why ?? "begun"} (edit {h.Edit}, {h.Duration:0.0} s)");
                 }
                 return true;
@@ -230,8 +238,33 @@ public static unsafe partial class Program
                 Ui.SetSandboxInventoryMade(true);
                 WsSay("inv open: Made parts");
                 return true;
+            case "tiles":
+            {
+                // "tiles FROM N TEMPLATE": the pictures of N made parts asked for in one frame, as rows on screen ask ({i} counts from FROM, the
+                // rest of the template as "fill"); with the pool full, the longest unseen slots are handed on. Prints how many show a picture now.
+                var w2 = rest.Split(' ', 3, StringSplitOptions.TrimEntries);
+                if (w2.Length < 3 || !int.TryParse(w2[0], out var from) || !int.TryParse(w2[1], out var n))
+                {
+                    WsFail("inv tiles FROM N TEMPLATE");
+                    return true;
+                }
+                var shown = 0;
+                for (var i = from; i < from + n; i++)
+                {
+                    var name = w2[2].Replace("{i}", i.ToString()).Replace("{f}", (100 + 5 * (i % 60)).ToString()).Replace("{s}", (20 + 5 * (i / 60)).ToString()); // ({f} a length in 5 cm steps, {s} a section that moves on every 60)
+                    if (ConstructParts.Find(name) is not { RuntimeMade: true } d)
+                    {
+                        WsFail($"inv tiles: no made part \"{name}\"");
+                        return true;
+                    }
+                    if (SandboxTiles.TryGetPart(d.Id, out _, out _, out _))
+                        shown++;
+                }
+                WsSay($"inv tiles: {from}..{from + n - 1}: {shown} with a picture; in use {SandboxTiles.MadeInUse} of {SandboxTiles.MadePool}, drawn {SandboxTiles.MadeRendered}, handed on {SandboxTiles.MadeEvicted}");
+                return true;
+            }
             case "icons":
-                WsSay($"inv icons: rows with a picture {Ui.SandboxMadeIcons}, swatches {Ui.SandboxMadeSwatches}; made tiles drawn {SandboxTiles.MadeRendered}, in use {SandboxTiles.MadeInUse} of {SandboxTiles.MadePool}, handed on {SandboxTiles.MadeEvicted}");
+                WsSay($"inv icons: rows with a picture {Ui.SandboxMadeIcons}, swatches {Ui.SandboxMadeSwatches}; made tiles drawn {SandboxTiles.MadeRendered}, in use {SandboxTiles.MadeInUse} of {SandboxTiles.MadePool}, handed on {SandboxTiles.MadeEvicted}, drawn again for new boxes {SandboxTiles.MadeRedrawn}, waits for a stand-in {SandboxTiles.MadeStandInWaits}, an id made again {SandboxTiles.MadeIdRemade}");
                 return true;
             case "force" when g.IsServer:
             {
@@ -267,6 +300,230 @@ public static unsafe partial class Program
                         return true;
                     }
                 WsFail("inv pull: no made row at a terminal");
+                return true;
+            }
+            case "rack" when g.IsServer:
+            {
+                // "rack N RACK[#n] NAME" (phase 4): N of a made part onto a Piece Rack by the conveyors' own packing (as a line would leave them).
+                var w2 = rest.Split(' ', 2, StringSplitOptions.TrimEntries);
+                if (w2.Length < 2 || !int.TryParse(w2[0], out var n) || !WsSplitStore(g, w2[1], out var c, out var part, out var d))
+                {
+                    WsFail($"inv rack N RACK[#n] NAME (\"{rest}\")");
+                    return true;
+                }
+                var put = 0;
+                while (put < n && g.Constructs.RackPut(c!, part, d!))
+                    put++;
+                WsSay($"inv rack: {put} of {n} x {Named(d!.Id)} onto the {c!.DefOf(part).Name}");
+                return true;
+            }
+            case "players" or "beacon":
+            {
+                // Two windows keep no common clock: "players N" waits until N other players are alive here; "beacon" until this peer's beacon
+                // view is on (its network theirs). Each tries again every 30 frames, 600 times at most.
+                var others = 0;
+                foreach (var pl in g.Players.Values)
+                    if (pl.Id != me.Id && pl.Alive)
+                        others++;
+                var ready = sub == "beacon" ? g.SandboxBeaconOn : int.TryParse(rest, out var need) && others >= need;
+                if (!ready)
+                {
+                    if (++_wsInvTries > 6000)
+                    {
+                        WsFail($"inv {arg}: never happened");
+                        return true;
+                    }
+                    _wsQueue.EnqueueFront("inv " + arg);
+                    _wsWait = 30;
+                    return true;
+                }
+                WsSay($"inv {arg}: after {_wsInvTries} waits");
+                _wsInvTries = 0;
+                return true;
+            }
+            case "select" when g.IsServer:
+            {
+                // "select delete|need BROKEN KEEP PART[#n]" (host, a test state): the body of that part selected but its first KEEP parts, the last BROKEN catalogue
+                // parts wrecked, then deleted as the selector does, or copied and the paste's survival check run (what is missing).
+                var w2 = rest.Split(' ', 4, StringSplitOptions.TrimEntries);
+                if (w2.Length < 4 || w2[0] is not ("delete" or "need") || !int.TryParse(w2[1], out var broken) || !int.TryParse(w2[2], out var keep) || WsFind(g, w2[3]) is not ({ } sc, _))
+                {
+                    WsFail($"inv select delete|need BROKEN KEEP PART[#n] (\"{rest}\")");
+                    return true;
+                }
+                var parts = sc.PartCount;
+                var why = hands.SelectForTool(g.Constructs, me.Id, me.Eye, sc, w2[0] == "delete", broken, keep);
+                WsSay($"inv select {w2[0]}: construct {sc.Id}, {parts} parts, {broken} wrecked: {why ?? "ok"}");
+                return true;
+            }
+            case "bodies":
+            {
+                // Every body near this player that holds a made part: its id, parts and the made ones by name (a refund's leftovers).
+                foreach (var b in g.Constructs.Bodies)
+                {
+                    if (System.Numerics.Vector3.Distance(b.WorldCom, me.Eye) > 30)
+                        continue;
+                    var made = new List<string>();
+                    for (var i = 0; i < b.PartCount; i++)
+                        if (b.DefOf(i).RuntimeMade)
+                            made.Add(PartRef.Listed(b.DefOf(i)));
+                    if (made.Count > 0)
+                        WsSay($"inv bodies: construct {b.Id}, {b.PartCount} parts, made: {string.Join("; ", made)}");
+                }
+                return true;
+            }
+            case "survival":
+                // "survival on|off" (a test state, run on each peer): the rules switched after the blueprint went down through the menu, so beacons work.
+                g.SurvivalForTool(rest != "off");
+                WsSay($"inv survival: infinite parts {g.SandboxInfiniteParts}, survival {g.SandboxHands.Survival}");
+                return true;
+            case "rackforce" when g.IsServer:
+            {
+                // "rackforce N TEMPLATE" (a test state, as "force" is): N made kinds, one of each, counted on the first Piece Rack's kinds
+                // past its packing (TEMPLATE as "fill" reads it), to drive a network's made list past a message's room; the key bytes are printed.
+                var w2 = arg.Split(' ', 3, StringSplitOptions.TrimEntries);
+                if (w2.Length < 3 || !int.TryParse(w2[1], out var n) || WsFind(g, "Piece Rack") is not ({ } rc, var rp) || g.Constructs.StoreOf(rc, rp) is not { } rst)
+                {
+                    WsFail("inv rackforce N TEMPLATE (and a Piece Rack)");
+                    return true;
+                }
+                var bytes = 0;
+                var scratch = new PacketWriter(1024);
+                for (var i = 0; i < n; i++)
+                {
+                    var name = w2[2].Replace("{i}", i.ToString()).Replace("{j}", (10 + i).ToString()).Replace("{k}", (100 + i).ToString()).Replace("{e}", (100 + 2 * i).ToString()).Replace("{t}", (12 + i % 29).ToString()).Replace("{q}", (i / 29).ToString());
+                    if (ConstructParts.Find(name) is not { RuntimeMade: true } d)
+                    {
+                        WsFail($"inv rackforce: no made part \"{name}\" ({(HullLoft.IsCutName(name) ? HullLoft.CutRefusal(name) : "")})");
+                        return true;
+                    }
+                    scratch.Begin(Msg.CAct);
+                    PartRef.Write(scratch, d.Id);
+                    bytes += scratch.Length - 1 + 2;
+                    rst.AddKind(d.Id, 1);
+                }
+                g.Constructs.ChangedForTool(rst);
+                WsSay($"inv rackforce: {n} kinds on the Piece Rack, {bytes} bytes of made entries (a beacon message's made list goes on in the next past {ConstructBeacons.MadeBudget})");
+                return true;
+            }
+            case "madesum":
+            {
+                // This peer's beacon view's made list as a digest of (key, count), to compare a host with a client.
+                var bv = g.SandboxBeacon(me.Id);
+                var list = new List<string>();
+                var total = 0;
+                for (var k = 0; k < bv.MadeN; k++)
+                {
+                    list.Add($"{ConstructParts.Get(bv.MadeDef[k])?.Name}={bv.MadeCount[k]}");
+                    total += bv.MadeCount[k];
+                }
+                list.Sort(StringComparer.Ordinal);
+                var h = 2166136261u;
+                foreach (var s in list)
+                    foreach (var ch in s)
+                        h = (h ^ ch) * 16777619u;
+                WsSay($"inv madesum: player {me.Id} network made kinds {bv.MadeN} (+{bv.MadeOver}), parts {total}, digest {h:X8}");
+                return true;
+            }
+            case "made":
+            {
+                // This peer's "Made parts" rows (the count's and the network's), their tooltips, and its beacon view's made list.
+                var bv = g.SandboxBeacon(me.Id);
+                WsSay($"inv made: beacon {bv.State}, on {g.SandboxBeaconOn}, made kinds on the network {bv.MadeN}{(bv.MadeOver > 0 ? $" (+{bv.MadeOver})" : "")}");
+                for (var k = 0; k < bv.MadeN; k++)
+                    WsSay($"inv made: network {Named(bv.MadeDef[k])} x{bv.MadeCount[k]}");
+                var r = 0;
+                foreach (var (id, text) in Ui.SandboxInventoryMadeRows(g))
+                {
+                    WsSay($"inv made: row {text.Split("##")[0]} ({ConstructParts.Get(id)?.Name}) tip: {Ui.SandboxInventoryMadeTip(r).Replace('\n', '|')}");
+                    r++;
+                }
+                return true;
+            }
+            case "search":
+                // "search TEXT": the Tab inventory's search as typed; the next frames draw it (then "inv hits").
+                Ui.OpenSandboxParts(false);
+                Ui.SetSandboxPartsSearch(rest);
+                WsSay($"inv search: \"{rest}\"");
+                return true;
+            case "hits":
+                WsSay($"inv hits: made rows found {Ui.SandboxMadeSearchHits}, pictures {Ui.SandboxMadeIcons}, swatches {Ui.SandboxMadeSwatches}");
+                return true;
+            case "mode":
+                // "mode line|replace|place": the build mode as its key leaves it (no station check: a test state), for a made row's click.
+                _buildMode = rest == "line" ? BuildMode.Line : rest == "replace" ? BuildMode.Replace : BuildMode.Place;
+                WsSay($"inv mode: {_buildMode}");
+                return true;
+            case "aidpick":
+            {
+                // "aidpick NAME": the Made parts row's click with a mode on (picked for the aid, not set down).
+                if (ConstructParts.Find(rest) is not { } d)
+                {
+                    WsFail($"inv aidpick: no part \"{rest}\"");
+                    return true;
+                }
+                Ui.SandboxMadePick(g, d);
+                WsSay($"inv aidpick: picked {Named(_aidPick)}, mode {_buildMode}, pinned {RuntimeParts.Pinned == d.Id}");
+                return true;
+            }
+            case "line":
+            {
+                // "line N PART[#n] NAME": a Line Layer stroke of N of a part along +x from the first socket of PART that takes it, sent as the drag's release sends it.
+                var w2 = rest.Split(' ', 2, StringSplitOptions.TrimEntries);
+                if (w2.Length < 2 || !int.TryParse(w2[0].Split('x')[0], out var n) || !WsSplitStore(g, w2[1], out var c, out var part, out var d))
+                {
+                    WsFail($"inv line N PART[#n] NAME (\"{rest}\")");
+                    return true;
+                }
+                // The part of that name nearest this player's eye, on any body (a map's own kit may have one too).
+                var named = c!.DefOf(part).Name;
+                var near = float.MaxValue;
+                foreach (var b in g.Constructs.Bodies)
+                    for (var i = 0; i < b.PartCount; i++)
+                        if (b.DefOf(i).Name == named && System.Numerics.Vector3.Distance(b.SegToWorld(b.Parts[i].Seg, b.Parts[i].Pos), me.Eye) is var pd && pd < near)
+                        {
+                            near = pd;
+                            c = b;
+                            part = i;
+                        }
+                // The free socket and turn whose ghost is nearest this player's eye (the server checks reach from there).
+                int bs = -1, bv = 0;
+                var best = float.MaxValue;
+                for (var s = 0; s < c!.SocketCount(part); s++)
+                    for (var v = 0; v < d!.Sockets.Length * 4 && v < 256; v++)
+                        if (ConstructBuild.Place(c, part, s, d, v / 4, v % 4, out var g0) == null && System.Numerics.Vector3.Distance(c.SegToWorld(g0.Seg, g0.Pos), me.Eye) is var dist && dist < best)
+                        {
+                            best = dist;
+                            bs = s;
+                            bv = v;
+                        }
+                if (bs >= 0 && ConstructBuild.Place(c, part, bs, d!, bv / 4, bv % 4, out var gh) == null)
+                        {
+                            var dir = (byte)0;
+                            var pitch = ConstructLine.Pitch(c, d, gh.Rot, gh, dir);
+                            var pw = g.SandboxAidBegin(BuildAidOp.Line);
+                            pw.U16(c.Id).U16((ushort)part);
+                            PartRef.Write(pw, d.Id);
+                            var rows = w2[0].Split('x') is [_, var mv] && int.TryParse(mv, out var mm) ? Math.Max(1, mm) : 1; // ("NxM": a field, M rows along +z)
+                            pw.U8((byte)bs).U8((byte)bv).U8(dir).F32(pitch).U16((ushort)n).U8(4).F32(ConstructLine.Pitch(c, d, gh.Rot, gh, 4)).U16((ushort)rows);
+                            g.SandboxAidSend(pw);
+                            WsSay($"inv line: {n} x {Named(d.Id)} from socket {bs} of the {c.DefOf(part).Name}, variant {bv}, pitch {pitch:0.###} m, ghost {System.Numerics.Vector3.Distance(c.SegToWorld(gh.Seg, gh.Pos), me.Eye):0.0} m from the eye at {me.Eye}");
+                            return true;
+                        }
+                WsFail($"inv line: no socket of the {c.DefOf(part).Name} takes the {Named(d!.Id)}");
+                return true;
+            }
+            case "replace":
+            {
+                // "replace PART[#n] NAME": the Replacer's swap of that part for NAME, as its click (or its picker) sends it.
+                if (!WsSplitStore(g, rest, out var c, out var part, out var d))
+                {
+                    WsFail($"inv replace PART[#n] NAME (\"{rest}\")");
+                    return true;
+                }
+                var plan = ConstructReplace.Plan(g.Constructs, c!, part, d!, out _);
+                SandboxReplaceSend(g, c!.Id, part, d!.Id);
+                WsSay($"inv replace: the {Named(c.Parts[part].Def)} for {Named(d.Id)} (this peer's plan: {plan ?? "fits"})");
                 return true;
             }
             case "net":

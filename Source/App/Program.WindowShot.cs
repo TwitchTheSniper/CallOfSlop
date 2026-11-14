@@ -30,7 +30,7 @@ public static unsafe partial class Program
     /// </summary>
     private static bool WsRejoin(string status, double now)
     {
-        if (!_windowShot || !_wsNet.StartsWith("join:", StringComparison.OrdinalIgnoreCase) || _quit || now - _wsStart > 90)
+        if (!_windowShot || !_wsNet.StartsWith("join:", StringComparison.OrdinalIgnoreCase) || _quit || now - _wsStart > 180)
             return false;
         if (now - _wsJoinTry < 2)
             return true; // (the session stays as it is for a moment: the next frame tries again)
@@ -221,7 +221,7 @@ public static unsafe partial class Program
                     _wsStep = 2;
                     _wsWait = 0;
                 }
-                else if (now - _wsStart > (_wsNet.StartsWith("join:", StringComparison.OrdinalIgnoreCase) ? 90 : 40)) // (a joined client waits out the host's own start-up)
+                else if (now - _wsStart > (_wsNet.StartsWith("join:", StringComparison.OrdinalIgnoreCase) ? 180 : 40)) // (a joined client waits out the host's own start-up: two windows loading at once take a minute and more on the Windows PC)
                     WsFail($"the world didn't reach play (phase {g.Phase}, alive {g.Local?.Alive}, menu {Ui.MenuOpen}{(g.Disconnected ? $", {g.Status}" : "")})");
                 return;
             case 2: // the blueprint down, then the camera

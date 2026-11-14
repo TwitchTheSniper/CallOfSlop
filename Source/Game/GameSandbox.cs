@@ -1268,8 +1268,8 @@ public sealed partial class Game
             case CActKind.TakeMade:
             {
                 var made = PartRef.Read(ref r); // (protocol 299: a made part from the Tab inventory, by key)
-                if (!Extrusion.IsRuntimeId(made) || SandboxInv.Of(p.Id).Count(made) == 0)
-                    return "you hold none of that made part"; // (only a key the player's count holds)
+                if (!Extrusion.IsRuntimeId(made) || SandboxInv.Of(p.Id).Count(made) == 0 && SandboxBeacon(p.Id).CountOf(made) == 0)
+                    return "you hold none of that made part"; // (only a key the player's count holds, or their network lists: inventories phase 4)
                 return hands.TakePart(SandboxPartsMenu ? World.Map.Sandbox : null, p.Id, made, Constructs, eye, p.Yaw);
             }
             case CActKind.Blueprint:

@@ -41,7 +41,7 @@ public sealed partial class ConstructEdits
             if (DropLoose(world, def, where, rot ?? Quaternion.Identity) is { } body)
             {
                 body.Owner = player;
-                Notices.Add((player, $"{def.Name} left as a body: physics-only ({def.PhysicsWhy})"));
+                Notices.Add((player, $"{PartRef.Shown(def)} left as a body: {(def.RuntimeMade ? "a made part is moved with the physics gun" : $"physics-only ({def.PhysicsWhy})")}"));
                 Done.Add($"player {player}: {def.Name} dropped as construct {body.Id} (physics-only: {def.PhysicsWhy})");
                 return GiveResult.Dropped;
             }
