@@ -78,3 +78,8 @@ Proposed, for the bigger machines and for length:
 - Sections by name (Construct configure, Assembling, Assembling network, Extruder, Extruder network, Press stock, Wheel orders, Display
   screens, Interaction sweep): 0 failures; one earlier run failed Press stock "part-way: the client never saw the piece", which passed alone
   twice and in the next full run of the nine (a timing flake, not looked into).
+
+## Answers, 2026-11-13
+
+- **Extruder expansion pieces:** build as proposed (the user): Die Extension blocks for width up to the next class, Run-out Table sections for length, on every class; the too-wide text names them before the next machine and before strips.
+- Standing by recommendation: a priority change does not re-rank queued lines; the row warns "too wide" before ordering; the one-minute retry stays.

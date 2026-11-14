@@ -73,3 +73,8 @@ STATUS: built; tried on host and a joined client.
 - Sections passed by name: Inventory beacon, Inventory beacon network, Sandbox inventory, Sandbox Tab inventory, Construct storage,
   Custom bins, Extruder network, Construct salvage, Assembling, Display screens, Interaction sweep (two re-run alone after a port clash
   with another session's test).
+
+## Answers, 2026-11-13
+
+- **Made pieces onto racks through the network:** no, take out only (the user). Made pieces reach racks by conveyor, arm or hand.
+- Standing by recommendation: rows labelled by blank and opening count with the key in the tooltip; Storage Volumes wait until a store keeps bodies; the terminal's screen stays text.

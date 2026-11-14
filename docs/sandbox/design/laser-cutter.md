@@ -501,3 +501,9 @@ They will be asked together; each stands on its own. The first option is the rec
 Phase 1's three questions were answered the same day (`laser-cutter-phase1-notes.md` keeps the record): offcuts round
 to the nearest unit and the cutter counts them in tenths (section 5); no fixed thickest stock, the cutting time a law of
 thickness over power (section 5, the bed's bound in 4.4); a flat bar on edge is cut through its width (4.4).
+
+### Answers, 2026-11-13 (after phase 4)
+
+- **Placing cuts:** the flat plan with drag handles and 5 cm snap is the Laser Cutter's next phase (the user: "Flat plan next"), ahead of other cutter work; the slider rows stay until it lands.
+- **Cut plates in the designer:** yes, a "Blank: formed panel / extruded plate" choice; a cut plate is saved and ordered like a cut panel.
+- **The Design button:** a pick orders at the Order count, as built (the builder's recommendation, not objected to).
