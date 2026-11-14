@@ -119,8 +119,12 @@ public static partial class ConstructLifters
         var next = was;
         if (move != default)
         {
-            Frame(c, l.Part, ld, out _, out var lr, out _);
+            Frame(c, l.Part, ld, out var lp, out var lr, out _);
             next = Clamp(ld, l, was + Vector3.Transform(move, Quaternion.Conjugate(lr)));
+            var wn = lp + Vector3.Transform(next, lr); // (never under the ground: the hook stops on it)
+            var floor = World.Map.GroundHeight(wn.X, wn.Z) + (l.Def != 0 && ConstructParts.Get(l.Def) is { } hd ? MathF.Max(0, -hd.BoundsMin.Y) : 0.1f);
+            if (wn.Y < floor && move.Y < 0)
+                next = Clamp(ld, l, Vector3.Transform(wn with { Y = floor } - lp, Quaternion.Conjugate(lr)));
         }
         var moving = Vector3.DistanceSquared(next, was) > 1e-8f;
         if (moving || Vector3.DistanceSquared(l.From, l.To) > 1e-8f)
@@ -206,7 +210,10 @@ public static partial class ConstructLifters
             {
                 if (lo == c || lo.Anchored || lo.HeldBy != 0 || lo.GrabbedBy != 255 || lo.CarriedBy != 0 || lo.Driver != 255)
                     continue;
-                var dd = Vector3.DistanceSquared(lo.WorldCom, hook);
+                var off = lo.WorldCom - hook;
+                if (MathF.Abs(off.Y) > CabGrabReach + 1f + lo.Radius)
+                    continue;
+                var dd = off.X * off.X + off.Z * off.Z; // (across, under the hook: its height is the piece's own)
                 if (dd > bestD + lo.Radius * lo.Radius)
                     continue;
                 if (lo.PartCount != 1)
