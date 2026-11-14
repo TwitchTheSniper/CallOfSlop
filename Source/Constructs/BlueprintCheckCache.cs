@@ -24,6 +24,19 @@ public static class BlueprintCheckCache
 
     public static bool Enabled(IReadOnlyList<Mods.Mod>? mods) => !BuildInfo.IsRelease && (mods == null || mods.Count == 0);
 
+    /// <summary>The program's and the data's stamp (<see cref="Stamp"/>), for another cache kept under the same rule (ConstructConduit's routes).</summary>
+    public static string CurrentStamp
+    {
+        get
+        {
+            Load();
+            return _stamp!;
+        }
+    }
+
+    /// <summary>A blueprint text's key in these lists.</summary>
+    public static string KeyOf(string text) => Key(text);
+
     /// <summary>True when this exact text passed its check under this program and this data.</summary>
     public static bool Passed(string text) => Load().Contains(Key(text));
 

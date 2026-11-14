@@ -1,0 +1,338 @@
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+
+namespace CallOfSlop;
+
+/// <summary>
+/// A pre-built's wiring laid as conduit (docs/sandbox/constructs/power-and-links.md, "Conduit in pre-builts"): a blueprint's
+/// <c>"wires"</c> on an anchored build (a colony building's light switch to its lamps) are routed once, as the blueprint is built,
+/// by the linking tool's own auto-router in its conduit mode (<see cref="RouteAsk.Conduit"/>: a metre off every surface costs
+/// six times one along it), so the cable runs along walls, floors and ceilings, round corners and through doorways
+/// instead of across the room. The route is an ordinary routed link with nodes, checked with the server's rule, so it is saved,
+/// sent and drawn as any other. A wire the router can't lay stays the straight one (drawn only with the linking tool out:
+/// <see cref="RouteRender.Concealed"/>), with a log line. Routes are kept per blueprint and wire, so a second copy of a building
+/// searches nothing; nothing here runs per frame or per tick.
+/// </summary>
+public static class ConstructConduit
+{
+    /// <summary>
+    /// The searches tried in turn, the cost a metre off every surface and the lattice's gap: a dear one keeps it on the walls, a cheaper one
+    /// finds a way where the dear one's search gives up (the weaker its guess, the more it searches), and the tool's own 5 cm lattice is smaller still.
+    /// </summary>
+    private static readonly (float Air, byte Gap)[] Tries = [(6f, 0), (3f, 0), (6f, 5)];
+    public const float BudgetMs = 250f; // one search at most, as the blueprints load: past it the wire stays straight (concealed)
+    public const float PlayMs = 20f; // a whole build's searching at most in play (a blueprint the load didn't route: a mod's, one built while it loads); past it the rest stay straight and are tried again next build
+    private static RouteSearch? _search; // (its tables, about 19 MB, are made for the load's routing and let go after it: Release)
+    private static bool _loading;
+    private static readonly ConditionalWeakTable<ConstructBuild.Blueprint, CRouteNode[]?[]> Cache = new();
+    private static readonly object Gate = new();
+    public static int Routed, Kept, Failed; // (since start: the log line, a check)
+    public static double Ms;
+
+    /// <summary>
+    /// Lays blueprint <paramref name="bp"/>'s wire <paramref name="k"/> (parts <paramref name="from"/> to <paramref name="to"/>,
+    /// into <paramref name="toPort"/>) as conduit on <paramref name="c"/>. False: not laid (the caller adds the straight wire).
+    /// </summary>
+    public static bool TryLay(ConstructWorld world, Construct c, ConstructBuild.Blueprint bp, int k, int from, int to, byte toPort, long deadline)
+    {
+        var ms = c.MoveSeg(c.Parts[from].Seg);
+        if (ms != c.MoveSeg(c.Parts[to].Seg))
+            return false; // (across a joint, a turret's or a gate's: it would flex in the open, so it stays in the walls)
+        lock (Gate)
+        {
+            var known = Cache.GetValue(bp, b => new CRouteNode[]?[b.Wires.Count]);
+            if (k >= known.Length)
+                return false;
+            if (known[k] is { } kept)
+            {
+                if (kept.Length == 0 || !Fits(world, c, from, to, toPort, kept))
+                    return false; // (it failed before, or this copy differs: straight)
+                Kept++;
+                return Add(world, c, from, to, toPort, kept);
+            }
+            if (Stopwatch.GetTimestamp() >= deadline)
+                return false; // (this build's time is up: straight this once, tried again on the next)
+            var sw = Stopwatch.StartNew();
+            var nodes = Find(world, c, from, to, toPort, deadline, out var why, out var outOfTime);
+            Ms += sw.Elapsed.TotalMilliseconds;
+            if (nodes == null && outOfTime)
+                return false; // (not kept: a busy moment isn't the blueprint's fault)
+            known[k] = nodes ?? [];
+            if (nodes == null)
+            {
+                Failed++;
+                Console.WriteLine($"[conduit] {bp.Name}: wire {k} ({c.DefOf(from).Name} -> {c.DefOf(to).Name}) stays straight, in the walls: {why}");
+                return false;
+            }
+            Routed++;
+            return Add(world, c, from, to, toPort, nodes);
+        }
+    }
+
+    private static CRouteNode[]? Find(ConstructWorld world, Construct c, int from, int to, byte toPort, long deadline, out string? why, out bool outOfTime)
+    {
+        why = null;
+        outOfTime = false;
+        foreach (var (air, gap) in Tries)
+        {
+            if (Find(world, c, from, to, toPort, air, gap, deadline, out why, out var late) is { } nodes)
+                return nodes;
+            outOfTime |= late;
+        }
+        return null;
+    }
+
+    private static CRouteNode[]? Find(ConstructWorld world, Construct c, int from, int to, byte toPort, float air, byte gap, long deadline, out string? why, out bool late)
+    {
+        var search = _search ??= new RouteSearch();
+        search.Clear();
+        var ask = new RouteAsk { World = world, C = c, Type = RouteType.Data, From = from, FromPort = 255, Parent = 255, Nodes = [], Count = 0, To = to, ToPort = toPort, Conduit = air, ConduitGap = gap };
+        var end = Math.Min(deadline, Stopwatch.GetTimestamp() + (long)(BudgetMs * Stopwatch.Frequency / 1000));
+        RouteSearch.Result r;
+        do
+            r = search.Poll(ask, MathF.Max(1f, MathF.Min(50f, (float)((end - Stopwatch.GetTimestamp()) * 1000.0 / Stopwatch.Frequency))));
+        while (r.State == RouteSearchState.Busy && Stopwatch.GetTimestamp() < end);
+        late = r.State == RouteSearchState.Busy;
+        if (late)
+        {
+            search.Cancel();
+            why = "out of time";
+            return null;
+        }
+        if (r.State != RouteSearchState.Found || r.Count == 0)
+        {
+            why = r.State == RouteSearchState.Found ? "the straight line is the route" : r.Why ?? "no route";
+            return null;
+        }
+        var nodes = r.Nodes.AsSpan(0, r.Count).ToArray();
+        why = OnMoving(c, from, nodes) ? "it would ride a moving part" : ConstructRoutes.Check(world, c, RouteType.Data, from, 255, 255, 0, default, nodes, to, toPort);
+        return why == null ? nodes : null;
+    }
+
+    /// <summary>When a build's searching must stop: as the blueprints load, a search's own budget only; in play, <see cref="PlayMs"/> from now.</summary>
+    public static long Deadline() => _loading ? long.MaxValue : Stopwatch.GetTimestamp() + (long)(PlayMs * Stopwatch.Frequency / 1000);
+
+    /// <summary>The blueprints' load builds each one with wires, so their routes are found then, not in a server tick (<see cref="ConstructBuild.LoadBlueprints"/>).</summary>
+    public static void BeginLoad() => _loading = true;
+
+    /// <summary>A blueprint whose wires will be laid as conduit: it has wires and stands on a foundation or a frozen base (the load builds it to find them).</summary>
+    public static bool Wanted(ConstructBuild.Blueprint bp)
+    {
+        if (bp.Wires.Count == 0)
+            return false;
+        if (bp.FrozenBase)
+            return true;
+        foreach (var st in bp.Steps)
+            if (ConstructParts.Find(st.Part) is { Role: PartRole.Foundation })
+                return true;
+        return false;
+    }
+
+    // ---- Dev builds: the routes found are kept on disk with the blueprint check's cache (BlueprintCheckCache.cs), so a blueprint that
+    // passed unchanged isn't built at every start just to route its wires (a first build costs seconds of JIT in a headless run).
+
+    public static string File => Path.Combine(AppFolders.Exe, "Cache", "conduit-routes.txt");
+    private static Dictionary<string, string>? _disk;
+    private const string NotWanted = "none"; // (a blueprint with wires that isn't a pre-built: kept so the next start needn't load the parts to find that out)
+    private static bool _diskDirty;
+
+    /// <summary>Takes blueprint <paramref name="bp"/>'s routes (from its <paramref name="text"/>) from the disk cache. False: not there, build it.</summary>
+    public static bool Restore(ConstructBuild.Blueprint bp, string text)
+    {
+        if (!Disk().TryGetValue(BlueprintCheckCache.KeyOf(text), out var line))
+            return false;
+        if (line == NotWanted)
+            return true; // (a vehicle's: nothing to route)
+        var wires = line.Split('|');
+        if (wires.Length != bp.Wires.Count)
+            return false;
+        var known = new CRouteNode[]?[wires.Length];
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        try
+        {
+            for (var k = 0; k < wires.Length; k++)
+            {
+                if (wires[k].Length == 0)
+                    continue; // (not tried: a build that ran out of time; the next build tries)
+                if (wires[k] == "-")
+                {
+                    known[k] = [];
+                    continue;
+                }
+                var pts = wires[k].Split(';');
+                var nodes = new CRouteNode[pts.Length];
+                for (var i = 0; i < pts.Length; i++)
+                {
+                    var f = pts[i].Split(',');
+                    nodes[i] = new CRouteNode { Pos = new System.Numerics.Vector3(float.Parse(f[0], inv), float.Parse(f[1], inv), float.Parse(f[2], inv)), Host = ushort.Parse(f[3], inv) };
+                }
+                known[k] = nodes;
+            }
+        }
+        catch (Exception ex) when (ex is FormatException or IndexOutOfRangeException or OverflowException)
+        {
+            return false;
+        }
+        lock (Gate)
+            Cache.AddOrUpdate(bp, known);
+        return true;
+    }
+
+    /// <summary>Keeps blueprint <paramref name="bp"/>'s routes, as its build found them, for the next start (or that it has none to find). Always true.</summary>
+    public static bool Remember(ConstructBuild.Blueprint bp, string text)
+    {
+        if (bp.Wires.Count == 0)
+            return true;
+        CRouteNode[]?[]? known = null;
+        if (Wanted(bp))
+            lock (Gate)
+                if (!Cache.TryGetValue(bp, out known))
+                    return true;
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var sb = new System.Text.StringBuilder(known == null ? NotWanted : "");
+        for (var k = 0; known != null && k < known.Length; k++)
+        {
+            if (k > 0)
+                sb.Append('|');
+            if (known[k] is not { } nodes)
+                continue;
+            if (nodes.Length == 0)
+                sb.Append('-');
+            for (var i = 0; i < nodes.Length; i++)
+                sb.Append(i > 0 ? ";" : "").Append(nodes[i].Pos.X.ToString("R", inv)).Append(',').Append(nodes[i].Pos.Y.ToString("R", inv)).Append(',')
+                    .Append(nodes[i].Pos.Z.ToString("R", inv)).Append(',').Append(nodes[i].Host.ToString(inv));
+        }
+        var line = sb.ToString();
+        var key = BlueprintCheckCache.KeyOf(text);
+        if (!Disk().TryGetValue(key, out var old) || old != line)
+        {
+            _disk![key] = line;
+            _diskDirty = true;
+        }
+        return true;
+    }
+
+    /// <summary>Writes the routes kept if they changed. A folder that can't be written just means no file.</summary>
+    public static void SaveDisk()
+    {
+        if (!_diskDirty || _disk == null)
+            return;
+        _diskDirty = false;
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(File)!);
+            var tmp = File + "." + Environment.ProcessId + ".tmp";
+            System.IO.File.WriteAllLines(tmp, _disk.OrderBy(e => e.Key, StringComparer.Ordinal).Select(e => e.Key + " " + e.Value).Prepend(BlueprintCheckCache.CurrentStamp));
+            System.IO.File.Move(tmp, File, true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+    }
+
+    private static Dictionary<string, string> Disk()
+    {
+        if (_disk != null)
+            return _disk;
+        _disk = new Dictionary<string, string>(StringComparer.Ordinal);
+        try
+        {
+            if (System.IO.File.Exists(File) && System.IO.File.ReadAllLines(File) is { Length: > 0 } lines && lines[0] == BlueprintCheckCache.CurrentStamp)
+                foreach (var l in lines.Skip(1))
+                    if (l.IndexOf(' ') is var sp and > 0)
+                        _disk[l[..sp]] = l[(sp + 1)..];
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+        return _disk;
+    }
+
+    /// <summary>The load is done: the search's tables go (a later build with nothing kept makes them again).</summary>
+    public static void EndLoad()
+    {
+        _loading = false;
+        lock (Gate)
+            _search = null;
+    }
+
+    private static bool Fits(ConstructWorld world, Construct c, int from, int to, byte toPort, CRouteNode[] nodes) =>
+        !OnMoving(c, from, nodes) && ConstructRoutes.Check(world, c, RouteType.Data, from, 255, 255, 0, default, nodes, to, toPort) == null;
+
+    /// <summary>A node on a part gone, or on one that moves apart from the wire's output (a gate's leaf).</summary>
+    private static bool OnMoving(Construct c, int from, CRouteNode[] nodes)
+    {
+        var ms = c.MoveSeg(c.Parts[from].Seg);
+        foreach (var n in nodes)
+            if (n.Host >= c.PartCount || c.MoveSeg(c.Parts[n.Host].Seg) != ms)
+                return true;
+        return false;
+    }
+
+    private static bool Add(ConstructWorld world, Construct c, int from, int to, byte toPort, CRouteNode[] nodes)
+    {
+        if (c.RouteCount >= Construct.MaxRoutes || world.TotalRoutes >= world.WireCap)
+            return false;
+        return ConstructRoutes.Add(world, c, RouteType.Data, from, 255, 255, 0, default, nodes, to, toPort) >= 0;
+    }
+
+    /// <summary>
+    /// <c>--conduit-check [NAME,NAME...]</c>: builds each anchored blueprint with wires (or those named) and says how each wire was laid:
+    /// its nodes, its length against the straight line, and how much of it runs in the open (over 8 cm from every part). To the console.
+    /// </summary>
+    public static int Cli(string[] args)
+    {
+        var at = Array.FindIndex(args, a => a.Equals("--conduit-check", StringComparison.OrdinalIgnoreCase));
+        var names = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1].Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries) : [];
+        var bad = 0;
+        foreach (var bp in ConstructBuild.Blueprints)
+        {
+            if (bp.Wires.Count == 0 || names.Length > 0 && !names.Any(n => n.Equals(bp.Name, StringComparison.OrdinalIgnoreCase)))
+                continue;
+            var world = new ConstructWorld();
+            if (ConstructBuild.Build(world, bp, System.Numerics.Vector3.Zero, System.Numerics.Quaternion.Identity, out var why) is not { } c)
+            {
+                Console.WriteLine($"[conduit] {bp.Name}: doesn't build: {why}");
+                bad++;
+                continue;
+            }
+            if (!c.Anchored && names.Length == 0)
+                continue;
+            Console.WriteLine($"[conduit] {bp.Name}: {c.PartCount} parts");
+            for (var r = 0; r < c.RouteCount; r++)
+            {
+                ref var rt = ref c.Routes[r];
+                if (rt.Type != RouteType.Data || rt.Parent != 255)
+                    continue;
+                var a = ConstructRoutes.PortPoint(c, rt.From, rt.FromPort, RouteType.Data);
+                var b = ConstructRoutes.PortPoint(c, rt.To, rt.ToPort, RouteType.Data);
+                float len = 0f, open = 0f;
+                var prev = ConstructRoutes.RestPoint(c, r, -1);
+                for (var i = 0; i <= rt.Count; i++)
+                {
+                    var q = ConstructRoutes.RestPoint(c, r, i);
+                    var l = System.Numerics.Vector3.Distance(prev, q);
+                    len += l;
+                    var steps = Math.Max(1, (int)(l / 0.1f));
+                    for (var k = 0; k < steps; k++)
+                    {
+                        var m = System.Numerics.Vector3.Lerp(prev, q, (k + 0.5f) / steps);
+                        if (ConstructRoutes.SignedDistance(c, m, -1, -1, out _) > 0.08f)
+                            open += l / steps;
+                    }
+                    prev = q;
+                }
+                if (args.Contains("--trace"))
+                    for (var i = -1; i <= rt.Count; i++)
+                    {
+                        var q = ConstructRoutes.RestPoint(c, r, i);
+                        var sd = ConstructRoutes.SignedDistance(c, q, -1, -1, out var near);
+                        Console.WriteLine($"    {q.X:0.00},{q.Y:0.00},{q.Z:0.00}: {sd:0.000} m off {(near >= 0 ? c.DefOf(near).Name : "-")}");
+                    }
+                Console.WriteLine($"  {c.DefOf(rt.From).Name}#{rt.From} -> {c.DefOf(rt.To).Name}#{rt.To}: {(rt.Count == 0 ? "straight" : $"{rt.Count} nodes")}, {len:0.0} m (straight {System.Numerics.Vector3.Distance(a, b):0.0} m), {open:0.0} m in the open");
+            }
+        }
+        Console.WriteLine($"[conduit] {Routed} wires routed, {Failed} left straight, {Ms:0} ms of searching; {Kept} copies from the cache");
+        return bad;
+    }
+}

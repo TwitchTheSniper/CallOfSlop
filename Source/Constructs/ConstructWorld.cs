@@ -606,12 +606,16 @@ public sealed partial class ConstructWorld
     {
         if (c.RouteCount >= Construct.MaxRoutes || TotalRoutes >= WireCap)
             return false;
-        if (ConstructRoutes.Add(this, c, RouteType.Data, from, 255, 255, 0, default, default, to, ConstructModules.IsBus(c.DefOf(from), 255) ? ConstructRoutes.DataPortByte(ConstructModules.BusPort(c.DefOf(to))) : (byte)255) < 0) // (a drive link goes into the drive port)
+        if (ConstructRoutes.Add(this, c, RouteType.Data, from, 255, 255, 0, default, default, to, WirePort(c, from, to)) < 0)
             return false;
         if (rebuild)
             c.Rebuild(); // (the wire is there at once, as it always was)
         return true;
     }
+
+    /// <summary>The input port a wire goes into: a drive link into the drive port, else the part itself (255).</summary>
+    public static byte WirePort(Construct c, int from, int to) =>
+        ConstructModules.IsBus(c.DefOf(from), 255) ? ConstructRoutes.DataPortByte(ConstructModules.BusPort(c.DefOf(to))) : (byte)255;
 
     /// <summary>Cuts every data link (wire) into or out of part <paramref name="part"/>. Returns how many went.</summary>
     public int RemoveWires(Construct c, int part)
