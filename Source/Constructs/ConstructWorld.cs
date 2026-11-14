@@ -1950,11 +1950,22 @@ public sealed partial class ConstructWorld
     {
         if (World.Map.Planetoid is not { } pl)
             return Ground(q, near.X, near.Z);
-        const float top = 60f, reach = top + 20f;
+        const float top = 60f;
+        var reach = top + 20f;
         var g = pl.GroundUnder(near);
         var rel = g - pl.Center;
         var up = rel.LengthSquared() > 1e-6f ? Vector3.Normalize(rel) : Vector3.UnitY;
         var from = g + up * top;
+        // Under a roof in dug ground (a cave, a tunnel, under the world's top there): the ray starts under the roof over the point, not
+        // 60 m over the floor, which lands on the top over the cave (run 7: a blueprint asked for in a cave came down 26 m over the player).
+        var nd = (near - pl.Center).Length();
+        var lifted = near + up * 1f; // (a probe a little into a slope or a floor)
+        if (nd > 1e-3f && nd < pl.SurfaceRadius(up, out _) - 1.5f && pl.Altitude(lifted) > 0f)
+        {
+            var roof = q.Raycast(lifted, up, top, QueryFilter.All);
+            from = lifted + up * MathF.Max(0f, MathF.Min(roof, top) - 0.05f);
+            reach = Vector3.Distance(from, g) + 20f;
+        }
         var d = q.Raycast(from, -up, reach, QueryFilter.All);
         return d < reach - 0.01f ? from - up * d : g; // (nothing hit: the ground itself)
     }

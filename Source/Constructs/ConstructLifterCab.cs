@@ -128,7 +128,7 @@ public static partial class ConstructLifters
             var wn = lp + Vector3.Transform(next, lr); // (never under the ground: the hook stops on it)
             var clear = l.Def != 0 && ConstructParts.Get(l.Def) is { } hd ? MathF.Max(0, -hd.BoundsMin.Y) : 0.1f; // (the piece's bottom under its origin)
             var alt = Altitude(wn, out var up);
-            if (alt < clear && move.Y < 0)
+            if (alt < clear) // (any move: across over a rising floor too, run 7: a cave's bowl took the hook 0.38 m into the ground, then Ctrl popped it out)
                 next = Clamp(ld, l, Vector3.Transform(wn + up * (clear - alt) - lp, Quaternion.Conjugate(lr)));
         }
         var moving = Vector3.DistanceSquared(next, was) > 1e-8f;

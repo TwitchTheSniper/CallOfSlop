@@ -62,7 +62,11 @@ public static partial class LifterProbe
         var loaded = piece.StartsWith("loaded ", StringComparison.Ordinal); // ("drop loaded NAME": a store part with 10 iron ore in it, phase 7)
         if (loaded)
             piece = piece[7..];
-        var d = piece == "blank" ? Blank() : piece.StartsWith("blank ", StringComparison.Ordinal) && int.TryParse(piece[6..], out var bcm) ? Blank(bcm) : ConstructParts.Find(piece); // ("blank 400": a 4 m one)
+        var bw = piece.StartsWith("blank ", StringComparison.Ordinal) ? piece[6..].Split('x') : [];
+        var d = piece == "blank" ? Blank() : bw.Length == 1 && int.TryParse(bw[0], out var bcm) ? Blank(bcm) // ("blank 400": a 4 m one)
+            : bw.Length == 3 && int.TryParse(bw[0], out var bx) && int.TryParse(bw[1], out var by) && int.TryParse(bw[2], out var bz) // ("blank 200x10x200": a plate too wide to nudge a player out from under, run 7)
+                ? Extrusion.Def(new ExtrusionKey(Extrusion.Presets[1].Mask, (ushort)bx, (ushort)by, (ushort)bz, RecyclingTable.Current.IdOf("laminate"), false))
+            : ConstructParts.Find(piece);
         if (d == null)
             return $"drop: no part \"{piece}\"";
         Freeform.PartWorld(pd, 0, out var pp, out var pr);

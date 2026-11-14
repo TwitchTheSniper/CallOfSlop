@@ -193,6 +193,8 @@ public sealed partial class Game
         }
         if (SandboxOn && World.Map.Sandbox is { } sandbox && WorldSession is not { HasSave: true })
         {
+            if (IsServer)
+                World.Map.ClearDugGround(); // (the last match's ground filled in: the match start keeps what is dug from here, Match.OnMatchStarted)
             SandboxCaves(); // (a planetoid's caves, dug into the fresh ground before anything stands on it: GameSandboxCaves.cs)
             CityMetroDig(); // (a city's metro halls and stairs, the same way: GameCityMetro.cs)
             Constructs.Populate(sandbox, World.Query); // (their structure goes out on the first playing tick)

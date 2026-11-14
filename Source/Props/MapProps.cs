@@ -659,16 +659,25 @@ public sealed partial class Map
         return true;
     }
 
-    /// <summary>Puts every broken prop back and resets all prop health (a new match, a new session on this map).</summary>
-    public void RestoreProps()
+    /// <summary>Every dug cell filled in again, a terrain's or a planetoid's (TerrainEdits.cs, PlanetEdits.cs), and the log emptied.</summary>
+    public void ClearDugGround()
     {
-        RestoreBuildings(); // building doors and windows too (MapBuildings.cs)
-        RestoreLogic(); // logic doors and controlled movers (MapLogic.cs)
         if (Terrain?.EditsIfMade is { Log.Count: > 0 })
             NavGraph.ForgetDug(this); // (a graph finished over that ground isn't the map's)
         Terrain?.EditsIfMade?.Clear(); // dug ground filled in again (TerrainEdits.cs)
         if (Planetoid?.EditsIfMade is { Version: > 0 } dugPlanet)
             dugPlanet.Clear(); // a planetoid's too (PlanetEdits.cs)
+    }
+
+    /// <summary>Puts every broken prop back and resets all prop health (a new match, a new session on this map).</summary>
+    /// <para><paramref name="ground"/> false: the dug ground is kept (a fresh Sandbox world's server dug its caves, metro and site benches
+    /// in the match's reset just before: Match.OnMatchStarted).</para>
+    public void RestoreProps(bool ground = true)
+    {
+        RestoreBuildings(); // building doors and windows too (MapBuildings.cs)
+        RestoreLogic(); // logic doors and controlled movers (MapLogic.cs)
+        if (ground)
+            ClearDugGround();
         ResourcesIfMade?.Reset(); // felled trees back, deposits full (ResourceField.cs)
         var damaged = false;
         for (var i = 0; i < _propHealth.Length; i++)

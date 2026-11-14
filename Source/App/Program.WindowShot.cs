@@ -396,6 +396,15 @@ public static unsafe partial class Program
         Construct? only = null; // ("NAME@bN": on body N, past the spawned blueprint; "NAME@w": the newest wrecked loose one of that name)
         if (spec.LastIndexOf("@b", StringComparison.Ordinal) is var ab and > 0 && ushort.TryParse(spec[(ab + 2)..], out var bid))
             (only, spec) = (g.Constructs.Get(bid), spec[..ab]);
+        else if (spec.EndsWith("@new", StringComparison.Ordinal)) // ("NAME@new": the newest body holding a part of that name, run 7: one just built by a test step)
+        {
+            spec = spec[..^4];
+            foreach (var b in g.Constructs.Bodies)
+                if ((only == null || b.Id > only.Id) && WsCount(b, spec.Trim()) > 0)
+                    only = b;
+            if (only == null)
+                return (null, -1);
+        }
         else if (spec.EndsWith("@w", StringComparison.Ordinal))
         {
             spec = spec[..^2];
@@ -976,7 +985,9 @@ public static unsafe partial class Program
                 var spot = WsPartSpot(bc, bpart, out var normal);
                 var low = bc.DefOf(bpart).Panels is [var first, ..] && first.At.Y < 0.8f && MathF.Abs(normal.Y) < 0.5f; // (a Router's low screen: stand in a finger's reach)
                 var stand = spot + (normal != Vector3.Zero ? normal : Vector3.UnitZ) * (low ? 1.0f : 1.8f);
-                var feet = new Vector3(stand.X, World.Map.GroundHeight(stand.X, stand.Z) + 0.35f, stand.Z);
+                var feet = World.Map.Planetoid != null // (on a planetoid: the ground under the spot along its up, a cave's floor under a roof; run 7: the flat height put a client 4 km up)
+                    ? ConstructWorld.Ground(World.Query, stand) + GravityFrames.UpAt(stand) * 0.35f
+                    : new Vector3(stand.X, World.Map.GroundHeight(stand.X, stand.Z) + 0.35f, stand.Z);
                 var n = 0;
                 foreach (var other in g.Players.Values)
                     if (other != me)
@@ -1212,6 +1223,23 @@ public static unsafe partial class Program
                     }
                     _wsQueue.EnqueueFront("lifter await");
                     _wsWait = 1;
+                    return;
+                }
+                if (arg.Trim().StartsWith("carrying ", StringComparison.Ordinal) && WsLiftWait(60)) // "lifter carrying NAME": waits (60 s at most) until a lifter carries a piece whose name holds NAME, in the first third of its move (run 7: then "lifter stand me put")
+                {
+                    var want = arg.Trim()[9..];
+                    var seen = false;
+                    foreach (var hb in g.Constructs.LiftBodies)
+                        for (var hi = 0; hi < hb.N; hi++)
+                            seen |= hb.Lifts[hi] is { State: LiftState.Carry, Def: > 0 } hl && hl.Age < hl.Dur / 3 && ConstructParts.Get(hl.Def)?.Name.Contains(want, StringComparison.OrdinalIgnoreCase) == true;
+                    if (!seen)
+                    {
+                        _wsQueue.EnqueueFront(arg.Trim().Length > 0 ? "lifter " + arg.Trim() : "lifter");
+                        WsWaitTicks(1);
+                        return;
+                    }
+                    _wsLiftSince = 0;
+                    WsSay($"lifter: carrying {want}: seen");
                     return;
                 }
                 if (arg.Trim() == "holding" && WsLiftWait(20)) // "lifter holding": waits (20 s at most) until a hand carries a piece to a fit
