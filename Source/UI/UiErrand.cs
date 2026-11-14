@@ -18,8 +18,22 @@ public sealed partial class Ui
     private static bool ErrandMakesWay(Game game) =>
         game.QuarryRiding || game.TutorialCurrent != null
         || game.QuarryLocal is not (Game.QuarryNone or Game.QuarryDone)
-        || game.BreakoutLocal is Game.BreakoutMuster or Game.BreakoutSpaceport
-        || game.DepotLocal is >= Game.DepotFirstStep and < Game.DepotDone;
+        || BreakoutPanelUp(game)
+        || game.DepotLocal is >= Game.DepotFirstStep and < Game.DepotDone
+        || game.DepotLocal == Game.DepotDone && Brutal.GlfwApi.Glfw.Time - game.DepotChangedAt <= 8;
+
+    /// <summary>The break-out's panel is up (as UiBreakout.cs shows it: the muster, then a minute at the spaceport, half a minute away).</summary>
+    private static bool BreakoutPanelUp(Game game)
+    {
+        var since = Brutal.GlfwApi.Glfw.Time - game.BreakoutChangedAt;
+        return game.BreakoutLocal switch
+        {
+            Game.BreakoutNone => false,
+            Game.BreakoutSpaceport => since <= 60,
+            Game.BreakoutAway => since <= 30,
+            _ => true,
+        };
+    }
 
     /// <summary>An errand is on screen (the depot's report and the "what next" goal wait for it).</summary>
     public static bool ErrandShowing(Game game) =>

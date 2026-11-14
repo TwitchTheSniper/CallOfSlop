@@ -33,7 +33,7 @@ public sealed partial class Game
     private readonly Player?[] _erWho = new Player?[256];
     private double _erNextLook;
     private StoryEngine? _erWired;
-    private int _erRelOn = -1, _erQShift = -1, _erVErrand = -1;
+    private int _erRelOn = -1, _erRelSupplied = -1, _erQShift = -1, _erVErrand = -1;
 
     // ---- Every peer: this PC's own errand, as the server tells it (Msg.Errand)
     public byte ErrandLocal { get; private set; } // index + 1 (0: none)
@@ -62,6 +62,7 @@ public sealed partial class Game
             return;
         _erWired = s;
         _erRelOn = s.Rules.Relation("OnErrand")?.Id ?? -1;
+        _erRelSupplied = s.Rules.Relation("Supplied")?.Id ?? -1;
         _erQShift = s.Rules.Quality("FirstShift")?.Id ?? -1;
         _erVErrand = s.Rules.VerbId("Errand");
     }
@@ -172,11 +173,13 @@ public sealed partial class Game
         var inv = SandboxInventory(p.Id);
         if (st.Say.Length > 0)
             OpeningSay(p, null, e.Giver, st.Say, now);
+        // What a step hands over comes once per player, ever: a resume, a drop and a second asking don't hand it over again.
+        var hand = st.Give.Length > 0 && ErrandSupply(p, e, k);
         for (var g = 0; g < st.Give.Length; g++)
         {
             var (name, units) = st.Give[g];
             var m = RecyclingTable.Current.IdOf(name);
-            if (inv.Materials[m] < units)
+            if (hand && inv.Materials[m] < units)
             {
                 SandboxHands.Notices.Add((p.Id, $"{e.Giver} hands you {units - inv.Materials[m]} {name}"));
                 inv.AddMaterial(m, units - inv.Materials[m]);
@@ -198,6 +201,19 @@ public sealed partial class Game
         ErrandSend(p);
     }
 
+    /// <summary>Server: may this step hand its things over to this player (not yet, by the story's Supplied, a bit a step)? Marks it handed.</summary>
+    private bool ErrandSupply(Player p, ErrandScript e, int step)
+    {
+        if (Story is not { } s || _erRelSupplied < 0 || StoryWho(p) is not (var who and >= 0))
+            return true;
+        var thing = ErrandThing(s, e);
+        var had = s.World.Get(who, _erRelSupplied, thing);
+        if ((had & 1 << step) != 0)
+            return false;
+        s.World.Set(who, _erRelSupplied, thing, had | 1 << step);
+        return true;
+    }
+
     /// <summary>Server: the errand starts (or starts again after a load) on the nearest of its machines to the colony.</summary>
     private void ErrandBegin(Player p, int k, double now, bool again)
     {
@@ -209,7 +225,9 @@ public sealed partial class Game
         if (ErrandFindMachine(e, p.Position) is not var (id, part))
         {
             Log($"[errand] {p.Name}: no {e.Machine} within {e.Reach:0} m of the colony for {e.Id}");
-            ErrandEnd(p, s, who, again ? null : e.Gone.Length > 0 ? e.Gone : null, now);
+            if (!again)
+                OpeningSay(p, null, e.Giver, e.Gone.Length > 0 ? e.Gone : $"Never mind. There's no {e.Machine} here after all.", now);
+            ErrandEnd(p, s, who, null, now);
             return;
         }
         (run.Errand, run.Machine, run.Part) = ((byte)(k + 1), id, part);

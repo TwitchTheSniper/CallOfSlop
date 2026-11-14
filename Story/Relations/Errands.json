@@ -3,6 +3,7 @@
   // machines: what it teaches is a Thing named in its file's "fact" ("the Foundry"). All saved with the story.
   "relations": [
     { "name": "Taught", "about": "a player and a machine someone showed them how to work (an errand done)" },
+    { "name": "Supplied", "about": "a player and an errand's machine: the steps whose things were handed over (a bit a step: once, ever)" },
     { "name": "OnErrand", "about": "a player and the machine of the errand under way for them (it starts again after a load)", "exclusive": true }
   ],
   "qualities": [
