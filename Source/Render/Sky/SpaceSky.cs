@@ -24,6 +24,9 @@ public static class SpaceSky
     /// <summary>The far bodies and ships the sky draws (empty when not <see cref="Active"/>).</summary>
     public static readonly SpaceSkyView View = new();
 
+    /// <summary>Is the sky another star system's, round a ship out there (<see cref="UpdateAway"/>)? Then there's no air: it's black.</summary>
+    public static bool Away { get; private set; }
+
     /// <summary>The sky <see cref="View"/> belongs to (the renderer draws the bodies only into that sky).</summary>
     public static SkySettings? Sky => _sky;
 
@@ -42,6 +45,7 @@ public static class SpaceSky
             _sky = sky;
             (_sunDirection, _moonDirection, _moon, _moonSize) = (sky.SunDirection, sky.MoonDirection, sky.Moon, sky.MoonSize);
         }
+        Away = false;
         var b = space.Bubble;
         sky.SunDirection = b.SunDirection(t, camera);
         sky.Moon = false; // the moon is one of the View's bodies, lit and turning like the others
@@ -69,6 +73,7 @@ public static class SpaceSky
             (_sunDirection, _moonDirection, _moon, _moonSize) = (sky.SunDirection, sky.MoonDirection, sky.Moon, sky.MoonSize);
         }
         sky.Moon = false;
+        Away = true;
         View.Update(sys, pose, -1, t, camera);
         sky.SunDirection = View.StarDirection;
         AddShips(space, galaxy, own.Id, t, own.SpaceShip);
@@ -95,6 +100,7 @@ public static class SpaceSky
     /// <summary>The sky's own sun and moon back (the map left the bubble, or the game ended).</summary>
     public static void Restore()
     {
+        Away = false;
         if (_sky is not { } sky)
             return;
         (sky.SunDirection, sky.MoonDirection, sky.Moon, sky.MoonSize) = (_sunDirection, _moonDirection, _moon, _moonSize);
