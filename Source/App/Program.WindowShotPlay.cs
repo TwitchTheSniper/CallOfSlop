@@ -16,7 +16,7 @@ public static partial class Program
     private static int _wsClipBodies, _wsClipLoose;
     private static bool _wsClipToolAsked;
 
-    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook";
+    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands";
 
     private static bool WsPlayVerb(Game g, Player me, string verb, string arg)
     {
@@ -151,6 +151,21 @@ public static partial class Program
                     _wsQueue.EnqueueFront($"near {arg} 2"); // (the look line is the crosshair's within reach: stand 2 m off it)
                 return true;
             }
+            case "hands": // every lifter's hand as this peer has it: its state, the hand's height over the ground under it and the piece's lowest point (a crane's carry height), the piece
+                foreach (var lb in g.Constructs.LiftBodies)
+                    if (g.Constructs.Get(lb.Body) is { } hb)
+                        for (var k = 0; k < lb.N; k++)
+                        {
+                            var l = lb.Lifts[k];
+                            if (l.Part >= hb.PartCount || ConstructLifters.DefOf(hb, l.Part) is not { } ld)
+                                continue;
+                            ConstructLifters.Frame(hb, l.Part, ld, out var lp, out var lr, out _);
+                            var hw = lp + Vector3.Transform(l.Moved ? ConstructLifters.Pose(ld, l, ConstructLifters.AgeNow(l), out _) : ConstructLifters.RestOf(ld), lr); // (where the piece is now, as it is drawn)
+                            var ground = World.Map.GroundHeight(hw.X, hw.Z);
+                            var piece = l.Def != 0 ? ConstructParts.Def(l.Def) : null;
+                            WsSay(string.Create(ci, $"hands: {hb.DefOf(l.Part).Name} (body {hb.Id}): {l.State} {l.Why}, piece origin at {hw:0.00}, {hw.Y - ground:0.00} m over the ground under it{(piece != null ? $", holding {piece.Name} ({piece.BoundsMax.Y - piece.BoundsMin.Y:0.00} m tall)" : "")}, moves {l.Moves}"));
+                        }
+                return true;
             case "partlook":
                 WsSay($"partinfo: look: {g.SandboxLookText}");
                 return true;
