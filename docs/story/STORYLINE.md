@@ -2,7 +2,7 @@
 
 The one written-down version of the main story. Karl steers it in plain words; Claude writes the data. To read what is
 in the game, open the story map (https://claude.ai/artifact/JJLq8Be3fd21fRvtdS22EF). When something here changes,
-change it here and nowhere else. Last settled: 2026-11-11 (the Light and the Gallery).
+change it here and nowhere else. Last settled: 2026-11-14 (the stranger with old papers).
 
 ## The story
 
@@ -73,6 +73,16 @@ can only be reached in a ship the player has built, so it is the endgame's own g
 
 ## The colony (act one)
 
+**The stranger** (Karl, 2026-11-14, settled). The player remembers nothing of who they are or of anything before the
+crash. The colony's staff know only that the player carries credentials, very old ones and wiped, and that the
+Ministry honours them, which is why the player kept all their work tools (not a gun). Nothing narrates it (Karl: no
+"you have lost your memory"): the player finds it out by asking. The Warden's thread: "I can't remember who I am."
+(credentials, very old, wiped), "So there's nothing there?" (a seal, "honour the bearer", a blank), and with "Why do I
+get to keep my tools?" "How old are my credentials?" (the seal is older than the Ministry). Nettles has "Do you know
+who I am?" (half the letters aren't letters). Foreman Grubb hands the kit back at the mine ("Never had a convict keep
+their own kit before") and a convict envies it. Left open on purpose: whose seal it is. It may lead back to the
+builders later; nothing says so yet.
+
 Things lying about the colony can be looked at closely (`Story/Lore/PenalColony.json`): each is somebody's, and
 noticing it opens a question with them; the schoolbook's missing chapter, "The Others", is the first hint of the empty sky.
 
@@ -103,7 +113,8 @@ words are leads: Wren cleaned the room under headquarters (`frag.silence`), Ambr
   observatory's struck-out catalogue), and they disagree over whether the dark is at peace or the stars should come
   back. Add it as one faction file and its lines, nothing more, when the records are settled.
 - Whether each system has its own sun (assumed yes, see the Light).
-- Where the player comes from (left unexplained for now).
+- Where the player comes from, who issued their old credentials and why they remember nothing (left unexplained; room
+  for the builders, not promised).
 - In co-op, who may work the machine.
 
 ## Parked

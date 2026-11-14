@@ -17,7 +17,7 @@
     // ---- Hello, again ----
     { "on": "Chatted", "if": "?me == 'Dot Pruett', ?me is Person",
       "say": [ "Still here? Grab a shovel or grab a fire.", "Coal doesn't move itself. Well, it does here. We move it.",
-               "Afternoon, {them.first}. Watch the barrow.", "Don't look at the gate when you talk to me. People notice." ] },
+               "Afternoon, {them.first}. Watch the barrow.", "They let you keep your kit. I came in with a spoon. They took the spoon.", "Don't look at the gate when you talk to me. People notice." ] },
     { "on": "Chatted", "if": "?me == 'Wren Haskett', ?me is Person",
       "say": [ "Hello again. Nobody's been seen yet today. Nobody ever is.", "Sit down, {them.first}. Look poorly. It's restful.",
                "You've a cough. No you haven't. You have now, if anyone asks." ] },
