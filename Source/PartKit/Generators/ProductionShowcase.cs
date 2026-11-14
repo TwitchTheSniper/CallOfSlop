@@ -48,7 +48,7 @@ public sealed class ProductionShowcase : IPartGenerator
 
         public static Script Build()
         {
-            var s = new Script { Description = "Every new production machine on one floor, stocked and wired: read the signs, press Start, send the bill. Set it on flat ground: it is 86 by 20 m, and a slope through the back strip buries the panel line's Extruder." };
+            var s = new Script { Description = "Every new production machine on one floor, stocked and wired: read the signs, press Start, send the bill. Set it on flat ground: it is 86 by 22 m, and a slope through the back strip buries the panel line's Extruder." };
             s.Group = "Production";
             s.Lay();
             return s;
@@ -211,6 +211,7 @@ public sealed class ProductionShowcase : IPartGenerator
             PanelDesignerCorner(orders);
             ChainCorner(asm); // (on the panel strip's floor: after it is laid)
             BackStrip(orders);
+            CraneBay(); // (arms and cranes phase 7: a Bridge Crane working a line of its own behind the refiners)
 
             Monitors(refine, orders);
             NetworkBoard(router);
@@ -396,6 +397,65 @@ public sealed class ProductionShowcase : IPartGenerator
                 k++;
             }
         }
+
+        /// <summary>
+        /// The crane bay (arms-and-cranes.md phase 7; production.md "Lifters"), on its own floor behind the refining row (x 0 to 22, z -14
+        /// to -22): a Medium Bridge Crane on two 16 m runs of Crane Rail 8 m apart, 6 m up on Medium Columns, and under it a line with
+        /// no conveyor at all: an Extruder making metal angles (unwired, so it runs while its stock lasts), a Press with a Bracket Die and a
+        /// Lay-down Pad. The crane takes each angle from the die into the press's bay and each bracket from the press to the pad by the
+        /// Routers' rule, and takes hand orders at its cabinet's screen (F from the floor under it).
+        /// </summary>
+        private void CraneBay()
+        {
+            for (var j = TilesZ; j < TilesZ + 4; j++)
+                for (var i = 0; i < 11; i++)
+                {
+                    var t = Put("Foundation", V(1 + 2 * i, 0.15f, -1 - 2 * j), Front);
+                    Paint(t, Floor);
+                    Finish(t, "concrete");
+                }
+            const string rail = "Crane Rail Medium 4 m";
+            const float x0 = 1.25f, nearZ = -13.75f, span = 8f; // (the near run on the old floor's back row, the far one on the new floor's)
+            var runs = new VPart[2, 4];
+            for (var side = 0; side < 2; side++)
+                for (var k = 0; k < 4; k++)
+                {
+                    var z = nearZ - side * span;
+                    var x = x0 + 4 * k;
+                    var foot = On("Adapter Medium to Small", x, z, new Orient(Vector3.UnitY, -Vector3.UnitY, Vector3.UnitZ, Vector3.UnitZ), "front2.2", CraneCol); // (a medium column on the small floor)
+                    var col = Onto(foot, "back", "Medium Column 4 m", "-z"); // (medium columns: a rail is a medium part)
+                    Paint(col, CraneCol);
+                    Finish(col, "painted plating");
+                    col = Onto(col, "+z", "Medium Column 2 m", "-z");
+                    Paint(col, CraneCol);
+                    Finish(col, "painted plating");
+                    runs[side, k] = Stand(rail, SocketAt(col, "+z"), Flow, col, "-y.0.0"); // (own +z along the run, east)
+                }
+            // The bridge on the near run's outer (north) side, facing across: its +x onto the second section's -x face.
+            var face = SocketAt(runs[0, 1], "-x.0.0"); // (own -x: north, the outer side)
+            if (face.Z < nearZ + 0.4f)
+                throw new VehicleKitException($"the near run's -x face is at z {face.Z:0.00}, not north of the rail");
+            var bridge = Stand("Medium Crane Bridge", face, new Orient(Vector3.UnitX, -Vector3.UnitZ, Vector3.UnitY, Vector3.UnitY), runs[0, 1], "+x");
+            Config(bridge, ("carryHeight", 1.0)); // (a metre over the higher end: the line is low, so a carry takes seconds, not the hook's whole drop)
+            var ex = On("Extruder", 3.25f, -18.25f, Flow, paint: CraneCol);
+            Config(ex, ("profile", "L-angle"), ("width", 0.2), ("height", 0.2), ("cutLength", 1.5));
+            Feed(StockOf("metal", 1.25f, -18.25f), ex);
+            var press = On("Press", 9.25f, -17.25f, Back, "-y.0.0", PressBlue);
+            Onto(press, "dieslot", "Bracket Die", "mount");
+            On("Lay-down Pad", 12.75f, -16.25f, Flow, "-y.0.0", Hazard);
+            Sign(17.75f, -15.25f, CraneCol, "BRIDGE CRANE: die, press, pad. F on its cabinet: orders", false);
+            Stripe(5.75f, -18.25f, true);
+        }
+
+        /// <summary>A part's socket's place (vehicle coordinates).</summary>
+        private Vector3 SocketAt(VPart p, string name)
+        {
+            var s = p.Def.Sockets.First(x => x.Name == name);
+            ref var cp = ref Live.Parts[p.Index];
+            return FromRest(cp.Pos + Rot24.Apply(cp.Rot, s.At));
+        }
+
+        private const string CraneCol = "#c99a1a";
 
         /// <summary>
         /// The panel line (production.md "The Panel Former"), on its own strip of floor behind the second row: an Extruder making steel sheet,

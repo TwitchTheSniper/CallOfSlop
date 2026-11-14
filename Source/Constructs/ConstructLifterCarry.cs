@@ -301,8 +301,9 @@ public static partial class ConstructLifters
             return false; // (the caller sets the idle reason)
         }
         Frame(c, l.Part, ld, out var lp, out var lr, out var shoulder);
-        for (var k = 0; k < l.PointN; k++)
+        for (var j = 0; j < l.PointN; j++)
         {
+            var k = (j + l.OutTurn) % l.PointN; // (the outs take turns: lifters phase 7, a press's brackets waited behind an Extruder's every angle)
             var pt = l.Points![k];
             if (pt.Kind != LiftPointKind.Out || world.Get(pt.Body) is not { } b || !PointAt(b, pt, out var outAt))
                 continue;
@@ -327,13 +328,15 @@ public static partial class ConstructLifters
                     continue;
                 var health = (byte)Math.Clamp(255 * lo.Parts[0].Health / MathF.Max(1, d.Health), 1, 255);
                 var paint = lo.Parts[0].Paint;
+                l.OutTurn = k + 1;
                 world.Remove(lo);
                 StartCarry(world, c, l, ld, lp, lr, d, health, paint, from, pr, to, toAt);
                 return true;
             }
         }
-        for (var k = 0; k < l.PointN; k++)
+        for (var j = 0; j < l.PointN; j++)
         {
+            var k = (j + l.OutTurn) % l.PointN; // (the outs take turns: lifters phase 7, a press's brackets waited behind an Extruder's every angle)
             // A machine's own output tray (2026-11-14, verification 4: since sized parts phase 6 a press's preset part, a Button, goes
             // to its tray, not to the floor at its out, and an arm never lifted it, so a terminal's order served by an arm never filled):
             // what the tray holds goes on from the out point by the same rule, a want first, else storage.
@@ -351,6 +354,7 @@ public static partial class ConstructLifters
                     continue;
                 world.CraftChanged(b);
                 Wake(b, pt.Part);
+                l.OutTurn = k + 1;
                 Freeform.PartWorld(b, pt.Part, out _, out var mr);
                 StartCarry(world, c, l, ld, lp, lr, d, 255, 0, outAt, mr, to, toAt);
                 return true;

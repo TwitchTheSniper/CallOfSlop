@@ -192,6 +192,7 @@ public sealed class CLift
     public int OrderN;
     public byte OrderId; // the order this carry serves (0: its own work)
     public byte OrderSeq; // server: the last order id given
+    public int OutTurn; // server: the point after the last out it carried from (the outs take turns)
     public int OrderLook; // server: 10 Hz steps since its last look at its orders
 }
 
