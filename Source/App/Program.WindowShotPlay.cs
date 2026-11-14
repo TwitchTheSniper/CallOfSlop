@@ -16,7 +16,7 @@ public static partial class Program
     private static int _wsClipBodies, _wsClipLoose;
     private static bool _wsClipToolAsked;
 
-    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine";
+    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon";
 
     private static bool WsPlayVerb(Game g, Player me, string verb, string arg)
     {
@@ -139,6 +139,7 @@ public static partial class Program
                 ref var p = ref c.Parts[part];
                 var (mat, amount) = RecyclingTable.Current.YieldOf(p);
                 WsSay(string.Create(ci, $"partinfo: {d.Name}{(d.RuntimeMade ? " (made)" : "")} (body {c.Id} part {part}): mass {c.PartMass(part):0.##} kg (def {d.Mass:0.##}), health {p.Health:0.#} of {d.Health:0.#}, armour {d.Armour:0.#}{(p.Broken ? ", wrecked" : "")}; recycles to {amount} {RecyclingTable.Current.NameOf(mat)}; cost cap {PressTable.Current.CostCapOf(d):0.##} kg; recipe {AssemblingTable.Current.Of(d.Id)?.Batch ?? "none"}; body {c.PartCount} parts, {c.Mass:0} kg"));
+                WsSay($"partinfo: a Welder's join here: {(ConstructPlace.FindJoin(g.Constructs, c, part, out var jp) ? $"yes, onto body {jp.Other!.Id}" : "none (no free socket of it meets another construct's, square)")}; anchored {c.Anchored}, loose {c.Loose}, segment {c.Parts[part].Seg}");
                 if (c.ModEngines is { } mes)
                     for (var k = 0; k < c.ModCount; k++)
                     {
@@ -224,6 +225,40 @@ public static partial class Program
                 g.SandboxMakeEngine(kw, tier, default, default, -1, bay, 0);
                 WsSay(string.Create(ci, $"makeengine: asked for {kw} kW, tier {tier}, {(bay == Vector3.Zero ? "no bay" : $"the Car bay {bay.X:0.00} x {bay.Y:0.00} x {bay.Z:0.00} m")}"));
                 _wsWait = 10;
+                return true;
+            }
+            case "standon" when g.IsServer: // host, a test state: "standon NAME | PART[#n] SOCKET BY": a new body of NAME stood with its socket BY on PART's free SOCKET, not joined (as a free placement leaves it), for the Welder's join
+            {
+                var bar = arg.IndexOf('|');
+                var rest = bar < 0 ? "" : arg[(bar + 1)..].Trim();
+                var bits = rest.Split(' ');
+                var (tc, tp) = bits.Length >= 3 ? WsFind(g, string.Join(' ', bits[..^2])) : (null, -1);
+                if (bar < 0 || tc == null || ConstructParts.Find(arg[..bar].Trim()) is not { } sd)
+                {
+                    WsFail($"standon NAME | PART[#n] SOCKET BY (\"{arg}\")");
+                    return true;
+                }
+                var ts = Array.FindIndex(tc.DefOf(tp).Sockets, x => x.Name == bits[^2]);
+                var bs = Array.FindIndex(sd.Sockets, x => x.Name == bits[^1]);
+                if (ts < 0 || bs < 0)
+                {
+                    WsFail($"standon: no socket {(ts < 0 ? bits[^2] : bits[^1])}");
+                    return true;
+                }
+                tc.SocketAt(tp, ts, out var at, out _);
+                var rot = tc.Rot;
+                var body = ConstructBuild.PlaceNew(g.Constructs, sd, new FreePlacement { Pos = tc.ToWorld(at) - Vector3.Transform(sd.Sockets[bs].At, rot), Rot = rot, Anchor = true }); // (pinned: a loose one is nudged off the socket by the contact within a few frames)
+                if (body != null)
+                {
+                    body.SocketAt(0, bs, out var sat, out _);
+                    body.Pos += tc.ToWorld(at) - body.ToWorld(sat); // (PlaceNew sets a free part down by its own rule: the socket put exactly on the other)
+                    body.Wake();
+                    body.SocketAt(0, bs, out var sat2, out var sdir);
+                    tc.SocketAt(tp, ts, out _, out var tdir);
+                    WsSay($"standon: gap {Vector3.Distance(body.ToWorld(sat2), tc.ToWorld(at)) * 100:0.0} cm; its socket {sd.Sockets[bs].Kind} class {sd.Sockets[bs].Class} dir {sdir}, the other's {tc.DefOf(tp).Sockets[ts].Kind} class {tc.DefOf(tp).Sockets[ts].Class} dir {tdir}; used {tc.SocketUsed(tp, ts)}; a join now: {ConstructPlace.FindJoin(g.Constructs, body, 0, out _)} (from it), {ConstructPlace.FindJoin(g.Constructs, tc, tp, out _, body)} (from the other); turn match {(Rot24.Nearest(Quaternion.Conjugate(body.Rot) * tc.Rot, out var mt) is var _ ? mt : 0):0.0000}");
+                }
+                WsSay($"standon: {sd.Name} on {tc.DefOf(tp).Name} {bits[^2]}: {(body == null ? "refused" : $"body {body.Id} (a separate construct, {g.Constructs.Bodies.Count} bodies)")}");
+                _wsWait = 5;
                 return true;
             }
             case "partlook":
