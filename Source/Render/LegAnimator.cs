@@ -222,6 +222,14 @@ public static class LegAnimator
         var stance = p.RenderStance;
         var seated = p.RenderSeat != SeatKind.None; // (carried by a construct: no gait, whatever the speed)
         var vel = seated ? Vector3.Zero : GravityFrames.ToLocal(pos, p.RenderVelocity); // (a planet: in the body's own frame)
+        if (p.RenderRide)
+        {
+            // Contraption space: the gait in the rider's own frame, as they are drawn (PlayerRender). In the world's the planted
+            // feet and the ground's height were left behind by the construct's own motion: a ship in orbit tore the legs away.
+            pos = p.RenderRideFeet;
+            yaw = p.RenderRideYaw;
+            vel = Vector3.Transform(p.RenderVelocity, Quaternion.Conjugate(p.RenderRideRot)); // (a rider's velocity is relative to the construct)
+        }
 
         var dt = (float)(now - st.Last);
         var fresh = !st.Init || dt > 0.5f || dt < 0;
@@ -304,7 +312,7 @@ public static class LegAnimator
         st.PelvisH = fresh ? baseH : float.Lerp(st.PelvisH, baseH, 1f - MathF.Exp(-12f * dt));
 
         var rays = 0;
-        var near = (float.IsNaN(Viewer.X) || Vector3.DistanceSquared(Viewer, pos) <= IkRange * IkRange) && !GravityFrames.Curved; // (foot rays are Y-down: none on a planet)
+        var near = (float.IsNaN(Viewer.X) || Vector3.DistanceSquared(Viewer, p.RenderPosition) <= IkRange * IkRange) && !GravityFrames.Curved; // (foot rays are Y-down: none on a planet)
         pose.GroundIk = false;
 
         if (seated)
@@ -533,7 +541,7 @@ public static class LegAnimator
         // ---- Locals for the scene graph / immediate path ----
         pose.PelvisLocal = pose.Pelvis;
         var invPelvis = ArmNodes.RigidInverse(pose.Pelvis);
-        var body = bodyRot * Matrix4x4.CreateTranslation(pos);
+        var body = p.RenderRide ? bodyRot * Matrix4x4.CreateFromQuaternion(p.RenderRideRot) * Matrix4x4.CreateTranslation(p.RenderPosition) : bodyRot * Matrix4x4.CreateTranslation(pos); // (as PlayerRender draws a rider)
         for (var i = 0; i < 2; i++)
         {
             pose.ThighLocal[i] = pose.Thigh[i] * invPelvis;
