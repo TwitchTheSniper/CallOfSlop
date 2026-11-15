@@ -160,7 +160,7 @@ public sealed class FactoryShowcase : IPartGenerator
         {
             var s = new Script
             {
-                Description = "One connected factory: raw ore, wood, stone and sand in at the west end, the Works Runabout built at the east end, every production machine working on the way. Read the signs, press Start on both consoles, then pick Works Runabout at the Building Station.",
+                Description = "One connected factory: raw ore, wood, stone and sand in at the west end, the Works Runabout built at the east end, every production machine working on the way. The refinery runs from the start; read the signs, press Start on the orders console, then pick Works Runabout at the Building Station.",
                 Group = "Production",
             };
             s.Lay();
@@ -201,17 +201,20 @@ public sealed class FactoryShowcase : IPartGenerator
             AreaSign(52.75f, Posts1, "4 PANEL LINE", PanelGreen);
             AreaSign(71.75f, Posts1, "5 WHEELS AND THE STATION LINE", Wheels);
             AreaSign(83.25f, Posts1, "6 BUILDING STATION", StationTeal);
-            AreaSign(104.25f, Posts1, "7 THE WING", Wheels);
+            AreaSign(109.25f, Posts1, "7 THE WING", Wheels); // (east of the Lay-down Pad: the pad and the bay stay clear)
+            AreaSign(77.75f, Posts1, "8 PRESS HALL: BEHIND THIS ROW, ON THE BACK FLOOR", PressBlue); // (the aisle's board for a hall it can't see)
+            Arrow(76.75f, -3.25f, -Vector3.UnitZ); // (its arrow, on the floor under the board: south, to the back floor)
             AreaSign(75.25f, -15.25f, "8 PRESS HALL", PressBlue);
             AreaSign(45.25f, -15.25f, "9 ASSEMBLY: WHERE THE LINES MEET", Assembler);
             AreaSign(56.75f, -31.25f, "10 TOOL ROOM", ToolGrey);
-            // Each press named by what it makes, on a lit post at its north side.
-            foreach (var (press, what) in new[] { (ph.Gear, "GEAR PRESS: Gear Sets"), (ph.Tank, "TANK PRESS: the fuel tank"), (ph.Piston, "PISTON PRESS: Piston Sets"),
-                         (ph.Cylinder, "CYLINDER PRESS: the cylinder"), (ph.Engine, "ENGINE PRESS: crank, carb, flywheel"), (ph.Bracket, "BRACKET PRESS: L Brackets") })
+            // Each press named by what it makes, on a medium board on its north side, big enough to read from the strip in front.
+            foreach (var (press, what) in new[] { (ph.Gear, "GEAR PRESS"), (ph.Tank, "TANK PRESS"), (ph.Piston, "PISTON PRESS"),
+                         (ph.Cylinder, "CYLINDER PRESS"), (ph.Engine, "ENGINE PRESS"), (ph.Bracket, "BRACKET PRESS") })
             {
                 var at = FromRest(Live.Parts[press.Index].Pos);
-                Sign(at.X - 1.0f, -20.75f, PressBlue, what);
+                MediumBoard(at.X - 1.0f, -20.75f, what, PressBlue, Post, tall: false);
             }
+            FlowArrows();
             foreach (var lamp in _lamps)
                 Lamp(lamp);
         }
@@ -304,6 +307,13 @@ public sealed class FactoryShowcase : IPartGenerator
             Feed(Heap("copper ore", 6.25f, -10.75f, 3.2f), copperS); // (3.2 m square: copper for wire stock, bronze and coils)
             Sign(-7.25f, Posts1, Stock, "RAW STOCK: filled in creative, empty in survival");
             Feed(Heap("sand", 30.25f, -10.75f, 2.4f), glassS);
+            // Each heap named on a post beside it (look review 6).
+            Sign(-7.25f, -7.25f, Stock, "IRON ORE (both heaps)", false);
+            Sign(13.25f, Posts1, Stock, "STONE", false);
+            Sign(21.25f, Posts1, Stock, "WOOD", false);
+            Sign(29.25f, Posts1, Stock, "SAND", false);
+            Sign(6.25f, -8.75f, Stock, "COPPER ORE", false);
+            Sign(28.25f, -8.75f, Stock, "SAND", false);
             ChuteVia(smelter, steelF, -7.35f);
             ChuteVia(smelter, bronzeF, -8.2f);
             Chute(copperS, bronzeF);
@@ -324,7 +334,8 @@ public sealed class FactoryShowcase : IPartGenerator
             ChuteVia(glassS, glass, -13.4f);
 
             var console = On("Line Console", 8.25f, Posts1, Front, paint: Control);
-            Sign(9.75f, Posts1, Refining, "Press Start on this console: the refiners run");
+            Config(console, ("startOn", true)); // (the refinery runs from the moment the factory is down: stacks smoke, chutes move; the order lines wait for Start)
+            Sign(9.75f, Posts1, Refining, "REFINERY CONSOLE: runs from the start; Stop holds it");
             foreach (var m in new[] { smelter, steelF, sawmill, rubberF })
                 Run(console, m, V(8.25f, 0, -2.0f), V(FromRest(Live.Parts[m.Index].Pos).X, 0, -2.0f));
             foreach (var m in new[] { copperS, bronzeF, clothS, glassS })
@@ -675,11 +686,11 @@ public sealed class FactoryShowcase : IPartGenerator
             var p1 = Sign(11.25f, Posts1, Refining, "MONITOR: the refinery console's Data out");
             var small = Onto(p1, "y+1", "Number Readout", "back");
             Paint(small, Board);
-            Link("data", refine, small, "Data out", null);
+            BehindPost(refine, small, 8.25f, 11.25f);
             var p2 = Sign(43.25f, Posts1, Control, "MONITOR: every maker on the orders line");
             var medium = Onto(p2, "y+1", "Text Sign", "back");
             Paint(medium, Board);
-            Link("data", orders, medium, "Data out", null);
+            BehindPost(orders, medium, 44.75f, 43.25f);
             var post = On("Frame Beam", 76.25f, -12.75f, Post, "end-", StationTeal, "painted plating");
             var adapter = Onto(post, "y+3", "Adapter Medium to Small", "front0.0"); // (a medium sign on a small post)
             Paint(adapter, StationTeal);
@@ -689,6 +700,19 @@ public sealed class FactoryShowcase : IPartGenerator
             Link("data", rs, board, "Data out", null, StationTeal, true, Along(new[] { V(FromRest(Live.Parts[rs.Index].Pos).X, 0, -12.6f), V(76.25f, 0, -12.6f) }));
             var fuel = On("Fuel Tank", 90.75f, -3.25f, Front, "-y", Power);
             Link("pipe", fuel, station, "Fuel out", "Fluid in", Power);
+        }
+
+        /// <summary>
+        /// A console's Data out to a screen on a post (front walkway's edge): laid along the floor behind the console and the post and up the
+        /// post's back, so no cable crosses a screen (look review 7: a straight link ran in front of the line's status sign).
+        /// </summary>
+        private void BehindPost(VPart console, VPart screen, float consoleX, float postX)
+        {
+            var at = FromRest(Live.Parts[screen.Index].Pos);
+            var z = Posts1 - 0.4f;
+            var nodes = Along(new[] { V(consoleX, 0, z), V(postX + 0.3f, 0, z) }).ToList();
+            nodes.Add(V(postX + 0.3f, at.Y, z));
+            Link("data", console, screen, "Data out", null, CableDark, true, null, nodes.ToArray());
         }
 
         // ---- 8. The orders console ----------------------------------------------------------------------------------------------------
@@ -749,35 +773,74 @@ public sealed class FactoryShowcase : IPartGenerator
 
         /// <summary>An area's floor colour (concrete tinted, look.md "Machine look": the floor carries the area, the machines their own colours).</summary>
         private static string AreaFloor(float x, float z) => z > -14
-            ? x < 8 ? "#7b7163" : x < 38 ? "#877866" : x < 44 ? "#7f786c" : x < 76 ? "#748070" : "#6e7c7a"
-            : x < 46 ? "#7a7682" : x < 57 && z > -24 ? "#8c7f58" : z < -28 && x < 80 ? "#79766f" : "#6d7587"; // (the Assembler's tiles ochre: where the lines meet)
+            ? x < 8 ? "#7b7163" : x < 38 ? "#877866" : x < 44 ? "#7f786c" : x < 76 ? "#6f8f55" : "#3f8a86" // (the panel line green, the station line teal)
+            : x < 46 ? "#7a7682" : x < 57 && z > -24 ? "#8c7f58" : z < -28 && x < 80 ? "#79766f" : "#5468a8"; // (the Assembler's tiles ochre: where the lines meet; the press hall blue)
 
         /// <summary>
         /// An area's name, numbered in the order the walkway passes it: a Medium Text Sign 3.5 m up on two posts, facing the walkway (or
         /// the way <paramref name="o"/> says), a lamp on top. Seen from the overview.
         /// </summary>
-        private void AreaSign(float x, float z, string text, string colour, Orient? o = null)
+        private void AreaSign(float x, float z, string text, string colour) => MediumBoard(x, z, text, colour, West, tall: true);
+
+        /// <summary>
+        /// A Medium Text Sign on a steel post (two Frame Beams, 3.5 m up, when <paramref name="tall"/>), a lamp on top; the board's face in
+        /// the area's colour (look review 2: every post and frame one steel, the board carries the area).
+        /// </summary>
+        private void MediumBoard(float x, float z, string text, string colour, Orient o, bool tall)
         {
-            var post = On("Frame Beam", x, z, o ?? Post, "end-", colour, "painted plating");
-            var top = Onto(post, "end+", "Frame Beam", "end-");
-            Paint(top, colour);
-            Finish(top, "painted plating");
-            var adapter = Onto(top, "y+1", "Adapter Medium to Small", "front0.0");
-            Paint(adapter, colour);
+            var post = On("Frame Beam", x, z, o, "end-", PostSteel, "painted plating");
+            var top = post;
+            if (tall)
+            {
+                top = Onto(post, "end+", "Frame Beam", "end-");
+                Paint(top, PostSteel);
+                Finish(top, "painted plating");
+            }
+            var adapter = Onto(top, tall ? "y+1" : "y+3", "Adapter Medium to Small", "front0.0");
+            Paint(adapter, PostSteel);
             var board = Onto(adapter, "back", "Medium Text Sign", "back");
-            Paint(board, Board);
+            Paint(board, colour);
+            Config(board, ("ink", Lighter(colour))); // (its face is a screen: the area's colour is its writing, lightened to read on the dark face)
             Text(board, text);
             var lamp = Onto(top, "end+", "Lamp", "-y");
             Config(lamp, ("colour", "#ffd27a"), ("brightness", 160));
             _lamps.Add(lamp);
         }
 
-        /// <summary>The walkway: Lane Markings end to end along the front walkway's middle, west to east, the whole length.</summary>
+        /// <summary>A painted Floor Arrow flat on the floor at (x, z), pointing along <paramref name="way"/>.</summary>
+        private void Arrow(float x, float z, Vector3 way) =>
+            On("Floor Arrow", x, z, new Orient(Vector3.UnitY, Vector3.UnitY, Vector3.UnitX, way), "bottom", Hazard, "hazard paint");
+
+        /// <summary>The walkway: a Lane Marking, then an arrow pointing east, the whole length west to east (look review 3: the flow's way).</summary>
         private void Walkway()
         {
-            for (var x = -6.25f; x < 108f; x += 4.0f) // (3.6 m lanes on the 0.5 m lattice: a short gap between them)
+            for (var x = -6.25f; x < 106f; x += 6.0f) // (3.6 m lanes on the 0.5 m lattice, a 1.8 m arrow in each gap)
+            {
                 On("Lane Marking", x, -1.25f, Front, "bottom", null, "hazard paint");
+                if (x + 3.0f < 108f)
+                    Arrow(x + 3.0f, -1.25f, Vector3.UnitX);
+            }
         }
+
+        /// <summary>Arrows beside the main lines, east with the flow: the blank line south of its Routers, the press line's north strip.</summary>
+        private void FlowArrows()
+        {
+            foreach (var x in new[] { 62.75f, 68.25f, 73.75f, 79.25f, 84.75f })
+                Arrow(x, -28.75f, Vector3.UnitX);
+            foreach (var x in new[] { 77.25f, 83.25f })
+                Arrow(x, -15.75f, Vector3.UnitX);
+        }
+
+        private const string PostSteel = "#7a8086";
+
+        /// <summary>A colour halfway to white: an area's colour as writing on a dark screen.</summary>
+        private static string Lighter(string hex)
+        {
+            var v = Convert.ToInt32(hex[1..], 16);
+            int r = v >> 16 & 255, g = v >> 8 & 255, b = v & 255;
+            return $"#{(r + 255) / 2:x2}{(g + 255) / 2:x2}{(b + 255) / 2:x2}";
+        }
+        private static readonly Orient West = new(Vector3.UnitZ, Vector3.UnitY, Vector3.UnitY, -Vector3.UnitX); // a post whose board faces west: read by someone walking east
 
         /// <summary>A part standing on the floor by its own socket <paramref name="by"/> at (x, z).</summary>
         private VPart On(string part, float x, float z, Orient o, string by = "bottom", string? paint = null, string? finish = null)
@@ -811,7 +874,7 @@ public sealed class FactoryShowcase : IPartGenerator
         /// <summary>A sign post at (x, z): a Frame Beam stood up in the stage's colour, a Text Sign facing the aisle, a lamp on top.</summary>
         private VPart Sign(float x, float z, string colour, string text, bool lit = true)
         {
-            var post = On("Frame Beam", x, z, Post, "end-", colour, "painted plating");
+            var post = On("Frame Beam", x, z, Post, "end-", PostSteel, "painted plating"); // (every post one steel, look review 2)
             var sign = Onto(post, "y+3", "Text Sign", "back");
             Paint(sign, Board);
             Text(sign, text);
@@ -833,11 +896,16 @@ public sealed class FactoryShowcase : IPartGenerator
         /// </summary>
         private VPart Heap(string material, float x, float z, float size)
         {
-            var v = On("Storage Volume", x, z, Front, "-y", Stock);
+            var v = On("Storage Volume", x, z, Front, "-y", HeapPaint(material)); // (each heap's box its own colour: look review 6)
             // (the box from 5 cm over the floor, size square and 2 m high: 24 % of it is the raw stock, under every open side's lip)
             Config(v, ("sizeX", size), ("sizeY", 2.0), ("sizeZ", size), ("atY", 0.35 + 0.5), ("material", material), ("fill", 24));
             return v;
         }
+
+        private static string HeapPaint(string material) => material switch
+        {
+            "iron ore" => "#8a4a32", "copper ore" => "#3f8f7a", "stone" => "#9a9a94", "wood" => "#6b4a26", _ => "#d8c48a", // (sand)
+        };
 
         /// <summary>
         /// An empty store at (x, z): a Storage Volume's box <paramref name="size"/> square and 1.5 m high, holding up to a quarter of it before an
@@ -987,11 +1055,12 @@ public sealed class FactoryShowcase : IPartGenerator
                 floor.Add(V(4.75f, 0, -1.85f));
                 floor.Add(V(4.75f, 0, z));
             }
-            floor.Add(V(at.X, 0, z));
-            if (at.Z < -10f)
-                floor.Add(V(at.X, 0, at.Z)); // (a back floor lamp: on along the floor to its post)
+            // (up the post's back corner, never in front of its sign: look review 7, a cable rising 0.4 m in front read as a post before the boards)
+            var rise = V(at.X + 0.35f, 0, at.Z - 0.35f);
+            floor.Add(V(rise.X, 0, z));
+            floor.Add(rise);
             var nodes = Along(floor.ToArray()).ToList();
-            nodes.Add(V(at.X, at.Y, at.Z < -10f ? at.Z : z));
+            nodes.Add(V(rise.X, at.Y, rise.Z));
             Link("data", _switch!, lamp, null, null, Board, true, null, nodes.ToArray());
         }
     }

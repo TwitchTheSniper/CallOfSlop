@@ -142,6 +142,15 @@ public static partial class ProductionLines
         return st.LineShown;
     }
 
+    /// <summary>The console's word for an orders-only maker with nothing queued: it waits as it should, never shown as broken (the Factory Showcase's look review).</summary>
+    public const string WaitingWord = "Waiting";
+
+    /// <summary>An orders-only machine (a queue of its own, even empty) with no order, stopped or short: it waits for orders, it isn't starved.</summary>
+    internal static bool WaitsForOrders(ConstructWorld world, Construct c, int m, LineState s) =>
+        s is LineState.Idle or LineState.Starved && c.Parts[m].Orders is { Bill: false, Total: 0 } && world.StoreOf(c, m) is { Held: false }; // (held by a stopped line: Stopped)
+
+    internal static string WordOf(ConstructWorld world, Construct c, int m, LineState s) => WaitsForOrders(world, c, m, s) ? WaitingWord : Word(s);
+
     public static string Word(LineState s) => s switch
     {
         LineState.Idle => "Stopped",
@@ -279,6 +288,7 @@ public static partial class ProductionLines
             return;
         }
         Span<LineState> states = stackalloc LineState[MaxListed];
+        Span<bool> waits = stackalloc bool[MaxListed];
         var pick = Pick(p, d, n);
         var worst = PanelState.Working;
         var running = 0;
@@ -287,11 +297,12 @@ public static partial class ProductionLines
         {
             states[k] = world.StoreOf(c, list[k]) is { } st ? Of(world, c, list[k], st, ConstructRender.Now) : LineState.Idle;
             var s = states[k];
+            waits[k] = on && WaitsForOrders(world, c, list[k], s);
             if (s == LineState.Running)
                 running++;
-            else if (s != LineState.Idle && Panel(s) > worst)
+            else if (s != LineState.Idle && !waits[k] && Panel(s) > worst)
                 worst = Panel(s);
-            stateW = Math.Max(stateW, Word(s).Length);
+            stateW = Math.Max(stateW, waits[k] ? WaitingWord.Length : Word(s).Length);
         }
         card.State = !on ? PanelState.Idle : worst;
         // The name's column: what the state's leaves; on a narrow screen (a big Text size) the state goes on the detail line.
@@ -328,9 +339,10 @@ public static partial class ProductionLines
             var m = list[k];
             var md = c.DefOf(m);
             var s = states[k];
-            Look(s, out var colour, out _, out _);
+            Look(waits[k] ? LineState.Idle : s, out var colour, out _, out _);
             if (s == LineState.NoPower)
                 colour = NoPowerGrey;
+            var word = waits[k] ? WaitingWord : Word(s);
             card.Add(line, k == pick ? '>' : ' ');
             if (k == pick)
                 card.Mark = line; // (the pick on a lit strip: which machine Recipe and Next act on)
@@ -339,7 +351,7 @@ public static partial class ProductionLines
             {
                 card.Add(line, ' ');
                 var from = card.Length(line);
-                card.Add(line, Word(s)).Tint(line, from, card.Length(line), colour);
+                card.Add(line, word).Tint(line, from, card.Length(line), colour);
             }
             line++;
             if ((every || k == pick) && line < rows)
@@ -347,7 +359,7 @@ public static partial class ProductionLines
                 card.Add(line, "  ");
                 if (stateBelow)
                 {
-                    card.Add(line, Word(s)).Tint(line, 2, card.Length(line), colour);
+                    card.Add(line, word).Tint(line, 2, card.Length(line), colour);
                     card.Add(line, ' ');
                 }
                 Detail(world, c, m, md, s, card, line);

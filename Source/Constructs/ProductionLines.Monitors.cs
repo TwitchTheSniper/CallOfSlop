@@ -327,9 +327,9 @@ public static partial class ProductionLines
             var s = states[k] = world.StoreOf(c, list[k]) is { } st ? Of(world, c, list[k], st, now) : LineState.Idle;
             if (s == LineState.Running)
                 running++;
-            else if (s != LineState.Idle && Panel(s) > worst)
+            else if (s != LineState.Idle && !WaitsForOrders(world, c, list[k], s) && Panel(s) > worst)
                 worst = Panel(s);
-            stateW = Math.Max(stateW, Word(s).Length);
+            stateW = Math.Max(stateW, WordOf(world, c, list[k], s).Length);
             if (c.Parts[list[k]].Orders is { Bill: false } q)
                 toGo += q.PiecesLeft;
             longest = Math.Max(longest, NameOf(c, list[..n], k).Length);
@@ -360,7 +360,7 @@ public static partial class ProductionLines
             var fit = rows - line;
             var first = AutoFirst(n, fit, now);
             for (var k = first; k < n && line < rows; k++, line++)
-                MachineRow(c, list[..n], k, states[k], card, line, nameW, cols);
+                MachineRow(world, c, list[..n], k, states[k], card, line, nameW, cols);
             return;
         }
         if (rows <= MediumRows)
@@ -372,7 +372,7 @@ public static partial class ProductionLines
             var line = 1;
             for (var k = first; k < n && k < first + fit && line + 1 < rows; k++)
             {
-                MachineRow(c, list[..n], k, states[k], card, line++, nameW, cols);
+                MachineRow(world, c, list[..n], k, states[k], card, line++, nameW, cols);
                 card.Add(line, "  ");
                 Detail(world, c, list[k], c.DefOf(list[k]), states[k], card, line);
                 card.Clip(line, cols).Dim(line);
@@ -393,11 +393,11 @@ public static partial class ProductionLines
     }
 
     /// <summary>A machine's row: its name in a column (ending ".." when cut) and its state in full in its lamp's colour.</summary>
-    private static void MachineRow(Construct c, ReadOnlySpan<int> list, int k, LineState s, PanelCard card, int line, int nameW, int cols)
+    private static void MachineRow(ConstructWorld world, Construct c, ReadOnlySpan<int> list, int k, LineState s, PanelCard card, int line, int nameW, int cols)
     {
         card.Field(line, NameOf(c, list, k), nameW, false, 0).Add(line, ' ');
         var from = card.Length(line);
-        card.Add(line, Word(s)).Tint(line, from, card.Length(line), Lamp(s));
+        card.Add(line, WordOf(world, c, list[k], s)).Tint(line, from, card.Length(line), Lamp(WaitsForOrders(world, c, list[k], s) ? LineState.Idle : s));
         card.Clip(line, cols);
     }
 
@@ -439,7 +439,7 @@ public static partial class ProductionLines
             var m = list[k];
             card.Field(line, NameOf(c, list, k), nameW, false, 0).Add(line, ' ');
             var from = card.Length(line);
-            card.Add(line, Word(states[k])).Tint(line, from, card.Length(line), Lamp(states[k]));
+            card.Add(line, WordOf(world, c, m, states[k])).Tint(line, from, card.Length(line), Lamp(WaitsForOrders(world, c, m, states[k]) ? LineState.Idle : states[k]));
             card.PadTo(line, nameW + 1 + stateW + 1);
             from = card.Length(line);
             if (c.Parts[m].Orders is { Bill: false } q && q.Total > 0)

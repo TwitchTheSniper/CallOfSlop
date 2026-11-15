@@ -128,6 +128,7 @@ FINISHED           the Works Runabout, built in the bay; a hand-ordered part in 
 7. A queued order's inputs are asked in full (`ConstructLogisticsPlan.Need`): only its own chains count, and the hopper only at the head.
 8. The window tool: `--spawn-yaw D`, and `stock` prints a bin's bulk.
 9. Code review: player blueprints keep `ordersOnly` (`ConstructClip`); a press sends tray parts by conveyor only where it leads to a junction, rack, Assembler or press (`TrayPartsRide`); `Need`'s "ahead" reads this order's place in the queue; a terminal's ask caches each machine's way with its net (`CraftNet.MachineWay`).
+10. Look review 2: the refinery console starts on (the refinery runs from spawn; the order lines wait for Start); area boards face west on steel posts, their writing in the area's colour; a press-hall board and arrow on the aisle; Floor Arrows (a new part kit dressing part) along the aisle and the press lines; the panel line green, the station teal, the press hall blue; heaps in their own colours with name signs; lamp cables and monitor links up the posts' backs; a medium board on each press; the window tool's `--dusk F` (lamps' dark light on any map) and `--no-hands` hides the NOCLIP note.
 
 ## Not verified
 
@@ -157,7 +158,7 @@ What the runs showed that they weren't testing. Not chased, except the first (fi
 5. A link `BlueprintScript` lays is checked only against the parts placed before it: a sign post placed later in its path passed the
    generator and the loader refused the blueprint ("links[56]: ... it would pass through the Frame Beam"). `--check-vehicle` on the
    output. Guess: `VehicleCore.cs` Link; check every link again when the text is written.
-6. A line console shows idle orders-only makers as "Stopped" while its line runs ("Running 0/16", rows "Stopped no orders"): it reads
+6. (Fixed, look review 2: an orders-only maker with no order now reads "Waiting", white and steady, on the console and the line sign: `ProductionLines.WaitsForOrders`.) A line console shows idle orders-only makers as "Stopped" while its line runs ("Running 0/16", rows "Stopped no orders"): it reads
    as held off. `panel Line Console#3` in any build run. Guess: `Source/Constructs/ProductionLines.cs` near 402 (a word like Waiting).
 7. The station's step allocates 262 KB in one tick at Start (its costing). `station measure`: "worst tick 262488 bytes". Guess:
    `ConstructStation` costing (`StationPreview`, the cost slice).
