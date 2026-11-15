@@ -1143,8 +1143,8 @@ public sealed partial class Game
                 if (Constructs.Get(body) is { } bc && part < bc.PartCount && bc.DefOf(part).Boarding)
                     return SandboxGrabOn(p, bc, part); // (a grab handle, a boarding ladder, a step plate: ba01)
                 var used = hands.Use(Constructs, p.Id, eye, body, part);
-                if (used == ConstructEdits.NothingToUse && Constructs.Get(body) is { Anchored: false, Loose: false } gc)
-                    return SandboxGrabOn(p, gc, part) is { } nogrip ? used : null; // (a vehicle's side: grab on and climb aboard)
+                if (used == ConstructEdits.NothingToUse && Constructs.Get(body) is { Anchored: false, Loose: false } gc && OutsideOf(p, gc))
+                    return SandboxGrabOn(p, gc, part) is { } nogrip ? used : null; // (a vehicle's side from outside it: grab on and climb aboard)
                 return used;
             }
             case CActKind.KeyPress:
@@ -2028,6 +2028,19 @@ public sealed partial class Game
     /// Board item ba01's grab-on (server): Use at a construct's side or a boarding part latches the player on in its frame
     /// and pulls them up onto the nearest top (ConstructRide.GrabOn; the climb runs in the shared movement step).
     /// </summary>
+    /// <summary>
+    /// Whether Use on a construct part with no use of its own may grab on at its side: only from outside it. A player
+    /// aboard (riding it) or inside its bounds (a ship's deck, under its hull) gets nothing, or F on a locker or a pipe
+    /// pulled them up onto the nearest top: onto the thing, or out through the hull onto the roof (2026-11-15).
+    /// </summary>
+    private static bool OutsideOf(Player p, Construct c)
+    {
+        if (p.Sim.RideBody == c.Id)
+            return false;
+        var at = c.ToLocal(p.Sim.Position + new Vector3(0, 0.9f, 0)); // (the body's middle, not the feet: standing on a deck plate puts the feet at its top)
+        return at.X < c.LocalMin.X || at.Y < c.LocalMin.Y || at.Z < c.LocalMin.Z || at.X > c.LocalMax.X || at.Y > c.LocalMax.Y || at.Z > c.LocalMax.Z;
+    }
+
     internal string? SandboxGrabOn(Player p, Construct c, int part, bool ladder = false)
     {
         if (!p.Alive)
