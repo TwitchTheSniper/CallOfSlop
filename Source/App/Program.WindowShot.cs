@@ -21,6 +21,7 @@ public static unsafe partial class Program
     private static string _wsOut = "", _wsMap = "Proving Ground", _wsBlueprint = "";
     private static Vector3? _wsAt, _wsLookAt, _wsSpawnAt;
     private static float? _wsSpawnYaw;
+    private static bool _wsNoHands; // (--no-hands: nothing drawn in the first-person hands and no legs, so a picture from the flying camera shows the scene)
     private static string _wsNet = "", _wsNotice = "";
     private static double _wsJoinTry; // (when a joining client last tried the host: it may still be loading)
 
@@ -75,6 +76,7 @@ public static unsafe partial class Program
         _wsBlueprint = Val("--blueprint") ?? "";
         _wsAt = Val("--at") is { } at ? WsVec(at) : null;
         _wsCalm = args.Any(a => a.Equals("--calm", StringComparison.OrdinalIgnoreCase)); // (no cold storm: a site is seen whole)
+        _wsNoHands = args.Any(a => a.Equals("--no-hands", StringComparison.OrdinalIgnoreCase));
         _wsLookAt = Val("--look-at") is { } la ? WsVec(la) : null;
         _wsSpawnAt = Val("--spawn-at") is { } sa ? WsVec(sa) : null;
         _wsSpawnYaw = Val("--spawn-yaw") is { } sy && float.TryParse(sy, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var syd) ? syd : null;

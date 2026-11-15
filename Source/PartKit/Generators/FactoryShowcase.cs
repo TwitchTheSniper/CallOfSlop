@@ -174,7 +174,7 @@ public sealed class FactoryShowcase : IPartGenerator
             // The root: the main floor's middle tile, so the blueprint's origin is its middle and a spawn in front of the player sets it
             // down as near as its size allows (SandboxBuildInFront: the origin goes its widest reach from its origin, plus 1.5 m, ahead).
             var root = Root("Foundation", V(RootX, 0.15f, RootZ), Front);
-            Paint(root, Floor);
+            Paint(root, AreaFloor(RootX, RootZ));
             Finish(root, "concrete");
             _tiles.Add(((int)(RootX - 1) / 2, (int)(-RootZ - 1) / 2));
             Tiles(0, 55, 0, 7); // the main floor: x 0 to 110, z 0 to -14
@@ -193,6 +193,25 @@ public sealed class FactoryShowcase : IPartGenerator
             ScrapAndSpares(r);
             var orders = OrdersConsole(pn.Sheet, pn.Former, pn.Glass, pn.Cutter, st.Wheel, asm.A, ph.Blank, ph.Gear, ph.Tank, ph.Piston, ph.Bracket, ph.Cylinder, ph.Engine, ph.CopperEx, ph.Cable, st.Station, hand.Terminal, hand.Designer, wing);
             Monitors(r.Console, orders, st.RouterS, st.Station);
+            Walkway();
+            // The areas, numbered as the walkway passes them west to east, then back along the back floor east to west.
+            AreaSign(-4.75f, Posts1, "1 RAW STOCK AND POWER", Stock);
+            AreaSign(6.75f, Posts1, "2 REFINERY", Refining);
+            AreaSign(37.75f, Posts1, "3 THE YARD", Yard);
+            AreaSign(52.75f, Posts1, "4 PANEL LINE", PanelGreen);
+            AreaSign(71.75f, Posts1, "5 WHEELS AND THE STATION LINE", Wheels);
+            AreaSign(83.25f, Posts1, "6 BUILDING STATION", StationTeal);
+            AreaSign(104.25f, Posts1, "7 THE WING", Wheels);
+            AreaSign(75.25f, -15.25f, "8 PRESS HALL", PressBlue);
+            AreaSign(45.25f, -15.25f, "9 ASSEMBLY: WHERE THE LINES MEET", Assembler);
+            AreaSign(56.75f, -31.25f, "10 TOOL ROOM", ToolGrey);
+            // Each press named by what it makes, on a lit post at its north side.
+            foreach (var (press, what) in new[] { (ph.Gear, "GEAR PRESS: Gear Sets"), (ph.Tank, "TANK PRESS: the fuel tank"), (ph.Piston, "PISTON PRESS: Piston Sets"),
+                         (ph.Cylinder, "CYLINDER PRESS: the cylinder"), (ph.Engine, "ENGINE PRESS: crank, carb, flywheel"), (ph.Bracket, "BRACKET PRESS: L Brackets") })
+            {
+                var at = FromRest(Live.Parts[press.Index].Pos);
+                Sign(at.X - 1.0f, -20.75f, PressBlue, what);
+            }
             foreach (var lamp in _lamps)
                 Lamp(lamp);
         }
@@ -220,7 +239,7 @@ public sealed class FactoryShowcase : IPartGenerator
                     _tiles.Add((i, j));
                     left.Remove((i, j));
                     var aisle = j == 0 || aisles.Contains(j);
-                    Paint(t, aisle ? Aisle : Floor);
+                    Paint(t, aisle ? Aisle : AreaFloor(1 + 2 * i, -1 - 2 * j));
                     Finish(t, aisle ? "painted deck plate" : "concrete");
                 }
             }
@@ -238,7 +257,7 @@ public sealed class FactoryShowcase : IPartGenerator
             Paint(tank2, Power);
             _fuel = tank2;
             var battery = On("Battery", 3.75f, Row1, Front, "-y", Power);
-            var mainPost = Sign(1.25f, Posts1, Power, "1 POWER. MAIN SWITCH: off = every machine No power");
+            var mainPost = Sign(1.25f, Posts1, Power, "MAIN SWITCH: off = every machine No power");
             _switch = Onto(mainPost, "y+2", "Switch", "-z");
             Config(_switch, ("startOn", true));
             Paint(_switch, Control);
@@ -305,7 +324,7 @@ public sealed class FactoryShowcase : IPartGenerator
             ChuteVia(glassS, glass, -13.4f);
 
             var console = On("Line Console", 8.25f, Posts1, Front, paint: Control);
-            Sign(9.75f, Posts1, Refining, "2 REFINERY: press Start on this console");
+            Sign(9.75f, Posts1, Refining, "Press Start on this console: the refiners run");
             foreach (var m in new[] { smelter, steelF, sawmill, rubberF })
                 Run(console, m, V(8.25f, 0, -2.0f), V(FromRest(Live.Parts[m.Index].Pos).X, 0, -2.0f));
             foreach (var m in new[] { copperS, bronzeF, clothS, glassS })
@@ -314,7 +333,7 @@ public sealed class FactoryShowcase : IPartGenerator
             Sign(30.25f, Posts1, Refining, "Wood to planks; planks and sand to rubber");
             Sign(14.25f, Posts2, Refining, "Copper ore to copper; copper and metal to bronze");
             Sign(30.25f, Posts2, Refining, "Planks to cloth; sand to glass");
-            Sign(41.25f, Posts1, Yard, "3 THE YARD: every refined material, in bins");
+            Sign(41.25f, Posts1, Yard, "Every refined material waits here in bins");
             return new Refined(steel, rubber, cloth, bronze, copper, glass, console, steelF);
         }
 
@@ -346,7 +365,7 @@ public sealed class FactoryShowcase : IPartGenerator
             // (One Assembler: a second, set to Bearings on its own, ate the copper and bronze with 298 spare Bearings.)
 
 
-            Sign(48.75f, -15.25f, Assembler, "4 ASSEMBLY: every catalogue part, its own bearings too", false);
+            Sign(48.75f, -15.25f, Assembler, "Every catalogue part, its own bearings too", false);
             return new Assembly(a, a, ra, ra);
         }
 
@@ -435,7 +454,7 @@ public sealed class FactoryShowcase : IPartGenerator
             Onto(cable, "dieslot", "Cable Die", "mount");
             Convey(copperEx, "Piece out", cable, "Piece in", Copper);
             _cable = cable;
-            Sign(62.75f, -14.75f, PressBlue, "5 PRESS HALL: blanks in from the south, parts out north", false);
+            Sign(62.75f, -14.75f, PressBlue, "Blanks in from the south, parts out north", false);
             return new Presses(blank, presses[0], presses[1], presses[5], presses[3], presses[4], cable, copperEx, j1, presses[2]);
         }
 
@@ -486,12 +505,12 @@ public sealed class FactoryShowcase : IPartGenerator
             Convey(rp, "Piece out", jc, "Piece in", PanelGreen, Small);
             var cutter = On("Laser Cutter", 67.75f, Row1, Flow);
             Convey(jc, "Piece out", cutter, "Piece in", CutterRed, Small);
-            var offcut = Bin(70.75f, -1.25f, CutterRed);
+            var offcut = Bin(70.75f, -7.75f, CutterRed); // (off the walkway)
             Link("chute", cutter, offcut, "Offcut", null, CutterRed);
             var glass = On("Panel Former", 54.25f, Row2, Flow, paint: GlassBlue);
             ChuteVia(r.Glass, glass, -13.85f);
             Corner(glass, "Piece out", jc, "Piece in 2", GlassBlue, Small);
-            Sign(50.25f, Posts1, PanelGreen, "6 PANELS: sheet in, formed panels out");
+            Sign(50.25f, Posts1, PanelGreen, "Sheet in, formed panels out");
             Sign(64.75f, Posts1, CutterRed, "LASER CUTTER: a panel in, a cut part out");
             Sign(56.25f, Posts2, GlassBlue, "GLASS: formed glass sheet for the panes");
             return new Panels(sheet, former, glass, cutter, rp);
@@ -546,7 +565,7 @@ public sealed class FactoryShowcase : IPartGenerator
             On("Loader Arm", 95.75f, -4.25f, Front, "-y.0.0");
             Sign(66.25f, Posts2, Wheels, "WHEELS: rubber in, a formed wheel out");
             Sign(76.25f, Posts2, StationTeal, "ROUTER: ordered pieces to the station, the rest to the rack");
-            Sign(90.25f, Posts1, StationTeal, "7 BUILDING STATION: F, pick Works Runabout, Start");
+            Sign(90.25f, Posts1, StationTeal, "F on the station: pick Works Runabout, Start");
             return (station, rs, wheel, rack);
         }
 
@@ -715,9 +734,56 @@ public sealed class FactoryShowcase : IPartGenerator
 
         // ---- Helpers --------------------------------------------------------------------------------------------------------------
 
+        // ---- The look (the look review, 2026-11-14): one steel for every link and junction, a floor colour an area, numbered signs ----
+
+        private const string ConveyorSteel = "#6b7177", ChuteSteel = "#555b62", CableDark = "#34383d";
+
+        /// <summary>Every routed link in one steel by kind, never a stage's colour: the machines carry the colour, the floor the area's.</summary>
+        private static string LinkPaint(string type) => type switch { "conveyor" => ConveyorSteel, "chute" => ChuteSteel, "pipe" => ChuteSteel, _ => CableDark };
+
+        private new void Link(string type, VPart from, VPart to, string? fromPort = null, string? toPort = null, string? paint = null, bool laid = false, params Vector3[] nodes) =>
+            base.Link(type, from, to, fromPort, toPort, LinkPaint(type), laid, null, nodes);
+
+        private new void Link(string type, VPart from, VPart to, string? fromPort, string? toPort, string? paint, bool laid, Vector2? size, params Vector3[] nodes) =>
+            base.Link(type, from, to, fromPort, toPort, LinkPaint(type), laid, size, nodes);
+
+        /// <summary>An area's floor colour (concrete tinted, look.md "Machine look": the floor carries the area, the machines their own colours).</summary>
+        private static string AreaFloor(float x, float z) => z > -14
+            ? x < 8 ? "#7b7163" : x < 38 ? "#877866" : x < 44 ? "#7f786c" : x < 76 ? "#748070" : "#6e7c7a"
+            : x < 46 ? "#7a7682" : x < 57 && z > -24 ? "#8c7f58" : z < -28 && x < 80 ? "#79766f" : "#6d7587"; // (the Assembler's tiles ochre: where the lines meet)
+
+        /// <summary>
+        /// An area's name, numbered in the order the walkway passes it: a Medium Text Sign 3.5 m up on two posts, facing the walkway (or
+        /// the way <paramref name="o"/> says), a lamp on top. Seen from the overview.
+        /// </summary>
+        private void AreaSign(float x, float z, string text, string colour, Orient? o = null)
+        {
+            var post = On("Frame Beam", x, z, o ?? Post, "end-", colour, "painted plating");
+            var top = Onto(post, "end+", "Frame Beam", "end-");
+            Paint(top, colour);
+            Finish(top, "painted plating");
+            var adapter = Onto(top, "y+1", "Adapter Medium to Small", "front0.0");
+            Paint(adapter, colour);
+            var board = Onto(adapter, "back", "Medium Text Sign", "back");
+            Paint(board, Board);
+            Text(board, text);
+            var lamp = Onto(top, "end+", "Lamp", "-y");
+            Config(lamp, ("colour", "#ffd27a"), ("brightness", 160));
+            _lamps.Add(lamp);
+        }
+
+        /// <summary>The walkway: Lane Markings end to end along the front walkway's middle, west to east, the whole length.</summary>
+        private void Walkway()
+        {
+            for (var x = -6.25f; x < 108f; x += 4.0f) // (3.6 m lanes on the 0.5 m lattice: a short gap between them)
+                On("Lane Marking", x, -1.25f, Front, "bottom", null, "hazard paint");
+        }
+
         /// <summary>A part standing on the floor by its own socket <paramref name="by"/> at (x, z).</summary>
         private VPart On(string part, float x, float z, Orient o, string by = "bottom", string? paint = null, string? finish = null)
         {
+            if (part.Contains("Conveyor ", StringComparison.Ordinal) && paint != null)
+                paint = ConveyorSteel; // (Joins and Routers: the conveyors' own steel)
             var p = Stand(part, V(x, FloorY, z), o, null, by);
             if (paint != null)
                 Paint(p, paint);
@@ -922,8 +988,10 @@ public sealed class FactoryShowcase : IPartGenerator
                 floor.Add(V(4.75f, 0, z));
             }
             floor.Add(V(at.X, 0, z));
+            if (at.Z < -10f)
+                floor.Add(V(at.X, 0, at.Z)); // (a back floor lamp: on along the floor to its post)
             var nodes = Along(floor.ToArray()).ToList();
-            nodes.Add(V(at.X, at.Y, z));
+            nodes.Add(V(at.X, at.Y, at.Z < -10f ? at.Z : z));
             Link("data", _switch!, lamp, null, null, Board, true, null, nodes.ToArray());
         }
     }

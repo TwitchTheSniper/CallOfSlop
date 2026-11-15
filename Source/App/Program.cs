@@ -2091,7 +2091,7 @@ public static unsafe partial class Program
                 continue; // (on a ride you are on the bus, not standing at the stop the camera may be watching)
             if (p.Id == _game.LocalId && p.Alive && !tp && !pilotView && !talkView) // (third person, the talk camera, or looking through a drone: your whole body is drawn like anyone's)
             {
-                if (ScenePresentation.Enabled && ScenePresentation.FirstPersonLegs)
+                if (ScenePresentation.Enabled && ScenePresentation.FirstPersonLegs && !_wsNoHands) // (--no-hands: a picture from the flying camera shows the scene, not your legs)
                     ScenePresentation.DrawLocalLegs(Gfx, p, Glfw.Time); // your own legs, seen when looking down
                 continue;
             }
@@ -2244,7 +2244,7 @@ public static unsafe partial class Program
 
         // ---- First-person gun -----------------------------------------------
         pass = Perf.Pass(PerfArea.ViewModel, PerfGpuPass.ViewModel);
-        if (local is { Alive: true } && !tp && !talkView && !_game.OpeningActive && !_game.QuarryRiding && !DrawSandboxTool(now, eye, fwd)) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening or on a ride)
+        if (local is { Alive: true } && !tp && !talkView && !_game.OpeningActive && !_game.QuarryRiding && !_wsNoHands && !DrawSandboxTool(now, eye, fwd)) // (_wsNoHands: the window tool's --no-hands, for pictures) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening or on a ride)
         {
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);
