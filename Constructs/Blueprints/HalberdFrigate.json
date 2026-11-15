@@ -7,80 +7,560 @@
       "part": "Halberd Engineering Deck"
     },
     {
+      "part": "Halberd Engineering Wall Bow",
+      "on": 0,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Engineering Wall Stbd",
+      "on": 0,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Engineering Wall Stern",
+      "on": 0,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Engineering Wall Port",
+      "on": 0,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Engineering Corner 1",
+      "on": 0,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Engineering Corner 2",
+      "on": 0,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Engineering Corner 3",
+      "on": 0,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Engineering Corner 4",
+      "on": 0,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Engineering Partition 1",
+      "on": 0,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Engineering Partition 2",
+      "on": 0,
+      "socket": "j9",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Engineering Partition 3",
+      "on": 0,
+      "socket": "j10",
+      "by": "j0"
+    },
+    {
       "part": "Halberd Thrust Frame",
       "on": 0,
-      "socket": "down",
-      "by": "up"
+      "socket": "j11",
+      "by": "j4"
     },
     {
-      "part": "Halberd Robot Bay Deck",
-      "on": 0,
-      "socket": "up",
-      "by": "down"
+      "part": "Halberd Robot Bay Wall Bow",
+      "on": 1,
+      "socket": "j3",
+      "by": "j0"
     },
     {
-      "part": "Halberd Med Deck",
+      "part": "Halberd Engineering Hull Bow",
+      "on": 1,
+      "socket": "hull0",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Robot Bay Wall Stbd",
       "on": 2,
-      "socket": "up",
-      "by": "down"
+      "socket": "j1",
+      "by": "j0"
     },
     {
-      "part": "Halberd Crew Deck",
+      "part": "Halberd Engineering Hull Stbd",
+      "on": 2,
+      "socket": "hull1",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Robot Bay Wall Stern",
       "on": 3,
-      "socket": "up",
-      "by": "down"
+      "socket": "j5",
+      "by": "j0"
     },
     {
-      "part": "Halberd Ops Deck",
+      "part": "Halberd Engineering Hull Stern",
+      "on": 3,
+      "socket": "hull2",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Robot Bay Wall Port",
       "on": 4,
       "socket": "up",
       "by": "down"
     },
     {
-      "part": "Halberd Cockpit Deck",
+      "part": "Halberd Engineering Hull Port",
+      "on": 4,
+      "socket": "hull3",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Robot Bay Corner 1",
       "on": 5,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Robot Bay Corner 2",
+      "on": 6,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Robot Bay Corner 3",
+      "on": 7,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Robot Bay Corner 4",
+      "on": 8,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Robot Bay Deck",
+      "on": 9,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Med Wall Bow",
+      "on": 13,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Robot Bay Hull Bow",
+      "on": 13,
+      "socket": "hull0",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Med Wall Stbd",
+      "on": 15,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Robot Bay Hull Stbd",
+      "on": 15,
+      "socket": "hull1",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Med Wall Stern",
+      "on": 17,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Robot Bay Hull Stern",
+      "on": 17,
+      "socket": "hull2",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Med Wall Port",
+      "on": 19,
       "socket": "up",
       "by": "down"
+    },
+    {
+      "part": "Halberd Robot Bay Hull Port",
+      "on": 19,
+      "socket": "hull3",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Med Corner 1",
+      "on": 21,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Med Corner 2",
+      "on": 22,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Med Corner 3",
+      "on": 23,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Med Corner 4",
+      "on": 24,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Robot Bay Partition 1",
+      "on": 25,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Med Deck",
+      "on": 26,
+      "socket": "j1",
+      "by": "j1"
+    },
+    {
+      "part": "Halberd Crew Wall Bow",
+      "on": 26,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Med Hull Bow",
+      "on": 26,
+      "socket": "hull0",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Crew Wall Stbd",
+      "on": 28,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Med Hull Stbd",
+      "on": 28,
+      "socket": "hull1",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Crew Wall Stern",
+      "on": 30,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Med Hull Stern",
+      "on": 30,
+      "socket": "hull2",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Crew Wall Port",
+      "on": 32,
+      "socket": "up",
+      "by": "down"
+    },
+    {
+      "part": "Halberd Med Hull Port",
+      "on": 32,
+      "socket": "hull3",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Crew Corner 1",
+      "on": 34,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Crew Corner 2",
+      "on": 35,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Crew Corner 3",
+      "on": 36,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Crew Corner 4",
+      "on": 37,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Med Partition 1",
+      "on": 39,
+      "socket": "j9",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Crew Deck",
+      "on": 40,
+      "socket": "j1",
+      "by": "j1"
+    },
+    {
+      "part": "Halberd Ops Wall Bow",
+      "on": 40,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Crew Hull Bow",
+      "on": 40,
+      "socket": "hull0",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Ops Wall Stbd",
+      "on": 42,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Crew Hull Stbd",
+      "on": 42,
+      "socket": "hull1",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Ops Wall Stern",
+      "on": 44,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Crew Hull Stern",
+      "on": 44,
+      "socket": "hull2",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Ops Wall Port",
+      "on": 46,
+      "socket": "up",
+      "by": "down"
+    },
+    {
+      "part": "Halberd Crew Hull Port",
+      "on": 46,
+      "socket": "hull3",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Ops Corner 1",
+      "on": 48,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Ops Corner 2",
+      "on": 49,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Ops Corner 3",
+      "on": 50,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Ops Corner 4",
+      "on": 51,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Crew Partition 1",
+      "on": 53,
+      "socket": "j9",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Crew Partition 2",
+      "on": 53,
+      "socket": "j10",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Crew Partition 3",
+      "on": 53,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Ops Deck",
+      "on": 54,
+      "socket": "j1",
+      "by": "j3"
+    },
+    {
+      "part": "Halberd Ops Hull Bow",
+      "on": 54,
+      "socket": "hull0",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Ops Hull Stbd",
+      "on": 56,
+      "socket": "hull1",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Ops Hull Stern",
+      "on": 58,
+      "socket": "hull2",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Cockpit Deck",
+      "on": 60,
+      "socket": "up",
+      "by": "down"
+    },
+    {
+      "part": "Halberd Ops Hull Port",
+      "on": 60,
+      "socket": "hull3",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Cockpit Wall Bow",
+      "on": 73,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Cockpit Wall Stbd",
+      "on": 73,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Cockpit Wall Stern",
+      "on": 73,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Cockpit Wall Port",
+      "on": 73,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Cockpit Corner 1",
+      "on": 73,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Cockpit Corner 2",
+      "on": 73,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Cockpit Corner 3",
+      "on": 73,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Cockpit Corner 4",
+      "on": 73,
+      "socket": "j7",
+      "by": "j0"
     },
     {
       "part": "Halberd Nose",
-      "on": 6,
-      "socket": "up",
-      "by": "down"
+      "on": 75,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Halberd Cockpit Hull Bow",
+      "on": 75,
+      "socket": "hull0",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Cockpit Hull Stbd",
+      "on": 76,
+      "socket": "hull1",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Cockpit Hull Stern",
+      "on": 77,
+      "socket": "hull2",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Cockpit Hull Port",
+      "on": 78,
+      "socket": "hull3",
+      "by": "back"
     },
     {
       "part": "Halberd Main Drive",
-      "on": 1,
+      "on": 12,
       "socket": "drive",
       "by": "top"
     },
     {
       "part": "Halberd Landing Leg",
-      "on": 1,
+      "on": 12,
       "socket": "legFL",
       "by": "top"
     },
     {
       "part": "Halberd Landing Leg",
-      "on": 1,
+      "on": 12,
       "socket": "legFR",
       "by": "top"
     },
     {
       "part": "Halberd Landing Leg",
-      "on": 1,
+      "on": 12,
       "socket": "legBL",
       "by": "top"
     },
     {
       "part": "Halberd Landing Leg",
-      "on": 1,
+      "on": 12,
       "socket": "legBR",
       "by": "top"
     },
     {
       "part": "Halberd Manoeuvre Jet",
-      "on": 1,
+      "on": 12,
       "socket": "jetPort",
       "by": "top",
       "paint": "#47525b",
@@ -88,7 +568,7 @@
     },
     {
       "part": "Halberd Manoeuvre Jet",
-      "on": 1,
+      "on": 12,
       "socket": "jetStbd",
       "by": "top",
       "paint": "#47525b",
@@ -96,7 +576,7 @@
     },
     {
       "part": "Halberd Manoeuvre Jet",
-      "on": 1,
+      "on": 12,
       "socket": "jetBow",
       "by": "top",
       "paint": "#47525b",
@@ -104,7 +584,7 @@
     },
     {
       "part": "Halberd Manoeuvre Jet",
-      "on": 1,
+      "on": 12,
       "socket": "jetStern",
       "by": "top",
       "paint": "#47525b",
@@ -118,25 +598,25 @@
     },
     {
       "part": "Halberd Spine Ladder",
-      "on": 2,
+      "on": 25,
       "socket": "ladder",
       "by": "bottom"
     },
     {
       "part": "Halberd Spine Ladder",
-      "on": 3,
+      "on": 39,
       "socket": "ladder",
       "by": "bottom"
     },
     {
       "part": "Halberd Spine Ladder",
-      "on": 4,
+      "on": 53,
       "socket": "ladder",
       "by": "bottom"
     },
     {
       "part": "Halberd Spine Ladder",
-      "on": 5,
+      "on": 69,
       "socket": "ladder",
       "by": "bottom"
     },
@@ -154,13 +634,13 @@
     },
     {
       "part": "Power Board",
-      "on": 0,
+      "on": 2,
       "socket": "board",
       "by": "back"
     },
     {
       "part": "Engineer's Panel",
-      "on": 0,
+      "on": 2,
       "socket": "panel",
       "by": "back"
     },
@@ -178,13 +658,13 @@
     },
     {
       "part": "Pipe Bank",
-      "on": 0,
+      "on": 1,
       "socket": "pipes",
       "by": "back"
     },
     {
       "part": "Tool Rack",
-      "on": 0,
+      "on": 4,
       "socket": "rack",
       "by": "back"
     },
@@ -202,7 +682,7 @@
     },
     {
       "part": "Locker",
-      "on": 0,
+      "on": 10,
       "socket": "suit0",
       "by": "wall",
       "paint": "#d8a628",
@@ -210,7 +690,7 @@
     },
     {
       "part": "Locker",
-      "on": 0,
+      "on": 11,
       "socket": "suit1",
       "by": "wall",
       "paint": "#d8a628",
@@ -218,7 +698,7 @@
     },
     {
       "part": "Bulkhead Door 1.5x2.25 m",
-      "on": 0,
+      "on": 3,
       "socket": "doorOuter",
       "by": "hang",
       "paint": "#56626c",
@@ -226,7 +706,7 @@
     },
     {
       "part": "Bulkhead Door 1.5x2.25 m",
-      "on": 0,
+      "on": 9,
       "socket": "doorInner",
       "by": "hang",
       "paint": "#56626c",
@@ -234,7 +714,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 0,
+      "on": 4,
       "socket": "lampA",
       "by": "back",
       "config": {
@@ -243,7 +723,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 0,
+      "on": 2,
       "socket": "lampB",
       "by": "back",
       "config": {
@@ -252,7 +732,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 0,
+      "on": 1,
       "socket": "lampC",
       "by": "back",
       "config": {
@@ -261,7 +741,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 0,
+      "on": 9,
       "socket": "lampLock",
       "by": "back",
       "config": {
@@ -270,7 +750,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 0,
+      "on": 10,
       "socket": "switch",
       "by": "back",
       "config": {
@@ -279,57 +759,57 @@
     },
     {
       "part": "Robot Charging Cradle",
-      "on": 2,
+      "on": 19,
       "socket": "cradle0",
       "by": "wall"
     },
     {
       "part": "Robot Charging Cradle",
-      "on": 2,
+      "on": 19,
       "socket": "cradle1",
       "by": "wall"
     },
     {
       "part": "Robot Charging Cradle",
-      "on": 2,
+      "on": 19,
       "socket": "cradle2",
       "by": "wall"
     },
     {
       "part": "Robot Shell",
-      "on": 41,
+      "on": 121,
       "socket": "front",
       "by": "back"
     },
     {
       "part": "Robot Shell",
-      "on": 43,
+      "on": 123,
       "socket": "front",
       "by": "back"
     },
     {
       "part": "Shell Control Chair",
-      "on": 2,
+      "on": 25,
       "socket": "couch0",
       "by": "bottom",
       "spin": 1
     },
     {
       "part": "Shell Control Chair",
-      "on": 2,
+      "on": 25,
       "socket": "couch1",
       "by": "bottom",
       "spin": 1
     },
     {
       "part": "Tool Rack",
-      "on": 2,
+      "on": 15,
       "socket": "armsRack",
       "by": "back"
     },
     {
       "part": "Locker",
-      "on": 2,
+      "on": 15,
       "socket": "locker0",
       "by": "wall",
       "paint": "#56626c",
@@ -337,7 +817,7 @@
     },
     {
       "part": "Locker",
-      "on": 2,
+      "on": 15,
       "socket": "locker1",
       "by": "wall",
       "paint": "#56626c",
@@ -345,19 +825,19 @@
     },
     {
       "part": "Ammo Crate",
-      "on": 2,
+      "on": 25,
       "socket": "ammo0",
       "by": "bottom"
     },
     {
       "part": "Ammo Crate",
-      "on": 2,
+      "on": 25,
       "socket": "ammo1",
       "by": "bottom"
     },
     {
       "part": "Bulkhead Door 1.5x2.25 m",
-      "on": 2,
+      "on": 38,
       "socket": "doorArmoury",
       "by": "hang",
       "paint": "#56626c",
@@ -365,7 +845,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 2,
+      "on": 19,
       "socket": "lampA",
       "by": "back",
       "config": {
@@ -374,7 +854,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 2,
+      "on": 19,
       "socket": "lampB",
       "by": "back",
       "config": {
@@ -383,7 +863,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 2,
+      "on": 15,
       "socket": "lampC",
       "by": "back",
       "config": {
@@ -392,7 +872,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 2,
+      "on": 17,
       "socket": "lampD",
       "by": "back",
       "config": {
@@ -401,7 +881,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 2,
+      "on": 38,
       "socket": "switch",
       "by": "back",
       "config": {
@@ -410,25 +890,25 @@
     },
     {
       "part": "Medical Station",
-      "on": 3,
+      "on": 26,
       "socket": "medL",
       "by": "back"
     },
     {
       "part": "Medical Station",
-      "on": 3,
+      "on": 26,
       "socket": "medR",
       "by": "back"
     },
     {
       "part": "Medicine Cabinet",
-      "on": 3,
+      "on": 26,
       "socket": "cabinet",
       "by": "back"
     },
     {
       "part": "Shower Stall",
-      "on": 3,
+      "on": 26,
       "socket": "decon",
       "by": "wall",
       "paint": "#d6dbd8",
@@ -436,7 +916,7 @@
     },
     {
       "part": "Locker",
-      "on": 3,
+      "on": 28,
       "socket": "medLocker",
       "by": "wall",
       "paint": "#d6dbd8",
@@ -444,7 +924,7 @@
     },
     {
       "part": "Bulkhead Door 1.5x2.25 m",
-      "on": 3,
+      "on": 52,
       "socket": "doorMed",
       "by": "hang",
       "paint": "#d6dbd8",
@@ -452,19 +932,19 @@
     },
     {
       "part": "Galley Stove",
-      "on": 3,
+      "on": 30,
       "socket": "stove",
       "by": "back"
     },
     {
       "part": "Galley Coffee Station",
-      "on": 3,
+      "on": 30,
       "socket": "coffee",
       "by": "wall"
     },
     {
       "part": "Locker",
-      "on": 3,
+      "on": 30,
       "socket": "galleyLocker",
       "by": "wall",
       "paint": "#5c646a",
@@ -472,14 +952,14 @@
     },
     {
       "part": "Mess Table",
-      "on": 3,
+      "on": 39,
       "socket": "table",
       "by": "bottom",
       "spin": 1
     },
     {
       "part": "Bulkhead Light",
-      "on": 3,
+      "on": 52,
       "socket": "lampMedA",
       "by": "back",
       "config": {
@@ -488,7 +968,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 3,
+      "on": 52,
       "socket": "lampMedB",
       "by": "back",
       "config": {
@@ -497,7 +977,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 3,
+      "on": 52,
       "socket": "switchMed",
       "by": "back",
       "config": {
@@ -506,7 +986,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 3,
+      "on": 32,
       "socket": "lampGalleyA",
       "by": "back",
       "config": {
@@ -515,7 +995,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 3,
+      "on": 28,
       "socket": "lampGalleyB",
       "by": "back",
       "config": {
@@ -524,7 +1004,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 3,
+      "on": 52,
       "socket": "switch",
       "by": "back",
       "config": {
@@ -533,31 +1013,31 @@
     },
     {
       "part": "Crash Couch",
-      "on": 4,
+      "on": 40,
       "socket": "couch0",
       "by": "wall"
     },
     {
       "part": "Crash Couch",
-      "on": 4,
+      "on": 40,
       "socket": "couch1",
       "by": "wall"
     },
     {
       "part": "Crash Couch",
-      "on": 4,
+      "on": 66,
       "socket": "couch2",
       "by": "wall"
     },
     {
       "part": "Crash Couch",
-      "on": 4,
+      "on": 66,
       "socket": "couch3",
       "by": "wall"
     },
     {
       "part": "Bulkhead Door 1.5x2.25 m",
-      "on": 4,
+      "on": 66,
       "socket": "doorBunk",
       "by": "hang",
       "paint": "#56626c",
@@ -565,7 +1045,7 @@
     },
     {
       "part": "Steel Swing Door 1.5x2.25 m",
-      "on": 4,
+      "on": 68,
       "socket": "doorHead",
       "by": "hang",
       "paint": "#56626c",
@@ -573,25 +1053,25 @@
     },
     {
       "part": "Ship Toilet",
-      "on": 4,
+      "on": 42,
       "socket": "toilet",
       "by": "wall"
     },
     {
       "part": "Ship Basin",
-      "on": 4,
+      "on": 67,
       "socket": "basin",
       "by": "wall"
     },
     {
       "part": "Steel Desk",
-      "on": 4,
+      "on": 46,
       "socket": "desk",
       "by": "wall"
     },
     {
       "part": "Locker",
-      "on": 4,
+      "on": 44,
       "socket": "locker0",
       "by": "wall",
       "paint": "#56626c",
@@ -599,7 +1079,7 @@
     },
     {
       "part": "Locker",
-      "on": 4,
+      "on": 44,
       "socket": "locker1",
       "by": "wall",
       "paint": "#5c646a",
@@ -607,7 +1087,7 @@
     },
     {
       "part": "Locker",
-      "on": 4,
+      "on": 44,
       "socket": "locker2",
       "by": "wall",
       "paint": "#56626c",
@@ -615,7 +1095,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 4,
+      "on": 66,
       "socket": "lampBunkA",
       "by": "back",
       "config": {
@@ -624,7 +1104,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 4,
+      "on": 66,
       "socket": "lampBunkB",
       "by": "back",
       "config": {
@@ -633,7 +1113,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 4,
+      "on": 46,
       "socket": "lampHall",
       "by": "back",
       "config": {
@@ -642,7 +1122,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 4,
+      "on": 67,
       "socket": "lampHead",
       "by": "back",
       "config": {
@@ -651,7 +1131,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 4,
+      "on": 66,
       "socket": "switch",
       "by": "back",
       "config": {
@@ -660,37 +1140,37 @@
     },
     {
       "part": "Piston 2x2 Medium",
-      "on": 2,
+      "on": 19,
       "socket": "pdcPort",
       "by": "base"
     },
     {
       "part": "Turntable",
-      "on": 92,
+      "on": 172,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Motor Hinge",
-      "on": 93,
+      "on": 173,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Halberd PDC",
-      "on": 94,
+      "on": 174,
       "socket": "leaf",
       "by": "bottom"
     },
     {
       "part": "Ammo Box",
-      "on": 95,
+      "on": 175,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Halberd PDC Hatch",
-      "on": 2,
+      "on": 19,
       "socket": "pdcPortHatch",
       "by": "hang",
       "paint": "#56626c",
@@ -698,37 +1178,37 @@
     },
     {
       "part": "Piston 2x2 Medium",
-      "on": 2,
+      "on": 15,
       "socket": "pdcStbd",
       "by": "base"
     },
     {
       "part": "Turntable",
-      "on": 98,
+      "on": 178,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Motor Hinge",
-      "on": 99,
+      "on": 179,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Halberd PDC",
-      "on": 100,
+      "on": 180,
       "socket": "leaf",
       "by": "bottom"
     },
     {
       "part": "Ammo Box",
-      "on": 101,
+      "on": 181,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Halberd PDC Hatch",
-      "on": 2,
+      "on": 15,
       "socket": "pdcStbdHatch",
       "by": "hang",
       "paint": "#56626c",
@@ -736,38 +1216,38 @@
     },
     {
       "part": "Piston 2x2 Medium",
-      "on": 5,
+      "on": 54,
       "socket": "pdcBow",
       "by": "base"
     },
     {
       "part": "Turntable",
-      "on": 104,
+      "on": 184,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Motor Hinge",
-      "on": 105,
+      "on": 185,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Halberd PDC",
-      "on": 106,
+      "on": 186,
       "socket": "leaf",
       "by": "bottom",
       "spin": 1
     },
     {
       "part": "Ammo Box",
-      "on": 107,
+      "on": 187,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Halberd PDC Hatch",
-      "on": 5,
+      "on": 54,
       "socket": "pdcBowHatch",
       "by": "hang",
       "paint": "#56626c",
@@ -775,38 +1255,38 @@
     },
     {
       "part": "Piston 2x2 Medium",
-      "on": 5,
+      "on": 58,
       "socket": "pdcStern",
       "by": "base"
     },
     {
       "part": "Turntable",
-      "on": 110,
+      "on": 190,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Motor Hinge",
-      "on": 111,
+      "on": 191,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Halberd PDC",
-      "on": 112,
+      "on": 192,
       "socket": "leaf",
       "by": "bottom",
       "spin": 1
     },
     {
       "part": "Ammo Box",
-      "on": 113,
+      "on": 193,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Halberd PDC Hatch",
-      "on": 5,
+      "on": 58,
       "socket": "pdcSternHatch",
       "by": "hang",
       "paint": "#56626c",
@@ -814,37 +1294,37 @@
     },
     {
       "part": "Gunnery Console",
-      "on": 2,
+      "on": 25,
       "socket": "gun",
       "by": "bottom"
     },
     {
       "part": "Flight Couch",
-      "on": 2,
+      "on": 25,
       "socket": "gunSeat",
       "by": "bottom"
     },
     {
       "part": "Turret Module",
-      "on": 116,
+      "on": 196,
       "socket": "module",
       "by": "-x"
     },
     {
       "part": "OR Gate",
-      "on": 118,
+      "on": 198,
       "socket": "+x",
       "by": "-x"
     },
     {
       "part": "Bakelite Switch",
-      "on": 2,
+      "on": 38,
       "socket": "pdcSwitch",
       "by": "back"
     },
     {
       "part": "Delay",
-      "on": 119,
+      "on": 199,
       "socket": "+z",
       "by": "-z",
       "config": {
@@ -853,45 +1333,45 @@
     },
     {
       "part": "OR Gate",
-      "on": 121,
+      "on": 201,
       "socket": "+z",
       "by": "-z"
     },
     {
       "part": "Gunnery Console",
-      "on": 5,
+      "on": 69,
       "socket": "gun",
       "by": "bottom",
       "spin": 2
     },
     {
       "part": "Flight Couch",
-      "on": 5,
+      "on": 69,
       "socket": "gunSeat",
       "by": "bottom",
       "spin": 2
     },
     {
       "part": "Turret Module",
-      "on": 123,
+      "on": 203,
       "socket": "module",
       "by": "-x"
     },
     {
       "part": "OR Gate",
-      "on": 125,
+      "on": 205,
       "socket": "+x",
       "by": "-x"
     },
     {
       "part": "Bakelite Switch",
-      "on": 5,
+      "on": 58,
       "socket": "pdcSwitch",
       "by": "back"
     },
     {
       "part": "Delay",
-      "on": 126,
+      "on": 206,
       "socket": "+z",
       "by": "-z",
       "config": {
@@ -900,19 +1380,19 @@
     },
     {
       "part": "OR Gate",
-      "on": 128,
+      "on": 208,
       "socket": "+z",
       "by": "-z"
     },
     {
       "part": "Chart Table",
-      "on": 5,
+      "on": 69,
       "socket": "plot",
       "by": "bottom"
     },
     {
       "part": "Locker",
-      "on": 5,
+      "on": 58,
       "socket": "locker0",
       "by": "wall",
       "paint": "#56626c",
@@ -920,7 +1400,7 @@
     },
     {
       "part": "Locker",
-      "on": 5,
+      "on": 58,
       "socket": "locker1",
       "by": "wall",
       "paint": "#56626c",
@@ -928,13 +1408,13 @@
     },
     {
       "part": "Tool Rack",
-      "on": 5,
+      "on": 60,
       "socket": "armsRack",
       "by": "back"
     },
     {
       "part": "Bulkhead Light",
-      "on": 5,
+      "on": 60,
       "socket": "lampA",
       "by": "back",
       "config": {
@@ -943,7 +1423,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 5,
+      "on": 56,
       "socket": "lampB",
       "by": "back",
       "config": {
@@ -952,7 +1432,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 5,
+      "on": 56,
       "socket": "lampC",
       "by": "back",
       "config": {
@@ -961,7 +1441,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 5,
+      "on": 58,
       "socket": "lampD",
       "by": "back",
       "config": {
@@ -970,7 +1450,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 5,
+      "on": 58,
       "socket": "switch",
       "by": "back",
       "config": {
@@ -979,7 +1459,7 @@
     },
     {
       "part": "Motor Hinge",
-      "on": 6,
+      "on": 73,
       "socket": "pilot",
       "by": "base",
       "spin": 3,
@@ -991,13 +1471,13 @@
     },
     {
       "part": "Flight Couch",
-      "on": 139,
+      "on": 219,
       "socket": "leaf",
       "by": "bottom"
     },
     {
       "part": "Motor Hinge",
-      "on": 6,
+      "on": 73,
       "socket": "copilot",
       "by": "base",
       "spin": 3,
@@ -1009,49 +1489,49 @@
     },
     {
       "part": "Flight Couch",
-      "on": 141,
+      "on": 221,
       "socket": "leaf",
       "by": "bottom"
     },
     {
       "part": "Halberd Flight Computer",
-      "on": 6,
+      "on": 73,
       "socket": "computer",
       "by": "bottom"
     },
     {
       "part": "Halberd Spinal Railgun",
-      "on": 7,
+      "on": 83,
       "socket": "railgun",
       "by": "back"
     },
     {
       "part": "Ammo Box",
-      "on": 144,
+      "on": 224,
       "socket": "ammo",
       "by": "left"
     },
     {
       "part": "Turret Module",
-      "on": 6,
+      "on": 73,
       "socket": "gunModule",
       "by": "-z"
     },
     {
       "part": "Driving Module",
-      "on": 146,
+      "on": 226,
       "socket": "+x",
       "by": "-x"
     },
     {
       "part": "Chart Table",
-      "on": 6,
+      "on": 78,
       "socket": "chart",
       "by": "back"
     },
     {
       "part": "Bulkhead Light",
-      "on": 6,
+      "on": 78,
       "socket": "lampA",
       "by": "back",
       "config": {
@@ -1060,7 +1540,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 6,
+      "on": 76,
       "socket": "lampB",
       "by": "back",
       "config": {
@@ -1069,7 +1549,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 6,
+      "on": 77,
       "socket": "lampC",
       "by": "back",
       "config": {
@@ -1078,7 +1558,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 6,
+      "on": 77,
       "socket": "switch",
       "by": "back",
       "config": {
@@ -1088,156 +1568,20 @@
   ],
   "wires": [
     [
-      40,
-      36
+      120,
+      116
     ],
     [
-      40,
-      37
+      120,
+      117
     ],
     [
-      40,
-      38
-    ],
-    [
-      40,
-      39
-    ],
-    [
-      58,
-      54
-    ],
-    [
-      58,
-      55
-    ],
-    [
-      58,
-      56
-    ],
-    [
-      58,
-      57
-    ],
-    [
-      71,
-      69
-    ],
-    [
-      71,
-      70
-    ],
-    [
-      74,
-      72
-    ],
-    [
-      74,
-      73
-    ],
-    [
-      91,
-      87
-    ],
-    [
-      91,
-      88
-    ],
-    [
-      91,
-      89
-    ],
-    [
-      91,
-      90
-    ],
-    [
-      117,
+      120,
       118
-    ],
-    [
-      118,
-      95
-    ],
-    [
-      118,
-      101
     ],
     [
       120,
       119
-    ],
-    [
-      119,
-      121
-    ],
-    [
-      119,
-      122
-    ],
-    [
-      121,
-      122
-    ],
-    [
-      119,
-      92
-    ],
-    [
-      122,
-      97
-    ],
-    [
-      119,
-      98
-    ],
-    [
-      122,
-      103
-    ],
-    [
-      124,
-      125
-    ],
-    [
-      125,
-      107
-    ],
-    [
-      125,
-      113
-    ],
-    [
-      127,
-      126
-    ],
-    [
-      126,
-      128
-    ],
-    [
-      126,
-      129
-    ],
-    [
-      128,
-      129
-    ],
-    [
-      126,
-      104
-    ],
-    [
-      129,
-      109
-    ],
-    [
-      126,
-      110
-    ],
-    [
-      129,
-      115
     ],
     [
       138,
@@ -1256,45 +1600,181 @@
       137
     ],
     [
-      140,
-      143
-    ],
-    [
-      140,
-      146
-    ],
-    [
-      146,
-      144
-    ],
-    [
-      140,
-      147
-    ],
-    [
-      152,
+      151,
       149
     ],
     [
-      152,
+      151,
       150
     ],
     [
-      152,
-      151
+      154,
+      152
+    ],
+    [
+      154,
+      153
+    ],
+    [
+      171,
+      167
+    ],
+    [
+      171,
+      168
+    ],
+    [
+      171,
+      169
+    ],
+    [
+      171,
+      170
+    ],
+    [
+      197,
+      198
+    ],
+    [
+      198,
+      175
+    ],
+    [
+      198,
+      181
+    ],
+    [
+      200,
+      199
+    ],
+    [
+      199,
+      201
+    ],
+    [
+      199,
+      202
+    ],
+    [
+      201,
+      202
+    ],
+    [
+      199,
+      172
+    ],
+    [
+      202,
+      177
+    ],
+    [
+      199,
+      178
+    ],
+    [
+      202,
+      183
+    ],
+    [
+      204,
+      205
+    ],
+    [
+      205,
+      187
+    ],
+    [
+      205,
+      193
+    ],
+    [
+      207,
+      206
+    ],
+    [
+      206,
+      208
+    ],
+    [
+      206,
+      209
+    ],
+    [
+      208,
+      209
+    ],
+    [
+      206,
+      184
+    ],
+    [
+      209,
+      189
+    ],
+    [
+      206,
+      190
+    ],
+    [
+      209,
+      195
+    ],
+    [
+      218,
+      214
+    ],
+    [
+      218,
+      215
+    ],
+    [
+      218,
+      216
+    ],
+    [
+      218,
+      217
+    ],
+    [
+      220,
+      223
+    ],
+    [
+      220,
+      226
+    ],
+    [
+      226,
+      224
+    ],
+    [
+      220,
+      227
+    ],
+    [
+      232,
+      229
+    ],
+    [
+      232,
+      230
+    ],
+    [
+      232,
+      231
     ]
   ],
   "links": [
     {
       "type": "data",
-      "from": 147,
-      "to": 139,
+      "from": 227,
+      "to": 219,
       "fromPort": "lift"
     },
     {
       "type": "data",
-      "from": 147,
-      "to": 141,
+      "from": 227,
+      "to": 221,
       "fromPort": "lift"
     }
   ],

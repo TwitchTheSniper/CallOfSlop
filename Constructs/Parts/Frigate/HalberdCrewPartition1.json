@@ -1,0 +1,193 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Halberd Crew Partition 1",
+  "description": "A partition of the Halberd's crew storey, with its door frames.",
+  "group": "Ship",
+  "section": "Halberd frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 350.0,
+  "health": 1500,
+  "armour": 20,
+  "material": "steel",
+  "color": "#8e959a",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        0.885,
+        9.875,
+        3.35
+      ],
+      "max": [
+        1.625,
+        12.875,
+        3.6
+      ],
+      "color": "#8e959a",
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        1.625,
+        12.125,
+        3.35
+      ],
+      "max": [
+        3.125,
+        12.875,
+        3.6
+      ],
+      "color": "#8e959a",
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        0.935,
+        9.879,
+        3.338
+      ],
+      "max": [
+        1.575,
+        10.625,
+        3.612
+      ],
+      "color": "#4c555c",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        1.565,
+        9.877,
+        3.335
+      ],
+      "max": [
+        1.628,
+        12.185,
+        3.615
+      ],
+      "color": "#2f3539",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        3.122,
+        9.877,
+        3.335
+      ],
+      "max": [
+        3.185,
+        12.185,
+        3.615
+      ],
+      "color": "#2f3539",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        3.125,
+        9.875,
+        3.35
+      ],
+      "max": [
+        8.865,
+        12.875,
+        3.6
+      ],
+      "color": "#8e959a",
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        3.175,
+        9.879,
+        3.338
+      ],
+      "max": [
+        8.815,
+        10.625,
+        3.612
+      ],
+      "color": "#4c555c",
+      "detail": true,
+      "finish": "matte paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "couch2",
+      "at": [
+        4.375,
+        10.0,
+        3.35
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "couch3",
+      "at": [
+        6.675,
+        10.0,
+        3.35
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "doorBunk",
+      "at": [
+        3.125,
+        11.0,
+        3.475
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "lampBunkA",
+      "at": [
+        2.875,
+        12.325,
+        3.35
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "lampBunkB",
+      "at": [
+        6.875,
+        12.325,
+        3.35
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "switch",
+      "at": [
+        4.875,
+        11.175,
+        3.6
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        5.425,
+        9.875,
+        3.475
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        5.425,
+        12.875,
+        3.475
+      ],
+      "dir": "+y"
+    }
+  ]
+}

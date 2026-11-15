@@ -1,0 +1,93 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Halberd Crew Wall Stbd",
+  "description": "A wall run of the Halberd's crew storey, the stbd side, inside its hull panel.",
+  "group": "Ship",
+  "section": "Halberd frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1100.0,
+  "health": 4000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#8e959a",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        8.875,
+        9.625,
+        2.025
+      ],
+      "max": [
+        9.125,
+        12.875,
+        6.725
+      ],
+      "color": "#8e959a",
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        8.863,
+        9.878,
+        2.025
+      ],
+      "max": [
+        8.875,
+        10.365,
+        6.725
+      ],
+      "color": "#4c555c",
+      "detail": true,
+      "finish": "matte paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hull1",
+      "at": [
+        9.125,
+        12.525,
+        4.375
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "toilet",
+      "at": [
+        8.875,
+        10.0,
+        6.475
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j0",
+      "at": [
+        8.995,
+        9.625,
+        4.375
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        8.875,
+        9.755,
+        4.375
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        8.995,
+        12.875,
+        4.375
+      ],
+      "dir": "+y"
+    }
+  ]
+}

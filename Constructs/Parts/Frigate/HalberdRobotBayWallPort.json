@@ -1,0 +1,262 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Halberd Robot Bay Wall Port",
+  "description": "A wall run of the Halberd's robot bay storey, the port side, inside its hull panel.",
+  "group": "Ship",
+  "section": "Halberd frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1100.0,
+  "health": 4000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#8e959a",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        0.625,
+        3.125,
+        2.025
+      ],
+      "max": [
+        0.875,
+        6.375,
+        6.725
+      ],
+      "color": "#8e959a",
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        0.875,
+        3.378,
+        2.025
+      ],
+      "max": [
+        0.887,
+        3.865,
+        6.725
+      ],
+      "color": "#4c555c",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        0.51,
+        4.695,
+        2.815
+      ],
+      "max": [
+        0.57,
+        5.655,
+        5.935
+      ],
+      "color": "#26292c",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.895,
+        5.595,
+        2.815
+      ],
+      "max": [
+        0.507,
+        5.655,
+        5.935
+      ],
+      "color": "#56626c",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.895,
+        4.695,
+        2.815
+      ],
+      "max": [
+        0.507,
+        4.755,
+        5.935
+      ],
+      "color": "#56626c",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.891,
+        4.758,
+        2.815
+      ],
+      "max": [
+        0.507,
+        5.592,
+        2.875
+      ],
+      "color": "#47525b",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.891,
+        4.758,
+        5.875
+      ],
+      "max": [
+        0.507,
+        5.592,
+        5.935
+      ],
+      "color": "#47525b",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.899,
+        5.655,
+        2.795
+      ],
+      "max": [
+        -0.775,
+        5.675,
+        5.955
+      ],
+      "color": "#d8a628",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.899,
+        4.675,
+        2.795
+      ],
+      "max": [
+        -0.775,
+        4.695,
+        5.955
+      ],
+      "color": "#d8a628",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.595,
+        4.635,
+        4.025
+      ],
+      "max": [
+        0.405,
+        4.675,
+        4.725
+      ],
+      "color": "#30363a",
+      "detail": true,
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hull3",
+      "at": [
+        0.625,
+        6.025,
+        4.375
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "pdcPort",
+      "at": [
+        0.51,
+        5.175,
+        4.375
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "pdcPortHatch",
+      "at": [
+        -0.895,
+        5.655,
+        4.375
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "down",
+      "at": [
+        0.75,
+        3.125,
+        4.375
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "up",
+      "at": [
+        0.75,
+        6.375,
+        4.375
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "cradle0",
+      "at": [
+        0.875,
+        3.5,
+        2.875
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "cradle1",
+      "at": [
+        0.875,
+        3.5,
+        4.375
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "cradle2",
+      "at": [
+        0.875,
+        3.5,
+        5.875
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "lampA",
+      "at": [
+        0.875,
+        5.825,
+        3.625
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "lampB",
+      "at": [
+        0.875,
+        5.825,
+        5.125
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j0",
+      "at": [
+        0.875,
+        3.255,
+        4.375
+      ],
+      "dir": "+x"
+    }
+  ]
+}
