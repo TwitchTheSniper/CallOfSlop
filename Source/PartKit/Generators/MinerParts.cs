@@ -1326,6 +1326,297 @@ public sealed class MinerParts : IPartGenerator
         return p.Stats(60 + rise * 12, 400, 6, 3.0);
     }
 
+    // ---- the fittings (Karl, 2026-11-15: the stock stove, table and lockers read as a house kitchen, "not on a space ship"). Each
+    // keeps the footprint and socket names of the stock part it replaces, so the decks' sockets stand; each is bolted down on a
+    // dark plinth or wall rail, latched shut, in the ship's paint (pale panel over dark frame, hazard on what moves).
+
+    private static void Fx(Part p, double x0, double y0, double z0, double x1, double y1, double z1, string color, string finish, bool detail = false, bool glow = false)
+    {
+        var shape = glow ? Kw(("glow", true)) : Kw(("finish", finish));
+        p.Add(Box([Math.Min(x0, x1), Math.Min(y0, y1), Math.Min(z0, z1)], [Math.Max(x0, x1), Math.Max(y0, y1), Math.Max(z0, z1)], color, detail: detail, shape: shape));
+    }
+
+    /// <summary>A hollow case (bottom, top, back, two sides, front), walls t thick, with shelf plates at the given heights: the room a storage slot needs.</summary>
+    private static void Case(Part p, double x0, double y0, double z0, double x1, double y1, double z1, double t, string color, string finish, params double[] shelves)
+    {
+        Fx(p, x0, y0, z0, x1, y0 + t, z1, color, finish);
+        Fx(p, x0, y1 - t, z0, x1, y1, z1, color, finish);
+        Fx(p, x0, y0 + t, z0, x1, y1 - t, z0 + t, color, finish);
+        Fx(p, x0, y0 + t, z1 - t, x1, y1 - t, z1, color, finish);
+        Fx(p, x0, y0 + t, z0 + t, x0 + t, y1 - t, z1 - t, color, finish);
+        Fx(p, x1 - t, y0 + t, z0 + t, x1, y1 - t, z1 - t, color, finish);
+        foreach (var y in shelves)
+            Fx(p, x0 + t, y - t / 2, z0 + t, x1 - t, y + t / 2, z1 - t, color, finish);
+    }
+
+    private static PyDict Slot(double x0, double y0, double z0, double x1, double y1, double z1, string? label = null)
+    {
+        var d = Kw(("min", Py.L(x0, y0, z0)), ("max", Py.L(x1, y1, z1)));
+        if (label != null)
+            d["label"] = label;
+        return d;
+    }
+
+    /// <summary>Bolt heads along a strip on a +z face at z: small dark squares, sunk 4 mm into the face.</summary>
+    private static void Bolts(Part p, double x0, double x1, double y, double z, int n)
+    {
+        for (var i = 0; i < n; i++)
+        {
+            var x = x0 + (x1 - x0) * (i + 0.5) / n;
+            Fx(p, x - 0.012, y - 0.012, z - 0.004, x + 0.012, y + 0.012, z + 0.014, "#3a3c3a", "steel", detail: true);
+        }
+    }
+
+    /// <summary>The galley: a sealed cook module on a plinth, two induction plates under a fiddle rail, a latched oven, a vented hood
+    /// over it on two struts.</summary>
+    private static Part GalleyUnit()
+    {
+        var p = new Part("Magpie Galley", Small, Section, "The Magpie's galley: a sealed cook module bolted to the deck, induction plates under a fiddle rail, a latched oven and a vented hood.", role: "storage", tool: "wrench", material: "steel", color: Steel, group: Group);
+        Fx(p, -0.5, 0, -0.35, 0.5, 0.1, 0.33, Frame, "dirty steel"); // (the plinth, kicked back)
+        Case(p, -0.48, 0.1, -0.35, 0.48, 0.86, 0.36, 0.03, "#b8bdb4", "painted steel");
+        Fx(p, -0.5, 0.86, -0.35, 0.5, 0.92, 0.38, "#3a3e40", "steel"); // (the top)
+        foreach (var x in new[] { -0.22, 0.22 })
+        {
+            Fx(p, x - 0.17, 0.916, -0.15, x + 0.17, 0.936, 0.19, "#1d2022", "plastic", detail: true);
+            Fx(p, x - 0.1, 0.932, -0.05, x + 0.1, 0.95, 0.09, "#ff7040", "glass", detail: true, glow: true);
+        }
+        // The fiddle rail: posts and a bar round the front and sides, so a pan stays put when the ship lurches.
+        foreach (var x in new[] { -0.47, 0.0, 0.47 })
+            Fx(p, x - 0.015, 0.92, 0.33, x + 0.015, 1.02, 0.36, "#9aa0a4", "chrome", detail: true);
+        Fx(p, -0.49, 1.0, 0.33, 0.49, 1.025, 0.36, "#9aa0a4", "chrome", detail: true);
+        foreach (var x in new[] { -0.485, 0.485 })
+            Fx(p, x - 0.015, 1.0, -0.2, x + 0.015, 1.025, 0.36, "#9aa0a4", "chrome", detail: true);
+        // The oven: a heavy door with a window, two latches and a hazard edge; a control strip over it.
+        Fx(p, -0.4, 0.18, 0.352, 0.4, 0.66, 0.38, "#9ea39a", "painted steel", detail: true);
+        Fx(p, -0.28, 0.3, 0.374, 0.28, 0.56, 0.39, "#40302a", "glass", detail: true);
+        foreach (var x in new[] { -0.34, 0.34 })
+            Fx(p, x - 0.03, 0.56, 0.374, x + 0.03, 0.64, 0.4, Frame, "steel", detail: true);
+        Fx(p, -0.4, 0.66, 0.352, 0.4, 0.68, 0.376, Hazard, "hazard paint", detail: true);
+        Fx(p, -0.4, 0.7, 0.352, 0.4, 0.84, 0.372, Console, "plastic", detail: true);
+        for (var i = 0; i < 4; i++)
+            Fx(p, -0.3 + i * 0.16, 0.74, 0.366, -0.24 + i * 0.16, 0.8, 0.384, i == 0 ? Red : Amber, "plastic", detail: true, glow: true);
+        // The hood: two struts off the back, a vented box, a lamp under it.
+        foreach (var x in new[] { -0.44, 0.44 })
+            Fx(p, x - 0.03, 0.92, -0.34, x + 0.03, 1.62, -0.28, Frame, "dirty steel");
+        Fx(p, -0.5, 1.62, -0.35, 0.5, 1.86, 0.2, "#b8bdb4", "painted steel");
+        for (var i = 0; i < 5; i++)
+            Fx(p, -0.4 + i * 0.18, 1.66, 0.196, -0.3 + i * 0.18, 1.82, 0.214, "#2a2e2b", "soot", detail: true);
+        Fx(p, -0.3, 1.596, -0.15, 0.3, 1.624, 0.05, Glow, "glass", detail: true, glow: true);
+        Fx(p, -0.5, 1.86, -0.35, 0.5, 1.9, 0.2, Frame, "dirty steel");
+        Bolts(p, -0.45, 0.45, 0.05, 0.33, 4);
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("back", [0, 0.45, -0.35], "-z");
+        p.Set(("storage", Kw(("slots", Py.L(Slot(-0.44, 0.14, -0.31, 0.44, 0.82, 0.32, "oven"))))));
+        return p.Stats(110, 300, 5, 2.5);
+    }
+
+    /// <summary>The brew unit: a wall-hung pressure urn on a rail, gauge and tap, cups clipped in a rack, a drip grate.</summary>
+    private static Part BrewUnit()
+    {
+        var p = new Part("Magpie Brew Unit", Small, Section, "The Magpie's brew unit: a pressure urn hung on a wall rail, its gauge and tap, cups clipped in a rack over a drip grate. Coffee for the night shift.", role: "frame", tool: "wrench", material: "steel", color: Steel, group: Group);
+        Fx(p, -0.37, 0.125, -0.3, 0.37, 1.45, -0.24, Frame, "dirty steel"); // (the back plate on its rail)
+        Fx(p, -0.37, 0.0, -0.3, 0.37, 0.125, 0.3, Frame, "dirty steel"); // (the base tray)
+        Fx(p, -0.33, 0.121, -0.2, 0.33, 0.14, 0.26, Grate, "painted grating", detail: true);
+        foreach (var x in new[] { -0.33, 0.33 })
+            Fx(p, x - 0.03, 0.14, 0.2, x + 0.03, 0.5, 0.26, "#3a3e40", "steel");
+        // The urn: a faceted drum, a band, a lid, a gauge, a tap.
+        Prism(p, Ngon(0, 0.5, -0.02, 0.22, 8), Ngon(0, 1.15, -0.02, 0.22, 8), "#9aa0a4", "steel");
+        Prism(p, Ngon(0, 0.78, -0.02, 0.232, 8), Ngon(0, 0.84, -0.02, 0.232, 8), Orange, "worn paint");
+        Fx(p, -0.08, 1.15, -0.1, 0.08, 1.24, 0.06, Frame, "steel");
+        Fx(p, -0.07, 0.95, 0.2, 0.07, 1.09, 0.225, "#e8e4d8", "gloss paint", detail: true);
+        Fx(p, -0.005, 1.0, 0.222, 0.05, 1.016, 0.238, Red, "plastic", detail: true);
+        Fx(p, -0.03, 0.55, 0.15, 0.03, 0.6, 0.3, Frame, "steel");
+        Fx(p, -0.015, 0.5, 0.27, 0.015, 0.56, 0.3, Frame, "steel");
+        // The cup rack: a bar of clips, mugs in them.
+        Fx(p, -0.34, 1.3, -0.24, 0.34, 1.32, -0.08, "#3a3e40", "steel");
+        for (var i = 0; i < 4; i++)
+            Fx(p, -0.3 + i * 0.17, 1.32, -0.2, -0.22 + i * 0.17, 1.42, -0.12, i % 2 == 0 ? "#d8d4c4" : "#5a7a8a", "gloss paint");
+        Fx(p, -0.36, 0.3, -0.244, 0.36, 0.34, -0.226, Hazard, "hazard paint", detail: true);
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("top", [0, 1.45, 0], "+y");
+        p.Sock("wall", [0, 0.125, -0.3], "-z");
+        return p.Stats(60, 200, 4, 2.0);
+    }
+
+    /// <summary>The mess table: a lipped steel top on lockers and one pedestal flanged to the deck, a tie-down rail along each side,
+    /// a lidded condiment box clipped in the middle.</summary>
+    private static Part MessTable()
+    {
+        var p = new Part("Magpie Mess Table", Small, Section, "The Magpie's mess table: a lipped steel top on lockers and a pedestal bolted to the deck, tie-down rails along its sides.", role: "storage", tool: "wrench", material: "steel", color: Steel, group: Group);
+        Fx(p, -0.34, 0, -0.3, 0.34, 0.03, 0.3, Frame, "dirty steel"); // (the deck flange)
+        Bolts(p, -0.3, 0.3, 0.015, 0.3, 4);
+        Fx(p, -0.12, 0.03, -0.12, 0.12, 0.16, 0.12, Frame, "dirty steel");
+        Case(p, -0.8, 0.16, -0.36, 0.8, 0.68, 0.36, 0.03, "#6c7270", "painted steel"); // (the lockers under the top)
+        Fx(p, -0.015, 0.19, -0.33, 0.015, 0.65, 0.33, "#6c7270", "painted steel");
+        foreach (var x in new[] { -0.4, 0.4 })
+        {
+            Fx(p, x - 0.36, 0.2, 0.356, x + 0.36, 0.64, 0.372, "#80878a", "painted steel", detail: true);
+            Fx(p, x - 0.08, 0.56, 0.366, x + 0.08, 0.59, 0.384, Frame, "steel", detail: true);
+            Fx(p, x - 0.36, 0.2, -0.372, x + 0.36, 0.64, -0.356, "#80878a", "painted steel", detail: true);
+        }
+        Fx(p, -0.9, 0.68, -0.45, 0.9, 0.73, 0.45, "#a6aca4", "painted steel");
+        // The lip and the tie-down rails.
+        Fx(p, -0.9, 0.73, -0.45, 0.9, 0.75, -0.41, Frame, "dirty steel");
+        Fx(p, -0.9, 0.73, 0.41, 0.9, 0.75, 0.45, Frame, "dirty steel");
+        Fx(p, -0.9, 0.73, -0.41, -0.86, 0.75, 0.41, Frame, "dirty steel");
+        Fx(p, 0.86, 0.73, -0.41, 0.9, 0.75, 0.41, Frame, "dirty steel");
+        foreach (var z in new[] { -0.47, 0.47 })
+            Fx(p, -0.8, 0.6, z - 0.015, 0.8, 0.625, z + 0.015, "#9aa0a4", "chrome", detail: true);
+        Fx(p, -0.12, 0.746, -0.08, 0.12, 0.82, 0.08, Orange, "worn paint");
+        Fx(p, -0.13, 0.816, -0.09, 0.13, 0.836, 0.09, Frame, "plastic", detail: true);
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Set(("storage", Kw(("slots", Py.L(Slot(-0.76, 0.2, -0.32, -0.02, 0.64, 0.32, "locker"), Slot(0.02, 0.2, -0.32, 0.76, 0.64, 0.32, "locker"))))));
+        return p.Stats(90, 220, 3, 2.0);
+    }
+
+    /// <summary>The kit locker: a tall steel locker on a wall rail, slotted vents in its door, two latch bars, a stencil band; a
+    /// helmet strapped on top.</summary>
+    private static Part KitLocker()
+    {
+        var p = new Part("Magpie Locker", Small, Section, "A kit locker: tall steel, hung on a wall rail and latched shut, vents in its door, a helmet strapped on top.", role: "storage", tool: "wrench", material: "steel", color: "#6a737b", group: Group);
+        Fx(p, -0.3, 0, -0.25, 0.3, 0.08, 0.2, Frame, "dirty steel"); // (the kick plinth, set back)
+        Case(p, -0.3, 0.08, -0.25, 0.3, 1.82, 0.24, 0.025, "#6a737b", "painted steel", 0.95);
+        Fx(p, -0.304, 1.82, -0.25, 0.304, 1.86, 0.258, Frame, "dirty steel");
+        Fx(p, -0.27, 0.12, 0.236, 0.27, 1.78, 0.252, "#7a838b", "painted steel", detail: true);
+        for (var i = 0; i < 6; i++)
+            Fx(p, -0.16, 1.5 + i * 0.045, 0.248, 0.16, 1.52 + i * 0.045, 0.264, Frame, "soot", detail: true);
+        foreach (var y in new[] { 0.55, 1.15 })
+            Fx(p, 0.17, y, 0.248, 0.23, y + 0.2, 0.272, "#9aa0a4", "chrome", detail: true);
+        Fx(p, -0.27, 0.96, 0.248, 0.27, 1.02, 0.264, Hazard, "hazard paint", detail: true);
+        Fx(p, -0.3, 1.86, -0.25, 0.3, 1.88, -0.2, "#3a3e40", "steel"); // (the rail it hangs from)
+        Prism(p, Ngon(0, 1.862, 0, 0.13, 8), Ngon(0, 1.98, 0, 0.12, 8), "#d8d4c4", "gloss paint");
+        Fx(p, -0.14, 1.9, -0.015, 0.14, 1.92, 0.015, Frame, "rubber", detail: true);
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("top", [0, 1.86, 0], "+y");
+        p.Sock("back", [0, 0.95, -0.25], "-z");
+        p.Sock("wall", [0, 0.125, -0.25], "-z");
+        p.Set(("storage", Kw(("slots", Py.L(Slot(-0.26, 0.12, -0.21, 0.26, 0.92, 0.2), Slot(-0.26, 0.98, -0.21, 0.26, 1.78, 0.2))))));
+        return p.Stats(50, 260, 5, 2.0);
+    }
+
+    /// <summary>The fold desk: a work top on two wall brackets, a screen and keypad set into a backboard on the wall, a drawer box under.</summary>
+    private static Part FoldDesk()
+    {
+        var p = new Part("Magpie Fold Desk", Small, Section, "A fold desk: a work top on wall brackets, a screen and keypad on its backboard, a drawer box under it. Nothing stands on the deck.", role: "frame", tool: "wrench", material: "steel", color: Steel, group: Group);
+        Fx(p, -0.7, 0.125, -0.35, 0.7, 1.35, -0.31, "#3a3e40", "dirty steel"); // (the backboard on the wall)
+        Fx(p, -0.7, 0.72, -0.31, 0.7, 0.76, 0.35, "#a6aca4", "painted steel");
+        Fx(p, -0.704, 0.7, 0.33, 0.704, 0.772, 0.372, Frame, "rubber");
+        foreach (var x in new[] { -0.6, 0.6 })
+            Prism(p, [[x - 0.025, 0.3, -0.31], [x + 0.025, 0.3, -0.31], [x + 0.025, 0.3, -0.27], [x - 0.025, 0.3, -0.27]], [[x - 0.025, 0.716, -0.31], [x + 0.025, 0.716, -0.31], [x + 0.025, 0.716, 0.3], [x - 0.025, 0.716, 0.3]], Frame, "dirty steel");
+        Fx(p, 0.15, 0.44, -0.31, 0.56, 0.716, 0.2, "#6c7270", "painted steel"); // (the drawer box)
+        Fx(p, 0.18, 0.47, 0.196, 0.53, 0.67, 0.212, "#80878a", "painted steel", detail: true);
+        Fx(p, 0.3, 0.6, 0.206, 0.42, 0.62, 0.224, Frame, "steel", detail: true);
+        Fx(p, -0.5, 0.86, -0.316, 0.1, 1.26, -0.296, Console, "plastic", detail: true);
+        Fx(p, -0.46, 0.9, -0.3, 0.06, 1.22, -0.286, Screen, "glass", detail: true, glow: true);
+        Fx(p, 0.18, 0.88, -0.316, 0.5, 1.08, -0.296, Console, "plastic", detail: true);
+        for (var i = 0; i < 3; i++)
+            Fx(p, 0.22 + i * 0.1, 0.92, -0.3, 0.28 + i * 0.1, 0.98, -0.286, i == 2 ? Green : Amber, "plastic", detail: true, glow: true);
+        Fx(p, -0.7, 1.3, -0.314, 0.7, 1.33, -0.294, Hazard, "hazard paint", detail: true);
+        p.Sock("top", [0, 0.76, 0], "+y");
+        p.Sock("wall", [0, 0.125, -0.35], "-z");
+        return p.Stats(55, 200, 4, 2.0);
+    }
+
+    /// <summary>The bunk: a mattress in a steel tray framed to the wall, restraint straps across it, a curtain on a rail above, a
+    /// reading lamp and a shelf in the frame's head.</summary>
+    private static Part Bunk()
+    {
+        var p = new Part("Magpie Bunk", Small, Section, "A crew bunk: a mattress in a steel tray framed to the wall, restraint straps for a hard landing, a curtain rail, a reading lamp.", role: "seat", tool: "wrench", material: "steel", color: "#3e4a5a", group: Group);
+        Fx(p, -0.4, 0, -0.96, 0.44, 0.3, 0.96, "#3a3e40", "dirty steel"); // (the drawer base)
+        foreach (var z in new[] { -0.47, 0.47 })
+            Fx(p, -0.3, 0.06, z - 0.4, 0.3, 0.26, z + 0.4, "#4a5258", "painted steel", detail: true);
+        Fx(p, -0.396, 0.3, -0.96, 0.42, 0.46, 0.96, "#3e4a5a", "fabric");
+        Fx(p, -0.38, 0.456, -0.94, 0.38, 0.54, -0.64, "#c8c4b4", "fabric"); // (the pillow)
+        foreach (var z in new[] { -0.2, 0.5 })
+            Fx(p, -0.39, 0.4, z - 0.04, 0.425, 0.48, z + 0.04, Orange, "rubber", detail: true);
+        // The frame: end panels, a top, a curtain rail and its curtain gathered at the foot.
+        Fx(p, -0.4, 0, -1.0, 0.444, 1.6, -0.96, "#a6aca4", "painted steel");
+        Fx(p, -0.4, 0, 0.96, 0.444, 1.6, 1.0, "#a6aca4", "painted steel");
+        Fx(p, -0.4, 1.556, -0.96, 0.44, 1.6, 0.96, "#a6aca4", "painted steel");
+        Fx(p, 0.38, 1.49, -0.96, 0.41, 1.52, 0.96, "#9aa0a4", "chrome", detail: true);
+        Fx(p, 0.34, 0.5, 0.74, 0.42, 1.48, 0.954, "#5a6a5a", "fabric");
+        Fx(p, -0.3, 0.9, -0.96, -0.04, 0.98, -0.8, "#6c7270", "painted steel"); // (the head shelf)
+        Fx(p, 0.08, 1.2, -0.962, 0.22, 1.3, -0.944, Glow, "glass", detail: true, glow: true);
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("wall", [-0.4, 0.125, 0], "-x");
+        p.Set(("seat", Kw(("at", Py.L(0, 0.15, 0)), ("bunk", true))));
+        return p.Stats(100, 240, 4, 2.5);
+    }
+
+    /// <summary>The med bed: a padded bed on a hazard-striped lift ram bolted to the deck, a monitor and a lamp arm on its head panel.</summary>
+    private static Part MedBed()
+    {
+        var p = new Part("Magpie Med Bed", Small, Section, "The Magpie's med bed: a padded bed on a lift ram bolted to the deck, an arm lamp and a monitor at its head. Lie on it to be patched up.", role: "seat", tool: "wrench", material: "steel", color: "#d8dcd8", group: Group);
+        Fx(p, -0.36, 0, -0.5, 0.36, 0.05, 0.6, Frame, "dirty steel");
+        Bolts(p, -0.3, 0.3, 0.025, 0.6, 3);
+        Fx(p, -0.14, 0.05, -0.1, 0.14, 0.45, 0.2, "#9aa0a4", "chrome");
+        Fx(p, -0.145, 0.2, -0.105, 0.145, 0.26, 0.205, Hazard, "hazard paint", detail: true);
+        Fx(p, -0.4, 0.45, -0.95, 0.4, 0.58, 1.0, "#d8dcd8", "gloss paint");
+        Fx(p, -0.37, 0.576, -0.92, 0.37, 0.68, 0.96, "#5a8a8a", "rubber");
+        Fx(p, -0.405, 0.5, -0.6, 0.405, 0.54, 0.7, Green, "plastic", detail: true);
+        // The head: a panel on the back socket, a monitor on it, a lamp on an arm over the bed.
+        Fx(p, -0.4, 0.45, -1.0, 0.4, 1.6, -0.954, "#d8dcd8", "gloss paint");
+        Fx(p, -0.3, 1.0, -0.958, 0.06, 1.3, -0.9, Console, "plastic");
+        Fx(p, -0.27, 1.03, -0.904, 0.03, 1.27, -0.888, Screen, "glass", detail: true, glow: true);
+        Fx(p, 0.18, 1.5, -0.958, 0.24, 1.56, -0.2, "#9aa0a4", "chrome");
+        Fx(p, 0.08, 1.44, -0.32, 0.34, 1.504, -0.12, "#d8dcd8", "gloss paint");
+        Fx(p, 0.1, 1.424, -0.3, 0.32, 1.444, -0.14, Glow, "glass", detail: true, glow: true);
+        Fx(p, -0.2, 1.4, -0.96, 0.2, 1.48, -0.946, Red, "gloss paint", detail: true);
+        Fx(p, -0.04, 1.36, -0.96, 0.04, 1.52, -0.946, "#f0f0f0", "gloss paint", detail: true);
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("top", [0, 1.6, 0], "+y");
+        p.Sock("back", [0, 0.8, -1.0], "-z");
+        p.Set(("seat", Kw(("at", Py.L(0, 0.15, 0.2)), ("heal", 4))));
+        return p.Stats(140, 260, 3, 3.0);
+    }
+
+    /// <summary>The med locker: a sealed white case on a wall plate, a green cross, a latch, a strip light over it.</summary>
+    private static Part MedLocker()
+    {
+        var p = new Part("Magpie Med Locker", Small, Section, "A sealed medical locker on the wall: dressings, stims and the splint kit behind a latched door with a green cross.", role: "storage", tool: "wrench", material: "steel", color: "#d8dcd8", group: Group);
+        Fx(p, -0.4, 0.5, -0.175, 0.4, 1.6, -0.15, "#3a3e40", "dirty steel"); // (the wall plate)
+        Case(p, -0.37, 0.55, -0.15, 0.37, 1.5, 0.15, 0.025, "#d8dcd8", "gloss paint", 1.02);
+        Fx(p, -0.34, 0.58, 0.146, 0.34, 1.47, 0.162, "#e8ece8", "gloss paint", detail: true);
+        Fx(p, -0.12, 1.05, 0.158, 0.12, 1.11, 0.174, Green, "gloss paint", detail: true);
+        Fx(p, -0.03, 0.96, 0.158, 0.03, 1.2, 0.176, Green, "gloss paint", detail: true);
+        Fx(p, 0.26, 0.85, 0.158, 0.31, 1.0, 0.186, "#9aa0a4", "chrome", detail: true);
+        Fx(p, -0.374, 1.5, -0.15, 0.374, 1.56, 0.12, Frame, "dirty steel");
+        Fx(p, -0.3, 1.488, -0.1, 0.3, 1.504, 0.08, "#e0f0e8", "glass", detail: true, glow: true);
+        p.Sock("top", [0, 1.6, -0.16], "+y");
+        p.Sock("back", [0, 0.85, -0.175], "-z");
+        p.Set(("storage", Kw(("slots", Py.L(Slot(-0.33, 0.6, -0.12, 0.33, 1.0, 0.12, "dressings"), Slot(-0.33, 1.04, -0.12, 0.33, 1.44, 0.12, "kit"))))));
+        return p.Stats(30, 160, 3, 2.0);
+    }
+
+    /// <summary>The cargo rack: two bays of steel shelves between uprights bolted to the wall, a cargo net over each, lashing points.</summary>
+    private static Part CargoRack()
+    {
+        var p = new Part("Magpie Cargo Rack", Small, Section, "A cargo rack: steel shelves between uprights bolted to the wall, a cargo net strapped over each bay, lashing points on the posts.", role: "storage", tool: "wrench", material: "steel", color: "#6b6f5a", group: Group);
+        foreach (var x in new[] { -1.0, -0.03, 0.94 })
+            Fx(p, x, 0, -0.25, x + 0.06, 2.0, 0.25, "#6b6f5a", "worn paint");
+        foreach (var y in new[] { 0.04, 0.68, 1.32, 1.96 })
+        {
+            Fx(p, -0.94, y - 0.04, -0.246, -0.03, y, 0.22, "#4a4e48", "dirty steel");
+            Fx(p, 0.03, y - 0.04, -0.246, 0.94, y, 0.22, "#4a4e48", "dirty steel");
+        }
+        foreach (var x0 in new[] { -0.94, 0.03 })
+        {
+            for (var i = 0; i < 4; i++)
+                Fx(p, x0 + 0.08 + i * 0.22, 0.06, 0.232, x0 + 0.1 + i * 0.22, 1.9, 0.248, "#2a2e2b", "rubber", detail: true);
+            foreach (var y in new[] { 0.45, 1.1, 1.75 })
+                Fx(p, x0 + 0.02, y, 0.236, x0 + 0.89, y + 0.02, 0.252, "#2a2e2b", "rubber", detail: true);
+        }
+        foreach (var x in new[] { -1.0, -0.03, 0.94 })
+            Fx(p, x - 0.004, 1.0, 0.246, x + 0.064, 1.06, 0.266, Hazard, "hazard paint", detail: true);
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("top", [0, 2.0, 0], "+y");
+        p.Sock("back", [0, 1.0, -0.25], "-z");
+        p.Sock("wall", [0, 0.125, -0.25], "-z");
+        p.Set(("storage", Kw(("slots", Py.L(Slot(-0.9, 0.08, -0.21, -0.07, 0.6, 0.21), Slot(0.07, 0.08, -0.21, 0.9, 0.6, 0.21), Slot(-0.9, 0.72, -0.21, -0.07, 1.24, 0.21),
+            Slot(0.07, 0.72, -0.21, 0.9, 1.24, 0.21), Slot(-0.9, 1.36, -0.21, -0.07, 1.88, 0.21), Slot(0.07, 1.36, -0.21, 0.9, 1.88, 0.21))))));
+        return p.Stats(70, 240, 4, 2.0);
+    }
+
     /// <summary>The flight computer: a low console between the couches, a flight stabilizer with a ship-size gyro in it. Fit it level, its arrow forward.</summary>
     private static Part FlightComputer()
     {
@@ -1522,12 +1813,12 @@ public sealed class MinerParts : IPartGenerator
         bp.Hang("Magpie Ladder", eng, "ladder", "bottom");
         // The workshop.
         bp.Hang("Tool Rack", work, "toolRack", "back");
-        Paint(bp, bp.Hang("Locker", work, "locker0", "wall"), Yellow2, "worn paint");
-        Paint(bp, bp.Hang("Locker", work, "locker1", "wall"), "#5d6a60", "worn paint");
-        bp.Hang("Steel Desk", work, "desk", "wall");
+        Paint(bp, bp.Hang("Magpie Locker", work, "locker0", "wall"), Yellow2, "worn paint");
+        Paint(bp, bp.Hang("Magpie Locker", work, "locker1", "wall"), "#5d6a60", "worn paint");
+        bp.Hang("Magpie Fold Desk", work, "desk", "wall");
         bp.Hang("Requisition Crate", work, "crate0", "-y");
         bp.Hang("Requisition Crate", work, "crate1", "-y");
-        Paint(bp, bp.Hang("Store Shelving 2 m", work, "shelf", "wall"), "#6b6f5a", "worn paint");
+        Paint(bp, bp.Hang("Magpie Cargo Rack", work, "shelf", "wall"), "#6b6f5a", "worn paint");
         Switch(bp, work, "switch", LampAt(bp, work, "lampA"), LampAt(bp, work, "lampB"));
         // The drill bay: four drills on rams over the well, each pair chuting into its side's hopper; one lever lowers them all.
         var holds = new int[2];
@@ -1571,7 +1862,7 @@ public sealed class MinerParts : IPartGenerator
         bp.Hang("Pipe Bank", eng, "pipes", "back");
         bp.Hang("Engineer's Panel", eng, "panel", "back");
         for (var i = 0; i < 3; i++)
-            Paint(bp, bp.Hang("Locker", eng, $"suit{i}", "wall"), Hazard, "worn paint");
+            Paint(bp, bp.Hang("Magpie Locker", eng, $"suit{i}", "wall"), Hazard, "worn paint");
         bp.Hang("Tool Rack", eng, "toolRack", "back");
         Door(bp, eng, "doorEng");
         Door(bp, eng, "doorOuter");
@@ -1583,12 +1874,12 @@ public sealed class MinerParts : IPartGenerator
         var fc = bp.Hang("Magpie Flight Computer", uf, "module", "bottom");
         bp.Wires.Add((pilot, fc));
         bp.Hang("Chart Table", uf, "chart", "back");
-        Paint(bp, bp.Hang("Locker", uf, "bridgeLocker", "wall"), Yellow2, "worn paint");
-        Paint(bp, bp.Hang("Store Shelving 2 m", uf, "shelf", "wall"), "#6b6f5a", "worn paint");
-        Paint(bp, bp.Hang("Crash Couch", uf, "couchA", "wall"), "#5a4632", "fabric");
-        Paint(bp, bp.Hang("Locker", uf, "lockerA", "wall"), "#5d6a60", "worn paint");
-        Paint(bp, bp.Hang("Crash Couch", uf, "couchB", "wall"), "#3e4a5a", "fabric");
-        bp.Hang("Steel Desk", uf, "deskB", "wall");
+        Paint(bp, bp.Hang("Magpie Locker", uf, "bridgeLocker", "wall"), Yellow2, "worn paint");
+        Paint(bp, bp.Hang("Magpie Cargo Rack", uf, "shelf", "wall"), "#6b6f5a", "worn paint");
+        bp.Hang("Magpie Bunk", uf, "couchA", "wall");
+        Paint(bp, bp.Hang("Magpie Locker", uf, "lockerA", "wall"), "#5d6a60", "worn paint");
+        bp.Hang("Magpie Bunk", uf, "couchB", "wall");
+        bp.Hang("Magpie Fold Desk", uf, "deskB", "wall");
         foreach (var d in new[] { "doorBridge", "doorCabinA", "doorCabinB" })
             Door(bp, uf, d);
         Switch(bp, uf, "switchBridge", LampAt(bp, uf, "lampBridgeL", "#ff6050"), LampAt(bp, uf, "lampBridgeR", "#ff6050"));
@@ -1598,13 +1889,12 @@ public sealed class MinerParts : IPartGenerator
         bp.Hang("Ship Toilet", ua, "toilet", "wall");
         bp.Hang("Ship Basin", ua, "basin", "wall");
         Paint(bp, bp.Hang("Shower Stall", ua, "shower", "wall"), "#dfe4e2", "gloss paint");
-        bp.Hang("Medical Station", ua, "med", "back");
-        bp.Hang("Medicine Cabinet", ua, "cabinet", "back");
-        bp.Hang("Galley Stove", ua, "stove", "back");
-        bp.Hang("Galley Coffee Station", ua, "coffee", "wall");
-        Paint(bp, bp.Hang("Locker", ua, "messLocker", "wall"), "#5c646a", "worn paint");
-        var table = bp.HangTurned("Mess Table", ua, "table", "bottom", BuildingParts.RY90);
-        bp.Hang("Office Plant", table, "top", "base");
+        bp.Hang("Magpie Med Bed", ua, "med", "back");
+        bp.Hang("Magpie Med Locker", ua, "cabinet", "back");
+        bp.Hang("Magpie Galley", ua, "stove", "back");
+        bp.Hang("Magpie Brew Unit", ua, "coffee", "wall");
+        Paint(bp, bp.Hang("Magpie Locker", ua, "messLocker", "wall"), "#5c646a", "worn paint");
+        bp.HangTurned("Magpie Mess Table", ua, "table", "bottom", BuildingParts.RY90);
         bp.Hang("Grow Rack 2 m", ua, "growL", "wall");
         bp.Hang("Grow Rack 2 m", ua, "growR", "wall");
         foreach (var d in new[] { "doorHead", "doorMed", "doorMess" })
@@ -1635,6 +1925,7 @@ public sealed class MinerParts : IPartGenerator
             Ladder("Magpie Ladder", Ft1 - Ft0, "A ladder between the Magpie's decks: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
             Ladder("Magpie Boarding Ladder", Ft0 - Ground, "The Magpie's boarding ladder, from the ground to the porch at its stern: F climbs it.", "hull", [0, 0.125 - Ground, -0.005], "+z"),
             PowerPlant(), FlightComputer(),
+            GalleyUnit(), BrewUnit(), MessTable(), KitLocker(), FoldDesk(), Bunk(), MedBed(), MedLocker(), CargoRack(),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);

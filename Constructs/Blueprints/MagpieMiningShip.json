@@ -175,7 +175,7 @@
       "by": "back"
     },
     {
-      "part": "Locker",
+      "part": "Magpie Locker",
       "on": 1,
       "socket": "locker0",
       "by": "wall",
@@ -183,7 +183,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Locker",
+      "part": "Magpie Locker",
       "on": 1,
       "socket": "locker1",
       "by": "wall",
@@ -191,7 +191,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Steel Desk",
+      "part": "Magpie Fold Desk",
       "on": 1,
       "socket": "desk",
       "by": "wall"
@@ -209,7 +209,7 @@
       "by": "-y"
     },
     {
-      "part": "Store Shelving 2 m",
+      "part": "Magpie Cargo Rack",
       "on": 1,
       "socket": "shelf",
       "by": "wall",
@@ -498,7 +498,7 @@
       "by": "back"
     },
     {
-      "part": "Locker",
+      "part": "Magpie Locker",
       "on": 3,
       "socket": "suit0",
       "by": "wall",
@@ -506,7 +506,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Locker",
+      "part": "Magpie Locker",
       "on": 3,
       "socket": "suit1",
       "by": "wall",
@@ -514,7 +514,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Locker",
+      "part": "Magpie Locker",
       "on": 3,
       "socket": "suit2",
       "by": "wall",
@@ -631,7 +631,7 @@
       "by": "back"
     },
     {
-      "part": "Locker",
+      "part": "Magpie Locker",
       "on": 5,
       "socket": "bridgeLocker",
       "by": "wall",
@@ -639,7 +639,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Store Shelving 2 m",
+      "part": "Magpie Cargo Rack",
       "on": 5,
       "socket": "shelf",
       "by": "wall",
@@ -647,15 +647,13 @@
       "finish": "worn paint"
     },
     {
-      "part": "Crash Couch",
+      "part": "Magpie Bunk",
       "on": 5,
       "socket": "couchA",
-      "by": "wall",
-      "paint": "#5a4632",
-      "finish": "fabric"
+      "by": "wall"
     },
     {
-      "part": "Locker",
+      "part": "Magpie Locker",
       "on": 5,
       "socket": "lockerA",
       "by": "wall",
@@ -663,15 +661,13 @@
       "finish": "worn paint"
     },
     {
-      "part": "Crash Couch",
+      "part": "Magpie Bunk",
       "on": 5,
       "socket": "couchB",
-      "by": "wall",
-      "paint": "#3e4a5a",
-      "finish": "fabric"
+      "by": "wall"
     },
     {
-      "part": "Steel Desk",
+      "part": "Magpie Fold Desk",
       "on": 5,
       "socket": "deskB",
       "by": "wall"
@@ -793,31 +789,31 @@
       "finish": "gloss paint"
     },
     {
-      "part": "Medical Station",
+      "part": "Magpie Med Bed",
       "on": 6,
       "socket": "med",
       "by": "back"
     },
     {
-      "part": "Medicine Cabinet",
+      "part": "Magpie Med Locker",
       "on": 6,
       "socket": "cabinet",
       "by": "back"
     },
     {
-      "part": "Galley Stove",
+      "part": "Magpie Galley",
       "on": 6,
       "socket": "stove",
       "by": "back"
     },
     {
-      "part": "Galley Coffee Station",
+      "part": "Magpie Brew Unit",
       "on": 6,
       "socket": "coffee",
       "by": "wall"
     },
     {
-      "part": "Locker",
+      "part": "Magpie Locker",
       "on": 6,
       "socket": "messLocker",
       "by": "wall",
@@ -825,17 +821,11 @@
       "finish": "worn paint"
     },
     {
-      "part": "Mess Table",
+      "part": "Magpie Mess Table",
       "on": 6,
       "socket": "table",
       "by": "bottom",
       "spin": 1
-    },
-    {
-      "part": "Office Plant",
-      "on": 109,
-      "socket": "top",
-      "by": "base"
     },
     {
       "part": "Grow Rack 2 m",
@@ -1035,20 +1025,20 @@
       99
     ],
     [
-      117,
-      116
+      116,
+      115
     ],
     [
-      119,
-      118
+      118,
+      117
     ],
     [
-      122,
+      121,
+      119
+    ],
+    [
+      121,
       120
-    ],
-    [
-      122,
-      121
     ]
   ],
   "conduit": true,

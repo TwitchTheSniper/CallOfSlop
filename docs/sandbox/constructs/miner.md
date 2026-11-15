@@ -41,6 +41,25 @@ landed). From bow to stern:
 The keel holds the main fuel tank (6,000 l) and has the drill well cut through it. Boarding is by the ladder from the
 ground up to the porch at the stern.
 
+## Fittings
+
+Karl (2026-11-15) said the stock stove, table and lockers looked like a house kitchen, "not on a space ship". The Magpie
+now carries its own fittings, made in the same generator. Each keeps the size and sockets of the stock part it replaces,
+is bolted down (a plinth, a deck flange or a wall rail) and is painted in the ship's colours:
+
+- **Magpie Galley**: a sealed cook module with induction plates, a fiddle rail, a latched oven and a vented hood.
+- **Magpie Brew Unit**: a pressure urn on a wall rail.
+- **Magpie Mess Table**: a lipped top over lockers on one pedestal, with tie-down rails.
+- **Magpie Locker**: a vented, latched kit locker with a helmet on top.
+- **Magpie Fold Desk**: a wall-bracketed top with a screen on its backboard.
+- **Magpie Bunk**: a framed bunk with restraint straps, a curtain rail and a reading lamp.
+- **Magpie Med Bed**: a bed on a lift ram, with a monitor and a lamp arm.
+- **Magpie Med Locker**: a sealed case with a green cross.
+- **Magpie Cargo Rack**: netted shelves on wall uprights.
+
+The rust bucket is getting generic "Ship Galley Range" and "Ship Mess Table" parts in ShipParts.cs (PR #218). Once those
+merge, the Magpie can switch to them if a shared set suits it.
+
 ## Mining
 
 - Four tier 1 **Drill Modules** (iron, stone, sand) hang on four **Piston 3x3 Long** rams under the gantry, in pairs
