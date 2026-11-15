@@ -482,7 +482,7 @@ public sealed class ShipParts : IPartGenerator
     /// spine), drawn only; its hidden part is the slices of the walls at the frame (the splitter gives them to the frame).</summary>
     private static void Rib(Part p, int r)
     {
-        const double Half = 0.1, Proud = 0.11;
+        const double Proud = 0.11;
         double[] Normal2(double[] a, double[] b, int s)
         {
             var d = U2(b[0] - a[0], b[1] - a[1]);
@@ -490,8 +490,10 @@ public sealed class ShipParts : IPartGenerator
             var c = new[] { (a[0] + b[0]) / 2 - Cx, (a[1] + b[1]) / 2 - 3.0 };
             return n[0] * c[0] + n[1] * c[1] < 0 ? [-n[0], -n[1]] : n;
         }
-        void Seg(double[] a, double[] b, int s)
+        // Neighbouring segments overlap at their corners, so every other one is 8 mm thinner (its fore and aft faces stay inside its neighbour).
+        void Seg(double[] a, double[] b, int s, bool thick)
         {
+            var Half = thick ? 0.1 : 0.096;
             var n = Normal2(a, b, s);
             // (each end runs 15 mm past the ring's point, so a rib's ends never share a plane with the facets' edges there)
             var d = U2(b[0] - a[0], b[1] - a[1]);
@@ -503,9 +505,9 @@ public sealed class ShipParts : IPartGenerator
         double[] V(int k, int s) => [Cx + s * Rings[r][k].W, Rings[r][k].Y, Rings[r][k].Z];
         foreach (var s in new[] { -1, 1 })
             for (var k = 0; k < 4; k++)
-                Seg(V(k, s), V(k + 1, s), s);
-        Seg(V(B, -1), V(B, 1), 1);
-        Seg(V(R, 1), V(R, -1), 1);
+                Seg(V(k, s), V(k + 1, s), s, k % 2 == 1);
+        Seg(V(B, -1), V(B, 1), 1, true);
+        Seg(V(R, 1), V(R, -1), 1, false);
     }
 
     /// <summary>A box run along z split at the frames (the frame's rib covers the joint), so each length goes to its own hull piece.</summary>
@@ -603,9 +605,10 @@ public sealed class ShipParts : IPartGenerator
         // (chine to deck line), from the nose ring back to the tail.
         for (var r = 1; r < Rings.Length - 1; r++)
             With(r == 5 ? "Rust Bucket Tail" : null, () => End2(p, r, B, Belly, "dirty steel"));
+        // (ring 5, the tail's, is drawn below under the tail's own tag: these loops stop at ring 4, or its facets came twice)
         With(HullTag, () =>
         {
-            for (var r = 1; r < Rings.Length - 1; r++)
+            for (var r = 1; r < Rings.Length - 2; r++)
                 foreach (var s in new[] { -1, 1 })
                 {
                     Facet(p, r, B, s, Belly, "dirty steel", paint: false);
@@ -613,7 +616,7 @@ public sealed class ShipParts : IPartGenerator
                     Facet(p, r, L, s, c, "rusty paint", paint: c == HullPaint);
                 }
             // The chine and the beam's rails, the beam's the heavier (the rub strake).
-            for (var r = 1; r < Rings.Length - 1; r++)
+            for (var r = 1; r < Rings.Length - 2; r++)
                 foreach (var s in new[] { -1, 1 })
                 {
                     Chine(p, r, L, s, 0.16, 0.1, Armour);
@@ -685,7 +688,7 @@ public sealed class ShipParts : IPartGenerator
                 var hi = Pt(1, D, s);
                 double[] loIn = [lo[0] - s * 0.1, lo[1], lo[2]], hiIn = [hi[0] - s * 0.1, hi[1], hi[2]];
                 Quad(p, loIn, lo, hi, hiIn, Patch);
-                Chine(p, 1, L, s, 0.16, 0.1, Armour);
+                // (the chine's rail here is the hull loop's: Where gives it to the chin)
             }
             // Hazard chevrons on the cheeks, the ramp's edge.
             foreach (var s in new[] { -1, 1 })
@@ -1151,7 +1154,7 @@ public sealed class ShipParts : IPartGenerator
             foreach (var s in new[] { -1, 1 })
                 LBox(p, s * 0.131, y, z - 0.18, s * 0.137, y + 0.14, z + 0.18, Frame, "dirty steel", detail: true);
         }
-        LBox(p, -0.14, 0.78, -4.7, 0.14, 1.0, -4.45, Stripe, "hazard paint", detail: true);
+        LBox(p, -0.14, 0.78, -4.704, 0.14, 1.0, -4.45, Stripe, "hazard paint", detail: true);
         LBox(p, -0.12, 0.95, -4.4, 0.12, 1.4, -0.6, null, hidden: true);
         // The ram from the housing to the boom, the crutch, the hook block on its wire.
         LBox(p, -0.05, 0.6, -0.55, 0.05, 1.12, -0.45, "#8a8e8a", "chrome", detail: true);
