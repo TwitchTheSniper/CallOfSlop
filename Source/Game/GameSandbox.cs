@@ -672,6 +672,10 @@ public sealed partial class Game
             foreach (var c in Constructs.Bodies)
                 if (c.StabCount > 0 && ConstructFlight.WriteDiagnostic(w, c))
                     Net.Broadcast(w.Span, PacketReliability.Unreliable);
+        if (ServerTick % ConstructThrust.SendEvery == 1)
+            foreach (var c in Constructs.Bodies)
+                if (c.ThrusterCount > 0 && ConstructThrust.WriteShown(w, c))
+                    Net.Broadcast(w.Span, PacketReliability.Unreliable); // (each jet's flame: a lost one is made good by the next that changes)
         if (ServerTick % ConstructFluid.SendEvery == 0)
         {
             int body = 0, tank = 0;

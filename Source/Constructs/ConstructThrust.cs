@@ -18,6 +18,7 @@ public struct CThruster
     public bool Scanned, GimbalScanned; // a stabilizer commands it (ConstructEffectors.cs), and its nozzle: a wire by hand leaves it to the wire
     public float Command, CommandX, CommandY; // what the stabilizer tells it
     public float Gap; // a repulsor: metres to what is under it, as of its last look (float.MaxValue: nothing in reach)
+    public float Shown; // a client: its level as the host last said (CBodyKind.Thrust), for its flame
 }
 
 /// <summary>
@@ -43,6 +44,9 @@ public sealed partial class Construct
     public float HoverRateNow; // on a planet: how fast the height held moves this tick (m/s), which the hold follows as well as the height
     public float LiftHeld; // how long the driver has held Shift or Ctrl (s): on a planet the hold climbs and sinks faster the longer it is held
     public float ThrustShow; // 0..1: how hard its thrusters push, of all they could (server; clients get it in the pose)
+    public long ThrustSentKey; // the server: the levels clients were last told (ConstructThrust.WriteShown)
+    public int ThrustDark; // the server: how many times in a row it has told them every thruster is out
+    public bool ThrustHeard; // a client: the host has told it each thruster's level since the last rebuild (else a flame burns by ThrustShow)
     public bool ActiveSignal; // this tick a wire asks a hub motor or a thruster for something: it stays awake
 
     /// <summary>Hub motors on the wheels (with the wheels: a track's rays share its motor).</summary>
@@ -83,6 +87,8 @@ public sealed partial class Construct
             keepPart[k] = Thrusters[k].Part;
         }
         ThrusterCount = 0;
+        ThrustHeard = false; // (a client's levels were by the old list: until the host speaks again its flames burn by ThrustShow)
+        ThrustSentKey = 0; // (the server tells them again)
         var want = 0;
         foreach (var i in Specials) // (thrusters are special parts)
             if (Parts[i].D.Role == PartRole.Thruster)
@@ -509,4 +515,54 @@ public static class ConstructThrustHud
         (c.StabCount > 0 && ConstructFlight.ApText(c) is { Length: > 0 } ap ? ap + ", " : "") + (c.SurfaceCount > 0 ? $"Air {c.Vel.Length() * 3.6f:0} km/h, stall {ConstructAero.StallSpeed(c) * 3.6f:0}, " : "") + (c.RotorCount > 0 ? $"Rotor {ConstructRotor.SpeedShare(c) * 100:0}%, " : "") + (c.CellCount > 0 ? $"Lift {ConstructLift.LiftKg(c) / 1000f:0.##} of {c.Mass / 1000f:0.##} t{(c.BurnerCount > 0 ? $", burner {c.BurnTrim * 100:0}%" : "")}, " : "") + (c.ThrusterCount > 0 ? $"Thrust {c.ThrustShow * 100:0}%{(c.HoverOn ? $", holding {ConstructPhysics.HoldShown(c.HoverY):0} m" : "")}, " : "") + $"drawing {c.PowerUse / 1e6f:0.#} MW";
 
     private static string Mw(float kw) => (kw / 1000f).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+}
+
+/// <summary>
+/// Each thruster's own level on the clients, for its flame (protocol 319): a ship with attitude jets every way fires a few at a time, and one level for the whole
+/// construct (<see cref="Construct.ThrustShow"/>) lit them all. The server sends a body's levels, a byte each, 10 times a second while any of them moves.
+/// </summary>
+public static class ConstructThrust
+{
+    public const int SendEvery = World.TickRate / 10;
+
+    /// <summary>One body's levels if they changed since it last sent them: u16 body, u16 n, u8 each. False: nothing to send.</summary>
+    public static bool WriteShown(PacketWriter w, Construct c)
+    {
+        var n = c.ThrusterCount;
+        if (n == 0)
+            return false;
+        var key = 17L + n;
+        var lit = false;
+        for (var k = 0; k < n; k++)
+        {
+            var v = Level(c.Thrusters[k]);
+            key = key * 31 + v;
+            lit |= v > 0;
+        }
+        if (key == c.ThrustSentKey && (lit || c.ThrustDark >= 3))
+            return false; // (all out goes three times: it goes unreliably, and a lost one would leave a flame burning)
+        c.ThrustDark = lit ? 0 : key == c.ThrustSentKey ? c.ThrustDark + 1 : 1;
+        c.ThrustSentKey = key;
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Thrust).U16(c.Id).U16((ushort)n);
+        for (var k = 0; k < n; k++)
+            w.U8(Level(c.Thrusters[k]));
+        return true;
+    }
+
+    private static byte Level(in CThruster t) => (byte)Math.Clamp(MathF.Round(MathF.Max(t.Level, t.Ab) * 255), 0, 255);
+
+    public static void ReadShown(ref PacketReader r, ConstructWorld world)
+    {
+        var c = world.Get(r.U16());
+        var n = r.U16();
+        var fits = c != null && c.ThrusterCount == n;
+        for (var k = 0; k < n; k++)
+        {
+            var v = r.U8();
+            if (fits)
+                c!.Thrusters[k].Shown = v / 255f;
+        }
+        if (fits)
+            c!.ThrustHeard = true;
+    }
 }
