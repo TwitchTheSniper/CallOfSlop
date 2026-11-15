@@ -41,7 +41,10 @@ landed). From bow to stern:
 | upper, aft | Magpie Mess Deck | head, sick bay, mess and galley, grow racks, the ladder down to engineering |
 
 The keel holds the main fuel tank (6,000 l) and has the drill well cut through it. Boarding is by the ladder from the
-ground up to the porch at the stern.
+ground up to the porch at the stern. It comes in two pieces (Karl, 2026-11-15): the upper flight is welded to the porch, and
+the **Magpie Ladder Foot** is an event door riding on it. F on the foot rolls it down 1.75 m to the ground in 2 s, or back up.
+The ladder can't be climbed while its foot is stowed (`ConstructRide.ClimbLadder`), and it starts stowed.
+`--check-building` skips a door leaf narrower than a person.
 
 ## Fittings
 

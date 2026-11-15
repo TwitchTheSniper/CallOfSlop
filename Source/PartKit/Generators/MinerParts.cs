@@ -1341,6 +1341,68 @@ public sealed class MinerParts : IPartGenerator
         return p.Stats(60 + rise * 12, 400, 6, 3.0);
     }
 
+    // ---- the boarding ladder (Karl, 2026-11-15: "roll down as two pieces, like a normal ladder would", and more rugged). The upper
+    // flight is welded to the porch; the foot is an event door riding on it that slides down (F, 2 s). Stowed, the foot sits up
+    // against the upper flight's outside with its feet 1.75 m off the ground, and the ladder can't be climbed (ConstructRide.ClimbLadder).
+    private const double BoardRise = Ft0 - Ground, BoardTop = BoardRise + 1.0, FootLen = 1.5, FootMount = BoardTop - 0.15, FootZ = -0.2;
+    private static double FootTravel => Py.Round(FootMount + 0.05 - FootLen, 2);
+
+    private static void Rugged(Part p, double x0, double y0, double z0, double x1, double y1, double z1, string color, string finish, bool detail = true) =>
+        p.Add(Box([x0, y0, z0], [x1, y1, z1], color, detail: detail, shape: Kw(("finish", finish))));
+
+    private static Part BoardingLadder()
+    {
+        var p = new Part("Magpie Boarding Ladder", Small, Section, "The Magpie's boarding ladder off the porch at its stern. Its foot rolls down to the ground (F on the foot); then F climbs it.",
+            role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
+        double y0 = FootLen - 0.35, top = BoardTop;
+        p.Add(Box([-0.3, 0, -0.19], [0.3, top, -0.005], hidden: true));
+        foreach (var x in new[] { -0.27, 0.27 })
+        {
+            Rugged(p, x - 0.04, y0, -0.185, x + 0.04, top, -0.105, "#5c615d", "dirty steel"); // (channel stiles)
+            Rugged(p, x - 0.045, top - 0.9, -0.19, x + 0.045, top - 0.84, -0.1, Hazard, "hazard paint");
+            for (var y = y0 + 0.3; y < top - 0.2; y += 0.6)
+                Rugged(p, x - 0.025, y, -0.105, x + 0.025, y + 0.08, -0.01, Frame, "dirty steel"); // (stand-off brackets to the hull)
+        }
+        for (var y = y0 + 0.15; y < BoardRise + 0.1; y += 0.3)
+        {
+            Rugged(p, -0.23, y - 0.025, -0.175, 0.23, y + 0.025, -0.115, "#3b3e3c", "dirty steel"); // (chequered treads)
+            Rugged(p, -0.2, y + 0.025, -0.165, 0.2, y + 0.037, -0.125, Hazard, "hazard paint");
+        }
+        Rugged(p, -0.32, top - 0.07, -0.2, 0.32, top, -0.1, Hazard, "hazard paint");
+        // The foot's mount: a bolted bracket with a roller track down both stiles' outsides.
+        p.Add(Box([-0.1, FootMount - 0.06, FootZ], [0.1, FootMount + 0.06, -0.19], Frame));
+        foreach (var x in new[] { -0.24, 0.24 })
+            Rugged(p, x - 0.012, y0 + 0.1, -0.197, x + 0.012, FootMount + 0.08, -0.185, "#2a2d2b", "steel");
+        p.Sock("hull", [0, 0.125 - Ground, -0.005], "+z");
+        p.Sock("lower", [0, FootMount, FootZ], "-z");
+        p.Set(("ladder", BoardRise));
+        return p.Stats(60 + BoardRise * 10, 450, 8, 3.0);
+    }
+
+    private static Part BoardingLadderLower()
+    {
+        var p = new Part("Magpie Ladder Foot", Small, Section, $"The foot of the Magpie's boarding ladder: F rolls it down to the ground ({FootTravel:0.##} m) or back up. The ladder can only be climbed with its foot down.",
+            role: "door", tool: "wrench", material: "steel", color: Frame, group: Group);
+        // In its own frame its hang socket (on the upper flight's mount) is the origin; it hangs out along -z, stowed.
+        double y1 = 0.05, y0 = y1 - FootLen;
+        p.Add(Box([-0.1, -0.06, -0.01], [0.1, 0.06, 0], hidden: true));
+        foreach (var x in new[] { -0.21, 0.21 })
+        {
+            p.Add(Box([x - 0.035, y0 + 0.06, -0.075], [x + 0.035, y1, -0.012], "#5c615d"));
+            Rugged(p, x - 0.05, y0, -0.09, x + 0.05, y0 + 0.06, 0.0, "#1d1e1d", "rubber"); // (rubber feet)
+            Rugged(p, x - 0.04, y1 - 0.2, -0.08, x + 0.04, y1 - 0.12, -0.006, Hazard, "hazard paint");
+            Rugged(p, x - 0.02, y1 - 0.06, -0.004, x + 0.02, y1 - 0.02, 0.0, "#8a8f86", "steel"); // (rollers in the track)
+        }
+        for (var y = y0 + 0.3; y < y1 - 0.15; y += 0.3)
+        {
+            Rugged(p, -0.18, y - 0.025, -0.07, 0.18, y + 0.025, -0.017, "#3b3e3c", "dirty steel");
+            Rugged(p, -0.16, y + 0.025, -0.06, 0.16, y + 0.037, -0.027, Hazard, "hazard paint");
+        }
+        p.Sock("hang", [0, 0, 0], "+z");
+        p.Set(("door", Kw(("kind", "slide"), ("axis", "-y"), ("travel", FootTravel), ("seconds", 2.0), ("hang", "hang"))));
+        return p.Stats(45, 300, 6, 2.0);
+    }
+
     // ---- the fittings (Karl, 2026-11-15: the stock stove, table and lockers read as a house kitchen, "not on a space ship"). Each
     // keeps the footprint and socket names of the stock part it replaces, so the decks' sockets stand; each is bolted down on a
     // dark plinth or wall rail, latched shut, in the ship's paint (pale panel over dark frame, hazard on what moves).
@@ -1859,7 +1921,8 @@ public sealed class MinerParts : IPartGenerator
         foreach (var n in new[] { "legFL", "legFR", "legBL", "legBR" })
             bp.Hang("Magpie Landing Leg", keel, n, "top");
         // Getting about: the boarding ladder off the porch, a ladder up from the workshop and one from engineering.
-        bp.Hang("Magpie Boarding Ladder", eng, "boarding", "hull");
+        var boarding = bp.Hang("Magpie Boarding Ladder", eng, "boarding", "hull");
+        bp.Hang("Magpie Ladder Foot", boarding, "lower", "hang"); // (stowed: F rolls it down to the ground)
         bp.Hang("Magpie Ladder", work, "ladder", "bottom");
         bp.Hang("Magpie Ladder", eng, "ladder", "bottom");
         // The workshop.
@@ -1979,7 +2042,7 @@ public sealed class MinerParts : IPartGenerator
             Jet("Magpie Retro Jet", $"A retro jet in the nose of a hopper's thruster pod: {RetroForce / 1000:0} kN forward, to stop it over a claim.", RetroForce, 0.8),
             Leg(),
             Ladder("Magpie Ladder", Ft1 - Ft0, "A ladder between the Magpie's decks: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
-            Ladder("Magpie Boarding Ladder", Ft0 - Ground, "The Magpie's boarding ladder, from the ground to the porch at its stern: F climbs it.", "hull", [0, 0.125 - Ground, -0.005], "+z"),
+            BoardingLadder(), BoardingLadderLower(),
             PowerPlant(), FlightComputer(),
             WellDoor(-1), WellDoor(1), GalleyUnit(), BrewUnit(), MessTable(), KitLocker(), FoldDesk(), Bunk(), MedBed(), MedLocker(), CargoRack(),
         ];

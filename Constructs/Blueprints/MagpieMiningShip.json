@@ -157,6 +157,12 @@
       "by": "hull"
     },
     {
+      "part": "Magpie Ladder Foot",
+      "on": 25,
+      "socket": "lower",
+      "by": "hang"
+    },
+    {
       "part": "Magpie Ladder",
       "on": 1,
       "socket": "ladder",
@@ -330,7 +336,7 @@
     },
     {
       "part": "Drill Module",
-      "on": 45,
+      "on": 46,
       "socket": "top",
       "by": "drive",
       "spin": 1
@@ -349,7 +355,7 @@
     },
     {
       "part": "Drill Module",
-      "on": 47,
+      "on": 48,
       "socket": "top",
       "by": "drive",
       "spin": 2
@@ -368,7 +374,7 @@
     },
     {
       "part": "Drill Module",
-      "on": 49,
+      "on": 50,
       "socket": "top",
       "by": "drive",
       "spin": 1
@@ -387,7 +393,7 @@
     },
     {
       "part": "Drill Module",
-      "on": 51,
+      "on": 52,
       "socket": "top",
       "by": "drive",
       "spin": 2
@@ -954,153 +960,153 @@
   ],
   "wires": [
     [
-      37,
-      35
-    ],
-    [
-      37,
+      38,
       36
     ],
     [
-      40,
-      41
+      38,
+      37
     ],
     [
-      42,
-      43
+      41,
+      42
     ],
     [
-      42,
+      43,
       44
     ],
     [
-      40,
+      43,
       45
     ],
     [
-      40,
-      47
+      41,
+      46
     ],
     [
-      40,
-      49
+      41,
+      48
     ],
     [
-      40,
-      51
+      41,
+      50
     ],
     [
-      56,
-      53
+      41,
+      52
     ],
     [
-      56,
+      57,
       54
     ],
     [
-      56,
+      57,
       55
     ],
     [
-      60,
-      57
+      57,
+      56
     ],
     [
-      60,
+      61,
       58
     ],
     [
-      60,
+      61,
       59
     ],
     [
-      78,
-      76
+      61,
+      60
     ],
     [
-      78,
+      79,
       77
     ],
     [
-      82,
-      79
+      79,
+      78
     ],
     [
-      82,
+      83,
       80
     ],
     [
-      82,
+      83,
       81
     ],
     [
       83,
-      85
+      82
     ],
     [
-      98,
-      96
+      84,
+      86
     ],
     [
-      98,
+      99,
       97
     ],
     [
-      101,
-      99
+      99,
+      98
     ],
     [
-      101,
+      102,
       100
     ],
     [
-      103,
-      102
+      102,
+      101
     ],
     [
-      119,
-      118
+      104,
+      103
     ],
     [
-      121,
-      120
+      120,
+      119
     ],
     [
-      124,
-      122
+      122,
+      121
     ],
     [
-      124,
+      125,
       123
+    ],
+    [
+      125,
+      124
     ]
   ],
   "conduit": true,
   "links": [
     {
       "type": "chute",
-      "from": 46,
-      "to": 38,
-      "fromPort": "Chute out",
-      "toPort": "Chute in"
-    },
-    {
-      "type": "chute",
-      "from": 48,
+      "from": 47,
       "to": 39,
       "fromPort": "Chute out",
       "toPort": "Chute in"
     },
     {
       "type": "chute",
-      "from": 50,
-      "to": 38,
+      "from": 49,
+      "to": 40,
       "fromPort": "Chute out",
       "toPort": "Chute in"
     },
     {
       "type": "chute",
-      "from": 52,
+      "from": 51,
       "to": 39,
+      "fromPort": "Chute out",
+      "toPort": "Chute in"
+    },
+    {
+      "type": "chute",
+      "from": 53,
+      "to": 40,
       "fromPort": "Chute out",
       "toPort": "Chute in"
     }
