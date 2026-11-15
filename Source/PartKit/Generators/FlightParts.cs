@@ -86,6 +86,7 @@ public sealed class FlightParts : IPartGenerator
         Hidden("homeY"),
         Hidden("homeX"),
         Hidden("homeZ"),
+        Choice("aiCrew", "AI crew", "Crew", ["Off", "Fights strangers", "Fights everyone"], 0, "A crew flies and fights it from its seats: it closes on the nearest target in 2.5 km, keeps its guns' range and fires. Strangers: outside its owner's faction. A player at the helm takes over."),
     ];
 
     /// <summary>A flat box, its arrow showing forward: mount it level, facing the way the craft flies.</summary>

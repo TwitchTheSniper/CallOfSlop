@@ -1485,9 +1485,12 @@ public sealed class TorpedoFrigateParts : IPartGenerator
 
     private static int Door(BuildingParts.Blueprint bp, int on, string sock) => Paint(bp, bp.Hang("Bulkhead Door 1.5x2.25 m", on, sock, "hang"), Armour, "plated steel");
 
-    private static PyDict Blueprint(Dictionary<string, PyDict> defs)
+    /// <summary>The frigate's blueprint; <paramref name="crewed"/>: with an AI crew that fights everyone (its flight computer's AI crew setting; ConstructShipAi.cs), a test enemy for the parts menu.</summary>
+    private static PyDict Blueprint(Dictionary<string, PyDict> defs, bool crewed = false)
     {
-        var bp = new BuildingParts.Blueprint("Zero Day Frigate", "The IT Department's torpedo frigate: two decks the length of a sleek armoured hull, a rotary torpedo bay in each flank, a spinal railgun, four point-defence turrets, flare launchers and a drive array the width of the stern.", defs, maxSteps: 256);
+        var bp = crewed
+            ? new BuildingParts.Blueprint("Zero Day Frigate (crewed)", "The Zero Day with an IT Department crew aboard: it lifts off, closes on the nearest player, you included, and fights with its railgun, turrets and torpedoes. Sit at its helm to take it.", defs, maxSteps: 256)
+            : new BuildingParts.Blueprint("Zero Day Frigate", "The IT Department's torpedo frigate: two decks the length of a sleek armoured hull, a rotary torpedo bay in each flank, a spinal railgun, four point-defence turrets, flare launchers and a drive array the width of the stern.", defs, maxSteps: 256);
         bp.Conduit = true;
         double[] zero = [0, 0, 0];
         var keel = bp.First("Zero Day Keel");
@@ -1560,6 +1563,8 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         var pilot = bp.Hang("Flight Couch", uf, "pilot", "bottom");
         bp.Hang("Flight Couch", uf, "copilot", "bottom");
         var fc = bp.Hang("Zero Day Flight Computer", uf, "computer", "bottom");
+        if (crewed)
+            bp.Steps[fc]["config"] = new PyDict { ["aiCrew"] = (int)ShipAiMode.Everyone };
         bp.Wires.Add((pilot, fc));
         var railModule = bp.Hang("Turret Module", uf, "gunModule", "-y");
         bp.Hang("Chart Table", uf, "chart", "back");
@@ -1656,5 +1661,6 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         }
         BuildingParts.AddPartDefs(o, defs, Out);
         o.File($"{BpOut}/ZeroDayFrigate.json", PyJson.Dumps(Blueprint(defs), 2) + "\n");
+        o.File($"{BpOut}/ZeroDayFrigateCrewed.json", PyJson.Dumps(Blueprint(defs, crewed: true), 2) + "\n");
     }
 }

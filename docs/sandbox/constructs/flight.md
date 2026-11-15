@@ -75,6 +75,8 @@ Invert pitch swaps W and S. **Settings:** keys, strength, stabilise level (off: 
 
 **Autopilot.** Hold altitude, hold heading, hover, waypoint, return home; on the configure panel, a Flight Control Panel or its inputs. Altitude 0 and heading -1 mean where it was when engaged. Home is where it last armed, or `set home`. A plane circles a point; a ship stops turning for it 25 m off.
 
+**AI crew** (the Crew group: Off, Fights strangers, Fights everyone): a crew flies and fights the craft from its own seats, server side. It closes on the nearest player in 2.5 km, keeps 220 m off, and fires its seats' guns, its Button-fired racks and flares; a player at the helm takes over. torpedo-frigate.md "The crew" has the rules.
+
 **Flight Control Panel** (S, M, L, capital; the old Flight Panel by name): height, climb, speed, heading, attitude, the autopilot and how it is set, whether every axis is controlled, and buttons for AP on, off, next mode, set home, level, strength, hold this altitude and hold this heading. A pilot's finger reaches it from the seat.
 
 **Flight Diagnostic Panel** (S, M, L): the craft from above and from the side, an arrow at each effector the way it pushes, long and bright by what it is told, blue or orange by the sign for surfaces and gimbals, red when dead or out of fuel, up to 24 arrows. It names any axis it can't control. It redraws at the panels' 4 Hz, and clients hear the commands at 5 Hz while it is at work (`CBodyKind.Flight`).

@@ -214,6 +214,7 @@ public enum CfgKey : byte
     LiftMode, // Loader Arm: what it works at (Auto, Station only, Carry only, Off: ConstructLifters.cs)
     CarryHeight, // Loader Arm: how high it lifts a piece over the higher end of a move before it turns (m)
     FormerStrips, // Panel Former: a chained panel wider than every Extruder on the network makes is formed of equal strips (on) or waits for a wider one (off; StockTargets.cs)
+    AiCrew, // Flight Stabilizer: an AI crew flies and fights the craft from its seats (ShipAiMode; ConstructShipAi.cs)
     COUNT,
 }
 
@@ -772,7 +773,7 @@ public static class ConstructConfig
         CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => "mask",
         CfgKey.Colour or CfgKey.Ink => "colour",
         CfgKey.Ramp => "choice",
-        CfgKey.Keys or CfgKey.ApMode or CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Unit or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid or CfgKey.Material => "choice",
+        CfgKey.Keys or CfgKey.ApMode or CfgKey.AiCrew or CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Unit or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid or CfgKey.Material => "choice",
         _ => "number",
     };
 
@@ -836,7 +837,7 @@ public static class ConstructConfig
                 CfgKey.FanBlades => d.Rotor != null || d.IsFanFormer,
                 CfgKey.FanKind or CfgKey.FanDiameter => d.IsFanFormer,
                 CfgKey.WingKind or CfgKey.WingChord or CfgKey.WingSpan => d.IsAirframeFormer,
-                (>= CfgKey.Keys and <= CfgKey.HomeZ) or CfgKey.InvertPitch or (>= CfgKey.PitchRate and <= CfgKey.ThrustLimit) or CfgKey.HomeY or CfgKey.WaypointY => d.Logic == CLogic.FlightStabilizer,
+                (>= CfgKey.Keys and <= CfgKey.HomeZ) or CfgKey.InvertPitch or (>= CfgKey.PitchRate and <= CfgKey.ThrustLimit) or CfgKey.HomeY or CfgKey.WaypointY or CfgKey.AiCrew => d.Logic == CLogic.FlightStabilizer,
                 CfgKey.Throw or CfgKey.Expo => d.Surface is { Control: > 0 } || d.ThrustGimbal > 0,
                 CfgKey.Grain => d.ThrustKind == ThrustKind.Solid,
                 CfgKey.Stabilised => d.Logic == CLogic.TurretModule,

@@ -24,9 +24,9 @@ The walkable two-deck ship of the rust bucket start: its hull parts, rooms, engi
 
 The tail-sitter combat frigate: six decks up a ladder spine, four PDCs, a spinal railgun, med bay, robot bay; how it flies.
 
-## [The Zero Day torpedo frigate](constructs/torpedo-frigate.md), 4 KB
+## [The Zero Day torpedo frigate](constructs/torpedo-frigate.md), 7 KB
 
-The IT Department's warship: a faceted lofted hull, two decks the length of the ship, torpedo sponsons, a spinal railgun, PDCs, flares.
+The IT Department's warship: a faceted lofted hull, two decks the length of the ship, torpedo sponsons, a spinal railgun, PDCs, flares; its AI crew, which flies and fights any stabilised craft by itself (ConstructShipAi.cs).
 
 Each file below lists its `## ` sections with their headings exactly as they were in the old single file, so a code
 comment such as `CONSTRUCTS.md "Extrusion"` is found by searching this index for the heading. To look inside a file,
