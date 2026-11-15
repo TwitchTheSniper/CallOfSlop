@@ -1,0 +1,1339 @@
+using static CallOfSlop.PartKit.PartKitMath;
+
+namespace CallOfSlop.PartKit.Generators;
+
+/// <summary>
+/// The Halberd, a mid-size combat frigate (Karl, 2026-11-15: "Give it the Rocinante feel, pdcs (we have gun turrets already so we can
+/// use these), med bay, robot area, all the good things. Keep it sci-fi ... layered hull and lived-in interior"; "make new parts too, go
+/// wild!"). Our own design: a tail-sitter whose decks stack up the thrust axis like a tower, joined by a ladder spine, with a chamfered
+/// octagonal hull, armour slabs standing proud of the skin over a visible frame, point-defence turrets on sponsons and a railgun up the
+/// spine. Writes Constructs/Parts/Frigate and the Halberd Frigate blueprint (docs/sandbox/constructs/frigate.md).
+///
+/// Six storeys, one big part each (floor, walls, partitions, its band of hull and armour, the hidden boxes standing for the drawn
+/// shapes): 1 engineering and the airlock, 2 the robot bay and armoury, 3 the med bay and galley, 4 crew quarters and the head, 5 ops
+/// (the gunnery stations), 6 the cockpit under the nose. Under them the thrust frame (the fuel tank) with the main drive and four legs;
+/// over them the nose with the railgun's muzzle and the sensor mast. Every big part has its origin at the body's: the generator works in
+/// ship metres (x across, port to starboard; y up from the lowest floor's underside; z from the bow face back, so forward is -z) and moves
+/// them by half a cell. Furniture is the shipped parts and the new fittings below, on sockets the big parts carry where each goes.
+///
+/// The rust bucket's lessons (Karl): no bathroom tiles anywhere (a ship is panelled), and nothing clips: every fitting stands on a
+/// socket on a face, and drawn plates are offset from the walls behind them.
+/// </summary>
+public sealed class FrigateParts : IPartGenerator
+{
+    public string Name => "frigate_parts";
+
+    private const string Out = "Constructs/Parts/Frigate";
+    private const string BpOut = "Constructs/Blueprints";
+    private const string Group = "Ship";
+    private const string Section = "Halberd frigate";
+    private const double H = 0.125; // half a cell
+    private const double T = 0.04; // a drawn plate's thickness
+
+    // The paint: slate armour over a pale skin, a primer red where the paint is worn through, hazard yellow on edges.
+    private const string Skin = "#a9aca6", Armour = "#46525c", Armour2 = "#3b4650", Primer = "#7a3b2c", Frame = "#26292c", Hazard = "#d8a628",
+        Wall = "#8e959a", WallLow = "#4c555c", WallTrim = "#2f3539", Deck = "#4d5357", Grate = "#3a3f43", Ceil = "#6f777c", Glass = "#7fa8c4",
+        Pipe = "#7b8287", PipeRed = "#a8402c", PipeBlue = "#2f6a9a", PipeYellow = "#c8a030", PipeGreen = "#3f8a52", Lamp = "#e8eef2",
+        MedWhite = "#d6dbd8", MedGreen = "#5aa88a", Console = "#23282c", Screen = "#58c8d8", Amber = "#f0a830";
+
+    // ---- the plan
+
+    private const double Cx = 5.0, Cz = 4.5; // the spine
+    private const double Pitch = 3.25, Slab = 0.25; // storey height and floor thickness
+    private const double So = 0.27; // the skin's offset outside a room's inner face (a 0.25 m wall and 2 cm)
+    private const int Storeys = 6;
+    private const double Sq2 = 1.4142135623730951;
+
+    private static double Fl(int k) => k * Pitch; // a storey's floor underside
+    private static double Ft(int k) => k * Pitch + Slab; // its floor's top
+    private static double Hx(int k) => k < 5 ? 4.0 : 2.75; // a room's inner half width
+    private static double Hz(int k) => k < 5 ? 3.5 : 2.5;
+    private static double Ci(int k) => k < 5 ? 1.15 : 0.8; // the inner corners' chamfer
+
+    // The ladder spine: two shafts side by side, each storey's ladder in the other one, so its foot stands on solid floor.
+    private const double ShaftZ0 = 3.85, ShaftZ1 = 5.1; // a hatch's front and back edge (the ladder hangs on the back edge)
+    private static readonly double[] ShaftX = [4.2, 5.8]; // P, Q: the hatches' middles
+    private const double ShaftW = 1.25;
+
+    private static int LadderShaft(int k) => k % 2; // storey k's ladder up (to k+1)
+    private static int HatchShaft(int k) => (k - 1) % 2; // the hatch in storey k's floor (ladder k-1 comes up through it)
+
+    // The drive end.
+    private const double FrameBottom = -2.6, Ground = -6.0;
+    private const double NoseTop = 21.6;
+
+    private static double[] P(double x, double y, double z) => [x - H, y - H, z - H];
+
+    // ---- geometry helpers (as the rust bucket's)
+
+    private static double[] Sub(double[] a, double[] b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+
+    private static double[] Cross(double[] a, double[] b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+
+    private static double Dot(double[] a, double[] b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+
+    private static double[] Unit(double[] a)
+    {
+        var l = Math.Sqrt(Dot(a, a));
+        return [a[0] / l, a[1] / l, a[2] / l];
+    }
+
+    /// <summary>A flat plate through the points (a convex polygon), T thick about them: a "hull" shape, drawn only.</summary>
+    private static void Plate(Part p, double[][] pts, string color, string finish = "painted plating", bool glass = false, bool paint = false, bool glow = false, double thick = T)
+    {
+        double[]? n = null;
+        for (var i = 2; i < pts.Length && n == null; i++)
+        {
+            var c = Cross(Sub(pts[1], pts[0]), Sub(pts[i], pts[0]));
+            if (Dot(c, c) > 1e-8)
+                n = Unit(c);
+        }
+        if (n == null)
+            return;
+        var both = new List<double[]>();
+        foreach (var q in pts)
+            foreach (var s in new[] { -1, 1 })
+                both.Add([.. Enumerable.Range(0, 3).Select(k => Py.Round(q[k] + s * n[k] * thick / 2, 4))]);
+        double[] mn = [.. Enumerable.Range(0, 3).Select(k => both.Min(q => q[k]))];
+        double[] mx = [.. Enumerable.Range(0, 3).Select(k => both.Max(q => q[k]))];
+        var shape = Kw(("shape", "hull"), ("points", both.Select(q => (object?)q.Select(x => (object?)x).ToList()).ToList()));
+        if (!paint)
+            shape["paintable"] = false;
+        if (!glass && !glow)
+            shape["finish"] = finish;
+        if (glow)
+            shape["glow"] = true;
+        p.Add(Box(mn, mx, color, detail: true, glass: glass, shape: shape));
+    }
+
+    /// <summary>A quad as one plate when flat, else as two triangles.</summary>
+    private static void Quad(Part p, double[] a, double[] b, double[] c, double[] d, string color, string finish = "painted plating", bool glass = false, bool paint = false)
+    {
+        var n = Cross(Sub(b, a), Sub(c, a));
+        var flat = Dot(n, n) < 1e-10 || Math.Abs(Dot(Unit(n), Sub(d, a))) < 0.002;
+        if (flat)
+            Plate(p, [a, b, c, d], color, finish, glass, paint);
+        else
+        {
+            Plate(p, [a, b, c], color, finish, glass, paint);
+            Plate(p, [a, c, d], color, finish, glass, paint);
+        }
+    }
+
+    /// <summary>A convex solid between two outlines (drawn only).</summary>
+    private static void Prism(Part p, double[][] a, double[][] b, string color, string finish, bool paint = false)
+    {
+        var both = a.Concat(b).Select(q => q.Select(x => Py.Round(x, 4)).ToArray()).ToList();
+        double[] mn = [.. Enumerable.Range(0, 3).Select(k => both.Min(q => q[k]))];
+        double[] mx = [.. Enumerable.Range(0, 3).Select(k => both.Max(q => q[k]))];
+        var shape = Kw(("shape", "hull"), ("points", both.Select(q => (object?)q.Select(x => (object?)x).ToList()).ToList()), ("finish", finish));
+        if (!paint)
+            shape["paintable"] = false;
+        p.Add(Box(mn, mx, color, detail: true, shape: shape));
+    }
+
+    private static void Solid(Part p, double x0, double y0, double z0, double x1, double y1, double z1, string color, string? finish = null)
+    {
+        var shape = finish == null ? null : Kw(("finish", finish));
+        p.Add(Box(P(Math.Min(x0, x1), Math.Min(y0, y1), Math.Min(z0, z1)), P(Math.Max(x0, x1), Math.Max(y0, y1), Math.Max(z0, z1)), color, shape: shape));
+    }
+
+    private static void Detail(Part p, double x0, double y0, double z0, double x1, double y1, double z1, string color, string? finish = null, bool glow = false)
+    {
+        var shape = finish == null && !glow ? null : new PyDict();
+        if (finish != null)
+            shape!["finish"] = finish;
+        if (glow)
+            shape!["glow"] = true;
+        p.Add(Box(P(Math.Min(x0, x1), Math.Min(y0, y1), Math.Min(z0, z1)), P(Math.Max(x0, x1), Math.Max(y0, y1), Math.Max(z0, z1)), color, detail: true, shape: shape));
+    }
+
+    private static void Hidden(Part p, double x0, double y0, double z0, double x1, double y1, double z1) =>
+        p.Add(Box(P(Math.Min(x0, x1), Math.Min(y0, y1), Math.Min(z0, z1)), P(Math.Max(x0, x1), Math.Max(y0, y1), Math.Max(z0, z1)), hidden: true));
+
+    private static void Sock(Part p, string name, double x, double y, double z, string dir) => p.Sock(name, P(x, y, z), dir);
+
+    // ---- outlines
+
+    /// <summary>An octagon round the spine: the room's inner outline of storey-like sizes grown by off, its corners chamfered so the
+    /// diagonals stay parallel. Points go round from the bow's port end.</summary>
+    private static (double X, double Z)[] Oct(double hx, double hz, double ci, double off)
+    {
+        double ox = hx + off, oz = hz + off, c = ci + off * (2 - Sq2);
+        return
+        [
+            (Cx - ox + c, Cz - oz), (Cx + ox - c, Cz - oz), (Cx + ox, Cz - oz + c), (Cx + ox, Cz + oz - c),
+            (Cx + ox - c, Cz + oz), (Cx - ox + c, Cz + oz), (Cx - ox, Cz + oz - c), (Cx - ox, Cz - oz + c),
+        ];
+    }
+
+    private static (double X, double Z)[] OctK(int k, double off) => Oct(Hx(k), Hz(k), Ci(k), off);
+
+    /// <summary>The band of plates between two outlines (at y0 and y1), edge by edge; skip: edges left out (filled by the caller).</summary>
+    private static void Ring(Part p, (double X, double Z)[] a, double y0, (double X, double Z)[] b, double y1, string color, string finish, bool paint, params int[] skip)
+    {
+        for (var i = 0; i < 8; i++)
+        {
+            if (skip.Contains(i))
+                continue;
+            var j = (i + 1) % 8;
+            Quad(p, P(a[i].X, y0, a[i].Z), P(a[j].X, y0, a[j].Z), P(b[j].X, y1, b[j].Z), P(b[i].X, y1, b[i].Z), color, finish, paint: paint);
+        }
+    }
+
+    /// <summary>A flat cap over an outline at y.</summary>
+    private static void Cap(Part p, (double X, double Z)[] o, double y, string color, string finish) =>
+        Plate(p, [.. o.Select(q => P(q.X, y, q.Z))], color, finish);
+
+    /// <summary>Points along edge i of an outline: t of the way along, pushed out by d (outward normal), at y.</summary>
+    private static double[] OnEdge((double X, double Z)[] o, int i, double t, double d, double y)
+    {
+        var j = (i + 1) % 8;
+        double ex = o[j].X - o[i].X, ez = o[j].Z - o[i].Z, l = Math.Sqrt(ex * ex + ez * ez);
+        double nx = ez / l, nz = -ex / l; // outward (the outline goes clockwise seen from above with x right and z down)
+        return P(o[i].X + ex * t + nx * d, y, o[i].Z + ez * t + nz * d);
+    }
+
+    /// <summary>An armour slab on edge i of outline o from t0 to t1 along and y0 to y1 up: a block standing d0..d1 out, its outer face
+    /// bevelled in by bev all round, so its edges catch the light. Hidden boxes aren't needed: the wall behind it is the hull.</summary>
+    private static void Slab2(Part p, (double X, double Z)[] o, int i, double t0, double t1, double y0, double y1, double d0, double d1, double bev, string color, string finish = "plated steel")
+    {
+        var j = (i + 1) % 8;
+        var len = Math.Sqrt(Math.Pow(o[j].X - o[i].X, 2) + Math.Pow(o[j].Z - o[i].Z, 2));
+        var tb = bev / len;
+        double[][] inner = [OnEdge(o, i, t0, d0, y0), OnEdge(o, i, t1, d0, y0), OnEdge(o, i, t1, d0, y1), OnEdge(o, i, t0, d0, y1)];
+        double[][] outer = [OnEdge(o, i, t0 + tb, d1, y0 + bev), OnEdge(o, i, t1 - tb, d1, y0 + bev), OnEdge(o, i, t1 - tb, d1, y1 - bev), OnEdge(o, i, t0 + tb, d1, y1 - bev)];
+        Prism(p, inner, outer, color, finish);
+    }
+
+    /// <summary>A flat strip on edge i (a seam, a stripe, a scorch, a hatch's outline), d out from the outline.</summary>
+    private static void Strip(Part p, (double X, double Z)[] o, int i, double t0, double t1, double y0, double y1, double d, string color, string finish = "painted plating", bool glow = false, bool glass = false)
+    {
+        Plate(p, [OnEdge(o, i, t0, d, y0), OnEdge(o, i, t1, d, y0), OnEdge(o, i, t1, d, y1), OnEdge(o, i, t0, d, y1)], color, finish, glow: glow, glass: glass);
+    }
+
+    // ---- a storey's shell: the floor with its hatch, the walls, the chamfered corners, the hull band
+
+    private readonly record struct Rect(double X0, double Z0, double X1, double Z1);
+
+    private static List<Rect> Minus(List<Rect> rs, Rect h)
+    {
+        var o = new List<Rect>();
+        foreach (var r in rs)
+        {
+            if (h.X1 <= r.X0 || h.X0 >= r.X1 || h.Z1 <= r.Z0 || h.Z0 >= r.Z1)
+            {
+                o.Add(r);
+                continue;
+            }
+            if (h.Z0 > r.Z0) o.Add(r with { Z1 = h.Z0 });
+            if (h.Z1 < r.Z1) o.Add(r with { Z0 = h.Z1 });
+            double za = Math.Max(r.Z0, h.Z0), zb = Math.Min(r.Z1, h.Z1);
+            if (h.X0 > r.X0) o.Add(new Rect(r.X0, za, h.X0, zb));
+            if (h.X1 < r.X1) o.Add(new Rect(h.X1, za, r.X1, zb));
+        }
+        return [.. o.Where(r => r.X1 - r.X0 > 0.02 && r.Z1 - r.Z0 > 0.02)];
+    }
+
+    private const int CornerSteps = 4;
+
+    /// <summary>The floor of a room of half sizes hx, hz with chamfer ci at height y0..y1: the middle less the corner squares, then a
+    /// stair of strips into each corner up to the diagonal; less the holes.</summary>
+    private static void Floor(Part p, double hx, double hz, double ci, double y0, double y1, string color, string finish, params Rect[] holes)
+    {
+        double x0 = Cx - hx, x1 = Cx + hx, z0 = Cz - hz, z1 = Cz + hz;
+        var rs = new List<Rect> { new(x0 + ci, z0, x1 - ci, z1), new(x0, z0 + ci, x0 + ci, z1 - ci), new(x1 - ci, z0 + ci, x1, z1 - ci) };
+        var s = ci / CornerSteps;
+        foreach (var (sx, sz) in new[] { (-1, -1), (1, -1), (1, 1), (-1, 1) })
+            for (var i = 0; i < CornerSteps - 1; i++)
+            {
+                // Strip i: u (outward along x from the corner square's inner edge) i*s..(i+1)*s, v 0..ci-(i+1)*s.
+                double ua = i * s, ub = (i + 1) * s, vb = ci - (i + 1) * s;
+                double xa = sx < 0 ? x0 + ci - ub : x1 - ci + ua, xb = sx < 0 ? x0 + ci - ua : x1 - ci + ub;
+                double za = sz < 0 ? z0 + ci - vb : z1 - ci, zb = sz < 0 ? z0 + ci : z1 - ci + vb;
+                rs.Add(new Rect(xa, za, xb, zb));
+            }
+        foreach (var h in holes)
+            rs = Minus(rs, h);
+        foreach (var r in rs)
+            Solid(p, r.X0, y0, r.Z0, r.X1, y1, r.Z1, color, finish);
+    }
+
+    /// <summary>The walls round a room from y0 to y1: four straight runs (with the doorways and windows in <paramref name="gaps"/>), a
+    /// panel across each corner with a stair of hidden boxes behind it, and a dark kick strip along the bottom of each run.</summary>
+    private static void Walls(Part p, double hx, double hz, double ci, double y0, double y1, params Gap[] gaps)
+    {
+        var gy = Math.Round(y0 / Pitch) * Pitch + Slab; // (gaps are measured from the floor's top)
+        double x0 = Cx - hx, x1 = Cx + hx, z0 = Cz - hz, z1 = Cz + hz;
+        // Runs: 0 the bow (z0), 1 starboard (x1), 2 the stern (z1), 3 port (x0); each from one chamfer to the next.
+        for (var side = 0; side < 4; side++)
+        {
+            var alongX = side % 2 == 0;
+            double a0 = alongX ? x0 + ci : z0 + ci, a1 = alongX ? x1 - ci : z1 - ci;
+            var face = side switch { 0 => z0, 1 => x1, 2 => z1, _ => x0 };
+            var outw = side is 1 or 2 ? 1 : -1;
+            void Run(double a, double b, double ya, double yb)
+            {
+                if (b - a < 0.02 || yb - ya < 0.02)
+                    return;
+                if (alongX)
+                    Solid(p, a, ya, face, b, yb, face + outw * 0.25, Wall, "wall panelling");
+                else
+                    Solid(p, face, ya, a, face + outw * 0.25, yb, b, Wall, "wall panelling");
+            }
+            var mine = gaps.Where(g => g.Side == side).OrderBy(g => g.A).ToList();
+            var at = a0;
+            foreach (var g in mine)
+            {
+                Run(at, g.A, y0, y1);
+                Run(g.A, g.B, y0, g.Sill > 0 ? gy + g.Sill : gy); // (under a window, or the threshold under a door: floor to walk over)
+                Run(g.A, g.B, gy + g.Head, y1); // the lintel
+                if (g.Sill > 0)
+                    Hidden(p, alongX ? g.A : face, gy + g.Sill, alongX ? face : g.A, alongX ? g.B : face + outw * 0.25, gy + g.Head, alongX ? face + outw * 0.25 : g.B);
+                at = g.B;
+            }
+            Run(at, a1, y0, y1);
+            // The kick strip, between the gaps that reach the floor.
+            at = a0;
+            foreach (var g in mine.Where(g => g.Sill <= 0).Append(new Gap(side, a1, a1, 0, 0)))
+            {
+                if (g.A - at > 0.1)
+                {
+                    if (alongX)
+                        Detail(p, at, y0, face - outw * 0.012, g.A, y0 + 0.75, face, WallLow, "matte paint");
+                    else
+                        Detail(p, face - outw * 0.012, y0, at, face, y0 + 0.75, g.A, WallLow, "matte paint");
+                }
+                at = g.B;
+            }
+        }
+        // The corners: a panel across each (drawn), the hidden stair behind it (the floor's stair's complement), a pipe run up it.
+        var s = ci / CornerSteps;
+        foreach (var (sx, sz) in new[] { (-1, -1), (1, -1), (1, 1), (-1, 1) })
+        {
+            double cxa = sx < 0 ? x0 : x1, cza = sz < 0 ? z0 : z1; // the room's corner
+            double[] A = P(cxa - sx * ci, y0 + 0.004, cza), B = P(cxa, y0 + 0.004, cza - sz * ci);
+            double[] A1 = P(cxa - sx * ci, y1 - 0.004, cza), B1 = P(cxa, y1 - 0.004, cza - sz * ci);
+            Plate(p, [A, B, B1, A1], Wall, "wall panelling", thick: 0.03);
+            for (var i = 0; i < CornerSteps; i++)
+            {
+                double ua = i * s, ub = (i + 1) * s, va = ci - (i + 1) * s;
+                double xa = sx < 0 ? x0 + ci - ub : x1 - ci + ua, xb = sx < 0 ? x0 + ci - ua : x1 - ci + ub;
+                double za = sz < 0 ? z0 - 0.25 : z1 - ci + va, zb = sz < 0 ? z0 + ci - va : z1 + 0.25;
+                // (reaching out under the walls' ends, so nothing slips between)
+                xa = sx < 0 ? Math.Min(xa, x0 - 0.25) : xa;
+                xb = sx > 0 ? Math.Max(xb, x1 + 0.25) : xb;
+                Hidden(p, xa, y0, za, xb, y1, zb);
+            }
+        }
+    }
+
+    /// <summary>A gap in a wall run: side (0 bow, 1 starboard, 2 stern, 3 port), from A to B along it, open from sill to head over the floor.</summary>
+    private readonly record struct Gap(int Side, double A, double B, double Sill, double Head);
+
+    private const double DoorH = 2.25;
+
+    private static Gap Door(int side, double a) => new(side, a, a + 1.5, 0, DoorH);
+
+    /// <summary>A partition from (x0, z0) to (x1, z1) along an axis, 0.25 m thick about the line, y0 to y1, its doorways (from, to)
+    /// 2.25 m high; the kick strip on both faces.</summary>
+    private static void Partition(Part p, double x0, double z0, double x1, double z1, double y0, double y1, string color, params double[] doors)
+    {
+        var alongX = Math.Abs(z1 - z0) < 1e-6;
+        double a0 = alongX ? Math.Min(x0, x1) : Math.Min(z0, z1), a1 = alongX ? Math.Max(x0, x1) : Math.Max(z0, z1), c = alongX ? z0 : x0;
+        void Run(double a, double b, double ya, double yb, string col, string fin, double th, bool detail)
+        {
+            if (b - a < 0.02)
+                return;
+            if (alongX)
+            {
+                if (detail) Detail(p, a, ya, c - th, b, yb, c + th, col, fin);
+                else Solid(p, a, ya, c - th, b, yb, c + th, col, fin);
+            }
+            else
+            {
+                if (detail) Detail(p, c - th, ya, a, c + th, yb, b, col, fin);
+                else Solid(p, c - th, ya, a, c + th, yb, b, col, fin);
+            }
+        }
+        var at = a0;
+        for (var i = 0; i < doors.Length; i++)
+        {
+            var d = doors[i];
+            Run(at, d, y0, y1, color, "wall panelling", 0.125, false);
+            Run(d, d + 1.5, y0 + DoorH, y1, color, "wall panelling", 0.125, false);
+            Run(at + 0.05, d - 0.05, y0, y0 + 0.75, WallLow, "matte paint", 0.137, true);
+            // The door frame: a hazard-striped sill and dark jambs.
+            Run(d - 0.06, d, y0, y0 + DoorH + 0.06, WallTrim, "painted steel", 0.14, true);
+            Run(d + 1.5, d + 1.56, y0, y0 + DoorH + 0.06, WallTrim, "painted steel", 0.14, true);
+            at = d + 1.5;
+        }
+        Run(at, a1, y0, y1, color, "wall panelling", 0.125, false);
+        Run(at + 0.05, a1 - 0.05, y0, y0 + 0.75, WallLow, "matte paint", 0.137, true);
+    }
+
+    /// <summary>The safety rail round storey k's hatch (open at its back edge, where the ladder lands people).</summary>
+    private static void HatchRail(Part p, int k)
+    {
+        var xc = ShaftX[HatchShaft(k)];
+        double x0 = xc - ShaftW / 2, x1 = xc + ShaftW / 2, y = Ft(k);
+        Solid(p, x0 - 0.06, y, ShaftZ0 - 0.06, x1 + 0.06, y + 1.0, ShaftZ0, Frame, "painted steel");
+        Solid(p, x0 - 0.06, y, ShaftZ0, x0, y + 1.0, ShaftZ1 - 0.3, Frame, "painted steel");
+        Solid(p, x1, y, ShaftZ0, x1 + 0.06, y + 1.0, ShaftZ1 - 0.3, Frame, "painted steel");
+        Detail(p, x0 - 0.075, y + 0.96, ShaftZ0 - 0.075, x1 + 0.075, y + 1.04, ShaftZ0 + 0.015, Hazard, "hazard paint");
+        // The hatch's coaming: a hazard band round the opening on the floor.
+        Detail(p, x0 - 0.12, y, ShaftZ1, x1 + 0.12, y + 0.012, ShaftZ1 + 0.12, Hazard, "hazard paint");
+    }
+
+    private static Rect Hatch(int k)
+    {
+        var xc = ShaftX[HatchShaft(k)];
+        return new Rect(xc - ShaftW / 2, ShaftZ0, xc + ShaftW / 2, ShaftZ1);
+    }
+
+    /// <summary>The hull band of a storey: the skin (with its openings), armour slabs over it with the frame showing between them, seams,
+    /// worn paint and a little scorching. o: the skin's outline; holes: (edge, t0, t1, y0, y1) left open in the skin.</summary>
+    private static void HullBand(Part p, int k, double y0, double y1, (int Edge, double T0, double T1, double Y0, double Y1)[] holes, int armourPattern)
+    {
+        var o = OctK(k, So);
+        // The skin, edge by edge, 3 mm short of the storey's ends so bands above and below never share an edge's plane.
+        for (var i = 0; i < 8; i++)
+        {
+            var hs = holes.Where(h => h.Edge == i).ToList();
+            double ya = y0 + (i % 2 == 0 ? 0.003 : 0.006), yb = y1 - (i % 2 == 0 ? 0.003 : 0.006);
+            if (hs.Count == 0)
+            {
+                Strip(p, o, i, 0, 1, ya, yb, 0, Skin, "painted plating");
+                continue;
+            }
+            var h = hs[0];
+            Strip(p, o, i, 0, h.T0, ya, yb, 0, Skin, "painted plating");
+            Strip(p, o, i, h.T1, 1, ya, yb, 0, Skin, "painted plating");
+            if (h.Y0 > ya + 0.02)
+                Strip(p, o, i, h.T0, h.T1, ya, h.Y0, 0, Skin, "painted plating");
+            if (h.Y1 < yb - 0.02)
+                Strip(p, o, i, h.T0, h.T1, h.Y1, yb, 0, Skin, "painted plating");
+        }
+        // The frame: a dark rib up each corner of the octagon (where two edges meet), standing a little proud of the skin.
+        for (var i = 0; i < 8; i++)
+        {
+            var q = o[i];
+            Detail(p, q.X - 0.09, y0 + 0.01, q.Z - 0.09, q.X + 0.09, y1 - 0.01, q.Z + 0.09, Frame, "dirty steel");
+        }
+        // A frame girder round the storey's floor line (the deck's edge), dark.
+        foreach (var i in Enumerable.Range(0, 8))
+            Strip(p, o, i, 0.02, 0.98, y0 + 0.02, y0 + 0.3, 0.05, Frame, "dirty steel");
+        // Armour slabs: two per flat face, one on each corner face, leaving the frame and the seams between them; patterns vary the
+        // heights so the stack doesn't read as a repeat.
+        double dy = y1 - y0;
+        double lo = y0 + 0.36, hi = y1 - 0.12;
+        double mid = armourPattern switch { 0 => y0 + dy * 0.55, 1 => y0 + dy * 0.4, _ => y0 + dy * 0.68 };
+        for (var i = 0; i < 8; i++)
+        {
+            var hs = holes.Where(h => h.Edge == i).ToList();
+            var flat = i % 2 == 0; // edges 0, 2, 4, 6 are the flat faces; 1, 3, 5, 7 the corners
+            if (flat)
+            {
+                // Split along the face, the two halves at different heights for a stepped look.
+                var col = (i + armourPattern) % 3 == 0 ? Armour2 : Armour;
+                if (hs.Count == 0)
+                {
+                    Slab2(p, o, i, 0.04, 0.48, lo, mid - 0.06, 0.02, 0.17, 0.08, col);
+                    Slab2(p, o, i, 0.52, 0.96, lo, hi, 0.02, 0.15, 0.06, col);
+                    Slab2(p, o, i, 0.04, 0.48, mid, hi, 0.02, 0.13, 0.05, Armour2);
+                }
+                else
+                {
+                    var h = hs[0];
+                    if (h.T0 > 0.12)
+                        Slab2(p, o, i, 0.04, h.T0 - 0.04, lo, hi, 0.02, 0.17, 0.08, col);
+                    if (h.T1 < 0.88)
+                        Slab2(p, o, i, h.T1 + 0.04, 0.96, lo, hi, 0.02, 0.17, 0.08, col);
+                }
+            }
+            else if (hs.Count == 0)
+            {
+                // The corners: a raked slab that steps further out, a primer-red scuff showing on its edge.
+                Slab2(p, o, i, 0.08, 0.92, lo + 0.2, hi - 0.1, 0.02, 0.24, 0.1, Armour);
+                Strip(p, o, i, 0.2, 0.42, lo + 0.32, lo + 0.5, 0.245, Primer, "worn paint");
+            }
+        }
+    }
+
+    // ---- the storeys
+
+    private static Part Big(string name, string desc) => new(name, Small, Section, desc, role: "frame", tool: "welder", material: "steel", color: Skin, group: Group);
+
+    /// <summary>A light on the wall at height 2.4 m over storey k's floor: the socket name and where it is.</summary>
+    private static void LampSock(Part p, string name, double x, int k, double z, string dir) => Sock(p, name, x, Ft(k) + 2.45, z, dir);
+
+    /// <summary>The sockets every storey carries: down onto the one below (or the thrust frame), up for the one above, and its ladder up.</summary>
+    private static void StackSockets(Part p, int k)
+    {
+        const double wx = 0.875; // on the port wall's line (storeys 1 to 5), under the cockpit's floor for the last
+        Sock(p, "down", wx, Fl(k), Cz, "-y");
+        if (k < Storeys - 1)
+            Sock(p, "up", k == Storeys - 2 ? wx : wx, Fl(k + 1), Cz, "+y");
+        else
+            Sock(p, "up", Cx - Hx(k) - 0.125, Fl(k + 1), Cz, "+y");
+        if (k < Storeys - 1)
+        {
+            var xc = ShaftX[LadderShaft(k)];
+            Sock(p, "ladder", xc, Ft(k), ShaftZ1 - 0.095, "+y");
+        }
+    }
+
+    /// <summary>Labelled pipes up a corner panel: three runs (red, blue, yellow) with stencil bands and a valve wheel.</summary>
+    private static void CornerPipes(Part p, int k, int sx, int sz, double y0, double y1)
+    {
+        double hx = Hx(k), hz = Hz(k), ci = Ci(k);
+        double cxa = sx < 0 ? Cx - hx : Cx + hx, cza = sz < 0 ? Cz - hz : Cz + hz;
+        string[] cols = [PipeRed, PipeBlue, PipeYellow];
+        for (var i = 0; i < 3; i++)
+        {
+            var t = 0.3 + 0.2 * i;
+            // A point on the diagonal, 0.12 m in front of it.
+            double px = cxa - sx * ci * (1 - t), pz = cza - sz * ci * t;
+            px -= sx * 0.12 / Sq2;
+            pz -= sz * 0.12 / Sq2;
+            Detail(p, px - 0.05, y0 + 0.02, pz - 0.05, px + 0.05, y1 - 0.02, pz + 0.05, cols[i], "painted steel");
+            Detail(p, px - 0.062, y0 + 1.5, pz - 0.062, px + 0.062, y0 + 1.62, pz + 0.062, "#e8e4d8", "matte paint"); // (its label)
+        }
+    }
+
+    private static Part Engineering()
+    {
+        const int k = 0;
+        var p = Big("Halberd Engineering Deck", "The Halberd's lowest storey: the reactor, the drive's plumbing, the workshop and the airlock with the boarding ladder.");
+        double y0 = Ft(k), y1 = Fl(k + 1);
+        Floor(p, Hx(k), Hz(k), Ci(k), Fl(k), Ft(k), Grate, "painted grating");
+        // The airlock: the outer door in the stern wall, a chamber 2.75 by 1.6 m, the inner door forward.
+        Walls(p, Hx(k), Hz(k), Ci(k), Fl(k), y1, Door(2, AirlockX));
+        Partition(p, 2.6, 6.25, 6.5, 6.25, y0, y1, Wall, AirlockX);
+        Partition(p, 3.5, 6.375, 3.5, Cz + Hz(k), y0, y1, Wall);
+        Partition(p, 6.5, 6.375, 6.5, Cz + Hz(k), y0, y1, Wall);
+        Detail(p, 3.64, y0, 6.4, 6.36, y0 + 0.012, 7.98, Hazard, "hazard paint"); // (the airlock's floor, striped)
+        // The ceiling's frames (under storey 2's floor): dark beams across, every 1.75 m.
+        foreach (var z in new[] { 2.0, 7.0 })
+            Detail(p, Cx - Hx(k) + 1.2, y1 - 0.2, z - 0.07, Cx + Hx(k) - 1.2, y1 - 0.012, z + 0.07, Frame, "dirty steel");
+        // The drive's feed: two lagged trunks from the reactor's corner down into the floor, and the fuel main.
+        Detail(p, 1.1, y0, 3.8, 1.4, y1 - 0.02, 4.1, "#c9c2a8", "lagging");
+        Detail(p, 1.09, y0 + 0.6, 3.79, 1.41, y0 + 0.72, 4.11, PipeRed, "painted steel");
+        Detail(p, 1.55, y0, 3.85, 1.75, y1 - 0.02, 4.05, PipeYellow, "painted steel");
+        CornerPipes(p, k, 1, -1, y0, y1);
+        CornerPipes(p, k, -1, 1, y0, y1);
+        HullBand(p, k, Fl(k), Fl(k + 1), [(4, Tof(4, AirlockX + 1.5, k), Tof(4, AirlockX, k), Ft(k) - 0.004, Ft(k) + DoorH)], 0);
+        // The hull at the airlock: a hazard-striped surround and a red/green cycle lamp over it.
+        var o = OctK(k, So);
+        double ta = Tof(4, AirlockX + 1.5, k), tb = Tof(4, AirlockX, k);
+        Strip(p, o, 4, ta - 0.03, tb + 0.03, Ft(k) + DoorH + 0.004, Ft(k) + DoorH + 0.12, 0.012, Hazard, "hazard paint");
+        Strip(p, o, 4, tb + 0.01, tb + 0.03, Ft(k), Ft(k) + DoorH, 0.012, Hazard, "hazard paint");
+        Strip(p, o, 4, ta - 0.03, ta - 0.01, Ft(k), Ft(k) + DoorH, 0.012, Hazard, "hazard paint");
+        Strip(p, o, 4, (ta + tb) / 2 - 0.02, (ta + tb) / 2 + 0.02, Ft(k) + DoorH + 0.2, Ft(k) + DoorH + 0.32, 0.03, "#40e070", glow: true);
+        // The boarding platform outside the outer door: a grated step with rails either side, the ladder on its edge.
+        double pz0 = Cz + Hz(k) + 0.25, pz1 = Cz + Hz(k) + 1.25;
+        Solid(p, AirlockX - 0.1, 0.0, pz0, AirlockX + 1.6, Ft(k), pz1, Grate, "painted grating");
+        Detail(p, AirlockX - 0.1, Ft(k) - 0.06, pz1 - 0.012, AirlockX + 1.6, Ft(k), pz1 + 0.004, Hazard, "hazard paint");
+        foreach (var x in new[] { AirlockX - 0.1, AirlockX + 1.54 })
+        {
+            Solid(p, x, Ft(k), pz0 + 0.09, x + 0.06, Ft(k) + 1.05, pz1, Frame, "painted steel");
+            Detail(p, x - 0.01, Ft(k) + 1.0, pz0 + 0.05, x + 0.07, Ft(k) + 1.08, pz1 + 0.01, Hazard, "hazard paint");
+        }
+        foreach (var x in new[] { AirlockX + 0.1, AirlockX + 1.4 }) // (its brackets under it)
+            Detail(p, x - 0.05, -0.6, pz0 + 0.02, x + 0.05, -0.002, pz0 + 0.7, Frame, "dirty steel");
+        StackSockets(p, k);
+        // Fittings: the reactor to port, the boards to starboard, the workshop and stores aft either side of the airlock.
+        Sock(p, "reactor", 2.6, y0, 2.85, "+y");
+        Sock(p, "board", Cx + Hx(k), y0 + 0.9, 3.0, "-x");
+        Sock(p, "panel", Cx + Hx(k), y0 + 0.6, 4.8, "-x");
+        Sock(p, "battery0", 8.75, y0, 5.8, "+y");
+        Sock(p, "battery1", 8.75, y0, 6.15, "+y");
+        Sock(p, "pipes", 5.0, y0 + 2.75, Cz - Hz(k), "+z");
+        Sock(p, "rack", Cx - Hx(k), y0 + 0.9, 6.1, "+x");
+        Sock(p, "crate0", 7.4, y0, 7.4, "+y");
+        Sock(p, "crate1", 7.9, y0, 7.4, "+y");
+        Sock(p, "suit0", 3.625, y0 + 0.125, 7.1, "+x");
+        Sock(p, "suit1", 6.375, y0 + 0.125, 7.1, "-x");
+        Sock(p, "doorOuter", AirlockX, y0 + 1.125, Cz + Hz(k) + 0.125, "+x");
+        Sock(p, "doorInner", AirlockX, y0 + 1.125, 6.25, "+x");
+        Sock(p, "boarding", AirlockX + 0.75, 0.125, Cz + Hz(k) + 1.25, "+z");
+        LampSock(p, "lampA", Cx - Hx(k), k, 4.5, "+x");
+        LampSock(p, "lampB", Cx + Hx(k), k, 6.0, "-x");
+        LampSock(p, "lampC", 7.3, k, Cz - Hz(k), "+z");
+        LampSock(p, "lampLock", 5.0, k, 6.375, "+z");
+        Sock(p, "switch", 3.375, y0 + 1.3, 7.0, "-x");
+        return p.Stats(16000, 30000, 30, 20.0);
+    }
+
+    private const double AirlockX = 4.25; // the airlock's doorways, x 4.25..5.75
+
+    /// <summary>How far along edge e of storey k's skin x (or z) is: for placing an opening.</summary>
+    private static double Tof(int e, double a, int k)
+    {
+        var o = OctK(k, So);
+        var j = (e + 1) % 8;
+        var alongX = Math.Abs(o[j].Z - o[e].Z) < 1e-6;
+        return alongX ? (a - o[e].X) / (o[j].X - o[e].X) : (a - o[e].Z) / (o[j].Z - o[e].Z);
+    }
+
+    private static Part RobotBay()
+    {
+        const int k = 1;
+        var p = Big("Halberd Robot Bay Deck", "The Halberd's second storey: robot shells in their cradles with the link couches facing them, and the armoury.");
+        double y0 = Ft(k), y1 = Fl(k + 1);
+        Floor(p, Hx(k), Hz(k), Ci(k), Fl(k), Ft(k), Deck, "painted deck plate", Hatch(k));
+        Detail(p, 1.3, y0, 2.4, 3.2, y0 + 0.012, 6.6, "#2a2d2f", "rubber matting"); // (the robot bay's mat)
+        Walls(p, Hx(k), Hz(k), Ci(k), Fl(k), y1);
+        HatchRail(p, k);
+        // The armoury to starboard behind a partition with a doorway.
+        Partition(p, 7.2, Cz - Hz(k) + 0.01, 7.2, Cz + Hz(k) - 0.01, y0, y1, Wall, 5.0);
+        // Charging bay markings on the floor in front of each cradle.
+        foreach (var z in new[] { 3.0, 4.5, 6.0 })
+            Detail(p, 1.02, y0, z - 0.5, 1.9, y0 + 0.013, z + 0.5, Hazard, "hazard paint");
+        foreach (var z in new[] { 3.0, 4.5, 6.0 })
+            Detail(p, 1.06, y0, z - 0.44, 1.86, y0 + 0.02, z + 0.44, "#2a2d2f", "rubber matting");
+        CornerPipes(p, k, -1, -1, y0, y1);
+        CornerPipes(p, k, 1, 1, y0, y1);
+        HullBand(p, k, Fl(k), Fl(k + 1), [], 1);
+        // The PDC sponsons on the flanks: an armoured drum on each side (port and starboard), what the turntable goes on.
+        foreach (var s in new[] { -1, 1 })
+            Sponson(p, s, 0, (y0 + y1) / 2 + 0.3);
+        StackSockets(p, k);
+        foreach (var (z, i) in new[] { (3.0, 0), (4.5, 1), (6.0, 2) })
+            Sock(p, $"cradle{i}", Cx - Hx(k), y0 + 0.125, z, "+x");
+        Sock(p, "gun", 5.6, y0, 1.5, "+y");
+        Sock(p, "gunSeat", 5.6, y0, 2.4, "+y");
+        Sock(p, "couch0", 3.3, y0, 2.4, "+y");
+        Sock(p, "couch1", 3.3, y0, 6.6, "+y");
+        Sock(p, "armsRack", Cx + Hx(k), y0 + 0.9, 3.7, "-x");
+        Sock(p, "locker0", Cx + Hx(k), y0 + 0.125, 5.5, "-x");
+        Sock(p, "locker1", Cx + Hx(k), y0 + 0.125, 6.15, "-x");
+        Sock(p, "ammo0", 8.1, y0, 2.45, "+y");
+        Sock(p, "ammo1", 8.1, y0, 2.95, "+y");
+        Sock(p, "doorArmoury", 7.2, y0 + 1.125, 5.0, "+z");
+        LampSock(p, "lampA", Cx - Hx(k), k, 3.75, "+x");
+        LampSock(p, "lampB", Cx - Hx(k), k, 5.25, "+x");
+        LampSock(p, "lampC", Cx + Hx(k), k, 2.6, "-x");
+        LampSock(p, "lampD", 4.5, k, Cz + Hz(k), "-z");
+        Sock(p, "switch", 7.075, y0 + 1.3, 3.8, "-x");
+        return p.Stats(15000, 28000, 30, 20.0);
+    }
+
+    /// <summary>A PDC sponson on face side s (-1 port, 1 starboard; axis 0 x, 1 z) at height y: an armoured octagonal drum standing
+    /// out of the face, a ring round its mouth, and the socket the turntable goes on.</summary>
+    private static void Sponson(Part p, int s, int axis, double y)
+    {
+        const double R0 = 0.55, Out0 = 0.19, Out1 = 0.75;
+        double face = axis == 0 ? (s < 0 ? Cx - 4.0 - So : Cx + 4.0 + So) : (s < 0 ? Cz - 3.5 - So : Cz + 3.5 + So);
+        double along = axis == 0 ? Cz : Cx;
+        double[] At(double a, double v, double outv) => axis == 0 ? P(face + s * outv, y + v, along + a) : P(along + a, y + v, face + s * outv);
+        double[][] RingAt(double r, double outv) => [.. Enumerable.Range(0, 8).Select(i =>
+        {
+            var an = Math.PI / 8 + i * Math.PI / 4;
+            return At(r * Math.Cos(an), r * Math.Sin(an), outv);
+        })];
+        Prism(p, RingAt(R0 + 0.15, 0.035), RingAt(R0, Out1), Armour, "plated steel");
+        Prism(p, RingAt(R0 + 0.06, Out1), RingAt(R0 + 0.02, Out1 + 0.06), Frame, "dirty steel");
+        Prism(p, RingAt(R0 + 0.3, 0.045), RingAt(R0 + 0.22, Out0), Hazard, "hazard paint");
+        var c = At(0, 0, Out1 + 0.06);
+        var mn = axis == 0 ? (s < 0 ? P(face - Out1 - 0.06, y - R0, along - R0) : P(face, y - R0, along - R0)) : (s < 0 ? P(along - R0, y - R0, face - Out1 - 0.06) : P(along - R0, y - R0, face));
+        var mx = axis == 0 ? (s < 0 ? P(face, y + R0, along + R0) : P(face + Out1 + 0.06, y + R0, along + R0)) : (s < 0 ? P(along + R0, y + R0, face) : P(along + R0, y + R0, face + Out1 + 0.06));
+        p.Add(Box(mn, mx, hidden: true));
+        var name = axis == 0 ? (s < 0 ? "pdcPort" : "pdcStbd") : (s < 0 ? "pdcBow" : "pdcStern");
+        var dir = axis == 0 ? (s < 0 ? "-x" : "+x") : (s < 0 ? "-z" : "+z");
+        p.Sock(name, c, dir);
+    }
+
+    private static Part MedDeck()
+    {
+        const int k = 2;
+        var p = Big("Halberd Med Deck", "The Halberd's third storey: the med bay forward with two treatment couches, the galley and mess aft.");
+        double y0 = Ft(k), y1 = Fl(k + 1);
+        Floor(p, Hx(k), Hz(k), Ci(k), Fl(k), Ft(k), Deck, "painted deck plate", Hatch(k));
+        Walls(p, Hx(k), Hz(k), Ci(k), Fl(k), y1);
+        HatchRail(p, k);
+        // The med bay across the bow, behind a partition with its doorway to port; a green stripe and a pale floor.
+        Partition(p, Cx - Hx(k) + 0.01, 3.4, Cx + Hx(k) - 0.01, 3.4, y0, y1, MedWhite, 1.75);
+        Detail(p, 2.2, y0, 1.03, 7.8, y0 + 0.012, 3.26, "#c9d0cc", "gloss paint");
+        Detail(p, 2.2, y0 + 1.2, 1.0 - 0.0, 7.8, y0 + 1.32, 1.012, MedGreen, "gloss paint");
+        // The scanner over each couch: a ceiling arm with a ring of light.
+        foreach (var x in new[] { 3.4, 6.0 })
+        {
+            Detail(p, x - 0.06, y1 - 0.55, 2.0 - 0.06, x + 0.06, y1 - 0.01, 2.0 + 0.06, Frame, "painted steel");
+            Detail(p, x - 0.35, y1 - 0.62, 2.0 - 0.35, x + 0.35, y1 - 0.55, 2.0 + 0.35, MedWhite, "gloss paint");
+            Detail(p, x - 0.28, y1 - 0.635, 2.0 - 0.28, x + 0.28, y1 - 0.62, 2.0 + 0.28, "#b8f0e0", glow: true);
+        }
+        // The galley: a counter along the stern wall with the coffee machine, the stove and lockers.
+        CornerPipes(p, k, -1, 1, y0, y1);
+        CornerPipes(p, k, 1, 1, y0, y1);
+        HullBand(p, k, Fl(k), Fl(k + 1), [], 2);
+        StackSockets(p, k);
+        Sock(p, "medL", 3.4, y0 + 0.8, Cz - Hz(k), "+z");
+        Sock(p, "medR", 6.0, y0 + 0.8, Cz - Hz(k), "+z");
+        Sock(p, "cabinet", 4.7, y0 + 0.85, Cz - Hz(k), "+z");
+        Sock(p, "decon", 7.35, y0 + 0.125, Cz - Hz(k), "+z");
+        Sock(p, "medLocker", Cx + Hx(k), y0 + 0.125, 2.6, "-x");
+        Sock(p, "doorMed", 3.25, y0 + 1.125, 3.4, "-x");
+        Sock(p, "stove", 2.75, y0 + 0.45, Cz + Hz(k), "-z");
+        Sock(p, "coffee", 3.7, y0 + 0.125, Cz + Hz(k), "-z");
+        Sock(p, "galleyLocker", 4.45, y0 + 0.125, Cz + Hz(k), "-z");
+        Sock(p, "table", 7.6, y0, 6.5, "+y");
+        LampSock(p, "lampMedA", 2.6, k, 3.275, "-z");
+        LampSock(p, "lampMedB", 7.4, k, 3.275, "-z");
+        LampSock(p, "lampGalleyA", Cx - Hx(k), k, 5.4, "+x");
+        LampSock(p, "lampGalleyB", Cx + Hx(k), k, 5.4, "-x");
+        Sock(p, "switchMed", 1.5, y0 + 1.3, 3.275, "-z");
+        Sock(p, "switch", 1.5, y0 + 1.3, 3.525, "+z");
+        return p.Stats(15000, 28000, 30, 20.0);
+    }
+
+    private static Part CrewDeck()
+    {
+        const int k = 3;
+        var p = Big("Halberd Crew Deck", "The Halberd's fourth storey: four crash couches in the bunk room, the head, lockers and a desk.");
+        double y0 = Ft(k), y1 = Fl(k + 1);
+        Floor(p, Hx(k), Hz(k), Ci(k), Fl(k), Ft(k), Deck, "painted deck plate", Hatch(k));
+        Walls(p, Hx(k), Hz(k), Ci(k), Fl(k), y1);
+        HatchRail(p, k);
+        // The bunk room across the bow; the head aft to starboard.
+        Partition(p, Cx - Hx(k) + 0.01, 3.6, Cx + Hx(k) - 0.01, 3.6, y0, y1, Wall, 1.75);
+        Partition(p, 6.4, 6.25, Cx + Hx(k) - 0.01, 6.25, y0, y1, Wall);
+        Partition(p, 6.4, 6.375, 6.4, Cz + Hz(k) - 0.01, y0, y1, Wall, 6.45);
+        Detail(p, 6.54, y0, 6.39, 7.8, y0 + 0.012, 7.98, "#5b6268", "rubber matting"); // (the head's floor)
+        CornerPipes(p, k, -1, 1, y0, y1);
+        HullBand(p, k, Fl(k), Fl(k + 1), [], 0);
+        StackSockets(p, k);
+        Sock(p, "couch0", 3.2, y0 + 0.125, Cz - Hz(k), "+z");
+        Sock(p, "couch1", 6.8, y0 + 0.125, Cz - Hz(k), "+z");
+        Sock(p, "couch2", 4.5, y0 + 0.125, 3.475, "-z");
+        Sock(p, "couch3", 6.8, y0 + 0.125, 3.475, "-z");
+        Sock(p, "doorBunk", 3.25, y0 + 1.125, 3.6, "-x");
+        Sock(p, "doorHead", 6.4, y0 + 1.125, 6.45, "+z");
+        Sock(p, "toilet", Cx + Hx(k), y0 + 0.125, 6.6, "-x");
+        Sock(p, "basin", 8.0, y0 + 0.125, 6.375, "+z");
+        Sock(p, "desk", Cx - Hx(k), y0 + 0.125, 5.4, "+x");
+        Sock(p, "locker0", 2.6, y0 + 0.125, Cz + Hz(k), "-z");
+        Sock(p, "locker1", 3.25, y0 + 0.125, Cz + Hz(k), "-z");
+        Sock(p, "locker2", 3.9, y0 + 0.125, Cz + Hz(k), "-z");
+        LampSock(p, "lampBunkA", 3.0, k, 3.475, "-z");
+        LampSock(p, "lampBunkB", 7.0, k, 3.475, "-z");
+        LampSock(p, "lampHall", Cx - Hx(k), k, 6.4, "+x");
+        LampSock(p, "lampHead", 7.6, k, 6.375, "+z");
+        Sock(p, "switch", 5.0, y0 + 1.3, 3.725, "+z");
+        return p.Stats(15000, 28000, 30, 20.0);
+    }
+
+    private static Part OpsDeck()
+    {
+        const int k = 4;
+        var p = Big("Halberd Ops Deck", "The Halberd's fifth storey: the gunnery stations that work the point-defence turrets, the plot table and the ship's locker.");
+        double y0 = Ft(k), y1 = Fl(k + 1);
+        Floor(p, Hx(k), Hz(k), Ci(k), Fl(k), Ft(k), Deck, "painted deck plate", Hatch(k));
+        Walls(p, Hx(k), Hz(k), Ci(k), Fl(k), y1);
+        HatchRail(p, k);
+        // A wall of screens across the bow over the gunnery stations.
+        for (var i = 0; i < 4; i++)
+        {
+            var x = 2.6 + i * 1.6;
+            Detail(p, x - 0.62, y0 + 1.25, Cz - Hz(k) + 0.0, x + 0.62, y0 + 2.05, Cz - Hz(k) + 0.04, Console, "plastic");
+            Detail(p, x - 0.55, y0 + 1.31, Cz - Hz(k) + 0.04, x + 0.55, y0 + 1.99, Cz - Hz(k) + 0.056, i % 2 == 0 ? Screen : "#e0a040", glow: true);
+        }
+        CornerPipes(p, k, -1, 1, y0, y1);
+        CornerPipes(p, k, 1, 1, y0, y1);
+        HullBand(p, k, Fl(k), Fl(k + 1), [], 1);
+        // The PDC sponsons at the bow and stern faces.
+        foreach (var s in new[] { -1, 1 })
+            Sponson(p, s, 1, (y0 + y1) / 2 + 0.2);
+        // The shoulder: the band from this storey's skin up to the cockpit's, with hidden boxes under it.
+        Shoulder(p);
+        StackSockets(p, k);
+        Sock(p, "gun", 8.3, y0, Cz, "+y");
+        Sock(p, "gunSeat", 7.35, y0, Cz, "+y");
+        Sock(p, "plot", 7.6, y0, 6.4, "+y");
+        Sock(p, "locker0", 2.55, y0 + 0.125, Cz + Hz(k), "-z");
+        Sock(p, "locker1", 3.2, y0 + 0.125, Cz + Hz(k), "-z");
+        Sock(p, "armsRack", Cx - Hx(k), y0 + 0.9, 5.6, "+x");
+        LampSock(p, "lampA", Cx - Hx(k), k, 3.0, "+x");
+        LampSock(p, "lampB", Cx + Hx(k), k, 3.0, "-x");
+        LampSock(p, "lampC", Cx + Hx(k), k, 6.0, "-x");
+        LampSock(p, "lampD", 4.0, k, Cz + Hz(k), "-z");
+        Sock(p, "switch", 4.2, y0 + 1.3, Cz + Hz(k), "-z");
+        return p.Stats(15000, 28000, 30, 20.0);
+    }
+
+    private const double ShoulderTop = 17.0;
+
+    private static void Shoulder(Part p)
+    {
+        var a = OctK(4, So);
+        var b = OctK(5, So);
+        Ring(p, a, Fl(5) + 0.003, b, ShoulderTop, Armour, "plated steel", false);
+        // Vents and a sensor blister on the shoulder.
+        foreach (var s in new[] { -1, 1 })
+            for (var i = 0; i < 4; i++)
+            {
+                var z = Cz - 1.2 + i * 0.8;
+                double x = Cx + s * (Hx(5) + So + 0.55);
+                Detail(p, x - 0.2, Fl(5) + 0.45 + 0.0, z - 0.08, x + 0.2, Fl(5) + 0.62, z + 0.08, Frame, "dirty steel");
+            }
+    }
+
+    private static Part Cockpit()
+    {
+        const int k = 5;
+        var p = Big("Halberd Cockpit Deck", "The Halberd's top storey under the nose: two flight couches before a visor that wraps the bow, the flight computer behind them.");
+        double y0 = Ft(k), y1 = Fl(k + 1);
+        // The floor spans storey 5's room (the shoulder's slab outside it is the ops deck's).
+        Floor(p, Hx(4), Hz(4), Ci(4), Fl(k), Ft(k), Deck, "painted deck plate", Hatch(k));
+        // The visor: a slit window in the bow wall and the two bow corners, 1.1 m high from 1.05 m over the floor.
+        const double Sill = 1.05, Head = 2.15;
+        Walls(p, Hx(k), Hz(k), Ci(k), Ft(k), y1, new Gap(0, Cx - Hx(k) + Ci(k), Cx + Hx(k) - Ci(k), Sill, Head));
+        HatchRail(p, k);
+        // The dashboard under the visor: a raked desk with screens and switches.
+        Solid(p, 3.1, y0, Cz - Hz(k), 6.9, y0 + 0.75, Cz - Hz(k) + 0.6, Console, "plastic");
+        Detail(p, 3.15, y0 + 0.75, Cz - Hz(k) + 0.02, 6.85, y0 + 0.9, Cz - Hz(k) + 0.56, "#30363a", "plastic");
+        foreach (var (x, c) in new[] { (3.5, Screen), (4.4, "#5fd06a"), (5.6, Amber), (6.5, Screen) })
+            Detail(p, x - 0.32, y0 + 0.905, Cz - Hz(k) + 0.08, x + 0.32, y0 + 0.92, Cz - Hz(k) + 0.48, c, glow: true);
+        // The skin with the visor's glass (and its frame bars), on the bow face and the two bow corners.
+        var o = OctK(k, So);
+        double ya = y0 + Sill, yb = y0 + Head;
+        HullBand(p, k, ShoulderTop, y1, [(0, 0, 1, ya, yb)], 2);
+        foreach (var e in new[] { 0 })
+        {
+            Strip(p, o, e, 0.0, 1.0, ya, yb, 0, Glass, glass: true);
+            Strip(p, o, e, 0.0, 1.0, yb, yb + 0.08, 0.02, Frame, "dirty steel");
+            Strip(p, o, e, 0.0, 1.0, ya - 0.08, ya, 0.02, Frame, "dirty steel");
+        }
+        foreach (var t in new[] { 0.333, 0.667 })
+            Strip(p, o, 0, t - 0.01, t + 0.01, ya, yb, 0.02, Frame, "dirty steel");
+        // The skin's lower part between the slab and the shoulder's top (behind the shoulder) isn't drawn; a hidden wall stands there.
+        Hidden(p, 0.75, Fl(k), 4.0, 1.0, Fl(k) + 0.05, 5.0); // (what the "down" socket is on, under the shoulder)
+        StackSockets(p, k);
+        Sock(p, "pilot", 4.1, y0, Cz - Hz(k) + 1.3, "+y");
+        Sock(p, "copilot", 5.9, y0, Cz - Hz(k) + 1.3, "+y");
+        Sock(p, "gunModule", 5.0, y0 + 0.4, Cz - Hz(k) + 0.6, "+z");
+        Sock(p, "computer", 6.6, y0, 6.2, "+y");
+        Sock(p, "chart", Cx - Hx(k), y0 + 0.475, 5.3, "+x");
+        LampSock(p, "lampA", Cx - Hx(k), k, 4.0, "+x");
+        LampSock(p, "lampB", Cx + Hx(k), k, 4.0, "-x");
+        LampSock(p, "lampC", 5.0, k, Cz + Hz(k), "-z");
+        Sock(p, "switch", 3.4, y0 + 1.3, Cz + Hz(k), "-z");
+        return p.Stats(9000, 20000, 30, 16.0);
+    }
+
+    // ---- the nose: the cockpit's ceiling, the cap, the sensor mast, the railgun's shroud
+
+    private static Part Nose()
+    {
+        var p = Big("Halberd Nose", "The Halberd's nose: armoured cap over the cockpit, the railgun's shroud, a sensor mast and a dish.");
+        const int k = 5;
+        double y0 = Fl(k + 1);
+        // The cockpit's ceiling (with a hole for the railgun's breech), lit by a strip.
+        double hx = Hx(k), hz = Hz(k), ci = Ci(k);
+        Floor(p, hx + 0.25, hz + 0.25, ci + 0.1, y0, y0 + Slab, Ceil, "wall panelling");
+        Detail(p, Cx - 1.6, y0 - 0.02, Cz - 0.08, Cx + 1.6, y0, Cz + 0.08, Lamp, glow: true);
+        // The cap: from storey 5's skin up and in to a raked top, lower at the bow so the visor sees out.
+        var a = OctK(k, So);
+        var mid = Oct(hx - 0.6, hz - 0.6, ci * 0.6, So);
+        var top = Oct(hx - 1.3, hz - 1.0, ci * 0.4, So);
+        double ym = y0 + 0.9;
+        for (var i = 0; i < 8; i++)
+        {
+            var j = (i + 1) % 8;
+            double yi = ym - (a[i].Z < Cz ? 0.3 : 0), yj = ym - (a[j].Z < Cz ? 0.3 : 0);
+            Quad(p, P(a[i].X, y0 + 0.003, a[i].Z), P(a[j].X, y0 + 0.003, a[j].Z), P(mid[j].X, yj, mid[j].Z), P(mid[i].X, yi, mid[i].Z), i % 2 == 0 ? Armour : Armour2, "plated steel");
+            double ti = NoseTop - (top[i].Z < Cz ? 0.5 : 0), tj = NoseTop - (top[j].Z < Cz ? 0.5 : 0);
+            Quad(p, P(mid[i].X, yi, mid[i].Z), P(mid[j].X, yj, mid[j].Z), P(top[j].X, tj, top[j].Z), P(top[i].X, ti, top[i].Z), i % 2 == 0 ? Skin : Armour, "painted plating");
+        }
+        Plate(p, [.. top.Select(q => P(q.X, NoseTop - (q.Z < Cz ? 0.5 : 0), q.Z))], Armour2, "plated steel");
+        // Hidden boxes for the cap, round the gun.
+        Hidden(p, Cx - hx + 0.3, y0 + Slab, Cz - hz + 0.3, Cx + hx - 0.3, y0 + 0.8, Cz + 0.1);
+        Hidden(p, Cx - hx + 0.3, y0 + Slab, Cz + 1.1, Cx + hx - 0.3, y0 + 0.8, Cz + hz - 0.3);
+        Hidden(p, Cx - hx + 0.3, y0 + Slab, Cz + 0.1, Cx - 0.5, y0 + 0.8, Cz + 1.1);
+        Hidden(p, Cx + 0.5, y0 + Slab, Cz + 0.1, Cx + hx - 0.3, y0 + 0.8, Cz + 1.1);
+        // The railgun's shroud: a raised armoured collar round the barrel's exit on top.
+        double gz = Cz + 0.6, ty = NoseTop - 0.05;
+        double[][] Oct8(double r, double y) => [.. Enumerable.Range(0, 8).Select(i =>
+        {
+            var an = Math.PI / 8 + i * Math.PI / 4;
+            return P(Cx + r * Math.Cos(an), y, gz + r * Math.Sin(an));
+        })];
+        Prism(p, Oct8(0.7, ty - 0.2), Oct8(0.48, ty + 0.55), Armour, "plated steel");
+        Prism(p, Oct8(0.5, ty + 0.55), Oct8(0.46, ty + 0.62), Hazard, "hazard paint");
+        // The sensor mast aft, a dish on a stalk to starboard, two antennae with red tips.
+        Solid(p, Cx - 0.08, NoseTop - 0.1, Cz + 1.35, Cx + 0.08, NoseTop + 1.9, Cz + 1.51, Frame, "painted steel");
+        foreach (var y in new[] { 0.7, 1.2, 1.6 })
+            Detail(p, Cx - 0.45, NoseTop + y, Cz + 1.4, Cx + 0.45, NoseTop + y + 0.05, Cz + 1.46, Frame, "painted steel");
+        Detail(p, Cx - 0.07, NoseTop + 1.9, Cz + 1.36, Cx + 0.07, NoseTop + 2.04, Cz + 1.5, "#e03020", glow: true);
+        Solid(p, Cx + 1.0, NoseTop - 0.3, Cz + 0.9, Cx + 1.12, NoseTop + 0.6, Cz + 1.02, Frame, "painted steel");
+        Prism(p, Oct8Off(Cx + 1.06, NoseTop + 0.6, Cz + 0.96, 0.08), Oct8Off(Cx + 1.06, NoseTop + 0.85, Cz + 0.96, 0.5), "#c8ccc8", "painted steel");
+        foreach (var s in new[] { -1, 1 })
+        {
+            Solid(p, Cx + s * 1.6 - 0.03, NoseTop - 0.4, Cz - 0.6, Cx + s * 1.6 + 0.03, NoseTop + 1.0, Cz - 0.54, Frame, "steel");
+            Detail(p, Cx + s * 1.6 - 0.04, NoseTop + 1.0, Cz - 0.61, Cx + s * 1.6 + 0.04, NoseTop + 1.08, Cz - 0.53, "#e03020", glow: true);
+        }
+        // Running lights on the cap's corners (port red, starboard green).
+        Detail(p, a[7].X + 0.02, y0 + 0.2, a[7].Z - 0.01, a[7].X + 0.14, y0 + 0.32, a[7].Z + 0.11, "#ff3020", glow: true);
+        Detail(p, a[2].X - 0.14, y0 + 0.2, a[2].Z - 0.01, a[2].X - 0.02, y0 + 0.32, a[2].Z + 0.11, "#30ff60", glow: true);
+        Sock(p, "down", Cx - Hx(k) - 0.125, y0, Cz, "-y");
+        Sock(p, "railgun", Cx, y0 + Slab, Cz + 0.6, "+y");
+        return p.Stats(5000, 14000, 35, 12.0);
+    }
+
+    private static double[][] Oct8Off(double cx, double y, double cz, double r) => [.. Enumerable.Range(0, 8).Select(i =>
+    {
+        var an = Math.PI / 8 + i * Math.PI / 4;
+        return P(cx + r * Math.Cos(an), y, cz + r * Math.Sin(an));
+    })];
+
+    // ---- the thrust frame (the fuel tank), the drive, the legs
+
+    private const double DriveForce = 4500000, JetBurn = 3.0;
+
+    private static Part ThrustFrame()
+    {
+        var p = new Part("Halberd Thrust Frame", Small, Section, "The Halberd's thrust frame under the engineering deck: the fuel tankage, the drive's mount and the landing legs' roots.", role: "fueltank", tool: "welder", material: "steel", color: Armour, group: Group);
+        var a = OctK(0, So);
+        var m = Oct(3.6, 3.1, 1.0, So);
+        var b = Oct(2.6, 2.2, 0.8, So);
+        const double ym = -1.1;
+        Ring(p, a, -0.003, m, ym, Armour, "plated steel", false);
+        Ring(p, m, ym, b, FrameBottom, Armour2, "plated steel", false);
+        Cap(p, b, FrameBottom, Frame, "soot");
+        // Frame ribs down the taper, a hazard band at the waist, primer scuffs, vents.
+        for (var i = 0; i < 8; i++)
+        {
+            double[] t0 = P(a[i].X, -0.02, a[i].Z), t1 = P(m[i].X, ym, m[i].Z), t2 = P(b[i].X, FrameBottom + 0.02, b[i].Z);
+            Bar(p, t0, t1, 0.08);
+            Bar(p, t1, t2, 0.08);
+        }
+        for (var i = 0; i < 8; i++)
+            Strip(p, m, i, 0.08, 0.92, ym - 0.2, ym - 0.05, 0.03, Hazard, "hazard paint");
+        // The thrust ring under it: a heavy dark collar the drive bolts to.
+        Prism(p, Oct8Off(Cx, FrameBottom, Cz, 1.35), Oct8Off(Cx, FrameBottom - 0.35, Cz, 1.2), Frame, "dirty steel");
+        // Hidden: the tankage, in two blocks (above and below the waist).
+        Hidden(p, Cx - 4.0, -1.1, Cz - 3.2, Cx + 4.0, 0.0, Cz + 3.2);
+        Hidden(p, 0.75, -0.1, 4.0, 1.0, 0.0, 5.0); // (what the "up" socket is on)
+        Hidden(p, Cx - 3.0, FrameBottom, Cz - 2.6, Cx + 3.0, -1.1, Cz + 2.6);
+        Hidden(p, Cx - 1.2, FrameBottom - 0.35, Cz - 1.2, Cx + 1.2, FrameBottom, Cz + 1.2);
+        Sock(p, "up", 0.875, 0.0, Cz, "+y");
+        Sock(p, "drive", Cx, FrameBottom - 0.35, Cz, "-y");
+        foreach (var (sx, sz, n) in new[] { (-1, -1, "legFL"), (1, -1, "legFR"), (-1, 1, "legBL"), (1, 1, "legBR") })
+            Sock(p, n, Cx + sx * 2.2, FrameBottom, Cz + sz * 1.8, "-y");
+        p.Set(("fuelTank", Kw(("capacity", 9000))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(Cx + 3.0, -1.6, Cz).Cast<object>()], "+x", "fuel"))));
+        return p.Stats(9000, 24000, 30, 14.0);
+    }
+
+    /// <summary>A frame bar from a to b, w wide, drawn proud of the surface by 3 cm along its own outward normal (the plate's).</summary>
+    private static void Bar(Part p, double[] a, double[] b, double w)
+    {
+        var d = Unit(Sub(b, a));
+        // Outward: away from the spine in plan.
+        double[] mid = [(a[0] + b[0]) / 2, 0, (a[2] + b[2]) / 2];
+        double[] outw = Unit([mid[0] - (Cx - H), 0, mid[2] - (Cz - H)]);
+        var side = Unit(Cross(d, outw));
+        double[] Off(double[] q, double s, double o) => [q[0] + side[0] * s + outw[0] * o, q[1] + side[1] * s, q[2] + side[2] * s + outw[2] * o];
+        Plate(p, [Off(a, -w / 2, 0.035), Off(a, w / 2, 0.035), Off(b, w / 2, 0.035), Off(b, -w / 2, 0.035)], Frame, "dirty steel");
+    }
+
+    /// <summary>The main drive: a big bell under the thrust ring, a glow deep inside. Origin on the ring; the bell down along -y.</summary>
+    private static Part Drive()
+    {
+        var p = new Part("Halberd Main Drive", Small, Section, $"The Halberd's main drive: {DriveForce / 1e6:0.0} MN down its bell, from the thrust frame's tanks.", role: "thruster", tool: "wrench", material: "steel", color: "#2a2c2e", group: Group);
+        double[] RingY(double r, double y, int i, int n = 12)
+        {
+            var an = Math.PI / n + i * 2 * Math.PI / n;
+            return [Py.Round(r * Math.Cos(an), 4), y, Py.Round(r * Math.Sin(an), 4)];
+        }
+        // The throat (a short drum), then the bell flaring to 1.5 m, then a lip.
+        (double Y, double R)[] st = [(0, 0.9), (-0.5, 0.75), (-0.8, 0.7), (-1.6, 1.05), (-2.3, 1.38), (-2.6, 1.5)];
+        for (var s = 0; s < st.Length - 1; s++)
+            for (var i = 0; i < 12; i++)
+                Quad(p, RingY(st[s].R, st[s].Y, i), RingY(st[s].R, st[s].Y, i + 1), RingY(st[s + 1].R, st[s + 1].Y, i + 1), RingY(st[s + 1].R, st[s + 1].Y, i), s < 2 ? "#3a3d40" : "#2a2c2e", s < 2 ? "dirty steel" : "soot");
+        // Cooling bands round the bell, and the glow up inside it.
+        foreach (var (y, r) in new[] { (-1.2, 0.9), (-1.95, 1.22) })
+            Prism(p, [.. Enumerable.Range(0, 12).Select(i => RingY(r + 0.04, y - 0.05, i))], [.. Enumerable.Range(0, 12).Select(i => RingY(r + 0.04, y + 0.05, i))], "#5a4a3a", "copper");
+        Plate(p, [.. Enumerable.Range(0, 12).Select(i => RingY(0.62, -0.85, i))], "#9ad8ff", glow: true);
+        p.Add(Box([-0.75, -0.8, -0.75], [0.75, 0, 0.75], hidden: true));
+        p.Add(Box([-1.1, -2.6, -1.1], [1.1, -0.8, 1.1], hidden: true));
+        p.Sock("top", [0, 0, 0], "+y");
+        p.Set(("thruster", Kw(("force", DriveForce), ("spool", 1.5), ("exhaust", "-y"), ("at", Py.L(0, -2.6, 0)), ("burnRate", Py.Round(DriveForce / 1e6 * JetBurn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [1.1, -1.2, 0], "+x", "fuel"))));
+        return p.Stats(6000, 9000, 25, 10.0);
+    }
+
+    /// <summary>A landing leg: a telescopic strut with a hydraulic ram beside it, on a broad pad. Origin at its root.</summary>
+    private static Part Leg()
+    {
+        var p = new Part("Halberd Landing Leg", Small, Section, "A landing leg: a telescopic strut and its ram on a broad pad.", role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
+        double bottom = Ground - FrameBottom; // (negative: the pad's underside)
+        p.Add(Box([-0.22, -1.6, -0.22], [0.22, 0, 0.22], Armour, shape: Kw(("finish", "plated steel"))));
+        p.Add(Box([-0.15, bottom + 0.2, -0.15], [0.15, -1.6, 0.15], "#9aa0a4", shape: Kw(("finish", "chrome"))));
+        p.Add(Box([-0.5, bottom, -0.5], [0.5, bottom + 0.2, 0.5], Frame, shape: Kw(("finish", "rubber"))));
+        p.Add(Box([-0.3, bottom + 0.2, -0.3], [0.3, bottom + 0.3, 0.3], Frame, shape: Kw(("finish", "dirty steel"))));
+        p.Add(Box([0.24, -1.4, -0.06], [0.34, -0.2, 0.06], "#4a4e52", detail: true, shape: Kw(("finish", "steel"))));
+        p.Add(Box([0.26, bottom + 0.35, -0.04], [0.32, -1.4, 0.04], "#9aa0a4", detail: true, shape: Kw(("finish", "chrome"))));
+        p.Add(Box([-0.235, -0.5, -0.235], [0.235, -0.38, 0.235], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
+        p.Sock("top", [0, 0, 0], "+y");
+        return p.Stats(900, 3000, 20, 6.0);
+    }
+
+    // ---- ladders
+
+    /// <summary>A ladder climbed with F: rails and rungs standing off a back plane (local z 0, the landing behind it), rise metres up
+    /// to its landing, the rails a metre past it.</summary>
+    private static Part Ladder(string name, double rise, string desc, string sockName, double[] sockAt, string sockDir)
+    {
+        var p = new Part(name, Small, Section, desc, role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
+        double top = rise + 1.0;
+        p.Add(Box([-0.3, 0, -0.19], [0.3, top, -0.005], hidden: true));
+        foreach (var x in new[] { -0.25, 0.25 })
+        {
+            p.Add(Box([x - 0.03, 0.0, -0.18], [x + 0.03, top, -0.12], "#9aa0a4", detail: true, shape: Kw(("finish", "painted steel"))));
+            for (var y = 0.6; y < top - 0.2; y += 1.2)
+                p.Add(Box([x - 0.02, y, -0.12], [x + 0.02, y + 0.06, -0.01], Frame, detail: true, shape: Kw(("finish", "dirty steel"))));
+        }
+        for (var y = 0.3; y < rise + 0.1; y += 0.3)
+            p.Add(Box([-0.22, y - 0.02, -0.165], [0.22, y + 0.02, -0.135], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
+        p.Add(Box([-0.29, top - 0.06, -0.19], [0.29, top, -0.11], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
+        p.Sock(sockName, sockAt, sockDir);
+        p.Set(("ladder", rise));
+        return p.Stats(60 + rise * 12, 400, 6, 3.0);
+    }
+
+    // ---- the guns
+
+    /// <summary>A point-defence cannon: a squat rotary breech with a shroud and three barrels, belt-fed from the box bolted to its back.</summary>
+    private static Part Pdc()
+    {
+        var p = new Part("Halberd PDC", Small, Section, "A point-defence cannon: a fast rotary gun for a turret, fed from the ammo box on its back.", role: "gun", tool: "wrench", material: "steel", color: Armour, group: Group);
+        p.Add(Box([-0.2, -0.16, -0.3], [0.2, 0.16, 0.3]));
+        p.Add(Box([-0.16, -0.12, -0.75], [0.16, 0.12, -0.3], Frame, shape: Kw(("finish", "dirty steel"))));
+        foreach (var (x, y) in new[] { (-0.06, 0.04), (0.06, 0.04), (0.0, -0.06) })
+            p.Add(Box([x - 0.025, y - 0.025, -1.35], [x + 0.025, y + 0.025, -0.75], "#2a2c2e", detail: true, shape: Kw(("finish", "steel"))));
+        p.Add(Box([-0.1, -0.1, -1.4], [0.1, 0.1, -1.3], Frame, detail: true, shape: Kw(("finish", "dirty steel"))));
+        p.Add(Box([-0.205, 0.09, -0.2], [0.205, 0.13, 0.2], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
+        p.Add(Box([0.2, -0.05, -0.1], [0.24, 0.05, 0.18], "#4a4e52", detail: true, shape: Kw(("finish", "steel"))));
+        p.Sock("bottom", [0, -0.16, 0], "-y");
+        p.Sock("top", [0, 0.16, 0], "+y");
+        p.Sock("back", [0, 0, 0.3], "+z");
+        p.Set(("gun", Kw(("damage", 16), ("rpm", 1500), ("spread", 1.6), ("range", 220), ("mag", 300), ("reload", 2.5), ("kick", 6), ("fx", "bullet"), ("soundOf", "Bastille"), ("muzzle", Py.L(0, 0, -1.4)))), ("centreSockets", false));
+        return p.Stats(180, 500, 14, 3.0);
+    }
+
+    /// <summary>The spinal railgun: a long breech in the cockpit's roof and a barrel up through the nose. Fires along its barrel.</summary>
+    private static Part Railgun()
+    {
+        var p = new Part("Halberd Spinal Railgun", Small, Section, "The Halberd's railgun: one slug, very fast, through three plates. Fixed along the spine, so the ship is the aim.", role: "gun", tool: "welder", material: "steel", color: Frame, group: Group);
+        p.Add(Box([-0.4, -0.4, -0.8], [0.4, 0.4, 0.8], Armour, shape: Kw(("finish", "plated steel"))));
+        p.Add(Box([-0.22, -0.22, -4.8], [0.22, 0.22, -0.8], "#3a3d40", shape: Kw(("finish", "dirty steel"))));
+        foreach (var s in new[] { -1, 1 })
+            p.Add(Box([s * 0.22 - (s > 0 ? 0 : 0.06), -0.12, -4.75], [s * 0.22 + (s > 0 ? 0.06 : 0), 0.12, -1.0], "#5a4a3a", detail: true, shape: Kw(("finish", "copper"))));
+        p.Add(Box([-0.28, -0.28, -4.95], [0.28, 0.28, -4.8], Frame, detail: true, shape: Kw(("finish", "dirty steel"))));
+        p.Add(Box([-0.18, -0.18, -4.97], [0.18, 0.18, -4.95], "#9ad8ff", detail: true, shape: Kw(("glow", true))));
+        foreach (var z in new[] { -0.6, 0.2 })
+            p.Add(Box([-0.405, -0.405, z], [0.405, 0.405, z + 0.12], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
+        p.Sock("back", [0, 0, 0.8], "+z");
+        p.Set(("gun", Kw(("damage", 700), ("rpm", 8), ("spread", 0.05), ("range", 600), ("mag", 1), ("reload", 6.0), ("flags", Py.L("penetrating")), ("kick", 2500), ("fx", "cannon"), ("speed", 900), ("soundOf", "Leviathan .50"), ("muzzle", Py.L(0, 0, -4.97)))), ("centreSockets", false));
+        return p.Stats(4200, 3000, 25, 8.0);
+    }
+
+    // ---- the fittings
+
+    private static Part Fitting(string name, string desc, string role = "frame", string color = "#8e959a") =>
+        new(name, Small, "Ship fittings", desc, role: role, tool: "wrench", material: "steel", color: color, group: Group);
+
+    private static void WallSockets(Part p, double back, double top)
+    {
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("top", [0, top, 0], "+y");
+        p.Sock("wall", [0, 0.125, -back], "-z");
+    }
+
+    /// <summary>The reactor: a squat armoured drum on a plinth, coolant loops round it, a window onto the glow. Makes power.</summary>
+    private static Part Reactor()
+    {
+        var p = Fitting("Halberd Reactor", "The Halberd's fusion reactor: 1.5 MW for the ship's circuits, no fuel. Don't look in the window.", "generator", Armour);
+        p.Set(("tool", "welder"));
+        p.Add(Box([-0.9, 0, -0.9], [0.9, 0.3, 0.9], Frame, shape: Kw(("finish", "dirty steel"))));
+        double[] O(double y, double r, int i)
+        {
+            var a = Math.PI / 8 + i * Math.PI / 4;
+            return [Py.Round(r * Math.Cos(a), 4), y, Py.Round(r * Math.Sin(a), 4)];
+        }
+        Prism(p, [.. Enumerable.Range(0, 8).Select(i => O(0.3, 0.78, i))], [.. Enumerable.Range(0, 8).Select(i => O(2.2, 0.78, i))], Armour, "plated steel");
+        Prism(p, [.. Enumerable.Range(0, 8).Select(i => O(2.2, 0.78, i))], [.. Enumerable.Range(0, 8).Select(i => O(2.5, 0.45, i))], Armour2, "plated steel");
+        foreach (var y in new[] { 0.7, 1.9 })
+            Prism(p, [.. Enumerable.Range(0, 8).Select(i => O(y, 0.82, i))], [.. Enumerable.Range(0, 8).Select(i => O(y + 0.1, 0.82, i))], Hazard, "hazard paint");
+        p.Add(Box([-0.55, 0.3, -0.55], [0.55, 2.5, 0.55], hidden: true));
+        p.Add(Box([-0.25, 1.0, 0.74], [0.25, 1.6, 0.8], "#a0f0ff", detail: true, shape: Kw(("glow", true))));
+        p.Add(Box([-0.32, 0.93, 0.73], [0.32, 1.67, 0.76], Frame, detail: true, shape: Kw(("finish", "dirty steel"))));
+        // Coolant loops: a blue and a red pipe up its flank and into the ceiling.
+        p.Add(Box([0.8, 0.3, -0.25], [0.92, 2.75, -0.13], PipeBlue, detail: true, shape: Kw(("finish", "painted steel"))));
+        p.Add(Box([0.8, 0.3, 0.13], [0.92, 2.75, 0.25], PipeRed, detail: true, shape: Kw(("finish", "painted steel"))));
+        p.Add(Box([-0.6, 0.3, -0.88], [-0.2, 0.62, -0.84], "#40ff90", detail: true, shape: Kw(("glow", true))));
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Set(("generator", Kw(("rate", 1500), ("spool", 10), ("fuel", "none"))), ("ports", Py.L(Kw(("name", "Power out"), ("type", "power"), ("dir", "out"), ("at", Py.L(0, 0.15, 0.9)), ("face", "+z")))));
+        return p.Stats(4000, 3000, 30, 12.0);
+    }
+
+    /// <summary>A robot's charging cradle: a back frame with clamps and a status light. The shell hangs on its front by its back.</summary>
+    private static Part Cradle()
+    {
+        var p = Fitting("Robot Charging Cradle", "A wall cradle for a robot shell: clamps, a charge lead and a status light. Hang the shell on its front.", color: Frame);
+        p.Add(Box([-0.4, 0, -0.12], [0.4, 2.1, 0.0], Frame, shape: Kw(("finish", "dirty steel"))));
+        p.Add(Box([-0.45, 0, -0.12], [-0.4, 2.2, 0.06], Hazard, shape: Kw(("finish", "hazard paint"))));
+        p.Add(Box([0.4, 0, -0.12], [0.45, 2.2, 0.06], Hazard, shape: Kw(("finish", "hazard paint"))));
+        foreach (var y in new[] { 0.9, 1.5 })
+            p.Add(Box([-0.3, y, 0.0], [0.3, y + 0.08, 0.06], "#5a6064", detail: true, shape: Kw(("finish", "steel"))));
+        p.Add(Box([-0.08, 1.95, 0.0], [0.08, 2.02, 0.03], "#40e070", detail: true, shape: Kw(("glow", true))));
+        p.Add(Box([0.25, 0.3, 0.0], [0.31, 1.6, 0.05], PipeYellow, detail: true, shape: Kw(("finish", "rubber"))));
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("wall", [0, 0.125, -0.12], "-z");
+        p.Sock("front", [0, 1.25, 0.0], "+z");
+        return p.Stats(60, 300, 6, 3.0);
+    }
+
+    /// <summary>A crash couch: a padded acceleration couch with a headrest and harness. Lie in it; it is where you wake (as a bunk).</summary>
+    private static Part CrashCouch()
+    {
+        var p = Fitting("Crash Couch", "An acceleration couch: padded, harnessed, gel-filled. Lie in it, and in survival it is where you wake.", "seat", "#3a4048");
+        p.Add(Box([-0.4, 0, -1.0], [0.4, 0.35, 1.0], Frame, shape: Kw(("finish", "dirty steel"))));
+        p.Add(Box([-0.36, 0.35, -0.95], [0.36, 0.5, 0.95], "#3d4a58", shape: Kw(("finish", "fabric"))));
+        p.Add(Box([-0.36, 0.5, -0.95], [0.36, 0.85, -0.7], "#3d4a58", shape: Kw(("finish", "fabric"))));
+        foreach (var s in new[] { -1, 1 })
+        {
+            p.Add(Box([s * 0.4 - 0.04, 0.35, -0.6], [s * 0.4 + 0.04, 0.62, 0.5], Frame, detail: true, shape: Kw(("finish", "painted steel"))));
+            p.Add(Box([s * 0.22 - 0.03, 0.501, -0.6], [s * 0.22 + 0.03, 0.515, 0.2], Hazard, detail: true, shape: Kw(("finish", "fabric"))));
+        }
+        p.Add(Box([-0.12, 0.62, -0.2], [0.12, 0.66, 0.0], "#40c0e0", detail: true, shape: Kw(("glow", true))));
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("wall", [-0.4, 0.125, 0], "-x"); // (its long side against a wall)
+        p.Set(("seat", Kw(("at", Py.L(0, 0.15, 0)), ("bunk", true))));
+        return p.Stats(90, 220, 4, 2.5);
+    }
+
+    /// <summary>A flight couch: a raked seat with a headrest, side sticks and a harness, for the cockpit and the gunnery stations.</summary>
+    private static Part FlightCouch()
+    {
+        var p = Fitting("Flight Couch", "A raked flight couch with side sticks: link it to a flight computer or a turret module.", "seat", "#3a4048");
+        p.Add(Box([-0.32, 0, -0.32], [0.32, 0.35, 0.32], Frame, shape: Kw(("finish", "dirty steel"))));
+        p.Add(Box([-0.3, 0.35, -0.3], [0.3, 0.5, 0.3], "#3d4a58", shape: Kw(("finish", "fabric"))));
+        p.Add(Box([-0.3, 0.5, 0.2], [0.3, 1.35, 0.4], "#3d4a58", shape: Kw(("finish", "fabric"))));
+        p.Add(Box([-0.18, 1.35, 0.24], [0.18, 1.55, 0.4], "#3d4a58", shape: Kw(("finish", "fabric"))));
+        foreach (var s in new[] { -1, 1 })
+        {
+            p.Add(Box([s * 0.36 - 0.05, 0.35, -0.25], [s * 0.36 + 0.05, 0.65, 0.3], Frame, detail: true, shape: Kw(("finish", "painted steel"))));
+            p.Add(Box([s * 0.36 - 0.025, 0.65, -0.15], [s * 0.36 + 0.025, 0.85, -0.1], "#2a2c2e", detail: true, shape: Kw(("finish", "rubber"))));
+            p.Add(Box([s * 0.15 - 0.03, 0.6, 0.19], [s * 0.15 + 0.03, 1.3, 0.2], Hazard, detail: true, shape: Kw(("finish", "fabric"))));
+        }
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Set(("seat", Kw(("at", Py.L(0, -0.05, 0)))));
+        return p.Stats(45, 160, 4, 2.0);
+    }
+
+    /// <summary>The galley's coffee machine on its counter: the most important part of the ship.</summary>
+    private static Part Coffee()
+    {
+        var p = Fitting("Galley Coffee Station", "A counter with a coffee machine on it. It makes one kind of coffee, and makes it badly, and the crew would mutiny without it.", "frame", "#8e959a");
+        p.Add(Box([-0.35, 0, -0.3], [0.35, 0.9, 0.3], "#5c646a", shape: Kw(("finish", "painted steel"))));
+        p.Add(Box([-0.37, 0.9, -0.32], [0.37, 0.94, 0.32], "#2f3539", detail: true, shape: Kw(("finish", "plastic"))));
+        p.Add(Box([-0.22, 0.94, -0.3], [0.22, 1.45, -0.02], "#c8ccc8", shape: Kw(("finish", "chrome"))));
+        p.Add(Box([-0.14, 1.05, -0.02], [0.14, 1.12, 0.06], "#2a2c2e", detail: true, shape: Kw(("finish", "plastic"))));
+        p.Add(Box([-0.05, 0.94, 0.0], [0.05, 1.03, 0.1], "#f0f0e8", detail: true, shape: Kw(("finish", "gloss paint"))));
+        p.Add(Box([0.08, 1.3, -0.019], [0.16, 1.36, -0.005], "#ff4020", detail: true, shape: Kw(("glow", true))));
+        p.Add(Box([0.22, 0.94, -0.2], [0.33, 1.1, -0.1], "#6a4a30", detail: true, shape: Kw(("finish", "plastic"))));
+        WallSockets(p, 0.3, 1.45);
+        return p.Stats(70, 160, 3, 2.0);
+    }
+
+    /// <summary>A gunnery station: a console with two screens and a stick housing, in front of the gunner's couch.</summary>
+    private static Part GunneryConsole()
+    {
+        var p = Fitting("Gunnery Console", "A gunner's console: target screens and a stick housing. The turret module sits under it.", color: Console);
+        p.Add(Box([-0.45, 0, -0.25], [0.45, 0.8, 0.25], Console, shape: Kw(("finish", "plastic"))));
+        p.Add(Box([-0.45, 0.8, -0.25], [0.45, 1.35, -0.1], Console, shape: Kw(("finish", "plastic"))));
+        p.Add(Box([-0.4, 0.85, -0.1], [0.4, 1.3, -0.085], Screen, detail: true, shape: Kw(("glow", true))));
+        p.Add(Box([-0.4, 0.8, -0.08], [0.4, 0.82, 0.2], "#e0a040", detail: true, shape: Kw(("glow", true))));
+        p.Add(Box([-0.46, 0.0, -0.26], [0.46, 0.12, 0.26], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("module", [0.45, 0.4, 0], "+x");
+        return p.Stats(60, 200, 4, 2.0);
+    }
+
+    /// <summary>The flight computer: a cabinet with the stabiliser's gyro in it, under its own status lights. Flies the ship.</summary>
+    private static Part FlightComputer()
+    {
+        var p = new Part("Halberd Flight Computer", Small, Section, "The Halberd's flight computer: a flight stabilizer with a ship-size gyro in a cabinet. Fit it level, its arrow forward.", role: "logic", tool: "wrench", material: "steel", color: Console, group: Group);
+        p.Add(Box([-0.4, 0, -0.3], [0.4, 1.4, 0.3], Console, shape: Kw(("finish", "plastic"))));
+        p.Add(Box([-0.35, 1.0, -0.318], [0.35, 1.3, -0.3], Screen, detail: true, shape: Kw(("glow", true))));
+        for (var i = 0; i < 5; i++)
+            p.Add(Box([-0.3 + i * 0.14, 0.85, -0.318], [-0.25 + i * 0.14, 0.9, -0.3 + 0.002], i % 2 == 0 ? "#40e070" : Amber, detail: true, shape: Kw(("glow", true))));
+        p.Add(Box([-0.05, 1.401, -0.25], [0.05, 1.415, 0.05], Hazard, detail: true, shape: Kw(("finish", "hazard paint")))); // (the arrow, forward)
+        p.Add(Box([-0.12, 1.401, -0.25], [0.12, 1.415, -0.17], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Set(("logic", Kw(("kind", "flightstabilizer"), ("gyro", 3000000))), ("config", FlightParts.Config), ("faces", "forward"), ("faceAxis", "-z"));
+        return p.Stats(300, 600, 8, 3.0);
+    }
+
+    // ---- the blueprint
+
+    private static int Paint(BuildingParts.Blueprint bp, int step, string paint, string? finish = null)
+    {
+        bp.Steps[step]["paint"] = paint;
+        if (finish != null)
+            bp.Steps[step]["finish"] = finish;
+        return step;
+    }
+
+    private static int LampAt(BuildingParts.Blueprint bp, int on, string sock, string colour = "#e8f0f4")
+    {
+        var s = bp.Hang("Bulkhead Light", on, sock, "back");
+        bp.Steps[s]["config"] = new PyDict { ["colour"] = colour };
+        return s;
+    }
+
+    private static void Switch(BuildingParts.Blueprint bp, int on, string sock, params int[] lamps)
+    {
+        var s = bp.Hang("Bakelite Switch", on, sock, "back");
+        bp.Steps[s]["config"] = new PyDict { ["startOn"] = true };
+        foreach (var l in lamps)
+            bp.Wires.Add((s, l));
+    }
+
+    /// <summary>A PDC turret on a sponson: a turntable, a motor hinge on its top for elevation, the gun on the hinge's leaf and its box behind.</summary>
+    private static int Turret(BuildingParts.Blueprint bp, int on, string sock)
+    {
+        var tt = bp.Hang("Turntable", on, sock, "base");
+        var hinge = bp.Hang("Motor Hinge", tt, "top", "base");
+        var gun = bp.Hang("Halberd PDC", hinge, "leaf", "bottom");
+        bp.Hang("Ammo Box", gun, "back", "front");
+        return gun;
+    }
+
+    private static BuildingParts.Blueprint Blueprint(Dictionary<string, PyDict> defs)
+    {
+        var bp = new BuildingParts.Blueprint("Halberd Frigate", "A combat frigate that stands on its tail: six decks up a ladder spine, four point-defence turrets and a spinal railgun.", defs, maxSteps: 192);
+        double[] zero = [0, 0, 0];
+        var eng = bp.First("Halberd Engineering Deck");
+        var frame = bp.Put("Halberd Thrust Frame", zero, 0);
+        var robot = bp.Put("Halberd Robot Bay Deck", zero, 0);
+        var med = bp.Put("Halberd Med Deck", zero, 0);
+        var crew = bp.Put("Halberd Crew Deck", zero, 0);
+        var ops = bp.Put("Halberd Ops Deck", zero, 0);
+        var cockpit = bp.Put("Halberd Cockpit Deck", zero, 0);
+        var nose = bp.Put("Halberd Nose", zero, 0);
+        var drive = bp.Hang("Halberd Main Drive", frame, "drive", "top");
+        foreach (var n in new[] { "legFL", "legFR", "legBL", "legBR" })
+            bp.Hang("Halberd Landing Leg", frame, n, "top");
+        // The ladder spine and the boarding ladder.
+        var decks = new[] { eng, robot, med, crew, ops };
+        foreach (var d in decks)
+            bp.Hang("Halberd Spine Ladder", d, "ladder", "bottom");
+        bp.Hang("Halberd Boarding Ladder", eng, "boarding", "hull");
+        // Engineering: the reactor, the boards, the batteries, the workshop and stores, the airlock's doors and suit lockers.
+        bp.Hang("Halberd Reactor", eng, "reactor", "bottom");
+        bp.Hang("Power Board", eng, "board", "back");
+        bp.Hang("Engineer's Panel", eng, "panel", "back");
+        bp.Hang("Battery", eng, "battery0", "-y");
+        bp.Hang("Battery", eng, "battery1", "-y");
+        bp.Hang("Pipe Bank", eng, "pipes", "back");
+        bp.Hang("Tool Rack", eng, "rack", "back");
+        bp.Hang("Requisition Crate", eng, "crate0", "-y");
+        bp.Hang("Requisition Crate", eng, "crate1", "-y");
+        Paint(bp, bp.Hang("Locker", eng, "suit0", "wall"), Hazard, "worn paint");
+        Paint(bp, bp.Hang("Locker", eng, "suit1", "wall"), Hazard, "worn paint");
+        Paint(bp, bp.Hang("Bulkhead Door 1.5x2.25 m", eng, "doorOuter", "hang"), Armour, "plated steel");
+        Paint(bp, bp.Hang("Bulkhead Door 1.5x2.25 m", eng, "doorInner", "hang"), Armour, "plated steel");
+        Switch(bp, eng, "switch", LampAt(bp, eng, "lampA"), LampAt(bp, eng, "lampB"), LampAt(bp, eng, "lampC"), LampAt(bp, eng, "lampLock", "#ff5040"));
+        // The robot bay: three cradles with two shells in them, two link couches, the armoury.
+        var cradles = Enumerable.Range(0, 3).Select(i => bp.Hang("Robot Charging Cradle", robot, $"cradle{i}", "wall")).ToArray();
+        bp.Hang("Robot Shell", cradles[0], "front", "back");
+        bp.Hang("Robot Shell", cradles[2], "front", "back");
+        bp.HangTurned("Shell Control Chair", robot, "couch0", "bottom", BuildingParts.RY90); // (facing the cradles)
+        bp.HangTurned("Shell Control Chair", robot, "couch1", "bottom", BuildingParts.RY90);
+        bp.Hang("Tool Rack", robot, "armsRack", "back");
+        Paint(bp, bp.Hang("Locker", robot, "locker0", "wall"), Armour, "worn paint");
+        Paint(bp, bp.Hang("Locker", robot, "locker1", "wall"), Armour, "worn paint");
+        bp.Hang("Ammo Crate", robot, "ammo0", "bottom");
+        bp.Hang("Ammo Crate", robot, "ammo1", "bottom");
+        Paint(bp, bp.Hang("Bulkhead Door 1.5x2.25 m", robot, "doorArmoury", "hang"), Armour, "plated steel");
+        Switch(bp, robot, "switch", LampAt(bp, robot, "lampA", "#f0c070"), LampAt(bp, robot, "lampB", "#f0c070"), LampAt(bp, robot, "lampC"), LampAt(bp, robot, "lampD"));
+        // The med bay and the galley.
+        bp.Hang("Medical Station", med, "medL", "back");
+        bp.Hang("Medical Station", med, "medR", "back");
+        bp.Hang("Medicine Cabinet", med, "cabinet", "back");
+        Paint(bp, bp.Hang("Shower Stall", med, "decon", "wall"), MedWhite, "gloss paint"); // (the decontamination shower)
+        Paint(bp, bp.Hang("Locker", med, "medLocker", "wall"), MedWhite, "gloss paint");
+        Paint(bp, bp.Hang("Bulkhead Door 1.5x2.25 m", med, "doorMed", "hang"), MedWhite, "gloss paint");
+        bp.Hang("Galley Stove", med, "stove", "back");
+        bp.Hang("Galley Coffee Station", med, "coffee", "wall");
+        Paint(bp, bp.Hang("Locker", med, "galleyLocker", "wall"), "#5c646a", "worn paint");
+        bp.HangTurned("Mess Table", med, "table", "bottom", BuildingParts.RY90);
+        Switch(bp, med, "switchMed", LampAt(bp, med, "lampMedA", "#f4fbff"), LampAt(bp, med, "lampMedB", "#f4fbff"));
+        Switch(bp, med, "switch", LampAt(bp, med, "lampGalleyA", "#ffe0b0"), LampAt(bp, med, "lampGalleyB", "#ffe0b0"));
+        // Crew quarters.
+        for (var i = 0; i < 4; i++)
+            bp.Hang("Crash Couch", crew, $"couch{i}", "wall");
+        Paint(bp, bp.Hang("Bulkhead Door 1.5x2.25 m", crew, "doorBunk", "hang"), Armour, "plated steel");
+        Paint(bp, bp.Hang("Steel Swing Door 1.5x2.25 m", crew, "doorHead", "hang"), Armour, "plated steel");
+        bp.Hang("Ship Toilet", crew, "toilet", "wall");
+        bp.Hang("Ship Basin", crew, "basin", "wall");
+        bp.Hang("Steel Desk", crew, "desk", "wall");
+        for (var i = 0; i < 3; i++)
+            Paint(bp, bp.Hang("Locker", crew, $"locker{i}", "wall"), i == 1 ? "#5c646a" : Armour, "worn paint");
+        Switch(bp, crew, "switch", LampAt(bp, crew, "lampBunkA", "#ffd8a0"), LampAt(bp, crew, "lampBunkB", "#ffd8a0"), LampAt(bp, crew, "lampHall"), LampAt(bp, crew, "lampHead"));
+        // Two gunnery stations, each working the turrets on its own deck (a wire reaches 8 m): the robot bay's port and starboard, ops' bow and stern.
+        var guns = new[] { Turret(bp, robot, "pdcPort"), Turret(bp, robot, "pdcStbd"), Turret(bp, ops, "pdcBow"), Turret(bp, ops, "pdcStern") };
+        foreach (var (deck, pair) in new[] { (robot, new[] { guns[0], guns[1] }), (ops, new[] { guns[2], guns[3] }) })
+        {
+            var turn = deck == ops ? BuildingParts.RY270 : BuildingParts.R0; // (ops' station faces starboard, between its two turrets)
+            var console = bp.HangTurned("Gunnery Console", deck, "gun", "bottom", turn);
+            var seat = bp.HangTurned("Flight Couch", deck, "gunSeat", "bottom", turn);
+            var module = bp.Hang("Turret Module", console, "module", "-x");
+            bp.Wires.Add((seat, module));
+            foreach (var g in pair)
+                bp.Wires.Add((module, g));
+        }
+        bp.Hang("Chart Table", ops, "plot", "bottom");
+        Paint(bp, bp.Hang("Locker", ops, "locker0", "wall"), Armour, "worn paint");
+        Paint(bp, bp.Hang("Locker", ops, "locker1", "wall"), Armour, "worn paint");
+        bp.Hang("Tool Rack", ops, "armsRack", "back");
+        Switch(bp, ops, "switch", LampAt(bp, ops, "lampA", "#a0c8ff"), LampAt(bp, ops, "lampB", "#a0c8ff"), LampAt(bp, ops, "lampC"), LampAt(bp, ops, "lampD"));
+        // The cockpit: the pilot flies through the flight computer and fires the railgun with it.
+        var pilot = bp.Hang("Flight Couch", cockpit, "pilot", "bottom");
+        bp.Hang("Flight Couch", cockpit, "copilot", "bottom");
+        var fc = bp.Hang("Halberd Flight Computer", cockpit, "computer", "bottom");
+        bp.Wires.Add((pilot, fc));
+        var rail = bp.Hang("Halberd Spinal Railgun", nose, "railgun", "back");
+        var railModule = bp.Hang("Turret Module", cockpit, "gunModule", "-z");
+        bp.Wires.Add((pilot, railModule));
+        bp.Wires.Add((railModule, rail));
+        bp.Hang("Chart Table", cockpit, "chart", "back");
+        Switch(bp, cockpit, "switch", LampAt(bp, cockpit, "lampA", "#ff6050"), LampAt(bp, cockpit, "lampB", "#ff6050"), LampAt(bp, cockpit, "lampC"));
+        _ = drive;
+        return bp;
+    }
+
+    public void Make(PartOutput o)
+    {
+        List<Part> parts =
+        [
+            Engineering(), RobotBay(), MedDeck(), CrewDeck(), OpsDeck(), Cockpit(), Nose(), ThrustFrame(), Drive(), Leg(),
+            Ladder("Halberd Spine Ladder", Pitch, "A ladder up the Halberd's spine, one storey: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
+            Ladder("Halberd Boarding Ladder", Ft(0) - Ground, "The Halberd's boarding ladder, from the ground to the airlock's platform: F climbs it.", "hull", [0, -Ground + 0.125, -0.005], "+z"),
+            Pdc(), Railgun(), Reactor(), Cradle(), CrashCouch(), FlightCouch(), Coffee(), GunneryConsole(), FlightComputer(),
+        ];
+        var defs = new Dictionary<string, PyDict>();
+        o.Own(Out);
+        foreach (var p in parts)
+        {
+            var d = p.Json();
+            var name = (string)d["name"]!;
+            defs.Add(name, d);
+            o.File($"{Out}/{FileName(name)}", PyJson.Dumps(d, 2) + "\n");
+        }
+        BuildingParts.AddPartDefs(o, defs, Out);
+        var bp = Blueprint(defs);
+        o.File($"{BpOut}/HalberdFrigate.json", PyJson.Dumps(bp.Json(), 2) + "\n");
+    }
+}

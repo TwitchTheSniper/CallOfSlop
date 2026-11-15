@@ -102,6 +102,7 @@ public static class PartKit
         new Generators.BuildingParts(),
         new Generators.InteriorParts(),
         new Generators.ShipParts(), // (the rust bucket: its blueprint uses the building and interior parts)
+        new Generators.FrigateParts(), // (the Halberd frigate: likewise)
         new Generators.MakeRv(),
         new Generators.MachineTiers(),
         new Generators.Assembling(),
