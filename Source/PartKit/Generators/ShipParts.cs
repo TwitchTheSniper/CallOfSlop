@@ -1390,6 +1390,117 @@ public sealed class ShipParts : IPartGenerator
         return p.Stats(60, 150, 3, 3.0);
     }
 
+    /// <summary>Sockets of the building kit's furniture (Interior: bottom, top, back at half height, the sides), so a ship's own fitting
+    /// takes a stock one's place in the blueprint.</summary>
+    private static void StockSockets(Part p, double w, double h, double d)
+    {
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("top", [0, h, 0], "+y");
+        p.Sock("back", [0, h / 2, -d / 2], "-z");
+        p.Sock("+x", [w / 2, h / 2, 0], "+x");
+        p.Sock("-x", [-w / 2, h / 2, 0], "-x");
+    }
+
+    private static PyDict Shelf(double[] mn, double[] mx, string label) => new()
+    {
+        ["slots"] = new List<object?> { new PyDict { ["min"] = mn.Select(v => (object?)Py.Round(v, 3)).ToList(), ["max"] = mx.Select(v => (object?)Py.Round(v, 3)).ToList(), ["label"] = label } },
+    };
+
+    /// <summary>The galley's range, built for a ship that pitches (Karl, 2026-11-15: the stock stove was a house's): bolted to the
+    /// bulkhead on a plinth, two induction plates with pan clamps and a fiddle rail, a pot strapped down, a dogged oven door, a grab
+    /// bar to hold in a bad burn, an extractor hood. The stock Galley Stove's size and sockets, so it hangs where that did.</summary>
+    private static Part GalleyRange()
+    {
+        double w = 1.0, h = 0.9, d = 0.7;
+        var p = Fitting("Ship Galley Range", "A galley range bolted to the bulkhead: two plates with pan clamps, a dogged oven and a grab bar for when the drive coughs.", role: "storage");
+        const string Dark = "#2a2826", Chrome = "#8a8e8a";
+        // The plinth (set back, dark), the carcass in the hull's green, the hob plate.
+        LBox(p, -0.46, 0, -0.33, 0.46, 0.1, 0.31, Dark, "dirty steel");
+        // (a shell round the oven, so the oven's slot has room: back, sides, floor, the band under the hob, the stiles round the door)
+        LBox(p, -0.5, 0.1, -0.35, 0.5, 0.72, -0.31, Patch, "rusty paint");
+        foreach (var sx in new[] { -1, 1 })
+        {
+            LBox(p, sx * 0.46, 0.1, -0.31, sx * 0.5, 0.72, 0.35, Patch, "rusty paint");
+            LBox(p, sx * 0.38, 0.14, 0.33, sx * 0.46, 0.72, 0.35, Patch, "rusty paint");
+        }
+        LBox(p, -0.46, 0.1, -0.31, 0.46, 0.14, 0.35, Patch, "rusty paint");
+        LBox(p, -0.38, 0.14, 0.33, 0.38, 0.17, 0.35, Patch, "rusty paint");
+        LBox(p, -0.5, 0.72, -0.35, 0.5, 0.86, 0.35, Patch, "rusty paint");
+        LBox(p, -0.505, 0.86, -0.35, 0.505, 0.9, 0.355, "#3a3836", "steel");
+        // Two induction plates, the right one warm; a pot on the left one under a clamp bar on posts.
+        LBox(p, -0.42, 0.9, -0.22, -0.04, 0.904, 0.16, "#1c1b1a", "steel", detail: true);
+        LBox(p, 0.04, 0.9, -0.22, 0.42, 0.904, 0.16, "#1c1b1a", "steel", detail: true);
+        LBox(p, 0.12, 0.904, -0.14, 0.34, 0.907, 0.08, "#ff7a2a", detail: true, glow: true);
+        LBox(p, -0.36, 0.904, -0.17, -0.1, 1.06, 0.11, Chrome, "steel");
+        LBox(p, -0.375, 1.06, -0.185, -0.085, 1.08, 0.125, Dark, "dirty steel", detail: true);
+        LBox(p, -0.4, 1.08, -0.045, -0.06, 1.095, -0.015, Stripe, "hazard paint", detail: true);
+        foreach (var x in new[] { -0.415, -0.06 })
+            LBox(p, x - 0.012, 0.904, -0.05, x + 0.012, 1.095, -0.01, Frame, "dirty steel", detail: true);
+        // The fiddle rail round the front and sides, on posts.
+        LBox(p, -0.48, 0.975, 0.315, 0.48, 0.995, 0.335, Chrome, "chrome", detail: true);
+        foreach (var sx in new[] { -1, 1 })
+        {
+            LBox(p, sx * 0.462, 0.972, -0.3, sx * 0.482, 0.992, 0.312, Chrome, "chrome", detail: true);
+            LBox(p, sx * 0.47 - 0.008, 0.9, 0.318, sx * 0.47 + 0.008, 0.975, 0.332, Chrome, "chrome", detail: true);
+        }
+        // The control strip (knobs, a red ready light), the oven door with its window, dogs at the corners, a lever latch.
+        LBox(p, -0.45, 0.74, 0.35, 0.45, 0.84, 0.372, Dark, "dirty steel", detail: true);
+        foreach (var x in new[] { -0.3, -0.15, 0.0 })
+            LBox(p, x - 0.025, 0.765, 0.372, x + 0.025, 0.815, 0.392, "#c8ccc6", "plastic", detail: true);
+        LBox(p, 0.28, 0.775, 0.372, 0.32, 0.805, 0.38, "#ff3020", detail: true, glow: true);
+        LBox(p, -0.4, 0.17, 0.35, 0.4, 0.7, 0.374, "#3a3f45", "painted steel", detail: true);
+        LBox(p, -0.25, 0.36, 0.374, 0.25, 0.56, 0.378, "#3a3020", detail: true);
+        foreach (var x in new[] { -0.37, 0.37 })
+            foreach (var y in new[] { 0.2, 0.67 })
+                LBox(p, x - 0.025, y - 0.02, 0.374, x + 0.025, y + 0.02, 0.392, Frame, "dirty steel", detail: true);
+        LBox(p, 0.22, 0.6, 0.374, 0.34, 0.64, 0.41, Stripe, "hazard paint", detail: true);
+        // The grab bar on stand-offs; bolts through the plinth's flange; a rust streak from a bolt.
+        LBox(p, -0.42, 0.875, 0.43, 0.42, 0.9, 0.455, Chrome, "chrome", detail: true);
+        foreach (var x in new[] { -0.4, 0.4 })
+            LBox(p, x - 0.012, 0.876, 0.355, x + 0.012, 0.899, 0.43, Chrome, "chrome", detail: true);
+        foreach (var x in new[] { -0.42, 0.42 })
+        {
+            LBox(p, x - 0.03, 0.03, 0.31, x + 0.03, 0.07, 0.33, Frame, "dirty steel", detail: true);
+            LBox(p, x - 0.01, 0.1, 0.35, x + 0.01, 0.3, 0.354, Rust, "rust", detail: true);
+        }
+        // The splashback up the bulkhead and the extractor hood over the plates, its grille and hazard edge.
+        LBox(p, -0.5, 0.9, -0.35, 0.5, 1.5, -0.32, Chrome, "steel");
+        LBox(p, 0.18, 0.93, -0.319, 0.22, 1.45, -0.316, Rust, "rust", detail: true);
+        LBox(p, -0.5, 1.5, -0.35, 0.5, 1.75, 0.05, Frame, "dirty steel");
+        LBox(p, -0.4, 1.496, -0.28, 0.4, 1.5, 0.0, "#1c1b1a", "dirty steel", detail: true);
+        LBox(p, -0.505, 1.51, 0.05, 0.505, 1.55, 0.056, Stripe, "hazard paint", detail: true);
+        p.Set(("storage", Shelf([-0.37, 0.18, -0.3], [0.37, 0.7, 0.32], "oven")));
+        StockSockets(p, w, h, d);
+        return p.Stats(120, 300, 4, 2.0);
+    }
+
+    /// <summary>The galley's table: a laminate top with a raised lip so nothing slides off, on two posts bolted to the deck, a shelf
+    /// between them. The stock Mess Table's size and sockets.</summary>
+    private static Part MessTable()
+    {
+        double w = 1.8, h = 0.75, d = 0.9;
+        var p = Fitting("Ship Mess Table", "A crew table bolted to the deck, with a lip round the edge: what is set on it stays on it.", role: "storage");
+        LBox(p, -0.9, 0.7, -0.45, 0.9, 0.75, 0.45, "#6b7068", "plastic");
+        LBox(p, -0.9, 0.75, 0.42, 0.9, 0.775, 0.45, Frame, "dirty steel", detail: true);
+        LBox(p, -0.9, 0.75, -0.45, 0.9, 0.775, -0.42, Frame, "dirty steel", detail: true);
+        foreach (var sx in new[] { -1, 1 })
+        {
+            LBox(p, sx * 0.87, 0.75, -0.42, sx * 0.9, 0.772, 0.42, Frame, "dirty steel", detail: true);
+            var x = sx * 0.55;
+            LBox(p, x - 0.06, 0.05, -0.06, x + 0.06, 0.7, 0.06, Frame, "dirty steel");
+            LBox(p, x - 0.18, 0, -0.18, x + 0.18, 0.05, 0.18, "#2a2826", "dirty steel");
+            foreach (var bx in new[] { -0.13, 0.13 })
+                foreach (var bz in new[] { -0.13, 0.13 })
+                    LBox(p, x + bx - 0.02, 0.05, bz - 0.02, x + bx + 0.02, 0.07, bz + 0.02, "#8a8e8a", "steel", detail: true);
+            // A worn patch where elbows go.
+            LBox(p, sx * 0.3 - 0.2, 0.75, 0.12, sx * 0.3 + 0.2, 0.752, 0.38, "#7d8279", "worn paint", detail: true);
+        }
+        LBox(p, -0.49, 0.3, -0.3, 0.49, 0.33, 0.3, Frame, "dirty steel");
+        p.Set(("storage", Shelf([-0.45, 0.34, -0.28], [0.45, 0.66, 0.28], "shelf")));
+        StockSockets(p, w, h, d);
+        return p.Stats(70, 200, 3, 2.0);
+    }
+
     private static Part GrowRack()
     {
         var p = Fitting("Grow Rack 2 m", "Three trays of hydroponic greens under lamps, fed from a drip line. Lettuce, mostly.");
@@ -1731,8 +1842,8 @@ public sealed class ShipParts : IPartGenerator
         // Hydroponics, the galley.
         foreach (var g in new[] { "growL0", "growL1", "growM0", "growM1" })
             Hang(bp, "Grow Rack 2 m", deck, g, "wall");
-        Hang(bp, "Galley Stove", deck, "stove", "back");
-        Hang(bp, "Mess Table", deck, "table", "back");
+        Hang(bp, "Ship Galley Range", deck, "stove", "back");
+        Hang(bp, "Ship Mess Table", deck, "table", "back");
         Hang(bp, "Medicine Cabinet", deck, "cabinet", "back");
         Hang(bp, "Galley Coffee Station", deck, "coffee", "wall");
         // Doors.
@@ -1760,7 +1871,7 @@ public sealed class ShipParts : IPartGenerator
         List<Part> parts =
         [
             .. structure, Ramp(), Pod(-1), Pod(1), Saddle(-1), Saddle(1), Drive(), LiftJet(), Leg(), Radiator(-1), Radiator(1), DeckCargo(), Crane(), Mast(),
-            Toilet(), Basin(), Shower(), GrowRack(), EngineBlock(),
+            Toilet(), Basin(), Shower(), GalleyRange(), MessTable(), GrowRack(), EngineBlock(),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);

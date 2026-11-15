@@ -541,13 +541,13 @@
       "by": "wall"
     },
     {
-      "part": "Galley Stove",
+      "part": "Ship Galley Range",
       "on": 17,
       "socket": "stove",
       "by": "back"
     },
     {
-      "part": "Mess Table",
+      "part": "Ship Mess Table",
       "on": 26,
       "socket": "table",
       "by": "back"
