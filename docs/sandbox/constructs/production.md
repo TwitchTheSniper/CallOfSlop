@@ -1394,7 +1394,7 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
 - **The job** (`CPart.Station`, a `StationJob`; server). Start costs the blueprint in a scratch world, 1.5 ms a tick: its bounds (the fit
   is checked again here and refused with the numbers), each link's length, its kinds. Then, at 2 Hz, each kind the build lacks (need
   less fitted, held and asked) becomes a craft order: linked stock is reserved and fetched first, the rest dealt to the wired consoles'
-  machines. Every part the build lacks is asked for at once (2026-11-14, the user: no waiting for one part before the next order starts; four new orders a look), so the machines work side by side; a part that can't be fitted yet waits in the hold, or in a Router's storage while the hold is full. A terminal's or station's ask goes first to a machine with a way to it (a conveyor through Joins and Routers, or a chute), then to any (`ConstructCrafting.StepTerminal`).
+  machines. Every part the build can fit now or next is asked for at once (2026-11-14, the user: no waiting for one part before the next order starts; four new orders a look): a step whose parent is in, or whose parent can be fitted next, so the machines work side by side while deeper parts wait to be ordered and the hold never fills with what can't be fitted yet. When the next part to fit can't come in (the hold full: at its door, or kept in a Router's storage), the station moves parts no step can take yet out to a Piece Rack on its network with a road back, in one decision (all go back if the part still wouldn't fit), and doesn't order those kinds again until a step can take them, when they come back as stock (`ConstructStation.MakeRoomFor`); with no such rack its note says it is stuck and to take one out. A terminal's or station's ask goes first to a machine with a way to it (a conveyor through Joins and Routers, or a chute), then to any (`ConstructCrafting.StepTerminal`).
   What nothing holds or makes is named on the screen with the reason; only what hangs off it waits.
 - **Fitting.** The vehicle is an ordinary construct, frozen at its final pose in the bay and `HeldBy` the station: no physics, and every
   edit, grab and seat refuses ("a Building Station is building it"). The station fits one part every `FitSeconds` (2 s) plus 0.02 s a kg,
@@ -1425,7 +1425,7 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   or boxes adding up to over one and a half times its volume) before any costing, at Start and in the panel; the costing itself is
   the blueprint's steps only (`StepsOnly`: no finish), 1 ms a tick, the bounds from the parts' boxes (`PartBounds`), so one slice
   is as long as its longest single step (a freeform weld on a big body rebuilds it). **Orders** (until 2026-11-14 a kind was
-  asked for only while a step of it had its parent in place; now every lacking part is asked at once, above). **A loose part lying in the
+  asked for only while a step of it had its parent in place; now every part it can fit now or next is asked at once, above). **A loose part lying in the
   bay** (a body of one part: set down, or dropped there with the physics gun) that the build lacks is taken at the next look, fitted
   at once or into the hold: the way to supply a physics-only part, which hands don't carry. **Start** refuses while the last build
   stands in the bay ("the bay isn't clear"). **Power**: the station draws its 150 W while it costs or builds and nothing idle

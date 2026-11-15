@@ -366,7 +366,7 @@ public sealed class ExtrusionParts : IPartGenerator
         p.Set(("power", power), ("storage", Kw(("bulk", bulk), ("wheel", wheel))),
             ("config", air ? AirframeConfig(across, width, d0, w0) : fan ? FanConfig(across, d0) : FormerConfig(across, width, d0, w0)),
             ("collider", "boxes")); // (the hub is a look: its cylinder must never become a hull)
-        return WithScreen(p, orders: true, recipe: fan || air); // (every former takes work orders; a Fan or Airframe Former keeps its Recipe button among them)
+        return WithScreen(p, orders: true, recipe: fan || air, width: c == Small ? 0.97 : null); // (every former takes work orders; a Fan or Airframe Former keeps its Recipe button among them. A small one's screen keeps its 0.97 m: it was sized from bounds a misplaced arrow had widened, and shrank when the arrow was put right)
     }
 
     /// <summary>The small Formers' look: a headstock on a dark column, a big bare hub with a chuck that turns, the hopper banded white, hazard paint round the hub.</summary>

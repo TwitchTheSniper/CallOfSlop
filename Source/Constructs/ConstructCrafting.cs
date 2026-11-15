@@ -67,6 +67,7 @@ public sealed class CraftNet
 
     public uint Key; // the body's links as they were (0: never worked out)
     public readonly int[] Machines = new int[MaxMachines]; // parts that take orders
+    public readonly bool[] MachineWay = new bool[MaxMachines]; // ...whether its output has a way to the tray (RouteTo), worked out with the net
     public int MachineN;
     public readonly int[] Stores = new int[MaxStores]; // parts that hold stock (racks, shelves, chests, volumes, bins)
     public readonly short[] Via = new short[MaxStores]; // ...how a part leaves it for the tray: a conveyor's index, -2 a chute, -1 no route
@@ -183,7 +184,10 @@ public static class ConstructCrafting
             if (WorkOrders.TakesOrders(d))
             {
                 if (net.MachineN < CraftNet.MaxMachines)
+                {
+                    net.MachineWay[net.MachineN] = RouteTo(c, seen[q], t) != -1;
                     net.Machines[net.MachineN++] = seen[q];
+                }
             }
             else if (d.IsRefiner)
             {
@@ -1265,8 +1269,8 @@ public static class ConstructCrafting
                 // could never deliver while the Extruder with a way waited: the Factory Showcase, 2026-11-14. Chains rank the same way.)
                 for (var i = 0; i < net.MachineN * 2 && ask > 0; i++)
                 {
-                    var m = net.Machines[i % net.MachineN];
-                    if ((i < net.MachineN) == (RouteTo(c, m, t) == -1))
+                    var m = net.Machines[i % net.MachineN]; // (its way cached with the net: MachineWay)
+                    if ((i < net.MachineN) != net.MachineWay[i % net.MachineN])
                         continue;
                     var why = LooseRefusal(world, c, m) ?? WorkOrders.Queue(world, c, m, o.What with { Count = (ushort)ask, Made = 0 }); // (never asked of a machine that drops it loose)
                     if (why == null)

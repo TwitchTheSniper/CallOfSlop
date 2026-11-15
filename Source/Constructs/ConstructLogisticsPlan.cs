@@ -317,7 +317,7 @@ public static class ConstructLogisticsPlan
             // What its input holds counts only when no other order is queued ahead of this one: else that order uses it first. (A station
             // orders every lacking part at once, so a Swing Arm queued behind a Differential counted the Differential's Bearings as its
             // own, was asked short, and waited for one Bearing for good: the Factory Showcase, 2026-11-14.)
-            var ahead = c.Parts[m].Orders is { Bill: false, Count: > 1 };
+            var ahead = c.Parts[m].Orders is { Bill: false, Count: > 0 } mq && (mq.Head.IsPiece || mq.Head.Part != product); // (another order is at its head: this one isn't, so what the hopper holds is that one's)
             foreach (var (rp, rn) in r.Parts)
                 if (inputs < kinds.Length)
                 {

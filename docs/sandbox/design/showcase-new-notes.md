@@ -119,14 +119,15 @@ FINISHED           the Works Runabout, built in the bay; a hand-ordered part in 
 ## Game changes made on the way (each with a lesson in `.claude/rules/production.md`)
 
 1. Conveyors run at 1 m/s (the user; protocol 316).
-2. A Building Station asks for every part it lacks at once (the user), and a full hold makes room for a part the build can fit now
-   (`ConstructStation.MakeRoomFor`).
+2. A Building Station asks at once for every part it can fit now or next (the user; deeper parts wait for their parent), and a full hold
+   makes room for the next part by moving what no step can take yet to a rack with a road back, or says it is stuck (`MakeRoomFor`).
 3. A terminal's or station's ask goes first to a machine with a way to it (`ConstructCrafting.StepTerminal`).
 4. A blueprint step may be `"ordersOnly"`: built with an empty queue, the machine never runs its own settings.
 5. A press with a Piece out conveyor sends every part on it, counted for its order (`ConstructPress.PutOut`).
 6. An Assembler takes a conveyor's part for any order in its queue (`FeedQueuedPart`): one input conveyor no longer deadlocks.
 7. A queued order's inputs are asked in full (`ConstructLogisticsPlan.Need`): only its own chains count, and the hopper only at the head.
 8. The window tool: `--spawn-yaw D`, and `stock` prints a bin's bulk.
+9. Code review: player blueprints keep `ordersOnly` (`ConstructClip`); a press sends tray parts by conveyor only where it leads to a junction, rack, Assembler or press (`TrayPartsRide`); `Need`'s "ahead" reads this order's place in the queue; a terminal's ask caches each machine's way with its net (`CraftNet.MachineWay`).
 
 ## Not verified
 
@@ -173,7 +174,7 @@ What the runs showed that they weren't testing. Not chased, except the first (fi
    Recommendation: a terminal refuses an order whose only maker has no way to it, as it refuses a part dropped loose.
 3. **Pooled inputs** in one machine's hopper are still not reserved for the order that asked (fix 7 asks enough). Recommendation:
    per-order input claims in the Assembler.
-4. **Ordering everything at once** fills the hold early; fix 2 copes. Recommendation: a staging rack the station draws from.
+4. **Ordering everything at once** filled the hold early; fixed by ordering only what can be fitted now or next, plus MakeRoomFor (code review).
 5. **The old Production Showcase** still has what this one lacks: the Bridge Crane, its rails, the Lifter Cab and its crane bay (left
    out at the user's word), the Run-out Table, a Splitter and the "conveyor too narrow" demo. Recommendation: keep it as the crane and
    conveyor-rules demo until the medium classes come in.
