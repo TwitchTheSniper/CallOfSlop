@@ -5,7 +5,7 @@ description: Design or change a ship, a big vehicle or a construct part for Call
 
 # Ship design, with the Ship gallery
 
-A ship is a **blueprint of parts**. Big ships are a few large generated parts (keel, decks, roof, pods) plus stock fittings on their sockets. Worked examples: the rust bucket (`Source/PartKit/Generators/ShipParts.cs`, `--gen-parts ship_parts`, notes in `docs/sandbox/constructs/ship.md`) and the Halberd Frigate (`Constructs/Parts/Frigate`, `Constructs/Blueprints/HalberdFrigate.json`). Read ship.md and `docs/sandbox/constructs/look.md` ("Valid is not finished", "Rules of thumb", "Off the axis") before you start. For the part file itself follow the `construct-part` skill.
+A ship is a **blueprint of parts**. Big ships are a few large generated parts (keel, decks, roof, pods) plus stock fittings on their sockets. Worked examples: the rust bucket (`Source/PartKit/Generators/ShipParts.cs`, `--gen-parts ship_parts`, notes in `docs/sandbox/constructs/ship.md`), the Halberd Frigate (`Constructs/Parts/Frigate`, `Constructs/Blueprints/HalberdFrigate.json`) and the Zero Day torpedo frigate (`Source/PartKit/Generators/TorpedoFrigateParts.cs`, notes in `docs/sandbox/constructs/torpedo-frigate.md`): the one to copy for a sleek ship, because its hull is lofted, not stacked (section 1b). Read ship.md and `docs/sandbox/constructs/look.md` ("Valid is not finished", "Rules of thumb", "Off the axis") before you start. For the part file itself follow the `construct-part` skill.
 
 ## 1. Plan the shape before the parts
 
@@ -13,6 +13,17 @@ A ship is a **blueprint of parts**. Big ships are a few large generated parts (k
 - **No plain boxes.** Every big face gets an angle: cut corners at bow and stern, sides that flare below the deck line and lean in above it, tapers toward the nose, a raked canopy, a spine or radiator on the roof. A tower of identical flat panels reads as a box too: vary panels deck to deck, taper, add ribs. Use `"shape": "hull"` boxes with `points` for faceted panels (any angle), `wedge` with `taper`/`shift` for tapering pieces, `bevel`/`rounded` with `radius` for edges, `cylinder`/`tube` for tanks, nozzles and pods. A hull facet is drawn only: give it hidden solid boxes behind it for collision and sockets.
 - Three colours (base, trim, accent under a tenth), a finish on every big face, lamps at every way in.
 - Ship parts go in the `"group": "Ship"` (with a `section` per ship), so the gallery finds them. Work in a generator (C#, `Source/PartKit`), never by hand-editing generated JSON.
+
+## 1b. Loft the hull first, then fit the rooms in it
+
+Karl's verdict (2026-11-15): the Halberd, a stack of octagonal storeys whose walls are the hull, reads "very simple" and ugly; the Zero Day, lofted, "so good". Rooms first gives a box; hull first gives a ship.
+
+- **Stations.** Write the hull as data: a half profile of about five points (keel edge, lower chine, beam, upper chine, spine edge) at six to eight stations bow to stern, and `At(z)` blending between them. The silhouette is tuned by moving stations: a long chisel nose, the widest beam well aft, a pinch at the stern.
+- **Facets** are plates stretched between two stations along one profile edge (keel, the sides, the spine). Every part along the ship draws its own band of them, so the skin stays continuous across parts.
+- **Fit the rooms to the skin:** a `SkinHalf(z, y)` (inner half-width at a height) and a check that throws when a room or floor pokes through. Hidden boxes out to the skin (`Void`) give collision without overlapping neighbours.
+- **Decks run the length** (Karl prefers it to storeys): two decks, each split fore and aft into parts, a corridor with rooms off it.
+- **Detail in the facet's frame** (along, across, out): bevelled armour slabs in ~3 m panels with a fixed pattern picked by facet and panel index (both sides match), chine rails on the profile corners, raked shoulder blocks. Big shapes first (sponsons, a dorsal block, the drive collar following the stern), small detail only once the silhouette reads.
+- **What a spaceship has:** bulkhead doors with hazard heads, railed ladder hatches, an airlock with a cycle light over a boarding shaft, light strips, a dado; rooms sized for the systems in them (walk-in torpedo bays by their magazines). Karl wants **no glass on the bridge**: armour over it, screens inside (view screen, camera screens).
 
 ## 2. Build and export
 
@@ -47,13 +58,14 @@ Check:
 - **The silhouette reads** from the Side and Top views: not a rectangle, a nose that makes sense, engines that push the way it flies (the game's bow is -z).
 - **Colour**: not one colour, not all dark grey; the accent marks doors, ramps and controls.
 
-Then the game's checks: `--check-building "NAME"` for a walkable ship, `--check-vehicle FILE` (z-fighting between parts, it builds, it stands), `--check-construct-parts`. Read REFUSED lines in `callofslop.log`.
+Then the game's checks: `--check-building "NAME"` for a walkable ship, `--check-vehicle FILE` (z-fighting **between** parts, it builds, it stands), `--check-construct-parts`, and `--selftest-only "No z-fighting"` for faces sharing a plane **inside** each part (`--check-vehicle` doesn't look there, and CI fails on it). Read REFUSED lines in `callofslop.log`: a refused part just goes missing from the build.
 
 ## 4. Update the Ship gallery
 
 There is one **Ship gallery** Artifact for the project. Its link is in project memory (`ship-preview-artifacts`); else find it with the Artifact tool's `list`. Never publish a second gallery.
 
 - From a session that didn't publish it: `read` it first (`action: "read"`, its `url`), then publish with `url`, `file_path` = `DIR/index.html`, `root` = DIR, and `files` = only the paths the export printed as changed (`{"models/x.json": "models/x.json", ...}`, always with `models/index.json` when it changed). Files left out stay as they were.
+- `--only` writes a `models/index.json` that lists only the ships it exported: merge its entries into the published index (keep the other ships and their parts) before publishing, or the gallery loses them.
 - The export deletes models it no longer writes (a ship or part renamed or removed) and prints them as `removed (publish them as null)`: drop each with `"models/old.json": null`.
 - Copy DIR to `/mnt/project-files/ship-gallery/` too.
 - The page has two pickers: a ship (or "Parts in no ship"), then the whole ship, one deck (cut at chest height from above, like a floor plan) or one of its parts on its own. Links name the view: `#halberd-frigate`, `#halberd-frigate--deck-3`, `#halberd-frigate--part-halberd-pdc`.
@@ -69,3 +81,7 @@ The preview is a design aid, not the renderer: no textures, no lamp light, legs 
 - Stairs: the Wide Stair under its Wide Stair Floor, or people crouch. Furniture on `"wall"` sockets, not mid-room.
 - Lift jets stand round the centre of mass, or the hover hold can't keep it level.
 - The game reads data from `bin/`: rebuild after `--gen-parts`, or the gallery shows the old parts.
+- Lofted plates z-fight in ways boxes don't (Zero Day, 2026-11-15): neighbouring facets cross at their shared edge, so their end caps share a plane; stagger the ends of alternate facets (odd ones 6 mm aft, chine rails between, each 1.5 mm short of its band: `FacetStagger`), draw a slightly twisted quad as one plate round all four corners, not two near-coplanar triangles, and start strips, glows and blocks a few mm off the face of the plate they sit on.
+- Thrusters need their own `"flame"`: the default is sized from force (radius `sqrt(F) * 0.002 + 0.05`), so a 9 MN drive got one flame 12 m across from its middle and a 1.5 MN jet one 5 m across. Give one flame per nozzle, at its mouth, as wide as it.
+- Walkable from the ground: leave 2.2 m or more under the keel to the boarding shaft, put an airlock's inner door where both its landings are clear of the shaft's rail, and keep tables out of doorways and ladder landings (`--check-building`'s map: 'o' is a floor that fits but can't be reached).
+- A wire reaches 8 m centre to centre: give each room its own switch, and put gun consoles within 8 m of their turret modules.
