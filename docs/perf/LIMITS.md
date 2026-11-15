@@ -516,7 +516,7 @@ where it has one. Line numbers are those of this audit.
 | Data sanity | `MaxPerConstruct` | `Constructs/ConstructFreeform.cs:18` | `192` | freeform welds a construct (they share Construct.MaxJoints with the joints: a segment is a byte, so 255 in all; was 64, this leaves 63 fo... | **Raised 64 to 192**: shares the 255 segments with moving joints, which already bounded the cost |
 | Data sanity | `MaxRuntimeName` | `Constructs/ConstructParts.cs:803` | `128` | a part made at run time ("stage": the Ordnance Rack's shapes): its name is its key in saves and blueprints, never a fixed-width field (a... | **New, 128**: a run-time (`"stage"`) part's name, i.e. the Ordnance Rack keys. Names are length-prefixed in saves (i32) and never sent in fixed fields; packet text is 255 bytes. Extrusion and ordnance keys never went through this check |
 | Data sanity | `MaxPerConstruct` | `Constructs/ConstructStoreVolume.cs:22` | `32` | a sanity check when fitted, was 4: nothing is sized by it | **Raised 4 to 32**: only checked when fitted, nothing is sized by it |
-| Data sanity | `MaxRecipes` | `Constructs/ConstructAssemblingTable.cs:48` | `2000` | - | Kept |
+| Data sanity | `MaxRecipes` | `Constructs/ConstructAssemblingTable.cs:48` | `4000` | - | Raised 2026-11-15 (ship hull pieces took the table past 2000) |
 | Data sanity | `MaxInputs` | `Constructs/ConstructAssemblingTable.cs:48` | `6` | - | Kept |
 | Data sanity | `MaxUnits` | `Constructs/ConstructAssemblingTable.cs:48` | `2000` | - | Kept |
 | Data sanity | `MaxPartCount` | `Constructs/ConstructAssemblingTable.cs:48` | `20` | - | Kept |

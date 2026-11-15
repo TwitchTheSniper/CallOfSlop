@@ -32,17 +32,19 @@ In the container (CLAUDE.md has the SDK setup):
 
 ```
 export XDG_RUNTIME_DIR=/tmp/xdg-runtime
-dotnet build -c Release --no-restore
-dotnet bin/Release/net10.0/CallOfSlop.dll --gen-parts ship_parts     # your generator
-dotnet build -c Release --no-restore                                 # the game reads parts from bin/
+dotnet build -c Release --no-restore                                 # after each change to the generator's code
+dotnet bin/Release/net10.0/CallOfSlop.dll --gen-parts ship_parts     # your generator (also copies what it writes into bin/)
+dotnet bin/Release/net10.0/CallOfSlop.dll --preview-shot "Ship Galley Range" --out $SCRATCH/part.png
 dotnet bin/Release/net10.0/CallOfSlop.dll --preview-gallery $SCRATCH/ship-gallery
 ```
+
+**The fast loop for a part's looks** is `--gen-parts` then `--preview-shot`: about 1 s and 3 s, no window, browser or GPU, no second build. The compile after a code change is the slow step (about 50 s here, 26 s on Karl's PC), so make several changes per round. `--preview-shot NAME|FILE` draws the model straight to a PNG: a sheet of the four corners at three quarters by default (a part's front is +z), or `--views iso,iso2,back,back2,front,bow,side,right,top,under`; `--cut Y` drops what is above a height (a deck), `--size N` a tile's pixels. Its line goes to `callofslop.log`, not the console. Open the PNG with Read; it is for you, not the user.
 
 `--preview-gallery DIR` exports every ship (a blueprint whose first part is in the Ship group), every part a ship uses and every other Ship part through the game's own build rules, and finds each ship's decks (floors with a ceiling over them, named after the part with the most floor there): `DIR/index.html`, `DIR/models/index.json` and `DIR/models/NAME.json`. A step that doesn't fit is REFUSED with the reason (the exit code counts refusals). The last line, in `bin/Release/net10.0/callofslop.log`, lists the files that changed (`changed: ...`). `--only "Name A,Name B"` limits it; `--preview-construct NAME|FILE --out X.html` makes one self-contained page (a draft blueprint file not yet in the data).
 
 ## 3. Look at it yourself once
 
-The cloud browser can't reach cdn.jsdelivr.net and the gallery fetches its models, so serve DIR on localhost and route three.js from npm (allowed):
+For a part, or a ship from a few sides, `--preview-shot` (section 2) is enough. For the gallery page itself, the cloud browser can't reach cdn.jsdelivr.net and the gallery fetches its models, so serve DIR on localhost and route three.js from npm (allowed):
 
 ```
 mkdir -p $SCRATCH/npm && cd $SCRATCH/npm && npm pack three@0.160.0 && tar xzf three-0.160.0.tgz
@@ -81,4 +83,5 @@ The preview is a design aid, not the renderer: no textures, no lamp light, legs 
 - No two drawn faces in one plane: offset 2 to 5 mm (`.claude/rules/z-fighting.md`).
 - Stairs: the Wide Stair under its Wide Stair Floor, or people crouch. Furniture on `"wall"` sockets, not mid-room.
 - Lift jets stand round the centre of mass, or the hover hold can't keep it level.
-- The game reads data from `bin/`: rebuild after `--gen-parts`, or the gallery shows the old parts.
+- The game reads data from `bin/`. `--gen-parts` copies what it writes there too (2026-11-15); a file changed any other way needs a rebuild, or the gallery shows the old parts.
+- Fittings: the building kit's furniture (Galley Stove, Mess Table, Locker...) reads as a house's (Karl, 2026-11-15, the rust bucket's galley). A ship gets ship fittings: bolted down, clamps, rails, grab bars, worn paint (`Ship Galley Range`, `Ship Mess Table` in ShipParts.cs keep the stock parts' sockets, so they swap in).
