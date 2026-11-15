@@ -1,14 +1,20 @@
-# Construct preview pages
+# Construct preview pages and the ship gallery
 
-`--preview-construct NAME|FILE [--out OUT.html]` builds a blueprint (by name, or a blueprint file not yet in the game's data)
-or a single construct part (by name) through the game's own build rules, and writes one self-contained web page: the
-triangles the renderer draws (shape meshes, paint, finish, glass, glow), a three.js viewer that turns, cuts away by height,
-colours by finish and picks parts. `viewer.html` is the page; the command puts the model's JSON in place of `__MODEL__` and
-the name in `<title>`. Default output: `preview/NAME.html` next to the DLL. The summary line goes to `callofslop.log`.
+Two commands write web pages that show constructs in 3D, built through the game's own build rules from the data next to
+the DLL (rebuild after `--gen-parts`). The summary line goes to `callofslop.log`.
 
-It is for agents designing ships and parts: the page is published as a claude.ai Artifact for the user to turn round
-(the ship-design skill). It is a design aid, not the renderer: no textures, no lamps' light, legs and tracks left out,
-joints at rest, hidden collision boxes skipped. Parts come from the data next to the DLL, so rebuild after `--gen-parts`.
+- `--preview-gallery DIR [--only "A,B"]`: **the usual one.** Every ship (a blueprint whose first part is in the `Ship`
+  group), every part those ships use and every other `Ship` part, or only the names given, as one gallery: `DIR/index.html` (the viewer with a picker),
+  `DIR/models/index.json` and one `DIR/models/NAME.json` per model. A second run leaves unchanged files alone and prints
+  the changed ones (`changed: ...`), so the gallery Artifact is republished with only those.
+- `--preview-construct NAME|FILE [--out OUT.html]`: one blueprint (by name, or a draft file not yet in the data) or one
+  part, as a single self-contained page.
 
-The page loads three.js 0.160.0 from cdn.jsdelivr.net. A cloud container's browser can't reach that CDN; to look at a
-page there, serve the npm package's files to the page (Playwright `page.route`), as the skill describes.
+`viewer.html` is the page for both: one puts the model's JSON in its `model` script tag, the gallery puts `null` there and
+the page fetches `models/index.json` and a model when it is picked (a ship picker, then the whole ship, a deck or one of its parts; `#ship--deck-2` or `#ship--part-id` in the address picks a view). Decks are found by the export: floors with a ceiling over them. The viewer turns,
+cuts away by height, colours by finish and picks parts. It is a design aid, not the renderer: no textures, no lamps'
+light, legs and tracks left out, joints at rest, hidden collision boxes skipped.
+
+The page loads three.js 0.160.0 from cdn.jsdelivr.net. A cloud container's browser can't reach that CDN, and the gallery
+fetches its models, so to look at it there serve DIR over http on localhost and route the CDN to the npm package's files
+(Playwright `page.route`; launch with the proxy's `bypass: "localhost"`), as the ship-design skill describes.

@@ -5,7 +5,7 @@ using System.Text.Json;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--preview-construct NAME|FILE [--out OUT.html]</c>: a blueprint (by name or file) or one construct part (by name), built
+/// <c>--preview-construct NAME|FILE [--out OUT.html]</c> (and <c>--preview-gallery DIR</c>, every ship in one page): a blueprint (by name or file) or one construct part (by name), built
 /// by the game's own rules (<see cref="ConstructBuild.BuildOnGround"/>), turned into the triangles the renderer draws (every
 /// shown box, its shape mesh, paint, finish, glass and glow) and written as a small web page with a three.js viewer that
 /// can be turned round, cut away by height and picked part by part. For agents designing ships and parts: the page is
@@ -18,10 +18,38 @@ public static class ConstructPreview
 {
     public static int Cli(string[] args)
     {
-        var what = args.SkipWhile(a => !a.Equals("--preview-construct", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() ?? "";
-        var outFile = args.SkipWhile(a => !a.Equals("--out", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault()
-                      ?? Path.Combine(AppContext.BaseDirectory, "preview", Safe(Path.GetFileNameWithoutExtension(what)) + ".html");
-        ConstructBuild.Blueprint bp;
+        if (Flag(args, "--preview-gallery") is { } galleryDir)
+            return Gallery(galleryDir, Flag(args, "--only"));
+        var what = Flag(args, "--preview-construct") ?? "";
+        var outFile = Flag(args, "--out") ?? Path.Combine(AppContext.BaseDirectory, "preview", Safe(Path.GetFileNameWithoutExtension(what)) + ".html");
+        if (Export(what, out var bp, out var parts, out _) is not { } json)
+            return 1;
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outFile))!);
+        var template = Template();
+        if (template == null)
+        {
+            var jsonFile = Path.ChangeExtension(outFile, ".json");
+            File.WriteAllText(jsonFile, json);
+            Console.WriteLine($"no tools/preview/viewer.html above {AppContext.BaseDirectory}: wrote the model only, {jsonFile}");
+            return 0;
+        }
+        File.WriteAllText(outFile, Page(template, json, bp.Name)); // (the page is named after what it shows: the artifact gallery takes its <title>)
+        Console.WriteLine($"preview {bp.Name}: {parts} parts, {_tris} triangles, {_skipped} hidden boxes skipped, {new FileInfo(outFile).Length / 1024} KB -> {Path.GetFullPath(outFile)}");
+        return 0;
+    }
+
+    private static string? Flag(string[] args, string name) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+
+    private static string Page(string template, string json, string title) =>
+        template.Replace("__MODEL__", json, StringComparison.Ordinal)
+            .Replace("<title>Construct Preview</title>", "<title>" + System.Net.WebUtility.HtmlEncode(title) + "</title>", StringComparison.Ordinal);
+
+    /// <summary>A blueprint file, blueprint or part by name, built and turned into the model's JSON; null (and the reason printed) when it can't be.</summary>
+    private static string? Export(string what, out ConstructBuild.Blueprint bp, out int parts, out List<(string Name, int Count)> uses)
+    {
+        bp = null!;
+        parts = 0;
+        uses = [];
         try
         {
             if (File.Exists(what))
@@ -33,38 +61,125 @@ public static class ConstructPreview
             else
             {
                 Console.WriteLine($"--preview-construct: no blueprint file, blueprint or part called \"{what}\"");
-                return 1;
+                return null;
             }
         }
         catch (Exception ex) when (ex is ConstructPartException or JsonException or InvalidOperationException or KeyNotFoundException or FormatException)
         {
             Console.WriteLine($"REFUSED {what}: {ex.Message}");
-            return 1;
+            return null;
         }
-
-        var world = new ConstructWorld();
-        var c = ConstructBuild.BuildOnGround(world, bp, Vector3.Zero, 0, out var why);
+        var c = ConstructBuild.BuildOnGround(new ConstructWorld(), bp, Vector3.Zero, 0, out var why);
         if (c == null)
         {
             Console.WriteLine($"REFUSED {bp.Name}: it doesn't build: {why}");
-            return 1;
+            return null;
         }
+        parts = c.PartCount;
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            var n = c.DefOf(i).Name;
+            if (!counts.TryAdd(n, 1))
+                counts[n]++;
+            else
+                uses.Add((n, 0));
+        }
+        uses = uses.Select(u => (u.Name, counts[u.Name])).ToList();
+        return Model(c, bp);
+    }
 
-        var json = Model(c, bp);
-        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outFile))!);
+    /// <summary>
+    /// <c>--preview-gallery DIR [--only "A,B"]</c>: every ship (a blueprint whose first part is in the "Ship" group), every part those
+    /// ships use and every other "Ship" part, or only the names given, as one gallery: DIR/index.html (the viewer with a ship picker
+    /// and a deck-or-part picker), DIR/models/index.json and one DIR/models/NAME.json each. Models whose JSON didn't change are left
+    /// untouched and the changed ones are printed, so an agent republishes the gallery Artifact with only those (files it leaves out are kept).
+    /// </summary>
+    private static int Gallery(string dir, string? only)
+    {
         var template = Template();
         if (template == null)
         {
-            var jsonFile = Path.ChangeExtension(outFile, ".json");
-            File.WriteAllText(jsonFile, json);
-            Console.WriteLine($"no tools/preview/viewer.html above {AppContext.BaseDirectory}: wrote the model only, {jsonFile}");
-            return 0;
+            Console.WriteLine($"--preview-gallery: no tools/preview/viewer.html above {AppContext.BaseDirectory}");
+            return 1;
         }
-        File.WriteAllText(outFile, template.Replace("__MODEL__", json, StringComparison.Ordinal) // (the page is named after what it shows: the artifact gallery takes its <title>)
-            .Replace("<title>Construct Preview</title>", "<title>" + System.Net.WebUtility.HtmlEncode(bp.Name) + "</title>", StringComparison.Ordinal));
-        Console.WriteLine($"preview {bp.Name}: {c.PartCount} parts, {_tris} triangles, {_skipped} hidden boxes skipped, {new FileInfo(outFile).Length / 1024} KB -> {Path.GetFullPath(outFile)}");
-        return 0;
+        var models = Path.Combine(dir, "models");
+        Directory.CreateDirectory(models);
+        var picked = only?.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries) ?? [];
+        var shipNames = only != null
+            ? picked.Where(n => ConstructBuild.FindBlueprint(n) != null || File.Exists(n)).ToList()
+            : ConstructBuild.Blueprints.Where(b => b.Steps.Count > 0 && ConstructParts.Find(b.Steps[0].Part)?.Group == "Ship").OrderBy(b => b.Name, StringComparer.Ordinal).Select(b => b.Name).ToList();
+        var looseNames = only != null
+            ? picked.Where(n => !shipNames.Contains(n)).ToList()
+            : ConstructParts.All.Where(d => d != null && d.Group == "Ship").OrderBy(d => d.Section, StringComparer.Ordinal).ThenBy(d => d.Name, StringComparer.Ordinal).Select(d => d.Name).ToList();
+        var changed = new List<string>();
+        var failed = 0;
+        var ships = new List<object>();
+        var parts = new Dictionary<string, object>(StringComparer.Ordinal); // (by part name: each part once, however many ships use it)
+        var written = new HashSet<string>(StringComparer.Ordinal);
+
+        string? Write(string name, out ConstructBuild.Blueprint bp, out int count, out List<(string Name, int Count)> uses)
+        {
+            if (Export(name, out bp, out count, out uses) is not { } json)
+            {
+                failed++;
+                return null;
+            }
+            var file = Slug(bp.Name) + ".json";
+            var path = Path.Combine(models, file);
+            written.Add(file);
+            if (!File.Exists(path) || File.ReadAllText(path) != json)
+            {
+                File.WriteAllText(path, json);
+                changed.Add("models/" + file);
+            }
+            return json;
+        }
+
+        void Part(string name)
+        {
+            if (parts.ContainsKey(name) || Write(name, out var bp, out _, out _) is not { } json)
+                return;
+            parts[name] = new { id = Slug(bp.Name), name = bp.Name, file = "models/" + Slug(bp.Name) + ".json", section = ConstructParts.Find(bp.Name)?.Section ?? "", tris = _tris, kb = json.Length / 1024 };
+        }
+
+        foreach (var name in shipNames)
+        {
+            if (Write(name, out var bp, out var count, out var uses) is not { } json)
+                continue;
+            ships.Add(new { id = Slug(bp.Name), name = bp.Name, file = "models/" + Slug(bp.Name) + ".json", parts = count, tris = _tris, kb = json.Length / 1024, uses = uses.Select(u => new object[] { Slug(u.Name), u.Count }).ToArray() });
+            foreach (var (part, _) in uses)
+                Part(part);
+        }
+        var usedByShips = new HashSet<string>(parts.Keys, StringComparer.Ordinal);
+        foreach (var name in looseNames)
+            Part(name);
+        var loose = parts.Keys.Where(k => !usedByShips.Contains(k)).Select(Slug).ToArray();
+
+        var list = JsonSerializer.Serialize(new { ships, parts = parts.Values, loose });
+        var listPath = Path.Combine(models, "index.json");
+        if (!File.Exists(listPath) || File.ReadAllText(listPath) != list)
+        {
+            File.WriteAllText(listPath, list);
+            changed.Add("models/index.json");
+        }
+        var page = Page(template, "null", "Ship Gallery");
+        var pagePath = Path.Combine(dir, "index.html");
+        if (!File.Exists(pagePath) || File.ReadAllText(pagePath) != page)
+        {
+            File.WriteAllText(pagePath, page);
+            changed.Add("index.html");
+        }
+        var stale = Directory.GetFiles(models, "*.json").Select(Path.GetFileName).Where(f => f != "index.json" && !written.Contains(f!)).ToList();
+        foreach (var f in stale)
+            File.Delete(Path.Combine(models, f!));
+        Console.WriteLine($"gallery {Path.GetFullPath(dir)}: {ships.Count} ships, {parts.Count} parts ({loose.Length} in no ship), {failed} refused; changed: {(changed.Count == 0 ? "nothing" : string.Join(" ", changed))}" +
+                          (stale.Count > 0 ? $"; removed (publish them as null): {string.Join(" ", stale.Select(f => "models/" + f))}" : ""));
+        return failed;
     }
+
+    /// <summary>A model's file and page name: lower-case ASCII letters, digits and hyphens (an Artifact's #name).</summary>
+    private static string Slug(string s) => string.Join('-', new string(s.ToLowerInvariant().Select(ch => ch is >= 'a' and <= 'z' or >= '0' and <= '9' ? ch : ' ').ToArray()).Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
     private static int _tris, _skipped;
 
@@ -76,6 +191,35 @@ public static class ConstructPreview
             if (File.Exists(Path.Combine(up.FullName, "tools", "preview", "viewer.html")))
                 return File.ReadAllText(Path.Combine(up.FullName, "tools", "preview", "viewer.html"));
         return null;
+    }
+
+    /// <summary>
+    /// The decks: heights where solid slabs add up to a floor (at least 6 m2 and a tenth of the biggest level), at least 2 m apart
+    /// (the bigger of two close levels wins) and with a ceiling: slabs 1.9 to 4.5 m above covering at least 30 % of it (a roof has none). Each is named after
+    /// the part with the most floor there. One level or none: no decks (a part, a small vehicle).
+    /// </summary>
+    private static List<(string Name, float Y)> Decks(Construct c, List<(float Y, float Area, int Part)> floors)
+    {
+        var levels = floors.GroupBy(f => MathF.Round(f.Y * 10) / 10)
+            .Select(g => (Y: g.Key, Area: g.Sum(f => f.Area), Part: g.GroupBy(f => c.DefOf(f.Part).Name).OrderByDescending(n => n.Sum(f => f.Area)).First().Key))
+            .ToList();
+        if (levels.Count == 0)
+            return [];
+        var most = levels.Max(l => l.Area);
+        var keep = new List<(float Y, float Area, string Part)>();
+        foreach (var l in levels.Where(l => l.Area >= MathF.Max(6f, most * 0.1f) && levels.Where(o => o.Y >= l.Y + 1.9f && o.Y <= l.Y + 4.5f).Sum(o => o.Area) >= l.Area * 0.3f).OrderBy(l => l.Y))
+        {
+            if (keep.Count > 0 && l.Y - keep[^1].Y < 2f)
+            {
+                if (l.Area > keep[^1].Area)
+                    keep[^1] = l;
+                continue;
+            }
+            keep.Add(l);
+        }
+        if (keep.Count < 2)
+            return [];
+        return keep.Select((l, i) => ($"{i + 1}: {l.Part}", l.Y)).ToList();
     }
 
     // The renderer's unit cube (shape 0): 12 triangles, corners at +-0.5, outward faces wound anticlockwise.
@@ -98,6 +242,7 @@ public static class ConstructPreview
         var looks = new List<(string Hex, float Glass, bool Glow, string Finish, float Metal, float Rough)>();
         var lookIndex = new Dictionary<(string, float, bool, string), ushort>();
         var parts = new StringBuilder();
+        var floors = new List<(float Y, float Area, int Part)>();
         _tris = _skipped = 0;
         for (var i = 0; i < c.PartCount; i++)
         {
@@ -105,6 +250,21 @@ public static class ConstructPreview
             var d = c.DefOf(i);
             c.RestPose(p.Seg, out var q, out var t);
             var first = triLook.Count;
+            for (var bi = 0; bi < d.SolidBoxes; bi++) // (floors: the tops of solid boxes, hidden ones too, since a drawn facet may stand for them)
+            {
+                var slab = d.Boxes[bi];
+                var sm = slab.Model(p.Rot, Vector3.Zero) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, slab.Center), q));
+                var blo = new Vector3(float.MaxValue);
+                var bhi = new Vector3(float.MinValue);
+                for (var k = 0; k < 8; k++)
+                {
+                    var v = Vector3.Transform(new Vector3((k & 1) - 0.5f, ((k >> 1) & 1) - 0.5f, ((k >> 2) & 1) - 0.5f), sm);
+                    blo = Vector3.Min(blo, v);
+                    bhi = Vector3.Max(bhi, v);
+                }
+                if (bhi.Y - blo.Y < 0.6f) // (a slab, not a wall or a crate)
+                    floors.Add((bhi.Y, (bhi.X - blo.X) * (bhi.Z - blo.Z), i));
+            }
             foreach (var b in d.Boxes)
             {
                 if (b.Hidden)
@@ -209,6 +369,11 @@ public static class ConstructPreview
         sb.Append(",\"min\":[").Append(F(lo.X)).Append(',').Append(F(lo.Y)).Append(',').Append(F(lo.Z)).Append(']');
         sb.Append(",\"max\":[").Append(F(hi.X)).Append(',').Append(F(hi.Y)).Append(',').Append(F(hi.Z)).Append(']');
         sb.Append(",\"scale\":").Append(F(scale));
+        sb.Append(",\"decks\":[");
+        var decks = Decks(c, floors);
+        for (var i = 0; i < decks.Count; i++)
+            sb.Append(i > 0 ? "," : "").Append(JsonSerializer.Serialize(new object[] { decks[i].Name, MathF.Round(decks[i].Y, 3) }));
+        sb.Append(']');
         sb.Append(",\"looks\":[");
         for (var i = 0; i < looks.Count; i++)
         {
