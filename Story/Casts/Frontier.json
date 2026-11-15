@@ -1,5 +1,5 @@
 {
-  // A cast (docs/story/STORY.md "People"): places joined by roads, people who live and work in them, and how some of them
+  // A cast (docs/archive/story/STORY.md "People"): places joined by roads, people who live and work in them, and how some of them
   // feel about each other at the start. The place marked "world" is the host's world (the scenario's, or the live one
   // when the Story window adds the cast); the others are only in the story for now. Qualities are traits from 0 to 100,
   // plus Wealth, Trader (Jonas at the depot; Sol sells at the landing) and Radio (Nell runs the landing's radio); needs start at random.
@@ -62,7 +62,7 @@
     { "who": "Sol Reyes", "rel": "Knows", "to": "Hugo Brandt", "value": 3 },
     { "who": "Jonas Pike", "rel": "Knows", "to": "Mara Voss", "value": 3 }
   ],
-  // Strangers the drama manager may bring in by the longest road, each once (docs/story/STORY.md "Pacing"): for a story in
+  // Strangers the drama manager may bring in by the longest road, each once (docs/archive/story/STORY.md "Pacing"): for a story in
   // progress that waits for anyone and that nobody here takes up ("suits": the verbs they would join one for; they heard
   // of it on the way), or after a long quiet spell (those with feelings towards the cast first: they have history here).
   "strangers": [

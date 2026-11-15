@@ -932,7 +932,7 @@ Ministry of Slop (`Ministry.json`) are data in the same shape,.
 
 - **Where they live**: a `"settlement"` stands the home on a planetoid as buildings the faction claims (docs/planets/WORLDS.md
   "Settlements").
-- **Out in the world**: outposts (docs/story/OUTPOSTS.md, `Story/Outposts/*.json`): a checkpoint, a camp, a relay, with a few of
+- **Out in the world**: outposts (docs/archive/story/OUTPOSTS.md, `Story/Outposts/*.json`): a checkpoint, a camp, a relay, with a few of
   the faction's people at posts or on patrol who greet, warn or shoot a player by their standing with it.
 - **Who they are**: a `"home"` (a story place, the faction's `Home`) and `"members"`: story people, `MemberOf` the faction,
   with traits as a cast's people have. For now they have no minds or bodies of their own: visits on foot come later (F3).

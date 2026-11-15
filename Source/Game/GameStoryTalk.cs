@@ -4,7 +4,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The story people's words in the world (docs/story/STORY.md "Lines"; phase 5 of the story systems). The story decides
+/// The story people's words in the world (docs/archive/story/STORY.md "Lines"; phase 5 of the story systems). The story decides
 /// what is said (<see cref="StoryTalk"/>, the response rules in Story/Lines); this decides when, and who hears it:
 ///   - a step plays out when the body reaches whoever it is with (or its spot; a trip as it sets off), and the person
 ///     says that step's line;

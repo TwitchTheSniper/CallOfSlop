@@ -5,7 +5,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The game's side of the storylets (docs/story/STORY.md "Storylets"; the engine is Source/Story/StoryStorylets.cs):
+/// The game's side of the storylets (docs/archive/story/STORY.md "Storylets"; the engine is Source/Story/StoryStorylets.cs):
 /// the induction's end recorded as an Induct, a player's visits to a storylet spot (near a person's body) counted in
 /// Visited, the hooks a storylet starts ("lockdown": the colony's lockdown with the player wanted; "depot": the Orbital
 /// Depot's report memo; "errand:ID": an errand on a works yard machine, GameErrands.cs), a line nobody says sent as a notice, and the choices a storylet offers shown in the talk panel

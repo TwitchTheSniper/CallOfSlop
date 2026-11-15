@@ -314,7 +314,7 @@ public sealed class Assembling : IPartGenerator
     };
 
     private static readonly string[] SkipFolders = ["Spawn", "Components", "Press/Dies", "Wings", "Lore"]; // (dies come from a Die Lathe, or the start kit; the colony's lore items are its own)
-    // (the old ammo modules: a box's setting does it now) (a data centre's terminal is found, never made: docs/story/FRAGMENTS.md)
+    // (the old ammo modules: a box's setting does it now) (a data centre's terminal is found, never made: docs/archive/story/FRAGMENTS.md)
     private static readonly string[] SkipNames = ["Material Bundle", "Construct Core", "Data Centre Terminal", "Chest Lid", "Lid Hinge", "FMJ Rounds", "AP Rounds", "HE Rounds", "Incendiary Rounds"];
     private const int MaxUnits = 2000;
     // The lowest Assembler for a size class; a part's cost tops out at MaxUnits, its time at 600 s.

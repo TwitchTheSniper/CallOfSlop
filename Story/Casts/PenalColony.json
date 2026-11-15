@@ -16,7 +16,7 @@
       "qualities": { "Sociable": 80, "Honest": 55, "Brave": 30, "Vengeful": 20, "Gossipy": 85, "Greedy": 40, "Wealth": 6 } },
     { "name": "Officer Nettles", "about": "guard, new, keen, armed with a clipboard", "home": "Penal Colony", "works": "Penal Colony",
       "qualities": { "Sociable": 60, "Honest": 80, "Brave": 55, "Vengeful": 30, "Gossipy": 50, "Greedy": 15, "Wealth": 5 } },
-    // ---- Convicts who mean to leave (Storylets/Breakout.json, docs/story/BREAKOUT.md). They work in the gangs (Posts) and
+    // ---- Convicts who mean to leave (Storylets/Breakout.json, docs/archive/story/BREAKOUT.md). They work in the gangs (Posts) and
     //      trust slowly: none of them says the word "escape" to a stranger.
     { "name": "Dot Pruett", "about": "convict on the boiler coal; drove the Ministry's ore haulers until she drove one into a Minister's pond", "home": "Penal Colony", "works": "Penal Colony",
       "qualities": { "Sociable": 55, "Honest": 45, "Brave": 70, "Vengeful": 40, "Gossipy": 35, "Greedy": 25, "Wealth": 2 } },

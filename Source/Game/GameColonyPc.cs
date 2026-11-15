@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The duty desk's computer (docs/story/STORY.md, "The duty desk"; the words: Story/Storylets/Colony.json, "duty-desk"): a guard
+/// The duty desk's computer (docs/archive/story/STORY.md, "The duty desk"; the words: Story/Storylets/Colony.json, "duty-desk"): a guard
 /// grumbles that the barracks' computer says it has thousands of viruses and not to turn it off, and the storylet's hook
 /// ("pcvirus") hooks that computer with the Scammers' Tech Support scam (GameSandboxScams.cs). Nobody says how to mend it. It has no
 /// switch: it runs off the barracks' Battery, and the cure is the Scammers' own (IT's): cut its power. Take the battery off with

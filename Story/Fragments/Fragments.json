@@ -1,8 +1,8 @@
 {
-  // The story's fragments (docs/story/FRAGMENTS.md; Game/GameStoryFragments.cs): the five records of what happened when the
+  // The story's fragments (docs/archive/story/FRAGMENTS.md; Game/GameStoryFragments.cs): the five records of what happened when the
   // systems were folded, one in each sealed data centre. A player can find them in any order; each one found is recorded in
   // the story world (a Thing named by its id, the relation Fragment towards it, its value the source) and shows in their
-  // Logbook (F1). The words are a first draft (the storyline is docs/story/STORYLINE.md): change them freely, but keep the
+  // Logbook (F1). The words are a first draft (the storyline is docs/archive/story/STORYLINE.md): change them freely, but keep the
   // ids, which storylets may name. Text is ASCII; "text" is a list of paragraphs.
   "format": "call-of-slop-fragments/1",
   "fragments": [

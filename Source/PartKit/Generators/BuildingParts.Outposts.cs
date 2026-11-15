@@ -1,7 +1,7 @@
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// The factions' outposts out in the world beyond the colony (docs/story/OUTPOSTS.md; Game/GameOutposts.cs builds them,
+/// The factions' outposts out in the world beyond the colony (docs/archive/story/OUTPOSTS.md; Game/GameOutposts.cs builds them,
 /// Story/Outposts says where): each small, each in its faction's own style (docs/sandbox/constructs/buildings.md). The
 /// Ministry's are concrete as ever; Clan MacSlop builds in drystone and tin, the IT Department in beige steel cabinets,
 /// The Call Centre in purple portacabins. A blueprint's front (-z) faces the colony when the outpost is placed.

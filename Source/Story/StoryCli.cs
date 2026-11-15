@@ -1,7 +1,7 @@
 namespace CallOfSlop.Story;
 
 /// <summary>
-/// The story layer's command lines (docs/story/STORY.md): <c>--story-sim FILE</c> plays a scenario headless and prints
+/// The story layer's command lines (docs/archive/story/STORY.md): <c>--story-sim FILE</c> plays a scenario headless and prints
 /// the chronicle, what the sifter did after each event (with --trace, what the people chose), the patterns' counts and the
 /// world at the end; its exit code is
 /// how many of the scenario's "expect" counts were missed (plus one when the story doesn't save and read back the same). <c>--check-story [DIR]</c> loads the story data and every
@@ -19,7 +19,7 @@ public static class StoryCli
 
     /// <summary>
     /// <c>--talk-sim [CAST] [--set Q=N,...] [--likes N] [--dead NAME] [--inspected ID,...]</c>: a player talks to each person of a cast
-    /// (Penal Colony by default) about their topics (docs/story/STORY.md "Topics"), asking the first new one of their own
+    /// (Penal Colony by default) about their topics (docs/archive/story/STORY.md "Topics"), asking the first new one of their own
     /// offered, again and again (a brush-off, or nothing new, ends it), and prints each question and answer, then what is left
     /// on offer. --set gives the player qualities (Inducted=1, Suspicion=4...), --likes how much each person likes them at
     /// the start, --dead marks someone dead, --inspected has them look at lore items first (Story/Lore). Words only: no bodies, no clock. Exit code: topics that never came up.

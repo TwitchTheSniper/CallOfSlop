@@ -1,5 +1,5 @@
 {
-  // The ending's own (Story/Storylets/Ending.json; docs/story/STORY.md "The ending").
+  // The ending's own (Story/Storylets/Ending.json; docs/archive/story/STORY.md "The ending").
   "relations": [
     { "name": "Ending", "about": "a player and what they did at the machine (Last Round, Undone, Kept)", "exclusive": true }
   ]

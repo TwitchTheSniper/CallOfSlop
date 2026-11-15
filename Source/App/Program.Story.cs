@@ -4,7 +4,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The Story window's key (F4 by default, rebindable; Esc closes it) and its draw call (Source/UI/UiStory.cs,
-/// docs/story/STORY.md). The window counts as a menu, so the cursor is free while it's open.
+/// docs/archive/story/STORY.md). The window counts as a menu, so the cursor is free while it's open.
 /// </summary>
 public static unsafe partial class Program
 {

@@ -1,5 +1,5 @@
 {
-  // What anyone will talk about when they have nothing of their own left to offer (docs/story/STORY.md "Topics"). Low
+  // What anyone will talk about when they have nothing of their own left to offer (docs/archive/story/STORY.md "Topics"). Low
   // priority, so a person's own topics (Colony.json and the rest) come first and these fill the panel only when there
   // is room. Each answers through the Lines occasions AskPlace, AskSelf and AskAdvice (Story/Lines/Colony.json writes
   // them per person), so even the stock questions sound like whoever is asked.

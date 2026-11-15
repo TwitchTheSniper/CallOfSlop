@@ -5,7 +5,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The Story window's Scenes and Roster tabs (docs/story/STORY.md "Plays", "Places" and "Roster"): the plays under way
+/// The Story window's Scenes and Roster tabs (docs/archive/story/STORY.md "Plays", "Places" and "Roster"): the plays under way
 /// (who plays whom, the beat they are at) and lately, each place's state and why, and the legacy roster of everyone the
 /// story has known. Plays can be turned off, and one tried at once when it can be cast.
 /// </summary>

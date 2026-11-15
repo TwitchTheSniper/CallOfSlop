@@ -12,7 +12,7 @@ public partial class Game
     /// Is this a story world? The server knows (the opening's colony); a client goes by the world being a survival one,
     /// which every new survival world's opening makes a story world, so its own tool changes match the server's.
     /// </summary>
-    private bool StoryArmsOn => IsServer ? _opOn : SandboxOn && !SandboxInfiniteParts;
+    private bool StoryArmsOn => IsServer ? _opOn && !SandboxInfiniteParts : SandboxOn && !SandboxInfiniteParts; // (creative aboard the rust bucket keeps its guns)
 
     /// <summary>Both sides: does <paramref name="p"/> carry no gun here (a person in a story world with no built gun)?</summary>
     internal bool StoryUnarmed(Player p) => StoryArmsOn && p.Bot == null && p.BuiltPrimary == null && p.BuiltSecondary == null;
@@ -28,7 +28,7 @@ public partial class Game
     /// <summary>Server, each Sandbox tick: nobody unarmed has the gun out (a spawn, a saved world's tool, a seat left).</summary>
     private void StoryArmsTick()
     {
-        if (!_opOn)
+        if (!StoryArmsOn)
             return;
         foreach (var p in Players.Values)
             if (p.Alive && p.Id < MaxPlayers && SandboxHands.Hand(p.Id).Tool == ConstructTool.None && !SandboxHands.Hand(p.Id).Seated && StoryUnarmed(p))

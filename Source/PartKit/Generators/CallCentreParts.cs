@@ -6,7 +6,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// The Call Centre's parts: Constructs/Parts/CallCentre (docs/vehiclekit/VEHICLEKIT.md, "The Call Centre style"). Was
 /// tools/constructs/callcentre_parts.py.
 ///
-/// The Scammers (docs/story/STORY.md, "The Scammers") run a call centre on wheels. Where bandits hang skulls they bolt on desk phones,
+/// The Scammers (docs/archive/story/STORY.md, "The Scammers") run a call centre on wheels. Where bandits hang skulls they bolt on desk phones,
 /// headsets on stands, GIFT CARDS signs and a prize wheel; loudhailers down the flanks as spikes; a phone mast on the roof. In their
 /// rooms: cubicle desks (a drawer of loot in each) and a water cooler. Furniture stands on feet on the floor's quarter grid and faces
 /// its own +z, into the room, as OfficeParts' does. Each trophy stands on one "base" socket and points up its own +y, its face to -z,

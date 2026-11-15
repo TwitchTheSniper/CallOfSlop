@@ -4,7 +4,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The story factions' technologies on the game's side (docs/story/STORY.md "Technologies"; the engine's side:
+/// The story factions' technologies on the game's side (docs/archive/story/STORY.md "Technologies"; the engine's side:
 /// Source/Story/StoryFactions.cs, data: "teaches" in Story/Factions). A part a faction teaches is built by an Assembler only
 /// for an owner the faction has taught it (themselves or their player faction), which it does once its standing with them
 /// first comes to the technology's tier: no money, standing is what buys it. A faction that teaches tells the players it

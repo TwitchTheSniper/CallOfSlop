@@ -5,7 +5,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The Story window's Factions tab (docs/story/STORY.md "Factions"): each faction of Story/Factions, what it wants, its
+/// The Story window's Factions tab (docs/archive/story/STORY.md "Factions"): each faction of Story/Factions, what it wants, its
 /// members and what it claims, and its standing with every player and group it has dealings with: the tier, the number,
 /// and the deeds it remembers of them.
 /// </summary>

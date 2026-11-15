@@ -6,7 +6,7 @@ namespace CallOfSlop.Story;
 
 /// <summary>
 /// <c>--story-map [OUT.html]</c>: the story map, one read-only page of every storylet in Story/Storylets as a flowchart with each
-/// beat spelt out (docs/story/STORY.md "Storylets"). It reads the game's files and fills the page template
+/// beat spelt out (docs/archive/story/STORY.md "Storylets"). It reads the game's files and fills the page template
 /// tools/story/story_map.html; run it again after the storylets change. Was tools/story/story_map.py (same bytes).
 /// </summary>
 public static class StoryMapPage

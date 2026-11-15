@@ -427,7 +427,7 @@ world to watch it work. F4 or Esc closes it. Joined players don't see the story 
 `--story-sim FILE` plays a scenario headless (`--trace` prints what the people choose, `--lines` what they say,
 `--drama=compare` counts the stories with and without the drama manager, `--roster` prints the roster),
 `--check-story` checks the data. Design and
-code: docs/story/STORY.md.
+code: docs/archive/story/STORY.md.
 
 ### Performance window
 

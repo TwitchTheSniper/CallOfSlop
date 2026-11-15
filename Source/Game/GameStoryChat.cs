@@ -20,7 +20,7 @@ public enum TalkAsk : byte
 }
 
 /// <summary>
-/// Players talking to the story's people (docs/story/STORY.md "Talking to people"), and the bodies turning to whoever
+/// Players talking to the story's people (docs/archive/story/STORY.md "Talking to people"), and the bodies turning to whoever
 /// they talk to. The use key on a person's body opens a small talk panel on that player's screen (Program.StoryTalk.cs);
 /// each button is a <see cref="TalkAsk"/> sent to the host, which answers through the story: a greeting is the story's
 /// Greet (or a Chat, at most every <see cref="StoryChatGap"/>), news is a Tell from the person to the player, a trade is

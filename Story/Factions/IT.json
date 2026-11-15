@@ -1,5 +1,5 @@
 {
-  // A faction (docs/story/STORY.md "Factions"): who they are, where they live, what is theirs, what they want, how they rate
+  // A faction (docs/archive/story/STORY.md "Factions"): who they are, where they live, what is theirs, what they want, how they rate
   // the players, and the deeds they remember. A deed is an event of "verb" whose "theirs" role (the target unless named) is
   // the faction's: the faction itself, one of its members, or a construct it claims. The doer must be a player; the deed
   // adds 1 to the "remember" relation the faction holds towards them and their group, moves its standing with both by

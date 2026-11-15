@@ -358,7 +358,7 @@ public sealed partial class Ui
         var worldLocked = game.WorldShownName.Length > 0; // (a saved world keeps its map and mode)
         ImGui.BeginDisabled(worldLocked);
         ImGui.SetNextItemWidth(240 * _scale);
-        if (ImGui.BeginCombo("Mode##room"u8, game.Module.Name))
+        if (game.Mode != GameMode.Sandbox && ImGui.BeginCombo("Mode##room"u8, game.Module.Name)) // (Sandbox has no other mode to go to: the arena modes are archived, CLAUDE.md)
         {
             foreach (var m in GameModeRegistry.ForMap(World.Map))
             {

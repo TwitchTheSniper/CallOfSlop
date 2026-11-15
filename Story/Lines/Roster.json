@@ -1,5 +1,5 @@
 {
-  // How the roster remembers people and players (docs/story/STORY.md "Roster"): the Remembered occasion, said by nobody.
+  // How the roster remembers people and players (docs/archive/story/STORY.md "Roster"): the Remembered occasion, said by nobody.
   // ?me is who it is about; for the dead ?place is where they died and ?actor who killed them (the occasion is about the
   // Kill, or the Die); ?here is their home, else where they worked, died or are. The most specific rule wins, and the
   // same line comes up for the same person every time. (Players have no traits: a trait's rule asks for a person.)

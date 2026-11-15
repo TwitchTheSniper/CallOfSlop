@@ -4,7 +4,7 @@ using System.Globalization;
 namespace CallOfSlop.Story;
 
 /// <summary>
-/// The story layer on the host (docs/story/STORY.md): the rules, the world state, the chronicle and the sifter, and the
+/// The story layer on the host (docs/archive/story/STORY.md): the rules, the world state, the chronicle and the sifter, and the
 /// story clock (seconds of play in this world, saved with it). <see cref="Record"/> is the one way in: an event's verb
 /// changes the world state, the event goes into the chronicle, the sifter sees it, and any story it completes is recorded
 /// as a Story event in turn. Nothing here runs per tick except <see cref="Advance"/> (a clock and, once a second, the
@@ -35,13 +35,13 @@ public sealed class StoryEngine
     /// <summary>The factions (living factions, F1): entities with standing towards each group, and a memory of deeds.</summary>
     public readonly StoryFactions Factions;
 
-    /// <summary>The storylets (docs/story/STORY.md "Storylets"): authored beats per player, cast from the world.</summary>
+    /// <summary>The storylets (docs/archive/story/STORY.md "Storylets"): authored beats per player, cast from the world.</summary>
     public readonly StoryStorylets Storylets;
 
-    /// <summary>What people will talk about with a player (docs/story/STORY.md "Topics"), and what asking does.</summary>
+    /// <summary>What people will talk about with a player (docs/archive/story/STORY.md "Topics"), and what asking does.</summary>
     public readonly StoryTopics Topics;
 
-    /// <summary>Things players look at closely (docs/story/STORY.md "Lore").</summary>
+    /// <summary>Things players look at closely (docs/archive/story/STORY.md "Lore").</summary>
     public readonly StoryLore Lore;
 
     /// <summary>Seconds of play in this world.</summary>

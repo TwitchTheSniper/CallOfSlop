@@ -141,7 +141,7 @@ public sealed partial class Ui
         if (ImGui.Button("Story"u8))
             StoryOpen = !StoryOpen;
         if (ImGui.IsItemHovered())
-            ImGui.SetItemTooltip("The story layer (docs/story/STORY.md, F4 in Sandbox): the story world, the chronicle, the stories in progress."u8);
+            ImGui.SetItemTooltip("The story layer (docs/archive/story/STORY.md, F4 in Sandbox): the story world, the chronicle, the stories in progress."u8);
         ImGui.SameLine();
         DrawDevAmmo(session, now);
         ImGui.SameLine();

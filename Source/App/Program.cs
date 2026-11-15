@@ -94,6 +94,9 @@ public static unsafe partial class Program
         System.Runtime.GCSettings.LatencyMode = System.Runtime.GCLatencyMode.SustainedLowLatency;
         Console.WriteLine($"Call of Slop - built with the BRUTAL framework, Copyright (c) 2024 Ahwoo Limited. {DateTime.Now}");
 
+        // --story: the archived story layer back on for this run (Game.StoryOn, docs/archive/story); its own tools want it.
+        if (args.Any(a => a.Equals("--story", StringComparison.OrdinalIgnoreCase) || a.Equals("--traffic-check", StringComparison.OrdinalIgnoreCase) || a.Equals("--outpost-check", StringComparison.OrdinalIgnoreCase)))
+            Game.StoryOn = true;
         if (args.Any(a => a.Equals("--net-client", StringComparison.OrdinalIgnoreCase)))
             return NetClientProcess.Run(args); // a headless client in its own process (NetClientProcess.cs; the "Two-process lobby" self-test)
         if (args.Any(a => a.Equals("--selftest-list", StringComparison.OrdinalIgnoreCase)))
@@ -121,13 +124,13 @@ public static unsafe partial class Program
         if (args.Any(a => a.Equals("--weather-sim", StringComparison.OrdinalIgnoreCase)))
             return WeatherCli.Run(args); // headless: run the weather simulation for some days and print its storms (Source/Weather)
         if (args.Any(a => a.Equals("--story-sim", StringComparison.OrdinalIgnoreCase)))
-            return Story.StoryCli.Sim(args); // headless: play a story scenario and print the chronicle and the sifter (docs/story/STORY.md)
+            return Story.StoryCli.Sim(args); // headless: play a story scenario and print the chronicle and the sifter (docs/archive/story/STORY.md)
         if (args.Any(a => a.Equals("--storylet-sim", StringComparison.OrdinalIgnoreCase)))
-            return Story.StoryCli.StoryletSim(args); // headless: a player in a cast's world, the storylets on the story's clock (docs/story/STORY.md "Storylets")
+            return Story.StoryCli.StoryletSim(args); // headless: a player in a cast's world, the storylets on the story's clock (docs/archive/story/STORY.md "Storylets")
         if (args.Any(a => a.Equals("--talk-sim", StringComparison.OrdinalIgnoreCase)))
-            return Story.StoryCli.TalkSim(args); // headless: a player asks a cast's people about their topics (docs/story/STORY.md "Topics")
+            return Story.StoryCli.TalkSim(args); // headless: a player asks a cast's people about their topics (docs/archive/story/STORY.md "Topics")
         if (args.Any(a => a.Equals("--story-map", StringComparison.OrdinalIgnoreCase)))
-            return Story.StoryMapPage.Cli(args); // the story map page from Story/Storylets (docs/story/STORY.md; was tools/story/story_map.py)
+            return Story.StoryMapPage.Cli(args); // the story map page from Story/Storylets (docs/archive/story/STORY.md; was tools/story/story_map.py)
         if (args.Any(a => a.Equals("--check-story", StringComparison.OrdinalIgnoreCase)))
             return Story.StoryCli.Check(args); // the story data (relations, verbs, patterns, scenarios): what loads, what's refused and why
         if (args.Any(a => a.Equals("--space-ships", StringComparison.OrdinalIgnoreCase)))

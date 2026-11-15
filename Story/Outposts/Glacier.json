@@ -1,5 +1,5 @@
 {
-  // The factions out on the ice round the penal colony on Glacier (docs/story/OUTPOSTS.md; Game/GameOutposts.cs). Each
+  // The factions out on the ice round the penal colony on Glacier (docs/archive/story/OUTPOSTS.md; Game/GameOutposts.cs). Each
   // outpost is a faction's: its buildings are built once, the first time the story comes to the world, and its people
   // have bodies only while a player is within "wake" m of it (they go once nobody is within "sleep").
   //

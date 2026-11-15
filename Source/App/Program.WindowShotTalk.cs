@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The window tool's talk actions (a quest played through, docs/story/BREAKOUT.md): "talk NAME" walks up to a story person
+/// The window tool's talk actions (a quest played through, docs/archive/story/BREAKOUT.md): "talk NAME" walks up to a story person
 /// and opens the talk panel as the use key would; "say hello|news|bye|choice N|ask TEXT" presses one of its buttons ("ask"
 /// takes the first topic whose label starts with TEXT, any case); "heard" prints what the panel shows: their last lines,
 /// the storylet's choices and the topics on offer. Everything goes through the panel's own calls.

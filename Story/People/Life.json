@@ -1,5 +1,5 @@
 {
-  // How the people live (docs/story/STORY.md "People"). Needs fall by the hour of play and actions refill them; actions
+  // How the people live (docs/archive/story/STORY.md "People"). Needs fall by the hour of play and actions refill them; actions
   // say how long a verb takes and what must hold; tasks break into steps (the first method whose "if" holds and whose
   // steps all plan); goals are scored by utility (each "score" line multiplied, times the weight) and the best one that
   // plans is done. Queries: actions see ?me ?here ?target ?owner ?place ?item, tasks ?me ?here and their params, goals

@@ -5,7 +5,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The Story window's Drama tab (docs/story/STORY.md "Drama"): the drama manager's stage directions (who is nudged
+/// The Story window's Drama tab (docs/archive/story/STORY.md "Drama"): the drama manager's stage directions (who is nudged
 /// towards what, for which story, how hard, for how long, and whether they did it), the stories in progress as it ranked
 /// them with why, and what it did lately. It can be turned off (the people go their own way) and its strength set.
 /// </summary>

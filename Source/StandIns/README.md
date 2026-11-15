@@ -7,13 +7,13 @@ kit or the construct code is touched.
 
 ## What they do
 
-- **A person arriving by road** (Story bodies, docs/story/STORY.md "Bodies"): a craft sets down 7 m outside the road's
+- **A person arriving by road** (Story bodies, docs/archive/story/STORY.md "Bodies"): a craft sets down 7 m outside the road's
   end just as the person's body appears there, stands 8 s while they step out, and goes. A road of 5 story minutes or
   more is a **shuttle** that comes down out of the sky and leaves with a jump flash; a shorter one a **hover hauler**
   that runs along the ground (planetoids too: it follows the ground under it).
 - **A person setting off**: a craft comes for them when they start to walk out. Their body waits at the road's end until
   the craft has landed (at most 30 s), then boards (the body goes) and the craft leaves.
-- **A faction courier** (docs/story/STORY.md "Jobs"): when a Requisition Crate is sealed, a small **courier flyer** sets
+- **A faction courier** (docs/archive/story/STORY.md "Jobs"): when a Requisition Crate is sealed, a small **courier flyer** sets
   down 6 m beside it just as the courier comes, and leaves once the crate is collected, sent back over the paperwork,
   short again or the job dropped.
 - Two craft due at one spot stand side by side (14 m apart).
@@ -76,7 +76,7 @@ Delete this folder, then every line marked `STAND-IN` (`git grep -n "STAND-IN"`)
 - `Source/App/Program.cs`: `StandInRender.Draw` and `--traffic-check`
 - `Story/Traffic/`: the traffic's data
 - `Source/UI/UiStoryPeople.cs`: the "Craft" and "Traffic" switches and the "Call craft" button
-- `docs/story/STORY.md`: the "Stand-in craft" paragraph
+- `docs/archive/story/STORY.md`: the "Stand-in craft" paragraph
 - `Source/Game/GameQuarry.cs`: the quarry duty's crew bus (`StandInFor.Duty`, the ride steps) and `Source/App/Program.Quarry.cs`
   (the ride's camera): a real crew bus that carries players replaces both (docs/story/DUTIES.md "The crew bus")
 

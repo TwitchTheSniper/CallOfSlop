@@ -4,7 +4,7 @@
   // no induction (docs/story/STARTS.md "A ship start"). The ship is the Rust Bucket blueprint (Source/PartKit/Generators/ShipParts.cs).
   "format": "call-of-slop-start/1",
   "name": "Rust bucket",
-  "order": 5,
+  "order": 0, // the first start on the menus, for Survival and Creative alike (Karl, 2026-11-14)
   "character": "Spacer",
   "background": "a tramp hauler who lives aboard a patched two-deck freighter, the only home you have",
   "about": "You wake on the floor of your cabin aboard the Rust Bucket, a patched two-deck freighter coasting round Glacier. The hold is nearly empty, the tanks are not, and nobody down there is expecting you.",

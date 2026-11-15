@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The talk camera (docs/story/STORY.md "Talking to people"): while the talk panel (Program.StoryTalk.cs) is open on a
+/// The talk camera (docs/archive/story/STORY.md "Talking to people"): while the talk panel (Program.StoryTalk.cs) is open on a
 /// person standing near you, the view eases from wherever it was (first person, the third-person shoulder camera) to an
 /// over-the-shoulder shot: behind your left shoulder, looking at their face, so they sit left of the middle and the panel
 /// on the right doesn't cover them. Closing the talk eases back to your own view, which has been worked out all along, so

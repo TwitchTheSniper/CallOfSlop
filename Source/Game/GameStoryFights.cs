@@ -4,7 +4,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The story people's fights (docs/story/STORY.md "Fights"): a person's body that is hurt fights back or runs, by who they
+/// The story people's fights (docs/archive/story/STORY.md "Fights"): a person's body that is hurt fights back or runs, by who they
 /// are (Brave, Vengeful, how they feel about whoever hurt them, how hurt they are), and calls out; the people who hear
 /// it (within <see cref="StoryHearing"/>) come to help someone they like, run, or carry on. A fighter may attack only
 /// their foe (<see cref="StoryFightsWith"/>, read by <see cref="SandboxEnemies"/>), so the ordinary bot fighting does

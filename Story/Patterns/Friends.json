@@ -1,5 +1,5 @@
 {
-  // Small stories among a group of friends, from what players already do in Sandbox (docs/story/STORY.md "Patterns").
+  // Small stories among a group of friends, from what players already do in Sandbox (docs/archive/story/STORY.md "Patterns").
   // A pattern's stages happen in order, with anything else in between; variables (?a) bind on the first stage that names
   // them and must match after. "within": the time allowed since the stage before. "where": a query on the world state
   // at that moment. "unless": an event that ends the story. "then": effects when it completes. "tells": its sentence.

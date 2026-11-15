@@ -3,7 +3,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The story layer's appraiser (docs/story/STORY.md, "The appraiser"): on the host in Sandbox, moments of play become
+/// The story layer's appraiser (docs/archive/story/STORY.md, "The appraiser"): on the host in Sandbox, moments of play become
 /// narratable events in the story engine: joins and leaves, kills and deaths, constructs set down, boarded, wrecked,
 /// stripped and towed, ships launched, landed and jumped, systems discovered. The constructs say what happened to them
 /// in their notes (<see cref="ConstructWorld.Notes"/>, read once a tick); the rest is called from where it happens. Its
@@ -13,6 +13,14 @@ namespace CallOfSlop;
 public sealed partial class Game
 {
     private static StoryRules? _storyData;
+
+    /// <summary>
+    /// The story layer is archived (Karl, 2026-11-14: the game is Survival and Creative now, docs/sandbox/SURVIVAL.md):
+    /// no story engine runs in play, so its people, factions, storylets, drama, jobs, objectives and data centres stay
+    /// out of every world. The code and the Story/ data stay as they are; <c>--story</c> on the command line brings it
+    /// back for one run (its CLI tools, --story-sim and the rest, don't need it). Its docs are in docs/archive/story.
+    /// </summary>
+    public static bool StoryOn;
 
     /// <summary>The story data (Story/*.json), loaded once.</summary>
     public static StoryRules StoryData => _storyData ??= StoryRules.LoadFolder();
@@ -39,7 +47,7 @@ public sealed partial class Game
     /// <summary>Server, every new match (from <see cref="ResetSandbox"/>): a fresh story in Sandbox, none elsewhere. A saved world's comes with its load.</summary>
     internal void StoryReset()
     {
-        if (!IsServer || !SandboxOn)
+        if (!IsServer || !SandboxOn || !StoryOn)
         {
             Story = null;
             StoryPlaying = null;

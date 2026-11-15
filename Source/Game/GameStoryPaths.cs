@@ -16,7 +16,7 @@ public sealed class StoryPathStep
 }
 
 /// <summary>
-/// The Logbook's Paths (docs/story/STORY.md "Paths"): each player's own chart of the storylets they have had, the end
+/// The Logbook's Paths (docs/archive/story/STORY.md "Paths"): each player's own chart of the storylets they have had, the end
 /// each came to (the others stay locked), the storylet qualities as tracks, and where they stand with the people who
 /// have a feeling about them (Likes less Grudge, a line from hostile to trusted). Host: once a second per player, sent
 /// when it changed (<see cref="Msg.StoryPaths"/>). Every peer has the storylets' texts (Story/Storylets), so the message

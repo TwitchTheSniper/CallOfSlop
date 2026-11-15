@@ -1,5 +1,5 @@
 {
-  // The Frontier cast with one player who shoots at the landing master (docs/story/STORY.md "Fights"): Hugo Brandt fights
+  // The Frontier cast with one player who shoots at the landing master (docs/archive/story/STORY.md "Fights"): Hugo Brandt fights
   // back, Sol Reyes comes to his aid, Ada Quill runs, and Hugo kills Karl. In the game the same events come from a
   // player shooting a person's body (GameStoryFights.cs): the people decide by their traits there, the scenario here.
   "name": "A fight at the landing",

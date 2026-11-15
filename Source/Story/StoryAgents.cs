@@ -117,7 +117,7 @@ public sealed class StoryAgent
 }
 
 /// <summary>
-/// The people in the story world (docs/story/STORY.md "People"). Each one thinks only when their
+/// The people in the story world (docs/archive/story/STORY.md "People"). Each one thinks only when their
 /// step under way ends or a wait runs out, a few per tick: needs fall with time, goals are scored by utility, the best is
 /// planned with the HTN planner (<see cref="StoryHtn"/>) over the same verbs players use, and its steps are acted out on
 /// the story clock, each recorded as an event (routine ones only change the world). What happens where they are, and what
@@ -277,7 +277,7 @@ public sealed class StoryAgents
     }
 
     /// <summary>
-    /// A stranger comes (the drama manager's pacing, docs/story/STORY.md "Pacing"): a new person, already on the road from
+    /// A stranger comes (the drama manager's pacing, docs/archive/story/STORY.md "Pacing"): a new person, already on the road from
     /// <paramref name="from"/> to <paramref name="place"/> (<paramref name="minutes"/> long), who makes it their home. Their
     /// qualities and feelings are the data's; their needs start middling, Company low (new in town, they want to meet
     /// people). Returns the person, or null when the world is full or the name is taken.

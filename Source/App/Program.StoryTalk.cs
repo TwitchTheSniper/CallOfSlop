@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Talking to the story's people (docs/story/STORY.md "Talking to people"; the host's side is Game/GameStoryChat.cs):
+/// Talking to the story's people (docs/archive/story/STORY.md "Talking to people"; the host's side is Game/GameStoryChat.cs):
 /// the crosshair on a person within <see cref="Game.StoryTalkReach"/> shows their name and "F: talk", and the use key
 /// opens the talk panel (UiStoryTalk.cs) and frees the mouse for it, like the Zombies trader's shelf. Opening it asks
 /// them to stop and turn to you; closing it (Esc, Goodbye, walking off, their death) says goodbye. A construct part

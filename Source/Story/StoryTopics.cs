@@ -16,7 +16,7 @@ public sealed class TopicAnswer
 }
 
 /// <summary>
-/// A thing a player can ask one of the story's people about in the talk panel (docs/story/STORY.md "Topics"): its own
+/// A thing a player can ask one of the story's people about in the talk panel (docs/archive/story/STORY.md "Topics"): its own
 /// button, offered when its "if" holds for that person and that player, gone once asked (unless "again"), and the way
 /// into the ones that follow it ("after"). Each person has their own; who they are, how they stand to the player and
 /// how far the player's story has gone decide what they will talk about and how.
@@ -221,7 +221,7 @@ public sealed class TopicRules
 }
 
 /// <summary>
-/// The topics at play (docs/story/STORY.md "Topics"): what a person offers to talk about with a player now, and what
+/// The topics at play (docs/archive/story/STORY.md "Topics"): what a person offers to talk about with a player now, and what
 /// happens when they are asked. What a player has asked is the Asked relation (player to the topic's Thing), so it
 /// saves with the world. Host only; nothing allocates when offering.
 /// </summary>

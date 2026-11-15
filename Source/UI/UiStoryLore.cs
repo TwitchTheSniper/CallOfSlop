@@ -5,7 +5,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The words of a lore item a player is looking at closely (Program.StoryLore.cs; docs/story/STORY.md "Lore"): a panel at
+/// The words of a lore item a player is looking at closely (Program.StoryLore.cs; docs/archive/story/STORY.md "Lore"): a panel at
 /// the left of the screen over the world, its title and paragraphs, and how to put it down. It takes no input, so the game
 /// keeps the mouse. Every line is ASCII; nothing allocates in a steady frame.
 /// </summary>

@@ -3,7 +3,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The story people's moods (docs/story/STORY.md "Moods"): buffs and debuffs from Story/Moods. At a moment of a fight
+/// The story people's moods (docs/archive/story/STORY.md "Moods"): buffs and debuffs from Story/Moods. At a moment of a fight
 /// (someone killed near them, a kill of their own, hurt, badly hurt, coming to help) a person's body may take on a mood
 /// whose query holds over the story world (they liked the dead, they are brave, vengeful...). While it lasts it scales the
 /// damage they take and deal (<see cref="DamagePlayer"/>), their aim, reactions and turning (<see cref="BotBrain"/>'s

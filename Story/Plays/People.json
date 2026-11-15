@@ -1,5 +1,5 @@
 {
-  // Plays (docs/story/STORY.md "Plays"): short scenes cast from the world. "cast" is a query whose first variable is the
+  // Plays (docs/archive/story/STORY.md "Plays"): short scenes cast from the world. "cast" is a query whose first variable is the
   // person who leads, and whose other variables are the rest of the cast; "extra" may cast more (who may be nobody: their
   // beats are skipped). Everyone cast who is a person must be free (idle, or at a step with nobody else in it) and where
   // the lead is. Beats come one after another ("after" the one before, 4s if not said): a beat says one of its lines, or

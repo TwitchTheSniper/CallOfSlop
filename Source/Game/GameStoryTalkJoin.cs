@@ -3,7 +3,7 @@ using Brutal.RakNetApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// Joining a talk (docs/story/STORY.md "Talking to people"; co-op): when a player begins talking to one of the story's
+/// Joining a talk (docs/archive/story/STORY.md "Talking to people"; co-op): when a player begins talking to one of the story's
 /// people, every other player gets a notice (<see cref="Msg.TalkInvite"/>) they may answer or ignore. One who joins has
 /// the same panel wherever they are: they hear what the person says while the talk lasts (GameStoryTalk.cs sends them
 /// the lines) and may say hello or ask for news themselves; a trade still wants them there. The talk stays the first

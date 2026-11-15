@@ -67,7 +67,7 @@ public struct DramaCandidate
 }
 
 /// <summary>
-/// The drama manager (Awash's Influence Mode, docs/story/STORY.md "Drama"). It ranks the sifter's live partial
+/// The drama manager (Awash's Influence Mode, docs/archive/story/STORY.md "Drama"). It ranks the sifter's live partial
 /// matches by how much they would add (the pattern's drama, how far along, how new, whether players are in it, how
 /// pressing) and gives the best few a stage direction: the person who would act next is nudged towards the verb the story
 /// waits for. It runs once a second at most, when an event came in or every half minute, never per tick, and allocates

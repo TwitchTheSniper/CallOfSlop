@@ -1,5 +1,5 @@
 {
-  // Factions (docs/story/STORY.md "Factions"): what players do with a faction's channels, and what a faction does back.
+  // Factions (docs/archive/story/STORY.md "Factions"): what players do with a faction's channels, and what a faction does back.
   "verbs": [
     { "name": "Email", "players": true, "sentence": "{actor} emailed {target}",
       "about": "a player at a plugged-in Computer types to a faction (target: the faction); its deeds can read the words", "effects": [ "target Emails actor +1" ] },

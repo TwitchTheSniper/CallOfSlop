@@ -4,7 +4,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The story's fragments and the sealed data centres that hold them (docs/story/FRAGMENTS.md; data <c>Story/Fragments/Fragments.json</c>,
+/// The story's fragments and the sealed data centres that hold them (docs/archive/story/FRAGMENTS.md; data <c>Story/Fragments/Fragments.json</c>,
 /// format <c>call-of-slop-fragments/1</c>). Read once on every peer: the host places the sites and decides who holds what
 /// (Game/GameStoryFragments.cs), a client needs the texts for its Logbook and the terminals' screens. A bad file is refused with a
 /// reason (the log, and <c>--check-story</c>) and there are no fragments.
@@ -18,7 +18,7 @@ public sealed class FragmentScript
     {
         public string Id = "", Title = "", Kind = "", Hint = ""; // its id is also the story world's name of its Thing ("frag.threat"), which storylets name it by
         public string[] Text = []; // paragraphs
-        public string[] Leads = []; // leads told elsewhere (a dying convict's last words: docs/story/BREAKOUT.md) that this record answers
+        public string[] Leads = []; // leads told elsewhere (a dying convict's last words: docs/archive/story/BREAKOUT.md) that this record answers
     }
 
     public sealed class Site

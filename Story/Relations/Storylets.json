@@ -1,5 +1,5 @@
 {
-  // The storylets' own (docs/story/STORY.md "Storylets"). A storylet is a Thing ("storylet:ID"); a player holds
+  // The storylets' own (docs/archive/story/STORY.md "Storylets"). A storylet is a Thing ("storylet:ID"); a player holds
   // OnStorylet towards it while it is under way (1, or 2 paused for an urgent one), StoryletAt (the story second it
   // began, then ended) and Played (how many times it ended for them). All saved with the story, like any relation. A storylet spot
   // ("Kettle") counts a player's visits in the Visited relation (Relations.json).

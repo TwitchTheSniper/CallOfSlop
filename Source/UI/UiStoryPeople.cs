@@ -5,7 +5,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The Story window's People tab (docs/story/STORY.md "People"): everyone with a mind of their own, where they are and
+/// The Story window's People tab (docs/archive/story/STORY.md "People"): everyone with a mind of their own, where they are and
 /// what they are doing; for the one picked, their needs, how each goal scores and why, the plan tree with the step under
 /// way, what they did lately and what they know (and who told them). A cast can be added to the live world from here, and
 /// the people's bodies in it turned on or off (GameStoryBodies.cs).

@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace CallOfSlop.Story;
 
 /// <summary>
-/// One response rule (docs/story/STORY.md "Lines"; Valve's dialogue rules): an occasion (<see cref="Concept"/>), what must
+/// One response rule (docs/archive/story/STORY.md "Lines"; Valve's dialogue rules): an occasion (<see cref="Concept"/>), what must
 /// hold (the verb, what it is about, a query), and lines to say. Of the rules for an occasion whose criteria all hold, the
 /// one with the most criteria (<see cref="Weight"/>) is said; ties are drawn at random.
 /// </summary>

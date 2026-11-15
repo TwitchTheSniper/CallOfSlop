@@ -4,7 +4,7 @@ using Brutal.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The Logbook (F1 in Sandbox by default; docs/story/FRAGMENTS.md): the old records' fragments this player holds, each with where it
+/// The Logbook (F1 in Sandbox by default; docs/archive/story/FRAGMENTS.md): the old records' fragments this player holds, each with where it
 /// came from, a "?" for each one still out there, and the leads they have heard of, a "?" until what the lead points to is found.
 /// Its second page, Paths, is UiLogbookPaths.cs; its third, Technologies, UiTechnologies.cs.
 /// It reads what the host sent (Game.FragmentsHeld, Game.FragmentLeads) and the texts every peer has (Story/Fragments). Closed, it

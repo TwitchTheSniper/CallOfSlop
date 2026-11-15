@@ -1,5 +1,5 @@
 {
-  // What the break-out's four convicts will talk about (docs/story/BREAKOUT.md; the beats are Storylets/Breakout.json).
+  // What the break-out's four convicts will talk about (docs/archive/story/BREAKOUT.md; the beats are Storylets/Breakout.json).
   // They give nothing away to a stranger: each thread brushes the player off ("keep") until the convict likes them
   // enough, and every proper answer warms them a little more, which is how trust is earned. Each ends on something to
   // notice later. Grassing to the Sergeant is his topic at the end. ?me is the person asked, ?them the player.

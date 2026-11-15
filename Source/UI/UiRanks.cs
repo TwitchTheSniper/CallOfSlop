@@ -5,7 +5,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The Faction window's rank bars (docs/story/STORY.md "Ranks"; the promotions: Game/GameStoryRanks.cs): with each story
+/// The Faction window's rank bars (docs/archive/story/STORY.md "Ranks"; the promotions: Game/GameStoryRanks.cs): with each story
 /// faction, your tier, a bar from where it began to the next one, and what the next one brings (its uniform, technologies
 /// and jobs). From the standings every peer has (FactionTable.PlayerStanding); the words are worked out again only when
 /// the table changes, not every frame.

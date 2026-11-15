@@ -3,7 +3,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The appraiser's milestones for mining and making (docs/story/STORY.md, "Milestones"). Small steady work never becomes
+/// The appraiser's milestones for mining and making (docs/archive/story/STORY.md, "Milestones"). Small steady work never becomes
 /// an event: what a player's drills, saws and buckets gather and what their refining machines make is summed in the
 /// constructs (<see cref="ConstructWorld.Yield"/>) and, once a second, added to the story world as the Mined and Refined
 /// relations (player to resource, in kilograms). Only crossing 1 t, 10 t or 100 t of one resource records an event (Mine,

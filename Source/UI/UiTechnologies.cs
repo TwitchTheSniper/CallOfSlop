@@ -4,7 +4,7 @@ using Brutal.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// What the player has learnt, and the moment they learn it (docs/story/STORY.md "Technologies"): the Logbook's Technologies
+/// What the player has learnt, and the moment they learn it (docs/archive/story/STORY.md "Technologies"): the Logbook's Technologies
 /// page (each story faction's technologies, learnt or locked, who teaches them and at what standing, then the player's own tool
 /// upgrades), and a short celebration in the middle of the screen when a faction teaches them something or they fit a tool
 /// upgrade. Both read what every peer has: the faction table's per-player masks (<see cref="FactionTable.PlayerLearnt"/>)

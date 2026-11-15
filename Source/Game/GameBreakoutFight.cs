@@ -4,7 +4,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The break-out's fight at the Ministry Spaceport (docs/story/BREAKOUT.md "The spaceport"): the first time someone who
+/// The break-out's fight at the Ministry Spaceport (docs/archive/story/BREAKOUT.md "The spaceport"): the first time someone who
 /// escaped comes near the landing, the spaceport's guards turn out at their posts round the terminal and go for whoever
 /// escaped (only them: <see cref="BreakoutGuardFights"/>). The convicts who fled fight back, and the guards can't hurt
 /// them, apart from the file's scripted deaths: at its time (or once enough guards are down) a convict is hit, says

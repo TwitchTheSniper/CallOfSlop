@@ -1,5 +1,5 @@
 {
-  // The Frontier cast with one player who kills one of them at the landing field (docs/story/STORY.md "Bodies"): a person
+  // The Frontier cast with one player who kills one of them at the landing field (docs/archive/story/STORY.md "Bodies"): a person
   // killed is dead for good, those who saw it fear the killer and keep away from them, and word of it gets around. In the
   // game the same happens when a player shoots a person's body.
   "name": "A killing at the landing",

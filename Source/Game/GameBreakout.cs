@@ -6,7 +6,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The break-out (docs/story/BREAKOUT.md; Karl, 2026-11-13): once a player is in with the convicts and Dot has named the
+/// The break-out (docs/archive/story/BREAKOUT.md; Karl, 2026-11-13): once a player is in with the convicts and Dot has named the
 /// night (the storylet "The night", its hook "breakout", which leaves the lead "The Night"), the crew walks to the
 /// Ministry's ration hauler outside the gate and waits; the player walks up to it and they are off, the colony's siren
 /// behind them. The ride is the crew bus's scene (Program.Quarry.cs, the craft STAND-IN, Source/StandIns): the hauler
@@ -405,7 +405,7 @@ public sealed partial class Game
 }
 
 /// <summary>
-/// Story/Opening/Breakout.json (format <see cref="Format"/>; docs/story/BREAKOUT.md): the crew, the lead that starts the
+/// Story/Opening/Breakout.json (format <see cref="Format"/>; docs/archive/story/BREAKOUT.md): the crew, the lead that starts the
 /// night, where the hauler waits and sets down, and the words. A bad file is refused with a reason and there is no break-out.
 /// </summary>
 public sealed class BreakoutScript

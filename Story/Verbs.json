@@ -1,5 +1,5 @@
 {
-  // Every action in the story layer (docs/story/STORY.md "The actions"): one list for players and NPCs, so a player's real
+  // Every action in the story layer (docs/archive/story/STORY.md "The actions"): one list for players and NPCs, so a player's real
   // action and an NPC's planned one leave the same trace. Roles: actor, target, owner (the target's owner at the time),
   // place, item. Effects change the world state when the event happens: "subject Relation object +n|-n|=n" (=0 removes;
   // no amount sets it to 1) or "subject Quality +n". An effect on an empty role, or from someone to themselves, does nothing.

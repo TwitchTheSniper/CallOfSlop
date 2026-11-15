@@ -10,7 +10,7 @@ public sealed class NeedDef
     public float FallsPerSecond;
 }
 
-/// <summary>What a consideration of a goal reads (docs/story/STORY.md "People").</summary>
+/// <summary>What a consideration of a goal reads (docs/archive/story/STORY.md "People").</summary>
 public enum NeedInput : byte
 {
     Need, // one of my needs, 0..100
@@ -114,7 +114,7 @@ public sealed class CastDef
     public sealed record Feeling(string Who, ushort Rel, string To, int Value);
 
     /// <summary>
-    /// Someone from outside the cast the drama manager may bring in by road (docs/story/STORY.md "Pacing"): to a story in
+    /// Someone from outside the cast the drama manager may bring in by road (docs/archive/story/STORY.md "Pacing"): to a story in
     /// progress that waits for anyone (<see cref="Suits"/>: the verbs they would join one for, empty any), or when it has
     /// been quiet too long. Each comes once. Their feelings are towards the cast's people (they have history).
     /// </summary>

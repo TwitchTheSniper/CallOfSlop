@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace CallOfSlop.Story;
 
 /// <summary>
-/// A mood (docs/story/STORY.md "Moods"): a buff or a debuff a person's body takes on at a moment of the fighting (a friend
+/// A mood (docs/archive/story/STORY.md "Moods"): a buff or a debuff a person's body takes on at a moment of the fighting (a friend
 /// killed nearby, badly hurt, coming to help...), if its query holds. While it lasts it changes how hard they are to hurt,
 /// how hard they hit, how well they aim and how quickly they react, and it may make them fight (or run from) whoever caused
 /// it. One mood at a time: a new one takes over only when its <see cref="Rank"/> is at least the one they are in.

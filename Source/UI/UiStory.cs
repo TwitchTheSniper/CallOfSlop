@@ -6,7 +6,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The Story window (F4 in Sandbox by default; docs/story/STORY.md, "Trying it"): the story on the host, for seeing
+/// The Story window (F4 in Sandbox by default; docs/archive/story/STORY.md, "Trying it"): the story on the host, for seeing
 /// where it is and steering it. Four tabs as it opens:
 /// <list type="bullet">
 /// <item>Story: for a player, the storylet playing now and its ends, every storylet and why it isn't playing, their
@@ -88,7 +88,7 @@ public sealed partial class Ui
             {
                 ImGuiSafe.TextWrapped(game == null ? "Start or join a game: the story runs in Sandbox, on the host."
                     : !game.SandboxOn ? "The story runs in Sandbox: this mode has none."
-                    : !game.IsServer ? "The story lives on the host: in this first version only the host sees it (docs/story/STORY.md)."
+                    : !game.IsServer ? "The story lives on the host: in this first version only the host sees it (docs/archive/story/STORY.md)."
                     : "No story yet.");
                 ImGuiSafe.TextColored(Dim, $"{Keybinds.Name(bind)} or Esc closes this window.");
             }

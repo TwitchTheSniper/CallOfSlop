@@ -61,7 +61,7 @@ public sealed partial class Game
 
     public static string DeathHint(SurvivalDeath rule) => rule switch
     {
-        SurvivalDeath.Checkpoint => "After a death you wake in the last Bunk you lay in, or in the penal colony's cell block.",
+        SurvivalDeath.Checkpoint => "After a death you wake in the last Bunk you lay in, or where you first woke.",
         SurvivalDeath.Permadeath => "One life. Dead is dead in this world: you watch your friends from then on.",
         _ => "After a death you come back at the world's spawn points.",
     };

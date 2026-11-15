@@ -1,5 +1,5 @@
 {
-  // What goes out on the radio (docs/story/STORY.md "Lines"): a radio operator's Broadcast is said on the Radio occasion,
+  // What goes out on the radio (docs/archive/story/STORY.md "Lines"): a radio operator's Broadcast is said on the Radio occasion,
   // with ?actor and ?target who did what to whom, ?place where and ?here the station. Every player in the world hears it,
   // and everyone in a place in the story learns it.
   "about": "the radio's news",

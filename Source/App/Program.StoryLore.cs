@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Looking closely at the colony's lore items (docs/story/STORY.md "Lore"; the host's side is Game/GameStoryLore.cs): the
+/// Looking closely at the colony's lore items (docs/archive/story/STORY.md "Lore"; the host's side is Game/GameStoryLore.cs): the
 /// crosshair on a lore part within use reach shows "Name  F: look closer", and the use key opens what it says
 /// (UiStoryLore.cs) on this player's screen, every peer having the words (Story/Lore), and sends the ordinary use act so the
 /// host counts the look. The mouse stays with the game: the words stay up until F again, Esc, or walking off.

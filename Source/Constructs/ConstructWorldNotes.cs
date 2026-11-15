@@ -1,6 +1,6 @@
 namespace CallOfSlop;
 
-/// <summary>What happened to a construct that the story layer hears of (docs/story/STORY.md, "The appraiser").</summary>
+/// <summary>What happened to a construct that the story layer hears of (docs/archive/story/STORY.md, "The appraiser").</summary>
 public enum CNoteKind : byte
 {
     Disabled, // its first part shot or blown off (By: the attacker, when known)

@@ -1,5 +1,5 @@
 {
-  // What a player does at the machine (docs/story/STORY.md "The ending"). The machine itself isn't built yet, so nothing
+  // What a player does at the machine (docs/archive/story/STORY.md "The ending"). The machine itself isn't built yet, so nothing
   // records these in play: the F4 Storylets tab's End buttons stand in for it.
   "verbs": [
     { "name": "SwitchOff", "players": true, "sentence": "{actor} switched the machine off",

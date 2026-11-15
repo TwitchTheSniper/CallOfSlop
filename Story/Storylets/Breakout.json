@@ -1,5 +1,5 @@
 {
-  // The break-out (docs/story/BREAKOUT.md; Karl, 2026-11-13): a road off the main quest that opens at any point in the
+  // The break-out (docs/archive/story/BREAKOUT.md; Karl, 2026-11-13): a road off the main quest that opens at any point in the
   // penal colony. Four convicts working in the gangs (Casts/PenalColony.json, Posts) mean to leave: Dot Pruett on the
   // boiler coal, Wren Haskett at sick parade, Ambrose Thale at the brazier, Hester Mossop at the heating main. Talking
   // to them warms them (Hello, their topics in Topics/Breakout.json); each beat here waits until one of them likes the
