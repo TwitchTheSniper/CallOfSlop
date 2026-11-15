@@ -116,14 +116,14 @@
     },
     {
       "part": "Magpie Retro Jet",
-      "on": 4,
-      "socket": "retroL",
+      "on": 7,
+      "socket": "retro",
       "by": "top"
     },
     {
       "part": "Magpie Retro Jet",
-      "on": 4,
-      "socket": "retroR",
+      "on": 8,
+      "socket": "retro",
       "by": "top"
     },
     {
@@ -292,6 +292,31 @@
       ]
     },
     {
+      "part": "Bakelite Switch",
+      "on": 2,
+      "socket": "wellDoorSwitch",
+      "by": "back",
+      "config": {
+        "startOn": false
+      }
+    },
+    {
+      "part": "Magpie Well Door F",
+      "on": 0,
+      "socket": "wellDoorF",
+      "by": "hang",
+      "paint": "#5a5d5c",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Magpie Well Door A",
+      "on": 0,
+      "socket": "wellDoorA",
+      "by": "hang",
+      "paint": "#5a5d5c",
+      "finish": "plated steel"
+    },
+    {
       "part": "Piston 3x3 Long",
       "on": 2,
       "socket": "drill0",
@@ -305,7 +330,7 @@
     },
     {
       "part": "Drill Module",
-      "on": 42,
+      "on": 45,
       "socket": "top",
       "by": "drive",
       "spin": 1
@@ -324,7 +349,7 @@
     },
     {
       "part": "Drill Module",
-      "on": 44,
+      "on": 47,
       "socket": "top",
       "by": "drive",
       "spin": 2
@@ -343,7 +368,7 @@
     },
     {
       "part": "Drill Module",
-      "on": 46,
+      "on": 49,
       "socket": "top",
       "by": "drive",
       "spin": 1
@@ -362,7 +387,7 @@
     },
     {
       "part": "Drill Module",
-      "on": 48,
+      "on": 51,
       "socket": "top",
       "by": "drive",
       "spin": 2
@@ -941,76 +966,76 @@
       41
     ],
     [
-      40,
-      42
+      42,
+      43
     ],
     [
-      40,
+      42,
       44
     ],
     [
       40,
-      46
+      45
     ],
     [
       40,
-      48
+      47
     ],
     [
-      53,
-      50
+      40,
+      49
     ],
     [
-      53,
+      40,
       51
     ],
     [
-      53,
-      52
+      56,
+      53
     ],
     [
-      57,
+      56,
       54
     ],
     [
-      57,
+      56,
       55
     ],
     [
-      57,
-      56
+      60,
+      57
     ],
     [
-      75,
-      73
+      60,
+      58
     ],
     [
-      75,
-      74
+      60,
+      59
     ],
     [
-      79,
+      78,
       76
     ],
     [
-      79,
+      78,
       77
     ],
     [
-      79,
-      78
+      82,
+      79
     ],
     [
-      80,
-      82
+      82,
+      80
     ],
     [
-      95,
-      93
+      82,
+      81
     ],
     [
-      95,
-      94
+      83,
+      85
     ],
     [
       98,
@@ -1021,52 +1046,60 @@
       97
     ],
     [
-      100,
+      101,
       99
     ],
     [
-      116,
-      115
+      101,
+      100
     ],
     [
-      118,
-      117
+      103,
+      102
     ],
     [
-      121,
-      119
+      119,
+      118
     ],
     [
       121,
       120
+    ],
+    [
+      124,
+      122
+    ],
+    [
+      124,
+      123
     ]
   ],
   "conduit": true,
   "links": [
     {
       "type": "chute",
-      "from": 43,
+      "from": 46,
       "to": 38,
       "fromPort": "Chute out",
       "toPort": "Chute in"
     },
     {
       "type": "chute",
-      "from": 45,
+      "from": 48,
       "to": 39,
       "fromPort": "Chute out",
       "toPort": "Chute in"
     },
     {
       "type": "chute",
-      "from": 47,
+      "from": 50,
       "to": 38,
       "fromPort": "Chute out",
       "toPort": "Chute in"
     },
     {
       "type": "chute",
-      "from": 49,
+      "from": 52,
       "to": 39,
       "fromPort": "Chute out",
       "toPort": "Chute in"

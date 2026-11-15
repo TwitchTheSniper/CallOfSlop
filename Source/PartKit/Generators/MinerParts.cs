@@ -517,6 +517,7 @@ public sealed class MinerParts : IPartGenerator
     // ---- the drill well: an opening through the drill bay's floor and the keel; four drills hang over it on rams
 
     private static readonly Rect Well = new(Cx - 1.75, 12.15, Cx + 1.75, 15.85); // (its rail leaves a standing landing inside both bulkhead doors)
+    private const double WellLeaf = 1.9, WellDoorZ0 = 12.1 - WellLeaf, WellDoorZ1 = 15.9 + WellLeaf; // the cargo doors' leaves (each covers half the well) and how far their rails run
     private static readonly double[] DrillZ = [12.6, 15.4]; // the gantry beams over the well (a pair of rams on each)
     private const double DrillX = 0.6, GantryY = 2.95; // the rams either side of the centreline, hung under the beams
 
@@ -591,6 +592,20 @@ public sealed class MinerParts : IPartGenerator
                 Detail(p, Cx + s * 2.3 - 0.16, hy - 0.12, z - 0.22, Cx + s * 2.3 + 0.16, hy - 0.004, z + 0.22, Frame, "dirty steel");
                 Detail(p, Cx + s * 2.3 - 0.12, hy - 0.13, z - 0.18, Cx + s * 2.3 + 0.12, hy - 0.12, z + 0.18, Glow, glow: true);
             }
+        // The well's cargo doors (Karl, 2026-11-15): two heavy leaves under the keel that slide fore and aft along C-channel rails, hung
+        // from a track beam along the starboard rail. The rails run past the well each way as far as a leaf travels.
+        var ky = At(14)[0].Y;
+        foreach (var s in new[] { -1, 1 })
+        {
+            Solid(p, Cx + s * 1.8, ky - 0.01, WellDoorZ0 - 0.25, Cx + s * 1.98, ky + 0.1, WellDoorZ1 + 0.25, Frame, "dirty steel"); // (the track beam, its foot a centimetre under the skin)
+            Solid(p, Cx + s * 1.9, ky - 0.22, WellDoorZ0 - 0.25, Cx + s * 1.97, ky - 0.01, WellDoorZ1 + 0.25, "#3a3c3a", "dirty steel"); // (the channel's web)
+            Solid(p, Cx + s * 1.78, ky - 0.25, WellDoorZ0 - 0.25, Cx + s * 1.97, ky - 0.22, WellDoorZ1 + 0.25, "#3a3c3a", "dirty steel"); // (its lip, under the leaves' edges)
+            Detail(p, Cx + s * 1.776, ky - 0.24, Well.Z0 - 0.15, Cx + s * 1.974, ky - 0.2, Well.Z1 + 0.15, Hazard, "hazard paint");
+            foreach (var z in new[] { WellDoorZ0 - 0.25, WellDoorZ1 + 0.23 })
+                Detail(p, Cx + s * 1.76, ky - 0.27, z, Cx + s * 1.99, ky - 0.004, z + 0.02, Orange, "worn paint"); // (the end stops)
+        }
+        Sock(p, "wellDoorF", Cx + 1.84, ky - 0.01, Well.Z0 + WellLeaf / 2 - 0.05, "-y");
+        Sock(p, "wellDoorA", Cx + 1.84, ky - 0.01, Well.Z1 - WellLeaf / 2 + 0.05, "-y");
         foreach (var (s, z, n) in new[] { (-1, 8.0, "legFL"), (1, 8.0, "legFR"), (-1, 21.5, "legBL"), (1, 21.5, "legBR") })
             Sock(p, n, Cx + s * 2.2, At(z)[0].Y + 0.02, z, "-y");
         Sock(p, "lampWellF", Cx, -0.65, shaft.Z0, "+z");
@@ -695,6 +710,7 @@ public sealed class MinerParts : IPartGenerator
         DoorSock(p, "doorFore", true, Cx - 0.75, ZWork + 0.125, Ft0);
         DoorSock(p, "doorAft", true, Cx - 0.75, ZDrill - 0.125, Ft0);
         Sock(p, "drillSwitch", Cx + 1.4, Ft0 + 1.3, ZWork + 0.25, "+z");
+        Sock(p, "wellDoorSwitch", Cx + 1.4, Ft0 + 0.95, ZWork + 0.25, "+z");
         Sock(p, "drillSign", Cx + 2.6, Ft0 + 1.55, ZWork + 0.25, "+z");
         Sock(p, "lampFL", Cx - Lw, Ft0 + 2.45, 11.1, "+x");
         Sock(p, "lampFR", Cx + Lw, Ft0 + 2.45, 11.1, "-x");
@@ -1006,14 +1022,6 @@ public sealed class MinerParts : IPartGenerator
                 Void(p, za, zb, ya, yb, 0);
         Hidden(p, Cx - 3.0, 0.3, ZFront - 0.6, Cx + 3.0, 3.2, ZFront - 0.25);
         Hidden(p, Cx - 2.4, 3.6, ZFront - 0.6, Cx + 2.4, 6.2, ZFront - 0.25);
-        foreach (var s in new[] { -1, 1 })
-        {
-            var q = OnFacet(1, s, Zc, ZFront, 0.4, 0.75);
-            double rx = Math.Round(q[0], 2), ry = Math.Round(q[1], 2), rz = Math.Round(q[2], 2);
-            Sock(p, s < 0 ? "retroL" : "retroR", rx, ry, rz, "-z");
-            Solid(p, rx - 0.35, ry - 0.35, rz, rx + 0.35, ry + 0.35, rz + 0.8, Yellow2, "worn paint");
-            Detail(p, rx - 0.36, ry + 0.1, rz + 0.2, rx + 0.36, ry + 0.18, rz + 0.6, Hazard, "hazard paint");
-        }
         p.Set(("fuelTank", Kw(("capacity", 1200))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(Cx, 1.0, ZFront - 0.25).Cast<object>()], "+z", "fuel"))));
         return p.Stats(7000, 24000, 40, 15.0);
     }
@@ -1155,16 +1163,23 @@ public sealed class MinerParts : IPartGenerator
         double jx0 = Cx + s * 6.95, jx1 = Cx + s * 8.6;
         Solid(p, Math.Min(jx0, jx1), 1.0, JetZ - 0.8, Math.Max(jx0, jx1), 1.45, JetZ + 0.8, Yellow2, "worn paint");
         Detail(p, Math.Min(jx0, jx1) - 0.004, 1.3, JetZ - 0.804, Math.Max(jx0, jx1) + 0.004, 1.38, JetZ + 0.804, Hazard, "hazard paint");
+        // The retro jet's housing on the shelf's nose (Karl, 2026-11-15: the retros under the bow's cheeks looked stuck on): a block
+        // standing forward of the lift jet, its face square to the bow, so the retro fires straight ahead from the thruster pod.
+        double rx0 = Cx + s * 7.3, rx1 = Cx + s * 8.4;
+        Solid(p, Math.Min(rx0, rx1), 0.72, RetroZ, Math.Max(rx0, rx1), 1.72, JetZ - 0.8, Yellow2, "worn paint");
+        Detail(p, Math.Min(rx0, rx1) - 0.004, 1.52, RetroZ - 0.004, Math.Max(rx0, rx1) + 0.004, 1.6, JetZ - 0.9, Hazard, "hazard paint");
+        Detail(p, Math.Min(rx0, rx1) + 0.08, 0.66, RetroZ + 0.08, Math.Max(rx0, rx1) - 0.08, 0.724, JetZ - 0.9, Frame, "dirty steel");
         // Hidden: the hopper's body, stepped inside its slope (the ore's box is drawn by the hold, which collides with nothing).
         double xi = Cx + s * HopIn;
         foreach (var (h1, y0, y1) in new[] { (5.3, -0.95, 0.0), (6.2, 0.0, 1.0), (7.0, 1.0, 1.3), (7.35, 1.3, 2.95) })
             Hidden(p, xi, y0, HopZ0 + 0.004, Cx + s * h1, y1, HopZ1 - 0.004);
         Sock(p, "lift", Cx + s * 7.85, 1.0, JetZ, "-y");
+        Sock(p, "retro", Cx + s * 7.85, 1.22, RetroZ, "-z");
         p.Set(("fuelTank", Kw(("capacity", 1500))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(Cx + s * 7.0, 0.5, HopZ1).Cast<object>()], "+z", "fuel"))));
         return p.Stats(6000, 24000, 35, 15.0);
     }
 
-    private const double JetZ = 11.2; // the forward lift jets, under the hoppers' shelves
+    private const double JetZ = 11.2, RetroZ = 9.9; // the forward lift jets under the hoppers' shelves; the retros' housings' faces
 
     // ---- the engine nacelles: a pod on a pylon each side aft, a drive at its tail and a lift jet under it
 
@@ -1365,6 +1380,43 @@ public sealed class MinerParts : IPartGenerator
             var x = x0 + (x1 - x0) * (i + 0.5) / n;
             Fx(p, x - 0.012, y - 0.012, z - 0.004, x + 0.012, y + 0.012, z + 0.014, "#3a3c3a", "steel", detail: true);
         }
+    }
+
+    /// <summary>A leaf of the well's cargo door: a heavy plate with a ribbed underside, rollers riding the rails' lips, a hazard band
+    /// along its meeting edge. It hangs from the keel's track beam by its starboard edge and slides away from the well (fore or aft).</summary>
+    private static Part WellDoor(int dir)
+    {
+        var name = dir < 0 ? "Magpie Well Door F" : "Magpie Well Door A";
+        var p = new Part(name, Small, Section, "A leaf of the Magpie's well door: a ribbed steel plate under the keel that slides " + (dir < 0 ? "forward" : "aft") + " along its rails to open the well for the drills.", role: "door", tool: "welder", material: "steel", color: Steel, group: Group);
+        double hx = 1.88, hz = WellLeaf / 2, t = 0.14, m = -dir * hz; // (m: the meeting edge's z, towards the other leaf)
+        double z0 = -hz + (dir > 0 ? 0.002 : 0), z1 = hz - (dir < 0 ? 0.002 : 0);
+        double ox = 1.84; // (the hang socket on the starboard edge: the leaf's own frame is centred under it)
+        double X(double x) => x - ox;
+        Fx(p, X(-hx), -t, z0, X(hx), 0, z1, "#5a5d5c", "plated steel");
+        // The underside: a frame round the edge, three ribs across, a run of bolts down each rib, rollers at the rail edges.
+        Fx(p, X(-hx + 0.04), -t - 0.05, z0 + 0.04, X(hx - 0.1), -t + 0.004, z0 + 0.12, Frame, "dirty steel");
+        Fx(p, X(-hx + 0.04), -t - 0.05, z1 - 0.12, X(hx - 0.1), -t + 0.004, z1 - 0.04, Frame, "dirty steel");
+        foreach (var x in new[] { -hx + 0.04, hx - 0.18 })
+            Fx(p, X(x), -t - 0.05, z0 + 0.12, X(x + 0.08), -t + 0.004, z1 - 0.12, Frame, "dirty steel");
+        foreach (var x in new[] { -1.1, 0.0, 1.1 })
+        {
+            Fx(p, X(x - 0.06), -t - 0.08, z0 + 0.12, X(x + 0.06), -t + 0.004, z1 - 0.12, "#3a3c3a", "dirty steel");
+            for (var i = 0; i < 4; i++)
+            {
+                var z = z0 + 0.3 + i * (z1 - z0 - 0.6) / 3;
+                Fx(p, X(x - 0.025), -t - 0.096, z - 0.025, X(x + 0.025), -t - 0.076, z + 0.025, "#9a9c98", "steel", detail: true);
+            }
+        }
+        // The meeting edge: a rubber seal and a hazard band on the plate's underside beside it.
+        Fx(p, X(-hx + 0.12), -t - 0.03, Math.Min(m, m + dir * 0.0), X(hx - 0.2), -0.02, m + dir * 0.03, Frame, "rubber", detail: true);
+        double hb0 = m + dir * 0.13, hb1 = m + dir * 0.33;
+        Fx(p, X(-hx + 0.14), -t - 0.016, Math.Min(hb0, hb1), X(hx - 0.2), -t + 0.004, Math.Max(hb0, hb1), Hazard, "hazard paint", detail: true);
+        foreach (var x in new[] { -hx + 0.02, hx - 0.06 })
+            foreach (var z in new[] { z0 + 0.25, z1 - 0.25 })
+                Fx(p, X(x), -t - 0.03, z - 0.07, X(x + 0.05), -t + 0.004, z + 0.07, "#9a9c98", "steel", detail: true); // (rollers)
+        p.Sock("hang", [0, 0, 0], "+y");
+        p.Set(("door", Kw(("kind", "slide"), ("axis", dir < 0 ? "-z" : "+z"), ("travel", WellLeaf + 0.05), ("seconds", 3.0), ("hang", "hang"))));
+        return p.Stats(900, 6000, 35, 6.0);
     }
 
     /// <summary>The galley: a sealed cook module on a plinth, two induction plates under a fiddle rail, a latched oven, a vented hood
@@ -1802,9 +1854,8 @@ public sealed class MinerParts : IPartGenerator
         }
         foreach (var h in hoppers)
             lifts.Add(bp.Hang("Magpie Lift Jet", h, "lift", "top"));
-        var retros = new List<int>();
-        foreach (var n in new[] { "retroL", "retroR" })
-            retros.Add(bp.Hang("Magpie Retro Jet", bow, n, "top"));
+        foreach (var h in hoppers)
+            bp.Hang("Magpie Retro Jet", h, "retro", "top");
         foreach (var n in new[] { "legFL", "legFR", "legBL", "legBR" })
             bp.Hang("Magpie Landing Leg", keel, n, "top");
         // Getting about: the boarding ladder off the porch, a ladder up from the workshop and one from engineering.
@@ -1839,6 +1890,11 @@ public sealed class MinerParts : IPartGenerator
         var sign2 = bp.Hang("Text Sign", bay, "drillSign", "back");
         bp.Steps[sign2]["text"] = new List<object?> { "DRILLS UP", "DRILLS DOWN" };
         bp.Wires.Add((lever, sign2));
+        // The well's cargo doors: two leaves under the keel on one switch below the drill lever (on: open). They start shut.
+        var doorSwitch = bp.Hang("Bakelite Switch", bay, "wellDoorSwitch", "back");
+        bp.Steps[doorSwitch]["config"] = new PyDict { ["startOn"] = false };
+        foreach (var n in new[] { "wellDoorF", "wellDoorA" })
+            bp.Wires.Add((doorSwitch, Paint(bp, bp.Hang(n == "wellDoorF" ? "Magpie Well Door F" : "Magpie Well Door A", keel, n, "hang"), "#5a5d5c", "plated steel")));
         var chutes = new List<(int Drill, int Hold)>();
         for (var i = 0; i < 4; i++)
         {
@@ -1920,12 +1976,12 @@ public sealed class MinerParts : IPartGenerator
         [
             .. structure, Drive(),
             Jet("Magpie Lift Jet", $"A lift jet: {LiftForce / 1e6:0.0} MN straight down. Four of them stand round the Magpie's middle.", LiftForce, 1.2),
-            Jet("Magpie Retro Jet", $"A retro jet in the Magpie's cheek: {RetroForce / 1000:0} kN forward, to stop it over a claim.", RetroForce, 0.8),
+            Jet("Magpie Retro Jet", $"A retro jet in the nose of a hopper's thruster pod: {RetroForce / 1000:0} kN forward, to stop it over a claim.", RetroForce, 0.8),
             Leg(),
             Ladder("Magpie Ladder", Ft1 - Ft0, "A ladder between the Magpie's decks: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
             Ladder("Magpie Boarding Ladder", Ft0 - Ground, "The Magpie's boarding ladder, from the ground to the porch at its stern: F climbs it.", "hull", [0, 0.125 - Ground, -0.005], "+z"),
             PowerPlant(), FlightComputer(),
-            GalleyUnit(), BrewUnit(), MessTable(), KitLocker(), FoldDesk(), Bunk(), MedBed(), MedLocker(), CargoRack(),
+            WellDoor(-1), WellDoor(1), GalleyUnit(), BrewUnit(), MessTable(), KitLocker(), FoldDesk(), Bunk(), MedBed(), MedLocker(), CargoRack(),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);

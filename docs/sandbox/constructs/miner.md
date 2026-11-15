@@ -22,7 +22,9 @@ band of skin over the rooms it holds, and `MustFit` throws if a room pokes throu
 - **Engine nacelles** (L and R): fuel pods on raked pylons aft. Each has a main drive at its tail and a lift jet under it.
 - **The spine**: an ore derrick (pedestal, a boom laid forward, a crutch and a ram), a ground-radar dish, radiators and
   antennae.
-- **The bow**: a light bar, a chin ground scanner, and a retro jet in each cheek.
+- **The bow**: a light bar and a chin ground scanner.
+- **Thruster pods** on the hoppers' shelves: a lift jet under each, and a retro jet in its nose that fires straight ahead.
+  Karl (2026-11-15) said the retros in the bow's cheeks looked stuck on.
 - **The stern**: a hood over the boarding porch, with a radiator grille.
 
 ## The decks
@@ -67,6 +69,10 @@ merge, the Magpie can switch to them if a shared set suits it.
 - One lever in the drill bay drives every ram (2 m stroke, slow) and flips the sign between "DRILLS UP" and
   "DRILLS DOWN". Fully down, the bit tips sit about 10 cm above the ground the legs stand on, inside a drill's 25 cm
   reach.
+- **The well's cargo door** (Karl, 2026-11-15): two ribbed steel leaves under the keel close the well. Each hangs from a
+  track beam and rides C-channel rails, and they slide apart fore and aft in 3 s. A Bakelite Switch below the drill
+  lever opens them (on) and shuts them (off), and they start shut. Open them before lowering the drills.
+  `--check-building` treats a level leaf as a hatch rather than a doorway (BuildingWalkCheck).
 - Drills 0 and 2 chute into the port hold and drills 1 and 3 into the starboard hold. Each hold is a **Storage Volume**
   sized to fill its hopper's inside, about 30 m3 (some 12,000 units of one bulk material).
 - A refinery and the trip to it are the production system's.

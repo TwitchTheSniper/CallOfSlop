@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Magpie Retro Jet",
-  "description": "A retro jet in the Magpie's cheek: 500 kN forward, to stop it over a claim.",
+  "description": "A retro jet in the nose of a hopper's thruster pod: 500 kN forward, to stop it over a claim.",
   "group": "Ship",
   "section": "Magpie miner",
   "role": "thruster",
