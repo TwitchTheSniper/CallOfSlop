@@ -1342,7 +1342,7 @@ public sealed class ShipParts : IPartGenerator
         Plate(p, [.. Enumerable.Range(0, 8).Select(i => RingY(0.055 * k, -0.17 * k, i))], "#ff8a3a", glow: true);
         p.Add(Box([-0.11 * k, -0.3 * k, -0.11 * k], [0.11 * k, -0.16 * k, 0.11 * k], hidden: true));
         p.Sock("base", [0, 0, 0], "+y");
-        p.Set(("thruster", Kw(("force", force), ("spool", 0.25), ("exhaust", "-y"), ("at", Py.L(0, Py.Round(-0.3 * k, 4), 0)), ("burnRate", Py.Round(force / 1e6 * JetBurn, 4)))));
+        p.Set(("thruster", Kw(("force", force), ("spool", 0.25), ("exhaust", "-y"), ("at", Py.L(0, Py.Round(-0.3 * k, 4), 0)), ("burnRate", Py.Round(force / 1e6 * JetBurn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [Math.Round(0.15 * k, 3), Math.Round(-0.05 * k, 3), 0], "+x", "fuel"))));
         p.Set(("flame", Py.L(Kw(("at", Py.L(0, Py.Round(-0.3 * k, 4), 0)), ("dir", "-y"), ("radius", Py.Round(0.08 * k, 4)), ("length", Py.Round(1.1 * k, 4)), ("kind", "Rocket")))));
         return p.Stats(Math.Round(90 * k * k * k), 1500, 12, 3.0);
     }

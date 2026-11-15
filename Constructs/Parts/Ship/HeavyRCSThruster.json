@@ -17,6 +17,20 @@
     ],
     "burnRate": 0.75
   },
+  "ports": [
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        0.24,
+        -0.08,
+        0
+      ],
+      "face": "+x"
+    }
+  ],
   "flame": [
     {
       "at": [
