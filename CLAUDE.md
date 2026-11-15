@@ -83,7 +83,7 @@ Constructs/Parts/, Blueprints/, Tools/   parts, build scripts, the tools' held m
 Constructs/*.json    Resources, Recycling, Refining, Assembling, Extrusion, Beacons, SurvivalStart, ModularEngine, WeaponParts, Loot ...
 Source/PartKit/      the part kit (docs/sandbox/PARTKIT.md): most of Constructs/Parts, Assembling.json and
                      ModularEngine.json are its output (change the generator); tools/constructs/ keeps only zfight.py
-Systems/*.json       star systems (at most ten; five now, one faction home each)
+Systems/*.json       star systems (at most ten; two now: Frostreach, the Survival world with five planets, and Dev for tests)
 Parts/<Category>/    the weapon builder's parts, which Sandbox uses too; Parts/Builds, Parts/Tables, _Registry.json, _Bases, _Fragments
 Maps/ Props/ Buildings/ Models/ Decals/ Materials/ Cosmetics/ Audio/ Branding/ Weapons/ Attachments/   data next to the exe
 docs/                sandbox/, space/, planets/, audio/MUSIC.md, mods/, render/, perf/, weather/, net/, steam/, vehiclekit/
