@@ -624,32 +624,62 @@ public sealed class FrigateParts : IPartGenerator
         LampSock(p, "lampC", Cx + Hx(k), k, 2.6, "-x");
         LampSock(p, "lampD", 4.5, k, Cz + Hz(k), "-z");
         Sock(p, "switch", 7.075, y0 + 1.3, 3.8, "-x");
+        Sock(p, "pdcSwitch", 7.075, y0 + 1.3, 4.2, "-x");
         return p.Stats(15000, 28000, 30, 20.0);
     }
 
-    /// <summary>A PDC sponson on face side s (-1 port, 1 starboard; axis 0 x, 1 z) at height y: an armoured octagonal drum standing
-    /// out of the face, a ring round its mouth, and the socket the turntable goes on.</summary>
+    /// <summary>
+    /// A PDC housing on face side s (-1 port, 1 starboard; axis 0 x, 1 z) at height y (Karl, 2026-11-15: the guns pull back in under a
+    /// hatch that seals): an armoured box standing out of the face, open at its mouth, deep and wide enough for the turret lying level.
+    /// A piston on its back plate (the socket pdcPort etc.) pushes the turret out past the mouth; the hatch hangs on the mouth's top edge.
+    /// </summary>
     private static void Sponson(Part p, int s, int axis, double y)
     {
-        const double R0 = 0.55, Out0 = 0.19, Out1 = 0.75;
+        const double Wall = 0.06;
         double face = axis == 0 ? (s < 0 ? Cx - 4.0 - So : Cx + 4.0 + So) : (s < 0 ? Cz - 3.5 - So : Cz + 3.5 + So);
         double along = axis == 0 ? Cz : Cx;
         double[] At(double a, double v, double outv) => axis == 0 ? P(face + s * outv, y + v, along + a) : P(along + a, y + v, face + s * outv);
-        double[][] RingAt(double r, double outv) => [.. Enumerable.Range(0, 8).Select(i =>
+        // A box between (a0, v0, o0) and (a1, v1, o1) in the housing's frame: drawn and solid, or a drawn trim.
+        void Slab(double a0, double a1, double v0, double v1, double o0, double o1, string color, string finish, bool trim = false)
         {
-            var an = Math.PI / 8 + i * Math.PI / 4;
-            return At(r * Math.Cos(an), r * Math.Sin(an), outv);
-        })];
-        Prism(p, RingAt(R0 + 0.15, 0.035), RingAt(R0, Out1), Armour, "plated steel");
-        Prism(p, RingAt(R0 + 0.06, Out1), RingAt(R0 + 0.02, Out1 + 0.06), Frame, "dirty steel");
-        Prism(p, RingAt(R0 + 0.3, 0.045), RingAt(R0 + 0.22, Out0), Hazard, "hazard paint");
-        var c = At(0, 0, Out1 + 0.06);
-        var mn = axis == 0 ? (s < 0 ? P(face - Out1 - 0.06, y - R0, along - R0) : P(face, y - R0, along - R0)) : (s < 0 ? P(along - R0, y - R0, face - Out1 - 0.06) : P(along - R0, y - R0, face));
-        var mx = axis == 0 ? (s < 0 ? P(face, y + R0, along + R0) : P(face + Out1 + 0.06, y + R0, along + R0)) : (s < 0 ? P(along + R0, y + R0, face) : P(along + R0, y + R0, face + Out1 + 0.06));
-        p.Add(Box(mn, mx, hidden: true));
+            var c0 = At(a0, v0, o0);
+            var c1 = At(a1, v1, o1);
+            p.Add(Box([Math.Min(c0[0], c1[0]), Math.Min(c0[1], c1[1]), Math.Min(c0[2], c1[2])], [Math.Max(c0[0], c1[0]), Math.Max(c0[1], c1[1]), Math.Max(c0[2], c1[2])], color, detail: trim, shape: Kw(("finish", finish))));
+        }
+        const double A = PdcHalfA, V = PdcHalfV, D = PdcDepth, B = 0.035 + Wall;
+        Slab(-A - Wall, A + Wall, -V - Wall, V + Wall, 0.035, B, Frame, "dirty steel"); // the back plate on the skin
+        Slab(-A - Wall, A + Wall, V, V + Wall, B + 0.003, D, Armour, "plated steel"); // top
+        Slab(-A - Wall, A + Wall, -V - Wall, -V, B + 0.003, D, Armour, "plated steel"); // bottom
+        Slab(-A - Wall, -A, -V + 0.003, V - 0.003, B + 0.003, D - 0.004, Armour2, "plated steel"); // the two ends
+        Slab(A, A + Wall, -V + 0.003, V - 0.003, B + 0.003, D - 0.004, Armour2, "plated steel");
+        Slab(-A - Wall - 0.02, A + Wall + 0.02, V + Wall, V + Wall + 0.02, D - 0.12, D + 0.004, Hazard, "hazard paint", true); // hazard lips over and under the mouth
+        Slab(-A - Wall - 0.02, A + Wall + 0.02, -V - Wall - 0.02, -V - Wall, D - 0.12, D + 0.004, Hazard, "hazard paint", true);
+        Slab(-0.35, 0.35, -V - Wall - 0.06, -V - Wall - 0.02, 0.2, D - 0.3, "#30363a", "dirty steel", true); // a rib under it
         var name = axis == 0 ? (s < 0 ? "pdcPort" : "pdcStbd") : (s < 0 ? "pdcBow" : "pdcStern");
         var dir = axis == 0 ? (s < 0 ? "-x" : "+x") : (s < 0 ? "-z" : "+z");
-        p.Sock(name, c, dir);
+        p.Sock(name, At(0, 0, B), dir);
+        p.Sock(name + "Hatch", At(0, V + Wall, D), dir);
+    }
+
+    // The PDC housing's inside (half its width along the face and half its height) and how far its mouth stands out of the skin;
+    // the turret lies level in it when pulled in (the gun and its box are 2 m long, 1.4 m of it ahead of the turntable's axis).
+    private const double PdcHalfA = 1.5, PdcHalfV = 0.42, PdcDepth = 1.5;
+    private const double HatchHold = 3.0; // (seconds a hatch stays open after its turret is pulled in: the piston's whole stroke takes 2.5)
+    private const int PdcSpinFlank = 0, PdcSpinEnds = 1; // (the gun's turn on the hinge's leaf: lays each turret level along its housing)
+
+    /// <summary>The hatch over a PDC housing's mouth: an armoured leaf hung from the mouth's top edge that swings up and out when
+    /// the turret is pushed out, and shuts over it when pulled in (its Open input: wired from the deck's PDC data point).</summary>
+    private static Part PdcHatch()
+    {
+        var p = new Part("Halberd PDC Hatch", Small, Section, "The armoured hatch over a PDC housing: opens when its turret is pushed out, seals when it is pulled in.", role: "door", tool: "welder", material: "steel", color: Armour, group: Group);
+        double a = PdcHalfA + 0.06, v = 2 * (PdcHalfV + 0.06);
+        p.Add(Box([-a, -v, 0.004], [a, 0, 0.064], Armour, shape: Kw(("finish", "plated steel"))));
+        foreach (var x in new[] { -0.75, 0.0, 0.75 })
+            p.Add(Box([x - 0.05, -v + 0.08, 0.064], [x + 0.05, -0.08, 0.09], Frame, detail: true, shape: Kw(("finish", "dirty steel"))));
+        p.Add(Box([-a + 0.04, -v + 0.03, 0.064], [a - 0.04, -v + 0.09, 0.078], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
+        p.Sock("hang", [0, 0, 0], "-z");
+        p.Set(("door", Kw(("kind", "swing"), ("axis", "+x"), ("pivot", Py.L(0, 0, 0.034)), ("angle", -90), ("seconds", 1.5), ("hang", "hang"))));
+        return p.Stats(260, 900, 30, 4.0);
     }
 
     private static Part MedDeck()
@@ -766,6 +796,7 @@ public sealed class FrigateParts : IPartGenerator
         LampSock(p, "lampC", Cx + Hx(k), k, 6.0, "-x");
         LampSock(p, "lampD", 4.0, k, Cz + Hz(k), "-z");
         Sock(p, "switch", 4.2, y0 + 1.3, Cz + Hz(k), "-z");
+        Sock(p, "pdcSwitch", 4.65, y0 + 1.3, Cz + Hz(k), "-z");
         return p.Stats(15000, 28000, 30, 20.0);
     }
 
@@ -789,31 +820,28 @@ public sealed class FrigateParts : IPartGenerator
     private static Part Cockpit()
     {
         const int k = 5;
-        var p = Big("Halberd Cockpit Deck", "The Halberd's top storey under the nose: two flight couches before a visor that wraps the bow, the flight computer behind them.");
+        var p = Big("Halberd Cockpit Deck", "The Halberd's top storey under the nose: two flight couches before the screens of the outside view, the flight computer behind them.");
         double y0 = Ft(k), y1 = Fl(k + 1);
         // The floor spans storey 5's room (the shoulder's slab outside it is the ops deck's).
         Floor(p, Hx(4), Hz(4), Ci(4), Fl(k), Ft(k), Deck, "painted deck plate", Hatch(k));
-        // The visor: a slit window in the bow wall and the two bow corners, 1.1 m high from 1.05 m over the floor.
+        // No window (Karl, 2026-11-15): the bow wall is whole and the pilots fly by the screens across it, 1.1 m high from 1.05 m over the floor.
         const double Sill = 1.05, Head = 2.15;
-        Walls(p, Hx(k), Hz(k), Ci(k), Ft(k), y1, new Gap(0, Cx - Hx(k) + Ci(k), Cx + Hx(k) - Ci(k), Sill, Head));
+        Walls(p, Hx(k), Hz(k), Ci(k), Ft(k), y1);
         HatchRail(p, k);
         // The dashboard under the visor: a raked desk with screens and switches.
         Solid(p, 3.1, y0, Cz - Hz(k), 6.9, y0 + 0.75, Cz - Hz(k) + 0.6, Console, "plastic");
         Detail(p, 3.15, y0 + 0.75, Cz - Hz(k) + 0.02, 6.85, y0 + 0.9, Cz - Hz(k) + 0.56, "#30363a", "plastic");
         foreach (var (x, c) in new[] { (3.5, Screen), (4.4, "#5fd06a"), (5.6, Amber), (6.5, Screen) })
             Detail(p, x - 0.32, y0 + 0.905, Cz - Hz(k) + 0.08, x + 0.32, y0 + 0.92, Cz - Hz(k) + 0.48, c, glow: true);
-        // The skin with the visor's glass (and its frame bars), on the bow face and the two bow corners.
-        var o = OctK(k, So);
-        double ya = y0 + Sill, yb = y0 + Head;
-        HullBand(p, k, ShoulderTop, y1, [(0, 0, 1, ya, yb)], 2);
-        foreach (var e in new[] { 0 })
-        {
-            Strip(p, o, e, 0.0, 1.0, ya, yb, 0, Glass, glass: true);
-            Strip(p, o, e, 0.0, 1.0, yb, yb + 0.08, 0.02, Frame, "dirty steel");
-            Strip(p, o, e, 0.0, 1.0, ya - 0.08, ya, 0.02, Frame, "dirty steel");
-        }
-        foreach (var t in new[] { 0.333, 0.667 })
-            Strip(p, o, 0, t - 0.01, t + 0.01, ya, yb, 0.02, Frame, "dirty steel");
+        // The outside view: three screens in a dark bezel across the bow wall where the visor was, an amber strip under them.
+        double ya = y0 + Sill, yb = y0 + Head, zw = Cz - Hz(k);
+        double bx0 = Cx - Hx(k) + Ci(k) + 0.1, bx1 = Cx + Hx(k) - Ci(k) - 0.1;
+        Detail(p, bx0, ya - 0.06, zw + 0.004, bx1, yb + 0.06, zw + 0.03, "#22272a", "plastic");
+        var third = (bx1 - bx0) / 3;
+        for (var i = 0; i < 3; i++)
+            Detail(p, bx0 + i * third + 0.05, ya, zw + 0.03, bx0 + (i + 1) * third - 0.05, yb, zw + 0.034, "#3d6f8f", glow: true);
+        Detail(p, bx0 + 0.3, ya - 0.05, zw + 0.03, bx1 - 0.3, ya - 0.035, zw + 0.034, Amber, glow: true);
+        HullBand(p, k, ShoulderTop, y1, [], 2);
         // The skin's lower part between the slab and the shoulder's top (behind the shoulder) isn't drawn; a hidden wall stands there.
         Hidden(p, 0.75, Fl(k), 4.0, 1.0, Fl(k) + 0.05, 5.0); // (what the "down" socket is on, under the shoulder)
         StackSockets(p, k);
@@ -1237,14 +1265,29 @@ public sealed class FrigateParts : IPartGenerator
             bp.Wires.Add((s, l));
     }
 
-    /// <summary>A PDC turret on a sponson: a turntable, a motor hinge on its top for elevation, the gun on the hinge's leaf and its box behind.</summary>
-    private static int Turret(BuildingParts.Blueprint bp, int on, string sock)
+    // The couch hinges: their turn on the floor socket (the axis across the ship) and the couch's on the leaf (facing the screens),
+    // and how far a full burn lays a couch back (lift 1) or tips it forward (lift -1), in degrees.
+    private const int CouchHingeSpin = 3, CouchSpin = 0; // (the hinge's axis +x: a plus angle lays the couch back)
+    private const int CouchBack = 35, CouchForward = -15;
+
+    private static int CouchHinge(BuildingParts.Blueprint bp, int cockpit, string sock)
     {
-        var tt = bp.Hang("Turntable", on, sock, "base");
+        var hinge = bp.Hang("Motor Hinge", cockpit, sock, "base", CouchHingeSpin);
+        bp.Steps[hinge]["config"] = new PyDict { ["min"] = CouchForward, ["max"] = CouchBack, ["speed"] = 20 };
+        return hinge;
+    }
+
+    /// <summary>A PDC turret in its housing: a piston on the housing's back plate that pushes it out, a turntable on the piston,
+    /// a motor hinge on its top for elevation, the gun on the hinge's leaf and its box behind; the hatch on the mouth.</summary>
+    private static (int Gun, int Piston, int Hatch) Turret(BuildingParts.Blueprint bp, int on, string sock, int spin)
+    {
+        var piston = bp.Hang("Piston 2x2 Medium", on, sock, "base");
+        var tt = bp.Hang("Turntable", piston, "top", "base");
         var hinge = bp.Hang("Motor Hinge", tt, "top", "base");
-        var gun = bp.Hang("Halberd PDC", hinge, "leaf", "bottom");
+        var gun = bp.Hang("Halberd PDC", hinge, "leaf", "bottom", spin);
         bp.Hang("Ammo Box", gun, "back", "front");
-        return gun;
+        var hatch = Paint(bp, bp.Hang("Halberd PDC Hatch", on, sock + "Hatch", "hang"), Armour, "plated steel");
+        return (gun, piston, hatch);
     }
 
     private static BuildingParts.Blueprint Blueprint(Dictionary<string, PyDict> defs)
@@ -1323,7 +1366,7 @@ public sealed class FrigateParts : IPartGenerator
             Paint(bp, bp.Hang("Locker", crew, $"locker{i}", "wall"), i == 1 ? "#5c646a" : Armour, "worn paint");
         Switch(bp, crew, "switch", LampAt(bp, crew, "lampBunkA", "#ffd8a0"), LampAt(bp, crew, "lampBunkB", "#ffd8a0"), LampAt(bp, crew, "lampHall"), LampAt(bp, crew, "lampHead"));
         // Two gunnery stations, each working the turrets on its own deck (a wire reaches 8 m): the robot bay's port and starboard, ops' bow and stern.
-        var guns = new[] { Turret(bp, robot, "pdcPort"), Turret(bp, robot, "pdcStbd"), Turret(bp, ops, "pdcBow"), Turret(bp, ops, "pdcStern") };
+        var guns = new[] { Turret(bp, robot, "pdcPort", PdcSpinFlank), Turret(bp, robot, "pdcStbd", PdcSpinFlank), Turret(bp, ops, "pdcBow", PdcSpinEnds), Turret(bp, ops, "pdcStern", PdcSpinEnds) };
         foreach (var (deck, pair) in new[] { (robot, new[] { guns[0], guns[1] }), (ops, new[] { guns[2], guns[3] }) })
         {
             var turn = deck == ops ? BuildingParts.RY270 : BuildingParts.R0; // (ops' station faces starboard, between its two turrets)
@@ -1332,7 +1375,25 @@ public sealed class FrigateParts : IPartGenerator
             var module = bp.Hang("Turret Module", console, "module", "-x");
             bp.Wires.Add((seat, module));
             foreach (var g in pair)
-                bp.Wires.Add((module, g));
+                bp.Wires.Add((module, g.Gun));
+            // The PDC data point (Karl, 2026-11-15): an OR gate on the module that pushes the pair out and opens their hatches while
+            // any input is high. The station's switch is wired into it; anything else (a sensor, a timer, a radio) can be wired in too.
+            // The hatches open with it but shut only once the turrets are back in: a second OR gate holds them open off a Delay
+            // for the pistons' stroke (1 m at 0.4 m/s) and a little more.
+            var data = bp.Hang("OR Gate", module, "+x", "-x");
+            var lever = bp.Hang("Bakelite Switch", deck, "pdcSwitch", "back");
+            bp.Wires.Add((lever, data));
+            var hold = bp.Hang("Delay", data, "+z", "-z");
+            bp.Steps[hold]["config"] = new PyDict { ["seconds"] = HatchHold };
+            var hatches = bp.Hang("OR Gate", hold, "+z", "-z");
+            bp.Wires.Add((data, hold));
+            bp.Wires.Add((data, hatches));
+            bp.Wires.Add((hold, hatches));
+            foreach (var g in pair)
+            {
+                bp.Wires.Add((data, g.Piston));
+                bp.Wires.Add((hatches, g.Hatch));
+            }
         }
         bp.Hang("Chart Table", ops, "plot", "bottom");
         Paint(bp, bp.Hang("Locker", ops, "locker0", "wall"), Armour, "worn paint");
@@ -1340,8 +1401,13 @@ public sealed class FrigateParts : IPartGenerator
         bp.Hang("Tool Rack", ops, "armsRack", "back");
         Switch(bp, ops, "switch", LampAt(bp, ops, "lampA", "#a0c8ff"), LampAt(bp, ops, "lampB", "#a0c8ff"), LampAt(bp, ops, "lampC"), LampAt(bp, ops, "lampD"));
         // The cockpit: the pilot flies through the flight computer and fires the railgun with it.
-        var pilot = bp.Hang("Flight Couch", cockpit, "pilot", "bottom");
-        bp.Hang("Flight Couch", cockpit, "copilot", "bottom");
+        // The flight couches turn as thrust is applied (Karl, 2026-11-15): each stands on a motor hinge across the ship, and the
+        // pilot's Driving Module sends its lift (Sprint: the main drive, Crouch: down) into both, so they lie back into a burn.
+        // The module's drive output stays unwired: the flight computer flies the ship.
+        var pilotHinge = CouchHinge(bp, cockpit, "pilot");
+        var pilot = bp.Hang("Flight Couch", pilotHinge, "leaf", "bottom", CouchSpin);
+        var copilotHinge = CouchHinge(bp, cockpit, "copilot");
+        bp.Hang("Flight Couch", copilotHinge, "leaf", "bottom", CouchSpin);
         var fc = bp.Hang("Halberd Flight Computer", cockpit, "computer", "bottom");
         bp.Wires.Add((pilot, fc));
         var rail = bp.Hang("Halberd Spinal Railgun", nose, "railgun", "back");
@@ -1349,6 +1415,10 @@ public sealed class FrigateParts : IPartGenerator
         var railModule = bp.Hang("Turret Module", cockpit, "gunModule", "-z");
         bp.Wires.Add((pilot, railModule));
         bp.Wires.Add((railModule, rail));
+        var couchModule = bp.Hang("Driving Module", railModule, "+x", "-x");
+        bp.Wires.Add((pilot, couchModule));
+        bp.DataLinks.Add((couchModule, pilotHinge, "lift"));
+        bp.DataLinks.Add((couchModule, copilotHinge, "lift"));
         bp.Hang("Chart Table", cockpit, "chart", "back");
         Switch(bp, cockpit, "switch", LampAt(bp, cockpit, "lampA", "#ff6050"), LampAt(bp, cockpit, "lampB", "#ff6050"), LampAt(bp, cockpit, "lampC"));
         _ = drive;
@@ -1359,7 +1429,7 @@ public sealed class FrigateParts : IPartGenerator
     {
         List<Part> parts =
         [
-            Engineering(), RobotBay(), MedDeck(), CrewDeck(), OpsDeck(), Cockpit(), Nose(), ThrustFrame(), Drive(), ManoeuvreJet(), Leg(),
+            Engineering(), RobotBay(), MedDeck(), CrewDeck(), OpsDeck(), Cockpit(), Nose(), ThrustFrame(), Drive(), ManoeuvreJet(), Leg(), PdcHatch(),
             Ladder("Halberd Spine Ladder", Pitch, "A ladder up the Halberd's spine, one storey: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
             Ladder("Halberd Boarding Ladder", Ft(0) - Ground, "The Halberd's boarding ladder, from the ground to the airlock's platform: F climbs it.", "hull", [0, -Ground + 0.125, -0.005], "+z"),
             Pdc(), Railgun(), Reactor(), Cradle(), CrashCouch(), FlightCouch(), Coffee(), GunneryConsole(), FlightComputer(),

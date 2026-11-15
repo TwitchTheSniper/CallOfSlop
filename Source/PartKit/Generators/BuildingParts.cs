@@ -1658,6 +1658,9 @@ public sealed partial class BuildingParts : IPartGenerator
         /// <summary>Signal wires by step, from and to (look.md "The authoring fields"): a switch to its lamps.</summary>
         public readonly List<(int From, int To)> Wires = [];
 
+        /// <summary>Data links from a named output port, by step (a Driving Module's "lift" into a hinge): the blueprint's "links".</summary>
+        public readonly List<(int From, int To, string FromPort)> DataLinks = [];
+
         /// <summary>Lay the wires as conduit along the walls though the build isn't anchored (a ship's lamps: ConstructConduit.cs).</summary>
         public bool Conduit;
 
@@ -1797,6 +1800,8 @@ public sealed partial class BuildingParts : IPartGenerator
             var d = new PyDict { ["format"] = "call-of-slop-construct-blueprint/1", ["name"] = Name, ["description"] = Desc, ["steps"] = Steps.Cast<object?>().ToList() };
             if (Wires.Count > 0)
                 d["wires"] = Wires.Select(w => (object?)new List<object?> { w.From, w.To }).ToList();
+            if (DataLinks.Count > 0)
+                d["links"] = DataLinks.Select(l => (object?)new PyDict { ["type"] = "data", ["from"] = l.From, ["to"] = l.To, ["fromPort"] = l.FromPort }).ToList();
             if (Conduit)
                 d["conduit"] = true;
             return d;

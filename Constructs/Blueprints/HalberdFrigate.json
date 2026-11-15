@@ -659,138 +659,250 @@
       }
     },
     {
-      "part": "Turntable",
+      "part": "Piston 2x2 Medium",
       "on": 2,
       "socket": "pdcPort",
       "by": "base"
     },
     {
-      "part": "Motor Hinge",
+      "part": "Turntable",
       "on": 92,
       "socket": "top",
       "by": "base"
     },
     {
-      "part": "Halberd PDC",
+      "part": "Motor Hinge",
       "on": 93,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Halberd PDC",
+      "on": 94,
       "socket": "leaf",
       "by": "bottom"
     },
     {
       "part": "Ammo Box",
-      "on": 94,
+      "on": 95,
       "socket": "back",
       "by": "front"
     },
     {
-      "part": "Turntable",
+      "part": "Halberd PDC Hatch",
+      "on": 2,
+      "socket": "pdcPortHatch",
+      "by": "hang",
+      "paint": "#56626c",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Piston 2x2 Medium",
       "on": 2,
       "socket": "pdcStbd",
       "by": "base"
     },
     {
+      "part": "Turntable",
+      "on": 98,
+      "socket": "top",
+      "by": "base"
+    },
+    {
       "part": "Motor Hinge",
-      "on": 96,
+      "on": 99,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Halberd PDC",
-      "on": 97,
+      "on": 100,
       "socket": "leaf",
       "by": "bottom"
     },
     {
       "part": "Ammo Box",
-      "on": 98,
+      "on": 101,
       "socket": "back",
       "by": "front"
     },
     {
-      "part": "Turntable",
+      "part": "Halberd PDC Hatch",
+      "on": 2,
+      "socket": "pdcStbdHatch",
+      "by": "hang",
+      "paint": "#56626c",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Piston 2x2 Medium",
       "on": 5,
       "socket": "pdcBow",
       "by": "base"
     },
     {
-      "part": "Motor Hinge",
-      "on": 100,
-      "socket": "top",
-      "by": "base"
-    },
-    {
-      "part": "Halberd PDC",
-      "on": 101,
-      "socket": "leaf",
-      "by": "bottom"
-    },
-    {
-      "part": "Ammo Box",
-      "on": 102,
-      "socket": "back",
-      "by": "front"
-    },
-    {
       "part": "Turntable",
-      "on": 5,
-      "socket": "pdcStern",
-      "by": "base"
-    },
-    {
-      "part": "Motor Hinge",
       "on": 104,
       "socket": "top",
       "by": "base"
     },
     {
-      "part": "Halberd PDC",
+      "part": "Motor Hinge",
       "on": 105,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Halberd PDC",
+      "on": 106,
       "socket": "leaf",
-      "by": "bottom"
+      "by": "bottom",
+      "spin": 1
     },
     {
       "part": "Ammo Box",
-      "on": 106,
+      "on": 107,
       "socket": "back",
       "by": "front"
     },
     {
-      "part": "Gunnery Console",
-      "on": 2,
-      "socket": "gun",
-      "by": "bottom"
-    },
-    {
-      "part": "Flight Couch",
-      "on": 2,
-      "socket": "gunSeat",
-      "by": "bottom"
-    },
-    {
-      "part": "Turret Module",
-      "on": 108,
-      "socket": "module",
-      "by": "-x"
-    },
-    {
-      "part": "Gunnery Console",
+      "part": "Halberd PDC Hatch",
       "on": 5,
-      "socket": "gun",
-      "by": "bottom",
-      "spin": 2
+      "socket": "pdcBowHatch",
+      "by": "hang",
+      "paint": "#56626c",
+      "finish": "plated steel"
     },
     {
-      "part": "Flight Couch",
+      "part": "Piston 2x2 Medium",
       "on": 5,
-      "socket": "gunSeat",
-      "by": "bottom",
-      "spin": 2
+      "socket": "pdcStern",
+      "by": "base"
     },
     {
-      "part": "Turret Module",
+      "part": "Turntable",
+      "on": 110,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Motor Hinge",
       "on": 111,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Halberd PDC",
+      "on": 112,
+      "socket": "leaf",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Ammo Box",
+      "on": 113,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Halberd PDC Hatch",
+      "on": 5,
+      "socket": "pdcSternHatch",
+      "by": "hang",
+      "paint": "#56626c",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Gunnery Console",
+      "on": 2,
+      "socket": "gun",
+      "by": "bottom"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 2,
+      "socket": "gunSeat",
+      "by": "bottom"
+    },
+    {
+      "part": "Turret Module",
+      "on": 116,
       "socket": "module",
       "by": "-x"
+    },
+    {
+      "part": "OR Gate",
+      "on": 118,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 2,
+      "socket": "pdcSwitch",
+      "by": "back"
+    },
+    {
+      "part": "Delay",
+      "on": 119,
+      "socket": "+z",
+      "by": "-z",
+      "config": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "part": "OR Gate",
+      "on": 121,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Gunnery Console",
+      "on": 5,
+      "socket": "gun",
+      "by": "bottom",
+      "spin": 2
+    },
+    {
+      "part": "Flight Couch",
+      "on": 5,
+      "socket": "gunSeat",
+      "by": "bottom",
+      "spin": 2
+    },
+    {
+      "part": "Turret Module",
+      "on": 123,
+      "socket": "module",
+      "by": "-x"
+    },
+    {
+      "part": "OR Gate",
+      "on": 125,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 5,
+      "socket": "pdcSwitch",
+      "by": "back"
+    },
+    {
+      "part": "Delay",
+      "on": 126,
+      "socket": "+z",
+      "by": "-z",
+      "config": {
+        "seconds": 3.0
+      }
+    },
+    {
+      "part": "OR Gate",
+      "on": 128,
+      "socket": "+z",
+      "by": "-z"
     },
     {
       "part": "Chart Table",
@@ -866,15 +978,39 @@
       }
     },
     {
-      "part": "Flight Couch",
+      "part": "Motor Hinge",
       "on": 6,
       "socket": "pilot",
-      "by": "bottom"
+      "by": "base",
+      "spin": 3,
+      "config": {
+        "min": -15,
+        "max": 35,
+        "speed": 20
+      }
     },
     {
       "part": "Flight Couch",
+      "on": 139,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Motor Hinge",
       "on": 6,
       "socket": "copilot",
+      "by": "base",
+      "spin": 3,
+      "config": {
+        "min": -15,
+        "max": 35,
+        "speed": 20
+      }
+    },
+    {
+      "part": "Flight Couch",
+      "on": 141,
+      "socket": "leaf",
       "by": "bottom"
     },
     {
@@ -891,7 +1027,7 @@
     },
     {
       "part": "Ammo Box",
-      "on": 126,
+      "on": 144,
       "socket": "ammo",
       "by": "left"
     },
@@ -900,6 +1036,12 @@
       "on": 6,
       "socket": "gunModule",
       "by": "-z"
+    },
+    {
+      "part": "Driving Module",
+      "on": 146,
+      "socket": "+x",
+      "by": "-x"
     },
     {
       "part": "Chart Table",
@@ -1010,69 +1152,151 @@
       90
     ],
     [
-      109,
-      110
-    ],
-    [
-      110,
-      94
-    ],
-    [
-      110,
-      98
-    ],
-    [
-      112,
-      113
-    ],
-    [
-      113,
-      102
-    ],
-    [
-      113,
-      106
-    ],
-    [
-      122,
+      117,
       118
     ],
     [
-      122,
+      118,
+      95
+    ],
+    [
+      118,
+      101
+    ],
+    [
+      120,
       119
     ],
     [
-      122,
-      120
-    ],
-    [
-      122,
+      119,
       121
     ],
     [
-      123,
+      119,
+      122
+    ],
+    [
+      121,
+      122
+    ],
+    [
+      119,
+      92
+    ],
+    [
+      122,
+      97
+    ],
+    [
+      119,
+      98
+    ],
+    [
+      122,
+      103
+    ],
+    [
+      124,
       125
     ],
     [
-      123,
-      128
+      125,
+      107
     ],
     [
-      128,
+      125,
+      113
+    ],
+    [
+      127,
       126
     ],
     [
-      133,
-      130
+      126,
+      128
     ],
     [
-      133,
-      131
+      126,
+      129
     ],
     [
-      133,
-      132
+      128,
+      129
+    ],
+    [
+      126,
+      104
+    ],
+    [
+      129,
+      109
+    ],
+    [
+      126,
+      110
+    ],
+    [
+      129,
+      115
+    ],
+    [
+      138,
+      134
+    ],
+    [
+      138,
+      135
+    ],
+    [
+      138,
+      136
+    ],
+    [
+      138,
+      137
+    ],
+    [
+      140,
+      143
+    ],
+    [
+      140,
+      146
+    ],
+    [
+      146,
+      144
+    ],
+    [
+      140,
+      147
+    ],
+    [
+      152,
+      149
+    ],
+    [
+      152,
+      150
+    ],
+    [
+      152,
+      151
     ]
+  ],
+  "links": [
+    {
+      "type": "data",
+      "from": 147,
+      "to": 139,
+      "fromPort": "lift"
+    },
+    {
+      "type": "data",
+      "from": 147,
+      "to": 141,
+      "fromPort": "lift"
+    }
   ],
   "conduit": true
 }
