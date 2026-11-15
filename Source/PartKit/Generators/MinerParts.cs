@@ -1826,7 +1826,7 @@ public sealed class MinerParts : IPartGenerator
             bp.Wires.Add((s, l));
     }
 
-    private static int Door(BuildingParts.Blueprint bp, int on, string sock) => Paint(bp, bp.Hang("Bulkhead Door 1.5x2.25 m", on, sock, "hang"), Orange, "worn paint");
+    private static int Door(BuildingParts.Blueprint bp, int on, string sock) => Paint(bp, bp.Hang("Slide Door 1.5x2.25 m", on, sock, "hang"), Orange, "worn paint");
 
     /// <summary>The Drill Module the ship carries: tier 1 (iron, stone, sand); a later tier is the same socket.</summary>
     public const string DrillPart = "Drill Module";

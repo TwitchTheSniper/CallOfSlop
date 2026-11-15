@@ -59,6 +59,9 @@ is bolted down (a plinth, a deck flange or a wall rail) and is painted in the sh
 - **Magpie Med Locker**: a sealed case with a green cross.
 - **Magpie Cargo Rack**: netted shelves on wall uprights.
 
+Every doorway has a **Slide Door 1.5x2.25 m** in the ship's orange. Karl (2026-11-15) asked for doors that slide like a
+miner's: a ribbed pocket door that slides into the wall beside the doorway (big-systems.md, "Event doors").
+
 The rust bucket is getting generic "Ship Galley Range" and "Ship Mess Table" parts in ShipParts.cs (PR #218). Once those
 merge, the Magpie can switch to them if a shared set suits it.
 

@@ -465,7 +465,7 @@
       }
     },
     {
-      "part": "Bulkhead Door 1.5x2.25 m",
+      "part": "Slide Door 1.5x2.25 m",
       "on": 2,
       "socket": "doorFore",
       "by": "hang",
@@ -473,7 +473,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Bulkhead Door 1.5x2.25 m",
+      "part": "Slide Door 1.5x2.25 m",
       "on": 2,
       "socket": "doorAft",
       "by": "hang",
@@ -553,7 +553,7 @@
       "by": "back"
     },
     {
-      "part": "Bulkhead Door 1.5x2.25 m",
+      "part": "Slide Door 1.5x2.25 m",
       "on": 3,
       "socket": "doorEng",
       "by": "hang",
@@ -561,7 +561,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Bulkhead Door 1.5x2.25 m",
+      "part": "Slide Door 1.5x2.25 m",
       "on": 3,
       "socket": "doorOuter",
       "by": "hang",
@@ -698,7 +698,7 @@
       "by": "wall"
     },
     {
-      "part": "Bulkhead Door 1.5x2.25 m",
+      "part": "Slide Door 1.5x2.25 m",
       "on": 5,
       "socket": "doorBridge",
       "by": "hang",
@@ -706,7 +706,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Bulkhead Door 1.5x2.25 m",
+      "part": "Slide Door 1.5x2.25 m",
       "on": 5,
       "socket": "doorCabinA",
       "by": "hang",
@@ -714,7 +714,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Bulkhead Door 1.5x2.25 m",
+      "part": "Slide Door 1.5x2.25 m",
       "on": 5,
       "socket": "doorCabinB",
       "by": "hang",
@@ -865,7 +865,7 @@
       "by": "wall"
     },
     {
-      "part": "Bulkhead Door 1.5x2.25 m",
+      "part": "Slide Door 1.5x2.25 m",
       "on": 6,
       "socket": "doorHead",
       "by": "hang",
@@ -873,7 +873,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Bulkhead Door 1.5x2.25 m",
+      "part": "Slide Door 1.5x2.25 m",
       "on": 6,
       "socket": "doorMed",
       "by": "hang",
@@ -881,7 +881,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Bulkhead Door 1.5x2.25 m",
+      "part": "Slide Door 1.5x2.25 m",
       "on": 6,
       "socket": "doorMess",
       "by": "hang",
