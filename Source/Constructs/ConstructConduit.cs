@@ -120,7 +120,7 @@ public static class ConstructConduit
     {
         if (bp.Wires.Count == 0)
             return false;
-        if (bp.FrozenBase)
+        if (bp.FrozenBase || bp.Conduit)
             return true;
         foreach (var st in bp.Steps)
             if (ConstructParts.Find(st.Part) is { Role: PartRole.Foundation })
@@ -296,7 +296,7 @@ public static class ConstructConduit
                 bad++;
                 continue;
             }
-            if (!c.Anchored && names.Length == 0)
+            if (!c.Anchored && !bp.Conduit && names.Length == 0)
                 continue;
             Console.WriteLine($"[conduit] {bp.Name}: {c.PartCount} parts");
             for (var r = 0; r < c.RouteCount; r++)

@@ -1,0 +1,129 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Halberd Landing Leg",
+  "description": "A landing leg: a telescopic strut and its ram on a broad pad.",
+  "group": "Ship",
+  "section": "Halberd frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 900.0,
+  "health": 3000,
+  "armour": 20,
+  "material": "steel",
+  "color": "#26292c",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -0.22,
+        -1.6,
+        -0.22
+      ],
+      "max": [
+        0.22,
+        0.0,
+        0.22
+      ],
+      "color": "#56626c",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.15,
+        -3.2,
+        -0.15
+      ],
+      "max": [
+        0.15,
+        -1.6,
+        0.15
+      ],
+      "color": "#9aa0a4",
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.5,
+        -3.4,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        -3.2,
+        0.5
+      ],
+      "color": "#26292c",
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        -0.3,
+        -3.2,
+        -0.3
+      ],
+      "max": [
+        0.3,
+        -3.1,
+        0.3
+      ],
+      "color": "#26292c",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.24,
+        -1.4,
+        -0.06
+      ],
+      "max": [
+        0.34,
+        -0.2,
+        0.06
+      ],
+      "color": "#4a4e52",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.26,
+        -3.05,
+        -0.04
+      ],
+      "max": [
+        0.32,
+        -1.4,
+        0.04
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "finish": "chrome"
+    },
+    {
+      "min": [
+        -0.235,
+        -0.5,
+        -0.235
+      ],
+      "max": [
+        0.235,
+        -0.38,
+        0.235
+      ],
+      "color": "#d8a628",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}
