@@ -27,7 +27,7 @@
   "health": 500,
   "armour": 14,
   "material": "steel",
-  "color": "#46525c",
+  "color": "#56626c",
   "attachSeconds": 3.0,
   "boxes": [
     {

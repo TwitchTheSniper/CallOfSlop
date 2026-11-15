@@ -31,7 +31,7 @@ public sealed class FrigateParts : IPartGenerator
     private const double T = 0.04; // a drawn plate's thickness
 
     // The paint: slate armour over a pale skin, a primer red where the paint is worn through, hazard yellow on edges.
-    private const string Skin = "#a9aca6", Armour = "#46525c", Armour2 = "#3b4650", Primer = "#7a3b2c", Frame = "#26292c", Hazard = "#d8a628",
+    private const string Skin = "#a9aca6", Armour = "#56626c", Armour2 = "#47525b", Primer = "#7a3b2c", Frame = "#26292c", Hazard = "#d8a628",
         Wall = "#8e959a", WallLow = "#4c555c", WallTrim = "#2f3539", Deck = "#4d5357", Grate = "#3a3f43", Ceil = "#6f777c", Glass = "#7fa8c4",
         Pipe = "#7b8287", PipeRed = "#a8402c", PipeBlue = "#2f6a9a", PipeYellow = "#c8a030", PipeGreen = "#3f8a52", Lamp = "#e8eef2",
         MedWhite = "#d6dbd8", MedGreen = "#5aa88a", Console = "#23282c", Screen = "#58c8d8", Amber = "#f0a830";
@@ -438,9 +438,17 @@ public sealed class FrigateParts : IPartGenerator
                 var col = (i + armourPattern) % 3 == 0 ? Armour2 : Armour;
                 if (hs.Count == 0)
                 {
-                    Slab2(p, o, i, 0.04, 0.48, lo, mid - 0.06, 0.02, 0.17, 0.08, col);
-                    Slab2(p, o, i, 0.52, 0.96, lo, hi, 0.02, 0.15, 0.06, col);
-                    Slab2(p, o, i, 0.04, 0.48, mid, hi, 0.02, 0.13, 0.05, Armour2);
+                    // One half armoured (stepped: a thick lower slab, a thinner one over it), the other half bare skin with its
+                    // panel seams, the armoured side swapping face to face and storey to storey so the pale hull shows through.
+                    var left = (i / 2 + k + armourPattern) % 2 == 0;
+                    double a0 = left ? 0.04 : 0.52, a1 = left ? 0.48 : 0.96, b0 = left ? 0.52 : 0.04, b1 = left ? 0.96 : 0.48;
+                    Slab2(p, o, i, a0, a1, lo, mid - 0.06, 0.02, 0.17, 0.08, col);
+                    Slab2(p, o, i, a0, a1, mid, hi, 0.02, 0.13, 0.05, Armour2);
+                    Slab2(p, o, i, b0, b1, lo, lo + 0.42, 0.02, 0.1, 0.04, Armour2); // a kick slab along the deck line
+                    Strip(p, o, i, (b0 + b1) / 2 - 0.006, (b0 + b1) / 2 + 0.006, lo + 0.46, hi - 0.04, 0.035, Frame, "dirty steel");
+                    Strip(p, o, i, b0 + 0.02, b1 - 0.02, mid - 0.012, mid + 0.012, 0.037, Frame, "dirty steel");
+                    if ((i + k) % 3 == 0) // a stencilled hazard flash on some bare panels
+                        Strip(p, o, i, b0 + 0.06, b0 + 0.2, hi - 0.34, hi - 0.24, 0.036, Hazard, "worn paint");
                 }
                 else
                 {
@@ -1213,6 +1221,7 @@ public sealed class FrigateParts : IPartGenerator
     private static BuildingParts.Blueprint Blueprint(Dictionary<string, PyDict> defs)
     {
         var bp = new BuildingParts.Blueprint("Halberd Frigate", "A combat frigate that stands on its tail: six decks up a ladder spine, four point-defence turrets and a spinal railgun.", defs, maxSteps: 192);
+        bp.Conduit = true; // (a ship isn't anchored, but its lamp wires still run up the walls and over the ceilings, not across the rooms)
         double[] zero = [0, 0, 0];
         var eng = bp.First("Halberd Engineering Deck");
         var frame = bp.Put("Halberd Thrust Frame", zero, 0);

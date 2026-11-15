@@ -27,7 +27,7 @@
   "health": 24000,
   "armour": 30,
   "material": "steel",
-  "color": "#46525c",
+  "color": "#56626c",
   "attachSeconds": 14.0,
   "boxes": [
     {
@@ -41,7 +41,7 @@
         -0.1211,
         1.0238
       ],
-      "color": "#46525c",
+      "color": "#56626c",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -100,7 +100,7 @@
         -0.1203,
         2.1762
       ],
-      "color": "#46525c",
+      "color": "#56626c",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -159,7 +159,7 @@
         -0.1211,
         6.8368
       ],
-      "color": "#46525c",
+      "color": "#56626c",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -218,7 +218,7 @@
         -0.1203,
         8.158
       ],
-      "color": "#46525c",
+      "color": "#56626c",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -277,7 +277,7 @@
         -0.1211,
         8.1638
       ],
-      "color": "#46525c",
+      "color": "#56626c",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -336,7 +336,7 @@
         -0.1203,
         8.158
       ],
-      "color": "#46525c",
+      "color": "#56626c",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -395,7 +395,7 @@
         -0.1211,
         6.8368
       ],
-      "color": "#46525c",
+      "color": "#56626c",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -454,7 +454,7 @@
         -0.1203,
         2.1762
       ],
-      "color": "#46525c",
+      "color": "#56626c",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -513,7 +513,7 @@
         -1.2147,
         1.9221
       ],
-      "color": "#3b4650",
+      "color": "#47525b",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -572,7 +572,7 @@
         -1.2125,
         2.8742
       ],
-      "color": "#3b4650",
+      "color": "#47525b",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -631,7 +631,7 @@
         -1.2139,
         6.5868
       ],
-      "color": "#3b4650",
+      "color": "#47525b",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -690,7 +690,7 @@
         -1.2125,
         7.756
       ],
-      "color": "#3b4650",
+      "color": "#47525b",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -749,7 +749,7 @@
         -1.2147,
         7.7621
       ],
-      "color": "#3b4650",
+      "color": "#47525b",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -808,7 +808,7 @@
         -1.2125,
         7.756
       ],
-      "color": "#3b4650",
+      "color": "#47525b",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -867,7 +867,7 @@
         -1.2139,
         6.5868
       ],
-      "color": "#3b4650",
+      "color": "#47525b",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -926,7 +926,7 @@
         -1.2125,
         2.8742
       ],
-      "color": "#3b4650",
+      "color": "#47525b",
       "detail": true,
       "shape": "hull",
       "points": [

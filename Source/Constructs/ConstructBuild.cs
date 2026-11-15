@@ -466,6 +466,7 @@ public static class ConstructBuild
         public List<ConstructTracks.Spec> Tracks = new(); // freeform tracks round steps' wheels
         public bool FrozenBase; // it starts with its base frozen, and these steps' joints ("frozenBase", "frozenJoints": ConstructFreeChain.cs)
         public List<int> FrozenJoints = new();
+        public bool Conduit; // its wires are laid as conduit along the walls though it isn't anchored: a ship's lamps ("conduit", ConstructConduit.cs)
         public List<ConstructCargo.CargoSpec> Cargo = new(); // loose parts it is built carrying in its frozen cargo volumes (decision 21)
         public List<Vector3?> StepAt = new(); // a step saved from a construct ("at": [x, y, z]): the part stands exactly there, whatever else is near it (sockets 2 cm apart weld, and a piece may overlap another by a weld); null: where its socket puts it
         public bool ExactLinks; // saved from a construct ("exactLinks": true): its parts link only as the steps say, nothing by landing on a free socket (ConstructClip.ToBlueprint)
@@ -680,6 +681,9 @@ public static class ConstructBuild
                     break;
                 case "frozenBase":
                     bp.FrozenBase = p.Value.ValueKind == JsonValueKind.True;
+                    break;
+                case "conduit":
+                    bp.Conduit = p.Value.ValueKind == JsonValueKind.True;
                     break;
                 case "frozenJoints":
                     foreach (var fj in p.Value.EnumerateArray())
@@ -943,7 +947,7 @@ public static class ConstructBuild
         // The wires, through the linking tool's rules.
         if (bp.Wires.Count > 0 && c.Dirty)
             c.Rebuild(); // (the wires' checks read the rebuilt body: once before them and once after, not once a wire)
-        var conduit = !linked && (c.Anchored || bp.FrozenBase); // (a pre-built: its wires are laid as conduit along the walls, ConstructConduit.cs)
+        var conduit = !linked && (c.Anchored || bp.FrozenBase || bp.Conduit); // (a pre-built: its wires are laid as conduit along the walls, ConstructConduit.cs)
         var conduitEnd = conduit && bp.Wires.Count > 0 ? ConstructConduit.Deadline() : 0;
         if (!linked) // (a Building Station laid the wires and links itself, one by one: ConstructStation.cs)
         for (var k = 0; k < bp.Wires.Count; k++)
