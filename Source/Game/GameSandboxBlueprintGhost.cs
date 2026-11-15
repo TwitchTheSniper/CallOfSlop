@@ -197,7 +197,10 @@ public sealed partial class Game
             return why;
         _sbHeld[p.Id] = null;
         _sbHeldCount--;
+        var before = Constructs.Bodies.Count;
         var c = VehicleSpawn.PlaceHeld(h, ground, yaw, out var refused);
+        if (c != null)
+            SandboxSpawnInherit(p.Id, before); // (set down in a moving ship: it moves with it)
         SpawnGhostSend(p.Id, c != null ? (byte)1 : (byte)2, token, h.Name, null);
         if (c == null)
             return refused.Length > 0 ? refused : $"the {h.Name} couldn't be set down";
