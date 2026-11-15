@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-map/1",
   "name": "Caledon",
-  "description": "Caledon, the 6 km highland world of Glenmore (Systems/Glenmore.json): steep bens with snow on their tops, long glens between them, heather on the slopes and bog in the low ground. Clan MacSlop's Glen runs through its middle.",
+  "description": "Caledon, the 6 km highland world of Frostreach (Systems/Frostreach.json): steep bens with snow on their tops, long glens between them, heather on the slopes and bog in the low ground. Clan MacSlop's Glen runs through its middle.",
   "author": "Call of Slop",
   "order": 4,
   "halfX": 8600,

@@ -1,7 +1,7 @@
 # The story's worlds
 
-Five star systems, one faction home in each (Karl, 2026-11-10; the storyline has five systems that each solved a part
-of the fold, and a data centre in each). A world is a planetoid map in `Maps/Planetoids/`, named by a body's `"map"` in
+Five planets in one star system, Frostreach (Karl, 2026-11-15; the storyline's five systems, one faction home in each,
+are archived with it: Cinder, Caledon and Mille moved into Frostreach, docs/space/GALAXY.md). The Dev system stays for tests. A world is a planetoid map in `Maps/Planetoids/`, named by a body's `"map"` in
 its system file. Together they are the game's map: the rust bucket and the Survival tutorial start over or on Glacier
 (docs/story/STARTS.md), and one saved world holds every world the group lands on. Every map there is written by `tools/planets/make_worlds.py`: change a world in the script and run it,
 then look at it with `--check-planetoid` (docs/planets/PLANETS.md "Making a world").
@@ -11,10 +11,10 @@ then look at it with `--check-planetoid` (docs/planets/PLANETS.md "Making a worl
 | Dev (Slopstar) | Planetoid (`Maps/Dev`) | 10 km, 18 | temperate hills, two mountains | Ministry of Slop: the penal colony | where the story starts; data centre 1 |
 | Dev | Bluestone (`Maps/Dev`) | 3 km, 9 | blue-grey, one big mountain | none | the first trip out |
 | Dev | Redrock | 4 km, 9 | red desert: mesa country in the north, the Gash (a 5 km canyon), the Steps, a dune sea | a Ministry mining concession | a practice landing before the first jump |
-| Ember | Cinder | 5 km, 12 | black basalt and craters, lava-coloured low ground, long fissures; one face always to its red sun | the Call Centre: the Call Floor | data centre on the night side |
+| Frostreach | Cinder | 5 km, 12 | black basalt and craters, lava-coloured low ground, long fissures; one face always to its red sun | the Call Centre: the Call Floor | data centre on the night side |
 | Frostreach | Glacier | 8 km, 14 | snowfields, blue ice ridges, four nunataks, the Rent (a 9 km crevasse), the Mirror (a frozen lake), the Shelves | the IT Department: the Server Farm | data centre at the bottom of the Rent |
-| Glenmore | Caledon | 6 km, 11 | bens with snow on top, long glens, heather slopes, bog | Clan MacSlop: the Glen | data centre in a corrie under Ben Slop |
-| Hearth | Mille | 3 km, 8 | hollow: a golden crust stepped in layers, 220 m thick, round a glowing cavity | none for now (the faith was removed, 2026-11-11) | data centre inside the cavity |
+| Frostreach | Caledon | 6 km, 11 | bens with snow on top, long glens, heather slopes, bog | Clan MacSlop: the Glen | data centre in a corrie under Ben Slop |
+| Frostreach | Mille | 3 km, 8 | hollow: a golden crust stepped in layers, 220 m thick, round a glowing cavity | none for now (the faith was removed, 2026-11-11) | data centre inside the cavity |
 | Frostreach (moon of Glacier) | Slopolis | 3.5 km, 10 | one city over the north (docs/planets/CITY.md), hills beyond | none: the free port | towers, streets, the elevated loop |
 
 ## Places kept flat
