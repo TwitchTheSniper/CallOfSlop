@@ -11,7 +11,9 @@ namespace CallOfSlop;
 /// instead of across the room. The route is an ordinary routed link with nodes, checked with the server's rule, so it is saved,
 /// sent and drawn as any other. A wire the router can't lay stays the straight one (drawn only with the linking tool out:
 /// <see cref="RouteRender.Concealed"/>), with a log line. Routes are kept per blueprint and wire, so a second copy of a building
-/// searches nothing; nothing here runs per frame or per tick.
+/// searches nothing; nothing here runs per frame or per tick. A <c>"conduit"</c> ship's <c>"links"</c> with no nodes (chutes, pipes,
+/// cables) are laid the same way, after its wires, and a conduit may pass through a thin wall, deck or hull plate where it must
+/// (<see cref="RouteSearch.PierceMax"/>; power-and-links.md, "Ship links and walls").
 /// </summary>
 public static class ConstructConduit
 {
