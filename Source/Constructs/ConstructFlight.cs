@@ -85,6 +85,14 @@ public static partial class ConstructFlight
     public const int OutThrottle = 0, OutReverse = 1, OutLift = 2, OutVent = 3, OutPitch = 4, OutYaw = 5, OutRoll = 6, OutLeftAileron = 7, OutRightAileron = 8, OutFlaps = 9, OutFrontLeft = 10, OutFrontRight = 11, OutRearLeft = 12, OutRearRight = 13, OutStrafeLeft = 14, OutStrafeRight = 15, OutFire = 16;
     public static readonly string[] OutPorts = ["throttle", "reverse", "lift", "vent", "pitch", "yaw", "roll", "left aileron", "right aileron", "flaps", "front left", "front right", "rear left", "rear right", "strafe left", "strafe right", "fire"]; // (add at the end, up to LogicBlocks.PortWidth, which also sizes every wide part: a link names its port by index)
 
+    /// <summary>
+    /// The ports a player seldom needs: a stabilizer finds what it flies by itself, so the linking tool shows only the seat, the main axes, the autopilot switch and the fire key
+    /// unless its key is held (or a link is already on one). The rest still work and keep their numbers.
+    /// </summary>
+    public static bool Advanced(string port, bool input) => input
+        ? port is "mode" or "altitude" or "heading" or "waypoint x" or "waypoint z" or "set home"
+        : port is "vent" or "left aileron" or "right aileron" or "flaps" or "front left" or "front right" or "rear left" or "rear right" or "strafe left" or "strafe right";
+
     /// <summary>The limits while their settings are 0: the most it tilts (degrees), turns (degrees a second), climbs and goes (m/s).</summary>
     private static readonly Vector4 RotorLimits = new(30, 90, 8, 30), ShipLimits = new(5, 12, 3, 15), PlaneLimits = new(45, 30, 20, 120), RocketLimits = new(25, 30, 30, 300), SpaceLimits = new(80, 30, 15, 40);
 
