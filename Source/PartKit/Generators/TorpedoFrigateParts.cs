@@ -138,8 +138,16 @@ public sealed class TorpedoFrigateParts : IPartGenerator
     }
 
     /// <summary>The skin of facet k on side s from za to zb (between two stations or inside one segment).</summary>
-    private static void Facet(Part p, int k, int s, double za, double zb, string color, string finish = "painted plating", bool glass = false) =>
-        Quad(p, Sh(OnFacet(k, s, za, zb, 0, 0)), Sh(OnFacet(k, s, za, zb, 0, 1)), Sh(OnFacet(k, s, za, zb, 1, 1)), Sh(OnFacet(k, s, za, zb, 1, 0)), color, finish, glass);
+    /// The odd facets sit 6 mm aft of the even ones and the chine rails 3 mm, so where neighbours' plates cross at an edge their ends
+    /// never share a plane (z-fighting.md); a facet's ends still meet the next band's same facet end to end.
+    private static void Facet(Part p, int k, int s, double za, double zb, string color, string finish = "painted plating", bool glass = false)
+    {
+        var dz = k % 2 == 1 ? FacetStagger : 0;
+        double[] At2(double u, double v) { var q = OnFacet(k, s, za, zb, u, v); return Sh([q[0], q[1], q[2] + dz + (u < 0.5 ? FacetTrim : -FacetTrim)]); }
+        Quad(p, At2(0, 0), At2(0, 1), At2(1, 1), At2(1, 0), color, finish, glass);
+    }
+
+    private const double FacetStagger = 0.006, FacetTrim = 0.0015; // (and each stops 1.5 mm short of its band's ends: a tapering band's plate leans past them)
 
     /// <summary>A bevelled armour slab on facet k from (u0, v0) to (u1, v1), standing d0..d1 out, its face drawn in by bev metres.</summary>
     private static void Slab(Part p, int k, int s, double za, double zb, double u0, double u1, double v0, double v1, double d0, double d1, double bev, string color, string finish = "plated steel")
@@ -189,7 +197,13 @@ public sealed class TorpedoFrigateParts : IPartGenerator
             double[] Pt(double[] d1, double t1, double t2) => Sh([c[0] + d1[0] * t1 + n[0] * t2, c[1] + d1[1] * t1 + n[1] * t2, z]);
             return [Pt(da, w, 0.01), Pt(da, w * 0.45, h), Pt(db, w * 0.45, h), Pt(db, w, 0.01)];
         }
-        Prism(p, Ring(za, w, h), Ring(zb, w2, h2), color, "plated steel");
+        var ra = Ring(za, w, h);
+        var rb = Ring(zb, w2, h2);
+        foreach (var q in ra)
+            q[2] += FacetStagger / 2 + FacetTrim; // (between the even and the odd facets' ends)
+        foreach (var q in rb)
+            q[2] += FacetStagger / 2 - FacetTrim;
+        Prism(p, ra, rb, color, "plated steel");
     }
 
     /// <summary>The armour on a facet band from za to zb: panels about 3 m long, each a slab (some stepped twice, some corporate blue),
@@ -275,7 +289,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
             Plate(p, [a, c, d], color, finish, glass);
             return;
         }
-        var flat = Math.Abs(Dot(Unit(n), Sub(d, a))) < 0.002;
+        var flat = Math.Abs(Dot(Unit(n), Sub(d, a))) < 0.08; // (a little twisted: one plate round all four, so no seam of two near-coplanar halves)
         if (flat)
             Plate(p, [a, b, c, d], color, finish, glass);
         else
@@ -513,8 +527,9 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         }
         // The shaft's lining: four plates down to the keel, hazard round its mouth.
         var hy = At(31)[0].Y;
-        foreach (var (x0, z0, x1, z1) in new[] { (shaft.X0, shaft.Z0, shaft.X1, shaft.Z0), (shaft.X0, shaft.Z1, shaft.X1, shaft.Z1), (shaft.X0, shaft.Z0, shaft.X0, shaft.Z1), (shaft.X1, shaft.Z0, shaft.X1, shaft.Z1) })
-            Plate(p, [P(x0, hy + 0.01, z0), P(x1, hy + 0.01, z1), P(x1, -0.01, z1), P(x0, -0.01, z0)], Grate, "dirty steel");
+        foreach (var (x0, z0, x1, z1, e) in new[] { (shaft.X0, shaft.Z0, shaft.X1, shaft.Z0, 0.0), (shaft.X0, shaft.Z1, shaft.X1, shaft.Z1, 0.0),
+            (shaft.X0, shaft.Z0 + 0.025, shaft.X0, shaft.Z1 - 0.025, 0.005), (shaft.X1, shaft.Z0 + 0.025, shaft.X1, shaft.Z1 - 0.025, 0.005) })
+            Plate(p, [P(x0, hy + 0.01 + e, z0), P(x1, hy + 0.01 + e, z1), P(x1, -0.01 - e, z1), P(x0, -0.01 - e, z0)], Grate, "dirty steel"); // (the sides between the ends, a little taller)
         Detail(p, shaft.X0 - 0.12, hy - 0.03, shaft.Z0 - 0.12, shaft.X1 + 0.12, hy - 0.004, shaft.Z0, Hazard, "hazard paint");
         Detail(p, shaft.X0 - 0.12, hy - 0.03, shaft.Z1, shaft.X1 + 0.12, hy - 0.004, shaft.Z1 + 0.12, Hazard, "hazard paint");
         Detail(p, shaft.X0 + 0.1, hy - 0.03, shaft.Z0 - 0.4, shaft.X1 - 0.1, hy - 0.004, shaft.Z0 - 0.25, Red, glow: true);
@@ -943,19 +958,19 @@ public sealed class TorpedoFrigateParts : IPartGenerator
             Slab(p, 3, s, Zt, Zc, 0.3, 0.95, 0.1, 0.9, 0.02, 0.1, 0.05, Armour);
             // The canopy's frames: three bars across the glass and one along its foot.
             foreach (var u in new[] { 0.02, 0.36, 0.68, 0.98 })
-                FStrip(p, 4, s, Zc, 8.0, u - 0.015, u + 0.015, 0.0, 1.0, 0.03, Frame, "painted steel");
+                FStrip(p, 4, s, Zc, 8.0, u - 0.015, u + 0.015, 0.012, 0.988, 0.03, Frame, "painted steel");
             // Running lights on the cheeks: port red, starboard green.
             var q = OnFacet(2, s, Zc, 8.0, 0.5, 1.0);
             Detail(p, q[0] - 0.08 + s * 0.04, q[1] - 0.05, q[2] - 0.08, q[0] + 0.08 + s * 0.04, q[1] + 0.07, q[2] + 0.08, s < 0 ? "#ff3020" : "#30ff60", glow: true);
         }
         foreach (var u in new[] { 0.02, 0.36, 0.68, 0.98 })
-            FStrip(p, 5, 1, Zc, 8.0, u - 0.015, u + 0.015, 0.0, 1.0, 0.03, Frame, "painted steel");
-        FStrip(p, 5, 1, Zc, 8.0, 0.0, 1.0, 0.485, 0.515, 0.03, Frame, "painted steel");
+            FStrip(p, 5, 1, Zc, 8.0, u - 0.015, u + 0.015, 0.012, 0.988, 0.03, Frame, "painted steel");
+        FStrip(p, 5, 1, Zc, 8.0, 0.0, 1.0, 0.485, 0.515, 0.037, Frame, "painted steel");
         Slab(p, 5, 1, Zt, Zc, 0.1, 0.92, 0.12, 0.88, 0.02, 0.12, 0.06, Armour2);
         // The tip: a dark cap over the blade, a sensor glow.
         var tip = At(Zt);
         Plate(p, [.. Enumerable.Range(0, 5).Select(k => P(Cx + tip[k].H, tip[k].Y, Zt)).Concat(Enumerable.Range(0, 5).Reverse().Select(k => P(Cx - tip[k].H, tip[k].Y, Zt)))], Frame, "dirty steel");
-        Detail(p, Cx - 0.12, 2.3, Zt - 0.02, Cx + 0.12, 2.6, Zt + 0.01, Glow, glow: true);
+        Detail(p, Cx - 0.12, 2.3, Zt - 0.032, Cx + 0.12, 2.6, Zt + 0.01, Glow, glow: true); // (proud of the tip plate)
         // Hidden boxes inside the nose.
         foreach (var (za, zb) in new[] { (Zt + 2.0, Zc), (Zc, 8.0) })
             foreach (var (ya, yb) in new[] { (At(za)[0].Y + 0.05, 1.5), (1.5, 3.2), (3.2, 5.0), (5.0, 6.4) })
@@ -993,13 +1008,13 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         double[][] Sect(double z, double w, double h)
         {
             var y = Top(z);
-            return [P(Cx - w, y - 0.02, z), P(Cx - w * 0.8, y + h, z), P(Cx + w * 0.8, y + h, z), P(Cx + w, y - 0.02, z)];
+            return [P(Cx - w, y - 0.012, z), P(Cx - w * 0.8, y + h, z), P(Cx + w * 0.8, y + h, z), P(Cx + w, y - 0.012, z)]; // (its foot inside the roof plate, off its underside)
         }
         Prism(p, Sect(hz0 - 2.0, 0.5, 0.05), Sect(hz0, 1.2, 0.55), Armour2, "plated steel");
         foreach (var s in new[] { -1, 1 })
         {
             // Each cheek of the trough a long slab (the barrel lies between them).
-            double[][] Cheek(double z) { var y = Top(z); return [P(Cx + s * 1.2, y - 0.02, z), P(Cx + s * 0.95, y + 0.55, z), P(Cx + s * 0.62, y + 0.55, z), P(Cx + s * 0.55, y - 0.02, z)]; }
+            double[][] Cheek(double z) { var y = Top(z); return [P(Cx + s * 1.2, y - 0.012, z), P(Cx + s * 0.95, y + 0.55, z), P(Cx + s * 0.62, y + 0.55, z), P(Cx + s * 0.55, y - 0.012, z)]; }
             Prism(p, Cheek(hz0), Cheek(20.0), Armour, "plated steel");
             Prism(p, Cheek(20.0 + 0.02), Cheek(30.0), Armour, "plated steel");
             Prism(p, Cheek(30.0 + 0.02), Cheek(hz1), Armour2, "plated steel");
@@ -1014,7 +1029,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         // railgun's housing, steps up again over the mess and rakes down to the drive, so the roofline isn't one flat line.
         double[][] Blk(double z, double w, double h, double wt)
         {
-            var y = Top(z) - 0.02;
+            var y = Top(z) - 0.012;
             return [P(Cx - w, y, z), P(Cx - wt - (w - wt) * 0.25, y + h * 0.7, z), P(Cx - wt, y + h, z), P(Cx + wt, y + h, z), P(Cx + wt + (w - wt) * 0.25, y + h * 0.7, z), P(Cx + w, y, z)];
         }
         Prism(p, Blk(hz1, 1.2, 0.55, 0.95), Blk(36.0, 2.3, 1.05, 1.5), Armour, "plated steel");
@@ -1029,7 +1044,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
             Plate(p, [P(Cx + sd * 1.4, Top(40) + 1.05, 38.6), P(Cx + sd * 1.4, Top(40) + 1.05, 41.6), P(Cx + sd * 1.43, Top(40) + 1.3, 41.6), P(Cx + sd * 1.43, Top(40) + 1.3, 38.6)], Blue, "painted plating");
             for (var z = 36.6; z < 42.6; z += 0.5)
                 Detail(p, Cx + sd * 1.9 - 0.25, Top(z) + 0.62, z, Cx + sd * 1.9 + 0.25, Top(z) + 0.66, z + 0.25, Frame, "soot");
-            Detail(p, Cx + sd * 2.0 - 0.02, Top(40) + 0.25, 36.4, Cx + sd * 2.0 + 0.02, Top(40) + 0.29, 43.0, Glow, glow: true);
+            Detail(p, Cx + sd * 2.0 - 0.02, Top(40) + 0.25, 36.4, Cx + sd * 2.0 + 0.02, Top(40) + 0.29, 42.9, Glow, glow: true);
         }
         Hidden(p, Cx - 1.6, Top(40) - 0.01, 36.2, Cx + 1.6, Top(40) + 1.0, 42.0);
         // The sensor mast on top: a raked blade, a dish to starboard, red tips; two whip antennae aft.
@@ -1129,9 +1144,10 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         {
             var col = i == 3 ? Skin : i == 4 ? Skin2 : Armour;
             var fin = i == 3 ? "painted plating" : "plated steel";
-            Quad(p, V(flat[i], zf), V(flat[i + 1], zf), V(full[i + 1], SpZ0), V(full[i], SpZ0), col, fin);
-            Quad(p, V(full[i], SpZ0), V(full[i + 1], SpZ0), V(full[i + 1], SpZ1), V(full[i], SpZ1), col, fin);
-            Quad(p, V(full[i], SpZ1), V(full[i + 1], SpZ1), V(flat[i + 1], za), V(flat[i], za), col, fin);
+            var dz = i % 2 == 1 ? FacetStagger : 0; // (odd panels' corners a little aft, so neighbours' ends never share a plane)
+            Quad(p, V(flat[i], zf + dz), V(flat[i + 1], zf + dz), V(full[i + 1], SpZ0 + dz), V(full[i], SpZ0 + dz), col, fin);
+            Quad(p, V(full[i], SpZ0 + dz), V(full[i + 1], SpZ0 + dz), V(full[i + 1], SpZ1 + dz), V(full[i], SpZ1 + dz), col, fin);
+            Quad(p, V(full[i], SpZ1 + dz), V(full[i + 1], SpZ1 + dz), V(flat[i + 1], za), V(flat[i], za), col, fin);
         }
         // Armour on the outer face, stepped, and the beam's rail continued along its top.
         double Xo(double d) => Cx + s * (SpOut + d);
@@ -1149,16 +1165,17 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         double px0 = Cx + s * 5.6, px1 = Cx + s * (SpOut - 0.35), py0 = 0.4, py1 = 2.7;
         double xa = Math.Min(px0, px1), xb = Math.Max(px0, px1);
         var capOut = full;
-        // (the cap as plates round the port: below, above, inboard and outboard of it)
-        Plate(p, [V(capOut[0], SpZ0), V(capOut[1], SpZ0), V(capOut[2], SpZ0), P(s < 0 ? xa : xb, py0, SpZ0), P(s < 0 ? xb : xa, py0, SpZ0)], Armour, "plated steel");
-        Plate(p, [P(xa, py1, SpZ0), P(xb, py1, SpZ0), P(xb, SpTop - 0.1, SpZ0), P(xa, SpTop - 0.1, SpZ0)], Armour, "plated steel");
-        Plate(p, [P(Cx + s * (SpOut), SpBot + 0.6, SpZ0), P(Cx + s * SpOut, 2.6, SpZ0), P(s < 0 ? xa : xb, py1, SpZ0), P(s < 0 ? xa : xb, py0, SpZ0)], Armour, "plated steel");
-        Plate(p, [V(full[0], SpZ0), P(s < 0 ? xb : xa, py0, SpZ0), P(s < 0 ? xb : xa, py1, SpZ0), V(full[5], SpZ0)], Armour, "plated steel");
+        // (the cap as plates round the port: below, above, inboard and outboard of it, each a few mm off the next so none share a face)
+        double zB = SpZ0, zA = SpZ0 - 0.005, zO = SpZ0 + 0.005, zI = SpZ0 + 0.0025;
+        Plate(p, [V(capOut[0], zB), V(capOut[1], zB), V(capOut[2], zB), P(s < 0 ? xa : xb, py0, zB), P(s < 0 ? xb : xa, py0, zB)], Armour, "plated steel");
+        Plate(p, [P(xa, py1, zA), P(xb, py1, zA), P(xb, SpTop - 0.1, zA), P(xa, SpTop - 0.1, zA)], Armour, "plated steel");
+        Plate(p, [P(Cx + s * (SpOut), SpBot + 0.6, zO), P(Cx + s * SpOut, 2.6, zO), P(s < 0 ? xa : xb, py1, zO), P(s < 0 ? xa : xb, py0, zO)], Armour, "plated steel");
+        Plate(p, [V(full[0], zI), P(s < 0 ? xb : xa, py0, zI), P(s < 0 ? xb : xa, py1, zI), V(full[5], zI)], Armour, "plated steel");
         foreach (var (x0, y0, x1, y1) in new[] { (xa - 0.08, py0 - 0.08, xb + 0.08, py0), (xa - 0.08, py1, xb + 0.08, py1 + 0.08), (xa - 0.08, py0, xa, py1), (xb, py0, xb + 0.08, py1) })
-            Detail(p, x0, y0, SpZ0 - 0.03, x1, y1, SpZ0 - 0.005, Hazard, "hazard paint");
-        // The port's inner tube: dark walls back to the magazine.
-        Detail(p, xa, py0 - 0.016, SpZ0, xb, py0, 21.0, Frame, "soot");
-        Detail(p, xa, py1, SpZ0, xb, py1 + 0.016, 21.0, Frame, "soot");
+            Detail(p, x0, y0, SpZ0 - 0.045, x1, y1, SpZ0 - 0.03, Hazard, "hazard paint"); // (clear in front of the cap's plates)
+        // The port's inner tube: dark walls back to the magazine, from behind the cap.
+        Detail(p, xa, py0 - 0.016, SpZ0 + 0.03, xb, py0, 21.0, Frame, "soot");
+        Detail(p, xa, py1, SpZ0 + 0.03, xb, py1 + 0.016, 21.0, Frame, "soot");
         // The room: floor, the outer wall, the ceiling, the back wall; hidden boxes round it inside the sponson.
         double xi = Cx + s * (Lw + 0.25), xo = Cx + s * SpRoom, xl = Math.Min(xi, xo), xr = Math.Max(xi, xo);
         Solid(p, xl, 0.0, SpZ0 + 0.25, xr, Ft0, SpZ1 - 0.25, Grate, "painted grating");
