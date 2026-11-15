@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Worn Flight Couch",
-  "description": "A camper's old captain's chair bolted to a swivel post. The springs are coming through, the fabric is older than you, and it is the most comfortable seat aboard. Link it to a Driving or Turret Module.",
+  "description": "A camper's old captain's chair bolted to a swivel post. A spring is coming through the seat, the fabric is older than you, and it is the most comfortable seat aboard. Link it to a Driving or Turret Module.",
   "group": "Ship",
   "section": "Ship fittings",
   "role": "seat",
@@ -582,14 +582,14 @@
     },
     {
       "min": [
-        -0.2,
-        0.345,
-        -0.265
+        0.065,
+        0.535,
+        -0.2575
       ],
       "max": [
-        -0.1,
-        0.365,
-        -0.245
+        0.145,
+        0.555,
+        -0.2375
       ],
       "color": "#8a8e8a",
       "detail": true,
@@ -597,14 +597,14 @@
     },
     {
       "min": [
-        -0.158,
-        0.349,
-        -0.263
+        0.097,
+        0.504,
+        -0.2555
       ],
       "max": [
-        -0.142,
-        0.405,
-        -0.247
+        0.113,
+        0.575,
+        -0.2395
       ],
       "color": "#6e3f26",
       "detail": true,
@@ -612,14 +612,14 @@
     },
     {
       "min": [
-        -0.16,
-        0.315,
-        -0.305
+        0.101,
+        0.565,
+        -0.2775
       ],
       "max": [
-        -0.14,
-        0.335,
-        -0.205
+        0.121,
+        0.585,
+        -0.2175
       ],
       "color": "#8a8e8a",
       "detail": true,
@@ -627,14 +627,14 @@
     },
     {
       "min": [
-        -0.158,
-        0.319,
-        -0.263
+        0.103,
+        0.569,
+        -0.2555
       ],
       "max": [
-        -0.142,
-        0.355,
-        -0.247
+        0.119,
+        0.605,
+        -0.2395
       ],
       "color": "#6e3f26",
       "detail": true,
@@ -642,14 +642,14 @@
     },
     {
       "min": [
-        -0.2,
-        0.285,
-        -0.265
+        0.077,
+        0.595,
+        -0.2575
       ],
       "max": [
-        -0.1,
-        0.305,
-        -0.245
+        0.157,
+        0.615,
+        -0.2375
       ],
       "color": "#8a8e8a",
       "detail": true,
@@ -657,14 +657,14 @@
     },
     {
       "min": [
-        -0.158,
-        0.289,
-        -0.263
+        0.109,
+        0.599,
+        -0.2555
       ],
       "max": [
-        -0.142,
-        0.325,
-        -0.247
+        0.125,
+        0.635,
+        -0.2395
       ],
       "color": "#6e3f26",
       "detail": true,
@@ -672,899 +672,14 @@
     },
     {
       "min": [
-        -0.16,
-        0.255,
-        -0.305
+        0.113,
+        0.625,
+        -0.2775
       ],
       "max": [
-        -0.14,
-        0.275,
-        -0.205
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        -0.158,
-        0.259,
-        -0.263
-      ],
-      "max": [
-        -0.142,
-        0.295,
-        -0.247
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        -0.2,
-        0.225,
-        -0.265
-      ],
-      "max": [
-        -0.1,
-        0.245,
-        -0.245
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        -0.158,
-        0.229,
-        -0.263
-      ],
-      "max": [
-        -0.142,
-        0.265,
-        -0.247
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        -0.16,
-        0.195,
-        -0.305
-      ],
-      "max": [
-        -0.14,
-        0.215,
-        -0.205
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.0,
-        0.345,
-        -0.265
-      ],
-      "max": [
-        0.1,
-        0.365,
-        -0.245
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.042,
-        0.349,
-        -0.263
-      ],
-      "max": [
-        0.058,
-        0.405,
-        -0.247
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        0.04,
-        0.315,
-        -0.345
-      ],
-      "max": [
-        0.06,
-        0.335,
-        -0.245
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.042,
-        0.319,
-        -0.303
-      ],
-      "max": [
-        0.058,
-        0.355,
-        -0.287
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        0.0,
-        0.285,
-        -0.345
-      ],
-      "max": [
-        0.1,
-        0.305,
-        -0.325
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.042,
-        0.289,
-        -0.343
-      ],
-      "max": [
-        0.058,
-        0.325,
-        -0.327
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        0.04,
-        0.255,
-        -0.425
-      ],
-      "max": [
-        0.06,
-        0.275,
-        -0.325
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.042,
-        0.259,
-        -0.383
-      ],
-      "max": [
-        0.058,
-        0.295,
-        -0.367
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        0.0,
-        0.225,
-        -0.425
-      ],
-      "max": [
-        0.1,
-        0.245,
-        -0.405
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.042,
-        0.229,
-        -0.423
-      ],
-      "max": [
-        0.058,
-        0.265,
-        -0.407
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        0.04,
-        0.195,
-        -0.505
-      ],
-      "max": [
-        0.06,
-        0.215,
-        -0.405
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.16,
-        0.345,
-        -0.265
-      ],
-      "max": [
-        0.26,
-        0.365,
-        -0.245
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.202,
-        0.349,
-        -0.263
-      ],
-      "max": [
-        0.218,
-        0.405,
-        -0.247
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        0.2,
-        0.315,
-        -0.305
-      ],
-      "max": [
-        0.22,
-        0.335,
-        -0.205
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.202,
-        0.319,
-        -0.263
-      ],
-      "max": [
-        0.218,
-        0.355,
-        -0.247
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        0.16,
-        0.285,
-        -0.265
-      ],
-      "max": [
-        0.26,
-        0.305,
-        -0.245
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.202,
-        0.289,
-        -0.263
-      ],
-      "max": [
-        0.218,
-        0.325,
-        -0.247
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        0.2,
-        0.255,
-        -0.305
-      ],
-      "max": [
-        0.22,
-        0.275,
-        -0.205
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.202,
-        0.259,
-        -0.263
-      ],
-      "max": [
-        0.218,
-        0.295,
-        -0.247
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        0.16,
-        0.225,
-        -0.265
-      ],
-      "max": [
-        0.26,
-        0.245,
-        -0.245
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.202,
-        0.229,
-        -0.263
-      ],
-      "max": [
-        0.218,
-        0.265,
-        -0.247
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        0.2,
-        0.195,
-        -0.305
-      ],
-      "max": [
-        0.22,
-        0.215,
-        -0.205
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.195,
-        0.345,
-        0.11
-      ],
-      "max": [
-        0.295,
-        0.365,
-        0.13
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.237,
-        0.349,
-        0.112
-      ],
-      "max": [
-        0.253,
-        0.405,
-        0.128
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        0.235,
-        0.315,
-        0.07
-      ],
-      "max": [
-        0.255,
-        0.335,
-        0.17
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.237,
-        0.319,
-        0.112
-      ],
-      "max": [
-        0.253,
-        0.355,
-        0.128
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        0.195,
-        0.285,
-        0.11
-      ],
-      "max": [
-        0.295,
-        0.305,
-        0.13
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.237,
-        0.289,
-        0.112
-      ],
-      "max": [
-        0.253,
-        0.325,
-        0.128
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        0.235,
-        0.255,
-        0.07
-      ],
-      "max": [
-        0.255,
-        0.275,
-        0.17
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.237,
-        0.259,
-        0.112
-      ],
-      "max": [
-        0.253,
-        0.295,
-        0.128
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        0.195,
-        0.225,
-        0.11
-      ],
-      "max": [
-        0.295,
-        0.245,
-        0.13
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        0.237,
-        0.229,
-        0.112
-      ],
-      "max": [
-        0.253,
-        0.265,
-        0.128
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        0.235,
-        0.195,
-        0.07
-      ],
-      "max": [
-        0.255,
-        0.215,
-        0.17
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        -0.295,
-        0.345,
-        0.04
-      ],
-      "max": [
-        -0.195,
-        0.365,
-        0.06
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        -0.253,
-        0.349,
-        0.042
-      ],
-      "max": [
-        -0.237,
-        0.405,
-        0.058
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        -0.29,
-        0.315,
-        0.0
-      ],
-      "max": [
-        -0.268,
-        0.335,
-        0.1
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        -0.288,
-        0.319,
-        0.042
-      ],
-      "max": [
-        -0.272,
-        0.355,
-        0.058
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        -0.365,
-        0.285,
-        0.04
-      ],
-      "max": [
-        -0.265,
-        0.305,
-        0.06
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        -0.323,
-        0.289,
-        0.042
-      ],
-      "max": [
-        -0.307,
-        0.325,
-        0.058
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        -0.36,
-        0.255,
-        0.0
-      ],
-      "max": [
-        -0.34,
-        0.275,
-        0.1
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        -0.358,
-        0.259,
-        0.042
-      ],
-      "max": [
-        -0.342,
-        0.295,
-        0.058
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        -0.435,
-        0.225,
-        0.04
-      ],
-      "max": [
-        -0.335,
-        0.245,
-        0.06
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        -0.393,
-        0.229,
-        0.042
-      ],
-      "max": [
-        -0.377,
-        0.265,
-        0.058
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        -0.43,
-        0.195,
-        0.0
-      ],
-      "max": [
-        -0.41,
-        0.215,
-        0.1
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        -0.295,
-        0.345,
-        0.23
-      ],
-      "max": [
-        -0.195,
-        0.365,
-        0.25
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        -0.253,
-        0.349,
-        0.232
-      ],
-      "max": [
-        -0.237,
-        0.405,
-        0.248
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        -0.255,
-        0.315,
-        0.19
-      ],
-      "max": [
-        -0.235,
-        0.335,
-        0.29
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        -0.253,
-        0.319,
-        0.232
-      ],
-      "max": [
-        -0.237,
-        0.355,
-        0.248
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        -0.295,
-        0.285,
-        0.23
-      ],
-      "max": [
-        -0.195,
-        0.305,
-        0.25
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        -0.253,
-        0.289,
-        0.232
-      ],
-      "max": [
-        -0.237,
-        0.325,
-        0.248
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        -0.255,
-        0.255,
-        0.19
-      ],
-      "max": [
-        -0.235,
-        0.275,
-        0.29
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        -0.253,
-        0.259,
-        0.232
-      ],
-      "max": [
-        -0.237,
-        0.295,
-        0.248
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        -0.295,
-        0.225,
-        0.23
-      ],
-      "max": [
-        -0.195,
-        0.245,
-        0.25
-      ],
-      "color": "#8a8e8a",
-      "detail": true,
-      "finish": "steel"
-    },
-    {
-      "min": [
-        -0.253,
-        0.229,
-        0.232
-      ],
-      "max": [
-        -0.237,
-        0.265,
-        0.248
-      ],
-      "color": "#6e3f26",
-      "detail": true,
-      "finish": "rust"
-    },
-    {
-      "min": [
-        -0.255,
-        0.195,
-        0.19
-      ],
-      "max": [
-        -0.235,
-        0.215,
-        0.29
+        0.133,
+        0.645,
+        -0.2175
       ],
       "color": "#8a8e8a",
       "detail": true,

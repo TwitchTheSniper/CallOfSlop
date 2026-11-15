@@ -1524,11 +1524,11 @@ public sealed class ShipParts : IPartGenerator
     /// <summary>The rust bucket's flight couch (Karl, 2026-11-15: "incredibly worn ... spring coming out from the bottom, worn fabric.
     /// I'm thinking winnebago vibe"): an old camper's captain's chair on a swivel pedestal, in faded mustard with brown, orange and cream
     /// stripes, a split cushion showing its foam, duct tape on the backrest, a headrest knocked askew, padded armrests (one worn through),
-    /// a taped stick and a frayed lap belt. Its bottom has torn away and the coil springs hang out of it, one sprung loose. The Seat's
+    /// a taped stick and a frayed lap belt. One spring has come up through the cushion. The Seat's
     /// sockets and seat height, so it stands where a Seat did.</summary>
     private static Part WornCouch()
     {
-        var p = Fitting("Worn Flight Couch", "A camper's old captain's chair bolted to a swivel post. The springs are coming through, the fabric is older than you, and it is the most comfortable seat aboard. Link it to a Driving or Turret Module.", role: "seat");
+        var p = Fitting("Worn Flight Couch", "A camper's old captain's chair bolted to a swivel post. A spring is coming through the seat, the fabric is older than you, and it is the most comfortable seat aboard. Link it to a Driving or Turret Module.", role: "seat");
         const string Fabric = "#a8875a", Brown = "#6b4226", Orange = "#b8602e", Cream = "#d6c69c", Foam = "#dcc77a", Tape = "#9a9c98", Chrome = "#8a8e8a", Dark = "#2a2826";
         // The pedestal: a foot plate bolted down, the post with a rust streak, the swivel plate, two side rails left of the seat pan.
         LBox(p, -0.26, 0, -0.26, 0.26, 0.04, 0.26, Dark, "dirty steel");
@@ -1571,30 +1571,18 @@ public sealed class ShipParts : IPartGenerator
         LBox(p, -0.355, 0.72, -0.235, -0.325, 0.9, -0.205, Dark, "rubber", detail: true);
         LBox(p, -0.358, 0.79, -0.238, -0.322, 0.82, -0.202, Tape, "plastic", detail: true);
         LBox(p, -0.348, 0.9, -0.228, -0.332, 0.906, -0.212, "#ff3020", detail: true, glow: true);
-        // The springs out of the torn bottom: coils of wire hung under the cushion, and one sprung loose out of the front.
-        void Spring(double x, double z, double leanZ, double leanX = 0)
+        // One spring come up through the split in the cushion, right where you sit (Karl: "just one spring").
+        for (var i = 0; i < 4; i++)
         {
-            const int Rings = 6;
-            for (var i = 0; i < Rings; i++)
-            {
-                var y = 0.355 - i * 0.03;
-                var cx = x - leanX * i;
-                var cz = z - leanZ * i;
-                if (i % 2 == 0)
-                    LBox(p, cx - 0.05, y - 0.01, cz - 0.01, cx + 0.05, y + 0.01, cz + 0.01, Chrome, "steel", detail: true);
-                else
-                    LBox(p, cx - 0.01, y - 0.01, cz - 0.05, cx + 0.01, y + 0.01, cz + 0.05, Chrome, "steel", detail: true);
-                // (the wire between rings: a detail box grows to 16 mm, so the rings are 20 mm and no face lines up)
-                if (i < Rings - 1)
-                    LBox(p, cx - 0.008, y - 0.006, cz - 0.008, cx + 0.008, y + 0.03 + (i == 0 ? 0.02 : 0), cz + 0.008, Rust, "rust", detail: true);
-            }
+            double x = 0.105 + i * 0.006, z = -0.2475, y = 0.545 + i * 0.03;
+            if (i % 2 == 0)
+                LBox(p, x - 0.04, y - 0.01, z - 0.01, x + 0.04, y + 0.01, z + 0.01, Chrome, "steel", detail: true);
+            else
+                LBox(p, x - 0.01, y - 0.01, z - 0.03, x + 0.01, y + 0.01, z + 0.03, Chrome, "steel", detail: true);
+            // (the wire between rings: a detail box grows to 16 mm, so the rings are 20 mm and no face lines up)
+            if (i < 3)
+                LBox(p, x - 0.008, y - 0.006 - (i == 0 ? 0.035 : 0), z - 0.008, x + 0.008, y + 0.03, z + 0.008, Rust, "rust", detail: true);
         }
-        Spring(-0.15, -0.255, 0);
-        Spring(0.05, -0.255, 0.04); // (sprung loose, out of the front)
-        Spring(0.21, -0.255, 0);
-        Spring(0.245, 0.12, 0);
-        Spring(-0.245, 0.05, 0, 0.035); // (and one out of the side)
-        Spring(-0.245, 0.24, 0);
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Sock("back", [0, 0.6, 0.38], "+z");
         p.Set(("seat", Kw(("at", Py.L(0, -0.03, 0)))));
