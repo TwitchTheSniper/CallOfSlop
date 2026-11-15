@@ -49,6 +49,150 @@
       "by": "down"
     },
     {
+      "part": "Halberd Engineering Hull Bow",
+      "on": 0,
+      "socket": "hull0",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Engineering Hull Stbd",
+      "on": 0,
+      "socket": "hull1",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Engineering Hull Stern",
+      "on": 0,
+      "socket": "hull2",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Engineering Hull Port",
+      "on": 0,
+      "socket": "hull3",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Robot Bay Hull Bow",
+      "on": 2,
+      "socket": "hull0",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Robot Bay Hull Stbd",
+      "on": 2,
+      "socket": "hull1",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Robot Bay Hull Stern",
+      "on": 2,
+      "socket": "hull2",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Robot Bay Hull Port",
+      "on": 2,
+      "socket": "hull3",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Med Hull Bow",
+      "on": 3,
+      "socket": "hull0",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Med Hull Stbd",
+      "on": 3,
+      "socket": "hull1",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Med Hull Stern",
+      "on": 3,
+      "socket": "hull2",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Med Hull Port",
+      "on": 3,
+      "socket": "hull3",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Crew Hull Bow",
+      "on": 4,
+      "socket": "hull0",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Crew Hull Stbd",
+      "on": 4,
+      "socket": "hull1",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Crew Hull Stern",
+      "on": 4,
+      "socket": "hull2",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Crew Hull Port",
+      "on": 4,
+      "socket": "hull3",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Ops Hull Bow",
+      "on": 5,
+      "socket": "hull0",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Ops Hull Stbd",
+      "on": 5,
+      "socket": "hull1",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Ops Hull Stern",
+      "on": 5,
+      "socket": "hull2",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Ops Hull Port",
+      "on": 5,
+      "socket": "hull3",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Cockpit Hull Bow",
+      "on": 6,
+      "socket": "hull0",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Cockpit Hull Stbd",
+      "on": 6,
+      "socket": "hull1",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Cockpit Hull Stern",
+      "on": 6,
+      "socket": "hull2",
+      "by": "back"
+    },
+    {
+      "part": "Halberd Cockpit Hull Port",
+      "on": 6,
+      "socket": "hull3",
+      "by": "back"
+    },
+    {
       "part": "Halberd Main Drive",
       "on": 1,
       "socket": "drive",
@@ -297,13 +441,13 @@
     },
     {
       "part": "Robot Shell",
-      "on": 41,
+      "on": 65,
       "socket": "front",
       "by": "back"
     },
     {
       "part": "Robot Shell",
-      "on": 43,
+      "on": 67,
       "socket": "front",
       "by": "back"
     },
@@ -666,25 +810,25 @@
     },
     {
       "part": "Turntable",
-      "on": 92,
+      "on": 116,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Motor Hinge",
-      "on": 93,
+      "on": 117,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Halberd PDC",
-      "on": 94,
+      "on": 118,
       "socket": "leaf",
       "by": "bottom"
     },
     {
       "part": "Ammo Box",
-      "on": 95,
+      "on": 119,
       "socket": "back",
       "by": "front"
     },
@@ -704,25 +848,25 @@
     },
     {
       "part": "Turntable",
-      "on": 98,
+      "on": 122,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Motor Hinge",
-      "on": 99,
+      "on": 123,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Halberd PDC",
-      "on": 100,
+      "on": 124,
       "socket": "leaf",
       "by": "bottom"
     },
     {
       "part": "Ammo Box",
-      "on": 101,
+      "on": 125,
       "socket": "back",
       "by": "front"
     },
@@ -742,26 +886,26 @@
     },
     {
       "part": "Turntable",
-      "on": 104,
+      "on": 128,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Motor Hinge",
-      "on": 105,
+      "on": 129,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Halberd PDC",
-      "on": 106,
+      "on": 130,
       "socket": "leaf",
       "by": "bottom",
       "spin": 1
     },
     {
       "part": "Ammo Box",
-      "on": 107,
+      "on": 131,
       "socket": "back",
       "by": "front"
     },
@@ -781,26 +925,26 @@
     },
     {
       "part": "Turntable",
-      "on": 110,
+      "on": 134,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Motor Hinge",
-      "on": 111,
+      "on": 135,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Halberd PDC",
-      "on": 112,
+      "on": 136,
       "socket": "leaf",
       "by": "bottom",
       "spin": 1
     },
     {
       "part": "Ammo Box",
-      "on": 113,
+      "on": 137,
       "socket": "back",
       "by": "front"
     },
@@ -826,13 +970,13 @@
     },
     {
       "part": "Turret Module",
-      "on": 116,
+      "on": 140,
       "socket": "module",
       "by": "-x"
     },
     {
       "part": "OR Gate",
-      "on": 118,
+      "on": 142,
       "socket": "+x",
       "by": "-x"
     },
@@ -844,7 +988,7 @@
     },
     {
       "part": "Delay",
-      "on": 119,
+      "on": 143,
       "socket": "+z",
       "by": "-z",
       "config": {
@@ -853,7 +997,7 @@
     },
     {
       "part": "OR Gate",
-      "on": 121,
+      "on": 145,
       "socket": "+z",
       "by": "-z"
     },
@@ -873,13 +1017,13 @@
     },
     {
       "part": "Turret Module",
-      "on": 123,
+      "on": 147,
       "socket": "module",
       "by": "-x"
     },
     {
       "part": "OR Gate",
-      "on": 125,
+      "on": 149,
       "socket": "+x",
       "by": "-x"
     },
@@ -891,7 +1035,7 @@
     },
     {
       "part": "Delay",
-      "on": 126,
+      "on": 150,
       "socket": "+z",
       "by": "-z",
       "config": {
@@ -900,7 +1044,7 @@
     },
     {
       "part": "OR Gate",
-      "on": 128,
+      "on": 152,
       "socket": "+z",
       "by": "-z"
     },
@@ -991,7 +1135,7 @@
     },
     {
       "part": "Flight Couch",
-      "on": 139,
+      "on": 163,
       "socket": "leaf",
       "by": "bottom"
     },
@@ -1009,7 +1153,7 @@
     },
     {
       "part": "Flight Couch",
-      "on": 141,
+      "on": 165,
       "socket": "leaf",
       "by": "bottom"
     },
@@ -1027,7 +1171,7 @@
     },
     {
       "part": "Ammo Box",
-      "on": 144,
+      "on": 168,
       "socket": "ammo",
       "by": "left"
     },
@@ -1039,7 +1183,7 @@
     },
     {
       "part": "Driving Module",
-      "on": 146,
+      "on": 170,
       "socket": "+x",
       "by": "-x"
     },
@@ -1088,213 +1232,213 @@
   ],
   "wires": [
     [
-      40,
-      36
+      64,
+      60
     ],
     [
-      40,
-      37
+      64,
+      61
     ],
     [
-      40,
-      38
+      64,
+      62
     ],
     [
-      40,
-      39
+      64,
+      63
     ],
     [
-      58,
-      54
+      82,
+      78
     ],
     [
-      58,
-      55
+      82,
+      79
     ],
     [
-      58,
-      56
+      82,
+      80
     ],
     [
-      58,
-      57
+      82,
+      81
     ],
     [
-      71,
-      69
+      95,
+      93
     ],
     [
-      71,
-      70
+      95,
+      94
     ],
     [
-      74,
-      72
+      98,
+      96
     ],
     [
-      74,
-      73
-    ],
-    [
-      91,
-      87
-    ],
-    [
-      91,
-      88
-    ],
-    [
-      91,
-      89
-    ],
-    [
-      91,
-      90
-    ],
-    [
-      117,
-      118
-    ],
-    [
-      118,
-      95
-    ],
-    [
-      118,
-      101
-    ],
-    [
-      120,
-      119
-    ],
-    [
-      119,
-      121
-    ],
-    [
-      119,
-      122
-    ],
-    [
-      121,
-      122
-    ],
-    [
-      119,
-      92
-    ],
-    [
-      122,
+      98,
       97
     ],
     [
-      119,
-      98
+      115,
+      111
     ],
     [
-      122,
-      103
+      115,
+      112
     ],
     [
-      124,
-      125
-    ],
-    [
-      125,
-      107
-    ],
-    [
-      125,
+      115,
       113
     ],
     [
-      127,
-      126
+      115,
+      114
     ],
     [
-      126,
-      128
+      141,
+      142
     ],
     [
-      126,
-      129
+      142,
+      119
     ],
     [
-      128,
-      129
+      142,
+      125
     ],
     [
-      126,
-      104
-    ],
-    [
-      129,
-      109
-    ],
-    [
-      126,
-      110
-    ],
-    [
-      129,
-      115
-    ],
-    [
-      138,
-      134
-    ],
-    [
-      138,
-      135
-    ],
-    [
-      138,
-      136
-    ],
-    [
-      138,
-      137
-    ],
-    [
-      140,
+      144,
       143
     ],
     [
-      140,
+      143,
+      145
+    ],
+    [
+      143,
       146
     ],
     [
+      145,
+      146
+    ],
+    [
+      143,
+      116
+    ],
+    [
       146,
-      144
+      121
     ],
     [
-      140,
-      147
+      143,
+      122
     ],
     [
-      152,
+      146,
+      127
+    ],
+    [
+      148,
       149
     ],
     [
-      152,
+      149,
+      131
+    ],
+    [
+      149,
+      137
+    ],
+    [
+      151,
       150
     ],
     [
+      150,
+      152
+    ],
+    [
+      150,
+      153
+    ],
+    [
       152,
-      151
+      153
+    ],
+    [
+      150,
+      128
+    ],
+    [
+      153,
+      133
+    ],
+    [
+      150,
+      134
+    ],
+    [
+      153,
+      139
+    ],
+    [
+      162,
+      158
+    ],
+    [
+      162,
+      159
+    ],
+    [
+      162,
+      160
+    ],
+    [
+      162,
+      161
+    ],
+    [
+      164,
+      167
+    ],
+    [
+      164,
+      170
+    ],
+    [
+      170,
+      168
+    ],
+    [
+      164,
+      171
+    ],
+    [
+      176,
+      173
+    ],
+    [
+      176,
+      174
+    ],
+    [
+      176,
+      175
     ]
   ],
   "links": [
     {
       "type": "data",
-      "from": 147,
-      "to": 139,
+      "from": 171,
+      "to": 163,
       "fromPort": "lift"
     },
     {
       "type": "data",
-      "from": 147,
-      "to": 141,
+      "from": 171,
+      "to": 165,
       "fromPort": "lift"
     }
   ],
