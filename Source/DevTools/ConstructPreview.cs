@@ -5,7 +5,7 @@ using System.Text.Json;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--preview-construct NAME|FILE [--out OUT.html]</c>: a blueprint (by name or file) or one construct part (by name), built
+/// <c>--preview-construct NAME|FILE [--out OUT.html]</c> (and <c>--preview-gallery DIR</c>, every ship in one page): a blueprint (by name or file) or one construct part (by name), built
 /// by the game's own rules (<see cref="ConstructBuild.BuildOnGround"/>), turned into the triangles the renderer draws (every
 /// shown box, its shape mesh, paint, finish, glass and glow) and written as a small web page with a three.js viewer that
 /// can be turned round, cut away by height and picked part by part. For agents designing ships and parts: the page is
@@ -18,10 +18,37 @@ public static class ConstructPreview
 {
     public static int Cli(string[] args)
     {
-        var what = args.SkipWhile(a => !a.Equals("--preview-construct", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() ?? "";
-        var outFile = args.SkipWhile(a => !a.Equals("--out", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault()
-                      ?? Path.Combine(AppContext.BaseDirectory, "preview", Safe(Path.GetFileNameWithoutExtension(what)) + ".html");
-        ConstructBuild.Blueprint bp;
+        if (Flag(args, "--preview-gallery") is { } galleryDir)
+            return Gallery(galleryDir, Flag(args, "--only"));
+        var what = Flag(args, "--preview-construct") ?? "";
+        var outFile = Flag(args, "--out") ?? Path.Combine(AppContext.BaseDirectory, "preview", Safe(Path.GetFileNameWithoutExtension(what)) + ".html");
+        if (Export(what, out var bp, out var parts) is not { } json)
+            return 1;
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outFile))!);
+        var template = Template();
+        if (template == null)
+        {
+            var jsonFile = Path.ChangeExtension(outFile, ".json");
+            File.WriteAllText(jsonFile, json);
+            Console.WriteLine($"no tools/preview/viewer.html above {AppContext.BaseDirectory}: wrote the model only, {jsonFile}");
+            return 0;
+        }
+        File.WriteAllText(outFile, Page(template, json, bp.Name)); // (the page is named after what it shows: the artifact gallery takes its <title>)
+        Console.WriteLine($"preview {bp.Name}: {parts} parts, {_tris} triangles, {_skipped} hidden boxes skipped, {new FileInfo(outFile).Length / 1024} KB -> {Path.GetFullPath(outFile)}");
+        return 0;
+    }
+
+    private static string? Flag(string[] args, string name) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+
+    private static string Page(string template, string json, string title) =>
+        template.Replace("__MODEL__", json, StringComparison.Ordinal)
+            .Replace("<title>Construct Preview</title>", "<title>" + System.Net.WebUtility.HtmlEncode(title) + "</title>", StringComparison.Ordinal);
+
+    /// <summary>A blueprint file, blueprint or part by name, built and turned into the model's JSON; null (and the reason printed) when it can't be.</summary>
+    private static string? Export(string what, out ConstructBuild.Blueprint bp, out int parts)
+    {
+        bp = null!;
+        parts = 0;
         try
         {
             if (File.Exists(what))
@@ -33,38 +60,84 @@ public static class ConstructPreview
             else
             {
                 Console.WriteLine($"--preview-construct: no blueprint file, blueprint or part called \"{what}\"");
-                return 1;
+                return null;
             }
         }
         catch (Exception ex) when (ex is ConstructPartException or JsonException or InvalidOperationException or KeyNotFoundException or FormatException)
         {
             Console.WriteLine($"REFUSED {what}: {ex.Message}");
-            return 1;
+            return null;
         }
-
-        var world = new ConstructWorld();
-        var c = ConstructBuild.BuildOnGround(world, bp, Vector3.Zero, 0, out var why);
+        var c = ConstructBuild.BuildOnGround(new ConstructWorld(), bp, Vector3.Zero, 0, out var why);
         if (c == null)
         {
             Console.WriteLine($"REFUSED {bp.Name}: it doesn't build: {why}");
-            return 1;
+            return null;
         }
+        parts = c.PartCount;
+        return Model(c, bp);
+    }
 
-        var json = Model(c, bp);
-        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outFile))!);
+    /// <summary>
+    /// <c>--preview-gallery DIR [--only "A,B"]</c>: every ship (a blueprint whose first part is in the "Ship" group) and every "Ship" part,
+    /// or only the names given, as one gallery: DIR/index.html (the viewer with a picker), DIR/models/index.json (the list) and one
+    /// DIR/models/NAME.json each. Models whose JSON didn't change are left untouched and the changed ones are printed, so an agent
+    /// republishes the gallery Artifact with only those files (files it leaves out are kept).
+    /// </summary>
+    private static int Gallery(string dir, string? only)
+    {
         var template = Template();
         if (template == null)
         {
-            var jsonFile = Path.ChangeExtension(outFile, ".json");
-            File.WriteAllText(jsonFile, json);
-            Console.WriteLine($"no tools/preview/viewer.html above {AppContext.BaseDirectory}: wrote the model only, {jsonFile}");
-            return 0;
+            Console.WriteLine($"--preview-gallery: no tools/preview/viewer.html above {AppContext.BaseDirectory}");
+            return 1;
         }
-        File.WriteAllText(outFile, template.Replace("__MODEL__", json, StringComparison.Ordinal) // (the page is named after what it shows: the artifact gallery takes its <title>)
-            .Replace("<title>Construct Preview</title>", "<title>" + System.Net.WebUtility.HtmlEncode(bp.Name) + "</title>", StringComparison.Ordinal));
-        Console.WriteLine($"preview {bp.Name}: {c.PartCount} parts, {_tris} triangles, {_skipped} hidden boxes skipped, {new FileInfo(outFile).Length / 1024} KB -> {Path.GetFullPath(outFile)}");
-        return 0;
+        var models = Path.Combine(dir, "models");
+        Directory.CreateDirectory(models);
+        var names = only != null
+            ? only.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).Select(n => (Name: n, Kind: ConstructBuild.FindBlueprint(n) != null || File.Exists(n) ? "Ship" : "Part", Section: "")).ToList()
+            : ConstructBuild.Blueprints.Where(b => b.Steps.Count > 0 && ConstructParts.Find(b.Steps[0].Part)?.Group == "Ship").OrderBy(b => b.Name, StringComparer.Ordinal).Select(b => (Name: b.Name, Kind: "Ship", Section: ""))
+                .Concat(ConstructParts.All.Where(d => d != null && d.Group == "Ship").OrderBy(d => d.Section, StringComparer.Ordinal).ThenBy(d => d.Name, StringComparer.Ordinal).Select(d => (Name: d.Name, Kind: "Part", Section: d.Section)))
+                .ToList();
+        var index = new List<object>();
+        var changed = new List<string>();
+        var failed = 0;
+        foreach (var (name, kind, section) in names)
+        {
+            if (Export(name, out var bp, out var parts) is not { } json)
+            {
+                failed++;
+                continue;
+            }
+            var file = Slug(bp.Name) + ".json";
+            var path = Path.Combine(models, file);
+            if (!File.Exists(path) || File.ReadAllText(path) != json)
+            {
+                File.WriteAllText(path, json);
+                changed.Add("models/" + file);
+            }
+            index.Add(new { file = "models/" + file, id = Slug(bp.Name), name = bp.Name, kind, section, parts, tris = _tris, kb = json.Length / 1024 });
+        }
+        var list = JsonSerializer.Serialize(index);
+        var listPath = Path.Combine(models, "index.json");
+        if (!File.Exists(listPath) || File.ReadAllText(listPath) != list)
+        {
+            File.WriteAllText(listPath, list);
+            changed.Add("models/index.json");
+        }
+        var page = Page(template, "null", "Ship Gallery");
+        var pagePath = Path.Combine(dir, "index.html");
+        if (!File.Exists(pagePath) || File.ReadAllText(pagePath) != page)
+        {
+            File.WriteAllText(pagePath, page);
+            changed.Add("index.html");
+        }
+        Console.WriteLine($"gallery {Path.GetFullPath(dir)}: {index.Count} models, {failed} refused; changed: {(changed.Count == 0 ? "nothing" : string.Join(" ", changed))}");
+        return failed;
     }
+
+    /// <summary>A model's file and page name: lower-case ASCII letters, digits and hyphens (an Artifact's #name).</summary>
+    private static string Slug(string s) => string.Join('-', new string(s.ToLowerInvariant().Select(ch => ch is >= 'a' and <= 'z' or >= '0' and <= '9' ? ch : ' ').ToArray()).Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
     private static int _tris, _skipped;
 

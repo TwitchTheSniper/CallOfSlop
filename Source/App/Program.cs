@@ -244,7 +244,7 @@ public static unsafe partial class Program
             return VehicleKit.VehicleGenJob.SliceReport(sliceVehicle, args); // seeds made in slices as a dynamic spawn makes them: time, slices, the longest spans by their yields
         if (args.SkipWhile(a => !a.Equals("--sweep-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } sweepVehicle)
             return VehicleKit.VehicleDriveCheck.Report(VehicleKit.VehicleKitCli.SweepVehicle(sweepVehicle, args)); // many seeds of a shape, built and checked, nothing written
-        if (args.Any(a => a.Equals("--preview-construct", StringComparison.OrdinalIgnoreCase)))
+        if (args.Any(a => a.Equals("--preview-construct", StringComparison.OrdinalIgnoreCase) || a.Equals("--preview-gallery", StringComparison.OrdinalIgnoreCase)))
             return ConstructPreview.Cli(args); // a blueprint or part as a turnable web page for an agent to publish (Source/DevTools/ConstructPreview.cs, tools/preview/)
         if (args.SkipWhile(a => !a.Equals("--check-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } vehicleFile)
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
