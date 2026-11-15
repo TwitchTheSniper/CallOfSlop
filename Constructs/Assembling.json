@@ -1693,6 +1693,7 @@
     {"output": "Ship Mess Table", "materials": {"steel": 14, "rubber": 3}, "seconds": 4.1},
     {"output": "Ship Toilet", "materials": {"steel": 6, "concrete": 1}, "seconds": 2.9},
     {"output": "Shower Stall", "materials": {"steel": 12, "concrete": 2}, "seconds": 3.8},
+    {"output": "Worn Flight Couch", "materials": {"steel": 8}, "parts": {"Tyre Carcass": 1}, "seconds": 3.2},
     {"output": "Jump Drive", "materials": {"steel": 24, "copper": 40}, "parts": {"Circuit Board": 2}, "seconds": 5.6, "minTier": 3},
     {"output": "Speed Gauge", "materials": {"steel": 1, "copper": 1}, "parts": {"Circuit Board": 1}, "seconds": 2.1, "minTier": 3},
     {"output": "Capital Stabiliser", "materials": {"steel": 2000, "concrete": 500}, "seconds": 600.0, "minTier": 4},
