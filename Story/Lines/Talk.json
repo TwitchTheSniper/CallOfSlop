@@ -1,5 +1,5 @@
 {
-  // What people say to a player who talks to them (docs/story/STORY.md "Talking to people"; the talk panel, the use key
+  // What people say to a player who talks to them (docs/archive/story/STORY.md "Talking to people"; the talk panel, the use key
   // on a person). The answers the panel needs beside People.json's: hello is answered as a Greet ("Greeted") the first
   // time and as a Chat ("Chatted") after; news is said as a Tell of theirs ("Step", verb Tell); a trade is answered as
   // one ("Traded"). The occasions here: NoNews (nothing they haven't told you), NotTrader (they don't sell), EmptyHands

@@ -4,7 +4,7 @@ using Brutal.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The "what next" line on the HUD (GameObjectives.cs, docs/story/OBJECTIVES.md): where the induction's panel sits, top
+/// The "what next" line on the HUD (GameObjectives.cs, docs/archive/story/OBJECTIVES.md): where the induction's panel sits, top
 /// left, once no story panel is up. The goal's title and one line; its memo for the first seconds, its hint for a while
 /// after <see cref="ObjectiveScript.HintAfter"/>, then just the two lines. In the story text's size and colour (Settings > Video).
 /// The words are made once per change (a new goal, new numbers, a rebound key): nothing per frame.

@@ -29,11 +29,9 @@ Code: `Source/Game/GameSandboxOpening.cs` (the server's beats, the colony, the w
   they go through the beats on that clock and everyone wakes in the cell block together, each to their own side, and starts
   the induction as a group (docs/sandbox/TUTORIAL.md, "Together"). Anyone arriving later has a card of their own, then joins
   whoever is on their step.
-  **STORY** on the main screen starts it alone: Sandbox survival on the chosen start's planetoid (docs/story/STARTS.md;
-  the default start's is Glacier in Frostreach, the cold planet: Karl, 2026-11-12), in a saved world (a new one named Story when none is picked), with no bots. Multiplayer has
-  **HOST STORY CO-OP**: the host's lobby opens on the same map and mode, where they pick or make the saved world; friends
-  join from the server browser or the invite code. The other systems' worlds are a Jump Drive away in the same saved world
-  (docs/planets/WORLDS.md).
+  Since 2026-11-14 (docs/sandbox/SURVIVAL.md) the penal colony is Survival's tutorial: the Tutorial tickbox on the Single
+  player or Multiplayer page plays it on Glacier in a world of its own that isn't saved. The rust bucket start's opening is
+  this one's card and wake, aboard (docs/story/STARTS.md "A ship start").
 - **Skip**: the jump key, at any beat (for that person only; the rest of the group carries on). Skipping puts them in the cell block at once and starts the induction.
 
 ## The beats

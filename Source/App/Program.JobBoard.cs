@@ -4,7 +4,7 @@ using Brutal.GlfwApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// The job board (Source/UI/UiJobBoard.cs, docs/story/STORY.md "The job board"): the use key on a lore item with
+/// The job board (Source/UI/UiJobBoard.cs, docs/archive/story/STORY.md "The job board"): the use key on a lore item with
 /// <c>"opens": "jobs"</c> (the Ministry Work Board in the colony yard) opens every faction's jobs with the cursor free, and
 /// sends the ordinary use act so the host counts the look (Game/GameStoryLore.cs). The use key again, Esc, the window's X
 /// or walking off closes it. It counts as a menu.

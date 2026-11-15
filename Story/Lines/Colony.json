@@ -1,5 +1,5 @@
 {
-  // What the Ministry of Slop's people say when a player talks to them in the penal colony (docs/story/STORY.md "Talking to
+  // What the Ministry of Slop's people say when a player talks to them in the penal colony (docs/archive/story/STORY.md "Talking to
   // people"). Hello is answered "Greeted" the first time and "Chatted" after; "Any news?" falls back on "NoNews"; the three
   // asks "What's this place?", "What do you do here?" and "Any advice?" are "AskPlace", "AskSelf" and "AskAdvice";
   // "Bye" is goodbye. A rule for one person (?me == 'Name', ?me is Person) beats one for the Ministry in general, which

@@ -4,7 +4,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The IT Department's side of its fax line (docs/story/STORY.md, "The IT Department's fax"; data <c>Story/Office/IT.json</c>): the pages a
+/// The IT Department's side of its fax line (docs/archive/story/STORY.md, "The IT Department's fax"; data <c>Story/Office/IT.json</c>): the pages a
 /// plugged-in Fax Machine prints in order, and the answers to emails sent from a Computer, picked by the words in them. Read once; a bad
 /// file leaves the line dead and says why in the log (and <c>--check-story</c>).
 /// </summary>

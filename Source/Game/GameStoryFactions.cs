@@ -3,7 +3,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The factions' side of the appraiser (docs/story/STORY.md "Factions"; the engine's side: Source/Story/StoryFactions.cs, data
+/// The factions' side of the appraiser (docs/archive/story/STORY.md "Factions"; the engine's side: Source/Story/StoryFactions.cs, data
 /// Story/Factions). Constructs a faction claims (its vehicles, by name), the groups the players are in (their player
 /// factions), what players do on a faction's channels (an email to it, its fax plugged in), the pages it faxes them, and
 /// the notices it sends about what was done to it. Host only, like the rest of the story; nothing new goes on the wire.

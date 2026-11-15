@@ -1,5 +1,5 @@
 {
-  // The story world's relationships and qualities (docs/story/STORY.md). A relationship is (subject, relation, target)
+  // The story world's relationships and qualities (docs/archive/story/STORY.md). A relationship is (subject, relation, target)
   // with a strength; 0 means it isn't there. Exclusive: one target at a time. Symmetric: both ways at once.
   // Relations and qualities share one set of names; verbs' effects and patterns' queries use them.
   "relations": [

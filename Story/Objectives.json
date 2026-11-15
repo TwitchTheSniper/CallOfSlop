@@ -1,5 +1,5 @@
 {
-  // The "what next" line (docs/story/OBJECTIVES.md; Game/GameObjectives.cs, UI/UiObjectives.cs): once the induction and the
+  // The "what next" line (docs/archive/story/OBJECTIVES.md; Game/GameObjectives.cs, UI/UiObjectives.cs): once the induction and the
   // first duty are over, the HUD shows the first goal here a story player hasn't met. Each is judged from the game's state:
   //   standing  the faction's standing with them (or their group) has reached "tier" ({have} and {need} in the text)
   //   depot     the Orbital Depot's run is done (the robot shells and the lander; no depot in the world: met)

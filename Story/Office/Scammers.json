@@ -1,6 +1,6 @@
 {
   "format": "call-of-slop-scams/1",
-  "about": "The Scammers (docs/story/STORY.md, \"The Scammers\"): a plugged-in Computer shows two of the adverts. Clicking one hooks the computer with its scam: the first message in \"firstIn\", the rest every \"every\", to the players within 10 m. Whatever a player types at a hooked computer goes to the scammers: the first reply rule with one of its words answers (specific ones first, the one with no words last), \"replyIn\" later. A rule with \"take\" means they fell for it: the scammers take that share of the computer's battery and leave. Unplugging the computer cures it. Lines: printable ASCII, at most 96 characters; labels at most 28 characters, popups 16.",
+  "about": "The Scammers (docs/archive/story/STORY.md, \"The Scammers\"): a plugged-in Computer shows two of the adverts. Clicking one hooks the computer with its scam: the first message in \"firstIn\", the rest every \"every\", to the players within 10 m. Whatever a player types at a hooked computer goes to the scammers: the first reply rule with one of its words answers (specific ones first, the one with no words last), \"replyIn\" later. A rule with \"take\" means they fell for it: the scammers take that share of the computer's battery and leave. Unplugging the computer cures it. Lines: printable ASCII, at most 96 characters; labels at most 28 characters, popups 16.",
   "from": "The Call Centre",
   "firstIn": "3s",
   "every": ["20s", "40s"],

@@ -4,7 +4,7 @@ using Brutal.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The talk panel (Program.StoryTalk.cs; docs/story/STORY.md "Talking to people"): opened with the use key on one of the
+/// The talk panel (Program.StoryTalk.cs; docs/archive/story/STORY.md "Talking to people"): opened with the use key on one of the
 /// story's people, at the right of the screen over the world (it goes on, and so do they). It shows what they said to
 /// you lately and asks: hello, any news, the person's own topics (GameStoryTopics.cs), trade what you hold (a trader takes it and gives you something of theirs),
 /// goodbye. The host decides everything; their answers come back as their own words. Esc, Goodbye or walking off

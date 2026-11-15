@@ -44,7 +44,7 @@ public sealed partial class Ui
     private enum Page
     {
         Main,
-        Story, // the story: a survival world on the galaxy's home planetoid (UiWorlds.cs DrawStoryWorld)
+        Story, // (archived 2026-11-14 with the story: the page is gone, the value stays)
         SinglePlayer,
         Multiplayer,
         Settings,
@@ -197,7 +197,7 @@ public sealed partial class Ui
             switch (_page)
             {
                 case Page.Main:
-                    Title($"{Weapons.All.Length} weapons. {Maps.All.Length} maps. No mercy.");
+                    Title("Survive, build, fight and fly. Alone or with friends.");
                     UpdateBanner(s); // "Update available" (UiUpdates.cs)
                     ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + MenuButtonWidth * _scale); // long text wraps at the button width instead of widening the panel
                     if (message.Length > 0)
@@ -211,23 +211,14 @@ public sealed partial class Ui
                         ImGui.Spacing();
                     }
                     ImGui.PopTextWrapPos();
-                    LevelSummary(compact: true);
-                    if (BigButton("STORY"))
-                        _page = Page.Story;
-                    if (ImGui.IsItemHovered())
-                        ImGui.SetItemTooltip("Crash-land on Glacier, the ice world, wake in the Ministry's penal colony, and find the five sealed data centres across the five star systems."u8);
+                    // (Karl, 2026-11-14: Single player and Multiplayer, each Survival or Creative. The story, the arena modes'
+                    // loadouts and the Zombies workbench preview are archived: docs/sandbox/SURVIVAL.md)
                     if (BigButton("SINGLE PLAYER"))
                         _page = Page.SinglePlayer;
                     if (BigButton("MULTIPLAYER"))
                         _page = Page.Multiplayer;
-                    if (BigButton("LOADOUTS"))
-                        OpenLobbyLoadouts();
                     if (BigButton("APPEARANCE"))
                         OpenAppearance(); // your look and your hat (UiAppearance.cs)
-                    if (BigButton("WORKBENCH (ZOMBIES PREVIEW)"))
-                        OpenWorkbench(); // the Weapon Workbench (UiWorkbench.cs)
-                    if (ImGui.IsItemHovered())
-                        ImGui.SetItemTooltip("Weapon Workbench: build guns from parts and test fire them. A preview of the coming Zombies mode."u8);
                     if (BigButton("MUSIC PLAYER"))
                         OpenMusicPlayer(audio); // every track in the game (UiMusicPlayer.cs)
                     if (BigButton("SETTINGS"))
@@ -237,84 +228,62 @@ public sealed partial class Ui
                         action = LobbyAction.Quit;
                     break;
 
-                case Page.Story:
-                    Title("Story - five worlds in five star systems");
-                    var storySaved = DrawStoryWorld(s); // (UiWorlds.cs)
-                    if (!storySaved)
-                    {
-                        StartPicker(s); // (which start a new world plays: GameStoryStart.cs; a saved world keeps its own)
-                        DeathPicker(ref s.SandboxDeath, ref s.SandboxKeepPack); // (survival's death rules: GameSandboxDeath.cs)
-                    }
-                    ImGui.Spacing();
-                    if (BigButton("START"))
-                    {
-                        StorySettings(s);
-                        s.Bots = 0;
-                        StoryWorldDefault(); // (a new world named Story when none was picked: the story is always saved)
-                        s.Save();
-                        action = LobbyAction.SinglePlayer;
-                    }
-                    if (BigButton("BACK"))
-                        _page = Page.Main;
-                    break;
-
                 case Page.SinglePlayer:
-                    Title("Single player - you against bots");
-                    ModePicker(s);
-                    var worldMap = s.Mode == GameMode.Sandbox && DrawSinglePlayerWorld(s); // (a saved world brings its map and mode: UiWorlds.cs)
-                    if (s.Mode == GameMode.Sandbox && !worldMap)
-                    {
-                        ImGui.Checkbox("Survival (no parts menu: gather and build)"u8, ref s.SandboxSurvival);
-                        if (s.SandboxSurvival)
-                            DeathPicker(ref s.SandboxDeath, ref s.SandboxKeepPack); // (survival's death rules: GameSandboxDeath.cs)
-                    }
-                    TeamRulesPicker(s); // (UiTeams.cs)
-                    if (!worldMap)
-                        MapPicker(s);
-                    var spMax = s.LobbyMaxPlayers(Maps.Packs, Maps.All); // the map's player limit (GameLobby.cs)
-                    s.Bots = Math.Clamp(s.Bots, 0, spMax - 1);
-                    ImGui.SetNextItemWidth(260 * _scale);
-                    ImGui.SliderInt("Bots"u8, ref s.Bots, 0, spMax - 1);
-                    ImGuiSafe.TextColored(Dim, PlayerCountLine(s, s.Bots + 1, spMax));
-                    if (s.Bots == 0)
-                        TestModeHint();
-                    else
-                    {
-                        DifficultyPicker(ref s.Difficulty);
-                        ImGuiSafe.TextColored(Dim, SkillHint(s.Difficulty)); // (UiLobbyRoom.cs)
-                        BotGearPicker(s); // UiBotGear.cs
-                    }
+                {
+                    Title("Single player");
+                    PlayStylePicker(s);
+                    var tutorial = TutorialPicker(s);
+                    var savedWorld = !tutorial && DrawSinglePlayerWorld(s); // (a saved world brings its own map, mode and start: UiWorlds.cs)
+                    if (!tutorial && !savedWorld)
+                        StartPicker(s);
+                    if (s.SandboxSurvival && !savedWorld && !tutorial)
+                        DeathPicker(ref s.SandboxDeath, ref s.SandboxKeepPack); // (survival's death rules: GameSandboxDeath.cs)
+                    s.Bots = 0;
                     ImGui.Spacing();
-                    if (BigButton("START"))
+                    var problem = savedWorld ? null : StartMapProblem(s);
+                    if (problem != null)
+                        ImGuiSafe.TextColored(Orange, problem);
+                    ImGui.BeginDisabled(problem != null);
+                    var go = BigButton("START");
+                    ImGui.EndDisabled();
+                    if (go)
                     {
+                        if (!savedWorld)
+                            ApplyStartMap(s);
+                        if (tutorial)
+                            DropSinglePlayerWorld(); // (the tutorial is a world of its own, never the one picked: UiWorlds.cs)
                         s.Save();
                         action = LobbyAction.SinglePlayer;
                     }
                     if (BigButton("BACK"))
                         _page = Page.Main;
                     break;
+                }
 
                 case Page.Multiplayer:
+                {
                     Title($"Multiplayer - up to {Game.MaxPeople} players over LAN or the internet (each map has its own limit)");
-                    ImGui.TextColored(Dim, "Hosting or joining opens the lobby: pick teams and loadouts, chat, ready up; the host starts the match."u8);
-                    if (BigButton("HOST A GAME"))
+                    PlayStylePicker(s);
+                    if (!TutorialPicker(s))
+                        StartPicker(s);
+                    var problem = StartMapProblem(s);
+                    if (problem != null)
+                        ImGuiSafe.TextColored(Orange, problem);
+                    ImGui.BeginDisabled(problem != null);
+                    var host = BigButton("HOST A GAME");
+                    ImGui.EndDisabled();
+                    if (host)
                     {
+                        ApplyStartMap(s);
+                        s.Bots = s.HostBots = 0;
                         s.Save();
-                        action = LobbyAction.Host; // straight into your lobby: every match setting is there (UiLobbyRoom.cs)
+                        action = LobbyAction.Host; // straight into your lobby (UiLobbyRoom.cs)
                         break;
                     }
-                    HostOpensWith(s);
-                    if (BigButton("HOST STORY CO-OP"))
-                    {
-                        StorySettings(s); // (Sandbox, Survival, the story's planetoid: friends crash, wake and go through the induction together)
-                        s.Save();
-                        action = LobbyAction.Host;
-                        break;
-                    }
-                    if (ImGui.IsItemHovered())
-                        ImGui.SetItemTooltip("The story with friends: you crash-land together, wake in the penal colony together and go through the warden's induction as a group. Opens your lobby on Survival; pick or make a saved world there. Friends join from the server browser or your invite code."u8);
-                    if (StoryStarts.All.Length > 1)
-                        CoopStartPicker(s); // (which start a new co-op world plays: GameStoryStart.cs)
+                    ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 640 * _scale);
+                    ImGui.TextColored(Dim, "Hosting opens your lobby: pick or make a saved world there, then start. Friends join from the server browser or your invite code, and wake with you."u8);
+                    ImGui.PopTextWrapPos();
+                    ImGui.Spacing();
                     SteamLobbyPicker(s); // who finds the Steam lobby (with Steam running)
                     if (ImGui.BeginTabBar("##mp"u8))
                     {
@@ -347,6 +316,7 @@ public sealed partial class Ui
                     if (BigButton("BACK"))
                         _page = Page.Main;
                     break;
+                }
 
                 case Page.Settings:
                     Title("Settings");
@@ -368,9 +338,6 @@ public sealed partial class Ui
         }
         return action;
     }
-
-    private string _opensWith = "";
-    private (GameMode, string, bool, string, int, BotDifficulty) _opensWithFor;
 
     /// <summary>Under HOST A GAME with Steam running: who finds the Steam lobby (Settings.SteamLobby; SteamLobbies.cs).</summary>
     private void SteamLobbyPicker(Settings s)
@@ -398,79 +365,93 @@ public sealed partial class Ui
         ImGui.Spacing();
     }
 
-    /// <summary>Under HOST A GAME: what the lobby opens with (the last choices; all of them change in the lobby).</summary>
-    /// <summary>
-    /// The story, alone or in co-op: Sandbox survival (the opening and the induction) on the story's home planetoid
-    /// (<see cref="Game.StoryHomeMap"/>, Glacier in Frostreach: the other systems' worlds are a jump away).
-    /// </summary>
-    private static void StorySettings(Settings s)
+    /// <summary>Survival or Creative, Sandbox's two ways to play (the arena modes are archived: CLAUDE.md), with what each means.</summary>
+    private void PlayStylePicker(Settings s)
     {
         s.Mode = GameMode.Sandbox;
-        s.SandboxSurvival = true;
-        var start = StoryStarts.Find(s.StoryStart) ?? StoryStarts.Default; // (the start's planetoid: GameStoryStart.cs)
-        if ((Maps.Find(start.Map) is { Sandbox: not null } own ? own : Maps.Find(Game.StoryHomeMap) is { Sandbox: not null } home ? home : Maps.All.FirstOrDefault(m => m.Sandbox != null)) is { } map)
-            s.MapName = map.Name;
-        s.MapRandom = false;
+        if (ImGui.RadioButton("Survival##playstyle"u8, s.SandboxSurvival))
+            s.SandboxSurvival = true;
+        ImGui.SameLine(0, 20 * _scale);
+        if (ImGui.RadioButton("Creative##playstyle"u8, !s.SandboxSurvival))
+            s.SandboxSurvival = false;
+        ImGui.TextColored(Dim, s.SandboxSurvival
+            ? "Gather, refine and make everything you build. No parts menu."u8
+            : "Every part and blueprint on the Tab parts menu, free. Nothing to gather."u8);
+        ImGui.Spacing();
     }
 
     /// <summary>
-    /// The Story page, a new world: which start it plays (Story/Starts, docs/story/STARTS.md), as radio buttons when there
-    /// is more than one, and what that start is. Co-op hosts with the same choice.
+    /// Survival's Tutorial tickbox (Karl, 2026-11-14): the Ministry's penal colony and the warden's induction, in a world of
+    /// its own that is never saved (StoryStarts.Tutorial). True: ticked, so the start, the map and the world are the tutorial's.
+    /// </summary>
+    private bool TutorialPicker(Settings s)
+    {
+        if (!s.SandboxSurvival || StoryStarts.Tutorial is not { } tut)
+            return false;
+        ImGui.Checkbox("Tutorial: the Ministry's penal colony"u8, ref s.SurvivalTutorial);
+        if (ImGui.IsItemHovered())
+            ImGui.SetItemTooltip("Learn the keys and the tools from the warden's induction, in the penal colony on Glacier. It is a world of its own and isn't saved: untick it to play your own world."u8);
+        if (s.SurvivalTutorial)
+        {
+            ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 640 * _scale);
+            ImGuiSafe.TextColored(Dim, tut.About);
+            ImGui.TextColored(Dim, "A world of its own, not saved: untick it to play your own world."u8);
+            ImGui.PopTextWrapPos();
+        }
+        ImGui.Spacing();
+        return s.SurvivalTutorial;
+    }
+
+    /// <summary>
+    /// A new world's start (Story/Starts, docs/story/STARTS.md), as radio buttons in the menus' order (the rust bucket
+    /// first), and what it is; an any-map start picks its map here.
     /// </summary>
     private void StartPicker(Settings s)
     {
-        var starts = StoryStarts.All;
-        var picked = StoryStarts.Find(s.StoryStart) ?? StoryStarts.Default;
-        if (starts.Length > 1)
+        var offered = StoryStarts.Offered;
+        var picked = StoryStarts.Picked(s.StoryStart);
+        if (offered.Length > 1)
         {
             ImGui.Text("Start"u8);
-            foreach (var st in starts)
+            foreach (var st in offered)
             {
                 ImGui.SameLine(0, 14 * _scale);
                 if (ImGui.RadioButton(st.Placeholder ? $"{st.Name} (placeholder)##start{st.Id}" : $"{st.Name}##start{st.Id}", st == picked))
                     picked = st;
             }
-            s.StoryStart = picked == StoryStarts.Default ? "" : picked.Id;
         }
+        s.StoryStart = picked.Id;
         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 640 * _scale);
         ImGuiSafe.TextColored(Dim, picked.About);
         if (picked.Character.Length > 0 || picked.Background.Length > 0)
             ImGuiSafe.TextColored(Dim, picked.Background.Length > 0 ? $"{picked.Character}: {picked.Background}" : picked.Character);
-        ImGui.TextColored(Dim, "The other worlds are each a Jump Drive away: each has a faction's home and a sealed data centre. One saved world holds them all."u8);
         ImGui.PopTextWrapPos();
         ImGui.Spacing();
+        if (picked.AnyMap)
+            MapPicker(s);
     }
 
-    /// <summary>Under HOST STORY CO-OP: the start a new story world plays (the Story page's choice, as a list).</summary>
-    private void CoopStartPicker(Settings s)
+    /// <summary>The start a new game plays (Settings.PlayedStartId: the tutorial's with its tickbox).</summary>
+    private static StoryStart PlayedStart(Settings s) => StoryStarts.Find(s.PlayedStartId) ?? StoryStarts.Default;
+
+    /// <summary>Why START can't play the start picked (no Sandbox map for it), or null.</summary>
+    private static string? StartMapProblem(Settings s)
     {
-        var picked = StoryStarts.Find(s.StoryStart) ?? StoryStarts.Default;
-        ImGui.SetNextItemWidth(300 * _scale);
-        if (ImGui.BeginCombo("Story start##coopstart"u8, picked.Placeholder ? $"{picked.Name} (placeholder)" : picked.Name))
-        {
-            foreach (var st in StoryStarts.All)
-                if (ImGui.Selectable(st.Placeholder ? $"{st.Name} (placeholder)" : st.Name, st == picked))
-                    s.StoryStart = st == StoryStarts.Default ? "" : st.Id;
-            ImGui.EndCombo();
-        }
-        ImGui.Spacing();
+        var start = PlayedStart(s);
+        if (!start.AnyMap)
+            return Maps.Find(start.Map) is { Sandbox: not null } ? null : $"The {start.Name} start's world, {start.Map}, isn't in the Maps folder.";
+        if (s.MapRandom)
+            return "Pick one map for this start (Change map...): a new world goes on one map.";
+        return Maps.Find(s.MapName) is { Sandbox: not null } ? null : $"{s.MapName} isn't a Survival and Creative map: Change map... to pick one that is.";
     }
 
-    private void HostOpensWith(Settings s)
+    /// <summary>At START or HOST: the map the start plays on (its own planetoid, or the one picked).</summary>
+    private static void ApplyStartMap(Settings s)
     {
-        s.HostBots = Math.Clamp(s.HostBots, 0, Math.Max(0, s.LobbyMaxPlayers(Maps.Packs, Maps.All) - 2)); // room for at least one friend, as before
-        var key = (s.Mode, s.MapName, s.MapRandom, s.MapPack, s.HostBots, s.Difficulty);
-        if (key != _opensWithFor || _opensWith.Length == 0)
-        {
-            _opensWithFor = key;
-            _opensWith = $"Opens your lobby with {GameModeRegistry.Get(s.Mode).Name} on {MapSelect.ChoiceText(s)}, "
-                         + (s.HostBots > 0 ? $"{s.HostBots} {SkillName(s.Difficulty)} bot{(s.HostBots == 1 ? "" : "s")}" : "no bots")
-                         + " (your last choices). Change anything there before you start.";
-        }
-        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 640 * _scale);
-        ImGuiSafe.TextColored(Dim, _opensWith);
-        ImGui.PopTextWrapPos();
-        ImGui.Spacing();
+        var start = PlayedStart(s);
+        if (!start.AnyMap && Maps.Find(start.Map) is { Sandbox: not null } own)
+            s.MapName = own.Name;
+        s.MapRandom = false;
     }
 
     /// <summary>"8 / 16 players on Quarry" (or, random from a pack, how many of its maps take that many).</summary>

@@ -3,7 +3,7 @@ using Brutal.GlfwApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// The Logbook's key (F1 by default, rebindable; Esc closes it) and its draw call (Source/UI/UiLogbook.cs, docs/story/FRAGMENTS.md).
+/// The Logbook's key (F1 by default, rebindable; Esc closes it) and its draw call (Source/UI/UiLogbook.cs, docs/archive/story/FRAGMENTS.md).
 /// The window counts as a menu, so the cursor is free while it's open.
 /// </summary>
 public static unsafe partial class Program

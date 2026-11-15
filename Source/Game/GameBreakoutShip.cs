@@ -4,7 +4,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The break-out's last part (docs/story/BREAKOUT.md "The ship"): an escapee who sits down in the Ministry Courier
+/// The break-out's last part (docs/archive/story/BREAKOUT.md "The ship"): an escapee who sits down in the Ministry Courier
 /// (GameSpaceport.cs; stolen, or handed over) takes the convicts who are alive and near it aboard. Each says their line,
 /// gains <c>Aboard</c> and their body goes (they ride inside: <see cref="BreakoutAboard"/> keeps it away). Once the
 /// courier is far from the spaceport (<see cref="BreakoutAwayAt"/>, or gone from this world into space) the crew are

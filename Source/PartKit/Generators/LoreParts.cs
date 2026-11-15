@@ -3,7 +3,7 @@ using static CallOfSlop.PartKit.PartKitMath;
 namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
-/// The penal colony's lore items: Constructs/Parts/Lore (docs/story/STORY.md "Lore"; the words are Story/Lore). Each is a
+/// The penal colony's lore items: Constructs/Parts/Lore (docs/archive/story/STORY.md "Lore"; the words are Story/Lore). Each is a
 /// thing of its own a player can look at closely in the colony's buildings: a tally scratched into a bed board, the photo
 /// board with a gap in year three, the Warden's handbook on its lectern, the Ministry's in-tray, the barracks noticeboard
 /// with Crumb's postcard, the Sergeant's key board with its eighth hook, a brass storm lantern from the Brine Flats,

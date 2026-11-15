@@ -1,5 +1,5 @@
 {
-  // The Frontier cast's twelve people with two players passing through (docs/story/STORY.md "People"). The players' events
+  // The Frontier cast's twelve people with two players passing through (docs/archive/story/STORY.md "People"). The players' events
   // are scripted; the people live on their own for "run" after the last one (--story-sim runs it headless, the Story
   // window plays it into the live world). The same seed gives the same run.
   "name": "Frontier",

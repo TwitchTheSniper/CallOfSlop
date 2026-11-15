@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The story people's murmur (docs/story/STORY.md "Lines"): while a line said aloud (<see cref="ChatFlags.Say"/>: a
+/// The story people's murmur (docs/archive/story/STORY.md "Lines"): while a line said aloud (<see cref="ChatFlags.Say"/>: a
 /// person's words, the talk panel's answers, the induction's warden and guards) is shown over someone's head, they mumble
 /// it in sung syllables ("mamama", a nasal "ngangaga"; Audio/SynthBabble.cs) at their mouth, and their jaw and head move
 /// with it (<see cref="TalkMouth"/>, drawn by the body model). Each person has their own voice, picked from their name:

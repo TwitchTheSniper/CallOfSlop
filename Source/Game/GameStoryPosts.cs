@@ -5,7 +5,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The staff's posts (docs/story/STORY.md "Bodies", "Posts"; data Story/Posts/PenalColony.json): a person on a Work step
+/// The staff's posts (docs/archive/story/STORY.md "Bodies", "Posts"; data Story/Posts/PenalColony.json): a person on a Work step
 /// in the colony doesn't stand about at the work spot but goes to a post and keeps it for the shift: sat at the duty desk
 /// in the guards' barracks doing the admin, at the tea urn, on watch at the gate. Each post names who takes
 /// it first; a post another body holds is passed over, and with nothing free the person works at the work spot as

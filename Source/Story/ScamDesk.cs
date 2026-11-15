@@ -4,7 +4,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The Scammers' side of a Computer (docs/story/STORY.md, "The Scammers"; data <c>Story/Office/Scammers.json</c>): the adverts on a
+/// The Scammers' side of a Computer (docs/archive/story/STORY.md, "The Scammers"; data <c>Story/Office/Scammers.json</c>): the adverts on a
 /// computer's screen, the scam each one opens, the messages a hooked computer gets, and the answers to what a player types back.
 /// Read once; a bad file leaves the adverts dead and says why in the log (and <c>--check-story</c>).
 /// </summary>

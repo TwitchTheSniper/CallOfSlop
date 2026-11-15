@@ -1,5 +1,5 @@
 {
-  // The IT Department as a faction (docs/story/STORY.md "Factions", Story/Factions/IT.json): what it remembers and how it
+  // The IT Department as a faction (docs/archive/story/STORY.md "Factions", Story/Factions/IT.json): what it remembers and how it
   // rates the players. Karl plugs in one of its faxes and emails it; Rook wrecks and strips one of its vans, twice, and is
   // blacklisted. The game records these from real play (Game/GameStoryFactions.cs); this plays them.
   "name": "IT Department",

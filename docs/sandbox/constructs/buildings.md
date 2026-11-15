@@ -253,7 +253,7 @@ notice is a rule nobody can keep.
 
 ## Out on the ice: the factions' outposts (`BuildingParts.Outposts.cs`)
 
-Each faction keeps a small outpost beyond the colony (docs/story/OUTPOSTS.md). The Ministry's two are in its style above;
+Each faction keeps a small outpost beyond the colony (docs/archive/story/OUTPOSTS.md). The Ministry's two are in its style above;
 the other three factions' styles start here, at outpost size: one room, and the thing outside that says whose it is.
 
 | | Clan MacSlop: drystone and tin | The IT Department: beige steel | The Call Centre: portacabins |

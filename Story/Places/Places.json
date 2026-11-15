@@ -1,5 +1,5 @@
 {
-  // How places change with what happens in them (docs/story/STORY.md "Places"; Kenshi's towns). Every few seconds each
+  // How places change with what happens in them (docs/archive/story/STORY.md "Places"; Kenshi's towns). Every few seconds each
   // place is in the first of these whose terms all hold, or in none: "recent" counts events of a verb there lately,
   // "people" and "players" count who is there (like "0" or ">= 3"), and "if" is a query over ?place. A place in a state
   // carries the quality of its name (Story/Relations/Places.json), so goals, lines and the radio can ask for it

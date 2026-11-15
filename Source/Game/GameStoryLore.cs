@@ -4,7 +4,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// Lore in the colony (docs/story/STORY.md "Lore"; the engine is Source/Story/StoryLore.cs, data Story/Lore): small things
+/// Lore in the colony (docs/archive/story/STORY.md "Lore"; the engine is Source/Story/StoryLore.cs, data Story/Lore): small things
 /// in the colony's buildings a player can look at closely, each a part of its own (the part kit's lore parts,
 /// Constructs/Parts/Lore). The host stands each item with an <c>"at"</c> where it belongs, a pinned construct of one part
 /// inside its building, once per world (the story's Thing "placed lore ID" notes it, so one taken away isn't put back);

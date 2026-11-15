@@ -1,5 +1,5 @@
 {
-  // What the people can do (docs/story/STORY.md "People"), added to Verbs.json's: the same list players use, so a person's
+  // What the people can do (docs/archive/story/STORY.md "People"), added to Verbs.json's: the same list players use, so a person's
   // planned action and a player's real one leave the same trace. Story/People gives each its time, condition and needs.
   // "players": the verbs players take too, by talking to people (GameStoryChat.cs). Their bodies (phase 4,
   // GameStoryBodies.cs) walk to where each step happens. Fights are the game's to record, never planned

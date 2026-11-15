@@ -1912,7 +1912,7 @@ public sealed partial class BuildingParts : IPartGenerator
             bp.Put("Shell Control Chair", [1.75, 0.375, z], R0);
         o.Add(bp);
 
-        // Sealed Data Centre: the first of the five data centres (docs/story/FRAGMENTS.md, Game/GameStoryFragments.cs), past the old
+        // Sealed Data Centre: the first of the five data centres (docs/archive/story/FRAGMENTS.md, Game/GameStoryFragments.cs), past the old
         // mine near the penal colony. A 4 by 8 m concrete block with blank walls and a flat roof, its doorway at the front (z 0), two
         // server racks down the middle and the Data Centre Terminal at the back facing the door. It has no battery: the player
         // brings power. The game finds the terminal by its part, not by its place.

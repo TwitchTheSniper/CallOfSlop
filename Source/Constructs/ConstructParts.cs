@@ -203,7 +203,7 @@ public enum CLogic : byte
     AntiGrav, // on power cancels a share of its construct's weight, within its radius (ConstructBoost.cs)
     Mooring, // a mast: on (unwired: always), it ropes a balloon in reach; off or Interact casts it off (ConstructCarrier.cs)
     BombRack, // lets go of the explosive parts bolted to it, one at a time while its input is on (ConstructOrdnance.cs)
-    Cipher, // a data centre's terminal (Game/GameStoryFragments.cs, docs/story/FRAGMENTS.md): puts out the carrier the server gives it (CPart.Mem); its key input is what the decode reads
+    Cipher, // a data centre's terminal (Game/GameStoryFragments.cs, docs/archive/story/FRAGMENTS.md): puts out the carrier the server gives it (CPart.Mem); its key input is what the decode reads
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>

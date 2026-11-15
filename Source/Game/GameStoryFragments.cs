@@ -5,7 +5,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The story's fragments and the sealed data centres (docs/story/FRAGMENTS.md; data Story/Fragments/Fragments.json, read by
+/// The story's fragments and the sealed data centres (docs/archive/story/FRAGMENTS.md; data Story/Fragments/Fragments.json, read by
 /// <see cref="FragmentScript"/>). A fragment is a record a player has found: the story world holds it (a Thing named by the
 /// fragment's id, the relation <c>Fragment</c> from the player towards it, its value the source's entity plus one, and a Recover
 /// event; the value is -1 with no source), so it is saved with the story and storylets can ask for it. Found in any order.
@@ -66,6 +66,11 @@ public sealed partial class Game
     /// <summary>Server, with the colony (a fresh story world, or a world from before the sites): every site not standing yet.</summary>
     private void FragmentSitesBuild()
     {
+        if (!StoryOn)
+        {
+            Log("[fragments] the story is archived (Game.StoryOn): no data centres");
+            return;
+        }
         var script = FragmentScript.Current;
         if (script.Problem.Length > 0)
         {

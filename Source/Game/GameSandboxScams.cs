@@ -1,7 +1,7 @@
 namespace CallOfSlop;
 
 /// <summary>
-/// The Scammers (docs/story/STORY.md, "The Scammers"; the words: Story/Office/Scammers.json; the screen and the click: Constructs/OfficeParts.cs).
+/// The Scammers (docs/archive/story/STORY.md, "The Scammers"; the words: Story/Office/Scammers.json; the screen and the click: Constructs/OfficeParts.cs).
 /// A plugged-in Computer's screen carries two adverts. Clicking one hooks the computer: the advert's scam writes to the players at it,
 /// a message every half a minute or so, and whatever they type there goes to the scammers, not IT. Fall for it ("ok", "yes", a gift
 /// card) and they take a share of the computer's battery and vanish. The cure is IT's: turn it off and on again (cut its power).

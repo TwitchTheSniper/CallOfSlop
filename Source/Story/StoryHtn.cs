@@ -1,7 +1,7 @@
 namespace CallOfSlop.Story;
 
 /// <summary>
-/// The HTN planner (docs/story/STORY.md "People"): a goal's task is decomposed depth first, in order: a compound task tries
+/// The HTN planner (docs/archive/story/STORY.md "People"): a goal's task is decomposed depth first, in order: a compound task tries
 /// its methods in turn (the first whose condition holds and whose steps all plan), an action checks its condition and
 /// puts its verb's effects on the world. It plans on the real world state inside a trial (<see cref="StoryWorld.BeginTrial"/>),
 /// so a later condition sees what earlier steps change (after a Travel, "?me In ?here" is the new place), and backtracking

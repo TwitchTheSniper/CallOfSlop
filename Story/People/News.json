@@ -1,5 +1,5 @@
 {
-  // What people make of what they learn (docs/story/STORY.md "People"). A person learns of an event when it happens where
+  // What people make of what they learn (docs/archive/story/STORY.md "People"). A person learns of an event when it happens where
   // they are (the actor always; the one robbed by a sneaky verb doesn't see it) or when they are told it, and keeps it as
   // news when it is interesting enough ("keep"); interest halves every hour. A reaction's "if" sees ?me (who learnt it)
   // and the event's ?actor ?target ?owner ?place ?item; its "then" changes how they feel and "interest" adds to the news.

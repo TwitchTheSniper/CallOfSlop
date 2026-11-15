@@ -1,5 +1,5 @@
 {
-  // What the penal colony's staff will talk about (docs/story/STORY.md "Topics"). Each person has their own threads: a
+  // What the penal colony's staff will talk about (docs/archive/story/STORY.md "Topics"). Each person has their own threads: a
   // first question anyone may ask, and follow-ups that open once it is asked ("after") and only answer properly when
   // they like the player enough (a brush-off with "keep" leaves the question waiting). Answers change with the
   // player's story (Inducted, Rank, Suspicion, Course, a Lead) and with what has happened to the others (Dead). Show,

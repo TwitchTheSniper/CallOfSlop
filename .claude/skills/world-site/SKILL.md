@@ -9,7 +9,7 @@ A site is data: a place on a planetoid, a list of blueprints laid there, and som
 
 | Kind | Data | Code and guide | Check |
 | --- | --- | --- | --- |
-| A faction's outpost (a few buildings, people at posts and on patrol) | `Story/Outposts/WORLD.json` | docs/story/OUTPOSTS.md "Adding outposts" | `--outpost-check` |
+| A faction's outpost (a few buildings, people at posts and on patrol) | `Story/Outposts/WORLD.json` | docs/archive/story/OUTPOSTS.md "Adding outposts" | `--outpost-check` |
 | A faction's settlement at its home (up to 12 buildings, nobody living there yet) | `"settlement"` in `Story/Factions/*.json` | docs/planets/WORLDS.md "Settlements", `GameStorySettlements.cs` | a window shot on that world; a faction file that is wrong is refused with its reason in `callofslop.log` |
 | A piece of the penal colony's site (roads, mains, fence, yard) | `Story/Opening/ColonyBuildings.json` (`"bench"`, rows with `"site"` or `"elsewhere"`) | docs/sandbox/constructs/buildings.md "The site", `GameColonySite.cs` | `--traffic-check 5` (logs each `[site]` footprint) |
 | A big place of its own near the colony (the spaceport) | a file of its own in `Story/Opening/` | docs/story/SPACEPORT.md "Where it stands", `GameSpaceport.cs` | a window shot, the tour |

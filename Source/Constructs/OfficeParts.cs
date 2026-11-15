@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace CallOfSlop;
 
-/// <summary>What an office part does (a part file's <c>"office"</c>): the IT Department's only lines in and out (docs/story/STORY.md, "The IT Department's fax").</summary>
+/// <summary>What an office part does (a part file's <c>"office"</c>): the IT Department's only lines in and out (docs/archive/story/STORY.md, "The IT Department's fax").</summary>
 public enum OfficeKind : byte
 {
     None,

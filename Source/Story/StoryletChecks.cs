@@ -1,7 +1,7 @@
 namespace CallOfSlop.Story;
 
 /// <summary>
-/// What <c>--check-story</c> warns about storylets (docs/story/STORY.md "Storylets"), the same rules as the storylet
+/// What <c>--check-story</c> warns about storylets (docs/archive/story/STORY.md "Storylets"), the same rules as the storylet
 /// builder's live warnings: storylets that can never play (nothing sets what they need, or more than a quality's max),
 /// what storylets set that nothing reads, dead ends (nothing a storylet changes opens another, and it isn't "final"),
 /// roles nobody in any cast can fill, a "next" that names no storylet, and choices with no end by time. Warnings, not

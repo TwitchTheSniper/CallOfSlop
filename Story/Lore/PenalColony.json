@@ -1,5 +1,5 @@
 {
-  // Things in the penal colony a player can look at closely (docs/story/STORY.md "Lore"). Each is a part of its own (the
+  // Things in the penal colony a player can look at closely (docs/archive/story/STORY.md "Lore"). Each is a part of its own (the
   // part kit's lore parts, Constructs/Parts/Lore) that the host stands where it belongs ("in" a building, "at" a spot in
   // its own frame, metres; "yaw" in degrees turns the part's front, its +z, towards the building's -x at 90). The use key
   // shows its "text". Show, don't tell: nobody explains anything here; each one is somebody's, and noticing it opens a

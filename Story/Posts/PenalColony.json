@@ -1,5 +1,5 @@
 {
-  // The penal colony staff's posts (docs/story/STORY.md "Posts", Game/GameStoryPosts.cs): on a Work step at the colony
+  // The penal colony staff's posts (docs/archive/story/STORY.md "Posts", Game/GameStoryPosts.cs): on a Work step at the colony
   // each person goes to a post and keeps it for the shift, scripted and shown, never told. The furniture is the Colony
   // Barracks blueprint's (the part kit's BuildingParts): moving it there moves the posts with it.
   //   at     barracks (the guards' barracks), colony (the Penal Colony construct), gate (just outside the colony's gate) or

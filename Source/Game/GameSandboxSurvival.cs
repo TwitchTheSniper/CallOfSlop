@@ -91,9 +91,13 @@ public sealed partial class Game
         _sbKitBuilt = false;
         Array.Clear(_sbKitTold);
         IReadOnlyList<string>? kit = s.SurvivalStart ?? (SandboxSurvivalOption ? PlayedStart.Kit ?? (IReadOnlyList<string>)SurvivalStart.Current.Items : null); // (a story start's own kit, GameStoryStart.cs)
-        if (kit == null)
-            return;
         var from = s.RackParts.Count > 0 ? s.Rack : World.Map.Spawns.Count > 0 ? World.Map.Spawns[0] : Vector3.Zero;
+        if (kit == null)
+        {
+            if (!SandboxSurvivalOption && OpScript is { Problem.Length: 0, Ship.Length: > 0 })
+                OpeningBuild(from); // (Creative aboard a ship start's ship, the rust bucket: no kit, the parts menu has everything; GameSpaceStart.cs)
+            return;
+        }
         if (SandboxSurvivalOption)
             from = OpeningBuild(from); // (the penal colony first, the kit round it: GameSandboxOpening.cs)
         foreach (var name in kit)

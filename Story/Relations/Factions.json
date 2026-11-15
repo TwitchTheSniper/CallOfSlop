@@ -1,5 +1,5 @@
 {
-  // Factions (docs/story/STORY.md "Factions", Story/Factions): who is in one, what is theirs, and what a faction remembers
+  // Factions (docs/archive/story/STORY.md "Factions", Story/Factions): who is in one, what is theirs, and what a faction remembers
   // of each player and group. A faction's standing with someone is its Likes (above 0) or its Grudge (below), from Relations.json.
   "relations": [
     { "name": "MemberOf", "exclusive": true, "about": "a person in a faction, or a player in a player faction (their group)" },

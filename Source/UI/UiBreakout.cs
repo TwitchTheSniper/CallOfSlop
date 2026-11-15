@@ -4,7 +4,7 @@ using Brutal.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The convicts' break-out on the HUD (GameBreakout.cs, docs/story/BREAKOUT.md): what to do now, top left where the duty's
+/// The convicts' break-out on the HUD (GameBreakout.cs, docs/archive/story/BREAKOUT.md): what to do now, top left where the duty's
 /// panel is, how far it is, and an orange marker over it. The ride itself is the crew bus's scene (UiQuarry.cs). Text is
 /// filled once per stage and the distance once per metre: nothing per frame.
 /// </summary>

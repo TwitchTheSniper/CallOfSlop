@@ -6,7 +6,7 @@ namespace CallOfSlop.Story;
 public readonly record struct PlaceRecent(ushort Verb, double Within, int Count);
 
 /// <summary>
-/// A state a place can be in (docs/story/STORY.md "Places"; Kenshi's towns that change with the world): what must hold
+/// A state a place can be in (docs/archive/story/STORY.md "Places"; Kenshi's towns that change with the world): what must hold
 /// for it, and the words when a place comes to it and leaves it. A place in it carries the quality of its name.
 /// </summary>
 public sealed class PlaceStateDef
@@ -151,7 +151,7 @@ public sealed class PlaceRules
 }
 
 /// <summary>
-/// Places that change with what happens in them (docs/story/STORY.md "Places"; Kenshi): every <see cref="LookEvery"/> s
+/// Places that change with what happens in them (docs/archive/story/STORY.md "Places"; Kenshi): every <see cref="LookEvery"/> s
 /// of the story's clock each place is in the first of the states (Story/Places) whose terms hold, or in none. A place in a
 /// state carries its quality (so the people's goals, the lines and the radio can ask for it: <c>?here Mourning</c>), and
 /// a change is a Turn event at the place, which the people there see and pass on like any news. A state lasts at least its

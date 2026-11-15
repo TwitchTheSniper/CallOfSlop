@@ -2,10 +2,12 @@
 name: story-writing
 description: Write or change Call of Slop's story content - storylets (beats), lines people say, topics, lore items, fragments, plays and place states under Story/. Use when the user gives a note about the story in plain words, when a beat's words are still draft, or when adding a quest, a road or a person's dialogue.
 ---
+**Archived (Karl, 2026-11-14).** The story, its plot and ending and the story engine are archived: the game is Survival and Creative now (docs/sandbox/SURVIVAL.md), and `Game.StoryOn` is false. Use this skill only when the user asks for story work again; then bring the story back first (`--story` for a run, `Game.StoryOn` for good) and read docs/archive/story.
+
 
 # Writing story content
 
-The user steers the story in plain words and doesn't edit the data: Claude writes it. `docs/story/STORYLINE.md` is the one written-down version of the story. Read it before anything else, every time; come to `docs/story/STORY.md` (100 KB: search it, don't read it whole) only for a file's format.
+The user steers the story in plain words and doesn't edit the data: Claude writes it. `docs/archive/story/STORYLINE.md` is the one written-down version of the story. Read it before anything else, every time; come to `docs/archive/story/STORY.md` (100 KB: search it, don't read it whole) only for a file's format.
 
 ## 1. Settle what changes, in the storyline first
 
@@ -30,7 +32,7 @@ What the storyline already fixes, so no beat contradicts it: nobody from then is
 | What people say, by occasion | `Story/Lines/*.json` | "Lines" |
 | What a person can be asked about | `Story/Topics/` | "Topics" |
 | A thing lying about that opens a question with its owner | `Story/Lore/*.json` | "Lore" |
-| The five records and their places | `Story/Fragments/Fragments.json` (ids never change) | docs/story/FRAGMENTS.md |
+| The five records and their places | `Story/Fragments/Fragments.json` (ids never change) | docs/archive/story/FRAGMENTS.md |
 | Scenes between people, and a place's state | `Story/Plays/`, `Story/Places/` | "Plays", "Places" |
 | A start, a duty, the tutorial's steps | `Story/Starts/`, `Story/Duties/`, `Story/Tutorial/` | docs/story/STARTS.md, DUTIES.md, docs/sandbox/TUTORIAL.md |
 

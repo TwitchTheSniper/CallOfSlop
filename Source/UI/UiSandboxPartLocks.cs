@@ -4,7 +4,7 @@ using Brutal.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The inventory's locked parts (docs/story/STORY.md "Technologies"): in survival with a story, a part a story faction
+/// The inventory's locked parts (docs/archive/story/STORY.md "Technologies"): in survival with a story, a part a story faction
 /// teaches that the player (or their faction) hasn't learnt is drawn greyed with a padlock, its tooltip says who teaches
 /// it, the technology, the standing it is taught at and the player's own, and with none in hand it can't be taken. So
 /// the menu reads as a list of goals. Creative worlds and worlds without a story lock nothing. The locks come from the

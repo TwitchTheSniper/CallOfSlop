@@ -5,7 +5,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The Logbook's Paths page (docs/story/STORY.md "Paths"): the player's own branch chart. Each storylet they have had
+/// The Logbook's Paths page (docs/archive/story/STORY.md "Paths"): the player's own branch chart. Each storylet they have had
 /// is a box in its plot's lane, oldest on the left, with its ends beside it: the one it came to is lit and named, the
 /// others stay locked ("?"), and a line runs from the end taken to what came of it. Under it, the storylet qualities
 /// as tracks (Rank, Suspicion) and a line per person from hostile to trusted, with a marker where the player stands.

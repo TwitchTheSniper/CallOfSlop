@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace CallOfSlop.Story;
 
-/// <summary>What a job is done by (docs/story/STORY.md "Jobs"): a crate the faction's courier collects, or something built that it inspects.</summary>
+/// <summary>What a job is done by (docs/archive/story/STORY.md "Jobs"): a crate the faction's courier collects, or something built that it inspects.</summary>
 public enum JobKind : byte
 {
     /// <summary>Fill a Requisition Crate with what it asks for (parts, bulk, cut pieces); the courier collects it.</summary>
@@ -27,7 +27,7 @@ public sealed class JobNeed
 }
 
 /// <summary>
-/// A job a faction offers (docs/story/STORY.md "Jobs"): no money, the pay is standing (and through it the faction's
+/// A job a faction offers (docs/archive/story/STORY.md "Jobs"): no money, the pay is standing (and through it the faction's
 /// technologies). A party (a player's group, or the player) holds at most one job of each faction at a time.
 /// </summary>
 public sealed class FactionJob
@@ -196,7 +196,7 @@ public sealed partial class FactionRules
 }
 
 /// <summary>
-/// Faction jobs in the story world (docs/story/STORY.md "Jobs"). A party holds a job as <c>OnJob</c> towards the job's Thing
+/// Faction jobs in the story world (docs/archive/story/STORY.md "Jobs"). A party holds a job as <c>OnJob</c> towards the job's Thing
 /// (<c>"job:FACTION:NAME"</c>); <c>JobAgain</c> is the story minute (plus one) before which it may not take that job again,
 /// and <c>JobRefused</c> marks a crate the courier has sent back once over the paperwork. All world state: saved with the story.
 /// The game judges whether a job is done (GameStoryJobs.cs) and calls <see cref="FinishJob"/>.

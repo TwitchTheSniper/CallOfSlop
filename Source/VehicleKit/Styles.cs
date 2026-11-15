@@ -107,7 +107,7 @@ public static class Styles
     /// The IT Department: a parody of modern office work, and the first faction everything is tried with. Beige cases, carpet
     /// grey and corporate blue, a hazard stripe of lanyard yellow; monitors, dishes, switches, cable reels, plants and plaques where
     /// bandits hang skulls, router antennas and dishes down the flanks, server racks, computers and fax machines in the rooms (the
-    /// Computer and the Fax Machine are the only line to the IT Department: docs/story/STORY.md), neat plates (it passed an audit).
+    /// Computer and the Fax Machine are the only line to the IT Department: docs/archive/story/STORY.md), neat plates (it passed an audit).
     /// Guns are named for the job. It is the tech faction: what it carries and drops is electronics (Constructs/Loot.json "it").
     /// </summary>
     public static readonly FactionStyle It = new()
@@ -172,7 +172,7 @@ public static class Styles
     };
 
     /// <summary>
-    /// The Call Centre: the Scammers (docs/story/STORY.md, "The Scammers") on wheels. A parody of the scam call centre: cubicle grey and
+    /// The Call Centre: the Scammers (docs/archive/story/STORY.md, "The Scammers") on wheels. A parody of the scam call centre: cubicle grey and
     /// corporate teal, with WINNER yellow, hot pink and dollar green where bandits use war paint; desk phones, headsets on stands, GIFT CARDS
     /// signs and a prize wheel where bandits hang skulls, loudhailers down the flanks, phone masts on the roofs, and rooms of cubicles
     /// (a drawer of loot in each) round the water cooler (Constructs/Parts/CallCentre, Source/PartKit/Generators/CallCentreParts.cs). They run on

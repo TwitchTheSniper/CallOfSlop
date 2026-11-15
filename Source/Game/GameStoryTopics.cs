@@ -4,7 +4,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The topics in the talk panel (docs/story/STORY.md "Topics"; the engine is Source/Story/StoryTopics.cs): while a player
+/// The topics in the talk panel (docs/archive/story/STORY.md "Topics"; the engine is Source/Story/StoryTopics.cs): while a player
 /// talks to one of the story's people, the host sends them what that person will talk about with them now
 /// (<see cref="Msg.TalkTopics"/>, when it changes), each a button; asking one is <see cref="TalkAsk.Topic"/> with the
 /// topic's index, answered in the person's own words. Every peer has the topics' texts, so only indices travel. Host

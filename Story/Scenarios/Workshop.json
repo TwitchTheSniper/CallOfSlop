@@ -1,5 +1,5 @@
 {
-  // Mining and making milestones (docs/story/STORY.md "Milestones"): what the appraiser records as a player's drills,
+  // Mining and making milestones (docs/archive/story/STORY.md "Milestones"): what the appraiser records as a player's drills,
   // refiners and assemblers work, and the two patterns in Work.json. The game records these from real work; this plays them.
   "name": "Workshop",
   "about": "Karl digs iron, smelts it and makes his first parts; Rook strips Karl's old buggy and builds from it",

@@ -1,6 +1,6 @@
 namespace CallOfSlop.Story;
 
-/// <summary>Where the drama manager's pacing is (docs/story/STORY.md "Pacing").</summary>
+/// <summary>Where the drama manager's pacing is (docs/archive/story/STORY.md "Pacing").</summary>
 public enum DramaPace : byte
 {
     Building, // it nudges, more as the stretch goes on, and strangers may come
@@ -8,7 +8,7 @@ public enum DramaPace : byte
 }
 
 /// <summary>
-/// The drama manager's pacing (docs/story/STORY.md "Pacing"), after the build-up, peak and relax of game directors.
+/// The drama manager's pacing (docs/archive/story/STORY.md "Pacing"), after the build-up, peak and relax of game directors.
 /// Tension rises with what happens to the people (each event as much as it is news, each story told more) and halves
 /// every <see cref="TensionHalfLife"/>. Past <see cref="Peak"/> a quiet stretch starts: no stage directions and no
 /// strangers, so the people go their own way and things settle, until the tension is back under <see cref="Calm"/> and

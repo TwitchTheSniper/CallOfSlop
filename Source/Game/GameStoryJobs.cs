@@ -28,7 +28,7 @@ public sealed class JobFaction
 }
 
 /// <summary>
-/// Faction jobs on the game's side (docs/story/STORY.md "Jobs"; the engine's side: Source/Story/StoryFactionJobs.cs, data
+/// Faction jobs on the game's side (docs/archive/story/STORY.md "Jobs"; the engine's side: Source/Story/StoryFactionJobs.cs, data
 /// "jobs" in Story/Factions). No money: a job pays standing, and through it the faction's technologies. A party (a
 /// player's faction, or the player) takes one job of each story faction at a time in the Faction window (F2).
 /// <list type="bullet">

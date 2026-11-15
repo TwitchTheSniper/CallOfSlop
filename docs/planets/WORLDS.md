@@ -2,8 +2,8 @@
 
 Five star systems, one faction home in each (Karl, 2026-11-10; the storyline has five systems that each solved a part
 of the fold, and a data centre in each). A world is a planetoid map in `Maps/Planetoids/`, named by a body's `"map"` in
-its system file. Together they are the story's map: STORY on the main screen (and HOST STORY CO-OP) starts on the
-Planetoid in Slopstar, and one saved world holds every world the group lands on (docs/story/OPENING.md). Every map there is written by `tools/planets/make_worlds.py`: change a world in the script and run it,
+its system file. Together they are the game's map: the rust bucket and the Survival tutorial start over or on Glacier
+(docs/story/STARTS.md), and one saved world holds every world the group lands on. Every map there is written by `tools/planets/make_worlds.py`: change a world in the script and run it,
 then look at it with `--check-planetoid` (docs/planets/PLANETS.md "Making a world").
 
 | System | World | Radius, gravity | Ground | Faction home | Why go |
@@ -33,7 +33,7 @@ data centre's site each have a 4 m survey post (yellow for the home, blue for th
 
 The story's data centres stand on the data sites of Cinder, Glacier, Caledon and Mille (the first is by the penal colony
 on Glacier, the story's home, so Glacier has two; Redrock's site is spare): `Story/Fragments/Fragments.json` names each world and the place, and the
-host builds the Sealed Data Centre there the first time a story game plays the world (docs/story/FRAGMENTS.md "On
+host builds the Sealed Data Centre there the first time a story game plays the world (docs/archive/story/FRAGMENTS.md "On
 another world"). Mille's stands on the cavity's wall under the Proving Bowl.
 
 Glacier has a cold storm outdoors (`"storm": true`, set in make_worlds.py): driven snow, a whiteout down to about

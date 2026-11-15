@@ -1,5 +1,5 @@
 {
-  // The storylets' events (docs/story/STORY.md "Storylets").
+  // The storylets' events (docs/archive/story/STORY.md "Storylets").
   "verbs": [
     { "name": "Storylet", "sentence": "{actor}: {item}",
       "about": "a storylet ended for a player (item: the storylet, target: who ended it with them, value: the end + 1, 0 none)" },

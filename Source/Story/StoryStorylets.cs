@@ -63,7 +63,7 @@ public sealed class StoryletEnd
 }
 
 /// <summary>
-/// A storylet (docs/story/STORY.md "Storylets"): an authored beat that waits for the world to be ready. Its needs are
+/// A storylet (docs/archive/story/STORY.md "Storylets"): an authored beat that waits for the world to be ready. Its needs are
 /// queries over the player (<c>?me</c>); its cast is filled from the living people; its beats are a play; it may hand
 /// out a faction job or start a game hook; and it ends by an event, a time or a choice, each changing the world.
 /// </summary>
@@ -593,7 +593,7 @@ public enum StoryletPhase : byte
 public readonly record struct StoryletDone(int Def, int Player, int End, string? Dropped, double StartedAt, double EndedAt);
 
 /// <summary>
-/// The storylets (docs/story/STORY.md "Storylets"): per player, once a second, the next storylet that can play is
+/// The storylets (docs/archive/story/STORY.md "Storylets"): per player, once a second, the next storylet that can play is
 /// started: an urgent one first (pausing whatever was under way), else the A and B plots in turn, with a rest between.
 /// A storylet casts its roles from the living people (free, where the player is), plays its beats, then waits for one
 /// of its ends: an event, a time or the player's choice. What it changes is the story world's own relations and

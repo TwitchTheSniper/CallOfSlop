@@ -4,7 +4,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The factions out in the world (docs/story/OUTPOSTS.md; data in Story/Outposts): small places beyond the colony, each a
+/// The factions out in the world (docs/archive/story/OUTPOSTS.md; data in Story/Outposts): small places beyond the colony, each a
 /// faction's, with a building or two and a few people at posts or on patrol. Host only, in a story world.
 /// <list type="bullet">
 /// <item>The buildings are built once, the first time the story comes to the world (an old save gains them then), and are

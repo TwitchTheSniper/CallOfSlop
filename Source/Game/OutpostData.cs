@@ -46,7 +46,7 @@ public sealed class OutpostSite
 }
 
 /// <summary>
-/// The outposts of one world (Story/Outposts/*.json, format <see cref="Format"/>; docs/story/OUTPOSTS.md): the factions'
+/// The outposts of one world (Story/Outposts/*.json, format <see cref="Format"/>; docs/archive/story/OUTPOSTS.md): the factions'
 /// small places beyond the colony. A bad file is refused with a reason and that world has no outposts.
 /// </summary>
 public sealed class OutpostData

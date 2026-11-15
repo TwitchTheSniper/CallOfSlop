@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The story world's paths (docs/story/PATHS.md; Karl, 2026-11-14: people walked into the colony's buildings). The host
+/// The story world's paths (docs/archive/story/PATHS.md; Karl, 2026-11-14: people walked into the colony's buildings). The host
 /// names the planetoid's sites, the penal colony and the quarry, and asks for the bots' nav graph over them
 /// (<see cref="NavGraph.RequestSites"/>, NavSites.cs), again when what stands there has changed and has stayed so a while.
 /// With that graph the story's people, the guards and the riot squad walk the arena bots' paths (A*, path following, the

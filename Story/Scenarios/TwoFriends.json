@@ -1,5 +1,5 @@
 {
-  // Two friends on the Planetoid (docs/story/STORY.md "Scenarios"): every pattern in Friends.json completes once, and a few
+  // Two friends on the Planetoid (docs/archive/story/STORY.md "Scenarios"): every pattern in Friends.json completes once, and a few
   // start and never finish (one runs out of time, one is ended by its "unless"), so the Story window has a bit of
   // everything. --story-sim plays it on its own clock; the Story window plays it into the live world, an event a beat.
   "name": "Two friends",

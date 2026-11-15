@@ -1,5 +1,5 @@
 {
-  // The people's moods in a fight (docs/story/STORY.md "Moods"): buffs and debuffs a person's body takes on at a moment
+  // The people's moods in a fight (docs/archive/story/STORY.md "Moods"): buffs and debuffs a person's body takes on at a moment
   // and keeps for "seconds". Moments: Killed (someone was killed within 30 m of them: ?them the killer, ?target the dead),
   // Kill (they killed ?target), Hurt (?them hurt them), Wounded (hurt below a third of their health, once a fight) and
   // Defend (they came to help ?target against ?them). Of a moment's moods whose "if" holds (a query over ?me ?them

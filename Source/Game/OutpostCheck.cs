@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// Story/Outposts built, then the host's player taken to each outpost in turn and back to the colony. Prints where each
 /// outpost went, its buildings, who got a body, what they said, a clan blood feud (they should fight), and what the
 /// outposts cost: the look when nobody is near, and the server's update with an outpost's people awake against none.
-/// Not a self-test: a hand tool for whoever changes the outposts or their data (docs/story/OUTPOSTS.md).
+/// Not a self-test: a hand tool for whoever changes the outposts or their data (docs/archive/story/OUTPOSTS.md).
 /// </summary>
 public static class OutpostCheck
 {

@@ -69,7 +69,7 @@ public sealed class FactionTable
     public readonly sbyte[] StoryStanding = new sbyte[Max * MaxStory];
 
     /// <summary>
-    /// What each story faction teaches (docs/story/STORY.md "Technologies"), a line each ("Remote Control (Registered): Remote
+    /// What each story faction teaches (docs/archive/story/STORY.md "Technologies"), a line each ("Remote Control (Registered): Remote
     /// Transmitter, ..."), and per player faction the ones it has learnt, a bit each (<see cref="StoryLearnt"/>[id * MaxStory + f]).
     /// </summary>
     public string[][] StoryTech = [];

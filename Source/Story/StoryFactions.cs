@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace CallOfSlop.Story;
 
-/// <summary>Something done to a faction that it remembers (docs/story/STORY.md "Factions"): a verb against something of its, how much it counts.</summary>
+/// <summary>Something done to a faction that it remembers (docs/archive/story/STORY.md "Factions"): a verb against something of its, how much it counts.</summary>
 public sealed class FactionDeed
 {
     public string Name = "", About = "";
@@ -20,7 +20,7 @@ public sealed class FactionDeed
 }
 
 /// <summary>
-/// A technology a faction teaches (docs/story/STORY.md "Technologies"): the parts an Assembler won't build for a player or
+/// A technology a faction teaches (docs/archive/story/STORY.md "Technologies"): the parts an Assembler won't build for a player or
 /// group until the faction has taught them it, which it does when its standing with them first comes to <see cref="Tier"/>.
 /// </summary>
 public sealed class FactionTech
@@ -414,7 +414,7 @@ file static class StringExt
 public readonly record struct FactionNotice(int Faction, int Deed, int Tier, int Actor, int Party, int Tech = -1, int Job = -1);
 
 /// <summary>
-/// The factions in the story world (docs/story/STORY.md "Factions"): each is a Faction entity with a home place, members
+/// The factions in the story world (docs/archive/story/STORY.md "Factions"): each is a Faction entity with a home place, members
 /// (people who are <c>MemberOf</c> it) and what it claims (constructs, by name). It wants things (its qualities, which
 /// drift by the hour), and it remembers what is done to it: a deed is an event against something of its, which adds to a
 /// relation it holds towards the doer (<c>WreckedOurs</c>) and moves its standing with them and their group. Standing runs

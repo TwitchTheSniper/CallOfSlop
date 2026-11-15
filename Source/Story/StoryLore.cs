@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace CallOfSlop.Story;
 
 /// <summary>
-/// One thing in the world a player can look at closely (docs/story/STORY.md "Lore"): a part of its own (from the part
+/// One thing in the world a player can look at closely (docs/archive/story/STORY.md "Lore"): a part of its own (from the part
 /// kit's lore parts) stood in one of the colony's buildings, and the words a player reads when they look at it. Looking
 /// is the relation <c>Inspected</c> from the player towards the item's Thing ("lore ID"), so topics and storylets can ask
 /// for it (<c>"?them Inspected 'lore edie-tally'"</c>): reading something is how a new question opens with someone.
@@ -202,7 +202,7 @@ public sealed class LoreRules
 }
 
 /// <summary>
-/// Lore at play (docs/story/STORY.md "Lore"): a player looking at an item. What they have looked at is the Inspected
+/// Lore at play (docs/archive/story/STORY.md "Lore"): a player looking at an item. What they have looked at is the Inspected
 /// relation (player to the item's Thing), so it saves with the world. Host only.
 /// </summary>
 public sealed class StoryLore

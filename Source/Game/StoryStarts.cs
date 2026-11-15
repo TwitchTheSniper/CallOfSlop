@@ -3,12 +3,12 @@ using System.Text.Json;
 namespace CallOfSlop;
 
 /// <summary>
-/// A way to begin the story (docs/story/STARTS.md; Story/Starts/*.json, format call-of-slop-start/1): the planetoid it
-/// begins on, who the player is and their background, the opening they go through (Story/Opening), whether the warden's
-/// induction follows, the faction and standing they start with, and the start kit. The Ministry of Slop's penal colony on
-/// Glacier is the first and default one (Karl, 2026-11-13: "allow it such that there may be different starts to the game
-/// on different planets/characters/backgrounds"). A start belongs to its planetoid: a survival world on another map plays
-/// the default start, as every survival world did before starts.
+/// A way to begin a new world (docs/story/STARTS.md; Story/Starts/*.json, format call-of-slop-start/1): the planetoid it
+/// begins on (or any map), who the player is and their background, the opening they go through (Story/Opening), whether
+/// the warden's induction follows, the faction and standing they start with, and the start kit. The menus offer them in
+/// order for Survival and Creative, the rust bucket first (Karl, 2026-11-14); the start with the induction (the Ministry's
+/// penal colony on Glacier) is the Survival tutorial's own world, behind its tickbox. A start belongs to its planetoid: a
+/// new world on another map plays the any-map start, and a world saved without a start plays the default (the colony).
 /// </summary>
 public sealed class StoryStart
 {
@@ -17,12 +17,13 @@ public sealed class StoryStart
     public string Id = ""; // the file's name (Story/Starts/PenalColony.json: "PenalColony"); what a save and the settings keep
     public string Name = ""; // on the Story page's chooser
     public int Order; // the chooser's order (low first)
-    public bool Default; // the start a world without one plays (old saves, other maps)
+    public bool Default; // the start a world saved without one plays (old saves: the penal colony)
     public bool Placeholder; // a rough start that only shows starts work (the chooser says so)
     public string Character = ""; // who you are ("Convict")
     public string Background = ""; // a line on who you were
     public string About = ""; // the Story page's paragraph
-    public string Map = ""; // the planetoid it begins on (a Sandbox map)
+    public string Map = ""; // the planetoid it begins on (a Sandbox map), or "any": the map picked on the menu
+    public bool AnyMap => Map.Equals("any", StringComparison.OrdinalIgnoreCase);
     public string Opening = ""; // a file in Story/Opening ("" none: no card, no wake, no colony)
     public bool Induction; // the warden's induction (Story/Tutorial/Induction.json) follows the opening
     public string Faction = ""; // a faction (Story/Factions, by name) whose standing...
@@ -156,9 +157,26 @@ public static class StoryStarts
     public static StoryStart? Find(string id) =>
         id.Length == 0 ? null : Array.Find(All, s => s.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
 
-    /// <summary>The start a survival world on <paramref name="map"/> plays when <paramref name="id"/> was asked for: that one on its own planetoid, else the default.</summary>
+    /// <summary>
+    /// The start a world on <paramref name="map"/> plays when <paramref name="id"/> was asked for: that one on its own
+    /// planetoid (or any map's), else the any-map start (a new world taken to another map), else the default. Nothing
+    /// asked (a world saved before starts) plays the default.
+    /// </summary>
     public static StoryStart For(string id, string map) =>
-        Find(id) is { } s && s.Map.Equals(map, StringComparison.OrdinalIgnoreCase) ? s : Default;
+        Find(id) is not { } s ? Default
+        : s.AnyMap || s.Map.Equals(map, StringComparison.OrdinalIgnoreCase) ? s
+        : Array.Find(All, a => a.AnyMap) ?? Default;
+
+    /// <summary>The Survival tutorial's start (the one the warden's induction follows: the penal colony), or null.</summary>
+    public static StoryStart? Tutorial => Array.Find(All, s => s.Induction);
+
+    /// <summary>The starts the menus offer for a new world, in order (the tutorial's is behind its own tickbox).</summary>
+    public static StoryStart[] Offered => _offered ??= [.. All.Where(s => !s.Induction)];
+    private static StoryStart[]? _offered;
+
+    /// <summary>The start the menus show picked for <paramref name="id"/>: that one when it is offered, else the first offered.</summary>
+    public static StoryStart Picked(string id) =>
+        Find(id) is { Induction: false } s ? s : Offered.Length > 0 ? Offered[0] : Default;
 
     /// <summary><c>--check-starts</c>: every start, what it holds, and the refused files. Exit code: the problems found.</summary>
     public static int Check()
@@ -171,7 +189,7 @@ public static class StoryStarts
             Console.WriteLine($"{s.Id}: \"{s.Name}\"{(s.Default ? " (default)" : "")}{(s.Placeholder ? " (placeholder)" : "")} on {s.Map}, {s.Character}; "
                               + $"opening {(s.Opening.Length > 0 ? s.Opening : "none")}, {(s.Induction ? "the induction" : "no tutorial")}"
                               + (s.Faction.Length > 0 ? $", {s.Faction} {s.Standing}" : "") + (s.Kit != null ? $", kit of {s.Kit.Length}" : ""));
-            if (Maps.Find(s.Map) is not { Sandbox: not null })
+            if (!s.AnyMap && Maps.Find(s.Map) is not { Sandbox: not null })
             {
                 Console.WriteLine($"  problem: no Sandbox map named {s.Map}");
                 bad++;

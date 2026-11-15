@@ -28,7 +28,7 @@ public readonly record struct NavSite(string Name, Vector3 Origin, Vector3 AxisX
 public readonly record struct NavSiteDoor(ushort Body, ushort Part, short Joint, Vector3 At, float Stands = 0);
 
 /// <summary>
-/// Bot navigation on a planetoid's sites (docs/story/PATHS.md; Karl, 2026-11-14: "sort out pathing for the penal colony"). A
+/// Bot navigation on a planetoid's sites (docs/archive/story/PATHS.md; Karl, 2026-11-14: "sort out pathing for the penal colony"). A
 /// planetoid is kilometres of ground all round, too big for a nav graph, so bots on one steered straight at their goals and
 /// walked into the colony's buildings. The game names the few places where people live and work (<see cref="NavSite"/>s:
 /// the colony, the quarry), and the graph is the ordinary one (A*, path following, shortcuts and the stuck watch all as in

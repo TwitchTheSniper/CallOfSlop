@@ -1,5 +1,5 @@
 {
-  // The people's relations and qualities (docs/story/STORY.md "People"), added to Relations.json's. Needs are qualities
+  // The people's relations and qualities (docs/archive/story/STORY.md "People"), added to Relations.json's. Needs are qualities
   // from 0 (desperate) to 100 (met): Story/People says how fast they fall and what refills them. Traits are qualities
   // from 0 to 100 that stay as the cast sets them.
   "relations": [

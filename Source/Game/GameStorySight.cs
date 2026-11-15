@@ -4,7 +4,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// What the story people's bodies see (docs/story/STORY.md "Sight"), host only, four times a second with the bodies.
+/// What the story people's bodies see (docs/archive/story/STORY.md "Sight"), host only, four times a second with the bodies.
 /// A body sees what is in front of it (<see cref="StorySightCone"/> either side of where it faces) out to
 /// <see cref="StorySightRange"/>, through no walls, smoke or foliage (the bots' own <see cref="BotSees"/>), and senses
 /// anyone right beside it (<see cref="StoryAware"/>) whichever way it faces. What it sees, it reacts to:

@@ -4,7 +4,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The story's people in the world (docs/story/STORY.md "Bodies"; phase 4 of the story systems): on the host in Sandbox,
+/// The story's people in the world (docs/archive/story/STORY.md "Bodies"; phase 4 of the story systems): on the host in Sandbox,
 /// each person the story has in this world (In the map's place) walks about it as a bot of the people's side
 /// (<see cref="SbPeopleTeam"/>), named after them. A person on the road here appears at that road's end a little before
 /// the trip is over and walks in; one setting off walks out to the road's end and goes. A step they take is acted out:

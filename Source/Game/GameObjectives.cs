@@ -5,7 +5,7 @@ using Brutal.RakNetApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// The "what next" line (docs/story/OBJECTIVES.md; Karl, 2026-11-13): once the warden's induction and the first duty are
+/// The "what next" line (docs/archive/story/OBJECTIVES.md; Karl, 2026-11-13): once the warden's induction and the first duty are
 /// over, a story player always has a current goal on the HUD, from <c>Story/Objectives.json</c>: the first goal in the list
 /// they haven't met yet. Each goal is judged from the game's own state, never ticked off by hand: standing with a faction,
 /// the Orbital Depot's run, and the milestones for firsts (GameMilestones.cs): a flight in a craft of their own, having left

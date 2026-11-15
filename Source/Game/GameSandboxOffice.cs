@@ -4,7 +4,7 @@ using Brutal.RakNetApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// The IT Department's fax line (docs/story/STORY.md, "The IT Department's fax"; the parts: Constructs/OfficeParts.cs; the words:
+/// The IT Department's fax line (docs/archive/story/STORY.md, "The IT Department's fax"; the parts: Constructs/OfficeParts.cs; the words:
 /// Story/Office/IT.json). Server, once a second: a Fax Machine on a battery's circuit counts the seconds it has been plugged in, and when
 /// its next page is due (the first within the hour) it springs to life and prints it to the players near it. A player who types in chat
 /// at a plugged-in Computer emails the IT Department instead of chatting; its answer comes back on the nearest plugged-in fax.

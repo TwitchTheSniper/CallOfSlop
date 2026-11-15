@@ -1,5 +1,5 @@
 {
-  // Stories of work: mining, refining and making (docs/story/STORY.md "Milestones"). Only milestones are events (the
+  // Stories of work: mining, refining and making (docs/archive/story/STORY.md "Milestones"). Only milestones are events (the
   // first 1 t, 10 t and 100 t of a resource, the first part on each machine tier), so these stages are rare and far apart.
   "patterns": [
     {

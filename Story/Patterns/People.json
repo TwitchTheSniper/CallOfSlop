@@ -1,5 +1,5 @@
 {
-  // Stories among the people (docs/story/STORY.md "Patterns" and "People"): the same sifter reads what they do as it reads
+  // Stories among the people (docs/archive/story/STORY.md "Patterns" and "People"): the same sifter reads what they do as it reads
   // players. Told news is a Tell whose item and owner are who did what to whom.
   "patterns": [
     {

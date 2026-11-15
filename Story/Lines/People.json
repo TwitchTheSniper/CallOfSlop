@@ -1,5 +1,5 @@
 {
-  // What the people say (docs/story/STORY.md "Lines"): response rules, Valve style. On an occasion, of the rules whose
+  // What the people say (docs/archive/story/STORY.md "Lines"): response rules, Valve style. On an occasion, of the rules whose
   // criteria all hold the one with the most criteria speaks ("verb", "about" and each clause of "if" count one), ties at
   // random. Occasions: Step (a step of theirs plays out, with whoever it is with), Saw (something they saw happen),
   // Heard (the reply to news told), Near (a player comes up to them), Hurt (shot or hit), Radio (Radio.json); by sight

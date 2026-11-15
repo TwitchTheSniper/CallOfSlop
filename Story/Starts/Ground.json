@@ -1,0 +1,15 @@
+{
+  // A start on the ground (Karl, 2026-11-14: Survival and Creative, the rust bucket first): the map picked on the menu, the
+  // shipped start kit round its parts rack in Survival, and no opening, cast or tutorial. What every Sandbox world was before
+  // the openings; a new world taken to a map its start doesn't belong to plays this one (StoryStarts.For). Text is ASCII.
+  "format": "call-of-slop-start/1",
+  "name": "On the ground",
+  "order": 10,
+  "character": "",
+  "background": "",
+  "about": "You start on the ground of the world you pick, with the start kit by the parts rack in Survival (in Creative, the parts menu has everything).",
+  "map": "any",
+  "opening": "none",
+  "tutorial": "none"
+  // "kit": not set: the shipped start kit (Constructs/SurvivalStart.json)
+}

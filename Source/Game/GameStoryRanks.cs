@@ -3,7 +3,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// Rank-up moments (docs/story/STORY.md "Ranks"): a promotion moment when a player's standing with a story faction first
+/// Rank-up moments (docs/archive/story/STORY.md "Ranks"): a promotion moment when a player's standing with a story faction first
 /// rises into a higher tier: the tier's name, what it brings (the uniform it issues, the technologies it now teaches, the
 /// jobs it opens) and the faction's own words for it (a tier's "promotion" in Story/Factions). Host: once a second from
 /// <see cref="StoryGroupsTick"/>. A player's first look, a new group (they joined or left a player faction) or a new story

@@ -1,7 +1,7 @@
 namespace CallOfSlop.Story;
 
 /// <summary>
-/// A query over the story world (docs/story/STORY.md "Queries"): clauses joined by commas, each one of
+/// A query over the story world (docs/archive/story/STORY.md "Queries"): clauses joined by commas, each one of
 /// <list type="bullet">
 /// <item><c>?a Grudge ?b</c>, <c>?a Grudge ?b &gt;= 20</c>: a relationship (present, or its strength compared)</item>
 /// <item><c>?a Kills &gt; 2</c>, <c>?a Kills</c>: a quality (compared, or not zero)</item>

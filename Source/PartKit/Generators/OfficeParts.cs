@@ -8,7 +8,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// What the IT Department bolts on where bandits hang skulls and spikes: a beige monitor on a stalk, a potted plant, a desk fan, an
 /// Employee of the Month plaque, a satellite dish, a network switch and a cable reel as trophies, and router antennas down the flanks as
 /// spikes. In its rooms: server racks (loot on their shelves), and the Computer and the Fax Machine, the only line to the IT Department
-/// (docs/story/STORY.md, "The IT Department's fax"). Furniture stands on feet on the floor's quarter grid and faces its own +z, into
+/// (docs/archive/story/STORY.md, "The IT Department's fax"). Furniture stands on feet on the floor's quarter grid and faces its own +z, into
 /// the room, as BodyParts' does. Each trophy stands on one "base" socket and points up its own +y, so the kit turns
 /// it outward, as the bandit parts do (BanditParts.cs). Leaves and soil aren't paintable; the rest takes the style's paint. Faces that
 /// meet are kept a few millimetres apart (CLAUDE.md, "No coplanar faces"). Recipes come from the part kit's assembling (--gen-parts assembling); run it after this one.
@@ -209,7 +209,7 @@ public sealed class OfficeParts : IPartGenerator
     }
 
     /// <summary>
-    /// The terminal in a sealed data centre (docs/story/FRAGMENTS.md; Game/GameStoryFragments.cs): a logic part, its kind "cipher".
+    /// The terminal in a sealed data centre (docs/archive/story/FRAGMENTS.md; Game/GameStoryFragments.cs): a logic part, its kind "cipher".
     /// It needs power (a battery on its construct's circuit), then puts out a carrier number and waits for the answer its screen asks
     /// for on its key input, which a player builds out of logic blocks. Heavy and welder-fitted, so it isn't carried off.
     /// </summary>

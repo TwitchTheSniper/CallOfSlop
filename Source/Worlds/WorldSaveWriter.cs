@@ -250,7 +250,7 @@ public static class WorldSaveWriter
                     w.Str(ship.System).U16(ship.Id).I32(ship.Primary).F64(ship.R.X).F64(ship.R.Y).F64(ship.R.Z).F64(ship.V.X).F64(ship.V.Y).F64(ship.V.Z);
             });
         if (s.Story is { } story)
-            w.Section(Story, () => story.Write(w)); // (the story layer, docs/story/STORY.md: its own format inside)
+            w.Section(Story, () => story.Write(w)); // (the story layer, docs/archive/story/STORY.md: its own format inside)
         head.Section(Names, () => names.Write(head));
         head.Bytes(w.Span);
         return head.Span;

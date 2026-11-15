@@ -91,7 +91,7 @@ public sealed class PatternDef
 }
 
 /// <summary>
-/// Everything the story layer reads from data (docs/story/STORY.md): relations and qualities, verbs, patterns. Loaded at
+/// Everything the story layer reads from data (docs/archive/story/STORY.md): relations and qualities, verbs, patterns. Loaded at
 /// start-up; a bad file is refused with a reason. Immutable once loaded.
 /// </summary>
 public sealed class StoryRules

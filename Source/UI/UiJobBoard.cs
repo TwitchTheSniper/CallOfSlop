@@ -5,7 +5,7 @@ using CallOfSlop.Story;
 namespace CallOfSlop;
 
 /// <summary>
-/// The job board (docs/story/STORY.md "Jobs", "The job board"): every story faction's work in one place, opened by the use
+/// The job board (docs/archive/story/STORY.md "Jobs", "The job board"): every story faction's work in one place, opened by the use
 /// key on the Ministry Work Board in the colony yard (a lore item with <c>"opens": "jobs"</c>: Program.JobBoard.cs). A tab a
 /// faction: your standing with it and a bar to its next tier (what that tier teaches), then each job: what it asks, what it
 /// pays and how far that takes you towards the next tier, why it can't be taken yet, or how far along yours is, with Take

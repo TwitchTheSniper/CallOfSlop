@@ -64,7 +64,7 @@ public sealed partial class Ui
     };
 
     /// <summary>
-    /// What the world's factions teach (docs/story/STORY.md "Technologies"): the parts an Assembler builds only once a faction
+    /// What the world's factions teach (docs/archive/story/STORY.md "Technologies"): the parts an Assembler builds only once a faction
     /// has taught them, at a tier of its standing. With a faction of yours, which ones it has learnt.
     /// </summary>
     private void DrawStoryTech(FactionTable t, byte mine, byte self)
@@ -96,7 +96,7 @@ public sealed partial class Ui
     }
 
     /// <summary>
-    /// Faction jobs (docs/story/STORY.md "Jobs"): what each story faction offers work for, which you may take now, and the one
+    /// Faction jobs (docs/archive/story/STORY.md "Jobs"): what each story faction offers work for, which you may take now, and the one
     /// your party holds and how far along it is. No money: a job pays standing. One job of each faction at a time.
     /// </summary>
     private void DrawFactionJobs(Game game)
