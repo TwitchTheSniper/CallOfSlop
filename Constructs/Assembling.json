@@ -1295,6 +1295,7 @@
     {"output": "Halberd Nose", "materials": {"steel": 1000, "concrete": 200}, "seconds": 152.0},
     {"output": "Halberd Ops Deck", "materials": {"steel": 2000, "concrete": 500}, "seconds": 180.0},
     {"output": "Halberd PDC", "materials": {"steel": 36}, "parts": {"Gear Set": 4}, "seconds": 7.4},
+    {"output": "Halberd PDC Hatch", "materials": {"steel": 52}, "parts": {"Bearing": 5}, "seconds": 9.8, "minTier": 2},
     {"output": "Halberd Reactor", "materials": {"steel": 800}, "parts": {"Copper Coil": 20}, "seconds": 122.0, "minTier": 2},
     {"output": "Halberd Robot Bay Deck", "materials": {"steel": 2000, "concrete": 500}, "seconds": 180.0},
     {"output": "Halberd Spinal Railgun", "materials": {"steel": 840}, "parts": {"Gear Set": 20}, "seconds": 128.0},
