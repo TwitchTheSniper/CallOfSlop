@@ -20,10 +20,11 @@
         "Auto",
         "Rotorcraft",
         "Plane",
-        "Rocket"
+        "Rocket",
+        "Ship"
       ],
       "default": 0,
-      "tooltip": "What the keys mean. Auto: wings and a forward push make it a plane, nozzles a rocket, anything else a rotorcraft. It finds what it can use by itself."
+      "tooltip": "What the keys mean. Auto: wings and a forward push make it a plane, nozzles a rocket, anything else a rotorcraft. Ship: turns every way, the nose follows the mouse. It finds what it can use by itself."
     },
     {
       "key": "flightPreset",

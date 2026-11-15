@@ -94,7 +94,7 @@ public static partial class ConstructFlight
         : port is "vent" or "left aileron" or "right aileron" or "flaps" or "front left" or "front right" or "rear left" or "rear right" or "strafe left" or "strafe right";
 
     /// <summary>The limits while their settings are 0: the most it tilts (degrees), turns (degrees a second), climbs and goes (m/s).</summary>
-    private static readonly Vector4 RotorLimits = new(30, 90, 8, 30), ShipLimits = new(5, 12, 3, 15), PlaneLimits = new(45, 30, 20, 120), RocketLimits = new(25, 30, 30, 300), SpaceLimits = new(80, 30, 15, 40);
+    private static readonly Vector4 RotorLimits = new(30, 90, 8, 30), ShipLimits = new(5, 12, 3, 15), PlaneLimits = new(45, 30, 20, 120), RocketLimits = new(25, 30, 30, 300), SpaceLimits = new(80, 30, 10, 40);
 
     private const float LoopPlane = 1.5f, LoopRocket = 1.5f, LoopRotor = 2.5f; // (1/s: how fast an attitude comes back where nothing it knows answers it)
     private const float PlaneSpeed = 40f; // m/s: a surface's gain falls with the square of the speed past this
@@ -1124,7 +1124,7 @@ public static partial class ConstructFlight
         {
             // Along its own axes: what the keys ask for, else stopped (every way it has a push for); its weight held up whichever way it lies.
             var wantVel = a.Front * (ask.Forward * maxSpeed) + a.Right * (ask.Side * maxSpeed) + a.Up * (ask.Lift * (ask.Lift > 0 ? maxClimb : maxDescent));
-            var push = c.Mass * 2 * ground * (wantVel - c.Vel) + up * MathF.Max(0, weight - c.LiftNow);
+            var push = c.Mass * 3 * ground * (wantVel - c.Vel) + up * MathF.Max(0, weight - c.LiftNow);
             demand[FlightEffectors.Forward] = Vector3.Dot(push, a.Front);
             demand[FlightEffectors.Up] = Vector3.Dot(push, a.Up);
             demand[FlightEffectors.Right] = Vector3.Dot(push, a.Right);
