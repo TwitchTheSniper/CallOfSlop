@@ -873,8 +873,9 @@ public sealed class MinerParts : IPartGenerator
         Sock(p, "couchB", Cx + Uw, Ft1 + 0.125, 14.4, "-x");
         Sock(p, "deskB", Cx + Uw, Ft1 + 0.125, 12.45, "-x");
         DoorSock(p, "doorBridge", true, Cx - 0.75, ZBridge + 0.125, Ft1);
-        DoorSock(p, "doorCabinA", false, 11.9, Cx - 1.0, Ft1);
-        DoorSock(p, "doorCabinB", false, 11.9, Cx + 1.0, Ft1);
+        // (the cabin doors hang on their aft jamb and slide aft into the cabin walls: forward of the doorways is the open hall, Karl 2026-11-15)
+        Sock(p, "doorCabinA", Cx - 1.0, Ft1 + 1.125, 13.4, "-z");
+        Sock(p, "doorCabinB", Cx + 1.0, Ft1 + 1.125, 13.4, "-z");
         Sock(p, "lampBridgeL", Cx - UwF, Ft1 + 2.45, 7.0, "+x");
         Sock(p, "lampBridgeR", Cx + UwF, Ft1 + 2.45, 7.0, "-x");
         Sock(p, "lampHall", Cx + Uw, Ft1 + 2.45, 9.8, "-x");
