@@ -5,7 +5,7 @@ description: Design or change a ship, a big vehicle or a construct part for Call
 
 # Ship design, with the Ship gallery
 
-A ship is a **blueprint of parts**. Big ships are a few large generated parts (keel, decks, roof, pods) plus stock fittings on their sockets. Worked examples: the rust bucket (`Source/PartKit/Generators/ShipParts.cs`, `--gen-parts ship_parts`, notes in `docs/sandbox/constructs/ship.md`) and the Halberd Frigate (`Constructs/Parts/Frigate`, `Constructs/Blueprints/HalberdFrigate.json`). Read ship.md and `docs/sandbox/constructs/look.md` ("Valid is not finished", "Rules of thumb", "Off the axis") before you start. For the part file itself follow the `construct-part` skill.
+A ship is a **blueprint of parts**. Big ships are generated in a C# part generator: the structure is many pieces welded together (section 1b), plus stock fittings on their sockets. Worked examples: the rust bucket (`Source/PartKit/Generators/ShipParts.cs`, `--gen-parts ship_parts`, notes in `docs/sandbox/constructs/ship.md`) and the Halberd Frigate (`Constructs/Parts/Frigate`, `Constructs/Blueprints/HalberdFrigate.json`). Read ship.md and `docs/sandbox/constructs/look.md` ("Valid is not finished", "Rules of thumb", "Off the axis") before you start. For the part file itself follow the `construct-part` skill.
 
 ## 1. Plan the shape before the parts
 
@@ -13,6 +13,18 @@ A ship is a **blueprint of parts**. Big ships are a few large generated parts (k
 - **No plain boxes.** Every big face gets an angle: cut corners at bow and stern, sides that flare below the deck line and lean in above it, tapers toward the nose, a raked canopy, a spine or radiator on the roof. A tower of identical flat panels reads as a box too: vary panels deck to deck, taper, add ribs. Use `"shape": "hull"` boxes with `points` for faceted panels (any angle), `wedge` with `taper`/`shift` for tapering pieces, `bevel`/`rounded` with `radius` for edges, `cylinder`/`tube` for tanks, nozzles and pods. A hull facet is drawn only: give it hidden solid boxes behind it for collision and sockets.
 - Three colours (base, trim, accent under a tenth), a finish on every big face, lamps at every way in.
 - Ship parts go in the `"group": "Ship"` (with a `section` per ship), so the gallery finds them. Work in a generator (C#, `Source/PartKit`), never by hand-editing generated JSON.
+
+## 1b. Make it of pieces, welded together
+
+Karl (2026-11-15): one big part per deck meant one hit took a whole deck. A ship's structure is **individual parts that break off one at a time**: every floor, wall run, corner frame, partition and hull panel is its own part, welded to whatever it touches. The Halberd does this (`Source/PartKit/Generators/FrigateParts.cs`, "Breaking up" in `docs/sandbox/constructs/frigate.md`); copy its approach:
+
+- **Draw a storey whole, then split it.** Keep building each storey as one `Part` with your normal helpers, then deal its boxes out to pieces by where each one sits (`Split`). The deck's floor slab and anything loose in the room go to the **Deck** (it keeps the storey's name, so the blueprint still finds it). Each **Wall** run takes what is on its face and what stands outside it, such as a turret housing. The four **Corner** frames take the chamfer, the rib and the corner armour. Each **Partition** takes its door frames. The outer skin goes on **Hull** panels per face (`HullPanels`), so knocking off a panel opens the room behind it.
+- **Sockets go with their face.** Give each socket to the piece whose solid or hidden box face it sits on, facing out (`SockOwner`). Hang furniture through a wrapper that looks up that piece (`Hang`/`HangTurned` in the generator), not on the old storey's step.
+- **Weld every touching pair.** Wherever two pieces' solid boxes touch face to face, add one facing socket pair on the biggest contact (`Connect`, sockets `j0`, `j1` ...). Place the pieces outward from the first over those pairs (`PlaceOrder`; each is a `bp.Put(name, zero, 0)`). One pair places a piece, and the game's `ConstructBuild.AutoLink` welds every other free facing pair within 2 cm. A piece that touches nothing throws, which catches a floating bit at once.
+- **Tough frame, softer skin.** Give the corner frames the most health, then walls, then panels and partitions, so a ship loses its skin before its bones. Keep the total mass near the old one, or the flight tuning changes.
+- **Watch the seams.** Split pieces lose the z-fight corrector that worked inside one part: details flush with a neighbour piece's face (kick strips on a floor's plane, a strip top level with a desk top) must be offset 3 to 5 mm in the generator. `--check-vehicle` lists "coplanar faces between parts"; get it to 0.
+- **Try it.** In a window, knock pieces off: `--window-shot OUT.png --blueprint NAME --do "secs 3; damage PIECE 20000; secs 2; view body N | 18,6,90"` (the shot prints the body number). `callofslop.log` says what broke off and what fell away as wrecks. Only the piece and what stood on it should go. The rest stays one body.
+- **Limits.** A part holds at most 256 boxes and 64 sockets, and its name is at most 32 characters. Raise the blueprint's `maxSteps` for the extra parts.
 
 ## 2. Build and export
 
@@ -63,6 +75,7 @@ The preview is a design aid, not the renderer: no textures, no lamp light, legs 
 
 ## Gotchas from past ships
 
+- One part per deck vanished whole under fire (the Halberd, 2026-11-15): build the structure of welded pieces from the start (1b).
 - The rust bucket started as a box with windows; Karl's steer was "less boxy, corners, a nose that makes sense". Start faceted.
 - A part's place rounds to the centimetre: sockets on whole centimetres, floors on a half-metre lattice.
 - No two drawn faces in one plane: offset 2 to 5 mm (`.claude/rules/z-fighting.md`).
