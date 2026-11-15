@@ -2390,11 +2390,12 @@ public sealed partial class Game
             {
                 // The view turns with the seat, then stays inside the seat type's limits.
                 localSeat = ((uint)body << 16) | (uint)(part + 1); // (16 bits of part: << 8 mixed seats past part 255)
-                if (_sbViewSeat == localSeat && lookKind != SeatKind.Gunner || _sbViewSeat == localSeat && !c.SeatAims(part)) // (a gunner who points the turret looks where they look: the turret follows)
+                var steers = ConstructFlight.MouseSteers(c, part); // (a ship's nose follows the look: the look stays put and the ship comes round to it)
+                if (!steers && (_sbViewSeat == localSeat && lookKind != SeatKind.Gunner || _sbViewSeat == localSeat && !c.SeatAims(part))) // (a gunner who points the turret looks where they look: the turret follows)
                     LookYaw = World.WrapAngle(LookYaw + World.WrapAngle(seatYaw - _sbViewYaw));
                 _sbViewYaw = seatYaw;
                 SandboxStabilise(c, part, localSeat);
-                p.RenderLookYaw = SeatLocalYaw(LookYaw, seatYaw, lookKind);
+                p.RenderLookYaw = SeatLocalYaw(LookYaw, seatYaw, steers ? SeatKind.Gunner : lookKind); // (and all the way round: it turns to whatever you look at)
                 LookYaw = World.WrapAngle(seatYaw + p.RenderLookYaw);
                 p.RenderYaw = LookYaw;
                 _stabYaw = LookYaw;
