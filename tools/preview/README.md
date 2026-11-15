@@ -4,14 +4,14 @@ Two commands write web pages that show constructs in 3D, built through the game'
 the DLL (rebuild after `--gen-parts`). The summary line goes to `callofslop.log`.
 
 - `--preview-gallery DIR [--only "A,B"]`: **the usual one.** Every ship (a blueprint whose first part is in the `Ship`
-  group) and every `Ship` part, or only the names given, as one gallery: `DIR/index.html` (the viewer with a picker),
+  group), every part those ships use and every other `Ship` part, or only the names given, as one gallery: `DIR/index.html` (the viewer with a picker),
   `DIR/models/index.json` and one `DIR/models/NAME.json` per model. A second run leaves unchanged files alone and prints
   the changed ones (`changed: ...`), so the gallery Artifact is republished with only those.
 - `--preview-construct NAME|FILE [--out OUT.html]`: one blueprint (by name, or a draft file not yet in the data) or one
   part, as a single self-contained page.
 
 `viewer.html` is the page for both: one puts the model's JSON in its `model` script tag, the gallery puts `null` there and
-the page fetches `models/index.json` and a model when it is picked (`#name` in the address picks one). The viewer turns,
+the page fetches `models/index.json` and a model when it is picked (a ship picker, then the whole ship, a deck or one of its parts; `#ship--deck-2` or `#ship--part-id` in the address picks a view). Decks are found by the export: floors with a ceiling over them. The viewer turns,
 cuts away by height, colours by finish and picks parts. It is a design aid, not the renderer: no textures, no lamps'
 light, legs and tracks left out, joints at rest, hidden collision boxes skipped.
 

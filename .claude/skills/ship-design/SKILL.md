@@ -26,7 +26,7 @@ dotnet build -c Release --no-restore                                 # the game 
 dotnet bin/Release/net10.0/CallOfSlop.dll --preview-gallery $SCRATCH/ship-gallery
 ```
 
-`--preview-gallery DIR` exports every ship (a blueprint whose first part is in the Ship group) and every Ship part through the game's own build rules: `DIR/index.html`, `DIR/models/index.json` and `DIR/models/NAME.json`. A step that doesn't fit is REFUSED with the reason (the exit code counts refusals). The last line, in `bin/Release/net10.0/callofslop.log`, lists the files that changed (`changed: ...`). `--only "Name A,Name B"` limits it; `--preview-construct NAME|FILE --out X.html` makes one self-contained page (a draft blueprint file not yet in the data).
+`--preview-gallery DIR` exports every ship (a blueprint whose first part is in the Ship group), every part a ship uses and every other Ship part through the game's own build rules, and finds each ship's decks (floors with a ceiling over them, named after the part with the most floor there): `DIR/index.html`, `DIR/models/index.json` and `DIR/models/NAME.json`. A step that doesn't fit is REFUSED with the reason (the exit code counts refusals). The last line, in `bin/Release/net10.0/callofslop.log`, lists the files that changed (`changed: ...`). `--only "Name A,Name B"` limits it; `--preview-construct NAME|FILE --out X.html` makes one self-contained page (a draft blueprint file not yet in the data).
 
 ## 3. Look at it yourself once
 
@@ -54,9 +54,10 @@ Then the game's checks: `--check-building "NAME"` for a walkable ship, `--check-
 There is one **Ship gallery** Artifact for the project. Its link is in project memory (`ship-preview-artifacts`); else find it with the Artifact tool's `list`. Never publish a second gallery.
 
 - From a session that didn't publish it: `read` it first (`action: "read"`, its `url`), then publish with `url`, `file_path` = `DIR/index.html`, `root` = DIR, and `files` = only the paths the export printed as changed (`{"models/x.json": "models/x.json", ...}`, always with `models/index.json` when it changed). Files left out stay as they were.
-- A model the export no longer writes (a ship renamed or removed) is dropped with `"models/old.json": null`.
+- The export deletes models it no longer writes (a ship or part renamed or removed) and prints them as `removed (publish them as null)`: drop each with `"models/old.json": null`.
 - Copy DIR to `/mnt/project-files/ship-gallery/` too.
-- Reply with the link and the model's `#name` (for example `.../KU14...#halberd-frigate`), plus two or three lines on what changed and what to look at ("cut at 13 m for the crew deck"). Don't send screenshots unless a question needs one.
+- The page has two pickers: a ship (or "Parts in no ship"), then the whole ship, one deck (cut at chest height from above, like a floor plan) or one of its parts on its own. Links name the view: `#halberd-frigate`, `#halberd-frigate--deck-3`, `#halberd-frigate--part-halberd-pdc`.
+- Reply with the link and the view's `#name`, plus two or three lines on what changed and what to look at ("cut at 13 m for the crew deck"). Don't send screenshots unless a question needs one.
 
 The preview is a design aid, not the renderer: no textures, no lamp light, legs and tracks left out, joints at rest, hidden collision boxes skipped. Judge final looks in the game (`--window-shot`, or `playtest-tour` on Karl's PC) before merging.
 
