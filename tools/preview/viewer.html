@@ -1,0 +1,196 @@
+<title>Construct Preview</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<!-- Written by --preview-construct (Source/DevTools/ConstructPreview.cs): the model's JSON replaces the __MODEL__ line below. -->
+<style>
+/* Layout: the model fills the screen; one quiet instrument panel floats over its left edge, folding to a bottom sheet on phones. */
+:root {
+  --bg: #e6e8ea; --sky: #d5dade; --panel: rgba(250,251,252,.92); --fg: #1d2226; --muted: #5d6870; --line: #c3cad0;
+  --accent: #d0742c; --pick: #ffb347;
+  --display: "Chakra Petch", "Segoe UI", system-ui, sans-serif; --body: "IBM Plex Sans", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #14181b; --sky: #1d2328; --panel: rgba(24,29,33,.9); --fg: #e3e7ea; --muted: #8e99a2; --line: #333d44; --accent: #e8893f; --pick: #ffc46b; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #14181b; --sky: #1d2328; --panel: rgba(24,29,33,.9); --fg: #e3e7ea; --muted: #8e99a2; --line: #333d44; --accent: #e8893f; --pick: #ffc46b; color-scheme: dark }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font: 13px/1.45 var(--body); overflow: hidden; }
+#view { position: fixed; inset: 0; }
+#view canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+#panel { position: fixed; top: calc(12px + env(safe-area-inset-top, 0px)); left: max(16px, env(safe-area-inset-left, 0px)); width: 300px; max-height: calc(100% - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; backdrop-filter: blur(6px); overflow: hidden; }
+h1 { margin: 0; font: 600 20px/1.15 var(--display); letter-spacing: .02em; text-wrap: balance; }
+.desc { margin: 4px 0 0; color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font: 12px var(--mono); font-variant-numeric: tabular-nums; }
+.stats div { display: flex; flex-direction: column; } .stats span { color: var(--muted); font: 10px var(--body); text-transform: uppercase; letter-spacing: .08em; }
+label.row { display: flex; align-items: center; gap: 8px; } label.row span { min-width: 64px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent); }
+.toggles { display: flex; flex-wrap: wrap; gap: 6px; }
+.toggles button, .views button { font: 12px var(--body); color: var(--fg); background: transparent; border: 1px solid var(--line); border-radius: 4px; padding: 4px 8px; cursor: pointer; }
+.toggles button[aria-pressed=true] { border-color: var(--accent); color: var(--accent); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+#search { width: 100%; box-sizing: border-box; font: 12px var(--body); padding: 5px 8px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--fg); }
+#parts { margin: 0; padding: 0; list-style: none; overflow: auto; min-height: 60px; flex: 1; border-top: 1px solid var(--line); }
+#parts li { display: flex; justify-content: space-between; gap: 8px; padding: 3px 2px; cursor: pointer; border-bottom: 1px solid color-mix(in srgb, var(--line) 50%, transparent); }
+#parts li:hover, #parts li.on { color: var(--accent); }
+#parts li em { font: 11px var(--mono); font-style: normal; color: var(--muted); font-variant-numeric: tabular-nums; }
+#tip { position: fixed; pointer-events: none; padding: 4px 8px; font: 12px var(--body); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
+#tip b { font-weight: 600; } #tip small { color: var(--muted); display: block; }
+.hint { color: var(--muted); font-size: 11px; margin: 0; }
+@media (min-width: 641px) { #view { left: calc(332px + env(safe-area-inset-left, 0px)); } }
+@media (max-width: 640px) {
+  #view { bottom: 42%; }
+  #panel { top: auto; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); width: auto; max-height: 42%; gap: 8px; padding: 10px 12px; }
+  #parts { display: none; } #search { display: none; } h1 { font-size: 17px; } .desc { display: none; }
+}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600&family=IBM+Plex+Mono&family=IBM+Plex+Sans:wght@400;600&display=swap">
+
+<div id="view"></div>
+<aside id="panel">
+  <div><h1 id="name">Construct</h1><p class="desc" id="desc"></p></div>
+  <div class="stats" id="stats"></div>
+  <label class="row" for="cut"><span>Cut at</span><input id="cut" type="range" min="0" max="1000" value="1000"><output id="cutv" style="font:12px var(--mono);min-width:44px;text-align:right">top</output></label>
+  <div class="toggles">
+    <button id="tGlass" aria-pressed="true">Glass</button>
+    <button id="tEdges" aria-pressed="false">Edges</button>
+    <button id="tFinish" aria-pressed="false">Colour by finish</button>
+    <button id="tSpin" aria-pressed="false">Turn</button>
+  </div>
+  <div class="toggles views"><button data-v="iso">3/4</button><button data-v="side">Side</button><button data-v="top">Top</button><button data-v="front">Bow</button></div>
+  <input id="search" type="search" placeholder="Find a part" aria-label="Find a part">
+  <ul id="parts"></ul>
+  <p class="hint">Drag to turn, right-drag to pan, wheel to zoom. Click a part to pick it; click empty space to clear.</p>
+</aside>
+<div id="tip" hidden></div>
+
+<script type="application/json" id="model">
+__MODEL__
+</script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+const M = JSON.parse(document.getElementById("model").textContent);
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const pos16 = new Int16Array(b64(M.pos).buffer), nrm8 = new Int8Array(b64(M.nrm).buffer), look16 = new Uint16Array(b64(M.look).buffer);
+const triCount = look16.length;
+const triPart = new Int32Array(triCount);
+M.parts.forEach(([, first, count], i) => triPart.fill(i, first, first + count));
+
+document.getElementById("name").textContent = M.name;
+document.getElementById("desc").textContent = M.description || "";
+const size = [0,1,2].map(a => M.max[a] - M.min[a]);
+const glassTris = Array.from(look16).filter(l => M.looks[l][1] > 0).length;
+document.getElementById("stats").innerHTML =
+  `<div><span>Size m</span>${size[0].toFixed(1)} x ${size[2].toFixed(1)}</div><div><span>Height m</span>${size[1].toFixed(1)}</div><div><span>Mass t</span>${(M.mass/1000).toFixed(1)}</div>` +
+  `<div><span>Parts</span>${M.parts.length}</div><div><span>Steps</span>${M.steps}</div><div><span>Triangles</span>${triCount.toLocaleString()}</div>`;
+
+// One geometry for solids, one for glass; a per-vertex colour so picking can repaint a part's triangles.
+const finishHue = {}; let hueN = 0;
+const finishColour = name => { if (!(name in finishHue)) finishHue[name] = new THREE.Color().setHSL((hueN++ * 0.618) % 1, 0.55, 0.55); return finishHue[name]; };
+function build(glass) {
+  const idx = []; for (let t = 0; t < triCount; t++) if ((M.looks[look16[t]][1] > 0) === glass) idx.push(t);
+  const p = new Float32Array(idx.length * 9), n = new Float32Array(idx.length * 9), c = new Float32Array(idx.length * 9);
+  idx.forEach((t, k) => { for (let j = 0; j < 9; j++) { p[k*9+j] = pos16[t*9+j] / M.scale; n[k*9+j] = nrm8[t*9+j] / 127; } });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(p, 3)); g.setAttribute("normal", new THREE.BufferAttribute(n, 3)); g.setAttribute("color", new THREE.BufferAttribute(c, 3));
+  g.userData.tris = idx; return g;
+}
+const solidGeo = build(false), glassGeo = build(true);
+const clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6);
+const solid = new THREE.Mesh(solidGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.15, side: THREE.DoubleSide, clippingPlanes: [clip] }));
+const glass = new THREE.Mesh(glassGeo, new THREE.MeshStandardMaterial({ vertexColors: true, transparent: true, opacity: 0.35, roughness: 0.1, depthWrite: false, side: THREE.DoubleSide, clippingPlanes: [clip] }));
+const glowGeoMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+let picked = -1, byFinish = false;
+const tmp = new THREE.Color();
+function paint() {
+  for (const g of [solidGeo, glassGeo]) {
+    const col = g.attributes.color.array;
+    g.userData.tris.forEach((t, k) => {
+      const L = M.looks[look16[t]];
+      if (picked >= 0 && triPart[t] === picked) tmp.set(getComputedStyle(document.documentElement).getPropertyValue("--pick").trim() || "#ffb347");
+      else if (byFinish) tmp.copy(finishColour(L[3] || "none"));
+      else { tmp.set(L[0]); if (L[2]) tmp.multiplyScalar(1.6); }
+      if (picked >= 0 && triPart[t] !== picked) tmp.multiplyScalar(0.55);
+      for (let v = 0; v < 3; v++) { col[k*9+v*3] = tmp.r; col[k*9+v*3+1] = tmp.g; col[k*9+v*3+2] = tmp.b; }
+    });
+    g.attributes.color.needsUpdate = true;
+  }
+}
+paint();
+
+const view = document.getElementById("view");
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.localClippingEnabled = true;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+view.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.add(solid, glass);
+const centre = new THREE.Vector3(...[0,1,2].map(a => (M.min[a] + M.max[a]) / 2));
+const radius = Math.max(1, Math.hypot(...size) / 2);
+const grid = new THREE.GridHelper(Math.ceil(radius * 3), Math.ceil(radius * 3), 0x888888, 0x888888);
+grid.position.set(centre.x, M.min[1] - 0.002, centre.z); grid.material.transparent = true; grid.material.opacity = 0.25; scene.add(grid);
+scene.add(new THREE.HemisphereLight(0xdfe8f0, 0x3a3228, 1.6));
+const sun = new THREE.DirectionalLight(0xffffff, 2.2); sun.position.set(-0.6, 1, -0.4).multiplyScalar(radius * 4); scene.add(sun);
+const fill = new THREE.DirectionalLight(0xffffff, 0.6); fill.position.set(0.8, 0.3, 0.9).multiplyScalar(radius * 4); scene.add(fill);
+let edges = null;
+
+const camera = new THREE.PerspectiveCamera(40, 1, radius / 200, radius * 40);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.copy(centre); controls.enableDamping = true;
+const views = { iso: [-1, 0.7, -1.1], side: [-1, 0.05, 0], top: [0.001, 1, 0.0001], front: [0, 0.15, -1] }; // (the game's bow is -z, port is -x)
+function setView(v) { const d = new THREE.Vector3(...views[v]).normalize().multiplyScalar(radius * 2.6); camera.position.copy(centre).add(d); controls.update(); }
+setView("iso");
+document.querySelectorAll(".views button").forEach(b => b.onclick = () => setView(b.dataset.v));
+
+function resize() { const w = view.clientWidth, h = view.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+addEventListener("resize", resize); resize();
+function sky() { scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue("--sky").trim() || "#d5dade"); }
+sky(); matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { sky(); paint(); });
+new MutationObserver(() => { sky(); paint(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+// Cutaway: everything above the slider's height is clipped, to look into decks.
+const cut = document.getElementById("cut"), cutv = document.getElementById("cutv");
+cut.oninput = () => { const f = cut.value / 1000; const y = M.min[1] + f * size[1]; clip.constant = f >= 1 ? 1e6 : y; cutv.textContent = f >= 1 ? "top" : (y - M.min[1]).toFixed(2) + " m"; };
+const toggle = (id, fn) => { const b = document.getElementById(id); b.onclick = () => { const on = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", on); fn(on); }; };
+toggle("tGlass", on => glass.visible = on);
+toggle("tEdges", on => { if (on && !edges) { edges = new THREE.LineSegments(new THREE.EdgesGeometry(solidGeo, 25), new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, clippingPlanes: [clip] })); scene.add(edges); } if (edges) edges.visible = on; });
+toggle("tFinish", on => { byFinish = on; paint(); });
+toggle("tSpin", on => { controls.autoRotate = on; });
+
+// Parts list: one row per distinct part name, with its count; a click picks the first of them.
+const list = document.getElementById("parts"), search = document.getElementById("search");
+const names = new Map(); M.parts.forEach(([n], i) => { if (!names.has(n)) names.set(n, []); names.get(n).push(i); });
+function fillList() {
+  const q = search.value.trim().toLowerCase(); list.innerHTML = "";
+  for (const [n, ids] of names) if (!q || n.toLowerCase().includes(q)) {
+    const li = document.createElement("li"); li.innerHTML = `<span></span><em>${ids.length > 1 ? "x" + ids.length : "#" + ids[0]}</em>`; li.firstChild.textContent = n;
+    li.classList.toggle("on", ids.includes(picked)); li.onclick = () => pick(ids.includes(picked) ? ids[(ids.indexOf(picked) + 1) % ids.length] : ids[0]); list.appendChild(li);
+  }
+}
+search.oninput = fillList; fillList();
+function pick(i) { picked = i; paint(); fillList(); }
+
+// Hover and click: a ray against the solids (and glass), the triangle's part and look.
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(), tip = document.getElementById("tip");
+function hit(ev) {
+  const r = renderer.domElement.getBoundingClientRect(); mouse.set((ev.clientX - r.left) / r.width * 2 - 1, -(ev.clientY - r.top) / r.height * 2 + 1);
+  ray.setFromCamera(mouse, camera);
+  const objs = glass.visible ? [solid, glass] : [solid];
+  const h = ray.intersectObjects(objs, false).find(h => clip.distanceToPoint(h.point) >= 0);
+  if (!h) return null; const t = h.object.geometry.userData.tris[h.faceIndex]; return { part: triPart[t], look: M.looks[look16[t]] };
+}
+let down = null;
+renderer.domElement.addEventListener("pointerdown", e => down = [e.clientX, e.clientY]);
+renderer.domElement.addEventListener("pointerup", e => { if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 4) { const h = hit(e); pick(h ? h.part : -1); } down = null; });
+renderer.domElement.addEventListener("pointermove", e => {
+  if (e.buttons) { tip.hidden = true; return; } const h = hit(e); if (!h) { tip.hidden = true; return; }
+  const [n] = M.parts[h.part]; const L = h.look;
+  tip.innerHTML = `<b></b><small></small>`; tip.firstChild.textContent = `${n}  #${h.part}`;
+  tip.lastChild.textContent = `${L[0]}${L[3] ? " · " + L[3] : ""}${L[1] > 0 ? " · glass" : ""}${L[2] ? " · glow" : ""}`;
+  tip.style.left = Math.min(e.clientX + 14, innerWidth - 220) + "px"; tip.style.top = (e.clientY + 14) + "px"; tip.hidden = false;
+});
+renderer.domElement.addEventListener("pointerleave", () => tip.hidden = true);
+
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches; if (reduce) controls.enableDamping = false;
+renderer.setAnimationLoop(() => { controls.update(); renderer.render(scene, camera); });
+</script>
