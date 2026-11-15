@@ -20,6 +20,10 @@ marked way in), then each faction's style. The Ministry of Slop: Brutalism, cold
 
 The walkable two-deck ship of the rust bucket start: its hull parts, rooms, engines and how it flies.
 
+## [The Halberd frigate](constructs/frigate.md), 5 KB
+
+The tail-sitter combat frigate: six decks up a ladder spine, four PDCs, a spinal railgun, med bay, robot bay; how it flies.
+
 Each file below lists its `## ` sections with their headings exactly as they were in the old single file, so a code
 comment such as `CONSTRUCTS.md "Extrusion"` is found by searching this index for the heading. To look inside a file,
 `grep -n '^## ' docs/sandbox/constructs/FILE.md` and read the section you need. New text goes into the file that holds
