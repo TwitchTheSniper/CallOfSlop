@@ -631,7 +631,9 @@ public static class ConstructLogistics
             return LogiReason.Closed;
         if (c.DefOf(part) is { IsPieceRack: false } md)
             return md.IsLaserCutter ? (ConstructLaserCutter.Wants(world, c, part, d) ? LogiReason.None : LogiReason.Closed) // (a cutter: while it still wants this blank)
-                : (md.IsAssembler || md.IsPanelFormer || md.IsPress) && ConstructLogisticsPlan.Open(world, c, part, r.Tag) ? LogiReason.None : LogiReason.Closed; // (a machine's input waits at its door)
+                : (md.IsAssembler || md.IsPanelFormer || md.IsPress) && ConstructLogisticsPlan.Open(world, c, part, r.Tag) ? LogiReason.None
+                : md.IsAssembler && world.UsedByQueue(c, part, d.Id) ? LogiReason.None // (its order closed but another queued there uses it: delivered, never set down loose)
+                : LogiReason.Closed; // (a machine's input waits at its door)
         if (((LogiFlags)r.Flags & LogiFlags.Storage) == 0 && r.Tag != 0 && m.DestPick[ds] && ConstructLifters.PadOrderOpen(world, c, part, r.Tag, d))
             return ConstructConveyor.RackCheck(c, part, st, d) != 0 ? LogiReason.DestFull : LogiReason.None; // (a station's large part to its pick pad: lifters phase 5)
         if (((LogiFlags)r.Flags & LogiFlags.Storage) == 0 && (r.Tag == 0 || c.Parts[part].Craft is not { } q || q.Find(r.Tag) < 0) && !(c.Parts[part].Craft == null && ConstructLogisticsPlan.Open(world, c, part, r.Tag)))

@@ -18,6 +18,12 @@ public static unsafe partial class Program
     private static void StormFrame(double now, Vector3 eye)
     {
         var map = World.Map;
+        if (_wsDusk > 0)
+        {
+            ConstructLamps.Dark = _wsDusk; // (the window tool's --dusk: lamps throw their dark light on any map, StormLight dims the rest)
+            Gfx.SetFog(map.Sky * Vector3.Lerp(Vector3.One, ColdStorm.DuskTint, _wsDusk), map.FogStart, map.FogEnd); // (the haze dims with it)
+            return;
+        }
         if (map.Storm == null && ColdStorm.Settings == null || _wsCalm)
             return; // (no storm here, or a check picture asked for clear air: --calm)
         var dt = _stormSeen < 0 ? 0 : now - _stormSeen;
@@ -47,7 +53,22 @@ public static unsafe partial class Program
     }
 
     /// <summary>The map's light as the storm leaves it (the map's own when there is none).</summary>
-    private static LightSetup StormLight(Map map) => ColdStorm.Settings != null ? ColdStorm.Light(map.Light) : map.Light;
+    private static LightSetup StormLight(Map map) => _wsDusk > 0 ? DuskLight(map.Light, _wsDusk) : ColdStorm.Settings != null ? ColdStorm.Light(map.Light) : map.Light;
+
+    /// <summary>The window tool's dusk (--dusk F): the sun all but gone and the rest of the light little and blue, as a storm's dusk leaves it.</summary>
+    private static LightSetup DuskLight(in LightSetup light, float dusk)
+    {
+        var dim = Vector3.Lerp(Vector3.One, ColdStorm.DuskTint, dusk);
+        return light with
+        {
+            SunColor = light.SunColor * (1f - 0.9f * dusk),
+            AmbSky = light.AmbSky * dim,
+            AmbGround = light.AmbGround * dim,
+            Zenith = light.Zenith * dim,
+            Horizon = light.Horizon * dim,
+            Ground = light.Ground * dim,
+        };
+    }
 
     /// <summary>Frost creeping in from the edges of the screen while you are out in the cold (under the HUD).</summary>
     private static void DrawStormFrost()

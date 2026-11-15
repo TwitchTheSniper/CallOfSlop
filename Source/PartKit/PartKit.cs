@@ -107,6 +107,7 @@ public static class PartKit
         new Generators.MachineTiers(),
         new Generators.Assembling(),
         new Generators.ProductionShowcase(), // (a blueprint built through the game's rules from the part files: last)
+        new Generators.FactoryShowcase(), // (the connected factory and its Works Runabout: also last)
     ];
 
     public static IPartGenerator? Find(string name) =>

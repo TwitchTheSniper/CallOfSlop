@@ -240,7 +240,7 @@ The user's "complex parts made in the world, not in menus". A **Press** stamps p
 - **Fed by chute.** A chute from an Extruder to a press takes each finished piece whole: at Cut, or at Cut every, the piece waits on the die (`ExtrudeStall.ChuteWaits`) until a chute move finds a bay that will have it, then moves. A chute from a shelf or a Die Rack brings a die of the press's size to an empty slot. A chute of bulk is refused. The press doesn't name its ports: it picks the first free bay that takes the piece. What a stroke makes goes out of the tray by chute as any slots do.
 - **Pressing.json.** `rows` is flat: one row per die, material and size band. A row names `die`, `output`, `count`, `seconds` and its `bays`, each with `label`, `sections` (Extrusion presets, `round`, `pipe`), `materials`, `minAcross` and `maxAcross` (the piece's smaller side), and what a stroke takes: `use` (m), for parts of a fixed size, or `useAcross` (times its size across). The first row whose bays are all satisfied runs. A row of several bays names them in order; a **one-bay row** (Bracket, Housing) is every bay's: each bay takes such pieces, and a stroke works the first whose piece is ready (`ConstructPress.BayOf`, 2026-11-11). Rows of a die stand together; a die has no list of its own, so 15 dies times materials times sizes is only more rows. `lathe` rows are chosen as a setting.
 - **What the die, the material and the piece do.** The die sets the family; choosing a recipe is swapping it. One die covers every material of its family. Fixed-size parts take their count from length: at `use` 0.1 a 2 m strip is 20 strokes, and a piece with less left than a stroke stops with "too short". Parts with no fixed size follow the section: the rows' bands pick the output, so a 0.15 m bar in a Housing Die makes Housing 0.25 m and a 0.3 m bar Housing 0.5 m.
-- **Stroke.** A row's `seconds` at the machine's speed. Power, Run wire and creative as a [production machine](#refining-decision-14); a body that can't leave waits with the pieces untouched. Output in the tray, 12 a slot; what no tray holds (physics-only, or too big: brackets, housings, dies) rides out on a conveyor from its **Piece out** to a Piece Rack, whole strokes only (it waits with "Output conveyor full", "Too big for its conveyor" or "Output conveyor cut"), and drops as a body at the front only when nothing is linked there.
+- **Stroke.** A row's `seconds` at the machine's speed. Power, Run wire and creative as a [production machine](#refining-decision-14); a body that can't leave waits with the pieces untouched. Output: with a conveyor on its **Piece out**, everything a stroke makes rides out on it, whole strokes only, tagged for the order it serves (2026-11-14: a tray part reached its Assembler through a store unseen by the chain, which asked again); without one, in the tray, 12 a slot, and what no tray holds (physics-only, or too big: brackets, housings, dies)  (it waits with "Output conveyor full", "Too big for its conveyor" or "Output conveyor cut"), and drops as a body at the front only when nothing is linked there.
 - **The first set** (33 rows):
 
   | Die | Bays | Makes | By |
@@ -874,7 +874,7 @@ Code: `Source/Constructs/ConstructConveyor.cs`; drawing in `RouteRender.Conveyor
   rails (the paint), steel rollers every 0.3 m and amber chevrons on the rails pointing the way the pieces go.
 - **Riding.** A cut at the die (the Cut input or Cut every) with a conveyor out of Piece out puts the finished piece on it whole:
   the part leaves the construct and becomes a rider (`CRider`: its def, link, front in metres, health share, paint). Riders move at
-  0.5 m/s, front first, never closer than 10 cm, and the lead one goes into the rack at the end. The machine waits, the piece on its
+  1 m/s (`ConstructConveyor.Speed`; 0.5 until 2026-11-14, when the user found parts took too long: protocol 318), front first, never closer than 10 cm, and the lead one goes into the rack at the end. The machine waits, the piece on its
   die, when the piece is too wide for the link ("conveyor too narrow: 0.10 m, piece needs 0.30 m - aim the linking tool at it: wheel
   or R to widen"; the screen says "Conveyor too narrow"), when there
   is no room at the start ("blocked: its conveyor is full": a full rack backs the pieces up to the machine) or when the link is cut.
@@ -916,7 +916,7 @@ Code: `Source/Constructs/ConstructConveyor.cs`; drawing in `RouteRender.Conveyor
   200 riders on 20 links with 5 splitters, 0.05 ms a step (max 0.15 ms); a client's step 0.003 ms. Racks draw only when they hold
   something (their list is made with the caches).
 
-Proposed (the user's to confirm): the wheel on the linking tool for the size (links have no configure panel); 0.5 m/s and a 10 cm
+Proposed (the user's to confirm): the wheel on the linking tool for the size (links have no configure panel); 1 m/s (was 0.5) and a 10 cm
 gap; junctions as parts rather than branches of a link; three ways at a junction; the rack storing pieces by kind rather than as
 fitted parts, drawing at most 24; F dropping the piece loose by the rack; riders passing through players (not reached: a piece as
 a solid box against a player near it is the next step); a piece longer than its whole link refused.
@@ -1394,8 +1394,8 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
 - **The job** (`CPart.Station`, a `StationJob`; server). Start costs the blueprint in a scratch world, 1.5 ms a tick: its bounds (the fit
   is checked again here and refused with the numbers), each link's length, its kinds. Then, at 2 Hz, each kind the build lacks (need
   less fitted, held and asked) becomes a craft order: linked stock is reserved and fetched first, the rest dealt to the wired consoles'
-  machines. A kind is asked for when a step of it can go on, and a few kinds ahead while the hold is nearly empty, so the hold never
-  fills with parts that can't be fitted yet. What nothing holds or makes is named on the screen with the reason; only what hangs off it waits.
+  machines. Every part that can be fitted on arrival (what it goes onto is fitted, or it is the first step) is asked for at once (2026-11-14, the user: no waiting for one part before the next order starts; four new orders a look), and the next level is ordered ahead, parts whose parent's part is held or on its way, one at a time while the hold, packed by its own rule with everything held and coming (a scratch copy, `OrderAhead`/`SimHold`), still has room for the largest ready part not yet in it (the user's choice: "order ahead, keep room"). Nothing deeper is ordered. When the next part can't come in (the hold full of parts left over or brought by hand), the station moves parts no step can take yet to a Piece Rack on its network with a road back, in one decision with a fit check, once per change of the hold (`ConstructStation.MakeRoomFor`); a moved kind is saved with the job and fetched back as stock. With no rack its note says to take one out; a part a player took out by hand isn't asked again while a player is within 16 m (`HandTook`); a part too long for the hold is never moved round: the note says to build a larger station or fit it by hand. A terminal's or station's ask goes first to a machine with a way to it (a conveyor through Joins and Routers, or a chute), then to any (`ConstructCrafting.StepTerminal`).
+  What nothing holds or makes is named on the screen with the reason; only what hangs off it waits.
 - **Fitting.** The vehicle is an ordinary construct, frozen at its final pose in the bay and `HeldBy` the station: no physics, and every
   edit, grab and seat refuses ("a Building Station is building it"). The station fits one part every `FitSeconds` (2 s) plus 0.02 s a kg,
   10 s at most: the first unfitted step, in the blueprint's order, whose parent step (and the steps its `"also"` names) is in place and
@@ -1424,8 +1424,8 @@ of a blueprint and builds it in a bay, part by part, where it can be seen. Phase
   its length. **A fit told without building**: `ConstructStation.QuickRefusal` walks the steps' part files (a part longer than the bay,
   or boxes adding up to over one and a half times its volume) before any costing, at Start and in the panel; the costing itself is
   the blueprint's steps only (`StepsOnly`: no finish), 1 ms a tick, the bounds from the parts' boxes (`PartBounds`), so one slice
-  is as long as its longest single step (a freeform weld on a big body rebuilds it). **Orders follow what can be fitted**: a kind is
-  asked for only while a step of it has its parent in place, so the hold holds what the next fits take. **A loose part lying in the
+  is as long as its longest single step (a freeform weld on a big body rebuilds it). **Orders** (until 2026-11-14 a kind was
+  asked for only while a step of it had its parent in place; now every part it can fit now or next is asked at once, above). **A loose part lying in the
   bay** (a body of one part: set down, or dropped there with the physics gun) that the build lacks is taken at the next look, fitted
   at once or into the hold: the way to supply a physics-only part, which hands don't carry. **Start** refuses while the last build
   stands in the bay ("the bay isn't clear"). **Power**: the station draws its 150 W while it costs or builds and nothing idle
@@ -1618,3 +1618,55 @@ a step the rules refuse fails there with their reason. It reads the part files: 
   JIT), p99 0.8 to 1.3 ms, 58 MB allocated (both peers), no generation-1 collection; the bill again, warm: worst 4.8 to 6.6 ms, p99
   0.9 to 1.9 ms, no collection. Before the fix the Wheel Former's growing wheel made a convex hull for each 5 cm (see [Wheel Former](#the-wheel-former)):
   ticks of 8 to 83 ms twice a second, 199 MB and a generation-1 collection.
+
+## Factory Showcase
+
+One shipped blueprint, **Factory Showcase** (`Constructs/Blueprints/FactoryShowcase.json`, group Production): a single connected
+factory on one body, raw ore, wood, stone and sand in at the west end and the **Works Runabout** built at the east end, every
+production machine doing real work on the way. Made by `--gen-parts factory_showcase` (`Source/PartKit/Generators/FactoryShowcase.cs`,
+with the Runabout's blueprint, `WorksRunabout.json`, beside it). Notes, the machine list and the numbers:
+`docs/sandbox/design/showcase-new-notes.md`. (The older [Production Showcase](#production-showcase) is a row of separate demos.)
+
+- **Spawn it** from the creative blueprint list (group Production) on flat ground: it is 118 by 32 m. On the Proving Ground the oval's
+  infield holds it: stand at (-30, 40) facing north (yaw 0) and spawn it; it goes down 65 m ahead, its west end at x -93, its east end at
+  x 25, z -12 to -44, clear of the banks. The window tool: `--spawn-at -30,0,40 --spawn-yaw 0`.
+- **Start it.** Press Start on the refinery's console (sign 2, at the west end) and on the orders console (the yellow desk by the yard,
+  "ORDERS: Start runs every maker"). F on the Building Station (sign 7, east end), pick Works Runabout, Start. In creative the Runabout
+  is built in about four minutes: every part it lacks is ordered at once, made on the floor and fitted as it arrives.
+- **The walk-through**, west to east along the front walkway (lane markings its whole length), then back along the back floor. Each area has a numbered sign on a lit post (1 RAW STOCK AND POWER to 10 TOOL ROOM) and its own floor tint; every link and junction is one steel colour, so the machines carry the colour; each press is labelled with what it makes:
+  1. **Power**: a Small Genset on two fuel tanks, a battery, the main switch (off: every machine No power) and its charge gauge.
+  2. **Raw stock and the refinery**: two iron ore heaps, copper ore, stone, wood and sand (Storage Volumes, filled in creative, empty in
+     survival) chuted into eight refiners in two rows: Workshop Smelter (ore to metal) and Workshop Foundry (metal and stone to steel;
+     tier 2, so their chutes move 20 a second), Sawmill (wood to planks), Foundry (planks and sand to rubber), Workshop Smelter (copper),
+     Workshop Foundry (bronze), Sawmill (planks to cloth), Smelter (sand to glass). A Recycler at the west end turns a dropped wreck into
+     metal for the steel Foundry. A Number Readout shows the refinery console's line.
+  3. **The yard**: every refined material in a bin (steel in a Storage Volume), a Smart Terminal and an Inventory Beacon on its chutes.
+  4. **Assembly** (back floor, west): one Workshop Assembler makes every catalogue part (seat, Driving Module, gearbox, differential,
+     swing arms, Servo Motors, Steering Pivots, its own Bearings). Its inputs ride in through one Join: Gear Sets from the Gear press,
+     Copper Coils from the Cable press (fed by a copper Extruder), and its own Router's loop.
+  5. **The press hall** (back floor): the blank Extruder makes each press's ordered blank and five Routers send it north into the press
+     that asked: Gear, Tank, Piston (bronze by chute in its kit hopper; its Piston Sets ride into the Cylinder press), Cylinder,
+     Engine (Bearing kits from the Assembler's Router), Bracket. The Runabout's extruded rails and bars come off the same Extruder. Every
+     press's output rides a conveyor (a Large Join where a 1.18 m Differential must pass) into the station's back port.
+  6. **The tool room** (back floor, south): an orders-only Extruder, a Die Lathe set to Bracket Dies, a die stock rack and a Die Rack. Its
+     own console's bill is one bar: Bill, then Send, and it cuts one spare Bracket Die (a Die Lathe takes no work orders).
+  7. **Panels and the cutter** (main floor, row 1): an Extruder with a Die Frame (a 1 m die) makes sheet sized to each panel for the
+     Panel Former (the hood); Router P sends a panel the cutter ordered through a Join into the Laser Cutter (the windscreen frame's
+     opening), the rest south to the station line. A second Panel Former fed glass forms the pane's blank, cut there too.
+  8. **Wheels and the station line** (row 2): the Wheel Former's wheels, the panels and the cut parts meet through Joins at Router S,
+     whose way ahead runs into the press line's last Join, way 2 into a rack that feeds back, way 3 to Router T and the Panel Designer
+     (design a panel; the Panel Former forms it). Past the last Join a Large Router sends a part ordered at the Crafting Terminal (any
+     part made here) to its tray, and everything else into the station's back port.
+  9. **The Building Station** with its 6 x 8 m bay, two Loader Arms fitting from its hold, and east of the bay the wing corner: the
+     Airframe Former's wing grows over a Lay-down Pad and drops on it; a Military Loader Arm fits it from the pad onto the build. A fuel
+     tank on the body's pool is piped into the station's Fluid in. A Medium Text Sign over Router S is the network board.
+- **The Works Runabout** (`WorksRunabout.json`, the Swing Arm Buggy's layout): extruded steel rails and bars, four formed rubber wheels,
+  a pressed one-cylinder engine (cylinder, crank, Small Carburettor, Small Flywheel), a pressed fuel tank, the Assembler's drivetrain,
+  seat and controls, a formed hood, a cut windscreen frame with its cut glass pane, two pressed L Brackets and a formed spoiler. It
+  drives (11 m/s on the drive check) and steers.
+- **Orders-only machines.** A blueprint step may say `"ordersOnly": true`: the machine is built with an empty queue, so it waits for an
+  order and never runs its own settings while its line is on (`BlueprintScript.OrdersOnly`, `ConstructBuild.SetConfig`). Every maker on
+  the orders console is built so.
+- **Measured** (2026-11-14, host, creative, the window tool): Start to Done in under four minutes, 30 of 30 parts and 3 of 3 links; the
+  server tick median 0.14 ms, worst 0.72 ms over the sampled frames while it built (`station measure`); the station's own step worst
+  3.3 ms in one tick (its costing), 0.4 MB over the build. Notes: `docs/sandbox/design/showcase-new-notes.md`.

@@ -33,7 +33,7 @@ public static partial class Program
     /// <summary>The note under the crosshair's top while flying (from the Sandbox ImGui pass).</summary>
     private static void DrawNoclipHud()
     {
-        if (_game is not { SandboxOn: true, Local: { Alive: true, Sim.Noclip: true } })
+        if (_game is not { SandboxOn: true, Local: { Alive: true, Sim.Noclip: true } } || _wsNoHands) // (the window tool's --no-hands: a scene picture shows no flying note)
             return;
         var size = ImGui.GetIO().DisplaySize;
         var fast = _down[(int)GameAction.Sprint];

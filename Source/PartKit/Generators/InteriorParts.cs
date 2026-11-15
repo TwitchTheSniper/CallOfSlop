@@ -657,10 +657,30 @@ public sealed partial class InteriorParts : IPartGenerator
         return p;
     }
 
+    /// <summary>
+    /// A painted arrow 1.8 m long on a floor, pointing along its own +x: the way a walkway or a line flows (the Factory Showcase's aisle
+    /// and conveyors). Its head is stepped bars, each a little narrower, all one colour (no coplanar faces between colours).
+    /// </summary>
+    private static Part FloorArrow()
+    {
+        var p = new Part("Floor Arrow", Small, "Dressing", "A painted arrow 1.8 m long showing the way a walkway or a line flows. Trim.", role: "frame", tool: "wrench", color: Yellow, group: "Interior");
+        p.Set(("finish", "hazard paint"));
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Add(B([-0.9, 0.004, -0.09], [0.2, 0.014, 0.09], Yellow)); // the shaft
+        const int steps = 7;
+        for (var k = 0; k < steps; k++)
+        {
+            double x0 = 0.2 + k * 0.1, half = 0.5 * (1 - (double)k / steps); // (each bar 10 cm on, narrower: a stepped head)
+            p.Add(B([x0, 0.004, -half], [x0 + 0.1, 0.014, half], Yellow));
+        }
+        p.Stats(2, 20, 1, 0.5);
+        return p;
+    }
+
     private static List<Part> DressingParts() =>
     [
         WallLight(), HallFloodlight(), PipeBank(), DuctRun(), CableTray(), WallRib(), WallSign(), ToolBoard(), FirePoint(), JibCrane(), BayMarking(),
-        KickPlate(), LaneMarking(),
+        KickPlate(), LaneMarking(), FloorArrow(),
     ];
 
     public void Make(PartOutput o)

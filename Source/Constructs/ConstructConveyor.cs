@@ -177,7 +177,7 @@ public sealed partial class ConstructWorld
 public static class ConstructConveyor
 {
     public const int Every = 6; // ticks between steps (10 Hz)
-    public const float Speed = 0.5f; // metres a second a piece rides (proposed)
+    public const float Speed = 1.0f; // metres a second a piece rides (the user, 2026-11-14: twice the first 0.5, "parts just take forever to get places"; both peers step riders by it: protocol 318)
     public const float Gap = 0.1f; // the least room between two pieces
     public const float BedTop = 0.06f; // a piece's underside above the link's line
     public const int MinSizeCm = 10, StepCm = 5;
@@ -987,8 +987,9 @@ public static class ConstructConveyor
         var td = c.DefOf(to);
         if (td.IsPieceRack)
         {
-            if (!world.RackPut(c, to, d, ordered: r.Tag != 0 && ((LogiFlags)r.Flags & LogiFlags.Storage) == 0))
-                return false;
+            var ordered = r.Tag != 0 && ((LogiFlags)r.Flags & LogiFlags.Storage) == 0;
+            if (!world.RackPut(c, to, d, ordered) && !(td.IsBuildStation && ConstructStation.MakeRoomFor(world, c, to, d) && world.RackPut(c, to, d, ordered)))
+                return false; // (a station's full hold makes room for a part the build can fit now: ConstructStation.MakeRoomFor)
             if (td.IsCraftTerminal)
                 ConstructCrafting.Arrived(world, c, to, d); // (it counts for the oldest open order of its kind)
             else if (world.StockTargetN > 0 || r.Tag != 0)
@@ -1007,7 +1008,8 @@ public static class ConstructConveyor
         if (td.IsAssembler)
         {
             // A part its recipe uses, while it has room: the chute's own test (a part it doesn't use waits at its door).
-            if (!world.WantsPart(c, to, d.Id) || !world.FeedPart(c, to, d))
+            // (or a part a later order of its queue uses: else one waiting at the front stops all that rides behind it)
+            if (!(world.WantsPart(c, to, d.Id) && world.FeedPart(c, to, d)) && !world.FeedQueuedPart(c, to, d))
                 return false;
             ConstructLogisticsPlan.Arrived(world, c, to, r.Tag, d); // (a chained order's input: it counts for its link)
             return true;

@@ -373,6 +373,8 @@ public sealed class ConstructClip
             var media = ConstructMedia.ToJson(in p);
             if (media.Length > 0)
                 sb.Append(", \"media\": ").Append(media);
+            if (p.Orders is { Bill: false } && WorkOrders.TakesOrders(d))
+                sb.Append(", \"ordersOnly\": true"); // (a machine with a queue, even an empty one, works orders only: the copy keeps that, never its own settings)
             if (ConstructPaint.IsSet(p.Paint))
                 sb.Append(", \"paint\": \"").Append(ConstructPaint.ToHex(p.Paint)).Append('"');
             if (ConstructFinish.Name(p.Finish) is { Length: > 0 } finish)
