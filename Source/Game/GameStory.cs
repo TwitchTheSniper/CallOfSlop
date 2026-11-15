@@ -40,6 +40,7 @@ public sealed partial class Game
     private readonly (int Verb, int Actor, int Target, double At)[] _storyRecent = new (int, int, int, double)[32];
     private int _storyRecentNext;
     private int _storyPlace = -1;
+    private byte[]? _storyKept; // the story archived (StoryOn false): a loaded world's Story section, written back as it was so nothing is lost
     private double _storyLast = -1;
     private int _vJoin, _vLeave, _vFound, _vBoard, _vKill, _vDie, _vWreck, _vStrip, _vTow, _vLaunch, _vLand, _vJump, _vDiscover;
     private int _rOwns, _rRode, _rDiscovered;
@@ -47,6 +48,7 @@ public sealed partial class Game
     /// <summary>Server, every new match (from <see cref="ResetSandbox"/>): a fresh story in Sandbox, none elsewhere. A saved world's comes with its load.</summary>
     internal void StoryReset()
     {
+        _storyKept = null;
         if (!IsServer || !SandboxOn || !StoryOn)
         {
             Story = null;
@@ -96,7 +98,11 @@ public sealed partial class Game
     internal void StoryTick(double now)
     {
         if (Story is not { } s)
+        {
+            if (IsServer && SandboxOn)
+                StandInsKeep(now); // (the story archived: the tutorial's crew bus is still a stand-in craft, GameStandIns.cs)
             return;
+        }
         s.Advance(_storyLast < 0 ? 0 : Math.Clamp(now - _storyLast, 0, 1));
         _storyLast = now;
         foreach (var p in Players.Values)
@@ -395,6 +401,7 @@ public sealed partial class Game
     /// <summary>On the tick, with the world's save: a plain copy of the story into the snapshot (its bytes are made on the save's worker). None without a story.</summary>
     private void StoryCapture(WorldSnapshot snap)
     {
+        snap.StoryKept = _storyKept;
         if (Story is not { } s)
         {
             snap.Story = null;
@@ -408,7 +415,13 @@ public sealed partial class Game
     private void StoryRead(SaveReader r, string world)
     {
         if (Story is not { } s)
+        {
+            if (!IsServer || StoryOn)
+                return;
+            _storyKept = r.Bytes(r.End - r.Pos); // (the story archived: kept as it is, so --story or StoryOn later finds it whole)
+            Console.WriteLine($"[story] {world}: the story is archived (Game.StoryOn); its {_storyKept.Length} bytes are kept as they are and saved again unread");
             return;
+        }
         try
         {
             s.Read(r);
