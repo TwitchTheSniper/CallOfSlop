@@ -531,7 +531,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   u8 inmate, u32 the tick it began).
     // 318: conveyors run at 1 m/s (ConstructConveyor.Speed, was 0.5): both peers step riders by it, so an older peer would draw them
     //   at half the speed between messages. No new bytes.
-    public const ushort ProtocolVersion = 318;
+    // 319: the rust bucket's breakdowns (GameSandboxBreakdowns.cs): CActKind.Breakdown (server -> clients: u16 body, u16 part,
+    //   u8 stage, u8 seconds, u8 say) and CActKind.Mend (u16 body, u16 part) at the end of CActKind.
+    public const ushort ProtocolVersion = 319;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -37,6 +37,14 @@ Open questions for when this is picked up: which resource each faction's planets
 defends its planet (patrols, outposts, convoys to raid); what "taking out" a faction gives (its planet's resources, its
 parts, both); and how the rust bucket's hold seeds the first mining run.
 
+## Built since
+
+- **Breakdowns that warn you first** (the roadmap's first step, 2026-11-15): in Survival the rust bucket's thrusters break
+  down now and then while someone is aboard. A part creaks and groans for a while first; the attach tool at the engine
+  room's Engineer's Panel (or at the part) sees to it for nothing in that time, and once it has failed it takes a little
+  metal to repair. `Source/Game/GameSandboxBreakdowns.cs`, numbers in `Constructs/Breakdowns.json`, and
+  docs/sandbox/constructs/ship.md "Breakdowns".
+
 ## What was archived (2026-11-14)
 
 Recoverable, not deleted:

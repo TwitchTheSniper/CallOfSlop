@@ -461,6 +461,8 @@ public static unsafe partial class Program
         // Routed links (decision 20): the look line on a link, and the wrench's or welder's repair (Program.SandboxLinks.cs).
         SandboxRouteLook(g, ref h, aimed, hit);
         SandboxCellPatch(g, ref h, aimed, hit); // (the attach tool on a holed lift cell: Program.SandboxCells.cs)
+        if (SandboxBreakdownLook(g, ref h, aimed, hit))
+            return true; // (the attach tool on a groaning or broken-down part: Program.SandboxCells.cs)
         // The linking tool: routing links node by node, the edit modes, settings (Program.SandboxLinks.cs).
         if (h.Tool == ConstructTool.Linker)
         {

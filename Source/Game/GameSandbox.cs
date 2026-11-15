@@ -103,6 +103,8 @@ public enum CActKind : byte
     TakeMade, // a part by PartRef (a made part's key): set down in front of the player from their Tab inventory (protocol 299; docs/sandbox/design/inventory-run-time-parts.md phase 2)
     Lifter, // u16 body, u16 part, u8 LiftOrderOp, u8 order id, the kind (PartRef), u8 count, from and to (u16 body, u16 part, u8 kind, u8 bay): a hand order at a lifter's panel (protocol 312; GameSandboxLifter.cs)
     ErrandDrop, // nothing: drop the errand under way (protocol 314; GameErrands.cs)
+    Breakdown, // server -> every client: u16 body, u16 part, u8 BreakdownStage, u8 seconds left, u8 1: say it to those aboard (protocol 319; GameSandboxBreakdowns.cs)
+    Mend, // u16 body, u16 part: the attach tool sees to a groaning part or repairs a broken-down one (protocol 319; GameSandboxBreakdowns.cs)
 }
 
 /// <summary>
@@ -147,10 +149,10 @@ public sealed partial class Game
     /// <summary>A refusal or a hint for the local player (shown on the HUD for a few seconds).</summary>
     public string SandboxNotice => SandboxNow < _sbNoticeUntil ? _sbNotice : "";
 
-    public void SandboxSay(string text)
+    public void SandboxSay(string text, float seconds = 3)
     {
         _sbNotice = text;
-        _sbNoticeUntil = SandboxNow + 3;
+        _sbNoticeUntil = SandboxNow + seconds;
     }
 
     // ---- Lifecycle -----------------------------------------------------------------------------------------------
@@ -429,6 +431,7 @@ public sealed partial class Game
         perf = Perf.Measure(PerfArea.Colony);
         AllocProfile.Mark("sandbox: colony");
         OpeningTick(now); // (the survival opening's beats: GameSandboxOpening.cs)
+        BreakdownTick(); // (the rust bucket's breakdowns: GameSandboxBreakdowns.cs)
         ShellTick(); // (worn robot shells keep their link: GameRobotShell.cs)
         FirstsTick(); // (a first flight in a craft of your own: GameMilestones.cs)
         PlayAreaTick(now); // (the tutorial's play areas: out of one, the step waits; GameTutorialBounds.cs)
@@ -854,6 +857,8 @@ public sealed partial class Game
                 }
                 else if (actKind == (byte)CActKind.Celebrate)
                     CelebrateRead(ref r); // (GameCelebrate.cs)
+                else if (actKind == (byte)CActKind.Breakdown)
+                    BreakdownRead(ref r); // (GameSandboxBreakdowns.cs)
                 break;
         }
     }
@@ -954,6 +959,12 @@ public sealed partial class Game
             case CActKind.QuarrySkip:
                 QuarrySkip(p); // the first Ministry duty (GameQuarry.cs)
                 return null;
+            case CActKind.Mend:
+            {
+                var body = r.U16();
+                var part = r.U16();
+                return BreakdownMendAct(p, body, part); // (the rust bucket's breakdowns: GameSandboxBreakdowns.cs)
+            }
             case CActKind.ErrandDrop:
                 ErrandDrop(p); // an errand on a works yard machine (GameErrands.cs)
                 return null;
