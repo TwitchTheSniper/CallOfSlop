@@ -452,8 +452,17 @@ public static partial class ConstructPhysics
     /// those that push up), spools, burns its fuel or power, and the sum of their pushes (N, world axes, through the centre
     /// of mass: in space the ship turns on the driver's A and D instead) is what the ship's flight takes.
     /// </summary>
-    public static Vector3 SpaceThrust(Construct c, float dt)
+    public static Vector3 SpaceThrust(Construct c, float dt) => SpaceThrust(c, dt, out _);
+
+    /// <summary>
+    /// The same, and its turn about the centre of mass (world axes). A stabilizer flying on Ship keys sets each thruster as it
+    /// does in the bubble (its mix holds the nose on the look and the speed asked), so a ship in space turns any way it has jets for.
+    /// </summary>
+    public static Vector3 SpaceThrust(Construct c, float dt, out Vector3 torque)
     {
+        torque = Vector3.Zero;
+        var owned = ConstructFlight.FliesShip(c);
+        var com = c.WorldCom;
         var fwd = c.Driver == 255 ? 0f : ((c.DriveKeys & Buttons.Forward) != 0 ? 1f : 0f) - ((c.DriveKeys & Buttons.Back) != 0 ? 1f : 0f);
         var lift = c.Driver == 255 ? 0f : MathF.Max(0, c.LiftInput);
         var sum = Vector3.Zero;
@@ -466,14 +475,16 @@ public static partial class ConstructPhysics
             var d = p.D;
             var want = 0f;
             if (Live(c, ref t, p))
-                want = d.ThrustKind == ThrustKind.Solid ? ConstructBoost.Grain(c, ref p, d, dt) : p.InCount > 0 ? Math.Clamp(p.In, 0, 1) : t.Lifts ? lift : Math.Clamp(t.MixForward * fwd, 0, 1);
+                want = owned && t.Scanned ? Math.Clamp(t.Command, 0, 1) : d.ThrustKind == ThrustKind.Solid ? ConstructBoost.Grain(c, ref p, d, dt) : p.InCount > 0 ? Math.Clamp(p.In, 0, 1) : t.Lifts ? lift : Math.Clamp(t.MixForward * fwd, 0, 1);
             var rate = d.ThrustSpool > 0 ? dt / d.ThrustSpool : 1f;
             t.Level = Math.Clamp(t.Level + Math.Clamp(want - t.Level, -2 * rate, rate), 0, 1);
             all += d.ThrustForce;
             if (t.Level <= 0 || d.ThrustKind is ThrustKind.Air or ThrustKind.Repulsor) // (nothing to breathe, nothing to push on)
                 continue;
-            c.WorldFrame(t.Seg, out var q, out _);
-            sum += Vector3.Transform(t.Dir, q) * (d.ThrustForce * t.Level);
+            c.WorldFrame(t.Seg, out var q, out var o);
+            var push = Vector3.Transform(t.Dir, q) * (d.ThrustForce * t.Level);
+            sum += push;
+            torque += Vector3.Cross(o + Vector3.Transform(t.At, q) - com, push);
             shown += d.ThrustForce * t.Level;
             if (d.ThrustFuel == EngineFuel.Fuel)
             {

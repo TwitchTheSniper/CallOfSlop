@@ -623,6 +623,15 @@ public static partial class ConstructFlight
         return KeysOf(c, p, p.D) == FlightPattern.Ship && ConstructConfig.Get(p, p.D, CfgKey.MouseAim, 0) >= 0.5f && SeatFor(c, c.Stabs[0].Part) == seat;
     }
 
+    /// <summary>Is a stabilizer on Ship keys flying this craft this tick (in space it then turns by its jets, not held level: GameSpaceLaunch.cs)?</summary>
+    public static bool FliesShip(Construct c)
+    {
+        if (!c.StabOwns || c.StabCount == 0 || c.Stabs[0].Part >= c.PartCount)
+            return false;
+        ref var p = ref c.Parts[c.Stabs[0].Part];
+        return KeysOf(c, p, p.D) == FlightPattern.Ship;
+    }
+
     /// <summary>The axes asked of it this tick, by its keys, with what is wired in added.</summary>
     private struct Asked
     {

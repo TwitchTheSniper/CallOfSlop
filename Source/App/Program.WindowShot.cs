@@ -1774,6 +1774,13 @@ public static unsafe partial class Program
                 return;
             case "me": // where this player is: feet, height over the ground, the frame they stand in and whether it is a ship in space
             {
+                if (g.SandboxHands.Hand(me.Id) is { Seated: true } sh && g.Constructs.Get(sh.SeatBody) is { StabCount: > 0 } sc && sc.Stabs[0].Part < sc.PartCount)
+                {
+                    // Seated on a stabilised craft: its nose against the level here, and its speed.
+                    var nose = Vector3.Transform(-Vector3.UnitZ, Quaternion.Multiply(sc.Rot, Rot24.Quat(sc.Parts[sc.Stabs[0].Part].Rot)));
+                    var upHere = ConstructPhysics.HoldUp(sc.WorldCom);
+                    WsSay($"craft: nose {MathF.Asin(Math.Clamp(Vector3.Dot(nose, upHere), -1, 1)) * 180 / MathF.PI:0} deg from level, {sc.Vel.Length():0.0} m/s{(sc.SpaceShip != 0 ? ", in space" : "")}");
+                }
                 var ride = g.Constructs.Get(me.Sim.RideBody);
                 var height = World.Map.Planetoid is { } mpl ? (float)mpl.Altitude(me.Position) : me.Position.Y;
                 WsSay($"me: feet {me.Position:0.0}, {height:0} m up, alive {me.Alive}, grounded {me.Sim.Grounded}, stance {me.Sim.Stance}; frame {(ride == null ? "none" : $"construct {ride.Id} at {ride.Vel.Length():0} m/s{(ride.SpaceShip != 0 ? $", in space (ship {ride.SpaceShip})" : "")}, local {me.Sim.RideLocal:0.00}")}; seated {g.SandboxHands.Hand(me.Id).Seated}; opening {g.OpeningLocal}");
