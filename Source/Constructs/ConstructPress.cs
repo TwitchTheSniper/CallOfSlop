@@ -308,7 +308,7 @@ public static class ConstructPress
                 return PressStall.TooShort;
         }
         satisfied = true;
-        if (!TrayPartsRide(c, part) && OutputFull(d, st, row)) // (a Piece out conveyor takes it all: PutOut)
+        if (!TrayPartsRide(world, c, part) && OutputFull(d, st, row)) // (a Piece out conveyor takes it all: PutOut)
             return PressStall.TrayFull;
         return ConstructRecycler.Powered(world, c, part) ? PressStall.None : PressStall.NoPower;
     }
@@ -317,23 +317,47 @@ public static class ConstructPress
         ConstructAssembling.OutputOf(d, st, r.Output, r.Count) == AsmOut.TrayFull;
 
     /// <summary>
-    /// Do the parts a tray could hold ride this press's Piece out conveyor? Only when it leads somewhere that takes parts: a junction (a
-    /// Router sends each on to whoever ordered it), a Piece Rack, a terminal or station, an Assembler or another press's kit hopper. A
-    /// conveyor to a cutter or a former (the code review, 2026-11-14: a player's press whose tray chutes to a shelf) keeps the tray.
+    /// Do the parts a tray could hold ride this press's Piece out conveyor? Only when it leads, through Joins (one way on), to something
+    /// that takes them: a Router (which sends each on to whoever ordered it), a Piece Rack that takes that kind (a terminal or station
+    /// too), an Assembler or another press's kit hopper. A Splitter (pieces in turn, so maybe to a cutter or a former), a cutter or a
+    /// former keeps the tray, as a press did before 2026-11-14 (code reviews 1 and 2: existing worlds).
     /// </summary>
-    internal static bool TrayPartsRide(Construct c, int part)
+    internal static bool TrayPartsRide(ConstructWorld world, Construct c, int part, ConstructPartDef? kind = null)
     {
-        if (ConstructConveyor.Out(c, part) is not (var k and >= 0) || c.Routes[k].To >= c.PartCount)
+        if (ConstructConveyor.Out(c, part) is not (var k and >= 0))
             return false;
-        var td = c.DefOf(c.Routes[k].To);
-        return td.IsConveyorJunction || td.IsPieceRack || td.IsAssembler || td.IsPress && !td.IsLathe;
+        int to = c.Routes[k].To;
+        for (var hop = 0; hop < 8 && to < c.PartCount; hop++)
+        {
+            var td = c.DefOf(to);
+            if (td.IsRouter || td.IsAssembler || td.IsPress && !td.IsLathe)
+                return true;
+            if (td.IsPieceRack)
+                return kind == null || world.StoreOf(c, to) is not { } rs || ConstructConveyor.RackCheck(c, to, rs, kind) is not (2 or 3);
+            if (!td.IsConveyorJunction)
+                return false;
+            // A Join: on along its one conveyor out; a Splitter (more than one) is no way on.
+            var next = -1;
+            var outs = 0;
+            for (var j = 0; j < c.RouteCount; j++)
+                if (c.Routes[j].Type == RouteType.Conveyor && c.Routes[j].Source == to && c.Routes[j].FedEnd)
+                {
+                    outs++;
+                    next = c.Routes[j].To;
+                }
+            if (outs != 1)
+                return false;
+            to = next;
+        }
+        return false;
     }
+
 
     /// <summary>What a stroke makes goes out: to the tray, the Piece out conveyor (whole strokes only) or the floor in front. False (and the stall set) when it can't.</summary>
     private static bool PutOut(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, ConstructPartDef output, int count)
     {
         var d = c.Parts[part].D;
-        if (ConstructConveyor.Out(c, part) is var conveyor and >= 0 && (ConstructAssembling.OutputOf(d, st, output, count) == AsmOut.Body || TrayPartsRide(c, part)))
+        if (ConstructConveyor.Out(c, part) is var conveyor and >= 0 && (ConstructAssembling.OutputOf(d, st, output, count) == AsmOut.Body || TrayPartsRide(world, c, part, output)))
         {
             // (a Piece out conveyor takes everything a stroke makes, whole strokes only, as an Assembler's does: a part a tray could hold,
             // a Gear Set, rides to the machine that ordered it, so its order counts it in. Until 2026-11-14 only what no tray holds rode,
@@ -483,7 +507,7 @@ public static class ConstructPress
         var need = bay < 0 ? 0 : Pressed.Bay2For(pattern!, c.Parts[PieceIn(c, part, bay)].D.ExKey with { Growing = false });
         var why = bay < 0 ? (p.Orders is { Bill: false, Count: 0 } ? PressStall.WantsOrder : PressStall.Wants)
             : need > KitHeld(st, pattern!.Bay2) ? PressStall.Bay2Short
-            : preset != null && !TrayPartsRide(c, part) && ConstructAssembling.OutputOf(d, st, preset, 1) == AsmOut.TrayFull ? PressStall.TrayFull // (with a Piece out conveyor everything rides it: PutOut)
+            : preset != null && !TrayPartsRide(world, c, part, preset) && ConstructAssembling.OutputOf(d, st, preset, 1) == AsmOut.TrayFull ? PressStall.TrayFull // (with a Piece out conveyor everything rides it: PutOut)
             : ConstructRecycler.Powered(world, c, part) ? PressStall.None : PressStall.NoPower;
         SetStall(world, st, why);
         if (why != PressStall.None || held || p.Broken)

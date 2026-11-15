@@ -296,17 +296,18 @@ public sealed class FactoryShowcase : IPartGenerator
             var clothS = On("Sawmill", 26.25f, Row2, Back, paint: Refining);
             var glassS = On("Smelter", 34.25f, Row2, Back, paint: Refining);
 
-            var ore = Heap("iron ore", -3.75f, -4.25f, 5.0f); // (two heaps on the raw strip west of the power plant: the whole factory's metal)
-            var ore2 = Heap("iron ore", -3.75f, -10.25f, 5.0f);
+            var ore = Heap("iron ore", -3.75f, -4.25f, 5.0f, 8.0f); // (two heaps on the raw strip west of the power plant: the whole factory's metal)
+            var ore2 = Heap("iron ore", -3.75f, -10.25f, 5.0f, 8.0f);
             ChuteVia(ore2, smelter, -9.6f);
             ChuteVia(ore, smelter, -9.5f);
-            Feed(Heap("stone", 14.25f, -4.25f, 2.4f), steelF);
-            var wood = Heap("wood", 22.25f, -4.25f, 2.4f);
+            // (8 m boxes, a quarter full: the refinery runs from the start and fills every machine's hopper, about 2,600 steel, before the build ends)
+            Feed(Heap("stone", 14.25f, -4.25f, 2.4f, 8.0f), steelF);
+            var wood = Heap("wood", 22.25f, -4.25f, 2.4f, 8.0f);
             Feed(wood, sawmill);
-            Feed(Heap("sand", 30.25f, -4.25f, 2.4f), rubberF);
-            Feed(Heap("copper ore", 6.25f, -10.75f, 3.2f), copperS); // (3.2 m square: copper for wire stock, bronze and coils)
+            Feed(Heap("sand", 30.25f, -4.25f, 2.4f, 8.0f), rubberF);
+            Feed(Heap("copper ore", 6.25f, -10.75f, 3.2f, 4.0f), copperS); // (3.2 m square: copper for wire stock, bronze and coils)
             Sign(-7.25f, Posts1, Stock, "RAW STOCK: filled in creative, empty in survival");
-            Feed(Heap("sand", 30.25f, -10.75f, 2.4f), glassS);
+            Feed(Heap("sand", 30.25f, -10.75f, 2.4f, 8.0f), glassS);
             // Each heap named on a post beside it (look review 6).
             Sign(-7.25f, -7.25f, Stock, "IRON ORE (both heaps)", false);
             Sign(13.25f, Posts1, Stock, "STONE", false);
@@ -894,11 +895,11 @@ public sealed class FactoryShowcase : IPartGenerator
         /// Raw stock: a Storage Volume at (x, z), a box on the floor that a creative world fills as the blueprint builds (to 24 %, under an
         /// open side's lip: Sealed volumes); a survival world builds it empty.
         /// </summary>
-        private VPart Heap(string material, float x, float z, float size)
+        private VPart Heap(string material, float x, float z, float size, float height = 2.0f)
         {
             var v = On("Storage Volume", x, z, Front, "-y", HeapPaint(material)); // (each heap's box its own colour: look review 6)
             // (the box from 5 cm over the floor, size square and 2 m high: 24 % of it is the raw stock, under every open side's lip)
-            Config(v, ("sizeX", size), ("sizeY", 2.0), ("sizeZ", size), ("atY", 0.35 + 0.5), ("material", material), ("fill", 24));
+            Config(v, ("sizeX", size), ("sizeY", (double)height), ("sizeZ", size), ("atY", height / 2.0 - 0.15), ("material", material), ("fill", 24));
             return v;
         }
 

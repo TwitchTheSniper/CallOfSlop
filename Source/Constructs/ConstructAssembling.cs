@@ -554,6 +554,22 @@ public sealed partial class ConstructWorld
         return false;
     }
 
+    /// <summary>
+    /// Does any order queued at this Assembler (its head too) use <paramref name="item"/>? A Router sends it a part tagged for a closed
+    /// order while one still does (pooled inputs, 2026-11-14: Bearings made for one order arrived after another had used its own, and
+    /// were set down loose beside the Router).
+    /// </summary>
+    public bool UsedByQueue(Construct c, int part, ushort item)
+    {
+        if (c.DefOf(part) is not { IsAssembler: true } d || c.Parts[part].Orders is not { Bill: false, Count: > 0 } q)
+            return false;
+        var table = AssemblingTable.Current;
+        for (var k = 0; k < q.Count; k++)
+            if (!q.Items[k].IsPiece && table.Of(q.Items[k].Part) is { } r && r.Machine == d.AsmMachine && r.CountOf(item) > 0)
+                return true;
+        return false;
+    }
+
     /// <summary>Would this Assembler take a part now? (For a chute looking through its source: nothing is noted.)</summary>
     public bool WantsPart(Construct c, int part, ushort item)
     {

@@ -134,6 +134,7 @@ public sealed class WorldNamesRead
 public sealed partial class ConstructWorld
 {
     private const uint LogiTag = 0x49474F4C; // "LOGI": a body's smart logistics block (its riders' destinations)
+    private const uint AsideTag = 0x45444953; // "SIDE": a body's stations' set-aside kinds (ConstructStation.MakeRoomFor), after LIFT
     private const uint LiftTag = 0x5446494C; // "LIFT": a body's lifters' hands that hold a piece (ConstructLifters.Snapshot)
 
     /// <summary>The tick's copy: every array the worker needs, in bulk.</summary>
@@ -490,6 +491,19 @@ public sealed partial class ConstructWorld
                 w.U16(lp).U16(names.Part(o.Def)).U8(o.Count).U8(o.Done);
                 w.U16(o.From.Body).U16(o.From.Part).U8((byte)o.From.Kind).U8(o.From.Bay);
                 w.U16(o.To.Body).U16(o.To.Part).U8((byte)o.To.Kind).U8(o.To.Bay);
+            }
+        }
+        // Stations' set-aside kinds, after LIFT: "SIDE", its length, i32 n, then per station u16 its part, u16 k and k kinds by the save's
+        // names. Only with stations' jobs (the blocks are read after them). An older build skips it; an older save ends before it.
+        if (b.Station is { } jobs && jobs.Any(x => x.Job.SetAside.Count > 0))
+        {
+            var withAside = jobs.Where(x => x.Job.SetAside.Count > 0).ToArray();
+            w.U32(AsideTag).I32(4 + withAside.Sum(x => 4 + 2 * x.Job.SetAside.Count)).I32(withAside.Length);
+            foreach (var (sp, sj) in withAside)
+            {
+                w.U16(sp).U16((ushort)sj.SetAside.Count);
+                foreach (var k in sj.SetAside)
+                    w.U16(names.Part(k));
             }
         }
     }
@@ -862,6 +876,22 @@ public sealed partial class ConstructWorld
                         o.From = new LiftPoint { Body = r.U16(), Part = r.U16(), Kind = (LiftPointKind)r.U8(), Bay = r.U8() };
                         o.To = new LiftPoint { Body = r.U16(), Part = r.U16(), Kind = (LiftPointKind)r.U8(), Bay = r.U8() };
                         lorders[i] = (lp, o);
+                    }
+                }
+            }
+            else if (tag == AsideTag && len >= 4)
+            {
+                var m = r.I32();
+                for (var i = 0; i < m && r.Pos + 4 <= end; i++)
+                {
+                    var sp = r.U16();
+                    int k = r.U16();
+                    var job = Array.Find(stations, x => x.Part == sp).Job;
+                    for (var q = 0; q < k && r.Pos + 2 <= end; q++)
+                    {
+                        var kind = r.U16();
+                        if (job != null && kind < names.Parts.Length && names.Parts[kind] != ConstructParts.None)
+                            job.SetAside.Add(names.Parts[kind]);
                     }
                 }
             }

@@ -50,9 +50,9 @@ public sealed partial class StationJob
     public ushort[] KindDef = [], KindNeed = [], KindFit = [];
     public string?[] KindWhy = []; // why nothing linked holds or makes it (null: ordered or held)
     public int KindN;
-    public int[] StepKind = [], KindReady = [], KindOrd = [], KindWay = []; // each step's kind; how many unfitted steps of a kind have their parent in place; how many may be ordered (parent in, or its part on its way); what of a kind is held or asked (each look)
-    public bool[] StepComing = []; // a step whose own part is held or asked (each look): its children may be ordered
+    public int[] StepKind = [], KindReady = [], KindOut = [], KindHave = []; // each step's kind; how many unfitted steps of a kind have their parent fitted (each look); parts a player took out of the hold by hand, not ordered again while a player is near; fitted and held last look
     public HashSet<ushort> SetAside = new(); // kinds a full hold moved out to a rack for a part that could be fitted (MakeRoomFor): not ordered again until a step can take them
+    public (ushort Def, int Version) RoomFail; // the part and the hold's version when making room last failed: not tried again until the hold changes
     public readonly List<(ushort Def, int Count, bool Loose)> Return = new(); // parts given back after a cancel or a release, a few a step
     public double CostMs, WorstMs;
     public long Started; // Stopwatch ticks at Start (the log's start-to-drivable time)
@@ -345,9 +345,8 @@ public static partial class ConstructStation
         j.KindWhy = new string?[defs.Count];
         j.KindN = defs.Count;
         j.KindReady = new int[defs.Count];
-        j.KindOrd = new int[defs.Count];
-        j.KindWay = new int[defs.Count];
-        j.StepComing = new bool[bp.Steps.Count];
+        j.KindOut = new int[defs.Count];
+        j.KindHave = new int[defs.Count];
         j.StepKind = new int[bp.Steps.Count];
         for (var s = 0; s < bp.Steps.Count; s++)
             j.StepKind[s] = defs.IndexOf((ushort)(ConstructParts.Find(bp.Steps[s].Part)?.Id ?? ConstructParts.None));
@@ -384,42 +383,31 @@ public static partial class ConstructStation
         if (j.State != StationState.Building)
             return;
         ConstructLifters.PadClaims(world, c, t, tray, j); // (what its arms' pick pads hold for it is claimed for the build: lifters phase 5)
+        // The rule (code review 2, 2026-11-14): a part is ordered when it can be fitted on arrival, that is when what it goes onto is fitted
+        // (or it is the first step). Every part ready in that sense is ordered at once (the user's wish: no waiting for one part before the
+        // next order starts); a deeper one waits for its parent to be fitted, not merely ordered, so the hold only ever fills with parts a
+        // step can take.
         Array.Clear(j.KindReady);
-        Array.Clear(j.KindOrd);
         while (j.Cursor < j.PartOf.Length && j.PartOf[j.Cursor] >= 0)
             j.Cursor++;
-        // What of each kind is in or on its way (held, in an arm's hand, or asked): handed out to the steps in build order, so a step knows
-        // whether its own part is coming.
-        for (var i = 0; i < j.KindN; i++)
-            j.KindWay[i] = ConstructCrafting.Holds(tray, j.KindDef[i]) + LiftHolds(world, c, t, j.KindDef[i]) + Asked(c.Parts[t].Craft, j.KindDef[i]);
         for (var s = j.Cursor; s < j.PartOf.Length; s++)
-        {
-            j.StepComing[s] = false;
-            if (j.PartOf[s] >= 0)
-                continue;
-            // Ordered: a step whose parent is in, or whose parent's part is in the hold or on its way (a step's parents come first in
-            // build order). Deeper children wait, so the hold doesn't fill with parts that can't be fitted yet.
-            var on = j.Bp!.Steps[s].On;
-            var k = j.StepKind[s];
-            if (k < 0)
-                continue;
-            if (Ready(j, s))
-                j.KindReady[k]++;
-            else if (on < 0 || on >= j.PartOf.Length || j.PartOf[on] >= 0 || !j.StepComing[on])
-                continue;
-            j.KindOrd[k]++;
-            if (j.KindWay[k] > 0)
-            {
-                j.KindWay[k]--;
-                j.StepComing[s] = true;
-            }
-        }
+            if (j.PartOf[s] < 0 && j.StepKind[s] >= 0 && Ready(j, s))
+                j.KindReady[j.StepKind[s]]++;
+        // Parts a player took out of the hold by hand aren't ordered again while a player is near the station (the part is still about);
+        // one that comes back, by hand or the door, ends that. With nobody near, the build orders what it lacks again.
+        var near = PlayerNear(world, c, t);
         var placed = 0;
         int firstKind = -1, firstOrder = -1, lacking = 0;
         for (var i = 0; i < j.KindN; i++)
         {
             var def = j.KindDef[i];
             var held = ConstructCrafting.Holds(tray, def) + LiftHolds(world, c, t, def); // (a piece in a Loader Arm's hand counts as in the hold: ConstructLifters.cs)
+            var have = j.KindFit[i] + held;
+            if (!near)
+                j.KindOut[i] = 0;
+            else if (have > j.KindHave[i] && j.KindOut[i] > 0)
+                j.KindOut[i] = Math.Max(0, j.KindOut[i] - (have - j.KindHave[i])); // (one came back)
+            j.KindHave[i] = have;
             var lack = j.KindNeed[i] - j.KindFit[i] - held;
             if (lack <= 0)
             {
@@ -429,13 +417,11 @@ public static partial class ConstructStation
             lacking += lack;
             var d = ConstructParts.Get(def);
             var asked = Asked(c.Parts[t].Craft, def);
-            // Every part the build lacks is asked for at once (the user, 2026-11-14: "place as many orders as it can at once, so that you're
-            // not sitting around waiting for a part to be delivered before the next order starts"): the machines work side by side, and a
-            // part that can't be fitted yet waits in the hold, or in the Router's storage while the hold is full, until its parent is in.
-            // Capped by the steps that may be ordered now (parent in or next); none of a kind set aside for room (MakeRoomFor) until a step can take it.
+            // As many as the steps ready for it (parent fitted), less what is held and what a player took out; a kind set aside for room
+            // (MakeRoomFor) is fetched back as stock once a step can take it, never made again.
             if (j.KindReady[i] > 0)
                 j.SetAside.Remove(def);
-            var want = j.SetAside.Contains(def) ? 0 : Math.Min(lack, Math.Max(0, j.KindOrd[i] - held));
+            var want = Math.Min(lack, Math.Max(0, j.KindReady[i] - held - j.KindOut[i]));
             if (want > asked && d != null && placed < OrdersAStep && (c.Parts[t].Craft?.Count ?? 0) < ConstructCrafting.MaxOrders)
             {
                 placed++;
@@ -456,15 +442,22 @@ public static partial class ConstructStation
             return; // (its links: NextLink's own note)
         // The next part to fit can't come in (a full hold: at the door, or kept in a Router's storage): room is made by moving out what no
         // step can take yet; when none can be made the station says so.
-        var stuck = false;
-        if (firstKind >= 0 && j.KindReady[firstKind] > 0 && tray.ItemCount > 0 && ConstructCrafting.Holds(tray, j.KindDef[firstKind]) == 0
-            && ConstructParts.Get(j.KindDef[firstKind]) is { } nd && ConstructConveyor.RackCheck(c, t, tray, nd, true) != 0)
-            stuck = !MakeRoomFor(world, c, t, nd);
+        string? stuck = null;
+        if (firstKind >= 0 && j.KindReady[firstKind] > 0 && ConstructCrafting.Holds(tray, j.KindDef[firstKind]) == 0
+            && ConstructParts.Get(j.KindDef[firstKind]) is { } nd && ConstructConveyor.RackCheck(c, t, tray, nd, true) is var rc and not 0)
+            stuck = rc == 3 ? "too long for this station's hold: build a larger station or fit it by hand"
+                : tray.ItemCount > 0 && !MakeRoomFor(world, c, t, nd) ? "hold full of parts no step fits yet, no rack with room: take one out" : null;
+        for (var i = 0; i < j.KindN && stuck == null; i++)
+            if (j.KindOut[i] > 0 && j.KindReady[i] > ConstructCrafting.Holds(tray, j.KindDef[i]))
+            {
+                firstKind = i; // (what it waits for is the part taken out)
+                stuck = $"you took {j.KindOut[i]} out by hand: bring {(j.KindOut[i] == 1 ? "it" : "them")} back (none ordered while you are near)";
+            }
         // The note is made again only when what it says changed (a look allocates nothing otherwise).
         var oq = c.Parts[t].Craft;
         var full = firstOrder >= 0 && oq!.Items[firstOrder].State == CraftState.Held && tray.ItemCount > 0 && oq.Items[firstOrder].Note.Contains("full", StringComparison.Ordinal);
         var key = lacking * 1009 + (firstKind + 1) * 31 + (firstOrder < 0 ? 0 : ((int)oq!.Items[firstOrder].State + 1) * 7 + oq.Items[firstOrder].Where + (oq.Items[firstOrder].Note?.GetHashCode() ?? 0))
-            + (firstKind >= 0 ? j.KindWhy[firstKind]?.GetHashCode() ?? 0 : 0) + (full ? 3 : 0) + (stuck ? 5 : 0);
+            + (firstKind >= 0 ? j.KindWhy[firstKind]?.GetHashCode() ?? 0 : 0) + (full ? 3 : 0) + (stuck?.GetHashCode() ?? 0);
         if (key == j.NoteKey)
             return;
         j.NoteKey = key;
@@ -474,10 +467,9 @@ public static partial class ConstructStation
             var name = firstKind < 0 ? "a part whose parent isn't in place" : ConstructParts.Get(j.KindDef[firstKind])?.Name ?? "a part this build doesn't have";
             // (a full hold empties as its parts are fitted: said as that, not as the terminal's "take parts out")
             var first = firstKind >= 0 && j.KindWhy[firstKind] is { } why ? $"{name}: {why}"
-                : stuck ? $"{name} (stuck: hold full of parts not fittable yet, no rack has room: take one out)"
                 : full ? $"{name} (next in: the hold is full until what it holds is fitted)"
                 : firstOrder >= 0 ? $"{name} ({ConstructCrafting.StateText(c, oq!.Items[firstOrder])})" : name;
-            note = $"waits for {lacking} part{(lacking == 1 ? "" : "s")}: {first}";
+            note = stuck != null ? $"{stuck}: {name}" : $"waits for {lacking} part{(lacking == 1 ? "" : "s")}: {first}"; // (a stall's reason first: a long run-time name is what the cut takes)
             if (note.Length > 120)
                 note = note[..120];
         }
@@ -1242,6 +1234,43 @@ public static partial class ConstructStation
     {
         if (c.Parts[t].Station is not { State: StationState.Building } j || world.StoreOf(c, t) is not { } tray)
             return false;
+        // A part that can never fit (too long or wide for this hold) moves nothing; nor is a try that failed made again before the hold
+        // changes (each try moves spares out and back: messages to every client).
+        if (ConstructConveyor.RackCheck(c, t, tray, d, true) == 3 || j.RoomFail == ((ushort)d.Id, tray.Version))
+            return false;
+        if (!TryMakeRoom(world, c, t, d, j, tray))
+        {
+            j.RoomFail = ((ushort)d.Id, tray.Version);
+            return false;
+        }
+        return true;
+    }
+
+    /// <summary>Server: a part a player took out of a station's hold by hand. It isn't ordered again while a player is near (<see cref="Orders"/>).</summary>
+    public static void HandTook(Construct c, int t, ConstructPartDef d)
+    {
+        if (c.Parts[t].Station is not { State: StationState.Building } j)
+            return;
+        var k = Array.IndexOf(j.KindDef, (ushort)d.Id);
+        if (k >= 0 && k < j.KindOut.Length)
+        {
+            j.KindOut[k]++;
+            j.KindHave[k] = Math.Max(0, j.KindHave[k] - 1);
+        }
+    }
+
+    /// <summary>Whether a player stands within 16 m of the station's bay (the parts a player took out are taken to be about).</summary>
+    private static bool PlayerNear(ConstructWorld world, Construct c, int t)
+    {
+        Bay(c, t, out var floor, out _, out _);
+        for (var i = 0; i < world.PlayerSpotCount; i++)
+            if (Vector3.DistanceSquared(world.PlayerSpots[i], floor) < 16f * 16f)
+                return true;
+        return false;
+    }
+
+    private static bool TryMakeRoom(ConstructWorld world, Construct c, int t, ConstructPartDef d, StationJob j, CStore tray)
+    {
         var want = Array.IndexOf(j.KindDef, (ushort)d.Id);
         if (want < 0 || want >= j.KindReady.Length || j.KindReady[want] <= 0)
             return false;
@@ -1522,7 +1551,7 @@ public static partial class ConstructStation
                 (o ??= new()).Add(((ushort)i, new StationJob
                 {
                     Name = j.Name, State = j.State, Body = j.Body, Repeat = j.Repeat, Steps = j.Steps, Fitted = j.Fitted, LinksDone = j.LinksDone,
-                    LinkAt = j.LinkAt, PartOf = (int[])j.PartOf.Clone(),
+                    LinkAt = j.LinkAt, PartOf = (int[])j.PartOf.Clone(), SetAside = new HashSet<ushort>(j.SetAside), // (spares moved out for room: saved, so a load doesn't order them again)
                 }));
         return o?.ToArray();
     }
