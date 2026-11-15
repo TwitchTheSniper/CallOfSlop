@@ -152,7 +152,7 @@ public sealed class FactoryShowcase : IPartGenerator
         private static readonly Orient Toward = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, -Vector3.UnitX); // own +z against the flow
         private static readonly Orient Post = new(Vector3.UnitZ, Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ); // a Frame Beam stood up, its y+ sockets to the front
 
-        private readonly List<VPart> _lamps = new();
+        private readonly List<(VPart Lamp, Vector3 Back)> _lamps = new(); // (each with the way behind its board: its cable climbs the post's back)
         private VPart? _switch;
         private readonly HashSet<(int I, int J)> _tiles = new(); // the floor's 2 m tiles laid so far, by (i, j): x 1 + 2i, z -1 - 2j
 
@@ -195,28 +195,28 @@ public sealed class FactoryShowcase : IPartGenerator
             Monitors(r.Console, orders, st.RouterS, st.Station);
             Walkway();
             // The areas, numbered as the walkway passes them west to east, then back along the back floor east to west.
-            AreaSign(-4.75f, Posts1, "1 RAW STOCK AND POWER", Stock);
+            AreaSign(-4.75f, Posts1, "1 RAW STOCK, POWER", Stock);
             AreaSign(6.75f, Posts1, "2 REFINERY", Refining);
-            AreaSign(37.75f, Posts1, "3 THE YARD", Yard);
+            AreaSign(37.75f, Posts1, "3 YARD", Yard);
             AreaSign(52.75f, Posts1, "4 PANEL LINE", PanelGreen);
-            AreaSign(71.75f, Posts1, "5 WHEELS AND THE STATION LINE", Wheels);
+            AreaSign(71.75f, Posts1, "5 WHEELS", Wheels);
             AreaSign(83.25f, Posts1, "6 BUILDING STATION", StationTeal);
-            AreaSign(109.25f, Posts1, "7 THE WING", Wheels); // (east of the Lay-down Pad: the pad and the bay stay clear)
-            AreaSign(77.75f, Posts1, "8 PRESS HALL: BEHIND THIS ROW, ON THE BACK FLOOR", PressBlue); // (the aisle's board for a hall it can't see)
+            AreaSign(109.25f, Posts1, "7 WING", Wheels); // (east of the Lay-down Pad: the pad and the bay stay clear)
+            AreaSign(77.75f, Posts1, "8 PRESS HALL BEHIND", PressBlue); // (the aisle's board for a hall it can't see)
             Arrow(76.75f, -3.25f, -Vector3.UnitZ); // (its arrow, on the floor under the board: south, to the back floor)
             AreaSign(75.25f, -15.25f, "8 PRESS HALL", PressBlue);
-            AreaSign(45.25f, -15.25f, "9 ASSEMBLY: WHERE THE LINES MEET", Assembler);
+            AreaSign(45.25f, -15.25f, "9 ASSEMBLY", Assembler);
             AreaSign(56.75f, -31.25f, "10 TOOL ROOM", ToolGrey);
             // Each press named by what it makes, on a medium board on its north side, big enough to read from the strip in front.
-            foreach (var (press, what) in new[] { (ph.Gear, "GEAR PRESS"), (ph.Tank, "TANK PRESS"), (ph.Piston, "PISTON PRESS"),
-                         (ph.Cylinder, "CYLINDER PRESS"), (ph.Engine, "ENGINE PRESS"), (ph.Bracket, "BRACKET PRESS") })
+            foreach (var (press, what) in new[] { (ph.Gear, "GEAR, PRESS"), (ph.Tank, "TANK, PRESS"), (ph.Piston, "PISTON, PRESS"),
+                         (ph.Cylinder, "CYLINDER, PRESS"), (ph.Engine, "ENGINE, PRESS"), (ph.Bracket, "BRACKET, PRESS") })
             {
                 var at = FromRest(Live.Parts[press.Index].Pos);
                 MediumBoard(at.X - 1.0f, -20.75f, what, PressBlue, Post, tall: false);
             }
             FlowArrows();
-            foreach (var lamp in _lamps)
-                Lamp(lamp);
+            foreach (var (lamp, back) in _lamps)
+                Lamp(lamp, back);
         }
 
         // ---- Floors ---------------------------------------------------------------------------------------------------------------
@@ -260,7 +260,7 @@ public sealed class FactoryShowcase : IPartGenerator
             Paint(tank2, Power);
             _fuel = tank2;
             var battery = On("Battery", 3.75f, Row1, Front, "-y", Power);
-            var mainPost = Sign(1.25f, Posts1, Power, "MAIN SWITCH: off = every machine No power");
+            var mainPost = Sign(1.25f, Posts1, Power, "MAIN SWITCH FOR ALL POWER");
             _switch = Onto(mainPost, "y+2", "Switch", "-z");
             Config(_switch, ("startOn", true));
             Paint(_switch, Control);
@@ -306,15 +306,15 @@ public sealed class FactoryShowcase : IPartGenerator
             Feed(wood, sawmill);
             Feed(Heap("sand", 30.25f, -4.25f, 2.4f, 8.0f), rubberF);
             Feed(Heap("copper ore", 6.25f, -10.75f, 3.2f, 4.0f), copperS); // (3.2 m square: copper for wire stock, bronze and coils)
-            Sign(-7.25f, Posts1, Stock, "RAW STOCK: filled in creative, empty in survival");
+            Sign(-7.25f, Posts1, Stock, "FULL IN CREATIVE ONLY");
             Feed(Heap("sand", 30.25f, -10.75f, 2.4f, 8.0f), glassS);
-            // Each heap named on a post beside it (look review 6).
-            Sign(-7.25f, -7.25f, Stock, "IRON ORE (both heaps)", false);
-            Sign(13.25f, Posts1, Stock, "STONE", false);
-            Sign(21.25f, Posts1, Stock, "WOOD", false);
-            Sign(29.25f, Posts1, Stock, "SAND", false);
-            Sign(6.25f, -8.75f, Stock, "COPPER ORE", false);
-            Sign(28.25f, -8.75f, Stock, "SAND", false);
+            // Each heap named on a medium board facing the walkway (look review 3: small signs read as nothing from the aisle).
+            HeapBoard(-2.25f, Posts1, "IRON ORE");
+            HeapBoard(14.25f, Posts1, "STONE");
+            HeapBoard(22.25f, Posts1, "WOOD");
+            HeapBoard(30.25f, Posts1, "SAND");
+            HeapBoard(6.25f, Posts2, "COPPER ORE");
+            HeapBoard(30.25f, Posts2, "SAND");
             ChuteVia(smelter, steelF, -7.35f);
             ChuteVia(smelter, bronzeF, -8.2f);
             Chute(copperS, bronzeF);
@@ -336,16 +336,13 @@ public sealed class FactoryShowcase : IPartGenerator
 
             var console = On("Line Console", 8.25f, Posts1, Front, paint: Control);
             Config(console, ("startOn", true)); // (the refinery runs from the moment the factory is down: stacks smoke, chutes move; the order lines wait for Start)
-            Sign(9.75f, Posts1, Refining, "REFINERY CONSOLE: runs from the start; Stop holds it");
+            Sign(9.75f, Posts1, Refining, "RUNS FROM THE START");
             foreach (var m in new[] { smelter, steelF, sawmill, rubberF })
                 Run(console, m, V(8.25f, 0, -2.0f), V(FromRest(Live.Parts[m.Index].Pos).X, 0, -2.0f));
             foreach (var m in new[] { copperS, bronzeF, clothS, glassS })
                 Run(console, m, V(8.25f, 0, -1.95f), V(8.0f, 0, -1.95f), V(8.0f, 0, -8.0f), V(FromRest(Live.Parts[m.Index].Pos).X, 0, -8.0f));
-            Sign(14.25f, Posts1, Refining, "Ore to metal; metal and stone to steel");
-            Sign(30.25f, Posts1, Refining, "Wood to planks; planks and sand to rubber");
-            Sign(14.25f, Posts2, Refining, "Copper ore to copper; copper and metal to bronze");
-            Sign(30.25f, Posts2, Refining, "Planks to cloth; sand to glass");
-            Sign(41.25f, Posts1, Yard, "Every refined material waits here in bins");
+            Sign(14.25f, Posts2, Refining, "COPPER TO BRONZE");
+            Sign(41.25f, Posts1, Yard, "REFINED STOCK BINS");
             return new Refined(steel, rubber, cloth, bronze, copper, glass, console, steelF);
         }
 
@@ -377,7 +374,7 @@ public sealed class FactoryShowcase : IPartGenerator
             // (One Assembler: a second, set to Bearings on its own, ate the copper and bronze with 298 spare Bearings.)
 
 
-            Sign(48.75f, -15.25f, Assembler, "Every catalogue part, its own bearings too", false);
+            Sign(48.75f, -15.25f, Assembler, "MAKES EVERY PART", false);
             return new Assembly(a, a, ra, ra);
         }
 
@@ -466,7 +463,7 @@ public sealed class FactoryShowcase : IPartGenerator
             Onto(cable, "dieslot", "Cable Die", "mount");
             Convey(copperEx, "Piece out", cable, "Piece in", Copper);
             _cable = cable;
-            Sign(62.75f, -14.75f, PressBlue, "Blanks in from the south, parts out north", false);
+            Sign(62.75f, -14.75f, PressBlue, "BLANKS IN, PARTS OUT", false);
             return new Presses(blank, presses[0], presses[1], presses[5], presses[3], presses[4], cable, copperEx, j1, presses[2]);
         }
 
@@ -522,9 +519,9 @@ public sealed class FactoryShowcase : IPartGenerator
             var glass = On("Panel Former", 54.25f, Row2, Flow, paint: GlassBlue);
             ChuteVia(r.Glass, glass, -13.85f);
             Corner(glass, "Piece out", jc, "Piece in 2", GlassBlue, Small);
-            Sign(50.25f, Posts1, PanelGreen, "Sheet in, formed panels out");
-            Sign(64.75f, Posts1, CutterRed, "LASER CUTTER: a panel in, a cut part out");
-            Sign(56.25f, Posts2, GlassBlue, "GLASS: formed glass sheet for the panes");
+            Sign(50.25f, Posts1, PanelGreen, "SHEET IN, PANELS OUT");
+            Sign(64.75f, Posts1, CutterRed, "LASER CUTTER");
+            Sign(56.25f, Posts2, GlassBlue, "GLASS SHEET");
             return new Panels(sheet, former, glass, cutter, rp);
         }
 
@@ -566,7 +563,7 @@ public sealed class FactoryShowcase : IPartGenerator
             Convey(rq, "Piece out", station, "Piece in", PressBlue, Wide, V(po.X + 1.0f, po.Y, po.Z), V(po.X + 1.0f, po.Y, sb.Z - 3.0f - (po.Y - sb.Y)), V(sb.X, po.Y, sb.Z - 3.0f - (po.Y - sb.Y)), V(sb.X, po.Y, sb.Z - 2.0f - (po.Y - sb.Y)), V(sb.X, sb.Y, sb.Z - 2.0f)); // (round east and up into the station's back, a 45 degree step down to its port)
             _terminal = On("Crafting Terminal", 99.25f, -23.75f, Front, "-y.0.0");
             Convey(rq, "Piece out 2", _terminal, "Piece in", StationTeal, Small);
-            Sign(102.75f, -21.75f, StationTeal, "CRAFTING TERMINAL: F, order a part, it rides here", false);
+            Sign(102.75f, -21.75f, StationTeal, "ORDER A PART HERE (F)", false);
             foreach (var t in _toStation)
                 ChuteVia(t, station, -14.35f - 0.15f * _toStation.IndexOf(t));
             ChuteVia(r.Copper, station, -14.05f); // (link stock: a unit of copper a metre of wire)
@@ -575,9 +572,9 @@ public sealed class FactoryShowcase : IPartGenerator
             Convey(rack, "Piece out", js, "Piece in 2", StationTeal, Small);
             On("Loader Arm", 95.75f, -10.75f, Front, "-y.0.0");
             On("Loader Arm", 95.75f, -4.25f, Front, "-y.0.0");
-            Sign(66.25f, Posts2, Wheels, "WHEELS: rubber in, a formed wheel out");
-            Sign(76.25f, Posts2, StationTeal, "ROUTER: ordered pieces to the station, the rest to the rack");
-            Sign(90.25f, Posts1, StationTeal, "F on the station: pick Works Runabout, Start");
+            Sign(66.25f, Posts2, Wheels, "WHEEL FORMER");
+            Sign(76.25f, Posts2, StationTeal, "TO STATION OR RACK");
+            Sign(90.25f, Posts1, StationTeal, "F: PICK WORKS RUNABOUT");
             return (station, rs, wheel, rack);
         }
 
@@ -606,7 +603,7 @@ public sealed class FactoryShowcase : IPartGenerator
             OrdersOnly(bar);
             Config(console, ("startOn", true));
             Bill(console, "Extrusion solid 25x25x25 steel", 1);
-            Sign(56.75f, -28.75f, ToolGrey, "TOOL ROOM: Bill, Send: one bar, one spare Bracket Die", false);
+            Sign(56.75f, -28.75f, ToolGrey, "BILL THEN SEND FOR A DIE", false);
         }
 
         /// <summary>An Assembler's Recipe setting for <paramref name="part"/>: its option's number (0 is None).</summary>
@@ -631,7 +628,7 @@ public sealed class FactoryShowcase : IPartGenerator
         {
             var rec = On("Recycler", 2.25f, -11.25f, Front, paint: Refining);
             ChuteVia(rec, r.SteelFoundry, -8.1f);
-            Sign(2.25f, Posts2, Refining, "RECYCLER: drop a wreck in; its metal goes to steel", false);
+            Sign(2.25f, Posts2, Refining, "WRECKS IN, METAL OUT", false);
             var term = On("Smart Terminal", 43.75f, -8.25f, Front, paint: Assembler); // (by the yard, on its chute network: a player pulls steel here)
             Link("chute", term, r.Steel, "Network", null, Assembler);
             var beacon = On("Inventory Beacon", 38.25f, -7.75f, Front, paint: Assembler);
@@ -654,7 +651,7 @@ public sealed class FactoryShowcase : IPartGenerator
             var desk = On("Panel Designer", 86.25f, -6.25f, Back, "-y.0.0");
             Convey(rt, "Piece out", desk, "Piece in", PanelGreen, Small);
 
-            Sign(86.25f, Posts1, PanelGreen, "PANEL DESIGNER: design a panel; it is formed for you");
+            Sign(86.25f, Posts1, PanelGreen, "PANEL DESIGNER");
             return (term, desk);
         }
 
@@ -667,11 +664,11 @@ public sealed class FactoryShowcase : IPartGenerator
         /// </summary>
         private VPart WingCorner(Refined r)
         {
-            On("Lay-down Pad", 102.25f, -10.75f, Front, "-y.0.0", Hazard);
-            var former = On("Airframe Former", 107.25f, -6.75f, Toward, paint: Wheels); // (its die over the pad's east end: the wing grows west over the pad)
+            On("Lay-down Pad", 103.75f, -10.75f, Front, "-y.0.0", Hazard); // (1.5 m east of the bay's edge: its west posts clear of the Runabout's way out north, look review 3)
+            var former = On("Airframe Former", 108.75f, -6.75f, Toward, paint: Wheels); // (its die over the pad's east end: the wing grows west over the pad)
             ChuteVia(r.Steel, former, -13.95f); // (along the main floor's back edge, off the walkway)
-            On("Military Loader Arm", 102.25f, -14.75f, Front, "-y.0.0");
-            Sign(107.25f, Posts1, Wheels, "AIRFRAME FORMER: the wing drops on the pad; the arm fits it");
+            On("Military Loader Arm", 103.75f, -14.75f, Front, "-y.0.0");
+            Sign(107.25f, Posts1, Wheels, "WING FORMER");
             return former;
         }
 
@@ -684,11 +681,11 @@ public sealed class FactoryShowcase : IPartGenerator
         /// </summary>
         private void Monitors(VPart refine, VPart orders, VPart rs, VPart station)
         {
-            var p1 = Sign(11.25f, Posts1, Refining, "MONITOR: the refinery console's Data out");
+            var p1 = Sign(11.25f, Posts1, Refining, "REFINERY OUTPUT");
             var small = Onto(p1, "y+1", "Number Readout", "back");
             Paint(small, Board);
             BehindPost(refine, small, 8.25f, 11.25f);
-            var p2 = Sign(43.25f, Posts1, Control, "MONITOR: every maker on the orders line");
+            var p2 = Sign(43.25f, Posts1, Control, "ORDER LINE STATUS");
             var medium = Onto(p2, "y+1", "Text Sign", "back");
             Paint(medium, Board);
             BehindPost(orders, medium, 44.75f, 43.25f);
@@ -700,7 +697,12 @@ public sealed class FactoryShowcase : IPartGenerator
             Text(board, "NETWORK BOARD");
             Link("data", rs, board, "Data out", null, StationTeal, true, Along(new[] { V(FromRest(Live.Parts[rs.Index].Pos).X, 0, -12.6f), V(76.25f, 0, -12.6f) }));
             var fuel = On("Fuel Tank", 90.75f, -3.25f, Front, "-y", Power);
-            Link("pipe", fuel, station, "Fuel out", "Fluid in", Power);
+            // (laid along the floor and up into the port, not a line across the bay: look review 3)
+            var fo = PortOrCentre(fuel, "Fuel out");
+            var fi = PortOrCentre(station, "Fluid in");
+            Link("pipe", fuel, station, "Fuel out", "Fluid in", Power, true, Along(new[] { V(fo.X, 0, fo.Z), V(fo.X, 0, fi.Z), V(fi.X, 0, fi.Z) }));
+            // The way out: arrows from the bay's open front to the walkway, the way the finished Runabout drives off.
+            Arrow(101.25f, -3.25f, Vector3.UnitZ);
         }
 
         /// <summary>
@@ -727,7 +729,7 @@ public sealed class FactoryShowcase : IPartGenerator
         {
             const float cx = 44.75f, gapX = 43.6f;
             var console = On("Line Console", cx, Posts1, Front, paint: Control);
-            Sign(46.25f, Posts1, Control, "ORDERS: Start runs every maker; the station orders here");
+            Sign(46.25f, Posts1, Control, "PRESS START HERE");
             var k = 0;
             foreach (var m in makers)
             {
@@ -787,7 +789,7 @@ public sealed class FactoryShowcase : IPartGenerator
         /// A Medium Text Sign on a steel post (two Frame Beams, 3.5 m up, when <paramref name="tall"/>), a lamp on top; the board's face in
         /// the area's colour (look review 2: every post and frame one steel, the board carries the area).
         /// </summary>
-        private void MediumBoard(float x, float z, string text, string colour, Orient o, bool tall)
+        private void MediumBoard(float x, float z, string text, string colour, Orient o, bool tall, bool lit = true)
         {
             var post = On("Frame Beam", x, z, o, "end-", PostSteel, "painted plating");
             var top = post;
@@ -802,10 +804,12 @@ public sealed class FactoryShowcase : IPartGenerator
             var board = Onto(adapter, "back", "Medium Text Sign", "back");
             Paint(board, colour);
             Config(board, ("ink", Lighter(colour))); // (its face is a screen: the area's colour is its writing, lightened to read on the dark face)
-            Text(board, text);
+            Text(board, Fit(text));
+            if (!lit)
+                return;
             var lamp = Onto(top, "end+", "Lamp", "-y");
             Config(lamp, ("colour", "#ffd27a"), ("brightness", 160));
-            _lamps.Add(lamp);
+            _lamps.Add((lamp, ReferenceEquals(o, West) ? Vector3.UnitX : -Vector3.UnitZ));
         }
 
         /// <summary>A painted Floor Arrow flat on the floor at (x, z), pointing along <paramref name="way"/>.</summary>
@@ -835,6 +839,34 @@ public sealed class FactoryShowcase : IPartGenerator
         private const string PostSteel = "#7a8086";
 
         /// <summary>A colour halfway to white: an area's colour as writing on a dark screen.</summary>
+        /// <summary>
+        /// A sign's text, refused unless it fits its board whole: both sign sizes show 3 lines of 10 characters
+        /// (<c>PanelRender.Columns</c>), wrapped as the board wraps (<c>PanelCard.Wrap</c>: ", " starts a new line when the next piece
+        /// doesn't fit beside it, a long piece breaks at a space). Look review 3: "MAIN SWITCH: off =" and two more were cut off.
+        /// </summary>
+        private static string Fit(string text, int cols = 10, int rows = 3)
+        {
+            int lines = 0, column = 0;
+            foreach (var piece in text.Split(", "))
+            {
+                if (column > 0 && column + 2 + piece.Length > cols)
+                    (lines, column) = (lines + 1, 0);
+                else if (column > 0)
+                    column += 2;
+                foreach (var word in piece.Split(' '))
+                {
+                    if (word.Length > cols)
+                        throw new VehicleKitException($"sign \"{text}\": \"{word}\" is longer than a line ({cols})");
+                    if (column > 0 && column + 1 + word.Length > cols)
+                        (lines, column) = (lines + 1, 0);
+                    column += (column > 0 ? 1 : 0) + word.Length;
+                }
+            }
+            if (lines + 1 > rows)
+                throw new VehicleKitException($"sign \"{text}\" takes {lines + 1} lines of {cols}: its board shows {rows}");
+            return text;
+        }
+
         private static string Lighter(string hex)
         {
             var v = Convert.ToInt32(hex[1..], 16);
@@ -864,6 +896,16 @@ public sealed class FactoryShowcase : IPartGenerator
             return FromRest(cp.Pos + Rot24.Apply(cp.Rot, np.At));
         }
 
+        /// <summary>A named port of any link type (vehicle coordinates), else the part's centre.</summary>
+        private Vector3 PortOrCentre(VPart p, string name)
+        {
+            ref var cp = ref Live.Parts[p.Index];
+            foreach (var np in p.Def.NamedPorts)
+                if (np.Name == name)
+                    return FromRest(cp.Pos + Rot24.Apply(cp.Rot, np.At));
+            return FromRest(cp.Pos);
+        }
+
         /// <summary>A part's socket's place (vehicle coordinates).</summary>
         private Vector3 SocketAt(VPart p, string name)
         {
@@ -873,17 +915,17 @@ public sealed class FactoryShowcase : IPartGenerator
         }
 
         /// <summary>A sign post at (x, z): a Frame Beam stood up in the stage's colour, a Text Sign facing the aisle, a lamp on top.</summary>
-        private VPart Sign(float x, float z, string colour, string text, bool lit = true)
+        private VPart Sign(float x, float z, string colour, string text, bool lit = false)
         {
             var post = On("Frame Beam", x, z, Post, "end-", PostSteel, "painted plating"); // (every post one steel, look review 2)
             var sign = Onto(post, "y+3", "Text Sign", "back");
             Paint(sign, Board);
-            Text(sign, text);
+            Text(sign, Fit(text));
             if (!lit)
                 return post;
             var lamp = Onto(post, "end+", "Lamp", "-y");
             Config(lamp, ("colour", "#ffb347"), ("brightness", 120));
-            _lamps.Add(lamp);
+            _lamps.Add((lamp, -Vector3.UnitZ));
             return post;
         }
 
@@ -902,6 +944,9 @@ public sealed class FactoryShowcase : IPartGenerator
             Config(v, ("sizeX", size), ("sizeY", (double)height), ("sizeZ", size), ("atY", height / 2.0 - 0.15), ("material", material), ("fill", 24));
             return v;
         }
+
+        /// <summary>A heap's name on a medium board on one post, facing the walkway, its writing in the heap's colour (no lamp).</summary>
+        private void HeapBoard(float x, float z, string name) => MediumBoard(x, z, name, HeapPaint(name.ToLowerInvariant()), Post, tall: false, lit: false);
 
         private static string HeapPaint(string material) => material switch
         {
@@ -1045,19 +1090,19 @@ public sealed class FactoryShowcase : IPartGenerator
         }
 
         /// <summary>A lamp wired from the main switch: a cable along the front walkway's edge (and across to the middle aisle), up its post.</summary>
-        private void Lamp(VPart lamp)
+        private void Lamp(VPart lamp, Vector3 back)
         {
             var at = FromRest(Live.Parts[lamp.Index].Pos);
-            var back = at.Z < -6;
-            var z = back ? -8.35f : -1.85f;
+            var middle = at.Z < -6;
+            var z = middle ? -8.35f : -1.85f;
             var floor = new List<Vector3> { V(1.25f, 0, -1.85f) };
-            if (back)
+            if (middle)
             {
                 floor.Add(V(4.75f, 0, -1.85f));
                 floor.Add(V(4.75f, 0, z));
             }
             // (up the post's back corner, never in front of its sign: look review 7, a cable rising 0.4 m in front read as a post before the boards)
-            var rise = V(at.X + 0.35f, 0, at.Z - 0.35f);
+            var rise = V(at.X + back.X * 0.3f, 0, at.Z + back.Z * 0.3f); // (5 cm off the 0.5 m post's back face, on the far side from its board)
             floor.Add(V(rise.X, 0, z));
             floor.Add(rise);
             var nodes = Along(floor.ToArray()).ToList();
