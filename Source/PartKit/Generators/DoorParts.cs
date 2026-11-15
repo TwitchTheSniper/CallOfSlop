@@ -182,6 +182,65 @@ public sealed class DoorParts : IPartGenerator
         return p;
     }
 
+    /// <summary>A Slide Door: the miner's pocket door (Karl, 2026-11-15: "more like what you'd expect on a miner ship"). It goes on a doorway's
+    /// jamb like a Bulkhead Door and slides sideways into the wall on that side. A framed, ribbed steel leaf with a kick plate, a small viewport,
+    /// a hazard-striped leading stile with a rubber seal, a pull bar each side and a status lamp. Everything stays within 9 cm of its middle, so
+    /// it hides inside any wall 20 cm thick or more once open.</summary>
+    private static Part SlideDoor(double w, double h)
+    {
+        var kind = Kinds[0];
+        var name = $"Slide Door {Py.G(w)}x{Py.G(h)} m";
+        double dw = w - 2 * Gap, dh = h - 2 * Gap, hy = dh / 2;
+        var p = new Part(name, Small, Section, $"A rugged sliding pocket door for a {Py.G(w)} by {Py.G(h)} m opening, in place of a hinge and a door: goes on its jamb and slides into the wall on that side (keep {Py.G(dw)} m of wall there, 20 cm thick or more).",
+            role: "door", tool: "wrench", material: "steel", color: "#8a8f86", group: Group);
+        const string Trim = "#5e635c", Kick = "#3f433f", Ring = "#2a2d2b", Yellow = "#e2b21c", Black = "#1d1e1d", Rubber = "#161716", Lamp = "#5cff7a";
+        var fixedPaint = Kw(("paintable", false));
+        // The leaf's core, a little inside its frame on every edge (so no face of it lies on the frame's), with the viewport cut through it.
+        double wx0 = dw * 0.5 - 0.17, wx1 = dw * 0.5 + 0.17, wy1 = hy - 0.17, wy0 = hy - 0.6; // (the viewport's opening)
+        double c = 0.035, e = 0.005;
+        p.Add(Box([e, -hy + e, -c], [dw - e, wy0 - 0.004, c]));
+        p.Add(Box([e, wy1 + 0.004, -c], [dw - e, hy - e, c]));
+        p.Add(Box([e, wy0 - 0.004, -c], [wx0 - 0.004, wy1 + 0.004, c]));
+        p.Add(Box([wx1 + 0.004, wy0 - 0.004, -c], [dw - e, wy1 + 0.004, c]));
+        p.Add(Box([wx0 - 0.004, wy0 - 0.004, -0.008], [wx1 + 0.004, wy1 + 0.004, 0.008], glass: true, detail: true));
+        // The frame: two stiles (the leading one wider) and two rails, proud of the core on both faces.
+        p.Add(Box([0, -hy, -0.05], [0.09, hy, 0.05], Trim, detail: true));
+        p.Add(Box([dw - 0.11, -hy, -0.05], [dw, hy, 0.05], Trim, detail: true));
+        p.Add(Box([0.07, hy - 0.1, -0.045], [dw - 0.09, hy, 0.045], Trim, detail: true));
+        p.Add(Box([0.07, -hy, -0.045], [dw - 0.09, -hy + 0.08, 0.045], Trim, detail: true));
+        p.Add(Box([0.07, -hy + 0.06, -0.047], [dw - 0.09, -hy + 0.34, 0.047], Kick, detail: true)); // (the kick plate)
+        // The viewport's dark ring, its opening 4 mm inside the hole in the core.
+        p.Add(Box([wx0 - 0.04, wy1, -0.05], [wx1 + 0.04, wy1 + 0.04, 0.05], Ring, detail: true));
+        p.Add(Box([wx0 - 0.04, wy0 - 0.04, -0.05], [wx1 + 0.04, wy0, 0.05], Ring, detail: true));
+        p.Add(Box([wx0 - 0.04, wy0 + 0.002, -0.049], [wx0, wy1 - 0.002, 0.049], Ring, detail: true));
+        p.Add(Box([wx1, wy0 + 0.002, -0.049], [wx1 + 0.04, wy1 - 0.002, 0.049], Ring, detail: true));
+        // Corrugations across the leaf between the kick plate and the viewport.
+        for (var y = -hy + 0.46; y + 0.06 < wy0 - 0.1; y += 0.22)
+            p.Add(Box([0.07, y, -0.043], [dw - 0.09, y + 0.06, 0.043], Trim, detail: true));
+        // The leading stile: a black strip with yellow bands, and the rubber seal standing just past the edge.
+        p.Add(Box([dw - 0.1, -hy + 0.03, -0.052], [dw - 0.01, hy - 0.03, 0.052], Black, detail: true, shape: fixedPaint));
+        for (var y = -hy + 0.06; y + 0.14 < hy - 0.05; y += 0.28)
+            p.Add(Box([dw - 0.095, y, -0.055], [dw - 0.015, y + 0.14, 0.055], Yellow, detail: true, shape: fixedPaint));
+        p.Add(Box([dw - 0.004, -hy + 0.03, -0.03], [dw + 0.012, hy - 0.03, 0.03], Rubber, detail: true, shape: fixedPaint));
+        // Bolts down the hang stile.
+        for (var y = -hy + 0.2; y < hy - 0.15; y += 0.4)
+            p.Add(Box([0.03, y, -0.056], [0.06, y + 0.03, 0.056], Ring, detail: true));
+        // A pull bar on standoffs on each face, and a status lamp on the top rail.
+        double bx0 = dw - 0.24, bx1 = dw - 0.2;
+        foreach (var y in new[] { -0.2, 0.16 })
+            p.Add(Box([bx0 + 0.005, y, -0.07], [bx1 - 0.005, y + 0.04, 0.07], Ring, detail: true));
+        p.Add(Box([bx0, -0.22, 0.07], [bx1, 0.22, 0.09], Grip, detail: true, shape: Use));
+        p.Add(Box([bx0, -0.22, -0.09], [bx1, 0.22, -0.07], Grip, detail: true, shape: Use));
+        p.Add(Box([dw - 0.2, hy - 0.075, -0.051], [dw - 0.14, hy - 0.035, 0.051], Lamp, detail: true, shape: Kw(("glow", true), ("paintable", false))));
+        HangStrip(p);
+        p.Sock("hang", [-Gap, 0, 0], "-x");
+        p.Sock("front", [dw / 2, 0, c], "+z");
+        p.Sock("back", [dw / 2, 0, -c], "-z");
+        p.Set(("door", Kw(("kind", "slide"), ("axis", "-x"), ("travel", Py.Round(dw + Gap, 2)), ("seconds", 1.0), ("hang", "hang"))));
+        p.Stats(kind.Kg * 1.6 * dw * dh, kind.Hp * 1.6 * dw * dh, kind.Armour + 10, 2.5);
+        return p;
+    }
+
     private static Part Handle()
     {
         var p = new Part("Door Handle", Small, Section, "On anything hung on a hinge: what F takes hold of. A panel works without one; this shows where.", tool: "wrench", color: Grip, group: Group);
@@ -208,6 +267,8 @@ public sealed class DoorParts : IPartGenerator
         }
         foreach (var (w, h) in new[] { (1.25, 2.0), (1.5, 2.25) })
             parts.Add(("EventSteel", Bulkhead(w, h)));
+        foreach (var (w, h) in EventOpenings)
+            parts.Add(("EventSteel", SlideDoor(w, h)));
         WriteParts(o, Out, parts);
     }
 }

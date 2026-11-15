@@ -24,6 +24,10 @@ The walkable two-deck ship of the rust bucket start: its hull parts, rooms, engi
 
 The tail-sitter combat frigate: six decks up a ladder spine, four PDCs, a spinal railgun, med bay, robot bay; how it flies.
 
+## [The Magpie mining ship](constructs/miner.md), 4 KB
+
+The first Survival ship: a lofted two-deck miner with four drills on rams through its keel, ore hoppers on its flanks; how it flies.
+
 Each file below lists its `## ` sections with their headings exactly as they were in the old single file, so a code
 comment such as `CONSTRUCTS.md "Extrusion"` is found by searching this index for the heading. To look inside a file,
 `grep -n '^## ' docs/sandbox/constructs/FILE.md` and read the section you need. New text goes into the file that holds

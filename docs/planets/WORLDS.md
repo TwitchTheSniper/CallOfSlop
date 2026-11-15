@@ -15,6 +15,7 @@ then look at it with `--check-planetoid` (docs/planets/PLANETS.md "Making a worl
 | Frostreach | Glacier | 8 km, 14 | snowfields, blue ice ridges, four nunataks, the Rent (a 9 km crevasse), the Mirror (a frozen lake), the Shelves | the IT Department: the Server Farm | data centre at the bottom of the Rent |
 | Frostreach | Caledon | 6 km, 11 | bens with snow on top, long glens, heather slopes, bog | Clan MacSlop: the Glen | data centre in a corrie under Ben Slop |
 | Frostreach | Mille | 3 km, 8 | hollow: a golden crust stepped in layers, 220 m thick, round a glowing cavity | none for now (the faith was removed, 2026-11-11) | data centre inside the cavity |
+| Frostreach (moonlet of Mille) | Crumb | 600 m, 1.5 | a grey lump of rubble pocked with craters; the sky's edge only 1.4 km up (`"sky"` in make_worlds.py) | none | the Magpie start wakes over it (docs/story/STARTS.md): iron, stone and sand, the ores a tier 1 drill works |
 | Frostreach (moon of Glacier) | Slopolis | 3.5 km, 10 | one city over the north (docs/planets/CITY.md), hills beyond | none: the free port | towers, streets, the elevated loop |
 
 ## Places kept flat
@@ -135,6 +136,7 @@ world's `"ore"`. `--check-planetoid` prints the count of each kind and the share
 | Glacier | helium, copper | iron; no sand |
 | Caledon | stone, iron | sand |
 | Mille | levite, gold, sand | iron |
+| Crumb | iron, stone, sand (31% of its ground is over a deposit) | no copper, gold, helium or levite |
 
 Not on a planetoid yet: forests (trees stand along +Y), deposits a map places by hand, and a hole dug from inside a hollow
 world's cavity (a drill on the cavity's wall taps but digs nothing).
@@ -145,6 +147,6 @@ world's cavity (a drill on the cavity's wall taps but digs nothing).
   host's game (docs/space/FREE-TRAVEL.md) is opened only for worlds of the bubble's own system.
 - **Docking in orbit** hasn't been tried with a shuttle coming back up to a ship held at the edge.
 - **Settlements.** The homes are bare ground: each faction's place is a blueprint still to be made and put there.
-- The moons and small bodies (Moonlet, Ashfall, Soot, Rime, Shard, Cairn, Skerry, Crumb, Proof) are rails and sky.
+- The moons and small bodies (Moonlet, Ashfall, Soot, Rime, Shard, Cairn, Skerry, Proof) are rails and sky; Crumb is the one with a map.
 - Colours are one set of rules per world (height and slope, and patches of a second colour), so Cinder's day side is not a different colour from its night.
 - Only Glacier has the rough country (ridges, crevasses, drifts, caves); the other worlds can take the same features.

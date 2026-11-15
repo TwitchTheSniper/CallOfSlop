@@ -1,0 +1,417 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Magpie Well Door A",
+  "description": "A leaf of the Magpie's well door: a ribbed steel plate under the keel that slides aft along its rails to open the well for the drills.",
+  "group": "Ship",
+  "section": "Magpie miner",
+  "role": "door",
+  "tool": "welder",
+  "door": {
+    "kind": "slide",
+    "axis": "+z",
+    "travel": 1.95,
+    "seconds": 3.0,
+    "hang": "hang"
+  },
+  "mass": 900.0,
+  "health": 6000,
+  "armour": 35,
+  "material": "steel",
+  "color": "#5a5d5c",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -3.72,
+        -0.14,
+        -0.948
+      ],
+      "max": [
+        0.04,
+        0.0,
+        0.95
+      ],
+      "color": "#5a5d5c",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -3.68,
+        -0.19,
+        -0.908
+      ],
+      "max": [
+        -0.06,
+        -0.136,
+        -0.828
+      ],
+      "color": "#26241f",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -3.68,
+        -0.19,
+        0.83
+      ],
+      "max": [
+        -0.06,
+        -0.136,
+        0.91
+      ],
+      "color": "#26241f",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -3.68,
+        -0.19,
+        -0.828
+      ],
+      "max": [
+        -3.6,
+        -0.136,
+        0.83
+      ],
+      "color": "#26241f",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.14,
+        -0.19,
+        -0.828
+      ],
+      "max": [
+        -0.06,
+        -0.136,
+        0.83
+      ],
+      "color": "#26241f",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -3.0,
+        -0.22,
+        -0.828
+      ],
+      "max": [
+        -2.88,
+        -0.136,
+        0.83
+      ],
+      "color": "#3a3c3a",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -2.965,
+        -0.236,
+        -0.673
+      ],
+      "max": [
+        -2.915,
+        -0.216,
+        -0.623
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -2.965,
+        -0.236,
+        -0.2403
+      ],
+      "max": [
+        -2.915,
+        -0.216,
+        -0.1903
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -2.965,
+        -0.236,
+        0.1923
+      ],
+      "max": [
+        -2.915,
+        -0.216,
+        0.2423
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -2.965,
+        -0.236,
+        0.625
+      ],
+      "max": [
+        -2.915,
+        -0.216,
+        0.675
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -1.9,
+        -0.22,
+        -0.828
+      ],
+      "max": [
+        -1.78,
+        -0.136,
+        0.83
+      ],
+      "color": "#3a3c3a",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -1.865,
+        -0.236,
+        -0.673
+      ],
+      "max": [
+        -1.815,
+        -0.216,
+        -0.623
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -1.865,
+        -0.236,
+        -0.2403
+      ],
+      "max": [
+        -1.815,
+        -0.216,
+        -0.1903
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -1.865,
+        -0.236,
+        0.1923
+      ],
+      "max": [
+        -1.815,
+        -0.216,
+        0.2423
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -1.865,
+        -0.236,
+        0.625
+      ],
+      "max": [
+        -1.815,
+        -0.216,
+        0.675
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.8,
+        -0.22,
+        -0.828
+      ],
+      "max": [
+        -0.68,
+        -0.136,
+        0.83
+      ],
+      "color": "#3a3c3a",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.765,
+        -0.236,
+        -0.673
+      ],
+      "max": [
+        -0.715,
+        -0.216,
+        -0.623
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.765,
+        -0.236,
+        -0.2403
+      ],
+      "max": [
+        -0.715,
+        -0.216,
+        -0.1903
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.765,
+        -0.236,
+        0.1923
+      ],
+      "max": [
+        -0.715,
+        -0.216,
+        0.2423
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.765,
+        -0.236,
+        0.625
+      ],
+      "max": [
+        -0.715,
+        -0.216,
+        0.675
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -3.6,
+        -0.17,
+        -0.95
+      ],
+      "max": [
+        -0.16,
+        -0.02,
+        -0.92
+      ],
+      "color": "#26241f",
+      "detail": true,
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        -3.58,
+        -0.156,
+        -0.82
+      ],
+      "max": [
+        -0.16,
+        -0.136,
+        -0.62
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -3.7,
+        -0.17,
+        -0.768
+      ],
+      "max": [
+        -3.65,
+        -0.136,
+        -0.628
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -3.7,
+        -0.17,
+        0.63
+      ],
+      "max": [
+        -3.65,
+        -0.136,
+        0.77
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.02,
+        -0.17,
+        -0.768
+      ],
+      "max": [
+        0.03,
+        -0.136,
+        -0.628
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.02,
+        -0.17,
+        0.63
+      ],
+      "max": [
+        0.03,
+        -0.136,
+        0.77
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

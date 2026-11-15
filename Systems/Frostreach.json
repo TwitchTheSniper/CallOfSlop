@@ -1,6 +1,6 @@
 {
   "name": "Frostreach",
-  "description": "The Survival world's one star system (Karl, 2026-11-15: five planets in one system for now): a white star with five planets. Glacier, the ice world (Maps/Planetoids/Glacier.json), with its moons Rime and Slopolis (the free port, a city: docs/planets/CITY.md); Cinder, a scorched rock close in with one face always to the star (Maps/Planetoids/Cinder.json); Caledon, a highland world (Maps/Planetoids/Caledon.json) with its moon Cairn; Mille, a hollow world (Maps/Planetoids/Mille.json) with its moonlet Crumb; and the small Shard far out. Cinder, Caledon and Mille came from the Ember, Glenmore and Hearth systems; new bodies go on the end, since a saved ship keeps its body by index (.claude/rules/maps-and-worlds.md). The others are rails and sky.",
+  "description": "The Survival world's one star system (Karl, 2026-11-15: five planets in one system for now): a white star with five planets. Glacier, the ice world (Maps/Planetoids/Glacier.json), with its moons Rime and Slopolis (the free port, a city: docs/planets/CITY.md); Cinder, a scorched rock close in with one face always to the star (Maps/Planetoids/Cinder.json); Caledon, a highland world (Maps/Planetoids/Caledon.json) with its moon Cairn; Mille, a hollow world (Maps/Planetoids/Mille.json) with its moonlet Crumb, a 600 m rock of iron, stone and sand where the Magpie start wakes (Maps/Planetoids/Crumb.json); and the small Shard far out. Cinder, Caledon and Mille came from the Ember, Glenmore and Hearth systems; new bodies go on the end, since a saved ship keeps its body by index (.claude/rules/maps-and-worlds.md). The others are rails and sky.",
   "galaxy": { "ly": [3.1, 2.8, 0.9], "arrive": { "at": "Glacier", "km": 45 } },
   "bodies": [
     { "name": "Frostreach", "gm": 2.39e20, "radius": 1.2e9, "color": [0.8, 0.88, 1.0], "rotation": { "hours": 300, "tilt": 11 } },
@@ -46,7 +46,7 @@
       "rotation": { "hours": 14, "tilt": 5 }
     },
     {
-      "name": "Crumb", "parent": "Mille", "radius": 350, "gravity": 0.8, "color": [0.7, 0.58, 0.4],
+      "name": "Crumb", "parent": "Mille", "radius": 600, "gravity": 1.5, "map": "Crumb", "color": [0.48, 0.44, 0.39],
       "orbit": { "km": 30, "e": 0.02, "i": 3, "lan": 0, "argp": 0, "m0": 45 },
       "rotation": { "locked": true }
     }
