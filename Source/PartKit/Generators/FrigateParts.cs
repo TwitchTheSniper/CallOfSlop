@@ -896,7 +896,7 @@ public sealed class FrigateParts : IPartGenerator
 
     // ---- the thrust frame (the fuel tank), the drive, the legs
 
-    private const double DriveForce = 4500000, JetBurn = 3.0;
+    private const double DriveForce = 4500000, JetForce = 500000, JetBurn = 3.0;
 
     private static Part ThrustFrame()
     {
@@ -928,6 +928,9 @@ public sealed class FrigateParts : IPartGenerator
         Sock(p, "drive", Cx, FrameBottom - 0.35, Cz, "-y");
         foreach (var (sx, sz, n) in new[] { (-1, -1, "legFL"), (1, -1, "legFR"), (-1, 1, "legBL"), (1, 1, "legBR") })
             Sock(p, n, Cx + sx * 2.2, FrameBottom, Cz + sz * 1.8, "-y");
+        // The manoeuvre jets, under the overhang on the four flat faces (the tankage's floor at the waist).
+        foreach (var (dx, dz, n) in new[] { (-3.5, 0.0, "jetPort"), (3.5, 0.0, "jetStbd"), (0.0, -3.0, "jetBow"), (0.0, 3.0, "jetStern") })
+            Sock(p, n, Cx + dx, -1.1, Cz + dz, "-y");
         p.Set(("fuelTank", Kw(("capacity", 9000))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(Cx + 3.0, -1.6, Cz).Cast<object>()], "+x", "fuel"))));
         return p.Stats(9000, 24000, 30, 14.0);
     }
@@ -967,6 +970,31 @@ public sealed class FrigateParts : IPartGenerator
         p.Sock("top", [0, 0, 0], "+y");
         p.Set(("thruster", Kw(("force", DriveForce), ("spool", 1.5), ("exhaust", "-y"), ("at", Py.L(0, -2.6, 0)), ("burnRate", Py.Round(DriveForce / 1e6 * JetBurn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [1.1, -1.2, 0], "+x", "fuel"))));
         return p.Stats(6000, 9000, 25, 10.0);
+    }
+
+    /// <summary>A manoeuvre jet under the thrust frame's overhang: one of four that hold the ship upright and lean it (one engine on the
+    /// spine can't, and the flight computer's gyro turns it only about the spine). Origin at its root, pushing up.</summary>
+    private static Part ManoeuvreJet()
+    {
+        var p = new Part("Halberd Manoeuvre Jet", Small, Section, $"A manoeuvre jet: {JetForce / 1000:0} kN down a short bell, fed from the thrust frame. Four of them keep the Halberd upright and lean it.", role: "thruster", tool: "wrench", material: "steel", color: "#2a2c2e", group: Group);
+        double[] RingY(double r, double y, int i, int n = 8)
+        {
+            var an = Math.PI / n + i * 2 * Math.PI / n;
+            return [Py.Round(r * Math.Cos(an), 4), y, Py.Round(r * Math.Sin(an), 4)];
+        }
+        // A squat housing bolted under the overhang, a hazard band round it, then the bell.
+        Prism(p, [.. Enumerable.Range(0, 8).Select(i => RingY(0.42, -0.003, i))], [.. Enumerable.Range(0, 8).Select(i => RingY(0.38, -0.4, i))], Armour2, "plated steel");
+        Prism(p, [.. Enumerable.Range(0, 8).Select(i => RingY(0.43, -0.3, i))], [.. Enumerable.Range(0, 8).Select(i => RingY(0.43, -0.22, i))], Hazard, "hazard paint");
+        (double Y, double R)[] st = [(-0.4, 0.26), (-0.55, 0.22), (-0.8, 0.3), (-0.95, 0.36)];
+        for (var s = 0; s < st.Length - 1; s++)
+            for (var i = 0; i < 8; i++)
+                Quad(p, RingY(st[s].R, st[s].Y, i), RingY(st[s].R, st[s].Y, i + 1), RingY(st[s + 1].R, st[s + 1].Y, i + 1), RingY(st[s + 1].R, st[s + 1].Y, i), s == 0 ? "#3a3d40" : "#2a2c2e", s == 0 ? "dirty steel" : "soot");
+        Plate(p, [.. Enumerable.Range(0, 8).Select(i => RingY(0.2, -0.56, i))], "#9ad8ff", glow: true);
+        p.Add(Box([-0.4, -0.4, -0.4], [0.4, 0, 0.4], hidden: true));
+        p.Add(Box([-0.34, -0.95, -0.34], [0.34, -0.4, 0.34], hidden: true));
+        p.Sock("top", [0, 0, 0], "+y");
+        p.Set(("thruster", Kw(("force", JetForce), ("spool", 0.4), ("exhaust", "-y"), ("at", Py.L(0, -0.95, 0)), ("burnRate", Py.Round(JetForce / 1e6 * JetBurn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [0.4, -0.2, 0], "+x", "fuel"))));
+        return p.Stats(600, 2500, 15, 6.0);
     }
 
     /// <summary>A landing leg: a telescopic strut with a hydraulic ram beside it, on a broad pad. Origin at its root.</summary>
@@ -1041,6 +1069,7 @@ public sealed class FrigateParts : IPartGenerator
         foreach (var z in new[] { -0.6, 0.2 })
             p.Add(Box([-0.405, -0.405, z], [0.405, 0.405, z + 0.12], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
         p.Sock("back", [0, 0, 0.8], "+z");
+        p.Sock("ammo", [0.4, 0, -0.3], "+x"); // (its slugs: an Ammo Box bolted to the breech's side)
         p.Set(("gun", Kw(("damage", 700), ("rpm", 8), ("spread", 0.05), ("range", 600), ("mag", 1), ("reload", 6.0), ("flags", Py.L("penetrating")), ("kick", 2500), ("fx", "cannon"), ("speed", 900), ("soundOf", "Leviathan .50"), ("muzzle", Py.L(0, 0, -4.97)))), ("centreSockets", false));
         return p.Stats(4200, 3000, 25, 8.0);
     }
@@ -1234,6 +1263,8 @@ public sealed class FrigateParts : IPartGenerator
         var drive = bp.Hang("Halberd Main Drive", frame, "drive", "top");
         foreach (var n in new[] { "legFL", "legFR", "legBL", "legBR" })
             bp.Hang("Halberd Landing Leg", frame, n, "top");
+        foreach (var n in new[] { "jetPort", "jetStbd", "jetBow", "jetStern" })
+            Paint(bp, bp.Hang("Halberd Manoeuvre Jet", frame, n, "top"), Armour2, "plated steel");
         // The ladder spine and the boarding ladder.
         var decks = new[] { eng, robot, med, crew, ops };
         foreach (var d in decks)
@@ -1314,6 +1345,7 @@ public sealed class FrigateParts : IPartGenerator
         var fc = bp.Hang("Halberd Flight Computer", cockpit, "computer", "bottom");
         bp.Wires.Add((pilot, fc));
         var rail = bp.Hang("Halberd Spinal Railgun", nose, "railgun", "back");
+        bp.Hang("Ammo Box", rail, "ammo", "left");
         var railModule = bp.Hang("Turret Module", cockpit, "gunModule", "-z");
         bp.Wires.Add((pilot, railModule));
         bp.Wires.Add((railModule, rail));
@@ -1327,7 +1359,7 @@ public sealed class FrigateParts : IPartGenerator
     {
         List<Part> parts =
         [
-            Engineering(), RobotBay(), MedDeck(), CrewDeck(), OpsDeck(), Cockpit(), Nose(), ThrustFrame(), Drive(), Leg(),
+            Engineering(), RobotBay(), MedDeck(), CrewDeck(), OpsDeck(), Cockpit(), Nose(), ThrustFrame(), Drive(), ManoeuvreJet(), Leg(),
             Ladder("Halberd Spine Ladder", Pitch, "A ladder up the Halberd's spine, one storey: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
             Ladder("Halberd Boarding Ladder", Ft(0) - Ground, "The Halberd's boarding ladder, from the ground to the airlock's platform: F climbs it.", "hull", [0, -Ground + 0.125, -0.005], "+z"),
             Pdc(), Railgun(), Reactor(), Cradle(), CrashCouch(), FlightCouch(), Coffee(), GunneryConsole(), FlightComputer(),

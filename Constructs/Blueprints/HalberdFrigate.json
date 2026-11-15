@@ -79,6 +79,38 @@
       "by": "top"
     },
     {
+      "part": "Halberd Manoeuvre Jet",
+      "on": 1,
+      "socket": "jetPort",
+      "by": "top",
+      "paint": "#47525b",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Halberd Manoeuvre Jet",
+      "on": 1,
+      "socket": "jetStbd",
+      "by": "top",
+      "paint": "#47525b",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Halberd Manoeuvre Jet",
+      "on": 1,
+      "socket": "jetBow",
+      "by": "top",
+      "paint": "#47525b",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Halberd Manoeuvre Jet",
+      "on": 1,
+      "socket": "jetStern",
+      "by": "top",
+      "paint": "#47525b",
+      "finish": "plated steel"
+    },
+    {
       "part": "Halberd Spine Ladder",
       "on": 0,
       "socket": "ladder",
@@ -265,13 +297,13 @@
     },
     {
       "part": "Robot Shell",
-      "on": 37,
+      "on": 41,
       "socket": "front",
       "by": "back"
     },
     {
       "part": "Robot Shell",
-      "on": 39,
+      "on": 43,
       "socket": "front",
       "by": "back"
     },
@@ -634,30 +666,6 @@
     },
     {
       "part": "Motor Hinge",
-      "on": 88,
-      "socket": "top",
-      "by": "base"
-    },
-    {
-      "part": "Halberd PDC",
-      "on": 89,
-      "socket": "leaf",
-      "by": "bottom"
-    },
-    {
-      "part": "Ammo Box",
-      "on": 90,
-      "socket": "back",
-      "by": "front"
-    },
-    {
-      "part": "Turntable",
-      "on": 2,
-      "socket": "pdcStbd",
-      "by": "base"
-    },
-    {
-      "part": "Motor Hinge",
       "on": 92,
       "socket": "top",
       "by": "base"
@@ -676,8 +684,8 @@
     },
     {
       "part": "Turntable",
-      "on": 5,
-      "socket": "pdcBow",
+      "on": 2,
+      "socket": "pdcStbd",
       "by": "base"
     },
     {
@@ -701,7 +709,7 @@
     {
       "part": "Turntable",
       "on": 5,
-      "socket": "pdcStern",
+      "socket": "pdcBow",
       "by": "base"
     },
     {
@@ -723,6 +731,30 @@
       "by": "front"
     },
     {
+      "part": "Turntable",
+      "on": 5,
+      "socket": "pdcStern",
+      "by": "base"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 104,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Halberd PDC",
+      "on": 105,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 106,
+      "socket": "back",
+      "by": "front"
+    },
+    {
       "part": "Gunnery Console",
       "on": 2,
       "socket": "gun",
@@ -736,7 +768,7 @@
     },
     {
       "part": "Turret Module",
-      "on": 104,
+      "on": 108,
       "socket": "module",
       "by": "-x"
     },
@@ -756,7 +788,7 @@
     },
     {
       "part": "Turret Module",
-      "on": 107,
+      "on": 111,
       "socket": "module",
       "by": "-x"
     },
@@ -858,6 +890,12 @@
       "by": "back"
     },
     {
+      "part": "Ammo Box",
+      "on": 126,
+      "socket": "ammo",
+      "by": "left"
+    },
+    {
       "part": "Turret Module",
       "on": 6,
       "socket": "gunModule",
@@ -908,132 +946,132 @@
   ],
   "wires": [
     [
-      36,
-      32
+      40,
+      36
     ],
     [
-      36,
-      33
+      40,
+      37
     ],
     [
-      36,
-      34
+      40,
+      38
     ],
     [
-      36,
-      35
+      40,
+      39
     ],
     [
-      54,
-      50
+      58,
+      54
     ],
     [
-      54,
-      51
+      58,
+      55
     ],
     [
-      54,
-      52
+      58,
+      56
     ],
     [
-      54,
-      53
+      58,
+      57
     ],
     [
-      67,
-      65
-    ],
-    [
-      67,
-      66
-    ],
-    [
-      70,
-      68
-    ],
-    [
-      70,
+      71,
       69
     ],
     [
-      87,
-      83
+      71,
+      70
     ],
     [
-      87,
-      84
+      74,
+      72
     ],
     [
-      87,
-      85
+      74,
+      73
     ],
     [
-      87,
-      86
+      91,
+      87
     ],
     [
-      105,
-      106
+      91,
+      88
     ],
     [
-      106,
+      91,
+      89
+    ],
+    [
+      91,
       90
     ],
     [
-      106,
+      109,
+      110
+    ],
+    [
+      110,
       94
     ],
     [
-      108,
-      109
-    ],
-    [
-      109,
+      110,
       98
     ],
     [
-      109,
+      112,
+      113
+    ],
+    [
+      113,
       102
     ],
     [
-      118,
-      114
+      113,
+      106
     ],
     [
-      118,
-      115
+      122,
+      118
     ],
     [
-      118,
-      116
+      122,
+      119
     ],
     [
-      118,
-      117
+      122,
+      120
     ],
     [
-      119,
+      122,
       121
     ],
     [
-      119,
-      123
+      123,
+      125
     ],
     [
       123,
-      122
-    ],
-    [
-      128,
-      125
+      128
     ],
     [
       128,
       126
     ],
     [
-      128,
-      127
+      133,
+      130
+    ],
+    [
+      133,
+      131
+    ],
+    [
+      133,
+      132
     ]
   ],
   "conduit": true
