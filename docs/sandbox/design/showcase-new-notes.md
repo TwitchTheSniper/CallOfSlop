@@ -90,7 +90,7 @@ FINISHED           the Works Runabout, built in the bay; a hand-ordered part in 
 
 ## The numbers (2026-11-14, the Windows PC, creative, `--spawn-at -30,0,40 --spawn-yaw 0`)
 
-- 884 parts, 142 links, 118 x 32 m; centre (-33, -24) on the Proving Ground, radius 64 m, in the oval's flat infield.
+- 981 parts (884 before the look pass: signs, lanes, labels), 158 links, 118 x 32 m; centre (-33, -24) on the Proving Ground, radius 64 m, in the oval's flat infield.
 - The Runabout: 30 parts, 3 links, 649 kg; drive check 56 m at 11.1 m/s, turns 325 degrees, stability 2.95.
 - Station Start to Done: under four minutes (Done between the second and third two-minute look): 30/30 parts, 3/3 links.
 - Server tick while it builds (`station measure`: the last 150 to 260 frames at each look, so windows, not the whole build): median

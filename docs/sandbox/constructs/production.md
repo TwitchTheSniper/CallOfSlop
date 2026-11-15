@@ -1633,7 +1633,7 @@ with the Runabout's blueprint, `WorksRunabout.json`, beside it). Notes, the mach
 - **Start it.** Press Start on the refinery's console (sign 2, at the west end) and on the orders console (the yellow desk by the yard,
   "ORDERS: Start runs every maker"). F on the Building Station (sign 7, east end), pick Works Runabout, Start. In creative the Runabout
   is built in about four minutes: every part it lacks is ordered at once, made on the floor and fitted as it arrives.
-- **The walk-through**, west to east along the front walkway, then back along the back floor:
+- **The walk-through**, west to east along the front walkway (lane markings its whole length), then back along the back floor. Each area has a numbered sign on a lit post (1 RAW STOCK AND POWER to 10 TOOL ROOM) and its own floor tint; every link and junction is one steel colour, so the machines carry the colour; each press is labelled with what it makes:
   1. **Power**: a Small Genset on two fuel tanks, a battery, the main switch (off: every machine No power) and its charge gauge.
   2. **Raw stock and the refinery**: two iron ore heaps, copper ore, stone, wood and sand (Storage Volumes, filled in creative, empty in
      survival) chuted into eight refiners in two rows: Workshop Smelter (ore to metal) and Workshop Foundry (metal and stone to steel;
