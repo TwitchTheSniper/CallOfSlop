@@ -50,6 +50,9 @@ public sealed partial class StationJob
     public ushort[] KindDef = [], KindNeed = [], KindFit = [];
     public string?[] KindWhy = []; // why nothing linked holds or makes it (null: ordered or held)
     public int KindN;
+    public int[] KindWay = [], KindAhead = []; // (each look) what of a kind is held or on its way, handed to the ready steps in build order; how many of a kind are ordered ahead (a ready step's child whose parent part is coming)
+    public bool[] StepComing = []; // (each look) a ready step whose own part is held or on its way
+    public readonly CStore Sim = new(); // (each look) the hold's packing with everything on its way, for the order-ahead reservation
     public int[] StepKind = [], KindReady = [], KindOut = [], KindHave = []; // each step's kind; how many unfitted steps of a kind have their parent fitted (each look); parts a player took out of the hold by hand, not ordered again while a player is near; fitted and held last look
     public HashSet<ushort> SetAside = new(); // kinds a full hold moved out to a rack for a part that could be fitted (MakeRoomFor): not ordered again until a step can take them
     public (ushort Def, int Version) RoomFail; // the part and the hold's version when making room last failed: not tried again until the hold changes
@@ -347,6 +350,9 @@ public static partial class ConstructStation
         j.KindReady = new int[defs.Count];
         j.KindOut = new int[defs.Count];
         j.KindHave = new int[defs.Count];
+        j.KindWay = new int[defs.Count];
+        j.KindAhead = new int[defs.Count];
+        j.StepComing = new bool[bp.Steps.Count];
         j.StepKind = new int[bp.Steps.Count];
         for (var s = 0; s < bp.Steps.Count; s++)
             j.StepKind[s] = defs.IndexOf((ushort)(ConstructParts.Find(bp.Steps[s].Part)?.Id ?? ConstructParts.None));
@@ -383,10 +389,10 @@ public static partial class ConstructStation
         if (j.State != StationState.Building)
             return;
         ConstructLifters.PadClaims(world, c, t, tray, j); // (what its arms' pick pads hold for it is claimed for the build: lifters phase 5)
-        // The rule (code review 2, 2026-11-14): a part is ordered when it can be fitted on arrival, that is when what it goes onto is fitted
-        // (or it is the first step). Every part ready in that sense is ordered at once (the user's wish: no waiting for one part before the
-        // next order starts); a deeper one waits for its parent to be fitted, not merely ordered, so the hold only ever fills with parts a
-        // step can take.
+        // The rule (the user's choice, 2026-11-14: "order ahead, keep room"): every part that can be fitted on arrival (what it goes onto
+        // is fitted, or it is the first step) is ordered at once; then the next level is ordered ahead, parts whose parent's own part is
+        // held or on its way, while the hold keeps room, after everything held and coming, for the largest ready part not yet in it
+        // (OrderAhead). Nothing deeper is ordered.
         Array.Clear(j.KindReady);
         while (j.Cursor < j.PartOf.Length && j.PartOf[j.Cursor] >= 0)
             j.Cursor++;
@@ -438,6 +444,8 @@ public static partial class ConstructStation
                             firstOrder = k;
             }
         }
+        if (placed < OrdersAStep && lacking > 0)
+            OrderAhead(world, c, t, tray, j, ref placed);
         if (j.Fitted >= j.Steps)
             return; // (its links: NextLink's own note)
         // The next part to fit can't come in (a full hold: at the door, or kept in a Router's storage): room is made by moving out what no
@@ -1246,8 +1254,115 @@ public static partial class ConstructStation
         return true;
     }
 
+    /// <summary>
+    /// Order ahead by one level (the user's choice, 2026-11-14): a step whose parent is a ready step (its own parent fitted) whose part is
+    /// held or on its way is ordered too, one at a time, each only while the hold, packed by its own rule with everything held and coming
+    /// and this part, still has room for the largest ready part not yet in it. A ready part is never kept out by parts ordered ahead; should
+    /// a hold fill anyway (a hand, a stock), the door makes room by moving them out (<see cref="MakeRoomFor"/>).
+    /// </summary>
+    private static void OrderAhead(ConstructWorld world, Construct c, int t, CStore tray, StationJob j, ref int placed)
+    {
+        var q = c.Parts[t].Craft;
+        for (var i = 0; i < j.KindN; i++)
+            j.KindWay[i] = ConstructCrafting.Holds(tray, j.KindDef[i]) + LiftHolds(world, c, t, j.KindDef[i]) + Asked(q, j.KindDef[i]);
+        Array.Clear(j.KindAhead);
+        for (var s = j.Cursor; s < j.PartOf.Length; s++)
+        {
+            j.StepComing[s] = false;
+            if (j.PartOf[s] >= 0 || j.StepKind[s] is not (var k and >= 0))
+                continue;
+            if (Ready(j, s))
+            {
+                if (j.KindWay[k] > 0)
+                {
+                    j.KindWay[k]--;
+                    j.StepComing[s] = true; // (its part is held or coming: its children may be ordered ahead)
+                }
+                continue;
+            }
+            var on = j.Bp!.Steps[s].On;
+            if (on >= 0 && on < s && j.PartOf[on] < 0 && j.StepComing[on] && Ready(j, on))
+                j.KindAhead[k]++; // (one level: a ready step's child, never deeper)
+        }
+        var rd = c.DefOf(t);
+        ConstructPartDef? reserve = null;
+        for (var i = 0; i < j.KindN; i++)
+            if (j.KindReady[i] > ConstructCrafting.Holds(tray, j.KindDef[i]) && ConstructParts.Get(j.KindDef[i]) is { } rdp
+                && (reserve == null || Volume(rdp) > Volume(reserve)))
+                reserve = rdp; // (the largest ready part not yet in the hold)
+        var simReady = false;
+        var items = tray.ItemCount;
+        for (var i = 0; i < j.KindN && placed < OrdersAStep; i++)
+        {
+            if (j.KindAhead[i] <= 0 || j.SetAside.Contains(j.KindDef[i]) || ConstructParts.Get(j.KindDef[i]) is not { } d)
+                continue;
+            var held = ConstructCrafting.Holds(tray, d.Id) + LiftHolds(world, c, t, d.Id);
+            var asked = Asked(q, d.Id);
+            var ahead = Math.Min(j.KindNeed[i] - j.KindFit[i], j.KindReady[i] + j.KindAhead[i] - j.KindOut[i]) - held - asked;
+            if (ahead <= 0 || ConstructConveyor.RackCheck(c, t, tray, d, true) == 3)
+                continue; // (none more, or it can never fit: the ready rule says why when it is due)
+            if (!simReady)
+            {
+                if (!SimHold(world, c, t, tray, j, rd, ref items))
+                    return; // (what is held and coming doesn't pack as it is: nothing is ordered ahead)
+                simReady = true;
+            }
+            var n = 0;
+            for (; n < ahead; n++)
+            {
+                if (items + 1 >= rd.RackCount || ConstructRackPack.Place(rd, j.Sim, d, false, out _, out _) != 0)
+                    break;
+                items++;
+                if (reserve != null && (items + 1 > rd.RackCount || ConstructRackPack.Place(rd, j.Sim, reserve, true, out _, out _) != 0))
+                    break; // (this one would take the ready part's room: it waits)
+            }
+            if (n > 0)
+            {
+                placed++;
+                j.KindWhy[i] = ConstructCrafting.Place(world, c, t, OrderFor(d, n));
+            }
+            if (n < ahead)
+                return; // (the hold's room is spoken for)
+        }
+    }
+
+    /// <summary>The hold as it will be: its packing copied into the job's scratch store, with everything on its way packed in too. False: it doesn't all pack.</summary>
+    private static bool SimHold(ConstructWorld world, Construct c, int t, CStore tray, StationJob j, ConstructPartDef rd, ref int items)
+    {
+        ConstructRackPack.Ensure(rd, tray);
+        var sim = j.Sim;
+        sim.Slabs ??= new RackSlab[ConstructRackPack.MaxSlabs];
+        sim.SlabLanes ??= new byte[ConstructRackPack.MaxSlabs * ConstructRackPack.MaxLanes];
+        if (tray.SlabN > 0)
+        {
+            Array.Copy(tray.Slabs!, sim.Slabs, tray.SlabN);
+            Array.Copy(tray.SlabLanes!, sim.SlabLanes, tray.SlabN * ConstructRackPack.MaxLanes);
+        }
+        (sim.SlabN, sim.SlabSum) = (tray.SlabN, tray.SlabSum);
+        var q = c.Parts[t].Craft;
+        for (var i = 0; i < j.KindN; i++)
+        {
+            var coming = Asked(q, j.KindDef[i]) + LiftHolds(world, c, t, j.KindDef[i]);
+            if (coming <= 0 || ConstructParts.Get(j.KindDef[i]) is not { } d)
+                continue;
+            for (var n = 0; n < coming; n++)
+            {
+                if (ConstructRackPack.Place(rd, sim, d, false, out _, out _) != 0)
+                    return false;
+                items++;
+            }
+        }
+        return true;
+    }
+
+    private static float Volume(ConstructPartDef d)
+    {
+        var s = d.BoundsMax - d.BoundsMin;
+        return s.X * s.Y * s.Z;
+    }
+
     /// <summary>Server: a part a player took out of a station's hold by hand. It isn't ordered again while a player is near (<see cref="Orders"/>).</summary>
-    public static void HandTook(Construct c, int t, ConstructPartDef d)
+    public static void HandTook(Construct c, int t, ConstructPartDef d) // (public: the window tool's "station take" too)
     {
         if (c.Parts[t].Station is not { State: StationState.Building } j)
             return;

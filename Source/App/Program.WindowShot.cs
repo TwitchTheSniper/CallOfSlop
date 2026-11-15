@@ -1511,6 +1511,19 @@ public static unsafe partial class Program
                     case "stock" when g.IsServer:
                         WsSay($"station: stock: {StationProbe.Stock(g.Constructs, sc, spart)}");
                         break;
+                    case "take" when g.IsServer && ConstructParts.Find(rest) is { } td: // host: one NAME out of the hold as a hand takes it (counted as taken by hand), set down beside the bay
+                    {
+                        if (g.Constructs.StoreOf(sc, spart) is not { } ts || !ConstructRackPack.LastOf(ts, (ushort)td.Id, out var tslab, out var tlane) || g.Constructs.RackTakeAt(sc, spart, tslab, tlane) is not { } got)
+                        {
+                            WsSay($"station: take: no {td.Name} in the hold");
+                            break;
+                        }
+                        ConstructStation.HandTook(sc, spart, got);
+                        ConstructStation.Bay(sc, spart, out var tfloor, out var tturn, out var tsize);
+                        ConstructBuild.PlaceNew(g.Constructs, got, tfloor + System.Numerics.Vector3.Transform(new System.Numerics.Vector3(tsize.X * 0.5f + 1.5f, 0.3f, 0), tturn), 0);
+                        WsSay($"station: took a {got.Name} out of the hold by hand");
+                        break;
+                    }
                     case "hold" when g.IsServer && ConstructParts.Find(rest) is { } hd:
                         foreach (var pl in g.Players.Values)
                             g.SandboxHands.Hands[pl.Id].Held = (ushort)hd.Id; // (every player: a client's give is tried with it)

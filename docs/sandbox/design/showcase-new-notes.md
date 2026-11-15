@@ -119,7 +119,7 @@ FINISHED           the Works Runabout, built in the bay; a hand-ordered part in 
 ## Game changes made on the way (each with a lesson in `.claude/rules/production.md`)
 
 1. Conveyors run at 1 m/s (the user; protocol 316).
-2. A Building Station asks at once for every part it can fit on arrival (the user; code review 2: a deeper part waits for its parent to be fitted), and a full hold
+2. A Building Station asks at once for every part it can fit on arrival and orders the next level ahead while the hold keeps room for the largest ready part (the user's choice, "order ahead, keep room"; the Runabout 7.25 min from Start, against 4 all at once and 12 ready-only), and a full hold
    makes room for the next part by moving what no step can take yet to a rack with a road back, or says it is stuck (`MakeRoomFor`).
 3. A terminal's or station's ask goes first to a machine with a way to it (`ConstructCrafting.StepTerminal`).
 4. A blueprint step may be `"ordersOnly"`: built with an empty queue, the machine never runs its own settings.
