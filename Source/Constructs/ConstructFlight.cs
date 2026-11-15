@@ -31,6 +31,7 @@ public struct CStab
     public bool Fitted; // the mix stands for the construct as it is
 
     public Vector3 Inertia; // kg m2 about its right, its forward, its up
+    public Vector3 Turning; // N m: about half of all its effectors could twist it by, about its loops' axes (pitch, roll, yaw): what Ship keys count on to stop a turn in time
     public float Gap; // m: under it, for its landing assist
     public int GapTick;
     public float Spool; // s: the slowest thruster it works
@@ -252,6 +253,7 @@ public static partial class ConstructFlight
         f.ComFitted = c.Com;
         var repulsorForce = 0f;
         var upForce = 0f;
+        var turning = Vector3.Zero;
         var n = f.Count;
         var a = f.A;
         ulong aliveA = 0, aliveB = 0;
@@ -277,6 +279,7 @@ public static partial class ConstructFlight
             a[at + FlightEffectors.Pitch] = torque.X * share;
             a[at + FlightEffectors.Roll] = -torque.Z * share;
             a[at + FlightEffectors.Yaw] = -torque.Y * share;
+            turning += new Vector3(MathF.Abs(torque.X), MathF.Abs(torque.Z), MathF.Abs(torque.Y)) * share;
             if (e.Kind is EffectorKind.Thruster or EffectorKind.Repulsor or EffectorKind.Rotor && live)
             {
                 upForce += MathF.Max(0, force.Y);
@@ -288,6 +291,7 @@ public static partial class ConstructFlight
                 s.RepulsorRange = c.Parts[e.Part].D.RepulsorRange;
             }
         }
+        s.Turning = turning * 0.5f; // (each way: about half of them push it)
         f.AliveA = aliveA;
         f.AliveB = aliveB;
         s.Repulsors = repulsorForce > 0.5f * upForce && upForce > 0;
@@ -1000,8 +1004,8 @@ public static partial class ConstructFlight
                     pitchTo = Vector3.Dot(turn, a.Right);
                     yawTo = -Vector3.Dot(turn, a.Up);
                 }
-                acroPitch = Math.Clamp(loop * response.X * pitchTo + ask.Pitch * rates.X, -rates.X, rates.X);
-                yawRate = Math.Clamp(loop * response.Z * yawTo + ask.Yaw * rates.Z, -rates.Z, rates.Z);
+                acroPitch = Math.Clamp(Toward(pitchTo, loop * response.X, s.Turning.X, s.Inertia.X) + ask.Pitch * rates.X, -rates.X, rates.X);
+                yawRate = Math.Clamp(Toward(yawTo, loop * response.Z, s.Turning.Z, s.Inertia.Z) + ask.Yaw * rates.Z, -rates.Z, rates.Z);
                 if (ask.Roll != 0 || !level)
                     acroRoll = ask.Roll * rates.Y;
                 else
@@ -1049,7 +1053,9 @@ public static partial class ConstructFlight
         var speedNow = c.Vel.Length();
         var surface = pattern == FlightPattern.Plane ? MathF.Min(1, PlaneSpeed / MathF.Max(speedNow, PlaneSpeed * 0.5f)) : 1f;
         surface *= surface;
-        var settling = armed && (c.Vel.LengthSquared() > 0.25f || !float.IsNaN(acroPitch) || pattern != FlightPattern.Plane); // (a plane parked: its surfaces just follow the stick)
+        var settling = armed && pattern != FlightPattern.Ship && (c.Vel.LengthSquared() > 0.25f || !float.IsNaN(acroPitch) || pattern != FlightPattern.Plane); // (a plane parked: its surfaces just follow the stick; a ship's turns are long and one way, and a hold wound up on one would swing it past the next)
+        if (pattern == FlightPattern.Ship)
+            s.Integral = default;
         var mainLevel = MathF.Max(0.1f, pattern == FlightPattern.Rocket ? p.Mem : 1f);
         for (var axis = 0; axis < 3; axis++)
         {
@@ -1123,7 +1129,14 @@ public static partial class ConstructFlight
         else if (pattern == FlightPattern.Ship)
         {
             // Along its own axes: what the keys ask for, else stopped (every way it has a push for); its weight held up whichever way it lies.
-            var wantVel = a.Front * (ask.Forward * maxSpeed) + a.Right * (ask.Side * maxSpeed) + a.Up * (ask.Lift * (ask.Lift > 0 ? maxClimb : maxDescent));
+            // Let go, it holds its height as a rotorcraft does (the height loop above), from where it can stop.
+            var letGo = ask.Forward == 0 && ask.Side == 0 && ask.Lift == 0 && !autopilot;
+            if (!letGo)
+            {
+                s.HoldAlt = height + (climb > 0 ? climb * climb / (2 * stopping) : 0);
+                s.AltHeld = true;
+            }
+            var wantVel = a.Front * (ask.Forward * maxSpeed) + a.Right * (ask.Side * maxSpeed) + a.Up * (ask.Lift * (ask.Lift > 0 ? maxClimb : maxDescent)) + (letGo ? up * climbWant : Vector3.Zero);
             var push = c.Mass * 3 * ground * (wantVel - c.Vel) + up * MathF.Max(0, weight - c.LiftNow);
             demand[FlightEffectors.Forward] = Vector3.Dot(push, a.Front);
             demand[FlightEffectors.Up] = Vector3.Dot(push, a.Up);
@@ -1188,6 +1201,16 @@ public static partial class ConstructFlight
             output[OutRightAileron] = -units.Y;
         }
         s.AltIntegral = Math.Clamp(s.AltIntegral + 0.3f * kv * Gain(p, d, CfgKey.ClimbHold) * climbErr * dt, -0.5f * g, 0.5f * g);
+    }
+
+    /// <summary>
+    /// The turning rate (rad/s) that takes an angle <paramref name="err"/> away: <paramref name="gain"/> times it, but never faster than it can be stopped in what is left with
+    /// half the twist it has (<paramref name="torque"/> N m on <paramref name="inertia"/> kg m2), so a heavy ship with small jets comes round slowly and doesn't swing past.
+    /// </summary>
+    private static float Toward(float err, float gain, float torque, float inertia)
+    {
+        var most = torque > 0 && inertia > 0 ? MathF.Sqrt(2 * 0.5f * torque / inertia * MathF.Abs(err)) : float.MaxValue;
+        return Math.Clamp(gain * err, -most, most);
     }
 
     /// <summary>The lean that gives this acceleration over the ground.</summary>
