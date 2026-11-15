@@ -333,6 +333,8 @@ public static partial class ConstructPreview
         }
         _tris = triLook.Count;
         _last = (pos, nrm, triLook, looks.Select(l => (l.Hex, l.Glass, l.Glow)).ToList()); // (for --preview-shot)
+        if (_shotLinks)
+            LinkTris(c);
 
         // Quantise: positions to int16 over the largest extent, normals to int8.
         var lo = new Vector3(float.MaxValue);
@@ -384,11 +386,25 @@ public static partial class ConstructPreview
             sb.Append(i > 0 ? "," : "").Append(JsonSerializer.Serialize(new object[] { l.Hex, l.Glass, l.Glow ? 1 : 0, l.Finish, l.Metal, l.Rough }));
         }
         sb.Append("],\"parts\":[").Append(parts).Append(']');
+        // The links (cables, pipes, chutes, shafts...) as the build laid them: [type, x, y, z, x, y, z, ...] from the output through the nodes to the input, rest frame.
+        sb.Append(",\"links\":[");
+        for (var r = 0; r < c.RouteCount; r++)
+        {
+            sb.Append(r > 0 ? "," : "").Append("[\"").Append(ConstructRoutes.TypeKey(c.Routes[r].Type)).Append('"');
+            for (var i = -1; i <= c.Routes[r].Count; i++)
+            {
+                var q = ConstructRoutes.RestPoint(c, r, i);
+                sb.Append(',').Append(F3(q.X)).Append(',').Append(F3(q.Y)).Append(',').Append(F3(q.Z));
+            }
+            sb.Append(']');
+        }
+        sb.Append(']');
         sb.Append(",\"pos\":\"").Append(Convert.ToBase64String(pb)).Append('"');
         sb.Append(",\"nrm\":\"").Append(Convert.ToBase64String(nb)).Append('"');
         sb.Append(",\"look\":\"").Append(Convert.ToBase64String(lb)).Append("\"}");
         return sb.ToString();
 
         static string F(float f) => f.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
+        static string F3(float f) => f.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
     }
 }

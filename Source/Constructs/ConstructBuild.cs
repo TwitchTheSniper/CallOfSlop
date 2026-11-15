@@ -520,7 +520,7 @@ public static class ConstructBuild
                     // Build it once on a scratch world: every step must fit (and a pre-built's wires are routed as conduit then, ConstructConduit.cs;
                     // a dev build keeps those routes with the check's cache, so one that passed unchanged isn't built again just for them).
                     var check = !remember || !BlueprintCheckCache.Passed(df.Text);
-                    if (!check && bp.Wires.Count > 0 && !ConstructConduit.Restore(bp, df.Text))
+                    if (!check && ConstructConduit.Any(bp) && !ConstructConduit.Restore(bp, df.Text))
                         check = ConstructConduit.Wanted(bp) || !ConstructConduit.Remember(bp, df.Text);
                     if (check)
                     {
@@ -955,7 +955,7 @@ public static class ConstructBuild
         if (bp.Wires.Count > 0 && c.Dirty)
             c.Rebuild(); // (the wires' checks read the rebuilt body: once before them and once after, not once a wire)
         var conduit = !linked && (c.Anchored || bp.FrozenBase || bp.Conduit); // (a pre-built: its wires are laid as conduit along the walls, ConstructConduit.cs)
-        var conduitEnd = conduit && bp.Wires.Count > 0 ? ConstructConduit.Deadline() : 0;
+        var conduitEnd = conduit && ConstructConduit.Any(bp) ? ConstructConduit.Deadline() : 0;
         if (!linked) // (a Building Station laid the wires and links itself, one by one: ConstructStation.cs)
         for (var k = 0; k < bp.Wires.Count; k++)
         {
@@ -979,7 +979,7 @@ public static class ConstructBuild
             c.Rebuild();
         // The routed links, through the linking tool's rules.
         for (var k = 0; k < bp.Links.Count && !linked; k++)
-            if (ConstructRoutes.BuildLink(world, c, bp.Links[k], partOf.AsSpan(0, bp.Steps.Count)) is { } bad)
+            if (ConstructRoutes.BuildLink(world, c, bp.Links[k], partOf.AsSpan(0, bp.Steps.Count), conduit && bp.Conduit ? bp : null, bp.Wires.Count + k, conduitEnd) is { } bad)
             {
                 run.Why = $"links[{k}]: {bad}";
                 world.Remove(c);

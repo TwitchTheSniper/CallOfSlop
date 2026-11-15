@@ -19,7 +19,7 @@ public static class ConstructConduit
     /// The searches tried in turn, the cost a metre off every surface and the lattice's gap: a dear one keeps it on the walls, a cheaper one
     /// finds a way where the dear one's search gives up (the weaker its guess, the more it searches), and the tool's own 5 cm lattice is smaller still.
     /// </summary>
-    private static readonly (float Air, byte Gap)[] Tries = [(6f, 0), (3f, 0), (6f, 5)];
+    private static readonly (float Air, byte Gap)[] Tries = [(6f, 0), (3f, 0), (6f, 5), (1.5f, 8)];
     public const float BudgetMs = 250f; // one search at most, as the blueprints load: past it the wire stays straight (concealed)
     public const float PlayMs = 20f; // a whole build's searching at most in play (a blueprint the load didn't route: a mod's, one built while it loads); past it the rest stay straight and are tried again next build
     private static RouteSearch? _search; // (its tables, about 19 MB, are made for the load's routing and let go after it: Release)
@@ -33,27 +33,35 @@ public static class ConstructConduit
     /// Lays blueprint <paramref name="bp"/>'s wire <paramref name="k"/> (parts <paramref name="from"/> to <paramref name="to"/>,
     /// into <paramref name="toPort"/>) as conduit on <paramref name="c"/>. False: not laid (the caller adds the straight wire).
     /// </summary>
-    public static bool TryLay(ConstructWorld world, Construct c, ConstructBuild.Blueprint bp, int k, int from, int to, byte toPort, long deadline)
+    public static bool TryLay(ConstructWorld world, Construct c, ConstructBuild.Blueprint bp, int k, int from, int to, byte toPort, long deadline) =>
+        TryLay(world, c, bp, k, RouteType.Data, from, 255, to, toPort, deadline);
+
+    /// <summary>
+    /// Lays one of blueprint <paramref name="bp"/>'s links as conduit: entry <paramref name="k"/> (its wires first, then its <c>"links"</c>
+    /// given with no nodes: chutes, pipes, power and data cables), a link of <paramref name="type"/> from part <paramref name="from"/>'s
+    /// port <paramref name="fromPort"/> to <paramref name="to"/>'s <paramref name="toPort"/>. A chute or pipe leaves and meets its ports
+    /// along their faces, as the tool's do; a cable any way. False: not laid (the caller lays it straight).
+    /// </summary>
+    public static bool TryLay(ConstructWorld world, Construct c, ConstructBuild.Blueprint bp, int k, RouteType type, int from, byte fromPort, int to, byte toPort, long deadline)
     {
-        var ms = c.MoveSeg(c.Parts[from].Seg);
-        if (ms != c.MoveSeg(c.Parts[to].Seg))
-            return false; // (across a joint, a turret's or a gate's: it would flex in the open, so it stays in the walls)
+        if (!Routable(type))
+            return false;
         lock (Gate)
         {
-            var known = Cache.GetValue(bp, b => new CRouteNode[]?[b.Wires.Count]);
+            var known = Cache.GetValue(bp, b => new CRouteNode[]?[Entries(b)]);
             if (k >= known.Length)
                 return false;
             if (known[k] is { } kept)
             {
-                if (kept.Length == 0 || !Fits(world, c, from, to, toPort, kept))
+                if (kept.Length == 0 || !Fits(world, c, type, from, fromPort, to, toPort, kept))
                     return false; // (it failed before, or this copy differs: straight)
                 Kept++;
-                return Add(world, c, from, to, toPort, kept);
+                return Add(world, c, type, from, fromPort, to, toPort, kept);
             }
             if (Stopwatch.GetTimestamp() >= deadline)
                 return false; // (this build's time is up: straight this once, tried again on the next)
             var sw = Stopwatch.StartNew();
-            var nodes = Find(world, c, from, to, toPort, deadline, out var why, out var outOfTime);
+            var nodes = Find(world, c, type, from, fromPort, to, toPort, deadline, out var why, out var outOfTime);
             Ms += sw.Elapsed.TotalMilliseconds;
             if (nodes == null && outOfTime)
                 return false; // (not kept: a busy moment isn't the blueprint's fault)
@@ -61,32 +69,43 @@ public static class ConstructConduit
             if (nodes == null)
             {
                 Failed++;
-                Console.WriteLine($"[conduit] {bp.Name}: wire {k} ({c.DefOf(from).Name} -> {c.DefOf(to).Name}) stays straight, in the walls: {why}");
+                Console.WriteLine(k < bp.Wires.Count
+                    ? $"[conduit] {bp.Name}: wire {k} ({c.DefOf(from).Name} -> {c.DefOf(to).Name}) stays straight, in the walls: {why}"
+                    : $"[conduit] {bp.Name}: link {k - bp.Wires.Count} ({ConstructRoutes.Name(type)}, {c.DefOf(from).Name} -> {c.DefOf(to).Name}) stays straight: {why}");
                 return false;
             }
             Routed++;
-            return Add(world, c, from, to, toPort, nodes);
+            return Add(world, c, type, from, fromPort, to, toPort, nodes);
         }
     }
 
-    private static CRouteNode[]? Find(ConstructWorld world, Construct c, int from, int to, byte toPort, long deadline, out string? why, out bool outOfTime)
+    /// <summary>The kinds laid as conduit: everything the square search routes but a conveyor (a bed has its own turns' rules) and a shaft.</summary>
+    public static bool Routable(RouteType type) => type is RouteType.Data or RouteType.Power or RouteType.Pipe or RouteType.Chute;
+
+    /// <summary>A blueprint's entries: its wires, then its links (only those with no nodes are laid as conduit).</summary>
+    public static int Entries(ConstructBuild.Blueprint bp) => bp.Wires.Count + bp.Links.Count;
+
+    /// <summary>Blueprint link <paramref name="s"/> is laid as conduit on a pre-built: it names no nodes of its own, isn't a branch, and is of a kind that can be.</summary>
+    public static bool Lays(ConstructRoutes.LinkSpec s) => s.Nodes.Count == 0 && s.Branch < 0 && !s.Laid && Routable(s.Type);
+
+    private static CRouteNode[]? Find(ConstructWorld world, Construct c, RouteType type, int from, byte fromPort, int to, byte toPort, long deadline, out string? why, out bool outOfTime)
     {
         why = null;
         outOfTime = false;
         foreach (var (air, gap) in Tries)
         {
-            if (Find(world, c, from, to, toPort, air, gap, deadline, out why, out var late) is { } nodes)
+            if (Find(world, c, type, from, fromPort, to, toPort, air, gap, deadline, out why, out var late) is { } nodes)
                 return nodes;
             outOfTime |= late;
         }
         return null;
     }
 
-    private static CRouteNode[]? Find(ConstructWorld world, Construct c, int from, int to, byte toPort, float air, byte gap, long deadline, out string? why, out bool late)
+    private static CRouteNode[]? Find(ConstructWorld world, Construct c, RouteType type, int from, byte fromPort, int to, byte toPort, float air, byte gap, long deadline, out string? why, out bool late)
     {
         var search = _search ??= new RouteSearch();
         search.Clear();
-        var ask = new RouteAsk { World = world, C = c, Type = RouteType.Data, From = from, FromPort = 255, Parent = 255, Nodes = [], Count = 0, To = to, ToPort = toPort, Conduit = air, ConduitGap = gap };
+        var ask = new RouteAsk { World = world, C = c, Type = type, From = from, FromPort = fromPort, Parent = 255, Nodes = [], Count = 0, To = to, ToPort = toPort, Conduit = air, ConduitGap = gap };
         var end = Math.Min(deadline, Stopwatch.GetTimestamp() + (long)(BudgetMs * Stopwatch.Frequency / 1000));
         RouteSearch.Result r;
         do
@@ -105,7 +124,7 @@ public static class ConstructConduit
             return null;
         }
         var nodes = r.Nodes.AsSpan(0, r.Count).ToArray();
-        why = OnMoving(c, from, nodes) ? "it would ride a moving part" : ConstructRoutes.Check(world, c, RouteType.Data, from, 255, 255, 0, default, nodes, to, toPort);
+        why = OnMoving(c, from, to, nodes) ? "it would ride a moving part" : ConstructRoutes.Check(world, c, type, from, fromPort, 255, 0, default, nodes, to, toPort, straight: r.Pierced);
         return why == null ? nodes : null;
     }
 
@@ -115,10 +134,22 @@ public static class ConstructConduit
     /// <summary>The blueprints' load builds each one with wires, so their routes are found then, not in a server tick (<see cref="ConstructBuild.LoadBlueprints"/>).</summary>
     public static void BeginLoad() => _loading = true;
 
+    /// <summary>A blueprint with something a pre-built's build lays as conduit: wires, or (a <c>"conduit"</c> ship's) links with no nodes.</summary>
+    public static bool Any(ConstructBuild.Blueprint bp)
+    {
+        if (bp.Wires.Count > 0)
+            return true;
+        if (bp.Conduit) // (a ship's links; an anchored building's chutes and pipes keep the routes their blueprint gives)
+            foreach (var l in bp.Links)
+                if (Lays(l))
+                    return true;
+        return false;
+    }
+
     /// <summary>A blueprint whose wires will be laid as conduit: it has wires and stands on a foundation or a frozen base (the load builds it to find them).</summary>
     public static bool Wanted(ConstructBuild.Blueprint bp)
     {
-        if (bp.Wires.Count == 0)
+        if (!Any(bp))
             return false;
         if (bp.FrozenBase || bp.Conduit)
             return true;
@@ -144,7 +175,7 @@ public static class ConstructConduit
         if (line == NotWanted)
             return true; // (a vehicle's: nothing to route)
         var wires = line.Split('|');
-        if (wires.Length != bp.Wires.Count)
+        if (wires.Length != Entries(bp))
             return false;
         var known = new CRouteNode[]?[wires.Length];
         var inv = System.Globalization.CultureInfo.InvariantCulture;
@@ -181,7 +212,7 @@ public static class ConstructConduit
     /// <summary>Keeps blueprint <paramref name="bp"/>'s routes, as its build found them, for the next start (or that it has none to find). Always true.</summary>
     public static bool Remember(ConstructBuild.Blueprint bp, string text)
     {
-        if (bp.Wires.Count == 0)
+        if (!Any(bp))
             return true;
         CRouteNode[]?[]? known = null;
         if (Wanted(bp))
@@ -256,24 +287,30 @@ public static class ConstructConduit
             _search = null;
     }
 
-    private static bool Fits(ConstructWorld world, Construct c, int from, int to, byte toPort, CRouteNode[] nodes) =>
-        !OnMoving(c, from, nodes) && ConstructRoutes.Check(world, c, RouteType.Data, from, 255, 255, 0, default, nodes, to, toPort) == null;
+    private static bool Fits(ConstructWorld world, Construct c, RouteType type, int from, byte fromPort, int to, byte toPort, CRouteNode[] nodes) =>
+        !OnMoving(c, from, to, nodes) && (ConstructRoutes.Check(world, c, type, from, fromPort, 255, 0, default, nodes, to, toPort) == null
+            || ConstructRoutes.Check(world, c, type, from, fromPort, 255, 0, default, nodes, to, toPort, straight: true) == null); // (one through a wall: its ends and spans, as it was found)
 
-    /// <summary>A node on a part gone, or on one that moves apart from the wire's output (a gate's leaf).</summary>
-    private static bool OnMoving(Construct c, int from, CRouteNode[] nodes)
+    /// <summary>
+    /// A node on a part gone, or on one that moves apart from both of the link's ends (a gate's leaf the wire only passes). A link whose
+    /// ends lie across a joint (a turret's guns, a drill on its ram) runs on the fixed side to the joint and crosses it there once,
+    /// in one flexing section, as the tool's own routes do (power-and-links.md, "Joints and constructs").
+    /// </summary>
+    private static bool OnMoving(Construct c, int from, int to, CRouteNode[] nodes)
     {
-        var ms = c.MoveSeg(c.Parts[from].Seg);
+        var a = c.MoveSeg(c.Parts[from].Seg);
+        var b = c.MoveSeg(c.Parts[to].Seg);
         foreach (var n in nodes)
-            if (n.Host >= c.PartCount || c.MoveSeg(c.Parts[n.Host].Seg) != ms)
+            if (n.Host >= c.PartCount || c.MoveSeg(c.Parts[n.Host].Seg) is var m && m != a && m != b)
                 return true;
         return false;
     }
 
-    private static bool Add(ConstructWorld world, Construct c, int from, int to, byte toPort, CRouteNode[] nodes)
+    private static bool Add(ConstructWorld world, Construct c, RouteType type, int from, byte fromPort, int to, byte toPort, CRouteNode[] nodes)
     {
         if (c.RouteCount >= Construct.MaxRoutes || world.TotalRoutes >= world.WireCap)
             return false;
-        return ConstructRoutes.Add(world, c, RouteType.Data, from, 255, 255, 0, default, nodes, to, toPort) >= 0;
+        return ConstructRoutes.Add(world, c, type, from, fromPort, 255, 0, default, nodes, to, toPort) >= 0;
     }
 
     /// <summary>
@@ -287,7 +324,7 @@ public static class ConstructConduit
         var bad = 0;
         foreach (var bp in ConstructBuild.Blueprints)
         {
-            if (bp.Wires.Count == 0 || names.Length > 0 && !names.Any(n => n.Equals(bp.Name, StringComparison.OrdinalIgnoreCase)))
+            if (!Any(bp) || names.Length > 0 && !names.Any(n => n.Equals(bp.Name, StringComparison.OrdinalIgnoreCase)))
                 continue;
             var world = new ConstructWorld();
             if (ConstructBuild.Build(world, bp, System.Numerics.Vector3.Zero, System.Numerics.Quaternion.Identity, out var why) is not { } c)
@@ -302,10 +339,10 @@ public static class ConstructConduit
             for (var r = 0; r < c.RouteCount; r++)
             {
                 ref var rt = ref c.Routes[r];
-                if (rt.Type != RouteType.Data || rt.Parent != 255)
+                if (!Routable(rt.Type) || rt.Parent != 255)
                     continue;
-                var a = ConstructRoutes.PortPoint(c, rt.From, rt.FromPort, RouteType.Data);
-                var b = ConstructRoutes.PortPoint(c, rt.To, rt.ToPort, RouteType.Data);
+                var a = ConstructRoutes.PortPoint(c, rt.From, rt.FromPort, rt.Type);
+                var b = ConstructRoutes.PortPoint(c, rt.To, rt.ToPort, rt.Type);
                 float len = 0f, open = 0f;
                 var prev = ConstructRoutes.RestPoint(c, r, -1);
                 for (var i = 0; i <= rt.Count; i++)
@@ -317,7 +354,7 @@ public static class ConstructConduit
                     for (var k = 0; k < steps; k++)
                     {
                         var m = System.Numerics.Vector3.Lerp(prev, q, (k + 0.5f) / steps);
-                        if (ConstructRoutes.SignedDistance(c, m, -1, -1, out _) > 0.08f)
+                        if (ConstructRoutes.SignedDistance(c, m, -1, -1, out _) > ConstructRoutes.Radius(rt.Type) + 0.07f)
                             open += l / steps;
                     }
                     prev = q;
@@ -329,10 +366,10 @@ public static class ConstructConduit
                         var sd = ConstructRoutes.SignedDistance(c, q, -1, -1, out var near);
                         Console.WriteLine($"    {q.X:0.00},{q.Y:0.00},{q.Z:0.00}: {sd:0.000} m off {(near >= 0 ? c.DefOf(near).Name : "-")}");
                     }
-                Console.WriteLine($"  {c.DefOf(rt.From).Name}#{rt.From} -> {c.DefOf(rt.To).Name}#{rt.To}: {(rt.Count == 0 ? "straight" : $"{rt.Count} nodes")}, {len:0.0} m (straight {System.Numerics.Vector3.Distance(a, b):0.0} m), {open:0.0} m in the open");
+                Console.WriteLine($"  {(rt.Type == RouteType.Data ? "" : ConstructRoutes.Name(rt.Type) + " ")}{c.DefOf(rt.From).Name}#{rt.From} -> {c.DefOf(rt.To).Name}#{rt.To}: {(rt.Count == 0 ? "straight" : $"{rt.Count} nodes")}, {len:0.0} m (straight {System.Numerics.Vector3.Distance(a, b):0.0} m), {open:0.0} m in the open");
             }
         }
-        Console.WriteLine($"[conduit] {Routed} wires routed, {Failed} left straight, {Ms:0} ms of searching; {Kept} copies from the cache");
+        Console.WriteLine($"[conduit] {Routed} links routed, {Failed} left straight, {Ms:0} ms of searching; {Kept} copies from the cache");
         return bad;
     }
 }

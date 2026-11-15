@@ -58,6 +58,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); ou
     <button id="tEdges" aria-pressed="false">Edges</button>
     <button id="tFinish" aria-pressed="false">Colour by finish</button>
     <button id="tSpin" aria-pressed="false">Turn</button>
+    <button id="tLinks" aria-pressed="false" title="Cables, pipes, chutes and shafts as the build laid them">Links</button>
+    <button id="tXray" aria-pressed="false" title="Draw the links through walls">Links through walls</button>
   </div>
   <div class="toggles views"><button data-v="iso">3/4</button><button data-v="side">Side</button><button data-v="top">Top</button><button data-v="front">Bow</button></div>
   <input id="search" type="search" placeholder="Find a part" aria-label="Find a part">
@@ -100,7 +102,7 @@ const finishHue = {}; let hueN = 0;
 const finishColour = name => { if (!(name in finishHue)) finishHue[name] = new THREE.Color().setHSL((hueN++ * 0.618) % 1, 0.55, 0.55); return finishHue[name]; };
 const tmp = new THREE.Color();
 let M = null, look16, triPart, solidGeo, glassGeo, solid, glass, grid = null, edges = null, size = [1, 1, 1], centre = new THREE.Vector3(), radius = 1;
-let picked = -1, byFinish = false, edgesOn = false, glassOn = true;
+let picked = -1, byFinish = false, edgesOn = false, glassOn = true, linksOn = false, xray = false, links = null;
 
 function build(glassSide, pos16, nrm8) {
   const idx = []; for (let t = 0; t < look16.length; t++) if ((M.looks[look16[t]][1] > 0) === glassSide) idx.push(t);
@@ -135,7 +137,31 @@ document.querySelectorAll(".views button").forEach(b => b.onclick = () => setVie
 
 function dispose() {
   for (const o of [solid, glass, grid, edges]) if (o) { scene.remove(o); o.geometry.dispose(); o.material.dispose(); }
-  edges = null;
+  edges = null; dropLinks();
+}
+
+// Links: each link of the model ([type, x, y, z, ...] from its output through its nodes to its input) as square tubes, one colour a type.
+// Data cables are drawn at least 3 cm across so they show. "Links through walls" draws them over everything, to follow one inside the hull.
+const linkLook = { data: ["#f2d21b", 0.015], power: ["#e0342a", 0.02], pipe: ["#2f7fe0", 0.05], chute: ["#ff8a1c", 0.12], shaft: ["#d8d8d8", 0.04], feed: ["#b06cff", 0.04], conveyor: ["#9aa3aa", 0.2] };
+function dropLinks() { if (links) { scene.remove(links); links.traverse(o => { if (o.isMesh) { o.geometry.dispose(); o.material.dispose(); } }); links = null; } }
+function makeLinks() {
+  dropLinks(); if (!M || !M.links || !M.links.length) return;
+  links = new THREE.Group(); const box = new THREE.BoxGeometry(1, 1, 1), up = new THREE.Vector3(0, 1, 0), m = new THREE.Matrix4(), q = new THREE.Quaternion();
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), d = new THREE.Vector3(), mid = new THREE.Vector3(), sc = new THREE.Vector3();
+  const byType = {}; for (const l of M.links) (byType[l[0]] ||= []).push(l);
+  for (const [type, ls] of Object.entries(byType)) {
+    const [hex, r] = linkLook[type] || ["#ffffff", 0.03], segs = [];
+    for (const l of ls) for (let i = 4; i + 2 < l.length; i += 3) segs.push([l[i - 3], l[i - 2], l[i - 1], l[i], l[i + 1], l[i + 2]]);
+    const mat = new THREE.MeshBasicMaterial({ color: hex, clippingPlanes: clips, depthTest: !xray, transparent: xray, opacity: xray ? 0.85 : 1 });
+    const mesh = new THREE.InstancedMesh(box, mat, segs.length); mesh.renderOrder = xray ? 2 : 0;
+    segs.forEach((s, k) => {
+      a.set(s[0], s[1], s[2]); b.set(s[3], s[4], s[5]); d.subVectors(b, a); const len = d.length();
+      q.setFromUnitVectors(up, len > 1e-6 ? d.normalize() : up); mid.addVectors(a, b).multiplyScalar(0.5); sc.set(2 * r, len + 2 * r, 2 * r);
+      mesh.setMatrixAt(k, m.compose(mid, q, sc));
+    });
+    links.add(mesh);
+  }
+  scene.add(links);
 }
 function show(model) {
   dispose(); M = model; picked = -1;
@@ -163,6 +189,8 @@ function show(model) {
   camera.near = radius / 200; camera.far = radius * 40; camera.updateProjectionMatrix();
   controls.target.copy(centre); setView("iso");
   if (edgesOn) makeEdges();
+  if (linksOn) makeLinks();
+  document.getElementById("tLinks").hidden = document.getElementById("tXray").hidden = !(M.links && M.links.length);
   deck(-1);
   names = new Map(); M.parts.forEach(([n], i) => { if (!names.has(n)) names.set(n, []); names.get(n).push(i); });
   search.value = ""; paint(); fillList();
@@ -186,6 +214,8 @@ toggle("tGlass", on => { glassOn = on; if (glass) glass.visible = on; });
 toggle("tEdges", on => { edgesOn = on; if (on && !edges && M) makeEdges(); if (edges) edges.visible = on; });
 toggle("tFinish", on => { byFinish = on; paint(); });
 toggle("tSpin", on => { controls.autoRotate = on; });
+toggle("tLinks", on => { linksOn = on; if (on) makeLinks(); else dropLinks(); });
+toggle("tXray", on => { xray = on; if (on && !linksOn) document.getElementById("tLinks").click(); else if (linksOn) makeLinks(); });
 
 // Parts list: one row per distinct part name, with its count; a click picks the first of them.
 const list = document.getElementById("parts"), search = document.getElementById("search");
