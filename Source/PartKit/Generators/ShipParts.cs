@@ -8,7 +8,7 @@ namespace CallOfSlop.PartKit.Generators;
 /// (docs/sandbox/constructs/ship.md).
 ///
 /// The second hull (Karl, 2026-11-15: the first was a blob, "look at the Zero Day and why it is so good"): a lofted hull of five
-/// facets a side through seven rings from a chisel nose that juts out over the cargo ramp to a tail behind the rooms, about 24 m
+/// facets a side through seven rings from a blunt bridge front over the cargo ramp to a tail behind the rooms, about 24 m
 /// long, with chine rails along every edge, three hoop frames, bevelled armour slabs and mismatched patch plates panel by panel,
 /// fuel lines down the flanks, and things that do a job on the outside: radiator wings, deck cargo, a crane, a mast, the engine
 /// pods and saddle tanks. The rooms are the first hull's (the opening's wake points and every fitting's socket still hold).
@@ -44,11 +44,11 @@ public sealed class ShipParts : IPartGenerator
     private const double Ceil = 6.0, CeilT = 6.06; // the upper ceiling's underside and top
 
     /// <summary>The hull's rings: half width, height and z of its five points a side (belly edge, chine, beam at the deck line, upper
-    /// chine, spine edge). Each point has its own z, so a facet can rake. Ring 0 is the chisel's tip, which sits over the cargo ramp:
+    /// chine, spine edge). Each point has its own z, so a facet can rake. Ring 0 is the bridge's blunt front (Karl, 2026-11-15: the chisel had to go), over the cargo ramp:
     /// its belly and chine points are the overhang's underside, so the lower facets start at ring 1.</summary>
     private static readonly (double W, double Y, double Z)[][] Rings =
     [
-        [(0.45, 3.0, -4.7), (0.45, 3.0, -4.7), (0.62, 3.45, -4.9), (0.45, 3.95, -4.65), (0.25, 4.15, -4.4)], // 0 the chisel's tip
+        [(1.65, 2.7, -2.3), (1.65, 2.7, -2.3), (1.95, 3.5, -2.7), (1.75, 5.45, -2.2), (1.05, 6.05, -1.6)], // 0 the bridge's blunt front
         [(0.9, -0.6, 0.9), (1.8, 0.0, -0.3), (2.0, 3.0, -1.5), (1.75, 6.0, 1.4), (1.1, 6.8, 2.3)], // 1 the nose: the ramp is its chin
         [(2.7, -0.6, 3.6), (4.8, 0.0, 3.0), (5.3, 3.0, 3.0), (4.95, 6.2, 3.2), (2.6, 7.3, 4.0)], // 2 the shoulder (frame)
         [(2.9, -0.6, 8.5), (4.8, 0.0, 8.5), (5.3, 3.0, 8.5), (4.95, 6.2, 8.5), (2.7, 7.3, 8.5)], // 3 midship (frame)
@@ -802,7 +802,7 @@ public sealed class ShipParts : IPartGenerator
         return p.Stats(1900, 3000, 30, 8.0);
     }
 
-    // ---- the deck: the upper deck, the canopy and the chisel nose, the upper hull, the tail's upper half
+    // ---- the deck: the upper deck, the canopy and the bridge front, the upper hull, the tail's upper half
 
     private static readonly (double X0, double Z0, double X1, double Z1) StairHole = (7.75, 8.25, 10.2, 11.75);
 
@@ -820,8 +820,8 @@ public sealed class ShipParts : IPartGenerator
     private static Part DeckPart()
     {
         var p = Big("Rust Bucket Deck", "The rust bucket's upper deck: the floor of the cockpit, the cabins, hydroponics and the galley.");
-        // The nose: the chisel that juts out over the ramp, its underside, its plated sides, a windscreen raked over the cockpit, the
-        // side windows, an armoured cap on the tip and two searchlights.
+        // The nose: the bridge front over the ramp, its underside, its plated sides, a windscreen raked over the cockpit, the
+        // side windows, the bridge's windows under a visor, a bumper and two searchlights.
         With("Rust Bucket Canopy", () =>
         {
             Quad(p, Pt(0, L, -1), Pt(0, L, 1), Pt(1, D, 1), Pt(1, D, -1), Belly, "dirty steel");
@@ -864,25 +864,45 @@ public sealed class ShipParts : IPartGenerator
             Quad(p, Pt(0, R, -1), Pt(0, R, 1), SpineAt(1, Glass), SpineAt(-1, Glass), HullPaint, paint: true);
             Quad(p, SpineAt(-1, Glass), SpineAt(1, Glass), Pt(1, R, 1), Pt(1, R, -1), GlassTint, glass: true);
             Bar(p, Mid(SpineAt(-1, Glass), SpineAt(1, Glass)), Mid(Pt(1, R, -1), Pt(1, R, 1)), [0, 0.025, 0]);
-            // The ram cap: a dark armour block round the chisel's tip.
-            double[][] Outline(double z, double grow, double dz)
+            // The bridge's front, a blunt raked face like a tug's: a bumper and armour low down, a band of windows at eye height with
+            // mullions, and a brow over them that juts out as a sun visor.
+            double[] F(int k, double t) => Lerp(Pt(0, k, -1), Pt(0, k, 1), t);
+            double[] Band(int k0, int k1, double t, double v) => Lerp(F(k0, t), F(k1, t), v);
+            Quad(p, F(L, 0), F(L, 1), F(D, 1), F(D, 0), Armour, "plated steel");
+            const double Fv0 = 0.16, Fv1 = 0.84, Ft0 = 0.05, Ft1 = 0.95;
+            Quad(p, Band(D, U, 0, 0), Band(D, U, 1, 0), Band(D, U, 1, Fv0), Band(D, U, 0, Fv0), HullPaint, paint: true);
+            Quad(p, Band(D, U, 0, Fv1), Band(D, U, 1, Fv1), Band(D, U, 1, 1), Band(D, U, 0, 1), HullPaint, paint: true);
+            Quad(p, Band(D, U, 0, Fv0), Band(D, U, Ft0, Fv0), Band(D, U, Ft0, Fv1), Band(D, U, 0, Fv1), HullPaint, paint: true);
+            Quad(p, Band(D, U, Ft1, Fv0), Band(D, U, 1, Fv0), Band(D, U, 1, Fv1), Band(D, U, Ft1, Fv1), HullPaint, paint: true);
+            Quad(p, Band(D, U, Ft0, Fv0), Band(D, U, Ft1, Fv0), Band(D, U, Ft1, Fv1), Band(D, U, Ft0, Fv1), GlassTint, glass: true);
+            var fn = Unit(Cross(Sub(F(D, 1), F(D, 0)), Sub(F(U, 0), F(D, 0))));
+            if (fn[2] > 0)
+                fn = [-fn[0], -fn[1], -fn[2]];
+            foreach (var t in new[] { 0.28, 0.5, 0.72 })
+                Bar(p, Band(D, U, t, Fv0), Band(D, U, t, Fv1), [fn[0] * 0.03, fn[1] * 0.03, fn[2] * 0.03]);
+            Bar(p, Band(D, U, Ft0, Fv0 + 0.005), Band(D, U, Ft1, Fv0 + 0.005), [fn[0] * 0.035, fn[1] * 0.035, fn[2] * 0.035]);
+            Quad(p, F(U, 0), F(U, 1), F(R, 1), F(R, 0), RoofDark, "plated steel");
+            // The visor: a dark slab from the brow's foot, out over the windows and a little down.
+            double[] Out(double[] q, double dy, double dz) => [q[0], q[1] + dy, q[2] + dz];
+            double[][] Visor(double dy) => [Out(F(U, -0.04), dy, 0.02), Out(F(U, 1.04), dy, 0.02), Out(F(U, 1.02), dy - 0.08, -0.5), Out(F(U, -0.02), dy - 0.08, -0.5)];
+            Prism(p, Visor(-0.02), Visor(0.1), Armour, "plated steel");
+            // The bumper: a heavy beam across the face at the beam line, hazard chevrons on it, two headlamps under it.
+            double[][] Beam(double dy) => [Out(F(D, -0.06), dy, 0.05), Out(F(D, 1.06), dy, 0.05), Out(F(D, 1.06), dy, -0.28), Out(F(D, -0.06), dy, -0.28)];
+            Prism(p, Beam(-0.16), Beam(0.1), Frame, "dirty steel");
+            foreach (var t in new[] { 0.12, 0.3, 0.7, 0.88 })
             {
-                var o = new List<double[]>();
-                foreach (var s in new[] { -1, 1 })
-                    foreach (var k in s < 0 ? new[] { L, D, U, R } : new[] { R, U, D, L })
-                    {
-                        var (w, y) = PointAt(k, z);
-                        if (k == L)
-                            (w, y) = (Rings[0][L].W, Rings[0][L].Y);
-                        o.Add(P(Cx + s * (w + grow), y + (k == L ? -grow : k == R ? grow : 0), z + dz));
-                    }
-                return [.. o];
+                var c = Out(F(D, t), 0, -0.283);
+                Detail(p, c[0] - 0.12, c[1] - 0.12, c[2] - 0.006, c[0] + 0.12, c[1] + 0.06, c[2], Stripe, "hazard paint");
             }
-            Prism(p, Outline(-4.9, 0.05, -0.06), Outline(-4.0, 0.06, 0), Armour, "plated steel");
-            Detail(p, Cx - 0.3, 3.47, -4.97, Cx + 0.3, 3.6, -4.95, Stripe, "hazard paint");
+            foreach (var t in new[] { 0.22, 0.78 })
+            {
+                var c = Lerp(F(L, t), F(D, t), 0.55);
+                Detail(p, c[0] - 0.16, c[1] - 0.09, c[2] - 0.06, c[0] + 0.16, c[1] + 0.09, c[2] + 0.04, Frame, "dirty steel");
+                Detail(p, c[0] - 0.12, c[1] - 0.06, c[2] - 0.065, c[0] + 0.12, c[1] + 0.06, c[2] - 0.06, "#fff2c8", glow: true);
+            }
             // What a round hits in the nose: the void under the windscreen, ahead of the dashboard.
-            foreach (var (y0, y1) in new[] { (3.08, 3.6), (3.6, 4.2), (4.2, 4.8), (4.8, 5.4) })
-                Void(p, -4.7, Rings[1][D].Z, y0, y1, 0.2);
+            foreach (var (y0, y1, z0) in new[] { (3.08, 3.6, -2.3), (3.6, 4.2, -2.35), (4.2, 4.8, -2.2), (4.8, 5.4, -1.95) })
+                Void(p, z0, Rings[1][D].Z, y0, y1, 0.2);
             foreach (var (y0, y1) in new[] { (F1T, 3.9), (3.9, 4.6), (4.6, 5.3), (5.3, 5.9) })
                 Void(p, Rings[1][D].Z, 0.5, y0, y1, 0.2);
         });
@@ -1568,7 +1588,7 @@ public sealed class ShipParts : IPartGenerator
             "Deck" => "The rust bucket's upper deck: the floor of the cockpit, the cabins, hydroponics and the galley.",
             "Roof" => "The rust bucket's roof: the upper deck's ceiling, the eaves and the spine, and the mounts for the gear on it.",
             "Chin" => "The rust bucket's chin: the hull either side of the cargo ramp, round the front of the hold.",
-            "Canopy" => "The rust bucket's nose: the chisel over the ramp, the windscreen, the side windows and the cockpit's front.",
+            "Canopy" => "The rust bucket's nose: the bridge front over the ramp, the windscreen, the side windows and the cockpit's front.",
             "Tail" => "The rust bucket's tail behind the rooms: the heat exchanger, the fins and the tail lights.",
             _ when what.StartsWith("Frame") => $"One of the rust bucket's hoop frames ({what[6..].ToLowerInvariant()}): a girder right round the hull. Tough.",
             _ when what.StartsWith("Partition") => "A partition of the rust bucket's rooms, with its doorways.",
@@ -1783,7 +1803,7 @@ public sealed class ShipParts : IPartGenerator
 
     private static BuildingParts.Blueprint Blueprint(Dictionary<string, PyDict> defs)
     {
-        var bp = new BuildingParts.Blueprint("Rust Bucket", "Your ship: a patched two-deck tramp with a chisel nose over its cargo ramp, a cockpit, two cabins, hydroponics, a galley, a hold and an engine room.", defs, maxSteps: 200);
+        var bp = new BuildingParts.Blueprint("Rust Bucket", "Your ship: a patched two-deck tramp with a blunt bridge over its cargo ramp, a cockpit, two cabins, hydroponics, a galley, a hold and an engine room.", defs, maxSteps: 200);
         bp.Conduit = true; // (its lamp wires run along the walls and over the ceilings, not across the rooms)
         double[] zero = [0, 0, 0];
         var steps = new Dictionary<string, int>();

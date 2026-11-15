@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Rust Bucket",
-  "description": "Your ship: a patched two-deck tramp with a chisel nose over its cargo ramp, a cockpit, two cabins, hydroponics, a galley, a hold and an engine room.",
+  "description": "Your ship: a patched two-deck tramp with a blunt bridge over its cargo ramp, a cockpit, two cabins, hydroponics, a galley, a hold and an engine room.",
   "steps": [
     {
       "part": "Rust Bucket Keel"

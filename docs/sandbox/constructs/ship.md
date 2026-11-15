@@ -12,8 +12,8 @@ What the Zero Day does that the first hull didn't, kept scrappy here: a long lof
 length, a line along every edge, armour that varies panel by panel, and things on the outside that do a job.
 
 - **Lofted.** Five points a side (belly edge, chine, beam at the deck line, upper chine, spine edge) through seven rings,
-  each point with its own z so a facet can rake: a chisel nose that juts 3 m out over the cargo ramp, a hexagonal section
-  amidships with a tall spine (7.3 m), and a tail behind the rooms that tucks in to the heat exchanger. About 24 m long,
+  each point with its own z so a facet can rake: a blunt bridge front over the cargo ramp, a hexagonal section
+  amidships with a tall spine (7.3 m), and a tail behind the rooms that tucks in to the heat exchanger. About 21.5 m long,
   14 m across the radiator wings, 11.6 m to the mast's tip, 113 t.
 - **Lines.** Chine rails along the chine, the beam (the heavy rub strake) and the upper chine and spine edges; three hoop
   frames (shoulder, midship, haunch) stand proud right round it.
@@ -23,8 +23,12 @@ length, a line along every edge, armour that varies panel by panel, and things o
 - **On the outside.** Radiator wings on the eaves (they glow along the edge), a battered half-height container strapped to
   the spine, a deck crane folded onto a crutch, a mast with a dish and a beacon, a grating walkway and a hatch on the spine,
   two raked fins on the tail, fuel lines on brackets from the saddle tanks aft to the pods, a sealed side hatch, searchlights
-  on the nose, running lights, tail lights. The stern pods have intake cowls, cooling rings and a fairing.
-- **Glass.** A raked windscreen over the nose and a band of side windows either side of the cockpit, framed; the rest is plate.
+  on the nose's cheeks, running lights, tail lights. The stern pods have intake cowls, cooling rings and a fairing.
+- **The bridge front** (Karl, 2026-11-15: the first chisel nose had to go). A blunt, raked face like a tug's: armour and a
+  heavy bumper with hazard chevrons and two headlamps low down, a band of windows at eye height with mullions, and a dark visor
+  jutting out over them from the brow.
+- **Glass.** The bridge's window band, a raked windscreen over the nose's top and a band of side windows either side of the
+  cockpit, framed; the rest is plate.
 
 The colours: tan paint, dark plate and frames, green and ochre patches, hazard ochre and primer red as accents.
 
