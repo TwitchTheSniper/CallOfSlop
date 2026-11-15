@@ -1415,9 +1415,8 @@
         6.9932,
         7.8772
       ],
-      "color": "#6f9ec0",
+      "color": "#30353b",
       "detail": true,
-      "glass": true,
       "shape": "hull",
       "points": [
         [
@@ -1461,7 +1460,8 @@
           7.8772
         ]
       ],
-      "paintable": false
+      "paintable": false,
+      "finish": "plated steel"
     },
     {
       "min": [
@@ -1847,9 +1847,8 @@
         6.9932,
         7.8772
       ],
-      "color": "#6f9ec0",
+      "color": "#30353b",
       "detail": true,
-      "glass": true,
       "shape": "hull",
       "points": [
         [
@@ -1893,7 +1892,8 @@
           7.8698
         ]
       ],
-      "paintable": false
+      "paintable": false,
+      "finish": "plated steel"
     },
     {
       "min": [
@@ -2024,9 +2024,8 @@
         6.9948,
         7.8825
       ],
-      "color": "#6f9ec0",
+      "color": "#3b4148",
       "detail": true,
-      "glass": true,
       "shape": "hull",
       "points": [
         [
@@ -2070,7 +2069,8 @@
           7.8765
         ]
       ],
-      "paintable": false
+      "paintable": false,
+      "finish": "plated steel"
     },
     {
       "min": [

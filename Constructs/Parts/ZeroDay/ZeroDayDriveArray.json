@@ -31,6 +31,52 @@
       "face": "-z"
     }
   ],
+  "flame": [
+    {
+      "at": [
+        -4.35,
+        0.2,
+        3.3
+      ],
+      "dir": "+z",
+      "radius": 1.15,
+      "length": 9.0,
+      "kind": "Rocket"
+    },
+    {
+      "at": [
+        -1.45,
+        0.2,
+        3.3
+      ],
+      "dir": "+z",
+      "radius": 1.15,
+      "length": 9.0,
+      "kind": "Rocket"
+    },
+    {
+      "at": [
+        1.45,
+        0.2,
+        3.3
+      ],
+      "dir": "+z",
+      "radius": 1.15,
+      "length": 9.0,
+      "kind": "Rocket"
+    },
+    {
+      "at": [
+        4.35,
+        0.2,
+        3.3
+      ],
+      "dir": "+z",
+      "radius": 1.15,
+      "length": 9.0,
+      "kind": "Rocket"
+    }
+  ],
   "mass": 16000.0,
   "health": 20000,
   "armour": 35,

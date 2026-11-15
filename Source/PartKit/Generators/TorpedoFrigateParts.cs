@@ -747,11 +747,15 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         Floor(p, [new Rect(Cx - UwF - 0.25, 8.25, Cx + UwF + 0.25, ZStep), new Rect(Cx - Uw - 0.25, ZStep, Cx + Uw + 0.25, 25.0)], Ceil1, Roof, Ceil, "painted plating");
         Detail(p, Cx - UwF + 0.05, Ft1, ZFront + 0.05, Cx + UwF - 0.05, Ft1 + 0.012, ZStep - 0.3, "#30353b", "rubber matting"); // (the bridge's mat)
         HatchRail(p, ForeHatch, Ft1);
-        // The bridge: narrow, a wide window forward onto the canopy, the dashboard under it.
-        WallRun(p, true, Cx - UwF - 0.25, Cx + UwF + 0.25, ZFront - 0.125, y0, y1, new Gap(Cx - 2.1, 4.2, 0.95, 2.65, true));
+        // The bridge: narrow and sealed, a wide view screen on its forward wall over the dashboard, a camera screen on each side.
+        WallRun(p, true, Cx - UwF - 0.25, Cx + UwF + 0.25, ZFront - 0.125, y0, y1);
+        Detail(p, Cx - 2.1, Ft1 + 1.2, ZFront - 0.016, Cx + 2.1, Ft1 + 2.6, ZFront + 0.016, "#202428", "plastic"); // (the screen's bezel)
+        Detail(p, Cx - 2.0, Ft1 + 1.28, ZFront + 0.008, Cx + 2.0, Ft1 + 2.52, ZFront + 0.028, "#2a5878", glow: true);
         foreach (var s in new[] { -1, 1 })
         {
-            WallRun(p, false, ZFront - 0.25, ZStep - 0.25, Cx + s * (UwF + 0.125), y0, y1, new Gap(9.4, 2.6, 1.0, 2.4, true));
+            WallRun(p, false, ZFront - 0.25, ZStep - 0.25, Cx + s * (UwF + 0.125), y0, y1);
+            Detail(p, Cx + s * UwF - 0.016, Ft1 + 1.25, 9.9, Cx + s * UwF + 0.016, Ft1 + 2.2, 11.6, "#202428", "plastic");
+            Detail(p, Cx + s * (UwF - 0.02) - 0.008, Ft1 + 1.32, 10.0, Cx + s * (UwF - 0.02) + 0.008, Ft1 + 2.13, 11.5, "#2a5878", glow: true);
             WallRun(p, false, ZStep, 25.0, Cx + s * (Uw + 0.125), y0, y1);
         }
         // The dashboard: a sloped console across the window's foot, screens on it, a strip of lights.
@@ -942,11 +946,11 @@ public sealed class TorpedoFrigateParts : IPartGenerator
                 Facet(p, 2, s, za, zb, Skin, "painted plating");
                 var canopy = za >= Zc;
                 Facet(p, 3, s, za, zb, canopy ? Armour : Skin, canopy ? "plated steel" : "painted plating");
-                Facet(p, 4, s, za, zb, canopy ? Glass : Skin2, "painted plating", glass: canopy);
+                Facet(p, 4, s, za, zb, canopy ? Armour2 : Skin2, canopy ? "plated steel" : "painted plating"); // (the bridge is sealed: no glass, it sees through cameras)
                 Chine(p, 2, s, za, zb, 0.26, 0.12, Armour2);
                 Chine(p, 3, s, za, zb, 0.2, 0.1, Armour);
             }
-            Facet(p, 5, 1, za, zb, za >= Zc ? Glass : Armour, "plated steel", glass: za >= Zc);
+            Facet(p, 5, 1, za, zb, Armour, "plated steel");
         }
         // Armour on the nose: the cheeks stepped, the chin, a blue blaze down each side.
         foreach (var s in new[] { -1, 1 })
@@ -1265,6 +1269,8 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         p.Add(Box([-2.6, -3.9, 0.0], [2.6, -1.2, 1.0], hidden: true));
         p.Sock("front", [0, 0, 0], "-z");
         p.Set(("thruster", Kw(("force", DriveForce), ("spool", 2.0), ("exhaust", "+z"), ("at", Py.L(0, 0.2, 3.3)), ("burnRate", Py.Round(DriveForce / 1e6 * Burn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [0, 1.0, 0], "-z", "fuel"))));
+        // One flame out of each bell, as wide as its mouth (the default flame is one from the middle, as wide as 9 MN asks: 12 m across).
+        p.Set(("flame", Py.L([.. new[] { -4.35, -1.45, 1.45, 4.35 }.Select(x => (object?)Kw(("at", Py.L(x, 0.2, 3.3)), ("dir", "+z"), ("radius", 1.15), ("length", 9.0), ("kind", "Rocket")))])));
         return p.Stats(16000, 20000, 35, 20.0);
     }
 
@@ -1288,6 +1294,8 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         p.Add(Box([-0.4 * scale, -1.05 * scale, -0.4 * scale], [0.4 * scale, -0.45 * scale, 0.4 * scale], hidden: true));
         p.Sock("top", [0, 0, 0], "+y");
         p.Set(("thruster", Kw(("force", force), ("spool", 0.5), ("exhaust", "-y"), ("at", Py.L(0, Py.Round(-1.05 * scale, 4), 0)), ("burnRate", Py.Round(force / 1e6 * Burn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [Py.Round(0.45 * scale, 4), Py.Round(-0.2 * scale, 4), 0], "+x", "fuel"))));
+        // The flame out of the bell's mouth, as wide as it (the default would be 5 m across from a 1 m bell).
+        p.Set(("flame", Py.L(Kw(("at", Py.L(0, Py.Round(-1.05 * scale, 4), 0)), ("dir", "-y"), ("radius", Py.Round(0.4 * scale, 4)), ("length", Py.Round(2.8 * scale, 4)), ("kind", "Rocket")))));
         return p.Stats(900 * scale, 3000, 20, 6.0);
     }
 
