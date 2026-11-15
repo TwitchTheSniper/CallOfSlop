@@ -1,0 +1,282 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Crumb",
+  "description": "Crumb, Mille's moonlet in Frostreach (Systems/Frostreach.json): a 600 m lump of rubble with a sixth of a world's pull, pocked with craters and streaked with iron, stone and sand. Close to home and easy to lift off from: where a new mining crew starts.",
+  "author": "Call of Slop",
+  "order": 7,
+  "halfX": 2000,
+  "halfZ": 2000,
+  "maxPlayers": 8,
+  "skybox": {
+    "preset": "dusk",
+    "zenith": "#05060c",
+    "horizon": "#2a2622",
+    "ground": "#1a1714",
+    "stars": 1.6,
+    "clouds": false,
+    "sun": {
+      "color": "#fff1dc",
+      "intensity": 1.15,
+      "size": 1.4,
+      "glow": 0.4
+    },
+    "haze": {
+      "color": "#3a332c",
+      "strength": 0.2
+    },
+    "ambient": 0.7
+  },
+  "planetoid": {
+    "radius": 600,
+    "cell": 2,
+    "strength": 1.5,
+    "surface": {
+      "grass": "#6e6559",
+      "dirt": "#5c5348",
+      "rock": "#433d36",
+      "sand": "#8a7c66",
+      "dirtSlope": 14,
+      "rockSlope": 28,
+      "sandBelow": -18
+    },
+    "features": [
+      {
+        "type": "noise",
+        "amplitude": 38,
+        "scale": 520,
+        "octaves": 4,
+        "seed": 71
+      },
+      {
+        "type": "mountain",
+        "lat": -20,
+        "lon": 140,
+        "radius": 260,
+        "height": 70,
+        "seed": 72,
+        "ridges": 0.4,
+        "erosion": 0.5,
+        "warp": 0.35
+      },
+      {
+        "type": "mountain",
+        "lat": 10,
+        "lon": 300,
+        "radius": 200,
+        "height": 50,
+        "seed": 73,
+        "ridges": 0.3,
+        "erosion": 0.5,
+        "warp": 0.35
+      },
+      {
+        "type": "crater",
+        "lat": -60,
+        "lon": 40,
+        "radius": 130,
+        "depth": 45
+      },
+      {
+        "type": "crater",
+        "lat": 20,
+        "lon": 200,
+        "radius": 110,
+        "depth": 35
+      },
+      {
+        "type": "crater",
+        "lat": 45,
+        "lon": 90,
+        "radius": 70,
+        "depth": 22
+      },
+      {
+        "type": "crater",
+        "lat": -10,
+        "lon": 30,
+        "radius": 90,
+        "depth": 30
+      },
+      {
+        "type": "crater",
+        "lat": 60,
+        "lon": 260,
+        "radius": 55,
+        "depth": 18
+      },
+      {
+        "type": "crater",
+        "lat": -35,
+        "lon": 250,
+        "radius": 60,
+        "depth": 20
+      },
+      {
+        "type": "crater",
+        "lat": 5,
+        "lon": 120,
+        "radius": 40,
+        "depth": 14
+      },
+      {
+        "type": "noise",
+        "amplitude": 3,
+        "scale": 40,
+        "octaves": 3,
+        "seed": 74
+      },
+      {
+        "type": "noise",
+        "amplitude": 0.5,
+        "scale": 12,
+        "octaves": 2,
+        "seed": 9
+      },
+      {
+        "type": "flatten",
+        "lat": 90,
+        "lon": 0,
+        "radius": 70,
+        "height": 6,
+        "edge": 150
+      }
+    ]
+  },
+  "sandbox": {
+    "resources": {
+      "mix": {
+        "iron vein": 3,
+        "stone seam": 2,
+        "sand bed": 1.5,
+        "copper vein": 0,
+        "gold vein": 0,
+        "helium pocket": 0,
+        "levite seam": 0
+      }
+    }
+  },
+  "teamSpawns": [
+    [
+      [
+        -6,
+        604.889,
+        -40
+      ],
+      [
+        6,
+        604.889,
+        -40
+      ],
+      [
+        -12,
+        605.051,
+        -36
+      ],
+      [
+        12,
+        605.051,
+        -36
+      ]
+    ],
+    [
+      [
+        -6,
+        604.889,
+        40
+      ],
+      [
+        6,
+        604.889,
+        40
+      ],
+      [
+        -12,
+        605.051,
+        36
+      ],
+      [
+        12,
+        605.051,
+        36
+      ]
+    ]
+  ],
+  "hills": [
+    {
+      "x": 30,
+      "y": 604.513,
+      "z": 30,
+      "radius": 6
+    },
+    {
+      "x": -30,
+      "y": 604.513,
+      "z": -30,
+      "radius": 6
+    }
+  ],
+  "flags": [
+    [
+      0,
+      604.827,
+      -45
+    ],
+    [
+      0,
+      604.827,
+      45
+    ]
+  ],
+  "ops": [
+    {
+      "op": "SurfaceSpawn",
+      "lat": 88.67634,
+      "lon": 22.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 88.67634,
+      "lon": 67.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 88.67634,
+      "lon": 112.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 88.67634,
+      "lon": 157.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 88.67634,
+      "lon": 202.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 88.67634,
+      "lon": 247.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 88.67634,
+      "lon": 292.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 88.67634,
+      "lon": 337.5
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 90,
+      "lon": 0,
+      "w": 1.2,
+      "h": 6,
+      "d": 1.2,
+      "color": "#8a8f99",
+      "material": "Concrete"
+    }
+  ]
+}

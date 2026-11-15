@@ -110,3 +110,11 @@ so a part that touches nothing throws. The blueprint places each part with `Put`
 - Mining hasn't been tried in a world: no drill has been run against real ground from the ship.
 - No build cost and no recipes: they are left to the production system.
 - The holds have no way to unload except their chute ports. The hopper spouts are only looks.
+
+## The Magpie start
+
+The Magpie has a start of its own (`Story/Starts/Magpie.json`, docs/story/STARTS.md), in Survival and Creative: the crew
+wake aboard 1.8 km over Crumb, Mille's 600 m moonlet, whose ground is iron, stone and sand, the ores the tier 1 drills work
+(docs/planets/WORLDS.md). The wake spots are the two cabins, the hall, the mess corridor, the workshop and engineering
+(`Story/Opening/Magpie.json`); a change to the decks' rooms checks them (`--window-shot X.png --map Crumb --start Magpie
+--survival --do "skip; wait 240; me"` prints where the player stands).
