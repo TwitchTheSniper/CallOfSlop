@@ -1,0 +1,297 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Magpie Boarding Ladder",
+  "description": "The Magpie's boarding ladder, from the ground to the porch at its stern: F climbs it.",
+  "group": "Ship",
+  "section": "Magpie miner",
+  "role": "frame",
+  "tool": "welder",
+  "ladder": 2.35,
+  "mass": 88.2,
+  "health": 400,
+  "armour": 6,
+  "material": "steel",
+  "color": "#26241f",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.3,
+        0.0,
+        -0.19
+      ],
+      "max": [
+        0.3,
+        3.35,
+        -0.005
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.28,
+        0.0,
+        -0.18
+      ],
+      "max": [
+        -0.22,
+        3.352,
+        -0.12
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.27,
+        0.6,
+        -0.12
+      ],
+      "max": [
+        -0.23,
+        0.66,
+        -0.01
+      ],
+      "color": "#26241f",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.27,
+        1.8,
+        -0.12
+      ],
+      "max": [
+        -0.23,
+        1.86,
+        -0.01
+      ],
+      "color": "#26241f",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.27,
+        3.0,
+        -0.12
+      ],
+      "max": [
+        -0.23,
+        3.06,
+        -0.01
+      ],
+      "color": "#26241f",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.22,
+        0.0,
+        -0.18
+      ],
+      "max": [
+        0.28,
+        3.352,
+        -0.12
+      ],
+      "color": "#9aa0a4",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.23,
+        0.6,
+        -0.12
+      ],
+      "max": [
+        0.27,
+        0.66,
+        -0.01
+      ],
+      "color": "#26241f",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.23,
+        1.8,
+        -0.12
+      ],
+      "max": [
+        0.27,
+        1.86,
+        -0.01
+      ],
+      "color": "#26241f",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.23,
+        3.0,
+        -0.12
+      ],
+      "max": [
+        0.27,
+        3.06,
+        -0.01
+      ],
+      "color": "#26241f",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.22,
+        0.28,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        0.32,
+        -0.135
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.22,
+        0.58,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        0.62,
+        -0.135
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.22,
+        0.88,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        0.92,
+        -0.135
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.22,
+        1.18,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        1.22,
+        -0.135
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.22,
+        1.48,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        1.52,
+        -0.135
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.22,
+        1.78,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        1.82,
+        -0.135
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.22,
+        2.08,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        2.12,
+        -0.135
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.22,
+        2.38,
+        -0.165
+      ],
+      "max": [
+        0.22,
+        2.42,
+        -0.135
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.29,
+        3.29,
+        -0.19
+      ],
+      "max": [
+        0.29,
+        3.35,
+        -0.11
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hull",
+      "at": [
+        0.0,
+        2.225,
+        -0.005
+      ],
+      "dir": "+z"
+    }
+  ]
+}

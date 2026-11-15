@@ -250,6 +250,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
         if (args.Any(a => a.Equals("--no-drive-gate", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleDriveCheck.GateOn = false; // the spawn's drive check off, to measure what it catches and costs (VehicleDriveCheck.cs)
+        if (args.SkipWhile(a => !a.Equals("--flight-check", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } flightFile)
+            return VehicleKit.VehicleFlightCheck.Cli(flightFile); // the aircraft's flight check on any blueprint: climb, hover level, go forward (a ship's too)
         if (args.SkipWhile(a => !a.Equals("--drive-check", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } driveFile)
             return VehicleKit.VehicleDriveCheck.Cli(driveFile, args); // the spawn's drive check on any blueprint: level, and a throttle pulse moves it
         if (args.SkipWhile(a => !a.Equals("--brief", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } briefOf)
