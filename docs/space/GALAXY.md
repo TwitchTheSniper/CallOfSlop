@@ -37,15 +37,15 @@ The shipped galaxy:
 | System | File | Where (ly) | What |
 | --- | --- | --- | --- |
 | Dev System | `Systems/Dev.json` | 0, 0, 0 | the Planetoid (the map), Moonlet, Bluestone and Redrock (maps too) |
-| Ember | `Systems/Ember.json` | 3.1, 2.8, 0.9 (4.27 from Dev) | a red dwarf: Cinder, Ashfall and its moonlet Soot |
-| Frostreach | `Systems/Frostreach.json` | -4.4, 4.6, -1.7 (6.59 from Dev, 8.14 from Ember) | a white star: Glacier and its moon Rime, Shard |
+| Frostreach | `Systems/Frostreach.json` | 3.1, 2.8, 0.9 (4.27 from Dev) | a white star, the Survival world's one system: five planets (Glacier with its moons Rime and Slopolis, Cinder, Caledon with its moon Cairn, Mille with its moonlet Crumb, and Shard) |
 
-| Glenmore | `Systems/Glenmore.json` | -4.6, -5.6, 1.4 (7.38 from Dev) | a yellow star: Caledon (a map) and its moon Cairn, Skerry |
-| Hearth | `Systems/Hearth.json` | 5.6, -5.2, -1.6 (7.81 from Dev) | an orange star: Mille (a map, hollow) and its moonlet Crumb, Proof |
-
-Cinder, Glacier, Caledon and Mille have maps (docs/planets/WORLDS.md): a jump arrives in orbit round them, and a ship
-that flies down into their sky lands the group there ("Landing in another system" below). From Dev every system is in the Jump Drive's 9 ly; Ember also reaches Frostreach
-and Hearth; Glenmore is reached only from Dev.
+Five planets in one star system for now (Karl, 2026-11-15): Cinder, Caledon and Mille were each in a system of their own
+(Ember, Glenmore and Hearth, removed) and are now Frostreach's planets, added after its old bodies so a saved ship's body
+index still points at the same body. Frostreach took Ember's place in the galaxy, in the Jump Drive's 9 ly from Dev.
+Glacier, Slopolis, Cinder, Caledon and Mille have maps (docs/planets/WORLDS.md): a jump arrives in orbit round Glacier, and
+a ship that flies down into a world's sky lands the group there. An old save on a world that moved keeps its ground and
+constructs, but its space clock starts again and a ship saved in orbit there stays where it was without its orbit (its
+saved body index belonged to the old system: `GameWorldSave.WorldSpaceShips`).
 
 **In the sky.** Every system's sky shows the galaxy's other stars as steady points of their colour (the star's `color`, or
 a white from its mass), brighter for a heavier, nearer star (`Galaxy.ApparentBrightness`): `SpaceSkyView.Stars`, drawn by
@@ -72,7 +72,7 @@ tonne of ship and light-year. Its `jumpTarget` setting (the configure tool) pick
   the charge stops and the driver's HUD says why (out of range, not enough charge, no such target): the HUD line is worked
   out from what every peer has, so a client says the same as the host.
 - **The Jumper** (`Constructs/Blueprints/Jumper.json`) is the Orbiter with a Jump Drive and three batteries (2.5 t, 900 kJ;
-  a jump to Ember takes 427 kJ).
+  a jump to Frostreach takes 427 kJ).
 
 ## Parked ships
 
@@ -119,6 +119,6 @@ ships, each with its own cursor.
 
 The "Galaxy" self-test section (`Source/App/SelfTestGalaxy.cs`): the shipped galaxy loads, distances and the nearest
 order, the arrival orbit, the refusals; then a real host and client with lag and loss on the Planetoid: the Jumper in
-orbit, the jump key refused with too little charge, the charge, the jump to Ember (flight, id, arrival, energy), the
-host's view of Ember's sky, the client following it there, W in Ember, no allocation with a ship away, the jump home
+orbit, the jump key refused with too little charge, the charge, the jump to Frostreach (flight, id, arrival, energy), the
+host's view of Frostreach's sky, the client following it there, W in Frostreach, no allocation with a ship away, the jump home
 (parked far out) and unparking near the planetoid.

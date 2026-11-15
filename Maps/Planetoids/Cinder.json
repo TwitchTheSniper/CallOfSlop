@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-map/1",
   "name": "Cinder",
-  "description": "Cinder, a 5 km scorched rock close to the red dwarf Ember (Systems/Ember.json), one face always to its sun: black basalt, craters, lava plains in the low ground and long fissures. The Call Centre works from the Call Floor, a flat-bottomed crater on the twilight line.",
+  "description": "Cinder, a 5 km scorched rock close to the white star Frostreach (Systems/Frostreach.json), one face always to its sun: black basalt, craters, lava plains in the low ground and long fissures. The Call Centre works from the Call Floor, a flat-bottomed crater on the twilight line.",
   "author": "Call of Slop",
   "order": 2,
   "halfX": 7600,

@@ -1955,7 +1955,10 @@ public sealed partial class Game
             }
             // Spawned back to back (the inventory stays open): the last one may stand on the spot, so the next goes on past it.
             if (!ConstructPhysics.SpawnOverlaps(Constructs, before))
+            {
+                SandboxSpawnInherit(p.Id, before); // (in a moving ship: it moves with it)
                 return c;
+            }
             if (tries == 7)
                 break;
             dist += MathF.Max(2 * reach + 1f, 2 * c.Radius);
@@ -1964,6 +1967,17 @@ public sealed partial class Game
             Constructs.Remove(Constructs.Bodies[i]);
         why = $"no room in front of you for the {bp.Name}";
         return null;
+    }
+
+    /// <summary>
+    /// Server: every body from <paramref name="from"/> on (a spawn: it, a trailer, its cargo) takes on the motion of the frame
+    /// player <paramref name="who"/> stands in, so a spawn in a ship in orbit or under way moves with the ship and comes down on its
+    /// floor, not left behind at the ship's speed (ConstructEdits.InheritRide).
+    /// </summary>
+    internal void SandboxSpawnInherit(byte who, int from)
+    {
+        for (var i = from; i < Constructs.Bodies.Count; i++)
+            SandboxHands.InheritRide(Constructs, who, Constructs.Bodies[i]);
     }
 
     /// <summary>A spawn moved as one: every body from <paramref name="from"/> on (it, a trailer), what cargo volumes carry following.</summary>
