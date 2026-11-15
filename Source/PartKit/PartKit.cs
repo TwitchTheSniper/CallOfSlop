@@ -202,6 +202,22 @@ public static class PartKit
                 System.IO.File.WriteAllBytes(full, new UTF8Encoding(false).GetBytes(o.Files[p]));
             }
             Say($"{gen.Name}: {o.Files.Count} files written ({changed.Count} changed, {stale.Count} removed) in {outRoot}");
+            // The game reads its data from the build folder (bin/...), which a build fills from the repo: copy what changed there too,
+            // so --preview-shot or --preview-construct straight after shows it without a rebuild.
+            var data = Path.GetFullPath(AppFolders.Data);
+            if (Arg("--out") is null && !Path.TrimEndingDirectorySeparator(data).Equals(Path.TrimEndingDirectorySeparator(Path.GetFullPath(outRoot)), StringComparison.OrdinalIgnoreCase) && Directory.Exists(Path.Combine(data, "Constructs")))
+            {
+                foreach (var p in stale)
+                    System.IO.File.Delete(Path.Combine(data, p));
+                foreach (var (p, text) in o.Files) // (against the build's own copy: it can be behind the repo, after a pull)
+                {
+                    var full = Path.Combine(data, p);
+                    if (System.IO.File.Exists(full) && System.IO.File.ReadAllText(full, Encoding.UTF8).Replace("\r\n", "\n") == text)
+                        continue;
+                    Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+                    System.IO.File.WriteAllBytes(full, new UTF8Encoding(false).GetBytes(text));
+                }
+            }
         }
         return bad;
     }

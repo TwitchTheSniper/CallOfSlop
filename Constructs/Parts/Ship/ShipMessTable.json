@@ -1,0 +1,375 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ship Mess Table",
+  "description": "A crew table bolted to the deck, with a lip round the edge: what is set on it stays on it.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "storage",
+  "tool": "wrench",
+  "storage": {
+    "slots": [
+      {
+        "min": [
+          -0.45,
+          0.34,
+          -0.28
+        ],
+        "max": [
+          0.45,
+          0.66,
+          0.28
+        ],
+        "label": "shelf"
+      }
+    ]
+  },
+  "mass": 70.0,
+  "health": 200,
+  "armour": 3,
+  "material": "steel",
+  "color": "#c8ccc6",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.9,
+        0.7,
+        -0.45
+      ],
+      "max": [
+        0.9,
+        0.75,
+        0.45
+      ],
+      "color": "#6b7068",
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        -0.9,
+        0.75,
+        0.42
+      ],
+      "max": [
+        0.9,
+        0.775,
+        0.45
+      ],
+      "color": "#2c2a28",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.9,
+        0.75,
+        -0.45
+      ],
+      "max": [
+        0.9,
+        0.775,
+        -0.42
+      ],
+      "color": "#2c2a28",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.9,
+        0.75,
+        -0.42
+      ],
+      "max": [
+        -0.87,
+        0.772,
+        0.42
+      ],
+      "color": "#2c2a28",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.61,
+        0.05,
+        -0.06
+      ],
+      "max": [
+        -0.49,
+        0.7,
+        0.06
+      ],
+      "color": "#2c2a28",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.73,
+        0.0,
+        -0.18
+      ],
+      "max": [
+        -0.37,
+        0.05,
+        0.18
+      ],
+      "color": "#2a2826",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.7,
+        0.05,
+        -0.15
+      ],
+      "max": [
+        -0.66,
+        0.07,
+        -0.11
+      ],
+      "color": "#8a8e8a",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.7,
+        0.05,
+        0.11
+      ],
+      "max": [
+        -0.66,
+        0.07,
+        0.15
+      ],
+      "color": "#8a8e8a",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.44,
+        0.05,
+        -0.15
+      ],
+      "max": [
+        -0.4,
+        0.07,
+        -0.11
+      ],
+      "color": "#8a8e8a",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.44,
+        0.05,
+        0.11
+      ],
+      "max": [
+        -0.4,
+        0.07,
+        0.15
+      ],
+      "color": "#8a8e8a",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.5,
+        0.743,
+        0.12
+      ],
+      "max": [
+        -0.1,
+        0.759,
+        0.38
+      ],
+      "color": "#7d8279",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        0.87,
+        0.75,
+        -0.42
+      ],
+      "max": [
+        0.9,
+        0.772,
+        0.42
+      ],
+      "color": "#2c2a28",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.49,
+        0.05,
+        -0.06
+      ],
+      "max": [
+        0.61,
+        0.7,
+        0.06
+      ],
+      "color": "#2c2a28",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.37,
+        0.0,
+        -0.18
+      ],
+      "max": [
+        0.73,
+        0.05,
+        0.18
+      ],
+      "color": "#2a2826",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.4,
+        0.05,
+        -0.15
+      ],
+      "max": [
+        0.44,
+        0.07,
+        -0.11
+      ],
+      "color": "#8a8e8a",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.4,
+        0.05,
+        0.11
+      ],
+      "max": [
+        0.44,
+        0.07,
+        0.15
+      ],
+      "color": "#8a8e8a",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.66,
+        0.05,
+        -0.15
+      ],
+      "max": [
+        0.7,
+        0.07,
+        -0.11
+      ],
+      "color": "#8a8e8a",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.66,
+        0.05,
+        0.11
+      ],
+      "max": [
+        0.7,
+        0.07,
+        0.15
+      ],
+      "color": "#8a8e8a",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.1,
+        0.743,
+        0.12
+      ],
+      "max": [
+        0.5,
+        0.759,
+        0.38
+      ],
+      "color": "#7d8279",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.49,
+        0.3,
+        -0.3
+      ],
+      "max": [
+        0.49,
+        0.33,
+        0.3
+      ],
+      "color": "#2c2a28",
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.75,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.375,
+        -0.45
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.9,
+        0.375,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.9,
+        0.375,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

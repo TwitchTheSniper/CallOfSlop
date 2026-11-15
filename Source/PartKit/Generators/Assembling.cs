@@ -539,6 +539,8 @@ public sealed class Assembling : IPartGenerator
                 throw new InvalidOperationException($"assembling: {output} is to be pressed, but no die has a preset for it (PressParts.Presets)");
             recipes.RemoveAt(k);
         }
+        if (recipes.Count > AssemblingTable.MaxRecipes) // (past it the game refuses the whole table, and every Assembler has no recipes)
+            throw new InvalidOperationException($"assembling: {recipes.Count} recipes, past AssemblingTable.MaxRecipes ({AssemblingTable.MaxRecipes})");
         o.File("Constructs/Assembling.json", Layout(recipes));
     }
 
