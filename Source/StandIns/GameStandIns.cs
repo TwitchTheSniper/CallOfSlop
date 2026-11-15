@@ -149,8 +149,11 @@ public sealed partial class Game
         return StandInPath.Ground(at + up * 30f);
     }
 
-    /// <summary>Server, four times a second with the bodies (from <see cref="StoryBodiesTick"/>'s look): craft for arrivals and departures.</summary>
-    private void StandInsTick(StoryEngine s, double now)
+    /// <summary>
+    /// Server, every Sandbox tick, with or without the story (StoryTick; the story archived still runs the tutorial's crew bus,
+    /// GameQuarry.cs): the craft out are kept up, the ended ones dropped and the rest sent again to whoever joined since.
+    /// </summary>
+    private void StandInsKeep(double now)
     {
         if (_standInMap != World.Map)
             StandInsForget();
@@ -161,6 +164,12 @@ public sealed partial class Game
             for (var i = 0; i < StandInCount; i++)
                 StandInSend(i, resend: true);
         }
+    }
+
+    /// <summary>Server, four times a second with the bodies (from <see cref="StoryBodiesTick"/>'s look): craft for arrivals and departures.</summary>
+    private void StandInsTick(StoryEngine s, double now)
+    {
+        StandInsKeep(now);
         if (now < _standInAt)
             return;
         _standInAt = now + StoryBodiesEvery;

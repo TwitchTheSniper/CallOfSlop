@@ -35,8 +35,11 @@ public sealed class Settings
     public string StoryStart = ""; // a new world's start (Story/Starts, by id; "": the first offered, the rust bucket): the Single player and Multiplayer pages (GameStoryStart.cs)
     public bool SurvivalTutorial; // Survival's Tutorial tickbox: the penal colony's induction, in a world of its own (StoryStarts.Tutorial)
 
-    /// <summary>The start a new game plays: the tutorial's in Survival with its tickbox, else the one picked (StoryStarts.Picked).</summary>
-    public string PlayedStartId => SandboxSurvival && SurvivalTutorial && StoryStarts.Tutorial is { } t ? t.Id : StoryStarts.Picked(StoryStart).Id;
+    /// <summary>
+    /// The start a new game plays: the tutorial's in Survival with its tickbox, else the one named (a tool's --start may name
+    /// any), else the first offered (StoryStarts.Picked: the menus always store an offered one).
+    /// </summary>
+    public string PlayedStartId => SandboxSurvival && SurvivalTutorial && StoryStarts.Tutorial is { } t ? t.Id : StoryStarts.Find(StoryStart)?.Id ?? StoryStarts.Picked(StoryStart).Id;
     public bool SandboxSurvival; // hosting Sandbox: Survival rather than Creative (the lobby room's Match tab; GameSandboxSurvival.cs)
     public SurvivalDeath SandboxDeath = SurvivalDeath.Checkpoint; // survival's death rule for a new world (GameSandboxDeath.cs)
     public bool SandboxKeepPack; // ...and a death keeps the backpack

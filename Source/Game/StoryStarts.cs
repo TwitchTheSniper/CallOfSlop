@@ -159,11 +159,11 @@ public static class StoryStarts
 
     /// <summary>
     /// The start a world on <paramref name="map"/> plays when <paramref name="id"/> was asked for: that one on its own
-    /// planetoid (or any map's), else the any-map start (a new world taken to another map), else the default. Nothing
-    /// asked (a world saved before starts) plays the default.
+    /// planetoid (or any map's), else the any-map start (a new world taken to another map, or a world saved with a start
+    /// that is gone: the archived Castaway), else the default. Nothing asked (a world saved before starts) plays the default.
     /// </summary>
     public static StoryStart For(string id, string map) =>
-        Find(id) is not { } s ? Default
+        Find(id) is not { } s ? (id.Length == 0 ? Default : Array.Find(All, a => a.AnyMap) ?? Default)
         : s.AnyMap || s.Map.Equals(map, StringComparison.OrdinalIgnoreCase) ? s
         : Array.Find(All, a => a.AnyMap) ?? Default;
 

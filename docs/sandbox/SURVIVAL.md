@@ -57,5 +57,7 @@ What stays live: the penal colony (its buildings, quarry, depot, spaceport and l
 opening's card and wake, and the warden's induction. Its staff are story people, so the colony has nobody walking it while
 the story is archived; the induction's lines still come, signed by the warden.
 
-A world saved while the story was on keeps loading, but its story state is dropped the next time it is saved with the
-story off.
+A world saved while the story was on keeps loading, and its story is kept: the Story section is read as bytes and written
+back unread on every save (`GameStory.StoryRead`), so `--story` later finds it whole. The tutorial's crew bus is a
+stand-in craft and is still kept up and sent to friends who join without the story (`StandInsKeep`). A world saved with
+a start that is gone (the archived Castaway) plays the On the ground start.

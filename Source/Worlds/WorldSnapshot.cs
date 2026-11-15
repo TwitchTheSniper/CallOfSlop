@@ -102,6 +102,7 @@ public sealed class WorldSnapshot
     /// <summary>A planetoid map's centre in the World (null: not a planetoid), so a later build that moves the origin can move the save with it.</summary>
     public Vector3? PlanetCentre;
     public Story.StorySave? Story, StoryCopy; // the story layer's state (Game/GameStory.cs; null: none), and the copy kept between saves
+    public byte[]? StoryKept; // with the story archived (Game.StoryOn false): a loaded world's Story section as it was read, written back untouched
     public double CaptureMs;
     public SaveWriter? Scratch, Head; // (the worker's)
 
