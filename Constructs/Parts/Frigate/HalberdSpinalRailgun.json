@@ -1,0 +1,176 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Halberd Spinal Railgun",
+  "description": "The Halberd's railgun: one slug, very fast, through three plates. Fixed along the spine, so the ship is the aim.",
+  "group": "Ship",
+  "section": "Halberd frigate",
+  "role": "gun",
+  "tool": "welder",
+  "gun": {
+    "damage": 700,
+    "rpm": 8,
+    "spread": 0.05,
+    "range": 600,
+    "mag": 1,
+    "reload": 6.0,
+    "flags": [
+      "penetrating"
+    ],
+    "kick": 2500,
+    "fx": "cannon",
+    "speed": 900,
+    "soundOf": "Leviathan .50",
+    "muzzle": [
+      0,
+      0,
+      -4.97
+    ]
+  },
+  "centreSockets": false,
+  "mass": 4200.0,
+  "health": 3000,
+  "armour": 25,
+  "material": "steel",
+  "color": "#26292c",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -0.4,
+        -0.4,
+        -0.8
+      ],
+      "max": [
+        0.4,
+        0.4,
+        0.8
+      ],
+      "color": "#56626c",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.22,
+        -0.22,
+        -4.8
+      ],
+      "max": [
+        0.22,
+        0.22,
+        -0.8
+      ],
+      "color": "#3a3d40",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.28,
+        -0.12,
+        -4.75
+      ],
+      "max": [
+        -0.22,
+        0.12,
+        -1.0
+      ],
+      "color": "#5a4a3a",
+      "detail": true,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        0.22,
+        -0.12,
+        -4.75
+      ],
+      "max": [
+        0.28,
+        0.12,
+        -1.0
+      ],
+      "color": "#5a4a3a",
+      "detail": true,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.28,
+        -0.28,
+        -4.95
+      ],
+      "max": [
+        0.28,
+        0.28,
+        -4.8
+      ],
+      "color": "#26292c",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.18,
+        -0.18,
+        -4.97
+      ],
+      "max": [
+        0.18,
+        0.18,
+        -4.95
+      ],
+      "color": "#9ad8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.405,
+        -0.405,
+        -0.6
+      ],
+      "max": [
+        0.405,
+        0.405,
+        -0.48
+      ],
+      "color": "#d8a628",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.405,
+        -0.405,
+        0.2
+      ],
+      "max": [
+        0.405,
+        0.405,
+        0.32
+      ],
+      "color": "#d8a628",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.8
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "ammo",
+      "at": [
+        0.4,
+        0.0,
+        -0.3
+      ],
+      "dir": "+x"
+    }
+  ]
+}

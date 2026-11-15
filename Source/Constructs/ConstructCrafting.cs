@@ -67,6 +67,7 @@ public sealed class CraftNet
 
     public uint Key; // the body's links as they were (0: never worked out)
     public readonly int[] Machines = new int[MaxMachines]; // parts that take orders
+    public readonly bool[] MachineWay = new bool[MaxMachines]; // ...whether its output has a way to the tray (RouteTo), worked out with the net
     public int MachineN;
     public readonly int[] Stores = new int[MaxStores]; // parts that hold stock (racks, shelves, chests, volumes, bins)
     public readonly short[] Via = new short[MaxStores]; // ...how a part leaves it for the tray: a conveyor's index, -2 a chute, -1 no route
@@ -183,7 +184,10 @@ public static class ConstructCrafting
             if (WorkOrders.TakesOrders(d))
             {
                 if (net.MachineN < CraftNet.MaxMachines)
+                {
+                    net.MachineWay[net.MachineN] = RouteTo(c, seen[q], t) != -1;
                     net.Machines[net.MachineN++] = seen[q];
+                }
             }
             else if (d.IsRefiner)
             {
@@ -1260,19 +1264,25 @@ public static class ConstructCrafting
             if (ask > 0)
             {
                 string? refusal = null;
-                for (var i = 0; i < net.MachineN && ask > 0; i++)
+                // Two passes: first the machines with a way to this tray (a conveyor through joins and Routers, or a chute), then any.
+                // (A maker whose conveyor feeds another machine, a sheet Extruder's into a Panel Former, took a station's chassis bar it
+                // could never deliver while the Extruder with a way waited: the Factory Showcase, 2026-11-14. Chains rank the same way.)
+                for (var i = 0; i < net.MachineN * 2 && ask > 0; i++)
                 {
-                    var why = LooseRefusal(world, c, net.Machines[i]) ?? WorkOrders.Queue(world, c, net.Machines[i], o.What with { Count = (ushort)ask, Made = 0 }); // (never asked of a machine that drops it loose)
+                    var m = net.Machines[i % net.MachineN]; // (its way cached with the net: MachineWay)
+                    if ((i < net.MachineN) != net.MachineWay[i % net.MachineN])
+                        continue;
+                    var why = LooseRefusal(world, c, m) ?? WorkOrders.Queue(world, c, m, o.What with { Count = (ushort)ask, Made = 0 }); // (never asked of a machine that drops it loose)
                     if (why == null)
                     {
-                        ConstructLogisticsPlan.Ranked(world, c, net.Machines[i], (byte)(StockTargets.FeedClass(c, t) + 2)); // (a High terminal's line goes ahead of Normal ones: phase 5)
-                        ConstructLogisticsPlan.Asked(world, c, net, t, o, net.Machines[i], ask); // (the parts its recipe needs: asked of other machines)
+                        ConstructLogisticsPlan.Ranked(world, c, m, (byte)(StockTargets.FeedClass(c, t) + 2)); // (a High terminal's line goes ahead of Normal ones: phase 5)
+                        ConstructLogisticsPlan.Asked(world, c, net, t, o, m, ask); // (the parts its recipe needs: asked of other machines)
                         o.Asked += (ushort)ask;
                         ask = 0;
                         if (state == CraftState.Waiting)
-                            where = (ushort)net.Machines[i];
+                            where = (ushort)m;
                     }
-                    else if (refusal == null || Kin(c.DefOf(net.Machines[i]), o.What))
+                    else if (refusal == null || Kin(c.DefOf(m), o.What))
                         refusal = why;
                 }
                 if (ask > 0 && state == CraftState.Waiting)

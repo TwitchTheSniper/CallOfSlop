@@ -366,7 +366,7 @@ public sealed class ExtrusionParts : IPartGenerator
         p.Set(("power", power), ("storage", Kw(("bulk", bulk), ("wheel", wheel))),
             ("config", air ? AirframeConfig(across, width, d0, w0) : fan ? FanConfig(across, d0) : FormerConfig(across, width, d0, w0)),
             ("collider", "boxes")); // (the hub is a look: its cylinder must never become a hull)
-        return WithScreen(p, orders: true, recipe: fan || air); // (every former takes work orders; a Fan or Airframe Former keeps its Recipe button among them)
+        return WithScreen(p, orders: true, recipe: fan || air, width: c == Small ? 0.97 : null); // (every former takes work orders; a Fan or Airframe Former keeps its Recipe button among them. A small one's screen keeps its 0.97 m: it was sized from bounds a misplaced arrow had widened, and shrank when the arrow was put right)
     }
 
     /// <summary>The small Formers' look: a headstock on a dark column, a big bare hub with a chuck that turns, the hopper banded white, hazard paint round the hub.</summary>
@@ -388,7 +388,7 @@ public sealed class ExtrusionParts : IPartGenerator
         p.Add(L([-0.612, 2.08, -0.762], [0.612, 2.19, -0.75], MachineLook.In));
         p.Add(L([0.6, 2.08, -0.75], [0.612, 2.19, -0.05], MachineLook.In));
         p.Add(L([-0.612, 2.08, -0.75], [-0.6, 2.19, -0.05], MachineLook.In));
-        MachineLook.Arrow(p, 2, -0.75, -1, 1, -1, 0, 1.8, 0.3, 0.3, MachineLook.In);
+        MachineLook.Arrow(p, 2, -0.75, -1, 1, -1, 1.8, 0, 0.3, 0.3, MachineLook.In); // (down into the hopper, under its rim: y 1.8, x 0. The two were swapped until 2026-11-14, so the arrow sat half in the floor at x 1.8, its top on the floor's plane)
         // The drive on the right: a dark motor and a guard.
         p.Add(L([0.6, 1.3, -0.6], [0.72, 1.9, -0.1], MachineLook.Base));
         p.Add(L([0.6, 0.2, -0.36], [0.63, 1.3, -0.3], MachineLook.Base));

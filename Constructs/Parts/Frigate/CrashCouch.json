@@ -1,0 +1,162 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Crash Couch",
+  "description": "An acceleration couch: padded, harnessed, gel-filled. Lie in it, and in survival it is where you wake.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "seat",
+  "tool": "wrench",
+  "seat": {
+    "at": [
+      0,
+      0.15,
+      0
+    ],
+    "bunk": true
+  },
+  "mass": 90.0,
+  "health": 220,
+  "armour": 4,
+  "material": "steel",
+  "color": "#3a4048",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -0.4,
+        0.0,
+        -1.0
+      ],
+      "max": [
+        0.4,
+        0.35,
+        1.0
+      ],
+      "color": "#26292c",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.36,
+        0.35,
+        -0.95
+      ],
+      "max": [
+        0.36,
+        0.5,
+        0.95
+      ],
+      "color": "#3d4a58",
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.36,
+        0.5,
+        -0.95
+      ],
+      "max": [
+        0.36,
+        0.85,
+        -0.7
+      ],
+      "color": "#3d4a58",
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.44,
+        0.35,
+        -0.6
+      ],
+      "max": [
+        -0.36,
+        0.62,
+        0.5
+      ],
+      "color": "#26292c",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.25,
+        0.501,
+        -0.6
+      ],
+      "max": [
+        -0.19,
+        0.515,
+        0.2
+      ],
+      "color": "#d8a628",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        0.36,
+        0.35,
+        -0.6
+      ],
+      "max": [
+        0.44,
+        0.62,
+        0.5
+      ],
+      "color": "#26292c",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.19,
+        0.501,
+        -0.6
+      ],
+      "max": [
+        0.25,
+        0.515,
+        0.2
+      ],
+      "color": "#d8a628",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.12,
+        0.62,
+        -0.2
+      ],
+      "max": [
+        0.12,
+        0.66,
+        0.0
+      ],
+      "color": "#40c0e0",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "wall",
+      "at": [
+        -0.4,
+        0.125,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

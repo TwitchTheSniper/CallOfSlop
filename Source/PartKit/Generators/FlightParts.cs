@@ -48,7 +48,7 @@ public sealed class FlightParts : IPartGenerator
 
     private static PyDict Hidden(string key) => Kw(("key", key), ("hidden", true), ("unit", "m"), ("min", -100000), ("max", 100000), ("default", 0));
 
-    private static readonly List<object?> Config =
+    internal static readonly List<object?> Config =
     [
         Choice("keys", "Keys", "Control", Keys, 0, "What the keys mean. Auto: wings and a forward push make it a plane, nozzles a rocket, anything else a rotorcraft. It finds what it can use by itself."),
         Choice("flightPreset", "Preset", "Control", ["Normal", "Docile", "Sport"], 0, "What auto means below: gentle, as it comes, or lively. Anything you set yourself stays."),

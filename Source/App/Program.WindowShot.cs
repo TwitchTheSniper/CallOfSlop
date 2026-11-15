@@ -17,9 +17,12 @@ namespace CallOfSlop;
 public static unsafe partial class Program
 {
     private static bool _windowShot, _wsCalm;
+    private static float _wsDusk; // --dusk F: 0 day to 1 dark, on any map (Program.Storm.cs)
     private static int _wsExit;
     private static string _wsOut = "", _wsMap = "Proving Ground", _wsBlueprint = "";
     private static Vector3? _wsAt, _wsLookAt, _wsSpawnAt;
+    private static float? _wsSpawnYaw;
+    private static bool _wsNoHands; // (--no-hands: nothing drawn in the first-person hands and no legs, so a picture from the flying camera shows the scene)
     private static string _wsNet = "", _wsNotice = "";
     private static double _wsJoinTry; // (when a joining client last tried the host: it may still be loading)
 
@@ -74,8 +77,11 @@ public static unsafe partial class Program
         _wsBlueprint = Val("--blueprint") ?? "";
         _wsAt = Val("--at") is { } at ? WsVec(at) : null;
         _wsCalm = args.Any(a => a.Equals("--calm", StringComparison.OrdinalIgnoreCase)); // (no cold storm: a site is seen whole)
+        _wsNoHands = args.Any(a => a.Equals("--no-hands", StringComparison.OrdinalIgnoreCase));
+        _wsDusk = float.TryParse(Val("--dusk"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var dk) ? Math.Clamp(dk, 0f, 1f) : 0f; // (a dusk on any map: its light dimmed, lamps throwing their dark light; Program.Storm.cs)
         _wsLookAt = Val("--look-at") is { } la ? WsVec(la) : null;
         _wsSpawnAt = Val("--spawn-at") is { } sa ? WsVec(sa) : null;
+        _wsSpawnYaw = Val("--spawn-yaw") is { } sy && float.TryParse(sy, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var syd) ? syd : null;
         _wsNet = Val("--net") ?? "";
         if (_wsNet.StartsWith("join:", StringComparison.OrdinalIgnoreCase))
             _wsBlueprint = ""; // (a client finds the host's constructs by their parts' names)
@@ -218,6 +224,8 @@ public static unsafe partial class Program
                         }
                         if (_wsSpawnAt is { } sp)
                             me.Teleport(new Vector3(sp.X, World.Map.GroundHeight(sp.X, sp.Z), sp.Z)); // (the blueprint goes down in front of here)
+                        if (_wsSpawnYaw is { } sy)
+                            me.Yaw = g.LookYaw = sy * MathF.PI / 180f; // (--spawn-yaw D: the player faces that way, so the spawn's place and heading are known; the look too, which the next input frame copies)
                         _wsBody = (ushort)(g.Constructs.Bodies.Count > 0 ? g.Constructs.Bodies.Max(b => b.Id) : 0);
                         g.SandboxSend(CActKind.Blueprint, part: (ushort)index); // (the parts menu's own call: UiSandboxParts.cs)
                     }
@@ -641,7 +649,9 @@ public static unsafe partial class Program
                     for (var k = 0; k < sst.KindN; k++)
                         Count(sst.KindDef![k], sst.KindCount![k]);
                 }
-                WsSay($"stock: {sc.DefOf(spart).Name}: {(held.Count == 0 ? "nothing" : string.Join(", ", held.Select(kv => $"{kv.Key} x{kv.Value}")))}");
+                var bulk = g.Constructs.StoreOf(sc, spart) is { } bst && (bst.Amount > 0 || bst.InAmount > 0)
+                    ? $" (bulk {bst.Amount} {RecyclingTable.Current.NameOf(bst.Material)}{(bst.InAmount > 0 ? $", input {bst.InAmount} {RecyclingTable.Current.NameOf(bst.InMaterial)}" : "")})" : ""; // (a bin's or a machine's bulk too)
+                WsSay($"stock: {sc.DefOf(spart).Name}: {(held.Count == 0 ? "nothing" : string.Join(", ", held.Select(kv => $"{kv.Key} x{kv.Value}")))}{bulk}");
                 var spotS = WsPartSpot(sc, spart, out _);
                 var reach = 6 + (sc.DefOf(spart).BoundsMax - sc.DefOf(spart).BoundsMin).Length(); // (6 m past a big machine's far side)
                 var loose = new SortedDictionary<string, int>(StringComparer.Ordinal);
@@ -1562,6 +1572,19 @@ public static unsafe partial class Program
                     case "stock" when g.IsServer:
                         WsSay($"station: stock: {StationProbe.Stock(g.Constructs, sc, spart)}");
                         break;
+                    case "take" when g.IsServer && ConstructParts.Find(rest) is { } td: // host: one NAME out of the hold as a hand takes it (counted as taken by hand), set down beside the bay
+                    {
+                        if (g.Constructs.StoreOf(sc, spart) is not { } ts || !ConstructRackPack.LastOf(ts, (ushort)td.Id, out var tslab, out var tlane) || g.Constructs.RackTakeAt(sc, spart, tslab, tlane) is not { } got)
+                        {
+                            WsSay($"station: take: no {td.Name} in the hold");
+                            break;
+                        }
+                        ConstructStation.HandTook(sc, spart, got);
+                        ConstructStation.Bay(sc, spart, out var tfloor, out var tturn, out var tsize);
+                        ConstructBuild.PlaceNew(g.Constructs, got, tfloor + System.Numerics.Vector3.Transform(new System.Numerics.Vector3(tsize.X * 0.5f + 1.5f, 0.3f, 0), tturn), 0);
+                        WsSay($"station: took a {got.Name} out of the hold by hand");
+                        break;
+                    }
                     case "hold" when g.IsServer && ConstructParts.Find(rest) is { } hd:
                         foreach (var pl in g.Players.Values)
                             g.SandboxHands.Hands[pl.Id].Held = (ushort)hd.Id; // (every player: a client's give is tried with it)

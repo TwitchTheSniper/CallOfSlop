@@ -102,10 +102,12 @@ public static class PartKit
         new Generators.BuildingParts(),
         new Generators.InteriorParts(),
         new Generators.ShipParts(), // (the rust bucket: its blueprint uses the building and interior parts)
+        new Generators.FrigateParts(), // (the Halberd frigate: likewise)
         new Generators.MakeRv(),
         new Generators.MachineTiers(),
         new Generators.Assembling(),
         new Generators.ProductionShowcase(), // (a blueprint built through the game's rules from the part files: last)
+        new Generators.FactoryShowcase(), // (the connected factory and its Works Runabout: also last)
     ];
 
     public static IPartGenerator? Find(string name) =>

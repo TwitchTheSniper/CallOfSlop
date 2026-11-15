@@ -1,0 +1,181 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Flight Couch",
+  "description": "A raked flight couch with side sticks: link it to a flight computer or a turret module.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "seat",
+  "tool": "wrench",
+  "seat": {
+    "at": [
+      0,
+      -0.05,
+      0
+    ]
+  },
+  "mass": 45.0,
+  "health": 160,
+  "armour": 4,
+  "material": "steel",
+  "color": "#3a4048",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.32,
+        0.0,
+        -0.32
+      ],
+      "max": [
+        0.32,
+        0.35,
+        0.32
+      ],
+      "color": "#26292c",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.3,
+        0.35,
+        -0.3
+      ],
+      "max": [
+        0.3,
+        0.5,
+        0.3
+      ],
+      "color": "#3d4a58",
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.3,
+        0.5,
+        0.2
+      ],
+      "max": [
+        0.3,
+        1.35,
+        0.4
+      ],
+      "color": "#3d4a58",
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.18,
+        1.35,
+        0.24
+      ],
+      "max": [
+        0.18,
+        1.55,
+        0.4
+      ],
+      "color": "#3d4a58",
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        -0.41,
+        0.35,
+        -0.25
+      ],
+      "max": [
+        -0.31,
+        0.65,
+        0.3
+      ],
+      "color": "#26292c",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.385,
+        0.65,
+        -0.15
+      ],
+      "max": [
+        -0.335,
+        0.85,
+        -0.1
+      ],
+      "color": "#2a2c2e",
+      "detail": true,
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        -0.18,
+        0.6,
+        0.19
+      ],
+      "max": [
+        -0.12,
+        1.3,
+        0.2
+      ],
+      "color": "#d8a628",
+      "detail": true,
+      "finish": "fabric"
+    },
+    {
+      "min": [
+        0.31,
+        0.35,
+        -0.25
+      ],
+      "max": [
+        0.41,
+        0.65,
+        0.3
+      ],
+      "color": "#26292c",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.335,
+        0.65,
+        -0.15
+      ],
+      "max": [
+        0.385,
+        0.85,
+        -0.1
+      ],
+      "color": "#2a2c2e",
+      "detail": true,
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        0.12,
+        0.6,
+        0.19
+      ],
+      "max": [
+        0.18,
+        1.3,
+        0.2
+      ],
+      "color": "#d8a628",
+      "detail": true,
+      "finish": "fabric"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

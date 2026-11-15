@@ -54,7 +54,7 @@ public static partial class Program
                     var rt = r.Route < c.RouteCount ? c.Routes[r.Route] : default;
                     var path = r.Route < c.RouteCount && rt.From < c.PartCount && rt.To < c.PartCount ? $"{c.DefOf(rt.From).Name}#{rt.From} -> {c.DefOf(rt.To).Name}#{rt.To}" : "?";
                     var dest = ConstructLogistics.PartOfStore(c, r.Dest);
-                    WsSay($"[logi]   {ConstructParts.Get(r.Def)?.Name} on {r.Route} ({path}) at {r.At:0.00}: dest {(dest < 0 ? "none" : $"{c.DefOf(dest).Name}#{dest}")} tag {r.Tag} flags {(LogiFlags)(r.Flags & 15)} reason {ConstructLogistics.ReasonOf(r)} - {ConstructLogistics.RiderNote(c, r) ?? "no note"}");
+                    WsSay($"[logi]   {ConstructParts.Get(r.Def)?.Name} on {r.Route} ({path}) at {r.At:0.00}: dest {(dest < 0 ? "none" : $"{c.DefOf(dest).Name}#{dest}")} tag {r.Tag} flags {(LogiFlags)(r.Flags & 15)} reason {ConstructLogistics.ReasonOf(r)} - {ConstructLogistics.RiderNote(c, r) ?? "no note"}; length {(r.Route < c.RouteCount ? ConstructConveyor.Length(c, r.Route).ToString("0.00") : "?")}; jam {(r.Route < c.RouteCount ? ConstructConveyor.JamText(c, r.Route, ConstructConveyor.Jam(w, c, r.Route)) ?? "none" : "?")}");
                 }
                 return;
             case "why":

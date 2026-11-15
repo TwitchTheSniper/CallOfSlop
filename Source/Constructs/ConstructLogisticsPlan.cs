@@ -288,6 +288,29 @@ public static class ConstructLogisticsPlan
         return best;
     }
 
+    /// <summary>
+    /// Whether machine <paramref name="m"/>'s queue holds another order before the one this ask is for, compared order by order, never by
+    /// kind (code review 2: a second Differential queued behind the first counted the first's Bearings as its own): a chained order is the
+    /// first queued for its link (<see cref="WorkOrder.Chain"/>), a terminal's own the last one of its part with no link (just queued).
+    /// </summary>
+    private static bool QueuedAhead(Construct c, int m, ushort product, in ChainEntry parent)
+    {
+        if (c.Parts[m].Orders is not { Bill: false, Count: > 0 } q)
+            return false;
+        var at = -1;
+        for (var k = 0; k < q.Count; k++)
+        {
+            ref readonly var o = ref q.Items[k];
+            if (parent.Depth > 0 ? o.Chain == parent.Id : o.Chain == 0 && !o.IsPiece && o.Part == product)
+            {
+                at = k;
+                if (parent.Depth > 0)
+                    break; // (a link's first)
+            }
+        }
+        return at != 0; // (not found: asked before it was queued, so whatever is queued is ahead of it)
+    }
+
     /// <summary>Units of material a sheet piece puts into a former's bin (<see cref="ConstructPanelFormer.TakeFromConveyor"/>'s count).</summary>
     public static int SheetUnits(ConstructPartDef sheet, byte material) =>
         Math.Max(1, (int)MathF.Round(sheet.Mass / MathF.Max(0.01f, RecyclingTable.Current.WeightOf(material))));
@@ -314,10 +337,14 @@ public static class ConstructLogisticsPlan
         else if (md.IsAssembler && AssemblingTable.Current.Of(product) is { Parts.Length: > 0 } r)
         {
             var batches = (ask + r.Count - 1) / r.Count;
+            // What its input holds counts only when no other order is queued ahead of this one: else that order uses it first. (A station
+            // orders every lacking part at once, so a Swing Arm queued behind a Differential counted the Differential's Bearings as its
+            // own, was asked short, and waited for one Bearing for good: the Factory Showcase, 2026-11-14.)
+            var ahead = QueuedAhead(c, m, product, parent); // (another order is before this one: what the hopper holds is that one's)
             foreach (var (rp, rn) in r.Parts)
                 if (inputs < kinds.Length)
                 {
-                    (kinds[inputs], wants[inputs], inside[inputs]) = ((ushort)rp.Id, rn * batches, ConstructCrafting.Holds(st, rp.Id));
+                    (kinds[inputs], wants[inputs], inside[inputs]) = ((ushort)rp.Id, rn * batches, ahead ? 0 : ConstructCrafting.Holds(st, rp.Id));
                     inputs++;
                 }
         }
@@ -327,9 +354,11 @@ public static class ConstructLogisticsPlan
             if (part == null)
                 continue;
             var coming = 0;
+            var parentId = parent.Depth == 0 ? (ushort)0 : parent.Id;
             for (var i = 0; i < world.ChainCount; i++)
-                if (world.Chains[i].Body == c.Id && world.Chains[i].Dest == m && world.Chains[i].Kind == part.Id)
-                    coming += world.Chains[i].Asked - world.Chains[i].Made;
+                if (world.Chains[i].Body == c.Id && world.Chains[i].Dest == m && world.Chains[i].Kind == part.Id
+                    && world.Chains[i].Root == parent.Root && world.Chains[i].RootId == parent.RootId && world.Chains[i].Parent == parentId)
+                    coming += world.Chains[i].Asked - world.Chains[i].Made; // (this order's own inputs on their way: another order's are its own)
             var shortBy = wants[j] - inside[j] - coming; // (one root a machine at a time: its head order uses what it holds)
             if (shortBy <= 0)
                 continue;

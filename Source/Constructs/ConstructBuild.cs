@@ -458,6 +458,7 @@ public static class ConstructBuild
         public List<string[]?> StepText = new(); // each step's messages ("text": LogicText.cs)
         public List<string[]?> StepMedia = new(); // each step's list ("media": ConstructMedia.cs)
         public List<List<(int Slot, float Value)>?> StepConfig = new(); // each step's part settings ("config": the configure tool's values; null: defaults)
+        public HashSet<int> OrdersOnly = new(); // steps whose machine is built with an empty queue ("ordersOnly": true): it works orders and nothing else, never its own settings (WorkOrders)
         public List<(int From, int To)> Wires = new(); // wires between steps' parts (milestone 2): straight data links since the routed links
         public List<ConstructRoutes.LinkSpec> Links = new(); // routed links between steps' parts (decision 20)
         public List<(int Reel, int Inlet)> Hoses = new(); // hoses plugged in as built: an ammo reel to its socket, by step
@@ -466,6 +467,7 @@ public static class ConstructBuild
         public List<ConstructTracks.Spec> Tracks = new(); // freeform tracks round steps' wheels
         public bool FrozenBase; // it starts with its base frozen, and these steps' joints ("frozenBase", "frozenJoints": ConstructFreeChain.cs)
         public List<int> FrozenJoints = new();
+        public bool Conduit; // its wires are laid as conduit along the walls though it isn't anchored: a ship's lamps ("conduit", ConstructConduit.cs)
         public List<ConstructCargo.CargoSpec> Cargo = new(); // loose parts it is built carrying in its frozen cargo volumes (decision 21)
         public List<Vector3?> StepAt = new(); // a step saved from a construct ("at": [x, y, z]): the part stands exactly there, whatever else is near it (sockets 2 cm apart weld, and a piece may overlap another by a weld); null: where its socket puts it
         public bool ExactLinks; // saved from a construct ("exactLinks": true): its parts link only as the steps say, nothing by landing on a free socket (ConstructClip.ToBlueprint)
@@ -598,6 +600,12 @@ public static class ConstructBuild
                                 case "spin": spin = f.Value.ValueKind == JsonValueKind.String && f.Value.GetString() == "auto" ? -1 : f.Value.GetInt32(); break; // ("auto": smart rotation's guess, SmartRotation.BestSpin)
                                 case "setting": setting = f.Value.GetInt32(); break;
                                 case "config": config = f.Value.Clone(); break;
+                                case "ordersOnly":
+                                    if (f.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                                        throw new ConstructPartException($"{file}: steps[{k}]: \"ordersOnly\" is true or false");
+                                    if (f.Value.GetBoolean())
+                                        bp.OrdersOnly.Add(k);
+                                    break;
                                 case "text": texts = f.Value.EnumerateArray().Select(v => v.GetString() ?? "").ToArray(); break;
                                 case "media": media = f.Value.EnumerateArray().Select(v => v.GetString() ?? "").ToArray(); break;
                                 case "weld": weld = ParseWeld(f.Value, file, k, ref on); break;
@@ -623,7 +631,7 @@ public static class ConstructBuild
                                     if (f.Value.ValueKind != JsonValueKind.Number || !f.Value.TryGetInt32(out fuse) || fuse < 0 || fuse > ConstructClip.MaxParts)
                                         throw new ConstructPartException($"{file}: steps[{k}]: \"fuse\" is a unit's number, 1 or more");
                                     break;
-                                default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin, at, also, setting, config, weld, paint, finish, fuse)");
+                                default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin, at, also, setting, config, ordersOnly, weld, paint, finish, fuse)");
                             }
                         if (k > 0 && (on < 0 || on >= k))
                             throw new ConstructPartException($"{file}: steps[{k}]: \"on\" must name an earlier step (0 to {k - 1})");
@@ -680,6 +688,9 @@ public static class ConstructBuild
                     break;
                 case "frozenBase":
                     bp.FrozenBase = p.Value.ValueKind == JsonValueKind.True;
+                    break;
+                case "conduit":
+                    bp.Conduit = p.Value.ValueKind == JsonValueKind.True;
                     break;
                 case "frozenJoints":
                     foreach (var fj in p.Value.EnumerateArray())
@@ -943,7 +954,7 @@ public static class ConstructBuild
         // The wires, through the linking tool's rules.
         if (bp.Wires.Count > 0 && c.Dirty)
             c.Rebuild(); // (the wires' checks read the rebuilt body: once before them and once after, not once a wire)
-        var conduit = !linked && (c.Anchored || bp.FrozenBase); // (a pre-built: its wires are laid as conduit along the walls, ConstructConduit.cs)
+        var conduit = !linked && (c.Anchored || bp.FrozenBase || bp.Conduit); // (a pre-built: its wires are laid as conduit along the walls, ConstructConduit.cs)
         var conduitEnd = conduit && bp.Wires.Count > 0 ? ConstructConduit.Deadline() : 0;
         if (!linked) // (a Building Station laid the wires and links itself, one by one: ConstructStation.cs)
         for (var k = 0; k < bp.Wires.Count; k++)
@@ -1066,6 +1077,11 @@ public static class ConstructBuild
                 LogicText.Set(ref c.Parts[part], k, texts[k]);
         if (part >= 0 && def.IsMedia && step < bp.StepMedia.Count && bp.StepMedia[step] is { } lines)
             ConstructMedia.SetList(ref c.Parts[part], lines); // (bad lines are left out: a blueprint is someone's file)
+        if (part >= 0 && bp.OrdersOnly.Contains(step) && WorkOrders.TakesOrders(def) && c.Parts[part].Orders == null)
+        {
+            c.Parts[part].Orders = new OrderList(); // ("ordersOnly": an empty queue, so it waits for orders and never works its own settings)
+            world.OrdersChanged(c);
+        }
         if (part < 0 || step >= bp.StepConfig.Count || bp.StepConfig[step] is not { } values)
             return;
         foreach (var (slot, v) in values)

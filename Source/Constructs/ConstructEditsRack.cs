@@ -95,6 +95,8 @@ public sealed partial class ConstructEdits
             world.RackPut(c, part, piece); // (back where it can go)
             return "the world is full";
         }
+        if (rd.IsBuildStation)
+            ConstructStation.HandTook(c, part, piece); // (not ordered again while the player is near)
         loose.Owner = c.Owner;
         Done.Add($"player {player}: pulled {piece.Name} off the {rd.Name} (construct {c.Id})");
         return Grab(world, player, eye, yaw, loose.Id, loose.Com);

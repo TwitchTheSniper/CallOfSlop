@@ -1647,7 +1647,7 @@ public sealed partial class BuildingParts : IPartGenerator
     }
 
     /// <summary>building_parts.Blueprint: steps worked out the way the game fits parts.</summary>
-    public sealed class Blueprint(string name, string desc, Dictionary<string, PyDict> defs)
+    public sealed class Blueprint(string name, string desc, Dictionary<string, PyDict> defs, int maxSteps = 128)
     {
         public readonly string Name = name;
         public readonly string Desc = desc;
@@ -1657,6 +1657,9 @@ public sealed partial class BuildingParts : IPartGenerator
 
         /// <summary>Signal wires by step, from and to (look.md "The authoring fields"): a switch to its lamps.</summary>
         public readonly List<(int From, int To)> Wires = [];
+
+        /// <summary>Lay the wires as conduit along the walls though the build isn't anchored (a ship's lamps: ConstructConduit.cs).</summary>
+        public bool Conduit;
 
         public int First(string part, int rot = 0)
         {
@@ -1772,13 +1775,30 @@ public sealed partial class BuildingParts : IPartGenerator
             return Commit(part, j, t, ds, pos, rr, step);
         }
 
+        /// <summary>As <see cref="Hang"/>, the part turned <paramref name="rot"/> (one of the turns the socket allows: a yaw on a floor).</summary>
+        public int HangTurned(string part, int j, string sock, string by, int rot)
+        {
+            var tgt = Parts[j];
+            var d = SocketsOf(Defs[part]);
+            var t = tgt.Socks.FindIndex(s => (string)s["name"]! == sock);
+            var ds = d.FindIndex(s => (string)s["name"]! == by);
+            if (t < 0 || ds < 0)
+                throw new InvalidOperationException($"{Name}: no socket {sock} or {by}");
+            for (var spin = 0; spin < 4; spin++)
+                if (Place(j, t, d, ds, spin).Rot == rot)
+                    return Hang(part, j, sock, by, spin);
+            throw new InvalidOperationException($"{Name}: {part} on {sock} can't be turned {rot}");
+        }
+
         public PyDict Json()
         {
-            if (Steps.Count > 128)
+            if (Steps.Count > maxSteps)
                 throw new InvalidOperationException($"{Name}: {Steps.Count} steps");
             var d = new PyDict { ["format"] = "call-of-slop-construct-blueprint/1", ["name"] = Name, ["description"] = Desc, ["steps"] = Steps.Cast<object?>().ToList() };
             if (Wires.Count > 0)
                 d["wires"] = Wires.Select(w => (object?)new List<object?> { w.From, w.To }).ToList();
+            if (Conduit)
+                d["conduit"] = true;
             return d;
         }
     }
