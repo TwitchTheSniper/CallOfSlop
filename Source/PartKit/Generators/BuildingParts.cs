@@ -844,12 +844,15 @@ public sealed partial class BuildingParts : IPartGenerator
     /// <summary>Steps as solid boxes from the floor: drawn as they are (concrete), or hidden under thin treads (wood, steel).</summary>
     private static void StepBoxes(BPart p, List<(double Z0, double Z1, double Top)> steps, double x0, double x1, bool solidVisible, string treadColour)
     {
+        // A building part holds 16 boxes: a flight whose steps and treads don't both fit (the 12-step Wide Stair) draws its steps
+        // whole, in the material's colour, instead of hidden steps under dark treads (a cap on the treads drew only its bottom 4).
+        if (!solidVisible && p.Boxes.Count + steps.Count * 2 > 16)
+            solidVisible = true;
         foreach (var (z0, z1, top) in steps)
             p.FBox(x0, 0, z0, x1, top, z1, hidden: !solidVisible);
         if (!solidVisible)
             foreach (var (z0, z1, top) in steps)
-                if (p.Boxes.Count < 16)
-                    p.FBox(x0, top - 0.05, z0, x1, top, z1, treadColour, detail: true);
+                p.FBox(x0, top - 0.05, z0, x1, top, z1, treadColour, detail: true);
     }
 
     /// <summary>A straight flight: <paramref name="count"/> steps (0: 8 for a storey, 4 for half) over <paramref name="run"/> cells,
