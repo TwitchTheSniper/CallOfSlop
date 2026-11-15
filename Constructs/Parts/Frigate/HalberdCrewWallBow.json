@@ -1,0 +1,120 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Halberd Crew Wall Bow",
+  "description": "A wall run of the Halberd's crew storey, the bow side, inside its hull panel.",
+  "group": "Ship",
+  "section": "Halberd frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1100.0,
+  "health": 4000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#8e959a",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        2.025,
+        9.625,
+        0.625
+      ],
+      "max": [
+        7.725,
+        12.875,
+        0.875
+      ],
+      "color": "#8e959a",
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        2.025,
+        9.878,
+        0.875
+      ],
+      "max": [
+        7.725,
+        10.365,
+        0.887
+      ],
+      "color": "#4c555c",
+      "detail": true,
+      "finish": "matte paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hull0",
+      "at": [
+        4.875,
+        12.525,
+        0.625
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "couch0",
+      "at": [
+        3.075,
+        10.0,
+        0.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "couch1",
+      "at": [
+        6.675,
+        10.0,
+        0.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        4.875,
+        9.625,
+        0.755
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        4.875,
+        9.755,
+        0.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        2.025,
+        11.255,
+        0.845
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        7.725,
+        11.255,
+        0.845
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        4.875,
+        12.875,
+        0.755
+      ],
+      "dir": "+y"
+    }
+  ]
+}

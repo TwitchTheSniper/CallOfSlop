@@ -300,9 +300,9 @@ public sealed class FrigateParts : IPartGenerator
                 if (g.A - at > 0.1)
                 {
                     if (alongX)
-                        Detail(p, at, y0, face - outw * 0.012, g.A, y0 + 0.75, face, WallLow, "matte paint");
+                        Detail(p, at, gy + 0.003, face - outw * 0.012, g.A, y0 + 0.74, face, WallLow, "matte paint");
                     else
-                        Detail(p, face - outw * 0.012, y0, at, face, y0 + 0.75, g.A, WallLow, "matte paint");
+                        Detail(p, face - outw * 0.012, gy + 0.003, at, face, y0 + 0.74, g.A, WallLow, "matte paint");
                 }
                 at = g.B;
             }
@@ -338,6 +338,9 @@ public sealed class FrigateParts : IPartGenerator
     /// 2.25 m high; the kick strip on both faces.</summary>
     private static void Partition(Part p, double x0, double z0, double x1, double z1, double y0, double y1, string color, params double[] doors)
     {
+        if (!Partitions.TryGetValue(p, out var mine))
+            Partitions[p] = mine = [];
+        mine.Add((x0, z0, x1, z1));
         var alongX = Math.Abs(z1 - z0) < 1e-6;
         double a0 = alongX ? Math.Min(x0, x1) : Math.Min(z0, z1), a1 = alongX ? Math.Max(x0, x1) : Math.Max(z0, z1), c = alongX ? z0 : x0;
         void Run(double a, double b, double ya, double yb, string col, string fin, double th, bool detail)
@@ -361,14 +364,14 @@ public sealed class FrigateParts : IPartGenerator
             var d = doors[i];
             Run(at, d, y0, y1, color, "wall panelling", 0.125, false);
             Run(d, d + 1.5, y0 + DoorH, y1, color, "wall panelling", 0.125, false);
-            Run(at + 0.05, d - 0.05, y0, y0 + 0.75, WallLow, "matte paint", 0.137, true);
+            Run(at + 0.05, d - 0.05, y0 + 0.004, y0 + 0.75, WallLow, "matte paint", 0.137, true);
             // The door frame: a hazard-striped sill and dark jambs.
             Run(d - 0.06, d, y0, y0 + DoorH + 0.06, WallTrim, "painted steel", 0.14, true);
             Run(d + 1.5, d + 1.56, y0, y0 + DoorH + 0.06, WallTrim, "painted steel", 0.14, true);
             at = d + 1.5;
         }
         Run(at, a1, y0, y1, color, "wall panelling", 0.125, false);
-        Run(at + 0.05, a1 - 0.05, y0, y0 + 0.75, WallLow, "matte paint", 0.137, true);
+        Run(at + 0.05, a1 - 0.05, y0 + 0.004, y0 + 0.75, WallLow, "matte paint", 0.137, true);
     }
 
     /// <summary>The safety rail round storey k's hatch (open at its back edge, where the ladder lands people).</summary>
@@ -1314,7 +1317,225 @@ public sealed class FrigateParts : IPartGenerator
         return p.Stats(300, 600, 8, 3.0);
     }
 
+    // ---- the storeys broken into pieces (Karl, 2026-11-15: "If I attack one deck of it, then the whole deck disappears"; he chose
+    // every wall and floor as a part of its own). Each storey is drawn whole above, then its boxes are dealt out to the pieces they
+    // belong to: the floor (and what stands loose in the room), the four wall runs, the four corner frames (the chamfer, the frame
+    // rib and the corner armour) and each partition. Every socket goes with the piece whose face it is on, and wherever two pieces'
+    // solid boxes touch they get a facing socket pair: one pair places a piece, the game welds the rest (ConstructBuild.AutoLink),
+    // so a piece knocked off leaves the rest welded to each other.
+
+    private static readonly Dictionary<Part, List<(double X0, double Z0, double X1, double Z1)>> Partitions = [];
+    private static readonly string[] DeckNames = ["Engineering", "Robot Bay", "Med", "Crew", "Ops", "Cockpit"];
+    private static readonly Dictionary<(string Part, string Sock), string> SockOwner = []; // (a storey's socket: the piece that holds it now)
+
+    private static double[] Vd(PyDict b, string key) => [.. ((List<object?>)b[key]!).Select(v => Convert.ToDouble(v) + H)];
+
+    private static bool Drawn(PyDict b) => b.Get("detail") is true;
+
+    /// <summary>Storey k (its whole part) dealt out into pieces; the part itself keeps the floor.</summary>
+    private static List<Part> Split(Part core, int k)
+    {
+        var deck = DeckNames[k];
+        double hx = Hx(k), hz = Hz(k), ci = Ci(k), x0 = Cx - hx, x1 = Cx + hx, z0 = Cz - hz, z1 = Cz + hz;
+        var walls = new Part[4];
+        var corners = new Part[4];
+        var parts = Partitions.TryGetValue(core, out var pr) ? pr : [];
+        var partitions = new Part[parts.Count];
+        Part Piece(string name, string desc) => new(name, Small, Section, desc, role: "frame", tool: "welder", material: "steel", color: Wall, group: Group);
+        for (var side = 0; side < 4; side++)
+            walls[side] = Piece($"Halberd {deck} Wall {FaceNames[side]}", $"A wall run of the Halberd's {deck.ToLowerInvariant()} storey, the {FaceNames[side].ToLowerInvariant()} side, inside its hull panel.");
+        (int Sx, int Sz)[] cs = [(-1, -1), (1, -1), (1, 1), (-1, 1)];
+        for (var c = 0; c < 4; c++)
+            corners[c] = Piece($"Halberd {deck} Corner {c + 1}", $"A corner frame of the Halberd's {deck.ToLowerInvariant()} storey: the chamfer, the frame rib and the corner's armour. Tough.");
+        for (var i = 0; i < parts.Count; i++)
+            partitions[i] = Piece($"Halberd {deck} Partition {i + 1}", $"A partition of the Halberd's {deck.ToLowerInvariant()} storey, with its door frames.");
+        var floor = new Part(core.D["name"] as string ?? "", Small, Section, $"The Halberd's {deck.ToLowerInvariant()} storey's deck: its floor, and what stands loose on it.", role: "frame", tool: "welder", material: "steel", color: Deck, group: Group);
+        Part Of(PyDict b)
+        {
+            double[] mn = Vd(b, "min"), mx = Vd(b, "max");
+            double xc = (mn[0] + mx[0]) / 2, yc = (mn[1] + mx[1]) / 2, zc = (mn[2] + mx[2]) / 2;
+            if (yc > Ft(k) - 0.01)
+                for (var i = 0; i < parts.Count; i++)
+                {
+                    var (a, bz, c, d) = parts[i];
+                    var alongX = Math.Abs(d - bz) < 1e-6;
+                    double lo = alongX ? Math.Min(a, c) : Math.Min(bz, d), hi = alongX ? Math.Max(a, c) : Math.Max(bz, d), line = alongX ? bz : a;
+                    double u = alongX ? xc : zc, v = alongX ? zc : xc;
+                    if (u > lo - 0.07 && u < hi + 0.07 && Math.Abs(v - line) < 0.145)
+                        return partitions[i];
+                }
+            if (mn[1] > Fl(k) - 0.001 && mx[1] < Ft(k) + 0.001)
+                return floor; // (the floor's slab and its corner steps; a threshold; the boarding platform)
+            for (var c = 0; c < 4; c++)
+            {
+                var (sx, sz) = cs[c];
+                double ox = sx * (xc - (sx < 0 ? x0 : x1)), oz = sz * (zc - (sz < 0 ? z0 : z1));
+                if (ox > -ci - 0.05 && oz > -ci - 0.05 && ox + oz > -ci - 0.3)
+                    return corners[c];
+            }
+            double[] outw = [z0 - zc, xc - x1, zc - z1, x0 - xc];
+            var best = 0;
+            for (var side = 1; side < 4; side++)
+                if (outw[side] > outw[best])
+                    best = side;
+            if (outw[best] > -0.06 || yc > Fl(k + 1) - 0.001)
+                return walls[best]; // (a wall run, what is on its face, what stands outside it: a PDC housing, the shoulder)
+            return floor;
+        }
+        foreach (var b in core.Boxes)
+            Of(b).Add(b);
+        var all = new List<Part> { floor };
+        all.AddRange(walls);
+        all.AddRange(corners);
+        all.AddRange(partitions);
+        all.RemoveAll(q => q.Boxes.Count == 0);
+        // The sockets: on the piece whose box face it stands on, facing out of it.
+        foreach (var sk in core.Sockets)
+        {
+            var at = ((List<object?>)sk["at"]!).Select(v => Convert.ToDouble(v) + H).ToArray();
+            var dir = (string)sk["dir"]!;
+            var ax = dir[1] - 'x';
+            var plus = dir[0] == '+';
+            Part? owner = null, drawnOwner = null;
+            foreach (var q in all)
+                foreach (var b in q.Boxes)
+                {
+                    double[] mn = Vd(b, "min"), mx = Vd(b, "max");
+                    if (Math.Abs((plus ? mx[ax] : mn[ax]) - at[ax]) > 0.005)
+                        continue;
+                    var inside = true;
+                    for (var a = 0; a < 3; a++)
+                        if (a != ax && (at[a] < mn[a] - 0.005 || at[a] > mx[a] + 0.005))
+                            inside = false;
+                    if (!inside)
+                        continue;
+                    if (Drawn(b))
+                        drawnOwner ??= q;
+                    else
+                        owner ??= q;
+                }
+            owner ??= drawnOwner;
+            if (owner == null)
+                System.Console.WriteLine($"Halberd {deck}: socket {sk["name"]} is on no piece's face; the floor takes it");
+            owner ??= floor;
+            owner.Sockets.Add(sk);
+            SockOwner[((string)core.D["name"]!, (string)sk["name"]!)] = (string)owner.D["name"]!;
+        }
+        // The stats: the frame is tough (the panels and walls go first), a wall less, a partition least; the floor keeps the storey's
+        // furniture and so most of its weight.
+        var scale = k == 5 ? 0.6 : 1.0;
+        floor.Stats(4200 * scale, 9000 * scale, 35, 10.0);
+        foreach (var w in walls)
+            w.Stats(1100 * scale, 4000 * scale, 30, 6.0);
+        foreach (var c in corners)
+            c.Stats(1600 * scale, 30000 * scale, 40, 8.0);
+        foreach (var q in partitions)
+            q.Stats(350, 1500, 20, 4.0);
+        return all;
+    }
+
+    /// <summary>A facing socket pair wherever two of the parts' solid boxes touch face to face (one pair a pair of parts, on their
+    /// biggest contact), unless they already meet at one: what welds the pieces to each other.</summary>
+    private static void Connect(List<Part> parts)
+    {
+        var solid = parts.Select(q => q.Boxes.Where(b => !Drawn(b)).Select(b => (Mn: Vd(b, "min"), Mx: Vd(b, "max"))).ToList()).ToList();
+        var bounds = solid.Select(l => (Mn: Enumerable.Range(0, 3).Select(a => l.Count == 0 ? 0 : l.Min(b => b.Mn[a])).ToArray(), Mx: Enumerable.Range(0, 3).Select(a => l.Count == 0 ? 0 : l.Max(b => b.Mx[a])).ToArray())).ToList();
+        var count = parts.Select(q => q.Sockets.Count(s => ((string)s["name"]!).StartsWith('j'))).ToArray();
+        for (var i = 0; i < parts.Count; i++)
+            for (var j = i + 1; j < parts.Count; j++)
+            {
+                var (bi, bj) = (bounds[i], bounds[j]);
+                if (Enumerable.Range(0, 3).Any(a => bi.Mn[a] > bj.Mx[a] + 0.002 || bj.Mn[a] > bi.Mx[a] + 0.002))
+                    continue;
+                if (Meet(parts[i], parts[j]))
+                    continue;
+                (double Area, double[] At, int Axis, bool IPlus) best = (0, [], 0, false);
+                foreach (var A in solid[i])
+                    foreach (var B in solid[j])
+                        for (var ax = 0; ax < 3; ax++)
+                        {
+                            bool iPlus = Math.Abs(A.Mx[ax] - B.Mn[ax]) < 0.001, iMinus = Math.Abs(A.Mn[ax] - B.Mx[ax]) < 0.001;
+                            if (!iPlus && !iMinus)
+                                continue;
+                            var at = new double[3];
+                            var area = 1.0;
+                            var ok = true;
+                            for (var a = 0; a < 3 && ok; a++)
+                            {
+                                if (a == ax)
+                                {
+                                    at[a] = iPlus ? A.Mx[a] : A.Mn[a];
+                                    continue;
+                                }
+                                double lo = Math.Max(A.Mn[a], B.Mn[a]), hi = Math.Min(A.Mx[a], B.Mx[a]);
+                                if (hi - lo < 0.03)
+                                    ok = false;
+                                at[a] = Math.Round((lo + hi) / 2, 2);
+                                area *= hi - lo;
+                            }
+                            if (ok && area > best.Area)
+                                best = (area, at, ax, iPlus);
+                        }
+                if (best.Area <= 0)
+                    continue;
+                var axis = "xyz"[best.Axis];
+                Sock(parts[i], $"j{count[i]++}", best.At[0], best.At[1], best.At[2], (best.IPlus ? "+" : "-") + axis);
+                Sock(parts[j], $"j{count[j]++}", best.At[0], best.At[1], best.At[2], (best.IPlus ? "-" : "+") + axis);
+            }
+    }
+
+    /// <summary>Whether two parts (at one origin) already have a socket of each at one point, facing each other.</summary>
+    private static bool Meet(Part a, Part b)
+    {
+        foreach (var s in a.Sockets)
+            foreach (var t in b.Sockets)
+            {
+                var (pa, pb) = ((List<object?>)s["at"]!, (List<object?>)t["at"]!);
+                if (Enumerable.Range(0, 3).All(i => Math.Abs(Convert.ToDouble(pa[i]) - Convert.ToDouble(pb[i])) < 0.004))
+                {
+                    var (da, db) = ((string)s["dir"]!, (string)t["dir"]!);
+                    if (da[1] == db[1] && da[0] != db[0])
+                        return true;
+                }
+            }
+        return false;
+    }
+
+    /// <summary>The order to place the structure in: out from the first part over the socket pairs they meet at.</summary>
+    private static List<string> PlaceOrder(List<Part> parts, string first)
+    {
+        var names = parts.Select(q => (string)q.D["name"]!).ToList();
+        var seen = new HashSet<int> { names.IndexOf(first) };
+        var order = new List<string> { first };
+        var queue = new Queue<int>(seen);
+        while (queue.Count > 0)
+        {
+            var i = queue.Dequeue();
+            for (var j = 0; j < parts.Count; j++)
+                if (!seen.Contains(j) && Meet(parts[i], parts[j]))
+                {
+                    seen.Add(j);
+                    order.Add(names[j]);
+                    queue.Enqueue(j);
+                }
+        }
+        if (order.Count != parts.Count)
+            throw new InvalidOperationException("Halberd: pieces joined to nothing: " + string.Join(", ", names.Where((n, i) => !seen.Contains(i))));
+        return order;
+    }
+
     // ---- the blueprint
+
+    private static List<string> Structure = [];
+    private static Dictionary<string, int> PieceSteps = [];
+
+    /// <summary>The step that holds socket sock of step on: a storey's piece that took it when the storey was split, else on itself.</summary>
+    private static int Holder(BuildingParts.Blueprint bp, int on, string sock) =>
+        bp.Steps[on]["part"] is string part && SockOwner.TryGetValue((part, sock), out var piece) ? PieceSteps[piece] : on;
+
+    private static int Hang(BuildingParts.Blueprint bp, string part, int on, string sock, string by, int spin = 0) => bp.Hang(part, Holder(bp, on, sock), sock, by, spin);
+
+    private static int HangTurned(BuildingParts.Blueprint bp, string part, int on, string sock, string by, int rot) => bp.HangTurned(part, Holder(bp, on, sock), sock, by, rot);
 
     private static int Paint(BuildingParts.Blueprint bp, int step, string paint, string? finish = null)
     {
@@ -1326,14 +1547,14 @@ public sealed class FrigateParts : IPartGenerator
 
     private static int LampAt(BuildingParts.Blueprint bp, int on, string sock, string colour = "#e8f0f4")
     {
-        var s = bp.Hang("Bulkhead Light", on, sock, "back");
+        var s = Hang(bp, "Bulkhead Light", on, sock, "back");
         bp.Steps[s]["config"] = new PyDict { ["colour"] = colour };
         return s;
     }
 
     private static void Switch(BuildingParts.Blueprint bp, int on, string sock, params int[] lamps)
     {
-        var s = bp.Hang("Bakelite Switch", on, sock, "back");
+        var s = Hang(bp, "Bakelite Switch", on, sock, "back");
         bp.Steps[s]["config"] = new PyDict { ["startOn"] = true };
         foreach (var l in lamps)
             bp.Wires.Add((s, l));
@@ -1346,7 +1567,7 @@ public sealed class FrigateParts : IPartGenerator
 
     private static int CouchHinge(BuildingParts.Blueprint bp, int cockpit, string sock)
     {
-        var hinge = bp.Hang("Motor Hinge", cockpit, sock, "base", CouchHingeSpin);
+        var hinge = Hang(bp, "Motor Hinge", cockpit, sock, "base", CouchHingeSpin);
         bp.Steps[hinge]["config"] = new PyDict { ["min"] = CouchForward, ["max"] = CouchBack, ["speed"] = 20 };
         return hinge;
     }
@@ -1355,101 +1576,96 @@ public sealed class FrigateParts : IPartGenerator
     /// a motor hinge on its top for elevation, the gun on the hinge's leaf and its box behind; the hatch on the mouth.</summary>
     private static (int Gun, int Piston, int Hatch) Turret(BuildingParts.Blueprint bp, int on, string sock, int spin)
     {
-        var piston = bp.Hang("Piston 2x2 Medium", on, sock, "base");
-        var tt = bp.Hang("Turntable", piston, "top", "base");
-        var hinge = bp.Hang("Motor Hinge", tt, "top", "base");
-        var gun = bp.Hang("Halberd PDC", hinge, "leaf", "bottom", spin);
-        bp.Hang("Ammo Box", gun, "back", "front");
-        var hatch = Paint(bp, bp.Hang("Halberd PDC Hatch", on, sock + "Hatch", "hang"), Armour, "plated steel");
+        var piston = Hang(bp, "Piston 2x2 Medium", on, sock, "base");
+        var tt = Hang(bp, "Turntable", piston, "top", "base");
+        var hinge = Hang(bp, "Motor Hinge", tt, "top", "base");
+        var gun = Hang(bp, "Halberd PDC", hinge, "leaf", "bottom", spin);
+        Hang(bp, "Ammo Box", gun, "back", "front");
+        var hatch = Paint(bp, Hang(bp, "Halberd PDC Hatch", on, sock + "Hatch", "hang"), Armour, "plated steel");
         return (gun, piston, hatch);
     }
 
     private static BuildingParts.Blueprint Blueprint(Dictionary<string, PyDict> defs)
     {
-        var bp = new BuildingParts.Blueprint("Halberd Frigate", "A combat frigate that stands on its tail: six decks up a ladder spine, four point-defence turrets and a spinal railgun.", defs, maxSteps: 192);
+        var bp = new BuildingParts.Blueprint("Halberd Frigate", "A combat frigate that stands on its tail: six decks up a ladder spine, four point-defence turrets and a spinal railgun.", defs, maxSteps: 320);
         bp.Conduit = true; // (a ship isn't anchored, but its lamp wires still run up the walls and over the ceilings, not across the rooms)
         double[] zero = [0, 0, 0];
-        var eng = bp.First("Halberd Engineering Deck");
-        var frame = bp.Put("Halberd Thrust Frame", zero, 0);
-        var robot = bp.Put("Halberd Robot Bay Deck", zero, 0);
-        var med = bp.Put("Halberd Med Deck", zero, 0);
-        var crew = bp.Put("Halberd Crew Deck", zero, 0);
-        var ops = bp.Put("Halberd Ops Deck", zero, 0);
-        var cockpit = bp.Put("Halberd Cockpit Deck", zero, 0);
-        var nose = bp.Put("Halberd Nose", zero, 0);
-        foreach (var deck in new[] { "Engineering", "Robot Bay", "Med", "Crew", "Ops", "Cockpit" })
-            for (var side = 0; side < 4; side++)
-                bp.Put(PanelName(deck, side), zero, 0);
-        var drive = bp.Hang("Halberd Main Drive", frame, "drive", "top");
+        var steps = new Dictionary<string, int>();
+        foreach (var name in Structure)
+            steps[name] = steps.Count == 0 ? bp.First(name) : bp.Put(name, zero, 0);
+        PieceSteps = steps;
+        int eng = steps["Halberd Engineering Deck"], frame = steps["Halberd Thrust Frame"], robot = steps["Halberd Robot Bay Deck"], med = steps["Halberd Med Deck"],
+            crew = steps["Halberd Crew Deck"], ops = steps["Halberd Ops Deck"], cockpit = steps["Halberd Cockpit Deck"], nose = steps["Halberd Nose"];
+        var drive = Hang(bp, "Halberd Main Drive", frame, "drive", "top");
         foreach (var n in new[] { "legFL", "legFR", "legBL", "legBR" })
-            bp.Hang("Halberd Landing Leg", frame, n, "top");
+            Hang(bp, "Halberd Landing Leg", frame, n, "top");
         foreach (var n in new[] { "jetPort", "jetStbd", "jetBow", "jetStern" })
-            Paint(bp, bp.Hang("Halberd Manoeuvre Jet", frame, n, "top"), Armour2, "plated steel");
+            Paint(bp, Hang(bp, "Halberd Manoeuvre Jet", frame, n, "top"), Armour2, "plated steel");
         // The ladder spine and the boarding ladder.
         var decks = new[] { eng, robot, med, crew, ops };
         foreach (var d in decks)
-            bp.Hang("Halberd Spine Ladder", d, "ladder", "bottom");
-        bp.Hang("Halberd Boarding Ladder", eng, "boarding", "hull");
+            Hang(bp, "Halberd Spine Ladder", d, "ladder", "bottom");
+        Hang(bp, "Halberd Boarding Ladder", eng, "boarding", "hull");
         // Engineering: the reactor, the boards, the batteries, the workshop and stores, the airlock's doors and suit lockers.
-        bp.Hang("Halberd Reactor", eng, "reactor", "bottom");
-        bp.Hang("Power Board", eng, "board", "back");
-        bp.Hang("Engineer's Panel", eng, "panel", "back");
-        bp.Hang("Battery", eng, "battery0", "-y");
-        bp.Hang("Battery", eng, "battery1", "-y");
-        bp.Hang("Pipe Bank", eng, "pipes", "back");
-        bp.Hang("Tool Rack", eng, "rack", "back");
-        bp.Hang("Requisition Crate", eng, "crate0", "-y");
-        bp.Hang("Requisition Crate", eng, "crate1", "-y");
-        Paint(bp, bp.Hang("Locker", eng, "suit0", "wall"), Hazard, "worn paint");
-        Paint(bp, bp.Hang("Locker", eng, "suit1", "wall"), Hazard, "worn paint");
-        Paint(bp, bp.Hang("Bulkhead Door 1.5x2.25 m", eng, "doorOuter", "hang"), Armour, "plated steel");
-        Paint(bp, bp.Hang("Bulkhead Door 1.5x2.25 m", eng, "doorInner", "hang"), Armour, "plated steel");
+        Hang(bp, "Halberd Reactor", eng, "reactor", "bottom");
+        Hang(bp, "Power Board", eng, "board", "back");
+        Hang(bp, "Engineer's Panel", eng, "panel", "back");
+        Hang(bp, "Battery", eng, "battery0", "-y");
+        Hang(bp, "Battery", eng, "battery1", "-y");
+        Hang(bp, "Pipe Bank", eng, "pipes", "back");
+        Hang(bp, "Tool Rack", eng, "rack", "back");
+        Hang(bp, "Requisition Crate", eng, "crate0", "-y");
+        Hang(bp, "Requisition Crate", eng, "crate1", "-y");
+        Paint(bp, Hang(bp, "Locker", eng, "suit0", "wall"), Hazard, "worn paint");
+        Paint(bp, Hang(bp, "Locker", eng, "suit1", "wall"), Hazard, "worn paint");
+        Paint(bp, Hang(bp, "Bulkhead Door 1.5x2.25 m", eng, "doorOuter", "hang"), Armour, "plated steel");
+        Paint(bp, Hang(bp, "Bulkhead Door 1.5x2.25 m", eng, "doorInner", "hang"), Armour, "plated steel");
         Switch(bp, eng, "switch", LampAt(bp, eng, "lampA"), LampAt(bp, eng, "lampB"), LampAt(bp, eng, "lampC"), LampAt(bp, eng, "lampLock", "#ff5040"));
         // The robot bay: three cradles with two shells in them, two link couches, the armoury.
-        var cradles = Enumerable.Range(0, 3).Select(i => bp.Hang("Robot Charging Cradle", robot, $"cradle{i}", "wall")).ToArray();
-        bp.Hang("Robot Shell", cradles[0], "front", "back");
-        bp.Hang("Robot Shell", cradles[2], "front", "back");
-        bp.HangTurned("Shell Control Chair", robot, "couch0", "bottom", BuildingParts.RY90); // (facing the cradles)
-        bp.HangTurned("Shell Control Chair", robot, "couch1", "bottom", BuildingParts.RY90);
-        bp.Hang("Tool Rack", robot, "armsRack", "back");
-        Paint(bp, bp.Hang("Locker", robot, "locker0", "wall"), Armour, "worn paint");
-        Paint(bp, bp.Hang("Locker", robot, "locker1", "wall"), Armour, "worn paint");
-        bp.Hang("Ammo Crate", robot, "ammo0", "bottom");
-        bp.Hang("Ammo Crate", robot, "ammo1", "bottom");
-        Paint(bp, bp.Hang("Bulkhead Door 1.5x2.25 m", robot, "doorArmoury", "hang"), Armour, "plated steel");
+        var cradles = Enumerable.Range(0, 3).Select(i => Hang(bp, "Robot Charging Cradle", robot, $"cradle{i}", "wall")).ToArray();
+        Hang(bp, "Robot Shell", cradles[0], "front", "back");
+        Hang(bp, "Robot Shell", cradles[2], "front", "back");
+        HangTurned(bp, "Shell Control Chair", robot, "couch0", "bottom", BuildingParts.RY90); // (facing the cradles)
+        HangTurned(bp, "Shell Control Chair", robot, "couch1", "bottom", BuildingParts.RY90);
+        Hang(bp, "Tool Rack", robot, "armsRack", "back");
+        Paint(bp, Hang(bp, "Locker", robot, "locker0", "wall"), Armour, "worn paint");
+        Paint(bp, Hang(bp, "Locker", robot, "locker1", "wall"), Armour, "worn paint");
+        Hang(bp, "Ammo Crate", robot, "ammo0", "bottom");
+        Hang(bp, "Ammo Crate", robot, "ammo1", "bottom");
+        Paint(bp, Hang(bp, "Bulkhead Door 1.5x2.25 m", robot, "doorArmoury", "hang"), Armour, "plated steel");
         Switch(bp, robot, "switch", LampAt(bp, robot, "lampA", "#f0c070"), LampAt(bp, robot, "lampB", "#f0c070"), LampAt(bp, robot, "lampC"), LampAt(bp, robot, "lampD"));
         // The med bay and the galley.
-        bp.Hang("Medical Station", med, "medL", "back");
-        bp.Hang("Medical Station", med, "medR", "back");
-        bp.Hang("Medicine Cabinet", med, "cabinet", "back");
-        Paint(bp, bp.Hang("Shower Stall", med, "decon", "wall"), MedWhite, "gloss paint"); // (the decontamination shower)
-        Paint(bp, bp.Hang("Locker", med, "medLocker", "wall"), MedWhite, "gloss paint");
-        Paint(bp, bp.Hang("Bulkhead Door 1.5x2.25 m", med, "doorMed", "hang"), MedWhite, "gloss paint");
-        bp.Hang("Galley Stove", med, "stove", "back");
-        bp.Hang("Galley Coffee Station", med, "coffee", "wall");
-        Paint(bp, bp.Hang("Locker", med, "galleyLocker", "wall"), "#5c646a", "worn paint");
-        bp.HangTurned("Mess Table", med, "table", "bottom", BuildingParts.RY90);
+        Hang(bp, "Medical Station", med, "medL", "back");
+        Hang(bp, "Medical Station", med, "medR", "back");
+        Hang(bp, "Medicine Cabinet", med, "cabinet", "back");
+        Paint(bp, Hang(bp, "Shower Stall", med, "decon", "wall"), MedWhite, "gloss paint"); // (the decontamination shower)
+        Paint(bp, Hang(bp, "Locker", med, "medLocker", "wall"), MedWhite, "gloss paint");
+        Paint(bp, Hang(bp, "Bulkhead Door 1.5x2.25 m", med, "doorMed", "hang"), MedWhite, "gloss paint");
+        Hang(bp, "Galley Stove", med, "stove", "back");
+        Hang(bp, "Galley Coffee Station", med, "coffee", "wall");
+        Paint(bp, Hang(bp, "Locker", med, "galleyLocker", "wall"), "#5c646a", "worn paint");
+        HangTurned(bp, "Mess Table", med, "table", "bottom", BuildingParts.RY90);
         Switch(bp, med, "switchMed", LampAt(bp, med, "lampMedA", "#f4fbff"), LampAt(bp, med, "lampMedB", "#f4fbff"));
         Switch(bp, med, "switch", LampAt(bp, med, "lampGalleyA", "#ffe0b0"), LampAt(bp, med, "lampGalleyB", "#ffe0b0"));
         // Crew quarters.
         for (var i = 0; i < 4; i++)
-            bp.Hang("Crash Couch", crew, $"couch{i}", "wall");
-        Paint(bp, bp.Hang("Bulkhead Door 1.5x2.25 m", crew, "doorBunk", "hang"), Armour, "plated steel");
-        Paint(bp, bp.Hang("Steel Swing Door 1.5x2.25 m", crew, "doorHead", "hang"), Armour, "plated steel");
-        bp.Hang("Ship Toilet", crew, "toilet", "wall");
-        bp.Hang("Ship Basin", crew, "basin", "wall");
-        bp.Hang("Steel Desk", crew, "desk", "wall");
+            Hang(bp, "Crash Couch", crew, $"couch{i}", "wall");
+        Paint(bp, Hang(bp, "Bulkhead Door 1.5x2.25 m", crew, "doorBunk", "hang"), Armour, "plated steel");
+        Paint(bp, Hang(bp, "Steel Swing Door 1.5x2.25 m", crew, "doorHead", "hang"), Armour, "plated steel");
+        Hang(bp, "Ship Toilet", crew, "toilet", "wall");
+        Hang(bp, "Ship Basin", crew, "basin", "wall");
+        Hang(bp, "Steel Desk", crew, "desk", "wall");
         for (var i = 0; i < 3; i++)
-            Paint(bp, bp.Hang("Locker", crew, $"locker{i}", "wall"), i == 1 ? "#5c646a" : Armour, "worn paint");
+            Paint(bp, Hang(bp, "Locker", crew, $"locker{i}", "wall"), i == 1 ? "#5c646a" : Armour, "worn paint");
         Switch(bp, crew, "switch", LampAt(bp, crew, "lampBunkA", "#ffd8a0"), LampAt(bp, crew, "lampBunkB", "#ffd8a0"), LampAt(bp, crew, "lampHall"), LampAt(bp, crew, "lampHead"));
         // Two gunnery stations, each working the turrets on its own deck (a wire reaches 8 m): the robot bay's port and starboard, ops' bow and stern.
         var guns = new[] { Turret(bp, robot, "pdcPort", PdcSpinFlank), Turret(bp, robot, "pdcStbd", PdcSpinFlank), Turret(bp, ops, "pdcBow", PdcSpinEnds), Turret(bp, ops, "pdcStern", PdcSpinEnds) };
         foreach (var (deck, pair) in new[] { (robot, new[] { guns[0], guns[1] }), (ops, new[] { guns[2], guns[3] }) })
         {
             var turn = deck == ops ? BuildingParts.RY270 : BuildingParts.R0; // (ops' station faces starboard, between its two turrets)
-            var console = bp.HangTurned("Gunnery Console", deck, "gun", "bottom", turn);
-            var seat = bp.HangTurned("Flight Couch", deck, "gunSeat", "bottom", turn);
-            var module = bp.Hang("Turret Module", console, "module", "-x");
+            var console = HangTurned(bp, "Gunnery Console", deck, "gun", "bottom", turn);
+            var seat = HangTurned(bp, "Flight Couch", deck, "gunSeat", "bottom", turn);
+            var module = Hang(bp, "Turret Module", console, "module", "-x");
             bp.Wires.Add((seat, module));
             foreach (var g in pair)
                 bp.Wires.Add((module, g.Gun));
@@ -1457,12 +1673,12 @@ public sealed class FrigateParts : IPartGenerator
             // any input is high. The station's switch is wired into it; anything else (a sensor, a timer, a radio) can be wired in too.
             // The hatches open with it but shut only once the turrets are back in: a second OR gate holds them open off a Delay
             // for the pistons' stroke (1 m at 0.4 m/s) and a little more.
-            var data = bp.Hang("OR Gate", module, "+x", "-x");
-            var lever = bp.Hang("Bakelite Switch", deck, "pdcSwitch", "back");
+            var data = Hang(bp, "OR Gate", module, "+x", "-x");
+            var lever = Hang(bp, "Bakelite Switch", deck, "pdcSwitch", "back");
             bp.Wires.Add((lever, data));
-            var hold = bp.Hang("Delay", data, "+z", "-z");
+            var hold = Hang(bp, "Delay", data, "+z", "-z");
             bp.Steps[hold]["config"] = new PyDict { ["seconds"] = HatchHold };
-            var hatches = bp.Hang("OR Gate", hold, "+z", "-z");
+            var hatches = Hang(bp, "OR Gate", hold, "+z", "-z");
             bp.Wires.Add((data, hold));
             bp.Wires.Add((data, hatches));
             bp.Wires.Add((hold, hatches));
@@ -1472,31 +1688,31 @@ public sealed class FrigateParts : IPartGenerator
                 bp.Wires.Add((hatches, g.Hatch));
             }
         }
-        bp.Hang("Chart Table", ops, "plot", "bottom");
-        Paint(bp, bp.Hang("Locker", ops, "locker0", "wall"), Armour, "worn paint");
-        Paint(bp, bp.Hang("Locker", ops, "locker1", "wall"), Armour, "worn paint");
-        bp.Hang("Tool Rack", ops, "armsRack", "back");
+        Hang(bp, "Chart Table", ops, "plot", "bottom");
+        Paint(bp, Hang(bp, "Locker", ops, "locker0", "wall"), Armour, "worn paint");
+        Paint(bp, Hang(bp, "Locker", ops, "locker1", "wall"), Armour, "worn paint");
+        Hang(bp, "Tool Rack", ops, "armsRack", "back");
         Switch(bp, ops, "switch", LampAt(bp, ops, "lampA", "#a0c8ff"), LampAt(bp, ops, "lampB", "#a0c8ff"), LampAt(bp, ops, "lampC"), LampAt(bp, ops, "lampD"));
         // The cockpit: the pilot flies through the flight computer and fires the railgun with it.
         // The flight couches turn as thrust is applied (Karl, 2026-11-15): each stands on a motor hinge across the ship, and the
         // pilot's Driving Module sends its lift (Sprint: the main drive, Crouch: down) into both, so they lie back into a burn.
         // The module's drive output stays unwired: the flight computer flies the ship.
         var pilotHinge = CouchHinge(bp, cockpit, "pilot");
-        var pilot = bp.Hang("Flight Couch", pilotHinge, "leaf", "bottom", CouchSpin);
+        var pilot = Hang(bp, "Flight Couch", pilotHinge, "leaf", "bottom", CouchSpin);
         var copilotHinge = CouchHinge(bp, cockpit, "copilot");
-        bp.Hang("Flight Couch", copilotHinge, "leaf", "bottom", CouchSpin);
-        var fc = bp.Hang("Halberd Flight Computer", cockpit, "computer", "bottom");
+        Hang(bp, "Flight Couch", copilotHinge, "leaf", "bottom", CouchSpin);
+        var fc = Hang(bp, "Halberd Flight Computer", cockpit, "computer", "bottom");
         bp.Wires.Add((pilot, fc));
-        var rail = bp.Hang("Halberd Spinal Railgun", nose, "railgun", "back");
-        bp.Hang("Ammo Box", rail, "ammo", "left");
-        var railModule = bp.Hang("Turret Module", cockpit, "gunModule", "-z");
+        var rail = Hang(bp, "Halberd Spinal Railgun", nose, "railgun", "back");
+        Hang(bp, "Ammo Box", rail, "ammo", "left");
+        var railModule = Hang(bp, "Turret Module", cockpit, "gunModule", "-z");
         bp.Wires.Add((pilot, railModule));
         bp.Wires.Add((railModule, rail));
-        var couchModule = bp.Hang("Driving Module", railModule, "+x", "-x");
+        var couchModule = Hang(bp, "Driving Module", railModule, "+x", "-x");
         bp.Wires.Add((pilot, couchModule));
         bp.DataLinks.Add((couchModule, pilotHinge, "lift"));
         bp.DataLinks.Add((couchModule, copilotHinge, "lift"));
-        bp.Hang("Chart Table", cockpit, "chart", "back");
+        Hang(bp, "Chart Table", cockpit, "chart", "back");
         Switch(bp, cockpit, "switch", LampAt(bp, cockpit, "lampA", "#ff6050"), LampAt(bp, cockpit, "lampB", "#ff6050"), LampAt(bp, cockpit, "lampC"));
         _ = drive;
         return bp;
@@ -1505,14 +1721,25 @@ public sealed class FrigateParts : IPartGenerator
     public void Make(PartOutput o)
     {
         Panels.Clear();
+        Partitions.Clear();
+        SockOwner.Clear();
+        Part[] storeys = [Engineering(), RobotBay(), MedDeck(), CrewDeck(), OpsDeck(), Cockpit()];
+        var nose = Nose();
+        var thrust = ThrustFrame();
+        var pieces = new List<Part>();
+        for (var k = 0; k < Storeys; k++)
+            pieces.AddRange(Split(storeys[k], k));
+        var structure = new List<Part>(pieces) { nose, thrust };
+        structure.AddRange(Panels); // (made with their storeys above)
+        Connect(structure);
+        Structure = PlaceOrder(structure, "Halberd Engineering Deck");
         List<Part> parts =
         [
-            Engineering(), RobotBay(), MedDeck(), CrewDeck(), OpsDeck(), Cockpit(), Nose(), ThrustFrame(), Drive(), ManoeuvreJet(), Leg(), PdcHatch(),
+            .. structure, Drive(), ManoeuvreJet(), Leg(), PdcHatch(),
             Ladder("Halberd Spine Ladder", Pitch, "A ladder up the Halberd's spine, one storey: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
             Ladder("Halberd Boarding Ladder", Ft(0) - Ground, "The Halberd's boarding ladder, from the ground to the airlock's platform: F climbs it.", "hull", [0, -Ground + 0.125, -0.005], "+z"),
             Pdc(), Railgun(), Reactor(), Cradle(), CrashCouch(), FlightCouch(), Coffee(), GunneryConsole(), FlightComputer(),
         ];
-        parts.AddRange(Panels); // (made with their storeys above)
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);
         foreach (var p in parts)

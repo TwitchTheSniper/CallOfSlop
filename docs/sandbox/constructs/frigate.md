@@ -4,8 +4,8 @@ Karl (2026-11-15): a second player ship, a mid-size combat frigate with point-de
 layered hull and a lived-in interior; "make new parts too, go wild", and none of the rust bucket's bathroom tiles or
 clipping. Generator: `Source/PartKit/Generators/FrigateParts.cs` (`--gen-parts frigate_parts`), which writes
 `Constructs/Parts/Frigate/*.json` and `Constructs/Blueprints/HalberdFrigate.json`. Change the generator, never its output.
-Built the way the rust bucket is (ship.md): big parts that share the body's origin, each holding a storey's floor, walls,
-hull band and the hidden boxes for them, furniture on their sockets.
+Built the way the rust bucket is (ship.md), big parts that share the body's origin, but each storey is broken into pieces
+so a hit takes one piece, not a deck (see "Breaking up"); furniture on the pieces' sockets.
 
 ## The stack
 
@@ -24,7 +24,7 @@ spine up through them (the ladder swaps side each storey, the hatch it climbs to
 | 6 | Halberd Nose | the armoured cap, the railgun's shroud, sensor mast, dish, antennae, running lights |
 
 The walls are painted panelling (pale over a dark dado), the med bay gloss white and green: no ceramic tiles anywhere.
-Labelled pipes run up the corners. `--check-building "Halberd Frigate"` passes (141 m2 a standing person can reach,
+Labelled pipes run up the corners. `--check-building "Halberd Frigate"` passes (142 m2 a standing person can reach,
 from the ground up the boarding ladder).
 
 ## The hull
@@ -34,6 +34,20 @@ frame rib up every corner and a girder at the deck line, and over that bevelled 
 face armoured in two steps, the other half bare skin with its panel seams, the side swapping face to face and storey to
 storey, raked slabs on the chamfered corners with primer-red scuffs, hazard flashes. Four armoured PDC housings stand out of the faces. The
 shoulder over the ops deck steps the tower in from 8 m to 5.5 m wide, so the silhouette reads as a hull with a head.
+
+## Breaking up
+
+Karl (2026-11-15): attacking one deck made the whole deck vanish; he chose every wall and floor as a part of its own. Each
+storey is still drawn whole by its builder (`Engineering()` ...), then `Split` deals its boxes out to pieces: the
+**Deck** (the floor and what stands loose in the room, the part that keeps the storey's old name), four **Wall** runs
+(Bow, Stbd, Stern, Port, with what is on their faces and outside them: the PDC housings, the shoulder), four **Corner**
+frames (the chamfer, the corner rib and armour; tough, 30,000 health) and each **Partition** (recorded by `Partition()`).
+The four **Hull** panels per storey are made by `HullPanels`. A socket goes to the piece whose box face it is on
+(`SockOwner`), and the blueprint's `Hang` wrapper puts furniture on that piece. `Connect` gives every two pieces whose solid
+boxes touch face to face a facing socket pair (`j0`, `j1` ...): one pair places a piece (`PlaceOrder`, out from the
+engineering deck), the game welds the rest (`ConstructBuild.AutoLink`), so a piece knocked off leaves the others welded
+(tried: the starboard hull and wall of two storeys shot away, the rest of the ship stood; a floor's loss drops only what
+stood on it). 233 parts in all; `--check-vehicle` finds no coplanar faces between them.
 
 ## Flight
 
@@ -75,7 +89,7 @@ cross a turret's joints, so they stay straight.
 
 ## The new parts
 
-Big parts: the six decks, the nose, the thrust frame. Fittings: Halberd Main Drive, Halberd Manoeuvre Jet, Halberd
+Big parts: the six storeys' pieces (deck, walls, corners, partitions, hull panels), the nose, the thrust frame. Fittings: Halberd Main Drive, Halberd Manoeuvre Jet, Halberd
 Landing Leg, Halberd Reactor (1.5 MW, no fuel), Halberd PDC, Halberd Spinal Railgun, Halberd Spine Ladder, Halberd
 Boarding Ladder, Halberd PDC Hatch, Robot Charging Cradle, Crash Couch, Flight Couch, Galley Coffee Station, Gunnery Console, Halberd Flight
 Computer.
