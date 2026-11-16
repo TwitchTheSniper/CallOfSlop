@@ -1,0 +1,362 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Dray Hold Well",
+  "description": "The Dray's hold, middle: row 3, with the cargo well through the floor between two container slots.",
+  "group": "Ship",
+  "section": "Dray hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 3600.0,
+  "health": 15000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#45494a",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        0.875,
+        -0.125,
+        26.675
+      ],
+      "max": [
+        5.425,
+        0.125,
+        33.075
+      ],
+      "color": "#45494a",
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        8.325,
+        -0.125,
+        26.675
+      ],
+      "max": [
+        12.875,
+        0.125,
+        33.075
+      ],
+      "color": "#45494a",
+      "finish": "painted deck plate"
+    },
+    {
+      "min": [
+        2.945,
+        0.125,
+        26.855
+      ],
+      "max": [
+        3.125,
+        0.175,
+        27.035
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        3.115,
+        0.125,
+        27.195
+      ],
+      "max": [
+        3.195,
+        0.137,
+        27.695
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        2.945,
+        0.125,
+        32.715
+      ],
+      "max": [
+        3.125,
+        0.175,
+        32.895
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        3.115,
+        0.125,
+        32.055
+      ],
+      "max": [
+        3.195,
+        0.137,
+        32.555
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        5.227,
+        0.125,
+        26.855
+      ],
+      "max": [
+        5.405,
+        0.175,
+        27.035
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        5.155,
+        0.125,
+        27.195
+      ],
+      "max": [
+        5.235,
+        0.135,
+        27.695
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        5.227,
+        0.125,
+        32.715
+      ],
+      "max": [
+        5.405,
+        0.175,
+        32.895
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        5.155,
+        0.125,
+        32.055
+      ],
+      "max": [
+        5.235,
+        0.135,
+        32.555
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        8.345,
+        0.125,
+        26.855
+      ],
+      "max": [
+        8.523,
+        0.175,
+        27.035
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        8.515,
+        0.125,
+        27.195
+      ],
+      "max": [
+        8.595,
+        0.135,
+        27.695
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        8.345,
+        0.125,
+        32.715
+      ],
+      "max": [
+        8.523,
+        0.175,
+        32.895
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        8.515,
+        0.125,
+        32.055
+      ],
+      "max": [
+        8.595,
+        0.135,
+        32.555
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        10.625,
+        0.125,
+        26.855
+      ],
+      "max": [
+        10.805,
+        0.175,
+        27.035
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        10.555,
+        0.125,
+        27.195
+      ],
+      "max": [
+        10.635,
+        0.137,
+        27.695
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        10.625,
+        0.125,
+        32.715
+      ],
+      "max": [
+        10.805,
+        0.175,
+        32.895
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        10.555,
+        0.125,
+        32.055
+      ],
+      "max": [
+        10.635,
+        0.137,
+        32.555
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        5.225,
+        0.125,
+        26.685
+      ],
+      "max": [
+        5.425,
+        0.137,
+        33.065
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        8.325,
+        0.125,
+        26.685
+      ],
+      "max": [
+        8.525,
+        0.137,
+        33.065
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        3.415,
+        -0.125,
+        29.875
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        10.595,
+        -0.005,
+        26.675
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        0.995,
+        0.125,
+        29.875
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        12.755,
+        0.125,
+        29.875
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        10.595,
+        -0.005,
+        33.075
+      ],
+      "dir": "+z"
+    }
+  ]
+}

@@ -32,6 +32,10 @@ The first Survival ship: a lofted two-deck miner with four drills on rams throug
 
 The IT Department's warship: a faceted lofted hull, two decks the length of the ship, torpedo sponsons, a spinal railgun, PDCs, flares; its AI crew, which flies and fights any stabilised craft by itself (ConstructShipAi.cs).
 
+## [The Dray container hauler](constructs/hauler.md), 3 KB
+
+A cargo ship round a hold of fourteen container slots, an overhead crane on rails and a belly well with sliding doors; frame, walls and doors so far.
+
 Each file below lists its `## ` sections with their headings exactly as they were in the old single file, so a code
 comment such as `CONSTRUCTS.md "Extrusion"` is found by searching this index for the heading. To look inside a file,
 `grep -n '^## ' docs/sandbox/constructs/FILE.md` and read the section you need. New text goes into the file that holds

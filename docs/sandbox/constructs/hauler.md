@@ -1,0 +1,43 @@
+# The Dray container hauler
+
+Karl (2026-11-16): a hauler built with the ship builder, "just the frame and interior walls/doors" for now, carrying 10 to 20
+cargo containers with an onboard crane to pick them up. Survival is logistics: the Dray is the ship that moves the goods.
+
+Generator: `Source/PartKit/Generators/HaulerParts.cs` (`--gen-parts hauler_parts`), which writes `Constructs/Parts/Dray/*.json`
+and `Constructs/Blueprints/DrayContainerHauler.json`. Change the generator, never its output. Built the Zero Day's way
+(torpedo-frigate.md): a lofted hull first, the rooms a box of their own inside it, each big part drawn whole and then dealt
+out into welded pieces (floors, wall runs, ceilings, hull bands; the keel and spine cut at the stations). Its pieces are
+blueprint-only (`Categories.json`'s name rule has "Dray").
+
+## The shape
+
+About 58 m long, 14 m across and 10 m tall, 157 t. A low, narrow cab forward (the crew section) steps out through a raked
+shoulder to the wide hold, which runs straight to the drive room, where the stern pinches in to a transom with four drive
+mounts. Heavy ring frames stand proud of the hull at every container row; between them the hold's sides are ribbed like a
+container's walls, alternating pale and freight blue row by row. Freight blue armour on the cab, a strongback (two box
+girders) along the hold's roof, a sensor mast, radiators over the drive room.
+
+## Inside
+
+| Part | What is in it |
+| --- | --- |
+| Dray Crew Lower Deck | mess, stores, the suit room with the ladder up, the airlock over the boarding shaft, the door aft into the hold |
+| Dray Crew Upper Deck | the sealed bridge (a view screen, no glass), two cabins off a hall, the head, the aft hall with the ladder |
+| Dray Hold Fore / Well / Aft | five rows of three container slots (6.4 m rows, lanes 2.7 m apart), less the slot over the well: 14 slots |
+| Dray Drive Room | aft of the hold, empty for now |
+
+- **Containers.** Each slot is marked by four twistlock pads for a 20-foot box (6.06 by 2.44 m, 2.6 m tall). No container
+  part exists yet.
+- **The crane.** Two runs of seven Crane Rail Medium 4 m, 8 m apart, on girders cantilevered off the hold's walls (rails at
+  5.25 m), and a Medium Crane Bridge on the port run. Its hook drops 8 m: from the rails to about 4 m under the floor, so
+  the ship can set down over a container on legs that leave about 2.9 m under the keel and lift it up through the well.
+  In a window run the bridge sits on its rails and reports Idle (nothing to pick); it needs power to move.
+- **The well** is the middle lane of row 3 (6.4 by 2.9 m), through the floor and the keel. Two belly door leaves
+  (Dray Well Door L/R, slide doors) hang from tracks across the well's ends and slide outboard 1.5 m to open it.
+- **Doors** are Bulkhead Doors 1.5x2.25 m in hazard orange.
+
+## Not yet
+
+Drives, jets, legs, the boarding ladder, lamps, wiring and fittings (Karl's scope for the first cut). Without legs and a
+boarding ladder `--check-building` can't reach the decks from the ground; its map shows every room joined through its doors.
+No container part, no power for the crane, no cargo storage volumes.

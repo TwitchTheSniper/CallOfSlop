@@ -1,0 +1,96 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Dray Drive Room Ceiling",
+  "description": "The ceiling of the Dray's drive room.",
+  "group": "Ship",
+  "section": "Dray hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 834.8,
+  "health": 5000,
+  "armour": 25,
+  "material": "steel",
+  "color": "#8f969a",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        2.125,
+        3.125,
+        46.0
+      ],
+      "max": [
+        11.625,
+        3.375,
+        49.625
+      ],
+      "color": "#8f969a",
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        4.125,
+        3.255,
+        46.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        2.255,
+        3.125,
+        47.685
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        11.495,
+        3.125,
+        47.685
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        6.875,
+        3.125,
+        49.495
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        2.125,
+        3.255,
+        47.815
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j5",
+      "at": [
+        11.625,
+        3.255,
+        47.815
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j6",
+      "at": [
+        6.875,
+        3.375,
+        47.815
+      ],
+      "dir": "+y"
+    }
+  ]
+}

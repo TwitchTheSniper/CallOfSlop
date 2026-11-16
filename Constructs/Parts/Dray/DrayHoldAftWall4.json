@@ -1,0 +1,273 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Dray Hold Aft Wall 4",
+  "description": "A wall of the Dray's hold aft, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Dray hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 635.3,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#71787c",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        0.875,
+        0.125,
+        39.475
+      ],
+      "max": [
+        1.125,
+        7.125,
+        45.75
+      ],
+      "color": "#71787c",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.863,
+        0.128,
+        39.525
+      ],
+      "max": [
+        1.137,
+        0.875,
+        45.7
+      ],
+      "color": "#c08a1c",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.375,
+        4.125,
+        39.475
+      ],
+      "max": [
+        3.375,
+        4.625,
+        43.875
+      ],
+      "color": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        3.363,
+        4.175,
+        39.479
+      ],
+      "max": [
+        3.379,
+        4.575,
+        43.871
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.125,
+        3.725,
+        39.425
+      ],
+      "max": [
+        3.375,
+        4.125,
+        39.725
+      ],
+      "color": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        1.129,
+        2.725,
+        39.475
+      ],
+      "max": [
+        2.275,
+        3.715,
+        39.675
+      ],
+      "color": "#202326",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          1.129,
+          2.725,
+          39.475
+        ],
+        [
+          1.129,
+          2.725,
+          39.675
+        ],
+        [
+          1.139,
+          3.715,
+          39.675
+        ],
+        [
+          1.139,
+          3.715,
+          39.475
+        ],
+        [
+          2.275,
+          3.715,
+          39.475
+        ],
+        [
+          2.275,
+          3.715,
+          39.675
+        ]
+      ],
+      "paintable": false,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        1.125,
+        3.725,
+        43.325
+      ],
+      "max": [
+        3.375,
+        4.125,
+        43.625
+      ],
+      "color": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        1.129,
+        2.725,
+        43.375
+      ],
+      "max": [
+        2.275,
+        3.715,
+        43.575
+      ],
+      "color": "#202326",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          1.129,
+          2.725,
+          43.375
+        ],
+        [
+          1.129,
+          2.725,
+          43.575
+        ],
+        [
+          1.139,
+          3.715,
+          43.575
+        ],
+        [
+          1.139,
+          3.715,
+          43.375
+        ],
+        [
+          2.275,
+          3.715,
+          43.375
+        ],
+        [
+          2.275,
+          3.715,
+          43.575
+        ]
+      ],
+      "paintable": false,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        1.129,
+        0.875,
+        42.555
+      ],
+      "max": [
+        1.245,
+        7.121,
+        42.795
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "railL6",
+      "at": [
+        2.875,
+        4.625,
+        40.375
+      ],
+      "dir": "+y",
+      "class": "medium"
+    },
+    {
+      "name": "j0",
+      "at": [
+        0.995,
+        0.125,
+        42.615
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        0.995,
+        3.625,
+        45.75
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        0.995,
+        3.625,
+        39.475
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        0.995,
+        7.125,
+        42.615
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        0.875,
+        1.975,
+        42.615
+      ],
+      "dir": "-x"
+    }
+  ]
+}

@@ -1,0 +1,141 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Dray Hold Aft Ceiling",
+  "description": "The ceiling of the Dray's hold aft.",
+  "group": "Ship",
+  "section": "Dray hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1089.1,
+  "health": 5000,
+  "armour": 25,
+  "material": "steel",
+  "color": "#8f969a",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        0.875,
+        7.125,
+        33.075
+      ],
+      "max": [
+        12.875,
+        7.375,
+        46.0
+      ],
+      "color": "#8f969a",
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        6.875,
+        7.255,
+        33.075
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        3.495,
+        7.125,
+        45.875
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        0.995,
+        7.125,
+        36.275
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        12.755,
+        7.125,
+        36.275
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        0.995,
+        7.125,
+        42.615
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j5",
+      "at": [
+        12.755,
+        7.125,
+        42.615
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j6",
+      "at": [
+        0.875,
+        7.255,
+        36.275
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j7",
+      "at": [
+        0.875,
+        7.255,
+        42.735
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j8",
+      "at": [
+        12.875,
+        7.255,
+        36.275
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j9",
+      "at": [
+        12.875,
+        7.255,
+        42.735
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j10",
+      "at": [
+        6.875,
+        7.375,
+        36.275
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j11",
+      "at": [
+        6.875,
+        7.375,
+        42.735
+      ],
+      "dir": "+y"
+    }
+  ]
+}

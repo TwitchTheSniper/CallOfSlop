@@ -21,7 +21,7 @@
   ],
   "rules": [
     { "group": "Ship", "notSection": "Ship fittings", "unlisted": true },
-    { "group": "Ship", "name": ["Magpie", "Halberd", "Zero Day", "Rust Bucket"], "unlisted": true },
+    { "group": "Ship", "name": ["Magpie", "Halberd", "Zero Day", "Rust Bucket", "Dray"], "unlisted": true },
     { "section": "Wings", "to": ["Flight", "Wings"] },
     { "section": "Control surfaces", "to": ["Flight", "Control surfaces"] },
     { "section": "Rotors", "to": ["Flight", "Rotors"] },

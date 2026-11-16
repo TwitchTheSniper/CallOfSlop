@@ -1,0 +1,731 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Dray Container Hauler",
+  "description": "A container hauler: a long hold for fourteen 20-foot containers with an overhead crane down its length and a well in its belly to lift them through, a small crew section forward and a drive room aft. (The frame, walls and doors so far: no drives, legs, lamps or fittings yet.)",
+  "steps": [
+    {
+      "part": "Dray Keel"
+    },
+    {
+      "part": "Dray Hold Well",
+      "on": 0,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Fore",
+      "on": 1,
+      "socket": "j1",
+      "by": "j9"
+    },
+    {
+      "part": "Dray Hold Well Wall 1",
+      "on": 1,
+      "socket": "j2",
+      "by": "j1"
+    },
+    {
+      "part": "Dray Hold Well Wall 2",
+      "on": 1,
+      "socket": "j3",
+      "by": "j1"
+    },
+    {
+      "part": "Dray Hold Aft",
+      "on": 1,
+      "socket": "j4",
+      "by": "j3"
+    },
+    {
+      "part": "Dray Keel 2",
+      "on": 2,
+      "socket": "j0",
+      "by": "j3"
+    },
+    {
+      "part": "Dray Keel 3",
+      "on": 2,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Keel 4",
+      "on": 2,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Lower Deck",
+      "on": 2,
+      "socket": "j3",
+      "by": "j13"
+    },
+    {
+      "part": "Dray Hold Fore Wall 1",
+      "on": 2,
+      "socket": "j4",
+      "by": "j9"
+    },
+    {
+      "part": "Dray Hold Fore Wall 2",
+      "on": 2,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Fore Wall 3",
+      "on": 2,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Fore Wall 4",
+      "on": 2,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Fore Wall 5",
+      "on": 2,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Well Ceiling",
+      "on": 3,
+      "socket": "j2",
+      "by": "j1"
+    },
+    {
+      "part": "Dray Hold Well Hull Port 5",
+      "on": 3,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Aft Wall 2",
+      "on": 3,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Well Hull Stbd 5",
+      "on": 4,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Aft Wall 3",
+      "on": 4,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Keel 6",
+      "on": 5,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Keel 7",
+      "on": 5,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Keel 8",
+      "on": 5,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Aft Wall 1",
+      "on": 5,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Aft Wall 4",
+      "on": 5,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Aft Wall 5",
+      "on": 5,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Drive Room",
+      "on": 5,
+      "socket": "j9",
+      "by": "j1"
+    },
+    {
+      "part": "Dray Crew Lower Hull Port 2",
+      "on": 6,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Lower Hull Stbd 2",
+      "on": 6,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Keel 1",
+      "on": 9,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Lower Wall 1",
+      "on": 9,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Lower Wall 2",
+      "on": 9,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Lower Wall 3",
+      "on": 9,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Lower Wall 4",
+      "on": 9,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Lower Wall 5",
+      "on": 9,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Lower Wall 6",
+      "on": 9,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Lower Wall 7",
+      "on": 9,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Lower Hull Port 1",
+      "on": 9,
+      "socket": "j9",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Lower Hull Stbd 1",
+      "on": 9,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Bow",
+      "on": 9,
+      "socket": "j14",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Upper Deck",
+      "on": 10,
+      "socket": "j4",
+      "by": "j24"
+    },
+    {
+      "part": "Dray Crew Upper Wall 4",
+      "on": 10,
+      "socket": "j5",
+      "by": "j4"
+    },
+    {
+      "part": "Dray Crew Upper Wall 7",
+      "on": 10,
+      "socket": "j6",
+      "by": "j4"
+    },
+    {
+      "part": "Dray Crew Upper Wall 13",
+      "on": 10,
+      "socket": "j7",
+      "by": "j3"
+    },
+    {
+      "part": "Dray Crew Upper Ceiling",
+      "on": 10,
+      "socket": "j8",
+      "by": "j17"
+    },
+    {
+      "part": "Dray Hold Fore Ceiling",
+      "on": 10,
+      "socket": "j12",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Fore Hull Port 3",
+      "on": 10,
+      "socket": "j13",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Fore Hull Stbd 3",
+      "on": 10,
+      "socket": "j14",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Fore Hull Port 4",
+      "on": 13,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Fore Hull Stbd 4",
+      "on": 14,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Aft Ceiling",
+      "on": 15,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Spine",
+      "on": 15,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Aft Hull Port 6",
+      "on": 17,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Aft Hull Stbd 6",
+      "on": 19,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Aft Hull Port 7",
+      "on": 23,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Hold Aft Hull Stbd 7",
+      "on": 23,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Drive Room Wall 1",
+      "on": 23,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Drive Room Wall 2",
+      "on": 23,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Drive Room Ceiling",
+      "on": 23,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Drive Room Wall 3",
+      "on": 26,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Drive Room Hull Port 8",
+      "on": 26,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Drive Room Hull Stbd 8",
+      "on": 26,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Stern",
+      "on": 26,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Upper Hull Port 1",
+      "on": 27,
+      "socket": "j3",
+      "by": "j2"
+    },
+    {
+      "part": "Dray Crew Upper Hull Port 2",
+      "on": 27,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Upper Hull Stbd 1",
+      "on": 28,
+      "socket": "j3",
+      "by": "j2"
+    },
+    {
+      "part": "Dray Crew Upper Hull Stbd 2",
+      "on": 28,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Upper Wall 1",
+      "on": 39,
+      "socket": "j3",
+      "by": "j4"
+    },
+    {
+      "part": "Dray Crew Upper Wall 2",
+      "on": 40,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Upper Wall 3",
+      "on": 40,
+      "socket": "j9",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Upper Wall 5",
+      "on": 40,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Upper Wall 6",
+      "on": 40,
+      "socket": "j12",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Upper Wall 8",
+      "on": 40,
+      "socket": "j14",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Upper Wall 9",
+      "on": 40,
+      "socket": "j15",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Upper Wall 10",
+      "on": 40,
+      "socket": "j16",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Upper Wall 11",
+      "on": 40,
+      "socket": "j17",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Crew Upper Wall 12",
+      "on": 40,
+      "socket": "j18",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Spine 1",
+      "on": 44,
+      "socket": "j18",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Spine 2",
+      "on": 44,
+      "socket": "j19",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Spine 3",
+      "on": 45,
+      "socket": "j10",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Spine 4",
+      "on": 45,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Spine 6",
+      "on": 50,
+      "socket": "j10",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Spine 7",
+      "on": 50,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Dray Spine 8",
+      "on": 62,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 33,
+      "socket": "doorMess",
+      "by": "hang",
+      "paint": "#dd6a1e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 33,
+      "socket": "doorSuit",
+      "by": "hang",
+      "paint": "#dd6a1e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 34,
+      "socket": "doorStore",
+      "by": "hang",
+      "paint": "#dd6a1e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 34,
+      "socket": "doorAirlock",
+      "by": "hang",
+      "paint": "#dd6a1e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 72,
+      "socket": "doorBridge",
+      "by": "hang",
+      "paint": "#dd6a1e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 73,
+      "socket": "doorCabinA",
+      "by": "hang",
+      "paint": "#dd6a1e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 74,
+      "socket": "doorCabinB",
+      "by": "hang",
+      "paint": "#dd6a1e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 43,
+      "socket": "doorHead",
+      "by": "hang",
+      "paint": "#dd6a1e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 10,
+      "socket": "doorHold",
+      "by": "hang",
+      "paint": "#dd6a1e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 23,
+      "socket": "doorDrive",
+      "by": "hang",
+      "paint": "#dd6a1e",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Dray Ladder",
+      "on": 9,
+      "socket": "ladder",
+      "by": "bottom"
+    },
+    {
+      "part": "Dray Well Door L",
+      "on": 8,
+      "socket": "wellDoorL",
+      "by": "hang",
+      "paint": "#666d71",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Dray Well Door R",
+      "on": 8,
+      "socket": "wellDoorR",
+      "by": "hang",
+      "paint": "#666d71",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Crane Rail Medium 4 m",
+      "on": 11,
+      "socket": "railL0",
+      "by": "-y.0.0",
+      "paint": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Crane Rail Medium 4 m",
+      "on": 13,
+      "socket": "railL1",
+      "by": "-y.0.0",
+      "paint": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Crane Rail Medium 4 m",
+      "on": 13,
+      "socket": "railL2",
+      "by": "-y.0.0",
+      "paint": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Crane Rail Medium 4 m",
+      "on": 3,
+      "socket": "railL3",
+      "by": "-y.0.0",
+      "paint": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Crane Rail Medium 4 m",
+      "on": 3,
+      "socket": "railL4",
+      "by": "-y.0.0",
+      "paint": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Crane Rail Medium 4 m",
+      "on": 17,
+      "socket": "railL5",
+      "by": "-y.0.0",
+      "paint": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Crane Rail Medium 4 m",
+      "on": 24,
+      "socket": "railL6",
+      "by": "-y.0.0",
+      "paint": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Crane Rail Medium 4 m",
+      "on": 12,
+      "socket": "railR0",
+      "by": "-y.0.0",
+      "paint": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Crane Rail Medium 4 m",
+      "on": 14,
+      "socket": "railR1",
+      "by": "-y.0.0",
+      "paint": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Crane Rail Medium 4 m",
+      "on": 14,
+      "socket": "railR2",
+      "by": "-y.0.0",
+      "paint": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Crane Rail Medium 4 m",
+      "on": 4,
+      "socket": "railR3",
+      "by": "-y.0.0",
+      "paint": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Crane Rail Medium 4 m",
+      "on": 4,
+      "socket": "railR4",
+      "by": "-y.0.0",
+      "paint": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Crane Rail Medium 4 m",
+      "on": 19,
+      "socket": "railR5",
+      "by": "-y.0.0",
+      "paint": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Crane Rail Medium 4 m",
+      "on": 25,
+      "socket": "railR6",
+      "by": "-y.0.0",
+      "paint": "#202326",
+      "finish": "painted steel"
+    },
+    {
+      "part": "Medium Crane Bridge",
+      "on": 98,
+      "socket": "-x.0.0",
+      "by": "+x",
+      "paint": "#e0a020",
+      "finish": "hazard paint"
+    }
+  ],
+  "conduit": true
+}
