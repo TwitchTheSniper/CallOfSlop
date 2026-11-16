@@ -2038,6 +2038,7 @@ public sealed partial class Game : IDisposable
                 SendTerrainDigState(sender); // dug ground: every crater so far (GameTerrainDig.cs)
                 SendResourceState(sender); // felled trees so far (GameResources.cs)
                 SendSpaceState(sender); // the space bubble and its clock (GameSpace.cs)
+                SendNavState(sender); // the ships under orders (GameNav.cs)
                 SendLogicState(sender); // map logic: doors, lamps, levers, controlled movers (GameLogic.cs)
                 SendCorpseState(sender); // the bodies lying about (GameCorpses.cs)
                 SendLabourState(sender); // the penal colony's convict labourers (GameLabour.cs)
@@ -2412,6 +2413,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Space:
                 ReadSpace(ref r); // the space bubble: system, clock, ships (GameSpace.cs)
+                break;
+            case (byte)Msg.Nav when !IsServer:
+                ReadNav(ref r); // a ship's order from the command view (GameNav.cs)
                 break;
             case (byte)Msg.ShieldHit when !IsServer && r.Has(2):
                 OnShieldHitPacket(ref r, now); // Last Stand's shield blocked a hit (Health.cs)

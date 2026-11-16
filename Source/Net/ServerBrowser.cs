@@ -531,7 +531,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   u8 inmate, u32 the tick it began).
     // 318: conveyors run at 1 m/s (ConstructConveyor.Speed, was 0.5): both peers step riders by it, so an older peer would draw them
     //   at half the speed between messages. No new bytes.
-    public const ushort ProtocolVersion = 318;
+    // 319: orders from the command view (docs/space/COMMAND.md, GameNav.cs): Msg.Nav at the end of Msg (u16 construct, u8 kind, u8 body,
+    //   u8 phase, u8 player, 3 x f64 point, f64 radius); CActKind.NavOrder at the end of CActKind (u16 construct, u8 kind, u8 body,
+    //   3 x f64 point, f64 radius).
+    public const ushort ProtocolVersion = 319;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

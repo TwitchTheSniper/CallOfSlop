@@ -193,16 +193,21 @@ public sealed partial class Game
         var up = Vector3.Normalize(com - centre);
         var mine = Vector3.Transform(Vector3.UnitY, c.Rot);
         var turn = Quaternion.Identity;
-        var axis = Vector3.Cross(mine, up);
-        var s = axis.Length();
-        if (s > 1e-6f)
+        if (c.NavThrottle >= 0 && c.NavAim != Vector3.Zero && c.NavAxis != Vector3.Zero)
+            turn = NavTurn(c, dt); // (an order flies it: its drive turns to where the nav computer wants the push, GameNav.cs)
+        else
         {
-            var angle = MathF.Atan2(s, Vector3.Dot(mine, up));
-            turn = Quaternion.CreateFromAxisAngle(axis / s, angle * MathF.Min(1, SpaceLevelRate * dt));
+            var axis = Vector3.Cross(mine, up);
+            var s = axis.Length();
+            if (s > 1e-6f)
+            {
+                var angle = MathF.Atan2(s, Vector3.Dot(mine, up));
+                turn = Quaternion.CreateFromAxisAngle(axis / s, angle * MathF.Min(1, SpaceLevelRate * dt));
+            }
+            var steer = c.Driver == 255 ? 0f : ((c.DriveKeys & Buttons.Right) != 0 ? 1f : 0f) - ((c.DriveKeys & Buttons.Left) != 0 ? 1f : 0f);
+            if (steer != 0)
+                turn = Quaternion.CreateFromAxisAngle(up, -steer * SpaceYawRate * dt) * turn;
         }
-        var steer = c.Driver == 255 ? 0f : ((c.DriveKeys & Buttons.Right) != 0 ? 1f : 0f) - ((c.DriveKeys & Buttons.Left) != 0 ? 1f : 0f);
-        if (steer != 0)
-            turn = Quaternion.CreateFromAxisAngle(up, -steer * SpaceYawRate * dt) * turn;
         var rot = Quaternion.Normalize(turn * c.Rot);
         // The spin that turn is, for clients carrying the pose on between packets.
         var dq = rot * Quaternion.Conjugate(c.Rot);

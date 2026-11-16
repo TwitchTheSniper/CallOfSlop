@@ -65,6 +65,7 @@ public static unsafe partial class Program
             LinkReset();
             TerminalIdle();
             Ui.CloseCrafting();
+            SetCommandOpen(false);
             Ui.CloseDesigner();
             Ui.CloseLifter();
             _linkWheel.ResetMode();

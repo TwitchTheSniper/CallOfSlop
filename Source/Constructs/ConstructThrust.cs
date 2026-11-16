@@ -44,6 +44,12 @@ public sealed partial class Construct
     public float LiftHeld; // how long the driver has held Shift or Ctrl (s): on a planet the hold climbs and sinks faster the longer it is held
     public float ThrustShow; // 0..1: how hard its thrusters push, of all they could (server; clients get it in the pose)
     public bool ActiveSignal; // this tick a wire asks a hub motor or a thruster for something: it stays awake
+    // The nav computer flies it in space (server; Game/GameNav.cs, docs/space/COMMAND.md): how hard its main drive is
+    // asked to push (0..1; negative: no order flies it, the driver does), which way the drive pushes (body frame), whether
+    // that drive is its lifters, and where the order wants that push to point (world, unit; zero: as it is).
+    public float NavThrottle = -1;
+    public Vector3 NavAxis, NavAim;
+    public bool NavLift;
 
     /// <summary>Hub motors on the wheels (with the wheels: a track's rays share its motor).</summary>
     private void BuildHubMotors()
@@ -450,6 +456,12 @@ public static partial class ConstructPhysics
     {
         var fwd = c.Driver == 255 ? 0f : ((c.DriveKeys & Buttons.Forward) != 0 ? 1f : 0f) - ((c.DriveKeys & Buttons.Back) != 0 ? 1f : 0f);
         var lift = c.Driver == 255 ? 0f : MathF.Max(0, c.LiftInput);
+        if (c.NavThrottle >= 0)
+        {
+            // An order flies it (Game/GameNav.cs): its main drive at the nav computer's throttle, nothing else.
+            fwd = c.NavLift ? 0f : c.NavThrottle;
+            lift = c.NavLift ? c.NavThrottle : 0f;
+        }
         var sum = Vector3.Zero;
         var shown = 0f;
         var all = 0f;
@@ -481,6 +493,45 @@ public static partial class ConstructPhysics
         }
         c.ThrustShow = all > 0 ? shown / all : 0;
         return sum;
+    }
+
+    /// <summary>
+    /// The drive the nav computer flies a ship in space with (Game/GameNav.cs): of its thrusters that answer forward and
+    /// those that lift, the set that pushes harder, as the driver's W or Shift would work them (<see cref="SpaceThrust"/>).
+    /// Returns the push they add up to (N; 0: none can push now), with its direction in the body's frame and whether it is
+    /// the lifters (a tail-sitter's main drive). A wired thruster is left to its wire and not counted.
+    /// </summary>
+    public static float NavDrive(Construct c, out Vector3 axis, out bool lift, out float burn)
+    {
+        Vector3 fwd = Vector3.Zero, up = Vector3.Zero;
+        float fwdBurn = 0, upBurn = 0;
+        for (var k = 0; k < c.ThrusterCount; k++)
+        {
+            ref var t = ref c.Thrusters[k];
+            ref var p = ref c.Parts[t.Part];
+            var d = p.D;
+            if (d.ThrustKind is ThrustKind.Air or ThrustKind.Repulsor or ThrustKind.Solid || p.InCount > 0 || !Live(c, ref t, p))
+                continue;
+            c.WorldFrame(t.Seg, out var q, out _);
+            var push = Vector3.Transform(Vector3.Transform(t.Dir, q), Quaternion.Conjugate(c.Rot)) * d.ThrustForce;
+            var fuel = d.ThrustFuel == EngineFuel.Fuel ? d.ThrustBurn : 0f;
+            if (t.Lifts)
+            {
+                up += push;
+                upBurn += fuel;
+            }
+            else if (t.MixForward > 0)
+            {
+                fwd += push * t.MixForward;
+                fwdBurn += fuel * t.MixForward;
+            }
+        }
+        lift = up.LengthSquared() > fwd.LengthSquared();
+        var sum = lift ? up : fwd;
+        burn = lift ? upBurn : fwdBurn;
+        var f = sum.Length();
+        axis = f > 1e-3f ? sum / f : Vector3.Zero;
+        return f;
     }
 
     /// <summary>Is this thruster able to push now (a stabilizer's mix leaves out one that can't)?</summary>

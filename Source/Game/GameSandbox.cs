@@ -103,6 +103,7 @@ public enum CActKind : byte
     TakeMade, // a part by PartRef (a made part's key): set down in front of the player from their Tab inventory (protocol 299; docs/sandbox/design/inventory-run-time-parts.md phase 2)
     Lifter, // u16 body, u16 part, u8 LiftOrderOp, u8 order id, the kind (PartRef), u8 count, from and to (u16 body, u16 part, u8 kind, u8 bay): a hand order at a lifter's panel (protocol 312; GameSandboxLifter.cs)
     ErrandDrop, // nothing: drop the errand under way (protocol 314; GameErrands.cs)
+    NavOrder, // u16 body, u8 NavKind (0 cancels), u8 the star system's body, 3 x f64 point, f64 radius: an order for a ship from the command view (protocol 319; GameNav.cs)
 }
 
 /// <summary>
@@ -959,6 +960,8 @@ public sealed partial class Game
                 return null;
             case CActKind.ShellLeave:
                 return ShellLeaveAct(p); // robot shells (GameRobotShell.cs)
+            case CActKind.NavOrder:
+                return NavOrderAct(p, ref r); // an order for a ship from the command view (GameNav.cs)
             case CActKind.Talk:
             {
                 var person = r.U8();

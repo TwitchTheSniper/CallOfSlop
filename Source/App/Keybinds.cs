@@ -85,6 +85,7 @@ public enum GameAction
     SeatEject, // ...and an ejection seat's handle (PilotGear.cs)
     Logbook, // binds version 25: Sandbox, the Logbook (the old records' fragments you hold, and your open leads; Source/UI/UiLogbook.cs) on F1
     JoinTalk, // binds version 26: Sandbox, join the talk another player is having with one of the story's people, while its notice shows (Program.StoryTalk.cs) on Backspace
+    CommandView, // binds version 27: Sandbox, the command view (the star system as a hologram, ships and their orders; Source/UI/UiCommand.cs) on Home
     COUNT,
 }
 
@@ -412,6 +413,7 @@ public static class Keybinds
         Key(GlfwKey.L), // Eject, in an ejection seat
         Key(GlfwKey.F1), // Logbook (Sandbox): binds version 25
         Key(GlfwKey.Backspace), // Join another player's talk (Sandbox): binds version 26
+        Key(GlfwKey.Home), // Command view (Sandbox): binds version 27
     ];
 
     /// <summary>
@@ -446,8 +448,9 @@ public static class Keybinds
     /// binding on the grave accent key added (same rule: left unbound when the player uses that key for something live beside it).
     /// 25: the Logbook (Sandbox) on F1 added (same rule).
     /// 26: Join another player's talk (Sandbox) on Backspace added (same rule).
+    /// 27: the command view (Sandbox) on Home added (same rule).
     /// </summary>
-    public const int DefaultsVersion = 26;
+    public const int DefaultsVersion = 27;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, int Index, int Old, int New)[] Changes =
@@ -509,6 +512,7 @@ public static class Keybinds
         (24, At(GameAction.ToolWheel, 1), Unbound, Key(GlfwKey.GraveAccent)), // (a second binding: the laptop's way to the wheel)
         (25, (int)GameAction.Logbook, Unbound, Key(GlfwKey.F1)),
         (26, (int)GameAction.JoinTalk, Unbound, Key(GlfwKey.Backspace)),
+        (27, (int)GameAction.CommandView, Unbound, Key(GlfwKey.Home)),
     ];
 
     /// <summary>
@@ -678,6 +682,7 @@ public static class Keybinds
             GameAction.SeatEject => "Eject (in an ejection seat)",
             GameAction.Logbook => "Logbook (Sandbox: the old records you have found, and your leads)",
             GameAction.JoinTalk => "Join a chat (Sandbox: when another player talks to someone, while the notice shows)",
+            GameAction.CommandView => "Command view (Sandbox: the star system, your ships and their orders)",
             _ => a.ToString(),
         };
 

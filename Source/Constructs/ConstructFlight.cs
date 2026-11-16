@@ -664,6 +664,35 @@ public static partial class ConstructFlight
         return slot >= 0 && ConstructConfig.Set(ref p, d, slot, v);
     }
 
+    /// <summary>
+    /// The nav computer's hand on the autopilot (Game/GameNav.cs): on, in <paramref name="mode"/>, flying to
+    /// <paramref name="waypoint"/> (Waypoint mode) and holding <paramref name="altitude"/> (as the Altitude setting shows it;
+    /// 0: where it is). False when the construct has no Flight Stabilizer that works.
+    /// </summary>
+    public static bool NavEngage(ConstructWorld world, Construct c, FlightMode mode, Vector3 waypoint, float altitude)
+    {
+        if (c.StabCount == 0 || c.Stabs[0].Part >= c.PartCount || !c.Parts[c.Stabs[0].Part].Working)
+            return false;
+        ref var p = ref c.Parts[c.Stabs[0].Part];
+        var d = p.D;
+        if (mode == FlightMode.Waypoint)
+        {
+            Put(ref p, d, CfgKey.WaypointX, waypoint.X);
+            Put(ref p, d, CfgKey.WaypointY, waypoint.Y);
+            Put(ref p, d, CfgKey.WaypointZ, waypoint.Z);
+        }
+        Put(ref p, d, CfgKey.TargetAlt, altitude);
+        Put(ref p, d, CfgKey.ApMode, (int)mode);
+        Put(ref p, d, CfgKey.Autopilot, 1);
+        world.StructureDirty.Add(c.Id);
+        c.Wake();
+        return true;
+    }
+
+    /// <summary>Is its autopilot on (the first stabilizer's setting)?</summary>
+    public static bool AutopilotOn(Construct c) =>
+        c.StabCount > 0 && c.Stabs[0].Part < c.PartCount && ConstructConfig.Get(c.Parts[c.Stabs[0].Part], c.Parts[c.Stabs[0].Part].D, CfgKey.Autopilot, 0) >= 0.5f;
+
     /// <summary>Home is here, now.</summary>
     public static void SetHome(ConstructWorld world, Construct c, int part)
     {
