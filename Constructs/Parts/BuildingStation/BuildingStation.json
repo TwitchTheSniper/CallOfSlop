@@ -106,6 +106,14 @@
       "type": "toggle",
       "default": false,
       "tooltip": "On: a build stays in the bay until it is filled. Off: it finishes with what it got and says what is short."
+    },
+    {
+      "key": "subJobs",
+      "label": "Sub-jobs",
+      "group": "Bay",
+      "type": "toggle",
+      "default": true,
+      "tooltip": "On (Auto): it builds parts of other stations' blueprints (their sub-blueprint uses) when it is idle. Off: it keeps to your own builds."
     }
   ],
   "storage": {

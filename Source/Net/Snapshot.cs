@@ -60,7 +60,7 @@ public struct SnapOwn
     public bool Ride; // the ride state follows (protocol 102): riding a construct, or just off one (its momentum)
     public ushort RideBody;
     public byte RideSeg, RideAir, RideClimb, RideFree, RideGrip; // RideGrip: a grip face's up axis (0: none; else 1 + axis * 2 + (negative ? 1 : 0))
-    public byte RideOn; // contraption space: the moving segment carrying them in the body's frame (protocol 324; ConstructRideMove.cs)
+    public byte RideOn; // contraption space: the moving segment carrying them in the body's frame (protocol 325; ConstructRideMove.cs)
     public Vector3 RideLocal, RideClimbTo;
     public Vector3 RideUp, RideVel; // contraption space (protocol 130): their up and own velocity in the frame (ConstructRideMove.cs)
     public bool Worn; // what they wear follows (PilotGear.cs)

@@ -21,6 +21,8 @@ public struct BodySnap
     public (ushort Part, ushort Kind)[]? Targets; // its racks' stock targets (StockTargets.cs; written in the LOGI block's fourth part)
     public (ushort Part, StationJob Job)[]? Station; // its Building Stations' jobs, copied (ConstructStation.cs; written after the crafting orders)
     public (ushort Part, ushort Def, uint Paint)[]? Lifts; // its lifters' hands that hold a piece (ConstructLifters.Snapshot; the LIFT block, after LOGI)
+    public byte[]? Uses; // its sub-blueprint uses (SubBlueprints.SaveBytes; the USES block, after SIDE)
+    public byte[]? SubJobs; // its stations' sub-blueprint jobs (ConstructStationTree.SaveBytes; the SUBJ block, after USES)
     public (ushort Lifter, LiftOrder Order)[]? LiftOrders; // its lifters' hand orders (ConstructLifters.SnapshotOrders; the LIFT block's second half, phase 7)
     public VehicleKit.VehicleBrief? Brief; // a generated faction vehicle's behaviour data (written after the tracks; the tick doesn't change a brief once it is on its construct)
 }

@@ -168,17 +168,11 @@ public sealed class SelectController
     /// <summary>A stamp starts: a saved blueprint's text is built here for its ghost and sent up for the server's own.</summary>
     public string? BeginStamp(Game g, string name)
     {
-        string text;
-        try
-        {
-            text = File.ReadAllText(PlayerBlueprints.PathOf(name));
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            return ex.Message;
-        }
+        // A stamp is a use of its blueprint: the file gets an id the first time (SubBlueprints.EnsureId: written again, atomically).
+        if (SubBlueprints.EnsureId(name, out var why) is not { } file)
+            return why;
         EndPlacing();
-        _load = new BlueprintLoad(text, name + ".json");
+        _load = new BlueprintLoad(file.Text, name + ".json", stamp: true);
         _loadName = name;
         _keepUntil = Environment.TickCount64 + 2000; // (the tool's round trip: a pick made before it arrives is kept)
         return null;
@@ -194,7 +188,7 @@ public sealed class SelectController
                 g.SandboxSay($"{_loadName} can't be built: {load.Why}");
             else
             {
-                g.SandboxClipUpload(ConstructEdits.Deflate(load.Text));
+                g.SandboxClipUpload(ConstructEdits.Deflate(load.Packed)); // (with every sub-blueprint version it was built from)
                 StartPlacing(Placing.Stamp, load.Clip, Quaternion.Identity, null);
             }
         }
@@ -251,6 +245,7 @@ public sealed class SelectController
             PlaceFrame(g, me, in inp, eye, dir, aimed, in hit, surface, point, normal);
             return;
         }
+        AimUse(aimed ? hit.Body : null, aimed ? hit.Part : -1);
         var off = g.SandboxAidOff(BuildAid.Select);
         if (off == null)
         {
@@ -698,9 +693,22 @@ public sealed class SelectController
 
     // ---- Words --------------------------------------------------------------------------------------------------
 
+    private Construct? _aimBody;
+    private int _aimPart = -1, _aimAge;
+    private string _aimUse = ""; // the aimed part's sub-blueprint use: "part of Turret #2 (v5, live)" (SubBlueprints.LookOf)
+
+    /// <summary>The part under the crosshair's use, worked out when the aim moves (and twice a second), never every frame.</summary>
+    private void AimUse(Construct? body, int part)
+    {
+        if (body == _aimBody && part == _aimPart && ++_aimAge < 30)
+            return;
+        (_aimBody, _aimPart, _aimAge) = (body, part, 0);
+        _aimUse = body is { Uses: not null } && part >= 0 && part < body.PartCount ? SubBlueprints.LookOf(body, part) : "";
+    }
+
     private void Words(Game g, string? off, string? problem)
     {
-        var key = HashCode.Combine(Selection.Total * 300 + Selection.Extra.Count, (int)Mode, _missing, off?.GetHashCode() ?? 0, problem?.GetHashCode() ?? 0, _deleteAt >= 0, SandboxKeys.Stamp, _dragBox && _dragging);
+        var key = HashCode.Combine(Selection.Total * 300 + Selection.Extra.Count, (int)Mode, _missing, off?.GetHashCode() ?? 0, problem?.GetHashCode() ?? 0, _deleteAt >= 0, SandboxKeys.Stamp, HashCode.Combine(_dragBox && _dragging, _aimUse));
         if (key != _hintKey)
         {
             _hintKey = key;
@@ -726,12 +734,12 @@ public sealed class SelectController
             }
             else if (Selection.Count == 0)
             {
-                _look = "";
+                _look = _aimUse.Length > 0 ? SandboxKeys.Line("Selector", _aimUse) : "";
                 _hint = $"{SandboxKeys.Fire}: pick, drag: box (from the ground: many constructs), double-click: section, {SandboxKeys.Aim} drag: marquee, Shift: add or take away";
             }
             else
             {
-                _look = _deleteAt >= 0 ? SandboxKeys.Line("Selector", what, null, $"{SandboxKeys.Drop} again: delete them") : SandboxKeys.Line("Selector", what + " selected");
+                _look = _deleteAt >= 0 ? SandboxKeys.Line("Selector", what, null, $"{SandboxKeys.Drop} again: delete them") : SandboxKeys.Line("Selector", what + " selected" + (_aimUse.Length > 0 ? "; aimed: " + _aimUse : ""));
                 _hint = $"{SandboxKeys.SelMove}: move, {SandboxKeys.SelCopy}: copy, {SandboxKeys.SelPaint}: paint, {SandboxKeys.SelWeld}: attach, {SandboxKeys.Drop}: delete, {SandboxKeys.SelSave}: save, {SandboxKeys.Aim}: clear";
             }
         }

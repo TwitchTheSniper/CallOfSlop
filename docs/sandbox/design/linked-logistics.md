@@ -336,3 +336,22 @@ self-test sections (rule of 2026-11-03), any probe removed.
    again. Alternative: holds on a ship on route refuse anyone but the owner's faction.
 10. **Ship destroyed with cargo.** **Recommended:** lines lost and ordered again automatically. Alternative: the root waits
     with "lost on HAULER 2: order again?" for the player to confirm.
+
+## The user's answers (2026-11-16)
+
+These override the text above where they differ.
+
+1. **"Concord"** was a slip for "constructed": any player-built ship with a hold and a Cargo Port hauls. No named ship class.
+2. **Reach:** a Transmitter/Receiver pair links factories on one planetoid; a Logistics Relay links across the star system; nothing links across a jump.
+3. **Pairing:** by the Transmitter's six-letter code typed into the Receiver.
+4. **Direction: two-way.** One pair links both networks fully; each side can order from the other and supply it. (Not the one-way rule above: a pair is symmetric for orders and stock; the names Transmitter and Receiver only say which end shows the code.)
+5. **A closed world is estimated, not opened.** A route ship arriving at a planetoid with no player on it does not open that world: its docking, loading and unloading are settled on the ledger (cargo moved by the manifest, times from the dock's rates), and the ship's leg there is simulated.
+6. **Remote factories: estimated production.** While its world is closed, a factory's output is estimated from its machines' rates, inputs, power and orders, and credited to the ledger (and to its stores when the world opens). Bound the estimate (no output past its inputs or store room) and keep it cheap.
+7. **Leaving conditions are the player's.** Per route stop, the player sets when the ship leaves: a time waited at the dock, a fill percentage of its whole cargo capacity, or an order completed; any combination, first one met. The defaults may be the design's (full = 95%, or 10 minutes).
+8. **Linked sub-jobs:** yes, a station's Sub-jobs setting gets a value Linked, off by default; a linked station is offered a sub-job before the 30 s fallback, and the finished module rides a cargo ship.
+9. **A player may take cargo** from a hold on a route; it is not ordered again: the order stays short until the player reorders.
+10. **Cargo lost with a destroyed ship is ordered again automatically;** the wreck's cargo can still be salvaged.
+
+## Queued next (user, 2026-11-16)
+
+After the sub-blueprints and linked logistics builds are on main: **a linked logistics layer on the navigation screen** (the command view, docs/space/COMMAND.md). A separate layer the player turns on and off. It shows only nodes of currently linked logistics networks (paired Transmitters/Receivers and Relays, with the factories they join); unlinked networks and parts are not drawn.

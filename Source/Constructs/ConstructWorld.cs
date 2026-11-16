@@ -758,6 +758,8 @@ public sealed partial class ConstructWorld
         }
         c.WorldFrame(baseSeg, out var q, out var t);
         var wreck = MegaDebrisLeft == 0 ? null : Create(t, q); // (a massive blast past its debris: the piece is gone, ConstructMegaBlast.cs)
+        if (wreck != null)
+            SubBlueprints.CopyTable(c, wreck); // (its parts keep their sub-blueprint uses)
         if (wreck != null && MegaDebrisLeft > 0)
             MegaDebrisLeft--;
         if (wreck == null)

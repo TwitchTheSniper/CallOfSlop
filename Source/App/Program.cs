@@ -248,6 +248,12 @@ public static unsafe partial class Program
             return ConstructPreview.Cli(args); // a blueprint or part as a turnable web page for an agent to publish (Source/DevTools/ConstructPreview.cs, tools/preview/)
         if (args.Any(a => a.Equals("--ship-ai-check", StringComparison.OrdinalIgnoreCase)))
             return VehicleKit.ShipAiCheck.Cli(args); // an AI crew flown against a target ship in a world of its own (ShipAiCheck.cs)
+        if (args.SkipWhile(a => !a.Equals("--sub-blueprint", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } subBlueprint)
+        {
+            // a blueprint's sub-blueprint tree, and the flat build against one that merges each use (SubBlueprints.cs)
+            SavePaths.Init(args); // (the player's blueprints are read from the save folder: --save-dir counts)
+            return SubBlueprints.Cli(subBlueprint, args);
+        }
         if (args.SkipWhile(a => !a.Equals("--check-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } vehicleFile)
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
         if (args.Any(a => a.Equals("--no-drive-gate", StringComparison.OrdinalIgnoreCase)))

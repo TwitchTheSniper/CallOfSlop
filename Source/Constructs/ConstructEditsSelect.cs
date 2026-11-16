@@ -47,6 +47,7 @@ public sealed partial class ConstructEdits
         public MemoryStream? Upload;
         public int UploadLength;
         public Task<ConstructBuild.Blueprint>? Parsing;
+        public ConstructBuild.Blueprint? BuildBp; // the stamped blueprint, flat (its uses tag the clip: SubBlueprints.TagStamp)
         public ConstructWorld? BuildWorld;
         public IEnumerator<int>? Steps;
         public ConstructBuild.BuildRun? Run;
@@ -483,7 +484,7 @@ public sealed partial class ConstructEdits
         // Read away from the game thread; its steps are built at the next ticks, a few at a time.
         var data = s.Upload.ToArray();
         s.Upload = null;
-        s.Parsing = Task.Run(() => ConstructBuild.ParseBlueprint(Inflate(data), "blueprint"));
+        s.Parsing = Task.Run(() => SubBlueprints.ParseFlat(Inflate(data), "blueprint", new SubBlueprints.Source { Library = false })); // (its uses come packed with it: the host builds what the client saw)
         _selectBusy++;
         return null;
     }
@@ -576,6 +577,7 @@ public sealed partial class ConstructEdits
                 return;
             }
             s.BuildName = bp.Name;
+            s.BuildBp = bp;
             s.BuildWorld = new ConstructWorld { CreativeRecycling = InfiniteParts }; // (creative-only settings keep or go as the real world would)
             s.Run = new ConstructBuild.BuildRun();
             s.Steps = ConstructBuild.BuildSteps(s.BuildWorld, bp, Vector3.Zero, Quaternion.Identity, s.Run).GetEnumerator();
@@ -589,6 +591,8 @@ public sealed partial class ConstructEdits
                 if (s.Run!.Built is { } built)
                 {
                     s.Clip = ConstructClip.Of(built, s.BuildName, s.BuildWorld);
+                    if (s.BuildBp != null)
+                        SubBlueprints.TagStamp(s.Clip.Body, s.BuildBp); // (the stamp is one use of its blueprint: the save keeps it a use)
                     s.ClipStamped = true;
                 }
                 else

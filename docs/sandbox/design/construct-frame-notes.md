@@ -31,7 +31,7 @@ their frame changed or lapsed; then a lift on a moving deck, and a plate made in
 ## What changed
 
 1. **One frame per construct.** A player in contraption space always rides the body's frame (`RideSeg` 0). A moving segment
-   under the feet only carries them in it: `MoveState.RideOn` (sent in the own-player snapshot, protocol 324), moved each
+   under the feet only carries them in it: `MoveState.RideOn` (sent in the own-player snapshot, protocol 325), moved each
    tick by that segment's motion at the feet (`ConstructRide.CarrierVel`, the velocity half a tick on, so a turntable carries
    them round, not out), and `RideVel` is relative to it while they stand on it. Stepping on or off it changes `RideOn`
    and their relative velocity in the same tick (no frame switch, no re-join). The frame reaches 2 m round the bounds and
