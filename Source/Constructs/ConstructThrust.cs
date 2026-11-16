@@ -55,6 +55,9 @@ public sealed partial class Construct
     public Vector3 NavAxis, NavAim;
     public bool NavLift;
 
+    /// <summary>Host: the climb an order asks of the stabilizer's autopilot in a sky (m/s; 0: the stabilizer's own limit). Game/GameNav.cs.</summary>
+    public float NavClimb;
+
     /// <summary>Hub motors on the wheels (with the wheels: a track's rays share its motor).</summary>
     private void BuildHubMotors()
     {

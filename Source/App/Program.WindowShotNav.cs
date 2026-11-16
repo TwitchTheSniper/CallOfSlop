@@ -7,7 +7,7 @@ namespace CallOfSlop;
 /// <summary>
 /// The window tool's verbs for the command view and ship orders (docs/space/COMMAND.md "Trying it"):
 /// <c>command [SPAN]</c> opens the view (SPAN: metres up the screen), <c>cmdpick N</c> picks the Nth craft on the map (0: the
-/// nearest), <c>order orbit BODY KM</c>, <c>order goto BODY KM</c> and <c>order cancel</c> give the picked craft an order as the
+/// nearest), <c>order orbit BODY KM</c>, <c>order goto BODY KM</c>, <c>order ground M</c> and <c>order cancel</c> give the picked craft an order as the
 /// menu would, <c>nav</c> prints every craft and its order, <c>hoist KM</c> (host) puts the picked craft that far over the
 /// ground, at rest over it, <c>warp N</c> (host) asks for a time warp, and <c>rclick X,Y</c> is the right mouse button at a
 /// window pixel (the order menu).
@@ -60,11 +60,21 @@ public static unsafe partial class Program
             case "order":
             {
                 var kind = words.Length > 0 ? words[0].ToLowerInvariant() : "";
+                if (kind == "ground" && words.Length == 2 && float.TryParse(words[1], inv, out var metres) && g.Space is { } gs && g.Constructs.Get(Ui.CommandPicked) is { } gc && GravityFrames.Point is { } ball)
+                {
+                    // "order ground M": a spot M metres along the ground from the picked craft, at its own height, as the menu's ground order gives.
+                    var up = Vector3.Normalize(gc.WorldCom - ball.Center);
+                    var along = Vector3.Normalize(Vector3.Cross(up, MathF.Abs(up.Y) < 0.9f ? Vector3.UnitY : Vector3.UnitX));
+                    var spot = ball.Center + Vector3.Normalize(gc.WorldCom + along * metres - ball.Center) * (gc.WorldCom - ball.Center).Length();
+                    g.NavSend(gc.Id, NavKind.Ground, gs.Bubble.Body, Vec3d.From(spot), 0);
+                    _wsWait = 10;
+                    return true;
+                }
                 var why = kind switch
                 {
                     "cancel" => Ui.CommandOrder(g, NavKind.None, "", 0),
                     "orbit" or "goto" when words.Length == 3 && double.TryParse(words[2], inv, out var km) => Ui.CommandOrder(g, kind == "orbit" ? NavKind.Orbit : NavKind.GoTo, words[1], km),
-                    _ => "order orbit BODY KM | order goto BODY KM | order cancel",
+                    _ => "order orbit BODY KM | order goto BODY KM | order ground M | order cancel",
                 };
                 if (why != null)
                     WsFail("order: " + why);

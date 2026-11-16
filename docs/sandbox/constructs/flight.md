@@ -78,7 +78,7 @@ Invert pitch swaps W and S (not on Ship keys). **Settings:** keys, strength, sta
 
 **The gyro.** Thrusters have no torque about their own axis, so four pushing the same way can't turn. A stabilizer has a gyro (`logic.gyro`, N m: 1,500, 400,000, 30,000,000, 2,000,000,000), an effector like any other about its own up.
 
-**Autopilot.** Hold altitude, hold heading, hover, waypoint, return home; on the configure panel, a Flight Control Panel or its inputs. Altitude 0 and heading -1 mean where it was when engaged. Home is where it last armed, or `set home`. A plane circles a point; a ship stops turning for it 25 m off.
+**Autopilot.** Hold altitude, hold heading, hover, waypoint, return home; on the configure panel, a Flight Control Panel or its inputs. Altitude 0 and heading -1 mean where it was when engaged. Home is where it last armed, or `set home`. A plane circles a point; a ship stops turning for it 25 m off. On Ship keys the autopilot flies along the craft's own axes: to the height it holds and over the ground to its point, turning the nose that way when nobody steers (hands on the keys come first). The command view's orders work a ship through it while the ship is in a sky (docs/space/COMMAND.md).
 
 **Flight Control Panel** (S, M, L, capital; the old Flight Panel by name): height, climb, speed, heading, attitude, the autopilot and how it is set, whether every axis is controlled, and buttons for AP on, off, next mode, set home, level, strength, hold this altitude and hold this heading. A pilot's finger reaches it from the seat.
 

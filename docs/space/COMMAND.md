@@ -98,7 +98,11 @@ ORBIT, DRIVE OFF") and burns again only if the ship has drifted well off its cir
 - **In a sky** (`NavInSky`): the order works the Flight Stabilizer's autopilot through `ConstructFlight.NavEngage`, as
   a player setting its panel would. A ground order is its Waypoint mode. An orbit or go-to order from the ground is its
   Hover mode with the target height `NavClimbOver` (600 m) over the sky's edge: the ship climbs out on its lift
-  (phase `Climb`) and the launch code makes it a space ship at the edge.
+  (phase `Climb`) at up to `NavClimbSpeed` (60 m/s, `Construct.NavClimb`: nobody is aboard to mind, and at the
+  stabilizer's own limit Glacier's sky took four minutes), and the launch code makes it a space ship at the edge. There
+  the autopilot is let go (`ConstructFlight.NavRelease`). A cancelled order leaves a ship in a sky hovering where it is.
+  The autopilot flies a stabilizer on Ship keys too (it used only to stop one): to the height it holds and over the
+  ground to its point.
 - **In space** (`NavInSpace`): the order asks for an acceleration and the ship is turned to give it. The ask comes from
   `NavGuidance`: `Orbit` inside 0.9 of the target's sphere of influence (a velocity field: circular speed along the
   track plus a climb or sink towards the circle, with gravity's unused pull fed forward), else `GoTo` (a speed that
@@ -108,7 +112,8 @@ ORBIT, DRIVE OFF") and burns again only if the ship has drifted well off its cir
   groups; `Game.NavTurn` turns the hull so that group points along the ask at `NavTurnRate` (0.6 rad/s), in place of
   the pilot's keys in `SpacePose`; the throttle (`Construct.NavThrottle`, read by `SpaceThrust`) opens as the drive
   comes within `NavAlignNone`..`NavAlignFull` of the aim. Fuel is burnt as for a pilot's burn, and a burn holds the
-  time warp at 1x as any burn does.
+  time warp at 1x as any burn does. Under an order `ConstructFlight.FliesShip` is false: the nav computer outranks a
+  stabilizer on Ship keys, whose jets would otherwise turn the hull.
 
 Phases (`NavPhase`): Climb, Transfer, Insert, Orbiting, Hold, Flying, Arrived, NoDrive (no fuel or no thruster that
 works in a vacuum: the card says so in red).
@@ -134,11 +139,11 @@ works in a vacuum: the card says so in red).
 
 The window tool (README.md "Testing without playing") has verbs for it (`Source/App/Program.WindowShotNav.cs`):
 `command [SPAN]` opens the view (SPAN: metres up the screen), `cmdview YAW PITCH` turns it (degrees), `cmdpick N` picks
-the Nth craft, `order orbit BODY KM`, `order goto BODY KM` and `order cancel` give the picked craft an order as the menu
-would, `rclick X,Y` is a right click (the menu itself), `nav` prints every craft and its order, `hoist KM` (host) puts
+the Nth craft, `order orbit BODY KM`, `order goto BODY KM`, `order ground M` (a spot M metres along the ground) and
+`order cancel` give the picked craft an order as the menu would, `rclick X,Y` is a right click (the menu itself), `nav` prints every craft and its order, `hoist KM` (host) puts
 the picked craft that high, at rest, and `warp N` asks for a time warp. For example, a Magpie into orbit and on to the
 moon:
 
 ```
---window-shot out.png --map Glacier --blueprint "Magpie Mining Ship" --calm --do "command 60000; hoist 2.9; order orbit Glacier 5.5; wait 3000; nav; shot orbit; order orbit Rime 2; wait 12000; nav"
+--window-shot out.png --map Glacier --blueprint "Magpie Mining Ship" --calm --do "command 60000; order orbit Glacier 5.5; wait 7000; nav; shot orbit; order orbit Rime 2; wait 12000; nav"
 ```

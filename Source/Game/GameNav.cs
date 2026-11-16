@@ -74,6 +74,9 @@ public sealed partial class Game
     /// <summary>How far past a sky's edge the lowest orbit sits (m), and how far over the edge a climb aims.</summary>
     public const double NavEdgeMargin = 400, NavClimbOver = 600;
 
+    /// <summary>How fast an order climbs a ship out of a sky (m/s) when its stabilizer's own climb limit is lower: nobody is aboard to mind, and at a ship's 10 m/s Glacier's sky took four minutes.</summary>
+    public const float NavClimbSpeed = 60;
+
     private const Buttons NavManualKeys = Buttons.Forward | Buttons.Back | Buttons.Left | Buttons.Right;
 
     /// <summary>The order a construct flies under (null: none).</summary>
@@ -260,6 +263,7 @@ public sealed partial class Game
         if (c != null)
         {
             c.NavThrottle = -1;
+            c.NavClimb = 0;
             c.NavAim = Vector3.Zero;
             if (c.SpaceShip != 0)
                 c.AngVel = Vector3.Zero; // (the order's turn isn't a spin to hand to a ship that turns by its jets)
@@ -315,6 +319,7 @@ public sealed partial class Game
     private void NavInSky(SpaceSession s, NavOrder o, Construct c)
     {
         c.NavThrottle = -1;
+        c.NavClimb = o.Kind == NavKind.Ground ? 0 : NavClimbSpeed;
         var here = c.WorldCom;
         if (o.Kind == NavKind.Ground)
         {
@@ -351,6 +356,13 @@ public sealed partial class Game
     /// <summary>In space the nav computer steers its main drive (<see cref="NavGuidance"/>).</summary>
     private void NavInSpace(SpaceSession s, NavOrder o, Construct c)
     {
+        c.NavClimb = 0;
+        if (o.Engaged)
+        {
+            // Out of the sky: the autopilot that climbed it is let go, or it would hold that height the next time it came down.
+            o.Engaged = false;
+            ConstructFlight.NavRelease(Constructs, c);
+        }
         if (o.Kind == NavKind.Ground || NavFlightOf(s, c) is not { } f || f.Ships.IndexOfId(c.SpaceShip) is var i && i < 0 || o.Body >= f.System.Count)
         {
             c.NavThrottle = -1;
@@ -497,6 +509,7 @@ public sealed partial class Game
             if (Constructs.Get(o.Construct) is { } c)
             {
                 c.NavThrottle = -1;
+                c.NavClimb = 0;
                 c.NavAim = Vector3.Zero;
             }
         NavOrders.Clear();

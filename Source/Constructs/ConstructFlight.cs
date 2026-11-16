@@ -742,6 +742,16 @@ public static partial class ConstructFlight
         return true;
     }
 
+    /// <summary>The nav computer lets the autopilot go (the ship is out of the sky: its drive is steered from Game/GameNav.cs now).</summary>
+    public static void NavRelease(ConstructWorld world, Construct c)
+    {
+        if (c.StabCount == 0 || c.Stabs[0].Part >= c.PartCount)
+            return;
+        ref var p = ref c.Parts[c.Stabs[0].Part];
+        if (Put(ref p, p.D, CfgKey.Autopilot, 0))
+            world.StructureDirty.Add(c.Id);
+    }
+
     /// <summary>Is its autopilot on (the first stabilizer's setting)?</summary>
     public static bool AutopilotOn(Construct c) =>
         c.StabCount > 0 && c.Stabs[0].Part < c.PartCount && ConstructConfig.Get(c.Parts[c.Stabs[0].Part], c.Parts[c.Stabs[0].Part].D, CfgKey.Autopilot, 0) >= 0.5f;
@@ -824,7 +834,7 @@ public static partial class ConstructFlight
         var preset = Presets[Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.FlightPreset, 0), 0, Presets.Length - 1)];
         var maxTilt = Rad(Setting(p, d, CfgKey.MaxTilt, lim.X * preset.Z));
         var maxTurn = Rad(Setting(p, d, CfgKey.MaxTurn, lim.Y * preset.X));
-        var maxClimb = Setting(p, d, CfgKey.MaxClimb, lim.Z * preset.Z);
+        var maxClimb = MathF.Max(Setting(p, d, CfgKey.MaxClimb, lim.Z * preset.Z), c.NavClimb); // (an order out of the sky climbs faster: Game/GameNav.cs)
         var maxDescent = Setting(p, d, CfgKey.MaxDescent, maxClimb);
         var maxSpeed = Setting(p, d, CfgKey.MaxSpeed, lim.W * preset.Z);
         var rates = new Vector3(Rad(Setting(p, d, CfgKey.PitchRate, maxTurn * 180f / MathF.PI)), Rad(Setting(p, d, CfgKey.RollRate, maxTurn * 180f / MathF.PI)), Rad(Setting(p, d, CfgKey.YawRate, maxTurn * 180f / MathF.PI)));
@@ -945,7 +955,19 @@ public static partial class ConstructFlight
         var far = toward.Length();
         var course = far > 1 ? HeadingOf(toward, up, north) : a.Heading;
         if (GravityFrames.Curved)
-            far = line.Length(); // (round the far side the way along the ground is short, and the point isn't near)
+        {
+            // Round the far side the way along the ground is short, and the point isn't near: the straight distance, but to
+            // the point brought to the craft's own height (a craft 1 km over its point is at it: measured whole, a hover that
+            // had climbed flew at full speed after every centimetre it was off).
+            far = line.Length();
+            if (GravityFrames.Point is { } ball)
+            {
+                var out1 = s.HoldPos - ball.Center;
+                var len = out1.Length();
+                if (len > 1)
+                    far = (ball.Center + out1 * ((pos - ball.Center).Length() / len) - pos).Length();
+            }
+        }
         var look = default(Vector3);
         var aiming = false;
         if (mouse)
@@ -1043,7 +1065,8 @@ public static partial class ConstructFlight
                     yawTo = -Vector3.Dot(turn, a.Up);
                 }
                 acroPitch = Math.Clamp(Toward(pitchTo, loop * response.X, s.Turning.X, s.Inertia.X) + ask.Pitch * rates.X, -rates.X, rates.X);
-                yawRate = Math.Clamp(Toward(yawTo, loop * response.Z, s.Turning.Z, s.Inertia.Z) + ask.Yaw * rates.Z, -rates.Z, rates.Z);
+                if (!(autopilot && !mouse && ask.Yaw == 0)) // (its autopilot, nobody steering: the heading it holds or the way to its point, as worked out above)
+                    yawRate = Math.Clamp(Toward(yawTo, loop * response.Z, s.Turning.Z, s.Inertia.Z) + ask.Yaw * rates.Z, -rates.Z, rates.Z);
                 if (ask.Roll != 0 || !level)
                     acroRoll = ask.Roll * rates.Y;
                 else
@@ -1168,13 +1191,17 @@ public static partial class ConstructFlight
         {
             // Along its own axes: what the keys ask for, else stopped (every way it has a push for); its weight held up whichever way it lies.
             // Let go, it holds its height as a rotorcraft does (the height loop above), from where it can stop.
-            var letGo = ask.Forward == 0 && ask.Side == 0 && ask.Lift == 0 && !autopilot;
+            // Its autopilot flies it the same way: to the height it holds, and over the ground to its point (an order from the
+            // command view climbs a ship out of the sky like this: Game/GameNav.cs). Hands on the keys come first.
+            var letGo = ask.Forward == 0 && ask.Side == 0 && ask.Lift == 0;
             if (!letGo)
             {
                 s.HoldAlt = height + (climb > 0 ? climb * climb / (2 * stopping) : 0);
                 s.AltHeld = true;
             }
             var wantVel = a.Front * (ask.Forward * maxSpeed) + a.Right * (ask.Side * maxSpeed) + a.Up * (ask.Lift * (ask.Lift > 0 ? maxClimb : maxDescent)) + (letGo ? up * climbWant : Vector3.Zero);
+            if (letGo && holdPos)
+                wantVel += a.FlatFront * wantFront + a.FlatRight * wantSide;
             var push = c.Mass * 3 * ground * (wantVel - c.Vel) + up * MathF.Max(0, weight - c.LiftNow);
             demand[FlightEffectors.Forward] = Vector3.Dot(push, a.Front);
             demand[FlightEffectors.Up] = Vector3.Dot(push, a.Up);
