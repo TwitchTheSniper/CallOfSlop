@@ -520,14 +520,25 @@ public static partial class World
     }
 
     /// <summary>
-    /// On a planet: never further from the centre than the map's half size (the sky above the planet ends there). The
+    /// Sandbox on a planet: how far from its centre players may go. Past the space bubble's edge (the map's half size,
+    /// GameSpaceLaunch.SpaceEdge), where ships go into orbit (a ship start wakes everyone 400 m past it, GameSpaceStart.cs),
+    /// so someone who steps off a ship up there floats free instead of being dragged back to an invisible ceiling; held
+    /// inside what a snapshot can carry (Snapshot.PosScale: +-32 km on each axis).
+    /// </summary>
+    public const float OpenSkyRadius = 30_000f;
+
+    /// <summary>On a planet: how far from its centre players may go (m): the map's half size, or in Sandbox <see cref="OpenSkyRadius"/>.</summary>
+    public static float SkyRadius => OpenSky ? MathF.Max(OpenSkyRadius, MathF.Max(Map.HalfX, Map.HalfZ)) : MathF.Max(Map.HalfX, Map.HalfZ);
+
+    /// <summary>
+    /// On a planet: never further from the centre than <see cref="SkyRadius"/> (the sky above the planet ends there). The
     /// ground keeps players up; nothing else to clamp.
     /// </summary>
     public static Vector3 ClampToSky(Vector3 feet, PointGravity planet)
     {
         var d = feet - planet.Center;
         var len = d.Length();
-        var max = MathF.Max(Map.HalfX, Map.HalfZ);
+        var max = SkyRadius;
         if (len > max)
             feet = planet.Center + d / len * max;
         if (Map.Planetoid is { } pl && pl.Altitude(feet) < -0.3f)
