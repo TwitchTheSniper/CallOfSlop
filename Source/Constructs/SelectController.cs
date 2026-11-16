@@ -239,6 +239,7 @@ public sealed class SelectController
     public void Frame(Game g, Player me, in SelectInput inp, Vector3 eye, Vector3 dir, bool aimed, in ConstructHit hit, bool surface, Vector3 point, Vector3 normal)
     {
         Selection.Check(g.Constructs);
+        UseFrameRender.ShownAt = ConstructConveyor.Clock; // (the selector is out: sub-blueprint uses are framed)
         ConstructRender.PartSel = Selection;
         if (Mode != Placing.None && Clip != null)
         {
