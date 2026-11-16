@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Diagnostics;
 using System.Numerics;
 using System.Text.Json;
@@ -787,7 +788,7 @@ public static class ConstructBuild
         foreach (var f in e.EnumerateObject())
             switch (f.Name)
             {
-                case "on": on = f.Value.GetInt32(); break;
+                case "on": on = SubBlueprints.ParseRef(f.Value, file, k); break;
                 case "pos":
                     if (f.Value.ValueKind != JsonValueKind.Array || f.Value.GetArrayLength() != 3)
                         throw new ConstructPartException($"{file}: steps[{k}]: weld \"pos\" is [x, y, z]");
@@ -806,7 +807,10 @@ public static class ConstructBuild
     }
 
     /// <summary>A freeform weld as a blueprint step's "weld" text (the inverse of the parser; the self-test's round trip).</summary>
-    public static string WeldJson(int on, Vector3 pos, Quaternion rot) =>
+    public static string WeldJson(int on, Vector3 pos, Quaternion rot) => WeldJson(on.ToString(CultureInfo.InvariantCulture), pos, rot);
+
+    /// <summary>The same with its "on" as text (a sub-blueprint use's step: ["uN", k]).</summary>
+    public static string WeldJson(string on, Vector3 pos, Quaternion rot) =>
         FormattableString.Invariant($"{{\"on\": {on}, \"pos\": [{pos.X:R}, {pos.Y:R}, {pos.Z:R}], \"rot\": [{rot.X:R}, {rot.Y:R}, {rot.Z:R}, {rot.W:R}]}}");
 
     /// <summary>Builds a blueprint as a new construct at a pose, through the same rules as a player (null and the reason on a step that doesn't fit).</summary>

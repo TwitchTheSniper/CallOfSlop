@@ -23,7 +23,7 @@ public struct ClipPlace
 /// selection, <see cref="ConstructBuild.BuildSteps"/> from a blueprint, and a copy of it goes into the real world the same way.
 /// The same selection gives the same clip on the server and a client, so the client's ghost is what the server will place.
 /// </summary>
-public sealed class ConstructClip
+public sealed partial class ConstructClip
 {
     /// <summary>The most a blueprint or a clip holds: one construct.</summary>
     public const int MaxParts = Construct.MaxParts;
@@ -319,49 +319,58 @@ public sealed class ConstructClip
     /// The links are written as they are ("exactLinks", each step's "also"), never left to the build: the clip's order isn't the order
     /// the parts went on, so a free socket that was never linked here could land on one a later step needs, and take it.
     /// </summary>
-    public string? ToBlueprint(string name, string description, out string why)
+    public string? ToBlueprint(string name, string description, out string why, ClipUses? uses = null)
     {
         why = "";
         var c = Body;
+        // The order: every part a step, as the clip has them; with uses (ConstructClipUses.cs) a use's parts are no steps: the use
+        // stands in the order where its first part was, after a step (Key orders parts by that; Ref names a part as a step or a use's).
+        var n = c.PartCount;
+        var plan = uses is { Count: > 0 } ? uses : null;
+        var steps = plan?.Steps ?? Identity(n);
+        var origin = c.Parts[steps[0]].Pos;
+        string Ref(int part) => plan == null ? part.ToString(CultureInfo.InvariantCulture) : plan.RefJson(part);
+        int Key(int part) => plan == null ? part : plan.Key[part];
         var sb = new StringBuilder(c.PartCount * 96);
         sb.Append("{\n  \"format\": \"").Append(ConstructBuild.BlueprintFormat).Append("\",\n  \"name\": ").Append(Quote(name));
         if (description.Length > 0)
             sb.Append(",\n  \"description\": ").Append(Quote(description));
         sb.Append(",\n  \"exactLinks\": true,\n  \"steps\": [\n");
-        var taken = new HashSet<(int, int)>(c.LinkCount); // (step, socket): what earlier steps hold (a socket can carry two links: only one is a step's way on)
+        var taken = new HashSet<(int, int)>(c.LinkCount); // (part, socket): what earlier steps hold (a socket can carry two links: only one is a step's way on)
         var fuseOf = new Dictionary<uint, int>(); // (fused units numbered 1, 2, ... in this blueprint: ConstructFuse.cs)
-        for (var k = 0; k < c.PartCount; k++)
+        for (var si = 0; si < steps.Length; si++)
         {
+            var k = steps[si];
             ref var p = ref c.Parts[k];
             var d = c.DefOf(k);
             sb.Append("    { \"part\": ").Append(Quote(d.Name));
             int stepOn = -1, stepSocket = -1, stepOwn = -1;
-            if (k == 0)
+            if (si == 0)
                 sb.Append(", \"spin\": ").Append(p.Rot);
-            else if (StepOn(k, taken, out var on, out var ts, out var ds, out var spin, ref why))
+            else if (StepOn(k, taken, out var on, out var ts, out var ds, out var spin, ref why, Key))
             {
                 (stepOn, stepSocket, stepOwn) = (on, ts, ds);
                 var td = c.DefOf(on);
-                sb.Append(", \"on\": ").Append(on).Append(", \"socket\": ").Append(Quote(ConstructMerge.SocketName(c, on, ts))).Append(", \"by\": ").Append(Quote(d.Sockets[ds].Name)).Append(", \"spin\": ").Append(spin);
-                var at = c.FrameOf(p.Seg) == 0 ? p.Pos - c.Parts[0].Pos : p.Pos; // (step 0 builds at the origin; a freeform piece's numbers are in its own frame)
+                sb.Append(", \"on\": ").Append(Ref(on)).Append(", \"socket\": ").Append(Quote(ConstructMerge.SocketName(c, on, ts))).Append(", \"by\": ").Append(Quote(d.Sockets[ds].Name)).Append(", \"spin\": ").Append(spin);
+                var at = c.FrameOf(p.Seg) == 0 ? p.Pos - origin : p.Pos; // (step 0 builds at the origin; a freeform piece's numbers are in its own frame)
                 sb.Append(FormattableString.Invariant($", \"at\": [{at.X:0.##}, {at.Y:0.##}, {at.Z:0.##}]"));
             }
             else if (why.Length > 0)
                 return null;
-            else if (WeldOf(k) is var weld and >= 0)
+            else if (WeldOf(k, Key) is var weld and >= 0)
             {
                 Freeform.StepPose(c, weld, out var wp, out var wr);
                 if (c.FrameOf(c.Joints[weld].ParentSeg) == 0)
-                    wp -= c.Parts[0].Pos; // (step 0 builds at the origin)
-                sb.Append(", \"weld\": ").Append(ConstructBuild.WeldJson(c.Joints[weld].Hinge, wp, wr));
+                    wp -= origin; // (step 0 builds at the origin)
+                sb.Append(", \"weld\": ").Append(ConstructBuild.WeldJson(Ref(c.Joints[weld].Hinge), wp, wr));
             }
             else
             {
                 // Nothing to fit it by: it stands where it is.
-                var at = p.Pos - c.Parts[0].Pos;
+                var at = p.Pos - origin;
                 sb.Append(", \"on\": 0, \"spin\": ").Append(p.Rot).Append(FormattableString.Invariant($", \"at\": [{at.X:0.##}, {at.Y:0.##}, {at.Z:0.##}]"));
             }
-            AlsoLinks(sb, k, stepOn, stepSocket, stepOwn, taken);
+            AlsoLinks(sb, k, stepOn, stepSocket, stepOwn, taken, Key, Ref, plan);
             if (p.Setting != d.DefaultSetting)
                 sb.Append(", \"setting\": ").Append(p.Setting);
             var cfg = ConstructConfig.ToJson(in p, d);
@@ -385,9 +394,11 @@ public sealed class ConstructClip
                     fuseOf[p.Fuse] = unit = fuseOf.Count + 1;
                 sb.Append(", \"fuse\": ").Append(unit); // (its fused unit, by number: a build gives it a new tag)
             }
-            sb.Append(k + 1 < c.PartCount ? " },\n" : " }\n");
+            sb.Append(si + 1 < steps.Length ? " },\n" : " }\n");
         }
         sb.Append("  ]");
+        if (plan != null)
+            plan.UsesJson(sb, c, origin, taken);
         if (BaseFrozen)
             sb.Append(",\n  \"frozenBase\": true");
         if (c.FrozenPieces > 0)
@@ -395,15 +406,15 @@ public sealed class ConstructClip
             sb.Append(",\n  \"frozenJoints\": [");
             var more = false;
             for (var j = 0; j < c.JointCount; j++)
-                if (c.Joints[j].Frozen && (j == 0 || c.Joints[j - 1].Hinge != c.Joints[j].Hinge))
+                if (c.Joints[j].Frozen && (j == 0 || c.Joints[j - 1].Hinge != c.Joints[j].Hinge) && (plan == null || !plan.InUse(c.Joints[j].Hinge)))
                 {
-                    sb.Append(more ? ", " : "").Append((int)c.Joints[j].Hinge);
+                    sb.Append(more ? ", " : "").Append(Ref(c.Joints[j].Hinge));
                     more = true;
                 }
             sb.Append(']');
         }
         if (c.RouteCount > 0)
-            sb.Append(",\n  \"links\": ").Append(ConstructRoutes.LinksJson(c, c.Parts[0].Pos, saved: true));
+            sb.Append(",\n  \"links\": ").Append(ConstructRoutes.LinksJson(c, origin, saved: true, plan == null ? null : Ref, plan == null ? null : plan.InsideOne));
         if (World.ConnectorsJson(c) is { Length: > 0 } connectors)
             sb.Append(",\n  \"connectors\": ").Append(connectors);
         if (World.NoCollidesJson(c) is { Length: > 0 } noCollide)
@@ -414,8 +425,16 @@ public sealed class ConstructClip
         return sb.ToString();
     }
 
+    private static int[] Identity(int n)
+    {
+        var a = new int[n];
+        for (var i = 0; i < n; i++)
+            a[i] = i;
+        return a;
+    }
+
     /// <summary>Step <paramref name="k"/>'s links to earlier steps other than the one it goes on by, and what they all hold.</summary>
-    private void AlsoLinks(StringBuilder sb, int k, int on, int socket, int own, HashSet<(int, int)> taken)
+    private void AlsoLinks(StringBuilder sb, int k, int on, int socket, int own, HashSet<(int, int)> taken, Func<int, int> key, Func<int, string> refOf, ClipUses? plan)
     {
         var c = Body;
         var d = c.DefOf(k);
@@ -423,7 +442,7 @@ public sealed class ConstructClip
         for (var e = c.FirstLink(k); e >= 0; e = c.NextLink(e))
         {
             int o = c.OtherEnd(e);
-            if (o >= k)
+            if (key(o) >= key(k))
                 continue;
             ref var l = ref c.Links[e >> 1];
             var (st, sd) = (e & 1) != 0 ? ((int)l.SA, (int)l.SB) : (l.SB, l.SA);
@@ -431,14 +450,14 @@ public sealed class ConstructClip
             var td = c.DefOf(o);
             if (o == on && st == socket && sd == own || st >= c.SocketCount(o) || sd >= d.Sockets.Length)
                 continue; // (the step's own; a link to a merged receiver's centre socket is named "merged ...": ConstructMerge.SocketName)
-            sb.Append(more ? ", [" : ", \"also\": [[").Append(o).Append(", ").Append(Quote(ConstructMerge.SocketName(c, o, st))).Append(", ").Append(Quote(d.Sockets[sd].Name)).Append(']');
+            sb.Append(more ? ", [" : ", \"also\": [[").Append(refOf(o)).Append(", ").Append(Quote(ConstructMerge.SocketName(c, o, st))).Append(", ").Append(Quote(d.Sockets[sd].Name)).Append(']');
             more = true;
         }
         if (more)
             sb.Append(']');
     }
 
-    private bool StepOn(int k, HashSet<(int, int)> taken, out int on, out int socket, out int own, out int spin, ref string why)
+    private bool StepOn(int k, HashSet<(int, int)> taken, out int on, out int socket, out int own, out int spin, ref string why, Func<int, int> key)
     {
         on = socket = own = spin = -1;
         var c = Body;
@@ -446,7 +465,7 @@ public sealed class ConstructClip
         for (var e = c.FirstLink(k); e >= 0; e = c.NextLink(e))
         {
             int o = c.OtherEnd(e);
-            if (o >= k || !Hangs(c, o, k) || on >= 0 && o > on)
+            if (key(o) >= key(k) || !Hangs(c, o, k) || on >= 0 && key(o) > key(on))
                 continue;
             ref var l = ref c.Links[e >> 1];
             var (st, sd) = (e & 1) != 0 ? (l.SA, l.SB) : (l.SB, l.SA); // (an entry on the B side: the other end is A)
@@ -480,16 +499,16 @@ public sealed class ConstructClip
     }
 
     /// <summary>The freeform weld that put part <paramref name="k"/> on, from an earlier step, or -1.</summary>
-    private int WeldOf(int k)
+    private int WeldOf(int k, Func<int, int> key)
     {
         var c = Body;
         for (var j = 0; j < c.JointCount; j++)
-            if (c.Joints[j].Freeform && c.Joints[j].Child == k && c.Joints[j].Hinge < k)
+            if (c.Joints[j].Freeform && c.Joints[j].Child == k && key(c.Joints[j].Hinge) < key(k))
                 return j;
         return -1;
     }
 
-    private static string Quote(string s)
+    internal static string Quote(string s)
     {
         var sb = new StringBuilder("\"");
         foreach (var ch in s)

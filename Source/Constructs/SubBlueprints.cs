@@ -65,7 +65,7 @@ public static class SubBlueprints
     public const int KeepVersions = 8; // the last this many old versions are kept, and any a lock names
     public const int CacheEntries = 64;
     public const string ShipPrefix = "ship:";
-    public const string VersionsFolder = ".versions", ChecksFolder = ".checks";
+    public const string VersionsFolder = ".versions", ChecksFolder = ".checks", PacksFolder = "Packs"; // (subfolders of ConstructBlueprints: a list reads only its top)
 
     // ---- Step references: a step of a use, ["uN", k] in a file -------------------------------------------------------
 
@@ -516,6 +516,10 @@ public static class SubBlueprints
         lock (Gate)
             Cache.Clear();
     }
+
+    /// <summary>One version of a sub-blueprint, from this PC (its history for an old one), built: the save's view of a use.</summary>
+    public static SubEntry Resolve(string id, int version, string name) =>
+        Get(new Source(), new UseSpec { Id = id, Version = version, Lock = true, Name = name }, new List<string> { id });
 
     private static SubEntry Get(Source src, UseSpec use, List<string> stack)
     {
@@ -1327,6 +1331,20 @@ public static class SubBlueprints
         {
         }
         return result;
+    }
+
+    /// <summary>Why a player's blueprint can't be read or flattened (the station panel's line), or null.</summary>
+    public static string? WhyNot(string name)
+    {
+        try
+        {
+            _ = ParseFlat(File.ReadAllText(PlayerBlueprints.PathOf(name)), name);
+            return null;
+        }
+        catch (Exception ex) when (ex is ConstructPartException or IOException or UnauthorizedAccessException or JsonException)
+        {
+            return ex.Message;
+        }
     }
 
     /// <summary>The player's blueprints that use <paramref name="id"/> live (a new version reaches them all).</summary>

@@ -16,7 +16,14 @@ public static class PlayerBlueprints
     public static string Folder => Path.Combine(SavePaths.Folder, FolderName);
 
     /// <summary>One saved blueprint as the Tab inventory lists it.</summary>
-    public sealed record Entry(string Name, string File, int Parts, string Search);
+    public sealed record Entry(string Name, string File, int Parts, string Search)
+    {
+        public string Id = "";
+        public int Version;
+        public List<(int Index, string Id, string Name, int Version, bool Lock)> Uses = new(); // its sub-blueprint uses (SubBlueprints.cs)
+        public string UsesLine = "";
+        public long Stamp; // the file's write time (a broken check is done again when it changes)
+    }
 
     private static readonly string[] Reserved = ["con", "prn", "aux", "nul", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9"];
 
@@ -78,6 +85,7 @@ public static class PlayerBlueprints
         var list = new List<Entry>();
         if (!Directory.Exists(Folder))
             return list;
+        SubBlueprints.Unpack(); // (packs dropped in the folder: their sub-blueprints land in history, the pack becomes a blueprint)
         foreach (var file in Directory.GetFiles(Folder, "*.json"))
         {
             try
@@ -87,7 +95,20 @@ public static class PlayerBlueprints
                 var steps = root.TryGetProperty("steps", out var s) && s.ValueKind == JsonValueKind.Array ? s.GetArrayLength() : 0;
                 var name = Path.GetFileNameWithoutExtension(file);
                 var label = root.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String ? n.GetString() ?? name : name;
-                list.Add(new Entry(name, file, steps, label.ToLowerInvariant()));
+                var e = new Entry(name, file, steps, label.ToLowerInvariant()) { Stamp = File.GetLastWriteTimeUtc(file).Ticks };
+                e.Id = root.TryGetProperty("id", out var idv) && idv.ValueKind == JsonValueKind.String ? idv.GetString() ?? "" : "";
+                e.Version = root.TryGetProperty("version", out var vv) && vv.ValueKind == JsonValueKind.Number ? vv.GetInt32() : 0;
+                if (root.TryGetProperty("uses", out var uses) && uses.ValueKind == JsonValueKind.Array)
+                {
+                    var k = 0;
+                    foreach (var u in uses.EnumerateArray())
+                    {
+                        e.Uses.Add((k++, u.TryGetProperty("id", out var ui) ? ui.GetString() ?? "" : "", u.TryGetProperty("name", out var un) ? un.GetString() ?? "" : "",
+                            u.TryGetProperty("version", out var uv) && uv.ValueKind == JsonValueKind.Number ? uv.GetInt32() : 0, u.TryGetProperty("lock", out var ul) && ul.ValueKind == JsonValueKind.True));
+                    }
+                    e.UsesLine = "uses: " + string.Join(", ", e.Uses.GroupBy(x => (x.Id, x.Version, x.Lock)).Select(g => $"{g.First().Name} x{g.Count()} (v{g.Key.Version} {(g.Key.Lock ? "locked" : "live")})"));
+                }
+                list.Add(e);
             }
             catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
             {

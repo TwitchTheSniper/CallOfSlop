@@ -19,6 +19,7 @@ public enum StationOp : byte
     Release, // release early: what is fitted becomes a normal construct
     Repeat, // n: builds still to start after this one
     Give, // what the player holds goes to the build
+    CancelUse, // n: a use's row (sub-blueprints, protocol 324): its sub-job cancels and it is dispatched again
 }
 
 /// <summary>A Building Station's job (<see cref="CPart.Station"/>; ConstructStation.cs). The first block is what both peers hold.</summary>
@@ -330,16 +331,17 @@ public static partial class ConstructStation
         var bp = j.Bp!;
         var defs = new List<ushort>();
         var need = new List<ushort>();
-        foreach (var step in bp.Steps)
+        for (var s = 0; s < bp.Steps.Count; s++)
         {
-            var id = (ushort)(ConstructParts.Find(step.Part)?.Id ?? ConstructParts.None);
+            var id = (ushort)(ConstructParts.Find(bp.Steps[s].Part)?.Id ?? ConstructParts.None);
+            var external = ConstructStationTree.External(j, s); // (a use another station builds: never ordered here)
             var k = defs.IndexOf(id);
             if (k < 0)
             {
                 defs.Add(id);
-                need.Add(1);
+                need.Add(external ? (ushort)0 : (ushort)1);
             }
-            else
+            else if (!external)
                 need[k]++;
         }
         j.KindDef = defs.ToArray();
@@ -356,6 +358,18 @@ public static partial class ConstructStation
         j.StepKind = new int[bp.Steps.Count];
         for (var s = 0; s < bp.Steps.Count; s++)
             j.StepKind[s] = defs.IndexOf((ushort)(ConstructParts.Find(bp.Steps[s].Part)?.Id ?? ConstructParts.None));
+    }
+
+    /// <summary>The kinds again after a use changed hands (built here now, or fitted with parts missing): what is fitted counted from PartOf.</summary>
+    public static void Rekind(StationJob j)
+    {
+        if (j.Bp == null || j.StepKind.Length != j.Bp.Steps.Count)
+            return;
+        MakeKinds(j);
+        for (var k = 0; k < j.PartOf.Length; k++)
+            if (j.PartOf[k] >= 0 && j.StepKind[k] >= 0)
+                j.KindFit[j.StepKind[k]]++;
+        j.NoteKey = 0;
     }
 
     /// <summary>What the station's open craft orders still ask for, of one kind.</summary>
@@ -388,6 +402,8 @@ public static partial class ConstructStation
         TakeDropped(world, c, t, tray, j);
         if (j.State != StationState.Building)
             return;
+        if (j.Tree != null)
+            ConstructStationTree.Look(world, c, t, j); // (its uses: dispatched, watched, taken when delivered, or built here)
         ConstructLifters.PadClaims(world, c, t, tray, j); // (what its arms' pick pads hold for it is claimed for the build: lifters phase 5)
         // The rule (the user's choice, 2026-11-14: "order ahead, keep room"): every part that can be fitted on arrival (what it goes onto
         // is fitted, or it is the first step) is ordered at once; then the next level is ordered ahead, parts whose parent's own part is
@@ -556,13 +572,65 @@ public static partial class ConstructStation
             return "it is still giving parts back";
         if (c.Parts[t].Station is { Body: not 0 } was && !BayClear(world, c, t, was))
             return "the bay isn't clear: move what was built out of it first";
-        if (Find(name) is not { } bp)
+        if (ConstructBuild.FindBlueprint(name) is { } bp)
+        {
+            if (bp.Steps.Count == 0 || bp.Steps.Count >= None)
+                return "that blueprint has no parts";
+            if (QuickRefusal(bp, BaySize(c, t)) is { } small)
+                return small; // (told from its parts alone: nothing is built to find out)
+            var j = new StationJob { Name = bp.Name, Bp = bp, Repeat = repeat, Steps = (ushort)bp.Steps.Count, Started = Stopwatch.GetTimestamp(), Stamp = ConstructStationTree.NewStamp() };
+            c.Parts[t].Station = j;
+            BeginCosting(world, j);
+        }
+        else if (PlayerBlueprints.NameRefusal(name) == null && PlayerBlueprints.Exists(name))
+        {
+            // A player's blueprint: read, its uses resolved and flattened off the game thread (SubBlueprints.cs), its tree pinned to the job.
+            var j = new StationJob { Name = name, Repeat = repeat, Started = Stopwatch.GetTimestamp(), Stamp = ConstructStationTree.NewStamp(), State = StationState.Costing };
+            j.Resolving = Task.Run(() => Resolve(j, name));
+            c.Parts[t].Station = j;
+        }
+        else
             return $"no blueprint named \"{name}\"";
+        world.StationOpened(c);
+        world.StationChanged(c);
+        return null;
+    }
+
+    /// <summary>A player's blueprint resolved for a job (a worker thread): flat, and its tree's versions packed into <see cref="StationJob.Pinned"/>.</summary>
+    private static ConstructBuild.Blueprint? Resolve(StationJob j, string name)
+    {
+        try
+        {
+            var text = File.ReadAllText(PlayerBlueprints.PathOf(name));
+            var src = new SubBlueprints.Source();
+            var bp = SubBlueprints.ParseFlat(text, name, src);
+            j.Pinned = bp.Map != null ? SubBlueprints.Pack(text, src) : "";
+            return bp;
+        }
+        catch (Exception e) when (e is ConstructPartException or IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        {
+            j.ResolveWhy = e.Message;
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Server: a sub-job (ConstructStationTree.cs): one use of another station's blueprint, built here from its own flat blueprint,
+    /// then carried to that station's bay. Null, or why not.
+    /// </summary>
+    public static string? StartSub(ConstructWorld world, Construct c, int t, ConstructBuild.Blueprint bp, string name, ushort rootBody, ushort rootPart, uint rootStamp, int rootUse, string pinned, int[] path)
+    {
+        if (c.Parts[t].Station is { State: StationState.Costing or StationState.Building })
+            return "it is building";
         if (bp.Steps.Count == 0 || bp.Steps.Count >= None)
-            return "that blueprint has no parts";
+            return "that use has no parts";
         if (QuickRefusal(bp, BaySize(c, t)) is { } small)
-            return small; // (told from its parts alone: nothing is built to find out)
-        var j = new StationJob { Name = bp.Name, Bp = bp, Repeat = repeat, Steps = (ushort)bp.Steps.Count, Started = Stopwatch.GetTimestamp() };
+            return small;
+        var j = new StationJob
+        {
+            Name = name, Bp = bp, Steps = (ushort)bp.Steps.Count, Started = Stopwatch.GetTimestamp(), Stamp = ConstructStationTree.NewStamp(),
+            Role = 1, RootBody = rootBody, RootPart = rootPart, RootStamp = rootStamp, RootUse = rootUse, Pinned = pinned, PinPath = path,
+        };
         c.Parts[t].Station = j;
         BeginCosting(world, j);
         world.StationOpened(c);
@@ -623,6 +691,8 @@ public static partial class ConstructStation
         if (c.Parts[t].Station is not { } j || j.State == StationState.Idle)
             return "nothing to cancel";
         CancelOrders(world, c, t);
+        ConstructStationTree.CancelTree(world, c, j); // (its sub-jobs cancel; delivered bodies not yet fitted are taken apart)
+        j.Resolving = null;
         if (j.State is StationState.Costing or StationState.Building && world.Get(j.Body) is { HeldBy: not 0 } b)
         {
             for (var i = 0; i < b.PartCount; i++)
@@ -651,6 +721,14 @@ public static partial class ConstructStation
     /// <summary>Server: Release early: what is fitted becomes a normal construct; arrived parts not fitted drop beside the bay; orders are cancelled.</summary>
     public static string? Release(ConstructWorld world, Construct c, int t)
     {
+        if (c.Parts[t].Station is { Role: 1, State: StationState.Done } done && world.Get(done.Body) is { } waiting)
+        {
+            waiting.HeldBy = 0; // (a sub-job's body whose main station is gone: freed as it stands)
+            Free(world, waiting, done);
+            done.Note = "released: it is yours to move or finish";
+            world.StationChanged(c);
+            return null;
+        }
         if (c.Parts[t].Station is not { State: StationState.Building } j || world.StoreOf(c, t) is not { } tray)
             return "nothing is being built";
         CancelOrders(world, c, t);
@@ -716,6 +794,8 @@ public static partial class ConstructStation
     private static bool Ready(StationJob j, int k)
     {
         var bp = j.Bp!;
+        if (ConstructStationTree.External(j, k))
+            return false; // (another station builds it: it comes with its use's body)
         if (k == 0)
             return true;
         var on = bp.Steps[k].On;
@@ -1079,6 +1159,13 @@ public static partial class ConstructStation
     private static bool NextLink(ConstructWorld world, Construct c, int t, StationJob j, Construct b)
     {
         var bp = j.Bp!;
+        while (j.LinkAt < j.Links && ConstructStationTree.SkipLink(j, j.LinkAt))
+        {
+            j.LinkAt++; // (a delivered use's own link: laid at its own station)
+            j.LinksDone++;
+        }
+        if (j.LinkAt >= j.Links)
+            return true;
         var i = j.LinkAt;
         var wire = i < bp.Wires.Count;
         var type = wire ? RouteType.Data : bp.Links[i - bp.Wires.Count].Type;
@@ -1178,12 +1265,15 @@ public static partial class ConstructStation
         j.Size = size;
         Bay(c, t, out var floor, out var rot, out var bay);
         j.Links = (ushort)Math.Min(None - 1, bp.Wires.Count + bp.Links.Count);
+        ConstructStationTree.Begin(j); // (its sub-blueprint uses: rows, and which steps are another station's)
         MakeKinds(j);
         LiftCost(j, run, built); // (each step's place on the body, for the lifters: ConstructLifters.cs)
         Console.WriteLine($"[station] {j.Name}: costed in {j.CostMs:0.0} ms, worst slice {j.WorstMs:0.00} ms; {size.X:0.00} x {size.Y:0.00} x {size.Z:0.00} m, {j.KindN} kinds");
         if (j.Resume)
         {
             j.Resume = false;
+            ConstructStationTree.Restore(j); // (a load's rows: which uses are in place, at a station, or built here)
+            Array.Clear(j.KindFit);
             for (var k = 0; k < j.PartOf.Length; k++)
                 if (j.PartOf[k] >= 0 && KindOf(j, (ushort)(ConstructParts.Find(bp.Steps[k].Part)?.Id ?? None)) is var kind and >= 0)
                     j.KindFit[kind]++;
@@ -1219,6 +1309,15 @@ public static partial class ConstructStation
     {
         j.Rot = rot;
         j.Pos = floor - Vector3.Transform(new Vector3(lo.X + size.X * 0.5f, lo.Y - 0.02f, lo.Z + size.Z * 0.5f), rot);
+    }
+
+    /// <summary>Is the bay clear of this body (a sub-job's body carried off frees its station)?</summary>
+    public static bool BayClearOf(ConstructWorld world, Construct c, int t, Construct b)
+    {
+        Bay(c, t, out var floor, out var rot, out var bay);
+        var local = Vector3.Transform(b.WorldCom - floor, Quaternion.Conjugate(rot));
+        var r = b.Radius;
+        return MathF.Abs(local.X) > bay.X * 0.5f + r || MathF.Abs(local.Z) > bay.Z * 0.5f + r || local.Y > bay.Y + r || local.Y < -r;
     }
 
     /// <summary>Is the bay clear of the construct just built (Repeat waits for it)?</summary>
@@ -1523,6 +1622,24 @@ public static partial class ConstructStation
     {
         if (j.State == StationState.Costing)
         {
+            if (j.Resolving is { } resolving)
+            {
+                if (!resolving.IsCompleted)
+                    return true;
+                j.Resolving = null;
+                if (resolving.Result is not { } bp)
+                {
+                    Fail(world, c, t, j, $"that blueprint doesn't build: {j.ResolveWhy}");
+                    return false;
+                }
+                if (QuickRefusal(bp, BaySize(c, t)) is { } small)
+                {
+                    Fail(world, c, t, j, small);
+                    return false;
+                }
+                (j.Bp, j.Name, j.Steps) = (bp, bp.Name, (ushort)Math.Min(None - 1, bp.Steps.Count));
+                world.StationChanged(c);
+            }
             if (j.Costing == null)
                 BeginCosting(world, j); // (after a load)
             Cost(world, c, t, j);
@@ -1572,6 +1689,12 @@ public static partial class ConstructStation
             Fail(world, c, t, j, b == null ? "the build was destroyed" : "the build was changed in the bay: released as it stands");
             return false;
         }
+        if (j.BigRow >= 0)
+        {
+            ConstructStationTree.FitTick(world, c, t, j); // (a use's big fit: the boom fits nothing else meanwhile)
+            j.FitTicks = 1;
+            return true;
+        }
         if (j.Fitted < j.Steps)
         {
             var k = NextStep(j, tray);
@@ -1592,6 +1715,11 @@ public static partial class ConstructStation
             if (NextLink(world, c, t, j, b))
                 j.FitTicks = (int)(LinkSeconds * World.TickRate);
             return true;
+        }
+        if (j.Role == 1)
+        {
+            ConstructStationTree.SubDone(world, c, t, j, b); // (a sub-job: no finish and no fill, the whole ship's: it waits to be carried)
+            return false;
         }
         if (!FillsFree(world) && Fill(world, c, t, j, b))
             return true; // (a look every half second while something moves)
@@ -1623,6 +1751,7 @@ public static partial class ConstructStation
             if (c.Parts[i].Station is not { } j)
                 continue;
             w.U16((ushort)i).U8((byte)j.State).Str(j.Name).U16(j.Fitted).U16(j.Steps).U16(j.LinksDone).U16(j.Links).U16(j.Repeat).U16(j.Body).U16(j.LastPart).U8(j.FitSeq).U8(j.LinkSeq).Str(j.Note);
+            ConstructStationTree.Write(w, j); // (protocol 324: its role and its uses' tree)
             n++;
         }
         w.PatchU16(at, (ushort)n);
@@ -1648,11 +1777,15 @@ public static partial class ConstructStation
             var linkSeq = r.U8();
             var note = r.Str();
             if (c == null || part >= c.PartCount || !c.DefOf(part).IsBuildStation)
+            {
+                ConstructStationTree.Read(ref r, null);
                 continue;
+            }
             var j = c.Parts[part].Station;
             if (j == null)
                 c.Parts[part].Station = j = new StationJob { SeenFit = fitSeq, SeenLink = linkSeq, HeardFit = fitSeq, HeardLink = linkSeq }; // (a joiner sees no burst of old effects)
             (j.State, j.Name, j.Fitted, j.Steps, j.LinksDone, j.Links, j.Repeat, j.Body, j.LastPart, j.FitSeq, j.LinkSeq, j.Note) = (state, name, fitted, steps, linksDone, links, repeat, body, last, fitSeq, linkSeq, note);
+            ConstructStationTree.Read(ref r, j);
         }
     }
 
@@ -1713,11 +1846,20 @@ public static partial class ConstructStation
     {
         foreach (var (part, j) in jobs)
         {
-            if (part >= c.PartCount || !c.DefOf(part).IsBuildStation || Find(j.Name) is not { } bp)
-                continue;
+            if (part >= c.PartCount || !c.DefOf(part).IsBuildStation || (j.PinnedBp ?? (j.Role == 1 ? null : Find(j.Name))) is not { } bp)
+                continue; // (a job with uses builds its pinned tree: the versions it started with)
             j.Bp = bp;
             j.Steps = (ushort)bp.Steps.Count;
             j.Started = Stopwatch.GetTimestamp();
+            if (j.State == StationState.Done && j.Role == 1)
+            {
+                // A sub-job's body waiting to be carried: its main station watches it (held by this construct when the bays touch).
+                if (world.Get(j.Body) is { } waiting && j.RootPart < c.PartCount && ConstructStationTree.BaysTouch(c, j.RootPart, part))
+                    waiting.HeldBy = c.Id;
+                c.Parts[part].Station = j;
+                world.StationChanged(c);
+                continue;
+            }
             if (j.State == StationState.Done)
                 continue; // (what it built is an ordinary body; a repeat is asked for again)
             var resume = j.PartOf.Length == bp.Steps.Count && j.State is StationState.Building or StationState.Costing; // (Costing with a fitted set: saved again before the costing after a load was done)
@@ -1813,6 +1955,9 @@ public sealed partial class ConstructEdits
                 break;
             case StationOp.Repeat:
                 why = ConstructStation.SetRepeat(world, c, part, n);
+                break;
+            case StationOp.CancelUse:
+                why = ConstructStationTree.CancelUse(world, c, part, n);
                 break;
             case StationOp.Give:
             {
