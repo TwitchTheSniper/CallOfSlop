@@ -62,6 +62,9 @@ public sealed class HaulerParts : IPartGenerator
     private static readonly Rect LadderHatch = new(Cx - 3.4, 12.3, Cx - 2.15, 13.55); // the suit room up to the aft hall
     private const double TrackY = -1.26; // the well doors' tracks' underside
 
+    /// <summary>The side doors beside the well (row 3), one a side: the opening's ends along the ship, its head, and the hinge socket.</summary>
+    private const double SideZ0 = 27.4, SideZ1 = 32.6, SideTop = 3.05, SideSockX = 6.875, SideSockY = 3.075, SideSockZ = 30.125;
+
     private static double[] P(double x, double y, double z) => [x - H, y - H, z - H];
 
     // ---- the hull: stations of a half profile (P0 the keel's edge, P1 the lower chine, P2 the beam, P3 the upper chine, P4 the spine's edge)
@@ -791,7 +794,11 @@ public sealed class HaulerParts : IPartGenerator
             double za = Rows[r], zb = Rows[r + 1];
             foreach (var s in new[] { -1, 1 })
             {
-                WallRun(p, false, Math.Max(za, ZHold + 0.125), Math.Min(zb, ZHoldEnd - 0.125), Cx + s * (Hw + 0.125), Ft0, HCeil);
+                var sideDoor = za == Well.Z0;
+                if (sideDoor)
+                    WallRun(p, false, za, zb, Cx + s * (Hw + 0.125), Ft0, HCeil, new Gap(SideZ0, SideZ1 - SideZ0, 0, SideTop - Ft0));
+                else
+                    WallRun(p, false, Math.Max(za, ZHold + 0.125), Math.Min(zb, ZHoldEnd - 0.125), Cx + s * (Hw + 0.125), Ft0, HCeil);
                 OnWall(p, () =>
                 {
                     // The crane's girder under its rail, on cantilever brackets off the wall; a frame up the wall at mid-row.
@@ -801,7 +808,9 @@ public sealed class HaulerParts : IPartGenerator
                         Solid(p, Cx + s * (RailX - 0.5), RailY - 1.0, ga, Cx + s * (RailX + 0.5), RailY - 0.5, gb, Frame, "painted steel");
                         Detail(p, Cx + s * (RailX - 0.5) - s * 0.004, RailY - 0.95, ga + 0.004, Cx + s * (RailX - 0.5) + s * 0.012, RailY - 0.55, gb - 0.004, Hazard, "hazard paint");
                     }
-                    for (var bz = RailZ0 + 0.3; bz < railZ1; bz += 3.9)
+                    // (beside the side door the brackets stand at its jambs)
+                    var bzs = sideDoor ? [SideZ0 - 0.2, SideZ1 + 0.2] : Enumerable.Range(0, 12).Select(i => RailZ0 + 0.3 + 3.9 * i).Where(z => z < railZ1).ToArray();
+                    foreach (var bz in bzs)
                         if (bz >= za && bz < zb)
                         {
                             Solid(p, Cx + s * (RailX - 0.5), RailY - 1.4, bz - 0.15, Cx + s * Hw, RailY - 1.0, bz + 0.15, Frame, "painted steel");
@@ -810,7 +819,8 @@ public sealed class HaulerParts : IPartGenerator
                                 [P(xg, RailY - 1.41, bz - 0.1), P(xg, RailY - 1.41, bz + 0.1)], Frame, "painted steel");
                         }
                     var fz = (za + zb) / 2;
-                    Detail(p, Cx + s * (Hw - 0.12), Ft0 + 0.75, fz - 0.12, Cx + s * (Hw - 0.004), HCeil - 0.004, fz + 0.12, Frame, "dirty steel");
+                    if (!sideDoor)
+                        Detail(p, Cx + s * (Hw - 0.12), Ft0 + 0.75, fz - 0.12, Cx + s * (Hw - 0.004), HCeil - 0.004, fz + 0.12, Frame, "dirty steel");
                     // The girder's tops take the rails (medium sockets: a rail is a medium part).
                     for (var k = 0; k < RailN; k++)
                     {
@@ -828,16 +838,28 @@ public sealed class HaulerParts : IPartGenerator
             foreach (var s in new[] { -1, 1 })
             {
                 var tone = r % 2 == 0 ? Skin : Armour;
-                Facet(p, 2, s, za, zb, Skin2, "painted plating");
                 Facet(p, 3, s, za, zb, Skin2, "painted plating");
-                Corrugate(p, 2, s, za, zb, tone);
                 Corrugate(p, 3, s, za, zb, tone);
-                Chine(p, 2, s, za, zb, 0.3, 0.14, Armour2);
+                if (za == Well.Z0)
+                    SideDoorway(p, s, za, zb);
+                else
+                {
+                    Facet(p, 2, s, za, zb, Skin2, "painted plating");
+                    Corrugate(p, 2, s, za, zb, tone);
+                    Chine(p, 2, s, za, zb, 0.3, 0.14, Armour2);
+                }
                 Shoulder(p, 3, s, za + 0.45, zb - 0.45, 0.55, 0.3, 1.1, Armour);
             }
             var ta = r == 0 ? 0.0 : 0.004;
             foreach (var (ya, yb) in new[] { (0.0, 0.7), (0.7, 3.5), (3.5, 6.0), (6.0, HRoof) })
-                VoidT(p, r == 0 ? za - 0.125 : za, r == Rows.Length - 2 ? zb + 0.125 : zb, ya, yb, Hw + 0.25, ta, 0.004);
+                if (za == Well.Z0 && ya < SideTop)
+                {
+                    // (the side doorway leaves the void below its head open)
+                    VoidT(p, za, SideZ0 - 0.045, ya, yb, Hw + 0.25, ta, 0);
+                    VoidT(p, SideZ1 + 0.045, zb, ya, yb, Hw + 0.25, 0, 0.004);
+                }
+                else
+                    VoidT(p, r == 0 ? za - 0.125 : za, r == Rows.Length - 2 ? zb + 0.125 : zb, ya, yb, Hw + 0.25, ta, 0.004);
         }
         Ribs(p, z0, z1, 2, 3);
         if (za0(i0, i1))
@@ -845,6 +867,11 @@ public sealed class HaulerParts : IPartGenerator
             // The well's coaming: a hazard band round its mouth.
             Detail(p, Well.X0 - 0.2, Ft0, Well.Z0 + 0.01, Well.X0, Ft0 + 0.012, Well.Z1 - 0.01, Hazard, "hazard paint");
             Detail(p, Well.X1, Ft0, Well.Z0 + 0.01, Well.X1 + 0.2, Ft0 + 0.012, Well.Z1 - 0.01, Hazard, "hazard paint");
+        }
+        if (za0(i0, i1))
+        {
+            Sock(p, "sideDoorL", Cx - SideSockX, SideSockY, SideSockZ, "-y");
+            Sock(p, "sideDoorR", Cx + SideSockX, SideSockY, SideSockZ, "-y");
         }
         if (i0 == 0)
         {
@@ -1037,6 +1064,71 @@ public sealed class HaulerParts : IPartGenerator
 
     /// <summary>A leaf of the well's belly door (s -1 port, +1 starboard): a ribbed plate under the keel that slides outboard along the
     /// tracks across the well's ends to open it for the crane.</summary>
+    /// <summary>The hull beside the well on side s with the side doorway cut in facet 2 (the beam's lower panel): the skin and its
+    /// ribbed panels either side, jambs and a hazard frame round it, the chine rail stopped short of it, a sill across the void, the
+    /// linings of its ends and the hinge beam over it that the door hangs from.</summary>
+    private static void SideDoorway(Part p, int s, double za, double zb)
+    {
+        var len = zb - za;
+        Facet(p, 2, s, za, SideZ0, Skin2, "painted plating");
+        Facet(p, 2, s, SideZ1, zb, Skin2, "painted plating");
+        Chine(p, 2, s, za, SideZ0 - 0.06, 0.3, 0.14, Armour2);
+        Chine(p, 2, s, SideZ1 + 0.06, zb, 0.3, 0.14, Armour2);
+        // The jambs: a dark frame each side, a hazard stripe on its face.
+        foreach (var (u0, u1) in new[] { ((SideZ0 - 0.26 - za) / len, (SideZ0 - za) / len), ((SideZ1 - za) / len, (SideZ1 + 0.26 - za) / len) })
+        {
+            Slab(p, 2, s, za, zb, u0, u1, 0.01, 0.99, 0.02, 0.11, 0.03, Frame, "dirty steel");
+            var um = (u0 + u1) / 2;
+            FStrip(p, 2, s, za, zb, um - 0.06 / len, um + 0.06 / len, 0.06, 0.94, 0.116, Hazard, "hazard paint");
+        }
+        // Inside: the sill over the void, its hazard edge, the ends' linings and the hinge beam.
+        double SkinX(double y) => SkinHalf(SideZ0, y);
+        Solid(p, Cx + s * 6.025, 0.0, SideZ0 - 0.04, Cx + s * 6.44, Ft0, SideZ1 + 0.04, HoldDeck, "painted deck plate");
+        Detail(p, Cx + s * 6.2, Ft0, SideZ0 + 0.02, Cx + s * 6.43, Ft0 + 0.012, SideZ1 - 0.02, Hazard, "hazard paint");
+        foreach (var z in new[] { SideZ0 - 0.02, SideZ1 + 0.02 })
+            Plate(p, [Sh([Cx + s * 6.025, Ft0 + 0.004, z]), Sh([Cx + s * (SkinX(Ft0) - 0.03), Ft0 + 0.004, z]), Sh([Cx + s * (SkinX(SideTop) - 0.03), SideTop, z]), Sh([Cx + s * 6.025, SideTop, z])], HoldWall, "dirty steel");
+        Solid(p, Cx + s * 6.025, SideSockY, SideZ0 - 0.045, Cx + s * SideSockX, 3.45, SideZ1 + 0.045, Frame, "painted steel");
+    }
+
+    /// <summary>A side door of the Dray's hold, beside the well: a ribbed leaf in the hull's lower side panel, hinged along its head at the
+    /// beam, that swings up and out to an awning over the doorway.</summary>
+    private static Part SideDoor(int s)
+    {
+        var name = s < 0 ? "Dray Side Door L" : "Dray Side Door R";
+        var p = new Part(name, Small, Section, "A side door of the Dray's hold beside the cargo well, " + (s < 0 ? "to port" : "to starboard") + ": a ribbed leaf hinged along its head that swings up and out, an awning over the doorway.", role: "door", tool: "welder", material: "steel", color: Armour, group: Group);
+        double[] S = [Cx + s * SideSockX, SideSockY, SideSockZ]; // (the hinge socket, the part's origin)
+        double za = SideZ0 + 0.015, zb = SideZ1 - 0.015, len = zb - za;
+        double v0 = (Ft0 + 0.02 - Mid[1].Item2) / (Mid[2].Item2 - Mid[1].Item2), v1 = (SideTop - Mid[1].Item2) / (Mid[2].Item2 - Mid[1].Item2);
+        var n = FacetNormal(2, s, za, zb);
+        double[] L(double u, double v, double d)
+        {
+            var q = OnFacet(2, s, za, zb, u, v);
+            return [Py.Round(q[0] + n[0] * d - S[0], 4), Py.Round(q[1] + n[1] * d - S[1], 4), Py.Round(q[2] + n[2] * d - S[2], 4)];
+        }
+        double[][] Q(double u0, double u1, double va, double vb, double d) => [L(u0, va, d), L(u1, va, d), L(u1, vb, d), L(u0, vb, d)];
+        // The leaf: 6 cm of plate, its outer face 1 cm proud of the skin; bars every half metre like a container's, a frame round them.
+        Plate(p, Q(0, 1, v0, v1, -0.02), Armour, "worn paint", thick: 0.06);
+        var bars = (int)Math.Floor((len - 0.3) / 0.5);
+        var pitch = (len - 0.3) / bars;
+        for (var i = 0; i < bars; i++)
+        {
+            double u0 = (0.15 + i * pitch + 0.07) / len, u1 = (0.15 + (i + 1) * pitch - 0.07) / len;
+            Prism(p, Q(u0, u1, v0 + 0.07, v1 - 0.07, 0.012), Q(u0 + 0.02 / len, u1 - 0.02 / len, v0 + 0.08, v1 - 0.08, 0.07), Armour2, "worn paint");
+        }
+        foreach (var (u0, u1) in new[] { (0.0, 0.1 / len), (1 - 0.1 / len, 1.0) })
+            Prism(p, Q(u0, u1, v0, v1, 0.012), Q(u0 + 0.01 / len, u1 - 0.01 / len, v0 + 0.01, v1 - 0.01, 0.06), Frame, "dirty steel");
+        Prism(p, Q(0.1 / len + 0.002, 1 - 0.1 / len - 0.002, v0, v0 + 0.045, 0.012), Q(0.1 / len + 0.004, 1 - 0.1 / len - 0.004, v0 + 0.005, v0 + 0.04, 0.05), Hazard, "hazard paint");
+        Prism(p, Q(0.1 / len + 0.002, 1 - 0.1 / len - 0.002, v1 - 0.03, v1, 0.012), Q(0.1 / len + 0.004, 1 - 0.1 / len - 0.004, v1 - 0.025, v1 - 0.005, 0.045), Frame, "dirty steel");
+        // Its body for the collider: a slab through the leaf's middle (the leaf leans 9 degrees).
+        var mid = L(0.5, (v0 + v1) / 2, -0.02);
+        p.Add(Box([mid[0] - 0.04, L(0, v0, 0)[1], L(0, 0, 0)[2]], [mid[0] + 0.04, L(0, v1, 0)[1], L(1, 0, 0)[2]], hidden: true));
+        p.Add(Box([-0.1, L(0, v1, 0)[1], L(0, 0, 0)[2]], [0.1, 0, L(1, 0, 0)[2]], hidden: true)); // (the hinge's knuckle under the beam, which takes the socket)
+        p.Sock("hang", [0, 0, 0], "+y");
+        var pivot = L(0.5, v1, 0.01);
+        p.Set(("door", Kw(("kind", "swing"), ("axis", "+z"), ("pivot", new List<object?> { pivot[0], pivot[1], 0.0 }), ("angle", 90.0 * s), ("seconds", 5.0), ("hang", "hang"))));
+        return p.Stats(1400, 7000, 35, 8.0);
+    }
+
     private static Part WellDoor(int s)
     {
         var name = s < 0 ? "Dray Well Door L" : "Dray Well Door R";
@@ -1395,7 +1487,7 @@ public sealed class HaulerParts : IPartGenerator
             placed[name] = placed.Count == 0 ? bp.First(name) : bp.Put(name, zero, 0);
         PieceSteps = placed;
         int keel = placed["Dray Keel"], lower = placed["Dray Crew Lower Deck"], upper = placed["Dray Crew Upper Deck"],
-            fore = placed["Dray Hold Fore"], aft = placed["Dray Hold Aft"];
+            fore = placed["Dray Hold Fore"], well = placed["Dray Hold Well"], aft = placed["Dray Hold Aft"];
         foreach (var d in new[] { "doorMess", "doorSuit", "doorStore", "doorAirlock" })
             Door(bp, lower, d);
         foreach (var d in new[] { "doorBridge", "doorCabinA", "doorCabinB", "doorHead" })
@@ -1405,6 +1497,8 @@ public sealed class HaulerParts : IPartGenerator
         Hang(bp, "Dray Ladder", lower, "ladder", "bottom");
         Paint(bp, Hang(bp, "Dray Well Door L", keel, "wellDoorL", "hang"), Bare, "plated steel");
         Paint(bp, Hang(bp, "Dray Well Door R", keel, "wellDoorR", "hang"), Bare, "plated steel");
+        Paint(bp, Hang(bp, "Dray Side Door L", well, "sideDoorL", "hang"), Armour, "worn paint");
+        Paint(bp, Hang(bp, "Dray Side Door R", well, "sideDoorR", "hang"), Armour, "worn paint");
         // The crane: two runs of rail on the girders, the bridge on the port run's outer side, spanning to the starboard run.
         var port = new int[RailN];
         foreach (var s in new[] { -1, 1 })
@@ -1440,7 +1534,7 @@ public sealed class HaulerParts : IPartGenerator
         Structure = PlaceOrder(structure, "Dray Keel");
         List<Part> parts =
         [
-            .. structure, WellDoor(-1), WellDoor(1),
+            .. structure, WellDoor(-1), WellDoor(1), SideDoor(-1), SideDoor(1),
             Ladder("Dray Ladder", Ft1 - Ft0, "A ladder between the Dray's crew decks: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
         ];
         var defs = new Dictionary<string, PyDict>();

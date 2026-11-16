@@ -34,6 +34,10 @@ girders) along the hold's roof, a sensor mast, radiators over the drive room.
   In a window run the bridge sits on its rails and reports Idle (nothing to pick); it needs power to move.
 - **The well** is the middle lane of row 3 (6.4 by 2.9 m), through the floor and the keel. Two belly door leaves
   (Dray Well Door L/R, slide doors) hang from tracks across the well's ends and slide outboard 1.5 m to open it.
+- **Side doors** (Karl, 2026-11-16): one each side beside the well, in the lower side panel of row 3 (5.2 m long, floor to
+  3.05 m), through the hull piece and the hold wall. Dray Side Door L/R are ribbed swing doors hinged along their head at
+  the beam: they swing up and out 90 degrees to an awning over the doorway. Each hangs by `sideDoorL`/`sideDoorR` under a
+  hinge beam in the well band's hull piece; the brackets of the crane's girder stand at the doorway's jambs.
 - **Doors** are Bulkhead Doors 1.5x2.25 m in hazard orange.
 
 ## Not yet
