@@ -112,8 +112,10 @@ public static partial class SelfTest
         // ---- A map in no system ----------------------------------------------------------------------------------------
         {
             var now = 0.0;
-            var plain = Maps.All.First(m => !StarSystems.ForMap(m.Name, out _, out _));
-            using var g = ModeGame(0, GameMode.FreeForAll, plain.Id);
+            // (a Sandbox map in no system, played as Sandbox; any map in none if there is no such Sandbox map)
+            var plain = Maps.All.FirstOrDefault(m => m.Sandbox != null && !StarSystems.ForMap(m.Name, out _, out _))
+                        ?? Maps.All.First(m => !StarSystems.ForMap(m.Name, out _, out _));
+            using var g = ModeGame(0, plain.Sandbox != null ? GameMode.Sandbox : GameMode.FreeForAll, plain.Id);
             Run(g, ref now, 0.2);
             if (g.Space != null)
                 Fail($"space bubble: {plain.Name} is in no system but has a bubble");
