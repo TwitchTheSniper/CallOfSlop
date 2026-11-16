@@ -1,0 +1,84 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Zero Day Upper Fore Wall 10",
+  "description": "A wall of the Zero Day's upper deck (upper fore), with its door frames and what is on its faces.",
+  "group": "Ship",
+  "section": "Zero Day frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 341.1,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        2.875,
+        3.375,
+        24.625
+      ],
+      "max": [
+        5.25,
+        6.375,
+        24.875
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.925,
+        3.378,
+        24.613
+      ],
+      "max": [
+        5.2,
+        4.125,
+        24.887
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        4.065,
+        3.375,
+        24.755
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        2.875,
+        4.875,
+        24.755
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        5.25,
+        4.875,
+        24.755
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        4.065,
+        6.375,
+        24.755
+      ],
+      "dir": "+y"
+    }
+  ]
+}

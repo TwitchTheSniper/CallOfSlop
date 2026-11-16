@@ -1,0 +1,147 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Zero Day Upper Fore Wall 3",
+  "description": "A wall of the Zero Day's upper deck (upper fore), with its door frames and what is on its faces.",
+  "group": "Ship",
+  "section": "Zero Day frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 341.1,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        2.625,
+        3.375,
+        14.625
+      ],
+      "max": [
+        2.875,
+        6.375,
+        24.875
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.613,
+        3.378,
+        14.675
+      ],
+      "max": [
+        2.887,
+        4.125,
+        24.825
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "couchA",
+      "at": [
+        2.875,
+        3.5,
+        21.275
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "lampOpsL",
+      "at": [
+        2.875,
+        5.825,
+        16.475
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "lampCabinA",
+      "at": [
+        2.875,
+        5.825,
+        23.475
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j0",
+      "at": [
+        2.755,
+        3.375,
+        20.795
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        2.755,
+        4.875,
+        14.625
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        2.875,
+        4.875,
+        19.875
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        2.875,
+        4.875,
+        24.755
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        2.755,
+        6.375,
+        19.755
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j5",
+      "at": [
+        2.625,
+        4.225,
+        17.245
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j6",
+      "at": [
+        2.625,
+        4.225,
+        22.375
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j7",
+      "at": [
+        2.755,
+        4.875,
+        24.875
+      ],
+      "dir": "+z"
+    }
+  ]
+}

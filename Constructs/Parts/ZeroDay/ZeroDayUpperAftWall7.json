@@ -1,0 +1,235 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Zero Day Upper Aft Wall 7",
+  "description": "A wall of the Zero Day's upper deck (upper aft), with its door frames and what is on its faces.",
+  "group": "Ship",
+  "section": "Zero Day frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 505.3,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        2.875,
+        3.375,
+        33.875
+      ],
+      "max": [
+        5.625,
+        6.375,
+        34.125
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.625,
+        5.625,
+        33.875
+      ],
+      "max": [
+        7.125,
+        6.375,
+        34.125
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.925,
+        3.378,
+        33.863
+      ],
+      "max": [
+        5.575,
+        4.125,
+        34.137
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.555,
+        3.377,
+        33.855
+      ],
+      "max": [
+        5.622,
+        5.695,
+        34.145
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        7.128,
+        3.377,
+        33.855
+      ],
+      "max": [
+        7.195,
+        5.695,
+        34.145
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.625,
+        5.628,
+        33.855
+      ],
+      "max": [
+        7.125,
+        5.695,
+        34.145
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        7.125,
+        3.375,
+        33.875
+      ],
+      "max": [
+        9.875,
+        6.375,
+        34.125
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        7.175,
+        3.378,
+        33.863
+      ],
+      "max": [
+        9.825,
+        4.125,
+        34.137
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "toilet",
+      "at": [
+        3.475,
+        3.5,
+        33.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "med0",
+      "at": [
+        9.325,
+        4.175,
+        33.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "med1",
+      "at": [
+        8.225,
+        4.175,
+        33.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "doorMess",
+      "at": [
+        5.625,
+        4.5,
+        34.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "switchMess",
+      "at": [
+        7.375,
+        4.675,
+        34.125
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        4.255,
+        3.375,
+        33.995
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        2.875,
+        4.875,
+        33.995
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        9.875,
+        4.875,
+        33.995
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        5.375,
+        4.875,
+        33.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j4",
+      "at": [
+        7.375,
+        4.875,
+        33.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j5",
+      "at": [
+        4.255,
+        6.375,
+        33.995
+      ],
+      "dir": "+y"
+    }
+  ]
+}
