@@ -26,6 +26,72 @@ public sealed partial class Ui
     private readonly Dictionary<string, (long Stamp, Task<string> Why)> _sbBroken = new(); // blueprints with uses: does each still build (SubBlueprints.BrokenWhy, off the frame)
     private string _sbSavedSaid = "";
 
+    // ---- The window tool's "bpui" verb (Program.WindowShotSubBp.cs): the buttons' own calls, for a run that drives them ----
+
+    internal void ToolStamp(Game game, string name) => SbStamp(game, name);
+
+    /// <summary>The save window's Save (and Replace) with this name; with the given lock on every kept use, or a changed use's way.</summary>
+    internal string ToolSave(string name, bool overwrite, bool? lockAll, UseChoice? changed, string newName)
+    {
+        if (!BlueprintSaveOpen || _bsClip == null)
+            return "the save window isn't open";
+        _bsName ??= new ImInputString(PlayerBlueprints.MaxName + 1);
+        ImGuiSafe.SetInput(_bsName, name);
+        foreach (var row in _bsUses?.Rows ?? [])
+        {
+            if (row.Kept && lockAll is { } l)
+                row.Lock = l;
+            if (row.Changed && changed is { } ch)
+            {
+                row.Choice = ch;
+                if (ch == UseChoice.NewBlueprint)
+                {
+                    if (!_bsNewNames.TryGetValue(row.Tag, out var nn))
+                        _bsNewNames[row.Tag] = nn = new ImInputString(PlayerBlueprints.MaxName + 1);
+                    ImGuiSafe.SetInput(nn, newName);
+                }
+            }
+        }
+        BlueprintSaveStart(name, overwrite);
+        return _bsWhy.Length > 0 ? _bsWhy : _bsAsk ? "asks to replace" : "checking";
+    }
+
+    /// <summary>The save window's Uses list as its rows say it.</summary>
+    internal IEnumerable<string> ToolSaveRows()
+    {
+        foreach (var row in _bsUses?.Rows ?? [])
+            yield return $"{row.Name} v{row.Version} (tag {row.Tag}, {row.Parts} parts): {(row.Kept ? row.Lock ? "kept, Lock" : "kept, Live" : row.Why + (row.Changed ? $" [{row.Choice}]" : ""))}";
+    }
+
+    internal string ToolSaveWhy => _bsWhy;
+
+    internal void ToolSetLock(string name, int use, bool locked)
+    {
+        _sbSaved = PlayerBlueprints.List();
+        if (_sbSaved.Find(e => e.Name == name) is { } e)
+            SbSetLock(e, use, locked);
+        else
+            _sbSavedSaid = $"no blueprint {name}";
+    }
+
+    internal void ToolPack(string name)
+    {
+        _sbSaved = PlayerBlueprints.List();
+        if (_sbSaved.Find(e => e.Name == name) is { } e)
+            SbPack(e);
+        else
+            _sbSavedSaid = $"no blueprint {name}";
+    }
+
+    internal string ToolSaid => _sbSavedSaid;
+
+    /// <summary>The labels of the selector's frames round sub-blueprint uses (UseFrameRender.cs), this frame's.</summary>
+    public void DrawUseLabels()
+    {
+        foreach (var (at, text, changed) in UseFrameRender.Labels)
+            Hud.WorldLabel(at, text, changed ? new System.Numerics.Vector3(1f, 0.72f, 0.15f) : new System.Numerics.Vector3(0.35f, 0.92f, 1f), 0.9f, 13f * _scale, UseFrameRender.MaxDistance);
+    }
+
     /// <summary>The save window is up (the mouse is free).</summary>
     public bool BlueprintSaveOpen { get; private set; }
 

@@ -102,6 +102,7 @@ public static partial class Program
     /// <summary>The ImGui pass: the save window, and the marquee on the screen.</summary>
     private static void DrawSelectInMatch()
     {
+        Ui.DrawUseLabels(); // (the selector out: each framed sub-blueprint use's label)
         if (Ui.BlueprintSaveOpen)
         {
             var gone = _session == null || _game is not { SandboxOn: true } g || g.Local is not { Alive: true } || g.Phase != MatchPhase.Playing;

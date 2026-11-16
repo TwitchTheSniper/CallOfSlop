@@ -513,7 +513,7 @@ public static class ConstructBuild
     public static List<Blueprint> LoadBlueprints(string folder, List<string> refused, IReadOnlyList<Mods.Mod>? mods = null)
     {
         var list = new List<Blueprint>();
-        var usesLater = new List<(Blueprint, string)>();
+        var usesLater = new List<(Blueprint, string, int)>(); // (and where it stands in the list: it goes back there, in file order)
         var remember = BlueprintCheckCache.Enabled(mods); // (dev builds skip the build check of a file that passed it unchanged: BlueprintCheckCache.cs)
         ConstructConduit.BeginLoad(); // (a pre-built's wires are routed as it is built here, not later in a server tick)
         try
@@ -532,7 +532,7 @@ public static class ConstructBuild
                     var bp = ParseBlueprint(df.Text, df.File);
                     if (bp.Uses.Count > 0)
                     {
-                        usesLater.Add((bp, df.Mod)); // (a shipped blueprint may use shipped ones: flattened once they are all read)
+                        usesLater.Add((bp, df.Mod, list.Count)); // (a shipped blueprint may use shipped ones: flattened once they are all read)
                         continue;
                     }
                     // Build it once on a scratch world: every step must fit (and a pre-built's wires are routed as conduit then, ConstructConduit.cs;
@@ -559,14 +559,15 @@ public static class ConstructBuild
                     refused.Add(df.Mod.Length > 0 ? $"mod {df.Mod}: {why}" : why);
                 }
             }
-            foreach (var (bp, mod) in usesLater)
+            var inserted = 0;
+            foreach (var (bp, mod, at) in usesLater)
             {
                 try
                 {
                     var flat = SubBlueprints.Flatten(bp, new SubBlueprints.Source { Library = false, Shipped = n => list.FirstOrDefault(b => b.Name.Equals(n, StringComparison.OrdinalIgnoreCase)) });
                     if (Build(new ConstructWorld(), flat, Vector3.Zero, Quaternion.Identity, out var why) == null)
                         throw new ConstructPartException($"{bp.File}: {why}");
-                    list.Add(flat);
+                    list.Insert(Math.Min(list.Count, at + inserted++), flat);
                 }
                 catch (ConstructPartException ex)
                 {

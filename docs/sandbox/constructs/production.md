@@ -1519,9 +1519,23 @@ Design and the user's answers: `docs/sandbox/design/sub-blueprints.md`; status a
   place equals the flat build), the save round trip (as a station build, as a stamp, with a part off), and a full-size tree timed.
   Window tool: `subbp` (every station's job and rows), `subbp stock`, `subbp cut` and `subbp carry` (host shortcuts: a finished
   sub-job's body loses a part, or is set down beside its main station's bay), `subbp bodies`.
-- **Not yet:** Loader Arms and Bridge Cranes carrying a submodule (the user's answer 7; the bays-that-touch hand-over and the 8 m
-  take work without them); the selector's cyan frames round uses (the look line names them); sub-jobs' orders carrying the root's
-  rank and age stamp; uses in a selection with ropes, springs, no-collide pairs or tracks are saved as plain parts.
+- **Carriers (2026-11-16, the user's answer 7).** A finished body still in its sub-station's bay is carried by a Loader Arm or
+  Bridge Crane on the same construct that is idle, powered, not manned, not Off, whose payload and largest piece take the body and
+  whose reach holds both the body and its use's spot (`ConstructLifterBodies.cs`). The hand moves on its usual path (an empty hand:
+  no new bytes); the server poses the frozen body on it each tick and clients get its poses. At the spot the main station takes it
+  for the big fit. The sub-station is free once the body has left its bay; the main station keeps watching the body. Bays that touch
+  still hand over; a body set down within 8 m of the bay (out of its own) is still taken.
+- **Rank.** A sub-job's orders rank by its main station's Feed priority and its build's age (`StationJob.OrderAge`): the oldest ship
+  goes first.
+- **The selector's frames.** With the selector out, each outermost use within 60 m has a thin cyan frame and a label ("Submodule Pod
+  (live)"), amber with ": changed" when its parts moved (`UseFrameRender.cs`; worked out on a structure change, not per frame).
+- **Showcase** (`--gen-parts submodule_showcase`): Submodule Pod, Submodule Skiff (two pods as `ship:` uses, one turned) and
+  Submodule Yard (two stations whose bays don't touch, a Loader Arm between). Spawn the yard, pick Submodule Skiff at its first
+  station: a pod is built at the second and the arm brings it (42 s on the 2-core box with `subbp stock`).
+- **Window tool:** `bpui stamp NAME`, `selectall`, `rows`, `save NAME [replace] [lock|live] [newversion|newblueprint NAME2]`, `list`,
+  `lock NAME USE on|off`, `pack NAME`: the Blueprints tab's and the save window's own calls; `subbp arms`.
+- **Not yet:** uses inside uses are framed only as their outer use; a Bridge Crane's carry is the arm's code path but untried; uses
+  in a selection with ropes, springs, no-collide pairs or tracks are saved as plain parts.
 
 ## Lifters
 
