@@ -1068,7 +1068,7 @@ public sealed partial class ConstructWorld
             piece.Owner = c.Owner;
             piece.Damaged = true;
             piece.Rebuild();
-            piece.Vel = vel + outward + new Vector3(0, 2.5f, 0); // knocked off: out and up
+            piece.Vel = c.SpaceShip != 0 ? vel : vel + outward + new Vector3(0, 2.5f, 0); // knocked off: out and up (in space, where nothing pulls it back down, it floats where it broke, with the ship: it becomes a ship of its own beside it, GameSpaceLaunch.cs)
             piece.AngVel = spin + new Vector3(1.3f, 0.4f, -0.9f);
         }
         return true;
