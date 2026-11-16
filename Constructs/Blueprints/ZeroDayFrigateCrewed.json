@@ -1,0 +1,1831 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Zero Day Frigate (crewed)",
+  "description": "The Zero Day with an IT Department crew aboard: it lifts off, closes on the nearest player, you included, and fights with its railgun, turrets and torpedoes. Sit at its helm to take it.",
+  "steps": [
+    {
+      "part": "Zero Day Keel"
+    },
+    {
+      "part": "Zero Day Lower Deck Aft",
+      "on": 0,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Keel 3",
+      "on": 1,
+      "socket": "j1",
+      "by": "j1"
+    },
+    {
+      "part": "Zero Day Keel 4",
+      "on": 1,
+      "socket": "keel",
+      "by": "lowerAft"
+    },
+    {
+      "part": "Zero Day Lower Deck Fore",
+      "on": 1,
+      "socket": "j2",
+      "by": "j13"
+    },
+    {
+      "part": "Zero Day Lower Aft Wall 1",
+      "on": 1,
+      "socket": "j3",
+      "by": "j1"
+    },
+    {
+      "part": "Zero Day Lower Aft Wall 2",
+      "on": 1,
+      "socket": "j4",
+      "by": "j1"
+    },
+    {
+      "part": "Zero Day Lower Aft Wall 3",
+      "on": 1,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Aft Wall 4",
+      "on": 1,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Aft Wall 5",
+      "on": 1,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Aft Wall 6",
+      "on": 1,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Aft Hull Port 4",
+      "on": 1,
+      "socket": "j9",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Aft Hull Port 5",
+      "on": 1,
+      "socket": "j10",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Aft Hull Stbd 4",
+      "on": 1,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Aft Hull Stbd 5",
+      "on": 1,
+      "socket": "j12",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Torpedo Bay L",
+      "on": 1,
+      "socket": "j13",
+      "by": "j1"
+    },
+    {
+      "part": "Zero Day Torpedo Bay R",
+      "on": 1,
+      "socket": "j14",
+      "by": "j1"
+    },
+    {
+      "part": "Zero Day Keel 1",
+      "on": 4,
+      "socket": "keel",
+      "by": "lowerFore"
+    },
+    {
+      "part": "Zero Day Keel 2",
+      "on": 4,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Fore Wall 1",
+      "on": 4,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Fore Wall 2",
+      "on": 4,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Fore Wall 3",
+      "on": 4,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Fore Wall 4",
+      "on": 4,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Fore Wall 5",
+      "on": 4,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Fore Wall 6",
+      "on": 4,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Fore Wall 7",
+      "on": 4,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Fore Hull Port 1",
+      "on": 4,
+      "socket": "j9",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Fore Hull Port 2",
+      "on": 4,
+      "socket": "j10",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Fore Hull Stbd 1",
+      "on": 4,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Lower Fore Hull Stbd 2",
+      "on": 4,
+      "socket": "j12",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Deck Aft",
+      "on": 5,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Stern",
+      "on": 7,
+      "socket": "stern",
+      "by": "deck"
+    },
+    {
+      "part": "Zero Day Upper Aft Hull Port 4",
+      "on": 11,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Aft Hull Port 5",
+      "on": 12,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Aft Hull Stbd 4",
+      "on": 13,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Aft Hull Stbd 5",
+      "on": 14,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Bow",
+      "on": 17,
+      "socket": "bow",
+      "by": "keel"
+    },
+    {
+      "part": "Zero Day Upper Deck Fore",
+      "on": 19,
+      "socket": "upper",
+      "by": "lower"
+    },
+    {
+      "part": "Zero Day Upper Fore Hull Port 1",
+      "on": 26,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Fore Hull Port 2",
+      "on": 27,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Fore Hull Stbd 1",
+      "on": 28,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Fore Hull Stbd 2",
+      "on": 29,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Aft Wall 1",
+      "on": 30,
+      "socket": "j6",
+      "by": "j1"
+    },
+    {
+      "part": "Zero Day Upper Aft Wall 2",
+      "on": 30,
+      "socket": "j7",
+      "by": "j1"
+    },
+    {
+      "part": "Zero Day Upper Aft Wall 3",
+      "on": 30,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Aft Wall 4",
+      "on": 30,
+      "socket": "j9",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Aft Wall 5",
+      "on": 30,
+      "socket": "j10",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Aft Wall 6",
+      "on": 30,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Aft Wall 7",
+      "on": 30,
+      "socket": "j12",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Aft Ceiling",
+      "on": 32,
+      "socket": "j3",
+      "by": "j8"
+    },
+    {
+      "part": "Zero Day Upper Fore Wall 1",
+      "on": 37,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Fore Wall 2",
+      "on": 37,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Fore Wall 3",
+      "on": 37,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Fore Wall 4",
+      "on": 37,
+      "socket": "j9",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Fore Wall 5",
+      "on": 37,
+      "socket": "j10",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Fore Wall 6",
+      "on": 37,
+      "socket": "j11",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Fore Wall 7",
+      "on": 37,
+      "socket": "j12",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Fore Wall 8",
+      "on": 37,
+      "socket": "j13",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Fore Wall 9",
+      "on": 37,
+      "socket": "j14",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Fore Wall 10",
+      "on": 37,
+      "socket": "j15",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Fore Wall 11",
+      "on": 37,
+      "socket": "j16",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Fore Hull Port 3",
+      "on": 37,
+      "socket": "j19",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Fore Hull Stbd 3",
+      "on": 37,
+      "socket": "j22",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Upper Fore Ceiling",
+      "on": 38,
+      "socket": "j4",
+      "by": "j11"
+    },
+    {
+      "part": "Zero Day Spine 3",
+      "on": 49,
+      "socket": "j12",
+      "by": "j1"
+    },
+    {
+      "part": "Zero Day Spine 4",
+      "on": 49,
+      "socket": "j13",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Spine 5",
+      "on": 49,
+      "socket": "j14",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Spine",
+      "on": 63,
+      "socket": "spine",
+      "by": "upper"
+    },
+    {
+      "part": "Zero Day Spine 2",
+      "on": 63,
+      "socket": "j18",
+      "by": "j0"
+    },
+    {
+      "part": "Zero Day Drive Array",
+      "on": 31,
+      "socket": "drive",
+      "by": "front"
+    },
+    {
+      "part": "Zero Day Lift Jet",
+      "on": 18,
+      "socket": "liftFL",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Lift Jet",
+      "on": 18,
+      "socket": "liftFR",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Lift Jet",
+      "on": 3,
+      "socket": "liftBL",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Lift Jet",
+      "on": 3,
+      "socket": "liftBR",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Landing Leg",
+      "on": 18,
+      "socket": "legFL",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Landing Leg",
+      "on": 18,
+      "socket": "legFR",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Landing Leg",
+      "on": 3,
+      "socket": "legBL",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Landing Leg",
+      "on": 3,
+      "socket": "legBR",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Retro Jet",
+      "on": 36,
+      "socket": "retroL",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Retro Jet",
+      "on": 36,
+      "socket": "retroR",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Boarding Ladder",
+      "on": 1,
+      "socket": "boarding",
+      "by": "hull"
+    },
+    {
+      "part": "Zero Day Ladder",
+      "on": 4,
+      "socket": "ladder",
+      "by": "bottom"
+    },
+    {
+      "part": "Zero Day Ladder",
+      "on": 1,
+      "socket": "ladder",
+      "by": "bottom"
+    },
+    {
+      "part": "Server Rack",
+      "on": 4,
+      "socket": "serverL0",
+      "by": "foot00"
+    },
+    {
+      "part": "Server Rack",
+      "on": 4,
+      "socket": "serverR0",
+      "by": "foot00"
+    },
+    {
+      "part": "Server Rack",
+      "on": 4,
+      "socket": "serverL1",
+      "by": "foot00"
+    },
+    {
+      "part": "Server Rack",
+      "on": 4,
+      "socket": "serverR1",
+      "by": "foot00"
+    },
+    {
+      "part": "Server Rack",
+      "on": 4,
+      "socket": "serverL2",
+      "by": "foot00"
+    },
+    {
+      "part": "Server Rack",
+      "on": 4,
+      "socket": "serverR2",
+      "by": "foot00"
+    },
+    {
+      "part": "Server Rack",
+      "on": 4,
+      "socket": "serverL3",
+      "by": "foot00"
+    },
+    {
+      "part": "Server Rack",
+      "on": 4,
+      "socket": "serverR3",
+      "by": "foot00"
+    },
+    {
+      "part": "Computer",
+      "on": 4,
+      "socket": "computer",
+      "by": "foot00"
+    },
+    {
+      "part": "Office Plant",
+      "on": 4,
+      "socket": "plant",
+      "by": "base"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 4,
+      "socket": "crate0",
+      "by": "-y"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 4,
+      "socket": "crate1",
+      "by": "-y"
+    },
+    {
+      "part": "Zero Day Locker",
+      "on": 21,
+      "socket": "locker0",
+      "by": "wall",
+      "paint": "#3b4148",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Zero Day Locker",
+      "on": 21,
+      "socket": "locker1",
+      "by": "wall",
+      "paint": "#3b4148",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Zero Day Locker",
+      "on": 21,
+      "socket": "locker2",
+      "by": "wall",
+      "paint": "#3b4148",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Tool Rack",
+      "on": 23,
+      "socket": "toolRack",
+      "by": "back"
+    },
+    {
+      "part": "Ammo Crate",
+      "on": 4,
+      "socket": "ammo0",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Crate",
+      "on": 4,
+      "socket": "ammo1",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Crate",
+      "on": 4,
+      "socket": "warheads0",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Crate",
+      "on": 4,
+      "socket": "warheads1",
+      "by": "bottom"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 24,
+      "socket": "doorServer",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 25,
+      "socket": "doorTorpedo",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 21,
+      "socket": "doorBayL",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 23,
+      "socket": "doorBayR",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Button",
+      "on": 21,
+      "socket": "fireL",
+      "by": "-x"
+    },
+    {
+      "part": "Button",
+      "on": 23,
+      "socket": "fireR",
+      "by": "+x"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 20,
+      "socket": "lampServer",
+      "by": "back",
+      "config": {
+        "colour": "#a0d0ff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 24,
+      "socket": "switchServer",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 21,
+      "socket": "lampArmouryL",
+      "by": "back",
+      "config": {
+        "colour": "#e8f4ff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 23,
+      "socket": "lampArmouryR",
+      "by": "back",
+      "config": {
+        "colour": "#e8f4ff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 25,
+      "socket": "switchFore",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 21,
+      "socket": "lampTorpL",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 23,
+      "socket": "lampTorpR",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 25,
+      "socket": "switchTorp",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 15,
+      "socket": "lamp",
+      "by": "back",
+      "config": {
+        "colour": "#ff7050"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 15,
+      "socket": "switch",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 16,
+      "socket": "lamp",
+      "by": "back",
+      "config": {
+        "colour": "#ff7050"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 16,
+      "socket": "switch",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Zero Day Locker",
+      "on": 5,
+      "socket": "suit0",
+      "by": "wall",
+      "paint": "#e0b020",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Zero Day Locker",
+      "on": 5,
+      "socket": "suit1",
+      "by": "wall",
+      "paint": "#e0b020",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Zero Day Locker",
+      "on": 5,
+      "socket": "suit2",
+      "by": "wall",
+      "paint": "#e0b020",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Zero Day Locker",
+      "on": 5,
+      "socket": "suit3",
+      "by": "wall",
+      "paint": "#e0b020",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Zero Day Locker",
+      "on": 6,
+      "socket": "airlockLocker",
+      "by": "wall",
+      "paint": "#e0b020",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 5,
+      "socket": "doorBayL",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 6,
+      "socket": "doorBayR",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 9,
+      "socket": "doorAirlock",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 10,
+      "socket": "doorEngine",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Zero Day Reactor",
+      "on": 1,
+      "socket": "reactor",
+      "by": "bottom"
+    },
+    {
+      "part": "Power Board",
+      "on": 6,
+      "socket": "board",
+      "by": "back"
+    },
+    {
+      "part": "Engineer's Panel",
+      "on": 5,
+      "socket": "panel",
+      "by": "back"
+    },
+    {
+      "part": "Battery",
+      "on": 1,
+      "socket": "battery0",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 1,
+      "socket": "battery1",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 1,
+      "socket": "battery2",
+      "by": "-y"
+    },
+    {
+      "part": "Pipe Bank",
+      "on": 7,
+      "socket": "pipes",
+      "by": "back"
+    },
+    {
+      "part": "Tool Rack",
+      "on": 5,
+      "socket": "toolRack",
+      "by": "back"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 1,
+      "socket": "crate0",
+      "by": "-y"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 1,
+      "socket": "crate1",
+      "by": "-y"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 6,
+      "socket": "lampAirlock",
+      "by": "back",
+      "config": {
+        "colour": "#ff5040"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampSuit",
+      "by": "back",
+      "config": {
+        "colour": "#e8f4ff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 9,
+      "socket": "switchAirlock",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampEngL",
+      "by": "back",
+      "config": {
+        "colour": "#a0d0ff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 6,
+      "socket": "lampEngR",
+      "by": "back",
+      "config": {
+        "colour": "#a0d0ff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 10,
+      "socket": "switchEng",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampTorpL",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 6,
+      "socket": "lampTorpR",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 8,
+      "socket": "switchTorp",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Flight Couch",
+      "on": 37,
+      "socket": "pilot",
+      "by": "bottom"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 37,
+      "socket": "copilot",
+      "by": "bottom"
+    },
+    {
+      "part": "Zero Day Flight Computer",
+      "on": 37,
+      "socket": "computer",
+      "by": "bottom",
+      "config": {
+        "aiCrew": 2
+      }
+    },
+    {
+      "part": "Turret Module",
+      "on": 37,
+      "socket": "gunModule",
+      "by": "-y"
+    },
+    {
+      "part": "Chart Table",
+      "on": 53,
+      "socket": "chart",
+      "by": "back"
+    },
+    {
+      "part": "Zero Day Locker",
+      "on": 51,
+      "socket": "bridgeLocker",
+      "by": "wall",
+      "paint": "#3b4148",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Chart Table",
+      "on": 37,
+      "socket": "plot",
+      "by": "bottom"
+    },
+    {
+      "part": "Crash Couch",
+      "on": 52,
+      "socket": "couchA",
+      "by": "wall",
+      "paint": "#2c3e58",
+      "finish": "fabric"
+    },
+    {
+      "part": "Zero Day Locker",
+      "on": 57,
+      "socket": "lockerA",
+      "by": "wall",
+      "paint": "#2c5aa0",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Crash Couch",
+      "on": 54,
+      "socket": "couchCaptain",
+      "by": "wall",
+      "paint": "#2c3e58",
+      "finish": "fabric"
+    },
+    {
+      "part": "Steel Desk",
+      "on": 60,
+      "socket": "deskCaptain",
+      "by": "wall"
+    },
+    {
+      "part": "Zero Day Locker",
+      "on": 58,
+      "socket": "lockerCaptain",
+      "by": "wall",
+      "paint": "#2c5aa0",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 55,
+      "socket": "doorBridge",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 56,
+      "socket": "doorOps",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 57,
+      "socket": "doorCabinA",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 58,
+      "socket": "doorCaptain",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Button",
+      "on": 56,
+      "socket": "flares",
+      "by": "+z"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 51,
+      "socket": "lampBridgeL",
+      "by": "back",
+      "config": {
+        "colour": "#ff6050"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 53,
+      "socket": "lampBridgeR",
+      "by": "back",
+      "config": {
+        "colour": "#ff6050"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 55,
+      "socket": "switchBridge",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 52,
+      "socket": "lampOpsL",
+      "by": "back",
+      "config": {
+        "colour": "#a0c8ff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 54,
+      "socket": "lampOpsR",
+      "by": "back",
+      "config": {
+        "colour": "#a0c8ff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 56,
+      "socket": "switchOps",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 52,
+      "socket": "lampCabinA",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 54,
+      "socket": "lampCaptain",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 57,
+      "socket": "switchCabins",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Crash Couch",
+      "on": 42,
+      "socket": "couchB0",
+      "by": "wall",
+      "paint": "#2c3e58",
+      "finish": "fabric"
+    },
+    {
+      "part": "Zero Day Locker",
+      "on": 45,
+      "socket": "lockerB",
+      "by": "wall",
+      "paint": "#2c5aa0",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Steel Desk",
+      "on": 47,
+      "socket": "deskB",
+      "by": "wall"
+    },
+    {
+      "part": "Ship Toilet",
+      "on": 48,
+      "socket": "toilet",
+      "by": "wall"
+    },
+    {
+      "part": "Ship Basin",
+      "on": 42,
+      "socket": "basin",
+      "by": "wall"
+    },
+    {
+      "part": "Shower Stall",
+      "on": 47,
+      "socket": "shower",
+      "by": "wall",
+      "paint": "#dfe4e2",
+      "finish": "gloss paint"
+    },
+    {
+      "part": "Medical Station",
+      "on": 48,
+      "socket": "med0",
+      "by": "back"
+    },
+    {
+      "part": "Medical Station",
+      "on": 48,
+      "socket": "med1",
+      "by": "back"
+    },
+    {
+      "part": "Medicine Cabinet",
+      "on": 43,
+      "socket": "cabinet",
+      "by": "back"
+    },
+    {
+      "part": "Zero Day Locker",
+      "on": 46,
+      "socket": "medLocker",
+      "by": "wall",
+      "paint": "#dfe4e2",
+      "finish": "gloss paint"
+    },
+    {
+      "part": "Galley Stove",
+      "on": 42,
+      "socket": "stove",
+      "by": "back"
+    },
+    {
+      "part": "Galley Coffee Station",
+      "on": 42,
+      "socket": "coffee",
+      "by": "wall"
+    },
+    {
+      "part": "Zero Day Locker",
+      "on": 42,
+      "socket": "messLocker",
+      "by": "wall",
+      "paint": "#5c646a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Mess Table",
+      "on": 30,
+      "socket": "table",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 45,
+      "socket": "doorCabinB",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 45,
+      "socket": "doorHead",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 46,
+      "socket": "doorMed",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 48,
+      "socket": "doorMess",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 42,
+      "socket": "lampCabinB",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 42,
+      "socket": "lampHead",
+      "by": "back",
+      "config": {
+        "colour": "#e8f4ff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 45,
+      "socket": "switchCrew",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 43,
+      "socket": "lampMed",
+      "by": "back",
+      "config": {
+        "colour": "#f4fbff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 46,
+      "socket": "switchMed",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 42,
+      "socket": "lampMessL",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 43,
+      "socket": "lampMessR",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0b0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 48,
+      "socket": "switchMess",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Zero Day Turret Barbette",
+      "on": 39,
+      "socket": "podL",
+      "by": "hull"
+    },
+    {
+      "part": "Zero Day Turret Barbette",
+      "on": 41,
+      "socket": "podR",
+      "by": "hull"
+    },
+    {
+      "part": "Zero Day Turret Barbette",
+      "on": 32,
+      "socket": "podL",
+      "by": "hull"
+    },
+    {
+      "part": "Zero Day Turret Barbette",
+      "on": 34,
+      "socket": "podR",
+      "by": "hull"
+    },
+    {
+      "part": "Turntable",
+      "on": 201,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 205,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Zero Day PDC",
+      "on": 206,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 207,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Turntable",
+      "on": 202,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 209,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Zero Day PDC",
+      "on": 210,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 211,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Turntable",
+      "on": 203,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 213,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Zero Day PDC",
+      "on": 214,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 215,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Turntable",
+      "on": 204,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 217,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Zero Day PDC",
+      "on": 218,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 219,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Gunnery Console",
+      "on": 37,
+      "socket": "gun",
+      "by": "bottom"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 37,
+      "socket": "gunSeat",
+      "by": "bottom"
+    },
+    {
+      "part": "Turret Module",
+      "on": 221,
+      "socket": "module",
+      "by": "-x"
+    },
+    {
+      "part": "Gunnery Console",
+      "on": 30,
+      "socket": "gun",
+      "by": "bottom"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 30,
+      "socket": "gunSeat",
+      "by": "bottom"
+    },
+    {
+      "part": "Turret Module",
+      "on": 224,
+      "socket": "module",
+      "by": "-x"
+    },
+    {
+      "part": "Zero Day Railgun",
+      "on": 64,
+      "socket": "railgun",
+      "by": "back"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 227,
+      "socket": "ammo",
+      "by": "bottom"
+    },
+    {
+      "part": "Zero Day Countermeasure Launcher",
+      "on": 68,
+      "socket": "flaresFL",
+      "by": "back"
+    },
+    {
+      "part": "Zero Day Countermeasure Launcher",
+      "on": 68,
+      "socket": "flaresFR",
+      "by": "back"
+    },
+    {
+      "part": "Zero Day Countermeasure Launcher",
+      "on": 64,
+      "socket": "flaresBL",
+      "by": "back"
+    },
+    {
+      "part": "Zero Day Countermeasure Launcher",
+      "on": 64,
+      "socket": "flaresBR",
+      "by": "back"
+    },
+    {
+      "part": "Ord Rack (1x6 drum 500x5500)",
+      "on": 15,
+      "socket": "magazine",
+      "by": "top"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 233,
+      "socket": "lug0",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 233,
+      "socket": "lug1",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 233,
+      "socket": "lug2",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 233,
+      "socket": "lug3",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 233,
+      "socket": "lug4",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 233,
+      "socket": "lug5",
+      "by": "lug"
+    },
+    {
+      "part": "Ord Rack (1x6 drum 500x5500)",
+      "on": 16,
+      "socket": "magazine",
+      "by": "top"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 240,
+      "socket": "lug0",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 240,
+      "socket": "lug1",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 240,
+      "socket": "lug2",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 240,
+      "socket": "lug3",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 240,
+      "socket": "lug4",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 240,
+      "socket": "lug5",
+      "by": "lug"
+    }
+  ],
+  "wires": [
+    [
+      110,
+      109
+    ],
+    [
+      113,
+      111
+    ],
+    [
+      113,
+      112
+    ],
+    [
+      116,
+      114
+    ],
+    [
+      116,
+      115
+    ],
+    [
+      118,
+      117
+    ],
+    [
+      120,
+      119
+    ],
+    [
+      142,
+      140
+    ],
+    [
+      142,
+      141
+    ],
+    [
+      145,
+      143
+    ],
+    [
+      145,
+      144
+    ],
+    [
+      148,
+      146
+    ],
+    [
+      148,
+      147
+    ],
+    [
+      149,
+      151
+    ],
+    [
+      168,
+      166
+    ],
+    [
+      168,
+      167
+    ],
+    [
+      171,
+      169
+    ],
+    [
+      171,
+      170
+    ],
+    [
+      174,
+      172
+    ],
+    [
+      174,
+      173
+    ],
+    [
+      195,
+      193
+    ],
+    [
+      195,
+      194
+    ],
+    [
+      197,
+      196
+    ],
+    [
+      200,
+      198
+    ],
+    [
+      200,
+      199
+    ],
+    [
+      222,
+      223
+    ],
+    [
+      223,
+      207
+    ],
+    [
+      223,
+      211
+    ],
+    [
+      225,
+      226
+    ],
+    [
+      226,
+      215
+    ],
+    [
+      226,
+      219
+    ],
+    [
+      149,
+      152
+    ],
+    [
+      152,
+      227
+    ],
+    [
+      165,
+      229
+    ],
+    [
+      165,
+      230
+    ],
+    [
+      165,
+      231
+    ],
+    [
+      165,
+      232
+    ],
+    [
+      107,
+      233
+    ],
+    [
+      108,
+      240
+    ]
+  ],
+  "conduit": true
+}

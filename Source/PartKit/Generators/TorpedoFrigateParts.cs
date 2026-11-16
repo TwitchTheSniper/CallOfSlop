@@ -1644,6 +1644,11 @@ public sealed class TorpedoFrigateParts : IPartGenerator
             {
                 q.D["role"] = core.D["role"];
                 q.Set(("fuelTank", Kw(("capacity", each))));
+                if (q != core) // (a tank has a fuel-out port: on its aft face, under the floor, for a pipe a player lays)
+                {
+                    var zmax = q.Boxes.Where(bx => !Drawn(bx)).Max(bx => Convert.ToDouble(((List<object?>)bx["max"]!)[2]));
+                    q.Set(("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. new[] { Cx - H, -1.0 - H, zmax }.Cast<object>()], "+z", "fuel"))));
+                }
             }
         }
         return all;
@@ -1827,9 +1832,12 @@ public sealed class TorpedoFrigateParts : IPartGenerator
 
     private static int Door(BuildingParts.Blueprint bp, int on, string sock) => Paint(bp, Hang(bp, "Bulkhead Door 1.5x2.25 m", on, sock, "hang"), Armour, "plated steel");
 
-    private static PyDict Blueprint(Dictionary<string, PyDict> defs)
+    /// <summary>The frigate's blueprint; <paramref name="crewed"/>: with an AI crew that fights everyone (its flight computer's AI crew setting; ConstructShipAi.cs), a test enemy for the parts menu.</summary>
+    private static PyDict Blueprint(Dictionary<string, PyDict> defs, bool crewed = false)
     {
-        var bp = new BuildingParts.Blueprint("Zero Day Frigate", "The IT Department's torpedo frigate: two decks the length of a sleek armoured hull, a rotary torpedo bay in each flank, a spinal railgun, four point-defence turrets, flare launchers and a drive array the width of the stern.", defs, maxSteps: 420);
+        var bp = crewed
+            ? new BuildingParts.Blueprint("Zero Day Frigate (crewed)", "The Zero Day with an IT Department crew aboard: it lifts off, closes on the nearest player, you included, and fights with its railgun, turrets and torpedoes. Sit at its helm to take it.", defs, maxSteps: 420)
+            : new BuildingParts.Blueprint("Zero Day Frigate", "The IT Department's torpedo frigate: two decks the length of a sleek armoured hull, a rotary torpedo bay in each flank, a spinal railgun, four point-defence turrets, flare launchers and a drive array the width of the stern.", defs, maxSteps: 420);
         bp.Conduit = true;
         double[] zero = [0, 0, 0];
         var placed = new Dictionary<string, int>();
@@ -1899,6 +1907,8 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         var pilot = Hang(bp, "Flight Couch", uf, "pilot", "bottom");
         Hang(bp, "Flight Couch", uf, "copilot", "bottom");
         var fc = Hang(bp, "Zero Day Flight Computer", uf, "computer", "bottom");
+        if (crewed)
+            bp.Steps[fc]["config"] = new PyDict { ["aiCrew"] = (int)ShipAiMode.Everyone };
         bp.Wires.Add((pilot, fc));
         var railModule = Hang(bp, "Turret Module", uf, "gunModule", "-y");
         Hang(bp, "Chart Table", uf, "chart", "back");
@@ -2008,5 +2018,6 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         }
         BuildingParts.AddPartDefs(o, defs, Out);
         o.File($"{BpOut}/ZeroDayFrigate.json", PyJson.Dumps(Blueprint(defs), 2) + "\n");
+        o.File($"{BpOut}/ZeroDayFrigateCrewed.json", PyJson.Dumps(Blueprint(defs, crewed: true), 2) + "\n");
     }
 }

@@ -15,6 +15,20 @@
   "fuelTank": {
     "capacity": 2800
   },
+  "ports": [
+    {
+      "name": "Fuel out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "fuel",
+      "at": [
+        6.375,
+        -1.125,
+        29.863
+      ],
+      "face": "+z"
+    }
+  ],
   "boxes": [
     {
       "min": [
