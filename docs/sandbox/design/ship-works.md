@@ -8,7 +8,8 @@ from it the same day (PRs 246 and 247).
 **Read section 15 first (the engine correction, 2026-11-16 late).** Phases 0 to 2 were built from this file and came out
 wrong where the file was wrong: one cylinder for a four-bell drive, standing in a room metres from the bells, and
 nacelles with nothing in them. Section 15 says what an engine is, with Karl's words and pictures, and overrides
-anything in sections 2 to 4, 10 and 11 that disagrees with it. The passages it replaces are marked.
+anything in sections 2 to 4, 10 and 11 that disagrees with it. The passages it replaces are marked. **Only main
+drives have engines** (Karl, 2026-11-16, 23:10): lift jets, retros and RCS are whole parts with nothing inside.
 
 Karl's ask (2026-11-16): when a ship is designed, its engines and turrets have no interior component. Larger engines
 should have an interior part, or a set of them, that the design has to make room for, different for each way an engine
@@ -61,8 +62,10 @@ engine room out.
 3. **Small things stay whole.** A thruster of 500 kN or less (RCS, small manoeuvre and retro jets), a gun with its
    box and a rack on the hull work as they do now, with no interior. They are the convenient option and pay for it:
    small jets burn more for their push, a surface gun has what is bolted to it, a surface rack fires what it holds.
-   **Every thruster over 500 kN has works** (Karl, 2026-11-16, answer 1): lift jets and big retros too. It is either
-   mounted on the hull with its engine inside, or on a nacelle with the same engine inside the nacelle.
+   **Every main drive over 500 kN has works** (Karl, 2026-11-16; answer 1 as he narrowed it that night, section
+   15.2 rule 6): a main drive is a thruster that pushes the ship forward. It is either mounted on the hull with its
+   engine inside, or on a nacelle with the same engine inside the nacelle. Lift jets, retros and RCS are whole parts
+   whatever their size.
 4. **A nacelle holds the same engine, outside the hull** (corrected, section 15). The bell on the nacelle's tail has
    its engine cylinder inside the nacelle, made of the same works parts as a hull drive's. No hull space, a wide gimbal
    and a long arm from the centre of mass, but only the cowl's armour, and it is serviced at the nacelle, outside.
@@ -178,7 +181,7 @@ decides how much of each. Provisional numbers; all of them live in the part file
 | Class | Thrust of the drive part | Torch drive needs | Room to allow (guide for a designer) |
 | --- | --- | --- | --- |
 | 0, a jet | 500 kN or less | nothing | none |
-| 1, light | over 0.5 MN, to 2 MN | Drive Core S (XS to 1.5 MN, for lift jets) | 1.8 m of cylinder behind the bell, 1.2 m across, and a way along one side |
+| 1, light | over 0.5 MN, to 2 MN | Drive Core S | 1.8 m of cylinder behind the bell, 1.2 m across, and a way along one side |
 | 2, medium | 2 to 6 MN | Drive Core M, Fuel Pump M | 3.6 m behind the bell, 1.7 m across |
 | 3, heavy | 6 to 12 MN | Drive Core L, Fuel Pump L, Coolant Exchanger L | 5.6 m behind the bell, 2.2 m across |
 | 4, capital | over 12 MN a bell | not built: use more bells | - |
@@ -193,14 +196,14 @@ reads it and writes the head's `needs`, so a generator never picks the list by h
 bells (section 15.2 rule 4): each bell has its own core, and its own pump and exchanger when its thrust asks, so a ship
 with four bells keeps three when one engine is holed. Redundancy is bought with room.
 
-A jet is whole but capped: the part kit refuses to generate a thruster in group `Ship` over `ShipWorks.json`'s
-`jetMost` (500 kN) that has no `works` block, whatever it is for. The old Boost parts (Capital Jet and the rest) are
+A main drive over `ShipWorks.json`'s `jetMost` (500 kN) has works; a lift jet, a retro or an RCS thruster has none
+at any size (section 15.2 rule 6, which also says how the check tells them apart).
+The old Boost parts (Capital Jet and the rest) are
 untouched: the Orbiter and Jumper climb on them, and the cap is on the new family, not the loader.
 
-**Lift jets and retros over 500 kN** (answer 1) are drives like any other: each has its own engine cylinder on its
-own line, in the hull over it or in the nacelle, hopper or tank it hangs under (section 15.2, rule 6). The "lift
-machinery bay" this paragraph first described, one core on a deck serving four jets through the keel, is withdrawn:
-it is the same mistake as one cylinder for four bells.
+**Lift jets and retros** are whole parts with nothing inside, whatever their thrust (Karl, 2026-11-16, 23:10: "Main
+drives only"; section 15.2 rule 6). The "lift machinery bay" this paragraph first described, one core on a deck
+serving four jets through the keel, is withdrawn and nothing replaces it.
 
 ### 4.2 Hull drive or pod
 
@@ -437,7 +440,7 @@ lines elsewhere. The text to add, in substance:
 (The four points on drives are rewritten for section 15; the skill's 1d on main still has the first wording and is
 rewritten from these in phase 2b.)
 
-- **Decide each bell before the hull.** For every thruster over 500 kN: its type, its thrust, and in the hull or in a
+- **Decide each bell before the hull.** For every main drive over 500 kN: its type, its thrust, and in the hull or in a
   nacelle. Every one is a bell, a plate and an engine cylinder in one straight line (section 15.2). Read the class
   table (this file, 4.1) for the cylinder's length and width and draw it into the stations first: the space directly
   behind each bell belongs to that bell's engine.
@@ -449,9 +452,8 @@ rewritten from these in phase 2b.)
   and the same engine cylinder inside it, with a service hatch and a way to reach the hatch (a handrail or a walkway
   on the pylon, and the airlock on that side). Never a solid tank with a bell on the end. Say in the ship's doc that
   it is serviced outside.
-- **Jets** of 500 kN or less (RCS, small manoeuvre jets) are whole and need nothing inside. **Every lift jet and
-  retro over 500 kN** has its own cylinder on its own line (upright over a lift jet), in the hull over it or inside
-  the housing it hangs from; never one core for several jets (section 15.2 rule 6).
+- **Lift jets, retros, RCS and small manoeuvre jets** are whole and need nothing inside, whatever their size
+  (section 15.2 rule 6). Only main drives have engines.
 - **Look at it before calling it done**: a cut view through the bells' axis shows one cylinder behind every bell,
   touching its plate.
 - **Each turret**: surface or trunked. A trunked one needs the deck under it clear for the trunk (its drum's depth
@@ -478,10 +480,10 @@ Thrust figures stay as they are unless the flight check says otherwise.
 
 | Ship | Now | After | Notes |
 | --- | --- | --- | --- |
-| **Rust Bucket** (`ShipParts.cs`) | Two 600 kN drives on the stern pods; four 800 kN lift jets under the pods and saddles; a prop engine block in the engine room | **Nacelles** (Karl, answer 7: its pods are nacelles), as section 15.4: each stern pod's tail is a hollow engine housing with a Drive Core S inside behind the Rust Bucket Drive and a service hatch; each lift jet has a Drive Core XS upright over it inside its pod or saddle tank. Heads `service: "outside"` with `needs`, the drives a 12 degree gimbal. The RCS thrusters are jets. The `Ship Engine Block` stays a fitting | The start ship teaches the nacelle's price: a breakdown is mended outside, through the hatch, on a space walk or landed. The Engineer's Panel only reports (which part, where); the breakdown's messages say so (`BreakdownHeard`). Try the first breakdown (4 crewed minutes in) from waking to mended outside, in orbit and landed. A handrail and a step by each hatch. (First built as flags on solid pods: section 15) |
-| **Magpie** (`MinerParts.cs`) | Two 900 kN drives on the nacelles' tails | **Nacelles**, as section 15.4: the last 2.4 m of each nacelle is a hollow engine housing with a Drive Core S inside behind the Magpie Drive, a real service hatch by the grab rail, a 12 degree gimbal; the tank is shortened. The four 1.2 MN lift jets each have a Drive Core XS upright over them inside the hopper's pod or the nacelle; the 500 kN retros stay whole | The miner teaches the other half: a breakdown means going out on the pylon and opening the hatch. Its engine deck stays a power room. (First built as flags on solid nacelles: section 15) |
+| **Rust Bucket** (`ShipParts.cs`) | Two 600 kN drives on the stern pods; four 800 kN lift jets under the pods and saddles; a prop engine block in the engine room | **Nacelles** (Karl, answer 7: its pods are nacelles), as section 15.4: each stern pod's tail is a hollow engine housing with a Drive Core S inside behind the Rust Bucket Drive and a service hatch. Drive heads `service: "outside"` with `needs`, a 12 degree gimbal. The lift jets and the RCS thrusters are whole parts with no works block. The `Ship Engine Block` stays a fitting | The start ship teaches the nacelle's price: a breakdown is mended outside, through the hatch, on a space walk or landed. The Engineer's Panel only reports (which part, where); the breakdown's messages say so (`BreakdownHeard`). Try the first breakdown (4 crewed minutes in) from waking to mended outside, in orbit and landed. A handrail and a step by each hatch. (First built as flags on solid pods: section 15) |
+| **Magpie** (`MinerParts.cs`) | Two 900 kN drives on the nacelles' tails | **Nacelles**, as section 15.4: the last 2.4 m of each nacelle is a hollow engine housing with a Drive Core S inside behind the Magpie Drive, a real service hatch by the grab rail, a 12 degree gimbal; the tank is shortened. The four 1.2 MN lift jets and the 500 kN retros are whole parts with no works block | The miner teaches the other half: a breakdown means going out on the pylon and opening the hatch. Its engine deck stays a power room. (First built as flags on solid nacelles: section 15) |
 | **Halberd** (removed) | Removed with its generator (Karl, 2026-11-16: "Don't worry about the Halberd, that can be left and removed"); its crew fittings moved to `CrewFittingsParts.cs` | - | - |
-| **Zero Day** (`TorpedoFrigateParts.cs`) | 9 MN Drive Array on the stern; engineering in the lower deck aft | **Hull drives**, as section 15.4: four Zero Day Drive Bells of 2.25 MN on the collar, and behind each, from the stern plate forward, its own Drive Core M and Fuel Pump M; the stern piece is the engine bay, open to engineering, which keeps the reactor. The four 1.5 MN lift jets each have a Drive Core S upright over them in the lower deck, joined through the keel plate. The two 1.2 MN retros keep outside service, each cheek deepened to hold a Drive Core S behind its jet. PDCs on Turret Rings with one magazine amidships. Railgun: `energy` and capacitors. Torpedo bays: unchanged at first; a second drum and a Reload Hoist a bay is the stretch (phase 4) | The reference ship: it should show the whole idea. The stern's 9,000 l of fuel moves to the keel or to tanks over and under the bay. (First built as one Drive Core L stack on engineering's aft wall and one lift core: section 15) |
+| **Zero Day** (`TorpedoFrigateParts.cs`) | 9 MN Drive Array on the stern; engineering in the lower deck aft | **Hull drives**, as section 15.4: four Zero Day Drive Bells of 2.25 MN on the collar, and behind each, from the stern plate forward, its own Drive Core M and Fuel Pump M; the stern piece is the engine bay, open to engineering, which keeps the reactor. The four 1.5 MN lift jets and the two 1.2 MN retros are whole parts with no works block. PDCs on Turret Rings with one magazine amidships. Railgun: `energy` and capacitors. Torpedo bays: unchanged at first; a second drum and a Reload Hoist a bay is the stretch (phase 4) | The reference ship: it should show the whole idea. The stern's 9,000 l of fuel moves to the keel or to tanks over and under the bay. (First built as one Drive Core L stack on engineering's aft wall and one lift core: section 15) |
 | **Dray hauler** (PR 242) | Frame, walls and doors only | Design it with this plan from the start: an Ion or torch hull drive with a drive room, no weapons or surface mounts only | Whoever picks the Dray up reads section 10. If it merges before phase 1, it gets today's thrusters and joins the phase 2 migration |
 
 The crewed Zero Day follows the Zero Day (one blueprint builder with a flag). After the last ship: regenerate the
@@ -501,7 +503,7 @@ then `--selftest-only`). If something fails that a command can't catch, one sect
 | **0. The mechanism** | `ShipWorks.json` and its table; the `works` and `worksPiece` blocks; `ConstructWorks.Build` at the rebuild; the look lines; `--check-vehicle`'s `works:` lines. No part uses it yet, so no ship changes | `--check-construct-parts` clean; a hand-written test blueprint (a nozzle, a mount, a core) reports 100%, and 25% with the core taken out; rebuild time on the Zero Day and the Titan Walker unchanged |
 | **1. Drives** | `ship_works` generator: Hull Mount, Drive Nozzle, Drive Core, Fuel Pump, Coolant Exchanger, Drive Pod. The cap in every thrust reader (3.3). Burn figures. The panel's report, the service flag, mending a broken piece | A demo blueprint of each class flown in a window: full thrust; shoot the pump, half or a quarter; mend it; a pod's failure refuses at the panel. A joined client sees the same look lines and flames. `--flight-check` on the demos |
 | **2. The ships' drives** | Rust Bucket, Magpie, Halberd, Zero Day as section 11 (drives only). Breakdowns onto works and onto every crewed player ship (section 7). The skill's new section. The four ship docs | Each: `--gen-parts`, `--check-vehicle` (works 100%, 0 coplanar), `--selftest-only "No z-fighting"`, `--check-building`, `--flight-check` against the old figures, `--conduit-check`. The rust bucket start in a window to a first breakdown, mended outside at the pod; a second ship (a Halberd from the Blueprints tab, boarded) to its own first breakdown, seen to inside; a host and a joined client aboard different ships. `--ship-ai-check` for the Zero Day. The gallery republished |
-| **2b. The engine correction** (section 15) | A thruster's own stack in `ConstructWorks.Build`; nacelle heads with `needs`; Drive Nacelle S/M in place of the Drive Pod, Drive Core XS; the Zero Day's four bells and engine bay, the Magpie's and the Rust Bucket's nacelle engines, every big lift jet's and retro's own cylinder; the skill's 1d and the ship docs | Section 15.5, all seven points |
+| **2b. The engine correction** (section 15) | A thruster's own stack in `ConstructWorks.Build`; nacelle heads with `needs`; Drive Nacelle S/M in place of the Drive Pod; the Zero Day's four bells and engine bay, the Magpie's and the Rust Bucket's nacelle engines; lift jets and retros back to whole parts; the skill's 1d and the ship docs | Section 15.5, all seven points |
 | **3. Turret Rings and autoloaders** | Turret Ring (the joint and its trunk), the ring feed in `ConstructAmmo`, Autoloader. The Halberd's and Zero Day's PDCs as section 11 | A ring fed from a container fires through 360 degrees with the store emptying; cut the feed, 3 s of rounds left; an autoloaded cannon's reload against a bare one; host and client. The two ships' checks again |
 | **4. Reload Hoists** | Reload Hoist, its magazine racks, the move. Optionally the Zero Day's second drums | A launcher of four with a magazine of eight fires twelve with nobody outside; power off, it stops; a magazine hit cooks off inside (`--bench-cookoff` for the cost); a client sees each reload arrive |
 | **5. Energy and lasers** | `gun.energy`, Capacitor Bank, the railguns' draw; then Laser Emitter, Laser Generator, Laser Pod, the beam's look | A railgun fires its burst and waits on the reactor; a trunked laser against a Laser Pod on the same target; capacitors shot out, no fire. `--ship-ai-check` (its railgun still fires) |
@@ -528,8 +530,8 @@ sheets of the changed rooms.
 
 All seven are answered; the text above is revised to match.
 
-1. **Which engines must have insides?** Answered: B, everything over a thrust figure, lift jets too. (A was main
-   drives only.)
+1. **Which engines must have insides?** Answered: B, everything over a thrust figure, lift jets too; then narrowed
+   the same night to A, main drives only (see the answer below).
 2. **A big nozzle with no works behind it:** Answered: B, it runs at a quarter. (A was that it doesn't run.)
 3. **Lasers and capacitors, which don't exist yet:** Answered: A, in this plan, as its last big phase. (B was a
    plan of their own later.)
@@ -546,6 +548,10 @@ Answers:
   included. The figure is `jetMost`, 500 kN, picked so that RCS thrusters (80 and 250 kN), the Halberd's manoeuvre
   jets and the Magpie's retros (500 kN) stay whole and every lift jet on the four ships (800 kN to 1.5 MN) does not.
   Sections 2, 4.1, 10 and 11 are revised for it. The figure is Karl's to move.
+  **Narrowed** (Karl, 2026-11-16, 23:10, decision card "Give each big lift jet and retro its own engine cylinder
+  too?": "Main drives only"; and in the thread, "RCS thrusters should be fine for now"). Once every engine had to be
+  a cylinder joined to its own thruster, he chose that only the main drive bells have one. Lift jets and retros are
+  whole parts with nothing inside, whatever their size. `jetMost` now applies to main drives. Section 15.2 rule 6.
 - **2: B** (Karl, 2026-11-16, decision card). A big engine with no machinery behind it runs at a quarter
   (`bareShare` 0.25), and so does one whose works are all destroyed. Section 3.2's step 5 and 3.3 are revised for it.
 - **3: A** (Karl, 2026-11-16, decision card). Lasers and capacitors are built in this plan, as phase 5. Phase 6
@@ -561,7 +567,7 @@ Answers:
   assembler"). No Assembling recipes. Section 9 is revised. How the production system makes them is to be agreed
   with TwitchTheSniper and is outside these phases unless Karl says the builder should take it on.
 
-## 15. The engine correction (2026-11-16, late): one clad cylinder joined to every thruster
+## 15. The engine correction (2026-11-16, late): one clad cylinder joined to every main drive bell
 
 Phases 0 to 2 are on main (PRs 246 and 247) and the engines came out wrong. The builder followed this file; the file
 was wrong in three places. This section is the fix, and it is a job of its own (phase 2b in section 12), done before
@@ -597,12 +603,12 @@ right and stays. Its number, its place and what it is joined to are wrong.
 | --- | --- | --- |
 | The Zero Day's four-bell Drive Array has one cylinder | 3.2 step 3 let every head on a mount share one set of works, and the array is one thruster part | One engine a bell (rule 1), nothing shared (rule 4) |
 | That cylinder hangs on engineering's aft wall at z 42.0; the bells are on the stern at z 46.5, with 4.5 m of tank between | A mount could be any flagged wall, and mounts flood into each other | The cylinder starts at the bell (rule 3) |
-| One Drive Core M on the lower deck serves four lift jets through the keel and the deck floors | 4.1's "lift machinery bay" | One engine a jet, on its line (rule 6) |
+| One Drive Core M on the lower deck serves four lift jets through the keel and the deck floors | 4.1's "lift machinery bay" | Removed: lift jets are whole parts (rule 6) |
 | The Magpie's and the Rust Bucket's nacelles are solid tanks; the drive on the tail only carries `service: "outside"` | Rule 4 and 3.1 called a pod "one part with its works in the cowl" and gave it no `needs` | A nacelle holds real engine parts (rule 5) |
 
 **Rule 1. One engine a bell.** An engine is three things in a straight line: the **bell** outside (the head), the
-**mount plate** it goes through, and the **engine cylinder** behind the plate. Count bells, not parts. Every bell
-over 500 kN has all three. A drive drawn with several bells is made as several thruster parts, one a bell, each with
+**mount plate** it goes through, and the **engine cylinder** behind the plate. Count bells, not parts. Every main
+drive bell over 500 kN has all three (rule 6 says what a main drive is). A drive drawn with several bells is made as several thruster parts, one a bell, each with
 its own thrust, flame, `works` block and cylinder: the Zero Day Drive Array becomes four bells of 2.25 MN, and its
 armoured collar stays as one piece (the mount) so the stern looks as it does.
 
@@ -631,17 +637,15 @@ panel, at least 1.0 by 0.8 m; if a hinged hatch can't be made to work there, an 
 it, and say so). The head on a nacelle has `service: "outside"` **and** `needs`. No nacelle is solid behind its bell
 and none is empty.
 
-**Rule 6. Lift jets and retros over 500 kN are engines too** (answer 1 stands; asked of Karl again on 2026-11-16 as a
-decision card, and this rule is the default until he answers). Each has its own cylinder on its own line: upright over
-a lift jet, fore and aft behind a retro. The designer picks, per jet: in the hull over it (the cylinder stands in the
-deck above, joined through the keel or belly plate), or as a nacelle (the cylinder is inside the tank, hopper, cheek or
-housing the jet hangs from, with a hatch). Small ones take a new short size, the Drive Core XS (15.3). When a cylinder
-won't fit on a jet's line, in this order: move the jet and its cylinder together to where it does; swell the housing
-round it (a clad blister); or split the jet into more jets of 500 kN or less, which are whole and need nothing. Never a
-shared core, a cylinder off its jet's line, or a flag with nothing behind it.
+**Rule 6. Only main drives have engines** (Karl, 2026-11-16, 23:10, decision card: "Main drives only"). A **main
+drive** is a thruster that pushes the ship forward: its exhaust points aft. Each main drive bell over 500 kN is an
+engine by rules 1 to 5. **Lift jets** (exhaust down) and **retros** (exhaust forward) are whole parts with nothing
+inside, whatever their thrust: no `works` block, no plate, no cylinder, no hatch, full thrust always. They go back to
+what they were before PR 246, including what they burned. This narrows answer 1, which had counted them. Don't build
+cylinders, cores or housings for them, and don't leave a `service: "outside"` flag on them.
 
-**Rule 7. RCS and small jets are untouched** (Karl: "RCS thrusters should be fine for now"). 500 kN or less: no plate,
-no cylinder, no change.
+**Rule 7. RCS and small jets are untouched** (Karl: "RCS thrusters should be fine for now"). No plate, no cylinder, no
+change.
 
 ### 15.3 Code
 
@@ -665,16 +669,20 @@ Nothing here changes the wire format: every peer still derives works from the pa
   carries its works in itself"): drop that refusal. `Works.Head(..., pod: true)` writes both. `WorksOutside` keeps
   what it means everywhere it is read (the panel reports and can't mend, the burn of 2.4 l/s a MN, no Overdrive); grep
   every reader of `WorksNeeds == 0`, which no longer means "a pod".
-- **The part kit's refusal** (a Ship thruster over `jetMost` with no works block) becomes: over `jetMost` it must
-  have `needs`. A bare `service: "outside"` on a thruster is refused.
+- **The part kit's refusal** (a Ship thruster over `jetMost` with no works block) goes: a part file can't know
+  whether it will be a main drive or a lift jet. A generator calls `Works.Head` for its main drives only. A bare
+  `service: "outside"` with no `needs` on a thruster is refused at the parse. In its place `--check-vehicle` reports
+  a ship's thruster over `jetMost` that pushes the craft forward (its thrust within 30 degrees of the craft's
+  forward) and has no `needs`: "a main drive with no engine".
 - **Breakdowns** (`GameSandboxBreakdowns.cs`): a candidate today is a thruster with no needs, or a drive works piece.
-  With rule 5 every big thruster has pieces, so a breakdown always lands on a piece of some engine; for a piece whose
-  head is `service: "outside"` the panel reports it and the mend is at the piece, through the nacelle's hatch.
+  Keep that. A main drive's breakdown lands on a piece of its engine; for a piece whose head is `service: "outside"`
+  the panel reports it and the mend is at the piece, through the nacelle's hatch. A lift jet or a retro breaks down
+  as a whole jet does in the code now (seen to at the jet). One thing follows that Karl hasn't been asked about: on a
+  hull-drive ship such as the Zero Day a lift jet's breakdown is still mended outside. Leave it so and say it in
+  the report.
 - **`ShipWorksParts.cs`.** Remove Drive Pod S and M. Add **Drive Nacelle S and M**: a hollow clad housing with a `top`
   socket for a pylon, a tail plate that is a mount, room inside for a Drive Core S (and, in M, a Drive Core M and a
-  Fuel Pump M) on the axis with 0.25 m clear round it, and the hatch. Add **Drive Core XS** for lift jets: serves 1.5
-  MN, radius about 0.45 m, about 0.9 m long (provisional: size it so it stands inside the Rust Bucket's saddle tanks,
-  radius 0.65 m, and say what it came to). Give the cylinders the cladding detail of rule 2 where they lack it. The
+  Fuel Pump M) on the axis with 0.25 m clear round it, and the hatch. No new core size is needed. Give the cylinders the cladding detail of rule 2 where they lack it. The
   Drive Nozzle demo blueprints: one nozzle, one plate, one stack each.
 - **`ShipWorks.json`**: no new numbers are needed. `jetMost` and `bareShare` stay.
 - **Docs and the skill**: the ship-design skill's section 1d (its lines about pods being flags and a lift core standing
@@ -684,7 +692,7 @@ Nothing here changes the wire format: every peer still derives works from the pa
 ### 15.4 The ships
 
 Each in its generator. Figures are from the generators as they are on main; check them with `MustFit` and the cut
-views, and where one is tight use the order under rule 6 or the one given here.
+views, and where one is tight use the order given here; never move a cylinder off its bell.
 
 **Zero Day** (`TorpedoFrigateParts.cs`; `Stern` 46.5, `ZAft` 42.0, bells at x = -4.35, -1.45, 1.45, 4.35, root radius
 1.15 m).
@@ -709,12 +717,8 @@ views, and where one is tight use the order under rule 6 or the one given here.
 - Remove: the Drive Core L, Fuel Pump L, Coolant Exchanger L and the lift jets' Drive Core M in engineering, the
   `driveCore` and `liftCore` sockets, and the mount flags on the keel lengths, the lower decks' floors and the aft
   wall.
-- The four 1.5 MN lift jets under the keel: a **Drive Core S** (radius 0.6 m, 1.8 m, serves 2 MN) standing upright
-  over each one in the lower deck, joined to it through the keel plate. Where one would stand in a corridor or a
-  doorway, move that jet and its cylinder along the keel together, and its opposite number with it so the hover trim
-  holds.
-- The two 1.2 MN retros in the bow's cheeks stay outside-serviced: each cheek housing is deepened to hold a Drive Core
-  S lying behind its jet, with a hatch.
+- The four 1.5 MN lift jets under the keel and the two 1.2 MN retros in the bow's cheeks become whole parts again
+  (rule 6): take the `works` block off both, and nothing stands in the lower deck for them.
 - Four thrusters across the stern can now push unevenly, which the mixes will use for yaw. Fly `--flight-check` and
   `--ship-ai-check` and compare with the figures before.
 
@@ -725,15 +729,14 @@ views, and where one is tight use the order under rule 6 or the one given here.
   axis (0.55 m clear round it). 900 kN asks for a core alone. The tank ahead of the bulkhead is shortened by that
   much.
 - The drawn service hatch on the nacelle becomes a real one, beside the core, on the side with the grab rail.
-- The four 1.2 MN lift jets under the hoppers and nacelles: each a **Drive Core XS** upright over it inside the hopper's
-  thruster pod or the nacelle (rule 6's order if one doesn't fit). The 500 kN retros stay whole.
+- The four 1.2 MN lift jets under the hoppers and nacelles and the 500 kN retros are whole parts (rule 6): take the
+  `works` block off the lift jets.
 
 **Rust Bucket** (`ShipParts.cs`; stern pods radius 0.9 m at x = 6.1, saddle tanks radius 0.65 m).
 
 - Each stern pod's tail becomes an engine housing as the Magpie's: the Rust Bucket Drive (600 kN) on the tail plate,
   a **Drive Core S** inside (0.3 m clear), a hatch, the tank shortened.
-- The four 800 kN lift jets: a **Drive Core XS** upright over each inside its pod or saddle tank, with a hatch
-  underneath or on the side.
+- The four 800 kN lift jets are whole parts (rule 6): take the `works` block off them.
 - The start still teaches the nacelle's price (answer 7): the first breakdown lands on a core in a nacelle and is
   mended outside, through the hatch, on a space walk or landed. Try that from waking to mended.
 
