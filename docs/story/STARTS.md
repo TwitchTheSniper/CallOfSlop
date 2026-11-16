@@ -49,6 +49,9 @@ everything; stock guns kept): `SandboxStartKit` builds only the ship there. Code
 
 - `RustBucket` (first): a tramp hauler waking on the floor of their cabin aboard the Rust Bucket (docs/sandbox/constructs/ship.md)
   in orbit 3 km over Glacier; no colony, no tutorial, no faction, the kit aboard (`"kit": []`). Survival and Creative.
+- `Magpie`: a prospector waking in a cabin aboard the Magpie Mining Ship (docs/sandbox/constructs/miner.md) 1.8 km over
+  Crumb, Mille's 600 m moonlet in Frostreach (gravity 1.5, iron, stone and sand: docs/planets/WORLDS.md), so the first job is
+  to set down and drill. No colony, no tutorial, no faction, the kit aboard. Survival and Creative.
 - `Ground`: the map picked on the menu, the shipped start kit round its parts rack in Survival, no opening: what every
   Sandbox world was before the openings.
 - `PenalColony` (default, the Survival tutorial): Ministry convict on Glacier, the crash card, waking in the colony, the

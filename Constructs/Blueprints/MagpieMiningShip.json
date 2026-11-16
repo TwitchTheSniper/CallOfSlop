@@ -1,0 +1,1114 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Magpie Mining Ship",
+  "description": "A mining ship: it sets down over a deposit, lowers four drills on rams through the well in its keel and fills the ore hoppers on its flanks, then flies the load to a refinery.",
+  "steps": [
+    {
+      "part": "Magpie Keel"
+    },
+    {
+      "part": "Magpie Workshop Deck",
+      "on": 0,
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Magpie Drill Bay",
+      "on": 0,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Magpie Engine Deck",
+      "on": 0,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Magpie Bow",
+      "on": 1,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Magpie Bridge Deck",
+      "on": 1,
+      "socket": "j3",
+      "by": "j1"
+    },
+    {
+      "part": "Magpie Mess Deck",
+      "on": 2,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Magpie Ore Hopper L",
+      "on": 2,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Magpie Ore Hopper R",
+      "on": 2,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Magpie Nacelle L",
+      "on": 3,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Magpie Nacelle R",
+      "on": 3,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Magpie Spine",
+      "on": 5,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Magpie Stern",
+      "on": 6,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Magpie Drive",
+      "on": 9,
+      "socket": "drive",
+      "by": "front"
+    },
+    {
+      "part": "Magpie Lift Jet",
+      "on": 9,
+      "socket": "lift",
+      "by": "top"
+    },
+    {
+      "part": "Magpie Drive",
+      "on": 10,
+      "socket": "drive",
+      "by": "front"
+    },
+    {
+      "part": "Magpie Lift Jet",
+      "on": 10,
+      "socket": "lift",
+      "by": "top"
+    },
+    {
+      "part": "Magpie Lift Jet",
+      "on": 7,
+      "socket": "lift",
+      "by": "top"
+    },
+    {
+      "part": "Magpie Lift Jet",
+      "on": 8,
+      "socket": "lift",
+      "by": "top"
+    },
+    {
+      "part": "Magpie Retro Jet",
+      "on": 7,
+      "socket": "retro",
+      "by": "top"
+    },
+    {
+      "part": "Magpie Retro Jet",
+      "on": 8,
+      "socket": "retro",
+      "by": "top"
+    },
+    {
+      "part": "Magpie Landing Leg",
+      "on": 0,
+      "socket": "legFL",
+      "by": "top"
+    },
+    {
+      "part": "Magpie Landing Leg",
+      "on": 0,
+      "socket": "legFR",
+      "by": "top"
+    },
+    {
+      "part": "Magpie Landing Leg",
+      "on": 0,
+      "socket": "legBL",
+      "by": "top"
+    },
+    {
+      "part": "Magpie Landing Leg",
+      "on": 0,
+      "socket": "legBR",
+      "by": "top"
+    },
+    {
+      "part": "Magpie Boarding Ladder",
+      "on": 3,
+      "socket": "boarding",
+      "by": "hull"
+    },
+    {
+      "part": "Magpie Ladder Foot",
+      "on": 25,
+      "socket": "lower",
+      "by": "hang"
+    },
+    {
+      "part": "Magpie Ladder",
+      "on": 1,
+      "socket": "ladder",
+      "by": "bottom"
+    },
+    {
+      "part": "Magpie Ladder",
+      "on": 3,
+      "socket": "ladder",
+      "by": "bottom"
+    },
+    {
+      "part": "Tool Rack",
+      "on": 1,
+      "socket": "toolRack",
+      "by": "back"
+    },
+    {
+      "part": "Magpie Locker",
+      "on": 1,
+      "socket": "locker0",
+      "by": "wall",
+      "paint": "#a97c24",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Magpie Locker",
+      "on": 1,
+      "socket": "locker1",
+      "by": "wall",
+      "paint": "#5d6a60",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Magpie Fold Desk",
+      "on": 1,
+      "socket": "desk",
+      "by": "wall"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 1,
+      "socket": "crate0",
+      "by": "-y"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 1,
+      "socket": "crate1",
+      "by": "-y"
+    },
+    {
+      "part": "Magpie Cargo Rack",
+      "on": 1,
+      "socket": "shelf",
+      "by": "wall",
+      "paint": "#6b6f5a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 1,
+      "socket": "lampA",
+      "by": "back",
+      "config": {
+        "colour": "#fff0d0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 1,
+      "socket": "lampB",
+      "by": "back",
+      "config": {
+        "colour": "#fff0d0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 1,
+      "socket": "switch",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Storage Volume",
+      "on": 2,
+      "socket": "holdL",
+      "by": "-y",
+      "config": {
+        "sizeX": 2.75,
+        "sizeY": 1.6,
+        "sizeZ": 6.9,
+        "atX": -2.07,
+        "atY": 1.7,
+        "atZ": 0.0
+      },
+      "paint": "#a97c24",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Storage Volume",
+      "on": 2,
+      "socket": "holdR",
+      "by": "-y",
+      "config": {
+        "sizeX": 2.75,
+        "sizeY": 1.6,
+        "sizeZ": 6.9,
+        "atX": 2.07,
+        "atY": 1.7,
+        "atZ": 0.0
+      },
+      "paint": "#a97c24",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 2,
+      "socket": "drillSwitch",
+      "by": "back"
+    },
+    {
+      "part": "Text Sign",
+      "on": 2,
+      "socket": "drillSign",
+      "by": "back",
+      "text": [
+        "DRILLS UP",
+        "DRILLS DOWN"
+      ]
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 2,
+      "socket": "wellDoorSwitch",
+      "by": "back",
+      "config": {
+        "startOn": false
+      }
+    },
+    {
+      "part": "Magpie Well Door F",
+      "on": 0,
+      "socket": "wellDoorF",
+      "by": "hang",
+      "paint": "#5a5d5c",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Magpie Well Door A",
+      "on": 0,
+      "socket": "wellDoorA",
+      "by": "hang",
+      "paint": "#5a5d5c",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Piston 3x3 Long",
+      "on": 2,
+      "socket": "drill0",
+      "by": "base",
+      "config": {
+        "max": 2.0,
+        "speed": 0.3
+      },
+      "paint": "#e0a020",
+      "finish": "hazard paint"
+    },
+    {
+      "part": "Drill Module",
+      "on": 46,
+      "socket": "top",
+      "by": "drive",
+      "spin": 1
+    },
+    {
+      "part": "Piston 3x3 Long",
+      "on": 2,
+      "socket": "drill1",
+      "by": "base",
+      "config": {
+        "max": 2.0,
+        "speed": 0.3
+      },
+      "paint": "#e0a020",
+      "finish": "hazard paint"
+    },
+    {
+      "part": "Drill Module",
+      "on": 48,
+      "socket": "top",
+      "by": "drive",
+      "spin": 2
+    },
+    {
+      "part": "Piston 3x3 Long",
+      "on": 2,
+      "socket": "drill2",
+      "by": "base",
+      "config": {
+        "max": 2.0,
+        "speed": 0.3
+      },
+      "paint": "#e0a020",
+      "finish": "hazard paint"
+    },
+    {
+      "part": "Drill Module",
+      "on": 50,
+      "socket": "top",
+      "by": "drive",
+      "spin": 1
+    },
+    {
+      "part": "Piston 3x3 Long",
+      "on": 2,
+      "socket": "drill3",
+      "by": "base",
+      "config": {
+        "max": 2.0,
+        "speed": 0.3
+      },
+      "paint": "#e0a020",
+      "finish": "hazard paint"
+    },
+    {
+      "part": "Drill Module",
+      "on": 52,
+      "socket": "top",
+      "by": "drive",
+      "spin": 2
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "lampFL",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0a0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "lampFR",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0a0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 0,
+      "socket": "lampWellF",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0a0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 2,
+      "socket": "switchFore",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "lampAL",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0a0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "lampAR",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0a0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 0,
+      "socket": "lampWellA",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0a0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 2,
+      "socket": "switchAft",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Slide Door 1.5x2.25 m",
+      "on": 2,
+      "socket": "doorFore",
+      "by": "hang",
+      "paint": "#d8661c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Slide Door 1.5x2.25 m",
+      "on": 2,
+      "socket": "doorAft",
+      "by": "hang",
+      "paint": "#d8661c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Magpie Power Plant",
+      "on": 3,
+      "socket": "reactor",
+      "by": "bottom"
+    },
+    {
+      "part": "Battery",
+      "on": 3,
+      "socket": "battery0",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 3,
+      "socket": "battery1",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 3,
+      "socket": "battery2",
+      "by": "-y"
+    },
+    {
+      "part": "Power Board",
+      "on": 3,
+      "socket": "board",
+      "by": "back"
+    },
+    {
+      "part": "Pipe Bank",
+      "on": 3,
+      "socket": "pipes",
+      "by": "back"
+    },
+    {
+      "part": "Engineer's Panel",
+      "on": 3,
+      "socket": "panel",
+      "by": "back"
+    },
+    {
+      "part": "Magpie Locker",
+      "on": 3,
+      "socket": "suit0",
+      "by": "wall",
+      "paint": "#e0a020",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Magpie Locker",
+      "on": 3,
+      "socket": "suit1",
+      "by": "wall",
+      "paint": "#e0a020",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Magpie Locker",
+      "on": 3,
+      "socket": "suit2",
+      "by": "wall",
+      "paint": "#e0a020",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Tool Rack",
+      "on": 3,
+      "socket": "toolRack",
+      "by": "back"
+    },
+    {
+      "part": "Slide Door 1.5x2.25 m",
+      "on": 3,
+      "socket": "doorEng",
+      "by": "hang",
+      "paint": "#d8661c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Slide Door 1.5x2.25 m",
+      "on": 3,
+      "socket": "doorOuter",
+      "by": "hang",
+      "paint": "#d8661c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 3,
+      "socket": "lampEngA",
+      "by": "back",
+      "config": {
+        "colour": "#a0d0ff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 3,
+      "socket": "lampEngB",
+      "by": "back",
+      "config": {
+        "colour": "#a0d0ff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 3,
+      "socket": "switchEng",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 3,
+      "socket": "lampLock",
+      "by": "back",
+      "config": {
+        "colour": "#ff5040"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 3,
+      "socket": "lampSuit",
+      "by": "back",
+      "config": {
+        "colour": "#fff0d0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 12,
+      "socket": "lampPorch",
+      "by": "back",
+      "config": {
+        "colour": "#ffd890"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 3,
+      "socket": "switchLock",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Flight Couch",
+      "on": 5,
+      "socket": "pilot",
+      "by": "bottom"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 5,
+      "socket": "copilot",
+      "by": "bottom"
+    },
+    {
+      "part": "Magpie Flight Computer",
+      "on": 5,
+      "socket": "module",
+      "by": "bottom"
+    },
+    {
+      "part": "Chart Table",
+      "on": 5,
+      "socket": "chart",
+      "by": "back"
+    },
+    {
+      "part": "Magpie Locker",
+      "on": 5,
+      "socket": "bridgeLocker",
+      "by": "wall",
+      "paint": "#a97c24",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Magpie Cargo Rack",
+      "on": 5,
+      "socket": "shelf",
+      "by": "wall",
+      "paint": "#6b6f5a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Magpie Bunk",
+      "on": 5,
+      "socket": "couchA",
+      "by": "wall"
+    },
+    {
+      "part": "Magpie Locker",
+      "on": 5,
+      "socket": "lockerA",
+      "by": "wall",
+      "paint": "#5d6a60",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Magpie Bunk",
+      "on": 5,
+      "socket": "couchB",
+      "by": "wall"
+    },
+    {
+      "part": "Magpie Fold Desk",
+      "on": 5,
+      "socket": "deskB",
+      "by": "wall"
+    },
+    {
+      "part": "Slide Door 1.5x2.25 m",
+      "on": 5,
+      "socket": "doorBridge",
+      "by": "hang",
+      "paint": "#d8661c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Slide Door 1.5x2.25 m",
+      "on": 5,
+      "socket": "doorCabinA",
+      "by": "hang",
+      "paint": "#d8661c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Slide Door 1.5x2.25 m",
+      "on": 5,
+      "socket": "doorCabinB",
+      "by": "hang",
+      "paint": "#d8661c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampBridgeL",
+      "by": "back",
+      "config": {
+        "colour": "#ff6050"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampBridgeR",
+      "by": "back",
+      "config": {
+        "colour": "#ff6050"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 5,
+      "socket": "switchBridge",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampHall",
+      "by": "back",
+      "config": {
+        "colour": "#fff0d0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampCabinA",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 5,
+      "socket": "switchHall",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampCabinB",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 5,
+      "socket": "switchCabinB",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Ship Toilet",
+      "on": 6,
+      "socket": "toilet",
+      "by": "wall"
+    },
+    {
+      "part": "Ship Basin",
+      "on": 6,
+      "socket": "basin",
+      "by": "wall"
+    },
+    {
+      "part": "Shower Stall",
+      "on": 6,
+      "socket": "shower",
+      "by": "wall",
+      "paint": "#dfe4e2",
+      "finish": "gloss paint"
+    },
+    {
+      "part": "Magpie Med Bed",
+      "on": 6,
+      "socket": "med",
+      "by": "back"
+    },
+    {
+      "part": "Magpie Med Locker",
+      "on": 6,
+      "socket": "cabinet",
+      "by": "back"
+    },
+    {
+      "part": "Magpie Galley",
+      "on": 6,
+      "socket": "stove",
+      "by": "back"
+    },
+    {
+      "part": "Magpie Brew Unit",
+      "on": 6,
+      "socket": "coffee",
+      "by": "wall"
+    },
+    {
+      "part": "Magpie Locker",
+      "on": 6,
+      "socket": "messLocker",
+      "by": "wall",
+      "paint": "#5c646a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Magpie Mess Table",
+      "on": 6,
+      "socket": "table",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Grow Rack 2 m",
+      "on": 6,
+      "socket": "growL",
+      "by": "wall"
+    },
+    {
+      "part": "Grow Rack 2 m",
+      "on": 6,
+      "socket": "growR",
+      "by": "wall"
+    },
+    {
+      "part": "Slide Door 1.5x2.25 m",
+      "on": 6,
+      "socket": "doorHead",
+      "by": "hang",
+      "paint": "#d8661c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Slide Door 1.5x2.25 m",
+      "on": 6,
+      "socket": "doorMed",
+      "by": "hang",
+      "paint": "#d8661c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Slide Door 1.5x2.25 m",
+      "on": 6,
+      "socket": "doorMess",
+      "by": "hang",
+      "paint": "#d8661c",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 6,
+      "socket": "lampHead",
+      "by": "back",
+      "config": {
+        "colour": "#fff0d0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 6,
+      "socket": "switchHead",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 6,
+      "socket": "lampMed",
+      "by": "back",
+      "config": {
+        "colour": "#f4fbff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 6,
+      "socket": "switchMed",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 6,
+      "socket": "lampMessL",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 6,
+      "socket": "lampMessR",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0b0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 6,
+      "socket": "switchMess",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    }
+  ],
+  "wires": [
+    [
+      38,
+      36
+    ],
+    [
+      38,
+      37
+    ],
+    [
+      41,
+      42
+    ],
+    [
+      43,
+      44
+    ],
+    [
+      43,
+      45
+    ],
+    [
+      41,
+      46
+    ],
+    [
+      41,
+      48
+    ],
+    [
+      41,
+      50
+    ],
+    [
+      41,
+      52
+    ],
+    [
+      57,
+      54
+    ],
+    [
+      57,
+      55
+    ],
+    [
+      57,
+      56
+    ],
+    [
+      61,
+      58
+    ],
+    [
+      61,
+      59
+    ],
+    [
+      61,
+      60
+    ],
+    [
+      79,
+      77
+    ],
+    [
+      79,
+      78
+    ],
+    [
+      83,
+      80
+    ],
+    [
+      83,
+      81
+    ],
+    [
+      83,
+      82
+    ],
+    [
+      84,
+      86
+    ],
+    [
+      99,
+      97
+    ],
+    [
+      99,
+      98
+    ],
+    [
+      102,
+      100
+    ],
+    [
+      102,
+      101
+    ],
+    [
+      104,
+      103
+    ],
+    [
+      120,
+      119
+    ],
+    [
+      122,
+      121
+    ],
+    [
+      125,
+      123
+    ],
+    [
+      125,
+      124
+    ]
+  ],
+  "conduit": true,
+  "links": [
+    {
+      "type": "chute",
+      "from": 47,
+      "to": 39,
+      "fromPort": "Chute out",
+      "toPort": "Chute in"
+    },
+    {
+      "type": "chute",
+      "from": 49,
+      "to": 40,
+      "fromPort": "Chute out",
+      "toPort": "Chute in"
+    },
+    {
+      "type": "chute",
+      "from": 51,
+      "to": 39,
+      "fromPort": "Chute out",
+      "toPort": "Chute in"
+    },
+    {
+      "type": "chute",
+      "from": 53,
+      "to": 40,
+      "fromPort": "Chute out",
+      "toPort": "Chute in"
+    }
+  ]
+}

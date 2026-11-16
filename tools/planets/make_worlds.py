@@ -165,7 +165,7 @@ WORLDS = [
         "name": "Cinder", "order": 2, "radius": 5000, "strength": 12,
         "ore": {"copper vein": 2, "gold vein": 1.5, "stone seam": 1.5, "helium pocket": 0, "sand bed": 0.5},
         "limit": (60, "the ash flats swallow anything heavier"),
-        "description": "Cinder, a 5 km scorched rock close to the red dwarf Ember (Systems/Ember.json), one face always to its sun: black basalt, craters, lava plains in the low ground and long fissures. The Call Centre works from the Call Floor, a flat-bottomed crater on the twilight line.",
+        "description": "Cinder, a 5 km scorched rock close to the white star Frostreach (Systems/Frostreach.json), one face always to its sun: black basalt, craters, lava plains in the low ground and long fissures. The Call Centre works from the Call Floor, a flat-bottomed crater on the twilight line.",
         "surface": {"grass": "#3b3331", "dirt": "#4d3a33", "rock": "#221d1d", "sand": "#a3472a", "dirtSlope": 22, "rockSlope": 34, "sandBelow": -28},
         "skybox": {"preset": "dusk", "zenith": "#1a0d10", "horizon": "#6e2a1c", "ground": "#1c1414", "stars": 1.4,
                    "sun": {"color": "#ff8a5a", "intensity": 1.1, "size": 5, "glow": 0.9}, "clouds": False,
@@ -238,7 +238,7 @@ WORLDS = [
     {
         "name": "Caledon", "order": 4, "radius": 6000, "strength": 11,
         "ore": {"stone seam": 2, "iron vein": 1.5, "sand bed": 0.5},
-        "description": "Caledon, the 6 km highland world of Glenmore (Systems/Glenmore.json): steep bens with snow on their tops, long glens between them, heather on the slopes and bog in the low ground. Clan MacSlop's Glen runs through its middle.",
+        "description": "Caledon, the 6 km highland world of Frostreach (Systems/Frostreach.json): steep bens with snow on their tops, long glens between them, heather on the slopes and bog in the low ground. Clan MacSlop's Glen runs through its middle.",
         "surface": {"grass": "#56733f", "dirt": "#75597a", "rock": "#5d5f66", "sand": "#4a4a33", "snow": "#e8eef0", "dirtSlope": 17, "rockSlope": 36, "sandBelow": -70, "snowAbove": 520},
         "skybox": {"preset": "overcast", "zenith": "#7d8a96", "horizon": "#b9c2c8", "ground": "#5b6a55",
                    "sun": {"color": "#fff4dc", "intensity": 0.85}, "clouds": {"coverage": 0.72, "density": 0.6, "altitude": 1600, "speed": 14},
@@ -271,7 +271,7 @@ WORLDS = [
         "name": "Mille", "order": 5, "radius": 3000, "strength": 8,
         "ore": {"levite seam": 3, "gold vein": 2, "sand bed": 1.5, "iron vein": 0.5},
         "limit": (40, "the crust is thin over the cavity"),
-        "description": "Mille, the 3 km hollow world of Hearth (Systems/Hearth.json): a golden crust stepped in layers all the way round, 220 m thick, over a cavity that glows like an oven. Its terrace stands empty for now: no faction lives here yet. The crust is thinnest under the Proving Bowl: dig there to get in.",
+        "description": "Mille, the 3 km hollow world of Frostreach (Systems/Frostreach.json): a golden crust stepped in layers all the way round, 220 m thick, over a cavity that glows like an oven. Its terrace stands empty for now: no faction lives here yet. The crust is thinnest under the Proving Bowl: dig there to get in.",
         "surface": {"grass": "#c99a4e", "dirt": "#a8733a", "rock": "#7d4f28", "sand": "#e8cf8f", "dirtSlope": 16, "rockSlope": 30, "sandBelow": -22},
         "skybox": {"preset": "dusk", "zenith": "#5e6f9a", "horizon": "#f0c48a", "ground": "#8a6a3c",
                    "sun": {"color": "#ffd9a0", "intensity": 1.0, "size": 1.8, "glow": 0.5}, "haze": {"color": "#e8b878", "strength": 0.6}},
@@ -308,6 +308,33 @@ WORLDS = [
         "city": {"radius": 640, "seed": 7, "blockX": 64, "blockZ": 88, "street": 16, "avenue": 26, "avenueEvery": 3, "tallest": 230, "lowest": 14, "coreFalloff": 700, "loop": 330, "metro": 1},
         "pole": False,
     },
+    {
+        # Karl (2026-11-15): "a start for the mining ship ... near an asteroid or something with low gravity to mine basic
+        # materials". Crumb was Mille's 350 m moonlet, rails and sky; it is a 600 m rock now (500 m is a planetoid's least),
+        # with Moon-like gravity and only the ores a tier 1 drill works (iron, stone, sand). The Magpie start wakes over it.
+        "name": "Crumb", "order": 7, "radius": 600, "strength": 1.5,
+        "ore": {"iron vein": 3, "stone seam": 2, "sand bed": 1.5, "copper vein": 0, "gold vein": 0, "helium pocket": 0, "levite seam": 0},
+        "sky": 1400,  # (the sky's edge 1.4 km up, not 2.6: a small rock's sky is short, so a ship start waits close over it)
+        "description": "Crumb, Mille's moonlet in Frostreach (Systems/Frostreach.json): a 600 m lump of rubble with a sixth of a world's pull, pocked with craters and streaked with iron, stone and sand. Close to home and easy to lift off from: where a new mining crew starts.",
+        "surface": {"grass": "#6e6559", "dirt": "#5c5348", "rock": "#433d36", "sand": "#8a7c66", "dirtSlope": 14, "rockSlope": 28, "sandBelow": -18},
+        "skybox": {"preset": "dusk", "zenith": "#05060c", "horizon": "#2a2622", "ground": "#1a1714", "stars": 1.6, "clouds": False,
+                   "sun": {"color": "#fff1dc", "intensity": 1.15, "size": 1.4, "glow": 0.4}, "haze": {"color": "#3a332c", "strength": 0.2}, "ambient": 0.7},
+        "features": [
+            noise(38, 520, 4, 71),  # a lumpy potato, not a ball
+            mountain(-20, 140, 260, 70, 72, ridges=0.4, erosion=0.5),
+            mountain(10, 300, 200, 50, 73, ridges=0.3, erosion=0.5),
+            crater(-60, 40, 130, 45),
+            crater(20, 200, 110, 35),
+            crater(45, 90, 70, 22),
+            crater(-10, 30, 90, 30),
+            crater(60, 260, 55, 18),
+            crater(-35, 250, 60, 20),
+            crater(5, 120, 40, 14),
+            noise(3, 40, 3, 74),
+        ],
+        "landing": 6,
+        "sites": [],
+    },
 ]
 
 
@@ -336,7 +363,7 @@ def build(w):
     def y(x, z, lift=0.0):
         return round(math.sqrt(top * top - x * x - z * z) + lift, 3)
 
-    half = min(r + 2600, 12600)
+    half = min(r + w.get("sky", 2600), 12600)
     ops = [{"op": "SurfaceSpawn", "lat": lat_of(top, 14), "lon": 22.5 + 45 * k} for k in range(8)]
     if w.get("pole", True):
         ops.append({"op": "SurfaceBlock", "lat": 90, "lon": 0, "w": 1.2, "h": 6, "d": 1.2, "color": "#8a8f99", "material": "Concrete"})  # the pole's post

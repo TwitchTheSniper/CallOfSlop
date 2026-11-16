@@ -1,0 +1,153 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Halberd Med Wall Bow",
+  "description": "A wall run of the Halberd's med storey, the bow side, inside its hull panel.",
+  "group": "Ship",
+  "section": "Halberd frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1100.0,
+  "health": 4000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#8e959a",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        2.025,
+        6.375,
+        0.625
+      ],
+      "max": [
+        7.725,
+        9.625,
+        0.875
+      ],
+      "color": "#8e959a",
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        2.025,
+        6.628,
+        0.875
+      ],
+      "max": [
+        7.725,
+        7.115,
+        0.887
+      ],
+      "color": "#4c555c",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        2.075,
+        7.825,
+        0.875
+      ],
+      "max": [
+        7.675,
+        7.945,
+        0.887
+      ],
+      "color": "#5aa88a",
+      "detail": true,
+      "finish": "gloss paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hull0",
+      "at": [
+        4.875,
+        9.275,
+        0.625
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "medL",
+      "at": [
+        3.275,
+        7.425,
+        0.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "medR",
+      "at": [
+        5.875,
+        7.425,
+        0.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "cabinet",
+      "at": [
+        4.575,
+        7.475,
+        0.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "decon",
+      "at": [
+        7.225,
+        6.75,
+        0.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        4.875,
+        6.375,
+        0.755
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        4.875,
+        6.495,
+        0.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        2.025,
+        7.995,
+        0.845
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        7.725,
+        7.995,
+        0.845
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        4.875,
+        9.625,
+        0.755
+      ],
+      "dir": "+y"
+    }
+  ]
+}

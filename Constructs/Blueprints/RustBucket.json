@@ -1,22 +1,166 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Rust Bucket",
-  "description": "Your ship: a patched two-deck tramp with a cockpit, two cabins, hydroponics, a galley, a hold and an engine room.",
+  "description": "Your ship: a patched two-deck tramp with a blunt bridge over its cargo ramp, a cockpit, two cabins, hydroponics, a galley, a hold and an engine room.",
   "steps": [
     {
       "part": "Rust Bucket Keel"
     },
     {
-      "part": "Rust Bucket Deck",
+      "part": "Rust Bucket Tail",
       "on": 0,
-      "socket": "deck",
-      "by": "keel"
+      "socket": "j0",
+      "by": "j0"
+    },
+    {
+      "part": "Rust Bucket Chin",
+      "on": 0,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Rust Bucket Lower Port Fore",
+      "on": 0,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
+      "part": "Rust Bucket Lower Stbd Fore",
+      "on": 0,
+      "socket": "j3",
+      "by": "j0"
+    },
+    {
+      "part": "Rust Bucket Lower Port Aft",
+      "on": 0,
+      "socket": "j4",
+      "by": "j0"
+    },
+    {
+      "part": "Rust Bucket Lower Stbd Aft",
+      "on": 0,
+      "socket": "j5",
+      "by": "j0"
+    },
+    {
+      "part": "Rust Bucket Lower Stern",
+      "on": 0,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Rust Bucket Frame Fore",
+      "on": 0,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Rust Bucket Frame Mid",
+      "on": 0,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Rust Bucket Frame Aft",
+      "on": 0,
+      "socket": "j9",
+      "by": "j0"
+    },
+    {
+      "part": "Rust Bucket Partition 1",
+      "on": 0,
+      "socket": "j10",
+      "by": "j0"
     },
     {
       "part": "Rust Bucket Roof",
       "on": 1,
-      "socket": "roof",
-      "by": "deck"
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Rust Bucket Deck",
+      "on": 2,
+      "socket": "j1",
+      "by": "j0"
+    },
+    {
+      "part": "Rust Bucket Upper Port Fore",
+      "on": 9,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Rust Bucket Upper Stbd Fore",
+      "on": 9,
+      "socket": "j7",
+      "by": "j0"
+    },
+    {
+      "part": "Rust Bucket Upper Port Aft",
+      "on": 9,
+      "socket": "j8",
+      "by": "j0"
+    },
+    {
+      "part": "Rust Bucket Upper Stbd Aft",
+      "on": 9,
+      "socket": "j9",
+      "by": "j0"
+    },
+    {
+      "part": "Rust Bucket Upper Stern",
+      "on": 10,
+      "socket": "j6",
+      "by": "j0"
+    },
+    {
+      "part": "Rust Bucket Canopy",
+      "on": 12,
+      "socket": "j4",
+      "by": "j1"
+    },
+    {
+      "part": "Rust Bucket Partition 2",
+      "on": 12,
+      "socket": "j10",
+      "by": "j3"
+    },
+    {
+      "part": "Rust Bucket Partition 3",
+      "on": 12,
+      "socket": "j11",
+      "by": "j3"
+    },
+    {
+      "part": "Rust Bucket Partition 4",
+      "on": 12,
+      "socket": "j12",
+      "by": "j2"
+    },
+    {
+      "part": "Rust Bucket Partition 5",
+      "on": 12,
+      "socket": "j13",
+      "by": "j1"
+    },
+    {
+      "part": "Rust Bucket Partition 6",
+      "on": 12,
+      "socket": "j14",
+      "by": "j2"
+    },
+    {
+      "part": "Rust Bucket Partition 7",
+      "on": 12,
+      "socket": "j15",
+      "by": "j1"
+    },
+    {
+      "part": "Rust Bucket Partition 8",
+      "on": 12,
+      "socket": "j16",
+      "by": "j1"
     },
     {
       "part": "Rust Bucket Pod L",
@@ -44,37 +188,37 @@
     },
     {
       "part": "Rust Bucket Drive",
-      "on": 3,
+      "on": 27,
       "socket": "drive",
       "by": "front"
     },
     {
       "part": "Rust Bucket Lift Jet",
-      "on": 3,
+      "on": 27,
       "socket": "lift",
       "by": "top"
     },
     {
       "part": "Rust Bucket Drive",
-      "on": 4,
+      "on": 28,
       "socket": "drive",
       "by": "front"
     },
     {
       "part": "Rust Bucket Lift Jet",
-      "on": 4,
+      "on": 28,
       "socket": "lift",
       "by": "top"
     },
     {
       "part": "Rust Bucket Lift Jet",
-      "on": 5,
+      "on": 29,
       "socket": "lift",
       "by": "top"
     },
     {
       "part": "Rust Bucket Lift Jet",
-      "on": 6,
+      "on": 30,
       "socket": "lift",
       "by": "top"
     },
@@ -115,8 +259,40 @@
       "by": "b0_0"
     },
     {
+      "part": "Rust Bucket Deck Cargo",
+      "on": 12,
+      "socket": "cargo",
+      "by": "bottom",
+      "paint": "#3f5e6a",
+      "finish": "rusty paint"
+    },
+    {
+      "part": "Rust Bucket Crane",
+      "on": 12,
+      "socket": "crane",
+      "by": "bottom"
+    },
+    {
+      "part": "Rust Bucket Mast",
+      "on": 12,
+      "socket": "mast",
+      "by": "bottom"
+    },
+    {
+      "part": "Rust Bucket Radiator L",
+      "on": 12,
+      "socket": "radL",
+      "by": "root"
+    },
+    {
+      "part": "Rust Bucket Radiator R",
+      "on": 12,
+      "socket": "radR",
+      "by": "root"
+    },
+    {
       "part": "Store Shelving 2 m",
-      "on": 0,
+      "on": 3,
       "socket": "shelfL0",
       "by": "wall",
       "paint": "#6b6f5a",
@@ -124,7 +300,7 @@
     },
     {
       "part": "Store Shelving 2 m",
-      "on": 0,
+      "on": 3,
       "socket": "shelfL1",
       "by": "wall",
       "paint": "#6b6f5a",
@@ -132,7 +308,7 @@
     },
     {
       "part": "Store Shelving 2 m",
-      "on": 0,
+      "on": 5,
       "socket": "shelfL2",
       "by": "wall",
       "paint": "#6b6f5a",
@@ -140,13 +316,13 @@
     },
     {
       "part": "Tool Rack",
-      "on": 0,
+      "on": 4,
       "socket": "rackR",
       "by": "back"
     },
     {
       "part": "Locker",
-      "on": 0,
+      "on": 4,
       "socket": "lockerR",
       "by": "wall",
       "paint": "#5d7468",
@@ -172,32 +348,32 @@
     },
     {
       "part": "Engineer's Panel",
-      "on": 0,
+      "on": 11,
       "socket": "panelEng",
       "by": "back"
     },
     {
       "part": "Power Board",
-      "on": 0,
+      "on": 11,
       "socket": "boardEng",
       "by": "back"
     },
     {
       "part": "Pipe Bank",
-      "on": 0,
+      "on": 11,
       "socket": "pipesEngL",
       "by": "back"
     },
     {
       "part": "Battery",
-      "on": 0,
+      "on": 11,
       "socket": "battery",
       "by": "-z",
       "paint": "#3a3d3f"
     },
     {
       "part": "Bulkhead Light",
-      "on": 0,
+      "on": 3,
       "socket": "lampHoldL0",
       "by": "back",
       "config": {
@@ -206,7 +382,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 0,
+      "on": 5,
       "socket": "lampHoldL1",
       "by": "back",
       "config": {
@@ -215,7 +391,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 0,
+      "on": 3,
       "socket": "switchHoldL",
       "by": "back",
       "config": {
@@ -224,7 +400,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 0,
+      "on": 4,
       "socket": "lampHoldR0",
       "by": "back",
       "config": {
@@ -233,7 +409,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 0,
+      "on": 4,
       "socket": "lampHoldR1",
       "by": "back",
       "config": {
@@ -242,7 +418,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 0,
+      "on": 4,
       "socket": "switchHoldR",
       "by": "back",
       "config": {
@@ -251,7 +427,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 0,
+      "on": 5,
       "socket": "lampEngL",
       "by": "back",
       "config": {
@@ -260,7 +436,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 0,
+      "on": 6,
       "socket": "lampEngR",
       "by": "back",
       "config": {
@@ -269,7 +445,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 0,
+      "on": 11,
       "socket": "switchEng",
       "by": "back",
       "config": {
@@ -278,31 +454,31 @@
     },
     {
       "part": "Seat",
-      "on": 1,
+      "on": 13,
       "socket": "seatL",
       "by": "bottom"
     },
     {
       "part": "Seat",
-      "on": 1,
+      "on": 13,
       "socket": "seatR",
       "by": "bottom"
     },
     {
       "part": "Driving Module",
-      "on": 1,
+      "on": 13,
       "socket": "module",
       "by": "-y"
     },
     {
       "part": "Chart Table",
-      "on": 1,
+      "on": 20,
       "socket": "chart",
       "by": "back"
     },
     {
       "part": "Iron Bed",
-      "on": 1,
+      "on": 14,
       "socket": "bed",
       "by": "wall",
       "paint": "#6b4a2e",
@@ -310,7 +486,7 @@
     },
     {
       "part": "Locker",
-      "on": 1,
+      "on": 20,
       "socket": "locker",
       "by": "wall",
       "paint": "#8c7b52",
@@ -318,73 +494,79 @@
     },
     {
       "part": "Steel Desk",
-      "on": 1,
+      "on": 24,
       "socket": "desk",
       "by": "wall"
     },
     {
       "part": "Shower Stall",
-      "on": 1,
+      "on": 20,
       "socket": "shower",
       "by": "wall"
     },
     {
       "part": "Ship Basin",
-      "on": 1,
+      "on": 15,
       "socket": "basin",
       "by": "wall"
     },
     {
       "part": "Ship Toilet",
-      "on": 1,
+      "on": 15,
       "socket": "toilet",
       "by": "wall"
     },
     {
       "part": "Grow Rack 2 m",
-      "on": 1,
+      "on": 16,
       "socket": "growL0",
       "by": "wall"
     },
     {
       "part": "Grow Rack 2 m",
-      "on": 1,
+      "on": 16,
       "socket": "growL1",
       "by": "wall"
     },
     {
       "part": "Grow Rack 2 m",
-      "on": 1,
+      "on": 21,
       "socket": "growM0",
       "by": "wall"
     },
     {
       "part": "Grow Rack 2 m",
-      "on": 1,
+      "on": 21,
       "socket": "growM1",
       "by": "wall"
     },
     {
-      "part": "Galley Stove",
-      "on": 1,
+      "part": "Ship Galley Range",
+      "on": 17,
       "socket": "stove",
       "by": "back"
     },
     {
-      "part": "Mess Table",
-      "on": 1,
+      "part": "Ship Mess Table",
+      "on": 26,
       "socket": "table",
       "by": "back"
     },
     {
       "part": "Medicine Cabinet",
-      "on": 1,
+      "on": 17,
       "socket": "cabinet",
       "by": "back"
     },
     {
+      "part": "Galley Coffee Station",
+      "on": 23,
+      "socket": "coffee",
+      "by": "wall"
+    },
+    {
       "part": "Steel Swing Door 1.5x2.25 m",
-      "on": 1,
+      "on": 20,
       "socket": "doorCockpit",
       "by": "hang",
       "paint": "#5d7468",
@@ -392,7 +574,7 @@
     },
     {
       "part": "Steel Swing Door 1.5x2.25 m",
-      "on": 1,
+      "on": 21,
       "socket": "doorBed",
       "by": "hang",
       "paint": "#5d7468",
@@ -400,7 +582,7 @@
     },
     {
       "part": "Steel Swing Door 1.5x2.25 m",
-      "on": 1,
+      "on": 22,
       "socket": "doorBath",
       "by": "hang",
       "paint": "#c9ccc4",
@@ -408,7 +590,7 @@
     },
     {
       "part": "Steel Swing Door 1.5x2.25 m",
-      "on": 1,
+      "on": 21,
       "socket": "doorHydro",
       "by": "hang",
       "paint": "#5d7468",
@@ -416,7 +598,7 @@
     },
     {
       "part": "Steel Swing Door 1.5x2.25 m",
-      "on": 1,
+      "on": 23,
       "socket": "doorGalley",
       "by": "hang",
       "paint": "#5d7468",
@@ -424,7 +606,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 1,
+      "on": 20,
       "socket": "lampCockpit",
       "by": "back",
       "config": {
@@ -433,7 +615,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 1,
+      "on": 20,
       "socket": "lampBed",
       "by": "back",
       "config": {
@@ -442,7 +624,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 1,
+      "on": 25,
       "socket": "lampBath",
       "by": "back",
       "config": {
@@ -451,7 +633,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 1,
+      "on": 21,
       "socket": "lampCorrA",
       "by": "back",
       "config": {
@@ -460,7 +642,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 1,
+      "on": 21,
       "socket": "switchFwd",
       "by": "back",
       "config": {
@@ -469,7 +651,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 1,
+      "on": 21,
       "socket": "lampHydroA",
       "by": "back",
       "config": {
@@ -478,7 +660,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 1,
+      "on": 21,
       "socket": "lampHydroB",
       "by": "back",
       "config": {
@@ -487,7 +669,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 1,
+      "on": 21,
       "socket": "lampCorrB",
       "by": "back",
       "config": {
@@ -496,7 +678,7 @@
     },
     {
       "part": "Bulkhead Light",
-      "on": 1,
+      "on": 26,
       "socket": "lampGalley",
       "by": "back",
       "config": {
@@ -505,7 +687,7 @@
     },
     {
       "part": "Bakelite Switch",
-      "on": 1,
+      "on": 23,
       "socket": "switchAft",
       "by": "back",
       "config": {
@@ -515,68 +697,69 @@
   ],
   "wires": [
     [
-      33,
-      31
+      62,
+      60
     ],
     [
-      33,
-      32
+      62,
+      61
     ],
     [
-      36,
-      34
-    ],
-    [
-      36,
-      35
-    ],
-    [
-      39,
-      37
-    ],
-    [
-      39,
-      38
-    ],
-    [
-      40,
-      42
-    ],
-    [
-      42,
-      11
-    ],
-    [
-      66,
-      62
-    ],
-    [
-      66,
+      65,
       63
     ],
     [
-      66,
+      65,
       64
     ],
     [
-      66,
-      65
+      68,
+      66
     ],
     [
-      71,
+      68,
       67
     ],
     [
-      71,
-      68
+      69,
+      71
     ],
     [
       71,
-      69
+      35
     ],
     [
-      71,
-      70
+      96,
+      92
+    ],
+    [
+      96,
+      93
+    ],
+    [
+      96,
+      94
+    ],
+    [
+      96,
+      95
+    ],
+    [
+      101,
+      97
+    ],
+    [
+      101,
+      98
+    ],
+    [
+      101,
+      99
+    ],
+    [
+      101,
+      100
     ]
-  ]
+  ],
+  "conduit": true
 }

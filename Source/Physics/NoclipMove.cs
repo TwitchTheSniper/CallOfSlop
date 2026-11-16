@@ -101,7 +101,7 @@ public static class NoclipMove
     /// <summary>
     /// The space a noclip flight has: the map's rectangle (the snapshots, the streamed ground and every mover assume players
     /// stay in it) from well under the ground to well over it; on a planet, the sky's edge players have anyway
-    /// (<see cref="World.ClampToSky"/>, which is under the edge of the space bubble) and any depth.
+    /// (<see cref="World.SkyRadius"/>: the edge of the space bubble, or far past it in Sandbox) and any depth.
     /// </summary>
     public static Vector3 Bounds(Vector3 feet)
     {
@@ -110,7 +110,7 @@ public static class NoclipMove
         {
             var d = feet - planet.Center;
             var len = d.Length();
-            var max = MathF.Max(map.HalfX, map.HalfZ);
+            var max = World.SkyRadius;
             if (len > max)
                 return planet.Center + d / len * max;
             return len < 2f ? planet.Center + (len > 1e-3f ? d / len : Vector3.UnitY) * 2f : feet; // (the planet's very centre has no up)

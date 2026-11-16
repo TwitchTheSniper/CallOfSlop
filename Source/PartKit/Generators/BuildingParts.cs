@@ -844,12 +844,15 @@ public sealed partial class BuildingParts : IPartGenerator
     /// <summary>Steps as solid boxes from the floor: drawn as they are (concrete), or hidden under thin treads (wood, steel).</summary>
     private static void StepBoxes(BPart p, List<(double Z0, double Z1, double Top)> steps, double x0, double x1, bool solidVisible, string treadColour)
     {
+        // A building part holds 16 boxes: a flight whose steps and treads don't both fit (the 12-step Wide Stair) draws its steps
+        // whole, in the material's colour, instead of hidden steps under dark treads (a cap on the treads drew only its bottom 4).
+        if (!solidVisible && p.Boxes.Count + steps.Count * 2 > 16)
+            solidVisible = true;
         foreach (var (z0, z1, top) in steps)
             p.FBox(x0, 0, z0, x1, top, z1, hidden: !solidVisible);
         if (!solidVisible)
             foreach (var (z0, z1, top) in steps)
-                if (p.Boxes.Count < 16)
-                    p.FBox(x0, top - 0.05, z0, x1, top, z1, treadColour, detail: true);
+                p.FBox(x0, top - 0.05, z0, x1, top, z1, treadColour, detail: true);
     }
 
     /// <summary>A straight flight: <paramref name="count"/> steps (0: 8 for a storey, 4 for half) over <paramref name="run"/> cells,
@@ -1658,6 +1661,9 @@ public sealed partial class BuildingParts : IPartGenerator
         /// <summary>Signal wires by step, from and to (look.md "The authoring fields"): a switch to its lamps.</summary>
         public readonly List<(int From, int To)> Wires = [];
 
+        /// <summary>Data links from a named output port, by step (a Driving Module's "lift" into a hinge): the blueprint's "links".</summary>
+        public readonly List<(int From, int To, string FromPort)> DataLinks = [];
+
         /// <summary>Lay the wires as conduit along the walls though the build isn't anchored (a ship's lamps: ConstructConduit.cs).</summary>
         public bool Conduit;
 
@@ -1797,6 +1803,8 @@ public sealed partial class BuildingParts : IPartGenerator
             var d = new PyDict { ["format"] = "call-of-slop-construct-blueprint/1", ["name"] = Name, ["description"] = Desc, ["steps"] = Steps.Cast<object?>().ToList() };
             if (Wires.Count > 0)
                 d["wires"] = Wires.Select(w => (object?)new List<object?> { w.From, w.To }).ToList();
+            if (DataLinks.Count > 0)
+                d["links"] = DataLinks.Select(l => (object?)new PyDict { ["type"] = "data", ["from"] = l.From, ["to"] = l.To, ["fromPort"] = l.FromPort }).ToList();
             if (Conduit)
                 d["conduit"] = true;
             return d;

@@ -1,0 +1,111 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Halberd Robot Bay Wall Stern",
+  "description": "A wall run of the Halberd's robot bay storey, the stern side, inside its hull panel.",
+  "group": "Ship",
+  "section": "Halberd frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1100.0,
+  "health": 4000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#8e959a",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        2.025,
+        3.125,
+        7.875
+      ],
+      "max": [
+        7.725,
+        6.375,
+        8.125
+      ],
+      "color": "#8e959a",
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        2.025,
+        3.378,
+        7.863
+      ],
+      "max": [
+        7.725,
+        3.865,
+        7.875
+      ],
+      "color": "#4c555c",
+      "detail": true,
+      "finish": "matte paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hull2",
+      "at": [
+        4.875,
+        6.025,
+        8.125
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "lampD",
+      "at": [
+        4.375,
+        5.825,
+        7.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        3.075,
+        3.125,
+        7.995
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        4.875,
+        3.255,
+        7.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        7.725,
+        4.755,
+        7.905
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        2.025,
+        4.755,
+        7.905
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        4.875,
+        6.375,
+        7.995
+      ],
+      "dir": "+y"
+    }
+  ]
+}
