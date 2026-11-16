@@ -78,7 +78,7 @@ Invert pitch swaps W and S (not on Ship keys). **Settings:** keys, strength, sta
 
 **The gyro.** Thrusters have no torque about their own axis, so four pushing the same way can't turn. A stabilizer has a gyro (`logic.gyro`, N m: 1,500, 400,000, 30,000,000, 2,000,000,000), an effector like any other about its own up.
 
-**Autopilot.** Hold altitude, hold heading, hover, waypoint, return home; on the configure panel, a Flight Control Panel or its inputs. Altitude 0 and heading -1 mean where it was when engaged. Home is where it last armed, or `set home`. A plane circles a point; a ship stops turning for it 25 m off.
+**Autopilot.** Hold altitude, hold heading, hover, waypoint, return home; on the configure panel, a Flight Control Panel or its inputs. Altitude 0 and heading -1 mean where it was when engaged. Home is where it last armed, or `set home`. A plane circles a point; a ship stops turning for it 25 m off. On Ship keys the autopilot flies along the craft's own axes: to the height it holds and over the ground to its point, turning the nose that way when nobody steers (hands on the keys come first). The command view's orders work a ship through it while the ship is in a sky (docs/space/COMMAND.md).
 
 **AI crew** (the Crew group: Off, Fights strangers, Fights everyone): a crew flies and fights the craft from its own seats, server side. It closes on the nearest player in 2.5 km, keeps 220 m off, and fires its seats' guns, its Button-fired racks and flares; a player at the helm takes over. torpedo-frigate.md "The crew" has the rules.
 

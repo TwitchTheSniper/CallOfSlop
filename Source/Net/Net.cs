@@ -123,6 +123,7 @@ public enum Msg : byte
     Errand, // server -> one client, Sandbox story: their errand on a works yard machine (u8 errand + 1 in Story/Errands, 0 none; u8 step, 255 done; u8 has a target, vec target) when it changes (reliable ordered; GameErrands.cs, protocol 314)
     LabourDay, // server -> all and each joiner, Sandbox story: the penal colony's day (u8 period + 1 of Story/Labour's "day", 0 none; u64 the labour scenes on shift, a bit each) when it changes (reliable ordered; GameLabourDay.cs, protocol 316)
     LabourIncident, // server -> all, Sandbox story: an incident in a labour gang (u8 scene, u8 kind, u8 inmate, u32 the server tick it began) as it begins (reliable ordered; GameLabourIncidents.cs, protocol 317)
+    Nav, // server -> all and each joiner, Sandbox: a ship's order from the command view (u16 construct, u8 NavKind (0: it ended), u8 body, u8 NavPhase, u8 the player who gave it, 3 x f64 point, f64 radius) when it begins, changes phase or ends (reliable ordered; GameNav.cs, protocol 323)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

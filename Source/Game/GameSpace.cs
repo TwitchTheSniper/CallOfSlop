@@ -64,6 +64,7 @@ public sealed partial class Game
         if (Space?.Flight is not { } f)
             return;
         f.AnyoneBusy = SpaceAnyoneBusy();
+        ServerTickNav(Space); // (ships under orders: where their drives point and how hard they push, GameNav.cs)
         SpaceLaunchBefore(f); // (ships that are constructs: their thrust and turn, GameSpaceLaunch.cs)
         SpaceAwayBefore(Space); // (and those in other systems: GameSpaceJump.cs)
         f.Tick(Space.AwayWarpLimit);
@@ -110,6 +111,7 @@ public sealed partial class Game
         _spaceMap = World.Map;
         _spaceShipCursor = 0;
         _spaceSentWarp = -1;
+        NavReset(); // (another map: no order outlives it, GameNav.cs)
         var old = Space;
         Space = null;
         if (!StarSystems.ForMap(World.Map.Name, out var e, out var body))
@@ -289,6 +291,7 @@ public sealed partial class Game
             return;
         if (!ReferenceEquals(_spaceMap, World.Map))
         {
+            NavReset();
             Space = null; // a new map: the host's next bubble says what it is
             return;
         }

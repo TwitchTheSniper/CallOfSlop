@@ -910,7 +910,7 @@ public static unsafe partial class Program
             else if (_session is { } g)
             {
                 // While the weapon workbench is open over the match the player HUD is not drawn at all (the match keeps running).
-                var benchCovers = Ui.WorkbenchOpen;
+                var benchCovers = Ui.WorkbenchOpen || Ui.CommandOpen; // (the command view has the whole screen too: Program.Command.cs)
                 uiPart.Dispose();
                 uiPart = Perf.Measure(PerfArea.UiHud);
                 if (!benchCovers)
@@ -1018,6 +1018,7 @@ public static unsafe partial class Program
             DrawFactionUi(); // the Faction window (F2; Program.Factions.cs): closed one check
             DrawJobBoardUi(); // the job board (the use key on the colony's work board; Program.JobBoard.cs): closed one check
             DrawLogbookUi(); // the Logbook (F1; Program.Logbook.cs): closed one check
+            DrawCommandUi(now); // the command view (Home; Program.Command.cs): closed one check
             DrawDevTools(now); // the look-at inspector and prop editor (F6 / F10; Program.DevTools.cs): closed two checks
             uiPart.Dispose();
             using (Perf.Measure(PerfArea.UiPerf))
@@ -1210,7 +1211,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.JobBoardOpen || Ui.LogbookOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen || Ui.DesignerOpen || Ui.LifterOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.FactionsOpen || Ui.JobBoardOpen || Ui.LogbookOpen || Ui.CommandOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.SandboxTexturePickerOpen || Ui.SandboxMaterialPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen || Ui.OrdnanceBenchOpen || Ui.RecipePickerOpen || Ui.CraftingOpen || Ui.DesignerOpen || Ui.LifterOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -1415,6 +1416,8 @@ public static unsafe partial class Program
         if (FactionKey(key)) // F2 (rebindable) or Esc: the Faction window (Program.Factions.cs)
             return;
         if (LogbookKey(key)) // F1 (rebindable) or Esc: the Logbook (Program.Logbook.cs)
+            return;
+        if (CommandKey(key)) // Home (rebindable) or Esc: the command view (Program.Command.cs)
             return;
         if (TalkJoinKey(key)) // Backspace (rebindable): join another player's talk while its notice shows (Program.StoryTalk.cs)
             return;
@@ -2274,7 +2277,7 @@ public static unsafe partial class Program
 
         // ---- First-person gun -----------------------------------------------
         pass = Perf.Pass(PerfArea.ViewModel, PerfGpuPass.ViewModel);
-        if (local is { Alive: true } && !tp && !talkView && !_game.OpeningActive && !_game.QuarryRiding && !_wsNoHands && !DrawSandboxTool(now, eye, fwd)) // (_wsNoHands: the window tool's --no-hands, for pictures) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening or on a ride)
+        if (local is { Alive: true } && !tp && !talkView && !Ui.CommandOpen && !_game.OpeningActive && !_game.QuarryRiding && !_wsNoHands && !DrawSandboxTool(now, eye, fwd)) // (_wsNoHands: the window tool's --no-hands, for pictures) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening or on a ride)
         {
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);
@@ -2286,7 +2289,7 @@ public static unsafe partial class Program
 
         // ---- HUD ------------------------------------------------------------
         Gfx.MarkGlow = false;
-        if (!Ui.WorkbenchOpen)
+        if (!Ui.WorkbenchOpen && !Ui.CommandOpen) // (nor under the command view: Program.Command.cs)
             using (Perf.Pass(PerfArea.Hud, PerfGpuPass.Hud))
                 DrawHud(now, w, h, local, fov); // hidden while the weapon workbench is open (the crosshair, ammo, prompts, weapon list)
     }

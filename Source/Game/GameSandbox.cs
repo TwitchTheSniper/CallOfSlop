@@ -106,6 +106,7 @@ public enum CActKind : byte
     RadarLock, // u16 body (the seat's), u16 target (0: none): the seated player's radar lock for that craft's missiles (protocol 320; ConstructRadar.cs)
     Breakdown, // server -> every client: u16 body, u16 part, u8 BreakdownStage, u8 seconds left, u8 1: say it to those aboard (protocol 321; GameSandboxBreakdowns.cs)
     Mend, // u16 body, u16 part: the attach tool sees to a groaning part or repairs a broken-down one (protocol 321; GameSandboxBreakdowns.cs)
+    NavOrder, // u16 body, u8 NavKind (0 cancels), u8 the star system's body, 3 x f64 point, f64 radius: an order for a ship from the command view (protocol 323; GameNav.cs)
 }
 
 /// <summary>
@@ -977,6 +978,8 @@ public sealed partial class Game
                 return null;
             case CActKind.ShellLeave:
                 return ShellLeaveAct(p); // robot shells (GameRobotShell.cs)
+            case CActKind.NavOrder:
+                return NavOrderAct(p, ref r); // an order for a ship from the command view (GameNav.cs)
             case CActKind.Talk:
             {
                 var person = r.U8();

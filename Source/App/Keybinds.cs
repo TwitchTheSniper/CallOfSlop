@@ -86,6 +86,7 @@ public enum GameAction
     Logbook, // binds version 25: Sandbox, the Logbook (the old records' fragments you hold, and your open leads; Source/UI/UiLogbook.cs) on F1
     JoinTalk, // binds version 26: Sandbox, join the talk another player is having with one of the story's people, while its notice shows (Program.StoryTalk.cs) on Backspace
     SeatRadar, // binds version 27: in a seat, lock the radar contact nearest the look, the next one, or none (ConstructRadar.cs, Program.SandboxRadar.cs) on the middle mouse button
+    CommandView, // binds version 28: Sandbox, the command view (the star system as a hologram, ships and their orders; Source/UI/UiCommand.cs) on Home
     COUNT,
 }
 
@@ -414,6 +415,7 @@ public static class Keybinds
         Key(GlfwKey.F1), // Logbook (Sandbox): binds version 25
         Key(GlfwKey.Backspace), // Join another player's talk (Sandbox): binds version 26
         Mouse(GlfwMouseButton.Middle), // Radar lock, in a seat: binds version 27 (shares the tool wheel's button, which a seat doesn't read)
+        Key(GlfwKey.Home), // Command view (Sandbox): binds version 28
     ];
 
     /// <summary>
@@ -449,8 +451,9 @@ public static class Keybinds
     /// 25: the Logbook (Sandbox) on F1 added (same rule).
     /// 26: Join another player's talk (Sandbox) on Backspace added (same rule).
     /// 27: Radar lock in a seat on the middle mouse button added (same rule; it shares the tool wheel's button, see <see cref="Overlap"/>).
+    /// 28: the command view (Sandbox) on Home added (same rule).
     /// </summary>
-    public const int DefaultsVersion = 27;
+    public const int DefaultsVersion = 28;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, int Index, int Old, int New)[] Changes =
@@ -513,6 +516,7 @@ public static class Keybinds
         (25, (int)GameAction.Logbook, Unbound, Key(GlfwKey.F1)),
         (26, (int)GameAction.JoinTalk, Unbound, Key(GlfwKey.Backspace)),
         (27, (int)GameAction.SeatRadar, Unbound, Mouse(GlfwMouseButton.Middle)),
+        (28, (int)GameAction.CommandView, Unbound, Key(GlfwKey.Home)),
     ];
 
     /// <summary>
@@ -683,6 +687,7 @@ public static class Keybinds
             GameAction.Logbook => "Logbook (Sandbox: the old records you have found, and your leads)",
             GameAction.JoinTalk => "Join a chat (Sandbox: when another player talks to someone, while the notice shows)",
             GameAction.SeatRadar => "Radar lock (in a seat with a radar: the contact nearest your look, again for the next)",
+            GameAction.CommandView => "Command view (Sandbox: the star system, your ships and their orders)",
             _ => a.ToString(),
         };
 
