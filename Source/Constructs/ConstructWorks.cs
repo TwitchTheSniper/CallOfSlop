@@ -482,26 +482,26 @@ public static class ConstructWorks
     private static string State(Construct c, in CWorksHead h) =>
         c.Parts[h.Part].D.WorksOutside ? "a pod: its works are in its cowl, serviced outside" : $"works {h.Cap * 100:0}%";
 
-    /// <summary>The look line on a head, a mount or a works piece (any tool in hand).</summary>
-    public static string Look(Construct c, int part)
+    /// <summary>The look line on a head, a mount or a works piece (any tool in hand): its works, its health and <paramref name="action"/> (the tool's hint).</summary>
+    public static string Look(Construct c, int part, string? action = null)
     {
         ref var p = ref c.Parts[part];
         var d = p.D;
-        var wrecked = p.Broken ? p.Health > 0 ? "broken down" : "wrecked" : "";
+        var wrecked = p.Broken ? p.Health > 0 ? "broken down" : "wrecked" : p.Health < d.Health - 0.5f ? $"{p.Health:0}/{d.Health:0} hp" : "";
         if (IsHead(d))
         {
             var k = c.WorksHeadOf(part);
             if (k < 0)
-                return SandboxKeys.Line(d.Name, SandboxKeys.Join(Rating(d), wrecked));
+                return SandboxKeys.Line(d.Name, SandboxKeys.Join(Rating(d), wrecked), null, action);
             ref var h = ref c.WorksHeads[k];
             var why = Why(c, h);
             if (why.Length > 0 && d.Role == PartRole.Thruster && h.Cap <= ShipWorks.Current.BareShare + 1e-3f)
                 why += ": running at a quarter";
-            return SandboxKeys.Line(d.Name, SandboxKeys.Join(Rating(d), State(c, h), wrecked), why);
+            return SandboxKeys.Line(d.Name, SandboxKeys.Join(Rating(d), State(c, h), wrecked), why, action);
         }
         var asm = AsmOfPiece(c, part);
         if (asm < 0)
-            return SandboxKeys.Line(d.Name, SandboxKeys.Join(d.WorksKind == WorksKind.Mount ? "" : $"serves {PieceServes(d)}", wrecked), d.WorksKind == WorksKind.Mount ? "no head through it" : "bolt it to a Hull Mount, or to works on one");
+            return SandboxKeys.Line(d.Name, SandboxKeys.Join(d.WorksKind == WorksKind.Mount ? "" : $"serves {PieceServes(d)}", wrecked), d.WorksKind == WorksKind.Mount ? "no head through it" : "bolt it to a Hull Mount, or to works on one", action);
         var heads = 0;
         var least = 1f;
         for (var k = 0; k < c.WorksHeadCount; k++)
@@ -512,11 +512,11 @@ public static class ConstructWorks
             }
         var of = heads == 0 ? "" : heads == 1 ? "works for 1 head" : $"works for {heads} heads";
         if (d.WorksKind == WorksKind.Mount)
-            return SandboxKeys.Line(d.Name, SandboxKeys.Join(heads == 0 ? "" : $"mount, {of}", wrecked), heads == 0 ? "no head through it" : null);
+            return SandboxKeys.Line(d.Name, SandboxKeys.Join(heads == 0 ? "" : $"mount, {of}", wrecked), heads == 0 ? "no head through it" : null, action);
         var cell = asm * KindCount + (int)d.WorksKind;
         var need = c.WorksNeed[cell];
         var load = need <= 0 ? "nothing needs it" : $"{MathF.Min(1, c.WorksServed[cell] / need) * 100:0}% of what they need";
-        return SandboxKeys.Line(d.Name, SandboxKeys.Join($"serves {PieceServes(d)}", of, wrecked), need <= 0 ? load : heads > 0 && least < 0.999f ? load : null);
+        return SandboxKeys.Line(d.Name, SandboxKeys.Join($"serves {PieceServes(d)}", of, wrecked), need <= 0 ? load : heads > 0 && least < 0.999f ? load : null, action);
     }
 
     private static string PieceServes(ConstructPartDef d) => d.WorksKind switch
