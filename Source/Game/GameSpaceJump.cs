@@ -314,6 +314,21 @@ public sealed partial class Game
         return null;
     }
 
+    /// <summary>
+    /// Any peer: the space ship this construct is the picture of (0: none). The host knows it (<see cref="Construct.SpaceShip"/>);
+    /// a client finds it among the host's ships, whose states are the host's own: its copy of the construct's pose lags the
+    /// host's, which at a high time speed is a long way round the orbit.
+    /// </summary>
+    internal ushort SpaceShipIdOf(Construct c)
+    {
+        if (c.SpaceShip != 0 || IsServer || Space is not { } s)
+            return c.SpaceShip;
+        foreach (var (id, v) in s.Ships)
+            if (v.Construct == c.Id)
+                return id;
+        return 0;
+    }
+
     /// <summary>Client: does a host ship picture this construct (it is in space)?</summary>
     private static bool SpaceShipOfConstruct(SpaceSession s, Construct c)
     {
