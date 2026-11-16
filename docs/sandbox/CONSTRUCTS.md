@@ -20,9 +20,13 @@ marked way in), then each faction's style. The Ministry of Slop: Brutalism, cold
 
 The walkable two-deck ship of the rust bucket start: its hull parts, rooms, engines and how it flies.
 
-## [The Halberd frigate](constructs/frigate.md), 5 KB
+## [The Halberd frigate](constructs/frigate.md), 7 KB
 
 The tail-sitter combat frigate: six decks up a ladder spine, four PDCs, a spinal railgun, med bay, robot bay; how it flies.
+
+## [The Magpie mining ship](constructs/miner.md), 4 KB
+
+The first Survival ship: a lofted two-deck miner with four drills on rams through its keel, ore hoppers on its flanks; how it flies.
 
 ## [The Zero Day torpedo frigate](constructs/torpedo-frigate.md), 7 KB
 

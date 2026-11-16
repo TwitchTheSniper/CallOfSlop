@@ -61,6 +61,8 @@ Code: `Source/Constructs/ConstructFlight.cs` (the loops and the mix, in the logi
 
 **A wire overrides the scan.** A thruster, rotor or surface with a wire into it from anything but its stabilizer is left to that wire. Wires from the stabilizer into a part it has found change nothing. Its named outputs still carry the same demands for anything wired by hand: `throttle`, `reverse`, `lift`, `vent`, `pitch`, `yaw`, `roll` (-1..1: nose up, nose right, right wing down), `left aileron`, `right aileron`, `flaps`, four corners, `strafe left`, `strafe right`, and `fire`, the pilot's fire key. Inputs: `seat`, axes that add to the seat's (`throttle`, `pitch`, `yaw`, `roll`, `lift`), `autopilot`, `mode` (1 to 5), `altitude`, `heading`, `waypoint x`, `waypoint z`, `set home`.
 
+**Ports in the linking tool.** The advanced ports (`vent`, the ailerons, `flaps`, the corners, `strafe left`/`right`, and the inputs `mode`, `altitude`, `heading`, the waypoint and `set home`) are hidden unless wired or the Sprint key is held (`ConstructFlight.Advanced`, `ConstructRoutes.AllPorts`). Port labels stand in two columns beside the part, inputs left, outputs right, in screen pixels (`Program.SandboxLinks`).
+
 **Keys** (the `keys` setting; they are the seat's move and roll actions, so they rebind in the usual place, and only a stabilised craft reads them this way). Auto picks: wings and a push that is mostly forward make a plane, nozzles a rocket, anything else a rotorcraft. The old Helicopter, Quadcopter, Hover platform and Airship patterns are all Rotorcraft: the scan is what tells them apart (a craft with two-way jets stays level and slides; gas keeps a ship level).
 
 | Keys | W, S | A, D | Q, E | Shift, Ctrl | Space |
@@ -68,8 +70,11 @@ Code: `Source/Constructs/ConstructFlight.cs` (the loops and the mix, in the logi
 | Rotorcraft | forward, back | yaw | roll (sideways) | climb, descend | |
 | Plane | nose down, up | roll, the rudder follows | yaw | a held throttle, more, less | wheel brake |
 | Rocket | lean on, back | lean left, right | spin | a held throttle, more, less | |
+| Ship | forward, back | slide left, right (yaw without mouse aim) | roll | up, down | |
 
-Invert pitch swaps W and S. **Settings:** keys, strength, stabilise level (off: the keys ask for turning), mouse aim (it flies where the seat looks), invert pitch, max lean, turn, climb and speed (0: their own), trim, and the autopilot's. It never leans further than its spare thrust can hold up, its loops go as fast as its slowest thruster follows (a helicopter's rotor winds up slowly, but its pitch answers at once), and a speed loop stays inside the attitude loop. A slow lean integral works off a steady side push.
+**Ship keys** (Karl, 2026-11-15: "they can be mouse controlled alongside the keybinds"; level is forward). With mouse aim on, the nose turns to the seat's look any way, down and up as well as round (the turn stops in time by what its jets and gyro can do: `Toward`), and the view no longer turns with the seat; in third person the orbit camera is the look (a little under it, `ThirdPerson.SteerTilt`). W/S, A/D and Shift/Ctrl ask for a speed along the craft's own axes (max speed 40 m/s, climb 10 m/s: `SpaceLimits`), its weight held up whichever way it lies; let go, it stops and holds its height. Q/E roll; with level on and no roll asked, it rolls back level, less so the nearer the nose is to straight up or down. It needs jets every way it turns: the Rust Bucket and the Magpie carry RCS Thrusters (`ShipParts.Rcs`). Past the sky's edge the same keys fly it (docs/space/SPACE.md). `--flight-check` points the look 70 degrees down and back on a Ship blueprint.
+
+Invert pitch swaps W and S (not on Ship keys). **Settings:** keys, strength, stabilise level (off: the keys ask for turning), mouse aim (it flies where the seat looks), invert pitch, max lean, turn, climb and speed (0: their own), trim, and the autopilot's. It never leans further than its spare thrust can hold up, its loops go as fast as its slowest thruster follows (a helicopter's rotor winds up slowly, but its pitch answers at once), and a speed loop stays inside the attitude loop. A slow lean integral works off a steady side push.
 
 **The gyro.** Thrusters have no torque about their own axis, so four pushing the same way can't turn. A stabilizer has a gyro (`logic.gyro`, N m: 1,500, 400,000, 30,000,000, 2,000,000,000), an effector like any other about its own up.
 
@@ -86,6 +91,8 @@ Invert pitch swaps W and S. **Settings:** keys, strength, stabilise level (off: 
 **Balance markers.** With the attach, linking, configure or selector tool out, or a part in hand, the crosshair on a flyer shows the centre of mass (yellow), lift (blue) and thrust (orange), labelled with how far ahead of the centre of mass each is. `Construct.LiftCentre` is the one sum: a new lifting thing adds itself with `ConstructFlight.AddLift`.
 
 ## Jets, rockets and repulsors
+
+**Flames.** Each thruster draws its own flame by its own level: the host sends them as a byte each (`CBodyKind.Thrust`, `ConstructThrust.WriteShown`, 6 Hz and only on change, protocol 319), so a client sees which RCS jets fire. A flame particle keeps its nozzle's speed apart from its own drift (`FxParticle.Carry`, undragged), so flames stay on the nozzles of a moving ship.
 
 Code: `Source/Constructs/ConstructBoost.cs`; parts and demos (Jet Hover Platform, Two-Stage Rocket, Hover Car, Anti-Grav Barge): `Source/PartKit/Generators/BoostParts.cs`. All but Anti-Grav and the decoupler are thrusters with a `kind`.
 

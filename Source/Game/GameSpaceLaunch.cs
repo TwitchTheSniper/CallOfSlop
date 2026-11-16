@@ -11,7 +11,7 @@ namespace CallOfSlop;
 /// The construct stays in the World as the ship's picture: its physics sleeps (<see cref="Construct.SpaceShip"/>), the
 /// host poses it from the ship every tick, and the poses go to clients the usual way, so its riders stay in their seats
 /// and see the planetoid turn below. Its thrusters push the ship (W and S by how they face the seat, Shift those that push
-/// up: <see cref="ConstructPhysics.SpaceThrust"/>), A and D turn it, and it is kept level over the ground below. Coming
+/// up: <see cref="ConstructPhysics.SpaceThrust"/>), A and D turn it, and it is kept level over the ground below; a stabilizer on Ship keys flies it instead, turning it by its jets any way. Coming
 /// back under the edge it is a physics body again, with the ship's speed, and the hover hold catches it where it came in.
 /// Host only; nothing new goes over the wire.
 /// </summary>
@@ -52,9 +52,16 @@ public sealed partial class Game
                 continue;
             if (c.Dirty)
                 c.Rebuild();
-            var force = c.ThrusterCount > 0 ? ConstructPhysics.SpaceThrust(c, dt) : Vector3.Zero;
+            var torque = Vector3.Zero;
+            var force = c.ThrusterCount > 0 ? ConstructPhysics.SpaceThrust(c, dt, out torque) : Vector3.Zero;
             var a = c.Mass > 0 ? Vec3d.From(force) / c.Mass : Vec3d.Zero;
             f.Ships.Thrust[i] = pose.Rot.Rotate(a); // (game axes to the ecliptic's)
+            if (ConstructFlight.FliesShip(c))
+            {
+                // Its jets turn it, as in the bubble (the stabilizer damps the turn it asks for).
+                c.AngVel += Vector3.TransformNormal(torque, c.InvInertiaWorld()) * dt;
+                c.AngVel -= c.AngVel * MathF.Min(1, ConstructPhysics.FlightTurnDrag * dt);
+            }
         }
     }
 
@@ -190,6 +197,18 @@ public sealed partial class Game
     /// </summary>
     private static void SpacePose(Construct c, Vector3 com, Vector3 vel, Vector3 centre, float dt)
     {
+        if (ConstructFlight.FliesShip(c))
+        {
+            // Flown on Ship keys: its own attitude, turned by its jets (SpaceLaunchBefore), never levelled.
+            var w = c.AngVel;
+            var wl = w.Length();
+            if (wl > 1e-7f)
+                c.Rot = Quaternion.Normalize(Quaternion.CreateFromAxisAngle(w / wl, wl * dt) * c.Rot);
+            c.Pos = com - Vector3.Transform(c.Com, c.Rot);
+            c.Vel = vel;
+            c.Asleep = false;
+            return;
+        }
         var up = Vector3.Normalize(com - centre);
         var mine = Vector3.Transform(Vector3.UnitY, c.Rot);
         var turn = Quaternion.Identity;
@@ -232,6 +251,21 @@ public sealed partial class Game
             return false;
         ConstructRender.SeatPoseFrom(c, h.SeatPart, _alpha, IsServer, out var q, out var feet, out origin);
         eyeFromOrigin = feet + Vector3.Transform(new Vector3(0, me.RenderEyeHeight, 0), q);
+        return true;
+    }
+
+    /// <summary>
+    /// The render origin for a local player standing in a construct (contraption space, <see cref="Player.RenderRide"/>): the
+    /// construct's drawn position, and the eye from it worked out in small numbers, so the ship and the camera standing in it
+    /// agree to the bit (docs/space/SPACE.md "Far from the middle"). False when not riding that way.
+    /// </summary>
+    internal bool LocalRideAnchor(Vector3 eye, out Vector3 origin, out Vector3 eyeFromOrigin)
+    {
+        origin = eyeFromOrigin = Vector3.Zero;
+        if (!SandboxOn || Local is not { Alive: true, RenderRide: true, RenderSeat: SeatKind.None } me || MannedEye != null)
+            return false;
+        origin = me.RenderRideBody;
+        eyeFromOrigin = me.RenderRideRel + Vector3.Transform(new Vector3(0, me.RenderEyeHeight, 0), me.RenderRideRot) + (eye - me.RenderEye); // (the last term: a blast's shake or stumble, 0 to the bit otherwise)
         return true;
     }
 

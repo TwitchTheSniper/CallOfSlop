@@ -29,7 +29,7 @@ public static unsafe class FxGpu
     private const string EmitSrc = """
         #version 410 core
         layout(local_size_x = 64) in;
-        struct P { vec4 a; vec4 b; vec3 c; uint tint; };
+        struct P { vec4 a; vec4 b; vec3 c; uint tint; vec4 d; }; // (d.xyz: the carry, Fx.FxParticle)
         layout(std430, binding = 1) buffer Pool { P pool[]; };
         layout(std430, binding = 4) readonly buffer Births { P births[]; };
         uniform uint uFirst, uCount, uCursor, uCap;
@@ -44,7 +44,7 @@ public static unsafe class FxGpu
     private static readonly string UpdateSrc = "#version 410 core\n" + Block + """
 
         layout(local_size_x = 256) in;
-        struct P { vec4 a; vec4 b; vec3 c; uint tint; };
+        struct P { vec4 a; vec4 b; vec3 c; uint tint; vec4 d; }; // (d.xyz: the carry, Fx.FxParticle)
         layout(std430, binding = 1) buffer Pool { P pool[]; };
         layout(std430, binding = 2) writeonly buffer Alive { uint alive[]; };
         layout(std430, binding = 3) buffer Cmd { uint verts; uint instances; uint first; uint baseInstance; };
@@ -73,7 +73,7 @@ public static unsafe class FxGpu
             v.y -= m.x * uDt;
             if (m.z > 0.0)
                 v += vec3(sin(uTime * 2.3 + seed + a.y * 0.7), cos(uTime * 1.7 + seed * 1.3 + a.x * 0.7), sin(uTime * 2.9 + seed * 0.7 + a.z * 0.7)) * m.z * uDt;
-            a.xyz += v * uDt;
+            a.xyz += (v + pool[i].d.xyz) * uDt;
             pool[i].a = a;
             pool[i].b.xyz = v;
             alive[atomicAdd(instances, 1u)] = i;
@@ -83,7 +83,7 @@ public static unsafe class FxGpu
     private static readonly string VertexSrc = "#version 410 core\n#define FX_PULL 0\n" + Block + """
 
         #if GL46 && FX_PULL
-        struct P { vec4 a; vec4 b; vec3 c; uint tint; };
+        struct P { vec4 a; vec4 b; vec3 c; uint tint; vec4 d; }; // (d.xyz: the carry, Fx.FxParticle)
         layout(std430, binding = 1) readonly buffer Pool { P pool[]; };
         layout(std430, binding = 2) readonly buffer Alive { uint alive[]; };
         #else

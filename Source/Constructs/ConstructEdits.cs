@@ -1095,6 +1095,23 @@ public sealed partial class ConstructEdits
         return d.IsLathe ? $"the {d.Name} is empty: set a block in its bay with the physics gun" : $"the {d.Name} is empty: set blanks in bay 1 (and 3) with the physics gun, a kit in bay 2 if its pattern wants one, and fit a die";
     }
 
+    /// <summary>
+    /// Server: a body that has just come into the world beside <paramref name="player"/> (spawned from the menu, dropped,
+    /// given) takes on the motion of the frame they stand in: a ship in orbit moves hundreds of metres a second, and a body
+    /// made there at rest in the world is left behind at once. With the deck's velocity at its centre and the deck's spin it
+    /// moves with the ship, and so falls onto its floor as it would on one standing still. Not riding anything: left as it is.
+    /// </summary>
+    public void InheritRide(ConstructWorld world, byte player, Construct c)
+    {
+        ref var h = ref Hands[player];
+        if (h.RideBody == 0 || h.RideBody == c.Id || world.Get(h.RideBody) is not { } deck || h.RideSeg > deck.JointCount)
+            return;
+        if (c.Dirty)
+            c.Rebuild(); // (its centre of mass, which a fresh body has yet to work out)
+        c.Vel = ConstructRide.SurfaceVel(deck, h.RideSeg, c.WorldCom);
+        c.AngVel = ConstructRide.SurfaceSpin(deck, h.RideSeg);
+    }
+
     public string? Drop(ConstructWorld world, byte player, Vector3 feet, float yaw)
     {
         ref var h = ref Hands[player];
@@ -1105,8 +1122,7 @@ public sealed partial class ConstructEdits
             return "the world is full of constructs";
         dropped.Owner = player;
         ConstructAmmo.Fitted(world, dropped, 0, def, ref h, false); // (a magazine dropped keeps what is in it)
-        if (h.RideBody != 0 && world.Get(h.RideBody) is { } deck && h.RideSeg <= deck.JointCount)
-            dropped.Vel = ConstructRide.SurfaceVel(deck, h.RideSeg, at); // (dropped on a moving deck, it keeps the deck's speed)
+        InheritRide(world, player, dropped); // (dropped on a moving deck, it keeps the deck's speed)
         h.Held = ConstructParts.None;
         h.Edit = EditKind.None;
         return null;

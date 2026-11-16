@@ -674,6 +674,10 @@ public sealed partial class Game
             foreach (var c in Constructs.Bodies)
                 if (c.StabCount > 0 && ConstructFlight.WriteDiagnostic(w, c))
                     Net.Broadcast(w.Span, PacketReliability.Unreliable);
+        if (ServerTick % ConstructThrust.SendEvery == 1)
+            foreach (var c in Constructs.Bodies)
+                if (c.ThrusterCount > 0 && ConstructThrust.WriteShown(w, c))
+                    Net.Broadcast(w.Span, PacketReliability.Unreliable); // (each jet's flame: a lost one is made good by the next that changes)
         if (ServerTick % ConstructFluid.SendEvery == 0)
         {
             int body = 0, tank = 0;
@@ -1141,8 +1145,8 @@ public sealed partial class Game
                 if (Constructs.Get(body) is { } bc && part < bc.PartCount && bc.DefOf(part).Boarding)
                     return SandboxGrabOn(p, bc, part); // (a grab handle, a boarding ladder, a step plate: ba01)
                 var used = hands.Use(Constructs, p.Id, eye, body, part);
-                if (used == ConstructEdits.NothingToUse && Constructs.Get(body) is { Anchored: false, Loose: false } gc)
-                    return SandboxGrabOn(p, gc, part) is { } nogrip ? used : null; // (a vehicle's side: grab on and climb aboard)
+                if (used == ConstructEdits.NothingToUse && Constructs.Get(body) is { Anchored: false, Loose: false } gc && OutsideOf(p, gc))
+                    return SandboxGrabOn(p, gc, part) is { } nogrip ? used : null; // (a vehicle's side from outside it: grab on and climb aboard)
                 return used;
             }
             case CActKind.KeyPress:
@@ -1957,7 +1961,10 @@ public sealed partial class Game
             }
             // Spawned back to back (the inventory stays open): the last one may stand on the spot, so the next goes on past it.
             if (!ConstructPhysics.SpawnOverlaps(Constructs, before))
+            {
+                SandboxSpawnInherit(p.Id, before); // (in a moving ship: it moves with it)
                 return c;
+            }
             if (tries == 7)
                 break;
             dist += MathF.Max(2 * reach + 1f, 2 * c.Radius);
@@ -1966,6 +1973,17 @@ public sealed partial class Game
             Constructs.Remove(Constructs.Bodies[i]);
         why = $"no room in front of you for the {bp.Name}";
         return null;
+    }
+
+    /// <summary>
+    /// Server: every body from <paramref name="from"/> on (a spawn: it, a trailer, its cargo) takes on the motion of the frame
+    /// player <paramref name="who"/> stands in, so a spawn in a ship in orbit or under way moves with the ship and comes down on its
+    /// floor, not left behind at the ship's speed (ConstructEdits.InheritRide).
+    /// </summary>
+    internal void SandboxSpawnInherit(byte who, int from)
+    {
+        for (var i = from; i < Constructs.Bodies.Count; i++)
+            SandboxHands.InheritRide(Constructs, who, Constructs.Bodies[i]);
     }
 
     /// <summary>A spawn moved as one: every body from <paramref name="from"/> on (it, a trailer), what cargo volumes carry following.</summary>
@@ -2012,6 +2030,19 @@ public sealed partial class Game
     /// Board item ba01's grab-on (server): Use at a construct's side or a boarding part latches the player on in its frame
     /// and pulls them up onto the nearest top (ConstructRide.GrabOn; the climb runs in the shared movement step).
     /// </summary>
+    /// <summary>
+    /// Whether Use on a construct part with no use of its own may grab on at its side: only from outside it. A player
+    /// aboard (riding it) or inside its bounds (a ship's deck, under its hull) gets nothing, or F on a locker or a pipe
+    /// pulled them up onto the nearest top: onto the thing, or out through the hull onto the roof (2026-11-15).
+    /// </summary>
+    private static bool OutsideOf(Player p, Construct c)
+    {
+        if (p.Sim.RideBody == c.Id)
+            return false;
+        var at = c.ToLocal(p.Sim.Position + new Vector3(0, 0.9f, 0)); // (the body's middle, not the feet: standing on a deck plate puts the feet at its top)
+        return at.X < c.LocalMin.X || at.Y < c.LocalMin.Y || at.Z < c.LocalMin.Z || at.X > c.LocalMax.X || at.Y > c.LocalMax.Y || at.Z > c.LocalMax.Z;
+    }
+
     internal string? SandboxGrabOn(Player p, Construct c, int part, bool ladder = false)
     {
         if (!p.Alive)
@@ -2239,6 +2270,21 @@ public sealed partial class Game
     private uint _sbViewSeat; // the seat the local view last turned with (body << 16 | part + 1; 0: none)
     private float _sbViewYaw;
 
+    /// <summary>
+    /// The local look turned to a seat's facing as the player sits: its heading, and its nose against the level here (a seat on a ship flying
+    /// nose down keeps her nose down; one on the level looks level). Without it the look kept the pitch the player had bending to the seat,
+    /// and a ship whose nose follows the look went after it.
+    /// </summary>
+    private void SeatLookForward(in Quaternion seat, Vector3 feet, float seatYaw)
+    {
+        var f = Vector3.Transform(-Vector3.UnitZ, seat);
+        var up = GravityFrames.UpAt(feet);
+        LookYaw = seatYaw;
+        LookPitch = Math.Clamp(MathF.Asin(Math.Clamp(Vector3.Dot(f, up), -1f, 1f)), -1.5f, 1.5f);
+        if (GravityFrames.Curved)
+            (LookYaw, LookPitch) = GravityFrames.Angles(LookFrame, f);
+    }
+
     private float _sbLookSent = float.NaN;
     private double _sbLookSentAt;
 
@@ -2378,11 +2424,14 @@ public sealed partial class Game
             {
                 // The view turns with the seat, then stays inside the seat type's limits.
                 localSeat = ((uint)body << 16) | (uint)(part + 1); // (16 bits of part: << 8 mixed seats past part 255)
-                if (_sbViewSeat == localSeat && lookKind != SeatKind.Gunner || _sbViewSeat == localSeat && !c.SeatAims(part)) // (a gunner who points the turret looks where they look: the turret follows)
+                var steers = ConstructFlight.MouseSteers(c, part); // (a ship's nose follows the look: the look stays put and the ship comes round to it)
+                if (_sbViewSeat != localSeat && kind != SeatKind.Gunner)
+                    SeatLookForward(q, feet, seatYaw); // (just sat down: the view faces the way the seat does, not wherever the look was as the player bent to it)
+                if (!steers && (_sbViewSeat == localSeat && lookKind != SeatKind.Gunner || _sbViewSeat == localSeat && !c.SeatAims(part))) // (a gunner who points the turret looks where they look: the turret follows)
                     LookYaw = World.WrapAngle(LookYaw + World.WrapAngle(seatYaw - _sbViewYaw));
                 _sbViewYaw = seatYaw;
                 SandboxStabilise(c, part, localSeat);
-                p.RenderLookYaw = SeatLocalYaw(LookYaw, seatYaw, lookKind);
+                p.RenderLookYaw = SeatLocalYaw(LookYaw, seatYaw, steers ? SeatKind.Gunner : lookKind); // (and all the way round: it turns to whatever you look at)
                 LookYaw = World.WrapAngle(seatYaw + p.RenderLookYaw);
                 p.RenderYaw = LookYaw;
                 _stabYaw = LookYaw;
@@ -2416,14 +2465,19 @@ public sealed partial class Game
         return Vector3.Transform(world - t, Quaternion.Conjugate(q));
     }
 
-    private void DrawnFrame(Construct c, int seg, out Quaternion q, out Vector3 t)
+    private void DrawnFrame(Construct c, int seg, out Quaternion q, out Vector3 t) => DrawnFrame(c, seg, out q, out t, out _, out _);
+
+    /// <summary>The frame as drawn, and its origin split into the body's drawn position and the segment's offset from it (small numbers, for a render origin).</summary>
+    private void DrawnFrame(Construct c, int seg, out Quaternion q, out Vector3 t, out Vector3 bodyPos, out Vector3 segRel)
     {
         var blend = IsServer;
         var pos = blend ? Vector3.Lerp(c.PrevPos, c.Pos, _alpha) : c.Pos;
         var rot = blend ? Quaternion.Slerp(c.PrevRot, c.Rot, _alpha) : c.Rot;
         ConstructRender.SegPoseBlended(c, seg, blend ? _alpha : 1f, out var sq, out var st);
         q = rot * sq;
-        t = pos + Vector3.Transform(st, rot);
+        segRel = Vector3.Transform(st, rot);
+        t = pos + segRel;
+        bodyPos = pos;
     }
 
     /// <summary>
@@ -2585,7 +2639,14 @@ public sealed partial class Game
             var rpm = (int)MathF.Round(car.Rpm / 100) * 100; // (the configure tool is still to come: the engine's rpm and torque show here and on the look line)
             var engine = car.Engine >= 0 && car.Engine < car.PartCount ? car.EngineDef : null;
             var torque = engine == null || !car.EngineRunning ? 0 : (int)MathF.Round(engine.EngineTorque * ConstructDrive.Curve(engine, car.Rpm) / 10) * 10;
-            if (_sbDrive.Stale(kmh * 100000L + fuel + ((long)(charge + 1) << 40) + ((long)car.Gear << 50) + (car.PowerOn ? 1L << 56 : 0) + (car.EngineRunning ? 1L << 57 : 0) + (gears != null ? 1L << 58 : 0) ^ ((long)rpm << 20) ^ ((long)torque << 33)))
+            if (!car.CanDrive && !car.HasHubMotor && engine == null)
+            {
+                // A craft with no road drive (a ship, a walker): its speed and charge, not a car's rpm and torque.
+                var ms = (int)MathF.Round(car.Vel.Length());
+                if (_sbDrive.Stale(ms * 1000L + (charge + 1) + (car.PowerOn ? 1L << 40 : 0) + (1L << 59)))
+                    _sbDrive.Text = $"{ms} m/s" + (charge >= 0 ? car.PowerOn ? $", charge {charge}%" : ", flat" : "");
+            }
+            else if (_sbDrive.Stale(kmh * 100000L + fuel + ((long)(charge + 1) << 40) + ((long)car.Gear << 50) + (car.PowerOn ? 1L << 56 : 0) + (car.EngineRunning ? 1L << 57 : 0) + (gears != null ? 1L << 58 : 0) ^ ((long)rpm << 20) ^ ((long)torque << 33)))
                 _sbDrive.Text = $"{kmh} km/h, {rpm} rpm, {torque} N m{(engine?.FuelKind == EngineFuel.Fuel ? $", fuel {fuel / 10f:0.0} l" : "")}"
                                 + (gears != null ? $", gear {gears.SettingLabels[Math.Min(car.Gear, gears.SettingLabels.Length - 1)]}" : "")
                                 + (charge >= 0 ? car.PowerOn ? $", charge {charge}%" : ", flat" : "")

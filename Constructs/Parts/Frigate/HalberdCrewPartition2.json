@@ -1,0 +1,93 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Halberd Crew Partition 2",
+  "description": "A partition of the Halberd's crew storey, with its door frames.",
+  "group": "Ship",
+  "section": "Halberd frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 350.0,
+  "health": 1500,
+  "armour": 20,
+  "material": "steel",
+  "color": "#8e959a",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        6.275,
+        9.875,
+        6.0
+      ],
+      "max": [
+        8.865,
+        12.875,
+        6.25
+      ],
+      "color": "#8e959a",
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        6.325,
+        9.879,
+        5.988
+      ],
+      "max": [
+        8.815,
+        10.625,
+        6.262
+      ],
+      "color": "#4c555c",
+      "detail": true,
+      "finish": "matte paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "basin",
+      "at": [
+        7.875,
+        10.0,
+        6.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "lampHead",
+      "at": [
+        7.475,
+        12.325,
+        6.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        6.995,
+        9.875,
+        6.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        6.335,
+        11.375,
+        6.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        6.995,
+        12.875,
+        6.125
+      ],
+      "dir": "+y"
+    }
+  ]
+}

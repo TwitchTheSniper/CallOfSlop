@@ -12,7 +12,7 @@ Each mod is a folder in `Mods/` next to the game's data (the folder with `Maps/`
 Mods/
   LongJumps/
     mod.json
-    Systems/Ember.json              (a patch)
+    Systems/Frostreach.json         (a patch)
     Systems/Lantern.json            (a new star system)
     Constructs/Parts/JumpDrive.json (a patch)
     Constructs/Blueprints/...       (new or changed blueprints)
@@ -95,7 +95,7 @@ The exit code is the number of problems.
 `docs/mods/example/LongJumps` is a small working mod. It does three things:
 
 - It patches the Jump Drive to 20 light-years and 12 s of charge.
-- It patches Ember: a new world, Kiln, and a more eccentric Ashfall.
+- It patches Frostreach: a sixth planet, Kiln, and a more eccentric Shard.
 - It adds a new star system, Lantern, 14 light-years out. The stock drive can't reach it, but the modded one can.
 
 To try it, copy the folder into `Mods/` next to the game. The "Mods" self-test uses it together with mods it makes itself:

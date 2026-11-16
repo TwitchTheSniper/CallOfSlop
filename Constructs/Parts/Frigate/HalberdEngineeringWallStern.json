@@ -1,0 +1,251 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Halberd Engineering Wall Stern",
+  "description": "A wall run of the Halberd's engineering storey, the stern side, inside its hull panel.",
+  "group": "Ship",
+  "section": "Halberd frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1100.0,
+  "health": 4000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#8e959a",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        2.025,
+        -0.125,
+        7.875
+      ],
+      "max": [
+        4.125,
+        3.125,
+        8.125
+      ],
+      "color": "#8e959a",
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        4.125,
+        2.375,
+        7.875
+      ],
+      "max": [
+        5.625,
+        3.125,
+        8.125
+      ],
+      "color": "#8e959a",
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        5.625,
+        -0.125,
+        7.875
+      ],
+      "max": [
+        7.725,
+        3.125,
+        8.125
+      ],
+      "color": "#8e959a",
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        2.025,
+        0.128,
+        7.863
+      ],
+      "max": [
+        4.125,
+        0.615,
+        7.875
+      ],
+      "color": "#4c555c",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        5.625,
+        0.128,
+        7.863
+      ],
+      "max": [
+        7.725,
+        0.615,
+        7.875
+      ],
+      "color": "#4c555c",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        4.025,
+        0.125,
+        8.215
+      ],
+      "max": [
+        4.085,
+        1.175,
+        9.125
+      ],
+      "color": "#26292c",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        4.015,
+        1.125,
+        8.175
+      ],
+      "max": [
+        4.095,
+        1.205,
+        9.135
+      ],
+      "color": "#d8a628",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        5.665,
+        0.125,
+        8.215
+      ],
+      "max": [
+        5.725,
+        1.175,
+        9.125
+      ],
+      "color": "#26292c",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.655,
+        1.125,
+        8.175
+      ],
+      "max": [
+        5.735,
+        1.205,
+        9.135
+      ],
+      "color": "#d8a628",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        4.175,
+        -0.725,
+        8.145
+      ],
+      "max": [
+        4.275,
+        -0.127,
+        8.825
+      ],
+      "color": "#26292c",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        5.475,
+        -0.725,
+        8.145
+      ],
+      "max": [
+        5.575,
+        -0.127,
+        8.825
+      ],
+      "color": "#26292c",
+      "detail": true,
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hull2",
+      "at": [
+        4.875,
+        2.775,
+        8.125
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "doorOuter",
+      "at": [
+        4.125,
+        1.25,
+        8.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j0",
+      "at": [
+        3.075,
+        -0.005,
+        7.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        7.725,
+        1.495,
+        7.905
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        2.025,
+        1.495,
+        7.905
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        3.375,
+        1.625,
+        7.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j4",
+      "at": [
+        6.375,
+        1.625,
+        7.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j5",
+      "at": [
+        3.075,
+        3.125,
+        7.995
+      ],
+      "dir": "+y"
+    }
+  ]
+}
