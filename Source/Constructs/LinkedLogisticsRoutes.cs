@@ -323,7 +323,7 @@ public static class LinkRoutes
                     unloading += m.Aboard;
         var filter = new LinkRouteFilter(r);
         foreach (var l in LinkLedger.Lines)
-            if (l.State == LinkLineState.Open && l.Use == 0 && l.SWorld == stop.World && l.SBody == stop.Body && filter.Takes(l))
+            if (l.State is LinkLineState.Open or LinkLineState.Posted && l.Use == 0 && l.SWorld == stop.World && l.SBody == stop.Body && filter.Takes(l))
                 loading += l.Ready + (int)l.Est;
         var fill = LinkDocks.ShipFill(world, c);
         var limit = PayloadLimit(c);
@@ -387,8 +387,8 @@ public static class LinkRoutes
         {
             if (moves <= 0)
                 break;
-            if (l.State != LinkLineState.Open || l.Use != 0 || l.SWorld != stop.World || l.SBody != stop.Body || !filter.Takes(l) || ConstructParts.Get(l.Kind) is not { } d)
-                continue;
+            if (l.State is not (LinkLineState.Open or LinkLineState.Posted) || l.Use != 0 || l.SWorld != stop.World || l.SBody != stop.Body || !filter.Takes(l) || ConstructParts.Get(l.Kind) is not { } d)
+                continue; // (a line posted to a closed world is still Posted: its estimate is what there is)
             while (moves > 0 && (l.Ready > 0 || l.Est >= 1) && PayloadTakes(c, d))
             {
                 if (!LinkDocks.PutIntoShip(world, c, d))

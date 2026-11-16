@@ -2,7 +2,7 @@
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Linked Works",
   "group": "Production",
-  "description": "A small works for linked logistics: fill the Storage Volume with parts; the Cargo Dock sends what a linked network orders. Pair its Receiver with a Transmitter's code.",
+  "description": "A small works for linked logistics: fill the Storage Volume with parts; the Cargo Dock sends what a linked network orders. Pair its Receiver with a Transmitter's code (one planetoid), or its Relay with a Relay's (the star system).",
   "steps": [
     { "part": "Foundation", "paint": "#8c8576" },
     { "part": "Foundation", "on": 0, "socket": "z+0", "by": "z-0", "paint": "#8c8576" },
@@ -14,9 +14,12 @@
     { "part": "Cargo Dock", "on": 3, "socket": "top11", "by": "-y" },
     { "part": "Docking Clamp", "on": 6, "socket": "top11", "by": "-y", "config": { "startOn": true } },
     { "part": "Logistics Receiver", "on": 1, "socket": "top00", "by": "-y" },
+    { "part": "Foundation", "on": 1, "socket": "x-0", "by": "x+0", "paint": "#8c8576" },
+    { "part": "Foundation", "on": 10, "socket": "x-0", "by": "x+0", "paint": "#8c8576" },
+    { "part": "Logistics Relay", "on": 11, "socket": "top11", "by": "-y" },
     { "part": "Storage Volume", "on": 0, "socket": "top30", "by": "-y" }
   ],
   "links": [
-    { "type": "chute", "from": 10, "fromPort": "Chute out", "to": 7, "toPort": "Chute in" }
+    { "type": "chute", "from": 13, "fromPort": "Chute out", "to": 7, "toPort": "Chute in" }
   ]
 }

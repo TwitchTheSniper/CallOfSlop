@@ -135,7 +135,7 @@ public static class LinkLedger
     /// <summary>A world posted this second (its step).</summary>
     public static void Seen(string world, string title)
     {
-        var was = Worlds.TryGetValue(world, out var w) ? w : (0, title, true);
+        var was = Worlds.TryGetValue(world, out var w) ? w : (0, title, false); // (a world first seen is open: nothing to land)
         Worlds[world] = (Now, title, was.Asleep);
     }
 
@@ -355,7 +355,7 @@ public static class LinkLedger
                 Lines.RemoveAt(i);
                 continue;
             }
-            if (l.State == LinkLineState.Open && Asleep(l.SWorld) && l.Use == 0)
+            if (l.State is LinkLineState.Open or LinkLineState.Posted && Asleep(l.SWorld) && l.Use == 0)
                 Estimate(l, dt);
             var aboard = l.Loaded - l.Delivered - l.Lost - l.Taken;
             if (l.Use == 0 && aboard > 0 && l.ShipSeen >= 0 && !Asleep(l.ShipWorld) && now - l.ShipSeen > ShipGone)

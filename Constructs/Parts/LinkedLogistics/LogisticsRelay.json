@@ -6,7 +6,6 @@
   "section": "Linked logistics",
   "role": "frame",
   "tool": "welder",
-  "sizeClass": "medium",
   "mass": 2000.0,
   "health": 2500,
   "armour": 5,

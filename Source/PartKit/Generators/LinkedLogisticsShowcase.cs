@@ -18,8 +18,8 @@ public sealed class LinkedLogisticsShowcase : IPartGenerator
 
     public void Make(PartOutput o)
     {
-        o.File("Constructs/Blueprints/LinkedWorks.json", Factory("Linked Works", "A small works for linked logistics: fill the Storage Volume with parts; the Cargo Dock sends what a linked network orders. Pair its Receiver with a Transmitter's code.", "Logistics Receiver", false));
-        o.File("Constructs/Blueprints/LinkedYard.json", Factory("Linked Yard", "A yard for linked logistics: order at the Crafting Terminal what the linked works holds; a ship brings it to the Cargo Dock, which chutes it to the terminal. Its Transmitter's code pairs a Receiver.", "Logistics Transmitter", true));
+        o.File("Constructs/Blueprints/LinkedWorks.json", Factory("Linked Works", "A small works for linked logistics: fill the Storage Volume with parts; the Cargo Dock sends what a linked network orders. Pair its Receiver with a Transmitter's code (one planetoid), or its Relay with a Relay's (the star system).", "Logistics Receiver", false));
+        o.File("Constructs/Blueprints/LinkedYard.json", Factory("Linked Yard", "A yard for linked logistics: order at the Crafting Terminal what the linked works holds; a ship brings it to the Cargo Dock, which chutes it to the terminal. Its Transmitter's code pairs a Receiver on this planetoid; its Relay's, a Relay on another world.", "Logistics Transmitter", true));
         o.File("Constructs/Blueprints/LinkedHauler.json", Hauler());
     }
 
@@ -32,12 +32,15 @@ public sealed class LinkedLogisticsShowcase : IPartGenerator
         steps.Add("{ \"part\": \"Cargo Dock\", \"on\": 3, \"socket\": \"top11\", \"by\": \"-y\" }"); // 7
         steps.Add("{ \"part\": \"Docking Clamp\", \"on\": 6, \"socket\": \"top11\", \"by\": \"-y\", \"config\": { \"startOn\": true } }"); // 8
         steps.Add($"{{ \"part\": \"{end}\", \"on\": 1, \"socket\": \"top00\", \"by\": \"-y\" }}"); // 9
+        steps.Add("{ \"part\": \"Foundation\", \"on\": 1, \"socket\": \"x-0\", \"by\": \"x+0\", \"paint\": \"#8c8576\" }"); // 10
+        steps.Add("{ \"part\": \"Foundation\", \"on\": 10, \"socket\": \"x-0\", \"by\": \"x+0\", \"paint\": \"#8c8576\" }"); // 11
+        steps.Add("{ \"part\": \"Logistics Relay\", \"on\": 11, \"socket\": \"top11\", \"by\": \"-y\" }"); // 12: across the star system
         steps.Add(yard
-            ? "{ \"part\": \"Crafting Terminal\", \"on\": 0, \"socket\": \"top30\", \"by\": \"-y.0.0\" }" // 10
+            ? "{ \"part\": \"Crafting Terminal\", \"on\": 0, \"socket\": \"top30\", \"by\": \"-y.0.0\" }" // 13
             : "{ \"part\": \"Storage Volume\", \"on\": 0, \"socket\": \"top30\", \"by\": \"-y\" }");
         var links = yard
-            ? "{ \"type\": \"chute\", \"from\": 7, \"fromPort\": \"Chute out\", \"to\": 10, \"toPort\": \"Chute in\" }"
-            : "{ \"type\": \"chute\", \"from\": 10, \"fromPort\": \"Chute out\", \"to\": 7, \"toPort\": \"Chute in\" }";
+            ? "{ \"type\": \"chute\", \"from\": 7, \"fromPort\": \"Chute out\", \"to\": 13, \"toPort\": \"Chute in\" }"
+            : "{ \"type\": \"chute\", \"from\": 13, \"fromPort\": \"Chute out\", \"to\": 7, \"toPort\": \"Chute in\" }";
         var sb = new StringBuilder();
         sb.Append("{\n  \"format\": \"").Append(Format).Append("\",\n  \"name\": \"").Append(name).Append("\",\n  \"group\": \"Production\",\n");
         sb.Append("  \"description\": \"").Append(description).Append("\",\n  \"steps\": [\n");

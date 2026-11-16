@@ -51,7 +51,7 @@ public sealed class LinkedLogisticsParts : IPartGenerator
 
     private static Part Relay()
     {
-        var c = Medium;
+        var c = Small; // (a small-class part, big: it stands on a Foundation's own sockets)
         var p = new Part("Logistics Relay", c, Section, "A dish that links this construct's logistics network with another across the star system (a Relay at each end). Shows a code to pair with; takes one. Needs 2 kW.",
             color: Body, group: "Production");
         p.Add(Box([-1.5, -0.5, -1.5], [1.5, 0.0, 1.5], MachineLook.Base));
