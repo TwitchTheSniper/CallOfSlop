@@ -990,6 +990,9 @@ public sealed class FrigateParts : IPartGenerator
         Detail(p, a[2].X - 0.14, y0 + 0.2, a[2].Z - 0.01, a[2].X - 0.02, y0 + 0.32, a[2].Z + 0.11, "#30ff60", glow: true);
         Sock(p, "down", Cx - Hx(k) - 0.125, y0, Cz, "-y");
         Sock(p, "railgun", Cx, y0 + Slab, Cz + 0.6, "+y");
+        // The radar's plinth on the cap, to port of the mast: the Long Range Sensor stands on it.
+        Solid(p, Cx - 1.27, NoseTop - 0.1, Cz + 0.93, Cx - 0.93, NoseTop + 0.08, Cz + 1.27, Frame, "painted steel");
+        Sock(p, "sensor", Cx - 1.1, NoseTop + 0.08, Cz + 1.1, "+y");
         return p.Stats(5000, 14000, 35, 12.0);
     }
 
@@ -1704,6 +1707,7 @@ public sealed class FrigateParts : IPartGenerator
         var fc = Hang(bp, "Halberd Flight Computer", cockpit, "computer", "bottom");
         bp.Wires.Add((pilot, fc));
         var rail = Hang(bp, "Halberd Spinal Railgun", nose, "railgun", "back");
+        Hang(bp, "Long Range Sensor", nose, "sensor", "-y"); // (the radar's scope in every seat; the lock waits for a missile rack: ConstructRadar.CanLock)
         Hang(bp, "Ammo Box", rail, "ammo", "left");
         var railModule = Hang(bp, "Turret Module", cockpit, "gunModule", "-z");
         bp.Wires.Add((pilot, railModule));

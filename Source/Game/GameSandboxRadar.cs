@@ -19,6 +19,9 @@ public sealed partial class Game
     /// <summary>The contact the local player has locked (0: none), as sent to the server.</summary>
     public ushort RadarLock;
 
+    /// <summary>Does the radar key lock on this craft (it carries a missile rack: <see cref="ConstructRadar.CanLock"/>)?</summary>
+    public bool RadarCanLock;
+
     private ushort _radarBody;
     private int _radarFrames;
 
@@ -58,6 +61,9 @@ public sealed partial class Game
             return;
         }
         RadarCraft = c;
+        RadarCanLock = ConstructRadar.CanLock(c);
+        if (!RadarCanLock)
+            RadarLock = 0;
         if (_radarFrames++ % 6 == 0) // (ten looks a second: a broadphase lookup each)
             RadarContactCount = ConstructRadar.Contacts(Constructs, c, RadarRange, RadarContacts);
         if (RadarLock != 0 && (Constructs.Get(RadarLock) is not { } t || !ConstructRadar.IsContact(c, t, RadarRange * ConstructRadar.HoldShare)))
@@ -70,7 +76,7 @@ public sealed partial class Game
     /// </summary>
     public bool RadarPick(Vector3 eye, Vector3 look)
     {
-        if (RadarCraft is not { } c)
+        if (RadarCraft is not { } c || !RadarCanLock)
             return false;
         RadarLock = RadarNext(eye, look);
         SandboxSend(CActKind.RadarLock, body: c.Id, part: RadarLock);

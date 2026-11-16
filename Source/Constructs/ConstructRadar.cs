@@ -57,6 +57,21 @@ public static class ConstructRadar
         c.RadarParts = list;
     }
 
+    /// <summary>
+    /// Can the lock do anything on this craft: does it carry something that launches guided ordnance (an Ordnance or Bomb
+    /// Rack, or a missile gun)? A radar on a craft with none (the rust bucket) is a scope only: no lock key, and the server
+    /// refuses one (Karl, 2026-11-16: the missiles' guidance is what connects to the radar).
+    /// </summary>
+    public static bool CanLock(Construct c)
+    {
+        if (c.RackCount > 0)
+            return true;
+        for (var k = 0; k < c.GunCount; k++)
+            if ((c.Guns[k].Effects & GunEffect.Shell) != 0 && c.Guns[k].Shell == ShellKind.Missile)
+                return true;
+        return false;
+    }
+
     /// <summary>Is <paramref name="b"/> something <paramref name="c"/>'s radar shows, <paramref name="range"/> metres out at most: a craft of its own, free, not a wreck, not in a cargo bay.</summary>
     public static bool IsContact(Construct c, Construct b, float range) =>
         b != c && !b.Wreck && !b.Anchored && b.CarriedBy == 0 && b.Mass >= MinMass && b.PartCount > 0
@@ -101,6 +116,8 @@ public static class ConstructRadar
         var range = Range(c);
         if (range <= 0)
             return "this craft has no working radar";
+        if (!CanLock(c))
+            return "nothing on this craft takes a radar lock (no missile rack)";
         if (world.Get(target) is not { } b || !IsContact(c, b, range * HoldShare))
             return "that contact is off the radar";
         c.RadarLock = target;

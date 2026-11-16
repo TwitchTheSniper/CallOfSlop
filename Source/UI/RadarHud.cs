@@ -42,7 +42,7 @@ public static class RadarHud
         var right = Vector3.Cross(fwd, up);
 
         // What the radar key would take next: as Game.RadarPick does, without sending.
-        var next = game.RadarNext(cam.Eye, cam.Forward);
+        var next = game.RadarCanLock ? game.RadarNext(cam.Eye, cam.Forward) : (ushort)0;
 
         // ---- The scope ----
         var r = 92f * scale;
@@ -112,14 +112,14 @@ public static class RadarHud
         }
 
         // ---- The lines under it (right-aligned with the scope) ----
-        var key = (int)range * 64 + game.RadarContactCount + (bind & 0xffff) * 100003;
+        var key = (int)range * 64 + game.RadarContactCount + (bind & 0xffff) * 100003 + (game.RadarCanLock ? 0 : 1 << 30);
         if (key != _headKey)
         {
             _headKey = key;
             var n = game.RadarContactCount;
             var reach = game.RadarRange;
             _headLine = $"RADAR {(reach >= 1000 ? $"{reach / 1000f:0.#} km" : $"{reach:0} m")}, {n} contact{(n == 1 ? "" : "s")}, ring {(range >= 1000 ? $"{range / 1000f:0.#} km" : $"{range:0} m")}";
-            _keyLine = $"{Keybinds.Name(bind)}: lock the nearest to your aim";
+            _keyLine = game.RadarCanLock ? $"{Keybinds.Name(bind)}: lock the nearest to your aim" : "Scope only: no missile rack to lock for";
         }
         var edge = centre.X + r;
         var ty = centre.Y + r + 6 * scale;
