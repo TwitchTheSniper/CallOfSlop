@@ -1,0 +1,221 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Halberd Ops Wall Port",
+  "description": "A wall run of the Halberd's ops storey, the port side, inside its hull panel.",
+  "group": "Ship",
+  "section": "Halberd frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1100.0,
+  "health": 4000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#8e959a",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        0.625,
+        12.875,
+        2.025
+      ],
+      "max": [
+        0.875,
+        16.125,
+        6.725
+      ],
+      "color": "#8e959a",
+      "finish": "wall panelling"
+    },
+    {
+      "min": [
+        0.875,
+        13.128,
+        2.025
+      ],
+      "max": [
+        0.887,
+        13.615,
+        6.725
+      ],
+      "color": "#4c555c",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        0.5947,
+        16.1108,
+        1.9132
+      ],
+      "max": [
+        1.8653,
+        16.8922,
+        6.8368
+      ],
+      "color": "#56626c",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.5947,
+          16.1452,
+          6.8368
+        ],
+        [
+          0.6153,
+          16.1108,
+          6.8368
+        ],
+        [
+          0.5947,
+          16.1452,
+          1.9132
+        ],
+        [
+          0.6153,
+          16.1108,
+          1.9132
+        ],
+        [
+          1.8447,
+          16.8922,
+          2.5632
+        ],
+        [
+          1.8653,
+          16.8578,
+          2.5632
+        ],
+        [
+          1.8447,
+          16.8922,
+          6.1868
+        ],
+        [
+          1.8653,
+          16.8578,
+          6.1868
+        ]
+      ],
+      "paintable": false,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        1.105,
+        16.575,
+        3.095
+      ],
+      "max": [
+        1.505,
+        16.745,
+        3.255
+      ],
+      "color": "#26292c",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        1.105,
+        16.575,
+        3.895
+      ],
+      "max": [
+        1.505,
+        16.745,
+        4.055
+      ],
+      "color": "#26292c",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        1.105,
+        16.575,
+        4.695
+      ],
+      "max": [
+        1.505,
+        16.745,
+        4.855
+      ],
+      "color": "#26292c",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        1.105,
+        16.575,
+        5.495
+      ],
+      "max": [
+        1.505,
+        16.745,
+        5.655
+      ],
+      "color": "#26292c",
+      "detail": true,
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hull3",
+      "at": [
+        0.625,
+        15.775,
+        4.375
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "down",
+      "at": [
+        0.75,
+        12.875,
+        4.375
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "up",
+      "at": [
+        0.75,
+        16.125,
+        4.375
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "armsRack",
+      "at": [
+        0.875,
+        14.025,
+        5.475
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "lampA",
+      "at": [
+        0.875,
+        15.575,
+        2.875
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j0",
+      "at": [
+        0.875,
+        12.995,
+        4.375
+      ],
+      "dir": "+x"
+    }
+  ]
+}

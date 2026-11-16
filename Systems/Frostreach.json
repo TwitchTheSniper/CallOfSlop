@@ -1,7 +1,7 @@
 {
   "name": "Frostreach",
-  "description": "A white star 6.6 light-years from the Dev System, 8.1 from Ember (phase 6, docs/space/GALAXY.md): the ice world Glacier with its moons Rime and Slopolis (the free port, a city: docs/planets/CITY.md), and the small Shard far out. Glacier is a map (Maps/Planetoids/Glacier.json), the IT Department's world; the others are rails and sky.",
-  "galaxy": { "ly": [-4.4, 4.6, -1.7], "arrive": { "at": "Glacier", "km": 45 } },
+  "description": "The Survival world's one star system (Karl, 2026-11-15: five planets in one system for now): a white star with five planets. Glacier, the ice world (Maps/Planetoids/Glacier.json), with its moons Rime and Slopolis (the free port, a city: docs/planets/CITY.md); Cinder, a scorched rock close in with one face always to the star (Maps/Planetoids/Cinder.json); Caledon, a highland world (Maps/Planetoids/Caledon.json) with its moon Cairn; Mille, a hollow world (Maps/Planetoids/Mille.json) with its moonlet Crumb, a 600 m rock of iron, stone and sand where the Magpie start wakes (Maps/Planetoids/Crumb.json); and the small Shard far out. Cinder, Caledon and Mille came from the Ember, Glenmore and Hearth systems; new bodies go on the end, since a saved ship keeps its body by index (.claude/rules/maps-and-worlds.md). The others are rails and sky.",
+  "galaxy": { "ly": [3.1, 2.8, 0.9], "arrive": { "at": "Glacier", "km": 45 } },
   "bodies": [
     { "name": "Frostreach", "gm": 2.39e20, "radius": 1.2e9, "color": [0.8, 0.88, 1.0], "rotation": { "hours": 300, "tilt": 11 } },
     {
@@ -23,6 +23,32 @@
       "name": "Slopolis", "parent": "Glacier", "radius": 3500, "gravity": 10, "map": "Slopolis", "color": [0.55, 0.5, 0.42],
       "orbit": { "km": 140, "e": 0.02, "i": 3, "lan": 200, "argp": 40, "m0": 20 },
       "rotation": { "hours": 26, "tilt": 0 }
+    },
+    {
+      "name": "Cinder", "parent": "Frostreach", "radius": 5000, "gravity": 12, "map": "Cinder", "color": [0.62, 0.34, 0.22],
+      "orbit": { "au": 0.35, "e": 0.01, "i": 0.5, "lan": 10, "argp": 0, "m0": 30 },
+      "rotation": { "locked": true },
+      "lumps": { "sources": [ { "type": "mascons", "name": "rubble", "points": [[0, 0, 0, 3], [300, 0, 0], [-300, 150, 0], [0, -150, 0]], "soft": 150, "mu": 1 } ] }
+    },
+    {
+      "name": "Caledon", "parent": "Frostreach", "radius": 6000, "gravity": 11, "map": "Caledon", "color": [0.36, 0.46, 0.3],
+      "orbit": { "au": 1.3, "e": 0.02, "i": 0.8, "lan": 140, "argp": 60, "m0": 210 },
+      "rotation": { "hours": 21, "tilt": 18 }
+    },
+    {
+      "name": "Cairn", "parent": "Caledon", "radius": 900, "gravity": 2, "color": [0.52, 0.5, 0.5],
+      "orbit": { "km": 70, "e": 0.03, "i": 7, "lan": 15, "argp": 0, "m0": 120 },
+      "rotation": { "locked": true }
+    },
+    {
+      "name": "Mille", "parent": "Frostreach", "radius": 3000, "gravity": 8, "map": "Mille", "color": [0.78, 0.6, 0.32],
+      "orbit": { "au": 3.0, "e": 0.015, "i": 0.3, "lan": 20, "argp": 100, "m0": 330 },
+      "rotation": { "hours": 14, "tilt": 5 }
+    },
+    {
+      "name": "Crumb", "parent": "Mille", "radius": 600, "gravity": 1.5, "map": "Crumb", "color": [0.48, 0.44, 0.39],
+      "orbit": { "km": 30, "e": 0.02, "i": 3, "lan": 0, "argp": 0, "m0": 45 },
+      "rotation": { "locked": true }
     }
   ]
 }

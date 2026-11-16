@@ -73,7 +73,7 @@ the body's own `gm`/`gravity`, so the orbits round it and its children's stay as
 - Refused with a reason: lumps on the star, a source reaching past twice the body's radius, no mass, a `uniform` source,
   and every map refusal (unknown keys, bad mascons or tetrahedra).
 - Shipped: the Dev system's Moonlet is a peanut (a lobe of twice the mass 250 m one way, the small one 500 m the other,
-  so the centre of mass stays at its centre; about 16% stronger off its small end at 1.5 km), Ember's Soot a rubble pile.
+  so the centre of mass stays at its centre; about 16% stronger off its small end at 1.5 km), Frostreach's Cinder a rubble pile.
 - Cost: one position and spin solve of the body per step time (`BodyGravityForce` keeps the last), shared by every ship.
 
 ## Gravity parts

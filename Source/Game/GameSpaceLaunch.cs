@@ -235,6 +235,21 @@ public sealed partial class Game
         return true;
     }
 
+    /// <summary>
+    /// The render origin for a local player standing in a construct (contraption space, <see cref="Player.RenderRide"/>): the
+    /// construct's drawn position, and the eye from it worked out in small numbers, so the ship and the camera standing in it
+    /// agree to the bit (docs/space/SPACE.md "Far from the middle"). False when not riding that way.
+    /// </summary>
+    internal bool LocalRideAnchor(Vector3 eye, out Vector3 origin, out Vector3 eyeFromOrigin)
+    {
+        origin = eyeFromOrigin = Vector3.Zero;
+        if (!SandboxOn || Local is not { Alive: true, RenderRide: true, RenderSeat: SeatKind.None } me || MannedEye != null)
+            return false;
+        origin = me.RenderRideBody;
+        eyeFromOrigin = me.RenderRideRel + Vector3.Transform(new Vector3(0, me.RenderEyeHeight, 0), me.RenderRideRot) + (eye - me.RenderEye); // (the last term: a blast's shake or stumble, 0 to the bit otherwise)
+        return true;
+    }
+
     /// <summary>The player sits in a construct that is in space (they can't get out there).</summary>
     internal bool SpaceSeated(Player p)
     {

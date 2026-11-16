@@ -437,6 +437,10 @@ public static class BuildingWalkCheck
             var b2 = t + Vector3.Transform(dmax, q);
             var mn = Vector3.Min(a, b2);
             var mx = Vector3.Max(a, b2);
+            if (mx.Y - mn.Y < 0.5f * MathF.Min(mx.X - mn.X, mx.Z - mn.Z))
+                continue; // (a leaf lying level is a hatch in a floor or a keel, the Magpie's well doors: nobody walks through it)
+            if (MathF.Max(mx.X - mn.X, mx.Z - mn.Z) < 0.6f)
+                continue; // (a leaf narrower than a person is no doorway: the foot of the Magpie's boarding ladder)
             var mid = (mn + mx) * 0.5f;
             var thinX = mx.X - mn.X < mx.Z - mn.Z;
             foreach (var side in new[] { -1f, 1f })

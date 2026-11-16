@@ -1,0 +1,149 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Rust Bucket Partition 7",
+  "description": "A partition of the rust bucket's rooms, with its doorways.",
+  "group": "Ship",
+  "section": "Rust bucket",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 400.0,
+  "health": 1200,
+  "armour": 15,
+  "material": "steel",
+  "color": "#9a9484",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        6.0,
+        3.125,
+        7.75
+      ],
+      "max": [
+        9.595,
+        5.875,
+        8.0
+      ],
+      "color": "#c9ccc4",
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        6.0,
+        3.129,
+        7.733
+      ],
+      "max": [
+        9.595,
+        4.025,
+        7.745
+      ],
+      "color": "#5f665f",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        6.0,
+        3.129,
+        8.005
+      ],
+      "max": [
+        9.595,
+        4.025,
+        8.017
+      ],
+      "color": "#5f665f",
+      "detail": true,
+      "finish": "matte paint"
+    },
+    {
+      "min": [
+        9.605,
+        3.125,
+        7.755
+      ],
+      "max": [
+        10.1177,
+        5.875,
+        7.995
+      ],
+      "color": "#c9ccc4",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          9.605,
+          3.125,
+          7.755
+        ],
+        [
+          10.1177,
+          3.125,
+          7.755
+        ],
+        [
+          9.8169,
+          5.875,
+          7.755
+        ],
+        [
+          9.605,
+          5.875,
+          7.755
+        ],
+        [
+          9.605,
+          3.125,
+          7.995
+        ],
+        [
+          10.1177,
+          3.125,
+          7.995
+        ],
+        [
+          9.8169,
+          5.875,
+          7.995
+        ],
+        [
+          9.605,
+          5.875,
+          7.995
+        ]
+      ],
+      "paintable": false,
+      "finish": "gloss paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "lampBath",
+      "at": [
+        7.875,
+        5.425,
+        7.75
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        7.795,
+        3.125,
+        7.875
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        7.795,
+        5.875,
+        7.875
+      ],
+      "dir": "+y"
+    }
+  ]
+}

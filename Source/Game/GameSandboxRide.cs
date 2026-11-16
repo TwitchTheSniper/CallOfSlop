@@ -202,8 +202,11 @@ public sealed partial class Game
             local = Vector3.Lerp(p.PrevRideLocal, local, _alpha);
         if (body == 0 || Constructs.Get(body) is not { } c || seg > c.JointCount)
             return;
-        DrawnFrame(c, seg, out var q, out var t);
+        DrawnFrame(c, seg, out var q, out var t, out var bodyPos, out var segRel);
+        var rel = segRel + Vector3.Transform(local, q) + (remote || IsServer ? Vector3.Zero : p.Id == LocalId ? _correction : Vector3.Zero);
         p.RenderPosition = t + Vector3.Transform(local, q) + (remote || IsServer ? Vector3.Zero : p.Id == LocalId ? _correction : Vector3.Zero);
+        p.RenderRideBody = bodyPos;
+        p.RenderRideRel = rel;
         var rider = ConstructRide.RiderRot(q, Vector3.Normalize(up));
         p.RenderRide = true;
         p.RenderRideRot = rider;

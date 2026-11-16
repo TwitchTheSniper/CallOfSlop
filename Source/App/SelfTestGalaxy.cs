@@ -8,11 +8,11 @@ public static partial class SelfTest
 {
     /// <summary>
     /// "Galaxy" (phase 6, docs/space/GALAXY.md): the galaxy tier and the jump drive. The shipped systems load in light-years
-    /// (Dev, Ember, Frostreach), an eleventh file and two systems on one spot are refused, and a jump arrives in a circular
+    /// (Dev and Frostreach, the Survival world's one system), an eleventh file and two systems on one spot are refused, and a jump arrives in a circular
     /// orbit at the target's edge. Then a real host and client with lag and loss, Sandbox on the Planetoid: the Jumper
     /// blueprint is put in orbit with the host in its seat; with too little charge the jump key does nothing but say why;
-    /// charged, it jumps to Ember (its ship keeps its id and moves to Ember's flight, the batteries pay the energy), the host
-    /// sees Ember's sky with the Dev star among the far stars, the client follows the ship there and says where it is; W
+    /// charged, it jumps to Frostreach (its ship keeps its id and moves to Frostreach's flight, the batteries pay the energy), the host
+    /// sees Frostreach's sky with the Dev star among the far stars, the client follows the ship there and says where it is; W
     /// still pushes it; it jumps back home; and the tick with a ship away allocates nothing.
     /// </summary>
     private static void CheckGalaxy()
@@ -29,28 +29,26 @@ public static partial class SelfTest
         var names = string.Join(", ", StarSystems.All.Select(e => e.System.Name));
         Line($"galaxy: {Galaxy.Count} systems ({names}); errors {StarSystems.Errors.Count}");
         var dev = StarSystems.All.ToList().FindIndex(e => e.System.File == "Dev.json");
-        var ember = StarSystems.All.ToList().FindIndex(e => e.System.File == "Ember.json");
         var frost = StarSystems.All.ToList().FindIndex(e => e.System.File == "Frostreach.json");
-        Want(StarSystems.Errors.Count == 0 && dev >= 0 && ember >= 0 && frost >= 0 && Galaxy.Count <= Galaxy.MaxSystems, $"Dev, Ember and Frostreach load ({names}; {string.Join("; ", StarSystems.Errors)})");
-        if (dev < 0 || ember < 0 || frost < 0)
+        Want(StarSystems.Errors.Count == 0 && dev >= 0 && frost >= 0 && Galaxy.Count <= Galaxy.MaxSystems, $"Dev and Frostreach load ({names}; {string.Join("; ", StarSystems.Errors)})");
+        if (dev < 0 || frost < 0)
         {
             Fail($"galaxy: {string.Join("; ", problems)}");
             return;
         }
-        var de = Galaxy.DistanceLy(dev, ember);
+        var de = Galaxy.DistanceLy(dev, frost);
         Galaxy.Nearest(dev, 1, out var n1, out _);
-        Galaxy.Nearest(dev, 2, out var n2, out _);
-        Galaxy.Nearest(ember, 1, out var e1, out _);
-        Want(Math.Abs(de - 4.2732) < 0.001 && n1 == ember && n2 == frost && Galaxy.Nearest(dev, Galaxy.Count - 1, out _, out _) && !Galaxy.Nearest(dev, Galaxy.Count, out _, out _) && e1 == dev,
-            $"distances and the nearest order (Dev-Ember {de:0.0000} ly; Dev's 1st {n1}, 2nd {n2}; Ember's 1st {e1})");
+        Galaxy.Nearest(frost, 1, out var f1, out _);
+        Want(Math.Abs(de - 4.2732) < 0.001 && n1 == frost && Galaxy.Nearest(dev, Galaxy.Count - 1, out _, out _) && !Galaxy.Nearest(dev, Galaxy.Count, out _, out _) && f1 == dev,
+            $"distances and the nearest order (Dev-Frostreach {de:0.0000} ly; Dev's 1st {n1}; Frostreach's 1st {f1})");
         // The jump arrives by the system's world (its file's "arrive" "at"), on the side it came from, in a circular orbit round it.
         var t0 = SpaceTime.FromSeconds(1e6);
-        var es = Galaxy.System(ember);
-        Galaxy.Arrive(dev, ember, t0, out var ap, out var av);
+        var es = Galaxy.System(frost);
+        Galaxy.Arrive(dev, frost, t0, out var ap, out var av);
         es.StateOf(es.ArrivalBody, t0, out var sp, out var sv);
         var ar = ap - sp;
         var circ = Math.Sqrt(es.Bodies[es.ArrivalBody].Mu / es.Arrival);
-        var back = Galaxy.DirectionTo(ember, dev);
+        var back = Galaxy.DirectionTo(frost, dev);
         Want(Math.Abs(ar.Length - es.Arrival) < 1 && Math.Abs((av - sv).Length - circ) < 1e-6 && Math.Abs(Vec3d.Dot(ar, av - sv)) < 1e-3 * ar.Length * circ
              && Vec3d.Dot(ar.Normalized(), new Vec3d(back.X, back.Y, 0).Normalized()) > 0.9999,
             $"a jump arrives {es.Arrival / 1000:0} km from {es.Bodies[es.ArrivalBody].Name}, towards where it came from, in a circular orbit ({ar.Length / 1000:0.0} km, {(av - sv).Length:0.0} of {circ:0.0} m/s)");
@@ -59,7 +57,7 @@ public static partial class SelfTest
         Directory.CreateDirectory(tmp);
         try
         {
-            var text = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, StarSystemFile.FolderName, "Ember.json"));
+            var text = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, StarSystemFile.FolderName, "Frostreach.json"));
             for (var k = 0; k < 11; k++)
                 File.WriteAllText(Path.Combine(tmp, $"S{k:00}.json"), text.Replace("\"ly\": [3.1, 2.8, 0.9]", $"\"ly\": [{k * 2}, 0, 0]"));
             var errs = new List<string>();
@@ -87,13 +85,13 @@ public static partial class SelfTest
             Want(ex.Message.Contains("unknown key \"warp\""), $"an unknown key in \"galaxy\" is refused ({ex.Message})");
         }
 
-        JumpScene(problems, dev, ember);
+        JumpScene(problems, dev, frost);
         foreach (var p in problems)
             Fail($"galaxy: {p}");
     }
 
-    /// <summary>The jump drive in play: host + client, the Jumper in orbit round the Planetoid, to Ember and back.</summary>
-    private static void JumpScene(List<string> problems, int dev, int ember)
+    /// <summary>The jump drive in play: host + client, the Jumper in orbit round the Planetoid, to Frostreach and back.</summary>
+    private static void JumpScene(List<string> problems, int dev, int frost)
     {
         void Want(bool ok, string what)
         {
@@ -184,7 +182,7 @@ public static partial class SelfTest
         // ---- Too little charge: the key says why and nothing happens -----------------------------------------------------
         var why1 = server.JumpProblem(space, ship, drive, out var to, out var ly, out var cost);
         Line($"galaxy: the Jumper: {ship.Mass:0} kg, {ship.ChargeCapacity:0} kJ; target 1 is {(to >= 0 ? Galaxy.System(to).Name : "none")} at {ly:0.00} ly for {cost:0} kJ ({why1 ?? "can go"})");
-        Want(why1 == null && to == ember && cost > 50 && cost < ship.ChargeCapacity * 0.6f, $"target 1 is Ember, within reach and charge ({why1}; {cost:0} of {ship.ChargeCapacity:0} kJ)");
+        Want(why1 == null && to == frost && cost > 50 && cost < ship.ChargeCapacity * 0.6f, $"target 1 is Frostreach, within reach and charge ({why1}; {cost:0} of {ship.ChargeCapacity:0} kJ)");
         var full = ship.Charge;
         ship.Charge = cost * 0.5f;
         Press();
@@ -192,7 +190,7 @@ public static partial class SelfTest
         Want((ship.Parts[drive].State & 1) == 0 && ship.SpaceAway == 0 && line != null && line.Contains("kJ, the batteries hold"), $"with too little charge it won't charge, and says why ({line})");
         ship.Charge = full;
 
-        // ---- To Ember -------------------------------------------------------------------------------------------------
+        // ---- To Frostreach -------------------------------------------------------------------------------------------------
         Press();
         Want((ship.Parts[drive].State & 1) != 0, "the jump key starts the charge");
         var charging = server.SpaceJumpLine(ship);
@@ -200,18 +198,18 @@ public static partial class SelfTest
         var half = ship.Parts[drive].Out;
         for (var wait = 0; wait < 120 && ship.SpaceAway == 0; wait++)
             PumpFast(server, [a], 0.1, ref now);
-        var away = space.Away[ember];
+        var away = space.Away[frost];
         var ai = away?.Ships.IndexOfId(id) ?? -1;
-        var es = Galaxy.System(ember);
+        var es = Galaxy.System(frost);
         var dist = ai >= 0 ? (away!.Ships.PositionOf(ai) - es.PositionOf(es.ArrivalBody, away.Ships.Time)).Length : 0;
-        Line($"galaxy: charging ({charging}), {half * 100:0}% after 4 s; jumped: away {ship.SpaceAway}, ship {ai} in Ember's flight {dist / 1000:0.0} km from {es.Bodies[es.ArrivalBody].Name}, charge {full:0} to {ship.Charge:0} kJ");
+        Line($"galaxy: charging ({charging}), {half * 100:0}% after 4 s; jumped: away {ship.SpaceAway}, ship {ai} in Frostreach's flight {dist / 1000:0.0} km from {es.Bodies[es.ArrivalBody].Name}, charge {full:0} to {ship.Charge:0} kJ");
         Want(half > 0.35f && half < 0.65f, $"the drive charges over its time ({half * 100:0}% after 4 of 8 s)");
-        Want(ship.SpaceAway == ember + 1 && ai >= 0 && flight.Ships.IndexOfId(id) < 0 && ship.SpaceShip == id, $"it jumps: the ship moves to Ember's flight with its id (away {ship.SpaceAway}, index {ai})");
-        Want(Math.Abs(dist - es.Arrival) < es.Arrival * 0.01, $"it arrives in orbit round Ember's world ({dist / 1000:0.0} of {es.Arrival / 1000:0.0} km)");
+        Want(ship.SpaceAway == frost + 1 && ai >= 0 && flight.Ships.IndexOfId(id) < 0 && ship.SpaceShip == id, $"it jumps: the ship moves to Frostreach's flight with its id (away {ship.SpaceAway}, index {ai})");
+        Want(Math.Abs(dist - es.Arrival) < es.Arrival * 0.01, $"it arrives in orbit round Frostreach's world ({dist / 1000:0.0} of {es.Arrival / 1000:0.0} km)");
         Want(full - ship.Charge > cost * 0.95f, $"the batteries pay the jump ({full - ship.Charge:0} kJ of {cost:0})");
         Want(server.SpaceSeated(me), "the driver is still seated");
 
-        // The host's view: Ember's sky, the Dev star among the far stars, the sun where Ember's star is.
+        // The host's view: Frostreach's sky, the Dev star among the far stars, the sun where Frostreach's star is.
         var t = server.SpaceRenderTime;
         var viewOk = server.SpaceAwayView(t, out var vsys, out var vpose, out var vg, out var vbody);
         var view = new SpaceSkyView();
@@ -221,28 +219,28 @@ public static partial class SelfTest
         for (var k = 0; k < view.StarCount; k++)
             if (view.Stars[k].Body == dev)
                 devStar = k;
-        var wantDev = vpose.Rot.InverseRotate(Galaxy.DirectionTo(ember, dev)).ToVector3();
+        var wantDev = vpose.Rot.InverseRotate(Galaxy.DirectionTo(frost, dev)).ToVector3();
         var sunWant = Vector3.Normalize((vpose.FromEcliptic(es.PositionOf(0, t)) - Vec3d.From(ship.WorldCom)).ToVector3());
-        Want(viewOk && vg == ember && ReferenceEquals(vbody, ship) && view.StarCount == Galaxy.Count - 1 && devStar >= 0
-             && Vector3.Dot(view.Stars[devStar].Dir, wantDev) > 0.9999f && Vector3.Dot(view.StarDirection, sunWant) > 0.9999f && view.BodyCount == es.Count - 1,
-            $"the host rides in Ember's sky: its bodies, its star as the sun and the Dev star among {view.StarCount} far stars (view {viewOk}, galaxy {vg}, bodies {view.BodyCount})");
+        Want(viewOk && vg == frost && ReferenceEquals(vbody, ship) && view.StarCount == Galaxy.Count - 1 && devStar >= 0
+             && Vector3.Dot(view.Stars[devStar].Dir, wantDev) > 0.9999f && Vector3.Dot(view.StarDirection, sunWant) > 0.9999f && view.BodyCount == Math.Min(es.Count - 1, SpaceSkyView.MaxBodies),
+            $"the host rides in Frostreach's sky: its bodies, its star as the sun and the Dev star among {view.StarCount} far stars (view {viewOk}, galaxy {vg}, bodies {view.BodyCount})");
         // The client follows it there. (PumpFast's 1.5 game seconds are about 0.1 s of real time, and the lag is real: wait for the news, bounded.)
         PumpFast(server, [a], 1.5, ref now);
-        for (var wait = 0; wait < 60 && a.Constructs.Get(ship.Id)?.SpaceAway != ember + 1; wait++)
+        for (var wait = 0; wait < 60 && a.Constructs.Get(ship.Id)?.SpaceAway != frost + 1; wait++)
             Pump(server, [a], 0.1, ref now, clock);
         var copy = a.Constructs.Get(ship.Id);
         var th = flight.Clock.Now;
         var cpos = default(SpacePos);
         var cg = -1;
-        var seenOk = copy != null && a.SpaceAwayShip(copy, th, out cg, out cpos, out _) && cg == ember;
+        var seenOk = copy != null && a.SpaceAwayShip(copy, th, out cg, out cpos, out _) && cg == frost;
         ai = away!.Ships.IndexOfId(id);
         var off = seenOk && ai >= 0 ? (cpos - away.Ships.PositionOf(ai)).Length : double.NaN;
         var cline = copy == null ? null : a.SpaceAwayLine(copy);
         Line($"galaxy: the client: away {copy?.SpaceAway}, its ship {off:0.0} m from the host's; line: {cline ?? "none"}; lag and loss {(lagged ? "on" : "NOT on")}");
-        Want(copy is { SpaceAway: var ca } && ca == ember + 1 && off < 50 && cline != null && cline.StartsWith("In space in Ember"),
-            $"the client follows the ship in Ember and says where it is (away {copy?.SpaceAway}, {off:0.0} m off, {cline})");
+        Want(copy is { SpaceAway: var ca } && ca == frost + 1 && off < 50 && cline != null && cline.StartsWith("In space in Frostreach"),
+            $"the client follows the ship in Frostreach and says where it is (away {copy?.SpaceAway}, {off:0.0} m off, {cline})");
 
-        // W still pushes it, in Ember's axes.
+        // W still pushes it, in Frostreach's axes.
         var v0 = away.Ships.VelocityOf(ai);
         server.HeldButtons = Buttons.Forward;
         PumpFast(server, [a], 1.0, ref now);
@@ -251,7 +249,7 @@ public static partial class SelfTest
         ai = away.Ships.IndexOfId(id);
         var dv = ai >= 0 ? (away.Ships.VelocityOf(ai) - v0).Length : 0;
         var grav = es.Bodies[es.ArrivalBody].Mu / (es.Arrival * es.Arrival) * 1.5;
-        Want(dv > grav * 3 + 1, $"W pushes the ship in Ember ({dv:0.00} m/s in 1.5 s; gravity alone {grav:0.00})");
+        Want(dv > grav * 3 + 1, $"W pushes the ship in Frostreach ({dv:0.00} m/s in 1.5 s; gravity alone {grav:0.00})");
 
         // ---- No allocation with a ship away ----------------------------------------------------------------------------
         server.SpaceAwayBefore(space);
@@ -280,7 +278,7 @@ public static partial class SelfTest
         PumpFast(server, [a], 1.0, ref now);
         for (var wait = 0; wait < 50 && copy is { SpaceAway: not 0 }; wait++)
             Pump(server, [a], 0.1, ref now, clock); // (the client hears it over the lagged link: real time)
-        Line($"galaxy: home: parked {ship.SpaceAway}, ship {hi} in the Dev flight {hd / 1000:0.0} km from {ds.Bodies[ds.ArrivalBody].Name}; Ember's flight holds {away.Ships.Count}; the client's copy parked {copy?.SpaceAway}");
+        Line($"galaxy: home: parked {ship.SpaceAway}, ship {hi} in the Dev flight {hd / 1000:0.0} km from {ds.Bodies[ds.ArrivalBody].Name}; Frostreach's flight holds {away.Ships.Count}; the client's copy parked {copy?.SpaceAway}");
         Want(ship.SpaceAway == 0 && hi >= 0 && away.Ships.Count == 0 && Math.Abs(hd - ds.Arrival) < ds.Arrival * 0.01 && copy is { SpaceAway: 0 },
             $"it jumps home: back in the Dev system's flight in orbit round its world, within the bubble's reach again, and the client knows (parked {ship.SpaceAway}, index {hi}, {hd / 1000:0.0} of {ds.Arrival / 1000:0.0} km, client {copy?.SpaceAway})");
         // Brought back within reach of the bubble, it is posed from its ship again.
