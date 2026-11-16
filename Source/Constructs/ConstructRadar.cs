@@ -57,6 +57,23 @@ public static class ConstructRadar
         c.RadarParts = list;
     }
 
+    /// <summary>
+    /// Can this craft's radar lock: is a working radar part wired into a working Fire Director (the fire control that hands
+    /// the lock to the missiles)? Without one the radar is a scope only (the rust bucket), and destroying either part loses
+    /// the lock (Karl, 2026-11-16). A walk of the wires: at a press, a launch, or once a frame for the local seat's HUD.
+    /// </summary>
+    public static bool CanLock(Construct c)
+    {
+        for (var w = 0; w < c.WireCount; w++)
+        {
+            int from = c.Wires[w].From, to = c.Wires[w].To;
+            if (from < c.PartCount && to < c.PartCount && c.DefOf(from).RadarRange > 0 && c.DefOf(to).Logic == CLogic.Director
+                && c.Parts[from].Working && c.Parts[to].Working)
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>Is <paramref name="b"/> something <paramref name="c"/>'s radar shows, <paramref name="range"/> metres out at most: a craft of its own, free, not a wreck, not in a cargo bay.</summary>
     public static bool IsContact(Construct c, Construct b, float range) =>
         b != c && !b.Wreck && !b.Anchored && b.CarriedBy == 0 && b.Mass >= MinMass && b.PartCount > 0
@@ -101,6 +118,8 @@ public static class ConstructRadar
         var range = Range(c);
         if (range <= 0)
             return "this craft has no working radar";
+        if (!CanLock(c))
+            return "the radar isn't wired to a working Fire Director";
         if (world.Get(target) is not { } b || !IsContact(c, b, range * HoldShare))
             return "that contact is off the radar";
         c.RadarLock = target;
@@ -113,7 +132,7 @@ public static class ConstructRadar
         if (c.RadarLock == 0)
             return 0;
         var range = Range(c);
-        if (range <= 0 || world.Get(c.RadarLock) is not { } b || !IsContact(c, b, range * HoldShare))
+        if (range <= 0 || !CanLock(c) || world.Get(c.RadarLock) is not { } b || !IsContact(c, b, range * HoldShare))
         {
             c.RadarLock = 0;
             return 0;

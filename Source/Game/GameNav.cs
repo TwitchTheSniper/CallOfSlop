@@ -56,7 +56,7 @@ public sealed class NavOrder
 /// stabilizer's own autopilot flies it (a waypoint over the ground, or a climb to the sky's edge on the way to space).
 /// A driver who touches the controls takes the ship back. Orders aren't saved, and a move to another world drops them.
 /// <para>
-/// The wire (protocol 322): <c>CActKind.NavOrder</c> from a client, and <see cref="Msg.Nav"/> from the host to everyone
+/// The wire (protocol 323): <c>CActKind.NavOrder</c> from a client, and <see cref="Msg.Nav"/> from the host to everyone
 /// when an order starts, changes phase or ends, and to each joiner.
 /// </para>
 /// </summary>

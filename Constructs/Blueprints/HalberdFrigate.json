@@ -1506,6 +1506,12 @@
       "by": "back"
     },
     {
+      "part": "Long Range Sensor",
+      "on": 83,
+      "socket": "sensor",
+      "by": "-y"
+    },
+    {
       "part": "Ammo Box",
       "on": 224,
       "socket": "ammo",
@@ -1519,9 +1525,15 @@
     },
     {
       "part": "Driving Module",
-      "on": 226,
+      "on": 227,
       "socket": "+x",
       "by": "-x"
+    },
+    {
+      "part": "Fire Director",
+      "on": 73,
+      "socket": "director",
+      "by": "-y"
     },
     {
       "part": "Chart Table",
@@ -1741,39 +1753,43 @@
     ],
     [
       220,
-      226
+      227
     ],
     [
-      226,
+      227,
       224
     ],
     [
       220,
-      227
+      228
     ],
     [
-      232,
+      225,
       229
     ],
     [
-      232,
-      230
+      234,
+      231
     ],
     [
-      232,
-      231
+      234,
+      232
+    ],
+    [
+      234,
+      233
     ]
   ],
   "links": [
     {
       "type": "data",
-      "from": 227,
+      "from": 228,
       "to": 219,
       "fromPort": "lift"
     },
     {
       "type": "data",
-      "from": 227,
+      "from": 228,
       "to": 221,
       "fromPort": "lift"
     }

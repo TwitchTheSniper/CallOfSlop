@@ -926,6 +926,7 @@ public sealed class FrigateParts : IPartGenerator
         Sock(p, "copilot", 5.9, y0, Cz - Hz(k) + 1.3, "+y");
         Sock(p, "gunModule", 5.0, y0 + 0.4, Cz - Hz(k) + 0.6, "+z");
         Sock(p, "computer", 6.6, y0, 6.2, "+y");
+        Sock(p, "director", 7.3, y0, 5.5, "+y"); // (the Fire Director the radar is wired into, by the flight computer)
         Sock(p, "chart", Cx - Hx(k), y0 + 0.475, 5.3, "+x");
         LampSock(p, "lampA", Cx - Hx(k), k, 4.0, "+x");
         LampSock(p, "lampB", Cx + Hx(k), k, 4.0, "-x");
@@ -990,6 +991,9 @@ public sealed class FrigateParts : IPartGenerator
         Detail(p, a[2].X - 0.14, y0 + 0.2, a[2].Z - 0.01, a[2].X - 0.02, y0 + 0.32, a[2].Z + 0.11, "#30ff60", glow: true);
         Sock(p, "down", Cx - Hx(k) - 0.125, y0, Cz, "-y");
         Sock(p, "railgun", Cx, y0 + Slab, Cz + 0.6, "+y");
+        // The radar's plinth on the cap, to port of the mast: the Long Range Sensor stands on it.
+        Solid(p, Cx - 1.27, NoseTop - 0.1, Cz + 0.93, Cx - 0.93, NoseTop + 0.08, Cz + 1.27, Frame, "painted steel");
+        Sock(p, "sensor", Cx - 1.1, NoseTop + 0.08, Cz + 1.1, "+y");
         return p.Stats(5000, 14000, 35, 12.0);
     }
 
@@ -1704,6 +1708,7 @@ public sealed class FrigateParts : IPartGenerator
         var fc = Hang(bp, "Halberd Flight Computer", cockpit, "computer", "bottom");
         bp.Wires.Add((pilot, fc));
         var rail = Hang(bp, "Halberd Spinal Railgun", nose, "railgun", "back");
+        var sensor = Hang(bp, "Long Range Sensor", nose, "sensor", "-y"); // (the radar's scope in every seat)
         Hang(bp, "Ammo Box", rail, "ammo", "left");
         var railModule = Hang(bp, "Turret Module", cockpit, "gunModule", "-z");
         bp.Wires.Add((pilot, railModule));
@@ -1712,6 +1717,10 @@ public sealed class FrigateParts : IPartGenerator
         bp.Wires.Add((pilot, couchModule));
         bp.DataLinks.Add((couchModule, pilotHinge, "lift"));
         bp.DataLinks.Add((couchModule, copilotHinge, "lift"));
+        // Fire control: the radar wired into a Fire Director, so the radar locks for the missiles (ConstructRadar.CanLock). No guns
+        // are wired out of it: the PDCs and the railgun keep their own modules.
+        var director = Hang(bp, "Fire Director", cockpit, "director", "-y");
+        bp.Wires.Add((sensor, director));
         Hang(bp, "Chart Table", cockpit, "chart", "back");
         Switch(bp, cockpit, "switch", LampAt(bp, cockpit, "lampA", "#ff6050"), LampAt(bp, cockpit, "lampB", "#ff6050"), LampAt(bp, cockpit, "lampC"));
         _ = drive;
