@@ -6,6 +6,7 @@ namespace CallOfSlop;
 public struct CPart
 {
     public ushort Def; // ConstructParts id (two bytes since protocol 87)
+    public ushort Use; // the sub-blueprint use it is part of, plus one (an index into its body's Construct.Uses; 0: none): SubBlueprints.cs
     public Vector3 Pos; // the part's origin in the rest frame (every segment's rest frame is the body frame at joint angle 0)
     public byte Rot; // Rot24 turn
     public byte Seg; // 0: the body itself; k > 0: hangs on joint k - 1
@@ -254,6 +255,10 @@ public sealed partial class Construct
     public const int BoxesPerGun = 4; // ammo boxes a gun's feed chain reaches (the nearest first)
 
     public ushort Id;
+    public List<UseTag>? Uses; // the sub-blueprint uses its parts belong to (CPart.Use; null on most bodies): SubBlueprints.cs
+    public UseMap? UsesFrom; // the flat blueprint whose table it took last (a build's parts tag as they go on)...
+    public int[]? UsesIndex; // ...and each of its tags' index in Uses (a loaded body's own table is reused: SubBlueprints.EnsureTable)
+    public uint SubStamp; // a sub-job's finished body: its root job's stamp (only that root takes it; 0: none)
     public CPart[] Parts = new CPart[FirstParts];
     public int PartCount;
     public int HeardParts = -1, HeardLinks; // this peer's building sounds: the counts last heard (-1: a new body; GameSandboxBuildSounds.cs)

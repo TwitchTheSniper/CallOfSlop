@@ -13,7 +13,7 @@ public sealed partial class Game
         var op = r.U8();
         var n = r.U16();
         var name = r.Str();
-        if (op > (byte)StationOp.Give || name.Length > 96)
+        if (op > (byte)StationOp.CancelUse || name.Length > 96)
             return "a bad action";
         return SandboxHands.StationAct(Constructs, p.Id, eye, body, part, (StationOp)op, n, name, Constructs.Get(body) is { } c ? SandboxConfigRefusal(c, p.Id) : null);
     }

@@ -215,6 +215,7 @@ public enum CfgKey : byte
     CarryHeight, // Loader Arm: how high it lifts a piece over the higher end of a move before it turns (m)
     FormerStrips, // Panel Former: a chained panel wider than every Extruder on the network makes is formed of equal strips (on) or waits for a wider one (off; StockTargets.cs)
     AiCrew, // Flight Stabilizer: an AI crew flies and fights the craft from its seats (ShipAiMode; ConstructShipAi.cs)
+    SubJobs, // Building Station: Auto, it takes other stations' sub-blueprint uses as sub-jobs; Off, it keeps to its player's builds (ConstructStationTree.cs)
     COUNT,
 }
 
@@ -820,7 +821,7 @@ public static class ConstructConfig
                 CfgKey.LinePick or CfgKey.OrderKind or CfgKey.OrderMaterial or CfgKey.LinePage or CfgKey.LineStopAfter => ProductionLines.IsConsole(d),
                 CfgKey.TextSize => ConstructPanels.HasText(d),
                 CfgKey.OrderCount => ProductionLines.IsConsole(d) || WorkOrders.TakesOrders(d),
-                CfgKey.BayWidth or CfgKey.BayDepth or CfgKey.BayHeight or (>= CfgKey.FillFuel and <= CfgKey.FillWait) => d.IsBuildStation,
+                CfgKey.BayWidth or CfgKey.BayDepth or CfgKey.BayHeight or (>= CfgKey.FillFuel and <= CfgKey.FillWait) or CfgKey.SubJobs => d.IsBuildStation,
                 CfgKey.RouterSpill or CfgKey.RouterHold => d.IsRouter && d.IsConveyorJunction,
                 CfgKey.StoreKeep or CfgKey.StorePriority or CfgKey.StoreTakes => StockTargets.IsStore(d),
                 CfgKey.LiftMode or CfgKey.CarryHeight => d.Lifter != null, // (a Loader Arm: ConstructLifters.cs)

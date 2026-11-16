@@ -56,7 +56,7 @@ Use this if the automatic copy didn't find your old build, for example because i
    - `appearance.txt` (if you have it)
    - the `AudioMixes` folder
    - the `Worlds` folder (if you have it)
-   - the `ConstructBlueprints` folder
+   - the `ConstructBlueprints` folder (with its subfolders: `.versions` holds older versions your blueprints' uses may name)
 4. Paste them into `%APPDATA%\CallOfSlop`. Create the folder if it isn't there. If Windows asks, replace the files that are already there.
 5. Start the new build and check your level in the main menu.
 
@@ -125,6 +125,19 @@ A pressed cylinder's **stroke** (its length against its width) now adds power as
 - **A press with a Piece out conveyor** that leads, through Joins, to a Router, a Piece Rack that takes the part, an Assembler or another press now sends its tray parts (gears, coils, brackets) on that conveyor, tagged for the order they serve, instead of keeping them in its tray. A press whose conveyor leads anywhere else (a Splitter, a cutter, a former) keeps them in its tray as before.
 - **A Building Station orders everything it can fit, and the next level ahead, while keeping room**: every part whose parent is already fitted (or the first part) is ordered at once; parts one level deeper, whose parent's part is already in the hold or on its way, are ordered ahead too, but only while the hold, counting everything in it and on its way, still has room for the largest part that can be fitted now. Nothing deeper is ordered, so the hold can't jam. If a hold fills anyway (parts you put in by hand), the station moves parts it can't fit yet to a Piece Rack on its network with a road back and fetches them again later; with no rack its screen asks you to take one out. A part you take out of the hold by hand isn't ordered again while you are near the station: bring it back, or walk away and it orders another. A part too long for the hold is refused once: the screen says to build a larger station or fit it by hand. A save keeps the parts it moved out, so a load doesn't order them again.
 - **Player blueprints keep a machine's "orders only"**: a machine that took no orders but your own (a queue, even empty) is saved and built that way again. Blueprints saved before this version build their machines running their own settings, as they did.
+
+### Sub-blueprints (2026-11-16)
+
+- **Blueprints in blueprints.** Stamping one of your blueprints into a build and saving the whole keeps the stamp as a *use* of that
+  blueprint. A blueprint gets an `"id"` and `"version"` in its file the first time it is stamped or saved with uses; older files are
+  untouched until then and load as before. Saving over a blueprint with an id keeps its old text in `ConstructBlueprints/.versions`,
+  so copy the whole `ConstructBlueprints` folder, subfolders included, when you move your saves. To give a friend a blueprint with
+  uses, press **Pack** in the Blueprints tab and send them `ConstructBlueprints/Packs/NAME.pack.json`; they drop it in their own
+  `ConstructBlueprints` folder.
+- **Worlds.** A world saved mid-build keeps each Building Station's sub-jobs and the versions its blueprint started with. An older
+  world loads with no uses on its bodies; a build started before this version goes on as a plain build.
+- **Building Stations** gain a **Sub-jobs** setting (Auto by default): an idle station on the same construct takes other stations'
+  uses. Set it Off on a station you keep for your own builds.
 
 ### Keeping saves on a USB stick (portable mode)
 

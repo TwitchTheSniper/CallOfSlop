@@ -19,6 +19,8 @@ public sealed partial class Ui
     private bool _bstForever;
     private double _bstFilledAt;
     private string _bstSearch = "", _bstFit = "", _bstHead = "", _bstQuick = "";
+    private Task<ConstructBuild.Blueprint?>? _bstFinding; // a picked player blueprint read and flattened off the frame (its sub-blueprint uses)
+    private int _bstCancelUse = -1;
     private ImInputString? _bstSearchInput;
     private ushort _bstBody;
     private int _bstPart = -1;
@@ -94,6 +96,10 @@ public sealed partial class Ui
                 j == null || j.State == StationState.Idle ? "Idle. Pick a blueprint, check it fits the bay, then Start." : ConstructStation.StateText(j));
             if (j is { Note.Length: > 0 })
                 ImGuiSafe.TextColored(j.State == StationState.Failed ? StBad : StWarn, j.Note);
+            if (j is { Role: 1, Header.Length: > 0 })
+                ImGuiSafe.TextColoredWrapped(StHead, j.Header); // (a sub-job: whose use it builds, and how it gets there)
+            if (j is { Tree: { Length: > 0 } tree } && j.State is StationState.Building or StationState.Costing)
+                StationTree(c, j, tree);
             if (c.Parts[part].Craft is { Count: > 0 } sq)
             {
                 // A chained order's links (smart logistics): the station's craft orders whose parts are made from parts made elsewhere.
@@ -208,7 +214,13 @@ public sealed partial class Ui
             _bstSel = pick;
             _bstFilledAt = 0;
             _bstQuick = "";
-            if (ConstructStation.Find(_bstList[pick].Name) is { } bp)
+            var pickName = _bstList[pick].Name;
+            _bstFinding = Task.Run(() => ConstructStation.Find(pickName)); // (a player's blueprint with uses is resolved and flattened: never in a frame)
+        }
+        if (_bstFinding is { IsCompleted: true } finding)
+        {
+            _bstFinding = null;
+            if (finding.Exception == null && finding.Result is { } bp)
             {
                 // (a blueprint far too big for the bay is told so from its parts alone; nothing is built)
                 if (ConstructStation.QuickRefusal(bp, ConstructStation.BaySize(c, part)) is { } small)
@@ -216,6 +228,8 @@ public sealed partial class Ui
                 else
                     _bstPreview.Begin(bp);
             }
+            else
+                _bstQuick = "that blueprint doesn't build: " + (SubBlueprints.WhyNot(_bstSel >= 0 && _bstSel < _bstList.Count ? _bstList[_bstSel].Name : "") ?? "it can't be read");
         }
         var n = _bstForever ? ushort.MaxValue : (ushort)(_bstRepeat - 1);
         if (start && _bstSel >= 0)
@@ -224,11 +238,46 @@ public sealed partial class Ui
             game.SandboxStation(_bstBody, _bstPart, StationOp.Repeat, n);
         if (cancel)
             game.SandboxStation(_bstBody, _bstPart, StationOp.Cancel);
+        if (_bstCancelUse >= 0)
+        {
+            game.SandboxStation(_bstBody, _bstPart, StationOp.CancelUse, (ushort)_bstCancelUse);
+            _bstCancelUse = -1;
+        }
         if (release)
             game.SandboxStation(_bstBody, _bstPart, StationOp.Release);
         if (!open)
             CloseCrafting();
         return open;
+    }
+
+    /// <summary>A root's uses, a line each, with Cancel use on a row a station has (its sub-job cancels and it is dispatched again).</summary>
+    private void StationTree(Construct c, StationJob j, UseRow[] tree)
+    {
+        var inPlace = 0;
+        foreach (var row in tree)
+            inPlace += row.State == UseState.InPlace ? 1 : 0;
+        ImGuiSafe.TextColored(StHead, $"Uses: {tree.Length} ({inPlace} in place)");
+        for (var r = 0; r < tree.Length; r++)
+        {
+            var row = tree[r];
+            var where = row.State switch
+            {
+                UseState.Building or UseState.Done => row.Station < c.PartCount ? $"Station {row.Station}" : "a station",
+                UseState.Own or UseState.Fitting or UseState.InPlace => "this station",
+                _ => "waiting",
+            };
+            var what = row.State == UseState.Building ? $"building {row.Fitted}/{row.Steps}" + (row.Note.Length > 0 && !row.Note.StartsWith("building", StringComparison.Ordinal) && row.Note != "costing" ? $" ({row.Note})" : "")
+                : row.Note.Length > 0 ? row.Note : row.State.ToString().ToLowerInvariant();
+            ImGui.PushID(r);
+            ImGuiSafe.TextColored(row.State == UseState.InPlace ? StGood : row.State == UseState.Waiting ? StWarn : Dim, $"  {row.Name} #{row.Number}   {where}   {what}");
+            if (row.State is UseState.Building or UseState.Done or UseState.Fitting)
+            {
+                ImGui.SameLine();
+                if (ImGui.SmallButton("Cancel use"u8))
+                    _bstCancelUse = r;
+            }
+            ImGui.PopID();
+        }
     }
 
     private readonly ushort[] _bstCfgPart = new ushort[1];

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Diagnostics;
 using System.Numerics;
 using System.Text.Json;
@@ -480,6 +481,14 @@ public static class ConstructBuild
         public List<(int Step, int Slot, string Part, int Count)> Stored = new(); // parts set in a container's slot when it is spawned, before its loot ("stored": [{"step": n, "slot": k, "part": "Box Mag", "count": 2}]; ConstructLoot.Stow)
         public List<(Vector3 Pos, Quaternion Rot)?> StepWeld = new(); // a step freeform-welded on (board item fw01): the part's frame in its "on" step's segment frame; null: socket steps
         public List<(int Step, WorkOrder Order)> Bill = new(); // lines on a Line Console's bill as it is built ("bill": [{"step": n, "piece": "Extrusion l-angle 20x20x150 metal", "count": 3}]; WorkOrders.cs): an order list, never material
+        // Sub-blueprints (docs/sandbox/design/sub-blueprints.md; SubBlueprints.cs). A file's own fields:
+        public string Id = ""; // "id": made once, kept through renames (16 hex digits; a shipped one "ship:<name>"); "": none yet
+        public int Version; // "version": 1 up, +1 on every overwrite and lock change (0: none)
+        public List<UseSpec> Uses = new(); // "uses": other saved blueprints built into this one; a step may name a use's step as ["uN", k] (SubBlueprints.UseRef)
+        public Dictionary<string, Dictionary<int, string>>? Packed; // "packed": the sub-blueprints a pack or a stamp's upload carries, by id and version (their text)
+        // ...and a flattened one's (SubBlueprints.Flatten): every use's steps are its own, so every reader builds it as any blueprint.
+        public UseMap? Map; // each step's use and each use's steps (null: no uses)
+        public HashSet<int>? FlipExact; // steps whose links go the other way from ExactLinks (a use whose own blueprint links the other way)
     }
 
     private static readonly List<string> _refusedBlueprints = new();
@@ -504,19 +513,28 @@ public static class ConstructBuild
     public static List<Blueprint> LoadBlueprints(string folder, List<string> refused, IReadOnlyList<Mods.Mod>? mods = null)
     {
         var list = new List<Blueprint>();
+        var usesLater = new List<(Blueprint, string)>();
         var remember = BlueprintCheckCache.Enabled(mods); // (dev builds skip the build check of a file that passed it unchanged: BlueprintCheckCache.cs)
         ConstructConduit.BeginLoad(); // (a pre-built's wires are routed as it is built here, not later in a server tick)
         try
         {
             foreach (var df in Mods.Resolve(Mods.BaseFiles(folder, false), mods ?? [], "Constructs/Blueprints", false, refused, (t, f) =>
                      {
-                         if (Build(new ConstructWorld(), ParseBlueprint(t, f), Vector3.Zero, Quaternion.Identity, out var why) == null)
+                         var parsed = ParseBlueprint(t, f);
+                         if (parsed.Uses.Count > 0)
+                             return; // (a mod's blueprint with uses: flattened and built once every shipped one is read, below, and refused there with why)
+                         if (Build(new ConstructWorld(), parsed, Vector3.Zero, Quaternion.Identity, out var why) == null)
                              throw new ConstructPartException($"{f}: {why}");
                      }))
             {
                 try
                 {
                     var bp = ParseBlueprint(df.Text, df.File);
+                    if (bp.Uses.Count > 0)
+                    {
+                        usesLater.Add((bp, df.Mod)); // (a shipped blueprint may use shipped ones: flattened once they are all read)
+                        continue;
+                    }
                     // Build it once on a scratch world: every step must fit (and a pre-built's wires are routed as conduit then, ConstructConduit.cs;
                     // a dev build keeps those routes with the check's cache, so one that passed unchanged isn't built again just for them).
                     var check = !remember || !BlueprintCheckCache.Passed(df.Text);
@@ -539,6 +557,20 @@ public static class ConstructBuild
                 {
                     var why = ex is ConstructPartException ? ex.Message : $"{df.File}: {ex.Message}";
                     refused.Add(df.Mod.Length > 0 ? $"mod {df.Mod}: {why}" : why);
+                }
+            }
+            foreach (var (bp, mod) in usesLater)
+            {
+                try
+                {
+                    var flat = SubBlueprints.Flatten(bp, new SubBlueprints.Source { Library = false, Shipped = n => list.FirstOrDefault(b => b.Name.Equals(n, StringComparison.OrdinalIgnoreCase)) });
+                    if (Build(new ConstructWorld(), flat, Vector3.Zero, Quaternion.Identity, out var why) == null)
+                        throw new ConstructPartException($"{bp.File}: {why}");
+                    list.Add(flat);
+                }
+                catch (ConstructPartException ex)
+                {
+                    refused.Add(mod.Length > 0 ? $"mod {mod}: {ex.Message}" : ex.Message);
                 }
             }
             if (remember)
@@ -594,7 +626,7 @@ public static class ConstructBuild
                             switch (f.Name)
                             {
                                 case "part": part = f.Value.GetString() ?? ""; break;
-                                case "on": on = f.Value.GetInt32(); break;
+                                case "on": on = SubBlueprints.ParseRef(f.Value, file, k); break;
                                 case "socket": sock = f.Value.GetString() ?? ""; break;
                                 case "by": own = f.Value.GetString() ?? ""; break;
                                 case "spin": spin = f.Value.ValueKind == JsonValueKind.String && f.Value.GetString() == "auto" ? -1 : f.Value.GetInt32(); break; // ("auto": smart rotation's guess, SmartRotation.BestSpin)
@@ -615,7 +647,7 @@ public static class ConstructBuild
                                     stepAt = ap;
                                     break;
                                 case "also":
-                                    also = f.Value.EnumerateArray().Select(a => a.ValueKind == JsonValueKind.Array && a.GetArrayLength() == 3 ? (a[0].GetInt32(), a[1].GetString() ?? "", a[2].GetString() ?? "")
+                                    also = f.Value.EnumerateArray().Select(a => a.ValueKind == JsonValueKind.Array && a.GetArrayLength() == 3 ? (SubBlueprints.ParseRef(a[0], file, k), a[1].GetString() ?? "", a[2].GetString() ?? "")
                                         : throw new ConstructPartException($"{file}: steps[{k}]: \"also\" is a list of [step, their socket, its socket]")).ToArray();
                                     break;
                                 case "paint":
@@ -633,7 +665,7 @@ public static class ConstructBuild
                                     break;
                                 default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin, at, also, setting, config, ordersOnly, weld, paint, finish, fuse)");
                             }
-                        if (k > 0 && (on < 0 || on >= k))
+                        if (k > 0 && (on < 0 || on >= k) && !SubBlueprints.IsUseRef(on))
                             throw new ConstructPartException($"{file}: steps[{k}]: \"on\" must name an earlier step (0 to {k - 1})");
                         bp.Steps.Add((part, k == 0 ? -1 : on, sock, own, spin));
                         bp.StepSettings.Add(setting);
@@ -656,7 +688,7 @@ public static class ConstructBuild
                     {
                         if (wire.ValueKind != JsonValueKind.Array || wire.GetArrayLength() != 2)
                             throw new ConstructPartException($"{file}: a wire is [from step, to step]");
-                        bp.Wires.Add((wire[0].GetInt32(), wire[1].GetInt32()));
+                        bp.Wires.Add((SubBlueprints.ParseRef(wire[0], file, -1), SubBlueprints.ParseRef(wire[1], file, -1)));
                     }
                     break;
                 case "links":
@@ -668,7 +700,7 @@ public static class ConstructBuild
                     {
                         if (hose.ValueKind != JsonValueKind.Array || hose.GetArrayLength() != 2)
                             throw new ConstructPartException($"{file}: a hose is [reel step, inlet step]");
-                        bp.Hoses.Add((hose[0].GetInt32(), hose[1].GetInt32()));
+                        bp.Hoses.Add((SubBlueprints.ParseRef(hose[0], file, -1), SubBlueprints.ParseRef(hose[1], file, -1)));
                     }
                     break;
                 case "connectors":
@@ -720,6 +752,18 @@ public static class ConstructBuild
                     foreach (var cg in p.Value.EnumerateArray())
                         bp.Cargo.Add(ConstructCargo.ParseSpec(cg, file, bp.Cargo.Count));
                     break;
+                case "id":
+                    bp.Id = p.Value.ValueKind == JsonValueKind.String && SubBlueprints.IdRefusal(p.Value.GetString() ?? "") == null ? p.Value.GetString()! : throw new ConstructPartException($"{file}: \"id\" is 16 hex digits");
+                    break;
+                case "version":
+                    bp.Version = p.Value.ValueKind == JsonValueKind.Number && p.Value.TryGetInt32(out var ver) && ver >= 1 ? ver : throw new ConstructPartException($"{file}: \"version\" is 1 or more");
+                    break;
+                case "uses":
+                    SubBlueprints.ParseUses(p.Value, file, bp);
+                    break;
+                case "packed":
+                    bp.Packed = SubBlueprints.ParsePacked(p.Value, file);
+                    break;
                 case "bill":
                     if (p.Value.ValueKind != JsonValueKind.Array)
                         throw new ConstructPartException($"{file}: \"bill\" is [{{\"step\", \"piece\", \"count\"}}]");
@@ -727,12 +771,13 @@ public static class ConstructBuild
                         bp.Bill.Add(ConstructBill.ParseLine(bl, file, bp.Bill.Count));
                     break;
                 default:
-                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, group, exactLinks, steps, wires, links, connectors, cargo, loot, stored, bill)");
+                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, group, id, version, exactLinks, steps, uses, packed, wires, links, connectors, cargo, loot, stored, bill)");
             }
         if (bp.Name.Length == 0 || bp.Name.Any(c => c < 32 || c > 126))
             throw new ConstructPartException($"{file}: \"name\" must be plain ASCII text");
         if (bp.Steps.Count == 0)
             throw new ConstructPartException($"{file}: \"steps\" is empty");
+        SubBlueprints.CheckRefs(bp, file); // (a step naming ["uN", k] needs that use; none without "uses")
         return bp;
     }
 
@@ -746,7 +791,7 @@ public static class ConstructBuild
         foreach (var f in e.EnumerateObject())
             switch (f.Name)
             {
-                case "on": on = f.Value.GetInt32(); break;
+                case "on": on = SubBlueprints.ParseRef(f.Value, file, k); break;
                 case "pos":
                     if (f.Value.ValueKind != JsonValueKind.Array || f.Value.GetArrayLength() != 3)
                         throw new ConstructPartException($"{file}: steps[{k}]: weld \"pos\" is [x, y, z]");
@@ -765,7 +810,10 @@ public static class ConstructBuild
     }
 
     /// <summary>A freeform weld as a blueprint step's "weld" text (the inverse of the parser; the self-test's round trip).</summary>
-    public static string WeldJson(int on, Vector3 pos, Quaternion rot) =>
+    public static string WeldJson(int on, Vector3 pos, Quaternion rot) => WeldJson(on.ToString(CultureInfo.InvariantCulture), pos, rot);
+
+    /// <summary>The same with its "on" as text (a sub-blueprint use's step: ["uN", k]).</summary>
+    public static string WeldJson(string on, Vector3 pos, Quaternion rot) =>
         FormattableString.Invariant($"{{\"on\": {on}, \"pos\": [{pos.X:R}, {pos.Y:R}, {pos.Z:R}], \"rot\": [{rot.X:R}, {rot.Y:R}, {rot.Z:R}, {rot.W:R}]}}");
 
     /// <summary>Builds a blueprint as a new construct at a pose, through the same rules as a player (null and the reason on a step that doesn't fit).</summary>
@@ -803,6 +851,14 @@ public static class ConstructBuild
     /// </summary>
     public static string? FitStep(ConstructWorld world, Construct c, Blueprint bp, int k, int[] partOf)
     {
+        var why = FitStepCore(world, c, bp, k, partOf);
+        if (why == null && bp.Map != null)
+            SubBlueprints.TagPart(c, bp.Map, k, partOf[k]); // (a use's part carries its use: the selector's frames, a save's uses)
+        return why;
+    }
+
+    private static string? FitStepCore(ConstructWorld world, Construct c, Blueprint bp, int k, int[] partOf)
+    {
         var (name, on, sock, own, spin) = bp.Steps[k];
         if (ConstructParts.Find(name) is not { } def)
         {
@@ -826,7 +882,7 @@ public static class ConstructBuild
             {
                 return $"step {k}: too many parts";
             }
-            if (!bp.ExactLinks)
+            if (!Exact(bp, k))
                 AutoLink(world, c, partOf[k]);
             if (LinkAlso(world, c, bp, k, partOf) is { } lost)
             {
@@ -871,7 +927,7 @@ public static class ConstructBuild
         }
         if (laidAt is { } stands)
             g.Pos = ConstructWorld.Quantise(stands);
-        partOf[k] = Attach(world, c, def, g, !bp.ExactLinks);
+        partOf[k] = Attach(world, c, def, g, !Exact(bp, k));
         if (partOf[k] < 0)
         {
             return $"step {k}: too many parts";
@@ -887,6 +943,9 @@ public static class ConstructBuild
         SetConfig(world, c, partOf[k], def, bp, k);
         return null;
     }
+
+    /// <summary>Does step <paramref name="k"/> link only as the blueprint says (a flattened use may link the other way: <see cref="Blueprint.FlipExact"/>)?</summary>
+    public static bool Exact(Blueprint bp, int k) => bp.ExactLinks != (bp.FlipExact?.Contains(k) ?? false);
 
     /// <summary>What <see cref="BuildSteps"/> came to: the construct, or the reason a step refused.</summary>
     public sealed class BuildRun
@@ -905,6 +964,11 @@ public static class ConstructBuild
     /// </summary>
     public static IEnumerable<int> BuildSteps(ConstructWorld world, Blueprint bp, Vector3 pos, Quaternion rot, BuildRun run)
     {
+        if (bp.Uses.Count > 0 && bp.Map == null)
+        {
+            run.Why = "it uses other blueprints: it is built from its flat form (SubBlueprints.Flatten)";
+            yield break;
+        }
         var c = world.Create(pos, rot);
         if (c == null)
         {
