@@ -70,6 +70,28 @@
         1.0,
         1.0
       ]
+    },
+    {
+      "name": "Chute in",
+      "type": "chute",
+      "dir": "in",
+      "at": [
+        -0.95,
+        0.875,
+        -2.65
+      ],
+      "face": "+y"
+    },
+    {
+      "name": "Chute out",
+      "type": "chute",
+      "dir": "out",
+      "at": [
+        0.95,
+        0.875,
+        -2.65
+      ],
+      "face": "+y"
     }
   ],
   "boxes": [

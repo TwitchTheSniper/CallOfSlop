@@ -13,7 +13,7 @@ namespace CallOfSlop;
 /// </summary>
 public static class LinkDocks
 {
-    public const float PortReach = 6f; // metres between a ship's Cargo Port and the dock's hatch (the part's middle) while a clamp holds it
+    public const float PortReach = 8f; // metres between a ship's Cargo Port and the dock's hatch (the part's middle) while a clamp holds it
     public const int MovesASecond = 2; // parts each way a second a docked ship (the user's design: one chute move a second; twice that for parts)
 
     private static readonly List<(ushort Ship, ushort Port, ushort Body, ushort Dock)> Docked = new(8);

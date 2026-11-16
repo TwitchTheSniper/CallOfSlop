@@ -151,6 +151,36 @@ public static class LinkPlan
     private static int _posts;
     private static double _postsAt;
 
+    public const byte RemoteMake = 4; // a terminal's row (CraftRow.Make) that only a linked network has
+
+    /// <summary>
+    /// Either peer, a terminal's list: rows for what linked networks hold or make that nothing here does ("Steel Beam - 40 at Bluestone
+    /// Works"), from the body's link ends' offers (CBodyKind.Link). A row the network has already gets nothing.
+    /// </summary>
+    public static void AppendRemote(Construct c, List<CraftRow> rows)
+    {
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            if (c.Parts[i].Link is not { Offers.Length: > 0 } lp || !c.DefOf(i).IsLinkEnd)
+                continue;
+            foreach (var o in lp.Offers)
+            {
+                if (ConstructParts.Get(o.Kind) is not { } d)
+                    continue;
+                CraftRow? row = null;
+                foreach (var r in rows)
+                    if (!r.What.IsPiece && r.What.Name == null && r.What.Part == o.Kind)
+                        row = r;
+                if (row is { } have && (have.Stock > 0 || have.Make is 1 or 2))
+                    continue;
+                if (row == null)
+                    rows.Add(row = new CraftRow { What = new WorkOrder { Part = o.Kind, Count = 1 }, Def = d, Name = d.Name });
+                row.Make = RemoteMake;
+                row.Missing = o.Free > 0 ? $"{o.Free} at {o.Where}{(o.Asleep ? " (asleep)" : "")}" : $"made at {o.Where}{(o.Asleep ? " (estimated)" : "")}";
+            }
+        }
+    }
+
     /// <summary>Does a linked network offer this kind to this body (a terminal there may take an order nothing local makes)?</summary>
     public static bool Offers(Construct c, ushort kind)
     {

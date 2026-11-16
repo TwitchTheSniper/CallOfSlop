@@ -710,6 +710,16 @@ public sealed partial class Ui
         Row(dl, "CARGO", k.Cargo, CmdCyan, ref y);
         Row(dl, "CREW", k.Crew, CmdCyan, ref y);
         Row(dl, "SYSTEMS", k.Systems, CmdCyan, ref y);
+        if (CmdLinked(c, out var routePart, out var manifest) is { } routeText)
+        {
+            // Linked logistics (LinkedLogisticsRoutes.cs): its route's state and its manifest, and ROUTE opens its Route Computer's panel.
+            if (manifest.Length > 0)
+                Row(dl, "MANIFEST", manifest, CmdCyan, ref y);
+            Row(dl, "ROUTE", routeText, routeText.StartsWith("ROUTE: SUSP", StringComparison.Ordinal) ? CmdAmber : CmdCyan, ref y);
+            if (routePart >= 0 && CmdButton(dl, new float2(x + col, y), new float2(x + col + 150 * _scale, y + 24 * _scale), "ROUTE...", CmdCyan, fade))
+                OpenLinked(c.Id, routePart, remote: true);
+            y += 30 * _scale;
+        }
         y += 6 * _scale;
         CmdLine(dl, new float2(x, y), new float2(p1.X - 16 * _scale, y), edge, 0.4f * fade);
         y += 8 * _scale;
@@ -791,5 +801,46 @@ public sealed partial class Ui
             _cmdFocusShip = 0;
             _cmdPan = Vec3d.Zero;
         }
+    }
+
+    private int _cmdLinkVer = -1;
+    private ushort _cmdLinkShip;
+    private string _cmdLinkRoute = "", _cmdLinkManifest = "";
+
+    /// <summary>A ship's linked logistics for its card: its route's first line and its manifest in short (null: no Route Computer or Cargo Port). Made only when they change.</summary>
+    private string? CmdLinked(Construct c, out int routePart, out string manifest)
+    {
+        routePart = -1;
+        manifest = "";
+        if (c.LinkParts == 0)
+            return null;
+        var port = -1;
+        var ver = 0;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.DefOf(i).LinkKind is LinkKind.Route or LinkKind.Port)
+            {
+                if (c.DefOf(i).LinkKind == LinkKind.Route)
+                    routePart = i;
+                else
+                    port = i;
+                ver = ver * 31 + (c.Parts[i].Link?.Version ?? 0) + i;
+            }
+        if (routePart < 0 && port < 0)
+            return null;
+        if (ver != _cmdLinkVer || c.Id != _cmdLinkShip)
+        {
+            (_cmdLinkVer, _cmdLinkShip) = (ver, c.Id);
+            var st = routePart >= 0 ? c.Parts[routePart].Link?.Status ?? "" : "NO ROUTE COMPUTER";
+            var cut = st.IndexOf('\n');
+            _cmdLinkRoute = (cut >= 0 ? st[..cut] : st).ToUpperInvariant();
+            var sb = new System.Text.StringBuilder();
+            if (port >= 0 && c.Parts[port].Link is { } plp)
+                foreach (var m in plp.Manifest)
+                    if (m.Aboard > 0 && sb.Length < 120)
+                        sb.Append(sb.Length > 0 ? ", " : "").Append(m.Aboard).Append(' ').Append(m.Use != 0 ? "MODULE" : (ConstructParts.Get(m.Kind)?.Name ?? "PART").ToUpperInvariant()).Append(" FOR ").Append((m.Dest ?? "").ToUpperInvariant());
+            _cmdLinkManifest = sb.ToString();
+        }
+        manifest = _cmdLinkManifest;
+        return _cmdLinkRoute;
     }
 }

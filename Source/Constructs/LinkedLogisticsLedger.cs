@@ -92,7 +92,7 @@ public enum LinkLineState : byte { Posted, Open, Closed, Failed }
 public static class LinkLedger
 {
     public const int MaxEnds = 256, MaxLines = 256, MaxLinesPerBody = 64;
-    public const double AsleepAfter = 5, DownUnpair = 10, ClosedKeep = 60, StallAfter = 600;
+    public const double AsleepAfter = 5, DownUnpair = 10, ClosedKeep = 60, StallAfter = 600, ShipGone = 15;
     public const int ReportEvery = 2, MakesEvery = 5; // posts between reports (2 s), reports between makes (10 s)
 
     public static readonly Dictionary<uint, LinkEnd> Ends = new();
@@ -357,6 +357,9 @@ public static class LinkLedger
             }
             if (l.State == LinkLineState.Open && Asleep(l.SWorld) && l.Use == 0)
                 Estimate(l, dt);
+            var aboard = l.Loaded - l.Delivered - l.Lost - l.Taken;
+            if (l.Use == 0 && aboard > 0 && l.ShipSeen >= 0 && !Asleep(l.ShipWorld) && now - l.ShipSeen > ShipGone)
+                LinkDocks.LostWith(l, aboard, l.Ship.Length > 0 ? l.Ship : "its ship"); // (its ship is in no open world any more: removed, not travelled)
         }
     }
 

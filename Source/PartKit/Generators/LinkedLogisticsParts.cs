@@ -94,25 +94,27 @@ public sealed class LinkedLogisticsParts : IPartGenerator
             ("hold", Py.L(Py.L(x0 + 0.13, y0 + 0.135, z0 + 0.13), Py.L(x1 - 0.13, top - 0.02, z1 - 0.02))))))));
         p.Set(("ports", Py.L(
             Kw(("name", "Piece in"), ("type", "conveyor"), ("dir", "in"), ("at", Py.L(0, 0.375, z1)), ("face", "+z"), ("opening", Py.L(1.0, 1.0))),
-            Kw(("name", "Piece out"), ("type", "conveyor"), ("dir", "out"), ("at", Py.L(0, 0.375, z0)), ("face", "-z"), ("opening", Py.L(1.0, 1.0))))));
+            Kw(("name", "Piece out"), ("type", "conveyor"), ("dir", "out"), ("at", Py.L(0, 0.375, z0)), ("face", "-z"), ("opening", Py.L(1.0, 1.0))),
+            Kw(("name", "Chute in"), ("type", "chute"), ("dir", "in"), ("at", Py.L(x0 + 0.3, top, z0 + 0.6)), ("face", "+y")),
+            Kw(("name", "Chute out"), ("type", "chute"), ("dir", "out"), ("at", Py.L(x1 - 0.3, top, z0 + 0.6)), ("face", "+y")))));
         return p;
     }
 
     private static Part Port()
     {
         var c = Small;
-        var p = new Part("Cargo Port", c, Section, "A ship's cargo hatch: docked over a Cargo Dock's hatch, the dock loads the ship's Storage Volumes and Piece Racks and unloads them. Keeps the ship's manifest.",
+        var p = new Part("Cargo Port", c, Section, "A ship's cargo hatch: held by a Docking Clamp near a Cargo Dock, the dock loads the ship's Storage Volumes and Piece Racks and unloads them. Keeps the ship's manifest.",
             color: Body, group: "Production");
-        p.Add(Box([-1.0, -0.125, -1.0], [1.0, 0.0, 1.0], MachineLook.Base));
-        p.Add(Box([-1.0, -0.005, -1.0], [1.0, 0.275, -0.75]));
-        p.Add(Box([-1.0, -0.005, 0.75], [1.0, 0.275, 1.0]));
-        p.Add(Box([-1.0, -0.005, -0.745], [-0.75, 0.275, 0.745]));
-        p.Add(Box([0.75, -0.005, -0.745], [1.0, 0.275, 0.745]));
-        p.Add(MachineLook.D([-0.74, -0.004, -0.74], [0.74, 0.012, 0.74], MachineLook.In));
-        p.Add(MachineLook.D([-0.95, 0.27, -0.95], [-0.8, 0.29, 0.95], MachineLook.Accent));
+        p.Add(Box([-0.5, -0.125, -0.5], [0.5, 0.0, 0.5], MachineLook.Base));
+        p.Add(Box([-0.5, -0.005, -0.5], [0.5, 0.15, -0.38]));
+        p.Add(Box([-0.5, -0.005, 0.38], [0.5, 0.15, 0.5]));
+        p.Add(Box([-0.5, -0.005, -0.375], [-0.38, 0.15, 0.375]));
+        p.Add(Box([0.38, -0.005, -0.375], [0.5, 0.15, 0.375]));
+        p.Add(MachineLook.D([-0.37, -0.004, -0.37], [0.37, 0.012, 0.37], MachineLook.In));
+        p.Add(MachineLook.D([-0.48, 0.145, -0.48], [-0.4, 0.165, 0.48], MachineLook.Accent));
         p.Sock("-y", [0, -0.125, 0], "-y");
-        p.Sock("+y", [0, 0.275, 0], "+y");
-        p.Stats(80, 400, 3, seconds: 4.0);
+        p.Sock("+y", [0, 0.15, 0], "+y");
+        p.Stats(40, 300, 3, seconds: 3.0);
         p.Set(("power", 100), ("onBreak", "disable"), ("logiLink", Link("port")));
         return p;
     }

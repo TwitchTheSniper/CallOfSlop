@@ -1,17 +1,17 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Cargo Port",
-  "description": "A ship's cargo hatch: docked over a Cargo Dock's hatch, the dock loads the ship's Storage Volumes and Piece Racks and unloads them. Keeps the ship's manifest.",
+  "description": "A ship's cargo hatch: held by a Docking Clamp near a Cargo Dock, the dock loads the ship's Storage Volumes and Piece Racks and unloads them. Keeps the ship's manifest.",
   "group": "Production",
   "section": "Linked logistics",
   "role": "frame",
   "tool": "welder",
-  "mass": 80.0,
-  "health": 400,
+  "mass": 40.0,
+  "health": 300,
   "armour": 3,
   "material": "steel",
   "color": "#3a6f8f",
-  "attachSeconds": 4.0,
+  "attachSeconds": 3.0,
   "power": 100,
   "onBreak": "disable",
   "logiLink": {
@@ -20,75 +20,75 @@
   "boxes": [
     {
       "min": [
-        -1.0,
+        -0.5,
         -0.125,
-        -1.0
+        -0.5
       ],
       "max": [
-        1.0,
+        0.5,
         0.0,
-        1.0
+        0.5
       ],
       "color": "#22262b"
     },
     {
       "min": [
-        -0.998,
+        -0.498,
         -0.005,
-        -0.998
+        -0.498
       ],
       "max": [
-        0.998,
-        0.275,
-        -0.75
+        0.498,
+        0.15,
+        -0.38
       ]
     },
     {
       "min": [
-        -0.998,
+        -0.498,
         -0.005,
-        0.75
+        0.38
       ],
       "max": [
-        0.998,
-        0.275,
-        0.998
+        0.498,
+        0.15,
+        0.498
       ]
     },
     {
       "min": [
-        -0.998,
+        -0.498,
         -0.005,
-        -0.745
+        -0.375
       ],
       "max": [
-        -0.75,
-        0.275,
-        0.745
+        -0.38,
+        0.15,
+        0.375
       ]
     },
     {
       "min": [
-        0.75,
+        0.38,
         -0.005,
-        -0.745
+        -0.375
       ],
       "max": [
-        0.998,
-        0.275,
-        0.745
+        0.498,
+        0.15,
+        0.375
       ]
     },
     {
       "min": [
-        -0.74,
+        -0.37,
         -0.004,
-        -0.74
+        -0.37
       ],
       "max": [
-        0.74,
+        0.37,
         0.012,
-        0.74
+        0.37
       ],
       "color": "#ecebe4",
       "detail": true,
@@ -96,14 +96,14 @@
     },
     {
       "min": [
-        -0.95,
-        0.27,
-        -0.95
+        -0.48,
+        0.145,
+        -0.48
       ],
       "max": [
-        -0.8,
-        0.29,
-        0.95
+        -0.4,
+        0.165,
+        0.48
       ],
       "color": "#f2b01e",
       "detail": true,
@@ -124,7 +124,7 @@
       "name": "+y",
       "at": [
         0.0,
-        0.275,
+        0.15,
         0.0
       ],
       "dir": "+y"
