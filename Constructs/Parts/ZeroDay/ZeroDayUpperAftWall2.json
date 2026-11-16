@@ -1,0 +1,183 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Zero Day Upper Aft Wall 2",
+  "description": "A wall of the Zero Day's upper deck (upper aft), with its door frames and what is on its faces.",
+  "group": "Ship",
+  "section": "Zero Day frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 700.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        9.875,
+        3.375,
+        24.875
+      ],
+      "max": [
+        10.125,
+        6.375,
+        41.875
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        9.863,
+        3.38,
+        24.925
+      ],
+      "max": [
+        10.137,
+        4.125,
+        41.825
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        9.861,
+        4.375,
+        27.875
+      ],
+      "max": [
+        9.875,
+        5.575,
+        30.875
+      ],
+      "color": "#dfe4e2",
+      "detail": true,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        9.852,
+        5.275,
+        29.225
+      ],
+      "max": [
+        9.866,
+        5.425,
+        29.725
+      ],
+      "color": "#40c070",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        9.85,
+        5.1,
+        29.4
+      ],
+      "max": [
+        9.866,
+        5.6,
+        29.55
+      ],
+      "color": "#40c070",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "cabinet",
+      "at": [
+        9.875,
+        4.225,
+        27.175
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "lampMed",
+      "at": [
+        9.875,
+        5.825,
+        31.875
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "lampMessR",
+      "at": [
+        9.875,
+        5.825,
+        36.275
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j0",
+      "at": [
+        9.995,
+        4.875,
+        24.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        9.995,
+        3.375,
+        32.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        9.995,
+        4.875,
+        41.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        9.875,
+        4.875,
+        33.995
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        9.995,
+        6.375,
+        33.375
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j5",
+      "at": [
+        10.125,
+        4.225,
+        33.875
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j6",
+      "at": [
+        10.125,
+        4.225,
+        39.875
+      ],
+      "dir": "+x"
+    }
+  ]
+}

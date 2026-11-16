@@ -1,0 +1,141 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Zero Day Upper Fore Wall 2",
+  "description": "A wall of the Zero Day's upper deck (upper fore), with its door frames and what is on its faces.",
+  "group": "Ship",
+  "section": "Zero Day frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 700.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        3.625,
+        3.375,
+        8.375
+      ],
+      "max": [
+        3.875,
+        6.375,
+        14.375
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        3.613,
+        3.378,
+        8.425
+      ],
+      "max": [
+        3.887,
+        4.125,
+        14.325
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        3.859,
+        4.625,
+        9.775
+      ],
+      "max": [
+        3.891,
+        5.575,
+        11.475
+      ],
+      "color": "#202428",
+      "detail": true,
+      "finish": "plastic"
+    },
+    {
+      "min": [
+        3.887,
+        4.695,
+        9.875
+      ],
+      "max": [
+        3.903,
+        5.505,
+        11.375
+      ],
+      "color": "#2a5878",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bridgeLocker",
+      "at": [
+        3.875,
+        3.5,
+        13.475
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "lampBridgeL",
+      "at": [
+        3.875,
+        5.825,
+        12.575
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j0",
+      "at": [
+        3.755,
+        3.375,
+        11.375
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        3.755,
+        4.875,
+        8.375
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        3.755,
+        4.875,
+        14.375
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        3.755,
+        6.375,
+        11.375
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        3.625,
+        4.225,
+        11.125
+      ],
+      "dir": "-x"
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Zero Day Lower Aft Wall 4",
+  "description": "A wall of the Zero Day's lower deck (lower aft), with its door frames and what is on its faces.",
+  "group": "Ship",
+  "section": "Zero Day frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 700.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        8.125,
+        0.125,
+        30.0
+      ],
+      "max": [
+        10.875,
+        3.125,
+        30.25
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        8.175,
+        0.128,
+        29.988
+      ],
+      "max": [
+        10.825,
+        0.875,
+        30.262
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "switchTorp",
+      "at": [
+        8.875,
+        1.425,
+        30.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        9.495,
+        0.125,
+        30.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        10.875,
+        1.625,
+        30.125
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        8.255,
+        1.625,
+        30.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        9.495,
+        3.125,
+        30.125
+      ],
+      "dir": "+y"
+    }
+  ]
+}

@@ -1,0 +1,296 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Zero Day Upper Aft Wall 4",
+  "description": "A wall of the Zero Day's upper deck (upper aft), with its door frames and what is on its faces.",
+  "group": "Ship",
+  "section": "Zero Day frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 700.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        5.25,
+        3.375,
+        25.0
+      ],
+      "max": [
+        5.5,
+        6.375,
+        25.775
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.25,
+        5.625,
+        25.775
+      ],
+      "max": [
+        5.5,
+        6.375,
+        27.275
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.238,
+        3.377,
+        25.05
+      ],
+      "max": [
+        5.512,
+        4.125,
+        25.725
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.23,
+        3.377,
+        25.705
+      ],
+      "max": [
+        5.52,
+        5.695,
+        25.772
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.23,
+        3.377,
+        27.278
+      ],
+      "max": [
+        5.52,
+        5.695,
+        27.345
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.23,
+        5.628,
+        25.775
+      ],
+      "max": [
+        5.52,
+        5.695,
+        27.275
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        5.25,
+        3.375,
+        27.275
+      ],
+      "max": [
+        5.5,
+        6.375,
+        31.775
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.25,
+        5.625,
+        31.775
+      ],
+      "max": [
+        5.5,
+        6.375,
+        33.275
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.238,
+        3.378,
+        27.325
+      ],
+      "max": [
+        5.512,
+        4.125,
+        31.725
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.23,
+        3.377,
+        31.705
+      ],
+      "max": [
+        5.52,
+        5.695,
+        31.772
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.23,
+        3.377,
+        33.278
+      ],
+      "max": [
+        5.52,
+        5.695,
+        33.345
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.23,
+        5.628,
+        31.775
+      ],
+      "max": [
+        5.52,
+        5.695,
+        33.275
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        5.25,
+        3.375,
+        33.275
+      ],
+      "max": [
+        5.5,
+        6.375,
+        33.875
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.238,
+        3.377,
+        33.325
+      ],
+      "max": [
+        5.512,
+        4.125,
+        33.825
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "lockerB",
+      "at": [
+        5.25,
+        3.5,
+        27.875
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "doorCabinB",
+      "at": [
+        5.375,
+        4.5,
+        25.775
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "doorHead",
+      "at": [
+        5.375,
+        4.5,
+        31.775
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "switchCrew",
+      "at": [
+        5.5,
+        4.675,
+        30.375
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j0",
+      "at": [
+        5.375,
+        3.375,
+        29.525
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        5.25,
+        4.875,
+        29.875
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        5.375,
+        4.875,
+        33.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        5.375,
+        6.375,
+        29.525
+      ],
+      "dir": "+y"
+    }
+  ]
+}

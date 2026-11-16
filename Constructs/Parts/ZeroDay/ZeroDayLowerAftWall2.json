@@ -1,0 +1,271 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Zero Day Lower Aft Wall 2",
+  "description": "A wall of the Zero Day's lower deck (lower aft), with its door frames and what is on its faces.",
+  "group": "Ship",
+  "section": "Zero Day frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 700.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        10.875,
+        0.125,
+        24.875
+      ],
+      "max": [
+        11.125,
+        3.125,
+        26.275
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        10.875,
+        2.375,
+        26.275
+      ],
+      "max": [
+        11.125,
+        3.125,
+        27.775
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        10.863,
+        0.127,
+        24.925
+      ],
+      "max": [
+        11.137,
+        0.875,
+        26.225
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        10.855,
+        0.127,
+        26.205
+      ],
+      "max": [
+        11.145,
+        2.445,
+        26.272
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        10.855,
+        0.127,
+        27.778
+      ],
+      "max": [
+        11.145,
+        2.445,
+        27.845
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        10.855,
+        2.378,
+        26.275
+      ],
+      "max": [
+        11.145,
+        2.445,
+        27.775
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        10.875,
+        0.125,
+        27.775
+      ],
+      "max": [
+        11.125,
+        3.125,
+        41.875
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        10.863,
+        0.13,
+        27.825
+      ],
+      "max": [
+        11.137,
+        0.875,
+        41.825
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "doorBayR",
+      "at": [
+        11.0,
+        1.25,
+        26.275
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "airlockLocker",
+      "at": [
+        10.875,
+        0.25,
+        33.175
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "board",
+      "at": [
+        10.875,
+        1.025,
+        40.475
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "lampTorpR",
+      "at": [
+        10.875,
+        2.575,
+        28.375
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "lampAirlock",
+      "at": [
+        10.875,
+        2.575,
+        31.475
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "lampEngR",
+      "at": [
+        10.875,
+        2.575,
+        35.875
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j0",
+      "at": [
+        10.995,
+        1.625,
+        24.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        10.995,
+        0.125,
+        36.795
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        10.995,
+        1.625,
+        41.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        10.875,
+        1.625,
+        30.125
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        10.875,
+        1.625,
+        33.995
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j5",
+      "at": [
+        11.125,
+        1.855,
+        33.875
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j6",
+      "at": [
+        11.125,
+        1.855,
+        39.875
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j7",
+      "at": [
+        10.995,
+        3.125,
+        33.575
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j8",
+      "at": [
+        11.125,
+        1.425,
+        29.495
+      ],
+      "dir": "+x"
+    }
+  ]
+}

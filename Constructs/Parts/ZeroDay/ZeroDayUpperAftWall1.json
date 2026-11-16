@@ -1,0 +1,207 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Zero Day Upper Aft Wall 1",
+  "description": "A wall of the Zero Day's upper deck (upper aft), with its door frames and what is on its faces.",
+  "group": "Ship",
+  "section": "Zero Day frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 700.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        2.625,
+        3.375,
+        24.875
+      ],
+      "max": [
+        2.875,
+        6.375,
+        41.875
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.613,
+        3.38,
+        24.925
+      ],
+      "max": [
+        2.887,
+        4.125,
+        41.825
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.875,
+        4.125,
+        30.075
+      ],
+      "max": [
+        2.889,
+        4.975,
+        33.675
+      ],
+      "color": "#d8dcdc",
+      "detail": true,
+      "finish": "gloss paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "couchB0",
+      "at": [
+        2.875,
+        3.5,
+        27.075
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "basin",
+      "at": [
+        2.875,
+        3.5,
+        31.075
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "stove",
+      "at": [
+        2.875,
+        3.825,
+        35.475
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "coffee",
+      "at": [
+        2.875,
+        3.5,
+        36.475
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "messLocker",
+      "at": [
+        2.875,
+        3.5,
+        37.275
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "lampCabinB",
+      "at": [
+        2.875,
+        5.825,
+        28.675
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "lampHead",
+      "at": [
+        2.875,
+        5.825,
+        32.475
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "lampMessL",
+      "at": [
+        2.875,
+        5.825,
+        39.475
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j0",
+      "at": [
+        2.755,
+        4.875,
+        24.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        2.755,
+        3.375,
+        32.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        2.755,
+        4.875,
+        41.875
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        2.875,
+        4.875,
+        29.875
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        2.875,
+        4.875,
+        33.995
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j5",
+      "at": [
+        2.755,
+        6.375,
+        33.375
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j6",
+      "at": [
+        2.625,
+        4.225,
+        33.875
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j7",
+      "at": [
+        2.625,
+        4.225,
+        39.875
+      ],
+      "dir": "-x"
+    }
+  ]
+}

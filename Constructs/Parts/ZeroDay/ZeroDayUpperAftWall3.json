@@ -1,0 +1,189 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Zero Day Upper Aft Wall 3",
+  "description": "A wall of the Zero Day's upper deck (upper aft), with its door frames and what is on its faces.",
+  "group": "Ship",
+  "section": "Zero Day frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 700.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        2.625,
+        3.375,
+        41.875
+      ],
+      "max": [
+        10.125,
+        6.375,
+        42.125
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.675,
+        3.378,
+        41.863
+      ],
+      "max": [
+        10.075,
+        4.125,
+        42.137
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        4.475,
+        4.275,
+        41.859
+      ],
+      "max": [
+        7.475,
+        5.775,
+        41.875
+      ],
+      "color": "#101830",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        4.775,
+        4.575,
+        41.849
+      ],
+      "max": [
+        4.805,
+        4.605,
+        41.865
+      ],
+      "color": "#ffffff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        5.375,
+        5.375,
+        41.849
+      ],
+      "max": [
+        5.405,
+        5.405,
+        41.865
+      ],
+      "color": "#ffffff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        6.075,
+        4.875,
+        41.849
+      ],
+      "max": [
+        6.105,
+        4.905,
+        41.865
+      ],
+      "color": "#ffffff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        6.775,
+        5.575,
+        41.849
+      ],
+      "max": [
+        6.805,
+        5.605,
+        41.865
+      ],
+      "color": "#ffffff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        7.175,
+        4.475,
+        41.849
+      ],
+      "max": [
+        7.205,
+        4.505,
+        41.865
+      ],
+      "color": "#ffffff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        5.075,
+        5.075,
+        41.849
+      ],
+      "max": [
+        5.105,
+        5.105,
+        41.865
+      ],
+      "color": "#ffffff",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        6.375,
+        3.375,
+        41.995
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        2.755,
+        4.875,
+        41.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        9.995,
+        4.875,
+        41.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        6.375,
+        6.375,
+        41.995
+      ],
+      "dir": "+y"
+    }
+  ]
+}
