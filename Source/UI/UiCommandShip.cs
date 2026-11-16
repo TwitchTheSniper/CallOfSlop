@@ -429,7 +429,7 @@ public sealed partial class Ui
         var w = 250 * _scale;
         var row = 24 * _scale;
         var rows = Math.Min(_cmdCraftCount, 14);
-        var p0 = _cvOrg + new float2(pad, pad + 100 * _scale);
+        var p0 = _cvOrg + new float2(pad, pad + 104 * _scale);
         var p1 = p0 + new float2(w, 34 * _scale + Math.Max(rows, 1) * row + 8 * _scale);
         CmdPlate(dl, p0, p1, fade, CmdCyan);
         CmdPanelArea(p0, p1);
@@ -488,7 +488,7 @@ public sealed partial class Ui
     {
         public ushort Id;
         public double Read;
-        public string Name, Class, Status, Flight, Orbit, Hull, Fuel, Power, Drive, Burn, Cargo, Crew, Systems, Order, Phase, Problem;
+        public string Name, Class, Status, Flight, Orbit, Hull, Fuel, Power, Drive, Burn, Cargo, Crew, Systems, Order, Phase, Trip, Problem;
         public float HullShare, FuelShare, PowerShare, OrderDone;
         public bool HasFuel, HasPower, HasOrder, Orders, Thrusting;
     }
@@ -615,7 +615,7 @@ public sealed partial class Ui
         k.Orders = k.Problem.Length == 0;
         var o2 = g.NavOf(c.Id);
         k.HasOrder = o2 != null;
-        k.Order = k.Phase = "";
+        k.Order = k.Phase = k.Trip = "";
         k.OrderDone = 0;
         if (o2 != null && o2.Body < sys.Count)
         {
@@ -629,9 +629,23 @@ public sealed partial class Ui
                 NavPhase.Flying => "FLYING THERE",
                 NavPhase.Arrived => "OVER THE WAYPOINT",
                 NavPhase.NoDrive => "NO DRIVE: IT CAN'T FLY THIS",
+                NavPhase.Depart => "BURNING OUT ONTO ITS TRANSFER",
+                NavPhase.Coast => "COASTING, DRIVE OFF",
+                NavPhase.Correct => "CORRECTION BURN",
+                NavPhase.Brake => "FLIPPED: BRAKING",
+                NavPhase.Short => string.Create(inv, $"OUT OF REACH: THE LEAST A TRIP TAKES IS {o2.DvNeed / 1000:0.0} KM/S"),
+                NavPhase.Wait => "IN ORBIT, WAITING FOR ITS WINDOW",
                 _ => "STARTING",
             };
             k.Order = Game.NavText(sys, o2).ToUpperInvariant();
+            if (o2.ArriveNs != 0 && o2.Phase is NavPhase.Depart or NavPhase.Coast or NavPhase.Correct or NavPhase.Wait)
+            {
+                var left = (o2.ArriveNs - s.Now.Ns) / (double)SpaceTime.NsPerSecond;
+                var leaves = (o2.DepartNs - s.Now.Ns) / (double)SpaceTime.NsPerSecond;
+                k.Trip = o2.Phase == NavPhase.Wait
+                    ? string.Create(inv, $"LEAVES IN {CmdTime(Math.Max(0, leaves)).ToUpperInvariant()}, THERE IN {CmdTime(Math.Max(0, left)).ToUpperInvariant()}    {o2.DvNeed / 1000:0.0} KM/S")
+                    : string.Create(inv, $"THERE IN {CmdTime(Math.Max(0, left)).ToUpperInvariant()}    {o2.DvNeed / 1000:0.0} KM/S");
+            }
             k.Phase = phase;
         }
     }
@@ -654,7 +668,7 @@ public sealed partial class Ui
         var pad = 22 * _scale;
         var w = 400 * _scale;
         var line = 19 * _scale;
-        var lines = 14 + (k.Orbit.Length > 0 ? 1 : 0) + (k.HasOrder ? 3 : 0) + (k.Problem.Length > 0 ? 1 : 0);
+        var lines = 14 + (k.Orbit.Length > 0 ? 1 : 0) + (k.HasOrder ? 3 : 0) + (k.Trip.Length > 0 ? 1 : 0) + (k.Problem.Length > 0 ? 1 : 0);
         var p0 = new float2(_cvOrg.X + _cvSize.X - pad - w, _cvOrg.Y + pad);
         var p1 = p0 + new float2(w, 64 * _scale + lines * line + 50 * _scale);
         var edge = k.HasOrder ? CmdAmber : CmdCyan;
@@ -719,6 +733,8 @@ public sealed partial class Ui
         {
             Row(dl, "ORDER", k.Order, CmdAmber, ref y);
             Row(dl, "NOW", k.Phase, CmdWhite, ref y);
+            if (k.Trip.Length > 0)
+                Row(dl, "TRIP", k.Trip, CmdWhite, ref y);
             y += 4 * _scale;
             if (CmdButton(dl, new float2(x + col, y), new float2(x + col + 150 * _scale, y + 24 * _scale), "CANCEL ORDER", CmdAmber, fade))
                 g.NavSend(c.Id, NavKind.None, 0, Vec3d.Zero, 0);

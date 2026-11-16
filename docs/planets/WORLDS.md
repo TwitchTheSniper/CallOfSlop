@@ -94,7 +94,7 @@ A jump arrives in orbit round the system's main world (`"arrive": { "at": "Cinde
 docs/space/GALAXY.md): 40 km from the Planetoid, 30 from Cinder, 45 from Glacier, 35 from Caledon, 20 from Mille. Fly
 down into the world's sky and the whole group lands there, with everyone seated aboard (docs/space/SPACE.md "Landing
 on another planetoid"): the bubble moves to that system, the world left behind is kept, and every system's ships fly on.
-Redrock is 1.5 AU from the home star's Planetoid, a long flight with no time warp: it is easier played by starting on it.
+Redrock is 1.5 AU from the home star's Planetoid, a long flight (a coast of weeks, sped up from the command view): it is easier played by starting on it.
 
 ## Landing limits
 

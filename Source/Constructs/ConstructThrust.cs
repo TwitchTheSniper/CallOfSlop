@@ -504,9 +504,9 @@ public static partial class ConstructPhysics
             if (d.ThrustFuel == EngineFuel.Fuel)
             {
                 if (d.ThrustKind != ThrustKind.Solid)
-                    c.UseFuel(d.ThrustBurn * t.Level * dt);
+                    c.UseFuel(d.ThrustBurn * t.Level * dt * SpaceFuelScale);
                 if (d.ThrustOx > 0)
-                    ConstructFluid.BurnOx(c, d.ThrustOx * t.Level * dt);
+                    ConstructFluid.BurnOx(c, d.ThrustOx * t.Level * dt * SpaceFuelScale);
             }
             else
                 c.MotorWork += d.ThrustPower * 1000f * t.Level;
@@ -521,8 +521,16 @@ public static partial class ConstructPhysics
     /// Returns the push they add up to (N; 0: none can push now), with its direction in the body's frame and whether it is
     /// the lifters (a tail-sitter's main drive). A wired thruster is left to its wire and not counted.
     /// </summary>
+    /// <summary>
+    /// The share of their fuel thrusters burn in space (the host's Settings > Gameplay "Fuel use in space", Karl 2026-11-16:
+    /// a slider for fuel and speed; clients hear it with the space clock). Lower, ships carry more dV and trips between
+    /// planets are quicker. The air and the ground are untouched.
+    /// </summary>
+    public static float SpaceFuelScale = 1f;
+
     public static float NavDrive(Construct c, out Vector3 axis, out bool lift, out float burn)
     {
+        var scale = SpaceFuelScale; // (its burn is a burn in space: the ship card's dV and the trip planner read it)
         Vector3 fwd = Vector3.Zero, up = Vector3.Zero;
         float fwdBurn = 0, upBurn = 0;
         for (var k = 0; k < c.ThrusterCount; k++)
@@ -548,7 +556,7 @@ public static partial class ConstructPhysics
         }
         lift = up.LengthSquared() > fwd.LengthSquared();
         var sum = lift ? up : fwd;
-        burn = lift ? upBurn : fwdBurn;
+        burn = (lift ? upBurn : fwdBurn) * scale;
         var f = sum.Length();
         axis = f > 1e-3f ? sum / f : Vector3.Zero;
         return f;

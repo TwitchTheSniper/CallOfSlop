@@ -136,7 +136,7 @@ public sealed class ClipUses
                 why = "the selection has ropes, springs, no-collide pairs or tracks: saved as plain parts";
             if (why.Length == 0 && !square)
                 why = "freeform-attached: a use is saved only standing square to the rest";
-            if (why.Length == 0 && tag.Origin != ConstructWorld.Quantise(tag.Origin))
+            if (why.Length == 0 && Vector3.DistanceSquared(tag.Origin, ConstructWorld.Quantise(tag.Origin)) > 1e-6f) // (1 mm: a float's sums aren't exact)
                 why = "off the 1 cm grid: saved as plain parts";
             if (why.Length == 0)
             {

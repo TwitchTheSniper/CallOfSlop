@@ -72,7 +72,7 @@ public sealed class PointMassForce(SpacePos at, double mu) : ISpaceForce
 /// steps: <see cref="ShipMode.Coast"/> (Wisdom-Holman kick-drift-kick, the drift an exact universal Kepler step round the
 /// primary, the kick everything else: symplectic, so energy doesn't drift over thousands of orbits),
 /// <see cref="ShipMode.Adaptive"/> (Dormand-Prince 5(4) with error control, for burns and strong perturbers) and
-/// <see cref="ShipMode.Rail"/> (patched conic: its own two-body orbit from an epoch, exact at any warp, used only while the
+/// <see cref="ShipMode.Rail"/> (patched conic: its own two-body orbit from an epoch, exact at any speed, used only while the
 /// other bodies' pull is under <see cref="RailTolerance"/> of the primary's). Nothing allocates per step.
 /// </para>
 /// </summary>
@@ -83,7 +83,7 @@ public sealed class SpaceShips
     /// <summary>The coasting step is at most this fraction of the local orbit (and of every perturber's time scale).</summary>
     public double StepsPerOrbit = 48;
 
-    /// <summary>The coasting substeps a ship may need per game tick before it limits the warp (also the most in one chunk).</summary>
+    /// <summary>The coasting substeps a ship may need per game tick before it limits the speed (also the most in one chunk).</summary>
     public int MaxSubsteps = 64;
 
     /// <summary>
@@ -101,7 +101,7 @@ public sealed class SpaceShips
     /// <summary>The adaptive step's error bounds per step: position (m), velocity (m/s), and relative to the state's size.</summary>
     public double PosTolerance = 1e-4, VelTolerance = 1e-7, RelTolerance = 1e-14;
 
-    /// <summary>The adaptive steps one ship may take per game tick before it limits the warp.</summary>
+    /// <summary>The adaptive steps one ship may take per game tick before it limits the speed.</summary>
     public int AdaptiveStepsPerTick = 16;
 
     /// <summary>The most substeps <see cref="MaxSubsteps"/> may be set to (the grid's size).</summary>
@@ -122,6 +122,18 @@ public sealed class SpaceShips
 
     /// <summary>Thrust per ship (m/s^2, ecliptic axes), set by the host each tick; non-zero takes the adaptive step.</summary>
     public readonly Vec3d[] Thrust;
+
+    /// <summary>
+    /// Is any ship pushed this step? A burn is real time (the time speed rule): one tick at 100,000x is half an hour, and a
+    /// burn the busy test hadn't seen yet (it reads the last tick's flames) put a ship 70 km/s off in one tick (2026-11-16).
+    /// </summary>
+    public bool AnyThrust()
+    {
+        for (var i = 0; i < Count; i++)
+            if (Thrust[i] != Vec3d.Zero)
+                return true;
+        return false;
+    }
 
     public readonly ShipFlags[] Flags;
 
@@ -167,8 +179,8 @@ public sealed class SpaceShips
     private bool _interp;
     private int _gLast;
 
-    /// <summary>The fastest warp every ship can follow accurately within its per-tick step budget (rails: no limit).</summary>
-    public int MaxWarp { get; private set; } = SpaceClock.MaxWarp;
+    /// <summary>The fastest speed every ship can follow accurately within its per-tick step budget (rails: no limit).</summary>
+    public int MaxSpeed { get; private set; } = SpaceClock.MaxSpeed;
 
     /// <summary>Counters for tests and the log: hand-overs, rail entries, Kepler solves that failed (should stay 0).</summary>
     public long Handovers, RailEntries, DriftFailures, AdaptiveSteps, CoastSteps;
@@ -428,7 +440,7 @@ public sealed class SpaceShips
         var start = Time.Ns;
         for (long c = 1; c <= chunks; c++)
             StepChunk(c == chunks ? to.Ns : start + (long)((Int128)total * c / chunks), c == 1);
-        UpdateWarpLimit();
+        UpdateSpeedLimit();
     }
 
     /// <summary>Jumps to a time without moving the ships' relative states (a client taking a host's clock with fresh states).</summary>
@@ -789,24 +801,24 @@ public sealed class SpaceShips
 
     private static double Dynamical(double r, double mu) => mu > 0 ? 2 * Math.PI * Math.Sqrt(r * r * r / mu) : double.PositiveInfinity;
 
-    private void UpdateWarpLimit()
+    private void UpdateSpeedLimit()
     {
         const double tick = 1.0 / 60;
-        var warp = (double)SpaceClock.MaxWarp;
+        var speed = (double)SpaceClock.MaxSpeed;
         for (var i = 0; i < Count; i++)
         {
             switch (_mode[i])
             {
                 case ShipMode.Coast:
-                    warp = Math.Min(warp, MaxSubsteps * (_hMax[i] > 0 ? _hMax[i] : MaxStep(i)) / tick);
+                    speed = Math.Min(speed, MaxSubsteps * (_hMax[i] > 0 ? _hMax[i] : MaxStep(i)) / tick);
                     break;
                 case ShipMode.Adaptive:
                     var h = _h[i] > 0 ? _h[i] : MaxStep(i) / 64;
-                    warp = Math.Min(warp, AdaptiveStepsPerTick * h / tick);
+                    speed = Math.Min(speed, AdaptiveStepsPerTick * h / tick);
                     break;
             }
         }
-        MaxWarp = (int)Math.Clamp(Math.Floor(warp), 1, SpaceClock.MaxWarp);
+        MaxSpeed = (int)Math.Clamp(Math.Floor(speed), 1, SpaceClock.MaxSpeed);
     }
 
     /// <summary>

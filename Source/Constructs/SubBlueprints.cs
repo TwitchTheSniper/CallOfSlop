@@ -946,16 +946,17 @@ public static class SubBlueprints
     }
 
     /// <summary>A stamp's clip: the whole of it is one use of the stamped blueprint, its own uses under it; every tag's parts hashed.</summary>
-    public static void TagStamp(Construct body, ConstructBuild.Blueprint flat)
+    public static void TagStamp(Construct body, ConstructBuild.Blueprint flat, string? id = null)
     {
-        if (flat.Id.Length == 0)
+        id = id is { Length: > 0 } ? id : flat.Id; // (a shipped sub-blueprint's flat form carries no id: its use's "ship:<name>" is given)
+        if (id.Length == 0)
             return; // (a blueprint without an id yet: stamped as plain parts)
         body.Uses ??= new List<UseTag>();
         var root = body.Uses.Count;
         foreach (var t in body.Uses)
             if (t.Parent < 0)
                 t.Parent = root;
-        body.Uses.Add(new UseTag { Id = flat.Id, Name = flat.Name, Version = flat.Version, Turn = 0, Origin = Vector3.Zero });
+        body.Uses.Add(new UseTag { Id = id, Name = flat.Name, Version = flat.Version, Turn = 0, Origin = Vector3.Zero });
         for (var i = 0; i < body.PartCount; i++)
             if (body.Parts[i].Use == 0)
                 body.Parts[i].Use = (ushort)(root + 1);

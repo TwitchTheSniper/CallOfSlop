@@ -7,7 +7,7 @@ namespace CallOfSlop;
 /// Leaving the bubble (docs/space/SPACE.md, "Leaving the bubble"). On a planetoid map in a star system, a construct whose
 /// centre of mass climbs past the sky's edge (the map's half size from the planet's centre, where players' sky ends:
 /// <see cref="World.ClampToSky"/>) becomes a ship of the system's flight (<see cref="SpaceShips"/>): a test particle in the
-/// gravity of every body on rails, coasting on the symplectic step (or on rails) under the space clock, at any warp.
+/// gravity of every body on rails, coasting on the symplectic step (or on rails) under the space clock, at any speed.
 /// The construct stays in the World as the ship's picture: its physics sleeps (<see cref="Construct.SpaceShip"/>), the
 /// host poses it from the ship every tick, and the poses go to clients the usual way, so its riders stay in their seats
 /// and see the planetoid turn below. Its thrusters push the ship (W and S by how they face the seat, Shift those that push

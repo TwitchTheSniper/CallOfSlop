@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Submodule Pod",
+  "group": "Submodules",
+  "description": "A small gun pod: the Submodule Skiff uses it twice (sub-blueprints).",
+  "steps": [
+    { "part": "Square Beam 0.25 m" },
+    { "part": "Square Beam 0.25 m", "on": 0, "socket": "+y", "by": "-y", "paint": "#5a6470" },
+    { "part": "Square Beam 0.25 m", "on": 1, "socket": "+x", "by": "-x", "paint": "#2f343a" }
+  ]
+}

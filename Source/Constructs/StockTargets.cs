@@ -75,8 +75,13 @@ public static class StockTargets
     public static bool Hold(Construct c, int part) => ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.RouterHold, 0) >= 0.5f;
 
     /// <summary>A terminal's (or station's) order class (Low 0, Normal 1, High 2).</summary>
-    public static byte FeedClass(Construct c, int part) =>
-        (byte)Math.Clamp((int)ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.FeedPriority, ConstructLogisticsPlan.ClassNormal), 0, 2);
+    public static byte FeedClass(Construct c, int part)
+    {
+        // A Building Station's sub-job (a use of another station's blueprint: ConstructStationTree.cs) orders at its main station's class.
+        if (c.Parts[part].Station is { Role: 1 } sj && sj.RootBody == c.Id && sj.RootPart != part && sj.RootPart < c.PartCount && c.DefOf(sj.RootPart).IsBuildStation)
+            part = sj.RootPart;
+        return (byte)Math.Clamp((int)ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.FeedPriority, ConstructLogisticsPlan.ClassNormal), 0, 2);
+    }
 
     /// <summary>The low mark: a target opens a refill at or below it (keep 20: 15; keep 6: 4).</summary>
     public static int Low(int keep) => keep - Math.Max(1, (keep + 3) / 4);
