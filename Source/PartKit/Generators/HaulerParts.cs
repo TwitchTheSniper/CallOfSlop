@@ -64,11 +64,11 @@ public sealed class HaulerParts : IPartGenerator
 
     /// <summary>The side doors beside the well (row 3), one a side: the opening's ends along the ship, its head, and the hinge socket.</summary>
     /// <summary>The drives (ship-works.md): four Drive Nozzle S through the transom, a hull drive whose works stand on the drive room's
-    /// aft wall (welded to the stern, both mounts): three Drive Core S serve the 6 MN, side by side with a metre and more clear in front
+    /// aft wall (welded to the stern, both mounts): three Drive Core S (cylinders on saddles, running forward off the wall) serve the 6 MN, side by side with over a metre clear in front
     /// of each one's gauge (on its starboard side), the Engineer's Panel on the port wall by the door.</summary>
     private const string DriveNozzle = "Drive Nozzle S", DriveCore = "Drive Core S";
-    private static readonly double[] CoreX = [-3.6, -0.5, 2.6];
-    private const double CoreH = 1.6, PanelZ = 47.0;
+    private static readonly double[] CoreX = [-2.4, 0.0, 2.4]; // (in line with the nozzles' columns and the door; over a metre clear by each gauge)
+    private const double PanelZ = 47.0;
 
     /// <summary>Attitude jets (Karl, 2026-11-16: it flips and burns on its drives, with small jets every way for small moves): a
     /// cluster at the bow and one at the stern, each up, down, out to both sides and along the ship, Heavy RCS Thrusters on pads.</summary>
@@ -947,7 +947,7 @@ public sealed class HaulerParts : IPartGenerator
             VoidT(p, plan.Z0, plan.Z1, ya, yb, Ew + 0.25, 0.004, 0.004);
         // The drive's works stand against the aft wall, each hung at its half height so it stands on the deck; the panel by the door.
         for (var i = 0; i < CoreX.Length; i++)
-            Sock(p, $"core{i}", Cx + CoreX[i], Ft0 + CoreH / 2, ZEngEnd, "-z");
+            Sock(p, $"core{i}", Cx + CoreX[i], Ft0 + ShipWorksParts.AxisOver(0), ZEngEnd, "-z"); // (its axis at its saddles' height over the deck)
         Sock(p, "panel", Cx - Ew, Ft0 + 0.6, PanelZ, "+x");
         foreach (var y in new[] { 0.0, Ft1 })
             MustFit("drive room", plan.Z1, Ew + 0.25, y);

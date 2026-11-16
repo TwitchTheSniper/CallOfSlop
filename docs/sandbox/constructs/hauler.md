@@ -42,8 +42,10 @@ girders) along the hold's roof, a sensor mast, radiators over the drive room.
 
 - **Drives** (ship works, PR 246, refitted 2026-11-16): four Drive Nozzle S (1.5 MN each, 6 MN) bolt to the transom's
   `drive0`-`drive3`, a hull drive. The stern and the drive room's aft wall are mounts (`Works.Mount`), welded together; three
-  Drive Core S (2 MN each) hang on the wall by their `front` at half their height (`core0`-`core2`), 1.7 m clear in front and
-  more than a metre beside each one's gauge, and the Engineer's Panel is on the port wall by the door. `--check-vehicle`
+  cylinder Drive Core S (PR 247, 2 MN each) lie along the ship on their saddles, `front` on the aft wall at axis height
+  (`Ft0 + ShipWorksParts.AxisOver(0)`, `core0`-`core2` at x -2.4, 0, 2.4), and the Engineer's Panel is on the port wall by
+  the door. The stern's tankage sits between the cores and the nozzles, so the cores are not on the nozzles' line; a longer
+  drive room would put them there. `--check-vehicle`
   prints every head at 100%.
 - **Attitude jets** (Karl, 2026-11-16: it flips and burns on its main drives, with small jets every way for small moves):
   16 Heavy RCS Thrusters (250 kN, under the 500 kN that needs works) on pads, a cluster at the bow (z 3, and two in the
