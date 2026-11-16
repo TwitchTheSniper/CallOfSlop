@@ -1626,11 +1626,15 @@ public static class SubBlueprints
                 }
                 var off = root.PartCount;
                 var plan = new JoinPlan { Other = sub.Body, Turn = tag.Turn, Offset = tag.Origin };
+                var j0 = Stopwatch.GetTimestamp();
                 if (!JoinAt(world, root, sub, plan, flat, tag, subPartOf, partOf, out var jw))
                 {
                     Console.WriteLine($"  {tag.Name}: the merge refuses: {jw}");
                     return 1;
                 }
+                var joinMs = (Stopwatch.GetTimestamp() - j0) * 1000.0 / Stopwatch.Frequency;
+                if (tag.Count >= 100)
+                    Console.WriteLine($"  the big fit of {tag.Name} ({tag.Count} parts into {off}): {joinMs:0.00} ms with the copy into this world, the merge alone {LastMergeMs:0.00} ms");
                 k = tag.First + tag.Count - 1;
                 continue;
             }
@@ -1760,6 +1764,7 @@ public static class SubBlueprints
         var off = root.PartCount;
         var n = moved.PartCount;
         plan.Other = moved;
+        var m0 = Stopwatch.GetTimestamp();
         if (!MergeExact(world, root, plan))
         {
             why = "the merge refused";
@@ -1779,7 +1784,8 @@ public static class SubBlueprints
             if (partOf[tag.First + s] >= 0)
                 LinkOutside(world, root, flat, tag.First + s, partOf, tag.First, tag.Count);
         root.Dirty = true;
-        root.Rebuild();
+        root.Rebuild(); // (once, after the joining links: the exact merge leaves it to the caller)
+        LastMergeMs = (Stopwatch.GetTimestamp() - m0) * 1000.0 / Stopwatch.Frequency;
         return true;
     }
 
@@ -1788,6 +1794,8 @@ public static class SubBlueprints
     /// the plan's turn and place are exact, its link none.
     /// </summary>
     public static bool MergeExact(ConstructWorld world, Construct a, JoinPlan plan) => world.MergeAt(a, plan);
+
+    public static double LastMergeMs; // the check's: the last merge alone
 
     /// <summary>A flat step's "also" links that end outside its use: laid after the big fit (the use's own were laid by its own build).</summary>
     public static void LinkOutside(ConstructWorld world, Construct c, ConstructBuild.Blueprint bp, int k, int[] partOf, int first, int count)
@@ -1894,6 +1902,11 @@ public static class SubBlueprints
             Console.WriteLine($"costing, run {pass}: {(run.Body != null ? "built" : "REFUSED: " + run.Why)} in {slices} slices, {total:0.0} ms in all, worst slice {worst:0.00} ms (budget {ConstructStation.CostBudgetMs} ms a tick)");
             ok = run.Body != null && (pass == 1 || worst < 8);
         }
+        // The big fit at this size: the top use's own body merged into its parent (the station's weld), timed.
+        var reference = ConstructBuild.Build(new ConstructWorld(), flat, Vector3.Zero, Quaternion.Identity, out _);
+        if (reference != null)
+            for (var pass = 0; pass < 2; pass++)
+                JoinCheck(flat, reference); // (twice: the first carries the JIT)
         return ok ? 0 : 1;
     }
 }

@@ -380,6 +380,7 @@ public sealed class ClipUses
         var inv = SubBlueprints.Inverse(tag.Turn);
         if (!world.MergeAt(a, new JoinPlan { Other = b, Turn = inv, Offset = -Rot24.Apply(inv, tag.Origin) }))
             return "it couldn't be turned into its own frame";
+        a.Rebuild();
         a.Uses = null;
         for (var i = 0; i < a.PartCount; i++)
             a.Parts[i].Use = 0; // (saved as plain parts: its inner uses become plain in the new version)

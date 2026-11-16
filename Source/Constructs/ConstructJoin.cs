@@ -138,7 +138,8 @@ public sealed partial class ConstructWorld
         a.Wreck = false;
         Remove(b);
         a.Dirty = true;
-        a.Rebuild();
+        if (!exact)
+            a.Rebuild(); // (an exact merge's caller lays its joining links first, then rebuilds once: SubBlueprints.JoinAt, the station's weld)
         a.Vel = mass > 0 ? momentum / mass : a.Vel;
         a.Wake();
         StructureDirty.Add(a.Id);

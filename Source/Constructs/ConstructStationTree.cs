@@ -588,7 +588,7 @@ public static partial class ConstructStationTree
                 Console.WriteLine($"[station] {j.Name}: {tag.Name} #{row.Number}: {off1} welded parts are off their places by more than 1 cm");
         }
         root.Dirty = true;
-        root.Rebuild();
+        root.Rebuild(); // (once: the merge left it for the joining links)
         root.PrevPos = root.NetPos = root.NetFromPos = root.Pos = j.Pos;
         world.StructureDirty.Add(root.Id);
         j.Fitted = (ushort)Math.Min(None - 1, j.Fitted + fitted);
@@ -623,7 +623,7 @@ public static partial class ConstructStationTree
             b.HeldBy = 0; // (frozen where it stands, as a stamped group lands: any player may move it with the physics gun)
             b.Wake();
         }
-        j.Note = touch ? "done - handed to the main station" : "done - waiting to be carried: move it into the main station's bay";
+        j.Note = touch ? "handed to the main station" : "waiting to be carried: move it into the main station's bay";
         world.StructureDirty.Add(b.Id);
         world.StationChanged(c);
         Console.WriteLine($"[station] {j.Name}: sub-job done ({j.Steps} parts){(touch ? "" : ", freed for carrying")}");
@@ -804,7 +804,7 @@ public static partial class ConstructStationTree
                 w ??= new SaveWriter(1024);
                 if (n++ == 0)
                     w.U16(0); // (the count, patched below)
-                w.U16((ushort)i).U8(j.Role).U32(j.Stamp).U16(j.RootBody).U16(j.RootPart).U32(j.RootStamp).U16((ushort)Math.Max(0, j.RootUse));
+                w.U16((ushort)i).U8(j.Role).U32(j.Stamp).U16(j.RootBody).U16(j.RootPart).U32(j.RootStamp).U16((ushort)Math.Max(0, j.RootUse)).Str(j.Header.Length > 200 ? j.Header[..200] : j.Header);
                 var packed = j.Pinned.Length > 0 ? ConstructEdits.Deflate(j.Pinned) : [];
                 w.I32(packed.Length).Bytes(packed);
                 w.U8((byte)Math.Min(SubBlueprints.MaxDepth + 1, j.PinPath.Length)); // (a sub-job's way down the pinned tree: a row at each level)
@@ -843,6 +843,7 @@ public static partial class ConstructStationTree
                 var rootPart = r.U16();
                 var rootStamp = r.U32();
                 int rootUse = r.U16();
+                var header = r.Str();
                 var len = r.I32();
                 var packed = r.Bytes(len);
                 var path = new int[r.U8()];
@@ -859,7 +860,7 @@ public static partial class ConstructStationTree
                 var j = Array.Find(jobs, x => x.Part == part).Job;
                 if (j == null)
                     continue;
-                (j.Role, j.Stamp, j.RootBody, j.RootPart, j.RootStamp, j.RootUse) = (role, stamp, rootBody, rootPart, rootStamp, rootUse);
+                (j.Role, j.Stamp, j.RootBody, j.RootPart, j.RootStamp, j.RootUse, j.Header) = (role, stamp, rootBody, rootPart, rootStamp, rootUse, header);
                 _stamp = Math.Max(_stamp, Math.Max(stamp, rootStamp));
                 if (packed.Length > 0)
                 {
