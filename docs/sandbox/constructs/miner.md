@@ -81,12 +81,15 @@ merge, the Magpie can switch to them if a shared set suits it.
   `--check-building` treats a level leaf as a hatch rather than a doorway (BuildingWalkCheck).
 - Drills 0 and 2 chute into the port hold and drills 1 and 3 into the starboard hold. Each hold is a **Storage Volume**
   sized to fill its hopper's inside, about 30 m3 (some 12,000 units of one bulk material).
+  The four chutes are laid by the router when the ship is built (power-and-links.md "Ship links and walls"): out of each
+  drill, across to the side wall at the drill's height and down into the hold.
 - A refinery and the trip to it are the production system's.
 
 ## Flight
 
 The pilot's Flight Couch is wired to the **Magpie Flight Computer**, a flight stabilizer with a 10 MN m gyro. It flies on
-Rotorcraft keys, as the Halberd and the Zero Day do: Shift climbs, W leans forward, A and D turn.
+Ship keys with mouse aim (flight.md "Ship keys"): the nose follows the look, W/S forward and back, A/D slide, Q/E roll,
+Shift/Ctrl up and down. Twelve **Heavy RCS Thrusters** (250 kN) on the hoppers and nacelles (up, down, outboard) turn it.
 
 - Four **Magpie Lift Jets** (1.2 MN each) stand round the centre of mass, under the hoppers and the nacelles.
 - Two **Magpie Drives** (900 kN each) push forward from the nacelles' tails.
@@ -110,6 +113,7 @@ so a part that touches nothing throws. The blueprint places each part with `Put`
 - Mining hasn't been tried in a world: no drill has been run against real ground from the ship.
 - No build cost and no recipes: they are left to the production system.
 - The holds have no way to unload except their chute ports. The hopper spouts are only looks.
+- The chutes cross the walkway round the well at about 1.6 m, since a drill's Chute out is at that height at rest and the holds sit on the floor by the walls. A tidier run (up the rams and along the gantry beams) needs the holds' inlets or the drills' ports moved in MinerParts.cs.
 
 ## The Magpie start
 

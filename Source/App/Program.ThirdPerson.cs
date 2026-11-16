@@ -88,7 +88,16 @@ public static unsafe partial class Program
             PilotThirdPersonAim(g, sc, h.SeatPart, d);
             return;
         }
-        if (g.Constructs.Get(h.SeatBody) is not { } c || h.SeatPart >= c.PartCount || c.SeatKindOf(h.SeatPart) != SeatKind.Gunner)
+        if (g.Constructs.Get(h.SeatBody) is not { } c || h.SeatPart >= c.PartCount)
+            return;
+        if (ConstructFlight.MouseSteers(c, h.SeatPart))
+        {
+            // A ship that steers by the look: the camera is the look, so the nose comes round to where the camera points (its first tilt counts as level).
+            g.LookYaw = ThirdPerson.OrbitYaw;
+            g.LookPitch = Math.Clamp(ThirdPerson.OrbitPitch - ThirdPerson.SteerTilt * MathF.Max(0, 1 - MathF.Abs(ThirdPerson.OrbitPitch) / 1.5f), -1.5f, 1.5f); // (the camera straight up or down is the nose straight up or down)
+            return;
+        }
+        if (c.SeatKindOf(h.SeatPart) != SeatKind.Gunner)
             return;
         var f = g.LookDir(ThirdPerson.OrbitYaw, ThirdPerson.OrbitPitch);
         if (!g.ThirdPersonSeatPoint(out var point, out _, out _, out _, out _, out _))
@@ -183,7 +192,7 @@ public static unsafe partial class Program
                 _tpSeatKey = key;
                 ThirdPerson.SeatDist = dist;
                 ThirdPerson.OrbitYaw = drone != null ? heading : _game.LookYaw; // (a drone's starts from behind it)
-                ThirdPerson.OrbitPitch = -0.25f;
+                ThirdPerson.OrbitPitch = ThirdPerson.SteerTilt;
                 _tpHeading = heading;
             }
             if (follow)

@@ -453,6 +453,9 @@ public sealed partial class Construct
     public int[] MainsFeed = []; // (interiors phase 11) by part, for mains lamps: the part whose wire switches it (-1: none, lit from the circuit alone); gathered with LampParts
     public int LiftStamp = -1, LiftPartCount = -1; // (ConstructLifters.Scan: its lifter parts were looked for at this RebuildStamp and part count)
     public int PadStamp = -1, PadPartCount = -1; // (ConstructLifters.NotePads, server: its Lay-down Pads were looked for at this RebuildStamp and part count)
+    public int RadarStamp = -1, RadarPartCount = -1; // (ConstructRadar.Range: its radar parts were looked for at this RebuildStamp and part count)
+    public int[] RadarParts = []; // the parts with a "radar" block
+    public ushort RadarLock; // server: the contact its seats' radar has locked for its missiles (0: none; ConstructRadar.cs), not saved
     public int RebuildStamp; // goes up with every rebuild (what is drawn from the parts follows it: ConstructRenderBatch.cs)
     internal ushort[] SigList = []; // the signal parts in part order (ConstructNet.Signals: kept for the poses)
     internal int SigListCount, SigListStamp = -1, SigListParts = -1;

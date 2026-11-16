@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// <summary>What a part's flame burns by ("source" in its "flame" block).</summary>
 public enum FlameSource : byte
 {
-    Thrust, // the construct's thrust (Construct.ThrustShow, every peer has it)
+    Thrust, // a thruster's own level (the host's, CBodyKind.Thrust on a client); any other part, or before the host has said, the construct's (Construct.ThrustShow)
     Burner, // a lift cell's burner (its level on the host; clients read it through the pose's smoke share)
     Engine, // the engine's load (a modular engine's stack, a jet that burns with the engine)
     Signal, // the part's own output, 0..1 (a logic part, or whatever sets it)
@@ -29,6 +29,7 @@ public sealed class FlameDef
 public sealed partial class Construct
 {
     public int[] FlameParts = []; // the parts with a flame or a stack, by part index (made again when the construct rebuilds)
+    public short[] FlameThruster = []; // ...and each one's place in Thrusters (-1: not a thruster)
     public int FlameCount;
     public int FlameStamp = -1;
 }
@@ -58,19 +59,36 @@ public static partial class ConstructRender
         if (n == 0)
             return;
         if (c.FlameParts.Length < n)
+        {
             c.FlameParts = new int[n];
+            c.FlameThruster = new short[n];
+        }
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].D is { } d && (d.Flames.Length > 0 || d.SmokeSize > 0))
+            {
+                var t = -1;
+                for (var k = 0; k < c.ThrusterCount && t < 0; k++)
+                    if (c.Thrusters[k].Part == i)
+                        t = k;
+                c.FlameThruster[c.FlameCount] = (short)t;
                 c.FlameParts[c.FlameCount++] = i;
+            }
     }
 
     /// <summary>How hard a flame burns now, from what this peer has.</summary>
-    private static float FlameLevel(Construct c, int i, FlameDef f)
+    private static float FlameLevel(Construct c, int i, int thruster, FlameDef f)
     {
         ref var p = ref c.Parts[i];
         switch (f.Source)
         {
             case FlameSource.Thrust:
+                if (thruster >= 0 && thruster < c.ThrusterCount && c.Thrusters[thruster].Part == i)
+                {
+                    if (_fxHost)
+                        return MathF.Max(c.Thrusters[thruster].Level, c.Thrusters[thruster].Ab);
+                    if (c.ThrustHeard)
+                        return c.Thrusters[thruster].Shown;
+                }
                 return c.ThrustShow;
             case FlameSource.Burner:
                 for (var k = 0; k < c.BurnerCount; k++)
@@ -108,7 +126,7 @@ public static partial class ConstructRender
             var frame = p.Seg > 0 && p.Seg <= c.JointCount ? SegMatrix(c, p.Seg, alpha) * worldBody : worldBody;
             foreach (var f in d.Flames)
             {
-                var level = FlameLevel(c, i, f);
+                var level = FlameLevel(c, i, c.FlameThruster[n], f);
                 if (level <= 0.005f)
                     continue;
                 var at = Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, f.At), frame);

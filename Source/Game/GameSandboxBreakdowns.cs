@@ -21,7 +21,7 @@ public enum BreakdownStage : byte
 /// time for nothing. Left alone, it fails with a bang: it stops working (Broken, with its health kept, which is how a
 /// breakdown is told from a part shot to pieces, even in a save) until the attach tool repairs it for a little metal.
 /// Server-side state is the one warning under way; clients hear each creak as a <see cref="CActKind.Breakdown"/> and read a
-/// failed part from its body (protocol 319).
+/// failed part from its body (protocol 321).
 /// </summary>
 public sealed partial class Game
 {

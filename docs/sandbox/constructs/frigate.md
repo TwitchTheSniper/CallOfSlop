@@ -84,8 +84,9 @@ constants are `CouchBack`, `CouchForward` in FrigateParts.cs; the blueprint carr
 ## Wiring
 
 The lamp switches' wires are laid as conduit along the walls and ceilings although a ship isn't anchored: the blueprint
-says `"conduit": true` (`ConstructBuild.Blueprint.Conduit`, power-and-links.md "Conduit in pre-builts"). The gun wires
-cross a turret's joints, so they stay straight.
+says `"conduit": true` (`ConstructBuild.Blueprint.Conduit`, power-and-links.md "Conduit in pre-builts"). So are the gun
+stations' wires (they run in the room, pass through the hull into the PDC housings and cross the turret joints once) and the
+couches' two `"links"` (power-and-links.md "Ship links and walls").
 
 ## The new parts
 
@@ -98,7 +99,6 @@ Computer.
 
 - The pilot flies on Rotorcraft keys, so the tower stays upright and the railgun points at the sky in flight; Rocket keys
   would lean it to aim, untried.
-- The gun stations' wires to the PDCs cross their rooms in the open (they ride the turret joints, so no conduit).
 - The couches follow the pilot's climb key, not the ship's real acceleration (there is no acceleration sensor); W and A/D
   don't move them. The copilot's couch, on a joint, counts as a gunner's seat (its prompt says "man the gun").
 - An opened hatch stands out level over its mouth; a turret raised steeply right under it may clip it (untried).

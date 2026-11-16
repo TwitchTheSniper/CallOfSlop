@@ -37,6 +37,7 @@ public enum CBodyKind : byte
     Station, // protocol 256: one body's Building Stations' jobs (ConstructStation.Write)
     Designs, // protocol 260: the world's shared panel designs, the whole list: u8 n, each a name and a key (PanelDesigns.Write)
     Lifts, // protocol 287: one body's lifters, the whole list: u8 n, each its part, state, piece, path and age (ConstructLifters.Write)
+    Thrust, // protocol 319: each thruster's level, for its flame: u16 n, u8 each (ConstructThrust.WriteShown)
 }
 
 /// <summary>
@@ -929,6 +930,9 @@ public static partial class ConstructNet
                 break;
             case CBodyKind.Lifts:
                 ConstructLifters.Read(ref r, world);
+                break;
+            case CBodyKind.Thrust:
+                ConstructThrust.ReadShown(ref r, world);
                 break;
             case CBodyKind.Station:
                 ConstructStation.Read(ref r, world);

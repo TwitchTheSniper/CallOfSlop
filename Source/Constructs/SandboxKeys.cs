@@ -17,7 +17,7 @@ public static class SandboxKeys
     public static string BuildMirror = "M", BuildLine = "O", BuildReplace = "P", BuildGantry = "U", GantryKeys = "";
 
     /// <summary>The key lines a seat shows.</summary>
-    public static string Drive = "", DriveStart = "", DriveShift = "", Fly = "", FlyPlane = "", FlyRotor = "", FlyRocket = "", Gunner = "", GunnerTurrets = "", GetOut = "";
+    public static string Drive = "", DriveStart = "", DriveShift = "", Fly = "", FlyPlane = "", FlyRotor = "", FlyRocket = "", FlyShip = "", FlyShipKeys = "", Gunner = "", GunnerTurrets = "", GetOut = "";
 
     /// <summary>The pilot's key lines on a rail or in a dock, and an ejection seat's (ConstructCarrier.Hint).</summary>
     public static string PilotHook = "", PilotLaunch = "", PilotUndock = "", PilotEject = "", PilotOpenChute = "", PilotOpenGlider = "", PilotCut = "", PilotGlide = "";
@@ -123,6 +123,8 @@ public static class SandboxKeys
         FlyPlane = $"{pitch}: nose down, up, {sides}: roll, {seatRoll}: yaw, {lift}: throttle, {K(GameAction.Jump)}: brake, {GetOut}";
         FlyRotor = $"{pitch}: forward, back, {sides}: yaw, {seatRoll}: roll, {lift}: climb, descend, {GetOut}";
         FlyRocket = $"{pitch}: lean on, back, {sides}: lean left, right, {seatRoll}: spin, {lift}: throttle, {GetOut}";
+        FlyShip = $"mouse: steer the nose, {pitch}: forward, back, {sides}: slide, {seatRoll}: roll, {lift}: up, down, {GetOut}";
+        FlyShipKeys = $"{pitch}: forward, back, {sides}: yaw, {seatRoll}: roll, {lift}: up, down, {GetOut}";
         Gunner = $"{Fire}: shoot, {GetOut}";
         GunnerTurrets = $"{Fire}: shoot, {Aim}: next turret, {GetOut}";
         const string spin = "mouse or wheel: spin (Shift: free, Ctrl: 5 deg)";

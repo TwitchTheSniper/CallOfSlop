@@ -9,6 +9,7 @@ public enum FlightPattern : byte
     Rotorcraft, // anything that hangs on its thrust or floats: quadcopters, helicopters, hover platforms, airships
     Plane,
     Rocket,
+    Ship, // a ship in every direction: no level held, the nose follows the seat's look, the keys push it along its own axes and stop it when let go
 }
 
 /// <summary>What the autopilot holds (the "apMode" setting; a saved number, so add at the end).</summary>
@@ -30,6 +31,7 @@ public struct CStab
     public bool Fitted; // the mix stands for the construct as it is
 
     public Vector3 Inertia; // kg m2 about its right, its forward, its up
+    public Vector3 Turning; // N m: about half of all its effectors could twist it by, about its loops' axes (pitch, roll, yaw): what Ship keys count on to stop a turn in time
     public float Gap; // m: under it, for its landing assist
     public int GapTick;
     public float Spool; // s: the slowest thruster it works
@@ -84,8 +86,16 @@ public static partial class ConstructFlight
     public const int OutThrottle = 0, OutReverse = 1, OutLift = 2, OutVent = 3, OutPitch = 4, OutYaw = 5, OutRoll = 6, OutLeftAileron = 7, OutRightAileron = 8, OutFlaps = 9, OutFrontLeft = 10, OutFrontRight = 11, OutRearLeft = 12, OutRearRight = 13, OutStrafeLeft = 14, OutStrafeRight = 15, OutFire = 16;
     public static readonly string[] OutPorts = ["throttle", "reverse", "lift", "vent", "pitch", "yaw", "roll", "left aileron", "right aileron", "flaps", "front left", "front right", "rear left", "rear right", "strafe left", "strafe right", "fire"]; // (add at the end, up to LogicBlocks.PortWidth, which also sizes every wide part: a link names its port by index)
 
+    /// <summary>
+    /// The ports a player seldom needs: a stabilizer finds what it flies by itself, so the linking tool shows only the seat, the main axes, the autopilot switch and the fire key
+    /// unless its key is held (or a link is already on one). The rest still work and keep their numbers.
+    /// </summary>
+    public static bool Advanced(string port, bool input) => input
+        ? port is "mode" or "altitude" or "heading" or "waypoint x" or "waypoint z" or "set home"
+        : port is "vent" or "left aileron" or "right aileron" or "flaps" or "front left" or "front right" or "rear left" or "rear right" or "strafe left" or "strafe right";
+
     /// <summary>The limits while their settings are 0: the most it tilts (degrees), turns (degrees a second), climbs and goes (m/s).</summary>
-    private static readonly Vector4 RotorLimits = new(30, 90, 8, 30), ShipLimits = new(5, 12, 3, 15), PlaneLimits = new(45, 30, 20, 120), RocketLimits = new(25, 30, 30, 300);
+    private static readonly Vector4 RotorLimits = new(30, 90, 8, 30), ShipLimits = new(5, 12, 3, 15), PlaneLimits = new(45, 30, 20, 120), RocketLimits = new(25, 30, 30, 300), SpaceLimits = new(80, 30, 10, 40);
 
     private const float LoopPlane = 1.5f, LoopRocket = 1.5f, LoopRotor = 2.5f; // (1/s: how fast an attitude comes back where nothing it knows answers it)
     private const float PlaneSpeed = 40f; // m/s: a surface's gain falls with the square of the speed past this
@@ -207,13 +217,19 @@ public static partial class ConstructFlight
         if (c.StabCount == 0)
             return SandboxKeys.Fly;
         ref var p = ref c.Parts[c.Stabs[0].Part];
-        return KeysOf(c, p, p.D) switch { FlightPattern.Plane => SandboxKeys.FlyPlane, FlightPattern.Rocket => SandboxKeys.FlyRocket, _ => SandboxKeys.FlyRotor };
+        return KeysOf(c, p, p.D) switch
+        {
+            FlightPattern.Plane => SandboxKeys.FlyPlane,
+            FlightPattern.Rocket => SandboxKeys.FlyRocket,
+            FlightPattern.Ship => ConstructConfig.Get(p, p.D, CfgKey.MouseAim, 0) >= 0.5f ? SandboxKeys.FlyShip : SandboxKeys.FlyShipKeys,
+            _ => SandboxKeys.FlyRotor,
+        };
     }
 
     /// <summary>The keys it answers to: what the setting says, or on Auto what it found.</summary>
     public static FlightPattern KeysOf(Construct c, in CPart p, ConstructPartDef d)
     {
-        var set = (FlightPattern)Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.Keys, 0), 0, 3);
+        var set = (FlightPattern)Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.Keys, 0), 0, (int)FlightPattern.Ship);
         if (set != FlightPattern.Auto)
             return set;
         var f = c.Effectors;
@@ -237,6 +253,7 @@ public static partial class ConstructFlight
         f.ComFitted = c.Com;
         var repulsorForce = 0f;
         var upForce = 0f;
+        var turning = Vector3.Zero;
         var n = f.Count;
         var a = f.A;
         ulong aliveA = 0, aliveB = 0;
@@ -262,6 +279,7 @@ public static partial class ConstructFlight
             a[at + FlightEffectors.Pitch] = torque.X * share;
             a[at + FlightEffectors.Roll] = -torque.Z * share;
             a[at + FlightEffectors.Yaw] = -torque.Y * share;
+            turning += new Vector3(MathF.Abs(torque.X), MathF.Abs(torque.Z), MathF.Abs(torque.Y)) * share;
             if (e.Kind is EffectorKind.Thruster or EffectorKind.Repulsor or EffectorKind.Rotor && live)
             {
                 upForce += MathF.Max(0, force.Y);
@@ -273,6 +291,7 @@ public static partial class ConstructFlight
                 s.RepulsorRange = c.Parts[e.Part].D.RepulsorRange;
             }
         }
+        s.Turning = turning * 0.5f; // (each way: about half of them push it)
         f.AliveA = aliveA;
         f.AliveB = aliveB;
         s.Repulsors = repulsorForce > 0.5f * upForce && upForce > 0;
@@ -517,7 +536,7 @@ public static partial class ConstructFlight
         p.Count = (ushort)(manned ? seat + 1 : 0);
         var pattern = KeysOf(c, p, d);
         var autopilot = Autopilot(world, c, ref s, ref p, d, input);
-        var ask = Ask(pattern, keys, input, ConstructConfig.Get(p, d, CfgKey.InvertPitch, 0) >= 0.5f);
+        var ask = Ask(pattern, keys, input, ConstructConfig.Get(p, d, CfgKey.InvertPitch, 0) >= 0.5f, MouseOn(c, p, d, seat));
         ask.Pitch = ConstructAero.Curve(ask.Pitch, ConstructConfig.Get(p, d, CfgKey.PitchExpo, 0) / 100f);
         ask.Forward = ConstructAero.Curve(ask.Forward, ConstructConfig.Get(p, d, CfgKey.PitchExpo, 0) / 100f);
         ask.Roll = ConstructAero.Curve(ask.Roll, ConstructConfig.Get(p, d, CfgKey.RollExpo, 0) / 100f);
@@ -532,10 +551,10 @@ public static partial class ConstructFlight
         }
         // Armed: at work. It stays armed with nobody at the controls: a craft in the air isn't dropped by its pilot getting up.
         var armed = (p.State & 1) != 0;
-        var flies = pattern != FlightPattern.Rotorcraft;
+        var flies = pattern is FlightPattern.Plane or FlightPattern.Rocket; // (a throttle that stays where it is left; a rotorcraft and a ship hold where they are)
         if (flies && ask.Lift != 0)
             p.Mem = Math.Clamp(p.Mem + ask.Lift * 0.5f * dt, 0, 1); // (Shift and Ctrl work a throttle that stays where it is left)
-        var wants = autopilot || (flies ? p.Mem > 0 || ask.Throttle > 0 : ask.Lift > 0 || ask.Forward != 0 && c.CellCount > 0);
+        var wants = autopilot || (flies ? p.Mem > 0 || ask.Throttle > 0 : ask.Lift > 0 || ask.Forward != 0 && (c.CellCount > 0 || pattern == FlightPattern.Ship) || ask.Side != 0 && pattern == FlightPattern.Ship);
         if (wants && !armed)
         {
             armed = true;
@@ -588,16 +607,41 @@ public static partial class ConstructFlight
         return output[0];
     }
 
+    /// <summary>Mouse aim is on and somebody is in its seat.</summary>
+    private static bool MouseOn(Construct c, in CPart p, ConstructPartDef d, int seat) =>
+        ConstructConfig.Get(p, d, CfgKey.MouseAim, 0) >= 0.5f && seat >= 0 && seat < c.PartCount && (c.Parts[seat].Keys & CPart.Occupied) != 0;
+
+    /// <summary>
+    /// Does the look of whoever sits in <paramref name="seat"/> steer this craft's nose (a stabilizer on Ship keys with mouse aim, taking its orders from that seat)? Then the view
+    /// doesn't turn with the seat (the craft turns to it, and would chase it for ever), and in third person the orbit camera is the look. On every peer, from the structure alone.
+    /// </summary>
+    public static bool MouseSteers(Construct c, int seat)
+    {
+        if (c.StabCount == 0 || c.Stabs[0].Part >= c.PartCount || seat < 0 || seat >= c.PartCount)
+            return false;
+        ref var p = ref c.Parts[c.Stabs[0].Part];
+        return KeysOf(c, p, p.D) == FlightPattern.Ship && ConstructConfig.Get(p, p.D, CfgKey.MouseAim, 0) >= 0.5f && SeatFor(c, c.Stabs[0].Part) == seat;
+    }
+
+    /// <summary>Is a stabilizer on Ship keys flying this craft this tick (in space it then turns by its jets, not held level: GameSpaceLaunch.cs)?</summary>
+    public static bool FliesShip(Construct c)
+    {
+        if (!c.StabOwns || c.StabCount == 0 || c.Stabs[0].Part >= c.PartCount)
+            return false;
+        ref var p = ref c.Parts[c.Stabs[0].Part];
+        return KeysOf(c, p, p.D) == FlightPattern.Ship;
+    }
+
     /// <summary>The axes asked of it this tick, by its keys, with what is wired in added.</summary>
     private struct Asked
     {
         public float Pitch, Roll, Yaw, Lift, Throttle, Forward, Side; // -1..1: nose up, right wing down, nose right, up, the main engines; forward and right over the ground
     }
 
-    private static Asked Ask(FlightPattern pattern, ushort keys, ReadOnlySpan<float> input, bool invert)
+    private static Asked Ask(FlightPattern pattern, ushort keys, ReadOnlySpan<float> input, bool invert, bool mouse)
     {
         var ws = ((keys & (ushort)Buttons.Forward) != 0 ? 1f : 0f) - ((keys & (ushort)Buttons.Back) != 0 ? 1f : 0f);
-        if (invert)
+        if (invert && pattern != FlightPattern.Ship) // (a ship's W and S push it along, they never pitch it)
             ws = -ws;
         var ad = ((keys & (ushort)Buttons.Right) != 0 ? 1f : 0f) - ((keys & (ushort)Buttons.Left) != 0 ? 1f : 0f);
         var qe = ConstructEdits.RollOf(keys);
@@ -619,6 +663,15 @@ public static partial class ConstructFlight
                 a.Pitch = Math.Clamp(a.Pitch - ws, -1, 1);
                 a.Roll = Math.Clamp(a.Roll + ad, -1, 1); // (A and D lean it; Q and E spin it)
                 a.Yaw = Math.Clamp(input[InYaw] + qe, -1, 1);
+                break;
+            case FlightPattern.Ship:
+                a.Forward = Math.Clamp(ws + a.Throttle, -1, 1); // (along its own nose, whichever way that points)
+                a.Roll = Math.Clamp(a.Roll + qe, -1, 1);
+                if (mouse)
+                {
+                    a.Side = ad; // (the mouse has the nose: A and D slide it)
+                    a.Yaw = Math.Clamp(input[InYaw], -1, 1);
+                }
                 break;
             default:
                 a.Forward = Math.Clamp(ws + a.Throttle - a.Pitch, -1, 1); // (W: forward, by a push if it has one, else it leans into it)
@@ -738,7 +791,7 @@ public static partial class ConstructFlight
         var carried = 1 - c.AntiShare;
         var weight = c.Mass * g * carried;
         var floats = c.CellCount > 0 && c.LiftNow > 0.4f * MathF.Max(1, weight); // (her gas keeps her level, and she goes as a ship goes)
-        var lim = pattern == FlightPattern.Plane ? PlaneLimits : pattern == FlightPattern.Rocket ? RocketLimits : floats ? ShipLimits : RotorLimits;
+        var lim = pattern == FlightPattern.Plane ? PlaneLimits : pattern == FlightPattern.Rocket ? RocketLimits : pattern == FlightPattern.Ship ? SpaceLimits : floats ? ShipLimits : RotorLimits;
         var preset = Presets[Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.FlightPreset, 0), 0, Presets.Length - 1)];
         var maxTilt = Rad(Setting(p, d, CfgKey.MaxTilt, lim.X * preset.Z));
         var maxTurn = Rad(Setting(p, d, CfgKey.MaxTurn, lim.Y * preset.X));
@@ -752,7 +805,7 @@ public static partial class ConstructFlight
         var climbResponse = Gain(p, d, CfgKey.ClimbResponse) * preset.Y;
         var strength = ConstructConfig.Get(p, d, CfgKey.Strength, 100) / 100f;
         var level = ConstructConfig.Get(p, d, CfgKey.Level, 1) >= 0.5f;
-        var mouse = ConstructConfig.Get(p, d, CfgKey.MouseAim, 0) >= 0.5f && seat >= 0 && seat < c.PartCount && (c.Parts[seat].Keys & CPart.Occupied) != 0;
+        var mouse = MouseOn(c, p, d, seat);
         var trimPitch = Rad(ConstructConfig.Get(p, d, CfgKey.TrimPitch, 0));
         var trimRoll = Rad(ConstructConfig.Get(p, d, CfgKey.TrimRoll, 0));
         if (s.Repulsors)
@@ -947,6 +1000,27 @@ public static partial class ConstructFlight
                 }
                 yawRate = ask.Yaw * rates.Z;
                 break;
+            case FlightPattern.Ship:
+            {
+                // No level held: the nose goes where the seat looks, by the shortest turn, whichever way it points now (straight down too).
+                float pitchTo = 0, yawTo = 0;
+                if (mouse)
+                {
+                    var cos = Math.Clamp(Vector3.Dot(a.Front, look), -1, 1);
+                    var axis = Vector3.Cross(a.Front, look);
+                    var sin = axis.Length();
+                    var turn = sin > 1e-5f ? axis * (MathF.Atan2(sin, cos) / sin) : cos < 0 ? a.Up * MathF.PI : Vector3.Zero; // (right behind: over the top)
+                    pitchTo = Vector3.Dot(turn, a.Right);
+                    yawTo = -Vector3.Dot(turn, a.Up);
+                }
+                acroPitch = Math.Clamp(Toward(pitchTo, loop * response.X, s.Turning.X, s.Inertia.X) + ask.Pitch * rates.X, -rates.X, rates.X);
+                yawRate = Math.Clamp(Toward(yawTo, loop * response.Z, s.Turning.Z, s.Inertia.Z) + ask.Yaw * rates.Z, -rates.Z, rates.Z);
+                if (ask.Roll != 0 || !level)
+                    acroRoll = ask.Roll * rates.Y;
+                else
+                    acroRoll = Math.Clamp(-loop * response.Y * a.Roll * Math.Clamp(2f * MathF.Cos(a.Pitch), 0, 1), -rates.Y, rates.Y); // (let go, it rolls back upright, but not while it points up or down)
+                break;
+            }
             default:
                 if (!level)
                 {
@@ -988,7 +1062,9 @@ public static partial class ConstructFlight
         var speedNow = c.Vel.Length();
         var surface = pattern == FlightPattern.Plane ? MathF.Min(1, PlaneSpeed / MathF.Max(speedNow, PlaneSpeed * 0.5f)) : 1f;
         surface *= surface;
-        var settling = armed && (c.Vel.LengthSquared() > 0.25f || !float.IsNaN(acroPitch) || pattern != FlightPattern.Plane); // (a plane parked: its surfaces just follow the stick)
+        var settling = armed && pattern != FlightPattern.Ship && (c.Vel.LengthSquared() > 0.25f || !float.IsNaN(acroPitch) || pattern != FlightPattern.Plane); // (a plane parked: its surfaces just follow the stick; a ship's turns are long and one way, and a hold wound up on one would swing it past the next)
+        if (pattern == FlightPattern.Ship)
+            s.Integral = default;
         var mainLevel = MathF.Max(0.1f, pattern == FlightPattern.Rocket ? p.Mem : 1f);
         for (var axis = 0; axis < 3; axis++)
         {
@@ -1059,6 +1135,24 @@ public static partial class ConstructFlight
             if (!f.CanDo(FlightEffectors.Up) || c.BurnerCount + c.CellCount > 0)
                 Height(c, ref s, ref p, liftForce, climbErr, height, climb, output, dt);
         }
+        else if (pattern == FlightPattern.Ship)
+        {
+            // Along its own axes: what the keys ask for, else stopped (every way it has a push for); its weight held up whichever way it lies.
+            // Let go, it holds its height as a rotorcraft does (the height loop above), from where it can stop.
+            var letGo = ask.Forward == 0 && ask.Side == 0 && ask.Lift == 0 && !autopilot;
+            if (!letGo)
+            {
+                s.HoldAlt = height + (climb > 0 ? climb * climb / (2 * stopping) : 0);
+                s.AltHeld = true;
+            }
+            var wantVel = a.Front * (ask.Forward * maxSpeed) + a.Right * (ask.Side * maxSpeed) + a.Up * (ask.Lift * (ask.Lift > 0 ? maxClimb : maxDescent)) + (letGo ? up * climbWant : Vector3.Zero);
+            var push = c.Mass * 3 * ground * (wantVel - c.Vel) + up * MathF.Max(0, weight - c.LiftNow);
+            demand[FlightEffectors.Forward] = Vector3.Dot(push, a.Front);
+            demand[FlightEffectors.Up] = Vector3.Dot(push, a.Up);
+            demand[FlightEffectors.Right] = Vector3.Dot(push, a.Right);
+            forwardPush = s.FrontForce > 0 ? Math.Clamp(demand[FlightEffectors.Forward] / s.FrontForce, -1, 1) : 0;
+            side = s.UpForce > 0 ? Math.Clamp(demand[FlightEffectors.Right] / s.UpForce, -1, 1) : 0;
+        }
         else if (pattern == FlightPattern.Rocket)
         {
             if (holdAlt)
@@ -1074,7 +1168,15 @@ public static partial class ConstructFlight
         // The same demands on its outputs, for whatever is wired by hand.
         output.Clear();
         var top = rotor ? s.UpForce > 0 ? Math.Clamp(liftForce / s.UpForce, 0, 1) : output[OutLift] : 0;
-        if (rotor)
+        if (pattern == FlightPattern.Ship)
+        {
+            output[OutThrottle] = MathF.Max(0, forwardPush);
+            output[OutReverse] = MathF.Max(0, -forwardPush);
+            output[OutStrafeRight] = MathF.Max(0, side);
+            output[OutStrafeLeft] = MathF.Max(0, -side);
+            output[OutLift] = s.UpForce > 0 ? Math.Clamp(demand[FlightEffectors.Up] / s.UpForce, 0, 1) : 0;
+        }
+        else if (rotor)
         {
             output[OutThrottle] = MathF.Max(0, forwardPush);
             output[OutReverse] = MathF.Max(0, -forwardPush);
@@ -1108,6 +1210,16 @@ public static partial class ConstructFlight
             output[OutRightAileron] = -units.Y;
         }
         s.AltIntegral = Math.Clamp(s.AltIntegral + 0.3f * kv * Gain(p, d, CfgKey.ClimbHold) * climbErr * dt, -0.5f * g, 0.5f * g);
+    }
+
+    /// <summary>
+    /// The turning rate (rad/s) that takes an angle <paramref name="err"/> away: <paramref name="gain"/> times it, but never faster than it can be stopped in what is left with
+    /// half the twist it has (<paramref name="torque"/> N m on <paramref name="inertia"/> kg m2), so a heavy ship with small jets comes round slowly and doesn't swing past.
+    /// </summary>
+    private static float Toward(float err, float gain, float torque, float inertia)
+    {
+        var most = torque > 0 && inertia > 0 ? MathF.Sqrt(2 * 0.5f * torque / inertia * MathF.Abs(err)) : float.MaxValue;
+        return Math.Clamp(gain * err, -most, most);
     }
 
     /// <summary>The lean that gives this acceleration over the ground.</summary>

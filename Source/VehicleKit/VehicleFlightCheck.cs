@@ -47,7 +47,7 @@ public static class VehicleFlightCheck
     /// <summary>The most tilt at rest (degrees), and at any moment of the flight.</summary>
     public const float MaxRestTilt = 8f, MaxFlightTilt = 35f;
 
-    public readonly record struct Result(bool Built, float RestTilt, float Climb, float HoverDrift, float HoverTilt, float HoverSpeed, float Forward, float WorstTilt, float Lift, double Ms, string Why)
+    public readonly record struct Result(bool Built, float RestTilt, float Climb, float HoverDrift, float HoverTilt, float HoverSpeed, float Forward, float WorstTilt, float Lift, double Ms, string Why, float Turned = float.NaN)
     {
         public bool Ok => Why.Length == 0;
 
@@ -66,7 +66,7 @@ public static class VehicleFlightCheck
         public string Line => Plane
             ? $"flight (plane): stalls at {Stall:0} m/s, rotated at {RunSpeed:0} m/s after {RunDist:0} m, climbed {Climb:0.0} m in {PlaneClimbTicks / (float)World.TickRate:0.#} s, level drift {LevelDrift:0.0} m and {HeadingDrift:0.0} deg, " +
               $"turned {Turned:0} deg, worst tilt {WorstTilt:0}, centre of mass {Balance:0.00} m ahead of the lift, {Ms:0} ms"
-            : $"flight: climbed {Climb:0.0} m in {ClimbTicks / (float)World.TickRate:0.#} s, hover drift {HoverDrift:0.00} m, hover tilt {HoverTilt:0.0} deg at {HoverSpeed:0.0} m/s, forward {Forward:0.0} m, worst tilt {WorstTilt:0}, lift {Lift:0.00}x its weight, {Ms:0} ms";
+            : $"flight: climbed {Climb:0.0} m in {ClimbTicks / (float)World.TickRate:0.#} s, hover drift {HoverDrift:0.00} m, hover tilt {HoverTilt:0.0} deg at {HoverSpeed:0.0} m/s, forward {Forward:0.0} m, worst tilt {WorstTilt:0}{(float.IsNaN(Turned) ? "" : $", nose {Turned:0} deg down on the look")}, lift {Lift:0.00}x its weight, {Ms:0} ms";
     }
 
     /// <summary>What the gate has done in this process, for the command line's last line.</summary>
@@ -142,8 +142,28 @@ public static class VehicleFlightCheck
             return Done(start, r with { Why = $"W for {ForwardTicks / (float)World.TickRate:0.#} s took it {moved:0.00} m forward (at least {MinForward:0.#})" }, gate);
         if (r.WorstTilt > MaxFlightTilt)
             return Done(start, r with { Why = $"it tipped {r.WorstTilt:0} degrees in flight (at most {MaxFlightTilt:0})" }, gate);
+        if (ConstructFlight.KeysOf(c, c.Parts[c.Stabs[0].Part], c.Parts[c.Stabs[0].Part].D) == FlightPattern.Ship && ConstructConfig.Get(c.Parts[c.Stabs[0].Part], c.Parts[c.Stabs[0].Part].D, CfgKey.MouseAim, 0) >= 0.5f)
+        {
+            // Ship keys: the nose follows the look. Looked 70 degrees down (straight ahead as it was), it should point down past 55 in six seconds (a heavy ship on small jets comes round slowly), then back level.
+            ref var sp = ref c.Parts[seat];
+            sp.AimYaw = MathF.Atan2(fwd.X, -fwd.Z);
+            sp.AimPitch = -70 * MathF.PI / 180;
+            Fly(w, q, place, c, 0, ShipTurnTicks, ref r);
+            var down = -Pitch(c);
+            sp.AimPitch = 0;
+            Fly(w, q, place, c, 0, ShipTurnTicks, ref r);
+            var back = Pitch(c);
+            r = r with { Why = down < 55 ? $"Ship keys: looked 70 degrees down, the nose went {down:0} down in {ShipTurnTicks / (float)World.TickRate:0} s (at least 55; {Attitude(c)})" : MathF.Abs(back) > 10 ? $"Ship keys: looked level again, the nose stayed {back:0} degrees off ({Attitude(c)})" : "" };
+            r = r with { Turned = down };
+        }
         return Done(start, r, gate);
     }
+
+    /// <summary>Ship keys: how long the nose has to come round to a look (each way).</summary>
+    public const int ShipTurnTicks = 6 * World.TickRate;
+
+    /// <summary>The stabilizer's nose above level, degrees.</summary>
+    private static float Pitch(Construct c) => MathF.Asin(Math.Clamp(Forward(c, c.Rot).Y, -1, 1)) * 180 / MathF.PI;
 
     /// <summary>A plane's ticks: the most for the take-off run and the rotation, then the climb, the level flight (settling, then measured) and the turn.</summary>
     public const int PlaneRunTicks = 1200, RotateTicks = 180, PlaneClimbTicks = 240, LevelSettleTicks = 300, ThrottleBackTicks = 36, LevelTicks = 180, TurnTicks = 180;

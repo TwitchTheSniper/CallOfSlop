@@ -171,6 +171,7 @@ public static unsafe partial class Program
                 g.SandboxSend(CActKind.SeatKeys, part: (byte)keys);
             }
             SeatedFinger(g, me, in h, now); // (a pilot's finger on a Flight Panel: Program.SandboxFlight.cs)
+            SeatedRadar(g, me); // (the radar key: Program.SandboxRadar.cs)
             return true;
         }
         if (_sbSeatKeys > 0)

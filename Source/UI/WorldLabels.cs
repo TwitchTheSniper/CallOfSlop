@@ -87,7 +87,7 @@ public static class Hud
     /// (metres, 0 = any) hides it further away. Returns false (nothing drawn) when the point is behind the camera,
     /// off screen or too far, so a caller can fall back to a HUD line. Call between ImGui's NewFrame and Render.
     /// </summary>
-    public static bool WorldLabel(Vector3 pos, ImString text, Vector3 colour, float alpha = 1f, float size = 0f, float maxDistance = 0f)
+    public static bool WorldLabel(Vector3 pos, ImString text, Vector3 colour, float alpha = 1f, float size = 0f, float maxDistance = 0f, Vector2 offset = default)
     {
         var cam = Camera;
         if (!cam.Valid || alpha <= 0f || !float.IsFinite(pos.X + pos.Y + pos.Z) || !CanDraw())
@@ -101,7 +101,8 @@ public static class Hud
         if (size <= 0f)
             size = ImGui.GetFontSize();
         var w = TextWidth(text, size);
-        var (x, y) = NameTagLayout.Clamp(s.X - w / 2, s.Y - size, w, size, area.X, area.Y, 4f);
+        s += offset; // (pixels: a column of labels about one point)
+        var (x, y) = NameTagLayout.Clamp(offset.X < 0 ? s.X - w : offset.X > 0 ? s.X : s.X - w / 2, s.Y - size, w, size, area.X, area.Y, 4f); // (left of the point it ends there, right of it it starts there)
         ShadowText(ImGui.GetBackgroundDrawList(), new float2(org.X + x, org.Y + y), size, text, colour, alpha);
         return true;
     }
