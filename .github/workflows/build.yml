@@ -1,6 +1,8 @@
 # Builds the game and runs the headless self-test on every push and pull request.
-# The self-test (CallOfSlop.exe --selftest) checks maps, map files, movement, perks, melee,
-# attachments, packets, full bot matches, the map vote and the server browser. See Source/App/SelfTest.cs.
+# The self-test (CallOfSlop.exe --selftest) checks what Sandbox builds on: constructs and their parts, building tools,
+# physics, driving and riding, production and logistics, Sandbox networking and saved worlds, space, planetoids and
+# digging, plus the allocation and source checks. The archived arena, Zombies and map-pack sections (SelfTest.Archived)
+# are skipped; --selftest-only still runs them by name. See Source/App/SelfTest.cs.
 name: Build and self-test
 
 # Which jobs run: main runs BOTH Linux and Windows on every push (the repo is public, so Actions minutes are free, and some
