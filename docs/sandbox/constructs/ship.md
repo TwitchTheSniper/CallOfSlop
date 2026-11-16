@@ -74,10 +74,12 @@ reach.
 - The stern pods are fuel tanks (2,500 l each) carrying a **Rust Bucket Drive** on their tails (600 kN, pushes forward)
   and a **Rust Bucket Lift Jet** under each (800 kN, down). Two **saddle tanks** on the forward flanks (1,000 l each) carry
   two more lift jets, so the lifters stand round the centre of mass and the hover hold keeps it level.
-- Every drive and lift jet is a **pod** (ship works, docs/sandbox/design/ship-works.md; Karl's answer 7: "the Rust Bucket
-  pods are nacelles"): `works.service: "outside"`, its works in its own cowl, so it needs nothing inside the hull but is
-  serviced only at the part, on a space walk or landed. The drives swing a 12 degree gimbal. Each pod has a grab rail along
-  its top and a tread-plate step under its outboard flank to reach it by.
+- Each stern pod is a **nacelle** (ship works, docs/sandbox/design/ship-works.md section 15; Karl's answer 7: "the Rust
+  Bucket pods are nacelles"): the tank forward, then a hollow clad engine housing whose tail plate is a mount. The drive
+  hangs on the plate outside and its own **Drive Core S** on the plate's inner face, on the drive's axis. The housing has a
+  **Service Hatch** (a swing door) on its outboard flank, a grab rail along its top and a tread-plate step under it: the
+  core is serviced outside, on a space walk or landed. The drives swing a 12 degree gimbal. The lift jets are whole parts
+  with no works (Karl, 2026-11-16: main drives only).
 - **RCS Thrusters** (80 kN) stand on each tank's top, bottom and outboard face, and a **Heavy RCS Thruster** (250 kN)
   on each saddle's front, pushing back (`ShipParts.Rcs`, on pads by `RcsMount`).
 - The pilot's Seat (port) is wired to a small Flight Stabilizer on the deck's module socket, on Ship keys with mouse aim
@@ -95,12 +97,12 @@ only while somebody alive is aboard: the first breakdown about 4 crewed minutes 
 14. The server walks the players, not the bodies, so the cost is bounded by the players. A part picked at random creaks
 and groans for 90 s, louder and closer together, and the people aboard that ship are told which one ("the aft starboard
 lift jet", "the drive core"). It picks among a hull drive's works pieces (Drive Core, Fuel Pump, Coolant Exchanger: the
-nozzle itself is not picked) and the thrusters with no works inside (pods and whole jets).
+nozzle itself is not picked), a nacelle's core, and the whole jets.
 
 The attach tool's Fire at the part sees to it for nothing in that time. A works piece stands inside the hull, so the
-Engineer's Panel in the engine room can see to its warning too. A pod or a jet hangs outside: the panel only reports it
-(which part, where), and it is seen to at the part, on a space walk or landed (the rust bucket's drives and lift jets are
-pods: ship works, docs/sandbox/design/ship-works.md 7). Left alone it fails with a bang and stops working (Broken, its
+Engineer's Panel in the engine room can see to its warning too. A nacelle's core or a jet is outside the hull: the panel only reports it
+(which part, where), and it is seen to at the part, on a space walk or landed (the rust bucket's drive cores are in
+nacelles: ship works, docs/sandbox/design/ship-works.md 15). Left alone it fails with a bang and stops working (Broken, its
 health kept: that is how a breakdown is told from a part shot to pieces, in a save too) until the attach tool repairs it
 at the part for 3 metal. No new one starts on a ship while two of its parts are broken down. A works piece shot to pieces
 is mended where it stands too, paid by its mass (ShipWorks.json's `mendPerTonne`). The panel's name is read by the code
