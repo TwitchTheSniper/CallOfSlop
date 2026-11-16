@@ -119,7 +119,7 @@ public static class RadarHud
             var n = game.RadarContactCount;
             var reach = game.RadarRange;
             _headLine = $"RADAR {(reach >= 1000 ? $"{reach / 1000f:0.#} km" : $"{reach:0} m")}, {n} contact{(n == 1 ? "" : "s")}, ring {(range >= 1000 ? $"{range / 1000f:0.#} km" : $"{range:0} m")}";
-            _keyLine = game.RadarCanLock ? $"{Keybinds.Name(bind)}: lock the nearest to your aim" : "Scope only: no missile rack to lock for";
+            _keyLine = game.RadarCanLock ? $"{Keybinds.Name(bind)}: lock the nearest to your aim" : "Scope only: wire it to a Fire Director to lock";
         }
         var edge = centre.X + r;
         var ty = centre.Y + r + 6 * scale;

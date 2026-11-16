@@ -262,7 +262,7 @@ public static class ConstructLogic
                     case CLogic.Director:
                     {
                         // A fire director (ConstructWeapons.cs): the seat wired into it, else the driver's; Count remembers it for the guns (plus one).
-                        var seat = count[i] > 0 && firstFrom[i] < c.PartCount && c.Parts[firstFrom[i]].D.Role == PartRole.Seat ? firstFrom[i] : c.DriveSeat;
+                        var seat = count[i] > 0 && firstFrom[i] < c.PartCount && c.Parts[firstFrom[i]].D.Role == PartRole.Seat ? firstFrom[i] : count[i] > 1 ? WiredSeat(c, i) : c.DriveSeat;
                         var manned = seat >= 0 && seat < c.PartCount && (c.Parts[seat].Keys & CPart.Occupied) != 0;
                         p.Count = (ushort)(manned ? seat + 1 : 0);
                         next = manned && (c.Parts[seat].Keys & ConstructParts.KeyFire) != 0 ? 1 : 0;
@@ -517,6 +517,15 @@ public static class ConstructLogic
     /// The transmission's gear (milestone 3): a signal wired into it picks the gear (1 the first; rounded, held inside the
     /// gears it has); unwired, or a signal below 0.5, it stays in the gear of its setting (the linking tool's R).
     /// </summary>
+    /// <summary>A Fire Director's seat when more than one wire comes in and the first isn't a seat (a radar wired in beside it): the first seat wired into it, else the driver's.</summary>
+    private static int WiredSeat(Construct c, int director)
+    {
+        for (var w = 0; w < c.WireCount; w++)
+            if (c.Wires[w].To == director && c.Wires[w].From < c.PartCount && c.Parts[c.Wires[w].From].D.Role == PartRole.Seat)
+                return c.Wires[w].From;
+        return c.DriveSeat;
+    }
+
     private static void SetGear(Construct c, bool wired, float signal)
     {
         var tr = c.Transmission;

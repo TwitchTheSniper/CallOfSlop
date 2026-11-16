@@ -19,7 +19,7 @@ public sealed partial class Game
     /// <summary>The contact the local player has locked (0: none), as sent to the server.</summary>
     public ushort RadarLock;
 
-    /// <summary>Does the radar key lock on this craft (it carries a missile rack: <see cref="ConstructRadar.CanLock"/>)?</summary>
+    /// <summary>Does the radar key lock on this craft (its radar is wired to a working Fire Director: <see cref="ConstructRadar.CanLock"/>)?</summary>
     public bool RadarCanLock;
 
     private ushort _radarBody;
