@@ -278,3 +278,15 @@ When the body reaches its spot (a lifter's put) or the root takes it (bays that 
 6. **Limits**: recommended depth 4, 64 uses a blueprint, 256 in a tree, history of every locked version plus the last 8.
 7. **Arms carry bodies too**: recommended yes, within their payload and largest piece (a Plasma arm: 8 t, 2.5 by 10 m), so
    small submodules need no crane.
+
+## The user's answers (2026-11-16)
+
+These override the text above where they differ.
+
+1. **No taker:** after 30 s with no station taking a use, the main station builds it itself, part by part.
+2. **Takers:** any station on the same construct that the main station's network reaches, each with a Sub-jobs setting (Auto or Off).
+3. **Big fit time:** 5 s + 1 s per tonne, 60 s at most.
+4. **Edit rule: parts only.** Adding, removing or moving parts in a use breaks its link (the save asks: plain parts, new version, new blueprint). Paint and settings changes do not break it: they are kept per use, as overrides on top of the linked blueprint, and survive a live update of that blueprint.
+5. **Changed delivery: repair it in the bay.** A delivered body that no longer matches its use (parts missing, broken or shot off) is taken: the station fits the body, then orders and fits the missing parts itself, as ordinary steps. A body with parts the use doesn't have (added or wrong parts) is still refused with the reason.
+6. **Limits: depth 8, 128 uses per blueprint, 1,024 per tree.** Old versions kept: any that a lock points at, plus the last 8. Costing and flattening a tree stays sliced within the 8 ms tick budget at these limits: measure it on a full-size tree.
+7. **Carriers:** Loader Arms carry a submodule within their payload; bigger ones need a Bridge Crane or the bay hand-off.
