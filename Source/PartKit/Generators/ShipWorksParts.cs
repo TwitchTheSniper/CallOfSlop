@@ -293,9 +293,7 @@ public sealed class ShipWorksParts : IPartGenerator
 
     public void Make(PartOutput o)
     {
-        var t = ShipWorks.Load(Path.Combine(o.Root, "Constructs", "ShipWorks.json"));
-        if (t.Problem.Length > 0)
-            throw new InvalidOperationException(t.Problem);
+        var t = Works.Table();
         List<Part> parts = [];
         for (var s = 0; s < 3; s++)
             parts.Add(Mount(s));
@@ -321,11 +319,11 @@ public static class Works
     private static ShipWorks? _table;
 
     /// <summary>The table, read from the repo (the part kit runs from it).</summary>
-    public static ShipWorks Table(PartOutput o)
+    public static ShipWorks Table()
     {
         if (_table != null)
             return _table;
-        var t = ShipWorks.Load(Path.Combine(o.Root, "Constructs", "ShipWorks.json"));
+        var t = ShipWorks.Load(Path.Combine(PartKit.FindRoot(), "Constructs", "ShipWorks.json"));
         if (t.Problem.Length > 0)
             throw new InvalidOperationException(t.Problem);
         return _table = t;

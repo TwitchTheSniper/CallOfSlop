@@ -203,6 +203,9 @@ public static class ConstructWorks
     /// <summary>Is this part a works piece or a mount?</summary>
     public static bool IsPiece(ConstructPartDef d) => d.WorksKind != WorksKind.None;
 
+    /// <summary>A drive's works piece (a core, pump, exchanger, turbopump, manifold or conditioner): what a breakdown picks on a hull drive.</summary>
+    public static bool IsDrivePiece(ConstructPartDef d) => d.WorksKind is >= WorksKind.Core and <= WorksKind.Conditioner;
+
     /// <summary>Either: it has a works line on the look.</summary>
     public static bool Has(ConstructPartDef d) => IsHead(d) || IsPiece(d);
 

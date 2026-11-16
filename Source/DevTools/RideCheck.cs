@@ -14,9 +14,9 @@ public static class RideCheck
     public static int Cli(string[] args)
     {
         string Arg(string name, string def) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() ?? def;
-        var names = Arg("--ride-check", "Rust Bucket,Zero Day Frigate,Halberd Frigate,Magpie Mining Ship");
+        var names = Arg("--ride-check", "Rust Bucket,Zero Day Frigate,Magpie Mining Ship");
         if (names.StartsWith("--"))
-            names = "Rust Bucket,Zero Day Frigate,Halberd Frigate,Magpie Mining Ship";
+            names = "Rust Bucket,Zero Day Frigate,Magpie Mining Ship";
         var speed = float.Parse(Arg("--speed", "10"), System.Globalization.CultureInfo.InvariantCulture);
         var turn = float.Parse(Arg("--turn", "10"), System.Globalization.CultureInfo.InvariantCulture) * MathF.PI / 180f;
         var spots = int.Parse(Arg("--spots", "8"));

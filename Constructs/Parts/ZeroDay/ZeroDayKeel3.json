@@ -29,6 +29,9 @@
       "face": "+z"
     }
   ],
+  "worksPiece": {
+    "kind": "mount"
+  },
   "boxes": [
     {
       "min": [

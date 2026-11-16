@@ -113,6 +113,9 @@ public sealed class Part
         var name = (string)D["name"]!;
         if (Boxes.Count is 0 or > 256 || Sockets.Count is 0 or > 64 || name.Length > 32)
             throw new InvalidOperationException($"{name}: {Boxes.Count} boxes, {Sockets.Count} sockets");
+        // A ship's thruster over jetMost has works behind it or is a pod (docs/sandbox/design/ship-works.md 4.1): Works.Head writes the block.
+        if (D.Get("group") is "Ship" && D.Get("thruster") is PyDict th && D.Get("works") is null && th.Get("force") is { } f && Convert.ToDouble(f) > Generators.Works.Table().JetMost)
+            throw new InvalidOperationException($"{name}: a Ship thruster of {Convert.ToDouble(f) / 1e3:0} kN with no works block: over ShipWorks.json's jetMost ({Generators.Works.Table().JetMost / 1e3:0} kN) it needs Works.Head (works inside, or a pod)");
         PartZFight.Resolve(Boxes, Sockets); // no two drawn faces on one plane (CLAUDE.md, "No coplanar faces")
         var d = new PyDict(D)
         {

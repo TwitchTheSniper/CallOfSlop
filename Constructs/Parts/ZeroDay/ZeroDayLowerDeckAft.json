@@ -12,6 +12,9 @@
   "material": "steel",
   "color": "#bdb9ad",
   "attachSeconds": 15.0,
+  "worksPiece": {
+    "kind": "mount"
+  },
   "boxes": [
     {
       "min": [
@@ -173,36 +176,6 @@
     },
     {
       "min": [
-        2.595,
-        0.125,
-        41.455
-      ],
-      "max": [
-        2.955,
-        3.105,
-        41.815
-      ],
-      "color": "#c9c2a8",
-      "detail": true,
-      "finish": "lagging"
-    },
-    {
-      "min": [
-        2.585,
-        0.825,
-        41.445
-      ],
-      "max": [
-        2.965,
-        0.945,
-        41.825
-      ],
-      "color": "#a8402c",
-      "detail": true,
-      "finish": "painted steel"
-    },
-    {
-      "min": [
         2.005,
         2.825,
         24.925
@@ -211,36 +184,6 @@
         2.105,
         2.925,
         41.375
-      ],
-      "color": "#a8402c",
-      "detail": true,
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        9.795,
-        0.125,
-        41.455
-      ],
-      "max": [
-        10.155,
-        3.105,
-        41.815
-      ],
-      "color": "#c9c2a8",
-      "detail": true,
-      "finish": "lagging"
-    },
-    {
-      "min": [
-        9.785,
-        0.825,
-        41.445
-      ],
-      "max": [
-        10.165,
-        0.945,
-        41.825
       ],
       "color": "#a8402c",
       "detail": true,
@@ -404,6 +347,15 @@
         2.475,
         0.125,
         39.875
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "liftCore",
+      "at": [
+        3.275,
+        0.125,
+        35.725
       ],
       "dir": "+y"
     },
