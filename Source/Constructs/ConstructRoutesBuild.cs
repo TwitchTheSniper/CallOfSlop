@@ -120,7 +120,12 @@ public static partial class ConstructRoutes
     }
 
     /// <summary>Builds blueprint link <paramref name="s"/> through the linking tool's rules (<paramref name="partOf"/>: each step's part). Null, or why not.</summary>
-    public static string? BuildLink(ConstructWorld world, Construct c, LinkSpec s, ReadOnlySpan<int> partOf)
+    /// <remarks>
+    /// On a pre-built (<paramref name="bp"/> given: anchored, a frozen base, or a <c>"conduit"</c> ship) a link with no nodes of its own is
+    /// laid by the auto-router as conduit along the walls, floors and ceilings (ConstructConduit.cs) as entry <paramref name="entry"/>;
+    /// one it can't lay is built straight as before.
+    /// </remarks>
+    public static string? BuildLink(ConstructWorld world, Construct c, LinkSpec s, ReadOnlySpan<int> partOf, ConstructBuild.Blueprint? bp = null, int entry = -1, long conduitEnd = 0)
     {
         if (s.To < 0 || s.To >= partOf.Length || s.Branch < 0 && (s.From < 0 || s.From >= partOf.Length))
             return "no such step";
@@ -146,6 +151,12 @@ public static partial class ConstructRoutes
             return DropOrWhy(world, c, s, from, s.FromPort, "output");
         if (s.ToPort.Length > 0 && !TryPortByName(c.DefOf(to), s.Type, s.ToPort, input: true, out toPort) && !(s.Type == RouteType.Data && HasDataPort(c.DefOf(to), s.ToPort, true)))
             return DropOrWhy(world, c, s, to, s.ToPort, "input");
+        if (bp != null && from >= 0 && ConstructConduit.Lays(bp, entry - bp.Wires.Count) && ConstructConduit.TryLay(world, c, bp, entry, s.Type, from, fromPort, to, toPort, conduitEnd))
+        {
+            c.Routes[c.RouteCount - 1].Cursor = BlueprintMark;
+            c.Routes[c.RouteCount - 1].Paint = s.Paint;
+            return null;
+        }
         Span<CRouteNode> nodes = s.Nodes.Count <= OnStack ? stackalloc CRouteNode[OnStack] : new CRouteNode[s.Nodes.Count];
         for (var i = 0; i < s.Nodes.Count; i++)
         {

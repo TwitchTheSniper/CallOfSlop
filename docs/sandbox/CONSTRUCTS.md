@@ -28,6 +28,10 @@ The tail-sitter combat frigate: six decks up a ladder spine, four PDCs, a spinal
 
 The first Survival ship: a lofted two-deck miner with four drills on rams through its keel, ore hoppers on its flanks; how it flies.
 
+## [The Zero Day torpedo frigate](constructs/torpedo-frigate.md), 4 KB
+
+The IT Department's warship: a faceted lofted hull, two decks the length of the ship, torpedo sponsons, a spinal railgun, PDCs, flares.
+
 Each file below lists its `## ` sections with their headings exactly as they were in the old single file, so a code
 comment such as `CONSTRUCTS.md "Extrusion"` is found by searching this index for the heading. To look inside a file,
 `grep -n '^## ' docs/sandbox/constructs/FILE.md` and read the section you need. New text goes into the file that holds
@@ -112,7 +116,7 @@ Links between constructs and power, routed links, world links.
 
 ## [Weapons](constructs/weapons.md), 93 KB
 
-Construct weapons, merged receivers, weapon builder parts in Sandbox, the Gun Workbench.
+Construct weapons (a craft's radar and lock among them), merged receivers, weapon builder parts in Sandbox, the Gun Workbench.
 
 - Construct weapons (milestone 3)
 - Merged receivers

@@ -1,0 +1,475 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Zero Day Railgun",
+  "description": "The Zero Day's railgun: one slug at great speed through anything in a line. Laid along the spine, so the ship is the aim.",
+  "group": "Ship",
+  "section": "Zero Day frigate",
+  "role": "gun",
+  "tool": "welder",
+  "gun": {
+    "damage": 900,
+    "rpm": 6,
+    "spread": 0.04,
+    "range": 800,
+    "mag": 1,
+    "reload": 7.0,
+    "flags": [
+      "penetrating"
+    ],
+    "kick": 3500,
+    "fx": "cannon",
+    "speed": 1100,
+    "soundOf": "Leviathan .50",
+    "muzzle": [
+      0,
+      0.3,
+      -32.92
+    ]
+  },
+  "centreSockets": false,
+  "mass": 9000.0,
+  "health": 6000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#3b4148",
+  "attachSeconds": 12.0,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        0.0,
+        -4.0
+      ],
+      "max": [
+        0.5,
+        0.7,
+        0.0
+      ],
+      "color": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.3,
+        0.1,
+        -32.5
+      ],
+      "max": [
+        0.3,
+        0.5,
+        -4.0
+      ],
+      "color": "#3a3d40",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.38,
+        0.15,
+        -32.4
+      ],
+      "max": [
+        -0.3,
+        0.45,
+        -4.1
+      ],
+      "color": "#b87333",
+      "detail": true,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.513,
+        0.3,
+        -3.6
+      ],
+      "max": [
+        -0.497,
+        0.42,
+        -0.4
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        0.3,
+        0.15,
+        -32.4
+      ],
+      "max": [
+        0.38,
+        0.45,
+        -4.1
+      ],
+      "color": "#b87333",
+      "detail": true,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        0.497,
+        0.3,
+        -3.6
+      ],
+      "max": [
+        0.513,
+        0.42,
+        -0.4
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.42,
+        0.04,
+        -6.75
+      ],
+      "max": [
+        0.42,
+        0.56,
+        -6.5
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.425,
+        0.48,
+        -6.68
+      ],
+      "max": [
+        0.425,
+        0.5,
+        -6.57
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.42,
+        0.04,
+        -9.75
+      ],
+      "max": [
+        0.42,
+        0.56,
+        -9.5
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.425,
+        0.48,
+        -9.68
+      ],
+      "max": [
+        0.425,
+        0.5,
+        -9.57
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.42,
+        0.04,
+        -12.75
+      ],
+      "max": [
+        0.42,
+        0.56,
+        -12.5
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.425,
+        0.48,
+        -12.68
+      ],
+      "max": [
+        0.425,
+        0.5,
+        -12.57
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.42,
+        0.04,
+        -15.75
+      ],
+      "max": [
+        0.42,
+        0.56,
+        -15.5
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.425,
+        0.48,
+        -15.68
+      ],
+      "max": [
+        0.425,
+        0.5,
+        -15.57
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.42,
+        0.04,
+        -18.75
+      ],
+      "max": [
+        0.42,
+        0.56,
+        -18.5
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.425,
+        0.48,
+        -18.68
+      ],
+      "max": [
+        0.425,
+        0.5,
+        -18.57
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.42,
+        0.04,
+        -21.75
+      ],
+      "max": [
+        0.42,
+        0.56,
+        -21.5
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.425,
+        0.48,
+        -21.68
+      ],
+      "max": [
+        0.425,
+        0.5,
+        -21.57
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.42,
+        0.04,
+        -24.75
+      ],
+      "max": [
+        0.42,
+        0.56,
+        -24.5
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.425,
+        0.48,
+        -24.68
+      ],
+      "max": [
+        0.425,
+        0.5,
+        -24.57
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.42,
+        0.04,
+        -27.75
+      ],
+      "max": [
+        0.42,
+        0.56,
+        -27.5
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.425,
+        0.48,
+        -27.68
+      ],
+      "max": [
+        0.425,
+        0.5,
+        -27.57
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.42,
+        0.04,
+        -30.75
+      ],
+      "max": [
+        0.42,
+        0.56,
+        -30.5
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.425,
+        0.48,
+        -30.68
+      ],
+      "max": [
+        0.425,
+        0.5,
+        -30.57
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.4,
+        0.02,
+        -32.9
+      ],
+      "max": [
+        0.4,
+        0.58,
+        -31.9
+      ],
+      "color": "#30353b",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.2,
+        0.2,
+        -32.92
+      ],
+      "max": [
+        0.2,
+        0.4,
+        -32.9
+      ],
+      "color": "#5ac8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.505,
+        -0.002,
+        -1.2
+      ],
+      "max": [
+        0.505,
+        0.705,
+        -1.06
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.505,
+        -0.002,
+        -2.6
+      ],
+      "max": [
+        0.505,
+        0.705,
+        -2.46
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "ammo",
+      "at": [
+        0.0,
+        0.7,
+        -2.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

@@ -15,7 +15,7 @@ public sealed class FlightParts : IPartGenerator
     private const string Out = "Constructs/Parts/Flight";
     private const string Section = "Flight control";
     private const string Housing = "#39414a", Dark = "#20252b", Arrow = "#e0b030", Pin = "#b08a4a", Screen = "#101416";
-    private static readonly string[] Keys = ["Auto", "Rotorcraft", "Plane", "Rocket"];
+    private static readonly string[] Keys = ["Auto", "Rotorcraft", "Plane", "Rocket", "Ship"];
     private static readonly string[] Modes = ["Hold altitude", "Hold heading", "Hover", "Waypoint", "Return home"];
     private const int FillPct = 22; // (a little short of her weight: the lift jet keeps her up and lets her down, and she needn't vent to come down)
 
@@ -50,7 +50,7 @@ public sealed class FlightParts : IPartGenerator
 
     internal static readonly List<object?> Config =
     [
-        Choice("keys", "Keys", "Control", Keys, 0, "What the keys mean. Auto: wings and a forward push make it a plane, nozzles a rocket, anything else a rotorcraft. It finds what it can use by itself."),
+        Choice("keys", "Keys", "Control", Keys, 0, "What the keys mean. Auto: wings and a forward push make it a plane, nozzles a rocket, anything else a rotorcraft. Ship: turns every way, the nose follows the mouse. It finds what it can use by itself."),
         Choice("flightPreset", "Preset", "Control", ["Normal", "Docile", "Sport"], 0, "What auto means below: gentle, as it comes, or lively. Anything you set yourself stays."),
         Number("strength", "Strength", "Control", "%", 10, 300, 5, 100, "How hard it corrects. Lower it if the craft shakes."),
         Toggle("level", "Stabilise level", "Control", true, "Off: the keys ask for turning, and it stays at whatever angle you leave it."),

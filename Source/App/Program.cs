@@ -922,6 +922,7 @@ public static unsafe partial class Program
                     DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
                     TacticalHud.DrawMarkers(g, now, Ui.Scale); // motion pings, decoy tags, your devices (TacticalHud.cs)
                     LauncherHud.DrawMarkers(g, now, Ui.Scale); // the lock-on brackets, the wire's guide dot, sticky charges (LauncherHud.cs)
+                    RadarHud.Draw(g, Ui.Scale, _settings.Bind(GameAction.SeatRadar)); // a craft's radar scope, its contacts and lock (RadarHud.cs)
                     DrawFriendlyHitText(g, now); // "FRIENDLY" under the friendly hit marker (Program.FriendlyHit.cs)
                     Ui.DrawHud(g, now, _joinAddress, _settings);
                 }
@@ -2592,14 +2593,17 @@ public static unsafe partial class Program
             Gfx.Rect(left + inset, m + inset, (bw - 2 * inset) * hp, bh - 2 * inset, HealthBarColor(local, hp, now), 0.95f);
             DrawHealthExtras(local, left, m, bw, bh, k, now); // regen glow and Last Stand shield pips (Program.Health.cs)
 
-            // Ammo bar (bottom-right) or reload progress
-            var def = _game.Active.Def;
-            var right = safeLeft + safeWidth - m;
-            var rp = _game.ReloadProgress(now);
-            Gfx.Rect(right - bw, m, bw, bh, black, 0.5f);
-            var fill = rp >= 0 ? rp : _game.Active.Ammo / (float)def.Mag;
-            Gfx.Rect(right - bw + inset, m + inset, (bw - 2 * inset) * fill, bh - 2 * inset,
-                rp >= 0 ? new Vector3(0.95f, 0.5f, 0.15f) : new Vector3(1f, 0.85f, 0.3f), 0.95f);
+            // Ammo bar (bottom-right) or reload progress; none seated in a Sandbox seat, where no hand gun fires (Game.ServerShot)
+            if (!_game.SandboxSeatedHere)
+            {
+                var def = _game.Active.Def;
+                var right = safeLeft + safeWidth - m;
+                var rp = _game.ReloadProgress(now);
+                Gfx.Rect(right - bw, m, bw, bh, black, 0.5f);
+                var fill = rp >= 0 ? rp : _game.Active.Ammo / (float)def.Mag;
+                Gfx.Rect(right - bw + inset, m + inset, (bw - 2 * inset) * fill, bh - 2 * inset,
+                    rp >= 0 ? new Vector3(0.95f, 0.5f, 0.15f) : new Vector3(1f, 0.85f, 0.3f), 0.95f);
+            }
         }
 
         if (now < _game.DamageFlashUntil)

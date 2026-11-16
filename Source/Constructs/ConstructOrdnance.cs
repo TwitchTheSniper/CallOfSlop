@@ -579,6 +579,8 @@ public static class ConstructOrdnance
     /// <summary>What a missile fired now locks on to: what its seeker sees, else what its gunner has in view; 0: it flies straight.</summary>
     public static ushort Lock(ConstructWorld world, Construct c, ref CGun g, Vector3 muzzle, Vector3 dir, IWorldQuery query)
     {
+        if (ConstructRadar.Target(world, c, muzzle, g.SightReach > 0 ? g.SightReach : LookReach) is var radar and > 0)
+            return radar; // (the craft's radar lock first: ConstructRadar.cs)
         if (g.Sight == SightKind.Seeker)
             return Seek(world, c, muzzle, dir, g.SightReach, g.SightCos, query);
         if (g.Seat < 0 || g.Seat >= c.PartCount || (c.Parts[g.Seat].Keys & CPart.Occupied) == 0)

@@ -56,14 +56,14 @@ public sealed class NavOrder
 /// stabilizer's own autopilot flies it (a waypoint over the ground, or a climb to the sky's edge on the way to space).
 /// A driver who touches the controls takes the ship back. Orders aren't saved, and a move to another world drops them.
 /// <para>
-/// The wire (protocol 319): <c>CActKind.NavOrder</c> from a client, and <see cref="Msg.Nav"/> from the host to everyone
+/// The wire (protocol 322): <c>CActKind.NavOrder</c> from a client, and <see cref="Msg.Nav"/> from the host to everyone
 /// when an order starts, changes phase or ends, and to each joiner.
 /// </para>
 /// </summary>
 public sealed partial class Game
 {
     /// <summary>The orders (host: the truth; a client: what it heard). A handful at most, so a list.</summary>
-    public readonly List<NavOrder> NavOrders = new(16);
+    public readonly List<NavOrder> NavOrders = new(MaxNavOrders + 1); // (its full size: a network-fed list never grows in a steady frame)
 
     /// <summary>The most ships under orders at once.</summary>
     public const int MaxNavOrders = 64;
@@ -261,6 +261,8 @@ public sealed partial class Game
         {
             c.NavThrottle = -1;
             c.NavAim = Vector3.Zero;
+            if (c.SpaceShip != 0)
+                c.AngVel = Vector3.Zero; // (the order's turn isn't a spin to hand to a ship that turns by its jets)
             if (c.SpaceShip == 0 && o.Engaged)
                 ConstructFlight.NavEngage(Constructs, c, FlightMode.Hover, default, 0); // (it stays where it is, hovering, until someone takes it)
             Console.WriteLine($"[nav] construct {c.Id}'s order ended: {why}");

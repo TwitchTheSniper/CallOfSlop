@@ -193,8 +193,9 @@ Not in phase 3 yet:
 ## Leaving the bubble: `Game/GameSpaceLaunch.cs`
 
 Travel is by built ships (Karl, 2026-11-03). On a planetoid map played in a star system, a free construct whose centre of
-mass climbs past the **sky's edge** (the map's half size from the planet's centre, where players' sky already ends:
-`World.ClampToSky`; 12.6 km on the Planetoid, so 2.6 km above its radius) becomes a ship of the host's `SpaceFlight`: a
+mass climbs past the **sky's edge** (the map's half size from the planet's centre; 12.6 km on the Planetoid, so 2.6 km above its radius;
+players in Sandbox may go on past it, to `World.OpenSkyRadius` from the centre, so one who steps off a ship in orbit floats
+free) becomes a ship of the host's `SpaceFlight`: a
 test particle round the Planetoid in the gravity of every body on rails, coasting on the symplectic step or on rails, at
 any warp. Its state is the construct's, through the bubble's frame (the ground's spin added).
 
@@ -205,8 +206,10 @@ any warp. Its state is the construct's, through the bubble's frame (the ground's
   frame (ConstructRideMove.cs), so they go round with it and walk its decks. Nothing new goes over the wire.
 - **Flying it in space.** Its own thrusters push the ship (`ConstructPhysics.SpaceThrust`: a wire sets one, else W and S
   work those facing the seat's way, Shift those that push up; fuel and power are used as in the air), through the centre
-  of mass. A and D turn it about the local up, and it is kept level over the ground below (ships have no attitude of their
-  own yet). The driver's line shows the height, speed and the orbit's lowest and highest points (worked out from the
+  of mass. A and D turn it about the local up, and it is kept level over the ground below. A stabilizer on Ship keys flies
+  it instead (`ConstructFlight.FliesShip`): its commands set the thrusters, their torque turns it (`SpaceLaunchBefore`), and
+  `SpacePose` keeps that attitude, so a ship can point its nose anywhere in orbit (Magpie over Crumb: 72 degrees down on
+  the look and back level). The driver's line shows the height, speed and the orbit's lowest and highest points (worked out from the
   construct's pose on every peer).
 - **Coming back.** 200 m under the edge it is a physics body again, with the ship's speed, the ship goes, and the hover
   hold catches it at the height it came in at.

@@ -1,0 +1,257 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Zero Day Turret Barbette",
+  "description": "An armoured barbette on the Zero Day's beam: a point-defence turret turns on its top.",
+  "group": "Ship",
+  "section": "Zero Day frigate",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1800.0,
+  "health": 8000,
+  "armour": 40,
+  "material": "steel",
+  "color": "#3b4148",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.9,
+        -1.2
+      ],
+      "max": [
+        0.9,
+        0.9,
+        1.2
+      ],
+      "color": "#3b4148",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -0.5,
+          -0.9,
+          -1.2
+        ],
+        [
+          -0.5,
+          0.7,
+          -0.96
+        ],
+        [
+          -0.5,
+          0.7,
+          0.96
+        ],
+        [
+          -0.5,
+          -0.9,
+          1.2
+        ],
+        [
+          0.9,
+          -0.6,
+          -1.1
+        ],
+        [
+          0.9,
+          0.9,
+          -0.88
+        ],
+        [
+          0.9,
+          0.9,
+          0.88
+        ],
+        [
+          0.9,
+          -0.6,
+          1.1
+        ]
+      ],
+      "paintable": false,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        0.9,
+        -0.6,
+        -1.1
+      ],
+      "max": [
+        1.6,
+        0.9,
+        1.1
+      ],
+      "color": "#30353b",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.9,
+          -0.6,
+          -1.1
+        ],
+        [
+          0.9,
+          0.9,
+          -0.88
+        ],
+        [
+          0.9,
+          0.9,
+          0.88
+        ],
+        [
+          0.9,
+          -0.6,
+          1.1
+        ],
+        [
+          1.6,
+          -0.2,
+          -0.75
+        ],
+        [
+          1.6,
+          0.9,
+          -0.6
+        ],
+        [
+          1.6,
+          0.9,
+          0.6
+        ],
+        [
+          1.6,
+          -0.2,
+          0.75
+        ]
+      ],
+      "paintable": false,
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        0.3,
+        0.9,
+        -0.9
+      ],
+      "max": [
+        1.45,
+        0.95,
+        0.9
+      ],
+      "color": "#2c5aa0",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.3,
+          0.9,
+          -0.9
+        ],
+        [
+          0.3,
+          0.91,
+          -0.72
+        ],
+        [
+          0.3,
+          0.91,
+          0.72
+        ],
+        [
+          0.3,
+          0.9,
+          0.9
+        ],
+        [
+          1.45,
+          0.9,
+          -0.6
+        ],
+        [
+          1.45,
+          0.95,
+          -0.48
+        ],
+        [
+          1.45,
+          0.95,
+          0.48
+        ],
+        [
+          1.45,
+          0.9,
+          0.6
+        ]
+      ],
+      "paintable": false,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        1.55,
+        0.2,
+        -0.45
+      ],
+      "max": [
+        1.62,
+        0.5,
+        0.45
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.0,
+        0.955,
+        -0.42
+      ],
+      "max": [
+        1.4,
+        0.995,
+        0.42
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.0,
+        -0.45,
+        -0.75
+      ],
+      "max": [
+        1.45,
+        1.0,
+        0.75
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hull",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        1.2,
+        1.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

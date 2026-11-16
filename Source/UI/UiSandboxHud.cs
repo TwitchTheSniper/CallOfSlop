@@ -25,8 +25,8 @@ public sealed partial class Ui
             return;
         }
         var w = game.Active;
-        if (Game.IsEmptyGun(w.Def))
-            return;
+        if (Game.IsEmptyGun(w.Def) || game.SandboxSeatedHere)
+            return; // (seated, no hand gun fires: the seat's own lines say what it does)
         ImGui.Text($"{w.Def.Name}");
         ImGui.SameLine(0, 12 * _scale);
         var reload = game.ReloadProgress(now);

@@ -113,7 +113,7 @@ ORBIT, DRIVE OFF") and burns again only if the ship has drifted well off its cir
 Phases (`NavPhase`): Climb, Transfer, Insert, Orbiting, Hold, Flying, Arrived, NoDrive (no fuel or no thruster that
 works in a vacuum: the card says so in red).
 
-### On the wire (protocol 319)
+### On the wire (protocol 322)
 
 - Client to host: `Msg.CAct` with `CActKind.NavOrder`: construct, kind, body, point (three doubles), radius. The host
   checks it (`NavOrderAct`) and answers a refusal in words.
