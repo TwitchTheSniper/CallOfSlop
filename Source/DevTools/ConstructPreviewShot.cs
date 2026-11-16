@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--preview-shot NAME|FILE [--out OUT.png] [--views iso,back,side,top,front,...] [--cut Y] [--size N]</c>: the preview's model drawn
+/// <c>--preview-shot NAME|FILE [--out OUT.png] [--views iso,back,side,top,front,...] [--cut Y] [--size N] [--links]</c>: the preview's model drawn
 /// straight to a PNG by a small software rasteriser, with no window, browser or GPU: a sheet of views (by default the four corners at
 /// three quarters, so every side of a part is seen), each tile fitted to the model. For an agent's own look at a part it is
 /// designing in seconds: <c>--gen-parts NAME</c> (which copies what it writes into the build's data too), then this; no rebuild, no
@@ -12,6 +12,50 @@ namespace CallOfSlop;
 public static partial class ConstructPreview
 {
     private static (List<Vector3> Pos, List<Vector3> Nrm, List<ushort> TriLook, List<(string Hex, float Glass, bool Glow)> Looks) _last;
+    private static bool _shotLinks; // --links: the construct's links drawn too, bright by type (data yellow, power red, pipe blue, chute orange, the rest white)
+
+    /// <summary>Each link segment as a square tube (at least 3 cm across, so a data cable shows) added to the shot's triangles, glowing in its type's colour.</summary>
+    private static void LinkTris(Construct c)
+    {
+        var (pos, nrm, triLook, looks) = _last;
+        Span<ushort> lookOf = stackalloc ushort[(int)RouteType.COUNT];
+        for (var t = 0; t < (int)RouteType.COUNT; t++)
+        {
+            lookOf[t] = (ushort)looks.Count;
+            looks.Add(((RouteType)t switch { RouteType.Data => "#f2d21b", RouteType.Power => "#e0342a", RouteType.Pipe => "#2f7fe0", RouteType.Chute => "#ff8a1c", _ => "#f4f4f4" }, 0f, true));
+        }
+        for (var r = 0; r < c.RouteCount; r++)
+        {
+            var type = c.Routes[r].Type;
+            var rad = MathF.Max(ConstructRoutes.Radius(type), 0.015f);
+            var a = ConstructRoutes.RestPoint(c, r, -1);
+            for (var i = 0; i <= c.Routes[r].Count; i++)
+            {
+                var b = ConstructRoutes.RestPoint(c, r, i);
+                var d = b - a;
+                if (d.LengthSquared() > 1e-8f)
+                {
+                    var f = Vector3.Normalize(d);
+                    var u = Vector3.Normalize(Vector3.Cross(f, MathF.Abs(f.Y) < 0.9f ? Vector3.UnitY : Vector3.UnitX)) * rad;
+                    var v = Vector3.Cross(f, u);
+                    for (var k = 0; k < 4; k++)
+                    {
+                        var (p0, p1) = k switch { 0 => (u + v, u - v), 1 => (u - v, -u - v), 2 => (-u - v, -u + v), _ => (-u + v, u + v) };
+                        var n = Vector3.Normalize(p0 + p1);
+                        Quad(a + p0, a + p1, b + p1, b + p0, n, lookOf[(int)type]);
+                    }
+                }
+                a = b;
+            }
+        }
+        _tris = triLook.Count;
+
+        void Quad(Vector3 q0, Vector3 q1, Vector3 q2, Vector3 q3, Vector3 n, ushort look)
+        {
+            pos.Add(q0); pos.Add(q1); pos.Add(q2); nrm.Add(n); nrm.Add(n); nrm.Add(n); triLook.Add(look);
+            pos.Add(q0); pos.Add(q2); pos.Add(q3); nrm.Add(n); nrm.Add(n); nrm.Add(n); triLook.Add(look);
+        }
+    }
 
     private static readonly Dictionary<string, Vector3> ShotViews = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -39,6 +83,7 @@ public static partial class ConstructPreview
         var size = int.TryParse(Flag(args, "--size"), out var sz) ? Math.Clamp(sz, 64, 2048) : 600;
         float? cut = float.TryParse(Flag(args, "--cut"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var cy) ? cy : null;
         var outFile = Flag(args, "--out") ?? Path.Combine(AppContext.BaseDirectory, "preview", Safe(Path.GetFileNameWithoutExtension(what)) + ".png");
+        _shotLinks = args.Any(a => a.Equals("--links", StringComparison.OrdinalIgnoreCase));
         if (Export(what, out var bp, out var parts, out _) is null)
             return 1;
         var cols = views.Length == 1 ? 1 : 2;
