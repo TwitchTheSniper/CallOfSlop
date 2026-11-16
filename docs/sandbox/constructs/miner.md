@@ -79,10 +79,9 @@ merge, the Magpie can switch to them if a shared set suits it.
   track beam and rides C-channel rails, and they slide apart fore and aft in 3 s. A Bakelite Switch below the drill
   lever opens them (on) and shuts them (off), and they start shut. Open them before lowering the drills.
   `--check-building` treats a level leaf as a hatch rather than a doorway (BuildingWalkCheck).
-- Drills 0 and 2 chute into the port hold and drills 1 and 3 into the starboard hold. Each hold is a **Storage Volume**
-  sized to fill its hopper's inside, about 30 m3 (some 12,000 units of one bulk material).
-  The four chutes are laid by the router when the ship is built (power-and-links.md "Ship links and walls"): out of each
-  drill, across to the side wall at the drill's height and down into the hold.
+- Each hopper's hold is a **Storage Volume**, about 30 m3 (some 12,000 units of one bulk material). Since the drills
+  became hand-carried on wall docks (PR #224) the blueprint has no chutes; its 21 wires are laid along the walls by the
+  router when the ship is built (power-and-links.md "Ship links and walls").
 - A refinery and the trip to it are the production system's.
 
 ## Flight
@@ -113,7 +112,6 @@ so a part that touches nothing throws. The blueprint places each part with `Put`
 - Mining hasn't been tried in a world: no drill has been run against real ground from the ship.
 - No build cost and no recipes: they are left to the production system.
 - The holds have no way to unload except their chute ports. The hopper spouts are only looks.
-- The chutes cross the walkway round the well at about 1.6 m, since a drill's Chute out is at that height at rest and the holds sit on the floor by the walls. A tidier run (up the rams and along the gantry beams) needs the holds' inlets or the drills' ports moved in MinerParts.cs.
 
 ## The Magpie start
 
