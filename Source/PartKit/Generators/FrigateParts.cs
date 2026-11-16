@@ -926,6 +926,7 @@ public sealed class FrigateParts : IPartGenerator
         Sock(p, "copilot", 5.9, y0, Cz - Hz(k) + 1.3, "+y");
         Sock(p, "gunModule", 5.0, y0 + 0.4, Cz - Hz(k) + 0.6, "+z");
         Sock(p, "computer", 6.6, y0, 6.2, "+y");
+        Sock(p, "director", 7.3, y0, 5.5, "+y"); // (the Fire Director the radar is wired into, by the flight computer)
         Sock(p, "chart", Cx - Hx(k), y0 + 0.475, 5.3, "+x");
         LampSock(p, "lampA", Cx - Hx(k), k, 4.0, "+x");
         LampSock(p, "lampB", Cx + Hx(k), k, 4.0, "-x");
@@ -1707,7 +1708,7 @@ public sealed class FrigateParts : IPartGenerator
         var fc = Hang(bp, "Halberd Flight Computer", cockpit, "computer", "bottom");
         bp.Wires.Add((pilot, fc));
         var rail = Hang(bp, "Halberd Spinal Railgun", nose, "railgun", "back");
-        Hang(bp, "Long Range Sensor", nose, "sensor", "-y"); // (the radar's scope in every seat; the lock waits for a missile rack: ConstructRadar.CanLock)
+        var sensor = Hang(bp, "Long Range Sensor", nose, "sensor", "-y"); // (the radar's scope in every seat)
         Hang(bp, "Ammo Box", rail, "ammo", "left");
         var railModule = Hang(bp, "Turret Module", cockpit, "gunModule", "-z");
         bp.Wires.Add((pilot, railModule));
@@ -1716,6 +1717,10 @@ public sealed class FrigateParts : IPartGenerator
         bp.Wires.Add((pilot, couchModule));
         bp.DataLinks.Add((couchModule, pilotHinge, "lift"));
         bp.DataLinks.Add((couchModule, copilotHinge, "lift"));
+        // Fire control: the radar wired into a Fire Director, so the radar locks for the missiles (ConstructRadar.CanLock). No guns
+        // are wired out of it: the PDCs and the railgun keep their own modules.
+        var director = Hang(bp, "Fire Director", cockpit, "director", "-y");
+        bp.Wires.Add((sensor, director));
         Hang(bp, "Chart Table", cockpit, "chart", "back");
         Switch(bp, cockpit, "switch", LampAt(bp, cockpit, "lampA", "#ff6050"), LampAt(bp, cockpit, "lampB", "#ff6050"), LampAt(bp, cockpit, "lampC"));
         _ = drive;

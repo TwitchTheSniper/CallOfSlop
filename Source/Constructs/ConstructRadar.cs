@@ -58,17 +58,19 @@ public static class ConstructRadar
     }
 
     /// <summary>
-    /// Can the lock do anything on this craft: does it carry something that launches guided ordnance (an Ordnance or Bomb
-    /// Rack, or a missile gun)? A radar on a craft with none (the rust bucket) is a scope only: no lock key, and the server
-    /// refuses one (Karl, 2026-11-16: the missiles' guidance is what connects to the radar).
+    /// Can this craft's radar lock: is a working radar part wired into a working Fire Director (the fire control that hands
+    /// the lock to the missiles)? Without one the radar is a scope only (the rust bucket), and destroying either part loses
+    /// the lock (Karl, 2026-11-16). A walk of the wires: at a press, a launch, or once a frame for the local seat's HUD.
     /// </summary>
     public static bool CanLock(Construct c)
     {
-        if (c.RackCount > 0)
-            return true;
-        for (var k = 0; k < c.GunCount; k++)
-            if ((c.Guns[k].Effects & GunEffect.Shell) != 0 && c.Guns[k].Shell == ShellKind.Missile)
+        for (var w = 0; w < c.WireCount; w++)
+        {
+            int from = c.Wires[w].From, to = c.Wires[w].To;
+            if (from < c.PartCount && to < c.PartCount && c.DefOf(from).RadarRange > 0 && c.DefOf(to).Logic == CLogic.Director
+                && c.Parts[from].Working && c.Parts[to].Working)
                 return true;
+        }
         return false;
     }
 
@@ -117,7 +119,7 @@ public static class ConstructRadar
         if (range <= 0)
             return "this craft has no working radar";
         if (!CanLock(c))
-            return "nothing on this craft takes a radar lock (no missile rack)";
+            return "the radar isn't wired to a working Fire Director";
         if (world.Get(target) is not { } b || !IsContact(c, b, range * HoldShare))
             return "that contact is off the radar";
         c.RadarLock = target;
@@ -130,7 +132,7 @@ public static class ConstructRadar
         if (c.RadarLock == 0)
             return 0;
         var range = Range(c);
-        if (range <= 0 || world.Get(c.RadarLock) is not { } b || !IsContact(c, b, range * HoldShare))
+        if (range <= 0 || !CanLock(c) || world.Get(c.RadarLock) is not { } b || !IsContact(c, b, range * HoldShare))
         {
             c.RadarLock = 0;
             return 0;
