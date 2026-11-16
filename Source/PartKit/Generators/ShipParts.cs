@@ -61,9 +61,14 @@ public sealed class ShipParts : IPartGenerator
     private static readonly double[] FrameZ = [3.0, 8.5, 14.0]; // the hoop frames (rings 2, 3, 4)
     private static readonly string[] FrameNames = ["Fore", "Mid", "Aft"];
 
-    // Where people stand: the rooms' side walls (hidden) are at these half widths amidships and follow the skin in where it narrows.
-    // A socket on the hull's inside is on those walls' faces.
+    // Where people stand (Karl, 2026-11-16: the rooms are what you'd expect inside a ship, a box standing in its own hull as the
+    // Zero Day's do, not rooms filling the shell). Aft of the cockpit the rooms have their own walls at these half widths (Lw the
+    // hold and the engine room, Uw the upper deck), with a gap of a metre or more out to the skin; hidden voids fill the gap so a
+    // round still stops at the skin. The cockpit keeps the whole nose (InHigh), so the canopy's windows are its walls, and the hold
+    // follows the skin in where the nose narrows round the ramp. A socket on the hull's inside is on those walls' faces.
     private const double InLow = 4.63, InHigh = 4.73;
+    private const double Lw = 3.75, Uw = 3.5, WallT = 0.06;
+    private const double CockpitBack = 4.125; // (the cockpit's back partition's aft face: the upper rooms' walls start here)
 
     private static double[] P(double x, double y, double z) => [x - H, y - H, z - H];
 
@@ -255,9 +260,20 @@ public sealed class ShipParts : IPartGenerator
     /// <summary>A storey's room half width over z0..z1: its wall line, less where the skin comes in.</summary>
     private static double RoomHalf(int level, double z0, double z1)
     {
-        var (y0, y1, inner) = Levels[level];
+        var (y0, y1, _) = Levels[level];
+        var inner = level == 0 ? Lw : z1 <= CockpitBack + 1e-6 ? InHigh : Uw;
         return Cm(Math.Min(inner, SkinMin(z0, z1, y0, y1) - 0.08));
     }
+
+    /// <summary>Whether a strip of a storey has the rooms' own wall (a room box in the hull), not the skin, at its sides.</summary>
+    private static bool BoxWalled(int level, double z0, double z1) =>
+        level == 0 ? RoomHalf(0, z0, z1) >= Lw - 1e-6 : z0 >= CockpitBack - 1e-6;
+
+    /// <summary>Where the hold's own walls start: the first strip aft of the nose wide enough for them.</summary>
+    private static double HoldWallFront => Strips(LowFront, Back, RoomCuts(0)).First(t => BoxWalled(0, t.Z0, t.Z1)).Z0;
+
+    /// <summary>A storey's strip cuts: the stair's opening, and upstairs the partitions across the rooms (where a wall's paint changes).</summary>
+    private static double[] RoomCuts(int level) => level == 0 ? [.. StairCuts, 12.0] : [.. StairCuts, CockpitBack, 8.0, 12.0];
 
     /// <summary>Strips along z from a to b: cut at every ring, at each frame's edges, at <paramref name="cuts"/>, and every half metre
     /// where the hull narrows (fore of the shoulder, aft of the haunch).</summary>
@@ -307,9 +323,11 @@ public sealed class ShipParts : IPartGenerator
     private static void FloorOf(Part p, int level, double y0, double y1, string color, (double X0, double Z0, double X1, double Z1)[] holes)
     {
         var front = level == 0 ? LowFront : Rings[1][D].Z;
-        foreach (var (z0, z1) in Strips(front, Back, [.. holes.SelectMany(h => new[] { h.Z0, h.Z1 }), .. StairCuts]))
+        foreach (var (z0, z1) in Strips(front, Back, [.. holes.SelectMany(h => new[] { h.Z0, h.Z1 }), .. RoomCuts(level)]))
         {
-            var w = level == 0 ? RoomHalf(0, z0, z1) : Cm(SkinMin(z0, z1, y0, y1) - 0.03);
+            // (where the rooms are a box, the floor stops under their walls, upstairs over the hold's, and the gap to the skin is open;
+            // the cockpit's runs out to the skin, and the hold's front to its walls)
+            var w = BoxWalled(level, z0, z1) ? (level == 0 ? RoomHalf(0, z0, z1) : Lw) + WallT : level == 0 ? RoomHalf(0, z0, z1) : Cm(SkinMin(z0, z1, y0, y1) - 0.03);
             double xa = Cx - w, xb = Cx + w;
             var xs = new List<(double, double)> { (xa, xb) };
             foreach (var h in holes)
@@ -320,20 +338,49 @@ public sealed class ShipParts : IPartGenerator
         }
     }
 
-    /// <summary>The hidden walls round a storey: each strip from the room's face out to the skin, both sides, and a cap at the back
-    /// (and the front, upstairs). They are hull runs: the splitter deals them to the hull pieces and the frames.</summary>
+    /// <summary>The walls round a storey. Where the rooms are a box in the hull, each side gets the room's own wall (painted plate,
+    /// a dark kick strip along its foot), one run per hull piece, and hidden voids from its back out to the skin; where they hug the
+    /// skin (the cockpit, the hold's front), only the hidden wall from the room's face out to the skin. A cap at the back (and the
+    /// front, upstairs). They are hull runs: the splitter deals them to the hull pieces and the frames.</summary>
     private static void HullWalls(Part p, int level)
     {
         var (y0, y1, _) = Levels[level];
         var front = level == 0 ? LowFront : UpFront;
+        var wallTop = level == 0 ? F1 : CeilT;
+        var runs = new List<(double Z0, double Z1, double In, string Color, string Finish, int Side)>();
         With(HullTag, () =>
         {
-            foreach (var (z0, z1) in Strips(front, Back, StairCuts))
+            foreach (var (z0, z1) in Strips(front, Back, RoomCuts(level)))
             {
                 var inner = RoomHalf(level, z0, z1);
-                var outer = Math.Max(inner + 0.04, Cm(SkinMin(z0, z1, y0, y1) - 0.06));
+                var boxed = BoxWalled(level, z0, z1);
+                var back = boxed ? inner + WallT : inner;
+                var outer = Math.Max(back + 0.04, Cm(SkinMin(z0, z1, y0, y1) - 0.06));
                 foreach (var s in new[] { -1, 1 })
-                    Hidden(p, Cx + s * inner, y0, z0, Cx + s * outer, y1, z1);
+                {
+                    if (boxed && Zone(z0, z1) >= 10) // (at a hoop frame the gap holds the frame's rib, wall to skin, seen in a cutaway)
+                        Solid(p, Cx + s * back, y0, z0, Cx + s * outer, y1, z1, Frame, "dirty steel");
+                    else
+                        Hidden(p, Cx + s * back, y0, z0, Cx + s * outer, y1, z1);
+                    if (boxed && level == 1 && outer > Lw + WallT + 0.04) // (the floor's edge, over the hold's walls, out to the skin)
+                        Hidden(p, Cx + s * (Lw + WallT), F1, z0, Cx + s * outer, F1T, z1);
+                    if (!boxed)
+                        continue;
+                    var bath = level == 1 && s > 0 && z0 >= CockpitBack - 1e-6 && z1 <= 8.0 + 1e-6;
+                    var (c, f) = bath ? (BathWall, "gloss paint") : (Wall, "painted plating");
+                    if (runs.Count > 0 && runs[^1] is var r && r.Side == s && Math.Abs(r.Z1 - z0) < 1e-6 && Math.Abs(r.In - inner) < 1e-6 && r.Color == c
+                        && Zone(r.Z0, r.Z1) == Zone(z0, z1))
+                        runs[^1] = r with { Z1 = z1 };
+                    else
+                        runs.Add((z0, z1, inner, c, f, s));
+                }
+            }
+            foreach (var (z0, z1, inner, c, f, s) in runs)
+            {
+                var face = Cx + s * inner;
+                Solid(p, face, level == 0 ? F0 : y0, z0, face + s * WallT, wallTop, z1, c, f);
+                // (the kick strip 4 to 16 mm proud of the wall, its ends 4 mm short of the strip's: no face in a neighbour's plane)
+                Detail(p, face - s * 0.004, (level == 0 ? F0 : y0) + 0.006, z0 + 0.004, face - s * 0.016, (level == 0 ? F0 : y0) + 0.896, z1 - 0.004, WallLow, "matte paint");
             }
             var bw = Cm(SkinMin(Back, Back + 0.1, y0, y1) - 0.06);
             Hidden(p, Cx - bw, y0, Back, Cx + bw, y1, Back + 0.1);
@@ -342,7 +389,28 @@ public sealed class ShipParts : IPartGenerator
                 var fw = Cm(SkinMin(UpFront - 0.04, UpFront, y0, y1) - 0.06);
                 Hidden(p, Cx - fw, y0, UpFront - 0.04, Cx + fw, y1, UpFront);
             }
+            else
+            {
+                // The hold's front: where its own walls start aft of the nose, a plate each side closing the gap to the skin.
+                var z = HoldWallFront;
+                foreach (var s in new[] { -1, 1 })
+                {
+                    double OutAt(double y) => Math.Max(Lw + WallT, SkinHalf(z, y) - 0.03);
+                    double[][] Tri(double zz) => [P(Cx + s * Lw, F0, zz), P(Cx + s * OutAt(F0), F0, zz), P(Cx + s * OutAt(F1), F1, zz), P(Cx + s * Lw, F1, zz)];
+                    Prism(p, Tri(z - 0.06), Tri(z - 0.004), Wall, "painted plating");
+                }
+            }
         });
+    }
+
+    /// <summary>The piece a stretch of hull wall at z0..z1 goes to (as Where deals them): a frame's band, else a hull run.</summary>
+    private static int Zone(double z0, double z1)
+    {
+        for (var i = 0; i < FrameZ.Length; i++)
+            if (z0 >= FrameZ[i] - 0.105 && z1 <= FrameZ[i] + 0.105)
+                return 10 + i;
+        var zc = (z0 + z1) / 2;
+        return zc < 2.95 ? 0 : zc > 14.05 ? 3 : zc < 8.5 ? 1 : 2;
     }
 
     /// <summary>Hidden boxes filling the skin between z0 and z1 over a band of heights, in strips (no room in it: the nose, the roof,
@@ -697,8 +765,7 @@ public sealed class ShipParts : IPartGenerator
         // The floor; the hidden walls round the hold and the engine room; the engine room's bulkhead; the belly void (the legs' mounts).
         FloorOf(p, 0, 0.0, F0, Floor, []);
         HullWalls(p, 0);
-        Partition(p, Cx - InLow + 0.01, 12.0, Cx + InLow - 0.01, 12.0, F0, F1, Wall, "painted plating", (4.25, 5.75, 2.25));
-        Fillers(p, 0, 12.0, F0, F1, Wall, "painted plating");
+        Partition(p, Cx - Lw, 12.0, Cx + Lw, 12.0, F0, F1, Wall, "painted plating", (4.25, 5.75, 2.25));
         foreach (var (a, b) in Strips(Rings[1][B].Z, Back))
         {
             var y0 = Math.Max(PointAt(B, a).Y, PointAt(B, b).Y);
@@ -710,34 +777,34 @@ public sealed class ShipParts : IPartGenerator
         With("Rust Bucket Deck", () =>
         {
             foreach (var z in new[] { 4.0, 6.0, 8.0, 10.0 })
-                Detail(p, Cx - 4.6, F1 - 0.22, z - 0.08, z is 8.0 or 10.0 ? 7.7 : Cx + 4.6, F1 - 0.012, z + 0.08, Frame, "dirty steel");
-            Detail(p, 1.2, F1 - 0.3, 3.4, 1.6, F1 - 0.24, 11.8, "#6b6a60", "dirty steel");
+                Detail(p, Cx - Lw + 0.004, F1 - 0.22, z - 0.08, z is 8.0 or 10.0 ? StairHole.X0 - 0.1 : Cx + Lw - 0.004, F1 - 0.012, z + 0.08, Frame, "dirty steel");
+            Detail(p, 1.45, F1 - 0.3, 3.4, 1.85, F1 - 0.24, 11.8, "#6b6a60", "dirty steel");
         });
         // Sockets: the ramp's hinge line, the stair's foot, the engine, the pods and saddle tanks (on the skin), the legs, the fittings.
         Sock(p, "ramp", Cx, 0.1, RampHingeZ, "-z");
         Hidden(p, Cx - 0.1, -0.1, RampHingeZ, Cx + 0.1, F0, LowFront); // (what the ramp's socket is on)
-        Sock(p, "stair", 7.875, F0, 8.375, "+y");
+        Sock(p, "stair", StairHole.X0 + 0.175, F0, 8.375, "+y");
         Sock(p, "engine", Cx, F0, 14.2, "+y");
         foreach (var (z, i) in new[] { (4.5, 0), (7.5, 1), (10.5, 2) })
-            Sock(p, $"shelfL{i}", Cx - InLow, F0 + 0.125, z, "+x");
-        Sock(p, "rackR", Cx + InLow, F0 + 0.9, 5.0, "-x");
-        Sock(p, "lockerR", Cx + InLow, F0 + 0.125, 6.5, "-x");
+            Sock(p, $"shelfL{i}", Cx - Lw, F0 + 0.125, z, "+x");
+        Sock(p, "rackR", Cx + Lw, F0 + 0.9, 5.0, "-x");
+        Sock(p, "lockerR", Cx + Lw, F0 + 0.125, 6.5, "-x");
         Sock(p, "crate0", 2.4, F0, 10.6, "+y");
         Sock(p, "crate1", 3.2, F0, 10.6, "+y");
-        Sock(p, "panelEng", 1.2, F0 + 0.6, 12.125, "+z");
-        Sock(p, "boardEng", 8.8, F0 + 0.9, 12.125, "+z");
-        Sock(p, "pipesEngL", 2.4, F0 + 2.6, 12.125, "+z");
+        Sock(p, "panelEng", 1.9, F0 + 0.6, 12.125, "+z");
+        Sock(p, "boardEng", 8.0, F0 + 0.9, 12.125, "+z");
+        Sock(p, "pipesEngL", 3.1, F0 + 2.6, 12.125, "+z");
         Sock(p, "battery", 7.3, F0 + 2.2, 12.125, "+z");
-        Sock(p, "switchHoldL", Cx - InLow, F0 + 1.3, 7.2, "+x");
-        Sock(p, "switchHoldR", Cx + InLow, F0 + 1.3, 7.4, "-x");
+        Sock(p, "switchHoldL", Cx - Lw, F0 + 1.3, 7.2, "+x");
+        Sock(p, "switchHoldR", Cx + Lw, F0 + 1.3, 7.4, "-x");
         Sock(p, "switchEng", 6.3, F0 + 1.3, 12.125, "+z");
         foreach (var (z, i) in new[] { (3.6, 0), (7.6, 1) })
         {
-            Sock(p, $"lampHoldL{i}", Cx - InLow, 2.5, z + 1.4, "+x");
-            Sock(p, $"lampHoldR{i}", Cx + InLow, 2.5, z + 0.4, "-x");
+            Sock(p, $"lampHoldL{i}", Cx - Lw, 2.5, z + 1.4, "+x");
+            Sock(p, $"lampHoldR{i}", Cx + Lw, 2.5, z + 0.4, "-x");
         }
-        Sock(p, "lampEngL", Cx - InLow, 2.5, 13.2, "+x");
-        Sock(p, "lampEngR", Cx + InLow, 2.5, 13.2, "-x");
+        Sock(p, "lampEngL", Cx - Lw, 2.5, 13.2, "+x");
+        Sock(p, "lampEngR", Cx + Lw, 2.5, 13.2, "-x");
         // (each on a small hidden mount just inside the skin, outside the hull run's wall: the pod and the tank hang from the keel)
         foreach (var s in new[] { -1, 1 })
         {
@@ -804,7 +871,7 @@ public sealed class ShipParts : IPartGenerator
 
     // ---- the deck: the upper deck, the canopy and the bridge front, the upper hull, the tail's upper half
 
-    private static readonly (double X0, double Z0, double X1, double Z1) StairHole = (7.75, 8.25, 10.2, 11.75);
+    private static readonly (double X0, double Z0, double X1, double Z1) StairHole = (6.55, 8.25, Cx + Uw, 11.75); // (the stair hall, inside the rooms' starboard wall)
 
     /// <summary>A frame bar from a to b: a thin plate 8 cm wide, moved by <paramref name="shift"/> to stand proud of the glass.</summary>
     private static void Bar(Part p, double[] a, double[] b, double[] shift)
@@ -825,12 +892,18 @@ public sealed class ShipParts : IPartGenerator
         With("Rust Bucket Canopy", () =>
         {
             Quad(p, Pt(0, L, -1), Pt(0, L, 1), Pt(1, D, 1), Pt(1, D, -1), Belly, "dirty steel");
-            const double Glass = 0.45; // (the windscreen starts this far back along the nose's top)
+            const double Glass = 0.15; // (the windscreen starts this far back along the nose's top: far enough forward that the pilot sees up and ahead)
             foreach (var s in new[] { -1, 1 })
             {
                 Plate(p, [Pt(0, L, s), Pt(0, D, s), Pt(1, D, s)], Armour, "plated steel");
-                Facet(p, 0, D, s, HullPaint);
-                Plates(p, 0, D, s, 4, 0.12, 0.88);
+                // The cheeks either side of the bridge front: plate low down, a window at eye height (Karl, 2026-11-16: the pilot
+                // looked out through a slot), so the pilot sees ahead and to the side past the front's band.
+                const double Cv0 = 0.3;
+                Facet(p, 0, D, s, GlassTint, glass: true, paint: false);
+                FStrip(p, 0, D, s, 0.01, 0.99, 0.01, Cv0, 0.012, HullPaint, "rusty paint");
+                var nc = FacetNormal(0, D, s);
+                Bar(p, OnFacet(0, D, s, 0.5, Cv0), OnFacet(0, D, s, 0.5, 0.97), [nc[0] * 0.035, nc[1] * 0.035, nc[2] * 0.035]);
+                Bar(p, OnFacet(0, D, s, 0.03, Cv0 + 0.01), OnFacet(0, D, s, 0.97, Cv0 + 0.01), [nc[0] * 0.04, nc[1] * 0.04, nc[2] * 0.04]);
                 Facet(p, 0, U, s, HullPaint, u1: Glass);
                 Facet(p, 0, U, s, GlassTint, glass: true, paint: false, u0: Glass);
                 // The side windows: a band of glass in the plated side, a frame bar under it.
@@ -856,8 +929,8 @@ public sealed class ShipParts : IPartGenerator
                 Bar(p, OnFacet(0, U, s, Glass, 0.03), OnFacet(0, U, s, Glass, 0.97), [n0[0] * 0.025, n0[1] * 0.025, n0[2] * 0.025]);
                 Bar(p, OnFacet(0, U, s, 0.72, 0.03), OnFacet(0, U, s, 0.72, 0.97), [n0[0] * 0.025, n0[1] * 0.025, n0[2] * 0.025]);
                 // A searchlight on each cheek of the nose.
-                Slab(p, 0, D, s, 0.56, 0.66, 0.25, 0.55, 0.02, 0.2, 0.03, Frame, "dirty steel");
-                FStrip(p, 0, D, s, 0.575, 0.645, 0.29, 0.51, 0.205, "#fff2c8", glow: true);
+                Slab(p, 0, D, s, 0.56, 0.66, 0.04, 0.26, 0.05, 0.23, 0.03, Frame, "dirty steel");
+                FStrip(p, 0, D, s, 0.575, 0.645, 0.07, 0.23, 0.235, "#fff2c8", glow: true);
             }
             // The spine across the nose: plated forward, glass aft of the windscreen's front bar, a bar up the middle.
             double[] SpineAt(int side, double u) => Lerp(Pt(0, R, side), Pt(1, R, side), u);
@@ -869,7 +942,7 @@ public sealed class ShipParts : IPartGenerator
             double[] F(int k, double t) => Lerp(Pt(0, k, -1), Pt(0, k, 1), t);
             double[] Band(int k0, int k1, double t, double v) => Lerp(F(k0, t), F(k1, t), v);
             Quad(p, F(L, 0), F(L, 1), F(D, 1), F(D, 0), Armour, "plated steel");
-            const double Fv0 = 0.16, Fv1 = 0.84, Ft0 = 0.05, Ft1 = 0.95;
+            const double Fv0 = 0.1, Fv1 = 0.9, Ft0 = 0.05, Ft1 = 0.95;
             Quad(p, Band(D, U, 0, 0), Band(D, U, 1, 0), Band(D, U, 1, Fv0), Band(D, U, 0, Fv0), HullPaint, paint: true);
             Quad(p, Band(D, U, 0, Fv1), Band(D, U, 1, Fv1), Band(D, U, 1, 1), Band(D, U, 0, 1), HullPaint, paint: true);
             Quad(p, Band(D, U, 0, Fv0), Band(D, U, Ft0, Fv0), Band(D, U, Ft0, Fv1), Band(D, U, 0, Fv1), HullPaint, paint: true);
@@ -878,8 +951,7 @@ public sealed class ShipParts : IPartGenerator
             var fn = Unit(Cross(Sub(F(D, 1), F(D, 0)), Sub(F(U, 0), F(D, 0))));
             if (fn[2] > 0)
                 fn = [-fn[0], -fn[1], -fn[2]];
-            foreach (var t in new[] { 0.28, 0.5, 0.72 })
-                Bar(p, Band(D, U, t, Fv0), Band(D, U, t, Fv1), [fn[0] * 0.03, fn[1] * 0.03, fn[2] * 0.03]);
+            // (no mullion: one stood in front of the pilot's crosshair. Karl, 2026-11-16: a clear view ahead)
             Bar(p, Band(D, U, Ft0, Fv0 + 0.005), Band(D, U, Ft1, Fv0 + 0.005), [fn[0] * 0.035, fn[1] * 0.035, fn[2] * 0.035]);
             Quad(p, F(U, 0), F(U, 1), F(R, 1), F(R, 0), RoofDark, "plated steel");
             // The visor: a dark slab from the brow's foot, out over the windows and a little down.
@@ -942,12 +1014,16 @@ public sealed class ShipParts : IPartGenerator
         FloorOf(p, 1, F1, F1T, Deck, [StairHole]);
         HullWalls(p, 1);
         // The cockpit's dashboard under the windscreen, in front of where anyone stands: a raked desk with dials and screens.
-        Solid(p, 2.9, F1T, 0.55, 7.1, F1T + 0.7, 1.35, Frame, "dirty steel");
-        Detail(p, 3.0, F1T + 0.7, 0.75, 7.0, F1T + 0.86, 1.3, "#3a3d3f", "plastic");
+        // (kept low, its top well under a seated pilot's eye, and the yokes short stubs off the sight line: Karl, 2026-11-16)
+        Solid(p, 2.9, F1T, 0.55, 7.1, F1T + 0.55, 1.35, Frame, "dirty steel");
+        Detail(p, 3.0, F1T + 0.55, 0.75, 7.0, F1T + 0.69, 1.3, "#3a3d3f", "plastic");
         foreach (var (x, c) in new[] { (3.5, "#5fd06a"), (4.6, "#e0a030"), (5.4, "#5fd06a"), (6.5, "#d04030") })
-            Detail(p, x - 0.3, F1T + 0.87, 0.85, x + 0.3, F1T + 0.89, 1.2, c, glow: true);
-        foreach (var x in new[] { 4.1, 5.9 })
-            Detail(p, x - 0.05, F1T + 0.7, 1.3, x + 0.05, F1T + 1.25, 1.34, Frame, "dirty steel"); // (the yokes' columns)
+            Detail(p, x - 0.3, F1T + 0.7, 0.85, x + 0.3, F1T + 0.72, 1.2, c, glow: true);
+        foreach (var x in new[] { 4.3, 5.7 })
+        {
+            Detail(p, x - 0.03, F1T + 0.555, 1.305, x + 0.03, F1T + 0.8, 1.34, Frame, "dirty steel"); // (the yokes' columns)
+            Detail(p, x - 0.14, F1T + 0.8, 1.29, x + 0.14, F1T + 0.84, 1.35, Frame, "rubber");
+        }
         // Partitions: the cockpit's back wall, the corridor's walls, the cabins' ends, the galley's end; doorways 1.5 by 2.25 m. Ship
         // walls are painted plate; the bathroom's gloss white.
         const double Dh = 2.25;
@@ -957,12 +1033,9 @@ public sealed class ShipParts : IPartGenerator
         var corridor = LastPartition;
         Partition(p, 6.0, 4.125, 6.0, 7.875, F1T, Ceil, BathWall, "gloss paint", (5.25, 6.75, Dh));
         Partition(p, 6.0, 12.125, 6.0, 16.04, F1T, Ceil, Wall, "painted plating", (13.25, 14.75, Dh));
-        Partition(p, Cx - InHigh + 0.01, 8.0, 3.875, 8.0, F1T, Ceil, Wall, "painted plating");
-        Fillers(p, 1, 8.0, F1T, Ceil, Wall, "painted plating", port: true, starboard: false);
-        Partition(p, 6.125, 8.0, Cx + InHigh - 0.01, 8.0, F1T, Ceil, BathWall, "gloss paint");
-        Fillers(p, 1, 8.0, F1T, Ceil, BathWall, "gloss paint", port: false, starboard: true);
-        Partition(p, 6.125, 12.0, Cx + InHigh - 0.01, 12.0, F1T, Ceil, Wall, "painted plating");
-        Fillers(p, 1, 12.0, F1T, Ceil, Wall, "painted plating", port: false, starboard: true);
+        Partition(p, Cx - Uw, 8.0, 3.875, 8.0, F1T, Ceil, Wall, "painted plating");
+        Partition(p, 6.125, 8.0, Cx + Uw, 8.0, F1T, Ceil, BathWall, "gloss paint");
+        Partition(p, 6.125, 12.0, Cx + Uw, 12.0, F1T, Ceil, Wall, "painted plating");
         // Pipes along the corridor's port wall under the ceiling, on brackets: the ship's plumbing, out in the open.
         With(corridor, () =>
         {
@@ -972,26 +1045,26 @@ public sealed class ShipParts : IPartGenerator
                 Detail(p, 4.13, 5.58, z - 0.03, 4.27, 5.9, z + 0.03, Frame, "dirty steel");
         });
         // The stair's rail along the opening's inboard side, open at its head (aft) to step off into the hall.
-        Solid(p, 7.69, F1T, 8.25, 7.75, F1T + 1.0, 10.6, Frame, "steel");
-        Detail(p, 7.65, F1T + 0.95, 8.25, 7.79, F1T + 1.05, 10.6, Stripe, "hazard paint");
+        Solid(p, StairHole.X0 - 0.06, F1T, 8.25, StairHole.X0, F1T + 1.0, 10.6, Frame, "steel");
+        Detail(p, StairHole.X0 - 0.1, F1T + 0.95, 8.25, StairHole.X0 + 0.04, F1T + 1.05, 10.6, Stripe, "hazard paint");
         // Sockets: the seats, the cabins' furniture, the doors' jambs, the lamps.
         Sock(p, "seatL", 4.0, F1T, 2.45, "+y");
         Sock(p, "seatR", 6.0, F1T, 2.45, "+y");
-        Sock(p, "module", Cx, F1T, 1.6, "+y"); // (on the floor in the footwell, under the dashboard's overhang)
+        Sock(p, "module", 4.0, F1T, 1.6, "+y"); // (on the floor in the pilot's footwell, so the seat's link runs along the floor, not up past the windscreen)
         Sock(p, "chart", 7.4, F1T + 0.475, 3.875, "-z");
-        Sock(p, "bed", Cx - InHigh, F1T + 0.125, 6.0, "+x");
+        Sock(p, "bed", Cx - Uw, F1T + 0.125, 6.0, "+x");
         Sock(p, "locker", 3.2, F1T + 0.125, 4.125, "+z");
-        Sock(p, "desk", 1.3, F1T + 0.125, 7.875, "-z");
-        Sock(p, "shower", 9.2, F1T + 0.125, 4.125, "+z");
-        Sock(p, "basin", Cx + InHigh, F1T + 0.125, 6.1, "-x");
-        Sock(p, "toilet", Cx + InHigh, F1T + 0.125, 7.3, "-x");
+        Sock(p, "desk", 2.9, F1T + 0.125, 7.875, "-z");
+        Sock(p, "shower", 7.9, F1T + 0.125, 4.125, "+z");
+        Sock(p, "basin", Cx + Uw, F1T + 0.125, 6.1, "-x");
+        Sock(p, "toilet", Cx + Uw, F1T + 0.125, 7.3, "-x");
         foreach (var (z, i) in new[] { (9.25, 0), (11.35, 1) })
-            Sock(p, $"growL{i}", Cx - InHigh, F1T + 0.125, z, "+x");
+            Sock(p, $"growL{i}", Cx - Uw, F1T + 0.125, z, "+x");
         Sock(p, "growM0", 3.875, F1T + 0.125, 12.0, "-x");
         Sock(p, "growM1", 3.875, F1T + 0.125, 14.1, "-x");
-        Sock(p, "stove", Cx + InHigh, F1T + 0.45, 12.7, "-x");
-        Sock(p, "table", 8.0, F1T + 0.375, 12.125, "+z");
-        Sock(p, "cabinet", Cx + InHigh, F1T + 0.85, 13.6, "-x");
+        Sock(p, "stove", Cx + Uw, F1T + 0.45, 15.2, "-x");
+        Sock(p, "table", 7.15, F1T + 0.375, 12.125, "+z");
+        Sock(p, "cabinet", Cx + Uw, F1T + 0.85, 13.8, "-x");
         Sock(p, "coffee", 6.125, F1T + 0.125, 15.35, "+x");
         Sock(p, "doorCockpit", 4.25, F1T + 1.125, 4.0, "+x");
         Sock(p, "doorBed", 4.0, F1T + 1.125, 5.25, "+z");
@@ -1057,7 +1130,7 @@ public sealed class ShipParts : IPartGenerator
         for (var i = 0; i < FrameZ.Length; i++)
             With($"Rust Bucket Frame {FrameNames[i]}", () => Rib(p, i + 2));
         // The ceiling (what the partitions meet), and the void over it to the skin, stepped: what the roof gear stands on.
-        foreach (var (z0, z1) in Strips(UpFront, Back, StairCuts))
+        foreach (var (z0, z1) in Strips(UpFront, Back, RoomCuts(1)))
         {
             var w = RoomHalf(1, z0, z1);
             Solid(p, Cx - w, Ceil, z0, Cx + w, CeilT, z1, Ceiling, "painted plating");

@@ -10,7 +10,7 @@
   "orbit": 3000, // m over the ground (past the sky's edge, 2.6 km up on Glacier)
   // Where people wake, one each in turn, in the ship's own metres from its first part's middle (ShipParts' Sx metres less
   // 0.125): the bedroom's floor, the corridor fore and aft, the cockpit, the galley, the hold.
-  "wake": [[2.875, 3.135, 6.875], [4.875, 3.135, 5.875], [4.875, 3.135, 9.875], [4.875, 3.135, 2.875], [7.875, 3.135, 13.875], [4.875, 0.135, 7.875]],
+  "wake": [[2.875, 3.135, 6.875], [4.875, 3.135, 5.875], [4.875, 3.135, 9.875], [4.875, 3.135, 2.875], [6.875, 3.135, 13.875], [4.875, 0.135, 7.875]],
   "beats": {
     "placeholder": { "time": 4.0, "caption": "The engines tick as they cool. Somewhere below, Glacier turns." },
     "wake": { "time": 3.5, "lines": [] }
