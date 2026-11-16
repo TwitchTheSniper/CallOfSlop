@@ -1,8 +1,8 @@
 # Ship works: engines and turrets with insides (design)
 
 Design only (2026-11-16). No code changed, nothing built, nothing run. Written for one builder (Opus, extra effort) who
-takes the whole feature, phase by phase, a WIP commit after each step. Section 14 holds the open questions and Karl's
-answers; an answer there overrides the text above it.
+takes the whole feature, phase by phase, a WIP commit after each step. Section 14 holds the questions and Karl's
+answers (all seven answered on 2026-11-16); an answer there overrides the text above it.
 
 Karl's ask (2026-11-16): when a ship is designed, its engines and turrets have no interior component. Larger engines
 should have an interior part, or a set of them, that the design has to make room for, different for each way an engine
@@ -399,9 +399,14 @@ rule its first parts.
   name no ship and is listed in the Parts tab. A ship's own drive stays ship-named and unlisted. `Categories.json`
   needs no new rule for that; add placing rules so the family sorts into Ship fittings' sub-sections (Drives, Drive
   works, Turret works).
-- **Recipes**: none in this work. Ship building is TwitchTheSniper's production system and agents don't change it
-  (SURVIVAL.md). The parts are in Creative and in blueprints; raise their recipes with Twitch (question 6). Do not let
-  the Assembling generator pick them up by a default: the table sits near `MaxRecipes`.
+- **How they are made** (Karl, 2026-11-16, answer 6): with the new production system, **not on the Assembler**. So
+  the part kit writes no Assembling recipe for any of these parts, and the Assembling generator must not pick them up
+  by a default (the table also sits near `MaxRecipes`). The production system is TwitchTheSniper's and in progress
+  (SURVIVAL.md: agents don't change it, and what leans on it is raised with them first), so this plan's phases stop
+  at parts that exist in Creative and in blueprints. Which machines make a Drive Core or a Turret Ring, and from what,
+  is a piece of work to agree with Twitch and is not one of the phases below; the builder gives each part its mass,
+  material and size class honestly so that system has what it needs, and lists the parts for Twitch at the end of
+  phase 1.
 - **Limits**: a part holds 256 boxes and 64 sockets, and a name 32 characters ("Coolant Exchanger L" fits).
 - **Checks**: `--check-vehicle` gains the `works:` lines (3.4). `--check-building` already proves a standing person
   reaches doors, seats and stores; add works pieces and the Engineer's Panel to what it must reach on a ship whose
@@ -503,7 +508,7 @@ sheets of the changed rooms.
 
 ## 14. Open questions, and Karl's answers
 
-The builder goes ahead on the recommended answer for any still open.
+All seven are answered; the text above is revised to match.
 
 1. **Which engines must have insides?** Answered: B, everything over a thrust figure, lift jets too. (A was main
    drives only.)
@@ -512,8 +517,8 @@ The builder goes ahead on the recommended answer for any still open.
    plan of their own later.)
 4. **Breakdowns:** Answered: B, every crewed player ship in Survival. (A was the ship start's own ship only.)
 5. **A Drive Core that is destroyed:** Answered: A, the drive stops (to its quarter), no blast. (B was a blast.)
-6. **Recipes for the new parts:** A (recommended): none here; raised with TwitchTheSniper for the production system.
-   B: the part kit writes Assembling recipes for them now.
+6. **Recipes for the new parts:** Answered: neither as asked. They are made with the new production system, not on
+   the Assembler.
 7. **The rust bucket:** Answered: B, it keeps its two pod drives as true pods, serviced outside. (A was one centre
    hull drive with a real engine room.)
 
@@ -534,3 +539,6 @@ Answers:
   last point is revised with what that changes in the code. It is done in phase 2, with the move onto the works.
 - **5: A** (Karl, 2026-11-16, decision card). A destroyed Drive Core only stops its drive, which falls to the
   quarter floor, and can be mended. Fuel Pumps and Turbopumps stay flammable.
+- **6** (Karl, 2026-11-16, in the thread: "They should be made with the new production system and not on the
+  assembler"). No Assembling recipes. Section 9 is revised. How the production system makes them is to be agreed
+  with TwitchTheSniper and is outside these phases unless Karl says the builder should take it on.
