@@ -639,6 +639,134 @@
       "by": "back"
     },
     {
+      "part": "Heavy RCS Thruster",
+      "on": 39,
+      "socket": "rcsUpL",
+      "by": "base",
+      "paint": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 39,
+      "socket": "rcsUpR",
+      "by": "base",
+      "paint": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 39,
+      "socket": "rcsDownL",
+      "by": "base",
+      "paint": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 39,
+      "socket": "rcsDownR",
+      "by": "base",
+      "paint": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 39,
+      "socket": "rcsOutL",
+      "by": "base",
+      "paint": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 39,
+      "socket": "rcsOutR",
+      "by": "base",
+      "paint": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 39,
+      "socket": "rcsAlongL",
+      "by": "base",
+      "paint": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 39,
+      "socket": "rcsAlongR",
+      "by": "base",
+      "paint": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 62,
+      "socket": "rcsUpL",
+      "by": "base",
+      "paint": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 62,
+      "socket": "rcsUpR",
+      "by": "base",
+      "paint": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 62,
+      "socket": "rcsDownL",
+      "by": "base",
+      "paint": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 62,
+      "socket": "rcsDownR",
+      "by": "base",
+      "paint": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 62,
+      "socket": "rcsOutL",
+      "by": "base",
+      "paint": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 62,
+      "socket": "rcsOutR",
+      "by": "base",
+      "paint": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 62,
+      "socket": "rcsAlongL",
+      "by": "base",
+      "paint": "#202326",
+      "finish": "dirty steel"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 62,
+      "socket": "rcsAlongR",
+      "by": "base",
+      "paint": "#202326",
+      "finish": "dirty steel"
+    },
+    {
       "part": "Dray Well Door L",
       "on": 8,
       "socket": "wellDoorL",
@@ -784,7 +912,7 @@
     },
     {
       "part": "Medium Crane Bridge",
-      "on": 108,
+      "on": 124,
       "socket": "-x.0.0",
       "by": "+x",
       "paint": "#e0a020",

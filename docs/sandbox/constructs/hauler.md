@@ -44,10 +44,14 @@ girders) along the hold's roof, a sensor mast, radiators over the drive room.
   `drive0`-`drive3`, a hull drive. The stern and the drive room's aft wall are mounts (`Works.Mount`), welded together; three
   Drive Core S (2 MN each) hang on the wall by their `front` at half their height (`core0`-`core2`), 1.7 m clear in front and
   more than a metre beside each one's gauge, and the Engineer's Panel is on the port wall by the door. `--check-vehicle`
-  prints every head at 100%. No lift jets or retros yet: those over 500 kN need works or pods too.
+  prints every head at 100%.
+- **Attitude jets** (Karl, 2026-11-16: it flips and burns on its main drives, with small jets every way for small moves):
+  16 Heavy RCS Thrusters (250 kN, under the 500 kN that needs works) on pads, a cluster at the bow (z 3, and two in the
+  nose tip) and one at the stern (z 52, and two on the transom): up, down, out to each side and along the ship, two of
+  each, so it can slide any way and turn on any axis.
 
 ## Not yet
 
-Lift and retro jets, legs, the boarding ladder, lamps, wiring and fittings (Karl's scope for the first cut). Without legs and a
+Legs, the boarding ladder, a seat and flight stabiliser, lamps, wiring and fittings (Karl's scope for the first cut). Without legs and a
 boarding ladder `--check-building` can't reach the decks from the ground; its map shows every room joined through its doors.
 No container part, no power for the crane, no cargo storage volumes.

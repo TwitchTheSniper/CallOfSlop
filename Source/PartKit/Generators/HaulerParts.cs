@@ -70,6 +70,34 @@ public sealed class HaulerParts : IPartGenerator
     private static readonly double[] CoreX = [-3.6, -0.5, 2.6];
     private const double CoreH = 1.6, PanelZ = 47.0;
 
+    /// <summary>Attitude jets (Karl, 2026-11-16: it flips and burns on its drives, with small jets every way for small moves): a
+    /// cluster at the bow and one at the stern, each up, down, out to both sides and along the ship, Heavy RCS Thrusters on pads.</summary>
+    private const string Rcs = "Heavy RCS Thruster";
+    private const double BowRcsZ = 3.0, SternRcsZ = 52.0, RcsPadW = 0.6;
+
+    /// <summary>A pad for an attitude jet: a square solid standing proud metres off the surface point (clear of the armour on it), sunk
+    /// 11 cm into the hull; its outer face takes the socket.</summary>
+    private static void RcsPad(Part p, string name, double x, double y, double z, string dir, double proud)
+    {
+        var s = dir[0] == '-' ? -1 : 1;
+        var axis = dir[1] - 'x';
+        double[] at = [x, y, z];
+        double[] lo = [x - RcsPadW / 2, y - RcsPadW / 2, z - RcsPadW / 2], hi = [x + RcsPadW / 2, y + RcsPadW / 2, z + RcsPadW / 2];
+        lo[axis] = Math.Min(at[axis] - s * 0.11, at[axis] + s * proud);
+        hi[axis] = Math.Max(at[axis] - s * 0.11, at[axis] + s * proud);
+        at[axis] += s * proud;
+        Solid(p, lo[0], lo[1], lo[2], hi[0], hi[1], hi[2], Frame, "dirty steel");
+        Sock(p, name, at[0], at[1], at[2], dir);
+    }
+
+    /// <summary>The x of facet k's surface (side s) at height y and station z (between its two profile points).</summary>
+    private static double FacetX(int k, int s, double z, double y)
+    {
+        var q = At(z);
+        var (a, b) = (q[k - 1], q[k]);
+        return Cx + s * (a.H + (b.H - a.H) * (y - a.Y) / (b.Y - a.Y));
+    }
+
     private const double SideZ0 = 27.4, SideZ1 = 32.6, SideTop = 3.05, SideSockX = 6.875, SideSockY = 3.075, SideSockZ = 30.125;
 
     private static double[] P(double x, double y, double z) => [x - H, y - H, z - H];
@@ -964,6 +992,16 @@ public sealed class HaulerParts : IPartGenerator
         var cy = At(2.5)[0].Y;
         Prism(p, [P(Cx - 1.0, cy + 0.02, 1.2), P(Cx + 1.0, cy + 0.02, 1.2), P(Cx + 1.0, cy + 0.02, 4.4), P(Cx - 1.0, cy + 0.02, 4.4)],
             [P(Cx - 0.7, cy - 0.35, 1.8), P(Cx + 0.7, cy - 0.35, 1.8), P(Cx + 0.7, cy - 0.35, 4.1), P(Cx - 0.7, cy - 0.35, 4.1)], Frame, "dirty steel");
+        // The bow's attitude jets: up and down on the brow and the flat, out on the cheeks, two retro jets in the tip.
+        var bq = At(BowRcsZ);
+        foreach (var s in new[] { -1, 1 })
+        {
+            var n = s < 0 ? "L" : "R";
+            RcsPad(p, "rcsUp" + n, Cx + s * 1.4, bq[4].Y, BowRcsZ, "+y", 0.2);
+            RcsPad(p, "rcsDown" + n, Cx + s * 1.9, bq[0].Y, BowRcsZ, "-y", 0.05);
+            RcsPad(p, "rcsOut" + n, FacetX(2, s, BowRcsZ, 1.6), 1.6, BowRcsZ, s < 0 ? "-x" : "+x", 0.3);
+            RcsPad(p, "rcsAlong" + n, Cx + s * 0.55, 2.0, Zt, "-z", 0.05);
+        }
         foreach (var (za, zb) in new[] { (Zt + 2.0, Zc), (Zc, ZFront - 0.25) })
             foreach (var (ya, yb) in new[] { (At(za)[0].Y + 0.05, 1.5), (1.5, 3.2), (3.2, 5.0), (5.0, 6.4) })
                 VoidT(p, za, zb, ya, yb, 0, 0.004, zb == ZFront - 0.25 ? 0.0 : 0.004);
@@ -1061,6 +1099,16 @@ public sealed class HaulerParts : IPartGenerator
         foreach (var (ya, yb) in new[] { (-0.9, -0.3), (-0.3, 1.0), (1.0, 3.3), (3.3, 5.6), (5.6, 6.7) })
             VoidT(p, ZEngEnd + 0.25, Stern, ya, yb, 0, 0.0, 0.004); // (flush with the drive room's back wall: they weld)
         VoidT(p, ZHoldEnd + 0.125, ZEngEnd + 0.25, Ft1, 6.65, 0, 0.004, 0.004); // (up to the spine's void over the drive room)
+        // The stern's attitude jets: up and down on the spine and the flat, out on the upper sides, two forward jets on the transom.
+        var sq = At(SternRcsZ);
+        foreach (var s in new[] { -1, 1 })
+        {
+            var n = s < 0 ? "L" : "R";
+            RcsPad(p, "rcsUp" + n, Cx + s * 1.5, sq[4].Y, SternRcsZ, "+y", 0.05);
+            RcsPad(p, "rcsDown" + n, Cx + s * 1.5, sq[0].Y, SternRcsZ, "-y", 0.05);
+            RcsPad(p, "rcsOut" + n, FacetX(3, s, SternRcsZ, 4.2), 4.2, SternRcsZ, s < 0 ? "-x" : "+x", 0.25);
+            RcsPad(p, "rcsAlong" + n, Cx + s * 3.9, 3.0, Stern, "+z", 0.05);
+        }
         foreach (var (n, dx, dy) in new[] { ("drive0", -2.4, 1.3), ("drive1", 2.4, 1.3), ("drive2", -2.4, 4.3), ("drive3", 2.4, 4.3) })
         {
             Solid(p, Cx + dx - 0.4, dy - 0.4, Stern - 0.3, Cx + dx + 0.4, dy + 0.4, Stern, Frame, "dirty steel");
@@ -1512,6 +1560,11 @@ public sealed class HaulerParts : IPartGenerator
         for (var i = 0; i < CoreX.Length; i++)
             Hang(bp, DriveCore, drive, $"core{i}", "front");
         Hang(bp, "Engineer's Panel", drive, "panel", "back");
+        // The attitude jets, at the bow and the stern.
+        foreach (var piece in new[] { placed["Dray Bow"], stern })
+            foreach (var d in new[] { "Up", "Down", "Out", "Along" })
+                foreach (var n in new[] { "L", "R" })
+                    Paint(bp, Hang(bp, Rcs, piece, $"rcs{d}{n}", "base"), Frame, "dirty steel");
         Paint(bp, Hang(bp, "Dray Well Door L", keel, "wellDoorL", "hang"), Bare, "plated steel");
         Paint(bp, Hang(bp, "Dray Well Door R", keel, "wellDoorR", "hang"), Bare, "plated steel");
         Paint(bp, Hang(bp, "Dray Side Door L", well, "sideDoorL", "hang"), Armour, "worn paint");
