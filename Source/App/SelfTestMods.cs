@@ -6,7 +6,7 @@ public static partial class SelfTest
 {
     /// <summary>
     /// "Mods" (phase 6, docs/mods/MODS.md): mods in a temporary folder over the shipped data. The example mod's patch on the
-    /// Jump Drive changes its range and keeps its other values, its patch on Ember adds a body by name and changes one value
+    /// Jump Drive changes its range and keeps its other values, its patch on Frostreach adds a body by name and changes one value
     /// of another, and its new system joins the galaxy with its own hash; a later mod (by order) patches what an earlier one
     /// left, removes a named list entry and adds a blueprint. Refused, each with the mod's name and the reason, the rest
     /// still loading: a patch of nothing, a new file with a taken name and no "override", a patch that renames, a patched
@@ -42,7 +42,7 @@ public static partial class SelfTest
             }
             Put("Later/mod.json", """{ "name": "Later", "order": 5 }""");
             Put("Later/Constructs/Parts/Drive.json", """{ "patch": "Jump Drive", "jump": { "charge": 3 } }""");
-            Put("Later/Systems/Ember.json", """{ "patch": "Ember", "bodies": [ { "name": "Soot", "remove": true } ] }""");
+            Put("Later/Systems/Frostreach.json", """{ "patch": "Frostreach", "bodies": [ { "name": "Crumb", "remove": true } ] }""");
             Put("Later/Constructs/Blueprints/Copy.json", File.ReadAllText(Path.Combine(ConstructBuild.BlueprintFolder, "Jumper.json")).Replace("\"Jumper\"", "\"Jumper Copy\""));
             Put("Bad/mod.json", """{ "name": "Bad", "order": 9 }""");
             Put("Bad/Systems/Nothing.json", """{ "patch": "No Such System", "description": "x" }""");
@@ -51,7 +51,7 @@ public static partial class SelfTest
             Put("Bad/Constructs/Parts/Far.json", "// a value the part's own checks refuse\n{ \"patch\": \"Battery\", \"power\": -5 }");
             Put("Broken/mod.json", """{ "name": "Broken", "colour": "red" }""");
             Put("Off/mod.json", """{ "name": "Off", "enabled": false }""");
-            Put("Off/Systems/Ember.json", """{ "patch": "Ember", "description": "never" }""");
+            Put("Off/Systems/Frostreach.json", """{ "patch": "Frostreach", "description": "never" }""");
 
             var errors = new List<string>();
             var mods = Mods.Discover(root, errors);
@@ -62,11 +62,11 @@ public static partial class SelfTest
             var sysErrors = new List<string>();
             var plain = StarSystems.LoadFolder(Path.Combine(AppFolders.Data, "Systems"), new List<string>());
             var modded = StarSystems.LoadFolder(Path.Combine(AppFolders.Data, "Systems"), sysErrors, mods);
-            var ember = modded.FirstOrDefault(e => e.System.Name == "Ember");
-            var emberBase = plain.FirstOrDefault(e => e.System.Name == "Ember");
-            var names = ember.System == null ? "" : string.Join(",", ember.System.Bodies.Select(b => b.Name));
-            Want(names == "Ember,Cinder,Ashfall,Kiln", $"Ember gains Kiln and loses Soot (bodies {names})");
-            Want(ember.System != null && emberBase.System != null && ember.Hash != emberBase.Hash, "a patched system hashes differently");
+            var frost = modded.FirstOrDefault(e => e.System.Name == "Frostreach");
+            var frostBase = plain.FirstOrDefault(e => e.System.Name == "Frostreach");
+            var names = frost.System == null ? "" : string.Join(",", frost.System.Bodies.Select(b => b.Name));
+            Want(names == "Frostreach,Glacier,Rime,Shard,Slopolis,Cinder,Caledon,Cairn,Mille,Kiln", $"Frostreach gains Kiln and loses Crumb (bodies {names})");
+            Want(frost.System != null && frostBase.System != null && frost.Hash != frostBase.Hash, "a patched system hashes differently");
             Want(modded.Count == plain.Count + 1 && modded[^1].System.Name == "Lantern" && modded.Take(plain.Count).Select(e => e.System.Name).SequenceEqual(plain.Select(e => e.System.Name)),
                 $"Lantern is added after the shipped systems, which keep their order ({string.Join(",", modded.Select(e => e.System.Name))})");
             Want(sysErrors.Any(e => e.Contains("mod Bad") && e.Contains("No Such System")), "a patch of nothing is refused");

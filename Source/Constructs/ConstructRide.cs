@@ -486,6 +486,8 @@ public static partial class ConstructRide
         var d = p.D;
         if (d.LadderTop <= 0 || p.Broken)
             return "nothing to climb there";
+        if (StowedFoot(c, part))
+            return "the ladder is stowed: F on its foot rolls it down";
         c.WorldFrame(p.Seg, out var q, out var t);
         var pos = p.Pos;
         var rot = p.Rot;
@@ -505,6 +507,19 @@ public static partial class ConstructRide
             return "no room at the top";
         StartClimb(ref s, c, p.Seg, to, (int)MathF.Ceiling((top.Y - foot.Y) / LadderSpeed * World.TickRate) + 6, frame);
         return null;
+    }
+
+    /// <summary>A ladder with an event door hung on it (a boarding ladder's foot, MinerParts) is climbed only with that door open.</summary>
+    private static bool StowedFoot(Construct c, int ladder)
+    {
+        for (var l = 0; l < c.LinkCount; l++)
+        {
+            ref var ln = ref c.Links[l];
+            var other = ln.A == ladder ? ln.B : ln.B == ladder ? ln.A : -1;
+            if (other >= 0 && c.DoorOf(other) is var k and >= 0 && c.Doors[k].Part == other && !ConstructDoors.TargetOpen(c, other))
+                return true;
+        }
+        return false;
     }
 
     /// <summary>The box face nearest world up (its axis and side), when it is up enough to stand on (the walkable slope).</summary>

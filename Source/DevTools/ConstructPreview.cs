@@ -14,10 +14,12 @@ namespace CallOfSlop;
 /// The page is <c>tools/preview/viewer.html</c> with the model's JSON put in place of its <c>__MODEL__</c> line; with no
 /// template found (a packaged build) only the JSON is written, next to where the page would be.
 /// </summary>
-public static class ConstructPreview
+public static partial class ConstructPreview
 {
     public static int Cli(string[] args)
     {
+        if (Flag(args, "--preview-shot") is { } shotOf)
+            return Shot(shotOf, args);
         if (Flag(args, "--preview-gallery") is { } galleryDir)
             return Gallery(galleryDir, Flag(args, "--only"));
         var what = Flag(args, "--preview-construct") ?? "";
@@ -330,6 +332,7 @@ public static class ConstructPreview
             parts.Append(JsonSerializer.Serialize(new object[] { d.Name, first, triLook.Count - first }));
         }
         _tris = triLook.Count;
+        _last = (pos, nrm, triLook, looks.Select(l => (l.Hex, l.Glass, l.Glow)).ToList()); // (for --preview-shot)
 
         // Quantise: positions to int16 over the largest extent, normals to int8.
         var lo = new Vector3(float.MaxValue);

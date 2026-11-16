@@ -244,12 +244,14 @@ public static unsafe partial class Program
             return VehicleKit.VehicleGenJob.SliceReport(sliceVehicle, args); // seeds made in slices as a dynamic spawn makes them: time, slices, the longest spans by their yields
         if (args.SkipWhile(a => !a.Equals("--sweep-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } sweepVehicle)
             return VehicleKit.VehicleDriveCheck.Report(VehicleKit.VehicleKitCli.SweepVehicle(sweepVehicle, args)); // many seeds of a shape, built and checked, nothing written
-        if (args.Any(a => a.Equals("--preview-construct", StringComparison.OrdinalIgnoreCase) || a.Equals("--preview-gallery", StringComparison.OrdinalIgnoreCase)))
+        if (args.Any(a => a.Equals("--preview-construct", StringComparison.OrdinalIgnoreCase) || a.Equals("--preview-gallery", StringComparison.OrdinalIgnoreCase) || a.Equals("--preview-shot", StringComparison.OrdinalIgnoreCase)))
             return ConstructPreview.Cli(args); // a blueprint or part as a turnable web page for an agent to publish (Source/DevTools/ConstructPreview.cs, tools/preview/)
         if (args.SkipWhile(a => !a.Equals("--check-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } vehicleFile)
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
         if (args.Any(a => a.Equals("--no-drive-gate", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleDriveCheck.GateOn = false; // the spawn's drive check off, to measure what it catches and costs (VehicleDriveCheck.cs)
+        if (args.SkipWhile(a => !a.Equals("--flight-check", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } flightFile)
+            return VehicleKit.VehicleFlightCheck.Cli(flightFile); // the aircraft's flight check on any blueprint: climb, hover level, go forward (a ship's too)
         if (args.SkipWhile(a => !a.Equals("--drive-check", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } driveFile)
             return VehicleKit.VehicleDriveCheck.Cli(driveFile, args); // the spawn's drive check on any blueprint: level, and a throttle pulse moves it
         if (args.SkipWhile(a => !a.Equals("--brief", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } briefOf)
@@ -1949,8 +1951,13 @@ public static unsafe partial class Program
     // =====================================================================
 
 
-    /// <summary>A camera this far from the map's middle (m) draws boxes relative to a render origin (float rounding there is about 0.5 mm).</summary>
-    public const float FarFromMiddle = 4096f;
+    /// <summary>
+    /// A camera this far from the map's middle (m) draws boxes relative to a render origin. It was 4096 m (float rounding
+    /// there about 0.5 mm), but a ship over Crumb (600 m radius, 2.4 km out) flickered all over (Karl, 2026-11-16): each
+    /// part's world matrix rounds on its own, and the view-projection cancels two numbers of kilometres, so parts shook
+    /// about a millimetre against each other and the camera, and the 2-5 mm offsets that keep faces apart z-fought.
+    /// </summary>
+    public const float FarFromMiddle = 256f;
 
     /// <summary>
     /// The render origin for this frame (Renderer.SetCameraAt; docs/space/SPACE.md, "Far from the middle"): none near the
@@ -1967,6 +1974,12 @@ public static unsafe partial class Program
         {
             origin = o;
             eyeFromOrigin = e + shake;
+            return;
+        }
+        if (!thirdPerson && local != null && _game.LocalRideAnchor(eye, out o, out e))
+        {
+            origin = o; // (standing in a ship: its drawn position, as for a seat, so the walls don't shimmer against the eye)
+            eyeFromOrigin = e;
             return;
         }
         origin = eye;
@@ -2067,7 +2080,11 @@ public static unsafe partial class Program
         openingView |= local != null && QuarryRideCamera(ref eye, ref fwd, ref camUp); // (the quarry duty's crew bus: Program.Quarry.cs)
         if (openingView)
             _game.Audio.SetListener(eye, fwd);
-        var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, 0.05f, World.Map.FarPlane);
+        // Third person: nothing comes nearer the camera than its sphere (ThirdPerson.CameraRadius), so the near plane can stand
+        // back, which spreads the depth buffer's precision further out (z-fighting between faces 2 mm apart on a ship seen
+        // from 40 m and more). The near plane's corners stay inside the sphere at wide views.
+        var near = tp ? ThirdPerson.CameraRadius * 0.48f : 0.05f;
+        var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, near, World.Map.FarPlane);
         RenderOrigin(local, tp || pilotView || openingView || talkView, eye, shake, out var origin, out var eyeFromOrigin);
         var viewFromOrigin = Matrix4x4.CreateLookAt(eyeFromOrigin, eyeFromOrigin + fwd, camUp);
         Gfx.SetCameraAt(origin, viewFromOrigin, proj);

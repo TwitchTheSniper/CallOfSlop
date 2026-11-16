@@ -824,7 +824,12 @@ public sealed partial class Game
             if (was >= 0)
             {
                 ref var sh = ref w.Ships[was];
-                var i = (uint)sh.Primary < (uint)f.System.Count ? f.Ships.AddRelative(sh.Primary, sh.R, sh.V) : -1;
+                // (a saved body index belongs to the system the world was saved in: a world that moved to another system,
+                // as Cinder, Caledon and Mille did into Frostreach on 2026-11-15, keeps the construct where it was, off rails)
+                var same = w.System == f.System.Name;
+                if (!same)
+                    Console.WriteLine($"[worlds] construct {c.Id}'s ship was saved in {w.System}, but {World.Map.Name} is in {f.System.Name} now: it stays where it was, out of orbit");
+                var i = same && (uint)sh.Primary < (uint)f.System.Count ? f.Ships.AddRelative(sh.Primary, sh.R, sh.V) : -1;
                 c.SpaceShip = i < 0 ? (ushort)0 : f.Ships.Ids[i];
                 continue;
             }

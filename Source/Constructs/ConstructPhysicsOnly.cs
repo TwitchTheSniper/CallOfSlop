@@ -62,6 +62,7 @@ public sealed partial class ConstructEdits
                     return "the world is full of constructs";
                 c.Owner = player;
                 made = c;
+                InheritRide(world, player, c); // (spawned in a moving ship: it moves with it, ConstructEdits.cs)
                 Done.Add($"player {player}: {def.Name} spawned as construct {c.Id} in front of them (physics-only: {def.PhysicsWhy})");
                 if (Hands[player].Tool == ConstructTool.PhysicsGun && !Hands[player].Seated)
                 {

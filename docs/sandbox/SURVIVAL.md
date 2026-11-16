@@ -23,19 +23,58 @@ the limits, and no longer offers the archived arena modes for a Sandbox game.
 
 ## Where Survival is going
 
-Karl's notes from the talk, as direction for later work (none of this is built yet):
+Karl's direction, from the talk with TwitchTheSniper and his review of the Design Roadmap notes (2026-11-15; the review
+page is the Artifact https://claude.ai/artifact/VULKVwr3ZSKKVUuije6gnJ). None of it is built yet. The notes behind it were
+a brainstorm, so their examples are not rules: only what is listed as decided below is decided, and the rest is open until
+Karl says otherwise.
 
+### Decided
+
+- **What the game is.** A production and simulation game about logistics, wars and diplomacy. No story and no ending.
+  Capital shipyards and big battles are the current progression marker; never call them an endgame.
 - **Logistics is the game.** Ships carry what the player needs; keeping those lines running, and defending them, is the
-  play.
-- **Gated resources.** The factions each hoard certain resources by holding the planets they are found on. What a player
-  can make depends on what they can get to.
-- **First goal: a mining and refining ship.** The player's first big build is a ship that digs and refines, so they can
-  work a world they don't live on.
-- **Then a combat ship.** Built to take on a faction, to win the new parts and resources it holds.
+  play. Threats to a supply line are shown and flagged (enemy ships heading for a place or a route).
+- **One star system, five planets,** for now. Today's `Systems/` still holds four faction systems plus Dev; that changes
+  when this is picked up.
+- **Gated resources.** Factions hold certain resources by holding the planets they are found on, so what a player can
+  make depends on what they can reach. A costly lift-off (high gravity, thick air) is a gate on some worlds only, and needs
+  a powerful ship. Hazards start with a few. Ice is one resource among several, nothing special.
+- **First goal: a mining ship.** The player's first big build digs, paired with a small refinery station or a refinery on
+  the ground, depending on the gating. Where a resource is refined is per resource: on the ground when refining sheds mass
+  before lift-off, in space when the process needs it (zero g). A refinery ship only makes sense at a huge size and is not
+  needed now. The first thing mined may be a found asteroid as well as a planetoid.
+- **Then a combat ship,** to take on a faction and win the parts and resources it holds.
+- **Capture and salvage** are in: derelicts, and independent ships making a name for themselves.
+- **Ships see other ships** (radar and lock-on).
+- **The reactor cap is a balance device.** A ship scales through burst, which costs hull space for capacitors; that stops
+  missile and meme-boat spam. Station reactors are heavier and hold more, and don't pay their way on a ship.
+- **Currency is in.** When it arrives and what is bought and sold are not set. NPCs have needs and wants.
+- **NPC factions are kinds,** such as traders and mercenaries, details not fixed. The story's factions (IT Department, Clan
+  MacSlop, the scammers, the Ministry of Slop) are archived with the story; the player faction system (F2) stays.
+- **NPCs are streamlined into assets;** the storylets stay archived.
+- **Robot shells come early.**
+- **Nothing happens while the game isn't running,** and nothing saves a player whose tank is empty, for now.
+- **Ships are built through TwitchTheSniper's production system** (machines, recipes, ship building). It is work in
+  progress and theirs: agents don't change it, and anything that leans on it is raised with them first.
 
-Open questions for when this is picked up: which resource each faction's planets hold and how scarce it is; how a faction
-defends its planet (patrols, outposts, convoys to raid); what "taking out" a faction gives (its planet's resources, its
-parts, both); and how the rust bucket's hold seeds the first mining run.
+### Open
+
+- Diplomacy: unknown.
+- Currency: when, and what is traded.
+- Asteroids (none in the game yet) and a radar display (missile seekers, the Fire Director and the Long Range Sensor part
+  exist; no display does).
+- Which resource each planet holds and how scarce it is; how a faction defends its planet (patrols, outposts, convoys to
+  raid); what taking out a faction gives; how the rust bucket's hold seeds the first mining run.
+
+### Ideas, for later (not rules)
+
+- Acting at a distance: load into a robot shell aboard a nearby ship through the on-board antenna at high power, then
+  command it.
+- A fleet room (top-down command, as in a strategy game), power routing between systems, a subsystems list, rail
+  launchers, faction politics, and late on, players shifting markets (cutting a route as a diplomatic move).
+
+Dropped from the notes: the "everything exists for a reason" rule, hand-placed shipyards, a rule that only small things
+are procedural, the vehicle terrain table, and urgent cargo.
 
 ## Built since
 
