@@ -1,11 +1,12 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Fuel Pump L",
-  "description": "A torch drive's fuel pump: it serves 12 MN of nozzles through the Hull Mount its works stand on. It is full of fuel, and burns when it is holed. A generic ship fitting: it fits any ship.",
+  "description": "A torch drive's fuel pump: a section of the drive's cylinder that bolts on behind its Drive Core (or to the Hull Mount itself). It serves 12 MN of nozzles through that mount. It is full of fuel, and burns when it is holed. A generic ship fitting: it fits any ship.",
   "group": "Ship",
   "section": "Ship fittings",
   "role": "frame",
   "tool": "welder",
+  "collider": "boxes",
   "onBreak": "disable",
   "worksPiece": {
     "kind": "pump",
@@ -20,73 +21,117 @@
   "boxes": [
     {
       "min": [
-        -0.7,
-        -0.75,
-        -1.6
+        -1.122,
+        -1.122,
+        -0.1
       ],
       "max": [
-        0.7,
-        -0.61,
-        -0.02
+        1.122,
+        1.122,
+        -0.003
       ],
-      "color": "#5c6057",
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
       "finish": "dirty steel"
     },
     {
       "min": [
-        -0.616,
-        -0.605,
-        -1.1456
+        -1.034,
+        -1.034,
+        -1.203
       ],
       "max": [
-        0.28,
-        0.63,
-        -0.7744
+        1.034,
+        1.034,
+        -0.097
       ],
       "color": "#d8a020",
       "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
       "finish": "worn paint"
     },
     {
       "min": [
-        -0.3536,
-        -0.604,
-        -1.408
+        -1.122,
+        -1.122,
+        -1.297
       ],
       "max": [
-        0.0176,
-        0.627,
-        -0.512
-      ],
-      "color": "#d8a020",
-      "detail": true,
-      "finish": "worn paint"
-    },
-    {
-      "min": [
-        0.168,
-        -0.607,
-        -0.88
-      ],
-      "max": [
-        0.644,
-        0.075,
-        -0.16
+        1.122,
+        1.122,
+        -1.2
       ],
       "color": "#7b8186",
       "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -1.144,
+        -1.144,
+        -0.78
+      ],
+      "max": [
+        1.144,
+        1.144,
+        -0.455
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "shape": "tube",
+      "segments": 24,
+      "inner": 0.886,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.8932,
+        -0.572,
+        -1.105
+      ],
+      "max": [
+        1.5972,
+        0.132,
+        -0.26
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
       "finish": "painted plating"
     },
     {
       "min": [
-        -0.288,
-        0.38,
-        -0.96
+        0.865,
+        -0.6002,
+        -1.108
       ],
       "max": [
-        -0.048,
-        0.62,
-        -0.003
+        1.6254,
+        0.1602,
+        -1.014
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.1,
+        1.074,
+        -0.65
+      ],
+      "max": [
+        0.1,
+        1.274,
+        -0.12
       ],
       "color": "#8a5a3a",
       "detail": true,
@@ -96,29 +141,29 @@
     },
     {
       "min": [
-        -0.288,
-        0.63,
-        -1.08
+        -0.07,
+        0.9306,
+        -0.72
       ],
       "max": [
-        -0.048,
-        0.747,
-        -0.84
+        0.07,
+        1.094,
+        -0.58
       ],
-      "color": "#34373a",
+      "color": "#8a5a3a",
       "detail": true,
-      "finish": "dirty steel"
+      "finish": "copper"
     },
     {
       "min": [
-        0.647,
+        1.5772,
         -0.3,
-        -0.64
+        -0.815
       ],
       "max": [
-        0.696,
-        0.0,
-        -0.32
+        1.6072,
+        -0.1,
+        -0.615
       ],
       "color": "#40e070",
       "detail": true,
@@ -127,26 +172,56 @@
     },
     {
       "min": [
-        -0.7,
-        -0.61,
-        -1.6
+        -0.792,
+        -1.149,
+        -0.75
       ],
       "max": [
-        0.7,
-        0.75,
+        0.792,
+        -0.495,
+        -0.55
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.88,
+        -1.147,
+        -0.77
+      ],
+      "max": [
+        0.88,
+        -1.1,
+        -0.53
+      ],
+      "color": "#5c6057",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -1.01,
+        -1.15,
+        -1.3
+      ],
+      "max": [
+        1.01,
+        1.01,
         -0.02
       ],
       "hidden": true
     },
     {
       "min": [
-        -0.3,
-        -0.3,
+        -0.4,
+        -0.4,
         -0.02
       ],
       "max": [
-        0.3,
-        0.3,
+        0.4,
+        0.4,
         0.0
       ],
       "hidden": true
@@ -167,34 +242,16 @@
       "at": [
         0.0,
         0.0,
-        -1.6
+        -1.3
       ],
       "dir": "-z"
-    },
-    {
-      "name": "+x",
-      "at": [
-        0.7,
-        0.0,
-        -0.8
-      ],
-      "dir": "+x"
-    },
-    {
-      "name": "-x",
-      "at": [
-        -0.7,
-        0.0,
-        -0.8
-      ],
-      "dir": "-x"
     },
     {
       "name": "deck",
       "at": [
         0.0,
-        -0.75,
-        -0.8
+        -1.15,
+        -0.65
       ],
       "dir": "-y"
     }
