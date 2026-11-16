@@ -51,7 +51,7 @@ round stops at the skin everywhere. The pods and saddle tanks hang from small mo
 ## The rooms
 
 The first hull's, unchanged (the opening's wake points and every fitting's socket hold). Upper deck (living): the cockpit
-across the bow (two Seats, a Chart Table, the dashboard under the windscreen), a corridor aft with the bedroom and bathroom
+across the bow (two Worn Flight Couches: a camper's old captain's chairs with the springs coming through; a Chart Table, the dashboard under the windscreen), a corridor aft with the bedroom and bathroom
 either side (its walls gloss white), then hydroponics (four Grow Racks), the stair hall and the galley (stove, table,
 Medicine Cabinet, Galley Coffee Station); pipes run along the corridor under the ceiling. Lower deck (working): the hold
 behind the ramp (shelving, a Tool Rack, a Locker, two Requisition Crates) and the engine room aft (the Ship Engine Block,

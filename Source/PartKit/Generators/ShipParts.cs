@@ -1572,6 +1572,74 @@ public sealed class ShipParts : IPartGenerator
         return p.Stats(70, 200, 3, 2.0);
     }
 
+    /// <summary>The rust bucket's flight couch (Karl, 2026-11-15: "incredibly worn ... spring coming out from the bottom, worn fabric.
+    /// I'm thinking winnebago vibe"): an old camper's captain's chair on a swivel pedestal, in faded mustard with brown, orange and cream
+    /// stripes, a split cushion showing its foam, duct tape on the backrest, a headrest knocked askew, padded armrests (one worn through),
+    /// a taped stick and a frayed lap belt. One spring has come up through the cushion. The Seat's
+    /// sockets and seat height, so it stands where a Seat did.</summary>
+    private static Part WornCouch()
+    {
+        var p = Fitting("Worn Flight Couch", "A camper's old captain's chair bolted to a swivel post. A spring is coming through the seat, the fabric is older than you, and it is the most comfortable seat aboard. Link it to a Driving or Turret Module.", role: "seat");
+        const string Fabric = "#a8875a", Brown = "#6b4226", Orange = "#b8602e", Cream = "#d6c69c", Foam = "#dcc77a", Tape = "#9a9c98", Chrome = "#8a8e8a", Dark = "#2a2826";
+        // The pedestal: a foot plate bolted down, the post with a rust streak, the swivel plate, two side rails left of the seat pan.
+        LBox(p, -0.26, 0, -0.26, 0.26, 0.04, 0.26, Dark, "dirty steel");
+        foreach (var bx in new[] { -0.21, 0.21 })
+            foreach (var bz in new[] { -0.21, 0.21 })
+                LBox(p, bx - 0.02, 0.04, bz - 0.02, bx + 0.02, 0.055, bz + 0.02, Chrome, "steel", detail: true);
+        LBox(p, -0.07, 0.04, -0.07, 0.07, 0.3, 0.07, Chrome, "steel");
+        LBox(p, -0.02, 0.06, -0.074, 0.0, 0.26, -0.07, Rust, "rust", detail: true);
+        LBox(p, -0.2, 0.3, -0.2, 0.2, 0.33, 0.2, Frame, "dirty steel");
+        foreach (var sx in new[] { -1, 1 })
+            LBox(p, sx * 0.27, 0.33, -0.28, sx * 0.3, 0.366, 0.3, Frame, "dirty steel");
+        // The cushion, sagging at the front, a worn patch where you sit and a split with the foam showing.
+        LBox(p, -0.3, 0.37, -0.3, 0.3, 0.52, 0.28, Fabric, "fabric");
+        LBox(p, -0.18, 0.508, -0.2, 0.16, 0.525, 0.12, "#c4a878", "fabric", detail: true);
+        LBox(p, 0.04, 0.51, -0.285, 0.17, 0.527, -0.21, Foam, "rubber", detail: true);
+        LBox(p, -0.12, 0.33, -0.306, 0.1, 0.368, -0.292, Fabric, "fabric", detail: true); // (the torn bottom hanging at the front)
+        // The lap belt lies across the cushion, its buckle undone, the other end hanging down the side.
+        LBox(p, -0.302, 0.51, -0.13, 0.2, 0.53, -0.07, "#7a2f2a", "fabric", detail: true);
+        LBox(p, 0.2, 0.512, -0.14, 0.26, 0.536, -0.06, Chrome, "chrome", detail: true);
+        LBox(p, -0.316, 0.24, -0.13, -0.299, 0.527, -0.07, "#7a2f2a", "fabric", detail: true);
+        // The backrest with the camper's stripes across its face, duct tape over a split, a patch on its back.
+        LBox(p, -0.3, 0.52, 0.2, 0.3, 1.2, 0.38, Fabric, "fabric");
+        foreach (var (y0, y1, c) in new[] { (0.68, 0.74, Brown), (0.74, 0.79, Orange), (0.79, 0.83, Cream), (0.83, 0.88, Orange), (0.88, 0.94, Brown) })
+            LBox(p, -0.297, y0, 0.194, 0.297, y1, 0.2, c, "fabric", detail: true);
+        LBox(p, -0.27, 1.0, 0.184, -0.07, 1.04, 0.2, Tape, "plastic", detail: true);
+        LBox(p, -0.19, 0.945, 0.18, -0.15, 1.12, 0.197, Tape, "plastic", detail: true);
+        LBox(p, 0.1, 0.56, 0.38, 0.26, 0.8, 0.384, "#5a6a4a", "fabric", detail: true);
+        // The headrest on two posts, knocked to one side.
+        foreach (var x in new[] { -0.07, 0.13 })
+            LBox(p, x - 0.012, 1.19, 0.285, x + 0.012, 1.215, 0.309, Chrome, "chrome", detail: true);
+        LBox(p, -0.14, 1.207, 0.23, 0.2, 1.39, 0.36, Fabric, "fabric");
+        LBox(p, -0.137, 1.27, 0.226, 0.197, 1.31, 0.23, Orange, "fabric", detail: true);
+        // The armrests on their brackets; the right one worn through to the foam, a stick on the left with tape round its grip.
+        foreach (var sx in new[] { -1, 1 })
+        {
+            LBox(p, sx * 0.32 - 0.015, 0.37, -0.18, sx * 0.32 + 0.015, 0.665, -0.14, Chrome, "steel", detail: true);
+            LBox(p, sx * 0.31, 0.66, -0.25, sx * 0.37, 0.72, 0.18, Brown, "fabric");
+        }
+        LBox(p, 0.315, 0.72, -0.1, 0.365, 0.724, 0.06, Foam, "rubber", detail: true);
+        LBox(p, -0.355, 0.72, -0.235, -0.325, 0.9, -0.205, Dark, "rubber", detail: true);
+        LBox(p, -0.358, 0.79, -0.238, -0.322, 0.82, -0.202, Tape, "plastic", detail: true);
+        LBox(p, -0.348, 0.9, -0.228, -0.332, 0.906, -0.212, "#ff3020", detail: true, glow: true);
+        // One spring come up through the split in the cushion, right where you sit (Karl: "just one spring").
+        for (var i = 0; i < 4; i++)
+        {
+            double x = 0.105 + i * 0.006, z = -0.2475, y = 0.545 + i * 0.03;
+            if (i % 2 == 0)
+                LBox(p, x - 0.04, y - 0.01, z - 0.01, x + 0.04, y + 0.01, z + 0.01, Chrome, "steel", detail: true);
+            else
+                LBox(p, x - 0.01, y - 0.01, z - 0.03, x + 0.01, y + 0.01, z + 0.03, Chrome, "steel", detail: true);
+            // (the wire between rings: a detail box grows to 16 mm, so the rings are 20 mm and no face lines up)
+            if (i < 3)
+                LBox(p, x - 0.008, y - 0.006 - (i == 0 ? 0.035 : 0), z - 0.008, x + 0.008, y + 0.03, z + 0.008, Rust, "rust", detail: true);
+        }
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("back", [0, 0.6, 0.38], "+z");
+        p.Set(("seat", Kw(("at", Py.L(0, -0.03, 0)))));
+        return p.Stats(40, 140, 3, 2.0);
+    }
+
     private static Part GrowRack()
     {
         var p = Fitting("Grow Rack 2 m", "Three trays of hydroponic greens under lamps, fed from a drip line. Lettuce, mostly.");
@@ -1907,8 +1975,8 @@ public sealed class ShipParts : IPartGenerator
         Switch(bp, keel, "switchHoldR", Lamp(bp, keel, "lampHoldR0"), Lamp(bp, keel, "lampHoldR1"));
         Switch(bp, keel, "switchEng", Lamp(bp, keel, "lampEngL"), Lamp(bp, keel, "lampEngR"));
         // The cockpit: the pilot's seat flies it through a flight stabilizer under the dashboard, on Ship keys with the mouse on the nose.
-        var pilot = Hang(bp, "Seat", deck, "seatL", "bottom");
-        Hang(bp, "Seat", deck, "seatR", "bottom");
+        var pilot = Hang(bp, "Worn Flight Couch", deck, "seatL", "bottom");
+        Hang(bp, "Worn Flight Couch", deck, "seatR", "bottom");
         var stab = Hang(bp, "Flight Stabilizer", deck, "module", "-y"); // (a small gyro: the attitude jets turn it)
         bp.Steps[stab]["config"] = ShipFlight();
         bp.Wires.Add((pilot, stab));
@@ -1952,7 +2020,7 @@ public sealed class ShipParts : IPartGenerator
         List<Part> parts =
         [
             .. structure, Ramp(), Pod(-1), Pod(1), Saddle(-1), Saddle(1), Drive(), LiftJet(), Rcs("RCS Thruster", RcsForce, 1.0), Rcs("Heavy RCS Thruster", HeavyRcsForce, 1.6), Leg(), Radiator(-1), Radiator(1), DeckCargo(), Crane(), Mast(),
-            Toilet(), Basin(), Shower(), GalleyRange(), MessTable(), GrowRack(), EngineBlock(),
+            Toilet(), Basin(), Shower(), GalleyRange(), MessTable(), WornCouch(), GrowRack(), EngineBlock(),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);

@@ -543,13 +543,13 @@
       }
     },
     {
-      "part": "Seat",
+      "part": "Worn Flight Couch",
       "on": 13,
       "socket": "seatL",
       "by": "bottom"
     },
     {
-      "part": "Seat",
+      "part": "Worn Flight Couch",
       "on": 13,
       "socket": "seatR",
       "by": "bottom"
