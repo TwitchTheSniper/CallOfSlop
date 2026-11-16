@@ -77,6 +77,7 @@ public sealed partial class Game
             return;
         f.AnyoneBusy = SpaceAnyoneBusy();
         ServerTickNav(Space); // (ships under orders: where their drives point and how hard they push, GameNav.cs)
+        ServerTickLinkRoutes(Space); // (route ships' legs through space: GameSandboxLinked.cs)
         SpaceLaunchBefore(f); // (ships that are constructs: their thrust and turn, GameSpaceLaunch.cs)
         SpaceAwayBefore(Space); // (and those in other systems: GameSpaceJump.cs)
         f.Tick(Space.AwayWarpLimit);

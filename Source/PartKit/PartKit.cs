@@ -91,6 +91,7 @@ public static class PartKit
         new Generators.CraftingTerminalParts(),
         new Generators.BuildStationParts(),
         new Generators.LifterParts(),
+        new Generators.LinkedLogisticsParts(), // (linked logistics: link ends, the Cargo Dock and Port, the Route Computer, the Dispatcher)
         new Generators.PanelDesignerParts(),
         new Generators.StructureParts(),
         new Generators.CapitalParts(),

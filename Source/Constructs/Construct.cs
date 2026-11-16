@@ -60,6 +60,7 @@ public struct CPart
     public OrderList? Orders; // an Extruder's or a Wheel Former's queue of work orders, a Line Console's bill (WorkOrders.cs; null: none)
     public CraftList? Craft; // a Crafting Terminal's open requests (ConstructCrafting.cs; null: none)
     public StationJob? Station; // a Building Station's job (ConstructStation.cs; null: none)
+    public LinkPart? Link; // a linked logistics part's own state: its code, pair, name, a port's manifest, a route, a fleet (LinkedLogistics.cs; null: none)
     public CMedia? Media; // a Video Screen's or Music Player's list and what it plays (ConstructMedia.cs)
     public System.Text.StringBuilder? MediaLoad; // a world file's list as its chunks come in (ConstructMedia.LoadChunk)
     public float[]? Trace; // a Graph Screen's last 30 s on this peer, oldest at TraceAt (LogicDisplays.cs)

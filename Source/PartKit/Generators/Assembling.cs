@@ -253,7 +253,15 @@ public sealed class Assembling : IPartGenerator
         Rec("Medium Run-out Table", 120, 2, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 4), ("Bearing", 2)]),
         Rec("Large Run-out Table", 180, 3, m: [("steel", 600), ("rubber", 150)], p: [("Bearing", 4), ("Control Unit", 1)]),
         Rec("Medium Die Extension", 120, 2, m: [("steel", 600), ("rubber", 150)], p: [("Gear Set", 2), ("Wiring Loom", 2)]),
-        Rec("Large Die Extension", 180, 3, m: [("steel", 600), ("rubber", 150)], p: [("Wiring Loom", 4), ("Control Unit", 1)])
+        Rec("Large Die Extension", 180, 3, m: [("steel", 600), ("rubber", 150)], p: [("Wiring Loom", 4), ("Control Unit", 1)]),
+        // Linked logistics (docs/sandbox/design/linked-logistics.md section 3): the link ends, the dock and port, the ship's and the factory's computers.
+        Rec("Logistics Transmitter", 12, 2, m: [("steel", 20), ("copper", 6)], p: [("Circuit Board", 4), ("Copper Coil", 2)]),
+        Rec("Logistics Receiver", 12, 2, m: [("steel", 20), ("copper", 6)], p: [("Circuit Board", 4), ("Copper Coil", 2)]),
+        Rec("Logistics Relay", 60, 3, m: [("steel", 200), ("copper", 40)], p: [("Circuit Board", 12), ("Control Unit", 2)]),
+        Rec("Cargo Dock", 40, 2, m: [("steel", 400), ("copper", 20)], p: [("Gear Set", 4), ("Circuit Board", 2)]),
+        Rec("Cargo Port", 8, 1, m: [("steel", 40)], p: [("Circuit Board", 2)]),
+        Rec("Route Computer", 15, 2, m: [("steel", 20), ("glass", 2)], p: [("Circuit Board", 6)]),
+        Rec("Logistics Dispatcher", 25, 3, m: [("steel", 60), ("glass", 4)], p: [("Circuit Board", 10), ("Control Unit", 1)])
     ];
 
     /// <summary>

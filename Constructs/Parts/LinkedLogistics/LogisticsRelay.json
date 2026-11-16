@@ -1,0 +1,141 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Logistics Relay",
+  "description": "A dish that links this construct's logistics network with another across the star system (a Relay at each end). Shows a code to pair with; takes one. Needs 2 kW.",
+  "group": "Production",
+  "section": "Linked logistics",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 2000.0,
+  "health": 2500,
+  "armour": 5,
+  "material": "steel",
+  "color": "#3a6f8f",
+  "attachSeconds": 10.0,
+  "power": 2000,
+  "onBreak": "disable",
+  "logiLink": {
+    "kind": "relay"
+  },
+  "boxes": [
+    {
+      "min": [
+        -1.5,
+        -0.5,
+        -1.5
+      ],
+      "max": [
+        1.5,
+        0.0,
+        1.5
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        -0.6,
+        -0.005,
+        -0.6
+      ],
+      "max": [
+        0.6,
+        0.8,
+        0.6
+      ]
+    },
+    {
+      "min": [
+        -0.4,
+        0.3,
+        0.597
+      ],
+      "max": [
+        0.4,
+        0.6,
+        0.612
+      ],
+      "color": "#10161c",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.2,
+        0.795,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        3.2,
+        0.2
+      ],
+      "color": "#98a1a9"
+    },
+    {
+      "min": [
+        -1.5,
+        3.195,
+        -1.5
+      ],
+      "max": [
+        1.5,
+        3.4,
+        1.5
+      ],
+      "color": "#d8dde2"
+    },
+    {
+      "min": [
+        -1.2,
+        3.395,
+        -1.2
+      ],
+      "max": [
+        1.2,
+        3.5,
+        1.2
+      ],
+      "color": "#d8dde2"
+    },
+    {
+      "min": [
+        -0.08,
+        3.495,
+        -0.08
+      ],
+      "max": [
+        0.08,
+        4.4,
+        0.08
+      ],
+      "color": "#98a1a9",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.2,
+        4.395,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        4.5,
+        0.2
+      ],
+      "color": "#f07818",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

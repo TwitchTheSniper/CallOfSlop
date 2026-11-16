@@ -141,7 +141,7 @@ public static class ConstructCrafting
     }
 
     private static bool IsStore(ConstructPartDef d) =>
-        d.Role == PartRole.Storage && !d.IsCraftTerminal && !d.IsAssembler && !d.IsRefiner && !d.IsExtruder && !d.IsPress && !d.IsBeacon && !d.IsTerminal && !d.IsGunBench
+        d.Role == PartRole.Storage && (!d.IsCraftTerminal || d.LinkKind == LinkKind.Dock) // (a Cargo Dock's hold is the network's stock: what ships bring is fetched from it) && !d.IsAssembler && !d.IsRefiner && !d.IsExtruder && !d.IsPress && !d.IsBeacon && !d.IsTerminal && !d.IsGunBench
         && !d.IsRecycler && !d.IsGatherer;
 
     private static void Build(Construct c, int t, CraftNet net)
@@ -825,6 +825,8 @@ public static class ConstructCrafting
             if (why != null && (refusal == null || Kin(c.DefOf(net.Machines[i]), what)))
                 refusal = why;
         }
+        if (!ok && d.LinkKind != LinkKind.Dock && LinkPlan.Offers(c, (ushort)kind.Id))
+            ok = true; // (a linked network holds or makes it: linked-logistics.md 4.2)
         if (!ok)
             return refusal ?? $"nothing linked to the {d.Name} holds or makes the {NameOf(what)}";
         ref var p = ref c.Parts[t];
@@ -896,6 +898,7 @@ public static class ConstructCrafting
             return "that order is gone";
         ref var o = ref q.Items[k];
         world.Reserve.Release(world, c.Parts[t].Store, id);
+        LinkPlan.Cancelled(c, c.Parts[t].Store, id); // (its remote lines: linked-logistics.md 4.2)
         ConstructLogisticsPlan.Cancelled(world, c, t, id); // (its chained inputs: their entries go, their unstarted orders leave their makers)
         if (o.Asked > 0)
         {
@@ -1285,6 +1288,11 @@ public static class ConstructCrafting
                     else if (refusal == null || Kin(c.DefOf(m), o.What))
                         refusal = why;
                 }
+                if (ask > 0 && c.DefOf(t).LinkKind != LinkKind.Dock && LinkPlan.AskRemote(world, c, owner, o.Id, false, def, ask) is var remote and > 0)
+                {
+                    o.Asked += (ushort)remote; // (a linked network makes or holds it: it comes by ship, linked-logistics.md 4.2)
+                    ask -= remote;
+                }
                 if (ask > 0 && state == CraftState.Waiting)
                 {
                     state = CraftState.Held;
@@ -1330,6 +1338,7 @@ public static class ConstructCrafting
                 note = o.Note ?? "";
                 if (o.State != CraftState.Queued || o.Age++ % 5 == 0)
                     note = ConstructLogistics.HeldNote(c, t, o.Id) // (a piece of it held at a Router, by its name: phase 4c)
+                           ?? (where == NoPart ? LinkPlan.Note(c, owner, o.Id) : null) // (asked of a linked network: where it is, linked-logistics.md 4.2)
                            ?? ConstructLogisticsPlan.Note(world, c, t, o.Id) // (a chained input: the link nobody makes, or who makes it)
                            ?? (where < c.PartCount ? Starved(world, c, net, where, o.What) : "");
                 if (o.Lost != 0 && note == "")

@@ -409,6 +409,7 @@ public static class ConstructConfig
         p.LeverShown = p.LeverShownY = -1;
         p.Text = p.Text2 = null;
         p.Media = null;
+        p.Link = null; // (a new part's link state is its own: a copy never shares a code or a manifest)
         p.Mem = 0;
         p.Reading = d.Logic == CLogic.Numpad ? LogicInputs.NoEntry : 0;
         for (var s = 0; s < d.Config.Length; s++)
