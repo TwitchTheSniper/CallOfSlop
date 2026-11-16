@@ -351,3 +351,7 @@ These override the text above where they differ.
 8. **Linked sub-jobs:** yes, a station's Sub-jobs setting gets a value Linked, off by default; a linked station is offered a sub-job before the 30 s fallback, and the finished module rides a cargo ship.
 9. **A player may take cargo** from a hold on a route; it is not ordered again: the order stays short until the player reorders.
 10. **Cargo lost with a destroyed ship is ordered again automatically;** the wreck's cargo can still be salvaged.
+
+## Queued next (user, 2026-11-16)
+
+After the sub-blueprints and linked logistics builds are on main: **a linked logistics layer on the navigation screen** (the command view, docs/space/COMMAND.md). A separate layer the player turns on and off. It shows only nodes of currently linked logistics networks (paired Transmitters/Receivers and Relays, with the factories they join); unlinked networks and parts are not drawn.
