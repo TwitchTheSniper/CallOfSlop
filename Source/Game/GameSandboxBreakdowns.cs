@@ -265,6 +265,11 @@ public sealed partial class Game
             }
             return null;
         }
+        if (WorksWrecked(c, part))
+        {
+            failed = true;
+            return $"{c.DefOf(part).Name}: wrecked - {SandboxKeys.Fire}: mend it ({WorksMendCost(c, part)})";
+        }
         if (c.DefOf(part).Role != PartRole.Thruster)
             return null;
         if (c.Parts[part].Broken && c.Parts[part].Health > 0)
@@ -274,6 +279,30 @@ public sealed partial class Game
         }
         if (BreakdownSeen(c, part))
             return $"{c.DefOf(part).Name}: groaning, about to fail ({Math.Max(0, (int)(_bdSeenFails - SandboxNow))} s) - {SandboxKeys.Fire}: see to it";
+        return null;
+    }
+
+    /// <summary>A ship's works piece broken by damage (disabled at zero health, still in place): mended where it stands (docs/sandbox/design/ship-works.md 7).</summary>
+    private static bool WorksWrecked(Construct c, int part) =>
+        part >= 0 && part < c.PartCount && c.Parts[part].Broken && c.Parts[part].Health <= 0 && c.DefOf(part).WorksKind is not (WorksKind.None or WorksKind.Mount);
+
+    private static string WorksMendCost(Construct c, int part) => ShipWorks.Current.MendCost(c.DefOf(part).Mass) is var n and > 0 ? $"{n} {ShipWorks.Current.MendMaterial}" : "free";
+
+    /// <summary>Server: the attach tool mends a works piece broken by damage: it is paid for by its mass, and comes back whole.</summary>
+    private string? WorksMend(Player p, Construct c, int part)
+    {
+        var t = ShipWorks.Current;
+        var d = c.DefOf(part);
+        if (SandboxHands.MendPay(Constructs, p.Id, p.Eye, t.MendMaterial, t.MendCost(d.Mass)) is { } why)
+            return why;
+        ref var pp = ref c.Parts[part];
+        pp.Broken = false;
+        pp.Health = d.Health;
+        c.Dirty = true;
+        Constructs.StructureDirty.Add(c.Id);
+        c.Wake();
+        SandboxHands.Done.Add($"player {p.Id}: mended the {d.Name} on construct {c.Id}");
+        Constructs.Events.Add($"construct {c.Id}: {d.Name} mended");
         return null;
     }
 
@@ -321,6 +350,8 @@ public sealed partial class Game
             if (part < 0)
                 return "nothing on this ship needs seeing to";
         }
+        else if (WorksWrecked(c, part))
+            return WorksMend(p, c, part);
         else if (c.DefOf(part).Role != PartRole.Thruster)
             return "that part is gone";
         if (_bdDef != 0 && body == _opShip && BreakdownPart(c) == part)

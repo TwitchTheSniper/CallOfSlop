@@ -1,0 +1,630 @@
+using System.Globalization;
+using System.Text;
+using System.Text.Json;
+
+namespace CallOfSlop;
+
+/// <summary>
+/// What a works piece is (docs/sandbox/design/ship-works.md 3.1). A head (a drive's nozzle, a gun on a ring, a launcher)
+/// lists the kinds it needs; a piece says which kind it is and how much it serves. The order is fixed: a head's needs are
+/// kept as bits by this number, so new kinds go at the end.
+/// </summary>
+public enum WorksKind : byte
+{
+    None,
+    Mount, // a piece of hull a head goes through: works bolted to it belong to the head bolted to it
+    Core, // a torch drive's reaction chamber (N of thrust)
+    Pump, // a torch drive's fuel pump (N)
+    Exchanger, // a torch drive's coolant exchanger (N)
+    Turbopump, // a rocket's propellant pump (N)
+    Manifold, // a rocket's mixing manifold (N)
+    Conditioner, // an ion drive's power conditioner (N)
+    Loader, // a ring's autoloader (guns of its size)
+    Lasergen, // a laser emitter's generator (kW of beam)
+    Hoist, // a launcher's reload hoist (kg of one weapon)
+}
+
+/// <summary>A head's place in its works (rebuilt with the caches): its assembly and what its works let it do.</summary>
+public struct CWorksHead
+{
+    public ushort Part;
+    public short Asm; // its assembly (-1: it reaches no mount)
+    public float Cap; // 0..1: the share of its rating its works let it have (a thruster never under ShipWorks.BareShare)
+    public float Burn; // a thruster: its burn at full level, as a share of its file's burnRate (above Cap when it is short of works: it burns at a jet's rate)
+    public WorksKind Short; // the kind that holds it back most (None: nothing does)
+}
+
+/// <summary>
+/// The works' numbers (Constructs/ShipWorks.json, docs/sandbox/design/ship-works.md): the thrust over which a ship's
+/// thruster must have works, the share a drive short of them keeps, the thrust from which a drive type needs each kind,
+/// and what mending a broken piece costs. The defaults match the file.
+/// </summary>
+public sealed class ShipWorks
+{
+    public const string Format = "call-of-slop-ship-works/1";
+
+    public float JetMost = 500_000; // N: a Ship thruster over this has works (the part kit refuses one that has none)
+    public float BareShare = 0.25f; // a thruster's works let it have at least this share
+    public float JetBurn = 3f; // l/s a MN: what a drive short of its works burns for what it pushes
+    public string MendMaterial = "metal";
+    public float MendPerTonne = 2f; // what a works piece broken by damage takes to mend, a tonne of it (at least 1)
+    public string Problem = "";
+
+    /// <summary>Per drive type, the thrust (N) from which each kind is needed, in order: torch, then rocket and ion.</summary>
+    public readonly Dictionary<string, (WorksKind Kind, float From)[]> Drives = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["torch"] = [(WorksKind.Core, 500_000), (WorksKind.Pump, 2_000_000), (WorksKind.Exchanger, 6_000_000)],
+        ["rocket"] = [(WorksKind.Turbopump, 500_000), (WorksKind.Manifold, 500_000)],
+        ["ion"] = [(WorksKind.Conditioner, 0)],
+    };
+
+    public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "ShipWorks.json");
+
+    private static ShipWorks? _current;
+
+    /// <summary>The table in use (loaded once; the defaults above when it is missing or refused).</summary>
+    public static ShipWorks Current => _current ??= Load(FilePath);
+
+    /// <summary>The kinds a drive of this type and thrust needs (the part kit writes them into the head's file).</summary>
+    public WorksKind[] NeedsFor(string type, float force)
+    {
+        if (!Drives.TryGetValue(type, out var rows))
+            throw new ArgumentException($"no drive type \"{type}\" in ShipWorks.json");
+        return force <= JetMost && type.Equals("torch", StringComparison.OrdinalIgnoreCase) ? [] : [.. rows.Where(r => force > r.From || r.From == 0).Select(r => r.Kind)];
+    }
+
+    public static ShipWorks Load(string path)
+    {
+        var t = new ShipWorks();
+        try
+        {
+            using var doc = JsonDocument.Parse(File.ReadAllText(path), new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
+            var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("format", out var f) || f.GetString() != Format)
+                throw new FormatException($"\"format\" must be \"{Format}\"");
+            foreach (var p in root.EnumerateObject())
+                if (p.Name is not ("format" or "jetMost" or "bareShare" or "jetBurn" or "mendMaterial" or "mendPerTonne" or "drives"))
+                    throw new FormatException($"unknown key \"{p.Name}\"");
+            t.JetMost = Num(root, "jetMost", 1, 1e9f);
+            t.BareShare = Num(root, "bareShare", 0, 1);
+            t.JetBurn = Num(root, "jetBurn", 0.01f, 100);
+            t.MendMaterial = root.GetProperty("mendMaterial").GetString() ?? "";
+            if (RecyclingTable.Current.IdOf(t.MendMaterial) == 0)
+                throw new FormatException($"\"mendMaterial\": no material named \"{t.MendMaterial}\" in Recycling.json");
+            t.MendPerTonne = Num(root, "mendPerTonne", 0, 1000);
+            t.Drives.Clear();
+            foreach (var type in root.GetProperty("drives").EnumerateObject())
+            {
+                var rows = new List<(WorksKind, float)>();
+                foreach (var k in type.Value.EnumerateObject())
+                {
+                    if (!Enum.TryParse<WorksKind>(k.Name, true, out var kind) || kind is WorksKind.None or WorksKind.Mount || int.TryParse(k.Name, out _))
+                        throw new FormatException($"\"drives.{type.Name}\": \"{k.Name}\" is no kind of works");
+                    var from = k.Value.GetSingle();
+                    if (!float.IsFinite(from) || from < 0 || from > 1e10f)
+                        throw new FormatException($"\"drives.{type.Name}.{k.Name}\" is {from}, not 0 to 1e10 N");
+                    rows.Add((kind, from));
+                }
+                if (rows.Count == 0)
+                    throw new FormatException($"\"drives.{type.Name}\" names no kind of works");
+                t.Drives[type.Name] = [.. rows];
+            }
+            if (!t.Drives.ContainsKey("torch"))
+                throw new FormatException("\"drives\" has no \"torch\"");
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or FormatException or KeyNotFoundException or InvalidOperationException)
+        {
+            t = new ShipWorks { Problem = $"{Path.GetFileName(path)}: {ex.Message}" };
+            Console.WriteLine($"[works] REFUSED {t.Problem}: the defaults are used");
+        }
+        return t;
+    }
+
+    private static float Num(JsonElement root, string key, float min, float max)
+    {
+        var v = root.GetProperty(key).GetSingle();
+        if (!float.IsFinite(v) || v < min || v > max)
+            throw new FormatException($"\"{key}\" is {v}, not between {min} and {max}");
+        return v;
+    }
+
+    /// <summary>What mending a works piece of this mass takes (whole units of <see cref="MendMaterial"/>, at least 1).</summary>
+    public int MendCost(float kg) => MendPerTonne <= 0 ? 0 : Math.Max(1, (int)MathF.Round(kg / 1000f * MendPerTonne));
+}
+
+public sealed partial class Construct
+{
+    public const int MaxWorksAssembly = 64; // parts one assembly's flood takes in (docs/sandbox/design/ship-works.md 3.2)
+
+    public CWorksHead[] WorksHeads = []; // its heads, in part order (made with the caches: ConstructWorks.Build)
+    public int WorksHeadCount;
+    public ushort[] WorksPieces = []; // the mounts and pieces its assemblies took in
+    public short[] WorksPieceAsm = [];
+    public int WorksPieceCount;
+    public int WorksAsmCount;
+    public float[] WorksNeed = [], WorksServed = []; // by assembly, then kind: what its heads ask and its working pieces give
+    public byte[] WorksHave = [], WorksAll = []; // by assembly, then kind: its working pieces, and all of them
+
+    /// <summary>A thruster's push now could be, at full level (N): its force, times what its works let it have.</summary>
+    public float ThrustOf(int k) => Parts[Thrusters[k].Part].D.ThrustForce * Thrusters[k].Cap;
+
+    /// <summary>The head entry of part <paramref name="part"/>, or -1 (its heads are in part order).</summary>
+    public int WorksHeadOf(int part)
+    {
+        int lo = 0, hi = WorksHeadCount - 1;
+        while (lo <= hi)
+        {
+            var mid = (lo + hi) >> 1;
+            var at = WorksHeads[mid].Part;
+            if (at == part)
+                return mid;
+            if (at < part)
+                lo = mid + 1;
+            else
+                hi = mid - 1;
+        }
+        return -1;
+    }
+}
+
+/// <summary>
+/// Ship works (docs/sandbox/design/ship-works.md): a big drive, a turret with an interior and a reloading launcher are
+/// assemblies. The part outside is the head; behind it, through the hull, are its works, found by touch at the rebuild: from
+/// the head down any joints it stands on to a mount, then every mount and works piece touching that one. What a head can do
+/// is set by the working pieces behind it (its cap). Nothing here runs per tick or goes on the wire: every peer finds the
+/// same from the parts.
+/// </summary>
+public static class ConstructWorks
+{
+    public const int KindCount = 11; // (WorksKind's values)
+    private const int MountSteps = 4; // joints a head may stand on between it and its mount (a gun's hinge and ring)
+
+    public static readonly string[] KindNames = ["", "mount", "core", "pump", "exchanger", "turbopump", "manifold", "conditioner", "loader", "lasergen", "hoist"];
+
+    /// <summary>The piece a player knows a kind by, in a look line ("no Drive Core behind it").</summary>
+    public static string KindPiece(WorksKind k) => k switch
+    {
+        WorksKind.Mount => "Hull Mount",
+        WorksKind.Core => "Drive Core",
+        WorksKind.Pump => "Fuel Pump",
+        WorksKind.Exchanger => "Coolant Exchanger",
+        WorksKind.Turbopump => "Turbopump",
+        WorksKind.Manifold => "Mixing Manifold",
+        WorksKind.Conditioner => "Power Conditioner",
+        WorksKind.Loader => "Autoloader",
+        WorksKind.Lasergen => "Laser Generator",
+        WorksKind.Hoist => "Reload Hoist",
+        _ => "works",
+    };
+
+    /// <summary>Is this part a head (it needs works, or is a pod with its works in itself)?</summary>
+    public static bool IsHead(ConstructPartDef d) => d.WorksNeeds != 0 || d.WorksOutside;
+
+    /// <summary>Is this part a works piece or a mount?</summary>
+    public static bool IsPiece(ConstructPartDef d) => d.WorksKind != WorksKind.None;
+
+    /// <summary>Either: it has a works line on the look.</summary>
+    public static bool Has(ConstructPartDef d) => IsHead(d) || IsPiece(d);
+
+    /// <summary>Does a head need this kind?</summary>
+    public static bool Needs(ConstructPartDef d, WorksKind k) => (d.WorksNeeds & (1 << (int)k)) != 0;
+
+    /// <summary>What a head asks of each kind it needs: a thruster its force (N), anything else its rating.</summary>
+    public static float NeedOf(ConstructPartDef d) => d.Role == PartRole.Thruster ? d.ThrustForce : MathF.Max(1, d.WorksRating);
+
+    /// <summary>The <c>"works"</c> and <c>"worksPiece"</c> keys of a part file (after its role's block).</summary>
+    public static void Parse(ConstructPartDef d, JsonElement root, string file)
+    {
+        if (ConstructParts.Opt(root, "works") is { } w)
+        {
+            ConstructParts.Known(w, ["needs", "service", "rating"], $"{file}: \"works\"");
+            if (ConstructParts.Opt(w, "needs") is { } needs)
+            {
+                if (needs.ValueKind != JsonValueKind.Array)
+                    throw new ConstructPartException($"{file}: \"works.needs\" lists kinds of works ({string.Join(", ", KindNames.Skip(2))})");
+                foreach (var n in needs.EnumerateArray())
+                {
+                    var k = KindOf(ConstructParts.Str(n, file, "works.needs"), file, "works.needs");
+                    if (k == WorksKind.Mount)
+                        throw new ConstructPartException($"{file}: \"works.needs\" names kinds of works, not a mount (a head finds its mount by touch)");
+                    d.WorksNeeds |= (ushort)(1 << (int)k);
+                }
+            }
+            var service = ConstructParts.Opt(w, "service") is { } sv ? ConstructParts.Str(sv, file, "works.service") : "inside";
+            d.WorksOutside = service switch
+            {
+                "inside" => false,
+                "outside" => true,
+                _ => throw new ConstructPartException($"{file}: \"works.service\" is inside or outside, not \"{service}\""),
+            };
+            if (ConstructParts.Opt(w, "rating") is { } rt)
+            {
+                d.WorksRating = ConstructParts.Num(rt, file, "works.rating");
+                ConstructParts.Range(d.WorksRating, 0, 1e10f, file, "works.rating");
+            }
+            if (d.WorksNeeds == 0 && !d.WorksOutside)
+                throw new ConstructPartException($"{file}: \"works\" needs something (\"needs\"), or says it is serviced outside (a pod: \"service\": \"outside\")");
+            if (d.WorksOutside && d.WorksNeeds != 0)
+                throw new ConstructPartException($"{file}: a pod (\"service\": \"outside\") carries its works in itself: no \"needs\"");
+        }
+        if (ConstructParts.Opt(root, "worksPiece") is { } wp)
+        {
+            ConstructParts.Known(wp, ["kind", "serves"], $"{file}: \"worksPiece\"");
+            d.WorksKind = KindOf(ConstructParts.Str(ConstructParts.Need(wp, "kind", $"{file}: \"worksPiece\""), file, "worksPiece.kind"), file, "worksPiece.kind");
+            if (d.WorksKind == WorksKind.Mount)
+            {
+                if (ConstructParts.Opt(wp, "serves") != null)
+                    throw new ConstructPartException($"{file}: a mount serves nothing: no \"worksPiece.serves\"");
+            }
+            else
+            {
+                d.WorksServes = ConstructParts.Num(ConstructParts.Need(wp, "serves", $"{file}: \"worksPiece\""), file, "worksPiece.serves");
+                ConstructParts.Range(d.WorksServes, 1, 1e10f, file, "worksPiece.serves");
+            }
+            if (IsHead(d))
+                throw new ConstructPartException($"{file}: a part is a head (\"works\") or a works piece (\"worksPiece\"), not both");
+        }
+    }
+
+    private static WorksKind KindOf(string s, string file, string what)
+    {
+        var i = Array.IndexOf(KindNames, s.ToLowerInvariant());
+        return i >= 1 ? (WorksKind)i : throw new ConstructPartException($"{file}: \"{what}\" is one of {string.Join(", ", KindNames.Skip(1))}, not \"{s}\"");
+    }
+
+    /// <summary>
+    /// With the caches, before the thrusters (they take their caps): every head's assembly and cap. One pass over the special
+    /// parts (heads, mounts and pieces are all special), a walk from each head to its mount, and a flood that visits each mount
+    /// and piece once. A body with no heads pays one loop.
+    /// </summary>
+    public static void Build(Construct c)
+    {
+        c.WorksHeadCount = c.WorksPieceCount = c.WorksAsmCount = 0;
+        var heads = 0;
+        foreach (var i in c.Specials)
+            if (IsHead(c.Parts[i].D))
+                heads++;
+        if (heads == 0)
+            return;
+        if (c.WorksHeads.Length < heads)
+            Array.Resize(ref c.WorksHeads, Math.Max(heads, c.WorksHeads.Length * 2));
+        using var scratch = Scratch.Begin();
+        var asmOf = scratch.Take<short>(c.PartCount);
+        asmOf.Fill(-1);
+        var queue = scratch.Take<ushort>(c.PartCount);
+        foreach (var i in c.Specials)
+        {
+            var d = c.Parts[i].D;
+            if (!IsHead(d))
+                continue;
+            short asm = -1;
+            if (d.WorksNeeds != 0 && FindMount(c, i, queue) is var mount and >= 0)
+                asm = asmOf[mount] >= 0 ? asmOf[mount] : Flood(c, mount, asmOf, queue);
+            c.WorksHeads[c.WorksHeadCount++] = new CWorksHead { Part = (ushort)i, Asm = asm, Cap = 1, Burn = 1 };
+        }
+        // What each assembly's heads ask of each kind, and what its working pieces give.
+        var cells = c.WorksAsmCount * KindCount;
+        if (c.WorksNeed.Length < cells)
+        {
+            var n = Math.Max(cells, c.WorksNeed.Length * 2);
+            Array.Resize(ref c.WorksNeed, n);
+            Array.Resize(ref c.WorksServed, n);
+            Array.Resize(ref c.WorksHave, n);
+            Array.Resize(ref c.WorksAll, n);
+        }
+        Array.Clear(c.WorksNeed, 0, cells);
+        Array.Clear(c.WorksServed, 0, cells);
+        Array.Clear(c.WorksHave, 0, cells);
+        Array.Clear(c.WorksAll, 0, cells);
+        for (var k = 0; k < c.WorksPieceCount; k++)
+        {
+            ref var p = ref c.Parts[c.WorksPieces[k]];
+            var d = p.D;
+            if (d.WorksKind == WorksKind.Mount)
+                continue;
+            var cell = c.WorksPieceAsm[k] * KindCount + (int)d.WorksKind;
+            c.WorksAll[cell] = (byte)Math.Min(255, c.WorksAll[cell] + 1);
+            if (!p.Working)
+                continue;
+            c.WorksHave[cell] = (byte)Math.Min(255, c.WorksHave[cell] + 1);
+            c.WorksServed[cell] += d.WorksServes;
+        }
+        for (var h = 0; h < c.WorksHeadCount; h++)
+        {
+            ref var wh = ref c.WorksHeads[h];
+            if (wh.Asm < 0)
+                continue;
+            var d = c.Parts[wh.Part].D;
+            var need = NeedOf(d);
+            for (var k = 2; k < KindCount; k++)
+                if (Needs(d, (WorksKind)k))
+                    c.WorksNeed[wh.Asm * KindCount + k] += need;
+        }
+        var t = ShipWorks.Current;
+        for (var h = 0; h < c.WorksHeadCount; h++)
+        {
+            ref var wh = ref c.WorksHeads[h];
+            var d = c.Parts[wh.Part].D;
+            if (d.WorksNeeds == 0)
+                continue; // (a pod: its works are in it)
+            var cap = 1f;
+            for (var k = 2; k < KindCount; k++)
+            {
+                if (!Needs(d, (WorksKind)k))
+                    continue;
+                var share = wh.Asm < 0 ? 0f : MathF.Min(1, c.WorksServed[wh.Asm * KindCount + k] / MathF.Max(1, c.WorksNeed[wh.Asm * KindCount + k]));
+                if (share < cap)
+                {
+                    cap = share;
+                    wh.Short = (WorksKind)k;
+                }
+            }
+            if (d.Role == PartRole.Thruster)
+            {
+                cap = MathF.Max(cap, t.BareShare); // (a bare nozzle still pushes at a quarter: the ship can limp, Karl answer 2)
+                if (cap < 0.999f && d.ThrustFuel == EngineFuel.Fuel && d.ThrustBurn > 0)
+                    wh.Burn = cap * MathF.Max(1, t.JetBurn * d.ThrustForce / 1e6f / d.ThrustBurn); // (short of its works it burns as a jet does for what it pushes)
+                else
+                    wh.Burn = cap;
+            }
+            wh.Cap = cap;
+        }
+    }
+
+    /// <summary>From a head down the joints it stands on (a gun's hinge and ring) to the first mount it touches, or -1.</summary>
+    private static int FindMount(Construct c, int head, Span<ushort> queue)
+    {
+        int n = 0, at = 0;
+        queue[n++] = (ushort)head;
+        var depthEnd = n;
+        for (var depth = 0; depth < MountSteps && at < n; depth++)
+        {
+            for (; at < depthEnd; at++)
+                for (var e = c.FirstLink(queue[at]); e >= 0; e = c.NextLink(e))
+                {
+                    var o = c.OtherEnd(e);
+                    var d = c.Parts[o].D;
+                    if (d.WorksKind == WorksKind.Mount)
+                        return o;
+                    if (d.HasJoint && n < queue.Length && queue[..n].IndexOf((ushort)o) < 0)
+                        queue[n++] = (ushort)o;
+                }
+            depthEnd = n;
+        }
+        return -1;
+    }
+
+    /// <summary>A new assembly: every mount and works piece touching <paramref name="mount"/>, through each other (at most <see cref="Construct.MaxWorksAssembly"/>).</summary>
+    private static short Flood(Construct c, int mount, Span<short> asmOf, Span<ushort> queue)
+    {
+        var id = (short)c.WorksAsmCount++;
+        int n = 0, at = 0;
+        asmOf[mount] = id;
+        queue[n++] = (ushort)mount;
+        while (at < n)
+        {
+            var i = queue[at++];
+            AddPiece(c, i, id);
+            for (var e = c.FirstLink(i); e >= 0; e = c.NextLink(e))
+            {
+                var o = c.OtherEnd(e);
+                if (asmOf[o] >= 0 || !IsPiece(c.Parts[o].D))
+                    continue;
+                if (n >= Construct.MaxWorksAssembly)
+                {
+                    Caps.Hit("parts in one ship works assembly", Construct.MaxWorksAssembly, n + 1);
+                    return id;
+                }
+                asmOf[o] = id;
+                queue[n++] = (ushort)o;
+            }
+        }
+        return id;
+    }
+
+    private static void AddPiece(Construct c, int part, short asm)
+    {
+        if (c.WorksPieces.Length <= c.WorksPieceCount)
+        {
+            var n = Math.Max(16, c.WorksPieces.Length * 2);
+            Array.Resize(ref c.WorksPieces, n);
+            Array.Resize(ref c.WorksPieceAsm, n);
+        }
+        c.WorksPieces[c.WorksPieceCount] = (ushort)part;
+        c.WorksPieceAsm[c.WorksPieceCount++] = asm;
+    }
+
+    /// <summary>A thruster's cap and burn share (BuildThrusters; 1 and 1 when it is no head).</summary>
+    public static void CapOf(Construct c, int part, out float cap, out float burn)
+    {
+        var h = c.WorksHeadOf(part);
+        (cap, burn) = h >= 0 ? (c.WorksHeads[h].Cap, c.WorksHeads[h].Burn) : (1f, 1f);
+    }
+
+    /// <summary>The assembly a mount or piece was taken into, or -1.</summary>
+    public static int AsmOfPiece(Construct c, int part)
+    {
+        for (var k = 0; k < c.WorksPieceCount; k++)
+            if (c.WorksPieces[k] == part)
+                return c.WorksPieceAsm[k];
+        return -1;
+    }
+
+    // ---- What the player is told ---------------------------------------------------------------------------------
+
+    /// <summary>A head's rating for people: "9.0 MN", "600 kN", "40 kW".</summary>
+    public static string Rating(ConstructPartDef d) => d.Role == PartRole.Thruster ? Force(d.ThrustForce) : $"{NeedOf(d):0} kW";
+
+    public static string Force(float n) => n >= 1e6f ? (n / 1e6f).ToString("0.0", CultureInfo.InvariantCulture) + " MN" : (n / 1000f).ToString("0", CultureInfo.InvariantCulture) + " kN";
+
+    /// <summary>Why a head is held back, or "" when it isn't: "no Drive Core behind it", "Fuel Pump 1 of 2 working".</summary>
+    public static string Why(Construct c, in CWorksHead h)
+    {
+        var d = c.Parts[h.Part].D;
+        if (d.WorksNeeds == 0 || h.Short == WorksKind.None)
+            return "";
+        if (h.Asm < 0)
+            return "on no Hull Mount: its works can't reach it";
+        var cell = h.Asm * KindCount + (int)h.Short;
+        var all = c.WorksAll[cell];
+        var have = c.WorksHave[cell];
+        if (all == 0)
+            return $"no {KindPiece(h.Short)} behind it";
+        if (have < all)
+            return $"{KindPiece(h.Short)} {have} of {all} working";
+        return $"{KindPiece(h.Short)} too small: serves {Force(c.WorksServed[cell])} of {Force(c.WorksNeed[cell])}";
+    }
+
+    /// <summary>A head's state: "works 100%", "works 25%".</summary>
+    private static string State(Construct c, in CWorksHead h) =>
+        c.Parts[h.Part].D.WorksOutside ? "a pod: its works are in its cowl, serviced outside" : $"works {h.Cap * 100:0}%";
+
+    /// <summary>The look line on a head, a mount or a works piece (any tool in hand).</summary>
+    public static string Look(Construct c, int part)
+    {
+        ref var p = ref c.Parts[part];
+        var d = p.D;
+        var wrecked = p.Broken ? p.Health > 0 ? "broken down" : "wrecked" : "";
+        if (IsHead(d))
+        {
+            var k = c.WorksHeadOf(part);
+            if (k < 0)
+                return SandboxKeys.Line(d.Name, SandboxKeys.Join(Rating(d), wrecked));
+            ref var h = ref c.WorksHeads[k];
+            var why = Why(c, h);
+            if (why.Length > 0 && d.Role == PartRole.Thruster && h.Cap <= ShipWorks.Current.BareShare + 1e-3f)
+                why += ": running at a quarter";
+            return SandboxKeys.Line(d.Name, SandboxKeys.Join(Rating(d), State(c, h), wrecked), why);
+        }
+        var asm = AsmOfPiece(c, part);
+        if (asm < 0)
+            return SandboxKeys.Line(d.Name, SandboxKeys.Join(d.WorksKind == WorksKind.Mount ? "" : $"serves {PieceServes(d)}", wrecked), d.WorksKind == WorksKind.Mount ? "no head through it" : "bolt it to a Hull Mount, or to works on one");
+        var heads = 0;
+        var least = 1f;
+        for (var k = 0; k < c.WorksHeadCount; k++)
+            if (c.WorksHeads[k].Asm == asm)
+            {
+                heads++;
+                least = MathF.Min(least, c.WorksHeads[k].Cap);
+            }
+        var of = heads == 0 ? "" : heads == 1 ? "works for 1 head" : $"works for {heads} heads";
+        if (d.WorksKind == WorksKind.Mount)
+            return SandboxKeys.Line(d.Name, SandboxKeys.Join(heads == 0 ? "" : $"mount, {of}", wrecked), heads == 0 ? "no head through it" : null);
+        var cell = asm * KindCount + (int)d.WorksKind;
+        var need = c.WorksNeed[cell];
+        var load = need <= 0 ? "nothing needs it" : $"{MathF.Min(1, c.WorksServed[cell] / need) * 100:0}% of what they need";
+        return SandboxKeys.Line(d.Name, SandboxKeys.Join($"serves {PieceServes(d)}", of, wrecked), need <= 0 ? load : heads > 0 && least < 0.999f ? load : null);
+    }
+
+    private static string PieceServes(ConstructPartDef d) => d.WorksKind switch
+    {
+        WorksKind.Lasergen => $"{d.WorksServes:0} kW",
+        WorksKind.Hoist => $"{d.WorksServes:0} kg",
+        WorksKind.Loader => $"{d.WorksServes:0} guns",
+        _ => Force(d.WorksServes),
+    };
+
+    /// <summary>What decides <see cref="Look"/> beyond the part (the look line's cache key).</summary>
+    public static long LookKey(Construct c, int part)
+    {
+        var key = (long)c.RebuildStamp;
+        var k = c.WorksHeadOf(part);
+        if (k >= 0)
+            key = key * 31 + (int)(c.WorksHeads[k].Cap * 1000);
+        return key;
+    }
+
+    /// <summary>
+    /// The Engineer's Panel's report: every drive with works, its share and why ("" when the ship has none). One line: the
+    /// heads at full are counted, the worst one is named.
+    /// </summary>
+    public static string PanelLook(Construct c)
+    {
+        if (c.WorksHeadCount == 0)
+            return "";
+        int full = 0, all = 0, pods = 0, worst = -1;
+        for (var k = 0; k < c.WorksHeadCount; k++)
+        {
+            ref var h = ref c.WorksHeads[k];
+            var d = c.Parts[h.Part].D;
+            if (d.Role != PartRole.Thruster)
+                continue;
+            all++;
+            if (d.WorksOutside)
+            {
+                pods++;
+                if (c.Parts[h.Part].Broken && (worst < 0 || c.WorksHeads[worst].Cap > 0))
+                    worst = k;
+                continue;
+            }
+            if (h.Cap >= 0.999f)
+                full++;
+            else if (worst < 0 || h.Cap < c.WorksHeads[worst].Cap)
+                worst = k;
+        }
+        if (all == 0)
+            return "";
+        var sb = new StringBuilder();
+        sb.Append(all == 1 ? "1 drive" : $"{all} drives");
+        if (all - pods > 0)
+            sb.Append($", {full} of {all - pods} at full");
+        if (pods > 0)
+            sb.Append(pods == 1 ? ", 1 pod (serviced outside)" : $", {pods} pods (serviced outside)");
+        if (worst >= 0)
+        {
+            ref var h = ref c.WorksHeads[worst];
+            var d = c.Parts[h.Part].D;
+            sb.Append(d.WorksOutside ? $"; the {d.Name} is out: mend it at the pod, outside" : $"; the {d.Name} at {h.Cap * 100:0}%: {Why(c, h)}");
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>The panel report's cache key.</summary>
+    public static long PanelKey(Construct c)
+    {
+        var key = (long)c.RebuildStamp;
+        for (var k = 0; k < c.WorksHeadCount; k++)
+            key = key * 31 + (int)(c.WorksHeads[k].Cap * 1000) + (c.Parts[c.WorksHeads[k].Part].Broken ? 7 : 0);
+        return key;
+    }
+
+    /// <summary>
+    /// <c>--check-vehicle</c>'s <c>works:</c> lines, one a head: its kinds, what was found, its cap. A head whose works don't
+    /// carry it whole (a thruster at its floor, a gun with no generator) is a failure.
+    /// </summary>
+    public static void Report(Construct c, List<string> notes, List<string> failures)
+    {
+        for (var k = 0; k < c.WorksHeadCount; k++)
+        {
+            ref var h = ref c.WorksHeads[k];
+            var d = c.Parts[h.Part].D;
+            if (d.WorksOutside)
+            {
+                notes.Add($"works: {d.Name} (part {h.Part}): a pod, {Rating(d)}, serviced outside");
+                continue;
+            }
+            var sb = new StringBuilder($"works: {d.Name} (part {h.Part}), {Rating(d)}: needs ");
+            var first = true;
+            for (var kind = 2; kind < KindCount; kind++)
+            {
+                if (!Needs(d, (WorksKind)kind))
+                    continue;
+                sb.Append(first ? "" : ", ").Append(KindNames[kind]);
+                first = false;
+                if (h.Asm >= 0)
+                {
+                    var cell = h.Asm * KindCount + kind;
+                    sb.Append($" ({c.WorksHave[cell]} of {c.WorksAll[cell]} working, {Force(c.WorksServed[cell])} for {Force(c.WorksNeed[cell])})");
+                }
+            }
+            sb.Append($"; cap {h.Cap * 100:0}%");
+            if (h.Cap < 0.999f)
+            {
+                sb.Append(": ").Append(Why(c, h));
+                failures.Add(sb.ToString());
+            }
+            else
+                notes.Add(sb.ToString());
+        }
+    }
+}

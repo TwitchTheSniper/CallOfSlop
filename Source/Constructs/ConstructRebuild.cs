@@ -827,6 +827,7 @@ public sealed partial class Construct
         BuildWheels();
         BuildDrivetrain();
         BuildPlants();
+        ConstructWorks.Build(this); // (ship works: each head's cap, which the thrusters take: ConstructWorks.cs)
         BuildThrusters();
         ConstructFluid.Build(this);
         ConstructLift.Build(this);

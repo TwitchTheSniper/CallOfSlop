@@ -19,6 +19,8 @@ public struct CThruster
     public float Command, CommandX, CommandY; // what the stabilizer tells it
     public float Gap; // a repulsor: metres to what is under it, as of its last look (float.MaxValue: nothing in reach)
     public float Shown; // a client: its level as the host last said (CBodyKind.Thrust), for its flame
+    public float Cap; // 0..1: the share of its force its works let it have (ConstructWorks.cs; 1 with no works block)
+    public float Burn; // its burn at full level as a share of its file's burnRate (over Cap when it is short of works)
 }
 
 /// <summary>
@@ -122,11 +124,12 @@ public sealed partial class Construct
             var at = p.Pos + Rot24.Apply(p.Rot, d.ThrustAt);
             var dir = -ConstructParts.DirVector(Rot24.ApplyDir(p.Rot, d.ThrustDir));
             ref var t = ref Thrusters[ThrusterCount];
-            t = new CThruster { Part = (ushort)i, Seg = p.Seg, At = at, Dir = dir, Lifts = dir.Y > 0.7f && d.ThrustKind is ThrustKind.Plain or ThrustKind.Air or ThrustKind.Rocket, Gap = float.MaxValue, GimbalX = Rot24.Apply(p.Rot, Vector3.UnitX), GimbalY = Rot24.Apply(p.Rot, Vector3.UnitY), Fed = d.ThrustFuel != EngineFuel.Fuel || p.Working && FuelReaches(i) };
+            ConstructWorks.CapOf(this, i, out var cap, out var burnShare); // (what its works let it push: a dead drive isn't counted on for yaw)
+            t = new CThruster { Part = (ushort)i, Seg = p.Seg, At = at, Dir = dir, Lifts = dir.Y > 0.7f && d.ThrustKind is ThrustKind.Plain or ThrustKind.Air or ThrustKind.Rocket, Gap = float.MaxValue, GimbalX = Rot24.Apply(p.Rot, Vector3.UnitX), GimbalY = Rot24.Apply(p.Rot, Vector3.UnitY), Fed = d.ThrustFuel != EngineFuel.Fuel || p.Working && FuelReaches(i), Cap = cap, Burn = burnShare };
             t.MixForward = Vector3.Dot(dir, fwd);
-            t.MixYaw = Vector3.Cross(at - Com, dir).Y * d.ThrustForce; // (made a share below)
+            t.MixYaw = Vector3.Cross(at - Com, dir).Y * d.ThrustForce * cap; // (made a share below)
             most = MathF.Max(most, MathF.Abs(t.MixYaw));
-            t.MixRoll = Vector3.Dot(Vector3.Cross(at - Com, dir), fwd) * d.ThrustForce; // (a roll to the right turns about the way it faces, clockwise from behind)
+            t.MixRoll = Vector3.Dot(Vector3.Cross(at - Com, dir), fwd) * d.ThrustForce * cap; // (a roll to the right turns about the way it faces, clockwise from behind)
             mostRoll = MathF.Max(mostRoll, MathF.Abs(t.MixRoll));
             while (kept < old && keepPart[kept] < i)
                 kept++;
@@ -244,7 +247,7 @@ public static partial class ConstructPhysics
                 wiredHeight = MathF.Max(wiredHeight, p.In1);
             if (t.Lifts && Live(c, ref t, p))
             {
-                liftForce += p.D.ThrustForce;
+                liftForce += p.D.ThrustForce * t.Cap;
                 spool = MathF.Max(spool, p.D.ThrustSpool);
             }
         }
@@ -347,9 +350,9 @@ public static partial class ConstructPhysics
             all += d.ThrustForce;
             if (t.Level <= 0 && t.Ab <= 0)
                 continue;
-            var push = d.ThrustForce * t.Level;
-            var burn = d.ThrustBurn * t.Level;
-            if (d.ThrustKind != ThrustKind.Plain)
+            var push = d.ThrustForce * t.Cap * t.Level; // (what its works let it push)
+            var burn = d.ThrustBurn * t.Burn * t.Level;
+            if (d.ThrustKind != ThrustKind.Plain || d.ThrustGimbal > 0) // (a plain drive with a gimbal, a ship's pod, turns its nozzle there too)
                 ConstructBoost.Scale(c, ref t, p, d, air, want, ref dir, ref push, ref burn, at, q, dt);
             if (push <= 0)
                 continue;
@@ -360,10 +363,10 @@ public static partial class ConstructPhysics
                 if (d.ThrustKind != ThrustKind.Solid)
                     c.UseFuel(burn * dt);
                 if (d.ThrustOx > 0)
-                    ConstructFluid.BurnOx(c, d.ThrustOx * t.Level * dt);
+                    ConstructFluid.BurnOx(c, d.ThrustOx * t.Burn * t.Level * dt);
             }
             else
-                c.MotorWork += d.ThrustPower * 1000f * (d.ThrustKind == ThrustKind.Repulsor ? push / d.ThrustForce : t.Level);
+                c.MotorWork += d.ThrustPower * 1000f * (d.ThrustKind == ThrustKind.Repulsor ? push / d.ThrustForce : t.Level * t.Cap);
         }
         c.ThrustShow = all > 0 ? MathF.Min(1, shown / all) : 0;
         if (shown > 0)
@@ -388,7 +391,7 @@ public static partial class ConstructPhysics
                 continue;
             c.WorldFrame(t.Seg, out var q, out var o);
             var at = o + Vector3.Transform(t.At, q);
-            twist += Vector3.Cross(at - com, Vector3.Transform(t.Dir, q) * (c.Parts[t.Part].D.ThrustForce * t.Level));
+            twist += Vector3.Cross(at - com, Vector3.Transform(t.Dir, q) * (c.ThrustOf(k) * t.Level));
         }
         if (twist == Vector3.Zero)
             return Vector2.Zero;
@@ -401,7 +404,7 @@ public static partial class ConstructPhysics
             if (!t.Lifts || !Live(c, ref t, p))
                 continue;
             var d = new Vector2(t.At.X - c.Com.X, t.At.Z - c.Com.Z) - mid;
-            var f = p.D.ThrustForce;
+            var f = c.ThrustOf(k);
             xx += f * d.X * d.X;
             xz += f * d.X * d.Y;
             zz += f * d.Y * d.Y;
@@ -434,7 +437,7 @@ public static partial class ConstructPhysics
             ref var t = ref c.Thrusters[k];
             ref var p = ref c.Parts[t.Part];
             if (t.Lifts && Live(c, ref t, p))
-                mid += new Vector2(t.At.X - c.Com.X, t.At.Z - c.Com.Z) * (p.D.ThrustForce / liftForce);
+                mid += new Vector2(t.At.X - c.Com.X, t.At.Z - c.Com.Z) * (c.ThrustOf(k) / liftForce);
         }
         float xx = 0, xz = 0, zz = 0;
         for (var k = 0; k < c.ThrusterCount; k++)
@@ -444,7 +447,7 @@ public static partial class ConstructPhysics
             if (!t.Lifts || !Live(c, ref t, p))
                 continue;
             var d = new Vector2(t.At.X - c.Com.X, t.At.Z - c.Com.Z) - mid;
-            var f = p.D.ThrustForce / liftForce;
+            var f = c.ThrustOf(k) / liftForce;
             xx += f * d.X * d.X;
             xz += f * d.X * d.Y;
             zz += f * d.Y * d.Y;
@@ -497,19 +500,19 @@ public static partial class ConstructPhysics
             if (t.Level <= 0 || d.ThrustKind is ThrustKind.Air or ThrustKind.Repulsor) // (nothing to breathe, nothing to push on)
                 continue;
             c.WorldFrame(t.Seg, out var q, out var o);
-            var push = Vector3.Transform(t.Dir, q) * (d.ThrustForce * t.Level);
+            var push = Vector3.Transform(t.Dir, q) * (d.ThrustForce * t.Cap * t.Level);
             sum += push;
             torque += Vector3.Cross(o + Vector3.Transform(t.At, q) - com, push);
-            shown += d.ThrustForce * t.Level;
+            shown += d.ThrustForce * t.Cap * t.Level;
             if (d.ThrustFuel == EngineFuel.Fuel)
             {
                 if (d.ThrustKind != ThrustKind.Solid)
-                    c.UseFuel(d.ThrustBurn * t.Level * dt * SpaceFuelScale);
+                    c.UseFuel(d.ThrustBurn * t.Burn * t.Level * dt * SpaceFuelScale);
                 if (d.ThrustOx > 0)
-                    ConstructFluid.BurnOx(c, d.ThrustOx * t.Level * dt * SpaceFuelScale);
+                    ConstructFluid.BurnOx(c, d.ThrustOx * t.Burn * t.Level * dt * SpaceFuelScale);
             }
             else
-                c.MotorWork += d.ThrustPower * 1000f * t.Level;
+                c.MotorWork += d.ThrustPower * 1000f * t.Level * t.Cap;
         }
         c.ThrustShow = all > 0 ? shown / all : 0;
         return sum;
@@ -541,8 +544,8 @@ public static partial class ConstructPhysics
             if (d.ThrustKind is ThrustKind.Air or ThrustKind.Repulsor or ThrustKind.Solid || p.InCount > 0 || !Live(c, ref t, p))
                 continue;
             c.WorldFrame(t.Seg, out var q, out _);
-            var push = Vector3.Transform(Vector3.Transform(t.Dir, q), Quaternion.Conjugate(c.Rot)) * d.ThrustForce;
-            var fuel = d.ThrustFuel == EngineFuel.Fuel ? d.ThrustBurn : 0f;
+            var push = Vector3.Transform(Vector3.Transform(t.Dir, q), Quaternion.Conjugate(c.Rot)) * (d.ThrustForce * t.Cap);
+            var fuel = d.ThrustFuel == EngineFuel.Fuel ? d.ThrustBurn * t.Burn : 0f;
             if (t.Lifts)
             {
                 up += push;
@@ -622,7 +625,7 @@ public static class ConstructThrust
         return true;
     }
 
-    private static byte Level(in CThruster t) => (byte)Math.Clamp(MathF.Round(MathF.Max(t.Level, t.Ab) * 255), 0, 255);
+    private static byte Level(in CThruster t) => (byte)Math.Clamp(MathF.Round(MathF.Max(t.Level * t.Cap, t.Ab) * 255), 0, 255); // (a drive short of its works burns low)
 
     public static void ReadShown(ref PacketReader r, ConstructWorld world)
     {

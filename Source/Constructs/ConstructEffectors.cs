@@ -247,13 +247,13 @@ public sealed class ThrusterEffectors : IEffectorSource
             t.Scanned = !byHand;
             t.GimbalScanned = false;
             if (!byHand)
-                found.Add(source, d.ThrustKind == ThrustKind.Repulsor ? EffectorKind.Repulsor : EffectorKind.Thruster, t.Part, 0, 0, 1, t.Dir * d.ThrustForce, t.At);
+                found.Add(source, d.ThrustKind == ThrustKind.Repulsor ? EffectorKind.Repulsor : EffectorKind.Thruster, t.Part, 0, 0, 1, t.Dir * (d.ThrustForce * t.Cap), t.At);
             if (d.ThrustGimbal <= 0 || WiredByHand(c, t.Part, stab, 1) || WiredByHand(c, t.Part, stab, 2))
                 continue;
             t.GimbalScanned = true;
             var swing = ConstructAero.ThrowOf(p, d, d.ThrustGimbal) * (ConstructConfig.Get(p, d, CfgKey.Reverse, 0) >= 0.5f ? -1 : 1);
-            found.Add(source, EffectorKind.Gimbal, t.Part, 1, -1, 1, Vector3.Cross(t.GimbalX, t.Dir) * (d.ThrustForce * swing), t.At);
-            found.Add(source, EffectorKind.Gimbal, t.Part, 2, -1, 1, Vector3.Cross(t.GimbalY, t.Dir) * (d.ThrustForce * swing), t.At);
+            found.Add(source, EffectorKind.Gimbal, t.Part, 1, -1, 1, Vector3.Cross(t.GimbalX, t.Dir) * (d.ThrustForce * t.Cap * swing), t.At);
+            found.Add(source, EffectorKind.Gimbal, t.Part, 2, -1, 1, Vector3.Cross(t.GimbalY, t.Dir) * (d.ThrustForce * t.Cap * swing), t.At);
         }
     }
 

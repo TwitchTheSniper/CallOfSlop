@@ -1,0 +1,198 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Drive Nozzle L",
+  "description": "A torch drive's nozzle, 10 MN: bolt it to a Hull Mount's outer face, and its works (Drive Core, Fuel Pump, Coolant Exchanger) to the mount's inner face, inside. Short of them it pushes at a quarter. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "thruster",
+  "tool": "wrench",
+  "thruster": {
+    "force": 10000000.0,
+    "spool": 2.0,
+    "exhaust": "+z",
+    "at": [
+      0,
+      0,
+      2.8
+    ],
+    "burnRate": 20.0,
+    "gimbal": 3,
+    "gimbalRate": 10
+  },
+  "ports": [
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        1.05,
+        0,
+        0.06
+      ],
+      "face": "+x"
+    }
+  ],
+  "flame": [
+    {
+      "at": [
+        0,
+        0,
+        2.8
+      ],
+      "dir": "+z",
+      "radius": 1.26,
+      "length": 5.6,
+      "kind": "Rocket"
+    }
+  ],
+  "works": {
+    "needs": [
+      "core",
+      "pump",
+      "exchanger"
+    ]
+  },
+  "mass": 4000.0,
+  "health": 9000,
+  "armour": 25,
+  "material": "steel",
+  "color": "#34373a",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -1.05,
+        -1.05,
+        0.0
+      ],
+      "max": [
+        1.05,
+        1.05,
+        0.12
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.651,
+        -0.651,
+        0.12
+      ],
+      "max": [
+        0.651,
+        0.651,
+        0.784
+      ],
+      "color": "#2f3134",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -1.4,
+        -1.4,
+        0.784
+      ],
+      "max": [
+        1.4,
+        1.4,
+        2.8
+      ],
+      "color": "#2a2c2e",
+      "detail": true,
+      "shape": "tube",
+      "segments": 20,
+      "inner": 0.9,
+      "taper": [
+        0.465,
+        0.465
+      ],
+      "finish": "soot"
+    },
+    {
+      "min": [
+        -0.5989,
+        -0.5989,
+        0.754
+      ],
+      "max": [
+        0.5989,
+        0.5989,
+        0.772
+      ],
+      "color": "#ffb060",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.0131,
+        -1.0131,
+        1.6512
+      ],
+      "max": [
+        1.0131,
+        1.0131,
+        1.7312
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "shape": "tube",
+      "segments": 20,
+      "inner": 0.941,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -1.2003,
+        -1.2003,
+        2.1552
+      ],
+      "max": [
+        1.2003,
+        1.2003,
+        2.2352
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "shape": "tube",
+      "segments": 20,
+      "inner": 0.95,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -1.05,
+        -1.05,
+        0.0
+      ],
+      "max": [
+        1.05,
+        1.05,
+        2.8
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

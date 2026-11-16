@@ -6,7 +6,7 @@
     { "name": "Buildings", "sections": ["Walls", "Wall openings", "Floors and foundations", "Roofs", "Columns and towers", "Stairs and access", "Doors and gates", "Defences"] },
     { "name": "Vehicle Body", "sections": ["Hoods and noses", "Cabs and cages", "Fenders and skirts", "Hull bays", "Sponsons and panniers", "Decks and tubs", "Tube frames", "Furniture"] },
     { "name": "Armour and Hull", "sections": ["Armour plate", "Heavy armour", "Gun ports", "Hull sections", "Hull plates"] },
-    { "name": "Drivetrain and Engines", "sections": ["Engines", "Modular engines", "Gearboxes", "Shafts and couplings", "Axles and differentials", "Thrusters"] },
+    { "name": "Drivetrain and Engines", "sections": ["Engines", "Modular engines", "Gearboxes", "Shafts and couplings", "Axles and differentials", "Thrusters", "Drive works"] },
     { "name": "Wheels and Suspension", "sections": ["Wheels", "Tracks", "Suspension", "Steering", "Legs"] },
     { "name": "Joints and Motion", "sections": ["Hinges", "Motor hinges", "Pistons", "Linear", "Hydraulics", "Turntables", "Free rotation", "Flexible joints", "Hitches and chains", "Cranes and lifts", "Launch and docking"] },
     { "name": "Power and Fuel", "sections": ["Fuel tanks", "Fluid tanks", "Fuel lines", "Batteries", "Alternators", "Power plants"] },
@@ -22,6 +22,7 @@
   "rules": [
     { "group": "Ship", "notSection": "Ship fittings", "unlisted": true },
     { "group": "Ship", "name": ["Magpie", "Halberd", "Zero Day", "Rust Bucket"], "unlisted": true },
+    { "group": "Ship", "section": "Ship fittings", "name": ["Hull Mount", "Drive Core", "Fuel Pump", "Coolant Exchanger", "Turbopump", "Mixing Manifold", "Power Conditioner"], "to": ["Drivetrain and Engines", "Drive works"] },
     { "section": "Wings", "to": ["Flight", "Wings"] },
     { "section": "Control surfaces", "to": ["Flight", "Control surfaces"] },
     { "section": "Rotors", "to": ["Flight", "Rotors"] },

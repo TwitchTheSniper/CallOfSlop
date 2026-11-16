@@ -475,7 +475,7 @@ public static partial class ConstructFlight
                 ref var t = ref c.Thrusters[k];
                 if (!OnJoint(c, t.Seg, j))
                     continue;
-                var force = c.Parts[t.Part].D.ThrustForce;
+                var force = c.ThrustOf(k); // (what its works let it push)
                 // The push turning about the joint: its change with the angle, and the arm from the centre of mass.
                 var dir = Vector3.Cross(jt.Axis, t.Dir);
                 var torque = Vector3.Transform(Vector3.Cross(t.At - c.Com, dir * force) * jt.Max, inv);
