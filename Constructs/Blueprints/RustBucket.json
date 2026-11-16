@@ -223,6 +223,90 @@
       "by": "top"
     },
     {
+      "part": "RCS Thruster",
+      "on": 27,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 27,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 27,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 28,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 28,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 28,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 29,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 29,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 29,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 30,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 30,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 30,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 29,
+      "socket": "rcsFore",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 30,
+      "socket": "rcsFore",
+      "by": "base"
+    },
+    {
       "part": "Rust Bucket Leg",
       "on": 0,
       "socket": "legFL",
@@ -465,10 +549,14 @@
       "by": "bottom"
     },
     {
-      "part": "Driving Module",
+      "part": "Flight Stabilizer",
       "on": 13,
       "socket": "module",
-      "by": "-y"
+      "by": "-y",
+      "config": {
+        "keys": "Ship",
+        "mouseAim": true
+      }
     },
     {
       "part": "Chart Table",
@@ -697,68 +785,64 @@
   ],
   "wires": [
     [
-      62,
-      60
+      76,
+      74
     ],
     [
-      62,
-      61
+      76,
+      75
     ],
     [
-      65,
-      63
+      79,
+      77
     ],
     [
-      65,
-      64
+      79,
+      78
     ],
     [
-      68,
-      66
+      82,
+      80
     ],
     [
-      68,
-      67
+      82,
+      81
     ],
     [
-      69,
-      71
+      83,
+      85
     ],
     [
-      71,
-      35
+      110,
+      106
     ],
     [
-      96,
-      92
+      110,
+      107
     ],
     [
-      96,
-      93
+      110,
+      108
     ],
     [
-      96,
-      94
+      110,
+      109
     ],
     [
-      96,
-      95
+      115,
+      111
     ],
     [
-      101,
-      97
+      115,
+      112
     ],
     [
-      101,
-      98
+      115,
+      113
     ],
     [
-      101,
-      99
-    ],
-    [
-      101,
-      100
+      115,
+      114
     ]
   ],
   "conduit": true

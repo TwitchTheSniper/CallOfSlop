@@ -103,7 +103,7 @@ public enum CActKind : byte
     TakeMade, // a part by PartRef (a made part's key): set down in front of the player from their Tab inventory (protocol 299; docs/sandbox/design/inventory-run-time-parts.md phase 2)
     Lifter, // u16 body, u16 part, u8 LiftOrderOp, u8 order id, the kind (PartRef), u8 count, from and to (u16 body, u16 part, u8 kind, u8 bay): a hand order at a lifter's panel (protocol 312; GameSandboxLifter.cs)
     ErrandDrop, // nothing: drop the errand under way (protocol 314; GameErrands.cs)
-    RadarLock, // u16 body (the seat's), u16 target (0: none): the seated player's radar lock for that craft's missiles (protocol 319; ConstructRadar.cs)
+    RadarLock, // u16 body (the seat's), u16 target (0: none): the seated player's radar lock for that craft's missiles (protocol 320; ConstructRadar.cs)
 }
 
 /// <summary>
@@ -673,6 +673,10 @@ public sealed partial class Game
             foreach (var c in Constructs.Bodies)
                 if (c.StabCount > 0 && ConstructFlight.WriteDiagnostic(w, c))
                     Net.Broadcast(w.Span, PacketReliability.Unreliable);
+        if (ServerTick % ConstructThrust.SendEvery == 1)
+            foreach (var c in Constructs.Bodies)
+                if (c.ThrusterCount > 0 && ConstructThrust.WriteShown(w, c))
+                    Net.Broadcast(w.Span, PacketReliability.Unreliable); // (each jet's flame: a lost one is made good by the next that changes)
         if (ServerTick % ConstructFluid.SendEvery == 0)
         {
             int body = 0, tank = 0;
@@ -2275,6 +2279,21 @@ public sealed partial class Game
     private uint _sbViewSeat; // the seat the local view last turned with (body << 16 | part + 1; 0: none)
     private float _sbViewYaw;
 
+    /// <summary>
+    /// The local look turned to a seat's facing as the player sits: its heading, and its nose against the level here (a seat on a ship flying
+    /// nose down keeps her nose down; one on the level looks level). Without it the look kept the pitch the player had bending to the seat,
+    /// and a ship whose nose follows the look went after it.
+    /// </summary>
+    private void SeatLookForward(in Quaternion seat, Vector3 feet, float seatYaw)
+    {
+        var f = Vector3.Transform(-Vector3.UnitZ, seat);
+        var up = GravityFrames.UpAt(feet);
+        LookYaw = seatYaw;
+        LookPitch = Math.Clamp(MathF.Asin(Math.Clamp(Vector3.Dot(f, up), -1f, 1f)), -1.5f, 1.5f);
+        if (GravityFrames.Curved)
+            (LookYaw, LookPitch) = GravityFrames.Angles(LookFrame, f);
+    }
+
     private float _sbLookSent = float.NaN;
     private double _sbLookSentAt;
 
@@ -2414,11 +2433,14 @@ public sealed partial class Game
             {
                 // The view turns with the seat, then stays inside the seat type's limits.
                 localSeat = ((uint)body << 16) | (uint)(part + 1); // (16 bits of part: << 8 mixed seats past part 255)
-                if (_sbViewSeat == localSeat && lookKind != SeatKind.Gunner || _sbViewSeat == localSeat && !c.SeatAims(part)) // (a gunner who points the turret looks where they look: the turret follows)
+                var steers = ConstructFlight.MouseSteers(c, part); // (a ship's nose follows the look: the look stays put and the ship comes round to it)
+                if (_sbViewSeat != localSeat && kind != SeatKind.Gunner)
+                    SeatLookForward(q, feet, seatYaw); // (just sat down: the view faces the way the seat does, not wherever the look was as the player bent to it)
+                if (!steers && (_sbViewSeat == localSeat && lookKind != SeatKind.Gunner || _sbViewSeat == localSeat && !c.SeatAims(part))) // (a gunner who points the turret looks where they look: the turret follows)
                     LookYaw = World.WrapAngle(LookYaw + World.WrapAngle(seatYaw - _sbViewYaw));
                 _sbViewYaw = seatYaw;
                 SandboxStabilise(c, part, localSeat);
-                p.RenderLookYaw = SeatLocalYaw(LookYaw, seatYaw, lookKind);
+                p.RenderLookYaw = SeatLocalYaw(LookYaw, seatYaw, steers ? SeatKind.Gunner : lookKind); // (and all the way round: it turns to whatever you look at)
                 LookYaw = World.WrapAngle(seatYaw + p.RenderLookYaw);
                 p.RenderYaw = LookYaw;
                 _stabYaw = LookYaw;
@@ -2626,7 +2648,14 @@ public sealed partial class Game
             var rpm = (int)MathF.Round(car.Rpm / 100) * 100; // (the configure tool is still to come: the engine's rpm and torque show here and on the look line)
             var engine = car.Engine >= 0 && car.Engine < car.PartCount ? car.EngineDef : null;
             var torque = engine == null || !car.EngineRunning ? 0 : (int)MathF.Round(engine.EngineTorque * ConstructDrive.Curve(engine, car.Rpm) / 10) * 10;
-            if (_sbDrive.Stale(kmh * 100000L + fuel + ((long)(charge + 1) << 40) + ((long)car.Gear << 50) + (car.PowerOn ? 1L << 56 : 0) + (car.EngineRunning ? 1L << 57 : 0) + (gears != null ? 1L << 58 : 0) ^ ((long)rpm << 20) ^ ((long)torque << 33)))
+            if (!car.CanDrive && !car.HasHubMotor && engine == null)
+            {
+                // A craft with no road drive (a ship, a walker): its speed and charge, not a car's rpm and torque.
+                var ms = (int)MathF.Round(car.Vel.Length());
+                if (_sbDrive.Stale(ms * 1000L + (charge + 1) + (car.PowerOn ? 1L << 40 : 0) + (1L << 59)))
+                    _sbDrive.Text = $"{ms} m/s" + (charge >= 0 ? car.PowerOn ? $", charge {charge}%" : ", flat" : "");
+            }
+            else if (_sbDrive.Stale(kmh * 100000L + fuel + ((long)(charge + 1) << 40) + ((long)car.Gear << 50) + (car.PowerOn ? 1L << 56 : 0) + (car.EngineRunning ? 1L << 57 : 0) + (gears != null ? 1L << 58 : 0) ^ ((long)rpm << 20) ^ ((long)torque << 33)))
                 _sbDrive.Text = $"{kmh} km/h, {rpm} rpm, {torque} N m{(engine?.FuelKind == EngineFuel.Fuel ? $", fuel {fuel / 10f:0.0} l" : "")}"
                                 + (gears != null ? $", gear {gears.SettingLabels[Math.Min(car.Gear, gears.SettingLabels.Length - 1)]}" : "")
                                 + (charge >= 0 ? car.PowerOn ? $", charge {charge}%" : ", flat" : "")
