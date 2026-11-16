@@ -28,7 +28,7 @@ The tail-sitter combat frigate: six decks up a ladder spine, four PDCs, a spinal
 
 The first Survival ship: a lofted two-deck miner with four drills on rams through its keel, ore hoppers on its flanks; how it flies.
 
-## [The Zero Day torpedo frigate](constructs/torpedo-frigate.md), 4 KB
+## [The Zero Day torpedo frigate](constructs/torpedo-frigate.md), 6 KB
 
 The IT Department's warship: a faceted lofted hull, two decks the length of the ship, torpedo sponsons, a spinal railgun, PDCs, flares.
 

@@ -8,9 +8,30 @@ link-blue light strips, server racks aboard. It is an enemy ship, but it builds 
 
 Generator: `Source/PartKit/Generators/TorpedoFrigateParts.cs` (`--gen-parts torpedo_frigate_parts`), which writes
 `Constructs/Parts/ZeroDay/*.json` and `Constructs/Blueprints/ZeroDayFrigate.json`. Change the generator, never its output.
-Built the way the Halberd is (frigate.md): big parts that share the body's origin, each holding a deck's floor, walls,
-hull band and hidden boxes, with furniture on their sockets. About 53 m long, 17 m across the sponsons, 15 m tall on its
-legs, 188 parts, 211 t.
+Built the way the Halberd is (frigate.md): big parts that share the body's origin, each drawn whole (a deck's floor, walls,
+hull band and hidden boxes), then broken into welded pieces (below), with furniture on their sockets. About 53 m long, 17 m
+across the sponsons, 15 m tall on its legs, 247 parts, 211 t.
+
+## Breaking up
+
+Karl (2026-11-16): split it into welded pieces like the Halberd, so a hit takes a piece, not a deck. Each deck part is still
+drawn whole by its builder (`LowerFore()` ...), then `SplitDeck` deals its boxes out: the **floor** (and what stands loose on
+it) keeps the part's name; each **wall run** (every `WallRun` call is recorded) is a Wall piece with its door frames and what
+is on its faces; an upper deck's **ceiling** and its light strips are one piece; and everything outside the rooms' outline
+(the skin, its armour and chine rails, and the hidden void behind them) is a **Hull** piece, one a side per station band
+(8, 14, 20, 30, 38, 42 m). `SplitBands` cuts the keel and the spine at the same stations; every keel length is a tank
+(14,000 l shared out), so a lift jet takes fuel from the length it hangs on, and the aft length keeps the keel's name and
+the fuel pipe to the drive. The bow, stern and torpedo sponsons stay whole. A socket goes to the piece whose box face it
+is on (`DealSockets`, `SockOwner`), the blueprint's `Hang` wrapper puts furniture on that piece, and `Connect` gives every
+two pieces whose solid boxes touch a facing socket pair: one places a piece (`PlaceOrder`, out from the keel), the game
+welds the rest. Pieces of one part never overlap (the side walls start where the front wall ends), and the walls' dado
+stands 3 mm off the floor, so `--check-vehicle` finds no coplanar faces between pieces. The flight check flies it as it
+did whole (climbs 7.6 m in 2 s, lift 1.58x its weight).
+
+The crew's lockers are the **Zero Day Locker** (Karl, 2026-11-16: the shared open-shelf Locker looked bland): a closed
+graphite cabinet with a raked top, louvres, a recessed pull, a badge reader with its lamp, a lit name strip and a blue edge
+light down its hinge side. Only its door takes the blueprint's paint (yellow at the airlock, blue in the cabins, white in
+the med bay).
 
 ## The hull
 
