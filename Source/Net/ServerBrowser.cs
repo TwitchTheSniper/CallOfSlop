@@ -531,7 +531,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   u8 inmate, u32 the tick it began).
     // 318: conveyors run at 1 m/s (ConstructConveyor.Speed, was 0.5): both peers step riders by it, so an older peer would draw them
     //   at half the speed between messages. No new bytes.
-    public const ushort ProtocolVersion = 318;
+    // 319: each thruster's own level for its flame (CBodyKind.Thrust at the end of CBodyKind: u16 body, u16 n, u8 level each, 10 Hz while one
+    //   changes; ConstructThrust.WriteShown), and the Flight Stabilizer's "keys" setting takes Ship (FlightPattern.Ship, 4).
+    public const ushort ProtocolVersion = 319;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

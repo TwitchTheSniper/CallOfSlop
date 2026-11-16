@@ -305,6 +305,23 @@ public sealed class MinerParts : IPartGenerator
         p.Add(Box(mn, mx, color, detail: true, shape: shape));
     }
 
+    /// <summary>
+    /// A mount for an attitude jet (ShipParts.Rcs): a square pad standing <c>0.04</c> m proud of the surface point, its outer face the socket (a socket sits on a solid box's face).
+    /// <paramref name="w"/>: the pad's width, a little over the jet's housing.
+    /// </summary>
+    private static void RcsMount(Part p, string name, double x, double y, double z, string dir, double w, string color)
+    {
+        var s = dir[0] == '-' ? -1 : 1;
+        double[] at = [x, y, z];
+        var axis = dir[1] - 'x';
+        double[] lo = [x - w / 2, y - w / 2, z - w / 2], hi = [x + w / 2, y + w / 2, z + w / 2];
+        lo[axis] = Math.Min(at[axis] - s * 0.11, at[axis] + s * 0.04);
+        hi[axis] = Math.Max(at[axis] - s * 0.11, at[axis] + s * 0.04);
+        at[axis] += s * 0.04;
+        Solid(p, lo[0], lo[1], lo[2], hi[0], hi[1], hi[2], color, "dirty steel");
+        Sock(p, name, at[0], at[1], at[2], dir);
+    }
+
     private static void Solid(Part p, double x0, double y0, double z0, double x1, double y1, double z1, string color, string? finish = null)
     {
         var shape = finish == null ? null : Kw(("finish", finish));
@@ -1164,6 +1181,10 @@ public sealed class MinerParts : IPartGenerator
             Hidden(p, xi, y0, HopZ0 + 0.004, Cx + s * h1, y1, HopZ1 - 0.004);
         Sock(p, "lift", Cx + s * 7.85, 1.0, JetZ, "-y");
         Sock(p, "retro", Cx + s * 7.85, 1.22, RetroZ, "-z");
+        // The attitude jets (ShipParts.Rcs): up on the retro housing's outboard top, down under it, out on the shelf's outboard face.
+        RcsMount(p, "rcsUp", Cx + s * 8.1, 1.72, 10.15, "+y", 0.54, Frame);
+        RcsMount(p, "rcsDown", Cx + s * 7.85, 0.66, 10.15, "-y", 0.54, Frame);
+        RcsMount(p, "rcsOut", Cx + s * 8.6, 1.225, 11.45, s < 0 ? "-x" : "+x", 0.54, Frame);
         p.Set(("fuelTank", Kw(("capacity", 1500))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(Cx + s * 7.0, 0.5, HopZ1).Cast<object>()], "+z", "fuel"))));
         return p.Stats(6000, 24000, 35, 15.0);
     }
@@ -1205,6 +1226,11 @@ public sealed class MinerParts : IPartGenerator
         Solid(p, x - 0.5, NacY - 0.5, NacZ1 - 0.3, x + 0.5, NacY + 0.5, NacZ1, Frame, "dirty steel"); // the drive's mount plate in the collar's end
         Sock(p, "drive", x, NacY, NacZ1, "+z");
         Sock(p, "lift", x, liftY, AftJetZ, "-y");
+        // The attitude jets (ShipParts.Rcs) aft on the pod's flats: up, down and outboard.
+        var flat = Math.Round(NacR * Math.Cos(Math.PI / 8), 3);
+        RcsMount(p, "rcsUp", x, NacY + flat, 27.0, "+y", 0.54, Frame);
+        RcsMount(p, "rcsDown", x, NacY - flat, 27.0, "-y", 0.54, Frame);
+        RcsMount(p, "rcsOut", x + s * flat, NacY, 27.0, s < 0 ? "-x" : "+x", 0.54, Frame);
         p.Set(("fuelTank", Kw(("capacity", 2500))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(x, NacY + 0.3, NacZ1).Cast<object>()], "+z", "fuel"))));
         return p.Stats(5000, 20000, 35, 15.0);
     }
@@ -1910,6 +1936,10 @@ public sealed class MinerParts : IPartGenerator
             lifts.Add(bp.Hang("Magpie Lift Jet", h, "lift", "top"));
         foreach (var h in hoppers)
             bp.Hang("Magpie Retro Jet", h, "retro", "top");
+        // Attitude jets pointing every way fore and aft (Karl, 2026-11-15): it turns about any axis and stops any way.
+        foreach (var t in hoppers.Concat(nacelles))
+            foreach (var sock in new[] { "rcsUp", "rcsDown", "rcsOut" })
+                bp.Hang("Heavy RCS Thruster", t, sock, "base");
         foreach (var n in new[] { "legFL", "legFR", "legBL", "legBR" })
             bp.Hang("Magpie Landing Leg", keel, n, "top");
         // Getting about: the boarding ladder off the porch, a ladder up from the workshop and one from engineering.
@@ -1966,6 +1996,7 @@ public sealed class MinerParts : IPartGenerator
         var pilot = bp.Hang("Flight Couch", uf, "pilot", "bottom");
         bp.Hang("Flight Couch", uf, "copilot", "bottom");
         var fc = bp.Hang("Magpie Flight Computer", uf, "module", "bottom");
+        bp.Steps[fc]["config"] = ShipParts.ShipFlight();
         bp.Wires.Add((pilot, fc));
         bp.Hang("Chart Table", uf, "chart", "back");
         Paint(bp, bp.Hang("Magpie Locker", uf, "bridgeLocker", "wall"), Yellow2, "worn paint");

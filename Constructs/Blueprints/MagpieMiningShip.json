@@ -127,6 +127,78 @@
       "by": "top"
     },
     {
+      "part": "Heavy RCS Thruster",
+      "on": 7,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 7,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 7,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 8,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 8,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 8,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 9,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 9,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 9,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 10,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 10,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 10,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
       "part": "Magpie Landing Leg",
       "on": 0,
       "socket": "legFL",
@@ -285,13 +357,13 @@
     },
     {
       "part": "Drill Module",
-      "on": 40,
+      "on": 52,
       "socket": "dock",
       "by": "back"
     },
     {
       "part": "Battery",
-      "on": 41,
+      "on": 53,
       "socket": "-x",
       "by": "+x"
     },
@@ -303,13 +375,13 @@
     },
     {
       "part": "Drill Module",
-      "on": 43,
+      "on": 55,
       "socket": "dock",
       "by": "back"
     },
     {
       "part": "Battery",
-      "on": 44,
+      "on": 56,
       "socket": "-x",
       "by": "+x"
     },
@@ -543,7 +615,11 @@
       "part": "Magpie Flight Computer",
       "on": 5,
       "socket": "module",
-      "by": "bottom"
+      "by": "bottom",
+      "config": {
+        "keys": "Ship",
+        "mouseAim": true
+      }
     },
     {
       "part": "Chart Table",
@@ -850,88 +926,88 @@
   ],
   "wires": [
     [
-      37,
-      35
-    ],
-    [
-      37,
-      36
-    ],
-    [
-      48,
-      46
-    ],
-    [
-      48,
+      49,
       47
     ],
     [
-      51,
-      49
+      49,
+      48
     ],
     [
-      51,
-      50
+      60,
+      58
     ],
     [
-      66,
-      65
+      60,
+      59
     ],
     [
-      69,
-      67
+      63,
+      61
     ],
     [
-      69,
-      68
+      63,
+      62
     ],
     [
-      72,
-      70
+      78,
+      77
     ],
     [
-      72,
-      71
+      81,
+      79
     ],
     [
-      73,
-      75
+      81,
+      80
     ],
     [
-      88,
-      86
+      84,
+      82
     ],
     [
-      88,
+      84,
+      83
+    ],
+    [
+      85,
       87
     ],
     [
-      91,
-      89
+      100,
+      98
     ],
     [
-      91,
-      90
+      100,
+      99
     ],
     [
-      93,
-      92
+      103,
+      101
     ],
     [
-      109,
-      108
+      103,
+      102
     ],
     [
-      111,
-      110
+      105,
+      104
     ],
     [
-      114,
-      112
+      121,
+      120
     ],
     [
-      114,
-      113
+      123,
+      122
+    ],
+    [
+      126,
+      124
+    ],
+    [
+      126,
+      125
     ]
   ],
   "conduit": true

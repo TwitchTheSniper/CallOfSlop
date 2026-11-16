@@ -25,7 +25,8 @@ public static class ThirdPerson
     public const float FootMin = 1.5f, FootMax = 8f, FootDefault = 3f;
     public const float ShoulderOffset = 0.5f;
     public const float CameraRadius = 0.25f;
-    public const float SeatPitchMin = -1.4f, SeatPitchMax = 1.3f;
+    public const float SeatPitchMin = -1.5f, SeatPitchMax = 1.5f; // (a ship steered by the camera points as far as it looks)
+    public const float SteerTilt = -0.25f; // the seat orbit's first tilt, looking down a little: a ship steered by the camera counts it as level
 
     /// <summary>The remembered mode per context.</summary>
     public static bool FootOn, SeatOn, PilotOn;
@@ -36,7 +37,7 @@ public static class ThirdPerson
     public static float FootDist = FootDefault;
 
     /// <summary>The seat orbit: heading, pitch (looking down is negative) and distance.</summary>
-    public static float OrbitYaw, OrbitPitch = -0.25f, SeatDist = 10f;
+    public static float OrbitYaw, OrbitPitch = SteerTilt, SeatDist = 10f;
 
     // ---- per frame ---------------------------------------------------------------------------------------------------
 
