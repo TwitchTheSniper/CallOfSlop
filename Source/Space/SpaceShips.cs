@@ -148,6 +148,7 @@ public sealed class SpaceShips
     // Bodies: GM, sphere of influence, children (flattened).
     private readonly int _nb;
     private readonly double[] _mu, _soi;
+
     private readonly int[] _childStart, _children;
 
     // Body states on the chunk's time grid (grid point g, body b at g * _nb + b): position, rail velocity, rail acceleration.
@@ -656,6 +657,20 @@ public sealed class SpaceShips
             var d = r - (pos[off + j] - pp);
             var d2 = d.LengthSquared;
             a -= d * (_mu[j] / (d2 * Math.Sqrt(d2)));
+        }
+        if (p != 0)
+        {
+            // The primary's moons pull it as well as the ship, but its rails leave that out (a body moves only round its
+            // parent), so its frame takes their pull on it as though it did: what is left of a moon's pull is the tide.
+            // Without it Slopolis (13% of Glacier's mass, 140 km out) pulled ships round Glacier while Glacier stayed on
+            // its path, and a 4 km orbit wandered by 1.4 km within hours (2026-11-16). The star is left fixed, as its rails are.
+            for (var k = _childStart[p]; k < _childStart[p + 1]; k++)
+            {
+                var j = _children[k];
+                var q = pp - pos[off + j];
+                var q2 = q.LengthSquared;
+                a += q * (_mu[j] / (q2 * Math.Sqrt(q2)));
+            }
         }
         if (Forces.Count > 0)
         {

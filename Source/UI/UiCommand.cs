@@ -61,6 +61,7 @@ public sealed partial class Ui
         public float2 At;
         public float Px; // its radius on the screen
         public bool Orders; // it takes them
+        public bool Space; // out of the bubble, a space ship (a client's: one of the host's ships pictures it)
     }
 
     private readonly CmdCraft[] _cmdCraft = new CmdCraft[128];
@@ -196,6 +197,7 @@ public sealed partial class Ui
             k.Vel = vel;
             k.Primary = NavGuidance.PrimaryAt(sys, pos, _cvTime);
             k.Orders = Game.NavProblem(c) == null;
+            k.Space = g.SpaceShipIdOf(c) != 0;
         }
         if (_cmdSel != 0 && CmdFind(_cmdSel) < 0)
             _cmdSel = 0;

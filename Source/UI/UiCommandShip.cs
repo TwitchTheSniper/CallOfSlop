@@ -33,7 +33,7 @@ public sealed partial class Ui
             var body = sys.Bodies[cr.Primary];
 
             // The path it is on, when it is on one: up in space, or high and fast.
-            var free = c.SpaceShip != 0 || r.Length - body.Radius > 1500 && v.Length > 40;
+            var free = cr.Space || r.Length - body.Radius > 1500 && v.Length > 40;
             if (free && cr.Primary > 0 && v.LengthSquared / 2 - body.Mu / r.Length < 0 && Vec3d.Cross(r, v).Length > 1)
             {
                 var o = KeplerOrbit.FromState(body.Mu, r, v, _cvTime);
@@ -76,7 +76,7 @@ public sealed partial class Ui
             {
                 // A dart along the way it goes (seen from its world); a diamond when it sits still.
                 var way = new float2((float)Vec3d.Dot(v, _cvRight), -(float)Vec3d.Dot(v, _cvUp));
-                var relative = c.SpaceShip != 0 ? v.Length : c.Vel.Length();
+                var relative = cr.Space ? v.Length : c.Vel.Length();
                 var size = 7 * _scale;
                 if (relative > 2 && way.Length() > 1e-3f)
                 {
@@ -459,7 +459,7 @@ public sealed partial class Ui
                 CmdLine(dl, q0, new float2(q0.X, q1.Y), CmdWhite, fade, 2.5f);
             var colour = picked ? CmdWhite : order != null ? CmdAmber : cr.Orders ? CmdCyan : CmdDim;
             CmdText(dl, q0 + new float2(10 * _scale, 4 * _scale), 12, colour, fade, CmdName(c), 0, false);
-            var where = c.SpaceShip != 0 ? "SPACE" : !c.HoverOn && c.Vel.LengthSquared() < 1 ? "DOWN" : "SKY";
+            var where = cr.Space ? "SPACE" : !c.HoverOn && c.Vel.LengthSquared() < 1 ? "DOWN" : "SKY";
             CmdText(dl, new float2(q1.X - 8 * _scale, q0.Y + 5 * _scale), 10.5f, order != null ? CmdAmber : CmdDim, fade, order != null ? "ORDER" : where, 2, false);
             if (hover && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
             {
@@ -512,16 +512,16 @@ public sealed partial class Ui
         k.Class = string.Create(inv, $"{c.Mass / 1000:0.0} T    {MathF.Max(size.X, MathF.Max(size.Y, size.Z)):0} M LONG    {c.PartCount} PARTS    OWNER {owner}");
 
         var name = _cmdBodyNames.Length > cr.Primary ? _cmdBodyNames[cr.Primary] : body.Name.ToUpperInvariant();
-        var height = c.SpaceShip == 0 && World.Map.Planetoid is { } pl ? pl.Altitude(c.WorldCom) : r.Length - body.Radius; // (in the sky: over the ground under it)
-        var ground = c.SpaceShip == 0 ? c.Vel.Length() : v.Length;
+        var height = !cr.Space && World.Map.Planetoid is { } pl ? pl.Altitude(c.WorldCom) : r.Length - body.Radius; // (in the sky: over the ground under it)
+        var ground = !cr.Space ? c.Vel.Length() : v.Length;
         k.Status = c.SpaceAway != 0 ? "DEEP SPACE, ROUND " + name
-            : c.SpaceShip != 0 ? "IN SPACE, ROUND " + name
+            : cr.Space ? "IN SPACE, ROUND " + name
             : !c.HoverOn && ground < 1 ? "DOWN ON " + name
             : ground < 2 ? "HOVERING OVER " + name
             : "FLYING OVER " + name;
         k.Flight = string.Create(inv, $"{CmdDistance(height).ToUpperInvariant()} UP    {ground:0} M/S");
         k.Orbit = "";
-        if (c.SpaceShip != 0 && cr.Primary > 0)
+        if (cr.Space && cr.Primary > 0)
         {
             var energy = v.LengthSquared / 2 - body.Mu / r.Length;
             if (energy >= 0)
