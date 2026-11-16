@@ -76,6 +76,14 @@ Karl says otherwise.
 Dropped from the notes: the "everything exists for a reason" rule, hand-placed shipyards, a rule that only small things
 are procedural, the vehicle terrain table, and urgent cargo.
 
+## Built since
+
+- **Breakdowns that warn you first** (the roadmap's first step, 2026-11-15): in Survival the rust bucket's thrusters break
+  down now and then while someone is aboard. A part creaks and groans for a while first; the attach tool at the engine
+  room's Engineer's Panel (or at the part) sees to it for nothing in that time, and once it has failed it takes a little
+  metal to repair. `Source/Game/GameSandboxBreakdowns.cs`, numbers in `Constructs/Breakdowns.json`, and
+  docs/sandbox/constructs/ship.md "Breakdowns".
+
 ## What was archived (2026-11-14)
 
 Recoverable, not deleted:

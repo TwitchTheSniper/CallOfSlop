@@ -501,7 +501,7 @@ public sealed partial class ConstructEdits
                 var salvage = Salvageable(c, player);
                 if (salvage || c.Damaged)
                     world.Note(CNoteKind.Strip, c.Id, player); // (a wreck: the story keeps someone else's, and any a faction claims: ConstructWorldNotes.cs, Game/GameStory.cs)
-                var wrecked = c.Parts[h.Part].Broken;
+                var wrecked = c.Parts[h.Part].Broken && !c.Parts[h.Part].BrokeDown; // (a breakdown comes off whole)
                 var wreckedPart = c.Parts[h.Part];
                 var magPack = c.Parts[h.Part].Rounds;
                 var partRot = c.Parts[h.Part].Rot;
