@@ -16,34 +16,35 @@ The user's decisions (binding):
    (c) automatic: a Logistics Dispatcher at the factory sends idle registered ships when enough cargo waits.
 4. **Loading:** a Cargo Dock (factory) with a matching Cargo Port (ship) for loose material and small pieces, and cranes
    and arms for big pieces and submodules into cargo volumes.
-5. Small local drones are out (a later design of their own).
+5. Small local drones are out: a later, separate design.
 
 The production system is the user's own; this design leans on it throughout and changes none of its rules for one
 construct. Names below are suggestions.
 
-## 1. What exists that this builds on
+## 1. What it builds on
 
-| Thing | Today | Where |
-| --- | --- | --- |
-| A network | One joined group on one construct; `LogiMap` on `Construct.Logi`; the terminal's `CraftNet` (64 machines, 64 stores) | `ConstructLogistics*.cs`, `ConstructCrafting.cs` |
-| The planner | 2 Hz, roots and `ChainEntry` (256 a world, 64 a network, depth 6): count, stock, make, explain | `ConstructLogisticsPlan.cs` |
-| Claims | `ConstructReserve`: store, kind, count, owner and order; 1,024 a world, never saved | `ConstructReserve.cs` |
-| Docks | A Docking Clamp is a cargo volume with a `dock` block: it pulls a slow craft in, holds it kinematically, refuels and charges it, and with `"chute": true` moves one chute load from a bin of the held body into a bin here | `ConstructCargo.cs`, big-systems.md "Docks" |
-| Holds | Storage Volume (bulk or parts, up to 40 m a side, 4 a construct); Cargo Volume (frozen box, carries bodies, 32 a construct) | storage-and-cargo.md |
-| Lifters | Loader Arms and Bridge Cranes; work by `Dest`, pick and put points; sub-blueprints adds a body carry | `arms-and-cranes.md`, `ConstructLifters*.cs` |
-| Ship orders | `NavKind` GoTo / Orbit / Ground, flown by any ship with a working Flight Stabilizer; 64 a world, host-only, **not saved** | `GameNav.cs`, docs/space/COMMAND.md |
-| Wireless | Sender and receiver on a channel within a reach, gathered once a tick | `ConstructRadio.cs` |
-| Worlds | One Game per planetoid someone is on (free travel); a planetoid with nobody on it for 30 s is saved and **closed: its machines stop**. Ships in space live in the host's main Game. Inside one Game every body ticks, near a player or not (only lift detail and physics sleep depend on distance) | docs/space/FREE-TRAVEL.md, `GameTravel*.cs` |
+- **Network and planner:** one joined group a construct (`LogiMap`, `CraftNet`: 64 machines, 64 stores); the 2 Hz planner's
+  roots and `ChainEntry` (256 a world, 64 a network, depth 6); claims in `ConstructReserve` (1,024, never saved).
+  `ConstructLogistics*.cs`, `ConstructCrafting.cs`, `ConstructReserve.cs`.
+- **Docks:** a Docking Clamp is a cargo volume with a `dock` block: it pulls a slow craft in, holds it, refuels and charges
+  it, and with `"chute": true` moves a chute load between bins across the two bodies (`ConstructCargo.cs`, big-systems.md).
+- **Holds:** Storage Volumes (bulk or parts, 40 m a side, 4 a construct); Cargo Volumes (frozen boxes that carry bodies).
+- **Lifters:** Loader Arms and Bridge Cranes with pick and put points; sub-blueprints adds a body carry.
+- **Ship orders:** `NavKind` GoTo, Orbit, Ground, flown by a ship with a working Flight Stabilizer; 64 a world, host-only,
+  not saved (`GameNav.cs`, COMMAND.md).
+- **Worlds:** one Game per planetoid someone is on (free travel). Inside one Game **every body ticks**, near a player or not
+  (only lift detail and physics sleep go by distance). A planetoid nobody is on for 30 s is saved and **closed: its machines
+  stop**. Ships in space live in the host's main Game, which always runs (FREE-TRAVEL.md, `GameTravel*.cs`).
 
-So: on one planetoid, both ends are always live. Across planetoids, the far end may be closed. Section 5 designs for that.
+So on one planetoid both ends are always live; across planetoids the far end may be closed (section 5).
 
 ## 2. What the player sees and does
 
 **Level 0, the link (Transmitter + Receiver built).** The shipyard on Glacier has a Building Station building a frigate; the
 smelting works on Bluestone has a Receiver, the shipyard a Transmitter, paired. The shipyard's Crafting Terminal list now
-shows what Bluestone holds and makes, marked with a planet tag ("Steel Beam - 40 at Bluestone Works"). The frigate's job
-orders 200 Steel Beam: 60 come from the yard's own racks, 140 are claimed or ordered at Bluestone. The row reads
-"140 Steel Beam - at Bluestone Works: 80 ready, 60 being made - **needs a ship**". Nothing moves yet.
+shows what Bluestone holds and makes, marked with a planet tag ("Steel Beam - 40 at Bluestone Works"). A frigate job
+short of 140 Steel Beam claims or orders them there: "140 Steel Beam - at Bluestone Works: 80 ready, 60 being made - **needs
+a ship**". Nothing moves yet.
 
 **Level a, manual (Cargo Dock + Cargo Port).** The player lands a ship with a Cargo Port on Bluestone's Cargo Dock. The
 clamp catches it and the dock's screen says "Loading for Glacier Yard: 34 of 140 Steel Beam, 1,200 of 4,000 steel". Routers
@@ -51,15 +52,13 @@ send claimed pieces to the dock; the dock passes them through the port into the 
 puts big pieces in its Cargo Volume. The ship's card (command view) and its port's look line show the **manifest**. The
 player flies to Glacier and docks at the yard's Cargo Dock; it empties what is for the yard; the yard's orders count it in.
 
-**Level b, standing routes (Route Computer on the ship).** In the command view the player picks the ship, right-clicks a
-Cargo Dock marker and chooses **ROUTE**: load at Bluestone Works until full (or for at most N minutes), fly to Glacier
-Yard, unload, come back. The ship flies itself (existing nav orders, plus a new dock approach), loops, and its card says
-"ROUTE: loading at Bluestone Works, 72% full, leaves when full or in 6:10".
+**Level b, standing routes (Route Computer).** In the command view the player picks the ship, right-clicks a Cargo Dock
+marker, **ROUTE**: load at Bluestone Works until full (or N minutes), fly to Glacier Yard, unload, return. It loops by
+itself; its card: "ROUTE: loading at Bluestone Works, 72% full, leaves when full or in 6:10".
 
-**Level c, automatic (Logistics Dispatcher at a factory).** Ships with a Route Computer docked at a factory with a
-Dispatcher can be **registered** to it (its panel, one click a ship). The Dispatcher watches the cargo waiting at its docks
-for each linked destination and sends an idle registered ship when enough waits (a share of that ship's hold) or when the
-oldest line has waited too long. The player sees a fleet list: ship, state, load, fuel, ETA.
+**Level c, automatic (Logistics Dispatcher).** Route-Computer ships docked once at a factory with a Dispatcher can be
+registered to it. It sends an idle one when enough cargo waits for a linked destination, or the oldest line has waited too
+long, and shows a fleet list: ship, state, load, fuel, ETA.
 
 ## 3. The parts
 
@@ -257,13 +256,10 @@ from a supplier's dock when that dock reports waiting cargo for it and the suppl
 | Ship destroyed with cargo | Its holds spill as storage does (bundles, loose parts, logged); its lines close as **lost**; the destination's move 1 no longer counts them, so they are ordered again on the next step ("12 Steel Beam lost with HAULER 2: ordered again") |
 | A player takes cargo from a hold | The line shrinks by what was taken (contested-store rule as for any store); the destination asks again for the shortfall |
 | Dock blocked (something on the pad, a ship that isn't moving away) | The arriving route ship holds 40 m over it ("dock busy"); after 2 minutes it tries another Cargo Dock of the same network, else waits |
-| Wrong ship (no Cargo Port, port not over the hatch, not registered) | The clamp holds it as a clamp does (refuel, charge); no exchange; the dock's screen says why ("no Cargo Port over the hatch") |
+| Wrong ship (no Cargo Port, port not over the hatch, not registered) | Held, refuelled and charged as by a clamp; no exchange; the dock's screen says why |
+| Pairing a Receiver on the Transmitter's own network | Refused ("that receiver is on this network") |
 | Staging hold full and no ship | Pieces back up as any full destination does (smart-logistics Q7: they wait at their Router, marked stuck) |
-| Destination dock full when unloading | The ship waits docked until room frees, then goes on; Full or timeout applies on the way out too |
 | Ship hijacked or flown off by a player | Its route is suspended; its lines stay in transit, then stalled after 10 minutes |
-| Transmitter's network splits | The end stays with the part (a part setting); the other half loses the link |
-| Two ends on one network (loop) | Refused at pairing ("that receiver is on this network") |
-| Save mid-trip | Manifest, route and its state (leg, stop, timer) are saved on the ship's parts; the ledger in the main world save |
 
 ## 8. Wire, saves, performance
 
@@ -286,24 +282,12 @@ No new save file: `SavePaths.SaveFiles` and `SaveFolders` are unchanged. Bluepri
 
 **Performance** (8 ms a tick on the 2-core box, no allocations in a steady tick, bounded per body):
 
-| Work | When | Bound |
-| --- | --- | --- |
-| A report | 0.5 Hz per link end, spread by `LinkId` | 128 + 128 kinds from the network's cached `CraftNet` lists: under 0.05 ms |
-| Ledger hand-off | each Game's update end | copies of at most 4 ends x (64 lines + report) |
-| Planner remote steps | inside the existing 2 Hz step | at most 8 new remote lines a step a network |
-| Bridge exchange | 1 Hz per docked ship | one chute move each way |
-| Payload and fuel estimate | on docking and on a change of hold mass | a few sums |
-| Dispatcher | 1 Hz | 8 ships x 4 destinations |
-| Route ships | per tick only while a leg flies (today's nav cost) | 32 a world |
-
-All tables are fixed arrays, pooled; names are made only when a reason changes. Measure: a world with 4 links, 128-kind
-reports, 32 route ships and 2 opened planetoids; the worst tick while a ship opens a planetoid (expected to be the
-`OpenPlace` load, which is today's landing cost).
-
-**Reuse.** Clamp mechanics and cross-body chute move (`ConstructCargo` docks); `ConstructReserve` for claims; the planner's
-moves and `ChainEntry` with a `Remote` flag; `WorkOrders.Refusal` for "what it makes"; `ConstructStorage.WriteDef` for
-kinds on the wire; nav orders and `NavGuidance` for legs; free travel's `OpenPlace`, `TravelPackShip`, in-memory hand-off;
-lifter points and the sub-blueprints body carry; `Ui.CmdIsCraft` and the ship card for the command view.
+Bounds: a report 0.5 Hz per end, spread by `LinkId`, from the network's cached lists (under 0.05 ms); the ledger hand-off
+copies at most 4 ends a Game; the planner's remote steps sit inside its 2 Hz step, 8 new lines a step a network; the bridge
+one chute move each way a second per docked ship; payload and fuel estimates on docking and on a change of hold mass; the
+Dispatcher 1 Hz over 8 ships and 4 destinations; route ships cost today's nav work only while a leg flies (32 a world).
+All tables are fixed arrays, pooled; names are made only when a reason changes. Measure with 4 links, 128-kind reports,
+32 route ships and 2 opened planetoids, and the worst tick while a ship opens a planetoid (today's landing cost).
 
 ## 9. Phases (one builder, the whole feature; a WIP commit `[skip ci]` after each)
 
@@ -327,12 +311,7 @@ lifter points and the sub-blueprints body carry; `Ui.CmdIsCraft` and the ship ca
 Tried by hand each phase on a host and a joined client (the `--window-shot` verbs where a picture checks something); no new
 self-test sections (rule of 2026-11-03), any probe removed.
 
-## 10. Small drones
-
-Small local drones that carry pieces between nearby constructs are not part of this design; they are a later design of
-their own.
-
-## 11. Open questions for the user (recommendation first)
+## 10. Open questions for the user (recommendation first)
 
 1. **"Concord".** No part, ship or faction called Concord exists in the repo. **Recommended:** treat it as any player-built
    ship with a Cargo Port; if Concord is a ship you want built, a showcase hauler blueprint of that name in phase 7.
