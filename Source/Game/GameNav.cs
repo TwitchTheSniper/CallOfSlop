@@ -30,6 +30,7 @@ public enum NavPhase : byte
     Correct, // between planets: a small burn back onto the planned conic
     Brake, // between planets: flipped over, braking into the target's neighbourhood
     Short, // between planets: no trip in reach fits the dV a trip may spend (NavOrder.DvNeed says what it would take)
+    Wait, // between planets: in orbit, drive off, until its launch window (NavOrder.DepartNs)
 }
 
 /// <summary>One ship's order (the host's; clients hear a copy for the command view).</summary>
@@ -57,11 +58,16 @@ public sealed class NavOrder
     /// A trip between planets (NavTrip.cs): when it arrives (space time, ns; 0: no trip planned) and the dV it spends
     /// (m/s; while <see cref="NavPhase.Short"/>, the least any trip would take). Sent to clients for the ship card.
     /// </summary>
-    public long ArriveNs;
+    public long ArriveNs, DepartNs;
     public float DvNeed;
 
     /// <summary>Host: a trip between planets is being flown (planned), or it is over and the order's own law has the ship now.</summary>
     internal bool Cruise, Handed;
+
+    /// <summary>Host: a plan being made over a few ticks (NavTrip.Search), from the planet the ship was at.</summary>
+    internal bool Planning;
+    internal NavTrip.Search Search;
+    internal int PlanFrom;
 }
 
 /// <summary>
@@ -252,8 +258,8 @@ public sealed partial class Game
         o.Phase = NavPhase.None;
         o.PhaseSent = NavPhase.None;
         o.Engaged = false;
-        o.Cruise = o.Handed = false;
-        o.ArriveNs = 0;
+        o.Cruise = o.Handed = o.Planning = false;
+        o.ArriveNs = o.DepartNs = 0;
         o.DvNeed = 0;
         Console.WriteLine($"[nav] {p.Name} ordered construct {id}: {NavText(sys, o)}");
         return null;
@@ -483,7 +489,7 @@ public sealed partial class Game
 
     private static void WriteNav(PacketWriter w, NavOrder o) =>
         w.Begin(Msg.Nav).U16(o.Construct).U8((byte)o.Kind).U8(o.Body).U8((byte)o.Phase).U8(o.By).F64(o.Point.X).F64(o.Point.Y).F64(o.Point.Z).F64(o.Radius)
-            .U64((ulong)o.ArriveNs).F32(o.DvNeed);
+            .U64((ulong)o.ArriveNs).U64((ulong)o.DepartNs).F32(o.DvNeed);
 
     /// <summary>Host: a joiner hears every order.</summary>
     private void SendNavState(RakNetGUID to)
@@ -498,7 +504,7 @@ public sealed partial class Game
     /// <summary>Client: an order began, changed or (kind None) ended.</summary>
     private void ReadNav(ref PacketReader r)
     {
-        if (IsServer || !r.Has(2 + 4 + 8 * 4 + 8 + 4))
+        if (IsServer || !r.Has(2 + 4 + 8 * 4 + 8 + 8 + 4))
             return;
         var id = r.U16();
         var kind = (NavKind)r.U8();
@@ -508,6 +514,7 @@ public sealed partial class Game
         var point = new Vec3d(r.F64(), r.F64(), r.F64());
         var radius = r.F64();
         var arriveNs = (long)r.U64();
+        var departNs = (long)r.U64();
         var dvNeed = r.F32();
         var o = NavOf(id);
         if (kind == NavKind.None || kind > NavKind.Ground)
@@ -529,6 +536,7 @@ public sealed partial class Game
         o.Point = point;
         o.Radius = radius;
         o.ArriveNs = arriveNs;
+        o.DepartNs = departNs;
         o.DvNeed = dvNeed;
     }
 

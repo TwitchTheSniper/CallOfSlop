@@ -148,4 +148,77 @@ public static class SpaceCli
     }
 
     private static string Dist(double m) => m >= 1e9 ? FormattableString.Invariant($"{m / StarSystemFile.Au:0.000000} AU") : FormattableString.Invariant($"{m / 1000:0.000} km");
+
+    /// <summary>
+    /// <c>--trip-check [FILE] [--accel A] [--dv DV] [--share S] [--day D]</c>: the trips an order would plan between every
+    /// pair of planets in a system (default Systems/Frostreach.json) for a ship that pushes A m/s2 with DV m/s of fuel
+    /// (default the Magpie: 42 and 25,900) and may spend share S of it (default <see cref="NavTrip.TripShare"/>), leaving on
+    /// day D: each trip's days and dV, and the least any trip needs when none fits (NavTrip.cs). Headless, prints to the log.
+    /// </summary>
+    public static int Trips(string[] args)
+    {
+        string? file = null;
+        double accel = 42, dv = 25_900, share = NavTrip.TripShare, day = 0;
+        for (var i = 0; i < args.Length; i++)
+        {
+            var a = args[i].ToLowerInvariant();
+            var v = i + 1 < args.Length ? args[i + 1] : null;
+            if (v == null)
+                continue;
+            if (a == "--trip-check" && !v.StartsWith("--"))
+                file = v;
+            else if (a == "--accel")
+                accel = double.Parse(v, CultureInfo.InvariantCulture);
+            else if (a == "--dv")
+                dv = double.Parse(v, CultureInfo.InvariantCulture);
+            else if (a == "--share")
+                share = double.Parse(v, CultureInfo.InvariantCulture);
+            else if (a == "--day")
+                day = double.Parse(v, CultureInfo.InvariantCulture);
+        }
+        var sys = LoadOrPrint(file ?? Path.Combine(AppContext.BaseDirectory, StarSystemFile.FolderName, "Frostreach.json"));
+        if (sys == null)
+            return 1;
+        var t = SpaceTime.FromSeconds(day * 86400);
+        var inv = CultureInfo.InvariantCulture;
+        Console.WriteLine(string.Create(inv, $"[trip] {sys.Name}, day {day:0}: a ship at {accel:0.0} m/s2 with {dv / 1000:0.0} km/s, spending at most {share:P0}"));
+        var sw = Stopwatch.StartNew();
+        if (Environment.GetEnvironmentVariable("TRIP_TABLE") is { } tt && tt.Split(',') is [var fa, var fb])
+        {
+            var f0 = sys.IndexOf(fa);
+            var f1 = sys.IndexOf(fb);
+            for (var w = 0; w < 2400; w += 60)
+            {
+                var tw = t + (long)(w * 86400.0 * SpaceTime.NsPerSecond);
+                sys.StateOf(f0, tw, out var pp, out var vv);
+                var line = new System.Text.StringBuilder($"[trip] wait {w}:");
+                for (var d = 50; d <= 1000; d += 50)
+                {
+                    NavTrip.Burn(sys, pp + new Vec3d(30000, 0, 0), vv, tw, f1, Vec3d.Zero, tw + (long)(d * 86400.0 * SpaceTime.NsPerSecond), out var o, out var i);
+                    line.Append(string.Create(inv, $" {(o.Length + i) / 1000:0}"));
+                }
+                Console.WriteLine(line);
+            }
+        }
+        for (var from = 1; from < sys.Count; from++)
+        {
+            if (sys.Bodies[from].Parent != 0)
+                continue;
+            sys.StateOf(from, t, out var p, out var v);
+            var at = p + new Vec3d(sys.Bodies[from].Radius * 3, 0, 0);
+            for (var to = 1; to < sys.Count; to++)
+            {
+                if (to == from || sys.Bodies[to].Parent != 0)
+                    continue;
+                var q = NavTrip.Search.Begin(sys, from, to, t);
+                while (!q.Done)
+                    q.Step(sys, from, at, v, to, Vec3d.Zero, accel, dv * share, NavTrip.Waits);
+                Console.WriteLine(q.BestArrive != 0
+                    ? string.Create(inv, $"[trip] {sys.Bodies[from].Name} to {sys.Bodies[to].Name}: leaves in {(q.BestDepart - t.Ns) / 1e9 / 86400:0} days, {(q.BestArrive - q.BestDepart) / 1e9 / 86400:0.0} days on the way, {q.BestSpend / 1000:0.00} km/s (the least any departure needs: {q.Need / 1000:0.00})")
+                    : string.Create(inv, $"[trip] {sys.Bodies[from].Name} to {sys.Bodies[to].Name}: out of reach, the least is {q.Need / 1000:0.00} km/s"));
+            }
+        }
+        Console.WriteLine(string.Create(inv, $"[trip] planned in {sw.Elapsed.TotalMilliseconds:0.0} ms"));
+        return 0;
+    }
 }

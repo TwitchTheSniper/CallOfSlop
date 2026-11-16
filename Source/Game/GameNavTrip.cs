@@ -34,6 +34,15 @@ public sealed partial class Game
     /// <summary>The Trip fuel slider's ends (percent of the ship's dV).</summary>
     public const int TripFuelLeast = 10, TripFuelMost = 95;
 
+    /// <summary>
+    /// Host setting (Settings > Gameplay "Fuel use in space"): the percent of their fuel thrusters burn in space
+    /// (<see cref="ConstructPhysics.SpaceFuelScale"/>, set from it each tick and sent with the space clock).
+    /// </summary>
+    public int SpaceFuelPercent = 100;
+
+    /// <summary>The Fuel use in space slider's low end (percent): a tenth of the fuel, ten times the dV.</summary>
+    public const int SpaceFuelLeast = 10;
+
     /// <summary>A coasting ship gets to its brake in no less than this much real time (s), however fast time runs.</summary>
     public const double NavLeadSeconds = 1.5;
 
@@ -45,6 +54,27 @@ public sealed partial class Game
 
     /// <summary>How often (ticks) a coasting ship looks at its plan again, and how often a ship short of dV plans again.</summary>
     public const int NavCoastCheck = 30, NavShortRetry = 600;
+
+    /// <summary>How many departure times a plan looks at a tick (each a scan of trip times: about 0.17 ms).</summary>
+    public const int NavPlanPerTick = 8;
+
+    /// <summary>
+    /// Host: while a ship plans or waits for its window it keeps a circular orbit round the body it is at, at the height it
+    /// has (no lower than that body's lowest), so a ship that was hovering or falling doesn't come down meanwhile.
+    /// </summary>
+    private static void NavPark(StarSystem sys, NavOrder o, SpacePos pos, Vec3d vel, SpaceTime t, double aMax, out Vec3d a)
+    {
+        a = Vec3d.Zero;
+        var body = NavGuidance.PrimaryAt(sys, pos, t);
+        if (body == 0)
+            return; // (round the star itself: it coasts)
+        sys.StateOf(body, t, out var bp, out var bv);
+        var r = pos - bp;
+        var radius = Math.Max(r.Length, NavMinOrbit(sys, body));
+        a = NavGuidance.Orbit(r, vel - bv, sys.Bodies[body].Mu, radius, aMax, out _, out var err);
+        if (err < 3)
+            a = Vec3d.Zero; // (near enough a circle: no burning all the wait)
+    }
 
     /// <summary>The handover to the order's own law comes this much sooner than the drive needs to stop (a share).</summary>
     public const double NavBrakeMargin = 1.25;
@@ -62,24 +92,51 @@ public sealed partial class Game
         var offset = o.Kind == NavKind.GoTo ? o.Point : Vec3d.Zero;
         if (!o.Cruise)
         {
-            if (o.Phase == NavPhase.Short && (ServerTick + o.Construct) % NavShortRetry != 0)
+            if (o.Phase == NavPhase.Short && !o.Planning && (ServerTick + o.Construct) % NavShortRetry != 0)
                 return true; // (drive off: it can't go; it looks again now and then, as the planets move)
             var dv = NavDvLeft(c, aMax);
             var share = Math.Clamp(TripShare, TripFuelLeast / 100.0, TripFuelMost / 100.0);
-            if (!NavTrip.Plan(sys, pos, vel, t, o.Body, offset, aMax, dv * share, out var arrive, out var spend, out var need))
+            if (!o.Planning)
+            {
+                o.PlanFrom = NavTrip.PlanetOf(sys, NavGuidance.PrimaryAt(sys, pos, t));
+                o.Search = NavTrip.Search.Begin(sys, o.PlanFrom, o.Body, t);
+                o.Planning = true;
+            }
+            // The plan looks at every departure from now to the next window, a few a tick (a whole plan is tens of ms).
+            NavSpeedCap = 1;
+            o.Search.Step(sys, o.PlanFrom, pos, vel, o.Body, offset, aMax, dv * share, NavPlanPerTick);
+            NavPark(sys, o, pos, vel, t, aMax, out a);
+            if (!o.Search.Done)
+                return true;
+            o.Planning = false;
+            if (o.Search.BestArrive == 0)
             {
                 if (o.Phase != NavPhase.Short)
-                    Console.WriteLine(FormattableString.Invariant($"[nav] construct {c.Id} can't reach {sys.Bodies[o.Body].Name}: the trip takes {need / 1000:0.0} km/s, it may spend {dv * share / 1000:0.0} of its {dv / 1000:0.0}"));
+                    Console.WriteLine(FormattableString.Invariant($"[nav] construct {c.Id} can't reach {sys.Bodies[o.Body].Name}: the least a trip takes is {o.Search.Need / 1000:0.0} km/s, it may spend {dv * share / 1000:0.0} of its {dv / 1000:0.0}"));
                 o.Phase = NavPhase.Short;
-                o.DvNeed = double.IsFinite(need) ? (float)need : 0;
-                o.ArriveNs = 0;
+                o.DvNeed = double.IsFinite(o.Search.Need) ? (float)o.Search.Need : 0;
+                o.ArriveNs = o.DepartNs = 0;
                 return true;
             }
             o.Cruise = true;
-            o.ArriveNs = arrive.Ns;
-            o.DvNeed = (float)spend;
+            o.DepartNs = o.Search.BestDepart;
+            o.ArriveNs = o.Search.BestArrive;
+            o.DvNeed = (float)o.Search.BestSpend;
+            o.Phase = o.DepartNs - t.Ns > SpaceTime.NsPerSecond * 2 ? NavPhase.Wait : NavPhase.Depart;
+            Console.WriteLine(FormattableString.Invariant($"[nav] construct {c.Id} to {sys.Bodies[o.Body].Name}: leaves in {(o.DepartNs - t.Ns) / 1e9 / 86400:0.0} days, {(o.ArriveNs - o.DepartNs) / 1e9 / 86400:0.0} days on the way, {o.DvNeed / 1000:0.00} km/s of its {dv / 1000:0.0}"));
+        }
+        if (o.Phase == NavPhase.Wait)
+        {
+            // In orbit, drive off, until its window: time may run fast, but not past the departure.
+            var toGo = (o.DepartNs - t.Ns) / (double)SpaceTime.NsPerSecond;
+            if (toGo > 0)
+            {
+                NavSpeedCap = Math.Min(NavSpeedCap, (int)Math.Clamp(toGo / NavLeadSeconds, 1, int.MaxValue));
+                NavPark(sys, o, pos, vel, t, aMax, out a);
+                return true;
+            }
             o.Phase = NavPhase.Depart;
-            Console.WriteLine(FormattableString.Invariant($"[nav] construct {c.Id} to {sys.Bodies[o.Body].Name}: {(arrive - t) / 86400:0.0} days, {spend / 1000:0.00} km/s of its {dv / 1000:0.0}"));
+            Console.WriteLine($"[nav] construct {c.Id}'s window to {sys.Bodies[o.Body].Name}: it burns");
         }
 
         // Near enough to stop on its own law? (as fast as it closes, the distance its drive needs to stop from that, with margin)
@@ -103,6 +160,8 @@ public sealed partial class Game
         NavSpeedCap = Math.Min(NavSpeedCap, (int)Math.Clamp(toBrake / NavLeadSeconds, 1, int.MaxValue));
 
         var burning = o.Phase is NavPhase.Depart or NavPhase.Correct;
+        if (burning)
+            NavSpeedCap = 1; // (a burn is real time, also while it turns to it: time racing on would move its aim every tick)
         if (!burning && (ServerTick + o.Construct) % NavCoastCheck != 0)
             return true;
         if (!NavTrip.Burn(sys, pos, vel, t, o.Body, offset, new SpaceTime(o.ArriveNs), out var dvOut, out _))
@@ -121,7 +180,7 @@ public sealed partial class Game
         if (!burning)
         {
             o.Phase = NavPhase.Correct;
-            NavSpeedCap = 1; // (a burn is real time: SpaceAnyoneBusy holds it there from the next tick too)
+            NavSpeedCap = 1;
         }
         var way = dvOut / o.SpeedError;
         // Round any body in the way (a burn out of a low orbit may point at the ground).

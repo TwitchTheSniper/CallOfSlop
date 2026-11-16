@@ -154,9 +154,48 @@ public static class NavTrip
         return double.IsFinite(best);
     }
 
+    /// <summary>How many departure times a plan looks at (from now to <see cref="WaitReach"/> of the planets' synodic period, at most <see cref="LongestWait"/>).</summary>
+    public const int Waits = 160;
+
+    /// <summary>The share of the synodic period (the time between two windows) a plan looks ahead, and the longest wait (s).</summary>
+    public const double WaitReach = 1.05, LongestWait = 4 * 365.25 * 86400;
+
     /// <summary>
-    /// The quickest trip whose burns fit <paramref name="budget"/> (m/s) at <paramref name="aMax"/> (m/s2): its arrival
-    /// time and the dV it spends. When none fits, false, with <paramref name="need"/> the least any trip in reach spends.
+    /// The step between the departure times a plan looks at (s) for a trip from <paramref name="from"/> (a planet, or 0: the
+    /// ship goes round the star itself, and only now is looked at) to the planet of <paramref name="body"/>.
+    /// </summary>
+    public static double WaitStep(StarSystem sys, int from, int body)
+    {
+        var to = PlanetOf(sys, body);
+        if (from <= 0 || to <= 0 || from == to)
+            return 0;
+        var p1 = sys.Bodies[from].Orbit.Period;
+        var p2 = sys.Bodies[to].Orbit.Period;
+        var synodic = Math.Abs(p1 - p2) < 1 ? LongestWait : Math.Abs(p1 * p2 / (p1 - p2));
+        return Math.Min(LongestWait, WaitReach * synodic) / Waits;
+    }
+
+    /// <summary>
+    /// Where a ship that waits round planet <paramref name="from"/> leaves from, <paramref name="wait"/> seconds after
+    /// <paramref name="t"/>: now, its own place and speed; later, the planet's (a parking orbit is metres against AU).
+    /// </summary>
+    public static void DepartState(StarSystem sys, int from, SpacePos at, Vec3d vel, SpaceTime t, double wait, out SpacePos depAt, out Vec3d depVel)
+    {
+        if (wait <= 0 || from <= 0)
+        {
+            depAt = at;
+            depVel = vel;
+            return;
+        }
+        sys.StateOf(from, t, out var p0, out _);
+        sys.StateOf(from, t + (long)(wait * SpaceTime.NsPerSecond), out var p1, out depVel);
+        depAt = p1 + (at - p0);
+    }
+
+    /// <summary>
+    /// The quickest trip leaving at <paramref name="t"/> from <paramref name="at"/> whose burns fit <paramref name="budget"/>
+    /// (m/s) at <paramref name="aMax"/> (m/s2): its arrival time and the dV it spends. When none fits, false, with
+    /// <paramref name="need"/> the least any trip leaving then spends.
     /// </summary>
     public static bool Plan(StarSystem sys, SpacePos at, Vec3d vel, SpaceTime t, int body, Vec3d offset, double aMax, double budget,
         out SpaceTime arrive, out double spend, out double need)
@@ -169,7 +208,7 @@ public static class NavTrip
         var gap = (sys.PositionOf(body, t) + offset - at).Length;
         // The quickest a ship could cross it at all, burning all the way (flip and burn with no coast).
         var quickest = Math.Max(600, 2 * Math.Sqrt(gap / aMax));
-        const int Steps = 64;
+        const int Steps = 32;
         var ratio = Math.Pow(LongestTrip / quickest, 1.0 / (Steps - 1));
         double okT = 0, badT = 0;
         var tof = quickest;
@@ -191,7 +230,7 @@ public static class NavTrip
             return false;
         // Closer to the quickest that still fits, between the last that didn't and the first that did.
         if (badT > 0)
-            for (var k = 0; k < 24; k++)
+            for (var k = 0; k < 16; k++)
             {
                 var mid = 0.5 * (okT + badT);
                 var fits = Burn(sys, at, vel, t, body, offset, t + (long)(mid * SpaceTime.NsPerSecond), out var o, out var i)
@@ -206,5 +245,47 @@ public static class NavTrip
         spend = dvo.Length + dvi;
         need = Math.Min(need, spend);
         return true;
+    }
+
+    /// <summary>
+    /// A plan's search over departure times (the game's runs a few a tick: <see cref="Step"/>). Keeps the earliest arrival
+    /// found so far and the least dV any departure needed.
+    /// </summary>
+    public struct Search
+    {
+        public SpaceTime From; // when the search began (waits count from it)
+        public int Next; // the next departure to look at (0 .. Waits)
+        public double Every; // seconds between departures (0: only now)
+        public long BestDepart, BestArrive; // ns (0: none fits yet)
+        public double BestSpend, Need;
+
+        public bool Done => Every <= 0 ? Next > 0 : Next >= Waits;
+
+        public static Search Begin(StarSystem sys, int from, int body, SpaceTime t) =>
+            new() { From = t, Every = WaitStep(sys, from, body), Need = double.PositiveInfinity };
+
+        /// <summary>Looks at up to <paramref name="count"/> more departures.</summary>
+        public void Step(StarSystem sys, int from, SpacePos at, Vec3d vel, int body, Vec3d offset, double aMax, double budget, int count)
+        {
+            for (var k = 0; k < count && !Done; k++, Next++)
+            {
+                var wait = Next * Every;
+                DepartState(sys, from, at, vel, From, wait, out var dAt, out var dVel);
+                var dep = From + (long)(wait * SpaceTime.NsPerSecond);
+                if (BestArrive != 0 && dep.Ns >= BestArrive)
+                {
+                    Next = Waits; // (no later departure can arrive sooner)
+                    return;
+                }
+                var ok = Plan(sys, dAt, dVel, dep, body, offset, aMax, budget, out var arrive, out var spend, out var need);
+                Need = Math.Min(Need, need);
+                if (ok && (BestArrive == 0 || arrive.Ns < BestArrive))
+                {
+                    BestDepart = dep.Ns;
+                    BestArrive = arrive.Ns;
+                    BestSpend = spend;
+                }
+            }
+        }
     }
 }

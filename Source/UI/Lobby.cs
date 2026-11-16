@@ -842,6 +842,14 @@ public sealed partial class Ui
             s.Save();
         ImGui.TextColored(Dim, "How much of a ship's fuel an order to another planet may burn. More fuel is a quicker trip; less leaves more for the way home. A ship plans its trip when it leaves, so a change counts from the next order."u8);
         ImGui.Spacing();
+        ImGui.SetNextItemWidth(w);
+        var use = s.SpaceFuelPercent;
+        if (ImGui.SliderInt("Fuel use in space"u8, ref use, Game.SpaceFuelLeast, 100, "%d%%"u8))
+            s.SpaceFuelPercent = Math.Clamp(use, Game.SpaceFuelLeast, 100);
+        if (ImGui.IsItemDeactivatedAfterEdit())
+            s.Save();
+        ImGuiSafe.TextColored(Dim, $"How much fuel thrusters burn in space. Less fuel per burn is more speed change from a tank, so trips between planets are quicker and reach further: a Magpie carries about {26 * 100 / Math.Max(1, s.SpaceFuelPercent)} km/s at {s.SpaceFuelPercent}%. Flight in the air is unchanged.");
+        ImGui.Spacing();
         var at = Array.IndexOf(TimeSpeedChoices, s.TimeSpeedMost);
         if (at < 0)
             at = TimeSpeedChoices.Length - 1;

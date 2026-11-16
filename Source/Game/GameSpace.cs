@@ -26,7 +26,7 @@ public sealed partial class Game
     public const int SpaceShipTimeoutTicks = 180;
 
     private Map? _spaceMap;
-    private int _spaceSentSpeed = -1;
+    private int _spaceSentSpeed = -1, _spaceSentFuel = -1;
     private int _spaceShipCursor;
 
     // Client: the bubble the host announced, applied once this PC has that map loaded.
@@ -39,7 +39,7 @@ public sealed partial class Game
     private enum SpaceMsg : byte
     {
         Bubble, // reliable, on a join and when the map changes: map name, system file ("" for none), file hash, body, then a clock
-        Clock, // unreliable once a second, reliable on a speed change: host tick, time (ns), speed
+        Clock, // unreliable once a second, reliable on a change: host tick, time (ns), speed, u8 the host's fuel use in space (percent, protocol 324)
         Ships, // unreliable, 10 Hz: host tick, count, then per ship its id and ShipState (a cursor takes turns past one packet)
     }
 
@@ -63,6 +63,7 @@ public sealed partial class Game
         }
         if (Space?.Flight is not { } f)
             return;
+        ConstructPhysics.SpaceFuelScale = Math.Clamp(SpaceFuelPercent, SpaceFuelLeast, 100) / 100f; // (the host's: clients hear it with the clock)
         f.AnyoneBusy = SpaceAnyoneBusy();
         ServerTickNav(Space); // (ships under orders: where their drives point and how hard they push, GameNav.cs)
         SpaceLaunchBefore(f); // (ships that are constructs: their thrust and turn, GameSpaceLaunch.cs)
@@ -73,9 +74,10 @@ public sealed partial class Game
         SpaceLaunchAfter(f); // (constructs past the sky's edge become ships; ships pose their constructs or come back in)
         SpaceJumpStep(Space); // (jump drives charge and jump; constructs in other systems are posed: GameSpaceJump.cs)
         SpaceLandingStep(Space, f); // (a ship within another planetoid's sky lands there, everyone aboard: GameSpaceLanding.cs)
-        if (f.Clock.Speed != _spaceSentSpeed)
+        if (f.Clock.Speed != _spaceSentSpeed || SpaceFuelPercent != _spaceSentFuel)
         {
             _spaceSentSpeed = f.Clock.Speed;
+            _spaceSentFuel = SpaceFuelPercent;
             WriteSpaceClock(_w, f);
             Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         }
@@ -110,7 +112,7 @@ public sealed partial class Game
     {
         _spaceMap = World.Map;
         _spaceShipCursor = 0;
-        _spaceSentSpeed = -1;
+        _spaceSentSpeed = _spaceSentFuel = -1;
         NavReset(); // (another map: no order outlives it, GameNav.cs)
         var old = Space;
         Space = null;
@@ -177,7 +179,7 @@ public sealed partial class Game
     }
 
     private void WriteSpaceClock(PacketWriter w, SpaceFlight f) =>
-        w.Begin(Msg.Space).U8((byte)SpaceMsg.Clock).U32(ServerTick).U64((ulong)f.Clock.Now.Ns).U32((uint)f.Clock.Speed);
+        w.Begin(Msg.Space).U8((byte)SpaceMsg.Clock).U32(ServerTick).U64((ulong)f.Clock.Now.Ns).U32((uint)f.Clock.Speed).U8((byte)Math.Clamp(SpaceFuelPercent, SpaceFuelLeast, 100));
 
     /// <summary>
     /// One ships packet of one system (phase 6: its galaxy index): up to <see cref="SpaceShipsPerPacket"/> ships from the
@@ -234,6 +236,8 @@ public sealed partial class Game
                 var tick = r.U32();
                 var ns = (long)r.U64();
                 var speed = (int)r.U32();
+                if (r.Has(1))
+                    ConstructPhysics.SpaceFuelScale = Math.Clamp((int)r.U8(), SpaceFuelLeast, 100) / 100f; // (the host's Fuel use in space)
                 if (_spacePendingMap != null && tick >= _spacePendingTick)
                     (_spacePendingTick, _spacePendingNs, _spacePendingSpeed) = (tick, ns, speed); // not applied yet: keep the newest
                 Space?.HostClock(tick, new SpaceTime(ns), speed);

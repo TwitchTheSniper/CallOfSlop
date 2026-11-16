@@ -541,8 +541,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 323: orders from the command view (docs/space/COMMAND.md, GameNav.cs): Msg.Nav at the end of Msg (u16 construct, u8 kind, u8 body,
     //   u8 phase, u8 player, 3 x f64 point, f64 radius); CActKind.NavOrder at the end of CActKind (u16 construct, u8 kind, u8 body,
     //   3 x f64 point, f64 radius).
-    // 324: trips between planets (docs/space/COMMAND.md "Between planets", GameNavTrip.cs): Msg.Nav gains u64 arrival (space ns) and
-    //   f32 dV after the radius, and NavPhase gains Depart, Coast, Correct, Brake and Short at its end.
+    // 324: trips between planets (docs/space/COMMAND.md "Between planets", GameNavTrip.cs): Msg.Nav gains u64 arrival and u64 departure (space ns)
+    //   and f32 dV after the radius, and NavPhase gains Depart, Coast, Correct, Brake, Short and Wait at its end; SpaceMsg.Clock gains a u8
+    //   at its end, the host's fuel use in space (percent: ConstructPhysics.SpaceFuelScale).
     public const ushort ProtocolVersion = 324;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>

@@ -591,7 +591,7 @@ where it has one. Line numbers are those of this audit.
 | Data sanity | `MaxRows` | `Render/Surfaces.cs:37` | `256` | - | Kept |
 | Data sanity | `MaxSystems` | `Space/Galaxy.cs:16` | `10` | - | Kept: the design's ten systems |
 | Data sanity | `MaxLy` | `Space/Galaxy.cs:19` | `1000` | - | Kept |
-| Data sanity | `MaxWarp` | `Space/SpacePos.cs:98` | `100_000` | - | Kept |
+| Data sanity | `SpaceClock.MaxSpeed` (was `MaxWarp`) | `Space/SpacePos.cs:98` | `100_000` | - | Kept |
 | Data sanity | `MaxGrid` | `Space/SpaceShips.cs:108` | `1 << 10` | - | Kept |
 | Data sanity | `MaxBodies` | `Space/SpaceSkyView.cs:45` | `8` | - | Kept |
 | Data sanity | `MaxShips` | `Space/SpaceSkyView.cs:45` | `16` | - | Kept |
