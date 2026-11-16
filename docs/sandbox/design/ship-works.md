@@ -347,9 +347,9 @@ Servicing (extends `GameSandboxBreakdowns.cs`):
 - **Breakdowns move onto the works.** Where a drive has works, the breakdown picks one of its works pieces (or the pod
   itself) instead of the nozzle; drives with none (jets) are picked as now. `BreakdownPart` finds the part again by
   def and place as it does.
-- **The panel rule changes** from "sees to anything" to: a warning on a piece whose head is `service: "inside"` can be
-  seen to at the panel; anything on a `service: "outside"` part is reported with where it is, and seen to at the part.
-  That is the whole of "easy to service" against "go outside", in one flag.
+- **The panel rule changes** from "sees to anything" to: a warning on a works piece inside can be seen to at the
+  panel; anything on a `service: "outside"` part (a pod), and on a whole jet, which hangs outside too, is reported
+  with where it is and seen to at the part. That is the whole of "easy to service" against "go outside", in one flag.
 - **Mending a piece broken by damage** uses the same act as a failed breakdown (the attach tool's Fire, `MendPay`),
   with a cost by the piece's size from `ShipWorks.json`. Today that act is only for a part that broke down (`Broken`
   with health kept); phase 1 widens it to a works piece at zero health and restores its health. Check first whether
@@ -442,7 +442,7 @@ Thrust figures stay as they are unless the flight check says otherwise.
 
 | Ship | Now | After | Notes |
 | --- | --- | --- | --- |
-| **Rust Bucket** (`ShipParts.cs`) | Two 600 kN drives on the stern pods; a prop engine block in the engine room | **Hull drive**: one centre Drive Nozzle (1.2 MN, the ship's own look) on the tail behind the engine room; the `Ship Engine Block` becomes a real Drive Core S (same look, same place). The pods and saddles keep their tanks and lose their drives; the four 800 kN lift jets under them become **pods** (nothing walkable is above them) | The start ship teaches the inside: its breakdowns are in the engine room where the panel is. Keep the names `Engineer's Panel` and the block's (the breakdown code reads the first). The tail's heat exchanger is already drawn |
+| **Rust Bucket** (`ShipParts.cs`) | Two 600 kN drives on the stern pods; four 800 kN lift jets under the pods and saddles; a prop engine block in the engine room | **Pods** (Karl, answer 7: its pods are nacelles): the two Rust Bucket Drives and the four lift jets take `service: "outside"`, the drives a 12 degree gimbal. The RCS thrusters are jets. No works inside; the `Ship Engine Block` stays a fitting (it may become the ship's generator later) | The start ship teaches the nacelle's price: a breakdown is mended outside, on a space walk or landed. The Engineer's Panel now only reports (which part, where); change the breakdown's messages to say so (`BreakdownHeard`), and try the first breakdown (4 crewed minutes in) from waking to mended outside, in orbit and landed. Add a handrail and a step by each pod |
 | **Magpie** (`MinerParts.cs`) | Two 900 kN drives on the nacelles' tails | **Pods**: each Magpie Drive takes `service: "outside"` and a 12 degree gimbal; the nacelle gets a handrail and a hatch by the drive. The four 1.2 MN lift jets under the hoppers and nacelles are pods too; the 500 kN retros stay whole | The miner teaches the other half: a breakdown means going out on the pylon. Its engine deck stays a power room. No works to place |
 | **Halberd** (`FrigateParts.cs`) | 4.5 MN Main Drive under the thrust frame; four 500 kN manoeuvre jets | **Hull drive, class 2**: the thrust frame is the mount; Drive Core M and Fuel Pump M on the engineering deck over the drive ring (the reactor and board move to the walls). The 500 kN manoeuvre jets are at the figure, not over it, and stay whole. PDCs: two of the four on Turret Rings fed from an Ammo Container in the armoury, two left as surface mounts in their housings. The railgun takes an `energy` and a Capacitor Bank in engineering | The engineering deck is 9.5 by 8.5 m and already crowded: lay it out again rather than squeeze. It also shows both turret kinds on one ship |
 | **Zero Day** (`TorpedoFrigateParts.cs`) | 9 MN Drive Array on the stern; engineering in the lower deck aft | **Hull drive, class 3**: a drive room at the aft end of the lower deck against the stern (the stern and that wall are mounts), with Drive Core L, Fuel Pump L and Coolant Exchanger L; engineering keeps the reactor forward of it. The four 1.5 MN lift jets: the keel lengths are mounts and a lift machinery bay with a Drive Core M stands on the keel amidships on the lower deck. The two 1.2 MN retros: the bow is their mount with a Drive Core M in a small bay under the bridge if `MustFit` allows, else they become pods in the bow's cheeks. PDCs on Turret Rings with one magazine amidships. Railgun: `energy` and capacitors. Torpedo bays: unchanged at first; a second drum and a Reload Hoist a bay is the stretch (phase 4) | The reference ship: it should show the whole idea. `MustFit` will say whether the drive room fits inside the skin at the stern; if not, shorten the stern tank, and share its fuel out as the keel does |
@@ -501,8 +501,8 @@ The builder goes ahead on the recommended answer for any still open.
 5. **A Drive Core that is destroyed:** A (recommended): the drive stops, no blast. B: it goes up like a fuel tank.
 6. **Recipes for the new parts:** A (recommended): none here; raised with TwitchTheSniper for the production system.
    B: the part kit writes Assembling recipes for them now.
-7. **The rust bucket:** A (recommended): one centre hull drive, so the start ship teaches the engine room. B: it
-   keeps its two pod drives as true pods, serviced outside.
+7. **The rust bucket:** Answered: B, it keeps its two pod drives as true pods, serviced outside. (A was one centre
+   hull drive with a real engine room.)
 
 Answers:
 
@@ -514,3 +514,6 @@ Answers:
   (`bareShare` 0.25), and so does one whose works are all destroyed. Section 3.2's step 5 and 3.3 are revised for it.
 - **3: A** (Karl, 2026-11-16, decision card). Lasers and capacitors are built in this plan, as phase 5. Phase 6
   (the other drive types and Overdrive) is small and may be done before it, so that lasers are the last thing built.
+- **7: B** (Karl, 2026-11-16, in the thread: "The Rust Bucket pods are nacelles, so they have the downside that you
+  have to go outside and mend them or land it"). The rust bucket's drives and lift jets are pods. Section 11's row is
+  revised. It follows that no ship shows a class 1 hull drive; the Halberd and the Zero Day show hull drives.
