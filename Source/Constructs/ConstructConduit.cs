@@ -21,7 +21,13 @@ public static class ConstructConduit
     /// The searches tried in turn, the cost a metre off every surface and the lattice's gap: a dear one keeps it on the walls, a cheaper one
     /// finds a way where the dear one's search gives up (the weaker its guess, the more it searches), and the tool's own 5 cm lattice is smaller still.
     /// </summary>
-    private static readonly (float Air, byte Gap)[] Tries = [(6f, 0), (3f, 0), (6f, 5), (1.5f, 8)]; // (the last, cheap in the air, only on a conduit ship: a building's wire stays in its walls or straight)
+    private static readonly (float Air, byte Gap)[] Tries = [(6f, 0), (3f, 0), (6f, 5)]; // (a building's)
+    /// <summary>
+    /// A conduit ship's: open air dear first (a metre of it dearer than several walls passed and every bend round them, so a
+    /// link never cuts across a room or a corridor to save a run along its walls), then the building's, then one cheap in the air.
+    /// </summary>
+    private static readonly (float Air, byte Gap)[] ShipTries = [(AirShip, 0), (6f, 0), (3f, 0), (6f, 5), (1.5f, 8)];
+    public const float AirShip = 30f;
     public const float BudgetMs = 250f; // one search at most, as the blueprints load: past it the wire stays straight (concealed)
     public const float PlayMs = 20f; // a whole build's searching at most in play (a blueprint the load didn't route: a mod's, one built while it loads); past it the rest stay straight and are tried again next build
     private static RouteSearch? _search; // (its tables, about 19 MB, are made for the load's routing and let go after it: Release)
@@ -106,7 +112,7 @@ public static class ConstructConduit
     {
         why = null;
         outOfTime = false;
-        foreach (var (air, gap) in ship ? Tries : Tries.AsSpan(0, Tries.Length - 1))
+        foreach (var (air, gap) in !ship ? Tries : _loading ? ShipTries : ShipTries.AsSpan(1)) // (in play, with 20 ms for a whole build, a ship skips the dear try: its weak guess would spend it all)
         {
             if (Find(world, c, ship, type, from, fromPort, to, toPort, air, gap, deadline, out why, out var late) is { } nodes)
                 return nodes;
@@ -178,13 +184,16 @@ public static class ConstructConduit
 
     public static string File => Path.Combine(AppFolders.Exe, "Cache", "conduit-routes.txt");
     private static Dictionary<string, string>? _disk;
+    /// <summary>Bumped whenever the router lays a blueprint differently (its costs, its tries), so a disk cache from before is laid again.</summary>
+    private const int RouterVersion = 2; // 2: ships price open air dearly (AirShip)
+    private static string DiskKey(string text) => $"{BlueprintCheckCache.KeyOf(text)}.r{RouterVersion}";
     private const string NotWanted = "none"; // (a blueprint with wires that isn't a pre-built: kept so the next start needn't load the parts to find that out)
     private static bool _diskDirty;
 
     /// <summary>Takes blueprint <paramref name="bp"/>'s routes (from its <paramref name="text"/>) from the disk cache. False: not there, build it.</summary>
     public static bool Restore(ConstructBuild.Blueprint bp, string text)
     {
-        if (!Disk().TryGetValue(BlueprintCheckCache.KeyOf(text), out var line))
+        if (!Disk().TryGetValue(DiskKey(text), out var line))
             return false;
         if (line == NotWanted)
             return true; // (a vehicle's: nothing to route)
@@ -248,7 +257,7 @@ public static class ConstructConduit
                     .Append(nodes[i].Pos.Z.ToString("R", inv)).Append(',').Append(nodes[i].Host.ToString(inv));
         }
         var line = sb.ToString();
-        var key = BlueprintCheckCache.KeyOf(text);
+        var key = DiskKey(text);
         if (!Disk().TryGetValue(key, out var old) || old != line)
         {
             _disk![key] = line;
