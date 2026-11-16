@@ -34,8 +34,17 @@ public static partial class SelfTest
         server.Mode = GameMode.Sandbox;
         using var client = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Alpha", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
         Pump(server, [client], 1.0, ref now, clock);
-        for (var wait = 0; wait < 40 && (server.Phase != MatchPhase.Playing || client.Local is not { Alive: true }); wait++)
+        for (var wait = 0; wait < 40 && (server.Phase != MatchPhase.Playing || server.Local is not { Alive: true } || client.Local is not { Alive: true }); wait++)
+        {
+            if (server.Phase == MatchPhase.Playing) // (no window: nobody presses deploy, Program.DeploySaved)
+            {
+                if (server.Local is not { Alive: true } && !server.RespawnRequested)
+                    server.RequestRespawn();
+                if (client.Local is not { Alive: true } && !client.RespawnRequested)
+                    client.RequestRespawn();
+            }
             PumpFast(server, [client], 0.25, ref now);
+        }
         PumpFast(server, [client], 2.0, ref now); // (the constructs settle)
         foreach (var p in server.Players.Values)
             p.ImmuneUntil = 1e9;
