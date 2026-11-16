@@ -69,7 +69,7 @@ merge, the Magpie can switch to them if a shared set suits it.
 
 Mining is by hand (Karl, 2026-11-16): the drills aren't fixed to the ship.
 
-- Two tier 1 **Drill Modules**, each with a Battery welded on, sit on two **Magpie Drill Docks** on the drill bay's
+- Two tier 1 **Drill Modules**, each with a Battery welded on, sit on two **Drill Docks** (a generic ship fitting) on the drill bay's
   aft wall. A dock is a part with `"toolDock": "Drill Module"` (any tier fits). F on a dock that holds a drill lets it
   go as a loose piece (`ConstructEditsDock.cs`). Carry it out down the ramp with the physics gun and stand it on the
   ground, where it digs. F on an empty dock with a drill's free back socket within 2.5 m squares the drill onto it and

@@ -679,9 +679,12 @@ public sealed class MinerParts : IPartGenerator
     private static readonly double[] DockX = [Cx - 2.9, Cx + 2.9];
     private const double DockY = Ft0 + 1.5; // the dock socket's height: a docked drill's bit stops 5 cm over the floor
 
+    private const string DockName = "Drill Dock", FittingsOut = "Constructs/Parts/Fittings";
+
     private static Part DrillDock()
     {
-        var p = new Part("Magpie Drill Dock", Small, Section, "A wall dock for a Drill Module (any tier). F lets the drill go, to carry outside with the physics gun; F with a loose drill close by clips it back on, square.",
+        // A fitting any ship can use (Karl, 2026-11-16): a name that names no ship, in "Ship fittings", in a folder of its own.
+        var p = new Part(DockName, Small, "Ship fittings", "A wall dock for a Drill Module (any tier), for any ship or base: weld it to a wall or bulkhead. F lets the drill go, to carry outside with the physics gun; F with a loose drill close by clips it back on, square.",
             role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
         // Its frame: the wall at z 0, the dock's face at z 0.12 (the drill's back socket meets it there).
         Rugged(p, -0.46, -0.45, 0, 0.46, 0.45, 0.06, "#3f433f", "dirty steel", detail: false); // (the backplate)
@@ -1971,7 +1974,7 @@ public sealed class MinerParts : IPartGenerator
         }
         for (var i = 0; i < DockX.Length; i++)
         {
-            var dock = bp.Hang("Magpie Drill Dock", bay, $"dock{i}", "wall");
+            var dock = bp.Hang(DockName, bay, $"dock{i}", "wall");
             var drill = bp.Hang(DrillPart, dock, "dock", "back");
             bp.Hang("Battery", drill, "-x", "+x");
         }
@@ -2042,18 +2045,19 @@ public sealed class MinerParts : IPartGenerator
             Jet("Magpie Retro Jet", $"A retro jet in the nose of a hopper's thruster pod: {RetroForce / 1000:0} kN forward, to stop it over a claim.", RetroForce, 0.8),
             Leg(),
             Ladder("Magpie Ladder", Ft1 - Ft0, "A ladder between the Magpie's decks: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
-            BoardingLadder(), BoardingLadderLower(), DrillDock(), Ramp(),
+            BoardingLadder(), BoardingLadderLower(), Ramp(),
             PowerPlant(), FlightComputer(),
             WellDoor(-1), WellDoor(1), GalleyUnit(), BrewUnit(), MessTable(), KitLocker(), FoldDesk(), Bunk(), MedBed(), MedLocker(), CargoRack(),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);
-        foreach (var p in parts)
+        o.Own(FittingsOut);
+        foreach (var (p, folder) in parts.Select(x => (x, Out)).Append((DrillDock(), FittingsOut)))
         {
             var d = p.Json();
             var name = (string)d["name"]!;
             defs.Add(name, d);
-            o.File($"{Out}/{FileName(name)}", PyJson.Dumps(d, 2) + "\n");
+            o.File($"{folder}/{FileName(name)}", PyJson.Dumps(d, 2) + "\n");
         }
         BuildingParts.AddPartDefs(o, defs, Out);
         o.File($"{BpOut}/MagpieMiningShip.json", PyJson.Dumps(Blueprint(defs, order), 2) + "\n");

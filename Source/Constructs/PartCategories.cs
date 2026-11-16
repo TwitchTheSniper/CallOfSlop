@@ -16,10 +16,10 @@ public sealed class PartCategories
 
     private sealed class Rule
     {
-        public string[] Groups = [], Sections = [], Names = [];
+        public string[] Groups = [], Sections = [], NotSections = [], Names = [];
         public PartRole[] Roles = [];
         public CLogic[] Logic = [];
-        public bool Given;
+        public bool Given, Unlisted;
         public string Category = "", Section = "";
     }
 
@@ -28,7 +28,7 @@ public sealed class PartCategories
 
     public string Problem = "";
 
-    private Rule[] _rules = [];
+    private Rule[] _rules = [], _unlisted = [];
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "Categories.json");
 
@@ -65,11 +65,7 @@ public sealed class PartCategories
                 section = d.Section.Length > 0 ? d.Section : d.Group;
                 return true;
             }
-            if ((r.Groups.Length > 0 && Array.IndexOf(r.Groups, d.Group) < 0)
-                || (r.Sections.Length > 0 && Array.IndexOf(r.Sections, d.Section) < 0)
-                || (r.Roles.Length > 0 && Array.IndexOf(r.Roles, d.Role) < 0)
-                || (r.Logic.Length > 0 && (d.Role != PartRole.Logic || Array.IndexOf(r.Logic, d.Logic) < 0))
-                || (r.Names.Length > 0 && !HasWord(d.Name, r.Names)))
+            if (!Matches(r, d))
                 continue;
             category = r.Category;
             section = r.Section;
@@ -78,6 +74,27 @@ public sealed class PartCategories
         category = section = "";
         return false;
     }
+
+    /// <summary>
+    /// True when an "unlisted" rule keeps the part out of the Parts tab and its search (Karl, 2026-11-16: a ship's own
+    /// sections, its decks, hulls, bays and keel, belong to its blueprint, not the parts menu). The part still loads, builds
+    /// and spawns as part of a blueprint; only the menu leaves it out.
+    /// </summary>
+    public bool Unlisted(ConstructPartDef d)
+    {
+        foreach (var r in _unlisted)
+            if (Matches(r, d))
+                return true;
+        return false;
+    }
+
+    private static bool Matches(Rule r, ConstructPartDef d) =>
+        !((r.Groups.Length > 0 && Array.IndexOf(r.Groups, d.Group) < 0)
+          || (r.Sections.Length > 0 && Array.IndexOf(r.Sections, d.Section) < 0)
+          || (r.NotSections.Length > 0 && Array.IndexOf(r.NotSections, d.Section) >= 0)
+          || (r.Roles.Length > 0 && Array.IndexOf(r.Roles, d.Role) < 0)
+          || (r.Logic.Length > 0 && (d.Role != PartRole.Logic || Array.IndexOf(r.Logic, d.Logic) < 0))
+          || (r.Names.Length > 0 && !HasWord(d.Name, r.Names)));
 
     /// <summary>A category's place in the tree, or -1.</summary>
     public int IndexOf(string category)
@@ -133,7 +150,8 @@ public sealed class PartCategories
             var made = new List<Rule>();
             foreach (var r in rules.EnumerateArray())
                 made.Add(ParseRule(r, t));
-            t._rules = made.ToArray();
+            t._rules = made.Where(r => !r.Unlisted).ToArray();
+            t._unlisted = made.Where(r => r.Unlisted).ToArray();
             return t;
         }
         catch (Exception ex) when (ex is JsonException or FormatException)
@@ -153,6 +171,8 @@ public sealed class PartCategories
             {
                 case "group": r.Groups = Strings(p.Value, p.Name); break;
                 case "section": r.Sections = Strings(p.Value, p.Name); break;
+                case "notSection": r.NotSections = Strings(p.Value, p.Name); break;
+                case "unlisted": r.Unlisted = p.Value.ValueKind == JsonValueKind.True; break;
                 case "name": r.Names = Strings(p.Value, p.Name); break;
                 case "role": r.Roles = Strings(p.Value, p.Name).Select(Enums<PartRole>).ToArray(); break;
                 case "logic": r.Logic = Strings(p.Value, p.Name).Select(Enums<CLogic>).ToArray(); break;
@@ -169,8 +189,10 @@ public sealed class PartCategories
                     break;
                 default: throw new FormatException($"unknown rule key \"{p.Name}\"");
             }
-        if (hasTo == r.Given)
-            throw new FormatException("a rule has either \"to\" or \"given\": true");
+        if ((hasTo ? 1 : 0) + (r.Given ? 1 : 0) + (r.Unlisted ? 1 : 0) != 1)
+            throw new FormatException("a rule has one of \"to\", \"given\": true or \"unlisted\": true");
+        if (r.Unlisted && r.Groups.Length + r.Sections.Length + r.Names.Length + r.Roles.Length + r.Logic.Length == 0)
+            throw new FormatException("an \"unlisted\" rule names what it hides (a group, section, name, role or logic)");
         return r;
     }
 

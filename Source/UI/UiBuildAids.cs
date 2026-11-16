@@ -27,7 +27,7 @@ public sealed partial class Ui
         _rpFits.Clear();
         var cls = c.DefOf(part).Class;
         foreach (var d in ConstructParts.All)
-            if (d.Offered && d.Class == cls && ConstructReplace.Plan(game.Constructs, c, part, d, out _) == null)
+            if (SandboxCatalogue.Listed(d) && d.Class == cls && ConstructReplace.Plan(game.Constructs, c, part, d, out _) == null)
                 _rpFits.Add(d);
         // Made parts the player has (their count, a rack on their network: inventories phase 4) that meet its connections, by key.
         var inv = game.SandboxInv.Of(game.LocalId);
