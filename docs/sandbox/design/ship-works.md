@@ -494,8 +494,8 @@ The builder goes ahead on the recommended answer for any still open.
 1. **Which engines must have insides?** Answered: B, everything over a thrust figure, lift jets too. (A was main
    drives only.)
 2. **A big nozzle with no works behind it:** Answered: B, it runs at a quarter. (A was that it doesn't run.)
-3. **Lasers and capacitors, which don't exist yet:** A (recommended): in this plan, as its last big phase. B: plan
-   engines, guns and missiles now and lasers on their own later.
+3. **Lasers and capacitors, which don't exist yet:** Answered: A, in this plan, as its last big phase. (B was a
+   plan of their own later.)
 4. **Breakdowns:** A (recommended): still only the ship start's own ship, moved onto its works. B: every crewed
    player ship in Survival.
 5. **A Drive Core that is destroyed:** A (recommended): the drive stops, no blast. B: it goes up like a fuel tank.
@@ -512,3 +512,5 @@ Answers:
   Sections 2, 4.1, 10 and 11 are revised for it. The figure is Karl's to move.
 - **2: B** (Karl, 2026-11-16, decision card). A big engine with no machinery behind it runs at a quarter
   (`bareShare` 0.25), and so does one whose works are all destroyed. Section 3.2's step 5 and 3.3 are revised for it.
+- **3: A** (Karl, 2026-11-16, decision card). Lasers and capacitors are built in this plan, as phase 5. Phase 6
+  (the other drive types and Overdrive) is small and may be done before it, so that lasers are the last thing built.
