@@ -112,6 +112,11 @@ At a rebuild, for each head with `works.needs`:
    it: the need of a kind is the sum over the assembly's heads (a drive's `force`, an emitter's rating).
 4. The head's **cap** is the least, over the kinds it needs, of `min(1, served / needed)`. A kind that is missing
    altogether gives 0 and a problem text ("no Drive Core behind it").
+5. **A thruster never falls under a quarter** (Karl, 2026-11-16, answer 2): its cap is at least `ShipWorks.json`'s
+   `bareShare` (0.25), so a bare nozzle, or one whose works are all shot out, still pushes at 25% and the ship can
+   limp. Below full works it burns at the jet's rate for what it pushes (3 l/s a MN), not the torch's. The floor is for
+   thrusters only: a Laser Emitter with no generator fires nothing (the Laser Pod is the whole version), and an
+   autoloader or a hoist that is missing simply isn't there.
 
 Kept per head: `Cap` (a float on `CThruster`, `CGun`, and for a rack on the part's cached entry) and a `Problem` string
 for the look line, made only at the rebuild. A part that breaks already marks the construct dirty, so a holed pump
@@ -129,7 +134,8 @@ reader that means "what this thruster can push now" to it:
 - `ConstructEffectors.cs` (the stabilizer's scan and gimbal authority), `ConstructFlight.cs:478`,
   `ConstructFlightPanel.cs:41`, `ConstructBoost.ForceNow` and its repulsor clamp.
 - The fuel burn scales with level as now; a capped drive burns in step with its push (multiply `burn` by the cap too).
-- `Live` returns false at a cap of 0, so a stabilizer's mix leaves the drive out, and the look line says why.
+- A thruster's cap is never 0 (the quarter floor, 3.2), so `Live` is unchanged; the look line says why it is at 25%
+  ("no Drive Core behind it: running at a quarter").
 - Leave alone: the default flame's size (`ConstructParts.cs:981`, a def-time figure) and the parse.
 - The flame's level (`ConstructThrust.Level`, the byte sent) is multiplied by the cap, so a starved drive burns low.
 
@@ -141,7 +147,7 @@ Guns and racks: sections 5 and 6 say where each cap lands.
   50%`. Of a works piece: what it serves and which drive it is part of. ASCII, cached by a key as the breakdown look is.
 - The `Engineer's Panel` look line lists each drive's state (section 7).
 - `--check-vehicle FILE` prints one `works:` line a head: its kinds, what was found, the cap, and `REFUSED`-style text
-  when a head has no works. The exit code counts a ship head with a cap under 1.
+  when a head has no works (a thruster at the quarter floor). The exit code counts a ship head with a cap under 1.
 
 ## 4. Engines
 
@@ -422,7 +428,7 @@ lines elsewhere. The text to add, in substance:
   works piece; `--flight-check` again after the works' mass went in.
 - In section 1 ("Plan the shape before the parts"), add the drives, turrets and their rooms to what is written down
   first. In "What a spaceship has" (1c), add the drive room, magazines and trunks. In the gotchas, one line: a ship
-  with a bare nozzle and no works doesn't fly.
+  with bare nozzles and no works has a quarter of its thrust, which seldom lifts it.
 
 The vehicle kit's generators (`Source/VehicleKit`, ground vehicles and aircraft) and the Interiors planner
 (`Source/Interiors`, the Titan Walker) are not changed by this plan. Their engines are modular engines and their jets
@@ -456,8 +462,8 @@ then `--selftest-only`). If something fails that a command can't catch, one sect
 
 | Phase | Builds | Tried by |
 | --- | --- | --- |
-| **0. The mechanism** | `ShipWorks.json` and its table; the `works` and `worksPiece` blocks; `ConstructWorks.Build` at the rebuild; the look lines; `--check-vehicle`'s `works:` lines. No part uses it yet, so no ship changes | `--check-construct-parts` clean; a hand-written test blueprint (a nozzle, a mount, a core) reports 100%, and 0% with the core taken out; rebuild time on the Zero Day and the Titan Walker unchanged |
-| **1. Drives** | `ship_works` generator: Hull Mount, Drive Nozzle, Drive Core, Fuel Pump, Coolant Exchanger, Drive Pod. The cap in every thrust reader (3.3). Burn figures. The panel's report, the service flag, mending a broken piece | A demo blueprint of each class flown in a window: full thrust; shoot the pump, half or none; mend it; a pod's failure refuses at the panel. A joined client sees the same look lines and flames. `--flight-check` on the demos |
+| **0. The mechanism** | `ShipWorks.json` and its table; the `works` and `worksPiece` blocks; `ConstructWorks.Build` at the rebuild; the look lines; `--check-vehicle`'s `works:` lines. No part uses it yet, so no ship changes | `--check-construct-parts` clean; a hand-written test blueprint (a nozzle, a mount, a core) reports 100%, and 25% with the core taken out; rebuild time on the Zero Day and the Titan Walker unchanged |
+| **1. Drives** | `ship_works` generator: Hull Mount, Drive Nozzle, Drive Core, Fuel Pump, Coolant Exchanger, Drive Pod. The cap in every thrust reader (3.3). Burn figures. The panel's report, the service flag, mending a broken piece | A demo blueprint of each class flown in a window: full thrust; shoot the pump, half or a quarter; mend it; a pod's failure refuses at the panel. A joined client sees the same look lines and flames. `--flight-check` on the demos |
 | **2. The ships' drives** | Rust Bucket, Magpie, Halberd, Zero Day as section 11 (drives only). Breakdowns onto works. The skill's new section. The four ship docs | Each: `--gen-parts`, `--check-vehicle` (works 100%, 0 coplanar), `--selftest-only "No z-fighting"`, `--check-building`, `--flight-check` against the old figures, `--conduit-check`. The rust bucket start in a window to a first breakdown, seen to in the engine room. `--ship-ai-check` for the Zero Day. The gallery republished |
 | **3. Turret Rings and autoloaders** | Turret Ring (the joint and its trunk), the ring feed in `ConstructAmmo`, Autoloader. The Halberd's and Zero Day's PDCs as section 11 | A ring fed from a container fires through 360 degrees with the store emptying; cut the feed, 3 s of rounds left; an autoloaded cannon's reload against a bare one; host and client. The two ships' checks again |
 | **4. Reload Hoists** | Reload Hoist, its magazine racks, the move. Optionally the Zero Day's second drums | A launcher of four with a magazine of eight fires twelve with nobody outside; power off, it stops; a magazine hit cooks off inside (`--bench-cookoff` for the cost); a client sees each reload arrive |
@@ -487,7 +493,7 @@ The builder goes ahead on the recommended answer for any still open.
 
 1. **Which engines must have insides?** Answered: B, everything over a thrust figure, lift jets too. (A was main
    drives only.)
-2. **A big nozzle with no works behind it:** A (recommended): it doesn't run, and says why. B: it runs at a quarter.
+2. **A big nozzle with no works behind it:** Answered: B, it runs at a quarter. (A was that it doesn't run.)
 3. **Lasers and capacitors, which don't exist yet:** A (recommended): in this plan, as its last big phase. B: plan
    engines, guns and missiles now and lasers on their own later.
 4. **Breakdowns:** A (recommended): still only the ship start's own ship, moved onto its works. B: every crewed
@@ -504,3 +510,5 @@ Answers:
   included. The figure is `jetMost`, 500 kN, picked so that RCS thrusters (80 and 250 kN), the Halberd's manoeuvre
   jets and the Magpie's retros (500 kN) stay whole and every lift jet on the four ships (800 kN to 1.5 MN) does not.
   Sections 2, 4.1, 10 and 11 are revised for it. The figure is Karl's to move.
+- **2: B** (Karl, 2026-11-16, decision card). A big engine with no machinery behind it runs at a quarter
+  (`bareShare` 0.25), and so does one whose works are all destroyed. Section 3.2's step 5 and 3.3 are revised for it.
