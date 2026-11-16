@@ -34,6 +34,16 @@ public sealed partial class Game
     private int _bdCreak; // ticks to its next creak
     private readonly Random _bdRng = new(5309);
 
+    /// <summary>Both sides, a new match (OpeningReset): no warning under way, the first one's wait from the start.</summary>
+    private void BreakdownReset()
+    {
+        _bdNext = -1;
+        _bdDef = 0;
+        _bdSeenBody = 0;
+        _bdSeenPart = -1;
+        _bdLookKey = -1;
+    }
+
     /// <summary>Server, each tick: the start ship's breakdowns.</summary>
     private void BreakdownTick()
     {
@@ -222,6 +232,24 @@ public sealed partial class Game
 
     /// <summary>The look line on a groaning or broken-down thruster, or on the engine room's panel while one is (null: nothing to say).</summary>
     public string? BreakdownLook(Construct c, int part, out bool failed)
+    {
+        // (made again only when what it says changes: the look line is asked for every frame)
+        var seen = BreakdownSeen(c, -1) ? _bdSeenPart : -1;
+        var key = ((long)c.Id << 48) ^ ((long)part << 32) ^ ((long)(seen + 1) << 16) ^ (seen >= 0 ? (int)(_bdSeenFails - SandboxNow) : 0) ^ ((long)BreakdownFailed(c) + 1 << 40) ^ (c.Parts.Length > part && part >= 0 && c.Parts[part].Broken ? 1L << 62 : 0);
+        if (key != _bdLookKey)
+        {
+            _bdLookKey = key;
+            _bdLookText = BreakdownLookMake(c, part, out _bdLookFailed);
+        }
+        failed = _bdLookFailed;
+        return _bdLookText;
+    }
+
+    private long _bdLookKey = -1;
+    private string? _bdLookText;
+    private bool _bdLookFailed;
+
+    private string? BreakdownLookMake(Construct c, int part, out bool failed)
     {
         failed = false;
         if (part < 0 || part >= c.PartCount)
