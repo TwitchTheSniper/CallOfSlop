@@ -24,7 +24,7 @@ public sealed class ShipWorksParts : IPartGenerator
 
     public const string Out = "Constructs/Parts/ShipWorks", Section = "Ship fittings", Group = "Ship";
 
-    private const string Steel = "#5a6065", Trim = "#7b8186", Dark = "#34373a", Hazard = "#d8a020", Copper = "#8a5a3a", Glow = "#ffb060", Gauge = "#40e070", Bed = "#5c6057";
+    private const string Steel = "#5a6065", Trim = "#7b8186", Dark = "#34373a", Hazard = "#d8a020", Copper = "#8a5a3a", Glow = "#ffb060", Gauge = "#40e070", Bed = "#5c6057", Chamber = "#98a1a9";
     private const double Plate = 0.3; // a mount's thickness
 
     /// <summary>The three sizes: a letter, and per size the numbers below.</summary>
@@ -104,9 +104,7 @@ public sealed class ShipWorksParts : IPartGenerator
             var (x, y) = ((ring + 0.08) * Math.Cos(a), (ring + 0.08) * Math.Sin(a));
             Look(p, x - 0.035, y - 0.035, 0.07, x + 0.035, y + 0.035, 0.1, "#9a9c98", "steel"); // (its bolts)
         }
-        // Ribs on the inner face, and hazard corners on the outer one.
-        foreach (var x in new[] { -hw * 0.66, hw * 0.66 })
-            Look(p, x - 0.06, -hw + 0.05, -Plate - 0.12, x + 0.06, hw - 0.05, -Plate - 0.003, Dark, "dirty steel");
+        // Hazard corners on the outer face (the inner face is plain: a Drive Core's flange lies on it).
         foreach (var sx in new[] { -1, 1 })
             foreach (var sy in new[] { -1, 1 })
                 Look(p, sx * (hw - 0.22), sy * (hw - 0.22), 0.003, sx * (hw - 0.05), sy * (hw - 0.05), 0.02, Hazard, "hazard paint");
@@ -191,15 +189,13 @@ public sealed class ShipWorksParts : IPartGenerator
 
     // ---- the works: sections of one cylinder behind the nozzle ------------------------------------------------------
 
-    /// <summary>A works section's sockets: its front face (to the mount, or the section before it), its back (the next section),
-    /// its sides and its saddles' feet.</summary>
+    /// <summary>A works section's sockets: its front face (to the mount, or the section before it), its back (the next section)
+    /// and its saddles' feet.</summary>
     private static void PieceSockets(Part p, double r, double d)
     {
         p.Sock("front", P(0, 0, 0), "+z");
         p.Sock("back", P(0, 0, -d), "-z");
-        var side = Math.Round(r * Inside, 3); // (on its solid's side: the round stands a little proud of it)
-        p.Sock("+x", P(side, 0, Math.Round(-d / 2, 2)), "+x");
-        p.Sock("-x", P(-side, 0, Math.Round(-d / 2, 2)), "-x");
+        // (no side sockets: the gauge, a pump's motor and an exchanger's fins stand out of the sides, and the stack goes on along its line)
         p.Sock("deck", P(0, -Math.Round(r + Saddle, 3), Math.Round(-d / 2, 2)), "-y");
     }
 
@@ -208,7 +204,7 @@ public sealed class ShipWorksParts : IPartGenerator
     /// <summary>A section's solid: the cylinder as a box a little inside its round, down to its saddles' feet, and the face that meets what is in front.</summary>
     private static void SectionHull(Part p, double r, double d)
     {
-        var side = Math.Round(r * Inside, 3);
+        var side = Math.Floor(r * Inside * 100) / 100;
         Hidden(p, -side, -r - Saddle, -d, side, side, -0.02);
         Hidden(p, -0.4, -0.4, -0.02, 0.4, 0.4, 0);
         p.Set(("collider", "boxes")); // (its round is a look: the fins' and rings' 24-sided tubes have no hull; the solid box stands for it)
@@ -222,7 +218,7 @@ public sealed class ShipWorksParts : IPartGenerator
     }
 
     /// <summary>The flange where a section meets the mount or the section before it: the mount ring's own size on a core, else the section's.</summary>
-    private static double FlangeR(int s) => NozCollar[s] + 0.24;
+    private static double FlangeR(int s) => Math.Min(NozCollar[s] + 0.24, CoreR[s] + Saddle - 0.01); // (no lower than its saddles' feet)
 
     /// <summary>A Drive Core: the reaction chamber, a long armoured cylinder bolted to the mount's inner face on the nozzle's
     /// axis, running into the ship: field coils round it, feed pipes along its top, a gauge on its side, saddles under it.</summary>
@@ -234,7 +230,7 @@ public sealed class ShipWorksParts : IPartGenerator
         var fl = FlangeR(s);
         Cyl(p, 0, 0, fl, -0.12, -0.003, Trim, "dirty steel", segments: 24); // (the flange to the mount, the mount ring's size)
         Cyl(p, 0, 0, Math.Min(fl, r) * 0.82, -0.303, -0.117, Dark, "dirty steel", segments: 20); // (the neck through the flange)
-        Cyl(p, 0, 0, r, -0.36, -d + 0.117, Steel, "painted plating", segments: 24); // (the chamber: its ends inside its rings)
+        Cyl(p, 0, 0, r, -0.36, -d + 0.117, Chamber, "steel", segments: 24); // (the chamber, bare steel so it stands out from a painted deck: its ends inside its rings)
         Cyl(p, 0, 0, r * 1.04, -0.42, -0.3, Trim, "dirty steel", segments: 24); // (its front ring)
         Cyl(p, 0, 0, r * 1.04, -d + 0.12, -d + 0.003, Trim, "dirty steel", segments: 24); // (its back flange, for the section behind)
         foreach (var zf in new[] { 0.25, 0.55, 0.7 })
@@ -242,7 +238,6 @@ public sealed class ShipWorksParts : IPartGenerator
             var z = -d * zf;
             Cyl(p, 0, 0, r + 0.03, z - 0.05, z + 0.05, Copper, "copper", inner: Math.Round(r / (r + 0.03), 3), segments: 24); // (field coils)
         }
-        Cyl(p, 0, 0, r + 0.02, -d * 0.85 - 0.05, -d * 0.85 + 0.05, Hazard, "hazard paint", inner: Math.Round((r - 0.02) / (r + 0.02), 3), segments: 24); // (a hazard band near its back)
         // Feed pipes along its top, on risers, and the gauge board on its starboard side.
         var pr = 0.05 + s * 0.015;
         var py = r + pr + 0.06;
@@ -275,7 +270,7 @@ public sealed class ShipWorksParts : IPartGenerator
         Cyl(p, 0, 0, r * 1.02, -0.1, -0.003, Trim, "dirty steel", segments: 24); // (the front flange)
         Cyl(p, 0, 0, rb, -0.097, -d + 0.097, Hazard, "worn paint", segments: 24); // (the pump body: its ends inside its flanges)
         Cyl(p, 0, 0, r * 1.02, -d + 0.1, -d + 0.003, Trim, "dirty steel", segments: 24); // (the back flange)
-        Cyl(p, 0, 0, r * 1.06, -d * 0.6, -d * 0.35, Dark, "dirty steel", inner: Math.Round(rb * 0.98 / (r * 1.06), 3), segments: 24); // (the volute)
+        Cyl(p, 0, 0, r * 1.04, -d * 0.6, -d * 0.35, Dark, "dirty steel", inner: Math.Round(rb * 0.98 / (r * 1.04), 3), segments: 24); // (the volute, above its saddle's feet)
         // The motor on its starboard side, an outlet pipe forward along its top, the pressure gauge on the motor.
         var mr = r * 0.32;
         Cyl(p, rb + mr * 0.6, -r * 0.2, mr, -d * 0.85, -d * 0.2, Trim, "painted plating", segments: 12);
