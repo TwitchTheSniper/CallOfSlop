@@ -49,6 +49,7 @@ public sealed class NavOrder
     /// <summary>Host: what clients were last told, and whether the autopilot was set for the phase it is in.</summary>
     internal NavPhase PhaseSent;
     internal long ArriveSent;
+    internal float DvSent;
     internal bool Engaged;
 
     /// <summary>Host: metres still to go and the speed still to change (m/s), for the log and the checks.</summary>
@@ -316,6 +317,7 @@ public sealed partial class Game
     private void ServerTickNav(SpaceSession s)
     {
         NavSpeedCap = int.MaxValue;
+        NavPlanLeft = NavPlanAllTicks;
         if (NavOrders.Count == 0)
             return;
         for (var k = NavOrders.Count - 1; k >= 0; k--)
@@ -338,10 +340,11 @@ public sealed partial class Game
                 NavInSky(s, o, c);
             else
                 NavInSpace(s, o, c);
-            if (o.Phase != o.PhaseSent || o.ArriveNs != o.ArriveSent)
+            if (o.Phase != o.PhaseSent || o.ArriveNs != o.ArriveSent || o.DvNeed != o.DvSent)
             {
                 o.PhaseSent = o.Phase;
                 o.ArriveSent = o.ArriveNs;
+                o.DvSent = o.DvNeed; // (a Short order's least dV changes as the planets move)
                 WriteNav(_w, o);
                 Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
             }

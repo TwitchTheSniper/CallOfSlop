@@ -58,6 +58,11 @@ public sealed partial class Game
     /// <summary>How many departure times a plan looks at a tick (each a scan of trip times: about 0.17 ms).</summary>
     public const int NavPlanPerTick = 8;
 
+    /// <summary>Departures every planning order together may try in one tick (about 0.17 ms each), and what is left of it this tick.</summary>
+    public const int NavPlanAllTicks = 16;
+
+    private int NavPlanLeft;
+
     /// <summary>
     /// Host: while a ship plans or waits for its window it keeps a circular orbit round the body it is at, at the height it
     /// has (no lower than that body's lowest), so a ship that was hovering or falling doesn't come down meanwhile.
@@ -125,7 +130,10 @@ public sealed partial class Game
         if (!o.Cruise)
         {
             if (o.Phase == NavPhase.Short && !o.Planning && (ServerTick + o.Construct) % NavShortRetry != 0)
-                return true; // (drive off: it can't go; it looks again now and then, as the planets move)
+            {
+                NavPark(sys, o, pos, vel, t, aMax, out a); // (it can't go: it stays in orbit, and looks again now and then, as the planets move)
+                return true;
+            }
             var dv = NavDvLeft(c, aMax);
             var share = Math.Clamp(TripShare, TripFuelLeast / 100.0, TripFuelMost / 100.0);
             if (!o.Planning)
@@ -136,7 +144,10 @@ public sealed partial class Game
             }
             // The plan looks at every departure from now to the next window, a few a tick (a whole plan is tens of ms).
             NavSpeedCap = 1;
-            o.Search.Step(sys, o.PlanFrom, pos, vel, o.Body, offset, aMax, dv * share, NavPlanPerTick);
+            var n = Math.Min(NavPlanPerTick, NavPlanLeft); // (one budget a tick for every order: six ships ordered at once don't take six times the tick)
+            NavPlanLeft -= n;
+            if (n > 0)
+                o.Search.Step(sys, o.PlanFrom, pos, vel, o.Body, offset, aMax, dv * share, n);
             NavPark(sys, o, pos, vel, t, aMax, out a);
             if (!o.Search.Done)
                 return true;
