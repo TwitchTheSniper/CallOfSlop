@@ -67,7 +67,7 @@ public sealed class SpaceFlight
     /// </summary>
     public void Tick(int shipLimit = int.MaxValue)
     {
-        Clock.Speed = SpaceTimeRule.Effective(RequestedSpeed, AnyoneBusy, Math.Min(Ships.MaxSpeed, shipLimit));
+        Clock.Speed = SpaceTimeRule.Effective(RequestedSpeed, AnyoneBusy || Ships.AnyThrust(), Math.Min(Ships.MaxSpeed, shipLimit));
         Clock.Tick();
         Wells.Refresh(); // (where the wells' ships are as this step starts)
         Ships.Advance(Clock.Now);

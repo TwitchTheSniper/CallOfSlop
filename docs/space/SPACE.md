@@ -178,7 +178,7 @@ physics; the sky does. `StarSystems` loads every `Systems/*.json` once and finds
   ship not heard of for 3 s is gone. A client whose system file differs from the host's (by hash) gets no bubble and
   says so in the log.
 - **Time speed.** The host sets it in the command view (Home, docs/space/COMMAND.md "Time speed"; `Game.RequestTimeSpeed`).
-  "Busy" (`Game.SpaceAnyoneBusy`) is only a ship in space burning its engines (its thrust needs real-time steps). Life in
+  "Busy" is only a ship in space burning its engines (its thrust needs real-time steps): `Game.SpaceAnyoneBusy` reads last tick's flames, and `SpaceShips.AnyThrust` this tick's push, so a burn that starts while time runs fast gets no sped-up tick (2026-11-16: one tick at 100K put a ship 70 km/s off). Life in
   the bubble (walking, driving, building, anything awake) doesn't count: the bubble's physics runs at 60 Hz whatever the
   space clock does, so it never stops the orbits (Karl, 2026-11-04).
 - **The Space window** (F7, the Space button): the system and body, the space time and its speed, the sun's elevation

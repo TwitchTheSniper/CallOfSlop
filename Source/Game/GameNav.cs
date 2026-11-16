@@ -68,6 +68,11 @@ public sealed class NavOrder
     internal bool Planning;
     internal NavTrip.Search Search;
     internal int PlanFrom;
+
+    /// <summary>Host: the circle a ship keeps while it plans or waits for its window (GameNavTrip.NavPark).</summary>
+    internal int ParkBody = -1;
+    internal double ParkRadius;
+    internal bool Parked;
 }
 
 /// <summary>
@@ -258,7 +263,8 @@ public sealed partial class Game
         o.Phase = NavPhase.None;
         o.PhaseSent = NavPhase.None;
         o.Engaged = false;
-        o.Cruise = o.Handed = o.Planning = false;
+        o.Cruise = o.Handed = o.Planning = o.Parked = false;
+        o.ParkBody = -1;
         o.ArriveNs = o.DepartNs = 0;
         o.DvNeed = 0;
         Console.WriteLine($"[nav] {p.Name} ordered construct {id}: {NavText(sys, o)}");
@@ -453,6 +459,10 @@ public sealed partial class Game
             o.Phase = o.Kind == NavKind.GoTo && o.Distance < 30 && o.SpeedError < 1.5 ? NavPhase.Hold : o.Handed ? NavPhase.Brake : NavPhase.Transfer;
         }
         var ask = a.Length;
+        // Near the target everything is real time: an insertion's push dips while the ship turns or between its
+        // corrections, and one sped-up tick there (half an hour at 100,000x) flings the ship out of the planet's reach.
+        if (ask >= 1e-4 || o.Phase is NavPhase.Insert or NavPhase.Transfer or NavPhase.Brake or NavPhase.Hold)
+            NavSpeedCap = 1;
         if (ask < 1e-4)
         {
             c.NavThrottle = 0;

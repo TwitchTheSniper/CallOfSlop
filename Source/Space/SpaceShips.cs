@@ -123,6 +123,18 @@ public sealed class SpaceShips
     /// <summary>Thrust per ship (m/s^2, ecliptic axes), set by the host each tick; non-zero takes the adaptive step.</summary>
     public readonly Vec3d[] Thrust;
 
+    /// <summary>
+    /// Is any ship pushed this step? A burn is real time (the time speed rule): one tick at 100,000x is half an hour, and a
+    /// burn the busy test hadn't seen yet (it reads the last tick's flames) put a ship 70 km/s off in one tick (2026-11-16).
+    /// </summary>
+    public bool AnyThrust()
+    {
+        for (var i = 0; i < Count; i++)
+            if (Thrust[i] != Vec3d.Zero)
+                return true;
+        return false;
+    }
+
     public readonly ShipFlags[] Flags;
 
     /// <summary>

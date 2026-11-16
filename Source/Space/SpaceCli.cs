@@ -183,23 +183,6 @@ public static class SpaceCli
         var inv = CultureInfo.InvariantCulture;
         Console.WriteLine(string.Create(inv, $"[trip] {sys.Name}, day {day:0}: a ship at {accel:0.0} m/s2 with {dv / 1000:0.0} km/s, spending at most {share:P0}"));
         var sw = Stopwatch.StartNew();
-        if (Environment.GetEnvironmentVariable("TRIP_TABLE") is { } tt && tt.Split(',') is [var fa, var fb])
-        {
-            var f0 = sys.IndexOf(fa);
-            var f1 = sys.IndexOf(fb);
-            for (var w = 0; w < 2400; w += 60)
-            {
-                var tw = t + (long)(w * 86400.0 * SpaceTime.NsPerSecond);
-                sys.StateOf(f0, tw, out var pp, out var vv);
-                var line = new System.Text.StringBuilder($"[trip] wait {w}:");
-                for (var d = 50; d <= 1000; d += 50)
-                {
-                    NavTrip.Burn(sys, pp + new Vec3d(30000, 0, 0), vv, tw, f1, Vec3d.Zero, tw + (long)(d * 86400.0 * SpaceTime.NsPerSecond), out var o, out var i);
-                    line.Append(string.Create(inv, $" {(o.Length + i) / 1000:0}"));
-                }
-                Console.WriteLine(line);
-            }
-        }
         for (var from = 1; from < sys.Count; from++)
         {
             if (sys.Bodies[from].Parent != 0)

@@ -62,6 +62,21 @@ public sealed partial class Game
     /// Host: while a ship plans or waits for its window it keeps a circular orbit round the body it is at, at the height it
     /// has (no lower than that body's lowest), so a ship that was hovering or falling doesn't come down meanwhile.
     /// </summary>
+    /// <summary>A parked ship's orbit is safe once its low point is this many times the least orbit (and stays so above 1x).</summary>
+    private const double NavParkMargin = 1.1;
+
+    /// <summary>The low and high points (distances from the centre) of the conic through r, v; the high one is infinite past escape.</summary>
+    private static void NavApsides(Vec3d r, Vec3d v, double mu, out double low, out double high)
+    {
+        var dist = r.Length;
+        var energy = 0.5 * v.LengthSquared - mu / dist;
+        var h = Vec3d.Cross(r, v).Length;
+        var e = Math.Sqrt(Math.Max(0, 1 + 2 * energy * h * h / (mu * mu)));
+        var p = h * h / mu;
+        low = p / (1 + e);
+        high = e < 1 ? p / (1 - e) : double.PositiveInfinity;
+    }
+
     private static void NavPark(StarSystem sys, NavOrder o, SpacePos pos, Vec3d vel, SpaceTime t, double aMax, out Vec3d a)
     {
         a = Vec3d.Zero;
@@ -70,10 +85,24 @@ public sealed partial class Game
             return; // (round the star itself: it coasts)
         sys.StateOf(body, t, out var bp, out var bv);
         var r = pos - bp;
-        var radius = Math.Max(r.Length, NavMinOrbit(sys, body));
-        a = NavGuidance.Orbit(r, vel - bv, sys.Bodies[body].Mu, radius, aMax, out _, out var err);
-        if (err < 3)
-            a = Vec3d.Zero; // (near enough a circle: no burning all the wait)
+        if (o.ParkBody != body)
+        {
+            o.ParkBody = body;
+            o.ParkRadius = Math.Max(r.Length, 1.2 * NavMinOrbit(sys, body)); // (chosen once: a circle chased at the height it has now never settles)
+            o.Parked = false;
+        }
+        // A safe orbit is left alone, drive off, so time may run fast: its low point clear of the ground and its high
+        // point well inside the world's reach. Only an unsafe one is trimmed (towards the circle), and it rests again
+        // with a margin, so the drive doesn't wake on every wobble (a trim never ends on a ship that turns to push).
+        var mu = sys.Bodies[body].Mu;
+        var v = vel - bv;
+        var least = NavMinOrbit(sys, body);
+        var reach = SpaceShips.SphereOfInfluence(sys, body);
+        NavApsides(r, v, mu, out var low, out var high);
+        var safe = o.Parked ? low > least && high < 0.6 * reach : low > NavParkMargin * least && high < 0.5 * reach;
+        o.Parked = safe;
+        if (!safe)
+            a = NavGuidance.Orbit(r, v, mu, o.ParkRadius, aMax, out _, out _);
     }
 
     /// <summary>The handover to the order's own law comes this much sooner than the drive needs to stop (a share).</summary>
