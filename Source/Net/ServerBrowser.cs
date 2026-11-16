@@ -542,8 +542,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   u8 phase, u8 player, 3 x f64 point, f64 radius); CActKind.NavOrder at the end of CActKind (u16 construct, u8 kind, u8 body,
     //   3 x f64 point, f64 radius).
     // 324: sub-blueprints (docs/sandbox/design/sub-blueprints.md): a body's Full ends with its use table and runs of parts with their
-    //   use (SubBlueprints.Write); CBodyKind.Station gains per job its role and sub-job tree (ConstructStationTree.cs); StationOp
-    //   CancelUse at the end of StationOp; the lift word gains a carried body (ConstructLifters).
+    //   use (SubBlueprints.Write: a Patch carries a change); CBodyKind.Station gains after each job its role, a sub-job's header and
+    //   its uses' rows (ConstructStationTree.Write); StationOp CancelUse at the end of StationOp; the Building Station's Sub-jobs
+    //   setting (CfgKey.SubJobs, a new config slot).
     public const ushort ProtocolVersion = 324;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
