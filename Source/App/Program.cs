@@ -1951,8 +1951,13 @@ public static unsafe partial class Program
     // =====================================================================
 
 
-    /// <summary>A camera this far from the map's middle (m) draws boxes relative to a render origin (float rounding there is about 0.5 mm).</summary>
-    public const float FarFromMiddle = 4096f;
+    /// <summary>
+    /// A camera this far from the map's middle (m) draws boxes relative to a render origin. It was 4096 m (float rounding
+    /// there about 0.5 mm), but a ship over Crumb (600 m radius, 2.4 km out) flickered all over (Karl, 2026-11-16): each
+    /// part's world matrix rounds on its own, and the view-projection cancels two numbers of kilometres, so parts shook
+    /// about a millimetre against each other and the camera, and the 2-5 mm offsets that keep faces apart z-fought.
+    /// </summary>
+    public const float FarFromMiddle = 256f;
 
     /// <summary>
     /// The render origin for this frame (Renderer.SetCameraAt; docs/space/SPACE.md, "Far from the middle"): none near the
@@ -1969,6 +1974,12 @@ public static unsafe partial class Program
         {
             origin = o;
             eyeFromOrigin = e + shake;
+            return;
+        }
+        if (!thirdPerson && local != null && _game.LocalRideAnchor(eye, out o, out e))
+        {
+            origin = o; // (standing in a ship: its drawn position, as for a seat, so the walls don't shimmer against the eye)
+            eyeFromOrigin = e;
             return;
         }
         origin = eye;
@@ -2069,7 +2080,11 @@ public static unsafe partial class Program
         openingView |= local != null && QuarryRideCamera(ref eye, ref fwd, ref camUp); // (the quarry duty's crew bus: Program.Quarry.cs)
         if (openingView)
             _game.Audio.SetListener(eye, fwd);
-        var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, 0.05f, World.Map.FarPlane);
+        // Third person: nothing comes nearer the camera than its sphere (ThirdPerson.CameraRadius), so the near plane can stand
+        // back, which spreads the depth buffer's precision further out (z-fighting between faces 2 mm apart on a ship seen
+        // from 40 m and more). The near plane's corners stay inside the sphere at wide views.
+        var near = tp ? ThirdPerson.CameraRadius * 0.48f : 0.05f;
+        var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, near, World.Map.FarPlane);
         RenderOrigin(local, tp || pilotView || openingView || talkView, eye, shake, out var origin, out var eyeFromOrigin);
         var viewFromOrigin = Matrix4x4.CreateLookAt(eyeFromOrigin, eyeFromOrigin + fwd, camUp);
         Gfx.SetCameraAt(origin, viewFromOrigin, proj);

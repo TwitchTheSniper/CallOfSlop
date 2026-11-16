@@ -2463,14 +2463,19 @@ public sealed partial class Game
         return Vector3.Transform(world - t, Quaternion.Conjugate(q));
     }
 
-    private void DrawnFrame(Construct c, int seg, out Quaternion q, out Vector3 t)
+    private void DrawnFrame(Construct c, int seg, out Quaternion q, out Vector3 t) => DrawnFrame(c, seg, out q, out t, out _, out _);
+
+    /// <summary>The frame as drawn, and its origin split into the body's drawn position and the segment's offset from it (small numbers, for a render origin).</summary>
+    private void DrawnFrame(Construct c, int seg, out Quaternion q, out Vector3 t, out Vector3 bodyPos, out Vector3 segRel)
     {
         var blend = IsServer;
         var pos = blend ? Vector3.Lerp(c.PrevPos, c.Pos, _alpha) : c.Pos;
         var rot = blend ? Quaternion.Slerp(c.PrevRot, c.Rot, _alpha) : c.Rot;
         ConstructRender.SegPoseBlended(c, seg, blend ? _alpha : 1f, out var sq, out var st);
         q = rot * sq;
-        t = pos + Vector3.Transform(st, rot);
+        segRel = Vector3.Transform(st, rot);
+        t = pos + segRel;
+        bodyPos = pos;
     }
 
     /// <summary>
