@@ -19,8 +19,13 @@ public static partial class ConstructRide
     /// <summary>A frame this slow (m/s, and rad/s) isn't moving: nothing to inherit.</summary>
     private const float StillSpeed = 0.05f;
 
-    /// <summary>A body made this close round a moving construct's bounds (m), or this far over its top, is made in its frame: tighter than a rider's, so a block set down on the ground beside a passing truck stays on the ground.</summary>
-    public const float SpawnPad = 0.3f, SpawnAbove = 1f;
+    /// <summary>
+    /// A body made this close round a moving construct's bounds (m), or this far over its top, is made in its frame. Made in
+    /// the air (nothing of the map within <see cref="SpawnGround"/> under it), it has the rider's whole frame
+    /// (<see cref="BoundsPad"/>): a part dropped over a truck bed's side or beside a ship's hull moves with it. On the ground,
+    /// only this tight box: a block set down beside a passing truck stays on the ground.
+    /// </summary>
+    public const float SpawnPad = 0.3f, SpawnAbove = 1f, SpawnGround = 0.6f;
 
     private static readonly List<Construct> _frameNear = new(32);
 
@@ -62,7 +67,13 @@ public static partial class ConstructRide
     {
         if (c.Dirty)
             c.Rebuild(); // (its centre of mass, which a fresh body has yet to work out)
-        frame ??= FrameAt(w, c.WorldCom, c);
+        if (frame == null)
+        {
+            var at = c.WorldCom;
+            var up = GravityFrames.UpAt(at);
+            var onGround = World.Query.Raycast(at + up * 0.1f, -up, SpawnGround + 0.1f + c.Radius, QueryFilter.All) < SpawnGround + 0.1f + c.Radius;
+            frame = onGround ? FrameAt(w, at, c) : FrameAt(w, at, c, BoundsPad, BoundsAbove);
+        }
         if (frame == null || frame == c || seg > frame.JointCount)
             return false;
         c.Vel = SurfaceVel(frame, seg, c.WorldCom);

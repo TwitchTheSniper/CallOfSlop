@@ -155,6 +155,19 @@ public static class RideCheck
                     lapses++;
                 w.Remove(loose);
             }
+            // ...and one dropped 1.5 m out past its side, in the air: still in its frame.
+            var side = c.ToWorld(new Vector3(c.LocalMax.X + 1.5f, (c.LocalMin.Y + c.LocalMax.Y) * 0.5f, (c.LocalMin.Z + c.LocalMax.Z) * 0.5f));
+            if (ConstructBuild.PlaceNew(w, ConstructParts.Need("Deck Plate"), side, 0) is { } beside)
+            {
+                beside.Vel = Vector3.Zero;
+                ConstructRide.SpawnIntoMotion(w);
+                beside.Rebuild();
+                var want = c.PointVel(beside.WorldCom);
+                Console.WriteLine($"  plate beside its hull: {beside.Vel.Length():0.00} m/s, the ship there {want.Length():0.00} m/s");
+                if ((beside.Vel - want).Length() > 0.05f)
+                    lapses++;
+                w.Remove(beside);
+            }
         }
         return lapses;
     }

@@ -16,7 +16,7 @@ public static partial class Program
     private static int _wsClipBodies, _wsClipLoose;
     private static bool _wsClipToolAsked;
 
-    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp";
+    private static bool WsPlayKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "sit" or "seated" or "getout" or "recycle" or "clip" or "partinfo" or "partlook" or "hands" or "cabto" or "damage" or "makeengine" or "standon" or "aimintake" or "feetup" or "cave" or "spawnbp" or "bringon" or "dropmotion";
 
     private static bool WsPlayVerb(Game g, Player me, string verb, string arg)
     {
@@ -277,6 +277,34 @@ public static partial class Program
                 WsLook(g, me.Eye, imid);
                 WsSay(string.Create(ci, $"aimintake: the intake's middle at {imid:0.00}, {Vector3.Distance(me.Eye, imid):0.0} m from the eye"));
                 _wsWait = 2;
+                return true;
+            }
+            case "bringon": // host: "bringon PART[#n]": every other player set down on that part's top, moving as its construct moves there (a respawn aboard: ConstructRide.SpawnVel)
+            {
+                var (bc, bp) = WsFind(g, arg);
+                if (bc == null || !g.IsServer)
+                {
+                    WsFail($"bringon: no part \"{arg}\" (or not the host)");
+                    return true;
+                }
+                bc.PartBounds(bp, out var blo, out var bhi);
+                var top = bc.ToWorld(new Vector3((blo.X + bhi.X) * 0.5f, bhi.Y + 0.05f, (blo.Z + bhi.Z) * 0.5f));
+                foreach (var other in g.Players.Values)
+                    if (other != me)
+                    {
+                        other.Teleport(top);
+                        other.Sim.Velocity = ConstructRide.SpawnVel(g.Constructs, top, bc);
+                        other.Sim.Grounded = false;
+                    }
+                WsSay(string.Create(ci, $"bringon: to {top:0.0} on construct {bc.Id} at {bc.Vel.Length():0.0} m/s"));
+                _wsWait = 5;
+                return true;
+            }
+            case "dropmotion": // "dropmotion": the newest body's speed against the construct this player rides (a part dropped aboard: did it come into the ship's motion?)
+            {
+                var nb = g.Constructs.Bodies.Count > 0 ? g.Constructs.Bodies.MaxBy(b => b.Id) : null; // (the newest: the highest id)
+                var deck = g.Constructs.Get(me.Sim.RideBody);
+                WsSay(string.Create(ci, $"dropmotion: newest body {nb?.Id} at {nb?.Vel.Length():0.00} m/s; the deck {(deck == null ? "none" : $"{deck.Id} at {deck.PointVel(nb?.WorldCom ?? me.Position).Length():0.00} m/s there")}"));
                 return true;
             }
             case "feetup": // "feetup UP": this player's feet UP m higher, out of the tool's flight, to fall onto whatever is below (a pad's deck: riding it)
