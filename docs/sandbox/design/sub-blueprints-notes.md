@@ -45,3 +45,14 @@ how it works: production.md "Building station", "Submodules".
 - Uses with ropes, springs, no-collide pairs or tracks in the selection are saved as plain parts; a wire added inside a use after
   its stamp is lost on save (a use's own links are its blueprint's).
 - The save window's plan resolves each use's blueprint on the frame (cached after the first): a big sub-blueprint may hitch once.
+
+## Merge review fixes (2026-11-16)
+- Release early and a failure now end the tree too: sub-jobs still building cancel, finished and fitting bodies are freed as they
+  stand (not held, not frozen); Cancel still takes them apart. A repeat sends its uses out again.
+- A body's table is matched tag by tag (`SubBlueprints.EnsureTable`, `Construct.UsesIndex`): a world loaded mid-build tags its later
+  parts into the loaded tags (tried: two uses, three parts each, both kept by the save plan after a reload mid-build).
+- A loose body is taken only if it is near the bay (tested first, 8 bodies a look at most), not anchored, the station owner's or a
+  team mate's, and not another root's sub-job body (`Construct.SubStamp`). A player's own stamped or hand-built use near the bay is
+  taken on purpose (the design's "by hand" way).
+- A mod's blueprint with uses skips the override's quick build check and is flattened and built with the shipped ones after they
+  are all read, refused there with why.

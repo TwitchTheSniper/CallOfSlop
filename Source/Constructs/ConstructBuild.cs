@@ -520,7 +520,10 @@ public static class ConstructBuild
         {
             foreach (var df in Mods.Resolve(Mods.BaseFiles(folder, false), mods ?? [], "Constructs/Blueprints", false, refused, (t, f) =>
                      {
-                         if (Build(new ConstructWorld(), ParseBlueprint(t, f), Vector3.Zero, Quaternion.Identity, out var why) == null)
+                         var parsed = ParseBlueprint(t, f);
+                         if (parsed.Uses.Count > 0)
+                             return; // (a mod's blueprint with uses: flattened and built once every shipped one is read, below, and refused there with why)
+                         if (Build(new ConstructWorld(), parsed, Vector3.Zero, Quaternion.Identity, out var why) == null)
                              throw new ConstructPartException($"{f}: {why}");
                      }))
             {

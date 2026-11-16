@@ -257,7 +257,8 @@ public sealed partial class Construct
     public ushort Id;
     public List<UseTag>? Uses; // the sub-blueprint uses its parts belong to (CPart.Use; null on most bodies): SubBlueprints.cs
     public UseMap? UsesFrom; // the flat blueprint whose table it took last (a build's parts tag as they go on)...
-    public int UsesBase; // ...and where that table starts in Uses
+    public int[]? UsesIndex; // ...and each of its tags' index in Uses (a loaded body's own table is reused: SubBlueprints.EnsureTable)
+    public uint SubStamp; // a sub-job's finished body: its root job's stamp (only that root takes it; 0: none)
     public CPart[] Parts = new CPart[FirstParts];
     public int PartCount;
     public int HeardParts = -1, HeardLinks; // this peer's building sounds: the counts last heard (-1: a new body; GameSandboxBuildSounds.cs)

@@ -650,6 +650,7 @@ public static partial class ConstructStation
     private static void Fail(ConstructWorld world, Construct c, int t, StationJob j, string why)
     {
         CancelOrders(world, c, t);
+        ConstructStationTree.CancelTree(world, c, j, takeApart: false); // (its sub-jobs stop; finished and fitting bodies are freed as they stand)
         if (world.Get(j.Body) is { HeldBy: not 0 } b)
             Free(world, b, j); // (what stands is released as it is: nothing is lost)
         j.State = StationState.Failed;
@@ -732,6 +733,7 @@ public static partial class ConstructStation
         if (c.Parts[t].Station is not { State: StationState.Building } j || world.StoreOf(c, t) is not { } tray)
             return "nothing is being built";
         CancelOrders(world, c, t);
+        ConstructStationTree.CancelTree(world, c, j, takeApart: false); // (its sub-jobs stop; finished and fitting bodies are freed as they stand)
         if (world.Get(j.Body) is { } b)
             Free(world, b, j);
         for (var i = 0; i < j.KindN; i++)
@@ -1670,6 +1672,8 @@ public static partial class ConstructStation
                 j.Fitted = j.LinksDone = 0;
                 j.LastPart = None;
                 j.NoteKey = j.FillKey = 0;
+                ConstructStationTree.Begin(j); // (a repeat's uses go out again: every row waits)
+                Rekind(j);
                 j.Started = Stopwatch.GetTimestamp();
                 j.State = StationState.Building;
                 j.Note = "";
@@ -1854,8 +1858,12 @@ public static partial class ConstructStation
             if (j.State == StationState.Done && j.Role == 1)
             {
                 // A sub-job's body waiting to be carried: its main station watches it (held by this construct when the bays touch).
-                if (world.Get(j.Body) is { } waiting && j.RootPart < c.PartCount && ConstructStationTree.BaysTouch(c, j.RootPart, part))
-                    waiting.HeldBy = c.Id;
+                if (world.Get(j.Body) is { } waiting)
+                {
+                    waiting.SubStamp = j.RootStamp; // (made for that root: no other takes it)
+                    if (j.RootPart < c.PartCount && ConstructStationTree.BaysTouch(c, j.RootPart, part))
+                        waiting.HeldBy = c.Id;
+                }
                 c.Parts[part].Station = j;
                 world.StationChanged(c);
                 continue;

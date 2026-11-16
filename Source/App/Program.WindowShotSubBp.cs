@@ -43,6 +43,16 @@ public static unsafe partial class Program
                         WsSay($"subbp: station {t}: its body {done.Id} set down beside station {sj.RootPart}'s bay");
                     }
                 break;
+            case "plan": // each body with uses as the save window plans it: which uses stay uses
+                foreach (var b in g.Constructs.Bodies)
+                    if (b.Uses is { Count: > 0 } && b.PartCount > 1)
+                    {
+                        var clip = ConstructClip.Of(b, "plan", g.Constructs);
+                        var plan = ClipUses.Plan(clip);
+                        foreach (var row in plan?.Rows ?? [])
+                            WsSay($"subbp: body {b.Id} plan: {row.Name} (tag {row.Tag}, {row.Parts} parts): {(row.Kept ? "kept as a use" : row.Why)}");
+                    }
+                break;
             case "bodies":
                 foreach (var b in g.Constructs.Bodies)
                     if (b.Uses is { Count: > 0 } uses)

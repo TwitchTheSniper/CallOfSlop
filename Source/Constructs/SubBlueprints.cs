@@ -905,26 +905,44 @@ public static class SubBlueprints
         if (k >= map.StepUse.Length || map.StepUse[k] < 0 || part < 0 || part >= c.PartCount)
             return;
         EnsureTable(c, map);
-        c.Parts[part].Use = (ushort)(c.UsesBase + map.StepUse[k] + 1);
+        c.Parts[part].Use = (ushort)(c.UsesIndex![map.StepUse[k]] + 1);
     }
 
-    /// <summary>The body has the flat blueprint's table (appended once, after the tags already there).</summary>
+    /// <summary>
+    /// The body holds the flat blueprint's table: each of its tags found among the body's own (the same use: blueprint, version, lock,
+    /// frame and outer use; a world loaded mid-build has them, and its later parts tag into them), or added after them.
+    /// </summary>
     public static void EnsureTable(Construct c, UseMap map)
     {
-        if (c.UsesFrom != map)
+        if (c.UsesFrom == map && c.UsesIndex is { } known && known.Length == map.Tags.Count)
+            return;
+        c.Uses ??= new List<UseTag>();
+        var index = new int[map.Tags.Count];
+        var claimed = new bool[c.Uses.Count];
+        for (var i = 0; i < map.Tags.Count; i++)
         {
-            // (a body takes a flat blueprint's table once; its tags follow those already there)
-            c.Uses ??= new List<UseTag>();
-            c.UsesBase = c.Uses.Count;
-            foreach (var t in map.Tags)
+            var t = map.Tags[i];
+            var parent = t.Parent >= 0 && t.Parent < i ? index[t.Parent] : -1;
+            index[i] = -1;
+            for (var e = 0; e < claimed.Length && index[i] < 0; e++)
             {
-                var copy = t.Clone();
-                if (copy.Parent >= 0)
-                    copy.Parent += c.UsesBase;
-                c.Uses.Add(copy);
+                var have = c.Uses[e];
+                if (!claimed[e] && have.Id == t.Id && have.Version == t.Version && have.Lock == t.Lock && have.Turn == t.Turn && have.Parent == parent
+                    && Vector3.DistanceSquared(have.Origin, t.Origin) < 0.0001f)
+                {
+                    claimed[e] = true;
+                    index[i] = e;
+                }
             }
-            c.UsesFrom = map;
+            if (index[i] >= 0)
+                continue;
+            var copy = t.Clone();
+            copy.Parent = parent;
+            index[i] = c.Uses.Count;
+            c.Uses.Add(copy);
         }
+        c.UsesIndex = index;
+        c.UsesFrom = map;
     }
 
     /// <summary>A stamp's clip: the whole of it is one use of the stamped blueprint, its own uses under it; every tag's parts hashed.</summary>
@@ -1005,7 +1023,7 @@ public static class SubBlueprints
     public static uint HashWhole(Construct c)
     {
         c.Uses ??= new List<UseTag>();
-        var saved = (c.Uses, c.UsesFrom, c.UsesBase);
+        var saved = (c.Uses, c.UsesFrom, c.UsesIndex);
         var parts = new ushort[c.PartCount];
         for (var i = 0; i < c.PartCount; i++)
         {
@@ -1014,7 +1032,7 @@ public static class SubBlueprints
         }
         c.Uses = [new UseTag()];
         var h = HashOf(c, 0);
-        (c.Uses, c.UsesFrom, c.UsesBase) = saved;
+        (c.Uses, c.UsesFrom, c.UsesIndex) = saved;
         for (var i = 0; i < c.PartCount; i++)
             c.Parts[i].Use = parts[i];
         if (c.Uses.Count == 0)
@@ -1066,7 +1084,7 @@ public static class SubBlueprints
         for (var i = partOff; i < partOff + partCount; i++)
             if (a.Parts[i].Use != 0)
                 a.Parts[i].Use = (ushort)(a.Parts[i].Use + tagOff);
-        a.UsesFrom = null;
+        // (appending keeps the indices of a's own tags: a build's table on it stays valid)
         if (a.Uses.Count > MaxTreeUses * 4)
             Compact(a);
     }
@@ -1077,9 +1095,10 @@ public static class SubBlueprints
         if (c.Uses == null)
             return;
         var keep = new bool[c.Uses.Count];
-        if (c.UsesFrom != null)
-            for (var t = c.UsesBase; t < c.UsesBase + c.UsesFrom.Tags.Count && t < keep.Length; t++)
-                keep[t] = true; // (a build's table stays whole: its later parts tag into it)
+        if (c.UsesFrom != null && c.UsesIndex != null)
+            foreach (var t in c.UsesIndex)
+                if (t >= 0 && t < keep.Length)
+                    keep[t] = true; // (a build's table stays whole: its later parts tag into it)
         for (var i = 0; i < c.PartCount; i++)
             for (int u = c.Parts[i].Use - 1, g = 0; u >= 0 && u < keep.Length && !keep[u] && g < 64; g++)
             {
@@ -1100,10 +1119,11 @@ public static class SubBlueprints
             if (c.Parts[i].Use != 0)
                 c.Parts[i].Use = (ushort)(c.Parts[i].Use - 1 < map.Length && map[c.Parts[i].Use - 1] >= 0 ? map[c.Parts[i].Use - 1] + 1 : 0);
         c.Uses = list.Count > 0 ? list : null;
-        if (c.UsesFrom != null && c.UsesBase < map.Length && map[c.UsesBase] >= 0)
-            c.UsesBase = map[c.UsesBase];
+        if (c.UsesFrom != null && c.UsesIndex != null && c.UsesIndex.All(t => t >= 0 && t < map.Length && map[t] >= 0))
+            for (var i = 0; i < c.UsesIndex.Length; i++)
+                c.UsesIndex[i] = map[c.UsesIndex[i]];
         else
-            c.UsesFrom = null;
+            (c.UsesFrom, c.UsesIndex) = (null, null);
     }
 
     /// <summary>A part's use as the look line says it: "part of Turret #2 (v5, live)", or "".</summary>

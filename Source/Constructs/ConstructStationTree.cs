@@ -239,16 +239,32 @@ public static partial class ConstructStationTree
         return MathF.Abs(local.X) <= bay.X * 0.5f + HandReach && MathF.Abs(local.Z) <= bay.Z * 0.5f + HandReach && local.Y > -HandReach && local.Y < bay.Y + HandReach;
     }
 
-    /// <summary>A loose body near the bay that is a whole use of this row's blueprint (stamped, or built by hand): taken for the big fit.</summary>
+    public const int LooseLooks = 8; // bodies near the bay a look checks for a use at most
+
+    /// <summary>
+    /// A loose body near the bay that is a whole use of this row's blueprint, taken for the big fit: one a player stamped or built (the
+    /// design's "by hand" way; deliberate), never another station's sub-job body, never anchored, and the station owner's (or a team
+    /// mate's). The bay test, cheap, comes first; a look checks <see cref="LooseLooks"/> near bodies at most.
+    /// </summary>
     private static bool TakeLoose(ConstructWorld world, Construct c, int t, StationJob j, int r)
     {
         var row = j.Tree![r];
         var id = j.Bp!.Map!.Tags[row.Tag].Id;
+        ConstructStation.Bay(c, t, out var floor, out var rot, out var bay);
+        var inv = Quaternion.Conjugate(rot);
+        var looked = 0;
         foreach (var b in world.Bodies)
         {
-            if (b.Uses == null || b.HeldBy != 0 || b.GrabbedBy != 255 || b.Driver != 255 || b.Id == j.Body || b.PartCount != row.Steps && b.PartCount > row.Steps)
+            if (b.Uses == null || b.HeldBy != 0 || b.GrabbedBy != 255 || b.Driver != 255 || b.Anchored || b.Id == j.Body || b.PartCount > row.Steps)
                 continue;
-            if (TopTag(b, id) < 0 || !NearBay(c, t, b))
+            var local = Vector3.Transform(b.WorldCom - floor, inv);
+            if (MathF.Abs(local.X) > bay.X * 0.5f + HandReach || MathF.Abs(local.Z) > bay.Z * 0.5f + HandReach || local.Y < -HandReach || local.Y > bay.Y + HandReach)
+                continue;
+            if (b.SubStamp != 0 && b.SubStamp != j.Stamp || !Factions.Shares(b.Owner, c.Owner) && b.Owner != 255)
+                continue; // (another station's sub-job body, or someone else's)
+            if (++looked > LooseLooks)
+                break;
+            if (TopTag(b, id) < 0)
                 continue;
             if (BeginFit(world, c, t, j, r, b) is { } refused)
             {
@@ -615,6 +631,7 @@ public static partial class ConstructStationTree
     public static void SubDone(ConstructWorld world, Construct c, int t, StationJob j, Construct b)
     {
         SubBlueprints.TagStamp(b, j.Bp!);
+        b.SubStamp = j.RootStamp; // (made for that root's use: no other station takes it)
         j.State = StationState.Done;
         j.Repeat = 0;
         var touch = world.Get(j.RootBody) is { } rc && j.RootPart < rc.PartCount && rc.Id == c.Id && BaysTouch(c, j.RootPart, t);
@@ -629,8 +646,12 @@ public static partial class ConstructStationTree
         Console.WriteLine($"[station] {j.Name}: sub-job done ({j.Steps} parts){(touch ? "" : ", freed for carrying")}");
     }
 
-    /// <summary>The root cancelled: every sub-job under it cancels; a delivered body not yet fitted is taken apart.</summary>
-    public static void CancelTree(ConstructWorld world, Construct c, StationJob j)
+    /// <summary>
+    /// The root's job ended. Cancel (<paramref name="takeApart"/>): every sub-job under it cancels and a delivered body not yet fitted
+    /// is taken apart, its parts given back. Release early or a failure: sub-jobs still building cancel, and every finished or fitting
+    /// body is freed as it stands, an ordinary construct (nothing is lost, nothing stays held).
+    /// </summary>
+    public static void CancelTree(ConstructWorld world, Construct c, StationJob j, bool takeApart = true)
     {
         if (j.Tree == null)
             return;
@@ -641,22 +662,37 @@ public static partial class ConstructStationTree
             {
                 if (sub.State == StationState.Done && world.Get(sub.Body) is { } done)
                 {
-                    TakeApart(world, sub, done);
+                    if (takeApart)
+                        TakeApart(world, sub, done);
+                    else
+                        FreeBody(world, done);
                     sub.State = StationState.Idle;
                     sub.Body = 0;
-                    sub.Note = "its main station cancelled: giving the parts back";
+                    sub.Note = takeApart ? "its main station cancelled: giving the parts back" : "its main station stopped: what it built is yours";
                     world.StationOpened(c);
+                    world.StationChanged(c);
                 }
                 else
                     ConstructStation.Cancel(world, c, row.Station);
             }
-            else if (row.State == UseState.Fitting && world.Get(row.Body) is { } fitting)
-            {
-                fitting.HeldBy = 0;
-            }
+            else if (row.State is UseState.Fitting or UseState.Done && world.Get(row.Body) is { } held && held.Id != j.Body)
+                FreeBody(world, held);
             row.State = UseState.Waiting;
+            row.Body = 0;
         }
         j.BigRow = -1;
+    }
+
+    /// <summary>A sub-blueprint body let go: no station holds it, not frozen, an ordinary construct where it stands.</summary>
+    private static void FreeBody(ConstructWorld world, Construct b)
+    {
+        b.HeldBy = 0;
+        b.Frozen = false;
+        b.SubStamp = 0;
+        b.Dirty = true;
+        b.Rebuild();
+        b.Wake();
+        world.StructureDirty.Add(b.Id);
     }
 
     private static void TakeApart(ConstructWorld world, StationJob owner, Construct b)
