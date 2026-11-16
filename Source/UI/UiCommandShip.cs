@@ -429,7 +429,7 @@ public sealed partial class Ui
         var w = 250 * _scale;
         var row = 24 * _scale;
         var rows = Math.Min(_cmdCraftCount, 14);
-        var p0 = _cvOrg + new float2(pad, pad + 100 * _scale);
+        var p0 = _cvOrg + new float2(pad, pad + 104 * _scale);
         var p1 = p0 + new float2(w, 34 * _scale + Math.Max(rows, 1) * row + 8 * _scale);
         CmdPlate(dl, p0, p1, fade, CmdCyan);
         CmdPanelArea(p0, p1);
@@ -629,9 +629,19 @@ public sealed partial class Ui
                 NavPhase.Flying => "FLYING THERE",
                 NavPhase.Arrived => "OVER THE WAYPOINT",
                 NavPhase.NoDrive => "NO DRIVE: IT CAN'T FLY THIS",
+                NavPhase.Depart => "BURNING OUT ONTO ITS TRANSFER",
+                NavPhase.Coast => "COASTING, DRIVE OFF",
+                NavPhase.Correct => "CORRECTION BURN",
+                NavPhase.Brake => "FLIPPED: BRAKING",
+                NavPhase.Short => string.Create(inv, $"OUT OF REACH: THE TRIP TAKES {o2.DvNeed / 1000:0.0} KM/S"),
                 _ => "STARTING",
             };
             k.Order = Game.NavText(sys, o2).ToUpperInvariant();
+            if (o2.ArriveNs != 0 && o2.Phase is NavPhase.Depart or NavPhase.Coast or NavPhase.Correct)
+            {
+                var left = (o2.ArriveNs - s.Now.Ns) / (double)SpaceTime.NsPerSecond;
+                phase += string.Create(inv, $"    ARRIVES IN {CmdTime(Math.Max(0, left)).ToUpperInvariant()}    {o2.DvNeed / 1000:0.0} KM/S");
+            }
             k.Phase = phase;
         }
     }

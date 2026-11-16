@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// runs the system's space clock and ships (<see cref="SpaceFlight"/>) once a tick, and every peer works out the sky from
 /// the clock (<see cref="SpaceBubble"/>: the real sun and moon, day and night as the body turns). What goes over the wire
 /// (<see cref="Msg.Space"/>, protocol 125) is only what a client can't work out: which system and body, the clock (time and
-/// warp), and the ships' states.
+/// speed), and the ships' states.
 /// </summary>
 public sealed partial class Game
 {
@@ -26,28 +26,28 @@ public sealed partial class Game
     public const int SpaceShipTimeoutTicks = 180;
 
     private Map? _spaceMap;
-    private int _spaceSentWarp = -1;
+    private int _spaceSentSpeed = -1;
     private int _spaceShipCursor;
 
     // Client: the bubble the host announced, applied once this PC has that map loaded.
     private string? _spacePendingMap, _spacePendingFile;
     private uint _spacePendingHash, _spacePendingTick, _spacePendingGalaxy;
-    private int _spacePendingBody, _spacePendingWarp;
+    private int _spacePendingBody, _spacePendingSpeed;
     private long _spacePendingNs;
     private bool _spaceWarned;
 
     private enum SpaceMsg : byte
     {
         Bubble, // reliable, on a join and when the map changes: map name, system file ("" for none), file hash, body, then a clock
-        Clock, // unreliable once a second, reliable on a warp change: host tick, time (ns), warp
+        Clock, // unreliable once a second, reliable on a speed change: host tick, time (ns), speed
         Ships, // unreliable, 10 Hz: host tick, count, then per ship its id and ShipState (a cursor takes turns past one packet)
     }
 
-    /// <summary>The space time to draw with: the clock between ticks (the frame's share of the next tick at the current warp).</summary>
-    public SpaceTime SpaceRenderTime => Space is { } s ? s.Now + (long)(s.Warp * (double)_alpha * SpaceTime.NsPerSecond / World.TickRate) : default;
+    /// <summary>The space time to draw with: the clock between ticks (the frame's share of the next tick at the current speed).</summary>
+    public SpaceTime SpaceRenderTime => Space is { } s ? s.Now + (long)(s.Speed * (double)_alpha * SpaceTime.NsPerSecond / World.TickRate) : default;
 
-    /// <summary>Host: asks for a warp (0 pauses, up to 100,000x). The provisional rule (<see cref="SpaceWarpRule"/>) decides what runs. False on a client or with no bubble.</summary>
-    public bool RequestSpaceWarp(int warp) => IsServer && Space?.Flight is { } f && f.RequestWarp(warp, fromHost: true);
+    /// <summary>Host: asks for a speed (0 pauses, up to 100,000x). The provisional rule (<see cref="SpaceTimeRule"/>) decides what runs. False on a client or with no bubble.</summary>
+    public bool RequestTimeSpeed(int speed) => IsServer && Space?.Flight is { } f && f.RequestSpeed(speed, fromHost: true);
 
     /// <summary>
     /// Host, every tick: the bubble follows the map, then the clock and the ships step and their news goes out.
@@ -67,15 +67,15 @@ public sealed partial class Game
         ServerTickNav(Space); // (ships under orders: where their drives point and how hard they push, GameNav.cs)
         SpaceLaunchBefore(f); // (ships that are constructs: their thrust and turn, GameSpaceLaunch.cs)
         SpaceAwayBefore(Space); // (and those in other systems: GameSpaceJump.cs)
-        f.Tick(Space.AwayWarpLimit);
+        f.Tick(Math.Min(Space.AwaySpeedLimit, Math.Min(NavSpeedCap, Math.Max(1, TimeSpeedMost)))); // (ships under orders slow it before a burn: GameNavTrip.cs)
         foreach (var af in Space.Away)
             af?.Follow(f.Clock); // (the other systems' ships, on the same galaxy time)
         SpaceLaunchAfter(f); // (constructs past the sky's edge become ships; ships pose their constructs or come back in)
         SpaceJumpStep(Space); // (jump drives charge and jump; constructs in other systems are posed: GameSpaceJump.cs)
         SpaceLandingStep(Space, f); // (a ship within another planetoid's sky lands there, everyone aboard: GameSpaceLanding.cs)
-        if (f.Clock.Warp != _spaceSentWarp)
+        if (f.Clock.Speed != _spaceSentSpeed)
         {
-            _spaceSentWarp = f.Clock.Warp;
+            _spaceSentSpeed = f.Clock.Speed;
             WriteSpaceClock(_w, f);
             Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         }
@@ -110,7 +110,7 @@ public sealed partial class Game
     {
         _spaceMap = World.Map;
         _spaceShipCursor = 0;
-        _spaceSentWarp = -1;
+        _spaceSentSpeed = -1;
         NavReset(); // (another map: no order outlives it, GameNav.cs)
         var old = Space;
         Space = null;
@@ -132,7 +132,7 @@ public sealed partial class Game
             if (!sameSystem)
             {
                 Space.Adopt(old.GalaxyIndex, was);
-                flight.RequestWarp(was.RequestedWarp, fromHost: true);
+                flight.RequestSpeed(was.RequestedSpeed, fromHost: true);
             }
         }
         WorldSpaceShips();
@@ -140,10 +140,10 @@ public sealed partial class Game
     }
 
     /// <summary>
-    /// The "is anyone busy" test of the warp rule (docs/space/SPACE.md "Time warp"): a ship in space burning its engines
+    /// The "is anyone busy" test of the time speed rule (docs/space/SPACE.md "Time speed"): a ship in space burning its engines
     /// (its thrust needs real-time steps) keeps space at 1x. Life in the bubble doesn't: its physics runs at 60 Hz whatever
     /// the space clock does, so walking, driving and building no longer stop the orbits (Karl, 2026-11-04: "players moving
-    /// stops the orbital mechanics" was a bug). The warp itself stays the host's (the provisional multiplayer rule).
+    /// stops the orbital mechanics" was a bug). The speed itself stays the host's (the provisional multiplayer rule).
     /// </summary>
     internal bool SpaceAnyoneBusy()
     {
@@ -173,11 +173,11 @@ public sealed partial class Game
             return;
         }
         w.Str(Space.MapName).Str(f.System.File).U32(Space.Hash).U8((byte)Space.Bubble.Body)
-            .U32(ServerTick).U64((ulong)f.Clock.Now.Ns).U32((uint)f.Clock.Warp).U32(Galaxy.Hash);
+            .U32(ServerTick).U64((ulong)f.Clock.Now.Ns).U32((uint)f.Clock.Speed).U32(Galaxy.Hash);
     }
 
     private void WriteSpaceClock(PacketWriter w, SpaceFlight f) =>
-        w.Begin(Msg.Space).U8((byte)SpaceMsg.Clock).U32(ServerTick).U64((ulong)f.Clock.Now.Ns).U32((uint)f.Clock.Warp);
+        w.Begin(Msg.Space).U8((byte)SpaceMsg.Clock).U32(ServerTick).U64((ulong)f.Clock.Now.Ns).U32((uint)f.Clock.Speed);
 
     /// <summary>
     /// One ships packet of one system (phase 6: its galaxy index): up to <see cref="SpaceShipsPerPacket"/> ships from the
@@ -223,7 +223,7 @@ public sealed partial class Game
                 _spacePendingBody = r.U8();
                 _spacePendingTick = r.U32();
                 _spacePendingNs = (long)r.U64();
-                _spacePendingWarp = (int)r.U32();
+                _spacePendingSpeed = (int)r.U32();
                 _spacePendingGalaxy = r.Has(4) ? r.U32() : 0;
                 _spaceWarned = false;
                 ApplySpacePending();
@@ -233,10 +233,10 @@ public sealed partial class Game
             {
                 var tick = r.U32();
                 var ns = (long)r.U64();
-                var warp = (int)r.U32();
+                var speed = (int)r.U32();
                 if (_spacePendingMap != null && tick >= _spacePendingTick)
-                    (_spacePendingTick, _spacePendingNs, _spacePendingWarp) = (tick, ns, warp); // not applied yet: keep the newest
-                Space?.HostClock(tick, new SpaceTime(ns), warp);
+                    (_spacePendingTick, _spacePendingNs, _spacePendingSpeed) = (tick, ns, speed); // not applied yet: keep the newest
+                Space?.HostClock(tick, new SpaceTime(ns), speed);
                 break;
             }
             case SpaceMsg.Ships when r.Has(6) && Space is { } s:
@@ -279,7 +279,7 @@ public sealed partial class Game
         Space.GalaxyOk = _spacePendingGalaxy == Galaxy.Hash;
         if (!Space.GalaxyOk)
             Console.WriteLine("[space] the host's star systems aren't the same as this PC's: its ships in other systems won't show");
-        Space.HostClock(_spacePendingTick, new SpaceTime(_spacePendingNs), _spacePendingWarp);
+        Space.HostClock(_spacePendingTick, new SpaceTime(_spacePendingNs), _spacePendingSpeed);
     }
 
     /// <summary>Client, every tick: the clock runs on between the host's, ships not heard of go, a waiting bubble is applied.</summary>
@@ -396,15 +396,15 @@ public sealed class SpaceSession
 
     private bool AwayHas(ushort id) => Taken(id, GalaxyIndex);
 
-    /// <summary>Host: the slowest warp the other systems' ships can follow (their own <see cref="SpaceShips.MaxWarp"/>).</summary>
-    public int AwayWarpLimit
+    /// <summary>Host: the slowest speed the other systems' ships can follow (their own <see cref="SpaceShips.MaxSpeed"/>).</summary>
+    public int AwaySpeedLimit
     {
         get
         {
             var w = int.MaxValue;
             foreach (var f in Away)
                 if (f is { Ships.Count: > 0 })
-                    w = Math.Min(w, f.Ships.MaxWarp);
+                    w = Math.Min(w, f.Ships.MaxSpeed);
             return w;
         }
     }
@@ -412,19 +412,19 @@ public sealed class SpaceSession
     public bool IsHost => Flight != null;
     public StarSystem System => Bubble.System;
     public SpaceTime Now => Flight?.Clock.Now ?? _clock.Now;
-    public int Warp => Flight?.Clock.Warp ?? _clock.Warp;
+    public int Speed => Flight?.Clock.Speed ?? _clock.Speed;
 
     /// <summary>Is this the bubble of that map?</summary>
     public bool IsFor(Map map) => string.Equals(MapName, map.Name, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Client: a clock from the host (older ones, by host tick, are dropped).</summary>
-    public void HostClock(uint tick, SpaceTime t, int warp)
+    public void HostClock(uint tick, SpaceTime t, int speed)
     {
         if (_heardClock && tick < _hostTick)
             return;
         _heardClock = true;
         _hostTick = tick;
-        _clock.Warp = warp;
+        _clock.Speed = speed;
         _clock.Set(t);
     }
 

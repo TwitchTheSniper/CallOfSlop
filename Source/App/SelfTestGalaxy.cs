@@ -253,14 +253,14 @@ public static partial class SelfTest
 
         // ---- No allocation with a ship away ----------------------------------------------------------------------------
         server.SpaceAwayBefore(space);
-        flight.Tick(space.AwayWarpLimit);
+        flight.Tick(space.AwaySpeedLimit);
         away.Follow(flight.Clock);
         server.SpaceJumpStep(space);
         var alloc = GC.GetAllocatedBytesForCurrentThread();
         for (var k = 0; k < 300; k++)
         {
             server.SpaceAwayBefore(space);
-            flight.Tick(space.AwayWarpLimit);
+            flight.Tick(space.AwaySpeedLimit);
             away.Follow(flight.Clock);
             server.SpaceJumpStep(space);
         }

@@ -94,7 +94,7 @@ public sealed partial class Game
             }
             // Parked in the World while its ship flies far out: upright (game +Y is that system's north), A and D turn it.
             SpacePose(c, c.SpaceParkAt, Vector3.Zero, c.SpaceParkAt - Vector3.UnitY * 1000f, dt);
-            SpaceLaunched++; // (counted with the bubble's own: the warp rule and the tick look at it)
+            SpaceLaunched++; // (counted with the bubble's own: the time speed rule and the tick look at it)
             Note(c);
         }
     }

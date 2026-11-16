@@ -848,6 +848,11 @@ public static unsafe partial class Program
                     }
                     var paused = game.Net.IsOffline && Ui.PauseOpen;
                     CrashLog.Phase = "game update";
+                    if (game.IsServer)
+                    {
+                        game.TripShare = _settings.TripFuelPercent / 100.0; // (host settings, Settings > Gameplay: GameNavTrip.cs)
+                        game.TimeSpeedMost = _settings.TimeSpeedMost;
+                    }
                     if (!paused)
                         using (Perf.Measure(PerfArea.Game))
                             game.Update(now, FrameDt);

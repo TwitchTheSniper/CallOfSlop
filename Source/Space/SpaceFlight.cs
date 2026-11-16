@@ -3,16 +3,16 @@ using System.Buffers.Binary;
 namespace CallOfSlop.Space;
 
 /// <summary>
-/// The warp rule for friends (docs/space/SPACE.md, "Time warp"). <b>Provisional:</b> this is the architecture's proposal
+/// The time speed rule for friends (docs/space/SPACE.md, "Time speed"). <b>Provisional:</b> this is the architecture's proposal
 /// (section 4) and Karl hasn't confirmed it yet (section 12); it's one function so it can change in one place.
-/// Only the host sets the warp; above 1x only while nobody is busy (a ship in space burning: Game.SpaceAnyoneBusy); never past what the ships can
-/// follow accurately (<see cref="SpaceShips.MaxWarp"/>). Warp 0 (paused) is always allowed to the host.
+/// Only the host sets the speed; above 1x only while nobody is busy (a ship in space burning: Game.SpaceAnyoneBusy); never past what the ships can
+/// follow accurately (<see cref="SpaceShips.MaxSpeed"/>). Speed 0 (paused) is always allowed to the host.
 /// </summary>
-public static class SpaceWarpRule
+public static class SpaceTimeRule
 {
     public static int Effective(int requested, bool anyoneBusy, int shipLimit)
     {
-        var w = Math.Clamp(requested, 0, SpaceClock.MaxWarp);
+        var w = Math.Clamp(requested, 0, SpaceClock.MaxSpeed);
         if (w <= 1)
             return w;
         if (anyoneBusy)
@@ -31,8 +31,8 @@ public sealed class SpaceFlight
     public readonly SpaceClock Clock;
     public readonly SpaceShips Ships;
 
-    /// <summary>The warp the host asked for (clients' requests are ignored: <see cref="RequestWarp"/>).</summary>
-    public int RequestedWarp { get; private set; } = 1;
+    /// <summary>The speed the host asked for (clients' requests are ignored: <see cref="RequestSpeed"/>).</summary>
+    public int RequestedSpeed { get; private set; } = 1;
 
     /// <summary>Someone is doing something that needs real-time physics (set by the game each tick; phase 3).</summary>
     public bool AnyoneBusy;
@@ -52,22 +52,22 @@ public sealed class SpaceFlight
     /// <summary>Gravity wells on ships in space (phase 5): they pull the other ships (ConstructGravity.cs).</summary>
     public readonly ConstructGravity.SpaceWells Wells;
 
-    /// <summary>A warp request; only the host's counts. Returns whether it was taken.</summary>
-    public bool RequestWarp(int warp, bool fromHost)
+    /// <summary>A speed request; only the host's counts. Returns whether it was taken.</summary>
+    public bool RequestSpeed(int speed, bool fromHost)
     {
         if (!fromHost)
             return false;
-        RequestedWarp = Math.Clamp(warp, 0, SpaceClock.MaxWarp);
+        RequestedSpeed = Math.Clamp(speed, 0, SpaceClock.MaxSpeed);
         return true;
     }
 
     /// <summary>
-    /// One game tick: the warp the rule allows, the clock, then every ship. <paramref name="shipLimit"/> is the other
+    /// One game tick: the speed the rule allows, the clock, then every ship. <paramref name="shipLimit"/> is the other
     /// systems' ships' own limit (phase 6: their flights follow this clock, <see cref="Follow"/>).
     /// </summary>
     public void Tick(int shipLimit = int.MaxValue)
     {
-        Clock.Warp = SpaceWarpRule.Effective(RequestedWarp, AnyoneBusy, Math.Min(Ships.MaxWarp, shipLimit));
+        Clock.Speed = SpaceTimeRule.Effective(RequestedSpeed, AnyoneBusy, Math.Min(Ships.MaxSpeed, shipLimit));
         Clock.Tick();
         Wells.Refresh(); // (where the wells' ships are as this step starts)
         Ships.Advance(Clock.Now);
@@ -75,11 +75,11 @@ public sealed class SpaceFlight
 
     /// <summary>
     /// Another system's flight in step with the bubble's clock (phase 6, docs/space/GALAXY.md: one galaxy time, every
-    /// system's epoch the same): takes its time and warp, then steps this system's ships to it.
+    /// system's epoch the same): takes its time and speed, then steps this system's ships to it.
     /// </summary>
     public void Follow(SpaceClock master)
     {
-        Clock.Warp = master.Warp;
+        Clock.Speed = master.Speed;
         Clock.Set(master.Now);
         Wells.Refresh();
         Ships.Advance(master.Now);
@@ -123,8 +123,8 @@ public readonly record struct ShipState(SpaceTime Time, int Primary, Vec3d R, Ve
 /// <summary>
 /// A client's view of one host ship (docs/space/SPACE.md, "Multiplayer"): the last few states the host sent. A sample at
 /// any time takes the two states either side, carries each one there along its two-body orbit round its primary (exact
-/// for a coasting ship, whatever the warp), and blends them by time, so the path is smooth and stays on the orbit even when
-/// a packet covers minutes of warped time. Past the newest state it carries that one on. No allocation.
+/// for a coasting ship, whatever the speed), and blends them by time, so the path is smooth and stays on the orbit even when
+/// a packet covers minutes of sped-up time. Past the newest state it carries that one on. No allocation.
 /// </summary>
 public sealed class ShipTrack
 {

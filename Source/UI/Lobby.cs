@@ -826,6 +826,39 @@ public sealed partial class Ui
     }
     private float _pendingUiScale = -1;
 
+    private static readonly int[] TimeSpeedChoices = [10, 100, 1000, 10_000, 100_000];
+    private static readonly string[] TimeSpeedLabels = ["10x", "100x", "1000x", "10000x", "100000x"];
+
+    /// <summary>Settings > Gameplay: how ships travel between planets (Karl, 2026-11-16). Host settings: in a joined game the host's count.</summary>
+    private void GameplaySettings(Settings s, float w)
+    {
+        ImGui.SeparatorText("Travel between planets"u8);
+        ImGui.TextColored(Dim, "These are the host's: in a game you joined, the host's settings fly the ships."u8);
+        ImGui.SetNextItemWidth(w);
+        var fuel = s.TripFuelPercent;
+        if (ImGui.SliderInt("Trip fuel"u8, ref fuel, Game.TripFuelLeast, Game.TripFuelMost, "%d%% of the tank"u8))
+            s.TripFuelPercent = Math.Clamp(fuel, Game.TripFuelLeast, Game.TripFuelMost);
+        if (ImGui.IsItemDeactivatedAfterEdit())
+            s.Save();
+        ImGui.TextColored(Dim, "How much of a ship's fuel an order to another planet may burn. More fuel is a quicker trip; less leaves more for the way home. A ship plans its trip when it leaves, so a change counts from the next order."u8);
+        ImGui.Spacing();
+        var at = Array.IndexOf(TimeSpeedChoices, s.TimeSpeedMost);
+        if (at < 0)
+            at = TimeSpeedChoices.Length - 1;
+        ImGui.SetNextItemWidth(w);
+        if (ImGui.BeginCombo("Fastest time speed"u8, TimeSpeedLabels[at]))
+        {
+            for (var k = 0; k < TimeSpeedChoices.Length; k++)
+                if (ImGui.Selectable(TimeSpeedLabels[k], k == at))
+                {
+                    s.TimeSpeedMost = TimeSpeedChoices[k];
+                    s.Save();
+                }
+            ImGui.EndCombo();
+        }
+        ImGui.TextColored(Dim, "The fastest the command view (Home) may run time while ships coast. Time runs at 1x while any ship in space burns, and slows by itself before an ordered ship's next burn."u8);
+    }
+
     private void SettingsPanel(Settings s, Audio audio)
     {
         EnsureInputs(s);
@@ -900,6 +933,17 @@ public sealed partial class Ui
             if (SavePaths.Warning is { } saveWarning)
                 ImGuiSafe.TextColored(Red, saveWarning);
             UpdateSettings(s); // Updates: check at startup, Check for updates (UiUpdates.cs)
+            ImGui.PopTextWrapPos();
+            ImGui.EndChild();
+            ImGui.EndTabItem();
+        }
+
+        // ---- Gameplay: travel between planets (host settings: GameNavTrip.cs) ------------------
+        if (ImGui.BeginTabItem("Gameplay"u8))
+        {
+            ImGui.BeginChild("##gameplay"u8, panel);
+            ImGui.PushTextWrapPos(0);
+            GameplaySettings(s, w);
             ImGui.PopTextWrapPos();
             ImGui.EndChild();
             ImGui.EndTabItem();

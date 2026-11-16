@@ -689,6 +689,21 @@ public sealed partial class Ui
     // ---------------------------------------------------------------------------------------------------------------
 
     private CmdLabel _cmdClock, _cmdScale;
+    private static readonly int[] CmdSpeeds = [0, 1, 10, 100, 1000, 10_000, 100_000];
+    private static readonly string[] CmdSpeedLabels = ["II", "1x", "10x", "100x", "1K", "10K", "100K"];
+    private static readonly string[] CmdHeldText = ["", "   (A SHIP IS BURNING)", "   (SLOWED FOR A BURN)", "   (SHIPS' LIMIT)", "   (SETTINGS' LIMIT)"];
+
+    /// <summary>Why the time runs slower than the host asked (an index into <see cref="CmdHeldText"/>; 0: it doesn't, or this is a client).</summary>
+    private static int CmdSpeedHeld(Game g, SpaceSession s)
+    {
+        if (s.Flight is not { } f || f.RequestedSpeed <= f.Clock.Speed || f.Clock.Speed == 0)
+            return 0;
+        if (f.AnyoneBusy)
+            return 1;
+        if (g.NavSpeedCap <= f.Clock.Speed)
+            return 2;
+        return g.TimeSpeedMost <= f.Clock.Speed ? 4 : 3;
+    }
     private static readonly string[] CmdPresets = ["SHIP", "WORLD", "MOONS", "SYSTEM"];
 
     private void CmdChrome(ImDrawListPtr dl, Game g, SpaceSession s, float fade, double now, string keyName)
@@ -708,11 +723,25 @@ public sealed partial class Ui
         }
         CmdText(dl, p0 + new float2(0, 15 * _scale), 26, CmdWhite, fade, title);
         var t = _cvTime.Seconds;
-        if (_cmdClock.Stale((long)t * 1000 + s.Warp))
-            _cmdClock.Text = FormattableString.Invariant($"DAY {(int)(t / 86400) + 1}  {(int)(t % 86400 / 3600):00}:{(int)(t % 3600 / 60):00}:{(int)(t % 60):00}   WARP {s.Warp}x");
-        CmdText(dl, p0 + new float2(0, 48 * _scale), 12.5f, s.Warp == 1 ? CmdCyan : CmdAmber, fade, _cmdClock.Text!);
+        var held = CmdSpeedHeld(g, s);
+        if (_cmdClock.Stale(((long)t * 1000 + s.Speed) * 8 + held))
+            _cmdClock.Text = FormattableString.Invariant($"DAY {(int)(t / 86400) + 1}  {(int)(t % 86400 / 3600):00}:{(int)(t % 3600 / 60):00}:{(int)(t % 60):00}   TIME {(s.Speed == 0 ? "PAUSED" : $"{s.Speed}x")}{CmdHeldText[held]}");
+        CmdText(dl, p0 + new float2(0, 48 * _scale), 12.5f, s.Speed == 1 ? CmdCyan : CmdAmber, fade, _cmdClock.Text!);
         CmdGlow(dl, p0 + new float2(0, 68 * _scale), p0 + new float2(250 * _scale, 68 * _scale), CmdCyan, 0.8f * fade);
         CmdLine(dl, p0 + new float2(250 * _scale, 68 * _scale), p0 + new float2(262 * _scale, 80 * _scale), CmdCyan, 0.8f * fade);
+
+        // Time speed, under the clock (the host's: Karl, 2026-11-16: ships coast between planets in real time, and the
+        // command view speeds time up; a burn holds it at 1x and an ordered ship slows it before its next burn).
+        if (g.IsServer && s.Flight is { } hf)
+        {
+            var tw = 34 * _scale;
+            for (var k = 0; k < CmdSpeeds.Length; k++)
+            {
+                var q0 = p0 + new float2(k * (tw + 3 * _scale), 76 * _scale);
+                if (CmdButton(dl, q0, q0 + new float2(tw, 19 * _scale), CmdSpeedLabels[k], k == 0 ? CmdAmber : CmdCyan, fade, hf.RequestedSpeed == CmdSpeeds[k], 11))
+                    g.RequestTimeSpeed(Math.Min(CmdSpeeds[k], Math.Max(1, g.TimeSpeedMost)));
+            }
+        }
 
         // Zoom presets, top middle.
         var bw = 92 * _scale;

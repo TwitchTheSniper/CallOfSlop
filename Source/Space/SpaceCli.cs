@@ -57,16 +57,16 @@ public static class SpaceCli
     }
 
     /// <summary>
-    /// <c>--space-ships [FILE] [--hours H] [--warp W]</c>: puts demo ships in a system (default Systems/Dev.json): a circular
+    /// <c>--space-ships [FILE] [--hours H] [--speed W]</c>: puts demo ships in a system (default Systems/Dev.json): a circular
     /// orbit at 1.5 times the radius of every body but the star, and one leaving the first planetoid at 1.5 times its escape
-    /// speed. Flies them for H hours of space time at W x warp through <see cref="SpaceFlight"/> (the warp rule may
+    /// speed. Flies them for H hours of space time at W x speed through <see cref="SpaceFlight"/> (the time speed rule may
     /// hold it lower) and prints, every hour, each ship's primary, step and distance; then the cost per tick.
     /// </summary>
     public static int Ships(string[] args)
     {
         string? file = null;
         double hours = 6;
-        var warp = 100;
+        var speed = 100;
         for (var i = 0; i < args.Length; i++)
         {
             var a = args[i].ToLowerInvariant();
@@ -75,8 +75,8 @@ public static class SpaceCli
                 file = v;
             else if (a == "--hours" && v != null)
                 hours = double.Parse(v, CultureInfo.InvariantCulture);
-            else if (a == "--warp" && v != null)
-                warp = int.Parse(v, CultureInfo.InvariantCulture);
+            else if (a == "--speed" && v != null)
+                speed = int.Parse(v, CultureInfo.InvariantCulture);
         }
         var sys = LoadOrPrint(file ?? Path.Combine(AppContext.BaseDirectory, StarSystemFile.FolderName, "Dev.json"));
         if (sys == null)
@@ -96,7 +96,7 @@ public static class SpaceCli
             var r = 1.5 * body.Radius;
             names[ships.AddRelative(1, new Vec3d(0, r, 0), new Vec3d(-1.5 * Math.Sqrt(2 * body.Mu / r), 0, 0))] = $"leaving {body.Name}";
         }
-        flight.RequestWarp(warp, fromHost: true);
+        flight.RequestSpeed(speed, fromHost: true);
         var sw = Stopwatch.StartNew();
         long ticks = 0;
         var nextHour = 0.0;
@@ -105,7 +105,7 @@ public static class SpaceCli
         {
             if (flight.Clock.Now.Seconds >= nextHour * 3600)
             {
-                Console.WriteLine($"[space] {flight.Clock.Now} at {flight.Clock.Warp}x (ships allow {ships.MaxWarp}x)");
+                Console.WriteLine($"[space] {flight.Clock.Now} at {flight.Clock.Speed}x (ships allow {ships.MaxSpeed}x)");
                 for (var i = 0; i < ships.Count; i++)
                 {
                     var p = ships.PrimaryOf(i);

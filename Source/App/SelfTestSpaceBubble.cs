@@ -13,7 +13,7 @@ public static partial class SelfTest
     /// northern summer so its polar spawn has the sun up; the equator has two sunrises and two sunsets in 48 h; the
     /// moonlet is where and as big as its orbit says; the sky follows the bubble and gives its own sun back. Then a real
     /// host and client over the transport with lag and loss: the client's bubble and clock match the host's, the host's
-    /// warp reaches it and drops to 1x while a construct is awake (the provisional rule), a client can't warp, 40 ships
+    /// speed reaches it and drops to 1x while a construct is awake (the provisional rule), a client can't set it, 40 ships
     /// (three packets' worth) reach it within a metre, removed ships go, a late joiner gets everything; a map in no system
     /// has no bubble; and the host's space tick, the ships packet and the sky allocate nothing.
     /// </summary>
@@ -153,7 +153,7 @@ public static partial class SelfTest
             Fail("space bubble: the map's own sun and moon didn't come back when the bubble went");
     }
 
-    /// <summary>A real host and client (and a late joiner) over the transport with lag and loss: bubble, clock, warp, ships.</summary>
+    /// <summary>A real host and client (and a late joiner) over the transport with lag and loss: bubble, clock, speed, ships.</summary>
     private static void SpaceBubbleNet(Map map, Planetoid pl, StarSystems.Entry entry)
     {
         const ushort port = 26511;
@@ -180,7 +180,7 @@ public static partial class SelfTest
             if (!ok)
                 problems.Add(what);
         }
-        // Clean ground: nothing awake that would hold the warp at 1x.
+        // Clean ground: nothing awake that would hold the speed at 1x.
         foreach (var c in server.Constructs.Bodies.ToList())
             server.Constructs.Remove(c);
         Pump(server, [a], 1.0, ref now, clock);
@@ -196,13 +196,13 @@ public static partial class SelfTest
         double Gap() => Math.Abs(cl.Now - hs.Now);
         Line($"space bubble net: lag and loss {(lagged ? "on" : "NOT on")}; host time {hs.Now}, the client {Gap():0.000} s apart at 1x");
         Want(Gap() < 0.3, $"at 1x the client's clock is within 0.3 s of the host's ({Gap():0.000} s)");
-        Want(!a.RequestSpaceWarp(1000) && cl.Warp == 1, "a client can't set the warp");
+        Want(!a.RequestTimeSpeed(1000) && cl.Speed == 1, "a client can't set the speed");
 
-        // Warp from the host; a construct falling and the host walking don't drop it (life in the bubble runs at 60 Hz
+        // Speed from the host; a construct falling and the host walking don't drop it (life in the bubble runs at 60 Hz
         // whatever the space clock does: Karl, 2026-11-04, "players moving stops the orbital mechanics").
-        server.RequestSpaceWarp(1000);
+        server.RequestTimeSpeed(1000);
         Pump(server, [a], 1.0, ref now, clock);
-        Want(flight.Clock.Warp == 1000 && cl.Warp == 1000, $"the host's 1000x reaches the client (host {flight.Clock.Warp}x, client {cl.Warp}x, someone busy {server.SpaceAnyoneBusy()})");
+        Want(flight.Clock.Speed == 1000 && cl.Speed == 1000, $"the host's 1000x reaches the client (host {flight.Clock.Speed}x, client {cl.Speed}x, someone busy {server.SpaceAnyoneBusy()})");
         Want(Gap() < 300, $"at 1000x the client's clock is within 300 s of space time of the host's ({Gap():0.0} s)");
         var ground = pl.GroundUnder(pl.Center + new Vector3(0, (float)pl.Radius + 400, 0)) + new Vector3(6, 0, 6);
         var block = ConstructBuild.PlaceNew(server.Constructs, ConstructParts.Need("Frame Block"), ground + new Vector3(0, 3, 0), 0);
@@ -213,9 +213,9 @@ public static partial class SelfTest
         var t0 = hs.Now;
         Pump(server, [a], 0.5, ref now, clock);
         var ran = hs.Now - t0;
-        Line($"space bubble net: 1000x asked; a block falling and the host walking: host {flight.Clock.Warp}x, client {cl.Warp}x, {ran:0} s of space time in 0.5 s");
-        Want(block != null && flight.Clock.Warp == 1000 && cl.Warp == 1000 && ran > 100, $"moving in the bubble keeps the warp (host {flight.Clock.Warp}x, client {cl.Warp}x, {ran:0} s in 0.5 s)");
-        server.RequestSpaceWarp(1);
+        Line($"space bubble net: 1000x asked; a block falling and the host walking: host {flight.Clock.Speed}x, client {cl.Speed}x, {ran:0} s of space time in 0.5 s");
+        Want(block != null && flight.Clock.Speed == 1000 && cl.Speed == 1000 && ran > 100, $"moving in the bubble keeps the speed (host {flight.Clock.Speed}x, client {cl.Speed}x, {ran:0} s in 0.5 s)");
+        server.RequestTimeSpeed(1);
         Pump(server, [a], 0.6, ref now, clock);
 
         // Ships: 40 in orbit round the Planetoid (three packets' worth), checked at the host's time within a metre.
