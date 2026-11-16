@@ -1,0 +1,1474 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Zero Day Frigate",
+  "description": "The IT Department's torpedo frigate: two decks the length of a sleek armoured hull, a rotary torpedo bay in each flank, a spinal railgun, four point-defence turrets, flare launchers and a drive array the width of the stern.",
+  "steps": [
+    {
+      "part": "Zero Day Keel"
+    },
+    {
+      "part": "Zero Day Bow",
+      "on": 0,
+      "socket": "bow",
+      "by": "keel"
+    },
+    {
+      "part": "Zero Day Lower Deck Fore",
+      "on": 0,
+      "socket": "lowerFore",
+      "by": "keel"
+    },
+    {
+      "part": "Zero Day Lower Deck Aft",
+      "on": 0,
+      "socket": "lowerAft",
+      "by": "keel"
+    },
+    {
+      "part": "Zero Day Stern",
+      "on": 3,
+      "socket": "stern",
+      "by": "deck"
+    },
+    {
+      "part": "Zero Day Upper Deck Fore",
+      "on": 2,
+      "socket": "upper",
+      "by": "lower"
+    },
+    {
+      "part": "Zero Day Upper Deck Aft",
+      "on": 5,
+      "socket": "upperAft",
+      "by": "fore"
+    },
+    {
+      "part": "Zero Day Spine",
+      "on": 5,
+      "socket": "spine",
+      "by": "upper"
+    },
+    {
+      "part": "Zero Day Torpedo Bay L",
+      "on": 2,
+      "socket": "sponsonL",
+      "by": "deck"
+    },
+    {
+      "part": "Zero Day Torpedo Bay R",
+      "on": 2,
+      "socket": "sponsonR",
+      "by": "deck"
+    },
+    {
+      "part": "Zero Day Drive Array",
+      "on": 4,
+      "socket": "drive",
+      "by": "front"
+    },
+    {
+      "part": "Zero Day Lift Jet",
+      "on": 0,
+      "socket": "liftFL",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Lift Jet",
+      "on": 0,
+      "socket": "liftFR",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Lift Jet",
+      "on": 0,
+      "socket": "liftBL",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Lift Jet",
+      "on": 0,
+      "socket": "liftBR",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Landing Leg",
+      "on": 0,
+      "socket": "legFL",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Landing Leg",
+      "on": 0,
+      "socket": "legFR",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Landing Leg",
+      "on": 0,
+      "socket": "legBL",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Landing Leg",
+      "on": 0,
+      "socket": "legBR",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Retro Jet",
+      "on": 1,
+      "socket": "retroL",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Retro Jet",
+      "on": 1,
+      "socket": "retroR",
+      "by": "top"
+    },
+    {
+      "part": "Zero Day Boarding Ladder",
+      "on": 3,
+      "socket": "boarding",
+      "by": "hull"
+    },
+    {
+      "part": "Zero Day Ladder",
+      "on": 2,
+      "socket": "ladder",
+      "by": "bottom"
+    },
+    {
+      "part": "Zero Day Ladder",
+      "on": 3,
+      "socket": "ladder",
+      "by": "bottom"
+    },
+    {
+      "part": "Server Rack",
+      "on": 2,
+      "socket": "serverL0",
+      "by": "foot00"
+    },
+    {
+      "part": "Server Rack",
+      "on": 2,
+      "socket": "serverR0",
+      "by": "foot00"
+    },
+    {
+      "part": "Server Rack",
+      "on": 2,
+      "socket": "serverL1",
+      "by": "foot00"
+    },
+    {
+      "part": "Server Rack",
+      "on": 2,
+      "socket": "serverR1",
+      "by": "foot00"
+    },
+    {
+      "part": "Server Rack",
+      "on": 2,
+      "socket": "serverL2",
+      "by": "foot00"
+    },
+    {
+      "part": "Server Rack",
+      "on": 2,
+      "socket": "serverR2",
+      "by": "foot00"
+    },
+    {
+      "part": "Server Rack",
+      "on": 2,
+      "socket": "serverL3",
+      "by": "foot00"
+    },
+    {
+      "part": "Server Rack",
+      "on": 2,
+      "socket": "serverR3",
+      "by": "foot00"
+    },
+    {
+      "part": "Computer",
+      "on": 2,
+      "socket": "computer",
+      "by": "foot00"
+    },
+    {
+      "part": "Office Plant",
+      "on": 2,
+      "socket": "plant",
+      "by": "base"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 2,
+      "socket": "crate0",
+      "by": "-y"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 2,
+      "socket": "crate1",
+      "by": "-y"
+    },
+    {
+      "part": "Locker",
+      "on": 2,
+      "socket": "locker0",
+      "by": "wall",
+      "paint": "#3b4148",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Locker",
+      "on": 2,
+      "socket": "locker1",
+      "by": "wall",
+      "paint": "#3b4148",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Locker",
+      "on": 2,
+      "socket": "locker2",
+      "by": "wall",
+      "paint": "#3b4148",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Tool Rack",
+      "on": 2,
+      "socket": "toolRack",
+      "by": "back"
+    },
+    {
+      "part": "Ammo Crate",
+      "on": 2,
+      "socket": "ammo0",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Crate",
+      "on": 2,
+      "socket": "ammo1",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Crate",
+      "on": 2,
+      "socket": "warheads0",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Crate",
+      "on": 2,
+      "socket": "warheads1",
+      "by": "bottom"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 2,
+      "socket": "doorServer",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 2,
+      "socket": "doorTorpedo",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 2,
+      "socket": "doorBayL",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 2,
+      "socket": "doorBayR",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Button",
+      "on": 2,
+      "socket": "fireL",
+      "by": "-x"
+    },
+    {
+      "part": "Button",
+      "on": 2,
+      "socket": "fireR",
+      "by": "+x"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "lampServer",
+      "by": "back",
+      "config": {
+        "colour": "#a0d0ff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 2,
+      "socket": "switchServer",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "lampArmouryL",
+      "by": "back",
+      "config": {
+        "colour": "#e8f4ff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "lampArmouryR",
+      "by": "back",
+      "config": {
+        "colour": "#e8f4ff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 2,
+      "socket": "switchFore",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "lampTorpL",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 2,
+      "socket": "lampTorpR",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 2,
+      "socket": "switchTorp",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 8,
+      "socket": "lamp",
+      "by": "back",
+      "config": {
+        "colour": "#ff7050"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 8,
+      "socket": "switch",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 9,
+      "socket": "lamp",
+      "by": "back",
+      "config": {
+        "colour": "#ff7050"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 9,
+      "socket": "switch",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Locker",
+      "on": 3,
+      "socket": "suit0",
+      "by": "wall",
+      "paint": "#e0b020",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Locker",
+      "on": 3,
+      "socket": "suit1",
+      "by": "wall",
+      "paint": "#e0b020",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Locker",
+      "on": 3,
+      "socket": "suit2",
+      "by": "wall",
+      "paint": "#e0b020",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Locker",
+      "on": 3,
+      "socket": "suit3",
+      "by": "wall",
+      "paint": "#e0b020",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Locker",
+      "on": 3,
+      "socket": "airlockLocker",
+      "by": "wall",
+      "paint": "#e0b020",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 3,
+      "socket": "doorBayL",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 3,
+      "socket": "doorBayR",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 3,
+      "socket": "doorAirlock",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 3,
+      "socket": "doorEngine",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Zero Day Reactor",
+      "on": 3,
+      "socket": "reactor",
+      "by": "bottom"
+    },
+    {
+      "part": "Power Board",
+      "on": 3,
+      "socket": "board",
+      "by": "back"
+    },
+    {
+      "part": "Engineer's Panel",
+      "on": 3,
+      "socket": "panel",
+      "by": "back"
+    },
+    {
+      "part": "Battery",
+      "on": 3,
+      "socket": "battery0",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 3,
+      "socket": "battery1",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 3,
+      "socket": "battery2",
+      "by": "-y"
+    },
+    {
+      "part": "Pipe Bank",
+      "on": 3,
+      "socket": "pipes",
+      "by": "back"
+    },
+    {
+      "part": "Tool Rack",
+      "on": 3,
+      "socket": "toolRack",
+      "by": "back"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 3,
+      "socket": "crate0",
+      "by": "-y"
+    },
+    {
+      "part": "Requisition Crate",
+      "on": 3,
+      "socket": "crate1",
+      "by": "-y"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 3,
+      "socket": "lampAirlock",
+      "by": "back",
+      "config": {
+        "colour": "#ff5040"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 3,
+      "socket": "lampSuit",
+      "by": "back",
+      "config": {
+        "colour": "#e8f4ff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 3,
+      "socket": "switchAirlock",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 3,
+      "socket": "lampEngL",
+      "by": "back",
+      "config": {
+        "colour": "#a0d0ff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 3,
+      "socket": "lampEngR",
+      "by": "back",
+      "config": {
+        "colour": "#a0d0ff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 3,
+      "socket": "switchEng",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 3,
+      "socket": "lampTorpL",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 3,
+      "socket": "lampTorpR",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 3,
+      "socket": "switchTorp",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Flight Couch",
+      "on": 5,
+      "socket": "pilot",
+      "by": "bottom"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 5,
+      "socket": "copilot",
+      "by": "bottom"
+    },
+    {
+      "part": "Zero Day Flight Computer",
+      "on": 5,
+      "socket": "computer",
+      "by": "bottom"
+    },
+    {
+      "part": "Turret Module",
+      "on": 5,
+      "socket": "gunModule",
+      "by": "-y"
+    },
+    {
+      "part": "Chart Table",
+      "on": 5,
+      "socket": "chart",
+      "by": "back"
+    },
+    {
+      "part": "Locker",
+      "on": 5,
+      "socket": "bridgeLocker",
+      "by": "wall",
+      "paint": "#3b4148",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Chart Table",
+      "on": 5,
+      "socket": "plot",
+      "by": "bottom"
+    },
+    {
+      "part": "Crash Couch",
+      "on": 5,
+      "socket": "couchA",
+      "by": "wall",
+      "paint": "#2c3e58",
+      "finish": "fabric"
+    },
+    {
+      "part": "Locker",
+      "on": 5,
+      "socket": "lockerA",
+      "by": "wall",
+      "paint": "#2c5aa0",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Crash Couch",
+      "on": 5,
+      "socket": "couchCaptain",
+      "by": "wall",
+      "paint": "#2c3e58",
+      "finish": "fabric"
+    },
+    {
+      "part": "Steel Desk",
+      "on": 5,
+      "socket": "deskCaptain",
+      "by": "wall"
+    },
+    {
+      "part": "Locker",
+      "on": 5,
+      "socket": "lockerCaptain",
+      "by": "wall",
+      "paint": "#2c5aa0",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 5,
+      "socket": "doorBridge",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 5,
+      "socket": "doorOps",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 5,
+      "socket": "doorCabinA",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 5,
+      "socket": "doorCaptain",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Button",
+      "on": 5,
+      "socket": "flares",
+      "by": "+z"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampBridgeL",
+      "by": "back",
+      "config": {
+        "colour": "#ff6050"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampBridgeR",
+      "by": "back",
+      "config": {
+        "colour": "#ff6050"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 5,
+      "socket": "switchBridge",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampOpsL",
+      "by": "back",
+      "config": {
+        "colour": "#a0c8ff"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampOpsR",
+      "by": "back",
+      "config": {
+        "colour": "#a0c8ff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 5,
+      "socket": "switchOps",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampCabinA",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 5,
+      "socket": "lampCaptain",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 5,
+      "socket": "switchCabins",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Crash Couch",
+      "on": 6,
+      "socket": "couchB0",
+      "by": "wall",
+      "paint": "#2c3e58",
+      "finish": "fabric"
+    },
+    {
+      "part": "Locker",
+      "on": 6,
+      "socket": "lockerB",
+      "by": "wall",
+      "paint": "#2c5aa0",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Steel Desk",
+      "on": 6,
+      "socket": "deskB",
+      "by": "wall"
+    },
+    {
+      "part": "Ship Toilet",
+      "on": 6,
+      "socket": "toilet",
+      "by": "wall"
+    },
+    {
+      "part": "Ship Basin",
+      "on": 6,
+      "socket": "basin",
+      "by": "wall"
+    },
+    {
+      "part": "Shower Stall",
+      "on": 6,
+      "socket": "shower",
+      "by": "wall",
+      "paint": "#dfe4e2",
+      "finish": "gloss paint"
+    },
+    {
+      "part": "Medical Station",
+      "on": 6,
+      "socket": "med0",
+      "by": "back"
+    },
+    {
+      "part": "Medical Station",
+      "on": 6,
+      "socket": "med1",
+      "by": "back"
+    },
+    {
+      "part": "Medicine Cabinet",
+      "on": 6,
+      "socket": "cabinet",
+      "by": "back"
+    },
+    {
+      "part": "Locker",
+      "on": 6,
+      "socket": "medLocker",
+      "by": "wall",
+      "paint": "#dfe4e2",
+      "finish": "gloss paint"
+    },
+    {
+      "part": "Galley Stove",
+      "on": 6,
+      "socket": "stove",
+      "by": "back"
+    },
+    {
+      "part": "Galley Coffee Station",
+      "on": 6,
+      "socket": "coffee",
+      "by": "wall"
+    },
+    {
+      "part": "Locker",
+      "on": 6,
+      "socket": "messLocker",
+      "by": "wall",
+      "paint": "#5c646a",
+      "finish": "worn paint"
+    },
+    {
+      "part": "Mess Table",
+      "on": 6,
+      "socket": "table",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 6,
+      "socket": "doorCabinB",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 6,
+      "socket": "doorHead",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 6,
+      "socket": "doorMed",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Door 1.5x2.25 m",
+      "on": 6,
+      "socket": "doorMess",
+      "by": "hang",
+      "paint": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 6,
+      "socket": "lampCabinB",
+      "by": "back",
+      "config": {
+        "colour": "#ffd8a0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 6,
+      "socket": "lampHead",
+      "by": "back",
+      "config": {
+        "colour": "#e8f4ff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 6,
+      "socket": "switchCrew",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 6,
+      "socket": "lampMed",
+      "by": "back",
+      "config": {
+        "colour": "#f4fbff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 6,
+      "socket": "switchMed",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 6,
+      "socket": "lampMessL",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0b0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 6,
+      "socket": "lampMessR",
+      "by": "back",
+      "config": {
+        "colour": "#ffe0b0"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 6,
+      "socket": "switchMess",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Zero Day Turret Barbette",
+      "on": 5,
+      "socket": "podL",
+      "by": "hull"
+    },
+    {
+      "part": "Zero Day Turret Barbette",
+      "on": 5,
+      "socket": "podR",
+      "by": "hull"
+    },
+    {
+      "part": "Zero Day Turret Barbette",
+      "on": 6,
+      "socket": "podL",
+      "by": "hull"
+    },
+    {
+      "part": "Zero Day Turret Barbette",
+      "on": 6,
+      "socket": "podR",
+      "by": "hull"
+    },
+    {
+      "part": "Turntable",
+      "on": 142,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 146,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Zero Day PDC",
+      "on": 147,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 148,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Turntable",
+      "on": 143,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 150,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Zero Day PDC",
+      "on": 151,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 152,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Turntable",
+      "on": 144,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 154,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Zero Day PDC",
+      "on": 155,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 156,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Turntable",
+      "on": 145,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 158,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Zero Day PDC",
+      "on": 159,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 160,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Gunnery Console",
+      "on": 5,
+      "socket": "gun",
+      "by": "bottom"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 5,
+      "socket": "gunSeat",
+      "by": "bottom"
+    },
+    {
+      "part": "Turret Module",
+      "on": 162,
+      "socket": "module",
+      "by": "-x"
+    },
+    {
+      "part": "Gunnery Console",
+      "on": 6,
+      "socket": "gun",
+      "by": "bottom"
+    },
+    {
+      "part": "Flight Couch",
+      "on": 6,
+      "socket": "gunSeat",
+      "by": "bottom"
+    },
+    {
+      "part": "Turret Module",
+      "on": 165,
+      "socket": "module",
+      "by": "-x"
+    },
+    {
+      "part": "Zero Day Railgun",
+      "on": 7,
+      "socket": "railgun",
+      "by": "back"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 168,
+      "socket": "ammo",
+      "by": "bottom"
+    },
+    {
+      "part": "Zero Day Countermeasure Launcher",
+      "on": 7,
+      "socket": "flaresFL",
+      "by": "back"
+    },
+    {
+      "part": "Zero Day Countermeasure Launcher",
+      "on": 7,
+      "socket": "flaresFR",
+      "by": "back"
+    },
+    {
+      "part": "Zero Day Countermeasure Launcher",
+      "on": 7,
+      "socket": "flaresBL",
+      "by": "back"
+    },
+    {
+      "part": "Zero Day Countermeasure Launcher",
+      "on": 7,
+      "socket": "flaresBR",
+      "by": "back"
+    },
+    {
+      "part": "Ord Rack (1x6 drum 500x5500)",
+      "on": 8,
+      "socket": "magazine",
+      "by": "top"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 174,
+      "socket": "lug0",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 174,
+      "socket": "lug1",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 174,
+      "socket": "lug2",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 174,
+      "socket": "lug3",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 174,
+      "socket": "lug4",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 174,
+      "socket": "lug5",
+      "by": "lug"
+    },
+    {
+      "part": "Ord Rack (1x6 drum 500x5500)",
+      "on": 9,
+      "socket": "magazine",
+      "by": "top"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 181,
+      "socket": "lug0",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 181,
+      "socket": "lug1",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 181,
+      "socket": "lug2",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 181,
+      "socket": "lug3",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 181,
+      "socket": "lug4",
+      "by": "lug"
+    },
+    {
+      "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
+      "on": 181,
+      "socket": "lug5",
+      "by": "lug"
+    }
+  ],
+  "wires": [
+    [
+      51,
+      50
+    ],
+    [
+      54,
+      52
+    ],
+    [
+      54,
+      53
+    ],
+    [
+      57,
+      55
+    ],
+    [
+      57,
+      56
+    ],
+    [
+      59,
+      58
+    ],
+    [
+      61,
+      60
+    ],
+    [
+      83,
+      81
+    ],
+    [
+      83,
+      82
+    ],
+    [
+      86,
+      84
+    ],
+    [
+      86,
+      85
+    ],
+    [
+      89,
+      87
+    ],
+    [
+      89,
+      88
+    ],
+    [
+      90,
+      92
+    ],
+    [
+      109,
+      107
+    ],
+    [
+      109,
+      108
+    ],
+    [
+      112,
+      110
+    ],
+    [
+      112,
+      111
+    ],
+    [
+      115,
+      113
+    ],
+    [
+      115,
+      114
+    ],
+    [
+      136,
+      134
+    ],
+    [
+      136,
+      135
+    ],
+    [
+      138,
+      137
+    ],
+    [
+      141,
+      139
+    ],
+    [
+      141,
+      140
+    ],
+    [
+      163,
+      164
+    ],
+    [
+      164,
+      148
+    ],
+    [
+      164,
+      152
+    ],
+    [
+      166,
+      167
+    ],
+    [
+      167,
+      156
+    ],
+    [
+      167,
+      160
+    ],
+    [
+      90,
+      93
+    ],
+    [
+      93,
+      168
+    ],
+    [
+      106,
+      170
+    ],
+    [
+      106,
+      171
+    ],
+    [
+      106,
+      172
+    ],
+    [
+      106,
+      173
+    ],
+    [
+      48,
+      174
+    ],
+    [
+      49,
+      181
+    ]
+  ],
+  "conduit": true
+}
