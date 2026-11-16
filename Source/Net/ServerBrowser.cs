@@ -537,7 +537,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   u16 target).
     // 321: the rust bucket's breakdowns (GameSandboxBreakdowns.cs): CActKind.Breakdown (server -> clients: u16 body, u16 part,
     //   u8 stage, u8 seconds, u8 say) and CActKind.Mend (u16 body, u16 part) at the end of CActKind, after RadarLock.
-    public const ushort ProtocolVersion = 321;
+    // 322: the Flight Stabilizer's "aiCrew" setting (CfgKey.AiCrew, a new config slot on every stabilizer; ConstructShipAi.cs).
+    public const ushort ProtocolVersion = 322;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

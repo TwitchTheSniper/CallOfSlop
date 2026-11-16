@@ -56,3 +56,34 @@ people can walk beneath it to the shaft.
 A thruster with no `"flame"` gets one from its force (`ConstructParts`: radius `sqrt(F) * 0.002 + 0.05`), which at frigate forces is far wider than
 the nozzle: 12 m across from the middle of the drive. So each Zero Day thruster names its own: one per drive bell (1.15 m, 9 m long) and one
 from each jet's mouth (0.4 m times its scale).
+
+## The crew (an enemy that flies and fights by itself)
+
+Karl's roadmap review (2026-11-15), step 5: one enemy ship that flies and fights by itself. Any craft with a Flight Stabilizer
+can have one: the stabilizer's **AI crew** setting (Crew group: Off, Fights strangers, Fights everyone). The blueprint
+**Zero Day Frigate (crewed)** is the Zero Day with it set to Fights everyone, so from the parts menu it is an enemy at once,
+its spawner included. Code: `Source/Constructs/ConstructShipAi.cs` (the crew), `Source/Game/GameSandboxShipAi.cs` (which
+bodies have one, who each is after; server only).
+
+- **It works the ship's own seats**, as players would, so nothing new goes over the wire and a ship needs no special parts.
+  The pilot's seat (the stabilizer's) flies it: the crew turns the stabilizer's Mouse aim on and looks at the target, so the
+  ship turns to face it; Shift and Ctrl hold it a few metres over the target (never under 35 m over the ground or into a hill
+  ahead); W and S hold a closing speed that falls to nothing at 220 m, inside its guns' 300 m; in that band Q and E slide it
+  one way and then the other every few seconds. The gunners' seats look where their rounds meet the target (led for its
+  speed) and fire when a gun bears within 4 degrees (2.5 for a fixed gun such as the railgun) and nothing of its own hull is
+  in the way. The Buttons wired to Ordnance Racks launch one torpedo every 8 s, taking turns, from 350 m to 2 km with the
+  target within 15 degrees of the nose, at a ship or a car only (a seeker wants something that moves); the Button wired to
+  the flare launchers goes when a missile steers for it inside a kilometre.
+- **Targets.** The nearest living player within 2.5 km: the body they sit or ride in, else themselves. Fights strangers
+  leaves out the ship owner's faction (a nobody's ship fights everyone). Anyone aboard it is not a target.
+- **With nothing to fight** it holds where it is, and after half a minute comes down where it is.
+- **Boarding.** A player in the pilot's seat has the helm: the crew stands down and Mouse aim goes back as it was. A player
+  in a gunner's seat has that seat. Setting it Off stands the crew down for good.
+- **Not yet:** saving a crew's state (it is the setting, so a loaded ship has its crew again), flying in space past the sky's
+  edge (a ship there is a SpaceFlight particle; the crew stops), the radar lock (PR #211: racks launch on what their
+  seekers see), defending anything, fleets or factions.
+- **The check:** `--ship-ai-check [SHIP] [--target NAME] [--range M] [--seconds S] [--still]` (`Source/VehicleKit/ShipAiCheck.cs`)
+  flies a crew against a target ship on the flight check's flat floor and prints a line every two seconds. On 2026-11-15 the
+  Zero Day against a second Zero Day 1200 m off (sliding about at 40 m): it lifted off, turned onto it in 6 s, launched its
+  first torpedo at 1180 m, closed at 23 m/s (its stabilizer's top speed) to 236 m, fired 1204 rounds until its ammunition was
+  gone and took the target to 98% of its health.
