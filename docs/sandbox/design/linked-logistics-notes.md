@@ -56,3 +56,13 @@ production.md "Linked logistics".
   thruster hauler with margin would be the robust showcase. A trip to another planet on the trip planner: not tried.
 - A joined client's view: not tried over `--net`.
 - No measurement of tick cost at the design's sizes (4 links, 128-kind reports, 32 route ships).
+
+## Merge review (2026-11-16, after main's trips between planets)
+- Merged main; protocol 327 (both history lines). IsStore's comment moved out of the expression (lesson in .claude/rules/production.md).
+  Route legs through space go through `Game.NavApply` (the command view's own check and reset of trip state); the route panel shows
+  the trip phases (Short, Wait, NoDrive, between planets); a pilot taking the controls suspends the route; dropped report kinds logged.
+- Sections run by name: Assembling, Assembling network, Refining network, Extruder, Inventory beacon, Construct storage, Construct
+  configure, Packets, Sandbox body sync, Space launch, Frame allocations, Constructs, Save folder, Sandbox Tab inventory, Sandbox
+  inventory, No z-fighting, Mods, Sandbox cargo volumes, Interaction sweep: passed. Mode switch reset failed on Player fields this
+  branch doesn't touch (Uniform, RenderRideBody, RenderRideRel, RenderRideFeet: from main).
+- Not done: the joined client's two-window run.
