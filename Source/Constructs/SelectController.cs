@@ -168,17 +168,11 @@ public sealed class SelectController
     /// <summary>A stamp starts: a saved blueprint's text is built here for its ghost and sent up for the server's own.</summary>
     public string? BeginStamp(Game g, string name)
     {
-        string text;
-        try
-        {
-            text = File.ReadAllText(PlayerBlueprints.PathOf(name));
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            return ex.Message;
-        }
+        // A stamp is a use of its blueprint: the file gets an id the first time (SubBlueprints.EnsureId: written again, atomically).
+        if (SubBlueprints.EnsureId(name, out var why) is not { } file)
+            return why;
         EndPlacing();
-        _load = new BlueprintLoad(text, name + ".json");
+        _load = new BlueprintLoad(file.Text, name + ".json", stamp: true);
         _loadName = name;
         _keepUntil = Environment.TickCount64 + 2000; // (the tool's round trip: a pick made before it arrives is kept)
         return null;
@@ -194,7 +188,7 @@ public sealed class SelectController
                 g.SandboxSay($"{_loadName} can't be built: {load.Why}");
             else
             {
-                g.SandboxClipUpload(ConstructEdits.Deflate(load.Text));
+                g.SandboxClipUpload(ConstructEdits.Deflate(load.Packed)); // (with every sub-blueprint version it was built from)
                 StartPlacing(Placing.Stamp, load.Clip, Quaternion.Identity, null);
             }
         }

@@ -55,8 +55,8 @@ public static partial class ConstructRoutes
             s.At = Vec3(at, where);
         }
         else
-            s.From = e.TryGetProperty("from", out var f) && f.ValueKind == JsonValueKind.Number ? f.GetInt32() : throw new ConstructPartException($"{where}: \"from\" (a step) is missing");
-        s.To = e.TryGetProperty("to", out var to) && to.ValueKind == JsonValueKind.Number ? to.GetInt32() : throw new ConstructPartException($"{where}: \"to\" (a step) is missing");
+            s.From = e.TryGetProperty("from", out var f) && f.ValueKind is JsonValueKind.Number or JsonValueKind.Array ? SubBlueprints.ParseRef(f, where, -1) : throw new ConstructPartException($"{where}: \"from\" (a step) is missing");
+        s.To = e.TryGetProperty("to", out var to) && to.ValueKind is JsonValueKind.Number or JsonValueKind.Array ? SubBlueprints.ParseRef(to, where, -1) : throw new ConstructPartException($"{where}: \"to\" (a step) is missing");
         if (e.TryGetProperty("fromPort", out var fp))
             s.FromPort = fp.GetString() ?? "";
         if (e.TryGetProperty("toPort", out var tp))
@@ -80,7 +80,7 @@ public static partial class ConstructRoutes
         if (e.TryGetProperty("hosts", out var hs))
         {
             foreach (var h in hs.EnumerateArray())
-                s.Hosts.Add(h.GetInt32());
+                s.Hosts.Add(SubBlueprints.ParseRef(h, where, -1));
             if (s.Hosts.Count != s.Nodes.Count)
                 throw new ConstructPartException($"{where}: \"hosts\" names one step a node");
         }

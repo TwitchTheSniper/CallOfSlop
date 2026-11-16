@@ -32,7 +32,15 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>Merges the construct of <paramref name="plan"/> into <paramref name="a"/> (call <see cref="CanMerge"/> first). The other construct goes.</summary>
-    public bool Merge(Construct a, in JoinPlan plan)
+    public bool Merge(Construct a, in JoinPlan plan) => Merge(a, plan, exact: false);
+
+    /// <summary>
+    /// A sub-blueprint's body fitted at its use's place (the Building Station's big fit, SubBlueprints.JoinAt): merged by the plan's
+    /// turn and place, no link made by the plan or by sockets meeting; the blueprint's own joining links follow.
+    /// </summary>
+    public bool MergeAt(Construct a, in JoinPlan plan) => Merge(a, plan, exact: true);
+
+    private bool Merge(Construct a, in JoinPlan plan, bool exact)
     {
         var b = plan.Other;
         if (CanMerge(a, b) != null)
@@ -113,12 +121,16 @@ public sealed partial class ConstructWorld
             XWires[k] = XWires[--XWireCount];
             LinksDirty = true;
         }
-        AddLink(a, plan.PartA, plan.SockA, plan.PartB + off, plan.SockB);
-        if (b.PartCount >= Construct.TreeMinParts)
-            AutoLinkMany(a, off, a.PartCount); // (a big group: through the part tree, so joining stays linear)
-        else
-            for (var i = off; i < a.PartCount; i++)
-                ConstructBuild.AutoLink(this, a, i); // (every other socket the two meet at welds too)
+        SubBlueprints.MergeTable(a, b, off, b.PartCount, turn, plan.Offset, true); // (its sub-blueprint uses come along, turned into a's frame)
+        if (!exact)
+        {
+            AddLink(a, plan.PartA, plan.SockA, plan.PartB + off, plan.SockB);
+            if (b.PartCount >= Construct.TreeMinParts)
+                AutoLinkMany(a, off, a.PartCount); // (a big group: through the part tree, so joining stays linear)
+            else
+                for (var i = off; i < a.PartCount; i++)
+                    ConstructBuild.AutoLink(this, a, i); // (every other socket the two meet at welds too)
+        }
         a.AddFuel(b.Fuel);
         a.Charge += b.Charge;
         a.Pinned |= b.Pinned;

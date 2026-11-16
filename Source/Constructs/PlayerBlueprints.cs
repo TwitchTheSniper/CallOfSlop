@@ -118,13 +118,23 @@ public sealed class BlueprintLoad
     public string Why { get; private set; } = "";
     public bool Done { get; private set; }
 
-    public BlueprintLoad(string text, string file)
+    public BlueprintLoad(string text, string file, bool stamp = false)
     {
         _text = text;
-        _parse = Task.Run(() => ConstructBuild.ParseBlueprint(text, file));
+        _stamp = stamp;
+        _parse = Task.Run(() => SubBlueprints.ParseFlat(text, file, Src)); // (its uses resolved and flattened here too: SubBlueprints.cs)
     }
 
+    private readonly bool _stamp;
+    private ConstructBuild.Blueprint? _bp;
+
+    /// <summary>Where its uses came from (what a stamp's upload packs with it).</summary>
+    public readonly SubBlueprints.Source Src = new();
+
     public string Text => _text;
+
+    /// <summary>The text with every sub-blueprint version its tree was built from: what a stamp uploads.</summary>
+    public string Packed => SubBlueprints.Pack(_text, Src);
 
     /// <summary>One frame's work. True when it is done (see <see cref="Clip"/> and <see cref="Why"/>).</summary>
     public bool Step()
@@ -141,7 +151,7 @@ public sealed class BlueprintLoad
                 Why = ex.InnerException?.Message ?? ex.Message;
                 return Done = true;
             }
-            var bp = parse.Result;
+            var bp = _bp = parse.Result;
             _name = bp.Name;
             if (bp.Steps.Count > ConstructClip.MaxParts)
             {
@@ -157,7 +167,11 @@ public sealed class BlueprintLoad
             if (!_steps!.MoveNext())
             {
                 if (_run!.Built is { } built)
+                {
                     Clip = ConstructClip.Of(built, _name, _world);
+                    if (_stamp && _bp != null)
+                        SubBlueprints.TagStamp(Clip.Body, _bp); // (a stamp is one use of its blueprint: the client's ghost frames match the server's)
+                }
                 else
                     Why = _run.Why;
                 _world = null;

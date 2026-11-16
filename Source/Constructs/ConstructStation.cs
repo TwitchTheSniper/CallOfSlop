@@ -537,7 +537,7 @@ public static partial class ConstructStation
     {
         try
         {
-            return PlayerBlueprints.NameRefusal(name) == null && PlayerBlueprints.Exists(name) ? ConstructBuild.ParseBlueprint(File.ReadAllText(PlayerBlueprints.PathOf(name)), name) : null;
+            return PlayerBlueprints.NameRefusal(name) == null && PlayerBlueprints.Exists(name) ? SubBlueprints.ParseFlat(File.ReadAllText(PlayerBlueprints.PathOf(name)), name) : null; // (its uses resolved: the flat blueprint, SubBlueprints.cs)
         }
         catch (Exception e) when (e is ConstructPartException or IOException or System.Text.Json.JsonException)
         {
