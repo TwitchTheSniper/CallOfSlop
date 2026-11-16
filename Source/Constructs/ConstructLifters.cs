@@ -207,6 +207,7 @@ public sealed class CLift
     public bool GrabAsk; // (phase 8) server: F in the cab, for the next step
     public int OutTurn; // server: the point after the last out it carried from (the outs take turns)
     public int OrderLook; // server: 10 Hz steps since its last look at its orders
+    public ushort CarryBody; // server: a submodule body it carries (ConstructLifterBodies.cs; 0: none): the hand is empty, the body posed on it
 }
 
 /// <summary>A construct's lifter parts, found when its parts change (<see cref="Construct.RebuildStamp"/>).</summary>
@@ -337,6 +338,7 @@ public static partial class ConstructLifters
     {
         var fitTaken = world.FitThisTick;
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        PoseBodies(world); // (every tick: a carried submodule rides its hand)
         StepLifts(world, query, fitTaken);
         if (world.LiftBodies.Count > 0)
         {
@@ -466,6 +468,8 @@ public static partial class ConstructLifters
                         }
                         break;
                     case LiftState.Carry:
+                        if (l.CarryBody != 0)
+                            break; // (a submodule body: PoseBodies moves it and ends the carry)
                         if (l.ToKind != LiftPointKind.None)
                         {
                             l.Age = (int)AgeAt(l, Now);
@@ -1588,6 +1592,7 @@ public sealed partial class ConstructWorld
 
     public void LiftClear()
     {
+        BodyCarries.Clear();
         LiftSeen.Clear();
         LiftBodies.Clear();
         LiftDirty.Clear();

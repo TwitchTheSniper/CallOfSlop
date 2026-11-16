@@ -238,7 +238,7 @@ public static class WorldSaveWriter
         if (s.SpaceSystem.Length > 0)
             w.Section(Space, () =>
             {
-                w.Str(s.SpaceSystem).I64(s.SpaceNs).I32(s.SpaceWarp).I32(s.ShipCount);
+                w.Str(s.SpaceSystem).I64(s.SpaceNs).I32(s.SpaceSpeed).I32(s.ShipCount);
                 foreach (ref var ship in s.Ships.AsSpan(0, s.ShipCount))
                     w.U16(ship.Id).I32(ship.Primary).F64(ship.R.X).F64(ship.R.Y).F64(ship.R.Z).F64(ship.V.X).F64(ship.V.Y).F64(ship.V.Z);
             });

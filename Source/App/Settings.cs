@@ -46,6 +46,9 @@ public sealed class Settings
     public int SandboxMaxBlast; // hosting Sandbox: the biggest blast's radius in metres (0: no limit but the engine's 2 km; the lobby room's Match tab, ConstructMegaBlast.cs)
     public int SandboxMaxBodies = ConstructWorld.DefaultBodyCap; // hosting Sandbox: the safety cap on constructs, wrecks and loose parts (board item cl01; the lobby room's Match tab)
     public int SandboxMaxPerPlayer = ConstructPlace.MaxPerPlayer; // ...and how many constructs each player may own (0: no limit)
+    public int TripFuelPercent = 50; // host setting, Settings > Gameplay "Trip fuel": the share of a ship's dV an order to another planet may spend (more is a quicker trip: GameNavTrip.cs)
+    public int SpaceFuelPercent = 100; // host setting, Settings > Gameplay "Fuel use in space": the share of their fuel thrusters burn in space (ConstructPhysics.SpaceFuelScale)
+    public int TimeSpeedMost = 100_000; // host setting, Settings > Gameplay "Fastest time speed": the command view's time speed goes no faster (docs/space/COMMAND.md)
     public bool TravelTogether; // host setting: a ship lands on another planetoid only with everyone aboard (off: free travel, each lands alone; docs/space/FREE-TRAVEL.md)
     public readonly List<string> SandboxFavorites = new(); // Sandbox: the parts favorited in the Tab inventory, by name (UiSandboxParts.cs)
     public bool SmartRotation = true; // Sandbox: the ghost's first turn is smart rotation's guess (Constructs/SmartRotation.cs); off: the fixed order
@@ -461,6 +464,9 @@ public sealed class Settings
                     case "sandbox_max_blast" when int.TryParse(v, out var sbl): s.SandboxMaxBlast = Math.Clamp(sbl, 0, (int)ConstructWorld.MegaMaxRadius); break;
                     case "sandbox_max_per_player" when int.TryParse(v, out var smp): s.SandboxMaxPerPlayer = Math.Clamp(smp, 0, 10000); break;
                     case "travel_together": s.TravelTogether = v == "1"; break;
+                    case "trip_fuel" when int.TryParse(v, out var tf): s.TripFuelPercent = Math.Clamp(tf, Game.TripFuelLeast, Game.TripFuelMost); break;
+                    case "space_fuel" when int.TryParse(v, out var sfp): s.SpaceFuelPercent = Math.Clamp(sfp, Game.SpaceFuelLeast, 100); break;
+                    case "time_speed_most" when int.TryParse(v, out var tsm): s.TimeSpeedMost = Math.Clamp(tsm, 1, Space.SpaceClock.MaxSpeed); break;
                     case "hold_to_paint": s.HoldToPaint = v != "0"; break;
                     case "tool_wheel": s.ToolWheel = v == "default" ? null : v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(); break;
                     case "tool_wheel_order":
@@ -628,6 +634,9 @@ public sealed class Settings
                     $"sandbox_max_blast={SandboxMaxBlast}",
                     $"sandbox_max_per_player={SandboxMaxPerPlayer}",
                     $"travel_together={(TravelTogether ? 1 : 0)}",
+                    $"trip_fuel={TripFuelPercent}",
+                    $"time_speed_most={TimeSpeedMost}",
+                    $"space_fuel={SpaceFuelPercent}",
                     $"hold_to_paint={(HoldToPaint ? 1 : 0)}",
                     $"tool_wheel={(ToolWheel == null ? "default" : string.Join(",", ToolWheel))}",
                     $"tool_wheel_off={string.Join(",", ToolWheelOff)}",

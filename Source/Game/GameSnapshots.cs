@@ -126,7 +126,7 @@ public sealed partial class Game
         {
             Position = p.Position, Velocity = p.Sim.Velocity, MantleTo = p.Sim.MantleTo, Mantling = p.Sim.MantleTicks > 0, Slow = SlowOf(p),
             Ride = p.Sim.RideBody != 0 || p.Sim.RideFree > 0, RideBody = p.Sim.RideBody, RideSeg = p.Sim.RideSeg, RideAir = p.Sim.RideAir,
-            RideClimb = p.Sim.RideClimb, RideFree = p.Sim.RideFree, RideGrip = ConstructRide.GripByte(p.Sim.RideGripUp),
+            RideClimb = p.Sim.RideClimb, RideFree = p.Sim.RideFree, RideGrip = ConstructRide.GripByte(p.Sim.RideGripUp), RideOn = p.Sim.RideOn,
             RideLocal = p.Sim.RideLocal, RideClimbTo = p.Sim.RideClimbTo, RideUp = p.Sim.RideUp, RideVel = p.Sim.RideVel,
             Worn = (p.Sim.Gear | p.Sim.Canopy | p.Sim.GearDelay) != 0, Gear = p.Sim.Gear, Canopy = p.Sim.Canopy, GearDelay = p.Sim.GearDelay, JetFuel = p.Sim.JetFuel, GearJump = p.Sim.GearJump,
         };
@@ -225,6 +225,7 @@ public sealed partial class Game
                     // The exact ride state (protocol 102): the replay starts in the construct's frame (ConstructRide.cs).
                     ownMove.RideBody = ro.RideBody;
                     ownMove.RideSeg = ro.RideSeg;
+                    ownMove.RideOn = ro.RideOn;
                     ownMove.RideAir = ro.RideAir;
                     ownMove.RideClimb = ro.RideClimb;
                     ownMove.RideFree = ro.RideFree;

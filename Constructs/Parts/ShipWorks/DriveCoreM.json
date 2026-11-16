@@ -1,0 +1,400 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Drive Core M",
+  "description": "A torch drive's reaction chamber on its bed: it serves 6 MN of nozzles through the Hull Mount it is bolted to. Leave a metre clear in front of its gauge to work on it. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "frame",
+  "tool": "welder",
+  "onBreak": "disable",
+  "worksPiece": {
+    "kind": "core",
+    "serves": 6000000.0
+  },
+  "mass": 3500.0,
+  "health": 7000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#5a6065",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -1.0,
+        -1.0,
+        -2.4
+      ],
+      "max": [
+        1.0,
+        -0.78,
+        -0.02
+      ],
+      "color": "#5c6057",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.7476,
+        -0.74,
+        -2.25
+      ],
+      "max": [
+        0.7476,
+        0.7552,
+        -0.16
+      ],
+      "color": "#5a6065",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.7925,
+        -0.7849,
+        -2.25
+      ],
+      "max": [
+        0.7925,
+        0.8001,
+        -2.1
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.7776,
+        -0.77,
+        -1.663
+      ],
+      "max": [
+        0.7776,
+        0.7852,
+        -1.583
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "shape": "tube",
+      "segments": 20,
+      "inner": 0.961,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.7776,
+        -0.77,
+        -1.1405
+      ],
+      "max": [
+        0.7776,
+        0.7852,
+        -1.0605
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "shape": "tube",
+      "segments": 20,
+      "inner": 0.961,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.7776,
+        -0.77,
+        -0.618
+      ],
+      "max": [
+        0.7776,
+        0.7852,
+        -0.538
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "shape": "tube",
+      "segments": 20,
+      "inner": 0.961,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.65,
+        -0.65,
+        -0.16
+      ],
+      "max": [
+        0.65,
+        0.65,
+        -0.003
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.5981,
+        -0.777,
+        -1.932
+      ],
+      "max": [
+        0.5981,
+        -0.4036,
+        -1.732
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.5981,
+        -0.777,
+        -0.678
+      ],
+      "max": [
+        0.5981,
+        -0.4036,
+        -0.478
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.4164,
+        0.7552,
+        -2.0
+      ],
+      "max": [
+        -0.2564,
+        0.9152,
+        -0.2
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.3924,
+        0.6057,
+        -2.006
+      ],
+      "max": [
+        -0.2804,
+        0.7952,
+        -1.894
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.3924,
+        0.6057,
+        -0.306
+      ],
+      "max": [
+        -0.2804,
+        0.7952,
+        -0.194
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        0.2564,
+        0.7552,
+        -2.0
+      ],
+      "max": [
+        0.4164,
+        0.9152,
+        -0.2
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        0.2804,
+        0.6057,
+        -2.006
+      ],
+      "max": [
+        0.3924,
+        0.7952,
+        -1.894
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        0.2804,
+        0.6057,
+        -0.306
+      ],
+      "max": [
+        0.3924,
+        0.7952,
+        -0.194
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.996,
+        -0.84,
+        -2.396
+      ],
+      "max": [
+        0.996,
+        -0.774,
+        -2.32
+      ],
+      "color": "#d8a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.7676,
+        -0.1924,
+        -1.45
+      ],
+      "max": [
+        0.8676,
+        0.2576,
+        -0.95
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.8676,
+        -0.0424,
+        -1.32
+      ],
+      "max": [
+        0.8826,
+        0.1776,
+        -1.08
+      ],
+      "color": "#40e070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.8676,
+        -0.1624,
+        -1.32
+      ],
+      "max": [
+        0.8826,
+        -0.0924,
+        -1.08
+      ],
+      "color": "#ffb060",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.0,
+        -0.78,
+        -2.4
+      ],
+      "max": [
+        1.0,
+        1.0,
+        -0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.4,
+        -0.4,
+        -0.02
+      ],
+      "max": [
+        0.4,
+        0.4,
+        0.0
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -2.4
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        1.0,
+        0.0,
+        -1.2
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.0,
+        0.0,
+        -1.2
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "deck",
+      "at": [
+        0.0,
+        -1.0,
+        -1.2
+      ],
+      "dir": "-y"
+    }
+  ]
+}

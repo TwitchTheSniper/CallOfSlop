@@ -93,13 +93,18 @@ Shift/Ctrl up and down. Twelve **Heavy RCS Thrusters** (250 kN) on the hoppers a
 
 Each thruster burns from the tank it hangs on: hoppers 1,500 l each, nacelles 2,500 l each, bow 1,200 l.
 
+The drives and the lift jets are **pods** (ship works, docs/sandbox/design/ship-works.md): each has `works.service:
+"outside"`, its works in its own cowl, so a breakdown means going out on the pylon (or landing), and the Engineer's Panel
+only reports it. The drives swing a 12 degree gimbal. Each nacelle has a grab rail along its top and a service hatch with
+hazard edges on its outboard flank by the drive. The 500 kN retros are whole jets (at `jetMost`, they need no works).
+
 To check it, run `--flight-check Constructs/Blueprints/MagpieMiningShip.json`. This is the aircraft kit's flight check
 on any blueprint file. It reports a climb of 9.3 m in 2 s, a hover drift of 0.01 m, a tilt of 0.1 degrees, and lift of
 2.0x its weight.
 
 ## How it is welded
 
-Following the Halberd, the 13 structure parts share the body's origin and are welded with `Connect`. Wherever two parts'
+As the Zero Day's are, the 13 structure parts share the body's origin and are welded with `Connect`. Wherever two parts'
 solid or hidden boxes touch, the generator adds a facing socket pair, and `PlaceOrder` lists them from the keel outward,
 so a part that touches nothing throws. The blueprint places each part with `Put` at zero, and the game welds the rest.
 `--check-vehicle` finds no coplanar faces between the parts; the "No z-fighting" section finds none inside them.

@@ -6,7 +6,7 @@ public static partial class SelfTest
 {
     /// <summary>
     /// The space layer's phase 1 (Source/Space, docs/space/SPACE.md): fixed-point positions exact to 0.1 mm out to the
-    /// system's reach, the nanosecond clock (60 ticks a second exactly, warp changes without drift, centuries without
+    /// system's reach, the nanosecond clock (60 ticks a second exactly, speed changes without drift, centuries without
     /// overflow), Kepler rails (periods, vis-viva and angular momentum, eccentric orbits, state round trips), the frame
     /// tree (every frame kind round trips, velocities against finite differences, body spin, the game's bubble on a
     /// planetoid matching the planetoid map), the Dev system file and refused files, and no allocation per query.
@@ -47,22 +47,22 @@ public static partial class SelfTest
         var clock = new SpaceClock();
         for (var n = 0; n < 90; n++)
             clock.Tick();
-        clock.Warp = 1000;
+        clock.Speed = 1000;
         for (var n = 0; n < 7; n++)
             clock.Tick();
-        clock.Warp = 3;
+        clock.Speed = 3;
         clock.Tick();
         var want = SpaceTime.TickNs(90) + SpaceTime.TickNs(7000) + SpaceTime.TickNs(3);
         if (clock.Now.Ns != want)
             Fail($"space clock: 90 ticks at 1x, 7 at 1000x and 1 at 3x gave {clock.Now.Ns} ns, not {want}");
-        clock.Warp = 0;
+        clock.Speed = 0;
         var paused = clock.Now;
         clock.Tick();
         if (clock.Now != paused)
-            Fail("space clock: warp 0 should pause it");
-        clock.Warp = SpaceClock.MaxWarp * 10;
-        if (clock.Warp != SpaceClock.MaxWarp)
-            Fail($"space clock: warp should stop at {SpaceClock.MaxWarp}");
+            Fail("space clock: speed 0 should pause it");
+        clock.Speed = SpaceClock.MaxSpeed * 10;
+        if (clock.Speed != SpaceClock.MaxSpeed)
+            Fail($"space clock: speed should stop at {SpaceClock.MaxSpeed}");
 
         // ---- Kepler rails -----------------------------------------------------------------------------------------------
         const double sunMu = 1.32712440018e20;

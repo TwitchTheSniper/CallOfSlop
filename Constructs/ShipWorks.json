@@ -1,0 +1,18 @@
+{
+  // Ship works (Source/Constructs/ConstructWorks.cs, docs/sandbox/design/ship-works.md): engines and turrets with insides.
+  // A drive over jetMost has works behind it through the hull (a Drive Core, Fuel Pumps, Coolant Exchangers), or is a pod
+  // with them in its cowl; what the head can push is capped by its working works. The part kit reads "drives" to write each
+  // generated head's "needs", so a generator never picks the list by hand.
+  "format": "call-of-slop-ship-works/1",
+  "jetMost": 500000, // N: a Ship thruster over this has works (Karl, 2026-11-16: every lift jet and retro over it too)
+  "bareShare": 0.25, // a thruster whose works are missing or shot out still pushes this share (Karl, 2026-11-16: it can limp)
+  "jetBurn": 3, // l/s a MN: what a drive short of its works burns for what it pushes (a whole drive burns its own burnRate)
+  "drives": {
+    // per drive type, the thrust (N) above which each kind of works is needed: a class is a guide, not a rule in code
+    "torch": { "core": 500000, "pump": 2000000, "exchanger": 6000000 },
+    "rocket": { "turbopump": 500000, "manifold": 500000 },
+    "ion": { "conditioner": 0 }
+  },
+  "mendMaterial": "metal", // a works piece broken by damage is mended with the attach tool for this (Recycling.json's materials)
+  "mendPerTonne": 2 // ...this much a tonne of the piece, at least 1
+}

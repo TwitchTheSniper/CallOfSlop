@@ -101,8 +101,9 @@ public static class PartKit
         new Generators.EngineParts(),
         new Generators.BuildingParts(),
         new Generators.InteriorParts(),
+        new Generators.ShipWorksParts(), // (ship works: the drives' nozzles, mounts, works and pods any ship builds from)
+        new Generators.CrewFittingsParts(), // (the couches, the gunnery console, the coffee station and the robot cradle the ships hang: before them)
         new Generators.ShipParts(), // (the rust bucket: its blueprint uses the building and interior parts)
-        new Generators.FrigateParts(), // (the Halberd frigate: likewise)
         new Generators.MinerParts(), // (the Magpie mining ship)
         new Generators.TorpedoFrigateParts(), // (the Zero Day torpedo frigate: likewise)
         new Generators.HaulerParts(), // (the Dray container hauler: likewise)
@@ -111,6 +112,7 @@ public static class PartKit
         new Generators.Assembling(),
         new Generators.ProductionShowcase(), // (a blueprint built through the game's rules from the part files: last)
         new Generators.FactoryShowcase(), // (the connected factory and its Works Runabout: also last)
+        new Generators.SubmoduleShowcase(), // (sub-blueprints: a pod, a skiff that uses it twice, a yard of two stations and an arm)
     ];
 
     public static IPartGenerator? Find(string name) =>

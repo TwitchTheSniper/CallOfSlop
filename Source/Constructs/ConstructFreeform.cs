@@ -334,6 +334,7 @@ public sealed partial class ConstructWorld
         }
         keep.LinksChanged();
         ConstructRoutes.Merge(keep, mover, off, Vector3.Zero, 0); // (routed links: their nodes stay in their hosts' frames)
+        SubBlueprints.MergeTable(keep, mover, off, mover.PartCount, 0, Vector3.Zero, false); // (its sub-blueprint uses: their parts stay in the weld's frame)
         ConstructTracks.Merge(keep, mover, off);
         for (var k = XWireCount - 1; k >= 0; k--)
         {

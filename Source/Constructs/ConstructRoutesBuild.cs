@@ -55,8 +55,8 @@ public static partial class ConstructRoutes
             s.At = Vec3(at, where);
         }
         else
-            s.From = e.TryGetProperty("from", out var f) && f.ValueKind == JsonValueKind.Number ? f.GetInt32() : throw new ConstructPartException($"{where}: \"from\" (a step) is missing");
-        s.To = e.TryGetProperty("to", out var to) && to.ValueKind == JsonValueKind.Number ? to.GetInt32() : throw new ConstructPartException($"{where}: \"to\" (a step) is missing");
+            s.From = e.TryGetProperty("from", out var f) && f.ValueKind is JsonValueKind.Number or JsonValueKind.Array ? SubBlueprints.ParseRef(f, where, -1) : throw new ConstructPartException($"{where}: \"from\" (a step) is missing");
+        s.To = e.TryGetProperty("to", out var to) && to.ValueKind is JsonValueKind.Number or JsonValueKind.Array ? SubBlueprints.ParseRef(to, where, -1) : throw new ConstructPartException($"{where}: \"to\" (a step) is missing");
         if (e.TryGetProperty("fromPort", out var fp))
             s.FromPort = fp.GetString() ?? "";
         if (e.TryGetProperty("toPort", out var tp))
@@ -80,7 +80,7 @@ public static partial class ConstructRoutes
         if (e.TryGetProperty("hosts", out var hs))
         {
             foreach (var h in hs.EnumerateArray())
-                s.Hosts.Add(h.GetInt32());
+                s.Hosts.Add(SubBlueprints.ParseRef(h, where, -1));
             if (s.Hosts.Count != s.Nodes.Count)
                 throw new ConstructPartException($"{where}: \"hosts\" names one step a node");
         }
@@ -462,14 +462,22 @@ public static partial class ConstructRoutes
     /// sits in <paramref name="c"/>'s frame (a blueprint builds it at the origin, so every point on that frame moves by it).
     /// <paramref name="saved"/>: a saved construct's: each link stands as laid, on the parts it was laid on.
     /// </summary>
-    public static string LinksJson(Construct c, Vector3 origin = default, bool saved = false)
+    public static string LinksJson(Construct c, Vector3 origin = default, bool saved = false, Func<int, string>? stepOf = null, Func<int, bool>? skip = null)
     {
+        // (stepOf: a part as a step, a sub-blueprint use's ["uN", k] among them; skip: a link left out, a use's own: later links' "branch" counts without it)
         Vector3 Out(Vector3 p, int host) => c.FrameOf(c.Parts[host].Seg) == 0 ? p - origin : p; // (a freeform piece's points are in its own frame)
+        string S(int part) => stepOf != null ? stepOf(part) : part.ToString(CultureInfo.InvariantCulture);
+        var newIndex = new int[c.RouteCount];
+        for (int k = 0, n = 0; k < c.RouteCount; k++)
+            newIndex[k] = skip != null && skip(k) ? -1 : n++;
         var sb = new StringBuilder("[");
+        var written = 0;
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref var r = ref c.Routes[k];
-            if (k > 0)
+            if (newIndex[k] < 0)
+                continue;
+            if (written++ > 0)
                 sb.Append(',');
             sb.Append("{\"type\":\"").Append(TypeKey(r.Type)).Append('"');
             if (r.Parent != 255)
@@ -479,13 +487,13 @@ public static partial class ConstructRoutes
                 for (var j = k + 1; j < c.RouteCount; j++)
                     if (c.Routes[j].Parent == r.Parent && c.Routes[j].ParentNode < r.ParentNode)
                         seg--;
-                sb.Append(",\"branch\":[").Append(r.Parent).Append(',').Append(seg).Append("],\"at\":");
+                sb.Append(",\"branch\":[").Append(newIndex[r.Parent]).Append(',').Append(seg).Append("],\"at\":");
                 var junction = c.Node(r.Parent, r.ParentNode);
                 AppendVec(sb, Out(junction.Pos, junction.Host));
             }
             else
-                sb.Append(",\"from\":").Append(r.From);
-            sb.Append(",\"to\":").Append(r.To);
+                sb.Append(",\"from\":").Append(S(r.From));
+            sb.Append(",\"to\":").Append(S(r.To));
             if (r.FromPort != 255 && r.Parent == 255)
                 sb.Append(",\"fromPort\":\"").Append(PortName(c.DefOf(r.From), r.Type, r.FromPort, input: false)).Append('"');
             if (r.ToPort != 255)
@@ -515,7 +523,7 @@ public static partial class ConstructRoutes
                         if (!first)
                             sb.Append(',');
                         first = false;
-                        sb.Append(c.Node(k, i).Host);
+                        sb.Append(S(c.Node(k, i).Host));
                     }
                     sb.Append(']');
                 }

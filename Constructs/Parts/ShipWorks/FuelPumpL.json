@@ -1,0 +1,202 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Fuel Pump L",
+  "description": "A torch drive's fuel pump: it serves 12 MN of nozzles through the Hull Mount its works stand on. It is full of fuel, and burns when it is holed. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "frame",
+  "tool": "welder",
+  "onBreak": "disable",
+  "worksPiece": {
+    "kind": "pump",
+    "serves": 12000000.0
+  },
+  "mass": 1800.0,
+  "health": 4000,
+  "armour": 15,
+  "material": "steel",
+  "color": "#5a6065",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -0.7,
+        -0.75,
+        -1.6
+      ],
+      "max": [
+        0.7,
+        -0.61,
+        -0.02
+      ],
+      "color": "#5c6057",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.616,
+        -0.605,
+        -1.1456
+      ],
+      "max": [
+        0.28,
+        0.63,
+        -0.7744
+      ],
+      "color": "#d8a020",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.3536,
+        -0.604,
+        -1.408
+      ],
+      "max": [
+        0.0176,
+        0.627,
+        -0.512
+      ],
+      "color": "#d8a020",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        0.168,
+        -0.607,
+        -0.88
+      ],
+      "max": [
+        0.644,
+        0.075,
+        -0.16
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.288,
+        0.38,
+        -0.96
+      ],
+      "max": [
+        -0.048,
+        0.62,
+        -0.003
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.288,
+        0.63,
+        -1.08
+      ],
+      "max": [
+        -0.048,
+        0.747,
+        -0.84
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.647,
+        -0.3,
+        -0.64
+      ],
+      "max": [
+        0.696,
+        0.0,
+        -0.32
+      ],
+      "color": "#40e070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.7,
+        -0.61,
+        -1.6
+      ],
+      "max": [
+        0.7,
+        0.75,
+        -0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.3,
+        -0.3,
+        -0.02
+      ],
+      "max": [
+        0.3,
+        0.3,
+        0.0
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -1.6
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.7,
+        0.0,
+        -0.8
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.7,
+        0.0,
+        -0.8
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "deck",
+      "at": [
+        0.0,
+        -0.75,
+        -0.8
+      ],
+      "dir": "-y"
+    }
+  ]
+}

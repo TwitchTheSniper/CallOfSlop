@@ -96,7 +96,7 @@ public enum Msg : byte
     TerrainDig, // server -> all and each joiner: Sandbox: ground dug (u16 count, then per op: u8 DigKind, vec centre, u16 radius in cm) (reliable ordered; GameTerrainDig.cs, protocol 108)
     ResourceFell, // server -> all and each joiner: Sandbox: trees felled (u16 count, then u32 ResourceField.TreeKey each)
     ResourceGrew, // server -> all: Sandbox: felled trees grown back (u16 count, then u32 ResourceField.TreeKey each; a joiner only hears what is still felled) (reliable ordered; GameResources.cs, protocol 111)
-    Space, // server -> all and each joiner: the space bubble (a SpaceMsg first): which system and body the map is, the space clock (time, warp), ships' states (GameSpace.cs, protocol 125)
+    Space, // server -> all and each joiner: the space bubble (a SpaceMsg first): which system and body the map is, the space clock (time, speed), ships' states (GameSpace.cs, protocol 125)
     Travel, // server -> one client: free travel: purpose 1, join a planetoid the host runs (world, map, its number); 2, back in the host's space (reliable ordered; GameTravel.cs, GameTravelVisit.cs, protocol 162)
     Relay, // client <-> server: free travel: a packet between a traveller's game and a planetoid's game on the host (kind: 0 data (planetoid number, up: reliability, the packet), 1 opened, 2 closed) (as the packet's own reliability; RelayTransport.cs, GameTravelVisit.cs, protocol 162)
     Factions, // server -> all and each joiner: Sandbox player factions, the whole table (names, leaders, members, invites) when it changes (reliable ordered; GameSandboxFactions.cs, protocol 161)
@@ -123,7 +123,7 @@ public enum Msg : byte
     Errand, // server -> one client, Sandbox story: their errand on a works yard machine (u8 errand + 1 in Story/Errands, 0 none; u8 step, 255 done; u8 has a target, vec target) when it changes (reliable ordered; GameErrands.cs, protocol 314)
     LabourDay, // server -> all and each joiner, Sandbox story: the penal colony's day (u8 period + 1 of Story/Labour's "day", 0 none; u64 the labour scenes on shift, a bit each) when it changes (reliable ordered; GameLabourDay.cs, protocol 316)
     LabourIncident, // server -> all, Sandbox story: an incident in a labour gang (u8 scene, u8 kind, u8 inmate, u32 the server tick it began) as it begins (reliable ordered; GameLabourIncidents.cs, protocol 317)
-    Nav, // server -> all and each joiner, Sandbox: a ship's order from the command view (u16 construct, u8 NavKind (0: it ended), u8 body, u8 NavPhase, u8 the player who gave it, 3 x f64 point, f64 radius) when it begins, changes phase or ends (reliable ordered; GameNav.cs, protocol 323)
+    Nav, // server -> all and each joiner, Sandbox: a ship's order from the command view (u16 construct, u8 NavKind (0: it ended), u8 body, u8 NavPhase, u8 the player who gave it, 3 x f64 point, f64 radius, u64 arrival and u64 departure in space ns, f32 the trip's dV) when it begins, changes phase or its arrival, or ends (reliable ordered; GameNav.cs, protocol 323, 326)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

@@ -9,8 +9,8 @@ public static partial class SelfTest
     /// The space layer's phase 2 (Source/Space/SpaceShips.cs, docs/space/SPACE.md "Ships"): the universal Kepler drift
     /// against the rails; energy over 10,000 orbits under the symplectic step with a force hook; scripted burns against the
     /// analytic answer; a close pass under the adaptive step; a flyby through a sphere of influence (hand-overs) against a
-    /// one-frame reference; on and off rails; warp; the predictor; host and client agree (snapshots, sampling,
-    /// determinism); the warp rule; and the budget (200 ships, 32 bodies, no allocation).
+    /// one-frame reference; on and off rails; speed; the predictor; host and client agree (snapshots, sampling,
+    /// determinism); the time speed rule; and the budget (200 ships, 32 bodies, no allocation).
     /// </summary>
     private static void CheckSpaceShips()
     {
@@ -21,10 +21,10 @@ public static partial class SelfTest
         ShipsClosePass();
         ShipsFlyby(dev);
         ShipsRails(dev);
-        ShipsWarp(dev);
+        ShipsSpeed(dev);
         ShipsPredictor(dev);
         ShipsClient(dev);
-        ShipsWarpRule();
+        ShipsSpeedRule();
         ShipsBudget();
     }
 
@@ -185,10 +185,13 @@ public static partial class SelfTest
         }
     }
 
-    private static void ShipsFlyby(StarSystem dev)
+    private static void ShipsFlyby(StarSystem full)
     {
         // A ship from 8,000 km out at 1 km/s falls past the Planetoid (18 km at closest): it starts round the star, is
         // handed to the Planetoid and back. Against one-frame references (round the star the whole way, adaptive, tight).
+        // Without the Planetoid's moons: in its own frame their pull is a tide (its rails don't move it by them), round the
+        // star it isn't, and the close pass turns that difference into kilometres (2026-11-16).
+        var dev = new StarSystem { Name = full.Name, Start = full.Start, Bodies = full.Bodies.Where(b => b.Parent <= 0).ToArray() };
         var home = dev.IndexOf("Planetoid");
         var t0 = SpaceTime.FromSeconds(86400 * 3.3);
         dev.StateOf(home, t0, out var hp, out var hv);
@@ -250,15 +253,15 @@ public static partial class SelfTest
         var gap = (rails.PositionOf(a) - rails.PositionOf(b)).Length;
         if (gap > 0.01)
             Fail($"space ships: on rails and coasting differ by {gap:0.0000} m after a day round Redrock");
-        if (rails.MaxWarp < 1000)
-            Fail($"space ships: a lone orbit shouldn't hold the warp under 1,000x (limit {rails.MaxWarp})");
+        if (rails.MaxSpeed < 1000)
+            Fail($"space ships: a lone orbit shouldn't hold the speed under 1,000x (limit {rails.MaxSpeed})");
 
-        // At full warp for 30 days the rail is exact: where its own two-body orbit says.
+        // At full speed for 30 days the rail is exact: where its own two-body orbit says.
         rails.Remove(b);
         rails.RelativeOf(a, out _, out var ra, out var va);
         var orbit = KeplerOrbit.FromState(mu, ra, va, rails.Time);
-        var clock = new SpaceClock(rails.Time) { Warp = SpaceClock.MaxWarp };
-        var ticks = (int)(30 * 86400.0 / SpaceClock.MaxWarp * 60);
+        var clock = new SpaceClock(rails.Time) { Speed = SpaceClock.MaxSpeed };
+        var ticks = (int)(30 * 86400.0 / SpaceClock.MaxSpeed * 60);
         for (var tick = 0; tick < ticks; tick++)
         {
             clock.Tick();
@@ -267,9 +270,9 @@ public static partial class SelfTest
         rails.RelativeOf(a, out _, out ra, out _);
         var off = (ra - orbit.PositionAt(rails.Time)).Length;
         if (rails.ModeOf(a) != ShipMode.Rail || off > 1e-4)
-            Fail($"space ships: 30 days on rails at {SpaceClock.MaxWarp}x: {rails.ModeOf(a)}, {off:g3} m off its orbit");
-        if (rails.MaxWarp != SpaceClock.MaxWarp)
-            Fail($"space ships: ships on rails shouldn't limit the warp (limit {rails.MaxWarp})");
+            Fail($"space ships: 30 days on rails at {SpaceClock.MaxSpeed}x: {rails.ModeOf(a)}, {off:g3} m off its orbit");
+        if (rails.MaxSpeed != SpaceClock.MaxSpeed)
+            Fail($"space ships: ships on rails shouldn't limit the speed (limit {rails.MaxSpeed})");
 
         // A burn takes it off the rails; when it ends it goes back on, on a new orbit.
         var e0 = rails.KeplerEnergy(a);
@@ -286,7 +289,7 @@ public static partial class SelfTest
             Fail($"space ships: after the burn: {rails.ModeOf(a)} (want Rail), energy {e0:0.0} -> {rails.KeplerEnergy(a):0.0} J/kg");
     }
 
-    private static void ShipsWarp(StarSystem dev)
+    private static void ShipsSpeed(StarSystem dev)
     {
         // A low orbit round the Planetoid (its moonlet tugs, so it coasts): 600 ticks at 1x, 60 at 10x and 6 at 100x land together.
         var home = dev.IndexOf("Planetoid");
@@ -294,18 +297,18 @@ public static partial class SelfTest
         var r0 = new Vec3d(12_000, 0, 1_000);
         var v0 = new Vec3d(0, Math.Sqrt(mu / r0.Length), 0);
         var ends = new SpacePos[3];
-        var warps = new[] { 1, 10, 100 };
-        for (var k = 0; k < warps.Length; k++)
+        var speeds = new[] { 1, 10, 100 };
+        for (var k = 0; k < speeds.Length; k++)
         {
             var flight = new SpaceFlight(dev, 1);
             var s = flight.Ships.AddRelative(home, r0, v0);
             if (flight.Ships.ModeOf(s) != ShipMode.Coast)
                 Fail($"space ships: a low Planetoid orbit should coast (the moonlet tugs it): {flight.Ships.ModeOf(s)}");
-            flight.RequestWarp(warps[k], fromHost: true);
-            for (var tick = 0; tick < 600 / warps[k]; tick++)
+            flight.RequestSpeed(speeds[k], fromHost: true);
+            for (var tick = 0; tick < 600 / speeds[k]; tick++)
                 flight.Tick();
-            if (flight.Clock.Warp != warps[k] || flight.Clock.Now != new SpaceTime(SpaceTime.NsPerSecond * 10))
-                Fail($"space ships: at {warps[k]}x the clock is {flight.Clock.Warp}x and at {flight.Clock.Now}");
+            if (flight.Clock.Speed != speeds[k] || flight.Clock.Now != new SpaceTime(SpaceTime.NsPerSecond * 10))
+                Fail($"space ships: at {speeds[k]}x the clock is {flight.Clock.Speed}x and at {flight.Clock.Now}");
             ends[k] = flight.Ships.PositionOf(s);
         }
         var d1 = (ends[1] - ends[0]).Length;
@@ -375,7 +378,7 @@ public static partial class SelfTest
 
         // Snapshots round-trip exactly; a client sampling 20 Hz snapshots each frame stays on the host's path, at 1x and 1000x.
         Span<byte> buf = stackalloc byte[ShipState.Size];
-        foreach (var warp in new[] { 1, 1000 })
+        foreach (var speed in new[] { 1, 1000 })
         {
             var host = new SpaceShips(dev, 1);
             var s = host.AddRelative(home, r0, v0);
@@ -383,7 +386,7 @@ public static partial class SelfTest
             var worst = 0.0;
             for (var tick = 1; tick <= 1200; tick++)
             {
-                var now = new SpaceTime(SpaceTime.TickNs((long)tick * warp));
+                var now = new SpaceTime(SpaceTime.TickNs((long)tick * speed));
                 host.Advance(now);
                 if (tick % 3 == 0)
                 {
@@ -395,46 +398,46 @@ public static partial class SelfTest
                     track.Push(back);
                 }
                 // The client draws 3 ticks (one snapshot) behind, like the construct interpolation.
-                if (tick > 9 && track.Sample(dev, new SpaceTime(SpaceTime.TickNs((long)(tick - 3) * warp)), out var cp, out _))
+                if (tick > 9 && track.Sample(dev, new SpaceTime(SpaceTime.TickNs((long)(tick - 3) * speed)), out var cp, out _))
                 {
                     var hostThen = PastHost[(tick - 3) % PastHost.Length];
                     worst = Math.Max(worst, (cp - hostThen).Length);
                 }
                 PastHost[tick % PastHost.Length] = host.PositionOf(s);
             }
-            Line($"  space ships: client at {warp}x: {worst * 1000:0.000} mm from the host");
-            if (worst > (warp == 1 ? 1e-3 : 1.0))
-                Fail($"space ships: a client sampling 20 Hz snapshots at {warp}x is {worst:0.0000} m from the host");
+            Line($"  space ships: client at {speed}x: {worst * 1000:0.000} mm from the host");
+            if (worst > (speed == 1 ? 1e-3 : 1.0))
+                Fail($"space ships: a client sampling 20 Hz snapshots at {speed}x is {worst:0.0000} m from the host");
         }
     }
 
     private static readonly SpacePos[] PastHost = new SpacePos[8];
 
-    private static void ShipsWarpRule()
+    private static void ShipsSpeedRule()
     {
         var sys = RockSystem();
         var flight = new SpaceFlight(sys, 4);
-        if (flight.RequestWarp(1000, fromHost: false) || flight.RequestedWarp != 1)
-            Fail("space warp: a client's request shouldn't change the warp");
-        flight.RequestWarp(1000, fromHost: true);
+        if (flight.RequestSpeed(1000, fromHost: false) || flight.RequestedSpeed != 1)
+            Fail("space speed: a client's request shouldn't change the speed");
+        flight.RequestSpeed(1000, fromHost: true);
         flight.Tick();
-        if (flight.Clock.Warp != 1000)
-            Fail($"space warp: the host's 1000x with nobody busy and no ships gave {flight.Clock.Warp}x");
+        if (flight.Clock.Speed != 1000)
+            Fail($"space speed: the host's 1000x with nobody busy and no ships gave {flight.Clock.Speed}x");
         flight.AnyoneBusy = true;
         flight.Tick();
-        if (flight.Clock.Warp != 1)
-            Fail($"space warp: someone busy should hold 1x (is {flight.Clock.Warp}x)");
+        if (flight.Clock.Speed != 1)
+            Fail($"space speed: someone busy should hold 1x (is {flight.Clock.Speed}x)");
         flight.AnyoneBusy = false;
         // A burning ship limits it.
         var s = flight.Ships.AddRelative(0, new Vec3d(20_000, 0, 0), new Vec3d(0, 300, 0));
         flight.Ships.Thrust[s] = new Vec3d(0, 1, 0);
-        flight.RequestWarp(SpaceClock.MaxWarp, true);
+        flight.RequestSpeed(SpaceClock.MaxSpeed, true);
         flight.Tick();
         flight.Tick();
-        if (flight.Clock.Warp >= SpaceClock.MaxWarp || flight.Clock.Warp != Math.Min(SpaceClock.MaxWarp, flight.Clock.Warp) || flight.Clock.Warp < 1)
-            Fail($"space warp: a burning ship should hold the warp under {SpaceClock.MaxWarp}x (is {flight.Clock.Warp}x, ship limit {flight.Ships.MaxWarp})");
-        if (SpaceWarpRule.Effective(0, true, 5) != 0 || SpaceWarpRule.Effective(50, false, 20) != 20 || SpaceWarpRule.Effective(-3, false, 9) != 0)
-            Fail("space warp: pause, the ship limit or a negative request came out wrong");
+        if (flight.Clock.Speed >= SpaceClock.MaxSpeed || flight.Clock.Speed != Math.Min(SpaceClock.MaxSpeed, flight.Clock.Speed) || flight.Clock.Speed < 1)
+            Fail($"space speed: a burning ship should hold the speed under {SpaceClock.MaxSpeed}x (is {flight.Clock.Speed}x, ship limit {flight.Ships.MaxSpeed})");
+        if (SpaceTimeRule.Effective(0, true, 5) != 0 || SpaceTimeRule.Effective(50, false, 20) != 20 || SpaceTimeRule.Effective(-3, false, 9) != 0)
+            Fail("space speed: pause, the ship limit or a negative request came out wrong");
     }
 
     private static void ShipsBudget()
@@ -504,7 +507,7 @@ public static partial class SelfTest
             }
         }
         Line($"  space ships: budget: 200 ships ({coast} coasting, {rail} on rails, {adapt} adaptive), 32 bodies: median {median:0.000} ms "
-             + $"a tick (worst {times[^1]:0.000}), {alloc} B allocated, warp limit {ships.MaxWarp}x");
+             + $"a tick (worst {times[^1]:0.000}), {alloc} B allocated, speed limit {ships.MaxSpeed}x");
         if (alloc > 0)
             Fail($"space ships: stepping 200 ships allocated {alloc} B over {times.Length} ticks (should be 0)");
         if (TickCpu.Available && median > 1.0)

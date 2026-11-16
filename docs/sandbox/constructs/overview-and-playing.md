@@ -480,7 +480,7 @@ list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and
 
 - **Tabs**: Parts, Blueprints and Tools.
 - **Not in the Parts tab: a ship's own pieces** (Karl, 2026-11-16). Every piece named after a ship (its decks, hulls, bays,
-  keel, jets, lockers: the Magpie's, Halberd's, Zero Day's and Rust Bucket's) comes with the ship's blueprint only.
+  keel, jets, lockers: the Magpie's, Zero Day's and Rust Bucket's) comes with the ship's blueprint only.
   `Constructs/Categories.json`'s `"unlisted": true` rules hide them from the tree and the search (group `Ship` outside the
   section `Ship fittings`, or a ship's name in the part's name); they still load, build, spawn and have recipes. A fitting
   any ship can use (the Drill Dock, RCS Thrusters, couches) goes in `Ship fittings` under a name that names no ship.

@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Submodule Skiff",
+  "group": "Submodules",
+  "description": "A skiff with two Submodule Pods as sub-blueprint uses: at a Building Station each pod is a sub-job for another station on the same construct.",
+  "steps": [
+    { "part": "Square Beam 0.25 m", "paint": "#8a6a3a" },
+    { "part": "Square Beam 0.25 m", "on": 0, "socket": "+x", "by": "-x", "paint": "#8a6a3a" },
+    { "part": "Square Beam 0.25 m", "on": 1, "socket": "+x", "by": "-x", "paint": "#8a6a3a" },
+    { "part": "Square Beam 0.25 m", "on": 2, "socket": "+x", "by": "-x", "paint": "#8a6a3a" }
+  ],
+  "uses": [
+    { "id": "ship:Submodule Pod", "name": "Submodule Pod", "version": 0, "turn": 0, "at": [0, 0.25, 0], "after": 3, "on": [[0, "+y", 0, "-y"]] },
+    { "id": "ship:Submodule Pod", "name": "Submodule Pod", "version": 0, "turn": 2, "at": [0.75, 0.25, 0], "after": 3, "on": [[3, "+y", 0, "-y"]] }
+  ]
+}

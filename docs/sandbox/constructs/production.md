@@ -1472,6 +1472,71 @@ a hand-delivered part fitted at once; copper and steel as the link stock, a unit
 the last part, in the blueprint's order (a link's branch and its hosts depend on that order); the frozen body refusing every edit;
 blueprints by name.
 
+### Submodules (sub-blueprints, 2026-11-16)
+
+Design and the user's answers: `docs/sandbox/design/sub-blueprints.md`; status and what is left: `sub-blueprints-notes.md` beside it.
+
+- **Uses.** A player blueprint may contain other saved blueprints: its file's `"uses"` (id, name, version, `lock`, Rot24 `turn`,
+  `at`, `after`: the parent step its steps follow, `on`: its joining links, `over`: paint and settings kept on that use). A step may
+  name a use's step as `["uN", k]` (steps' `on` and `also`, wires, hoses, links). `SubBlueprints.Flatten` (`Source/Constructs/
+  SubBlueprints.cs`) resolves every use (a pack's own, `ship:<name>` for a shipped one, else the player's folder by id; a lock its
+  `.versions/<id>/<version>.json`), and lays its steps out turned and placed into one ordinary flat blueprint, with a `UseMap` (each
+  step's use, each use's steps and its own flat blueprint). Limits: 8 deep, 128 uses a blueprint, 1,024 a tree; a loop and a missing
+  version are refused by name. Every reader builds the flat form: the station, a stamp (both peers; the client uploads it packed with
+  every version it built), the Blueprint Desk's check, the shipped list (a shipped blueprint may use shipped ones).
+- **Ids and versions.** A blueprint gets `"id"` and `"version"` the first time it is stamped or saved with uses; saving over it keeps
+  the old text in `ConstructBlueprints/.versions/<id>/` (the last 8 and any a lock names) and bumps the version: a live use builds the
+  newest. The Blueprints tab shows each blueprint's uses with Live / Lock per blueprint used, red when it no longer builds (cached in
+  `.checks/` by the versions under it), and **Pack** (`Packs/NAME.pack.json`: the blueprint and every version its tree names; one
+  dropped in another player's `ConstructBlueprints` folder is unpacked on the next list).
+- **Tags.** A stamp tags its parts as one use (`CPart.Use`, `Construct.Uses`: id, version, lock, turn, origin, parent, the parts'
+  hash); a station's build tags each use's parts. Tags follow copies, splits, merges and freeform welds, travel at the end of a
+  body's Full (protocol 324) and save in a `USES` block. The selector's look line says "part of Pod #2 (v1, live)" (", changed" when
+  its parts moved). The save window lists the uses: an intact one (parts as stamped, square, on the grid) is saved as a use, Live or
+  Lock; a changed one is saved as plain parts by default, or as the **next version** of its blueprint, or as a **new blueprint**; a
+  selection that is nothing but one use keeps its inner uses. Paint and settings changed on a use are kept on it (`over`), and stay
+  through a live update.
+- **The job tree.** A job whose blueprint has uses is a root: each use is a row (`ConstructStationTree.cs`). A use's steps are
+  another station's (never ordered, never fitted here) until it is in place or built here. At the 2 Hz look a waiting use is
+  dispatched to a Building Station **on the same construct** whose network shares this one's, its **Sub-jobs** setting Auto (group
+  Bay, default on), powered, idle and with a bay big enough: one whose bay touches this one's first, then the smallest bay, then the
+  nearest. The sub-station builds the use's own flat blueprint (no finish, no fill: the whole ship's), tags the body as one use and
+  either hands it over (bays that touch) or frees it, frozen, for a player to move ("nothing carries it: move it into the main
+  station's bay"). A body of that use set down within 8 m of the bay (a sub-job's, or one a player stamped or built) is taken.
+  **Nothing takes a use for 30 s: the station builds it itself, part by part** (the user's answer 1).
+- **The big fit.** Every part of the body is matched to its flat step at the use's place (part, 1 cm, turn): a part the use doesn't
+  have refuses the body with the reason; **a missing or shot-off part is fitted here afterwards as an ordinary step** (the user's
+  answer 5). The body is drawn to its spot over the first third of 5 s + 1 s a tonne (60 s at most), then welded in one tick
+  (`ConstructWorld.MergeAt`: the exact merge, no sockets auto-linked, one rebuild after the joining links); damage carries over. A
+  delivered use's own links are not laid again. Measured on the 2-core box: a 2,605-part use merges, links and rebuilds in 2.5 ms
+  (9 ms on its first, with the JIT); costing a tree at the limits (1,005 uses, 2,606 steps) slices at 1.4 to 2.6 ms worst.
+- **Wire and saves.** `CBodyKind.Station` carries each job's role, a sub-job's header and up to 64 rows (state, station, body,
+  fitted, steps, name, number, note); `StationOp.CancelUse` (n: the row) cancels a use's sub-job and dispatches it again. The
+  `SUBJ` block keeps each job's role, stamps, pinned tree (the root's blueprint packed with the versions it started with: a load
+  builds the same tree), its way down it and its rows. Cancel at the root cancels every sub-job and takes apart delivered bodies; a
+  sub-job whose root is gone waits, and Release frees its body.
+- **Tools.** `--sub-blueprint NAME [--roundtrip] [--tree-size]`: the tree, the join check (each use built alone and merged at its
+  place equals the flat build), the save round trip (as a station build, as a stamp, with a part off), and a full-size tree timed.
+  Window tool: `subbp` (every station's job and rows), `subbp stock`, `subbp cut` and `subbp carry` (host shortcuts: a finished
+  sub-job's body loses a part, or is set down beside its main station's bay), `subbp bodies`.
+- **Carriers (2026-11-16, the user's answer 7).** A finished body still in its sub-station's bay is carried by a Loader Arm or
+  Bridge Crane on the same construct that is idle, powered, not manned, not Off, whose payload and largest piece take the body and
+  whose reach holds both the body and its use's spot (`ConstructLifterBodies.cs`). The hand moves on its usual path (an empty hand:
+  no new bytes); the server poses the frozen body on it each tick and clients get its poses. At the spot the main station takes it
+  for the big fit. The sub-station is free once the body has left its bay; the main station keeps watching the body. Bays that touch
+  still hand over; a body set down within 8 m of the bay (out of its own) is still taken.
+- **Rank.** A sub-job's orders rank by its main station's Feed priority and its build's age (`StationJob.OrderAge`): the oldest ship
+  goes first.
+- **The selector's frames.** With the selector out, each outermost use within 60 m has a thin cyan frame and a label ("Submodule Pod
+  (live)"), amber with ": changed" when its parts moved (`UseFrameRender.cs`; worked out on a structure change, not per frame).
+- **Showcase** (`--gen-parts submodule_showcase`): Submodule Pod, Submodule Skiff (two pods as `ship:` uses, one turned) and
+  Submodule Yard (two stations whose bays don't touch, a Loader Arm between). Spawn the yard, pick Submodule Skiff at its first
+  station: a pod is built at the second and the arm brings it (42 s on the 2-core box with `subbp stock`).
+- **Window tool:** `bpui stamp NAME`, `selectall`, `rows`, `save NAME [replace] [lock|live] [newversion|newblueprint NAME2]`, `list`,
+  `lock NAME USE on|off`, `pack NAME`: the Blueprints tab's and the save window's own calls; `subbp arms`.
+- **Not yet:** uses inside uses are framed only as their outer use; a Bridge Crane's carry is the arm's code path but untried; uses
+  in a selection with ropes, springs, no-collide pairs or tracks are saved as plain parts.
+
 ## Lifters
 
 Scripted machines that carry pieces (design: `docs/sandbox/design/arms-and-cranes.md`; code `Source/Constructs/ConstructLifters.cs`,

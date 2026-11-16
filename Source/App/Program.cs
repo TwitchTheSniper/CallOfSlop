@@ -133,6 +133,8 @@ public static unsafe partial class Program
             return Story.StoryMapPage.Cli(args); // the story map page from Story/Storylets (docs/archive/story/STORY.md; was tools/story/story_map.py)
         if (args.Any(a => a.Equals("--check-story", StringComparison.OrdinalIgnoreCase)))
             return Story.StoryCli.Check(args); // the story data (relations, verbs, patterns, scenarios): what loads, what's refused and why
+        if (args.Any(a => a.Equals("--trip-check", StringComparison.OrdinalIgnoreCase)))
+            return Space.SpaceCli.Trips(args); // headless: the trips an order would plan between a system's planets (Source/Space/NavTrip.cs)
         if (args.Any(a => a.Equals("--space-ships", StringComparison.OrdinalIgnoreCase)))
             return Space.SpaceCli.Ships(args); // headless: demo ships flying in a star system's gravity (Source/Space/SpaceShips.cs)
         if (args.Any(a => a.Equals("--traffic-check", StringComparison.OrdinalIgnoreCase)))
@@ -248,10 +250,18 @@ public static unsafe partial class Program
             return ConstructPreview.Cli(args); // a blueprint or part as a turnable web page for an agent to publish (Source/DevTools/ConstructPreview.cs, tools/preview/)
         if (args.Any(a => a.Equals("--ship-ai-check", StringComparison.OrdinalIgnoreCase)))
             return VehicleKit.ShipAiCheck.Cli(args); // an AI crew flown against a target ship in a world of its own (ShipAiCheck.cs)
+        if (args.SkipWhile(a => !a.Equals("--sub-blueprint", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } subBlueprint)
+        {
+            // a blueprint's sub-blueprint tree, and the flat build against one that merges each use (SubBlueprints.cs)
+            SavePaths.Init(args); // (the player's blueprints are read from the save folder: --save-dir counts)
+            return SubBlueprints.Cli(subBlueprint, args);
+        }
         if (args.SkipWhile(a => !a.Equals("--check-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } vehicleFile)
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
         if (args.Any(a => a.Equals("--no-drive-gate", StringComparison.OrdinalIgnoreCase)))
             VehicleKit.VehicleDriveCheck.GateOn = false; // the spawn's drive check off, to measure what it catches and costs (VehicleDriveCheck.cs)
+        if (args.Any(a => a.Equals("--ride-check", StringComparison.OrdinalIgnoreCase)))
+            return RideCheck.Cli(args); // a player walked round moving ships headless: every tick their frame changed or lapsed (Source/DevTools/RideCheck.cs)
         if (args.SkipWhile(a => !a.Equals("--flight-check", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } flightFile)
             return VehicleKit.VehicleFlightCheck.Cli(flightFile); // the aircraft's flight check on any blueprint: climb, hover level, go forward (a ship's too)
         if (args.SkipWhile(a => !a.Equals("--drive-check", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } driveFile)
@@ -848,6 +858,12 @@ public static unsafe partial class Program
                     }
                     var paused = game.Net.IsOffline && Ui.PauseOpen;
                     CrashLog.Phase = "game update";
+                    if (game.IsServer)
+                    {
+                        game.TripShare = _settings.TripFuelPercent / 100.0; // (host settings, Settings > Gameplay: GameNavTrip.cs)
+                        game.TimeSpeedMost = _settings.TimeSpeedMost;
+                        game.SpaceFuelPercent = _settings.SpaceFuelPercent;
+                    }
                     if (!paused)
                         using (Perf.Measure(PerfArea.Game))
                             game.Update(now, FrameDt);

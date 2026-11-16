@@ -33,7 +33,7 @@ public sealed partial class Ui
             var body = sys.Bodies[cr.Primary];
 
             // The path it is on, when it is on one: up in space, or high and fast.
-            var free = c.SpaceShip != 0 || r.Length - body.Radius > 1500 && v.Length > 40;
+            var free = cr.Space || r.Length - body.Radius > 1500 && v.Length > 40;
             if (free && cr.Primary > 0 && v.LengthSquared / 2 - body.Mu / r.Length < 0 && Vec3d.Cross(r, v).Length > 1)
             {
                 var o = KeplerOrbit.FromState(body.Mu, r, v, _cvTime);
@@ -76,7 +76,7 @@ public sealed partial class Ui
             {
                 // A dart along the way it goes (seen from its world); a diamond when it sits still.
                 var way = new float2((float)Vec3d.Dot(v, _cvRight), -(float)Vec3d.Dot(v, _cvUp));
-                var relative = c.SpaceShip != 0 ? v.Length : c.Vel.Length();
+                var relative = cr.Space ? v.Length : c.Vel.Length();
                 var size = 7 * _scale;
                 if (relative > 2 && way.Length() > 1e-3f)
                 {
@@ -429,7 +429,7 @@ public sealed partial class Ui
         var w = 250 * _scale;
         var row = 24 * _scale;
         var rows = Math.Min(_cmdCraftCount, 14);
-        var p0 = _cvOrg + new float2(pad, pad + 100 * _scale);
+        var p0 = _cvOrg + new float2(pad, pad + 104 * _scale);
         var p1 = p0 + new float2(w, 34 * _scale + Math.Max(rows, 1) * row + 8 * _scale);
         CmdPlate(dl, p0, p1, fade, CmdCyan);
         CmdPanelArea(p0, p1);
@@ -459,7 +459,7 @@ public sealed partial class Ui
                 CmdLine(dl, q0, new float2(q0.X, q1.Y), CmdWhite, fade, 2.5f);
             var colour = picked ? CmdWhite : order != null ? CmdAmber : cr.Orders ? CmdCyan : CmdDim;
             CmdText(dl, q0 + new float2(10 * _scale, 4 * _scale), 12, colour, fade, CmdName(c), 0, false);
-            var where = c.SpaceShip != 0 ? "SPACE" : !c.HoverOn && c.Vel.LengthSquared() < 1 ? "DOWN" : "SKY";
+            var where = cr.Space ? "SPACE" : !c.HoverOn && c.Vel.LengthSquared() < 1 ? "DOWN" : "SKY";
             CmdText(dl, new float2(q1.X - 8 * _scale, q0.Y + 5 * _scale), 10.5f, order != null ? CmdAmber : CmdDim, fade, order != null ? "ORDER" : where, 2, false);
             if (hover && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
             {
@@ -488,7 +488,7 @@ public sealed partial class Ui
     {
         public ushort Id;
         public double Read;
-        public string Name, Class, Status, Flight, Orbit, Hull, Fuel, Power, Drive, Burn, Cargo, Crew, Systems, Order, Phase, Problem;
+        public string Name, Class, Status, Flight, Orbit, Hull, Fuel, Power, Drive, Burn, Cargo, Crew, Systems, Order, Phase, Trip, Problem;
         public float HullShare, FuelShare, PowerShare, OrderDone;
         public bool HasFuel, HasPower, HasOrder, Orders, Thrusting;
     }
@@ -512,16 +512,16 @@ public sealed partial class Ui
         k.Class = string.Create(inv, $"{c.Mass / 1000:0.0} T    {MathF.Max(size.X, MathF.Max(size.Y, size.Z)):0} M LONG    {c.PartCount} PARTS    OWNER {owner}");
 
         var name = _cmdBodyNames.Length > cr.Primary ? _cmdBodyNames[cr.Primary] : body.Name.ToUpperInvariant();
-        var height = c.SpaceShip == 0 && World.Map.Planetoid is { } pl ? pl.Altitude(c.WorldCom) : r.Length - body.Radius; // (in the sky: over the ground under it)
-        var ground = c.SpaceShip == 0 ? c.Vel.Length() : v.Length;
+        var height = !cr.Space && World.Map.Planetoid is { } pl ? pl.Altitude(c.WorldCom) : r.Length - body.Radius; // (in the sky: over the ground under it)
+        var ground = !cr.Space ? c.Vel.Length() : v.Length;
         k.Status = c.SpaceAway != 0 ? "DEEP SPACE, ROUND " + name
-            : c.SpaceShip != 0 ? "IN SPACE, ROUND " + name
+            : cr.Space ? "IN SPACE, ROUND " + name
             : !c.HoverOn && ground < 1 ? "DOWN ON " + name
             : ground < 2 ? "HOVERING OVER " + name
             : "FLYING OVER " + name;
         k.Flight = string.Create(inv, $"{CmdDistance(height).ToUpperInvariant()} UP    {ground:0} M/S");
         k.Orbit = "";
-        if (c.SpaceShip != 0 && cr.Primary > 0)
+        if (cr.Space && cr.Primary > 0)
         {
             var energy = v.LengthSquared / 2 - body.Mu / r.Length;
             if (energy >= 0)
@@ -615,7 +615,7 @@ public sealed partial class Ui
         k.Orders = k.Problem.Length == 0;
         var o2 = g.NavOf(c.Id);
         k.HasOrder = o2 != null;
-        k.Order = k.Phase = "";
+        k.Order = k.Phase = k.Trip = "";
         k.OrderDone = 0;
         if (o2 != null && o2.Body < sys.Count)
         {
@@ -629,9 +629,23 @@ public sealed partial class Ui
                 NavPhase.Flying => "FLYING THERE",
                 NavPhase.Arrived => "OVER THE WAYPOINT",
                 NavPhase.NoDrive => "NO DRIVE: IT CAN'T FLY THIS",
+                NavPhase.Depart => "BURNING OUT ONTO ITS TRANSFER",
+                NavPhase.Coast => "COASTING, DRIVE OFF",
+                NavPhase.Correct => "CORRECTION BURN",
+                NavPhase.Brake => "FLIPPED: BRAKING",
+                NavPhase.Short => string.Create(inv, $"OUT OF REACH: THE LEAST A TRIP TAKES IS {o2.DvNeed / 1000:0.0} KM/S"),
+                NavPhase.Wait => "IN ORBIT, WAITING FOR ITS WINDOW",
                 _ => "STARTING",
             };
             k.Order = Game.NavText(sys, o2).ToUpperInvariant();
+            if (o2.ArriveNs != 0 && o2.Phase is NavPhase.Depart or NavPhase.Coast or NavPhase.Correct or NavPhase.Wait)
+            {
+                var left = (o2.ArriveNs - s.Now.Ns) / (double)SpaceTime.NsPerSecond;
+                var leaves = (o2.DepartNs - s.Now.Ns) / (double)SpaceTime.NsPerSecond;
+                k.Trip = o2.Phase == NavPhase.Wait
+                    ? string.Create(inv, $"LEAVES IN {CmdTime(Math.Max(0, leaves)).ToUpperInvariant()}, THERE IN {CmdTime(Math.Max(0, left)).ToUpperInvariant()}    {o2.DvNeed / 1000:0.0} KM/S")
+                    : string.Create(inv, $"THERE IN {CmdTime(Math.Max(0, left)).ToUpperInvariant()}    {o2.DvNeed / 1000:0.0} KM/S");
+            }
             k.Phase = phase;
         }
     }
@@ -654,7 +668,7 @@ public sealed partial class Ui
         var pad = 22 * _scale;
         var w = 400 * _scale;
         var line = 19 * _scale;
-        var lines = 14 + (k.Orbit.Length > 0 ? 1 : 0) + (k.HasOrder ? 3 : 0) + (k.Problem.Length > 0 ? 1 : 0);
+        var lines = 14 + (k.Orbit.Length > 0 ? 1 : 0) + (k.HasOrder ? 3 : 0) + (k.Trip.Length > 0 ? 1 : 0) + (k.Problem.Length > 0 ? 1 : 0);
         var p0 = new float2(_cvOrg.X + _cvSize.X - pad - w, _cvOrg.Y + pad);
         var p1 = p0 + new float2(w, 64 * _scale + lines * line + 50 * _scale);
         var edge = k.HasOrder ? CmdAmber : CmdCyan;
@@ -719,6 +733,8 @@ public sealed partial class Ui
         {
             Row(dl, "ORDER", k.Order, CmdAmber, ref y);
             Row(dl, "NOW", k.Phase, CmdWhite, ref y);
+            if (k.Trip.Length > 0)
+                Row(dl, "TRIP", k.Trip, CmdWhite, ref y);
             y += 4 * _scale;
             if (CmdButton(dl, new float2(x + col, y), new float2(x + col + 150 * _scale, y + 24 * _scale), "CANCEL ORDER", CmdAmber, fade))
                 g.NavSend(c.Id, NavKind.None, 0, Vec3d.Zero, 0);

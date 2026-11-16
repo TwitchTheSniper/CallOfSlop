@@ -1065,7 +1065,7 @@ public static class ConstructCrafting
                         for (var k = 0; k < q.Count; k++)
                         {
                             if (q.Items[k].Stamp == 0)
-                                q.Items[k].Stamp = world.OrderStamp++;
+                                q.Items[k].Stamp = c.Parts[t].Station is { Role: 1, OrderAge: > 0 } sj ? sj.OrderAge : world.OrderStamp++; // (a sub-job's orders are as old as its main station's build: the oldest ship goes first)
                             if (!q.Items[k].Done && !q.Items[k].Cancelled)
                                 oldest = Math.Min(oldest, q.Items[k].Stamp);
                         }

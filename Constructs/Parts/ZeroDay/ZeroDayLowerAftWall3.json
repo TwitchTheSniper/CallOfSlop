@@ -12,6 +12,9 @@
   "material": "steel",
   "color": "#c4c8ca",
   "attachSeconds": 6.0,
+  "worksPiece": {
+    "kind": "mount"
+  },
   "boxes": [
     {
       "min": [
@@ -54,10 +57,28 @@
       "dir": "+z"
     },
     {
-      "name": "pipes",
+      "name": "driveCore",
       "at": [
-        4.175,
-        2.875,
+        6.375,
+        1.425,
+        41.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "drivePump",
+      "at": [
+        3.825,
+        0.875,
+        41.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "driveExchanger",
+      "at": [
+        9.075,
+        1.225,
         41.875
       ],
       "dir": "-z"

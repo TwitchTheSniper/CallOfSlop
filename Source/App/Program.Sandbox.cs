@@ -242,6 +242,7 @@ public static unsafe partial class Program
                       ^ ((long)part.Rounds << 33) ^ (part.Burn > 0 ? 1L << 55 : 0) ^ (part.Reload > 0 ? 1L << 54 : 0)
                       ^ (d.Role is PartRole.Engine or PartRole.Transmission or PartRole.EnginePiece ? (long)(hit.Body.Rpm / 50) << 8 ^ (long)hit.Body.Gear << 3 : 0) // (an engine's rpm, a gearbox's gear)
                       ^ (d.Piece != EnginePiece.None ? ConstructEngine.LookKey(hit.Body, hit.Part) << 20 : 0) // (a modular engine's readout)
+                      ^ (ConstructWorks.Has(d) ? ConstructWorks.LookKey(hit.Body, hit.Part) << 8 : d.Name == Game.BreakdownPanel ? ConstructWorks.PanelKey(hit.Body) << 8 : 0) // (ship works: a head's cap, a piece's load, the panel's report)
                       ^ (ConstructCargo.IsVolume(d) ? (long)CarriedBy(g.Constructs, hit.Body) << 44 : 0) ^ (hit.Body.CarriedBy != 0 ? 1L << 63 : 0) // (a cargo volume's load; carried)
                       ^ (d.Role == PartRole.Seat || d.IsSeatModule ? (long)hit.Body.RebuildStamp * 1000003L : 0) // (a seat's or a module's links)
                       ^ (d.HasJoint ? (long)hit.Body.PartCount << 41 ^ (long)hit.Body.JointCount << 21 : 0) // (a joint's two part counts)
@@ -278,6 +279,8 @@ public static unsafe partial class Program
                     PartRole.Battery => SandboxKeys.Line(d.Name, part.Broken ? "wrecked" : hit.Body.PowerOn ? $"{charge}%" : "flat"),
                     PartRole.Transmission when d.HasGears && d.SettingLabels.Length > 0 => SandboxKeys.Line(d.Name, SandboxKeys.Join($"gear {d.SettingLabels[Math.Min(hit.Body.Gear, d.SettingLabels.Length - 1)]}", wrecked)),
                     _ when d.Piece != EnginePiece.None => ConstructEngine.Look(hit.Body, hit.Part), // (what the pieces add up to, or what is missing, with any tool in hand)
+                    _ when ConstructWorks.Has(d) && d.Role != PartRole.Gun && part.Burn <= 0 && !hit.Body.Loose && !ConstructEdits.WreckedAlone(hit.Body) => ConstructWorks.Look(hit.Body, hit.Part, !fits || aim.Verdict != AimVerdict.Can ? null : $"hold {SandboxKeys.Aim}: {(salvage ? "salvage" : "take off")}"), // (ship works: what a head's works let it do, what a piece serves; a fire falls through to ON FIRE)
+                    _ when d.Name == Game.BreakdownPanel && part.Burn <= 0 && !hit.Body.Loose && ConstructWorks.PanelLook(hit.Body) is { Length: > 0 } panel => SandboxKeys.Line(d.Name, SandboxKeys.Join(signal, panel), unpowered), // (the engineer's report on every drive, after its own reading)
                     PartRole.Engine when bare => SandboxKeys.Line(d.Name, part.Broken ? "wrecked" : hit.Part == hit.Body.Engine && hit.Body.EngineRunning ? $"{hit.Body.Rpm:0} rpm, {d.EngineTorque * ConstructDrive.Curve(d, hit.Body.Rpm):0} N m" : "off"),
                     PartRole.Differential when bare && d.Diff == DiffKind.Steering => SandboxKeys.Line(d.Name, ConstructDrive.SteerDiffLook(hit.Body, hit.Part, out var steerWhy), part.Broken ? "wrecked" : steerWhy),
                     PartRole.Differential when bare => SandboxKeys.Line(d.Name, SandboxKeys.Join(d.Diff == DiffKind.Lockable ? part.Setting == 1 ? "locked" : "open" : "", wrecked)),

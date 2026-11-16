@@ -94,7 +94,7 @@ public sealed partial class Game
             }
             // Parked in the World while its ship flies far out: upright (game +Y is that system's north), A and D turn it.
             SpacePose(c, c.SpaceParkAt, Vector3.Zero, c.SpaceParkAt - Vector3.UnitY * 1000f, dt);
-            SpaceLaunched++; // (counted with the bubble's own: the warp rule and the tick look at it)
+            SpaceLaunched++; // (counted with the bubble's own: the time speed rule and the tick look at it)
             Note(c);
         }
     }
@@ -312,6 +312,21 @@ public sealed partial class Game
             return _sbJump.Text;
         }
         return null;
+    }
+
+    /// <summary>
+    /// Any peer: the space ship this construct is the picture of (0: none). The host knows it (<see cref="Construct.SpaceShip"/>);
+    /// a client finds it among the host's ships, whose states are the host's own: its copy of the construct's pose lags the
+    /// host's, which at a high time speed is a long way round the orbit.
+    /// </summary>
+    internal ushort SpaceShipIdOf(Construct c)
+    {
+        if (c.SpaceShip != 0 || IsServer || Space is not { } s)
+            return c.SpaceShip;
+        foreach (var (id, v) in s.Ships)
+            if (v.Construct == c.Id)
+                return id;
+        return 0;
     }
 
     /// <summary>Client: does a host ship picture this construct (it is in space)?</summary>

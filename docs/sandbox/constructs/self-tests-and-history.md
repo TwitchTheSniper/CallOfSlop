@@ -400,7 +400,8 @@ A player on a construct lives in its frame (`Source/Constructs/ConstructRideMove
 
 - **The frame.** A branch of `World.Simulate`, like noclip: with `MoveState.RideUp` set, the tick runs `ConstructRide.Step`:
   the capsule mover's walk, step-up, ground snap, jump and stances (`SweptMover.FrameStep`, the same code the world mover uses)
-  in the coordinates of the segment under the feet, against shapes gathered there. `RideLocal` (feet) and `RideVel` (their
+  in the coordinates of the construct's body (one frame per construct, protocol 325: a moving segment under the feet, a lift
+  deck or a turntable, carries them in it, `MoveState.RideOn`; docs/sandbox/design/construct-frame-notes.md), against shapes gathered there. `RideLocal` (feet) and `RideVel` (their
   velocity) are the whole of their movement; `Position` and `Velocity` are copies for whatever reads the world. The construct's
   own boxes come from its joints alone (`SegPose`), never its world pose, so nothing about its speed, turn, tilt or roll
   reaches the mover: the same inputs give the same local state at 0 and 200 m/s, tilted or inverted, on the server, in the
@@ -447,7 +448,7 @@ A player on a construct lives in its frame (`Source/Constructs/ConstructRideMove
   piece's move in the deck's frame. Pieces cut free and wrecks already take the deck's velocity at the cut, a dropped part now too.
 - **Shots.** At deck speed over 2 m/s a rider's shot uses the server's eye and look (the client's world ray is a round trip
   behind). A target on the shooter's own deck is rewound in its frame. Hit boxes stand along the rider's up.
-- **Space.** A rider stays in the frame through a warp, a jump and being parked: they follow the pose. A ship on rails throws nobody.
+- **Space.** A rider stays in the frame through a sped-up coast, a jump and being parked: they follow the pose. A ship on rails throws nobody.
 - **Saved worlds.** A rider's place is kept in the frame (the `Riders` section, which older readers skip), and they come back
   aboard where they stood, relative to the construct.
 - **Cost.** Eight riders on a 7,500-part, 300 m deck: 0.16 ms a tick in the container, nothing allocated.

@@ -84,6 +84,7 @@ public sealed partial class ConstructWorld
                 return null;
             }
             ref var d = ref c.Parts[n];
+            d.Use = s.Use; // (its sub-blueprint use: the table follows below)
             d.Setting = s.Setting;
             d.Cfg = s.Cfg.Copy();
             d.Paint = s.Paint;
@@ -103,6 +104,7 @@ public sealed partial class ConstructWorld
             if (marked[link.A] >= 0 && marked[link.B] >= 0)
                 AddLink(c, marked[link.A], link.SA, marked[link.B], link.SB);
         }
+        SubBlueprints.CopyTable(src, c);
         ConstructRoutes.Remap(src, marked, c);
         ConstructTracks.Remap(src, marked, c);
         for (var k = 0; k < c.TrackCount; k++)
