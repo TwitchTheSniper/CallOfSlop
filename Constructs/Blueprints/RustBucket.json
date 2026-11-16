@@ -223,6 +223,90 @@
       "by": "top"
     },
     {
+      "part": "RCS Thruster",
+      "on": 27,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 27,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 27,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 28,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 28,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 28,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 29,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 29,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 29,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 30,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 30,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "RCS Thruster",
+      "on": 30,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 29,
+      "socket": "rcsFore",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 30,
+      "socket": "rcsFore",
+      "by": "base"
+    },
+    {
       "part": "Rust Bucket Leg",
       "on": 0,
       "socket": "legFL",
@@ -277,6 +361,12 @@
       "on": 12,
       "socket": "mast",
       "by": "bottom"
+    },
+    {
+      "part": "Long Range Sensor",
+      "on": 12,
+      "socket": "sensor",
+      "by": "-y"
     },
     {
       "part": "Rust Bucket Radiator L",
@@ -465,10 +555,14 @@
       "by": "bottom"
     },
     {
-      "part": "Driving Module",
+      "part": "Flight Stabilizer",
       "on": 13,
       "socket": "module",
-      "by": "-y"
+      "by": "-y",
+      "config": {
+        "keys": "Ship",
+        "mouseAim": true
+      }
     },
     {
       "part": "Chart Table",
@@ -697,68 +791,64 @@
   ],
   "wires": [
     [
-      62,
-      60
+      77,
+      75
     ],
     [
-      62,
-      61
+      77,
+      76
     ],
     [
-      65,
-      63
+      80,
+      78
     ],
     [
-      65,
-      64
+      80,
+      79
     ],
     [
-      68,
-      66
+      83,
+      81
     ],
     [
-      68,
-      67
+      83,
+      82
     ],
     [
-      69,
-      71
+      84,
+      86
     ],
     [
-      71,
-      35
+      111,
+      107
     ],
     [
-      96,
-      92
+      111,
+      108
     ],
     [
-      96,
-      93
+      111,
+      109
     ],
     [
-      96,
-      94
+      111,
+      110
     ],
     [
-      96,
-      95
+      116,
+      112
     ],
     [
-      101,
-      97
+      116,
+      113
     ],
     [
-      101,
-      98
+      116,
+      114
     ],
     [
-      101,
-      99
-    ],
-    [
-      101,
-      100
+      116,
+      115
     ]
   ],
   "conduit": true

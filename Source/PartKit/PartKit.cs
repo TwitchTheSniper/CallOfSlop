@@ -104,6 +104,7 @@ public static class PartKit
         new Generators.ShipParts(), // (the rust bucket: its blueprint uses the building and interior parts)
         new Generators.FrigateParts(), // (the Halberd frigate: likewise)
         new Generators.MinerParts(), // (the Magpie mining ship)
+        new Generators.TorpedoFrigateParts(), // (the Zero Day torpedo frigate: likewise)
         new Generators.MakeRv(),
         new Generators.MachineTiers(),
         new Generators.Assembling(),

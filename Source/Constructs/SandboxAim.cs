@@ -286,6 +286,8 @@ public static class SandboxAim
                 return AimCall.Refuse($"empty the {d.Name} first");
             return OutOfPickUp(in t) ? AimCall.No : AimCall.Ok; // (F on a loose body picks it up, whatever the part is: the input sends PickUp first)
         }
+        if (d.ToolDock)
+            return p.Broken ? AimCall.Refuse($"the {d.Name} is wrecked") : AimCall.Ok;
         if (d.Role == PartRole.Seat)
         {
             if (d.RemoteReceiver)

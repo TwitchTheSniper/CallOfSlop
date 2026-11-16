@@ -1,0 +1,168 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Zero Day Countermeasure Launcher",
+  "description": "Six tubes of flares on the spine: a press of the flare button throws a spread of them. Missiles and torpedoes coming in may go for one instead.",
+  "group": "Ship",
+  "section": "Zero Day frigate",
+  "role": "gun",
+  "tool": "welder",
+  "gun": {
+    "damage": 1,
+    "rpm": 240,
+    "spread": 14,
+    "range": 40,
+    "maxRange": 80,
+    "mag": 24,
+    "reload": 8,
+    "kick": 2,
+    "fx": "cannon",
+    "soundOf": "Leviathan .50",
+    "shell": "flare",
+    "speed": 32,
+    "burn": 6,
+    "muzzle": [
+      0,
+      0,
+      -0.47
+    ]
+  },
+  "centreSockets": false,
+  "mass": 90.0,
+  "health": 600,
+  "armour": 10,
+  "material": "steel",
+  "color": "#3b4148",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.3,
+        -0.2,
+        -0.45
+      ],
+      "max": [
+        0.3,
+        0.2,
+        0.0
+      ],
+      "color": "#3b4148",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -0.24,
+        -0.14,
+        -0.47
+      ],
+      "max": [
+        -0.12,
+        -0.02,
+        -0.45
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        -0.06,
+        -0.14,
+        -0.47
+      ],
+      "max": [
+        0.06,
+        -0.02,
+        -0.45
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        0.12,
+        -0.14,
+        -0.47
+      ],
+      "max": [
+        0.24,
+        -0.02,
+        -0.45
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        -0.24,
+        0.02,
+        -0.47
+      ],
+      "max": [
+        -0.12,
+        0.14,
+        -0.45
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        -0.06,
+        0.02,
+        -0.47
+      ],
+      "max": [
+        0.06,
+        0.14,
+        -0.45
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        0.12,
+        0.02,
+        -0.47
+      ],
+      "max": [
+        0.24,
+        0.14,
+        -0.45
+      ],
+      "color": "#1f2226",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        -0.305,
+        -0.205,
+        -0.2
+      ],
+      "max": [
+        0.305,
+        0.205,
+        -0.12
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

@@ -96,6 +96,8 @@ public enum Sfx
     ColonyAlarm, // the penal colony's lockdown siren (SynthAlarm.cs, played by Game.ColonyAlarmSounds): one wail, up and down
     Babble, // one murmured syllable of a story person's talk (SynthBabble.cs, played by Game.StoryBabbleSounds): "ma", "ga", "na"...
     Tannoy, // a loudspeaker on a pole: two chimes and a garbled announcement (SynthAlarm.cs, played by PartAmbience)
+    HullCreak, // a ship's part about to go: a long metal groan and a few ticks (SynthBreakdown.cs, played by Game.BreakdownHeard)
+    PartFail, // the part going: a bang, a clatter and a hiss of escaping fuel (SynthBreakdown.cs)
     COUNT,
 }
 
@@ -1031,6 +1033,8 @@ public static partial class Synth
             return alarm; // SynthAlarm.cs
         if (BabbleFoley(sfx, variant) is { } babble)
             return babble; // SynthBabble.cs
+        if (BreakdownFoley(sfx, variant) is { } breakdown)
+            return breakdown; // SynthBreakdown.cs
         var rng = new Random(77 + (int)sfx + variant * 1000);
         Buf b;
         switch (sfx)

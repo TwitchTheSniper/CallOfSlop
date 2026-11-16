@@ -1076,6 +1076,7 @@ public sealed class ShipParts : IPartGenerator
         Sock(p, "cargo", Cx - 0.5, RoofDeck, 9.0, "+y");
         Sock(p, "crane", Cx + 1.7, RoofDeck, 12.4, "+y");
         Sock(p, "mast", Cx - 1.6, RoofDeck, 5.2, "+y");
+        Sock(p, "sensor", Cx - 0.7, RoofDeck, 5.2, "+y"); // (the Long Range Sensor beside the mast: the radar's scope)
         Sock(p, "radL", Cx - RadX, 6.3, RadZ, "-x");
         Sock(p, "radR", Cx + RadX, 6.3, RadZ, "+x");
         return p;
@@ -1246,6 +1247,8 @@ public sealed class ShipParts : IPartGenerator
     private const double PodX = 6.1, PodY = 1.4, PodR = 0.9, SadX = 5.8, SadY = 1.0, SadR = 0.65, SadZ = 5.6, PodLiftZ = 14.2;
     private const double DriveForce = 600000, LiftForce = 800000, JetBurn = 3.0; // (l/s per MN, as the shipped jets)
     private const double PodZ = 14.5;
+    internal const double RcsForce = 80000, HeavyRcsForce = 250000; // N: the attitude jets (Karl, 2026-11-15: a ship needs thrusters pointing every way to turn every way)
+    private const double PodRcsZ = 15.4, PodRcsDownZ = 15.9, SadRcsZ = 6.1, SadRcsDownZ = 6.95;
     private static readonly double PodInner = Cm(SkinHalf(PodZ, PodY)), SadInner = Cm(SkinHalf(SadZ, SadY));
 
     private static Part Pod(int side)
@@ -1274,6 +1277,10 @@ public sealed class ShipParts : IPartGenerator
         Sock(p, "hull", Cx + side * PodInner, PodY, PodZ, side < 0 ? "+x" : "-x");
         Sock(p, "drive", cx, cy, 17.2, "+z");
         Sock(p, "lift", cx, cy - r * 0.9, PodLiftZ, "-y");
+        // The attitude jets: up on the fairing, down under the pod behind the lift jet, out on the outboard flat.
+        RcsMount(p, "rcsUp", cx, cy + r * 1.12, PodRcsZ, "+y", 0.36, Frame);
+        RcsMount(p, "rcsDown", cx, cy - Flat(r), PodRcsDownZ, "-y", 0.36, Frame);
+        RcsMount(p, "rcsOut", cx + side * Flat(r), cy, PodRcsZ, side < 0 ? "-x" : "+x", 0.36, Frame);
         p.Set(("fuelTank", Kw(("capacity", 2500))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(cx + side * r * 0.9, cy, 13.0).Cast<object>()], side < 0 ? "-x" : "+x", "fuel"))));
         return p.Stats(3500, 6000, 25, 10.0);
     }
@@ -1293,8 +1300,52 @@ public sealed class ShipParts : IPartGenerator
         Hidden(p, cx - r * 0.9, cy - r * 0.9, 4.4, cx + r * 0.9, cy + r * 0.9, 7.3);
         Sock(p, "hull", inner, cy, SadZ, side < 0 ? "+x" : "-x");
         Sock(p, "lift", cx, cy - r * 0.9, SadZ, "-y");
+        // The attitude jets: up between the filler and the aft strap, down behind the lift jet, out on the outboard flat, and a retro on its nose.
+        RcsMount(p, "rcsUp", cx, cy + Flat(r), SadRcsZ, "+y", 0.36, Frame);
+        RcsMount(p, "rcsDown", cx, cy - Flat(r), SadRcsDownZ, "-y", 0.36, Frame);
+        RcsMount(p, "rcsOut", cx + side * Flat(r), cy, SadRcsZ, side < 0 ? "-x" : "+x", 0.36, Frame);
+        RcsMount(p, "rcsFore", cx, cy, 3.7, "-z", 0.54, Frame);
         p.Set(("fuelTank", Kw(("capacity", 1000))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(cx + side * r * 0.9, cy, 6.4).Cast<object>()], side < 0 ? "-x" : "+x", "fuel"))));
         return p.Stats(1200, 3000, 20, 8.0);
+    }
+
+    /// <summary>
+    /// A mount for an attitude jet (ShipParts.Rcs): a square pad standing <c>0.04</c> m proud of the surface point, its outer face the socket (a socket sits on a solid box's face).
+    /// <paramref name="w"/>: the pad's width, a little over the jet's housing.
+    /// </summary>
+    private static void RcsMount(Part p, string name, double x, double y, double z, string dir, double w, string color)
+    {
+        var s = dir[0] == '-' ? -1 : 1;
+        double[] at = [x, y, z];
+        var axis = dir[1] - 'x';
+        double[] lo = [x - w / 2, y - w / 2, z - w / 2], hi = [x + w / 2, y + w / 2, z + w / 2];
+        lo[axis] = Math.Min(at[axis] - s * 0.11, at[axis] + s * 0.04);
+        hi[axis] = Math.Max(at[axis] - s * 0.11, at[axis] + s * 0.04);
+        at[axis] += s * 0.04;
+        Solid(p, lo[0], lo[1], lo[2], hi[0], hi[1], hi[2], color, "dirty steel");
+        Sock(p, name, at[0], at[1], at[2], dir);
+    }
+
+    /// <summary>How far an octagon's flat side is from its middle, for corner radius r (the corners at 22.5 degrees off the axes, so the flats face along them).</summary>
+    private static double Flat(double r) => Math.Round(r * Math.Cos(Math.PI / 8), 3);
+
+    /// <summary>
+    /// An attitude jet: a small housing with a hazard band and a bell, its exhaust away from its base. One part, hung on sockets facing every way: a flight stabilizer
+    /// works out what each does, so a ship with them round its ends turns about any axis and stops any way (the Rust Bucket and the Magpie carry them).
+    /// </summary>
+    internal static Part Rcs(string name, double force, double k)
+    {
+        var p = new Part(name, Small, "Ship fittings", $"An attitude jet: {force / 1000:0} kN out of a small bell. Fit them round a ship's ends pointing every way, and a flight stabilizer turns it about any axis and stops it any way.", role: "thruster", tool: "wrench", material: "steel", color: Frame, group: Group);
+        p.Add(Box([-0.15 * k, -0.16 * k, -0.15 * k], [0.15 * k, -0.003, 0.15 * k], "#3a3836", shape: Kw(("finish", "dirty steel"))));
+        p.Add(Box([-0.154 * k, -0.12 * k, -0.154 * k], [0.154 * k, -0.09 * k, 0.154 * k], Stripe, detail: true, shape: Kw(("finish", "hazard paint"))));
+        for (var i = 0; i < 8; i++)
+            Quad(p, RingY(0.06 * k, -0.16 * k, i), RingY(0.06 * k, -0.16 * k, i + 1), RingY(0.11 * k, -0.3 * k, i + 1), RingY(0.11 * k, -0.3 * k, i), "#2a2624", "soot");
+        Plate(p, [.. Enumerable.Range(0, 8).Select(i => RingY(0.055 * k, -0.17 * k, i))], "#ff8a3a", glow: true);
+        p.Add(Box([-0.11 * k, -0.3 * k, -0.11 * k], [0.11 * k, -0.16 * k, 0.11 * k], hidden: true));
+        p.Sock("base", [0, 0, 0], "+y");
+        p.Set(("thruster", Kw(("force", force), ("spool", 0.25), ("exhaust", "-y"), ("at", Py.L(0, Py.Round(-0.3 * k, 4), 0)), ("burnRate", Py.Round(force / 1e6 * JetBurn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [Math.Round(0.15 * k, 3), Math.Round(-0.05 * k, 3), 0], "+x", "fuel"))));
+        p.Set(("flame", Py.L(Kw(("at", Py.L(0, Py.Round(-0.3 * k, 4), 0)), ("dir", "-y"), ("radius", Py.Round(0.08 * k, 4)), ("length", Py.Round(1.1 * k, 4)), ("kind", "Rocket")))));
+        return p.Stats(Math.Round(90 * k * k * k), 1500, 12, 3.0);
     }
 
     /// <summary>An octagon's corner (part-local, about the origin) at radius rr, height y in the xz plane (a ring across y).</summary>
@@ -1846,6 +1897,9 @@ public sealed class ShipParts : IPartGenerator
 
     private static int Hang(BuildingParts.Blueprint bp, string part, int on, string sock, string by, int spin = 0) => bp.Hang(part, Holder(bp, on, sock), sock, by, spin);
 
+    /// <summary>A ship's flight stabilizer settings: Ship keys (FlightPattern.Ship), the nose on the mouse.</summary>
+    internal static PyDict ShipFlight() => new() { ["keys"] = "Ship", ["mouseAim"] = true };
+
     private static int Paint(BuildingParts.Blueprint bp, int step, string paint, string? finish = null)
     {
         bp.Steps[step]["paint"] = paint;
@@ -1887,6 +1941,12 @@ public sealed class ShipParts : IPartGenerator
             bp.Hang("Rust Bucket Lift Jet", pod, "lift", "top");
         }
         var foreLift = saddles.Select(t => bp.Hang("Rust Bucket Lift Jet", t, "lift", "top")).ToArray();
+        // Attitude jets pointing every way at both ends, so it turns about any axis and stops any way; heavy retros on the saddle tanks' noses to brake.
+        foreach (var t in pods.Concat(saddles))
+            foreach (var sock in new[] { "rcsUp", "rcsDown", "rcsOut" })
+                bp.Hang("RCS Thruster", t, sock, "base");
+        foreach (var t in saddles)
+            bp.Hang("Heavy RCS Thruster", t, "rcsFore", "base");
         foreach (var n in new[] { "legFL", "legFR", "legBL", "legBR" })
             Hang(bp, "Rust Bucket Leg", keel, n, "top");
         Hang(bp, "Rust Bucket Ramp", keel, "ramp", "hang");
@@ -1895,6 +1955,7 @@ public sealed class ShipParts : IPartGenerator
         Paint(bp, Hang(bp, "Rust Bucket Deck Cargo", roof, "cargo", "bottom"), "#3f5e6a", "rusty paint");
         Hang(bp, "Rust Bucket Crane", roof, "crane", "bottom");
         Hang(bp, "Rust Bucket Mast", roof, "mast", "bottom");
+        Hang(bp, "Long Range Sensor", roof, "sensor", "-y"); // (the radar's scope in every seat; no missile rack, so no lock: ConstructRadar.CanLock)
         Hang(bp, "Rust Bucket Radiator L", roof, "radL", "root");
         Hang(bp, "Rust Bucket Radiator R", roof, "radR", "root");
         // The hold: shelving down the port side, a tool rack and a locker opposite, two crates by the stair.
@@ -1913,12 +1974,12 @@ public sealed class ShipParts : IPartGenerator
         Switch(bp, keel, "switchHoldL", Lamp(bp, keel, "lampHoldL0"), Lamp(bp, keel, "lampHoldL1"));
         Switch(bp, keel, "switchHoldR", Lamp(bp, keel, "lampHoldR0"), Lamp(bp, keel, "lampHoldR1"));
         Switch(bp, keel, "switchEng", Lamp(bp, keel, "lampEngL"), Lamp(bp, keel, "lampEngR"));
-        // The cockpit: the pilot's seat drives through a Driving Module under the dashboard, as the Orbiter's does.
+        // The cockpit: the pilot's seat flies it through a flight stabilizer under the dashboard, on Ship keys with the mouse on the nose.
         var pilot = Hang(bp, "Worn Flight Couch", deck, "seatL", "bottom");
         Hang(bp, "Worn Flight Couch", deck, "seatR", "bottom");
-        var module = Hang(bp, "Driving Module", deck, "module", "-y");
-        bp.Wires.Add((pilot, module));
-        bp.Wires.Add((module, foreLift[0]));
+        var stab = Hang(bp, "Flight Stabilizer", deck, "module", "-y"); // (a small gyro: the attitude jets turn it)
+        bp.Steps[stab]["config"] = ShipFlight();
+        bp.Wires.Add((pilot, stab));
         Hang(bp, "Chart Table", deck, "chart", "back");
         // The bedroom, the bathroom.
         Paint(bp, Hang(bp, "Iron Bed", deck, "bed", "wall"), "#6b4a2e", "worn paint");
@@ -1958,7 +2019,7 @@ public sealed class ShipParts : IPartGenerator
         Structure = PlaceOrder(structure, "Rust Bucket Keel");
         List<Part> parts =
         [
-            .. structure, Ramp(), Pod(-1), Pod(1), Saddle(-1), Saddle(1), Drive(), LiftJet(), Leg(), Radiator(-1), Radiator(1), DeckCargo(), Crane(), Mast(),
+            .. structure, Ramp(), Pod(-1), Pod(1), Saddle(-1), Saddle(1), Drive(), LiftJet(), Rcs("RCS Thruster", RcsForce, 1.0), Rcs("Heavy RCS Thruster", HeavyRcsForce, 1.6), Leg(), Radiator(-1), Radiator(1), DeckCargo(), Crane(), Mast(),
             Toilet(), Basin(), Shower(), GalleyRange(), MessTable(), WornCouch(), GrowRack(), EngineBlock(),
         ];
         var defs = new Dictionary<string, PyDict>();

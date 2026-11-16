@@ -65,11 +65,13 @@ reach.
 - The stern pods are fuel tanks (2,500 l each) carrying a **Rust Bucket Drive** on their tails (600 kN, pushes forward)
   and a **Rust Bucket Lift Jet** under each (800 kN, down). Two **saddle tanks** on the forward flanks (1,000 l each) carry
   two more lift jets, so the lifters stand round the centre of mass and the hover hold keeps it level.
-- The pilot's Seat (port) drives through a Driving Module on the cockpit floor, wired as the Orbiter's. Shift climbs and
-  holds, W flies forward, A and D turn. There is no reverse thrust: to slow, turn round and burn. Tried in a window: it
-  climbs 16 m in 9 s and holds, as the first hull did.
-- In orbit it is a ship like any other (docs/space/SPACE.md); to come down, turn it round, burn until the orbit's low
-  point is under the sky's edge, and the hover catches it on the way in.
+- **RCS Thrusters** (80 kN) stand on each tank's top, bottom and outboard face, and a **Heavy RCS Thruster** (250 kN)
+  on each saddle's front, pushing back (`ShipParts.Rcs`, on pads by `RcsMount`).
+- The pilot's Seat (port) is wired to a small Flight Stabilizer on the deck's module socket, on Ship keys with mouse aim
+  (docs/sandbox/constructs/flight.md "Ship keys"): the nose follows the look, W/S forward and back, A/D slide, Q/E roll,
+  Shift/Ctrl up and down; let go, it stops and holds. `--flight-check`: climbs, holds within 0.25 m, nose 65 degrees down
+  on the look and back level.
+- In orbit it is a ship like any other (docs/space/SPACE.md), and the stabilizer flies it there too.
 
 ## Breakdowns
 
