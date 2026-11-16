@@ -273,12 +273,12 @@ public sealed partial class Game
     {
         var feet = ConstructEdits.SeatFeet(c, seat);
         p.Teleport(feet);
-        p.Sim.Velocity = c.PointVel(feet); // (a ship's bunk: moving with it)
+        p.Sim.Velocity = ConstructRide.SpawnVel(Constructs, feet, c, c.Parts[seat].Seg); // (a ship's bunk: moving with it, turning too)
         if (SandboxHands.Use(Constructs, p.Id, p.Eye, c.Id, seat) is null)
             return;
         c.WorldFrame(c.Parts[seat].Seg, out var q, out _);
         p.Teleport(feet + Vector3.Transform(Vector3.UnitY, q) * 1.0f); // (someone is in it: on top)
-        p.Sim.Velocity = c.PointVel(feet);
+        p.Sim.Velocity = ConstructRide.SpawnVel(Constructs, p.Position, c, c.Parts[seat].Seg);
     }
 
     // ---- Saved worlds -----------------------------------------------------------------------------------------------

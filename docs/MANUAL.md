@@ -608,7 +608,9 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   fire, aim and R are free for the construct's input readers. The HUD says what's missing. Players standing on a moving
   deck, lift or turntable ride along; a construct that hits you hard enough hurts (by its speed and weight).
 - **Contraption space:** on a construct you live in its frame. Its up is your up and it feels like still, level ground: walk, jump and
-  build on a banked, rolled or inverted hull, at any speed. You step off by walking off an edge or jumping clear, and keep its speed.
+  build on a banked, rolled or inverted hull, at any speed. The whole construct is one frame, a couple of metres round it included:
+  lifts, ramps and turntables carry you in it, and a jump in a tall hold stays in it. You step off by walking off an edge or jumping
+  clear, and keep its speed (from a fast one until you land); anything made, dropped or spawned aboard moves with it from the start.
   (docs/sandbox/CONSTRUCTS.md, "Contraption space".)
 - **Suspensions** come in eight sizes, kart to capital, by wheel size, and in kinds that mount and move differently: the plain
   bracket, the Pogo Strut (hung from its top, the wheel straight under it), the Swing Arm (the wheel leans with it), the Double

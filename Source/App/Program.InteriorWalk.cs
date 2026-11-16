@@ -401,7 +401,7 @@ public static unsafe partial class Program
             var onCar = c.ToLocal(c.SegToWorld(seg, floorLocal)) + new Vector3(0, 0.2f, 0);
             var s = Drop(onCar);
             var y0 = s.Position.Y;
-            var riding = s.RideBody == c.Id && s.RideSeg == seg;
+            var riding = s.RideBody == c.Id && ConstructRide.Carrier(s) == c.MoveSeg(seg); // (one frame per construct: the car carries them in the body's frame)
             if (button < 0)
             {
                 Tally($"lift L{lvl}", false, "the car has no button");
@@ -412,7 +412,7 @@ public static unsafe partial class Program
             for (var t = 0; t < 6 * World.TickRate; t++)
                 Tick(ref s, Buttons.None, 0, world: true);
             var rose = s.Position.Y - y0;
-            var stillOn = s.RideBody == c.Id && s.RideSeg == seg;
+            var stillOn = s.RideBody == c.Id && ConstructRide.Carrier(s) == c.MoveSeg(seg);
             Tally($"lift L{lvl} ride up", riding && use == null && rose is > 2.7f and < 3.3f && stillOn, $"car {car}: boarded {riding}, button {use ?? "pressed"}, rider rose {rose:0.00} m, still on the car {stillOn}");
             // walk off: the first of the four ways that gets 3 m off the car on the landing's level
             var at = c.ToLocal(s.Position);
@@ -422,7 +422,7 @@ public static unsafe partial class Program
             {
                 var s2 = s;
                 var r = WalkTo(ref s2, at + d * 3.2f, 4f);
-                if (r.Ok && MathF.Abs(r.Dy) < 0.3f && s2.RideSeg == 0)
+                if (r.Ok && MathF.Abs(r.Dy) < 0.3f && ConstructRide.Carrier(s2) == 0)
                 {
                     off = true;
                     break;

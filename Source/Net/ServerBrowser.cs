@@ -545,7 +545,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   use (SubBlueprints.Write: a Patch carries a change); CBodyKind.Station gains after each job its role, a sub-job's header and
     //   its uses' rows (ConstructStationTree.Write); StationOp CancelUse at the end of StationOp; the Building Station's Sub-jobs
     //   setting (CfgKey.SubJobs, a new config slot).
-    public const ushort ProtocolVersion = 324;
+    // 325: one frame per construct (docs/sandbox/design/construct-frame-notes.md): a player in contraption space rides the
+    //   construct's body frame (RideSeg 0) and a moving segment under the feet carries them in it; SnapOwn's ride state gains
+    //   u8 RideOn (that segment) after RideGrip.
+    public const ushort ProtocolVersion = 325;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

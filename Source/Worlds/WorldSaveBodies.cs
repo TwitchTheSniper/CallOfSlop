@@ -1028,6 +1028,7 @@ public sealed partial class ConstructWorld
         c.Asleep = (flags & 2) != 0;
         c.Vel = vel;
         c.AngVel = ang;
+        c.Fresh = false; // (loaded with the motion it was saved with: not a spawn to set moving, ConstructRideSpawn.cs)
         if (usesBytes != null)
             SubBlueprints.LoadBytes(c, usesBytes); // (before parts that don't load go: the tags move with the parts)
         var doomed = 0;
