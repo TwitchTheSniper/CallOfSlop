@@ -95,6 +95,8 @@ public static class LinkedCheck
         var yDock = PartOf(yd, d => d.LinkKind == LinkKind.Dock);
         for (var k = 0; k < 8; k++)
             wa.PutPart(wk, store, gear);
+        var dispPart = PartOf(wk, d => d.LinkKind == LinkKind.Dispatcher);
+        wk.Parts[dispPart].Broken = true; // (the works' Dispatcher off until its own test: it would send the hauler the teleports below move by hand)
         Run(wa, placeA, 3);
         var code = LinkedLogistics.Code(yd.Parts[trans].Link?.Id ?? 0);
         string? why;
@@ -201,6 +203,8 @@ public static class LinkedCheck
             Console.WriteLine(FormattableString.Invariant($"     t {k * 0.25:0.00}: y {ha.WorldCom.Y:0.00} up {Vector3.Transform(Vector3.UnitY, ha.Rot).Y:0.00} angvel {ha.AngVel.Length():0.0} held {ha.CarriedBy} phase {ha.Parts[PartOf(ha, d => d.LinkKind == LinkKind.Route)].Link?.Route?.Phase} rotors {string.Join(" ", Enumerable.Range(0, ha.RotorCount).Select(i => $"{ha.Rotors[i].Command:0.0}/{ha.Rotors[i].Thrust:0}"))}"));
         }
         Console.WriteLine($"     hauler set in the works' clamp again: held by {ha.CarriedBy}, up {Vector3.Transform(Vector3.UnitY, ha.Rot).Y:0.00}, at {ha.WorldCom:0.0}, route {ha.Parts[PartOf(ha, d => d.LinkKind == LinkKind.Route)].Link?.Route?.Phase}");
+        wk.Parts[dispPart].Broken = false;
+        Run(wa, placeA, 2);
         // The Dispatcher: the hauler, docked at the works, joins its fleet; with parts waiting it is sent on a one-off run.
         var disp = PartOf(wk, d => d.LinkKind == LinkKind.Dispatcher);
         var fleet = wk.Parts[disp].Link?.Fleet;
@@ -223,8 +227,9 @@ public static class LinkedCheck
             if (k % 3 == 0)
                 Console.WriteLine($"     {k * 4 + 4} s: up {Vector3.Transform(Vector3.UnitY, ha.Rot).Y:0.00} AP {ConstructFlight.ApText(ha)} hauler at {ha.WorldCom.X:0},{ha.WorldCom.Y:0},{ha.WorldCom.Z:0}, held by {ha.CarriedBy}, aboard {ha.Parts[port].Link!.Manifest.Sum(m => m.Aboard)}; stop {sent.At + 1} {sent.Phase}: {sent.Why}");
         }
+        Say(unloaded, $"the run flew for real: off the works' dock by its rule, 120 m to the yard, down into its clamp, unloaded: {(unloaded ? "yes" : "no")}");
         var flew = sent is { Phase: RoutePhase.Done } && unloaded && ha.CarriedBy == wk.Id;
-        Console.WriteLine($"  {(flew ? "ok  " : "GAP ")} (not counted: the Linked Hauler is a Fan Quad near its lift limit, linked-logistics-notes.md) the run flew: works -> yard (docked, unloaded) -> works (docked): route {sent?.Phase}, held by {ha.CarriedBy}, up {Vector3.Transform(Vector3.UnitY, ha.Rot).Y:0.00}");
+        Console.WriteLine($"  {(flew ? "ok  " : "GAP ")} (not counted: the Fan Quad hauler can tip as the yard's clamp lets it go, linked-logistics-notes.md) and back to the works: route {sent?.Phase}, held by {ha.CarriedBy}, up {Vector3.Transform(Vector3.UnitY, ha.Rot).Y:0.00}");
         Console.WriteLine($"     the yard's order: {Order(yd, term)}");
 
         // A sub-blueprint job over the link: the yard's station builds the Submodule Skiff; its pods go to the works' station (Sub-jobs Linked).

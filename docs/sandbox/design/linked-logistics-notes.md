@@ -47,9 +47,12 @@ production.md "Linked logistics".
   between Games isn't there). A route ship in a planetoid's own Game climbing out to space: not tried.
 - Cranes and arms putting into a docked ship's Cargo Volume as a put point (lifter integration): not built; a submodule goes into the
   volume by hand (physics gun) or a carry the lifter already does.
-- **The Linked Hauler (a Fan Quad) doesn't lift off under the autopilot's waypoint mode**, in the window as headless (the shipped Fan
-  Quad doesn't either, headless): it sat on the ground with AP WPT on and its fans drawing power. So a route's real flight between two
-  docks was not seen; docking was the clamp's pull. Next: a thruster hauler (as the Magpie flies orders), or find why rotorcraft don't
-  climb on the waypoint autopilot from rest.
+- Route flight (merge review, 2026-11-16): the hauler that "didn't lift" was overweight for four ducted fans (386 kg: its rotors
+  saturated and it flipped) and, in the check, flat (its battery ran down in earlier waits; the showcase's works have no battery to
+  charge it at the clamp). Lighter now (Port 20 kg, Route Computer 15 kg under the port); a departure engages the autopilot and lets go at
+  once with a 4 m lift-off, and leaves the dock behind by distance before a clamp's pull retakes it. Headless (`--linked-check`) a
+  Dispatcher run flew for real: off the works' dock by its rule, 120 m to the yard, down into its clamp, unloaded. The return leg is not
+  reliable: as the yard's clamp let it go the hauler tipped over (a marginal rotorcraft near the ground). Not a bug found on main; a
+  thruster hauler with margin would be the robust showcase. A trip to another planet on the trip planner: not tried.
 - A joined client's view: not tried over `--net`.
 - No measurement of tick cost at the design's sizes (4 links, 128-kind reports, 32 route ships).

@@ -73,7 +73,7 @@ public static class LinkRoutes
     public const float Over = 30f, SinkRate = 2f, CatchLow = 2f; // metres over the dock it comes in at; m/s it sinks; the lowest it sinks to
     public const double CatchWait = 30;
     public const float LiftOff = 4f; // metres it climbs off a dock before it heads away
-    public const double SpinUp = 2; // seconds its drive runs on the dock before the clamp lets go // seconds at its lowest with no clamp taking it: said on its card
+    public const double SpinUp = 0; // seconds its drive runs on the dock before the clamp lets go // seconds at its lowest with no clamp taking it: said on its card
     public const float PayloadSpare = 1.2f; // lift-off thrust kept spare: 20%
 
     /// <summary>A stop's default rules: full (95%) or 10 minutes or nothing more to do.</summary>
@@ -256,8 +256,8 @@ public static class LinkRoutes
                 break;
             }
             case RoutePhase.Leaving:
-                if (now - r.Since >= SpinUp + 3 && c.CarriedBy == 0)
-                    Phase(r, RoutePhase.Flying);
+                if (c.CarriedBy == 0 && (now - r.Since >= SpinUp + 3 || dockBody == null || Vector3.Distance(c.WorldCom, LinkDocks.PartAt(dockBody, stop.Part)) > 6))
+                    Phase(r, RoutePhase.Flying); // (off the dock: away at once, before a clamp's pull takes it back)
                 else
                     r.Why = c.CarriedBy != 0 ? "spinning up on the dock" : "climbing off the dock";
                 break;
