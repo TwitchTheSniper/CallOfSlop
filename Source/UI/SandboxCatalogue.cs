@@ -115,6 +115,9 @@ public sealed class SandboxCatalogue
         return s.EndsWith('s') ? s : s + "s";
     }
 
+    /// <summary>Whether a part is in the Parts tab: offered, and not kept out by an "unlisted" rule (a ship's own section).</summary>
+    public static bool Listed(ConstructPartDef d) => d.Offered && !PartCategories.Current.Unlisted(d);
+
     /// <summary>The catalogue of the loaded parts, blueprints and tools.</summary>
     public static SandboxCatalogue Make()
     {
@@ -132,6 +135,8 @@ public sealed class SandboxCatalogue
                 continue; // (a cylinder's head: a tool makes it)
             if (!d.Offered)
                 continue; // (replaced by a routed link: the linking tool makes pipes and shafts now; or a wall's damage stage)
+            if (PartCategories.Current.Unlisted(d))
+                continue; // (a ship's own section: it comes with the ship's blueprint, Categories.json's "unlisted" rules)
             partItems.Add((g, s, PartCategories.Current.SectionOrder(g, s), d.Name, d.Id));
         }
         cat.Parts = MakeTree(partItems, "part");
