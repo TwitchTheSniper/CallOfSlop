@@ -261,9 +261,13 @@ public sealed partial class Game
         }
     }
 
+    /// <summary>The motion of the frame a player rides (its surface's velocity at their feet; zero when they ride nothing): a player's own <see cref="MoveState.Velocity"/> is relative to it.</summary>
+    internal Vector3 SandboxRideCarry(Player p) =>
+        SandboxOn && p.Sim.RideBody != 0 && Constructs.Get(p.Sim.RideBody) is { } ride ? ConstructRide.RiderSurfaceVel(ride, p.Sim, p.Position) : Vector3.Zero;
+
     /// <summary>Server: how fast the player is moving in the world: their own speed plus, on a construct, that part of it (what a part they drop leaves with).</summary>
     private Vector3 SandboxCarry(Player p, Vector3 eye) =>
-        p.Sim.RideBody != 0 && Constructs.Get(p.Sim.RideBody) is { } ride ? ride.PointVel(eye) + p.Sim.Velocity : p.Sim.Velocity;
+        p.Sim.RideBody != 0 && Constructs.Get(p.Sim.RideBody) is { } ride ? ConstructRide.RiderSurfaceVel(ride, p.Sim, eye) + p.Sim.Velocity : p.Sim.Velocity;
 
     /// <summary>
     /// Server: the player gets out of their seat (when <paramref name="teleport"/>). On a moving construct, or where there is
@@ -304,8 +308,7 @@ public sealed partial class Game
             {
                 p.Sim.Velocity = vel;
                 p.Sim.Grounded = false;
-                if (vel.LengthSquared() > ConstructRide.FreeSpeed * ConstructRide.FreeSpeed)
-                    p.Sim.RideFree = ConstructRide.FreeTicks;
+                p.Sim.RideFree = ConstructRide.FreeFor(vel); // (the seat's speed carries them: a fast one until they land)
             }
             return;
         }
@@ -2037,7 +2040,7 @@ public sealed partial class Game
         if (h.Seated && Constructs.Get(h.SeatBody) is { } c)
         {
             s.Position = ConstructEdits.SeatFeet(c, h.SeatPart);
-            s.Velocity = c.Vel;
+            s.Velocity = h.SeatPart < c.PartCount ? ConstructRide.SurfaceVel(c, c.Parts[h.SeatPart].Seg, s.Position) : c.Vel; // (the seat's motion, turning too: what they leave with)
             s.Grounded = true;
             s.MantleTicks = 0;
             s.Stance = Stance.Stand; // (the seat takes Ctrl: the body doesn't crouch)

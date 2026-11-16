@@ -60,6 +60,7 @@ public struct SnapOwn
     public bool Ride; // the ride state follows (protocol 102): riding a construct, or just off one (its momentum)
     public ushort RideBody;
     public byte RideSeg, RideAir, RideClimb, RideFree, RideGrip; // RideGrip: a grip face's up axis (0: none; else 1 + axis * 2 + (negative ? 1 : 0))
+    public byte RideOn; // contraption space: the moving segment carrying them in the body's frame (protocol 324; ConstructRideMove.cs)
     public Vector3 RideLocal, RideClimbTo;
     public Vector3 RideUp, RideVel; // contraption space (protocol 130): their up and own velocity in the frame (ConstructRideMove.cs)
     public bool Worn; // what they wear follows (PilotGear.cs)
@@ -315,7 +316,7 @@ public static class Snapshot
             w.Vec(o.MantleTo);
         if (o.Ride)
         {
-            w.U16(o.RideBody).U8(o.RideSeg).U8(o.RideAir).U8(o.RideClimb).U8(o.RideFree).U8(o.RideGrip).Vec(o.RideLocal).Vec(o.RideUp).Vec(o.RideVel);
+            w.U16(o.RideBody).U8(o.RideSeg).U8(o.RideAir).U8(o.RideClimb).U8(o.RideFree).U8(o.RideGrip).U8(o.RideOn).Vec(o.RideLocal).Vec(o.RideUp).Vec(o.RideVel);
             if (o.RideClimb > 0)
                 w.Vec(o.RideClimbTo);
         }
@@ -336,7 +337,7 @@ public static class Snapshot
             o.MantleTo = r.Vec();
         if ((flags & 4) != 0)
         {
-            if (!r.Has(18 + SlowBytes))
+            if (!r.Has(19 + SlowBytes))
                 return null;
             o.Ride = true;
             o.RideBody = r.U16();
@@ -345,6 +346,7 @@ public static class Snapshot
             o.RideClimb = r.U8();
             o.RideFree = r.U8();
             o.RideGrip = r.U8();
+            o.RideOn = r.U8();
             o.RideLocal = r.Vec();
             if (!r.Has(24))
                 return null;

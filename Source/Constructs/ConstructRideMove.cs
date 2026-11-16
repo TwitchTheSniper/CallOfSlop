@@ -170,10 +170,15 @@ public static partial class ConstructRide
         return true;
     }
 
-    /// <summary>Into a construct's frame: the feet, the velocity relative to it, and the up they take there.</summary>
+    /// <summary>
+    /// Into a construct's frame: the feet, the velocity relative to the surface of segment <paramref name="seg"/> they stand
+    /// on, and the up they take there. The frame is the construct's body, whatever they stand on: a moving segment (a lift
+    /// deck, a lowered ramp) only carries them in it (<see cref="MoveState.RideOn"/>).
+    /// </summary>
     public static void Join(ref MoveState s, Construct c, int seg, Vector3 up, Vector3 relative)
     {
-        seg = c.MoveSeg(seg);
+        s.RideOn = (byte)c.MoveSeg(seg);
+        seg = 0;
         s.RideBody = c.Id;
         s.RideSeg = (byte)seg;
         s.RideUp = up;
@@ -194,7 +199,13 @@ public static partial class ConstructRide
     public static void Rejoin(ref MoveState s, Construct c, int seg, Vector3 up, Vector3 local)
     {
         s.RideBody = c.Id;
-        s.RideSeg = (byte)seg;
+        s.RideOn = (byte)c.MoveSeg(seg);
+        if (seg != 0)
+        {
+            local = ToLocal(c, 0, ToWorld(c, seg, local)); // (a save from before one frame per construct: feet in a segment's frame, and up in its turn)
+            up = Vector3.Transform(Vector3.Transform(up, QuatOf(c, seg)), Quaternion.Conjugate(QuatOf(c, 0)));
+        }
+        s.RideSeg = 0;
         s.RideUp = Vector3.Normalize(up);
         s.RideLocal = local;
         s.RideVel = Vector3.Zero;
@@ -240,7 +251,7 @@ public static partial class ConstructRide
             Place(ref s, c);
             s.Grounded = s.RideClimb == 0;
             s.RideAir = 0;
-            surfaceVel = SurfaceVel(c, s.RideSeg, s.Position);
+            surfaceVel = RiderSurfaceVel(c, s, s.Position);
             climbing = s.RideClimb > 0;
             return c;
         }
@@ -250,7 +261,7 @@ public static partial class ConstructRide
             return null;
         }
         Place(ref s, c);
-        surfaceVel = SurfaceVel(c, s.RideSeg, s.Position);
+        surfaceVel = RiderSurfaceVel(c, s, s.Position);
         // A crash: the deck's jolt, less what its own turn explains (a hard turn at speed isn't one), throws them off at its speed before it.
         if (server && !c.Anchored && !c.Asleep && c.SpaceShip == 0) // (a ship on rails moves as its orbit says, warp and all: nothing to be thrown by)
         {
@@ -265,7 +276,7 @@ public static partial class ConstructRide
                     s.Velocity += up * ThrowPop;
                 s.Grounded = false;
                 Clear(ref s);
-                s.RideFree = FreeTicks;
+                s.RideFree = Math.Max((byte)FreeTicks, FreeFor(surfaceVel));
                 s.RideAir = RejoinTicks;
                 w.Events.Add($"a rider was thrown off construct {c.Id} ({a.Length() / 9.81f:0.0} g)");
                 return null;
@@ -291,6 +302,23 @@ public static partial class ConstructRide
     {
         c.WorldFrame(seg, out var q, out _);
         return q;
+    }
+
+    /// <summary>
+    /// A moving segment's own motion (its joints', not the body's) at a point of the body's frame, in that frame's axes: the
+    /// velocity half a tick along it, so a turntable carries a rider round its axis and not out of it.
+    /// </summary>
+    public static Vector3 CarrierVel(Construct c, int seg, Vector3 local)
+    {
+        if (seg <= 0 || seg > c.JointCount)
+            return Vector3.Zero;
+        c.WorldFrame(0, out var q, out var t);
+        var at = t + Vector3.Transform(local, q);
+        var v = c.SegPointVel(seg, at);
+        if (v == Vector3.Zero)
+            return v;
+        v = c.SegPointVel(seg, at + v * (World.TickDt * 0.5f));
+        return Vector3.Transform(v, Quaternion.Conjugate(q));
     }
 
     private static bool GripPart(Construct c, int part)
@@ -531,7 +559,9 @@ public static partial class ConstructRide
         if (s.RideClimb > 0)
             return true; // (a climb moves them, in the construct step)
         var worldUp = GravityFrames.UpAt(s.Position);
-        if (c.Anchored && c.MoveSeg(s.RideSeg) == 0 && Vector3.Dot(Vector3.Normalize(Vector3.Transform(s.RideUp, q)), worldUp) >= AnchoredLevel)
+        if (s.RideOn > c.JointCount)
+            s.RideOn = 0;
+        if (c.Anchored && c.MoveSeg(Carrier(s)) == 0 && Vector3.Dot(Vector3.Normalize(Vector3.Transform(s.RideUp, q)), worldUp) >= AnchoredLevel)
         {
             LeaveFrame(ref s, c); // (a level frozen floor is the world's: frozen under them, or climbed onto; level by their own up: frozen upside down, they stay on it)
             return false;
@@ -549,6 +579,19 @@ public static partial class ConstructRide
         var control = s.KnockTicks > 0
             ? (s.Grounded ? Knockback.StaggerGroundControl : Knockback.StaggerAirControl)
             : s.Grounded ? 14f : 3f;
+        // Carried by a moving segment under the feet (a lift deck, a turntable): moved with it in the body's frame, its
+        // motion this tick at the feet (the velocity half a step on: a turn carries them round it, not out of it).
+        var onVel = Vector3.Zero;
+        if (s.RideOn != 0)
+        {
+            if (s.Grounded)
+            {
+                onVel = CarrierVel(c, s.RideOn, s.RideLocal);
+                s.RideLocal += onVel * World.TickDt;
+            }
+            else
+                s.RideOn = 0;
+        }
         var m = SweptMover.Instance;
         var reach = s.RideVel.Length() * World.TickDt + World.StepHeight + SweptMover.SnapDown + SweptMover.MinStepForward + 0.5f;
         Gather(w, c, s.RideSeg, s.RideLocal, up, reach);
@@ -557,6 +600,11 @@ public static partial class ConstructRide
         _groundBody = null;
         _groundPart = -1;
         _wallBody = null;
+        if (s.RideOn != 0 && !s.Grounded)
+        {
+            s.RideVel += onVel; // (off a lift or a turntable: its motion goes with them, still in the body's frame)
+            s.RideOn = 0;
+        }
         if (s.Grounded)
         {
             s.RideAir = 0;
@@ -568,13 +616,7 @@ public static partial class ConstructRide
             if (s.RideAir < 255)
                 s.RideAir++;
             c.SegPose(s.RideSeg, out var qs, out var ts);
-            var lb = ts + Vector3.Transform(s.RideLocal, qs);
-            var pad = new Vector3(BoundsPad);
-            var above = Vector3.Abs(up) * (BoundsAbove - BoundsPad);
-            var inside = lb.X > c.LocalMin.X - pad.X - (up.X < 0 ? above.X : 0) && lb.X < c.LocalMax.X + pad.X + (up.X > 0 ? above.X : 0)
-                         && lb.Y > c.LocalMin.Y - pad.Y - (up.Y < 0 ? above.Y : 0) && lb.Y < c.LocalMax.Y + pad.Y + (up.Y > 0 ? above.Y : 0)
-                         && lb.Z > c.LocalMin.Z - pad.Z - (up.Z < 0 ? above.Z : 0) && lb.Z < c.LocalMax.Z + pad.Z + (up.Z > 0 ? above.Z : 0);
-            if (!inside && s.RideAir > CoyoteTicks)
+            if (!InFrame(c, ts + Vector3.Transform(s.RideLocal, qs), Vector3.Transform(up, qs)) && s.RideAir > CoyoteTicks)
             {
                 LeaveFrame(ref s, c); // off the edge, or clear of it: the world's gravity from here, with their speed in it
                 return true;
@@ -597,10 +639,10 @@ public static partial class ConstructRide
                 return;
             Place(ref s, c);
             var worldUp = s.RideUpW;
-            var rel = s.Velocity + SurfaceVel(c, s.RideSeg, s.Position) - SurfaceVel(other, tag.Seg, s.Position);
+            var rel = s.Velocity + RiderSurfaceVel(c, s, s.Position) - SurfaceVel(other, tag.Seg, s.Position);
             var u = UpFor(other, worldUp);
             c.WorldFrame(s.RideSeg, out var qo, out _);
-            other.WorldFrame(tag.Seg, out var qn, out _);
+            other.WorldFrame(0, out var qn, out _); // (the up is the body frame's: one frame per construct)
             var face = Vector3.Normalize(Vector3.Transform(Vector3.Transform(n, qo), Quaternion.Conjugate(qn)));
             if (Vector3.Dot(face, u) < World.MinWalkNormalY)
                 u = face;
@@ -613,13 +655,12 @@ public static partial class ConstructRide
             return;
         }
         var ms = c.MoveSeg(tag.Seg);
-        if (ms != s.RideSeg)
+        if (ms != s.RideOn)
         {
-            Place(ref s, c);
-            var rel = s.Velocity + SurfaceVel(c, s.RideSeg, s.Position) - SurfaceVel(c, ms, s.Position);
-            Join(ref s, c, ms, s.RideUp, rel);
-            s.Grounded = true;
-            SweptMover.Instance.FrameShapes.Clear();
+            // Onto another of its moving segments (or off one onto the body): the same frame, only what carries them changes,
+            // so their velocity is now relative to the new surface (no frame switch, no jolt).
+            s.RideVel += (s.RideOn != 0 ? CarrierVel(c, s.RideOn, s.RideLocal) : Vector3.Zero) - (ms != 0 ? CarrierVel(c, ms, s.RideLocal) : Vector3.Zero);
+            s.RideOn = (byte)ms;
         }
         _groundBody = c;
         _groundPart = tag.Part;
@@ -656,7 +697,7 @@ public static partial class ConstructRide
             s.Grounded = true;
             return;
         }
-        if (c.MoveSeg(tag.Seg) != s.RideSeg && tag.Seg > 0)
+        if (c.MoveSeg(tag.Seg) != s.RideOn && tag.Seg > 0)
         {
             c.WorldFrame(s.RideSeg, out var q, out var t);
             _wallBody = c;

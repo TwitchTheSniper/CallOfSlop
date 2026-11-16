@@ -294,6 +294,7 @@ public sealed partial class Construct
     public Vector3 GrabFrameVel, GrabFrameSpin; // held by a rider: their deck's motion, on top of which the piece is moved (ConstructGrab.Drive)
     public bool Asleep;
     public int SleepTicks;
+    public bool Fresh; // server: made since the physics last stepped; one nobody gave a motion takes its frame's (ConstructRideSpawn.cs)
     // Cargo volumes (decision 21; ConstructCargo.cs). Carried: this body rides kinematically in a frozen cargo volume of
     // construct CarriedBy (0: free), at CarryPos / CarryRot in the frame of that volume part's segment (CarrySeg); the
     // server finds the volume again by its part tag. A carrier counts what it carries in Cargo (body frame) for its mass.

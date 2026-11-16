@@ -30,11 +30,34 @@ public static partial class ConstructRide
     /// <summary>Ticks a rider stays in the frame after leaving its surface, wherever they are (0.3 s).</summary>
     public const int CoyoteTicks = 18;
 
-    /// <summary>Ticks in the frame off its surface at most, even inside its bounds (a long fall inside a tall build).</summary>
-    public const int MaxAirTicks = 180;
+    /// <summary>
+    /// The construct's frame reaches this far round its bounds (m), and this far above its top along the rider's up: off its
+    /// surfaces anywhere in that box (a jump in a tall hold, a step off a deck's edge, a fall down a hangar), a rider stays in
+    /// its frame however long, and only past it (after <see cref="CoyoteTicks"/>) leaves with its motion (one frame per
+    /// construct: docs/sandbox/design/construct-frame-notes.md).
+    /// </summary>
+    public const float BoundsPad = 2f, BoundsAbove = 3f;
 
-    /// <summary>The construct's bounds count this far round it (m), and this far above its top, for staying in the frame mid-jump.</summary>
-    public const float BoundsPad = 0.5f, BoundsAbove = 2.5f;
+    /// <summary>Is a point of the body's frame (<paramref name="local"/>) inside a construct's frame: its bounds, padded, and further above along <paramref name="up"/> (the body frame's axes)?</summary>
+    public static bool InFrame(Construct c, Vector3 local, Vector3 up)
+    {
+        for (var a = 0; a < 3; a++)
+        {
+            var above = MathF.Abs(up[a]) * (BoundsAbove - BoundsPad);
+            if (local[a] < c.LocalMin[a] - BoundsPad - (up[a] < 0 ? above : 0) || local[a] > c.LocalMax[a] + BoundsPad + (up[a] > 0 ? above : 0))
+                return false;
+        }
+        return true;
+    }
+
+    /// <summary>The segment whose surface carries a rider: in contraption space the moving one under the feet (<see cref="MoveState.RideOn"/>), else the one ridden.</summary>
+    public static int Carrier(in MoveState s) => s.RideOn != 0 ? s.RideOn : s.RideSeg;
+
+    /// <summary>A rider's surface velocity at a world point: the body's motion and the carrying segment's (a lift's, a turntable's).</summary>
+    public static Vector3 RiderSurfaceVel(Construct c, in MoveState s, Vector3 at) => SurfaceVel(c, Carrier(s) <= c.JointCount ? Carrier(s) : 0, at);
+
+    /// <summary>A rider's velocity in the world: their own (relative to what carries them) and the surface's at their feet.</summary>
+    public static Vector3 WorldVel(Construct? c, in MoveState s) => c == null || s.RideBody != c.Id ? s.Velocity : s.Velocity + RiderSurfaceVel(c, s, s.Position);
 
     /// <summary>A deck's acceleration (m/s^2) that throws its riders off: across, or dropping away; on grip parts, more.</summary>
     public const float ThrowAccel = 2.5f * 9.81f, DropAccel = 1.6f * 9.81f, GripThrowAccel = 5f * 9.81f;
@@ -43,6 +66,13 @@ public static partial class ConstructRide
     public const int FreeTicks = 45;
 
     public const float FreeSpeed = 1.5f;
+
+    /// <summary>Leaving a frame moving faster than this (m/s), its momentum carries them until they land (<see cref="NoclipMove.Flung"/>): out of a cargo plane's ramp, off a ship in flight.</summary>
+    public const float FlingSpeed = 6f;
+
+    /// <summary>The air steering a body leaving a frame moving at <paramref name="v"/> gets: none to speak of until it lands when fast, weak a while when slower, else its own.</summary>
+    public static byte FreeFor(Vector3 v) =>
+        v.LengthSquared() > FlingSpeed * FlingSpeed ? NoclipMove.Flung : v.LengthSquared() > FreeSpeed * FreeSpeed ? (byte)FreeTicks : (byte)0;
 
     /// <summary>Thrown off by a crash: up off the deck at least this fast (m/s), and not taken back into a frame for this many ticks.</summary>
     public const float ThrowPop = 2.5f;
@@ -123,10 +153,9 @@ public static partial class ConstructRide
             s.Velocity = Vector3.Transform(s.RideVel, QuatOf(c, s.RideSeg));
         if (momentum && c != null && s.RideSeg <= c.JointCount)
         {
-            var v = SurfaceVel(c, s.RideSeg, s.Position);
+            var v = RiderSurfaceVel(c, s, s.Position); // (the body's motion at the feet, linear and turning, and a lift's under them)
             s.Velocity += v;
-            if (v.LengthSquared() > FreeSpeed * FreeSpeed)
-                s.RideFree = FreeTicks;
+            s.RideFree = FreeFor(v); // (its momentum carries them: a fast one until they land)
         }
         Clear(ref s);
     }
@@ -135,6 +164,7 @@ public static partial class ConstructRide
     {
         s.RideBody = 0;
         s.RideSeg = 0;
+        s.RideOn = 0;
         s.RideAir = 0;
         s.RideClimb = 0;
         s.RideGripUp = Vector3.Zero;
@@ -221,7 +251,7 @@ public static partial class ConstructRide
                 s.Velocity.Y = MathF.Max(s.Velocity.Y, ThrowPop);
                 s.Grounded = false;
                 Clear(ref s);
-                s.RideFree = FreeTicks;
+                s.RideFree = Math.Max((byte)FreeTicks, FreeFor(surfaceVel));
                 s.RideAir = RejoinTicks; // (not back in its frame at once: thrown)
                 w.Events.Add($"a rider was thrown off construct {c.Id} ({a.Length() / 9.81f:0.0} g)");
                 return null;
@@ -254,12 +284,13 @@ public static partial class ConstructRide
             if (v.LengthSquared() > 1f)
                 rel = Vector3.Zero;
             var up = UpFor(standing, worldUp);
+            standing.SegPose(standSeg, out var sq, out _); // (a face's up is its segment's: into the body's frame, the one ridden)
             if (gripUp != Vector3.Zero)
-                up = gripUp;
-            else if (faceUp != Vector3.Zero && Vector3.Dot(faceUp, up) < World.MinWalkNormalY)
-                up = faceUp; // (not a face that lies across the construct's up: the surface under the feet decides)
+                up = Vector3.Normalize(Vector3.Transform(gripUp, sq));
+            else if (faceUp != Vector3.Zero && Vector3.Dot(Vector3.Transform(faceUp, sq), up) < World.MinWalkNormalY)
+                up = Vector3.Normalize(Vector3.Transform(faceUp, sq)); // (not a face that lies across the construct's up: the surface under the feet decides)
             s.Grounded = true;
-            if (standing.Anchored && standing.MoveSeg(standSeg) == 0 && Vector3.Dot(Vector3.Normalize(Vector3.Transform(up, QuatOf(standing, standSeg))), worldUp) >= AnchoredLevel)
+            if (standing.Anchored && standing.MoveSeg(standSeg) == 0 && Vector3.Dot(Vector3.Normalize(Vector3.Transform(up, QuatOf(standing, 0))), worldUp) >= AnchoredLevel)
                 return; // (the end of a tall frozen thing: its up is its long side, but this floor is level: the world's)
             Join(ref s, standing, standSeg, up, rel);
             return;
@@ -302,11 +333,7 @@ public static partial class ConstructRide
         s.RideGripUp = Vector3.Zero;
         if (s.RideAir < 255)
             s.RideAir++;
-        var lb = ride.ToLocal(feet);
-        var inside = lb.X > ride.LocalMin.X - BoundsPad && lb.X < ride.LocalMax.X + BoundsPad
-                     && lb.Z > ride.LocalMin.Z - BoundsPad && lb.Z < ride.LocalMax.Z + BoundsPad
-                     && lb.Y > ride.LocalMin.Y - BoundsPad && lb.Y < ride.LocalMax.Y + BoundsAbove;
-        if ((inside || s.RideAir <= CoyoteTicks) && s.RideAir < MaxAirTicks)
+        if (InFrame(ride, ride.ToLocal(feet), Vector3.Transform(GravityFrames.UpAt(feet), Quaternion.Conjugate(ride.Rot))) || s.RideAir <= CoyoteTicks)
         {
             s.RideLocal = ToLocal(ride, s.RideSeg, feet);
             s.RideWorld = feet;
@@ -368,6 +395,9 @@ public static partial class ConstructRide
     public static void StartClimb(ref MoveState s, Construct c, int seg, Vector3 to, int ticks, bool frame = false)
     {
         s.RideBody = c.Id;
+        s.RideOn = frame ? (byte)c.MoveSeg(seg) : (byte)0; // (contraption space: in the body's frame, carried by what it climbs onto)
+        if (frame)
+            seg = 0;
         s.RideSeg = (byte)seg;
         s.RideLocal = ToLocal(c, seg, s.Position);
         s.RideClimbTo = ToLocal(c, seg, to);

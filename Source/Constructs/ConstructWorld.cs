@@ -465,8 +465,12 @@ public sealed partial class ConstructWorld
         Shattered.Clear();
         FireCount = 0;
         CookOffCount = 0;
+        FreshCount = 0;
         ClearStores();
     }
+
+    /// <summary>Bodies made since the physics last stepped (the server's step clears it: ConstructRide.SpawnIntoMotion).</summary>
+    public int FreshCount;
 
     /// <summary>A new empty body at a pose (null when the host's cap is reached or no id is free). Add parts, then it rebuilds on the next tick.</summary>
     public Construct? Create(Vector3 pos, Quaternion rot, ushort id = 0)
@@ -480,6 +484,8 @@ public sealed partial class ConstructWorld
         var c = new Construct { Id = id, Pos = pos, Rot = rot, PrevPos = pos, PrevRot = rot, NetPos = pos, NetFromPos = pos, NetRot = rot, NetFromRot = rot, StorePool = Stores };
         Bodies.Add(c);
         _byId[id] = c;
+        c.Fresh = true; // (into the motion of the frame it is made in, before the physics next steps: ConstructRideSpawn.cs)
+        FreshCount++;
         StructureDirty.Add(id);
         GridAdded(c);
         _blasting?.Add(c); // (a piece split off by a blast going off: it is in the blast too)
@@ -2127,6 +2133,7 @@ public sealed partial class ConstructWorld
         ConstructOrdnance.Release(this, query); // (bomb racks that let go: the same)
         ConstructLauncher.Step(this, dt); // (catapults and arrestor gear, on the logic's signals: ConstructLauncher.cs)
         ConstructDoors.Step(this); // (event doors: the wired ones' edges and the moving ones, nothing for an idle door)
+        ConstructRide.SpawnIntoMotion(this); // (bodies made since the last step: into the motion of the frame they were made in)
         ConstructRide.BeforePhysics(this); // (each body's acceleration: riders thrown off by a crash)
         perf.Dispose();
         perf = Perf.Measure(PerfArea.ConstructPhysics);
