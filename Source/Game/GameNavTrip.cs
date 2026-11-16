@@ -63,7 +63,7 @@ public sealed partial class Game
     /// has (no lower than that body's lowest), so a ship that was hovering or falling doesn't come down meanwhile.
     /// </summary>
     /// <summary>A parked ship's orbit is safe once its low point is this many times the least orbit (and stays so above 1x).</summary>
-    private const double NavParkMargin = 1.1;
+    private const double NavParkMargin = 1.15;
 
     /// <summary>The low and high points (distances from the centre) of the conic through r, v; the high one is infinite past escape.</summary>
     private static void NavApsides(Vec3d r, Vec3d v, double mu, out double low, out double high)
@@ -99,6 +99,9 @@ public sealed partial class Game
         var least = NavMinOrbit(sys, body);
         var reach = SpaceShips.SphereOfInfluence(sys, body);
         NavApsides(r, v, mu, out var low, out var high);
+        // (on rails a moon doesn't tug its planet, so its full pull wobbles a low orbit's shape by kilometres over the
+        // days, Slopolis round Glacier: the orbit may wander as it likes, and is trimmed only near the sky's edge, under
+        // which the ship would be a physics body in the bubble again)
         var safe = o.Parked ? low > least && high < 0.6 * reach : low > NavParkMargin * least && high < 0.5 * reach;
         o.Parked = safe;
         if (!safe)

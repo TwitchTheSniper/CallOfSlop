@@ -150,8 +150,12 @@ use in space" setting, gets there.
    `NavTrip.Lambert` solve round the star (universal variables, short or long way, the cheaper). The plan is the
    departure that **arrives soonest**. None fits: phase Short, the card says the least any departure needs, and it plans
    again every ten seconds.
-2. **Wait** for the window, drive off, in a circular orbit at the height it has (`Game.NavPark`); time may run fast,
-   but is held so the departure comes in no less than `NavLeadSeconds` (1.5 s) of real time.
+2. **Wait** for the window in orbit, drive off (`Game.NavPark`); time may run fast, but is held so the departure comes
+   in no less than `NavLeadSeconds` (1.5 s) of real time. Bodies are on rails, so a moon doesn't tug its planet and
+   its full pull wobbles a low orbit's shape by kilometres over the days (Slopolis round Glacier): the orbit may
+   wander, and is trimmed towards a circle (at 1x, seconds) only when its low point nears the sky's edge (under which
+   the ship would be a physics body in the bubble again) or its high point nears the edge of the world's reach.
+   Round a small world time runs at what the ship's steps allow (about 15,000x round Glacier), not the full 100K.
 3. **Depart**: the burn out, closed-loop, re-solved every tick for the planned arrival from where the ship really is
    (minutes at 4 g), bent round any body in the way (`NavGuidance.Avoid`).
 4. **Coast** round the star with the drive off; every half second (`NavCoastCheck`) it solves again and burns back onto
@@ -159,7 +163,11 @@ use in space" setting, gets there.
 5. **Brake**: once it is as close as its drive needs to stop from the speed it closes at (with a quarter's margin and
    twice the target's lowest orbit), the trip hands it to the order's own law (`NavGuidance.Orbit` or `GoTo`), which
    flips it and brakes into the orbit or onto the point. While it coasts towards that point the time speed is held so it
-   gets there in no less than 1.5 s of real time (`Game.NavSpeedCap`).
+   gets there in no less than 1.5 s of real time (`Game.NavSpeedCap`); from the hand-over until the orbit has settled
+   (Insert, Brake, Transfer and Hold) time is held at 1x, since an insertion's push dips between corrections and one
+   sped-up tick (half an hour of space at 100K) flings the ship out of the planet's reach. The orbit law climbs at no
+   more than a fifth of the circle's speed (`NavGuidance.Orbit`: a strong drive under its circle once asked for more
+   than escape speed round a small world).
 
 The card's TRIP row says when it leaves, when it is there and the dV the trip spends. The drawn conic is its transfer.
 A trip made on a mid-course plan keeps its arrival time: a ship whose fuel or thrust changes on the way may need more
