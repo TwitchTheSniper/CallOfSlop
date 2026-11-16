@@ -1,0 +1,236 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Autoloader S",
+  "description": "A turret's autoloader: bolt it to a Turret Ring's trunk. It serves 1 gun on the ring while the ring is fed: a gun of six rounds or fewer reloads in well under half its time, a belt-fed one doesn't stop between loads. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "frame",
+  "tool": "welder",
+  "onBreak": "disable",
+  "worksPiece": {
+    "kind": "loader",
+    "serves": 1.0
+  },
+  "mass": 300.0,
+  "health": 1500,
+  "armour": 20,
+  "material": "steel",
+  "color": "#5a6065",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        -0.25,
+        -0.6
+      ],
+      "max": [
+        0.25,
+        -0.17,
+        -0.02
+      ],
+      "color": "#5c6057",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.245,
+        -0.167,
+        -0.558
+      ],
+      "max": [
+        -0.175,
+        0.249,
+        -0.49
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.175,
+        -0.167,
+        -0.558
+      ],
+      "max": [
+        0.245,
+        0.249,
+        -0.49
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.246,
+        0.18,
+        -0.56
+      ],
+      "max": [
+        0.246,
+        0.247,
+        -0.06
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.09,
+        -0.13,
+        -0.48
+      ],
+      "max": [
+        0.09,
+        0.05,
+        -0.05
+      ],
+      "color": "#d8a020",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.0405,
+        -0.0805,
+        -0.05
+      ],
+      "max": [
+        0.0405,
+        0.0005,
+        -0.003
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.16,
+        -0.167,
+        -0.45
+      ],
+      "max": [
+        0.16,
+        -0.125,
+        -0.12
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.105,
+        0.08,
+        -0.48
+      ],
+      "max": [
+        0.195,
+        0.17,
+        -0.18
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.19,
+        0.05,
+        -0.18
+      ],
+      "max": [
+        -0.16,
+        0.15,
+        -0.06
+      ],
+      "color": "#40e070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.25,
+        -0.17,
+        -0.6
+      ],
+      "max": [
+        0.25,
+        0.25,
+        -0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.2,
+        -0.2,
+        -0.02
+      ],
+      "max": [
+        0.2,
+        0.2,
+        0.0
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.6
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0.0,
+        -0.3
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0.0,
+        -0.3
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "deck",
+      "at": [
+        0.0,
+        -0.25,
+        -0.3
+      ],
+      "dir": "-y"
+    }
+  ]
+}

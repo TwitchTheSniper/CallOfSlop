@@ -1,0 +1,516 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Turret Ring M",
+  "description": "A turret's ring, 1.6 m across and rated 36000 N m, with a trunk 1 m deep under it through the deck. An ammo feed into its Ammo in, at the trunk's foot, feeds every gun on it, and Autoloaders bolt to the trunk's sides. Signal 1 or -1 turns it, 0 holds. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "joint",
+  "tool": "wrench",
+  "power": 40.0,
+  "joint": {
+    "type": "turntable",
+    "axis": "+y",
+    "pivot": [
+      0,
+      0.32,
+      0
+    ],
+    "leaf": "top",
+    "speed": 45,
+    "strength": 36000,
+    "give": 20,
+    "overloadDamage": 0
+  },
+  "config": [
+    {
+      "key": "speed",
+      "label": "Speed",
+      "group": "Motor",
+      "unit": "deg/s",
+      "min": 0.0,
+      "max": 90.0,
+      "step": 1,
+      "tooltip": "How fast it turns: rated 45 deg/s (0%), from stopped (-100%) to 90 deg/s (+100%)."
+    },
+    {
+      "key": "strength",
+      "label": "Torque",
+      "group": "Motor",
+      "unit": "N m",
+      "min": 3600.0,
+      "max": 36000.0,
+      "step": 100,
+      "tooltip": "What it holds, up to 36000 N m."
+    }
+  ],
+  "ports": [
+    {
+      "name": "Ammo in",
+      "type": "feed",
+      "dir": "in",
+      "at": [
+        0,
+        -1.0,
+        0
+      ],
+      "face": "-y"
+    }
+  ],
+  "worksPiece": {
+    "kind": "mount"
+  },
+  "collider": "boxes",
+  "mass": 1200.0,
+  "health": 5000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#5a6065",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -0.8,
+        0.0,
+        -0.8
+      ],
+      "max": [
+        0.8,
+        0.32,
+        0.8
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -1.0,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.0,
+        0.5
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.8,
+        0.003,
+        -0.8
+      ],
+      "max": [
+        0.8,
+        0.08,
+        0.8
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
+      "front": "+y",
+      "finish": "dirty steel",
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.72,
+        0.075,
+        -0.72
+      ],
+      "max": [
+        0.72,
+        0.275,
+        0.72
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
+      "front": "+y",
+      "finish": "dirty steel",
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.672,
+        0.27,
+        -0.672
+      ],
+      "max": [
+        0.672,
+        0.317,
+        0.672
+      ],
+      "color": "#5a6065",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
+      "front": "+y",
+      "finish": "painted plating",
+      "side": "leaf"
+    },
+    {
+      "min": [
+        -0.728,
+        0.144,
+        -0.728
+      ],
+      "max": [
+        0.728,
+        0.184,
+        0.728
+      ],
+      "color": "#d8a020",
+      "detail": true,
+      "shape": "tube",
+      "segments": 24,
+      "front": "+y",
+      "inner": 0.967,
+      "finish": "hazard paint",
+      "side": "base"
+    },
+    {
+      "min": [
+        0.7091,
+        0.077,
+        0.1717
+      ],
+      "max": [
+        0.7591,
+        0.11,
+        0.2217
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel",
+      "side": "base"
+    },
+    {
+      "min": [
+        0.5124,
+        0.077,
+        0.5124
+      ],
+      "max": [
+        0.5624,
+        0.11,
+        0.5624
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel",
+      "side": "base"
+    },
+    {
+      "min": [
+        0.1717,
+        0.077,
+        0.7091
+      ],
+      "max": [
+        0.2217,
+        0.11,
+        0.7591
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel",
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.2217,
+        0.077,
+        0.7091
+      ],
+      "max": [
+        -0.1717,
+        0.11,
+        0.7591
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel",
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.5624,
+        0.077,
+        0.5124
+      ],
+      "max": [
+        -0.5124,
+        0.11,
+        0.5624
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel",
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.7591,
+        0.077,
+        0.1717
+      ],
+      "max": [
+        -0.7091,
+        0.11,
+        0.2217
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel",
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.7591,
+        0.077,
+        -0.2217
+      ],
+      "max": [
+        -0.7091,
+        0.11,
+        -0.1717
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel",
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.5624,
+        0.077,
+        -0.5624
+      ],
+      "max": [
+        -0.5124,
+        0.11,
+        -0.5124
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel",
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.2217,
+        0.077,
+        -0.7591
+      ],
+      "max": [
+        -0.1717,
+        0.11,
+        -0.7091
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel",
+      "side": "base"
+    },
+    {
+      "min": [
+        0.1717,
+        0.077,
+        -0.7591
+      ],
+      "max": [
+        0.2217,
+        0.11,
+        -0.7091
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel",
+      "side": "base"
+    },
+    {
+      "min": [
+        0.5124,
+        0.077,
+        -0.5624
+      ],
+      "max": [
+        0.5624,
+        0.11,
+        -0.5124
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel",
+      "side": "base"
+    },
+    {
+      "min": [
+        0.7091,
+        0.077,
+        -0.2217
+      ],
+      "max": [
+        0.7591,
+        0.11,
+        -0.1717
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel",
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.5,
+        -0.92,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        -0.003,
+        0.5
+      ],
+      "color": "#5a6065",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "painted plating",
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.52,
+        -0.33,
+        -0.52
+      ],
+      "max": [
+        0.52,
+        -0.27,
+        0.52
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "shape": "tube",
+      "segments": 16,
+      "front": "+y",
+      "inner": 0.962,
+      "finish": "dirty steel",
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.52,
+        -0.73,
+        -0.52
+      ],
+      "max": [
+        0.52,
+        -0.67,
+        0.52
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "shape": "tube",
+      "segments": 16,
+      "front": "+y",
+      "inner": 0.962,
+      "finish": "dirty steel",
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.53,
+        -0.997,
+        -0.53
+      ],
+      "max": [
+        0.53,
+        -0.915,
+        0.53
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "dirty steel",
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.12,
+        -1.08,
+        -0.12
+      ],
+      "max": [
+        0.12,
+        -0.997,
+        0.12
+      ],
+      "color": "#d8a020",
+      "detail": true,
+      "finish": "worn paint",
+      "side": "base"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.32,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "trunk+x",
+      "at": [
+        0.5,
+        -0.5,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "trunk-x",
+      "at": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "trunk+z",
+      "at": [
+        0.0,
+        -0.5,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "trunk-z",
+      "at": [
+        0.0,
+        -0.5,
+        -0.5
+      ],
+      "dir": "-z"
+    }
+  ]
+}
