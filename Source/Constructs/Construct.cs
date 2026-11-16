@@ -80,6 +80,9 @@ public struct CPart
 
     public readonly ConstructPartDef D => ConstructParts.Def(Def);
     public readonly bool Working => !Broken;
+
+    /// <summary>A thruster that broke down (Game/GameSandboxBreakdowns.cs): stopped, its health kept, repairable; not a wreck.</summary>
+    public readonly bool BrokeDown => Broken && Health > 0 && D.Role == PartRole.Thruster;
 }
 
 /// <summary>

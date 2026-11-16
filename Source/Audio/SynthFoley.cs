@@ -22,6 +22,7 @@ public static partial class Synth
         Sfx.BuildPlace => BuildPlaceVariants,
         Sfx.BuildUnbolt or Sfx.BuildPop => 2,
         Sfx.Babble => BabbleVariants,
+        Sfx.HullCreak => 3,
         _ => 1,
     };
 

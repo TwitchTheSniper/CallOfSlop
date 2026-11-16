@@ -14,4 +14,19 @@ public static partial class Program
         if (Pressed(GameAction.Fire) && !_swallowClick)
             g.SandboxSendPatchCell(hit.Body.Id, hit.Part);
     }
+
+    /// <summary>
+    /// The attach tool at a part that is groaning or has broken down (Game/GameSandboxBreakdowns.cs): the look line says so,
+    /// and Fire sees to it or repairs it. True: it is such a part, and the tool does nothing else this frame.
+    /// </summary>
+    private static bool SandboxBreakdownLook(Game g, ref SandboxHand h, bool aimed, in ConstructHit hit)
+    {
+        if (!aimed || h.Seated || h.Tool != ConstructTool.Welder || h.Held != ConstructParts.None || ConnectorModeOn(in h) || hit.RoutePlus1 != 0
+            || g.BreakdownLook(hit.Body, hit.Part, out _) is not { } line)
+            return false;
+        g.SandboxLookText = line;
+        if (Pressed(GameAction.Fire) && !_swallowClick)
+            g.SandboxSendMend(hit.Body.Id, hit.Part);
+        return true; // (the line stays: nothing else the attach tool does here overwrites it)
+    }
 }

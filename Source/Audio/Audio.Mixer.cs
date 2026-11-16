@@ -78,6 +78,7 @@ public sealed partial class Audio
         >= Sfx.ZombieGroan and <= Sfx.ZombieHeadDeath or Sfx.CrowdRoar => MixBus.ZombieVoices,
         >= Sfx.BuildSnap and <= Sfx.BuildDrop => MixBus.Building,
         Sfx.Babble => MixBus.Speech,
+        Sfx.HullCreak or Sfx.PartFail => MixBus.PropBreak,
         _ => world ? MixBus.Tactical : MixBus.Ui,
     };
 
