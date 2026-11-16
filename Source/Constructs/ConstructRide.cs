@@ -348,13 +348,13 @@ public static partial class ConstructRide
     /// <summary>
     /// A player in the air, not in any frame, whose feet are inside a moving construct's bounds (a ship that turned back over
     /// someone who fell off it, a hold flown round a jumper): into its frame at once, with their velocity relative to it, so
-    /// its hull meets them in its frame and not as a box sweeping through the world (<see cref="FrameAt"/>: the same tight
-    /// bounds a spawn uses).
+    /// its hull meets them in its frame and not as a box sweeping through the world (<see cref="FrameAt"/>, its bounds with
+    /// nothing round them: someone coming down onto a deck from above lands on it and is matched to it, boarding assist 1).
     /// </summary>
     private static void CatchInAir(ConstructWorld w, ref MoveState s)
     {
         var feet = s.Position;
-        if (FrameAt(w, feet) is not { } f)
+        if (FrameAt(w, feet, null, 0f, 0f) is not { } f)
             return;
         var v = SurfaceVel(f, 0, feet);
         if (v.LengthSquared() < FreeSpeed * FreeSpeed)

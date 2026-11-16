@@ -28,7 +28,7 @@ public static partial class ConstructRide
     /// The moving construct whose frame holds world point <paramref name="at"/> (its bounds, padded by <see cref="SpawnPad"/>:
     /// <see cref="InFrame"/>), the smallest when frames nest (a car in a cargo plane's hold); null when none moves there.
     /// </summary>
-    public static Construct? FrameAt(ConstructWorld w, Vector3 at, Construct? skip = null)
+    public static Construct? FrameAt(ConstructWorld w, Vector3 at, Construct? skip = null, float pad = SpawnPad, float top = SpawnAbove)
     {
         var near = w.Near(at, BoundsAbove + 1f, _frameNear);
         Construct? best = null;
@@ -41,7 +41,7 @@ public static partial class ConstructRide
                 || f.Vel.LengthSquared() < StillSpeed * StillSpeed && f.AngVel.LengthSquared() < StillSpeed * StillSpeed)
                 continue;
             var iq = Quaternion.Conjugate(f.Rot);
-            if (!InFrame(f, Vector3.Transform(at - f.Pos, iq), Vector3.Transform(up, iq), SpawnPad, SpawnAbove))
+            if (!InFrame(f, Vector3.Transform(at - f.Pos, iq), Vector3.Transform(up, iq), pad, top))
                 continue;
             var size = (f.LocalMax - f.LocalMin).LengthSquared();
             if (size < bestSize)

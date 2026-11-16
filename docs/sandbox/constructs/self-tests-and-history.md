@@ -400,7 +400,8 @@ A player on a construct lives in its frame (`Source/Constructs/ConstructRideMove
 
 - **The frame.** A branch of `World.Simulate`, like noclip: with `MoveState.RideUp` set, the tick runs `ConstructRide.Step`:
   the capsule mover's walk, step-up, ground snap, jump and stances (`SweptMover.FrameStep`, the same code the world mover uses)
-  in the coordinates of the segment under the feet, against shapes gathered there. `RideLocal` (feet) and `RideVel` (their
+  in the coordinates of the construct's body (one frame per construct, protocol 324: a moving segment under the feet, a lift
+  deck or a turntable, carries them in it, `MoveState.RideOn`; docs/sandbox/design/construct-frame-notes.md), against shapes gathered there. `RideLocal` (feet) and `RideVel` (their
   velocity) are the whole of their movement; `Position` and `Velocity` are copies for whatever reads the world. The construct's
   own boxes come from its joints alone (`SegPose`), never its world pose, so nothing about its speed, turn, tilt or roll
   reaches the mover: the same inputs give the same local state at 0 and 200 m/s, tilted or inverted, on the server, in the

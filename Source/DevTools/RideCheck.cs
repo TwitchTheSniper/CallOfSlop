@@ -104,7 +104,7 @@ public static class RideCheck
                 if (s.RideBody == 0)
                 {
                     var iq = Quaternion.Conjugate(c.Rot);
-                    if (ConstructRide.InFrame(c, c.ToLocal(s.Position), Vector3.Transform(Vector3.UnitY, iq), ConstructRide.SpawnPad, ConstructRide.SpawnAbove)) // (left past the padded frame, a player is caught again inside its bounds proper)
+                    if (ConstructRide.InFrame(c, c.ToLocal(s.Position), Vector3.Transform(Vector3.UnitY, iq), 0f, 0f)) // (left past the padded frame, a player is caught again inside its bounds proper)
                         inFrameLapses++;
                     if (leftAt < 0)
                     {
