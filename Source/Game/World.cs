@@ -802,6 +802,8 @@ public sealed class Player
     public bool RenderRide;
     public Quaternion RenderRideRot = Quaternion.Identity;
     public float RenderRideYaw;
+    public Vector3 RenderRideBody; // the construct's drawn position (its body frame's origin) this frame: with RenderRideRel, the render origin for a rider's camera (Program.RenderOrigin)
+    public Vector3 RenderRideRel; // the feet from RenderRideBody, worked out in small numbers (never as a difference of two world points, which jitters by float rounding)
     public Vector3 RenderRideFeet; // the feet in the rider's own axes, from the frame's origin: the legs' gait works here, still however fast the construct goes (a ship in orbit: 300 m/s)
     public Vector3 RenderWheelR, RenderWheelL; // a driver's hands on the steering wheel (world), and the rim's turn
     public Quaternion RenderWheelRot = Quaternion.Identity;
