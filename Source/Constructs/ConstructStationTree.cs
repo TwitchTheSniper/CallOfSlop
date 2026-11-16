@@ -396,7 +396,7 @@ public static partial class ConstructStationTree
         row.Touch = BaysTouch(c, t, st);
         row.Note = "costing";
         var subJob = c.Parts[st].Station!;
-        subJob.Header = $"for {c.DefOf(t).Name} {t}: {name}" + (row.Touch ? " - its bay touches the main station's: handed over" : " - nothing carries it: move it into the main station's bay by hand");
+        subJob.Header = $"for {c.DefOf(t).Name} {t}: {name}" + (row.Touch ? " - its bay touches the main station's: handed over" : " - a Loader Arm or Bridge Crane reaching both bays brings it, else move it into the main station's bay by hand");
         return true;
     }
 
@@ -693,7 +693,7 @@ public static partial class ConstructStationTree
             b.HeldBy = 0; // (frozen where it stands, as a stamped group lands: any player may move it with the physics gun)
             b.Wake();
         }
-        j.Note = touch ? "handed to the main station" : "waiting to be carried: move it into the main station's bay";
+        j.Note = touch ? "handed to the main station" : "waiting to be carried: a lifter reaching both bays, or move it into the main station's bay";
         world.StructureDirty.Add(b.Id);
         world.StationChanged(c);
         Console.WriteLine($"[station] {j.Name}: sub-job done ({j.Steps} parts){(touch ? "" : ", freed for carrying")}");

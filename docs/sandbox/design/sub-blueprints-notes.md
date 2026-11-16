@@ -56,3 +56,13 @@ how it works: production.md "Building station", "Submodules".
   taken on purpose (the design's "by hand" way).
 - A mod's blueprint with uses skips the override's quick build check and is flattened and built with the shipped ones after they
   are all read, refused there with why.
+
+## Leftovers (branch claude/sub-blueprints-2, 2026-11-16)
+- Done: Loader Arm / Bridge Crane carry of a finished body (`ConstructLifterBodies.cs`, no wire change); sub-job orders at the main
+  station's class and age; the selector's frames and labels (`UseFrameRender.cs`); the Submodule showcase (part kit generator
+  `submodule_showcase`: pod, skiff, yard); the `bpui` window verb.
+- Tried: the yard end to end (both pods built at the second station, carried by the arm, welded; 42 s). Through `bpui` and real keys:
+  stamp Ship (placed with Fire, attached), the frame's label, select all, SelectSave opened the save window, its Uses list kept Ship
+  as a use (Lock), saved; the Blueprints tab's list, Live toggle (v2), Pack. Found and fixed: a use attached by a socket read as off
+  the 1 cm grid (float sums: now 1 mm); shipped sub-blueprints' bodies had no id (TagStamp takes the use's).
+- Not tried: a Bridge Crane's carry; the frames seen in a picture (the label list was read); a joined client during an arm carry.
