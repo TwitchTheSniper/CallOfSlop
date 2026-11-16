@@ -1214,6 +1214,14 @@ public sealed class MinerParts : IPartGenerator
             Prism(p, RingZ(x, NacY, NacR + 0.012, z, 8), RingZ(x, NacY, NacR + 0.012, z + 0.05, 8), Frame, "dirty steel");
         Detail(p, x + s * (NacR * 0.92) - 0.05, NacY + 0.1, 24.2, x + s * (NacR * 0.92) + 0.05, NacY + 0.5, 26.4, Frame, "soot");
         Detail(p, x - 0.4, NacY + NacR * 0.92, 21.6, x + 0.4, NacY + NacR * 0.92 + 0.02, 22.4, Primer, "rusty paint");
+        // The drive is a pod, mended outside (ship works, Karl 2026-11-16): a grab rail along the nacelle's top and a service hatch on its outboard flank by the drive.
+        var top = NacR * Math.Cos(Math.PI / 8);
+        foreach (var z in new[] { 24.4, 26.2 })
+            Detail(p, x - 0.03, NacY + top - 0.02, z - 0.03, x + 0.03, NacY + top + 0.2, z + 0.03, "#9a9c98", "steel");
+        Detail(p, x - 0.025, NacY + top + 0.18, 24.36, x + 0.025, NacY + top + 0.23, 26.24, Hazard, "worn paint");
+        Detail(p, x + s * (top - 0.01), NacY - 0.45, 25.8, x + s * (top + 0.025), NacY - 0.05, 26.7, Frame, "painted plating");
+        Detail(p, x + s * (top + 0.02), NacY - 0.45, 25.8, x + s * (top + 0.04), NacY - 0.4, 26.7, Hazard, "hazard paint");
+        Detail(p, x + s * (top + 0.02), NacY - 0.1, 25.8, x + s * (top + 0.04), NacY - 0.05, 26.7, Hazard, "hazard paint");
         // The pylon: a raked faceted web from the hull to the pod, the fuel lines over it.
         double hx = Cx + s * 4.9;
         Prism(p, [P(hx, 2.05, NacZ0 + 1.4), P(hx, 3.15, NacZ0 + 1.0), P(hx, 3.15, NacZ0 + 6.6), P(hx, 2.05, NacZ0 + 6.2)],
@@ -1302,7 +1310,8 @@ public sealed class MinerParts : IPartGenerator
         Plate(p, R(0.6, 0.45), "#ffb060", glow: true);
         p.Add(Box([-0.7, -0.7, 0.0], [0.7, 0.7, 1.7], hidden: true));
         p.Sock("front", [0, 0, 0], "-z");
-        p.Set(("thruster", Kw(("force", DriveForce), ("spool", 1.5), ("exhaust", "+z"), ("at", Py.L(0, 0, 1.7)), ("burnRate", Py.Round(DriveForce / 1e6 * Burn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [0, 0.7, 0.2], "+y", "fuel"))));
+        p.Set(("thruster", Kw(("force", DriveForce), ("spool", 1.5), ("exhaust", "+z"), ("at", Py.L(0, 0, 1.7)), ("burnRate", Py.Round(DriveForce / 1e6 * Burn, 4)), ("gimbal", 12), ("gimbalRate", 20))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [0, 0.7, 0.2], "+y", "fuel"))));
+        Works.Head(p, Works.Table(), "torch", DriveForce, pod: true); // (a pod on the nacelle's tail: mended outside, on the pylon; Karl 2026-11-16)
         p.Set(("flame", Py.L(Kw(("at", Py.L(0, 0, 1.7)), ("dir", "+z"), ("radius", 0.95), ("length", 5.0), ("kind", "Rocket")))));
         return p.Stats(1800, 6000, 15, 8.0);
     }
@@ -1327,6 +1336,8 @@ public sealed class MinerParts : IPartGenerator
         p.Add(Box([-0.4 * scale, -1.05 * scale, -0.4 * scale], [0.4 * scale, -0.45 * scale, 0.4 * scale], hidden: true));
         p.Sock("top", [0, 0, 0], "+y");
         p.Set(("thruster", Kw(("force", force), ("spool", 0.5), ("exhaust", "-y"), ("at", Py.L(0, Py.Round(-1.05 * scale, 4), 0)), ("burnRate", Py.Round(force / 1e6 * Burn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [Py.Round(0.45 * scale, 4), Py.Round(-0.2 * scale, 4), 0], "+x", "fuel"))));
+        if (force > Works.Table().JetMost)
+            Works.Head(p, Works.Table(), "torch", force, pod: true); // (a lift jet under a hopper or a nacelle: a pod, mended from underneath; the 500 kN retros stay whole)
         p.Set(("flame", Py.L(Kw(("at", Py.L(0, Py.Round(-1.05 * scale, 4), 0)), ("dir", "-y"), ("radius", Py.Round(0.4 * scale, 4)), ("length", Py.Round(2.8 * scale, 4)), ("kind", "Rocket")))));
         return p.Stats(700 * scale, 3000, 20, 6.0);
     }

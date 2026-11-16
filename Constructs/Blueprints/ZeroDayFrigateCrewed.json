@@ -481,6 +481,30 @@
       "by": "top"
     },
     {
+      "part": "Drive Core L",
+      "on": 7,
+      "socket": "driveCore",
+      "by": "front"
+    },
+    {
+      "part": "Fuel Pump L",
+      "on": 7,
+      "socket": "drivePump",
+      "by": "front"
+    },
+    {
+      "part": "Coolant Exchanger L",
+      "on": 7,
+      "socket": "driveExchanger",
+      "by": "front"
+    },
+    {
+      "part": "Drive Core M",
+      "on": 1,
+      "socket": "liftCore",
+      "by": "deck"
+    },
+    {
       "part": "Zero Day Boarding Ladder",
       "on": 1,
       "socket": "boarding",
@@ -886,13 +910,13 @@
     },
     {
       "part": "Pipe Bank",
-      "on": 7,
+      "on": 10,
       "socket": "pipes",
       "by": "back"
     },
     {
       "part": "Tool Rack",
-      "on": 5,
+      "on": 10,
       "socket": "toolRack",
       "by": "back"
     },
@@ -1418,31 +1442,7 @@
     },
     {
       "part": "Turntable",
-      "on": 201,
-      "socket": "top",
-      "by": "base"
-    },
-    {
-      "part": "Motor Hinge",
       "on": 205,
-      "socket": "top",
-      "by": "base"
-    },
-    {
-      "part": "Zero Day PDC",
-      "on": 206,
-      "socket": "leaf",
-      "by": "bottom"
-    },
-    {
-      "part": "Ammo Box",
-      "on": 207,
-      "socket": "back",
-      "by": "front"
-    },
-    {
-      "part": "Turntable",
-      "on": 202,
       "socket": "top",
       "by": "base"
     },
@@ -1466,7 +1466,7 @@
     },
     {
       "part": "Turntable",
-      "on": 203,
+      "on": 206,
       "socket": "top",
       "by": "base"
     },
@@ -1490,7 +1490,7 @@
     },
     {
       "part": "Turntable",
-      "on": 204,
+      "on": 207,
       "socket": "top",
       "by": "base"
     },
@@ -1513,6 +1513,30 @@
       "by": "front"
     },
     {
+      "part": "Turntable",
+      "on": 208,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 221,
+      "socket": "top",
+      "by": "base"
+    },
+    {
+      "part": "Zero Day PDC",
+      "on": 222,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 223,
+      "socket": "back",
+      "by": "front"
+    },
+    {
       "part": "Gunnery Console",
       "on": 37,
       "socket": "gun",
@@ -1526,7 +1550,7 @@
     },
     {
       "part": "Turret Module",
-      "on": 221,
+      "on": 225,
       "socket": "module",
       "by": "-x"
     },
@@ -1544,7 +1568,7 @@
     },
     {
       "part": "Turret Module",
-      "on": 224,
+      "on": 228,
       "socket": "module",
       "by": "-x"
     },
@@ -1556,7 +1580,7 @@
     },
     {
       "part": "Ammo Box",
-      "on": 227,
+      "on": 231,
       "socket": "ammo",
       "by": "bottom"
     },
@@ -1592,37 +1616,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 233,
+      "on": 237,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 233,
+      "on": 237,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 233,
+      "on": 237,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 233,
+      "on": 237,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 233,
+      "on": 237,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 233,
+      "on": 237,
       "socket": "lug5",
       "by": "lug"
     },
@@ -1634,197 +1658,197 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 240,
+      "on": 244,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 240,
+      "on": 244,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 240,
+      "on": 244,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 240,
+      "on": 244,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 240,
+      "on": 244,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 240,
+      "on": 244,
       "socket": "lug5",
       "by": "lug"
     }
   ],
   "wires": [
     [
-      110,
-      109
+      114,
+      113
     ],
     [
-      113,
-      111
-    ],
-    [
-      113,
-      112
-    ],
-    [
-      116,
-      114
-    ],
-    [
-      116,
+      117,
       115
     ],
     [
-      118,
-      117
+      117,
+      116
+    ],
+    [
+      120,
+      118
     ],
     [
       120,
       119
     ],
     [
-      142,
-      140
+      122,
+      121
     ],
     [
-      142,
-      141
+      124,
+      123
     ],
     [
-      145,
-      143
-    ],
-    [
-      145,
+      146,
       144
     ],
     [
-      148,
-      146
+      146,
+      145
     ],
     [
-      148,
+      149,
       147
     ],
     [
       149,
-      151
-    ],
-    [
-      168,
-      166
-    ],
-    [
-      168,
-      167
-    ],
-    [
-      171,
-      169
-    ],
-    [
-      171,
-      170
-    ],
-    [
-      174,
-      172
-    ],
-    [
-      174,
-      173
-    ],
-    [
-      195,
-      193
-    ],
-    [
-      195,
-      194
-    ],
-    [
-      197,
-      196
-    ],
-    [
-      200,
-      198
-    ],
-    [
-      200,
-      199
-    ],
-    [
-      222,
-      223
-    ],
-    [
-      223,
-      207
-    ],
-    [
-      223,
-      211
-    ],
-    [
-      225,
-      226
-    ],
-    [
-      226,
-      215
-    ],
-    [
-      226,
-      219
-    ],
-    [
-      149,
-      152
+      148
     ],
     [
       152,
+      150
+    ],
+    [
+      152,
+      151
+    ],
+    [
+      153,
+      155
+    ],
+    [
+      172,
+      170
+    ],
+    [
+      172,
+      171
+    ],
+    [
+      175,
+      173
+    ],
+    [
+      175,
+      174
+    ],
+    [
+      178,
+      176
+    ],
+    [
+      178,
+      177
+    ],
+    [
+      199,
+      197
+    ],
+    [
+      199,
+      198
+    ],
+    [
+      201,
+      200
+    ],
+    [
+      204,
+      202
+    ],
+    [
+      204,
+      203
+    ],
+    [
+      226,
       227
     ],
     [
-      165,
-      229
+      227,
+      211
     ],
     [
-      165,
+      227,
+      215
+    ],
+    [
+      229,
       230
     ],
     [
-      165,
+      230,
+      219
+    ],
+    [
+      230,
+      223
+    ],
+    [
+      153,
+      156
+    ],
+    [
+      156,
       231
     ],
     [
-      165,
-      232
-    ],
-    [
-      107,
+      169,
       233
     ],
     [
-      108,
-      240
+      169,
+      234
+    ],
+    [
+      169,
+      235
+    ],
+    [
+      169,
+      236
+    ],
+    [
+      111,
+      237
+    ],
+    [
+      112,
+      244
     ]
   ],
   "conduit": true

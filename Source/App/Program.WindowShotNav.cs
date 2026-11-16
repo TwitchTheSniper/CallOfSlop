@@ -9,12 +9,13 @@ namespace CallOfSlop;
 /// <c>command [SPAN]</c> opens the view (SPAN: metres up the screen), <c>cmdpick N</c> picks the Nth craft on the map (0: the
 /// nearest), <c>order orbit BODY KM</c>, <c>order goto BODY KM</c>, <c>order ground M</c> and <c>order cancel</c> give the picked craft an order as the
 /// menu would, <c>nav</c> prints every craft and its order, <c>hoist KM</c> (host) puts the picked craft that far over the
-/// ground, at rest over it, <c>warp N</c> (host) asks for a time warp, and <c>rclick X,Y</c> is the right mouse button at a
+/// ground, at rest over it, <c>speed N</c> (host) asks for a time speed, <c>travel FUEL SHARE</c> (host) sets Settings > Gameplay's
+/// Fuel use in space and Trip fuel for the run (percents), and <c>rclick X,Y</c> is the right mouse button at a
 /// window pixel (the order menu).
 /// </summary>
 public static unsafe partial class Program
 {
-    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "warp" or "cmdview" or "rclick" or "rclickup";
+    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup";
 
     private static bool WsNavVerb(Game g, Player me, string verb, string arg)
     {
@@ -94,7 +95,10 @@ public static unsafe partial class Program
                         continue;
                     var o = g.NavOf(c.Id);
                     var height = World.Map.Planetoid is { } pl ? (float)pl.Altitude(c.WorldCom) : c.WorldCom.Y;
-                    WsSay(string.Create(inv, $"[nav] construct {c.Id}: {(c.SpaceAway != 0 ? "parked" : c.SpaceShip != 0 ? "space" : "sky")}, {height:0} m up, {c.Vel.Length():0.0} m/s, mass {c.Mass / 1000:0.0} t, fuel {c.FuelLeft:0} L, thrust {c.ThrustShow:0.00}, nav throttle {c.NavThrottle:0.00}, takes orders: {Game.NavProblem(c) ?? "yes"}; order: {(o == null ? "none" : $"{Game.NavText(s.System, o)}, {o.Phase}, {o.Distance:0} m to go, {o.SpeedError:0.0} m/s off")}{(g.SpaceOrbitLine(c) is { } line ? "; " + line : "")}"));
+                    var push = ConstructPhysics.NavDrive(c, out _, out _, out var burn);
+                    var accel = c.Mass > 0 ? push / c.Mass : 0;
+                    WsSay(string.Create(inv, $"[nav] construct {c.Id} drive: {accel:0.00} m/s2, {(burn > 0 ? $"{c.FuelLeft / burn:0} s at full, dV {accel * c.FuelLeft / burn:0} m/s" : "no fuel burnt")}"));
+                    WsSay(string.Create(inv, $"[nav] construct {c.Id}: {(c.SpaceAway != 0 ? "parked" : c.SpaceShip != 0 ? "space" : "sky")}, {height:0} m up, {c.Vel.Length():0.0} m/s, mass {c.Mass / 1000:0.0} t, fuel {c.FuelLeft:0} L, thrust {c.ThrustShow:0.00}, nav throttle {c.NavThrottle:0.00}, takes orders: {Game.NavProblem(c) ?? "yes"}; order: {(o == null ? "none" : $"{Game.NavText(s.System, o)}, {o.Phase}, {o.Distance:0} m to go, {o.SpeedError:0.0} m/s off{(o.ArriveNs != 0 ? $", trip leaves day {o.DepartNs / 864e11:0.0}, arrives day {o.ArriveNs / 864e11:0.0}, {o.DvNeed / 1000:0.00} km/s" : "")}")}; space day {s.Now.Seconds / 86400:0.00} at {s.Speed}x{((c.SpaceAway != 0 ? g.SpaceAwayLine(c) : g.SpaceOrbitLine(c)) is { } line ? "; " + line : "")}"));
                 }
                 return true;
             }
@@ -136,8 +140,18 @@ public static unsafe partial class Program
                 Brutal.ImGuiApi.ImGui.GetIO().AddMouseButtonEvent(1, false);
                 _wsWait = 3;
                 return true;
-            case "warp" when g.IsServer:
-                WsSay($"[nav] warp {arg}: {(int.TryParse(arg, out var w) && g.RequestSpaceWarp(w) ? "asked" : "refused")}");
+            case "travel" when g.IsServer: // "travel FUEL SHARE": Settings > Gameplay's Fuel use in space and Trip fuel (percent) for this run, not saved
+                if (words.Length == 2 && int.TryParse(words[0], out var use) && int.TryParse(words[1], out var share))
+                {
+                    _settings.SpaceFuelPercent = Math.Clamp(use, Game.SpaceFuelLeast, 100);
+                    _settings.TripFuelPercent = Math.Clamp(share, Game.TripFuelLeast, Game.TripFuelMost);
+                    WsSay($"[nav] travel: fuel use in space {_settings.SpaceFuelPercent}%, trip fuel {_settings.TripFuelPercent}%");
+                }
+                else
+                    WsFail("travel FUEL SHARE (percents)");
+                return true;
+            case "speed" when g.IsServer:
+                WsSay($"[nav] speed {arg}: {(int.TryParse(arg, out var w) && g.RequestTimeSpeed(w) ? "asked" : "refused")}");
                 return true;
         }
         return false;

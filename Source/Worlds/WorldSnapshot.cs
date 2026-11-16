@@ -88,7 +88,7 @@ public sealed class WorldSnapshot
     public WorldPlayer[] Players = [];
     public readonly ushort[] OwnerRecord = new ushort[256]; // an owner byte -> its player record, plus one (0: nobody's)
     public long SpaceNs;
-    public int SpaceWarp;
+    public int SpaceSpeed;
     public string SpaceSystem = "";
     public OpeningSave? Opening; // the survival opening's colony and crash site (GameSandboxOpening.cs), or null
     public byte[]? LinkLedger; // the host's link ledger (LinkLedger.SaveBytes; the LINK section), the main world's only

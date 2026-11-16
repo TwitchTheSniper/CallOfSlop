@@ -34,7 +34,7 @@ public sealed class LinkRoute
     public byte At; // the stop it flies to, or is at
     public RoutePhase Phase;
     public double Since; // when the phase began (LinkLedger.Now)
-    public bool Suspended, OneOff, InOrbit;
+    public bool Suspended, OneOff, InOrbit, OrderSet; // (OrderSet: its leg's nav order is the route's own: GameSandboxLinked.cs)
     public float Alt; // Docking: metres over the dock it holds now
     public readonly float[] Fuel = new float[Trips];
     public int FuelN;
@@ -264,9 +264,7 @@ public static class LinkRoutes
                     break;
                 }
                 if (r.InOrbit)
-                    Arrive(world, c, r, RoutePhase.Settling);
-                else
-                    r.Why = $"through space to {LinkLedger.Title(stop.World)} ({stop.Name})";
+                    Arrive(world, c, r, RoutePhase.Settling); // (Why is the nav order's phase meanwhile: GameSandboxLinked.cs)
                 break;
         }
     }

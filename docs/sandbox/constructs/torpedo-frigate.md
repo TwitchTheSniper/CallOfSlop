@@ -1,6 +1,6 @@
 # The Zero Day torpedo frigate (the IT Department's warship)
 
-Karl (2026-11-15): a state-of-the-art faction torpedo frigate, sleeker and bigger than the Halberd, with countermeasures,
+Karl (2026-11-15): a state-of-the-art faction torpedo frigate, sleeker and bigger than the Halberd (since removed), with countermeasures,
 a torpedo bay on each side, a railgun and a drive the width of the ship; faceted corners and stepped armour like his
 reference picture (the MORN 251 cutaway), decks running the length of the ship, and doors and fittings you'd expect on a
 spaceship. The faction is the IT Department, known for powerful, state-of-the-art ships: pale skin, dark armour slabs,
@@ -8,13 +8,13 @@ link-blue light strips, server racks aboard. It is an enemy ship, but it builds 
 
 Generator: `Source/PartKit/Generators/TorpedoFrigateParts.cs` (`--gen-parts torpedo_frigate_parts`), which writes
 `Constructs/Parts/ZeroDay/*.json` and `Constructs/Blueprints/ZeroDayFrigate.json`. Change the generator, never its output.
-Built the way the Halberd is (frigate.md): big parts that share the body's origin, each drawn whole (a deck's floor, walls,
+Built of big parts that share the body's origin, each drawn whole (a deck's floor, walls,
 hull band and hidden boxes), then broken into welded pieces (below), with furniture on their sockets. About 53 m long, 17 m
-across the sponsons, 15 m tall on its legs, 247 parts, 211 t.
+across the sponsons, 15 m tall on its legs, 251 parts.
 
 ## Breaking up
 
-Karl (2026-11-16): split it into welded pieces like the Halberd, so a hit takes a piece, not a deck. Each deck part is still
+Karl (2026-11-16): split it into welded pieces (as the Halberd was), so a hit takes a piece, not a deck. Each deck part is still
 drawn whole by its builder (`LowerFore()` ...), then `SplitDeck` deals its boxes out: the **floor** (and what stands loose on
 it) keeps the part's name; each **wall run** (every `WallRun` call is recorded) is a Wall piece with its door frames and what
 is on its faces; an upper deck's **ceiling** and its light strips are one piece; and everything outside the rooms' outline
@@ -48,13 +48,30 @@ Two decks run fore and aft (floors at 0.25 and 3.5 m, ship frame), each in a for
 | Part | What is in it |
 | --- | --- |
 | Zero Day Lower Deck Fore | the server room (Server Racks), the armoury, the fore end of the torpedo room with a bay door each side, the fire buttons; the ladder up to ops |
-| Zero Day Lower Deck Aft | the rest of the torpedo room, the airlock over the boarding shaft (starboard), the suit bay (port), engineering (reactor, board, batteries) and the ladder up to the mess |
+| Zero Day Lower Deck Aft | the rest of the torpedo room, the airlock over the boarding shaft (starboard), the suit bay (port), engineering (the drive's works on the aft wall, the lift jets' Drive Core M, reactor, board, batteries) and the ladder up to the mess |
 | Zero Day Upper Deck Fore | the sealed bridge (no glass: a view screen over the dashboard, camera screens each side; two Flight Couches, the flight computer), ops (the forward gun station, a plot table, the flares button), cabin A and the captain's cabin |
 | Zero Day Upper Deck Aft | cabin B, the head, the med bay, the mess with the aft gun station |
 
 Around them: the Keel (14,000 l of fuel, legs, lift jets, the boarding shaft), the Bow (armoured over the bridge, retro jets), the Spine
 (roof, the railgun's trough, a dorsal block, mast, antennae, flare launchers), the Stern (9,000 l, fins) and the Drive
 Array (four bells in one collar the width of the stern, 9 MN).
+
+## Drives and their works
+
+The Zero Day is the reference ship for ship works (docs/sandbox/design/ship-works.md): a class 3 hull drive with its works
+inside, and pods where nothing walkable is near.
+
+- The **Drive Array** (9 MN torch) needs a Drive Core, a Fuel Pump and a Coolant Exchanger (ShipWorks.json's `drives`
+  table). Its mount is the Stern, welded to engineering's aft wall, which is a mount too: on that wall stand a **Drive Core
+  L** in the middle (12 MN), a **Fuel Pump L** to port and a **Coolant Exchanger L** to starboard behind the ladder up.
+- The four **Lift Jets** (1.5 MN each) hang on the keel. Every keel length is a mount, and so are the lower decks' floors
+  over it, so the keel's jets, the floors and engineering's wall are one assembly: the lift jets' **Drive Core M** stands on
+  engineering's floor, forward to port, and its 6 MN pools with the Core L (18 MN of cores for 15 MN of drives).
+- The two **Retro Jets** (1.2 MN) in the bow's cheeks are **pods**: their works in their housings, seen to only from
+  outside.
+- With its works whole a hull drive burns 2 l/s a MN (the array 18 l/s); a pod 2.4. Shoot out a works piece and the cap
+  falls: the look line, the Engineer's Panel and `--check-vehicle`'s `works:` lines say which piece. Breakdowns pick the
+  works pieces and the retro pods, not the nozzles (ship.md "Breakdowns").
 
 ## Weapons and countermeasures
 

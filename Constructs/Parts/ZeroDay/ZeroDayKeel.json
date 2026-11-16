@@ -29,6 +29,9 @@
   "material": "steel",
   "color": "#3b4148",
   "attachSeconds": 10.0,
+  "worksPiece": {
+    "kind": "mount"
+  },
   "boxes": [
     {
       "min": [

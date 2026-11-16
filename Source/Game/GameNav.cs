@@ -25,6 +25,12 @@ public enum NavPhase : byte
     Flying, // over the ground, on its autopilot towards the waypoint
     Arrived, // over the waypoint, hovering
     NoDrive, // nothing it has can push it now (no fuel, no power, wrecked)
+    Depart, // between planets: the burn out, onto the conic round the star (NavTrip.cs)
+    Coast, // between planets: drive off, coasting round the star (time can be sped up)
+    Correct, // between planets: a small burn back onto the planned conic
+    Brake, // between planets: flipped over, braking into the target's neighbourhood
+    Short, // between planets: no trip in reach fits the dV a trip may spend (NavOrder.DvNeed says what it would take)
+    Wait, // between planets: in orbit, drive off, until its launch window (NavOrder.DepartNs)
 }
 
 /// <summary>One ship's order (the host's; clients hear a copy for the command view).</summary>
@@ -42,10 +48,32 @@ public sealed class NavOrder
 
     /// <summary>Host: what clients were last told, and whether the autopilot was set for the phase it is in.</summary>
     internal NavPhase PhaseSent;
+    internal long ArriveSent;
+    internal float DvSent;
     internal bool Engaged;
 
     /// <summary>Host: metres still to go and the speed still to change (m/s), for the log and the checks.</summary>
     public double Distance, SpeedError;
+
+    /// <summary>
+    /// A trip between planets (NavTrip.cs): when it arrives (space time, ns; 0: no trip planned) and the dV it spends
+    /// (m/s; while <see cref="NavPhase.Short"/>, the least any trip would take). Sent to clients for the ship card.
+    /// </summary>
+    public long ArriveNs, DepartNs;
+    public float DvNeed;
+
+    /// <summary>Host: a trip between planets is being flown (planned), or it is over and the order's own law has the ship now.</summary>
+    internal bool Cruise, Handed;
+
+    /// <summary>Host: a plan being made over a few ticks (NavTrip.Search), from the planet the ship was at.</summary>
+    internal bool Planning;
+    internal NavTrip.Search Search;
+    internal int PlanFrom;
+
+    /// <summary>Host: the circle a ship keeps while it plans or waits for its window (GameNavTrip.NavPark).</summary>
+    internal int ParkBody = -1;
+    internal double ParkRadius;
+    internal bool Parked;
 }
 
 /// <summary>
@@ -56,7 +84,7 @@ public sealed class NavOrder
 /// stabilizer's own autopilot flies it (a waypoint over the ground, or a climb to the sky's edge on the way to space).
 /// A driver who touches the controls takes the ship back. Orders aren't saved, and a move to another world drops them.
 /// <para>
-/// The wire (protocol 323): <c>CActKind.NavOrder</c> from a client, and <see cref="Msg.Nav"/> from the host to everyone
+/// The wire (protocol 326): <c>CActKind.NavOrder</c> from a client, and <see cref="Msg.Nav"/> from the host to everyone
 /// when an order starts, changes phase or ends, and to each joiner.
 /// </para>
 /// </summary>
@@ -139,6 +167,10 @@ public sealed partial class Game
             return false;
         if (c.SpaceAway == 0)
         {
+            // A client's copy of a ship in space is the host's ship state, not its own lagging pose of the construct
+            // (2026-11-16: at 100,000x the card said "falls back" for a ship the host had 2 km over Glacier).
+            if (!IsServer && SpaceShipIdOf(c) is var ship and not 0 && s.SampleShip(ship, t, out pos, out vel))
+                return true;
             var pose = s.Bubble.PoseAt(t);
             var com = Vec3d.From(c.WorldCom);
             pos = pose.ToEcliptic(com);
@@ -201,6 +233,17 @@ public sealed partial class Game
         }
         if (kind > NavKind.Ground || !double.IsFinite(point.X + point.Y + point.Z + radius))
             return null;
+        return NavApply(s, c, kind, body, point, radius, p.Id, p.Name, out _);
+    }
+
+    /// <summary>
+    /// Host: an order set on a ship (a player's from the command view, or a Route Computer's leg: GameSandboxLinked.cs), checked as a
+    /// player's is, with everything a new order starts from reset (a cruise, a hand-over, a trip's plan). Null, or why it takes none.
+    /// </summary>
+    internal string? NavApply(SpaceSession s, Construct c, NavKind kind, int body, Vec3d point, double radius, byte by, string who, out NavOrder? order)
+    {
+        order = null;
+        var id = c.Id;
         if (NavProblem(c) is { } why)
             return "It takes no orders: " + why;
         var sys = c.SpaceAway != 0 ? Galaxy.System(c.SpaceAway - 1) : s.System;
@@ -232,11 +275,16 @@ public sealed partial class Game
         o.Body = (byte)body;
         o.Point = point;
         o.Radius = radius;
-        o.By = p.Id;
+        o.By = by;
         o.Phase = NavPhase.None;
         o.PhaseSent = NavPhase.None;
         o.Engaged = false;
-        Console.WriteLine($"[nav] {p.Name} ordered construct {id}: {NavText(sys, o)}");
+        o.Cruise = o.Handed = o.Planning = o.Parked = false;
+        o.ParkBody = -1;
+        o.ArriveNs = o.DepartNs = 0;
+        o.DvNeed = 0;
+        order = o;
+        Console.WriteLine($"[nav] {who} ordered construct {id}: {NavText(sys, o)}");
         return null;
     }
 
@@ -284,6 +332,8 @@ public sealed partial class Game
     /// <summary>Host, every tick: each order steers its ship, and a change of phase goes out. Allocation-free.</summary>
     private void ServerTickNav(SpaceSession s)
     {
+        NavSpeedCap = int.MaxValue;
+        NavPlanLeft = NavPlanAllTicks;
         if (NavOrders.Count == 0)
             return;
         for (var k = NavOrders.Count - 1; k >= 0; k--)
@@ -306,9 +356,11 @@ public sealed partial class Game
                 NavInSky(s, o, c);
             else
                 NavInSpace(s, o, c);
-            if (o.Phase != o.PhaseSent)
+            if (o.Phase != o.PhaseSent || o.ArriveNs != o.ArriveSent || o.DvNeed != o.DvSent)
             {
                 o.PhaseSent = o.Phase;
+                o.ArriveSent = o.ArriveNs;
+                o.DvSent = o.DvNeed; // (a Short order's least dV changes as the planets move)
                 WriteNav(_w, o);
                 Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
             }
@@ -387,7 +439,11 @@ public sealed partial class Game
         c.NavLift = lift;
         Vec3d a;
         var mu = sys.Bodies[o.Body].Mu;
-        if (o.Kind == NavKind.Orbit && (o.Body == 0 || r.Length < 0.9 * SpaceShips.SphereOfInfluence(sys, o.Body)))
+        if (!o.Handed && (o.Cruise || NavTrip.Crosses(sys, pos, t, o.Body)) && NavCruise(s, f, o, c, pos, t, aMax, out a))
+        {
+            // Between planets: the trip's own burns (GameNavTrip.cs).
+        }
+        else if (o.Kind == NavKind.Orbit && (o.Body == 0 || r.Length < 0.9 * SpaceShips.SphereOfInfluence(sys, o.Body)))
         {
             var was = o.Phase == NavPhase.Orbiting;
             a = NavGuidance.Orbit(r, v, mu, o.Radius, aMax, out var settled, out o.SpeedError);
@@ -419,9 +475,13 @@ public sealed partial class Game
             }
             var gravity = NavGuidance.Gravity(sys, pos, t) - NavGuidance.Gravity(sys, bp, t, o.Body);
             a = NavGuidance.GoTo(r, v, to, way, arrive, gravity, aMax, out o.Distance, out o.SpeedError);
-            o.Phase = o.Kind == NavKind.GoTo && o.Distance < 30 && o.SpeedError < 1.5 ? NavPhase.Hold : NavPhase.Transfer;
+            o.Phase = o.Kind == NavKind.GoTo && o.Distance < 30 && o.SpeedError < 1.5 ? NavPhase.Hold : o.Handed ? NavPhase.Brake : NavPhase.Transfer;
         }
         var ask = a.Length;
+        // Near the target everything is real time: an insertion's push dips while the ship turns or between its
+        // corrections, and one sped-up tick there (half an hour at 100,000x) flings the ship out of the planet's reach.
+        if (ask >= 1e-4 || o.Phase is NavPhase.Insert or NavPhase.Transfer or NavPhase.Brake or NavPhase.Hold)
+            NavSpeedCap = 1;
         if (ask < 1e-4)
         {
             c.NavThrottle = 0;
@@ -457,7 +517,8 @@ public sealed partial class Game
     // ---------------------------------------------------------------------------------------------------------------
 
     private static void WriteNav(PacketWriter w, NavOrder o) =>
-        w.Begin(Msg.Nav).U16(o.Construct).U8((byte)o.Kind).U8(o.Body).U8((byte)o.Phase).U8(o.By).F64(o.Point.X).F64(o.Point.Y).F64(o.Point.Z).F64(o.Radius);
+        w.Begin(Msg.Nav).U16(o.Construct).U8((byte)o.Kind).U8(o.Body).U8((byte)o.Phase).U8(o.By).F64(o.Point.X).F64(o.Point.Y).F64(o.Point.Z).F64(o.Radius)
+            .U64((ulong)o.ArriveNs).U64((ulong)o.DepartNs).F32(o.DvNeed);
 
     /// <summary>Host: a joiner hears every order.</summary>
     private void SendNavState(RakNetGUID to)
@@ -472,7 +533,7 @@ public sealed partial class Game
     /// <summary>Client: an order began, changed or (kind None) ended.</summary>
     private void ReadNav(ref PacketReader r)
     {
-        if (IsServer || !r.Has(2 + 4 + 8 * 4))
+        if (IsServer || !r.Has(2 + 4 + 8 * 4 + 8 + 8 + 4))
             return;
         var id = r.U16();
         var kind = (NavKind)r.U8();
@@ -481,6 +542,9 @@ public sealed partial class Game
         var by = r.U8();
         var point = new Vec3d(r.F64(), r.F64(), r.F64());
         var radius = r.F64();
+        var arriveNs = (long)r.U64();
+        var departNs = (long)r.U64();
+        var dvNeed = r.F32();
         var o = NavOf(id);
         if (kind == NavKind.None || kind > NavKind.Ground)
         {
@@ -500,6 +564,9 @@ public sealed partial class Game
         o.By = by;
         o.Point = point;
         o.Radius = radius;
+        o.ArriveNs = arriveNs;
+        o.DepartNs = departNs;
+        o.DvNeed = dvNeed;
     }
 
     /// <summary>The bubble changed (another map): construct ids start again, so no order outlives it.</summary>

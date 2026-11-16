@@ -141,8 +141,8 @@ public static class ConstructCrafting
     }
 
     private static bool IsStore(ConstructPartDef d) =>
-        d.Role == PartRole.Storage && (!d.IsCraftTerminal || d.LinkKind == LinkKind.Dock) // (a Cargo Dock's hold is the network's stock: what ships bring is fetched from it) && !d.IsAssembler && !d.IsRefiner && !d.IsExtruder && !d.IsPress && !d.IsBeacon && !d.IsTerminal && !d.IsGunBench
-        && !d.IsRecycler && !d.IsGatherer;
+        d.Role == PartRole.Storage && (!d.IsCraftTerminal || d.LinkKind == LinkKind.Dock) && !d.IsAssembler && !d.IsRefiner && !d.IsExtruder && !d.IsPress && !d.IsBeacon && !d.IsTerminal && !d.IsGunBench
+        && !d.IsRecycler && !d.IsGatherer; // (a Cargo Dock's hold is the network's stock: what ships bring is fetched from it)
 
     private static void Build(Construct c, int t, CraftNet net)
     {

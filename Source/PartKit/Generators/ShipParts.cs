@@ -1353,6 +1353,11 @@ public sealed class ShipParts : IPartGenerator
         Prism(p, [P(cx - 0.18, cy + r * 0.97, 11.8), P(cx + 0.18, cy + r * 0.97, 11.8), P(cx + 0.1, cy + r * 1.12, 12.3), P(cx - 0.1, cy + r * 1.12, 12.3)],
             [P(cx - 0.18, cy + r * 0.97, 16.2), P(cx + 0.18, cy + r * 0.97, 16.2), P(cx + 0.1, cy + r * 1.12, 15.8), P(cx - 0.1, cy + r * 1.12, 15.8)], Armour2, "plated steel");
         Detail(p, cx - side * 0.2, cy + 0.3, 14.6, cx - side * 0.83, cy + 0.42, 15.6, Stripe, "hazard paint");
+        // The pod is a nacelle, mended outside (ship works, Karl 2026-11-16): a grab rail along its outboard flank and a step under it, for a space walk or from the ground.
+        foreach (var z in new[] { 14.1, 15.0 })
+            Detail(p, cx + side * 0.74, cy + 0.43, z - 0.03, cx + side * 1.06, cy + 0.47, z + 0.03, "#9a9c98", "steel");
+        Detail(p, cx + side * 1.03, cy + 0.41, 14.0, cx + side * 1.09, cy + 0.49, 15.1, Stripe, "worn paint");
+        Detail(p, cx + side * 0.62, cy - 0.62, 14.75, cx + side * 0.98, cy - 0.58, 15.15, "#3a3836", "tread plate");
         // The pylons to the hull (each meets the skin), and the hidden box for the nacelle.
         var outer = cx - side * r * 0.9;
         foreach (var (z0, z1) in new[] { (12.2, 13.4), (15.0, 16.0) })
@@ -1459,7 +1464,8 @@ public sealed class ShipParts : IPartGenerator
         Plate(p, [.. Enumerable.Range(0, 8).Select(i => RingZ(0.5, 0.1, i))], "#ff8a3a", glow: true);
         p.Add(Box([-0.5, -0.5, 0], [0.5, 0.5, 0.55], hidden: true));
         p.Sock("front", [0, 0, 0], "-z");
-        p.Set(("thruster", Kw(("force", DriveForce), ("spool", 1.2), ("exhaust", "+z"), ("at", Py.L(0, 0, 0.7)), ("burnRate", Py.Round(DriveForce / 1e6 * JetBurn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [0.5, 0, 0.3], "+x", "fuel"))));
+        p.Set(("thruster", Kw(("force", DriveForce), ("spool", 1.2), ("exhaust", "+z"), ("at", Py.L(0, 0, 0.7)), ("burnRate", Py.Round(DriveForce / 1e6 * JetBurn, 4)), ("gimbal", 12), ("gimbalRate", 20))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [0.5, 0, 0.3], "+x", "fuel"))));
+        Works.Head(p, Works.Table(), "torch", DriveForce, pod: true); // (its works are in the nacelle: mended outside, on a space walk or landed; Karl 2026-11-16)
         return p.Stats(1800, 4000, 12, 6.0);
     }
 
@@ -1480,6 +1486,7 @@ public sealed class ShipParts : IPartGenerator
         p.Add(Box([-0.44, -0.55, -0.44], [0.44, -0.26, 0.44], hidden: true));
         p.Sock("top", [0, 0, 0], "+y");
         p.Set(("thruster", Kw(("force", LiftForce), ("spool", 1.0), ("exhaust", "-y"), ("at", Py.L(0, -0.55, 0)), ("burnRate", Py.Round(LiftForce / 1e6 * JetBurn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [-0.46, -0.13, 0], "-x", "fuel"))));
+        Works.Head(p, Works.Table(), "torch", LiftForce, pod: true); // (a pod under its tank, nothing walkable over it: mended from underneath)
         return p.Stats(2500, 4000, 12, 6.0);
     }
 

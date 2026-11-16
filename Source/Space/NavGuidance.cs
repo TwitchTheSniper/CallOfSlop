@@ -43,6 +43,9 @@ public static class NavGuidance
         var circle = Math.Sqrt(mu / dist);
         var off = radius - dist;
         var climb = Math.Sign(off) * Math.Min(Math.Abs(off) / (5 * Tau), Math.Sqrt(2 * BrakeShare * aMax * Math.Abs(off)));
+        // Up, never more than a fifth of the circle's speed: a ship kilometres under its circle with a strong drive asked
+        // for hundreds of m/s up, faster than escape round a small world. (Down it may fall as fast as it can stop.)
+        climb = Math.Min(climb, 0.2 * circle);
         var want = along * circle + up * climb;
         var dv = want - v;
         speedError = dv.Length;

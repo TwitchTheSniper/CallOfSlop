@@ -564,6 +564,8 @@ public static class LinkLedger
                         var at = e.Report.N++;
                         (e.Report.Kind[at], e.Report.Free[at], e.Report.Makes[at], e.Report.Rate[at], e.Report.Batches[at]) = ((ushort)d.Id, free, makes, rate, batches);
                     }
+                    else
+                        Console.WriteLine($"[linked] {e.Name}'s report: \"{name}\" dropped: {(ConstructParts.Find(name) == null ? "no such part in this build" : "the report is full")}");
                 }
                 e.Report.Version = 1;
                 Ends[e.Id] = e;

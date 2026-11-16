@@ -51,7 +51,7 @@ public readonly record struct SpacePos(long X, long Y, long Z)
 
 /// <summary>
 /// Space time (the doc's BubbleTime): a 64-bit count of nanoseconds since the system's epoch. Integer, so it never drifts
-/// however long the game runs or how fast time is warped; it reaches about 292 years. The 60 Hz game tick isn't a whole
+/// however long the game runs or how fast time is sped up; it reaches about 292 years. The 60 Hz game tick isn't a whole
 /// number of nanoseconds, so <see cref="TickNs"/> gives the exact floor of n / 60 s, and 60 ticks are exactly a second.
 /// </summary>
 public readonly record struct SpaceTime(long Ns) : IComparable<SpaceTime>
@@ -89,34 +89,34 @@ public readonly record struct SpaceTime(long Ns) : IComparable<SpaceTime>
 }
 
 /// <summary>
-/// The space clock: stepped once per game tick, with a whole-number time warp. Time is the time at the last warp change
-/// plus the warped ticks since, computed from integers every time, so changing warp or running for days never drifts.
+/// The space clock: stepped once per game tick, with a whole-number time speed. Time is the time at the last speed change
+/// plus the sped-up ticks since, computed from integers every time, so changing speed or running for days never drifts.
 /// </summary>
 public sealed class SpaceClock
 {
-    /// <summary>The fastest warp allowed (the doc's 100,000x).</summary>
-    public const int MaxWarp = 100_000;
+    /// <summary>The fastest speed allowed (the doc's 100,000x).</summary>
+    public const int MaxSpeed = 100_000;
 
     private long _baseNs;
     private long _ticks;
-    private int _warp = 1;
+    private int _speed = 1;
 
     public SpaceClock(SpaceTime start = default) => _baseNs = start.Ns;
 
-    public SpaceTime Now => new(_baseNs + SpaceTime.TickNs(_ticks * _warp));
+    public SpaceTime Now => new(_baseNs + SpaceTime.TickNs(_ticks * _speed));
 
-    /// <summary>How many times faster than real time space time runs (1 to <see cref="MaxWarp"/>; 0 pauses it).</summary>
-    public int Warp
+    /// <summary>How many times faster than real time space time runs (1 to <see cref="MaxSpeed"/>; 0 pauses it).</summary>
+    public int Speed
     {
-        get => _warp;
+        get => _speed;
         set
         {
-            var w = Math.Clamp(value, 0, MaxWarp);
-            if (w == _warp)
+            var w = Math.Clamp(value, 0, MaxSpeed);
+            if (w == _speed)
                 return;
             _baseNs = Now.Ns;
             _ticks = 0;
-            _warp = w;
+            _speed = w;
         }
     }
 

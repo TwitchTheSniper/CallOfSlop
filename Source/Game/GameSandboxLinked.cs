@@ -61,6 +61,7 @@ public sealed partial class Game
             {
                 if (o is { Kind: NavKind.Orbit, By: 255 })
                     NavEnd(o, c, "its route's leg through space is over");
+                r.OrderSet = false;
                 continue;
             }
             var stop = r.Stops[Math.Min(r.At, r.N - 1)];
@@ -74,28 +75,37 @@ public sealed partial class Game
                 r.Why = $"{LinkLedger.Title(stop.World)} isn't in this star system: the route waits";
                 continue;
             }
-            if (NavProblem(c) is { } np)
+            if (o == null && r.OrderSet && c.Driver != 255)
             {
-                r.Why = "can't fly: " + np;
+                // (its order ended because its pilot took the controls, GameNav: hands on the controls win; RESUME takes it up again)
+                r.OrderSet = false;
+                r.Suspended = true;
+                r.Why = "suspended: a pilot took the controls - RESUME on its card";
+                Console.WriteLine($"[linked] {c.DisplayName()}'s route suspended: a pilot took the controls");
                 continue;
             }
-            if (o == null)
+            if (o == null || o.Kind != NavKind.Orbit || o.Body != target)
             {
-                if (NavOrders.Count >= MaxNavOrders)
+                // (a new leg goes through the command view's own path: every trip state reset, so a hand-over or a trip between planets plans afresh)
+                if (NavApply(s, c, NavKind.Orbit, target, default, NavMinOrbit(sys, target), 255, $"{c.DisplayName()}'s route", out o) is { } why)
                 {
-                    r.Why = "too many ships are under orders: the route waits";
+                    r.Why = $"through space to {stop.Name}: {why}";
                     continue;
                 }
-                NavOrders.Add(o = new NavOrder { Construct = c.Id, By = 255 });
-            }
-            if (o.Kind != NavKind.Orbit || o.Body != target)
-            {
-                (o.Kind, o.Body, o.Radius, o.Point, o.Phase, o.PhaseSent, o.Engaged, o.By) = (NavKind.Orbit, (byte)target, NavMinOrbit(sys, target), default, NavPhase.None, NavPhase.None, false, 255);
+                r.OrderSet = true;
                 Console.WriteLine($"[linked] {c.DisplayName()}: through space to {sys.Bodies[target].Name} for {stop.Name}");
             }
-            r.InOrbit = o.Phase == NavPhase.Orbiting || o.Phase == NavPhase.Insert && o.Distance < 0.05 * o.Radius;
-            if (o.Phase == NavPhase.NoDrive)
-                r.Why = "stalled: nothing it has can push it (fuel, power)";
+            r.InOrbit = o!.Phase == NavPhase.Orbiting || o.Phase == NavPhase.Insert && o.Distance < 0.05 * o.Radius;
+            if (r.Phase == RoutePhase.Orbit)
+                r.Why = o.Phase switch
+                {
+                    NavPhase.NoDrive => "stalled: nothing it has can push it (fuel, power)",
+                    NavPhase.Short => FormattableString.Invariant($"no trip in reach: it needs about {o.DvNeed:0} m/s of dV"),
+                    NavPhase.Wait => "in orbit, waiting for its launch window",
+                    NavPhase.Climb => $"climbing out for {LinkLedger.Title(stop.World)}",
+                    NavPhase.Depart or NavPhase.Coast or NavPhase.Correct or NavPhase.Brake => $"between planets ({o.Phase.ToString().ToLowerInvariant()}) to {LinkLedger.Title(stop.World)}",
+                    _ => $"through space to {LinkLedger.Title(stop.World)} ({stop.Name})",
+                };
         }
     }
 }

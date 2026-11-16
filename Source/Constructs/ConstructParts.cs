@@ -626,6 +626,12 @@ public sealed partial class ConstructPartDef
     public SightKind Sight; // "sight": bolted to a gun, what it adds (ConstructOrdnance.cs)
     public float SightReach, SightCone; // how far it sees (m), and how far off its axis or the look a target can be (degrees)
     public float RadarRange; // "radar": {"range"}: its craft's seats get the radar scope out to this far (m), and a contact locked on it goes to the craft's missiles (ConstructRadar.cs)
+    // Ship works (ConstructWorks.cs, docs/sandbox/design/ship-works.md): a head's needs and a works piece's kind
+    public ushort WorksNeeds; // "works": {"needs"}: the kinds of works it must have behind it (bits by WorksKind)
+    public bool WorksOutside; // "works": {"service": "outside"}: a pod, its works in its cowl, serviced at the part
+    public float WorksRating; // "works": {"rating"}: what a head that isn't a thruster asks of its works (a thruster asks its force)
+    public WorksKind WorksKind; // "worksPiece": {"kind"}: a mount, or the kind of works it is
+    public float WorksServes; // "worksPiece": {"serves"}: what it carries, in its kind's unit (N of thrust, kW of beam, kg of ordnance)
     public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
     public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick; // a heavy gun's own numbers
     public float GunMaxRange = 300f; // how far its rounds reach at all
@@ -765,7 +771,7 @@ public sealed partial class ConstructPartDef
     public bool IsReceiverGun => Role == PartRole.Gun && GunReceiver.Length > 0;
 
     /// <summary>Catches fire from incendiary rounds (wood, rubber, fuel tanks, ammo boxes).</summary>
-    public bool Flammable => Material is "wood" or "rubber" or "cloth" && Envelope == null || Role is PartRole.FuelTank or PartRole.AmmoBox || Burns; // (a lift cell burns by its gas: ConstructWorld.CanBurn)
+    public bool Flammable => Material is "wood" or "rubber" or "cloth" && Envelope == null || Role is PartRole.FuelTank or PartRole.AmmoBox || Burns || WorksKind is WorksKind.Pump or WorksKind.Turbopump; // (a lift cell burns by its gas: ConstructWorld.CanBurn; a drive's pumps are full of fuel)
 
     /// <summary>Burns whatever its material: a designed weapon with a motor's propellant or a tank's fuel in it (OrdnanceDesign.Build).</summary>
     public bool Burns;
@@ -1320,7 +1326,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "logiLink",
+        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar", "works", "worksPiece", "logiLink",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1461,6 +1467,7 @@ public static partial class ConstructParts
             d.SightCone = Num(Need(sgt, "cone", file), file, "sight.cone");
             Range(d.SightCone, 0.5f, 90f, file, "sight.cone");
         }
+        ConstructWorks.Parse(d, root, file);
         if (Opt(root, "radar") is { } rdr)
         {
             Known(rdr, ["range"], $"{file}: \"radar\"");

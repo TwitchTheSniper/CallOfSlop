@@ -448,7 +448,7 @@ A player on a construct lives in its frame (`Source/Constructs/ConstructRideMove
   piece's move in the deck's frame. Pieces cut free and wrecks already take the deck's velocity at the cut, a dropped part now too.
 - **Shots.** At deck speed over 2 m/s a rider's shot uses the server's eye and look (the client's world ray is a round trip
   behind). A target on the shooter's own deck is rewound in its frame. Hit boxes stand along the rider's up.
-- **Space.** A rider stays in the frame through a warp, a jump and being parked: they follow the pose. A ship on rails throws nobody.
+- **Space.** A rider stays in the frame through a sped-up coast, a jump and being parked: they follow the pose. A ship on rails throws nobody.
 - **Saved worlds.** A rider's place is kept in the frame (the `Riders` section, which older readers skip), and they come back
   aboard where they stood, relative to the construct.
 - **Cost.** Eight riders on a 7,500-part, 300 m deck: 0.16 ms a tick in the container, nothing allocated.

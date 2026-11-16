@@ -29,8 +29,10 @@ metres). `QuatD` is a double quaternion; `Rotate` turns a frame's own axes into 
 
 `SpaceTime` is a `long` count of nanoseconds since the system's epoch (the doc's BubbleTime), good for 292 years. A 60 Hz
 tick isn't a whole number of nanoseconds, so `SpaceTime.TickNs(n)` is the exact floor of n / 60 s: 60 ticks are one
-second exactly, and a century of ticks has no remainder. `SpaceClock` is stepped once a tick with a whole-number warp
-(0 pauses, up to 100,000x); its time is always "time at the last warp change + `TickNs(ticks x warp)`", so it never drifts.
+second exactly, and a century of ticks has no remainder. `SpaceClock` is stepped once a tick with a whole-number time speed
+(`Speed`: 0 pauses, up to 100,000x); its time is always "time at the last speed change + `TickNs(ticks x speed)`", so it
+never drifts. (This was the "time warp" until Karl's 2026-11-16 ruling that warp no longer changes time: the old text is
+in docs/archive/space/TIME-WARP.md.)
 
 Periodic things (orbits, spins) take whole periods off in integer nanoseconds first (`KeplerOrbit.PhaseSeconds`), so a
 planet 30 years on is where its phase says to well under a millimetre.
@@ -99,13 +101,13 @@ parent, anything past the reach, more than 8 parents deep.
 `Systems/Dev.json` is the test system: a Sun-like star, the 10 km Planetoid (the Dev map, same radius and gravity: the
 self-test checks they match) with a 1 km moonlet at 60 km and Bluestone, a 3 km sister planetoid 1,500 km out, and
 Redrock, a 4 km planetoid at 1.5 AU. Distances are "mixed" (Karl, 2026-11-03): moons and sister planetoids close (short
-hops by ship, discs in the sky), other planets far (AU, needing warp). They are only numbers here, so easy to change.
+hops by ship, discs in the sky), other planets far (AU: a coast of weeks, sped up from the command view). They are only numbers here, so easy to change.
 
 ## Ships (phase 2): `SpaceShips`
 
 Ships, wrecks and thrown things outside a planetoid's bubble are **massless test particles** in the summed gravity of the
 bodies on rails, plus thrust and force hooks. `SpaceShips` keeps them as arrays by index and is stepped on the host to
-the space clock's time (`Advance(t)`); `SpaceFlight` is the clock, the warp rule and the ships stepped together once a tick.
+the space clock's time (`Advance(t)`); `SpaceFlight` is the clock, the time speed rule and the ships stepped together once a tick.
 Nothing allocates per step (the self-test measures it).
 
 **Primary and hand-over.** Each ship is held relative to its *primary*: the smallest body whose sphere of influence
@@ -123,7 +125,7 @@ few 10^-4 m/s^2.)
 | --- | --- | --- |
 | `Coast` | No thrust, others' pull under 10% of the primary's | Wisdom-Holman kick-drift-kick: the drift is an exact two-body step round the primary (`UniversalKepler`: universal variables, any conic, Laguerre-Conway), the kicks are everything else. Symplectic: energy error stays bounded over thousands of orbits. Steps are at most 1/48 of the orbit and of each perturber's time scale (its own orbit time at that distance, and distance over closing speed), rounded down to a power of two so they rarely change size |
 | `Adaptive` | Thrust, `ShipFlags.ForceAdaptive`, or others' pull over 10% of the primary's (back to `Coast` under 5%) | Dormand-Prince 5(4) with error control (0.1 mm and 10^-7 m/s a step by default); bodies inside a short chunk come from a cubic through its ends instead of a Kepler solve per stage |
-| `Rail` | No thrust and others' pull under 10^-6 of the primary's (off again over 4 x 10^-6) | Patched conic: the ship's own two-body orbit from the moment it went on, exact at any warp (whole periods come off in integer ns). A sphere of influence crossed takes it off; a burn takes it off |
+| `Rail` | No thrust and others' pull under 10^-6 of the primary's (off again over 4 x 10^-6) | Patched conic: the ship's own two-body orbit from the moment it went on, exact at any time speed (whole periods come off in integer ns). A sphere of influence crossed takes it off; a burn takes it off |
 
 Ships in a span longer than a few steps are moved in chunks of at most 8 steps each, so step sizes are looked at again
 before a ship gets much closer to anything. **Force hooks** (`ISpaceForce`, `SpaceShips.Forces`) add an acceleration to
@@ -131,11 +133,11 @@ every ship in every step (gravity tech, anomalies, repulsors later); `PointMassF
 pure function of position, velocity and time (the predictor calls it at future times), and stops a ship going on rails
 when it matters.
 
-**Warp.** `SpaceShips.MaxWarp` is the fastest warp at which every ship still takes its full steps within a per-tick
-budget (64 coasting substeps or 16 adaptive steps a tick); ships on rails don't limit it. The warp rule
-(`SpaceWarpRule.Effective`) is the architecture's **provisional** proposal, not yet confirmed by Karl: only the host sets
-the warp; above 1x only while nobody is busy in a bubble (`SpaceFlight.AnyoneBusy`, set by the game from phase 3); never
-past `MaxWarp`; the host may always pause (0).
+**Time speed.** `SpaceShips.MaxSpeed` is the fastest time speed at which every ship still takes its full steps within a
+per-tick budget (64 coasting substeps or 16 adaptive steps a tick); ships on rails don't limit it. The rule
+(`SpaceTimeRule.Effective`): only the host sets it; above 1x only while nobody is busy (`SpaceFlight.AnyoneBusy`, set by
+the game from phase 3); never past `MaxSpeed` or the limit the game passes in (ships under orders slowing it before a
+burn, and the host's "Fastest time speed": docs/space/COMMAND.md); the host may always pause (0).
 
 **Predictor.** `Predict(ship, every, ecl, frame, inFrame)` writes where a coasting ship will be every `every` seconds
 (the map view's path), in the ecliptic frame and, if wanted, in any frame (a body's inertial frame for the path round it,
@@ -146,7 +148,7 @@ tugs, far less in a quiet orbit, nothing on rails. No allocation after the first
 **Multiplayer.** The host steps ships; clients don't. A `ShipState` (time, primary, offset, velocity: 58 bytes,
 `Write`/`Read`) is what a host would send. A client's `ShipTrack` keeps the last four and samples any time by carrying
 the two either side along their two-body orbits to that time and blending them, so the path stays on the orbit even
-when one packet covers minutes of warped time (0.1 mm from the host at 1x, about 0.3 m at 1000x in the moonlet-tugged
+when one packet covers minutes of sped-up time (0.1 mm from the host at 1x, about 0.3 m at 1000x in the moonlet-tugged
 orbit). The host's steps are deterministic: the same inputs give the same bits. Nothing is on the wire yet; the
 protocol bump comes with the bubble (phase 3).
 
@@ -163,25 +165,24 @@ physics; the sky does. `StarSystems` loads every `Systems/*.json` once and finds
 
 - **The host** (`Source/Game/GameSpace.cs`) makes the map's `SpaceSession` when a map loads (the space time carries on
   when the next map is in the same system, else it starts at the file's `"start"`), and steps its `SpaceFlight` once a
-  tick: the clock under the warp rule, then the ships.
+  tick: the clock under the time speed rule, then the ships.
 - **The sky** (`Source/Render/Sky/SpaceSky.cs`): each frame the map's sky takes the star's real direction
   (`SpaceBubble.SunDirection`, from the camera) and draws every other body and the nearest ships (phase 4, "Seeing
   space" below; the moonlet is about 1.9 degrees across from the pole). Light and fog follow the same sun, so a planetoid
   has day and night as it turns (24 h on the Planetoid at 1x), and seasons. The map's own sun and moon come back when the
   game leaves the bubble. Everything is a pure function of the system and the clock, so each peer works it out itself.
 - **The wire** (`Msg.Space`, protocol 125): `Bubble` (reliable, to each joiner and on a map change: map, system file and
-  hash, body, the clock), `Clock` (tick, time, warp: once a second unreliable, at once and reliable on a warp change) and
+  hash, body, the clock), `Clock` (tick, time, time speed: once a second unreliable, at once and reliable on a change) and
   `Ships` (10 Hz, up to 18 ships a packet from a cursor that takes turns, each its id and `ShipState`). A client runs its
   own clock between the host's and keeps a `ShipTrack` per ship id (`SpaceShips.Ids`: ids stay when indices shift); a
   ship not heard of for 3 s is gone. A client whose system file differs from the host's (by hash) gets no bubble and
   says so in the log.
-- **Warp.** The host asks for a warp (`Game.RequestSpaceWarp`, or F7 > Space); `SpaceWarpRule.Effective` is still the
-  provisional rule. "Busy" (`Game.SpaceAnyoneBusy`) is only a ship in space burning its engines (its thrust needs real-time
-  steps). Life in the bubble (walking, driving, building, anything awake) doesn't count: the bubble's physics runs at 60 Hz
-  whatever the space clock does, so it never stops the orbits (Karl, 2026-11-04: until then anyone moving dropped the
-  warp to 1x, and the sky and orbits seemed to stop).
-- **The Space window** (F7, the Space button): the system and body, the space time and warp, the sun's elevation where you
-  stand, the moon, the ships; the host's warp buttons.
+- **Time speed.** The host sets it in the command view (Home, docs/space/COMMAND.md "Time speed"; `Game.RequestTimeSpeed`).
+  "Busy" is only a ship in space burning its engines (its thrust needs real-time steps): `Game.SpaceAnyoneBusy` reads last tick's flames, and `SpaceShips.AnyThrust` this tick's push, so a burn that starts while time runs fast gets no sped-up tick (2026-11-16: one tick at 100K put a ship 70 km/s off). Life in
+  the bubble (walking, driving, building, anything awake) doesn't count: the bubble's physics runs at 60 Hz whatever the
+  space clock does, so it never stops the orbits (Karl, 2026-11-04).
+- **The Space window** (F7, the Space button): the system and body, the space time and its speed, the sun's elevation
+  where you stand, the moon, the ships.
 
 Not in phase 3 yet:
 - **Moving the origin (floating origin): not done, by choice** (Karl, 2026-11-04). Shifting the World would move every
@@ -197,7 +198,7 @@ mass climbs past the **sky's edge** (the map's half size from the planet's centr
 players in Sandbox may go on past it, to `World.OpenSkyRadius` from the centre, so one who steps off a ship in orbit floats
 free) becomes a ship of the host's `SpaceFlight`: a
 test particle round the Planetoid in the gravity of every body on rails, coasting on the symplectic step or on rails, at
-any warp. Its state is the construct's, through the bubble's frame (the ground's spin added).
+any time speed. Its state is the construct's, through the bubble's frame (the ground's spin added).
 
 - **The construct stays as the ship's picture.** `Construct.SpaceShip` (the ship's id) puts its physics to sleep; every
   tick the host poses it from the ship (place, speed, a spin for clients), so its poses reach clients the usual way, its
@@ -213,7 +214,7 @@ any warp. Its state is the construct's, through the bubble's frame (the ground's
   construct's pose on every peer).
 - **Coming back.** 200 m under the edge it is a physics body again, with the ship's speed, the ship goes, and the hover
   hold catches it at the height it came in at.
-- **Warp.** A driver who only coasts isn't busy, so the host's warp runs in orbit; a burn holds it at 1x.
+- **Time speed.** A driver who only coasts isn't busy, so the host's time speed runs in orbit; a burn holds it at 1x.
 - **Far from the middle (render origin).** A ship 150 km up shook badly (Karl, 2026-11-04): with float positions out
   there (1.6 cm steps) and a camera at the same distance, the box shader's view-projection cancelled two numbers of 150 km
   each, and parts jumped tens of pixels a frame against each other. Now a camera more than 256 m from the World's origin
@@ -315,16 +316,16 @@ docs/space/COMMAND.md (`Source/UI/UiCommand*.cs`, `Source/Game/GameNav.cs`, `Sou
   H hours (from its parent, from the star, and where the sun is overhead on each spinning body). Output goes to
   `callofslop.log`.
 - `--check-system FILE`: does this file load? Exit code 0 or 1, the reason in the log.
-- `--space-ships [FILE] [--hours H] [--warp W]`: demo ships in a system (default Dev): a circular orbit round every body
-  but the star and one leaving the first planetoid, flown H hours at W x warp through `SpaceFlight` (default 6 h at 100x);
+- `--space-ships [FILE] [--hours H] [--speed W]`: demo ships in a system (default Dev): a circular orbit round every body
+  but the star and one leaving the first planetoid, flown H hours at W x time speed through `SpaceFlight` (default 6 h at 100x);
   prints each ship's primary, step and distance every hour, then the cost per tick and the hand-overs.
 
 ## Next phases
 
 2. Done (above, "Ships"). Still to come with it: a debug map view drawing the predictor's path, and ships' attitudes.
 3. Done (above, "The bubble", and "Leaving the bubble"), apart from moving the World's origin. Travel is decided now (Karl,
-   2026-11-03): players build ships that fly, so leaving a bubble means a built ship becoming a phase 2 ship. Time warp
-   with friends is shelved: the host-only provisional rule stays.
+   2026-11-03): players build ships that fly, so leaving a bubble means a built ship becoming a phase 2 ship. Time speed
+   is the host's (docs/space/COMMAND.md); the warp it was is archived (docs/archive/space/TIME-WARP.md).
 4. Done (above, "Seeing space"), apart from the depth range (see there). Lighting from local up for props and
    players, and drawing bodies in image skies, are still to do.
 5. Done: gravity as a sum of sources, the Gravity Well and Gravity Generator parts and the Twin Worlds Dev map

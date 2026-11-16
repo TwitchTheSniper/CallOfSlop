@@ -129,11 +129,13 @@ public sealed partial class Game
         for (var i = _places.Count - 1; i >= 0; i--)
         {
             var g = _places[i];
+            (g.TripShare, g.TimeSpeedMost, g.SpaceFuelPercent) = (TripShare, TimeSpeedMost, SpaceFuelPercent); // (the host's Settings > Gameplay hold in every place)
             g.Update(now, frameDt);
             if (g.Keep is { Done: true })
                 ClosePlace(g, "nobody is on it");
         }
         World.Enter(Place);
+        ConstructPhysics.SpaceFuelScale = Math.Clamp(SpaceFuelPercent, SpaceFuelLeast, 100) / 100f; // (a static the places set too: GameSpace.cs)
         if (_placeLeave.Count > 0)
             PlaceLeaveStep();
     }
