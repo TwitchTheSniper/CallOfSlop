@@ -172,6 +172,13 @@ public static class LinkRoutes
         var dockBody = stop.World == key ? world.Get(stop.Body) : null;
         var local = dockBody != null && c.SpaceShip == 0 && stop.Part < dockBody.PartCount && dockBody.DefOf(stop.Part).LinkKind == LinkKind.Dock;
         var now = LinkLedger.Now;
+        if (r.Phase is RoutePhase.Flying or RoutePhase.Leaving or RoutePhase.Orbit && c.CarriedBy != 0 && (dockBody == null || c.CarriedBy != dockBody.Id))
+        {
+            ConstructCarrier.LetGo(world, c); // (a clamp it left took it again before it climbed out of its pull: let go once more)
+            ConstructFlight.NavEngage(world, c, FlightMode.Hover, default, ConstructPhysics.HoldShown(ConstructPhysics.HoldHeight(c.WorldCom) + Over));
+            r.Why = "climbing off the dock";
+            return;
+        }
         switch (r.Phase)
         {
             case RoutePhase.Flying:

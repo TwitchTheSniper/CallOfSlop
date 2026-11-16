@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// peer has it (its status lines, a port's manifest: on a client, what CBodyKind.Link said); <c>linked pair</c> types the first
 /// Transmitter's code into every Receiver's panel (the panel's own CActKind.Link); <c>linked fill N PART</c> (host, a server shortcut)
 /// puts N parts into every Storage Volume of the bodies with a Receiver; <c>linked order N PART</c> orders at the first Crafting Terminal
-/// of a body with a Transmitter through the terminal panel's own message; <c>linked open PART[#n]</c> opens that part's panel as the use
+/// of a body with a Transmitter (host: a server shortcut, the panel's order without its reach; a client: the panel's own message); <c>linked open PART[#n]</c> opens that part's panel as the use
 /// key does; <c>linked route A B</c> gives the first Route Computer a route between the first two Cargo Docks it knows and starts it.
 /// </summary>
 public static unsafe partial class Program
@@ -30,6 +30,9 @@ public static unsafe partial class Program
                     for (var i = 0; i < c.PartCount; i++)
                         if (c.DefOf(i).LinkKind != LinkKind.None)
                             WsSay($"linked: body {c.Id} {c.DefOf(i).Name} {i}: {(c.Parts[i].Link is { } lp ? $"\"{lp.Name}\" {lp.Status.Replace('\n', '|')}; offers {lp.Offers.Length}; manifest {lp.Manifest.Sum(m => m.Aboard)}" : "no state heard")}");
+                foreach (var c in w.Bodies)
+                    if (LinkRoutes.RouteOf(c) is { } rr)
+                        WsSay($"linked: route ship {c.Id} at {c.WorldCom:0.0} vel {c.Vel.Length():0.0} held by {c.CarriedBy}, AP {ConstructFlight.ApText(c)}; stop {rr.At + 1} {rr.Phase}: {rr.Why}{(w.Get(rr.Stops[rr.At].Body) is { } db && rr.Stops[rr.At].Part < db.PartCount ? $"; its dock at {LinkDocks.PartAt(db, rr.Stops[rr.At].Part):0.0}" : "")}");
                 if (g.IsServer)
                     foreach (var l in LinkLedger.Lines)
                         WsSay($"linked: line {l.Id} {l.State} {ConstructParts.Get(l.Kind)?.Name} {l.Count}: ready {l.Ready} loaded {l.Loaded} delivered {l.Delivered} lost {l.Lost} taken {l.Taken} \"{l.Note}\"");
@@ -72,8 +75,10 @@ public static unsafe partial class Program
                     for (var i = 0; yard && i < c.PartCount; i++)
                         if (c.DefOf(i) is { IsCraftTerminal: true, LinkKind: LinkKind.None, IsBuildStation: false })
                         {
-                            g.SandboxCraftOrder(c.Id, i, new WorkOrder { Part = (ushort)od.Id, Count = count });
-                            WsSay($"linked: ordered {count} {od.Name} at body {c.Id}'s {c.DefOf(i).Name}");
+                            var said = g.IsServer ? ConstructCrafting.Place(w, c, i, new WorkOrder { Part = (ushort)od.Id, Count = count }) : null; // (host, a server shortcut: the terminal panel's order without its reach)
+                            if (!g.IsServer)
+                                g.SandboxCraftOrder(c.Id, i, new WorkOrder { Part = (ushort)od.Id, Count = count });
+                            WsSay($"linked: ordered {count} {od.Name} at body {c.Id}'s {c.DefOf(i).Name}: {said ?? "placed"}");
                             return;
                         }
                 }
