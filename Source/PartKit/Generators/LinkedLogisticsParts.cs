@@ -114,7 +114,7 @@ public sealed class LinkedLogisticsParts : IPartGenerator
         p.Add(MachineLook.D([-0.48, 0.145, -0.48], [-0.4, 0.165, 0.48], MachineLook.Accent));
         p.Sock("-y", [0, -0.125, 0], "-y");
         p.Sock("+y", [0, 0.15, 0], "+y");
-        p.Stats(40, 300, 3, seconds: 3.0);
+        p.Stats(20, 300, 3, seconds: 3.0);
         p.Set(("power", 100), ("onBreak", "disable"), ("logiLink", Link("port")));
         return p;
     }
@@ -144,7 +144,7 @@ public sealed class LinkedLogisticsParts : IPartGenerator
         ("", Relay()),
         ("", Dock()),
         ("", Port()),
-        ("", Console("Route Computer", "route", "Flies its ship on a standing route between Cargo Docks (set in the command view), with the leaving rules you set at each stop. Needs a working Flight Stabilizer.", 0.6, 0.6, 40, 150, ["a", "b"])),
+        ("", Console("Route Computer", "route", "Flies its ship on a standing route between Cargo Docks (set in the command view), with the leaving rules you set at each stop. Needs a working Flight Stabilizer.", 0.6, 0.6, 15, 150, ["a", "b"])),
         ("", Console("Logistics Dispatcher", "dispatcher", "Sends this factory's registered route ships when enough cargo waits for a linked network. Needs a link end on this construct.", 1.2, 0.8, 300, 300, ["a", "b", "c"])),
     ]);
 }

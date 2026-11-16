@@ -71,7 +71,9 @@ public static class LinkRoutes
 {
     public const byte LeaveTime = 1, LeaveFill = 2, LeaveDone = 4;
     public const float Over = 30f, SinkRate = 2f, CatchLow = 2f; // metres over the dock it comes in at; m/s it sinks; the lowest it sinks to
-    public const double CatchWait = 30; // seconds at its lowest with no clamp taking it: said on its card
+    public const double CatchWait = 30;
+    public const float LiftOff = 4f; // metres it climbs off a dock before it heads away
+    public const double SpinUp = 2; // seconds its drive runs on the dock before the clamp lets go // seconds at its lowest with no clamp taking it: said on its card
     public const float PayloadSpare = 1.2f; // lift-off thrust kept spare: 20%
 
     /// <summary>A stop's default rules: full (95%) or 10 minutes or nothing more to do.</summary>
@@ -172,10 +174,10 @@ public static class LinkRoutes
         var dockBody = stop.World == key ? world.Get(stop.Body) : null;
         var local = dockBody != null && c.SpaceShip == 0 && stop.Part < dockBody.PartCount && dockBody.DefOf(stop.Part).LinkKind == LinkKind.Dock;
         var now = LinkLedger.Now;
-        if (r.Phase is RoutePhase.Flying or RoutePhase.Leaving or RoutePhase.Orbit && c.CarriedBy != 0 && (dockBody == null || c.CarriedBy != dockBody.Id))
+        if ((r.Phase is RoutePhase.Flying or RoutePhase.Orbit || r.Phase == RoutePhase.Leaving && now - r.Since >= SpinUp) && c.CarriedBy != 0 && (dockBody == null || c.CarriedBy != dockBody.Id || r.Phase == RoutePhase.Leaving))
         {
             ConstructCarrier.LetGo(world, c); // (a clamp it left took it again before it climbed out of its pull: let go once more)
-            ConstructFlight.NavEngage(world, c, FlightMode.Hover, default, ConstructPhysics.HoldShown(ConstructPhysics.HoldHeight(c.WorldCom) + Over));
+            ConstructFlight.NavEngage(world, c, FlightMode.Hover, default, ConstructPhysics.HoldShown(ConstructPhysics.HoldHeight(c.WorldCom) + LiftOff)); // (a gentle climb first: a craft near its lift limit that asks for all of it at once has nothing left to keep level)
             r.Why = "climbing off the dock";
             return;
         }
@@ -254,8 +256,10 @@ public static class LinkRoutes
                 break;
             }
             case RoutePhase.Leaving:
-                if (now - r.Since >= 4)
+                if (now - r.Since >= SpinUp + 3 && c.CarriedBy == 0)
                     Phase(r, RoutePhase.Flying);
+                else
+                    r.Why = c.CarriedBy != 0 ? "spinning up on the dock" : "climbing off the dock";
                 break;
             case RoutePhase.Orbit:
                 if (local)
@@ -297,8 +301,9 @@ public static class LinkRoutes
         r.At = (byte)(last ? 0 : r.At + 1);
         if (r.Phase == RoutePhase.Docked)
         {
-            ConstructCarrier.LetGo(world, c);
-            ConstructFlight.NavEngage(world, c, FlightMode.Hover, default, ConstructPhysics.HoldShown(ConstructPhysics.HoldHeight(c.WorldCom) + Over));
+            // Its drive spins up while the clamp still holds it, then the clamp lets go (Leaving): let go first, a craft drops on its
+            // hanging gear before its rotors bite, and may lie on its side.
+            ConstructFlight.NavEngage(world, c, FlightMode.Hover, default, ConstructPhysics.HoldShown(ConstructPhysics.HoldHeight(c.WorldCom))); // (where it is: no climb asked of it while it is held, so nothing winds up)
             Phase(r, RoutePhase.Leaving);
         }
         else

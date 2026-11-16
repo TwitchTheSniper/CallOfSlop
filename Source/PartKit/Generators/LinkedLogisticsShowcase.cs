@@ -77,7 +77,7 @@ public sealed class LinkedLogisticsShowcase : IPartGenerator
             { "part": "Flight Stabilizer", "on": 0, "socket": "+y3", "by": "-y", "config": { "keys": "Rotorcraft" } },
             { "part": "Battery Pack", "on": 0, "socket": "-y3", "by": "+y" },
             { "part": "Cargo Port", "on": 9, "socket": "-y", "by": "+y" },
-            { "part": "Route Computer", "on": 0, "socket": "-y7", "by": "-y" },
+            { "part": "Route Computer", "on": 10, "socket": "-y", "by": "-y" },
             { "part": "Storage Volume", "on": 0, "socket": "-y0", "by": "-y", "config": { "sizeX": 1, "sizeY": 1, "sizeZ": 1, "atY": -0.7 } }
           ],
           "links": [

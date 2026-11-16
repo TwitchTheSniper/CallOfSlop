@@ -38,6 +38,28 @@ public static class LinkedCheck
         LinkLedger.Reset();
         var wa = new ConstructWorld { CreativeRecycling = true };
         var q = new SelfTest.DriveWorld();
+        if (args.Any(a => a == "--fq"))
+        {
+            // (a probe: why a rotorcraft doesn't lift under its waypoint autopilot)
+            var fq = new ConstructBuild.GroundJob(wa, ConstructBuild.FindBlueprint(args.SkipWhile(a => a != "--fq").Skip(1).FirstOrDefault() ?? "Fan Quad")!, null);
+            while (!fq.Step(1000))
+            {
+            }
+            Construct c;
+            using (placeA.In())
+                c = fq.Join(new Vector3(0, 0, 0), 0, out _)!;
+            using (placeA.In())
+                ConstructFlight.NavEngage(wa, c, args.Contains("--wpt") ? FlightMode.Waypoint : FlightMode.Hover, new Vector3(100, 0, 0), ConstructPhysics.HoldShown(ConstructPhysics.HoldHeight(c.WorldCom) + 20));
+            for (var sec = 0; sec < 12; sec++)
+            {
+                using (placeA.In())
+                    for (var t = 0; t < World.TickRate; t++)
+                        wa.Step(q, World.TickDt);
+                var rs = string.Join(", ", Enumerable.Range(0, c.RotorCount).Select(k => FormattableString.Invariant($"[cmd {c.Rotors[k].Command:0.00} w {c.Rotors[k].Omega:0} T {c.Rotors[k].Thrust:0} scanned {c.Rotors[k].Scanned} in {c.Parts[c.Rotors[k].Part].In:0.00}/{c.Parts[c.Rotors[k].Part].InCount}]")));
+                Console.WriteLine(FormattableString.Invariant($"fq {sec}: x {c.WorldCom.X:0.0} y {c.WorldCom.Y:0.00} up {Vector3.Transform(Vector3.UnitY, c.Rot).Y:0.00} vel {c.Vel.Y:0.0} anch {c.Anchored} carried {c.CarriedBy} mass {c.Mass:0} owns {c.StabOwns} elec {c.Electrical} charge {c.Charge:0} AP {ConstructFlight.ApText(c)} rotors {rs}"));
+            }
+            return 0;
+        }
         Construct Build(ConstructWorld w, VehicleKit.VehicleDriveCheck.CheckPlace place, ConstructBuild.Blueprint bp, Vector3 at)
         {
             var job = new ConstructBuild.GroundJob(w, bp, null);
@@ -160,6 +182,25 @@ public static class LinkedCheck
         Say(line3 is { Taken: 1 } && LinkLedger.Lines.Count == linesBefore, $"a part taken from the hold: line {line3?.Id} taken {line3?.Taken}, loaded {line3?.Loaded}; no new line ({LinkLedger.Lines.Count} lines); {line3?.Note}");
         Console.WriteLine($"     the yard's order: {Order(yd, term)}");
 
+        // (the hauler set upright in the works' clamp again, as a pilot lands it: the teleports above can leave it on its back)
+        using (placeA.In())
+        {
+            ConstructCarrier.LetGo(wa, ha);
+            ha.Pos = LinkDocks.PartAt(wk, clampW) + new Vector3(0, 1.2f, 0);
+            ha.Rot = Quaternion.Identity;
+            ha.Charge = ha.ChargeCapacity; // (its fans ran the battery flat in the waits above: the showcase's works have no battery to charge it at the clamp)
+            ha.Vel = ha.AngVel = Vector3.Zero;
+            ha.DockAway = 0;
+            ha.Wake();
+        }
+        for (var k = 0; k < 15 && ha.CarriedBy != wk.Id; k++)
+            Run(wa, placeA, 1);
+        for (var k = 0; k < 48 && args.Contains("--trace"); k++)
+        {
+            Run(wa, placeA, 0.25);
+            Console.WriteLine(FormattableString.Invariant($"     t {k * 0.25:0.00}: y {ha.WorldCom.Y:0.00} up {Vector3.Transform(Vector3.UnitY, ha.Rot).Y:0.00} angvel {ha.AngVel.Length():0.0} held {ha.CarriedBy} phase {ha.Parts[PartOf(ha, d => d.LinkKind == LinkKind.Route)].Link?.Route?.Phase} rotors {string.Join(" ", Enumerable.Range(0, ha.RotorCount).Select(i => $"{ha.Rotors[i].Command:0.0}/{ha.Rotors[i].Thrust:0}"))}"));
+        }
+        Console.WriteLine($"     hauler set in the works' clamp again: held by {ha.CarriedBy}, up {Vector3.Transform(Vector3.UnitY, ha.Rot).Y:0.00}, at {ha.WorldCom:0.0}, route {ha.Parts[PartOf(ha, d => d.LinkKind == LinkKind.Route)].Link?.Route?.Phase}");
         // The Dispatcher: the hauler, docked at the works, joins its fleet; with parts waiting it is sent on a one-off run.
         var disp = PartOf(wk, d => d.LinkKind == LinkKind.Dispatcher);
         var fleet = wk.Parts[disp].Link?.Fleet;
@@ -173,8 +214,18 @@ public static class LinkedCheck
         Run(wa, placeA, 8);
         var sent = ha.Parts[rcp].Link?.Route;
         Say(sent is { OneOff: true, N: 3 }, $"the Dispatcher sent it: {(sent == null ? "no route" : $"{sent.N} stops, {sent.Phase}: {sent.Why}")}; {fleet?.Last}");
-        if (sent != null)
-            ha.Parts[rcp].Link!.Route = null; // (headless: no flight here; the window tool flies it)
+        // The run flown for real: off the works' dock by its rule, to 30 m over the yard's dock, down into its clamp, unloaded, and back.
+        var unloaded = false;
+        for (var k = 0; k < 60 && sent != null && sent.Phase != RoutePhase.Done; k++)
+        {
+            Run(wa, placeA, 4);
+            unloaded |= sent.At == 2 && ha.Parts[port].Link!.Manifest.Sum(m => m.Aboard) == 0;
+            if (k % 3 == 0)
+                Console.WriteLine($"     {k * 4 + 4} s: up {Vector3.Transform(Vector3.UnitY, ha.Rot).Y:0.00} AP {ConstructFlight.ApText(ha)} hauler at {ha.WorldCom.X:0},{ha.WorldCom.Y:0},{ha.WorldCom.Z:0}, held by {ha.CarriedBy}, aboard {ha.Parts[port].Link!.Manifest.Sum(m => m.Aboard)}; stop {sent.At + 1} {sent.Phase}: {sent.Why}");
+        }
+        var flew = sent is { Phase: RoutePhase.Done } && unloaded && ha.CarriedBy == wk.Id;
+        Console.WriteLine($"  {(flew ? "ok  " : "GAP ")} (not counted: the Linked Hauler is a Fan Quad near its lift limit, linked-logistics-notes.md) the run flew: works -> yard (docked, unloaded) -> works (docked): route {sent?.Phase}, held by {ha.CarriedBy}, up {Vector3.Transform(Vector3.UnitY, ha.Rot).Y:0.00}");
+        Console.WriteLine($"     the yard's order: {Order(yd, term)}");
 
         // A sub-blueprint job over the link: the yard's station builds the Submodule Skiff; its pods go to the works' station (Sub-jobs Linked).
         var ySt = PartOf(yd, d => d.IsBuildStation);
