@@ -1146,6 +1146,8 @@ public sealed partial class ConstructEdits
         var reach = ConstructBuild.UseReach + (d.Role == PartRole.Seat && !c.Anchored && !c.Asleep ? MathF.Min(c.Vel.Length(), SeatReachSpeed) * 0.2f : 0);
         if (Reachable(eye, ReachPoint(c, part, eye), reach) is { } far)
             return far;
+        if (d.ToolDock)
+            return DockUse(world, player, c, part);
         if (d.Role == PartRole.Seat)
         {
             ref var seat = ref c.Parts[part];

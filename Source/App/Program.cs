@@ -924,6 +924,7 @@ public static unsafe partial class Program
                     DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
                     TacticalHud.DrawMarkers(g, now, Ui.Scale); // motion pings, decoy tags, your devices (TacticalHud.cs)
                     LauncherHud.DrawMarkers(g, now, Ui.Scale); // the lock-on brackets, the wire's guide dot, sticky charges (LauncherHud.cs)
+                    RadarHud.Draw(g, Ui.Scale, _settings.Bind(GameAction.SeatRadar)); // a craft's radar scope, its contacts and lock (RadarHud.cs)
                     DrawFriendlyHitText(g, now); // "FRIENDLY" under the friendly hit marker (Program.FriendlyHit.cs)
                     Ui.DrawHud(g, now, _joinAddress, _settings);
                 }

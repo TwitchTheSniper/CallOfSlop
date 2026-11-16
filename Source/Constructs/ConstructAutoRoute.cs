@@ -58,6 +58,9 @@ public sealed class RouteSearch
     public const float ConduitClear = 0.25f; // a conduit's centreline off a surface, in radii (the tool's own routes keep one radius)
     public const float ConduitWeight = 1.5f; // a conduit's A* weight (above)
     public const int ConduitGap = 3; // cm: a conduit's lattice keeps planes this close (the tool's own thins to 5 cm, which can leave a wall's plane out)
+    // (a conduit may pass straight through a wall, a deck or a hull plate where it must, like a gland through a ship's bulkhead:
+    // a box of a structural part, a frame's or a panel's, no thicker than PierceMax across; each lattice edge through one costs PierceCost)
+    public const float PierceMax = 0.3f, PierceCost = 2.5f;
     private const float BedCap = 0.5f; // the widest conveyor bed the 12 m looks plan turns for
 
     /// <summary>What a search came to: its state, the nodes it adds to the link and why it failed.</summary>
@@ -70,6 +73,7 @@ public sealed class RouteSearch
         public int Count;
         public float Length; // the whole link's length
         public ushort Width; // a conveyor: the bed it will open to (cm), what its ends take and its turns leave room for
+        public bool Pierced; // a conduit that passes through a wall, a deck or a hull plate (RouteSearch.PierceMax): checked by its ends and spans only
         internal long Age;
     }
 
@@ -79,6 +83,7 @@ public sealed class RouteSearch
 
     // (made the first time the tool is used: a player who never links never pays for them)
     private ushort[] _grid = [];
+    private byte[] _hard = []; // a conduit's: per point, the axes its edge is blocked along by something it may not pass through (a pierceable plate only sets BlockBit)
     private int[] _hash = [], _hState = [];
     private int[] _sKey = [], _sParent = [];
     private float[] _sG = [], _sLen = [], _sRun = [];
@@ -118,6 +123,7 @@ public sealed class RouteSearch
     private float _hFactor = 0.92f; // the search's guess of the cost a metre: lower with runs to lie beside, or it would never look at the way round to them
     private Vector3 _s, _g, _sDir, _gDir, _min, _max;
     private bool _closed, _flat, _hasPrev, _longWay, _gaveUp;
+    private bool _pierce, _pierced, _loose; // a conduit: may pass through walls; the path found does; a cable's (data, power), which leaves and meets a part any way and lies flat on the wall
     private int _frame, _startHost, _goalHost, _msS, _msG;
     private bool _half; // the goal is a suspension's Drive in
     private Vector3 _prevDir;
@@ -278,6 +284,7 @@ public sealed class RouteSearch
         slot.Count = count;
         slot.Length = length;
         slot.Width = width;
+        slot.Pierced = state == RouteSearchState.Found && _pierced;
         slot.Age = ++_age;
         for (var i = 0; i < count; i++)
             slot.Nodes[i] = _chk[_ask.Count + i];
@@ -300,7 +307,12 @@ public sealed class RouteSearch
         _goalHost = _closed ? a.To : a.OpenHost;
         _stage = a.Conduit > 0f && _flat ? 1 : 0; // (conduit: from a 4 m look, so the walls and ceiling round the ends are in it)
         _air = a.Conduit > 0f && _flat ? MathF.Max(a.Conduit, 1f) : 1f;
-        _hWeight = a.Conduit > 0f && _flat ? ConduitWeight : 1f;
+        _pierce = a.Conduit > 0f && _flat && a.Parent == 255 && a.Count == 0;
+        _loose = a.Conduit > 0f && _flat && a.Type is RouteType.Data or RouteType.Power;
+        _hWeight = _loose ? ConduitWeight : 1f; // (a chute or pipe is big and seen: its search keeps to the best route, not one 1.5 times as dear)
+        _pierced = false;
+        if (_pierce && _hard.Length == 0)
+            _hard = new byte[MaxPoints];
         _lastWhy = null;
         _longWay = _gaveUp = false;
         if (_startHost < 0 || _startHost >= c.PartCount || _goalHost < 0 || _goalHost >= c.PartCount)
@@ -360,7 +372,7 @@ public sealed class RouteSearch
             _firstExit = ConstructRoutes.ExitAlongIn(c, _startHost, first, ToWork(c.Parts[Math.Min((int)a.Nodes[0].Host, c.PartCount - 1)].Seg, a.Nodes[0].Pos), _frame == 0 && c.FreeformCount > 0);
         _g = _closed ? ToWork(c.Parts[a.To].Seg, ConstructRoutes.PortPoint(c, a.To, a.ToPort, a.Type)) : ToWork(c.Parts[a.OpenHost].Seg, a.OpenAt);
         _gDir = _closed ? PortDirWork(a.To, a.ToPort) : Vector3.Zero;
-        if (a.Conduit > 0f && _flat)
+        if (_loose)
             _sDir = _gDir = Vector3.Zero; // (conduit leaves a switch and meets a lamp any way, so it can go flat to the wall at once, out of the box's top or side)
         if (Vector3.Distance(_s, _g) > _maxLen)
         {
@@ -394,7 +406,7 @@ public sealed class RouteSearch
         var c = _ask.C;
         var margin = _flat ? FlatStages[_stage].Margin : ShaftStages[_stage].Margin;
         _clear = _flat ? FlatStages[_stage].Clear * _radius : _radius + 0.01f;
-        if (_ask.Conduit > 0f && _flat)
+        if (_loose)
             _clear = MathF.Min(_clear, ConduitClear * _radius); // (conduit lies on the wall: a switch's centre is already beside it, no jog out and back)
         _hFactor = c.RouteCount > 0 || c.TrayCount > 0 ? BesideFactor : HugFactor;
         _min = ConstructWorld.Quantise(Vector3.Min(_s, _g) - new Vector3(margin)); // (on the 1 cm grid: so are the planes)
@@ -523,6 +535,8 @@ public sealed class RouteSearch
                 _stride[1] = _n[0];
                 _stride[2] = _n[0] * _n[1];
                 Array.Clear(_grid, 0, (int)total);
+                if (_pierce)
+                    Array.Clear(_hard, 0, (int)total);
                 return true;
             }
         }
@@ -733,7 +747,7 @@ public sealed class RouteSearch
                 if (BoxInWork(c, i, b, out var lo, out var hi) && Overlaps(lo - clear, hi + clear))
                 {
                     if (_flat)
-                        RasterBox(lo - clear + inset, hi + clear - inset, BlockBit);
+                        RasterBox(lo - clear + inset, hi + clear - inset, BlockBit, HugBit, _pierce ? HardAxes(d, lo, hi) : 0);
                     else
                         RasterPoints(lo - clear, hi + clear);
                 }
@@ -778,7 +792,7 @@ public sealed class RouteSearch
     /// Marks every lattice edge a box touches: along an axis, the edges in the other two axes' open range and overlapping
     /// this one's (<paramref name="bit"/>), and the wider ring round it (the discount for running beside it).
     /// </summary>
-    private void RasterBox(Vector3 lo, Vector3 hi, int bit, int ring = HugBit)
+    private void RasterBox(Vector3 lo, Vector3 hi, int bit, int ring = HugBit, int hardAxes = 0)
     {
         Span<int> a0 = stackalloc int[3], a1 = stackalloc int[3], o0 = stackalloc int[3], o1 = stackalloc int[3];
         for (var a = 0; a < 3; a++)
@@ -813,7 +827,13 @@ public sealed class RouteSearch
                 {
                     var hard = i >= a0[u] && i < a1[u] && j >= a0[v] && j < a1[v];
                     var at = i * uo + j * vo + e0 * eo;
-                    if (hard)
+                    if (hard && (hardAxes & (1 << axis)) != 0)
+                        for (var e = e0; e < e1; e++, at += eo)
+                        {
+                            _grid[at] |= hardBits;
+                            _hard[at] |= (byte)(1 << axis);
+                        }
+                    else if (hard)
                         for (var e = e0; e < e1; e++, at += eo)
                             _grid[at] |= hardBits;
                     else
@@ -822,6 +842,30 @@ public sealed class RouteSearch
                 }
         }
     }
+
+    /// <summary>
+    /// A conduit's: the axes along which a part's box may not be passed through (bits 0 to 2). A structural part's box (a frame's,
+    /// a panel's: a wall, a deck, a hull plate) no thicker than <see cref="PierceMax"/> along an axis may be crossed along it; anything
+    /// else, and a plate along its face, blocks as ever.
+    /// </summary>
+    private static int HardAxes(ConstructPartDef d, Vector3 lo, Vector3 hi)
+    {
+        if (d.Role is not (PartRole.Frame or PartRole.Panel))
+            return 7;
+        var size = hi - lo;
+        return (size.X <= PierceMax ? 0 : 1) | (size.Y <= PierceMax ? 0 : 2) | (size.Z <= PierceMax ? 0 : 4);
+    }
+
+    /// <summary>A conduit's state at point <paramref name="p"/> arrived along way <paramref name="dir"/> through a plate (its last edge was one).</summary>
+    private bool Inside(int p, int dir)
+    {
+        var axis = dir / 2;
+        var edge = (dir & 1) == 0 ? p - _stride[axis] : p;
+        return edge >= 0 && (_grid[edge] & (BlockBit << axis)) != 0;
+    }
+
+    /// <summary>The lattice edge from point <paramref name="edge"/> along <paramref name="axis"/> may be taken: clear, or (a conduit) through a plate only.</summary>
+    private bool Open(int edge, int axis) => (_grid[edge] & (BlockBit << axis)) == 0 || _pierce && (_hard[edge] & (1 << axis)) == 0;
 
     /// <summary>The even lattice's points inside a box.</summary>
     private void RasterPoints(Vector3 lo, Vector3 hi)
@@ -1018,12 +1062,12 @@ public sealed class RouteSearch
             {
                 var stride = _stride[axis];
                 var i = Index(axis, p, _stride, _n);
-                if (i + 1 < _n[axis] && (_grid[p] & (BlockBit << axis)) == 0 && (_grid[p + stride] & ReachBit) == 0)
+                if (i + 1 < _n[axis] && Open(p, axis) && (_grid[p + stride] & ReachBit) == 0)
                 {
                     _grid[p + stride] |= ReachBit;
                     _stack[_stackN++] = p + stride;
                 }
-                if (i > 0 && (_grid[p - stride] & (BlockBit << axis)) == 0 && (_grid[p - stride] & ReachBit) == 0)
+                if (i > 0 && Open(p - stride, axis) && (_grid[p - stride] & ReachBit) == 0)
                 {
                     _grid[p - stride] |= ReachBit;
                     _stack[_stackN++] = p - stride;
@@ -1218,7 +1262,8 @@ public sealed class RouteSearch
                     len = _lat[axis][i] - _lat[axis][i - 1];
                 }
                 var bits = _grid[edge];
-                if ((bits & (BlockBit << axis)) != 0 || (_grid[q] & ReachBit) == 0)
+                var through = (bits & (BlockBit << axis)) != 0;
+                if (through && !Open(edge, axis) || (_grid[q] & ReachBit) == 0)
                     continue;
                 var total = _sLen[s] + len;
                 if (total > _maxLen)
@@ -1227,7 +1272,7 @@ public sealed class RouteSearch
                     continue;
                 }
                 var cost = len * ((bits & (SoftBit << axis)) != 0 ? SoftFactor : (bits & (BesideBit << axis)) != 0 ? BesideFactor : (bits & (HugBit << axis)) != 0 ? HugFactor : _air);
-                var ng = g + cost + (turn ? _bend : 0f);
+                var ng = g + (through ? len * _air + (turn || !Inside(p, dir) ? PierceCost : 0f) : cost) + (turn ? _bend : 0f); // (a wall costs once, however many planes lie in it)
                 var st = StateOf(q * 6 + d, out var fresh);
                 if (st < 0)
                 {
@@ -1424,8 +1469,18 @@ public sealed class RouteSearch
         if (back >= MaxPath - 8)
             return false;
         var w = n + back;
+        _pierced = false;
         for (var i = _bestState; i >= 0; i = _sParent[i])
+        {
             _path[--w] = PointAt(_sKey[i] / 6);
+            if (_pierce && _sParent[i] >= 0)
+            {
+                // (the edge into this state from its parent: the lower point's, along the state's way)
+                var axis = _sKey[i] % 6 / 2;
+                var edge = Math.Min(_sKey[i] / 6, _sKey[_sParent[i]] / 6);
+                _pierced |= (_grid[edge] & (BlockBit << axis)) != 0;
+            }
+        }
         n += back;
         if (_bestTarget >= 0 && _closed)
             _path[n++] = PointAt(PointNear(_g));
@@ -1435,9 +1490,10 @@ public sealed class RouteSearch
         // The ends, solved again by hand: the search's lattice turns where its planes are, so a few cm between the last run and a
         // port (or a waypoint) came out as two or three short jogs. Each end is tried as "the path, at most two turns, the port".
         // (not a conduit's: its ends hug the wall they meet, and a shape with fewer turns would leave it for the air)
-        if (_closed && _gDir != Vector3.Zero && _ask.Conduit <= 0f)
+        // (a conduit's chute or pipe keeps its port faces, so its ends are tidied as the tool's are; not one that passes through a wall, whose shape the check can't judge)
+        if (_closed && _gDir != Vector3.Zero && !_loose && !_pierced)
             n = TidyEnd(n, false);
-        if (_ask.Parent == 255 && (_hasPrev || _sDir != Vector3.Zero) && _ask.Conduit <= 0f)
+        if (_ask.Parent == 255 && (_hasPrev || _sDir != Vector3.Zero) && !_loose && !_pierced)
             n = TidyEnd(n, true);
         return Nodes(n, true);
     }
@@ -1532,7 +1588,7 @@ public sealed class RouteSearch
         Hosts(have, total);
         var c = _ask.C;
         if (_closed)
-            return ConstructRoutes.Check(_ask.World, c, _ask.Type, _ask.From, _ask.FromPort, _ask.Parent, _ask.ParentSeg, _ask.Junction, _chk.AsSpan(0, total), _ask.To, _ask.ToPort, checkFrom: have); // (what the search added: the rest was checked as it was laid)
+            return ConstructRoutes.Check(_ask.World, c, _ask.Type, _ask.From, _ask.FromPort, _ask.Parent, _ask.ParentSeg, _ask.Junction, _chk.AsSpan(0, total), _ask.To, _ask.ToPort, straight: _pierced, checkFrom: have); // (what the search added: the rest was checked as it was laid; a conduit through a wall only its ends and spans, since the lattice kept it clear of all but the plates it passes)
         var tail = _chk[total - 1];
         return ConstructRoutes.OpenPath(c, _ask.Type, _ask.From, _ask.FromPort, _ask.Parent, _ask.ParentSeg, _ask.Junction, _chk.AsSpan(0, total - 1), tail.Pos, tail.Host);
     }

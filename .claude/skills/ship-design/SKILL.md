@@ -54,6 +54,15 @@ dotnet bin/Release/net10.0/CallOfSlop.dll --preview-gallery $SCRATCH/ship-galler
 
 `--preview-gallery DIR` exports every ship (a blueprint whose first part is in the Ship group), every part a ship uses and every other Ship part through the game's own build rules, and finds each ship's decks (floors with a ceiling over them, named after the part with the most floor there): `DIR/index.html`, `DIR/models/index.json` and `DIR/models/NAME.json`. A step that doesn't fit is REFUSED with the reason (the exit code counts refusals). The last line, in `bin/Release/net10.0/callofslop.log`, lists the files that changed (`changed: ...`). `--only "Name A,Name B"` limits it; `--preview-construct NAME|FILE --out X.html` makes one self-contained page (a draft blueprint file not yet in the data).
 
+## 2b. Links: name the ends, let the build route them
+
+Karl (2026-11-15): chutes and cables that run from one side of a room to the other are bugs. A walkable ship's blueprint says `"conduit": true`, and then the build routes every wire and every `"links"` entry **with no nodes** along walls, floors and ceilings, through a wall, deck or hull plate where it must, and across a joint once (power-and-links.md "Ship links and walls"). So in a ship generator:
+
+- Give a link its two ends and ports only (`"from"`, `"to"`, `"fromPort"`, `"toPort"`); never hand-place `"nodes"`, and never set `"laid"`.
+- Put ports where a run along a surface exists: a hold's chute inlet against a wall or the ceiling, a drill's or a machine's Chute out facing a wall, a switch on the wall it wires along. A port in the middle of a room makes even a routed chute cross the room in the open (the Magpie's drill chutes cross the walkway round the well at 1.6 m).
+- Walls a cable has to pass are frame or panel boxes no thicker than 30 cm; thicker armour needs an opening or a thinner plate where the cable goes.
+- Check: `--conduit-check "Ship Name"` lists every link (nodes, length against the straight line, metres in the open) and the log's `[conduit]` lines name the ones left straight and why; `--preview-shot "Ship Name" --links --cut Y` draws them (data yellow, power red, pipe blue, chute orange); the gallery's Links toggle shows them to Karl. Aim for no link left straight but logic hops under half a metre, and little in the open.
+
 ## 3. Look at it yourself once
 
 For a part, or a ship from a few sides, `--preview-shot` (section 2) is enough. For the gallery page itself, the cloud browser can't reach cdn.jsdelivr.net and the gallery fetches its models, so serve DIR on localhost and route three.js from npm (allowed):

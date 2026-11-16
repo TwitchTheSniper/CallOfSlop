@@ -103,6 +103,7 @@ public enum CActKind : byte
     TakeMade, // a part by PartRef (a made part's key): set down in front of the player from their Tab inventory (protocol 299; docs/sandbox/design/inventory-run-time-parts.md phase 2)
     Lifter, // u16 body, u16 part, u8 LiftOrderOp, u8 order id, the kind (PartRef), u8 count, from and to (u16 body, u16 part, u8 kind, u8 bay): a hand order at a lifter's panel (protocol 312; GameSandboxLifter.cs)
     ErrandDrop, // nothing: drop the errand under way (protocol 314; GameErrands.cs)
+    RadarLock, // u16 body (the seat's), u16 target (0: none): the seated player's radar lock for that craft's missiles (protocol 320; ConstructRadar.cs)
 }
 
 /// <summary>
@@ -1342,6 +1343,15 @@ public sealed partial class Game
             case CActKind.SeatKeys:
                 hands.Hand(p.Id).SeatKeys = (ushort)((r.U8() & 127) << 8);
                 return null;
+            case CActKind.RadarLock:
+            {
+                var body = r.U16();
+                var target = r.U16();
+                ref var sh = ref hands.Hand(p.Id);
+                if (!sh.Seated || sh.SeatBody != body || Constructs.Get(body) is not { } craft)
+                    return "not in a seat of that craft";
+                return ConstructRadar.SetLock(Constructs, craft, target);
+            }
             case CActKind.StoreIn:
             case CActKind.TakeStored:
             {
@@ -1490,6 +1500,7 @@ public sealed partial class Game
                 w.U16(body).U16(part);
                 break;
             case CActKind.RackDrop:
+            case CActKind.RadarLock:
                 w.U16(body).U16(part);
                 break;
             case CActKind.Rider:

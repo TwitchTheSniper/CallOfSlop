@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Magpie Engine Deck",
-  "description": "The Magpie's lower deck aft: engineering (the power plant, board and batteries), the suit room and airlock, and the porch at the stern.",
+  "description": "The Magpie's lower deck aft: one cargo bay with the power plant, board and batteries along its port side, the suit lockers, and the stern ramp.",
   "group": "Ship",
   "section": "Magpie miner",
   "role": "frame",
@@ -34,13 +34,28 @@
         17.975
       ],
       "max": [
-        9.975,
+        4.275,
         0.139,
         22.775
       ],
       "color": "#3a3c3a",
       "detail": true,
       "finish": "painted grating"
+    },
+    {
+      "min": [
+        4.575,
+        0.123,
+        24.925
+      ],
+      "max": [
+        7.175,
+        0.139,
+        26.105
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
     },
     {
       "min": [
@@ -51,7 +66,7 @@
       "max": [
         1.675,
         3.125,
-        25.875
+        26.125
       ],
       "color": "#a9ad9f",
       "finish": "painted plating"
@@ -65,7 +80,7 @@
       "max": [
         1.687,
         0.875,
-        25.825
+        26.075
       ],
       "color": "#4f5a52",
       "detail": true,
@@ -80,7 +95,7 @@
       "max": [
         10.325,
         3.125,
-        25.875
+        26.125
       ],
       "color": "#a9ad9f",
       "finish": "painted plating"
@@ -94,7 +109,7 @@
       "max": [
         10.337,
         0.875,
-        25.825
+        26.075
       ],
       "color": "#4f5a52",
       "detail": true,
@@ -102,246 +117,12 @@
     },
     {
       "min": [
-        1.425,
-        0.125,
-        25.875
-      ],
-      "max": [
-        5.125,
-        3.125,
-        26.125
-      ],
-      "color": "#a9ad9f",
-      "finish": "painted plating"
-    },
-    {
-      "min": [
-        5.125,
-        2.375,
-        25.875
-      ],
-      "max": [
-        6.625,
-        3.125,
-        26.125
-      ],
-      "color": "#a9ad9f",
-      "finish": "painted plating"
-    },
-    {
-      "min": [
-        1.475,
-        0.125,
-        25.863
-      ],
-      "max": [
-        5.075,
-        0.875,
-        26.137
-      ],
-      "color": "#4f5a52",
-      "detail": true,
-      "finish": "painted plating"
-    },
-    {
-      "min": [
-        5.055,
-        0.125,
-        25.855
-      ],
-      "max": [
-        5.122,
-        2.445,
-        26.145
-      ],
-      "color": "#2a2e2b",
-      "detail": true,
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        6.628,
-        0.125,
-        25.855
-      ],
-      "max": [
-        6.695,
-        2.445,
-        26.145
-      ],
-      "color": "#2a2e2b",
-      "detail": true,
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        5.125,
-        2.378,
-        25.855
-      ],
-      "max": [
-        6.625,
-        2.445,
-        26.145
-      ],
-      "color": "#e0a020",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        6.625,
-        0.125,
-        25.875
-      ],
-      "max": [
-        10.325,
-        3.125,
-        26.125
-      ],
-      "color": "#a9ad9f",
-      "finish": "painted plating"
-    },
-    {
-      "min": [
-        6.675,
-        0.125,
-        25.863
-      ],
-      "max": [
-        10.275,
-        0.875,
-        26.137
-      ],
-      "color": "#4f5a52",
-      "detail": true,
-      "finish": "painted plating"
-    },
-    {
-      "min": [
-        1.675,
-        0.125,
-        22.875
-      ],
-      "max": [
-        5.125,
-        3.125,
-        23.125
-      ],
-      "color": "#a9ad9f",
-      "finish": "painted plating"
-    },
-    {
-      "min": [
-        5.125,
-        2.375,
-        22.875
-      ],
-      "max": [
-        6.625,
-        3.125,
-        23.125
-      ],
-      "color": "#a9ad9f",
-      "finish": "painted plating"
-    },
-    {
-      "min": [
-        1.725,
-        0.125,
-        22.863
-      ],
-      "max": [
-        5.075,
-        0.875,
-        23.137
-      ],
-      "color": "#4f5a52",
-      "detail": true,
-      "finish": "painted plating"
-    },
-    {
-      "min": [
-        5.055,
-        0.125,
-        22.855
-      ],
-      "max": [
-        5.122,
-        2.445,
-        23.145
-      ],
-      "color": "#2a2e2b",
-      "detail": true,
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        6.628,
-        0.125,
-        22.855
-      ],
-      "max": [
-        6.695,
-        2.445,
-        23.145
-      ],
-      "color": "#2a2e2b",
-      "detail": true,
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        5.125,
-        2.378,
-        22.855
-      ],
-      "max": [
-        6.625,
-        2.445,
-        23.145
-      ],
-      "color": "#e0a020",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        6.625,
-        0.125,
-        22.875
-      ],
-      "max": [
-        10.075,
-        3.125,
-        23.125
-      ],
-      "color": "#a9ad9f",
-      "finish": "painted plating"
-    },
-    {
-      "min": [
-        6.675,
-        0.125,
-        22.863
-      ],
-      "max": [
-        10.025,
-        0.875,
-        23.137
-      ],
-      "color": "#4f5a52",
-      "detail": true,
-      "finish": "painted plating"
-    },
-    {
-      "min": [
-        2.295,
+        1.495,
         0.125,
         22.475
       ],
       "max": [
-        2.655,
+        1.855,
         3.105,
         22.865
       ],
@@ -351,12 +132,12 @@
     },
     {
       "min": [
-        2.285,
+        1.485,
         0.825,
         22.465
       ],
       "max": [
-        2.665,
+        1.865,
         0.945,
         22.87
       ],
@@ -366,12 +147,27 @@
     },
     {
       "min": [
-        9.095,
+        4.235,
+        0.125,
+        23.075
+      ],
+      "max": [
+        4.315,
+        0.175,
+        24.825
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        9.895,
         0.125,
         22.475
       ],
       "max": [
-        9.455,
+        10.255,
         3.105,
         22.865
       ],
@@ -381,18 +177,33 @@
     },
     {
       "min": [
-        9.085,
+        9.885,
         0.825,
         22.465
       ],
       "max": [
-        9.465,
+        10.265,
         0.945,
         22.87
       ],
       "color": "#a8402c",
       "detail": true,
       "finish": "painted steel"
+    },
+    {
+      "min": [
+        7.435,
+        0.125,
+        23.075
+      ],
+      "max": [
+        7.515,
+        0.175,
+        24.825
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
     },
     {
       "min": [
@@ -426,6 +237,36 @@
     },
     {
       "min": [
+        1.775,
+        2.925,
+        23.005
+      ],
+      "max": [
+        9.975,
+        3.113,
+        23.145
+      ],
+      "color": "#26241f",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        1.775,
+        2.925,
+        24.805
+      ],
+      "max": [
+        9.975,
+        3.113,
+        24.945
+      ],
+      "color": "#26241f",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
         5.375,
         3.1,
         18.275
@@ -433,173 +274,11 @@
       "max": [
         6.375,
         3.125,
-        22.675
+        25.725
       ],
       "color": "#fff0d0",
       "detail": true,
       "glow": true
-    },
-    {
-      "min": [
-        5.375,
-        3.1,
-        23.475
-      ],
-      "max": [
-        6.375,
-        3.125,
-        25.475
-      ],
-      "color": "#fff0d0",
-      "detail": true,
-      "glow": true
-    },
-    {
-      "min": [
-        6.825,
-        2.525,
-        25.859
-      ],
-      "max": [
-        7.025,
-        2.675,
-        25.875
-      ],
-      "color": "#e0402c",
-      "detail": true,
-      "glow": true
-    },
-    {
-      "min": [
-        4.725,
-        2.525,
-        25.859
-      ],
-      "max": [
-        4.925,
-        2.675,
-        25.875
-      ],
-      "color": "#40e070",
-      "detail": true,
-      "glow": true
-    },
-    {
-      "min": [
-        5.075,
-        -0.125,
-        26.125
-      ],
-      "max": [
-        6.675,
-        0.125,
-        27.375
-      ],
-      "color": "#3a3c3a",
-      "finish": "painted grating"
-    },
-    {
-      "min": [
-        5.077,
-        0.065,
-        27.363
-      ],
-      "max": [
-        6.673,
-        0.123,
-        27.379
-      ],
-      "color": "#e0a020",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        5.075,
-        0.125,
-        26.215
-      ],
-      "max": [
-        5.135,
-        1.175,
-        27.375
-      ],
-      "color": "#26241f",
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        5.065,
-        1.125,
-        26.175
-      ],
-      "max": [
-        5.145,
-        1.205,
-        27.385
-      ],
-      "color": "#e0a020",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        6.615,
-        0.125,
-        26.215
-      ],
-      "max": [
-        6.675,
-        1.175,
-        27.375
-      ],
-      "color": "#26241f",
-      "finish": "painted steel"
-    },
-    {
-      "min": [
-        6.605,
-        1.125,
-        26.175
-      ],
-      "max": [
-        6.685,
-        1.205,
-        27.385
-      ],
-      "color": "#e0a020",
-      "detail": true,
-      "finish": "hazard paint"
-    },
-    {
-      "min": [
-        5.225,
-        -0.725,
-        26.145
-      ],
-      "max": [
-        5.325,
-        -0.127,
-        26.825
-      ],
-      "color": "#26241f",
-      "detail": true,
-      "finish": "dirty steel"
-    },
-    {
-      "min": [
-        6.425,
-        -0.725,
-        26.145
-      ],
-      "max": [
-        6.525,
-        -0.127,
-        26.825
-      ],
-      "color": "#26241f",
-      "detail": true,
-      "finish": "dirty steel"
     },
     {
       "min": [
@@ -1988,9 +1667,31 @@
         26.121
       ],
       "hidden": true
+    },
+    {
+      "min": [
+        5.775,
+        -0.125,
+        26.025
+      ],
+      "max": [
+        5.975,
+        0.075,
+        26.125
+      ],
+      "hidden": true
     }
   ],
   "sockets": [
+    {
+      "name": "ramp",
+      "at": [
+        5.875,
+        -0.025,
+        26.125
+      ],
+      "dir": "+z"
+    },
     {
       "name": "reactor",
       "at": [
@@ -2068,7 +1769,7 @@
       "at": [
         1.675,
         0.25,
-        23.575
+        23.275
       ],
       "dir": "+x"
     },
@@ -2077,7 +1778,7 @@
       "at": [
         1.675,
         0.25,
-        24.275
+        23.975
       ],
       "dir": "+x"
     },
@@ -2086,7 +1787,7 @@
       "at": [
         1.675,
         0.25,
-        24.975
+        24.675
       ],
       "dir": "+x"
     },
@@ -2095,36 +1796,9 @@
       "at": [
         10.075,
         1.025,
-        24.475
+        23.875
       ],
       "dir": "-x"
-    },
-    {
-      "name": "doorEng",
-      "at": [
-        5.125,
-        1.25,
-        23.0
-      ],
-      "dir": "+x"
-    },
-    {
-      "name": "doorOuter",
-      "at": [
-        5.125,
-        1.25,
-        26.0
-      ],
-      "dir": "+x"
-    },
-    {
-      "name": "boarding",
-      "at": [
-        5.875,
-        0.0,
-        27.375
-      ],
-      "dir": "+z"
     },
     {
       "name": "lampEngA",
@@ -2138,14 +1812,14 @@
     {
       "name": "lampEngB",
       "at": [
-        4.275,
+        1.675,
         2.575,
-        22.875
+        22.175
       ],
-      "dir": "-z"
+      "dir": "+x"
     },
     {
-      "name": "lampLock",
+      "name": "lampBayA",
       "at": [
         10.075,
         2.575,
@@ -2154,31 +1828,40 @@
       "dir": "-x"
     },
     {
-      "name": "lampSuit",
+      "name": "lampBayB",
       "at": [
         1.675,
         2.575,
-        24.275
+        25.275
       ],
       "dir": "+x"
     },
     {
       "name": "switchEng",
       "at": [
-        6.875,
+        10.075,
         1.425,
-        22.875
+        18.575
       ],
-      "dir": "-z"
+      "dir": "-x"
     },
     {
-      "name": "switchLock",
+      "name": "switchBayR",
       "at": [
-        6.875,
+        10.075,
         1.425,
-        23.125
+        24.875
       ],
-      "dir": "+z"
+      "dir": "-x"
+    },
+    {
+      "name": "switchBayL",
+      "at": [
+        1.675,
+        1.425,
+        25.575
+      ],
+      "dir": "+x"
     },
     {
       "name": "j0",
