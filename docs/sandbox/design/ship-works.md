@@ -52,9 +52,11 @@ engine room out.
    whatever it stands on, to a **mount** (a piece of hull that says works may be bolted to it), then every works piece
    bolted to that mount or to another works piece. No new link type, nothing per tick, nothing on the wire: every peer
    derives it from the parts.
-3. **Small things stay whole.** RCS thrusters, lift and retro jets, a gun with its box, a rack on the hull work as they
-   do now, with no interior. They are the convenient option and pay for it: jets burn more for their push, a surface gun
-   has what is bolted to it, a surface rack fires what it holds.
+3. **Small things stay whole.** A thruster of 500 kN or less (RCS, small manoeuvre and retro jets), a gun with its
+   box and a rack on the hull work as they do now, with no interior. They are the convenient option and pay for it:
+   small jets burn more for their push, a surface gun has what is bolted to it, a surface rack fires what it holds.
+   **Every thruster over 500 kN has works** (Karl, 2026-11-16, answer 1): lift jets and big retros too. It is either
+   mounted on the hull with its works inside, or a pod with them in its cowl.
 4. **A pod is a drive with its works in the cowl.** One part, hung outside on a pylon: no hull space, a wide gimbal and
    a long arm from the centre of mass, but only the cowl's armour, and it is serviced at the part, outside.
 5. **Everything is data.** Which kinds of works a head needs, what each piece serves, the classes and every number are
@@ -150,8 +152,8 @@ decides how much of each. Provisional numbers; all of them live in the part file
 
 | Type | Today's `kind` | Works it needs | What the room is like | Character |
 | --- | --- | --- | --- | --- |
-| Jet (self-contained) | plain | none | - | RCS, lift and retro jets. Thirsty: 3 l/s a MN as now. At most 2 MN a part |
-| Torch drive | plain, on fuel | **Drive Core**, then a **Fuel Pump**, then a **Coolant Exchanger** as the class grows | A core on its bed with a walkway round it; pumps on the fuel side; the exchanger against the hull with its radiators outside | The ships' main drive. Efficient: 2 l/s a MN |
+| Jet (self-contained) | plain | none | - | RCS and small manoeuvre and retro jets. Thirsty: 3 l/s a MN as now. At most 500 kN a part (`jetMost`) |
+| Torch drive | plain, on fuel | **Drive Core**, then a **Fuel Pump**, then a **Coolant Exchanger** as the class grows | A core on its bed with a walkway round it; pumps on the fuel side; the exchanger against the hull with its radiators outside | The ships' main drives, and every lift or retro jet over 500 kN. Efficient: 2 l/s a MN |
 | Rocket | rocket (fuel and oxidiser) | a **Turbopump** for each propellant and a **Mixing Manifold** | Small and dense: pumps between the two tank feeds | Most thrust for its room, thirstiest, and the pumps burn |
 | Ion drive | plain, electric | a **Power Conditioner** | Cabinets and bus bars; no fuel, a great deal of power | Little thrust, no tank: a hauler's cruise engine, and it competes with the weapons for the reactor |
 | Turbojet | air | none | - | Breathes, so it is a pod by nature. Unchanged |
@@ -159,22 +161,34 @@ decides how much of each. Provisional numbers; all of them live in the part file
 
 | Class | Thrust of the drive part | Torch drive needs | Room to allow (guide for a designer) |
 | --- | --- | --- | --- |
-| 0, a jet | under 2 MN, type Jet | nothing | none |
-| 1, light | 0.5 to 2 MN | Drive Core S | a bay about 3 by 3 m against the stern, 2.5 m high |
+| 0, a jet | 500 kN or less | nothing | none |
+| 1, light | over 0.5 MN, to 2 MN | Drive Core S | a bay about 3 by 3 m against the stern, 2.5 m high |
 | 2, medium | 2 to 6 MN | Drive Core M, Fuel Pump M | a room about 5 by 4 m |
 | 3, heavy | 6 to 20 MN | Drive Core L, Fuel Pump L, Coolant Exchanger L | a hall about 8 by 6 m, better two decks high |
 | 4, capital | over 20 MN | cores, pumps and exchangers in number until they serve it | an engine hall the width of the stern |
 
 Pieces serve by capacity (`serves`), so a class is a guide, not a rule in code: Drive Core S serves 2 MN, M 6 MN, L 12
 MN; Fuel Pump M 6 MN, L 12 MN; Coolant Exchanger L 20 MN. `ShipWorks.json` holds, per type, the thrust above which
-each further kind is needed (torch: core from 0.5 MN, pump from 2 MN, exchanger from 6 MN); the part kit's drive helper
+each further kind is needed (torch: core over 0.5 MN, pump from 2 MN, exchanger from 6 MN); the part kit's drive helper
 reads it and writes the head's `needs`, so a generator never picks the list by hand. Two drives on one mount share one
 core room, and a ship with two pumps where one would do keeps half its thrust when one is holed: redundancy is bought
 with room.
 
-A jet is whole but capped: the part kit refuses to generate a self-contained thruster in group `Ship` over
-`ShipWorks.json`'s `jetMost` (2 MN). The old Boost parts (Capital Jet and the rest) are untouched: the Orbiter and
-Jumper climb on them, and the cap is on the new family, not the loader.
+A jet is whole but capped: the part kit refuses to generate a thruster in group `Ship` over `ShipWorks.json`'s
+`jetMost` (500 kN) that has no `works` block, whatever it is for. The old Boost parts (Capital Jet and the rest) are
+untouched: the Orbiter and Jumper climb on them, and the cap is on the new family, not the loader.
+
+**Lift jets and retros over 500 kN** (answer 1) are drives like any other and come the same two ways:
+
+- **Under the hull with works inside.** Lift jets hang on the keel, so flag the keel lengths as mounts: the flood
+  passes through touching mounts, so one **lift machinery bay** on the lowest deck, standing on the keel, serves every
+  lift jet on it. Need is summed over the assembly (3.2), so four 1.5 MN lifters ask for 6 MN of core: one Drive Core
+  M, and each lifter's own `needs` is only a core since it is under 2 MN. A keel length shot away takes its jet and
+  cuts the flood there, which is right. The same goes for retros through the bow.
+- **As a pod.** A lift jet under a tank, a hopper or a nacelle, with nothing walkable above it, is a pod:
+  `service: "outside"`, the cowl's armour, mended from underneath on the ground or on a space walk.
+
+A designer may mix them: lift bay for the keel's jets, pods on the outriggers.
 
 ### 4.2 Hull drive or pod
 
@@ -395,7 +409,9 @@ lines elsewhere. The text to add, in substance:
   that room.
 - **A pod**: on a pylon outside the skin, clear of the hull by its gimbal's swing, with a way to reach it (a handrail
   or a walkway on the pylon, and the airlock on that side). Say in the ship's doc that it is serviced outside.
-- **Jets** (lift, retro, RCS) are whole and need nothing inside; none over 2 MN.
+- **Jets** of 500 kN or less (RCS, small manoeuvre jets) are whole and need nothing inside. **Every lift jet and
+  retro over 500 kN** is a hull drive too (flag the keel or bow as its mount and give the lifters one lift machinery
+  bay on the lowest deck) or a pod where nothing walkable is above it.
 - **Each turret**: surface or trunked. A trunked one needs the deck under it clear for the trunk (its drum's depth
   and 0.5 m round it), a place for its works on the trunk, and a magazine: inside the armour, off the corridor, behind
   a door, its feed through an Ammo Switch. Gun consoles stay within 8 m of their Turret Modules.
@@ -420,10 +436,10 @@ Thrust figures stay as they are unless the flight check says otherwise.
 
 | Ship | Now | After | Notes |
 | --- | --- | --- | --- |
-| **Rust Bucket** (`ShipParts.cs`) | Two 600 kN drives on the stern pods; a prop engine block in the engine room | **Hull drive**: one centre Drive Nozzle (1.2 MN, the ship's own look) on the tail behind the engine room; the `Ship Engine Block` becomes a real Drive Core S (same look, same place). The pods keep their tanks and lift jets and lose their drives | The start ship teaches the inside: its breakdowns are in the engine room where the panel is. Keep the names `Engineer's Panel` and the block's (the breakdown code reads the first). The tail's heat exchanger is already drawn |
-| **Magpie** (`MinerParts.cs`) | Two 900 kN drives on the nacelles' tails | **Pods**: each Magpie Drive takes `service: "outside"` and a 12 degree gimbal; the nacelle gets a handrail and a hatch by the drive | The miner teaches the other half: a breakdown means going out on the pylon. Its engine deck stays a power room. No works to place |
-| **Halberd** (`FrigateParts.cs`) | 4.5 MN Main Drive under the thrust frame; four 500 kN manoeuvre jets | **Hull drive, class 2**: the thrust frame is the mount; Drive Core M and Fuel Pump M on the engineering deck over the drive ring (the reactor and board move to the walls). The manoeuvre jets are jets. PDCs: two of the four on Turret Rings fed from an Ammo Container in the armoury, two left as surface mounts in their housings. The railgun takes an `energy` and a Capacitor Bank in engineering | The engineering deck is 9.5 by 8.5 m and already crowded: lay it out again rather than squeeze. It also shows both turret kinds on one ship |
-| **Zero Day** (`TorpedoFrigateParts.cs`) | 9 MN Drive Array on the stern; engineering in the lower deck aft | **Hull drive, class 3**: a drive room at the aft end of the lower deck against the stern (the stern and that wall are mounts), with Drive Core L, Fuel Pump L and Coolant Exchanger L; engineering keeps the reactor forward of it. PDCs on Turret Rings with one magazine amidships. Railgun: `energy` and capacitors. Torpedo bays: unchanged at first; a second drum and a Reload Hoist a bay is the stretch (phase 4) | The reference ship: it should show the whole idea. `MustFit` will say whether the drive room fits inside the skin at the stern; if not, shorten the stern tank, and share its fuel out as the keel does |
+| **Rust Bucket** (`ShipParts.cs`) | Two 600 kN drives on the stern pods; a prop engine block in the engine room | **Hull drive**: one centre Drive Nozzle (1.2 MN, the ship's own look) on the tail behind the engine room; the `Ship Engine Block` becomes a real Drive Core S (same look, same place). The pods and saddles keep their tanks and lose their drives; the four 800 kN lift jets under them become **pods** (nothing walkable is above them) | The start ship teaches the inside: its breakdowns are in the engine room where the panel is. Keep the names `Engineer's Panel` and the block's (the breakdown code reads the first). The tail's heat exchanger is already drawn |
+| **Magpie** (`MinerParts.cs`) | Two 900 kN drives on the nacelles' tails | **Pods**: each Magpie Drive takes `service: "outside"` and a 12 degree gimbal; the nacelle gets a handrail and a hatch by the drive. The four 1.2 MN lift jets under the hoppers and nacelles are pods too; the 500 kN retros stay whole | The miner teaches the other half: a breakdown means going out on the pylon. Its engine deck stays a power room. No works to place |
+| **Halberd** (`FrigateParts.cs`) | 4.5 MN Main Drive under the thrust frame; four 500 kN manoeuvre jets | **Hull drive, class 2**: the thrust frame is the mount; Drive Core M and Fuel Pump M on the engineering deck over the drive ring (the reactor and board move to the walls). The 500 kN manoeuvre jets are at the figure, not over it, and stay whole. PDCs: two of the four on Turret Rings fed from an Ammo Container in the armoury, two left as surface mounts in their housings. The railgun takes an `energy` and a Capacitor Bank in engineering | The engineering deck is 9.5 by 8.5 m and already crowded: lay it out again rather than squeeze. It also shows both turret kinds on one ship |
+| **Zero Day** (`TorpedoFrigateParts.cs`) | 9 MN Drive Array on the stern; engineering in the lower deck aft | **Hull drive, class 3**: a drive room at the aft end of the lower deck against the stern (the stern and that wall are mounts), with Drive Core L, Fuel Pump L and Coolant Exchanger L; engineering keeps the reactor forward of it. The four 1.5 MN lift jets: the keel lengths are mounts and a lift machinery bay with a Drive Core M stands on the keel amidships on the lower deck. The two 1.2 MN retros: the bow is their mount with a Drive Core M in a small bay under the bridge if `MustFit` allows, else they become pods in the bow's cheeks. PDCs on Turret Rings with one magazine amidships. Railgun: `energy` and capacitors. Torpedo bays: unchanged at first; a second drum and a Reload Hoist a bay is the stretch (phase 4) | The reference ship: it should show the whole idea. `MustFit` will say whether the drive room fits inside the skin at the stern; if not, shorten the stern tank, and share its fuel out as the keel does |
 | **Dray hauler** (PR 242) | Frame, walls and doors only | Design it with this plan from the start: an Ion or torch hull drive with a drive room, no weapons or surface mounts only | Whoever picks the Dray up reads section 10. If it merges before phase 1, it gets today's thrusters and joins the phase 2 migration |
 
 The crewed Zero Day follows the Zero Day (one blueprint builder with a flag). After the last ship: regenerate the
@@ -469,8 +485,8 @@ sheets of the changed rooms.
 
 The builder goes ahead on the recommended answer for any still open.
 
-1. **Which engines must have insides?** A (recommended): main drives only; lift, retro and RCS jets stay whole, up to
-   2 MN, and burn more for their push. B: everything over a thrust figure, lift jets too.
+1. **Which engines must have insides?** Answered: B, everything over a thrust figure, lift jets too. (A was main
+   drives only.)
 2. **A big nozzle with no works behind it:** A (recommended): it doesn't run, and says why. B: it runs at a quarter.
 3. **Lasers and capacitors, which don't exist yet:** A (recommended): in this plan, as its last big phase. B: plan
    engines, guns and missiles now and lasers on their own later.
@@ -484,4 +500,7 @@ The builder goes ahead on the recommended answer for any still open.
 
 Answers:
 
-- (none yet)
+- **1: B** (Karl, 2026-11-16, decision card). Every thruster over a thrust figure has works, lift jets and retros
+  included. The figure is `jetMost`, 500 kN, picked so that RCS thrusters (80 and 250 kN), the Halberd's manoeuvre
+  jets and the Magpie's retros (500 kN) stay whole and every lift jet on the four ships (800 kN to 1.5 MN) does not.
+  Sections 2, 4.1, 10 and 11 are revised for it. The figure is Karl's to move.
