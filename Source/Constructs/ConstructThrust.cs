@@ -60,6 +60,9 @@ public sealed partial class Construct
     /// <summary>Host: the climb an order asks of the stabilizer's autopilot in a sky (m/s; 0: the stabilizer's own limit). Game/GameNav.cs.</summary>
     public float NavClimb;
 
+    /// <summary>Host: an order sets it down (m/s it comes down at, slowing near the ground; 0: none). Its autopilot's height loop reads it (ConstructFlight.cs). Game/GameNavLand.cs.</summary>
+    public float NavLand;
+
     /// <summary>Hub motors on the wheels (with the wheels: a track's rays share its motor).</summary>
     private void BuildHubMotors()
     {

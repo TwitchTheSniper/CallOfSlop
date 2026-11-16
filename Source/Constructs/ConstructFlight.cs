@@ -753,6 +753,27 @@ public static partial class ConstructFlight
             world.StructureDirty.Add(c.Id);
     }
 
+    /// <summary>The nav computer moves the point its autopilot flies to (a ship coming to a player who walks on).</summary>
+    public static void NavMoveWaypoint(ConstructWorld world, Construct c, Vector3 waypoint)
+    {
+        if (c.StabCount == 0 || c.Stabs[0].Part >= c.PartCount)
+            return;
+        ref var p = ref c.Parts[c.Stabs[0].Part];
+        var d = p.D;
+        if (Put(ref p, d, CfgKey.WaypointX, waypoint.X) | Put(ref p, d, CfgKey.WaypointY, waypoint.Y) | Put(ref p, d, CfgKey.WaypointZ, waypoint.Z))
+            world.StructureDirty.Add(c.Id);
+    }
+
+    /// <summary>An order has set it down: its autopilot off and its stabilizer at rest, as a pilot who landed leaves it (it arms again at a touch of the keys).</summary>
+    public static void NavSetDown(ConstructWorld world, Construct c)
+    {
+        NavRelease(world, c);
+        c.HoverOn = false;
+        for (var k = 0; k < c.StabCount; k++)
+            if (c.Stabs[k].Part < c.PartCount)
+                c.Parts[c.Stabs[k].Part].State &= unchecked((byte)~1);
+    }
+
     /// <summary>Is its autopilot on (the first stabilizer's setting)?</summary>
     public static bool AutopilotOn(Construct c) =>
         c.StabCount > 0 && c.Stabs[0].Part < c.PartCount && ConstructConfig.Get(c.Parts[c.Stabs[0].Part], c.Parts[c.Stabs[0].Part].D, CfgKey.Autopilot, 0) >= 0.5f;
@@ -938,15 +959,24 @@ public static partial class ConstructFlight
         }
 
         var assist = ConstructConfig.Get(p, d, CfgKey.LandingAssist, 0);
-        if (assist > 0 && climbWant < 0)
+        var setDown = autopilot && c.NavLand > 0 && !(ask.Lift != 0 && rotor); // (an order from the command view sets it down: Game/GameNavLand.cs)
+        if (setDown || assist > 0 && climbWant < 0)
         {
             // Near the ground it comes down no faster than it can stop.
             if (++s.GapTick >= 6 || s.GapTick == 1)
             {
                 s.GapTick = 1;
-                s.Gap = World.Query.Raycast(c.WorldCom, -up, assist + c.Radius, QueryFilter.All) - MathF.Max(0, c.Com.Y - c.LocalMin.Y);
+                var reach = setDown ? MathF.Max(assist, Game.NavLandLook) : assist;
+                s.Gap = World.Query.Raycast(c.WorldCom, -up, reach + c.Radius, QueryFilter.All) - MathF.Max(0, c.Com.Y - c.LocalMin.Y);
             }
-            if (s.Gap < assist)
+            if (setDown)
+            {
+                // Down at the order's speed, slowing as the ground comes near (a fifth of the gap a second: it has time to stop).
+                climbWant = -MathF.Min(c.NavLand, MathF.Max(0.6f, 0.2f * s.Gap + 0.6f));
+                s.HoldAlt = height;
+                s.AltHeld = true;
+            }
+            else if (s.Gap < assist)
                 climbWant = MathF.Max(climbWant, -MathF.Max(0.6f, 0.5f * s.Gap));
         }
 
