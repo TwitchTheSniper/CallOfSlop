@@ -1911,6 +1911,12 @@ public static partial class ConstructRoutes
             var saved = r;
             r.Type = RouteType.COUNT; // (not matched by the duplicate check while checked)
             why = Check(null, c, saved.Type, saved.From, saved.FromPort, 255, 0, Vector3.Zero, nodes[..saved.Count], saved.To, saved.ToPort);
+            // (a pre-built's conduit laid through a wall fails the full rule as it stands, ConstructConduit: a move that doesn't add a new
+            // fault, its ends and spans still good, is let through)
+            if (why != null && !why.StartsWith("at most", StringComparison.Ordinal)
+                && Check(null, c, saved.Type, saved.From, saved.FromPort, 255, 0, Vector3.Zero, c.RouteNodes.AsSpan(saved.Start, saved.Count), saved.To, saved.ToPort) == why
+                && Check(null, c, saved.Type, saved.From, saved.FromPort, 255, 0, Vector3.Zero, nodes[..saved.Count], saved.To, saved.ToPort, straight: true) == null)
+                why = null;
             r = saved;
         }
         return why != null && !why.StartsWith("at most", StringComparison.Ordinal) ? why : null;

@@ -151,7 +151,7 @@ public static partial class ConstructRoutes
             return DropOrWhy(world, c, s, from, s.FromPort, "output");
         if (s.ToPort.Length > 0 && !TryPortByName(c.DefOf(to), s.Type, s.ToPort, input: true, out toPort) && !(s.Type == RouteType.Data && HasDataPort(c.DefOf(to), s.ToPort, true)))
             return DropOrWhy(world, c, s, to, s.ToPort, "input");
-        if (bp != null && from >= 0 && ConstructConduit.Lays(s) && ConstructConduit.TryLay(world, c, bp, entry, s.Type, from, fromPort, to, toPort, conduitEnd))
+        if (bp != null && from >= 0 && ConstructConduit.Lays(bp, entry - bp.Wires.Count) && ConstructConduit.TryLay(world, c, bp, entry, s.Type, from, fromPort, to, toPort, conduitEnd))
         {
             c.Routes[c.RouteCount - 1].Cursor = BlueprintMark;
             c.Routes[c.RouteCount - 1].Paint = s.Paint;
