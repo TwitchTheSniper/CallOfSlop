@@ -533,7 +533,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   at half the speed between messages. No new bytes.
     // 319: each thruster's own level for its flame (CBodyKind.Thrust at the end of CBodyKind: u16 body, u16 n, u8 level each, 10 Hz while one
     //   changes; ConstructThrust.WriteShown), and the Flight Stabilizer's "keys" setting takes Ship (FlightPattern.Ship, 4).
-    public const ushort ProtocolVersion = 319;
+    // 320: a craft's radar (docs/sandbox/constructs/weapons.md "Radar"): CActKind.RadarLock at the end of CActKind (u16 body,
+    //   u16 target).
+    // 321: the rust bucket's breakdowns (GameSandboxBreakdowns.cs): CActKind.Breakdown (server -> clients: u16 body, u16 part,
+    //   u8 stage, u8 seconds, u8 say) and CActKind.Mend (u16 body, u16 part) at the end of CActKind, after RadarLock.
+    public const ushort ProtocolVersion = 321;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

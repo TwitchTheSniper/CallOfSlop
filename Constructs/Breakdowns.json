@@ -1,0 +1,13 @@
+{
+  // Breakdowns on the rust bucket (Source/Game/GameSandboxBreakdowns.cs, docs/sandbox/constructs/ship.md "Breakdowns"):
+  // the roadmap's "breakdowns that warn you first" (Karl, 2026-11-15). Survival only, on a ship start's own ship, and the
+  // clock runs only while somebody is aboard it with the game running.
+  "format": "call-of-slop-breakdowns/1",
+  "minMinutes": 8, // crewed minutes from one breakdown's warning to the next: a random time between these two
+  "maxMinutes": 14,
+  "firstMinutes": 4, // the first one comes this soon after you wake (crewed minutes), so the start shows what to look out for
+  "warnSeconds": 90, // how long a part creaks and groans before it fails: fix it with the attach tool in that time for nothing
+  "repairMaterial": "metal", // what a failed part takes to put right (Recycling.json's materials: salvage gives metal)
+  "repairCost": 3,
+  "maxFailed": 2 // no new breakdown starts while this many parts are already failed and waiting for a repair
+}

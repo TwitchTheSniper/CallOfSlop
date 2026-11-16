@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Magpie Mining Ship",
-  "description": "A mining ship: it sets down over a deposit, lowers four drills on rams through the well in its keel and fills the ore hoppers on its flanks, then flies the load to a refinery.",
+  "description": "A mining ship: it sets down by a deposit and lowers its stern ramp; its crew carry the drills out from their docks, and fill the ore hoppers on its flanks, then fly the load to a refinery.",
   "steps": [
     {
       "part": "Magpie Keel"
@@ -223,16 +223,12 @@
       "by": "top"
     },
     {
-      "part": "Magpie Boarding Ladder",
+      "part": "Magpie Stern Ramp",
       "on": 3,
-      "socket": "boarding",
-      "by": "hull"
-    },
-    {
-      "part": "Magpie Ladder Foot",
-      "on": 37,
-      "socket": "lower",
-      "by": "hang"
+      "socket": "ramp",
+      "by": "hang",
+      "paint": "#a97c24",
+      "finish": "worn paint"
     },
     {
       "part": "Magpie Ladder",
@@ -354,121 +350,40 @@
       "finish": "worn paint"
     },
     {
-      "part": "Bakelite Switch",
+      "part": "Magpie Drill Dock",
       "on": 2,
-      "socket": "drillSwitch",
+      "socket": "dock0",
+      "by": "wall"
+    },
+    {
+      "part": "Drill Module",
+      "on": 52,
+      "socket": "dock",
       "by": "back"
     },
     {
-      "part": "Text Sign",
+      "part": "Battery",
+      "on": 53,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Magpie Drill Dock",
       "on": 2,
-      "socket": "drillSign",
-      "by": "back",
-      "text": [
-        "DRILLS UP",
-        "DRILLS DOWN"
-      ]
-    },
-    {
-      "part": "Bakelite Switch",
-      "on": 2,
-      "socket": "wellDoorSwitch",
-      "by": "back",
-      "config": {
-        "startOn": false
-      }
-    },
-    {
-      "part": "Magpie Well Door F",
-      "on": 0,
-      "socket": "wellDoorF",
-      "by": "hang",
-      "paint": "#5a5d5c",
-      "finish": "plated steel"
-    },
-    {
-      "part": "Magpie Well Door A",
-      "on": 0,
-      "socket": "wellDoorA",
-      "by": "hang",
-      "paint": "#5a5d5c",
-      "finish": "plated steel"
-    },
-    {
-      "part": "Piston 3x3 Long",
-      "on": 2,
-      "socket": "drill0",
-      "by": "base",
-      "config": {
-        "max": 2.0,
-        "speed": 0.3
-      },
-      "paint": "#e0a020",
-      "finish": "hazard paint"
+      "socket": "dock1",
+      "by": "wall"
     },
     {
       "part": "Drill Module",
-      "on": 58,
-      "socket": "top",
-      "by": "drive",
-      "spin": 1
+      "on": 55,
+      "socket": "dock",
+      "by": "back"
     },
     {
-      "part": "Piston 3x3 Long",
-      "on": 2,
-      "socket": "drill1",
-      "by": "base",
-      "config": {
-        "max": 2.0,
-        "speed": 0.3
-      },
-      "paint": "#e0a020",
-      "finish": "hazard paint"
-    },
-    {
-      "part": "Drill Module",
-      "on": 60,
-      "socket": "top",
-      "by": "drive",
-      "spin": 2
-    },
-    {
-      "part": "Piston 3x3 Long",
-      "on": 2,
-      "socket": "drill2",
-      "by": "base",
-      "config": {
-        "max": 2.0,
-        "speed": 0.3
-      },
-      "paint": "#e0a020",
-      "finish": "hazard paint"
-    },
-    {
-      "part": "Drill Module",
-      "on": 62,
-      "socket": "top",
-      "by": "drive",
-      "spin": 1
-    },
-    {
-      "part": "Piston 3x3 Long",
-      "on": 2,
-      "socket": "drill3",
-      "by": "base",
-      "config": {
-        "max": 2.0,
-        "speed": 0.3
-      },
-      "paint": "#e0a020",
-      "finish": "hazard paint"
-    },
-    {
-      "part": "Drill Module",
-      "on": 64,
-      "socket": "top",
-      "by": "drive",
-      "spin": 2
+      "part": "Battery",
+      "on": 56,
+      "socket": "-x",
+      "by": "+x"
     },
     {
       "part": "Bulkhead Light",
@@ -483,15 +398,6 @@
       "part": "Bulkhead Light",
       "on": 2,
       "socket": "lampFR",
-      "by": "back",
-      "config": {
-        "colour": "#ffe0a0"
-      }
-    },
-    {
-      "part": "Bulkhead Light",
-      "on": 0,
-      "socket": "lampWellF",
       "by": "back",
       "config": {
         "colour": "#ffe0a0"
@@ -519,15 +425,6 @@
       "part": "Bulkhead Light",
       "on": 2,
       "socket": "lampAR",
-      "by": "back",
-      "config": {
-        "colour": "#ffe0a0"
-      }
-    },
-    {
-      "part": "Bulkhead Light",
-      "on": 0,
-      "socket": "lampWellA",
       "by": "back",
       "config": {
         "colour": "#ffe0a0"
@@ -631,34 +528,9 @@
       "by": "back"
     },
     {
-      "part": "Slide Door 1.5x2.25 m",
-      "on": 3,
-      "socket": "doorEng",
-      "by": "hang",
-      "paint": "#d8661c",
-      "finish": "worn paint"
-    },
-    {
-      "part": "Slide Door 1.5x2.25 m",
-      "on": 3,
-      "socket": "doorOuter",
-      "by": "hang",
-      "paint": "#d8661c",
-      "finish": "worn paint"
-    },
-    {
       "part": "Bulkhead Light",
       "on": 3,
       "socket": "lampEngA",
-      "by": "back",
-      "config": {
-        "colour": "#a0d0ff"
-      }
-    },
-    {
-      "part": "Bulkhead Light",
-      "on": 3,
-      "socket": "lampEngB",
       "by": "back",
       "config": {
         "colour": "#a0d0ff"
@@ -676,16 +548,7 @@
     {
       "part": "Bulkhead Light",
       "on": 3,
-      "socket": "lampLock",
-      "by": "back",
-      "config": {
-        "colour": "#ff5040"
-      }
-    },
-    {
-      "part": "Bulkhead Light",
-      "on": 3,
-      "socket": "lampSuit",
+      "socket": "lampBayA",
       "by": "back",
       "config": {
         "colour": "#fff0d0"
@@ -703,7 +566,34 @@
     {
       "part": "Bakelite Switch",
       "on": 3,
-      "socket": "switchLock",
+      "socket": "switchBayR",
+      "by": "back",
+      "config": {
+        "startOn": true
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 3,
+      "socket": "lampBayB",
+      "by": "back",
+      "config": {
+        "colour": "#fff0d0"
+      }
+    },
+    {
+      "part": "Bulkhead Light",
+      "on": 3,
+      "socket": "lampEngB",
+      "by": "back",
+      "config": {
+        "colour": "#a0d0ff"
+      }
+    },
+    {
+      "part": "Bakelite Switch",
+      "on": 3,
+      "socket": "switchBayL",
       "by": "back",
       "config": {
         "startOn": true
@@ -1036,155 +926,89 @@
   ],
   "wires": [
     [
-      50,
+      49,
+      47
+    ],
+    [
+      49,
       48
     ],
     [
-      50,
-      49
-    ],
-    [
-      53,
-      54
-    ],
-    [
-      55,
-      56
-    ],
-    [
-      55,
-      57
-    ],
-    [
-      53,
+      60,
       58
     ],
     [
-      53,
-      60
+      60,
+      59
     ],
     [
-      53,
+      63,
+      61
+    ],
+    [
+      63,
       62
     ],
     [
-      53,
-      64
+      78,
+      77
     ],
     [
-      69,
-      66
+      81,
+      79
     ],
     [
-      69,
-      67
+      81,
+      80
     ],
     [
-      69,
-      68
+      84,
+      82
     ],
     [
-      73,
-      70
+      84,
+      83
     ],
     [
-      73,
-      71
+      85,
+      87
     ],
     [
-      73,
-      72
-    ],
-    [
-      91,
-      89
-    ],
-    [
-      91,
-      90
-    ],
-    [
-      95,
-      92
-    ],
-    [
-      95,
-      93
-    ],
-    [
-      95,
-      94
-    ],
-    [
-      96,
+      100,
       98
     ],
     [
-      111,
-      109
+      100,
+      99
     ],
     [
-      111,
-      110
+      103,
+      101
     ],
     [
-      114,
-      112
+      103,
+      102
     ],
     [
-      114,
-      113
+      105,
+      104
     ],
     [
-      116,
-      115
+      121,
+      120
     ],
     [
-      132,
-      131
+      123,
+      122
     ],
     [
-      134,
-      133
+      126,
+      124
     ],
     [
-      137,
-      135
-    ],
-    [
-      137,
-      136
+      126,
+      125
     ]
   ],
-  "conduit": true,
-  "links": [
-    {
-      "type": "chute",
-      "from": 59,
-      "to": 51,
-      "fromPort": "Chute out",
-      "toPort": "Chute in"
-    },
-    {
-      "type": "chute",
-      "from": 61,
-      "to": 52,
-      "fromPort": "Chute out",
-      "toPort": "Chute in"
-    },
-    {
-      "type": "chute",
-      "from": 63,
-      "to": 51,
-      "fromPort": "Chute out",
-      "toPort": "Chute in"
-    },
-    {
-      "type": "chute",
-      "from": 65,
-      "to": 52,
-      "fromPort": "Chute out",
-      "toPort": "Chute in"
-    }
-  ]
+  "conduit": true
 }

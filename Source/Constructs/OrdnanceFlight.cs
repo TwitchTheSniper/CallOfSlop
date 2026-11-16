@@ -512,14 +512,22 @@ public static class OrdnanceFlight
     private static void Lock(ConstructWorld world, Construct c, int rack, ref CShell s, OrdFlightStats f, Vector3 at, Vector3 fwd, IWorldQuery query)
     {
         var cos = MathF.Cos(f.SeekCone * MathF.PI / 180f);
+        if (f.Seek is OrdSeek.Heat or OrdSeek.Radar or OrdSeek.Command && ConstructRadar.Target(world, c, at, f.SeekReach) is var radar and > 0)
+        {
+            s.Target = radar; // (the craft's radar lock wins over what the seeker would find: ConstructRadar.cs)
+            if (f.Seek == OrdSeek.Heat)
+                s.Flags |= ShellFlags.FlareProne;
+            return;
+        }
         switch (f.Seek)
         {
             case OrdSeek.None:
-                // A Seeker Head bolted to the rack locks for a weapon with no seeker of its own.
+                // A Seeker Head bolted to the rack locks for a weapon with no seeker of its own (the craft's radar lock first).
                 for (var e = c.FirstLink(rack); e >= 0; e = c.NextLink(e))
                     if (c.DefOf(c.OtherEnd(e)) is { Sight: SightKind.Seeker } head && c.Parts[c.OtherEnd(e)].Working)
                     {
-                        s.Target = ConstructOrdnance.Seek(world, c, at, fwd, head.SightReach, MathF.Cos(head.SightCone * MathF.PI / 180f), query);
+                        s.Target = ConstructRadar.Target(world, c, at, head.SightReach) is var held and > 0 ? held
+                            : ConstructOrdnance.Seek(world, c, at, fwd, head.SightReach, MathF.Cos(head.SightCone * MathF.PI / 180f), query);
                         s.Flags |= ShellFlags.FlareProne;
                         break;
                     }

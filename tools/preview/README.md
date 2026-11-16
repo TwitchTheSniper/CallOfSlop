@@ -12,7 +12,7 @@ the DLL (rebuild after `--gen-parts`). The summary line goes to `callofslop.log`
 
 `viewer.html` is the page for both: one puts the model's JSON in its `model` script tag, the gallery puts `null` there and
 the page fetches `models/index.json` and a model when it is picked (a ship picker, then the whole ship, a deck or one of its parts; `#ship--deck-2` or `#ship--part-id` in the address picks a view). Decks are found by the export: floors with a ceiling over them. The viewer turns,
-cuts away by height, colours by finish and picks parts. It is a design aid, not the renderer: no textures, no lamps'
+cuts away by height, colours by finish, picks parts and shows the links (Links: cables, pipes, chutes and shafts as the build laid them, one colour a type; Links through walls draws them over everything). Each model carries `"links"`: `[type, x, y, z, ...]` from the output through the nodes to the input. `--preview-shot ... --links` draws them in the PNG too. It is a design aid, not the renderer: no textures, no lamps'
 light, legs and tracks left out, joints at rest, hidden collision boxes skipped.
 
 The page loads three.js 0.160.0 from cdn.jsdelivr.net. A cloud container's browser can't reach that CDN, and the gallery

@@ -1076,6 +1076,7 @@ public sealed class ShipParts : IPartGenerator
         Sock(p, "cargo", Cx - 0.5, RoofDeck, 9.0, "+y");
         Sock(p, "crane", Cx + 1.7, RoofDeck, 12.4, "+y");
         Sock(p, "mast", Cx - 1.6, RoofDeck, 5.2, "+y");
+        Sock(p, "sensor", Cx - 0.7, RoofDeck, 5.2, "+y"); // (the Long Range Sensor beside the mast: the radar's scope)
         Sock(p, "radL", Cx - RadX, 6.3, RadZ, "-x");
         Sock(p, "radR", Cx + RadX, 6.3, RadZ, "+x");
         return p;
@@ -1886,6 +1887,7 @@ public sealed class ShipParts : IPartGenerator
         Paint(bp, Hang(bp, "Rust Bucket Deck Cargo", roof, "cargo", "bottom"), "#3f5e6a", "rusty paint");
         Hang(bp, "Rust Bucket Crane", roof, "crane", "bottom");
         Hang(bp, "Rust Bucket Mast", roof, "mast", "bottom");
+        Hang(bp, "Long Range Sensor", roof, "sensor", "-y"); // (the radar's scope in every seat; no missile rack, so no lock: ConstructRadar.CanLock)
         Hang(bp, "Rust Bucket Radiator L", roof, "radL", "root");
         Hang(bp, "Rust Bucket Radiator R", roof, "radR", "root");
         // The hold: shelving down the port side, a tool rack and a locker opposite, two crates by the stair.

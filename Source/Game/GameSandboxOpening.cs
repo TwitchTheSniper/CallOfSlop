@@ -100,6 +100,7 @@ public sealed partial class Game
         _opOn = false;
         _opColony = 0;
         _opShip = 0;
+        BreakdownReset(); // (GameSandboxBreakdowns.cs)
         LockdownReset(); // (and its barracks: GameColonyLockdown.cs)
         ColonyBuildingsReset(); // (and the Ministry's buildings round the colony: GameColonyBuildings.cs)
         DepotReset(); // (and the Remote Works and the Orbital Depot: GameDepot.cs)

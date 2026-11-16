@@ -501,7 +501,7 @@ public sealed partial class ConstructEdits
                 var salvage = Salvageable(c, player);
                 if (salvage || c.Damaged)
                     world.Note(CNoteKind.Strip, c.Id, player); // (a wreck: the story keeps someone else's, and any a faction claims: ConstructWorldNotes.cs, Game/GameStory.cs)
-                var wrecked = c.Parts[h.Part].Broken;
+                var wrecked = c.Parts[h.Part].Broken && !c.Parts[h.Part].BrokeDown; // (a breakdown comes off whole)
                 var wreckedPart = c.Parts[h.Part];
                 var magPack = c.Parts[h.Part].Rounds;
                 var partRot = c.Parts[h.Part].Rot;
@@ -1146,6 +1146,8 @@ public sealed partial class ConstructEdits
         var reach = ConstructBuild.UseReach + (d.Role == PartRole.Seat && !c.Anchored && !c.Asleep ? MathF.Min(c.Vel.Length(), SeatReachSpeed) * 0.2f : 0);
         if (Reachable(eye, ReachPoint(c, part, eye), reach) is { } far)
             return far;
+        if (d.ToolDock)
+            return DockUse(world, player, c, part);
         if (d.Role == PartRole.Seat)
         {
             ref var seat = ref c.Parts[part];
