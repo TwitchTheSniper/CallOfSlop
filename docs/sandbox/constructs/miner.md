@@ -25,7 +25,7 @@ band of skin over the rooms it holds, and `MustFit` throws if a room pokes throu
 - **The bow**: a light bar and a chin ground scanner.
 - **Thruster pods** on the hoppers' shelves: a lift jet under each, and a retro jet in its nose that fires straight ahead.
   Karl (2026-11-15) said the retros in the bow's cheeks looked stuck on.
-- **The stern**: a hood over the boarding porch, with a radiator grille.
+- **The stern**: a hood over the stern ramp, with a radiator grille.
 
 ## The decks
 
@@ -35,15 +35,12 @@ landed). From bow to stern:
 | Deck | Part | What is in it |
 | --- | --- | --- |
 | lower, fore | Magpie Workshop Deck | bench, tool rack, lockers, desk, crates, shelving, the ladder up to the hall |
-| lower, middle | Magpie Drill Bay | the drill well (railed), the gantry with four drills on rams, windows into both hoppers, the drill lever and its sign |
-| lower, aft | Magpie Engine Deck | power plant, batteries, board, pipes, the aft ladder, the suit room and airlock, the outer door onto the porch |
+| lower, middle | Magpie Drill Bay | the two drill docks on its aft wall, windows into both hoppers, the hoist rail |
+| lower, aft | Magpie Engine Deck | one stern bay (Karl, 2026-11-16): power plant, batteries, board, pipes, the aft ladder, suit lockers, the stern ramp |
 | upper, fore | Magpie Bridge Deck | sealed bridge (screens, no glass), two flight couches, the flight computer, the hall, two cabins with crash couches |
 | upper, aft | Magpie Mess Deck | head, sick bay, mess and galley, grow racks, the ladder down to engineering |
 
-The keel holds the main fuel tank (6,000 l) and has the drill well cut through it. Boarding is by the ladder from the
-ground up to the porch at the stern. It comes in two pieces (Karl, 2026-11-15): the upper flight is welded to the porch, and
-the **Magpie Ladder Foot** is an event door riding on it. F on the foot rolls it down 1.75 m to the ground in 2 s, or back up.
-The ladder can't be climbed while its foot is stowed (`ConstructRide.ClimbLadder`), and it starts stowed.
+The keel holds the main fuel tank (6,000 l). Boarding is up the stern ramp into the stern bay.
 `--check-building` skips a door leaf narrower than a person.
 
 ## Fittings
@@ -70,19 +67,18 @@ merge, the Magpie can switch to them if a shared set suits it.
 
 ## Mining
 
-- Four tier 1 **Drill Modules** (iron, stone, sand) hang on four **Piston 3x3 Long** rams under the gantry, in pairs
-  across the well. A later tier fits the same socket (`MinerParts.DrillPart`).
-- One lever in the drill bay drives every ram (2 m stroke, slow) and flips the sign between "DRILLS UP" and
-  "DRILLS DOWN". Fully down, the bit tips sit about 10 cm above the ground the legs stand on, inside a drill's 25 cm
-  reach.
-- **The well's cargo door** (Karl, 2026-11-15): two ribbed steel leaves under the keel close the well. Each hangs from a
-  track beam and rides C-channel rails, and they slide apart fore and aft in 3 s. A Bakelite Switch below the drill
-  lever opens them (on) and shuts them (off), and they start shut. Open them before lowering the drills.
-  `--check-building` treats a level leaf as a hatch rather than a doorway (BuildingWalkCheck).
-- Drills 0 and 2 chute into the port hold and drills 1 and 3 into the starboard hold. Each hold is a **Storage Volume**
-  sized to fill its hopper's inside, about 30 m3 (some 12,000 units of one bulk material).
-  The four chutes are laid by the router when the ship is built (power-and-links.md "Ship links and walls"): out of each
-  drill, across to the side wall at the drill's height and down into the hold.
+Mining is by hand (Karl, 2026-11-16): the drills aren't fixed to the ship.
+
+- Two tier 1 **Drill Modules**, each with a Battery welded on, sit on two **Magpie Drill Docks** on the drill bay's
+  aft wall. A dock is a part with `"toolDock": "Drill Module"` (any tier fits). F on a dock that holds a drill lets it
+  go as a loose piece (`ConstructEditsDock.cs`). Carry it out down the ramp with the physics gun and stand it on the
+  ground, where it digs. F on an empty dock with a drill's free back socket within 2.5 m squares the drill onto it and
+  welds it there. The biggest piece a dock takes is 8 parts.
+- Each hold is a **Storage Volume** sized to fill its hopper's inside, about 30 m3 (some 12,000 units of one bulk
+  material). F on a hold tips carried ore in, or takes out a load of 100.
+- **The stern ramp** (Magpie Stern Ramp): an event door hung on the stern bay's floor. F lowers it in 4 s to a fixed
+  40 degrees, its full length (about 3.7 m), which reaches the ground when the ship stands on its legs. Shut, it leans
+  into the opening under the stern hood.
 - A refinery and the trip to it are the production system's.
 
 ## Flight
@@ -110,10 +106,9 @@ so a part that touches nothing throws. The blueprint places each part with `Put`
 
 ## Not yet
 
-- Mining hasn't been tried in a world: no drill has been run against real ground from the ship.
+- Mining with a loose drill hasn't been tried in a world, nor the dock's release and re-clip in a running game.
 - No build cost and no recipes: they are left to the production system.
-- The holds have no way to unload except their chute ports. The hopper spouts are only looks.
-- The chutes cross the walkway round the well at about 1.6 m, since a drill's Chute out is at that height at rest and the holds sit on the floor by the walls. A tidier run (up the rams and along the gantry beams) needs the holds' inlets or the drills' ports moved in MinerParts.cs.
+- Ore goes into a hold by hand: a carried drill's Chute out isn't linked to anything.
 
 ## The Magpie start
 
