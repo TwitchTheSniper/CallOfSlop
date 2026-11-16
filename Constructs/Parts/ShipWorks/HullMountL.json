@@ -9,6 +9,7 @@
   "worksPiece": {
     "kind": "mount"
   },
+  "collider": "boxes",
   "mass": 2500.0,
   "health": 10000,
   "armour": 40,

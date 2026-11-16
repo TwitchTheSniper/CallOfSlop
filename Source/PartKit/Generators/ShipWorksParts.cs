@@ -120,7 +120,7 @@ public sealed class ShipWorksParts : IPartGenerator
                 p.Sock(i == 0 && j == 0 ? "in" : $"in.{i}.{j}", P(i * 0.5, j * 0.5, -Plate), "-z");
         foreach (var (en, at) in new (string, double[])[] { ("edge+x", P(hw, 0, -0.15)), ("edge-x", P(-hw, 0, -0.15)), ("edge+y", P(0, hw, -0.15)), ("edge-y", P(0, -hw, -0.15)) })
             p.Sock(en, at, en[4..]);
-        p.Set(("worksPiece", Kw(("kind", "mount"))));
+        p.Set(("worksPiece", Kw(("kind", "mount"))), ("collider", "boxes")); // (the ring is a look: its 24-sided tube has no hull, and one would fill the hole; the plate collides)
         return p.Stats(MountMass[s], MountHealth[s], 40);
     }
 
