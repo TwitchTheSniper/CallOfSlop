@@ -116,7 +116,7 @@ Links between constructs and power, routed links, world links.
 
 ## [Weapons](constructs/weapons.md), 93 KB
 
-Construct weapons, merged receivers, weapon builder parts in Sandbox, the Gun Workbench.
+Construct weapons (a craft's radar and lock among them), merged receivers, weapon builder parts in Sandbox, the Gun Workbench.
 
 - Construct weapons (milestone 3)
 - Merged receivers
