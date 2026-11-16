@@ -475,6 +475,8 @@ public sealed partial class ConstructPartDef
     public float TankFlow; // a Fluid Tank: litres a second through its pipes at most
     public Fluid TankFluid; // what the tank holds (hoses and world links only move it between tanks that hold the same)
     public bool Stage; // a damage stage of another part ("stage": true): what a wall turns into as it loses chunks; not offered in the parts menu or on a rack
+    public bool ToolDock; // a tool dock ("toolDock": the part name its piece must start with): F lets go of what is on its "dock" socket or clips a loose one on (ConstructEditsDock.cs)
+    public string ToolDockFits = "";
     public bool Boarding; // a preferred boarding point ("boarding": true): Use near it grabs on and climbs aboard (ConstructRide.GrabOn)
     public float LadderTop; // a vertical ladder ("ladder": its landing's height in the part's frame, m; 0: not one): Use climbs it up or down (ConstructRide.ClimbLadder)
     public WalkKind Walk; // building pieces: walked on ("walk": floor, stairs, ramp, ladder): players step up onto it, bots may path over it
@@ -1316,7 +1318,7 @@ public static partial class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "damaged", "stage", "faces", "faceAxis", "router",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
         "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
@@ -1392,6 +1394,11 @@ public static partial class ConstructParts
         d.Stage = Opt(root, "stage") is { ValueKind: JsonValueKind.True };
         d.Walk = Opt(root, "walk") is { } walk ? EnumOf<WalkKind>(Str(walk, file, "walk"), file, "walk") : WalkKind.None;
         d.Boarding = Opt(root, "boarding") is { ValueKind: JsonValueKind.True }; // (a grab handle, a boarding ladder, a step plate: Use grabs on here first; ConstructRide.cs)
+        if (Opt(root, "toolDock") is { } dockFits)
+        {
+            d.ToolDock = true;
+            d.ToolDockFits = Str(dockFits, file, "toolDock");
+        }
         d.LadderTop = Opt(root, "ladder") is { } ladder ? Num(ladder, file, "ladder") : 0f; // (a vertical ladder: its landing's height, climbed with Use)
         if (Opt(root, "damaged") is { } dmg)
         {

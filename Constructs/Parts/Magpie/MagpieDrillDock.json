@@ -1,0 +1,216 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Magpie Drill Dock",
+  "description": "A wall dock for a Drill Module (any tier). F lets the drill go, to carry outside with the physics gun; F with a loose drill close by clips it back on, square.",
+  "group": "Ship",
+  "section": "Magpie miner",
+  "role": "frame",
+  "tool": "welder",
+  "toolDock": "Drill Module",
+  "mass": 35.0,
+  "health": 600,
+  "armour": 8,
+  "material": "steel",
+  "color": "#26241f",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.46,
+        -0.45,
+        0.0
+      ],
+      "max": [
+        0.46,
+        0.45,
+        0.06
+      ],
+      "color": "#3f433f",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.14,
+        -0.14,
+        0.06
+      ],
+      "max": [
+        0.14,
+        0.14,
+        0.12
+      ],
+      "color": "#5c615d"
+    },
+    {
+      "min": [
+        -0.43,
+        -0.3,
+        0.06
+      ],
+      "max": [
+        -0.35,
+        0.3,
+        0.2
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.44,
+        -0.32,
+        0.055
+      ],
+      "max": [
+        -0.34,
+        -0.26,
+        0.21
+      ],
+      "color": "#2a2d2b",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.35,
+        -0.3,
+        0.06
+      ],
+      "max": [
+        0.43,
+        0.3,
+        0.2
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.34,
+        -0.32,
+        0.055
+      ],
+      "max": [
+        0.44,
+        -0.26,
+        0.21
+      ],
+      "color": "#2a2d2b",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.32,
+        -0.42,
+        0.06
+      ],
+      "max": [
+        -0.28,
+        -0.38,
+        0.075
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.32,
+        0.38,
+        0.06
+      ],
+      "max": [
+        -0.28,
+        0.42,
+        0.075
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.28,
+        -0.42,
+        0.06
+      ],
+      "max": [
+        0.32,
+        -0.38,
+        0.075
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.28,
+        0.38,
+        0.06
+      ],
+      "max": [
+        0.32,
+        0.42,
+        0.075
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.08,
+        0.3,
+        0.06
+      ],
+      "max": [
+        0.08,
+        0.4,
+        0.1
+      ],
+      "color": "#d8661c",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.25,
+        0.32,
+        0.06
+      ],
+      "max": [
+        -0.15,
+        0.38,
+        0.085
+      ],
+      "color": "#40e070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "dock",
+      "at": [
+        0.0,
+        0.0,
+        0.12
+      ],
+      "dir": "+z"
+    }
+  ]
+}
