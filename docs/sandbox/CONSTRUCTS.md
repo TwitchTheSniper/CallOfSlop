@@ -31,7 +31,7 @@ The IT Department's warship: a faceted lofted hull, two decks the length of the 
 ## [Ship works](design/ship-works.md), 48 KB (the design)
 
 Engines and turrets with insides: a ship's drive over 500 kN has works behind it through the hull (Drive Core, Fuel Pump,
-Coolant Exchanger on a Hull Mount) or is a pod with them in its cowl; what a drive pushes is capped by its working works
+Coolant Exchanger: one cylinder bolted on behind the nozzle's Hull Mount) or is a pod with them in its cowl; what a drive pushes is capped by its working works
 (ConstructWorks.cs, Constructs/ShipWorks.json, the `ship_works` generator); breakdowns on every crewed ship. The drives
 are in; turret rings, hoists, rocket and ion drives and lasers are its later phases. A code guide replaces it in its last phase.
 

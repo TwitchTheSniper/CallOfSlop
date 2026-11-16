@@ -488,14 +488,14 @@
     },
     {
       "part": "Fuel Pump L",
-      "on": 7,
-      "socket": "drivePump",
+      "on": 80,
+      "socket": "back",
       "by": "front"
     },
     {
       "part": "Coolant Exchanger L",
-      "on": 7,
-      "socket": "driveExchanger",
+      "on": 81,
+      "socket": "back",
       "by": "front"
     },
     {
@@ -916,7 +916,7 @@
     },
     {
       "part": "Tool Rack",
-      "on": 10,
+      "on": 6,
       "socket": "toolRack",
       "by": "back"
     },

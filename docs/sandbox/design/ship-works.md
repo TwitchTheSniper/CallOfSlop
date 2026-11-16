@@ -159,7 +159,7 @@ decides how much of each. Provisional numbers; all of them live in the part file
 | Type | Today's `kind` | Works it needs | What the room is like | Character |
 | --- | --- | --- | --- | --- |
 | Jet (self-contained) | plain | none | - | RCS and small manoeuvre and retro jets. Thirsty: 3 l/s a MN as now. At most 500 kN a part (`jetMost`) |
-| Torch drive | plain, on fuel | **Drive Core**, then a **Fuel Pump**, then a **Coolant Exchanger** as the class grows | A core on its bed with a walkway round it; pumps on the fuel side; the exchanger against the hull with its radiators outside | The ships' main drives, and every lift or retro jet over 500 kN. Efficient: 2 l/s a MN |
+| Torch drive | plain, on fuel | **Drive Core**, then a **Fuel Pump**, then a **Coolant Exchanger** as the class grows | One large cylinder on the nozzle's line, running into the ship from the mount's inner face: the core, then the pump and the exchanger bolted on behind it as sections of the same cylinder (Karl, 2026-11-16), a walkway round it | The ships' main drives, and every lift or retro jet over 500 kN. Efficient: 2 l/s a MN |
 | Rocket | rocket (fuel and oxidiser) | a **Turbopump** for each propellant and a **Mixing Manifold** | Small and dense: pumps between the two tank feeds | Most thrust for its room, thirstiest, and the pumps burn |
 | Ion drive | plain, electric | a **Power Conditioner** | Cabinets and bus bars; no fuel, a great deal of power | Little thrust, no tank: a hauler's cruise engine, and it competes with the weapons for the reactor |
 | Turbojet | air | none | - | Breathes, so it is a pod by nature. Unchanged |
@@ -223,10 +223,11 @@ Generic parts, section `Ship fittings`, names that name no ship (section 9). Siz
   face.
 - **Hull Mount S/M/L**: an armoured ring plate, 30 cm thick, a socket on each face. The piece of hull a head goes
   through. The same part serves drives, launchers and (as the Turret Ring's trunk, section 5) turrets.
-- **Drive Core S/M/L**: the reaction chamber on its bed. The biggest piece; the Overdrive setting is on it; a gauge.
-  Takes the rust bucket's `Ship Engine Block` look for S.
-- **Fuel Pump M/L**: on the fuel side, flammable (it joins the parts incendiary rounds light), a pressure gauge.
-- **Coolant Exchanger L**: against the hull, with a radiator panel drawn on its outer face.
+- **Drive Core S/M/L**: the reaction chamber, a long cylinder bolted to the mount's inner face on the nozzle's line and
+  running into the ship (Karl, 2026-11-16). The biggest piece; the Overdrive setting is on it; a gauge.
+- **Fuel Pump M/L**: the next section of that cylinder, bolted on behind the core; flammable (it joins the parts
+  incendiary rounds light), a pressure gauge on its motor.
+- **Coolant Exchanger L**: the last section, ringed with radiator fins.
 - **Drive Pod S/M** (1.5 and 5 MN): nozzle and works in one cowl, `service: "outside"`, a 12 degree gimbal, a service
   hatch drawn on its side where the attach tool is used.
 - Later, with their types (phase 6): **Turbopump**, **Mixing Manifold**, **Power Conditioner**, **Rocket Nozzle**,

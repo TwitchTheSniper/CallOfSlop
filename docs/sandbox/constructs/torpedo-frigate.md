@@ -48,7 +48,7 @@ Two decks run fore and aft (floors at 0.25 and 3.5 m, ship frame), each in a for
 | Part | What is in it |
 | --- | --- |
 | Zero Day Lower Deck Fore | the server room (Server Racks), the armoury, the fore end of the torpedo room with a bay door each side, the fire buttons; the ladder up to ops |
-| Zero Day Lower Deck Aft | the rest of the torpedo room, the airlock over the boarding shaft (starboard), the suit bay (port), engineering (the drive's works on the aft wall, the lift jets' Drive Core M, reactor, board, batteries) and the ladder up to the mess |
+| Zero Day Lower Deck Aft | the rest of the torpedo room, the airlock over the boarding shaft (starboard), the suit bay (port), engineering (the drive's works as one cylinder forward from the aft wall, the lift jets' Drive Core M, reactor, board, batteries) and the ladder up to the mess |
 | Zero Day Upper Deck Fore | the sealed bridge (no glass: a view screen over the dashboard, camera screens each side; two Flight Couches, the flight computer), ops (the forward gun station, a plot table, the flares button), cabin A and the captain's cabin |
 | Zero Day Upper Deck Aft | cabin B, the head, the med bay, the mess with the aft gun station |
 
@@ -62,11 +62,12 @@ The Zero Day is the reference ship for ship works (docs/sandbox/design/ship-work
 inside, and pods where nothing walkable is near.
 
 - The **Drive Array** (9 MN torch) needs a Drive Core, a Fuel Pump and a Coolant Exchanger (ShipWorks.json's `drives`
-  table). Its mount is the Stern, welded to engineering's aft wall, which is a mount too: on that wall stand a **Drive Core
-  L** in the middle (12 MN), a **Fuel Pump L** to port and a **Coolant Exchanger L** to starboard behind the ladder up.
+  table). Its mount is the Stern, welded to engineering's aft wall, which is a mount too: from that wall one cylinder runs
+  forward down the middle of the room, a **Drive Core L** (12 MN), then a **Fuel Pump L** and a **Coolant Exchanger L**
+  bolted on behind it, 5.6 m in all. The reactor stands forward to starboard and the tool rack on the starboard wall.
 - The four **Lift Jets** (1.5 MN each) hang on the keel. Every keel length is a mount, and so are the lower decks' floors
   over it, so the keel's jets, the floors and engineering's wall are one assembly: the lift jets' **Drive Core M** stands on
-  engineering's floor, forward to port, and its 6 MN pools with the Core L (18 MN of cores for 15 MN of drives).
+  engineering's floor, lying forward to port, and its 6 MN pools with the Core L (18 MN of cores for 15 MN of drives).
 - The two **Retro Jets** (1.2 MN) in the bow's cheeks are **pods**: their works in their housings, seen to only from
   outside.
 - With its works whole a hull drive burns 2 l/s a MN (the array 18 l/s); a pod 2.4. Shoot out a works piece and the cap
