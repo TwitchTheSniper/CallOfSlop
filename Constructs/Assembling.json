@@ -2017,6 +2017,7 @@
     {"output": "Zero Day Ladder", "materials": {"steel": 20, "concrete": 4}, "seconds": 5.0},
     {"output": "Zero Day Landing Leg", "materials": {"steel": 220, "concrete": 44}, "seconds": 35.0},
     {"output": "Zero Day Lift Jet", "materials": {"steel": 252}, "parts": {"Gear Set": 20}, "seconds": 39.8},
+    {"output": "Zero Day Locker", "materials": {"steel": 12, "rubber": 2}, "seconds": 3.8},
     {"output": "Zero Day Lower Deck Aft", "materials": {"steel": 2000, "concrete": 500}, "seconds": 180.0},
     {"output": "Zero Day Lower Deck Fore", "materials": {"steel": 2000, "concrete": 500}, "seconds": 180.0},
     {"output": "Zero Day PDC", "materials": {"steel": 40}, "parts": {"Gear Set": 4}, "seconds": 8.0},

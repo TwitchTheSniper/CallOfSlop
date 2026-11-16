@@ -1442,6 +1442,58 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         return p.Stats(400, 800, 8, 3.0);
     }
 
+    /// <summary>The crew's locker (Karl, 2026-11-16: the shared open-shelf Locker "looks a little bland"): a closed graphite cabinet with
+    /// a raked top, its door the one panel the blueprint paints (lanyard yellow at the airlock, corporate blue in the cabins), louvres top
+    /// and bottom, a recessed pull, a badge reader with its status lamp, a lit name strip and a link-blue edge light. The same size and
+    /// sockets as the Locker, so it hangs by "wall" where that did.</summary>
+    private static Part Locker()
+    {
+        var p = new Part("Zero Day Locker", Small, Section, "A Zero Day crew locker: a closed cabinet with two shelves for a person's kit, a badge reader on its door.", role: "storage", tool: "wrench", material: "steel", color: Blue, group: Group);
+        p.Set(("finish", "painted steel"));
+        PyDict Keep(string finish) => Kw(("finish", finish), ("paintable", false));
+        PyDict Lit() => Kw(("glow", true), ("paintable", false));
+        void D(double x0, double y0, double z0, double x1, double y1, double z1, string col, PyDict shape) => p.Add(Box([x0, y0, z0], [x1, y1, z1], col, detail: true, shape: shape));
+        foreach (var (mn, mx) in new (double[], double[])[] // (what a hand or a round meets: a shell round the shelves' room)
+        {
+            ([-0.3, 0, -0.25], [0.3, 0.085, 0.2]), ([-0.3, 1.75, -0.25], [0.3, 1.9, 0.2]), ([-0.3, 0.085, -0.25], [0.3, 1.75, -0.215]),
+            ([-0.3, 0.085, -0.215], [-0.27, 1.75, 0.2]), ([0.27, 0.085, -0.215], [0.3, 1.75, 0.2]), ([-0.27, 0.085, 0.175], [0.27, 1.75, 0.2]),
+            ([-0.27, 0.925, -0.215], [0.27, 0.975, 0.175]),
+        })
+            p.Add(Box(mn, mx, Armour, hidden: true));
+        // The carcass: graphite, its top raked down to the front.
+        double[][] Side(double x) => [[x, 0.08, -0.25], [x, 0.08, 0.2], [x, 1.76, 0.2], [x, 1.9, 0.07], [x, 1.9, -0.25]];
+        Prism(p, Side(-0.3), Side(0.3), Armour, "painted steel");
+        D(-0.285, 0, -0.235, 0.285, 0.085, 0.182, Frame, Keep("dirty steel")); // (the plinth, into the carcass)
+        for (var i = 0; i < 4; i++)
+            D(-0.21 + i * 0.11, 0.02, 0.174, -0.16 + i * 0.11, 0.055, 0.188, Hazard, Keep("hazard paint"));
+        // The door, standing 12 mm proud: the paint goes here.
+        D(-0.262, 0.12, 0.195, 0.262, 1.72, 0.212, Blue, Kw(("finish", "painted steel")));
+        D(-0.262, 0.94, 0.205, 0.262, 0.952, 0.217, Frame, Keep("dirty steel")); // (the seam between its two panels)
+        for (var i = 0; i < 5; i++)
+            D(-0.17, 1.5 + i * 0.035, 0.206, 0.17, 1.515 + i * 0.035, 0.218, Frame, Keep("dirty steel")); // louvres, top
+        for (var i = 0; i < 3; i++)
+            D(-0.17, 0.2 + i * 0.035, 0.206, 0.17, 0.215 + i * 0.035, 0.218, Frame, Keep("dirty steel")); // and bottom
+        D(0.185, 0.72, 0.208, 0.232, 1.17, 0.236, WallTrim, Keep("painted steel")); // the pull
+        D(0.193, 0.76, 0.228, 0.224, 1.13, 0.242, "#7a8088", Keep("steel"));
+        D(0.12, 1.25, 0.208, 0.235, 1.42, 0.226, Console, Keep("plastic")); // the badge reader
+        D(0.135, 1.31, 0.219, 0.22, 1.405, 0.231, Screen, Lit());
+        D(0.15, 1.265, 0.219, 0.2, 1.29, 0.231, "#40e070", Lit()); // its lamp: unlocked
+        D(-0.2, 1.33, 0.208, 0.06, 1.39, 0.22, Console, Keep("plastic")); // the name strip
+        D(-0.19, 1.34, 0.214, 0.05, 1.38, 0.226, "#d8f0ff", Lit());
+        D(-0.293, 0.15, 0.194, -0.271, 1.7, 0.206, Glow, Lit()); // the edge light, down the hinge side
+        foreach (var s in new[] { -1, 1 }) // (a pressed rib down each side)
+            D(s > 0 ? 0.296 : -0.308, 0.3, -0.12, s > 0 ? 0.308 : -0.296, 1.6, -0.06, WallTrim, Keep("painted steel"));
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("top", [0, 1.9, 0], "+y");
+        p.Sock("back", [0, 0.95, -0.25], "-z");
+        p.Sock("+x", [0.3, 0.95, 0], "+x");
+        p.Sock("-x", [-0.3, 0.95, 0], "-x");
+        p.Sock("wall", [0, 0.125, -0.25], "-z");
+        PyDict Slot(double[] mn, double[] mx) => new() { ["min"] = mn.Select(v => (object?)v).ToList(), ["max"] = mx.Select(v => (object?)v).ToList() };
+        p.Set(("storage", new PyDict { ["slots"] = Py.L(Slot([-0.26, 0.09, -0.21], [0.26, 0.92, 0.17]), Slot([-0.26, 0.98, -0.21], [0.26, 1.74, 0.17])) }));
+        return p.Stats(60, 320, 6, 2.0);
+    }
+
     // ---- the blueprint
 
     /// <summary>The torpedo: a designed weapon (Source/Constructs/OrdnanceDesign.cs) 50 cm across, about 5.3 m long: a radar seeker (flares
@@ -1523,7 +1575,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         bp.Hang("Requisition Crate", lf, "crate0", "-y");
         bp.Hang("Requisition Crate", lf, "crate1", "-y");
         for (var i = 0; i < 3; i++)
-            Paint(bp, bp.Hang("Locker", lf, $"locker{i}", "wall"), Armour, "worn paint");
+            Paint(bp, bp.Hang("Zero Day Locker", lf, $"locker{i}", "wall"), Armour, "worn paint");
         bp.Hang("Tool Rack", lf, "toolRack", "back");
         bp.Hang("Ammo Crate", lf, "ammo0", "bottom");
         bp.Hang("Ammo Crate", lf, "ammo1", "bottom");
@@ -1540,8 +1592,8 @@ public sealed class TorpedoFrigateParts : IPartGenerator
             Switch(bp, bay, "switch", LampAt(bp, bay, "lamp", "#ff7050"));
         // Lower deck aft: suits, the airlock, engineering.
         for (var i = 0; i < 4; i++)
-            Paint(bp, bp.Hang("Locker", la, $"suit{i}", "wall"), Hazard, "worn paint");
-        Paint(bp, bp.Hang("Locker", la, "airlockLocker", "wall"), Hazard, "worn paint");
+            Paint(bp, bp.Hang("Zero Day Locker", la, $"suit{i}", "wall"), Hazard, "worn paint");
+        Paint(bp, bp.Hang("Zero Day Locker", la, "airlockLocker", "wall"), Hazard, "worn paint");
         foreach (var d in new[] { "doorBayL", "doorBayR", "doorAirlock", "doorEngine" })
             Door(bp, la, d);
         bp.Hang("Zero Day Reactor", la, "reactor", "bottom");
@@ -1563,13 +1615,13 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         bp.Wires.Add((pilot, fc));
         var railModule = bp.Hang("Turret Module", uf, "gunModule", "-y");
         bp.Hang("Chart Table", uf, "chart", "back");
-        Paint(bp, bp.Hang("Locker", uf, "bridgeLocker", "wall"), Armour, "worn paint");
+        Paint(bp, bp.Hang("Zero Day Locker", uf, "bridgeLocker", "wall"), Armour, "worn paint");
         bp.Hang("Chart Table", uf, "plot", "bottom");
         Paint(bp, bp.Hang("Crash Couch", uf, "couchA", "wall"), "#2c3e58", "fabric");
-        Paint(bp, bp.Hang("Locker", uf, "lockerA", "wall"), Blue, "worn paint");
+        Paint(bp, bp.Hang("Zero Day Locker", uf, "lockerA", "wall"), Blue, "worn paint");
         Paint(bp, bp.Hang("Crash Couch", uf, "couchCaptain", "wall"), "#2c3e58", "fabric");
         bp.Hang("Steel Desk", uf, "deskCaptain", "wall");
-        Paint(bp, bp.Hang("Locker", uf, "lockerCaptain", "wall"), Blue, "worn paint");
+        Paint(bp, bp.Hang("Zero Day Locker", uf, "lockerCaptain", "wall"), Blue, "worn paint");
         foreach (var d in new[] { "doorBridge", "doorOps", "doorCabinA", "doorCaptain" })
             Door(bp, uf, d);
         var flareButton = bp.Hang("Button", uf, "flares", "+z");
@@ -1578,7 +1630,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         Switch(bp, uf, "switchCabins", LampAt(bp, uf, "lampCabinA", "#ffd8a0"), LampAt(bp, uf, "lampCaptain", "#ffd8a0"));
         // Upper deck aft: the crew cabin, the head, the med bay, the mess.
         Paint(bp, bp.Hang("Crash Couch", ua, "couchB0", "wall"), "#2c3e58", "fabric");
-        Paint(bp, bp.Hang("Locker", ua, "lockerB", "wall"), Blue, "worn paint");
+        Paint(bp, bp.Hang("Zero Day Locker", ua, "lockerB", "wall"), Blue, "worn paint");
         bp.Hang("Steel Desk", ua, "deskB", "wall");
         bp.Hang("Ship Toilet", ua, "toilet", "wall");
         bp.Hang("Ship Basin", ua, "basin", "wall");
@@ -1586,10 +1638,10 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         bp.Hang("Medical Station", ua, "med0", "back");
         bp.Hang("Medical Station", ua, "med1", "back");
         bp.Hang("Medicine Cabinet", ua, "cabinet", "back");
-        Paint(bp, bp.Hang("Locker", ua, "medLocker", "wall"), MedWhite, "gloss paint");
+        Paint(bp, bp.Hang("Zero Day Locker", ua, "medLocker", "wall"), MedWhite, "gloss paint");
         bp.Hang("Galley Stove", ua, "stove", "back");
         bp.Hang("Galley Coffee Station", ua, "coffee", "wall");
-        Paint(bp, bp.Hang("Locker", ua, "messLocker", "wall"), "#5c646a", "worn paint");
+        Paint(bp, bp.Hang("Zero Day Locker", ua, "messLocker", "wall"), "#5c646a", "worn paint");
         var table = bp.HangTurned("Mess Table", ua, "table", "bottom", BuildingParts.RY90);
         _ = table;
         foreach (var d in new[] { "doorCabinB", "doorHead", "doorMed", "doorMess" })
@@ -1643,7 +1695,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
             Leg(),
             Ladder("Zero Day Ladder", Ft1 - Ft0, "A ladder between the Zero Day's decks: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
             Ladder("Zero Day Boarding Ladder", Ft0 - Ground, "The Zero Day's boarding ladder, from the ground up the shaft into the airlock: F climbs it.", "hull", [0, Ft0 - Ground - 0.125, -0.005], "+z"),
-            Railgun(), Pdc(), Countermeasures(), Reactor(), FlightComputer(),
+            Railgun(), Pdc(), Countermeasures(), Reactor(), FlightComputer(), Locker(),
         ];
         var defs = new Dictionary<string, PyDict>();
         o.Own(Out);

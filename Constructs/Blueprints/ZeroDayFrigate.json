@@ -217,7 +217,7 @@
       "by": "-y"
     },
     {
-      "part": "Locker",
+      "part": "Zero Day Locker",
       "on": 2,
       "socket": "locker0",
       "by": "wall",
@@ -225,7 +225,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Locker",
+      "part": "Zero Day Locker",
       "on": 2,
       "socket": "locker1",
       "by": "wall",
@@ -233,7 +233,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Locker",
+      "part": "Zero Day Locker",
       "on": 2,
       "socket": "locker2",
       "by": "wall",
@@ -423,7 +423,7 @@
       }
     },
     {
-      "part": "Locker",
+      "part": "Zero Day Locker",
       "on": 3,
       "socket": "suit0",
       "by": "wall",
@@ -431,7 +431,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Locker",
+      "part": "Zero Day Locker",
       "on": 3,
       "socket": "suit1",
       "by": "wall",
@@ -439,7 +439,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Locker",
+      "part": "Zero Day Locker",
       "on": 3,
       "socket": "suit2",
       "by": "wall",
@@ -447,7 +447,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Locker",
+      "part": "Zero Day Locker",
       "on": 3,
       "socket": "suit3",
       "by": "wall",
@@ -455,7 +455,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Locker",
+      "part": "Zero Day Locker",
       "on": 3,
       "socket": "airlockLocker",
       "by": "wall",
@@ -666,7 +666,7 @@
       "by": "back"
     },
     {
-      "part": "Locker",
+      "part": "Zero Day Locker",
       "on": 5,
       "socket": "bridgeLocker",
       "by": "wall",
@@ -688,7 +688,7 @@
       "finish": "fabric"
     },
     {
-      "part": "Locker",
+      "part": "Zero Day Locker",
       "on": 5,
       "socket": "lockerA",
       "by": "wall",
@@ -710,7 +710,7 @@
       "by": "wall"
     },
     {
-      "part": "Locker",
+      "part": "Zero Day Locker",
       "on": 5,
       "socket": "lockerCaptain",
       "by": "wall",
@@ -845,7 +845,7 @@
       "finish": "fabric"
     },
     {
-      "part": "Locker",
+      "part": "Zero Day Locker",
       "on": 6,
       "socket": "lockerB",
       "by": "wall",
@@ -897,7 +897,7 @@
       "by": "back"
     },
     {
-      "part": "Locker",
+      "part": "Zero Day Locker",
       "on": 6,
       "socket": "medLocker",
       "by": "wall",
@@ -917,7 +917,7 @@
       "by": "wall"
     },
     {
-      "part": "Locker",
+      "part": "Zero Day Locker",
       "on": 6,
       "socket": "messLocker",
       "by": "wall",
