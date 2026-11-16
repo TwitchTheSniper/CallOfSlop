@@ -554,6 +554,8 @@ public static partial class ConstructStationTree
         var off = root.PartCount;
         var n = body.PartCount;
         var match = j.BigMatch;
+        SubBlueprints.EnsureTable(root, j.Bp.Map); // (the build's own table first: the body's tags come after it, and go once its parts are retagged)
+        var tagsBefore = root.Uses!.Count;
         if (match.Length != n || !world.MergeAt(root, new JoinPlan { Other = body, Turn = j.BigTurn, Offset = j.BigOffset }))
         {
             row.State = UseState.Waiting;
@@ -573,6 +575,18 @@ public static partial class ConstructStationTree
         for (var k = tag.First; k < tag.First + tag.Count; k++)
             if (j.PartOf[k] >= 0)
                 SubBlueprints.LinkOutside(world, root, j.Bp, k, j.PartOf, tag.First, tag.Count);
+        if (root.Uses != null && root.Uses.Count > tagsBefore)
+            root.Uses.RemoveRange(tagsBefore, root.Uses.Count - tagsBefore); // (the body's own tags: every part of it carries the build's now)
+        // The check that the join is exact: every welded part where the costing put its step (nothing fails silently).
+        if (j.Plan is { } plan && plan.At.Length == j.PartOf.Length)
+        {
+            var off1 = 0;
+            for (var k = tag.First; k < tag.First + tag.Count; k++)
+                if (j.PartOf[k] >= 0 && Vector3.DistanceSquared(root.Parts[j.PartOf[k]].Pos, plan.At[k]) > 0.0001f)
+                    off1++;
+            if (off1 > 0)
+                Console.WriteLine($"[station] {j.Name}: {tag.Name} #{row.Number}: {off1} welded parts are off their places by more than 1 cm");
+        }
         root.Dirty = true;
         root.Rebuild();
         root.PrevPos = root.NetPos = root.NetFromPos = root.Pos = j.Pos;

@@ -66,7 +66,16 @@ public sealed class ClipUses
             plan.Choose(-1, dissolved, whyOf, keep, lists);
             if (plan.Chosen.Count == 0)
                 break;
-            plan.Order();
+            if (!plan.Order())
+            {
+                // (nothing but uses, no parent part to hold them: the outermost go plain, their inner uses stay uses)
+                foreach (var t in plan.Chosen)
+                {
+                    dissolved.Add(t);
+                    whyOf[t] = "the selection is nothing but this use: its inner uses are kept";
+                }
+                continue;
+            }
             // A routed link wholly in one use is that use's own; a branch on one, or one branching off it from outside, can't be told
             // apart: those uses go plain, and the choice is made again.
             var more = false;
@@ -186,7 +195,7 @@ public sealed class ClipUses
     private static int Cm(float v) => (int)MathF.Round(v * 100);
 
     /// <summary>The build order: plain parts as steps in the clip's order, each use where its first part came (after a step).</summary>
-    private void Order()
+    private bool Order()
     {
         var c = _clip.Body;
         var n = c.PartCount;
@@ -233,20 +242,7 @@ public sealed class ClipUses
             }
         }
         if (steps.Count == 0)
-        {
-            // (nothing but uses: no parent to hold them, so all are plain parts)
-            foreach (var row in Rows)
-                if (row.Kept)
-                {
-                    row.Kept = false;
-                    row.Why = "the selection is nothing but this use: saved as plain parts";
-                }
-            Chosen.Clear();
-            Steps = Enumerable.Range(0, n).ToArray();
-            Key = Steps;
-            Array.Fill(UseOf, -1);
-            return;
-        }
+            return false;
         for (var i = 0; i < n; i++)
             if (UseOf[i] >= 0)
                 Key[i] = useKey[UseOf[i]];
@@ -267,6 +263,7 @@ public sealed class ClipUses
                     UseOf[i] = remap[UseOf[i]];
         }
         Steps = steps.ToArray();
+        return true;
     }
 
     public bool InUse(int part) => part >= 0 && part < UseOf.Length && UseOf[part] >= 0;

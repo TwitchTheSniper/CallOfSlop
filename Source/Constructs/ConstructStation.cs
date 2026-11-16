@@ -218,7 +218,7 @@ public static partial class ConstructStation
     {
         StationState.Costing => $"{j.Name}: working out its bill",
         StationState.Building => j.Fitted < j.Steps ? $"{j.Name}: {j.Fitted} of {j.Steps} parts" : j.LinksDone < j.Links ? $"{j.Name}: link {j.LinksDone} of {j.Links}" : $"{j.Name}: filling its tanks",
-        StationState.Done => $"{j.Name}: done - drive it out",
+        StationState.Done => j.Role == 1 ? $"{j.Name}: done" : $"{j.Name}: done - drive it out",
         StationState.Failed => $"{j.Name}: stopped",
         _ => "idle",
     };
@@ -1723,7 +1723,7 @@ public static partial class ConstructStation
         }
         if (!FillsFree(world) && Fill(world, c, t, j, b))
             return true; // (a look every half second while something moves)
-        var left = j.Note; // (what the fill couldn't give: said after Done)
+        var left = FillsFree(world) ? "" : j.Note; // (what the fill couldn't give: said after Done; with no fill stage the note is an older look's)
         Finish(world, c, t, j, b);
         if (j.State == StationState.Done && left.Length > 0)
             j.Note = left;

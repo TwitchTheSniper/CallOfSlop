@@ -506,6 +506,7 @@ public static class SubBlueprints
         public string Why = "";
         public long Used;
         public double Ms;
+        public uint Hash;
     }
 
     private static readonly Dictionary<string, SubEntry> Cache = new();
@@ -561,6 +562,7 @@ public static class SubBlueprints
                 body.Rebuild();
             e.Body = body;
             e.PartOf = run.PartOf!;
+            e.Hash = HashWhole(body); // (what a use of it hashes to, as built: a save tells a changed use by it)
         }
         catch (ConstructPartException ex)
         {
@@ -734,14 +736,14 @@ public static class SubBlueprints
             flat[s] = baseStep + s;
         // Its tag, then its own tags under it.
         var ti = map.Tags.Count;
-        map.Tags.Add(new UseTag { Id = use.Id, Name = use.Name.Length > 0 ? use.Name : sf.Name, Version = sub.Version, Lock = use.Lock, Turn = turn, Origin = use.At, First = baseStep, Count = sf.Steps.Count });
+        map.Tags.Add(new UseTag { Id = use.Id, Name = use.Name.Length > 0 ? use.Name : sf.Name, Version = sub.Version, Lock = use.Lock, Turn = turn, Origin = use.At, First = baseStep, Count = sf.Steps.Count, Hash = sub.Hash });
         var tagBase = map.Tags.Count;
         if (sf.Map != null)
             foreach (var st in sf.Map.Tags)
                 map.Tags.Add(new UseTag
                 {
                     Id = st.Id, Name = st.Name, Version = st.Version, Lock = st.Lock, Turn = Rot24.Compose(turn, st.Turn), Origin = use.At + Rot24.Apply(turn, st.Origin),
-                    Parent = st.Parent < 0 ? ti : tagBase + st.Parent, First = baseStep + st.First, Count = st.Count, Sub = st.Sub,
+                    Parent = st.Parent < 0 ? ti : tagBase + st.Parent, First = baseStep + st.First, Count = st.Count, Sub = st.Sub, Hash = st.Hash,
                 });
         // The joining links, by the sub step they end at.
         var joins = new List<(int, string, string)>?[sf.Steps.Count];
@@ -902,6 +904,13 @@ public static class SubBlueprints
     {
         if (k >= map.StepUse.Length || map.StepUse[k] < 0 || part < 0 || part >= c.PartCount)
             return;
+        EnsureTable(c, map);
+        c.Parts[part].Use = (ushort)(c.UsesBase + map.StepUse[k] + 1);
+    }
+
+    /// <summary>The body has the flat blueprint's table (appended once, after the tags already there).</summary>
+    public static void EnsureTable(Construct c, UseMap map)
+    {
         if (c.UsesFrom != map)
         {
             // (a body takes a flat blueprint's table once; its tags follow those already there)
@@ -916,7 +925,6 @@ public static class SubBlueprints
             }
             c.UsesFrom = map;
         }
-        c.Parts[part].Use = (ushort)(c.UsesBase + map.StepUse[k] + 1);
     }
 
     /// <summary>A stamp's clip: the whole of it is one use of the stamped blueprint, its own uses under it; every tag's parts hashed.</summary>
@@ -993,6 +1001,27 @@ public static class SubBlueprints
         return sum ^ n * 40503u;
     }
 
+    /// <summary>A whole body as one use in its own frame (a sub-blueprint's own build): <see cref="HashOf"/>'s sum over every part.</summary>
+    public static uint HashWhole(Construct c)
+    {
+        c.Uses ??= new List<UseTag>();
+        var saved = (c.Uses, c.UsesFrom, c.UsesBase);
+        var parts = new ushort[c.PartCount];
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            parts[i] = c.Parts[i].Use;
+            c.Parts[i].Use = 1;
+        }
+        c.Uses = [new UseTag()];
+        var h = HashOf(c, 0);
+        (c.Uses, c.UsesFrom, c.UsesBase) = saved;
+        for (var i = 0; i < c.PartCount; i++)
+            c.Parts[i].Use = parts[i];
+        if (c.Uses.Count == 0)
+            c.Uses = null;
+        return h;
+    }
+
     /// <summary>The turn that undoes <paramref name="r"/>.</summary>
     public static byte Inverse(byte r)
     {
@@ -1048,6 +1077,9 @@ public static class SubBlueprints
         if (c.Uses == null)
             return;
         var keep = new bool[c.Uses.Count];
+        if (c.UsesFrom != null)
+            for (var t = c.UsesBase; t < c.UsesBase + c.UsesFrom.Tags.Count && t < keep.Length; t++)
+                keep[t] = true; // (a build's table stays whole: its later parts tag into it)
         for (var i = 0; i < c.PartCount; i++)
             for (int u = c.Parts[i].Use - 1, g = 0; u >= 0 && u < keep.Length && !keep[u] && g < 64; g++)
             {
@@ -1068,7 +1100,10 @@ public static class SubBlueprints
             if (c.Parts[i].Use != 0)
                 c.Parts[i].Use = (ushort)(c.Parts[i].Use - 1 < map.Length && map[c.Parts[i].Use - 1] >= 0 ? map[c.Parts[i].Use - 1] + 1 : 0);
         c.Uses = list.Count > 0 ? list : null;
-        c.UsesFrom = null;
+        if (c.UsesFrom != null && c.UsesBase < map.Length && map[c.UsesBase] >= 0)
+            c.UsesBase = map[c.UsesBase];
+        else
+            c.UsesFrom = null;
     }
 
     /// <summary>A part's use as the look line says it: "part of Turret #2 (v5, live)", or "".</summary>
@@ -1413,6 +1448,7 @@ public static class SubBlueprints
     {
         if (args.Any(a => a.Equals("--tree-size", StringComparison.OrdinalIgnoreCase)))
             return TreeSize(nameOrFile);
+        var roundTrip = args.Any(a => a.Equals("--roundtrip", StringComparison.OrdinalIgnoreCase));
         string text, file;
         try
         {
@@ -1447,7 +1483,106 @@ public static class SubBlueprints
         }
         var bad = flat.Map == null ? 0 : JoinCheck(flat, built);
         Console.WriteLine(bad == 0 ? "join check: every use's own build merged at its place gives the flat build's parts (within 1 mm)" : $"join check: {bad} problems");
+        if (roundTrip)
+            bad += RoundTrip(flat, built);
         return bad;
+    }
+
+    /// <summary>
+    /// --roundtrip: the built ship saved again as the save window saves it (its uses kept as uses), read back and built: the same parts
+    /// at the same places. Then the same as a stamp (one use of the whole): its inner uses stay uses. Then one part of a use off: that use
+    /// goes plain (parts only, the user's answer 4) and the save still builds back whole.
+    /// </summary>
+    private static int RoundTrip(ConstructBuild.Blueprint flat, Construct built)
+    {
+        var bad = 0;
+        foreach (var mode in new[] { "station build", "stamp", "a part off" })
+        {
+            var clip = ConstructClip.Of(built, flat.Name);
+            if (mode == "stamp")
+                TagStamp(clip.Body, flat);
+            string? text;
+            string why;
+            ClipUses? plan;
+            if (mode == "a part off")
+            {
+                var items = Enumerable.Range(0, clip.Body.PartCount).Where(i => i != clip.Body.PartCount - 1).Select(i => (ushort)i).ToArray();
+                var cut = ConstructClip.Capture(clip.Body, items, out why, clip.World);
+                if (cut == null)
+                {
+                    Console.WriteLine($"round trip ({mode}): the capture refuses: {why}");
+                    bad++;
+                    continue;
+                }
+                clip = cut;
+            }
+            plan = ClipUses.Plan(clip);
+            text = clip.ToBlueprint(flat.Name + " again", "", out why, plan);
+            if (text == null)
+            {
+                Console.WriteLine($"round trip ({mode}): the save refuses: {why}");
+                bad++;
+                continue;
+            }
+            foreach (var row in plan?.Rows ?? [])
+                Console.WriteLine($"round trip ({mode}): {row.Name} (tag {row.Tag}): {(row.Kept ? $"kept as a use, {row.Parts} parts" : row.Why)}");
+            try
+            {
+                var again = ParseFlat(text, "again.json");
+                var back = ConstructBuild.Build(new ConstructWorld(), again, Vector3.Zero, Quaternion.Identity, out why);
+                if (back == null)
+                {
+                    Console.WriteLine($"round trip ({mode}): it doesn't build back: {why}");
+                    bad++;
+                    continue;
+                }
+                var want = clip.Body;
+                var differ = Differ(want, back);
+                var painted = 0;
+                for (var i = 0; i < back.PartCount; i++)
+                    painted += back.Parts[i].Paint != 0 ? 1 : 0;
+                Console.WriteLine($"round trip ({mode}): {again.Uses.Sum(u => u.Over.Count)} overrides saved, {painted} painted parts built back");
+                Console.WriteLine($"round trip ({mode}): {again.Uses.Count} uses saved, {again.Steps.Count} flat steps; built back {back.PartCount} of {want.PartCount} parts{(differ.Length > 0 ? ": DIFFERS: " + differ : ", every part in place")}");
+                if (differ.Length > 0 || back.PartCount != want.PartCount)
+                    bad++;
+            }
+            catch (ConstructPartException ex)
+            {
+                Console.WriteLine($"round trip ({mode}): it doesn't read back: {ex.Message}");
+                bad++;
+            }
+        }
+        return bad;
+    }
+
+    /// <summary>The first part of <paramref name="a"/> with no part of the same kind, place (1 cm) and turn in <paramref name="b"/>, frames aligned at each one's lowest corner. "" when all match.</summary>
+    private static string Differ(Construct a, Construct b)
+    {
+        Vector3 Lo(Construct c)
+        {
+            var lo = new Vector3(float.MaxValue);
+            for (var i = 0; i < c.PartCount; i++)
+                lo = Vector3.Min(lo, c.Parts[i].Pos);
+            return lo;
+        }
+        var la = Lo(a);
+        var lb = Lo(b);
+        var have = new Dictionary<(string, int, int, int, byte), int>();
+        for (var i = 0; i < b.PartCount; i++)
+        {
+            var p = b.Parts[i].Pos - lb;
+            var key = (b.DefOf(i).Name, (int)MathF.Round(p.X * 100), (int)MathF.Round(p.Y * 100), (int)MathF.Round(p.Z * 100), b.Parts[i].Rot);
+            have[key] = have.GetValueOrDefault(key) + 1;
+        }
+        for (var i = 0; i < a.PartCount; i++)
+        {
+            var p = a.Parts[i].Pos - la;
+            var key = (a.DefOf(i).Name, (int)MathF.Round(p.X * 100), (int)MathF.Round(p.Y * 100), (int)MathF.Round(p.Z * 100), a.Parts[i].Rot);
+            if (have.GetValueOrDefault(key) <= 0)
+                return $"{a.DefOf(i).Name} at {p} turn {a.Parts[i].Rot}";
+            have[key]--;
+        }
+        return "";
     }
 
     private static IEnumerable<(int Tag, int Depth)> TreeOrder(UseMap map)
