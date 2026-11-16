@@ -39,12 +39,12 @@ public static partial class ConstructRide
     public const float BoundsPad = 2f, BoundsAbove = 3f;
 
     /// <summary>Is a point of the body's frame (<paramref name="local"/>) inside a construct's frame: its bounds, padded, and further above along <paramref name="up"/> (the body frame's axes)?</summary>
-    public static bool InFrame(Construct c, Vector3 local, Vector3 up)
+    public static bool InFrame(Construct c, Vector3 local, Vector3 up, float pad = BoundsPad, float top = BoundsAbove)
     {
         for (var a = 0; a < 3; a++)
         {
-            var above = MathF.Abs(up[a]) * (BoundsAbove - BoundsPad);
-            if (local[a] < c.LocalMin[a] - BoundsPad - (up[a] < 0 ? above : 0) || local[a] > c.LocalMax[a] + BoundsPad + (up[a] > 0 ? above : 0))
+            var above = MathF.Abs(up[a]) * (top - pad);
+            if (local[a] < c.LocalMin[a] - pad - (up[a] < 0 ? above : 0) || local[a] > c.LocalMax[a] + pad + (up[a] > 0 ? above : 0))
                 return false;
         }
         return true;
@@ -55,9 +55,6 @@ public static partial class ConstructRide
 
     /// <summary>A rider's surface velocity at a world point: the body's motion and the carrying segment's (a lift's, a turntable's).</summary>
     public static Vector3 RiderSurfaceVel(Construct c, in MoveState s, Vector3 at) => SurfaceVel(c, Carrier(s) <= c.JointCount ? Carrier(s) : 0, at);
-
-    /// <summary>A rider's velocity in the world: their own (relative to what carries them) and the surface's at their feet.</summary>
-    public static Vector3 WorldVel(Construct? c, in MoveState s) => c == null || s.RideBody != c.Id ? s.Velocity : s.Velocity + RiderSurfaceVel(c, s, s.Position);
 
     /// <summary>A deck's acceleration (m/s^2) that throws its riders off: across, or dropping away; on grip parts, more.</summary>
     public const float ThrowAccel = 2.5f * 9.81f, DropAccel = 1.6f * 9.81f, GripThrowAccel = 5f * 9.81f;
@@ -295,6 +292,8 @@ public static partial class ConstructRide
             Join(ref s, standing, standSeg, up, rel);
             return;
         }
+        if (standing != null && gripUp == Vector3.Zero)
+            standSeg = standing.MoveSeg(standSeg); // (welded pieces are one rigid piece with what they hang from: one frame, not one per piece)
         if (standing != null && Rideable(standing, standSeg) && (ride != null || s.RideAir == 0))
         {
             if (ride != standing || s.RideSeg != standSeg)
@@ -324,7 +323,11 @@ public static partial class ConstructRide
             return;
         }
         if (ride == null)
+        {
+            if (frame && standing == null && !s.Grounded && s.RideAir == 0 && s.Canopy == 0 && Bodies is { } w)
+                CatchInAir(w, ref s); // (back inside a moving construct mid-air: in its frame again)
             return;
+        }
         if (standing != null || s.Grounded)
         {
             Leave(ref s, ride, momentum: true); // onto an anchored floor or the map's ground: off the frame, with its speed
@@ -340,6 +343,24 @@ public static partial class ConstructRide
             return;
         }
         Leave(ref s, ride, momentum: true);
+    }
+
+    /// <summary>
+    /// A player in the air, not in any frame, whose feet are inside a moving construct's bounds (a ship that turned back over
+    /// someone who fell off it, a hold flown round a jumper): into its frame at once, with their velocity relative to it, so
+    /// its hull meets them in its frame and not as a box sweeping through the world (<see cref="FrameAt"/>: the same tight
+    /// bounds a spawn uses).
+    /// </summary>
+    private static void CatchInAir(ConstructWorld w, ref MoveState s)
+    {
+        var feet = s.Position;
+        if (FrameAt(w, feet) is not { } f)
+            return;
+        var v = SurfaceVel(f, 0, feet);
+        if (v.LengthSquared() < FreeSpeed * FreeSpeed)
+            return;
+        Join(ref s, f, 0, UpFor(f, GravityFrames.UpAt(feet)), s.Velocity - v);
+        s.Grounded = false;
     }
 
     /// <summary>A grip face's up (an axis of the segment's frame) in a byte for the wire: 0 none, else 1 + axis * 2 (+1 negative).</summary>

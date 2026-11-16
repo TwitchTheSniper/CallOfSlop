@@ -28,7 +28,7 @@ public static class RideCheck
         }
         yard.RestoreProps();
         World.SetMap(yard);
-        var bad = 0;
+        var bad = Lift(speed);
         foreach (var name in names.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
             bad += One(name, speed, turn, spots);
         Console.WriteLine($"ride check: {bad} lapse(s)");
@@ -65,7 +65,9 @@ public static class RideCheck
             var vel = Vector3.Zero;
             var ang = Vector3.Zero;
             var log = new List<string>();
-            int frameless = 0, segSwaps = 0, bodySwaps = 0, airTicks = 0, maxAir = 0;
+            int frameless = 0, segSwaps = 0, bodySwaps = 0, airTicks = 0, maxAir = 0, inFrameLapses = 0, leftAt = -1;
+            var leaveRel = 0f;
+            var after = float.NaN;
             var lastBody = (ushort)0;
             var lastSeg = (byte)0;
             for (var t = 0; t < 60 * 15; t++)
@@ -101,6 +103,16 @@ public static class RideCheck
                 }
                 if (s.RideBody == 0)
                 {
+                    var iq = Quaternion.Conjugate(c.Rot);
+                    if (ConstructRide.InFrame(c, c.ToLocal(s.Position), Vector3.Transform(Vector3.UnitY, iq), ConstructRide.SpawnPad, ConstructRide.SpawnAbove)) // (left past the padded frame, a player is caught again inside its bounds proper)
+                        inFrameLapses++;
+                    if (leftAt < 0)
+                    {
+                        leftAt = t;
+                        leaveRel = (s.Velocity - c.PointVel(s.Position)).Length();
+                    }
+                    if (t == leftAt + 60)
+                        after = new Vector2(s.Velocity.X, s.Velocity.Z).Length();
                     frameless++;
                     if (frameless < 6)
                         log.Add($"t{t}: no frame (grounded {s.Grounded}, local {c.ToLocal(s.Position)}, rel speed {(s.Velocity - c.PointVel(s.Position)).Length():0.0})");
@@ -121,13 +133,101 @@ public static class RideCheck
                 lastBody = s.RideBody;
                 lastSeg = s.RideSeg;
             }
-            var lost = frameless > 0;
+            var lost = inFrameLapses > 0;
             lapses += lost ? 1 : 0;
-            Console.WriteLine($"  from {c.DefOf(part).Name}#{part} at {local}: frameless {frameless} ticks, segment swaps {segSwaps}, body swaps {bodySwaps}, air ticks {airTicks} (longest {maxAir}), ends {(s.RideBody == 0 ? "OFF" : "on")} at {c.ToLocal(s.Position)}");
+            Console.WriteLine($"  from {c.DefOf(part).Name}#{part} at {local}: frameless {frameless} ticks ({inFrameLapses} inside its bounds), segment swaps {segSwaps}, body swaps {bodySwaps}, air ticks {airTicks} (longest {maxAir}), ends {(s.RideBody == 0 ? "OFF" : "on")} at {c.ToLocal(s.Position)}"
+                + (leftAt >= 0 ? $"; left at t{leftAt} {leaveRel:0.0} m/s off the ship's point speed ({speed:0} m/s), across {after:0.0} m/s a second later" : ""));
             foreach (var l in log)
                 Console.WriteLine("     " + l);
         }
+        // Spawn into motion: a loose plate made a metre over the first spot, as any path makes a body.
+        if (found.Count > 0)
+        {
+            var at = c.ToWorld(found[0].Item2) + Vector3.Transform(new Vector3(0, 1f, 0), c.Rot);
+            if (ConstructBuild.PlaceNew(w, ConstructParts.Need("Deck Plate"), at, 0) is { } loose)
+            {
+                loose.Vel = Vector3.Zero;
+                ConstructRide.SpawnIntoMotion(w);
+                loose.Rebuild();
+                var want = c.PointVel(loose.WorldCom);
+                Console.WriteLine($"  spawned plate: {loose.Vel.Length():0.00} m/s, the ship there {want.Length():0.00} m/s (off by {(loose.Vel - want).Length():0.000}), spin {loose.AngVel.Y:0.000} (ship {c.AngVel.Y:0.000})");
+                if ((loose.Vel - want).Length() > 0.05f)
+                    lapses++;
+                w.Remove(loose);
+            }
+        }
         return lapses;
+    }
+
+    /// <summary>
+    /// A lift on a moving deck: a row of deck plates with a piston and a plate on it, the body driven along and the piston up
+    /// and down (its pose and speed set each tick); a player standing on the lift's plate rides it in the body's frame.
+    /// </summary>
+    public static int Lift(float speed)
+    {
+        var w = new ConstructWorld();
+        var plate = ConstructParts.Need("Deck Plate");
+        if (ConstructBuild.PlaceNew(w, plate, ConstructWorld.Ground(World.Query, 0, 0), 0) is not { } c)
+            return 1;
+        var at = 0;
+        for (var k = 1; k < 4; k++)
+            at = Fit(w, c, at, "+z", plate, "-z");
+        var piston = Fit(w, c, 1, "top11", ConstructParts.Need("Piston"), "base");
+        var deck = piston < 0 ? -1 : Fit(w, c, piston, "top", plate, "bottom");
+        c.Rebuild();
+        if (deck < 0 || c.JointCount != 1)
+        {
+            Console.WriteLine($"lift: doesn't build (piston {piston}, deck {deck}, joints {c.JointCount})");
+            return 1;
+        }
+        ref var j = ref c.Joints[0];
+        Pose(w, c, c.Pos + new Vector3(0, 30f, 0), c.Rot, Vector3.Zero, Vector3.Zero);
+        c.SolidBox(deck, 0, out var centre, out var half);
+        var top = centre + new Vector3(0, half.Y + 0.03f, 0);
+        c.SegPose(c.Parts[deck].Seg, out var sq, out var st);
+        var s = new MoveState { Position = c.ToWorld(st + Vector3.Transform(top, sq)) };
+        float worst = 0, angle = 0;
+        int frameless = 0, onLift = 0;
+        var fwd = Vector3.Transform(-Vector3.UnitZ, c.Rot);
+        for (var t = 0; t < 60 * 8; t++)
+        {
+            var vel = fwd * speed * MathF.Min(1f, t / 60f);
+            var jv = t < 60 ? 0f : (t / 120) % 2 == 0 ? 0.6f : -0.6f;
+            angle = Math.Clamp(angle + jv * World.TickDt, j.Min, j.Max);
+            j.Angle = angle;
+            j.Vel = angle <= j.Min || angle >= j.Max ? 0 : jv;
+            Pose(w, c, c.Pos + vel * World.TickDt, c.Rot, vel, Vector3.Zero);
+            var walk = t > 60 * 7 ? Buttons.Forward : Buttons.None;
+            World.Simulate(ref s, new InputCmd { Buttons = walk, SpeedPct = 100, RideBody = s.RideBody });
+            w.BlockPlayer(ref s, World.HeightOf(s.Stance), server: true, who: 1);
+            if (s.RideBody == 0 && t < 60 * 7)
+                frameless++;
+            if (t > 30 && t < 60 * 7 && s.RideBody != 0)
+            {
+                onLift += s.RideOn == c.Parts[deck].Seg ? 1 : 0;
+                c.SegPose(c.Parts[deck].Seg, out sq, out st);
+                var deckTop = (st + Vector3.Transform(top, sq)).Y - 0.03f;
+                worst = MathF.Max(worst, MathF.Abs(c.ToLocal(s.Position).Y - deckTop));
+            }
+        }
+        Console.WriteLine($"lift at {speed:0} m/s: on the lift {onLift} ticks (of {60 * 7 - 31}), feet off its top by {worst * 100:0.0} cm at worst, frameless {frameless} ticks, ends {(s.RideBody == 0 ? "OFF" : $"on (carried by segment {s.RideOn})")} at {c.ToLocal(s.Position)}");
+        return worst > 0.05f || frameless > 0 ? 1 : 0;
+    }
+
+    private static int Fit(ConstructWorld w, Construct c, int on, string socket, ConstructPartDef def, string by)
+    {
+        if (on < 0)
+            return -1;
+        var ts = Array.FindIndex(c.DefOf(on).Sockets, x => x.Name == socket);
+        var ds = Array.FindIndex(def.Sockets, x => x.Name == by);
+        for (var rot = 0; rot < 24; rot++)
+            if (ConstructBuild.Place(c, on, ts, def, ds, rot, out var g) is null)
+            {
+                var i = ConstructBuild.Attach(w, c, def, g);
+                c.Rebuild();
+                return i;
+            }
+        return -1;
     }
 
     /// <summary>A construct moved as the physics would: its pose, velocity and turn, its acceleration noted.</summary>

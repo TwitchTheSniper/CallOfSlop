@@ -19,10 +19,13 @@ public static partial class ConstructRide
     /// <summary>A frame this slow (m/s, and rad/s) isn't moving: nothing to inherit.</summary>
     private const float StillSpeed = 0.05f;
 
+    /// <summary>A body made this close round a moving construct's bounds (m), or this far over its top, is made in its frame: tighter than a rider's, so a block set down on the ground beside a passing truck stays on the ground.</summary>
+    public const float SpawnPad = 0.3f, SpawnAbove = 1f;
+
     private static readonly List<Construct> _frameNear = new(32);
 
     /// <summary>
-    /// The moving construct whose frame holds world point <paramref name="at"/> (its bounds, padded as a rider's frame is:
+    /// The moving construct whose frame holds world point <paramref name="at"/> (its bounds, padded by <see cref="SpawnPad"/>:
     /// <see cref="InFrame"/>), the smallest when frames nest (a car in a cargo plane's hold); null when none moves there.
     /// </summary>
     public static Construct? FrameAt(ConstructWorld w, Vector3 at, Construct? skip = null)
@@ -34,11 +37,11 @@ public static partial class ConstructRide
         for (var i = 0; i < near.Count; i++)
         {
             var f = near[i];
-            if (f == skip || f.Fresh || f.Anchored || f.Asleep || f.PartCount == 0
+            if (f == skip || f.Anchored || f.Asleep || f.PartCount == 0
                 || f.Vel.LengthSquared() < StillSpeed * StillSpeed && f.AngVel.LengthSquared() < StillSpeed * StillSpeed)
                 continue;
             var iq = Quaternion.Conjugate(f.Rot);
-            if (!InFrame(f, Vector3.Transform(at - f.Pos, iq), Vector3.Transform(up, iq)))
+            if (!InFrame(f, Vector3.Transform(at - f.Pos, iq), Vector3.Transform(up, iq), SpawnPad, SpawnAbove))
                 continue;
             var size = (f.LocalMax - f.LocalMin).LengthSquared();
             if (size < bestSize)
