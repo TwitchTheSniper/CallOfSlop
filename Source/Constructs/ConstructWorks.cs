@@ -48,7 +48,6 @@ public sealed class ShipWorks
     public float JetBurn = 3f; // l/s a MN: what a drive short of its works burns for what it pushes
     public string MendMaterial = "metal";
     public float MendPerTonne = 2f; // what a works piece broken by damage takes to mend, a tonne of it (at least 1)
-    public float LoaderReload = 0.4f; // a gun of six rounds or fewer on a ring with its autoloaders reloads in this share of its time
     public string Problem = "";
 
     /// <summary>Per drive type, the thrust (N) from which each kind is needed, in order: torch, then rocket and ion.</summary>
@@ -84,7 +83,7 @@ public sealed class ShipWorks
             if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("format", out var f) || f.GetString() != Format)
                 throw new FormatException($"\"format\" must be \"{Format}\"");
             foreach (var p in root.EnumerateObject())
-                if (p.Name is not ("format" or "jetMost" or "bareShare" or "jetBurn" or "mendMaterial" or "mendPerTonne" or "loaderReload" or "drives"))
+                if (p.Name is not ("format" or "jetMost" or "bareShare" or "jetBurn" or "mendMaterial" or "mendPerTonne" or "drives"))
                     throw new FormatException($"unknown key \"{p.Name}\"");
             t.JetMost = Num(root, "jetMost", 1, 1e9f);
             t.BareShare = Num(root, "bareShare", 0, 1);
@@ -93,7 +92,6 @@ public sealed class ShipWorks
             if (RecyclingTable.Current.IdOf(t.MendMaterial) == 0)
                 throw new FormatException($"\"mendMaterial\": no material named \"{t.MendMaterial}\" in Recycling.json");
             t.MendPerTonne = Num(root, "mendPerTonne", 0, 1000);
-            t.LoaderReload = Num(root, "loaderReload", 0.05f, 1);
             t.Drives.Clear();
             foreach (var type in root.GetProperty("drives").EnumerateObject())
             {
@@ -211,12 +209,6 @@ public static class ConstructWorks
     /// <summary>Either: it has a works line on the look.</summary>
     public static bool Has(ConstructPartDef d) => IsHead(d) || IsPiece(d);
 
-    /// <summary>
-    /// Is this part a Turret Ring: a joint whose base is a mount (ship-works.md 5.2)? Its trunk takes works (autoloaders), and an
-    /// ammo feed into its Ammo in feeds every gun standing on it, with no link across the joint.
-    /// </summary>
-    public static bool IsRing(ConstructPartDef d) => d.HasJoint && d.WorksKind == WorksKind.Mount;
-
     /// <summary>Does a head need this kind?</summary>
     public static bool Needs(ConstructPartDef d, WorksKind k) => (d.WorksNeeds & (1 << (int)k)) != 0;
 
@@ -291,13 +283,11 @@ public static class ConstructWorks
     public static void Build(Construct c)
     {
         c.WorksHeadCount = c.WorksPieceCount = c.WorksAsmCount = 0;
-        int heads = 0, rings = 0;
+        var heads = 0;
         foreach (var i in c.Specials)
             if (IsHead(c.Parts[i].D))
                 heads++;
-            else if (IsRing(c.Parts[i].D))
-                rings++;
-        if (heads == 0 && rings == 0)
+        if (heads == 0)
             return;
         if (c.WorksHeads.Length < heads)
             Array.Resize(ref c.WorksHeads, Math.Max(heads, c.WorksHeads.Length * 2));
@@ -315,11 +305,6 @@ public static class ConstructWorks
                 asm = asmOf[mount] >= 0 ? asmOf[mount] : Flood(c, mount, asmOf, queue);
             c.WorksHeads[c.WorksHeadCount++] = new CWorksHead { Part = (ushort)i, Asm = asm, Cap = 1, Burn = 1 };
         }
-        // A Turret Ring is an assembly whether or not a head reaches it: the guns standing on it take its autoloaders (BuildGuns, after this).
-        if (rings > 0)
-            foreach (var i in c.Specials)
-                if (IsRing(c.Parts[i].D) && asmOf[i] < 0)
-                    Flood(c, i, asmOf, queue);
         // What each assembly's heads ask of each kind, and what its working pieces give.
         var cells = c.WorksAsmCount * KindCount;
         if (c.WorksNeed.Length < cells)
@@ -452,22 +437,6 @@ public static class ConstructWorks
         c.WorksPieceAsm[c.WorksPieceCount++] = asm;
     }
 
-    /// <summary>The Turret Ring part <paramref name="part"/> (a gun) stands on, down its joints, or -1.</summary>
-    public static int RingUnder(Construct c, int part)
-    {
-        using var scratch = Scratch.Begin();
-        var queue = scratch.Take<ushort>(Math.Min(c.PartCount, 64));
-        var m = FindMount(c, part, queue);
-        return m >= 0 && IsRing(c.Parts[m].D) ? m : -1;
-    }
-
-    /// <summary>What the working autoloaders in a ring's assembly serve (guns), or 0.</summary>
-    public static float LoadersAt(Construct c, int ring)
-    {
-        var asm = ring >= 0 ? AsmOfPiece(c, ring) : -1;
-        return asm >= 0 && asm < c.WorksAsmCount ? c.WorksServed[asm * KindCount + (int)WorksKind.Loader] : 0;
-    }
-
     /// <summary>A thruster's cap and burn share (BuildThrusters; 1 and 1 when it is no head).</summary>
     public static void CapOf(Construct c, int part, out float cap, out float burn)
     {
@@ -530,11 +499,7 @@ public static class ConstructWorks
                 why += ": running at a quarter";
             return SandboxKeys.Line(d.Name, SandboxKeys.Join(Rating(d), State(c, h), wrecked), why, action);
         }
-        if (IsRing(d))
-            return RingLook(c, part, wrecked, action);
         var asm = AsmOfPiece(c, part);
-        if (d.WorksKind == WorksKind.Loader)
-            return LoaderLook(c, part, asm, wrecked, action);
         if (asm < 0)
             return SandboxKeys.Line(d.Name, SandboxKeys.Join(d.WorksKind == WorksKind.Mount ? "" : $"serves {PieceServes(d)}", wrecked), d.WorksKind == WorksKind.Mount ? "no head through it" : "bolt it to a Hull Mount, or to works on one", action);
         var heads = 0;
@@ -554,57 +519,11 @@ public static class ConstructWorks
         return SandboxKeys.Line(d.Name, SandboxKeys.Join($"serves {PieceServes(d)}", of, wrecked), need <= 0 ? load : heads > 0 && least < 0.999f ? load : null, action);
     }
 
-    /// <summary>A Turret Ring's look: what feeds it, the guns on it and how well its autoloaders serve them.</summary>
-    private static string RingLook(Construct c, int ring, string wrecked, string? action)
-    {
-        var d = c.Parts[ring].D;
-        int guns = 0;
-        var loaded = 0f;
-        for (var k = 0; k < c.GunCount; k++)
-            if (c.Guns[k].Ring == ring)
-            {
-                guns++;
-                loaded = MathF.Max(loaded, c.Guns[k].Loaded);
-            }
-        var on = guns == 0 ? "" : guns == 1 ? "1 gun on it" : $"{guns} guns on it";
-        var load = loaded <= 0 ? "" : loaded >= 0.999f ? "autoloaded" : $"autoloaded {loaded * 100:0}%";
-        var feed = ConstructAmmo.RingFeed(c, ring);
-        var problem = feed < 0 ? "no ammo feed into its Ammo in" : null;
-        return SandboxKeys.Line(d.Name, SandboxKeys.Join(on, feed >= 0 ? "fed" : "", load, wrecked), problem, action);
-    }
-
-    /// <summary>An Autoloader's look: the guns it loads on its ring, or why it loads none.</summary>
-    private static string LoaderLook(Construct c, int part, int asm, string wrecked, string? action)
-    {
-        var d = c.Parts[part].D;
-        int guns = 0, fed = 0;
-        var anyRing = false;
-        for (var k = 0; k < c.GunCount; k++)
-            if (c.Guns[k].Ring >= 0 && asm >= 0 && AsmOfPiece(c, c.Guns[k].Ring) == asm)
-            {
-                guns++;
-                if (c.Guns[k].RingFed)
-                    fed++;
-            }
-        for (var k = 0; k < c.WorksPieceCount && !anyRing; k++)
-            anyRing = c.WorksPieceAsm[k] == asm && IsRing(c.Parts[c.WorksPieces[k]].D);
-        var serves = $"serves {PieceServes(d)}";
-        if (asm < 0 || !anyRing)
-            return SandboxKeys.Line(d.Name, SandboxKeys.Join(serves, wrecked), "bolt it to a Turret Ring's trunk", action);
-        if (guns == 0)
-            return SandboxKeys.Line(d.Name, SandboxKeys.Join(serves, wrecked), "no gun stands on its ring", action);
-        if (fed == 0)
-            return SandboxKeys.Line(d.Name, SandboxKeys.Join(serves, wrecked), "its ring has no ammo feed: it loads nothing", action);
-        var served = c.WorksServed[asm * KindCount + (int)WorksKind.Loader];
-        var of = fed == 1 ? "loads 1 gun" : $"loads {fed} guns";
-        return SandboxKeys.Line(d.Name, SandboxKeys.Join(serves, of, wrecked), served < fed ? $"{MathF.Min(1, served / fed) * 100:0}% of what they need" : null, action);
-    }
-
     private static string PieceServes(ConstructPartDef d) => d.WorksKind switch
     {
         WorksKind.Lasergen => $"{d.WorksServes:0} kW",
         WorksKind.Hoist => $"{d.WorksServes:0} kg",
-        WorksKind.Loader => d.WorksServes == 1 ? "1 gun" : $"{d.WorksServes:0} guns",
+        WorksKind.Loader => $"{d.WorksServes:0} guns",
         _ => Force(d.WorksServes),
     };
 
@@ -709,23 +628,6 @@ public static class ConstructWorks
             }
             else
                 notes.Add(sb.ToString());
-        }
-        // Guns on Turret Rings: what feeds them through the ring, and their autoloaders (ship-works.md 5.2, 5.3).
-        for (var k = 0; k < c.GunCount; k++)
-        {
-            ref var g = ref c.Guns[k];
-            if (g.Ring < 0 || g.Part >= c.PartCount)
-                continue;
-            var line = $"works: {c.Parts[g.Part].D.Name} (part {g.Part}) on {c.Parts[g.Ring].D.Name} (part {g.Ring})";
-            if (!g.RingFed)
-            {
-                notes.Add($"{line}: no feed into the ring's Ammo in");
-                continue;
-            }
-            var fed = ConstructAmmo.FedFrom(null, c, k, out var sc, out var src) && sc == c && src >= 0 && src < c.PartCount;
-            line += fed ? $": fed from {c.Parts[src].D.Name} (part {src})" : ": its ring's feed reaches no store";
-            line += g.Loaded > 0 ? $", autoloaded {g.Loaded * 100:0}%, reload {g.ReloadTicks / (float)World.TickRate:0.##} s" : $", reload {g.ReloadTicks / (float)World.TickRate:0.##} s";
-            (fed ? notes : failures).Add(line);
         }
     }
 }
