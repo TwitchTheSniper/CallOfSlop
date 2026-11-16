@@ -4,8 +4,8 @@ namespace CallOfSlop.PartKit.Generators;
 
 /// <summary>
 /// The linked logistics showcase (docs/sandbox/design/linked-logistics.md, phase 7): Constructs/Blueprints/LinkedWorks.json, a small works
-/// (a Logistics Receiver, a Cargo Dock fed by chute from a Storage Volume, a Docking Clamp beside the dock, a Logistics Dispatcher); LinkedYard.json, a
-/// yard (a Logistics Transmitter, a Cargo Dock that chutes into a Crafting Terminal, a Docking Clamp); and LinkedHauler.json, the
+/// (a Logistics Receiver, a Cargo Dock fed by chute from a Storage Volume, a Docking Clamp beside the dock, a Logistics Dispatcher, a Building Station set to Sub-jobs Linked); LinkedYard.json, a
+/// yard (a Logistics Transmitter, a Cargo Dock that chutes into a Crafting Terminal, a Docking Clamp, a Building Station: pick Submodule Skiff there and its pods are built at the works); and LinkedHauler.json, the
 /// Fan Quad with a Cargo Port under it, a Route Computer and a Storage Volume. Spawn both on Glacier, pair the Receiver with the
 /// Transmitter's code, fill the works' Storage Volume with parts, order one of them at the yard's terminal: it waits for a ship; land
 /// the hauler in the works' clamp (or give it a route: the command view, ROUTE...).
@@ -38,8 +38,14 @@ public sealed class LinkedLogisticsShowcase : IPartGenerator
         steps.Add(yard
             ? "{ \"part\": \"Crafting Terminal\", \"on\": 0, \"socket\": \"top30\", \"by\": \"-y.0.0\" }" // 13
             : "{ \"part\": \"Storage Volume\", \"on\": 0, \"socket\": \"top30\", \"by\": \"-y\" }");
-        if (!yard)
-            steps.Add("{ \"part\": \"Logistics Dispatcher\", \"on\": 1, \"socket\": \"top30\", \"by\": \"-y\" }"); // 14: sends registered route ships
+        steps.Add(yard
+            ? "{ \"part\": \"Foundation\", \"on\": 2, \"socket\": \"x+0\", \"by\": \"x-0\", \"paint\": \"#8c8576\" }" // 14 (a spacer: the yard has no Dispatcher)
+            : "{ \"part\": \"Logistics Dispatcher\", \"on\": 1, \"socket\": \"top30\", \"by\": \"-y\" }"); // 14: sends registered route ships
+        // A Building Station off to the +x side (its bay beside it): at the yard a main station whose sub-blueprint uses no local station
+        // takes; at the works one set to Sub-jobs Linked, which takes them over the link.
+        steps.Add("{ \"part\": \"Foundation\", \"on\": 3, \"socket\": \"x+0\", \"by\": \"x-0\", \"paint\": \"#8c8576\" }"); // 15
+        steps.Add("{ \"part\": \"Foundation\", \"on\": 15, \"socket\": \"x+0\", \"by\": \"x-0\", \"paint\": \"#8c8576\" }"); // 16
+        steps.Add($"{{ \"part\": \"Building Station\", \"on\": 16, \"socket\": \"top00\", \"by\": \"-y.0.0\", \"config\": {{ \"bayWidth\": 4, \"bayDepth\": 3, \"bayHeight\": 3, \"subJobs\": {(yard ? 1 : 2)} }} }}"); // 17
         var links = yard
             ? "{ \"type\": \"chute\", \"from\": 7, \"fromPort\": \"Chute out\", \"to\": 13, \"toPort\": \"Chute in\" }"
             : "{ \"type\": \"chute\", \"from\": 13, \"fromPort\": \"Chute out\", \"to\": 7, \"toPort\": \"Chute in\" }";

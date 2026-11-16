@@ -64,7 +64,7 @@ public static class LinkedCheck
 
         Console.WriteLine("linked-check: one planetoid (Transmitter and Receiver)");
         var wk = Build(wa, placeA, works, new Vector3(0, 0, 0));
-        var yd = Build(wa, placeA, yard, new Vector3(60, 0, 0));
+        var yd = Build(wa, placeA, yard, new Vector3(120, 0, 0));
         var store = PartOf(wk, d => d.IsVolumeStore);
         var recv = PartOf(wk, d => d.LinkKind == LinkKind.Receiver);
         var trans = PartOf(yd, d => d.LinkKind == LinkKind.Transmitter);
@@ -175,6 +175,42 @@ public static class LinkedCheck
         Say(sent is { OneOff: true, N: 3 }, $"the Dispatcher sent it: {(sent == null ? "no route" : $"{sent.N} stops, {sent.Phase}: {sent.Why}")}; {fleet?.Last}");
         if (sent != null)
             ha.Parts[rcp].Link!.Route = null; // (headless: no flight here; the window tool flies it)
+
+        // A sub-blueprint job over the link: the yard's station builds the Submodule Skiff; its pods go to the works' station (Sub-jobs Linked).
+        var ySt = PartOf(yd, d => d.IsBuildStation);
+        var wSt = PartOf(wk, d => d.IsBuildStation);
+        var beam = ConstructParts.Find("Square Beam 0.25 m")!;
+        for (var k = 0; k < 8; k++)
+        {
+            wa.RackPut(wk, wSt, beam);
+            wa.RackPut(yd, ySt, beam);
+        }
+        using (placeA.In())
+            why = ConstructStation.Start(wa, yd, ySt, "Submodule Skiff", 0);
+        Say(why == null, $"the yard's station starts the Submodule Skiff: {why ?? "started"}");
+        LinkLine? sub = null;
+        for (var k = 0; k < 60 && !(sub is { Ready: 1 }); k++)
+        {
+            Run(wa, placeA, 1);
+            sub = LinkLedger.Lines.FirstOrDefault(l => l.Use != 0);
+        }
+        Say(sub is { Ready: 1 }, $"a pod offered over the link, built at the works: {(sub == null ? "no line" : $"line {sub.Id}: {sub.State}, ready {sub.Ready}, {sub.Note}")}");
+        Console.WriteLine($"     yard station: {StationProbe.Text(wa, yd, ySt)}; rows: {string.Join(" | ", (yd.Parts[ySt].Station?.Tree ?? []).Select(r => $"{r.Name} #{r.Number} {r.State} {r.Note}"))}");
+        Console.WriteLine($"     works station: {StationProbe.Text(wa, wk, wSt)}");
+        if (sub is { Ready: 1 } && wa.Bodies.FirstOrDefault(b => b.SubLine == sub.Id) is { } pod)
+        {
+            // Flown in and set down by the yard's bay (as a player brings it in a ship's Cargo Volume and lets it go there).
+            ConstructStation.Bay(yd, ySt, out var floor, out _, out _);
+            using (placeA.In())
+            {
+                pod.Pos = floor + new Vector3(0, 6, 0);
+                pod.Wake();
+            }
+            Run(wa, placeA, 3);
+            Say(sub is { Delivered: 1 }, $"the pod is handed to the yard's station: line {sub.State}, {sub.Note}");
+            Run(wa, placeA, 20);
+            Console.WriteLine($"     yard station: {StationProbe.Text(wa, yd, ySt)}; rows: {string.Join(" | ", (yd.Parts[ySt].Station?.Tree ?? []).Select(r => $"{r.Name} #{r.Number} {r.State} {r.Note}"))}");
+        }
 
         // Saves: the body block and the ledger.
         var bytes = LinkedLogistics.SaveBytes(ha);
