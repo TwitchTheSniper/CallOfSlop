@@ -127,6 +127,78 @@
       "by": "top"
     },
     {
+      "part": "Heavy RCS Thruster",
+      "on": 7,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 7,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 7,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 8,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 8,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 8,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 9,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 9,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 9,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 10,
+      "socket": "rcsUp",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 10,
+      "socket": "rcsDown",
+      "by": "base"
+    },
+    {
+      "part": "Heavy RCS Thruster",
+      "on": 10,
+      "socket": "rcsOut",
+      "by": "base"
+    },
+    {
       "part": "Magpie Landing Leg",
       "on": 0,
       "socket": "legFL",
@@ -158,7 +230,7 @@
     },
     {
       "part": "Magpie Ladder Foot",
-      "on": 25,
+      "on": 37,
       "socket": "lower",
       "by": "hang"
     },
@@ -336,7 +408,7 @@
     },
     {
       "part": "Drill Module",
-      "on": 46,
+      "on": 58,
       "socket": "top",
       "by": "drive",
       "spin": 1
@@ -355,7 +427,7 @@
     },
     {
       "part": "Drill Module",
-      "on": 48,
+      "on": 60,
       "socket": "top",
       "by": "drive",
       "spin": 2
@@ -374,7 +446,7 @@
     },
     {
       "part": "Drill Module",
-      "on": 50,
+      "on": 62,
       "socket": "top",
       "by": "drive",
       "spin": 1
@@ -393,7 +465,7 @@
     },
     {
       "part": "Drill Module",
-      "on": 52,
+      "on": 64,
       "socket": "top",
       "by": "drive",
       "spin": 2
@@ -653,7 +725,11 @@
       "part": "Magpie Flight Computer",
       "on": 5,
       "socket": "module",
-      "by": "bottom"
+      "by": "bottom",
+      "config": {
+        "keys": "Ship",
+        "mouseAim": true
+      }
     },
     {
       "part": "Chart Table",
@@ -960,153 +1036,153 @@
   ],
   "wires": [
     [
-      38,
-      36
-    ],
-    [
-      38,
-      37
-    ],
-    [
-      41,
-      42
-    ],
-    [
-      43,
-      44
-    ],
-    [
-      43,
-      45
-    ],
-    [
-      41,
-      46
-    ],
-    [
-      41,
+      50,
       48
     ],
     [
-      41,
-      50
+      50,
+      49
     ],
     [
-      41,
-      52
-    ],
-    [
-      57,
+      53,
       54
     ],
     [
-      57,
-      55
-    ],
-    [
-      57,
+      55,
       56
     ],
     [
-      61,
+      55,
+      57
+    ],
+    [
+      53,
       58
     ],
     [
-      61,
-      59
-    ],
-    [
-      61,
+      53,
       60
     ],
     [
-      79,
-      77
+      53,
+      62
     ],
     [
-      79,
-      78
+      53,
+      64
     ],
     [
-      83,
-      80
+      69,
+      66
     ],
     [
-      83,
-      81
+      69,
+      67
     ],
     [
-      83,
-      82
+      69,
+      68
     ],
     [
-      84,
-      86
+      73,
+      70
     ],
     [
-      99,
-      97
+      73,
+      71
     ],
     [
-      99,
+      73,
+      72
+    ],
+    [
+      91,
+      89
+    ],
+    [
+      91,
+      90
+    ],
+    [
+      95,
+      92
+    ],
+    [
+      95,
+      93
+    ],
+    [
+      95,
+      94
+    ],
+    [
+      96,
       98
     ],
     [
-      102,
-      100
+      111,
+      109
     ],
     [
-      102,
-      101
+      111,
+      110
     ],
     [
-      104,
-      103
+      114,
+      112
     ],
     [
-      120,
-      119
+      114,
+      113
     ],
     [
-      122,
-      121
+      116,
+      115
     ],
     [
-      125,
-      123
+      132,
+      131
     ],
     [
-      125,
-      124
+      134,
+      133
+    ],
+    [
+      137,
+      135
+    ],
+    [
+      137,
+      136
     ]
   ],
   "conduit": true,
   "links": [
     {
       "type": "chute",
-      "from": 47,
-      "to": 39,
+      "from": 59,
+      "to": 51,
       "fromPort": "Chute out",
       "toPort": "Chute in"
     },
     {
       "type": "chute",
-      "from": 49,
-      "to": 40,
+      "from": 61,
+      "to": 52,
       "fromPort": "Chute out",
       "toPort": "Chute in"
     },
     {
       "type": "chute",
-      "from": 51,
-      "to": 39,
+      "from": 63,
+      "to": 51,
       "fromPort": "Chute out",
       "toPort": "Chute in"
     },
     {
       "type": "chute",
-      "from": 53,
-      "to": 40,
+      "from": 65,
+      "to": 52,
       "fromPort": "Chute out",
       "toPort": "Chute in"
     }

@@ -86,7 +86,8 @@ merge, the Magpie can switch to them if a shared set suits it.
 ## Flight
 
 The pilot's Flight Couch is wired to the **Magpie Flight Computer**, a flight stabilizer with a 10 MN m gyro. It flies on
-Rotorcraft keys, as the Halberd and the Zero Day do: Shift climbs, W leans forward, A and D turn.
+Ship keys with mouse aim (flight.md "Ship keys"): the nose follows the look, W/S forward and back, A/D slide, Q/E roll,
+Shift/Ctrl up and down. Twelve **Heavy RCS Thrusters** (250 kN) on the hoppers and nacelles (up, down, outboard) turn it.
 
 - Four **Magpie Lift Jets** (1.2 MN each) stand round the centre of mass, under the hoppers and the nacelles.
 - Two **Magpie Drives** (900 kN each) push forward from the nacelles' tails.

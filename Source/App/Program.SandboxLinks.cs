@@ -37,6 +37,7 @@ public static partial class Program
     // before ImGui's NewFrame, when ImGui has no font, and text drawn there crashed the game natively (lc01, reopened).
     private static readonly Vector3[] _lkMarkAt = new Vector3[ConstructRoutes.MaxLinkPorts];
     private static readonly Vector3[] _lkMarkCol = new Vector3[ConstructRoutes.MaxLinkPorts];
+    private static readonly Vector2[] _lkMarkPx = new Vector2[ConstructRoutes.MaxLinkPorts]; // a data port's label: pixels from where the part's data ports sit (inputs in a column to the left, outputs to the right)
     private static readonly byte[] _lkMarkIdx = new byte[ConstructRoutes.MaxLinkPorts];
     private static int _lkMarkN;
 
@@ -171,7 +172,7 @@ public static partial class Program
             var ok = _lkMarkOk[k];
             var text = i == _lkMarkNear && _lkMarkWhy[k] is { } why ? why : _lkMarkText[k];
             if (text is { Length: > 0 })
-                Hud.WorldLabel(_lkMarkAt[i], text, _lkMarkCol[i], ok || i == _lkMarkNear ? 0.95f : 0.5f, 13f * Ui.Scale, 12f);
+                Hud.WorldLabel(_lkMarkAt[i], text, _lkMarkCol[i], ok || i == _lkMarkNear ? 0.95f : 0.5f, 13f * Ui.Scale, 12f, _lkMarkPx[i] * Ui.Scale);
         }
     }
 
@@ -410,7 +411,7 @@ public static partial class Program
         if (!ConstructRoutes.HasAnyPort(d))
             return;
         var routing = _lkBody != 0;
-        var n = ConstructRoutes.AllPorts(c, hit.Part, _lkAll);
+        var n = ConstructRoutes.AllPorts(c, hit.Part, _lkAll, Down(GameAction.Sprint));
         var key = HashCode.Combine(c.Id, hit.Part, routing, (int)_lkType, c.RouteCount, n, HashCode.Combine(_lkParent, _lkFromPort)) ^ (long)c.PartCount << 40;
         if (key != _lkMarkKey)
         {
@@ -425,7 +426,17 @@ public static partial class Program
             }
         }
         c.WorldFrame(c.Parts[hit.Part].Seg, out var q, out var t);
-        var dataSeen = 0;
+        int dataIns = 0, dataOuts = 0;
+        for (var i = 0; i < n; i++)
+            if (_lkAll[i].Type == RouteType.Data)
+            {
+                if (_lkAll[i].In)
+                    dataIns++;
+                else
+                    dataOuts++;
+            }
+        int seenIn = 0, seenOut = 0;
+        const float Row = 15f; // (px, at Ui.Scale 1)
         var m = 0;
         var nearD = float.MaxValue;
         _lkMarkNear = -1;
@@ -434,8 +445,8 @@ public static partial class Program
             ref var p = ref _lkAll[i];
             var ok = _lkMarkOk[i];
             var at = t + Vector3.Transform(ConstructRoutes.LivePort(c, hit.Part, p.Byte, p.Type), q);
-            if (p.Type == RouteType.Data)
-                at += new Vector3(0, 0.1f * dataSeen++, 0); // (data ports share the part's middle: stacked)
+            // Data ports share the part's middle: their names go in two short columns beside it on the screen, inputs left and outputs right, whatever the distance or angle.
+            _lkMarkPx[m] = p.Type != RouteType.Data ? Vector2.Zero : p.In ? new Vector2(-60f, Row * (seenIn++ - 0.5f * (dataIns - 1))) : new Vector2(60f, Row * (seenOut++ - 0.5f * (dataOuts - 1)));
             if (!float.IsFinite(at.X + at.Y + at.Z))
                 continue; // (a pose not received yet: nothing to place it at)
             _lkMarkIdx[m] = (byte)i; // (the text stays cached at index i)
@@ -517,7 +528,7 @@ public static partial class Program
 
     private static bool OpenPicker(Construct c, int part, bool end, Vector3 near)
     {
-        var n = ConstructRoutes.AllPorts(c, part, _lkAll);
+        var n = ConstructRoutes.AllPorts(c, part, _lkAll, Down(GameAction.Sprint));
         if (end && LinkIsWatch(c))
         {
             _lkAll[0] = ConstructRoutes.WatchEnd; // (a sensor's watch link ends at any part, and at nothing else of it)
@@ -1245,7 +1256,7 @@ public static partial class Program
                 ? w.Mode == LinkMode.Loom ? LoomHud
                 : _lkMoveRoute >= 0 ? $"Move node: {fire}: place (red: hold to adjust), {aim}: let go{why}" : $"{Cap(w.ModeName)}: {fire} a link"
                 : _lkBody == 0
-                    ? $"{(w.Highlight ? "Highlight all: " : "")}{fire} a device or a link, {aim}: cut wires, {SandboxKeys.Reload}: setting"
+                    ? $"{(w.Highlight ? "Highlight all: " : "")}{fire} a device or a link, {aim}: cut wires, {SandboxKeys.Reload}: setting, hold {SandboxKeys.Sprint}: every port"
                     : _lkFree
                         ? $"Free routing: {fire}: node, release {free} to end at an input{why}"
                         : $"{type}, {_lkCount} node{(_lkCount == 1 ? "" : "s")}: {fire} the input (the route is found for you) or a node (red: hold to adjust), {free}: free routing, {aim} or Backspace: undo, Esc: cancel{why}";

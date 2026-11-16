@@ -443,7 +443,7 @@ public static partial class ConstructRoutes
     /// choice: the port gives the link's type). Named ports first (shafts, pipes, power), then the data inputs and outputs,
     /// then a storage part's chute. Returns how many were written into <paramref name="list"/>.
     /// </summary>
-    public static int AllPorts(Construct c, int part, Span<LinkPort> list)
+    public static int AllPorts(Construct c, int part, Span<LinkPort> list, bool all = true)
     {
         if (part < 0 || part >= c.PartCount)
             return 0;
@@ -472,12 +472,26 @@ public static partial class ConstructRoutes
             for (var k = 0; k < count && n < list.Length; k++)
             {
                 var nm = names.Length > 0 ? names[k] : input ? "Data in" : "Data out";
+                if (!all && d.Logic == CLogic.FlightStabilizer && ConstructFlight.Advanced(nm, input) && !Wired(c, part, DataPortByte(names.Length <= 1 ? 0 : k), input))
+                    continue; // (the rest of a stabilizer's ports are for wiring by hand: shown while the key is held, or once something is on them)
                 list[n++] = new LinkPort { Type = RouteType.Data, Byte = DataPortByte(names.Length <= 1 ? 0 : k), Name = nm, In = input, Out = !input, FreeIn = input, FreeOut = !input, Fluid = "" };
             }
         }
         if (d.Role == PartRole.Storage && n < list.Length && !HasPort(d, RouteType.Chute, true) && !HasPort(d, RouteType.Chute, false))
             list[n++] = new LinkPort { Type = RouteType.Chute, Byte = 255, Name = "Chute", In = true, Out = true, FreeIn = true, FreeOut = true, Fluid = "" };
         return n;
+    }
+
+    /// <summary>Is a data link on this port of the part already?</summary>
+    private static bool Wired(Construct c, int part, byte port, bool input)
+    {
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            ref var r = ref c.Routes[k];
+            if (r.Type == RouteType.Data && (input ? r.To == part && r.ToPort == port : r.Source == part && r.SourcePort == port))
+                return true;
+        }
+        return false;
     }
 
     private static bool Has(Span<byte> a, int n, byte v)

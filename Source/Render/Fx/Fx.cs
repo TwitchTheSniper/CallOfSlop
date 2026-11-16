@@ -23,7 +23,7 @@ public enum FxKind : byte
     Count,
 }
 
-/// <summary>One particle as the pool holds it, on the GPU or in the fallback's array (48 bytes; the shader's struct P).</summary>
+/// <summary>One particle as the pool holds it, on the GPU or in the fallback's array (64 bytes; the shader's struct P).</summary>
 [StructLayout(LayoutKind.Sequential)]
 public struct FxParticle
 {
@@ -33,6 +33,8 @@ public struct FxParticle
     public float Life; // 0: a free slot
     public float Size, Seed, Kind;
     public uint Tint; // RGBA8: rgb times the kind's colour, a times its alpha
+    public Vector3 Carry; // m/s: the speed of what made it, kept as it is (no drag, no turbulence): a ship's flame stays on its nozzle however fast the ship goes
+    public float Pad;
 }
 
 /// <summary>
@@ -100,7 +102,7 @@ public static class Fx
     }
 
     /// <summary>One particle.</summary>
-    public static void Emit(FxKind kind, Vector3 pos, Vector3 vel, float size, float life, uint tint = White)
+    public static void Emit(FxKind kind, Vector3 pos, Vector3 vel, float size, float life, uint tint = White, Vector3 carry = default)
     {
         if (!On)
             return;
@@ -121,6 +123,7 @@ public static class Fx
         p.Seed = Rand();
         p.Kind = (float)kind;
         p.Tint = tint;
+        p.Carry = carry;
     }
 
     /// <summary>How many of <paramref name="wanted"/> (a rate times the frame, say) to make now: whole, the setting's share of it, the fraction by chance.</summary>
@@ -218,7 +221,7 @@ public static class Fx
             var up = Vector3.Cross(dir, side);
             var off = side * (MathF.Cos(a) * r) + up * (MathF.Sin(a) * r);
             var along = 0.75f + 0.5f * Rand();
-            Emit(kind, at + off + dir * (Rand() * speed * dt), carry + dir * (speed * along) + off * 0.8f, radius * (0.85f + 0.5f * Rand()), life * (0.7f + 0.6f * Rand()), tint);
+            Emit(kind, at + off + dir * (Rand() * speed * dt), dir * (speed * along) + off * 0.8f, radius * (0.85f + 0.5f * Rand()), life * (0.7f + 0.6f * Rand()), tint, carry); // (its own speed drags and streaks; the nozzle's it keeps, so the flame stays on it)
         }
     }
 
@@ -259,7 +262,7 @@ public static class Fx
             }
             ref readonly var k = ref kinds[(int)p.Kind];
             p.Vel = p.Vel * MathF.Max(0f, 1f - k.Drag * dt) - new Vector3(0, k.Gravity * dt, 0);
-            p.Pos += p.Vel * dt;
+            p.Pos += (p.Vel + p.Carry) * dt;
             CpuDraw[n++] = p;
         }
         CpuAlive = n;
