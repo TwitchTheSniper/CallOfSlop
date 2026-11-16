@@ -625,6 +625,7 @@ public sealed partial class ConstructPartDef
     public int GunShell = -1; // a heavy gun's ShellKind ("shell"); -1: its rounds are rounds
     public SightKind Sight; // "sight": bolted to a gun, what it adds (ConstructOrdnance.cs)
     public float SightReach, SightCone; // how far it sees (m), and how far off its axis or the look a target can be (degrees)
+    public float RadarRange; // "radar": {"range"}: its craft's seats get the radar scope out to this far (m), and a contact locked on it goes to the craft's missiles (ConstructRadar.cs)
     public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
     public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick; // a heavy gun's own numbers
     public float GunMaxRange = 300f; // how far its rounds reach at all
@@ -1319,7 +1320,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "finish", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "retired", "hydraulics", "toolOnly", "tray", "walk", "boarding", "ladder", "toolDock", "damaged", "stage", "faces", "faceAxis", "router",
-        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab",
+        "sight", "ordnance", "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "dieExtension", "runOut", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "shell", "office", "requisition", "media", "speaker", "leg", "stabiliser", "door", "lifter", "craneRail", "lifterCab", "radar",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1459,6 +1460,12 @@ public static partial class ConstructParts
             Range(d.SightReach, 10f, 5000f, file, "sight.reach");
             d.SightCone = Num(Need(sgt, "cone", file), file, "sight.cone");
             Range(d.SightCone, 0.5f, 90f, file, "sight.cone");
+        }
+        if (Opt(root, "radar") is { } rdr)
+        {
+            Known(rdr, ["range"], $"{file}: \"radar\"");
+            d.RadarRange = Num(Need(rdr, "range", file), file, "radar.range");
+            Range(d.RadarRange, 50f, ConstructRadar.MaxRange, file, "radar.range");
         }
         if (Opt(root, "explosive") is { } ex)
         {
