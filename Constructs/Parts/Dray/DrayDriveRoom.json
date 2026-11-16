@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Dray Drive Room",
-  "description": "The Dray's drive room, aft of the hold under the stern: where the drives' feeds, the power plant and the board go.",
+  "description": "The Dray's drive room, aft of the hold under the stern: the drives' works stand against its aft wall, and the Engineer's Panel by the door.",
   "group": "Ship",
   "section": "Dray hauler",
   "role": "frame",

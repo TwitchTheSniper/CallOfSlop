@@ -12,6 +12,9 @@
   "material": "steel",
   "color": "#b9bdb5",
   "attachSeconds": 6.0,
+  "worksPiece": {
+    "kind": "mount"
+  },
   "boxes": [
     {
       "min": [
@@ -44,6 +47,33 @@
     }
   ],
   "sockets": [
+    {
+      "name": "core0",
+      "at": [
+        3.275,
+        0.925,
+        49.375
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "core1",
+      "at": [
+        6.375,
+        0.925,
+        49.375
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "core2",
+      "at": [
+        9.475,
+        0.925,
+        49.375
+      ],
+      "dir": "-z"
+    },
     {
       "name": "j0",
       "at": [

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Dray Container Hauler",
-  "description": "A container hauler: a long hold for fourteen 20-foot containers with an overhead crane down its length and a well in its belly to lift them through, a small crew section forward and a drive room aft. (The frame, walls and doors so far: no drives, legs, lamps or fittings yet.)",
+  "description": "A container hauler: a long hold for fourteen 20-foot containers with an overhead crane down its length and a well in its belly to lift them through, a small crew section forward and a drive room aft. Four torch nozzles push it, their works in the drive room. (No legs, lamps or fittings yet.)",
   "steps": [
     {
       "part": "Dray Keel"
@@ -591,6 +591,54 @@
       "by": "bottom"
     },
     {
+      "part": "Drive Nozzle S",
+      "on": 62,
+      "socket": "drive0",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Nozzle S",
+      "on": 62,
+      "socket": "drive1",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Nozzle S",
+      "on": 62,
+      "socket": "drive2",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Nozzle S",
+      "on": 62,
+      "socket": "drive3",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Core S",
+      "on": 59,
+      "socket": "core0",
+      "by": "front"
+    },
+    {
+      "part": "Drive Core S",
+      "on": 59,
+      "socket": "core1",
+      "by": "front"
+    },
+    {
+      "part": "Drive Core S",
+      "on": 59,
+      "socket": "core2",
+      "by": "front"
+    },
+    {
+      "part": "Engineer's Panel",
+      "on": 56,
+      "socket": "panel",
+      "by": "back"
+    },
+    {
       "part": "Dray Well Door L",
       "on": 8,
       "socket": "wellDoorL",
@@ -736,7 +784,7 @@
     },
     {
       "part": "Medium Crane Bridge",
-      "on": 100,
+      "on": 108,
       "socket": "-x.0.0",
       "by": "+x",
       "paint": "#e0a020",

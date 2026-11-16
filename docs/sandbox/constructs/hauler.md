@@ -40,8 +40,14 @@ girders) along the hold's roof, a sensor mast, radiators over the drive room.
   hinge beam in the well band's hull piece; the brackets of the crane's girder stand at the doorway's jambs.
 - **Doors** are Bulkhead Doors 1.5x2.25 m in hazard orange.
 
+- **Drives** (ship works, PR 246, refitted 2026-11-16): four Drive Nozzle S (1.5 MN each, 6 MN) bolt to the transom's
+  `drive0`-`drive3`, a hull drive. The stern and the drive room's aft wall are mounts (`Works.Mount`), welded together; three
+  Drive Core S (2 MN each) hang on the wall by their `front` at half their height (`core0`-`core2`), 1.7 m clear in front and
+  more than a metre beside each one's gauge, and the Engineer's Panel is on the port wall by the door. `--check-vehicle`
+  prints every head at 100%. No lift jets or retros yet: those over 500 kN need works or pods too.
+
 ## Not yet
 
-Drives, jets, legs, the boarding ladder, lamps, wiring and fittings (Karl's scope for the first cut). Without legs and a
+Lift and retro jets, legs, the boarding ladder, lamps, wiring and fittings (Karl's scope for the first cut). Without legs and a
 boarding ladder `--check-building` can't reach the decks from the ground; its map shows every room joined through its doors.
 No container part, no power for the crane, no cargo storage volumes.

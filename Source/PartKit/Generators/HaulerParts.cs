@@ -63,6 +63,13 @@ public sealed class HaulerParts : IPartGenerator
     private const double TrackY = -1.26; // the well doors' tracks' underside
 
     /// <summary>The side doors beside the well (row 3), one a side: the opening's ends along the ship, its head, and the hinge socket.</summary>
+    /// <summary>The drives (ship-works.md): four Drive Nozzle S through the transom, a hull drive whose works stand on the drive room's
+    /// aft wall (welded to the stern, both mounts): three Drive Core S serve the 6 MN, side by side with a metre and more clear in front
+    /// of each one's gauge (on its starboard side), the Engineer's Panel on the port wall by the door.</summary>
+    private const string DriveNozzle = "Drive Nozzle S", DriveCore = "Drive Core S";
+    private static readonly double[] CoreX = [-3.6, -0.5, 2.6];
+    private const double CoreH = 1.6, PanelZ = 47.0;
+
     private const double SideZ0 = 27.4, SideZ1 = 32.6, SideTop = 3.05, SideSockX = 6.875, SideSockY = 3.075, SideSockZ = 30.125;
 
     private static double[] P(double x, double y, double z) => [x - H, y - H, z - H];
@@ -892,7 +899,7 @@ public sealed class HaulerParts : IPartGenerator
     {
         WallCol = Wall;
         DadoCol = WallLow;
-        var p = Big("Dray Drive Room", "The Dray's drive room, aft of the hold under the stern: where the drives' feeds, the power plant and the board go.");
+        var p = Big("Dray Drive Room", "The Dray's drive room, aft of the hold under the stern: the drives' works stand against its aft wall, and the Engineer's Panel by the door.");
         var plan = new Rect(Cx - Ew - 0.25, ZHoldEnd + 0.125, Cx + Ew + 0.25, ZEngEnd + 0.25);
         Floor(p, [plan], 0, Ft0, Deck, "painted deck plate");
         Floor(p, [plan], Ceil0, Ft1, Ceil, "painted plating");
@@ -910,6 +917,10 @@ public sealed class HaulerParts : IPartGenerator
         Ribs(p, ZHoldEnd, ZEngEnd, 2);
         foreach (var (ya, yb) in new[] { (0.0, 0.7), (0.7, Ft1) })
             VoidT(p, plan.Z0, plan.Z1, ya, yb, Ew + 0.25, 0.004, 0.004);
+        // The drive's works stand against the aft wall, each hung at its half height so it stands on the deck; the panel by the door.
+        for (var i = 0; i < CoreX.Length; i++)
+            Sock(p, $"core{i}", Cx + CoreX[i], Ft0 + CoreH / 2, ZEngEnd, "-z");
+        Sock(p, "panel", Cx - Ew, Ft0 + 0.6, PanelZ, "+x");
         foreach (var y in new[] { 0.0, Ft1 })
             MustFit("drive room", plan.Z1, Ew + 0.25, y);
         return p.Stats(8000, 24000, 30, 15.0);
@@ -1020,7 +1031,8 @@ public sealed class HaulerParts : IPartGenerator
 
     private static Part SternPart()
     {
-        var p = Big("Dray Stern", "The Dray's stern: the hull closing over the drive room, and the transom with the mounts its four drives go on.", color: Armour);
+        var p = Big("Dray Stern", "The Dray's stern: the hull closing over the drive room, the drives' tankage, and the transom its four nozzles bolt to. Their works stand on the drive room's aft wall, welded to it.", color: Armour);
+        Works.Mount(p); // (the nozzles' mount: their works stand on the drive room's aft wall, welded to it)
         foreach (var s in new[] { -1, 1 })
         {
             Band(p, 3, s, ZHoldEnd, ZEngEnd, Skin2, 7);
@@ -1044,10 +1056,7 @@ public sealed class HaulerParts : IPartGenerator
         var q = At(Stern);
         Plate(p, [.. Enumerable.Range(0, 5).Select(k => P(Cx + q[k].H, q[k].Y, Stern)).Concat(Enumerable.Range(0, 5).Reverse().Select(k => P(Cx - q[k].H, q[k].Y, Stern)))], Frame, "soot");
         foreach (var (dx, dy) in new[] { (-2.4, 1.3), (2.4, 1.3), (-2.4, 4.3), (2.4, 4.3) })
-        {
-            Prism(p, RingZ(Cx + dx - H, dy - H, 1.05, 1.05, Stern + 0.02 - H, 10), RingZ(Cx + dx - H, dy - H, 0.95, 0.95, Stern + 0.45 - H, 10), Bare, "dirty steel");
-            Detail(p, Cx + dx - 0.5, dy - 0.5, Stern + 0.45, Cx + dx + 0.5, dy + 0.5, Stern + 0.47, Frame, "soot");
-        }
+            Prism(p, RingZ(Cx + dx - H, dy - H, 0.78, 0.78, Stern + 0.02 - H, 10), RingZ(Cx + dx - H, dy - H, 0.7, 0.7, Stern + 0.1 - H, 10), Bare, "dirty steel"); // (a doubler round each nozzle)
         Detail(p, Cx - 0.6, 2.7, Stern + 0.02, Cx + 0.6, 2.9, Stern + 0.05, Hazard, "hazard paint");
         foreach (var (ya, yb) in new[] { (-0.9, -0.3), (-0.3, 1.0), (1.0, 3.3), (3.3, 5.6), (5.6, 6.7) })
             VoidT(p, ZEngEnd + 0.25, Stern, ya, yb, 0, 0.0, 0.004); // (flush with the drive room's back wall: they weld)
@@ -1479,7 +1488,7 @@ public sealed class HaulerParts : IPartGenerator
 
     private static PyDict Blueprint(Dictionary<string, PyDict> defs)
     {
-        var bp = new BuildingParts.Blueprint(ShipName, "A container hauler: a long hold for fourteen 20-foot containers with an overhead crane down its length and a well in its belly to lift them through, a small crew section forward and a drive room aft. (The frame, walls and doors so far: no drives, legs, lamps or fittings yet.)", defs, maxSteps: 400);
+        var bp = new BuildingParts.Blueprint(ShipName, "A container hauler: a long hold for fourteen 20-foot containers with an overhead crane down its length and a well in its belly to lift them through, a small crew section forward and a drive room aft. Four torch nozzles push it, their works in the drive room. (No legs, lamps or fittings yet.)", defs, maxSteps: 400);
         bp.Conduit = true;
         double[] zero = [0, 0, 0];
         var placed = new Dictionary<string, int>();
@@ -1495,6 +1504,14 @@ public sealed class HaulerParts : IPartGenerator
         Door(bp, fore, "doorHold");
         Door(bp, aft, "doorDrive");
         Hang(bp, "Dray Ladder", lower, "ladder", "bottom");
+        // The drives: nozzles on the transom, their cores on the drive room's aft wall, the Engineer's Panel by the door.
+        var stern = placed["Dray Stern"];
+        foreach (var d in new[] { "drive0", "drive1", "drive2", "drive3" })
+            Hang(bp, DriveNozzle, stern, d, "mount");
+        var drive = placed["Dray Drive Room"];
+        for (var i = 0; i < CoreX.Length; i++)
+            Hang(bp, DriveCore, drive, $"core{i}", "front");
+        Hang(bp, "Engineer's Panel", drive, "panel", "back");
         Paint(bp, Hang(bp, "Dray Well Door L", keel, "wellDoorL", "hang"), Bare, "plated steel");
         Paint(bp, Hang(bp, "Dray Well Door R", keel, "wellDoorR", "hang"), Bare, "plated steel");
         Paint(bp, Hang(bp, "Dray Side Door L", well, "sideDoorL", "hang"), Armour, "worn paint");
@@ -1530,6 +1547,10 @@ public sealed class HaulerParts : IPartGenerator
         structure.AddRange(SplitDeck(DriveRoom(), "Drive Room"));
         structure.AddRange(SplitBands(Spine(), "Spine", 30.0));
         structure.AddRange([Bow(), SternPart()]);
+        // The works' mounts (ship-works.md): the stern, and the drive room's aft wall the works stand on, welded to it.
+        foreach (var q in structure)
+            if (q.Sockets.Any(k => (string)k["name"]! == "core0"))
+                Works.Mount(q);
         Connect(structure);
         Structure = PlaceOrder(structure, "Dray Keel");
         List<Part> parts =
