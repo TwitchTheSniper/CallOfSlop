@@ -32,7 +32,7 @@ public sealed partial class Game
     public int WorldAutosaveMinutes = 5;
 
     private readonly ulong[] _worldKeys = new ulong[256];
-    private (ulong Ns, int Warp, string System, ShipSnap[] Ships)? _worldSpace;
+    private (ulong Ns, int Speed, string System, ShipSnap[] Ships)? _worldSpace;
 
     private ulong WorldKeyOf(Player p) => p.Id == LocalId ? LocalWorldKey : _worldKeys[p.Id];
 
@@ -226,7 +226,7 @@ public sealed partial class Game
         {
             s.SpaceSystem = f.System.Name;
             s.SpaceNs = f.Clock.Now.Ns;
-            s.SpaceWarp = f.RequestedWarp;
+            s.SpaceSpeed = f.RequestedSpeed;
             WorldSnapshot.Grow(ref s.Ships, f.Ships.Count);
             for (var k = 0; k < f.Ships.Count; k++)
             {
@@ -768,11 +768,11 @@ public sealed partial class Game
     {
         var system = r.Str();
         var ns = r.I64();
-        var warp = r.I32();
+        var speed = r.I32();
         var ships = new ShipSnap[r.Count(50)];
         for (var k = 0; k < ships.Length; k++)
             ships[k] = new ShipSnap { Id = r.U16(), Primary = r.I32(), R = new Vec3d(r.F64(), r.F64(), r.F64()), V = new Vec3d(r.F64(), r.F64(), r.F64()) };
-        _worldSpace = ((ulong)ns, warp, system, ships);
+        _worldSpace = ((ulong)ns, speed, system, ships);
         _spaceMap = null; // (ServerTickSpace makes the bubble again, at the saved time)
     }
 
@@ -796,7 +796,7 @@ public sealed partial class Game
         if (_worldSpace is not { } w || w.System != system.Name)
             return null;
         var f = new SpaceFlight(system, SpaceShipCapacity, new SpaceTime((long)w.Ns));
-        f.RequestWarp(w.Warp, fromHost: true);
+        f.RequestSpeed(w.Speed, fromHost: true);
         return f;
     }
 

@@ -548,7 +548,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 325: one frame per construct (docs/sandbox/design/construct-frame-notes.md): a player in contraption space rides the
     //   construct's body frame (RideSeg 0) and a moving segment under the feet carries them in it; SnapOwn's ride state gains
     //   u8 RideOn (that segment) after RideGrip.
-    public const ushort ProtocolVersion = 325;
+    // 326: trips between planets (docs/space/COMMAND.md "Between planets", GameNavTrip.cs): Msg.Nav gains u64 arrival and u64 departure (space ns)
+    //   and f32 dV after the radius, and NavPhase gains Depart, Coast, Correct, Brake, Short and Wait at its end; SpaceMsg.Clock gains a u8
+    //   at its end, the host's fuel use in space (percent: ConstructPhysics.SpaceFuelScale).
+    public const ushort ProtocolVersion = 326;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -6,7 +6,7 @@ once, because a Game holds one map.
 
 Route 1 (Karl, 2026-11-05): the host's process runs every planetoid someone is on, one server Game each. This replaced
 route 2 (2026-11-04: the planetoid ran on the game of a player standing on it, with hand-overs and copies), to keep
-clear of desyncs and hand-overs. No time warp, so every world shares one clock.
+clear of desyncs and hand-overs. Every world shares one clock (its time speed is the host's, set in the command view: docs/space/COMMAND.md).
 
 ## The shape: one Game per planetoid
 

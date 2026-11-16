@@ -23,7 +23,7 @@ Each system file may say where it sits:
 - `arrive`: how far from the star a jump arrives (`au`, `km` or `a` in metres). Default (`Galaxy.DefaultArrival`): a quarter
   past the farthest the star's own bodies get, at least half an AU. With `"at": "Cinder"` the distance is from that body
   instead (`StarSystem.ArrivalBody`): the ship arrives in a circular orbit round one of the system's worlds, a short
-  flight from its sky. All five systems do this (there is no time warp to cross half an AU with).
+  flight from its sky. All five systems do this (a jump's arrival should need no long coast).
 
 Refused with a reason: an eleventh file, two systems less than 0.05 ly apart (the later file), unknown keys, a bad `ly`, an
 arrival inside twice the star's (or the named body's) radius or past half the fixed-point reach, an `at` that names no body.
@@ -88,7 +88,7 @@ one):
   their system).
 - Its thrusters still push the ship and A and D turn it. A ship in another system is stepped by that system's own flight
   (`SpaceSession.Away`, made on first use) on the bubble's time (`SpaceFlight.Follow`); ship ids are shared across the
-  galaxy (`SpaceShips.IdTaken`). The warp rule counts those ships too.
+  galaxy (`SpaceShips.IdTaken`). The time speed rule counts those ships too.
 - A parked ship back within 180 km of the bubble's origin (in the bubble's system) is posed from its ship again and can
   fly back down.
 

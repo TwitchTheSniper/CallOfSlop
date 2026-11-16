@@ -12,7 +12,7 @@ public static partial class SelfTest
     /// along the local up, faster the longer it is held. Put just under the sky's edge going up and round, it leaves the
     /// bubble: it becomes a ship round the Planetoid with the construct's state, its physics sleeps, the driver stays
     /// seated and can't get out, and the client sees it where the host has it and an "In space" orbit line. Coasting, the
-    /// construct follows the ship along its two-body orbit, level over the ground; the host's warp runs while the driver only
+    /// construct follows the ship along its two-body orbit, level over the ground; the host's speed runs while the driver only
     /// coasts and drops to 1x on a burn; W adds speed along its heading and D turns it. Sent falling back, it comes in under
     /// the edge as a physics body with the ship's speed and the hover catches it; and the launch tick allocates nothing.
     /// </summary>
@@ -167,7 +167,7 @@ public static partial class SelfTest
             return;
         }
 
-        // ---- Coasting: the construct follows the ship's orbit, level; warp runs ------------------------------------------
+        // ---- Coasting: the construct follows the ship's orbit, level; speed runs ------------------------------------------
         flight.Ships.RelativeOf(si, out _, out var rr, out var rv);
         var tStart = flight.Ships.Time;
         var track = new List<Vector3>(512);
@@ -198,11 +198,11 @@ public static partial class SelfTest
         Line($"space launch: the client's Orbiter {seen:0.00} m from the host's path ({ship.Vel.Length():0} m/s); its line: {line ?? "none"}; lag and loss {(lagged ? "on" : "NOT on")}");
         Want(seen < 1.5f, $"the client draws the ship on the host's path ({seen:0.00} m off it)");
         Want(line != null && line.StartsWith("In space"), $"the client's driver line says it is in space ({line ?? "none"})");
-        // Warp while coasting; a burn drops it to 1x.
-        server.RequestSpaceWarp(50);
+        // Speed while coasting; a burn drops it to 1x.
+        server.RequestTimeSpeed(50);
         PumpFast(server, [a], 1.0, ref now);
-        var coastWarp = flight.Clock.Warp;
-        server.RequestSpaceWarp(1);
+        var coastSpeed = flight.Clock.Speed;
+        server.RequestTimeSpeed(1);
         PumpFast(server, [a], 0.2, ref now);
         si = flight.Ships.IndexOfId(ship.SpaceShip);
         var e0 = si >= 0 ? flight.Ships.KeplerEnergy(si) : 0;
@@ -219,9 +219,9 @@ public static partial class SelfTest
         si = flight.Ships.IndexOfId(ship.SpaceShip);
         var e1 = si >= 0 ? flight.Ships.KeplerEnergy(si) : 0;
         var turned = MathF.Acos(Math.Clamp(Vector3.Dot(yaw0, yaw1), -1, 1)) * 180 / MathF.PI;
-        Line($"space launch: warp coasting {coastWarp}x; W for 2 s: energy {e0:0} to {e1:0} J/kg, {fuel0 - ship.Fuel:0.0} l burnt, busy {burnBusy}; D for 1 s turned it {turned:0} deg");
-        Want(coastWarp == 50, $"the host's warp runs while the driver coasts ({coastWarp}x)");
-        Want(burnBusy && Math.Abs(e1 - e0) > 500 && fuel0 - ship.Fuel > 0.1f, $"W burns: the orbit changes, fuel goes and the warp holds at 1x (energy {e0:0} to {e1:0}, busy {burnBusy})");
+        Line($"space launch: speed coasting {coastSpeed}x; W for 2 s: energy {e0:0} to {e1:0} J/kg, {fuel0 - ship.Fuel:0.0} l burnt, busy {burnBusy}; D for 1 s turned it {turned:0} deg");
+        Want(coastSpeed == 50, $"the host's speed runs while the driver coasts ({coastSpeed}x)");
+        Want(burnBusy && Math.Abs(e1 - e0) > 500 && fuel0 - ship.Fuel > 0.1f, $"W burns: the orbit changes, fuel goes and the speed holds at 1x (energy {e0:0} to {e1:0}, busy {burnBusy})");
         Want(turned > 25 && turned < 70, $"D turns the ship ({turned:0} deg in 1 s)");
 
         // ---- Back in -----------------------------------------------------------------------------------------------------

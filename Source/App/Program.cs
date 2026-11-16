@@ -133,6 +133,8 @@ public static unsafe partial class Program
             return Story.StoryMapPage.Cli(args); // the story map page from Story/Storylets (docs/archive/story/STORY.md; was tools/story/story_map.py)
         if (args.Any(a => a.Equals("--check-story", StringComparison.OrdinalIgnoreCase)))
             return Story.StoryCli.Check(args); // the story data (relations, verbs, patterns, scenarios): what loads, what's refused and why
+        if (args.Any(a => a.Equals("--trip-check", StringComparison.OrdinalIgnoreCase)))
+            return Space.SpaceCli.Trips(args); // headless: the trips an order would plan between a system's planets (Source/Space/NavTrip.cs)
         if (args.Any(a => a.Equals("--space-ships", StringComparison.OrdinalIgnoreCase)))
             return Space.SpaceCli.Ships(args); // headless: demo ships flying in a star system's gravity (Source/Space/SpaceShips.cs)
         if (args.Any(a => a.Equals("--traffic-check", StringComparison.OrdinalIgnoreCase)))
@@ -856,6 +858,12 @@ public static unsafe partial class Program
                     }
                     var paused = game.Net.IsOffline && Ui.PauseOpen;
                     CrashLog.Phase = "game update";
+                    if (game.IsServer)
+                    {
+                        game.TripShare = _settings.TripFuelPercent / 100.0; // (host settings, Settings > Gameplay: GameNavTrip.cs)
+                        game.TimeSpeedMost = _settings.TimeSpeedMost;
+                        game.SpaceFuelPercent = _settings.SpaceFuelPercent;
+                    }
                     if (!paused)
                         using (Perf.Measure(PerfArea.Game))
                             game.Update(now, FrameDt);

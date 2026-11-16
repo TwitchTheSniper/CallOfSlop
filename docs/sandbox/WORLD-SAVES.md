@@ -46,7 +46,7 @@ indices into the part's file.
   wires between constructs, world links and hoses.
 - **Stores:** bins, Storage Volumes, machines' inputs and mixes, Assembler, Recycler, drill and refining jobs in progress.
 - **The world:** the ground's op log (replayed on load), felled trees, regrowth due times, part-cut trees, deposit amounts, the
-  gather clock; the space clock, warp and the ships that are constructs, in the bubble's system and in any other they jumped to
+  gather clock; the space clock, its time speed and the ships that are constructs, in the bubble's system and in any other they jumped to
   (docs/space/GALAXY.md "Saved").
 - **People:** position, health, tool, part in hand, inventory, backpack, built weapons; what they built stays theirs.
 
