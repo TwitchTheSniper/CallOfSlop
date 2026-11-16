@@ -94,6 +94,7 @@ public static class VehicleChecks
             return r;
         }
         Static(c, w, bp, r, o);
+        ConstructWorks.Report(c, r.Notes, r.Failures); // (ship works: a works: line a head, a failure for one its works don't carry whole)
         View(c, r);
         ZFighting(c, r);
         Silhouette(c, r, o);

@@ -15,7 +15,9 @@
       0,
       0.7
     ],
-    "burnRate": 1.8
+    "burnRate": 1.8,
+    "gimbal": 12,
+    "gimbalRate": 20
   },
   "ports": [
     {
@@ -31,6 +33,9 @@
       "face": "+x"
     }
   ],
+  "works": {
+    "service": "outside"
+  },
   "mass": 1800.0,
   "health": 4000,
   "armour": 12,

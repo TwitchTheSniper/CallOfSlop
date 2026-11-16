@@ -85,7 +85,7 @@ public static partial class ConstructRender
                 if (thruster >= 0 && thruster < c.ThrusterCount && c.Thrusters[thruster].Part == i)
                 {
                     if (_fxHost)
-                        return MathF.Max(c.Thrusters[thruster].Level, c.Thrusters[thruster].Ab);
+                        return MathF.Max(c.Thrusters[thruster].Level * c.Thrusters[thruster].Cap, c.Thrusters[thruster].Ab); // (a drive short of its works burns low, as the clients are told)
                     if (c.ThrustHeard)
                         return c.Thrusters[thruster].Shown;
                 }

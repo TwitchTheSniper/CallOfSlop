@@ -15,7 +15,9 @@
       0,
       1.7
     ],
-    "burnRate": 2.25
+    "burnRate": 2.25,
+    "gimbal": 12,
+    "gimbalRate": 20
   },
   "ports": [
     {
@@ -31,6 +33,9 @@
       "face": "+y"
     }
   ],
+  "works": {
+    "service": "outside"
+  },
   "flame": [
     {
       "at": [

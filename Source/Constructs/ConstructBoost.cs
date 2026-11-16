@@ -124,8 +124,8 @@ public static class ConstructBoost
         {
             d.ThrustGimbal = ConstructParts.Num(gim, file, "thruster.gimbal") * MathF.PI / 180f;
             d.GimbalRate = (ConstructParts.Opt(b, "gimbalRate") is { } rate ? ConstructParts.Num(rate, file, "thruster.gimbalRate") : 60f) * MathF.PI / 180f;
-            if (d.ThrustKind is not (ThrustKind.Air or ThrustKind.Rocket) || d.AbForce > 0)
-                throw new ConstructPartException($"{file}: a gimbal is on a jet with no afterburner, or a rocket");
+            if (d.ThrustKind is not (ThrustKind.Air or ThrustKind.Rocket or ThrustKind.Plain) || d.AbForce > 0)
+                throw new ConstructPartException($"{file}: a gimbal is on a jet with no afterburner, a rocket or a plain drive (a ship's pod)");
             d.DataIn = ["throttle", "gimbal pitch", "gimbal yaw"];
         }
         if (ConstructParts.Opt(b, "oxidiser") is { } ox)
@@ -206,7 +206,7 @@ public static class ConstructBoost
     }
 
     /// <summary>A thruster's force as of now, flat out, no afterburner (a stabilizer's mix).</summary>
-    public static float ForceNow(Construct c, ConstructPartDef d) => d.ThrustKind == ThrustKind.Air ? d.ThrustForce * AirShare(c, c.WorldCom) : d.ThrustForce;
+    public static float ForceNow(Construct c, int k) => c.Parts[c.Thrusters[k].Part].D.ThrustKind == ThrustKind.Air ? c.ThrustOf(k) * AirShare(c, c.WorldCom) : c.ThrustOf(k);
 
     /// <summary>How much of its push a repulsor has at this gap: most at the ground, a tenth by half its range, none at its range.</summary>
     public static float Falloff(float gap, float range) => gap >= range ? 0 : MathF.Exp(-4.6f * gap / range) * (1 - gap / range);
@@ -258,7 +258,7 @@ public static class ConstructBoost
             {
                 // A shock absorber in the field: each one damps its own corner, so a hover car doesn't bounce on the spring it rides.
                 var damp = -c.Mass / c.RepulsorCount * 14f * Vector3.Dot(c.PointVel(at), dir) * MathF.Min(1, f * 4);
-                push = Math.Clamp(push + damp, 0, d.ThrustForce * 2);
+                push = Math.Clamp(push + damp, 0, d.ThrustForce * t.Cap * 2);
             }
         }
     }

@@ -31,6 +31,9 @@
       "face": "+x"
     }
   ],
+  "works": {
+    "service": "outside"
+  },
   "flame": [
     {
       "at": [

@@ -671,13 +671,11 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         HatchRail(p, BellyHatch, Ft0);
         // The bulkhead into engineering.
         WallRun(p, true, Cx - Lw, Cx + Lw, 34.125, y0, y1, Door(Cx - 0.75));
-        // Engineering: the drive's feed trunks into the aft wall, a catwalk-grey ceiling of frames.
+        // Engineering: pipes along the ceiling's corners, a catwalk-grey ceiling of frames. The drive's works stand against the aft
+        // wall (a Hull Mount for the drive array through the stern behind it): its Drive Core L in the middle, the Fuel Pump L to
+        // port, the Coolant Exchanger L to starboard behind the ladder; the lift jets' Drive Core M stands forward to port.
         foreach (var s in new[] { -1, 1 })
-        {
-            Detail(p, Cx + s * 3.6 - 0.18, Ft0, ZAft - 0.42, Cx + s * 3.6 + 0.18, y1 - 0.02, ZAft - 0.06, "#c9c2a8", "lagging");
-            Detail(p, Cx + s * 3.6 - 0.19, Ft0 + 0.7, ZAft - 0.43, Cx + s * 3.6 + 0.19, Ft0 + 0.82, ZAft - 0.05, PipeRed, "painted steel");
             Detail(p, Cx + s * (Lw - 0.18) - 0.05, y1 - 0.3, 25.05, Cx + s * (Lw - 0.18) + 0.05, y1 - 0.2, ZAft - 0.5, s < 0 ? PipeRed : PipeBlue, "painted steel");
-        }
         foreach (var z in new[] { 36.5, 39.0 })
             Detail(p, Cx - Lw + 0.1, y1 - 0.2, z - 0.07, Cx + Lw - 0.1, y1 - 0.012, z + 0.07, Frame, "dirty steel");
         CeilStrip(p, Cx - 0.6, Cx + 0.6, 25.1, 29.9, y1);
@@ -714,12 +712,18 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         Sock(p, "airlockLocker", Cx + Lw, Ft0 + 0.125, 33.3, "-x");
         Sock(p, "reactor", Cx + 2.4, Ft0, 37.6, "+y");
         Sock(p, "board", Cx + Lw, Ft0 + 0.9, 40.6, "-x");
-        Sock(p, "panel", Cx - Lw, Ft0 + 0.6, 37.0, "+x");
+        Sock(p, "panel", Cx - Lw, Ft0 + 0.6, 38.0, "+x");
         Sock(p, "battery0", Cx - 3.9, Ft0, 39.0, "+y");
         Sock(p, "battery1", Cx - 3.9, Ft0, 39.5, "+y");
         Sock(p, "battery2", Cx - 3.9, Ft0, 40.0, "+y");
-        Sock(p, "pipes", Cx - 2.2, Ft0 + 2.75, ZAft, "-z");
-        Sock(p, "toolRack", Cx - Lw, Ft0 + 0.9, 35.4, "+x");
+        Sock(p, "pipes", Cx - 2.7, Ft0 + 2.75, 34.25, "+z"); // (over the lift core, on the bulkhead's aft face)
+        Sock(p, "toolRack", Cx + 3.0, Ft0 + 0.9, 34.25, "+z");
+        // The drive's works on the aft wall, each at its own half height so it stands on the deck (Drive Core L 2.6 m tall, Fuel
+        // Pump L 1.5, Coolant Exchanger L 2.2), and the lift jets' core on the deck.
+        Sock(p, "driveCore", Cx, Ft0 + 1.3, ZAft, "-z");
+        Sock(p, "drivePump", Cx - 2.55, Ft0 + 0.75, ZAft, "-z");
+        Sock(p, "driveExchanger", Cx + 2.7, Ft0 + 1.1, ZAft, "-z");
+        Sock(p, "liftCore", Cx - 3.1, Ft0, 35.85, "+y");
         Sock(p, "ladder", AftHatch.X0 + 0.625, Ft0, AftHatch.Z1 - 0.095, "+y");
         Sock(p, "crate0", Cx + 3.6, Ft0, 29.5, "+y");
         Sock(p, "crate1", Cx - 3.6, Ft0, 29.5, "+y");
@@ -1078,7 +1082,8 @@ public sealed class TorpedoFrigateParts : IPartGenerator
 
     private static Part SternPart()
     {
-        var p = Big("Zero Day Stern", "The Zero Day's stern: the hull flares out to carry the drive array across its whole width. The drive's tankage is inside.", "fueltank", Armour);
+        var p = Big("Zero Day Stern", "The Zero Day's stern: the hull flares out to carry the drive array across its whole width. The drive's tankage is inside, and its works bolt to the engineering wall in front of it.", "fueltank", Armour);
+        Works.Mount(p); // (the drive array's mount: its works stand on the aft wall welded to it)
         foreach (var (za, zb) in new[] { (42.0, 44.0), (44.0, Stern) })
         {
             Facet(p, 0, 1, za, zb, Armour, "plated steel");
@@ -1227,13 +1232,17 @@ public sealed class TorpedoFrigateParts : IPartGenerator
 
     // ---- the drive array, the lift and retro jets, the legs
 
-    private const double DriveForce = 9000000, LiftForce = 1500000, RetroForce = 1200000, Burn = 2.5;
+    private const double DriveForce = 9000000, LiftForce = 1500000, RetroForce = 1200000;
+
+    // The drive array and the lift jets are hull drives with their works in engineering (ship-works.md, a class 3 torch: Drive
+    // Cores, a Fuel Pump and a Coolant Exchanger), so they burn a hull drive's 2 l/s a MN; the retros are pods in the bow's cheeks.
+    private const double Burn = ShipWorksParts.HullBurn, RetroBurn = ShipWorksParts.PodBurn;
 
     /// <summary>The drive array across the whole stern: four bells side by side in one armoured collar, heat-sink plates between them,
     /// a link-blue glow deep in each. Origin on the stern face; pushes along -z (its exhaust +z).</summary>
     private static Part Drive()
     {
-        var p = new Part("Zero Day Drive Array", Small, Section, $"The Zero Day's drive: four bells in one armoured collar the width of the ship, {DriveForce / 1e6:0} MN from the stern's tankage.", role: "thruster", tool: "wrench", material: "steel", color: Frame, group: Group);
+        var p = new Part("Zero Day Drive Array", Small, Section, $"The Zero Day's drive: four bells in one armoured collar the width of the ship, {DriveForce / 1e6:0} MN from the stern's tankage. Its Drive Core, Fuel Pump and Coolant Exchanger stand in engineering.", role: "thruster", tool: "wrench", material: "steel", color: Frame, group: Group);
         // The collar: a faceted frame matching the stern's outline, standing 1.2 m off it.
         var q = At(Stern);
         double[][] Outline(double z, double grow, double dy) => [.. Enumerable.Range(0, 5).Select(k => new[] { Py.Round(q[k].H * grow, 4), Py.Round(q[k].Y - 2.6 + dy, 4), z }).Concat(Enumerable.Range(0, 5).Reverse().Select(k => new[] { Py.Round(-q[k].H * grow, 4), Py.Round(q[k].Y - 2.6 + dy, 4), z }))];
@@ -1273,12 +1282,14 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         p.Set(("thruster", Kw(("force", DriveForce), ("spool", 2.0), ("exhaust", "+z"), ("at", Py.L(0, 0.2, 3.3)), ("burnRate", Py.Round(DriveForce / 1e6 * Burn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [0, 1.0, 0], "-z", "fuel"))));
         // One flame out of each bell, as wide as its mouth (the default flame is one from the middle, as wide as 9 MN asks: 12 m across).
         p.Set(("flame", Py.L([.. new[] { -4.35, -1.45, 1.45, 4.35 }.Select(x => (object?)Kw(("at", Py.L(x, 0.2, 3.3)), ("dir", "+z"), ("radius", 1.15), ("length", 9.0), ("kind", "Rocket")))])));
+        Works.Head(p, Works.Table(), "torch", DriveForce);
         return p.Stats(16000, 20000, 35, 20.0);
     }
 
     /// <summary>A jet in a squat armoured housing: lift (down) or retro (forward). Origin at its root; the bell along -y.</summary>
-    private static Part Jet(string name, string desc, double force, double scale)
+    private static Part Jet(string name, string desc, double force, double scale, bool pod)
     {
+        var burn = pod ? RetroBurn : Burn;
         var p = new Part(name, Small, Section, desc, role: "thruster", tool: "wrench", material: "steel", color: Frame, group: Group);
         double[] R(double r, double y, int i, int n = 8)
         {
@@ -1295,7 +1306,8 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         p.Add(Box([-0.45 * scale, -0.45 * scale, -0.45 * scale], [0.45 * scale, 0, 0.45 * scale], hidden: true));
         p.Add(Box([-0.4 * scale, -1.05 * scale, -0.4 * scale], [0.4 * scale, -0.45 * scale, 0.4 * scale], hidden: true));
         p.Sock("top", [0, 0, 0], "+y");
-        p.Set(("thruster", Kw(("force", force), ("spool", 0.5), ("exhaust", "-y"), ("at", Py.L(0, Py.Round(-1.05 * scale, 4), 0)), ("burnRate", Py.Round(force / 1e6 * Burn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [Py.Round(0.45 * scale, 4), Py.Round(-0.2 * scale, 4), 0], "+x", "fuel"))));
+        p.Set(("thruster", Kw(("force", force), ("spool", 0.5), ("exhaust", "-y"), ("at", Py.L(0, Py.Round(-1.05 * scale, 4), 0)), ("burnRate", Py.Round(force / 1e6 * burn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [Py.Round(0.45 * scale, 4), Py.Round(-0.2 * scale, 4), 0], "+x", "fuel"))));
+        Works.Head(p, Works.Table(), "torch", force, pod);
         // The flame out of the bell's mouth, as wide as it (the default would be 5 m across from a 1 m bell).
         p.Set(("flame", Py.L(Kw(("at", Py.L(0, Py.Round(-1.05 * scale, 4), 0)), ("dir", "-y"), ("radius", Py.Round(0.4 * scale, 4)), ("length", Py.Round(2.8 * scale, 4)), ("kind", "Rocket")))));
         return p.Stats(900 * scale, 3000, 20, 6.0);
@@ -1855,6 +1867,11 @@ public sealed class TorpedoFrigateParts : IPartGenerator
             Hang(bp, "Zero Day Landing Leg", keel, n, "top");
         foreach (var n in new[] { "retroL", "retroR" })
             Hang(bp, "Zero Day Retro Jet", bow, n, "top");
+        // Their works in engineering: the drive's on the aft wall, the lift jets' core on the deck.
+        Hang(bp, "Drive Core L", la, "driveCore", "front");
+        Hang(bp, "Fuel Pump L", la, "drivePump", "front");
+        Hang(bp, "Coolant Exchanger L", la, "driveExchanger", "front");
+        Hang(bp, "Drive Core M", la, "liftCore", "deck");
         // Ladders: the boarding ladder up the shaft, two between the decks.
         Hang(bp, "Zero Day Boarding Ladder", la, "boarding", "hull");
         Hang(bp, "Zero Day Ladder", lf, "ladder", "bottom");
@@ -1995,13 +2012,18 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         structure.AddRange(SplitDeck(UpperAft(), "Upper Aft"));
         structure.AddRange(SplitBands(Spine(), "Spine", 12.0)); // (the band over the bridge, where it sits on the upper deck)
         structure.AddRange([Bow(), SternPart(), Sponson(-1), Sponson(1)]);
+        // The works' mounts (ship-works.md): the keel's lengths (the lift jets' mount) and the lower decks' floors over them, and the
+        // engineering wall the drive's works stand on, welded to the stern. One assembly: the drive's and the lift jets' cores pool.
+        foreach (var q in structure)
+            if (((string)q.D["name"]!).StartsWith("Zero Day Keel") || (string)q.D["name"]! is "Zero Day Lower Deck Fore" or "Zero Day Lower Deck Aft" || q.Sockets.Any(k => (string)k["name"]! == "driveCore"))
+                Works.Mount(q);
         Connect(structure);
         Structure = PlaceOrder(structure, "Zero Day Keel");
         List<Part> parts =
         [
             .. structure, Barbette(), Drive(),
-            Jet("Zero Day Lift Jet", $"A lift jet under the Zero Day's keel: {LiftForce / 1e6:0.0} MN straight down.", LiftForce, 1.4),
-            Jet("Zero Day Retro Jet", $"A retro jet in the Zero Day's cheek: {RetroForce / 1e6:0.0} MN forward, to slow it down.", RetroForce, 1.0),
+            Jet("Zero Day Lift Jet", $"A lift jet under the Zero Day's keel: {LiftForce / 1e6:0.0} MN straight down. The keel is its mount, and its Drive Core stands in engineering.", LiftForce, 1.4, pod: false),
+            Jet("Zero Day Retro Jet", $"A retro jet in the Zero Day's cheek: {RetroForce / 1e6:0.0} MN forward, to slow it down. A pod: its works are in its housing, mended from outside.", RetroForce, 1.0, pod: true),
             Leg(),
             Ladder("Zero Day Ladder", Ft1 - Ft0, "A ladder between the Zero Day's decks: F climbs it.", "bottom", [0, 0, -0.095], "-y"),
             Ladder("Zero Day Boarding Ladder", Ft0 - Ground, "The Zero Day's boarding ladder, from the ground up the shaft into the airlock: F climbs it.", "hull", [0, Ft0 - Ground - 0.125, -0.005], "+z"),

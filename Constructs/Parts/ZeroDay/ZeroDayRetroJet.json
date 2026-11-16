@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Zero Day Retro Jet",
-  "description": "A retro jet in the Zero Day's cheek: 1.2 MN forward, to slow it down.",
+  "description": "A retro jet in the Zero Day's cheek: 1.2 MN forward, to slow it down. A pod: its works are in its housing, mended from outside.",
   "group": "Ship",
   "section": "Zero Day frigate",
   "role": "thruster",
@@ -15,7 +15,7 @@
       -1.05,
       0
     ],
-    "burnRate": 3.0
+    "burnRate": 2.88
   },
   "ports": [
     {
@@ -31,6 +31,9 @@
       "face": "+x"
     }
   ],
+  "works": {
+    "service": "outside"
+  },
   "flame": [
     {
       "at": [

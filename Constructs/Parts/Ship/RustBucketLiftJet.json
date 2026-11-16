@@ -31,6 +31,9 @@
       "face": "-x"
     }
   ],
+  "works": {
+    "service": "outside"
+  },
   "mass": 2500.0,
   "health": 4000,
   "armour": 12,

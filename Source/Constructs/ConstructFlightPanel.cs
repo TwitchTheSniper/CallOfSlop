@@ -38,7 +38,7 @@ public sealed partial class Construct
         for (var k = 0; k < ThrusterCount; k++)
         {
             ref var t = ref Thrusters[k];
-            var f = Parts[t.Part].D.ThrustForce;
+            var f = ThrustOf(k); // (what its works let it push)
             sum += t.At * f;
             push += t.Dir * f;
             weight += f;

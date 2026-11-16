@@ -1,0 +1,326 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Drive Pod M",
+  "description": "A drive pod, 5 MN: nozzle and works in one cowl, hung outside on a pylon (its top) or a nacelle's tail (its front). It turns the ship with its 12 degree gimbal and takes no room inside, but it has only the cowl's armour and is mended at the pod: on a space walk, or landed. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "thruster",
+  "tool": "wrench",
+  "thruster": {
+    "force": 5000000.0,
+    "spool": 1.5,
+    "exhaust": "+z",
+    "at": [
+      0,
+      0,
+      6.193
+    ],
+    "burnRate": 12.0,
+    "gimbal": 12,
+    "gimbalRate": 20
+  },
+  "ports": [
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        0,
+        1.07,
+        3.825
+      ],
+      "face": "+y"
+    }
+  ],
+  "flame": [
+    {
+      "at": [
+        0,
+        0,
+        6.193
+      ],
+      "dir": "+z",
+      "radius": 1.029,
+      "length": 4.84,
+      "kind": "Rocket"
+    }
+  ],
+  "works": {
+    "service": "outside"
+  },
+  "mass": 5200.0,
+  "health": 5000,
+  "armour": 12,
+  "material": "steel",
+  "color": "#5a6065",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -1.1,
+        -1.1,
+        0.0
+      ],
+      "max": [
+        1.1,
+        1.1,
+        0.81
+      ],
+      "color": "#5a6065",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "taper": [
+        0.72,
+        0.72
+      ],
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -1.1,
+        -1.1,
+        0.81
+      ],
+      "max": [
+        1.1,
+        1.1,
+        4.5
+      ],
+      "color": "#5a6065",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -1.13,
+        -1.13,
+        2.475
+      ],
+      "max": [
+        1.13,
+        1.13,
+        2.7
+      ],
+      "color": "#d8a020",
+      "detail": true,
+      "shape": "tube",
+      "segments": 16,
+      "inner": 0.973,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.682,
+        -0.682,
+        4.44
+      ],
+      "max": [
+        0.682,
+        0.682,
+        4.62
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -1.089,
+        -1.089,
+        4.62
+      ],
+      "max": [
+        1.089,
+        1.089,
+        6.193
+      ],
+      "color": "#2a2c2e",
+      "detail": true,
+      "shape": "tube",
+      "segments": 16,
+      "inner": 0.9,
+      "taper": [
+        0.5,
+        0.5
+      ],
+      "finish": "soot"
+    },
+    {
+      "min": [
+        -0.484,
+        -0.484,
+        4.64
+      ],
+      "max": [
+        0.484,
+        0.484,
+        4.66
+      ],
+      "color": "#ffb060",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        1.07,
+        -0.385,
+        1.35
+      ],
+      "max": [
+        1.13,
+        0.385,
+        2.34
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        1.13,
+        -0.385,
+        1.35
+      ],
+      "max": [
+        1.15,
+        0.385,
+        1.4
+      ],
+      "color": "#d8a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.13,
+        -0.385,
+        2.29
+      ],
+      "max": [
+        1.15,
+        0.385,
+        2.34
+      ],
+      "color": "#d8a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.15,
+        -0.06,
+        1.725
+      ],
+      "max": [
+        1.21,
+        0.06,
+        1.965
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -1.26,
+        -0.03,
+        1.097
+      ],
+      "max": [
+        -1.08,
+        0.03,
+        1.155
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -1.26,
+        -0.03,
+        3.345
+      ],
+      "max": [
+        -1.08,
+        0.03,
+        3.405
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -1.29,
+        -0.025,
+        1.095
+      ],
+      "max": [
+        -1.24,
+        0.025,
+        3.403
+      ],
+      "color": "#d8a020",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.55,
+        -1.11,
+        0.9
+      ],
+      "max": [
+        0.55,
+        -1.05,
+        1.8
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "soot"
+    },
+    {
+      "min": [
+        -0.77,
+        -0.77,
+        0.0
+      ],
+      "max": [
+        0.77,
+        1.07,
+        4.5
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "pylon",
+      "at": [
+        0.0,
+        1.07,
+        2.25
+      ],
+      "dir": "+y"
+    }
+  ]
+}
