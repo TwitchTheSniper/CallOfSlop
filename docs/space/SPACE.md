@@ -193,8 +193,9 @@ Not in phase 3 yet:
 ## Leaving the bubble: `Game/GameSpaceLaunch.cs`
 
 Travel is by built ships (Karl, 2026-11-03). On a planetoid map played in a star system, a free construct whose centre of
-mass climbs past the **sky's edge** (the map's half size from the planet's centre, where players' sky already ends:
-`World.ClampToSky`; 12.6 km on the Planetoid, so 2.6 km above its radius) becomes a ship of the host's `SpaceFlight`: a
+mass climbs past the **sky's edge** (the map's half size from the planet's centre; 12.6 km on the Planetoid, so 2.6 km above its radius;
+players in Sandbox may go on past it, to `World.OpenSkyRadius` from the centre, so one who steps off a ship in orbit floats
+free) becomes a ship of the host's `SpaceFlight`: a
 test particle round the Planetoid in the gravity of every body on rails, coasting on the symplectic step or on rails, at
 any warp. Its state is the construct's, through the bubble's frame (the ground's spin added).
 
