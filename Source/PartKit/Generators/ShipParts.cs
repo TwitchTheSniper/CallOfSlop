@@ -65,7 +65,7 @@ public sealed class ShipParts : IPartGenerator
     // Zero Day's do, not rooms filling the shell). Aft of the cockpit the rooms have their own walls at these half widths (Lw the
     // hold and the engine room, Uw the upper deck), with a gap of a metre or more out to the skin; hidden voids fill the gap so a
     // round still stops at the skin. The cockpit keeps the whole nose (InHigh), so the canopy's windows are its walls, and the hold
-    // follows the skin in where the nose narrows round the ramp. A socket on the hull's inside is on those walls' faces.
+    // has a straight bay at its front, as wide as the ramp lets it be (no walls stepping in with the nose). A socket on the hull's inside is on those walls' faces.
     private const double InLow = 4.63, InHigh = 4.73;
     private const double Lw = 3.75, Uw = 3.5, WallT = 0.06;
     private const double CockpitBack = 4.125; // (the cockpit's back partition's aft face: the upper rooms' walls start here)
@@ -258,19 +258,30 @@ public sealed class ShipParts : IPartGenerator
     private static readonly (double Y0, double Y1, double In)[] Levels = [(0.0, F1, InLow), (F1T, CeilT, InHigh)];
 
     /// <summary>A storey's room half width over z0..z1: its wall line, less where the skin comes in.</summary>
+    /// <summary>The hold's front (Karl, 2026-11-16: no floor or walls stepping in with the nose) is a straight bay as wide as the
+    /// ramp's mouth lets it be, from the ramp to <see cref="HoldWallFront"/>, where a flat wall steps out to the hold's own.</summary>
     private static double RoomHalf(int level, double z0, double z1)
+    {
+        var raw = SkinHalfIn(level, z0, z1);
+        return level == 0 && raw < Lw - 1e-6 ? BayHalf : raw;
+    }
+
+    private static double SkinHalfIn(int level, double z0, double z1)
     {
         var (y0, y1, _) = Levels[level];
         var inner = level == 0 ? Lw : z1 <= CockpitBack + 1e-6 ? InHigh : Uw;
         return Cm(Math.Min(inner, SkinMin(z0, z1, y0, y1) - 0.08));
     }
 
-    /// <summary>Whether a strip of a storey has the rooms' own wall (a room box in the hull), not the skin, at its sides.</summary>
-    private static bool BoxWalled(int level, double z0, double z1) =>
-        level == 0 ? RoomHalf(0, z0, z1) >= Lw - 1e-6 : z0 >= CockpitBack - 1e-6;
+    /// <summary>The ramp bay's half width: the narrowest the nose allows at the ramp, less room for the wall's void.</summary>
+    private static double BayHalf => Cm(Strips(LowFront, Back, RoomCuts(0)).Min(t => SkinHalfIn(0, t.Z0, t.Z1)) - 0.04);
+
+    /// <summary>Whether a strip of a storey has the rooms' own wall (a room box in the hull), not the skin, at its sides: the whole
+    /// lower deck (the hold, its ramp bay and the engine room), and the upper deck aft of the cockpit.</summary>
+    private static bool BoxWalled(int level, double z0, double z1) => level == 0 || z0 >= CockpitBack - 1e-6;
 
     /// <summary>Where the hold's own walls start: the first strip aft of the nose wide enough for them.</summary>
-    private static double HoldWallFront => Strips(LowFront, Back, RoomCuts(0)).First(t => BoxWalled(0, t.Z0, t.Z1)).Z0;
+    private static double HoldWallFront => Strips(LowFront, Back, RoomCuts(0)).First(t => SkinHalfIn(0, t.Z0, t.Z1) >= Lw - 1e-6).Z0;
 
     /// <summary>A storey's strip cuts: the stair's opening, and upstairs the partitions across the rooms (where a wall's paint changes).</summary>
     private static double[] RoomCuts(int level) => level == 0 ? [.. StairCuts, 12.0] : [.. StairCuts, CockpitBack, 8.0, 12.0];
@@ -326,7 +337,7 @@ public sealed class ShipParts : IPartGenerator
         foreach (var (z0, z1) in Strips(front, Back, [.. holes.SelectMany(h => new[] { h.Z0, h.Z1 }), .. RoomCuts(level)]))
         {
             // (where the rooms are a box, the floor stops under their walls, upstairs over the hold's, and the gap to the skin is open;
-            // the cockpit's runs out to the skin, and the hold's front to its walls)
+            // the cockpit's runs out to the skin, and the ramp bay to its walls)
             var w = BoxWalled(level, z0, z1) ? (level == 0 ? RoomHalf(0, z0, z1) : Lw) + WallT : level == 0 ? RoomHalf(0, z0, z1) : Cm(SkinMin(z0, z1, y0, y1) - 0.03);
             double xa = Cx - w, xb = Cx + w;
             var xs = new List<(double, double)> { (xa, xb) };
@@ -340,7 +351,7 @@ public sealed class ShipParts : IPartGenerator
 
     /// <summary>The walls round a storey. Where the rooms are a box in the hull, each side gets the room's own wall (painted plate,
     /// a dark kick strip along its foot), one run per hull piece, and hidden voids from its back out to the skin; where they hug the
-    /// skin (the cockpit, the hold's front), only the hidden wall from the room's face out to the skin. A cap at the back (and the
+    /// skin (the cockpit), only the hidden wall from the room's face out to the skin. A cap at the back (and the
     /// front, upstairs). They are hull runs: the splitter deals them to the hull pieces and the frames.</summary>
     private static void HullWalls(Part p, int level)
     {
@@ -391,12 +402,16 @@ public sealed class ShipParts : IPartGenerator
             }
             else
             {
-                // The hold's front: where its own walls start aft of the nose, a plate each side closing the gap to the skin.
+                // The ramp bay's aft end: where the hold's own walls start, a flat plate each side from the bay's wall (3 mm into it,
+                // no shared face) out to the skin.
                 var z = HoldWallFront;
+                var bi = BayHalf + 0.003;
                 foreach (var s in new[] { -1, 1 })
                 {
                     double OutAt(double y) => Math.Max(Lw + WallT, SkinHalf(z, y) - 0.03);
-                    double[][] Tri(double zz) => [P(Cx + s * Lw, F0, zz), P(Cx + s * OutAt(F0), F0, zz), P(Cx + s * OutAt(F1), F1, zz), P(Cx + s * Lw, F1, zz)];
+                    // (4 mm inside the bay wall's top and foot, which it overlaps)
+                    double ya = F0 + 0.004, yb = F1 - 0.004;
+                    double[][] Tri(double zz) => [P(Cx + s * bi, ya, zz), P(Cx + s * OutAt(ya), ya, zz), P(Cx + s * OutAt(yb), yb, zz), P(Cx + s * bi, yb, zz)];
                     Prism(p, Tri(z - 0.06), Tri(z - 0.004), Wall, "painted plating");
                 }
             }
