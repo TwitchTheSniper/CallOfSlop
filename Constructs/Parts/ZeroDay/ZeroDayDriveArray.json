@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Zero Day Drive Array",
-  "description": "The Zero Day's drive: four bells in one armoured collar the width of the ship, 9 MN from the stern's tankage. Its Drive Core, Fuel Pump and Coolant Exchanger stand in engineering.",
+  "description": "The Zero Day's drive: four bells in one armoured collar the width of the ship, 9 MN from the stern's tankage. Its works run forward from engineering's aft wall as one cylinder: a Drive Core, a Fuel Pump and a Coolant Exchanger.",
   "group": "Ship",
   "section": "Zero Day frigate",
   "role": "thruster",
