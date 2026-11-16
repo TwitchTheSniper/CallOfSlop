@@ -6,13 +6,7 @@ Design only (2026-11-16). No code changed, nothing built, nothing run. Written f
 
 The user's ask (2026-11-16): one design covering all AI, bots and crew in Sandbox, so the separate systems become one.
 
-Sources read (excerpts): `ConstructShipAi.cs`, `GameSandboxShipAi.cs`, torpedo-frigate.md "The crew", `GameSandboxAircraft.cs`
-and `AircraftPilot.cs` (orders), `GameSandboxSpawns.cs` (header, caps), `GameSandboxBreakdowns.cs` (header),
-`GameRobotShell.cs` (header), `GameSandboxFactions.cs` and `Factions.cs` (headers, owner bytes), `GameSandboxVehicles.cs`
-(header), `Bots.cs`, `BotMove.cs`, `BotCombat.cs` (signatures), `StoryHtn.cs`, `StoryAgents.cs` (headers), `Story/Factions/*.json`
-(head), docs/vehiclekit/SPAWNING.md "Behaviour data", MASS-HORDE.md "The tiers", SURVIVAL.md, INTERIORS.md (head),
-VEHICLE-WEAPONS.md (gunners note), ship-works.md section 7, construct-frame-notes.md, linked-logistics.md 6.4-6.5,
-`CrewFittingsParts.cs` (header), git log -12.
+Sources: the files and docs named in section 1, read in excerpts.
 
 Not verified, for phase 0 of the first builder: what one bodied bot `Player` costs a tick on its own (movement, sight, aim) with
 no arena brain; whether a bot `Player` can sit through `ConstructEdits.Use` and be carried by `SandboxHands` like a person
@@ -32,21 +26,17 @@ whether `Msg.Factions` still carries `StoryNames`/`StoryStanding` with the story
 
 ## 1. What exists today
 
-| Thing | What it does | Body? | Where |
-| --- | --- | --- | --- |
-| Ship AI crew (Karl, 2026-11-15) | A Flight Stabilizer setting (Off, Fights strangers, Fights everyone). Works the ship's own seats by writing their keys and aim (`ShipAi.Seat`): pilot through mouse aim, Shift/Ctrl, W/S, Q/E; gunners lay and fire turrets within 4 degrees (2.5 fixed); Buttons wired to Ordnance Racks every 8 s; flares. Target: nearest living player in 2.5 km. A player at the helm stands it down. Not saved (the setting is). | None: seats get `CPart.Occupied` without a sitter | `ConstructShipAi.cs`, `GameSandboxShipAi.cs`, `ShipAiCheck.cs` |
-| Aircraft bot pilots | Hold, Patrol, Goto, Return, Land through the stabilizer's autopilot; at most 32 (`MaxPilots`); air escorts for convoys | None | `GameSandboxAircraft.cs`, `AircraftPilot.cs` |
-| Spawned bots | The arena `BotBrain` on foot (difficulty, gun, side), from the Spawn tab and the Bot Spawner part; each one is a `Player` with an id above the people's seats (`SpawnBotCapMax = MaxPlayers 224 - MaxPeople`) | Yes, a full `Player` | `GameSandboxSpawns.cs`, `Bots*.cs`, `BotNav*.cs` |
-| Faction ground vehicles and convoys | Generated and set down with a **brief** (guns and arcs, seats and what each controls, weak points, keep-away side, steering, entries, loot). Nothing reads the brief; nothing drives them | None | `VehicleSpawn`, `VehicleBrief*.cs`, `VehicleConvoys.cs` |
-| Mass horde | Zombies in three tiers (individuals, crowd particles, mass counts) | Tiered | `Source/Game/Horde/` |
-| Robot shells | A player in a Shell Control Chair wakes in a Robot Shell and plays it as themselves | The player's | `GameRobotShell.cs`, `ConstructShell*.cs` |
-| Breakdowns | Every crewed player ship's drive parts warn, then fail; mended at the part or the Engineer's Panel. Skips ships with an AI crew | - | `GameSandboxBreakdowns.cs` |
-| Sentries | A gun with a proximity sensor wired in aims and fires by itself | - | weapons.md "A sentry" |
-| Story people (archived) | Needs fall, goals scored by utility, the best planned by a bounded, allocation-free HTN over verbs; a few think per tick | Had bodies | `StoryAgents.cs`, `StoryHtn.cs` |
-| Factions | Player factions (32, keyed by owner byte, a stance table); the story's factions are archived but the table still has `StoryNames`, `StoryStanding` (16 x 32) | - | `Factions.cs` |
-| Crew fittings | Crash Couch (respawn bunk), Flight Couch, Gunnery Console, Galley Coffee Station, Robot Charging Cradle on every ship | - | `CrewFittingsParts.cs` |
-| The construct frame | One frame per moving construct (2 m round its bounds), bodies spawned aboard take its motion, leaving keeps momentum; bots' plain ride rides it | - | `ConstructRide*.cs` |
-| Linked logistics (design) | Route orders (2 to 4 stops, Dock/Undock), the Dispatcher sends registered ships | - | linked-logistics.md 6.4, 6.5 |
+| Thing | What it does today | Body? |
+| --- | --- | --- |
+| Ship AI crew (Karl, `ConstructShipAi.cs`, `GameSandboxShipAi.cs`) | A Flight Stabilizer setting (Off, Fights strangers, Fights everyone) that writes the ship's seats' keys and aim (`ShipAi.Seat`): flies, lays and fires turrets, launches racks, fires flares at the nearest player in 2.5 km; a player at the helm stands it down; not saved | None: seats get `CPart.Occupied` with no sitter |
+| Aircraft pilots (`GameSandboxAircraft.cs`, `AircraftPilot.cs`) | Hold, Patrol, Goto, Return, Land through the stabilizer's autopilot; 32 at most | None |
+| Spawned bots (`GameSandboxSpawns.cs`) | The arena `BotBrain` on foot; each a `Player` with an id above the people's (`SpawnBotCapMax = 224 - MaxPeople`) | A full `Player` |
+| Faction vehicles, convoys (`VehicleSpawn`, `VehicleBrief*`) | Set down with a **brief** (guns and arcs, seats and what each controls, weak points, keep-away side, steering, entries, loot). Nothing reads it; nothing drives them | None |
+| Mass horde, robot shells, sentries | Zombies in three tiers; a player wearing a shell; a gun with a proximity sensor firing by itself | - |
+| Breakdowns (`GameSandboxBreakdowns.cs`) | Crewed player ships' drives warn then fail; mended at the part or the Engineer's Panel; ships with an AI crew skipped | - |
+| Story people, HTN (archived) | Utility-scored goals planned by a bounded, allocation-free HTN; a few think per tick | Had bodies |
+| Factions (`Factions.cs`) | 32 player factions by owner byte; the archived story's `StoryNames`, `StoryStanding` (16 x 32) still in the table | - |
+| Crew fittings, construct frame, linked logistics | Couches, Gunnery Console, Charging Cradle; one frame per moving construct; route orders and the Dispatcher (design) | - |
 
 The finding: four brains (ship crew, aircraft pilot, arena bot, horde) that share no perception, no targets and no idea of a
 faction; none puts a body in a seat; ground faction vehicles have no driver at all. Karl's crew is the best of them and
@@ -66,8 +56,6 @@ the right driving code to keep: what changes is who is allowed to press the keys
   A beaten crew surrenders, hands up; take the helm and the ship is yours.
 - **Your own crew** (section 9): Robot Shells you built stand in their cradles; assign one to a gunnery console or the helm
   in the Crew window and it works that station for you, by the same brain. Your crew never stops you driving by hand.
-- **Look line** on any crew member: name, faction, job, what they are doing ("gunner, Turret 2: firing"; "engineer:
-  arming the scuttle charge, 23 s").
 
 ## 3. The brain's shape
 
@@ -160,18 +148,227 @@ turntables carry riders). They need a path inside:
 
 ## 6. Jobs
 
-| Job | Station | What the driver does | Reads | Phase |
-| --- | --- | --- | --- | --- |
-| **Pilot** | Helm (drive seat / stabilizer seat) | Ships: Karl's flying. Aircraft: `AircraftPilot`'s orders. Ground: follow a path, a leader, keep the brief's `KeepAway` side off the enemy, hold `Engage` range for its gunners, brake to stop. Walkers and giants: the same through the Driving Module's keys, slower turn caps | Brief (`Steer`, `TurnRadius`, `TopSpeed`, `Climb`, `TipSide`), contacts, orders | 1 (ships, air), 2 (ground) |
-| **Gunner** | A gunner's seat or Gunnery Console | Karl's laying and firing; launch buttons; flares. Ground: the brief's `Clear` bins before firing | Contacts, `CGun`, brief `Guns[]` | 1 |
-| **Engineer** | Engineer's Panel, works pieces, fires | Sees to breakdown warnings, mends broken works pieces (same act and cost as a player's), puts out fires; in a boarding, the one who scuttles | `GameSandboxBreakdowns` state, works health | 4 |
-| **Loader** | Magazine, racks, autoloader feed | Carries reloads to a rack or feed by hand when a gunner runs low | Ammo counts, brief `Stowed` | 4 |
-| **Hauler** | Store, machines, Cargo Dock | Carries crates and pieces inside a body ("players and bots carry things by hand", INTERIORS.md), works a dock's exchange | Logistics network's moves | 7 |
-| **Crane operator** | Loader Arm, Bridge Crane seats | Pick and put by the lifters' points | Lifters' pick and put points | 7 |
-| **Guard / marine** | A room or choke point | Holds it with a hand gun; repels boarders | Contacts aboard, interior rooms | 5 |
-| **Spotter** | Beside a capital gun | Shares a target's range and lead with its gunners (tighter bearing tolerance) | Contacts | 7 |
-| **Builder drone** | A building station's bay | Works a station's job beside its arms (later, its own design) | Building station jobs | 7 |
-| **Passenger / rest** | Couch, cradle, galley | Spare crew wait here and fill a station that empties | - | 1 |
+| Job | Station | What the driver does | Phase |
+| --- | --- | --- | --- |
+| **Pilot** | Helm (drive seat / stabilizer seat) | Ships: Karl's flying. Aircraft: `AircraftPilot`'s orders. Ground: follow a path, a leader, keep the brief's `KeepAway` side off the enemy, hold `Engage` range for its gunners, brake to stop. Walkers and giants: the same through the Driving Module's keys, slower turn caps | 1 (ships, air), 2 (ground) |
+| **Gunner** | A gunner's seat or Gunnery Console | Karl's laying and firing; launch buttons; flares. Ground: the brief's `Clear` bins before firing | 1 |
+| **Engineer** | Engineer's Panel, works pieces, fires | Sees to breakdown warnings, mends broken works pieces (same act and cost as a player's), puts out fires; in a boarding, the one who scuttles | 4 |
+| **Loader** | Magazine, racks, autoloader feed | Carries reloads to a rack or feed by hand when a gunner runs low | 4 |
+| **Hauler** | Store, machines, Cargo Dock | Carries crates and pieces inside a body ("players and bots carry things by hand", INTERIORS.md), works a dock's exchange | 7 |
+| **Crane operator** | Loader Arm, Bridge Crane seats | Pick and put by the lifters' points | 7 |
+| **Guard / marine** | A room or choke point | Holds it with a hand gun; repels boarders | 5 |
+| **Spotter** | Beside a capital gun | Shares a target's range and lead with its gunners (tighter bearing tolerance) | 7 |
+| **Builder drone** | A building station's bay | Works a station's job beside its arms (later, its own design) | 7 |
+| **Passenger / rest** | Couch, cradle, galley | Spare crew wait here and fill a station that empties | 1 |
 
 Spare crew are what make rule 1 fair: a ship with 6 crew and 4 stations survives losing a pilot once; a two-seat buggy
 does not.
+
+## 7. Faction rules as data
+
+NPC factions are kinds (SURVIVAL.md: traders, mercenaries, details not fixed). Their home is a new data folder beside
+the construct data, loaded at start-up like any other, a bad file refused with a reason:
+
+- `Crew/Factions/<Name>.json` (`"format": "call-of-slop-npc-faction/1"`), one per kind: `Traders`, `Mercenaries`,
+  `Raiders` (the Bandit style's), `Militia` (a planet's holder), `Salvagers`, plus `Player Crew` (section 9) and
+  `Test Hostile` (what "Fights everyone" means today).
+- `Crew/Jobs.json`: each job's methods (the steps of section 3), its station kinds, the stations a goal needs manned.
+- `Crew/Names.json`: crew names per faction (ASCII).
+
+A faction file holds:
+
+| Key | What |
+| --- | --- |
+| `name`, `about`, `styles` | Its name, a line for the look line, the vehicle kit styles its craft are made in (`Bandit`, `IT`...; the style is only a look) |
+| `stance` | To players by default: `hostile`, `wary` (fights only who shot first), `neutral`; to each other faction kind |
+| `engage` | Sight range, the range band it fights at (or the brief's `Engage`), whether it chases, whether it fights on foot |
+| `crew` | Crew per body class (min, max, spares), skill range, share of robots, guns carried |
+| `morale` | Start, what lowers it (crew lost, hull lost, out of ammunition, outgunned), what raises it (kills, allies near) |
+| `flee` | Hull and morale below which the captain's Flee wins |
+| `boarding` | Weights per boarding action (section 8), the morale at which Surrender is allowed, the desperation at which Scuttle is |
+| `scuttle` | `never`, `desperate`, `always` when taken; its timer (s), how long arming takes, which points it prefers |
+| `capture` | What surrendered crew may be (released, put off, recruited) and what taking a ship gives (standing changes) |
+| `needs`, `wants` | Data only for now (NPCs have needs and wants; currency is open): what a trader buys and sells, what a mercenary is paid with. Read by nothing until trade exists |
+
+**Standing** (how each NPC faction sees each player faction) goes in the factions table: `Factions.StoryNames` and
+`StoryStanding` (16 kinds x 32 player factions) are already there and already sent whole with `Msg.Factions`; rename them
+`NpcNames`, `NpcStanding` and fill them from `Crew/Factions` when the story is off (verify the wire first: if they are
+sent as now, no protocol change). A deed (attack a faction's body, kill its crew, take its ship) moves standing; `wary`
+turns `hostile` below 0.
+
+**Who owns a faction body.** Today an NPC construct is owner 255 (nobody). Add `Construct.NpcFaction` (a byte, 0: none),
+server-side, saved in the crew block (section 12). Its owner stays 255, so every rule about players' ownership is
+unchanged. Karl's two settings map onto it: Fights strangers is the `Mercenaries` kind with the ship owner's faction
+friendly, Fights everyone is `Test Hostile`; the stabilizer setting stays as a creative shortcut that crews the ship.
+
+## 8. Boarding: what a crew does when you come aboard
+
+**Triggers** (any one, read by the captain at its next think, at once on the first): a hostile player inside the body's
+frame (`RideBody` is the body) or seated in it; a breach (a door or hull part between outside and a crewed room destroyed
+while a hostile is within 30 m); the body clamped to a hostile dock; its helm taken by a hostile.
+
+**The actions.** The captain scores each by the faction's weights against its state: boarders' strength (count, guns,
+health) against defenders', hull and works health, whether the ship can still fly, morale, allies within 3 km. Several
+run at once (one per group of crew); the set changes as the fight goes.
+
+| Action | What the crew does | How a player stops it |
+| --- | --- | --- |
+| **Hold stations** | Pilot keeps flying, evades and tries to throw boarders off (rolls, burns); gunners keep firing at what is outside | Kill the pilot first: the ship stops |
+| **Repel** | Guards and spare crew take their guns, hold choke points between the breach and the bridge, engine room and magazine (interior rooms, CrewNav's narrowest edges) | Fight; grenades; come in by another way |
+| **Lock down** | Close and lock doors on the way to vital rooms, stop lifts | Cut through, blow the door |
+| **Call for help** | Radio: the same faction's crewed bodies within 3 km turn to come (their captain's Follow) | Kill the radio part or jam it (if jamming exists), or be quick |
+| **Dump** | Eject cargo (open the hold, push crates out), wipe a route computer: denies the prize | Reach the hold first |
+| **Flee** | Burn away at full throttle with boarders aboard | Kill the pilot, wreck the drive works |
+| **Abandon** | Crew run for exits (escape pods if fitted, else jump; leaving keeps momentum); the ship is left a derelict, its guns silent | Let them go: the prize is whole |
+| **Surrender** | Hands up, guns dropped, every station left; the look line says "surrendered" | Accept: stop shooting (shooting a surrendered crew costs standing) |
+| **Scuttle** | Below | Below |
+
+**Scuttle**, when desperate (the faction allows it, the fight is lost by its own reckoning, and it is not allowed to
+surrender or chose not to):
+
+1. **Who and where.** The nearest living engineer (else anyone) goes to a scuttle point it can reach on CrewNav. Points,
+   by the faction's preference: a magazine or ordnance store (cook-off), a fuel tank bank, the reactor, the drive works.
+   A point that is destroyed, or that no living crew member can reach, is off the list. With no point left, no scuttle.
+2. **Arming** takes 8 s (faction data) standing at the point: a bodied member there, interruptible by killing or
+   stunning them, or damaging the point. Players aboard hear a klaxon and see "Scuttle charge arming: Magazine" on
+   their look line from anywhere aboard.
+3. **The countdown** (faction data, 30 to 90 s, default 45 s) shows to everyone aboard and within 200 m. At zero the point
+   goes up as its own kind does (the existing cook-off, fuel fire or a blast sized by the point), with what it chains to.
+   The ship may survive in pieces: what is left is salvage.
+4. **Disarming:** at the point, the attach tool's Fire held 3 s (the same act as seeing to a breakdown warning), or
+   destroying the charge's part before zero (it then burns, not blasts). Either cancels it; the crew may try again
+   elsewhere if they can.
+
+**How the player chooses** is everything they can already do, because the brain only uses what exists: shooting the pilot
+stops the ship; wrecking the drive works or the reactor stops it for good; killing the engineer (through a window, from a
+boarding position) takes scuttling and repair away; destroying the magazine from outside removes the biggest scuttle point
+(and blows it now, which is its own choice); taking the guns out first makes boarding safe. A small, cheap enemy is
+easiest to blow up; a valuable one rewards care.
+
+**What capture gives.** A ship is taken when no hostile crew who isn't surrendered is aboard and a player has sat at its
+helm for 10 s: its `NpcFaction` goes to 0 and its owner to that player (the existing hand-over, as a faction gift does).
+The taker gets the ship and everything aboard (the brief's `Loot` and `Stowed`), the parts to salvage, and the crew's
+fate to choose (section 16, question 6). Standing falls with that faction and rises with its enemies.
+
+## 9. Your own crew
+
+- **Robot Shells first** (SURVIVAL.md: robot shells come early; they are parts a player builds, so no currency or hiring is
+  needed). A Robot Shell that no player wears, standing in a Charging Cradle aboard, can be put on the owner's roster with
+  the configure tool or the Crew window. It is then a crew member of kind robot under the `Player Crew` rules: never
+  surrenders, never scuttles unless ordered, never refuses an order. A player who wears it (the chair) takes it over and
+  it stands back on the roster when they leave. Human crew (hired from traders) come with currency, later.
+- **The Crew window** (a key to choose, or a Crew Console part on the bridge): the roster (name, job, station, health,
+  what they are doing), drag a member onto a station, and orders: **Man stations**, **Hold fire**, **Fire at will**,
+  **Defend** (guards to choke points), **Follow me**, **Go to** (a station or a spot), **Stand down**. Owner and faction
+  members only.
+- **Your crew obey you, not rule 1's gate.** A player's own body can be driven by its owner, its logic, its autopilot or
+  its crew; the crew are one more way, never a requirement. A crewed own ship's pilot can fly `GameNav` orders and the
+  route orders of linked logistics (6.4) from the helm seat; a Route Computer alone still flies a route as designed.
+- **Acting at a distance** (SURVIVAL.md idea): later, a Crew Console's orders through a ship's antenna at range; and the
+  fleet room's commands become captain goals for each crewed ship.
+
+## 10. The horde, spawns, aircraft and convoys
+
+- **The mass horde stays its own system** (`Source/Game/Horde/`): its tiers do what this design's LOD does, for a crowd.
+  Crew treat zombies as threats (the Sandbox's `AreEnemies`); gunners fire at individuals; a crowd near a parked convoy
+  makes its captain's Flee or Engage win. Nothing in the horde changes.
+- **The Spawn tab** keeps its on-foot bots (the arena `BotBrain` stays for that and for the archived modes, untouched).
+  It gains "crewed vehicle" (a faction vehicle spawned with its crew in its seats) and "crew of a faction" (on-foot crew
+  with the Guard or Patrol job). The Bot Spawner part gets a faction setting later.
+- **Aircraft spawns** seat a pilot crew member: `AircraftPilot` becomes the air `HelmDriver`, its orders the captain's
+  goals; `MaxPilots` folds into the crew budget.
+- **Convoys** spawn with crew per the brief's `Seats[]` (driver, gunners, spares in the cab or bed); the leader's captain
+  takes a path, the others Follow at their `ConvoyIndex` and `Lane`; an escort's air pilot follows the leader.
+- **Outposts and bases** (faction bases are designed function first, creative spawn only for now): their guns are
+  stations too (rule 1: a base turret needs a gunner in it), their guards Guard and Patrol on foot.
+
+## 11. Networking
+
+The brain runs only on the server, as Karl's crew and the pilots do now. What clients see:
+
+- Bodied crew are bot `Player`s: their movement, seats, animation and names go as any bot's do today (the roster
+  broadcast for names). Their guns turn through the existing poses. Nothing new for that.
+- New on the wire, each in the phase that needs it, each with a `ProtocolVersion` bump and a line in its history, new
+  messages at the end of `Msg`: a crew notice (`CActKind` style: surrendered, scuttle arming, countdown, disarmed) and a
+  member's job and faction for the look line (phase 3 or 5); the Crew window's roster to its owner's peers (phase 6).
+- Seated and asleep crew, captain state, contacts and plans are never sent.
+
+## 12. Saves
+
+- A **crew block** at the end of a body's bytes (after the brief's, as the brief went after the tracks: WORLD-SAVES.md),
+  versioned, skipped with a log line if it doesn't read, never the body: `NpcFaction`, the roster (each member's id,
+  faction, kind, skill, health, job, station by part tag, gun), morale, a scuttle countdown if one runs. Bodied members
+  are written as records. A Robot Shell on a player's roster keeps its link in the same block.
+- Standing goes with the factions table, which the world already saves.
+- No new save file: nothing for `SavePaths`, the package list or MIGRATING.md. Old saves load with no crews, except that a
+  Flight Stabilizer set to a crew gets a fresh one (as today).
+
+## 13. Performance
+
+- **Budget:** 200 crew in a world, 96 bodied, the crew system at most 1.5 ms a tick on the 2-core box with 20 crewed
+  ships in sight; a steady tick allocates nothing. Measure in phase 1 with the biggest crewed ship lying on a slope.
+- **Bounded per body:** stations scanned once per rebuild, the station plan re-run only on change, contacts refreshed
+  one body per tick round robin, CrewNav built off the tick in slices and patched on a part's loss.
+- **Think rates** by tier (section 4); a captain far away thinks every 5 s; an asleep body costs nothing.
+- **Fixed arrays** (rosters of 32, contacts of 32 per body, a pool of minds); the bodied bots' cost counted with players.
+- **The check:** extend `--ship-ai-check` into `--crew-check [BLUEPRINT] [--crew N] [--target NAME] [--board]`: seats a
+  crew, fights or boards, prints the crew system's cost per tick and its allocations. A dev tool, not a self-test section.
+
+## 14. Reuse, and what is not touched
+
+**Reused:** Karl's `ShipAi` (moved into drivers, tuning unchanged); `AircraftPilot`; the brief; the arena bots' path
+follower, unstick, sight and aim (`BotFollow`, `BotUnstick`, `BotCombat`) ported, their files left alone; the bot `Player`
+and its ids; players' seat and act paths; breakdown state; the construct frame; the building check's reach walker; the
+interior planner's rooms; the factions table's NPC standing arrays; the story HTN's shape as a pattern only.
+
+**Not touched:** the archived arena bots and modes (`Bots*`, `BotNav*`, squads, vantage), Zombies and the horde, the
+story's people, HTN and factions (`Source/Story/`, `Story/`), the production system (TwitchTheSniper's; haulers and crane
+operators only press what a player would), maps and terrain (another developer's).
+
+## 15. Phases (one builder each, the whole phase; a WIP `[skip ci]` after each step)
+
+Value lands early: phase 1 alone gives rule 1 on ships and aircraft with bodies you can shoot.
+
+| Phase | What | Done when |
+| --- | --- | --- |
+| **1. Crew in seats** | `Source/Crew/`: roster, stations scan, the rule-1 gate, LOD tiers, bodied bot `Player`s that sit (phase 0: can a bot sit and ride?), spares in couches who take an empty seat (a timed walk first, no CrewNav). `ShipAi` split into helm and gun drivers behind the gate; aircraft pilots seated. The stabilizer setting crews the ship. Crew block in saves. `--crew-check` | The crewed Zero Day fights as before in `--crew-check`; shooting its pilot stops it, a spare takes the helm; a gunner shot silences its turret; 20 crewed ships under the budget; a host and a joined client see the crew |
+| **2. Ground crews** | Ground `HelmDriver` from the brief (paths over the ground, Follow in convoys, keep-away side, engage band), walkers through the Driving Module; gunners on ground vehicles (VEHICLE-WEAPONS.md's queued "gunners"); convoys and faction vehicles spawn crewed | A convoy drives in formation and fights; killing a driver stops that truck |
+| **3. Factions and the captain** | `Crew/Factions`, `Crew/Jobs.json`, `NpcFaction`, standing; contacts per body; captain utility (Engage, Hold, Patrol, Follow, Route, Land, Flee); look line with name, faction, job (protocol bump) | Traders flee, mercenaries fight, wary ones only answer fire; standing moves |
+| **4. Inside the ship** | CrewNav (building check walker, interior hints, patching), bodied walking with doors and lifts; engineers see to breakdowns and mend, loaders carry reloads; breakdowns run on NPC ships once engineers do (Karl) | A frigate's spare walks from its couch to the helm; an NPC ship's breakdown is mended by its engineer, not if he is dead |
+| **5. Boarding** | Triggers, the action set, guards, lock down, call for help, abandon, surrender, scuttle (points, arming, countdown, disarming), capture and its hand-over, crew notices (protocol bump) | Boarding a mercenary frigate ends in each of: fight won, surrender, scuttle disarmed, scuttle gone off; killing the engineer from outside removes scuttle |
+| **6. Your own crew** | Robot Shells on the roster, the Crew window and its orders, own pilots flying nav and route orders | A player crews their ship's guns with two shells and flies it; the shells fight off a raider |
+| **7. Work crews** | Haulers inside a body, crane operators, spotters on capital guns, builder drones (each may want its own short design first) | Each job works one station of its kind end to end |
+
+## 16. Open questions for the user (recommendation first)
+
+1. **Faction guns with no gunner (base turrets, NPC sentries).** Recommend: no exception, every faction gun needs a crew
+   member at its station, as the rule says; players' sentries and later auto-targeting parts stay players' only. Or: allow
+   faction "automated turrets" as a rarer, weaker kind.
+2. **An empty helm in the air.** Recommend: a ship or aircraft whose stabilizer can hover holds where it is (its stabilizer's
+   hold, as "nothing to fight" does now), one that can't glides down; in space it coasts with thrust 0. Or: everything
+   falls (dramatic, but a 300 t ship dropped on your base by your own sniper).
+3. **Crew hit from far away.** Recommend: a seated member dies with its station part and takes blast damage there; only
+   crew within 300 m of a player are real bodies. Or: promote crew on any body under fire, at a body cost.
+4. **Your first crew.** Recommend: Robot Shells (built, no currency). Or: hired humans first, which waits on currency.
+5. **When a ship is taken.** Recommend: no un-surrendered hostile crew aboard and a player at the helm for 10 s. Or: the
+   helm alone (quicker, easier to exploit).
+6. **Prisoners.** Recommend: released (they walk off or go to a pod) or put off at a dock; recruiting comes with currency.
+   Or: they stay aboard as dead weight.
+7. **Scuttle numbers.** Recommend: 8 s to arm, 45 s countdown (30 to 90 by faction), 3 s to disarm. Or shorter, for tension.
+8. **Crew budget.** Recommend 200 crew a world, 96 bodied, sharing the spawned bots' ids (the Spawn tab's cap falls while
+   crews are bodied). Or: a separate, lower cap for crew.
+9. **Far seats.** Recommend: nothing drawn for seated crew past 300 m. Or: a cheap seated figure in an occupied seat (a
+   bit per seat on the wire).
+10. **Where the faction files live.** Recommend `Crew/Factions/` beside `Constructs/`. Or `Constructs/Factions/`.
+
+## 17. To agree with Karl (he owns ships and the crew)
+
+- **Rule 1 replaces the bodiless crew** (proposal): his crew's flying and gunnery move unchanged into drivers, but a
+  driver presses keys only with a crew member in that seat; the stabilizer setting now seats a crew. Killing the pilot
+  stops the ship.
+- **Breakdowns on NPC ships** once engineers exist (today `GameSandboxBreakdowns` skips crewed ships).
+- **`--ship-ai-check` becomes `--crew-check`**, seating a crew first; same lines and figures.
+- **Scuttle points on his ships:** his answer 5 made a broken Drive Core only stop. Propose: scuttling uses the magazine,
+  the fuel and the reactor, never the Drive Core; or a Scuttle Charge fitting in the crew fittings.
+- **Crew fittings as stations:** the Crash Couch and Charging Cradle as where spare crew wait, the Gunnery Console as a
+  gunner's station, the Galley for morale later.
