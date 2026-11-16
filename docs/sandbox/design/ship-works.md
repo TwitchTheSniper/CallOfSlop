@@ -338,7 +338,7 @@ Damage:
   part; only penetrating rounds go on, losing damage at each). So "armoured by being inside" needs no new rule.
 - A piece at zero health is disabled, not knocked off. Its `serves` is gone, the cap falls at the rebuild, the look
   line and the panel say which piece. With two of a kind the drive runs at half.
-- Fuel Pumps and Turbopumps are flammable. A Drive Core that breaks only stops (no blast): open question 5.
+- Fuel Pumps and Turbopumps are flammable. A Drive Core that breaks only stops (no blast; answer 5).
 - A pod is one part with the cowl's armour. Disabled, it gives nothing until mended outside; shot off, it is a wreck.
 - A magazine inside is ordnance or bulk ammo: its cook-off is the existing one.
 
@@ -511,7 +511,7 @@ The builder goes ahead on the recommended answer for any still open.
 3. **Lasers and capacitors, which don't exist yet:** Answered: A, in this plan, as its last big phase. (B was a
    plan of their own later.)
 4. **Breakdowns:** Answered: B, every crewed player ship in Survival. (A was the ship start's own ship only.)
-5. **A Drive Core that is destroyed:** A (recommended): the drive stops, no blast. B: it goes up like a fuel tank.
+5. **A Drive Core that is destroyed:** Answered: A, the drive stops (to its quarter), no blast. (B was a blast.)
 6. **Recipes for the new parts:** A (recommended): none here; raised with TwitchTheSniper for the production system.
    B: the part kit writes Assembling recipes for them now.
 7. **The rust bucket:** Answered: B, it keeps its two pod drives as true pods, serviced outside. (A was one centre
@@ -532,3 +532,5 @@ Answers:
   revised. It follows that no ship shows a class 1 hull drive; the Halberd and the Zero Day show hull drives.
 - **4: B** (Karl, 2026-11-16, decision card). Breakdowns happen on every crewed player ship in Survival. Section 7's
   last point is revised with what that changes in the code. It is done in phase 2, with the move onto the works.
+- **5: A** (Karl, 2026-11-16, decision card). A destroyed Drive Core only stops its drive, which falls to the
+  quarter floor, and can be mended. Fuel Pumps and Turbopumps stay flammable.
