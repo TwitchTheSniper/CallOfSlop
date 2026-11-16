@@ -54,7 +54,7 @@ public sealed partial class Game
         if (!IsServer)
         {
             h.RideBody = me.Sim.RideBody;
-            h.RideSeg = me.Sim.RideSeg;
+            h.RideSeg = (byte)ConstructRide.Carrier(me.Sim); // (the surface carrying them, a lift's or a turntable's: what a drop or a held piece moves with)
         }
         h.RideTurn = Quaternion.Normalize(rider * ConstructGrab.YawQ(_rideYaw));
     }
@@ -89,7 +89,7 @@ public sealed partial class Game
         var rider = ConstructRide.RiderRot(q, p.Sim.RideUp);
         ConstructRide.LookIn(rider, GravityFrames.Forward(p.Position, p.Yaw, p.Pitch), out var yaw, out _);
         h.RideBody = p.Sim.RideBody;
-        h.RideSeg = p.Sim.RideSeg;
+        h.RideSeg = (byte)ConstructRide.Carrier(p.Sim); // (the surface carrying them, a lift's or a turntable's: what a drop or a held piece moves with)
         h.RideTurn = Quaternion.Normalize(rider * ConstructGrab.YawQ(yaw));
     }
 
@@ -116,7 +116,7 @@ public sealed partial class Game
     {
         if (!SandboxOn || shooter.Sim.RideUp == Vector3.Zero || Constructs.Get(shooter.Sim.RideBody) is not { } c || shooter.Sim.RideSeg > c.JointCount)
             return;
-        if (ConstructRide.SurfaceVel(c, shooter.Sim.RideSeg, shooter.Position).LengthSquared() < 4f)
+        if (ConstructRide.RiderSurfaceVel(c, shooter.Sim, shooter.Position).LengthSquared() < 4f)
             return;
         origin = shooter.Eye;
         dir = GravityFrames.Forward(shooter.Position, shooter.Yaw, shooter.Pitch);
@@ -173,6 +173,31 @@ public sealed partial class Game
         if (Vector3.DistanceSquared(was, s.Position) > 4f)
             return; // (a teleport, a respawn: nothing to blend from)
         (p.PrevRideBody, p.PrevRideSeg, p.PrevRideLocal) = (s.RideBody, s.RideSeg, ConstructRide.ToLocal(c, s.RideSeg, was));
+    }
+
+    /// <summary>
+    /// The host's aim from the drawn eye into the tick's frame. The host draws between its last two ticks (<c>_alpha</c>), but
+    /// constructs are hit, and reach measured, where the last tick put them: on a ship at orbital speed that is metres apart,
+    /// so a part beside a seated or standing rider read as too far away, or the ray missed it. A rider's eye moves with the
+    /// construct it is in (in the construct's frame, so the ship's speed drops out); anyone else's to their own tick position.
+    /// A client draws its constructs where it hits them already, so nothing changes there.
+    /// </summary>
+    internal void AimToTick(Player me, ref Vector3 eye, ref Vector3 dir)
+    {
+        if (!IsServer || !SandboxOn || !me.Alive)
+            return;
+        ref var h = ref SandboxHands.Hand(me.Id);
+        var body = h.Seated ? h.SeatBody : me.Sim.RideBody;
+        if (body != 0 && Constructs.Get(body) is { } c)
+        {
+            var pos = Vector3.Lerp(c.PrevPos, c.Pos, _alpha);
+            var rot = Quaternion.Slerp(c.PrevRot, c.Rot, _alpha);
+            var turn = Quaternion.Normalize(c.Rot * Quaternion.Conjugate(rot));
+            eye = c.Pos + Vector3.Transform(eye - pos, turn); // (small numbers: the eye from the drawn body, then from the body at the tick)
+            dir = Vector3.Normalize(Vector3.Transform(dir, turn));
+            return;
+        }
+        eye += me.Position - me.RenderPosition; // (on foot: the drawn body is between the ticks too)
     }
 
     /// <summary>Server: after the constructs' step every rider is where their construct now is, whether or not an input came in this tick.</summary>

@@ -7,8 +7,8 @@ public static partial class SelfTest
     /// <summary>
     /// "Sandbox Tab inventory" (board item dev-sandbox-tab-inventory-ti01; Keybinds.Context): the Sandbox inventory is its
     /// own action on Tab, live only in Sandbox, and the scoreboard is live everywhere but Sandbox, so Tab in a Sandbox match
-    /// gives the inventory and no scoreboard while Tab in Team Deathmatch and Zombies still gives the scoreboard (the Zombies
-    /// parts inventory keeps I); the defaults share no key within a context; and settings.txt from binds version 12 migrate:
+    /// gives the inventory and no scoreboard, while outside Sandbox (Keybinds.Resolve with SandboxOn false; no arena match
+    /// is started since those modes were archived) Tab still gives the scoreboard (the Zombies parts inventory keeps I); the defaults share no key within a context; and settings.txt from binds version 12 migrate:
     /// a never-rebound inventory gets Tab, a rebound one keeps its key for the Sandbox inventory, and with Tab taken by a
     /// key used everywhere the Sandbox inventory keeps I. Uses temporary files only.
     /// </summary>
@@ -26,25 +26,28 @@ public static partial class SelfTest
         Want(kd[(int)GameAction.SandboxInventory] == tab && kd[(int)GameAction.Scoreboard] == tab && kd[(int)GameAction.Inventory] == i && Duplicates(kd).Length == 0,
             "the Sandbox inventory doesn't default to Tab beside the scoreboard (or the Zombies inventory left I, or the defaults clash)");
 
-        // Tab held in a real match of each mode (what PollActions reads: Keybinds.Resolve with the game's SandboxOn).
+        // Tab held in a real Sandbox match (what PollActions reads: Keybinds.Resolve with the game's SandboxOn), and Tab with
+        // Sandbox off (any other mode: only SandboxOn matters to Resolve).
         var down = new bool[(int)GameAction.COUNT];
         var seen = new List<string>();
-        foreach (var mode in new[] { GameMode.Sandbox, GameMode.TeamDeathmatch, GameMode.Zombies })
+        using (var g = ModeGame(0, GameMode.Sandbox, Maps.Find(ConstructYardMap)?.Id ?? 0))
         {
-            byte mapId = 0;
-            if (mode == GameMode.Sandbox && Maps.Find(ConstructYardMap) is { } yard)
-                mapId = yard.Id;
-            using var g = ModeGame(0, mode, mapId);
             for (var k = 0; k < down.Length; k++)
                 down[k] = kd[k] == tab;
             Keybinds.Resolve(kd, g.SandboxOn, down);
             var inv = down[(int)GameAction.SandboxInventory];
             var scores = down[(int)GameAction.Scoreboard];
-            seen.Add($"{mode}: inventory {inv}, scoreboard {scores}");
-            if (mode == GameMode.Sandbox)
-                Want(g.SandboxOn && inv && !scores, "Tab in a Sandbox match doesn't open the inventory, or shows the scoreboard");
-            else
-                Want(!g.SandboxOn && scores && !inv, $"Tab in {mode} doesn't show the scoreboard (or opens the Sandbox inventory)");
+            seen.Add($"Sandbox: inventory {inv}, scoreboard {scores}");
+            Want(g.SandboxOn && inv && !scores, "Tab in a Sandbox match doesn't open the inventory, or shows the scoreboard");
+        }
+        {
+            for (var k = 0; k < down.Length; k++)
+                down[k] = kd[k] == tab;
+            Keybinds.Resolve(kd, false, down);
+            var inv = down[(int)GameAction.SandboxInventory];
+            var scores = down[(int)GameAction.Scoreboard];
+            seen.Add($"Sandbox off: inventory {inv}, scoreboard {scores}");
+            Want(scores && !inv, "Tab with Sandbox off doesn't show the scoreboard (or opens the Sandbox inventory)");
         }
         // The Zombies parts inventory (I) is off in Sandbox, the Sandbox one off elsewhere.
         for (var k = 0; k < down.Length; k++)

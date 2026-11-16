@@ -33,8 +33,8 @@ public struct FxParticle
     public float Life; // 0: a free slot
     public float Size, Seed, Kind;
     public uint Tint; // RGBA8: rgb times the kind's colour, a times its alpha
-    public Vector3 Carry; // m/s: the speed of what made it, kept as it is (no drag, no turbulence): a ship's flame stays on its nozzle however fast the ship goes
-    public float Pad;
+    public Vector3 Carry; // m/s: the speed of what made it, kept as it is (no drag, no turbulence), for a particle with no carrier
+    public float Carrier; // 1 + the carrier slot whose body moves it each frame (Fx.Carrier: a ship's flame stays on its nozzle however fast the ship goes); 0: none
 }
 
 /// <summary>
@@ -102,7 +102,7 @@ public static class Fx
     }
 
     /// <summary>One particle.</summary>
-    public static void Emit(FxKind kind, Vector3 pos, Vector3 vel, float size, float life, uint tint = White, Vector3 carry = default)
+    public static void Emit(FxKind kind, Vector3 pos, Vector3 vel, float size, float life, uint tint = White, Vector3 carry = default, int carrier = 0)
     {
         if (!On)
             return;
@@ -124,6 +124,7 @@ public static class Fx
         p.Kind = (float)kind;
         p.Tint = tint;
         p.Carry = carry;
+        p.Carrier = carrier;
     }
 
     /// <summary>How many of <paramref name="wanted"/> (a rate times the frame, say) to make now: whole, the setting's share of it, the fraction by chance.</summary>
@@ -205,7 +206,7 @@ public static class Fx
     /// how long the flame is. <paramref name="level"/> 0..1 is how hard it burns, <paramref name="carry"/> the speed of what it is
     /// fixed to (a flame leaves with its ship), <paramref name="dt"/> the frame.
     /// </summary>
-    public static void Flame(FxKind kind, Vector3 at, Vector3 dir, Vector3 carry, float radius, float length, float level, float dt, uint tint = White)
+    public static void Flame(FxKind kind, Vector3 at, Vector3 dir, Vector3 carry, float radius, float length, float level, float dt, uint tint = White, int carrier = 0)
     {
         // A particle lives about as long as it takes to reach the flame's tip, so the count alive fits the flame, not the frame rate.
         var len = length * (0.35f + 0.65f * level);
@@ -221,7 +222,113 @@ public static class Fx
             var up = Vector3.Cross(dir, side);
             var off = side * (MathF.Cos(a) * r) + up * (MathF.Sin(a) * r);
             var along = 0.75f + 0.5f * Rand();
-            Emit(kind, at + off + dir * (Rand() * speed * dt), dir * (speed * along) + off * 0.8f, radius * (0.85f + 0.5f * Rand()), life * (0.7f + 0.6f * Rand()), tint, carry); // (its own speed drags and streaks; the nozzle's it keeps, so the flame stays on it)
+            Emit(kind, at + off + dir * (Rand() * speed * dt), dir * (speed * along) + off * 0.8f, radius * (0.85f + 0.5f * Rand()), life * (0.7f + 0.6f * Rand()), tint, carry, carrier); // (its own speed drags and streaks; the nozzle's it keeps, or its carrier moves it, so the flame stays on it)
+        }
+    }
+
+    // ---- Carriers: bodies whose particles move with them (a ship's flames) -------------------------------------------------
+
+    /// <summary>How many bodies at once can carry their particles (the step shader's uCarry holds four vec4s each).</summary>
+    public const int MaxCarriers = 24;
+
+    /// <summary>Each slot's move since the last step, as the shaders read it: three rows of the turn (w: the pivot's move) and the pivot before.</summary>
+    public static readonly Vector4[] CarrierRows = MakeRows();
+
+    private static readonly ushort[] _carrierId = new ushort[MaxCarriers];
+    private static readonly Vector3[] _carrierPos = new Vector3[MaxCarriers], _carrierNewPos = new Vector3[MaxCarriers];
+    private static readonly Quaternion[] _carrierRot = new Quaternion[MaxCarriers], _carrierNewRot = new Quaternion[MaxCarriers];
+    private static readonly float[] _carrierIdle = new float[MaxCarriers];
+    private static readonly bool[] _carrierFresh = new bool[MaxCarriers];
+
+    /// <summary>A slot whose body has lit nothing for this long is let go (longer than any carried particle lives).</summary>
+    private const float CarrierLetGo = 2f;
+
+    private static Vector4[] MakeRows()
+    {
+        var rows = new Vector4[MaxCarriers * 4];
+        for (var s = 0; s < MaxCarriers; s++)
+            Identity(rows, s * 4);
+        return rows;
+    }
+
+    private static void Identity(Vector4[] rows, int c)
+    {
+        rows[c] = new Vector4(1, 0, 0, 0);
+        rows[c + 1] = new Vector4(0, 1, 0, 0);
+        rows[c + 2] = new Vector4(0, 0, 1, 0);
+        rows[c + 3] = Vector4.Zero;
+    }
+
+    private static Vector3 Turn(Vector4[] rows, int c, Vector3 v) =>
+        new(rows[c].X * v.X + rows[c].Y * v.Y + rows[c].Z * v.Z, rows[c + 1].X * v.X + rows[c + 1].Y * v.Y + rows[c + 1].Z * v.Z, rows[c + 2].X * v.X + rows[c + 2].Y * v.Y + rows[c + 2].Z * v.Z);
+
+    /// <summary>
+    /// A body (by its id, not 0) as drawn this frame, whose particles should move with it: 1 + its slot, to pass to an emitter,
+    /// or 0 when every slot is taken (the particle then keeps the body's speed as its carry). Its particles follow the body's
+    /// drawn pose from frame to frame, whatever its speed or turn, so nothing is left behind by a frame's lag or the step's dt.
+    /// </summary>
+    public static int Carrier(ushort id, Vector3 pos, Quaternion rot)
+    {
+        if (id == 0)
+            return 0;
+        var free = -1;
+        for (var s = 0; s < MaxCarriers; s++)
+        {
+            if (_carrierId[s] == id)
+            {
+                (_carrierNewPos[s], _carrierNewRot[s], _carrierFresh[s]) = (pos, rot, true);
+                _carrierIdle[s] = 0;
+                return s + 1;
+            }
+            if (free < 0 && _carrierId[s] == 0)
+                free = s;
+        }
+        if (free < 0)
+            return 0;
+        _carrierId[free] = id;
+        (_carrierPos[free], _carrierRot[free]) = (pos, rot);
+        (_carrierNewPos[free], _carrierNewRot[free], _carrierFresh[free]) = (pos, rot, true);
+        _carrierIdle[free] = 0;
+        return free + 1;
+    }
+
+    /// <summary>The body's slot (1 + it) refreshed with its pose this frame if it holds one, else -1: <see cref="Carrier"/> takes one.</summary>
+    public static int CarrierKept(ushort id, Vector3 pos, Quaternion rot)
+    {
+        if (id != 0)
+            for (var s = 0; s < MaxCarriers; s++)
+                if (_carrierId[s] == id)
+                {
+                    (_carrierNewPos[s], _carrierNewRot[s], _carrierFresh[s]) = (pos, rot, true);
+                    return s + 1;
+                }
+        return -1;
+    }
+
+    /// <summary>Once a frame, before the step: each carrier's move since the last one into <see cref="CarrierRows"/> (none for a body not drawn this frame: its move comes with the next).</summary>
+    internal static void CarriersStep(float dt)
+    {
+        var rows = CarrierRows;
+        for (var s = 0; s < MaxCarriers; s++)
+        {
+            var c = s * 4;
+            if (_carrierId[s] != 0 && (_carrierIdle[s] += dt) > CarrierLetGo)
+                _carrierId[s] = 0; // (nothing lit on it for longer than a carried particle lives)
+            if (_carrierId[s] == 0 || !_carrierFresh[s])
+            {
+                Identity(rows, c);
+                continue;
+            }
+            _carrierFresh[s] = false;
+            var turn = Quaternion.Normalize(_carrierNewRot[s] * Quaternion.Conjugate(_carrierRot[s]));
+            var m = Matrix4x4.CreateFromQuaternion(turn);
+            var move = _carrierNewPos[s] - _carrierPos[s];
+            var from = _carrierPos[s];
+            rows[c] = new Vector4(m.M11, m.M21, m.M31, move.X);
+            rows[c + 1] = new Vector4(m.M12, m.M22, m.M32, move.Y);
+            rows[c + 2] = new Vector4(m.M13, m.M23, m.M33, move.Z);
+            rows[c + 3] = new Vector4(from, 0);
+            (_carrierPos[s], _carrierRot[s]) = (_carrierNewPos[s], _carrierNewRot[s]);
         }
     }
 
@@ -241,6 +348,8 @@ public static class Fx
             CpuCursor = 0;
         }
         var kinds = FxKinds.Rows;
+        CarriersStep(dt);
+        var rows = CarrierRows;
         for (var i = 0; i < BirthCount; i++)
         {
             CpuPool[CpuCursor] = Births[i];
@@ -254,6 +363,18 @@ public static class Fx
             ref var p = ref pool[i];
             if (p.Life <= 0)
                 continue;
+            if (p.Carrier > 0.5f && p.Age > 0)
+            {
+                // Moved with its body since last frame (born this frame, it is where the body is drawn now already).
+                var c = ((int)(p.Carrier + 0.5f) - 1) * 4;
+                if ((uint)c < (uint)rows.Length)
+                {
+                    var pivot = new Vector3(rows[c + 3].X, rows[c + 3].Y, rows[c + 3].Z);
+                    var r = p.Pos - pivot;
+                    p.Pos = pivot + Turn(rows, c, r) + new Vector3(rows[c].W, rows[c + 1].W, rows[c + 2].W);
+                    p.Vel = Turn(rows, c, p.Vel);
+                }
+            }
             p.Age += dt;
             if (p.Age >= p.Life)
             {

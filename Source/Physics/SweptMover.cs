@@ -28,6 +28,9 @@ public sealed class SweptMover : IMover
 {
     public static readonly SweptMover Instance = new();
 
+    /// <summary>In thin air the keys push a free player this share of their walking speed each second (m/s per second per m/s): a suit's jets, not the ground's grip.</summary>
+    public const float SpaceNudge = 0.5f;
+
     public PhysicsMode Mode => PhysicsMode.Swept;
 
     /// <summary>How far down walking players are kept on the ground (stairs, slopes).</summary>
@@ -105,6 +108,10 @@ public sealed class SweptMover : IMover
 
         // Up and gravity at the feet (one uniform field today).
         var g = (GravityFrames.VolumeGravity(s.Position, out var vg) ? vg : phys.Gravity.GravityAt(s.Position)) * World.GravityScale; // (the host's gravity setting: up is unchanged; inside a gravity generator's box, its pull)
+        var og = Vector3.Zero;
+        var inOrbit = GravityFrames.Point?.FreeFall(s.Position, out og) == true && !GravityFrames.VolumeGravity(s.Position, out _);
+        if (inOrbit)
+            g = og; // (past a star system's bubble edge: the pull a ship in orbit there falls by, GravityFrames.cs)
         var hook = GravityFrames.HookCount > 0 ? GravityFrames.HookAt(s.Position) : Vector3.Zero; // (force hooks pull, but don't turn up)
         var gLen = g.Length();
         var up = gLen > 1e-6f ? -g / gLen : Vector3.UnitY;
@@ -155,10 +162,17 @@ public sealed class SweptMover : IMover
             ClassicMover.SlopeSteer(_terrain!, s, wish, speed, ref tx, ref tz, ref control);
             target = new Vector3(tx, 0, tz);
         }
-        var blend = 1f - MathF.Exp(-control * dt);
+        // High over a planetoid the air thins (ConstructAir.DragShare): a player in the air there is braked as little as a
+        // construct is, so someone who steps off a ship in orbit keeps its hundreds of metres a second and floats beside it
+        // instead of being stopped dead (and left behind) by the ground's air control; the keys then only nudge (a suit's jets).
+        var air = !s.Grounded && GravityFrames.Point != null ? ConstructAir.DragShare(s.Position) : 1f;
+        var thick = inOrbit && !s.Grounded ? 0f : air * air * air; // (past the bubble's edge no air at all, as for a ship there)
+        var blend = 1f - MathF.Exp(-control * thick * dt);
         var vUp = Vector3.Dot(s.Velocity, up);
         var vFlat = s.Velocity - up * vUp;
         vFlat += (target - vFlat) * blend;
+        if (thick < 1f)
+            vFlat += wish * (speed * SpaceNudge * (1f - thick) * dt);
         s.Velocity = vFlat + up * vUp;
 
         if ((b & Buttons.Jump) != 0 && (b & Buttons.Forward) != 0 && s.Stance != Stance.Prone && up == Vector3.UnitY // (the ledge search is Y-up only: never on a planet, fine on a zoned map's decks)

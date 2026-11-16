@@ -66,7 +66,7 @@ public sealed partial class Game
         proj.Grenade = g;
         proj.Bounce = g.Bounce;
         proj.StagesLeft = g.Stages;
-        proj.Vel = dir * g.ThrowSpeed + new Vector3(0, Throwables.ThrowUp, 0) + p.Sim.Velocity * 0.5f;
+        proj.Vel = dir * g.ThrowSpeed + new Vector3(0, Throwables.ThrowUp, 0) + p.Sim.Velocity * 0.5f + SandboxRideCarry(p);
         if (g.Cookable && cook > 0)
             proj.Born = now - Math.Clamp(cook, 0, g.FuseSeconds); // cooked: the fuse already ran in the hand
     }

@@ -350,7 +350,7 @@
       "finish": "worn paint"
     },
     {
-      "part": "Magpie Drill Dock",
+      "part": "Drill Dock",
       "on": 2,
       "socket": "dock0",
       "by": "wall"
@@ -368,7 +368,7 @@
       "by": "+x"
     },
     {
-      "part": "Magpie Drill Dock",
+      "part": "Drill Dock",
       "on": 2,
       "socket": "dock1",
       "by": "wall"

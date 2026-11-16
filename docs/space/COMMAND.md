@@ -191,14 +191,14 @@ offers no jump. When the cost is decided: what pays it (power, a fuel, wear on t
 JUMP for a ship with a working drive when it gives a cost, and the jump arrives as `Galaxy.Arrive` does, in orbit round
 the target.
 
-### On the wire (protocols 323 and 324)
+### On the wire (protocols 323 and 326)
 
 - Client to host: `Msg.CAct` with `CActKind.NavOrder`: construct, kind, body, point (three doubles), radius. The host
   checks it (`NavOrderAct`) and answers a refusal in words.
 - Host to all: `Msg.Nav`, the whole order list (construct, kind, body, point, radius, phase, and a trip's arrival and
-  departure in space ns and its dV: 324), sent when an order starts, changes phase or its plan, or ends, and to each
+  departure in space ns and its dV: 326), sent when an order starts, changes phase or its plan, or ends, and to each
   joiner (`SendNavState`). Clients draw from it; they fly nothing.
-- The space clock (`SpaceMsg.Clock`) carries the host's Fuel use in space (a u8 percent, 324), so a client's card works
+- The space clock (`SpaceMsg.Clock`) carries the host's Fuel use in space (a u8 percent, 326), so a client's card works
   out the same dV.
 
 ## What it doesn't do yet

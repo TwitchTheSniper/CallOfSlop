@@ -20,6 +20,7 @@ public struct RouteAsk
     public Vector3 OpenAt;
     public ushort OpenHost;
     public byte ConduitGap; // ... and the closest its lattice keeps planes, cm (0: RouteSearch.ConduitGap)
+    public bool Exact; // a conduit's: guess by the true cost to the goal (a pass over the lattice first), for a search the plain guess loses its way in
     public float Conduit; // a pre-built's wiring (ConstructConduit.cs), above 1: the cost a metre off every surface, so it runs along walls, floors and ceilings like conduit (0: the tool's own route)
 }
 
@@ -105,8 +106,27 @@ public sealed class RouteSearch
         Gather,
         Raster,
         Flood,
+        Dist,
         Search,
     }
+
+    // ---- A conduit's cost to the goal (2026-11-16) -------------------------------------------------------------------
+    // A conduit prices air dearly, so the plain guess (the straight distance at the hugging price) is weak and a search across a
+    // big ship ran out of time. A conduit's guess is instead the true cost to the goal over the lattice, bends and walls left
+    // out (so never more than the real cost): one pass from the goal outward, then the search heads straight down it.
+    private float[] _hd = [];
+    private int[] _hdStamp = [];
+    private int _hdNow;
+    private int[] _dHeapP = [];
+    private float[] _dHeapF = [];
+    private int _dHeapN;
+    private bool _useHd;
+    private float _hdCap; // (the pass stops past this: a point it hadn't settled costs at least this much)
+    private int _hdStart;
+
+    private const float HdReach = 2f, HdSlack = 6f; // (the pass goes on to this many times the start's cost, plus this: the search's bends and walls)
+    private const int DistHeap = 1 << 21; // (a point is pushed again each time it gets cheaper: past this the plain guess is used)
+
 
     // Each stage looks further round, on the construct's 5 cm grid; the last goes everywhere on a finer lattice, with links half sunk
     // into the surfaces they pass (the embedding the path rule forgives), for the narrow slots.
@@ -236,7 +256,7 @@ public sealed class RouteSearch
         var h = Mix(Mix(Mix(1234567L, a.C.Id), a.C.RebuildStamp), (long)a.Type);
         h = Mix(Mix(Mix(Mix(h, a.From), a.FromPort), a.Parent), a.ParentSeg);
         h = Mix(Mix(Mix(Mix(h, a.Junction), a.Count), a.To), a.ToPort);
-        h = Mix(Mix(Mix(Mix(h, a.OpenAt), a.OpenHost), a.C.RouteCount), BitConverter.SingleToInt32Bits(a.Conduit) + a.ConduitGap * 7919L);
+        h = Mix(Mix(Mix(Mix(h, a.OpenAt), a.OpenHost), a.C.RouteCount), BitConverter.SingleToInt32Bits(a.Conduit) + a.ConduitGap * 7919L + (a.Exact ? 104729L : 0L));
         for (var i = 0; i < a.Count; i++)
             h = Mix(Mix(h, a.Nodes[i].Pos), a.Nodes[i].Host);
         return h == 0 ? 1 : h;
@@ -613,6 +633,19 @@ public sealed class RouteSearch
                     break;
                 case Phase.Flood:
                     if (!FloodSlice(end))
+                        return null;
+                    if (StartDist())
+                    {
+                        _phase = Phase.Dist;
+                        break;
+                    }
+                    if (StartFlat())
+                        _phase = Phase.Search;
+                    else
+                        NextStage();
+                    break;
+                case Phase.Dist:
+                    if (!DistSlice(end))
                         return null;
                     if (StartFlat())
                         _phase = Phase.Search;
@@ -1077,6 +1110,136 @@ public sealed class RouteSearch
         return true;
     }
 
+    /// <summary>A conduit's: begins the cost-to-goal pass from the targets (false: not a conduit, the plain guess).</summary>
+    private bool StartDist()
+    {
+        _useHd = false;
+        if (!_pierce || !_ask.Exact)
+            return false;
+        if (_hd.Length == 0)
+        {
+            _hd = new float[MaxPoints];
+            _hdStamp = new int[MaxPoints];
+            _dHeapP = new int[DistHeap];
+            _dHeapF = new float[DistHeap];
+        }
+        if (++_hdNow == int.MaxValue)
+        {
+            Array.Clear(_hdStamp);
+            _hdNow = 1;
+        }
+        _dHeapN = 0;
+        _hdCap = float.MaxValue;
+        _hdStart = PointNear(_s);
+        for (var t = 0; t < _tgtN; t++)
+            Relax(_tgtPoint[t], _tgtT[t]);
+        return _dHeapN > 0;
+    }
+
+    private void Relax(int p, float d)
+    {
+        if (_hdStamp[p] == _hdNow && _hd[p] <= d)
+            return;
+        if (_dHeapN >= DistHeap)
+        {
+            _dHeapN = -1; // (too many: the plain guess)
+            return;
+        }
+        if (_dHeapN < 0)
+            return;
+        _hdStamp[p] = _hdNow;
+        _hd[p] = d;
+        var i = _dHeapN++;
+        while (i > 0)
+        {
+            var up = (i - 1) >> 1;
+            if (_dHeapF[up] <= d)
+                break;
+            _dHeapF[i] = _dHeapF[up];
+            _dHeapP[i] = _dHeapP[up];
+            i = up;
+        }
+        _dHeapF[i] = d;
+        _dHeapP[i] = p;
+    }
+
+    /// <summary>A slice of the cost-to-goal pass: true done (the guess is set), false out of time.</summary>
+    private bool DistSlice(long end)
+    {
+        var count = 0;
+        while (_dHeapN > 0)
+        {
+            if ((++count & 4095) == 0 && Stopwatch.GetTimestamp() >= end)
+                return false;
+            // pop
+            var p = _dHeapP[0];
+            var d = _dHeapF[0];
+            var n = --_dHeapN;
+            if (n > 0)
+            {
+                var lastF = _dHeapF[n];
+                var lastP = _dHeapP[n];
+                var i = 0;
+                while (true)
+                {
+                    var ch = i * 2 + 1;
+                    if (ch >= n)
+                        break;
+                    if (ch + 1 < n && _dHeapF[ch + 1] < _dHeapF[ch])
+                        ch++;
+                    if (_dHeapF[ch] >= lastF)
+                        break;
+                    _dHeapF[i] = _dHeapF[ch];
+                    _dHeapP[i] = _dHeapP[ch];
+                    i = ch;
+                }
+                _dHeapF[i] = lastF;
+                _dHeapP[i] = lastP;
+            }
+            if (d > _hd[p])
+                continue; // (a stale entry)
+            if (d > _hdCap)
+            {
+                _dHeapN = 0; // (far enough: the search keeps to the cheap side of this)
+                break;
+            }
+            if (p == _hdStart)
+                _hdCap = d * HdReach + HdSlack;
+
+            for (var axis = 0; axis < 3; axis++)
+            {
+                var stride = _stride[axis];
+                var i = Index(axis, p, _stride, _n);
+                if (i + 1 < _n[axis])
+                    DistEdge(p + stride, p, axis, _lat[axis][i + 1] - _lat[axis][i], d);
+                if (i > 0)
+                    DistEdge(p - stride, p - stride, axis, _lat[axis][i] - _lat[axis][i - 1], d);
+                if (_dHeapN < 0)
+                    break;
+            }
+            if (_dHeapN < 0)
+                break;
+        }
+        _useHd = _dHeapN == 0;
+        if (_dHeapN < 0)
+            _dHeapN = 0;
+
+        return true;
+    }
+
+    private void DistEdge(int q, int edge, int axis, float len, float d)
+    {
+        if ((_grid[q] & ReachBit) == 0)
+            return;
+        var bits = _grid[edge];
+        var through = (bits & (BlockBit << axis)) != 0;
+        if (through && !Open(edge, axis))
+            return;
+        // (the search's own price of the edge, a wall's once-only cost left out)
+        var cost = through ? len * _air : len * ((bits & (SoftBit << axis)) != 0 ? SoftFactor : (bits & (BesideBit << axis)) != 0 ? BesideFactor : (bits & (HugBit << axis)) != 0 ? HugFactor : _air);
+        Relax(q, d + cost);
+    }
+
     private bool StartFlat()
     {
         var c = _ask.C;
@@ -1185,7 +1348,10 @@ public sealed class RouteSearch
         var dy = MathF.Abs(_lat[1][y] - _g.Y);
         var dz = MathF.Abs(_lat[2][z] - _g.Z);
         var bends = (dx > 0.01f ? 1 : 0) + (dy > 0.01f ? 1 : 0) + (dz > 0.01f ? 1 : 0) - 1;
-        return ((dx + dy + dz) * _hFactor + MathF.Max(bends, 0) * _bend) * _hWeight;
+        var h = (dx + dy + dz) * _hFactor + MathF.Max(bends, 0) * _bend;
+        if (_useHd)
+            h = MathF.Max(h, _hdStamp[point] == _hdNow && _hd[point] <= _hdCap ? _hd[point] : _hdCap);
+        return h * _hWeight;
     }
 
     /// <summary>A slice of the square search: true found, false nothing there, null out of time.</summary>

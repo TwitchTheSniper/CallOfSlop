@@ -89,7 +89,7 @@ public static partial class ConstructNet
     /// </summary>
     public static void WriteFull(PacketWriter w, Construct c, uint tick = 0)
     {
-        w.Reserve(4096 + c.PartCount * 64 + c.LinkCount * 6 + c.JointCount * 64 + c.RouteCount * 16 + c.RouteNodeCount * 16);
+        w.Reserve(4096 + c.PartCount * 64 + c.LinkCount * 6 + c.JointCount * 64 + c.RouteCount * 16 + c.RouteNodeCount * 16 + (c.Uses?.Count ?? 0) * 96 + (c.Uses != null ? c.PartCount * 6 : 0));
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Full).U16(c.Id).U32(tick);
         w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0) | (c.Damaged ? 8 : 0) | (c.Pinned ? 16 : 0) | (c.Frozen ? 32 : 0))).U8(c.Owner).U8(c.FrozenBy); // (protocol 84: pinned; 87: frozen by the physics gun, and by whom)
         w.U16((ushort)Math.Max(0, c.Root)).U8(c.Driver).U16((ushort)(c.DriverSeat < 0 ? ushort.MaxValue : c.DriverSeat));
@@ -168,6 +168,7 @@ public static partial class ConstructNet
         ConstructTracks.Write(w, c); // (protocol 136)
         ConstructFinish.WriteFull(w, c); // (protocol 192: the texture paint tool's materials, by name)
         ConstructFuse.WriteFull(w, c); // (protocol 193: the fused units, runs of parts and their tags)
+        SubBlueprints.Write(w, c); // (protocol 324: its sub-blueprint uses, then runs of parts and their use)
     }
 
     /// <summary>
@@ -1199,6 +1200,7 @@ public static partial class ConstructNet
         ConstructTracks.Read(ref r, c, parts); // protocol 136: the tracks
         ConstructFinish.ReadFull(ref r, c); // protocol 192: the texture paint tool's materials
         ConstructFuse.ReadFull(ref r, c); // protocol 193: the fused units
+        SubBlueprints.Read(ref r, c); // protocol 324: the sub-blueprint uses
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Seg > c.JointCount)
                 throw new MalformedPacketException("a construct part on a joint that isn't there");
@@ -1374,8 +1376,8 @@ public static partial class ConstructNet
             if (c != null)
             {
                 c.DigestRound = world.DigestRound;
-                if (!wrong && asleep && c.NetTick <= tick)
-                    wrong = !c.Asleep || Vector3.DistanceSquared(c.NetPos, pos) > 0.02f * 0.02f || MathF.Abs(Quaternion.Dot(c.NetRot, rot)) < 0.99996f; // (2 cm, about 1 degree)
+                if (!wrong && asleep && c.NetTick <= tick) // (the digest's "asleep" is the server's Still: an anchored body without joints counts though awake, and sends no pose saying so, so it is still here too; 2026-11-16: every such body was sent whole again every round)
+                    wrong = !(c.Asleep || c.Anchored && c.JointCount == 0) || Vector3.DistanceSquared(c.NetPos, pos) > 0.02f * 0.02f || MathF.Abs(Quaternion.Dot(c.NetRot, rot)) < 0.99996f; // (2 cm, about 1 degree)
             }
             if (wrong && world.ResyncCount < world.Resync.Length)
                 world.Resync[world.ResyncCount++] = id;

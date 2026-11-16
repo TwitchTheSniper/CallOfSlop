@@ -39,7 +39,7 @@ public sealed partial class Game
     private enum SpaceMsg : byte
     {
         Bubble, // reliable, on a join and when the map changes: map name, system file ("" for none), file hash, body, then a clock
-        Clock, // unreliable once a second, reliable on a change: host tick, time (ns), speed, u8 the host's fuel use in space (percent, protocol 324)
+        Clock, // unreliable once a second, reliable on a change: host tick, time (ns), speed, u8 the host's fuel use in space (percent, protocol 326)
         Ships, // unreliable, 10 Hz: host tick, count, then per ship its id and ShipState (a cursor takes turns past one packet)
     }
 
@@ -48,6 +48,18 @@ public sealed partial class Game
 
     /// <summary>Host: asks for a speed (0 pauses, up to 100,000x). The provisional rule (<see cref="SpaceTimeRule"/>) decides what runs. False on a client or with no bubble.</summary>
     public bool RequestTimeSpeed(int speed) => IsServer && Space?.Flight is { } f && f.RequestSpeed(speed, fromHost: true);
+
+    /// <summary>
+    /// Any peer, when the bubble is made: past the bubble's edge a free player falls by the body's own GM, as the ships do,
+    /// so one who steps off a ship in orbit stays beside it (PointGravity.FreeFall). Both peers set it, so prediction agrees.
+    /// </summary>
+    private void SpaceOrbitPull()
+    {
+        if (GravityFrames.Point is not { } pg)
+            return;
+        var edge = SpaceEdge;
+        (pg.OrbitMu, pg.OrbitFrom) = Space != null && edge > 0 ? (Space.Bubble.BodyInfo.Mu, edge) : (0, 0);
+    }
 
     /// <summary>
     /// Host, every tick: the bubble follows the map, then the clock and the ships step and their news goes out.
@@ -129,6 +141,7 @@ public sealed partial class Game
         var start = was != null && (sameSystem || g >= 0 && old!.GalaxyIndex >= 0) ? old!.Now : e.System.Start;
         var flight = saved ?? kept ?? new SpaceFlight(e.System, SpaceShipCapacity, start);
         Space = new SpaceSession(new SpaceBubble(e.System, body), e.Hash, World.Map.Name, flight);
+        SpaceOrbitPull();
         if (was != null && (sameSystem || g >= 0 && old!.GalaxyIndex >= 0))
         {
             for (var k = 0; k < old!.Away.Length; k++)
@@ -283,6 +296,7 @@ public sealed partial class Game
             return;
         }
         Space = new SpaceSession(new SpaceBubble(e.System, _spacePendingBody), e.Hash, map, null);
+        SpaceOrbitPull();
         Space.GalaxyOk = _spacePendingGalaxy == Galaxy.Hash;
         if (!Space.GalaxyOk)
             Console.WriteLine("[space] the host's star systems aren't the same as this PC's: its ships in other systems won't show");

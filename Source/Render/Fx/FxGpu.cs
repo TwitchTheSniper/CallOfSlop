@@ -29,7 +29,7 @@ public static unsafe class FxGpu
     private const string EmitSrc = """
         #version 410 core
         layout(local_size_x = 64) in;
-        struct P { vec4 a; vec4 b; vec3 c; uint tint; vec4 d; }; // (d.xyz: the carry, Fx.FxParticle)
+        struct P { vec4 a; vec4 b; vec3 c; uint tint; vec4 d; }; // (d.xyz: the carry, d.w: 1 + its carrier, Fx.FxParticle)
         layout(std430, binding = 1) buffer Pool { P pool[]; };
         layout(std430, binding = 4) readonly buffer Births { P births[]; };
         uniform uint uFirst, uCount, uCursor, uCap;
@@ -44,13 +44,14 @@ public static unsafe class FxGpu
     private static readonly string UpdateSrc = "#version 410 core\n" + Block + """
 
         layout(local_size_x = 256) in;
-        struct P { vec4 a; vec4 b; vec3 c; uint tint; vec4 d; }; // (d.xyz: the carry, Fx.FxParticle)
+        struct P { vec4 a; vec4 b; vec3 c; uint tint; vec4 d; }; // (d.xyz: the carry, d.w: 1 + its carrier, Fx.FxParticle)
         layout(std430, binding = 1) buffer Pool { P pool[]; };
         layout(std430, binding = 2) writeonly buffer Alive { uint alive[]; };
         layout(std430, binding = 3) buffer Cmd { uint verts; uint instances; uint first; uint baseInstance; };
         uniform float uDt;
         uniform float uTime;
         uniform uint uCap;
+        uniform vec4 uCarry[96]; // Fx.CarrierRows: per carrier, three rows of its turn (w: its move) and the pivot before
         void main()
         {
             uint i = gl_GlobalInvocationID.x;
@@ -60,6 +61,18 @@ public static unsafe class FxGpu
             vec4 b = pool[i].b;
             if (b.w <= 0.0)
                 return;
+            vec4 d = pool[i].d;
+            if (d.w > 0.5 && a.w > 0.0)
+            {
+                // Moved with its body since last frame (born this frame, it is where the body is drawn now already).
+                int s = (int(d.w + 0.5) - 1) * 4;
+                if (s >= 0 && s < 96)
+                {
+                    vec3 r = a.xyz - uCarry[s + 3].xyz;
+                    a.xyz = uCarry[s + 3].xyz + vec3(dot(uCarry[s].xyz, r), dot(uCarry[s + 1].xyz, r), dot(uCarry[s + 2].xyz, r)) + vec3(uCarry[s].w, uCarry[s + 1].w, uCarry[s + 2].w);
+                    b.xyz = vec3(dot(uCarry[s].xyz, b.xyz), dot(uCarry[s + 1].xyz, b.xyz), dot(uCarry[s + 2].xyz, b.xyz));
+                }
+            }
             a.w += uDt;
             if (a.w >= b.w)
             {
@@ -73,7 +86,7 @@ public static unsafe class FxGpu
             v.y -= m.x * uDt;
             if (m.z > 0.0)
                 v += vec3(sin(uTime * 2.3 + seed + a.y * 0.7), cos(uTime * 1.7 + seed * 1.3 + a.x * 0.7), sin(uTime * 2.9 + seed * 0.7 + a.z * 0.7)) * m.z * uDt;
-            a.xyz += (v + pool[i].d.xyz) * uDt;
+            a.xyz += (v + d.xyz) * uDt;
             pool[i].a = a;
             pool[i].b.xyz = v;
             alive[atomicAdd(instances, 1u)] = i;
@@ -83,7 +96,7 @@ public static unsafe class FxGpu
     private static readonly string VertexSrc = "#version 410 core\n#define FX_PULL 0\n" + Block + """
 
         #if GL46 && FX_PULL
-        struct P { vec4 a; vec4 b; vec3 c; uint tint; vec4 d; }; // (d.xyz: the carry, Fx.FxParticle)
+        struct P { vec4 a; vec4 b; vec3 c; uint tint; vec4 d; }; // (d.xyz: the carry, d.w: 1 + its carrier, Fx.FxParticle)
         layout(std430, binding = 1) readonly buffer Pool { P pool[]; };
         layout(std430, binding = 2) readonly buffer Alive { uint alive[]; };
         #else
@@ -191,7 +204,7 @@ public static unsafe class FxGpu
     private static float _busy; // seconds until the longest life still running is over
     private static bool _idle;
     private static int _lViewProj, _lOrigin, _lCam, _lRight, _lUp, _lAmbient, _lFog, _lFogRange;
-    private static int _uFirst, _uCount, _uCursor, _uCapE, _uDt, _uTime, _uCapU;
+    private static int _uFirst, _uCount, _uCursor, _uCapE, _uDt, _uTime, _uCapU, _uCarry;
 
     private const uint GlSrc1Alpha = 0x88FB; // GL_ONE_MINUS_SRC1_ALPHA (dual-source blending, core since GL 3.3)
 
@@ -282,6 +295,7 @@ public static unsafe class FxGpu
         _uDt = Loc(_update.Program, "uDt\0"u8);
         _uTime = Loc(_update.Program, "uTime\0"u8);
         _uCapU = Loc(_update.Program, "uCap\0"u8);
+        _uCarry = Loc(_update.Program, "uCarry\0"u8);
         _births = new StreamRing(sizeof(FxParticle), Fx.MaxBirths, "Fx.births");
         _pool = GenBuffer();
         _alive = GenBuffer();
@@ -340,6 +354,7 @@ public static unsafe class FxGpu
             Fx.StepCpu(dt);
             return;
         }
+        Fx.CarriersStep(dt); // (each frame, busy or not: a carrier's last pose stays this frame's)
         var cap = Fx.Capacity(Fx.Level, true);
         if (cap != _cap)
             Size(cap);
@@ -377,6 +392,8 @@ public static unsafe class FxGpu
         Native.glUniform1f(_uDt, dt);
         Native.glUniform1f(_uTime, time % 4096f);
         Native.glUniform1ui(_uCapU, (uint)_cap);
+        fixed (Vector4* carry = Fx.CarrierRows)
+            Native.glUniform4fv(_uCarry, Fx.MaxCarriers * 4, (float*)carry);
         Native.glDispatchCompute((uint)((_cap + 255) / 256), 1, 1);
         Native.glMemoryBarrier((GlBitfield)(GL_SHADER_STORAGE_BARRIER_BIT | GL_COMMAND_BARRIER_BIT));
     }

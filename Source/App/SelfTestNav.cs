@@ -141,8 +141,7 @@ public static partial class SelfTest
                             Position = new Vector3(x, y, z),
                             Velocity = stream ? Vector3.Zero : new Vector3(Rand(-14, 14), Rand(-8, 6), Rand(-14, 14)),
                             Grounded = stream || run % 2 == 0,
-                            Stance = stream ? Stance.Stand : (Stance)rng.Next(3),
-                            MovePerk = run % 7 == 0 ? PerkId.Parkour : PerkId.None,
+                            Stance = stream ? Stance.Stand : (Stance)rng.Next(3), // (no movement perk: Sandbox has none, SandboxModule.FixedPerks)
                         };
                         var a = s;
                         var yaw = Rand(-MathF.PI, MathF.PI);

@@ -1,6 +1,6 @@
 {
   "format": "call-of-slop-categories/1",
-  "about": "The Tab inventory's categories (docs/sandbox/CONSTRUCTS.md, 'The inventory'). Function first; size is the window's filter, never a category. Rules run top to bottom and the first match places the part. A rule's keys all have to match: group and section (the part file's own \"group\" and \"section\", any of a list), role, logic (the logic kind), name (any of these words in the part's name). 'given' keeps a part whose file names a category as its group, with its own section.",
+  "about": "The Tab inventory's categories (docs/sandbox/CONSTRUCTS.md, 'The inventory'). Function first; size is the window's filter, never a category. Rules run top to bottom and the first match places the part. A rule's keys all have to match: group and section (the part file's own \"group\" and \"section\", any of a list), role, logic (the logic kind), name (any of these words in the part's name). 'given' keeps a part whose file names a category as its group, with its own section. 'unlisted' rules (notSection: any section but these) keep a part out of the Parts tab and its search wherever they stand: a ship's own pieces, which come with its blueprint (Karl, 2026-11-16: everything named after a ship). A ship's generator gives its pieces a section of its own; a fitting any ship can use goes in 'Ship fittings' with a name that names no ship.",
   "categories": [
     { "name": "Structure", "sections": ["Beams and frames", "Braces and junctions", "Plates and sheet", "Decks and chassis", "Glass, grates and openings", "Wedges and curves", "Adapters and ballast"] },
     { "name": "Buildings", "sections": ["Walls", "Wall openings", "Floors and foundations", "Roofs", "Columns and towers", "Stairs and access", "Doors and gates", "Defences"] },
@@ -20,6 +20,8 @@
     { "name": "Lights and Details", "sections": ["Lights", "Body panels", "Chimneys and stacks"] }
   ],
   "rules": [
+    { "group": "Ship", "notSection": "Ship fittings", "unlisted": true },
+    { "group": "Ship", "name": ["Magpie", "Halberd", "Zero Day", "Rust Bucket"], "unlisted": true },
     { "section": "Wings", "to": ["Flight", "Wings"] },
     { "section": "Control surfaces", "to": ["Flight", "Control surfaces"] },
     { "section": "Rotors", "to": ["Flight", "Rotors"] },

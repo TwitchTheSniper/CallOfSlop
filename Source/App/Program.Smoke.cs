@@ -6,8 +6,9 @@ namespace CallOfSlop;
 /// The window smoke test (<c>--smoketest</c>): one short script that drives the real window end to end and logs
 /// <c>[smoke]</c> lines to callofslop.log, then quits. It runs on a throwaway copy of the saves (SavePaths.UseSmokeSandbox),
 /// so it never touches a real save. The script: the lobby, the Loadouts and Appearance screens opened and closed,
-/// then three short runs (a Free-for-all match on Proto Box with a few seconds of moving, shooting and a melee swing, the
-/// pause menu, the results screen and map vote; a Zombies start; a Sandbox start; a Sandbox start on the planetoid with a crater), each ending back in the lobby.
+/// then two short Sandbox runs (Construct Yard with a crater and a row of parts textured, fused and remade; the planetoid
+/// with a crater and the pause menu opened and shut), each ending back in the lobby. The arena match and the Zombies start
+/// went with those modes' archiving (2026-11-16).
 /// Everything deeper is covered by the headless self-test (SelfTest*.cs); the picture tools are --light-shots and friends.
 /// </summary>
 public static unsafe partial class Program
@@ -17,8 +18,6 @@ public static unsafe partial class Program
     /// <summary>The runs after the lobby: a log label, the mode, the map and the bot count.</summary>
     private static readonly (string Label, GameMode Mode, string Map, string Fallback, int Bots)[] SmokeRuns =
     [
-        ("match", GameMode.FreeForAll, "Proto Box", "", 7),
-        ("zombies", GameMode.Zombies, "Blackmoor Asylum", "Zombies Test", 1),
         ("sandbox", GameMode.Sandbox, "Construct Yard", "", 0),
         ("planetoid", GameMode.Sandbox, "Planetoid", "", 0), // (a crater on the planetoid: its dug ground's drawing, PlanetRendererDug.cs)
     ];
@@ -29,7 +28,7 @@ public static unsafe partial class Program
     private static int _smokeRun = -1;
     private static double _smokeStepStart, _smokeWorstDt;
     private static int _smokeFrames, _smokeRunFrames;
-    private static int _smokeScript; // the match run's sub-steps, below
+    private static int _smokeScript; // the run's sub-steps, below
     private static Construct? _smokeBig; // the Sandbox run's row of parts (textured by the texture paint tool)
     private static Buttons _smokeButtons; // held movement keys (ORed into the real input)
     private static bool _smokeFireHeld; // held trigger (ORed into the real one)
@@ -103,8 +102,6 @@ public static unsafe partial class Program
         _settings.Mode = mode;
         _settings.Bots = bots;
         StartSession(LobbyAction.SinglePlayer);
-        if (_session != null && mode == GameMode.FreeForAll)
-            Ui.SmokeRespawn(_session, now); // the loadout as it stands, then deploy (UiLoadout.cs)
         Console.WriteLine($"[smoke] {label}: started {map.Name} ({mode}): session {(_session != null ? "ok" : "FAILED")}");
         _smokeStep = SmokeStep.Waiting;
         _smokeStepStart = now;
@@ -149,7 +146,7 @@ public static unsafe partial class Program
         }
     }
 
-    /// <summary>A few seconds of play; the match run also moves, shoots, swings, opens the pause menu and ends on the results screen.</summary>
+    /// <summary>A few seconds of play: a crater and a row of parts on Construct Yard; a crater and the pause menu on the planetoid.</summary>
     private static void SmokePlay(double now, double t)
     {
         if (_session is not { } g)
@@ -158,57 +155,25 @@ public static unsafe partial class Program
             return;
         }
         var label = SmokeRuns[_smokeRun].Label;
-        if (_smokeRun == 0)
-        {
-            switch (_smokeScript)
-            {
-                case 0: // run forward, sprinting
-                    _smokeButtons = Buttons.Forward | Buttons.Sprint;
-                    _smokeScript = 1;
-                    break;
-                case 1 when t > 1.0: // keep moving and fire
-                    _smokeFireHeld = true;
-                    _smokeScript = 2;
-                    break;
-                case 2 when t > 2.5: // stop, swing the knife
-                    _smokeButtons = Buttons.None;
-                    _smokeFireHeld = false;
-                    g.TryMelee(now);
-                    _smokeScript = 3;
-                    break;
-                case 3 when t > 3.0: // the pause menu, open and shut
-                    Ui.PauseOpen = true;
-                    _smokeScript = 4;
-                    break;
-                case 4 when t > 3.5:
-                    Ui.PauseOpen = false;
-                    SetMouseCaptured(true);
-                    _smokeScript = 5;
-                    break;
-                case 5 when t > 4.0:
-                    Console.WriteLine($"[smoke] {label}: {World.Map.Name}: alive {g.Local?.Alive}, weapon {g.Active.Def.Name}, phase {g.Phase}, players {g.Players.Count}, "
-                        + $"{(_smokeFrames - _smokeRunFrames) / Math.Max(t, 0.001):0} fps avg, worst frame {_smokeWorstDt * 1000:0} ms, GL error 0x{GlDebug.Error():X}");
-                    g.DebugEndMatch(now); // the results screen and the map vote
-                    _smokeScript = 6;
-                    break;
-                case 6 when t > 5.5:
-                    g.CastVote(1);
-                    _smokeScript = 7;
-                    break;
-                case 7 when t > 6.2:
-                    Console.WriteLine($"[smoke] {label}: vote screen: options {string.Join(", ", g.VoteNames)}, my vote {g.MyVote}, mouse free {!_mouseCaptured}, GL error 0x{GlDebug.Error():X}");
-                    EndSmokeRun(now);
-                    break;
-            }
-            return;
-        }
         if (g.SandboxOn && _smokeScript == 0 && t > 1.0 && g.Local is { } pm && World.Map.Planetoid is { } planet)
         {
             // A crater 5 m in front of the player on the planetoid (PlanetEdits.cs): its blocks and the masked ground draw in a real window.
             var up = GravityFrames.UpAt(pm.Position);
             var ahead = System.Numerics.Vector3.Normalize(System.Numerics.Vector3.Cross(up, MathF.Abs(up.X) < 0.9f ? System.Numerics.Vector3.UnitX : System.Numerics.Vector3.UnitZ));
             g.BlastCrater(planet.GroundUnder(pm.Position + ahead * 5f), 8f);
-            _smokeScript = 1;
+            _smokeScript = 10;
+        }
+        if (_smokeScript == 10 && t > 1.8) // the pause menu, open and shut (the arena match did this until 2026-11-16)
+        {
+            Ui.PauseOpen = true;
+            _smokeScript = 11;
+        }
+        else if (_smokeScript == 11 && t > 2.3)
+        {
+            Ui.PauseOpen = false;
+            SetMouseCaptured(true);
+            Console.WriteLine($"[smoke] {label}: pause menu opened and shut, mouse captured {_mouseCaptured}, GL error 0x{GlDebug.Error():X}");
+            _smokeScript = 12;
         }
         if (g.SandboxOn && _smokeScript == 0 && t > 1.0 && g.Local is { } me && World.Map.Terrain != null)
         {
@@ -307,7 +272,7 @@ public static unsafe partial class Program
         _smokeButtons = Buttons.None;
         _smokeFireHeld = false;
         EndSession("");
-        _settings.Mode = GameMode.FreeForAll;
+        _settings.Mode = GameMode.Sandbox;
         _smokeStep = SmokeStep.Lobby2;
         _smokeStepStart = now;
         _smokeWorstDt = 0;

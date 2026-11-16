@@ -465,8 +465,19 @@ public sealed partial class ConstructWorld
         Shattered.Clear();
         FireCount = 0;
         CookOffCount = 0;
+        Fresh.Clear();
+        FreshOverflow = false;
         ClearStores();
     }
+
+    /// <summary>
+    /// Bodies made since the physics last stepped, up to <see cref="FreshCap"/> (past it <see cref="FreshOverflow"/>: the step
+    /// looks at every body). The server's step empties it (ConstructRide.SpawnIntoMotion); a client's only ever reaches the cap.
+    /// </summary>
+    public readonly List<Construct> Fresh = new(FreshCap);
+
+    public const int FreshCap = 256;
+    public bool FreshOverflow;
 
     /// <summary>A new empty body at a pose (null when the host's cap is reached or no id is free). Add parts, then it rebuilds on the next tick.</summary>
     public Construct? Create(Vector3 pos, Quaternion rot, ushort id = 0)
@@ -480,6 +491,11 @@ public sealed partial class ConstructWorld
         var c = new Construct { Id = id, Pos = pos, Rot = rot, PrevPos = pos, PrevRot = rot, NetPos = pos, NetFromPos = pos, NetRot = rot, NetFromRot = rot, StorePool = Stores };
         Bodies.Add(c);
         _byId[id] = c;
+        c.Fresh = true; // (into the motion of the frame it is made in, before the physics next steps: ConstructRideSpawn.cs)
+        if (Fresh.Count < FreshCap)
+            Fresh.Add(c);
+        else
+            FreshOverflow = true;
         StructureDirty.Add(id);
         GridAdded(c);
         _blasting?.Add(c); // (a piece split off by a blast going off: it is in the blast too)
@@ -752,6 +768,8 @@ public sealed partial class ConstructWorld
         }
         c.WorldFrame(baseSeg, out var q, out var t);
         var wreck = MegaDebrisLeft == 0 ? null : Create(t, q); // (a massive blast past its debris: the piece is gone, ConstructMegaBlast.cs)
+        if (wreck != null)
+            SubBlueprints.CopyTable(c, wreck); // (its parts keep their sub-blueprint uses)
         if (wreck != null && MegaDebrisLeft > 0)
             MegaDebrisLeft--;
         if (wreck == null)
@@ -1068,7 +1086,7 @@ public sealed partial class ConstructWorld
             piece.Owner = c.Owner;
             piece.Damaged = true;
             piece.Rebuild();
-            piece.Vel = vel + outward + new Vector3(0, 2.5f, 0); // knocked off: out and up
+            piece.Vel = c.SpaceShip != 0 ? vel : vel + outward + new Vector3(0, 2.5f, 0); // knocked off: out and up (in space, where nothing pulls it back down, it floats where it broke, with the ship: it becomes a ship of its own beside it, GameSpaceLaunch.cs)
             piece.AngVel = spin + new Vector3(1.3f, 0.4f, -0.9f);
         }
         return true;
@@ -2127,6 +2145,7 @@ public sealed partial class ConstructWorld
         ConstructOrdnance.Release(this, query); // (bomb racks that let go: the same)
         ConstructLauncher.Step(this, dt); // (catapults and arrestor gear, on the logic's signals: ConstructLauncher.cs)
         ConstructDoors.Step(this); // (event doors: the wired ones' edges and the moving ones, nothing for an idle door)
+        ConstructRide.SpawnIntoMotion(this); // (bodies made since the last step: into the motion of the frame they were made in)
         ConstructRide.BeforePhysics(this); // (each body's acceleration: riders thrown off by a crash)
         perf.Dispose();
         perf = Perf.Measure(PerfArea.ConstructPhysics);

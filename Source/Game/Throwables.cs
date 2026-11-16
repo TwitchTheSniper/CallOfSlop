@@ -651,7 +651,7 @@ public sealed partial class Game
             Kind = kind,
             Owner = p.Id,
             Pos = origin,
-            Vel = Throwables.LaunchVelocity(Throwables.Get(kind), dir, p.Sim.Velocity),
+            Vel = Throwables.LaunchVelocity(Throwables.Get(kind), dir, p.Sim.Velocity) + SandboxRideCarry(p), // (thrown in a moving ship: its motion too, all of it)
             Born = now,
         };
         if (_nextProjectileId == 0)

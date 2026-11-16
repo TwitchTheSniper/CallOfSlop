@@ -73,94 +73,94 @@
       "by": "j0"
     },
     {
-      "part": "Rust Bucket Roof",
+      "part": "Rust Bucket Upper Stern",
       "on": 1,
       "socket": "j1",
       "by": "j0"
     },
     {
+      "part": "Rust Bucket Roof",
+      "on": 1,
+      "socket": "j2",
+      "by": "j0"
+    },
+    {
       "part": "Rust Bucket Deck",
       "on": 2,
-      "socket": "j1",
+      "socket": "j2",
       "by": "j0"
     },
     {
       "part": "Rust Bucket Upper Port Fore",
-      "on": 9,
-      "socket": "j6",
+      "on": 3,
+      "socket": "j4",
       "by": "j0"
     },
     {
       "part": "Rust Bucket Upper Stbd Fore",
-      "on": 9,
-      "socket": "j7",
+      "on": 4,
+      "socket": "j4",
       "by": "j0"
     },
     {
       "part": "Rust Bucket Upper Port Aft",
-      "on": 9,
-      "socket": "j8",
+      "on": 5,
+      "socket": "j5",
       "by": "j0"
     },
     {
       "part": "Rust Bucket Upper Stbd Aft",
-      "on": 9,
-      "socket": "j9",
-      "by": "j0"
-    },
-    {
-      "part": "Rust Bucket Upper Stern",
-      "on": 10,
-      "socket": "j6",
+      "on": 6,
+      "socket": "j5",
       "by": "j0"
     },
     {
       "part": "Rust Bucket Canopy",
-      "on": 12,
+      "on": 13,
       "socket": "j4",
       "by": "j1"
     },
     {
       "part": "Rust Bucket Partition 2",
-      "on": 12,
+      "on": 13,
       "socket": "j10",
-      "by": "j3"
+      "by": "j5"
     },
     {
       "part": "Rust Bucket Partition 3",
-      "on": 12,
+      "on": 13,
       "socket": "j11",
       "by": "j3"
     },
     {
       "part": "Rust Bucket Partition 4",
-      "on": 12,
+      "on": 13,
       "socket": "j12",
       "by": "j2"
     },
     {
       "part": "Rust Bucket Partition 5",
-      "on": 12,
+      "on": 13,
       "socket": "j13",
       "by": "j1"
     },
     {
       "part": "Rust Bucket Partition 6",
-      "on": 12,
+      "on": 13,
       "socket": "j14",
-      "by": "j2"
+      "by": "j3"
     },
     {
       "part": "Rust Bucket Partition 7",
-      "on": 12,
+      "on": 13,
       "socket": "j15",
-      "by": "j1"
+      "by": "j2"
     },
     {
       "part": "Rust Bucket Partition 8",
-      "on": 12,
+      "on": 13,
       "socket": "j16",
-      "by": "j1"
+      "by": "j2"
     },
     {
       "part": "Rust Bucket Pod L",
@@ -344,7 +344,7 @@
     },
     {
       "part": "Rust Bucket Deck Cargo",
-      "on": 12,
+      "on": 13,
       "socket": "cargo",
       "by": "bottom",
       "paint": "#3f5e6a",
@@ -352,31 +352,31 @@
     },
     {
       "part": "Rust Bucket Crane",
-      "on": 12,
+      "on": 13,
       "socket": "crane",
       "by": "bottom"
     },
     {
       "part": "Rust Bucket Mast",
-      "on": 12,
+      "on": 13,
       "socket": "mast",
       "by": "bottom"
     },
     {
       "part": "Long Range Sensor",
-      "on": 12,
+      "on": 13,
       "socket": "sensor",
       "by": "-y"
     },
     {
       "part": "Rust Bucket Radiator L",
-      "on": 12,
+      "on": 13,
       "socket": "radL",
       "by": "root"
     },
     {
       "part": "Rust Bucket Radiator R",
-      "on": 12,
+      "on": 13,
       "socket": "radR",
       "by": "root"
     },
@@ -544,19 +544,19 @@
     },
     {
       "part": "Worn Flight Couch",
-      "on": 13,
+      "on": 14,
       "socket": "seatL",
       "by": "bottom"
     },
     {
       "part": "Worn Flight Couch",
-      "on": 13,
+      "on": 14,
       "socket": "seatR",
       "by": "bottom"
     },
     {
       "part": "Flight Stabilizer",
-      "on": 13,
+      "on": 14,
       "socket": "module",
       "by": "-y",
       "config": {
@@ -572,7 +572,7 @@
     },
     {
       "part": "Iron Bed",
-      "on": 14,
+      "on": 15,
       "socket": "bed",
       "by": "wall",
       "paint": "#6b4a2e",
@@ -600,25 +600,25 @@
     },
     {
       "part": "Ship Basin",
-      "on": 15,
+      "on": 16,
       "socket": "basin",
       "by": "wall"
     },
     {
       "part": "Ship Toilet",
-      "on": 15,
+      "on": 16,
       "socket": "toilet",
       "by": "wall"
     },
     {
       "part": "Grow Rack 2 m",
-      "on": 16,
+      "on": 17,
       "socket": "growL0",
       "by": "wall"
     },
     {
       "part": "Grow Rack 2 m",
-      "on": 16,
+      "on": 17,
       "socket": "growL1",
       "by": "wall"
     },
@@ -636,7 +636,7 @@
     },
     {
       "part": "Ship Galley Range",
-      "on": 17,
+      "on": 12,
       "socket": "stove",
       "by": "back"
     },
@@ -648,7 +648,7 @@
     },
     {
       "part": "Medicine Cabinet",
-      "on": 17,
+      "on": 18,
       "socket": "cabinet",
       "by": "back"
     },

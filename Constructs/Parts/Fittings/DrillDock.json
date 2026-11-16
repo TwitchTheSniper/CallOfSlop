@@ -1,9 +1,9 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Magpie Drill Dock",
-  "description": "A wall dock for a Drill Module (any tier). F lets the drill go, to carry outside with the physics gun; F with a loose drill close by clips it back on, square.",
+  "name": "Drill Dock",
+  "description": "A wall dock for a Drill Module (any tier), for any ship or base: weld it to a wall or bulkhead. F lets the drill go, to carry outside with the physics gun; F with a loose drill close by clips it back on, square.",
   "group": "Ship",
-  "section": "Magpie miner",
+  "section": "Ship fittings",
   "role": "frame",
   "tool": "welder",
   "toolDock": "Drill Module",

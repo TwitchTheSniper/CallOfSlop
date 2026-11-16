@@ -104,6 +104,7 @@ public struct MoveState
     public Vector3 RideUp; // their up in the construct's rest frame (zero: a bot, or the plain ride above)
     public Vector3 RideVel; // their own velocity in the segment's frame
     public Vector3 RideUpW; // RideUp in the world, as the frame last put them down (not sent)
+    public byte RideOn; // contraption space: the moving segment (a lift deck, a ramp, a turntable) under the feet, which carries them in the body's frame (0: the body itself); RideVel is relative to it while they stand on it
 
     // What they wear (PilotGear.cs): only ever set in Sandbox, so everything else pays one test.
     public byte Gear; // the backpack's parachute, glider and jetpack (bits; the server's)

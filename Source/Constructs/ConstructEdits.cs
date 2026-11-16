@@ -51,7 +51,7 @@ public struct SandboxHand
     public double GrabAskedAt; // client: when it last asked to grab or let go (the 10 Hz tail doesn't undo it meanwhile)
     // Contraption space (GameSandboxRide.cs; each machine's own, never sent): the frame this player stands in.
     public ushort RideBody; // 0: none
-    public byte RideSeg;
+    public byte RideSeg; // the segment whose surface carries them (the body, or a lift, a ramp, a turntable they stand on: ConstructRide.Carrier); their frame is the body's
     public Quaternion RideTurn; // their look's yaw, as a turn in the world about their up (the physics gun's "relative to the look")
 
     public readonly bool Seated => SeatBody != 0;
@@ -526,6 +526,7 @@ public sealed partial class ConstructEdits
                     {
                         freed.Owner = player;
                         freed.Vel = vel;
+                        freed.AngVel = c.Anchored || c.Asleep ? Vector3.Zero : c.AngVel; // (cut loose from a turning ship: turning with it)
                         return $"ok: {def.Name} cut free of construct {from} as construct {freed.Id} (physics-only: {def.PhysicsWhy})";
                     }
                     // (the world is full: counted, as below)
@@ -1099,17 +1100,14 @@ public sealed partial class ConstructEdits
     /// Server: a body that has just come into the world beside <paramref name="player"/> (spawned from the menu, dropped,
     /// given) takes on the motion of the frame they stand in: a ship in orbit moves hundreds of metres a second, and a body
     /// made there at rest in the world is left behind at once. With the deck's velocity at its centre and the deck's spin it
-    /// moves with the ship, and so falls onto its floor as it would on one standing still. Not riding anything: left as it is.
+    /// moves with the ship, and so falls onto its floor as it would on one standing still. Not riding anything: the frame it was
+    /// made in, if one moves there (ConstructRide.IntoMotion, which every new body passes through before the physics steps).
     /// </summary>
     public void InheritRide(ConstructWorld world, byte player, Construct c)
     {
         ref var h = ref Hands[player];
-        if (h.RideBody == 0 || h.RideBody == c.Id || world.Get(h.RideBody) is not { } deck || h.RideSeg > deck.JointCount)
-            return;
-        if (c.Dirty)
-            c.Rebuild(); // (its centre of mass, which a fresh body has yet to work out)
-        c.Vel = ConstructRide.SurfaceVel(deck, h.RideSeg, c.WorldCom);
-        c.AngVel = ConstructRide.SurfaceSpin(deck, h.RideSeg);
+        var deck = h.RideBody != 0 && h.RideBody != c.Id ? world.Get(h.RideBody) : null;
+        ConstructRide.IntoMotion(world, c, deck, deck != null && h.RideSeg <= deck.JointCount ? h.RideSeg : 0); // (the one helper: not riding, the frame it was made in, if any)
     }
 
     public string? Drop(ConstructWorld world, byte player, Vector3 feet, float yaw)

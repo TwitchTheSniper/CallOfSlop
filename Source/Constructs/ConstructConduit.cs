@@ -21,7 +21,15 @@ public static class ConstructConduit
     /// The searches tried in turn, the cost a metre off every surface and the lattice's gap: a dear one keeps it on the walls, a cheaper one
     /// finds a way where the dear one's search gives up (the weaker its guess, the more it searches), and the tool's own 5 cm lattice is smaller still.
     /// </summary>
-    private static readonly (float Air, byte Gap)[] Tries = [(6f, 0), (3f, 0), (6f, 5), (1.5f, 8)]; // (the last, cheap in the air, only on a conduit ship: a building's wire stays in its walls or straight)
+    private static readonly (float Air, byte Gap, bool Exact)[] Tries = [(6f, 0, false), (3f, 0, false), (6f, 5, false)]; // (a building's)
+    /// <summary>
+    /// A conduit ship's: open air dear first (a metre of it dearer than several walls passed and every bend round them, so a
+    /// link never cuts across a room or a corridor to save a run along its walls), searched again by the true cost to the goal
+    /// when the plain guess's route still runs in the open (<see cref="OpenMax"/>), then the building's, then one cheap in the air.
+    /// </summary>
+    private static readonly (float Air, byte Gap, bool Exact)[] ShipTries = [(AirShip, 0, false), (AirShip, 0, true), (6f, 0, false), (3f, 0, false), (6f, 5, false), (1.5f, 8, false)];
+    public const float AirShip = 30f;
+    public const float ExactBudgetMs = 1000f; // the true cost's search, for the few routes the plain guess left in the open (its pass over the lattice comes first), as the blueprints load
     public const float BudgetMs = 250f; // one search at most, as the blueprints load: past it the wire stays straight (concealed)
     public const float PlayMs = 20f; // a whole build's searching at most in play (a blueprint the load didn't route: a mod's, one built while it loads); past it the rest stay straight and are tried again next build
     private static RouteSearch? _search; // (its tables, about 19 MB, are made for the load's routing and let go after it: Release)
@@ -67,6 +75,11 @@ public static class ConstructConduit
             Ms += sw.Elapsed.TotalMilliseconds;
             if (nodes == null && outOfTime)
                 return false; // (not kept: a busy moment isn't the blueprint's fault)
+            if (outOfTime)
+            {
+                Routed++;
+                return Add(world, c, type, from, fromPort, to, toPort, nodes!); // (laid, not kept: a later try ran out of time before it could judge this one)
+            }
             known[k] = nodes ?? [];
             if (nodes == null)
             {
@@ -106,21 +119,61 @@ public static class ConstructConduit
     {
         why = null;
         outOfTime = false;
-        foreach (var (air, gap) in ship ? Tries : Tries.AsSpan(0, Tries.Length - 1))
+        CRouteNode[]? kept = null;
+        var keptAir = 0f;
+        foreach (var (air, gap, exact) in !ship ? Tries : _loading ? ShipTries : ShipTries.AsSpan(2)) // (in play, with 20 ms for a whole build, a ship skips the dear tries: they would spend it all)
         {
-            if (Find(world, c, ship, type, from, fromPort, to, toPort, air, gap, deadline, out why, out var late) is { } nodes)
-                return nodes;
+            var nodes = Find(world, c, ship, type, from, fromPort, to, toPort, air, gap, exact, deadline, out why, out var late, out var open);
             outOfTime |= late;
+            if (exact && kept != null)
+            {
+                outOfTime = late; // (laid but not kept when the true cost's search ran out of time to judge it: tried again next start)
+                return nodes != null && open < keptAir ? nodes : kept; // (the plain guess's route, unless the true cost's ran less in the open)
+            }
+            if (nodes == null)
+                continue; // (a plain search that failed, even refused by the check, is tried with the true cost too: its route differs)
+            if (ship && !exact && air >= AirShip && open > OpenMax)
+            {
+                // (the plain guess wanders on a big ship and settles for a run across a room: the true cost's search, the dearer pass, judges)
+                kept = nodes;
+                keptAir = open;
+                continue;
+            }
+            outOfTime = false;
+            return nodes;
         }
-        return null;
+        return kept;
     }
 
-    private static CRouteNode[]? Find(ConstructWorld world, Construct c, bool ship, RouteType type, int from, byte fromPort, int to, byte toPort, float air, byte gap, long deadline, out string? why, out bool late)
+    /// <summary>How much of a route (m) runs in the open: over 7 cm past its own radius from every part, sampled every 10 cm (as <c>--conduit-check</c> reports it).</summary>
+    public static float OpenLength(Construct c, RouteType type, int from, byte fromPort, int to, byte toPort, ReadOnlySpan<CRouteNode> nodes)
     {
+        var open = 0f;
+        var prev = ConstructRoutes.PortPoint(c, from, fromPort, type);
+        var gap = ConstructRoutes.Radius(type) + 0.07f;
+        for (var i = 0; i <= nodes.Length; i++)
+        {
+            var q = i < nodes.Length ? nodes[i].Pos : ConstructRoutes.PortPoint(c, to, toPort, type);
+            var l = System.Numerics.Vector3.Distance(prev, q);
+            var steps = Math.Max(1, (int)(l / 0.1f));
+            for (var k = 0; k < steps; k++)
+                if (ConstructRoutes.SignedDistance(c, System.Numerics.Vector3.Lerp(prev, q, (k + 0.5f) / steps), -1, -1, out _) > gap)
+                    open += l / steps;
+            prev = q;
+        }
+        return open;
+    }
+
+    /// <summary>A ship's route found by the plain guess that runs more than this in the open (m) is searched again with the true cost to the goal.</summary>
+    public const float OpenMax = 0.3f;
+
+    private static CRouteNode[]? Find(ConstructWorld world, Construct c, bool ship, RouteType type, int from, byte fromPort, int to, byte toPort, float air, byte gap, bool exact, long deadline, out string? why, out bool late, out float open)
+    {
+        open = 0f;
         var search = _search ??= new RouteSearch();
         search.Clear();
-        var ask = new RouteAsk { World = world, C = c, Type = type, From = from, FromPort = fromPort, Parent = 255, Nodes = [], Count = 0, To = to, ToPort = toPort, Conduit = air, ConduitGap = gap };
-        var end = Math.Min(deadline, Stopwatch.GetTimestamp() + (long)(BudgetMs * Stopwatch.Frequency / 1000));
+        var ask = new RouteAsk { World = world, C = c, Type = type, From = from, FromPort = fromPort, Parent = 255, Nodes = [], Count = 0, To = to, ToPort = toPort, Conduit = air, ConduitGap = gap, Exact = exact };
+        var end = Math.Min(deadline, Stopwatch.GetTimestamp() + (long)((exact ? ExactBudgetMs : BudgetMs) * Stopwatch.Frequency / 1000));
         RouteSearch.Result r;
         do
             r = search.Poll(ask, MathF.Max(1f, MathF.Min(50f, (float)((end - Stopwatch.GetTimestamp()) * 1000.0 / Stopwatch.Frequency))));
@@ -138,6 +191,7 @@ public static class ConstructConduit
             return null;
         }
         var nodes = r.Nodes.AsSpan(0, r.Count).ToArray();
+        open = OpenLength(c, type, from, fromPort, to, toPort, nodes);
         why = OnMoving(c, ship, from, to, nodes) ? "it would ride a moving part" : ConstructRoutes.Check(world, c, type, from, fromPort, 255, 0, default, nodes, to, toPort, straight: r.Pierced);
         return why == null ? nodes : null;
     }
@@ -178,13 +232,16 @@ public static class ConstructConduit
 
     public static string File => Path.Combine(AppFolders.Exe, "Cache", "conduit-routes.txt");
     private static Dictionary<string, string>? _disk;
+    /// <summary>Bumped whenever the router lays a blueprint differently (its costs, its tries), so a disk cache from before is laid again.</summary>
+    private const int RouterVersion = 3; // 2: ships price open air dearly (AirShip); 3: a route in the open is searched again by the true cost (RouteAsk.Exact)
+    private static string DiskKey(string text) => $"{BlueprintCheckCache.KeyOf(text)}.r{RouterVersion}";
     private const string NotWanted = "none"; // (a blueprint with wires that isn't a pre-built: kept so the next start needn't load the parts to find that out)
     private static bool _diskDirty;
 
     /// <summary>Takes blueprint <paramref name="bp"/>'s routes (from its <paramref name="text"/>) from the disk cache. False: not there, build it.</summary>
     public static bool Restore(ConstructBuild.Blueprint bp, string text)
     {
-        if (!Disk().TryGetValue(BlueprintCheckCache.KeyOf(text), out var line))
+        if (!Disk().TryGetValue(DiskKey(text), out var line))
             return false;
         if (line == NotWanted)
             return true; // (a vehicle's: nothing to route)
@@ -248,7 +305,7 @@ public static class ConstructConduit
                     .Append(nodes[i].Pos.Z.ToString("R", inv)).Append(',').Append(nodes[i].Host.ToString(inv));
         }
         var line = sb.ToString();
-        var key = BlueprintCheckCache.KeyOf(text);
+        var key = DiskKey(text);
         if (!Disk().TryGetValue(key, out var old) || old != line)
         {
             _disk![key] = line;

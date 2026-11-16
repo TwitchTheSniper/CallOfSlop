@@ -27,8 +27,11 @@ length, a line along every edge, armour that varies panel by panel, and things o
 - **The bridge front** (Karl, 2026-11-15: the first chisel nose had to go). A blunt, raked face like a tug's: armour and a
   heavy bumper with hazard chevrons and two headlamps low down, a band of windows at eye height with mullions, and a dark visor
   jutting out over them from the brow.
-- **Glass.** The bridge's window band, a raked windscreen over the nose's top and a band of side windows either side of the
-  cockpit, framed; the rest is plate.
+- **Glass.** The bridge's window band (no mullion in it), windows in the nose's cheeks either side of it, a raked windscreen
+  over most of the nose's top and a band of side windows either side of the cockpit, framed; the rest is plate. Karl
+  (2026-11-16): the pilot looked out through a slot with a post in front of the crosshair, so the front band lost its
+  mullions, the cheeks and the windscreen opened up, and the dashboard came down (0.7 m, the yokes short stubs off the
+  seats' lines).
 
 The colours: tan paint, dark plate and frames, green and ochre patches, hazard ochre and primer red as accents.
 
@@ -44,13 +47,19 @@ the **Chin** (round the ramp), the **Canopy** (the nose, windscreen and side win
 Tried: shooting off the starboard fore hull runs dropped the lamps, switches, rack, locker, basin and toilet on them and
 nothing else. `--check-vehicle` finds no coplanar faces between the parts.
 
-The rooms' side walls are hidden boxes from the room's face (4.63 m from the middle downstairs, 4.73 up, less where the
-skin comes in: `RoomHalf`) out to the skin; the nose, the roof, the belly and the tail are filled with hidden voids, so a
-round stops at the skin everywhere. The pods and saddle tanks hang from small mounts on the keel just inside the skin.
+The rooms are a box standing inside the hull (Karl, 2026-11-16: "the interior rooms don't have to cover the whole of the
+external shell", as the Zero Day's don't). Aft of the cockpit they have their own painted walls with a kick strip, 3.75 m
+from the middle downstairs (`Lw`) and 3.5 m up (`Uw`), and the floors stop under them (the upper one over the hold's
+walls), so there is a gap of 1 to 1.8 m out to the skin. At each hoop frame the frame's rib crosses the gap; elsewhere
+hidden voids fill it, so a round still stops at the skin. The cockpit keeps the whole nose (4.73 m, its canopy for walls),
+and the hold's front is a straight bay as wide as the ramp lets it be (`BayHalf`; no floor or walls stepping in with the nose), with a flat plate each side at its aft end out to the hold's walls and the skin
+(`BoxWalled`, `HoldWallFront`). The nose, the roof, the belly and the tail are filled with hidden voids. The pods and saddle tanks hang from small mounts on the keel just inside the skin.
 
 ## The rooms
 
-The first hull's, unchanged (the opening's wake points and every fitting's socket hold). Upper deck (living): the cockpit
+The first hull's, in the narrower room box: the fittings on the side walls moved in with them (the galley's range aft by
+the coffee station, the stair hall's opening inside the starboard wall, the Engineer's Panel and the Pipe Bank inboard), the
+galley's wake point too. Upper deck (living): the cockpit
 across the bow (two Worn Flight Couches: a camper's old captain's chairs with the springs coming through; a Chart Table, the dashboard under the windscreen), a corridor aft with the bedroom and bathroom
 either side (its walls gloss white), then hydroponics (four Grow Racks), the stair hall and the galley (stove, table,
 Medicine Cabinet, Galley Coffee Station); pipes run along the corridor under the ceiling. Lower deck (working): the hold

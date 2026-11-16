@@ -4,12 +4,12 @@ using Brutal.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// "Frame allocations": the main loop's steady frames allocate nothing. A loopback host on Horde Stress (a mass horde
-/// round under way) with one client; every frame both games update and one of them draws its HUD and the F9 window
+/// "Frame allocations": the main loop's steady frames allocate nothing. A loopback Sandbox host on Construct Yard (its
+/// constructs standing) with one client; every frame both games update and one of them draws its HUD and the F9 window
 /// (closed, the full window, the corner overlay) into a headless ImGui context (<see cref="Ui.InitHeadless"/>). The
 /// main thread's bytes per frame must stay at (almost) zero, and a failure names the perf areas that allocated
 /// (<see cref="Perf.TrackAllocs"/>). The 3D scene isn't drawn headless: <c>--alloc-frames</c> (Program.AllocFrames.cs)
-/// measures the real window's frames, render included.
+/// measures the real window's frames, render included. (Until 2026-11-16 it ran a Zombies horde round on Horde Stress.)
 /// </summary>
 public static partial class SelfTest
 {
@@ -18,9 +18,9 @@ public static partial class SelfTest
 
     private static void CheckFrameAllocs()
     {
-        if (Maps.Find("Horde Stress") is not { Zombies: not null } map)
+        if (Maps.Find(ConstructYardMap) is not { Sandbox: not null } map)
         {
-            Fail("frame allocations: no Horde Stress map");
+            Fail($"frame allocations: no {ConstructYardMap} map");
             return;
         }
         const ushort port = 26293;
@@ -30,27 +30,29 @@ public static partial class SelfTest
         using var server = new Game(NetPeer.Host(port, Game.MaxPeople - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: map.Id)
         {
             MapVoteEnabled = false,
-            LobbyEnabled = true,
-            WarmupEnabled = true,
         };
-        server.ZRules = ZombiesRules.Load(File.ReadAllText(ZombiesRules.PathName), "test rules");
-        server.ZRules.FirstRoundDelay = 0.5f;
-        server.ZSeed = 31;
-        server.Mode = GameMode.Zombies;
-        server.StressSize = 1000;
+        server.Mode = GameMode.Sandbox;
         using var client = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Alpha", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
         Pump(server, [client], 1.0, ref now, clock);
-        server.LobbyStart(true, now);
-        PumpFast(server, [client], Game.LobbyCountdownSeconds + 0.5, ref now);
-        server.ForceStart();
-        PumpFast(server, [client], Game.CountdownSeconds + 2.0, ref now);
+        for (var wait = 0; wait < 40 && (server.Phase != MatchPhase.Playing || server.Local is not { Alive: true } || client.Local is not { Alive: true }); wait++)
+        {
+            if (server.Phase == MatchPhase.Playing) // (no window: nobody presses deploy, Program.DeploySaved)
+            {
+                if (server.Local is not { Alive: true } && !server.RespawnRequested)
+                    server.RequestRespawn();
+                if (client.Local is not { Alive: true } && !client.RespawnRequested)
+                    client.RequestRespawn();
+            }
+            PumpFast(server, [client], 0.25, ref now);
+        }
+        PumpFast(server, [client], 2.0, ref now); // (the constructs settle)
         foreach (var p in server.Players.Values)
             p.ImmuneUntil = 1e9;
         if (server.Phase != MatchPhase.Playing || client.Phase != MatchPhase.Playing || server.Local is not { Alive: true } || client.Local is not { Alive: true }
-            || server.ZPhase != ZRoundPhase.Round || server.Crowd.Total == 0)
+            || !server.SandboxOn || server.Constructs.Bodies.Count == 0 || client.Constructs.Bodies.Count == 0)
         {
-            Fail($"frame allocations: the loopback Horde Stress round didn't start (server {server.Phase} {server.ZPhase}, crowd {server.Crowd.Total}, client {client.Phase}, "
-                 + $"host {(server.Local?.Alive == true ? "alive" : "not alive")}, client {(client.Local?.Alive == true ? "alive" : "not alive")})");
+            Fail($"frame allocations: the loopback Sandbox game on {map.Name} didn't start (server {server.Phase}, {server.Constructs.Bodies.Count} bodies, client {client.Phase}, "
+                 + $"{client.Constructs.Bodies.Count} bodies, host {(server.Local?.Alive == true ? "alive" : "not alive")}, client {(client.Local?.Alive == true ? "alive" : "not alive")})");
             return;
         }
 
@@ -120,7 +122,7 @@ public static partial class SelfTest
                         failures.Add($"{who} with the perf window {view}: {least} B over 60 frames ({areas}; the rounds: {rounds})");
                 }
             CheckInputBurst(server, client, ref now, failures, report);
-            Line($"frame allocations (loopback host and client on {map.Name}, {server.Crowd.Total} in the crowd, HUD and perf window drawn headless; least of three 60-frame rounds): {string.Join(", ", report)}");
+            Line($"frame allocations (loopback Sandbox host and client on {map.Name}, {server.Constructs.Bodies.Count} bodies, HUD and perf window drawn headless; least of three 60-frame rounds): {string.Join(", ", report)}");
             if (failures.Count > 0)
                 Fail($"steady frames should allocate nothing on the main thread: {string.Join("; ", failures)}");
         }
