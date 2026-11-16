@@ -14,7 +14,8 @@ public static unsafe partial class Program
     {
         if (key == GlfwKey.Escape && Ui.CommandOpen)
         {
-            SetCommandOpen(false);
+            if (!Ui.CommandEsc()) // (an open order menu goes first)
+                SetCommandOpen(false);
             return true;
         }
         if (key == GlfwKey.Unknown || !_settings.HasBind(GameAction.CommandView, Keybinds.Key(key)) || Ui.ChatOpen || Ui.WantsTextInput || _session is not { SandboxOn: true } g)
@@ -30,8 +31,8 @@ public static unsafe partial class Program
 
     internal static void SetCommandOpen(bool open)
     {
-        if (!open && !Ui.CommandOpen)
-            return;
+        if (open ? Ui.PauseOpen : !Ui.CommandOpen)
+            return; // (never over the pause menu: single player is stopped under it, and no order would move)
         Ui.SetCommandOpen(open, _session, Glfw.Time);
         CommandCursor();
     }

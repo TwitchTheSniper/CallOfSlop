@@ -301,6 +301,11 @@ every shader turns off early depth tests, which costs fill rate everywhere. On t
 touch. If it shows in play, the cheapest fix is drawing far ground in its own depth slice (a second near/far pass), and
 it gets its own branch.
 
+## The command view and ship orders
+
+The map of all this, and the autopilot that flies a ship to an orbit or a place by itself, are in
+docs/space/COMMAND.md (`Source/UI/UiCommand*.cs`, `Source/Game/GameNav.cs`, `Source/Space/NavGuidance.cs`).
+
 ## Command line
 
 - `--space-sim [FILE] [--days N] [--every H]`: prints a system (default `Systems/Dev.json`) and where each body is every

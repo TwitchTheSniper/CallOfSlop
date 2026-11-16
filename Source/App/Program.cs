@@ -908,7 +908,7 @@ public static unsafe partial class Program
             else if (_session is { } g)
             {
                 // While the weapon workbench is open over the match the player HUD is not drawn at all (the match keeps running).
-                var benchCovers = Ui.WorkbenchOpen;
+                var benchCovers = Ui.WorkbenchOpen || Ui.CommandOpen; // (the command view has the whole screen too: Program.Command.cs)
                 uiPart.Dispose();
                 uiPart = Perf.Measure(PerfArea.UiHud);
                 if (!benchCovers)
@@ -2274,7 +2274,7 @@ public static unsafe partial class Program
 
         // ---- First-person gun -----------------------------------------------
         pass = Perf.Pass(PerfArea.ViewModel, PerfGpuPass.ViewModel);
-        if (local is { Alive: true } && !tp && !talkView && !_game.OpeningActive && !_game.QuarryRiding && !_wsNoHands && !DrawSandboxTool(now, eye, fwd)) // (_wsNoHands: the window tool's --no-hands, for pictures) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening or on a ride)
+        if (local is { Alive: true } && !tp && !talkView && !Ui.CommandOpen && !_game.OpeningActive && !_game.QuarryRiding && !_wsNoHands && !DrawSandboxTool(now, eye, fwd)) // (_wsNoHands: the window tool's --no-hands, for pictures) // (Sandbox: the wrench or welder instead, or nothing in a seat; nothing in hand in the opening or on a ride)
         {
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);
@@ -2286,7 +2286,7 @@ public static unsafe partial class Program
 
         // ---- HUD ------------------------------------------------------------
         Gfx.MarkGlow = false;
-        if (!Ui.WorkbenchOpen)
+        if (!Ui.WorkbenchOpen && !Ui.CommandOpen) // (nor under the command view: Program.Command.cs)
             using (Perf.Pass(PerfArea.Hud, PerfGpuPass.Hud))
                 DrawHud(now, w, h, local, fov); // hidden while the weapon workbench is open (the crosshair, ammo, prompts, weapon list)
     }

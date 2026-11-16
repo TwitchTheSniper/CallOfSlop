@@ -335,11 +335,38 @@ public sealed partial class Ui
                     }
                 }
             }
+            // Ribs: where a corner of the outline is the same corner on the level above, a line up between them.
+            for (var y = 0; y + 1 < ny; y++)
+            {
+                var wy = min.Y + (y + 0.5f) * high;
+                var level = (y + 0.5f) / (ny - 1);
+                for (var z = 1; z < nz; z++)
+                    for (var x = 1; x < nx; x++)
+                    {
+                        var here = CmdCorner(y, x, z, nx, nz);
+                        if (here == 0 || here != CmdCorner(y + 1, x, z, nx, nz))
+                            continue;
+                        if (pass == 1 && n < want)
+                        {
+                            h.A[n] = new Vector3(min.X + (x - 1) * cell, wy, min.Z + (z - 1) * cell);
+                            h.B[n] = new Vector3(min.X + (x - 1) * cell, wy + high, min.Z + (z - 1) * cell);
+                            h.Level[n] = level;
+                        }
+                        n++;
+                    }
+            }
             if (pass == 0)
                 want = n;
             else
                 h.Count = Math.Min(n, want);
         }
+    }
+
+    /// <summary>The four cells round a grid corner on a level, as bits, when they make a corner of the outline (one or three filled); else 0.</summary>
+    private int CmdCorner(int y, int x, int z, int nx, int nz)
+    {
+        var bits = _cmdGrid[(y * nz + z - 1) * nx + x - 1] | _cmdGrid[(y * nz + z - 1) * nx + x] << 1 | _cmdGrid[(y * nz + z) * nx + x - 1] << 2 | _cmdGrid[(y * nz + z) * nx + x] << 3;
+        return bits is 1 or 2 or 4 or 8 or 7 or 11 or 13 or 14 ? bits : 0;
     }
 
     /// <summary>The picked craft as a hologram where it is, turned as it is, its thrusters lit when they push.</summary>
@@ -461,7 +488,7 @@ public sealed partial class Ui
     {
         public ushort Id;
         public double Read;
-        public string Name, Class, Status, Flight, Orbit, Hull, Fuel, Power, Drive, Cargo, Crew, Systems, Order, Problem;
+        public string Name, Class, Status, Flight, Orbit, Hull, Fuel, Power, Drive, Burn, Cargo, Crew, Systems, Order, Phase, Problem;
         public float HullShare, FuelShare, PowerShare, OrderDone;
         public bool HasFuel, HasPower, HasOrder, Orders, Thrusting;
     }
@@ -485,7 +512,7 @@ public sealed partial class Ui
         k.Class = string.Create(inv, $"{c.Mass / 1000:0.0} T    {MathF.Max(size.X, MathF.Max(size.Y, size.Z)):0} M LONG    {c.PartCount} PARTS    OWNER {owner}");
 
         var name = _cmdBodyNames.Length > cr.Primary ? _cmdBodyNames[cr.Primary] : body.Name.ToUpperInvariant();
-        var height = r.Length - body.Radius;
+        var height = c.SpaceShip == 0 && World.Map.Planetoid is { } pl ? pl.Altitude(c.WorldCom) : r.Length - body.Radius; // (in the sky: over the ground under it)
         var ground = c.SpaceShip == 0 ? c.Vel.Length() : v.Length;
         k.Status = c.SpaceAway != 0 ? "DEEP SPACE, ROUND " + name
             : c.SpaceShip != 0 ? "IN SPACE, ROUND " + name
@@ -537,10 +564,14 @@ public sealed partial class Ui
         {
             var a = force / c.Mass;
             var seconds = burn > 0 ? c.FuelLeft / burn : double.PositiveInfinity;
-            k.Drive = string.Create(inv, $"{a:0.0} M/S2 ({a / 9.81f:0.00} G){(double.IsFinite(seconds) ? $"    {CmdTime(seconds).ToUpperInvariant()} OF BURN    DV {a * seconds / 1000:0.00} KM/S" : "    ON POWER")}");
+            k.Drive = string.Create(inv, $"{a:0.0} M/S2  ({a / 9.81f:0.00} G)    {force / 1000:0} KN");
+            k.Burn = double.IsFinite(seconds) ? string.Create(inv, $"{CmdTime(seconds).ToUpperInvariant()} AT FULL    DV {a * seconds / 1000:0.00} KM/S") : "ON POWER: NO FUEL BURNT";
         }
         else
-            k.Drive = c.ThrusterCount > 0 ? "NOTHING CAN PUSH NOW (FUEL, POWER OR DAMAGE)" : "NO THRUSTERS";
+        {
+            k.Drive = c.ThrusterCount > 0 ? "NOTHING CAN PUSH NOW" : "NO THRUSTERS";
+            k.Burn = c.ThrusterCount > 0 ? "NO FUEL, NO POWER, OR WRECKED" : "-";
+        }
 
         var cargo = c.LoadMass + c.CargoMass;
         k.Cargo = cargo > 0.5f ? string.Create(inv, $"{cargo / 1000:0.00} T ABOARD") : "EMPTY";
@@ -584,7 +615,7 @@ public sealed partial class Ui
         k.Orders = k.Problem.Length == 0;
         var o2 = g.NavOf(c.Id);
         k.HasOrder = o2 != null;
-        k.Order = "";
+        k.Order = k.Phase = "";
         k.OrderDone = 0;
         if (o2 != null && o2.Body < sys.Count)
         {
@@ -600,7 +631,8 @@ public sealed partial class Ui
                 NavPhase.NoDrive => "NO DRIVE: IT CAN'T FLY THIS",
                 _ => "STARTING",
             };
-            k.Order = Game.NavText(sys, o2).ToUpperInvariant() + "    //    " + phase;
+            k.Order = Game.NavText(sys, o2).ToUpperInvariant();
+            k.Phase = phase;
         }
     }
 
@@ -622,7 +654,7 @@ public sealed partial class Ui
         var pad = 22 * _scale;
         var w = 400 * _scale;
         var line = 19 * _scale;
-        var lines = 13 + (k.Orbit.Length > 0 ? 1 : 0) + (k.HasOrder ? 2 : 0) + (k.Problem.Length > 0 ? 1 : 0);
+        var lines = 14 + (k.Orbit.Length > 0 ? 1 : 0) + (k.HasOrder ? 3 : 0) + (k.Problem.Length > 0 ? 1 : 0);
         var p0 = new float2(_cvOrg.X + _cvSize.X - pad - w, _cvOrg.Y + pad);
         var p1 = p0 + new float2(w, 64 * _scale + lines * line + 50 * _scale);
         var edge = k.HasOrder ? CmdAmber : CmdCyan;
@@ -674,6 +706,7 @@ public sealed partial class Ui
         Bar(dl, "POWER", k.PowerShare, k.Power, k.HasPower, ref y);
         y += 6 * _scale;
         Row(dl, "DRIVE", k.Drive, k.Drive.StartsWith('N') ? CmdAmber : CmdCyan, ref y);
+        Row(dl, "BURN", k.Burn, k.Drive.StartsWith('N') ? CmdAmber : CmdCyan, ref y);
         Row(dl, "CARGO", k.Cargo, CmdCyan, ref y);
         Row(dl, "CREW", k.Crew, CmdCyan, ref y);
         Row(dl, "SYSTEMS", k.Systems, CmdCyan, ref y);
@@ -685,6 +718,7 @@ public sealed partial class Ui
         else if (k.HasOrder)
         {
             Row(dl, "ORDER", k.Order, CmdAmber, ref y);
+            Row(dl, "NOW", k.Phase, CmdWhite, ref y);
             y += 4 * _scale;
             if (CmdButton(dl, new float2(x + col, y), new float2(x + col + 150 * _scale, y + 24 * _scale), "CANCEL ORDER", CmdAmber, fade))
                 g.NavSend(c.Id, NavKind.None, 0, Vec3d.Zero, 0);

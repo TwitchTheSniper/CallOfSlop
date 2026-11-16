@@ -12,7 +12,7 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Ui
 {
-    private bool _cmdOrderOpen, _cmdOrderAsk;
+    private bool _cmdOrderOpen, _cmdOrderAsk, _cmdOrderShut;
     private ushort _cmdOrderShip;
     private int _cmdOrderBody = -1; // the world to orbit (-1: none under the click)
     private int _cmdOrderPointBody = -1; // the body a point in space is measured from (-1: no point)
@@ -80,7 +80,8 @@ public sealed partial class Ui
             var rules = NavGuidance.PrimaryAt(sys, place, _cvTime);
             _cmdOrderPointBody = rules;
             _cmdOrderPoint = place - sys.PositionOf(rules, _cvTime);
-            _cmdOrderGo = "GO TO THIS PLACE, " + CmdDistance(_cmdOrderPoint.Length).ToUpperInvariant() + " FROM " + _cmdBodyNames[rules];
+            // (told as the card tells heights: from the body's surface)
+            _cmdOrderGo = "GO TO THIS PLACE, " + CmdDistance(Math.Max(0, _cmdOrderPoint.Length - sys.Bodies[rules].Radius)).ToUpperInvariant() + " FROM " + _cmdBodyNames[rules];
         }
         else
             return; // (the star: nothing to do there)
@@ -121,7 +122,7 @@ public sealed partial class Ui
             var send = NavKind.None;
             ImGuiSafe.TextColored(new float4(CmdAmber.X, CmdAmber.Y, CmdAmber.Z, 1f), _cmdOrderTitle);
             ImGui.Separator();
-            if (g.Constructs.Get(_cmdOrderShip) is not { } c || Game.NavProblem(c) != null)
+            if (_cmdOrderShut || g.Constructs.Get(_cmdOrderShip) is not { } c || Game.NavProblem(c) != null)
                 ImGui.CloseCurrentPopup();
             else
             {
@@ -134,9 +135,10 @@ public sealed partial class Ui
                     if (_cmdOrderHasGround && ImGui.Button("FLY TO THIS SPOT OVER THE GROUND"u8, new float2(300 * _scale, 0)))
                         send = NavKind.Ground;
                 }
-                if (_cmdOrderPointBody >= 0 && ImGui.Button(_cmdOrderGo, new float2(0, 0)))
+                var wide = _cmdOrderPointBody >= 0 ? MathF.Max(300 * _scale, ImGui.CalcTextSize(_cmdOrderGo).X + 20 * _scale) : 300 * _scale;
+                if (_cmdOrderPointBody >= 0 && ImGui.Button(_cmdOrderGo, new float2(wide, 0)))
                     send = NavKind.GoTo;
-                if (g.NavOf(_cmdOrderShip) != null && ImGui.Button("CANCEL ITS ORDER"u8, new float2(300 * _scale, 0)))
+                if (g.NavOf(_cmdOrderShip) != null && ImGui.Button("CANCEL ITS ORDER"u8, new float2(wide, 0)))
                 {
                     g.NavSend(_cmdOrderShip, NavKind.None, 0, Vec3d.Zero, 0);
                     ImGui.CloseCurrentPopup();
@@ -159,6 +161,16 @@ public sealed partial class Ui
             ImGui.EndPopup();
         }
         ImGui.PopStyleColor(8);
+        _cmdOrderShut = false;
+    }
+
+    /// <summary>Esc in the view: an open order menu closes first. False: nothing was open, the view itself may close.</summary>
+    public bool CommandEsc()
+    {
+        if (!_cmdOrderOpen)
+            return false;
+        _cmdOrderShut = true;
+        return true;
     }
 
     /// <summary>The script and the checks: the order menu's choice without the mouse. Null, or why not.</summary>
@@ -190,6 +202,13 @@ public sealed partial class Ui
             _cmdSpan = _cmdSpanWant = span;
         if (pick != 0)
             _cmdSel = pick;
+    }
+
+    /// <summary>The script: the view's turn about the ecliptic's north and its tilt (radians; a quarter turn looks straight down).</summary>
+    public void CommandTurn(float yaw, float pitch)
+    {
+        _cmdYaw = yaw;
+        _cmdPitch = Math.Clamp(pitch, 0.18f, MathF.PI / 2);
     }
 
     /// <summary>The craft picked in the view (0: none).</summary>

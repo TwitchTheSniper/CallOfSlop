@@ -244,11 +244,15 @@ public sealed partial class Game
         return o.Kind switch
         {
             NavKind.Orbit => FormattableString.Invariant($"orbit {name} at {(o.Radius - sys.Bodies[Math.Min(o.Body, sys.Count - 1)].Radius) / 1000:0.0} km"),
-            NavKind.GoTo => FormattableString.Invariant($"go to a point {o.Point.Length / 1000:0.0} km from {name}"),
+            NavKind.GoTo => "go to a point " + NavFar(Math.Max(0, o.Point.Length - sys.Bodies[Math.Min(o.Body, sys.Count - 1)].Radius)) + " from " + name, // (from its surface, as heights are told)
             NavKind.Ground => "go to a waypoint on " + name,
             _ => "none",
         };
     }
+
+    private static string NavFar(double m) => m >= 1.496e9
+        ? FormattableString.Invariant($"{m / 1.496e11:0.00} AU")
+        : m >= 1e7 ? FormattableString.Invariant($"{m / 1e6:0.0} thousand km") : FormattableString.Invariant($"{m / 1000:0.0} km");
 
     /// <summary>Host: an order is over (done with, cancelled, or its ship is gone): the drive is let go and everyone hears.</summary>
     private void NavEnd(NavOrder o, Construct? c, string why)

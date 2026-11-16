@@ -557,10 +557,16 @@ public sealed partial class Ui
                 CmdRing(dl, at, MathF.Max(r, 6 * _scale) + 9 * _scale, CmdWhite, 0.9f * fade, 1.5f, 3, 0.7f, (float)(now * 0.8));
             var tag = MathF.Max(r, 5 * _scale) * 0.72f + 6 * _scale;
             var name = _cmdBodyNames.Length > b ? _cmdBodyNames[b] : body.Name;
-            if (r < _cvSize.Y * 0.8f)
+            if (b == 0 && r < _cvSize.Y * 0.8f)
+            {
+                // (the star's name hangs down and to the left: its inner worlds' names stand up and to the right of it)
+                CmdLine(dl, at + new float2(-tag * 0.72f, tag * 0.72f), at + new float2(-tag - 16 * _scale, tag + 6 * _scale), tint, 0.6f * fade);
+                CmdText(dl, at + new float2(-tag - 20 * _scale, tag), 15, picked ? CmdWhite : tint, fade, name, 2);
+            }
+            else if (r < _cvSize.Y * 0.8f)
             {
                 CmdLine(dl, at + new float2(tag * 0.72f, -tag * 0.72f), at + new float2(tag + 16 * _scale, -tag - 6 * _scale), tint, 0.6f * fade * open);
-                CmdText(dl, at + new float2(tag + 20 * _scale, -tag - 15 * _scale), b == 0 || body.Parent == 0 ? 15 : 12.5f, picked ? CmdWhite : tint, fade * open, name);
+                CmdText(dl, at + new float2(tag + 20 * _scale, -tag - 15 * _scale), body.Parent == 0 ? 15 : 12.5f, picked ? CmdWhite : tint, fade * open, name);
             }
         }
     }

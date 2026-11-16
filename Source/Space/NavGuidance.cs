@@ -82,12 +82,19 @@ public static class NavGuidance
         speedError = 0;
         if (!(aMax > 0))
             return Vec3d.Zero;
+        // The speed to have at this distance, and how fast that speed itself falls as the ship closes: a ship that only
+        // chased the speed lagged it by the braking rate times Tau (50 m/s at 3.6 g) and flew through its place.
+        var closing = Math.Max(0, Vec3d.Dot(v, way));
         var speed = Math.Sqrt(arrive * arrive + 2 * BrakeShare * aMax * distance);
-        if (distance < 60)
-            speed = Math.Min(speed, arrive + distance / Tau); // (the last metres: ease in, don't overshoot)
+        var brake = speed > 1e-3 ? BrakeShare * aMax * Math.Min(closing / speed, 1.5) : 0;
+        if (distance < 60 && arrive + distance / Tau < speed)
+        {
+            speed = arrive + distance / Tau; // (the last metres: ease in, don't overshoot)
+            brake = Math.Min(closing / Tau, 1.5 * BrakeShare * aMax);
+        }
         var dv = way * speed - v;
         speedError = dv.Length;
-        var a = dv / Tau - gravity;
+        var a = dv / Tau - way * brake - gravity;
         return speedError < SpeedDeadband && gravity.Length < 0.002 * aMax ? Vec3d.Zero : a;
     }
 
