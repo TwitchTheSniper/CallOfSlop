@@ -1226,8 +1226,8 @@ public sealed class MinerParts : IPartGenerator
         var lean = Math.Tan(RampLean * Math.PI / 180);
         foreach (var x in new[] { dx0, dx1 })
         {
-            Plate(p, [P(x, Ft0, zt), P(x, yHood, zt), P(x, yHood, ZT + (yHood - Ft0) * lean + 0.06)], Steel, "plated steel");
-            Detail(p, x - 0.1, Ft0, zt + 0.02, x + 0.1, yHood, zt + 0.06, Hazard, "hazard paint"); // (the opening's frame, hazard)
+            Plate(p, [P(x, Ft0, zt), P(x, yHood - 0.005, zt), P(x, yHood - 0.005, ZT + (yHood - Ft0) * lean + 0.06)], Steel, "plated steel");
+            Detail(p, x - 0.1, Ft0, zt + 0.02, x + 0.1, yHood - 0.008, zt + 0.06, Hazard, "hazard paint"); // (the opening's frame, hazard)
         }
         var topZ = ZT + RampLen * Math.Sin(RampLean * Math.PI / 180);
         var topY = Ft0 + RampLen * Math.Cos(RampLean * Math.PI / 180);
