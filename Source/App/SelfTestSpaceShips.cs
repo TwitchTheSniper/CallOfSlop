@@ -185,10 +185,13 @@ public static partial class SelfTest
         }
     }
 
-    private static void ShipsFlyby(StarSystem dev)
+    private static void ShipsFlyby(StarSystem full)
     {
         // A ship from 8,000 km out at 1 km/s falls past the Planetoid (18 km at closest): it starts round the star, is
         // handed to the Planetoid and back. Against one-frame references (round the star the whole way, adaptive, tight).
+        // Without the Planetoid's moons: in its own frame their pull is a tide (its rails don't move it by them), round the
+        // star it isn't, and the close pass turns that difference into kilometres (2026-11-16).
+        var dev = new StarSystem { Name = full.Name, Start = full.Start, Bodies = full.Bodies.Where(b => b.Parent <= 0).ToArray() };
         var home = dev.IndexOf("Planetoid");
         var t0 = SpaceTime.FromSeconds(86400 * 3.3);
         dev.StateOf(home, t0, out var hp, out var hv);

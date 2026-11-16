@@ -167,6 +167,10 @@ public sealed partial class Game
             return false;
         if (c.SpaceAway == 0)
         {
+            // A client's copy of a ship in space is the host's ship state, not its own lagging pose of the construct
+            // (2026-11-16: at 100,000x the card said "falls back" for a ship the host had 2 km over Glacier).
+            if (!IsServer && SpaceShipIdOf(c) is var ship and not 0 && s.SampleShip(ship, t, out pos, out vel))
+                return true;
             var pose = s.Bubble.PoseAt(t);
             var com = Vec3d.From(c.WorldCom);
             pos = pose.ToEcliptic(com);

@@ -296,15 +296,16 @@ public sealed partial class Game
             return null;
         var body = s.Bubble.Body;
         var t = SpaceRenderTime;
-        var pose = s.Bubble.PoseAt(t);
-        var com = Vec3d.From(c.WorldCom);
+        if (!NavState(c, t, out var at, out var vel)) // (a client's ship in space: the host's state, GameNav.cs)
+            return null;
+        var inSpace = SpaceShipIdOf(c) != 0;
         s.System.StateOf(body, t, out var bp, out var bv);
-        var r = pose.ToEcliptic(com) - bp;
-        var v = pose.VelocityToEcliptic(com, Vec3d.From(c.Vel)) - bv;
+        var r = at - bp;
+        var v = vel - bv;
         var mu = s.System.Bodies[body].Mu;
         var rad = (float)pl.Radius;
         var height = (float)r.Length - rad;
-        if (height < 1000 && c.SpaceShip == 0)
+        if (height < 1000 && !inSpace)
             return null;
         var energy = v.LengthSquared / 2 - mu / r.Length;
         var h = Vec3d.Cross(r, v).Length;
@@ -314,10 +315,10 @@ public sealed partial class Game
         var apo = e < 1 ? (float)(p / (1 - e)) - rad : float.PositiveInfinity;
         var edge = SpaceEdge;
         var key = (long)MathF.Round(height / 10) ^ ((long)MathF.Round((float)v.Length) << 20) ^ ((long)MathF.Round(peri / 10) << 34)
-                  ^ (float.IsFinite(apo) ? (long)MathF.Round(apo / 10) << 48 : 1L << 62) ^ (c.SpaceShip != 0 ? 1L << 63 : 0);
+                  ^ (float.IsFinite(apo) ? (long)MathF.Round(apo / 10) << 48 : 1L << 62) ^ (inSpace ? 1L << 63 : 0);
         if (_sbOrbit.Stale(key))
         {
-            var where = c.SpaceShip != 0 || edge > 0 && r.Length > edge ? $"In space round {s.System.Bodies[body].Name}" : "Climbing";
+            var where = inSpace || edge > 0 && r.Length > edge ? $"In space round {s.System.Bodies[body].Name}" : "Climbing";
             var hi = float.IsFinite(apo) ? $"{apo / 1000:0.0} km" : "escaping";
             var low = peri < 0 ? "under the ground" : $"{peri / 1000:0.0} km";
             _sbOrbit.Text = $"{where}: {height / 1000:0.00} km up, {v.Length:0} m/s; orbit low {low}, high {hi}" + (where == "Climbing" ? $" (space starts {(edge - rad) / 1000:0.0} km up)" : "");
