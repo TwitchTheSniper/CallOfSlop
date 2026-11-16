@@ -52,7 +52,7 @@ external shell", as the Zero Day's don't). Aft of the cockpit they have their ow
 from the middle downstairs (`Lw`) and 3.5 m up (`Uw`), and the floors stop under them (the upper one over the hold's
 walls), so there is a gap of 1 to 1.8 m out to the skin. At each hoop frame the frame's rib crosses the gap; elsewhere
 hidden voids fill it, so a round still stops at the skin. The cockpit keeps the whole nose (4.73 m, its canopy for walls),
-and the hold follows the skin in round the ramp until it is wide enough, where a plate each side closes the gap
+and the hold's front is a straight bay as wide as the ramp lets it be (`BayHalf`; no floor or walls stepping in with the nose), with a flat plate each side at its aft end out to the hold's walls and the skin
 (`BoxWalled`, `HoldWallFront`). The nose, the roof, the belly and the tail are filled with hidden voids. The pods and saddle tanks hang from small mounts on the keel just inside the skin.
 
 ## The rooms
