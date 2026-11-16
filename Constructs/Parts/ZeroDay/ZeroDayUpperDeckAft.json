@@ -6,7 +6,7 @@
   "section": "Zero Day frigate",
   "role": "frame",
   "tool": "welder",
-  "mass": 3000.0,
+  "mass": 6400.0,
   "health": 18000,
   "armour": 30,
   "material": "steel",

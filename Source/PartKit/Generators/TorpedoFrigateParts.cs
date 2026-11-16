@@ -444,7 +444,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
                 Run(g.A - 0.05, g.A + g.W + 0.05, y0 + g.Sill - 0.06, y0 + g.Sill, WallTrim, "painted steel", 0.14, true);
             }
             else
-                Run(at + 0.05, g.A - 0.05, y0, y0 + 0.75, WallLow, "painted plating", 0.137, true);
+                Run(at + 0.05, g.A - 0.05, y0 + 0.003, y0 + 0.75, WallLow, "painted plating", 0.137, true);
             // The frame: dark jambs, a hazard head.
             Run(g.A - 0.07, g.A, y0, y0 + g.Head + 0.07, WallTrim, "painted steel", 0.145, true);
             Run(g.A + g.W, g.A + g.W + 0.07, y0, y0 + g.Head + 0.07, WallTrim, "painted steel", 0.145, true);
@@ -452,7 +452,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
             at = g.A + g.W;
         }
         Run(at, a1, y0, y1, Wall, "painted plating", 0.125, false);
-        Run(at + 0.05, a1 - 0.05, y0, y0 + 0.75, WallLow, "painted plating", 0.137, true);
+        Run(at + 0.05, a1 - 0.05, y0 + 0.003, y0 + 0.75, WallLow, "painted plating", 0.137, true);
     }
 
     /// <summary>The socket a door hangs by in a wall's doorway (from Gap a): on the wall's centre line at the doorway's start.</summary>
@@ -1599,14 +1599,15 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         }
         all.AddRange(hull.Values);
         DealSockets(core, all, p => WallOf(p, 0, true, true) is int i ? WallPiece(i) : null);
-        var others = 0.0;
+        (double Mass, double Hp, int Armour) Kind(Part q) => q == ceiling ? (1200.0, 5000.0, 25) : q.Color == Wall ? (700.0, 3500.0, 25) : (1800.0, 9000.0, 40);
+        var others = all.Skip(1).Sum(q => Kind(q).Mass);
+        var share = Math.Min(1.0, mass * 0.6 / others); // (the pieces take at most 60% of the part's mass; the floor keeps the rest, so the ship weighs what it did)
         foreach (var q in all.Skip(1))
         {
-            var (m, hp, ar) = q == ceiling ? (1200.0, 5000.0, 25) : q.Color == Wall ? (700.0, 3500.0, 25) : (1800.0, 9000.0, 40);
-            q.Stats(m, hp, ar, 6.0);
-            others += m;
+            var (m, hp, ar) = Kind(q);
+            q.Stats(m * share, hp, ar, 6.0);
         }
-        core.Stats(Math.Max(3000, mass - others), health * 0.5, 30, 15.0);
+        core.Stats(mass - others * share, health * 0.5, 30, 15.0);
         return all;
     }
 
@@ -1636,6 +1637,15 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         DealSockets(core, all, at => Band(at[2]) == keep ? core : bands.GetValueOrDefault(Band(at[2]))); // (a mount inside a drawn plate: the band it is in)
         foreach (var q in all)
             q.Stats(mass / all.Count, health * 0.45, armour, 10.0);
+        if (core.D.Get("fuelTank") is PyDict tank) // (the keel's tankage shared out: a jet takes its fuel from the tank it is on)
+        {
+            var each = (int)Math.Round(Convert.ToDouble(tank["capacity"]) / all.Count);
+            foreach (var q in all)
+            {
+                q.D["role"] = core.D["role"];
+                q.Set(("fuelTank", Kw(("capacity", each))));
+            }
+        }
         return all;
     }
 

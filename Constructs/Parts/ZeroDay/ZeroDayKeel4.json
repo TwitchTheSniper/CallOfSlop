@@ -4,7 +4,7 @@
   "description": "A length of the Zero Day's keel, between two of the hull's stations: plating, armour and the void inside.",
   "group": "Ship",
   "section": "Zero Day frigate",
-  "role": "frame",
+  "role": "fueltank",
   "tool": "welder",
   "mass": 5200.0,
   "health": 27000,
@@ -12,6 +12,9 @@
   "material": "steel",
   "color": "#3b4148",
   "attachSeconds": 10.0,
+  "fuelTank": {
+    "capacity": 2800
+  },
   "boxes": [
     {
       "min": [
