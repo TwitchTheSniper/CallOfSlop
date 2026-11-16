@@ -241,7 +241,7 @@ public static partial class ConstructRender
             var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
             var level = cull ? CullLevel(cam, c, pos, rot) : 1; // (out of view or far: nothing, or one box: ConstructRenderCull.cs)
             if (Fx.On && (c.ThrustShow > 0 || c.SmokeLevel > 0 || c.BurnerCount > 0 || c.WheelCount > 0 || c.FlameStamp != c.RebuildStamp || c.FlameCount > 0))
-                EmitFlames(c, Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos), pos, cam, blendTicks ? alpha : 1f); // (seen or not: a flame behind the camera is in view next frame)
+                EmitFlames(c, Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos), pos, rot, cam, blendTicks ? alpha : 1f); // (seen or not: a flame behind the camera is in view next frame)
             if (level == 0)
             {
                 culled++;

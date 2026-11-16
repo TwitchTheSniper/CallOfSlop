@@ -105,7 +105,7 @@ public static partial class ConstructRender
     }
 
     /// <summary>One construct's flames, stack smoke and wheel dust this frame: particles from what every peer has, so host and clients see the same. Nothing when it has none.</summary>
-    private static void EmitFlames(Construct c, in Matrix4x4 worldBody, Vector3 pos, Vector3 eye, float alpha)
+    private static void EmitFlames(Construct c, in Matrix4x4 worldBody, Vector3 pos, Quaternion rot, Vector3 eye, float alpha)
     {
         if (!Fx.On)
             return;
@@ -114,6 +114,8 @@ public static partial class ConstructRender
             return;
         if (c.FlameStamp != c.RebuildStamp)
             FindFlames(c);
+        // Flames ride the body as drawn: each frame they move with it (Fx.Carrier), so at any speed they stay on their nozzles.
+        var carrier = Fx.CarrierKept(c.Id, pos, rot); // (-1: none yet, taken at the first lit flame, so a body whose flames are out holds no slot; one just gone out keeps its slot until let go, so its last flames move with it)
         for (var n = 0; n < c.FlameCount; n++)
         {
             var i = c.FlameParts[n];
@@ -131,9 +133,10 @@ public static partial class ConstructRender
                     continue;
                 var at = Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, f.At), frame);
                 var dir = Vector3.TransformNormal(ConstructParts.DirVector(Rot24.ApplyDir(p.Rot, f.Dir)), frame);
-                var r = at - pos;
-                var carry = c.Vel + Vector3.Cross(c.AngVel, r);
-                Fx.Flame(f.Kind, at, dir, carry, f.Radius, f.Length, level, dt, f.Tint);
+                if (carrier < 0)
+                    carrier = Fx.Carrier(c.Id, pos, rot);
+                var carry = carrier != 0 ? Vector3.Zero : c.Vel + Vector3.Cross(c.AngVel, at - pos); // (no slot free: the body's speed)
+                Fx.Flame(f.Kind, at, dir, carry, f.Radius, f.Length, level, dt, f.Tint, carrier);
                 var tip = at + dir * (f.Length * 0.5f);
                 if (Vector3.DistanceSquared(tip, eye) < 200f * 200f)
                     PostFx.AddHaze(tip + dir * (f.Length * 0.4f * level), MathF.Min(f.Radius * 3f + f.Length * 0.7f * level, 30f), 0.3f + 0.55f * level);
