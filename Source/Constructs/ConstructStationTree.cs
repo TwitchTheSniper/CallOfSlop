@@ -40,6 +40,8 @@ public sealed partial class StationJob
     public byte Role; // 0: an ordinary job (a root when Tree is set); 1: a sub-job, built for another station
     public int[]? StepRow; // each flat step's row (-1: the parent's own)
     public uint Stamp; // this job's own stamp (a sub-job names its root by body, part and stamp)
+    public string UseId = ""; // a sub-job's use: its blueprint's id (a shipped one's flat blueprint carries none)
+    public uint OrderAge; // the age stamp its orders rank by (world.OrderStamp at a root's Start; a sub-job takes its root's)
     public ushort RootBody, RootPart;
     public uint RootStamp;
     public int RootUse; // its row on the root
@@ -186,6 +188,10 @@ public static partial class ConstructStationTree
         var row = j.Tree![r];
         var changed = false;
         var sub = SubOf(c, j, r);
+        // A finished body made for this use is what counts once it is done: its station may take other work as soon as it has left
+        // the bay (a lifter carrying it, a player moving it).
+        if (row.State == UseState.Done && world.Get(row.Body) is { } kept && kept.SubStamp == j.Stamp && (sub == null || sub.Body != kept.Id))
+            return Delivery(world, c, t, j, r, kept, false);
         if (sub == null || sub.State is StationState.Failed or StationState.Idle)
         {
             // Wrecked, cancelled at the sub-station, or it failed: dispatched again, never that station for this use.
@@ -219,16 +225,38 @@ public static partial class ConstructStationTree
             row.Body = body.Id;
             changed = true;
         }
-        // Delivered: bays that touch hand it over; a body moved within reach of this bay is taken (by hand, a crane, its own wheels).
-        if (row.Touch || NearBay(c, t, body))
+        return Delivery(world, c, t, j, r, body, true) || changed;
+    }
+
+    /// <summary>
+    /// A use's finished body: bays that touch hand it over; one still in its own station's bay is carried by a lifter that reaches
+    /// both (else a player moves it); one set down near this bay (by hand, a crane, its own wheels) is taken for the big fit.
+    /// </summary>
+    private static bool Delivery(ConstructWorld world, Construct c, int t, StationJob j, int r, Construct body, bool atStation)
+    {
+        var row = j.Tree![r];
+        var changed = false;
+        var inOwnBay = atStation && !row.Touch && row.Station < c.PartCount && !ConstructStation.BayClearOf(world, c, row.Station, body);
+        if (row.Touch || !inOwnBay && NearBay(c, t, body))
         {
+            if (ConstructLifters.CarryingBody(world, body.Id) != null)
+                return changed; // (still on its way in)
             if (BeginFit(world, c, t, j, r, body) is { } refused)
                 Note(row, refused, ref changed);
             else
                 changed = true;
         }
+        else if (ConstructLifters.CarryingBody(world, body.Id) is { } carrier)
+            Note(row, $"done - a {carrier} brings it", ref changed);
         else
-            Note(row, $"done: move {row.Name} #{row.Number} into this bay", ref changed);
+        {
+            var carryWhy = "";
+            var spotted = Spot(world, j, r, body, out var toPos, out var toRot, out var spotWhy);
+            if (spotted && ConstructLifters.CarryBody(world, c, body, toPos, toRot, out var who, out carryWhy))
+                Note(row, $"done - a {who} brings it", ref changed);
+            else
+                Note(row, $"done: {(spotted ? carryWhy : spotWhy)}: move {row.Name} #{row.Number} into this bay", ref changed);
+        }
         return changed;
     }
 
@@ -361,6 +389,8 @@ public static partial class ConstructStationTree
             row.Note = why;
             return false;
         }
+        c.Parts[st].Station!.UseId = tag.Id;
+        c.Parts[st].Station!.OrderAge = j.OrderAge != 0 ? j.OrderAge : world.OrderStamp++; // (its parts queue as old as this build)
         row.State = UseState.Building;
         row.Station = (ushort)st;
         row.Touch = BaysTouch(c, t, st);
@@ -427,24 +457,21 @@ public static partial class ConstructStationTree
     /// <summary>Do two stations' bays touch or overlap (the no-crane layout: helper stations round a big bay)?</summary>
     public static bool BaysTouch(Construct c, int a, int b)
     {
-        Corners(c, a, out var amin, out var amax);
-        Corners(c, b, out var bmin, out var bmax);
-        const float slack = 0.6f;
-        return amin.X <= bmax.X + slack && bmin.X <= amax.X + slack && amin.Y <= bmax.Y + slack && bmin.Y <= amax.Y + slack && amin.Z <= bmax.Z + slack && bmin.Z <= amax.Z + slack;
-    }
-
-    private static void Corners(Construct c, int t, out Vector3 min, out Vector3 max)
-    {
-        ConstructStation.Bay(c, t, out var floor, out var rot, out var size);
-        min = new Vector3(float.MaxValue);
-        max = new Vector3(float.MinValue);
+        // (in the first bay's own frame: two bays of one construct turned alike are boxes there, whatever way the construct faces)
+        ConstructStation.Bay(c, a, out var af, out var ar, out var asz);
+        ConstructStation.Bay(c, b, out var bf, out var br, out var bsz);
+        var inv = Quaternion.Conjugate(ar);
+        var min = new Vector3(float.MaxValue);
+        var max = new Vector3(float.MinValue);
         for (var k = 0; k < 8; k++)
         {
-            var corner = new Vector3((k & 1) == 0 ? -0.5f : 0.5f, (k & 2) == 0 ? 0 : 1, (k & 4) == 0 ? -0.5f : 0.5f) * size;
-            var p = floor + Vector3.Transform(corner, rot);
+            var corner = new Vector3((k & 1) == 0 ? -0.5f : 0.5f, (k & 2) == 0 ? 0 : 1, (k & 4) == 0 ? -0.5f : 0.5f) * bsz;
+            var p = Vector3.Transform(bf + Vector3.Transform(corner, br) - af, inv);
             min = Vector3.Min(min, p);
             max = Vector3.Max(max, p);
         }
+        const float slack = 0.6f;
+        return min.X <= asz.X * 0.5f + slack && max.X >= -asz.X * 0.5f - slack && min.Y <= asz.Y + slack && max.Y >= -slack && min.Z <= asz.Z * 0.5f + slack && max.Z >= -asz.Z * 0.5f - slack;
     }
 
     // ---- The big fit -------------------------------------------------------------------------------------------------------
@@ -527,6 +554,32 @@ public static partial class ConstructStationTree
     }
 
     private static int Cm(float v) => (int)MathF.Round(v * 100);
+
+    /// <summary>Where a use's body stands once fitted (its world pose on the build), for a lifter's carry. False and why not yet.</summary>
+    private static bool Spot(ConstructWorld world, StationJob j, int r, Construct body, out Vector3 pos, out Quaternion rot, out string why)
+    {
+        (pos, rot) = (Vector3.Zero, Quaternion.Identity);
+        var tag = j.Bp!.Map!.Tags[j.Tree![r].Tag];
+        if (world.Get(j.Body) is not { } root)
+        {
+            why = "waits for the build's first part";
+            return false;
+        }
+        if (!Ready(j, tag, out why))
+            return false;
+        var bt = TopTag(body, tag.Id);
+        if (bt < 0)
+        {
+            why = $"that body isn't one {tag.Name}";
+            return false;
+        }
+        var btag = body.Uses![bt];
+        var turn = Rot24.Compose(tag.Turn, SubBlueprints.Inverse(btag.Turn));
+        var offset = ConstructWorld.Quantise(tag.Origin - Rot24.Apply(turn, btag.Origin));
+        rot = Quaternion.Normalize(root.Rot * Rot24.Quat(turn));
+        pos = root.Pos + Vector3.Transform(offset, root.Rot);
+        return true;
+    }
 
     /// <summary>Server, each tick of a big fit: the body drawn to its spot, then at the timer's end one merge.</summary>
     public static void FitTick(ConstructWorld world, Construct c, int t, StationJob j)
@@ -630,7 +683,7 @@ public static partial class ConstructStationTree
     /// </summary>
     public static void SubDone(ConstructWorld world, Construct c, int t, StationJob j, Construct b)
     {
-        SubBlueprints.TagStamp(b, j.Bp!);
+        SubBlueprints.TagStamp(b, j.Bp!, j.UseId);
         b.SubStamp = j.RootStamp; // (made for that root's use: no other station takes it)
         j.State = StationState.Done;
         j.Repeat = 0;
@@ -905,7 +958,13 @@ public static partial class ConstructStationTree
                     {
                         var bp = SubBlueprints.ParseFlat(j.Pinned, j.Name + ".json", new SubBlueprints.Source { Library = false });
                         foreach (var step in path)
-                            bp = bp.Map?.Top().ToList() is { } tops && step < tops.Count ? SubBlueprints.SubFlat(bp, bp.Map.Tags[tops[step]]) : throw new ConstructPartException("its use isn't in it");
+                        {
+                            var tops = bp.Map?.Top().ToList() ?? throw new ConstructPartException("its use isn't in it");
+                            if (step >= tops.Count)
+                                throw new ConstructPartException("its use isn't in it");
+                            j.UseId = bp.Map.Tags[tops[step]].Id;
+                            bp = SubBlueprints.SubFlat(bp, bp.Map.Tags[tops[step]]);
+                        }
                         j.PinnedBp = bp;
                         j.PinPath = path;
                     }

@@ -53,6 +53,14 @@ public static unsafe partial class Program
                             WsSay($"subbp: body {b.Id} plan: {row.Name} (tag {row.Tag}, {row.Parts} parts): {(row.Kept ? "kept as a use" : row.Why)}");
                     }
                 break;
+            case "arms": // every lifter on the stations' body: its shoulder and reach
+                for (var t = 0; t < sc.PartCount; t++)
+                    if (ConstructLifters.DefOf(sc, t) is { } ld)
+                    {
+                        ConstructLifters.Frame(sc, t, ld, out _, out _, out var shoulder);
+                        WsSay($"subbp: lifter {t} ({sc.DefOf(t).Name}): shoulder {shoulder:0.00}, reach {ld.ReachMin:0.0}-{ld.ReachMax:0.0} m, payload {ld.Payload:0} kg: {ConstructLifters.Look(g.Constructs, sc, t)}");
+                    }
+                break;
             case "bodies":
                 foreach (var b in g.Constructs.Bodies)
                     if (b.Uses is { Count: > 0 } uses)
@@ -64,7 +72,8 @@ public static unsafe partial class Program
                     if (!sc.DefOf(t).IsBuildStation)
                         continue;
                     var j = sc.Parts[t].Station;
-                    WsSay($"subbp: station {t} (Sub-jobs {(ConstructStationTree.SubJobsOn(sc, t) ? "Auto" : "Off")}): {ConstructStation.StateText(j)}{(j is { Note.Length: > 0 } ? " - " + j.Note : "")}");
+                    ConstructStation.Bay(sc, t, out var bfloor, out _, out var bsize);
+                    WsSay($"subbp: station {t} (Sub-jobs {(ConstructStationTree.SubJobsOn(sc, t) ? "Auto" : "Off")}, bay floor {bfloor:0.00} size {bsize:0.0}): {ConstructStation.StateText(j)}{(j is { Note.Length: > 0 } ? " - " + j.Note : "")}");
                     if (j is { Role: 1 })
                         WsSay($"subbp:   header: {j.Header}");
                     if (j != null)

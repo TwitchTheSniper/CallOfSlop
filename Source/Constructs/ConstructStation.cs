@@ -578,14 +578,14 @@ public static partial class ConstructStation
                 return "that blueprint has no parts";
             if (QuickRefusal(bp, BaySize(c, t)) is { } small)
                 return small; // (told from its parts alone: nothing is built to find out)
-            var j = new StationJob { Name = bp.Name, Bp = bp, Repeat = repeat, Steps = (ushort)bp.Steps.Count, Started = Stopwatch.GetTimestamp(), Stamp = ConstructStationTree.NewStamp() };
+            var j = new StationJob { Name = bp.Name, Bp = bp, Repeat = repeat, Steps = (ushort)bp.Steps.Count, Started = Stopwatch.GetTimestamp(), Stamp = ConstructStationTree.NewStamp(), OrderAge = world.OrderStamp++ };
             c.Parts[t].Station = j;
             BeginCosting(world, j);
         }
         else if (PlayerBlueprints.NameRefusal(name) == null && PlayerBlueprints.Exists(name))
         {
             // A player's blueprint: read, its uses resolved and flattened off the game thread (SubBlueprints.cs), its tree pinned to the job.
-            var j = new StationJob { Name = name, Repeat = repeat, Started = Stopwatch.GetTimestamp(), Stamp = ConstructStationTree.NewStamp(), State = StationState.Costing };
+            var j = new StationJob { Name = name, Repeat = repeat, Started = Stopwatch.GetTimestamp(), Stamp = ConstructStationTree.NewStamp(), OrderAge = world.OrderStamp++, State = StationState.Costing };
             j.Resolving = Task.Run(() => Resolve(j, name));
             c.Parts[t].Station = j;
         }
