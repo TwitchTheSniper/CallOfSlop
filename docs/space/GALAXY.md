@@ -42,7 +42,7 @@ The shipped galaxy:
 Five planets in one star system for now (Karl, 2026-11-15): Cinder, Caledon and Mille were each in a system of their own
 (Ember, Glenmore and Hearth, removed) and are now Frostreach's planets, added after its old bodies so a saved ship's body
 index still points at the same body. Frostreach took Ember's place in the galaxy, in the Jump Drive's 9 ly from Dev.
-Glacier, Slopolis, Cinder, Caledon and Mille have maps (docs/planets/WORLDS.md): a jump arrives in orbit round Glacier, and
+Glacier, Slopolis, Cinder, Caledon, Mille and Crumb (Mille's moonlet, where the Magpie start wakes) have maps (docs/planets/WORLDS.md): a jump arrives in orbit round Glacier, and
 a ship that flies down into a world's sky lands the group there. An old save on a world that moved keeps its ground and
 constructs, but its space clock starts again and a ship saved in orbit there stays where it was without its orbit (its
 saved body index belonged to the old system: `GameWorldSave.WorldSpaceShips`).

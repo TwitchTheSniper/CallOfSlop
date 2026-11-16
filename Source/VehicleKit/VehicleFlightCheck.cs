@@ -318,6 +318,19 @@ public static class VehicleFlightCheck
 
     private static float Tilt(Construct c) => MathF.Acos(Math.Clamp(Vector3.Transform(Vector3.UnitY, c.Rot).Y, -1, 1)) * 180 / MathF.PI;
 
+    /// <summary>--flight-check FILE: the flight check on any blueprint file (a ship's as well as a generated aircraft's), its line printed; 0 when it flies.</summary>
+    public static int Cli(string file)
+    {
+        if (!File.Exists(file))
+        {
+            Console.WriteLine($"no file {file}");
+            return 1;
+        }
+        var r = Run(File.ReadAllText(file), Path.GetFileName(file), gate: false);
+        Console.WriteLine($"{Path.GetFileName(file)}: {(r.Ok ? "flies" : "FAILS: " + r.Why)}; {r.Line}");
+        return r.Ok ? 0 : 1;
+    }
+
     /// <summary>The full check's part for an aircraft (<see cref="VehicleCheckOptions.Flies"/>): the flight check's numbers as a note, its refusal as a failure.</summary>
     public static void Into(string text, string file, VehicleReport report)
     {

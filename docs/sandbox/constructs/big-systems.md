@@ -31,7 +31,11 @@ body frame as an ordinary part, shut or open, and changes only when a player or 
   past the jamb towards their own -z, as a Flush Door on a Door Hinge does, and keep the 2 cm gap. A **Double Door L** and
   **R** (1.5x2.25 m) hang on either jamb and meet in the middle on their `meet` sockets: linked there, F on either works both.
   The **Bulkhead Door** (1.25x2 and 1.5x2.25 m, steel, 6 cm) slides into the wall on its hang side, so keep its width of wall
-  there. A hidden 2 cm strip in the gap carries each plain socket (a socket is on a face).
+  there. The **Slide Door** (1x2, 1.25x2, 1.25x2.35 and 1.5x2.25 m) is the miner's pocket door (Karl, 2026-11-15): it
+  slides the same way, in 1 s, and is a framed, ribbed leaf with a kick plate, a viewport, a hazard-striped leading stile
+  with a rubber seal, a pull bar each side and a status lamp. All of it is within 9 cm of its middle, so it disappears into
+  any wall 20 cm thick or more. The Magpie hangs one in every doorway. A hidden 2 cm strip in the gap carries each plain
+  socket (a socket is on a face).
 - **The list.** `Construct.Doors` (at most `MaxDoors`, 1,024, its own array) holds each door part on segment 0 and the parts
   that ride its leaf: anything linked to that door part alone, on a socket other than its hang socket (a Door Handle, a sign),
   at most 8. It is built from the special parts after a rebuild (`EnsureDoors`). What lasts lives in the door part: where it
