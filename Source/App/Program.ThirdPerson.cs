@@ -158,6 +158,7 @@ public static unsafe partial class Program
         dir = g.LookDir(g.LookYaw, g.LookPitch);
         if (ThirdPerson.Active && ThirdPerson.HaveCam && !ThirdPerson.Seated)
             eye = ThirdPerson.AimOrigin(FootCameraNow(eye, dir), dir, eye);
+        g.AimToTick(me, ref eye, ref dir); // (the host: from the drawn frame to the tick's, where constructs are hit and reach is measured)
     }
 
     /// <summary>In the frame: puts the camera where the third-person view wants it (one sphere cast). True when it did (no bob, no recoil roll, no first-person gun).</summary>

@@ -50,6 +50,18 @@ public sealed partial class Game
     public bool RequestSpaceWarp(int warp) => IsServer && Space?.Flight is { } f && f.RequestWarp(warp, fromHost: true);
 
     /// <summary>
+    /// Any peer, when the bubble is made: past the bubble's edge a free player falls by the body's own GM, as the ships do,
+    /// so one who steps off a ship in orbit stays beside it (PointGravity.FreeFall). Both peers set it, so prediction agrees.
+    /// </summary>
+    private void SpaceOrbitPull()
+    {
+        if (GravityFrames.Point is not { } pg)
+            return;
+        var edge = SpaceEdge;
+        (pg.OrbitMu, pg.OrbitFrom) = Space != null && edge > 0 ? (Space.Bubble.BodyInfo.Mu, edge) : (0, 0);
+    }
+
+    /// <summary>
     /// Host, every tick: the bubble follows the map, then the clock and the ships step and their news goes out.
     /// Allocation-free once the map's bubble is made.
     /// </summary>
@@ -124,6 +136,7 @@ public sealed partial class Game
         var start = was != null && (sameSystem || g >= 0 && old!.GalaxyIndex >= 0) ? old!.Now : e.System.Start;
         var flight = saved ?? kept ?? new SpaceFlight(e.System, SpaceShipCapacity, start);
         Space = new SpaceSession(new SpaceBubble(e.System, body), e.Hash, World.Map.Name, flight);
+        SpaceOrbitPull();
         if (was != null && (sameSystem || g >= 0 && old!.GalaxyIndex >= 0))
         {
             for (var k = 0; k < old!.Away.Length; k++)
@@ -276,6 +289,7 @@ public sealed partial class Game
             return;
         }
         Space = new SpaceSession(new SpaceBubble(e.System, _spacePendingBody), e.Hash, map, null);
+        SpaceOrbitPull();
         Space.GalaxyOk = _spacePendingGalaxy == Galaxy.Hash;
         if (!Space.GalaxyOk)
             Console.WriteLine("[space] the host's star systems aren't the same as this PC's: its ships in other systems won't show");

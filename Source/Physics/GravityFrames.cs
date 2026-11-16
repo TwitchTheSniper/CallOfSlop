@@ -37,6 +37,30 @@ public sealed class PointGravity : IGravityField
         Inside = MathF.Max(inside, 0);
     }
 
+    /// <summary>
+    /// In a star system (set by the game's space bubble, GameSpace.cs): the body's GM (m^3/s^2) and the distance from the
+    /// centre past which a free player falls as a ship there does (<see cref="FreeFall"/>); 0: never.
+    /// </summary>
+    public double OrbitMu;
+    public float OrbitFrom;
+
+    /// <summary>
+    /// A free player's pull past the bubble's edge: the body's GM over the distance squared, as the ships there feel it
+    /// (SpaceShips), with no gravity setting, so someone who steps off a ship in orbit falls round with it. False inside.
+    /// </summary>
+    public bool FreeFall(Vector3 position, out Vector3 g)
+    {
+        g = Vector3.Zero;
+        if (OrbitMu <= 0 || OrbitFrom <= 0)
+            return false;
+        var d = position - Center;
+        var r2 = d.LengthSquared();
+        if (r2 <= OrbitFrom * OrbitFrom)
+            return false;
+        g = -d / MathF.Sqrt(r2) * (float)(OrbitMu / r2);
+        return true;
+    }
+
     public Vector3 GravityAt(Vector3 position) => -GravityFrames.UpOf(this, position) * Strength;
 
     public Vector3 UpAt(Vector3 position) => GravityFrames.UpOf(this, position);
