@@ -81,26 +81,56 @@ public static partial class ConstructRide
     }
 
     /// <summary>
-    /// Server, before the physics steps: every body made since (<see cref="Construct.Fresh"/>) that no path gave a motion
-    /// takes its frame's. A scan of the bodies only on a tick that made some; nothing allocates.
+    /// Server, before the physics steps: every body made since (<see cref="ConstructWorld.Fresh"/>) that no path gave a motion
+    /// takes its frame's. Only the bodies made this tick are looked at (all of them past <see cref="ConstructWorld.FreshCap"/>),
+    /// and only one with a moving construct near its origin is rebuilt and placed; nothing allocates.
     /// </summary>
     public static void SpawnIntoMotion(ConstructWorld w)
     {
-        if (w.FreshCount == 0)
-            return;
-        w.FreshCount = 0;
-        var bodies = w.Bodies;
-        for (var i = 0; i < bodies.Count; i++)
+        if (w.FreshOverflow)
         {
-            var c = bodies[i];
-            if (!c.Fresh)
-                continue;
-            c.Fresh = false;
-            if (c.Anchored || c.Pinned || c.Frozen || c.CarriedBy != 0 || c.SpaceShip != 0 || c.HeldBy != 0 || c.PartCount == 0
-                || c.Vel != Vector3.Zero || c.AngVel != Vector3.Zero)
-                continue; // (held, or given a motion by the path that made it)
-            if (IntoMotion(w, c))
-                w.Events.Add($"construct {c.Id} came into a moving frame: {c.Vel.Length():0.0} m/s");
+            w.FreshOverflow = false;
+            w.Fresh.Clear();
+            var bodies = w.Bodies;
+            for (var i = 0; i < bodies.Count; i++)
+                if (bodies[i].Fresh)
+                    SpawnOne(w, bodies[i]);
+            return;
         }
+        var fresh = w.Fresh;
+        for (var i = 0; i < fresh.Count; i++)
+            if (fresh[i].Fresh && w.Get(fresh[i].Id) == fresh[i])
+                SpawnOne(w, fresh[i]);
+        fresh.Clear();
+    }
+
+    private static void SpawnOne(ConstructWorld w, Construct c)
+    {
+        c.Fresh = false;
+        if (c.Anchored || c.Pinned || c.Frozen || c.Asleep || c.CarriedBy != 0 || c.SpaceShip != 0 || c.HeldBy != 0 || c.PartCount == 0
+            || c.Vel != Vector3.Zero || c.AngVel != Vector3.Zero)
+            return; // (held, asleep, or given a motion by the path that made it)
+        if (c.Dirty && c.PartCount > 1)
+            c.Rebuild(); // (a spawned blueprint, rare: its centre and size; a single part's origin is its place)
+        if (!MovingNear(w, c.Dirty ? c.Pos : c.WorldCom, c))
+            return; // (no moving construct anywhere near: nothing to rebuild it for)
+        IntoMotion(w, c);
+    }
+
+    /// <summary>Is any construct moving with its bounds near world point <paramref name="at"/> (a cheap sphere test before a fresh body is rebuilt)?</summary>
+    private static bool MovingNear(ConstructWorld w, Vector3 at, Construct skip)
+    {
+        var near = w.Near(at, BoundsAbove + 1f, _frameNear);
+        for (var i = 0; i < near.Count; i++)
+        {
+            var f = near[i];
+            if (f == skip || f.Anchored || f.Asleep || f.PartCount == 0
+                || f.Vel.LengthSquared() < StillSpeed * StillSpeed && f.AngVel.LengthSquared() < StillSpeed * StillSpeed)
+                continue;
+            var reach = f.Radius + skip.Radius + BoundsAbove + 2f; // (a fresh body's radius may not be worked out yet: the pad covers a part's size)
+            if (Vector3.DistanceSquared(at, f.WorldCom) <= reach * reach)
+                return true;
+        }
+        return false;
     }
 }

@@ -245,6 +245,12 @@ public static partial class ConstructRide
         c.WorldFrame(s.RideSeg, out var q, out var t);
         if (s.RideClimb > 0)
         {
+            if (s.RideOn != 0 && s.RideOn <= c.JointCount)
+            {
+                var carry = CarrierVel(c, s.RideOn, s.RideClimbTo) * World.TickDt; // (climbing onto a moving lift: its end, and the climber, go with it)
+                s.RideClimbTo += carry;
+                s.RideLocal += carry;
+            }
             s.RideLocal += (s.RideClimbTo - s.RideLocal) / s.RideClimb;
             s.RideClimb--;
             s.RideVel = Vector3.Zero;

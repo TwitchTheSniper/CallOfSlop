@@ -54,7 +54,7 @@ public sealed partial class Game
         if (!IsServer)
         {
             h.RideBody = me.Sim.RideBody;
-            h.RideSeg = me.Sim.RideSeg;
+            h.RideSeg = (byte)ConstructRide.Carrier(me.Sim); // (the surface carrying them, a lift's or a turntable's: what a drop or a held piece moves with)
         }
         h.RideTurn = Quaternion.Normalize(rider * ConstructGrab.YawQ(_rideYaw));
     }
@@ -89,7 +89,7 @@ public sealed partial class Game
         var rider = ConstructRide.RiderRot(q, p.Sim.RideUp);
         ConstructRide.LookIn(rider, GravityFrames.Forward(p.Position, p.Yaw, p.Pitch), out var yaw, out _);
         h.RideBody = p.Sim.RideBody;
-        h.RideSeg = p.Sim.RideSeg;
+        h.RideSeg = (byte)ConstructRide.Carrier(p.Sim); // (the surface carrying them, a lift's or a turntable's: what a drop or a held piece moves with)
         h.RideTurn = Quaternion.Normalize(rider * ConstructGrab.YawQ(yaw));
     }
 
@@ -116,7 +116,7 @@ public sealed partial class Game
     {
         if (!SandboxOn || shooter.Sim.RideUp == Vector3.Zero || Constructs.Get(shooter.Sim.RideBody) is not { } c || shooter.Sim.RideSeg > c.JointCount)
             return;
-        if (ConstructRide.SurfaceVel(c, shooter.Sim.RideSeg, shooter.Position).LengthSquared() < 4f)
+        if (ConstructRide.RiderSurfaceVel(c, shooter.Sim, shooter.Position).LengthSquared() < 4f)
             return;
         origin = shooter.Eye;
         dir = GravityFrames.Forward(shooter.Position, shooter.Yaw, shooter.Pitch);

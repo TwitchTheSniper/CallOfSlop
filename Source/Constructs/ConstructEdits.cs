@@ -51,7 +51,7 @@ public struct SandboxHand
     public double GrabAskedAt; // client: when it last asked to grab or let go (the 10 Hz tail doesn't undo it meanwhile)
     // Contraption space (GameSandboxRide.cs; each machine's own, never sent): the frame this player stands in.
     public ushort RideBody; // 0: none
-    public byte RideSeg;
+    public byte RideSeg; // the segment whose surface carries them (the body, or a lift, a ramp, a turntable they stand on: ConstructRide.Carrier); their frame is the body's
     public Quaternion RideTurn; // their look's yaw, as a turn in the world about their up (the physics gun's "relative to the look")
 
     public readonly bool Seated => SeatBody != 0;

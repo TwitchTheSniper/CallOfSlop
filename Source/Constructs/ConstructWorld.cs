@@ -465,12 +465,19 @@ public sealed partial class ConstructWorld
         Shattered.Clear();
         FireCount = 0;
         CookOffCount = 0;
-        FreshCount = 0;
+        Fresh.Clear();
+        FreshOverflow = false;
         ClearStores();
     }
 
-    /// <summary>Bodies made since the physics last stepped (the server's step clears it: ConstructRide.SpawnIntoMotion).</summary>
-    public int FreshCount;
+    /// <summary>
+    /// Bodies made since the physics last stepped, up to <see cref="FreshCap"/> (past it <see cref="FreshOverflow"/>: the step
+    /// looks at every body). The server's step empties it (ConstructRide.SpawnIntoMotion); a client's only ever reaches the cap.
+    /// </summary>
+    public readonly List<Construct> Fresh = new(FreshCap);
+
+    public const int FreshCap = 256;
+    public bool FreshOverflow;
 
     /// <summary>A new empty body at a pose (null when the host's cap is reached or no id is free). Add parts, then it rebuilds on the next tick.</summary>
     public Construct? Create(Vector3 pos, Quaternion rot, ushort id = 0)
@@ -485,7 +492,10 @@ public sealed partial class ConstructWorld
         Bodies.Add(c);
         _byId[id] = c;
         c.Fresh = true; // (into the motion of the frame it is made in, before the physics next steps: ConstructRideSpawn.cs)
-        FreshCount++;
+        if (Fresh.Count < FreshCap)
+            Fresh.Add(c);
+        else
+            FreshOverflow = true;
         StructureDirty.Add(id);
         GridAdded(c);
         _blasting?.Add(c); // (a piece split off by a blast going off: it is in the blast too)
