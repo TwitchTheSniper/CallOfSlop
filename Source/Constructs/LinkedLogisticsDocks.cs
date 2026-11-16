@@ -145,7 +145,7 @@ public static class LinkDocks
                 l.Ready--;
                 l.Loaded++;
                 l.Ship = ship.DisplayName();
-                (l.ShipSeen, l.ShipWorld) = (LinkLedger.Now, key);
+                (l.ShipSeen, l.ShipWorld, l.ShipBody) = (LinkLedger.Now, key, ship.Id);
                 AddManifest(lp, l, 1);
                 moved++;
             }
@@ -281,7 +281,7 @@ public static class LinkDocks
                 continue;
             }
             if (l != null)
-                (l.ShipSeen, l.ShipWorld, l.Ship) = (LinkLedger.Now, key, ship.DisplayName());
+                (l.ShipSeen, l.ShipWorld, l.Ship, l.ShipBody) = (LinkLedger.Now, key, ship.DisplayName(), ship.Id);
             var k = kinds[..kn].IndexOf(ml.Kind);
             if (k < 0 && kn < kinds.Length)
                 (kinds[kn], have[kn], k) = (ml.Kind, ShipHolds(world, ship, ml.Kind), kn++);
@@ -299,10 +299,7 @@ public static class LinkDocks
                 lp.Version++;
                 if (l != null)
                 {
-                    l.Taken += (ushort)taken;
-                    l.Loaded -= (ushort)taken;
-                    l.Count -= (ushort)Math.Min(l.Count, taken); // (not asked again: the user's answer 9; its order stays short until reordered)
-                    l.Taken -= 0;
+                    l.Taken += (ushort)taken; // (not asked again: the user's answer 9; its order stays short until reordered)
                     l.Note = $"{taken} taken from {ship.DisplayName()}'s hold: order again to replace them";
                     Console.WriteLine($"[linked] line {l.Id}: {taken} {ConstructParts.Get(l.Kind)?.Name} taken from {ship.DisplayName()}'s hold");
                     if (l.Outstanding == 0 && l.State == LinkLineState.Open)

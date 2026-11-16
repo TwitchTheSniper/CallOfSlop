@@ -44,6 +44,7 @@ public static class LinkDispatch
 
     public static void Step(ConstructWorld world, string key)
     {
+        _world = world;
         foreach (var (bid, part) in world.LinkState.Parts)
         {
             if (world.Get(bid) is not { } f || part >= f.PartCount || f.DefOf(part).LinkKind != LinkKind.Dispatcher || f.Parts[part].Link is not { } lp)
@@ -160,6 +161,9 @@ public static class LinkDispatch
             if (l.State != LinkLineState.Open || l.Use != 0 || ConstructParts.Get(l.Kind) is not { } d)
                 continue;
             var units = l.Ready + (int)l.Est;
+            var aboard = l.Loaded - l.Delivered - l.Lost - l.Taken;
+            if (aboard > 0 && l.ShipWorld == key && LinkLedger.Ends.Count >= 0 && ShipHere(l.ShipBody, f))
+                units += aboard; // (loaded on a ship idle at this factory: a run waits to go)
             if (units <= 0)
                 continue;
             bool fetch;
@@ -186,6 +190,10 @@ public static class LinkDispatch
         }
         return n;
     }
+
+    private static ConstructWorld? _world;
+
+    private static bool ShipHere(ushort ship, Construct f) => _world?.Get(ship) is { } s && s.CarriedBy == f.Id;
 
     /// <summary>The Cargo Dock of a linked network's body, from the ledger (its world may be closed).</summary>
     private static LinkDockRef? DockOf(string world, ushort body)

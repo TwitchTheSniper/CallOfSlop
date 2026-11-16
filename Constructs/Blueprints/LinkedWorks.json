@@ -17,7 +17,8 @@
     { "part": "Foundation", "on": 1, "socket": "x-0", "by": "x+0", "paint": "#8c8576" },
     { "part": "Foundation", "on": 10, "socket": "x-0", "by": "x+0", "paint": "#8c8576" },
     { "part": "Logistics Relay", "on": 11, "socket": "top11", "by": "-y" },
-    { "part": "Storage Volume", "on": 0, "socket": "top30", "by": "-y" }
+    { "part": "Storage Volume", "on": 0, "socket": "top30", "by": "-y" },
+    { "part": "Logistics Dispatcher", "on": 1, "socket": "top30", "by": "-y" }
   ],
   "links": [
     { "type": "chute", "from": 13, "fromPort": "Chute out", "to": 7, "toPort": "Chute in" }

@@ -96,7 +96,8 @@ public static class LinkedCheck
         var clampW = PartOf(wk, d => d.IsDock && d.LinkKind == LinkKind.None);
         var ha = Build(wa, placeA, hauler, LinkDocks.PartAt(wk, clampW) + new Vector3(0, 1.2f, 0) - new Vector3(0, 0, 0));
         var port = PartOf(ha, d => d.LinkKind == LinkKind.Port);
-        Run(wa, placeA, 6);
+        for (var k = 0; k < 15 && ha.CarriedBy != wk.Id; k++)
+            Run(wa, placeA, 1);
         Say(ha.CarriedBy == wk.Id, $"the works' Docking Clamp holds the hauler: CarriedBy {ha.CarriedBy} (works {wk.Id})");
         Run(wa, placeA, 4);
         var aboard = ha.Parts[port].Link?.Manifest.Sum(m => m.Aboard) ?? 0;
@@ -111,7 +112,8 @@ public static class LinkedCheck
             ha.DockAway = 0;
             ha.Wake();
         }
-        Run(wa, placeA, 6);
+        for (var k = 0; k < 15 && ha.CarriedBy != yd.Id; k++)
+            Run(wa, placeA, 1);
         Say(ha.CarriedBy == yd.Id, $"the yard's Docking Clamp holds the hauler: CarriedBy {ha.CarriedBy} (yard {yd.Id})");
         Run(wa, placeA, 12);
         Say(line is { State: LinkLineState.Closed, Delivered: 4 }, $"unloaded: line {line?.State}, delivered {line?.Delivered}; {line?.Note}");
@@ -142,6 +144,37 @@ public static class LinkedCheck
         var line3 = LinkLedger.Lines.LastOrDefault(l => l.Id != line2?.Id && l.Count == 2 && l.Kind == gear.Id);
         Say(line2 is { Lost: 2 } && line3 != null, $"lost with the ship: line {line2?.Id} lost {line2?.Lost}; ordered again: {(line3 == null ? "no" : $"line {line3.Id}")}");
         Console.WriteLine($"     the yard's order: {Order(yd, term)}");
+
+        // A part taken from the hold by a player: the line shrinks, nothing is ordered again (the user's answer 9).
+        using (placeA.In())
+        {
+            ha.Parts[port].Broken = false;
+            ha.Parts[port].Health = ha.DefOf(port).Health;
+        }
+        Run(wa, placeA, 6);
+        var linesBefore = LinkLedger.Lines.Count;
+        using (placeA.In())
+            for (var k = LinkDocks.ShipHolds(wa, ha, (ushort)gear.Id); k > 1; k--)
+                LinkDocks.TakeFromShip(wa, ha, gear); // (all but one: the lost line's two still lie in the hold, as loose cargo now)
+        Run(wa, placeA, 3);
+        Say(line3 is { Taken: 1 } && LinkLedger.Lines.Count == linesBefore, $"a part taken from the hold: line {line3?.Id} taken {line3?.Taken}, loaded {line3?.Loaded}; no new line ({LinkLedger.Lines.Count} lines); {line3?.Note}");
+        Console.WriteLine($"     the yard's order: {Order(yd, term)}");
+
+        // The Dispatcher: the hauler, docked at the works, joins its fleet; with parts waiting it is sent on a one-off run.
+        var disp = PartOf(wk, d => d.LinkKind == LinkKind.Dispatcher);
+        var fleet = wk.Parts[disp].Link?.Fleet;
+        Say(fleet is { N: 1 }, $"the works' Dispatcher registered the hauler: {wk.Parts[disp].Link?.Status.Replace("\n", " | ")}");
+        using (placeA.In())
+            why = ConstructCrafting.Place(wa, yd, term, new WorkOrder { Part = (ushort)gear.Id, Count = 1 });
+        using (placeA.In())
+            LinkedLogistics.Act(wa, wk, disp, LinkOp.FleetRules, 10, 1, "");
+        var rcp = PartOf(ha, d => d.LinkKind == LinkKind.Route);
+        LinkLedger.Offset += 70; // (the oldest line past the Dispatcher's one-minute timeout)
+        Run(wa, placeA, 8);
+        var sent = ha.Parts[rcp].Link?.Route;
+        Say(sent is { OneOff: true, N: 3 }, $"the Dispatcher sent it: {(sent == null ? "no route" : $"{sent.N} stops, {sent.Phase}: {sent.Why}")}; {fleet?.Last}");
+        if (sent != null)
+            ha.Parts[rcp].Link!.Route = null; // (headless: no flight here; the window tool flies it)
 
         // Saves: the body block and the ledger.
         var bytes = LinkedLogistics.SaveBytes(ha);

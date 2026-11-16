@@ -74,6 +74,7 @@ public sealed class LinkLine
     public bool Reclaim = true; // its ready parts are claimed again at its dock (claims aren't saved)
     public double ShipSeen = -1; // when a ship's manifest last showed it aboard (LinkDocks), and in which world
     public string ShipWorld = "";
+    public ushort ShipBody; // ...and its body there
     public bool CancelAtDock; // its supplier's dock order is to be cancelled (a broken link: what isn't made yet isn't wanted)
     public int Outstanding => Math.Max(0, Count - Delivered - Lost - Taken);
     public int ToLoad => Math.Max(0, Count - Loaded);
