@@ -1374,8 +1374,8 @@ public static partial class ConstructNet
             if (c != null)
             {
                 c.DigestRound = world.DigestRound;
-                if (!wrong && asleep && c.NetTick <= tick)
-                    wrong = !c.Asleep || Vector3.DistanceSquared(c.NetPos, pos) > 0.02f * 0.02f || MathF.Abs(Quaternion.Dot(c.NetRot, rot)) < 0.99996f; // (2 cm, about 1 degree)
+                if (!wrong && asleep && c.NetTick <= tick) // (the digest's "asleep" is the server's Still: an anchored body without joints counts though awake, and sends no pose saying so, so it is still here too; 2026-11-16: every such body was sent whole again every round)
+                    wrong = !(c.Asleep || c.Anchored && c.JointCount == 0) || Vector3.DistanceSquared(c.NetPos, pos) > 0.02f * 0.02f || MathF.Abs(Quaternion.Dot(c.NetRot, rot)) < 0.99996f; // (2 cm, about 1 degree)
             }
             if (wrong && world.ResyncCount < world.Resync.Length)
                 world.Resync[world.ResyncCount++] = id;
