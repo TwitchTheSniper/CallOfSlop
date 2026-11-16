@@ -354,7 +354,21 @@ Servicing (extends `GameSandboxBreakdowns.cs`):
   with a cost by the piece's size from `ShipWorks.json`. Today that act is only for a part that broke down (`Broken`
   with health kept); phase 1 widens it to a works piece at zero health and restores its health. Check first whether
   another repair path already covers disabled parts, and use it if so.
-- Which ships have breakdowns at all stays as it is (the ship start's own ship) unless Karl widens it: question 4.
+- **Every crewed player ship breaks down** (Karl, 2026-11-16, answer 4), in Survival, not only the ship start's own.
+  What changes in `GameSandboxBreakdowns.cs`:
+  - Today's state is one warning for one ship (`_opShip`, `_bdNext`, `_bdDef`, `_bdPos`, `_bdLeft`, `_bdCreak`). It
+    becomes a ship's own: the clock and the warning under way are kept on the `Construct` (a few fields, as `LiftStamp`
+    is; no dictionary that grows with bodies).
+  - Which bodies: walk the players, not the bodies. Each look (four a second, as now), for every living player take
+    the body they ride or sit in, once a body, and tick it if it is a **ship**: it has a thruster over `jetMost` or a
+    Flight Stabilizer, isn't a wreck, and has no AI crew fighting for it (`GameSandboxShipAi`). So the cost is bounded
+    by the players, whatever the world holds, and an enemy frigate doesn't break down until it is taken.
+  - A ship's first breakdown comes `firstMinutes` after it is first crewed, then by `minMinutes` to `maxMinutes`, all
+    crewed time, as now. `maxFailed` is per ship. Overdrive (4.4) runs that ship's clock faster.
+  - The clocks aren't saved today and needn't be yet: a loaded ship starts its wait again.
+  - The client's side (`_bdSeenBody` and the messages) is already by body; check that a player hears only the ship
+    they are aboard, and that two ships warning at once don't share the one seen-part slot.
+  - `Breakdowns.json`'s comment and ship.md "Breakdowns" say "the ship start's own ship": change both.
 
 ## 8. Power and the capacitor rule
 
@@ -464,7 +478,7 @@ then `--selftest-only`). If something fails that a command can't catch, one sect
 | --- | --- | --- |
 | **0. The mechanism** | `ShipWorks.json` and its table; the `works` and `worksPiece` blocks; `ConstructWorks.Build` at the rebuild; the look lines; `--check-vehicle`'s `works:` lines. No part uses it yet, so no ship changes | `--check-construct-parts` clean; a hand-written test blueprint (a nozzle, a mount, a core) reports 100%, and 25% with the core taken out; rebuild time on the Zero Day and the Titan Walker unchanged |
 | **1. Drives** | `ship_works` generator: Hull Mount, Drive Nozzle, Drive Core, Fuel Pump, Coolant Exchanger, Drive Pod. The cap in every thrust reader (3.3). Burn figures. The panel's report, the service flag, mending a broken piece | A demo blueprint of each class flown in a window: full thrust; shoot the pump, half or a quarter; mend it; a pod's failure refuses at the panel. A joined client sees the same look lines and flames. `--flight-check` on the demos |
-| **2. The ships' drives** | Rust Bucket, Magpie, Halberd, Zero Day as section 11 (drives only). Breakdowns onto works. The skill's new section. The four ship docs | Each: `--gen-parts`, `--check-vehicle` (works 100%, 0 coplanar), `--selftest-only "No z-fighting"`, `--check-building`, `--flight-check` against the old figures, `--conduit-check`. The rust bucket start in a window to a first breakdown, seen to in the engine room. `--ship-ai-check` for the Zero Day. The gallery republished |
+| **2. The ships' drives** | Rust Bucket, Magpie, Halberd, Zero Day as section 11 (drives only). Breakdowns onto works and onto every crewed player ship (section 7). The skill's new section. The four ship docs | Each: `--gen-parts`, `--check-vehicle` (works 100%, 0 coplanar), `--selftest-only "No z-fighting"`, `--check-building`, `--flight-check` against the old figures, `--conduit-check`. The rust bucket start in a window to a first breakdown, mended outside at the pod; a second ship (a Halberd from the Blueprints tab, boarded) to its own first breakdown, seen to inside; a host and a joined client aboard different ships. `--ship-ai-check` for the Zero Day. The gallery republished |
 | **3. Turret Rings and autoloaders** | Turret Ring (the joint and its trunk), the ring feed in `ConstructAmmo`, Autoloader. The Halberd's and Zero Day's PDCs as section 11 | A ring fed from a container fires through 360 degrees with the store emptying; cut the feed, 3 s of rounds left; an autoloaded cannon's reload against a bare one; host and client. The two ships' checks again |
 | **4. Reload Hoists** | Reload Hoist, its magazine racks, the move. Optionally the Zero Day's second drums | A launcher of four with a magazine of eight fires twelve with nobody outside; power off, it stops; a magazine hit cooks off inside (`--bench-cookoff` for the cost); a client sees each reload arrive |
 | **5. Energy and lasers** | `gun.energy`, Capacitor Bank, the railguns' draw; then Laser Emitter, Laser Generator, Laser Pod, the beam's look | A railgun fires its burst and waits on the reactor; a trunked laser against a Laser Pod on the same target; capacitors shot out, no fire. `--ship-ai-check` (its railgun still fires) |
@@ -496,8 +510,7 @@ The builder goes ahead on the recommended answer for any still open.
 2. **A big nozzle with no works behind it:** Answered: B, it runs at a quarter. (A was that it doesn't run.)
 3. **Lasers and capacitors, which don't exist yet:** Answered: A, in this plan, as its last big phase. (B was a
    plan of their own later.)
-4. **Breakdowns:** A (recommended): still only the ship start's own ship, moved onto its works. B: every crewed
-   player ship in Survival.
+4. **Breakdowns:** Answered: B, every crewed player ship in Survival. (A was the ship start's own ship only.)
 5. **A Drive Core that is destroyed:** A (recommended): the drive stops, no blast. B: it goes up like a fuel tank.
 6. **Recipes for the new parts:** A (recommended): none here; raised with TwitchTheSniper for the production system.
    B: the part kit writes Assembling recipes for them now.
@@ -517,3 +530,5 @@ Answers:
 - **7: B** (Karl, 2026-11-16, in the thread: "The Rust Bucket pods are nacelles, so they have the downside that you
   have to go outside and mend them or land it"). The rust bucket's drives and lift jets are pods. Section 11's row is
   revised. It follows that no ship shows a class 1 hull drive; the Halberd and the Zero Day show hull drives.
+- **4: B** (Karl, 2026-11-16, decision card). Breakdowns happen on every crewed player ship in Survival. Section 7's
+  last point is revised with what that changes in the code. It is done in phase 2, with the move onto the works.
