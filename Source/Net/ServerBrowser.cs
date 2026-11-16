@@ -533,7 +533,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   at half the speed between messages. No new bytes.
     // 319: each thruster's own level for its flame (CBodyKind.Thrust at the end of CBodyKind: u16 body, u16 n, u8 level each, 10 Hz while one
     //   changes; ConstructThrust.WriteShown), and the Flight Stabilizer's "keys" setting takes Ship (FlightPattern.Ship, 4).
-    public const ushort ProtocolVersion = 319;
+    // 320: the Flight Stabilizer's "aiCrew" setting (CfgKey.AiCrew, a new config slot on every stabilizer; ConstructShipAi.cs).
+    public const ushort ProtocolVersion = 320;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

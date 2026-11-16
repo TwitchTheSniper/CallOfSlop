@@ -61,6 +61,7 @@ public sealed partial class Construct
     public int StabCount;
     public FlightEffectors? Effectors; // what the first stabilizer found (made when there is one)
     public bool StabLive; // a stabilizer is at work this tick: it stays awake
+    public bool CrewAims; // an AI crew flies it (ConstructShipAi.cs): its stabilizer turns to the crew pilot's look as if on Mouse aim. Server only, never saved
     public bool StabOwns; // this tick the stabilizer has set its effectors (a wrecked one sets nothing: they go back to their wires and the driver)
     public Vector3 GyroNow; // N m, world: what the gyro asks for this tick
     public bool HasFlightDiag, DiagSent; // a Flight Diagnostic Panel is on it; clients were last told something non-zero
@@ -609,7 +610,7 @@ public static partial class ConstructFlight
 
     /// <summary>Mouse aim is on and somebody is in its seat.</summary>
     private static bool MouseOn(Construct c, in CPart p, ConstructPartDef d, int seat) =>
-        ConstructConfig.Get(p, d, CfgKey.MouseAim, 0) >= 0.5f && seat >= 0 && seat < c.PartCount && (c.Parts[seat].Keys & CPart.Occupied) != 0;
+        (c.CrewAims || ConstructConfig.Get(p, d, CfgKey.MouseAim, 0) >= 0.5f) && seat >= 0 && seat < c.PartCount && (c.Parts[seat].Keys & CPart.Occupied) != 0;
 
     /// <summary>
     /// Does the look of whoever sits in <paramref name="seat"/> steer this craft's nose (a stabilizer on Ship keys with mouse aim, taking its orders from that seat)? Then the view

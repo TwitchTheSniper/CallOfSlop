@@ -21,6 +21,8 @@ public sealed partial class Game
         {
             if (Constructs.Get(id) is not { } c || c.Wreck || c.SpaceShip != 0)
             {
+                if (Constructs.Get(id) is { } left)
+                    ai.Release(left);
                 _shipAiGone.Add(id);
                 continue;
             }
@@ -38,8 +40,8 @@ public sealed partial class Game
     {
         foreach (var c in Constructs.Bodies)
         {
-            if (c.StabCount == 0 && !_shipAi.ContainsKey(c.Id))
-                continue;
+            if (c.SpaceShip != 0 || c.StabCount == 0 && !_shipAi.ContainsKey(c.Id))
+                continue; // (a ship out in space has no crew at work: the tick lets it go)
             var mode = c.Wreck ? ShipAiMode.Off : ShipAi.ModeOf(c);
             _shipAi.TryGetValue(c.Id, out var ai);
             if (mode != ShipAiMode.Off && ai == null)

@@ -44,7 +44,19 @@ public sealed class ShipAi
 
     public readonly ushort Body;
     public ShipAiMode Mode;
-    public string State = "standing by"; // (for the check's lines and a log)
+    /// <summary>What it is doing, for the check's lines and a log (made when read: nothing on the tick).</summary>
+    public string State => _state switch
+    {
+        1 => "no pilot's seat",
+        2 => "no target: holding",
+        3 => "no target: landing",
+        4 => $"closing, {_stateDist:0} m",
+        5 => $"opening, {_stateDist:0} m",
+        6 => $"holding at {_stateDist:0} m",
+        _ => "standing by",
+    };
+    private int _state;
+    private float _stateDist;
     public int Shots, Launches, Flares; // (fired, for the check)
 
     private int _stab = -1, _pilot = -1;
@@ -58,7 +70,6 @@ public sealed class ShipAi
     private float _ground = float.MaxValue, _ahead = float.MaxValue; // clearance under it and along its way (m)
     private int _launchAt, _strafeUntil, _idle;
     private sbyte _strafe = 1;
-    private float _mouseWas = -1; // its stabilizer's own Mouse aim, put back when the crew stands down
 
     public ShipAi(ushort body, ShipAiMode mode)
     {
@@ -114,12 +125,7 @@ public sealed class ShipAi
                 _rackButton[_rackCount++] = (short)b;
             }
         }
-        if (_stab >= 0 && _mouseWas < 0)
-        {
-            ref var s = ref c.Parts[_stab];
-            _mouseWas = ConstructConfig.Get(s, s.D, CfgKey.MouseAim, 0);
-            ConstructConfig.Put(ref s, s.D, CfgKey.MouseAim, 1); // (it turns to where its pilot looks)
-        }
+        c.CrewAims = _stab >= 0; // (its stabilizer turns to where the crew's pilot looks, whatever its Mouse aim setting; never saved)
     }
 
     /// <summary>A Button wired into part <paramref name="part"/>, or -1.</summary>
@@ -131,17 +137,12 @@ public sealed class ShipAi
         return -1;
     }
 
-    /// <summary>The crew stands down (the setting went off, or a player took the helm): its stabilizer's Mouse aim as it was.</summary>
+    /// <summary>The crew stands down (the setting went off, or a player took the helm): its stabilizer goes back to its own Mouse aim setting.</summary>
     public void Release(Construct c)
     {
-        if (_stab >= 0 && _stab < c.PartCount && _mouseWas >= 0 && c.Parts[_stab].D.Logic == CLogic.FlightStabilizer)
-        {
-            ref var s = ref c.Parts[_stab];
-            ConstructConfig.Put(ref s, s.D, CfgKey.MouseAim, _mouseWas);
-        }
-        _mouseWas = -1;
+        c.CrewAims = false;
         _structure = -1;
-        State = "standing by";
+        _state = 0;
     }
 
     /// <summary>
@@ -156,7 +157,7 @@ public sealed class ShipAi
             Scan(c);
         if (_pilot < 0 || _pilot >= c.PartCount || c.Parts[_pilot].Broken)
         {
-            State = "no pilot's seat";
+            _state = 1;
             return;
         }
         var com = c.WorldCom;
@@ -175,7 +176,7 @@ public sealed class ShipAi
             _idle++;
             if (_idle > 30 * World.TickRate && _ground < 400)
                 pilot |= (ushort)Buttons.Crouch;
-            State = _idle > 30 * World.TickRate ? "no target: landing" : "no target: holding"; // (constants: nothing made)
+            _state = _idle > 30 * World.TickRate ? 3 : 2;
             Seat(c, _pilot, pilot, c.Parts[_pilot].AimYaw, c.Parts[_pilot].AimPitch);
             for (var s = 0; s < _seatCount; s++)
                 Seat(c, _seats[s], CPart.Occupied, c.Parts[_seats[s]].AimYaw, c.Parts[_seats[s]].AimPitch);
@@ -215,8 +216,8 @@ public sealed class ShipAi
             }
             pilot |= _strafe > 0 ? ConstructParts.KeyRollRight : ConstructParts.KeyRollLeft;
         }
-        if (_tick % LookTicks == 0)
-            State = gap > StandBand ? $"closing, {dist:0} m" : gap < -StandBand ? $"opening, {dist:0} m" : $"holding at {dist:0} m"; // (now and then: a string)
+        _state = gap > StandBand ? 4 : gap < -StandBand ? 5 : 6;
+        _stateDist = dist;
 
         // The guns: each seat looks at where its guns' rounds meet the target, and fires when a gun on it bears and reaches.
         var (pilotLook, pilotFire) = Gunnery(world, c, _pilot, t, dist, fixedGuns: true);
