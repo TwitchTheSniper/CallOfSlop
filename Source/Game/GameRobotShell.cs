@@ -74,8 +74,8 @@ public sealed partial class Game
             SandboxHands.Notices.Add((p.Id, "Linking to a robot shell..."));
             return;
         }
-        if (now - run.SatAt < ShellLinkSeconds)
-            return;
+        if (now - run.SatAt < ShellLinkSeconds || ServerTick % ShellCheckEvery != 0)
+            return; // (the search looks through every ship in reach: a few times a second, not every tick)
         ShellWanted(p, c, seat);
         if (ConstructShell.Find(Constructs, c, seat, p.Id, out var shellPart, out var why) is not { } shell)
         {
@@ -100,7 +100,10 @@ public sealed partial class Game
             shell = piece;
             seat = c.SeatOf(p.Id); // (the chair may be on the same ship: its parts moved up)
             if (seat < 0)
+            {
+                Log($"[shell] {p.Name}: the chair lost its seat as the shell came off its dock");
                 return;
+            }
             h.SeatPart = (ushort)seat;
         }
         ShellEnter(p, ref h, c, seat, shell);
@@ -286,16 +289,16 @@ public sealed partial class Game
     private bool ShellDockUse(Player p, Vector3 eye, ushort body, int part, out string? why)
     {
         why = null;
-        if (!_sh[p.Id].On || Constructs.Get(body) is not { } c || (uint)part >= (uint)c.PartCount || !c.DefOf(part).ShellBodyFits)
-            return false;
+        if (!_sh[p.Id].On || Constructs.Get(body) is not { } c || (uint)part >= (uint)c.PartCount || !c.DefOf(part).ShellBodyFits || ConstructShell.DockHolds(c, part))
+            return false; // (a dock holding a shell: F lets it go, as from the body)
         ref var dp = ref c.Parts[part];
         c.WorldFrame(dp.Seg, out var q, out var t);
         if (Vector3.Distance(eye, t + Vector3.Transform(dp.Pos, q)) > ConstructBuild.UseReach + 1.5f)
             why = "too far from the dock";
         else if (dp.Broken)
             why = $"the {dp.D.Name} is wrecked";
-        else if (ConstructShell.DockHolds(c, part))
-            why = $"the {dp.D.Name} already holds a shell";
+        else if (SandboxHands.DockRefusal(c, p.Id) is { } no)
+            why = no;
         else
             ShellReturn(p, lost: false, "You clamp the shell on the dock and wake in the chair.", c, part);
         return true;

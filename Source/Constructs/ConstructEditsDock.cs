@@ -47,6 +47,9 @@ public sealed partial class ConstructEdits
         return DockClip(world, player, c, dock, null);
     }
 
+    /// <summary>Why the dock on <paramref name="c"/> can't clamp a shell on now (defended, someone flying the ship), else null: asked before the wearer leaves it.</summary>
+    public string? DockRefusal(Construct c, byte player) => Contested(c, player) ?? (c.Driver != 255 ? "someone is flying it: the dock clamps when nobody is" : null);
+
     /// <summary>A Robot Shell Dock clamps on the shell its wearer just left (Game/GameRobotShell.cs, ShellDockUse): null when done, else why not.</summary>
     public string? ClipOnDock(ConstructWorld world, byte player, Construct c, int dock, Construct piece) => DockClip(world, player, c, dock, piece);
 

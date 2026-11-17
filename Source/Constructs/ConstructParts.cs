@@ -1247,6 +1247,7 @@ public static partial class ConstructParts
         "fuel hose reel" or "water hose reel" => "Fluid Hose Reel",
         "fuel hose inlet" or "water hose inlet" => "Fluid Hose Inlet",
         "flight panel" => "Flight Control Panel",
+        "robot charging cradle" => "Robot Shell Dock", // (rebuilt as a shell dock, 2026-11-17)
         "medium flight panel" => "Medium Flight Control Panel",
         "large flight panel" => "Large Flight Control Panel",
         "long missile fuel tank" => "Missile Fuel Tank", // (folded: a design's tank has a length now, OrdnanceDesign.Folded; a stored one is a 0.5 m tank)
