@@ -803,8 +803,8 @@ public sealed class ShipParts : IPartGenerator
         foreach (var (z, i) in new[] { (4.5, 0), (7.5, 1), (10.5, 2) })
             Sock(p, $"shelfL{i}", Cx - Lw, F0 + 0.125, z, "+x");
         Sock(p, "rackR", Cx + Lw, F0 + 0.9, 5.0, "-x");
-        Sock(p, "lockerR", Cx + Lw, F0 + 0.125, 6.5, "-x");
-        Sock(p, "shellDock", Cx + Lw, F0 + 0.125, 7.45, "-x"); // (the one Robot Shell Dock, aft of the locker: Karl, 2026-11-17)
+        Sock(p, "lockerR", Cx + Lw, F0 + 0.125, 6.05, "-x");
+        Sock(p, "shellDock", Cx + Lw, F0 + 0.125, 7.0, "-x"); // (the one Robot Shell Dock, aft of the locker: Karl, 2026-11-17)
         Sock(p, "crate0", 2.4, F0, 10.6, "+y");
         Sock(p, "crate1", 3.2, F0, 10.6, "+y");
         Sock(p, "panelEng", 1.9, F0 + 0.6, 12.125, "+z");
@@ -812,7 +812,7 @@ public sealed class ShipParts : IPartGenerator
         Sock(p, "pipesEngL", 3.1, F0 + 2.6, 12.125, "+z");
         Sock(p, "battery", 7.3, F0 + 2.2, 12.125, "+z");
         Sock(p, "switchHoldL", Cx - Lw, F0 + 1.3, 7.2, "+x");
-        Sock(p, "switchHoldR", Cx + Lw, F0 + 1.3, 8.0, "-x"); // (aft of the Robot Shell Dock)
+        Sock(p, "switchHoldR", Cx + Lw, F0 + 1.3, 7.55, "-x"); // (aft of the Robot Shell Dock)
         Sock(p, "switchEng", 6.3, F0 + 1.3, 12.125, "+z");
         foreach (var (z, i) in new[] { (3.6, 0), (7.6, 1) })
         {
