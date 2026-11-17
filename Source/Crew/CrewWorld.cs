@@ -999,7 +999,7 @@ public sealed class CrewWorld
         }
         if (s.Ai != null)
             s.Ai.Mode = s.Mode;
-        NavLook(c, s);
+        NavLook(c, s, host);
         Fill(c, s, host);
         if (Tick >= s.CaptainAt)
             Captain(c, s, host);
@@ -1141,9 +1141,9 @@ public sealed class CrewWorld
     /// Near a person (bodied), the body's walk graph (CrewNav: built off the tick in slices, again after a rebuild); once built, each station's
     /// standing spot on it. Seated and asleep crews have none (their walks are timers).
     /// </summary>
-    private void NavLook(Construct c, CrewShip s)
+    private void NavLook(Construct c, CrewShip s, ICrewHost? host)
     {
-        if (s.Tier != CrewTier.Bodied)
+        if (s.Tier != CrewTier.Bodied || host == null) // (no game: no bodies to walk it)
         {
             s.Nav = null;
             return;

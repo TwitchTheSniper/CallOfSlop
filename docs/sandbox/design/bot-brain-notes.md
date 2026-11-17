@@ -1,6 +1,6 @@
 # Bot brain: builder's notes
 
-Working notes for docs/sandbox/design/bot-brain.md, kept current after every step so a successor can finish. Branch `claude/bot-brain` (phase 1, merged), then `claude/bot-brain-2` (phases 2 on).
+Working notes for docs/sandbox/design/bot-brain.md, kept current after every step so a successor can finish. Branch `claude/bot-brain` (phase 1, merged), then `claude/bot-brain-2` (phases 2, 3, 5, 6, part of 4: merged), then `claude/bot-brain-3` (phase 4's rest, phase 7).
 
 ## Done (phase 1: crew in seats)
 
@@ -209,11 +209,72 @@ riders, Save folder, Packets, Space launch pass after merging main (protocol 332
 Unverified: a landing on another planet with credits (no run); hired bodies beside the player's spawned friendly bots; an owner aboard
 their own Fights everyone ship (by reading only); a scuttle point split off; `EngPart` (the engineer's part) is still an index, not a tag.
 
-## Next (for a successor, branch `claude/bot-brain-2`)
+## Done (phase 4's rest: CrewNav, branch `claude/bot-brain-3`)
 
-- Phase 4's rest: CrewNav (see the phase 4 note above), bodied crew walking it, unreachable stations, Lock down (locked doors) and
-  Dump (cargo out) in the boarding acts.
-- Phase 7 (work crews): haulers, crane operators, spotters on capital guns, builder drones: nothing built yet.
+- `Source/Crew/CrewNav.cs`: one walk graph per body in its rest frame, only for bodied crews (a person within 300 m) with a game (a tool's
+  world has no bodies: none built). Its solid boxes (`SolidBox`, through `SegPose`) on a 0.2 m grid; each column's surfaces are spots, fit
+  where a standing body (radius `World.PlayerRadius`, `PlayerHeight`) has room; a part that isn't a stair, ramp or floor (`Walk` none) is
+  stepped onto only within a 6 cm lip (BlockPlayer steps onto such a part only with the feet's centre over it); spots within 0.4 m of a
+  drop are left out (a centre that drifts over an edge falls). Upright door leaves are left out (the walker opens them: `ConstructDoors.Use`,
+  never a locked one); a flat door is a hatch and walked on. Ladders join foot to landing. Connected parts are labelled (`Comp`, `CompSize`:
+  a pocket of under 16 spots is no place to start). Built in slices under a CPU budget (`BuildBudgetMs` 0.35 ms a tick: boxes, cells,
+  columns, drop edges, ladders, parts), one build at a time, at most 16 graphs kept (oldest out). Keyed by `ShapeOf` (parts' tags, places,
+  turns, whole or gone): a rebuild that moved nothing (a breakdown, a repair) keeps the graph; a part lost builds it again (not patched).
+- Searches: A* on the graph (4 columns a step up or down, ladders), one at a time, `SearchBudgetMs` 0.3 ms a tick; the way pulled straight
+  where a body can walk straight (never past a ladder). Walkers (64, fixed arrays, 48 turning points each): `Steer` gives the keys
+  (forward at 75%, 50% near a turn; yaw in the ship's frame and the world's), climbs a ladder at its end, opens a closed upright door ahead
+  twice a second, gives up after 3 s with no headway (or at a locked door): then it is put at its station (the timer's way, logged).
+- Crew bodies ride the ship's own frame (contraption space) as people do: `Player.FramedRider` (people and crew bodies; spawned bots ride the
+  plain way, as before). In the plain ride a walking body crossing a deck seam was pushed out below the deck.
+- `CrewWorld`: each station's spot (`StNode`; a seat's feet, a standing station's foot); a member who can't reach a station (another
+  connected part) isn't sent (`Reaches`); a bodied member sent to a station stands up at its spot and walks (`WalkBody`), seated or
+  standing there on arrival (`Arrived`). Engineers and loaders now have bodies standing at their places (`ICrewHost.Promote` with a spot,
+  `StandAt`, `Feet`). Errands (`Errand`): the engineer walks to the part it sees to and back (`EngTag`: the part by tag, not an index);
+  a loader walks to the fullest source, takes up to 200 rounds, walks to the box and puts them in (`LoadStage`, `LoadCarry`); repellers
+  (Repel) walk to the first boarder until within 6 m, then their bot brains fight (`CrewRepelWalk`). A record's walk is a timer as before
+  (straight distance x 1.4 with a graph).
+- `--crew-check [SHIP] --crew-walk [--speed V] [--turn DEG/S]`: the graph built (timed cold and warm), a standing body walked by `Steer`
+  through the real movement step from a couch to every station, the ship 30 m up and moving.
+
+Verified (2026-11-17): `--crew-walk` on the Zero Day, still and at 10 m/s turning 10 deg/s: 9 of 9 stations reached (helm 3 m in 0.9 s, gun
+seat 238 35 m in 9.8 s, engine room 37 m in 11.8 s; through the bulkhead doors, ends 0.3 m off). Graph 72150 spots (66 parts), warm build
+113 ticks, 45 ms in all, worst tick 0.49 ms; walking, the nav's worst tick 1.0 ms (searches), 0.04 ms on average. Window runs on the crewed
+Zero Day: a gunner shot, a spare walks 8 m to the gun in 3.2 s; the pilot shot, the same walks to the helm; a drive core broken down, the
+engineer's body walks 8 m to it (1.9 s), repairs it, walks back; the engineer killed, a spare walks 37 m to the engine room in 13.5 s and
+takes the job. `--crew-check` 34 us a tick, 720 bytes in 7200 ticks (as main). `--crew-scale 5000` on Zero Days 58 us a tick, worst 1.1 ms,
+0 bytes (records have no graphs).
+
+Costs to know: the first graph of a session costs about 15 ms in one tick (JIT) and its arrays' first growth (about 3 MB once).
+
+Unverified: a joined client watching a crew body walk (it saw the 6 bodies; that run's frigate fell out of the world at 7 fps with two
+windows on the 2-core box, not seen in five host-only runs: unexplained); lifts (nothing rides one: a deck on a lift is a spot where it
+stands now); a repeller's walk to a boarder (no run); a loader's carry in a run (the Zero Day has no ammo box); Lock down and Dump.
+
+## Done (phase 7: work crews)
+
+- Stations `Spot` (beside the capital gun: the biggest gun part, 1.5 m3 or more: the Zero Day's Railgun), `Crane` (each lifter: arm or
+  bridge crane, worked from beside it; the Lifter Cab stays a person's), `Dock` (each cargo dock), `Build` (each Building Station), at most 12
+  work stations a roster; jobs `Spotter`, `Crane`, `Hauler`, `Builder`, filled after the magazine, before the couches; standing (bodies walk
+  there by CrewNav).
+- Rule 1 for machines (`Source/Constructs/CrewGate.cs`, `CrewWorld.Works`): on a crewed NPC body (a faction kind, not an own crew or a prize,
+  owner nobody) a lifter (`ConstructLifters`: stops as without power), a cargo dock's exchange (`LinkedLogisticsDocks`) and a Building
+  Station's job (`ConstructStation.StepOpen`: waits, still open) work only while their hand stands at them. Players' bodies and route
+  ships are never held.
+- A spotter at its place: that gun fires within half the bearing (`ShipAi.SpotBear`).
+- A nobody's body set down by the vehicle spawner with a lifter, dock or Building Station gets a crew (`CrewFactionVehicle`).
+- `--crew-check BLUEPRINT --crew-work [--crew-faction NAME]`: stations, hands, the gate with the hand killed and after a spare takes it.
+
+Verified (2026-11-17): Factory Showcase as Traders: a builder at the Building Station, three crane hands at the Loader Arms; each killed,
+the gate shuts (`works False`) until a spare walks over (two spares: the last two stay shut). Linked Yard: a hauler at the Docking Clamp, a
+builder at its station. Zero Day: a spotter at the Railgun (the gun spotted while manned, not after).
+
+Unverified: a lifter, dock or station actually held and released in a running world (only the gate's answer is checked); builder drones
+are crew members, not drones (the design's "own design first"); no protocol change (none needed).
+
+## Next (for a successor)
+
+- CrewNav: lifts (ride a lift deck: `ConstructRide` carriers), patching a graph on a part's loss instead of building it again, Lock down
+  (locked doors cut the graph) and Dump (cargo out) in the boarding acts; a joined client watching a walk.
 - Own crews: pilots for `GameNav` and linked-logistics route orders (own crews never take the helm now), the Crew Console part and
   orders at range, Robot Shells on the roster (the next kind, answer 4), a brig part (prisoners are held aboard without one), ransom.
 - Earning credits beyond the start balance and the capture bounty (a placeholder: trade comes later).

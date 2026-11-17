@@ -428,40 +428,12 @@ public static class CrewCheck
         if (Environment.GetEnvironmentVariable("CREW_NAV_DEBUG") == "2")
         {
             c.EnsureDoors();
-            for (var b = 0; b < g.Boxes; b++)
-                if (g.BoxAt(b) is var bb && bb.Min.X <= 7.5f && bb.Max.X >= 6.6f && bb.Min.Z <= 16.2f && bb.Max.Z >= 15.3f && bb.Max.Y > 0f && bb.Min.Y < 6f)
-                    Console.WriteLine($"  dbg box {b} part {g.BPart[b]} {c.Parts[g.BPart[b]].D.Name} seg {c.Parts[g.BPart[b]].Seg} {bb.Min}..{bb.Max} walk {c.Parts[g.BPart[b]].D.Walk}");
             for (var k = 0; k < c.DoorCount; k++)
             {
                 int dp = c.Doors[k].Part;
                 Console.WriteLine($"  dbg door {dp} {c.Parts[dp].D.Name} at {c.ToLocal(ConstructRender.PartCentre(c, dp))} upright {CrewNav.Upright(c, dp)} open {ConstructDoors.TargetOpen(c, dp)} locked {ConstructDoors.Locked(c, dp)}");
             }
         }
-        if (Environment.GetEnvironmentVariable("CREW_NAV_DEBUG") == "1")
-            foreach (var (what, node) in spots)
-            {
-                if (node < 0)
-                    continue;
-                var np = g.NodePos(node);
-                var size = 0;
-                for (var i = 0; i < g.NodeCount; i++)
-                    size += g.Comp[i] == g.Comp[node] ? 1 : 0;
-                var col = g.ColOf[node];
-                var line = $"  dbg {what}: node {node} at {np}, part of {size}; next columns:";
-                foreach (var dc in new[] { -g.Nz, g.Nz, -1, 1 })
-                {
-                    line += " [";
-                    for (var k = g.ColStart[col + dc]; k < g.ColStart[col + dc + 1]; k++)
-                        line += $"{g.Top[k]:0.00} ";
-                    line += "]";
-                }
-                Span<int> nb = stackalloc int[16];
-                var nn = CrewNav.Neighbours(g, node, nb, out _);
-                line += $" -> {nn} neighbours:";
-                for (var j = 0; j < nn; j++)
-                    line += $" {nb[j]}@{g.Top[nb[j]]:0.00} comp {g.Comp[nb[j]]} (mine {g.Comp[node]})";
-                Console.WriteLine(line);
-            }
         var ok = true;
         var clock = 0;
         var ms = new MoveState();
@@ -504,7 +476,7 @@ public static class CrewCheck
                 World.Simulate(ref ms, cmd);
                 w.BlockPlayer(ref ms, World.HeightOf(ms.Stance), server: true, who: 1);
                 var now = c.ToLocal(ms.Position);
-                if (Environment.GetEnvironmentVariable("CREW_NAV_DEBUG") == "2" && (t % 30 == 0 || !ms.Grounded || t > 150 && t < 167))
+                if (Environment.GetEnvironmentVariable("CREW_NAV_DEBUG") == "2" && (t % 30 == 0 || !ms.Grounded))
                     Console.WriteLine($"    t{t}: at {now}, leg {nav.WAt[walker]}/{nav.WCount[walker]} to {(nav.WAt[walker] < nav.WCount[walker] ? nav.WPts[walker * CrewNav.MaxPts + nav.WAt[walker]] : default)}, grounded {ms.Grounded}, climb {ms.RideClimb} mantle {ms.MantleTicks} ride {ms.RideBody}, ladder {nav.WLadder[walker * CrewNav.MaxPts + Math.Min(nav.WAt[walker], CrewNav.MaxPts - 1)]}, vel {ms.Velocity}");
                 travelled += Vector3.Distance(now, last);
                 last = now;

@@ -25,10 +25,8 @@ public sealed class CrewNavGraph
 
     // The solid boxes in the rest frame.
     internal Vector3[] BMin = new Vector3[256], BMax = new Vector3[256];
-    internal bool[] BWalk = new bool[256];
-    public int[] BPart = new int[256];
-    public int Boxes => BoxCount;
-    public (Vector3 Min, Vector3 Max) BoxAt(int b) => (BMin[b], BMax[b]); // (a stair, a ramp, a floor: stepped up onto from the disc's edge; anything else only a lip)
+    internal bool[] BWalk = new bool[256]; // (a stair, a ramp, a floor: stepped up onto from the disc's edge; anything else only a lip)
+    internal int[] BPart = new int[256]; // (each box's part)
     internal int BoxCount;
     // 1 m cells over the grid: the boxes near each.
     internal int[] CellStart = [], CellItems = [];
