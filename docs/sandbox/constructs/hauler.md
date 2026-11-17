@@ -40,15 +40,17 @@ girders) along the hold's roof, a sensor mast, radiators over the drive room.
   hinge beam in the well band's hull piece; the brackets of the crane's girder stand at the doorway's jambs.
 - **Doors** are Bulkhead Doors 1.5x2.25 m in hazard orange.
 
-- **Drives** (Karl, 2026-11-17: two large thrusters that look substantial from behind, the drive room slim and stretched to meet
-  the stern so every piece can be reached; ship-works.md 15, one engine per bell): two Drive Nozzle L (10 MN each, 20 MN) on
-  the stern's `drive0`/`drive1` seats at x -2, +2 (`DriveX`), axis height `DriveY` = `Ft0 + ShipWorksParts.AxisOver(2)`, each
-  in a broad shroud (r 1.85, `ShroudR`) on the transom. The stern is the mount (`Works.Mount`); behind each nozzle its own
-  engine bolts to the transom bulkhead's inner face (`engine0`/`engine1` at `StIn` 53.4, on the nozzle's axis): a Drive Core L,
-  a Fuel Pump L and a Coolant Exchanger L, one cylinder on saddles on the deck running forward to z 47.8. The drive room runs
-  from the hold to that bulkhead, 8.4 m inside (`Ew` 4.2): a walkway between the engines and one outboard of each. The
-  stern's bottom station is fuller so the room's deck fits it. The Engineer's Panel is on the port wall forward of the
-  engines. `--check-vehicle` prints both heads at 100%.
+- **Drives** (Karl, 2026-11-17: two large thrusters on the ship's middle line that look substantial from behind, the drive
+  room slim and stretched to meet the stern so every piece can be reached; ship-works.md 15, one engine per bell): two Drive
+  Nozzle L (10 MN each, 20 MN) on the stern's `drive0`/`drive1` seats at x -2, +2 (`DriveX`), axis height `DriveY` (2.9 m,
+  the transom's middle), each in a broad shroud (r 1.85, `ShroudR`). The stern is the mount (`Works.Mount`); behind each nozzle
+  its own engine bolts to the transom bulkhead's inner face (`engine0`/`engine1` at `StIn` 53.4, on the nozzle's axis): a
+  Drive Core L, a Fuel Pump L and a Coolant Exchanger L, one cylinder on saddles running forward to z 47.8. They stand on a
+  raised engine floor (`Fe`, 1.5 m up, from `ZPlat` 48.0 to the bulkhead) reached by a Steel Stair Flight 1.5 m from the door;
+  the room is 8.4 m wide inside (`Ew` 4.2) and 4.5 m high (`CeilE`), with a walkway between the engines and one outboard of
+  each. Three beams across under the ceiling (`EngineFrameZ`), on posts against the walls, hang a pair of straps onto each
+  engine. The stern's bottom station is fuller so the room fits it. The Engineer's Panel is on the port wall by the stair.
+  `--check-vehicle` prints both heads at 100%.
 - **Attitude jets** (Karl, 2026-11-16: it flips and burns on its main drives, with small jets every way for small moves):
   16 Heavy RCS Thrusters (250 kN, under the 500 kN that needs works) on pads, a cluster at the bow (z 3, and two in the
   nose tip) and one at the stern (z 52, and two on the transom): up, down, out to each side and along the ship, two of

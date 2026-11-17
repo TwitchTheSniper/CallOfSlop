@@ -69,7 +69,11 @@ public sealed class HaulerParts : IPartGenerator
     /// Pump L and a Coolant Exchanger L, one cylinder on saddles on the drive room's deck, running forward. A walkway down the middle
     /// between them and one outboard of each; the Engineer's Panel on the port wall forward of them.</summary>
     private static readonly double[] DriveX = [-2.0, 2.0];
-    private static double DriveY => Ft0 + ShipWorksParts.AxisOver(2); // (the engines' saddles stand on the deck)
+    // (Karl, 2026-11-17: the drives on the ship's middle line: the engines stand on a raised floor, a stair flight up from the door)
+    private const double Fe = Ft0 + 1.5, CeilE = 4.75, ZPlat = 48.0; // the engine floor's top, the drive room's ceiling, the engine floor's front
+    private static double DriveY => Fe + ShipWorksParts.AxisOver(2); // (the engines' saddles stand on the engine floor)
+    private const string StairPart = "Steel Stair Flight 1.5 m";
+    private static readonly double[] EngineFrameZ = [52.6, 49.55, 48.35]; // (over each engine's core coil, pump volute and exchanger: clear of gauges, panels and the pump's motor)
     private const double Ew = 4.2; // the drive room's inner half width
     private const double StIn = 53.4; // the transom bulkhead's inner face, where the engines' front flanges bolt
     private const double ShroudR = 1.85; // a nozzle's shroud on the transom
@@ -932,27 +936,42 @@ public sealed class HaulerParts : IPartGenerator
     {
         WallCol = Wall;
         DadoCol = WallLow;
-        var p = Big("Dray Drive Room", "The Dray's drive room, aft of the hold to the transom: the two drives' engines run forward off the transom bulkhead along it, with a walkway each side of them, and the Engineer's Panel by the door.");
+        var p = Big("Dray Drive Room", "The Dray's drive room, aft of the hold to the transom: the two drives' engines stand on a raised floor and run forward off the transom bulkhead, with a walkway each side of them; a stair flight up from the door, and the Engineer's Panel beside it.");
         var plan = new Rect(Cx - Ew - 0.25, ZHoldEnd + 0.125, Cx + Ew + 0.25, StIn);
         Floor(p, [plan], 0, Ft0, Deck, "painted deck plate");
-        Floor(p, [plan], Ceil0, Ft1, Ceil, "painted plating");
-        Room(p, plan, 0, Ft1);
-        Ceils[p] = Ceil0;
-        Detail(p, Cx - Ew + 0.1, Ft0, ZHoldEnd + 1.0, Cx + Ew - 0.1, Ft0 + 0.012, StIn - 0.1, Grate, "painted grating");
+        Floor(p, [new Rect(Cx - Ew + 0.004, ZPlat, Cx + Ew - 0.004, StIn)], Ft0, Fe, Deck, "painted deck plate"); // (the engine floor)
+        Floor(p, [plan], CeilE, CeilE + 0.25, Ceil, "painted plating");
+        Room(p, plan, 0, CeilE + 0.25);
+        Ceils[p] = CeilE;
+        Detail(p, Cx - Ew + 0.1, Ft0, ZHoldEnd + 0.6, Cx + Ew - 0.1, Ft0 + 0.012, ZPlat - 0.1, Grate, "painted grating");
+        Detail(p, Cx - Ew + 0.1, Fe, ZPlat + 0.3, Cx + Ew - 0.1, Fe + 0.012, StIn - 0.1, Grate, "painted grating");
+        Detail(p, Cx - Ew + 0.1, Fe, ZPlat + 0.003, Cx + Ew - 0.1, Fe + 0.008, ZPlat + 0.15, Hazard, "hazard paint"); // (the engine floor's edge)
         foreach (var s in new[] { -1, 1 })
-            WallRun(p, false, ZHoldEnd + 0.125, StIn, Cx + s * (Ew + 0.125), Ft0, Ceil0);
+            WallRun(p, false, ZHoldEnd + 0.125, StIn, Cx + s * (Ew + 0.125), Ft0, CeilE);
         foreach (var s in new[] { -1, 1 })
         {
             Band(p, 2, s, ZHoldEnd, ZEngEnd, Skin, 9);
             Chine(p, 2, s, ZHoldEnd, ZEngEnd, 0.3, 0.14, Armour2);
         }
         Ribs(p, ZHoldEnd, ZEngEnd, 2);
-        foreach (var (ya, yb) in new[] { (0.0, 0.7), (0.7, Ft1) })
+        foreach (var (ya, yb) in new[] { (0.0, 0.7), (0.7, Ft1), (Ft1, CeilE + 0.25) })
             VoidT(p, plan.Z0, ZEngEnd, ya, yb, Ew + 0.25, 0.004, 0.004); // (aft of the station the stern's void goes on)
+        // The engines' supports (Karl, 2026-11-17): a ring frame over each engine's core, pump and exchanger, a beam across under the
+        // ceiling on posts against the walls, with a pair of hangers down onto each engine's back, clear of its pipes.
+        foreach (var z in EngineFrameZ)
+        {
+            Detail(p, Cx - Ew + 0.004, CeilE - 0.25, z - 0.1, Cx + Ew - 0.004, CeilE - 0.006, z + 0.1, Frame, "dirty steel");
+            foreach (var sx in new[] { -1, 1 })
+                Detail(p, Cx + sx * (Ew - 0.004), Fe + 0.004, z - 0.1, Cx + sx * (Ew - 0.14), CeilE - 0.252, z + 0.1, Frame, "dirty steel");
+            foreach (var dx in DriveX)
+                foreach (var hx in new[] { -0.6, 0.6 })
+                    Detail(p, Cx + dx + hx - 0.04, DriveY + 0.86, z - 0.05, Cx + dx + hx + 0.04, CeilE - 0.248, z + 0.05, Bare, "dirty steel");
+        }
+        Sock(p, "stair", Cx - 0.375, Ft0, ZPlat - 1.375, "+y"); // (a 1.5 m flight's foot: it rises aft to the engine floor's edge)
         Sock(p, "panel", Cx - Ew, Ft0 + 0.6, PanelZ, "+x");
-        foreach (var y in new[] { 0.0, Ft1 })
+        foreach (var y in new[] { 0.0, Ft1, CeilE + 0.25 })
             MustFit("drive room", plan.Z1, Ew + 0.25, y);
-        return p.Stats(9000, 24000, 30, 15.0);
+        return p.Stats(11000, 24000, 30, 15.0);
     }
 
     // ---- the bow: a blunt, armoured cab nose over the crew section, sealed (no glass)
@@ -1107,15 +1126,15 @@ public sealed class HaulerParts : IPartGenerator
                 Detail(p, bx - 0.05, by - 0.05, Stern + 0.29, bx + 0.05, by + 0.05, Stern + 0.36, "#9a9c98", "steel"); // (its bolts)
             }
         }
-        Detail(p, Cx - 0.12, 0.4, Stern + 0.02, Cx + 0.12, 2.4, Stern + 0.05, Hazard, "hazard paint");
-        Solid(p, Cx - Ew - 0.25, 0, StIn, Cx + Ew + 0.25, Ft1, Stern - 0.03, Bare, "dirty steel"); // (the bulkhead: its inner face is the engines')
+        Detail(p, Cx - 0.12, DriveY - 1.0, Stern + 0.02, Cx + 0.12, DriveY + 1.0, Stern + 0.05, Hazard, "hazard paint");
+        Solid(p, Cx - Ew - 0.25, 0, StIn, Cx + Ew + 0.25, CeilE + 0.25, Stern - 0.03, Bare, "dirty steel"); // (the bulkhead: its inner face is the engines')
         foreach (var dx in DriveX)
             Detail(p, Cx + dx - 1.3, DriveY + 1.4, StIn - 0.02, Cx + dx + 1.3, DriveY + 1.5, StIn - 0.003, Hazard, "hazard paint"); // (a keep-clear band over each engine)
-        foreach (var (ya, yb) in new[] { (-0.7, 0.0), (Ft1, 5.6), (5.6, 6.3) })
+        foreach (var (ya, yb) in new[] { (-0.7, 0.0), (CeilE + 0.25, 5.6), (5.6, 6.3) })
             VoidT(p, ZEngEnd, Stern, ya, yb, 0, 0.004, 0.03);
-        foreach (var (ya, yb) in new[] { (0.0, 0.7), (0.7, Ft1) })
+        foreach (var (ya, yb) in new[] { (0.0, 0.7), (0.7, Ft1), (Ft1, CeilE + 0.25) })
             VoidT(p, ZEngEnd, Stern, ya, yb, Ew + 0.25, 0.004, 0.03);
-        VoidT(p, ZHoldEnd + 0.125, ZEngEnd, Ft1, 6.65, 0, 0.004, 0.004); // (up to the spine's void over the drive room)
+        VoidT(p, ZHoldEnd + 0.125, ZEngEnd, CeilE + 0.25, 6.65, 0, 0.004, 0.004); // (up to the spine's void over the drive room)
         // The stern's attitude jets: up and down on the spine and the flat, out on the upper sides, two forward jets on the transom.
         var sq = At(SternRcsZ);
         foreach (var s in new[] { -1, 1 })
@@ -1124,7 +1143,7 @@ public sealed class HaulerParts : IPartGenerator
             RcsPad(p, "rcsUp" + n, Cx + s * 1.5, sq[4].Y, SternRcsZ, "+y", 0.05);
             RcsPad(p, "rcsDown" + n, Cx + s * 1.5, sq[0].Y, SternRcsZ, "-y", 0.05);
             RcsPad(p, "rcsOut" + n, FacetX(3, s, SternRcsZ, 4.2), 4.2, SternRcsZ, s < 0 ? "-x" : "+x", 0.25);
-            RcsPad(p, "rcsAlong" + n, Cx + s * 3.9, 3.0, Stern, "+z", 0.05);
+            RcsPad(p, "rcsAlong" + n, Cx + s * 3.6, 5.3, Stern, "+z", 0.05); // (above the shrouds' shoulders)
         }
         for (var i = 0; i < DriveX.Length; i++)
         {
@@ -1580,6 +1599,7 @@ public sealed class HaulerParts : IPartGenerator
             Hang(bp, "Coolant Exchanger L", Hang(bp, "Fuel Pump L", Hang(bp, "Drive Core L", stern, $"engine{i}", "front"), "back", "front"), "back", "front");
         }
         Hang(bp, "Engineer's Panel", drive, "panel", "back");
+        Paint(bp, Hang(bp, StairPart, drive, "stair", "b0_0"), Bare, "dirty steel");
         // The attitude jets, at the bow and the stern.
         foreach (var piece in new[] { placed["Dray Bow"], stern })
             foreach (var d in new[] { "Up", "Down", "Out", "Along" })
