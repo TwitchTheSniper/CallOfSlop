@@ -10,6 +10,12 @@ namespace CallOfSlop.Space;
 /// </summary>
 public static class SpaceTimeRule
 {
+    /// <summary>
+    /// Above this speed coasting ships take rails under <see cref="SpaceShips.WarpRailTolerance"/> (2026-11-17): at 10,000x
+    /// and under, ships fly the full model as before; faster, the patched conic, as space games do at high warp.
+    /// </summary>
+    public const int WarpRailsAbove = 10_000;
+
     public static int Effective(int requested, bool anyoneBusy, int shipLimit)
     {
         var w = Math.Clamp(requested, 0, SpaceClock.MaxSpeed);
@@ -67,7 +73,9 @@ public sealed class SpaceFlight
     /// </summary>
     public void Tick(int shipLimit = int.MaxValue)
     {
-        Clock.Speed = SpaceTimeRule.Effective(RequestedSpeed, AnyoneBusy || Ships.AnyThrust(), Math.Min(Ships.MaxSpeed, shipLimit));
+        var busy = AnyoneBusy || Ships.AnyThrust();
+        Ships.WarpRails = SpaceTimeRule.Effective(RequestedSpeed, busy, shipLimit) > SpaceTimeRule.WarpRailsAbove;
+        Clock.Speed = SpaceTimeRule.Effective(RequestedSpeed, busy, Math.Min(Ships.MaxSpeed, shipLimit));
         Clock.Tick();
         Wells.Refresh(); // (where the wells' ships are as this step starts)
         Ships.Advance(Clock.Now);
@@ -81,6 +89,7 @@ public sealed class SpaceFlight
     {
         Clock.Speed = master.Speed;
         Clock.Set(master.Now);
+        Ships.WarpRails = master.Speed > SpaceTimeRule.WarpRailsAbove;
         Wells.Refresh();
         Ships.Advance(master.Now);
     }

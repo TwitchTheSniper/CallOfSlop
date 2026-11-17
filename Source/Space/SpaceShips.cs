@@ -95,6 +95,33 @@ public sealed class SpaceShips
     /// <summary>The perturbation (other bodies and hooks over the primary's pull) under which a coasting ship goes on rails.</summary>
     public double RailTolerance = 1e-6;
 
+    /// <summary>
+    /// High time speed (<see cref="WarpRails"/>): a coasting ship goes on rails under this perturbation instead of
+    /// <see cref="RailTolerance"/>, as space games put ships on rails at high warp. Round Glacier the moonlet's tide is about
+    /// 6 x 10^-6 of Glacier's pull at a low orbit, so the old tolerance kept those ships coasting, and their step budget held
+    /// time at about 15,000x (2026-11-17).
+    /// </summary>
+    public double WarpRailTolerance = 0.02;
+
+    /// <summary>
+    /// Set by the flight while time runs faster than <see cref="SpaceTimeRule.WarpRailsAbove"/>: coasting ships with small
+    /// perturbations take patched-conic rails (exact at any speed, and steady to draw), and come off again as it slows.
+    /// </summary>
+    public bool WarpRails;
+
+    /// <summary>The most chunks a tick is cut into to look for rail ships crossing a sphere of influence (rails: one Kepler solve each).</summary>
+    public int MaxRailChunks = 256;
+
+    /// <summary>The shortest rail chunk (s): near a sphere's edge the time speed limit takes over instead.</summary>
+    public const double RailStepLeast = 4;
+
+    /// <summary>
+    /// Per body, the radius under which a ship in space stops being one (a planetoid's sky's edge, m; 0: none, set by
+    /// the game). A coasting ship whose orbit dips under it holds the time speed so it takes several ticks to get there,
+    /// instead of jumping past the edge (or the ground) in one sped-up tick.
+    /// </summary>
+    public readonly double[] Sky;
+
     /// <summary>The perturbation above which a coasting ship takes the adaptive step (the Kepler drift assumes it small).</summary>
     public double AdaptiveRatio = 0.1;
 
@@ -213,6 +240,7 @@ public sealed class SpaceShips
             throw new ArgumentException("a star system starts with its star");
         _mu = new double[_nb];
         _soi = new double[_nb];
+        Sky = new double[_nb];
         _aN4 = new double[_nb];
         var counts = new int[_nb + 1];
         for (var b = 0; b < _nb; b++)
@@ -437,6 +465,14 @@ public sealed class SpaceShips
         var chunks = (long)Math.Ceiling(need / Math.Clamp(Math.Min(ChunkSubsteps, MaxSubsteps), 1, MaxGrid));
         if (chunks < 1 || double.IsNaN(need))
             chunks = 1;
+        // Ships on rails are looked at often enough not to pass through a sphere of influence between two looks (one
+        // tick at 1,000,000x is 4.6 hours: a ship would fly through a moon's sphere unseen).
+        var railNeed = 1.0;
+        for (var i = 0; i < Count; i++)
+            if (_mode[i] == ShipMode.Rail)
+                railNeed = Math.Max(railNeed, dt / RailStep(i));
+        if (railNeed > chunks)
+            chunks = (long)Math.Min(Math.Ceiling(railNeed), Math.Max(chunks, MaxRailChunks));
         var start = Time.Ns;
         for (long c = 1; c <= chunks; c++)
             StepChunk(c == chunks ? to.Ns : start + (long)((Int128)total * c / chunks), c == 1);
@@ -748,7 +784,7 @@ public sealed class SpaceShips
             var ratio = pert.Length * r.LengthSquared / _mu[p];
             if (ratio > (was == ShipMode.Adaptive ? AdaptiveRatio / 2 : AdaptiveRatio))
                 mode = ShipMode.Adaptive;
-            else if ((flags & ShipFlags.NoRails) == 0 && ratio < (was == ShipMode.Rail ? RailTolerance * 4 : RailTolerance))
+            else if ((flags & ShipFlags.NoRails) == 0 && ratio < (was == ShipMode.Rail ? 4 : 1) * (WarpRails ? Math.Max(RailTolerance, WarpRailTolerance) : RailTolerance))
                 mode = ShipMode.Rail;
             else
                 mode = ShipMode.Coast;
@@ -816,9 +852,84 @@ public sealed class SpaceShips
                     var h = _h[i] > 0 ? _h[i] : MaxStep(i) / 64;
                     speed = Math.Min(speed, AdaptiveStepsPerTick * h / tick);
                     break;
+                default:
+                    speed = Math.Min(speed, MaxRailChunks * RailStep(i) / tick);
+                    break;
+            }
+            // A ship whose orbit dips under its primary's sky takes at least four ticks to get there.
+            var p = _primary[i];
+            var sky = Sky[p];
+            if (sky > 0 && _mode[i] != ShipMode.Adaptive)
+            {
+                var r = _r[i].Length;
+                if (r > sky && Periapsis(_mu[p], _r[i], _v[i]) < sky)
+                    speed = Math.Min(speed, (r - sky) / Math.Max(1, _v[i].Length) / (4 * tick));
             }
         }
         MaxSpeed = (int)Math.Clamp(Math.Floor(speed), 1, SpaceClock.MaxSpeed);
+    }
+
+    private static double Periapsis(double mu, Vec3d r, Vec3d v)
+    {
+        var energy = v.LengthSquared / 2 - mu / r.Length;
+        var h2 = Vec3d.Cross(r, v).LengthSquared;
+        var e = Math.Sqrt(Math.Max(0, 1 + 2 * energy * h2 / (mu * mu)));
+        return h2 / mu / (1 + e);
+    }
+
+    /// <summary>
+    /// The longest a ship on rails may go between looks: half the time it would take, at its speed relative to each,
+    /// to reach the edge of its primary's sphere of influence or of a child's whose orbit its own can reach.
+    /// </summary>
+    private double RailStep(int i)
+    {
+        var p = _primary[i];
+        var r = _r[i];
+        var v = _v[i];
+        var rl = r.Length;
+        var mu = _mu[p];
+        var energy = v.LengthSquared / 2 - mu / rl;
+        var h2 = Vec3d.Cross(r, v).LengthSquared;
+        var e = Math.Sqrt(Math.Max(0, 1 + 2 * energy * h2 / (mu * mu)));
+        var peri = h2 / mu / (1 + e);
+        var apo = energy < 0 && e < 1 ? h2 / mu / (1 - e) : double.PositiveInfinity;
+        var step = double.PositiveInfinity;
+        if (p != 0 && apo > _soi[p])
+            step = Math.Max(0, _soi[p] * SoiHysteresis - rl) / Math.Max(1e-3, v.Length);
+        var bodies = System.Bodies;
+        for (var k = _childStart[p]; k < _childStart[p + 1]; k++)
+        {
+            var c = _children[k];
+            var o = bodies[c].Orbit;
+            if (apo < o.A * (1 - o.E) - _soi[c] || peri > o.A * (1 + o.E) + _soi[c])
+                continue; // (their paths never come within its sphere)
+            var gap = (r - (_cPos[c] - _cPos[p])).Length - _soi[c];
+            var vr = (v - (_cVel[c] - _cVel[p])).Length;
+            step = Math.Min(step, Math.Max(0, gap) / Math.Max(1e-3, vr));
+        }
+        return Math.Max(RailStepLeast, step * 0.5);
+    }
+
+    /// <summary>
+    /// A ship's ecliptic position and velocity at a time near <see cref="Time"/> (a frame drawn between two ticks): its
+    /// two-body orbit round its primary carried from the last step (from its rail's epoch when on one), its primary
+    /// where its rails have it then. The drawn path and mark then move smoothly with the drawn bodies at any time speed.
+    /// </summary>
+    public void StateAt(int i, SpaceTime t, out SpacePos pos, out Vec3d vel)
+    {
+        var p = _primary[i];
+        Vec3d r, v;
+        var ok = _mode[i] == ShipMode.Rail
+            ? UniversalKepler.PropagateNs(_mu[p], _railR[i], _railV[i], t.Ns - _railEpoch[i].Ns, out r, out v)
+            : UniversalKepler.PropagateNs(_mu[p], _r[i], _v[i], t.Ns - Time.Ns, out r, out v);
+        if (!ok)
+        {
+            r = _r[i];
+            v = _v[i];
+        }
+        System.StateOf(p, t, out var bp, out var bv);
+        pos = bp + r;
+        vel = bv + v;
     }
 
     /// <summary>
@@ -917,5 +1028,9 @@ public sealed class SpaceShips
         VelTolerance = o.VelTolerance;
         RelTolerance = o.RelTolerance;
         AdaptiveStepsPerTick = o.AdaptiveStepsPerTick;
+        WarpRailTolerance = o.WarpRailTolerance;
+        WarpRails = o.WarpRails;
+        MaxRailChunks = o.MaxRailChunks;
+        Array.Copy(o.Sky, Sky, Sky.Length);
     }
 }

@@ -97,6 +97,13 @@ public static class SpaceCli
             names[ships.AddRelative(1, new Vec3d(0, r, 0), new Vec3d(-1.5 * Math.Sqrt(2 * body.Mu / r), 0, 0))] = $"leaving {body.Name}";
         }
         flight.RequestSpeed(speed, fromHost: true);
+        // Each ship's orbital energy round its primary at the start, to show drift (a closed orbit keeps it; rails exactly).
+        var e0 = new double[ships.Count];
+        var p0 = new int[ships.Count];
+        for (var i = 0; i < ships.Count; i++)
+            (e0[i], p0[i]) = (ships.KeplerEnergy(i), ships.PrimaryOf(i));
+        long slowest = int.MaxValue, fastest = 0;
+        var worstMs = 0.0;
         var sw = Stopwatch.StartNew();
         long ticks = 0;
         var nextHour = 0.0;
@@ -110,13 +117,20 @@ public static class SpaceCli
                 {
                     var p = ships.PrimaryOf(i);
                     var d = (ships.PositionOf(i) - ships.BodyPosition(p)).Length;
-                    Console.WriteLine(FormattableString.Invariant($"  {names[i],-20} {ships.ModeOf(i),-8} round {sys.Bodies[p].Name,-12} {Dist(d)}"));
+                    var drift = p == p0[i] ? FormattableString.Invariant($", energy {(ships.KeplerEnergy(i) - e0[i]) / Math.Abs(e0[i]):+0.0e+0;-0.0e+0}") : "";
+                    Console.WriteLine(FormattableString.Invariant($"  {names[i],-20} {ships.ModeOf(i),-8} round {sys.Bodies[p].Name,-12} {Dist(d)}{drift}"));
                 }
                 nextHour++;
             }
+            var t0 = Stopwatch.GetTimestamp();
             flight.Tick();
+            if (ticks > 60)
+                worstMs = Math.Max(worstMs, Stopwatch.GetElapsedTime(t0).TotalMilliseconds); // (past the first second: JIT)
+            if (ticks > 0)
+                (slowest, fastest) = (Math.Min(slowest, flight.Clock.Speed), Math.Max(fastest, flight.Clock.Speed));
             ticks++;
         }
+        Console.WriteLine(FormattableString.Invariant($"[space] time speed {slowest}x to {fastest}x after the first tick; the slowest tick {worstMs:0.00} ms"));
         Console.WriteLine(FormattableString.Invariant(
             $"[space] {ticks} ticks in {sw.Elapsed.TotalMilliseconds:0.0} ms ({sw.Elapsed.TotalMilliseconds * 1000 / Math.Max(1, ticks):0.0} us a tick); ")
             + FormattableString.Invariant($"{ships.Handovers} hand-overs, {ships.RailEntries} rail entries, {ships.CoastSteps} coasting and {ships.AdaptiveSteps} adaptive steps, {ships.DriftFailures} failed drifts"));
