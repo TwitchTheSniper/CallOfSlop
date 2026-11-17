@@ -42,16 +42,18 @@ public static class PilotGear
             s.GearDelay = 0;
             return;
         }
+        var held = false;
         if ((s.GearDelay != 0 || s.Canopy is OpenChute or OpenGlider || press) && Eva.Vacuum(s.Position))
         {
             // No air to hold a canopy (past the space bubble's edge, or the sky's top): a parachute or a glider never opens
             // there, and one open stows; the suit and its MMU are what a spacewalker has (docs/sandbox/EVA.md). The jetpack burns.
-            s.GearDelay = 0;
+            // An ejection seat's chute waits, its delay held, and opens once they fall into air.
+            held = true;
             if (s.Canopy is OpenChute or OpenGlider)
                 s.Canopy = 0;
             press = false;
         }
-        if (s.GearDelay > 0 && --s.GearDelay == 0)
+        if (!held && s.GearDelay > 0 && --s.GearDelay == 0)
             s.Canopy = OpenChute;
         if (s.Canopy == Burning)
             s.Canopy = 0;

@@ -284,7 +284,7 @@ public sealed partial class Game
         rec.SteamId = TrustedSteamId(p) is not 0 and var steam ? steam : rec.SteamId;
         rec.HasPlace = p.Alive && !InLobby;
         rec.Pos = p.Position;
-        var riding = p.Alive && p.Sim.RideUp != default;
+        var riding = p.Alive && p.Sim.RideUp != default && !p.Sim.Noclip; // (a noclip flyer in a ship's frame may be in its hull: saved at their world spot, so the load finds them room)
         (rec.RideBody, rec.RideSeg, rec.RideLocal, rec.RideUp) = (riding ? p.Sim.RideBody : (ushort)0, p.Sim.RideSeg, p.Sim.RideLocal, p.Sim.RideUp);
         ref var hand = ref SandboxHands.Hand(p.Id);
         var spaceSeat = p.Alive && hand.Seated && Constructs.Get(hand.SeatBody) is { SpaceShip: not 0 };
