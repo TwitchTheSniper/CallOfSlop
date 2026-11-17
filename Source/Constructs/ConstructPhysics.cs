@@ -1678,7 +1678,16 @@ public static partial class ConstructPhysics
         c.AngVel *= 0.985f;
         var top = air >= 1 ? c.AeroFlying ? AirTable.Current.FlightTop : MaxSpeed : MathF.Min(MaxFlightSpeed, MaxSpeed / MathF.Max(air, 1e-3f));
         var v2 = c.Vel.LengthSquared();
-        if (v2 > top * top)
+        if (c.SpeedKept > top)
+        {
+            // Come into the world moving faster than the limit (a piece off a fast ship, the ship's speed): it keeps that speed,
+            // slowing as it loses it, never faster again (ConstructRideSpawn.cs).
+            var v = MathF.Sqrt(v2);
+            if (v > c.SpeedKept)
+                c.Vel *= c.SpeedKept / v;
+            c.SpeedKept = v > top ? MathF.Min(c.SpeedKept, v) : 0f;
+        }
+        else if (v2 > top * top)
             c.Vel *= top / MathF.Sqrt(v2);
         var w2 = c.AngVel.LengthSquared();
         if (w2 > MaxSpin * MaxSpin)
