@@ -218,6 +218,7 @@ public enum CfgKey : byte
     SubJobs, // Building Station: Auto, it takes other stations' sub-blueprint uses as sub-jobs; Off, it keeps to its player's builds (ConstructStationTree.cs)
     ShellWear0, ShellWear1, ShellWear2, ShellWear3, // Robot Shell: its works' wear, two bytes a setting (not on the panel; ShellWear.cs)
     ShellDamage, // Robot Shell: health it has lost (shells don't heal: a repair with the attach tool or a crew engineer puts it back; not on the panel)
+    Dampeners, // Flight Stabilizer on Ship keys: its inertia dampeners (off: the keys only burn, and it coasts; the seat's dampener key flips it: ConstructFlight.ToggleDampeners)
     COUNT,
 }
 
@@ -843,7 +844,7 @@ public static class ConstructConfig
                 CfgKey.FanBlades => d.Rotor != null || d.IsFanFormer,
                 CfgKey.FanKind or CfgKey.FanDiameter => d.IsFanFormer,
                 CfgKey.WingKind or CfgKey.WingChord or CfgKey.WingSpan => d.IsAirframeFormer,
-                (>= CfgKey.Keys and <= CfgKey.HomeZ) or CfgKey.InvertPitch or (>= CfgKey.PitchRate and <= CfgKey.ThrustLimit) or CfgKey.HomeY or CfgKey.WaypointY or CfgKey.AiCrew => d.Logic == CLogic.FlightStabilizer,
+                (>= CfgKey.Keys and <= CfgKey.HomeZ) or CfgKey.InvertPitch or (>= CfgKey.PitchRate and <= CfgKey.ThrustLimit) or CfgKey.HomeY or CfgKey.WaypointY or CfgKey.AiCrew or CfgKey.Dampeners => d.Logic == CLogic.FlightStabilizer,
                 CfgKey.Throw or CfgKey.Expo => d.Surface is { Control: > 0 } || d.ThrustGimbal > 0,
                 CfgKey.Grain => d.ThrustKind == ThrustKind.Solid,
                 CfgKey.Stabilised => d.Logic == CLogic.TurretModule,

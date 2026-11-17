@@ -1308,8 +1308,8 @@ public static partial class ConstructPhysics
     {
         var v = Vector3.Zero;
         var c = _bodies[body];
-        if (_dyn[body])
-            v = c.Vel + Vector3.Cross(c.AngVel, r);
+        if (_dyn[body] || c.SpaceShip != 0)
+            v = c.Vel + Vector3.Cross(c.AngVel, r); // (a ship out of the bubble is posed by its flight, not stepped, but it moves: what touches it meets it at its speed, GameSpaceLaunch.cs)
         for (var k = 0; k < un; k++)
         {
             int slot = _chainSlot[u0 + k];

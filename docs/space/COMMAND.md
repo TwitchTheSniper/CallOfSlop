@@ -153,7 +153,7 @@ Day's Limpet, [limpet.md](../sandbox/constructs/limpet.md)). Pick the carrier, t
 under the cursor (in its hologram; zoom in until it is large) is the spot, a door if one is under it, and the menu offers
 BOARD: SEAL ON THIS DOOR or BOARD: CUT IN HERE. The order goes on the pod (its card shows it): it flies out from under the
 carrier, across, grips, then opens the door or cuts through and opens its own. On the wire its point is the target's id,
-the part and 1 for a door (protocol 340); the host works the spot and the way out of the skin there. The pod must be within
+the part and 1 for a door (protocol 341); the host works the spot and the way out of the skin there. The pod must be within
 3 km of the target. `order board N door|hull` (the window tool) gives it from a script.
 
 ### How a ship flies one (`Game.ServerTickNav`, before the launch step each tick)

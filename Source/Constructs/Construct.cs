@@ -341,6 +341,9 @@ public sealed partial class Construct
     // speed; ConstructRide.SpawnIntoMotion sets it, ConstructPhysics.Integrate lets it slow and never speed up past it). 0: none.
     internal float SpeedKept;
 
+    /// <summary>Server: its velocity was just set from a moving frame (let go, cut free): it keeps that speed past the physics' limit.</summary>
+    internal void KeepSpeed() => SpeedKept = Vel.Length();
+
     // Mass properties (rebuilt with the caches)
     public float Mass, InvMass;
     public Vector3 Com; // body frame

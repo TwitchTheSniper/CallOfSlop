@@ -633,6 +633,43 @@ public static partial class ConstructFlight
         return KeysOf(c, p, p.D) == FlightPattern.Ship;
     }
 
+    /// <summary>
+    /// Are its inertia dampeners off and nothing else flying it (Ship keys only)? Then the keys only burn and it coasts on what it has. Its autopilot, an order from
+    /// the command view (Game/GameNav.cs) and an AI crew always fly with them on, whatever the setting says: they hold speeds and points, which a coast can't.
+    /// </summary>
+    private static bool Coasts(Construct c, in CPart p, ConstructPartDef d, bool autopilot) =>
+        !autopilot && !c.CrewAims && c.NavThrottle < 0 && ConstructConfig.Get(p, d, CfgKey.Dampeners, 1) < 0.5f;
+
+    /// <summary>Does this craft fly on Ship keys, so its seat's dampener key means something (on every peer, from the structure alone)?</summary>
+    public static bool HasDampeners(Construct c)
+    {
+        if (c.StabCount == 0 || c.Stabs[0].Part >= c.PartCount)
+            return false;
+        ref var p = ref c.Parts[c.Stabs[0].Part];
+        return KeysOf(c, p, p.D) == FlightPattern.Ship && p.D.CfgSlot[(int)CfgKey.Dampeners] >= 0;
+    }
+
+    /// <summary>Its inertia dampeners' setting is off (whether or not the autopilot is overriding it just now).</summary>
+    public static bool DampenersOff(Construct c)
+    {
+        if (!HasDampeners(c))
+            return false;
+        ref var p = ref c.Parts[c.Stabs[0].Part];
+        return ConstructConfig.Get(p, p.D, CfgKey.Dampeners, 1) < 0.5f;
+    }
+
+    /// <summary>Server: the seat's dampener key flips its stabilizer's Inertia dampeners setting. A refusal's reason, or null.</summary>
+    public static string? ToggleDampeners(ConstructWorld world, Construct c)
+    {
+        if (!HasDampeners(c))
+            return "this craft has no inertia dampeners (a Flight Stabilizer on Ship keys)";
+        ref var p = ref c.Parts[c.Stabs[0].Part];
+        Put(ref p, p.D, CfgKey.Dampeners, DampenersOff(c) ? 1 : 0);
+        world.StructureDirty.Add(c.Id);
+        c.Wake();
+        return null;
+    }
+
     /// <summary>The axes asked of it this tick, by its keys, with what is wired in added.</summary>
     private struct Asked
     {
@@ -1227,6 +1264,22 @@ public static partial class ConstructFlight
             // Its autopilot flies it the same way: to the height it holds, and over the ground to its point (an order from the
             // command view climbs a ship out of the sky like this: Game/GameNav.cs). Hands on the keys come first.
             var letGo = ask.Forward == 0 && ask.Side == 0 && ask.Lift == 0;
+            if (Coasts(c, p, d, autopilot))
+            {
+                // Dampeners off (the pilot's seat key, CfgKey.Dampeners): no drift is cancelled. The keys burn along its axes as hard as they would from a
+                // standstill, and let go it coasts on whatever it has, so a pilot can match another ship's speed by hand. It still turns as asked and stops a
+                // turn: only the way it goes is left alone. Under the sky's edge its weight is still held up (it would drop out of a chase); out there, as a
+                // ship in the star system (GameSpaceLaunch.cs), the orbit is the space flight's and nothing is held.
+                s.HoldAlt = height;
+                s.AltHeld = true;
+                var burn = c.Mass * 3 * ground * (a.Front * (ask.Forward * maxSpeed) + a.Right * (ask.Side * maxSpeed) + a.Up * (ask.Lift * (ask.Lift > 0 ? maxClimb : maxDescent)))
+                           + (c.SpaceShip == 0 ? up * MathF.Max(0, weight - c.LiftNow) : Vector3.Zero);
+                demand[FlightEffectors.Forward] = Vector3.Dot(burn, a.Front);
+                demand[FlightEffectors.Up] = Vector3.Dot(burn, a.Up);
+                demand[FlightEffectors.Right] = Vector3.Dot(burn, a.Right);
+            }
+            else
+            {
             if (!letGo)
             {
                 s.HoldAlt = height + (climb > 0 ? climb * climb / (2 * stopping) : 0);
@@ -1239,6 +1292,7 @@ public static partial class ConstructFlight
             demand[FlightEffectors.Forward] = Vector3.Dot(push, a.Front);
             demand[FlightEffectors.Up] = Vector3.Dot(push, a.Up);
             demand[FlightEffectors.Right] = Vector3.Dot(push, a.Right);
+            }
             forwardPush = s.FrontForce > 0 ? Math.Clamp(demand[FlightEffectors.Forward] / s.FrontForce, -1, 1) : 0;
             side = s.UpForce > 0 ? Math.Clamp(demand[FlightEffectors.Right] / s.UpForce, -1, 1) : 0;
         }

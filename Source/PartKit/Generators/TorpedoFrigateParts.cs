@@ -343,6 +343,20 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
 
     private static void Sock(Part p, string name, double x, double y, double z, string dir) => p.Sock(name, P(x, y, z), dir);
 
+    // The downward attitude jets (Karl, 2026-11-17: the lift jets push up and nothing pushed down, so the ship couldn't descend under
+    // thrust or pitch and roll like the shuttle): a Heavy RCS Thruster on a pad either side of the roof at the bow and at the stern, each
+    // on a tank part so its fuel reaches it, clear of the railgun's barrel, the flare launchers, the cradle, the sensor and the fins.
+    private const double TopRcsBowX = 1.4, TopRcsBowZ = 5.2, TopRcsSternX = 2.0, TopRcsSternZ = 45.9, TopRcsPad = 0.54;
+
+    /// <summary>A square pad standing out of the spine's plate (which may slope along z) at x, z, its top a whole centimetre and the socket on it, facing up.</summary>
+    private static void TopJetPad(Part p, string name, double x, double z)
+    {
+        double h = TopRcsPad / 2, ya = At(z - h)[4].Y, yb = At(z + h)[4].Y;
+        double top = Math.Ceiling((Math.Max(ya, yb) + 0.05) * 100) / 100, bottom = Math.Min(ya, yb) - 0.12;
+        Solid(p, x - h, bottom, z - h, x + h, top, z + h, Frame, "dirty steel");
+        Sock(p, name, x, top, z, "+y");
+    }
+
     private static double[][] Ngon(double cx, double y, double cz, double r, int n, double phase = 0) => [.. Enumerable.Range(0, n).Select(i =>
     {
         var a = phase + Math.PI / n + i * 2 * Math.PI / n;
@@ -1094,6 +1108,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Solid(p, rx - 0.4, ry - 0.4, rz, rx + 0.4, ry + 0.4, rz + 0.9, Armour2, "plated steel"); // (the retro jet's housing)
             Detail(p, rx - 0.41, ry + 0.1, rz + 0.2, rx + 0.41, ry + 0.18, rz + 0.7, Hazard, "hazard paint");
         }
+        // Two attitude jets on the canopy's roof, either side of the railgun's barrel, firing up: they push the nose down (and roll the ship).
+        foreach (var s in new[] { -1, 1 })
+            TopJetPad(p, s < 0 ? "rcsTopL" : "rcsTopR", Cx + s * TopRcsBowX, TopRcsBowZ);
         p.Set(("fuelTank", Kw(("capacity", 1500))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(Cx, 1.0, 8.0).Cast<object>()], "+z", "fuel"))));
         return p.Stats(9000, 24000, 40, 15.0);
     }
@@ -1273,6 +1290,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Shoulder(p, 3, s, 42.3, 46.3, 0.8, 0.45, 1.2, Armour);
             Shoulder(p, 1, s, 42.6, 46.0, 0.6, 0.3, 1.0, Armour);
         }
+        // Two attitude jets on the roof aft of the shuttle, between the heat-sink fins, firing up: they push the tail down (and roll the ship).
+        foreach (var s in new[] { -1, 1 })
+            TopJetPad(p, s < 0 ? "rcsTopL" : "rcsTopR", Cx + s * TopRcsSternX, TopRcsSternZ);
         // (no stern face: the drive collar closes it, its plate the engines' mount)
         // Heat-sink fins above the drive, angled out.
         foreach (var s in new[] { -1, 1 })
@@ -2144,6 +2164,9 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
             Hang(bp, "Zero Day Landing Leg", keel, n, "top");
         foreach (var n in new[] { "retroL", "retroR" })
             Hang(bp, "Zero Day Retro Jet", bow, n, "top");
+        foreach (var piece in new[] { bow, stern })
+            foreach (var n in new[] { "rcsTopL", "rcsTopR" })
+                Hang(bp, "Heavy RCS Thruster", piece, n, "base");
         // Ladders: the boarding ladder up the shaft, two between the decks.
         Hang(bp, "Zero Day Boarding Ladder", la, "boarding", "hull");
         Hang(bp, "Zero Day Ladder", lf, "ladder", "bottom");

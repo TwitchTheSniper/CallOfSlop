@@ -53,7 +53,7 @@ panel of another craft and picks BOARD. The dock lets the pod go and the host fl
 
 The pod is steered as a physics body (its speed and turn set straight, within 12 m/s² and 1.2 rad/s), not as a space ship:
 it stays a body of the bubble while it boards (GameSpaceLaunch.cs leaves it be), so it boards in space as in a sky. The order
-is the pod's, so its card shows it; the target is the order's point on the wire (protocol 340).
+is the pod's, so its card shows it; the target is the order's point on the wire (protocol 341).
 
 ## Not done
 
