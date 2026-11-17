@@ -46,6 +46,11 @@ Working notes for docs/sandbox/design/bot-brain.md, kept current after every ste
 - Saves: a crewed frigate saved after its gunner was shot (`saveworld`) loads with its crew of 5 (`loadworld`).
 - A joined client (`--net host` / `join`, `crewbodies 2`): 2 crew bodies among its players and the other 4 as stand-ins.
 - Self-test sections by name: Sandbox spawns, Frame allocations, Sandbox body sync, World links: all pass.
+- Review fixes (2026-11-16): a player who uses a seat a crew body is in always gets it (`ConstructEdits.CrewYield`: the member
+  stands up and walks to a free couch); a person at the helm releases the crew's forced mouse aim; a body's wounds go back to
+  its record when it goes; crew at the controls don't count as a person taking over (`ConstructWorld.HumanDriver`, in GameNav,
+  linked routes); bodies are made two a tick. `--crew-check` after them: worst crew tick 1.25 ms (in Karl's driving, its rays),
+  worst thinking 86 us; the earlier 5.7 ms spike didn't come back (taken for a one-off JIT or GC).
 
 ## Next
 

@@ -150,7 +150,7 @@ public sealed partial class Game : ICrewHost
         lines.Add($"{(IsServer ? "host" : "client")}: {bodies} crew bodies among the players, stand-ins on {CrewStandIns.Count} bodies ({CrewStandIns.Values.Sum(a => a.Length)} seats: {string.Join(", ", CrewStandIns.Select(kv => $"{kv.Key}: {string.Join("/", kv.Value)}"))})");
         for (var i = 0; i < Crew.ShipHigh; i++)
             if (Crew.Ships[i] is { } s && Constructs.Get(s.Body) is { } c)
-                lines.Add($"construct {s.Body} at height {ConstructPhysics.HoldHeight(c.WorldCom):0} m, {c.Vel.Length():0.0} m/s, {(s.Ai != null ? $"{s.Ai.State}, shots {s.Ai.Shots} (gunners {s.Ai.GunnerShots})" : "no driver")}; {Crew.Describe(s)}");
+                lines.Add($"construct {s.Body}{(c.CrewAims ? " (crew aims)" : "")}{(c.Driver != 255 ? $" driver {c.Driver}" : "")} at height {ConstructPhysics.HoldHeight(c.WorldCom):0} m, {c.Vel.Length():0.0} m/s, {(s.Ai != null ? $"{s.Ai.State}, shots {s.Ai.Shots} (gunners {s.Ai.GunnerShots})" : "no driver")}; {Crew.Describe(s)}");
         return lines;
     }
 
