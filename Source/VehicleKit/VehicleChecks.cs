@@ -228,8 +228,8 @@ public static class VehicleChecks
             zF = MathF.Min(zF, wh.Centre.Z);
             zB = MathF.Max(zB, wh.Centre.Z);
         }
-        r.Notes.Add($"wheels: {c.WheelCount}, {driven} driven, {steered} steered; wheelbase {zB - zF:0.00} m");
-        if (driven == 0 || steered == 0)
+        r.Notes.Add($"wheels: {c.WheelCount}, {driven} driven, {steered} steered{(c.SkidSteer ? " (skid steer)" : "")}; wheelbase {zB - zF:0.00} m");
+        if (driven == 0 || steered == 0 && !c.SkidSteer) // (a tracked crawler steers by driving its sides against each other: the Excavator)
             r.Failures.Add($"{driven} driven and {steered} steered wheels: it needs both");
         var ground = float.MaxValue;
         for (var k = 0; k < c.WheelCount; k++)

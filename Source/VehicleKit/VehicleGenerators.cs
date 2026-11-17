@@ -70,6 +70,7 @@ public static class VehicleRegistry
         s => new Generators.GiantTruck(s),
         s => new Generators.Concept(s),
         s => new Generators.OreHauler(s), // (the factory kit's ore loop: docs/sandbox/design/factory-generator.md)
+        s => new Generators.Excavator(s), // (extraction follows the ore: docs/vehiclekit/EXCAVATOR-notes.md)
     ];
 
     /// <summary>Things every shipped style ships that are not vehicles a role or a convoy draws: the standalone turret (docs/sandbox/VEHICLE-WEAPONS.md, "Turrets").</summary>
@@ -81,8 +82,12 @@ public static class VehicleRegistry
     internal static IEnumerable<IVehicleGenerator> For(FactionStyle st, bool all) =>
         Shapes.Select(f => f(st)).Concat(Extras.Select(f => f(st)).Where(g => all || g is VehicleShape v && st.Extra.Contains(v.Shape))).Concat(Everywhere.Select(f => f(st)));
 
-    /// <summary>What ships: every shape in every shipped style.</summary>
-    public static IReadOnlyList<IVehicleGenerator> All => _all ??= Styles.Shipped.SelectMany(st => For(st, false)).ToArray();
+    /// <summary>What ships: every shape in every shipped style, and the shapes other styles commit files of.</summary>
+    public static IReadOnlyList<IVehicleGenerator> All => _all ??= Styles.Shipped.SelectMany(st => For(st, false)).Concat(Committed()).ToArray();
+
+    /// <summary>The shapes a style that doesn't ship has committed files of (<see cref="FactionStyle.Committed"/>).</summary>
+    private static IEnumerable<IVehicleGenerator> Committed() =>
+        Styles.All.Where(st => !Styles.Shipped.Contains(st)).SelectMany(st => For(st, true).Where(g => g is VehicleShape v && st.Committed.Contains(v.Shape)));
 
     private static IVehicleGenerator[]? _all;
 

@@ -388,5 +388,6 @@ public static class Styles
         Weapons = [new("Service MG", "Reaper Battle Rifle Receiver{barrel:Standard Barrel,feed:Box Mag}")],
         LootTable = "bandit",
         Limits = new() { ["crookedPlates"] = 2, ["tiltDegrees"] = 1, ["thirdSeat"] = 1, ["slits"] = 0 },
+        Committed = ["Ore Hauler", "Excavator"], // (it ships no vehicles, but the factory kit's ore loop spawns these by name: --gen-vehicles compares them)
     };
 }
