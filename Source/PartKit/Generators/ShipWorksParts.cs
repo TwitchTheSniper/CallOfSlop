@@ -29,7 +29,7 @@ public sealed class ShipWorksParts : IPartGenerator
     private const double Plate = 0.3; // a mount's thickness
 
     /// <summary>The three sizes: a letter, and per size the numbers below.</summary>
-    private static readonly string[] SizeName = ["S", "M", "L"];
+    private static readonly string[] SizeName = ["S", "M", "L", "XS"]; // (XS, index 3, is a Drive Core only: a small craft's engine, the Shuttle's two)
 
     // Hull Mount: half its width, mass, health.
     private static readonly double[] MountHalf = [0.75, 1.25, 2.0], MountMass = [500, 1200, 2500], MountHealth = [3000, 6000, 10000];
@@ -38,8 +38,9 @@ public sealed class ShipWorksParts : IPartGenerator
     private static readonly double[] NozForce = [1.5e6, 5e6, 10e6], NozCollar = [0.45, 0.75, 1.05], NozLength = [1.3, 2.0, 2.8], NozMouth = [0.6, 1.0, 1.4], NozMass = [600, 1800, 4000], NozHealth = [3000, 6000, 9000], NozSpool = [1.2, 1.5, 2.0];
 
     // Drive Core: serves (N), width, height, depth, mass, health.
-    public static readonly double[] CoreR = [0.6, 0.85, 1.1], CoreD = [1.8, 2.6, 3.2];
-    private static readonly double[] CoreServes = [2e6, 6e6, 12e6], CoreMass = [1500, 3500, 7000], CoreHealth = [4000, 7000, 12000];
+    public static readonly double[] CoreR = [0.6, 0.85, 1.1, 0.3], CoreD = [1.8, 2.6, 3.2, 1.1];
+    private static readonly double[] CoreServes = [2e6, 6e6, 12e6, 3e5], CoreMass = [1500, 3500, 7000, 350], CoreHealth = [4000, 7000, 12000, 1500];
+    public const int XS = 3; // the Drive Core XS's index in the Core arrays
 
     // Fuel Pump (M, L: index 1, 2): serves, width, height, depth, mass, health.
     public static readonly double[] PumpD = [0, 1.0, 1.3];
@@ -499,7 +500,8 @@ public sealed class ShipWorksParts : IPartGenerator
     {
         var side = Math.Floor(r * Inside * 100) / 100;
         Hidden(p, -side, -r - Saddle, -d, side, side, -0.02);
-        Hidden(p, -0.4, -0.4, -0.02, 0.4, 0.4, 0);
+        var face = Math.Min(0.4, side); // (the face that meets the mount: 0.8 m square, as wide as the section on an XS)
+        Hidden(p, -face, -face, -0.02, face, face, 0);
         p.Set(("collider", "boxes")); // (its round is a look: the fins' and rings' 24-sided tubes have no hull; the solid box stands for it)
     }
 
@@ -511,7 +513,7 @@ public sealed class ShipWorksParts : IPartGenerator
     }
 
     /// <summary>The flange where a section meets the mount or the section before it: the mount ring's own size on a core, else the section's.</summary>
-    private static double FlangeR(int s) => Math.Min(NozCollar[s] + 0.24, CoreR[s] + Saddle - 0.01); // (no lower than its saddles' feet)
+    private static double FlangeR(int s) => Math.Min(NozCollar[Math.Min(s, 2)] + 0.24, CoreR[s] + Saddle - 0.01); // (no lower than its saddles' feet)
 
     /// <summary>Bolt heads round a flange or ring: n of them at radius rr, on the band from z0 to z1 (a cylinder's joint).</summary>
     private static void Bolts(Part p, double rr, double z0, double z1, int n, double phase = 0)
@@ -553,7 +555,7 @@ public sealed class ShipWorksParts : IPartGenerator
     private static Part Core(int s)
     {
         var (r, d) = (CoreR[s], CoreD[s]);
-        var p = new Part($"Drive Core {SizeName[s]}", Small, Section, Desc($"A torch drive's reaction chamber: a cylinder {r * 2:0.#} m across and {d:0.#} m long that bolts to a Hull Mount's inner face right behind its nozzle and runs on into the ship. It serves {CoreServes[s] / 1e6:0} MN of nozzles through that mount; a bigger drive's Fuel Pump and Coolant Exchanger bolt on behind it, the same cylinder going on. Leave a metre clear by its gauge to work on it."),
+        var p = new Part($"Drive Core {SizeName[s]}", Small, Section, Desc($"A torch drive's reaction chamber: a cylinder {r * 2:0.#} m across and {d:0.#} m long that bolts to a Hull Mount's inner face right behind its nozzle and runs on into the ship. It serves {(CoreServes[s] < 1e6 ? $"{CoreServes[s] / 1e3:0} kN" : $"{CoreServes[s] / 1e6:0} MN")} of nozzles through that mount; a bigger drive's Fuel Pump and Coolant Exchanger bolt on behind it, the same cylinder going on. Leave a metre clear by its gauge to work on it."),
             role: "frame", tool: "welder", material: "steel", color: Steel, group: Group);
         var fl = FlangeR(s);
         Cyl(p, 0, 0, fl, -0.12, -0.003, Trim, "dirty steel", segments: 24); // (the flange to the mount, the mount ring's size)
@@ -567,7 +569,7 @@ public sealed class ShipWorksParts : IPartGenerator
             Cyl(p, 0, 0, r + 0.03, z - 0.05, z + 0.05, Copper, "copper", inner: Math.Round(r / (r + 0.03), 3), segments: 24); // (field coils)
         }
         // Feed pipes along its top, on risers, and the gauge board on its starboard side.
-        var pr = 0.05 + s * 0.015;
+        var pr = s == XS ? 0.035 : 0.05 + s * 0.015;
         var py = r + pr + 0.06;
         foreach (var x in new[] { -r * 0.3, r * 0.3 })
         {
@@ -576,9 +578,10 @@ public sealed class ShipWorksParts : IPartGenerator
                 Look(p, x - pr * 0.7, r * 0.85, z - pr * 0.7, x + pr * 0.7, py - pr * 0.5, z + pr * 0.7, Copper, "copper");
         }
         var (gz, gh) = (-d * 0.825, d * 0.075); // (on the clad band behind the last coil: the service panels are forward)
-        Look(p, r * 0.9, -0.25, gz - gh, r + 0.1, 0.25, gz + gh, Dark, "painted plating"); // (the gauge board)
-        Look(p, r + 0.1, -0.05, gz - gh * 0.6, r + 0.115, 0.17, gz + gh * 0.6, Gauge, "", glow: true);
-        Look(p, r + 0.1, -0.17, gz - gh * 0.6, r + 0.115, -0.1, gz + gh * 0.6, Glow, "", glow: true);
+        var gk = Math.Min(1, r / 0.6); // (the board's height: as drawn for an S and up, smaller on an XS)
+        Look(p, r * 0.9, -0.25 * gk, gz - gh, r + 0.1, 0.25 * gk, gz + gh, Dark, "painted plating"); // (the gauge board)
+        Look(p, r + 0.1, -0.05 * gk, gz - gh * 0.6, r + 0.115, 0.17 * gk, gz + gh * 0.6, Gauge, "", glow: true);
+        Look(p, r + 0.1, -0.17 * gk, gz - gh * 0.6, r + 0.115, -0.1 * gk, gz + gh * 0.6, Glow, "", glow: true);
         foreach (var z in new[] { -d * 0.25, -d * 0.8 })
             SaddleAt(p, r, z);
         // The cladding (ship-works.md 15, rule 2): a band between the first two coils and one behind the last, each two panels
@@ -664,6 +667,7 @@ public sealed class ShipWorksParts : IPartGenerator
             parts.Add(Nozzle(s, t));
         for (var s = 0; s < 3; s++)
             parts.Add(Core(s));
+        parts.Add(Core(XS));
         parts.Add(Pump(1));
         parts.Add(Pump(2));
         parts.Add(Exchanger());
