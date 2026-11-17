@@ -2438,6 +2438,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.PowerNews when !IsServer:
                 ReadPowerNews(ref r); // the NPC powers' news lines (GameCrewFactions.cs)
                 break;
+            case (byte)Msg.MachineSound when !IsServer && r.Has(13):
+                ReadMachineSound(ref r); // a dock's clamps and the like (GameMachineSounds.cs)
+                break;
             case (byte)Msg.ShieldHit when !IsServer && r.Has(2):
                 OnShieldHitPacket(ref r, now); // Last Stand's shield blocked a hit (Health.cs)
                 break;

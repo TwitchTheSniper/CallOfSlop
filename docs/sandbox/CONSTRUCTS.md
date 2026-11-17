@@ -66,6 +66,7 @@ The configure tool, fusing, free placement, painting, the remover, snappy/socket
 - The material painter
 - The remover tool (board item rt01)
 - Building sounds
+- Machine sounds
 - Snappy building (decision 24, board item sb01)
 - Centre sockets (board item cs02)
 - Joint sides (board item js01)

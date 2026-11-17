@@ -1284,6 +1284,7 @@ public static unsafe partial class Program
         g.EngineAudio.Pick(g.Constructs, Gfx.CameraPosition);
         g.EngineAudio.Play(g.Audio); // (modular engines: EngineSounds.cs)
         g.SandboxBuildSounds(now); // (building: GameSandboxBuildSounds.cs)
+        g.MachineFrameSounds(now); // (reactors' hums, robot shells starting up, the shell chair's link: GameMachineSounds.cs)
         AllocProfile.Stop();
     }
 
