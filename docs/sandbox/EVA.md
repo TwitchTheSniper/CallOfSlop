@@ -13,7 +13,7 @@ Three parts (part kit generator `Source/PartKit/Generators/EvaParts.cs`, files i
 
 ## The parts
 
-- **Space Suit Locker** (`"eva": "locker"`): F puts the suit on or takes it off. Refused in a robot shell and while wearing an MMU. The suit is `Player.Eva & Eva.Suit`, sent with the roster (after the uniform: protocol 335), drawn as the `space_suit` uniform (`Player.DrawnUniform`) whatever uniform is chosen.
+- **Space Suit Locker** (`"eva": "locker"`): F puts the suit on or takes it off. Refused in a robot shell and while wearing an MMU. The suit is `Player.Eva & Eva.Suit`, sent with the roster (after the uniform: protocol 336), drawn as the `space_suit` uniform (`Player.DrawnUniform`) whatever uniform is chosen.
 - **MMU Dock** (`"eva": "dock"`): a seat with an `mmu` socket on its upright and a `Fuel in` pipe port on its base edge. Sitting needs a suit (or a shell). Seated, the docked pack fills from the body's fuel (`ReachesFuel`/`UseFuel`, `Eva.MmuLitres` per fill) in Survival, at once in Creative; its tank is stored in the pack part's `CPart.Rounds` (out of `Eva.MmuFull`), so it is saved and synced like a magazine. The eject key (L) detaches: the pack part is removed, `Player.Eva |= Eva.Mmu`, the player stands with a small push forward. Walking up to an empty dock wearing the pack and pressing F docks it again.
 - **Manned Manoeuvring Unit** (`"eva": "mmu"`): the pack, original but after NASA's: a white frame, side tanks, four corner thruster quads, two arms forward to hand controllers. Its latch fits the suit's back plate.
 

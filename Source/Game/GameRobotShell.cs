@@ -336,17 +336,23 @@ public sealed partial class Game
         if (!SandboxOn || Local is not { } me || !me.Alive)
         {
             _lkFrom = _lkWoke = _lkLift = -1;
+            _lkWasShell = false; // (dead or out of the Sandbox: no unlink sound when they come back)
             return false;
         }
         if (me.InShell)
         {
             if (!_lkWasShell)
+            {
                 _lkWoke = now; // (the link took: they open their eyes as the robot)
+                LinkCue(Sfx.ShellLinkWake);
+            }
             _lkWasShell = _lkSpent = true;
             _lkFrom = -1;
         }
         else
         {
+            if (_lkWasShell)
+                LinkCue(Sfx.ShellUnlink); // (back in the body: the link spins down, the helmet lifts)
             _lkWasShell = false;
             _lkWoke = -1;
             ref var h = ref SandboxHands.Hand(me.Id);
@@ -363,7 +369,10 @@ public sealed partial class Game
             {
                 _lkOut = -1;
                 if (!_lkSpent && _lkFrom < 0)
+                {
                     _lkFrom = now;
+                    LinkCue(Sfx.ShellHelmetDown);
+                }
             }
         }
         if (_lkWoke >= 0)
@@ -398,6 +407,7 @@ public sealed partial class Game
             _lkSpent = true;
             _lkFrom = -1;
             _lkLift = now;
+            LinkCue(Sfx.ShellHelmetUp); // (no link: the helmet goes back up)
             helmet = 1;
             return true;
         }

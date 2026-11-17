@@ -78,7 +78,7 @@ public sealed partial class Game
             w.U8(p.Prestige).U8(p.Level).U8((byte)p.Hat);
         (p.Bot != null ? default : p.Look).Pack(w); // protocol 45: the look (Appearance.cs; bots: Auto)
         w.U8(p.Uniform); // protocol 257: the uniform the server dresses them in (GameUniforms.cs; bots too: the colony's staff)
-        w.U8(p.Eva); // protocol 335: their spacewalk gear (a space suit, an MMU on it: GameSandboxEva.cs)
+        w.U8(p.Eva); // protocol 336: their spacewalk gear (a space suit, an MMU on it: GameSandboxEva.cs)
     }
 
     private static PlayerCosmetics ReadRosterCosmetics(ref PacketReader r, bool isBot)
