@@ -221,7 +221,7 @@ public sealed partial class Construct
             StructBounds(part, out var smn, out var smx);
             GrowBounds(smn, smx); // (the face it left stays out: loose, never short)
         }
-        RestBounds(part, out var mn, out var mx);
+        ReachBounds(part, out var mn, out var mx); // (as the part tree holds it: ConstructDoors.Place passes the old one so)
         ref var p = ref Parts[part];
         if (_collider != null && !_colliderStale)
         {

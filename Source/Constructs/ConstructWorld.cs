@@ -1856,11 +1856,108 @@ public sealed partial class ConstructWorld
                     }
                 }
             }
+            SkinBlock(c, candidates, ref s, height, feetUp, ref standing, ref standSeg);
         }
         // Into (or out of) the ride frame: standing on a part rides its segment; off every surface, a jump stays in the
         // frame inside the construct's bounds, else they leave it with its momentum (ConstructRide.cs).
         ConstructRide.End(ref s, ride, standing, standSeg, gripUp, faceUp, frame);
         return standing;
+    }
+
+    private readonly List<ContactShape> _skinShapes = new(256);
+
+    /// <summary>
+    /// A ship's skin (its parts' "hull" shapes: ConstructHulls) against a player outside its frame: they land on its plates (and
+    /// stand on them: then <see cref="ConstructRide.End"/> takes them into its frame, where ConstructRideMove.Gather meets the
+    /// plates as triangles) and are pushed out of its sides, where the boxes above meet only the rooms metres inside it.
+    /// <paramref name="candidates"/>: the body's parts near the player, in <see cref="_partHits"/>.
+    /// </summary>
+    private void SkinBlock(Construct c, int candidates, ref MoveState s, float height, Vector3 up, ref Construct? standing, ref int standSeg)
+    {
+        var any = false;
+        for (var ci = 0; ci < candidates && !any; ci++)
+            any = c.Parts[_partHits[ci]].D.HasSkin;
+        if (!any)
+            return; // (no skin near: every body but a ship's)
+        var r = World.PlayerRadius;
+        var step = s.Velocity * World.TickDt;
+        var from = s.Position - step; // (where this tick's move started: a fall faster than a plate is thick still meets it)
+        var lo = Vector3.Min(from, s.Position) - new Vector3(r + height + 0.2f);
+        var hi = Vector3.Max(from, s.Position) + new Vector3(r + height + 0.2f);
+        var shapes = _skinShapes;
+        shapes.Clear();
+        for (var ci = 0; ci < candidates; ci++)
+        {
+            var i = _partHits[ci];
+            ref var p = ref c.Parts[i];
+            if (!p.D.HasSkin || p.Broken)
+                continue;
+            c.WorldFrame(p.Seg, out var q, out var t);
+            ConstructRide.AddSkin(shapes, c, i, q, t, lo, hi, c.Id, p.Seg);
+        }
+        if (shapes.Count == 0)
+            return;
+        var span = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(shapes);
+        var core = up * (height - 2 * r);
+        // Coming down onto it: the move cast along its way, stopped where it first meets a plate it can stand on.
+        if (Vector3.Dot(step, up) < 0 && step.LengthSquared() > 1e-8f)
+        {
+            var len = step.Length();
+            var dir = step / len;
+            var a = from + up * r;
+            if (CapsuleContact.Cast(span, a, a + core, r, dir, len, out var toi, out var n, out _, out _) && Vector3.Dot(n, up) >= World.MinWalkNormalY)
+            {
+                s.Position = from + dir * toi;
+                Stand(c, ref s, up, ref standing, ref standSeg);
+                return;
+            }
+        }
+        var push = CapsuleContact.Depenetrate(span, s.Position + up * r, s.Position + up * r + core, r, 4, out _);
+        if (push == Vector3.Zero)
+        {
+            // Stood on it last tick: still on it if a plate is just under the feet.
+            if (s.Grounded || Vector3.Dot(s.Velocity, up) > 0.5f)
+                return;
+            var a = s.Position + up * r;
+            if (CapsuleContact.Cast(span, a, a + core, r, -up, 0.06f, out var toi, out var n, out _, out _) && Vector3.Dot(n, up) >= World.MinWalkNormalY)
+            {
+                s.Position -= up * toi;
+                Stand(c, ref s, up, ref standing, ref standSeg);
+            }
+            return;
+        }
+        var lift = Vector3.Dot(push, up);
+        if (lift >= World.MinWalkNormalY * push.Length())
+        {
+            s.Position += push; // (on top of a plate)
+            Stand(c, ref s, up, ref standing, ref standSeg);
+            return;
+        }
+        // Into its side: out sideways (never down through the floor they stand on), the speed into it gone.
+        if (s.Grounded && lift < 0)
+            push -= up * lift;
+        s.Position += push;
+        var pl = push.Length();
+        if (pl > 1e-6f)
+        {
+            var pn = push / pl;
+            var vn = Vector3.Dot(s.Velocity, pn);
+            if (vn < 0)
+                s.Velocity -= pn * vn;
+        }
+    }
+
+    private static void Stand(Construct c, ref MoveState s, Vector3 up, ref Construct? standing, ref int standSeg)
+    {
+        var vu = Vector3.Dot(s.Velocity, up);
+        if (vu < 0)
+            s.Velocity -= up * vu;
+        s.Grounded = true;
+        if (standing == null)
+        {
+            standing = c;
+            standSeg = 0;
+        }
     }
 
     private static Vector3 GripAxis(int ax, int sign)
