@@ -8,6 +8,8 @@ public enum CrewJob : byte
     Spare,
     Pilot,
     Gunner,
+    Engineer, // phase 4: sees to breakdowns and mends works pieces (Game/GameCrewWork.cs)
+    Loader, // phase 4: carries rounds to an emptying ammo box
 }
 
 /// <summary>What a crew member is doing.</summary>
@@ -17,6 +19,9 @@ public enum CrewState : byte
     Station, // at its station (a helm or a gun works; a couch rests)
     Walking, // on the way to a station (a timed walk: CrewWorld.WalkSpeed)
     Dead, // killed; the slot is freed once a body that went with it has gone
+    Fighting, // phase 5: up from its station repelling boarders (a body's bot brain fights; GameCrewBoard.cs)
+    Surrendered, // hands up: no station, no fight; on a ship that was taken, a prisoner
+    Scuttling, // on its way to a scuttle point, or arming the charge there
 }
 
 /// <summary>How much a crewed body costs (bot-brain.md section 4): a bot <see cref="Player"/> per member near a person, a record at its seat further off, nothing asleep.</summary>
@@ -27,12 +32,22 @@ public enum CrewTier : byte
     Bodied,
 }
 
+/// <summary>What the captain wants of its body (bot-brain.md section 3), from the faction's rules and what it sees.</summary>
+public enum CrewGoal : byte
+{
+    Hold, // nothing to fight: hold, patrol or follow as its drivers do
+    Engage,
+    Flee,
+}
+
 /// <summary>What a station is for.</summary>
 public enum CrewStationKind : byte
 {
     Helm,
     Gun,
     Rest,
+    Works, // the Engineer's Panel, else a drive's works piece or a jet (an engineer stands there)
+    Magazine, // an ammo box or magazine (a loader stands there)
 }
 
 /// <summary>The game's side of the crew (Game/GameCrew.cs): bot bodies, people's targets. Null in a check with no game: nobody is bodied.</summary>
@@ -52,8 +67,14 @@ public interface ICrewHost
     /// <summary>The body sits in <paramref name="part"/> of <paramref name="c"/>, out of whatever seat it was in. False: it couldn't.</summary>
     bool Sit(byte player, Construct c, int part);
 
-    /// <summary>The target a crew of <paramref name="mode"/> on <paramref name="c"/> fights this tick, from the contact its last look picked (<paramref name="contact"/>, 255: look again).</summary>
-    bool Target(Construct c, ShipAiMode mode, ref byte contact, bool look, out ShipAiTarget t);
+    /// <summary>The target crew <paramref name="s"/> on <paramref name="c"/> fights this tick, from the contact its last look picked (<see cref="CrewShip.Contact"/>, <see cref="CrewShip.ContactBody"/>); <paramref name="look"/>: look again.</summary>
+    bool Target(Construct c, CrewShip s, bool look, out ShipAiTarget t);
+
+    /// <summary>Player <paramref name="player"/> did something to faction <paramref name="faction"/>: its standing with them moves by <paramref name="amount"/>.</summary>
+    void Deed(byte faction, byte player, int amount);
+
+    /// <summary>The captain's look at a boarding (GameCrewBoard.cs): boarders, its act, a scuttle, a capture. True: it is boarded or a scuttle runs (the captain's own goal waits).</summary>
+    bool Board(Construct c, CrewShip s);
 }
 
 /// <summary>
@@ -85,10 +106,35 @@ public sealed class CrewShip
     public bool BodiesShort; // the last try for a body found none (logged once)
     public bool AirOff; // an aircraft's autopilot was let go for want of a pilot (GameSandboxAircraft.cs)
     public bool HelmLost; // the helm emptied and nobody has taken it (an aircraft's pilot let go of the autopilot once)
+    public bool RosterDirty = true; // an own crew's or a prize's roster changed (GameCrewHire.cs sends it)
     public bool SeatsDirty = true; // the stand-ins clients draw changed (GameCrew.cs sends them)
     public float Near = float.MaxValue; // m to the nearest person, last look
     public byte Contact = 255; // the player its look picked (255: none)
+    public ushort ContactBody; // ... or another faction's crewed body (0: none)
     public int Slot; // its index in CrewWorld.Ships
+
+    // The captain (phase 3): its faction kind, morale, goal, who has attacked it, and when it thinks next.
+    public byte Faction; // CrewFactions id (0: none: the old Fights strangers / everyone rules)
+    public float Morale = 1, Hull = 1, HullMax; // morale 0-1; the hull's share left of HullMax (its parts' health when crewed)
+    public CrewGoal Goal;
+    // Boarding (phase 5, GameCrewBoard.cs).
+    public BoardAct Act;
+    public bool Own, HoldFire; // phase 6: a player's own hired crew (the Player Crew kind: never the helm unless a player orders it, never in the way); told to hold fire
+    public bool Boarded, Prize, CalledHelp; // Prize: taken by a player, its crew are prisoners
+    public short ScPart = -1; // the scuttle point (-1: none); ScStage 1 on the way, 2 arming, 3 counting down; ScAt the stage's end
+    public byte ScStage, ScDisarmBy = 255;
+    public int ScMember = -1;
+    public long ScAt, ScDisarmAt, ScSaidAt;
+    public ushort ScTried; // the last point disarmed (by tag), not tried again
+    public ushort ScTag; // the scuttle point's part tag: ScPart follows it through a rebuild or a split (ScuttleFollow)
+    public short EngPart = -1; // the part its engineer is seeing to (-1: none), done at EngDone; the loader's next carry at LoadAt
+    public long EngDone, LoadAt;
+    public byte Lost; // members lost since it was crewed
+    public long CaptainAt; // the tick it thinks next
+    public readonly ulong[] Foes = new ulong[4]; // players who have hit it (a bit each)
+
+    public bool Foe(byte player) => (Foes[player >> 6] & (1UL << (player & 63))) != 0;
+    public void MarkFoe(byte player) => Foes[player >> 6] |= 1UL << (player & 63);
 
     public bool HelmOn(CrewWorld w) => Helm >= 0 && StMember[Helm] is var m and >= 0 && w.State[m] == CrewState.Station;
     public bool InGrace(long tick) => tick < GraceUntil;
@@ -112,12 +158,31 @@ public sealed class CrewShip
         HelmLost = false;
         AirOff = false;
         FromSetting = false;
-        SeatsDirty = true;
+        SeatsDirty = RosterDirty = true;
         Near = float.MaxValue;
         Contact = 255;
+        ContactBody = 0;
         Ai = null;
         Air = false;
         Tier = CrewTier.Asleep;
+        Faction = 0;
+        Morale = Hull = 1;
+        HullMax = 0;
+        Goal = CrewGoal.Hold;
+        Lost = 0;
+        CaptainAt = 0;
+        EngPart = -1;
+        EngDone = LoadAt = 0;
+        Act = BoardAct.Hold;
+        Boarded = Prize = CalledHelp = Own = HoldFire = false;
+        ScPart = -1;
+        ScTag = 0;
+        ScStage = 0;
+        ScDisarmBy = 255;
+        ScMember = -1;
+        ScAt = ScDisarmAt = ScSaidAt = 0;
+        ScTried = 0;
+        Array.Clear(Foes);
     }
 }
 
@@ -160,6 +225,7 @@ public sealed class CrewWorld
     public long[] Ready = []; // a walk's end, or a dead body's going (tick)
     public ushort[] Name = [];
     public int[] Ship = []; // its ship's slot in Ships
+    public byte[] Fac = []; // the NPC faction kind it came from (a prisoner's or a hired hand's: standing goes to them)
     /// <summary>Player ids that are crew bodies (a seat they sit in is still the crew's).</summary>
     public readonly bool[] IsBody = new bool[256];
     private int[] _free = [];
@@ -192,8 +258,8 @@ public sealed class CrewWorld
     /// <summary>Bodies made at most this many a tick (a roster near a person comes to life over a few ticks, not 32 spawns in one).</summary>
     public const int PromotePerTick = 2;
     private int _promoted;
-    public long Bytes;
-    public int Ticks;
+    public long Bytes, LastAllocTick;
+    public int Ticks, AllocTicks; // (ticks that allocated, and the last: a check's clue)
 
     public CrewWorld() => Grow(256);
 
@@ -212,6 +278,7 @@ public sealed class CrewWorld
         Array.Resize(ref Ready, n);
         Array.Resize(ref Name, n);
         Array.Resize(ref Ship, n);
+        Array.Resize(ref Fac, n);
         Array.Resize(ref _free, n);
         for (var i = was; i < n; i++)
             Ship[i] = -1;
@@ -226,12 +293,21 @@ public sealed class CrewWorld
     // ---- Making and losing crews ---------------------------------------------------------------------------------------------------
 
     /// <summary>A roster for <paramref name="c"/> (none yet): one member per station it can work now, and spares (<paramref name="spares"/>; -1: by its couches).</summary>
-    public CrewShip? Crew(Construct c, ShipAiMode mode, bool air = false, int spares = -1)
+    public CrewShip? Crew(Construct c, ShipAiMode mode, bool air = false, int spares = -1, byte faction = 0, bool empty = false)
     {
         if (_shipOf.ContainsKey(c.Id))
             return ShipOf(c.Id);
         var s = NewShip(c.Id, mode, air);
+        SetFaction(c, s, faction);
         Scan(c, s);
+        if (empty)
+        {
+            Events.Add($"construct {c.Id}: a roster with nobody on it yet ({CrewFactions.Of(faction)?.Name ?? "no faction"})");
+            return s; // (hired hands join it one at a time: GameCrewHire.cs)
+        }
+        var def = CrewFactions.Of(faction);
+        if (spares < 0 && def != null)
+            spares = def.SparesMin + (int)(c.Id * 2654435761u % (uint)(def.SparesMax - def.SparesMin + 1));
         var rest = 0;
         for (var k = 0; k < s.StCount; k++)
         {
@@ -240,7 +316,7 @@ public sealed class CrewWorld
                 rest++;
                 continue;
             }
-            Add(s, s.StKind[k] == CrewStationKind.Helm ? CrewJob.Pilot : CrewJob.Gunner, k);
+            Add(s, s.StKind[k] switch { CrewStationKind.Helm => CrewJob.Pilot, CrewStationKind.Gun => CrewJob.Gunner, CrewStationKind.Works => CrewJob.Engineer, _ => CrewJob.Loader }, k);
         }
         var want = spares >= 0 ? spares : Math.Max(1, Math.Min(rest, 2 + (s.StCount - rest) / 2));
         for (var k = 0; k < s.StCount && want > 0 && s.MemberCount < MaxCrewPerBody; k++)
@@ -251,8 +327,32 @@ public sealed class CrewWorld
             }
         for (; want > 0 && s.MemberCount < MaxCrewPerBody; want--)
             Add(s, CrewJob.Spare, -1); // (no couch: aboard, waiting)
-        Events.Add($"construct {c.Id}: a crew of {s.MemberCount} took it ({mode}{(air ? ", aircraft" : "")})");
+        if (def != null)
+            for (var i = 0; i < s.MemberCount; i++)
+                Skill[s.Members[i]] = (byte)(def.SkillMin + (Uid[s.Members[i]] * 40503u) % (uint)(def.SkillMax - def.SkillMin + 1));
+        Events.Add($"construct {c.Id}: a crew of {s.MemberCount} took it ({mode}{(air ? ", aircraft" : "")}{(def != null ? $", {def.Name}" : "")})");
         return s;
+    }
+
+    /// <summary>Its faction kind (0: none), on the roster and the construct, and the hull it starts from.</summary>
+    public static void SetFaction(Construct c, CrewShip s, byte faction)
+    {
+        s.Faction = faction;
+        s.Own = faction != 0 && faction == CrewFactions.Find("Player Crew");
+        c.NpcFaction = s.Own ? (byte)0 : faction; // (a player's own crew: the body stays theirs, no NPC faction)
+        s.Morale = CrewFactions.Of(faction)?.MoraleStart ?? 1;
+        s.HullMax = HullOf(c);
+        s.Hull = 1;
+    }
+
+    /// <summary>Its parts' health, whole (O(parts): the captain's look, once a second at most).</summary>
+    public static float HullOf(Construct c)
+    {
+        var h = 0f;
+        for (var i = 0; i < c.PartCount; i++)
+            if (!c.Parts[i].Broken)
+                h += c.Parts[i].Health;
+        return h;
     }
 
     private CrewShip NewShip(ushort body, ShipAiMode mode, bool air)
@@ -301,6 +401,7 @@ public sealed class CrewWorld
             _nextUid = Uid[m] + 1;
         Body[m] = s.Body;
         Ship[m] = s.Slot;
+        Fac[m] = s.Faction;
         Job[m] = job;
         Health[m] = health;
         Skill[m] = skill;
@@ -370,6 +471,8 @@ public sealed class CrewWorld
         Unseat(s, m);
         Health[m] = 0;
         State[m] = CrewState.Dead;
+        if (s.Lost < 255)
+            s.Lost++;
         Ready[m] = Tick + GoneTicks;
         if (!bodyDied)
             Remove(s, m, host);
@@ -474,6 +577,12 @@ public sealed class CrewWorld
             if (seat >= 0 && seat < c.PartCount && seat != helm && Usable(c, seat) && IndexOf(s, seat) < 0)
                 AddStation(c, s, seat, CrewStationKind.Gun);
         }
+        // The engineer's place (phase 4): the Engineer's Panel, else the first drive works piece or jet a breakdown may pick; the loader's: an
+        // ammo box or magazine, on a body with guns. Neither is a seat: their members are records, never bodies (until CrewNav walks them).
+        if (s.StCount < MaxCrewPerBody && WorksStation(c) is var works and >= 0 && IndexOf(s, works) < 0)
+            AddStation(c, s, works, CrewStationKind.Works);
+        if (s.StCount < MaxCrewPerBody && c.GunCount > 0 && MagazineStation(c) is var mag and >= 0 && IndexOf(s, mag) < 0)
+            AddStation(c, s, mag, CrewStationKind.Magazine);
         for (var i = 0; i < c.PartCount && s.StCount < MaxCrewPerBody; i++)
             if (i != helm && c.Parts[i].D.Role == PartRole.Seat && Usable(c, i) && IndexOf(s, i) < 0)
                 AddStation(c, s, i, CrewStationKind.Rest);
@@ -504,6 +613,7 @@ public sealed class CrewWorld
                 Kill(m, host);
             }
         }
+        ScuttleFollow(c, s);
         // A walker's goal by tag too (its station's index may have moved).
         for (var i = 0; i < s.MemberCount; i++)
         {
@@ -513,6 +623,61 @@ public sealed class CrewWorld
         }
         s.SeatsDirty = true;
     }
+
+    /// <summary>
+    /// The scuttle point's index again from its tag, after a rebuild or a body split moved the parts: the charge stays on its own part. A point
+    /// no longer in the body (gone with a split's other piece) is -1, which <c>ScuttleStep</c> takes for the point lost.
+    /// </summary>
+    public static void ScuttleFollow(Construct c, CrewShip s)
+    {
+        if (s.ScPart < 0 || s.ScTag == 0 || s.ScPart < c.PartCount && c.Parts[s.ScPart].Tag == s.ScTag)
+            return;
+        var now = -1;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].Tag == s.ScTag)
+            {
+                now = i;
+                break;
+            }
+        s.ScPart = (short)now;
+        s.SeatsDirty = true;
+    }
+
+    /// <summary>Where an engineer works: the Engineer's Panel (Game.BreakdownPanel), else a drive's works piece, else a jet (-1: nothing to see to).</summary>
+    public static int WorksStation(Construct c)
+    {
+        var piece = -1;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            ref var p = ref c.Parts[i];
+            if (p.Health <= 0)
+                continue;
+            if (p.D.Name == Game.BreakdownPanel)
+                return i;
+            if (piece < 0 && (ConstructWorks.IsDrivePiece(p.D) || p.D.Role == PartRole.Thruster && p.D.WorksNeeds == 0 && c.StabCount > 0))
+                piece = i;
+        }
+        return piece;
+    }
+
+    /// <summary>Where a loader works: the ammo box or magazine with the most room (-1: none).</summary>
+    public static int MagazineStation(Construct c)
+    {
+        var best = -1;
+        var most = 0;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            ref var p = ref c.Parts[i];
+            if (p.Health <= 0 || !(p.D.Role == PartRole.AmmoBox || ConstructAmmo.IsMagazine(p.D)))
+                continue;
+            var cap = ConstructAmmo.Capacity(p.D);
+            if (cap > most)
+                (best, most) = (i, cap);
+        }
+        return best;
+    }
+
+    private static bool Standing(CrewStationKind k) => k is CrewStationKind.Works or CrewStationKind.Magazine;
 
     private static bool Usable(Construct c, int part) => !c.Parts[part].Broken && c.Parts[part].D.Role == PartRole.Seat && !c.Parts[part].D.RemoteReceiver && !c.Parts[part].D.LifterCab;
 
@@ -570,8 +735,12 @@ public sealed class CrewWorld
             WorstDriveMs = Math.Max(WorstDriveMs, (t3 - t2) * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
         }
         var b1 = GC.GetAllocatedBytesForCurrentThread();
-        if (Events.Count == 0)
+        if (Events.Count == 0 && b1 > b0)
+        {
             Bytes += b1 - b0;
+            AllocTicks++;
+            LastAllocTick = Tick;
+        }
         var ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
         CpuMs += ms;
         if (Ticks > 10 && ms > WorstMs)
@@ -603,7 +772,7 @@ public sealed class CrewWorld
             if (c.StabCount == 0 || c.Wreck || c.SpaceShip != 0 || _shipOf.ContainsKey(c.Id))
                 continue;
             var mode = ShipAi.ModeOf(c);
-            if (mode != ShipAiMode.Off && Crew(c, mode) is { } made)
+            if (mode != ShipAiMode.Off && Crew(c, mode, faction: mode == ShipAiMode.Everyone ? CrewFactions.Find("Test Hostile") : c.Owner == 255 ? CrewFactions.Find("Mercenaries") : (byte)0) is { } made)
                 made.FromSetting = true;
         }
     }
@@ -654,7 +823,7 @@ public sealed class CrewWorld
             var m = s.StMember[k];
             if (m >= 0 && Player[m] == 0)
             {
-                if (p.Broken)
+                if (Standing(s.StKind[k]) ? p.Health <= 0 : p.Broken)
                 {
                     Events.Add($"construct {c.Id}: crew member {Uid[m]} died with their station");
                     Kill(m, host);
@@ -698,7 +867,12 @@ public sealed class CrewWorld
             }
             return;
         }
-        if (!s.Air && s.Ai == null && _aiOut < MaxDrivers)
+        if (s.Prize && s.Ai != null)
+        {
+            s.Ai.Release(c);
+            FreeAi(s); // (taken: its crew are prisoners, nobody drives for them)
+        }
+        if (!s.Air && !s.Prize && s.Ai == null && _aiOut < MaxDrivers)
         {
             s.Ai = _aiPool.Count > 0 ? _aiPool.Pop() : new ShipAi(s.Body, s.Mode);
             s.Ai.Reset(s.Body, s.Mode);
@@ -709,8 +883,47 @@ public sealed class CrewWorld
         if (s.Ai != null)
             s.Ai.Mode = s.Mode;
         Fill(c, s, host);
+        if (Tick >= s.CaptainAt)
+            Captain(c, s, host);
         if (s.Tier == CrewTier.Bodied && host != null)
             Embody(c, s, host);
+    }
+
+    /// <summary>
+    /// The captain (bot-brain.md section 3, phase 3): once a second near a person, every five seconds further, it reads who has hit the body (a
+    /// deed against its faction), its hull and losses into morale, and picks its goal by its faction's rules: with something to fight it engages,
+    /// or flees once its hull or morale falls under the faction's lines; with nothing, it holds (its drivers hold, patrol or follow).
+    /// </summary>
+    private void Captain(Construct c, CrewShip s, ICrewHost? host)
+    {
+        s.CaptainAt = Tick + (s.Tier == CrewTier.Bodied ? World.TickRate : 5 * World.TickRate);
+        var def = CrewFactions.Of(s.Faction);
+        if (c.LastHitBy != 255)
+        {
+            var by = c.LastHitBy;
+            c.LastHitBy = 255;
+            if (!s.Foe(by))
+            {
+                s.MarkFoe(by);
+                Events.Add($"construct {c.Id}: player {by} attacked its crew{(def != null ? $" ({def.Name})" : "")}");
+            }
+            if (def != null)
+                host?.Deed(s.Faction, by, -5);
+        }
+        s.Hull = s.HullMax > 0 ? Math.Clamp(HullOf(c) / s.HullMax, 0, 1) : 1;
+        if (def != null)
+            s.Morale = Math.Clamp(def.MoraleStart - def.MoraleCrewLost * s.Lost - def.MoraleHullLost * (1 - s.Hull), 0, 1);
+        if (host != null && host.Board(c, s))
+            return; // (boarded, or a scuttle runs: GameCrewBoard.cs)
+        var contact = s.Contact != 255 || s.ContactBody != 0;
+        var goal = !contact ? CrewGoal.Hold
+            : def != null && (s.Hull < def.FleeHull || s.Morale < def.FleeMorale) ? CrewGoal.Flee
+            : CrewGoal.Engage;
+        if (goal != s.Goal)
+        {
+            Events.Add($"construct {c.Id}: its captain {(goal == CrewGoal.Flee ? "runs" : goal == CrewGoal.Engage ? "fights" : "holds")} (hull {s.Hull * 100:0}%, morale {s.Morale * 100:0}%, {s.Lost} crew lost{(def != null ? $", {def.Name}" : "")})");
+            s.Goal = goal;
+        }
     }
 
     /// <summary>
@@ -733,6 +946,8 @@ public sealed class CrewWorld
                 Station[m] = -1;
                 continue;
             }
+            if (Player[m] != 0 && Standing(s.StKind[st]))
+                DropBody(m, host); // (no body stands at a station yet: a record there until CrewNav, phase 4's next step)
             if (Player[m] != 0 && host != null && !host.Sit((byte)(Player[m] - 1), c, s.StPart[st]))
             {
                 State[m] = CrewState.Free;
@@ -740,7 +955,7 @@ public sealed class CrewWorld
                 continue;
             }
             Seat(s, m, st);
-            Events.Add($"construct {c.Id}: crew member {Uid[m]} took the {(st == s.Helm ? "helm" : s.StKind[st] == CrewStationKind.Gun ? "gun seat" : "couch")}");
+            Events.Add($"construct {c.Id}: crew member {Uid[m]} took the {StationName(s.StKind[st])}");
         }
         for (var st = 0; st < s.StCount; st++)
         {
@@ -754,17 +969,17 @@ public sealed class CrewWorld
                 State[m0] = CrewState.Free;
             }
         }
-        for (var pass = 0; pass < 3; pass++)
+        for (var pass = 0; pass < 5; pass++)
         {
-            var kind = pass == 0 ? CrewStationKind.Helm : pass == 1 ? CrewStationKind.Gun : CrewStationKind.Rest;
+            var kind = pass switch { 0 => CrewStationKind.Helm, 1 => CrewStationKind.Gun, 2 => CrewStationKind.Works, 3 => CrewStationKind.Magazine, _ => CrewStationKind.Rest };
             for (var st = 0; st < s.StCount; st++)
             {
-                if (s.StKind[st] != kind || s.StMember[st] >= 0 || Sitter(c, s.StPart[st]) != 0 || c.Parts[s.StPart[st]].Broken || Coming(s, st))
+                if (s.StKind[st] != kind || s.Own && kind == CrewStationKind.Helm || s.StMember[st] >= 0 || Sitter(c, s.StPart[st]) != 0 || (Standing(kind) ? c.Parts[s.StPart[st]].Health <= 0 : c.Parts[s.StPart[st]].Broken) || Coming(s, st))
                     continue;
                 var m = Nearest(c, s, st, kind);
                 if (m < 0)
                 {
-                    if (kind == CrewStationKind.Helm && !s.HelmLost && !s.InGrace(Tick))
+                    if (kind == CrewStationKind.Helm && !s.Own && !s.HelmLost && !s.InGrace(Tick))
                     {
                         s.HelmLost = true;
                         Events.Add($"construct {c.Id}: nobody left to take the helm");
@@ -779,14 +994,27 @@ public sealed class CrewWorld
                     Job[m] = CrewJob.Pilot;
                 else if (kind == CrewStationKind.Gun)
                     Job[m] = CrewJob.Gunner;
+                else if (kind == CrewStationKind.Works)
+                    Job[m] = CrewJob.Engineer;
+                else if (kind == CrewStationKind.Magazine)
+                    Job[m] = CrewJob.Loader;
                 State[m] = CrewState.Walking;
                 Station[m] = (short)st;
                 Tag[m] = s.StTag[st];
                 Ready[m] = Tick + Math.Max(MinWalkTicks, (int)(dist / WalkSpeed * World.TickRate));
-                Events.Add($"construct {c.Id}: crew member {Uid[m]} goes for the {(kind == CrewStationKind.Helm ? "helm" : kind == CrewStationKind.Gun ? "gun seat" : "couch")} ({dist:0} m)");
+                Events.Add($"construct {c.Id}: crew member {Uid[m]} goes for the {StationName(kind)} ({dist:0} m)");
             }
         }
     }
+
+    public static string StationName(CrewStationKind k) => k switch
+    {
+        CrewStationKind.Helm => "helm",
+        CrewStationKind.Gun => "gun seat",
+        CrewStationKind.Works => "engine room",
+        CrewStationKind.Magazine => "magazine",
+        _ => "couch",
+    };
 
     /// <summary>Someone walks to station <paramref name="st"/> already.</summary>
     private bool Coming(CrewShip s, int st)
@@ -808,14 +1036,14 @@ public sealed class CrewWorld
             var m = s.Members[i];
             var cur = Station[m];
             var curKind = cur >= 0 && State[m] == CrewState.Station ? s.StKind[cur] : CrewStationKind.Rest;
-            if (State[m] is CrewState.Dead or CrewState.Walking)
-                continue;
+            if (State[m] is not (CrewState.Free or CrewState.Station))
+                continue; // (dead, walking, fighting, surrendered or scuttling)
             if (kind == CrewStationKind.Rest && State[m] != CrewState.Free)
                 continue; // (only a member with nowhere to be goes to a couch)
             var penalty = curKind switch
             {
                 CrewStationKind.Rest => 0f,
-                CrewStationKind.Gun when kind == CrewStationKind.Helm => 1000f, // (a gunner leaves their gun for the helm only with no spare)
+                CrewStationKind.Gun or CrewStationKind.Works or CrewStationKind.Magazine when kind == CrewStationKind.Helm => 1000f, // (a gunner, an engineer or a loader leaves for the helm only with no spare)
                 _ => -1f,
             };
             if (penalty < 0)
@@ -841,7 +1069,7 @@ public sealed class CrewWorld
             if (Player[m] != 0 || State[m] != CrewState.Station || Station[m] < 0)
                 continue;
             int part = s.StPart[Station[m]];
-            if (Sitter(c, part) != 0)
+            if (Sitter(c, part) != 0 || Standing(s.StKind[Station[m]]))
                 continue;
             var id = host.Promote(this, m, c, part);
             if (id == 0)
@@ -905,20 +1133,24 @@ public sealed class CrewWorld
         {
             if (Ships[i] is not { Ai: { } ai } s || w.Get(s.Body) is not { } c || c.Wreck)
                 continue;
-            if (ai.Boarded(c, this))
+            if (!s.Own && ai.Boarded(c, this))
             {
-                if (c.CrewAims)
+                if (c.CrewAims || c.CrewDrives)
                     ai.Release(c); // (a person has the helm: their stabilizer's own Mouse aim setting, not the crew's)
                 continue;
             }
-            var look = (Tick + i) % 30 == 0 || s.Contact == 255 && (Tick + i) % 10 == 0;
+            var look = (Tick + i) % 30 == 0 || s.Contact == 255 && s.ContactBody == 0 && (Tick + i) % 10 == 0;
             if (s.Tier == CrewTier.Seated && (Tick + i) % 2 == 1)
             {
                 ai.Replay(c);
                 continue;
             }
             ShipAiTarget t = default;
-            var has = host != null ? host.Target(c, s.Mode, ref s.Contact, look, out t) : CheckTarget(c, out t);
+            var has = host != null ? host.Target(c, s, look, out t) : CheckTarget(c, out t);
+            if (s.HoldFire)
+                has = false; // (its owner's order: Hold fire)
+            if (host == null)
+                s.Contact = has ? (byte)0 : (byte)255; // (a check's fixed target is the captain's contact)
             ai.Step(w, c, q, has, t);
         }
     }
@@ -934,7 +1166,7 @@ public sealed class CrewWorld
 
     // ---- Saves (the CREW block of a body: WorldSaveBodies.cs) ------------------------------------------------------------------------
 
-    public const byte SaveVersion = 1;
+    public const byte SaveVersion = 2; // (2: its faction kind, by name, morale and losses)
 
     /// <summary>A body's crew as bytes for its save (null: none). Bodied members are written as records; walks as free.</summary>
     public byte[]? SaveBytes(ushort body)
@@ -942,7 +1174,8 @@ public sealed class CrewWorld
         if (ShipOf(body) is not { } s)
             return null;
         var wr = new SaveWriter(64 + s.MemberCount * 12);
-        wr.U8(SaveVersion).U8((byte)s.Mode).U8((byte)((s.Air ? 1 : 0) | (s.FromSetting ? 2 : 0)));
+        wr.U8(SaveVersion).U8((byte)s.Mode).U8((byte)((s.Air ? 1 : 0) | (s.FromSetting ? 2 : 0) | (s.Prize ? 4 : 0)));
+        wr.Str(CrewFactions.Of(s.Faction)?.Name ?? "").U8((byte)(s.Morale * 255)).U8(s.Lost);
         var n = 0;
         for (var i = 0; i < s.MemberCount; i++)
             if (State[s.Members[i]] != CrewState.Dead)
@@ -954,7 +1187,7 @@ public sealed class CrewWorld
             if (State[m] == CrewState.Dead)
                 continue;
             var tag = State[m] == CrewState.Station ? Tag[m] : (ushort)0;
-            wr.U32(Uid[m]).U8((byte)Job[m]).U8((byte)Math.Clamp(Health[m] / MemberHealth * 255, 1, 255)).U8(Skill[m]).U16(tag).U16(Name[m]);
+            wr.U32(Uid[m]).U8((byte)((byte)Job[m] | (State[m] == CrewState.Surrendered ? 0x80 : 0))).U8((byte)Math.Clamp(Health[m] / MemberHealth * 255, 1, 255)).U8(Skill[m]).U16(tag).U16(Name[m]);
         }
         return wr.Span.ToArray();
     }
@@ -966,26 +1199,46 @@ public sealed class CrewWorld
         {
             var r = new SaveReader(bytes);
             var v = r.U8();
-            if (v != SaveVersion)
+            if (v is not (1 or SaveVersion))
             {
                 Console.WriteLine($"[crew] construct {c.Id}'s crew is of version {v} (this build reads {SaveVersion}): left off");
                 return;
             }
             var mode = (ShipAiMode)Math.Min((int)r.U8(), 2);
             var flags = r.U8();
+            var faction = (byte)0;
+            float morale = -1;
+            byte lost = 0;
+            if (v >= 2)
+            {
+                var fname = r.Str();
+                faction = CrewFactions.Find(fname);
+                if (fname.Length > 0 && faction == 0)
+                    Console.WriteLine($"[crew] construct {c.Id}'s crew was of faction \"{fname}\", which isn't read now: it has none");
+                morale = r.U8() / 255f;
+                lost = r.U8();
+            }
             int n = r.U8();
             var s = NewShip(c.Id, mode, (flags & 1) != 0);
             s.FromSetting = (flags & 2) != 0;
+            s.Prize = (flags & 4) != 0;
+            SetFaction(c, s, faction);
+            if (morale >= 0)
+                s.Morale = morale;
+            s.Lost = lost;
             Scan(c, s);
             for (var i = 0; i < n && i < MaxCrewPerBody; i++)
             {
                 var uid = r.U32();
-                var job = (CrewJob)Math.Min((int)r.U8(), 2);
+                var jb = r.U8();
+                var job = (CrewJob)Math.Min(jb & 0x7F, (int)CrewJob.Loader);
                 var health = r.U8() / 255f * MemberHealth;
                 var skill = r.U8();
                 var tag = r.U16();
                 var name = r.U16();
-                Add(s, job, TagIndex(s, tag), uid, health, skill, name);
+                var at = Add(s, job, (jb & 0x80) != 0 ? -1 : TagIndex(s, tag), uid, health, skill, name);
+                if (at >= 0 && (jb & 0x80) != 0)
+                    State[at] = CrewState.Surrendered; // (a prisoner, or hands up)
             }
             Events.Add($"construct {c.Id}: its crew of {s.MemberCount} came back from the save");
         }
@@ -1022,13 +1275,40 @@ public sealed class CrewWorld
         return $"{s.MemberCount} crew, tier {s.Tier}: {string.Join("; ", parts)}";
     }
 
+    /// <summary>The member leaves its station for <paramref name="state"/> (fighting, surrendered, scuttling); its body stays where the game puts it.</summary>
+    public void Leave(int m, CrewState state)
+    {
+        if (m < 0 || m >= High || Ship[m] < 0 || Ships[Ship[m]] is not { } s || State[m] == CrewState.Dead)
+            return;
+        Unseat(s, m);
+        State[m] = state;
+    }
+
+    /// <summary>A member's record goes, alive (released, put off, abandoned ship): its body with it.</summary>
+    public void Release(int m, ICrewHost? host)
+    {
+        if (m < 0 || m >= High || Ship[m] < 0 || Ships[Ship[m]] is not { } s)
+            return;
+        Remove(s, m, host);
+    }
+
+    /// <summary>Its members alive.</summary>
+    public int Alive(CrewShip s)
+    {
+        var n = 0;
+        for (var i = 0; i < s.MemberCount; i++)
+            if (State[s.Members[i]] != CrewState.Dead)
+                n++;
+        return n;
+    }
+
     /// <summary>The seats with a member at them and no body (what clients draw as stand-ins), into <paramref name="parts"/>. Returns how many.</summary>
     public int StandIns(CrewShip s, Span<ushort> parts)
     {
         var n = 0;
         for (var st = 0; st < s.StCount && n < parts.Length; st++)
-            if (s.StMember[st] is var m and >= 0 && State[m] == CrewState.Station && Player[m] == 0)
-                parts[n++] = (ushort)s.StPart[st];
+            if (s.StMember[st] is var m and >= 0 && State[m] == CrewState.Station && Player[m] == 0 && !Standing(s.StKind[st]))
+                parts[n++] = (ushort)s.StPart[st]; // (a seat; an engineer or a loader stands, and isn't drawn yet)
         return n;
     }
 }

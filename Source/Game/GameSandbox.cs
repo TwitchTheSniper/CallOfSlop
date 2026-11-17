@@ -108,6 +108,7 @@ public enum CActKind : byte
     Mend, // u16 body, u16 part: the attach tool sees to a groaning part or repairs a broken-down one (protocol 321; GameSandboxBreakdowns.cs)
     NavOrder, // u16 body, u8 NavKind (0 cancels), u8 the star system's body, 3 x f64 point, f64 radius: an order for a ship from the command view (protocol 323; GameNav.cs)
     Link, // u16 body, u16 part, u8 LinkOp, u32 a, u32 b, str text: a linked logistics part's panel, or a route from the command view (protocol 328; GameSandboxLinked.cs)
+    Crew, // u16 body, u32 member uid, u8 CrewOrder: a crew order from the Crew window (protocol 332; GameCrewHire.cs)
 }
 
 /// <summary>
@@ -181,7 +182,9 @@ public sealed partial class Game
         ResetSandboxSpawns(); // (no spawns queued, no spawned zombies: GameSandboxSpawns.cs)
         _vehicleSpawn?.Reset(); // (no faction vehicles on the way: GameSandboxVehicles.cs)
         Crew.Clear(this); // (no crews from the last world: GameCrew.cs)
+        CrewFactionsClear(); // (nor standings: GameCrewFactions.cs; a saved world's follow from its Crew section)
         CrewStandIns.Clear();
+        CrewInfo.Clear();
         SpawnHeldReset();
         _pilots.Clear(); // (no bot pilots: GameSandboxAircraft.cs)
         _airPending = 0;
@@ -991,6 +994,13 @@ public sealed partial class Game
             case CActKind.QuarrySkip:
                 QuarrySkip(p); // the first Ministry duty (GameQuarry.cs)
                 return null;
+            case CActKind.Crew:
+            {
+                var body = r.U16();
+                var uid = r.U32();
+                var op = r.U8();
+                return op <= (byte)CrewOrder.FireAtWill ? CrewOrderAct(p, body, uid, (CrewOrder)op) : $"no crew order {op}"; // (GameCrewHire.cs)
+            }
             case CActKind.Mend:
             {
                 var body = r.U16();

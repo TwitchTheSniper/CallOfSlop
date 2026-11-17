@@ -1,0 +1,83 @@
+{
+  "format": "call-of-slop-npc-faction/1",
+  "name": "Militia",
+  "about": "A planet's holders: wary of strangers, they answer fire and guard what is theirs.",
+  "styles": [
+    "Militia"
+  ],
+  "stance": {
+    "players": "wary",
+    "factions": {
+      "Raiders": "hostile",
+      "Traders": "neutral",
+      "Mercenaries": "wary",
+      "Salvagers": "neutral"
+    }
+  },
+  "engage": {
+    "sight": 2000,
+    "range": 0,
+    "chase": false,
+    "onFoot": true
+  },
+  "crew": {
+    "spares": [
+      1,
+      3
+    ],
+    "skill": [
+      100,
+      200
+    ],
+    "robots": 0.0
+  },
+  "morale": {
+    "start": 0.8,
+    "crewLost": 0.1,
+    "hullLost": 0.4,
+    "outOfAmmo": 0.2,
+    "kill": 0.1,
+    "alliesNear": 0.1
+  },
+  "flee": {
+    "hull": 0.3,
+    "morale": 0.3
+  },
+  "boarding": {
+    "weights": {
+      "hold": 1.0,
+      "repel": 1.2,
+      "lockDown": 1.0,
+      "callForHelp": 1.2,
+      "dump": 0.2,
+      "flee": 0.4,
+      "abandon": 0.4,
+      "surrender": 0.6,
+      "scuttle": 0.4
+    },
+    "surrenderMorale": 0.3,
+    "scuttleDesperation": 0.8
+  },
+  "scuttle": {
+    "when": "desperate",
+    "arm": 15,
+    "countdown": 90,
+    "disarm": 5,
+    "points": [
+      "magazine",
+      "reactor"
+    ]
+  },
+  "capture": [
+    "release",
+    "drop",
+    "hire",
+    "brig"
+  ],
+  "hire": {
+    "cost": 200,
+    "wage": 20
+  },
+  "needs": {},
+  "wants": {}
+}

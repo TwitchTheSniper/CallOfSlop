@@ -1,0 +1,85 @@
+{
+  "format": "call-of-slop-npc-faction/1",
+  "name": "Traders",
+  "about": "Haulers and merchants: they run from a fight and only fight back when cornered.",
+  "styles": [
+    "IT",
+    "Highland"
+  ],
+  "stance": {
+    "players": "neutral",
+    "factions": {
+      "Raiders": "hostile",
+      "Militia": "neutral",
+      "Mercenaries": "neutral",
+      "Salvagers": "neutral"
+    }
+  },
+  "engage": {
+    "sight": 2000,
+    "range": 0,
+    "chase": false,
+    "onFoot": true
+  },
+  "crew": {
+    "spares": [
+      1,
+      3
+    ],
+    "skill": [
+      60,
+      140
+    ],
+    "robots": 0.0
+  },
+  "morale": {
+    "start": 0.5,
+    "crewLost": 0.15,
+    "hullLost": 0.6,
+    "outOfAmmo": 0.2,
+    "kill": 0.1,
+    "alliesNear": 0.1
+  },
+  "flee": {
+    "hull": 0.9,
+    "morale": 0.6
+  },
+  "boarding": {
+    "weights": {
+      "hold": 0.4,
+      "repel": 0.5,
+      "lockDown": 0.8,
+      "callForHelp": 1.0,
+      "dump": 0.6,
+      "flee": 1.0,
+      "abandon": 0.8,
+      "surrender": 1.2,
+      "scuttle": 0.1
+    },
+    "surrenderMorale": 0.5,
+    "scuttleDesperation": 0.9
+  },
+  "scuttle": {
+    "when": "never",
+    "arm": 15,
+    "countdown": 90,
+    "disarm": 5,
+    "points": [
+      "magazine",
+      "fuel",
+      "reactor"
+    ]
+  },
+  "capture": [
+    "release",
+    "drop",
+    "hire",
+    "brig"
+  ],
+  "hire": {
+    "cost": 120,
+    "wage": 12
+  },
+  "needs": {},
+  "wants": {}
+}

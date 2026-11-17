@@ -476,6 +476,8 @@ public sealed partial class Game
                         (theirs.SpaceSeatBody, theirs.SpaceSeatPart) = (seatBody, seatPart);
                 }
             }
+            else if (tag == WorldSaveWriter.CrewTag && theirs != null)
+                WorldReadCrewRecords(rr, [theirs]); // (their credits and NPC standings travel with them: GameCrewFactions.cs)
         }, ref lost);
         return theirs;
     }
@@ -491,6 +493,9 @@ public sealed partial class Game
         to.Held = from.Held;
         to.Builds = from.Builds;
         to.Health = from.Health;
+        to.Credits = from.Credits; // (credits and how the NPC kinds see them go where they go: GameCrewFactions.cs)
+        to.CreditsStarted = from.CreditsStarted || to.CreditsStarted;
+        to.NpcStanding = from.NpcStanding;
     }
 
     private static void TryDelete(string folder)

@@ -1,0 +1,74 @@
+{
+  "format": "call-of-slop-npc-faction/1",
+  "name": "Player Crew",
+  "about": "A player's own hired crew: they obey their captain and never scuttle unless ordered.",
+  "styles": [],
+  "stance": {
+    "players": "neutral",
+    "factions": {}
+  },
+  "engage": {
+    "sight": 2500,
+    "range": 0,
+    "chase": true,
+    "onFoot": true
+  },
+  "crew": {
+    "spares": [
+      0,
+      0
+    ],
+    "skill": [
+      100,
+      200
+    ],
+    "robots": 0.0
+  },
+  "morale": {
+    "start": 1.0,
+    "crewLost": 0.0,
+    "hullLost": 0.0,
+    "outOfAmmo": 0.2,
+    "kill": 0.1,
+    "alliesNear": 0.1
+  },
+  "flee": {
+    "hull": 0.0,
+    "morale": 0.0
+  },
+  "boarding": {
+    "weights": {
+      "hold": 1.0,
+      "repel": 1.0,
+      "lockDown": 0.5,
+      "callForHelp": 0.0,
+      "dump": 0.0,
+      "flee": 0.0,
+      "abandon": 0.0,
+      "surrender": 0.0,
+      "scuttle": 0.0
+    },
+    "surrenderMorale": 0.0,
+    "scuttleDesperation": 2.0
+  },
+  "scuttle": {
+    "when": "never",
+    "arm": 15,
+    "countdown": 90,
+    "disarm": 5,
+    "points": [
+      "magazine",
+      "fuel",
+      "reactor"
+    ]
+  },
+  "capture": [
+    "release"
+  ],
+  "hire": {
+    "cost": 0,
+    "wage": 1
+  },
+  "needs": {},
+  "wants": {}
+}

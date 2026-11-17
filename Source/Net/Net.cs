@@ -124,7 +124,9 @@ public enum Msg : byte
     LabourDay, // server -> all and each joiner, Sandbox story: the penal colony's day (u8 period + 1 of Story/Labour's "day", 0 none; u64 the labour scenes on shift, a bit each) when it changes (reliable ordered; GameLabourDay.cs, protocol 316)
     LabourIncident, // server -> all, Sandbox story: an incident in a labour gang (u8 scene, u8 kind, u8 inmate, u32 the server tick it began) as it begins (reliable ordered; GameLabourIncidents.cs, protocol 317)
     Nav, // server -> all and each joiner, Sandbox: a ship's order from the command view (u16 construct, u8 NavKind (0: it ended), u8 body, u8 NavPhase, u8 the player who gave it, 3 x f64 point, f64 radius, u64 arrival and u64 departure in space ns, f32 the trip's dV) when it begins, changes phase or its arrival, or ends (reliable ordered; GameNav.cs, protocol 323, 326)
-    CrewSeats, // server -> all and each joiner, Sandbox: a crewed body's seats with a crew member and no body, drawn as stand-ins (u16 construct, u8 n, n x u16 seat part; n 0: none) when they change and every 5 s in turn (reliable ordered; GameCrew.cs, protocol 329)
+    CrewSeats, // server -> all and each joiner, Sandbox: a crewed body's seats with a crew member and no body, drawn as stand-ins (u16 construct, u8 n, n x u16 seat part; n 0: none; then u8 faction kind, u8 crew alive, u16 scuttle point, u8 its stage: 332) when they change and every 5 s in turn (reliable ordered; GameCrew.cs, protocol 329, 332)
+    CrewRoster, // server -> all and each joiner, Sandbox: an own crew's or a prize's roster (u16 construct, u8 owner, u8 flags, u8 n, n x (u32 uid, u16 name, u8 job, u8 state, u8 health, u8 kind)) when it changes (reliable ordered; GameCrewHire.cs, protocol 332)
+    Credits, // server -> one client, Sandbox: their credits (u64 as i64; -1 unlimited) when they change (reliable ordered; GameCrewHire.cs, protocol 332)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

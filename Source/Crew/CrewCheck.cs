@@ -32,11 +32,22 @@ public static class CrewCheck
             Console.WriteLine($"no blueprint named \"{(shipBp == null ? shipName : targetName)}\" among {ConstructBuild.Blueprints.Count} ({ConstructBuild.RefusedBlueprints.Count} refused: {string.Join("; ", ConstructBuild.RefusedBlueprints.Take(3))})");
             return 1;
         }
+        _faction = Arg("--crew-faction") is { } cf ? CrewFactions.Find(cf) : (byte)0;
+        if (Arg("--crew-convoy") is { } convoy)
+            return Convoy(convoy.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries), seconds > 0 && Arg("--seconds") != null ? seconds : 60) ? 0 : 1;
+        _faction = Arg("--crew-faction") is { } fn ? CrewFactions.Find(fn) : (byte)0;
+        if (Arg("--crew-faction") is { } fname && _faction == 0)
+        {
+            Console.WriteLine($"no faction \"{fname}\" in Crew/Factions");
+            return 1;
+        }
         var ok = seconds <= 0 || Fight(shipBp, targetBp, shipName, targetName, range, seconds, still);
         if (scale > 0)
             ok &= Scale(scale, Arg("--crew-scale-ship") ?? "Bandit Helicopter 1");
         return ok ? 0 : 1;
     }
+
+    private static byte _faction;
 
     private static Construct Build(ConstructWorld w, ConstructBuild.Blueprint bp, Vector3 ground, float yaw, VehicleDriveCheck.CheckPlace place)
     {
@@ -56,7 +67,7 @@ public static class CrewCheck
         var ship = Build(w, shipBp, Vector3.Zero, MathF.PI, place); // (facing south, away from the target: it must turn to fight)
         var target = Build(w, targetBp, new Vector3(0, 0, -range), 0, place);
         var crew = new CrewWorld();
-        var cs = crew.Crew(ship, ShipAiMode.Everyone)!;
+        var cs = crew.Crew(ship, ShipAiMode.Everyone, faction: _faction)!;
         var tSeat = target.StabCount > 0 ? ConstructFlight.SeatFor(target, target.Stabs[0].Part) : -1;
         var hp0 = Health(target);
         var shots0 = w.ShotsFired;
@@ -156,7 +167,7 @@ public static class CrewCheck
                           $"helm {(helmRetakenAt >= 0 ? $"taken again {(helmRetakenAt - pilotKilledAt) / (float)World.TickRate:0.0} s after the pilot died" : "NEVER TAKEN AGAIN")}; " +
                           $"gunners' shots {gunShotsAtKill} when shot, {gunShotsLate} a second on, {cs.Ai?.GunnerShots ?? 0} at the end (spares took the seats): {(silenced ? "silenced" : "STILL FIRING")}; " +
                           $"with nobody left it moved {driftAfterStop:0} m in its last 10 s, at {ship.Vel.Length():0.0} m/s: {(stopped ? "stopped" : "DIDN'T STOP")}");
-        Console.WriteLine($"crew: the crew's own cost {crew.CpuMs / Math.Max(1, crew.Ticks) * 1000:0.0} us a tick (worst {crew.WorstMs * 1000:0} us at {crew.WorstTick / (float)World.TickRate:0.0} s; worst thinking {crew.WorstThinkMs * 1000:0} us, worst driving {crew.WorstDriveMs * 1000:0} us), {crew.Bytes} bytes allocated in {crew.Ticks} ticks");
+        Console.WriteLine($"crew: the crew's own cost {crew.CpuMs / Math.Max(1, crew.Ticks) * 1000:0.0} us a tick (worst {crew.WorstMs * 1000:0} us at {crew.WorstTick / (float)World.TickRate:0.0} s; worst thinking {crew.WorstThinkMs * 1000:0} us, worst driving {crew.WorstDriveMs * 1000:0} us), {crew.Bytes} bytes allocated in {crew.Ticks} ticks ({crew.AllocTicks} ticks allocated, the last at {crew.LastAllocTick / (float)World.TickRate:0.0} s)");
         var ok = fought && retaken && silenced && stopped;
         Console.WriteLine($"crew: {(ok ? "OK" : "FAILED")}");
         return ok;
@@ -218,6 +229,107 @@ public static class CrewCheck
         var ok = per < 1.5 && crew.Bytes == 0;
         Console.WriteLine($"scale: {crew.Live} crew, {awake} bodies awake: {per * 1000:0.0} us a tick on average, worst {crew.WorstMs * 1000:0} us, {crew.Bytes} bytes allocated in {crew.Ticks} ticks " +
                           $"(the records: {crew.Uid.Length} slots, about {crew.Uid.Length * 43 / 1024} KB): {(ok ? "OK" : "OVER BUDGET")}");
+        return ok;
+    }
+
+    /// <summary>
+    /// <c>--crew-check --crew-convoy "A,B,C" [--seconds S]</c> (phase 2): a column of crewed ground vehicles (the first leads), each with a brief made from
+    /// its body, driven by their seated crews on the flat floor past a target 150 m off their way. At a third of the run the second vehicle's driver is
+    /// shot: it must stop, brakes on, while the rest drive on. Lines every 2 s: each one's speed and how far it is from its place.
+    /// </summary>
+    private static bool Convoy(string[] names, int seconds)
+    {
+        var place = VehicleDriveCheck.Place(1);
+        var w = new ConstructWorld();
+        var q = new SelfTest.DriveWorld();
+        var crew = new CrewWorld();
+        var bodies = new List<Construct>();
+        var back = 0f;
+        foreach (var name in names)
+        {
+            var bp = ConstructBuild.FindBlueprint(name);
+            if (bp == null)
+            {
+                Console.WriteLine($"convoy: no blueprint \"{name}\"");
+                return false;
+            }
+            var c = Build(w, bp, new Vector3(0, 0, back), 0, place); // (heading north, -Z)
+            var brief = VehicleBriefMake.Rebuild(c, name);
+            brief.Convoy = 1;
+            brief.ConvoyIndex = (byte)bodies.Count;
+            brief.Leader = bodies.Count > 0 ? bodies[0].Id : (ushort)0;
+            if (brief.Attach(c) is { } why)
+                Console.WriteLine($"convoy: {name}'s brief doesn't fit ({why})");
+            back += c.LocalMax.Z - c.LocalMin.Z + VehicleConvoys.Gap + 4;
+            var cs = crew.Crew(c, ShipAiMode.Everyone, faction: _faction);
+            Console.WriteLine($"convoy: {name} as {c.Id} ({c.PartCount} parts, {c.Mass / 1000:0.0} t, drive seat {c.DriveSeat}, {c.GunCount} guns): {(cs != null ? crew.Describe(cs) : "NO CREW")}");
+            bodies.Add(c);
+        }
+        Flush(crew);
+        if (bodies.Count < 2)
+            return false;
+        var target = Build(w, ConstructBuild.FindBlueprint(names[^1])!, new Vector3(150, 0, -300), 0, place);
+        var people = new[] { Vector3.Zero };
+        var ticks = seconds * World.TickRate;
+        var killAt = ticks / 3;
+        var victim = crew.ShipOf(bodies[1].Id)!;
+        var shots0 = w.ShotsFired;
+        float worstGap = 0, gapSum = 0;
+        var gapN = 0;
+        var victimSpeedLate = -1f;
+        var leaderMoved = 0f;
+        var lead0 = bodies[0].WorldCom;
+        for (var t = 0; t < ticks; t++)
+        {
+            using (place.In())
+            {
+                crew.Fixed = new ShipAiTarget { At = target.WorldCom, Vel = target.Vel, Body = target.Id, Player = 255 };
+                people[0] = bodies[0].WorldCom;
+                crew.Step(w, q, null, people, crewOn: false);
+                w.Step(q, World.TickDt);
+            }
+            Flush(crew);
+            if (t == killAt && victim.Helm >= 0 && victim.StMember[victim.Helm] is var pm and >= 0)
+            {
+                // Its driver first: someone else aboard takes the wheel (logged); then everyone aboard, so it stops for good.
+                crew.Kill(pm, null);
+                Console.WriteLine($"  {t / World.TickRate} s: {names[1]}'s driver shot: {crew.Describe(victim)}");
+            }
+            if (t == killAt + 6 * World.TickRate)
+            {
+                Console.WriteLine($"  {t / World.TickRate} s: {names[1]}: {crew.Describe(victim)}; everyone aboard shot");
+                for (var i = victim.MemberCount - 1; i >= 0; i--)
+                    crew.Kill(victim.Members[i], null);
+            }
+            if (t > killAt + 16 * World.TickRate)
+                victimSpeedLate = MathF.Max(victimSpeedLate, bodies[1].Vel.Length());
+            if (t > 10 * World.TickRate)
+                for (var k = 2; k < bodies.Count; k++)
+                    if (crew.ShipOf(bodies[k].Id)?.Ai is { State: var st } && st.StartsWith("following", StringComparison.Ordinal))
+                    {
+                        var g = MathF.Abs(float.Parse(st.Split(' ')[1].TrimEnd(','), System.Globalization.CultureInfo.InvariantCulture));
+                        if (k != 1)
+                        {
+                            worstGap = MathF.Max(worstGap, g);
+                            gapSum += g;
+                            gapN++;
+                        }
+                    }
+            if (t % (2 * World.TickRate) == 2 * World.TickRate - 1)
+            {
+                var line = string.Join("; ", bodies.Select((b, k) => $"{k}: {b.Vel.Length():0.0} m/s {crew.ShipOf(b.Id)?.Ai?.State ?? "no driver"}"));
+                Console.WriteLine($"  {(t + 1) / World.TickRate,3} s: {line}; shots {w.ShotsFired - shots0}");
+            }
+        }
+        leaderMoved = Vector3.Distance(lead0, bodies[0].WorldCom);
+        var moved = leaderMoved > 50;
+        var kept = gapN == 0 || gapSum / gapN < 15;
+        var stopped = victimSpeedLate < 0.5f;
+        Console.WriteLine($"convoy: the leader moved {leaderMoved:0} m: {(moved ? "drove" : "DIDN'T DRIVE")}; followers off their places {(gapN > 0 ? gapSum / gapN : 0):0.0} m on average, worst {worstGap:0}: {(kept ? "kept formation" : "LOST FORMATION")}; " +
+                          $"{w.ShotsFired - shots0} shots; the truck whose driver was shot: at most {victimSpeedLate:0.0} m/s 10 s after its crew was shot: {(stopped ? "stopped" : "DIDN'T STOP")}");
+        Console.WriteLine($"convoy: the crew's own cost {crew.CpuMs / Math.Max(1, crew.Ticks) * 1000:0.0} us a tick (worst {crew.WorstMs * 1000:0} us at {crew.WorstTick / (float)World.TickRate:0.0} s; thinking {crew.WorstThinkMs * 1000:0}, driving {crew.WorstDriveMs * 1000:0}), {crew.Bytes} bytes allocated in {crew.Ticks} ticks");
+        var ok = moved && kept && stopped;
+        Console.WriteLine($"convoy: {(ok ? "OK" : "FAILED")}");
         return ok;
     }
 

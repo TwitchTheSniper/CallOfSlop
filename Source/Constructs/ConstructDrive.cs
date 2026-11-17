@@ -677,7 +677,7 @@ public static class ConstructDrive
     {
         if (!c.CanDrive || c.Transmission < 0 || c.Transmission >= c.PartCount || c.DriveSeat < 0 || c.DriveSeat >= c.PartCount)
             return;
-        var keys = c.Driver != 255 ? c.Parts[c.DriveSeat].Keys : (ushort)0;
+        var keys = c.Driven ? c.Parts[c.DriveSeat].Keys : (ushort)0;
         var shift = (ushort)(keys & (ConstructParts.KeyReload | (ushort)Buttons.Sprint));
         var rise = (ushort)(shift & ~c.ShiftKeys);
         c.ShiftKeys = shift;
@@ -978,7 +978,7 @@ public static class ConstructDrive
     }
 
     /// <summary>The steering this tick: a wire into a steering differential wins over the seat's keys. -1 to 1, 1 is right.</summary>
-    public static float SteerNow(Construct c) => c.SteerWired != 0 ? c.SteerSignal : c.Driver != 255 ? c.SteerInput : 0f;
+    public static float SteerNow(Construct c) => c.SteerWired != 0 ? c.SteerSignal : c.Driven ? c.SteerInput : 0f;
 
     /// <summary>What steers wheel <paramref name="w"/>'s side: its own differential's wire, or <paramref name="steer"/> (<see cref="SteerNow"/>).</summary>
     public static float WheelSteer(Construct c, in CWheel w, float steer) => w.Group < Construct.MaxGroups && (c.SteerWired & (1 << w.Group)) != 0 ? c.GroupSteer[w.Group] : steer;

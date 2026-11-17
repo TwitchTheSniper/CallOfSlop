@@ -253,7 +253,8 @@ public static unsafe partial class Program
                       ^ (d.Rotor != null ? ConstructRotor.LookKey(hit.Body, hit.Part) << 8 : d.Surface != null ? ConstructAero.LookKey(hit.Body, hit.Part) << 8 : 0) // (a rotor's speed and blades, a wing's stall speed)
                       ^ (aim.Verdict == AimVerdict.Refused ? (long)(aim.Why?.GetHashCode() ?? 1) << 3 : 0)
                       ^ (hit.Body.Loose && ToolUpgrades.Current.ModuleOf(d.Id) is { } module ? (g.SandboxHands.Level(me.Id, module.Stat) + 1L) * 7919L << 24 : 0) // (a tool upgrade: what you have of it)
-                      ^ (h.Tool == ConstructTool.Hands ? h.Held == ConstructParts.None ? 1L << 59 : 1L << 58 : 0); // (hands out: what the click does, and whether they are full)
+                      ^ (h.Tool == ConstructTool.Hands ? h.Held == ConstructParts.None ? 1L << 59 : 1L << 58 : 0) // (hands out: what the click does, and whether they are full)
+                      ^ (g.CrewInfo.TryGetValue(hit.Body.Id, out var crewKey) ? (long)(crewKey.Faction * 256 + crewKey.Alive) * 104729L : 0); // (a crewed body's faction and crew)
             if (key != _sbLookKey)
             {
                 _sbLookKey = key;
@@ -316,6 +317,8 @@ public static unsafe partial class Program
                     _ when ConstructEdits.WreckedAlone(hit.Body) => SandboxKeys.Line(d.Name, SandboxKeys.Join($"wrecked, {d.Mass:0} kg", carriedIn), "haul it to a Recycler"),
                     _ => SandboxKeys.Line(d.Name, hp, null, !fits || aim.Verdict != AimVerdict.Can ? null : $"hold {SandboxKeys.Aim}: {(salvage ? "salvage" : "take off")}"),
                 };
+                if (g.CrewLook(hit.Body.Id) is { } crewNote)
+                    _sbLookText = $"{_sbLookText}  ({crewNote})"; // (a crewed body: its faction kind and crew, GameCrew.cs)
                 if (aim.Verdict == AimVerdict.Refused)
                     _sbAimRefusedText = SandboxKeys.Line(d.Name, null, aim.Why); // (red outline: why the tool can't)
                 _sbAimRefusedKey = key;

@@ -313,6 +313,7 @@ public sealed partial class Game
         WorldSections(ws, main, (tag, r) =>
         {
             if (tag is WorldSaveWriter.Names or WorldSaveWriter.Misc or WorldSaveWriter.Players or WorldSaveWriter.SpaceSeats or WorldSaveWriter.Story
+                    or WorldSaveWriter.CrewTag // (credits and standings travel with the people: the Players section clears them)
                 || plan.Travel && tag == WorldSaveWriter.Space)
                 WorldReadSection(tag, r, ws, names, ref kept, ref lost, ref nextTag);
         }, ref lost);
