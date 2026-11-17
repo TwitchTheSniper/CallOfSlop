@@ -478,6 +478,7 @@ public sealed partial class ConstructPartDef
     public bool Stage; // a damage stage of another part ("stage": true): what a wall turns into as it loses chunks; not offered in the parts menu or on a rack
     public bool ToolDock; // a tool dock ("toolDock": the part name its piece must start with): F lets go of what is on its "dock" socket or clips a loose one on (ConstructEditsDock.cs)
     public string ToolDockFits = "";
+    public bool ShellBodyFits => ToolDock && ToolDockFits == "Robot Shell"; // (a Robot Shell Dock: its shell is woken where it hangs, ConstructShell.Docked)
     public bool Boarding; // a preferred boarding point ("boarding": true): Use near it grabs on and climbs aboard (ConstructRide.GrabOn)
     public float LadderTop; // a vertical ladder ("ladder": its landing's height in the part's frame, m; 0: not one): Use climbs it up or down (ConstructRide.ClimbLadder)
     public WalkKind Walk; // building pieces: walked on ("walk": floor, stairs, ramp, ladder): players step up onto it, bots may path over it

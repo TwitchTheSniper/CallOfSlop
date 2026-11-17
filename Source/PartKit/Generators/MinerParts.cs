@@ -2009,7 +2009,7 @@ public sealed class MinerParts : IPartGenerator
             Paint(bp, bp.Hang("Magpie Locker", eng, $"suit{i}", "wall"), Hazard, "worn paint");
         bp.Hang("Tool Rack", eng, "toolRack", "back");
         for (var i = 0; i < 3; i++)
-            bp.Hang("Robot Shell", bp.Hang("Robot Shell Dock", eng, $"shellDock{i}", "wall"), "front", "back");
+            bp.Hang("Robot Shell", bp.Hang("Robot Shell Dock", eng, $"shellDock{i}", "wall"), "dock", "back");
         Switch(bp, eng, "switchEng", LampAt(bp, eng, "lampEngA", "#a0d0ff"));
         Switch(bp, eng, "switchBayR", LampAt(bp, eng, "lampBayA"), LampAt(bp, stern, "lampPorch", "#ffd890"));
         Switch(bp, eng, "switchBayL", LampAt(bp, eng, "lampBayB"), LampAt(bp, eng, "lampEngB", "#a0d0ff"));

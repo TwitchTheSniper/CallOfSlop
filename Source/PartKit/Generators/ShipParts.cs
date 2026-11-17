@@ -2064,7 +2064,7 @@ public sealed class ShipParts : IPartGenerator
             Paint(bp, Hang(bp, "Store Shelving 2 m", keel, $"shelfL{i}", "wall"), "#6b6f5a", "worn paint");
         Hang(bp, "Tool Rack", keel, "rackR", "back");
         Paint(bp, Hang(bp, "Locker", keel, "lockerR", "wall"), "#5d7468", "worn paint");
-        Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", keel, "shellDock", "wall"), "front", "back");
+        Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", keel, "shellDock", "wall"), "dock", "back");
         Hang(bp, "Requisition Crate", keel, "crate0", "-y");
         Hang(bp, "Requisition Crate", keel, "crate1", "-y");
         // The engine room. (The Engineer's Panel is where the breakdowns are seen to: GameSandboxBreakdowns reads its name.)

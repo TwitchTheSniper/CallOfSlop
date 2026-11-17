@@ -2099,7 +2099,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
             Paint(bp, Hang(bp, "Zero Day Locker", la, $"suit{i}", "wall"), Hazard, "worn paint");
         Paint(bp, Hang(bp, "Zero Day Locker", la, "airlockLocker", "wall"), Hazard, "worn paint");
         for (var i = 0; i < 4; i++)
-            Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", la, $"shellDock{i}", "wall"), "front", "back");
+            Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", la, $"shellDock{i}", "wall"), "dock", "back");
         foreach (var d in new[] { "doorBayL", "doorBayR", "doorAirlock", "doorEngine" })
             Door(bp, la, d);
         Hang(bp, "Zero Day Reactor", la, "reactor", "bottom");

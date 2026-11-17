@@ -452,7 +452,7 @@
     {
       "part": "Robot Shell",
       "on": 72,
-      "socket": "front",
+      "socket": "dock",
       "by": "back"
     },
     {

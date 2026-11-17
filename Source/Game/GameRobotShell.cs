@@ -77,7 +77,7 @@ public sealed partial class Game
         if (now - run.SatAt < ShellLinkSeconds)
             return;
         ShellWanted(p, c, seat);
-        if (ConstructShell.Find(Constructs, c, seat, p.Id, out var why) is not { } shell)
+        if (ConstructShell.Find(Constructs, c, seat, p.Id, out var shellPart, out var why) is not { } shell)
         {
             if (now - run.WhyAt > 4)
             {
@@ -85,6 +85,23 @@ public sealed partial class Game
                 SandboxHands.Notices.Add((p.Id, $"No link: {why}"));
             }
             return;
+        }
+        if (shell.PartCount > 1)
+        {
+            // A shell on a Robot Shell Dock (Karl, 2026-11-17): the dock unclamps it, and it is woken as one standing alone.
+            var marks = new bool[shell.PartCount];
+            marks[shellPart] = true;
+            if (Constructs.CutOut(shell, marks, shell.Owner) is not { } piece)
+            {
+                SandboxHands.Notices.Add((p.Id, "No link: the world is full"));
+                return;
+            }
+            Log($"[shell] a docked shell unclamps from construct {shell.Id} (-> {piece.Id})");
+            shell = piece;
+            seat = c.SeatOf(p.Id); // (the chair may be on the same ship: its parts moved up)
+            if (seat < 0)
+                return;
+            h.SeatPart = (ushort)seat;
         }
         ShellEnter(p, ref h, c, seat, shell);
     }
@@ -127,7 +144,7 @@ public sealed partial class Game
         var tool = h.Tool;
         h = SandboxHand.Empty;
         h.Tool = tool == ConstructTool.None ? ConstructTool.Hands : tool;
-        var feet = shell.ToWorld(Vector3.Zero) + GravityFrames.UpAt(shell.WorldCom) * 0.03f;
+        var feet = shell.ToWorld(sp.Pos) + GravityFrames.UpAt(shell.WorldCom) * 0.03f; // (its part's feet: a shell cut off a dock keeps its place in the ship's frame)
         var fwd = Vector3.Transform(-Vector3.UnitZ, shell.Rot * Rot24.Quat(sp.Rot));
         ShellWoke(p, shell);
         FirstReached(p, Milestone.Shell); // (GameMilestones.cs)
@@ -147,7 +164,7 @@ public sealed partial class Game
     /// Server: back to the body. Lost: the shell was destroyed (nothing stands again); otherwise it stands where they were.
     /// Whatever the shell carried is set down where it stands (or fell). <paramref name="why"/> is said to them.
     /// </summary>
-    private void ShellReturn(Player p, bool lost, string why)
+    private void ShellReturn(Player p, bool lost, string why, Construct? dock = null, int dockPart = -1)
     {
         ref var run = ref _sh[p.Id];
         if (!run.On)
@@ -168,9 +185,15 @@ public sealed partial class Game
         {
             ConstructConfig.Put(ref stood.Parts[0], run.ShellDef, CfgKey.Channel, run.Channel);
             stood.Owner = run.Owner;
-            stood.Frozen = true; // (it stands as it was left until someone moves it)
+            stood.Frozen = dock == null; // (it stands as it was left until someone moves it; one for a dock is clamped on first)
             stood.Rebuild();
             Constructs.StructureDirty.Add(stood.Id);
+            if (dock != null && SandboxHands.ClipOnDock(Constructs, p.Id, dock, dockPart, stood) is { } stuck)
+            {
+                why = $"The dock couldn't clamp the shell ({stuck}): it stands where you left it. You wake in the chair.";
+                stood.Frozen = true;
+                stood.Rebuild();
+            }
         }
         if (run.Pack != null)
         {
@@ -206,7 +229,7 @@ public sealed partial class Game
         run.Pack = null;
         ShellBroadcast(p);
         SandboxHands.Notices.Add((p.Id, why));
-        Log($"[shell] {p.Name} back in their body ({(lost ? "shell destroyed" : "shell left standing")}): {why}");
+        Log($"[shell] {p.Name} back in their body ({(lost ? "shell destroyed" : dock != null ? "shell to its dock" : "shell left standing")}): {why}");
         ShellBack(p, lost);
     }
 
@@ -254,6 +277,28 @@ public sealed partial class Game
             return "you aren't in a robot shell";
         ShellReturn(p, lost: false, "You leave the shell standing and wake in the chair.");
         return null;
+    }
+
+    /// <summary>
+    /// Server, F from inside a shell (Karl, 2026-11-17): on a free Robot Shell Dock it clamps the shell on and sends them back
+    /// to their body; it never happens by walking past one. False: not a shell dock, or they aren't in a shell (F as ever).
+    /// </summary>
+    private bool ShellDockUse(Player p, Vector3 eye, ushort body, int part, out string? why)
+    {
+        why = null;
+        if (!_sh[p.Id].On || Constructs.Get(body) is not { } c || (uint)part >= (uint)c.PartCount || !c.DefOf(part).ShellBodyFits)
+            return false;
+        ref var dp = ref c.Parts[part];
+        c.WorldFrame(dp.Seg, out var q, out var t);
+        if (Vector3.Distance(eye, t + Vector3.Transform(dp.Pos, q)) > ConstructBuild.UseReach + 1.5f)
+            why = "too far from the dock";
+        else if (dp.Broken)
+            why = $"the {dp.D.Name} is wrecked";
+        else if (ConstructShell.DockHolds(c, part))
+            why = $"the {dp.D.Name} already holds a shell";
+        else
+            ShellReturn(p, lost: false, "You clamp the shell on the dock and wake in the chair.", c, part);
+        return true;
     }
 
     /// <summary>Server: a player leaves the game: back in their body first, so their record is the body's and the shell stands.</summary>

@@ -1597,7 +1597,7 @@ public sealed class HaulerParts : IPartGenerator
         Hang(bp, "Dray Ladder", lower, "ladder", "bottom");
         for (var i = 0; i < 3; i++)
         {
-            Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", lower, $"shellDock{i}", "wall"), "front", "back");
+            Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", lower, $"shellDock{i}", "wall"), "dock", "back");
             bp.HangTurned("Shell Control Chair", Holder(bp, lower, $"linkChair{i}"), $"linkChair{i}", "bottom", BuildingParts.RY90);
         }
         // The drives: a big nozzle on each shroud, and behind it on the bulkhead its own engine (core, pump, exchanger, one cylinder).

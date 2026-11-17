@@ -561,7 +561,7 @@
     {
       "part": "Robot Shell",
       "on": 81,
-      "socket": "front",
+      "socket": "dock",
       "by": "back"
     },
     {
@@ -573,7 +573,7 @@
     {
       "part": "Robot Shell",
       "on": 83,
-      "socket": "front",
+      "socket": "dock",
       "by": "back"
     },
     {
@@ -585,7 +585,7 @@
     {
       "part": "Robot Shell",
       "on": 85,
-      "socket": "front",
+      "socket": "dock",
       "by": "back"
     },
     {

@@ -29,7 +29,7 @@ public sealed class CrewFittingsParts : IPartGenerator
     /// <summary>
     /// A Robot Shell's wall dock (Karl, 2026-11-17: three or four on every ship, one on the rust bucket): a back plate between two
     /// hazard posts, a hood with a downlight and a status lamp, a foot plate the shell stands on, shoulder jaws either side of it
-    /// and a charge lead into its power pack. The shell hangs by its back socket on <c>front</c>, its feet on the plate, facing out.
+    /// and a charge lead into its power pack. The shell hangs by its back socket on <c>dock</c>, its feet on the plate, facing out.
     /// Detail boxes stay 3 mm or more off the shell's (ShellParts.Shell) and off each other's faces (z-fighting.md).
     /// </summary>
     public const double DockHalf = 0.43; // its half width over the posts: docks side by side stand this far apart and twice more
@@ -37,7 +37,7 @@ public sealed class CrewFittingsParts : IPartGenerator
     private static Part Cradle()
     {
         const string Plate = "#3a3f43", Jaw = "#5a6064", Lead = PipeYellow, Green = "#40e070", Amber = "#f2a93b", Light = "#d8f0ff";
-        var p = Fitting("Robot Shell Dock", "A wall dock for a Robot Shell: it stands on the foot plate, held by its shoulders, a lead in its back keeping it charged. Hang the shell on its front.", color: Frame);
+        var p = Fitting("Robot Shell Dock", "A wall dock for a Robot Shell. A Shell Control Chair wakes a docked shell; in the shell, F on a free dock clamps it on and sends you back to your body.", color: Frame);
         const double Foot = 0.03, Top = 2.2;
         p.Add(Box([-0.39, 0, -0.12], [0.39, 2.1, 0.0], Frame, shape: Kw(("finish", "dirty steel")))); // the back plate
         foreach (var s in new[] { -1, 1 })
@@ -63,7 +63,8 @@ public sealed class CrewFittingsParts : IPartGenerator
             p.Add(Box([-DockHalf + 0.008, y, 0.083], [-0.402, y + 0.05, 0.088], c, detail: true, shape: Kw(("glow", true)))); // the charge bars on the port post
         p.Sock("bottom", [0, 0, 0], "-y");
         p.Sock("wall", [0, 0.125, -0.12], "-z");
-        p.Sock("front", [0, 1.25 + Foot, 0.0], "+z");
+        p.Sock("dock", [0, 1.25 + Foot, 0.0], "+z");
+        p.Set(("toolDock", "Robot Shell")); // (F lets the shell go or clips a loose one on, ConstructEditsDock.cs; a chair wakes a docked shell and F from inside one clamps it back on, Game/GameRobotShell.cs)
         return p.Stats(70, 300, 6, 3.0);
     }
 

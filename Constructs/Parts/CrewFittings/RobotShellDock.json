@@ -1,11 +1,12 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Robot Shell Dock",
-  "description": "A wall dock for a Robot Shell: it stands on the foot plate, held by its shoulders, a lead in its back keeping it charged. Hang the shell on its front.",
+  "description": "A wall dock for a Robot Shell. A Shell Control Chair wakes a docked shell; in the shell, F on a free dock clamps it on and sends you back to your body.",
   "group": "Ship",
   "section": "Ship fittings",
   "role": "frame",
   "tool": "wrench",
+  "toolDock": "Robot Shell",
   "mass": 70.0,
   "health": 300,
   "armour": 6,
@@ -360,7 +361,7 @@
       "dir": "-z"
     },
     {
-      "name": "front",
+      "name": "dock",
       "at": [
         0.0,
         1.28,

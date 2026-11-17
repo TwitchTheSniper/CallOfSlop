@@ -1195,6 +1195,8 @@ public sealed partial class Game
                     return SandboxGrabOn(p, lc, part, ladder: true); // (a vertical ladder: climbed up or down, ConstructRide.ClimbLadder)
                 if (Constructs.Get(body) is { } bc && part < bc.PartCount && bc.DefOf(part).Boarding)
                     return SandboxGrabOn(p, bc, part); // (a grab handle, a boarding ladder, a step plate: ba01)
+                if (ShellDockUse(p, eye, body, part, out var docked))
+                    return docked; // (in a robot shell, F on a free Robot Shell Dock: clamped on, back to the body; GameRobotShell.cs)
                 var used = hands.Use(Constructs, p.Id, eye, body, part);
                 if (used == ConstructEdits.NothingToUse && Constructs.Get(body) is { Anchored: false, Loose: false } gc && OutsideOf(p, gc))
                     return SandboxGrabOn(p, gc, part) is { } nogrip ? used : null; // (a vehicle's side from outside it: grab on and climb aboard)
