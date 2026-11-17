@@ -156,3 +156,10 @@ New parts the user wants for cargo and storage (they also simplify the kit's bui
 2. **A walled cargo volume option:** the custom cargo volume can have walls by default (a setting), giving up some of the allowed space, so storage no longer needs to be enclosed by hand.
 3. **A large flat grate:** cargo tipped onto it goes into the chute network (an intake for tipping trucks, buckets and players' dumps).
 4. **An output spigot like a combine harvester's unloading auger:** a station can unload into an open-top truck or bin (swings out, pours loose material and small pieces).
+
+## Extraction must follow the ore (user, 2026-11-17)
+
+Drills deplete the ground under them, so a fixed drill on a deck stops working. Every extraction post must move its drills over the deposit:
+- **Arms or cranes** (robotic arms, gantry/bridge cranes) that carry drill heads across the deposit; or
+- **Tool racks** where NPC crew (the bot brain's work crews) pick up portable drills and carry them to fresh ground.
+- **A mining vehicle shaped like an excavator** (a vehicle-kit generator: tracked or wheeled base, boom, a digging or drilling head, a bucket or chute to a hauler) helps extraction too.
