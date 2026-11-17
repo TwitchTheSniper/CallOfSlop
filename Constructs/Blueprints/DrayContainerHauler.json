@@ -585,6 +585,63 @@
       "by": "bottom"
     },
     {
+      "part": "Robot Shell Dock",
+      "on": 35,
+      "socket": "shellDock0",
+      "by": "wall"
+    },
+    {
+      "part": "Robot Shell",
+      "on": 94,
+      "socket": "front",
+      "by": "back"
+    },
+    {
+      "part": "Shell Control Chair",
+      "on": 9,
+      "socket": "linkChair0",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Robot Shell Dock",
+      "on": 35,
+      "socket": "shellDock1",
+      "by": "wall"
+    },
+    {
+      "part": "Robot Shell",
+      "on": 97,
+      "socket": "front",
+      "by": "back"
+    },
+    {
+      "part": "Shell Control Chair",
+      "on": 9,
+      "socket": "linkChair1",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Robot Shell Dock",
+      "on": 35,
+      "socket": "shellDock2",
+      "by": "wall"
+    },
+    {
+      "part": "Robot Shell",
+      "on": 100,
+      "socket": "front",
+      "by": "back"
+    },
+    {
+      "part": "Shell Control Chair",
+      "on": 9,
+      "socket": "linkChair2",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
       "part": "Drive Nozzle L",
       "on": 61,
       "socket": "drive0",
@@ -598,13 +655,13 @@
     },
     {
       "part": "Fuel Pump L",
-      "on": 95,
+      "on": 104,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Coolant Exchanger L",
-      "on": 96,
+      "on": 105,
       "socket": "back",
       "by": "front"
     },
@@ -622,13 +679,13 @@
     },
     {
       "part": "Fuel Pump L",
-      "on": 99,
+      "on": 108,
       "socket": "back",
       "by": "front"
     },
     {
       "part": "Coolant Exchanger L",
-      "on": 100,
+      "on": 109,
       "socket": "back",
       "by": "front"
     },
@@ -920,7 +977,7 @@
     },
     {
       "part": "Medium Crane Bridge",
-      "on": 125,
+      "on": 134,
       "socket": "-x.0.0",
       "by": "+x",
       "paint": "#e0a020",

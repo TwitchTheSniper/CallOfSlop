@@ -1,0 +1,372 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Robot Shell Dock",
+  "description": "A wall dock for a Robot Shell: it stands on the foot plate, held by its shoulders, a lead in its back keeping it charged. Hang the shell on its front.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 70.0,
+  "health": 300,
+  "armour": 6,
+  "material": "steel",
+  "color": "#26292c",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.39,
+        0.0,
+        -0.12
+      ],
+      "max": [
+        0.39,
+        2.1,
+        0.0
+      ],
+      "color": "#26292c",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.43,
+        0.0,
+        -0.12
+      ],
+      "max": [
+        -0.39,
+        2.2,
+        0.08
+      ],
+      "color": "#d8a628",
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.427,
+        1.38,
+        0.083
+      ],
+      "max": [
+        -0.395,
+        1.5,
+        0.27
+      ],
+      "color": "#5a6064",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.422,
+        1.4,
+        0.273
+      ],
+      "max": [
+        -0.4,
+        1.48,
+        0.29
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        -0.422,
+        0.25,
+        0.083
+      ],
+      "max": [
+        -0.4,
+        0.33,
+        0.2
+      ],
+      "color": "#5a6064",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.39,
+        0.0,
+        -0.12
+      ],
+      "max": [
+        0.43,
+        2.2,
+        0.08
+      ],
+      "color": "#d8a628",
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        0.395,
+        1.38,
+        0.083
+      ],
+      "max": [
+        0.427,
+        1.5,
+        0.27
+      ],
+      "color": "#5a6064",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.4,
+        1.4,
+        0.273
+      ],
+      "max": [
+        0.422,
+        1.48,
+        0.29
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        0.4,
+        0.25,
+        0.083
+      ],
+      "max": [
+        0.422,
+        0.33,
+        0.2
+      ],
+      "color": "#5a6064",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.37,
+        0.45,
+        0.003
+      ],
+      "max": [
+        0.37,
+        0.52,
+        0.016
+      ],
+      "color": "#5a6064",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.37,
+        1.85,
+        0.003
+      ],
+      "max": [
+        0.37,
+        1.92,
+        0.016
+      ],
+      "color": "#5a6064",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.36,
+        0.003,
+        0.003
+      ],
+      "max": [
+        0.36,
+        0.03,
+        0.38
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.36,
+        0.006,
+        0.383
+      ],
+      "max": [
+        0.36,
+        0.027,
+        0.4
+      ],
+      "color": "#d8a628",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.43,
+        2.2,
+        -0.12
+      ],
+      "max": [
+        0.43,
+        2.32,
+        0.34
+      ],
+      "color": "#26292c",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.3,
+        2.1845,
+        0.12
+      ],
+      "max": [
+        0.3,
+        2.2005,
+        0.3
+      ],
+      "color": "#d8f0ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.1,
+        2.23,
+        0.3385
+      ],
+      "max": [
+        0.1,
+        2.28,
+        0.3545
+      ],
+      "color": "#40e070",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.05,
+        1.18,
+        0.003
+      ],
+      "max": [
+        0.05,
+        1.3,
+        0.03
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        0.17,
+        1.22,
+        0.003
+      ],
+      "max": [
+        0.34,
+        1.26,
+        0.017
+      ],
+      "color": "#c8a030",
+      "detail": true,
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        0.3,
+        0.04,
+        0.005
+      ],
+      "max": [
+        0.34,
+        1.22,
+        0.017
+      ],
+      "color": "#c8a030",
+      "detail": true,
+      "finish": "rubber"
+    },
+    {
+      "min": [
+        -0.422,
+        1.62,
+        0.0775
+      ],
+      "max": [
+        -0.402,
+        1.67,
+        0.0935
+      ],
+      "color": "#40e070",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.422,
+        1.7,
+        0.0775
+      ],
+      "max": [
+        -0.402,
+        1.75,
+        0.0935
+      ],
+      "color": "#40e070",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.422,
+        1.78,
+        0.0775
+      ],
+      "max": [
+        -0.402,
+        1.83,
+        0.0935
+      ],
+      "color": "#f2a93b",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "wall",
+      "at": [
+        0.0,
+        0.125,
+        -0.12
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        1.28,
+        0.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

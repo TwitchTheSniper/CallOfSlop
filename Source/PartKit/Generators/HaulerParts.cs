@@ -749,6 +749,11 @@ public sealed class HaulerParts : IPartGenerator
         DoorSock(p, "doorStore", false, 6.0, Cx + 1.25, Ft0);
         DoorSock(p, "doorAirlock", false, 11.0, Cx + 1.25, Ft0);
         Sock(p, "ladder", LadderHatch.X0 + 0.625, Ft0, LadderHatch.Z1 - 0.095, "+y");
+        for (var i = 0; i < 3; i++) // (the Robot Shell Docks on the suit room's forward wall, and the Shell Control Chairs down the store's
+            // starboard wall, backs to it: Karl, 2026-11-17)
+            Sock(p, $"shellDock{i}", Cx - Lw + 0.17 + CrewFittingsParts.DockHalf + i * (2 * CrewFittingsParts.DockHalf + 0.01), Ft0 + 0.125, 10.625, "+z");
+        for (var i = 0; i < 3; i++)
+            Sock(p, $"linkChair{i}", Cx + Lw - 0.5, Ft0, 6.4 + i * 1.0, "+y");
         Sock(p, "boarding", BellyHatch.X0 + 0.625, Ft0 - 0.125, BellyHatch.Z1, "-z");
         foreach (var (what, z) in new[] { ("lower deck front", ZFront - 0.25), ("lower deck back", ZHold) })
             foreach (var y in new[] { 0.0, Ft1 })
@@ -1590,6 +1595,11 @@ public sealed class HaulerParts : IPartGenerator
         Door(bp, fore, "doorHold");
         Door(bp, aft, "doorDrive");
         Hang(bp, "Dray Ladder", lower, "ladder", "bottom");
+        for (var i = 0; i < 3; i++)
+        {
+            Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", lower, $"shellDock{i}", "wall"), "front", "back");
+            bp.HangTurned("Shell Control Chair", Holder(bp, lower, $"linkChair{i}"), $"linkChair{i}", "bottom", BuildingParts.RY90);
+        }
         // The drives: a big nozzle on each shroud, and behind it on the bulkhead its own engine (core, pump, exchanger, one cylinder).
         var stern = placed["Dray Stern"];
         var drive = placed["Dray Drive Room"];

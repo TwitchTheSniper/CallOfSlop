@@ -553,6 +553,42 @@
       "by": "back"
     },
     {
+      "part": "Robot Shell Dock",
+      "on": 3,
+      "socket": "shellDock0",
+      "by": "wall"
+    },
+    {
+      "part": "Robot Shell",
+      "on": 81,
+      "socket": "front",
+      "by": "back"
+    },
+    {
+      "part": "Robot Shell Dock",
+      "on": 3,
+      "socket": "shellDock1",
+      "by": "wall"
+    },
+    {
+      "part": "Robot Shell",
+      "on": 83,
+      "socket": "front",
+      "by": "back"
+    },
+    {
+      "part": "Robot Shell Dock",
+      "on": 3,
+      "socket": "shellDock2",
+      "by": "wall"
+    },
+    {
+      "part": "Robot Shell",
+      "on": 85,
+      "socket": "front",
+      "by": "back"
+    },
+    {
       "part": "Bulkhead Light",
       "on": 3,
       "socket": "lampEngA",
@@ -862,6 +898,27 @@
       "by": "wall"
     },
     {
+      "part": "Shell Control Chair",
+      "on": 6,
+      "socket": "linkChair0",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Shell Control Chair",
+      "on": 6,
+      "socket": "linkChair1",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Shell Control Chair",
+      "on": 6,
+      "socket": "linkChair2",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
       "part": "Slide Door 1.5x2.25 m",
       "on": 6,
       "socket": "doorHead",
@@ -975,64 +1032,64 @@
       66
     ],
     [
-      82,
-      81
-    ],
-    [
-      85,
-      83
-    ],
-    [
-      85,
-      84
-    ],
-    [
-      88,
-      86
-    ],
-    [
       88,
       87
     ],
     [
-      89,
-      91
+      91,
+      89
     ],
     [
-      104,
-      102
+      91,
+      90
     ],
     [
-      104,
-      103
+      94,
+      92
     ],
     [
-      107,
-      105
+      94,
+      93
     ],
     [
-      107,
-      106
+      95,
+      97
     ],
     [
-      109,
+      110,
       108
     ],
     [
-      125,
-      124
+      110,
+      109
     ],
     [
-      127,
-      126
+      113,
+      111
     ],
     [
-      130,
-      128
+      113,
+      112
     ],
     [
-      130,
-      129
+      115,
+      114
+    ],
+    [
+      134,
+      133
+    ],
+    [
+      136,
+      135
+    ],
+    [
+      139,
+      137
+    ],
+    [
+      139,
+      138
     ]
   ],
   "conduit": true
