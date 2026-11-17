@@ -395,11 +395,11 @@ public static unsafe partial class Program
         _shotTool |= _stressShots | _ragdollShots | _vehicleShots | _vehicleSheet;
         CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
         var windowShot = WindowShotArgs(args); // --window-shot: pictures of the real window for an agent's own checking (Program.WindowShot.cs)
-        if (_shotTool || perfShot || megaWindow || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)) || windowShot)
+        if (_shotTool || perfShot || megaWindow || _glBench || windowShot)
         {
             SavePaths.UseSmokeSandbox(args);
-            // A dev build's tool runs (window shots, the bench and the tour, perf and GL checks) skip the BRUTAL logo; the smoke test and a release still show it.
-            _noSplash = !BuildInfo.IsRelease && !args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
+            // A dev build's tool runs (window shots, the bench and the tour, perf and GL checks) skip the BRUTAL logo; a release still shows it.
+            _noSplash = !BuildInfo.IsRelease;
         }
         else
             SavePaths.Init(args);
@@ -419,7 +419,6 @@ public static unsafe partial class Program
         AppearanceStore.Load(); // before the loadouts: a first run takes the hat from loadout.txt's old hat= line (Appearance.cs)
         LoadoutStore.Load();
         Console.WriteLine($"[update] this build: {BuildInfo.Label} (protocol {ServerInfo.ProtocolVersion})");
-        if (!args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
         {
             // Update check (Source/Updates): in the background, never blocking startup; release builds only, at most every 6 h.
             Updater.Shared = new Updater(null, SavePaths.PathOf("update_check.txt"), SavePaths.ExeFolder);
@@ -432,8 +431,7 @@ public static unsafe partial class Program
         _lossPct = FlagValue(args, "--loss");
         _forceNoUpnp = args.Any(a => a.Equals("--no-upnp", StringComparison.OrdinalIgnoreCase));
         _freeTravel = args.Any(a => a.Equals("--free-travel", StringComparison.OrdinalIgnoreCase)); // (dev, free travel step 2: GameTravel.cs)
-        _smoke = args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
-        _frameCapOff = _smoke || _windowShot || _shotTool || perfShot || megaWindow || _glBench; // these measure frame rates: never capped (Program.FrameCap.cs)
+        _frameCapOff = _windowShot || _shotTool || perfShot || megaWindow || _glBench; // these measure frame rates: never capped (Program.FrameCap.cs)
         RenderCaps.ReadArgs(args); // --gl41, --gl-no=... (RenderCaps.cs)
         if (args.Any(a => a.Equals("--no-merge", StringComparison.OrdinalIgnoreCase)))
             ConstructRender.MergeOn = false; // constructs drawn box by box, as before merged meshes (docs/render/MERGED-MESHES.md)
@@ -461,7 +459,7 @@ public static unsafe partial class Program
                 _settings.MediaOthersWeb = MediaDirector.OthersWeb;
                 _settings.Save();
             };
-            MediaBrowser.Allowed = !_smoke && !_shotTool && !_windowShot; // (a test run never starts a browser)
+            MediaBrowser.Allowed = !_shotTool && !_windowShot; // (a test run never starts a browser)
             (AudioSystem.EffectsVolume, AudioSystem.FootstepVolume) = (_settings.EffectsVolume, _settings.FootstepVolume);
             AudioSystem.OwnGunVolume = _settings.OwnGunVolume;
             LoadAudioMix(); // audio_mix.json from the Audio mixer window, if there is one (Program.AudioMixer.cs)
@@ -530,7 +528,7 @@ public static unsafe partial class Program
             MediaDirector.Shutdown(AudioSystem);
             AudioSystem.Dispose();
             Glfw.Terminate();
-            if (!_smoke && !_windowShot && !_shotTool && !_perfShot && !_allocFrames && !_glBench) // the smoke test borrows settings temporarily; never save them
+            if (!_windowShot && !_shotTool && !_perfShot && !_allocFrames && !_glBench) // the tool runs borrow settings temporarily; never save them
             {
                 _settings.Save();
                 _progress.Save();
@@ -687,9 +685,7 @@ public static unsafe partial class Program
         EndSession("");
         _lobbyMessage = "";
         _joinInvite = invite;
-        if (_smoke)
-            LoadoutStore.ReadOnly = AppearanceStore.ReadOnly = true;
-        var loadout = LoadoutStore.Active(_smoke ? SmokeProgress() : _progress);
+        var loadout = LoadoutStore.Active(_progress);
         try
         {
             NetPeer net;
@@ -722,14 +718,13 @@ public static unsafe partial class Program
             if (_settings.WorldKey == 0)
             {
                 _settings.WorldKey = (ulong)Random.Shared.NextInt64(1, long.MaxValue); // (who this PC is to a saved world: kept with the settings)
-                if (!_smoke)
-                    _settings.Save();
+                _settings.Save();
             }
             _session = new Game(net, AudioSystem, DisplayName(), loadout.Primary, loadout.Secondary, bots, _settings.Difficulty, map.Id,
                 loadout.Grenade, loadout.Equipment, loadout.PrimaryKit, loadout.SecondaryKit, loadout.Perks)
                 {
-                    Progress = _smoke ? SmokeProgress() : _progress, // the smoke test must never touch your real save
-                    ChosenHat = AppearanceStore.EffectiveHat(_smoke ? SmokeProgress() : _progress), // hat and look: the APPEARANCE screen (GameCosmeticLoadout.cs)
+                    Progress = _progress,
+                    ChosenHat = AppearanceStore.EffectiveHat(_progress), // hat and look: the APPEARANCE screen (GameCosmeticLoadout.cs)
                     ChosenLook = AppearanceStore.Look,
                     LocalWorldKey = _settings.WorldKey,
                     WorldAutosaveMinutes = _settings.WorldAutosaveMinutes,
@@ -829,9 +824,7 @@ public static unsafe partial class Program
                 Glfw.PollEvents();
             SteamPlatform.RunCallbacks(); // overlay, persona and avatar callbacks (no-op without Steam)
             var now = Glfw.Time;
-            if (_smoke)
-                SmokeTick(now);
-            else if (_windowShot)
+            if (_windowShot)
                 WindowShotTick(now); // (Program.WindowShot.cs)
             FrameDt = Math.Min(now - last, 0.1);
             last = now;
@@ -1086,14 +1079,12 @@ public static unsafe partial class Program
 
     /// <summary>
     /// Shows the BRUTAL logo splash (see <see cref="Splash"/>) in its own little loop before the lobby or any session.
-    /// The smoke test watches it in full (no skipping) and logs that it was shown.
     /// </summary>
     /// <summary>A test run: no logo (window-tool runs, or --no-splash in a dev build). Players always see it.</summary>
     private static bool _noSplash;
 
     private static void RunSplash()
     {
-        var shown = false;
         while (!_window.ShouldClose && !_quit)
         {
             Glfw.PollEvents();
@@ -1105,13 +1096,8 @@ public static unsafe partial class Program
             if (fb.X > 0 && fb.Y > 0)
                 Gfx.BeginFrame(fb.X, fb.Y, new Vector3(0.04f, 0.04f, 0.05f));
             Ui.BeginFrame();
-            Splash.Draw(now, allowSkip: !_smoke);
+            Splash.Draw(now, allowSkip: true);
             Ui.EndFrame();
-            if (_smoke && !shown && Splash.Elapsed(now) > 1.2)
-            {
-                shown = true;
-                Console.WriteLine($"[smoke] splash: BRUTAL logo shown, GL error 0x{GlDebug.Error():X}");
-            }
             _window.SwapBuffers();
         }
     }
@@ -1910,7 +1896,7 @@ public static unsafe partial class Program
                 buttons |= Buttons.Crouch;
         }
         buttons = GantryButtons(buttons); // (the Build Gantry's camera: the body stays parked, Program.SandboxGantry.cs)
-        _game.HeldButtons = buttons | _smokeButtons; // (_smokeButtons: the smoke test's movement)
+        _game.HeldButtons = buttons;
         _game.AimHeld = (_mouseCaptured && Down(GameAction.Aim) && !SandboxHoldsTrigger) ; // (Sandbox: aim takes parts off with a tool out)
 
         // Trigger: semi-auto weapons need the press edge, autos use the held state.
@@ -1922,7 +1908,7 @@ public static unsafe partial class Program
             down = false;
         }
         var pressed = down && Pressed(GameAction.Fire);
-        _game.UpdateTrigger(now, down || _smokeFireHeld, pressed); // (_smokeFireHeld: the smoke test's trigger)
+        _game.UpdateTrigger(now, down, pressed);
     }
 
     // =====================================================================

@@ -192,8 +192,7 @@ light through. Movers aren't occluders either.
 - `CallOfSlop --light-shots "Light Test" [--at x,y,z,yaw,pitch ...]` writes `smoke_light_<view>_on.bmp` and `_off.bmp`
   next to the log and quits (views: the map-select overview, each `--at` camera, or the first spawns). It works without a
   GPU under a virtual X server with Mesa's software GL, which is how this was developed in the agent container:
-  `xvfb-run -a -s "-screen 0 1280x720x24" dotnet CallOfSlop.dll --light-shots "Light Test"`. (The whole `--smoketest`
-  runs there too.)
+  `xvfb-run -a -s "-screen 0 1280x720x24" dotnet CallOfSlop.dll --light-shots "Light Test"`.
 - `--light-debug` adds three pictures per view: `_occ` (the bake's occluders drawn over the scene, coloured by kind:
   map boxes white, buildings green, prop parts magenta, hidden colliders yellow, trunks brown, and every baked light as
   a small cube in its colour, seen through walls), `_grid` (the grid's light alone on white) and `_sky` (grey: the sky

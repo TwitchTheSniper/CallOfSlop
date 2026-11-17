@@ -69,7 +69,7 @@ public static unsafe partial class Program
                 SendRoomLoadout(now);
             }
             _roomLoadoutsOpen = false;
-            if (_session is { IsServer: true } && !_smoke)
+            if (_session is { IsServer: true })
                 _settings.Save(); // the host's lobby choices, for next time (the smoke test never writes settings.txt)
             if (_session is { Module.StartsAtOnce: true } && !MenusOpen)
             {
@@ -144,7 +144,7 @@ public static unsafe partial class Program
         switch (roomAction)
         {
             case LobbyRoomAction.Leave:
-                if (game.IsServer && !_smoke)
+                if (game.IsServer)
                     _settings.Save(); // the host's lobby choices, for next time, even without a match
                 game.CloseReason = "The host closed the server from the lobby (CLOSE SERVER) and went to the main menu."; // what clients are told (GameHostBye.cs)
                 EndSession("");
