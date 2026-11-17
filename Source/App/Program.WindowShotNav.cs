@@ -15,7 +15,7 @@ namespace CallOfSlop;
 /// </summary>
 public static unsafe partial class Program
 {
-    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk";
+    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk" or "missile" or "missiles";
 
     private static float Bulk(Construct c, int i)
     {
@@ -42,6 +42,33 @@ public static unsafe partial class Program
                     Ui.CommandLook(span);
                 _wsWait = 20;
                 return true;
+            case "missiles": // "missiles [on|off]": the command view's missiles layer, and what it drew last frame
+            {
+                if (words.Length > 0)
+                    Ui.CommandMissilesOn = words[0] != "off";
+                var (shown, homing) = Ui.CommandMissileCounts;
+                WsSay($"[nav] missiles layer {(Ui.CommandMissilesOn ? "on" : "off")}: {shown} shown, {homing} homing");
+                _wsWait = 3;
+                return true;
+            }
+            case "missile" when g.IsServer: // "missile M [SPEED]" (host): a test missile M metres off the picked craft, locked on it (no blast)
+            {
+                if (g.Constructs.Get(Ui.CommandPicked) is not { } tc || words.Length == 0 || !float.TryParse(words[0], inv, out var off))
+                {
+                    WsFail("missile: pick a craft first (cmdpick N), then missile M [SPEED]");
+                    return true;
+                }
+                var mv = words.Length > 1 && float.TryParse(words[1], inv, out var sp) ? sp : 120f;
+                var side = Vector3.Normalize(Vector3.Cross(tc.Vel.LengthSquared() > 1 ? Vector3.Normalize(tc.Vel) : Vector3.UnitZ, Vector3.UnitY) + new Vector3(0, 0.15f, 0));
+                if (!float.IsFinite(side.X))
+                    side = Vector3.UnitX;
+                var from = tc.WorldCom + side * off;
+                var way = Vector3.Normalize(Vector3.Cross(side, Vector3.UnitY) - side * 0.3f); // (it starts off across, then turns in)
+                var id = g.Constructs.AddShell(new CShell { Kind = ShellKind.Missile, Pos = from, Prev = from, Tested = from, Vel = tc.Vel + way * mv, Thrust = 25f, Turn = 0.6f, Burn = 30 * World.TickRate, Target = tc.Id, Clear = 0, By = 255 });
+                WsSay($"[nav] test missile {id} {off} m off construct {tc.Id}");
+                _wsWait = 3;
+                return true;
+            }
             case "cmdview": // "cmdview YAW PITCH" (degrees): the view's turn and tilt
                 if (words.Length == 2 && float.TryParse(words[0], inv, out var yaw) && float.TryParse(words[1], inv, out var pitch))
                     Ui.CommandTurn(yaw * MathF.PI / 180, pitch * MathF.PI / 180);

@@ -1777,6 +1777,18 @@
       }
     },
     {
+      "part": "Docking Hatch",
+      "on": 3,
+      "socket": "limpetHatch",
+      "by": "base"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 66,
+      "socket": "dockHatch",
+      "by": "base"
+    },
+    {
       "part": "Zero Day Railgun",
       "on": 64,
       "socket": "railgun",
@@ -1784,7 +1796,7 @@
     },
     {
       "part": "Ammo Box",
-      "on": 255,
+      "on": 257,
       "socket": "ammo",
       "by": "bottom"
     },
@@ -1832,37 +1844,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 263,
+      "on": 265,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 263,
+      "on": 265,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 263,
+      "on": 265,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 263,
+      "on": 265,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 263,
+      "on": 265,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 263,
+      "on": 265,
       "socket": "lug5",
       "by": "lug"
     },
@@ -1874,37 +1886,37 @@
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 270,
+      "on": 272,
       "socket": "lug0",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 270,
+      "on": 272,
       "socket": "lug1",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 270,
+      "on": 272,
       "socket": "lug2",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 270,
+      "on": 272,
       "socket": "lug3",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 270,
+      "on": 272,
       "socket": "lug4",
       "by": "lug"
     },
     {
       "part": "Ordnance:M50:Radar Seeker+Impact Fuse+Warhead HE*2+Reaction Jets+Solid Motor",
-      "on": 270,
+      "on": 272,
       "socket": "lug5",
       "by": "lug"
     }
@@ -2040,15 +2052,7 @@
     ],
     [
       173,
-      255
-    ],
-    [
-      190,
       257
-    ],
-    [
-      190,
-      258
     ],
     [
       190,
@@ -2059,16 +2063,24 @@
       260
     ],
     [
-      261,
+      190,
+      261
+    ],
+    [
+      190,
       262
     ],
     [
+      263,
+      264
+    ],
+    [
       119,
-      263
+      265
     ],
     [
       120,
-      270
+      272
     ]
   ],
   "links": [

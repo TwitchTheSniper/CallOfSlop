@@ -293,6 +293,13 @@
       "by": "bottom"
     },
     {
+      "part": "Docking Hatch",
+      "on": 4,
+      "socket": "hatch",
+      "by": "base",
+      "spin": 3
+    },
+    {
       "part": "Bakelite Switch",
       "on": 1,
       "socket": "switchA",
@@ -368,20 +375,20 @@
       28
     ],
     [
-      44,
-      45
-    ],
-    [
-      44,
+      45,
       46
     ],
     [
-      44,
+      45,
       47
     ],
     [
-      44,
+      45,
       48
+    ],
+    [
+      45,
+      49
     ]
   ],
   "conduit": true

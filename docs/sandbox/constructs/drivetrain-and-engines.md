@@ -415,7 +415,7 @@ the rest frame (`ToRest`, `DirToRest`). Everything is derived from the parts and
 and no save or message carries it. Building allocates nothing past a construct's first piece. `Apply` puts the numbers in one
 `ConstructPartDef` (`Construct.EngineDef`) and `ConstructDrive.Tick` runs that: no tick work per cylinder. The flywheel is the
 construct's `Engine`, so wires, gearboxes, shafts, PTOs, anchored bases and seatless carts work as for a fixed engine. An
-alternator touching any piece counts. The first engine that can run is the construct's, as with fixed engines.
+alternator touching any piece counts, and a Generator Head on the flywheel's output makes it a generator set (power-and-links.md "Engine generators"). The first engine that can run is the construct's, as with fixed engines.
 
 ### Damage
 

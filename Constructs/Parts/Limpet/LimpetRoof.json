@@ -375,9 +375,31 @@
       "color": "#1f2226",
       "detail": true,
       "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.445,
+        2.1,
+        2.475
+      ],
+      "max": [
+        0.195,
+        2.155,
+        2.552
+      ],
+      "hidden": true
     }
   ],
   "sockets": [
+    {
+      "name": "hatch",
+      "at": [
+        -0.125,
+        2.1,
+        2.515
+      ],
+      "dir": "-y"
+    },
     {
       "name": "j0",
       "at": [

@@ -85,7 +85,8 @@ Three things keep links tidy.
   is last tick's total. A flat battery comes back on at 0.2 kJ (no flicker at empty).
 - **The engine needs the starter**: asked to go (the driver's throttle, or a signal into it) an electrical construct's
   engine takes 2.5 kJ to start (the engine must be on the battery's circuit); flat: "It won't start: the battery is flat".
-  It runs until nobody asks it to. An **Alternator** touching the engine charges the batteries while it runs (1.5 kW).
+  It runs until nobody asks it to. An **Alternator** touching the engine charges the batteries while it runs (1.5 kW); a
+  **Generator Head** on its shaft makes it a power plant ([Engine generators](#engine-generators)).
 - **Optional per map** (decision): a construct without a battery runs as milestone 2 did (nothing needs power), so every
   earlier blueprint keeps working; a map's `"power": "required"` makes every construct electrical (no battery: no logic,
   no motors, no start). The Wired Buggy (battery, alternator, charge gauge), the Motor Gate (battery, charge gauge) and
@@ -96,6 +97,42 @@ Three things keep links tidy.
   `ConstructPower.On(construct, part)`.
 
 **Capacitor Banks** (docs/sandbox/design/ship-works.md 8) are a pool of their own beside the batteries (`Construct.Cap`): energy guns (`gun.energy`: railguns, lasers) fire from them only, never from batteries (Karl, 2026-11-17). The circuit refills the working banks it reaches at their `capacitor.rate`, out of the batteries, as a draw, never taking the last quarter of the batteries (`ConstructPower.CapReserve`: then they fill only as fast as the plants make power); a broken bank takes its share of the charge. The pool rides the pose as a byte (protocol 331).
+
+### Engine generators
+
+A fuelled engine as a station's or a base's power plant (the user, 2026-11-17; notes in docs/sandbox/design/engine-generators-notes.md). Code:
+`Source/Constructs/ConstructGenset.cs`; parts `Constructs/Parts/EngineGenerators`, written by the part kit (`--gen-parts generator_heads`,
+`Source/PartKit/Generators/GeneratorHeadParts.cs`).
+
+- **Generator Heads** (role `generator` with `"shaft"`: its efficiency; `"fuel": "none"`): Small 150 kW (90%), Medium 400 kW (92%), Large 1 MW
+  (94%), Huge 4 MW (95%), one for each Engine Kit preset. A head is a power plant an engine turns through its **Drive in**: bolted on a
+  modular engine's flywheel output (its `drive` socket on the flywheel's `+z`), or at the end of a drive shaft from a flywheel, gearbox or power
+  take-off (found with the drills' shaft feeds, `ConstructDrillDrive`). Every head's shaft stands 0.5 m over its feet, so a Small-piece
+  engine on it clears the floor. It makes the body electrical and holds a little (twice its kW in kJ), like any plant.
+- **What it gives**: the heads' rating, or the engine's power at its peak times their efficiency (times the shaft's own losses) times 0.95
+  (`Headroom`, the governor's margin), whichever is less (`Construct.GenMax`). Measured (`--genset-run`): a 120 kW engine gives 102.6 kW,
+  307 kW gives 268.5, 800 gives 714, 2966 gives 2677.
+- **Burn follows load.** The head follows what the circuit asks (the draw, plus what the batteries lack), up over its `spool` (2 to 6 s)
+  and only as fast as the engine carries it. It asks the engine for that power: the engine is governed to an rpm that rises with the
+  demand and the throttle that carries the head's torque, and burns by that load (`ConstructDrive.Burn`: the head's torque is carried like
+  a drill's, `Construct.GenLoad`). 1.2 to 1.85 l a kWh at full load, 1.7 to 2.7 at a fifth or half (it idles part of the burn).
+- **Start and stop.** A stopped set starts when the batteries fall under half, or the draw would flatten them within 60 s; with the
+  batteries full and the draw under 2% of what it gives for 20 s it stops (`StartBelow`, `StartSeconds`, `IdleStop`). The batteries carry
+  the gap while it starts and spools. A big engine needs its starter and a charged battery ("won't start" otherwise).
+- **Overload**: a draw past what it gives says "overloaded" and the batteries run down; an engine that can't carry the head (another load
+  on the shaft, a misfiring cylinder) sheds load rather than be pulled down (`KeepUp`). No heat: modular engines don't overheat.
+- **Fuel**: the engine's own (a tank touching it or piped to its Fuel in, fuel lines, hoses, the logistics' fuel deliveries): dry, it
+  stops ("no fuel"); filled, it starts again on the next demand.
+- **Its run input** (a wire) holds it off. **Its output** (the part's Data out) is its load, 0 to 1 (`GenOut / GenMax`), for a gauge or logic.
+- **On a vehicle**: the set governs only an engine nobody drives and with no driven wheels; on a vehicle the head takes its load off what the
+  driver's throttle turns (an alternator that follows the circuit). One engine a body (the first that runs), so one set a body.
+- **The look line** (host and joined client): "Small Generator Head: 20.5 of 102.6 kW, draw 20.5 kW, 2734 rpm, fuel 149 l", then why not
+  ("standby: starts when the batteries run down", "no fuel", "won't start", "overloaded", "held off by its run wire", "no engine").
+- **Sound**: the engine's (its rpm and load ride every pose), so a set is quiet in standby and labours with the load; a head doesn't
+  hum as a reactor does (`MachineSounds.Hums` leaves heads out). The stacks smoke with the head's load.
+- **Network (protocol 339)**: the pose's plant block gains a byte of `GenState` and, with a set, f32 what it can give, a byte of its
+  output's share and a byte of the draw (0 to twice what it gives). Nothing is saved: the set's state comes back from the batteries and the
+  demand on the first tick after a load.
 
 ### Joint reactions
 

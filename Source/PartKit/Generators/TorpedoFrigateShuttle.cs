@@ -5,10 +5,11 @@ namespace CallOfSlop.PartKit.Generators;
 /// <summary>
 /// The shuttle, the Zero Day's boarding pod (Karl, 2026-11-17: "Add a boarding shuttle to the Day Zero", his pick of four: a
 /// reusable hull-cutting pod on the spine, first called the Limpet and renamed the Shuttle when he saw it; docs/sandbox/constructs/shuttle.md). About 10 m long and 4 m across: a faceted wedge in
-/// the IT Department's paint, a cockpit for its pilot and a cabin for four boarders. It rides a Docking Clamp in a cradle on the
-/// Zero Day's roof, its belly hatch over the ladder up from the mess. It flies to a ship, sets its four hull grapples down on the
-/// hull and grips it (ConstructBreach.cs: it rides on that body from then on), and the breaching cutter ringing its belly hatch
-/// burns through what is under it; the boarders drop through into the room below, where the crew's boarding starts.
+/// the IT Department's paint, a cockpit for its pilot and a cabin for four boarders that runs to the stern, where its two drives'
+/// engines (a Drive Core XS each) stand on the floor. It rides a Docking Clamp in a cradle on the Zero Day's roof, its docking
+/// hatch in the cabin floor over the Zero Day's own on the cradle: both open while the clamp holds it (ConstructDoors.StepDocks).
+/// It can also set its four hull grapples down on a ship's hull and grip it (ConstructBreach.cs: it rides on that body from then
+/// on); the boarders open the hatch by hand. (Karl, 2026-11-17: the breaching cutter came out for the docking hatch.)
 ///
 /// Built like the Zero Day, of lofted, faceted pieces welded together, rooms inside a separate hull: the belly (the floor, the keel,
 /// the skids), a hull side each (the beam facets, the rooms' side walls, the lift sponsons and the tanks the jets draw on), the roof
@@ -23,7 +24,9 @@ public sealed partial class TorpedoFrigateParts
 
     // The plan (pod frame).
     private const double LFt = 0.65, LFloor0 = 0.4, LCeil = 2.7, LCeilTop = 2.8; // the floor's top and underside, the ceiling and its top
-    private const double LNoseZ = -2.6, LBulkZ = -1.0, LAftZ = 4.4; // the nose bulkhead (the cockpit's front), the cockpit's back, the cabin's aft wall
+    private const double LNoseZ = -2.6, LBulkZ = -1.0, LAftZ = 4.7; // the nose bulkhead (the cockpit's front), the cockpit's back, the cabin's aft wall (the stern's mount plate, 0.3 m to the stern: Karl, 2026-11-17, the room touching the back so the engines can be maintained)
+    private const double LEngX = 0.7; // the two drives' (and their engines') axes either side of the centreline
+    private static double LEngY => LFt + ShipWorksParts.AxisOver(ShipWorksParts.XS) + 0.01; // the axes' height: a Drive Core XS's saddles 1 cm over the cabin floor (a place rounds to the centimetre)
     private const double LCockW = 0.95, LCabW = 1.25, LWallT = 0.1; // the cockpit's and the cabin's inner half widths, a wall's thickness
     private static readonly Rect LHatch = new(-0.65, -0.65, 0.65, 0.65); // the belly hatch the cutter rings (the hole in the floor)
     private const double LHatchIn = 0.5; // the hatch's clear half width inside the cutter's ring
@@ -205,12 +208,19 @@ public sealed partial class TorpedoFrigateParts
     /// <summary>The belly: the floor (with the hatch the cutter rings), the keel and the lower chines, the skids and the void under the floor.</summary>
     private static Part LBelly()
     {
-        var p = LBig("Shuttle Belly", "The shuttle's belly: the cabin's and the cockpit's floor, the keel, the skids between its hull grapples and the belly hatch its breaching cutter rings.", color: Armour);
+        var p = LBig("Shuttle Belly", "The shuttle's belly: the cabin's and the cockpit's floor, the keel, the skids between its hull grapples and the opening its docking hatch closes.", color: Armour);
         // The floor, round the hatch: the cockpit's narrower than the cabin's (the hull narrows forward).
         var floorW = Math.Floor((Math.Min(LSkinHalf(LNoseZ, LFloor0), LSkinHalf(LNoseZ, LFt)) - 0.07) * 100) / 100;
         var cabW = Math.Floor((Math.Min(LSkinHalf(LAftZ, LFloor0), LSkinHalf(LAftZ, LFt)) - 0.07) * 100) / 100;
-        foreach (var r in Minus([new Rect(-floorW, LNoseZ, floorW, LBulkZ), new Rect(-cabW, LBulkZ, cabW, LAftZ)], LHole))
+        // (the docking hatch's pocket: the floor there is a plate under it and a skin over it, the lid sliding aft between them)
+        var pocket = new Rect(-DockHatchHalf - 0.01, -DockHatchHalf - 0.01, DockHatchHalf + 0.01, DockHatchHalf + DockHatchTravel + 0.01);
+        foreach (var r in Minus(Minus([new Rect(-floorW, LNoseZ, floorW, LBulkZ), new Rect(-cabW, LBulkZ, cabW, LAftZ)], LHole), pocket))
             Solid(p, r.X0, LFloor0, r.Z0, r.X1, LFt, r.Z1, Deck, "painted deck plate");
+        foreach (var r in Minus([pocket], LHole))
+        {
+            Solid(p, r.X0, LFloor0, r.Z0, r.X1, LFt - DockHatchTop, r.Z1, Deck, "painted deck plate");
+            Solid(p, r.X0, LFt - DockSkin, r.Z0, r.X1, LFt, r.Z1, Deck, "painted deck plate");
+        }
         // The keel's flat and the lower chines (facets 0 and 1), with the hatch's mouth cut through the flat.
         foreach (var (za, zb) in LBody)
         {
@@ -248,11 +258,7 @@ public sealed partial class TorpedoFrigateParts
         Detail(p, LHole.X0 - 0.1, LFt, LHole.Z0 - 0.1, LHole.X1 + 0.1, LFt + 0.012, LHole.Z0, Hazard, "hazard paint");
         Detail(p, LHole.X0 - 0.1, LFt, LHole.Z0, LHole.X0, LFt + 0.012, LHole.Z1, Hazard, "hazard paint");
         Detail(p, LHole.X1, LFt, LHole.Z0, LHole.X1 + 0.1, LFt + 0.012, LHole.Z1, Hazard, "hazard paint");
-        // A rail round the hatch on three sides (fore, port, starboard), open aft where people step off the ladder.
-        Solid(p, LHole.X0 - 0.06, LFt, LHole.Z0 - 0.06, LHole.X1 + 0.06, LFt + 0.95, LHole.Z0 - 0.0, Frame, "painted steel");
-        Solid(p, LHole.X0 - 0.06, LFt, LHole.Z0, LHole.X0, LFt + 0.95, LHole.Z1 - 0.35, Frame, "painted steel");
-        Solid(p, LHole.X1, LFt, LHole.Z0, LHole.X1 + 0.06, LFt + 0.95, LHole.Z1 - 0.35, Frame, "painted steel");
-        Detail(p, LHole.X0 - 0.075, LFt + 0.91, LHole.Z0 - 0.075, LHole.X1 + 0.075, LFt + 0.99, LHole.Z0 + 0.015, Hazard, "hazard paint");
+        // (no rail round it: Karl, 2026-11-17, the docking hatch slides shut in the floor, flush, and is walked over)
         // The runner down the cabin and the cockpit.
         Detail(p, -0.4, LFt, LHole.Z1 + 0.05, 0.4, LFt + 0.01, LAftZ - 0.05, "#30353b", "rubber matting");
         Detail(p, -0.4, LFt, LNoseZ + 0.05, 0.4, LFt + 0.01, LHole.Z0 - 0.12, "#30353b", "rubber matting");
@@ -262,9 +268,12 @@ public sealed partial class TorpedoFrigateParts
             Solid(p, s * 0.95, 0.02, -1.9, s * 0.75, hy, 3.3, Frame, "dirty steel");
             Detail(p, s * 0.96, 0.12, -1.85, s * 0.74, 0.16, 3.25, Hazard, "hazard paint");
         }
-        // Sockets: the cutter in the hatch, the grapples' pads at the skids' ends, the pilot and the flight computer, the boarders' seats,
-        // the lockers and the batteries.
-        Sock(p, "cutter", 0, LFloor0, (LHatchIn + LHatch.Z1 - 0.03) / 2, "-y"); // (on the floor's underside over the ring's aft side)
+        // Sockets: the docking hatch in the floor, the grapples' pads at the skids' ends, the pilot and the flight computer, the
+        // boarders' seats, the lockers and the batteries.
+        // The docking hatch lies in the floor (Karl, 2026-11-17: "a sliding hatch underneath so that you can walk over it"): its lid
+        // 4 mm under the floor's top over the opening, sliding aft inside the floor plate. It hangs by its shoe on a block in the
+        // floor ahead of the opening.
+        Sock(p, "hatch", 0, LFt - DockHatchTop, -DockHatchHang, "+y"); // (on the pocket's floor plate ahead of the opening)
         foreach (var (s, z, n) in new[] { (-1, -2.2, "gripFL"), (1, -2.2, "gripFR"), (-1, 3.6, "gripBL"), (1, 3.6, "gripBR") })
         {
             // Each grapple's mount: a block under the keel between the void and the pad (the keel rises toward the nose).
@@ -278,12 +287,13 @@ public sealed partial class TorpedoFrigateParts
         // (facing in, a couch's back stands 0.4 m out from its middle: 0.74 keeps it off the cabin's side wall and leaves a 0.8 m aisle)
         foreach (var (s, z, n) in new[] { (-1, 1.5, "seatL0"), (-1, 2.5, "seatL1"), (1, 1.5, "seatR0"), (1, 2.5, "seatR1") })
             Sock(p, n, s * 0.74, LFt, z, "+y");
-        Sock(p, "lockerL", -0.4, LFt, LAftZ - 0.25, "+y");
-        Sock(p, "lockerR", 0.4, LFt, LAftZ - 0.25, "+y");
+        // (the lockers stand against the side walls ahead of the seats, facing in, Karl's ask; the batteries between the seats and the engines)
+        Sock(p, "lockerL", -(LCabW - 0.255), LFt, 0.45, "+y");
+        Sock(p, "lockerR", LCabW - 0.255, LFt, 0.45, "+y");
         foreach (var (s, n) in new[] { (-1, "batteryL0"), (1, "batteryR0") })
-            Sock(p, n, s * 1.05, LFt, LAftZ - 0.15, "+y");
+            Sock(p, n, s * 1.05, LFt, 3.15, "+y");
         foreach (var (s, n) in new[] { (-1, "batteryL1"), (1, "batteryR1") })
-            Sock(p, n, s * 1.05, LFt, LAftZ - 0.45, "+y");
+            Sock(p, n, s * 1.05, LFt, 3.4, "+y");
         foreach (var z in new[] { LNoseZ, LBulkZ })
             LMustFit("cockpit floor", z, floorW, LFt);
         foreach (var z in new[] { LBulkZ, LAftZ })
@@ -347,7 +357,7 @@ public sealed partial class TorpedoFrigateParts
         }
         // The cockpit's and the cabin's lamps and switches on this wall.
         Sock(p, "lampCockpit", xc, LCeil - 0.4, -1.9, s < 0 ? "+x" : "-x");
-        Sock(p, "lampCabinF", xb, LCeil - 0.4, 0.6, s < 0 ? "+x" : "-x");
+        Sock(p, "lampCabinF", xb, LCeil - 0.4, -0.35, s < 0 ? "+x" : "-x"); // (ahead of the locker on this wall)
         Sock(p, "lampCabinB", xb, LCeil - 0.4, 3.4, s < 0 ? "+x" : "-x");
         Sock(p, "switchA", xc, LFt + 1.25, -1.15, s < 0 ? "+x" : "-x");
         Sock(p, "switchB", xc, LFt + 1.0, -1.15, s < 0 ? "+x" : "-x");
@@ -357,7 +367,7 @@ public sealed partial class TorpedoFrigateParts
             LMustFit("side wall", z, xh, LFt);
             LMustFit("side wall", z, xh, LCeil);
         }
-        p.Set(("fuelTank", Kw(("capacity", 450))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(s * 1.5, 1.0, LAftZ - 0.004).Cast<object>()], "+z", "fuel"))));
+        p.Set(("fuelTank", Kw(("capacity", 600))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(s * 1.5, 1.0, LAftZ - 0.004).Cast<object>()], "+z", "fuel"))));
         return p.Stats(1150, 6500, 30, 12.0);
     }
 
@@ -469,10 +479,11 @@ public sealed partial class TorpedoFrigateParts
         return p.Stats(900, 8000, 45, 12.0);
     }
 
-    /// <summary>The stern: the last band of the hull, the cabin's aft wall, the stern plate and the drive's mount on it.</summary>
+    /// <summary>The stern: the last band of the hull and the cabin's aft wall, a 0.3 m mount plate the two drives bolt to outside
+    /// and their engines (a Drive Core XS each, on the drive's axis) inside, standing on the cabin floor where a person reaches them.</summary>
     private static Part LSternPart()
     {
-        var p = LBig("Shuttle Stern", "The shuttle's stern: the cabin's aft wall, the stern plate and the drive's mount, with the fuel the drive draws.", "fueltank", Armour);
+        var p = LBig("Shuttle Stern", "The shuttle's stern: the cabin's aft wall, an armoured plate its two drives bolt to outside and their engines inside, in the cabin.", "frame", Armour);
         var (za, zb) = (LAftZ, LStern);
         LFacet(p, 0, 1, za, zb, Armour, "plated steel");
         LFacet(p, 5, 1, za, zb, Armour, "plated steel");
@@ -480,25 +491,56 @@ public sealed partial class TorpedoFrigateParts
             for (var k = 1; k <= 4; k++)
                 LFacet(p, k, s, za, zb, k is 2 or 3 ? Skin : Armour2, k is 2 or 3 ? "painted plating" : "plated steel");
         LCap(p, LStern, Armour2, "plated steel");
-        // The aft wall: the cabin's end, and the tank behind it out to the skin.
-        Solid(p, -(LCabW + LWallT), LFloor0, LAftZ, LCabW + LWallT, LCeilTop, LAftZ + LWallT, Wall, "painted plating");
-        Detail(p, -LCabW + 0.05, LFt + 0.003, LAftZ - 0.012, LCabW - 0.05, LFt + 0.7, LAftZ, WallLow, "painted plating");
+        // The plate: the cabin's end wall, as thick as the band (it stops 4 mm short of the cap, whose plate closes it).
+        Solid(p, -(LCabW + LWallT), LFloor0, LAftZ, LCabW + LWallT, LCeilTop, LStern - 0.004, Wall, "painted plating");
+        Detail(p, -LCabW + 0.05, LFt + 0.003, LAftZ - 0.012, -LEngX - 0.42, LFt + 0.7, LAftZ, WallLow, "painted plating");
+        Detail(p, LEngX + 0.42, LFt + 0.003, LAftZ - 0.012, LCabW - 0.05, LFt + 0.7, LAftZ, WallLow, "painted plating");
+        Detail(p, -LEngX + 0.42, LFt + 0.003, LAftZ - 0.012, LEngX - 0.42, LFt + 0.7, LAftZ, WallLow, "painted plating");
+        // The void about the plate out to the skin: under the floor, over the ceiling and either side.
         var ya = Math.Max(LAt(za)[0].Y, LAt(zb)[0].Y) + 0.03;
         var yb = Math.Min(LAt(za)[4].Y, LAt(zb)[4].Y) - 0.03;
-        LVoid(p, LAftZ + LWallT, zb - 0.05, ya, yb, 0);
-        // The drive's mount: a ring plate on the stern, armour round it, two tail lights.
-        Solid(p, -0.42, 1.03, LStern - 0.04, 0.42, 1.87, LStern + 0.1, Frame, "dirty steel");
-        Detail(p, -0.47, 0.98, LStern - 0.035, 0.47, 1.03, LStern + 0.08, Hazard, "hazard paint");
+        LVoid(p, za, zb - 0.05, ya, LFloor0, 0);
+        LVoid(p, za, zb - 0.05, LCeilTop, yb, 0);
+        LVoid(p, za, zb - 0.05, LFloor0, LCeilTop, LCabW + LWallT);
+        // Each drive's ring plate on the stern, hazard round it; the tail lights over them.
         foreach (var s in new[] { -1, 1 })
         {
+            Solid(p, s * LEngX - 0.36, LEngY - 0.36, LStern - 0.04, s * LEngX + 0.36, LEngY + 0.36, LStern + 0.1, Frame, "dirty steel");
+            Detail(p, s * LEngX - 0.4, LEngY - 0.41, LStern - 0.035, s * LEngX + 0.4, LEngY - 0.36, LStern + 0.08, Hazard, "hazard paint");
             Detail(p, s * 1.2 - 0.1, 2.2, LStern - 0.01, s * 1.2 + 0.1, 2.3, LStern + 0.006, Red, glow: true);
-            Detail(p, s * 0.95 - 0.25, 0.9, LStern - 0.01, s * 0.95 + 0.25, 0.96, LStern + 0.006, Hazard, "hazard paint");
+            var n = s < 0 ? "L" : "R";
+            Sock(p, $"drive{n}", s * LEngX, LEngY, LStern + 0.1, "+z");
+            Sock(p, $"engine{n}", s * LEngX, LEngY, LAftZ, "-z");
         }
-        Sock(p, "drive", 0, 1.45, LStern + 0.1, "+z");
-        Sock(p, "lockerWall", 0, LFt + 0.8, LAftZ, "-z");
-        p.Set(("fuelTank", Kw(("capacity", 300))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(0.3, 1.1, LStern + 0.1).Cast<object>()], "+z", "fuel"))));
-        return p.Stats(700, 6000, 35, 10.0);
+        Works.Mount(p);
+        return p.Stats(900, 7000, 40, 10.0);
     }
+
+    /// <summary>One of the shuttle's two drives: a small torch bell on the stern, its engine (a Drive Core XS) right behind it
+    /// through the plate, inside the cabin (Karl, 2026-11-17: two thrusters on the back, each with a small engine attached). Under
+    /// the table's 500 kN a drive needs no works; these ask for a core all the same, so the engine is there to mend and to shoot out.</summary>
+    private static Part LDrive()
+    {
+        var p = new Part("Shuttle Drive", Small, LSection, $"One of the shuttle's two drives, {LDriveForce / 1e3:0} kN, on its stern. Its engine, a Drive Core XS, is right behind it in the cabin, on its axis.", role: "thruster", tool: "wrench", material: "steel", color: Frame, group: Group);
+        (double Z, double R)[] st = [(0.0, 0.3), (0.12, 0.24), (0.35, 0.3), (0.6, 0.36)];
+        for (var s = 0; s < st.Length - 1; s++)
+        {
+            var r0 = RingZ(0, 0, st[s].R, st[s].R, st[s].Z + (s == 0 ? 0.004 : 0), 10);
+            var r1 = RingZ(0, 0, st[s + 1].R, st[s + 1].R, st[s + 1].Z, 10);
+            for (var i = 0; i < 10; i++)
+                Quad(p, r0[i], r0[(i + 1) % 10], r1[(i + 1) % 10], r1[i], s == 0 ? "#3a3d40" : "#2a2c2e", s == 0 ? "dirty steel" : "soot");
+        }
+        Prism(p, RingZ(0, 0, 0.31, 0.31, 0.42, 10), RingZ(0, 0, 0.33, 0.33, 0.47, 10), "#5a4a3a", "copper");
+        Plate(p, [.. RingZ(0, 0, 0.2, 0.2, 0.14, 10)], Glow, glow: true);
+        p.Add(Box([-0.25, -0.25, 0.0], [0.25, 0.25, 0.6], hidden: true));
+        p.Sock("mount", [0, 0, 0], "-z");
+        p.Set(("thruster", Kw(("force", LDriveForce), ("spool", 0.8), ("exhaust", "+z"), ("at", Py.L(0, 0, 0.6)), ("burnRate", Py.Round(LDriveForce / 1e6 * Burn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [0, 0.25, 0.3], "+y", "fuel"))));
+        p.Set(("flame", Py.L(Kw(("at", Py.L(0, 0, 0.6)), ("dir", "+z"), ("radius", 0.32), ("length", 2.4), ("kind", "Rocket")))));
+        p.Set(("works", Kw(("needs", Py.L("core")))));
+        return p.Stats(250, 2500, 25, 4.0);
+    }
+
+    private const double LDriveForce = 60000; // N a drive: the two push what the one 120 kN drive did
 
     /// <summary>The cockpit's bulkhead: the frame between the cockpit and the cabin, open in the middle (no door: a pod this small seals as one).</summary>
     private static Part LBulkhead()
@@ -550,6 +592,36 @@ public sealed partial class TorpedoFrigateParts
             ("config", Py.L(Kw(("key", "colour"), ("type", "colour"), ("label", "Colour"), ("group", "Light"), ("default", "#ff6a20"), ("tooltip", "The colour its lances glow while it burns.")))));
         return p.Stats(260, 3000, 30, 6.0);
     }
+
+    /// <summary>
+    /// The docking hatch (Karl, 2026-11-17: "a docking hatch which opens when docked", the Shuttle's and the Zero Day's): an
+    /// armoured lid 1.44 m square that slides 1.5 m along its +z off the opening it closes. It is an event door with
+    /// <c>"dock": true</c>: while a dock holds the craft and its hatch lies over another docking hatch on the body holding it, both
+    /// slide open; when the dock lets go both shut (ConstructDoors.StepDocks). F opens and shuts it by hand as well. It hangs by its
+    /// base (its underside) on the deck round the opening, or in a pocket in a floor (the Shuttle's), its top just under the floor's.
+    /// </summary>
+    private static Part LDockHatch()
+    {
+        var p = new Part("Docking Hatch", Small, "Ship fittings", "A docking hatch (any ship can carry one): an armoured lid that slides 1.5 m off an opening up to 1.3 m across. While a dock holds the craft over another docking hatch, both slide open by themselves, and shut when the dock lets go. F opens or shuts it by hand. Fit it flat over the opening, with 1.5 m clear on its sliding side.", role: "door", tool: "wrench", material: "steel", color: Armour2, group: Group);
+        const double h = DockHatchHalf, t = 0.06;
+        p.Add(Box([-h, 0.014, -h], [h, t, h], Armour2, shape: Kw(("finish", "plated steel")))); // (1.4 cm off what it hangs on: clear of a deck's hazard edging)
+        p.Add(Box([-0.3, 0, -DockHatchHang - 0.03], [0.3, 0.014, -DockHatchHang + 0.03], hidden: true)); // (the shoe it hangs by, on its fore edge)
+        // Hazard chevrons along its two ends, ribs across it, a handle at its leading end and a lamp.
+        foreach (var z in new[] { -h + 0.04, h - 0.16 })
+            p.Add(Box([-h + 0.04, t - 0.006, z], [h - 0.04, t + 0.008, z + 0.12], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
+        foreach (var x in new[] { -0.4, 0.0, 0.4 })
+            p.Add(Box([x - 0.04, t - 0.006, -h + 0.2], [x + 0.04, t + 0.03, h - 0.2], Armour, detail: true, shape: Kw(("finish", "plated steel"))));
+        p.Add(Box([-0.2, t - 0.006, -h + 0.18], [0.2, t + 0.06, -h + 0.22], "#9aa0a4", detail: true, shape: Kw(("finish", "steel"))));
+        p.Add(Box([h - 0.14, t - 0.006, -0.05], [h - 0.06, t + 0.025, 0.05], "#40e070", detail: true, shape: Kw(("glow", true))));
+        p.Sock("base", [0, 0, -DockHatchHang], "-y");
+        p.Set(("door", Kw(("kind", "slide"), ("axis", "+z"), ("travel", DockHatchTravel), ("seconds", 2.0), ("hang", "base"), ("dock", true))));
+        return p.Stats(250, 3000, 30, 4.0);
+    }
+
+    public const double DockHatchHalf = 0.72; // the docking hatch's half width (it covers an opening up to 1.3 m across)
+    public const double DockHatchHang = 0.69; // its hanging shoe (its "base" socket) this far ahead of its middle, on its fore edge
+    private const double DockHatchTop = 0.066, DockSkin = 0.004; // the docking hatch's top over its shoe plus 6 mm (its lid's top 6 mm under the floor it lies flush with), and the floor's skin over its pocket
+    public const double DockHatchTravel = 1.5; // how far it slides open
 
     /// <summary>The shuttle's flight computer: a low console ahead of the pilot, a flight stabilizer with a small craft's gyro.</summary>
     private static Part LFlightComputer()
@@ -613,15 +685,16 @@ public sealed partial class TorpedoFrigateParts
     [
         .. pieces.Select(x => (x, LOut)),
         (LJet("Shuttle Lift Jet", "A lift jet under one of the shuttle's sponsons: 110 kN straight down.", 110000, 0.5), LOut),
-        (LJet("Shuttle Drive", "The shuttle's drive on its stern: 120 kN.", 120000, 0.55), LOut),
+        (LDrive(), LOut),
         (LFlightComputer(), LOut),
         (LGrapple(), BoardingOut),
         (LCutter(), BoardingOut),
+        (LDockHatch(), BoardingOut),
     ];
 
     private static PyDict ShuttleBlueprint(Dictionary<string, PyDict> defs, List<string> order)
     {
-        var bp = new BuildingParts.Blueprint(ShuttleName, "The Zero Day's boarding pod: it flies a pilot and four boarders to a ship, grips its hull with four magnetic grapples and burns a way in through the hull under its belly hatch with its breaching cutter. Port switches in the cockpit: the grapples (aft) and the cutter (fore).", defs, maxSteps: 120);
+        var bp = new BuildingParts.Blueprint(ShuttleName, "The Zero Day's shuttle: a pilot and four boarders, two drives on its stern with their engines in the cabin, and a docking hatch under its belly that opens by itself while it is docked over another. It can grip a ship's hull with four magnetic grapples (the port cockpit switch).", defs, maxSteps: 120);
         bp.Conduit = true;
         double[] zero = [0, 0, 0];
         var st = new Dictionary<string, int>();
@@ -636,15 +709,18 @@ public sealed partial class TorpedoFrigateParts
                 foreach (var r in new[] { "rcsUp", "rcsOut", "rcsEnd" })
                     bp.Hang("RCS Thruster", side, r + tag, "base");
             }
-        bp.Hang("Shuttle Drive", stern, "drive", "top");
-        // The grapples and the cutter, each on a cockpit switch to port (grapples aft, the cutter fore).
+        // The two drives on the stern's plate, each with its engine (a Drive Core XS) bolted to the plate's inner face on its axis.
+        foreach (var n in new[] { "L", "R" })
+        {
+            bp.HangTurned("Shuttle Drive", stern, $"drive{n}", "mount", 0);
+            bp.HangTurned("Drive Core XS", stern, $"engine{n}", "front", 0);
+        }
+        // The docking hatch in the floor, sliding aft; the grapples on a cockpit switch to port.
+        bp.HangTurned("Docking Hatch", belly, "hatch", "base", BuildingParts.R0);
         var grips = new[] { "gripFL", "gripFR", "gripBL", "gripBR" }.Select(n => bp.Hang("Hull Grapple", belly, n, "top")).ToArray();
-        var cutter = bp.Hang("Breaching Cutter", belly, "cutter", "top");
         var gripSwitch = bp.Hang("Bakelite Switch", port, "switchB", "back");
         foreach (var g in grips)
             bp.Wires.Add((gripSwitch, g));
-        var cutSwitch = bp.Hang("Bakelite Switch", port, "switchA", "back");
-        bp.Wires.Add((cutSwitch, cutter));
         // The pilot and the flight computer; the boarders' four seats facing in along the cabin's walls; lockers and batteries aft.
         var pilot = bp.Hang("Flight Couch", belly, "pilot", "bottom");
         Paint(bp, pilot, "#2c3e58", "fabric");
@@ -656,8 +732,9 @@ public sealed partial class TorpedoFrigateParts
             Paint(bp, bp.HangTurned("Flight Couch", belly, n, "bottom", BuildingParts.RY270), "#2c3e58", "fabric");
         foreach (var n in new[] { "seatR0", "seatR1" })
             Paint(bp, bp.HangTurned("Flight Couch", belly, n, "bottom", BuildingParts.RY90), "#2c3e58", "fabric");
-        foreach (var n in new[] { "lockerL", "lockerR" })
-            Paint(bp, bp.HangTurned("Zero Day Locker", belly, n, "bottom", BuildingParts.RY180), Hazard, "worn paint");
+        // (a locker's back is its -z: RY90 puts it to -x, against the port wall, and RY270 to +x)
+        Paint(bp, bp.HangTurned("Zero Day Locker", belly, "lockerL", "bottom", BuildingParts.RY90), Hazard, "worn paint");
+        Paint(bp, bp.HangTurned("Zero Day Locker", belly, "lockerR", "bottom", BuildingParts.RY270), Hazard, "worn paint");
         foreach (var n in new[] { "batteryL0", "batteryR0", "batteryL1", "batteryR1" })
             bp.Hang("Battery", belly, n, "-y");
         // Lights: the cockpit's and the cabin's, on the starboard cockpit switch; the cabin's switch by the hatch.

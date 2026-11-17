@@ -32,6 +32,7 @@ public sealed partial class TorpedoFrigateParts
 
     // Docked under the Zero Day's keel (its frame): the pod's roof just under the keel's docking hatch, its receiver on the centreline.
     private const double LimpetRoofY = -1.7, LimpetBaseY = LimpetRoofY - PH, LimpetRecvZ = 31.4;
+    private const double PHatchZ = 1.95; // the docking hatch's middle under the ceiling (its shoe 0.69 m aft of it, clear of the stern; its lid over the hole)
     private const double LimpetLadderRise = Ft0 - (LimpetBaseY + PFt + 0.013); // (from the pod's deck up to the lower deck's floor)
     private const double LimpetOriginZ = LimpetRecvZ - 2.05; // (the pod's middle: its receiver is 2.05 m aft of it)
     private const double LimpetClampX = Cx - 2.1, LimpetClampZ = 29.3; // the Docking Clamp under the keel to port of the pod
@@ -158,6 +159,10 @@ public sealed partial class TorpedoFrigateParts
         }
         foreach (var (x0, z0, x1, z1) in new[] { (h.X0, h.Z0, h.X1, h.Z0 + 0.016), (h.X0, h.Z1 - 0.016, h.X1, h.Z1), (h.X0, h.Z0 + 0.019, h.X0 + 0.016, h.Z1 - 0.019), (h.X1 - 0.016, h.Z0 + 0.019, h.X1, h.Z1 - 0.019) })
             Detail(p, x0, PCeil - 0.01, z0, x1, PH - 0.004, z1, Frame, "dirty steel");
+        // The Docking Hatch hangs under the ceiling over the hole (its shoe on a pad aft of it), and slides forward along the ceiling to open:
+        // it pairs with the one in the Zero Day's keel over the shaft (ConstructDoors.StepDocks).
+        Hidden(p, -0.32, PCeil - 0.005, PHatchZ + DockHatchHang - 0.04, 0.32, PCeil + 0.05, PIn - 0.003); // (5 cm at least, or Hidden drops it)
+        Sock(p, "hatch", 0, PCeil - 0.005, PHatchZ + DockHatchHang, "-y");
         return p.Stats(600, 5000, 35, 10.0);
     }
 
@@ -294,7 +299,7 @@ public sealed partial class TorpedoFrigateParts
     private static Part PLadder()
     {
         var rise = LimpetLadderRise;
-        var top = PCeil - PFt - 0.03;
+        var top = PCeil - PFt - 0.09; // (under the docking hatch hung on the ceiling)
         var p = new Part("Limpet Ladder", Small, PSection, "The ladder at the Limpet's aft wall, up through its receiver and, docked, on through the Zero Day's docking hatch into its lower deck: F climbs it.", role: "frame", tool: "welder", material: "steel", color: Frame, group: Group);
         p.Add(Box([-0.3, 0, -0.19], [0.3, top, -0.005], hidden: true));
         foreach (var x in new[] { -0.25, 0.25 })
@@ -364,6 +369,8 @@ public sealed partial class TorpedoFrigateParts
         foreach (var n in new[] { "battery0", "battery1" })
             bp.Hang("Battery", floor, n, "-y");
         bp.Hang("Limpet Ladder", floor, "ladder", "bottom");
+        // The Docking Hatch under the receiver, upside down (it slides forward, its shoe aft): it opens with the keel's while the clamp holds the pod.
+        bp.HangTurned("Docking Hatch", st["Limpet Roof"], "hatch", "base", BuildingParts.Turn("+x", "-y"));
         // Lights on the lamp switch by the door (on from the start).
         var lightSwitch = bp.Hang("Bakelite Switch", port, "switchA", "back");
         bp.Steps[lightSwitch]["config"] = new PyDict { ["startOn"] = true };

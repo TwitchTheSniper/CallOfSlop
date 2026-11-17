@@ -243,6 +243,7 @@ public static unsafe partial class Program
                       ^ (d.CapacitorKJ > 0 || d.GunEnergy > 0 ? (long)(ConstructPower.CapShare(hit.Body) * 100) << 46 ^ (long)(hit.Body.CapCapacity / 100) << 24 : 0) // (the capacitors: a bank's, an energy gun's)
                       ^ (d.Role is PartRole.Engine or PartRole.Transmission or PartRole.EnginePiece ? (long)(hit.Body.Rpm / 50) << 8 ^ (long)hit.Body.Gear << 3 : 0) // (an engine's rpm, a gearbox's gear)
                       ^ (d.Piece != EnginePiece.None ? ConstructEngine.LookKey(hit.Body, hit.Part) << 20 : 0) // (a modular engine's readout)
+                      ^ (d.PlantShaft > 0 ? ConstructGenset.LookKey(hit.Body) * 31L : 0) // (a generator head's readout)
                       ^ (ConstructWorks.Has(d) ? ConstructWorks.LookKey(hit.Body, hit.Part) << 8 : d.Name == Game.BreakdownPanel ? ConstructWorks.PanelKey(hit.Body) << 8 : 0) // (ship works: a head's cap, a piece's load, the panel's report)
                       ^ (ConstructCargo.IsVolume(d) ? (long)CarriedBy(g.Constructs, hit.Body) << 44 : 0) ^ (hit.Body.CarriedBy != 0 ? 1L << 63 : 0) // (a cargo volume's load; carried)
                       ^ (d.Role == PartRole.Seat || d.IsSeatModule ? (long)hit.Body.RebuildStamp * 1000003L : 0) // (a seat's or a module's links)
@@ -280,6 +281,7 @@ public static unsafe partial class Program
                     PartRole.Hitch when near => SandboxKeys.Line(d.Name, coupled ? "coupled" : "free", h.Tool == ConstructTool.Welder ? null : "needs the attach tool", h.Tool == ConstructTool.Welder ? SandboxKeys.Do(use, coupled ? "uncouple" : "couple") : null),
                     _ when d.CapacitorKJ > 0 => CapacitorLook(hit.Body, hit.Part, d, hp),
                     PartRole.Battery => SandboxKeys.Line(d.Name, part.Broken ? "wrecked" : hit.Body.PowerOn ? $"{charge}%" : "flat"),
+                    PartRole.Generator when d.PlantShaft > 0 => ConstructGenset.Look(hit.Body, hit.Part), // (an engine generator set: kW out of what it gives, the draw, rpm, fuel, and why not)
                     PartRole.Transmission when d.HasGears && d.SettingLabels.Length > 0 => SandboxKeys.Line(d.Name, SandboxKeys.Join($"gear {d.SettingLabels[Math.Min(hit.Body.Gear, d.SettingLabels.Length - 1)]}", wrecked)),
                     _ when d.Piece != EnginePiece.None => ConstructEngine.Look(hit.Body, hit.Part), // (what the pieces add up to, or what is missing, with any tool in hand)
                     _ when ConstructWorks.Has(d) && d.Role != PartRole.Gun && part.Burn <= 0 && !hit.Body.Loose && !ConstructEdits.WreckedAlone(hit.Body) => ConstructWorks.Look(hit.Body, hit.Part, !fits || aim.Verdict != AimVerdict.Can ? null : $"hold {SandboxKeys.Aim}: {(salvage ? "salvage" : "take off")}"), // (ship works: what a head's works let it do, what a piece serves; a fire falls through to ON FIRE)
