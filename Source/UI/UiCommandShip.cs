@@ -160,7 +160,9 @@ public sealed partial class Ui
                 ImDrawListExtensions.AddPolyline(dl, _cmdPts.AsSpan(i, 4), col, ImDrawFlags.None, 1.4f * _scale);
             return;
         }
-        var to = o.Kind == NavKind.Ground ? _cvPose.ToEcliptic(o.Point) : bp + o.Point;
+        var to = o.Kind == NavKind.Come && g.Players.GetValueOrDefault(o.By) is { Alive: true } who && o.Phase != NavPhase.Landing
+            ? _cvPose.ToEcliptic(Vec3d.From(who.Position)) // (it comes to them where they are now)
+            : o.Kind is NavKind.Ground or NavKind.Land or NavKind.Come ? _cvPose.ToEcliptic(o.Point) : bp + o.Point;
         var at = CmdP(to);
         var d = 7 * _scale;
         CmdGlow(dl, at + new float2(0, -d), at + new float2(d, 0), CmdAmber, fade);
@@ -635,6 +637,8 @@ public sealed partial class Ui
                 NavPhase.Brake => "FLIPPED: BRAKING",
                 NavPhase.Short => string.Create(inv, $"OUT OF REACH: THE LEAST A TRIP TAKES IS {o2.DvNeed / 1000:0.0} KM/S"),
                 NavPhase.Wait => "IN ORBIT, WAITING FOR ITS WINDOW",
+                NavPhase.Descend => "COMING DOWN INTO THE SKY",
+                NavPhase.Landing => "SETTING DOWN",
                 _ => "STARTING",
             };
             k.Order = Game.NavText(sys, o2).ToUpperInvariant();
@@ -751,6 +755,9 @@ public sealed partial class Ui
                 if (CmdButton(dl, new float2(x + col, y), new float2(x + col + 190 * _scale, y + 24 * _scale), label, CmdCyan, fade))
                     g.NavSend(c.Id, NavKind.Orbit, cr.Primary, Vec3d.Zero, Game.NavMinOrbit(s.System, cr.Primary) + 300);
             }
+            // And to come to you, when you are on this world's ground (bottom left, beside CENTRE).
+            if (CmdCanCome(g, c) && CmdButton(dl, new float2(x + col, p1.Y - 32 * _scale), new float2(x + col + 120 * _scale, p1.Y - 10 * _scale), "COME TO ME", CmdGreen, fade, false, 11))
+                g.NavSend(c.Id, NavKind.Come, s.Bubble.Body, Vec3d.Zero, 0);
             y += 30 * _scale;
         }
         // Centre it, bottom right of the card.

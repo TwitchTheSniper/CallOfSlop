@@ -551,7 +551,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 326: trips between planets (docs/space/COMMAND.md "Between planets", GameNavTrip.cs): Msg.Nav gains u64 arrival and u64 departure (space ns)
     //   and f32 dV after the radius, and NavPhase gains Depart, Coast, Correct, Brake, Short and Wait at its end; SpaceMsg.Clock gains a u8
     //   at its end, the host's fuel use in space (percent: ConstructPhysics.SpaceFuelScale).
-    public const ushort ProtocolVersion = 326;
+    // 327: landing from the command view (docs/space/COMMAND.md "Landing", GameNavLand.cs): NavKind gains Land and Come, and NavPhase
+    //   Descend and Landing, at their ends (CActKind.NavOrder and Msg.Nav carry them).
+    public const ushort ProtocolVersion = 327;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
