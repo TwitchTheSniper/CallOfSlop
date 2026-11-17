@@ -81,6 +81,8 @@ public static class ConstructCargo
 
     private static int VolumeOf(Construct carrier, Construct b)
     {
+        if (b.CarryTag == 0)
+            return -1; // (gripped by its own grapples: no volume holds it, and a server's tags start at 1, so no walk of the carrier's parts)
         if (b.CarryPart < carrier.PartCount && carrier.Parts[b.CarryPart].Tag == b.CarryTag && IsVolume(carrier.Parts[b.CarryPart].D))
             return b.CarryPart;
         for (var i = 0; i < carrier.PartCount; i++)
@@ -372,18 +374,32 @@ public static class ConstructCargo
     private static readonly List<Construct> _near = new(256), _carried = new(64);
 
     /// <summary>Every carrier's cargo list (its mass and where it sits, body frame); a carrier whose list changed rebuilds its mass.</summary>
+    /// <summary>Is a craft gripped (by its own grapples) on <paramref name="c"/>? Walks only the carried bodies.</summary>
+    private static bool GripsOn(Construct c)
+    {
+        foreach (var b in _carried)
+            if (b.CarriedBy == c.Id && b.CarryTag == 0)
+                return true;
+        return false;
+    }
+
     private static void Refresh(ConstructWorld world)
     {
         world.CargoChanged = false;
         var bodies = world.Bodies;
         // The carried bodies once (in list order), so each carrier walks only them, not every body.
         _carried.Clear();
+        var gripped = 0;
         foreach (var b in bodies)
             if (b.CarriedBy != 0)
+            {
                 _carried.Add(b);
+                if (b.CarryTag == 0)
+                    gripped++; // (a craft gripped by its grapples: any body can carry one, logic or not)
+            }
         foreach (var c in bodies)
         {
-            if (c.CargoCount == 0 && (_carried.Count == 0 || !c.HasLogic))
+            if (c.CargoCount == 0 && (_carried.Count == 0 || !c.HasLogic && (gripped == 0 || !GripsOn(c))))
                 continue; // (carries nothing, and can't: nothing to refresh)
             var n = 0;
             var mass = 0f;
@@ -679,6 +695,7 @@ public static class ConstructCargo
 public sealed partial class ConstructWorld
 {
     internal int CargoTicks;
+    internal int BreachTicks; // (ConstructBreach.Step's count to its next look: one a world, as two worlds may tick in turn)
     public uint CarrierClock; // server: ticks, for what a dock or arrestor leaves alone a while (ConstructCarrier.cs)
     /// <summary>A volume changed state (frozen or not): the cargo step looks at once rather than at its next 10 Hz look.</summary>
     public bool CargoScanNow;

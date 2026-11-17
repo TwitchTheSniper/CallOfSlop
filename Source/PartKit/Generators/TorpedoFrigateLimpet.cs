@@ -545,7 +545,7 @@ public sealed partial class TorpedoFrigateParts
         foreach (var (x0, z0, x1, z1) in new[] { (-o + 0.02, -o + 0.02, o - 0.02, -o + 0.08), (-o + 0.02, o - 0.08, o - 0.02, o - 0.02) })
             p.Add(Box([x0, -0.126, z0], [x1, -0.12, z1], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
         p.Sock("top", [0, top, (LHatchIn + LHatch.Z1 - 0.03) / 2], "+y");
-        p.Set(("logic", Kw(("kind", "lamp"))), ("breach", Kw(("kind", "cutter"), ("reach", 1.2), ("rate", 900))), ("power", 2500),
+        p.Set(("logic", Kw(("kind", "lamp"))), ("breach", Kw(("kind", "cutter"), ("reach", 2.0), ("rate", 900))), ("power", 2500),
             ("config", Py.L(Kw(("key", "colour"), ("type", "colour"), ("label", "Colour"), ("group", "Light"), ("default", "#ff6a20"), ("tooltip", "The colour its lances glow while it burns.")))));
         return p.Stats(260, 3000, 30, 6.0);
     }

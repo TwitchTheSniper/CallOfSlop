@@ -11,7 +11,7 @@
   },
   "breach": {
     "kind": "cutter",
-    "reach": 1.2,
+    "reach": 2.0,
     "rate": 900
   },
   "power": 2500,

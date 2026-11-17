@@ -30,9 +30,10 @@ Two new kinds of lamp logic part, by their `"breach"` block (only lamp logic par
 | Part | Block | What it does |
 | --- | --- | --- |
 | Hull Grapple | `{"kind": "grapple", "reach": 0.6}` | While its input is on and a body's hull is within its reach under its face (its -y), moving under 3 m/s against it, the craft grips that body: it is carried as a docking clamp carries a craft (`CarriedBy`, no volume, its pose in the frame of the gripped part's segment), so it moves with the hull and nothing new goes over the wire. Every grapple off (or the last one broken) lets go. |
-| Breaching Cutter | `{"kind": "cutter", "reach": 1.2, "rate": 900}` | While its craft is gripped and its input is on, it burns the nearest part of the gripped body under its ring (five rays), `rate` damage a second, raw (armour doesn't stop it), one part after another until nothing is left there: then "the cutter is through", once. |
+| Breaching Cutter | `{"kind": "cutter", "reach": 2.0, "rate": 900}` | While its craft is gripped and its input is on, it burns the nearest part of the gripped body under its ring (five rays), `rate` damage a second, raw (armour doesn't stop it), one part after another until nothing is left there: then "the cutter is through", once. |
 
-Server only, ten times a second, allocating nothing. A ship in space flight (`SpaceShip != 0`) and a body already carried
+Server only, ten times a second, allocating nothing. A gripped craft lets go when no grapple that is on has the hull within its
+reach any more (the hull under it shot away or broken off). Its mass joins whatever it grips, a wreck too. A ship in space flight (`SpaceShip != 0`) and a body already carried
 can't be gripped. Damage is billed to the pod's driver (or owner).
 
 ## On the Zero Day
@@ -49,6 +50,8 @@ the Zero Day Limpet Ladder climbs from the mess up into the pod. The pilot's key
 - A grip isn't kept through a save and load.
 - No ladder from the target back up into the pod, and none from the ground into a landed pod.
 - No air: the hole doesn't vent the room below.
+- Cutting into a part that goes up when wrecked (the Zero Day's Bow holds fuel) sets it off as any other damage does, and can
+  take the pod with it.
 - `--check-building` walks the carrier alone, so it says the Zero Day Limpet Ladder has no room at its top; checked by hand
   (rays in a built world): the foot stands under the open shaft in the mess, the top lands on the pod's floor aft of the hatch
   with 1.9 m of head room.

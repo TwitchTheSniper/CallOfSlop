@@ -28,8 +28,6 @@ public static class ConstructBreach
     public const float GripSpeed = 3f; // m/s against the hull under which a grapple takes hold
     public const int Rays = 5; // a cutter's rays: its middle and four round its ring (a fitting off the middle still stands in the way)
 
-    private static int _ticks;
-
     /// <summary>Does body <paramref name="b"/> have a breach part (counted once a rebuild, on the body)?</summary>
     private static bool HasAny(Construct b)
     {
@@ -50,8 +48,8 @@ public static class ConstructBreach
     /// its carrier's under it rides on as long as this says so (ConstructCargo.Step).</summary>
     public static bool Holds(Construct b)
     {
-        if (b.Dirty || !HasAny(b))
-            return false;
+        if (!HasAny(b))
+            return false; // (a body dirty since its last rebuild still holds: a part broken this tick is Broken already)
         for (var i = 0; i < b.PartCount; i++)
             if (b.DefOf(i).Breach == BreachKind.Grapple && On(b, i))
                 return true;
@@ -77,9 +75,9 @@ public static class ConstructBreach
     /// <summary>Server, every tick: ten times a second each craft with breach parts grips, lets go or cuts.</summary>
     public static void Step(ConstructWorld world)
     {
-        if (++_ticks < StepEvery)
+        if (++world.BreachTicks < StepEvery)
             return;
-        _ticks = 0;
+        world.BreachTicks = 0;
         var bodies = world.Bodies;
         for (var k = 0; k < bodies.Count; k++)
         {
@@ -89,8 +87,30 @@ public static class ConstructBreach
             if (b.CarriedBy == 0)
                 TryGrip(world, b);
             else if (Gripped(world, b) && world.Get(b.CarriedBy) is { } c)
+            {
+                if (!OnHull(world, b, c))
+                {
+                    world.Events.Add($"construct {b.Id}: nothing under its grapples now: it lets go of construct {c.Id}");
+                    ConstructCarrier.LetGo(world, b); // (the hull under it was shot away or broke off)
+                    continue;
+                }
                 Cut(world, b, c);
+            }
         }
+    }
+
+    /// <summary>Is the gripped body's hull still under a grapple that is on (its reach and a little more: the grip holds it there)?</summary>
+    private static bool OnHull(ConstructWorld world, Construct b, Construct c)
+    {
+        for (var i = 0; i < b.PartCount; i++)
+        {
+            if (b.DefOf(i).Breach != BreachKind.Grapple || !On(b, i))
+                continue;
+            Face(b, i, out var at, out var down);
+            if (world.Raycast(at, down, b.DefOf(i).BreachReach + 0.3f, out _, b, only: c))
+                return true;
+        }
+        return false;
     }
 
     private static void TryGrip(ConstructWorld world, Construct b)
