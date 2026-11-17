@@ -211,17 +211,28 @@ public static partial class SelfTest
     /// ("Sandbox full hands" reached six minutes), so it samples. Shortened, never raised, by an agent.</summary>
     internal const double MaxSectionSeconds = 180;
 
+    /// <summary>
+    /// The sections of 10 s or more, with their time on a Linux CI runner (measured 2026-11-17, PR 261's run). The shards
+    /// are dealt by these numbers, so keep them near the truth: a section's time is in its part's log ("-- Name: N s").
+    /// </summary>
     internal static readonly (string Name, double Seconds)[] ShardHeavy =
     [
-        ("Interaction sweep", 120), ("Sandbox full hands", 45), ("Joint chain network", 39), ("Ride frame", 37), ("Magazine sockets", 35),
-        ("Gathering network", 23), ("Link tool online", 21), ("Wheel orders", 21),
+        ("Interaction sweep", 116), ("Sandbox full hands", 48), ("Joint chain network", 39), ("Ride frame", 37), ("Magazine sockets", 35),
+        ("Terrain digging", 34), ("Terrain streaming", 34), ("Terrain", 26), ("Sandbox physics gun feel", 25), ("Gathering network", 22),
+        ("Link tool online", 21), ("Wheel orders", 21), ("Refining network", 19), ("Powder charge", 17.5), ("Assembling network", 17.4),
+        ("Sandbox body sync", 17.2), ("Salvage haul network", 16.4), ("Space bubble", 14), ("Flexible joints network", 12.6), ("Mods", 12.2),
+        ("Compound collision", 11.7), ("Construct placement", 11.3), ("Constructs", 10.6), ("Large systems network", 10.5),
     ];
+
+    /// <summary>What a section not in <see cref="ShardHeavy"/> costs, on average (s): the rest of the 2026-11-17 run, 273 s over about 110 sections.</summary>
+    private const double ShardLightSeconds = 2.5;
 
     /// <summary>
     /// Part K of N of the full suite (--selftest-shard "K/N", CI's side-by-side jobs): of the sections the full suite runs
     /// (not the <paramref name="archived"/> ones), the long ones (<see cref="ShardHeavy"/>) dealt out by their cost and
-    /// the rest in suite order, every N-th from the K-th, plus the sections those need. Every section is in exactly one
-    /// part by its place, so the N parts together run the whole suite.
+    /// then the rest in suite order, each to the part with the least time so far (at <see cref="ShardLightSeconds"/> each),
+    /// plus the sections those need. Every section is in exactly one part by its place, so the N parts together run the
+    /// whole suite, and the parts end close together (2026-11-17: dealing the rest every N-th left one part 100 s behind).
     /// </summary>
     internal static (string[] Picked, string? Error) ResolveShard(string shard, IReadOnlyList<string> names, IReadOnlyDictionary<string, string[]> needs, IReadOnlySet<string> archived)
     {
@@ -229,9 +240,9 @@ public static partial class SelfTest
         if (kn.Length != 2 || !int.TryParse(kn[0], out var k) || !int.TryParse(kn[1], out var n) || n < 1 || n > 64 || k < 1 || k > n)
             return ([], $"--selftest-shard: \"{shard}\" isn't K/N with 1 <= K <= N <= 64 (e.g. 2/4)");
         var suite = names.Where(s => !archived.Contains(s)).ToArray();
-        // The long sections first, each to the part with the least so far (so two of them never share a part by chance:
-        // "Sandbox full hands" and "Interaction sweep" together made one part of four take twice the others); then
-        // the rest in turn.
+        // The long sections first, longest first, each to the part with the least so far (so two of them never share a
+        // part by chance: "Sandbox full hands" and "Interaction sweep" together made one part of four take twice the
+        // others); then the rest the same way, at their average cost.
         var picked = new HashSet<string>(StringComparer.Ordinal);
         var load = new double[n];
         foreach (var (name, secs) in ShardHeavy.Where(h => suite.Contains(h.Name)).OrderByDescending(h => h.Seconds))
@@ -241,9 +252,13 @@ public static partial class SelfTest
             if (part == k - 1)
                 picked.Add(name);
         }
-        var rest = suite.Where(s => !ShardHeavy.Any(h => h.Name == s)).ToArray();
-        for (var i = k - 1; i < rest.Length; i += n)
-            picked.Add(rest[i]);
+        foreach (var s in suite.Where(s => !ShardHeavy.Any(h => h.Name == s)))
+        {
+            var part = Array.IndexOf(load, load.Min());
+            load[part] += ShardLightSeconds;
+            if (part == k - 1)
+                picked.Add(s);
+        }
         for (var grew = true; grew;)
         {
             grew = false;
