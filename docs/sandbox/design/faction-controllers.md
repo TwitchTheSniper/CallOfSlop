@@ -412,3 +412,17 @@ These override the text above where they differ.
 9. **Allies help players:** an allied power's groups join fights near the player, answer calls for help and may escort; helping them back raises relations.
 
 **Prerequisite for answer 6 (user, 2026-11-17):** before any real faction production is built, a generator for factory buildings must be designed: logical layout rules, consistent design principles, fun and interesting layouts, in the spirit of Karl's ship designer. It builds on the function-first base generator idea (project doc `claude/base-generator.md`: a base's function fixes its machines, a logical layout follows, the faction's style changes arrangement, shell and dressing).
+
+## The user's answers on admirals (2026-11-17, with Karl in the call)
+
+These override section 6 where they differ.
+
+1. **Groups: 1-12 ships each, up to 256 groups** in the world (not 64). Keep the far layer's cost fixed per tick at that count.
+2. **No flagship seat:** an admiral reaches the **fleet command network** from any chair or area with access to it (a bridge, a command room), and can send commands from anywhere on that network. Design the network (which parts give access, how a ship joins its group's network, what cutting it does).
+3. **Admirals are a role in the hierarchy, not a combat post.** An admiral holds the logic for leading any group of captains, whatever they do: combat and civilian alike (convoys, trade fleets, mining fleets, haulers, construction). Whenever captains need coordinating, an admiral coordinates them; simple tasks with no group coordination need none. Orders in phase 2: form up, go to, engage, escort, hold, retreat, board, targeting, focus fire, screening, plus civilian orders as fits (load, unload, mine, deliver, follow a route); more later.
+4. **Discipline by faction doctrine.**
+5. **Succession by faction doctrine.**
+6. **No fixed break line:** the admiral decides each think, weighing the strength left against the enemy's (doctrine still flavours how it weighs).
+7. **Captured admirals and captains, interrogation:** a captured admiral is a valuable prisoner (credit ransom; capture -25 relations, release +15) and can reveal intelligence: their group of captains and the admirals they coordinate with (positions shown for a while). Captains too, to a lesser extent: their ship, crew, and where disembarked crew are and what they are doing. **Interrogation** is how players gain it; admirals' and captains' resistance varies. **Add an Interrogator crew role.**
+8. **Convoys are led by an admiral.**
+9. **Names for both admirals and captains**, on the look line, in news and in interrogation results.
