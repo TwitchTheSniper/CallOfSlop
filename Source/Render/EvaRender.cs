@@ -10,7 +10,7 @@ namespace CallOfSlop;
 public static class EvaRender
 {
     /// <summary>The suit's attach point in the standing torso's frame (the space suit uniform's plate, Cosmetics/uniforms.json).</summary>
-    private static readonly Vector3 Attach = new(0, -0.02f, 0.452f);
+    private static readonly Vector3 Attach = new(0, -0.02f, 0.455f);
 
     private static ConstructPartDef? _mmu;
     private static bool _looked;

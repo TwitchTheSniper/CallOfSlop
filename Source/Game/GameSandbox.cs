@@ -350,7 +350,10 @@ public sealed partial class Game
                 SandboxRiderGrab(p); // (the held thing follows the look)
             else if (Constructs.PlayerSpotCount < Constructs.PlayerSpots.Length)
                 Constructs.PlayerSpots[Constructs.PlayerSpotCount++] = p.Position; // (proximity sensors)
+            if ((p.Eva & Eva.Mmu) != 0 && (p.Sim.Gear & PilotGear.Mmu) == 0)
+                p.Sim.JetFuel = p.MmuFuel; // (a teleport made a new MoveState: the pack's tank is still the pack's)
             p.Sim.Gear = SandboxWorn(p);
+            p.MmuFuel = p.Sim.JetFuel;
             SandboxEvaTick(p, now); // (breath in vacuum, a suit's air: GameSandboxEva.cs)
             if (!h.Seated)
             {

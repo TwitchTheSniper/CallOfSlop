@@ -688,6 +688,8 @@ public sealed class Player
     [MatchState]
     public byte Eva; // spacewalk gear (Eva's bits: a space suit, an MMU on it; GameSandboxEva.cs); the server's, in the roster
     [MatchState]
+    public ushort MmuFuel; // the worn MMU's tank as the server last stepped it: put back when a teleport wipes MoveState (GameSandboxEva.cs)
+    [MatchState]
     public float Breath = CallOfSlop.Eva.BreathSeconds, SuitAir = CallOfSlop.Eva.SuitSeconds; // seconds of breath held and of the suit's air (Eva.Step: the server's; a client works out its own for the HUD)
     /// <summary>The uniform drawn: a space suit while one is worn (Uniforms.SpaceSuit), else <see cref="Uniform"/>.</summary>
     public byte DrawnUniform => (Eva & CallOfSlop.Eva.Suit) != 0 && Uniforms.SpaceSuit is { } s ? s.Index : Uniform;
@@ -765,6 +767,7 @@ public sealed class Player
         SbSpawned = false;
         InShell = false; // (the server ends any shell run at a new match: ShellResetAll)
         Eva = 0;
+        MmuFuel = 0;
         Breath = CallOfSlop.Eva.BreathSeconds;
         SuitAir = CallOfSlop.Eva.SuitSeconds;
         ShellChair = ShellSeat = 0;

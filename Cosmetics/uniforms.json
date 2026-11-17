@@ -312,7 +312,7 @@
     {
       "id": "space_suit",
       "name": "Space Suit",
-      "about": "A pressure suit with 30 minutes of air, a chest control unit and a life-support pack with an attach point for a Manned Manoeuvring Unit (docs/sandbox/EVA.md). Worn from a Space Suit Locker, never issued.",
+      "about": "30 minutes of air, and an attach point on the back for a Manned Manoeuvring Unit. From a Space Suit Locker.",
       "colors": { "coat": "#e6e6de", "coatDark": "#c9ccc6", "sleeve": "#e4e4dc", "collar": "#9aa0a6", "trim": "#c43a2e", "trousers": "#e2e2da", "hips": "#d9d9d1", "boots": "#cfd2cf", "gloves": "#d7dad6", "cuff": "#7f8c9a" },
       "torso": [
         { "at": [0, 0.03, 0.0], "size": [0.84, 0.42, 0.46], "color": "#e6e6de" },
@@ -330,9 +330,9 @@
         { "at": [0, 0.0, 0.33], "size": [0.66, 0.5, 0.18], "color": "#b9bdbd" },
         { "at": [0, 0.31, 0.33], "size": [0.6, 0.026, 0.2], "color": "#9aa0a6" },
         { "at": [0, -0.24, 0.4425], "size": [0.5, 0.03, 0.006], "color": "#d8642a", "detail": true },
-        { "at": [0, -0.02, 0.4455], "size": [0.22, 0.16, 0.013], "color": "#3a3e42" },
-        { "at": [0.07, -0.02, 0.4545], "size": [0.03, 0.03, 0.006], "color": "#c9a24a", "detail": true },
-        { "at": [-0.07, -0.02, 0.4545], "size": [0.03, 0.03, 0.006], "color": "#c9a24a", "detail": true },
+        { "at": [0, -0.02, 0.443], "size": [0.22, 0.16, 0.012], "color": "#3a3e42" },
+        { "at": [0.07, -0.02, 0.45], "size": [0.03, 0.03, 0.006], "color": "#c9a24a", "detail": true },
+        { "at": [-0.07, -0.02, 0.45], "size": [0.03, 0.03, 0.006], "color": "#c9a24a", "detail": true },
         { "at": [0.425, -0.1, 0.05], "size": [0.03, 0.03, 0.4], "color": "#c9a24a", "detail": true }
       ],
       "hat": [

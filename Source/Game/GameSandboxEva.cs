@@ -13,8 +13,8 @@ public enum EvaPart : byte
 
 /// <summary>
 /// The spacewalk rules (Karl, 2026-11-17; docs/sandbox/EVA.md). <see cref="Player.Eva"/>'s bits: a space suit, and on it
-/// the MMU. Vacuum is wherever the air is under <see cref="VacuumBelow"/> (open space, the top of a planetoid's sky), inside
-/// a ship as well as out (Karl: until there are pressurised rooms). There a person in no suit holds their breath for
+/// the MMU. Vacuum is past the space bubble's edge round a body (where ships orbit) or wherever the air is under
+/// <see cref="VacuumBelow"/> (open space, the top of a planetoid's sky), inside a ship as well as out (Karl: until there are pressurised rooms). There a person in no suit holds their breath for
 /// <see cref="BreathSeconds"/>, then chokes; a suit's air lasts <see cref="SuitSeconds"/>. A robot shell needs no air, and
 /// neither do NPC bodies (bots: the crews) for now. Shared by the server (the damage) and a joined client (its own HUD).
 /// </summary>
@@ -29,8 +29,9 @@ public static class Eva
     public const float MmuLitres = 6f; // fuel a full tank takes from the ship
     public const int MmuFillTicks = 4; // tank a tick on a fed dock: full in 15 s
 
-    /// <summary>Is the air at this point too thin to breathe?</summary>
-    public static bool Vacuum(Vector3 at) => ConstructAir.Density(at) < VacuumBelow;
+    /// <summary>Is the air at this point too thin to breathe: past the space bubble's edge round a star system's body (where ships orbit), or thinner than <see cref="VacuumBelow"/>?</summary>
+    public static bool Vacuum(Vector3 at) =>
+        GravityFrames.Point is { OrbitFrom: > 0 } pg && Vector3.DistanceSquared(at, pg.Center) > pg.OrbitFrom * pg.OrbitFrom || ConstructAir.Density(at) < VacuumBelow;
 
     /// <summary>Does this player breathe: a person, not a robot shell, not an NPC, alive, not flying in creative's noclip.</summary>
     public static bool Breathes(Player p) => p.Bot == null && !p.InShell && p.Alive && !p.Sim.Noclip;
@@ -129,10 +130,10 @@ public sealed partial class Game
         {
             if (docked >= 0)
                 return "this dock already holds an MMU";
-            if (!DockMmu(c, part, p.Sim.JetFuel))
+            if (!DockMmu(c, part, p.MmuFuel))
                 return "the MMU won't go on the dock";
             p.Eva &= unchecked((byte)~Eva.Mmu);
-            p.Sim.JetFuel = 0;
+            p.Sim.JetFuel = p.MmuFuel = 0;
             BroadcastRoster();
             Constructs.Events.Add($"construct {c.Id}: {p.Name} docked an MMU");
         }
@@ -184,7 +185,12 @@ public sealed partial class Game
         if (mmu < 0)
             return false;
         ref var m = ref c.Parts[mmu];
-        if (m.Rounds < Eva.MmuFull && c.ReachesFuel(seat) && c.Fuel + c.FluidFuel > 0)
+        if (m.Rounds < Eva.MmuFull && SandboxInfiniteParts)
+        {
+            m.Rounds = Eva.MmuFull; // (creative: endless parts, endless fuel)
+            Constructs.NoteAmmo(c, mmu);
+        }
+        else if (m.Rounds < Eva.MmuFull && c.ReachesFuel(seat) && c.Fuel + c.FluidFuel > 0)
         {
             var add = (ushort)Math.Min(Eva.MmuFillTicks, Eva.MmuFull - m.Rounds);
             c.UseFuel(add * Eva.MmuLitres / Eva.MmuFull);
@@ -204,7 +210,7 @@ public sealed partial class Game
         Constructs.RemovePart(c, mmu); // (the pack comes off the dock with them)
         p.Eva |= Eva.Mmu;
         SandboxStand(p, teleport: true);
-        p.Sim.JetFuel = fuel;
+        p.Sim.JetFuel = p.MmuFuel = fuel;
         p.Sim.Gear = SandboxWorn(p);
         // A gentle push off the dock, forward out of it, with whatever the ship was doing.
         c.WorldFrame(dock.Seg, out var q, out _);
@@ -247,11 +253,11 @@ public sealed partial class Game
             && Constructs.Create(p.Position + new Vector3(0, 1f, 0), Quaternion.CreateFromAxisAngle(Vector3.UnitY, -p.Yaw)) is { } loose)
         {
             Constructs.AddPart(loose, def, Vector3.Zero, 0);
-            loose.Parts[0].Rounds = p.Sim.JetFuel;
+            loose.Parts[0].Rounds = p.MmuFuel;
             loose.Vel = p.Sim.Velocity;
         }
         p.Eva = 0;
-        p.Sim.JetFuel = 0;
+        p.Sim.JetFuel = p.MmuFuel = 0;
         BroadcastRoster();
     }
 }
@@ -267,7 +273,7 @@ public sealed partial class Game
         {
             var mmu = DockedMmu(c, seat);
             var fuel = mmu >= 0 ? c.Parts[mmu].Rounds * 100 / Eva.MmuFull : -1;
-            var fed = c.ReachesFuel(seat) && c.Fuel + c.FluidFuel > 0;
+            var fed = SandboxInfiniteParts || c.ReachesFuel(seat) && c.Fuel + c.FluidFuel > 0;
             if (_sbEvaDock.Stale(fuel * 4 + (fed ? 1 : 0) + 2))
                 _sbEvaDock.Text = mmu < 0 ? "MMU Dock: empty" : $"MMU fuel {fuel}%" + (fuel >= 100 ? ", full" : fed ? ", filling" : ", no fuel reaches the dock (pipe fuel to its Fuel in)");
             lines.Add(new HudLine(_sbEvaDock.Text, mmu >= 0 && !fed && fuel < 100 ? orange : white));
