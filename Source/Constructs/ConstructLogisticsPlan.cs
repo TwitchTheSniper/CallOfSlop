@@ -623,7 +623,8 @@ public static class ConstructLogisticsPlan
         var name = ConstructParts.Get(e.Kind)?.Name ?? "part";
         var sheet = refusal != null && c.DefOf(e.Dest) is { IsPanelFormer: true, IsLaserCutter: false } && ConstructParts.Get(e.Kind) is { IsExtrusion: true } sd && sd.ExKey.H == SheetThickCm
             ? TooWideText(c, net, sd.ExKey.W) : null;
-        var reason = sheet ?? (refusal != null ? $"waiting on {name}: {refusal}" : $"waiting on {name}: nothing on the network makes it");
+        var remote = sheet == null && refusal == null ? LinkPlan.AskChain(world, c, e.Id, e.Kind, count) : null; // (a linked network: linked-logistics.md 4.2)
+        var reason = sheet ?? remote ?? (refusal != null ? $"waiting on {name}: {refusal}" : $"waiting on {name}: nothing on the network or linked networks makes it");
         if (e.Reason != reason)
             e.Reason = reason; // (made only when it changes)
     }

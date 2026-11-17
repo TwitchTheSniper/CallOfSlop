@@ -254,6 +254,17 @@ public sealed partial class Game
         }
         if (kind > NavKind.Come || !double.IsFinite(point.X + point.Y + point.Z + radius))
             return null;
+        return NavApply(s, c, kind, body, point, radius, p.Id, p.Name, p, out _);
+    }
+
+    /// <summary>
+    /// Host: an order set on a ship (a player's from the command view, or a Route Computer's leg: GameSandboxLinked.cs), checked as a
+    /// player's is, with everything a new order starts from reset (a cruise, a hand-over, a trip's plan). Null, or why it takes none.
+    /// </summary>
+    internal string? NavApply(SpaceSession s, Construct c, NavKind kind, int body, Vec3d point, double radius, byte by, string who, Player? p, out NavOrder? order)
+    {
+        order = null;
+        var id = c.Id;
         if (NavProblem(c) is { } why)
             return "It takes no orders: " + why;
         var sys = c.SpaceAway != 0 ? Galaxy.System(c.SpaceAway - 1) : s.System;
@@ -277,6 +288,8 @@ public sealed partial class Game
                 return "It is too heavy to land on this world";
             if (kind == NavKind.Come)
             {
+                if (p == null)
+                    return "Only a player can call it to come"; // (a route leg never asks it: GameSandboxLinked.cs)
                 if (!p.Alive)
                     return "You are dead: it has nobody to come to";
                 if (p.Sim.RideBody == c.Id)
@@ -305,7 +318,7 @@ public sealed partial class Game
         o.Body = (byte)body;
         o.Point = point;
         o.Radius = radius;
-        o.By = p.Id;
+        o.By = by;
         o.Phase = NavPhase.None;
         o.PhaseSent = NavPhase.None;
         o.Engaged = false;
@@ -314,8 +327,9 @@ public sealed partial class Game
         o.ArriveNs = o.DepartNs = 0;
         o.DvNeed = 0;
         o.Still = 0;
-        c.NavLand = 0;
-        Console.WriteLine($"[nav] {p.Name} ordered construct {id}: {NavText(sys, o)}");
+        c.NavLand = 0; // (any new order, a player's or a route leg's, ends a landing's hold)
+        order = o;
+        Console.WriteLine($"[nav] {who} ordered construct {id}: {NavText(sys, o)}");
         return null;
     }
 

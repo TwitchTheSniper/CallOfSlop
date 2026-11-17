@@ -553,7 +553,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   at its end, the host's fuel use in space (percent: ConstructPhysics.SpaceFuelScale).
     // 327: landing from the command view (docs/space/COMMAND.md "Landing", GameNavLand.cs): NavKind gains Land and Come, and NavPhase
     //   Descend and Landing, at their ends (CActKind.NavOrder and Msg.Nav carry them).
-    public const ushort ProtocolVersion = 327;
+    // 328: linked logistics (docs/sandbox/design/linked-logistics.md): CBodyKind.Link at the end of CBodyKind (a body's link parts: ids,
+    //   names, status lines as a u8 count then a str each, offers by PartRef, a port's manifest, a Route Computer's docks:
+    //   LinkedLogistics.Write); CActKind.Link at the end of CActKind (u16 body, u16 part, u8 LinkOp, u32 a, u32 b, str text); the
+    //   Building Station's Sub-jobs setting is a choice (Off, Auto, Linked).
+    public const ushort ProtocolVersion = 328;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

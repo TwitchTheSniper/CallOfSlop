@@ -1,0 +1,131 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Logistics Dispatcher",
+  "description": "Sends this factory's registered route ships when enough cargo waits for a linked network. Needs a link end on this construct.",
+  "group": "Production",
+  "section": "Linked logistics",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 300.0,
+  "health": 300,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3a6f8f",
+  "attachSeconds": 3.0,
+  "power": 300,
+  "onBreak": "disable",
+  "logiLink": {
+    "kind": "dispatcher"
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.6,
+        -0.125,
+        -0.4
+      ],
+      "max": [
+        0.6,
+        0.0,
+        0.4
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        -0.58,
+        -0.005,
+        -0.38
+      ],
+      "max": [
+        0.58,
+        0.6,
+        0.38
+      ]
+    },
+    {
+      "min": [
+        -0.56,
+        0.595,
+        -0.36
+      ],
+      "max": [
+        0.56,
+        0.9,
+        -0.22
+      ],
+      "color": "#22262b"
+    },
+    {
+      "min": [
+        -0.53,
+        0.62,
+        -0.224
+      ],
+      "max": [
+        0.53,
+        0.88,
+        -0.21
+      ],
+      "color": "#10161c",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.52,
+        0.598,
+        0.2
+      ],
+      "max": [
+        -0.42,
+        0.615,
+        0.32
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.38,
+        0.598,
+        0.2
+      ],
+      "max": [
+        -0.28,
+        0.615,
+        0.32
+      ],
+      "color": "#f2b01e",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.24,
+        0.598,
+        0.2
+      ],
+      "max": [
+        -0.14,
+        0.615,
+        0.32
+      ],
+      "color": "#d02a1e",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

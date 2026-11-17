@@ -209,6 +209,7 @@ public sealed partial class Game
         s.FactionStances = (sbyte[])FactionTable.Stance.Clone();
         s.Opening = OpeningCapture(); // (GameSandboxOpening.cs)
         s.Start = StartCapture(); // (GameStoryStart.cs)
+        s.LinkLedger = Keep == null && stashFolder == null && (LinkLedger.Ends.Count > 0 || LinkLedger.Lines.Count > 0) ? LinkLedger.SaveBytes() : null; // (the host's main world keeps the ledger: linked-logistics.md section 8)
         s.OpCount = 0;
         s.GroundOnPlanet = World.Map.Planetoid != null;
         if (DigGroundIfMade is { } g)
@@ -423,6 +424,8 @@ public sealed partial class Game
         ws.Applied = true;
         _sbKitBuilt = false;
         WorldFinishWrite(ws);
+        if (Keep == null && _landing == null)
+            LinkLedger.Reset(); // (a new world: its own ledger, from its LINK section if it has one)
         if (_landing is { } plan)
         {
             _landing = null;
@@ -592,6 +595,10 @@ public sealed partial class Game
                 break;
             case WorldSaveWriter.StartTag:
                 StartLoad(r.Str()); // (the story start it was made with: GameStoryStart.cs)
+                break;
+            case WorldSaveWriter.LinkTag:
+                if (Keep == null)
+                    LinkLedger.Load(r); // (the link ledger: LinkedLogisticsLedger.cs)
                 break;
             case WorldSaveWriter.Fate:
                 WorldReadDeath(r, ws); // (death and checkpoints: GameSandboxDeath.cs)
