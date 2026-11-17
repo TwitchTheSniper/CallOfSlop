@@ -604,7 +604,8 @@ public sealed class PowerRelations
                 End(i, "runs out");
                 continue;
             }
-            if (PactK[i] == PactKind.Alliance && (BandOf(a, o) < RelBand.Neutral || BandOf(o, a) < RelBand.Neutral))
+            if (PactK[i] == PactKind.Alliance && (BandOf(a, o) < RelBand.Neutral || BandOf(o, a) < RelBand.Neutral)
+                || PactK[i] == PactKind.NonAggression && (BandOf(a, o) == RelBand.War || BandOf(o, a) == RelBand.War))
             {
                 End(i, "falls apart");
                 continue;

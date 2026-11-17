@@ -191,7 +191,7 @@ public static class CrewRelationsCheck
             }
             if (poked && client.FactionTable.PowerCount == CrewPowers.Count
                 && client.FactionTable.PowerRel[(north - 1) * FactionTable.MaxStory + red - 1] == server.FactionTable.PowerRel[(north - 1) * FactionTable.MaxStory + red - 1]
-                && client.PowerNews.Count > 0)
+                && client.PowerNews.Exists(l => l.Contains("declares war on Red Hand")))
             {
                 seen = true;
                 break;

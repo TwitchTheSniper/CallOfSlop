@@ -82,26 +82,53 @@ public sealed partial class Ui
     /// How the world's powers see each other (docs/sandbox/design/faction-controllers.md section 7): the grid (row: how that power sees each
     /// column's), the pacts between them and the latest news, newest first.
     /// </summary>
+    private string[] _powShort = [];
+    private int[] _powShown = [];
+    private int _powShownCount, _powShortVersion = -1;
+
+    /// <summary>The powers the grid shows (those that keep their relations by themselves are left out: Player Crew, Test Hostile) and their tags, again when the table changes.</summary>
+    private void PowerColumns(FactionTable t, int n)
+    {
+        if (_powShortVersion == t.Version && _powShort.Length == n)
+            return;
+        _powShortVersion = t.Version;
+        _powShort = new string[n];
+        _powShown = new int[n];
+        _powShownCount = 0;
+        for (var i = 0; i < n; i++)
+        {
+            var name = t.StoryNames[i];
+            var def = CrewPowers.Of(CrewPowers.Find(name)) is { } d && d.Name.Equals(name, StringComparison.OrdinalIgnoreCase) ? d : null;
+            _powShort[i] = def?.Tag is { Length: > 0 } tag ? tag : name[..Math.Min(4, name.Length)].ToUpperInvariant();
+            if (def is not { Controller: false })
+                _powShown[_powShownCount++] = i;
+        }
+    }
+
     private void DrawPowerRelations(Game game, FactionTable t)
     {
         var n = Math.Min(t.PowerCount, t.StoryNames.Length);
         if (n < 2 && t.PactCount == 0 && game.PowerNews.Count == 0)
             return;
+        PowerColumns(t, n);
         ImGui.Separator();
         ImGuiSafe.TextColored(Orange, "Between the factions");
-        if (n >= 2 && ImGui.BeginTable("##powgrid"u8, n + 1, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.SizingFixedFit))
+        var m = _powShownCount;
+        if (m >= 2 && ImGui.BeginTable("##powgrid"u8, m + 1, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.SizingFixedFit))
         {
             ImGui.TableSetupColumn("sees"u8);
-            for (var b = 0; b < n; b++)
-                ImGui.TableSetupColumn(t.StoryNames[b]);
+            for (var j = 0; j < m; j++)
+                ImGui.TableSetupColumn(_powShort[_powShown[j]]);
             ImGui.TableHeadersRow();
-            for (var a = 0; a < n; a++)
+            for (var i = 0; i < m; i++)
             {
+                var a = _powShown[i];
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
                 ImGuiSafe.TextColored(Orange, t.StoryNames[a]);
-                for (var b = 0; b < n; b++)
+                for (var j = 0; j < m; j++)
                 {
+                    var b = _powShown[j];
                     ImGui.TableNextColumn();
                     if (a == b)
                     {
