@@ -306,6 +306,8 @@ public static class SandboxAim
         }
         if (d.Role == PartRole.Hitch)
             return tool == ConstructTool.Welder ? p.Broken ? AimCall.Refuse("that hitch is wrecked") : AimCall.Ok : AimCall.No;
+        if (d.Role == PartRole.Gun && !d.HasJoint)
+            return AimCall.No; // (a gun on a turret's plate isn't opened or shut: its own look line says what it holds, not its turntable's refusal)
         var seg = c.MoveSeg(p.Seg); // (a freeform weld is rigid: nothing there to open)
         if (d.HasJoint && c.RailJointOf(t.Part) is var own and >= 0)
             seg = own + 1;

@@ -1230,6 +1230,8 @@ public sealed partial class ConstructEdits
             return Hitch(world, player, c, part);
         if (ConstructDoors.Use(world, c, part) is { } door)
             return door.Length == 0 ? null : door; // (an event door, or a part on its leaf: ConstructDoors.cs)
+        if (d.Role == PartRole.Gun && !d.HasJoint)
+            return c.Loose ? PickUp(world, player, eye, body) : NothingToUse; // (a gun on a turret isn't opened or shut by hand: SandboxAim.Use says the same)
         var seg = c.MoveSeg(c.Parts[part].Seg); // (a freeform weld is rigid: nothing there to open)
         if (d.HasJoint && c.RailJointOf(part) is var own and >= 0)
             seg = own + 1;
