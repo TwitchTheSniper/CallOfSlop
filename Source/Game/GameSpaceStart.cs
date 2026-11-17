@@ -54,7 +54,44 @@ public sealed partial class Game
         _opMiddle = _opGate = _opWake = _opCrash = from;
         Constructs.Events.Add($"opening: the ship ({script.Ship}) as construct {ship.Id}");
         Log($"[opening] the {script.Ship} is construct {ship.Id}, {(r - pl.Radius) / 1000:0.0} km up over {from.X:0},{from.Z:0}, going round at {speed:0} m/s");
+        foreach (var co in script.Company)
+            OpeningCompanion(co, centre, up, fwd, r, speed);
         return true;
+    }
+
+    /// <summary>
+    /// Server, a ship start's company (the opening's <c>"company"</c>; Karl, 2026-11-17: an NPC Zero Day of a neutral faction
+    /// near the player's): a nobody's ship on the same circular orbit, <see cref="OpeningScript.Companion.Behind"/> m back along
+    /// it (the same orbit, so the gap holds as they go round), crewed by the faction kind named. Its magazines come full and its
+    /// banks charged, as every ship the game spawns (ConstructBuild). A miss is logged, and the start goes on without it.
+    /// </summary>
+    private void OpeningCompanion(in OpeningScript.Companion co, Vector3 centre, Vector3 up, Vector3 fwd, float r, float speed)
+    {
+        if (ConstructBuild.FindBlueprint(co.Ship) is not { } bp)
+            return;
+        var a = co.Behind / r; // (the angle back along the orbit)
+        var cu = up * MathF.Cos(a) - fwd * MathF.Sin(a);
+        var cf = fwd * MathF.Cos(a) + up * MathF.Sin(a);
+        var z = -cf;
+        var x = Vector3.Cross(cu, z);
+        var rot = Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(new Matrix4x4(x.X, x.Y, x.Z, 0, cu.X, cu.Y, cu.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1)));
+        var c = ConstructBuild.Build(Constructs, bp, centre + cu * r, rot, out var why);
+        if (c == null)
+        {
+            Log($"[opening] the company's {co.Ship} didn't build in orbit: {why}");
+            return;
+        }
+        c.Rebuild();
+        c.Owner = 255; // (nobody's: the faction's)
+        c.Vel = cf * speed;
+        c.PrevPos = c.Pos;
+        c.Wake();
+        var faction = CrewPowers.Find(co.Faction);
+        var crew = Crew.Crew(c, ShipAiMode.Strangers, faction: faction);
+        if (Crew.Events.Count > 0)
+            CrewLog();
+        Constructs.Events.Add($"opening: the company's {co.Ship} ({co.Faction}) as construct {c.Id}");
+        Log($"[opening] the company's {co.Ship} is construct {c.Id}, {co.Behind:0} m {(co.Behind >= 0 ? "behind" : "ahead")}, crewed by {CrewPowers.Of(faction)?.Name ?? "nobody"} ({(crew != null ? Crew.Alive(crew) : 0)} aboard)");
     }
 
     /// <summary>Server: a player into the ship, standing in its frame at their wake spot (lying down, as the opening has them). False: no ship.</summary>
