@@ -48,15 +48,19 @@ public static class LinkedCheck
             Construct c;
             using (placeA.In())
                 c = fq.Join(new Vector3(0, 0, 0), 0, out _)!;
+            // (--to X,Z: the waypoint, default 100,0; --yaw D: the craft turned that far first)
+            var to = args.SkipWhile(a => a != "--to").Skip(1).FirstOrDefault()?.Split(',').Select(v => float.Parse(v, System.Globalization.CultureInfo.InvariantCulture)).ToArray() ?? [100f, 0f];
+            if (args.SkipWhile(a => a != "--yaw").Skip(1).FirstOrDefault() is { } yaw)
+                c.Rot = Quaternion.CreateFromAxisAngle(Vector3.UnitY, float.Parse(yaw, System.Globalization.CultureInfo.InvariantCulture) * MathF.PI / 180f);
             using (placeA.In())
-                ConstructFlight.NavEngage(wa, c, args.Contains("--wpt") ? FlightMode.Waypoint : FlightMode.Hover, new Vector3(100, 0, 0), ConstructPhysics.HoldShown(ConstructPhysics.HoldHeight(c.WorldCom) + 20));
+                ConstructFlight.NavEngage(wa, c, args.Contains("--wpt") ? FlightMode.Waypoint : FlightMode.Hover, new Vector3(to[0], 0, to[1]), ConstructPhysics.HoldShown(ConstructPhysics.HoldHeight(c.WorldCom) + 20));
             for (var sec = 0; sec < 12; sec++)
             {
                 using (placeA.In())
                     for (var t = 0; t < World.TickRate; t++)
                         wa.Step(q, World.TickDt);
                 var rs = string.Join(", ", Enumerable.Range(0, c.RotorCount).Select(k => FormattableString.Invariant($"[cmd {c.Rotors[k].Command:0.00} w {c.Rotors[k].Omega:0} T {c.Rotors[k].Thrust:0} scanned {c.Rotors[k].Scanned} in {c.Parts[c.Rotors[k].Part].In:0.00}/{c.Parts[c.Rotors[k].Part].InCount}]")));
-                Console.WriteLine(FormattableString.Invariant($"fq {sec}: x {c.WorldCom.X:0.0} y {c.WorldCom.Y:0.00} up {Vector3.Transform(Vector3.UnitY, c.Rot).Y:0.00} vel {c.Vel.Y:0.0} anch {c.Anchored} carried {c.CarriedBy} mass {c.Mass:0} owns {c.StabOwns} elec {c.Electrical} charge {c.Charge:0} AP {ConstructFlight.ApText(c)} rotors {rs}"));
+                Console.WriteLine(FormattableString.Invariant($"fq {sec}: x {c.WorldCom.X:0.0} z {c.WorldCom.Z:0.0} y {c.WorldCom.Y:0.00} up {Vector3.Transform(Vector3.UnitY, c.Rot).Y:0.00} vel {c.Vel.Y:0.0} anch {c.Anchored} carried {c.CarriedBy} mass {c.Mass:0} owns {c.StabOwns} elec {c.Electrical} charge {c.Charge:0} AP {ConstructFlight.ApText(c)} rotors {rs}"));
             }
             return 0;
         }

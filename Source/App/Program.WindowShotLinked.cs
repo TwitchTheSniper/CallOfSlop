@@ -32,7 +32,7 @@ public static unsafe partial class Program
                             WsSay($"linked: body {c.Id} {c.DefOf(i).Name} {i}: {(c.Parts[i].Link is { } lp ? $"\"{lp.Name}\" {lp.Status.Replace('\n', '|')}; offers {lp.Offers.Length}; manifest {lp.Manifest.Sum(m => m.Aboard)}" : "no state heard")}");
                 foreach (var c in w.Bodies)
                     if (LinkRoutes.RouteOf(c) is { } rr)
-                        WsSay($"linked: route ship {c.Id} at {c.WorldCom:0.0} vel {c.Vel.Length():0.0} held by {c.CarriedBy}, AP {ConstructFlight.ApText(c)}; stop {rr.At + 1} {rr.Phase}: {rr.Why}{(w.Get(rr.Stops[rr.At].Body) is { } db && rr.Stops[rr.At].Part < db.PartCount ? $"; its dock at {LinkDocks.PartAt(db, rr.Stops[rr.At].Part):0.0}" : "")}");
+                        WsSay($"linked: route ship {c.Id} at {c.WorldCom:0.0} vel {c.Vel.Length():0.0} held by {c.CarriedBy}, up {System.Numerics.Vector3.Transform(System.Numerics.Vector3.UnitY, c.Rot).Y:0.00}, charge {ConstructPower.Share(c) * 100:0}% (power {(c.PowerOn ? "on" : "off")}, {c.PowerUse / 1000f:0} kW), anchored {c.Anchored}, frozen {c.Frozen}, thrust {c.ThrustShow:0.00}, AP {ConstructFlight.ApText(c)}; stop {rr.At + 1} {rr.Phase}: {rr.Why}{(w.Get(rr.Stops[rr.At].Body) is { } db && rr.Stops[rr.At].Part < db.PartCount ? $"; its dock at {LinkDocks.PartAt(db, rr.Stops[rr.At].Part):0.0}" : "")}");
                 if (g.IsServer)
                     foreach (var l in LinkLedger.Lines)
                         WsSay($"linked: line {l.Id} {l.State} {ConstructParts.Get(l.Kind)?.Name} {l.Count}: ready {l.Ready} loaded {l.Loaded} delivered {l.Delivered} lost {l.Lost} taken {l.Taken} \"{l.Note}\"");

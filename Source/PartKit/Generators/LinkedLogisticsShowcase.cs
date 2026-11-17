@@ -47,11 +47,11 @@ public sealed class LinkedLogisticsShowcase : IPartGenerator
         steps.Add("{ \"part\": \"Foundation\", \"on\": 3, \"socket\": \"x+0\", \"by\": \"x-0\", \"paint\": \"#8c8576\" }"); // 15
         steps.Add("{ \"part\": \"Foundation\", \"on\": 15, \"socket\": \"x+0\", \"by\": \"x-0\", \"paint\": \"#8c8576\" }"); // 16
         steps.Add($"{{ \"part\": \"Building Station\", \"on\": 16, \"socket\": \"top00\", \"by\": \"-y.0.0\", \"config\": {{ \"bayWidth\": 4, \"bayDepth\": 3, \"bayHeight\": 3, \"subJobs\": {(yard ? 1 : 2)} }} }}"); // 17
-        // Four Battery Packs (80 MJ) on two Foundations off the row's -x side by the clamp: the clamp charges a held ship from it (20 kW),
+        // Four Battery Packs (80 MJ) on the outer of two Foundations off the row's -x side by the Cargo Dock (6 m from the clamp: a landing hauler's feet clear them): the clamp charges a held ship from it (20 kW),
         // so an electric hauler comes back full enough for its next leg.
-        steps.Add("{ \"part\": \"Foundation\", \"on\": 5, \"socket\": \"x-0\", \"by\": \"x+0\", \"paint\": \"#8c8576\" }"); // 18
+        steps.Add("{ \"part\": \"Foundation\", \"on\": 3, \"socket\": \"x-0\", \"by\": \"x+0\", \"paint\": \"#8c8576\" }"); // 18
         steps.Add("{ \"part\": \"Foundation\", \"on\": 18, \"socket\": \"x-0\", \"by\": \"x+0\", \"paint\": \"#8c8576\" }"); // 19
-        foreach (var (on, socket) in new[] { (18, "top11"), (18, "top31"), (19, "top11"), (19, "top31") })
+        foreach (var (on, socket) in new[] { (19, "top10"), (19, "top30"), (19, "top13"), (19, "top33") })
             steps.Add($"{{ \"part\": \"Battery Pack\", \"on\": {on}, \"socket\": \"{socket}\", \"by\": \"-y\" }}"); // 20 to 23 (half a metre apart: their trims don't meet)
         var links = yard
             ? "{ \"type\": \"chute\", \"from\": 7, \"fromPort\": \"Chute out\", \"to\": 13, \"toPort\": \"Chute in\" }"

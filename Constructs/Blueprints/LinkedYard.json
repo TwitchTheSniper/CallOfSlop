@@ -22,12 +22,12 @@
     { "part": "Foundation", "on": 3, "socket": "x+0", "by": "x-0", "paint": "#8c8576" },
     { "part": "Foundation", "on": 15, "socket": "x+0", "by": "x-0", "paint": "#8c8576" },
     { "part": "Building Station", "on": 16, "socket": "top00", "by": "-y.0.0", "config": { "bayWidth": 4, "bayDepth": 3, "bayHeight": 3, "subJobs": 1 } },
-    { "part": "Foundation", "on": 5, "socket": "x-0", "by": "x+0", "paint": "#8c8576" },
+    { "part": "Foundation", "on": 3, "socket": "x-0", "by": "x+0", "paint": "#8c8576" },
     { "part": "Foundation", "on": 18, "socket": "x-0", "by": "x+0", "paint": "#8c8576" },
-    { "part": "Battery Pack", "on": 18, "socket": "top11", "by": "-y" },
-    { "part": "Battery Pack", "on": 18, "socket": "top31", "by": "-y" },
-    { "part": "Battery Pack", "on": 19, "socket": "top11", "by": "-y" },
-    { "part": "Battery Pack", "on": 19, "socket": "top31", "by": "-y" }
+    { "part": "Battery Pack", "on": 19, "socket": "top10", "by": "-y" },
+    { "part": "Battery Pack", "on": 19, "socket": "top30", "by": "-y" },
+    { "part": "Battery Pack", "on": 19, "socket": "top13", "by": "-y" },
+    { "part": "Battery Pack", "on": 19, "socket": "top33", "by": "-y" }
   ],
   "links": [
     { "type": "chute", "from": 7, "fromPort": "Chute out", "to": 13, "toPort": "Chute in" }
