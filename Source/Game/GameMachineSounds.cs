@@ -17,6 +17,8 @@ public sealed partial class Game
     private readonly Vector3[] _mcAt = new Vector3[256]; // where each was last frame
     private readonly ushort[] _mcChair = new ushort[256], _mcSeat = new ushort[256];
     private double _mcLast;
+    private readonly uint[] _mcSeen = new uint[256]; // the frame each id was last looked at
+    private uint _mcFrame = 1;
 
     /// <summary>The link's sounds at the chair, as heard by others, are this much of the wearer's own.</summary>
     private const float ChairHeardGain = 0.55f;
@@ -27,11 +29,18 @@ public sealed partial class Game
         var dt = (float)Math.Clamp(now - _mcLast, 0, 0.25);
         _mcLast = now;
         if (!Audio.Enabled)
+        {
+            _mcFrame++; // (nothing heard: everyone starts unseen when sound comes back)
             return;
+        }
         CallOfSlop.MachineSounds.Frame(Constructs, Audio, Audio.ListenerPosition, dt);
+        _mcFrame++;
         foreach (var p in Players.Values)
         {
             var id = p.Id;
+            if (_mcSeen[id] != _mcFrame - 1)
+                _mcShell[id] = 0; // (not here last frame: a joiner, perhaps on a leaver's id, starts unseen)
+            _mcSeen[id] = _mcFrame;
             var state = p.InShell ? (byte)2 : (byte)1;
             var was = _mcShell[id];
             if (was != 0 && was != state && p.Alive)

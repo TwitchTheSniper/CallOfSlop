@@ -336,6 +336,7 @@ public sealed partial class Game
         if (!SandboxOn || Local is not { } me || !me.Alive)
         {
             _lkFrom = _lkWoke = _lkLift = -1;
+            _lkWasShell = false; // (dead or out of the Sandbox: no unlink sound when they come back)
             return false;
         }
         if (me.InShell)

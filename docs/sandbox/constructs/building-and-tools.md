@@ -602,7 +602,7 @@ Karl, 2026-11-17. Synthesised at start-up like the rest (`Source/Audio/SynthMach
 - **Reactors** hum: any power plant that burns nothing, of 100 kW or more (`MachineSounds.Hums`; a hamster wheel doesn't). The three nearest each get two loops on 6 voices of their own (`Audio.Machine.cs`), a light hum and a heavy, pulsing one faded across by how hard the body's plants work (`Construct.PlantShow`, a byte in the pose since protocol 335), a little higher with load; a ship with its mains off is quiet.
 - **Shell Control Chair**: the sitter hears the helmet come down and seal, the link take as their eyes open as the robot, the link spin down when they come back, and the helmet lift when no shell answers (`ShellLinkView` cues them, at the ear). Others hear the link at the chair.
 - **Robot shells** start up (relays, a capacitor whine, each joint's servo, a fan) when someone wakes in one, and power down where it is left standing (from each player's shell flag changing).
-- **Robot Shell Dock** clamps closing and letting go: `Game.DockSound(clamp, at)` on the server plays it and sends `Msg.MachineSound` to every client.
+- **Robot Shell Dock** clamps closing and letting go: `Game.DockSound(clamp, at)` on the server plays it and sends `Msg.MachineSound` to every client. Called from the dock's clamp and release points once the docks are in (PR 259).
 
 ## Snappy building (decision 24, board item sb01)
 

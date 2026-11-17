@@ -1415,13 +1415,14 @@ public static partial class ConstructNet
     /// charging): both ride only the pose, so it sends one, at most every <see cref="StateEvery"/> pose ticks.
     /// </summary>
     private static bool StateDue(Construct c, uint poseTick) =>
-        poseTick - c.StateSentAt >= StateEvery && (MathF.Abs(c.Fuel - c.FuelSent) >= 0.01f || c.Fuel != c.FuelSent && c.Fuel == 0 || ChargeByte(c) != c.ChargeSent || c.CapCapacity > 0 && CapByte(c) != c.CapSent);
+        poseTick - c.StateSentAt >= StateEvery && (MathF.Abs(c.Fuel - c.FuelSent) >= 0.01f || c.Fuel != c.FuelSent && c.Fuel == 0 || ChargeByte(c) != c.ChargeSent || c.CapCapacity > 0 && CapByte(c) != c.CapSent || c.PlantCount > 0 && ShareOut(c.PlantShow) != c.PlantSent);
 
     private static void StateSent(Construct c, uint poseTick)
     {
         c.FuelSent = c.Fuel;
         c.ChargeSent = ChargeByte(c);
         c.CapSent = CapByte(c);
+        c.PlantSent = ShareOut(c.PlantShow);
         c.StateSentAt = poseTick;
     }
 
