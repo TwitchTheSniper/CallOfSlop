@@ -31,12 +31,50 @@ public static class ConstructStoreVolume
 
     public static readonly Vector3 PartsColour = new(0.48f, 0.42f, 0.33f); // (a level of stored parts: crates)
 
-    /// <summary>The box in the frame of the part's segment, exactly as the player sized it (the developer, 2026-11-02: it isn't clipped to the construct).</summary>
+    public const float WallT = 0.15f; // a walled box's walls and floor (metres, inside the box as sized)
+    public const int WallBoxes = 5; // the floor and four walls: solid boxes past the part file's own (Construct.SolidBox)
+    public const byte WalledFaces = ConstructSeal.AllSealed & ~(1 << 2); // its own walls close every face but the top (+y, face 2)
+
+    /// <summary>Is this Storage Volume walled (its Walls setting, on by default; the user, 2026-11-17: storage needs no hand-built walls)?</summary>
+    public static bool Walled(in CPart p, ConstructPartDef d) => d.IsVolumeStore && !p.Broken && ConstructConfig.Get(p, d, CfgKey.Walls, 0) >= 0.5f;
+
+    /// <summary>
+    /// The box in the frame of the part's segment, as the player sized it (the developer, 2026-11-02: it isn't clipped to the construct);
+    /// a walled one's walls and floor (<see cref="WallT"/>) come out of it.
+    /// </summary>
     public static void Usable(Construct c, int part, Vector3 size, Vector3 at, out Vector3 min, out Vector3 max)
     {
+        if (Walled(c.Parts[part], c.Parts[part].D))
+        {
+            size = Vector3.Max(size - new Vector3(2 * WallT, WallT, 2 * WallT), new Vector3(0.05f));
+            at.Y += WallT * 0.5f;
+        }
         ConstructCargo.BoxFrom(c.Parts[part], size, at, out var centre, out var half);
         min = centre - half;
         max = centre + half;
+    }
+
+    /// <summary>
+    /// Wall <paramref name="k"/> of a walled box (0 the floor, 1 to 4 the walls), in its segment's rest frame: inside the sized box,
+    /// the walls a few mm short of the box's top and the floor a few mm in from the walls (they share no face plane).
+    /// </summary>
+    public static void WallBox(Construct c, int part, int k, out Vector3 centre, out Vector3 half)
+    {
+        ref var p = ref c.Parts[part];
+        ConstructCargo.Settings(p, p.D, out var size, out var at);
+        var h = size * 0.5f;
+        Vector3 lc, lh;
+        var t = MathF.Min(WallT, MathF.Min(h.X, h.Z) * 0.5f);
+        switch (k)
+        {
+            case 0: lc = at + new Vector3(0, -h.Y + t * 0.5f, 0); lh = new Vector3(h.X - t + 0.003f, t * 0.5f, h.Z - t + 0.003f); break;
+            case 1: lc = at + new Vector3(h.X - t * 0.5f, -0.002f, 0); lh = new Vector3(t * 0.5f, h.Y - 0.002f, h.Z); break;
+            case 2: lc = at + new Vector3(-h.X + t * 0.5f, -0.002f, 0); lh = new Vector3(t * 0.5f, h.Y - 0.002f, h.Z); break;
+            case 3: lc = at + new Vector3(0, -0.004f, h.Z - t * 0.5f); lh = new Vector3(h.X - t - 0.003f, h.Y - 0.004f, t * 0.5f); break;
+            default: lc = at + new Vector3(0, -0.004f, -h.Z + t * 0.5f); lh = new Vector3(h.X - t - 0.003f, h.Y - 0.004f, t * 0.5f); break;
+        }
+        centre = p.Pos + Rot24.Apply(p.Rot, lc);
+        half = Rot24.ApplyHalf(p.Rot, lh);
     }
 
     /// <summary>The part's box as it stands (see <see cref="Usable(Construct, int, Vector3, Vector3, out Vector3, out Vector3)"/>).</summary>

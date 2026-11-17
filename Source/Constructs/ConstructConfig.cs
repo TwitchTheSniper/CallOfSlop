@@ -217,6 +217,7 @@ public enum CfgKey : byte
     AiCrew, // Flight Stabilizer: an AI crew flies and fights the craft from its seats (ShipAiMode; ConstructShipAi.cs)
     SubJobs, // Building Station: Auto, it takes other stations' sub-blueprint uses as sub-jobs; Off, it keeps to its player's builds (ConstructStationTree.cs)
     ShellWear0, ShellWear1, ShellWear2, ShellWear3, // Robot Shell: its works' wear, two bytes a setting (not on the panel; ShellWear.cs)
+    Walls, // Storage Volume: on, its box is a walled open-topped bin (four walls and a floor inside the box, solid; ConstructStoreVolume.Walled)
     COUNT,
 }
 
@@ -770,7 +771,7 @@ public static class ConstructConfig
 
     private static string DefaultType(CfgKey k) => k switch
     {
-        CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip or CfgKey.Invert or CfgKey.Wrap or CfgKey.Pushable or CfgKey.Stabilised => "toggle",
+        CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip or CfgKey.Invert or CfgKey.Wrap or CfgKey.Pushable or CfgKey.Stabilised or CfgKey.Walls => "toggle",
         CfgKey.Profile => "choice",
         CfgKey.RunMode or CfgKey.LinePage or CfgKey.OrderKind or CfgKey.OrderMaterial => "choice",
         CfgKey.SteerKind => "choice",
@@ -835,6 +836,7 @@ public static class ConstructConfig
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),
                 CfgKey.Hole => d.IsEnvelope,
+                CfgKey.Walls => d.IsVolumeStore,
                 CfgKey.Reverse => d.Surface is { Control: > 0 } || d.Rotor != null || d.ThrustGimbal > 0,
                 CfgKey.Trim => d.Surface is { Control: > 0 },
                 CfgKey.Hand or CfgKey.Pusher or CfgKey.TorqueMix or CfgKey.BladeLost or (>= CfgKey.Blade0 and <= CfgKey.Blade3) => d.Rotor != null,

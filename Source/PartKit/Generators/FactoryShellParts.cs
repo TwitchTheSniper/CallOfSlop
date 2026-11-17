@@ -16,6 +16,7 @@ public sealed class FactoryShellParts : IPartGenerator
 
     private const string Out = "Constructs/Parts/Factory";
     private const string Concrete = "#8e8a80", Rim = "#5c5a55", Hazard = "#f2b01e";
+    private const int MaxBulk = 60_000; // (ConstructStorage.MaxBulk: a bin's capacity stops here, so the 8 m bunker is rated under its room)
     private const int UnitsPerM3 = 400; // (Recycling.json binUnitsPerCubicMetre: a bunker holds what a Storage Volume of its inside would)
 
     /// <summary>An open-topped bin: walls <paramref name="t"/> thick round a floor, chute in and out on its rim, a socket under the middle.</summary>
@@ -41,13 +42,83 @@ public sealed class FactoryShellParts : IPartGenerator
         p.Sock("-x", [x0, h * 0.5, 0], "-x");
         double i0 = x0 + t + 0.005, i1 = x1 - t - 0.005;
         var volume = (i1 - i0) * (i1 - i0) * (h - 0.05 - t - 0.005);
-        p.Set(("storage", Kw(("bulk", Kw(("material", "any"), ("capacity", (int)Math.Round(volume * UnitsPerM3)), ("chuteLoad", 160),
+        p.Set(("storage", Kw(("bulk", Kw(("material", "any"), ("capacity", (int)Math.Min(MaxBulk, Math.Round(volume * UnitsPerM3))), ("chuteLoad", 160),
                 ("min", Vec(i0, t + 0.005, i0)), ("max", Vec(i1, h - 0.05, i1)))))),
             ("ports", Py.L(
                 Kw(("name", "Chute in"), ("type", "chute"), ("dir", "in"), ("at", Vec(x0 + t * 0.5, h, 0)), ("face", "+y")),
                 Kw(("name", "Chute out"), ("type", "chute"), ("dir", "out"), ("at", Vec(x1 - t * 0.5, h, 0)), ("face", "+y")))));
         var area = w * w + 4 * w * h;
         p.Stats(area * t * 2400 * 0.5, area * 900, 20);
+        return p;
+    }
+
+    private const string Grid = "#3d4247", Spout = "#c9a227";
+
+    /// <summary>
+    /// A Tipping Grate (the user, 2026-11-17): a low steel grid over a shallow pit, flush enough to drive a tipper alongside or over.
+    /// Whatever is tipped onto it (a tipper's lip, a bucket, a player's F, an Unloading Auger) lands in its pit, a bin, and its Chute out
+    /// sends it on into the chute network. 0.3 m high: a frame round a pit floor, with bars across (look boxes) a few mm under the frame's top.
+    /// </summary>
+    private static Part Grate(double w, int cap)
+    {
+        var c = Small;
+        const double h = 0.3, f = 0.15, floor = 0.12;
+        var p = new Part($"Tipping Grate {w:0} m", c, "Factory", "A low grate over a pit: tip loose cargo onto it from a truck, a bucket or your hands, and its chute takes it on.", role: "storage", material: "steel", color: Grid, group: "Production");
+        double x0 = -w / 2, x1 = w / 2;
+        p.Add(Box([x0, 0, x0], [x1, floor, x1], Concrete)); // the pit's floor
+        foreach (var (a, b) in new[] { (x0, x0 + f), (x1 - f, x1) })
+            p.Add(Box([a, floor - 0.004, x0], [b, h, x1])); // the frame along z
+        foreach (var (a, b) in new[] { (x0, x0 + f), (x1 - f, x1) })
+            p.Add(Box([x0 + f, floor - 0.004, a], [x1 - f, h - 0.004, b])); // the frame along x
+        var bars = (int)Math.Round((w - 2 * f) / 0.25);
+        for (var k = 1; k < bars; k++)
+        {
+            var x = x0 + f + k * (w - 2 * f) / bars;
+            p.Add(Box([x - 0.025, h - 0.06, x0 + f + 0.004], [x + 0.025, h - 0.008, x1 - f - 0.004], Grid, detail: true)); // a bar
+        }
+        foreach (var z in new[] { x0 + f + 0.08, x1 - f - 0.08 })
+            p.Add(Box([x0 + 0.03, h + 0.002, z - 0.04], [x1 - 0.03, h + 0.012, z + 0.04], Hazard, detail: true)); // hazard strips on the frame's top
+        p.Sock("bottom", [0, 0, 0], "-y");
+        p.Sock("+x", [x1, h * 0.5, 0], "+x");
+        p.Sock("-x", [x0, h * 0.5, 0], "-x");
+        double i0 = x0 + f + 0.005, i1 = x1 - f - 0.005;
+        p.Set(("storage", Kw(("bulk", Kw(("material", "any"), ("capacity", cap), ("chuteLoad", 320),
+                ("min", Vec(i0, floor + 0.005, i0)), ("max", Vec(i1, h - 0.07, i1)))))),
+            ("ports", Py.L(
+                Kw(("name", "Chute out"), ("type", "chute"), ("dir", "out"), ("at", Vec(x1 - f * 0.5, h, x1 - f * 0.5)), ("face", "+y")))));
+        p.Stats(w * w * 60, w * w * 500, 25);
+        return p;
+    }
+
+    /// <summary>
+    /// An Unloading Auger (the user, 2026-11-17: a combine harvester's unloading auger): a hopper on a Medium turntable's top with a
+    /// square tube out along its z and a spout at the end. Chute loose material or small pieces into the hopper; with power and its Run
+    /// input on it pours from the spout into the store under it (ConstructAugers.cs). Swing it on a Turntable 1x1 Medium: logic turns it.
+    /// </summary>
+    private static Part Auger(double length)
+    {
+        var c = Medium;
+        const double hw = 0.32, hh = 0.7, tw = 0.16, ty0 = 0.42, ty1 = 0.74;
+        var p = new Part($"Unloading Auger {length:0} m", c, "Factory", "A hopper and a swinging tube: it pours its load from the spout into a truck bed or bin under it. Fit it on a Turntable 1x1 Medium to swing it.", role: "storage", material: "steel", color: Spout, group: "Production");
+        p.Add(Box([-hw, 0, -hw], [hw, 0.06, hw], Grid)); // the hopper's floor plate
+        foreach (var (a, b) in new[] { (-hw, -hw + 0.04), (hw - 0.04, hw) })
+            p.Add(Box([a, 0.056, -hw], [b, hh, hw])); // its sides along z
+        foreach (var (a, b) in new[] { (-hw, -hw + 0.04), (hw - 0.04, hw) })
+            p.Add(Box([-hw + 0.044, 0.056, a], [hw - 0.044, hh - 0.004, b])); // its sides along x
+        p.Add(Box([-tw, ty0, hw + 0.004], [tw, ty1, length - 0.3])); // the tube
+        p.Add(Box([-tw - 0.02, ty0 - 0.1, length - 0.3 - 0.004], [tw + 0.02, ty1 + 0.02, length])); // the head
+        p.Add(Box([-0.12, 0.12, length - 0.26], [0.12, ty0 - 0.096, length - 0.04], Grid)); // the spout, down
+        for (var z = hw + 0.6; z < length - 0.5; z += 0.9)
+            p.Add(Box([-tw - 0.012, ty0 - 0.012, z], [tw + 0.012, ty1 + 0.012, z + 0.08], Grid, detail: true)); // a flange band
+        p.Add(Box([-0.1, ty0 - 0.3, hw + 0.15], [0.1, ty0 - 0.004, hw + 0.35], Grid, detail: true)); // the drive box under the tube
+        p.Sock("mount", [0, 0, 0], "-y");
+        p.Set(("power", 3.0),
+            ("storage", Kw(("bulk", Kw(("material", "any"), ("capacity", 800), ("chuteLoad", 320),
+                ("min", Vec(-hw + 0.045, 0.065, -hw + 0.045)), ("max", Vec(hw - 0.045, hh - 0.05, hw - 0.045)))),
+                ("auger", Kw(("tip", Vec(0, 0.1, length - 0.15)), ("rate", 200))))),
+            ("ports", Py.L(
+                Kw(("name", "Chute in"), ("type", "chute"), ("dir", "in"), ("at", Vec(0, hh, -hw + 0.02)), ("face", "+y")))));
+        p.Stats(120 + length * 45, 900 + length * 150, 12);
         return p;
     }
 
@@ -124,6 +195,14 @@ public sealed class FactoryShellParts : IPartGenerator
             ("", Bunker("Ore Bunker 2 m", 2.0, 1.5, 0.12, "An open concrete bin for bulk stock: chute in and out on its rim, or tip a load in from above.", false)),
             ("", Bunker("Ore Bunker 3 m", 3.0, 2.0, 0.15, "A big open concrete bin for bulk stock: chute in and out on its rim, or tip a load in from above.", false)),
             ("", Bunker("Tipping Bunker 3 m", 3.0, 1.0, 0.15, "A low open bin a tipper pours into from the road beside it: its top is 1 m up. Chute it on to the stock.", true)),
+            ("", Bunker("Ore Bunker 4 m", 4.0, 2.5, 0.18, "A large open concrete bin for bulk stock: chute in and out on its rim, or tip a load in from above.", false)),
+            ("", Bunker("Ore Bunker 5 m", 5.0, 2.5, 0.2, "A large open concrete bin for bulk stock: chute in and out on its rim, or tip a load in from above.", false)),
+            ("", Bunker("Ore Bunker 6 m", 6.0, 3.0, 0.2, "A huge open concrete bin for bulk stock: chute in and out on its rim, or tip a load in from above.", false)),
+            ("", Bunker("Ore Bunker 8 m", 8.0, 3.0, 0.25, "A huge open concrete bin for a works' stock: chute in and out on its rim, or tip a load in from above.", false)),
+            ("", Grate(4.0, 6000)),
+            ("", Grate(6.0, 12000)),
+            ("", Auger(4.0)),
+            ("", Auger(6.0)),
         ]);
     }
 }
