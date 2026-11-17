@@ -51,10 +51,76 @@ public sealed class FactoryShellParts : IPartGenerator
         return p;
     }
 
+    /// <summary>The shed's eaves: a portal column's height, over the tallest Workshop refiner (6.3 m) on a 0.3 m floor with the rafter and a margin.</summary>
+    public const double Eaves = 8.0, ColumnW = 0.3, RafterH = 0.35, RafterW = 0.2, Bay = 4.0, SheetT = 0.04, Lift = 0.003;
+
+    /// <summary>The spans a portal rafter comes in: a machine band and its aisle, less half a metre (factory kit: columns 0.25 m in from the road and the band's back).</summary>
+    public static readonly double[] Spans = [5.5, 7.5, 9.5, 11.5, 13.5];
+
+    private const string Steel = "#3a3f46", Sheet = "#6f7a6a", Plate = "#2a2e33";
+
+    /// <summary>A portal column: an H-section steel post, its foot on a floor socket, its head carrying a rafter.</summary>
+    private static Part Column()
+    {
+        var c = Small;
+        double h = Eaves, w = ColumnW, f = 0.04;
+        var p = new Part($"Portal Column {h:0} m", c, "Factory shell", "A steel H column for a shed or hall: stand it on the floor, a Portal Rafter on its head.", color: Steel, group: "Building");
+        p.Add(Box([-w / 2, 0, -w / 2], [w / 2, h, -w / 2 + f])); // a flange
+        p.Add(Box([-w / 2, 0, w / 2 - f], [w / 2, h, w / 2])); // the other flange
+        p.Add(Box([-f / 2, 0, -w / 2 + f], [f / 2, h - 0.004, w / 2 - f])); // the web
+        p.Add(Box([-0.25, 0.003, -0.25], [0.25, 0.025, 0.25], Plate, detail: true)); // the base plate
+        p.Add(Box([-w / 2 - 0.01, h - 0.02, -w / 2 - 0.01], [w / 2 + 0.01, h + 0.002, w / 2 + 0.01], Plate, detail: true)); // the cap
+        p.Sock("foot", [0, 0, 0], "-y");
+        p.Sock("head", [0, h + 0.002, 0], "+y");
+        p.Stats(h * 0.022 * 7850, 1800, 18);
+        return p;
+    }
+
+    /// <summary>A portal rafter <paramref name="span"/> long (its own z): a seat under each end on a column's head, a top socket over each end for the roof.</summary>
+    private static Part Rafter(double span)
+    {
+        var c = Small;
+        double h = RafterH, w = RafterW, f = 0.035;
+        var p = new Part($"Portal Rafter {span:0.0} m", c, "Factory shell", "A steel rafter from column head to column head: roof sheets lie on it.", color: Steel, group: "Building");
+        p.Add(Box([-w / 2, 0, 0], [w / 2, f, span])); // the bottom flange
+        p.Add(Box([-w / 2, h - f, 0], [w / 2, h, span])); // the top flange
+        p.Add(Box([-0.015, f, 0.004], [0.015, h - f, span - 0.004])); // the web
+        p.Sock("seatA", [0, 0, 0], "-y");
+        p.Sock("seatB", [0, 0, span], "-y");
+        p.Sock("topA", [0, h, 0], "+y");
+        p.Sock("topB", [0, h, span], "+y");
+        p.Stats(span * 0.009 * 7850, 900, 12);
+        return p;
+    }
+
+    /// <summary>A roof sheet one bay wide (its own x, 4 m) over a rafter's span (its own z, with a quarter metre over each end), corrugated on top.</summary>
+    private static Part RoofSheet(double span)
+    {
+        var c = Small;
+        double l = span + 0.5;
+        var p = new Part($"Roof Sheet {Bay:0}x{l:0} m", c, "Factory shell", "A corrugated roof sheet a bay wide: lay it from one Portal Rafter to the next.", color: Sheet, group: "Building");
+        p.Add(Box([0, Lift, -0.25], [Bay, Lift + SheetT, span + 0.25])); // the sheet, a few mm over the rafters it lies on
+        for (var k = 0; k < 8; k++)
+        {
+            var x = (k + 0.5) * Bay / 8;
+            p.Add(Box([x - 0.05, Lift + SheetT, -0.247], [x + 0.05, Lift + SheetT + 0.025, span + 0.247], detail: true)); // a corrugation
+        }
+        p.Sock("rest", [0, 0, 0], "-y");
+        p.Stats(Bay * l * 9, Bay * l * 60, 3);
+        return p;
+    }
+
     public void Make(PartOutput o)
     {
+        var shell = new List<(string, Part)> { ("", Column()) };
+        foreach (var s in Spans)
+        {
+            shell.Add(("", Rafter(s)));
+            shell.Add(("", RoofSheet(s)));
+        }
         WriteParts(o, Out,
         [
+            .. shell,
             ("", Bunker("Ore Bunker 2 m", 2.0, 1.5, 0.12, "An open concrete bin for bulk stock: chute in and out on its rim, or tip a load in from above.", false)),
             ("", Bunker("Ore Bunker 3 m", 3.0, 2.0, 0.15, "A big open concrete bin for bulk stock: chute in and out on its rim, or tip a load in from above.", false)),
             ("", Bunker("Tipping Bunker 3 m", 3.0, 1.0, 0.15, "A low open bin a tipper pours into from the road beside it: its top is 1 m up. Chute it on to the stock.", true)),

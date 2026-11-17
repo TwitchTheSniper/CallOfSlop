@@ -89,6 +89,9 @@ public sealed class FactoryScript : BlueprintScript
         for (var k = 0; k < Programme.Edges.Count; k++)
             Edge(Programme.Edges[k], Plan.Lanes[k]);
         Console_();
+        if (Plan.Shell == "shed")
+            foreach (var (zone, r, _) in Plan.Zones.Where(z => z.Zone == 'P'))
+                Shed(r);
         Signs();
         Mast();
         Road();
@@ -300,6 +303,39 @@ public sealed class FactoryScript : BlueprintScript
 
     /// <summary>The skip hinge's axis (its own y) along the road, the way that makes a positive angle tip it towards the road.</summary>
     private static readonly Vector3 SkipAxis = Vector3.UnitX;
+
+    /// <summary>
+    /// A shed over a zone's machine band (3.5, the shell <c>shed</c>): Portal Columns 8 m along the road's edge and the band's back, a bay of 4 m apart
+    /// from the zone's west end, a Portal Rafter across each pair, a Roof Sheet over each bay. Open sided: the refiners (6.3 m) stand under 8 m eaves.
+    /// </summary>
+    private void Shed(PlanRect r)
+    {
+        var zf = -FactoryPlan.RoadDepth - 0.25f; // (over the aisle too: the front row stands at the road's edge, clear of the zone boards and the console)
+        var zb = Plan.BandBack + 0.25f;
+        var span = zf - zb;
+        var frame = Style.Colour(_paint.Fork("shed"), "frame");
+        var roof = Style.Colour(_paint.Fork("roof"), "roof");
+        var x0 = r.X0 + 1.25f; // (the first frame a metre in: the zone board stands at its west edge)
+        var bays = (int)MathF.Floor((r.X1 - 0.25f - x0) / 4f);
+        if (bays < 1)
+            return;
+        var rafters = new List<VPart>();
+        for (var k = 0; k <= bays; k++)
+        {
+            var x = x0 + 4f * k;
+            var front = On($"Portal Column 8 m", x, zf, Front, "foot", frame, "painted plating");
+            On($"Portal Column 8 m", x, zb, Front, "foot", frame, "painted plating");
+            var rafter = Stand($"Portal Rafter {span:0.0} m", V(x, FloorY + 8.002f, zf), new Orient(Vector3.UnitZ, -Vector3.UnitZ, Vector3.UnitY, Vector3.UnitY), front, "seatA");
+            Paint(rafter, frame);
+            rafters.Add(rafter);
+        }
+        for (var k = 1; k <= bays; k++)
+        {
+            var x = x0 + 4f * k;
+            var sheet = Stand($"Roof Sheet 4x{span + 0.5f:0} m", V(x, FloorY + 8.002f + 0.35f, zf), new Orient(Vector3.UnitZ, -Vector3.UnitZ, Vector3.UnitY, Vector3.UnitY), rafters[k], "rest");
+            Paint(sheet, roof);
+        }
+    }
 
     // ---- Chutes ---------------------------------------------------------------------------------------------------------------------
 

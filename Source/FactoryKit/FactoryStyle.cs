@@ -66,15 +66,15 @@ public static class FactoryStyles
         All.FirstOrDefault(s => s.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) ?? throw new FactoryKitException($"no factory style \"{name}\" ({string.Join(", ", All.Select(s => s.Name))})");
 
     /// <summary>
-    /// Militia: olive and dark steel, sandbagged power, a radio mast as the signature, open yards (phase 1: the shell is a yard; sheds and halls come with
-    /// the factory_shell parts in phase 2). Workshop machines, now and then an older plain one in a bank.
+    /// Militia: olive and dark steel, sandbagged power, a radio mast as the signature, open yards or open-sided sheds over the refiner banks (factory_shell's portal frames;
+    /// halls with cladding come later). Workshop machines, now and then an older plain one in a bank.
     /// </summary>
     public static readonly FactoryStyle Militia = new()
     {
         Name = "Militia",
         VehicleStyle = "Militia",
         Arrangements = new() { ["rows"] = 1 },
-        Shells = new() { ["yard"] = 1 },
+        Shells = new() { ["yard"] = 0.4, ["shed"] = 0.6 }, // (a shed: portal frames and a roof over the refiner banks, open sided)
         Tier = 2,
         OlderMachine = 0.35,
         SpareMin = 0,
@@ -93,6 +93,7 @@ public static class FactoryStyles
             ["floor"] = ["#80796a", "#7a7466"],
             ["aisle"] = ["#56603f", "#4c5638"],
             ["lane"] = ["#55534e", "#5d5a54"],
+            ["roof"] = ["#5e6a52", "#6b6f5e", "#5a5f58"],
         },
         ZoneFloor = new()
         {
