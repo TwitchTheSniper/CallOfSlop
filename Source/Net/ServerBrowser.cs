@@ -551,7 +551,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 326: trips between planets (docs/space/COMMAND.md "Between planets", GameNavTrip.cs): Msg.Nav gains u64 arrival and u64 departure (space ns)
     //   and f32 dV after the radius, and NavPhase gains Depart, Coast, Correct, Brake, Short and Wait at its end; SpaceMsg.Clock gains a u8
     //   at its end, the host's fuel use in space (percent: ConstructPhysics.SpaceFuelScale).
-    public const ushort ProtocolVersion = 326;
+    // 328: the bot brain's crews (docs/sandbox/design/bot-brain.md, phase 1; GameCrew.cs): Msg.CrewSeats at the end of Msg (u16 construct,
+    //   u8 n, n x u16 seat part), the seats a crew member works with no body, drawn as stand-ins. (327 is linked logistics': the merger renumbers.)
+    public const ushort ProtocolVersion = 328;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

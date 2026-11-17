@@ -23,7 +23,7 @@ namespace CallOfSlop;
 ///   --test-kit                     hosting Zombies: the test kit on maps that allow it (Horde Test; not saved)
 ///   --save-dir &lt;path&gt;              keep the saves in that folder (see SavePaths.cs)
 /// Release: --bake DIR (baked nav graphs for every shipped map, BotNavBake.cs).
-/// Modding helpers: --check-map FILE, --check-maps DIR, --gen-map NAME, --gen-maps, --gen-plan FILE PNG, --gen-vehicle NAME, --gen-vehicles, --check-vehicle FILE, --ship-ai-check [SHIP], --sweep-vehicle NAME, --diversity NAME, --diversity-style STYLE, --kit-report [--roles], --role "STYLE ROLE" --tier N, --family "STYLE ROLE", --convoy STYLE, --grade-vehicle, --grade-report, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR,
+/// Modding helpers: --check-map FILE, --check-maps DIR, --gen-map NAME, --gen-maps, --gen-plan FILE PNG, --gen-vehicle NAME, --gen-vehicles, --check-vehicle FILE, --crew-check [SHIP] [--scale N], --sweep-vehicle NAME, --diversity NAME, --diversity-style STYLE, --kit-report [--roles], --role "STYLE ROLE" --tier N, --family "STYLE ROLE", --convoy STYLE, --grade-vehicle, --grade-report, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR,
 /// --check-part FILE, --check-parts [DIR], --export-parts DIR [--resolved], --watch-parts (hot reload while playing).
 /// </summary>
 public static unsafe partial class Program
@@ -248,8 +248,8 @@ public static unsafe partial class Program
             return VehicleKit.VehicleDriveCheck.Report(VehicleKit.VehicleKitCli.SweepVehicle(sweepVehicle, args)); // many seeds of a shape, built and checked, nothing written
         if (args.Any(a => a.Equals("--preview-construct", StringComparison.OrdinalIgnoreCase) || a.Equals("--preview-gallery", StringComparison.OrdinalIgnoreCase) || a.Equals("--preview-shot", StringComparison.OrdinalIgnoreCase)))
             return ConstructPreview.Cli(args); // a blueprint or part as a turnable web page for an agent to publish (Source/DevTools/ConstructPreview.cs, tools/preview/)
-        if (args.Any(a => a.Equals("--ship-ai-check", StringComparison.OrdinalIgnoreCase)))
-            return VehicleKit.ShipAiCheck.Cli(args); // an AI crew flown against a target ship in a world of its own (ShipAiCheck.cs)
+        if (args.Any(a => a.Equals("--crew-check", StringComparison.OrdinalIgnoreCase)))
+            return CrewCheck.Cli(args); // a crewed ship flown by its seated crew against a target, its crew shot act by act; --scale N (Source/Crew/CrewCheck.cs)
         if (args.SkipWhile(a => !a.Equals("--sub-blueprint", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } subBlueprint)
         {
             // a blueprint's sub-blueprint tree, and the flat build against one that merges each use (SubBlueprints.cs)

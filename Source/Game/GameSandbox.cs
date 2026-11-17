@@ -179,7 +179,8 @@ public sealed partial class Game
         SandboxClearBuilds(); // (built weapons go with the match: GameSandboxBench.cs)
         ResetSandboxSpawns(); // (no spawns queued, no spawned zombies: GameSandboxSpawns.cs)
         _vehicleSpawn?.Reset(); // (no faction vehicles on the way: GameSandboxVehicles.cs)
-        _shipAi.Clear(); // (no crews from the last world: GameSandboxShipAi.cs)
+        Crew.Clear(this); // (no crews from the last world: GameCrew.cs)
+        CrewStandIns.Clear();
         SpawnHeldReset();
         _pilots.Clear(); // (no bot pilots: GameSandboxAircraft.cs)
         _airPending = 0;
@@ -361,6 +362,8 @@ public sealed partial class Game
                 continue;
             }
             h.SeatPart = (ushort)seat; // (parts are renumbered when others come off)
+            if (Crew.IsBody[p.Id])
+                continue; // (a crew body: its crew works the seat, GameCrew.cs)
             if (c.Parts[seat].D.Bunk)
             {
                 SandboxBunkSeen(p, c, seat); // (their checkpoint: GameSandboxDeath.cs)
@@ -406,11 +409,12 @@ public sealed partial class Game
         Constructs.DrillDig ??= DrillScoop; // (a working drill digs: ConstructDrillShaft.cs)
         Constructs.ScoopGround ??= this; // (scoops dig and pour: ConstructScoops.cs)
         Constructs.Targets = this; // (the guns hit players, bots and zombies: GameConstructWeapons.cs)
+        Constructs.CrewBytes ??= Crew.SaveBytes; // (a body's crew in its save: GameCrew.cs)
         Constructs.Hands ??= SandboxHandOf; // (a held hose follows its holder's hands)
         Constructs.Taught ??= AssemblerTaught; // (parts a story faction must teach first: GameStoryTech.cs)
         if (Constructs.PlayerEndCount > 0)
             SandboxHarpoonTick(); // (lines on players: their ends and who still holds them, GameSandboxHarpoon.cs)
-        SandboxShipAiTick(); // (ships with an AI crew work their seats: GameSandboxShipAi.cs)
+        SandboxCrewTick(); // (crews man and work their ships' seats: GameCrew.cs, Source/Crew/CrewWorld.cs)
         AllocProfile.Mark("sandbox: constructs");
         using (Perf.Measure(PerfArea.Constructs))
             Constructs.Step(World.Query, World.TickDt);

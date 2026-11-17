@@ -1277,6 +1277,11 @@ public sealed partial class Game : IDisposable
                 }
                 SprintSpread.Tick(p, cmd.Buttons); // sprint inaccuracy (SprintSpread.cs)
             }
+            else if (p.CrewSlot >= 0)
+            {
+                using var _ = Perf.Measure(PerfArea.Bots);
+                CrewBodyTick(p); // (a crew member's body: its crew drives its seat, GameCrew.cs)
+            }
             else if (p.Bot != null)
             {
                 using var _ = Perf.Measure(PerfArea.Bots);
@@ -1291,7 +1296,7 @@ public sealed partial class Game : IDisposable
 
             AllocProfile.Mark("respawn, history");
             // Bots respawn on their own; people respawn when they click Respawn (never forced).
-            if (!p.Alive && p.AwayOn == null && (p.Bot != null || p.WantsRespawn) && now >= p.RespawnAt && Module.CanRespawn(this, p, now)) // (Zombies: bled out = back next round, see ZombiesMode.cs)
+            if (!p.Alive && p.AwayOn == null && (p.Bot != null && p.CrewSlot < 0 || p.WantsRespawn) && now >= p.RespawnAt && Module.CanRespawn(this, p, now)) // (Zombies: bled out = back next round, see ZombiesMode.cs)
             {
                 Spawn(p, ServerTick, now);
                 if (p.Id == LocalId)
@@ -2039,6 +2044,7 @@ public sealed partial class Game : IDisposable
                 SendResourceState(sender); // felled trees so far (GameResources.cs)
                 SendSpaceState(sender); // the space bubble and its clock (GameSpace.cs)
                 SendNavState(sender); // the ships under orders (GameNav.cs)
+                SendCrewSeats(sender); // the crews' stand-ins (GameCrew.cs)
                 SendLogicState(sender); // map logic: doors, lamps, levers, controlled movers (GameLogic.cs)
                 SendCorpseState(sender); // the bodies lying about (GameCorpses.cs)
                 SendLabourState(sender); // the penal colony's convict labourers (GameLabour.cs)
@@ -2416,6 +2422,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Nav when !IsServer:
                 ReadNav(ref r); // a ship's order from the command view (GameNav.cs)
+                break;
+            case (byte)Msg.CrewSeats when !IsServer:
+                ReadCrewSeats(ref r); // the crews' stand-ins (GameCrew.cs)
                 break;
             case (byte)Msg.ShieldHit when !IsServer && r.Has(2):
                 OnShieldHitPacket(ref r, now); // Last Stand's shield blocked a hit (Health.cs)

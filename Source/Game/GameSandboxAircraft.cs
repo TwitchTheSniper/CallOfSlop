@@ -75,8 +75,10 @@ public sealed partial class Game
         var plane = AircraftAutopilot.IsPlane(c);
         var speed = plane ? MathF.Max(25, 1.5f * ConstructAero.StallSpeed(c)) : 0;
         AircraftAutopilot.Launch(Constructs, c, speed);
-        var pilot = new AircraftPilot(c, order, over, radius, height);
+        var pilot = new AircraftPilot(c, order, over, radius, height) { CrewBodies = Crew.IsBody };
         _pilots.Add(pilot);
+        Crew.Crew(c, ShipAiMode.Strangers, air: true); // (its pilot sits at the helm: killed, the craft holds or glides; GameCrew.cs)
+        CrewLog();
         Console.WriteLine($"[aircraft] {name} as construct {c.Id} launched {height:0} m up{(plane ? $" at {speed:0} m/s" : "")}; pilot: {order} about ({over.X:0}, {over.Z:0}), radius {pilot.Radius:0}");
         done?.Invoke(c, pilot, "");
     }
@@ -89,7 +91,9 @@ public sealed partial class Game
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var b0 = GC.GetAllocatedBytesForCurrentThread();
         for (var i = _pilots.Count - 1; i >= 0; i--)
-            if (!_pilots[i].Step(Constructs))
+            if (PilotHeld(_pilots[i]))
+                continue;
+            else if (!_pilots[i].Step(Constructs))
             {
                 Console.WriteLine($"[aircraft] pilot of construct {_pilots[i].Id} let go: {_pilots[i].Line(Constructs)}");
                 _pilots.RemoveAt(i);
@@ -97,6 +101,29 @@ public sealed partial class Game
         PilotsBytes += GC.GetAllocatedBytesForCurrentThread() - b0;
         PilotsCpuMs += (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
         PilotsTicks++;
+    }
+
+    /// <summary>
+    /// The rule-1 gate for an aircraft (bot-brain.md): with no living pilot at its helm it keeps its last orders for a few seconds
+    /// (CrewWorld.HelmGraceTicks) and then its autopilot is let go: a craft that can hover holds, a plane glides down. A crew member who takes
+    /// the helm flies it on. True: the pilot doesn't fly this tick.
+    /// </summary>
+    private bool PilotHeld(AircraftPilot pilot)
+    {
+        var s = Crew.ShipOf(pilot.Id);
+        if (s == null || s.HelmOn(Crew))
+        {
+            if (s != null)
+                s.AirOff = false;
+            return false;
+        }
+        if (s.InGrace(Crew.Tick) || s.AirOff)
+            return true;
+        s.AirOff = true;
+        if (Constructs.Get(pilot.Id) is { } c)
+            AircraftAutopilot.Off(c, Constructs);
+        Console.WriteLine($"[aircraft] construct {pilot.Id} has nobody at its helm: its autopilot let go");
+        return true;
     }
 
     /// <summary>What the pilots' ticks have cost (server): CPU (ms), bytes allocated (a pilot letting go logs a line), ticks with a pilot.</summary>

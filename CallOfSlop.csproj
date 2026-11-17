@@ -81,6 +81,8 @@
     <None Update="Systems\**\*" CopyToOutputDirectory="PreserveNewest" />
     <!-- The story layer's data: Story\Relations.json, Verbs.json, Patterns\, Scenarios\ (docs/story/STORY.md). -->
     <None Update="Story\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The crews' data: Crew\Names.json (docs/sandbox/design/bot-brain.md). -->
+    <None Update="Crew\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

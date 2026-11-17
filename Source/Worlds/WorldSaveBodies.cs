@@ -138,6 +138,10 @@ public sealed partial class ConstructWorld
     private const uint LiftTag = 0x5446494C; // "LIFT": a body's lifters' hands that hold a piece (ConstructLifters.Snapshot)
     private const uint UsesTag = 0x53455355; // "USES": a body's sub-blueprint uses (SubBlueprints.SaveBytes), after SIDE
     private const uint SubJobsTag = 0x4A425553; // "SUBJ": its stations' sub-blueprint jobs (ConstructStationTree.SaveBytes), after USES
+    private const uint CrewTag = 0x57455243; // "CREW": its crew (Source/Crew/CrewWorld.cs SaveBytes), last
+
+    /// <summary>A body's crew for its save (the game's crews: Game.Crew.SaveBytes); null: no crews in this world.</summary>
+    public Func<ushort, byte[]?>? CrewBytes;
 
     /// <summary>The tick's copy: every array the worker needs, in bulk.</summary>
     public void CaptureInto(WorldSnapshot s, Func<Construct, bool>? keep = null)
@@ -189,6 +193,7 @@ public sealed partial class ConstructWorld
             b.LiftOrders = ConstructLifters.SnapshotOrders(this, c);
             b.Uses = SubBlueprints.SaveBytes(c);
             b.SubJobs = ConstructStationTree.SaveBytes(this, c);
+            b.Crew = CrewBytes?.Invoke(c.Id) ?? c.CrewLoad; // (a crew not yet picked up from the last load keeps its bytes)
             b.Parts = s.PartCount;
             b.PartCount = c.PartCount;
             b.Links = s.LinkCount;
@@ -441,7 +446,7 @@ public sealed partial class ConstructWorld
         foreach (ref readonly var cr in (b.Conveyed ?? []).AsSpan())
             logi |= cr.Dest != 0 || cr.Flags != 0;
         logi |= b.Chains != null || b.Targets != null;
-        var lift = b.Lifts != null || b.LiftOrders != null || b.Uses != null || b.SubJobs != null; // (a hand holding a piece: the LIFT block follows the LOGI block, so the blocks before it are written; USES and SUBJ after them)
+        var lift = b.Lifts != null || b.LiftOrders != null || b.Uses != null || b.SubJobs != null || b.Crew != null; // (a hand holding a piece: the LIFT block follows the LOGI block, so the blocks before it are written; USES and SUBJ after them)
         if (conveyors || b.Orders != null || b.Craft != null || b.Station != null || logi || lift)
             ConstructConveyor.WriteSave(w, routes, b.Conveyed ?? [], names); // (an empty one before the work orders: they follow it)
         // Work orders (WorkOrders.cs), after the conveyors: a body without any writes nothing.
@@ -516,6 +521,9 @@ public sealed partial class ConstructWorld
             w.U32(UsesTag).I32(b.Uses.Length).Bytes(b.Uses);
         if (b.SubJobs != null)
             w.U32(SubJobsTag).I32(b.SubJobs.Length).Bytes(b.SubJobs);
+        // Its crew (the bot brain, docs/sandbox/design/bot-brain.md section 12), last: "CREW", its length, CrewWorld.SaveBytes's bytes. An older build skips it.
+        if (b.Crew != null)
+            w.U32(CrewTag).I32(b.Crew.Length).Bytes(b.Crew);
     }
 
     public static void WriteStore(SaveWriter w, CStore s, WorldNames names)
@@ -857,6 +865,7 @@ public sealed partial class ConstructWorld
         (ushort Part, ushort Def, uint Paint)[]? lifts = null; // (and its lifters' hands that hold a piece: the LIFT block, ConstructLifters.cs)
         (ushort Lifter, LiftOrder Order)[]? lorders = null; // (and their hand orders: phase 7)
         byte[]? usesBytes = null, subJobBytes = null; // (USES and SUBJ: sub-blueprints)
+        byte[]? crewBytes = null; // (CREW: its crew, picked up by the game's crews: CrewWorld.Load)
         while (stations != null && r.Has(8) && r.Pos + 8 <= bodyEnd) // (tagged blocks: LOGI, then LIFT; an unknown one is skipped)
         {
             var tag = r.U32();
@@ -894,6 +903,8 @@ public sealed partial class ConstructWorld
                 usesBytes = r.Bytes(len);
             else if (tag == SubJobsTag)
                 subJobBytes = r.Bytes(len);
+            else if (tag == CrewTag)
+                crewBytes = r.Bytes(len);
             else if (tag == AsideTag && len >= 4)
             {
                 var m = r.I32();
@@ -1046,6 +1057,7 @@ public sealed partial class ConstructWorld
             ConstructLifters.ApplyOrders(this, loc, lorders);
         if (briefBytes != null)
             LoadBrief(c, briefBytes);
+        c.CrewLoad = crewBytes;
         return c;
     }
 
