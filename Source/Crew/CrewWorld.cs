@@ -14,6 +14,8 @@ public enum CrewJob : byte
     Crane, // phase 7: works a lifter (an arm or a bridge crane) from beside it: an NPC body's lifter runs only while one stands there (CrewGate)
     Hauler, // phase 7: works a cargo dock's exchange (linked logistics)
     Builder, // phase 7: works a Building Station's bay (its job steps only while one stands there)
+    Admiral, // faction-controllers.md phase 2: leads a group of captains from any seat on the fleet command network (CrewFleet.cs); never a station's worker
+    Interrogator, // phase 2: questions prisoners for intelligence (a player's own hand: CrewFleet.Interrogate, Game/GameCrewIntel.cs)
 }
 
 /// <summary>What a crew member is doing.</summary>
@@ -158,8 +160,22 @@ public sealed class CrewShip
     public bool EngWalks; // its engineer's body set off for EngTag
     public int LoadCarry; // rounds in its arms
     public byte Lost; // members lost since it was crewed
+    // Phase 2 of faction-controllers.md: groups and admirals (CrewFleet.cs). Server only.
+    public short Group = -1; // its group's slot in CrewFleet (-1: none: its captain on its own)
+    public ShipOrder Order; // what its admiral told it last (Kind None: its captain's own judgement)
+    public uint CaptainUid; // its captain: the senior member (a name on the look line, a prisoner worth more); 0: none chosen yet
+    public float Strength; // what it fights with (guns, hull): the admiral's sums (CrewFleet.StrengthOf, at each scan)
+    public readonly short[] NetPart = new short[4]; // parts that put it on the net by radio (CrewFleet.Look, after each rebuild)
+    public int NetCount, NetStamp = -1;
+    public Vector3 TargetAt; // what its drivers fought last (CrewWorld.Drive), at TargetTick: its admiral's contacts
+    public ushort TargetBody;
+    public long TargetTick = long.MinValue / 2;
+    public bool OnNet; // it hears its group's fleet command network (a part that gives access, or its crew's voice within reach)
     public long CaptainAt; // the tick it thinks next
     public readonly ulong[] Foes = new ulong[4]; // players who have hit it (a bit each)
+
+    /// <summary>Its admiral's order is live and its captain still obeys it (a cut ship keeps its last order for <see cref="CrewFleet.CutGraceTicks"/>).</summary>
+    public bool Ordered(long tick) => Order.Kind != OrderKind.None && tick < Order.Until;
 
     public bool Foe(byte player) => (Foes[player >> 6] & (1UL << (player & 63))) != 0;
     public void MarkFoe(byte player) => Foes[player >> 6] |= 1UL << (player & 63);
@@ -215,6 +231,15 @@ public sealed class CrewShip
         ScTried = 0;
         Array.Clear(Foes);
         (DoerPlayer, DoerBody, DoerAt, FoeBody, FoeBodyAt) = (255, 0, 0, 0, 0);
+        Group = -1;
+        Order = default;
+        CaptainUid = 0;
+        Strength = 0;
+        OnNet = false;
+        NetCount = 0;
+        NetStamp = -1;
+        TargetBody = 0;
+        TargetTick = long.MinValue / 2;
         NavBuild = -1;
         Nav = null;
     }
@@ -285,6 +310,9 @@ public sealed class CrewWorld
 
     /// <summary>The walk graphs inside bodies and the crew bodies walking them (phase 4: CrewNav.cs).</summary>
     public readonly CrewNav Nav = new();
+
+    /// <summary>Groups and admirals (faction-controllers.md phase 2): CrewFleet.cs, stepped after the captains.</summary>
+    public readonly CrewFleet Fleet = new();
 
     /// <summary>Gone bodies' records, for the stand-ins' network to clear (GameCrew.cs reads and empties it).</summary>
     public readonly List<ushort> GoneBodies = new(64);
@@ -567,6 +595,7 @@ public sealed class CrewWorld
     /// <summary>The whole crew goes (the setting went off, the body went or was wrecked).</summary>
     public void Disband(CrewShip s, ConstructWorld? w, ICrewHost? host, string why)
     {
+        Fleet.ShipGone(this, s, why); // (its group hears of it: CrewFleet.cs)
         while (s.MemberCount > 0)
             Remove(s, s.Members[s.MemberCount - 1], host);
         if (s.Ai != null)
@@ -848,6 +877,7 @@ public sealed class CrewWorld
             FindSlice(w);
         var t1 = System.Diagnostics.Stopwatch.GetTimestamp();
         ShipSlice(w, host, people);
+        Fleet.Step(this, w, host);
         var t2 = System.Diagnostics.Stopwatch.GetTimestamp();
         BodiedTick(w, host);
         Drive(w, q, host);
@@ -1042,15 +1072,23 @@ public sealed class CrewWorld
             if (def != null)
                 host?.Deed(RelEvent.HitBody, s, by, byBody);
         }
+        var hullWas = s.Hull;
         s.Hull = s.HullMax > 0 ? Math.Clamp(HullOf(c) / s.HullMax, 0, 1) : 1;
+        if (hullWas >= 0.5f && s.Hull < 0.5f && s.Group >= 0)
+            Fleet.Report(this, s, FleetReport.HitBadly, 0);
         if (def != null)
             s.Morale = Math.Clamp(def.MoraleStart - def.MoraleCrewLost * s.Lost - def.MoraleHullLost * (1 - s.Hull), 0, 1);
         if (host != null && host.Board(c, s))
             return; // (boarded, or a scuttle runs: GameCrewBoard.cs)
         var contact = s.Contact != 255 || s.ContactBody != 0;
-        var goal = !contact ? CrewGoal.Hold
-            : def != null && (s.Hull < def.FleeHull || s.Morale < def.FleeMorale) ? CrewGoal.Flee
+        // Under an admiral's live order its own Flee lines are held off by the doctrine's discipline (a disciplined line holds until told to go).
+        var held = s.Ordered(Tick) && s.Order.Kind != OrderKind.Retreat && Fleet.Of(s.Group) is { } grp ? 1 - grp.Doctrine.Discipline : 1f;
+        var goal = !contact && !(s.Ordered(Tick) && s.Order.Kind == OrderKind.Engage) ? CrewGoal.Hold
+            : def != null && (s.Hull < def.FleeHull * held || s.Morale < def.FleeMorale * held) ? CrewGoal.Flee
             : CrewGoal.Engage;
+        if (goal == CrewGoal.Flee && s.Goal != CrewGoal.Flee && s.Group >= 0)
+            Fleet.Report(this, s, FleetReport.NeedHelp, 0);
+
         if (goal != s.Goal)
         {
             Events.Add($"construct {c.Id}: its captain {(goal == CrewGoal.Flee ? "runs" : goal == CrewGoal.Engage ? "fights" : "holds")} (hull {s.Hull * 100:0}%, morale {s.Morale * 100:0}%, {s.Lost} crew lost{(def != null ? $", {def.Name}" : "")})");
@@ -1137,7 +1175,7 @@ public sealed class CrewWorld
                 if (Station[m] >= 0)
                     Unseat(s, m);
                 var walked = Player[m] != 0 && host != null && WalkBody(c, s, m, fromNode, st, host);
-                if (kind != CrewStationKind.Rest)
+                if (kind != CrewStationKind.Rest && Job[m] is not (CrewJob.Admiral or CrewJob.Interrogator))
                     Job[m] = JobFor(kind);
                 State[m] = CrewState.Walking;
                 Station[m] = (short)st;
@@ -1306,6 +1344,12 @@ public sealed class CrewWorld
             };
             if (penalty < 0)
                 continue;
+            if (Job[m] is CrewJob.Admiral or CrewJob.Interrogator && kind != CrewStationKind.Rest)
+            {
+                if (kind != CrewStationKind.Helm)
+                    continue; // (an admiral leads from a couch; an interrogator is nobody's gunner)
+                penalty += 2000; // (the helm only with nobody else aboard)
+            }
             if (!Reaches(s, m, st))
                 continue; // (cut off from it: CrewNav's graph has no way)
             var d = cur >= 0 ? Vector3.Distance(ConstructRender.PartCentre(c, s.StPart[cur]), to) : 6f;
@@ -1412,6 +1456,18 @@ public sealed class CrewWorld
                 has = false; // (its owner's order: Hold fire)
             if (host == null)
                 s.Contact = has ? (byte)0 : (byte)255; // (a check's fixed target is the captain's contact)
+            if (has)
+            {
+                s.TargetAt = t.At;
+                s.TargetBody = t.Body;
+                s.TargetTick = Tick; // (its admiral's contacts: CrewFleet)
+            }
+            if (!s.HoldFire && s.Ordered(Tick) && s.Order.Kind is OrderKind.Engage or OrderKind.Board && w.Get(s.Order.Body) is { Wreck: false } oc
+                && Vector3.DistanceSquared(oc.WorldCom, c.WorldCom) < ShipAi.EngageRange * ShipAi.EngageRange * 2.25f)
+            {
+                t = new ShipAiTarget { At = oc.WorldCom, Vel = oc.Vel, Body = oc.Id, Player = 255 }; // (its admiral's focus: the whole group fires at one)
+                has = true;
+            }
             ai.Step(w, c, q, has, t);
         }
     }
@@ -1516,6 +1572,7 @@ public sealed class CrewWorld
             if (Ships[i] is { } s)
                 Disband(s, null, host, "went with the world");
         ShipHigh = 0;
+        Fleet.Clear();
         GoneBodies.Clear();
         Events.Clear();
     }

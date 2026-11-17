@@ -15,7 +15,9 @@
     "help": { "amount": 2, "scale": ["loyalty"] },
     "breakPact": { "amount": -40 },
     "breakPactHeard": { "amount": -15, "scale": ["loyalty"] },
-    "keepPact": { "amount": 1 }
+    "keepPact": { "amount": 1 },
+    "captureOfficer": { "amount": -25, "scale": ["pride"] },
+    "releaseOfficer": { "amount": 15, "scale": ["forgiveness"] }
   },
   "bands": { "war": -50, "neutral": 20, "friendly": 60, "hysteresis": 5 },
   "decay": { "perMinute": 1 },
