@@ -256,8 +256,8 @@ public sealed class CrewWorld
     /// <summary>Bodies made at most this many a tick (a roster near a person comes to life over a few ticks, not 32 spawns in one).</summary>
     public const int PromotePerTick = 2;
     private int _promoted;
-    public long Bytes;
-    public int Ticks;
+    public long Bytes, LastAllocTick;
+    public int Ticks, AllocTicks; // (ticks that allocated, and the last: a check's clue)
 
     public CrewWorld() => Grow(256);
 
@@ -713,8 +713,12 @@ public sealed class CrewWorld
             WorstDriveMs = Math.Max(WorstDriveMs, (t3 - t2) * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
         }
         var b1 = GC.GetAllocatedBytesForCurrentThread();
-        if (Events.Count == 0)
+        if (Events.Count == 0 && b1 > b0)
+        {
             Bytes += b1 - b0;
+            AllocTicks++;
+            LastAllocTick = Tick;
+        }
         var ms = (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
         CpuMs += ms;
         if (Ticks > 10 && ms > WorstMs)
