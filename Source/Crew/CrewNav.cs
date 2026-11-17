@@ -14,6 +14,7 @@ public sealed class CrewNavGraph
 {
     public ushort Body;
     public int Stamp = -1, PartsSeen = -1;
+    public ulong Shape; // its parts' places when built (CrewNav.ShapeOf): a rebuild that moved nothing (a breakdown, a repair) keeps the graph
     public int Build; // a number per build (station nodes are kept against it)
     public bool Ready;
     public long UsedAt; // the tick it was last asked for (the cache drops the oldest)
@@ -70,7 +71,7 @@ public sealed class CrewNav
     public const int StuckTicks = 3 * World.TickRate;
 
     /// <summary>A tick's building stops after this much CPU (ms), at the end of a slice (the slices above are each a few tens of microseconds).</summary>
-    public const double BuildBudgetMs = 0.35;
+    public const double BuildBudgetMs = 0.35, SearchBudgetMs = 0.3;
 
     private readonly CrewNavGraph?[] _graphs = new CrewNavGraph?[MaxGraphs];
     private readonly Stack<CrewNavGraph> _pool = new();
@@ -101,6 +102,11 @@ public sealed class CrewNav
                 g.UsedAt = Tick;
                 if (g.Stamp == c.RebuildStamp && g.PartsSeen == c.PartCount)
                     return g.Ready ? g : null;
+                if (g.Ready && g.PartsSeen == c.PartCount && ShapeOf(c) == g.Shape)
+                {
+                    g.Stamp = c.RebuildStamp; // (rebuilt, but nothing moved or went: the same walk graph)
+                    return g;
+                }
                 if (_building < 0 || _building == k)
                     Start(k, c); // (rebuilt: build it again; the old one is no use meanwhile)
                 return null;
@@ -134,6 +140,7 @@ public sealed class CrewNav
         g.Body = c.Id;
         g.Stamp = c.RebuildStamp;
         g.PartsSeen = c.PartCount;
+        g.Shape = ShapeOf(c);
         g.Ready = false;
         g.Phase = 0;
         g.At = 0;
@@ -145,6 +152,22 @@ public sealed class CrewNav
         g.BuildTicks = 0;
         g.BuildMs = g.WorstSliceMs = 0;
         _building = slot;
+    }
+
+    /// <summary>A hash of where a body's parts are and which are whole (a part's health only counts as there or gone): its walk graph's key.</summary>
+    public static ulong ShapeOf(Construct c)
+    {
+        var h = 14695981039346656037UL;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            ref var p = ref c.Parts[i];
+            h = (h ^ p.Tag) * 1099511628211UL;
+            h = (h ^ (uint)BitConverter.SingleToInt32Bits(p.Pos.X)) * 1099511628211UL;
+            h = (h ^ (uint)BitConverter.SingleToInt32Bits(p.Pos.Y)) * 1099511628211UL;
+            h = (h ^ (uint)BitConverter.SingleToInt32Bits(p.Pos.Z)) * 1099511628211UL;
+            h = (h ^ (uint)(p.Rot | p.Seg << 8 | (p.Health > 0 ? 1 << 16 : 0))) * 1099511628211UL;
+        }
+        return h;
     }
 
     /// <summary>Forget every graph and walker (a world's end).</summary>
@@ -183,7 +206,7 @@ public sealed class CrewNav
         if (_building >= 0 && _graphs[_building] is { } g)
         {
             var c = w.Get(g.Body);
-            if (c == null || c.Wreck || c.RebuildStamp != g.Stamp || c.PartCount != g.PartsSeen)
+            if (c == null || c.Wreck || c.PartCount != g.PartsSeen || c.RebuildStamp != g.Stamp && ShapeOf(c) != g.Shape)
             {
                 if (c == null || c.Wreck)
                     Drop(g.Body);
@@ -683,8 +706,12 @@ public sealed class CrewNav
     {
         var budget = ExpandPerTick;
         Span<int> nb = stackalloc int[16];
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        var limit = (long)(SearchBudgetMs * System.Diagnostics.Stopwatch.Frequency / 1000);
         while (budget > 0)
         {
+            if ((budget & 63) == 0 && System.Diagnostics.Stopwatch.GetTimestamp() - t0 > limit)
+                return; // (the rest next tick)
             if (_search < 0)
             {
                 if (_queueCount == 0)
@@ -866,7 +893,7 @@ public sealed class CrewNav
     public readonly float[] WLength = new float[MaxWalkers], WBest = new float[MaxWalkers];
     public readonly Vector3[] WPts = new Vector3[MaxWalkers * MaxPts];
     public readonly short[] WLadder = new short[MaxWalkers * MaxPts];
-    public readonly long[] WDoorAt = new long[MaxWalkers];
+    public readonly long[] WDoorAt = new long[MaxWalkers], WStart = new long[MaxWalkers];
 
     public CrewNav()
     {
@@ -921,6 +948,7 @@ public sealed class CrewNav
         WAt[w] = 0;
         WStuck[w] = 0;
         WDoorAt[w] = 0;
+        WStart[w] = Tick;
         _queue[(_queueHead + _queueCount) % MaxWalkers] = w;
         _queueCount++;
         return w;
@@ -948,7 +976,7 @@ public sealed class CrewNav
         if (WPhase[w] != 1)
             return WPhase[w];
         if (WAt[w] >= WCount[w])
-            return WPhase[w] = 2;
+            return There(w);
         var feet = c.ToLocal(s.Position);
         var at = WPts[w * MaxPts + WAt[w]];
         var flat = new Vector2(at.X - feet.X, at.Z - feet.Z);
@@ -960,7 +988,7 @@ public sealed class CrewNav
             WBest[w] = float.MaxValue;
             WStuck[w] = 0;
             if (WAt[w] >= WCount[w])
-                return WPhase[w] = 2;
+                return There(w);
             at = WPts[w * MaxPts + WAt[w]];
             flat = new Vector2(at.X - feet.X, at.Z - feet.Z);
             d = flat.Length();
@@ -983,7 +1011,10 @@ public sealed class CrewNav
             WStuck[w] = 0;
         }
         else if (++WStuck[w] > StuckTicks)
+        {
+            Events.Add($"construct {WBody[w]}: a crew body stuck {Vector3.Distance(feet, at):0.0} m short of its turn {WAt[w] + 1} of {WCount[w]} gave up the walk");
             return WPhase[w] = 3;
+        }
         // A closed door within reach ahead: open it (as F on it), twice a second at most.
         if (Tick >= WDoorAt[w] && c.DoorCount > 0)
         {
@@ -1014,6 +1045,13 @@ public sealed class CrewNav
         if (d < 1.2f)
             cmd.SpeedPct = 50; // (round a corner, or onto its spot, without running past it)
         return 1;
+    }
+
+    private byte There(int w)
+    {
+        if (WCount[w] > 0)
+            Events.Add($"construct {WBody[w]}: a crew body walked its way ({WLength[w]:0.0} m, {WCount[w]} legs) in {(Tick - WStart[w]) / (float)World.TickRate:0.0} s");
+        return WPhase[w] = 2;
     }
 
     /// <summary>A tool's line: graphs kept, walkers, cost.</summary>

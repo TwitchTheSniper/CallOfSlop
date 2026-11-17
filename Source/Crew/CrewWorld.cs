@@ -138,8 +138,12 @@ public sealed class CrewShip
     public long ScAt, ScDisarmAt, ScSaidAt;
     public ushort ScTried; // the last point disarmed (by tag), not tried again
     public ushort ScTag; // the scuttle point's part tag: ScPart follows it through a rebuild or a split (ScuttleFollow)
-    public short EngPart = -1; // the part its engineer is seeing to (-1: none), done at EngDone; the loader's next carry at LoadAt
+    public ushort EngTag; // the part its engineer is seeing to, by tag (0: none: an index moves with a rebuild), done at EngDone; the loader's next carry at LoadAt
     public long EngDone, LoadAt;
+    public ushort LoadFrom, LoadTo; // a bodied loader's carry under way (tags; 0: none): to the source (LoadStage 1), then the box (2)
+    public byte LoadStage;
+    public bool EngWalks; // its engineer's body set off for EngTag
+    public int LoadCarry; // rounds in its arms
     public byte Lost; // members lost since it was crewed
     public long CaptainAt; // the tick it thinks next
     public readonly ulong[] Foes = new ulong[4]; // players who have hit it (a bit each)
@@ -182,8 +186,11 @@ public sealed class CrewShip
         Goal = CrewGoal.Hold;
         Lost = 0;
         CaptainAt = 0;
-        EngPart = -1;
+        EngTag = 0;
         EngDone = LoadAt = 0;
+        LoadFrom = LoadTo = 0;
+        LoadStage = 0;
+        LoadCarry = 0;
         Act = BoardAct.Hold;
         Boarded = Prize = CalledHelp = Own = HoldFire = false;
         ScPart = -1;
@@ -1076,11 +1083,7 @@ public sealed class CrewWorld
             }
             Vector3 at;
             if (Standing(s.StKind[st]))
-            {
-                c.PartBounds(part, out var mn, out var mx);
-                c.SegPose(c.Parts[part].Seg, out var sq, out var sp);
-                at = sp + Vector3.Transform(new Vector3((mn.X + mx.X) * 0.5f, mn.Y + 0.1f, (mn.Z + mx.Z) * 0.5f), sq);
-            }
+                at = PartFoot(c, part);
             else
                 at = c.ToLocal(ConstructEdits.SeatFeet(c, part));
             s.StNode[st] = CrewNav.NearestNode(g, at, CrewNav.Reach + (Standing(s.StKind[st]) ? 1f : 0f));
@@ -1112,6 +1115,46 @@ public sealed class CrewWorld
             return false;
         host.StandAt((byte)(Player[m] - 1), c, g.NodePos(fromNode));
         return true;
+    }
+
+    /// <summary>The part with tag <paramref name="tag"/> (-1: none: gone, or split off with another piece).</summary>
+    public static int PartByTag(Construct c, ushort tag)
+    {
+        if (tag == 0)
+            return -1;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].Tag == tag)
+                return i;
+        return -1;
+    }
+
+    /// <summary>
+    /// A bodied member's errand inside its body (an engineer to a part, a loader between boxes, a repeller to a boarder): walks it along CrewNav's
+    /// path from where it stands to the spot nearest <paramref name="rest"/>, keeping its station. False: no graph, no spot, or no way there.
+    /// </summary>
+    public bool Errand(Construct c, CrewShip s, int m, Vector3 rest, ICrewHost host, float across = CrewNav.Reach + 1)
+    {
+        if (Player[m] == 0 || s.Nav is not { } g || s.NavBuild != g.Build || !host.Feet((byte)(Player[m] - 1), out var feet))
+            return false;
+        var from = CrewNav.NearestNode(g, c.ToLocal(feet), 1.2f);
+        var to = CrewNav.NearestNode(g, rest, across, 2.5f);
+        if (from < 0 || to < 0 || g.Comp[from] != g.Comp[to])
+            return false;
+        var w = Nav.WalkerOf(m);
+        if (w >= 0 && Nav.WGoal[w] == to && Nav.WPhase[w] <= 1)
+            return true; // (on its way there already)
+        return Nav.Walk(g, m, from, to) >= 0;
+    }
+
+    /// <summary>A member's errand has ended (there, or given up): no walker left.</summary>
+    public bool ErrandDone(int m) => Nav.WalkerOf(m) < 0;
+
+    /// <summary>The spot a part is worked from, in the rest frame: its centre at its foot.</summary>
+    public static Vector3 PartFoot(Construct c, int part)
+    {
+        c.PartBounds(part, out var mn, out var mx);
+        c.SegPose(c.Parts[part].Seg, out var sq, out var sp);
+        return sp + Vector3.Transform(new Vector3((mn.X + mx.X) * 0.5f, mn.Y + 0.1f, (mn.Z + mx.Z) * 0.5f), sq);
     }
 
     /// <summary>A body walking CrewNav's path got there (or gave up, <paramref name="ok"/> false: it is put there as the timer would): its station is taken at the next look.</summary>

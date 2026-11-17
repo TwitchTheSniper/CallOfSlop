@@ -512,6 +512,11 @@ public static class CrewCheck
             ok &= there;
             Console.WriteLine($"  {what}: {(there ? "there" : phase == 3 ? "GAVE UP" : "NOT THERE")} in {t / (float)World.TickRate:0.0} s, path {nav.WLength[walker]:0.0} m in {nav.WCount[walker]} legs, walked {travelled:0.0} m, ended {Vector3.Distance(end, g.NodePos(node)):0.00} m off, riding {(ms.RideBody == c.Id ? "it" : ms.RideBody == 0 ? "nothing" : $"body {ms.RideBody}")}");
             nav.End(walker);
+            if (k == (start == 0 ? 1 : 0))
+            {
+                Console.WriteLine($"  (first walk's worst nav tick {nav.WorstMs:0.00} ms: JIT and the search arrays' first growth; timed afresh from here)");
+                nav.WorstMs = 0;
+            }
             foreach (var e in nav.Events)
                 Console.WriteLine($"  [nav] {e}");
             nav.Events.Clear();
