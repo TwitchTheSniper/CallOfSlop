@@ -18,6 +18,26 @@ public static class ConstructLogic
     /// <summary>A lever's four positions (each Interact moves it one on): middle, forward, middle, back.</summary>
     public static float LeverValue(byte state) => (state & 3) switch { 1 => 1f, 3 => -1f, _ => 0f };
 
+    /// <summary>
+    /// Does a wire come into part <paramref name="part"/>'s first input? The server's logic tick counts it (<see cref="CPart.InCount"/>);
+    /// a joined client never runs that tick, so it reads its copy's wires (made from the routes by the rebuild) and the cross wires it was sent.
+    /// </summary>
+    public static bool WiredIn(ConstructWorld? world, Construct c, int part)
+    {
+        if ((uint)part >= (uint)c.PartCount)
+            return false;
+        if (c.Parts[part].InCount > 0)
+            return true;
+        for (var k = 0; k < c.WireCount; k++)
+            if (c.Wires[k].To == part && c.Wires[k].ToPort == 0 && c.Wires[k].From < c.PartCount)
+                return true;
+        if (world != null)
+            for (var k = 0; k < world.XWireCount; k++)
+                if (world.XWires[k].BodyTo == c.Id && world.XWires[k].To == part)
+                    return true;
+        return false;
+    }
+
     public static void Step(ConstructWorld world, Construct c, float dt)
     {
         if (c.Dirty)

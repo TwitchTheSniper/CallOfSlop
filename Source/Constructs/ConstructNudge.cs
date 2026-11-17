@@ -116,6 +116,7 @@ public sealed partial class ConstructEdits
             return "take out the Nudge tool";
         if (bodies.Length is 0 or > Nudge.MaxBodies || !float.IsFinite(pivot.X + pivot.Y + pivot.Z))
             return "nothing to nudge";
+        NudgeFinish(world, player);
         NudgeRelease(player);
         var hold = _nudges[player] ??= new NudgeHold();
         hold.Count = 0;
@@ -306,6 +307,33 @@ public sealed partial class ConstructEdits
         hold.Move = nextMove;
         hold.Turn = nextTurn;
         NudgePose(hold, dt);
+    }
+
+    /// <summary>
+    /// A new drag begun while the last one is still easing to where it was let go (a put-back on its way home, an end a
+    /// slow packet held up): that one lands where it was asked first, so the new drag starts from the pose the player let
+    /// go at. Released mid-way, the bodies stayed short of it (CI 2026-11-17, "Nudge tool": a put-back 18 cm from home
+    /// when an arc began straight after, the block left there). The server calls it before it works out the new drag's centre.
+    /// </summary>
+    public void NudgeFinish(ConstructWorld world, byte player)
+    {
+        if (_nudges[player] is not { Count: > 0, EndLeft: >= 0 } hold)
+            return;
+        for (var i = 0; i < hold.Count; i++)
+            if (!ReferenceEquals(world.Get(hold.Bodies[i].Id), hold.Bodies[i]) || hold.Bodies[i].PartCount == 0)
+                return; // (one went: released where they are)
+        if (hold.Move != hold.WantMove || hold.Turn != hold.WantTurn)
+        {
+            // A put-back goes home, where it came from and so clear; an end lands where it was let go only if nothing is in the way.
+            var home = hold.WantMove == Vector3.Zero && hold.WantTurn == Quaternion.Identity;
+            if (!home && NudgeBlocked(world, player, hold, hold.WantMove, hold.WantTurn))
+                return;
+            hold.Move = hold.WantMove;
+            hold.Turn = hold.WantTurn;
+            NudgePose(hold, (float)World.TickDt);
+        }
+        NudgeLand(world, hold, player);
+        NudgeRelease(player);
     }
 
     /// <summary>A drag let go that moved or turned its bodies: a loose one freezes where it landed, to build on (a cancelled drag has moved nothing; nobody is frozen in a driver's seat).</summary>

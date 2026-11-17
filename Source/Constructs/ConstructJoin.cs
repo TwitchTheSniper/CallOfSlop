@@ -133,6 +133,7 @@ public sealed partial class ConstructWorld
         }
         a.AddFuel(b.Fuel);
         a.Charge += b.Charge;
+        a.Cap += b.Cap; // (its capacitors too: the rebuild clamps it to what the joined banks hold)
         a.Pinned |= b.Pinned;
         a.Damaged |= b.Damaged;
         a.Wreck = false;

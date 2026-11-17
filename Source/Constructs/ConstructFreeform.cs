@@ -352,6 +352,7 @@ public sealed partial class ConstructWorld
         }
         keep.AddFuel(mover.Fuel);
         keep.Charge += mover.Charge;
+        keep.Cap += mover.Cap; // (the capacitors' charge too: the rebuild clamps it to the banks' sum)
         keep.Damaged |= mover.Damaged;
         keep.Wreck = false;
         var from2 = mover.Id;

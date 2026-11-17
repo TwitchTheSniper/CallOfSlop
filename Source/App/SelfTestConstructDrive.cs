@@ -956,8 +956,11 @@ public static partial class SelfTest
         sw.Start();
         DriveSteps(w, q, 120, drive);
         var ms = sw.Elapsed.TotalMilliseconds / 120;
-        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
-        Line($"budget: {cars.Count} vehicles ({parts} parts) driving for 120 ticks: {ms:0.00} ms a tick, {bytes} bytes allocated");
+        var first = GC.GetAllocatedBytesForCurrentThread() - before;
+        // A one-off runtime allocation landed in the measure once on CI (1928 B, PR 255, never again on a re-run): the
+        // least of identical rounds counts, so a steady cost still shows in every one (tests-and-ci.md, 2026-11-14).
+        var bytes = RecheckAllocBytes(first, () => DriveSteps(w, q, 120, drive));
+        Line($"budget: {cars.Count} vehicles ({parts} parts) driving for 120 ticks: {ms:0.00} ms a tick, {bytes} bytes allocated (the first round {first} B)");
         if (bytes > 0)
             Fail($"construct drive: {bytes} bytes allocated in 120 ticks of driving");
         if (ms > 4)

@@ -95,7 +95,7 @@ Unverified: walkers through the Driving Module (the same keys); a convoy's own g
   awake crewed bodies they are hostile to (`Target`'s look).
 - Saves: the world's Crew section (`WorldSaveWriter.CrewTag`, "CREW"): each record's credits and own standings (by kind name), then the
   player factions' standings. No new save file.
-- Protocol 331: `Msg.CrewSeats` gains u8 faction kind and u8 crew alive; the look line adds "(Militia, crew of 3)"; crew bodies are
+- Protocol 332: `Msg.CrewSeats` gains u8 faction kind and u8 crew alive; the look line adds "(Militia, crew of 3)"; crew bodies are
   named "[Militia] Name".
 - Tools: `--crew-check --crew-faction NAME` (with `--crew-convoy` too); window verbs `crewhit` (a server shortcut: 1 hp off a crewed
   body as this player's shot), `npcstanding`.
@@ -145,7 +145,7 @@ a run (the Zero Day has no ammo box).
 - Capture: boarders aboard and no member left who isn't dead or surrendered: `CrewShip.Prize`, owner the first boarder (if they may own
   another), `NpcFaction` 0, -20 standing, a notice. Prisoners (`CrewPrisoner`): release (+5), drop (the ship below 1 m/s, +3), hold;
   hire is phase 6. Saved: the crew block's flags bit 4 (a prize) and a job's 0x80 bit (surrendered).
-- Notices go by `SandboxHands.Notices` to everyone aboard or within 200 m (no new message). `Msg.CrewSeats` (still 331 on this branch)
+- Notices go by `SandboxHands.Notices` to everyone aboard or within 200 m (no new message). `Msg.CrewSeats` (still 332 on this branch)
   also carries the scuttle point and its stage, for the client's look line.
 - Window verbs: `crewfaction NAME` (a test state), `crewdisarm` (a server shortcut: stands the player by the charge and starts the
   disarm through the Mend act's server path), `crewprisoner release|drop|hold|hire`.
@@ -173,7 +173,7 @@ a charge; Call for help; Abandon; boarding a ground vehicle.
   below 0. Boarding acts don't run on them.
 - The Crew section (top of the Faction window, `UI/UiCrew.cs`): credits; each own crew and prize: members (name, kind, job, doing,
   health) with Dismiss, Hold fire / Fire at will, and for prisoners Release, Put off, Hire; "Hire a hand nearby". Orders go as
-  `CActKind.Crew` (u16 body, u32 uid, u8 `CrewOrder`); rosters as `Msg.CrewRoster` to all (own crews and prizes only). Protocol 331 still.
+  `CActKind.Crew` (u16 body, u32 uid, u8 `CrewOrder`); rosters as `Msg.CrewRoster` to all (own crews and prizes only). Protocol 332 still.
 
 Verified (2026-11-16): Survival start 500 credits, 500 again after a save and load (not 1000). Creative "unlimited". The crewed Zero
 Day as Traders, boarded, surrendered, taken; two prisoners hired: the roster became Player Crew, both walked to the gun seats; the
@@ -182,11 +182,19 @@ host's roster view showed 2 at work and 3 prisoners.
 Unverified: the Crew section drawn (no picture); a joined client's roster, credits and orders; wages and leaving unpaid; hiring from a
 friendly crew nearby; own gunners firing at a hostile.
 
-## Next
+## Next (for a successor, branch `claude/bot-brain-2`)
 
-- Phase 1 is done (below). Phase 2 next: the ground `HelmDriver` from the brief, convoys and faction vehicles spawned crewed.
-- Phase 2 (ground crews), 3 (factions, `Crew/Factions`, captain), 4 (CrewNav, engineers), 5 (boarding, scuttle 15 s / 90 s / 5 s,
-  capture when all crew are gone, prisoners), 6 (own crew: hired NPC crew first; see "Hiring" below), 7 (work crews).
+- Phase 4's rest: CrewNav (see the phase 4 note above), bodied crew walking it, unreachable stations, Lock down (locked doors) and
+  Dump (cargo out) in the boarding acts.
+- Phase 7 (work crews): haulers, crane operators, spotters on capital guns, builder drones: nothing built yet.
+- Own crews: pilots for `GameNav` and linked-logistics route orders (own crews never take the helm now), the Crew Console part and
+  orders at range, Robot Shells on the roster (the next kind, answer 4), a brig part (prisoners are held aboard without one), ransom.
+- Earning credits beyond the start balance and the capture bounty (a placeholder: trade comes later).
+
+Scale after phase 6 (2026-11-16): `--crew-scale 5000` on Zero Day frigates 11 us a tick (worst 93 us), on Bandit Buggy 1 as Raiders 55 us
+(worst 0.69 ms), 0 bytes; the fight check 26-29 us a tick, worst 0.7 to 4.1 ms once (driving: Karl's rays or JIT), and a few hundred bytes
+in 6 of 7200 ticks (none in the scale runs: taken for tier-up JIT, unproven). Self-test sections by name after merging main (protocol
+332): Sandbox spawns, Sandbox body sync, Frame allocations, World links, Space ships, Save folder: all pass.
 
 ## Hiring before currency (proposal for the user, answer 4)
 

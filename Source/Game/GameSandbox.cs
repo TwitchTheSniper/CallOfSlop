@@ -108,7 +108,7 @@ public enum CActKind : byte
     Mend, // u16 body, u16 part: the attach tool sees to a groaning part or repairs a broken-down one (protocol 321; GameSandboxBreakdowns.cs)
     NavOrder, // u16 body, u8 NavKind (0 cancels), u8 the star system's body, 3 x f64 point, f64 radius: an order for a ship from the command view (protocol 323; GameNav.cs)
     Link, // u16 body, u16 part, u8 LinkOp, u32 a, u32 b, str text: a linked logistics part's panel, or a route from the command view (protocol 328; GameSandboxLinked.cs)
-    Crew, // u16 body, u32 member uid, u8 CrewOrder: a crew order from the Crew window (protocol 331; GameCrewHire.cs)
+    Crew, // u16 body, u32 member uid, u8 CrewOrder: a crew order from the Crew window (protocol 332; GameCrewHire.cs)
 }
 
 /// <summary>
@@ -2847,10 +2847,14 @@ public sealed partial class Game
         ref var g = ref c.Guns[k];
         ref var p = ref c.Parts[g.Part];
         var boxes = ConstructWeapons.BoxRounds(c, k, Constructs);
-        var key = ((long)c.Id << 48) ^ ((long)g.Part << 40) ^ ((long)p.Rounds << 24) ^ ((long)boxes << 2) ^ (p.Reload > 0 ? 1 : 0) ^ (p.Broken ? 2 : 0) ^ ((long)g.Problem.GetHashCode() << 16);
+        var shots = g.Energy > 0 ? (int)MathF.Min(999, c.Cap / g.Energy) : 0; // (an energy gun: the shots its capacitors hold, ship-works.md 8)
+        var key = ((long)c.Id << 48) ^ ((long)g.Part << 40) ^ ((long)p.Rounds << 24) ^ ((long)boxes << 2) ^ (p.Reload > 0 ? 1 : 0) ^ (p.Broken ? 2 : 0) ^ ((long)g.Problem.GetHashCode() << 16) ^ ((long)shots << 30) ^ (c.CapCapacity > 0 ? 1L << 62 : 0);
         if (_sbGun.Stale(key))
             _sbGun.Text = p.Broken ? $"{p.D.Name}: wrecked"
                 : g.Problem.Length > 0 ? $"{p.D.Name} - won't fire: {g.Problem}"
+                : g.Energy > 0 && c.CapCapacity <= 0 ? $"{p.D.Name} - won't fire: no Capacitor Bank on its circuit"
+                : g.NoAmmo ? (shots == 0 ? $"{p.D.Name}: capacitors charging" : $"{p.D.Name}: {shots} shot{(shots == 1 ? "" : "s")} in the capacitors")
+                : g.Energy > 0 && shots == 0 && p.Rounds > 0 ? $"{p.D.Name}: {p.Rounds}/{g.Mag}, capacitors charging"
                 : g.BoxCount == 0 && g.FeedRoute < 0 && g.FeedSocket < 0 && p.Rounds == 0 && boxes == 0 ? $"{p.D.Name} - {(g.MagPart >= 0 ? "magazine empty" : "no ammo box or feed")}"
                 : p.Reload > 0 ? $"{p.D.Name}: reloading, {boxes} in boxes"
                 : p.Rounds == 0 && boxes == 0 ? $"{p.D.Name}: out of ammo"

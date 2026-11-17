@@ -342,6 +342,21 @@ Nothing of this exists, so it is the biggest piece of new work and comes last.
   a second drum as reloads (section 11).
 - The AI crew needs nothing: it presses the same buttons, and the hoist refills by itself.
 
+**Built (phase 4, 2026-11-17).** `ShipWorksParts.Hoist`: Reload Hoist S lifts 400 kg (0.8 x 1.0 x 1.2 m, 1.5 kW), L
+3,000 kg (1.4 x 1.8 x 2.0 m, 4 kW); its `back` bolts to a mount's inner face, Ordnance Racks bolt to its `under`, `top`,
+`+x`, `-x` or `front`. `ConstructWorks.Build` finds each launcher (a rack whose mount, down its joints, is in a
+hoist's assembly) and keeps `Construct.Hoists` (one launcher a hoist; a rack bolted to the hoist is magazine, never
+launcher). `ConstructHoists.Step` (server, every quarter second, after the racks let go) moves the magazine's first
+weapon that the hoist lifts and that fits a free station (`ConstructOrdnance.StationFor`: the snap's limits and room,
+nose along the rack) after `hoistSeconds` (6) times the square root of its mass over `hoistMass` (80 kg): add the new
+part on the launcher, then remove the old one, one move a body a look. The move's ticks are the hoist's `CPart.Cool`, so
+they live through the rebuild; it draws its power only while it moves (`ConstructPower`). A hoist with no power, broken,
+or with nothing that fits waits and starts again. The look line says what it lifts, what is in its magazine and why it
+waits; `--check-vehicle` prints a `works:` line a hoist. Tried on a rig (/mnt/project-files/ship-works/hoist-rig.json: a
+launcher of four, Reload Hoist L, a magazine of eight): with the launcher's input on it fired all twelve with nobody
+outside; on a joined client the launcher kept firing past its own four; a flat battery stopped it ("no power"). The Zero
+Day's second drums are not fitted.
+
 ## 7. Crew, damage and servicing
 
 What a crew member can now do, and where:
@@ -410,6 +425,39 @@ rule its first parts.
 4. **The railguns take it first.** The Halberd Spinal Railgun and the Zero Day Railgun get an `energy`, and each ship
    a Capacitor Bank in engineering sized for a few shots. Lasers follow.
 5. The ion drive draws from the same circuit, so its ship chooses between cruising and shooting.
+
+**Built (phase 5, 2026-11-17).** Karl's ruling (decision card, 2026-11-17): **energy guns fire from capacitors only**, never
+from batteries, so a big battery bank can't stand in for capacitor room. So the capacitors are a pool of their own on the
+construct (`Construct.Cap`, `CapCapacity`, `CapRate`), apart from `Charge`: a part's top-level `"capacitor": {"capacity",
+"rate"}` block (kJ, kW) makes it a bank, and `ConstructPower.Rebuild` adds up the working banks the circuit reaches. Each
+tick with power on, the circuit refills them at their rate, up to what the batteries hold: the refill counts as a draw, so
+the plants spool up for it. A bank lost (broken, cut off) takes its share of the charge; a new one comes empty, and a loaded
+world's banks start empty too (the body save has no field for them). `gun.energy` (kJ a shot) is taken from the pool when
+the shot is fired (`ConstructPower.Draw`); short of it, the gun waits with its round kept. A gun with `energy` and no `mag`
+(a laser) has no rounds at all. Parts (`ShipWorksParts`):
+
+- **Capacitor Bank S/M/L**: 5, 40 and 150 MJ, refilled at 400, 1,500 and 4,000 kW; 0.9, 4 and 12 t (Power and Fuel >
+  Batteries). Its look line gives the ship's whole pool and its own numbers.
+- **Laser Emitter S/M/L** (Weapons > Guns): 400, 1,500 and 5,000 kW of beam, `works.needs: ["lasergen"]` with that
+  rating; 120 pulses a minute, each `rating * 0.5 s` kJ (200, 750 and 2,500 kJ) and `rating * 0.25 / 2` damage (50, 188,
+  625), ranges 400, 600 and 900 m. A pulse's damage is scaled by its works' cap (`ConstructWeapons.Beam`): an emitter with
+  no generator doesn't fire. `BeamDamagePerKw` (0.25 a second) is the generator's constant, not ShipWorks.json's.
+- **Laser Generator S/M/L** (Turret works): serves 500, 1,800 and 6,000 kW; it bolts to a Turret Ring's trunk (the
+  Autoloader's sockets and sizes) or behind a mount.
+- **Laser Pod**: emitter and generator in one housing, 80 kW (a fifth of the S), no works, for a turntable or a deck.
+- **The beam** is `GunFx.Beam` (protocol 331, at the end of the enum): a hitscan pulse through `Round` like any round, no
+  lead (`RoundV` 0), drawn as a red line from the muzzle to the hit for 0.12 s with the Trophy zap.
+- **The Zero Day's railgun** takes 15 MJ a slug (`TorpedoFrigateParts.RailEnergy`); a Capacitor Bank M stands in
+  engineering aft of the reactor: 40 MJ, two full slugs and a bit, and it refills one in 10 s, the gun's own rate of fire.
+- On the wire (protocol 331) a body's Full carries `Cap`; a pose carries the pool's share as a byte when the body has
+  banks (bit 4 of the asleep byte), and a still body sends a pose when it changes (`StateDue`).
+- `--check-vehicle` prints a `capacitors:` line (what they hold, the refill, shots per gun) and fails an energy gun with
+  no bank on its circuit; a laser on a ring reports its generators with the heads, not a feed.
+
+Tried: a rig (Battery Pack, Capacitor Bank S, Laser Emitter S on a Turret Ring S with a Laser Generator S on its trunk, a
+Laser Pod, one Switch) fired both from the switch; the bank went from 5 MJ to 3.9 MJ in 10 s (480 kW of beam against
+400 kW of refill) and the battery fed the refill. The Zero Day with its bank flies (`--flight-check`: lift 1.43x) and
+`--ship-ai-check` gave the same 4803 shots and 5 launches as before.
 
 ## 9. The parts system
 

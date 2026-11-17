@@ -10,7 +10,7 @@ public struct BodySnap
     public byte Owner, FrozenBy, CarrySeg;
     public bool Wreck, Asleep, Damaged, Pinned, Frozen, HoverOn;
     public int Root, Gear;
-    public float Fuel, Charge, HoverY;
+    public float Fuel, Charge, Cap, HoverY; // (Cap: its Capacitor Banks' kJ, saved as a setting of its first part an older reader skips)
     public Vector3 Pos, Vel, AngVel, CarryPos;
     public Quaternion Rot, CarryRot;
     public int Parts, PartCount, Links, LinkCount, Joints, JointCount, Routes, RouteCount, Nodes, Tracks, TrackCount, TrackParts;

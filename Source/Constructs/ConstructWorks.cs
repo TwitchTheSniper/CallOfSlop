@@ -53,6 +53,8 @@ public sealed class ShipWorks
     public string MendMaterial = "metal";
     public float MendPerTonne = 2f; // what a works piece broken by damage takes to mend, a tonne of it (at least 1)
     public float LoaderReload = 0.4f; // a gun of six rounds or fewer on a ring with its autoloaders reloads in this share of its time
+    public float HoistSeconds = 6f; // s a Reload Hoist takes to move a weapon of HoistMass (ship-works.md 6)
+    public float HoistMass = 80f; // kg: the weapon that takes HoistSeconds; the time grows with the square root of the mass
     public string Problem = "";
 
     /// <summary>Per drive type, the thrust (N) from which each kind is needed, in order: torch, then rocket and ion.</summary>
@@ -88,7 +90,7 @@ public sealed class ShipWorks
             if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("format", out var f) || f.GetString() != Format)
                 throw new FormatException($"\"format\" must be \"{Format}\"");
             foreach (var p in root.EnumerateObject())
-                if (p.Name is not ("format" or "jetMost" or "bareShare" or "jetBurn" or "mendMaterial" or "mendPerTonne" or "loaderReload" or "drives"))
+                if (p.Name is not ("format" or "jetMost" or "bareShare" or "jetBurn" or "mendMaterial" or "mendPerTonne" or "loaderReload" or "hoistSeconds" or "hoistMass" or "drives"))
                     throw new FormatException($"unknown key \"{p.Name}\"");
             t.JetMost = Num(root, "jetMost", 1, 1e9f);
             t.BareShare = Num(root, "bareShare", 0, 1);
@@ -98,6 +100,8 @@ public sealed class ShipWorks
                 throw new FormatException($"\"mendMaterial\": no material named \"{t.MendMaterial}\" in Recycling.json");
             t.MendPerTonne = Num(root, "mendPerTonne", 0, 1000);
             t.LoaderReload = Num(root, "loaderReload", 0.05f, 1);
+            t.HoistSeconds = Num(root, "hoistSeconds", 0.5f, 120);
+            t.HoistMass = Num(root, "hoistMass", 1, 100_000);
             t.Drives.Clear();
             foreach (var type in root.GetProperty("drives").EnumerateObject())
             {
@@ -306,14 +310,16 @@ public static class ConstructWorks
     /// </summary>
     public static void Build(Construct c)
     {
-        c.WorksHeadCount = c.WorksPieceCount = c.WorksAsmCount = 0;
-        int heads = 0, rings = 0;
+        c.WorksHeadCount = c.WorksPieceCount = c.WorksAsmCount = c.HoistCount = 0;
+        int heads = 0, rings = 0, racks = 0;
         foreach (var i in c.Specials)
             if (IsHead(c.Parts[i].D))
                 heads++;
             else if (IsRing(c.Parts[i].D))
                 rings++;
-        if (heads == 0 && rings == 0)
+            else if (c.Parts[i].D.Logic == CLogic.BombRack)
+                racks++;
+        if (heads == 0 && rings == 0 && racks == 0)
             return;
         if (c.WorksHeads.Length < heads)
             Array.Resize(ref c.WorksHeads, Math.Max(heads, c.WorksHeads.Length * 2));
@@ -349,6 +355,11 @@ public static class ConstructWorks
             foreach (var i in c.Specials)
                 if (IsRing(c.Parts[i].D) && asmOf[i] < 0)
                     Flood(c, i, asmOf, queue);
+        // A launcher rack on a mount: the Reload Hoists in its mount's assembly load it (ship-works.md 6; ConstructHoists.cs).
+        if (racks > 0)
+            foreach (var i in c.Specials)
+                if (c.Parts[i].D.Logic == CLogic.BombRack && FindMount(c, i, queue) is var m and >= 0)
+                    Hoists(c, i, asmOf[m] >= 0 ? asmOf[m] : Flood(c, m, asmOf, queue));
         // What each assembly's heads ask of each kind, and what its working pieces give.
         var cells = c.WorksAsmCount * KindCount;
         if (c.WorksNeed.Length < cells)
@@ -484,6 +495,36 @@ public static class ConstructWorks
         return -1;
     }
 
+    /// <summary>The hoists of assembly <paramref name="asm"/> that load rack <paramref name="rack"/>: each hoist loads the launcher nearest it (two drums on one mount, a hoist behind each), and a rack bolted to the hoist is its magazine, never its launcher.</summary>
+    private static void Hoists(Construct c, int rack, short asm)
+    {
+        for (var k = 0; k < c.WorksPieceCount; k++)
+        {
+            if (c.WorksPieceAsm[k] != asm || c.Parts[c.WorksPieces[k]].D.WorksKind != WorksKind.Hoist)
+                continue;
+            var hoist = c.WorksPieces[k];
+            var magazine = false;
+            for (var e = c.FirstLink(hoist); e >= 0 && !magazine; e = c.NextLink(e))
+                magazine = c.OtherEnd(e) == rack;
+            if (magazine)
+                continue;
+            var had = -1;
+            for (var h = 0; h < c.HoistCount && had < 0; h++)
+                if (c.Hoists[h].Part == hoist)
+                    had = h;
+            if (had >= 0)
+            {
+                var at = c.Parts[hoist].Pos;
+                if (Vector3.DistanceSquared(at, c.Parts[rack].Pos) < Vector3.DistanceSquared(at, c.Parts[c.Hoists[had].Launcher].Pos))
+                    c.Hoists[had].Launcher = (ushort)rack;
+                continue;
+            }
+            if (c.Hoists.Length == c.HoistCount)
+                Array.Resize(ref c.Hoists, Math.Max(2, c.HoistCount * 2));
+            c.Hoists[c.HoistCount++] = new CHoist { Part = hoist, Launcher = (ushort)rack };
+        }
+    }
+
     /// <summary>A thruster's engine: <paramref name="first"/> and every works piece bolted on behind it, through works pieces only (never a mount).</summary>
     private static short Stack(Construct c, int first, Span<short> asmOf, Span<ushort> queue)
     {
@@ -592,6 +633,9 @@ public static class ConstructWorks
     /// <summary>A head's rating for people: "9.0 MN", "600 kN", "40 kW".</summary>
     public static string Rating(ConstructPartDef d) => d.Role == PartRole.Thruster ? Force(d.ThrustForce) : $"{NeedOf(d):0} kW";
 
+    /// <summary>What a head's works serve, in its own unit: a thruster's newtons, else kW (a laser's beam).</summary>
+    public static string Amount(ConstructPartDef head, float v) => head.Role == PartRole.Thruster ? Force(v) : $"{v:0} kW";
+
     public static string Force(float n) => n >= 1e6f ? (n / 1e6f).ToString("0.0", CultureInfo.InvariantCulture) + " MN" : (n / 1000f).ToString("0", CultureInfo.InvariantCulture) + " kN";
 
     /// <summary>Why a head is held back, or "" when it isn't: "no Drive Core behind it", "Fuel Pump 1 of 2 working".</summary>
@@ -611,7 +655,7 @@ public static class ConstructWorks
             return $"no {KindPiece(h.Short)} behind it";
         if (have < all)
             return $"{KindPiece(h.Short)} {have} of {all} working";
-        return $"{KindPiece(h.Short)} too small: serves {Force(c.WorksServed[cell])} of {Force(c.WorksNeed[cell])}";
+        return $"{KindPiece(h.Short)} too small: serves {Amount(d, c.WorksServed[cell])} of {Amount(d, c.WorksNeed[cell])}";
     }
 
     /// <summary>A head's state: "works 100%", "works 25%".</summary>
@@ -644,6 +688,8 @@ public static class ConstructWorks
             return SandboxKeys.Line(d.Name, SandboxKeys.Join($"serves {PieceServes(d)}", wrecked), "in line with no bell: bolt it to a Hull Mount right behind a drive's nozzle, on its axis", action);
         if (d.WorksKind == WorksKind.Loader)
             return LoaderLook(c, part, asm, wrecked, action);
+        if (d.WorksKind == WorksKind.Hoist)
+            return ConstructHoists.Look(c, part, wrecked, action);
         if (asm < 0)
             return SandboxKeys.Line(d.Name, SandboxKeys.Join(d.WorksKind == WorksKind.Mount ? "" : $"serves {PieceServes(d)}", wrecked), d.WorksKind == WorksKind.Mount ? "no head through it" : "bolt it to a Hull Mount, or to works on one", action);
         var heads = 0;
@@ -758,6 +804,8 @@ public static class ConstructWorks
         var k = c.WorksHeadOf(part);
         if (k >= 0)
             key = key * 31 + (int)(c.WorksHeads[k].Cap * 1000);
+        if (c.Parts[part].D.WorksKind == WorksKind.Hoist)
+            key = key * 31 + (c.Parts[part].Powered ? 1 : 0) + (c.PowerOn ? 2 : 0); // (a hoist says when it has no power)
         return key;
     }
 
@@ -832,7 +880,7 @@ public static class ConstructWorks
                 if (h.Asm >= 0)
                 {
                     var cell = h.Asm * KindCount + kind;
-                    sb.Append($" ({c.WorksHave[cell]} of {c.WorksAll[cell]} working, {Force(c.WorksServed[cell])} for {Force(c.WorksNeed[cell])})");
+                    sb.Append($" ({c.WorksHave[cell]} of {c.WorksAll[cell]} working, {Amount(d, c.WorksServed[cell])} for {Amount(d, c.WorksNeed[cell])})");
                 }
             }
             if (h.Asm >= 0)
@@ -854,6 +902,12 @@ public static class ConstructWorks
         foreach (var i in c.Specials)
             if (IsDrivePiece(c.Parts[i].D) && AsmOfPiece(c, i) < 0)
                 failures.Add($"works: {c.Parts[i].D.Name} (part {i}) is in line with no bell: no drive's nozzle is on its axis, through the mount it is bolted to");
+        for (var k = 0; k < c.HoistCount; k++)
+        {
+            var h = c.Hoists[k];
+            var line = $"works: {c.DefOf(h.Part).Name} (part {h.Part}) loads the {c.DefOf(h.Launcher).Name} (part {h.Launcher}), {ConstructHoists.InMagazine(c, h)} in its magazine";
+            notes.Add(ConstructHoists.Next(c, h, out var w, out _, out _, out _) ? line + $", {ConstructHoists.Seconds(c.DefOf(w)):0.0} s a load" : line + ", nothing to move now");
+        }
         var most = ShipWorks.Current.JetMost;
         var cos = MathF.Cos(30f * MathF.PI / 180f);
         for (var k = 0; k < c.ThrusterCount; k++)
@@ -866,8 +920,8 @@ public static class ConstructWorks
         for (var k = 0; k < c.GunCount; k++)
         {
             ref var g = ref c.Guns[k];
-            if (g.Ring < 0 || g.Part >= c.PartCount)
-                continue;
+            if (g.Ring < 0 || g.Part >= c.PartCount || g.NoAmmo)
+                continue; // (a laser on a ring needs no feed: its generators are its works, reported with the heads)
             var line = $"works: {c.Parts[g.Part].D.Name} (part {g.Part}) on {c.Parts[g.Ring].D.Name} (part {g.Ring})";
             if (!g.RingFed)
             {

@@ -783,6 +783,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         Sock(p, "battery0", Cx - 3.9, Ft0, 39.0, "+y");
         Sock(p, "battery1", Cx - 3.9, Ft0, 39.5, "+y");
         Sock(p, "battery2", Cx - 3.9, Ft0, 40.0, "+y");
+        Sock(p, "capacitor", Cx + 2.4, Ft0, 37.0, "+y"); // (the railgun's Capacitor Bank, aft of the reactor: ship-works.md 8)
         Sock(p, "pipes", Cx - 2.7, Ft0 + 2.75, 34.25, "+z"); // (on the bulkhead's aft face)
         Sock(p, "toolRack", Cx + Lw, Ft0 + 0.9, 38.2, "-x");
         Sock(p, "ladder", AftHatch.X0 + 0.625, Ft0, AftHatch.Z1 - 0.095, "+y");
@@ -1516,10 +1517,11 @@ public sealed class TorpedoFrigateParts : IPartGenerator
 
     /// <summary>The railgun: a long breech in the spine's housing and a barrel between copper rails out over the bow. Fires along -z.</summary>
     private const double RailLen = 32.5;
+    private const double RailEnergy = 15000; // kJ a slug takes from the capacitors (ship-works.md 8): the Capacitor Bank M aboard holds two and a bit, and refills one in 10 s, its rate of fire
 
     private static Part Railgun()
     {
-        var p = new Part("Zero Day Railgun", Small, Section, "The Zero Day's railgun: one slug at great speed through anything in a line. Laid along the spine, so the ship is the aim.", role: "gun", tool: "welder", material: "steel", color: Armour, group: Group);
+        var p = new Part("Zero Day Railgun", Small, Section, "The Zero Day's railgun: one slug at great speed through anything in a line, each shot 15 MJ from the ship's Capacitor Bank. Laid along the spine, so the ship is the aim.", role: "gun", tool: "welder", material: "steel", color: Armour, group: Group);
         // Local: the breech's back on the socket at the origin, the barrel forward along -z.
         p.Add(Box([-0.5, 0, -4.0], [0.5, 0.7, 0], Armour, shape: Kw(("finish", "plated steel"))));
         p.Add(Box([-0.3, 0.1, -RailLen], [0.3, 0.5, -4.0], "#3a3d40", shape: Kw(("finish", "dirty steel"))));
@@ -1540,7 +1542,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
             p.Add(Box([-0.505, 0.0, z], [0.505, 0.705, z + 0.14], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
         p.Sock("back", [0, 0, 0], "-y");
         p.Sock("ammo", [0, 0.7, -2.0], "+y");
-        p.Set(("gun", Kw(("damage", 900), ("rpm", 6), ("spread", 0.04), ("range", 800), ("mag", 1), ("reload", 7.0), ("flags", Py.L("penetrating")), ("kick", 3500), ("fx", "cannon"), ("speed", 1100), ("soundOf", "Leviathan .50"), ("muzzle", Py.L(0, 0.3, Py.Round(-RailLen - 0.42, 4))))), ("centreSockets", false));
+        p.Set(("gun", Kw(("damage", 900), ("rpm", 6), ("spread", 0.04), ("range", 800), ("mag", 1), ("reload", 7.0), ("energy", RailEnergy), ("flags", Py.L("penetrating")), ("kick", 3500), ("fx", "cannon"), ("speed", 1100), ("soundOf", "Leviathan .50"), ("muzzle", Py.L(0, 0.3, Py.Round(-RailLen - 0.42, 4))))), ("centreSockets", false));
         return p.Stats(9000, 6000, 30, 12.0);
     }
 
@@ -2096,6 +2098,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         Hang(bp, "Engineer's Panel", la, "panel", "back");
         for (var i = 0; i < 3; i++)
             Hang(bp, "Battery", la, $"battery{i}", "-y");
+        Hang(bp, "Capacitor Bank M", la, "capacitor", "deck"); // (the railgun fires from it: Karl, 2026-11-17, energy guns fire from capacitors only)
         Hang(bp, "Pipe Bank", la, "pipes", "back");
         Hang(bp, "Tool Rack", la, "toolRack", "back");
         Hang(bp, "Requisition Crate", la, "crate0", "-y");

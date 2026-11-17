@@ -1,0 +1,288 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Reload Hoist S",
+  "description": "A launcher's reload hoist: bolt it behind the Hull Mount a launcher rack is on, and bolt Ordnance Racks to it as its magazine. With power it moves one weapon at a time, up to 400 kg, from the magazine onto an empty station of the launcher: about 6 s for a 25 cm missile, longer for a heavier one. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "frame",
+  "tool": "welder",
+  "power": 1500.0,
+  "onBreak": "disable",
+  "worksPiece": {
+    "kind": "hoist",
+    "serves": 400.0
+  },
+  "mass": 500.0,
+  "health": 2000,
+  "armour": 20,
+  "material": "steel",
+  "color": "#5a6065",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -0.4,
+        -0.498,
+        -0.1
+      ],
+      "max": [
+        0.4,
+        0.5,
+        -0.002
+      ],
+      "color": "#5a6065",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.398,
+        -0.5,
+        -1.2
+      ],
+      "max": [
+        0.398,
+        -0.44,
+        -0.098
+      ],
+      "color": "#5c6057",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.395,
+        -0.442,
+        -1.195
+      ],
+      "max": [
+        -0.325,
+        0.497,
+        -1.125
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.395,
+        -0.442,
+        -0.635
+      ],
+      "max": [
+        -0.325,
+        0.497,
+        -0.565
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.325,
+        -0.442,
+        -1.195
+      ],
+      "max": [
+        0.395,
+        0.497,
+        -1.125
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.325,
+        -0.442,
+        -0.635
+      ],
+      "max": [
+        0.395,
+        0.497,
+        -0.565
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.06,
+        0.43,
+        -1.196
+      ],
+      "max": [
+        0.06,
+        0.497,
+        -0.098
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.396,
+        0.44,
+        -1.193
+      ],
+      "max": [
+        0.396,
+        0.49,
+        -1.13
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.11,
+        0.19,
+        -1.02
+      ],
+      "max": [
+        0.11,
+        0.41,
+        -0.72
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.09,
+        0.0,
+        -0.48
+      ],
+      "max": [
+        0.09,
+        0.17,
+        -0.336
+      ],
+      "color": "#d8a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.012,
+        0.17,
+        -0.42
+      ],
+      "max": [
+        0.012,
+        0.425,
+        -0.396
+      ],
+      "color": "#262829",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.288,
+        -0.442,
+        -1.08
+      ],
+      "max": [
+        0.288,
+        -0.39,
+        -0.72
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.31,
+        0.05,
+        -0.16
+      ],
+      "max": [
+        0.34,
+        0.2,
+        -0.12
+      ],
+      "color": "#40e070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.4,
+        -0.44,
+        -1.2
+      ],
+      "max": [
+        0.4,
+        0.5,
+        -0.1
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -1.2
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.4,
+        0.0,
+        -0.9
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.4,
+        0.0,
+        -0.9
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "under",
+      "at": [
+        0.0,
+        -0.5,
+        -0.78
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.5,
+        -0.78
+      ],
+      "dir": "+y"
+    }
+  ]
+}
