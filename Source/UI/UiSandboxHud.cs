@@ -12,6 +12,8 @@ public sealed partial class Ui
     /// <summary>The tool or part in hand, or the gun and its ammo. No strings per frame: the text goes straight into ImGui's frame arena.</summary>
     private void DrawSandboxHeld(Game game, Player local, double now)
     {
+        if (game.CreditsLine.Length > 0)
+            ImGuiSafe.TextColored(Dim, game.CreditsLine); // (credits: GameCrewHire.cs)
         if (game.HarpoonHudLine(local) is { Length: > 0 } line)
             ImGuiSafe.TextColored(Orange, line); // (a line out or a head stuck in you: GameSandboxHarpoon.cs)
         if (game.ArtilleryHudLine(local) is { Length: > 0 } arc)

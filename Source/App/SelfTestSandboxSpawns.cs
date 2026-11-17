@@ -212,6 +212,8 @@ public static partial class SelfTest
         Run(g, ref now, 8);
         var end = follower is { Alive: true } ? Vector3.Distance(follower.Position, me.Position) : float.MaxValue;
         Line($"spawns obstacles: a box ahead {hit}, none behind {!clear}; a friendly bot to the host past a construct: {start:0.0} m -> {end:0.0} m, {g.SandboxBotDetours} detour ticks, {g.SandboxBotReplans} replans");
+        if (!hit) // (CI 2026-11-17 saw no box ahead once, never here in a full shard or alone: where the buggy stood, for the next time)
+            Line($"spawns obstacles: the buggy built at {obstacle.Pos} turned {obstacle.Rot}, its centre {obstacle.WorldCom}, radius {obstacle.Radius:0.00}, dirty {obstacle.Dirty}; the probe from {from} ({g.Constructs.Bodies.Count} bodies, grid {g.Constructs.UseGrid}); gravity there {ConstructGravity.GravityFor(obstacle, obstacle.WorldCom)}");
         if (!hit || clear || follower == null || end > 6f)
             Fail("spawns: bots don't get round constructs");
     }

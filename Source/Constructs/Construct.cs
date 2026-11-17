@@ -360,6 +360,19 @@ public sealed partial class Construct
     public bool CanDrive; // seat + working engine + fuel path + transmission + driven wheels (the drivetrain)
     public int Engine = -1;
     public int Transmission = -1;
+    /// <summary>Server: the NPC faction kind whose crew has it (Source/Crew/CrewFactions.cs; 0: none). Its owner stays 255. Saved in the crew block.</summary>
+    public byte NpcFaction;
+
+    /// <summary>Server: the player who last damaged it (ConstructWorld.DamageBy at the hit; 255: none since its crew's captain last looked).</summary>
+    public byte LastHitBy = 255;
+    public ushort LastHitBody; // the body whose guns last hurt it (0: none): an NPC crew's guns, whose owner is nobody (CrewWorld's captain)
+
+    /// <summary>Server: a seated crew member with no body works the drive seat (Source/Crew/CrewGround.cs): it drives as a sitter would. Never saved or sent.</summary>
+    public bool CrewDrives;
+
+    /// <summary>Someone drives it: a sitter in its drive seat, or its crew (<see cref="CrewDrives"/>).</summary>
+    public bool Driven => Driver != 255 || CrewDrives;
+
     public int DriveSeat = -1; // the seat whose sitter drives: the one linked through a Driving Module to the drivetrain (ConstructModules.cs); -1: no seat drives, whatever else it has
     public int ControlSeat = -1; // the seat forward is taken from: the drive seat, else a seat on a Driving Module wired by hand
     public CTurretMod[] TurretMods = [];
@@ -427,6 +440,8 @@ public sealed partial class Construct
     public bool Electrical; // this tick: it has a battery, or the map requires power
     public float Charge; // kJ in its working batteries (burners and draws go through UseCharge: ConstructPlant.cs)
     public float ChargeCapacity; // kJ they hold
+    public float Cap, CapCapacity, CapRate; // its Capacitor Banks (ship-works.md 8, Karl 2026-11-17: energy guns fire from these only): kJ in them, kJ the working ones the circuit reaches hold, kW the circuit refills them at
+    public byte CapSent; // the capacitors' share last sent (ConstructNet.StateDue)
     public bool PowerOn = true; // the batteries have charge (or it isn't electrical)
     public bool MainsOff; // every battery is wired and its wire says off: machines get nothing from the circuit, controls stay live (ConstructPower.Mains; on the wire in the gear byte's top bit)
     public bool MainsWired; // some battery has a wire in (with the caches): only then is MainsOff looked at

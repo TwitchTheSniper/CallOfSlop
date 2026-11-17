@@ -294,6 +294,13 @@ public static class ConstructBoost
         var charge = c.ChargeCapacity > 0 ? c.Charge * Math.Clamp(piece.ChargeCapacity / c.ChargeCapacity, 0, 1) : 0;
         c.Charge -= charge;
         piece.SetStores(fuel, charge);
+        if (c.CapCapacity > 0 && piece.CapCapacity > 0) // (the capacitors' charge by the banks that went; the parent's capacity drops with it, so its rebuild doesn't scale it down again)
+        {
+            var bank = Math.Clamp(piece.CapCapacity / c.CapCapacity, 0, 1);
+            piece.Cap = Math.Min(piece.CapCapacity, c.Cap * bank);
+            c.Cap -= c.Cap * bank;
+            c.CapCapacity -= c.CapCapacity * bank;
+        }
     }
 }
 

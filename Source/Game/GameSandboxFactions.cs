@@ -488,6 +488,14 @@ public sealed partial class Game
                 for (var f = 0; f < story; f++)
                     w.U8((byte)t.PlayerStanding[k * FactionTable.MaxStory + f]).U8(t.PlayerLearnt[k * FactionTable.MaxStory + f]);
             }
+        var pw = Math.Min(t.PowerCount, FactionTable.MaxStory);
+        w.U8((byte)pw); // (protocol 333: the powers' grid and pacts, GameCrewFactions.cs)
+        for (var a = 0; a < pw; a++)
+            for (var b = 0; b < pw; b++)
+                w.U8((byte)t.PowerRel[a * FactionTable.MaxStory + b]);
+        w.U8((byte)t.PactCount);
+        for (var k = 0; k < t.PactCount; k++)
+            w.U8(t.PactKindOf[k]).U8(t.PactA[k]).U8(t.PactB[k]).U16(t.PactHeld[k]).U16(t.PactLeft[k]);
     }
 
     private static void WriteFactionPairs(PacketWriter w, byte[] of)
@@ -600,6 +608,26 @@ public sealed partial class Game
                 var learnt = r.U8();
                 if (who != 255 && f < FactionTable.MaxStory)
                     (t.PlayerStanding[who * FactionTable.MaxStory + f], t.PlayerLearnt[who * FactionTable.MaxStory + f]) = (v, learnt);
+            }
+        }
+        int pw = r.Has(1) ? r.U8() : 0;
+        for (var a = 0; a < pw; a++)
+            for (var b = 0; b < pw; b++)
+            {
+                var v = r.Has(1) ? (sbyte)r.U8() : (sbyte)0;
+                if (a < FactionTable.MaxStory && b < FactionTable.MaxStory)
+                    t.PowerRel[a * FactionTable.MaxStory + b] = v;
+            }
+        t.PowerCount = Math.Min(pw, FactionTable.MaxStory);
+        int pk = r.Has(1) ? r.U8() : 0;
+        t.PactCount = 0;
+        for (var k = 0; k < pk && r.Has(7); k++)
+        {
+            var (kind, a, b, held, left) = (r.U8(), r.U8(), r.U8(), r.U16(), r.U16());
+            if (t.PactCount < FactionTable.MaxPacts && a < t.PowerCount && b < t.PowerCount)
+            {
+                var i = t.PactCount++;
+                (t.PactKindOf[i], t.PactA[i], t.PactB[i], t.PactHeld[i], t.PactLeft[i]) = (kind, a, b, held, left);
             }
         }
         t.StoryTech = techs;

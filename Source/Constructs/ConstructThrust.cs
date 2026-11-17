@@ -209,7 +209,7 @@ public static partial class ConstructPhysics
     {
         ref var sp = ref c.Parts[w.Suspension];
         var cmd = sp.InCount > 0 ? Math.Clamp(sp.In, -1, 1)
-            : c.Driver == 255 ? 0f
+            : !c.Driven ? 0f
             : c.HubSkid ? Math.Clamp(c.Throttle - c.SteerInput * w.SideSign, -1, 1) : c.Throttle;
         if (cmd == 0 || !c.Electrical || !ConstructPower.On(c, w.Suspension))
             return 0;
@@ -230,7 +230,7 @@ public static partial class ConstructPhysics
         var planet = GravityFrames.Curved; // (the hold measures its height along its gravity: HoldHeight)
         var up = BodyUp(c, dt);
         var height = HoldHeight(com);
-        if (c.Driver == 255)
+        if (!c.Driven)
             c.LiftInput = c.RollInput = 0;
         c.LiftHeld = c.LiftInput != 0 ? c.LiftHeld + dt : 0;
         // The hold: the driver's sprint starts it, or a height wired into a thruster.
@@ -345,7 +345,7 @@ public static partial class ConstructPhysics
                     var off = new Vector2(t.At.X - c.Com.X, t.At.Z - c.Com.Z) - mid;
                     want = Math.Clamp(hoverShare * (1 + a / g + Vector2.Dot(trim, off) + HoverRoll * t.MixRoll * c.RollInput) + Vector2.Dot(counter, off), 0, 1);
                 }
-                else if (c.Driver != 255)
+                else if (c.Driven)
                     want = Math.Clamp(t.MixForward * c.Throttle + t.MixYaw * c.SteerInput + t.MixRoll * c.RollInput, 0, 1);
             }
             var rate = d.ThrustSpool > 0 ? dt / d.ThrustSpool : 1f;
@@ -478,8 +478,8 @@ public static partial class ConstructPhysics
         torque = Vector3.Zero;
         var owned = ConstructFlight.FliesShip(c);
         var com = c.WorldCom;
-        var fwd = c.Driver == 255 ? 0f : ((c.DriveKeys & Buttons.Forward) != 0 ? 1f : 0f) - ((c.DriveKeys & Buttons.Back) != 0 ? 1f : 0f);
-        var lift = c.Driver == 255 ? 0f : MathF.Max(0, c.LiftInput);
+        var fwd = !c.Driven ? 0f : ((c.DriveKeys & Buttons.Forward) != 0 ? 1f : 0f) - ((c.DriveKeys & Buttons.Back) != 0 ? 1f : 0f);
+        var lift = !c.Driven ? 0f : MathF.Max(0, c.LiftInput);
         if (c.NavThrottle >= 0)
         {
             // An order flies it (Game/GameNav.cs): its main drive at the nav computer's throttle, nothing else.

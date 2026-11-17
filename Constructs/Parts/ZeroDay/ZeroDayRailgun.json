@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Zero Day Railgun",
-  "description": "The Zero Day's railgun: one slug at great speed through anything in a line. Laid along the spine, so the ship is the aim.",
+  "description": "The Zero Day's railgun: one slug at great speed through anything in a line, each shot 15 MJ from the ship's Capacitor Bank. Laid along the spine, so the ship is the aim.",
   "group": "Ship",
   "section": "Zero Day frigate",
   "role": "gun",
@@ -13,6 +13,7 @@
     "range": 800,
     "mag": 1,
     "reload": 7.0,
+    "energy": 15000.0,
     "flags": [
       "penetrating"
     ],

@@ -90,6 +90,18 @@ public sealed class FactionTable
     }
     public readonly byte[] StoryLearnt = new byte[Max * MaxStory];
 
+    /// <summary>
+    /// The NPC powers among themselves (docs/sandbox/design/faction-controllers.md section 5; server: Crew/CrewRelations.cs, sent to everyone):
+    /// how power a sees power b at [a * MaxStory + b] (the first <see cref="PowerCount"/> NPC rows; -100 to 100), and the pacts between them
+    /// (kind, the two powers as NPC rows, minutes held and minutes left, 0xFFFF: no end).
+    /// </summary>
+    public int PowerCount;
+    public readonly sbyte[] PowerRel = new sbyte[MaxStory * MaxStory];
+    public const int MaxPacts = 32;
+    public int PactCount;
+    public readonly byte[] PactKindOf = new byte[MaxPacts], PactA = new byte[MaxPacts], PactB = new byte[MaxPacts];
+    public readonly ushort[] PactHeld = new ushort[MaxPacts], PactLeft = new ushort[MaxPacts];
+
     /// <summary>The standing each technology is taught at, per story faction in the order of <see cref="StoryTech"/> (its tier's lowest standing).</summary>
     public sbyte[][] StoryTechNeed = [];
 
@@ -194,6 +206,9 @@ public sealed class FactionTable
         Array.Clear(PlayerStanding);
         Array.Clear(PlayerLearnt);
         Array.Clear(Notorious);
+        PowerCount = 0;
+        PactCount = 0;
+        Array.Clear(PowerRel);
         Version++;
     }
 

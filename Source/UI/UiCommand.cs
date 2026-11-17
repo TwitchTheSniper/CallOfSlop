@@ -168,6 +168,7 @@ public sealed partial class Ui
             CmdBackdrop(dl, fade, now);
             CmdGrid(dl, s, fade);
             CmdBodies(dl, session, s, fade, now);
+            CmdLinks(dl, session, s, fade, now); // (the logistics layer, when on: UiCommandLinks.cs)
             CmdCrafts(dl, session, s, fade, now);
             CmdChrome(dl, session, s, fade, now, keyName);
             CmdRoster(dl, session, s, fade);
@@ -757,6 +758,7 @@ public sealed partial class Ui
             if (CmdButton(dl, q0, q0 + new float2(bw, bh), CmdPresets[k], CmdCyan, fade, level == k))
                 CmdPreset(g, sys, k);
         }
+        CmdLinksButton(dl, new float2(bx + 4 * (bw + 6 * _scale) + 18 * _scale, by), new float2(bw * 1.1f, bh), fade); // (the logistics layer)
         if (_cmdScale.Stale((long)(_cmdSpan * 100)))
             _cmdScale.Text = "VIEW  " + CmdDistance(_cmdSpan) + "  ACROSS" + (_cmdFocusAuto ? "" : "   //   FOCUS PINNED");
         CmdText(dl, new float2(_cvCentre.X, by + bh + 7 * _scale), 11, CmdDim, fade, _cmdScale.Text!, 1);

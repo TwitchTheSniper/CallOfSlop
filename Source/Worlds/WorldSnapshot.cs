@@ -10,7 +10,7 @@ public struct BodySnap
     public byte Owner, FrozenBy, CarrySeg;
     public bool Wreck, Asleep, Damaged, Pinned, Frozen, HoverOn;
     public int Root, Gear;
-    public float Fuel, Charge, HoverY;
+    public float Fuel, Charge, Cap, HoverY; // (Cap: its Capacitor Banks' kJ, saved as a setting of its first part an older reader skips)
     public Vector3 Pos, Vel, AngVel, CarryPos;
     public Quaternion Rot, CarryRot;
     public int Parts, PartCount, Links, LinkCount, Joints, JointCount, Routes, RouteCount, Nodes, Tracks, TrackCount, TrackParts;
@@ -92,6 +92,8 @@ public sealed class WorldSnapshot
     public int SpaceSpeed;
     public string SpaceSystem = "";
     public OpeningSave? Opening; // the survival opening's colony and crash site (GameSandboxOpening.cs), or null
+    public byte[]? CrewFactions; // how each NPC faction kind sees each player faction (Game/GameCrewFactions.cs; in the Crew section), null: none met
+    public byte[]? Powers; // the NPC powers' relations, pacts and news (PowerRelations.SaveBytes; the POWR section)
     public byte[]? LinkLedger; // the host's link ledger (LinkLedger.SaveBytes; the LINK section), the main world's only
     public string Start = ""; // the story start the world was made with (GameStoryStart.cs; "": the default)
     public string[] FactionNames = []; // player factions by id ("": free; the players' records say who is in which)
@@ -157,11 +159,15 @@ public sealed class WorldPlayer
     public Vector3 BunkPos;
     public ushort Firsts; // their milestones for firsts, a bit each (GameMilestones.cs; saved in the Firsts section)
     public byte[] Upgrades = []; // their tool upgrade levels, a byte a ToolStat (ConstructEditsUpgrades.cs; saved in the Tools section)
+    public bool CreditsStarted; // given the start balance (Survival)
+    public long Credits; // their credits (Game/GameCrewFactions.cs; saved in the Crew section)
+    public (string Faction, sbyte Standing)[] NpcStanding = []; // how each NPC faction kind they've met sees them, when not in a player faction (saved in the Crew section)
 
     public WorldPlayer Copy()
     {
         var c = (WorldPlayer)MemberwiseClone();
         c.Upgrades = (byte[])Upgrades.Clone();
+        c.NpcStanding = ((string, sbyte)[])NpcStanding.Clone();
         c.Pack = new CStore();
         WorldStores.Copy(Pack, c.Pack);
         return c;

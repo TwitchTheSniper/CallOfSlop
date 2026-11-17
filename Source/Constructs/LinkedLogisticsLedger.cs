@@ -222,6 +222,31 @@ public static class LinkLedger
         return n;
     }
 
+    /// <summary>An end's answering partners as the command view's layer draws them (<see cref="LinkFar"/>), or null when they are as
+    /// <paramref name="had"/> says (nothing is made then).</summary>
+    public static LinkFar[]? FarOf(uint id, LinkFar[] had)
+    {
+        Span<uint> ps = stackalloc uint[16];
+        var n = Ends.TryGetValue(id, out var e) ? Partners(e, ps) : 0;
+        var same = n == had.Length;
+        for (var i = 0; i < n && same; i++)
+        {
+            var p = Ends[ps[i]];
+            same = had[i].Id == p.Id && had[i].World == p.World && had[i].Body == p.Body && had[i].Name == p.Name && had[i].Flags == FarFlags(p);
+        }
+        if (same)
+            return null;
+        var far = new LinkFar[n];
+        for (var i = 0; i < n; i++)
+        {
+            var p = Ends[ps[i]];
+            far[i] = new LinkFar { Id = p.Id, World = p.World, Body = p.Body, Name = p.Name, Flags = FarFlags(p) };
+        }
+        return far;
+    }
+
+    private static byte FarFlags(LinkEnd p) => (byte)((Asleep(p.World) ? LinkFar.Asleep : 0) | (p.Report.HasDock ? LinkFar.HasDock : 0));
+
     /// <summary>A pair that links: reach (a Relay at both ends to cross worlds), not one network, neither over its body's limit nor down past 10 s.</summary>
     public static bool Valid(LinkEnd a, LinkEnd b) =>
         a.Id != b.Id && !(a.World == b.World && a.Body == b.Body) && !a.Over && !b.Over

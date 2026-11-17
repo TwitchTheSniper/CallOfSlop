@@ -108,6 +108,7 @@ public enum CActKind : byte
     Mend, // u16 body, u16 part: the attach tool sees to a groaning part or repairs a broken-down one (protocol 321; GameSandboxBreakdowns.cs)
     NavOrder, // u16 body, u8 NavKind (0 cancels), u8 the star system's body, 3 x f64 point, f64 radius: an order for a ship from the command view (protocol 323; GameNav.cs)
     Link, // u16 body, u16 part, u8 LinkOp, u32 a, u32 b, str text: a linked logistics part's panel, or a route from the command view (protocol 328; GameSandboxLinked.cs)
+    Crew, // u16 body, u32 member uid, u8 CrewOrder: a crew order from the Crew window (protocol 332; GameCrewHire.cs)
 }
 
 /// <summary>
@@ -181,7 +182,9 @@ public sealed partial class Game
         ResetSandboxSpawns(); // (no spawns queued, no spawned zombies: GameSandboxSpawns.cs)
         _vehicleSpawn?.Reset(); // (no faction vehicles on the way: GameSandboxVehicles.cs)
         Crew.Clear(this); // (no crews from the last world: GameCrew.cs)
+        CrewFactionsClear(); // (nor standings: GameCrewFactions.cs; a saved world's follow from its Crew section)
         CrewStandIns.Clear();
+        CrewInfo.Clear();
         SpawnHeldReset();
         _pilots.Clear(); // (no bot pilots: GameSandboxAircraft.cs)
         _airPending = 0;
@@ -292,7 +295,7 @@ public sealed partial class Game
             {
                 p.Teleport(spot);
                 p.Sim.Velocity = vel;
-                ConstructRide.End(ref p.Sim, null, deck, seg, Vector3.Zero, frame: p.Bot == null); // (as landing on it: the same frame)
+                ConstructRide.End(ref p.Sim, null, deck, seg, Vector3.Zero, frame: p.FramedRider); // (as landing on it: the same frame)
                 return;
             }
         }
@@ -412,6 +415,7 @@ public sealed partial class Game
         Constructs.Targets = this; // (the guns hit players, bots and zombies: GameConstructWeapons.cs)
         Constructs.CrewBytes ??= Crew.SaveBytes; // (a body's crew in its save: GameCrew.cs)
         Constructs.CrewBodies = Crew.IsBody; // (crew at the controls aren't a person taking over)
+        Constructs.CrewWorks ??= Crew.Works; // (an NPC crew's machines work only manned: CrewGate)
         SandboxHands.CrewYield ??= CrewYield; // (a crew body stands up for a player who sits)
         Constructs.Hands ??= SandboxHandOf; // (a held hose follows its holder's hands)
         Constructs.Taught ??= AssemblerTaught; // (parts a story faction must teach first: GameStoryTech.cs)
@@ -801,6 +805,7 @@ public sealed partial class Game
         ConstructNet.WriteClear(w);
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         SendFactions(to); // (before the constructs: who shares what, GameSandboxFactions.cs)
+        SendPowerNewsTo(to); // (the NPC powers' news: GameCrewFactions.cs)
         if (Constructs.Designs.Count > 0)
         {
             PanelDesigns.Write(w, Constructs); // (the shared panel designs, before any order that names one)
@@ -991,6 +996,13 @@ public sealed partial class Game
             case CActKind.QuarrySkip:
                 QuarrySkip(p); // the first Ministry duty (GameQuarry.cs)
                 return null;
+            case CActKind.Crew:
+            {
+                var body = r.U16();
+                var uid = r.U32();
+                var op = r.U8();
+                return op <= (byte)CrewOrder.FireAtWill ? CrewOrderAct(p, body, uid, (CrewOrder)op) : $"no crew order {op}"; // (GameCrewHire.cs)
+            }
             case CActKind.Mend:
             {
                 var body = r.U16();
@@ -2070,7 +2082,7 @@ public sealed partial class Game
             ConstructRide.Clear(ref s); // (a seat is its own frame)
             return;
         }
-        Constructs.BlockPlayer(ref s, World.HeightOf(s.Stance), IsServer, p.Id, frame: p.Bot == null, doors: p.Bot == null || NavGraph.Current.SiteOf(s.Position, 2f) < 0);
+        Constructs.BlockPlayer(ref s, World.HeightOf(s.Stance), IsServer, p.Id, frame: p.FramedRider, doors: p.Bot == null || NavGraph.Current.SiteOf(s.Position, 2f) < 0);
         if (Constructs.LiftBodies.Count > 0 && p.Bot == null)
             ConstructLifterPush.Block(Constructs, ref s, World.HeightOf(s.Stance), _sepAtTick != 0 ? _sepAtTick : MoverPhysics.Clock, IsServer); // (a Loader Arm's piece in the air pushes them aside, or waits for them: ConstructLifterPush.cs)
         if (IsServer && Constructs.LastHitSpeed > RunOverSpeed && Constructs.LastHitBody is { } car)
@@ -2104,8 +2116,8 @@ public sealed partial class Game
             return "not while noclipping";
         // (it moved on since the player aimed: a little more reach the faster it goes)
         var slack = c.Anchored || c.Asleep ? 0 : MathF.Min((c.Vel - p.Sim.Velocity).Length(), 12f) * 0.15f;
-        var why = ladder ? ConstructRide.ClimbLadder(ref p.Sim, c, part, World.HeightOf(Stance.Stand), frame: p.Bot == null)
-            : ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack, frame: p.Bot == null);
+        var why = ladder ? ConstructRide.ClimbLadder(ref p.Sim, c, part, World.HeightOf(Stance.Stand), frame: p.FramedRider)
+            : ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack, frame: p.FramedRider);
         if (why == null)
             Constructs.Events.Add($"player {p.Id} grabbed on to construct {c.Id}");
         return why;
@@ -2837,10 +2849,14 @@ public sealed partial class Game
         ref var g = ref c.Guns[k];
         ref var p = ref c.Parts[g.Part];
         var boxes = ConstructWeapons.BoxRounds(c, k, Constructs);
-        var key = ((long)c.Id << 48) ^ ((long)g.Part << 40) ^ ((long)p.Rounds << 24) ^ ((long)boxes << 2) ^ (p.Reload > 0 ? 1 : 0) ^ (p.Broken ? 2 : 0) ^ ((long)g.Problem.GetHashCode() << 16);
+        var shots = g.Energy > 0 ? (int)MathF.Min(999, c.Cap / g.Energy) : 0; // (an energy gun: the shots its capacitors hold, ship-works.md 8)
+        var key = ((long)c.Id << 48) ^ ((long)g.Part << 40) ^ ((long)p.Rounds << 24) ^ ((long)boxes << 2) ^ (p.Reload > 0 ? 1 : 0) ^ (p.Broken ? 2 : 0) ^ ((long)g.Problem.GetHashCode() << 16) ^ ((long)shots << 30) ^ (c.CapCapacity > 0 ? 1L << 62 : 0);
         if (_sbGun.Stale(key))
             _sbGun.Text = p.Broken ? $"{p.D.Name}: wrecked"
                 : g.Problem.Length > 0 ? $"{p.D.Name} - won't fire: {g.Problem}"
+                : g.Energy > 0 && c.CapCapacity <= 0 ? $"{p.D.Name} - won't fire: no Capacitor Bank on its circuit"
+                : g.NoAmmo ? (shots == 0 ? $"{p.D.Name}: capacitors charging" : $"{p.D.Name}: {shots} shot{(shots == 1 ? "" : "s")} in the capacitors")
+                : g.Energy > 0 && shots == 0 && p.Rounds > 0 ? $"{p.D.Name}: {p.Rounds}/{g.Mag}, capacitors charging"
                 : g.BoxCount == 0 && g.FeedRoute < 0 && g.FeedSocket < 0 && p.Rounds == 0 && boxes == 0 ? $"{p.D.Name} - {(g.MagPart >= 0 ? "magazine empty" : "no ammo box or feed")}"
                 : p.Reload > 0 ? $"{p.D.Name}: reloading, {boxes} in boxes"
                 : p.Rounds == 0 && boxes == 0 ? $"{p.D.Name}: out of ammo"

@@ -90,6 +90,12 @@ public sealed partial class ConstructWorld
     /// <summary>Server: player ids that are crew bodies (Game.Crew.IsBody), whose seat at the controls isn't a person taking over.</summary>
     public bool[]? CrewBodies;
 
+    /// <summary>Player <paramref name="who"/> is a crew member's body (its weight and landings don't push or wake the body it stands on).</summary>
+    public bool IsCrewBody(byte who) => who != 255 && CrewBodies is { } cb && cb[who];
+
+    /// <summary>The crews' word on a machine of a crewed NPC body (bot-brain.md phase 7: CrewGate); null: every machine works.</summary>
+    public Func<Construct, int, bool>? CrewWorks;
+
     /// <summary>A person (not a crew body) is at <paramref name="c"/>'s controls.</summary>
     public bool HumanDriver(Construct c) => c.Driver != 255 && (CrewBodies == null || !CrewBodies[c.Driver]);
 
@@ -997,6 +1003,10 @@ public sealed partial class ConstructWorld
         ref var p = ref c.Parts[part];
         var d = p.D;
         dealt = raw ? MathF.Max(0, damage) : MathF.Max(0, damage - d.Armour); // (raw: burning, which armour doesn't stop)
+        if (dealt > 0 && DamageBy != 255 && DamageBy != c.Owner)
+            c.LastHitBy = DamageBy; // (a crew's captain reads it: a deed against its faction, Source/Crew/CrewWorld.cs)
+        if (dealt > 0 && DamageBody != 0 && DamageBody != c.Id)
+            c.LastHitBody = DamageBody;
         if (dealt <= 0 || p.Broken && !p.BrokeDown) // (a broken-down thruster can still be shot to pieces)
             return false;
         var taken = d.IsEnvelope && !raw ? dealt * ConstructLift.Holed(this, c, part, dealt) : dealt; // (a round goes through a cell's skin)
@@ -1705,7 +1715,7 @@ public sealed partial class ConstructWorld
                         var landing = MathF.Max(0, -s.Velocity.Y - (c.Vel.Y < 0 ? -c.Vel.Y : 0)); // (m/s coming down onto it)
                         if (s.Velocity.Y < 0)
                             s.Velocity.Y = 0;
-                        if (server && c.SpringCount > 0 && !c.Anchored && c.CarriedBy == 0 && p.Seg == 0 && standing != c)
+                        if (server && c.SpringCount > 0 && !c.Anchored && c.CarriedBy == 0 && p.Seg == 0 && standing != c && !IsCrewBody(who))
                         {
                             // A body on spring feet (board item cs03) gives under who stands on it: their weight, and a landing's knock.
                             c.SpringRiders++;

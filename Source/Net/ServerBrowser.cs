@@ -559,7 +559,20 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   Building Station's Sub-jobs setting is a choice (Off, Auto, Linked).
     // 329: the bot brain's crews (docs/sandbox/design/bot-brain.md, phase 1; GameCrew.cs): Msg.CrewSeats at the end of Msg (u16 construct,
     //   u8 n, n x u16 seat part), the seats a crew member works with no body, drawn as stand-ins.
-    public const ushort ProtocolVersion = 329;
+    // 330: the command view's logistics layer (docs/space/COMMAND.md "The logistics layer"): CBodyKind.Link gains, per part after its
+    //   docks, u8 n then n x (u32 id, str world, u16 body, str name, u8 flags): an end's answering partners, a Route Computer's stops
+    //   (LinkFar).
+    // 331: ship works phase 5 (docs/sandbox/design/ship-works.md 8): a body's Full gains f32 Cap (its capacitors' kJ) after the charge; a pose's
+    //   asleep byte gains bit 4 (PoseCap), and with it a u8 share of the capacitors after the walk block; GunFx gains Beam at its end.
+    // 332: the bot brain's factions (bot-brain.md, phase 3; GameCrew.cs): Msg.CrewSeats gains u8 faction kind, u8 crew alive, u16 scuttle point
+    //   (0xFFFF: none) and u8 its stage after its seats (the look line's "Raiders, crew of 4", a charge to disarm); crew bodies are named for
+    //   their faction.
+    //   Msg.CrewRoster and Msg.Credits at the end of Msg; CActKind.Crew at the end of CActKind (u16 body, u32 uid, u8 CrewOrder): crews, prisoners,
+    //   credits (phases 5 and 6).
+    // 333: faction relations through play (docs/sandbox/design/faction-controllers.md phase 1; GameCrewFactions.cs, Crew/CrewRelations.cs):
+    //   Msg.Factions ends with u8 powers n, n x n x i8 (how each power sees each), u8 pacts k, k x (u8 kind, u8 a, u8 b, u16 minutes held,
+    //   u16 minutes left: 0xFFFF none); Msg.PowerNews at the end of Msg. The NPC rows (and CrewSeats' faction byte) are powers, not kinds.
+    public const ushort ProtocolVersion = 333;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

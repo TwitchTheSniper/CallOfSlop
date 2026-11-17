@@ -304,6 +304,8 @@ public static partial class SelfTest
         Program.SweepNudgeModes.Angle = 15f;
         var rot0 = block.Rot;
         var com0 = block.WorldCom;
+        // (the put-back above may not have reached the server yet, under the lag and loss: "back" then passed on the pose before
+        // it, and the arc's begin met the put-back still easing home; the server lands an ending drag first, NudgeFinish)
         // Taken straight after the put-back drag, while the client's copy may still be centimetres behind: the turn is about
         // the body's own centre as the server has it, whatever the copy showed (CI 2026-11-14: 58 mm off on a 120 degree arc).
         var lag = 0f;

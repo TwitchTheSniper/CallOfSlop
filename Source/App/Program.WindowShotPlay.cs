@@ -34,6 +34,58 @@ public static partial class Program
                     g.Crew.UnbodyAll(g);
                 }
                 return true;
+            case "crewconvoy": // "crewconvoy STYLE N": the host sets down a nobody's crewed convoy of N, 60 m ahead of the player, heading across its view
+                if (g.IsServer)
+                {
+                    var bits = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    var fwd = GravityFrames.FlatForward(me.Position, me.Yaw);
+                    var at = g.SandboxGroundAt(me.Position + fwd * 60);
+                    var asked = g.VehicleSpawn.RequestConvoy(bits.Length > 0 ? bits[0] : "Bandit", bits.Length > 1 && int.TryParse(bits[1], out var cn) ? cn : 3, 1, null, at, me.Yaw + MathF.PI * 0.5f);
+                    Console.WriteLine($"[windowshot] crewconvoy: {asked ?? "asked"}");
+                }
+                return true;
+            case "crewhit": // "crewhit [PLAYER]": host, a server shortcut: this player's (or that player id's: a joined client's) shot (DamageBy) takes 1 hp off a part of the first crewed body, as a round would
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewhit: {g.CrewHitFirst(byte.TryParse(arg, out var hitBy) && g.Players.TryGetValue(hitBy, out var hp) ? hp : me)}");
+                return true;
+            case "crewbreak": // "crewbreak [fail]": host, a server shortcut: the first crewed body's breakdown clock runs out now (a warning; "fail": the part breaks down at once)
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewbreak: {g.CrewBreakFirst(arg == "fail")}");
+                return true;
+            case "crewkill": // "crewkill JOB": host, a server shortcut: every crew member with that job on the first crewed body dies (records too: a round through the hull)
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewkill: {g.CrewKillJob(arg)}");
+                return true;
+            case "crewfaction": // "crewfaction NAME": host, a test state: the first crewed body's crew is of that NPC faction kind
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewfaction: {g.CrewSetFaction(arg)}");
+                return true;
+            case "crewdisarm": // "crewdisarm": host, a server shortcut: this player is put by the first crewed body's scuttle charge and starts its disarm (the Mend act's server path)
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewdisarm: {g.CrewDisarmFirst(me)}");
+                return true;
+            case "crewprisoner": // "crewprisoner release|drop|hold|hire": host: this player's order for the first prisoner on the first crewed body; a client sends it as the Crew window's button does (CActKind.Crew), to the first prisoner of a prize it has the roster of
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewprisoner: {g.CrewPrisonerFirst(me, arg)}");
+                else
+                {
+                    var op = arg switch { "release" => CrewOrder.Release, "drop" => CrewOrder.Drop, "hire" => CrewOrder.Hire, _ => (CrewOrder)255 };
+                    var sent = false;
+                    foreach (var v in g.CrewRosters.Values)
+                        foreach (var m in v.Members)
+                            if (!sent && op != (CrewOrder)255 && m.State == CrewState.Surrendered)
+                            {
+                                g.SandboxSendCrewOrder(v.Body, m.Uid, op);
+                                Console.WriteLine($"[windowshot] crewprisoner: sent {op} for {m.Name} on {v.Body}");
+                                sent = true;
+                            }
+                    if (!sent)
+                        Console.WriteLine("[windowshot] crewprisoner: no prisoner in this client's rosters");
+                }
+                return true;
+            case "npcstanding": // "npcstanding": how each NPC faction kind sees this player, as this peer's factions table has it
+                Console.WriteLine($"[windowshot] npcstanding: {g.CrewStandingLine(me)}");
+                return true;
             case "crewshoot": // "crewshoot pilot|gunner|spare": the host shoots the first crew body with that job, as a player's round does (DamagePlayer)
                 if (g.IsServer && g.CrewShoot(me, arg) is { } shot)
                     Console.WriteLine($"[windowshot] crewshoot: {shot}");

@@ -1277,7 +1277,7 @@ public sealed partial class Game : IDisposable
                 }
                 SprintSpread.Tick(p, cmd.Buttons); // sprint inaccuracy (SprintSpread.cs)
             }
-            else if (p.CrewSlot >= 0)
+            else if (p.CrewSlot >= 0 && (!CrewBodyFights(p) || Crew.Nav.WalkerOf(p.CrewSlot) >= 0)) // (a repeller on its way to a boarder walks: CrewNav)
             {
                 using var _ = Perf.Measure(PerfArea.Bots);
                 CrewBodyTick(p); // (a crew member's body: its crew drives its seat, GameCrew.cs)
@@ -1572,6 +1572,8 @@ public sealed partial class Game : IDisposable
             return false;
         if (!CanDamage(attacker, victim))
             return false; // no friendly fire in team modes (your own grenade still hurts you)
+        if (victim.CrewSlot >= 0 && attacker != victim)
+            CrewBodyHit(victim, attacker); // (a deed against the crew's power, by a person or another crew: GameCrewFactions.cs)
         victim.LastCombatTime = now;
         attacker.LastCombatTime = now;
         victim.LastHurtTime = now; // health regen waits (Health.cs)
@@ -2045,6 +2047,7 @@ public sealed partial class Game : IDisposable
                 SendSpaceState(sender); // the space bubble and its clock (GameSpace.cs)
                 SendNavState(sender); // the ships under orders (GameNav.cs)
                 SendCrewSeats(sender); // the crews' stand-ins (GameCrew.cs)
+                SendCrewRosters(sender); // own crews and prizes (GameCrewHire.cs)
                 SendLogicState(sender); // map logic: doors, lamps, levers, controlled movers (GameLogic.cs)
                 SendCorpseState(sender); // the bodies lying about (GameCorpses.cs)
                 SendLabourState(sender); // the penal colony's convict labourers (GameLabour.cs)
@@ -2425,6 +2428,15 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.CrewSeats when !IsServer:
                 ReadCrewSeats(ref r); // the crews' stand-ins (GameCrew.cs)
+                break;
+            case (byte)Msg.CrewRoster when !IsServer:
+                ReadCrewRoster(ref r); // own crews and prizes (GameCrewHire.cs)
+                break;
+            case (byte)Msg.Credits when !IsServer:
+                ReadCredits(ref r); // this player's credits (GameCrewHire.cs)
+                break;
+            case (byte)Msg.PowerNews when !IsServer:
+                ReadPowerNews(ref r); // the NPC powers' news lines (GameCrewFactions.cs)
                 break;
             case (byte)Msg.ShieldHit when !IsServer && r.Has(2):
                 OnShieldHitPacket(ref r, now); // Last Stand's shield blocked a hit (Health.cs)

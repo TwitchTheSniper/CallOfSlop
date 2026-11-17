@@ -739,7 +739,7 @@ public static partial class ConstructPhysics
 
     private static void WalkBody(Construct c, float reach, float dt)
     {
-        var driven = c.Driver != 255;
+        var driven = c.Driven;
         var throttle = driven ? c.Throttle : 0;
         var turn = driven ? c.SteerInput : 0;
         var strafe = driven ? c.RollInput : 0;

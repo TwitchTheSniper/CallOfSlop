@@ -28,7 +28,7 @@ public struct ShipAiTarget
 /// with a living pilot at it (or for <see cref="CrewWorld.HelmGraceTicks"/> after one is lost, its last input held), and each gun
 /// seat with a living gunner. With no crew set (a tool) it works every seat.
 /// </summary>
-public sealed class ShipAi
+public sealed partial class ShipAi
 {
     /// <summary>How far it sees a target (m), the range it keeps (a little inside its guns' 300 m), and the band either side it is content in.</summary>
     public const float EngageRange = 2500, StandOff = 220, StandBand = 40;
@@ -41,6 +41,9 @@ public sealed class ShipAi
 
     /// <summary>How far off a gun may point and still fire (degrees): a fixed gun the ship lays, a turret its gunner lays.</summary>
     public const float FixedBear = 2.5f, TurretBear = 4f;
+
+    /// <summary>A spotter beside the capital gun (bot-brain.md phase 7) shares the target's range and lead: its gunner fires only this share as far off.</summary>
+    public const float SpotBear = 0.5f;
 
     private const int ScanTicks = 120, LookTicks = 30; // (its seats, guns and racks again; the ground under it and ahead)
     private const int MaxSeats = 16, MaxRacks = 16;
@@ -59,6 +62,9 @@ public sealed class ShipAi
         4 => $"closing, {_stateDist:0} m",
         5 => $"opening, {_stateDist:0} m",
         6 => $"holding at {_stateDist:0} m",
+        7 => $"following, {_stateDist:0} m behind its place",
+        8 => $"patrolling, {_stateDist:0} m to go",
+        9 => $"fleeing, {_stateDist:0} m",
         _ => "standing by",
     };
     private int _state;
@@ -107,6 +113,7 @@ public sealed class ShipAi
         Shots = GunnerShots = Launches = Flares = 0;
         Crew = null;
         Ship = null;
+        GroundReset();
     }
 
     /// <summary>Its crew works seat <paramref name="seat"/> (no crew: a tool's, every seat is worked).</summary>
@@ -141,7 +148,8 @@ public sealed class ShipAi
     {
         _structure = c.PartCount;
         _stab = c.StabCount > 0 ? c.Stabs[0].Part : -1;
-        _pilot = _stab >= 0 ? ConstructFlight.SeatFor(c, _stab) : -1;
+        _pilot = _stab >= 0 ? ConstructFlight.SeatFor(c, _stab) : Crew != null ? c.DriveSeat : -1; // (no stabilizer: a ground vehicle's drive seat, driven by Source/Crew/CrewGround.cs)
+        _onGround = _stab < 0 && _pilot >= 0;
         _seatCount = 0;
         _rackCount = 0;
         _flareCount = 0;
@@ -163,7 +171,7 @@ public sealed class ShipAi
                 _rackButton[_rackCount++] = (short)b;
             }
         }
-        c.CrewAims = _stab >= 0; // (its stabilizer turns to where the crew's pilot looks, whatever its Mouse aim setting; never saved)
+        c.CrewAims = _stab >= 0 && Ship is not { Own: true }; // (its stabilizer turns to where the crew's pilot looks, whatever its Mouse aim setting; never saved. A player's own crew never flies it)
     }
 
     /// <summary>A Button wired into part <paramref name="part"/>, or -1.</summary>
@@ -179,6 +187,7 @@ public sealed class ShipAi
     public void Release(Construct c)
     {
         c.CrewAims = false;
+        c.CrewDrives = false;
         _structure = -1;
         _state = 0;
     }
@@ -196,6 +205,12 @@ public sealed class ShipAi
         if (_pilot < 0 || _pilot >= c.PartCount || c.Parts[_pilot].Broken)
         {
             _state = 1;
+            c.CrewDrives = false;
+            return;
+        }
+        if (_onGround)
+        {
+            StepGround(world, c, query, has, t); // (Source/Crew/CrewGround.cs)
             return;
         }
         var com = c.WorldCom;
@@ -264,11 +279,12 @@ public sealed class ShipAi
         }
         _state = gap > StandBand ? 4 : gap < -StandBand ? 5 : 6;
         _stateDist = dist;
+        var fleeing = Fleeing(ref pilot); // (its captain runs: nose away, full ahead; Source/Crew/CrewGround.cs)
 
         // The guns: each seat looks at where its guns' rounds meet the target, and fires when a gun on it bears and reaches.
         if (pilotOn)
         {
-            var (pilotLook, pilotFire) = Gunnery(world, c, _pilot, t, dist, fixedGuns: true);
+            var (pilotLook, pilotFire) = fleeing ? (GravityFrames.Angles(com, -dir * 100), false) : Gunnery(world, c, _pilot, t, dist, fixedGuns: true);
             if (pilotFire)
                 pilot |= ConstructParts.KeyFire;
             PilotSeat(c, pilot, pilotLook.Yaw, pilotLook.Pitch);
@@ -287,7 +303,7 @@ public sealed class ShipAi
             return; // (the racks and flares are the pilot's buttons)
 
         // The racks: one launch at a time, taking turns, at a ship or a car (a seeker wants something that moves), with the target off the nose.
-        if (_rackCount > 0 && t.Body != 0 && dist is > LaunchMin and < LaunchMax && _tick >= _launchAt)
+        if (!fleeing && _rackCount > 0 && t.Body != 0 && dist is > LaunchMin and < LaunchMax && _tick >= _launchAt)
         {
             var nose = Vector3.Transform(-Vector3.UnitZ, c.Rot); // (the racks' ports face forward)
             if (Vector3.Dot(nose, dir) > MathF.Cos(LaunchCone * MathF.PI / 180))
@@ -346,6 +362,7 @@ public sealed class ShipAi
         var at = Lead(c, eye, t, speed);
         var look = GravityFrames.Angles(c.WorldCom, at - eye);
         var fire = false;
+        var spotted = Ship != null && Crew != null ? Crew.Spotted(Ship) : -1; // (phase 7: a spotter at the capital gun)
         for (var k = 0; k < c.GunCount && !fire; k++)
         {
             ref var g = ref c.Guns[k];
@@ -354,7 +371,7 @@ public sealed class ShipAi
             ConstructWeapons.MuzzleWorld(c, k, out var muzzle, out var fwd);
             var to = Lead(c, muzzle, t, g.RoundV > 0 ? g.RoundV : g.Speed) - muzzle;
             var bear = MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Normalize(fwd), Vector3.Normalize(to)), -1, 1)) * 180 / MathF.PI;
-            if (bear > (g.AimJoints > 0 ? TurretBear : FixedBear))
+            if (bear > (g.AimJoints > 0 ? TurretBear : FixedBear) * (g.Part == spotted ? SpotBear : 1))
                 continue;
             // Never through its own hull: a turret on the far beam holds.
             if (!world.Raycast(muzzle + fwd * 0.5f, Vector3.Normalize(fwd), MathF.Min(to.Length(), 60), out _, only: c))
@@ -413,6 +430,8 @@ public sealed class ShipAi
             Seat(c, _pilot, _pilotKeys, _pilotYaw, _pilotPitch);
         else if (Grace)
             Seat(c, _pilot, (ushort)(_pilotKeys & ~ConstructParts.KeyFire), _pilotYaw, _pilotPitch);
+        else if (_onGround)
+            GroundStop(c);
         for (var s = 0; s < _seatCount; s++)
             if (_seats[s] < c.PartCount && Manned(_seats[s]))
                 Seat(c, _seats[s], _seatKeys[s], _seatYaw[s], _seatPitch[s]);

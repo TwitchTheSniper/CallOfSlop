@@ -62,6 +62,19 @@ public sealed class ShipWorksParts : IPartGenerator
     // Reload Hoist S and L: kg of one weapon it lifts, width, height, depth, mass, health, watts (ship-works.md 6).
     private static readonly double[] HoistServes = [400, 3000], HoistW = [0.8, 1.4], HoistH = [1.0, 1.8], HoistD = [1.2, 2.0], HoistMass = [500, 1800], HoistHealth = [2000, 5000], HoistPower = [1500, 4000];
 
+    // Capacitor Bank S/M/L (ship-works.md 8, Karl 2026-11-17: energy guns fire from these only): kJ held, kW the circuit refills it at, width, height, depth, mass, health.
+    private static readonly double[] CapKj = [5000, 40000, 150000], CapKw = [400, 1500, 4000], CapW = [0.8, 1.4, 2.0], CapH = [1.0, 1.6, 2.2], CapD = [0.6, 1.0, 1.4], CapMass = [900, 4000, 12000], CapHealth = [1500, 3500, 7000];
+
+    // Laser Emitter S/M/L (ship-works.md 5.4): beam rating (kW), pulses a minute, range (m), its body's width, height, depth and barrel, mass, health.
+    // A pulse's damage is the rating times BeamDamagePerKw over the pulses a second, its energy the rating over them (kJ).
+    private static readonly double[] BeamKw = [400, 1500, 5000], BeamRange = [400, 600, 900], EmitW = [0.5, 0.75, 1.1], EmitH = [0.35, 0.5, 0.75], EmitD = [0.8, 1.2, 1.7], EmitBarrel = [0.9, 1.4, 2.0], EmitMass = [300, 900, 2500], EmitHealth = [900, 2000, 4500];
+    public const double BeamRpm = 120, BeamDamagePerKw = 0.25, PodShare = 0.2; // (a Laser Pod: emitter and generator in one at a fifth of the S's beam)
+
+    // Laser Generator S/M/L: kW of beam it serves (a little over its emitter's), width, height, depth (to its ring's trunk), mass, health.
+    private static readonly double[] GenKw = [500, 1800, 6000], GenW = [0.5, 0.8, 1.1], GenH = [0.5, 0.8, 1.2], GenD = [0.6, 0.9, 1.3], GenMass = [400, 1100, 2800], GenHealth = [1500, 3000, 5500];
+
+    private const string Lens = "#ff4030", Coil = "#3a6fa8", CapCell = "#2c5a8a", CapGlow = "#40c8ff"; // (a beam's lens; a generator's coils; a capacitor's cells and its charge lamp)
+
     private static double[] P(double x, double y, double z) => [x, y, z];
 
     private static void Solid(Part p, double x0, double y0, double z0, double x1, double y1, double z1, string color, string finish) =>
@@ -223,6 +236,138 @@ public sealed class ShipWorksParts : IPartGenerator
         p.Sock("top", P(0, y1, Math.Round(-d * 0.65, 2)), "+y");
         p.Set(("power", HoistPower[s]), ("onBreak", "disable"), ("worksPiece", Kw(("kind", "hoist"), ("serves", HoistServes[s]))));
         return p.Stats(HoistMass[s], HoistHealth[s], 20);
+    }
+
+    // ---- energy: capacitors and lasers (ship-works.md 5.4, 8) ---------------------------------------------------------
+
+    /// <summary>
+    /// A Capacitor Bank: a cabinet of cells standing on a deck. The ship's circuit refills it at its rate; railguns and lasers fire from
+    /// the banks only (Karl, 2026-11-17), never from batteries. Broken, it loses its share of the charge. Origin: the middle of its foot.
+    /// </summary>
+    private static Part Capacitor(int s)
+    {
+        var (w, h, d) = (CapW[s], CapH[s], CapD[s]);
+        var p = new Part($"Capacitor Bank {SizeName[s]}", Small, Section, Desc($"Holds {CapKj[s] / 1000:0.#} MJ for the ship's energy guns, refilled from the circuit at {CapKw[s]:0} kW: railguns and lasers fire from capacitors only, never from batteries. Link it to the ship's circuit. Broken, it loses its charge."),
+            role: "frame", tool: "welder", material: "steel", color: Dark, group: Group);
+        var (hw, hd) = (w / 2, d / 2);
+        Solid(p, -hw, 0, -hd, hw, 0.08, hd, Bed, "dirty steel"); // (its plinth)
+        Solid(p, -hw + 0.03, 0.083, -hd + 0.03, hw - 0.03, h - 0.06, hd - 0.03, Dark, "painted plating"); // (the cabinet)
+        Look(p, -hw + 0.01, h - 0.057, -hd + 0.01, hw - 0.01, h - 0.003, hd - 0.01, Trim, "steel"); // (its lid)
+        // The cells: a grid of cylinders standing out of its front, each with a cap.
+        var cols = s + 2;
+        var rows = s + 3;
+        var pitchX = (w - 0.16) / cols;
+        var pitchY = (h - 0.3) / rows;
+        var r = Math.Min(pitchX, pitchY) * 0.36;
+        for (var i = 0; i < cols; i++)
+            for (var j = 0; j < rows; j++)
+            {
+                var (x, y) = (-hw + 0.08 + pitchX * (i + 0.5), 0.14 + pitchY * (j + 0.5));
+                Cyl(p, x, y, r, hd - 0.05, hd + 0.05, CapCell, "painted plating", segments: 12);
+                Cyl(p, x, y, r * 0.55, hd + 0.045, hd + 0.065, Trim, "steel", segments: 10);
+            }
+        Look(p, -hw + 0.05, h - 0.2, hd - 0.026, hw - 0.05, h - 0.12, hd + 0.02, Copper, "copper"); // (the bus bar over the cells)
+        Look(p, -hw + 0.05, 0.085, hd - 0.026, hw - 0.05, 0.12, hd + 0.015, Hazard, "hazard paint"); // (a hazard band at its foot)
+        Look(p, hw - 0.12, h - 0.11, hd - 0.026, hw - 0.06, h - 0.08, hd + 0.025, CapGlow, "", glow: true); // (its charge lamp)
+        foreach (var x in new[] { -hw * 0.5, hw * 0.5 })
+            Up(p, x, 0, 0.05, h - 0.01, h + 0.08, Copper, "copper", segments: 10); // (its terminals)
+        Hidden(p, -hw, 0.08, -hd, hw, h, hd + 0.065);
+        p.Sock("deck", P(0, 0, 0), "-y");
+        p.Sock("top", P(0, h, 0), "+y");
+        p.Sock("back", P(0, Math.Round(h / 2, 2), -hd), "-z");
+        p.Sock("+x", P(hw, Math.Round(h / 2, 2), 0), "+x");
+        p.Sock("-x", P(-hw, Math.Round(h / 2, 2), 0), "-x");
+        p.Set(("capacitor", Kw(("capacity", CapKj[s]), ("rate", CapKw[s]))), ("onBreak", "disable"),
+            ("ports", Py.L(Kw(("name", "Power in"), ("type", "power"), ("dir", "in"), ("noEffect", true), ("at", P(-hw, Math.Round(h * 0.3, 2), 0)), ("face", "-x")))));
+        return p.Stats(CapMass[s], CapHealth[s], 20);
+    }
+
+    /// <summary>A beam's gun block: a pulse's damage and energy from its rating (kW), no rounds, its muzzle at the lens.</summary>
+    private static PyDict BeamGun(double kw, double range, double muzzleZ) =>
+        Kw(("damage", Math.Round(kw * BeamDamagePerKw * 60 / BeamRpm, 1)), ("rpm", BeamRpm), ("spread", 0.05), ("range", range), ("maxRange", range),
+            ("energy", Math.Round(kw * 60 / BeamRpm, 1)), ("fx", "beam"), ("muzzle", P(0, 0, Math.Round(muzzleZ, 3))));
+
+    /// <summary>A laser's body: a housing on a foot, a lens tube along -z with a lit lens at its end, cooling fins on the housing.</summary>
+    private static void LaserBody(Part p, double w, double h, double d, double barrel)
+    {
+        var (hw, hh, hd) = (w / 2, h / 2, d / 2);
+        Solid(p, -hw, -hh, -hd, hw, hh, hd, Dark, "painted plating"); // (the housing)
+        Look(p, -hw * 0.7, hh + 0.003, -hd * 0.8, hw * 0.7, hh + 0.04, hd * 0.6, Trim, "steel"); // (its top plate)
+        for (var k = 0; k < 4; k++)
+        {
+            var z = -hd * 0.6 + k * hd * 0.4;
+            foreach (var sx in new[] { -1.0, 1.0 })
+                Look(p, sx * (hw + 0.003), -hh * 0.7, z - 0.012, sx * (hw + 0.035), hh * 0.7, z + 0.012, Trim, "steel"); // (cooling fins on its sides)
+        }
+        var r = Math.Min(w, h) * 0.2;
+        Cyl(p, 0, 0, r * 1.25, -hd - 0.08, -hd + 0.02, Trim, "steel", segments: 16); // (the tube's collar)
+        Cyl(p, 0, 0, r, -hd - barrel, -hd - 0.05, Steel, "dirty steel", segments: 16); // (the lens tube)
+        Cyl(p, 0, 0, r * 1.15, -hd - barrel - 0.06, -hd - barrel + 0.004, Dark, "steel", inner: 0.75, segments: 16); // (its hood)
+        Cyl(p, 0, 0, r * 0.7, -hd - barrel - 0.02, -hd - barrel + 0.01, Lens, "", segments: 16, glow: true); // (the lens)
+        Look(p, -hw * 0.5, -hh * 0.4, hd + 0.003, hw * 0.5, hh * 0.4, hd + 0.03, Coil, "painted plating"); // (the feed's plate at the back)
+        Hidden(p, -r, -r, -hd - barrel - 0.06, r, r, -hd);
+    }
+
+    /// <summary>
+    /// A Laser Emitter (ship-works.md 5.4): a beam gun for a turret, its beam what the Laser Generators bolted to its ring's trunk (or its
+    /// mount's inner face) serve, up to its rating. Each pulse takes its energy from the ship's capacitors; no rounds.
+    /// </summary>
+    private static Part Emitter(int s)
+    {
+        var (w, h, d, b) = (EmitW[s], EmitH[s], EmitD[s], EmitBarrel[s]);
+        var p = new Part($"Laser Emitter {SizeName[s]}", Small, Section, Desc($"A beam gun for a turret ring or a hull mount, {BeamKw[s]:0} kW of beam: Laser Generators bolted to the ring's trunk (or behind the mount) make the beam, and each pulse takes {BeamKw[s] * 60 / BeamRpm / 1000:0.##} MJ from the ship's capacitors. No ammunition."),
+            role: "gun", tool: "welder", material: "steel", color: Dark, group: Group);
+        LaserBody(p, w, h, d, b);
+        p.Sock("bottom", P(0, -h / 2, 0), "-y");
+        p.Sock("top", P(0, h / 2, 0), "+y");
+        p.Sock("back", P(0, 0, d / 2), "+z");
+        p.Set(("gun", BeamGun(BeamKw[s], BeamRange[s], -d / 2 - b - 0.06)), ("works", Kw(("needs", Py.L("lasergen")), ("rating", BeamKw[s]))), ("centreSockets", false));
+        return p.Stats(EmitMass[s], EmitHealth[s], 16);
+    }
+
+    /// <summary>A Laser Generator: coils and a cooling jacket on a frame, bolted to a Turret Ring's trunk or a Hull Mount's inner face (its front, +z).</summary>
+    private static Part Generator(int s)
+    {
+        var (w, h, d) = (GenW[s], GenH[s], GenD[s]);
+        var p = new Part($"Laser Generator {SizeName[s]}", Small, Section, Desc($"Makes a laser's beam, up to {GenKw[s]:0} kW: bolt it to the trunk of the Turret Ring a Laser Emitter stands on, or behind the Hull Mount it goes through."),
+            role: "frame", tool: "welder", material: "steel", color: Steel, group: Group);
+        var y0 = -h / 2;
+        Solid(p, -w / 2, y0, -d, w / 2, y0 + 0.08, -0.02, Bed, "dirty steel"); // (its base frame)
+        var r = Math.Min(w, h) * 0.32;
+        Cyl(p, 0, y0 + 0.08 + r + 0.01, r, -d + 0.06, -0.065, Coil, "painted plating", segments: 16); // (the coil drum)
+        for (var k = 0; k < 4; k++)
+        {
+            var z = -d + 0.12 + k * (d - 0.24) / 3;
+            Cyl(p, 0, y0 + 0.08 + r + 0.01, r * 1.08, z - 0.02, z + 0.02, Copper, "copper", segments: 16); // (its copper bands)
+        }
+        Look(p, -w / 2 + 0.02, y0 + 0.083, -0.06, w / 2 - 0.02, h / 2 - 0.003, -0.02, Trim, "steel"); // (the face plate on the trunk)
+        Look(p, w / 2 - 0.07, y0 + h * 0.7, -0.1, w / 2 - 0.04, y0 + h * 0.85, -0.064, Lens, "", glow: true); // (its ready lamp)
+        Look(p, -w * 0.4, y0 + 0.078, -d * 0.18, w * 0.4, y0 + 0.086, -0.064, Hazard, "hazard paint");
+        Hidden(p, -w / 2, y0 + 0.08, -d, w / 2, h / 2, -0.02);
+        Hidden(p, -0.2, -0.2, -0.02, 0.2, 0.2, 0); // (the face that meets the trunk)
+        p.Sock("front", P(0, 0, 0), "+z");
+        p.Sock("back", P(0, 0, -d), "-z");
+        p.Sock("+x", P(w / 2, 0, Math.Round(-d / 2, 2)), "+x");
+        p.Sock("-x", P(-w / 2, 0, Math.Round(-d / 2, 2)), "-x");
+        p.Sock("deck", P(0, -h / 2, Math.Round(-d / 2, 2)), "-y");
+        p.Set(("onBreak", "disable"), ("worksPiece", Kw(("kind", "lasergen"), ("serves", GenKw[s]))));
+        return p.Stats(GenMass[s], GenHealth[s], 20);
+    }
+
+    /// <summary>A Laser Pod: an emitter and its generator in one housing, for a surface mount (no works), at a fifth of the Laser Emitter S's beam.</summary>
+    private static Part Pod()
+    {
+        var kw = BeamKw[0] * PodShare;
+        var (w, h, d, b) = (0.4, 0.3, 0.6, 0.5);
+        var p = new Part("Laser Pod", Small, Section, Desc($"A small beam gun with its generator inside, for a turntable or a deck: {kw:0} kW of beam, each pulse {kw * 60 / BeamRpm:0} kJ from the ship's capacitors. No ammunition."),
+            role: "gun", tool: "welder", material: "steel", color: Dark, group: Group);
+        LaserBody(p, w, h, d, b);
+        Look(p, -w / 2 - 0.03, -h / 2 + 0.004, -d * 0.3, -w / 2 - 0.006, h * 0.3, d * 0.3, Coil, "painted plating"); // (its generator's pack on the side)
+        p.Sock("bottom", P(0, -h / 2, 0), "-y");
+        p.Sock("top", P(0, h / 2, 0), "+y");
+        p.Sock("back", P(0, 0, d / 2), "+z");
+        p.Set(("gun", BeamGun(kw, 300, -d / 2 - b - 0.06)), ("centreSockets", false));
+        return p.Stats(180, 500, 12);
     }
 
     // ---- the mount -------------------------------------------------------------------------------------------------
@@ -531,6 +676,13 @@ public sealed class ShipWorksParts : IPartGenerator
             parts.Add(Loader(s));
         parts.Add(Hoist(0));
         parts.Add(Hoist(1));
+        for (var s = 0; s < 3; s++)
+            parts.Add(Capacitor(s));
+        for (var s = 0; s < 3; s++)
+            parts.Add(Emitter(s));
+        for (var s = 0; s < 3; s++)
+            parts.Add(Generator(s));
+        parts.Add(Pod());
         WriteParts(o, Out, parts.Select(p => ("", p)));
     }
 }

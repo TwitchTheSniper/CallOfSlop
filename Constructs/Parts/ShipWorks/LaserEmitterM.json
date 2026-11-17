@@ -1,0 +1,314 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Laser Emitter M",
+  "description": "A beam gun for a turret ring or a hull mount, 1500 kW of beam: Laser Generators bolted to the ring's trunk (or behind the mount) make the beam, and each pulse takes 0.75 MJ from the ship's capacitors. No ammunition. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "gun",
+  "tool": "welder",
+  "gun": {
+    "damage": 187.5,
+    "rpm": 120.0,
+    "spread": 0.05,
+    "range": 600.0,
+    "maxRange": 600.0,
+    "energy": 750.0,
+    "fx": "beam",
+    "muzzle": [
+      0.0,
+      0.0,
+      -2.06
+    ]
+  },
+  "works": {
+    "needs": [
+      "lasergen"
+    ],
+    "rating": 1500.0
+  },
+  "centreSockets": false,
+  "mass": 900.0,
+  "health": 2000,
+  "armour": 16,
+  "material": "steel",
+  "color": "#34373a",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -0.375,
+        -0.25,
+        -0.6
+      ],
+      "max": [
+        0.375,
+        0.25,
+        0.6
+      ],
+      "color": "#34373a",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.2625,
+        0.253,
+        -0.48
+      ],
+      "max": [
+        0.2625,
+        0.29,
+        0.36
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.41,
+        -0.175,
+        -0.372
+      ],
+      "max": [
+        -0.378,
+        0.175,
+        -0.348
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.378,
+        -0.175,
+        -0.372
+      ],
+      "max": [
+        0.41,
+        0.175,
+        -0.348
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.41,
+        -0.175,
+        -0.132
+      ],
+      "max": [
+        -0.378,
+        0.175,
+        -0.108
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.378,
+        -0.175,
+        -0.132
+      ],
+      "max": [
+        0.41,
+        0.175,
+        -0.108
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.41,
+        -0.175,
+        0.108
+      ],
+      "max": [
+        -0.378,
+        0.175,
+        0.132
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.378,
+        -0.175,
+        0.108
+      ],
+      "max": [
+        0.41,
+        0.175,
+        0.132
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.41,
+        -0.175,
+        0.348
+      ],
+      "max": [
+        -0.378,
+        0.175,
+        0.372
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        0.378,
+        -0.175,
+        0.348
+      ],
+      "max": [
+        0.41,
+        0.175,
+        0.372
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.68
+      ],
+      "max": [
+        0.125,
+        0.125,
+        -0.58
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.1,
+        -0.1,
+        -2.0
+      ],
+      "max": [
+        0.1,
+        0.1,
+        -0.65
+      ],
+      "color": "#5a6065",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.115,
+        -0.115,
+        -2.06
+      ],
+      "max": [
+        0.115,
+        0.115,
+        -1.996
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "shape": "tube",
+      "segments": 16,
+      "inner": 0.75,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.07,
+        -0.07,
+        -2.02
+      ],
+      "max": [
+        0.07,
+        0.07,
+        -1.99
+      ],
+      "color": "#ff4030",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.1875,
+        -0.1,
+        0.603
+      ],
+      "max": [
+        0.1875,
+        0.1,
+        0.63
+      ],
+      "color": "#3a6fa8",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.1,
+        -0.1,
+        -2.06
+      ],
+      "max": [
+        0.1,
+        0.1,
+        -0.6
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -0.25,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.25,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.6
+      ],
+      "dir": "+z"
+    }
+  ]
+}

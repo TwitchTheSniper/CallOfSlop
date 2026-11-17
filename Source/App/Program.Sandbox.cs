@@ -240,6 +240,7 @@ public static unsafe partial class Program
                       ^ ((long)g.Constructs.CouplingCount << 50) ^ ((long)(h.Tool == ConstructTool.Welder ? 1 : 0) << 61) ^ ((long)(int)(ConstructPower.Share(hit.Body) * 100) << 53) ^ (hit.Body.PowerOn ? 1L << 60 : 0)
                       ^ (salvage ? 1L << 56 : 0) ^ (theirs ? 1L << 57 : 0) ^ (d.Configurable ? (long)BitConverter.SingleToInt32Bits(ConstructConfig.At(part, d, 0)) << 20 : 0)
                       ^ ((long)part.Rounds << 33) ^ (part.Burn > 0 ? 1L << 55 : 0) ^ (part.Reload > 0 ? 1L << 54 : 0)
+                      ^ (d.CapacitorKJ > 0 || d.GunEnergy > 0 ? (long)(ConstructPower.CapShare(hit.Body) * 100) << 46 ^ (long)(hit.Body.CapCapacity / 100) << 24 : 0) // (the capacitors: a bank's, an energy gun's)
                       ^ (d.Role is PartRole.Engine or PartRole.Transmission or PartRole.EnginePiece ? (long)(hit.Body.Rpm / 50) << 8 ^ (long)hit.Body.Gear << 3 : 0) // (an engine's rpm, a gearbox's gear)
                       ^ (d.Piece != EnginePiece.None ? ConstructEngine.LookKey(hit.Body, hit.Part) << 20 : 0) // (a modular engine's readout)
                       ^ (ConstructWorks.Has(d) ? ConstructWorks.LookKey(hit.Body, hit.Part) << 8 : d.Name == Game.BreakdownPanel ? ConstructWorks.PanelKey(hit.Body) << 8 : 0) // (ship works: a head's cap, a piece's load, the panel's report)
@@ -252,7 +253,8 @@ public static unsafe partial class Program
                       ^ (d.Rotor != null ? ConstructRotor.LookKey(hit.Body, hit.Part) << 8 : d.Surface != null ? ConstructAero.LookKey(hit.Body, hit.Part) << 8 : 0) // (a rotor's speed and blades, a wing's stall speed)
                       ^ (aim.Verdict == AimVerdict.Refused ? (long)(aim.Why?.GetHashCode() ?? 1) << 3 : 0)
                       ^ (hit.Body.Loose && ToolUpgrades.Current.ModuleOf(d.Id) is { } module ? (g.SandboxHands.Level(me.Id, module.Stat) + 1L) * 7919L << 24 : 0) // (a tool upgrade: what you have of it)
-                      ^ (h.Tool == ConstructTool.Hands ? h.Held == ConstructParts.None ? 1L << 59 : 1L << 58 : 0); // (hands out: what the click does, and whether they are full)
+                      ^ (h.Tool == ConstructTool.Hands ? h.Held == ConstructParts.None ? 1L << 59 : 1L << 58 : 0) // (hands out: what the click does, and whether they are full)
+                      ^ (g.CrewInfo.TryGetValue(hit.Body.Id, out var crewKey) ? (long)(crewKey.Faction * 256 + crewKey.Alive) * 104729L : 0); // (a crewed body's faction and crew)
             if (key != _sbLookKey)
             {
                 _sbLookKey = key;
@@ -276,6 +278,7 @@ public static unsafe partial class Program
                     PartRole.FluidTank when !hit.Body.Loose && !ConstructEdits.WreckedAlone(hit.Body) => SandboxKeys.Line(d.Name, ConstructFluid.State(part, d), part.Burn > 0 ? "ON FIRE" : ConstructFluid.Problem(hit.Body, hit.Part), h.Tool == ConstructTool.Configure ? SandboxKeys.Do(SandboxKeys.Fire, g.SandboxInfiniteParts ? "set fluid and fill" : "see settings") : !fits || aim.Verdict != AimVerdict.Can ? null : $"hold {SandboxKeys.Aim}: {(salvage ? "salvage" : "take off")}"),
                     _ when h.Tool == ConstructTool.Linker => SandboxKeys.Line(d.Name, SandboxKeys.Join(setting, signal), unpowered.Length > 0 ? unpowered : ConstructModules.Problem(hit.Body, hit.Part)),
                     PartRole.Hitch when near => SandboxKeys.Line(d.Name, coupled ? "coupled" : "free", h.Tool == ConstructTool.Welder ? null : "needs the attach tool", h.Tool == ConstructTool.Welder ? SandboxKeys.Do(use, coupled ? "uncouple" : "couple") : null),
+                    _ when d.CapacitorKJ > 0 => CapacitorLook(hit.Body, hit.Part, d, hp),
                     PartRole.Battery => SandboxKeys.Line(d.Name, part.Broken ? "wrecked" : hit.Body.PowerOn ? $"{charge}%" : "flat"),
                     PartRole.Transmission when d.HasGears && d.SettingLabels.Length > 0 => SandboxKeys.Line(d.Name, SandboxKeys.Join($"gear {d.SettingLabels[Math.Min(hit.Body.Gear, d.SettingLabels.Length - 1)]}", wrecked)),
                     _ when d.Piece != EnginePiece.None => ConstructEngine.Look(hit.Body, hit.Part), // (what the pieces add up to, or what is missing, with any tool in hand)
@@ -314,6 +317,8 @@ public static unsafe partial class Program
                     _ when ConstructEdits.WreckedAlone(hit.Body) => SandboxKeys.Line(d.Name, SandboxKeys.Join($"wrecked, {d.Mass:0} kg", carriedIn), "haul it to a Recycler"),
                     _ => SandboxKeys.Line(d.Name, hp, null, !fits || aim.Verdict != AimVerdict.Can ? null : $"hold {SandboxKeys.Aim}: {(salvage ? "salvage" : "take off")}"),
                 };
+                if (g.CrewLook(hit.Body.Id) is { } crewNote)
+                    _sbLookText = $"{_sbLookText}  ({crewNote})"; // (a crewed body: its faction kind and crew, GameCrew.cs)
                 if (aim.Verdict == AimVerdict.Refused)
                     _sbAimRefusedText = SandboxKeys.Line(d.Name, null, aim.Why); // (red outline: why the tool can't)
                 _sbAimRefusedKey = key;
@@ -1212,6 +1217,26 @@ public static unsafe partial class Program
             broken ? null : ConstructModules.Problem(c, part) ?? ConstructRemote.SeatProblem(_game.Constructs, c, part), near && !taken && !broken ? SandboxKeys.Do(SandboxKeys.Use, kind == SeatKind.Driver ? "drive" : kind == SeatKind.Gunner ? "man the gun" : "sit") : null);
     }
 
+    /// <summary>A Capacitor Bank on the look line: what the ship's banks hold and how fast the circuit refills them (ship-works.md 8).</summary>
+    private static string CapacitorLook(Construct c, int part, ConstructPartDef d, string hp)
+    {
+        ref var p = ref c.Parts[part];
+        if (p.Broken)
+            return SandboxKeys.Line(d.Name, "wrecked: its charge is lost");
+        var mine = $"holds {MegaJoules(d.CapacitorKJ)}, refills at {d.CapacitorKW:0} kW";
+        if (!p.Powered || c.CapCapacity <= 0)
+            return SandboxKeys.Line(d.Name, SandboxKeys.Join(mine, hp), "not on the ship's circuit: link it to a battery's");
+        return SandboxKeys.Line(d.Name, SandboxKeys.Join($"capacitors {MegaJoules(c.Cap)} of {MegaJoules(c.CapCapacity)}", mine, hp), c.Cap >= c.CapCapacity ? null : !c.PowerOn ? "not refilling: the batteries are flat" : ConstructPower.Share(c) <= ConstructPower.CapReserve + 0.01f ? "batteries at reserve: refills only as power is made" : null);
+    }
+
+    private static string MegaJoules(float kj) => kj >= 1000 ? $"{kj / 1000:0.#} MJ" : $"{kj:0} kJ";
+
+    /// <summary>An energy gun's capacitors: "capacitors 80%", "capacitors flat: N kJ a shot", "no Capacitor Bank on its circuit".</summary>
+    private static string EnergyLine(Construct c, in CGun g) =>
+        g.Energy <= 0 ? "" : c.CapCapacity <= 0 ? $"no Capacitor Bank on its circuit ({MegaJoules(g.Energy)} a shot)"
+        : c.Cap < g.Energy ? $"capacitors flat: {MegaJoules(g.Energy)} a shot, {MegaJoules(c.Cap)} held"
+        : $"capacitors {ConstructPower.CapShare(c) * 100:0}%, {(int)MathF.Min(999, c.Cap / g.Energy)} shots";
+
     private static string GunLook(Construct c, int k, in CPart hitPart)
     {
         ref var g = ref c.Guns[k];
@@ -1224,10 +1249,19 @@ public static unsafe partial class Program
             name = $"{name} {g.MergeN}x{g.MergeN}";
             hurt = hp < most - 0.5f ? $"{hp:0}/{most:0} hp" : "";
         }
+        var energy = EnergyLine(c, g);
+        if (!p.Broken && g.Problem.Length == 0 && g.NoAmmo)
+        {
+            var beam = ConstructWeapons.Beam(c, g.Part);
+            var works = ConstructWorks.IsHead(p.D) && c.WorksHeadOf(g.Part) is var wk and >= 0 ? ConstructWorks.Why(c, c.WorksHeads[wk]) : "";
+            return SandboxKeys.Line(name, SandboxKeys.Join(ConstructWorks.IsHead(p.D) ? $"beam {beam * 100:0}% of {ConstructWorks.Rating(p.D)}" : "", energy, hurt),
+                beam <= 0 ? $"won't fire: {(works.Length > 0 ? works : "no Laser Generator serving it")}" : works.Length > 0 ? works : g.Seat < 0 && g.Sensor == CGun.NoSensor && !ConstructLogic.WiredIn(_game?.Constructs, c, g.Part) ? "wire a signal in to fire" : null);
+        }
         return p.Broken ? SandboxKeys.Line(name, "wrecked")
             : g.Problem.Length > 0 ? SandboxKeys.Line(name, hurt, $"won't fire: {g.Problem}")
+            : g.Energy > 0 && energy.StartsWith("no Capacitor", StringComparison.Ordinal) ? SandboxKeys.Line(name, hurt, $"won't fire: {energy}")
             : g.BoxCount == 0 && g.FeedRoute < 0 && g.FeedSocket < 0 && p.Rounds == 0 && ConstructWeapons.BoxRounds(c, k) == 0 ? SandboxKeys.Line(name, hurt, g.MagPart >= 0 ? "magazine empty: take it off and fill it at an ammo box" : "no ammo box or feed")
-            : SandboxKeys.Line(name, SandboxKeys.Join($"{p.Rounds}/{g.Mag}{(p.Reload > 0 ? " reloading" : "")}", $"{ConstructAmmo.Types[ConstructAmmo.TypeOfGun(_game?.Constructs, c, k)]}, {ConstructWeapons.BoxRounds(c, k, _game?.Constructs)} to come", ConstructConfig.Has(c.DefOf(g.Part), CfgKey.Charge) && g.RoundV > 0 ? PowderCharge.Line(g.RoundV, g.Def!.ChargeV) : "", hurt), g.Seat < 0 && g.Sensor == CGun.NoSensor && p.InCount == 0 ? "wire a signal in to fire" : null);
+            : SandboxKeys.Line(name, SandboxKeys.Join($"{p.Rounds}/{g.Mag}{(p.Reload > 0 ? " reloading" : "")}", $"{ConstructAmmo.Types[ConstructAmmo.TypeOfGun(_game?.Constructs, c, k)]}, {ConstructWeapons.BoxRounds(c, k, _game?.Constructs)} to come", ConstructConfig.Has(c.DefOf(g.Part), CfgKey.Charge) && g.RoundV > 0 ? PowderCharge.Line(g.RoundV, g.Def!.ChargeV) : "", energy, hurt), g.Seat < 0 && g.Sensor == CGun.NoSensor && !ConstructLogic.WiredIn(_game?.Constructs, c, g.Part) ? "wire a signal in to fire" : null);
     }
 
     /// <summary>The constructs, ghosts and tool (called from the world pass; nothing outside Sandbox).</summary>

@@ -56,7 +56,7 @@ public sealed partial class Game
             var body = SandboxHands.Hand(p.Id).SeatBody;
             if (body == 0)
                 body = p.Sim.RideBody;
-            if (body == 0 || Constructs.Get(body) is not { PartCount: > 0 } c || c.BdTick == ServerTick)
+            if (body == 0 || Constructs.Get(body) is not { PartCount: > 0 } c || !BdDue(c))
                 continue;
             c.BdTick = ServerTick; // (one step a look, however many are aboard)
             if (BreakdownShip(c))
@@ -64,14 +64,17 @@ public sealed partial class Game
         }
     }
 
+    /// <summary>Whether a body's clock may step now: at most one step per <see cref="BdStep"/> ticks, whoever steps it (this look, or its NPC crew's in GameCrewWork.cs a tick later).</summary>
+    private bool BdDue(Construct c) => c.BdTick == 0 || ServerTick - c.BdTick >= BdStep;
+
     /// <summary>
     /// A body that breaks down: a ship (a thruster over ShipWorks.json's jetMost, or a Flight Stabilizer), not a wreck, and no
-    /// AI crew fighting for it (an enemy frigate doesn't break down until it is taken).
+    /// AI crew of its own owner's fighting for it (an NPC ship breaks down, and its engineer sees to it: GameCrewWork.cs).
     /// </summary>
     private bool BreakdownShip(Construct c)
     {
-        if (c.Wreck || Crew.Has(c.Id))
-            return false;
+        if (c.Wreck || Crew.ShipOf(c.Id) is { Faction: 0 })
+            return false; // (a player's ship crewed by its stabilizer's setting: as before. An NPC crew's ship breaks down: its engineer sees to it, GameCrewWork.cs)
         if (c.StabCount > 0)
             return true;
         var most = ShipWorks.Current.JetMost;
@@ -314,6 +317,18 @@ public sealed partial class Game
     /// <summary>The look line on a groaning or broken-down thruster, or on the engine room's panel while one is (null: nothing to say).</summary>
     public string? BreakdownLook(Construct c, int part, out bool failed)
     {
+        if (CrewInfo.TryGetValue(c.Id, out var crew) && crew.Scuttle == part && crew.Stage >= 2)
+        {
+            failed = false;
+            var ck = ((long)c.Id << 40) ^ ((long)part << 8) ^ crew.Stage ^ 1L << 62; // (made again only when it changes, as below)
+            if (ck != _bdLookKey)
+            {
+                _bdLookKey = ck;
+                _bdLookFailed = false;
+                _bdLookText = crew.Stage == 2 ? $"{c.DefOf(part).Name}: SCUTTLE CHARGE ARMING - {SandboxKeys.Fire}: disarm (stay 5 s)" : $"{c.DefOf(part).Name}: SCUTTLE CHARGE - {SandboxKeys.Fire}: disarm (stay 5 s)"; // (a crew's charge: GameCrewBoard.cs)
+            }
+            return _bdLookText;
+        }
         // (made again only when what it says changes: the look line is asked for every frame)
         var slot = BreakdownSeenSlot(c);
         var seen = slot >= 0 ? _bdSeen[slot].Part : -1;
@@ -433,6 +448,8 @@ public sealed partial class Game
             return "that part is gone";
         if (Vector3.Distance(p.Eye, ConstructRender.PartCentre(c, part)) > ConstructBuild.Reach + 2.5f)
             return "too far away";
+        if (CrewDisarm(p, c, part) is { } disarm)
+            return disarm.Length > 0 ? disarm : null; // (a crew's scuttle charge on it: the attach tool disarms it, GameCrewBoard.cs)
         if (IsBreakdownPanel(c, part))
         {
             // (from the engine room: a warning on a works piece inside; the rest is reported, and seen to at the part)

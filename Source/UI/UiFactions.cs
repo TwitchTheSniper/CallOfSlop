@@ -33,7 +33,10 @@ public sealed partial class Ui
             if (game is not { SandboxOn: true } || game.Local is not { } me)
                 ImGuiSafe.TextWrapped("Factions are a Sandbox thing: start or join a Sandbox game.");
             else
+            {
+                DrawCrewSection(game, me); // (your credits, crew and prisoners: UiCrew.cs)
                 DrawFactionBody(game, me);
+            }
             ImGuiSafe.TextColored(Dim, $"{Keybinds.Name(bind)} or Esc closes this window.");
         }
         ImGui.End();
@@ -54,14 +57,106 @@ public sealed partial class Ui
     /// <summary>A standing (-100 to 100) in a word.</summary>
     private static string StandingWord(int v) => v switch
     {
-        <= -60 => "hunts you",
-        <= -20 => "hostile",
-        < 0 => "wary",
-        0 => "doesn't know you",
-        < 20 => "neutral",
-        < 60 => "friendly",
-        _ => "trusts you",
+        <= -50 => "at war with you",
+        < 0 => "hostile",
+        < 20 => "wary",
+        < 60 => "neutral",
+        _ => "friendly",
     };
+
+    /// <summary>A relation's band in a word (faction-controllers.md section 5.2: the window's grid; the numbers are on hover).</summary>
+    private static string BandWord(int v) => v switch { <= -50 => "WAR", < 0 => "hostile", < 20 => "wary", < 60 => "neutral", _ => "friendly" };
+
+    private static float4 BandColour(int v) => v switch
+    {
+        <= -50 => new float4(1f, 0.3f, 0.25f, 1f),
+        < 0 => new float4(1f, 0.6f, 0.3f, 1f),
+        < 20 => new float4(0.85f, 0.85f, 0.5f, 1f),
+        < 60 => new float4(0.75f, 0.75f, 0.75f, 1f),
+        _ => new float4(0.45f, 0.9f, 0.5f, 1f),
+    };
+
+    private static string PactWord(byte k) => k switch { 1 => "Ceasefire", 2 => "Non-aggression", 3 => "Alliance", _ => "Pact" };
+
+    /// <summary>
+    /// How the world's powers see each other (docs/sandbox/design/faction-controllers.md section 7): the grid (row: how that power sees each
+    /// column's), the pacts between them and the latest news, newest first.
+    /// </summary>
+    private string[] _powShort = [];
+    private int[] _powShown = [];
+    private int _powShownCount, _powShortVersion = -1;
+
+    /// <summary>The powers the grid shows (those that keep their relations by themselves are left out: Player Crew, Test Hostile) and their tags, again when the table changes.</summary>
+    private void PowerColumns(FactionTable t, int n)
+    {
+        if (_powShortVersion == t.Version && _powShort.Length == n)
+            return;
+        _powShortVersion = t.Version;
+        _powShort = new string[n];
+        _powShown = new int[n];
+        _powShownCount = 0;
+        for (var i = 0; i < n; i++)
+        {
+            var name = t.StoryNames[i];
+            var def = CrewPowers.Of(CrewPowers.Find(name)) is { } d && d.Name.Equals(name, StringComparison.OrdinalIgnoreCase) ? d : null;
+            _powShort[i] = def?.Tag is { Length: > 0 } tag ? tag : name[..Math.Min(4, name.Length)].ToUpperInvariant();
+            if (def is not { Controller: false })
+                _powShown[_powShownCount++] = i;
+        }
+    }
+
+    private void DrawPowerRelations(Game game, FactionTable t)
+    {
+        var n = Math.Min(t.PowerCount, t.StoryNames.Length);
+        if (n < 2 && t.PactCount == 0 && game.PowerNews.Count == 0)
+            return;
+        PowerColumns(t, n);
+        ImGui.Separator();
+        ImGuiSafe.TextColored(Orange, "Between the factions");
+        var m = _powShownCount;
+        if (m >= 2 && ImGui.BeginTable("##powgrid"u8, m + 1, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.SizingFixedFit))
+        {
+            ImGui.TableSetupColumn("sees"u8);
+            for (var j = 0; j < m; j++)
+                ImGui.TableSetupColumn(_powShort[_powShown[j]]);
+            ImGui.TableHeadersRow();
+            for (var i = 0; i < m; i++)
+            {
+                var a = _powShown[i];
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGuiSafe.TextColored(Orange, t.StoryNames[a]);
+                for (var j = 0; j < m; j++)
+                {
+                    var b = _powShown[j];
+                    ImGui.TableNextColumn();
+                    if (a == b)
+                    {
+                        ImGuiSafe.TextColored(Dim, "-");
+                        continue;
+                    }
+                    int v = t.PowerRel[a * FactionTable.MaxStory + b];
+                    ImGuiSafe.TextColored(BandColour(v), BandWord(v));
+                    if (ImGui.IsItemHovered())
+                        ImGuiSafe.SetTooltip($"{t.StoryNames[a]} sees {t.StoryNames[b]} at {v:+0;-0;0}");
+                }
+            }
+            ImGui.EndTable();
+        }
+        for (var k = 0; k < t.PactCount; k++)
+        {
+            if (t.PactA[k] >= t.StoryNames.Length || t.PactB[k] >= t.StoryNames.Length)
+                continue;
+            var left = t.PactLeft[k] == 0xFFFF ? "" : $", {t.PactLeft[k]} min left";
+            ImGuiSafe.TextWrapped($"{PactWord(t.PactKindOf[k])}: {t.StoryNames[t.PactA[k]]} and {t.StoryNames[t.PactB[k]]} ({t.PactHeld[k]} min{left})");
+        }
+        if (game.PowerNews.Count > 0)
+        {
+            ImGuiSafe.TextColored(Dim, "News");
+            for (var k = game.PowerNews.Count - 1; k >= Math.Max(0, game.PowerNews.Count - 8); k--)
+                ImGuiSafe.TextWrapped(game.PowerNews[k]);
+        }
+    }
 
     /// <summary>
     /// What the world's factions teach (docs/archive/story/STORY.md "Technologies"): the parts an Assembler builds only once a faction
@@ -167,6 +262,7 @@ public sealed partial class Ui
                 ImGuiSafe.TextColored(Orange, "How the world's factions see you");
                 DrawRankBars(game);
             }
+            DrawPowerRelations(game, t);
             DrawFactionJobs(game);
             DrawStoryTech(t, 0, me.Id);
             return;
@@ -306,6 +402,7 @@ public sealed partial class Ui
                     int v = t.StoryStanding[mine * FactionTable.MaxStory + f];
                     ImGuiSafe.TextWrapped($"{t.StoryNames[f]}: {StandingWord(v)} ({v:+0;-0;0})");
                 }
+            DrawPowerRelations(game, t);
             DrawFactionJobs(game);
             DrawStoryTech(t, mine, me.Id);
         }

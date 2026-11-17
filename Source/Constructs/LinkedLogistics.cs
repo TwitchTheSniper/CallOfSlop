@@ -54,6 +54,7 @@ public sealed class LinkPart
     public LinkRoute? Route; // a Route Computer's route
     public LinkFleet? Fleet; // a Dispatcher's ships
     public LinkDockRef[] Docks = []; // host-made, a Route Computer's: the Cargo Docks a route may stop at
+    public LinkFar[] Far = []; // host-made: an end's answering partners, a Route Computer's stops (the command view's logistics layer)
     public int Version, SentVersion; // goes up when anything here changes (the wire's key); and what clients were last sent
     public float LastFuel; // a Route Computer: fuel at the last stop's leaving (a trip's use is the difference)
 }
@@ -66,6 +67,20 @@ public struct LinkOffer
     public bool Makes; // a machine there takes the order
     public string Where; // the far end's name
     public bool Asleep; // its world is closed: production estimated
+}
+
+/// <summary>
+/// What the command view's logistics layer (docs/space/COMMAND.md "The logistics layer") draws a line to: an end's partner that answers
+/// it, or a Route Computer's stop. A client has only its own world's bodies, so a partner on another world is known by this alone.
+/// </summary>
+public struct LinkFar
+{
+    public const byte Asleep = 1, HasDock = 2, Next = 4; // its world is closed; it has a Cargo Dock; a route's stop it flies to now
+    public uint Id; // the partner's LinkId (0 for a route's stop)
+    public string World; // its world's key (a map's name: a body of the star system has it as its Map)
+    public ushort Body; // its body there
+    public string Name;
+    public byte Flags;
 }
 
 /// <summary>A Cargo Dock a route may stop at: its world (map), body and part, and its name.</summary>
@@ -225,16 +240,7 @@ public static partial class LinkedLogistics
         lw.Parts.Clear();
         foreach (var c in world.Bodies)
         {
-            if (c.LinkStamp != c.RebuildStamp || c.LinkParts < 0)
-            {
-                c.LinkStamp = c.RebuildStamp;
-                var n = 0;
-                for (var i = 0; i < c.PartCount; i++)
-                    if (c.DefOf(i).LinkKind != LinkKind.None)
-                        n++;
-                c.LinkParts = n;
-            }
-            if (c.LinkParts == 0)
+            if (PartCount(c) == 0)
                 continue;
             for (var i = 0; i < c.PartCount && lw.Parts.Count < LinkWorld.MaxParts; i++)
                 if (c.DefOf(i).LinkKind != LinkKind.None)
@@ -245,6 +251,21 @@ public static partial class LinkedLogistics
                         lp.Id = NewId(); // (a Route Computer is known to a Dispatcher by it; ends get theirs in Ends, twins checked)
                 }
         }
+    }
+
+    /// <summary>How many linked logistics parts a body has, counted again only when it was rebuilt (a client's command view asks too).</summary>
+    public static int PartCount(Construct c)
+    {
+        if (c.LinkStamp != c.RebuildStamp || c.LinkParts < 0)
+        {
+            c.LinkStamp = c.RebuildStamp;
+            var n = 0;
+            for (var i = 0; i < c.PartCount; i++)
+                if (c.DefOf(i).LinkKind != LinkKind.None)
+                    n++;
+            c.LinkParts = n;
+        }
+        return c.LinkParts;
     }
 
     /// <summary>Is a link part working: whole, on a body that isn't a wreck, powered?</summary>
@@ -298,6 +319,11 @@ public static partial class LinkedLogistics
                 p.Out1 = waiting ? 1 : 0;
                 lp.Linked = (byte)Math.Min(255, linked);
                 lp.Waiting = waiting;
+                if (LinkLedger.FarOf(lp.Id, lp.Far) is { } far)
+                {
+                    lp.Far = far;
+                    lp.Version++;
+                }
                 var offers = LinkLedger.OffersFor(lp.Id, lp.Pair);
                 if (!SameOffers(lp.Offers, offers))
                 {
@@ -310,7 +336,14 @@ public static partial class LinkedLogistics
             else if (d.LinkKind == LinkKind.Port)
                 status = LinkDocks.PortStatus(c, part, lp);
             else if (d.LinkKind == LinkKind.Route)
+            {
                 status = LinkRoutes.Status(world, c, part, lp);
+                if (LinkRoutes.FarOf(lp.Route, lp.Far) is { } stops)
+                {
+                    lp.Far = stops;
+                    lp.Version++;
+                }
+            }
             else
                 status = LinkDispatch.Status(world, c, part, lp);
             if (status != lp.Status)
@@ -471,6 +504,10 @@ public static partial class LinkedLogistics
             w.U8((byte)dn);
             for (var k = 0; k < dn; k++)
                 w.Str(lp.Docks[k].World).U16(lp.Docks[k].Body).U16(lp.Docks[k].Part).Str(lp.Docks[k].Name);
+            var fn = Math.Min(lp.Far.Length, 16);
+            w.U8((byte)fn);
+            for (var k = 0; k < fn; k++)
+                w.U32(lp.Far[k].Id).Str(lp.Far[k].World).U16(lp.Far[k].Body).Str(lp.Far[k].Name).U8(lp.Far[k].Flags);
             n++;
         }
         w.PatchU16(at, (ushort)n);
@@ -505,6 +542,10 @@ public static partial class LinkedLogistics
             lp.Docks = new LinkDockRef[dn];
             for (var j = 0; j < dn; j++)
                 lp.Docks[j] = new LinkDockRef { World = r.Str(), Body = r.U16(), Part = r.U16(), Name = r.Str() };
+            int fn = r.U8();
+            lp.Far = new LinkFar[fn];
+            for (var j = 0; j < fn; j++)
+                lp.Far[j] = new LinkFar { Id = r.U32(), World = r.Str(), Body = r.U16(), Name = r.Str(), Flags = r.U8() };
             if (c != null && part < c.PartCount && c.DefOf(part).LinkKind != LinkKind.None)
             {
                 lp.Version = (c.Parts[part].Link?.Version ?? 0) + 1;

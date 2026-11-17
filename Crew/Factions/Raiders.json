@@ -1,0 +1,83 @@
+{
+  "format": "call-of-slop-npc-faction/1",
+  "name": "Raiders",
+  "about": "Bandits in welded junk: they attack on sight and scuttle rather than be taken.",
+  "styles": [
+    "Bandit"
+  ],
+  "stance": {
+    "players": "hostile",
+    "factions": {
+      "Traders": "hostile",
+      "Militia": "hostile",
+      "Mercenaries": "wary",
+      "Salvagers": "hostile"
+    }
+  },
+  "engage": {
+    "sight": 2500,
+    "range": 0,
+    "chase": true,
+    "onFoot": true
+  },
+  "crew": {
+    "spares": [
+      1,
+      4
+    ],
+    "skill": [
+      80,
+      180
+    ],
+    "robots": 0.0
+  },
+  "morale": {
+    "start": 0.8,
+    "crewLost": 0.12,
+    "hullLost": 0.5,
+    "outOfAmmo": 0.2,
+    "kill": 0.1,
+    "alliesNear": 0.1
+  },
+  "flee": {
+    "hull": 0.3,
+    "morale": 0.3
+  },
+  "boarding": {
+    "weights": {
+      "hold": 1.0,
+      "repel": 1.0,
+      "lockDown": 0.5,
+      "callForHelp": 1.0,
+      "dump": 0.8,
+      "flee": 0.6,
+      "abandon": 0.5,
+      "surrender": 0.3,
+      "scuttle": 1.0
+    },
+    "surrenderMorale": 0.15,
+    "scuttleDesperation": 0.6
+  },
+  "scuttle": {
+    "when": "desperate",
+    "arm": 15,
+    "countdown": 90,
+    "disarm": 5,
+    "points": [
+      "magazine",
+      "fuel"
+    ]
+  },
+  "capture": [
+    "release",
+    "drop",
+    "hire",
+    "brig"
+  ],
+  "hire": {
+    "cost": 150,
+    "wage": 15
+  },
+  "needs": {},
+  "wants": {}
+}

@@ -6,7 +6,7 @@ namespace CallOfSlop;
 /// Transmitter's code into every Receiver's panel (the panel's own CActKind.Link); <c>linked fill N PART</c> (host, a server shortcut)
 /// puts N parts into every Storage Volume of the bodies with a Receiver; <c>linked order N PART</c> orders at the first Crafting Terminal
 /// of a body with a Transmitter (host: a server shortcut, the panel's order without its reach; a client: the panel's own message); <c>linked open PART[#n]</c> opens that part's panel as the use
-/// key does; <c>linked route A B</c> gives the first Route Computer a route between the first two Cargo Docks it knows and starts it.
+/// key does; <c>linked layer [on|off]</c> turns the command view's logistics layer on or off and prints what it draws; <c>linked route A B</c> gives the first Route Computer a route between the first two Cargo Docks it knows and starts it.
 /// </summary>
 public static unsafe partial class Program
 {
@@ -95,6 +95,19 @@ public static unsafe partial class Program
                 }
                 OpenLinkedPanel(oc, op);
                 WsSay($"linked: panel {(Ui.LinkedOpen ? "open" : "NOT OPEN")} on body {oc.Id} part {op} ({oc.DefOf(op).Name})");
+                return;
+            }
+            case "layer":
+            {
+                // "linked layer [on|off]": the command view's logistics layer turned on or off (the view open first: `command`), then
+                // what it draws as this peer has it: each factory's name and line, the links and route legs counted.
+                if (words.Length > 1)
+                    Ui.CommandLinksOn = words[1] != "off";
+                var (nodes, edges, legs) = Ui.CommandLinkCounts;
+                WsSay($"linked: layer {(Ui.CommandLinksOn ? "on" : "off")}, view {(Ui.CommandOpen ? "open" : "closed")}: {nodes} factories, {edges} links, {legs} route legs");
+                for (var k = 0; k < nodes; k++)
+                    WsSay("linked: layer node " + Ui.CommandLinkNode(k));
+                _wsWait = 20;
                 return;
             }
             case "route":
