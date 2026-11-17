@@ -124,6 +124,39 @@ public static class SkinCheck
         sw.Stop();
         Console.WriteLine($"{name}: {c.PartCount} parts, {w.Bodies.Count} bodies, collider {leaves} leaves ({hulls} convex) built in {sw.Elapsed.TotalMilliseconds:0.0} ms");
 
+        var doorsBad = 0;
+        // Doors with skin plates (the Dray's side doors, the ramps): opened and shut through the real path, the collider moved in
+        // place each time (Construct.DoorPartMoved), then held against one built afresh.
+        for (var k = 0; k < c.PartCount; k++)
+        {
+            var dd = c.DefOf(k);
+            if (!dd.HasSkin || c.DoorOf(k) is not (var di and >= 0) || c.Doors[di].Part != k)
+                continue; // (event doors: a hinged ramp is a joint, which the collider's groups move)
+            foreach (var open in new[] { !ConstructDoors.SettledOpen(c, k), ConstructDoors.SettledOpen(c, k) })
+            {
+                _ = c.Collider;
+                ConstructDoors.Command(w, c, di, open);
+                for (var t = 0; t < 600 && ConstructDoors.IsMoving(c, k); t++)
+                    ConstructDoors.Step(w);
+                List<(Vector3, Vector3)> Of() => Enumerable.Range(0, c.Collider.LeafCount).Select(i => c.Collider.Leaves[i]).Where(l => l.Part == k && !l.Dead)
+                    .Select(l => (l.Centre, l.Half)).OrderBy(x => x.Centre.X).ThenBy(x => x.Centre.Y).ThenBy(x => x.Centre.Z).ToList();
+                var moved = Of();
+                c.ColliderChanged();
+                var fresh = Of();
+                // (each leaf against the nearest built afresh: a sort by centre swaps leaves a hundredth of a millimetre apart)
+                var off = moved.Count != fresh.Count ? float.PositiveInfinity
+                    : moved.Select(m => fresh.Min(f => Vector3.Distance(m.Item1, f.Item1) + Vector3.Distance(m.Item2, f.Item2))).DefaultIfEmpty(0).Max();
+                Console.WriteLine($"  door {dd.Name}#{k} {(open ? "opened" : "shut")}: {moved.Count} leaves moved in place, {fresh.Count} built afresh, off by {off * 1000:0.0} mm at most");
+                if (off > 0.002f)
+                {
+                    doorsBad++;
+                    if (Trace)
+                        for (var j = 0; j < Math.Min(moved.Count, fresh.Count); j++)
+                            Console.WriteLine($"      {moved[j].Item1} {moved[j].Item2} | {fresh[j].Item1} {fresh[j].Item2}");
+                }
+            }
+        }
+
         // Rays: down from above, and in from port and starboard.
         var mn = c.LocalMin;
         var mx = c.LocalMax;
@@ -331,7 +364,7 @@ public static class SkinCheck
         }
         Console.WriteLine($"  players on {picks.Count} spots: {sunk} sank 5 cm to 1 m into the skin, {fell} fell through, {slid} slid off (worst sink {worstSink * 100:0} cm)");
         Console.WriteLine($"  plates dropped on them: {plateSunk} sank 5 cm to 1 m, {plateFell} fell through, {plateSlid} slid off (worst sink {worstPlate * 100:0} cm)");
-        return gaps > rays / 20 || fell + plateFell > 0 ? 1 : 0;
+        return gaps > rays / 20 || fell + plateFell + doorsBad > 0 ? 1 : 0;
     }
 
     /// <summary>How far below the drawn skin under it a thing ends (its centre at <paramref name="local"/>, its bottom <paramref name="below"/>

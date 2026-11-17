@@ -1865,6 +1865,7 @@ public sealed partial class ConstructWorld
     }
 
     private readonly List<ContactShape> _skinShapes = new(256);
+    private byte[] _skinSegs = new byte[256]; // (each skin triangle's segment: what a player landing on it stands on)
 
     /// <summary>
     /// A ship's skin (its parts' "hull" shapes: ConstructHulls) against a player outside its frame: they land on its plates (and
@@ -1893,7 +1894,12 @@ public sealed partial class ConstructWorld
             if (!p.D.HasSkin || p.Broken)
                 continue;
             c.WorldFrame(p.Seg, out var q, out var t);
+            var first = shapes.Count;
             ConstructRide.AddSkin(shapes, c, i, q, t, lo, hi, c.Id, p.Seg);
+            if (_skinSegs.Length < shapes.Count)
+                Array.Resize(ref _skinSegs, Math.Max(shapes.Count, _skinSegs.Length * 2));
+            for (var k = first; k < shapes.Count; k++)
+                _skinSegs[k] = p.Seg;
         }
         if (shapes.Count == 0)
             return;
@@ -1905,10 +1911,10 @@ public sealed partial class ConstructWorld
             var len = step.Length();
             var dir = step / len;
             var a = from + up * r;
-            if (CapsuleContact.Cast(span, a, a + core, r, dir, len, out var toi, out var n, out _, out _) && Vector3.Dot(n, up) >= World.MinWalkNormalY)
+            if (CapsuleContact.Cast(span, a, a + core, r, dir, len, out var toi, out var n, out _, out var hit) && Vector3.Dot(n, up) >= World.MinWalkNormalY)
             {
                 s.Position = from + dir * toi;
-                Stand(c, ref s, up, ref standing, ref standSeg);
+                Stand(c, _skinSegs[hit], ref s, up, ref standing, ref standSeg);
                 return;
             }
         }
@@ -1919,10 +1925,10 @@ public sealed partial class ConstructWorld
             if (s.Grounded || Vector3.Dot(s.Velocity, up) > 0.5f)
                 return;
             var a = s.Position + up * r;
-            if (CapsuleContact.Cast(span, a, a + core, r, -up, 0.06f, out var toi, out var n, out _, out _) && Vector3.Dot(n, up) >= World.MinWalkNormalY)
+            if (CapsuleContact.Cast(span, a, a + core, r, -up, 0.06f, out var toi, out var n, out _, out var hit) && Vector3.Dot(n, up) >= World.MinWalkNormalY)
             {
                 s.Position -= up * toi;
-                Stand(c, ref s, up, ref standing, ref standSeg);
+                Stand(c, _skinSegs[hit], ref s, up, ref standing, ref standSeg);
             }
             return;
         }
@@ -1930,7 +1936,7 @@ public sealed partial class ConstructWorld
         if (lift >= World.MinWalkNormalY * push.Length())
         {
             s.Position += push; // (on top of a plate)
-            Stand(c, ref s, up, ref standing, ref standSeg);
+            Stand(c, StoodSeg(span, s.Position, up), ref s, up, ref standing, ref standSeg);
             return;
         }
         // Into its side: out sideways (never down through the floor they stand on), the speed into it gone.
@@ -1947,7 +1953,25 @@ public sealed partial class ConstructWorld
         }
     }
 
-    private static void Stand(Construct c, ref MoveState s, Vector3 up, ref Construct? standing, ref int standSeg)
+    /// <summary>The segment of the skin triangle nearest under the feet (just pushed up onto it).</summary>
+    private int StoodSeg(ReadOnlySpan<ContactShape> span, Vector3 feet, Vector3 up)
+    {
+        var best = 0;
+        var bd = float.MaxValue;
+        var r = World.PlayerRadius;
+        for (var k = 0; k < span.Length; k++)
+        {
+            var d = CapsuleContact.Separation(span[k], feet + up * r, feet + up * r, r, out _, out _);
+            if (d < bd)
+            {
+                bd = d;
+                best = _skinSegs[k];
+            }
+        }
+        return best;
+    }
+
+    private static void Stand(Construct c, int seg, ref MoveState s, Vector3 up, ref Construct? standing, ref int standSeg)
     {
         var vu = Vector3.Dot(s.Velocity, up);
         if (vu < 0)
@@ -1956,7 +1980,7 @@ public sealed partial class ConstructWorld
         if (standing == null)
         {
             standing = c;
-            standSeg = 0;
+            standSeg = seg;
         }
     }
 

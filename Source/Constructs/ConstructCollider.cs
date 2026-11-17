@@ -698,7 +698,7 @@ internal sealed partial class ConstructCollider
     /// <paramref name="oldMin"/>..<paramref name="oldMax"/>, are turned by <paramref name="r"/> about its old place and put at
     /// its new one, and the nodes over them refitted from their children (the tree keeps its shape). Costs the tree's depth, not
     /// its size. <paramref name="leaves"/>: how many it has (the walk stops when all are found). False when that isn't safe (not all
-    /// found, a hull, a turned or wheel leaf): build it again then.
+    /// found, a turned or wheel leaf): build it again then. A hull leaf moves with its corners.
     /// </summary>
     public bool MovePart(int part, int leaves, Vector3 oldMin, Vector3 oldMax, Vector3 oldPos, Vector3 newPos, byte r)
     {
@@ -732,8 +732,25 @@ internal sealed partial class ConstructCollider
                 ref var l = ref Leaves[i];
                 if (l.Part == part && !l.Dead)
                 {
-                    if (l.Turned || l.Hull >= 0 || l.WheelIx >= 0)
+                    if (l.Turned || l.WheelIx >= 0)
                         _moveBad = true;
+                    else if (l.Hull >= 0)
+                    {
+                        // A hull of the part (a door's skin plates, a wedge): its corners turned and moved as the boxes are, its
+                        // leaf's box their bounds again (in group 0, the body's frame, as the part is).
+                        var h = Hulls[l.Hull];
+                        for (var k = 0; k < h.V.Length; k++)
+                            h.V[k] = newPos + Rot24.Apply(r, h.V[k] - oldPos);
+                        for (var k = 0; k < h.N.Length; k++)
+                            h.N[k] = Rot24.Apply(r, h.N[k]);
+                        for (var k = 0; k < h.Dirs.Length; k++)
+                            h.Dirs[k] = Rot24.Apply(r, h.Dirs[k]);
+                        h.Bounds(out var hmn, out var hmx);
+                        l.Centre = (hmn + hmx) * 0.5f;
+                        l.Half = (hmx - hmn) * 0.5f;
+                        moved++;
+                        _moveLeft--;
+                    }
                     else
                     {
                         l.Centre = newPos + Rot24.Apply(r, l.Centre - oldPos);
