@@ -156,7 +156,7 @@ public static class CrewCheck
                           $"helm {(helmRetakenAt >= 0 ? $"taken again {(helmRetakenAt - pilotKilledAt) / (float)World.TickRate:0.0} s after the pilot died" : "NEVER TAKEN AGAIN")}; " +
                           $"gunners' shots {gunShotsAtKill} when shot, {gunShotsLate} a second on, {cs.Ai?.GunnerShots ?? 0} at the end (spares took the seats): {(silenced ? "silenced" : "STILL FIRING")}; " +
                           $"with nobody left it moved {driftAfterStop:0} m in its last 10 s, at {ship.Vel.Length():0.0} m/s: {(stopped ? "stopped" : "DIDN'T STOP")}");
-        Console.WriteLine($"crew: the crew's own cost {crew.CpuMs / Math.Max(1, crew.Ticks) * 1000:0.0} us a tick (worst {crew.WorstMs * 1000:0} us at {crew.WorstTick / (float)World.TickRate:0.0} s), {crew.Bytes} bytes allocated in {crew.Ticks} ticks");
+        Console.WriteLine($"crew: the crew's own cost {crew.CpuMs / Math.Max(1, crew.Ticks) * 1000:0.0} us a tick (worst {crew.WorstMs * 1000:0} us at {crew.WorstTick / (float)World.TickRate:0.0} s; worst thinking {crew.WorstThinkMs * 1000:0} us, worst driving {crew.WorstDriveMs * 1000:0} us), {crew.Bytes} bytes allocated in {crew.Ticks} ticks");
         var ok = fought && retaken && silenced && stopped;
         Console.WriteLine($"crew: {(ok ? "OK" : "FAILED")}");
         return ok;

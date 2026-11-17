@@ -411,6 +411,8 @@ public sealed partial class Game
         Constructs.ScoopGround ??= this; // (scoops dig and pour: ConstructScoops.cs)
         Constructs.Targets = this; // (the guns hit players, bots and zombies: GameConstructWeapons.cs)
         Constructs.CrewBytes ??= Crew.SaveBytes; // (a body's crew in its save: GameCrew.cs)
+        Constructs.CrewBodies = Crew.IsBody; // (crew at the controls aren't a person taking over)
+        SandboxHands.CrewYield ??= CrewYield; // (a crew body stands up for a player who sits)
         Constructs.Hands ??= SandboxHandOf; // (a held hose follows its holder's hands)
         Constructs.Taught ??= AssemblerTaught; // (parts a story faction must teach first: GameStoryTech.cs)
         if (Constructs.PlayerEndCount > 0)

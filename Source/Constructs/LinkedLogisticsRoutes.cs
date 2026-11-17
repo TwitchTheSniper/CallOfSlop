@@ -146,7 +146,7 @@ public static class LinkRoutes
                 r.Why = $"can't fly: {np}";
                 continue;
             }
-            if (c.Driver != 255 && (c.DriveKeys & (Buttons.Forward | Buttons.Back | Buttons.Left | Buttons.Right | Buttons.Jump | Buttons.Crouch)) != 0)
+            if (world.HumanDriver(c) && (c.DriveKeys & (Buttons.Forward | Buttons.Back | Buttons.Left | Buttons.Right | Buttons.Jump | Buttons.Crouch)) != 0)
             {
                 Suspend(world, c, r, "suspended: a pilot took the controls - RESUME on its card");
                 continue;

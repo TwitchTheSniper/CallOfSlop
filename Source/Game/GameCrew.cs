@@ -82,6 +82,22 @@ public sealed partial class Game : ICrewHost
 
     bool ICrewHost.Alive(byte player) => Players.TryGetValue(player, out var p) && p.Alive;
 
+    float ICrewHost.HealthOf(byte player) => Players.TryGetValue(player, out var p) && p.Alive ? (float)p.Health / World.MaxHealth : -1;
+
+    /// <summary>A player uses a seat a crew body sits in: the member stands up and finds another place (a person always gets the seat). True: it is free.</summary>
+    private bool CrewYield(Construct c, int part)
+    {
+        var who = c.Parts[part].SitterPlus1 != 0 ? c.Parts[part].SitterPlus1 - 1 : part == c.DriveSeat ? c.Driver : 255;
+        if (who == 255 || !Crew.IsBody[who] || !Players.TryGetValue((byte)who, out var p))
+            return false;
+        Crew.StandAside(p.CrewSlot);
+        SandboxStand(p, teleport: true);
+        if (c.Driver == who)
+            SandboxHands.StopDriving(c);
+        Console.WriteLine($"[crew] construct {c.Id}: {p.Name} stood up from seat {part} for a player");
+        return c.Parts[part].SitterPlus1 == 0 && (part != c.DriveSeat || c.Driver == 255);
+    }
+
     bool ICrewHost.Sit(byte player, Construct c, int part) => Players.TryGetValue(player, out var p) && CrewSit(p, c, part);
 
     /// <summary>A crew body into a seat, out of any it was in (no reach: the crew's timed walk got it there).</summary>

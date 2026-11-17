@@ -69,6 +69,9 @@ public struct SandboxHand
 /// </summary>
 public sealed partial class ConstructEdits
 {
+    /// <summary>Server: a crew body in seat (construct, part) stands up for a player who uses it (Game/GameCrew.cs). True: the seat is free now.</summary>
+    public Func<Construct, int, bool>? CrewYield;
+
     public readonly SandboxHand[] Hands = new SandboxHand[256];
 
     /// <summary>A line per completed edit (the self-test reads them; the game logs them).</summary>
@@ -1153,10 +1156,10 @@ public sealed partial class ConstructEdits
                 return $"the {d.Name} is flown from a console or a transmitter on its channel";
             if (seat.Broken)
                 return "the seat is wrecked";
-            if (seat.SitterPlus1 != 0 || part == c.DriveSeat && c.Driver != 255)
-                return "someone is already in it";
             if (h.Seated)
                 return "you are already sitting";
+            if ((seat.SitterPlus1 != 0 || part == c.DriveSeat && c.Driver != 255) && !(CrewYield?.Invoke(c, part) ?? false))
+                return "someone is already in it"; // (a crew member stands up for a player: Game/GameCrew.cs)
             h.Edit = EditKind.None;
             h.HasSeatLook = false;
             h.SeatBody = c.Id;

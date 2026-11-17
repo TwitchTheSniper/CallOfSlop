@@ -46,6 +46,9 @@ public interface ICrewHost
 
     bool Alive(byte player);
 
+    /// <summary>A body's health as a share of a player's whole (0-1); -1: no such body.</summary>
+    float HealthOf(byte player);
+
     /// <summary>The body sits in <paramref name="part"/> of <paramref name="c"/>, out of whatever seat it was in. False: it couldn't.</summary>
     bool Sit(byte player, Construct c, int part);
 
@@ -184,6 +187,11 @@ public sealed class CrewWorld
     /// <summary>What the crew's ticks have cost: CPU (ms), bytes allocated, ticks.</summary>
     public double CpuMs, WorstMs;
     public long WorstTick;
+    public double WorstThinkMs, WorstDriveMs; // (the worst tick's slices of thinking, and of the bodies' deaths plus the drivers)
+
+    /// <summary>Bodies made at most this many a tick (a roster near a person comes to life over a few ticks, not 32 spawns in one).</summary>
+    public const int PromotePerTick = 2;
+    private int _promoted;
     public long Bytes;
     public int Ticks;
 
@@ -335,6 +343,15 @@ public sealed class CrewWorld
         s.SeatsDirty = true;
     }
 
+    /// <summary>A person takes the member's seat: it leaves its station and finds another place at the next look (its body is stood up by the game).</summary>
+    public void StandAside(int m)
+    {
+        if (m < 0 || m >= High || Ship[m] < 0 || Ships[Ship[m]] is not { } s || State[m] == CrewState.Dead)
+            return;
+        Unseat(s, m);
+        State[m] = CrewState.Free;
+    }
+
     /// <summary>The member is hurt (<paramref name="amount"/> health); at nothing left it dies, and leaves its station.</summary>
     public void Hurt(int m, float amount, ICrewHost? host)
     {
@@ -381,6 +398,8 @@ public sealed class CrewWorld
         if (Player[m] == 0)
             return;
         IsBody[Player[m] - 1] = false;
+        if (host != null && State[m] != CrewState.Dead && host.HealthOf((byte)(Player[m] - 1)) is var f and >= 0)
+            Health[m] = MathF.Max(1, f * MemberHealth); // (its body's wounds go back to its record)
         host?.Demote((byte)(Player[m] - 1));
         Player[m] = 0;
         for (var i = 0; i < _bodiedCount; i++)
@@ -536,11 +555,20 @@ public sealed class CrewWorld
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var b0 = GC.GetAllocatedBytesForCurrentThread();
         Tick++;
+        _promoted = 0;
         if (crewOn)
             FindSlice(w);
+        var t1 = System.Diagnostics.Stopwatch.GetTimestamp();
         ShipSlice(w, host, people);
+        var t2 = System.Diagnostics.Stopwatch.GetTimestamp();
         BodiedTick(w, host);
         Drive(w, q, host);
+        var t3 = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (Ticks > 10)
+        {
+            WorstThinkMs = Math.Max(WorstThinkMs, (t2 - t1) * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
+            WorstDriveMs = Math.Max(WorstDriveMs, (t3 - t2) * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
+        }
         var b1 = GC.GetAllocatedBytesForCurrentThread();
         if (Events.Count == 0)
             Bytes += b1 - b0;
@@ -807,7 +835,7 @@ public sealed class CrewWorld
     /// <summary>Near a person: each member in a seat gets a bot body there, nearest bodies first while any are free.</summary>
     private void Embody(Construct c, CrewShip s, ICrewHost host)
     {
-        for (var i = 0; i < s.MemberCount && _bodiedCount < Math.Min(MaxBodied, MaxBodiedCap); i++)
+        for (var i = 0; i < s.MemberCount && _bodiedCount < Math.Min(MaxBodied, MaxBodiedCap) && _promoted < PromotePerTick; i++)
         {
             var m = s.Members[i];
             if (Player[m] != 0 || State[m] != CrewState.Station || Station[m] < 0)
@@ -826,6 +854,7 @@ public sealed class CrewWorld
             s.BodiesShort = false;
             Player[m] = (byte)(id + 1);
             IsBody[id] = true;
+            _promoted++;
             Events.Add($"construct {c.Id}: crew member {Uid[m]} has a body (player {id}) at seat {part}");
             _bodied[_bodiedCount++] = m;
             s.SeatsDirty = true;
@@ -877,7 +906,11 @@ public sealed class CrewWorld
             if (Ships[i] is not { Ai: { } ai } s || w.Get(s.Body) is not { } c || c.Wreck)
                 continue;
             if (ai.Boarded(c, this))
-                continue; // (a person has the helm)
+            {
+                if (c.CrewAims)
+                    ai.Release(c); // (a person has the helm: their stabilizer's own Mouse aim setting, not the crew's)
+                continue;
+            }
             var look = (Tick + i) % 30 == 0 || s.Contact == 255 && (Tick + i) % 10 == 0;
             if (s.Tier == CrewTier.Seated && (Tick + i) % 2 == 1)
             {
