@@ -118,13 +118,13 @@ public sealed partial class Game
     public const float NavClimbSpeed = 60;
 
     /// <summary>How fast an ordered landing comes down (m/s) until the ground is near, and how far down it looks for the ground (m).</summary>
-    public const float NavLandSpeed = 40, NavLandLook = 300;
+    public const float NavLandSpeed = 40, NavLandLook = 600;
 
     /// <summary>How near its spot a landing starts to come down (m along the ground), and how far from the player a ship that comes to them sets down (m past its own size).</summary>
     public const float NavLandNear = 20, NavComeBeside = 8;
 
-    /// <summary>How long a landing ship sits still while asked down before it counts as down (ticks): near the ground, and anywhere (on a roof the ray doesn't see).</summary>
-    public const int NavDownTicks = 60, NavStuckTicks = 180;
+    /// <summary>How long a landing ship sits still near the ground while asked down before it counts as down, and how long anywhere before the order gives up and leaves it hovering (ticks).</summary>
+    public const int NavDownTicks = 60, NavStuckTicks = 600;
 
     private const Buttons NavManualKeys = Buttons.Forward | Buttons.Back | Buttons.Left | Buttons.Right;
 
@@ -273,10 +273,14 @@ public sealed partial class Game
                 return "It can't set down on a spot: a plane or a rocket needs somewhere to land on its own";
             if (c.SpaceShip != 0 && SpaceEdge <= 0)
                 return "There is no way down from here";
+            if (c.SpaceShip != 0 && LandOverLimit(c, out _))
+                return "It is too heavy to land on this world";
             if (kind == NavKind.Come)
             {
                 if (!p.Alive)
                     return "You are dead: it has nobody to come to";
+                if (p.Sim.RideBody == c.Id)
+                    return "You are aboard it";
                 point = NavBeside(c, p.Position, Vector3.Zero);
             }
         }
@@ -405,7 +409,7 @@ public sealed partial class Game
     private void NavInSky(SpaceSession s, NavOrder o, Construct c)
     {
         c.NavThrottle = -1;
-        c.NavClimb = o.Kind == NavKind.Ground ? 0 : NavClimbSpeed;
+        c.NavClimb = o.Kind is NavKind.Ground or NavKind.Land or NavKind.Come ? 0 : NavClimbSpeed; // (only a climb out to space hurries)
         var here = c.WorldCom;
         if (o.Kind is NavKind.Land or NavKind.Come)
         {

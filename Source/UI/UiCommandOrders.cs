@@ -183,7 +183,7 @@ public sealed partial class Ui
 
     /// <summary>Can this ship be told to come to the local player: they are on foot on the bubble's world, and it can land?</summary>
     private static bool CmdCanCome(Game g, Construct c) =>
-        g.Local is { Alive: true } me && !g.SandboxHands.Hand(me.Id).Seated && c.SpaceAway == 0 && CmdCanLand(c);
+        g.Local is { Alive: true } me && !g.SandboxHands.Hand(me.Id).Seated && me.Sim.RideBody != c.Id && c.SpaceAway == 0 && CmdCanLand(c);
 
     /// <summary>Can it set down on a spot (not a plane or a rocket, which land on their own)?</summary>
     private static bool CmdCanLand(Construct c)

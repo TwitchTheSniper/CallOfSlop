@@ -971,8 +971,10 @@ public static partial class ConstructFlight
             }
             if (setDown)
             {
-                // Down at the order's speed, slowing as the ground comes near (a fifth of the gap a second: it has time to stop).
-                climbWant = -MathF.Min(c.NavLand, MathF.Max(0.6f, 0.2f * s.Gap + 0.6f));
+                // Down at the order's speed, slowing as the ground comes near: a fifth of the gap a second, and no faster than
+                // half of what its lift has to spare over its weight can stop in that gap (a heavy hauler comes down slowly).
+                var brake = MathF.Max(0.3f, 0.5f * (s.UpForce + c.LiftNow - weight) / MathF.Max(1, c.Mass));
+                climbWant = -MathF.Min(c.NavLand, MathF.Max(0.6f, MathF.Min(0.2f * s.Gap + 0.6f, MathF.Sqrt(2 * brake * MathF.Max(0, s.Gap)))));
                 s.HoldAlt = height;
                 s.AltHeld = true;
             }

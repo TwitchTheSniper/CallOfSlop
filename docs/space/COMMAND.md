@@ -127,19 +127,23 @@ for a landing Descend and Landing.
 A Land order's point is a spot on the ground of the bubble's world (World coordinates, on the ball's radius: only the
 way to it along the ground counts); a Come order's spot is worked out on the host from the player who gave it
 (`NavBeside`: the ship's own radius plus `NavComeBeside`, 8 m, from them, on the side it comes from), again each tick
-until it starts down. A plane or a rocket refuses both (they land on their own), and so does a ship in another system.
+until it starts down (or until they come aboard it: a player riding it can't order it to come to them). A plane or a
+rocket refuses both (they land on their own), and so does a ship in another system or one too heavy for the world's
+landing limit.
 
 - **From space** the order's `GoTo` law aims at a point `NavDescendUnder` (300 m) under the sky's edge over the spot
   (`NavSkyOver`, turning with the ground; on a thin sky half way down it), with nothing left of its speed there, so it
   crosses the line where it is a physics body again (200 m under the edge) slowly (phase `Descend`; time runs at 1x).
   A landing on another planet first flies the trip there.
 - **In the sky** the autopilot's Waypoint mode flies it over the spot at its present height (`Flying`; off the ground
-  first if it sits there). Within `NavLandNear` (20 m) and drifting under 4 m/s it comes down (`Landing`):
-  `Construct.NavLand` (`NavLandSpeed`, 40 m/s) takes over the stabilizer's height loop, which looks down `NavLandLook`
-  (300 m) every 6 ticks and comes down at a fifth of the gap a second (0.6 m/s at the least) until the gap is gone.
-- **Down:** it has sat still while asked down for a second near the ground (three anywhere, for a roof the ray may not
-  see): the order ends, its autopilot off and its stabilizer at rest (`ConstructFlight.NavSetDown`), as a pilot leaves
-  a ship that landed. Cancelling a landing leaves it hovering, as any order in a sky does.
+  first if it sits there, at the stabilizer's own climb limit). Within `NavLandNear` (20 m) and drifting under 4 m/s it
+  comes down (`Landing`): `Construct.NavLand` (`NavLandSpeed`, 40 m/s) takes over the stabilizer's height loop, which
+  looks down `NavLandLook` (600 m) every 6 ticks and comes down at a fifth of the gap a second, and no faster than half
+  its spare lift could stop in the gap (0.6 m/s at the least), until the gap is gone.
+- **Down:** it has sat still while asked down for a second within 4 m of the ground: the order ends, its autopilot off and its stabilizer at rest (`ConstructFlight.NavSetDown`), as a pilot leaves
+  a ship that landed. Still for ten seconds higher up (a repulsor field or its gas holding it, or something the ray
+  doesn't see) the order gives up and leaves it hovering, since let go in the air it would fall. Cancelling a landing
+  leaves it hovering too, as any order in a sky does.
 
 ## Time speed
 

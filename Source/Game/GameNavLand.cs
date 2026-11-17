@@ -29,8 +29,8 @@ public sealed partial class Game
     {
         var here = c.WorldCom;
         var up = ConstructPhysics.HoldUp(here);
-        if (o.Kind == NavKind.Come && o.Phase != NavPhase.Landing && Players.GetValueOrDefault(o.By) is { Alive: true } p)
-            o.Point = NavBeside(c, p.Position, here); // (a player who walks off is followed; once it is coming down, the spot stays)
+        if (o.Kind == NavKind.Come && o.Phase != NavPhase.Landing && Players.GetValueOrDefault(o.By) is { Alive: true } p && p.Sim.RideBody != c.Id)
+            o.Point = NavBeside(c, p.Position, here); // (a player who walks off is followed; once it is coming down, or they have come aboard, the spot stays)
         var spot = o.Point.ToVector3();
         if (!o.Engaged)
         {
@@ -61,12 +61,15 @@ public sealed partial class Game
             Console.WriteLine($"[nav] construct {c.Id} is over its spot: coming down");
         }
         c.NavLand = NavLandSpeed;
-        // Down: it sits still while it is asked down (near the ground for a second, or anywhere for three: on a roof or a
-        // ship, which the ray down may not see).
+        // Down: it sits still near the ground while it is asked down. Still for long anywhere else (a repulsor field or
+        // its gas holding it up, or something the ray down doesn't see), the order gives up and leaves it hovering: let
+        // go in the air, it would fall.
         o.Still = climb > -0.3f && climb < 0.5f ? o.Still + 1 : Math.Min(o.Still, 0);
         var gap = c.StabCount > 0 ? c.Stabs[0].Gap : 0;
-        if (o.Still >= (gap < 4 ? NavDownTicks : NavStuckTicks))
+        if (gap < 4 && o.Still >= NavDownTicks)
             NavEnd(o, c, "it has landed", down: true);
+        else if (o.Still >= NavStuckTicks)
+            NavEnd(o, c, "it can't come down any further here");
     }
 
     /// <summary>Host: the autopilot set to fly to a point at its own height (lifting off first when it sits on the ground). False: it has no working stabilizer.</summary>
