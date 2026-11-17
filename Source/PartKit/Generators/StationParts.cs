@@ -40,7 +40,14 @@ public sealed class StationParts : IPartGenerator
 
     // ---- the plan (station metres)
 
-    private static readonly (double N0, double N1)[] SpineCuts = [(-90, -62), (-62, -34), (-34, -6), (-6, 12), (32, 52), (52, 76), (76, 100)];
+    // Karl (2026-11-17, on the first model): more levels round a central spine, broken up. The spine steps over three tiers, each
+    // its own district: the stern's works low (engineering, the reactor, the south frigate finger and fuel), the harbour in the middle
+    // (cargo pier, warehouse, the drum, the north finger), the trade quarter and the hub high at the bow. A lift tower stands where
+    // the spine steps, its doors onto both decks.
+    private const double Low = -12, Mid = 0, High = 12;
+    private static readonly (double N0, double N1)[] SpineCuts = [(-90, -62), (-62, -44.5), (-38.5, -6), (-6, 12), (38, 52), (52, 76), (76, 100)];
+    private static readonly double[] SpineU = [Low, Low, Mid, Mid, High, High, High];
+    private static readonly (double N0, double N1) TowerS = (-44.5, -38.5), TowerN = (32, 38);
     private const double DrumN0 = 12, DrumN1 = 32, DrumR = 10, DrumAxisU = 4, DrumE = 26;
     private static readonly (double N0, double N1) FingerA = (-3, 1), FingerB = (-70, -66);
     private const double FingerE = 104, FingerCut = 53;
@@ -52,7 +59,17 @@ public sealed class StationParts : IPartGenerator
     private static readonly double[] FuelE = [22, 40, 58];
     private const double FuelR = 7.2, FuelU = -9.5;
 
-    private static double[] P(double e, double u, double n) => [e - H, u - H, -n - H];
+    private static double[] P(double e, double u, double n) => [e - H, u + _u - H, -n - H];
+
+    /// <summary>The level the piece being made stands on (its deck top's u): every box and socket of it is raised by this.</summary>
+    private static double _u;
+
+    private static T At<T>(double u, Func<T> make)
+    {
+        _u = u;
+        try { return make(); }
+        finally { _u = 0; }
+    }
 
     // ---- box helpers
 
@@ -313,7 +330,7 @@ public sealed class StationParts : IPartGenerator
         var (n0, n1) = SpineCuts[i];
         var p = New($"Freeport Spine {i + 1}", "A length of Freeport One's spine: the 6 m deck the station hangs off, a truss under it carrying the fuel and coolant mains, railings and lamps.", Deck);
         DeckSlab(p, -3, n0, 3, n1);
-        TrussN(p, 0, 3, n0, n1, 5);
+        TrussN(p, 0, 3, n0, n1, 7); // (deep: the spine is the station's backbone)
         // the railings, open where a pier, a finger, a catwalk or a building meets the spine
         (double, double)[] east = [(FingerA.N0, FingerA.N1), (FingerB.N0, FingerB.N1), (FuelN[0] - 1, FuelN[0] + 1), (FuelN[1] - 1, FuelN[1] + 1), (42, 56), (MarinaN[0] - 1.5, MarinaN[0] + 1.5), (MarinaN[1] - 1.5, MarinaN[1] + 1.5)];
         (double, double)[] west = [(-38, -2), (44, 56), (MarinaN[0] - 1.5, MarinaN[0] + 1.5), (MarinaN[1] - 1.5, MarinaN[1] + 1.5)];
@@ -741,6 +758,61 @@ public sealed class StationParts : IPartGenerator
         return [b, o, m];
     }
 
+    // ---- the lift towers where the spine steps a level
+
+    /// <summary>A lift tower on the spine where it steps from one tier to the next: a sealed shaft block with braced corner columns,
+    /// the lifts in a lit shaft down each side, a door onto each tier's deck (doors: the tier's u and the face, "-n" or "+n"), window
+    /// bands, a crown with a beacon mast on top and a pod under it.</summary>
+    private static Part Tower(string tag, (double N0, double N1) at, double uLo, double uHi, (double U, string Face)[] doors)
+    {
+        var p = New($"Freeport Lift Tower {tag}", "A lift tower on Freeport One's spine, where the spine steps from one tier to the next: lifts in lit shafts, a door onto each tier's deck, braced corners and a beacon on top.", Hull);
+        const double w = 4.5, sh = 4.2;
+        var (n0, n1) = at;
+        var mid = (n0 + n1) / 2;
+        Hid(p, -w, uLo, n0, w, uHi, n1);
+        Det(p, -sh, uLo, n0 + 0.3, sh, uHi, n1 - 0.3, Hull, "painted plating");
+        foreach (var se in new[] { -1, 1 })
+        {
+            foreach (var cn in new[] { n0, n1 - 0.6 })
+            {
+                Det(p, se * (w - 0.6), uLo - 0.3, cn, se * w, uHi + 0.3, cn + 0.6, Frame, "painted steel");
+                foreach (var d in doors)
+                    Det(p, se * (w - 0.65), d.U - 0.35, cn - 0.05, se * (w + 0.05), d.U + 0.35, cn + 0.65, Hazard, "hazard paint");
+            }
+            // the lift shaft's glazing down the side, its frame, a car part way up
+            Det(p, se * sh, uLo + 1, mid - 1.0, se * (sh + 0.06), uHi - 1, mid + 1.0, Cyan, glow: true);
+            foreach (var sn in new[] { -1, 1 })
+                Det(p, se * sh, uLo + 0.6, mid + sn * 0.98, se * (sh + 0.1), uHi - 0.6, mid + sn * 1.25, Frame, "painted steel");
+            var car = se < 0 ? uLo + (uHi - uLo) * 0.3 : uLo + (uHi - uLo) * 0.62;
+            Det(p, se * (sh + 0.004), car, mid - 0.8, se * (sh + 0.09), car + 2.6, mid + 0.8, Door, "worn paint");
+            // cross bracing up the side, panel by panel
+            var k = 0;
+            for (var u = uLo + 1; u + 6 <= uHi - 0.5; u += 6, k++)
+                Bar(p, [se * (w - 0.15), u, k % 2 == 0 ? n0 + 0.3 : n1 - 0.3], [se * (w - 0.15), u + 6, k % 2 == 0 ? n1 - 0.3 : n0 + 0.3], 0.2, Frame);
+        }
+        foreach (var d in doors)
+        {
+            var keep = _u;
+            _u = d.U;
+            WallDoor(p, d.Face, d.Face[0] == '-' ? n0 + 0.3 : n1 - 0.3, 0, 2.4, 2.6);
+            _u = keep;
+        }
+        // window bands on the end faces, clear of the doors
+        foreach (var (face, sg) in new[] { (n0 + 0.3, -1), (n1 - 0.3, 1) })
+            for (var u = uLo + 2; u < uHi - 1.5; u += 4)
+                if (doors.All(d => u + 0.5 < d.U - 0.5 || u > d.U + 3.6))
+                    Det(p, -3.2, u, face + sg * 0.004, 3.2, u + 0.5, face + sg * 0.05, Glow, glow: true);
+        // the crown, its lit band, a cap and the beacon mast; the pod under the tower
+        Det(p, -3.2, uHi + 0.004, n0 + 0.9, 3.2, uHi + 3, n1 - 0.9, Hull2, "painted plating");
+        Det(p, -3.25, uHi + 1.2, n0 + 0.85, 3.25, uHi + 1.6, n1 - 0.85, Cyan, glow: true);
+        Det(p, -3.6, uHi + 2.99, n0 + 0.6, 3.6, uHi + 3.3, n1 - 0.6, Frame, "painted steel");
+        Det(p, -0.1, uHi + 3.3, mid - 0.1, 0.1, uHi + 9, mid + 0.1, Frame, "steel");
+        Sphere(p, 0, uHi + 9.4, mid, 0.4, Red, 8, glow: true);
+        Cyl(p, 'u', 0, 0, mid, uLo - 4, uLo - 0.004, 2.6, Hull3, 12, "painted plating", taper: [0.5, 0.5]);
+        Sphere(p, 0, uLo - 4.4, mid, 0.4, Red, 8, glow: true);
+        return p.Stats(30000, 70000, 30, 20.0);
+    }
+
     // ---- the habitat drum across the spine, and the roof pad on it
 
     private static Part Drum(int part)
@@ -780,7 +852,7 @@ public sealed class StationParts : IPartGenerator
 
     private static Part RoofPad()
     {
-        var p = New("Freeport Roof Pad", "The roof pad on Freeport One's habitat drum, the station's second level: a landing deck on four pylons for one small ship, a Docking Clamp Large in its middle.", Deck);
+        var p = New("Freeport Roof Pad", "The roof pad on Freeport One's habitat drum, above the harbour tier: a landing deck on four pylons for one small ship, a Docking Clamp Large in its middle.", Deck);
         const double top = 16.0;
         double cn = (DrumN0 + DrumN1) / 2;
         foreach (var e in new[] { -12.0, 12.0 })
@@ -965,20 +1037,24 @@ public sealed class StationParts : IPartGenerator
         _slabs = 0;
         var parts = new List<Part>();
         for (var i = 0; i < SpineCuts.Length; i++)
-            parts.Add(Spine(i));
+            parts.Add(At(SpineU[i], () => Spine(i)));
+        parts.Add(Tower("S", TowerS, Low - 10, Mid + 8, [(Low, "-n"), (Mid, "+n")]));
+        parts.Add(Tower("N", TowerN, Mid - 10, High + 10, [(Mid, "-n"), (High, "+n")]));
+        // the harbour tier
         parts.AddRange([Drum(0), Drum(1), Drum(2), RoofPad()]);
-        parts.AddRange(Hub());
         parts.AddRange([CargoPier(true), CargoPier(false), Gantry()]);
-        parts.AddRange([Finger("A1", FingerA, false, 1), Finger("A2", FingerA, true, 1), Finger("B1", FingerB, false, -1), Finger("B2", FingerB, true, -1)]);
-        parts.AddRange([RepairArm(0, FingerA, 1), RepairArm(1, FingerB, -1)]);
-        for (var i = 0; i < MarinaN.Length; i++)
-            parts.AddRange([MarinaFinger(i, 1), MarinaFinger(i, -1)]);
-        parts.AddRange([FuelFarm(0), FuelFarm(1)]);
+        parts.AddRange([Finger("A1", FingerA, false, 1), Finger("A2", FingerA, true, 1), RepairArm(0, FingerA, 1), FuelFarm(0)]);
         parts.AddRange(Warehouse());
-        parts.AddRange(Market());
-        parts.AddRange(Customs());
-        parts.AddRange(Engineering());
-        parts.AddRange([Boom(), Reactor(), Radiator(-1), Radiator(1)]);
+        // the trade quarter and the hub, high at the bow
+        parts.AddRange(At(High, Hub));
+        for (var i = 0; i < MarinaN.Length; i++)
+            parts.AddRange([At(High, () => MarinaFinger(i, 1)), At(High, () => MarinaFinger(i, -1))]);
+        parts.AddRange(At(High, Market));
+        parts.AddRange(At(High, Customs));
+        // the works, low at the stern
+        parts.AddRange(At(Low, () => new List<Part> { Finger("B1", FingerB, false, -1), Finger("B2", FingerB, true, -1), RepairArm(1, FingerB, -1), FuelFarm(1) }));
+        parts.AddRange(At(Low, Engineering));
+        parts.AddRange(At(Low, () => new List<Part> { Boom(), Reactor(), Radiator(-1), Radiator(1) }));
         Connect(parts);
         var order = PlaceOrder(parts, "Freeport Spine 4");
         var defs = new Dictionary<string, PyDict>();

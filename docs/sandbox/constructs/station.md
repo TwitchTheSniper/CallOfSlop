@@ -7,8 +7,14 @@ Karl (2026-11-17) asked for the game's first space station; the layout was agree
 
 ## What it is
 
-A harbour in orbit, about 290 m from the hub's bow to the reactor and 210 m across the piers. A 6 m walkway spine runs north
-to south with everything hung off it, and each side takes one kind of traffic:
+A harbour in orbit, about 290 m from the hub's bow to the reactor and 210 m across the piers. A 6 m walkway spine on a 7 m deep
+truss runs north to south with everything hung off it, and each side takes one kind of traffic.
+
+**Three tiers** (Karl, 2026-11-17, on the first model: more levels round a central spine, broken up). The spine steps 12 m at
+each of two lift towers (sealed shafts with braced corners, lit lift glazing down both sides, a door onto each tier, a beacon
+crown): the **works** low at the stern (u -12: engineering, the reactor boom, the south frigate finger and its fuel spheres), the
+**harbour** in the middle (u 0: cargo pier, warehouse, the drum and roof pad, the north finger and its fuel), the **trade quarter**
+high at the bow (u +12: marina, market, customs and the hub). The generator raises a piece onto its tier with `At(u, ...)`.
 
 - **West, freight:** an open cargo pier 74 x 22 m off the warehouse's big door, under a gantry crane (legs every 11 m, a bridge
   with a trolley, hook block and cab). A Cargo Dock pad with a Docking Clamp Large sits where a Dray's belly well comes down;
@@ -19,8 +25,8 @@ to south with everything hung off it, and each side takes one kind of traffic:
 - **North, small craft:** a marina of four short fingers with a Docking Clamp Medium each, beside the market hall (sawtooth roof,
   striped awning) and customs (a berth board facing the spine). The command hub stands at the bow: two hexagonal storeys, a
   lit sensor band, four gun domes and a lattice mast with the traffic radar.
-- **Middle:** the habitat drum, a 52 x 20 m cylinder lying across the spine, with the roof pad on top (the station's second
-  level: a Docking Clamp Large for a Magpie-sized ship, reached by a ladder tower).
+- **Middle:** the habitat drum, a 52 x 20 m cylinder lying across the spine, with the roof pad on top (above the harbour
+  tier: a Docking Clamp Large for a Magpie-sized ship, reached by a ladder tower).
 - **Under the decks:** a fuel farm of six 14 m spheres hung under two catwalks between the fingers.
 - **South:** engineering (stacks, gun domes) at the root of a 46 m boom to the reactor, with a radiator wing each side.
 
