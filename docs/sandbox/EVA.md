@@ -21,6 +21,8 @@ Three parts (part kit generator `Source/PartKit/Generators/EvaParts.cs`, files i
 
 `PilotGear.Mmu` (gear bit 8) runs `MmuStep` in place of the jetpack: forward/back along the look, strafe right/left, jump up and crouch down along the look's up, `PilotGear.MmuAccel` (2.5 m/s2) per axis, one tick of fuel per thrusting tick. Thrusting shows as `Canopy = Burning` to others, who see cold-gas puffs off the quads. No thrust while grounded, riding or mantling. `Player.MmuFuel` mirrors the tank so a teleport (which resets `Sim`) keeps it. Dying or leaving the game with the pack drops it as a loose part holding its fuel. Detaching in space leaves the ship's ride frame (`ConstructRide.Leave`), so the pack fires at once.
 
+No canopy in vacuum (2026-11-17): where `Eva.Vacuum` holds, `PilotGear.Step` never opens the parachute or the glider (the jump key, an ejection seat's delayed chute), and one already open stows; the jetpack still burns. The HUD's open hint is hidden there too.
+
 ## Not yet
 
 - No ship blueprint carries a dock or locker yet.
