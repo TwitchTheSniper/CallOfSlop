@@ -92,7 +92,7 @@ public static class CrewPowers
     {
         var kinds = CrewFactions.All;
         var list = new List<NpcPowerDef>();
-        var raw = new List<(Dictionary<string, int> Start, Dictionary<string, int> Rest)>();
+        var raw = new List<(Dictionary<string, int> Start, Dictionary<string, int> Rests)>();
         if (Directory.Exists(dir) && Directory.GetFiles(dir, "*.json").Length > 0)
         {
             foreach (var path in Directory.GetFiles(dir, "*.json").OrderBy(p => p, StringComparer.Ordinal))
@@ -135,11 +135,11 @@ public static class CrewPowers
                 // By name in the power file; else its kind's stance to the other's kind (a power and itself, or two of one kind: the kind's word for itself, neutral).
                 var v = raw[i].Start.TryGetValue(o.Name, out var n) ? n : o == d ? 100 : StartFrom(d.Kind.ToFactions.Length > o.Kind.Id ? d.Kind.ToFactions[o.Kind.Id] : CrewStance.Neutral);
                 d.StartTo[j] = (sbyte)v;
-                d.RestTo[j] = (sbyte)(raw[i].Rest.TryGetValue(o.Name, out var rn) ? rn : v);
+                d.RestTo[j] = (sbyte)(raw[i].Rests.TryGetValue(o.Name, out var rn) ? rn : v);
             }
             d.StartPlayers = (sbyte)(raw[i].Start.TryGetValue("players", out var p) ? p : d.Kind.StartStanding);
-            d.RestPlayers = (sbyte)(raw[i].Rest.TryGetValue("players", out var rp) ? rp : d.StartPlayers);
-            foreach (var name in raw[i].Start.Keys.Concat(raw[i].Rest.Keys))
+            d.RestPlayers = (sbyte)(raw[i].Rests.TryGetValue("players", out var rp) ? rp : d.StartPlayers);
+            foreach (var name in raw[i].Start.Keys.Concat(raw[i].Rests.Keys))
                 if (name != "players" && Array.FindIndex(all, 1, a => a!.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) < 0)
                     Console.WriteLine($"[crew] power {d.Name}: its relation to \"{name}\" names no power: left out");
         }
@@ -214,7 +214,7 @@ public static class CrewPowers
             return map;
         foreach (var kv in rel.EnumerateObject())
             map[kv.Name] = kv.Value.ValueKind == JsonValueKind.Number
-                ? kv.Value.GetInt32() is var n and >= -100 and <= 100 ? n : throw new InvalidDataException($"{key}: \"{kv.Name}\" {n} is outside -100 to 100")
+                ? Math.Abs(kv.Value.GetInt32()) <= 100 ? kv.Value.GetInt32() : throw new InvalidDataException($"{key}: \"{kv.Name}\" {kv.Value.GetInt32()} is outside -100 to 100")
                 : (kv.Value.GetString() ?? "").ToLowerInvariant() switch
                 {
                     "hostile" => -50,

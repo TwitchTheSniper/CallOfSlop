@@ -183,7 +183,7 @@ public sealed class PowerRelations
     public FactionTable Table = new(); // the factions table whose NPC rows hold the standings with players (the Game sets its own)
     public IPowerSight? Sight;
     public Func<byte, string>? PartyName; // a player's or player faction's name for news (owner byte; a faction: 0x100 + id)
-    public long Tick;
+    public long Tick = 1; // (from 1: a tick of 0 is "never" in the stamps below)
     public int Version; // bumped on any change clients see
 
     public readonly sbyte[] Rel = new sbyte[N * N]; // [a * N + b]: how power a + 1 sees power b + 1
@@ -271,6 +271,25 @@ public sealed class PowerRelations
 
     /// <summary>Crews of <paramref name="a"/> fight <paramref name="b"/>'s on sight: below 0 and no pact.</summary>
     public bool Fights(byte a, byte b) => a != b && Get(a, b) < 0 && !HoldsFire(a, b);
+
+    /// <summary>
+    /// Whether a crew of <paramref name="a"/> fights a crew of <paramref name="b"/> that is fighting a crew of power <paramref name="theirPower"/> (0:
+    /// none) or person <paramref name="theirPerson"/> (255: none): never under a pact; on sight below 0; and, not friends with b, when b fights a
+    /// friend or ally of a's, or a person a counts as a friend (allies help players and each other in a fight they see: section 5.2, answer 9).
+    /// </summary>
+    public bool ShipFights(byte a, byte b, byte theirPower, byte theirPerson)
+    {
+        if (a == b || HoldsFire(a, b))
+            return false;
+        var v = Get(a, b);
+        if (v < 0)
+            return true;
+        if (v >= Rules.FriendlyLine)
+            return false;
+        if (theirPower != 0 && theirPower != b && Helps(a, theirPower))
+            return true;
+        return theirPerson != 255 && Peek(a, theirPerson) >= Rules.FriendlyLine;
+    }
 
     /// <summary><paramref name="a"/> helps <paramref name="f"/> in a fight it sees: allied, or friendly.</summary>
     public bool Helps(byte a, byte f) => a != 0 && f != 0 && a != f && (PactOf(a, f) == PactKind.Alliance || BandOf(a, f) == RelBand.Friendly);
@@ -610,6 +629,8 @@ public sealed class PowerRelations
             {
                 _proposed[ba] = PactKind.None;
                 var cur = PactOf(a, b);
+                if (cur == kind)
+                    continue; // (both proposed it at once: signed already)
                 var yes = kind switch
                 {
                     PactKind.Ceasefire => cur == PactKind.None && CeasefireWanted(b, a) && (def.Aggression < Rules.CeasefireRefuseAggression || _loss[ab] > 0),
@@ -650,6 +671,8 @@ public sealed class PowerRelations
             if (b == a)
                 continue;
             var k = (a - 1) * N + b - 1;
+            if (PactOf(a, (byte)b) == PactKind.Ceasefire)
+                continue; // (a ceasefire holds the grudge where it was set)
             var to = Toward(Rel[k], def.RestTo[b], steps, Band[k] == RelBand.War);
             if (to != Rel[k])
                 Move(a, (byte)b, to - Rel[k]);

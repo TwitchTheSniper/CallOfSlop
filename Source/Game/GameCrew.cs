@@ -387,17 +387,9 @@ public sealed partial class Game : ICrewHost
             return true;
         if (!CrewStandingOn)
             return CrewPowers.KindOf(a) is { } k && CrewPowers.KindOf(b) is { } kb && k.ToFactions[kb.Id] == CrewStance.Hostile; // (the story owns the rows: the kinds' fixed stances)
-        var rel = Relations;
-        if (rel.HoldsFire(a, b))
-            return false;
-        var v = rel.Get(a, b);
-        if (v < 0)
-            return true;
-        if (v >= rel.Rules.FriendlyLine)
-            return false;
-        if (o.ContactBody != 0 && Crew.ShipOf(o.ContactBody) is { Faction: not 0 } f && f.Faction != b && rel.Helps(a, f.Faction))
-            return true;
-        return o.Contact != 255 && Players.TryGetValue(o.Contact, out var p) && p.CrewSlot < 0 && p.Bot == null && rel.Peek(a, p.Id) >= rel.Rules.FriendlyLine;
+        var friend = o.ContactBody != 0 && Crew.ShipOf(o.ContactBody) is { Faction: not 0, Own: false } f ? f.Faction : (byte)0;
+        var person = o.Contact != 255 && Players.TryGetValue(o.Contact, out var p) && p.CrewSlot < 0 && p.Bot == null ? o.Contact : (byte)255;
+        return Relations.ShipFights(a, b, friend, person);
     }
 
     /// <summary>A person crew <paramref name="s"/> doesn't fight for itself, seen fighting a crew of a power its own counts as a friend or ally, within its sight (help in a fight it sees).</summary>

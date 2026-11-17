@@ -18,6 +18,8 @@ public static class CrewCheck
     public static int Cli(string[] args)
     {
         string? Arg(string name) => args.SkipWhile(a => !a.Equals(name, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+        if (args.Any(a => a.Equals("--crew-relations", StringComparison.OrdinalIgnoreCase)))
+            return CrewRelationsCheck.Run(args); // (relations that change through play: CrewRelationsCheck.cs)
         var at = Array.FindIndex(args, a => a.Equals("--crew-check", StringComparison.OrdinalIgnoreCase));
         var shipName = at >= 0 && at + 1 < args.Length && !args[at + 1].StartsWith("--") ? args[at + 1] : "Zero Day Frigate";
         var targetName = Arg("--target") ?? "Zero Day Frigate";
