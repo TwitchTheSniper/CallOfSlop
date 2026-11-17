@@ -271,6 +271,21 @@ builder at its station. Zero Day: a spotter at the Railgun (the gun spotted whil
 Unverified: a lifter, dock or station actually held and released in a running world (only the gate's answer is checked); builder drones
 are crew members, not drones (the design's "own design first"); no protocol change (none needed).
 
+## Review fixes (branch `claude/bot-brain-3`, 2026-11-17)
+
+- Placing crew never wakes a body (`CrewSit`, `CrewStandAt`: a parked ship stays parked; its drive wakes it on its keys); a crew body's
+  weight and landings never push or wake the body under it (`ConstructWorld.IsCrewBody`, in `NoteStanding` and `BlockPlayer`); a parked
+  body (asleep, anchored or still) gets crew bodies only with the server's ground or a static under it within 60 m (`CrewGroundUnder`).
+- The machines' gate is the world's own hook (`ConstructWorld.CrewWorks`, set with `CrewBytes`), not a process-wide static.
+- A client's roster reads every job (Spotter, Crane, Hauler, Builder were shown as Loader).
+- Walkers open only a door on the leg they walk (within 0.9 m of it, ahead, within 1.8 m) and shut it again 2.5 m behind, unless their
+  ship is boarded or they are fighting.
+
+Verified: a joined client by a parked Traders frigate with the host 700 m off: it landed and stayed (8 m, 0 m/s for 40 s), the client saw
+its 7 crew bodies, no fall (the earlier fall wasn't seen again). `--crew-walk` at 10 m/s turning: 9 of 9 (doors shut behind); `--crew-work`
+Factory Showcase and Linked Yard OK; `--crew-check` OK (39 us a tick); `--linked-check` passed; sections Ride frame, Seated riders,
+Sandbox spawns, Frame allocations, Large systems network, Salvage haul network, Mode switch reset pass.
+
 ## Next (for a successor)
 
 - CrewNav: lifts (ride a lift deck: `ConstructRide` carriers), patching a graph on a part's loss instead of building it again, Lock down

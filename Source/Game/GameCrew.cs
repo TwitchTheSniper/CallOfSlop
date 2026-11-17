@@ -16,12 +16,10 @@ public sealed partial class Game : ICrewHost
     private readonly Vector3[] _crewPeople = new Vector3[MaxPlayers];
     private readonly ushort[] _crewParts = new ushort[CrewWorld.MaxCrewPerBody];
     private int _crewSendAt;
-    private Func<Construct, int, bool>? _crewGate;
 
     /// <summary>A tick, after the people's seats and before the constructs step: the crews think, man their seats and drive.</summary>
     private void SandboxCrewTick()
     {
-        CrewGate.Check = _crewGate ??= Crew.Works; // (this world's crew: the delegate made once)
         var n = 0;
         foreach (var p in Players.Values)
             if (p.Alive && p.Bot == null)
@@ -73,6 +71,8 @@ public sealed partial class Game : ICrewHost
     {
         if (SandboxBotCount() + crew.Bodied >= Math.Clamp(SandboxBotCap, 0, SpawnBotCapMax))
             return 0; // (the spawned bots' cap is shared: bot-brain.md section 4)
+        if (!CrewGroundUnder(c))
+            return 0; // (a parked body with no ground the server knows under it: its crew stay records)
         var id = FreeNpcId();
         if (id == 0)
             return 0;
@@ -98,6 +98,21 @@ public sealed partial class Game : ICrewHost
         bot.Health = Math.Max(1, (int)(World.MaxHealth * crew.Health[m] / CrewWorld.MemberHealth));
         _sbRosterDirty = true; // (one roster for a tick's bodies: SandboxSpawnTick sends it)
         return id;
+    }
+
+    /// <summary>
+    /// Whether crew may be bodied on <paramref name="c"/>: a body in motion carries its riders in its frame wherever it is; a parked one (asleep,
+    /// anchored, still) only where the server's world has ground or a static under it within 60 m (a body never comes to life over nothing).
+    /// </summary>
+    private bool CrewGroundUnder(Construct c)
+    {
+        if (!c.Asleep && !c.Anchored && c.Vel.LengthSquared() > 0.25f)
+            return true;
+        var com = c.WorldCom;
+        if (ConstructWorld.FellOut(com, World.Query))
+            return false;
+        var down = -GravityFrames.UpAt(com);
+        return World.Query.Raycast(com, down, c.Radius + 60f, new QueryFilter(QueryLayers.Static), out _);
     }
 
     /// <summary>A crew body's side: a hired crew (<see cref="CrewShip.Own"/>) and an owned ship's Fights strangers crew are on the owner's (friendly bots), the rest enemy bots.</summary>
@@ -176,11 +191,10 @@ public sealed partial class Game : ICrewHost
         h.Edit = EditKind.None;
         var at = c.ToWorld(rest + new Vector3(0, 0.03f, 0));
         p.Teleport(at);
-        p.Sim.Velocity = c.PointVel(at);
+        p.Sim.Velocity = c.Asleep || c.Anchored ? Vector3.Zero : c.PointVel(at);
         ConstructRide.End(ref p.Sim, null, c, 0, Vector3.Zero, frame: true); // (the ship's own frame, as a person rides it: CrewNav's walks need it)
         for (var i = 0; i < Player.HistorySize; i++)
-            p.History[i] = new HistoryEntry { Position = p.Position, Yaw = p.Yaw };
-        c.Wake();
+            p.History[i] = new HistoryEntry { Position = p.Position, Yaw = p.Yaw }; // (a sleeping body isn't woken to place its crew)
     }
 
     /// <summary>A crew body into a seat, out of any it was in (no reach: the crew's timed walk got it there).</summary>
@@ -204,8 +218,7 @@ public sealed partial class Game : ICrewHost
         }
         p.Teleport(ConstructEdits.SeatFeet(c, part));
         for (var i = 0; i < Player.HistorySize; i++)
-            p.History[i] = new HistoryEntry { Position = p.Position, Yaw = p.Yaw };
-        c.Wake();
+            p.History[i] = new HistoryEntry { Position = p.Position, Yaw = p.Yaw }; // (no wake: a parked body stays parked; its drive wakes it on its keys)
         return true;
     }
 
@@ -235,7 +248,9 @@ public sealed partial class Game : ICrewHost
             return false;
         if (SandboxHands.Hand(p.Id).Seated)
             return false; // (sat down meanwhile)
-        var phase = Crew.Nav.Steer(w, c, Constructs, ref p.Sim, out var cmd);
+        var m = p.CrewSlot;
+        var leave = Crew.State[m] == CrewState.Fighting || Crew.ShipOf(c.Id) is { Boarded: true }; // (a fight aboard: doors are left as they are)
+        var phase = Crew.Nav.Steer(w, c, Constructs, ref p.Sim, out var cmd, leave);
         if (phase >= 2)
         {
             Crew.Nav.End(w);

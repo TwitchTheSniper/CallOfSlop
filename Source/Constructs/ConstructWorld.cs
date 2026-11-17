@@ -90,6 +90,12 @@ public sealed partial class ConstructWorld
     /// <summary>Server: player ids that are crew bodies (Game.Crew.IsBody), whose seat at the controls isn't a person taking over.</summary>
     public bool[]? CrewBodies;
 
+    /// <summary>Player <paramref name="who"/> is a crew member's body (its weight and landings don't push or wake the body it stands on).</summary>
+    public bool IsCrewBody(byte who) => who != 255 && CrewBodies is { } cb && cb[who];
+
+    /// <summary>The crews' word on a machine of a crewed NPC body (bot-brain.md phase 7: CrewGate); null: every machine works.</summary>
+    public Func<Construct, int, bool>? CrewWorks;
+
     /// <summary>A person (not a crew body) is at <paramref name="c"/>'s controls.</summary>
     public bool HumanDriver(Construct c) => c.Driver != 255 && (CrewBodies == null || !CrewBodies[c.Driver]);
 
@@ -1707,7 +1713,7 @@ public sealed partial class ConstructWorld
                         var landing = MathF.Max(0, -s.Velocity.Y - (c.Vel.Y < 0 ? -c.Vel.Y : 0)); // (m/s coming down onto it)
                         if (s.Velocity.Y < 0)
                             s.Velocity.Y = 0;
-                        if (server && c.SpringCount > 0 && !c.Anchored && c.CarriedBy == 0 && p.Seg == 0 && standing != c)
+                        if (server && c.SpringCount > 0 && !c.Anchored && c.CarriedBy == 0 && p.Seg == 0 && standing != c && !IsCrewBody(who))
                         {
                             // A body on spring feet (board item cs03) gives under who stands on it: their weight, and a landing's knock.
                             c.SpringRiders++;

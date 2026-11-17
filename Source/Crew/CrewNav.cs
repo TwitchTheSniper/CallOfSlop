@@ -891,6 +891,7 @@ public sealed class CrewNav
     public readonly float[] WLength = new float[MaxWalkers], WBest = new float[MaxWalkers];
     public readonly Vector3[] WPts = new Vector3[MaxWalkers * MaxPts];
     public readonly short[] WLadder = new short[MaxWalkers * MaxPts];
+    public readonly short[] WDoor = new short[MaxWalkers]; // (the door it opened and hasn't passed 2.5 m yet: shut behind it; -1: none)
     public readonly long[] WDoorAt = new long[MaxWalkers], WStart = new long[MaxWalkers];
 
     public CrewNav()
@@ -946,6 +947,7 @@ public sealed class CrewNav
         WAt[w] = 0;
         WStuck[w] = 0;
         WDoorAt[w] = 0;
+        WDoor[w] = -1;
         WStart[w] = Tick;
         _queue[(_queueHead + _queueCount) % MaxWalkers] = w;
         _queueCount++;
@@ -968,7 +970,7 @@ public sealed class CrewNav
     /// the body's rest frame turned to the world each tick; a ladder's point climbs it; a closed door on the way is opened). Returns its
     /// phase: 1 walking, 2 there, 3 given up (stuck twice, or a locked door in the way).
     /// </summary>
-    public byte Steer(int w, Construct c, ConstructWorld world, ref MoveState s, out InputCmd cmd)
+    public byte Steer(int w, Construct c, ConstructWorld world, ref MoveState s, out InputCmd cmd, bool leaveDoors = false)
     {
         cmd = new InputCmd { SpeedPct = 100, RideBody = s.RideBody };
         if (WPhase[w] != 1)
@@ -1013,18 +1015,37 @@ public sealed class CrewNav
             Events.Add($"construct {WBody[w]}: a crew body stuck {Vector3.Distance(feet, at):0.0} m short of its turn {WAt[w] + 1} of {WCount[w]} gave up the walk");
             return WPhase[w] = 3;
         }
-        // A closed door within reach ahead: open it (as F on it), twice a second at most.
+        // Doors, twice a second: one it opened and has left 2.5 m behind is shut again (unless told to leave them: a boarding, a fight); a
+        // closed one on the leg it walks now (within 0.9 m of the line, in front of it, within 1.8 m) is opened as F opens it.
         if (Tick >= WDoorAt[w] && c.DoorCount > 0)
         {
             WDoorAt[w] = Tick + World.TickRate / 2;
+            if (WDoor[w] >= 0 && WDoor[w] < c.PartCount && c.DoorOf(WDoor[w]) is var dk and >= 0)
+            {
+                var oc = c.ToLocal(ConstructRender.PartCentre(c, WDoor[w]));
+                if (Vector2.Distance(new Vector2(oc.X, oc.Z), new Vector2(feet.X, feet.Z)) > 2.5f)
+                {
+                    if (!leaveDoors && ConstructDoors.TargetOpen(c, WDoor[w]) && !ConstructDoors.Locked(c, WDoor[w]))
+                        ConstructDoors.Command(world, c, dk, false);
+                    WDoor[w] = -1;
+                }
+            }
+            var leg = new Vector2(at.X - feet.X, at.Z - feet.Z);
+            var legLen = MathF.Max(leg.Length(), 1e-3f);
+            var along = leg / legLen;
             for (var k = 0; k < c.DoorCount; k++)
             {
                 int part = c.Doors[k].Part;
                 if (part >= c.PartCount || ConstructDoors.TargetOpen(c, part) || !Upright(c, part))
-                    continue; // (a hatch underfoot is left shut)
+                    continue; // (open already, or a hatch underfoot: left shut)
                 var dc = c.ToLocal(ConstructRender.PartCentre(c, part));
-                if (Vector2.DistanceSquared(new Vector2(dc.X, dc.Z), new Vector2(feet.X, feet.Z)) > 1.8f * 1.8f || dc.Y < feet.Y + 0.2f || dc.Y > feet.Y + 2.2f)
+                if (dc.Y < feet.Y + 0.2f || dc.Y > feet.Y + 2.2f)
                     continue;
+                var rel = new Vector2(dc.X - feet.X, dc.Z - feet.Z);
+                var ahead = Vector2.Dot(rel, along);
+                var off = MathF.Abs(rel.X * along.Y - rel.Y * along.X);
+                if (ahead < -0.3f || ahead > MathF.Min(1.8f, legLen + 0.6f) || off > 0.9f)
+                    continue; // (not on its way)
                 if (ConstructDoors.Locked(c, part))
                 {
                     if (WStuck[w] > World.TickRate)
@@ -1032,6 +1053,7 @@ public sealed class CrewNav
                     continue;
                 }
                 ConstructDoors.Use(world, c, part);
+                WDoor[w] = (short)part;
             }
         }
         var localYaw = MathF.Atan2(flat.X, -flat.Y);
