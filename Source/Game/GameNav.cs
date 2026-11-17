@@ -12,7 +12,7 @@ public enum NavKind : byte
     Orbit, // a circle round a body, a radius from its centre
     Ground, // fly to a point over the ground of the world it is on (World coordinates), on its autopilot
     Land, // fly to a spot on the ground of the bubble's world (World coordinates), from its sky or from space, and set down on it
-    Come, // fly to the player who gave it (Point: the spot beside them, World coordinates, as last worked out) and set down there
+    Come, // fly to the player who gave it (Point: the spot beside them, World coordinates, as last worked out): set down there, or in space hold beside them
 }
 
 /// <summary>How far an order has got (a wire byte: add at the end).</summary>
@@ -84,6 +84,9 @@ public sealed class NavOrder
 
     /// <summary>Host: the waypoint its autopilot was last given (a Come order moves it after its player).</summary>
     internal Vector3 WaypointSent;
+
+    /// <summary>Host: a Come order's player was out in space when last seen (it holds beside them there, not lands).</summary>
+    internal bool ComeSpace;
 }
 
 /// <summary>
@@ -279,13 +282,6 @@ public sealed partial class Game
         {
             if (c.SpaceAway != 0 || body != s.Bubble.Body)
                 return "It can land only on the world you are on";
-            ref var sp = ref c.Parts[c.Stabs[0].Part];
-            if (ConstructFlight.KeysOf(c, sp, sp.D) is FlightPattern.Plane or FlightPattern.Rocket)
-                return "It can't set down on a spot: a plane or a rocket needs somewhere to land on its own";
-            if (c.SpaceShip != 0 && SpaceEdge <= 0)
-                return "There is no way down from here";
-            if (c.SpaceShip != 0 && LandOverLimit(c, out _))
-                return "It is too heavy to land on this world";
             if (kind == NavKind.Come)
             {
                 if (p == null)
@@ -296,6 +292,8 @@ public sealed partial class Game
                     return "You are aboard it";
                 point = NavBeside(c, p.Position, Vector3.Zero);
             }
+            if ((kind == NavKind.Land || p == null || !NavPlayerInSpace(p)) && NavCantLand(c) is { } cant) // (a player out in space: it comes and holds beside them)
+                return cant;
         }
         else
         {
@@ -327,6 +325,7 @@ public sealed partial class Game
         o.ArriveNs = o.DepartNs = 0;
         o.DvNeed = 0;
         o.Still = 0;
+        o.ComeSpace = kind == NavKind.Come && p != null && NavPlayerInSpace(p);
         c.NavLand = 0; // (any new order, a player's or a route leg's, ends a landing's hold)
         order = o;
         Console.WriteLine($"[nav] {who} ordered construct {id}: {NavText(sys, o)}");
@@ -343,7 +342,7 @@ public sealed partial class Game
             NavKind.GoTo => "go to a point " + NavFar(Math.Max(0, o.Point.Length - sys.Bodies[Math.Min(o.Body, sys.Count - 1)].Radius)) + " from " + name, // (from its surface, as heights are told)
             NavKind.Ground => "go to a waypoint on " + name,
             NavKind.Land => "land on a spot on " + name,
-            NavKind.Come => "come to its player and land",
+            NavKind.Come => "come to its player",
             _ => "none",
         };
     }
@@ -402,6 +401,11 @@ public sealed partial class Game
             }
             if (c.Dirty)
                 c.Rebuild();
+            if (o.Kind == NavKind.Come && NavComeMode(o, c) is { } comeEnds)
+            {
+                NavEnd(o, c, comeEnds);
+                continue;
+            }
             if (c.SpaceShip == 0)
                 NavInSky(s, o, c);
             else
@@ -423,9 +427,10 @@ public sealed partial class Game
     private void NavInSky(SpaceSession s, NavOrder o, Construct c)
     {
         c.NavThrottle = -1;
-        c.NavClimb = o.Kind is NavKind.Ground or NavKind.Land or NavKind.Come ? 0 : NavClimbSpeed; // (only a climb out to space hurries)
+        var climbs = o.Kind is NavKind.GoTo or NavKind.Orbit || o.Kind == NavKind.Come && o.ComeSpace;
+        c.NavClimb = climbs ? NavClimbSpeed : 0; // (only a climb out to space hurries)
         var here = c.WorldCom;
-        if (o.Kind is NavKind.Land or NavKind.Come)
+        if (!climbs && o.Kind is NavKind.Land or NavKind.Come)
         {
             NavLandSky(o, c);
             return;
@@ -496,6 +501,8 @@ public sealed partial class Game
         {
             // Between planets: the trip's own burns (GameNavTrip.cs).
         }
+        else if (o.Kind == NavKind.Come && o.ComeSpace && Players.GetValueOrDefault(o.By) is { Alive: true } who)
+            a = NavBesideInSpace(s, sys, o, c, who, pos, f.Ships.VelocityOf(i), t, aMax); // (its player is out in space: it comes and holds beside them)
         else if (o.Kind == NavKind.Orbit && (o.Body == 0 || r.Length < 0.9 * SpaceShips.SphereOfInfluence(sys, o.Body)))
         {
             var was = o.Phase == NavPhase.Orbiting;

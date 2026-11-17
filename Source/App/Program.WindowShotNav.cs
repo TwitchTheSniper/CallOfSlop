@@ -15,7 +15,7 @@ namespace CallOfSlop;
 /// </summary>
 public static unsafe partial class Program
 {
-    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup";
+    private static bool WsNavKnown(string action) => action.Split(' ', 2)[0].ToLowerInvariant() is "command" or "cmdpick" or "order" or "nav" or "hoist" or "speed" or "travel" or "cmdview" or "rclick" or "rclickup" or "spacewalk";
 
     private static bool WsNavVerb(Game g, Player me, string verb, string arg)
     {
@@ -104,6 +104,25 @@ public static unsafe partial class Program
                     WsSay(string.Create(inv, $"[nav] construct {c.Id} drive: {accel:0.00} m/s2, {(burn > 0 ? $"{c.FuelLeft / burn:0} s at full, dV {accel * c.FuelLeft / burn:0} m/s" : "no fuel burnt")}"));
                     WsSay(string.Create(inv, $"[nav] construct {c.Id}: {(c.SpaceAway != 0 ? "parked" : c.SpaceShip != 0 ? "space" : "sky")}, {height:0} m up, {c.Vel.Length():0.0} m/s, mass {c.Mass / 1000:0.0} t, fuel {c.FuelLeft:0} L, thrust {c.ThrustShow:0.00}, nav throttle {c.NavThrottle:0.00}, takes orders: {Game.NavProblem(c) ?? "yes"}; order: {(o == null ? "none" : $"{Game.NavText(s.System, o)}, {o.Phase}, {o.Distance:0} m to go, {o.SpeedError:0.0} m/s off{(o.ArriveNs != 0 ? $", trip leaves day {o.DepartNs / 864e11:0.0}, arrives day {o.ArriveNs / 864e11:0.0}, {o.DvNeed / 1000:0.00} km/s" : "")}")}; space day {s.Now.Seconds / 86400:0.00} at {s.Speed}x{((c.SpaceAway != 0 ? g.SpaceAwayLine(c) : g.SpaceOrbitLine(c)) is { } line ? "; " + line : "")}{(g.Local is { Alive: true } you && c.SpaceShip == 0 ? $"; {Vector3.Distance(you.Position, c.WorldCom):0} m from you" : "")}"));
                 }
+                return true;
+            }
+            case "spacewalk" when g.IsServer:
+            {
+                // "spacewalk KM [SIDE]": this player out on a spacewalk KM km over the ground under the picked craft, SIDE m (default 150) to one side of it, at rest.
+                if (g.Constructs.Get(Ui.CommandPicked) is not { } c || GravityFrames.Point is not { } planet || World.Map.Planetoid is not { } pl
+                    || words.Length < 1 || !float.TryParse(words[0], inv, out var km))
+                {
+                    WsFail("spacewalk KM [SIDE]: pick a craft first (command, cmdpick), on a planetoid");
+                    return true;
+                }
+                var side = words.Length > 1 && float.TryParse(words[1], inv, out var sm) ? sm : 150f;
+                var up = Vector3.Normalize(c.WorldCom - planet.Center);
+                var across = Vector3.Normalize(Vector3.Cross(up, MathF.Abs(up.Y) < 0.9f ? Vector3.UnitY : Vector3.UnitX));
+                me.Sim.RideBody = 0;
+                me.Sim.Position = planet.Center + up * ((float)pl.Radius + km * 1000f) + across * side;
+                me.Sim.Velocity = Vector3.Zero;
+                WsSay(string.Create(inv, $"[nav] you are out at {km:0.0} km, {side:0} m beside construct {c.Id}'s line"));
+                _wsWait = 10;
                 return true;
             }
             case "hoist" when g.IsServer:
