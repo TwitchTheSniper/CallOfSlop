@@ -364,6 +364,8 @@ public static class Styles
     {
         Name = "Militia",
         Group = "Militia",
+        Extra = ["Ore Hauler"], // (the factory kit's ore loop: listed so --gen-vehicles compares the committed MilitiaOreHauler1.json)
+        Seeds = new() { ["Ore Hauler"] = [1] },
         Palette = new()
         {
             ["rust"] = ["#4f5a3a", "#47523a", "#5c6644"],

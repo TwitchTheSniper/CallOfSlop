@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-factory-function/1",
+  "name": "extraction",
+  "about": "An extraction post (factory-generator.md 3.1): Drill Modules on the floor's back edge over the deposit, each chuting into the ore buffer, the buffer into the loading bin at the road, a small plant, a mast. The target is raw ore an hour; one drill a tier's gather rate.",
+  "size": "post",
+  "target": { "iron ore": 108000 },
+  "spare": 0.0,
+  "intakeMinutes": 0,
+  "outputMinutes": 2,
+  "powerMargin": 0.25,
+  "dock": "road",
+  "roles": [
+    { "role": "drill", "zone": "intake" },
+    { "role": "buffer", "zone": "storage" },
+    { "role": "loading", "zone": "output" },
+    { "role": "power", "zone": "power" },
+    { "role": "control", "zone": "control" },
+    { "role": "mast", "zone": "control" }
+  ]
+}

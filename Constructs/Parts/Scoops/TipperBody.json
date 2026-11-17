@@ -1,0 +1,303 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tipper Body",
+  "description": "A truck bed or loading skip that tips sideways: hang it on a Motor Hinge by a hinge socket under one side and turn it past 55 degrees to pour its load over that side into whatever store is under it.",
+  "group": "Gathering",
+  "section": "Scoops",
+  "role": "storage",
+  "tool": "welder",
+  "storage": {
+    "bulk": {
+      "material": "any",
+      "capacity": 600,
+      "min": [
+        -0.945,
+        0.055,
+        -1.195
+      ],
+      "max": [
+        0.945,
+        0.55,
+        1.195
+      ]
+    },
+    "scoop": {
+      "edge": [
+        [
+          -0.99,
+          0.6,
+          1.24
+        ],
+        [
+          -0.99,
+          0.6,
+          -1.24
+        ]
+      ],
+      "rim": [
+        [
+          0.99,
+          0.6,
+          1.24
+        ],
+        [
+          0.99,
+          0.6,
+          -1.24
+        ]
+      ],
+      "cuts": [
+        -1,
+        0,
+        0
+      ],
+      "mouth": [
+        0,
+        1,
+        0
+      ],
+      "reach": 0.05,
+      "cutForce": 100000,
+      "biteRadius": 0.3,
+      "spillDegrees": 55,
+      "pourSeconds": 6.0
+    }
+  },
+  "mass": 374.4,
+  "health": 1872,
+  "armour": 20,
+  "material": "steel",
+  "color": "#b8862a",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -1.0,
+        0.0,
+        -1.25
+      ],
+      "max": [
+        1.0,
+        0.05,
+        1.25
+      ]
+    },
+    {
+      "min": [
+        -1.0,
+        0.05,
+        -1.25
+      ],
+      "max": [
+        -0.95,
+        0.6,
+        1.25
+      ]
+    },
+    {
+      "min": [
+        0.95,
+        0.05,
+        -1.25
+      ],
+      "max": [
+        1.0,
+        0.6,
+        1.25
+      ]
+    },
+    {
+      "min": [
+        -0.95,
+        0.05,
+        -1.25
+      ],
+      "max": [
+        0.95,
+        0.596,
+        -1.2
+      ]
+    },
+    {
+      "min": [
+        -0.95,
+        0.05,
+        1.2
+      ],
+      "max": [
+        0.95,
+        0.596,
+        1.25
+      ]
+    },
+    {
+      "min": [
+        -1.02,
+        0.54,
+        -1.247
+      ],
+      "max": [
+        -0.98,
+        0.62,
+        1.247
+      ],
+      "color": "#55585c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.98,
+        0.54,
+        -1.247
+      ],
+      "max": [
+        1.02,
+        0.62,
+        1.247
+      ],
+      "color": "#55585c",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.038,
+        0.003,
+        -0.9775
+      ],
+      "max": [
+        -1.003,
+        0.52,
+        -0.8975
+      ],
+      "color": "#6a6256",
+      "detail": true
+    },
+    {
+      "min": [
+        1.003,
+        0.003,
+        -0.9775
+      ],
+      "max": [
+        1.038,
+        0.52,
+        -0.8975
+      ],
+      "color": "#6a6256",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.038,
+        0.003,
+        -0.3525
+      ],
+      "max": [
+        -1.003,
+        0.52,
+        -0.2725
+      ],
+      "color": "#6a6256",
+      "detail": true
+    },
+    {
+      "min": [
+        1.003,
+        0.003,
+        -0.3525
+      ],
+      "max": [
+        1.038,
+        0.52,
+        -0.2725
+      ],
+      "color": "#6a6256",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.038,
+        0.003,
+        0.2725
+      ],
+      "max": [
+        -1.003,
+        0.52,
+        0.3525
+      ],
+      "color": "#6a6256",
+      "detail": true
+    },
+    {
+      "min": [
+        1.003,
+        0.003,
+        0.2725
+      ],
+      "max": [
+        1.038,
+        0.52,
+        0.3525
+      ],
+      "color": "#6a6256",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.038,
+        0.003,
+        0.8975
+      ],
+      "max": [
+        -1.003,
+        0.52,
+        0.9775
+      ],
+      "color": "#6a6256",
+      "detail": true
+    },
+    {
+      "min": [
+        1.003,
+        0.003,
+        0.8975
+      ],
+      "max": [
+        1.038,
+        0.52,
+        0.9775
+      ],
+      "color": "#6a6256",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hingeL",
+      "at": [
+        -0.875,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "hingeR",
+      "at": [
+        0.875,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "under",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}
