@@ -484,7 +484,7 @@ public static class ConstructWorks
             {
                 var o = c.OtherEnd(e);
                 var d = c.Parts[o].D;
-                if (asmOf[o] >= 0 || !IsPiece(d) || d.WorksKind == WorksKind.Mount)
+                if (asmOf[o] >= 0 || !IsDrivePiece(d)) // (a drive's stack is drive pieces only: a gun's generator bolted on behind it stays the gun's)
                     continue;
                 if (n >= Construct.MaxWorksAssembly)
                 {
@@ -778,7 +778,7 @@ public static class ConstructWorks
         for (var k = 0; k < c.ThrusterCount; k++)
         {
             var d = c.Parts[c.Thrusters[k].Part].D;
-            if (d.ThrustForce > most && d.WorksNeeds == 0 && c.Thrusters[k].MixForward >= cos)
+            if (d.Group == "Ship" && d.ThrustForce > most && d.WorksNeeds == 0 && c.Thrusters[k].MixForward >= cos) // (ships only, as the part kit's old refusal was: an aircraft's jet has no works)
                 failures.Add($"works: {d.Name} (part {c.Thrusters[k].Part}), {Rating(d)}, is a main drive with no engine: over {Force(most)} pushing the craft forward, it needs works (Works.Head) and its own engine behind its bell");
         }
     }
