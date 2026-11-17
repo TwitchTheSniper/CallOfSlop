@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Shuttle",
-  "description": "The Zero Day's boarding pod: it flies a pilot and four boarders to a ship, grips its hull with four magnetic grapples and burns a way in through the hull under its belly hatch with its breaching cutter. Port switches in the cockpit: the grapples (aft) and the cutter (fore).",
+  "description": "The Zero Day's shuttle: a pilot and four boarders, two drives on its stern with their engines in the cabin, and a docking hatch under its belly that opens by itself while it is docked over another. It can grip a ship's hull with four magnetic grapples (the port cockpit switch).",
   "steps": [
     {
       "part": "Shuttle Belly"
@@ -141,8 +141,32 @@
     {
       "part": "Shuttle Drive",
       "on": 4,
-      "socket": "drive",
-      "by": "top"
+      "socket": "driveL",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Core XS",
+      "on": 4,
+      "socket": "engineL",
+      "by": "front"
+    },
+    {
+      "part": "Shuttle Drive",
+      "on": 4,
+      "socket": "driveR",
+      "by": "mount"
+    },
+    {
+      "part": "Drive Core XS",
+      "on": 4,
+      "socket": "engineR",
+      "by": "front"
+    },
+    {
+      "part": "Docking Hatch",
+      "on": 0,
+      "socket": "hatch",
+      "by": "base"
     },
     {
       "part": "Hull Grapple",
@@ -169,21 +193,9 @@
       "by": "top"
     },
     {
-      "part": "Breaching Cutter",
-      "on": 0,
-      "socket": "cutter",
-      "by": "top"
-    },
-    {
       "part": "Bakelite Switch",
       "on": 1,
       "socket": "switchB",
-      "by": "back"
-    },
-    {
-      "part": "Bakelite Switch",
-      "on": 1,
-      "socket": "switchA",
       "by": "back"
     },
     {
@@ -245,7 +257,7 @@
       "on": 0,
       "socket": "lockerL",
       "by": "bottom",
-      "spin": 3,
+      "spin": 1,
       "paint": "#e0b020",
       "finish": "worn paint"
     },
@@ -254,7 +266,7 @@
       "on": 0,
       "socket": "lockerR",
       "by": "bottom",
-      "spin": 3,
+      "spin": 2,
       "paint": "#e0b020",
       "finish": "worn paint"
     },
@@ -357,52 +369,48 @@
   ],
   "wires": [
     [
-      29,
-      24
-    ],
-    [
-      29,
-      25
-    ],
-    [
-      29,
-      26
-    ],
-    [
-      29,
-      27
-    ],
-    [
-      30,
+      32,
       28
     ],
     [
-      31,
-      32
+      32,
+      29
     ],
     [
-      43,
-      44
+      32,
+      30
     ],
     [
-      43,
-      45
+      32,
+      31
     ],
     [
-      46,
+      33,
+      34
+    ],
+    [
+      45,
+      46
+    ],
+    [
+      45,
       47
     ],
     [
-      46,
-      48
-    ],
-    [
-      46,
+      48,
       49
     ],
     [
-      46,
+      48,
       50
+    ],
+    [
+      48,
+      51
+    ],
+    [
+      48,
+      52
     ]
   ],
   "conduit": true

@@ -21,6 +21,7 @@ public struct CDoor
     public bool Wired; // a wire runs into one of its ports: the server reads them each tick (edges only)
     public bool Seen; // the ports below hold a reading (no edge on the first)
     public bool LastOpen, LastToggle;
+    public bool DockSeen, Mated, MateNow, ShutDue; // a docking hatch ("dock": true): looked at once, mated at the last look, at this one, and to shut once nobody is in it (ConstructDoors.StepDocks)
     public float StartF; // how far open it was drawn when it last started moving (0 shut, 1 open)
     public double StartAt; // and when, on ConstructRender.Now's clock
 }
@@ -37,6 +38,7 @@ public sealed partial class Construct
     public int DoorCount;
     public ushort[] DoorLeaves = [];
     public int DoorLeafCount;
+    public int DoorDockCount; // docking hatches among them (ConstructDoors.StepDocks)
     public int DoorMovingCount, DoorWiredCount; // (the server's step looks at a body only while one is above 0)
     public int DoorEpoch; // goes up whenever the door list is built again (the merged meshes plan again, leaving door parts out: ConstructRenderBatch.cs)
     private int _doorStamp = -1;
@@ -65,7 +67,7 @@ public sealed partial class Construct
                 _doorOld = new CDoor[Doors.Length];
             Array.Copy(Doors, _doorOld, oldCount);
         }
-        DoorCount = DoorLeafCount = DoorMovingCount = DoorWiredCount = 0;
+        DoorCount = DoorLeafCount = DoorMovingCount = DoorWiredCount = DoorDockCount = 0;
         foreach (var i in Specials)
         {
             ref var p = ref Parts[i];
@@ -105,6 +107,9 @@ public sealed partial class Construct
                 dr.Seen = _doorOld[o].Seen;
                 dr.LastOpen = _doorOld[o].LastOpen;
                 dr.LastToggle = _doorOld[o].LastToggle;
+                dr.DockSeen = _doorOld[o].DockSeen;
+                dr.Mated = _doorOld[o].Mated;
+                dr.ShutDue = _doorOld[o].ShutDue;
             }
             else
             {
@@ -165,6 +170,8 @@ public sealed partial class Construct
         {
             if (Doors[k].Wired)
                 DoorWiredCount++;
+            if (Parts[Doors[k].Part].D.Door!.Dock)
+                DoorDockCount++;
             if ((Parts[Doors[k].Part].State & ConstructDoors.Moving) != 0)
                 DoorMovingCount++;
         }

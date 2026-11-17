@@ -107,7 +107,7 @@ public sealed partial class Game
         }
         if (p.ShieldCharges > 0 && now >= p.ShieldUntil)
             p.ShieldCharges = 0;
-        if (p.Health >= World.MaxHealth || now - p.LastHurtTime < Perks.RegenDelay(p.Perks)) // Quick Fix: sooner
+        if (p.InShell || p.Health >= World.MaxHealth || now - p.LastHurtTime < Perks.RegenDelay(p.Perks)) // Quick Fix: sooner; a robot shell never heals by itself (a repair does: GameShellWear.cs)
         {
             p.Regenerating = false;
             p.RegenCarry = 0;

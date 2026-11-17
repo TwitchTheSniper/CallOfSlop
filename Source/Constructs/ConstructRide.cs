@@ -613,7 +613,10 @@ public static partial class ConstructRide
     }
 
     /// <summary>Would a body standing at <paramref name="feet"/> on part <paramref name="onPart"/> be inside another of the construct's solid boxes?</summary>
-    public static bool BlockedOn(Construct c, int onPart, Vector3 feet, float height)
+    public static bool BlockedOn(Construct c, int onPart, Vector3 feet, float height) => BlockedBy(c, onPart, feet, height) >= 0;
+
+    /// <summary>As <see cref="BlockedOn"/>: the part in the way, or -1.</summary>
+    public static int BlockedBy(Construct c, int onPart, Vector3 feet, float height)
     {
         var mid = feet + new Vector3(0, height * 0.5f + 0.05f, 0);
         var here = c.ToLocal(mid);
@@ -635,9 +638,9 @@ public static partial class ConstructRide
                 // (a body: radius across, half its height up and down; the floor it stands on is just below)
                 if (rel.X < half.X + World.PlayerRadius * 0.7f && rel.Z < half.Z + World.PlayerRadius * 0.7f && rel.Y < half.Y + height * 0.45f
                     && !(i == onPart && rel.Y >= half.Y + height * 0.45f - 0.1f))
-                    return true;
+                    return i;
             }
         }
-        return false;
+        return -1;
     }
 }

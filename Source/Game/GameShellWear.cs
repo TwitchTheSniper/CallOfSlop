@@ -152,16 +152,20 @@ public sealed partial class Game
     public static ConstructPartDef? ShellSpare(ShellWork w) => _spares[(int)w] ??= ConstructParts.Find(ShellWear.SpareName(w));
 
     /// <summary>What the attach tool's Fire would do to a standing shell with this wear, for this player.</summary>
-    private enum ShellFix : byte { Nothing, Fit, Service, NeedsPart }
+    private enum ShellFix : byte { Nothing, Fit, Service, NeedsPart, Repair }
 
     /// <summary>
-    /// Both sides: what Fire does to a standing shell. The most worn work past the service mark first: a spare in hand or in the inventory
-    /// fits a new one; else a worn (not failed) work is serviced; a failed one with no spare is said.
+    /// Both sides: what Fire does to a standing shell. Damage first (shells don't heal by themselves: a repair patches it back to full);
+    /// then the most worn work past the service mark: a spare in hand or in the inventory fits a new one; else a worn (not failed)
+    /// work is serviced; a failed one with no spare is said.
     /// </summary>
-    private ShellFix ShellFixOf(byte player, in ShellCond c, out ShellWork work)
+    private ShellFix ShellFixOf(byte player, in ShellCond c, int health, out ShellWork work)
     {
         var t = ShellWear.Current;
         var mark = ShellWear.WearOf(t.ServiceToPct);
+        work = ShellWork.Plating;
+        if (health < World.MaxHealth)
+            return ShellFix.Repair;
         work = ShellWork.LegL;
         ShellWork? service = null, needs = null;
         Span<int> order = stackalloc int[ShellWear.Works];
@@ -225,8 +229,17 @@ public sealed partial class Game
         ShellCond wear = default;
         ShellWear.Read(sp, d, ref wear);
         var t = ShellWear.Current;
-        switch (ShellFixOf(p.Id, wear, out var w))
+        var health = ShellWear.HealthOf(sp, d);
+        switch (ShellFixOf(p.Id, wear, health, out var w))
         {
+            case ShellFix.Repair:
+                if (SandboxHands.MendPay(Constructs, p.Id, p.Eye, t.ServiceMaterial, t.ServiceCost) is { } owes)
+                    return owes;
+                ShellWear.PutHealth(ref sp, d, World.MaxHealth);
+                ShellWearStore(c, part, wear);
+                SandboxHands.Done.Add($"player {p.Id}: repaired the robot shell on construct {c.Id} ({health} to {World.MaxHealth})");
+                SandboxHands.Notices.Add((p.Id, "Robot shell repaired: its damage is patched."));
+                return null;
             case ShellFix.Fit:
             {
                 var spare = ShellSpare(w)!;
@@ -342,6 +355,7 @@ public sealed partial class Game
         {
             for (var k = 0; k < ShellWear.Works; k++)
                 p.ShellWear[k] = Math.Min(p.ShellWear[k], mark);
+            p.Health = World.MaxHealth; // (its damage patched too: shells don't heal by themselves)
             _sh[p.Id].Sent = p.ShellWear;
             ShellBroadcast(p);
             SandboxHands.Notices.Add((p.Id, "The crew's engineer went over your shell: everything serviced."));
@@ -353,6 +367,7 @@ public sealed partial class Game
             ShellWear.Read(d.Parts[0], d.Parts[0].D, ref wear);
             for (var k = 0; k < ShellWear.Works; k++)
                 wear[k] = Math.Min(wear[k], mark);
+            ShellWear.PutHealth(ref d.Parts[0], d.Parts[0].D, World.MaxHealth);
             ShellWearStore(d, 0, wear);
             Console.WriteLine($"[crew] construct {c.Id}: its engineer serviced the robot shell {d.Id}");
         }
@@ -373,7 +388,7 @@ public sealed partial class Game
         ushort shell = 0;
         byte wearer = 0;
         foreach (var p in Players.Values)
-            if (p.InShell && p.Alive && p.Sim.RideBody == c.Id && t.NeedsService(p.ShellWear) && (p.Id == c.Owner || Factions.Shares(c.Owner, p.Id) || s.Own))
+            if (p.InShell && p.Alive && p.Sim.RideBody == c.Id && (t.NeedsService(p.ShellWear) || p.Health < World.MaxHealth) && (p.Id == c.Owner || Factions.Shares(c.Owner, p.Id) || s.Own))
             {
                 where = p.Position;
                 wearer = (byte)(p.Id + 1);
@@ -386,7 +401,7 @@ public sealed partial class Game
                     continue;
                 ShellCond wear = default;
                 ShellWear.Read(d.Parts[0], d.Parts[0].D, ref wear);
-                if (!t.NeedsService(wear))
+                if (!t.NeedsService(wear) && ShellWear.HealthOf(d.Parts[0], d.Parts[0].D) >= World.MaxHealth)
                     continue;
                 where = d.ToWorld(Vector3.Zero);
                 shell = d.Id;
@@ -417,8 +432,10 @@ public sealed partial class Game
             return null;
         ShellCond wear = default;
         ShellWear.Read(c.Parts[part], c.Parts[part].D, ref wear);
-        var fix = ShellFixOf(LocalId, wear, out var w);
+        var health = ShellWear.HealthOf(c.Parts[part], c.Parts[part].D);
+        var fix = ShellFixOf(LocalId, wear, health, out var w);
         long key = (long)c.Id << 40 ^ (long)fix << 36 ^ (long)w << 32 ^ SandboxInv.Of(LocalId).Version;
+        key = key * 31 + health;
         for (var k = 0; k < ShellWear.Works; k++)
             key = key * 31 + wear[k];
         if (key == _swLookKey)
@@ -430,10 +447,13 @@ public sealed partial class Game
             if (wear[k] > ShellWear.WearOf(t.ServiceToPct))
                 faults.Append(faults.Length > 0 ? ", " : "").Append(ShellWear.ShortOf((ShellWork)k)).Append(' ').Append(ShellWear.Pct(wear[k])).Append('%');
         var worst = ShellWear.Worst(wear, out var most);
+        if (health < World.MaxHealth)
+            faults.Insert(0, faults.Length > 0 ? $"health {health * 100 / World.MaxHealth}%, " : $"health {health * 100 / World.MaxHealth}%");
         var state = faults.Length > 0 ? faults.ToString() : $"in good order ({ShellWear.Pct(most)}% at worst)";
         var cost = t.ServiceCost > 0 ? $"{t.ServiceCost} {t.ServiceMaterial}" : "free";
         _swLookText = fix switch
         {
+            ShellFix.Repair => $"Robot Shell: {state} - {SandboxKeys.Fire}: repair the damage ({cost})",
             ShellFix.Fit => $"Robot Shell: {state} - {SandboxKeys.Fire}: fit a new {ShellWear.NameOf(w)}",
             ShellFix.Service => $"Robot Shell: {state} - {SandboxKeys.Fire}: service the {ShellWear.NameOf(w)} ({cost})",
             ShellFix.NeedsPart => $"Robot Shell: {state} - the {ShellWear.NameOf(w)} needs a new {ShellWear.SpareName(w)}",
