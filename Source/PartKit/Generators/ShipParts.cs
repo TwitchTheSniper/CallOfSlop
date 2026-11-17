@@ -1334,26 +1334,29 @@ public sealed class ShipParts : IPartGenerator
     // The stern pods' and the saddle tanks' middles and sizes (Sx metres), the main drives' and lift jets' pushes (N).
     private const double PodX = 6.1, PodY = 1.4, PodR = 0.9, SadX = 5.8, SadY = 1.0, SadR = 0.65, SadZ = 5.6, PodLiftZ = 14.2;
     private const double DriveForce = 600000, LiftForce = 800000, JetBurn = 3.0; // (l/s per MN, as the shipped jets)
-    private const double PodZ = 14.5;
+    private const double PodZ = 14.5, PodEng = 14.85; // the pod's middle (its socket), the bulkhead between its tank and its engine housing
     internal const double RcsForce = 80000, HeavyRcsForce = 250000; // N: the attitude jets (Karl, 2026-11-15: a ship needs thrusters pointing every way to turn every way)
     private const double PodRcsZ = 15.4, PodRcsDownZ = 15.9, SadRcsZ = 6.1, SadRcsDownZ = 6.95;
     private static readonly double PodInner = Cm(SkinHalf(PodZ, PodY)), SadInner = Cm(SkinHalf(SadZ, SadY));
 
     private static Part Pod(int side)
     {
-        var p = new Part(side < 0 ? "Rust Bucket Pod L" : "Rust Bucket Pod R", Small, "Rust bucket", "One of the rust bucket's engine pods: a patched nacelle full of fuel, its main drive at the back and a lift jet under it.", role: "fueltank", tool: "welder", material: "steel", color: HullPaint, group: Group);
+        var p = new Part(side < 0 ? "Rust Bucket Pod L" : "Rust Bucket Pod R", Small, "Rust bucket", "One of the rust bucket's engine pods: a patched nacelle full of fuel, a lift jet under it, and at its back the engine housing: the main drive on the tail plate outside, its Drive Core inside behind it, a service hatch in the outboard flank.", role: "fueltank", tool: "welder", material: "steel", color: HullPaint, group: Group);
         double cx = Cx + side * PodX, cy = PodY, r = PodR;
-        Nacelle(p, cx, cy, [(10.4, 0.35), (11.3, r), (16.6, r), (17.2, 0.75)], 1, "dirty steel", "soot");
-        // A stepped intake cowl at the front, three cooling rings, the collar the drive bolts to, a fairing along its top.
+        Nacelle(p, cx, cy, [(10.4, 0.35), (11.3, r), (PodEng, r)], 1, "dirty steel", "soot");
+        // The engine housing (ship-works.md 15.4, Karl 2026-11-16: "the nacelles don't have any thrust components in them"): the
+        // tank stops at a bulkhead and the pod's tail is hollow round the drive's own Drive Core S, reached through a hatch.
+        EngineHousing.Draw(p, P, cx, cy, Flat(r), EngineHousing.HalfFlat(Flat(r)), PodEng, 17.2, side, Patch, HullPaint, Frame, Stripe, "rusty paint", ShipWorksParts.CoreR[0], ShipWorksParts.CoreD[0], ShipWorksParts.CoreD[0]);
+        Collar(p, cx, cy, PodEng - 0.08, PodEng + 0.12, r * 1.02, r * 1.08, Armour, "plated steel"); // (the band over the bulkhead)
+        // A stepped intake cowl at the front, three cooling rings, a fairing along its top.
         Collar(p, cx, cy, 10.95, 11.45, r * 0.98, r * 1.1, Armour, "plated steel");
         Collar(p, cx, cy, 11.45, 11.75, r * 1.1, r * 1.04, Frame, "dirty steel");
         foreach (var z in new[] { 13.2, 13.5, 13.8 })
             Collar(p, cx, cy, z, z + 0.08, r * 1.01, r * 1.08, "#2d3033", "steel");
-        Collar(p, cx, cy, 16.3, 16.75, r * 1.01, r * 1.07, Armour, "plated steel");
         Prism(p, [P(cx - 0.18, cy + r * 0.97, 11.8), P(cx + 0.18, cy + r * 0.97, 11.8), P(cx + 0.1, cy + r * 1.12, 12.3), P(cx - 0.1, cy + r * 1.12, 12.3)],
-            [P(cx - 0.18, cy + r * 0.97, 16.2), P(cx + 0.18, cy + r * 0.97, 16.2), P(cx + 0.1, cy + r * 1.12, 15.8), P(cx - 0.1, cy + r * 1.12, 15.8)], Armour2, "plated steel");
-        Detail(p, cx - side * 0.2, cy + 0.3, 14.6, cx - side * 0.83, cy + 0.42, 15.6, Stripe, "hazard paint");
-        // The pod is a nacelle, mended outside (ship works, Karl 2026-11-16): a grab rail along its outboard flank and a step under it, for a space walk or from the ground.
+            [P(cx - 0.18, cy + r * 0.97, PodEng - 0.1), P(cx + 0.18, cy + r * 0.97, PodEng - 0.1), P(cx + 0.1, cy + r * 1.12, PodEng - 0.4), P(cx - 0.1, cy + r * 1.12, PodEng - 0.4)], Armour2, "plated steel");
+        Detail(p, cx - side * 0.2, cy + 0.3, 13.6, cx - side * 0.83, cy + 0.42, 14.5, Stripe, "hazard paint");
+        // Its engine is mended outside, through the hatch (ship works, Karl 2026-11-16): a grab rail along its outboard flank and a step under it, for a space walk or from the ground.
         foreach (var z in new[] { 14.1, 15.0 })
             Detail(p, cx + side * 0.74, cy + 0.43, z - 0.03, cx + side * 1.06, cy + 0.47, z + 0.03, "#9a9c98", "steel");
         Detail(p, cx + side * 1.03, cy + 0.41, 14.0, cx + side * 1.09, cy + 0.49, 15.1, Stripe, "worn paint");
@@ -1365,13 +1368,13 @@ public sealed class ShipParts : IPartGenerator
             var inner = Cx + side * Cm(Math.Min(SkinHalf(z0, PodY), SkinHalf(z1, PodY)));
             Solid(p, inner, 1.15, z0, outer, 1.65, z1, Frame, "dirty steel");
         }
-        Hidden(p, cx - r * 0.9, cy - r * 0.9, 11.3, cx + r * 0.9, cy + r * 0.9, 17.2);
+        Hidden(p, cx - r * 0.9, cy - r * 0.9, 11.3, cx + r * 0.9, cy + r * 0.9, PodEng - 0.004);
         Hidden(p, Cx + side * PodInner, PodY - 0.1, PodZ - 0.1, outer, PodY + 0.1, PodZ + 0.1); // (what the socket is on)
         Sock(p, "hull", Cx + side * PodInner, PodY, PodZ, side < 0 ? "+x" : "-x");
-        Sock(p, "drive", cx, cy, 17.2, "+z");
+        Works.Mount(p, outside: true); // (the housing's tail plate: the drive bolts to it outside, its Drive Core inside)
         Sock(p, "lift", cx, cy - r * 0.9, PodLiftZ, "-y");
         // The attitude jets: up on the fairing, down under the pod behind the lift jet, out on the outboard flat.
-        RcsMount(p, "rcsUp", cx, cy + r * 1.12, PodRcsZ, "+y", 0.36, Frame);
+        RcsMount(p, "rcsUp", cx, cy + r * 1.12, PodEng - 0.75, "+y", 0.36, Frame); // (on the fairing, ahead of the housing)
         RcsMount(p, "rcsDown", cx, cy - Flat(r), PodRcsDownZ, "-y", 0.36, Frame);
         RcsMount(p, "rcsOut", cx + side * Flat(r), cy, PodRcsZ, side < 0 ? "-x" : "+x", 0.36, Frame);
         p.Set(("fuelTank", Kw(("capacity", 2500))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(cx + side * r * 0.9, cy, 13.0).Cast<object>()], side < 0 ? "-x" : "+x", "fuel"))));
@@ -1465,7 +1468,7 @@ public sealed class ShipParts : IPartGenerator
         p.Add(Box([-0.5, -0.5, 0], [0.5, 0.5, 0.55], hidden: true));
         p.Sock("front", [0, 0, 0], "-z");
         p.Set(("thruster", Kw(("force", DriveForce), ("spool", 1.2), ("exhaust", "+z"), ("at", Py.L(0, 0, 0.7)), ("burnRate", Py.Round(DriveForce / 1e6 * JetBurn, 4)), ("gimbal", 12), ("gimbalRate", 20))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [0.5, 0, 0.3], "+x", "fuel"))));
-        Works.Head(p, Works.Table(), "torch", DriveForce, pod: true); // (its works are in the nacelle: mended outside, on a space walk or landed; Karl 2026-11-16)
+        Works.Head(p, Works.Table(), "torch", DriveForce, nacelle: true); // (its engine is in the pod behind it: mended through the hatch, on a space walk or landed; ship-works.md 15)
         return p.Stats(1800, 4000, 12, 6.0);
     }
 
@@ -1486,7 +1489,6 @@ public sealed class ShipParts : IPartGenerator
         p.Add(Box([-0.44, -0.55, -0.44], [0.44, -0.26, 0.44], hidden: true));
         p.Sock("top", [0, 0, 0], "+y");
         p.Set(("thruster", Kw(("force", LiftForce), ("spool", 1.0), ("exhaust", "-y"), ("at", Py.L(0, -0.55, 0)), ("burnRate", Py.Round(LiftForce / 1e6 * JetBurn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [-0.46, -0.13, 0], "-x", "fuel"))));
-        Works.Head(p, Works.Table(), "torch", LiftForce, pod: true); // (a pod under its tank, nothing walkable over it: mended from underneath)
         return p.Stats(2500, 4000, 12, 6.0);
     }
 
@@ -2033,6 +2035,8 @@ public sealed class ShipParts : IPartGenerator
         foreach (var pod in pods)
         {
             bp.Hang("Rust Bucket Drive", pod, "drive", "front");
+            bp.Hang("Drive Core S", pod, "core", "front"); // (its engine, inside the housing on the drive's axis, bolted to the tail plate)
+            Works.HangHatch(bp, pod, pod == pods[0] ? -1 : 1);
             bp.Hang("Rust Bucket Lift Jet", pod, "lift", "top");
         }
         var foreLift = saddles.Select(t => bp.Hang("Rust Bucket Lift Jet", t, "lift", "top")).ToArray();

@@ -16,8 +16,8 @@ public sealed partial class Ui
     private ushort _cmdOrderShip;
     private int _cmdOrderBody = -1; // the world to orbit (-1: none under the click)
     private int _cmdOrderPointBody = -1; // the body a point in space is measured from (-1: no point)
-    private Vec3d _cmdOrderPoint, _cmdOrderGround;
-    private bool _cmdOrderHasGround;
+    private Vec3d _cmdOrderPoint, _cmdOrderGround, _cmdOrderLand;
+    private bool _cmdOrderHasGround, _cmdOrderHasLand, _cmdOrderCome;
     private float _cmdOrderKm, _cmdOrderKmMin, _cmdOrderKmMax;
     private float2 _cmdOrderAt;
     private string _cmdOrderTitle = "", _cmdOrderOrbit = "", _cmdOrderGo = "", _cmdOrderNote = "";
@@ -40,12 +40,17 @@ public sealed partial class Ui
         var sys = s.System;
         ref var cr = ref _cmdCraft[k];
         var hit = CmdHit(s, m, out var body);
-        if (hit >= 0)
+        // On your own marker: it can come to you (a craft beside you is under the click too).
+        var come = CmdCanCome(g, c) && g.Local is { } me && (m - CmdP(_cvPose.ToEcliptic(Vec3d.From(me.Position)))).Length() < 14 * _scale;
+        if (hit >= 0 && !come)
             return; // (another craft: nothing to tell it yet)
         _cmdOrderShip = c.Id;
         _cmdOrderBody = -1;
         _cmdOrderPointBody = -1;
-        _cmdOrderHasGround = false;
+        _cmdOrderHasGround = _cmdOrderHasLand = false;
+        _cmdOrderCome = come;
+        if (come)
+            body = s.Bubble.Body;
         if (body > 0)
         {
             _cmdOrderBody = body;
@@ -55,15 +60,17 @@ public sealed partial class Ui
             _cmdOrderKmMax = (float)Math.Max(_cmdOrderKmMin * 4, Math.Min(0.5 * SpaceShips.SphereOfInfluence(sys, body), 60 * b.Radius) / 1000);
             _cmdOrderKm = MathF.Round(_cmdOrderKmMin + 0.3f, 1);
             _cmdOrderOrbit = "ORBIT " + _cmdBodyNames[body];
-            // The ground under the click, when the ship is in that world's sky.
-            if (body == s.Bubble.Body && c.SpaceShip == 0 && CmdOnBall(m, sys.PositionOf(body, _cvTime), b.Radius, out var onBall))
+            // The ground under the click: a spot to land on, from the sky or from space, and in its sky a point to fly over.
+            if (body == s.Bubble.Body && !come && c.SpaceAway == 0 && CmdOnBall(m, sys.PositionOf(body, _cvTime), b.Radius, out var onBall))
             {
                 var world = _cvPose.FromEcliptic(sys.PositionOf(body, _cvTime) + onBall);
-                // (at the ship's own height over the ground: the autopilot holds that)
                 var centre = s.Bubble.GameCentre;
                 var up = (world - centre).Normalized();
+                _cmdOrderLand = centre + up * b.Radius;
+                _cmdOrderHasLand = CmdCanLand(c);
+                // (at the ship's own height over the ground: the autopilot holds that)
                 _cmdOrderGround = centre + up * (Vec3d.From(c.WorldCom) - centre).Length;
-                _cmdOrderHasGround = true;
+                _cmdOrderHasGround = c.SpaceShip == 0;
             }
         }
         else if (body < 0)
@@ -132,6 +139,10 @@ public sealed partial class Ui
                     ImGui.SliderFloat("km up##cmdorbit"u8, ref _cmdOrderKm, _cmdOrderKmMin, _cmdOrderKmMax, "%.1f"u8, ImGuiSliderFlags.Logarithmic);
                     if (ImGui.Button(_cmdOrderOrbit, new float2(300 * _scale, 0)))
                         send = NavKind.Orbit;
+                    if (_cmdOrderCome && ImGui.Button("COME TO ME AND LAND"u8, new float2(300 * _scale, 0)))
+                        send = NavKind.Come;
+                    if (_cmdOrderHasLand && ImGui.Button("LAND HERE"u8, new float2(300 * _scale, 0)))
+                        send = NavKind.Land;
                     if (_cmdOrderHasGround && ImGui.Button("FLY TO THIS SPOT OVER THE GROUND"u8, new float2(300 * _scale, 0)))
                         send = NavKind.Ground;
                 }
@@ -154,6 +165,12 @@ public sealed partial class Ui
                     case NavKind.GoTo:
                         g.NavSend(_cmdOrderShip, NavKind.GoTo, _cmdOrderPointBody, _cmdOrderPoint, 0);
                         break;
+                    case NavKind.Land:
+                        g.NavSend(_cmdOrderShip, NavKind.Land, _cmdOrderBody, _cmdOrderLand, 0);
+                        break;
+                    case NavKind.Come:
+                        g.NavSend(_cmdOrderShip, NavKind.Come, _cmdOrderBody, Vec3d.Zero, 0); // (the host works out the spot beside you)
+                        break;
                 }
                 if (send != NavKind.None)
                     ImGui.CloseCurrentPopup();
@@ -162,6 +179,19 @@ public sealed partial class Ui
         }
         ImGui.PopStyleColor(8);
         _cmdOrderShut = false;
+    }
+
+    /// <summary>Can this ship be told to come to the local player: they are on foot on the bubble's world, and it can land?</summary>
+    private static bool CmdCanCome(Game g, Construct c) =>
+        g.Local is { Alive: true } me && !g.SandboxHands.Hand(me.Id).Seated && me.Sim.RideBody != c.Id && c.SpaceAway == 0 && CmdCanLand(c);
+
+    /// <summary>Can it set down on a spot (not a plane or a rocket, which land on their own)?</summary>
+    private static bool CmdCanLand(Construct c)
+    {
+        if (c.StabCount == 0 || c.Stabs[0].Part >= c.PartCount)
+            return false;
+        ref var p = ref c.Parts[c.Stabs[0].Part];
+        return ConstructFlight.KeysOf(c, p, p.D) is not (FlightPattern.Plane or FlightPattern.Rocket);
     }
 
     /// <summary>Esc in the view: an open order menu closes first. False: nothing was open, the view itself may close.</summary>
@@ -183,6 +213,11 @@ public sealed partial class Ui
         if (kind == NavKind.None)
         {
             g.NavSend(c.Id, NavKind.None, 0, Vec3d.Zero, 0);
+            return null;
+        }
+        if (kind == NavKind.Come)
+        {
+            g.NavSend(c.Id, kind, s.Bubble.Body, Vec3d.Zero, 0);
             return null;
         }
         var body = s.System.IndexOf(bodyName);

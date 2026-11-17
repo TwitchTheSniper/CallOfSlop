@@ -42,6 +42,9 @@ public sealed class LinkRoute
     public string Why = "";
     public uint SentBy; // a Dispatcher's id that sent it (a one-off run), 0: the player's own
     public bool FuelShort;
+    public float ChargeBest; // Docked: the most its charge has been at this dock, and when (not saved: a load waits afresh)
+    public double ChargeBestAt = -1;
+    public bool ChargeStalled; // its charge stopped rising at a dock that charges: it leaves without waiting for ChargeLeave
 }
 
 /// <summary>Which lines a docked ship takes on: those for its route's stops, or (no route: the player flies it) every line waiting here.</summary>
@@ -252,12 +255,18 @@ public static class LinkRoutes
                     r.Why = $"fuel short: needs about {need:0} l, has {c.Fuel:0}{(r.Phase == RoutePhase.Docked ? " - refuelling at the dock" : "")}";
                     break;
                 }
-                if (r.Phase == RoutePhase.Docked && ChargeWait(world, c))
+                if (r.Phase == RoutePhase.Docked && ChargeWait(world, c, r, now))
                 {
                     r.Why = $"charging at the dock: {ConstructPower.Share(c) * 100:0}%, leaves at {ChargeLeave * 100:0}%";
                     break;
                 }
+                var stalled = r.ChargeStalled;
                 Depart(world, c, r);
+                if (stalled)
+                {
+                    r.Why += $" - its charge stopped rising at {ConstructPower.Share(c) * 100:0}% (it draws more than the clamp gives)";
+                    Console.WriteLine($"[linked] {c.DisplayName()}: {r.Why}");
+                }
                 break;
             }
             case RoutePhase.Leaving:
@@ -320,13 +329,26 @@ public static class LinkRoutes
     /// <summary>The share of its batteries a ship held by a clamp that charges waits for before it leaves (its lift fans or rotors run on them).</summary>
     public const float ChargeLeave = 0.5f;
 
-    /// <summary>Does a docked ship wait to charge? Only under its share, with batteries, held by a construct whose clamp charges and that has charge to give.</summary>
-    private static bool ChargeWait(ConstructWorld world, Construct c)
+    /// <summary>Seconds a docked ship waits with its charge not rising before it leaves anyway (it draws more than the clamp gives).</summary>
+    public const double ChargeStall = 30;
+
+    /// <summary>Does a docked ship wait to charge? Only under its share, with batteries, held by a construct whose clamp charges and that has
+    /// charge to give, and only while its charge still rises (none for <see cref="ChargeStall"/> s: <see cref="LinkRoute.ChargeStalled"/>).</summary>
+    private static bool ChargeWait(ConstructWorld world, Construct c, LinkRoute r, double now)
     {
-        if (c.ChargeCapacity <= 0 || ConstructPower.Share(c) >= ChargeLeave || world.Get(c.CarriedBy) is not { } holder || holder.Charge <= 1f)
+        r.ChargeStalled = false;
+        var share = ConstructPower.Share(c);
+        if (c.ChargeCapacity <= 0 || share >= ChargeLeave || world.Get(c.CarriedBy) is not { } holder || holder.Charge <= 1f)
             return false;
         var clamp = ConstructCargo.CarriedIn(holder, c);
-        return clamp >= 0 && holder.Parts[clamp].D.DockCharge > 0 && ConstructPower.On(holder, clamp);
+        if (clamp < 0 || holder.Parts[clamp].D.DockCharge <= 0 || !ConstructPower.On(holder, clamp))
+            return false;
+        if (r.ChargeBestAt < r.Since || share > r.ChargeBest + 0.002f)
+            (r.ChargeBest, r.ChargeBestAt) = (share, now); // (a new dock, or it rose: wait on)
+        if (now - r.ChargeBestAt < ChargeStall)
+            return true;
+        r.ChargeStalled = true;
+        return false;
     }
 
     /// <summary>Fuel a leg needs: 25% over the most its last trips used (none known: no wait).</summary>

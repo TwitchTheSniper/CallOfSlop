@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Zero Day Lift Jet",
-  "description": "A lift jet under the Zero Day's keel: 1.5 MN straight down. The keel is its mount, and its Drive Core stands in engineering.",
+  "description": "A lift jet under the Zero Day's keel: 1.5 MN straight down.",
   "group": "Ship",
   "section": "Zero Day frigate",
   "role": "thruster",
@@ -15,7 +15,7 @@
       -1.47,
       0
     ],
-    "burnRate": 3.0
+    "burnRate": 3.75
   },
   "ports": [
     {
@@ -31,11 +31,6 @@
       "face": "+x"
     }
   ],
-  "works": {
-    "needs": [
-      "core"
-    ]
-  },
   "flame": [
     {
       "at": [

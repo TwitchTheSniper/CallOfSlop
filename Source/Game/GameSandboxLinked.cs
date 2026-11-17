@@ -87,7 +87,7 @@ public sealed partial class Game
             if (o == null || o.Kind != NavKind.Orbit || o.Body != target)
             {
                 // (a new leg goes through the command view's own path: every trip state reset, so a hand-over or a trip between planets plans afresh)
-                if (NavApply(s, c, NavKind.Orbit, target, default, NavMinOrbit(sys, target), 255, $"{c.DisplayName()}'s route", out o) is { } why)
+                if (NavApply(s, c, NavKind.Orbit, target, default, NavMinOrbit(sys, target), 255, $"{c.DisplayName()}'s route", null, out o) is { } why)
                 {
                     r.Why = $"through space to {stop.Name}: {why}";
                     continue;

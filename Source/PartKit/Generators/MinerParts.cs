@@ -1197,31 +1197,32 @@ public sealed class MinerParts : IPartGenerator
     // ---- the engine nacelles: a pod on a pylon each side aft, a drive at its tail and a lift jet under it
 
     private const double NacX = 6.95, NacY = 2.3, NacR = 1.15, NacZ0 = 19.4, NacZ1 = 29.2, PylonX = 5.45, AftJetZ = 21.4;
+    private const double NacEng = 26.8; // the bulkhead between a nacelle's tank and its engine housing (the last 2.4 m)
 
     private static Part Nacelle(int s)
     {
         var name = s < 0 ? "Magpie Nacelle L" : "Magpie Nacelle R";
-        var p = Big(name, "One of the Magpie's engine nacelles: a fuel pod on a pylon off the flank, the main drive at its tail and a lift jet under it.", "fueltank", Yellow);
+        var p = Big(name, "One of the Magpie's engine nacelles: a fuel pod on a pylon off the flank, a lift jet under it, and at its tail the engine housing: the main drive on the tail plate outside, its Drive Core inside behind it, a service hatch in the outboard flank.", "fueltank", Yellow);
         var x = Cx + s * NacX;
-        // The pod: a nose cone, an eight-sided body in three bands, a tail collar.
+        // The pod: a nose cone, an eight-sided tank in three bands, then the engine housing (ship-works.md 15.4, Karl 2026-11-16:
+        // "the nacelles don't have any thrust components in them"): hollow, clad, the drive's own Drive Core S inside on its axis.
         Prism(p, RingZ(x, NacY, 0.45, NacZ0, 8), RingZ(x, NacY, NacR, NacZ0 + 1.0, 8), Frame, "plated steel");
         Prism(p, RingZ(x, NacY, NacR, NacZ0 + 1.004, 8), RingZ(x, NacY, NacR, 23.0, 8), Yellow, "worn paint");
         Prism(p, RingZ(x, NacY, NacR + 0.02, 23.004, 8), RingZ(x, NacY, NacR + 0.02, 23.5, 8), Hazard, "hazard paint");
-        Prism(p, RingZ(x, NacY, NacR, 23.504, 8), RingZ(x, NacY, NacR, 27.6, 8), Yellow2, "worn paint");
-        Prism(p, RingZ(x, NacY, NacR + 0.08, 27.604, 8), RingZ(x, NacY, NacR - 0.1, NacZ1 - 0.004, 8), Frame, "dirty steel"); // (its end a hair short of the drive's mount plate)
+        Prism(p, RingZ(x, NacY, NacR, 23.504, 8), RingZ(x, NacY, NacR, NacEng - 0.004, 8), Yellow2, "worn paint");
+        var flatR = NacR * Math.Cos(Math.PI / 8);
+        EngineHousing.Draw(p, P, x, NacY, flatR, EngineHousing.HalfFlat(flatR), NacEng, NacZ1, s, Yellow, Yellow2, Frame, Hazard, "worn paint", ShipWorksParts.CoreR[0], ShipWorksParts.CoreD[0], ShipWorksParts.CoreD[0]);
+        Prism(p, RingZ(x, NacY, NacR + 0.07, NacEng - 0.06, 8), RingZ(x, NacY, NacR + 0.07, NacEng + 0.08, 8), Frame, "dirty steel"); // (the band round the bulkhead, where the tank ends and the housing starts)
         // Panel seams and a primer patch, an intake grille on the outboard flank.
         foreach (var z in new[] { 21.2, 25.5 })
             Prism(p, RingZ(x, NacY, NacR + 0.012, z, 8), RingZ(x, NacY, NacR + 0.012, z + 0.05, 8), Frame, "dirty steel");
         Detail(p, x + s * (NacR * 0.92) - 0.05, NacY + 0.1, 24.2, x + s * (NacR * 0.92) + 0.05, NacY + 0.5, 26.4, Frame, "soot");
         Detail(p, x - 0.4, NacY + NacR * 0.92, 21.6, x + 0.4, NacY + NacR * 0.92 + 0.02, 22.4, Primer, "rusty paint");
-        // The drive is a pod, mended outside (ship works, Karl 2026-11-16): a grab rail along the nacelle's top and a service hatch on its outboard flank by the drive.
+        // The engine is mended outside, through the hatch (ship works, Karl 2026-11-16): a grab rail along the nacelle's top to it.
         var top = NacR * Math.Cos(Math.PI / 8);
         foreach (var z in new[] { 24.4, 26.2 })
             Detail(p, x - 0.03, NacY + top - 0.02, z - 0.03, x + 0.03, NacY + top + 0.2, z + 0.03, "#9a9c98", "steel");
         Detail(p, x - 0.025, NacY + top + 0.18, 24.36, x + 0.025, NacY + top + 0.23, 26.24, Hazard, "worn paint");
-        Detail(p, x + s * (top - 0.01), NacY - 0.45, 25.8, x + s * (top + 0.025), NacY - 0.05, 26.7, Frame, "painted plating");
-        Detail(p, x + s * (top + 0.02), NacY - 0.45, 25.8, x + s * (top + 0.04), NacY - 0.4, 26.7, Hazard, "hazard paint");
-        Detail(p, x + s * (top + 0.02), NacY - 0.1, 25.8, x + s * (top + 0.04), NacY - 0.05, 26.7, Hazard, "hazard paint");
         // The pylon: a raked faceted web from the hull to the pod, the fuel lines over it.
         double hx = Cx + s * 4.9;
         Prism(p, [P(hx, 2.05, NacZ0 + 1.4), P(hx, 3.15, NacZ0 + 1.0), P(hx, 3.15, NacZ0 + 6.6), P(hx, 2.05, NacZ0 + 6.2)],
@@ -1232,16 +1233,15 @@ public sealed class MinerParts : IPartGenerator
         var liftY = Math.Round(NacY - NacR * Math.Cos(Math.PI / 8) - 0.01, 2); // (a centimetre proud of the pod's flat underside)
         Solid(p, x - 0.45, liftY, AftJetZ - 0.7, x + 0.45, NacY - 0.75, AftJetZ + 0.7, Frame, "dirty steel");
         // Hidden: the pod, the pylon (out from where the engine deck's root stops).
-        Hidden(p, x - 0.8, NacY - 0.75, NacZ0 + 1.0, x + 0.8, NacY + 0.8, 27.6);
+        Hidden(p, x - 0.8, NacY - 0.75, NacZ0 + 1.0, x + 0.8, NacY + 0.8, NacEng - 0.004);
         Hidden(p, Cx + s * PylonX, 2.2, NacZ0 + 1.6, x - s * 0.8, 3.0, NacZ0 + 6.1);
-        Solid(p, x - 0.5, NacY - 0.5, NacZ1 - 0.3, x + 0.5, NacY + 0.5, NacZ1, Frame, "dirty steel"); // the drive's mount plate in the collar's end
-        Sock(p, "drive", x, NacY, NacZ1, "+z");
+        Works.Mount(p, outside: true); // (the housing's tail plate: the drive bolts to it outside, its Drive Core inside)
         Sock(p, "lift", x, liftY, AftJetZ, "-y");
-        // The attitude jets (ShipParts.Rcs) aft on the pod's flats: up, down and outboard.
+        // The attitude jets (ShipParts.Rcs) aft on the tank's flats, ahead of the housing: up, down and outboard.
         var flat = Math.Round(NacR * Math.Cos(Math.PI / 8), 3);
-        RcsMount(p, "rcsUp", x, NacY + flat, 27.0, "+y", 0.54, Frame);
-        RcsMount(p, "rcsDown", x, NacY - flat, 27.0, "-y", 0.54, Frame);
-        RcsMount(p, "rcsOut", x + s * flat, NacY, 27.0, s < 0 ? "-x" : "+x", 0.54, Frame);
+        RcsMount(p, "rcsUp", x, NacY + flat, NacEng - 0.45, "+y", 0.54, Frame);
+        RcsMount(p, "rcsDown", x, NacY - flat, NacEng - 0.45, "-y", 0.54, Frame);
+        RcsMount(p, "rcsOut", x + s * flat, NacY, NacEng - 0.45, s < 0 ? "-x" : "+x", 0.54, Frame);
         p.Set(("fuelTank", Kw(("capacity", 2500))), ("ports", Py.L(BigDriveParts.PipePort("Fuel out", "out", [.. P(x, NacY + 0.3, NacZ1).Cast<object>()], "+z", "fuel"))));
         return p.Stats(5000, 20000, 35, 15.0);
     }
@@ -1311,7 +1311,7 @@ public sealed class MinerParts : IPartGenerator
         p.Add(Box([-0.7, -0.7, 0.0], [0.7, 0.7, 1.7], hidden: true));
         p.Sock("front", [0, 0, 0], "-z");
         p.Set(("thruster", Kw(("force", DriveForce), ("spool", 1.5), ("exhaust", "+z"), ("at", Py.L(0, 0, 1.7)), ("burnRate", Py.Round(DriveForce / 1e6 * Burn, 4)), ("gimbal", 12), ("gimbalRate", 20))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [0, 0.7, 0.2], "+y", "fuel"))));
-        Works.Head(p, Works.Table(), "torch", DriveForce, pod: true); // (a pod on the nacelle's tail: mended outside, on the pylon; Karl 2026-11-16)
+        Works.Head(p, Works.Table(), "torch", DriveForce, nacelle: true); // (its engine is in the nacelle behind it: mended through the hatch, outside; ship-works.md 15)
         p.Set(("flame", Py.L(Kw(("at", Py.L(0, 0, 1.7)), ("dir", "+z"), ("radius", 0.95), ("length", 5.0), ("kind", "Rocket")))));
         return p.Stats(1800, 6000, 15, 8.0);
     }
@@ -1336,8 +1336,7 @@ public sealed class MinerParts : IPartGenerator
         p.Add(Box([-0.4 * scale, -1.05 * scale, -0.4 * scale], [0.4 * scale, -0.45 * scale, 0.4 * scale], hidden: true));
         p.Sock("top", [0, 0, 0], "+y");
         p.Set(("thruster", Kw(("force", force), ("spool", 0.5), ("exhaust", "-y"), ("at", Py.L(0, Py.Round(-1.05 * scale, 4), 0)), ("burnRate", Py.Round(force / 1e6 * Burn, 4)))), ("ports", Py.L(BigDriveParts.PipePort("Fuel in", "in", [Py.Round(0.45 * scale, 4), Py.Round(-0.2 * scale, 4), 0], "+x", "fuel"))));
-        if (force > Works.Table().JetMost)
-            Works.Head(p, Works.Table(), "torch", force, pod: true); // (a lift jet under a hopper or a nacelle: a pod, mended from underneath; the 500 kN retros stay whole)
+        // (whole, with nothing inside: only main drives have engines, Karl 2026-11-16)
         p.Set(("flame", Py.L(Kw(("at", Py.L(0, Py.Round(-1.05 * scale, 4), 0)), ("dir", "-y"), ("radius", Py.Round(0.4 * scale, 4)), ("length", Py.Round(2.8 * scale, 4)), ("kind", "Rocket")))));
         return p.Stats(700 * scale, 3000, 20, 6.0);
     }
@@ -1944,6 +1943,8 @@ public sealed class MinerParts : IPartGenerator
         foreach (var n in nacelles)
         {
             bp.Hang("Magpie Drive", n, "drive", "front");
+            bp.Hang("Drive Core S", n, "core", "front"); // (its engine, inside the housing on the drive's axis, bolted to the tail plate)
+            Works.HangHatch(bp, n, n == nacelles[0] ? -1 : 1);
             lifts.Add(bp.Hang("Magpie Lift Jet", n, "lift", "top"));
         }
         foreach (var h in hoppers)

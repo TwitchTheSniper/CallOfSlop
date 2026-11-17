@@ -1,0 +1,116 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Service Hatch 1x0.8 m",
+  "description": "A hinged armoured lid for a drive nacelle's service opening, 1 by 0.8 m: F opens it from outside, to reach the engine behind it. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "door",
+  "tool": "wrench",
+  "door": {
+    "kind": "swing",
+    "axis": "+y",
+    "pivot": [
+      0,
+      0,
+      -0.02
+    ],
+    "angle": 90,
+    "seconds": 0.8,
+    "hang": "hang"
+  },
+  "mass": 90.0,
+  "health": 1500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#6c7378",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.02,
+        -0.38,
+        -0.02
+      ],
+      "max": [
+        0.96,
+        0.38,
+        0.02
+      ],
+      "color": "#6c7378",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.06,
+        -0.32,
+        -0.026
+      ],
+      "max": [
+        0.9,
+        0.32,
+        0.026
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.8,
+        -0.12,
+        -0.06
+      ],
+      "max": [
+        0.86,
+        0.12,
+        -0.026
+      ],
+      "color": "#9a9c98",
+      "detail": true,
+      "finish": "steel",
+      "use": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.02,
+        -0.318,
+        -0.035
+      ],
+      "max": [
+        0.1,
+        -0.24,
+        -0.02
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.02,
+        0.24,
+        -0.035
+      ],
+      "max": [
+        0.1,
+        0.318,
+        -0.02
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        -0.02,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

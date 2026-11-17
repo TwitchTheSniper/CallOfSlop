@@ -93,10 +93,12 @@ Shift/Ctrl up and down. Twelve **Heavy RCS Thrusters** (250 kN) on the hoppers a
 
 Each thruster burns from the tank it hangs on: hoppers 1,500 l each, nacelles 2,500 l each, bow 1,200 l.
 
-The drives and the lift jets are **pods** (ship works, docs/sandbox/design/ship-works.md): each has `works.service:
-"outside"`, its works in its own cowl, so a breakdown means going out on the pylon (or landing), and the Engineer's Panel
-only reports it. The drives swing a 12 degree gimbal. Each nacelle has a grab rail along its top and a service hatch with
-hazard edges on its outboard flank by the drive. The 500 kN retros are whole jets (at `jetMost`, they need no works).
+Each nacelle holds its drive's engine (ship works, docs/sandbox/design/ship-works.md section 15): behind the fuel tank,
+a hollow clad housing whose tail plate is a mount, the drive on its outer face and a **Drive Core S** on its inner face
+on the drive's axis. A breakdown means going out on the pylon (or landing) and in through the **Service Hatch** (a swing
+door with hazard edges) on the nacelle's outboard flank; the Engineer's Panel only reports it. The drives swing a 12
+degree gimbal; each nacelle has a grab rail along its top. The lift jets and the 500 kN retros are whole parts with no
+works (Karl, 2026-11-16: main drives only).
 
 To check it, run `--flight-check Constructs/Blueprints/MagpieMiningShip.json`. This is the aircraft kit's flight check
 on any blueprint file. It reports a climb of 9.3 m in 2 s, a hover drift of 0.01 m, a tilt of 0.1 degrees, and lift of

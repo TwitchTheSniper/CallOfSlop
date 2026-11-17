@@ -193,6 +193,19 @@
       "by": "front"
     },
     {
+      "part": "Drive Core S",
+      "on": 27,
+      "socket": "core",
+      "by": "front"
+    },
+    {
+      "part": "Service Hatch 1x0.8 m",
+      "on": 27,
+      "socket": "hatch",
+      "by": "hang",
+      "spin": 3
+    },
+    {
       "part": "Rust Bucket Lift Jet",
       "on": 27,
       "socket": "lift",
@@ -203,6 +216,18 @@
       "on": 28,
       "socket": "drive",
       "by": "front"
+    },
+    {
+      "part": "Drive Core S",
+      "on": 28,
+      "socket": "core",
+      "by": "front"
+    },
+    {
+      "part": "Service Hatch 1x0.8 m",
+      "on": 28,
+      "socket": "hatch",
+      "by": "hang"
     },
     {
       "part": "Rust Bucket Lift Jet",
@@ -791,64 +816,64 @@
   ],
   "wires": [
     [
-      77,
-      75
-    ],
-    [
-      77,
-      76
-    ],
-    [
-      80,
-      78
-    ],
-    [
-      80,
+      81,
       79
     ],
     [
-      83,
-      81
+      81,
+      80
     ],
     [
-      83,
+      84,
       82
     ],
     [
       84,
+      83
+    ],
+    [
+      87,
+      85
+    ],
+    [
+      87,
       86
     ],
     [
-      111,
-      107
+      88,
+      90
     ],
     [
-      111,
-      108
+      115,
+      111
     ],
     [
-      111,
-      109
-    ],
-    [
-      111,
-      110
-    ],
-    [
-      116,
+      115,
       112
     ],
     [
-      116,
+      115,
       113
     ],
     [
-      116,
+      115,
       114
     ],
     [
-      116,
-      115
+      120,
+      116
+    ],
+    [
+      120,
+      117
+    ],
+    [
+      120,
+      118
+    ],
+    [
+      120,
+      119
     ]
   ],
   "conduit": true
