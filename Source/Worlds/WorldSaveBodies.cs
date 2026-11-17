@@ -169,6 +169,7 @@ public sealed partial class ConstructWorld
             b.Gear = c.Gear;
             b.Fuel = c.Fuel;
             b.Charge = c.Charge;
+            b.Cap = c.Cap;
             b.Pos = c.Pos;
             b.Rot = c.Rot;
             if (c.HeldBy != 0 && BodyCarries.Count > 0 && ConstructLifters.CarryEnd(this, c, out var endPos, out var endRot))
@@ -289,6 +290,9 @@ public sealed partial class ConstructWorld
     /// <summary>The setting key a part's fused unit (ConstructFuse.cs) is saved under: its number in the body (1, 2, ...), new tags when read.</summary>
     public const string FuseKey = "fuse:unit";
 
+    /// <summary>The setting key a body's Capacitor Banks' charge (kJ, ConstructPower.cs) is saved under, on its first part; an older save has none: empty.</summary>
+    public const string CapKey = "body:cap";
+
     /// <summary>The setting key a Line Console's Made count (ProductionLines.Monitors.cs) is saved under; an older save has none: 0.</summary>
     public const string MadeKey = "line:made";
 
@@ -347,6 +351,11 @@ public sealed partial class ConstructWorld
         var countAt = new SaveWriter(4096);
         var settings = 0;
         Dictionary<uint, int>? fused = null; // (the fused units, numbered 1, 2, ... in this body: ConstructFuse.cs)
+        if (b.Cap > 0 && parts.Length > 0)
+        {
+            countAt.U16(0).U16(names.Key(CapKey)).F32(b.Cap); // (the body's, as a setting of its first part an older reader skips)
+            settings++;
+        }
         for (var i = 0; i < parts.Length; i++)
         {
             ref var p = ref parts[i];
@@ -714,6 +723,7 @@ public sealed partial class ConstructWorld
             parts[i].State = was;
         }
         var settings = r.Count(8);
+        var capSaved = 0f;
         ConstructFuse.Renumber? units = null;
         for (var k = 0; k < settings; k++)
         {
@@ -726,6 +736,11 @@ public sealed partial class ConstructWorld
             {
                 if (float.IsFinite(v) && v >= 1 && v < 1 << 24)
                     parts[part].Fuse = (units ??= new ConstructFuse.Renumber()).Tag((int)v); // (new tags: a unit is one by its number in this body)
+                continue;
+            }
+            if (names.Keys[key] == CapKey)
+            {
+                capSaved = float.IsFinite(v) ? v : 0;
                 continue;
             }
             if (names.Keys[key] == MadeKey)
@@ -1042,6 +1057,7 @@ public sealed partial class ConstructWorld
         c.Empty(); // (what follows is its fuel and charge, not a fresh part's)
         c.Fuel = fuel;
         c.Charge = float.IsFinite(charge) ? Math.Clamp(charge, 0, c.ChargeCapacity) : 0;
+        c.Cap = Math.Clamp(capSaved, 0, c.CapCapacity); // (the banks the rebuild found on its circuit)
         c.Gear = Math.Max(0, gear);
         ConstructNet.SetPower(c, ConstructNet.PowerFlags(c), (byte)c.Gear);
         c.HoverOn = (flags & 32) != 0;

@@ -68,6 +68,7 @@ public sealed partial class Game
                 // centimetres behind just after a drag: the turn goes about the bodies' centre as the server has them, or
                 // a 120 degree arc swings that centre by 1.7 times the lag (CI 2026-11-14: 58 mm).
                 var sent = r.Vec();
+                hands.NudgeFinish(Constructs, p.Id); // (a drag still easing to where it was let go lands first: the centre is where it ends up)
                 return hands.NudgeBegin(Constructs, p.Id, eye, bodies, ConstructEdits.NudgeCentre(Constructs, bodies) ?? sent);
             }
             case CActKind.NudgeSteer:

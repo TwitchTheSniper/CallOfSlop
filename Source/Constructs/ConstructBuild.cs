@@ -1084,6 +1084,10 @@ public static class ConstructBuild
         if (bp.FrozenBase)
             c.Frozen = c.Anchored = true;
         c.Rebuild();
+        // Its Capacitor Banks come charged, as its magazines come full (Karl, 2026-11-17: a ship the game spawns is ready to fight);
+        // a Building Station's build (linked) is a player's, whose banks come empty and fill from its circuit.
+        if (!linked)
+            c.Cap = c.CapCapacity;
         // What it carries (decision 21): loose parts in the cargo volumes its steps start frozen.
         if (bp.Cargo.Count > 0)
         {
