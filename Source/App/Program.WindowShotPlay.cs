@@ -48,6 +48,14 @@ public static partial class Program
                 if (g.IsServer)
                     Console.WriteLine($"[windowshot] crewhit: {g.CrewHitFirst(me)}");
                 return true;
+            case "crewbreak": // "crewbreak [fail]": host, a server shortcut: the first crewed body's breakdown clock runs out now (a warning; "fail": the part breaks down at once)
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewbreak: {g.CrewBreakFirst(arg == "fail")}");
+                return true;
+            case "crewkill": // "crewkill JOB": host, a server shortcut: every crew member with that job on the first crewed body dies (records too: a round through the hull)
+                if (g.IsServer)
+                    Console.WriteLine($"[windowshot] crewkill: {g.CrewKillJob(arg)}");
+                return true;
             case "npcstanding": // "npcstanding": how each NPC faction kind sees this player, as this peer's factions table has it
                 Console.WriteLine($"[windowshot] npcstanding: {g.CrewStandingLine(me)}");
                 return true;

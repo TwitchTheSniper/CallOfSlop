@@ -107,6 +107,28 @@ shots in 6 s.
 
 Unverified: standing after a save and load; the Factions window's rows (no picture); two hostile NPC crews meeting.
 
+## Done (phase 4, part: engineers, loaders, breakdowns on NPC ships)
+
+- Jobs `Engineer` and `Loader`, stations `Works` (the Engineer's Panel, else the first drive works piece, else a jet on a stabilised craft)
+  and `Magazine` (the ammo box or magazine with the most room, on a body with guns). They aren't seats: their members are records, never
+  bodies, and aren't drawn. A standing station's member dies with it only when it is destroyed (health 0), not when it breaks down.
+  Fill takes them after the guns; an engineer or loader leaves for the helm only when no spare is left.
+- `Game/GameCrewWork.cs`: an NPC crew's ship (faction not 0) breaks down on its own clock while its crew is awake (Survival, as a player's
+  ship); `GameSandboxBreakdowns.BreakdownShip` now skips only a player's ship crewed by its own stabilizer setting. The engineer walks
+  (distance x 1.4 / walk speed) and sees to a warning (3 s), repairs a part broken down (12 s), mends a shot-out works piece (20 s), free.
+  Nobody at the Works station: nothing is done, and a spare walks there to take the job. A loader carries up to 200 rounds every 8 s from
+  the fullest source to the emptiest ammo box under a third full.
+- Window verbs `crewbreak [fail]` and `crewkill JOB` (server shortcuts).
+
+Verified (2026-11-16, window run on the crewed Zero Day): a warning on the port drive core seen to by its engineer 11 s later; a
+starboard drive core broken down, repaired 21 s later; the engineer killed, a spare walked to the engine room and took the job, and went
+to the next broken-down lift jet.
+
+Not done (phase 4's rest, for a successor): **CrewNav**, the walk graph inside a body (the design's section 5: deck spots, doors, lifts,
+the building check's walker in the rest frame, built in slices, patched on a part's loss), bodied members walking it, and so stations a
+member can't reach. Walks are still timers (straight-line distance) and bodies still move seat to seat by `CrewSit`. Loaders untried in
+a run (the Zero Day has no ammo box).
+
 ## Next
 
 - Phase 1 is done (below). Phase 2 next: the ground `HelmDriver` from the brief, convoys and faction vehicles spawned crewed.

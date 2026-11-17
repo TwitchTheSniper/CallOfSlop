@@ -28,6 +28,7 @@ public sealed partial class Game : ICrewHost
         Crew.Step(Constructs, World.Query, this, _crewPeople.AsSpan(0, n));
         if (Crew.Events.Count > 0)
             CrewLog();
+        CrewWorkTick();
         CrewSendSeats();
     }
 

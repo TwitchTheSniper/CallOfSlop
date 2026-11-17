@@ -66,12 +66,12 @@ public sealed partial class Game
 
     /// <summary>
     /// A body that breaks down: a ship (a thruster over ShipWorks.json's jetMost, or a Flight Stabilizer), not a wreck, and no
-    /// AI crew fighting for it (an enemy frigate doesn't break down until it is taken).
+    /// AI crew of its own owner's fighting for it (an NPC ship breaks down, and its engineer sees to it: GameCrewWork.cs).
     /// </summary>
     private bool BreakdownShip(Construct c)
     {
-        if (c.Wreck || Crew.Has(c.Id))
-            return false;
+        if (c.Wreck || Crew.ShipOf(c.Id) is { Faction: 0 })
+            return false; // (a player's ship crewed by its stabilizer's setting: as before. An NPC crew's ship breaks down: its engineer sees to it, GameCrewWork.cs)
         if (c.StabCount > 0)
             return true;
         var most = ShipWorks.Current.JetMost;
