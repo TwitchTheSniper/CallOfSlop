@@ -584,7 +584,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 338: robot shells keep their damage (no self-heal): CfgKey gains ShellDamage at its end, a Robot Shell's hidden setting.
     // 339: engine generators (ConstructGenset.cs): a pose's plant block gains u8 GenState, and with a set f32 kW it can give, u8 its output's
     //   share and u8 the draw (0 to twice that); the four Generator Heads move part ids.
-    public const ushort ProtocolVersion = 339;
+    // 340: inertia dampeners (a ship's seat key): CActKind.Dampeners (u16 body) at its end; CfgKey gains Dampeners at its end, a Flight Stabilizer setting.
+    public const ushort ProtocolVersion = 340;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
