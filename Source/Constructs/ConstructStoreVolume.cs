@@ -32,7 +32,8 @@ public static class ConstructStoreVolume
     public static readonly Vector3 PartsColour = new(0.48f, 0.42f, 0.33f); // (a level of stored parts: crates)
 
     public const float WallT = 0.15f; // a walled box's walls and floor (metres, inside the box as sized)
-    public const int WallBoxes = 5; // the floor and four walls: solid boxes past the part file's own (Construct.SolidBox)
+    public const int WallBoxes = 5;
+    private const float Inset = 0.004f; // the floor and four walls: solid boxes past the part file's own (Construct.SolidBox)
     public const byte WalledFaces = ConstructSeal.AllSealed & ~(1 << 2); // its own walls close every face but the top (+y, face 2)
 
     /// <summary>Is this Storage Volume walled (its Walls setting, on by default; the user, 2026-11-17: storage needs no hand-built walls)?</summary>
@@ -62,12 +63,12 @@ public static class ConstructStoreVolume
     {
         ref var p = ref c.Parts[part];
         ConstructCargo.Settings(p, p.D, out var size, out var at);
-        var h = size * 0.5f;
+        var h = size * 0.5f - new Vector3(Inset, 0, Inset); // (4 mm in from the box's faces: a player's panels built to the box never share a face with them)
         Vector3 lc, lh;
         var t = MathF.Min(WallT, MathF.Min(h.X, h.Z) * 0.5f);
         switch (k)
         {
-            case 0: lc = at + new Vector3(0, -h.Y + t * 0.5f, 0); lh = new Vector3(h.X - t + 0.003f, t * 0.5f, h.Z - t + 0.003f); break;
+            case 0: lc = at + new Vector3(0, -h.Y + Inset + t * 0.5f, 0); lh = new Vector3(h.X - t + 0.003f, t * 0.5f, h.Z - t + 0.003f); break;
             case 1: lc = at + new Vector3(h.X - t * 0.5f, -0.002f, 0); lh = new Vector3(t * 0.5f, h.Y - 0.002f, h.Z); break;
             case 2: lc = at + new Vector3(-h.X + t * 0.5f, -0.002f, 0); lh = new Vector3(t * 0.5f, h.Y - 0.002f, h.Z); break;
             case 3: lc = at + new Vector3(0, -0.004f, h.Z - t * 0.5f); lh = new Vector3(h.X - t - 0.003f, h.Y - 0.004f, t * 0.5f); break;
