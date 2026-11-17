@@ -355,3 +355,5 @@ These override the text above where they differ.
 ## Queued next (user, 2026-11-16)
 
 After the sub-blueprints and linked logistics builds are on main: **a linked logistics layer on the navigation screen** (the command view, docs/space/COMMAND.md). A separate layer the player turns on and off. It shows only nodes of currently linked logistics networks (paired Transmitters/Receivers and Relays, with the factories they join); unlinked networks and parts are not drawn.
+
+Built on `claude/linked-nav-layer` (protocol 331): docs/space/COMMAND.md "The logistics layer".

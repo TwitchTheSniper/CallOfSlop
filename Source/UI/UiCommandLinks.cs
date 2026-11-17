@@ -130,7 +130,16 @@ public sealed partial class Ui
             }
         }
 
-        // A link both of whose ends are nodes is listed twice (each end names the other): keep one.
+        // A partner gathered as a node after its edge was made is joined now; then a link both of whose ends are nodes is listed
+        // twice (each end names the other): keep one.
+        for (var e = 0; e < _cmdLinkEdgeN; e++)
+        {
+            ref var ed = ref _cmdLinkEdges[e];
+            if (ed.B < 0 && ed.Body != 0)
+                for (var k = 0; k < _cmdLinkNodeN; k++)
+                    if (_cmdLinkNodes[k].Body == ed.Body)
+                        (ed.B, ed.Body) = ((short)k, 0);
+        }
         var kept = 0;
         for (var e = 0; e < _cmdLinkEdgeN; e++)
         {
@@ -162,7 +171,7 @@ public sealed partial class Ui
             if (e.B < 0 && g.Constructs.Get(far.Body) is { } pc && CmdLinkVisible(g, pc))
                 e.Body = far.Body;
             // (a partner not seen here, or another player's: a stub with its name, never its body; a body gathered later as a
-            // node is joined in CmdLinks)
+            // node is joined at the gather's end)
         }
         else
             e.Planet = CmdPlanetOf(sys, far.World);
@@ -206,15 +215,6 @@ public sealed partial class Ui
             return;
         var sys = s.System;
         CmdLinksGather(g, sys, now);
-        // (a partner that turned out to be a node after its edge was made: joined now, at no cost when there is none)
-        for (var e = 0; e < _cmdLinkEdgeN; e++)
-        {
-            ref var ed = ref _cmdLinkEdges[e];
-            if (ed.B < 0 && ed.Body != 0)
-                for (var k = 0; k < _cmdLinkNodeN; k++)
-                    if (_cmdLinkNodes[k].Body == ed.Body)
-                        (ed.B, ed.Body) = ((short)k, 0);
-        }
         for (var k = 0; k < _cmdLinkNodeN; k++)
         {
             ref var n = ref _cmdLinkNodes[k];
