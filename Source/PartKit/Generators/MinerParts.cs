@@ -754,6 +754,8 @@ public sealed class MinerParts : IPartGenerator
         for (var i = 0; i < 3; i++)
             Sock(p, $"suit{i}", Cx - Lw, Ft0 + 0.125, 23.4 + i * 0.7, "+x");
         Sock(p, "toolRack", Cx + Lw, Ft0 + 0.9, 24.0, "-x");
+        for (var i = 0; i < 3; i++) // (the Robot Shell Docks down the starboard wall, by the ramp: Karl, 2026-11-17)
+            Sock(p, $"shellDock{i}", Cx + Lw, Ft0 + 0.125, 20.3 + i * (2 * CrewFittingsParts.DockHalf + 0.02), "-x");
         Sock(p, "lampEngA", Cx + Lw, Ft0 + 2.45, 20.6, "-x");
         Sock(p, "lampEngB", Cx - Lw, Ft0 + 2.45, 22.3, "+x");
         Sock(p, "lampBayA", Cx + Lw, Ft0 + 2.45, 25.4, "-x");
@@ -956,6 +958,8 @@ public sealed class MinerParts : IPartGenerator
         Sock(p, "messLocker", Cx - Uw, Ft1 + 0.125, 21.9, "+x");
         Sock(p, "table", Cx - 1.6, Ft1, 23.6, "+y");
         Sock(p, "growL", Cx - 1.9, Ft1 + 0.125, ZAft, "-z");
+        for (var i = 0; i < 3; i++) // (the Shell Control Chairs down the mess's starboard wall, aft of the ladder: Karl, 2026-11-17)
+            Sock(p, $"linkChair{i}", Cx + Uw - 0.5, Ft1, 23.15 + i * 0.85, "+y");
         Sock(p, "growR", Cx + 1.7, Ft1 + 0.125, ZAft, "-z");
         DoorSock(p, "doorHead", false, 16.6, Cx - 1.0, Ft1);
         DoorSock(p, "doorMed", false, 16.6, Cx + 1.0, Ft1);
@@ -2004,6 +2008,8 @@ public sealed class MinerParts : IPartGenerator
         for (var i = 0; i < 3; i++)
             Paint(bp, bp.Hang("Magpie Locker", eng, $"suit{i}", "wall"), Hazard, "worn paint");
         bp.Hang("Tool Rack", eng, "toolRack", "back");
+        for (var i = 0; i < 3; i++)
+            bp.Hang("Robot Shell", bp.Hang("Robot Shell Dock", eng, $"shellDock{i}", "wall"), "dock", "back");
         Switch(bp, eng, "switchEng", LampAt(bp, eng, "lampEngA", "#a0d0ff"));
         Switch(bp, eng, "switchBayR", LampAt(bp, eng, "lampBayA"), LampAt(bp, stern, "lampPorch", "#ffd890"));
         Switch(bp, eng, "switchBayL", LampAt(bp, eng, "lampBayB"), LampAt(bp, eng, "lampEngB", "#a0d0ff"));
@@ -2037,6 +2043,8 @@ public sealed class MinerParts : IPartGenerator
         bp.HangTurned("Magpie Mess Table", ua, "table", "bottom", BuildingParts.RY90);
         bp.Hang("Grow Rack 2 m", ua, "growL", "wall");
         bp.Hang("Grow Rack 2 m", ua, "growR", "wall");
+        for (var i = 0; i < 3; i++)
+            bp.HangTurned("Shell Control Chair", ua, $"linkChair{i}", "bottom", BuildingParts.RY90);
         foreach (var d in new[] { "doorHead", "doorMed", "doorMess" })
             Door(bp, ua, d);
         Switch(bp, ua, "switchHead", LampAt(bp, ua, "lampHead"));

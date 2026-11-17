@@ -1185,7 +1185,7 @@
     {"output": "Flight Couch", "materials": {"steel": 9}, "parts": {"Tyre Carcass": 1}, "seconds": 3.3},
     {"output": "Galley Coffee Station", "materials": {"steel": 14, "concrete": 3}, "seconds": 4.1},
     {"output": "Gunnery Console", "materials": {"steel": 12, "concrete": 2}, "seconds": 3.8},
-    {"output": "Robot Charging Cradle", "materials": {"steel": 12, "concrete": 2}, "seconds": 3.8},
+    {"output": "Robot Shell Dock", "materials": {"steel": 14, "concrete": 3}, "seconds": 4.1},
     {"output": "Deck Plate", "materials": {"steel": 12, "rubber": 2}, "seconds": 3.8},
     {"output": "Door", "materials": {"steel": 8}, "parts": {"Bearing": 1}, "seconds": 3.2, "minTier": 2},
     {"output": "Door Handle", "materials": {"steel": 1}, "seconds": 2.0},

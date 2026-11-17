@@ -38,13 +38,32 @@ public sealed partial class ConstructEdits
             if (!MarkPiece(c, dock, held, marks))
                 return "it is welded to more than the dock: take it off with the attach tool";
             var name = c.DefOf(held).Name;
+            var at = ConstructRender.PartCentre(c, dock);
             if (world.CutOut(c, marks, player) is not { } piece)
                 return "the world is full";
             piece.Wake();
+            if (d.ShellBodyFits)
+                DockSounds.Add((false, at));
             Done.Add($"player {player}: let the {name} go from the {d.Name} (construct {c.Id} -> {piece.Id})");
             return null;
         }
-        // Empty: clip on the nearest piece that fits.
+        return DockClip(world, player, c, dock, null);
+    }
+
+    /// <summary>Why the dock on <paramref name="c"/> can't clamp a shell on now (defended, someone flying the ship), else null: asked before the wearer leaves it.</summary>
+    public string? DockRefusal(Construct c, byte player) => Contested(c, player) ?? (c.Driver != 255 ? "someone is flying it: the dock clamps when nobody is" : null);
+
+    /// <summary>A Robot Shell Dock clamps on the shell its wearer just left (Game/GameRobotShell.cs, ShellDockUse): null when done, else why not.</summary>
+    public string? ClipOnDock(ConstructWorld world, byte player, Construct c, int dock, Construct piece) => DockClip(world, player, c, dock, piece);
+
+    /// <summary>The empty dock clips on the nearest loose piece that fits (only <paramref name="only"/>, when given).</summary>
+    private string? DockClip(ConstructWorld world, byte player, Construct c, int dock, Construct? only)
+    {
+        ref var dp = ref c.Parts[dock];
+        var d = dp.D;
+        var s = DockSocket(d);
+        if (s < 0)
+            return $"the {d.Name} has no dock socket";
         c.SocketAt(dock, s, out var at, out var dir);
         var wat = c.ToWorld(at);
         var wdir = Vector3.Transform(ConstructParts.DirVector(dir), c.Rot);
@@ -54,7 +73,7 @@ public sealed partial class ConstructEdits
         var bestDist = DockReach;
         foreach (var o in world.Bodies)
         {
-            if (o == c || o.Anchored || o.PartCount > DockMostParts || o.Driver != 255)
+            if (o == c || only != null && o != only || o.Anchored || o.PartCount > DockMostParts || o.Driver != 255)
                 continue;
             if (Vector3.Distance(o.Pos, wat) > o.Radius + DockReach)
                 continue;
@@ -95,8 +114,11 @@ public sealed partial class ConstructEdits
         if (!ConstructPlace.FindJoin(world, c, dock, out var plan, only: best) || plan.PartB != bestPart)
             return "it won't sit square on the dock";
         var from = best.Id;
+        var dockAt = ConstructRender.PartCentre(c, dock);
         if (!world.Merge(c, plan))
             return "it can't be clipped on";
+        if (d.ShellBodyFits)
+            DockSounds.Add((true, dockAt));
         Done.Add($"player {player}: clipped construct {from} onto the {d.Name} (construct {c.Id})");
         return null;
     }

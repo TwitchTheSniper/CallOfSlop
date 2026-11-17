@@ -803,7 +803,8 @@ public sealed class ShipParts : IPartGenerator
         foreach (var (z, i) in new[] { (4.5, 0), (7.5, 1), (10.5, 2) })
             Sock(p, $"shelfL{i}", Cx - Lw, F0 + 0.125, z, "+x");
         Sock(p, "rackR", Cx + Lw, F0 + 0.9, 5.0, "-x");
-        Sock(p, "lockerR", Cx + Lw, F0 + 0.125, 6.5, "-x");
+        Sock(p, "lockerR", Cx + Lw, F0 + 0.125, 6.05, "-x");
+        Sock(p, "shellDock", Cx + Lw, F0 + 0.125, 7.0, "-x"); // (the one Robot Shell Dock, aft of the locker: Karl, 2026-11-17)
         Sock(p, "crate0", 2.4, F0, 10.6, "+y");
         Sock(p, "crate1", 3.2, F0, 10.6, "+y");
         Sock(p, "panelEng", 1.9, F0 + 0.6, 12.125, "+z");
@@ -811,7 +812,7 @@ public sealed class ShipParts : IPartGenerator
         Sock(p, "pipesEngL", 3.1, F0 + 2.6, 12.125, "+z");
         Sock(p, "battery", 7.3, F0 + 2.2, 12.125, "+z");
         Sock(p, "switchHoldL", Cx - Lw, F0 + 1.3, 7.2, "+x");
-        Sock(p, "switchHoldR", Cx + Lw, F0 + 1.3, 7.4, "-x");
+        Sock(p, "switchHoldR", Cx + Lw, F0 + 1.3, 7.55, "-x"); // (aft of the Robot Shell Dock)
         Sock(p, "switchEng", 6.3, F0 + 1.3, 12.125, "+z");
         foreach (var (z, i) in new[] { (3.6, 0), (7.6, 1) })
         {
@@ -1072,6 +1073,7 @@ public sealed class ShipParts : IPartGenerator
         Sock(p, "seatR", 6.0, F1T, 2.45, "+y");
         Sock(p, "module", 4.0, F1T, 1.6, "+y"); // (on the floor in the pilot's footwell, so the seat's link runs along the floor, not up past the windscreen)
         Sock(p, "chart", 7.4, F1T + 0.475, 3.875, "-z");
+        Sock(p, "linkChair", 2.6, F1T, 3.5, "+y"); // (the one Shell Control Chair, port of the cockpit's door, its back to the partition)
         Sock(p, "bed", Cx - Uw, F1T + 0.125, 6.0, "+x");
         Sock(p, "locker", 3.2, F1T + 0.125, 4.125, "+z");
         Sock(p, "desk", 2.9, F1T + 0.125, 7.875, "-z");
@@ -2067,6 +2069,7 @@ public sealed class ShipParts : IPartGenerator
             Paint(bp, Hang(bp, "Store Shelving 2 m", keel, $"shelfL{i}", "wall"), "#6b6f5a", "worn paint");
         Hang(bp, "Tool Rack", keel, "rackR", "back");
         Paint(bp, Hang(bp, "Locker", keel, "lockerR", "wall"), "#5d7468", "worn paint");
+        Hang(bp, "Robot Shell", Hang(bp, "Robot Shell Dock", keel, "shellDock", "wall"), "dock", "back");
         Hang(bp, "Requisition Crate", keel, "crate0", "-y");
         Hang(bp, "Requisition Crate", keel, "crate1", "-y");
         // The engine room. (The Engineer's Panel is where the breakdowns are seen to: GameSandboxBreakdowns reads its name.)
@@ -2085,6 +2088,7 @@ public sealed class ShipParts : IPartGenerator
         bp.Steps[stab]["config"] = ShipFlight();
         bp.Wires.Add((pilot, stab));
         Hang(bp, "Chart Table", deck, "chart", "back");
+        bp.HangTurned("Shell Control Chair", Holder(bp, deck, "linkChair"), "linkChair", "bottom", BuildingParts.R0);
         // The bedroom, the bathroom.
         Paint(bp, Hang(bp, "Iron Bed", deck, "bed", "wall"), "#6b4a2e", "worn paint");
         Paint(bp, Hang(bp, "Locker", deck, "locker", "wall"), "#8c7b52", "worn paint");
