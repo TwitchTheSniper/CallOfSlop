@@ -30,7 +30,7 @@ public sealed partial class Ui
             foreach (var (uid, name, job, state, hp, fac) in v.Members)
             {
                 ImGui.PushID((int)uid);
-                var kind = CrewFactions.Of(fac)?.Name ?? "";
+                var kind = CrewPowers.Of(fac)?.Name ?? "";
                 var doing = state switch
                 {
                     CrewState.Surrendered => "prisoner",

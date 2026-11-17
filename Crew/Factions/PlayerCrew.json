@@ -2,6 +2,7 @@
   "format": "call-of-slop-npc-faction/1",
   "name": "Player Crew",
   "about": "A player's own hired crew: they obey their captain and never scuttle unless ordered.",
+  "controller": false,
   "styles": [],
   "stance": {
     "players": "neutral",

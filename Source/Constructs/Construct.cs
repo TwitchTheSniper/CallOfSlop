@@ -365,6 +365,7 @@ public sealed partial class Construct
 
     /// <summary>Server: the player who last damaged it (ConstructWorld.DamageBy at the hit; 255: none since its crew's captain last looked).</summary>
     public byte LastHitBy = 255;
+    public ushort LastHitBody; // the body whose guns last hurt it (0: none): an NPC crew's guns, whose owner is nobody (CrewWorld's captain)
 
     /// <summary>Server: a seated crew member with no body works the drive seat (Source/Crew/CrewGround.cs): it drives as a sitter would. Never saved or sent.</summary>
     public bool CrewDrives;

@@ -1,0 +1,33 @@
+{
+  // How relations between powers (and with players) move through play: docs/sandbox/design/faction-controllers.md section 5.
+  // Each event's amount is the change to the victim's view of the doer, scaled by the victim's parameters (each 0.5 + p: 0.5 gives the amount).
+  "format": "call-of-slop-npc-relations/1",
+  "events": {
+    "hitBody": { "amount": -5, "scale": ["pride"] },
+    "hitCrew": { "amount": -3, "scale": ["pride"] },
+    "killCrew": { "amount": -4, "scale": ["values.crew"] },
+    "destroyShip": { "amount": -15, "scale": ["values.ships", "pride"] },
+    "board": { "amount": -10, "scale": ["pride"] },
+    "capture": { "amount": -20, "scale": ["values.ships", "pride"] },
+    "release": { "amount": 5, "scale": ["forgiveness"] },
+    "drop": { "amount": 3, "scale": ["forgiveness"] },
+    "hire": { "amount": 2 },
+    "help": { "amount": 2, "scale": ["loyalty"] },
+    "breakPact": { "amount": -40 },
+    "breakPactHeard": { "amount": -15, "scale": ["loyalty"] },
+    "keepPact": { "amount": 1 }
+  },
+  "bands": { "war": -50, "neutral": 20, "friendly": 60, "hysteresis": 5 },
+  "decay": { "perMinute": 1 },
+  "witness": { "enemyShare": 0.2 },
+  "help": { "most": 10, "everySeconds": 60, "fightGapSeconds": 300 },
+  "pacts": {
+    "ceasefireMinutes": 30,
+    "ceasefireRelation": -40,
+    "ceasefireLosses": 10,
+    "staleWarMinutes": 30,
+    "answerCooldownMinutes": 5,
+    "allianceLoyalty": 0.5,
+    "ceasefireRefuseAggression": 0.8
+  }
+}

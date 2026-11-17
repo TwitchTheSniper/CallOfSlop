@@ -85,8 +85,8 @@ public interface ICrewHost
     /// <summary>The target crew <paramref name="s"/> on <paramref name="c"/> fights this tick, from the contact its last look picked (<see cref="CrewShip.Contact"/>, <see cref="CrewShip.ContactBody"/>); <paramref name="look"/>: look again.</summary>
     bool Target(Construct c, CrewShip s, bool look, out ShipAiTarget t);
 
-    /// <summary>Player <paramref name="player"/> did something to faction <paramref name="faction"/>: its standing with them moves by <paramref name="amount"/>.</summary>
-    void Deed(byte faction, byte player, int amount);
+    /// <summary>Someone did <paramref name="e"/> to crew <paramref name="s"/>: a person (<paramref name="byPlayer"/>; a crew member's body counts as its power) or a crewed body's guns (<paramref name="byBody"/>): relations move (Crew/CrewRelations.cs).</summary>
+    void Deed(RelEvent e, CrewShip s, byte byPlayer, ushort byBody);
 
     /// <summary>The captain's look at a boarding (GameCrewBoard.cs): boarders, its act, a scuttle, a capture. True: it is boarded or a scuttle runs (the captain's own goal waits).</summary>
     bool Board(Construct c, CrewShip s);
@@ -133,7 +133,12 @@ public sealed class CrewShip
     public int Slot; // its index in CrewWorld.Ships
 
     // The captain (phase 3): its faction kind, morale, goal, who has attacked it, and when it thinks next.
-    public byte Faction; // CrewFactions id (0: none: the old Fights strangers / everyone rules)
+    public byte Faction; // CrewPowers id, its kind through it (0: none: the old Fights strangers / everyone rules)
+    public byte DoerPlayer = 255; // who last attacked it (a person, or with DoerBody a crewed body), at DoerAt: a kill or a lost ship is theirs
+    public ushort DoerBody;
+    public long DoerAt;
+    public ushort FoeBody; // the crewed body that last shot it (answered whatever its power's view), at FoeBodyAt
+    public long FoeBodyAt;
     public float Morale = 1, Hull = 1, HullMax; // morale 0-1; the hull's share left of HullMax (its parts' health when crewed)
     public CrewGoal Goal;
     // Boarding (phase 5, GameCrewBoard.cs).
@@ -209,6 +214,7 @@ public sealed class CrewShip
         ScAt = ScDisarmAt = ScSaidAt = 0;
         ScTried = 0;
         Array.Clear(Foes);
+        (DoerPlayer, DoerBody, DoerAt, FoeBody, FoeBodyAt) = (255, 0, 0, 0, 0);
         NavBuild = -1;
         Nav = null;
     }
@@ -274,6 +280,8 @@ public sealed class CrewWorld
     private int _bodiedCount;
     private int _findAt, _shipAt;
     public long Tick;
+    /// <summary>How long an attack stays someone's: a crew member dying within it is their kill (a lost ship: four times as long).</summary>
+    public static int DoerTicks => 15 * World.TickRate;
 
     /// <summary>The walk graphs inside bodies and the crew bodies walking them (phase 4: CrewNav.cs).</summary>
     public readonly CrewNav Nav = new();
@@ -336,10 +344,10 @@ public sealed class CrewWorld
         Scan(c, s);
         if (empty)
         {
-            Events.Add($"construct {c.Id}: a roster with nobody on it yet ({CrewFactions.Of(faction)?.Name ?? "no faction"})");
+            Events.Add($"construct {c.Id}: a roster with nobody on it yet ({CrewPowers.Of(faction)?.Name ?? "no faction"})");
             return s; // (hired hands join it one at a time: GameCrewHire.cs)
         }
-        var def = CrewFactions.Of(faction);
+        var def = CrewPowers.KindOf(faction);
         if (spares < 0 && def != null)
             spares = def.SparesMin + (int)(c.Id * 2654435761u % (uint)(def.SparesMax - def.SparesMin + 1));
         var rest = 0;
@@ -372,9 +380,9 @@ public sealed class CrewWorld
     public static void SetFaction(Construct c, CrewShip s, byte faction)
     {
         s.Faction = faction;
-        s.Own = faction != 0 && faction == CrewFactions.Find("Player Crew");
+        s.Own = faction != 0 && faction == CrewPowers.ForKindName("Player Crew");
         c.NpcFaction = s.Own ? (byte)0 : faction; // (a player's own crew: the body stays theirs, no NPC faction)
-        s.Morale = CrewFactions.Of(faction)?.MoraleStart ?? 1;
+        s.Morale = CrewPowers.KindOf(faction)?.MoraleStart ?? 1;
         s.HullMax = HullOf(c);
         s.Hull = 1;
     }
@@ -508,6 +516,8 @@ public sealed class CrewWorld
         State[m] = CrewState.Dead;
         if (s.Lost < 255)
             s.Lost++;
+        if (host != null && s.Faction != 0 && (s.DoerPlayer != 255 || s.DoerBody != 0) && Tick - s.DoerAt < DoerTicks)
+            host.Deed(RelEvent.KillCrew, s, s.DoerPlayer, s.DoerBody); // (whoever last attacked it killed them)
         Ready[m] = Tick + GoneTicks;
         if (!bodyDied)
             Remove(s, m, host);
@@ -889,7 +899,7 @@ public sealed class CrewWorld
             if (c.StabCount == 0 || c.Wreck || c.SpaceShip != 0 || _shipOf.ContainsKey(c.Id))
                 continue;
             var mode = ShipAi.ModeOf(c);
-            if (mode != ShipAiMode.Off && Crew(c, mode, faction: mode == ShipAiMode.Everyone ? CrewFactions.Find("Test Hostile") : c.Owner == 255 ? CrewFactions.Find("Mercenaries") : (byte)0) is { } made)
+            if (mode != ShipAiMode.Off && Crew(c, mode, faction: mode == ShipAiMode.Everyone ? CrewPowers.ForKindName("Test Hostile") : c.Owner == 255 ? CrewPowers.ForKindName("Mercenaries") : (byte)0) is { } made)
                 made.FromSetting = true;
         }
     }
@@ -914,6 +924,8 @@ public sealed class CrewWorld
         var c = w.Get(s.Body);
         if (c == null || c.Wreck)
         {
+            if (host != null && s.Faction != 0 && (s.DoerPlayer != 255 || s.DoerBody != 0) && Tick - s.DoerAt < 4 * DoerTicks)
+                host.Deed(RelEvent.DestroyShip, s, s.DoerPlayer, s.DoerBody); // (a ship lost to whoever last attacked it)
             Disband(s, w, host, c == null ? "went with its body" : "died with its ship");
             return;
         }
@@ -1015,18 +1027,20 @@ public sealed class CrewWorld
     private void Captain(Construct c, CrewShip s, ICrewHost? host)
     {
         s.CaptainAt = Tick + (s.Tier == CrewTier.Bodied ? World.TickRate : 5 * World.TickRate);
-        var def = CrewFactions.Of(s.Faction);
-        if (c.LastHitBy != 255)
+        var def = CrewPowers.KindOf(s.Faction);
+        if (c.LastHitBy != 255 || c.LastHitBody != 0)
         {
             var by = c.LastHitBy;
+            var byBody = c.LastHitBody;
             c.LastHitBy = 255;
-            if (!s.Foe(by))
+            c.LastHitBody = 0;
+            if (by != 255 && !s.Foe(by))
             {
                 s.MarkFoe(by);
-                Events.Add($"construct {c.Id}: player {by} attacked its crew{(def != null ? $" ({def.Name})" : "")}");
+                Events.Add($"construct {c.Id}: player {by} attacked its crew{(def != null ? $" ({CrewPowers.Of(s.Faction)!.Name})" : "")}");
             }
             if (def != null)
-                host?.Deed(s.Faction, by, -5);
+                host?.Deed(RelEvent.HitBody, s, by, byBody);
         }
         s.Hull = s.HullMax > 0 ? Math.Clamp(HullOf(c) / s.HullMax, 0, 1) : 1;
         if (def != null)
@@ -1422,7 +1436,7 @@ public sealed class CrewWorld
             return null;
         var wr = new SaveWriter(64 + s.MemberCount * 12);
         wr.U8(SaveVersion).U8((byte)s.Mode).U8((byte)((s.Air ? 1 : 0) | (s.FromSetting ? 2 : 0) | (s.Prize ? 4 : 0)));
-        wr.Str(CrewFactions.Of(s.Faction)?.Name ?? "").U8((byte)(s.Morale * 255)).U8(s.Lost);
+        wr.Str(CrewPowers.Of(s.Faction)?.Name ?? "").U8((byte)(s.Morale * 255)).U8(s.Lost);
         var n = 0;
         for (var i = 0; i < s.MemberCount; i++)
             if (State[s.Members[i]] != CrewState.Dead)
@@ -1459,7 +1473,7 @@ public sealed class CrewWorld
             if (v >= 2)
             {
                 var fname = r.Str();
-                faction = CrewFactions.Find(fname);
+                faction = CrewPowers.Find(fname);
                 if (fname.Length > 0 && faction == 0)
                     Console.WriteLine($"[crew] construct {c.Id}'s crew was of faction \"{fname}\", which isn't read now: it has none");
                 morale = r.U8() / 255f;

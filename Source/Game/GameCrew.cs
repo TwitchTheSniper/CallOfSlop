@@ -55,8 +55,8 @@ public sealed partial class Game : ICrewHost
         return false;
     }
 
-    /// <summary>A nobody's generated craft's faction kind: the one its style belongs to, else Raiders.</summary>
-    public static byte CrewFactionFor(Construct c) => c.Brief is { } b && CrewFactions.ForStyle(b.Style) is var f and > 0 ? f : CrewFactions.Find("Raiders");
+    /// <summary>A nobody's generated craft's power: the first made from the kind its style belongs to, else from Raiders.</summary>
+    public static byte CrewFactionFor(Construct c) => c.Brief is { } b && CrewPowers.ForStyle(b.Style) is var f and > 0 ? f : CrewPowers.ForKindName("Raiders");
 
     private void CrewLog()
     {
@@ -80,7 +80,7 @@ public sealed partial class Game : ICrewHost
         var bot = new Player
         {
             Id = id,
-            Name = $"[{(CrewFactions.Of(ship?.Faction ?? 0)?.Name ?? "CREW")}] {CrewNames.Of(crew.Name[m])}",
+            Name = $"[{(CrewPowers.Of(ship?.Faction ?? 0)?.Name ?? "CREW")}] {CrewNames.Of(crew.Name[m])}",
             Bot = new BotBrain(BotDifficulty.Normal, BotPersonality.Tactician, (int)crew.Uid[m]),
             Team = CrewTeam(c, ship),
             CrewSlot = m,
@@ -304,7 +304,7 @@ public sealed partial class Game : ICrewHost
     {
         t = default;
         var com = c.WorldCom;
-        var def = CrewFactions.Of(s.Faction);
+        var def = CrewPowers.KindOf(s.Faction);
         var sight = def?.Sight ?? ShipAi.EngageRange;
         if (look)
         {
@@ -325,7 +325,7 @@ public sealed partial class Game : ICrewHost
                 for (var i = 0; i < Crew.ShipHigh; i++)
                 {
                     if (Crew.Ships[i] is not { Tier: not CrewTier.Asleep, Faction: not 0, Own: false, Prize: false } o || o == s || o.MemberCount == 0
-                        || (s.Own ? c.Owner == 255 || CrewStanding(o.Faction, c.Owner) >= 0 && !o.Foe(c.Owner) : def.ToFactions[o.Faction] != CrewStance.Hostile)
+                        || (s.Own ? c.Owner == 255 || CrewStanding(o.Faction, c.Owner) >= 0 && !o.Foe(c.Owner) : !CrewShipFights(s, o))
                         || Constructs.Get(o.Body) is not { Wreck: false } oc)
                         continue;
                     var d2 = Vector3.DistanceSquared(oc.WorldCom, com);
@@ -369,7 +369,49 @@ public sealed partial class Game : ICrewHost
             return !(s.Mode == ShipAiMode.Strangers && c.Owner != 255 && Factions.Shares(c.Owner, p.Id));
         if (s.Own)
             return p.Id != c.Owner && !Factions.Shares(c.Owner, p.Id) && (s.Foe(p.Id) || FactionTable.RelationOf(c.Owner, p.Id) == FactionTable.Relations.War); // (a player's own crew: who hit it, or a faction at war with its owner's)
-        return s.Foe(p.Id) || CrewStanding(s.Faction, p.Id) < 0;
+        return s.Foe(p.Id) || CrewStanding(s.Faction, p.Id) < 0 || CrewStandingOn && CrewHelpsAgainst(c, s, p);
+    }
+
+    /// <summary>
+    /// Whether crew <paramref name="s"/> fights crew <paramref name="o"/> (faction-controllers.md section 5): it answers a crew that shot it lately;
+    /// else no pact may hold between their powers, and it fights when its power sees theirs below 0, or (not friends with them) when it sees them
+    /// fighting a power or a person its power counts as a friend or an ally (help in a fight it sees).
+    /// </summary>
+    private bool CrewShipFights(CrewShip s, CrewShip o)
+    {
+        var a = s.Faction;
+        var b = o.Faction;
+        if (a == b)
+            return false;
+        if (s.FoeBody == o.Body && Crew.Tick - s.FoeBodyAt < 2 * CrewWorld.DoerTicks)
+            return true;
+        if (!CrewStandingOn)
+            return CrewPowers.KindOf(a) is { } k && CrewPowers.KindOf(b) is { } kb && k.ToFactions[kb.Id] == CrewStance.Hostile; // (the story owns the rows: the kinds' fixed stances)
+        var rel = Relations;
+        if (rel.HoldsFire(a, b))
+            return false;
+        var v = rel.Get(a, b);
+        if (v < 0)
+            return true;
+        if (v >= rel.Rules.FriendlyLine)
+            return false;
+        if (o.ContactBody != 0 && Crew.ShipOf(o.ContactBody) is { Faction: not 0 } f && f.Faction != b && rel.Helps(a, f.Faction))
+            return true;
+        return o.Contact != 255 && Players.TryGetValue(o.Contact, out var p) && p.CrewSlot < 0 && p.Bot == null && rel.Peek(a, p.Id) >= rel.Rules.FriendlyLine;
+    }
+
+    /// <summary>A person crew <paramref name="s"/> doesn't fight for itself, seen fighting a crew of a power its own counts as a friend or ally, within its sight (help in a fight it sees).</summary>
+    private bool CrewHelpsAgainst(Construct c, CrewShip s, Player p)
+    {
+        var rel = Relations;
+        if (rel.Peek(s.Faction, p.Id) >= rel.Rules.FriendlyLine)
+            return false;
+        var sight = CrewPowers.KindOf(s.Faction)?.Sight ?? ShipAi.EngageRange;
+        for (var i = 0; i < Crew.ShipHigh; i++)
+            if (Crew.Ships[i] is { Tier: not CrewTier.Asleep, Own: false, Prize: false } o && o != s && o.Contact == p.Id && o.Faction != s.Faction
+                && rel.Helps(s.Faction, o.Faction) && Constructs.Get(o.Body) is { } oc && Vector3.DistanceSquared(oc.WorldCom, c.WorldCom) < sight * sight)
+                return true;
+        return false;
     }
 
     /// <summary>Where a crew shoots at <paramref name="p"/>: the body they sit or ride in, else themselves. False: aboard this one (a boarder is the crew's business, not its guns').</summary>
@@ -473,7 +515,7 @@ public sealed partial class Game : ICrewHost
 
     /// <summary>The look line's crew note for a body ("Raiders, crew of 4"), or null.</summary>
     public string? CrewLook(ushort body) => CrewInfo.TryGetValue(body, out var i) && i.Alive > 0
-        ? $"{CrewFactions.Of(i.Faction)?.Name ?? "crewed"}, crew of {i.Alive}" : null;
+        ? $"{CrewPowers.Of(i.Faction)?.Name ?? "crewed"}, crew of {i.Alive}" : null;
 
     private void CrewSeatsSet(ushort body, ReadOnlySpan<ushort> parts, byte faction, int alive, int scuttle, byte stage)
     {

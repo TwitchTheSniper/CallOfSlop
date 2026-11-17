@@ -28,7 +28,7 @@ public sealed partial class Game
             return true;
         if (s.Own)
             return false; // (a player's own crew: their faction aboard is welcome; a hostile boarder is a foe the guns can't see, phase 6 leaves it)
-        var def = CrewFactions.Of(s.Faction);
+        var def = CrewPowers.KindOf(s.Faction);
         byte first = 255;
         var boarders = 0;
         foreach (var p in Players.Values)
@@ -43,9 +43,9 @@ public sealed partial class Game
             if (!s.Foe(p.Id))
             {
                 s.MarkFoe(p.Id);
-                Console.WriteLine($"[crew] construct {c.Id}: player {p.Id} boarded it{(def != null ? $" ({def.Name})" : "")}");
+                Console.WriteLine($"[crew] construct {c.Id}: player {p.Id} boarded it{(def != null ? $" ({CrewPowers.Of(s.Faction)!.Name})" : "")}");
                 if (def != null)
-                    ((ICrewHost)this).Deed(s.Faction, p.Id, -10);
+                    ((ICrewHost)this).Deed(RelEvent.Board, s, p.Id, 0);
             }
         }
         if (s.ScStage > 0)
@@ -165,14 +165,14 @@ public sealed partial class Game
         s.CalledHelp = true;
         var n = 0;
         for (var i = 0; i < Crew.ShipHigh; i++)
-            if (Crew.Ships[i] is { Tier: not CrewTier.Asleep } o && o != s && o.Faction == s.Faction && !o.Prize && Constructs.Get(o.Body) is { } oc
+            if (Crew.Ships[i] is { Tier: not CrewTier.Asleep } o && o != s && (o.Faction == s.Faction || CrewStandingOn && Relations.Helps(o.Faction, s.Faction)) && !o.Prize && Constructs.Get(o.Body) is { } oc
                 && Vector3.DistanceSquared(oc.WorldCom, c.WorldCom) < HelpRange * HelpRange)
             {
                 o.MarkFoe(boarder);
                 n++;
             }
         if (n > 0)
-            Console.WriteLine($"[crew] construct {c.Id}: its crew called for help: {n} crews of the {CrewFactions.Of(s.Faction)?.Name} answer");
+            Console.WriteLine($"[crew] construct {c.Id}: its crew called for help: {n} crews of the {CrewPowers.Of(s.Faction)?.Name} and its friends answer");
     }
 
     /// <summary>Taken: the ship is the boarder's, its surrendered crew their prisoners, the faction thinks the worse of them.</summary>
@@ -189,7 +189,7 @@ public sealed partial class Game
 
     private void CrewCapture(Construct c, CrewShip s, byte by)
     {
-        var def = CrewFactions.Of(s.Faction);
+        var def = CrewPowers.KindOf(s.Faction);
         s.Prize = true;
         s.Act = BoardAct.Surrender;
         s.ScStage = 0;
@@ -206,7 +206,7 @@ public sealed partial class Game
             if (Crew.State[s.Members[i]] == CrewState.Surrendered)
                 prisoners++;
         if (def != null && by != 255)
-            ((ICrewHost)this).Deed(s.Faction, by, -20);
+            ((ICrewHost)this).Deed(RelEvent.Capture, s, by, 0);
         CrewBounty(by, prisoners); // (credits: GameCrewHire.cs)
         s.RosterDirty = true;
         Console.WriteLine($"[crew] construct {c.Id}: taken by player {by}{(c.Owner == by ? "" : " (who can't own another: it stays nobody's)")}, {prisoners} prisoners");
@@ -397,7 +397,7 @@ public sealed partial class Game
         if (s.ScDisarmBy == p.Id)
             return "";
         s.ScDisarmBy = p.Id;
-        s.ScDisarmAt = Crew.Tick + (long)((CrewFactions.Of(s.Faction)?.ScuttleDisarm ?? 5) * World.TickRate);
+        s.ScDisarmAt = Crew.Tick + (long)((CrewPowers.KindOf(s.Faction)?.ScuttleDisarm ?? 5) * World.TickRate);
         SandboxHands.Notices.Add((p.Id, "Disarming: stay at the charge."));
         return "";
     }
@@ -449,14 +449,14 @@ public sealed partial class Game
         {
             case "release":
                 Crew.Release(m, this);
-                ((ICrewHost)this).Deed(faction, p.Id, 5);
+                PowerDeed(RelEvent.Release, faction, p.Id, c.WorldCom);
                 Console.WriteLine($"[crew] construct {body}: player {p.Id} released prisoner {uid}");
                 return null;
             case "drop":
                 if (c.Vel.Length() > 1)
                     return "land or stop the ship first";
                 Crew.Release(m, this);
-                ((ICrewHost)this).Deed(faction, p.Id, 3);
+                PowerDeed(RelEvent.Drop, faction, p.Id, c.WorldCom);
                 Console.WriteLine($"[crew] construct {body}: player {p.Id} put prisoner {uid} off");
                 return null;
             case "hold":
@@ -478,9 +478,9 @@ public sealed partial class Game
 
     public string CrewSetFaction(string name)
     {
-        var f = CrewFactions.Find(name);
+        var f = CrewPowers.Find(name);
         if (f == 0)
-            return $"no faction {name}";
+            return $"no power {name}";
         for (var i = 0; i < Crew.ShipHigh; i++)
             if (Crew.Ships[i] is { } s && Constructs.Get(s.Body) is { } c)
             {

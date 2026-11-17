@@ -79,6 +79,7 @@ public struct CShellBlast
     public Vector3 At;
     public float Radius, Damage;
     public byte By;
+    public ushort Gun; // the body that fired it (0: none): the blast's credit (ConstructWorld.DamageBody)
     public int Body; // the next index in the list of bodies
     public int Part; // the next part of that body, counted down (-1: start it)
     public int BodyCount;
@@ -502,7 +503,7 @@ public sealed partial class ConstructWorld
         var n = 0;
         for (var i = 0; i < near.Count && n < ShellMaxBodies; i++)
             _blastBodies[n++] = near[i].Id;
-        _blast = new CShellBlast { Active = n > 0, Incendiary = s.Kind == ShellKind.Incendiary, At = s.Pos, Radius = s.Blast, Damage = s.Damage, By = s.By, BodyCount = n, Part = -1, Debris = BlastDebris(s.Blast) };
+        _blast = new CShellBlast { Active = n > 0, Incendiary = s.Kind == ShellKind.Incendiary, At = s.Pos, Radius = s.Blast, Damage = s.Damage, By = s.By, Gun = s.Gun, BodyCount = n, Part = -1, Debris = BlastDebris(s.Blast) };
     }
 
     /// <summary>The blast under way, <see cref="ShellPartsPerTick"/> parts on. Walks each body's parts from the last, so one that breaks off never moves those still to come.</summary>
@@ -512,6 +513,7 @@ public sealed partial class ConstructWorld
             return;
         ref var b = ref _blast;
         DamageBy = b.By;
+        DamageBody = b.Gun;
         var ownDebris = MegaDebrisLeft < 0; // (inside a massive blast's walk its own count rules)
         if (ownDebris)
             MegaDebrisLeft = b.Debris;
@@ -568,6 +570,7 @@ public sealed partial class ConstructWorld
             b.Part = -1;
         }
         DamageBy = 255;
+        DamageBody = 0;
         if (ownDebris)
         {
             b.Debris = Math.Max(0, MegaDebrisLeft);

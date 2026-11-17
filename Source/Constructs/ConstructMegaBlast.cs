@@ -192,6 +192,7 @@ public sealed partial class ConstructWorld
     private void WalkMega(ref CMegaBlast m, ref int budget)
     {
         DamageBy = m.By;
+        DamageBody = m.Gun;
         MegaDebrisLeft = m.Debris;
         while (budget > 0 && m.Body < m.BodyCount)
         {
@@ -215,6 +216,7 @@ public sealed partial class ConstructWorld
         m.Debris = Math.Max(0, MegaDebrisLeft);
         MegaDebrisLeft = -1;
         DamageBy = 255;
+        DamageBody = 0;
     }
 
     /// <summary>One body's parts under a massive blast (see <see cref="WalkMega"/>).</summary>

@@ -103,7 +103,7 @@ public sealed partial class Game
             for (var k = s.MemberCount - 1; k >= 0; k--)
             {
                 var m = s.Members[k];
-                if (Crew.State[m] == CrewState.Dead || CrewFactions.Of(Crew.Fac[m]) is not { Wage: > 0 } def)
+                if (Crew.State[m] == CrewState.Dead || CrewPowers.KindOf(Crew.Fac[m]) is not { Wage: > 0 } def)
                     continue;
                 if (CreditsPay(c.Owner, def.Wage) is { } why)
                 {
@@ -183,7 +183,8 @@ public sealed partial class Game
             if (m < 0 || from == null)
                 return $"no friendly crew within {HireReach:0} m to hire from (their kind must think well of you: standing 20 or more)";
         }
-        var def = CrewFactions.Of(Crew.Fac[m]);
+        var def = CrewPowers.KindOf(Crew.Fac[m]);
+        var power = Crew.Fac[m];
         if (def is { CanHire: false } || from.Prize == false && def == null)
             return "they won't be hired";
         var ship = CrewOwnShip(me, from);
@@ -198,12 +199,12 @@ public sealed partial class Game
             return "your ship's crew is full";
         if (!SandboxInfiniteParts && cost > 0 && _credits[me.Id] < cost)
             return $"that costs {cost} credits: you have {_credits[me.Id]}";
-        to ??= Crew.Crew(ship, ShipAiMode.Strangers, faction: CrewFactions.Find("Player Crew"), empty: true);
+        to ??= Crew.Crew(ship, ShipAiMode.Strangers, faction: CrewPowers.ForKindName("Player Crew"), empty: true);
         if (to is { Prize: true, Own: false })
         {
             // A prize's first hand: its roster becomes your crew (the rest stay prisoners aboard it).
             to.Prize = false;
-            CrewWorld.SetFaction(ship, to, CrewFactions.Find("Player Crew"));
+            CrewWorld.SetFaction(ship, to, CrewPowers.ForKindName("Player Crew"));
             to.Act = BoardAct.Hold;
             CrewTeamsFollow(to);
         }
@@ -217,7 +218,7 @@ public sealed partial class Game
         if (hand >= 0)
             Crew.Fac[hand] = fac; // (their wage and their kind's standing)
         if (def != null)
-            ((ICrewHost)this).Deed(def.Id, me.Id, 2);
+            PowerDeed(RelEvent.Hire, power, me.Id, ship.WorldCom);
         CrewLog();
         Console.WriteLine($"[crew] player {me.Id} hired {CrewNames.Of(name)} ({def?.Name ?? "no kind"}) for {def?.HireCost ?? 0} credits onto construct {ship.Id}");
         SandboxHands.Notices.Add((me.Id, $"{CrewNames.Of(name)} joined your crew ({def?.HireCost ?? 0} credits; wage {def?.Wage ?? 0} every {WageMinutes} minutes)"));
@@ -233,7 +234,7 @@ public sealed partial class Game
         var bestD = HireReach;
         for (var i = 0; i < Crew.ShipHigh; i++)
         {
-            if (Crew.Ships[i] is not { Faction: not 0, Own: false, Prize: false, Tier: CrewTier.Bodied } s || CrewFactions.Of(s.Faction) is not { CanHire: true } def
+            if (Crew.Ships[i] is not { Faction: not 0, Own: false, Prize: false, Tier: CrewTier.Bodied } s || CrewPowers.KindOf(s.Faction) is not { CanHire: true } def
                 || CrewStanding(s.Faction, me.Id) < 20 || s.Foe(me.Id) || Constructs.Get(s.Body) is not { } c)
                 continue;
             var d = Vector3.Distance(c.WorldCom, me.Position) - c.Radius;

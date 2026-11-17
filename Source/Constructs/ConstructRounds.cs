@@ -134,8 +134,10 @@ public sealed partial class ConstructWorld
             else if (what == 1 && ch.Part >= 0 && ch.Part < ch.Body.PartCount && ch.RoutePlus1 == 0 && ch.SlotPlus1 == 0)
             {
                 DamageBy = r.By;
+                DamageBody = r.Gun;
                 DamagePart(ch.Body, ch.Part, dealt, out _);
                 DamageBy = 255;
+                DamageBody = 0;
             }
         }
         return true;

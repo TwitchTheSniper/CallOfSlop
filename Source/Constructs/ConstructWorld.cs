@@ -1005,6 +1005,8 @@ public sealed partial class ConstructWorld
         dealt = raw ? MathF.Max(0, damage) : MathF.Max(0, damage - d.Armour); // (raw: burning, which armour doesn't stop)
         if (dealt > 0 && DamageBy != 255 && DamageBy != c.Owner)
             c.LastHitBy = DamageBy; // (a crew's captain reads it: a deed against its faction, Source/Crew/CrewWorld.cs)
+        if (dealt > 0 && DamageBody != 0 && DamageBody != c.Id)
+            c.LastHitBody = DamageBody;
         if (dealt <= 0 || p.Broken && !p.BrokeDown) // (a broken-down thruster can still be shot to pieces)
             return false;
         var taken = d.IsEnvelope && !raw ? dealt * ConstructLift.Holed(this, c, part, dealt) : dealt; // (a round goes through a cell's skin)

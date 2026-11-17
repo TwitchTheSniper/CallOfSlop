@@ -2,6 +2,7 @@
   "format": "call-of-slop-npc-faction/1",
   "name": "Test Hostile",
   "about": "A test enemy (the Flight Stabilizer's Fights everyone): it fights everyone, never gives up.",
+  "controller": false,
   "styles": [],
   "stance": {
     "players": "hostile",
