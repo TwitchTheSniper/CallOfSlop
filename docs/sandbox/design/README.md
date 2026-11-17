@@ -8,6 +8,7 @@ Written by design agents for the builders that follow; each ends with the user's
 - `ship-works.md`: engines and turrets with insides (drive works behind a mount, pods, Turret Rings, autoloaders, reload hoists, capacitors and lasers). Section 12 holds the phases, section 14 Karl's answers to its seven questions. Nothing built yet.
 - `bot-brain.md`: one brain for every AI in Sandbox (crew as bodies in seats and stations, the driving rule, LOD tiers, faction rules as data in `Crew/Factions`, boarding and scuttling, your own Robot Shell crew). Section 15 holds the phases, 16 the open questions, 17 what is to be agreed with Karl. Nothing built yet.
 - `faction-controllers.md`: the bot brain's two top tiers: a faction controller per power (strategy, relations that change through play, pacts, missions, planets held) and admirals for groups (convoys, patrols, strike groups); far groups as one record. Section 10 holds the phases, 11 the open questions, 12 what is to be agreed with Karl. Nothing built yet.
+- `factory-generator.md`: the factory generator (function first: brief, programme, flow graph, zones, grid plan with routed logistics, shell of halls and yards, faction style, wiring, checks that run it), modelled on the ship designer and the vehicle kit; the prerequisite for faction production. Section 9 holds the phases, 10 the open questions. Nothing built yet.
 
 `tools/coordinator/merge.sh` is the coordinator's merge helper (merge, build, part checks, production sections by name, push); its paths are one cloud box's and need adjusting.
 
