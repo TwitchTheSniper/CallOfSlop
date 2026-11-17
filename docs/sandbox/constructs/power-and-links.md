@@ -128,8 +128,8 @@ A fuelled engine as a station's or a base's power plant (the user, 2026-11-17; n
   driver's throttle turns (an alternator that follows the circuit). One engine a body (the first that runs), so one set a body.
 - **The look line** (host and joined client): "Small Generator Head: 20.5 of 102.6 kW, draw 20.5 kW, 2734 rpm, fuel 149 l", then why not
   ("standby: starts when the batteries run down", "no fuel", "won't start", "overloaded", "held off by its run wire", "no engine").
-- **Sound**: the engine's (its rpm and load, in every pose); a head of 100 kW or more hums with the plants' load as a reactor does
-  (`MachineSounds`). The stacks smoke with the head's load.
+- **Sound**: the engine's (its rpm and load ride every pose), so a set is quiet in standby and labours with the load; a head doesn't
+  hum as a reactor does (`MachineSounds.Hums` leaves heads out). The stacks smoke with the head's load.
 - **Network (protocol 339)**: the pose's plant block gains a byte of `GenState` and, with a set, f32 what it can give, a byte of its
   output's share and a byte of the draw (0 to twice what it gives). Nothing is saved: the set's state comes back from the batteries and the
   demand on the first tick after a load.

@@ -8,7 +8,7 @@ ENGINEKIT.md "Generator sets".
 
 1. **Generator Heads** (part kit `generator_heads`): Small 150 kW, Medium 400, Large 1000, Huge 4000; 90 to 95%; spool 2 to 6 s; all with a
    small-class Drive in 0.5 m over their feet. Role `generator` with `"shaft"` (efficiency) and `"fuel": "none"`, so a head is a plant for
-   everything plants do (the circuit's source, its buffer, the run wire, PlantShow, the hum) and `ShaftIn` (the drills' shaft feeds find it).
+   everything plants do (the circuit's source, its buffer, the run wire, PlantShow; not the reactor hum: a set is heard as its engine) and `ShaftIn` (the drills' shaft feeds find it).
 2. **ConstructGenset** (server, inside `ConstructPlant.Step`, after the plants): GenMax, the start/stop rule, the head's level (spool, only
    as fast as the engine carries it, shed when it doesn't), the engine's governed rpm and throttle, the load at the crank (`GenLoad`, in
    `ConstructDrillDrive.Carry` with the other shaft loads, so `Burn` bills it), the head's Out (load 0..1, passed through by the logic tick).
@@ -60,5 +60,5 @@ part, no engine) in the power rect. To use engine sets instead:
 - A joined client's look line was tried through a written and read pose (`--genset-run`), not over the real transport in a window.
 - Heads aren't size-classed: a Medium or bigger engine reaches one by a drive shaft (through an adapter), not bolted on; the kit only
   builds Small-piece engines for sets.
-- No heat model (modular engines don't overheat). The head has no sound of its own beyond the plants' hum.
+- No heat model (modular engines don't overheat). The head has no sound of its own: the engine's loop, by rpm and load, is the set's.
 - Survival: the heads have Assembler recipes (steel and Copper Coils, tier 2); the shipped sets aren't in any start or loot table.
