@@ -28,7 +28,7 @@ public static class ShipAiCheck
             return 1;
         }
         var place = VehicleDriveCheck.Place(1);
-        var w = new ConstructWorld { CreativeRecycling = true }; // (built as creative spawns them: a magazine's creative fill is what the PDCs fire)
+        var w = new ConstructWorld();
         var q = new SelfTest.DriveWorld();
         Construct? Build(ConstructBuild.Blueprint bp, Vector3 ground, float yaw)
         {

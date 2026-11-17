@@ -85,8 +85,10 @@ inside the hull, in one room with engineering.
   sealed) in the hull's void behind the wall, sealed by the wall, the deck and the void round it (`MagazineAt` cuts the
   void). The feed is laid by the generator (`MagazineFeed`: up the wall, through it, the void and the hull into the
   barbette, up into the trunk's foot), since the router can't pass solid void. Nothing is bolted to the guns outside, so
-  shooting a turret off leaves its rounds inside; a hit on the magazine through the hull cooks it off there. Creative
-  fills the magazines; in Survival they come empty, like any store.
+  shooting a turret off leaves its rounds inside; a hit on the magazine through the hull cooks it off there. A store
+  whose blueprint fills it with ammo comes full whenever the game builds it, in Survival too (Karl, 2026-11-17: an
+  enemy frigate must be able to fire); one a player's Building Station fits comes empty and is filled by hand
+  (`ConstructBuild.SetConfig`, `ConstructWorld.PlayerBuild`).
 - Four Zero Day Countermeasure Launchers (flare guns) on the spine, all fired by the flares button in ops.
 
 ## Getting aboard
