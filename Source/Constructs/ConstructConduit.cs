@@ -48,7 +48,7 @@ public static class ConstructConduit
 
     /// <summary>
     /// Lays one of blueprint <paramref name="bp"/>'s links as conduit: entry <paramref name="k"/> (its wires first, then its <c>"links"</c>
-    /// given with no nodes: chutes, pipes, power and data cables), a link of <paramref name="type"/> from part <paramref name="from"/>'s
+    /// given with no nodes: chutes, pipes, ammo feeds, power and data cables), a link of <paramref name="type"/> from part <paramref name="from"/>'s
     /// port <paramref name="fromPort"/> to <paramref name="to"/>'s <paramref name="toPort"/>. A chute or pipe leaves and meets its ports
     /// along their faces, as the tool's do; a cable any way. False: not laid (the caller lays it straight).
     /// </summary>
@@ -74,7 +74,11 @@ public static class ConstructConduit
             var nodes = Find(world, c, bp.Conduit, type, from, fromPort, to, toPort, deadline, out var why, out var outOfTime);
             Ms += sw.Elapsed.TotalMilliseconds;
             if (nodes == null && outOfTime)
+            {
+                if (_loading) // (nothing fails silently: at the load each search has its own budget, so say which link it couldn't lay)
+                    Console.WriteLine($"[conduit] {bp.Name}: {(k < bp.Wires.Count ? $"wire {k}" : $"link {k - bp.Wires.Count} ({ConstructRoutes.Name(type)})")} ({c.DefOf(from).Name} -> {c.DefOf(to).Name}) stays straight this start: {why}");
                 return false; // (not kept: a busy moment isn't the blueprint's fault)
+            }
             if (outOfTime)
             {
                 Routed++;
@@ -94,8 +98,9 @@ public static class ConstructConduit
         }
     }
 
-    /// <summary>The kinds laid as conduit: everything the square search routes but a conveyor (a bed has its own turns' rules) and a shaft.</summary>
-    public static bool Routable(RouteType type) => type is RouteType.Data or RouteType.Power or RouteType.Pipe or RouteType.Chute;
+    /// <summary>The kinds laid as conduit: everything the square search routes but a conveyor (a bed has its own turns' rules) and a shaft
+    /// (an ammo feed bends any way, as a cable does: a ship's magazine to its Turret Rings).</summary>
+    public static bool Routable(RouteType type) => type is RouteType.Data or RouteType.Power or RouteType.Pipe or RouteType.Chute or RouteType.Feed;
 
     /// <summary>A blueprint's entries: its wires, then its links (only those with no nodes are laid as conduit).</summary>
     public static int Entries(ConstructBuild.Blueprint bp) => bp.Wires.Count + bp.Links.Count;

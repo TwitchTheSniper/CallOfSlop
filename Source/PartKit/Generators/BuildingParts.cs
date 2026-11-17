@@ -1664,6 +1664,12 @@ public sealed partial class BuildingParts : IPartGenerator
         /// <summary>Data links from a named output port, by step (a Driving Module's "lift" into a hinge): the blueprint's "links".</summary>
         public readonly List<(int From, int To, string FromPort)> DataLinks = [];
 
+        /// <summary>
+        /// Ammo feeds by step, from and to, with their ports (a magazine's Ammo out into a Turret Ring's Ammo in): after the data links.
+        /// Nodes given (body frame): laid as given through walls and hull ("laid": only its ends and lengths are checked); none: routed.
+        /// </summary>
+        public readonly List<(int From, int To, string FromPort, string ToPort, double[][]? Nodes)> Feeds = [];
+
         /// <summary>Lay the wires as conduit along the walls though the build isn't anchored (a ship's lamps: ConstructConduit.cs).</summary>
         public bool Conduit;
 
@@ -1796,6 +1802,17 @@ public sealed partial class BuildingParts : IPartGenerator
             throw new InvalidOperationException($"{Name}: {part} on {sock} can't be turned {rot}");
         }
 
+        private static PyDict FeedJson((int From, int To, string FromPort, string ToPort, double[][]? Nodes) l)
+        {
+            var d = new PyDict { ["type"] = "feed", ["from"] = l.From, ["to"] = l.To, ["fromPort"] = l.FromPort, ["toPort"] = l.ToPort };
+            if (l.Nodes is { Length: > 0 } ns)
+            {
+                d["nodes"] = ns.Select(n => (object?)n.Select(v => (object?)v).ToList()).ToList();
+                d["laid"] = true;
+            }
+            return d;
+        }
+
         public PyDict Json()
         {
             if (Steps.Count > maxSteps)
@@ -1803,8 +1820,9 @@ public sealed partial class BuildingParts : IPartGenerator
             var d = new PyDict { ["format"] = "call-of-slop-construct-blueprint/1", ["name"] = Name, ["description"] = Desc, ["steps"] = Steps.Cast<object?>().ToList() };
             if (Wires.Count > 0)
                 d["wires"] = Wires.Select(w => (object?)new List<object?> { w.From, w.To }).ToList();
-            if (DataLinks.Count > 0)
-                d["links"] = DataLinks.Select(l => (object?)new PyDict { ["type"] = "data", ["from"] = l.From, ["to"] = l.To, ["fromPort"] = l.FromPort }).ToList();
+            if (DataLinks.Count > 0 || Feeds.Count > 0)
+                d["links"] = DataLinks.Select(l => (object?)new PyDict { ["type"] = "data", ["from"] = l.From, ["to"] = l.To, ["fromPort"] = l.FromPort })
+                    .Concat(Feeds.Select(l => (object?)FeedJson(l))).ToList();
             if (Conduit)
                 d["conduit"] = true;
             return d;

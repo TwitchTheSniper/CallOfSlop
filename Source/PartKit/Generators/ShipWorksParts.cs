@@ -25,7 +25,7 @@ public sealed class ShipWorksParts : IPartGenerator
 
     public const string Out = "Constructs/Parts/ShipWorks", Section = "Ship fittings", Group = "Ship";
 
-    private const string Clad = "#6c7378", Cable = "#262829", Steel = "#5a6065", Trim = "#7b8186", Dark = "#34373a", Hazard = "#d8a020", Copper = "#8a5a3a", Glow = "#ffb060", Gauge = "#40e070", Bed = "#5c6057", Chamber = "#98a1a9";
+    private const string Clad = "#6c7378", Cable = "#262829", Steel = "#5a6065", Trim = "#7b8186", Dark = "#34373a", Hazard = "#d8a020", Copper = "#8a5a3a", Glow = "#ffb060", Gauge = "#40e070", Bed = "#5c6057", Chamber = "#98a1a9", RingPlate = "#4d5866"; // (RingPlate: a Turret Ring's turning plate, a blue-grey no fixed box uses)
     private const double Plate = 0.3; // a mount's thickness
 
     /// <summary>The three sizes: a letter, and per size the numbers below.</summary>
@@ -50,6 +50,14 @@ public sealed class ShipWorksParts : IPartGenerator
     public static double AxisOver(int s) => CoreR[s] + Saddle;
 
     public const double HullBurn = 2.0, NacelleBurn = 2.4; // l/s a MN: a hull drive with its works whole, and one in a nacelle (its smaller core)
+
+    // Turret Ring: the race's radius and height over the deck, the trunk's radius and depth under it, torque (N m), speed (deg/s), mass, health, power (W).
+    public static readonly double[] RingR = [0.5, 0.8, 1.2], RingH = [0.25, 0.32, 0.4], TrunkR = [0.3, 0.5, 0.75], TrunkD = [0.6, 1.0, 1.5];
+    private static readonly int[] RingTorque = [12000, 36000, 100000], RingSpeed = [60, 45, 30];
+    private static readonly double[] RingMass = [400, 1200, 3000], RingHealth = [2500, 5000, 9000], RingPower = [20, 40, 80];
+
+    // Autoloader: guns it serves, width, height, depth, mass, health (its height fits its ring's trunk).
+    private static readonly double[] LoaderServes = [1, 2, 4], LoaderW = [0.5, 0.8, 1.1], LoaderH = [0.5, 0.8, 1.2], LoaderD = [0.6, 0.9, 1.3], LoaderMass = [300, 700, 1500], LoaderHealth = [1500, 3000, 5000];
 
     private static double[] P(double x, double y, double z) => [x, y, z];
 
@@ -84,6 +92,101 @@ public sealed class ShipWorksParts : IPartGenerator
     }
 
     private static string Desc(string s) => s + " A generic ship fitting: it fits any ship.";
+
+    /// <summary>A cylinder standing along y (a cylinder shape turned up), its axis at (x, z): inner a tube's bore.</summary>
+    private static void Up(Part p, double x, double z, double r, double y0, double y1, string color, string finish, double inner = 0, int segments = 16)
+    {
+        var shape = Kw(("shape", inner > 0 ? "tube" : "cylinder"), ("segments", segments), ("front", "+y"));
+        if (inner > 0)
+            shape["inner"] = inner;
+        shape["finish"] = finish;
+        p.Add(Box(P(x - r, Math.Min(y0, y1), z - r), P(x + r, Math.Max(y0, y1), z + r), color, detail: true, shape: shape));
+    }
+
+    // ---- the turret ring and its autoloader -------------------------------------------------------------------------
+
+    /// <summary>
+    /// A Turret Ring (ship-works.md 5.2): a turntable whose base carries a trunk down through the deck. Its frame's origin is
+    /// the deck's top at its middle: the race stands on the deck (y 0 to its height), the trunk hangs under it, with sockets on
+    /// its sides for Autoloaders and an Ammo in at its foot. A feed into the Ammo in feeds every gun standing on the ring, with
+    /// no link across the joint; the trunk is a mount, so works bolted to it serve those guns.
+    /// </summary>
+    private static Part Ring(int s)
+    {
+        var (r, h, tr, td) = (RingR[s], RingH[s], TrunkR[s], TrunkD[s]);
+        var p = new Part($"Turret Ring {SizeName[s]}", Small, Section, Desc($"A turret's ring, {r * 2:0.#} m across and rated {RingTorque[s]} N m, with a trunk {td:0.#} m deep under it through the deck. An ammo feed into its Ammo in, at the trunk's foot, feeds every gun on it, and Autoloaders bolt to the trunk's sides. Signal 1 or -1 turns it, 0 holds."),
+            role: "joint", tool: "wrench", material: "steel", color: Steel, group: Group);
+        Hidden(p, -r, 0, -r, r, h, r); // (the race)
+        Hidden(p, -tr, -td, -tr, tr, 0, tr); // (the trunk)
+        Up(p, 0, 0, r, 0.003, 0.08, Dark, "dirty steel", segments: 24); // (the flange on the deck)
+        Up(p, 0, 0, r * 0.9, 0.075, h - 0.045, Trim, "dirty steel", segments: 24); // (the race)
+        Up(p, 0, 0, r * 0.84, h - 0.05, h - 0.003, RingPlate, "painted plating", segments: 24); // (the turning plate: the joint's leaf, its own colour and not paintable, as every joint's moving side)
+        p.Boxes[^1]!["side"] = "leaf";
+        p.Boxes[^1]!["paintable"] = false;
+        Up(p, 0, 0, r * 0.91, h * 0.45, h * 0.45 + 0.04, Hazard, "hazard paint", inner: Math.Round(r * 0.88 / (r * 0.91), 3), segments: 24); // (a hazard band round the race)
+        for (var k = 0; k < 12; k++)
+        {
+            var a = k * Math.PI / 6 + Math.PI / 12;
+            var (x, z) = (r * 0.95 * Math.Cos(a), r * 0.95 * Math.Sin(a));
+            Look(p, x - 0.025, 0.077, z - 0.025, x + 0.025, 0.11, z + 0.025, "#9a9c98", "steel"); // (the flange's bolts)
+        }
+        Up(p, 0, 0, tr, -td + 0.08, -0.003, Steel, "painted plating"); // (the trunk)
+        foreach (var y in new[] { -td * 0.3, -td * 0.7 })
+            Up(p, 0, 0, tr + 0.02, y - 0.03, y + 0.03, Dark, "dirty steel", inner: Math.Round(tr / (tr + 0.02), 3)); // (its hoops)
+        Up(p, 0, 0, tr * 1.06, -td + 0.003, -td + 0.085, Dark, "dirty steel"); // (its foot)
+        Look(p, -0.12, -td - 0.08, -0.12, 0.12, -td + 0.003, 0.12, Hazard, "worn paint"); // (the Ammo in's mouth)
+        foreach (var b in p.Boxes)
+            if (!b.Has("side"))
+                b["side"] = "base"; // (everything but the turning plate stands still with the deck, the hidden race and trunk too)
+        p.Sock("base", P(0, 0, 0), "-y");
+        p.Sock("top", P(0, h, 0), "+y");
+        var mid = Math.Round(-td / 2, 2);
+        p.Sock("trunk+x", P(tr, mid, 0), "+x");
+        p.Sock("trunk-x", P(-tr, mid, 0), "-x");
+        p.Sock("trunk+z", P(0, mid, tr), "+z");
+        p.Sock("trunk-z", P(0, mid, -tr), "-z");
+        var speed = RingSpeed[s];
+        var torque = RingTorque[s];
+        p.Set(("power", RingPower[s]),
+            ("joint", Kw(("type", "turntable"), ("axis", "+y"), ("pivot", Py.L(0, Py.Round(h, 4), 0)), ("leaf", "top"), ("speed", speed), ("strength", torque), ("give", 20), ("overloadDamage", 0))),
+            ("config", Py.L(
+                Kw(("key", "speed"), ("label", "Speed"), ("group", "Motor"), ("unit", "deg/s"), ("min", 0.0), ("max", (double)2 * speed), ("step", 1), ("tooltip", $"How fast it turns: rated {speed} deg/s (0%), from stopped (-100%) to {2 * speed} deg/s (+100%).")),
+                Kw(("key", "strength"), ("label", "Torque"), ("group", "Motor"), ("unit", "N m"), ("min", torque / 10.0), ("max", (double)torque), ("step", 100), ("tooltip", $"What it holds, up to {torque} N m.")))),
+            ("ports", Py.L(Kw(("name", "Ammo in"), ("type", "feed"), ("dir", "in"), ("at", Py.L(0, Py.Round(-td, 4), 0)), ("face", "-y")))),
+            ("worksPiece", Kw(("kind", "mount"))),
+            ("collider", "boxes")); // (the race and trunk are drawn as cylinders: the hidden boxes collide)
+        return p.Stats(RingMass[s], RingHealth[s], 30);
+    }
+
+    /// <summary>An Autoloader: a rammer on a frame, a shell tray and its hoist, bolted to a Turret Ring's trunk (its front face).</summary>
+    private static Part Loader(int s)
+    {
+        var (w, h, d) = (LoaderW[s], LoaderH[s], LoaderD[s]);
+        var n = (int)LoaderServes[s];
+        var p = new Part($"Autoloader {SizeName[s]}", Small, Section, Desc($"A turret's autoloader: bolt it to a Turret Ring's trunk. It serves {(n == 1 ? "1 gun" : $"{n} guns")} on the ring while the ring is fed: a gun of six rounds or fewer reloads in well under half its time, a belt-fed one doesn't stop between loads."),
+            role: "frame", tool: "welder", material: "steel", color: Steel, group: Group);
+        var y0 = -h / 2;
+        Solid(p, -w / 2, y0, -d, w / 2, y0 + 0.08, -0.02, Bed, "dirty steel"); // (its base frame)
+        foreach (var x in new[] { -w / 2 + 0.04, w / 2 - 0.04 })
+            Look(p, x - 0.035, y0 + 0.083, -d + 0.04, x + 0.035, h / 2 - 0.003, -d + 0.11, Dark, "dirty steel"); // (the frame's posts at the back...)
+        Look(p, -w / 2 + 0.004, h / 2 - 0.07, -d + 0.04, w / 2 - 0.004, h / 2 - 0.003, -0.06, Dark, "dirty steel"); // (...and the rail over it)
+        var tr = Math.Min(w, h) * 0.18;
+        Cyl(p, 0, y0 + h * 0.42, tr, -d + 0.12, -0.05, Hazard, "worn paint", segments: 12); // (the rammer)
+        Cyl(p, 0, y0 + h * 0.42, tr * 0.45, -0.05, -0.003, Trim, "steel", segments: 10); // (its head)
+        Look(p, -w * 0.32, y0 + 0.083, -d * 0.75, w * 0.32, y0 + h * 0.25, -d * 0.2, Trim, "painted plating"); // (the shell tray)
+        Cyl(p, w * 0.3, y0 + h * 0.75, tr * 0.5, -d + 0.12, -d * 0.3, Copper, "copper", segments: 8); // (a hydraulic ram)
+        Look(p, -w / 2 + 0.06, y0 + h * 0.6, -d * 0.3, -w / 2 + 0.09, y0 + h * 0.8, -d * 0.1, Gauge, "", glow: true); // (its ready lamp)
+        Look(p, -w * 0.4, y0 + 0.078, -d * 0.18, w * 0.4, y0 + 0.086, -0.03, Hazard, "hazard paint"); // (a hazard band on the frame's front edge: this face feeds the ring)
+        Hidden(p, -w / 2, y0 + 0.08, -d, w / 2, h / 2, -0.02);
+        Hidden(p, -0.2, -0.2, -0.02, 0.2, 0.2, 0); // (the face that meets the trunk)
+        p.Sock("front", P(0, 0, 0), "+z");
+        p.Sock("back", P(0, 0, -d), "-z");
+        p.Sock("+x", P(w / 2, 0, Math.Round(-d / 2, 2)), "+x");
+        p.Sock("-x", P(-w / 2, 0, Math.Round(-d / 2, 2)), "-x");
+        p.Sock("deck", P(0, -h / 2, Math.Round(-d / 2, 2)), "-y");
+        p.Set(("onBreak", "disable"), ("worksPiece", Kw(("kind", "loader"), ("serves", LoaderServes[s]))));
+        return p.Stats(LoaderMass[s], LoaderHealth[s], 20);
+    }
 
     // ---- the mount -------------------------------------------------------------------------------------------------
 
@@ -385,6 +488,10 @@ public sealed class ShipWorksParts : IPartGenerator
         parts.Add(Nacelle(0));
         parts.Add(Nacelle(1));
         parts.Add(Hatch());
+        for (var s = 0; s < 3; s++)
+            parts.Add(Ring(s));
+        for (var s = 0; s < 3; s++)
+            parts.Add(Loader(s));
         WriteParts(o, Out, parts.Select(p => ("", p)));
     }
 }

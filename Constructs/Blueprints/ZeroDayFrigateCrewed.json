@@ -1347,7 +1347,7 @@
     },
     {
       "part": "Zero Day Locker",
-      "on": 43,
+      "on": 44,
       "socket": "messLocker",
       "by": "wall",
       "paint": "#5c646a",
@@ -1489,7 +1489,7 @@
       "by": "hull"
     },
     {
-      "part": "Turntable",
+      "part": "Turret Ring S",
       "on": 213,
       "socket": "top",
       "by": "base"
@@ -1507,82 +1507,122 @@
       "by": "bottom"
     },
     {
-      "part": "Ammo Box",
-      "on": 219,
-      "socket": "back",
-      "by": "front"
-    },
-    {
-      "part": "Turntable",
+      "part": "Turret Ring S",
       "on": 214,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Motor Hinge",
-      "on": 221,
+      "on": 220,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Zero Day PDC",
-      "on": 222,
+      "on": 221,
       "socket": "leaf",
       "by": "bottom"
     },
     {
-      "part": "Ammo Box",
-      "on": 223,
-      "socket": "back",
-      "by": "front"
-    },
-    {
-      "part": "Turntable",
+      "part": "Turret Ring S",
       "on": 215,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Motor Hinge",
-      "on": 225,
+      "on": 223,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Zero Day PDC",
-      "on": 226,
+      "on": 224,
       "socket": "leaf",
       "by": "bottom"
     },
     {
-      "part": "Ammo Box",
-      "on": 227,
-      "socket": "back",
-      "by": "front"
-    },
-    {
-      "part": "Turntable",
+      "part": "Turret Ring S",
       "on": 216,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Motor Hinge",
-      "on": 229,
+      "on": 226,
       "socket": "top",
       "by": "base"
     },
     {
       "part": "Zero Day PDC",
-      "on": 230,
+      "on": 227,
       "socket": "leaf",
       "by": "bottom"
     },
     {
-      "part": "Ammo Box",
-      "on": 231,
-      "socket": "back",
-      "by": "front"
+      "part": "Ammo Container",
+      "on": 38,
+      "socket": "magL",
+      "by": "-y",
+      "config": {
+        "sizeX": 1.0,
+        "sizeY": 0.7,
+        "sizeZ": 1.0,
+        "atX": -1.0,
+        "atY": 0.2,
+        "atZ": 0.65,
+        "material": "ammo",
+        "fill": 100
+      }
+    },
+    {
+      "part": "Ammo Container",
+      "on": 38,
+      "socket": "magR",
+      "by": "-y",
+      "config": {
+        "sizeX": 1.0,
+        "sizeY": 0.7,
+        "sizeZ": 1.0,
+        "atX": 1.0,
+        "atY": 0.2,
+        "atZ": 0.65,
+        "material": "ammo",
+        "fill": 100
+      }
+    },
+    {
+      "part": "Ammo Container",
+      "on": 31,
+      "socket": "magL",
+      "by": "-y",
+      "config": {
+        "sizeX": 1.0,
+        "sizeY": 0.7,
+        "sizeZ": 1.0,
+        "atX": -1.0,
+        "atY": 0.2,
+        "atZ": 0.65,
+        "material": "ammo",
+        "fill": 100
+      }
+    },
+    {
+      "part": "Ammo Container",
+      "on": 31,
+      "socket": "magR",
+      "by": "-y",
+      "config": {
+        "sizeX": 1.0,
+        "sizeY": 0.7,
+        "sizeZ": 1.0,
+        "atX": 1.0,
+        "atY": 0.2,
+        "atZ": 0.65,
+        "material": "ammo",
+        "fill": 100
+      }
     },
     {
       "part": "Gunnery Console",
@@ -1852,7 +1892,7 @@
     ],
     [
       235,
-      223
+      222
     ],
     [
       237,
@@ -1860,11 +1900,11 @@
     ],
     [
       238,
-      227
+      225
     ],
     [
       238,
-      231
+      228
     ],
     [
       161,
@@ -1898,6 +1938,108 @@
       120,
       252
     ]
+  ],
+  "links": [
+    {
+      "type": "feed",
+      "from": 229,
+      "to": 217,
+      "fromPort": "Ammo out",
+      "toPort": "Ammo in",
+      "nodes": [
+        [
+          3.08,
+          3.93,
+          15.38
+        ],
+        [
+          -0.4,
+          3.93,
+          15.38
+        ],
+        [
+          -0.7,
+          3.475,
+          15.38
+        ]
+      ],
+      "laid": true
+    },
+    {
+      "type": "feed",
+      "from": 230,
+      "to": 220,
+      "fromPort": "Ammo out",
+      "toPort": "Ammo in",
+      "nodes": [
+        [
+          9.67,
+          3.93,
+          15.38
+        ],
+        [
+          13.14,
+          3.93,
+          15.38
+        ],
+        [
+          13.44,
+          3.475,
+          15.38
+        ]
+      ],
+      "laid": true
+    },
+    {
+      "type": "feed",
+      "from": 231,
+      "to": 223,
+      "fromPort": "Ammo out",
+      "toPort": "Ammo in",
+      "nodes": [
+        [
+          3.08,
+          3.93,
+          37.38
+        ],
+        [
+          -0.4,
+          3.93,
+          37.38
+        ],
+        [
+          -0.7,
+          3.475,
+          37.38
+        ]
+      ],
+      "laid": true
+    },
+    {
+      "type": "feed",
+      "from": 232,
+      "to": 226,
+      "fromPort": "Ammo out",
+      "toPort": "Ammo in",
+      "nodes": [
+        [
+          9.67,
+          3.93,
+          37.38
+        ],
+        [
+          13.14,
+          3.93,
+          37.38
+        ],
+        [
+          13.44,
+          3.475,
+          37.38
+        ]
+      ],
+      "laid": true
+    }
   ],
   "conduit": true
 }

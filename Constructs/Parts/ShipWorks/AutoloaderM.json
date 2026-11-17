@@ -1,0 +1,251 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Autoloader M",
+  "description": "A turret's autoloader: bolt it to a Turret Ring's trunk. It serves 2 guns on the ring while the ring is fed: a gun of six rounds or fewer reloads in well under half its time, a belt-fed one doesn't stop between loads. A generic ship fitting: it fits any ship.",
+  "group": "Ship",
+  "section": "Ship fittings",
+  "role": "frame",
+  "tool": "welder",
+  "onBreak": "disable",
+  "worksPiece": {
+    "kind": "loader",
+    "serves": 2.0
+  },
+  "mass": 700.0,
+  "health": 3000,
+  "armour": 20,
+  "material": "steel",
+  "color": "#5a6065",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -0.4,
+        -0.4,
+        -0.9
+      ],
+      "max": [
+        0.4,
+        -0.32,
+        -0.02
+      ],
+      "color": "#5c6057",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.395,
+        -0.317,
+        -0.858
+      ],
+      "max": [
+        -0.325,
+        0.399,
+        -0.79
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        0.325,
+        -0.317,
+        -0.858
+      ],
+      "max": [
+        0.395,
+        0.399,
+        -0.79
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.396,
+        0.33,
+        -0.86
+      ],
+      "max": [
+        0.396,
+        0.397,
+        -0.06
+      ],
+      "color": "#34373a",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -0.144,
+        -0.208,
+        -0.78
+      ],
+      "max": [
+        0.144,
+        0.08,
+        -0.05
+      ],
+      "color": "#d8a020",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -0.0648,
+        -0.1288,
+        -0.05
+      ],
+      "max": [
+        0.0648,
+        0.0008,
+        -0.003
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "finish": "steel"
+    },
+    {
+      "min": [
+        -0.256,
+        -0.317,
+        -0.675
+      ],
+      "max": [
+        0.256,
+        -0.2,
+        -0.18
+      ],
+      "color": "#7b8186",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.168,
+        0.128,
+        -0.78
+      ],
+      "max": [
+        0.312,
+        0.272,
+        -0.27
+      ],
+      "color": "#8a5a3a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "finish": "copper"
+    },
+    {
+      "min": [
+        -0.34,
+        0.08,
+        -0.27
+      ],
+      "max": [
+        -0.31,
+        0.24,
+        -0.09
+      ],
+      "color": "#40e070",
+      "detail": true,
+      "glow": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.32,
+        -0.326,
+        -0.162
+      ],
+      "max": [
+        0.32,
+        -0.31,
+        -0.03
+      ],
+      "color": "#d8a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.4,
+        -0.32,
+        -0.9
+      ],
+      "max": [
+        0.4,
+        0.4,
+        -0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.2,
+        -0.2,
+        -0.02
+      ],
+      "max": [
+        0.2,
+        0.2,
+        0.0
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.9
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.4,
+        0.0,
+        -0.45
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.4,
+        0.0,
+        -0.45
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "deck",
+      "at": [
+        0.0,
+        -0.4,
+        -0.45
+      ],
+      "dir": "-y"
+    }
+  ]
+}

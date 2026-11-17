@@ -18,6 +18,20 @@ public static partial class SelfTest
     /// </summary>
     private static void CheckSpaceLaunch()
     {
+        // The Planetoid map is put back to the first map after, whatever happens: "Large drive" after this section built
+        // its offline rigs on the Planetoid's ground and gravity and failed 15 checks (2026-11-17).
+        try
+        {
+            SpaceLaunchRun();
+        }
+        finally
+        {
+            World.SetMap(Maps.All[0]);
+        }
+    }
+
+    private static void SpaceLaunchRun()
+    {
         StarSystems.Reload();
         if (Maps.Find("Planetoid") is not { Planetoid: { } pl } map || ConstructBuild.FindBlueprint("Orbiter") is not { } bp)
         {

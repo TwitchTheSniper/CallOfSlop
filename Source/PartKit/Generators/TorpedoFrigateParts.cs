@@ -43,6 +43,10 @@ public sealed class TorpedoFrigateParts : IPartGenerator
     private const double Ft0 = 0.25, Ceil0 = 3.25, Ft1 = 3.5, Ceil1 = 6.5, Roof = 6.75; // floor tops and ceilings of the two decks
     private const double Ground = -4.1; // where the legs stand
     private const double ZFront = 8.5, ZStep = 14.75, ZAft = 42.0; // the rooms' front, where they widen, their back
+    // A PDC's magazine (ship-works.md 5.2): a bunker in the hull's void behind the room's side wall at its barbette, aft of the
+    // feed's line: its size out from the wall, up and along (m), and how far aft of the feed's line it starts. 0.7 m3: 2,800 rounds.
+    private const double MagX = 1.0, MagY = 0.7, MagZ = 1.0, MagGap = 0.15;
+    private const double MagCube = 3.296; // the magazine's Ammo Container (a 0.4 m cube) stands against the side wall inside: its middle this far out
     private const double Lw = 4.5, LwF = 3.5, Uw = 3.5, UwF = 2.5; // the rooms' inner half widths: lower aft, lower fore, upper aft, the bridge
     private const double DoorH = 2.25;
 
@@ -361,11 +365,73 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         za += 0.004; // (no face shared with the neighbouring band's boxes)
         zb -= 0.004;
         if (xin <= 0)
-            Hidden(p, Cx - xo, ya, za, Cx + xo, yb, zb);
+            HiddenOut(p, Cx - xo, ya, za, Cx + xo, yb, zb);
         else
             foreach (var s in new[] { -1, 1 })
-                Hidden(p, Cx + s * xin, ya, za, Cx + s * xo, yb, zb);
+                HiddenOut(p, Math.Min(Cx + s * xin, Cx + s * xo), ya, za, Math.Max(Cx + s * xin, Cx + s * xo), yb, zb);
     }
+
+    /// <summary>The rooms cut out of the void while a deck is made (a PDC's magazine): x0, y0, z0, x1, y1, z1 in the deck's frame.</summary>
+    private static readonly List<double[]> VoidHoles = [];
+
+    /// <summary>A hidden box less <see cref="VoidHoles"/>: the pieces of it round each hole (none thinner than a centimetre).</summary>
+    private static void HiddenOut(Part p, double x0, double y0, double z0, double x1, double y1, double z1)
+    {
+        var pieces = new List<double[]> { new[] { x0, y0, z0, x1, y1, z1 } };
+        foreach (var h in VoidHoles)
+        {
+            var next = new List<double[]>();
+            foreach (var b in pieces)
+            {
+                if (h[0] >= b[3] || h[3] <= b[0] || h[1] >= b[4] || h[4] <= b[1] || h[2] >= b[5] || h[5] <= b[2])
+                {
+                    next.Add(b);
+                    continue;
+                }
+                var r = (double[])b.Clone();
+                for (var a = 0; a < 3; a++) // (slabs below and above the hole on each axis in turn, then what is left narrows to it)
+                {
+                    if (h[a] > r[a] + 0.01)
+                    {
+                        var lo = (double[])r.Clone();
+                        lo[a + 3] = h[a];
+                        next.Add(lo);
+                    }
+                    if (h[a + 3] < r[a + 3] - 0.01)
+                    {
+                        var hi = (double[])r.Clone();
+                        hi[a] = h[a + 3];
+                        next.Add(hi);
+                    }
+                    r[a] = Math.Max(r[a], h[a]);
+                    r[a + 3] = Math.Min(r[a + 3], h[a + 3]);
+                }
+            }
+            pieces = next;
+        }
+        foreach (var b in pieces)
+            Hidden(p, b[0], b[1], b[2], b[3], b[4], b[5]);
+    }
+
+    /// <summary>
+    /// The PDC magazine behind side <paramref name="s"/>'s wall at the barbette at <paramref name="zc"/>: the hole in the void (from
+    /// the wall's outer face, on the deck, aft of the feed's line) and the socket its Ammo Container stands on, inside against the wall.
+    /// The container's box fills the hole; the wall, the deck and the void round it seal it (ConstructSeal's reach).
+    /// </summary>
+    private static void MagazineAt(Part p, int s, double zc)
+    {
+        double d0 = Uw + 0.25 + 0.006, d1 = Uw + 0.25 + 0.046 + MagX + 0.04;
+        VoidHoles.Add([Math.Min(Cx + s * d0, Cx + s * d1), Ft1, zc + MagGap - 0.04, Math.Max(Cx + s * d0, Cx + s * d1), Ft1 + 0.05 + MagY + 0.05, zc + MagGap + MagZ + 0.04]);
+        Sock(p, s < 0 ? "magL" : "magR", Cx + s * MagCube, Ft1, zc, "+y");
+    }
+
+    /// <summary>The config of a PDC magazine's Ammo Container on side <paramref name="s"/>: its box in the hole behind the wall, full in creative.</summary>
+    private static PyDict MagazineConfig(int s) => new()
+    {
+        ["sizeX"] = MagX, ["sizeY"] = MagY, ["sizeZ"] = MagZ,
+        ["atX"] = s * Py.Round(Uw + 0.25 + 0.046 + MagX / 2 - MagCube, 2), ["atY"] = Py.Round(0.05 + MagY / 2 - 0.2, 2), ["atZ"] = Py.Round(MagGap + MagZ / 2, 2),
+        ["material"] = "ammo", ["fill"] = 100,
+    };
 
     // ---- rooms: floors, walls, doors
 
@@ -801,13 +867,16 @@ public sealed class TorpedoFrigateParts : IPartGenerator
             Shoulder(p, 3, s, 8.4, 13.6, 0.75, 0.42, 1.4, Armour);
             Shoulder(p, 2, s, 9.0, 13.0, 0.55, 0.3, 1.0, Blue);
         }
-        // The void: beside the floor slab, beside the walls, beside the ceiling.
+        // The void: beside the floor slab, beside the walls, beside the ceiling; the forward PDCs' magazines cut out of it behind ops' walls.
+        foreach (var s in new[] { -1, 1 })
+            MagazineAt(p, s, 15.5);
         foreach (var (za, zb, xl, xu) in new[] { (8.0, 14.0, LwF + 0.25, UwF + 0.25), (14.0, 20.0, Lw + 0.25, Uw + 0.25), (20.0, 30.0, Lw + 0.25, Uw + 0.25) })
         {
             Void(p, za, Math.Min(zb, 25.0), 3.25, 3.5, xl);
             Void(p, za, Math.Min(zb, 25.0), 3.5, 5.2, xu);
             Void(p, za, Math.Min(zb, 25.0), 5.2, 6.75, xu);
         }
+        VoidHoles.Clear();
         Sock(p, "lower", Cx - 2.0, Ceil0, ZFront - 0.125, "-y");
         Sock(p, "spine", Cx - 1.5, Roof, 12.0, "+y");
         Sock(p, "upperAft", Cx - 2.0, Ft1, 25.0, "+z");
@@ -889,12 +958,15 @@ public sealed class TorpedoFrigateParts : IPartGenerator
                 Chine(p, 3, s, za, zb, 0.25, 0.12, Armour);
                 FStrip(p, 3, s, za, zb, 0.03, 0.97, 0.04, 0.065, 0.025, Glow, glow: true);
             }
+        foreach (var s in new[] { -1, 1 })
+            MagazineAt(p, s, 37.5); // (the aft PDCs' magazines, behind the mess's walls)
         foreach (var (za, zb) in new[] { (25.0, 30.0), (30.0, 38.0), (38.0, ZAft) })
         {
             Void(p, za, zb, 3.25, 3.5, Lw + 0.25);
             Void(p, za, zb, 3.5, 5.2, Uw + 0.25);
             Void(p, za, zb, 5.2, 6.75, Uw + 0.25);
         }
+        VoidHoles.Clear();
         Sock(p, "fore", Cx - 2.0, Ft1, 25.0, "-z");
         foreach (var s in new[] { -1, 1 })
             Sock(p, s < 0 ? "podL" : "podR", Cx + s * PodX, 3.375, 37.5, s < 0 ? "-x" : "+x");
@@ -912,7 +984,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         // The mess: galley, coffee, the table (with the office plant on it: it is the IT Department's ship), the aft gunnery station.
         Sock(p, "stove", Cx - Uw, Ft1 + 0.45, 35.6, "+x");
         Sock(p, "coffee", Cx - Uw, Ft1 + 0.125, 36.6, "+x");
-        Sock(p, "messLocker", Cx - Uw, Ft1 + 0.125, 37.4, "+x");
+        Sock(p, "messLocker", Cx + Uw, Ft1 + 0.125, 36.2, "-x"); // (starboard: the port magazine's container stands where it was)
         Sock(p, "table", Cx - 2.0, Ft1, 38.4, "+y");
         Sock(p, "gun", Cx - 0.3, Ft1, 39.6, "+y");
         Sock(p, "gunSeat", Cx - 0.3, Ft1, 40.6, "+y");
@@ -1264,7 +1336,7 @@ public sealed class TorpedoFrigateParts : IPartGenerator
 
     private static Part Barbette()
     {
-        var p = Big("Zero Day Turret Barbette", "An armoured barbette on the Zero Day's beam: a point-defence turret turns on its top.", color: Armour);
+        var p = Big("Zero Day Turret Barbette", "An armoured barbette on the Zero Day's beam: a point-defence turret turns on its top, on a Turret Ring whose trunk goes down into the barbette's well, fed from the magazine inside.", color: Armour);
         // Local: x out from the hull (the socket at 0), y up, z along the ship.
         double[][] Sec(double x, double w, double y0, double y1) => [[x, y0, -w], [x, y1, -w * 0.8], [x, y1, w * 0.8], [x, y0, w]];
         double[][] Pt(IEnumerable<double[]> q) => [.. q.Select(a => a.Select(v => Py.Round(v, 4)).ToArray())];
@@ -1272,8 +1344,13 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         Prism(p, Pt(Sec(0.9, 1.1, -0.6, 0.9)), Pt(Sec(1.6, 0.75, -0.2, 0.9)), Armour2, "plated steel");
         Prism(p, Pt(Sec(0.3, 0.9, 0.9, 0.91)), Pt(Sec(1.45, 0.6, 0.9, 0.95)), Blue, "painted plating");
         p.Add(Box([1.55, 0.2, -0.45], [1.62, 0.5, 0.45], Hazard, detail: true, shape: Kw(("finish", "hazard paint"))));
-        p.Add(Box([1.0, 0.955, -0.42], [1.4, 0.995, 0.42], Frame, detail: true, shape: Kw(("finish", "dirty steel")))); // (the turntable's ring)
-        p.Add(Box([0.0, -0.45, -0.75], [1.45, 1.0, 0.75], hidden: true));
+        // Its solid round the well the Turret Ring's trunk goes down (the trunk reaches TrunkD under the ring's base, at the top socket).
+        var (wx, wr) = (1.2 - ShipWorksParts.TrunkR[0] - 0.02, ShipWorksParts.TrunkR[0] + 0.02);
+        var wy = Math.Round(1.0 - ShipWorksParts.TrunkD[0] - 0.02, 2);
+        p.Add(Box([0.0, -0.45, -0.75], [wx, 1.0, 0.75], hidden: true));
+        p.Add(Box([wx, -0.45, -0.75], [1.45, wy, 0.75], hidden: true));
+        p.Add(Box([wx, wy, -0.75], [1.45, 1.0, -wr], hidden: true));
+        p.Add(Box([wx, wy, wr], [1.45, 1.0, 0.75], hidden: true));
         p.Sock("hull", [0, 0, 0], "-x");
         p.Sock("top", [1.2, 1.0, 0], "+y");
         return p.Stats(1800, 8000, 40, 8.0);
@@ -1919,13 +1996,32 @@ public sealed class TorpedoFrigateParts : IPartGenerator
             bp.Wires.Add((s, l));
     }
 
-    private static int Turret(BuildingParts.Blueprint bp, int pod)
+    /// <summary>A point-defence turret on a barbette: a Turret Ring S (its trunk down the barbette's well), a Motor Hinge, the PDC. Its
+    /// rounds come up the ring's feed from the magazine (ship-works.md 5.2), so nothing is bolted to the gun outside.</summary>
+    private static int Turret(BuildingParts.Blueprint bp, int pod, out int ring)
     {
-        var tt = Hang(bp, "Turntable", pod, "top", "base");
-        var hinge = Hang(bp, "Motor Hinge", tt, "top", "base");
-        var gun = Hang(bp, "Zero Day PDC", hinge, "leaf", "bottom");
-        Hang(bp, "Ammo Box", gun, "back", "front");
-        return gun;
+        ring = Hang(bp, "Turret Ring S", pod, "top", "base");
+        var hinge = Hang(bp, "Motor Hinge", ring, "top", "base");
+        return Hang(bp, "Zero Day PDC", hinge, "leaf", "bottom");
+    }
+
+    /// <summary>
+    /// A PDC magazine's feed (body frame): from its container's Ammo out up 15 cm, out through the wall, the void and the hull level
+    /// with that, then down into the barbette under the trunk's foot and up into the ring's Ammo in (ship-works.md 5.2).
+    /// </summary>
+    private static double[][] MagazineFeed(BuildingParts.Blueprint bp, int mag, int ring)
+    {
+        var o = bp.Parts[0].Pos;
+        double[] At(int step, double[] local)
+        {
+            var a = BuildingParts.Apply(bp.Parts[step].Rot, local);
+            return [bp.Parts[step].Pos[0] + a[0] - o[0], bp.Parts[step].Pos[1] + a[1] - o[1], bp.Parts[step].Pos[2] + a[2] - o[2]];
+        }
+        var top = At(mag, [0, 0.2, 0]);
+        var foot = At(ring, [0, -ShipWorksParts.TrunkD[0], 0]);
+        var s = Math.Sign(foot[0] - top[0]);
+        double[] R(double x, double y, double z) => [Py.Round(x, 3), Py.Round(y, 3), Py.Round(z, 3)];
+        return [R(top[0], top[1] + 0.15, top[2]), R(foot[0] - s * 0.3, top[1] + 0.15, top[2]), R(foot[0], foot[1] - 0.175, foot[2])];
     }
 
     private static int Door(BuildingParts.Blueprint bp, int on, string sock) => Paint(bp, Hang(bp, "Bulkhead Door 1.5x2.25 m", on, sock, "hang"), Armour, "plated steel");
@@ -2052,7 +2148,18 @@ public sealed class TorpedoFrigateParts : IPartGenerator
         Switch(bp, ua, "switchMess", LampAt(bp, ua, "lampMessL", "#ffe0b0"), LampAt(bp, ua, "lampMessR", "#ffe0b0"));
         // The turrets: two barbettes forward worked from ops, two aft worked from the mess.
         var pods = new[] { Hang(bp, "Zero Day Turret Barbette", uf, "podL", "hull"), Hang(bp, "Zero Day Turret Barbette", uf, "podR", "hull"), Hang(bp, "Zero Day Turret Barbette", ua, "podL", "hull"), Hang(bp, "Zero Day Turret Barbette", ua, "podR", "hull") };
-        var guns = pods.Select(pd => Turret(bp, pd)).ToArray();
+        var rings = new int[pods.Length];
+        var guns = pods.Select((pd, k) => Turret(bp, pd, out rings[k])).ToArray();
+        // Each PDC's magazine: an Ammo Container against the room's side wall by its barbette, its box in the hull's void behind the
+        // wall (ops forward, the mess aft), its feed laid up the wall, through it, the void and the hull into the barbette, to the ring's
+        // Ammo in at the trunk's foot. Laid, not routed: the void and the barbette are solid to the router.
+        for (var k = 0; k < rings.Length; k++)
+        {
+            var side = k % 2 == 0 ? -1 : 1;
+            var mag = Hang(bp, "Ammo Container", k < 2 ? uf : ua, side < 0 ? "magL" : "magR", "-y");
+            bp.Steps[mag]["config"] = MagazineConfig(side);
+            bp.Feeds.Add((mag, rings[k], "Ammo out", "Ammo in", MagazineFeed(bp, mag, rings[k])));
+        }
         foreach (var (deck, pair) in new[] { (uf, new[] { guns[0], guns[1] }), (ua, new[] { guns[2], guns[3] }) })
         {
             var console = Hang(bp, "Gunnery Console", deck, "gun", "bottom");

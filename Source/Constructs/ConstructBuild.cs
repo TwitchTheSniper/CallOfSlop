@@ -1149,12 +1149,26 @@ public static class ConstructBuild
         }
         if (part < 0 || step >= bp.StepConfig.Count || bp.StepConfig[step] is not { } values)
             return;
+        // A ship the game spawns in survival comes with its magazines full (Karl, 2026-11-17): a store the blueprint fills with ammo is
+        // filled in any world but by a player's build (a Building Station's fit: PlayerBuild), which comes empty and is filled by hand.
+        var magazine = !world.Creative && !world.PlayerBuild && def.IsVolumeStore && FillsAmmo(def, values);
         foreach (var (slot, v) in values)
-            if (world.Creative || !def.Config[slot].CreativeOnly) // (a survival world builds it as it comes: an empty tank, whatever the blueprint says)
+            if (world.Creative || magazine || !def.Config[slot].CreativeOnly) // (a survival world builds it as it comes: an empty tank, whatever the blueprint says)
                 ConstructConfig.Set(ref c.Parts[part], def, slot, v);
         ConstructConfig.StartState(ref c.Parts[part], def);
-        if (def.IsVolumeStore && world.Creative)
+        if (def.IsVolumeStore && (world.Creative || magazine))
             ConstructStoreVolume.SetContents(world, c, part, limit: false); // (its walls may not be up yet: an open box spills what it must later)
+    }
+
+    /// <summary>Does a store's step set its Material to bulk ammo?</summary>
+    private static bool FillsAmmo(ConstructPartDef def, List<(int Slot, float Value)> values)
+    {
+        var slot = def.CfgSlot[(int)CfgKey.Material];
+        var ammo = RecyclingTable.Current.IdOf("ammo");
+        foreach (var (s, v) in values)
+            if (s == slot && ammo != 0 && (int)v == ammo)
+                return true;
+        return false;
     }
 
     /// <summary>

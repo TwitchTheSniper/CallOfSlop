@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Zero Day Turret Barbette",
-  "description": "An armoured barbette on the Zero Day's beam: a point-defence turret turns on its top.",
+  "description": "An armoured barbette on the Zero Day's beam: a point-defence turret turns on its top, on a Turret Ring whose trunk goes down into the barbette's well, fed from the magazine inside.",
   "group": "Ship",
   "section": "Zero Day frigate",
   "role": "frame",
@@ -207,24 +207,48 @@
     },
     {
       "min": [
-        1.0,
-        0.955,
-        -0.42
-      ],
-      "max": [
-        1.4,
-        0.995,
-        0.42
-      ],
-      "color": "#1f2226",
-      "detail": true,
-      "finish": "dirty steel"
-    },
-    {
-      "min": [
         0.0,
         -0.45,
         -0.75
+      ],
+      "max": [
+        0.88,
+        1.0,
+        0.75
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.88,
+        -0.45,
+        -0.75
+      ],
+      "max": [
+        1.45,
+        0.38,
+        0.75
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.88,
+        0.38,
+        -0.75
+      ],
+      "max": [
+        1.45,
+        1.0,
+        -0.32
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.88,
+        0.38,
+        0.32
       ],
       "max": [
         1.45,

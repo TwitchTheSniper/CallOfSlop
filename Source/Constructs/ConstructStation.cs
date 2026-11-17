@@ -857,7 +857,17 @@ public static partial class ConstructStation
         }
         var fuel0 = b.Fuel;
         var charge0 = b.Charge;
-        if (ConstructBuild.FitStep(world, b, bp, k, j.PartOf) is { } why)
+        world.PlayerBuild = true;
+        string? why;
+        try
+        {
+            why = ConstructBuild.FitStep(world, b, bp, k, j.PartOf);
+        }
+        finally
+        {
+            world.PlayerBuild = false;
+        }
+        if (why != null)
         {
             if (j.PartOf[k] >= 0 && b.PartCount == j.Fitted + 1)
                 j.Fitted++; // (the part went on before the refusal: the count stays the body's)

@@ -2088,6 +2088,7 @@ public sealed partial class ConstructWorld
 
     /// <summary>A creative world: endless parts (Game.SandboxShareRules sets it for every system that asks).</summary>
     public bool Creative => CreativeRecycling;
+    public bool PlayerBuild; // a Building Station fits a step: a player's build, whose stores come empty in survival (ConstructBuild.SetConfig)
 
     public int RecyclerTicks;
 
