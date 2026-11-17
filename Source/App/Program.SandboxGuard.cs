@@ -68,6 +68,7 @@ public static unsafe partial class Program
             SetCommandOpen(false);
             Ui.CloseDesigner();
             Ui.CloseLifter();
+            Ui.CloseLinked();
             _linkWheel.ResetMode();
             _lkMarkN = 0;
             PhysGunIdle();
@@ -76,6 +77,7 @@ public static unsafe partial class Program
             _swFlow.Cancel();
             _pwFlow.Cancel();
             SocketWeldRender.Clear();
+            UseFrameRender.Reset(); // (its frames are keyed by body id: another world's ids are other bodies)
             CargoReset();
             LeverReset();
             TypingClose();
@@ -123,6 +125,7 @@ public static unsafe partial class Program
             DrawCraftingInMatch(now);
             DrawDesignerInMatch(now);
             DrawLifterInMatch(now);
+            DrawLinkedInMatch(now);
             DrawToolWheelEditorInMatch();
             DrawSandboxTrackInMatch();
             DrawSandboxPaintInMatch();

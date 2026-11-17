@@ -143,6 +143,13 @@ A pressed cylinder's **stroke** (its length against its width) now adds power as
 - **Building Stations** gain a **Sub-jobs** setting (Auto by default): an idle station on the same construct takes other stations'
   uses. Set it Off on a station you keep for your own builds.
 
+### Linked logistics (2026-11-16)
+
+- **Worlds.** A world keeps its link ends' codes and pairs, ships' manifests, Route Computers' routes and Dispatchers' fleets on
+  their parts, and the host's link ledger (what was asked of linked factories, and what a closed world owes) in the main world's
+  save. An older build skips them; an older world loads with none. No new save file.
+- **Building Stations' Sub-jobs** is now a choice: Off, Auto (as before) or **Linked** (also takes uses sent over a logistics link).
+
 ### Keeping saves on a USB stick (portable mode)
 
 Put an empty file called `portable.txt` next to `CallOfSlop.exe`. The game then keeps its saves in its own folder, like the old builds did. Copy your save files into that folder yourself.

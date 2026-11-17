@@ -1537,6 +1537,38 @@ Design and the user's answers: `docs/sandbox/design/sub-blueprints.md`; status a
 - **Not yet:** uses inside uses are framed only as their outer use; a Bridge Crane's carry is the arm's code path but untried; uses
   in a selection with ropes, springs, no-collide pairs or tracks are saved as plain parts.
 
+## Linked logistics (2026-11-16)
+
+Design: docs/sandbox/design/linked-logistics.md (the user's answers at its end win); status: linked-logistics-notes.md. Code:
+`Source/Constructs/LinkedLogistics*.cs`, `Game/GameSandboxLinked.cs`, `UI/UiLinked.cs`. Parts: the part kit's `logistics_link_parts`
+(Constructs/Parts/LinkedLogistics), Tab inventory: Storage and Logistics, Linked logistics.
+
+- **Link ends.** A Logistics Transmitter shows a six-letter code; a Logistics Receiver on the same planetoid takes it (its panel, the use
+  key). A Logistics Relay does both and reaches the whole star system (a Relay at each end). A pair is two-way: each network orders from
+  the other. A network is the end's whole body, at most 4 ends. Linked output: 1 while a partner answers; Waiting: parts wait for a ship.
+- **Remote orders.** What a terminal or station order (or a chained input) can't get from its own network goes to a linked network that
+  holds or makes it (same planetoid first, then most stock): there it is an order at that network's **Cargo Dock**, a terminal-like
+  staging hold fed by its chutes and Routers; what lands in it is claimed for the line. The consumer's row says "at Works: 4 ready -
+  needs a ship". A terminal lists linked networks' stock and makes ("4 at Bluestone Works").
+- **Docks and ports.** A ship held by any Docking Clamp of the construct, with its **Cargo Port** within 8 m of a Cargo Dock, trades
+  two parts a second each way: unloading into the dock (stock for that network), then loading what waits into its Storage Volumes and
+  Piece Racks. Each part is a manifest line on the port (card: MANIFEST). Ship destroyed: its lines are lost and ordered again. A part taken
+  from its hold: the line shrinks and is not ordered again.
+- **Routes** (Route Computer, a working Flight Stabilizer): 2 to 4 Cargo Dock stops set in its panel or the command view's ROUTE...;
+  each stop's leaving rules (full %, minutes waited, nothing more to do; first met). On one planetoid it flies to 30 m over the dock and
+  sinks until the clamp takes it. A stop on another world is flown through space to a low orbit there and settled on the ledger at the
+  dock's rates (not landed). Fuel: it waits when it has less than 25% over its last trips' most. A pilot's keys suspend it.
+- **Closed worlds.** A world nobody is on is asleep: its ends' reports stay, its factories' output for posted lines is estimated (stock
+  at once, makers at their recipe's pace, never past their inputs), and a route ship's stop there is settled on the ledger; when the
+  world opens, what was settled lands in its stores.
+- **Dispatcher.** Route ships of its owner that dock here join its fleet (8); an idle one is sent on a run (here, there, back) when
+  waiting cargo reaches its threshold of the ship's payload, or the oldest line passes its timeout. It also fetches from a supplier
+  without a Dispatcher.
+- **Linked sub-jobs.** A Building Station set to Sub-jobs **Linked** takes sub-blueprint uses offered over a link, before the root's 30 s
+  fallback. The finished module is carried into a ship's Cargo Volume; docked at the root's construct (or set down within 60 m of the
+  root's bay) it is handed to the root's delivery.
+- Showcase: Linked Works, Linked Yard, Linked Hauler (`linked_logistics_showcase`): the hauler flies on four electric lift fans, and each factory's clamp charges it from four Battery Packs (a docked route ship under half charge waits to charge). Headless check: `--linked-check`; window verb `linked`.
+
 ## Lifters
 
 Scripted machines that carry pieces (design: `docs/sandbox/design/arms-and-cranes.md`; code `Source/Constructs/ConstructLifters.cs`,

@@ -180,6 +180,8 @@ public static class ConstructModules
             return LogicBlocks.OutPort(c, part, port); // (a Data Bus's breakout)
         if (p.D.Lifter != null)
             return port == 2 ? p.Mem : 0; // (a lifter's Moved: ConstructLifters.Ports)
+        if (p.D.LinkKind != LinkKind.None)
+            return LinkedLogistics.Output(p, port); // (a Route Computer's Fuel short)
         var seat = p.Count - 1;
         if (seat < 0 || seat >= c.PartCount)
             return 0;

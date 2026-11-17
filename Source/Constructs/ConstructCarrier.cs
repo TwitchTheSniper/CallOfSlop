@@ -13,6 +13,7 @@ public static class ConstructCarrier
     public const float HookSpeed = 8f; // m/s against the deck: what a rail will hook
     public const float PullFastest = 8f, PullGrip = 30f, PullStart = 15f; // a dock's tractor: how fast it draws, how firmly (1/s), and what it won't take on
     public const float SnapReach = 1.2f; // across a pull dock's box: how near its middle a craft is held
+    public const float SnapUpright = 0.8f; // how upright with the dock (the cosine: 37 degrees) a pull dock's craft is before it is held: one on its side or back is righted first
     public const uint AwayTicks = 300; // after a dock lets go it leaves that craft alone this long
     public const float MooringSpeed = 8f; // m/s against the mast: what a mast ties
     public const ushort MooringAway = 50; // looks (ten a second) after casting off before it ties again
@@ -173,18 +174,23 @@ public static class ConstructCarrier
         // Upright with the ship, and it stops turning; its heading stays its own.
         var upB = Vector3.Transform(Vector3.UnitY, body.Rot);
         var upC = Vector3.Transform(Vector3.UnitY, q);
-        body.AngVel += (c.AngVel + Vector3.Cross(upB, upC) * 2f - body.AngVel) * MathF.Min(1f, 4f * dt);
+        var right = Vector3.Cross(upB, upC);
+        if (Vector3.Dot(upB, upC) < 0) // (past a right angle the cross shrinks to nothing on its back: turn at the full rate, about its own x when it lies flat on it)
+            right = right.LengthSquared() > 1e-4f ? Vector3.Normalize(right) : Vector3.Transform(Vector3.UnitX, body.Rot);
+        body.AngVel += (c.AngVel + right * 2f - body.AngVel) * MathF.Min(1f, 4f * dt);
         ConstructLauncher.Push(c, at, -dv * body.Mass);
     }
 
-    /// <summary>Is <paramref name="b"/> where a pull dock holds a craft: over the middle of its box (the height is what the craft's gear makes it)?</summary>
+    /// <summary>Is <paramref name="b"/> where a pull dock holds a craft: over the middle of its box (the height is what the craft's gear makes it),
+    /// and upright with it (a craft caught on its side or back was held so, and left so: the tractor rights it first)?</summary>
     public static bool Snapped(Construct c, int part, Construct b)
     {
         ConstructCargo.Box(c, part, out var centre, out _);
         var local = ConstructCargo.ToRest(c, part, b.WorldCom) - centre;
         var up = Rot24.Apply(c.Parts[part].Rot, Vector3.UnitY);
         local -= up * Vector3.Dot(local, up);
-        return local.LengthSquared() < SnapReach * SnapReach;
+        c.WorldFrame(c.Parts[part].Seg, out var q, out _);
+        return local.LengthSquared() < SnapReach * SnapReach && Vector3.Dot(Vector3.Transform(Vector3.UnitY, b.Rot), Vector3.Transform(Vector3.UnitY, q)) > SnapUpright; // (the tractor's up: Tractor)
     }
 
     /// <summary>A mooring mast, ten times a second: on, it ropes the nearest balloon in reach; off, it casts its rope off.</summary>

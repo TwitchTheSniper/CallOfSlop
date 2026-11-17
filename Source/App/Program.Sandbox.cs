@@ -433,6 +433,8 @@ public static unsafe partial class Program
                 Ui.OpenOrdnanceBench(g); // (the Ordnance Bench: UiOrdnanceBench.cs)
                 SetMouseCaptured(false);
             }
+            else if (aimed && !join && !hit.Body.Loose && LinkedUse(hit.Body, hit.Part, hit.Distance))
+                OpenLinkedPanel(hit.Body, hit.Part); // (a linked logistics part: Program.SandboxLinked.cs)
             else if (aimed && !join && !hit.Body.Loose && LifterUse(hit.Body, hit.Part, hit.Distance)) // (the Welder's join first)
                 OpenLifterPanel(hit.Body, hit.Part); // (a Loader Arm or a Crane Bridge: its points and hand orders, Program.SandboxLifter.cs)
             else if (join)
