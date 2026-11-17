@@ -396,3 +396,17 @@ Value first: phase 1 alone makes the world's factions fall out and make up throu
   kit makes ground vehicles only; a command fit for a flagship.
 - **SURVIVAL.md:** if he agrees, "faction politics" moves from ideas to decided, with a line pointing here, and "NPC
   factions are kinds" gains "powers are made from kinds".
+
+## The user's answers (2026-11-17)
+
+These override the text above where they differ.
+
+1. **Powers from kinds:** yes. Kinds give behaviour data; powers are named factions made from them (up to 16); with no Powers folder each kind is one power.
+2. **Admiral:** an abstract mind tied to a real crew record on a flagship; killing or capturing it triggers the faction's succession doctrine or breaks the group.
+3. **Clock:** real time for minds and relation decay; Karl's space clock for groups moving between planets. Nothing happens while the game is off.
+4. **Far fights:** settled by strength on the ledger; a closed world is never opened for them.
+5. **Powers CAN be wiped out:** a power with no planets, ships or crew left is gone for good (others may take its place later: propose how, as an open question for a later phase).
+6. **Ships come from REAL PRODUCTION:** factions build ships in real factories with the production system (machines, recipes, Building Stations, sub-blueprints, linked logistics), which players can raid. This is far bigger work than an abstract stock: design how a faction runs factories (its own bases, crews as builders and haulers, resources from planets it holds), what happens when nobody is near (production estimated on the ledger like linked logistics' closed worlds), and phase it in after the relations and admiral phases.
+7. **Fog of war:** players see faction groups only within their sensors, plus what allies and news report (stale positions marked).
+8. **Up to 1,000 faction ships as real bodies near players at once** (not 40). This is a scale target: the physics, crew bodies, captains, admirals, network and drawing must hold the 8 ms tick at that count; design the LOD steps that make it possible (far-from-player bodies on a coarse physics/think rate, batched drawing, network interest management), measure with the biggest blueprints, and report what the engine can actually reach before promising it.
+9. **Allies help players:** an allied power's groups join fights near the player, answer calls for help and may escort; helping them back raises relations.
