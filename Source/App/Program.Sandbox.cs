@@ -1223,7 +1223,7 @@ public static unsafe partial class Program
         var mine = $"holds {MegaJoules(d.CapacitorKJ)}, refills at {d.CapacitorKW:0} kW";
         if (!p.Powered || c.CapCapacity <= 0)
             return SandboxKeys.Line(d.Name, SandboxKeys.Join(mine, hp), "not on the ship's circuit: link it to a battery's");
-        return SandboxKeys.Line(d.Name, SandboxKeys.Join($"capacitors {MegaJoules(c.Cap)} of {MegaJoules(c.CapCapacity)}", mine, hp), c.Cap < c.CapCapacity && !c.PowerOn ? "not refilling: the batteries are flat" : null);
+        return SandboxKeys.Line(d.Name, SandboxKeys.Join($"capacitors {MegaJoules(c.Cap)} of {MegaJoules(c.CapCapacity)}", mine, hp), c.Cap >= c.CapCapacity ? null : !c.PowerOn ? "not refilling: the batteries are flat" : ConstructPower.Share(c) <= ConstructPower.CapReserve + 0.01f ? "batteries at reserve: refills only as power is made" : null);
     }
 
     private static string MegaJoules(float kj) => kj >= 1000 ? $"{kj / 1000:0.#} MJ" : $"{kj:0} kJ";

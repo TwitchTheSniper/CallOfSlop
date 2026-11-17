@@ -152,9 +152,21 @@ public static class ConstructPower
         c.Cap = Math.Clamp(c.Cap, 0, c.CapCapacity);
     }
 
-    /// <summary>kJ the circuit puts into the capacitors this tick: their rate, up to what they lack and what the batteries hold.</summary>
-    private static float Refill(Construct c, float dt) =>
-        c.CapRate <= 0 || c.Cap >= c.CapCapacity ? 0 : MathF.Max(0, MathF.Min(c.CapRate * dt, MathF.Min(c.CapCapacity - c.Cap, c.Charge)));
+    /// <summary>The share of the batteries the capacitors never take: the starter, the lamps and the logic keep it.</summary>
+    public const float CapReserve = 0.25f;
+
+    /// <summary>
+    /// kJ the circuit puts into the capacitors this tick: their rate, up to what they lack and what the batteries hold over
+    /// <see cref="CapReserve"/> of their size (and the engine's starter), so a bank never flattens the batteries: once they are
+    /// down to it, the banks fill only as fast as the plants and alternators make more.
+    /// </summary>
+    private static float Refill(Construct c, float dt)
+    {
+        if (c.CapRate <= 0 || c.Cap >= c.CapCapacity)
+            return 0;
+        var spare = c.Charge - MathF.Max(c.ChargeCapacity * CapReserve, StarterKJ * 2);
+        return MathF.Max(0, MathF.Min(c.CapRate * dt, MathF.Min(c.CapCapacity - c.Cap, spare)));
+    }
 
     /// <summary>The capacitors' charge as a share of what they hold (0 without any).</summary>
     public static float CapShare(Construct c) => c.CapCapacity > 0 ? Math.Clamp(c.Cap / c.CapCapacity, 0, 1) : 0;

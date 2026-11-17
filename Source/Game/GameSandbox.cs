@@ -2837,10 +2837,14 @@ public sealed partial class Game
         ref var g = ref c.Guns[k];
         ref var p = ref c.Parts[g.Part];
         var boxes = ConstructWeapons.BoxRounds(c, k, Constructs);
-        var key = ((long)c.Id << 48) ^ ((long)g.Part << 40) ^ ((long)p.Rounds << 24) ^ ((long)boxes << 2) ^ (p.Reload > 0 ? 1 : 0) ^ (p.Broken ? 2 : 0) ^ ((long)g.Problem.GetHashCode() << 16);
+        var shots = g.Energy > 0 ? (int)MathF.Min(999, c.Cap / g.Energy) : 0; // (an energy gun: the shots its capacitors hold, ship-works.md 8)
+        var key = ((long)c.Id << 48) ^ ((long)g.Part << 40) ^ ((long)p.Rounds << 24) ^ ((long)boxes << 2) ^ (p.Reload > 0 ? 1 : 0) ^ (p.Broken ? 2 : 0) ^ ((long)g.Problem.GetHashCode() << 16) ^ ((long)shots << 30) ^ (c.CapCapacity > 0 ? 1L << 62 : 0);
         if (_sbGun.Stale(key))
             _sbGun.Text = p.Broken ? $"{p.D.Name}: wrecked"
                 : g.Problem.Length > 0 ? $"{p.D.Name} - won't fire: {g.Problem}"
+                : g.Energy > 0 && c.CapCapacity <= 0 ? $"{p.D.Name} - won't fire: no Capacitor Bank on its circuit"
+                : g.NoAmmo ? (shots == 0 ? $"{p.D.Name}: capacitors charging" : $"{p.D.Name}: {shots} shot{(shots == 1 ? "" : "s")} in the capacitors")
+                : g.Energy > 0 && shots == 0 && p.Rounds > 0 ? $"{p.D.Name}: {p.Rounds}/{g.Mag}, capacitors charging"
                 : g.BoxCount == 0 && g.FeedRoute < 0 && g.FeedSocket < 0 && p.Rounds == 0 && boxes == 0 ? $"{p.D.Name} - {(g.MagPart >= 0 ? "magazine empty" : "no ammo box or feed")}"
                 : p.Reload > 0 ? $"{p.D.Name}: reloading, {boxes} in boxes"
                 : p.Rounds == 0 && boxes == 0 ? $"{p.D.Name}: out of ammo"
