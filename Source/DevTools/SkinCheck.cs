@@ -308,6 +308,27 @@ public static class SkinCheck
                 w.Remove(loose);
             }
         }
+        // The ship let down onto the yard's ground and stepped there: what a step costs it with its skin on the ground.
+        {
+            foreach (var b in ship)
+            {
+                b.Anchored = false;
+                b.Wake();
+            }
+            Hold(w, ship, new Vector3(0, -29.5f, 0));
+            foreach (var b in ship)
+                b.Anchored = false;
+            var costs = new List<double>();
+            for (var t = 0; t < 240; t++)
+            {
+                var st = System.Diagnostics.Stopwatch.GetTimestamp();
+                ConstructPhysics.Step(w, World.Query, World.TickDt);
+                if (t >= 30)
+                    costs.Add(System.Diagnostics.Stopwatch.GetElapsedTime(st).TotalMilliseconds);
+            }
+            costs.Sort();
+            Console.WriteLine($"  on the ground: a physics step median {costs[costs.Count / 2]:0.000} ms, 95th {costs[costs.Count * 95 / 100]:0.000} ms, worst {costs[^1]:0.000} ms; rests {c.Pos.Y - c.PrevPos.Y:0.000} m/tick, {(c.Asleep ? "asleep" : "awake")}");
+        }
         Console.WriteLine($"  players on {picks.Count} spots: {sunk} sank 5 cm to 1 m into the skin, {fell} fell through, {slid} slid off (worst sink {worstSink * 100:0} cm)");
         Console.WriteLine($"  plates dropped on them: {plateSunk} sank 5 cm to 1 m, {plateFell} fell through, {plateSlid} slid off (worst sink {worstPlate * 100:0} cm)");
         return gaps > rays / 20 || fell + plateFell > 0 ? 1 : 0;
