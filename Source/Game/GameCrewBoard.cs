@@ -35,8 +35,8 @@ public sealed partial class Game
         {
             if (!p.Alive || p.CrewSlot >= 0 || !Aboard(p, c.Id))
                 continue;
-            if (s.Faction == 0 && !Fights(c, s, p))
-                continue; // (an owned ship's crew: its own faction aboard is welcome)
+            if (!BoardFoe(c, s, p))
+                continue; // (only those the crew's rules call hostile: never the owner, the owner's faction or a hired crew's employer)
             boarders++;
             if (first == 255)
                 first = p.Id;
@@ -76,7 +76,8 @@ public sealed partial class Game
         }
         if (defenders == 0)
         {
-            CrewCapture(c, s, first);
+            if (c.Owner == 255)
+                CrewCapture(c, s, first); // (a player's ship is never taken by killing its crew: it stays its owner's)
             return true;
         }
         if (def == null || s.Act is BoardAct.Surrender or BoardAct.Abandon || s.Act == BoardAct.Scuttle && s.ScStage > 0)
@@ -174,6 +175,17 @@ public sealed partial class Game
     }
 
     /// <summary>Taken: the ship is the boarder's, its surrendered crew their prisoners, the faction thinks the worse of them.</summary>
+    /// <summary>
+    /// Whether <paramref name="p"/> aboard counts as a boarder: someone the crew's faction rules call hostile (<see cref="Fights"/>: a foe or
+    /// standing below 0, or the stabilizer's setting with no faction), and never the ship's owner or anyone in the owner's faction.
+    /// </summary>
+    private bool BoardFoe(Construct c, CrewShip s, Player p)
+    {
+        if (c.Owner != 255 && (p.Id == c.Owner || Factions.Shares(c.Owner, p.Id)))
+            return false;
+        return Fights(c, s, p);
+    }
+
     private void CrewCapture(Construct c, CrewShip s, byte by)
     {
         var def = CrewFactions.Of(s.Faction);
@@ -263,6 +275,7 @@ public sealed partial class Game
             SandboxStand(bp, teleport: true);
         Crew.Leave(who, CrewState.Scuttling);
         s.ScPart = (short)point;
+        s.ScTag = c.Parts[point].Tag;
         s.ScMember = who;
         s.ScStage = 1;
         s.SeatsDirty = true; // (clients' look line: the charge)
@@ -274,6 +287,7 @@ public sealed partial class Game
     /// <summary>The scuttle's stages, once a captain's look: the walk, the arming (the one arming must live), the countdown, the blast.</summary>
     private void ScuttleStep(Construct c, CrewShip s, NpcFactionDef? def)
     {
+        CrewWorld.ScuttleFollow(c, s); // (a rebuild or split since the last look: the charge stays on its own part)
         int point = s.ScPart;
         if (point < 0 || point >= c.PartCount || c.Parts[point].Health <= 0)
         {

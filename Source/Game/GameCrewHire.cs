@@ -189,19 +189,27 @@ public sealed partial class Game
         var ship = CrewOwnShip(me, from);
         if (ship == null)
             return $"be aboard your own ship, or within {OwnShipReach:0} m of one, to hire crew for it";
-        var to = Crew.ShipOf(ship.Id) ?? Crew.Crew(ship, ShipAiMode.Strangers, faction: CrewFactions.Find("Player Crew"), empty: true);
+        // Every refusal before anything changes: a refused hire leaves no empty roster (and no ShipAi driver slot) behind.
+        var cost = def?.HireCost ?? 0;
+        var to = Crew.ShipOf(ship.Id);
+        if (to != null && !to.Own && !to.Prize)
+            return "that ship has a crew that isn't yours";
+        if (to != null && to.MemberCount >= CrewWorld.MaxCrewPerBody)
+            return "your ship's crew is full";
+        if (!SandboxInfiniteParts && cost > 0 && _credits[me.Id] < cost)
+            return $"that costs {cost} credits: you have {_credits[me.Id]}";
+        to ??= Crew.Crew(ship, ShipAiMode.Strangers, faction: CrewFactions.Find("Player Crew"), empty: true);
         if (to is { Prize: true, Own: false })
         {
             // A prize's first hand: its roster becomes your crew (the rest stay prisoners aboard it).
             to.Prize = false;
             CrewWorld.SetFaction(ship, to, CrewFactions.Find("Player Crew"));
             to.Act = BoardAct.Hold;
+            CrewTeamsFollow(to);
         }
         if (to == null || !to.Own)
-            return "that ship has a crew that isn't yours";
-        if (to.MemberCount >= CrewWorld.MaxCrewPerBody)
-            return "your ship's crew is full";
-        if (CreditsPay(me.Id, def?.HireCost ?? 0) is { } why)
+            return "that ship can't take a crew";
+        if (CreditsPay(me.Id, cost) is { } why)
             return why;
         var (uidKeep, name, skill, health, fac) = (Crew.Uid[m], Crew.Name[m], Crew.Skill[m], Crew.Health[m], Crew.Fac[m]);
         Crew.Release(m, this);

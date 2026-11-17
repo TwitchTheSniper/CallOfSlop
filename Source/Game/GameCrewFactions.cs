@@ -193,32 +193,8 @@ public sealed partial class Game
     /// <summary>A saved world's Crew section: each person's credits and standings onto their record, the factions' standings into the table.</summary>
     private void WorldReadCrew(SaveReader r, WorldSession ws)
     {
-        var v = r.U8();
-        if (v != 1)
-        {
-            Console.WriteLine($"[crew] the world's crew section is of version {v} (this build reads 1): left off");
+        if (!WorldReadCrewRecords(r, ws.Players))
             return;
-        }
-        var n = r.Count(26);
-        for (var k = 0; k < n; k++)
-        {
-            var key = r.U64();
-            var steam = r.U64();
-            var credits = r.I64();
-            var started = r.U8() != 0;
-            int sn = r.U8();
-            var list = new (string, sbyte)[sn];
-            for (var j = 0; j < sn; j++)
-                list[j] = (r.Str(), (sbyte)r.U8());
-            foreach (var rec in ws.Players)
-                if (rec.Key == key && rec.SteamId == steam)
-                {
-                    rec.Credits = credits;
-                    rec.CreditsStarted = started;
-                    rec.NpcStanding = list;
-                    break;
-                }
-        }
         var len = r.I32();
         if (len <= 0)
             return;
@@ -238,9 +214,43 @@ public sealed partial class Game
         FactionTable.Version++;
     }
 
+    /// <summary>The Crew section's version and its people: each one's credits and standings onto the matching record of <paramref name="recs"/>. False: a version this build doesn't read (left off).</summary>
+    private static bool WorldReadCrewRecords(SaveReader r, IReadOnlyList<WorldPlayer> recs)
+    {
+        var v = r.U8();
+        if (v != 1)
+        {
+            Console.WriteLine($"[crew] the world's crew section is of version {v} (this build reads 1): left off");
+            return false;
+        }
+        var n = r.Count(26);
+        for (var k = 0; k < n; k++)
+        {
+            var key = r.U64();
+            var steam = r.U64();
+            var credits = r.I64();
+            var started = r.U8() != 0;
+            int sn = r.U8();
+            var list = new (string, sbyte)[sn];
+            for (var j = 0; j < sn; j++)
+                list[j] = (r.Str(), (sbyte)r.U8());
+            foreach (var rec in recs)
+                if (rec.Key == key && rec.SteamId == steam)
+                {
+                    rec.Credits = credits;
+                    rec.CreditsStarted = started;
+                    rec.NpcStanding = list;
+                    break;
+                }
+        }
+        return true;
+    }
+
     /// <summary>A new world: nobody has met anyone.</summary>
     private void CrewFactionsClear()
     {
+        _ = CrewFactions.All; // (the kinds' files and the names read here, at a world's start, never inside a server tick)
+        _ = CrewNames.All;
         Array.Clear(_npcMetFaction);
         Array.Clear(_npcMetPlayer);
         Array.Clear(_credits);

@@ -56,13 +56,16 @@ public sealed partial class Game
             var body = SandboxHands.Hand(p.Id).SeatBody;
             if (body == 0)
                 body = p.Sim.RideBody;
-            if (body == 0 || Constructs.Get(body) is not { PartCount: > 0 } c || c.BdTick == ServerTick)
+            if (body == 0 || Constructs.Get(body) is not { PartCount: > 0 } c || !BdDue(c))
                 continue;
             c.BdTick = ServerTick; // (one step a look, however many are aboard)
             if (BreakdownShip(c))
                 BreakdownStep(c, t);
         }
     }
+
+    /// <summary>Whether a body's clock may step now: at most one step per <see cref="BdStep"/> ticks, whoever steps it (this look, or its NPC crew's in GameCrewWork.cs a tick later).</summary>
+    private bool BdDue(Construct c) => c.BdTick == 0 || ServerTick - c.BdTick >= BdStep;
 
     /// <summary>
     /// A body that breaks down: a ship (a thruster over ShipWorks.json's jetMost, or a Flight Stabilizer), not a wreck, and no
@@ -317,7 +320,14 @@ public sealed partial class Game
         if (CrewInfo.TryGetValue(c.Id, out var crew) && crew.Scuttle == part && crew.Stage >= 2)
         {
             failed = false;
-            return crew.Stage == 2 ? $"{c.DefOf(part).Name}: SCUTTLE CHARGE ARMING - {SandboxKeys.Fire}: disarm (stay 5 s)" : $"{c.DefOf(part).Name}: SCUTTLE CHARGE - {SandboxKeys.Fire}: disarm (stay 5 s)"; // (a crew's charge: GameCrewBoard.cs)
+            var ck = ((long)c.Id << 40) ^ ((long)part << 8) ^ crew.Stage ^ 1L << 62; // (made again only when it changes, as below)
+            if (ck != _bdLookKey)
+            {
+                _bdLookKey = ck;
+                _bdLookFailed = false;
+                _bdLookText = crew.Stage == 2 ? $"{c.DefOf(part).Name}: SCUTTLE CHARGE ARMING - {SandboxKeys.Fire}: disarm (stay 5 s)" : $"{c.DefOf(part).Name}: SCUTTLE CHARGE - {SandboxKeys.Fire}: disarm (stay 5 s)"; // (a crew's charge: GameCrewBoard.cs)
+            }
+            return _bdLookText;
         }
         // (made again only when what it says changes: the look line is asked for every frame)
         var slot = BreakdownSeenSlot(c);

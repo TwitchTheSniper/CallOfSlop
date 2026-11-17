@@ -126,6 +126,7 @@ public sealed class CrewShip
     public int ScMember = -1;
     public long ScAt, ScDisarmAt, ScSaidAt;
     public ushort ScTried; // the last point disarmed (by tag), not tried again
+    public ushort ScTag; // the scuttle point's part tag: ScPart follows it through a rebuild or a split (ScuttleFollow)
     public short EngPart = -1; // the part its engineer is seeing to (-1: none), done at EngDone; the loader's next carry at LoadAt
     public long EngDone, LoadAt;
     public byte Lost; // members lost since it was crewed
@@ -175,6 +176,7 @@ public sealed class CrewShip
         Act = BoardAct.Hold;
         Boarded = Prize = CalledHelp = Own = HoldFire = false;
         ScPart = -1;
+        ScTag = 0;
         ScStage = 0;
         ScDisarmBy = 255;
         ScMember = -1;
@@ -611,6 +613,7 @@ public sealed class CrewWorld
                 Kill(m, host);
             }
         }
+        ScuttleFollow(c, s);
         // A walker's goal by tag too (its station's index may have moved).
         for (var i = 0; i < s.MemberCount; i++)
         {
@@ -618,6 +621,25 @@ public sealed class CrewWorld
             if (State[m] == CrewState.Walking)
                 Station[m] = (short)TagIndex(s, Tag[m]);
         }
+        s.SeatsDirty = true;
+    }
+
+    /// <summary>
+    /// The scuttle point's index again from its tag, after a rebuild or a body split moved the parts: the charge stays on its own part. A point
+    /// no longer in the body (gone with a split's other piece) is -1, which <c>ScuttleStep</c> takes for the point lost.
+    /// </summary>
+    public static void ScuttleFollow(Construct c, CrewShip s)
+    {
+        if (s.ScPart < 0 || s.ScTag == 0 || s.ScPart < c.PartCount && c.Parts[s.ScPart].Tag == s.ScTag)
+            return;
+        var now = -1;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].Tag == s.ScTag)
+            {
+                now = i;
+                break;
+            }
+        s.ScPart = (short)now;
         s.SeatsDirty = true;
     }
 

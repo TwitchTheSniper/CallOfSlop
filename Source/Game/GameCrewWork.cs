@@ -33,7 +33,7 @@ public sealed partial class Game
                 _crewWorkAt = 0;
             if (Crew.Ships[_crewWorkAt++] is not { Tier: not CrewTier.Asleep, Faction: not 0 } s || Constructs.Get(s.Body) is not { Wreck: false, PartCount: > 0 } c)
                 continue;
-            if (clock && c.BdTick != ServerTick && BreakdownShip(c))
+            if (clock && BdDue(c) && BreakdownShip(c))
             {
                 c.BdTick = ServerTick;
                 BreakdownStep(c, t); // (an NPC ship's own clock: its crew is aboard)

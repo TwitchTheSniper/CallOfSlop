@@ -71,7 +71,7 @@ public sealed partial class Game : ICrewHost
             Id = id,
             Name = $"[{(CrewFactions.Of(ship?.Faction ?? 0)?.Name ?? "CREW")}] {CrewNames.Of(crew.Name[m])}",
             Bot = new BotBrain(BotDifficulty.Normal, BotPersonality.Tactician, (int)crew.Uid[m]),
-            Team = ship?.Mode == ShipAiMode.Strangers && c.Owner != 255 && ship.Faction == 0 ? SbFriendlyTeam : SbHostileTeam,
+            Team = CrewTeam(c, ship),
             CrewSlot = m,
         };
         Players[id] = bot;
@@ -85,6 +85,21 @@ public sealed partial class Game : ICrewHost
         bot.Health = Math.Max(1, (int)(World.MaxHealth * crew.Health[m] / CrewWorld.MemberHealth));
         _sbRosterDirty = true; // (one roster for a tick's bodies: SandboxSpawnTick sends it)
         return id;
+    }
+
+    /// <summary>A crew body's side: a hired crew (<see cref="CrewShip.Own"/>) and an owned ship's Fights strangers crew are on the owner's (friendly bots), the rest enemy bots.</summary>
+    private static byte CrewTeam(Construct c, CrewShip? s) =>
+        s != null && (s.Own || s.Mode == ShipAiMode.Strangers && c.Owner != 255 && s.Faction == 0) ? SbFriendlyTeam : SbHostileTeam;
+
+    /// <summary>After a crew's side changes (a prize's roster hired), its bodies take the new side.</summary>
+    private void CrewTeamsFollow(CrewShip s)
+    {
+        if (Constructs.Get(s.Body) is not { } c)
+            return;
+        var team = CrewTeam(c, s);
+        for (var i = 0; i < s.MemberCount; i++)
+            if (Crew.Player[s.Members[i]] is var b and not 0 && Players.TryGetValue((byte)(b - 1), out var p))
+                p.Team = team;
     }
 
     void ICrewHost.Demote(byte player)
