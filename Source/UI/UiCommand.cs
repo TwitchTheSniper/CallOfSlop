@@ -170,6 +170,7 @@ public sealed partial class Ui
             CmdBodies(dl, session, s, fade, now);
             CmdLinks(dl, session, s, fade, now); // (the logistics layer, when on: UiCommandLinks.cs)
             CmdCrafts(dl, session, s, fade, now);
+            CmdMissiles(dl, session, fade, now); // (the missiles layer, when on: UiCommandMissiles.cs)
             CmdChrome(dl, session, s, fade, now, keyName);
             CmdRoster(dl, session, s, fade);
             CmdShipCard(dl, session, s, fade, now);
@@ -759,6 +760,7 @@ public sealed partial class Ui
                 CmdPreset(g, sys, k);
         }
         CmdLinksButton(dl, new float2(bx + 4 * (bw + 6 * _scale) + 18 * _scale, by), new float2(bw * 1.1f, bh), fade); // (the logistics layer)
+        CmdMissilesButton(dl, new float2(bx - 18 * _scale - bw * 1.15f, by), new float2(bw * 1.15f, bh), fade); // (the missiles layer, left of the presets: the ship card is on the right)
         if (_cmdScale.Stale((long)(_cmdSpan * 100)))
             _cmdScale.Text = "VIEW  " + CmdDistance(_cmdSpan) + "  ACROSS" + (_cmdFocusAuto ? "" : "   //   FOCUS PINNED");
         CmdText(dl, new float2(_cvCentre.X, by + bh + 7 * _scale), 11, CmdDim, fade, _cmdScale.Text!, 1);
