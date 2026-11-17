@@ -11,9 +11,8 @@ Binding decisions it is designed from (the user, 2026-11-11, project doc `claude
    needs; a logical layout is generated from that list; the faction's style then changes how the layout and objects are
    arranged. Not style first.
 2. **First functions:** resource extraction, refinery and factory, vehicle depot, defended outpost.
-3. **Working when near:** built and wired for real (powered machines, drills filling storage, lines producing), running
-   only while a player is close; far away it sleeps and its stock is worked out from time passed (linked logistics'
-   ledger, answer 6 of `linked-logistics.md`).
+3. **Working when near:** built and wired for real, running only while a player is close; far away it sleeps and its
+   stock is worked out from time passed (`linked-logistics.md` answer 6).
 4. **What a faction may change:** the arrangement (rows, walled ring, sprawl along a road, stacked platforms), the shell
    (open yard with awnings, sheds, halls, dug in), paint, finish and dressing, and machine choice (tier or variant, spare
    capacity, defence).
@@ -24,43 +23,39 @@ And (user, 2026-11-10/11): large structures are **large hangars and industrial s
 decoration; asymmetric layouts (an aircraft carrier's hangar deck, a cargo ship's engine hall); functional furnishings;
 interior materials per faction.
 
-Not touched: the production system itself (machines, recipes, stations, routers) is TwitchTheSniper's and this
-generator only lays it out through its own rules (SURVIVAL.md, "Ships are built through TwitchTheSniper's production
-system"). Anything below that needs a change there is listed as such and raised with them first.
+Not touched: the production system is TwitchTheSniper's (SURVIVAL.md); the generator only lays it out through its
+rules, and anything needing a change there is raised with them first.
 
 ## 1. What it copies from the ship designer and the vehicle kit
 
-Karl's ship designer works because it never trusts itself: every step goes through the game's own build rules, the
-shape is planned before the parts, the output is ordinary blueprints, and there are fast tools to look and to measure.
-The factory generator takes each of those whole.
+Karl's ship designer works because every step goes through the game's own rules, the shape is planned before the
+parts, the output is ordinary blueprints, and fast tools look and measure.
 
-| From | What the factory generator takes |
+| From | Taken whole |
 | --- | --- |
-| `BlueprintScript` (`Source/VehicleKit/VehicleCore.cs`) | Every part, link and setting is a real step through `ConstructBuild.Place`, `CanWire`, `BuildLink`; a refused step throws with the reason. The Factory Showcase (`Source/PartKit/Generators/FactoryShowcase.cs`) already lays 118 x 32 m of working factory this way. |
-| ship-design skill 1, 1c | **Plan before parts.** Ships: job, crew, rooms, then the loft, then the rooms fitted to it. Factories: function, flows, zones, then the plan, then the shell over it. |
-| ship-design 1b | **Pieces that break off one at a time.** A hall is columns, wall panels, roof panels and girders, each its own part, welded where they touch; frames tougher than cladding. A raid opens a wall, it does not delete a hall. |
-| ship-design 2b, power-and-links "Ship links and walls" | **Name the ends, let the build route them** (`"conduit": true`): power and data are routed along walls and ceilings. Material links (chutes, conveyors) are laid by the generator's own router (section 3.4), since their path *is* the layout. |
-| `FactionStyle` (`Styles.cs`) | **A shape never names a colour or a favourite part.** A `FactoryStyle` holds palette, slots, weights and limits; a new power needs only a style. |
-| `Dice` and `Fork` | Seeded per stage, nothing from `Random` or hashes; each seed generated twice to prove it. |
-| QUALITY-TOOLS.md | `--diversity`, `--kit-report`, `--vehicle-sheet`, `grades.json`: the same three for factories (section 6). |
-| `InteriorPlanner` (`Source/Interiors`) | A 4 m cell, a 3 m storey, `GridRect`, `InteriorRng`, ASCII plans, a planner that knows only a volume and keep-outs. The factory plan reuses the grid types and the room filler for its crew block. |
-| buildings.md | The job gives the shape; reads at 50 m; one style per faction; ways in marked; lit and switched; `--check-building`'s walker. |
-| Factory Showcase notes (`showcase-new-notes.md`) | Lessons already paid for: `Config` values the loader refuses, links through a Frame Beam, orders-only makers, a Large Join where a Differential passes, a router with no way to its maker. Its `Tiles`, `Walkway`, `FlowArrows`, `AreaSign`, `Feed` helpers move into the kit. |
+| `BlueprintScript` (`VehicleCore.cs`) | Every part, link and setting is a real step through the game's rules; a refusal throws with its reason. The Factory Showcase (`FactoryShowcase.cs`) already lays 118 x 32 m of working factory this way, and its helpers (`Tiles`, `Walkway`, `FlowArrows`, `AreaSign`, `Feed`) move into the kit. |
+| ship-design 1, 1b, 1c | Plan before parts (function, flows, zones, plan, then the shell over it); structure as welded pieces that break off one at a time, frames tougher than cladding. |
+| ship-design 2b | Wires and data name their ends and are routed by conduit; chutes and conveyors are laid by the kit's own router (3.4), since their path is the layout. |
+| `FactionStyle`, `Dice.Fork` | A shape never names a colour or favourite part; seeds forked per stage, generated twice to prove them. |
+| QUALITY-TOOLS.md | Diversity, sweeps, sheets and the user's grades (section 5). |
+| `InteriorPlanner` | The 4 m cell, 3 m storey, `GridRect`, `InteriorRng`, ASCII plans; its room filler for crew blocks. |
+| buildings.md, look.md | The job gives the shape; reads at 50 m; one style per faction; ways in marked and lit; `--check-building`'s walker. |
+| `showcase-new-notes.md` | Lessons paid for: `Config` values the loader refuses, links through a Frame Beam, orders-only makers, Large Joins where a wide piece passes. |
 
 ## 2. Inputs: the brief
 
 A **factory brief** (`FactoryBrief`, a record; also readable from JSON so a faction controller or a test can write one):
 
-| Field | What | Example |
-| --- | --- | --- |
-| `function` | A function id from `Constructs/Factories/Functions/*.json` | `extraction`, `refinery`, `factory`, `depot`, `outpost` |
-| `target` | What it must produce and how fast: material or part keys with a rate per hour, or a blueprint to build (a depot) | `iron ore 600/h`; `steel 200/h, glass 40/h`; `Works Runabout` |
-| `size` | Size class: `post`, `works`, `plant`, `complex` (a footprint and part budget band, section 2.1) | `works` |
-| `style` | A `FactoryStyle` name (a power's, from its kind) | `Militia`, `Traders` |
-| `tier` | Machine tier ceiling, 1 to 5 (`MachineTiers.cs`) | 2 |
-| `seed` | u32 | 7 |
-| `site` | Footprint (w x d m), the slope it must sit on (graded flat by default), gravity, the side the road or pad comes in from, keep-outs, a deposit position for extraction | 64 x 48 m, road from the east, iron vein at (12, -8) |
-| `extras` | Defence level 0-3, spare capacity (0 to 50 %), crew size, dock kind (none, road, Cargo Dock, pad) | defence 1, spare 20 %, Cargo Dock |
+| Field | What |
+| --- | --- |
+| `function` | An id from `Constructs/Factories/Functions/*.json`: `extraction`, `refinery`, `factory`, `depot`, `outpost` |
+| `target` | Material or part keys with a rate per hour (`steel 200/h`), or a blueprint to build (a depot) |
+| `size` | `post`, `works`, `plant`, `complex` (2.1) |
+| `style` | A `FactoryStyle` name (a power's, from its kind) |
+| `tier` | Machine tier ceiling, 1 to 5 (`MachineTiers.cs`) |
+| `seed` | u32 |
+| `site` | Footprint, slope (graded flat by default), gravity, the side the road or pad comes from, keep-outs, the deposit for extraction |
+| `extras` | Defence 0-3, spare capacity 0-50 %, crew size, dock kind (none, road, Cargo Dock, pad) |
 
 Everything defaults from the function and size, so `--gen-factory refinery --style Militia --seed 3` is enough.
 
@@ -78,10 +73,8 @@ build on it and for the vehicle a depot makes.
 
 ## 3. The pipeline
 
-Eight stages, each a pure function of its inputs and its own fork of the seed, each printable on its own
-(`--factory-plan` prints stages 1 to 4 as text without building anything, in under a second). A later stage never
-changes an earlier one's decision; if it can't fit, it fails with the stage and reason, and the sweep picks another seed
-(as `--sweep-vehicle` does).
+Eight stages, each a pure function of its inputs and its own seed fork. A later stage never changes an earlier one's
+decision; one that can't fit fails with the stage and reason, and the sweep tries another seed (as `--sweep-vehicle`).
 
 ```
 brief -> 1 programme -> 2 flow graph -> 3 zones -> 4 plan (grid, cells, routes) -> 5 shell -> 6 style and dressing
@@ -90,26 +83,10 @@ brief -> 1 programme -> 2 flow graph -> 3 zones -> 4 plan (grid, cells, routes) 
 
 ### 3.1 Function to programme
 
-A **function file** (`Constructs/Factories/Functions/refinery.json`) says what the function is made of, as data:
-
-```json
-{
-  "format": "call-of-slop-factory-function/1",
-  "name": "refinery",
-  "takes": ["ore", "stone", "wood", "sand"],
-  "makes": "refined",
-  "needs": [
-    { "role": "intake",  "what": "bulk store",      "per": "input kind", "hold": "30 min" },
-    { "role": "process", "what": "refiner",         "for": "target",     "spare": "brief" },
-    { "role": "storage", "what": "bulk store",      "per": "output kind","hold": "60 min" },
-    { "role": "output",  "what": "dock",            "kind": "brief" },
-    { "role": "power",   "what": "plant",           "for": "load", "margin": 0.25 },
-    { "role": "control", "what": "console",         "kinds": ["refining", "orders"] },
-    { "role": "crew",    "what": "rooms",           "set": "works crew" },
-    { "role": "defence", "what": "brief" }
-  ]
-}
-```
+A **function file** (`Constructs/Factories/Functions/refinery.json`, format `call-of-slop-factory-function/1`) lists, as
+data, the roles it needs and how each is sized: intake bins per input kind (hold 30 min), process machines for the
+target (plus the brief's spare), output bins (60 min), a dock of the brief's kind, power for the load plus 25 %, its
+consoles, a crew room set, and the brief's defence.
 
 The **programme solver** turns the target rates into machine counts with the game's own tables, never its own numbers:
 for each wanted output it walks `Refining.json`, `Assembling.json`, `Extrusion.json` and the Press presets back to raw
@@ -118,13 +95,13 @@ Smelters), and counts machines as `ceil(rate / machine rate * (1 + spare))`. Pow
 plus a margin, then a plant from the style's list (gensets, a reactor at tier 4+). The result is a **programme**: a list
 of objects, each with a role, a part (or a sub-blueprint, 3.4), its throughput and its ports.
 
-| Function | Its core | Its objects |
+| Function | Core | Around it |
 | --- | --- | --- |
-| **Extraction** | Drill Modules (tier) over the deposit, each with its buffer and shaft (gathering-and-salvage "The drill's buffer and shaft") | ore bins (Storage Volumes), a loading point (chute to a hauler bay or a Cargo Dock), power, a shed for the crew, lights, a mast |
-| **Refinery** | Refiners by recipe (Smelter, Foundry, Sawmill, Recycler) | intake heaps, refined-material bins, a Smart Terminal and Inventory Beacon, the refining console, power, crew block, dock |
-| **Factory** | Extruders, Presses, Formers, Assemblers, Laser Cutter, Panel Former, Die Lathe, the Crafting Terminal | a refined-material yard, routers and joins, piece racks, a tool room, orders console, crew, dock |
-| **Vehicle depot** | One or more Building Stations with bays sized to the target, Loader Arms or a crane bay, a Lay-down Pad | a part store, the feed line from a factory (local or linked), vehicle apron and road, fuel and charge, a hangar door |
-| **Defended outpost** | Turrets, a watch platform, walls | an ammo store, a small power plant, a barracks, a beacon; it wraps another function or stands alone |
+| **Extraction** | Drill Modules over the deposit with buffer and shaft | ore bins, a loading point (hauler bay or Cargo Dock), power, crew shed, mast |
+| **Refinery** | Smelters, Foundries, Sawmills, a Recycler | intake heaps, refined bins, Smart Terminal and Beacon, refining console |
+| **Factory** | Extruders, Presses, Formers, Assemblers, Cutter, Die Lathe, Crafting Terminal | material yard, routers, piece racks, tool room, orders console |
+| **Vehicle depot** | Building Stations with bays sized to the target, Loader Arms or a crane bay | part store, feed line (local or linked), apron, fuel, hangar door |
+| **Defended outpost** | Turrets, watch platform, walls | magazine, small plant, barracks; wraps another function or stands alone |
 
 A function can **wrap** another: `outpost` around `extraction` adds the defence ring; `plant` sizes of `factory` may
 include a `refinery` front end (the Showcase is refinery + factory + depot in one).
@@ -134,14 +111,10 @@ include a `refinery` front end (the Showcase is refinery + factory + depot in on
 Nodes are the programme's objects; an edge is a material flow with a **carrier kind** chosen from what moves and how
 much:
 
-| Carrier | When | Laid as |
-| --- | --- | --- |
-| `chute` | bulk material (ore, metal, sand) | a chute link, high where it crosses walkways (2.4 m clear) |
-| `conveyor` | pieces up to the conveyor's width | conveyor links, Routers, Joins, Large Joins where a wide piece passes |
-| `crane` | pieces or submodules over a conveyor's size or weight | a crane bay: rails along a bay, a bridge (`Medium/Large Crane Bridge`), the bay kept clear under it |
-| `arm` | a short hand-over (hold to station, pad to build) | a Loader Arm at the corner of a bay |
-| `vehicle` | between buildings, or out of the site | a road or apron lane, a hauler bay, a pad |
-| `link` | out of the site to another network | a Transmitter/Receiver or Relay, and a Cargo Dock |
+Carriers: `chute` (bulk), `conveyor` (pieces, with Routers, Joins, Large Joins), `crane` (pieces or submodules too big
+for a conveyor: a bay with rails and a bridge, kept clear under it), `arm` (short hand-overs: hold to station, pad to
+build), `vehicle` (between buildings or off site: a lane, hauler bay or pad) and `link` (a Transmitter/Receiver or Relay
+with a Cargo Dock).
 
 Each edge has a rate (from 3.1) and a **priority**: the main line (raw to product) is spine traffic and gets the
 straightest route; returns (scrap to the Recycler, empty die stock, the Showcase's rack return) and services (fuel, ammo)
@@ -150,59 +123,210 @@ its out router, its console). Cells are the unit the plan moves around.
 
 ### 3.3 Zoning
 
-Every node gets a zone; zones are the plan's first blocks:
-
-| Zone | Holds | Wants | Avoids |
-| --- | --- | --- | --- |
-| **intake** | raw heaps, drill heads, the hauler's tipping bay | road side, the deposit | crew, output |
-| **process** | refiners, presses, formers, assemblers, stations | intake before it, storage after it; a hall | the road (noise, nothing to see) |
-| **storage** | bins, racks, the yard | between process and output, reachable by a crane or arm | |
-| **output** | docks, the apron, the hangar door | the road or pad side, open sky over a Cargo Dock | intake's lane (no crossing) |
-| **power** | gensets, fuel tanks, batteries, the main switch | apart: one end, downwind; its own fence | crew |
-| **control and crew** | consoles, the network board, mess, bunks, lockers, washroom | **overlooks process** (a gallery or a raised office with windows on the hall floor), by the main door | power |
-| **defence** | turrets, walls, a watch platform, the gate | the perimeter and the ways in | |
-| **docks and links** | Cargo Dock, Transmitter/Relay mast, pad | the edge, clear approach | |
-
-The zoner places zones as rectangles along a **spine** in flow order (intake to output), with the adjacency above
-scored; the arrangement (3.4) bends the spine.
+Each node gets a zone, and zones are the plan's first blocks, placed as rectangles along a **spine** in flow order with
+an adjacency score: **intake** (heaps, drill heads, tipping bay: the road side and the deposit), **process** (refiners,
+presses, stations: in a hall, after intake, before storage), **storage** (bins, racks, the yard: between process and
+output, under a crane or arm), **output** (docks, apron, hangar door: the road or pad side, never across intake's lane),
+**power** (gensets, fuel, batteries, the main switch: apart, downwind, fenced), **control and crew** (consoles, network
+board, mess, bunks: overlooking process, by the main door, away from power), **defence** (turrets, walls, watch
+platform, gate: the perimeter and ways in), **docks and links** (Cargo Dock, mast, pad: the edge, clear approach).
 
 ### 3.4 The plan: grid, arrangement, cells, routes
 
-**The grid** is the interior planner's: a 4 m cell, a 3 m storey (building pieces are a 2 and 4 m module), with a 0.25 m
-sub-grid inside a cell for machines and sockets (the vehicle kit's lattice). Halls are taller (3.5) but stay on the 4 m
-plan grid, so a wall, a column and a roof panel always land on a module.
+**Grid:** the interior planner's 4 m cell and 3 m storey (building pieces are a 2 and 4 m module), a 0.25 m sub-grid
+inside a cell for machines and sockets. Halls are taller but stay on the 4 m plan, so walls, columns and roof panels
+land on a module.
 
-**The arrangement** is the style's first choice (decision 4), a weighted pick:
+**Arrangement** (decision 4), the style's weighted pick, bends the spine: `rows` (straight, cells either side: the
+Showcase), `ring` (a loop inside a wall, process in the middle), `road` (cells strung in clumps along a track: a
+sprawl), `stacked` (intake on top, chutes falling through platforms), `L`/`U` (the spine turned round a yard).
 
-| Arrangement | The spine | Reads as |
+**Cells** go in flow order along the spine, input upstream, output downstream; a cell's footprint is its machine plus
+a service margin (1 m clear before its screen, walkways 0.9 m, 1.1 m on the main aisle: buildings.md "Laying out a
+building"). Same-recipe machines group into **banks** facing a shared feed (the Showcase's eight refiners).
+
+**Routing:** A* on the sub-grid over three layers (floor, a 2.4 m overhead rack, crane height), main line first. Costs:
+turns, layer changes, length; a floor crossing of the main aisle is forbidden, of the vehicle lane overhead only (4.5 m
+clear). Overhead runs ride a pipe bridge that is part of the shell. The router writes nodes; wires stay conduit-routed.
+
+**Asymmetry and the set piece** (rules 9, 10) are chosen here, before the shell, so the plan bends to give them room.
+
+**Cells as sub-blueprint uses.** A repeated cell (a refiner bank, a drill head with buffer and shaft, a turret with its
+magazine) is its own blueprint, used in the factory (`sub-blueprints.md`: 128 uses a blueprint, live by default), so
+salvage, rebuilding at a Building Station and fixes to the cell's generator all deal in named modules.
+
+`--factory-plan` prints each storey as ASCII (zones as letters, cells as numbers, walkways `.`, the lane `=`, routes
+`-|+`), the programme with rates and every edge with carrier and length, as `InteriorPlan.Ascii()` does.
+
+### 3.5 The shell: halls, yards, platforms
+
+The shell is built **over** the plan; the machines are its reason. The style picks one per zone (decision 4): `yard`
+(hard standing, a fence, awnings over machines that mind the weather), `shed` (one 4-8 m span), `hall` (12 to 24 m clear
+span, 8 to 14 m to the eaves, column bays of 6 or 8 m carrying a crane rail, roof lights, big doors at the ends),
+`gallery` (a mezzanine at 4-5 m: control room with windows on the floor, offices, walkways over the line), `platform`
+(open steel decks on columns, stairs and ladders, chutes falling through) and `dug in` (a berm round a low shell, a ramp
+down).
+
+**Big industrial spaces** (user, 2026-11-10/11): a hall is one volume, not rooms. Its clear height comes from what moves
+in it (crane hook over the biggest piece; a depot's biggest vehicle plus 2 m), never under 8 m. Crew rooms go in the
+gallery or a lean-to, so the floor stays open and the main door sees the far one. References: a carrier's hangar deck
+(low, very wide, lifts at the edge, painted lines), a ship's engine hall (tall, gratings at three levels, the machine
+reaching through them).
+
+**New parts** (part-kit generator `factory_shell`): the building pieces stop at 2.75 m walls and 4 m beams, so halls need
+portal columns and rafters (8 to 24 m spans in welded pieces), 4 x 4 m cladding (corrugated, plated, concrete; window
+and louvre variants), roof panels with a roof-light variant, ridge and gutter, sliding and roller hangar doors (4, 8,
+12 m, on the event doors), crane rails to the bay spacing, grating mezzanines with rails, a pipe bridge, berm slopes.
+Plain parts where possible (look.md "A detail budget"); frames toughest, then cladding, then roof (ship-design 1b).
+
+### 3.6 Style and dressing
+
+A **`FactoryStyle`** is the vehicle kit's `FactionStyle` for buildings; a power's style names both, so its trucks and
+sheds match. It holds: arrangement and shell weights; machine choice per role and tier, spare capacity and defence
+ranges; a palette by role (cladding, frame, roof, zone floor tints, accent, hazard: three colours plus hazard, look.md);
+finishes; interior materials (user, 2026-11-11); dressing slots (lamp colour, sign voice, clutter: drums, pallets, cable
+reels, tool racks); the **signature** seen at 50 m (a stack, a mast, a painted roof: buildings.md rule 3); limits
+(asymmetry, crooked patched cladding, how much is left open).
+
+**Functional furnishing first:** a tool rack by the press it serves, lockers by the door, a mess off the gallery, a
+first-aid post on the main aisle, a fire point every 24 m. Then dressing: the Showcase's zone tints, floor arrows and
+numbered lit area signs, hazard paint on crane bays and moving edges, lamps at every way in; few, larger parts, and
+paint or a finish wherever that does the job.
+
+### 3.7 Wiring: power, logic and orders
+
+- **Power:** the plant feeds a main switch, then **one switch per zone** (a raid that hits the power hall stops the
+  lines, a player can stop one hall); poles or wall runs so no wire passes 8 m (ship-design: a wire reaches 8 m), all
+  routed by conduit (`"conduit": true`).
+- **Logic:** a start console per zone (the Showcase's "Start runs every maker"), a beacon that blinks while lines run,
+  stock gauges on the bins, a network board (Medium Text Sign) in the control room.
+- **Orders:** makers on an orders console are `ordersOnly` (production.md "Orders-only machines"); a depot's Building
+  Station gets its target blueprint; a dock gets its Transmitter or Receiver and, for a faction, its pairing on spawn.
+
+### 3.8 Checks (every seed, before it is written)
+
+1. **Builds:** every step through the rules; no REFUSED line.
+2. **Works:** a headless run spawns it, switches it on, feeds intake from creative stock and runs **90 s of game time**
+   (bounded, not a long simulation): every machine starts a job, every main edge carries something, the product count
+   moves, the tick stays under 8 ms. An idle machine or dry edge names itself.
+3. **Reach:** `--check-building`'s walker reaches every console, screen, seat, door and switch; a hauler-sized box
+   reaches every dock, apron and tipping bay along the lane.
+4. **Links:** `--conduit-check` clean; no chute or conveyor over the main aisle below 2.4 m.
+5. **Looks:** zero coplanar faces between parts (`--check-vehicle`); `--look-report` within the style's band; rule 8.
+6. **Budget:** parts, links, joints and generation time inside the size class.
+
+## 4. Layout rules and design principles
+
+1. **Read the flow from the door:** walking the main aisle meets in, make, store, out in order, with numbered signs and
+   floor arrows. The main line never doubles back; returns run along the back.
+2. **Raw never crosses finished:** intake and output lanes never cross; the dirty end (ore, scrap) and the clean end
+   (assembly, the station) are apart.
+3. **Every machine reachable standing** (rule widths in 3.4; 2 m where carts pass). Bot crews walk it: the plan hands
+   CrewNav (`bot-brain.md`) its aisles, doors and stations as hints, as the interior planner does.
+4. **Vehicles have their own lane,** 4 m at least (8 m on a depot's apron), turning room at the ends, crossings marked.
+5. **Overhead is for flow, the floor for people:** 2.4 m clear over walkways, 4.5 m over the lane, nothing over a
+   crane's bay.
+6. **Sight lines:** the control room sees the floor, the main door the far door, a guard post every way in.
+7. **Services shown** on racks and pipe bridges (buildings.md "The site" 6); the stack is the tallest thing.
+8. **Reads at 50 m:** separate masses (hall, lean-to, tower, stack) with air between, stepped rooflines; the vehicle
+   kit's side and top fill limits applied to the site.
+9. **Asymmetry on purpose:** one end differs (a tower, a crane gantry over the yard, a one-sided lean-to); banks offset,
+   not mirrored; symmetry only where the style asks for order.
+10. **One set piece per building:** the biggest machine given space, light and the tall hall (the depot's bay under its
+    crane, the furnace bank seen from the gallery, a drill in an open-roofed pit).
+11. **No coplanar faces** (`.claude/rules/z-fighting.md`): cladding 3-5 mm proud of its frame, floor tints 3 mm over the
+    slab, seams offset as ship-design 1b.
+12. **Defensible and raidable:** two or three ways in, choke points before the control room, power and magazine as weak
+    points (the interior planner's critical rooms); never one sealed door.
+
+## 5. Variety: seeds, diversity, grading
+
+- **Seeds** fork per stage (`programme`, `zones`, `arrangement`, `plan`, `shell`, `dress`, `paint`): a paint roll never
+  moves a wall; each seed is built twice to prove it.
+- **Diversity** (`FactoryDiversity`, the vehicle kit's distance with factory terms): plan (zone rectangles and the
+  spine's shape on a normalised grid), silhouette (side and top fill in 16 slices, as `VehiclePlan.Profiles`), shell
+  mix (share of yard, shed, hall, platform, dug in), parts (kinds, capped), flow (route length over straight-line
+  length, crossings, layers used), size. `--factory-diversity "Style function" --seeds N` prints the spread, the alike
+  groups, the most different set, and the traits that NEVER VARY, exactly as `--diversity`.
+- **Grading:** `docs/factorykit/grades.json` in the same format as the vehicle kit's (`--grade-factory "Militia
+  refinery 7" 4 "good gallery, dull roof"`), user grades only, and `--grade-report` reads both files. Shipped seeds per
+  style and function are the graded best (`FactoryStyle.Seeds`).
+
+## 6. Output and quality tools
+
+**Output:** ordinary blueprints in `Constructs/Blueprints/Factories/` (group `Factories` in the Blueprints tab), one per
+shipped style, function and seed, with cell blueprints in `Constructs/Blueprints/Factories/Cells/` used by them.
+Foundations anchor them. One body per building; a `plant` with several buildings is several blueprints placed by a
+small **site file** (positions, the yard and road slabs between them; `Constructs/Factories/Sites/*.json`), so no body
+nears 16,000 parts and a raid on one hall doesn't rebuild the others' meshes. Because they are blueprints of ordinary
+parts and uses, a player can salvage them, copy a cell, or have a Building Station build one (or one cell) like any
+other blueprint.
+
+| Command | What |
+| --- | --- |
+| `--gen-factory FUNCTION [--style S] [--size C] [--tier N] [--seed S] [--brief FILE] [--plan]` | Generate, check (3.8 less the work run), write; `--plan` (also `--factory-plan`) prints stages 1-4 only, under a second |
+| `--factory-check NAME [--seconds 90]` | The work run and the reach, link and look checks; exit code = failures |
+| `--sweep-factory "Style function" [--seeds N]` | Many seeds, nothing written: failure rate, commonest refusal, times |
+| `--factory-diversity`, `--grade-factory`, `--grade-report` | Section 5 |
+| `--preview-gallery DIR --factories`, `--preview-shot NAME --views top,iso --cut 4` | One **Factory gallery** Artifact (republished as ship-design 4 does the Ship gallery; its cut slider is a floor plan); the 3 s plan and corner shot |
+
+## 7. Performance
+
+- **Generation is off the tick:** at the command line for shipped seeds, on a worker thread in play from a brief; plan
+  stages under 50 ms and the scratch build under 1 s for a `works` on the 2-core box (`--sweep-factory` times them);
+  the blueprint cached by brief hash in the save folder's `Cache/`.
+- **Spawn is budgeted:** 3,500 parts in one tick would pass 8 ms, so a generated factory spawns in slices of a step count
+  measured to stay under 2 ms a tick (it rises over a second or two). If no sliced spawn exists, it is phase 1's one
+  engine change, measured with the largest `plant`.
+- **Near runs, far sleeps** (decision 3): near a player its machines run as anyone's (the Showcase: 0.14 ms median tick
+  while building). Far, the ledger estimates output (`linked-logistics.md` answer 6) from a **rate card** the generator
+  writes with each blueprint, so nothing re-solves the chain.
+- **Draws:** cladding and roofs as plain parts in few materials keep the merged chunks few draws; lamps only where people
+  go (the 4 nearest within 16 m light anything).
+
+## 8. How factions and players use it
+
+**Factions** (the faction controllers' production phase, after relations and admirals; their answer 6): a power holding
+a planet founds an `extraction` on each held deposit, a `refinery` per few of those, a `factory` and a `depot` at home.
+The controller writes the brief (target from its shipbuilding wants, size from its stock, its style, a seed from the
+world seed and site id) and spawns the result; crews staff the control rooms and haul on linked routes; the ledger moves
+stock while nobody is near. Players raid for real: break the power hall and the lines stop, take the stores, steal a
+half-built ship from the bay. Wrecked works are rebuilt from the same seed before ships come again.
+
+**Players:** creative spawn from the Blueprints tab (decision 6). Later, perhaps, a **Works Planner** panel (question 4).
+
+## 9. Phases (one builder each, the whole phase; a WIP `[skip ci]` after each step)
+
+| Phase | What | Done when |
 | --- | --- | --- |
-| `rows` | straight, the hall's length; cells either side in rows | a works: the Showcase |
-| `ring` | a loop inside a wall; process in the middle, storage and crew round it | a walled fort, a compound |
-| `road` | a road, cells strung along it in clumps with gaps | a sprawl, shacks along a track |
-| `stacked` | vertical: intake on top, gravity down through platforms (chutes fall, no lifts) | a tower works, a hillside plant |
-| `L` / `U` | a straight spine turned once or twice round a yard | a yard with sheds on two or three sides |
+| **1. Kit and ore loop pair** | `Source/FactoryKit` (brief, function files, solver, flow graph, zoner, grid planner and router, `--gen-factory --plan`); the Showcase's helpers moved in; `factory_shell` parts for a shed and a small hall; Militia style; `extraction` (post) and `refinery` (works) with a hauler bay and road, as a pair in a site file; sliced spawn if missing | A creative player spawns the pair, switches on, drills fill bins, a hauler carries ore over, steel comes out; `--factory-check` passes both; 8 seeds of each generate |
+| **2. Halls and quality** | Full `factory_shell` (portals to 24 m, cladding, hangar doors, crane rails, galleries, platforms, berms); `rows`, `ring`, `road`, `L`; sweep, diversity, grades, the Factory gallery; a second style | The user grades a sheet of each; no style slot with choices NEVER VARIES |
+| **3. Factory and depot** | `factory` and `depot` functions; cells as sub-blueprint uses; `stacked`; the rate card | A generated depot builds a vehicle from a generated factory's parts over a Cargo Dock |
+| **4. Outposts and defence** | `outpost` alone and as a wrapper, the raid rules, CrewNav hints | A defended post holds off a test raid and can be broken into |
+| **5. Faction production** | Hand-off to the faction controllers' production phase (briefs, spawn at holdings, ledger estimate, rebuild) | (that design's) |
 
-**Placing cells.** In each zone, cells go in flow order along the spine, each one's input port facing upstream and
-output downstream; a cell's footprint is its machine's bounds plus a **service margin** (1 m clear in front of its
-screen and gauge, 0.9 m walkways, 1.1 m where two people pass: buildings.md "Laying out a building"). Same-recipe
-machines group into **banks** (two rows facing a shared feed, the Showcase's eight refiners) so one feed line serves
-several. A bank of more than four turns into a repeated sub-blueprint use (3.4, output).
+Phases 1 and 2 need nothing from TwitchTheSniper's systems beyond what exists; phase 3's sub-blueprint cells and phase
+5's estimate lean on sub-blueprints and linked logistics, so they wait for those to be on main and are raised with
+TwitchTheSniper first.
 
-**Routing.** A grid router (A* on the 0.25 m sub-grid, three layers: floor, 2.4 m overhead rack, 5 m+ crane height)
-lays every edge, main line first. Costs: a turn, a crossing of a walkway on the floor (forbidden on the main aisle), a
-layer change, length. Chutes and conveyors may ride the overhead rack (a pipe bridge of Steel Beams on columns, part of
-the shell); a crossing of the vehicle lane is only overhead (at least 4.5 m clear). The router writes nodes, so the
-links are `"laid": true` only where a wall must be passed (2b's rule for routed ports still holds for wires).
+## 10. Open questions for the user (recommendation first)
 
-**Asymmetry and the set piece** (section 4, rules 9 and 10) are decided here, before the shell: one cell is chosen as
-the set piece, and the plan is bent so it has room and a sight line.
-
-**Output: cells as sub-blueprint uses.** A cell that repeats (a refiner bank, a drill head with its buffer and shaft, a
-turret with its magazine) is written once as its own blueprint and used in the factory blueprint as a **use**
-(`sub-blueprints.md`: depth 8, 128 uses a blueprint). A player who salvages a refiner bank, or a faction that rebuilds
-one at a Building Station, deals with a named module, and a fix to the cell's generator updates every factory that uses
-it (live uses, answer 4 there).
-
-**Print it.** `--factory-plan` writes the plan as ASCII per storey (zones as letters, cells as numbers, walkways `.`,
-the vehicle lane `=`, routes `-|+`), the programme with rates, and the flow edges with their carriers and lengths:
-the same habit as `InteriorPlan.Ascii()`.
+1. **Where the code lives.** Recommend a new `Source/FactoryKit/` on the vehicle kit's `BlueprintScript`, with its own
+   commands (`--gen-factory`), data in `Constructs/Factories/`. Or: a part-kit generator per factory, as the Showcase
+   is (simpler, but no briefs at run time, so factions couldn't use it).
+2. **Committed seeds or generated in play.** Recommend both: shipped seeds committed for creative (graded), and
+   faction works generated in play from a brief and cached. Or: committed only (factions pick from a shipped set: less
+   variety, no worker thread).
+3. **One body or several.** Recommend one body per building and a site file for a plant (raids and edits stay local;
+   no body near 16,000 parts). Or: one body per site, as the Showcase (simpler links, one spawn, but a hall's damage
+   rebuilds the whole site's meshes).
+4. **A player-facing designer.** Recommend later (after phase 3): a Works Planner panel that rolls seeds from a brief
+   and stamps a ghost. Or: never, factories stay hand-built by players and generated only for factions and creative.
+5. **Which styles first.** Recommend Militia for phase 1 (the vehicle kit's test style, so its trucks match), then the
+   first power kinds from faction-controllers (Traders, Raiders) in phase 2. Or: start from the archived factions'
+   building styles (Ministry Brutalism, MacSlop stone and tin), which buildings.md already describes.
+6. **The hauler in the ore loop.** Recommend a road and tipping bay for a player-driven ground hauler in phase 1 (works
+   now), with a Cargo Dock variant once linked logistics ships are flying on main. Or: a Cargo Dock and route ship from
+   the start.
+7. **Grading load.** Recommend the user grades one sheet of 12 seeds per style and function at phase 2's end, and ships
+   the top three. Or: ship whatever passes the checks and the diversity spread (no grading).
