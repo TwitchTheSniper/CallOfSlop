@@ -22,6 +22,10 @@ public sealed partial class Ui
     private float2 _cmdOrderAt;
     private string _cmdOrderComeText = "", _cmdOrderTitle = "", _cmdOrderOrbit = "", _cmdOrderGo = "", _cmdOrderNote = "";
     private double _cmdOrderNoteUntil;
+    private bool _cmdOrderBoard, _cmdOrderBoardDoor; // a Board order (Game/GameNavBoard.cs): the ship's pod to a door or the hull of another
+    private ushort _cmdOrderBoardShip;
+    private int _cmdOrderBoardPart;
+    private string _cmdOrderBoardText = "";
 
     /// <summary>A right click on the map: what could the picked ship do there?</summary>
     private void CmdOrderAt(Game g, SpaceSession s, float2 m)
@@ -42,8 +46,41 @@ public sealed partial class Ui
         var hit = CmdHit(s, m, out var body);
         // On your own marker: it can come to you (a craft beside you is under the click too).
         var come = CmdCanCome(g, c) && g.Local is { } me && (m - CmdP(_cvPose.ToEcliptic(Vec3d.From(me.Position)))).Length() < 14 * _scale;
+        _cmdOrderBoard = false;
         if (hit >= 0 && !come)
-            return; // (another craft: nothing to tell it yet)
+        {
+            // Another craft: with a boarding pod docked, a door or a hull panel of it to board by (the part under the click).
+            if (_cmdCraft[hit].Id == c.Id || g.Constructs.Get(_cmdCraft[hit].Id) is not { } t)
+                return;
+            if (Game.BoardPodOf(g.Constructs, c) == null)
+            {
+                CmdNote(CmdName(c) + " HAS NO BOARDING POD DOCKED");
+                return;
+            }
+            if (_cmdCraft[hit].Px < 40 * _scale)
+            {
+                CmdNote("ZOOM IN ON " + CmdName(t) + " TO PICK A DOOR OR A HULL PANEL TO BOARD BY");
+                return;
+            }
+            if (!CmdBoardPick(t, _cmdCraft[hit], m, out var part, out var door))
+            {
+                CmdNote("RIGHT CLICK ON A DOOR OR A HULL PANEL OF " + CmdName(t));
+                return;
+            }
+            _cmdOrderShip = c.Id;
+            _cmdOrderBody = -1;
+            _cmdOrderPointBody = -1;
+            _cmdOrderHasGround = _cmdOrderHasLand = _cmdOrderCome = false;
+            _cmdOrderBoard = true;
+            _cmdOrderBoardShip = t.Id;
+            _cmdOrderBoardPart = part;
+            _cmdOrderBoardDoor = door;
+            _cmdOrderBoardText = (door ? "BOARD: SEAL ON THIS DOOR (" : "BOARD: CUT IN HERE (") + t.DefOf(part).Name.ToUpperInvariant() + ")";
+            _cmdOrderTitle = "ORDER FOR " + CmdName(c) + "'S POD";
+            _cmdOrderAt = m;
+            _cmdOrderAsk = true;
+            return;
+        }
         _cmdOrderShip = c.Id;
         _cmdOrderBody = -1;
         _cmdOrderPointBody = -1;
@@ -147,6 +184,15 @@ public sealed partial class Ui
                     if (_cmdOrderHasGround && ImGui.Button("FLY TO THIS SPOT OVER THE GROUND"u8, new float2(300 * _scale, 0)))
                         send = NavKind.Ground;
                 }
+                if (_cmdOrderBoard)
+                {
+                    var bw = MathF.Max(300 * _scale, ImGui.CalcTextSize(_cmdOrderBoardText).X + 20 * _scale);
+                    if (ImGui.Button(_cmdOrderBoardText, new float2(bw, 0)))
+                    {
+                        g.NavSend(_cmdOrderShip, NavKind.Board, 0, new Vec3d(_cmdOrderBoardShip, _cmdOrderBoardPart, _cmdOrderBoardDoor ? 1 : 0), 0);
+                        ImGui.CloseCurrentPopup();
+                    }
+                }
                 var wide = _cmdOrderPointBody >= 0 ? MathF.Max(300 * _scale, ImGui.CalcTextSize(_cmdOrderGo).X + 20 * _scale) : 300 * _scale;
                 if (_cmdOrderPointBody >= 0 && ImGui.Button(_cmdOrderGo, new float2(wide, 0)))
                     send = NavKind.GoTo;
@@ -180,6 +226,54 @@ public sealed partial class Ui
         }
         ImGui.PopStyleColor(8);
         _cmdOrderShut = false;
+    }
+
+    /// <summary>
+    /// The part of craft <paramref name="t"/> under the cursor, as its hologram is drawn (UiCommandShip.cs): of the parts whose
+    /// middles lie within a few pixels, the one nearest the eye, or a door among them not far behind it. False: none there.
+    /// </summary>
+    private bool CmdBoardPick(Construct t, in CmdCraft cr, float2 m, out int part, out bool door)
+    {
+        part = -1;
+        door = false;
+        var turn = t.SpaceAway != 0 ? Game.AwayRot : _cvPose.Rot;
+        Span<float2> ax = stackalloc float2[3];
+        Span<float> deep = stackalloc float[3];
+        for (var k = 0; k < 3; k++)
+        {
+            var e = turn.Rotate(Vec3d.From(Vector3.Transform(k == 0 ? Vector3.UnitX : k == 1 ? Vector3.UnitY : Vector3.UnitZ, t.Rot)));
+            ax[k] = new float2((float)(Vec3d.Dot(e, _cvRight) * _cvScale), -(float)(Vec3d.Dot(e, _cvUp) * _cvScale));
+            deep[k] = (float)Vec3d.Dot(e, _cvDir);
+        }
+        var com = t.Com;
+        var reach = 12 * _scale;
+        float bestDeep = float.MaxValue, doorDeep = float.MaxValue;
+        var doorPart = -1;
+        for (var i = 0; i < t.PartCount; i++)
+        {
+            var p = t.Parts[i].Pos - com;
+            var at = cr.At + ax[0] * p.X + ax[1] * p.Y + ax[2] * p.Z;
+            var isDoor = Game.BoardIsDoor(t, i);
+            if ((at - m).Length() > (isDoor ? reach * 1.5f : reach))
+                continue;
+            var d = deep[0] * p.X + deep[1] * p.Y + deep[2] * p.Z;
+            if (d < bestDeep)
+            {
+                bestDeep = d;
+                part = i;
+            }
+            if (isDoor && d < doorDeep)
+            {
+                doorDeep = d;
+                doorPart = i;
+            }
+        }
+        if (doorPart >= 0 && doorDeep < bestDeep + 1.5f)
+        {
+            part = doorPart;
+            door = true;
+        }
+        return part >= 0;
     }
 
     /// <summary>Can this ship be told to come to the local player: they are on foot on the bubble's world, and it can land?</summary>

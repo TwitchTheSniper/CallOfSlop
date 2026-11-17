@@ -581,7 +581,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   Eva bits (a space suit, an MMU on it).
     // 337: robot shell wear (GameShellWear.cs, ShellWear.cs): Msg.Shell ends with 8 x u8, the shell's works' wear; CfgKey gains ShellWear0..3
     //   (a Robot Shell's hidden settings) at its end, and the six Shell spare parts move part ids.
-    public const ushort ProtocolVersion = 337;
+    // 338: the Board order (Game/GameNavBoard.cs): NavKind gains Board (a pod flown to a ship's door or hull; Point: the target id, part, 1 for a door)
+    //   at its end, and the Limpet boarding pod's 11 parts (Constructs/Parts/Limpet) move part ids.
+    public const ushort ProtocolVersion = 338;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
