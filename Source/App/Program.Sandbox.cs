@@ -1023,6 +1023,8 @@ public static unsafe partial class Program
             return stopped;
         if ((GatherStall)st.Blocked == GatherStall.BinFull || st.Amount >= d.BulkCapacity)
             return " - bin full: empty it (chute or F)";
+        if ((GatherStall)st.Blocked == GatherStall.WorkedOut)
+            return " - this spot is worked out: move the bit on (3 m) to fresh ground";
         if ((GatherStall)st.Blocked == GatherStall.OtherMaterial)
             return $" - its bin holds {RecyclingTable.Current.NameOf(st.Material)}: empty it";
         if (g != null && hit.Body != null && st.Drive == ShaftState.None && !ConstructRecycler.Powered(g.Constructs, hit.Body, hit.Part))

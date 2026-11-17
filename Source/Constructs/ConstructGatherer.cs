@@ -18,6 +18,7 @@ public enum GatherStall : byte
     TierLow, // the deposit or the trees need a higher tier
     BinFull,
     OtherMaterial, // its bin holds another material
+    WorkedOut, // the spot under its bit has given all it has (ResourceField.SpotUnits): move it on (a rail it rides moves it: ConstructDrillFollow)
 }
 
 public static class ConstructGatherer
@@ -222,6 +223,8 @@ public static class ConstructGatherer
         }
         if (!DrillShaft.Touches(field, at, bottom) || field.TappableAt(at.X, at.Z) is not { } kind)
             return Stall(world, st, GatherStall.NoDeposit);
+        if (field.WorkedOut(at))
+            return ConstructDrillFollow.Advance(world, c, part) ? true : Stall(world, st, GatherStall.WorkedOut);
         if (d.Tier < kind.MinTier)
             return Stall(world, st, GatherStall.TierLow);
         var want = RecyclingTable.Current.IdOf(kind.Material);
@@ -266,6 +269,8 @@ public static class ConstructGatherer
         WorkTip(c, part, pl, out var at, out var tip);
         if (!DrillShaft.Touches(pl, tip) || field.TappableAt(at) is not { } kind)
             return Stall(world, st, GatherStall.NoDeposit);
+        if (field.WorkedOut(at))
+            return ConstructDrillFollow.Advance(world, c, part) ? true : Stall(world, st, GatherStall.WorkedOut);
         if (d.Tier < kind.MinTier)
             return Stall(world, st, GatherStall.TierLow);
         var want = RecyclingTable.Current.IdOf(kind.Material);

@@ -97,7 +97,7 @@ public sealed class FactoryShellParts : IPartGenerator
     /// </summary>
     private static Part Auger(double length)
     {
-        var c = Medium;
+        var c = Small; // (it fits a Turntable 1x1 Medium's top, a small socket)
         const double hw = 0.32, hh = 0.7, tw = 0.16, ty0 = 0.42, ty1 = 0.74;
         var p = new Part($"Unloading Auger {length:0} m", c, "Factory", "A hopper and a swinging tube: it pours its load from the spout into a truck bed or bin under it. Fit it on a Turntable 1x1 Medium to swing it.", role: "storage", material: "steel", color: Spout, group: "Production");
         p.Add(Box([-hw, 0, -hw], [hw, 0.06, hw], Grid)); // the hopper's floor plate
@@ -112,7 +112,7 @@ public sealed class FactoryShellParts : IPartGenerator
             p.Add(Box([-tw - 0.012, ty0 - 0.012, z], [tw + 0.012, ty1 + 0.012, z + 0.08], Grid, detail: true)); // a flange band
         p.Add(Box([-0.1, ty0 - 0.3, hw + 0.15], [0.1, ty0 - 0.004, hw + 0.35], Grid, detail: true)); // the drive box under the tube
         p.Sock("mount", [0, 0, 0], "-y");
-        p.Set(("power", 3.0),
+        p.Set(("power", 1500.0), // (watts, as a drill's: its motor turns the screw)
             ("storage", Kw(("bulk", Kw(("material", "any"), ("capacity", 800), ("chuteLoad", 320),
                 ("min", Vec(-hw + 0.045, 0.065, -hw + 0.045)), ("max", Vec(hw - 0.045, hh - 0.05, hw - 0.045)))),
                 ("auger", Kw(("tip", Vec(0, 0.1, length - 0.15)), ("rate", 200))))),

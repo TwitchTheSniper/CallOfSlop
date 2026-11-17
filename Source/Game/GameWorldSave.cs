@@ -777,6 +777,12 @@ public sealed partial class Game
         s.Cut = new (uint, int)[r.Count(8)];
         for (var k = 0; k < s.Cut.Length; k++)
             s.Cut[k] = (r.U32(), r.I32());
+        if (r.Has(4)) // (drill spots: saves from 2026-11-17 on)
+        {
+            s.Spots = new (uint, int)[r.Count(8)];
+            for (var k = 0; k < s.Spots.Length; k++)
+                s.Spots[k] = (r.U32(), r.I32());
+        }
         if (World.Map.Resources?.Restore(s) is { } note)
             Console.WriteLine($"[worlds] {ws.Meta.Name}: {note}");
     }

@@ -6,8 +6,7 @@
   "section": "Factory",
   "role": "storage",
   "tool": "welder",
-  "sizeClass": "medium",
-  "power": 3.0,
+  "power": 1500.0,
   "storage": {
     "bulk": {
       "material": "any",
@@ -51,7 +50,7 @@
   "armour": 12,
   "material": "steel",
   "color": "#c9a227",
-  "attachSeconds": 4.0,
+  "attachSeconds": 2.5,
   "boxes": [
     {
       "min": [
