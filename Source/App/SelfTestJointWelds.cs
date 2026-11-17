@@ -20,8 +20,8 @@ public static partial class SelfTest
     {
         var joints = new List<ConstructPartDef>();
         foreach (var d in ConstructParts.All)
-            if (d.HasJoint && d.LeafIndex >= 0 && d.Class == ConstructParts.Small)
-                joints.Add(d); // (the rig is a small frame block: a bigger class's joints don't socket onto it, "Large systems" drives those)
+            if (d.HasJoint && d.LeafIndex >= 0 && d.Class == ConstructParts.Small && d.WorksKind != WorksKind.Mount)
+                joints.Add(d); // (the rig is a small frame block: a bigger class's joints don't socket onto it, "Large systems" drives those; a Turret Ring's trunk goes down through a deck, never onto a block's top)
         var bad = new List<string>();
         var summary = new List<string>();
         foreach (var d in joints)
