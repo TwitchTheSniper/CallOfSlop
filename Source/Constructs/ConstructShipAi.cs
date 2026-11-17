@@ -313,6 +313,7 @@ public sealed partial class ShipAi
                     int k = _rackGun[r], button = _rackButton[r];
                     if (k >= c.RackCount || c.Racks[k].Held == 0 || button >= c.PartCount || c.Parts[button].Broken)
                         continue;
+                    ConstructRadar.SetLock(world, c, t.Body); // (the radar's lock for the torpedo, when the ship can lock: a Fire Director wired to its radar)
                     Press(c, button, 2); // (two ticks: one round out before the rack's interval)
                     _nextRack = r + 1;
                     _launchAt = _tick + (int)(LaunchGap * World.TickRate);
