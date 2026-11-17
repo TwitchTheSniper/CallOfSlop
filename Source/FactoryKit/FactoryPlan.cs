@@ -52,10 +52,38 @@ public sealed class FactoryPlan
     public bool Floored(float x, float z) => z > StripBack || PowerBehind && x > PowerRect.X0 && x < PowerRect.X1;
     public bool PowerBehind;
 
+    /// <summary>
+    /// An extraction's drill deck (Open 1): the back row's tiles under the drills carry <see cref="DeckSlabs"/> concrete slabs (0.25 m each, the top at 1.30 m) so a
+    /// Drill Module's tower, 1.2 m under its foot, hangs to the ground past the back edge while the floor stays on it; three step tiles in the row in front climb to
+    /// it at its east end (0.25 m rises, a person walks them). Tiles are columns <see cref="DeckI0"/> to <see cref="DeckI1"/> (exclusive), row <see cref="DeckJ"/>.
+    /// </summary>
+    public bool HasDeck;
+    public int DeckI0, DeckI1, DeckJ;
+    public const int DeckSlabs = 4;
+    public const float SlabThick = 0.25f;
+
+    /// <summary>How many slabs tile (i, j) carries: the deck's four, a step's one to three, else none.</summary>
+    public int SlabsAt(int i, int j)
+    {
+        if (!HasDeck || i < DeckI0 || i >= DeckI1)
+            return 0;
+        if (j == DeckJ)
+            return DeckSlabs;
+        return j == DeckJ - 1 && i >= DeckI1 - 3 ? i - (DeckI1 - 3) + 1 : 0;
+    }
+
     public PlanCell? CellOf(FactoryObject o) => Cells.FirstOrDefault(c => c.Obj == o);
 
     /// <summary>On the floor's socket lattice: the nearest x.25 or x.75.</summary>
     public static float Snap(float v) => MathF.Floor(v * 2f) / 2f + 0.25f;
+
+    /// <summary>On the drill deck's top sockets (a slab's corners: x = 2k or 2k + 1.75, FactoryScript.Deck), the nearest.</summary>
+    public static float DeckX(float v)
+    {
+        var a = MathF.Round(v / Tile) * Tile;
+        var b = MathF.Floor(v / Tile) * Tile + 1.75f;
+        return MathF.Abs(a - v) <= MathF.Abs(b - v) ? a : b;
+    }
 
     /// <summary>A part's footprint on the floor (x, z extents), standing as the builder stands it (machines turned with their back to the back).</summary>
     public static (float W, float D) Footprint(FactoryObject o)
@@ -96,7 +124,7 @@ public sealed class FactoryPlan
             {
                 var w = width(objs[k]) + 2 * margin;
                 var (cx, cz) = at(objs[k], k, x + w * 0.5f);
-                plan.Cells.Add(new PlanCell(objs[k], new PlanRect(x, x + w, -(RoadDepth + AisleDepth), plan.BandBack), Snap(cx), Snap(cz), number++));
+                plan.Cells.Add(new PlanCell(objs[k], new PlanRect(x, x + w, -(RoadDepth + AisleDepth), plan.BandBack), zone == 'I' && f.Name == "extraction" ? cx : Snap(cx), zone == 'I' && f.Name == "extraction" ? cz : Snap(cz), number++));
                 x += w;
             }
             x = x0 + MathF.Ceiling((x - x0) / Tile) * Tile;
@@ -108,7 +136,16 @@ public sealed class FactoryPlan
         {
             // Drills on the floor's back edge, their bits out over the ground (the deposit is behind the post); the buffer in front of them.
             var drills = p.Of("drill").ToList();
-            Block('I', "DRILLS", drills, (o, k, cx) => (cx, plan.Back + 0.25f), o => MathF.Max(Footprint(o).W, 2.5f));
+            // On the drill deck's slab sockets (2k or 2k + 1.75 along x; the back edge's z), the deck at least four tiles long (three steps and a tile).
+            Block('I', "DRILLS", drills, (o, k, cx) => (DeckX(cx), plan.Back), o => MathF.Max(Footprint(o).W, 2.5f));
+            var di = plan.Zones.Count - 1;
+            if (plan.Zones[di].Rect.W < 4 * Tile)
+            {
+                x = plan.Zones[di].Rect.X0 + 4 * Tile;
+                plan.Zones[di] = plan.Zones[di] with { Rect = plan.Zones[di].Rect with { X1 = x } };
+            }
+            plan.HasDeck = true;
+            (plan.DeckI0, plan.DeckI1, plan.DeckJ) = ((int)(plan.Zones[di].Rect.X0 / Tile), (int)MathF.Round(plan.Zones[di].Rect.X1 / Tile), (int)MathF.Round(-plan.Back / Tile) - 1);
             var buffer = p.Of("buffer").ToList();
             Block('S', "ORE BUFFER", buffer, (o, k, cx) => (cx, bandMid), o => Footprint(o).W);
         }
@@ -173,6 +210,8 @@ public sealed class FactoryPlan
         // The mast: the signature, at the end the power isn't (asymmetry on purpose: rule 9).
         plan.MastX = dz.Chance(0.5) ? 0.75f : Snap(plan.PowerRect.X0 - 1.0f);
         plan.MastZ = plan.StripBack + 0.75f;
+        if (plan.HasDeck && plan.MastX < plan.DeckI1 * Tile)
+            plan.MastZ = plan.BandBack + 0.75f; // (off the deck, whose slabs carry sockets at their corners only)
         if (plan.Length > size.Length || plan.Depth > size.Depth)
             throw new FactoryKitException($"plan: {FactoryData.N(plan.Length)} x {FactoryData.N(plan.Depth)} m is past the {size.Name} class's {FactoryData.N(size.Length)} x {FactoryData.N(size.Depth)} m");
         var machines = p.Objects.Count(o => o.Role is "process" or "drill");
@@ -212,6 +251,8 @@ public sealed class FactoryPlan
                 foreach (var (zone, r, _) in Zones)
                     if (x > r.X0 && x < r.X1 && z < r.Z0 && z > r.Z1)
                         g[j, i] = z > -(RoadDepth + AisleDepth) && zone is 'P' or 'S' ? '.' : z < BandBack && z > BandBack - StripDepth && zone != 'W' ? '-' : char.ToLowerInvariant(zone);
+                if (SlabsAt(i, j) > 0)
+                    g[j, i] = j == DeckJ ? '#' : "_~^"[SlabsAt(i, j) - 1];
             }
         foreach (var c in Cells)
         {
@@ -225,7 +266,7 @@ public sealed class FactoryPlan
             }
         }
         var sb = new StringBuilder();
-        sb.Append($"plan: {Arrangement}, shell {Shell}, {FactoryData.N(Length)} x {FactoryData.N(Depth)} m (a character is a 2 m tile; road '=', aisle '.', back strip '-', zones by letter, cells numbered)\n");
+        sb.Append($"plan: {Arrangement}, shell {Shell}, {FactoryData.N(Length)} x {FactoryData.N(Depth)} m (a character is a 2 m tile; road '=', aisle '.', back strip '-', drill deck '#', its steps '_~^', zones by letter, cells numbered)\n");
         for (var j = 0; j < rows; j++)
         {
             sb.Append("  ");

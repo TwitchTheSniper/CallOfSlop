@@ -25,6 +25,8 @@ public static class FactoryCli
             b = b with { Tier = tier };
         if (int.TryParse(Flag(args, "--seed"), out var seed))
             return [b with { Seed = seed }];
+        if (int.TryParse(Flag(args, "--seeds"), out var count))
+            return Enumerable.Range(1, count).Select(k => b with { Seed = k }).ToList();
         if (Flag(args, "--brief") != null)
             return [b];
         var style = FactoryStyles.Find(b.Style);

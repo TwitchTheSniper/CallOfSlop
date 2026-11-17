@@ -20,7 +20,7 @@ public sealed class FactoryScript : BlueprintScript
     public readonly FactoryProgramme Programme;
     public readonly FactoryPlan Plan;
     private readonly Dice _paint, _dress;
-    private readonly HashSet<(int I, int J)> _tiles = new();
+    private readonly Dictionary<(int I, int J), VPart> _tiles = new();
     private readonly Dictionary<int, VPart> _of = new();
     private readonly List<(VPart Lamp, float X)> _lamps = new();
     private VPart? _switch;
@@ -102,8 +102,84 @@ public sealed class FactoryScript : BlueprintScript
         var (ri, rj) = (cols / 2, rows / 2);
         var root = Root("Foundation", V(1 + 2 * ri, 0.15f, -1 - 2 * rj), Front);
         TilePaint(root, ri, rj);
-        _tiles.Add((ri, rj));
+        _tiles[(ri, rj)] = root;
         Tiles(0, cols, 0, rows);
+        Deck();
+    }
+
+    /// <summary>
+    /// The drill deck and its steps (<see cref="FactoryPlan.HasDeck"/>): Concrete Floor 2x2 m slabs stacked on the tiles, each by its b7_7 corner on the
+    /// tile's top33 socket, so a slab stands 0.125 m west and back of its tile (over the back edge, never over a neighbour's top: no shared face but
+    /// the zone's one paint). The top is <see cref="DeckTop"/>.
+    /// </summary>
+    private void Deck()
+    {
+        if (!Plan.HasDeck)
+            return;
+        var colour = Style.Floor(_paint.Fork("zoneI"), 'I');
+        for (var j = Plan.DeckJ - 1; j <= Plan.DeckJ; j++)
+            for (var i = Plan.DeckI0; i < Plan.DeckI1; i++)
+            {
+                var n = Plan.SlabsAt(i, j);
+                if (n == 0 || !_tiles.TryGetValue((i, j), out var under))
+                    continue;
+                var (cx, cz) = (1f + 2 * i, -1f - 2 * j);
+                for (var k = 0; k < n; k++)
+                {
+                    var slab = Stand("Concrete Floor 2x2 m", V(cx + 0.75f, FloorY + k * FactoryPlan.SlabThick, cz + 0.75f), Front, under, "b7_7");
+                    Paint(slab, colour);
+                    Finish(slab, "concrete");
+                    under = slab;
+                }
+            }
+    }
+
+    public static float DeckTop => FloorY + FactoryPlan.DeckSlabs * FactoryPlan.SlabThick;
+
+    /// <summary>The walking surface's height at (x, z): a slab tile's top (its slabs sit 0.125 m west and back of it), else the floor's.</summary>
+    private float Top(float x, float z)
+    {
+        if (!Plan.HasDeck)
+            return FloorY;
+        var i = (int)MathF.Floor((x + 0.125f) / FactoryPlan.Tile);
+        var j = (int)MathF.Floor((-z - 0.125f) / FactoryPlan.Tile);
+        return FloorY + Plan.SlabsAt(i, j) * FactoryPlan.SlabThick;
+    }
+
+    /// <summary>
+    /// Nodes laid on the floor (<see cref="Along"/>) lifted onto whatever they cross, <paramref name="dy"/> over its top: where the top changes, a node pair
+    /// rises (or drops) 0.15 m on the low side of the step's edge, so nothing runs through a slab.
+    /// </summary>
+    private Vector3[] Lift(Vector3[] nodes, float dy)
+    {
+        if (!Plan.HasDeck)
+            return nodes.Select(n => n with { Y = FloorY + dy }).ToArray();
+        var outp = new List<Vector3>();
+        for (var k = 0; k < nodes.Length; k++)
+        {
+            var q = nodes[k];
+            var tq = Top(q.X, q.Z);
+            if (k > 0)
+            {
+                var p = nodes[k - 1];
+                var d = Vector3.Distance(p with { Y = 0 }, q with { Y = 0 });
+                var u = d > 1e-4f ? (q - p) with { Y = 0 } / d : Vector3.Zero;
+                var t = Top(p.X, p.Z);
+                for (var s = 0.05f; s < d; s += 0.05f)
+                {
+                    var c = p + u * s;
+                    var tc = Top(c.X, c.Z);
+                    if (MathF.Abs(tc - t) < 1e-3f)
+                        continue;
+                    var at = tc > t ? c - u * 0.2f : c + u * 0.15f;
+                    outp.Add(V(at.X, t + dy, at.Z));
+                    outp.Add(V(at.X, tc + dy, at.Z));
+                    t = tc;
+                }
+            }
+            outp.Add(V(q.X, tq + dy, q.Z));
+        }
+        return outp.ToArray();
     }
 
     /// <summary>2 m Foundations over tiles [i0, i1) x [j0, j1), each beside one already down (a Foundation snaps to a neighbour's socket).</summary>
@@ -112,17 +188,17 @@ public sealed class FactoryScript : BlueprintScript
         var left = new List<(int I, int J)>();
         for (var j = j0; j < j1; j++)
             for (var i = i0; i < i1; i++)
-                if (!_tiles.Contains((i, j)) && Plan.Floored(1f + 2 * i, -1f - 2 * j))
+                if (!_tiles.ContainsKey((i, j)) && Plan.Floored(1f + 2 * i, -1f - 2 * j))
                     left.Add((i, j));
         while (left.Count > 0)
         {
-            var next = left.Where(t => _tiles.Contains((t.I - 1, t.J)) || _tiles.Contains((t.I + 1, t.J)) || _tiles.Contains((t.I, t.J - 1)) || _tiles.Contains((t.I, t.J + 1))).ToList();
+            var next = left.Where(t => _tiles.ContainsKey((t.I - 1, t.J)) || _tiles.ContainsKey((t.I + 1, t.J)) || _tiles.ContainsKey((t.I, t.J - 1)) || _tiles.ContainsKey((t.I, t.J + 1))).ToList();
             if (next.Count == 0)
                 throw new VehicleKitException($"tiles {i0}-{i1} x {j0}-{j1} touch no floor laid before them");
             foreach (var (i, j) in next)
             {
                 var t = Put("Foundation", V(1 + 2 * i, 0.15f, -1 - 2 * j), Front);
-                _tiles.Add((i, j));
+                _tiles[(i, j)] = t;
                 left.Remove((i, j));
                 TilePaint(t, i, j);
             }
@@ -167,7 +243,8 @@ public sealed class FactoryScript : BlueprintScript
         {
             case "drill":
             {
-                var m = On(o.Part, c.X, c.Z, Back, paint: Style.Colour(_paint.Fork("machine"), "machine"));
+                var m = Stand(o.Part, V(c.X, Top(c.X, c.Z + 0.3f), c.Z), Back, null, "bottom"); // (on the deck's back-edge socket)
+                Paint(m, Style.Colour(_paint.Fork("machine"), "machine"));
                 return m;
             }
             case "process":
@@ -217,7 +294,7 @@ public sealed class FactoryScript : BlueprintScript
         pts.Add(V(b.X, 0, laneZ));
         if (MathF.Abs(b.Z - laneZ) > 5.5f)
             pts.Add(V(b.X, 0, b.Z - MathF.Sign(b.Z - laneZ)));
-        var nodes = Along(pts.ToArray()).Select(n => n with { Y = FloorY + 0.2f }).ToArray();
+        var nodes = Lift(Along(pts.ToArray()), 0.2f);
         try
         {
             Route("chute", from, to, OutPort(from), InPort(to), true, nodes);
@@ -299,7 +376,7 @@ public sealed class FactoryScript : BlueprintScript
             var pts = new List<Vector3> { V(Plan.ConsoleX, 0, lane), V(at.X - side, 0, lane) };
             if (MathF.Abs(at.Z - lane) > 6f)
                 pts.Add(V(at.X - side, 0, at.Z));
-            Route("data", console, m, null, "Run", true, Along(pts.ToArray()));
+            Route("data", console, m, null, "Run", true, Lift(Along(pts.ToArray()), 0.03f));
         }
     }
 
@@ -431,7 +508,7 @@ public sealed class FactoryScript : BlueprintScript
         var lane = Plan.Back + 0.15f + 0.04f * (_cable++ % 8);
         var rise = V(at.X + 0.3f, 0, at.Z - 0.3f);
         var floor = new List<Vector3> { V(sw.X + 0.3f, 0, sw.Z - 0.3f), V(sw.X + 0.3f, 0, lane), V(rise.X, 0, lane), rise };
-        var nodes = Along(floor.ToArray()).ToList();
+        var nodes = Lift(Along(floor.ToArray()), 0.03f).ToList();
         for (var y = FloorY + 7f; y < at.Y - 0.5f; y += 7f)
             nodes.Add(V(rise.X, y, rise.Z)); // (up a mast: a node every 7 m, a segment reaches 8)
         nodes.Add(V(rise.X, at.Y, rise.Z));
