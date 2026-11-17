@@ -538,6 +538,81 @@ public static partial class ConstructRide
     }
 
     /// <summary>
+    /// Noclip in a moving construct (<see cref="NoclipMove"/>): the flyer keeps the frame they are in, so a ship at speed
+    /// doesn't leave them behind, and their flight's velocity is relative to it. The start of their tick: the frame they are in
+    /// (null: none, or it went, or something moved them), with them put where it is now and <see cref="MoveState.Velocity"/>
+    /// their speed through it.
+    /// </summary>
+    public static Construct? NoclipFrame(ref MoveState s)
+    {
+        if (s.RideUp == Vector3.Zero || s.RideBody == 0)
+        {
+            if (s.RideBody != 0)
+                Clear(ref s);
+            return null;
+        }
+        var c = Bodies?.Get(s.RideBody);
+        if (c == null || s.RideSeg > c.JointCount)
+        {
+            Clear(ref s);
+            return null;
+        }
+        c.WorldFrame(s.RideSeg, out var q, out _);
+        if (!Absorb(ref s, q))
+        {
+            Clear(ref s);
+            return null;
+        }
+        s.RideOn = 0;
+        s.RideClimb = 0;
+        Place(ref s, c);
+        return c;
+    }
+
+    /// <summary>
+    /// The end of a noclip flyer's tick in frame <paramref name="c"/>: the move (<see cref="MoveState.Velocity"/>, relative)
+    /// goes into it. False: clear of it (past <see cref="InFrame"/>'s padded box), they are the world's again, with their own speed.
+    /// </summary>
+    public static bool NoclipMoved(ref MoveState s, Construct c, Vector3 move)
+    {
+        c.WorldFrame(s.RideSeg, out var q, out _);
+        var iq = Quaternion.Conjugate(q);
+        s.RideLocal += Vector3.Transform(move, iq);
+        s.RideVel = Vector3.Transform(s.Velocity, iq);
+        s.RideAir = 0;
+        Place(ref s, c);
+        c.SegPose(s.RideSeg, out var qs, out var ts);
+        if (InFrame(c, ts + Vector3.Transform(s.RideLocal, qs), Vector3.Transform(s.RideUp, qs)))
+            return true;
+        var v = s.Velocity;
+        Clear(ref s);
+        s.Velocity = v;
+        return false;
+    }
+
+    /// <summary>
+    /// A noclip flyer out of any frame: inside a moving construct's bounds (no padding: flying past a hull doesn't catch) takes
+    /// them into its frame, their speed then relative to it (caught, not hit; <see cref="NoclipMoved"/> lets them go again).
+    /// </summary>
+    public static void NoclipCatch(ref MoveState s)
+    {
+        var w = Bodies;
+        if (w == null || FrameAt(w, s.Position + GravityFrames.UpAt(s.Position) * 0.9f, pad: 0f, top: 0f) is not { } f)
+            return;
+        Join(ref s, f, 0, UpFor(f, GravityFrames.UpAt(s.Position)), s.Velocity);
+        s.Grounded = false;
+    }
+
+    /// <summary>Someone left noclip in a frame and the game found them room (<see cref="NoclipMove.ExitSpot"/>): their new spot goes into the frame, so they stand in it, on its deck.</summary>
+    public static void NoclipLanded(ref MoveState s)
+    {
+        if (s.RideUp == Vector3.Zero || Bodies?.Get(s.RideBody) is not { } c || s.RideSeg > c.JointCount)
+            return;
+        s.RideLocal = ToLocal(c, s.RideSeg, s.Position);
+        Place(ref s, c);
+    }
+
+    /// <summary>
     /// One tick of a rider's movement, in the construct's frame: the branch of <see cref="World.Simulate"/>. False when the
     /// ride is over (the construct went, a teleport) and the ordinary mover should run instead.
     /// </summary>

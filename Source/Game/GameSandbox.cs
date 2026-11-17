@@ -2707,7 +2707,7 @@ public sealed partial class Game
         }
         if (me.Sim.Canopy == PilotGear.OpenChute || me.Sim.Canopy == PilotGear.OpenGlider)
             lines.Add(new HudLine(me.Sim.Canopy == PilotGear.OpenGlider ? SandboxKeys.PilotGlide : SandboxKeys.PilotCut, dim));
-        else if (me.Sim.Canopy == 0 && me.Sim.Gear != 0 && !me.Sim.Grounded && me.Sim.RideBody == 0 && me.Sim.Velocity.Y < -PilotGear.OpenFall && (me.Sim.Gear & 3) != 0)
+        else if (me.Sim.Canopy == 0 && me.Sim.Gear != 0 && !me.Sim.Grounded && me.Sim.RideBody == 0 && me.Sim.Velocity.Y < -PilotGear.OpenFall && (me.Sim.Gear & 3) != 0 && !Eva.Vacuum(me.Position))
             lines.Add(new HudLine((me.Sim.Gear & PilotGear.Glider) != 0 ? SandboxKeys.PilotOpenGlider : SandboxKeys.PilotOpenChute, white));
         if (h.Seated && Constructs.Get(h.SeatBody) is { } car)
         {
