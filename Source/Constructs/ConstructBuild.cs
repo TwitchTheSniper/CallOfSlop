@@ -510,10 +510,21 @@ public static class ConstructBuild
 
     public static Blueprint? FindBlueprint(string name) => Blueprints.FirstOrDefault(b => b.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>The blueprints being read now (LoadBlueprints' list while it fills, else null): a carried craft is found among those
+    /// read before it while the list is checked, never through <see cref="Blueprints"/>, whose loader is running (constructs.md, 2026-11-10).</summary>
+    [ThreadStatic] private static List<Blueprint>? _loading;
+
+    /// <summary>A blueprint a carrier carries: from the list being read while the blueprints load, else the loaded ones.</summary>
+    internal static Blueprint? FindCarried(string name) => _loading is { } l
+        ? l.FirstOrDefault(b => b.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+        : FindBlueprint(name);
+
     /// <summary>Every blueprint of a folder (by file name), then the mods' changes and new ones (docs/mods/MODS.md); each must build.</summary>
     public static List<Blueprint> LoadBlueprints(string folder, List<string> refused, IReadOnlyList<Mods.Mod>? mods = null)
     {
         var list = new List<Blueprint>();
+        var outer = _loading;
+        _loading = list;
         var usesLater = new List<(Blueprint, string, int)>(); // (and where it stands in the list: it goes back there, in file order)
         var remember = BlueprintCheckCache.Enabled(mods); // (dev builds skip the build check of a file that passed it unchanged: BlueprintCheckCache.cs)
         ConstructConduit.BeginLoad(); // (a pre-built's wires are routed as it is built here, not later in a server tick)
@@ -584,6 +595,7 @@ public static class ConstructBuild
         finally
         {
             ConstructConduit.EndLoad();
+            _loading = outer;
         }
         return list;
     }

@@ -1,0 +1,142 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Limpet Bulkhead",
+  "description": "The frame between the Limpet's cockpit and its cabin, open in the middle.",
+  "group": "Ship",
+  "section": "Limpet boarding pod",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 150.0,
+  "health": 2500,
+  "armour": 15,
+  "material": "steel",
+  "color": "#c4c8ca",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        -1.075,
+        0.525,
+        -1.225
+      ],
+      "max": [
+        -0.625,
+        2.575,
+        -1.125
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        0.375,
+        0.525,
+        -1.225
+      ],
+      "max": [
+        0.825,
+        2.575,
+        -1.125
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.625,
+        2.475,
+        -1.225
+      ],
+      "max": [
+        0.375,
+        2.575,
+        -1.125
+      ],
+      "color": "#c4c8ca",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -0.695,
+        0.527,
+        -1.245
+      ],
+      "max": [
+        -0.627,
+        2.545,
+        -1.105
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        0.377,
+        0.527,
+        -1.245
+      ],
+      "max": [
+        0.445,
+        2.545,
+        -1.105
+      ],
+      "color": "#2a2e33",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.625,
+        2.477,
+        -1.245
+      ],
+      "max": [
+        0.375,
+        2.545,
+        -1.105
+      ],
+      "color": "#e0b020",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.845,
+        0.525,
+        -1.175
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -1.075,
+        1.555,
+        -1.175
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        0.825,
+        1.555,
+        -1.175
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -0.125,
+        2.575,
+        -1.175
+      ],
+      "dir": "+y"
+    }
+  ]
+}

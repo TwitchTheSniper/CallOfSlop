@@ -633,7 +633,7 @@ public static class ConstructCargo
         for (var k = 0; k < carry.Count; k++)
         {
             var spec = carry[k];
-            if (ConstructBuild.FindBlueprint(spec.Blueprint) is not { } sub || sub.Carry.Count > 0)
+            if (ConstructBuild.FindCarried(spec.Blueprint) is not { } sub || sub.Carry.Count > 0)
                 return $"carry[{k}]: no blueprint \"{spec.Blueprint}\" (or it carries craft of its own)";
             var rot = Quaternion.Normalize(c.Rot * Rot24.Quat(spec.Turn));
             if (ConstructBuild.Build(world, sub, c.ToWorld(spec.At), rot, out var why) is not { } b)
