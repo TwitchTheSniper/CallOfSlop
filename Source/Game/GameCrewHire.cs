@@ -12,6 +12,9 @@ public enum CrewOrder : byte
     Dismiss, // one of your crew leaves
     HoldFire, // the whole crew of that body: hold fire
     FireAtWill, // ... fire at will
+    Interrogate, // faction-controllers.md phase 2: question a prisoner officer (an admiral or a captain) for intelligence (GameCrewFleet.cs)
+    Ransom, // ... send a prisoner officer back to its power for credits
+    Interrogator, // ... one of your hands becomes your Interrogator (or back to a spare)
 }
 
 /// <summary>
@@ -295,6 +298,10 @@ public sealed partial class Game
                 return CrewPrisoner(p, body, uid, "drop");
             case CrewOrder.Hire:
                 return CrewHire(p, body, uid);
+            case CrewOrder.Interrogate:
+                return CrewInterrogate(p, body, uid);
+            case CrewOrder.Ransom:
+                return CrewRansom(p, body, uid);
         }
         if (Constructs.Get(body) is not { } c || Crew.ShipOf(body) is not { Own: true } s)
             return "no crew of yours aboard that";
@@ -309,6 +316,8 @@ public sealed partial class Game
                 Crew.Release(m, this);
                 s.SeatsDirty = true;
                 return null;
+            case CrewOrder.Interrogator:
+                return CrewMakeInterrogator(s, uid);
             case CrewOrder.HoldFire:
             case CrewOrder.FireAtWill:
                 s.HoldFire = op == CrewOrder.HoldFire;

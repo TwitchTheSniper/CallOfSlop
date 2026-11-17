@@ -261,6 +261,9 @@ public sealed class CrewWorld
     /// <summary>Work stations (lifters, docks, Building Stations) a roster takes, at most: room is kept for its seats.</summary>
     public const int WorkStations = 12;
 
+    /// <summary>Drivers at once (default <see cref="MaxDrivers"/>; the fleet scale check raises it to measure what more would cost).</summary>
+    public static int DriverCap = MaxDrivers;
+
     public const int MaxCrewPerBody = 32, MaxDrivers = 64, ShipsPerTick = 48, FindPerTick = 64, MaxBodiedCap = 64;
     public const float BodyRange = 300, BodyDrop = 380, SeatedRange = 3000, SeatedDrop = 3200;
     /// <summary>An empty helm keeps its last input this long (ticks); a seated crew member's walk to a station, in m/s, and at least this long (ticks).</summary>
@@ -1031,7 +1034,7 @@ public sealed class CrewWorld
             s.Ai.Release(c);
             FreeAi(s); // (taken: its crew are prisoners, nobody drives for them)
         }
-        if (!s.Air && !s.Prize && s.Ai == null && _aiOut < MaxDrivers)
+        if (!s.Air && !s.Prize && s.Ai == null && _aiOut < DriverCap)
         {
             s.Ai = _aiPool.Count > 0 ? _aiPool.Pop() : new ShipAi(s.Body, s.Mode);
             s.Ai.Reset(s.Body, s.Mode);
@@ -1451,7 +1454,7 @@ public sealed class CrewWorld
                 continue;
             }
             ShipAiTarget t = default;
-            var has = host != null ? host.Target(c, s, look, out t) : CheckTarget(c, out t);
+            var has = host != null ? host.Target(c, s, look, out t) : CheckTarget(c, s, out t);
             if (s.HoldFire)
                 has = false; // (its owner's order: Hold fire)
             if (host == null)
@@ -1475,15 +1478,22 @@ public sealed class CrewWorld
     /// <summary>A check with no game: its target is set from outside.</summary>
     public ShipAiTarget? Fixed;
 
-    private bool CheckTarget(Construct c, out ShipAiTarget t)
+    /// <summary>A check with no game: each crew's own target (null: <see cref="Fixed"/> for all). Made once by the check, never in a tick.</summary>
+    public CheckTargetFn? FixedFor;
+
+    public delegate bool CheckTargetFn(Construct c, CrewShip s, out ShipAiTarget t);
+
+    private bool CheckTarget(Construct c, CrewShip s, out ShipAiTarget t)
     {
+        if (FixedFor != null)
+            return FixedFor(c, s, out t);
         t = Fixed ?? default;
         return Fixed.HasValue;
     }
 
     // ---- Saves (the CREW block of a body: WorldSaveBodies.cs) ------------------------------------------------------------------------
 
-    public const byte SaveVersion = 2; // (2: its faction kind, by name, morale and losses)
+    public const byte SaveVersion = 3; // (2: its faction kind, by name, morale and losses; 3: its group's slot and its captain, after the members)
 
     /// <summary>A body's crew as bytes for its save (null: none). Bodied members are written as records; walks as free.</summary>
     public byte[]? SaveBytes(ushort body)
@@ -1506,6 +1516,7 @@ public sealed class CrewWorld
             var tag = State[m] == CrewState.Station ? Tag[m] : (ushort)0;
             wr.U32(Uid[m]).U8((byte)((byte)Job[m] | (State[m] == CrewState.Surrendered ? 0x80 : 0))).U8((byte)Math.Clamp(Health[m] / MemberHealth * 255, 1, 255)).U8(Skill[m]).U16(tag).U16(Name[m]);
         }
+        wr.U16((ushort)(s.Group + 1)).U32(s.CaptainUid); // (3: its group, whose header is the world's Fleet section: CrewFleet.SaveBytes)
         return wr.Span.ToArray();
     }
 
@@ -1516,7 +1527,7 @@ public sealed class CrewWorld
         {
             var r = new SaveReader(bytes);
             var v = r.U8();
-            if (v is not (1 or SaveVersion))
+            if (v is not (1 or 2 or SaveVersion))
             {
                 Console.WriteLine($"[crew] construct {c.Id}'s crew is of version {v} (this build reads {SaveVersion}): left off");
                 return;
@@ -1548,7 +1559,7 @@ public sealed class CrewWorld
             {
                 var uid = r.U32();
                 var jb = r.U8();
-                var job = (CrewJob)Math.Min(jb & 0x7F, (int)CrewJob.Loader);
+                var job = (CrewJob)Math.Min(jb & 0x7F, (int)CrewJob.Interrogator); // (was capped at Loader: a saved Spotter, Crane, Hauler or Builder came back a Loader)
                 var health = r.U8() / 255f * MemberHealth;
                 var skill = r.U8();
                 var tag = r.U16();
@@ -1556,6 +1567,13 @@ public sealed class CrewWorld
                 var at = Add(s, job, (jb & 0x80) != 0 ? -1 : TagIndex(s, tag), uid, health, skill, name);
                 if (at >= 0 && (jb & 0x80) != 0)
                     State[at] = CrewState.Surrendered; // (a prisoner, or hands up)
+            }
+            if (v >= 3)
+            {
+                var slot = r.U16() - 1;
+                s.CaptainUid = r.U32();
+                if (slot >= 0)
+                    Fleet.Rejoin(this, c, s, slot);
             }
             Events.Add($"construct {c.Id}: its crew of {s.MemberCount} came back from the save");
         }

@@ -208,6 +208,7 @@ public sealed partial class Game
         if (def != null && by != 255)
             ((ICrewHost)this).Deed(RelEvent.Capture, s, by, 0);
         CrewBounty(by, prisoners); // (credits: GameCrewHire.cs)
+        CrewOfficersTaken(c, s, by); // (an admiral or a captain among them: GameCrewFleet.cs)
         s.RosterDirty = true;
         Console.WriteLine($"[crew] construct {c.Id}: taken by player {by}{(c.Owner == by ? "" : " (who can't own another: it stays nobody's)")}, {prisoners} prisoners");
         CrewNotice(c, prisoners > 0
@@ -449,7 +450,8 @@ public sealed partial class Game
         {
             case "release":
                 Crew.Release(m, this);
-                PowerDeed(RelEvent.Release, faction, p.Id, c.WorldCom);
+                if (!CrewOfficerFreed(uid, p.Id, c.WorldCom)) // (an officer: the bigger event, GameCrewFleet.cs)
+                    PowerDeed(RelEvent.Release, faction, p.Id, c.WorldCom);
                 Console.WriteLine($"[crew] construct {body}: player {p.Id} released prisoner {uid}");
                 return null;
             case "drop":

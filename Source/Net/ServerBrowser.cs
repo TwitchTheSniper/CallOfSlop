@@ -581,7 +581,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   Eva bits (a space suit, an MMU on it).
     // 337: robot shell wear (GameShellWear.cs, ShellWear.cs): Msg.Shell ends with 8 x u8, the shell's works' wear; CfgKey gains ShellWear0..3
     //   (a Robot Shell's hidden settings) at its end, and the six Shell spare parts move part ids.
-    public const ushort ProtocolVersion = 337;
+    // 340: groups and admirals (docs/sandbox/design/faction-controllers.md phase 2; GameCrewFleet.cs): Msg.CrewSeats ends with u16 captain's name, u16
+    //   admiral's name aboard (0xFFFF: none), u16 group number (0: none); Msg.Intel at the end of Msg; CrewOrder gains Interrogate, Ransom, Interrogator.
+    public const ushort ProtocolVersion = 340;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;

@@ -939,6 +939,7 @@ public static unsafe partial class Program
                 else if (!benchCovers)
                 {
                     DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
+                    DrawIntelMarks(g); // what questioning gave up (GameCrewFleet.cs)
                     TacticalHud.DrawMarkers(g, now, Ui.Scale); // motion pings, decoy tags, your devices (TacticalHud.cs)
                     LauncherHud.DrawMarkers(g, now, Ui.Scale); // the lock-on brackets, the wire's guide dot, sticky charges (LauncherHud.cs)
                     RadarHud.Draw(g, Ui.Scale, _settings.Bind(GameAction.SeatRadar)); // a craft's radar scope, its contacts and lock (RadarHud.cs)

@@ -2438,6 +2438,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.Credits when !IsServer:
                 ReadCredits(ref r); // this player's credits (GameCrewHire.cs)
                 break;
+            case (byte)Msg.Intel when !IsServer:
+                ReadIntel(ref r); // what a questioned officer gave up (GameCrewFleet.cs)
+                break;
             case (byte)Msg.PowerNews when !IsServer:
                 ReadPowerNews(ref r); // the NPC powers' news lines (GameCrewFactions.cs)
                 break;

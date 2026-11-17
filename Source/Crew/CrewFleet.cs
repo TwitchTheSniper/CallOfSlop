@@ -278,6 +278,27 @@ public sealed class CrewFleet
         return slot;
     }
 
+    /// <summary>A crewed body joins group <paramref name="slot"/> (a convoy's member set down after its leader). False (logged): full, another power's, or no NPC crew.</summary>
+    public bool Join(CrewWorld crew, ConstructWorld w, int slot, ushort body)
+    {
+        if (Of(slot) is not { } g || crew.ShipOf(body) is not { Own: false, Prize: false } s || w.Get(body) is not { Wreck: false } c || s.Faction != g.Power || g.Count >= CrewGroup.MaxShips)
+        {
+            crew.Events.Add($"fleet: construct {body} can't join group slot {slot} (full, another power's, or no NPC crew)");
+            return false;
+        }
+        if (s.Group == slot)
+            return true;
+        if (s.Group >= 0)
+            Leave(crew, s);
+        Look(crew, c, s);
+        g.Ships[g.Count++] = body;
+        s.Group = (short)slot;
+        g.Strength0 += s.Strength;
+        g.ThinkAt = 0;
+        crew.Events.Add($"fleet: construct {body} joins group {g.Number} ({g.Count} ships)");
+        return true;
+    }
+
     /// <summary>A ship leaves its group (its captain on its own again).</summary>
     public void Leave(CrewWorld crew, CrewShip s)
     {
@@ -619,7 +640,7 @@ public sealed class CrewFleet
             var work = g.RouteWork[g.RouteAt];
             kind = work == OrderKind.Route ? OrderKind.GoTo : work;
             at = p;
-            if (Vector3.Distance(Flat(flag.WorldCom), Flat(p)) < 40)
+            if (g.DwellUntil != 0 || Vector3.Distance(Flat(flag.WorldCom), Flat(p)) < ArriveBand + flag.Radius * 0.5f)
             {
                 if (g.DwellUntil == 0)
                 {
@@ -641,6 +662,9 @@ public sealed class CrewFleet
     }
 
     private static Vector3 Flat(Vector3 v) => v with { Y = 0 };
+
+    /// <summary>A flagship this close to a route's point (m, plus half its size) is there.</summary>
+    public const float ArriveBand = 50;
 
     /// <summary>A follower's slot (x right, z ahead of the flagship) by the doctrine's shape.</summary>
     public static Vector3 Slot(FleetDoctrine d, int n)
@@ -802,6 +826,119 @@ public sealed class CrewFleet
     {
         if (Of(s.Group) is { } g)
             g.Post(kind, s.Body, other, crew.Tick);
+    }
+
+    /// <summary>An officer's resistance to questioning: its doctrine's, give or take a fifth by the person (its uid), 0.05 to 0.95.</summary>
+    public static float ResistanceOf(uint uid, FleetDoctrine d) => Math.Clamp(d.Resistance + ((int)(uid * 2654435761u >> 24) % 41 - 20) / 100f, 0.05f, 0.95f);
+
+    /// <summary>Seconds of questioning to break an officer of <paramref name="resistance"/>: with an Interrogator of <paramref name="skill"/> (0-255), or alone (skill -1: the rules' aloneTimes as long).</summary>
+    public float InterrogationSeconds(float resistance, int skill) =>
+        Rules.InterrogateSeconds * (resistance / 0.5f) * (skill < 0 ? Rules.InterrogateAlone : 1f / (0.5f + skill / 255f)); // (a skilled interrogator at 255 takes two thirds as long, an unskilled one twice)
+
+    // ---- Saves (the world's Fleet section: WorldSaveWriter.FleetTag; each ship's group in its crew block) -------------------------------
+
+    public const byte SaveVersion = 1;
+
+    /// <summary>Every live group's header (its ships rejoin from their crew blocks); null: none.</summary>
+    public byte[]? SaveBytes()
+    {
+        if (Live == 0)
+            return null;
+        var wr = new SaveWriter(256 + Live * 160);
+        wr.U8(SaveVersion).U16((ushort)_number).U16((ushort)Live);
+        foreach (var g in Groups)
+        {
+            if (!g.Live)
+                continue;
+            wr.U8((byte)g.Slot).Str(CrewPowers.Of(g.Power)?.Name ?? "").U8((byte)g.Task).Str(g.Doctrine.Name).U32(g.AdmiralUid).U16(g.AdmiralName).U16(g.Number);
+            wr.U8((byte)g.Order).Vec(g.OrderAt).Vec(g.Home).U8((byte)g.RouteCount);
+            for (var i = 0; i < g.RouteCount; i++)
+                wr.Vec(g.Route[i]).U8((byte)g.RouteWork[i]);
+            wr.U8((byte)g.RouteAt).F32(g.Dwell).U8((byte)((g.Loop ? 1 : 0) | (g.Retreating ? 2 : 0))).F32(g.Strength0).I32(g.Losses);
+        }
+        return wr.Span.ToArray();
+    }
+
+    /// <summary>A saved world's groups: headers into their slots, waiting <see cref="LoadGraceSeconds"/> for their ships. A section that doesn't read leaves no groups (logged).</summary>
+    public void Load(CrewWorld crew, byte[] bytes)
+    {
+        Clear();
+        try
+        {
+            var r = new SaveReader(bytes);
+            var v = r.U8();
+            if (v != SaveVersion)
+            {
+                Console.WriteLine($"[fleet] the Fleet section is of version {v} (this build reads {SaveVersion}): no groups");
+                return;
+            }
+            _number = r.U16();
+            int n = r.U16();
+            for (var k = 0; k < n; k++)
+            {
+                var g = Groups[r.U8()];
+                g.Clear();
+                var pname = r.Str();
+                g.Power = CrewPowers.Find(pname);
+                g.Task = (GroupTask)Math.Min((int)r.U8(), (int)GroupTask.Construction);
+                var dname = r.Str();
+                g.Doctrine = Rules.Doctrines.TryGetValue(dname, out var d) ? d : Rules.DoctrineOf(g.Power);
+                g.AdmiralUid = r.U32();
+                g.AdmiralName = r.U16();
+                g.Number = r.U16();
+                g.Order = (OrderKind)Math.Min((int)r.U8(), (int)OrderKind.Route);
+                g.OrderAt = r.Vec();
+                g.Home = r.Vec();
+                g.RouteCount = Math.Min((int)r.U8(), CrewGroup.MaxRoute);
+                for (var i = 0; i < g.RouteCount; i++)
+                {
+                    g.Route[i] = r.Vec();
+                    g.RouteWork[i] = (OrderKind)Math.Min((int)r.U8(), (int)OrderKind.Route);
+                }
+                g.RouteAt = Math.Min((int)r.U8(), Math.Max(0, g.RouteCount - 1));
+                g.Dwell = r.F32();
+                var flags = r.U8();
+                g.Loop = (flags & 1) != 0;
+                g.Retreating = (flags & 2) != 0;
+                g.Strength0 = r.F32();
+                g.Losses = r.I32();
+                if (g.Power == 0)
+                {
+                    Console.WriteLine($"[fleet] saved group {g.Number} was of power \"{pname}\", which isn't read now: left off");
+                    g.Clear();
+                    continue;
+                }
+                g.Live = true;
+                g.Serial++;
+                g.ThinkAt = crew.Tick + (long)(LoadGraceSeconds * World.TickRate); // (its ships rejoin from their crew blocks first)
+                Live++;
+            }
+            Console.WriteLine($"[fleet] {Live} groups came back from the save");
+        }
+        catch (WorldFileException ex)
+        {
+            Console.WriteLine($"[fleet] the Fleet section didn't read ({ex.Message}): no groups");
+            Clear();
+        }
+    }
+
+    /// <summary>A loaded group waits this long for its ships before its admiral thinks (s).</summary>
+    public const float LoadGraceSeconds = 20;
+
+    /// <summary>A ship from a save rejoins its group's slot (the Fleet section is read before bodies' crews).</summary>
+    public void Rejoin(CrewWorld crew, Construct c, CrewShip s, int slot)
+    {
+        if (Of(slot) is not { } g || g.Power != s.Faction || g.Count >= CrewGroup.MaxShips)
+        {
+            Console.WriteLine($"[fleet] construct {c.Id}'s saved group (slot {slot}) isn't there or isn't its power's: its captain is on its own");
+            return;
+        }
+        for (var k = 0; k < g.Count; k++)
+            if (g.Ships[k] == c.Id)
+                return;
+        Look(crew, c, s);
+        g.Ships[g.Count++] = c.Id;
+        s.Group = (short)slot;
     }
 
     // ---- Intelligence (the user's answers on admirals 7) -----------------------------------------------------------------------------

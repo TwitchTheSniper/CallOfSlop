@@ -51,12 +51,25 @@ public sealed partial class Ui
                     ImGui.SameLine();
                     if (ImGui.SmallButton("Hire"u8))
                         game.SandboxSendCrewOrder(body, uid, CrewOrder.Hire);
+                    if (job == CrewJob.Admiral || job == CrewJob.Pilot)
+                    {
+                        // (an admiral or a captain: the host answers if it is no officer)
+                        ImGui.SameLine();
+                        if (ImGui.SmallButton("Question"u8))
+                            game.SandboxSendCrewOrder(body, uid, CrewOrder.Interrogate);
+                        ImGui.SameLine();
+                        if (ImGui.SmallButton("Ransom"u8))
+                            game.SandboxSendCrewOrder(body, uid, CrewOrder.Ransom);
+                    }
                 }
                 else if (v.Own)
                 {
                     ImGui.SameLine();
                     if (ImGui.SmallButton("Dismiss"u8))
                         game.SandboxSendCrewOrder(body, uid, CrewOrder.Dismiss);
+                    ImGui.SameLine();
+                    if (ImGui.SmallButton(job == CrewJob.Interrogator ? "Off questioning"u8 : "Interrogator"u8))
+                        game.SandboxSendCrewOrder(body, uid, CrewOrder.Interrogator);
                 }
                 ImGui.PopID();
             }
