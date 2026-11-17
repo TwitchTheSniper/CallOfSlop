@@ -615,7 +615,10 @@ public sealed class VehicleSpawner(Game game)
         if (a.Convoy is { } run && a.Index == 0)
             run.LeaderId = c.Id;
         if (brief == null)
+        {
+            game.CrewFactionVehicle(c); // (a nobody's vehicle drives only with a crew: GameCrew.cs)
             return;
+        }
         if (a.Convoy is { } r)
             (brief.Slot, brief.Formation, brief.Convoy, brief.ConvoyIndex, brief.Lane, brief.Leader) =
                 (r.Plan.Members[a.Index].Slot, r.Plan.Formation, r.Plan.Seed, (byte)a.Index, (sbyte)a.Lane, r.LeaderId);
@@ -623,6 +626,7 @@ public sealed class VehicleSpawner(Game game)
             brief.Model = m.Key;
         if (brief.Attach(c) is { } why)
             Console.WriteLine($"[vehicles] {name}: its behaviour brief doesn't fit the body that was built ({why}): left off");
+        game.CrewFactionVehicle(c);
     }
 
     private void Finish(in Ask a, Construct? c, string name, string why)

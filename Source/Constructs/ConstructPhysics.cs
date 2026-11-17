@@ -187,7 +187,7 @@ public static partial class ConstructPhysics
                 c.Vel += weight * ((1 - c.AntiShare) * dt); // (a planet: towards its centre, from where the body is; Anti-Grav takes its share off)
                 if (c.GrabbedBy != 255)
                 {
-                    if (c.Driver != 255)
+                    if (c.Driven)
                     {
                         // (the gun wins: a driver's keys do nothing while it is held, so the wheels and thrusters don't fight the beam)
                         c.Throttle = c.SteerInput = c.Steer = c.LiftInput = c.RollInput = 0;
@@ -938,7 +938,7 @@ public static partial class ConstructPhysics
     private const float HeadingHold = 0.9f;
 
     /// <summary>Is the engine asked to run this tick: a driver in the seat, or a run signal wired into it (board item cs03: no seat needed)?</summary>
-    public static bool DriveOn(Construct c) => (c.Driver != 255 || c.EngineWired || c.SteerRuns || c.RotorRuns) && c.EngineRunning && c.StallTicks == 0;
+    public static bool DriveOn(Construct c) => (c.Driven || c.EngineWired || c.SteerRuns || c.RotorRuns) && c.EngineRunning && c.StallTicks == 0;
 
     /// <summary>The throttle this tick: a wired engine's signal (its throttle port, or its one input), else the driver's.</summary>
     public static float DriveThrottle(Construct c) => c.EngineWired ? c.EngineSignal : c.Throttle;
@@ -2101,7 +2101,7 @@ public static partial class ConstructPhysics
     {
         // (a long body's far end moves at its spin times its length: a 300 m hull is not still at what a buggy is)
         var still = c.Anchored || c.Vel.LengthSquared() < StillSpeed2 && c.AngVel.LengthSquared() * MathF.Max(1, c.Radius * c.Radius / 64f) < StillSpeed2;
-        still &= (c.Driver == 255 || (c.Throttle == 0 && c.SteerInput == 0 && c.LiftInput == 0 && c.RollInput == 0)) && !(c.EngineWired && c.EngineSignal != 0) && c.SteerSignal == 0 && !c.HoverOn && !c.ActiveSignal && !c.StabLive && c.ThrustShow <= 0 && !c.RotorLive;
+        still &= (!c.Driven || (c.Throttle == 0 && c.SteerInput == 0 && c.LiftInput == 0 && c.RollInput == 0)) && !(c.EngineWired && c.EngineSignal != 0) && c.SteerSignal == 0 && !c.HoverOn && !c.ActiveSignal && !c.StabLive && c.ThrustShow <= 0 && !c.RotorLive;
         for (var j = 0; j < c.JointCount && still; j++)
         {
             ref var jt = ref c.Joints[j];

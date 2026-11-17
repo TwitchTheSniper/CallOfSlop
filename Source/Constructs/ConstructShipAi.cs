@@ -28,7 +28,7 @@ public struct ShipAiTarget
 /// with a living pilot at it (or for <see cref="CrewWorld.HelmGraceTicks"/> after one is lost, its last input held), and each gun
 /// seat with a living gunner. With no crew set (a tool) it works every seat.
 /// </summary>
-public sealed class ShipAi
+public sealed partial class ShipAi
 {
     /// <summary>How far it sees a target (m), the range it keeps (a little inside its guns' 300 m), and the band either side it is content in.</summary>
     public const float EngageRange = 2500, StandOff = 220, StandBand = 40;
@@ -59,6 +59,8 @@ public sealed class ShipAi
         4 => $"closing, {_stateDist:0} m",
         5 => $"opening, {_stateDist:0} m",
         6 => $"holding at {_stateDist:0} m",
+        7 => $"following, {_stateDist:0} m behind its place",
+        8 => $"patrolling, {_stateDist:0} m to go",
         _ => "standing by",
     };
     private int _state;
@@ -107,6 +109,7 @@ public sealed class ShipAi
         Shots = GunnerShots = Launches = Flares = 0;
         Crew = null;
         Ship = null;
+        GroundReset();
     }
 
     /// <summary>Its crew works seat <paramref name="seat"/> (no crew: a tool's, every seat is worked).</summary>
@@ -141,7 +144,8 @@ public sealed class ShipAi
     {
         _structure = c.PartCount;
         _stab = c.StabCount > 0 ? c.Stabs[0].Part : -1;
-        _pilot = _stab >= 0 ? ConstructFlight.SeatFor(c, _stab) : -1;
+        _pilot = _stab >= 0 ? ConstructFlight.SeatFor(c, _stab) : Crew != null ? c.DriveSeat : -1; // (no stabilizer: a ground vehicle's drive seat, driven by Source/Crew/CrewGround.cs)
+        _onGround = _stab < 0 && _pilot >= 0;
         _seatCount = 0;
         _rackCount = 0;
         _flareCount = 0;
@@ -179,6 +183,7 @@ public sealed class ShipAi
     public void Release(Construct c)
     {
         c.CrewAims = false;
+        c.CrewDrives = false;
         _structure = -1;
         _state = 0;
     }
@@ -196,6 +201,12 @@ public sealed class ShipAi
         if (_pilot < 0 || _pilot >= c.PartCount || c.Parts[_pilot].Broken)
         {
             _state = 1;
+            c.CrewDrives = false;
+            return;
+        }
+        if (_onGround)
+        {
+            StepGround(world, c, query, has, t); // (Source/Crew/CrewGround.cs)
             return;
         }
         var com = c.WorldCom;
@@ -413,6 +424,8 @@ public sealed class ShipAi
             Seat(c, _pilot, _pilotKeys, _pilotYaw, _pilotPitch);
         else if (Grace)
             Seat(c, _pilot, (ushort)(_pilotKeys & ~ConstructParts.KeyFire), _pilotYaw, _pilotPitch);
+        else if (_onGround)
+            GroundStop(c);
         for (var s = 0; s < _seatCount; s++)
             if (_seats[s] < c.PartCount && Manned(_seats[s]))
                 Seat(c, _seats[s], _seatKeys[s], _seatYaw[s], _seatPitch[s]);

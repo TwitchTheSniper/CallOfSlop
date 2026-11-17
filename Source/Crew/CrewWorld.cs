@@ -907,7 +907,7 @@ public sealed class CrewWorld
                 continue;
             if (ai.Boarded(c, this))
             {
-                if (c.CrewAims)
+                if (c.CrewAims || c.CrewDrives)
                     ai.Release(c); // (a person has the helm: their stabilizer's own Mouse aim setting, not the crew's)
                 continue;
             }

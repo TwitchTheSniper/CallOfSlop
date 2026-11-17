@@ -30,6 +30,18 @@ public sealed partial class Game : ICrewHost
         CrewSendSeats();
     }
 
+    /// <summary>
+    /// A nobody's ground vehicle or walker just set down (a faction vehicle, a convoy's member) gets a crew in its seats (bot-brain.md phase 2:
+    /// it moves only with a driver aboard). Aircraft and ships are crewed by their pilots and stabilizers; a player's vehicle never is.
+    /// </summary>
+    public void CrewFactionVehicle(Construct c)
+    {
+        if (!IsServer || c.Owner != 255 || c.Wreck || c.StabCount > 0 || c.DriveSeat < 0 || Crew.Has(c.Id))
+            return;
+        Crew.Crew(c, ShipAiMode.Strangers);
+        CrewLog();
+    }
+
     private void CrewLog()
     {
         foreach (var e in Crew.Events)

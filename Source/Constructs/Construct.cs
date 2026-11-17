@@ -360,6 +360,12 @@ public sealed partial class Construct
     public bool CanDrive; // seat + working engine + fuel path + transmission + driven wheels (the drivetrain)
     public int Engine = -1;
     public int Transmission = -1;
+    /// <summary>Server: a seated crew member with no body works the drive seat (Source/Crew/CrewGround.cs): it drives as a sitter would. Never saved or sent.</summary>
+    public bool CrewDrives;
+
+    /// <summary>Someone drives it: a sitter in its drive seat, or its crew (<see cref="CrewDrives"/>).</summary>
+    public bool Driven => Driver != 255 || CrewDrives;
+
     public int DriveSeat = -1; // the seat whose sitter drives: the one linked through a Driving Module to the drivetrain (ConstructModules.cs); -1: no seat drives, whatever else it has
     public int ControlSeat = -1; // the seat forward is taken from: the drive seat, else a seat on a Driving Module wired by hand
     public CTurretMod[] TurretMods = [];
