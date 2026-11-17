@@ -43,10 +43,13 @@ Working notes for docs/sandbox/design/bot-brain.md, kept current after every ste
 - Window-shot verbs for this: `crew` (rosters, shots; on a client the bodies and stand-ins it has), `crewshoot pilot|gunner|spare`,
   `crewbodies N` (cap the host's bodies; the rest go back to records and are drawn as stand-ins).
 
+- Saves: a crewed frigate saved after its gunner was shot (`saveworld`) loads with its crew of 5 (`loadworld`).
+- A joined client (`--net host` / `join`, `crewbodies 2`): 2 crew bodies among its players and the other 4 as stand-ins.
+- Self-test sections by name: Sandbox spawns, Frame allocations, Sandbox body sync, World links: all pass.
+
 ## Next
 
-- Phase 1 by hand: a window run with a crewed ship (bodies within 300 m, shoot a gunner from outside), a joined client's view
-  of bodies and stand-ins.
+- Phase 1 is done (below). Phase 2 next: the ground `HelmDriver` from the brief, convoys and faction vehicles spawned crewed.
 - Phase 2 (ground crews), 3 (factions, `Crew/Factions`, captain), 4 (CrewNav, engineers), 5 (boarding, scuttle 15 s / 90 s / 5 s,
   capture when all crew are gone, prisoners), 6 (own crew: hired NPC crew first; see "Hiring" below), 7 (work crews).
 
@@ -60,6 +63,6 @@ prisoners (simplest, no data), or a flat materials fee anywhere.
 
 ## Unverified
 
-- Everything with bodies (`Promote`, `CrewSit`, a body killed in its seat) is untried in a real window and over the network.
+- Aircraft pilots as crew (`PilotHeld`): built, never flown with a pilot killed.
 - Stand-ins' look (no picture taken); whether clients' part indices always match the host's after a rebuild (the host
   re-sends on its rebuild; a client's own rebuild order is assumed the same).

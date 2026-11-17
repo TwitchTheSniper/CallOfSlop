@@ -121,8 +121,13 @@ bodies have one, who each is after; server only).
 - **Not yet:** saving a crew's state (it is the setting, so a loaded ship has its crew again), flying in space past the sky's
   edge (a ship there is a SpaceFlight particle; the crew stops), the radar lock (PR #211: racks launch on what their
   seekers see), defending anything, fleets or factions.
-- **The check:** `--ship-ai-check [SHIP] [--target NAME] [--range M] [--seconds S] [--still]` (`Source/VehicleKit/ShipAiCheck.cs`)
-  flies a crew against a target ship on the flight check's flat floor and prints a line every two seconds. On 2026-11-15 the
+- **Seated crew (2026-11-16, the bot brain: docs/sandbox/design/bot-brain.md, Source/Crew/).** The setting now puts a crew in
+  the seats: a pilot at the helm, a gunner at each gun seat, spares on the couches. The flying and gunnery above work a seat only
+  while a living member sits at it: shoot the pilot and the helm keeps its last input for 3 s, then a spare walks over and takes
+  it (with nobody left it holds); shoot a gunner and that gun falls silent until a spare takes the seat. Near a player the crew
+  are bot bodies in their seats; further off records, drawn as stand-ins. A crew is saved with its ship.
+- **The check:** `--crew-check [SHIP] [--target NAME] [--range M] [--seconds S] [--still] [--crew-scale N]` (`Source/Crew/CrewCheck.cs`,
+  was `--ship-ai-check`) flies a crew against a target ship on the flight check's flat floor and prints a line every two seconds. On 2026-11-15 the
   Zero Day against a second Zero Day 1200 m off (sliding about at 40 m): it lifted off, turned onto it in 6 s, launched its
   first torpedo at 1180 m, closed at 23 m/s (its stabilizer's top speed) to 236 m, fired 1204 rounds until its ammunition was
   gone and took the target to 98% of its health.
