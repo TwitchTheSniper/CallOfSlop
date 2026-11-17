@@ -7,7 +7,7 @@ namespace CallOfSlop;
 /// <summary>
 /// The window tool's verbs for the command view and ship orders (docs/space/COMMAND.md "Trying it"):
 /// <c>command [SPAN]</c> opens the view (SPAN: metres up the screen), <c>cmdpick N</c> picks the Nth craft on the map (0: the
-/// nearest), <c>order orbit BODY KM</c>, <c>order goto BODY KM</c>, <c>order ground M</c> and <c>order cancel</c> give the picked craft an order as the
+/// nearest), <c>order orbit BODY KM</c>, <c>order goto BODY KM</c>, <c>order ground M</c>, <c>order land M</c>, <c>order come</c> and <c>order cancel</c> give the picked craft an order as the
 /// menu would, <c>nav</c> prints every craft and its order, <c>hoist KM</c> (host) puts the picked craft that far over the
 /// ground, at rest over it, <c>speed N</c> (host) asks for a time speed, <c>travel FUEL SHARE</c> (host) sets Settings > Gameplay's
 /// Fuel use in space and Trip fuel for the run (percents), and <c>rclick X,Y</c> is the right mouse button at a
@@ -61,21 +61,25 @@ public static unsafe partial class Program
             case "order":
             {
                 var kind = words.Length > 0 ? words[0].ToLowerInvariant() : "";
-                if (kind == "ground" && words.Length == 2 && float.TryParse(words[1], inv, out var metres) && g.Space is { } gs && g.Constructs.Get(Ui.CommandPicked) is { } gc && GravityFrames.Point is { } ball)
+                if (kind is "ground" or "land" && words.Length == 2 && float.TryParse(words[1], inv, out var metres) && g.Space is { } gs && g.Constructs.Get(Ui.CommandPicked) is { } gc && GravityFrames.Point is { } ball)
                 {
                     // "order ground M": a spot M metres along the ground from the picked craft, at its own height, as the menu's ground order gives.
-                    var up = Vector3.Normalize(gc.WorldCom - ball.Center);
+                    // "order land M": the same spot on the ball's surface, to set down on (from space too: then along from under it).
+                    var from = gc.SpaceShip != 0 ? ball.Center + Vector3.Normalize(gc.WorldCom - ball.Center) * (float)gs.System.Bodies[gs.Bubble.Body].Radius : gc.WorldCom;
+                    var up = Vector3.Normalize(from - ball.Center);
                     var along = Vector3.Normalize(Vector3.Cross(up, MathF.Abs(up.Y) < 0.9f ? Vector3.UnitY : Vector3.UnitX));
-                    var spot = ball.Center + Vector3.Normalize(gc.WorldCom + along * metres - ball.Center) * (gc.WorldCom - ball.Center).Length();
-                    g.NavSend(gc.Id, NavKind.Ground, gs.Bubble.Body, Vec3d.From(spot), 0);
+                    var high = kind == "land" ? (float)gs.System.Bodies[gs.Bubble.Body].Radius : (from - ball.Center).Length();
+                    var spot = ball.Center + Vector3.Normalize(from + along * metres - ball.Center) * high;
+                    g.NavSend(gc.Id, kind == "land" ? NavKind.Land : NavKind.Ground, gs.Bubble.Body, Vec3d.From(spot), 0);
                     _wsWait = 10;
                     return true;
                 }
                 var why = kind switch
                 {
                     "cancel" => Ui.CommandOrder(g, NavKind.None, "", 0),
+                    "come" => Ui.CommandOrder(g, NavKind.Come, "", 0),
                     "orbit" or "goto" when words.Length == 3 && double.TryParse(words[2], inv, out var km) => Ui.CommandOrder(g, kind == "orbit" ? NavKind.Orbit : NavKind.GoTo, words[1], km),
-                    _ => "order orbit BODY KM | order goto BODY KM | order ground M | order cancel",
+                    _ => "order orbit BODY KM | order goto BODY KM | order ground M | order land M | order come | order cancel",
                 };
                 if (why != null)
                     WsFail("order: " + why);
@@ -98,7 +102,7 @@ public static unsafe partial class Program
                     var push = ConstructPhysics.NavDrive(c, out _, out _, out var burn);
                     var accel = c.Mass > 0 ? push / c.Mass : 0;
                     WsSay(string.Create(inv, $"[nav] construct {c.Id} drive: {accel:0.00} m/s2, {(burn > 0 ? $"{c.FuelLeft / burn:0} s at full, dV {accel * c.FuelLeft / burn:0} m/s" : "no fuel burnt")}"));
-                    WsSay(string.Create(inv, $"[nav] construct {c.Id}: {(c.SpaceAway != 0 ? "parked" : c.SpaceShip != 0 ? "space" : "sky")}, {height:0} m up, {c.Vel.Length():0.0} m/s, mass {c.Mass / 1000:0.0} t, fuel {c.FuelLeft:0} L, thrust {c.ThrustShow:0.00}, nav throttle {c.NavThrottle:0.00}, takes orders: {Game.NavProblem(c) ?? "yes"}; order: {(o == null ? "none" : $"{Game.NavText(s.System, o)}, {o.Phase}, {o.Distance:0} m to go, {o.SpeedError:0.0} m/s off{(o.ArriveNs != 0 ? $", trip leaves day {o.DepartNs / 864e11:0.0}, arrives day {o.ArriveNs / 864e11:0.0}, {o.DvNeed / 1000:0.00} km/s" : "")}")}; space day {s.Now.Seconds / 86400:0.00} at {s.Speed}x{((c.SpaceAway != 0 ? g.SpaceAwayLine(c) : g.SpaceOrbitLine(c)) is { } line ? "; " + line : "")}"));
+                    WsSay(string.Create(inv, $"[nav] construct {c.Id}: {(c.SpaceAway != 0 ? "parked" : c.SpaceShip != 0 ? "space" : "sky")}, {height:0} m up, {c.Vel.Length():0.0} m/s, mass {c.Mass / 1000:0.0} t, fuel {c.FuelLeft:0} L, thrust {c.ThrustShow:0.00}, nav throttle {c.NavThrottle:0.00}, takes orders: {Game.NavProblem(c) ?? "yes"}; order: {(o == null ? "none" : $"{Game.NavText(s.System, o)}, {o.Phase}, {o.Distance:0} m to go, {o.SpeedError:0.0} m/s off{(o.ArriveNs != 0 ? $", trip leaves day {o.DepartNs / 864e11:0.0}, arrives day {o.ArriveNs / 864e11:0.0}, {o.DvNeed / 1000:0.00} km/s" : "")}")}; space day {s.Now.Seconds / 86400:0.00} at {s.Speed}x{((c.SpaceAway != 0 ? g.SpaceAwayLine(c) : g.SpaceOrbitLine(c)) is { } line ? "; " + line : "")}{(g.Local is { Alive: true } you && c.SpaceShip == 0 ? $"; {Vector3.Distance(you.Position, c.WorldCom):0} m from you" : "")}"));
                 }
                 return true;
             }

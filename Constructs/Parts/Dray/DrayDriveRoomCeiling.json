@@ -1,0 +1,132 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Dray Drive Room Ceiling",
+  "description": "The ceiling of the Dray's drive room.",
+  "group": "Ship",
+  "section": "Dray hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1200.0,
+  "health": 5000,
+  "armour": 25,
+  "material": "steel",
+  "color": "#8f969a",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        2.425,
+        4.625,
+        46.0
+      ],
+      "max": [
+        11.325,
+        4.875,
+        53.275
+      ],
+      "color": "#8f969a",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        2.679,
+        4.375,
+        52.375
+      ],
+      "max": [
+        11.071,
+        4.619,
+        52.575
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        2.679,
+        4.375,
+        49.325
+      ],
+      "max": [
+        11.071,
+        4.619,
+        49.525
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        2.679,
+        4.375,
+        48.125
+      ],
+      "max": [
+        11.071,
+        4.619,
+        48.325
+      ],
+      "color": "#202326",
+      "detail": true,
+      "finish": "dirty steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        4.275,
+        4.755,
+        46.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        2.555,
+        4.625,
+        49.635
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        11.195,
+        4.625,
+        49.635
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        2.425,
+        4.755,
+        47.685
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        11.325,
+        4.755,
+        47.685
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j5",
+      "at": [
+        6.875,
+        4.875,
+        51.325
+      ],
+      "dir": "+y"
+    }
+  ]
+}

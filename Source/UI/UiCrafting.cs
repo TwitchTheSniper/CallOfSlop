@@ -68,6 +68,7 @@ public sealed partial class Ui
         _crStamp = stamp;
         _crBuiltAt = now;
         ConstructCrafting.Catalogue(world, c, part, _crRows);
+        LinkPlan.AppendRemote(c, _crRows); // (what linked networks hold or make: comes by ship, linked-logistics.md section 2)
         _crRows.Sort(static (a, b) => string.CompareOrdinal(a.Name, b.Name));
         var names = RecyclingTable.Current;
         _crTiles = new RpTile[_crRows.Count];
@@ -80,7 +81,7 @@ public sealed partial class Ui
                 _crSel = i;
             _crMake += row.Make > 0 ? 1 : 0;
             _crStock += row.Stock > 0 ? 1 : 0;
-            var usable = row.Stock > 0 || row.Make is 1 or 2;
+            var usable = row.Stock > 0 || row.Make is 1 or 2 or LinkPlan.RemoteMake;
             var mat = row.What.IsPiece ? row.What.Key.Material : (byte)0;
             var t = new RpTile
             {
@@ -92,13 +93,14 @@ public sealed partial class Ui
                 Search = row.Name.ToLowerInvariant(),
             };
             t.Time = row.Stock > 0 ? (row.Make is 1 or 2 ? $"in stock {row.Stock}, can make" : $"in stock {row.Stock}")
-                : row.Make == 1 ? "can make" : row.Make == 2 ? "can make: chain" : Short(row.Missing, 24);
+                : row.Make == 1 ? "can make" : row.Make == 2 ? "can make: chain" : row.Make == LinkPlan.RemoteMake ? Short(row.Missing, 24) : Short(row.Missing, 24);
             var maker = row.Machine >= 0 && row.Machine < c.PartCount ? c.DefOf(row.Machine).Name : "";
             t.Tip = row.Make switch
             {
                 1 => $"{row.Name}: the {maker} makes it now{(row.Recipe != null ? $" ({row.Recipe.Batch})" : "")}.{(row.Stock > 0 ? $" {row.Stock} in stock come first." : "")}",
                 2 => $"{row.Name}: the {maker} can make it once it is fed: {row.Missing}.",
                 3 => $"{row.Name}: the {maker} could make it, but {row.Missing}.{(row.Stock > 0 ? $" {row.Stock} in stock can be fetched." : "")}",
+                LinkPlan.RemoteMake => $"{row.Name}: {row.Missing}. Ordered here, it is made or taken there and comes by cargo ship.",
                 _ => $"{row.Name}: {row.Stock} in linked stores, not reserved. No linked machine makes it.",
             };
             if (row.Recipe is { } r)

@@ -1,0 +1,96 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Dray Hold Well Ceiling",
+  "description": "The ceiling of the Dray's hold well.",
+  "group": "Ship",
+  "section": "Dray hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1045.2,
+  "health": 5000,
+  "armour": 25,
+  "material": "steel",
+  "color": "#8f969a",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        0.875,
+        7.125,
+        26.675
+      ],
+      "max": [
+        12.875,
+        7.375,
+        33.075
+      ],
+      "color": "#8f969a",
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        6.875,
+        7.255,
+        26.675
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        0.995,
+        7.125,
+        29.875
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        12.755,
+        7.125,
+        29.875
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        0.875,
+        7.255,
+        29.875
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j4",
+      "at": [
+        12.875,
+        7.255,
+        29.875
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "j5",
+      "at": [
+        6.875,
+        7.255,
+        33.075
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j6",
+      "at": [
+        6.875,
+        7.375,
+        29.875
+      ],
+      "dir": "+y"
+    }
+  ]
+}

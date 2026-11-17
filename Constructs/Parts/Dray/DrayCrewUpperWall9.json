@@ -1,0 +1,172 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Dray Crew Upper Wall 9",
+  "description": "A wall of the Dray's crew upper, with its door frames and what is fixed to it.",
+  "group": "Ship",
+  "section": "Dray hauler",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 336.0,
+  "health": 3500,
+  "armour": 25,
+  "material": "steel",
+  "color": "#b9bdb5",
+  "attachSeconds": 6.0,
+  "boxes": [
+    {
+      "min": [
+        5.875,
+        3.375,
+        9.0
+      ],
+      "max": [
+        6.125,
+        6.375,
+        9.475
+      ],
+      "color": "#b9bdb5",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.875,
+        5.625,
+        9.475
+      ],
+      "max": [
+        6.125,
+        6.375,
+        10.975
+      ],
+      "color": "#b9bdb5",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.863,
+        3.378,
+        9.05
+      ],
+      "max": [
+        6.137,
+        4.125,
+        9.425
+      ],
+      "color": "#3d5569",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.855,
+        3.377,
+        9.405
+      ],
+      "max": [
+        6.145,
+        5.695,
+        9.472
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.855,
+        3.377,
+        10.978
+      ],
+      "max": [
+        6.145,
+        5.695,
+        11.045
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.855,
+        5.628,
+        9.475
+      ],
+      "max": [
+        6.145,
+        5.695,
+        10.975
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        5.875,
+        3.375,
+        10.975
+      ],
+      "max": [
+        6.125,
+        6.375,
+        11.25
+      ],
+      "color": "#b9bdb5",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.863,
+        3.378,
+        11.025
+      ],
+      "max": [
+        6.137,
+        4.125,
+        11.2
+      ],
+      "color": "#3d5569",
+      "detail": true,
+      "finish": "painted plating"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "doorCabinA",
+      "at": [
+        6.0,
+        4.5,
+        9.475
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j0",
+      "at": [
+        5.995,
+        3.375,
+        9.235
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        5.995,
+        4.875,
+        9.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        5.995,
+        6.375,
+        10.225
+      ],
+      "dir": "+y"
+    }
+  ]
+}

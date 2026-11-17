@@ -2172,6 +2172,8 @@ public sealed partial class ConstructWorld
         ConstructCrafting.Step(this); // (Crafting Terminals fetch and order: 2 Hz, only bodies with open orders)
         AllocProfile.Mark("machines: ConstructStation");
         ConstructStation.Step(this); // (Building Stations cost, order and fit: only bodies whose stations have a job)
+        AllocProfile.Mark("machines: LinkedLogistics");
+        LinkedLogistics.Step(this); // (link ends, remote lines, Cargo Docks, routes and Dispatchers: linked-logistics.md; once a second)
         AllocProfile.Mark("machines: ConstructLifters");
         ConstructLifters.Step(this, query); // (Loader Arms fit parts at the stations they reach and carry between points: lifters phase 4)
         AllocProfile.Mark("machines: ConstructPress");

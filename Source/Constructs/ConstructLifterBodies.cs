@@ -16,7 +16,7 @@ public static partial class ConstructLifters
     /// body and whose reach holds the body where it is and at <paramref name="toPos"/>, <paramref name="toRot"/>, starts carrying it
     /// there. True and the lifter's name, or false and why none does.
     /// </summary>
-    public static bool CarryBody(ConstructWorld world, Construct c, Construct body, Vector3 toPos, Quaternion toRot, out string who, out string why)
+    public static bool CarryBody(ConstructWorld world, Construct c, int station, Construct body, Vector3 toPos, Quaternion toRot, out string who, out string why)
     {
         who = "";
         why = "no Loader Arm or Bridge Crane on this construct";
@@ -37,9 +37,11 @@ public static partial class ConstructLifters
             var l = lb.Lifts[i];
             if (l.Part >= c.PartCount || DefOf(c, l.Part) is not { } ld)
                 continue;
-            if (l.State != LiftState.Idle || l.CabPart >= 0 || l.Steered || l.CarryBody != 0 || !ConstructRecycler.Powered(world, c, l.Part)
-                || (int)ConstructConfig.Get(c.Parts[l.Part], c.DefOf(l.Part), CfgKey.LiftMode, 0) == 3)
+            var mode = (int)ConstructConfig.Get(c.Parts[l.Part], c.DefOf(l.Part), CfgKey.LiftMode, 0);
+            if (l.State != LiftState.Idle || l.CabPart >= 0 || l.Steered || l.CarryBody != 0 || !ConstructRecycler.Powered(world, c, l.Part) || mode == 3)
                 continue;
+            if (mode == 1 && !ServesStation(c, l.Part, ld, station))
+                continue; // (Station only: it carries a body only to a station it works at, one whose bay its reach takes in)
             if (body.Mass > ld.Payload)
             {
                 heavy++;
@@ -87,6 +89,36 @@ public static partial class ConstructLifters
         why = heavy > 0 ? $"too heavy for {(heavy == 1 ? "the lifter" : "every lifter")} that could take it: {body.Mass:0} kg"
             : big > 0 ? $"too big for the lifters' hands: {longest:0.0} m long"
             : far > 0 ? "no Loader Arm or Bridge Crane reaches both its station's bay and its spot" : "every lifter is busy";
+        return false;
+    }
+
+    /// <summary>Does lifter <paramref name="part"/> work at station <paramref name="station"/> of the same body (its reach takes in the bay)?</summary>
+    private static bool ServesStation(Construct c, int part, LifterDef ld, int station)
+    {
+        if (station < 0 || station >= c.PartCount || !c.DefOf(station).IsBuildStation)
+            return false;
+        ConstructStation.Bay(c, station, out var floor, out _, out var bay);
+        Frame(c, part, ld, out _, out _, out var shoulder);
+        return Vector3.Distance(floor, shoulder) <= ld.ReachMax + bay.Length() * 0.5f + ld.Down;
+    }
+
+    /// <summary>
+    /// Where a carried body ends its carry (its spot), for a save made mid-carry: the body is saved there, so a load never leaves it
+    /// frozen in the air with no hand under it (the hand's carry is not saved); the main station's next look takes it in its bay.
+    /// </summary>
+    public static bool CarryEnd(ConstructWorld world, Construct body, out Vector3 pos, out Quaternion rot)
+    {
+        pos = body.Pos;
+        rot = body.Rot;
+        foreach (var l in world.BodyCarries)
+        {
+            if (l.CarryBody != body.Id || world.Get(l.Body) is not { } c || l.Part >= c.PartCount || DefOf(c, l.Part) is not { } ld)
+                continue;
+            Frame(c, l.Part, ld, out var lp, out var lr, out _);
+            pos = lp + Vector3.Transform(l.To, lr);
+            rot = Quaternion.Normalize(lr * l.ToRot);
+            return true;
+        }
         return false;
     }
 
