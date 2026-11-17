@@ -1,0 +1,251 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Freeport Reactor",
+  "description": "Freeport One's reactor at the end of its boom, well away from the people: a heavy station plant (more than a ship can carry), its cooling rings lit.",
+  "group": "Ship",
+  "section": "Freeport station",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 400000.0,
+  "health": 120000,
+  "armour": 60,
+  "material": "steel",
+  "color": "#8e938f",
+  "attachSeconds": 30.0,
+  "boxes": [
+    {
+      "min": [
+        -5.125,
+        -7.125,
+        149.875
+      ],
+      "max": [
+        4.875,
+        6.875,
+        160.875
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -6.125,
+        -7.125,
+        149.875
+      ],
+      "max": [
+        5.875,
+        6.875,
+        161.875
+      ],
+      "color": "#8e938f",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "plated steel"
+    },
+    {
+      "min": [
+        -6.375,
+        -4.475,
+        149.625
+      ],
+      "max": [
+        6.125,
+        -3.775,
+        162.125
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -6.375,
+        0.025,
+        149.625
+      ],
+      "max": [
+        6.125,
+        0.725,
+        162.125
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -6.375,
+        4.525,
+        149.625
+      ],
+      "max": [
+        6.125,
+        5.225,
+        162.125
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -6.245,
+        -2.025,
+        149.755
+      ],
+      "max": [
+        5.995,
+        -1.425,
+        161.995
+      ],
+      "color": "#9fe8ff",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "glow": true
+    },
+    {
+      "min": [
+        -6.245,
+        2.575,
+        149.755
+      ],
+      "max": [
+        5.995,
+        3.175,
+        161.995
+      ],
+      "color": "#9fe8ff",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "glow": true
+    },
+    {
+      "min": [
+        -5.625,
+        4.075,
+        150.375
+      ],
+      "max": [
+        5.375,
+        10.075,
+        161.375
+      ],
+      "color": "#a9ada6",
+      "detail": true,
+      "shape": "sphere",
+      "segments": 16,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -4.625,
+        -10.125,
+        151.375
+      ],
+      "max": [
+        4.375,
+        -7.125,
+        160.375
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "taper": [
+        0.6,
+        0.6
+      ],
+      "front": "+y",
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        -1.525,
+        -1.115,
+        149.871
+      ],
+      "max": [
+        1.275,
+        -0.121,
+        150.475
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.525,
+        10.075,
+        155.475
+      ],
+      "max": [
+        0.275,
+        10.875,
+        156.275
+      ],
+      "color": "#e0402c",
+      "detail": true,
+      "shape": "sphere",
+      "segments": 8,
+      "glow": true
+    },
+    {
+      "min": [
+        -6.325,
+        -6.125,
+        155.575
+      ],
+      "max": [
+        -5.725,
+        5.875,
+        156.175
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        5.475,
+        -6.125,
+        155.575
+      ],
+      "max": [
+        6.075,
+        5.875,
+        156.175
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        -0.625,
+        149.875
+      ],
+      "dir": "-z"
+    }
+  ]
+}

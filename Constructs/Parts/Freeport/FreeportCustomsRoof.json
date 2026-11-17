@@ -1,0 +1,164 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Freeport Customs Roof",
+  "description": "The roof of customs and berthing, a sealed building at Freeport One.",
+  "group": "Ship",
+  "section": "Freeport station",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 9000.0,
+  "health": 25000,
+  "armour": 20,
+  "material": "steel",
+  "color": "#a9ada6",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -22.125,
+        5.875,
+        -56.125
+      ],
+      "max": [
+        -6.125,
+        6.275,
+        -44.125
+      ],
+      "color": "#a9ada6",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -22.225,
+        5.925,
+        -56.225
+      ],
+      "max": [
+        -6.025,
+        6.225,
+        -44.025
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -17.525,
+        6.279,
+        -50.125
+      ],
+      "max": [
+        -14.725,
+        7.575,
+        -48.125
+      ],
+      "color": "#8e938f",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -17.225,
+        7.575,
+        -49.725
+      ],
+      "max": [
+        -16.025,
+        7.725,
+        -48.525
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+y",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -15.725,
+        7.575,
+        -49.725
+      ],
+      "max": [
+        -15.025,
+        7.775,
+        -48.525
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "grating"
+    },
+    {
+      "min": [
+        -9.125,
+        6.279,
+        -54.525
+      ],
+      "max": [
+        -8.725,
+        9.875,
+        -54.125
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -9.275,
+        9.825,
+        -54.675
+      ],
+      "max": [
+        -8.575,
+        10.525,
+        -53.975
+      ],
+      "color": "#e0402c",
+      "detail": true,
+      "shape": "sphere",
+      "segments": 8,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -14.125,
+        5.875,
+        -55.975
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -14.125,
+        5.875,
+        -44.275
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -6.275,
+        5.875,
+        -50.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -21.975,
+        5.875,
+        -50.125
+      ],
+      "dir": "-y"
+    }
+  ]
+}

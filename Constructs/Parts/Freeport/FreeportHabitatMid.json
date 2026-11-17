@@ -1,0 +1,299 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Freeport Habitat Mid",
+  "description": "A third of Freeport One's habitat drum, a 20 m cylinder lying across the spine: quarters, mess and medbay (sealed for now), lit window strips round it.",
+  "group": "Ship",
+  "section": "Freeport station",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 12000.0,
+  "health": 60000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#c3c5be",
+  "attachSeconds": 20.0,
+  "boxes": [
+    {
+      "min": [
+        -3.121,
+        -6.125,
+        -32.125
+      ],
+      "max": [
+        2.871,
+        13.875,
+        -12.125
+      ],
+      "color": "#c3c5be",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
+      "front": "+x",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -3.125,
+        -4.125,
+        -30.125
+      ],
+      "max": [
+        2.875,
+        11.875,
+        -14.125
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -3.125,
+        -1.125,
+        -32.125
+      ],
+      "max": [
+        2.875,
+        -0.125,
+        -12.125
+      ],
+      "color": "#55595b",
+      "finish": "deck plate"
+    },
+    {
+      "min": [
+        -1.325,
+        -0.121,
+        -12.721
+      ],
+      "max": [
+        1.075,
+        2.475,
+        -12.665
+      ],
+      "color": "#4f5a60",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -1.573,
+        -0.121,
+        -12.721
+      ],
+      "max": [
+        -1.325,
+        2.723,
+        -12.605
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.075,
+        -0.121,
+        -12.721
+      ],
+      "max": [
+        1.323,
+        2.723,
+        -12.605
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.575,
+        2.475,
+        -12.717
+      ],
+      "max": [
+        1.325,
+        2.725,
+        -12.601
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.185,
+        1.045,
+        -12.665
+      ],
+      "max": [
+        0.175,
+        1.175,
+        -12.605
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.475,
+        2.925,
+        -12.721
+      ],
+      "max": [
+        0.225,
+        3.125,
+        -12.475
+      ],
+      "color": "#ffe0a0",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -1.325,
+        -0.121,
+        -31.585
+      ],
+      "max": [
+        1.075,
+        2.475,
+        -31.529
+      ],
+      "color": "#4f5a60",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        -1.573,
+        -0.121,
+        -31.645
+      ],
+      "max": [
+        -1.325,
+        2.723,
+        -31.529
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        1.075,
+        -0.121,
+        -31.645
+      ],
+      "max": [
+        1.323,
+        2.723,
+        -31.529
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -1.575,
+        2.475,
+        -31.649
+      ],
+      "max": [
+        1.325,
+        2.725,
+        -31.533
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        -0.185,
+        1.045,
+        -31.645
+      ],
+      "max": [
+        0.175,
+        1.175,
+        -31.585
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -0.475,
+        2.925,
+        -31.775
+      ],
+      "max": [
+        0.225,
+        3.125,
+        -31.529
+      ],
+      "color": "#ffe0a0",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -3.025,
+        -6.275,
+        -32.275
+      ],
+      "max": [
+        2.775,
+        14.025,
+        -11.975
+      ],
+      "color": "#2e7c84",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 24,
+      "front": "+x",
+      "finish": "worn paint"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -0.125,
+        -0.625,
+        -12.125
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -0.125,
+        -0.625,
+        -32.125
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -3.125,
+        3.875,
+        -22.125
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j3",
+      "at": [
+        2.875,
+        3.875,
+        -22.125
+      ],
+      "dir": "+x"
+    }
+  ]
+}

@@ -1,0 +1,370 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Freeport Repair Arm 2",
+  "description": "A repair arm on a frigate finger at Freeport One: it reaches over a docked ship and mends it, piece by piece, while the crew wait.",
+  "group": "Ship",
+  "section": "Freeport station",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 6000.0,
+  "health": 15000,
+  "armour": 20,
+  "material": "steel",
+  "color": "#dd6a1e",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        84.375,
+        -0.125,
+        66.375
+      ],
+      "max": [
+        87.375,
+        1.075,
+        69.375
+      ],
+      "color": "#2a2e31",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        84.525,
+        1.079,
+        66.525
+      ],
+      "max": [
+        87.225,
+        2.075,
+        69.225
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y",
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        85.275,
+        1.075,
+        67.275
+      ],
+      "max": [
+        86.475,
+        8.375,
+        68.475
+      ],
+      "color": "#dd6a1e",
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        85.225,
+        2.275,
+        67.225
+      ],
+      "max": [
+        86.525,
+        2.475,
+        68.525
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        84.875,
+        7.975,
+        66.875
+      ],
+      "max": [
+        86.875,
+        9.975,
+        68.875
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "shape": "sphere",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        83.3897,
+        8.5889,
+        67.5637
+      ],
+      "max": [
+        86.3603,
+        15.7611,
+        78.6863
+      ],
+      "color": "#dd6a1e",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          85.4762,
+          9.3611,
+          67.5637
+        ],
+        [
+          85.3897,
+          8.5889,
+          68.0179
+        ],
+        [
+          86.2738,
+          8.5889,
+          68.1863
+        ],
+        [
+          86.3603,
+          9.3611,
+          67.7321
+        ],
+        [
+          83.4762,
+          15.7611,
+          78.0637
+        ],
+        [
+          83.3897,
+          14.9889,
+          78.5179
+        ],
+        [
+          84.2738,
+          14.9889,
+          78.6863
+        ],
+        [
+          84.3603,
+          15.7611,
+          78.2321
+        ]
+      ],
+      "paintable": false,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        84.2672,
+        9.4892,
+        67.8058
+      ],
+      "max": [
+        86.4828,
+        16.0608,
+        78.4442
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          86.2864,
+          9.6608,
+          67.8058
+        ],
+        [
+          86.2672,
+          9.4892,
+          67.9068
+        ],
+        [
+          86.4636,
+          9.4892,
+          67.9442
+        ],
+        [
+          86.4828,
+          9.6608,
+          67.8432
+        ],
+        [
+          84.2864,
+          16.0608,
+          78.3058
+        ],
+        [
+          84.2672,
+          15.8892,
+          78.4068
+        ],
+        [
+          84.4636,
+          15.8892,
+          78.4442
+        ],
+        [
+          84.4828,
+          16.0608,
+          78.3432
+        ]
+      ],
+      "paintable": false,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        83.125,
+        14.625,
+        77.625
+      ],
+      "max": [
+        84.625,
+        16.125,
+        79.125
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "shape": "sphere",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        82.5018,
+        9.177,
+        78.0529
+      ],
+      "max": [
+        84.2482,
+        15.573,
+        83.1971
+      ],
+      "color": "#dd6a1e",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          83.5018,
+          15.573,
+          78.5561
+        ],
+        [
+          83.6136,
+          15.177,
+          78.0529
+        ],
+        [
+          84.2482,
+          15.177,
+          78.1939
+        ],
+        [
+          84.1364,
+          15.573,
+          78.6971
+        ],
+        [
+          82.5018,
+          9.573,
+          83.0561
+        ],
+        [
+          82.6136,
+          9.177,
+          82.5529
+        ],
+        [
+          83.2482,
+          9.177,
+          82.6939
+        ],
+        [
+          83.1364,
+          9.573,
+          83.1971
+        ]
+      ],
+      "paintable": false,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        82.375,
+        8.875,
+        82.375
+      ],
+      "max": [
+        83.375,
+        9.875,
+        83.375
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "shape": "sphere",
+      "segments": 10,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        82.555,
+        7.775,
+        82.555
+      ],
+      "max": [
+        83.195,
+        8.925,
+        83.195
+      ],
+      "color": "#8e938f",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "taper": [
+        0.45,
+        0.45
+      ],
+      "front": "+y",
+      "finish": "steel"
+    },
+    {
+      "min": [
+        82.675,
+        7.425,
+        82.675
+      ],
+      "max": [
+        83.075,
+        7.825,
+        83.075
+      ],
+      "color": "#9fe8ff",
+      "detail": true,
+      "shape": "sphere",
+      "segments": 8,
+      "glow": true
+    },
+    {
+      "min": [
+        85.575,
+        6.675,
+        68.479
+      ],
+      "max": [
+        86.175,
+        7.475,
+        68.525
+      ],
+      "color": "#ffe0a0",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        85.875,
+        -0.125,
+        67.875
+      ],
+      "dir": "-y"
+    }
+  ]
+}

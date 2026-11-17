@@ -1,0 +1,395 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Freeport Marina 1E",
+  "description": "A trader's berth at Freeport One's north marina: a 3 m finger with a Docking Clamp Medium at its end, small craft either side.",
+  "group": "Ship",
+  "section": "Freeport station",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 8000.0,
+  "health": 20000,
+  "armour": 20,
+  "material": "steel",
+  "color": "#55595b",
+  "attachSeconds": 10.0,
+  "boxes": [
+    {
+      "min": [
+        2.875,
+        -1.125,
+        -65.625
+      ],
+      "max": [
+        23.875,
+        -0.125,
+        -62.625
+      ],
+      "color": "#55595b",
+      "finish": "deck plate"
+    },
+    {
+      "min": [
+        6.845,
+        -0.1255,
+        -65.325
+      ],
+      "max": [
+        6.905,
+        -0.1095,
+        -62.925
+      ],
+      "color": "#3d4143",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        10.845,
+        -0.1255,
+        -65.325
+      ],
+      "max": [
+        10.905,
+        -0.1095,
+        -62.925
+      ],
+      "color": "#3d4143",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        14.845,
+        -0.1255,
+        -65.325
+      ],
+      "max": [
+        14.905,
+        -0.1095,
+        -62.925
+      ],
+      "color": "#3d4143",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        18.845,
+        -0.1255,
+        -65.325
+      ],
+      "max": [
+        18.905,
+        -0.1095,
+        -62.925
+      ],
+      "color": "#3d4143",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        22.845,
+        -0.1255,
+        -65.325
+      ],
+      "max": [
+        22.905,
+        -0.1095,
+        -62.925
+      ],
+      "color": "#3d4143",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        2.895,
+        -0.121,
+        -65.605
+      ],
+      "max": [
+        23.855,
+        -0.103,
+        -65.305
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        2.895,
+        -0.121,
+        -62.945
+      ],
+      "max": [
+        23.855,
+        -0.103,
+        -62.645
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        2.867,
+        -0.675,
+        -65.633
+      ],
+      "max": [
+        23.883,
+        -0.375,
+        -62.617
+      ],
+      "color": "#2e7c84",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        23.685,
+        -0.123,
+        -62.865
+      ],
+      "max": [
+        23.765,
+        0.935,
+        -62.785
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        23.685,
+        -0.123,
+        -65.465
+      ],
+      "max": [
+        23.765,
+        0.935,
+        -65.385
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        23.675,
+        0.935,
+        -65.425
+      ],
+      "max": [
+        23.775,
+        0.995,
+        -62.825
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        23.695,
+        0.395,
+        -65.405
+      ],
+      "max": [
+        23.755,
+        0.435,
+        -62.845
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        9.175,
+        -0.121,
+        -63.275
+      ],
+      "max": [
+        9.575,
+        0.425,
+        -62.875
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        9.175,
+        -0.121,
+        -65.375
+      ],
+      "max": [
+        9.575,
+        0.425,
+        -64.975
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        17.175,
+        -0.121,
+        -63.275
+      ],
+      "max": [
+        17.575,
+        0.425,
+        -62.875
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        17.175,
+        -0.121,
+        -65.375
+      ],
+      "max": [
+        17.575,
+        0.425,
+        -64.975
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y",
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        13.305,
+        -0.121,
+        -64.195
+      ],
+      "max": [
+        13.445,
+        3.075,
+        -64.055
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        13.155,
+        3.075,
+        -64.345
+      ],
+      "max": [
+        13.595,
+        3.215,
+        -63.905
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        13.205,
+        3.015,
+        -64.295
+      ],
+      "max": [
+        13.545,
+        3.07,
+        -63.955
+      ],
+      "color": "#ffe0a0",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        23.515,
+        -0.121,
+        -64.185
+      ],
+      "max": [
+        23.635,
+        2.073,
+        -64.065
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        23.525,
+        1.475,
+        -64.625
+      ],
+      "max": [
+        23.625,
+        2.075,
+        -63.625
+      ],
+      "color": "#2e7c84",
+      "detail": true,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        3.175,
+        -2.325,
+        -64.925
+      ],
+      "max": [
+        23.575,
+        -1.129,
+        -63.325
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "clamp",
+      "at": [
+        22.375,
+        -0.125,
+        -64.125
+      ],
+      "dir": "+y",
+      "class": "medium"
+    },
+    {
+      "name": "j0",
+      "at": [
+        2.875,
+        -0.625,
+        -64.125
+      ],
+      "dir": "-x"
+    }
+  ]
+}

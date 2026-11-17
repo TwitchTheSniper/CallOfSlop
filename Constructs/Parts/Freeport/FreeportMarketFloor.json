@@ -1,0 +1,223 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Freeport Market Floor",
+  "description": "The floor of the market hall, a sealed building at Freeport One.",
+  "group": "Ship",
+  "section": "Freeport station",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 20000.0,
+  "health": 50000,
+  "armour": 25,
+  "material": "steel",
+  "color": "#55595b",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        2.875,
+        -1.125,
+        -56.125
+      ],
+      "max": [
+        29.875,
+        -0.125,
+        -42.125
+      ],
+      "color": "#55595b",
+      "finish": "deck plate"
+    },
+    {
+      "min": [
+        6.845,
+        -0.1255,
+        -55.825
+      ],
+      "max": [
+        6.905,
+        -0.1095,
+        -42.425
+      ],
+      "color": "#3d4143",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        10.845,
+        -0.1255,
+        -55.825
+      ],
+      "max": [
+        10.905,
+        -0.1095,
+        -42.425
+      ],
+      "color": "#3d4143",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        14.845,
+        -0.1255,
+        -55.825
+      ],
+      "max": [
+        14.905,
+        -0.1095,
+        -42.425
+      ],
+      "color": "#3d4143",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        18.845,
+        -0.1255,
+        -55.825
+      ],
+      "max": [
+        18.905,
+        -0.1095,
+        -42.425
+      ],
+      "color": "#3d4143",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        22.845,
+        -0.1255,
+        -55.825
+      ],
+      "max": [
+        22.905,
+        -0.1095,
+        -42.425
+      ],
+      "color": "#3d4143",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        26.845,
+        -0.1255,
+        -55.825
+      ],
+      "max": [
+        26.905,
+        -0.1095,
+        -42.425
+      ],
+      "color": "#3d4143",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        2.863,
+        -0.675,
+        -56.137
+      ],
+      "max": [
+        29.887,
+        -0.375,
+        -42.113
+      ],
+      "color": "#2e7c84",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        3.275,
+        -0.121,
+        -43.905
+      ],
+      "max": [
+        3.435,
+        6.075,
+        -43.745
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        3.275,
+        -0.121,
+        -54.505
+      ],
+      "max": [
+        3.435,
+        6.075,
+        -54.345
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        2.875,
+        -0.625,
+        -47.125
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j1",
+      "at": [
+        2.875,
+        -0.625,
+        -54.125
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "j2",
+      "at": [
+        17.875,
+        -0.125,
+        -55.975
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        17.875,
+        -0.125,
+        -42.275
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j4",
+      "at": [
+        29.725,
+        -0.125,
+        -49.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "j5",
+      "at": [
+        6.025,
+        -0.125,
+        -49.125
+      ],
+      "dir": "+y"
+    }
+  ]
+}

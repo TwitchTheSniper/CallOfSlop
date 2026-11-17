@@ -32,6 +32,10 @@ The IT Department's warship: a faceted lofted hull, two decks the length of the 
 
 A cargo ship round a hold of fourteen container slots, an overhead crane on rails and a belly well with sliding doors, two big drives with their engines in a drive room aft, and attitude jets; no legs, lamps or fittings yet.
 
+## [Freeport One, the first space station](constructs/station.md), 3 KB
+
+A harbour in orbit: a long spine with an open cargo pier and gantry crane, two frigate fingers with repair arms, a trader marina, sealed buildings with doors out, a fuel farm, a habitat drum with a roof pad and the reactor on a boom; docking clamps on every berth.
+
 ## [Ship works](design/ship-works.md), 48 KB (the design)
 
 Engines and turrets with insides: a ship's drive over 500 kN has works behind it through the hull (Drive Core, Fuel Pump,

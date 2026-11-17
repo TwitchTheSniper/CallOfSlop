@@ -1,0 +1,385 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Freeport Market Wall W",
+  "description": "A wall of the market hall, a sealed building at Freeport One: plated, ribbed, with its doors out.",
+  "group": "Ship",
+  "section": "Freeport station",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 8000.0,
+  "health": 30000,
+  "armour": 25,
+  "material": "steel",
+  "color": "#c3c5be",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        5.875,
+        -0.125,
+        -55.825
+      ],
+      "max": [
+        6.175,
+        7.875,
+        -42.425
+      ],
+      "color": "#c3c5be",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.795,
+        -0.121,
+        -56.105
+      ],
+      "max": [
+        5.871,
+        0.775,
+        -42.145
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        5.825,
+        4.835,
+        -56.105
+      ],
+      "max": [
+        5.871,
+        5.335,
+        -42.145
+      ],
+      "color": "#dd6a1e",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        5.755,
+        7.525,
+        -56.105
+      ],
+      "max": [
+        5.871,
+        7.871,
+        -42.145
+      ],
+      "color": "#8e938f",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.695,
+        0.775,
+        -45.045
+      ],
+      "max": [
+        5.869,
+        7.525,
+        -44.805
+      ],
+      "color": "#a9ada6",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.695,
+        0.775,
+        -47.845
+      ],
+      "max": [
+        5.869,
+        7.525,
+        -47.605
+      ],
+      "color": "#a9ada6",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.695,
+        0.775,
+        -50.645
+      ],
+      "max": [
+        5.869,
+        7.525,
+        -50.405
+      ],
+      "color": "#a9ada6",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.695,
+        0.775,
+        -53.445
+      ],
+      "max": [
+        5.869,
+        7.525,
+        -53.205
+      ],
+      "color": "#a9ada6",
+      "detail": true,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        5.815,
+        -0.123,
+        -51.125
+      ],
+      "max": [
+        5.866,
+        3.075,
+        -47.125
+      ],
+      "color": "#4f5a60",
+      "detail": true,
+      "finish": "worn paint"
+    },
+    {
+      "min": [
+        5.755,
+        -0.119,
+        -47.125
+      ],
+      "max": [
+        5.869,
+        3.327,
+        -46.877
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        5.755,
+        -0.119,
+        -51.375
+      ],
+      "max": [
+        5.869,
+        3.325,
+        -51.125
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        5.751,
+        3.075,
+        -51.373
+      ],
+      "max": [
+        5.867,
+        3.323,
+        -46.875
+      ],
+      "color": "#e0a020",
+      "detail": true,
+      "finish": "hazard paint"
+    },
+    {
+      "min": [
+        5.775,
+        0.235,
+        -51.025
+      ],
+      "max": [
+        5.815,
+        0.315,
+        -47.225
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.775,
+        0.635,
+        -51.025
+      ],
+      "max": [
+        5.815,
+        0.715,
+        -47.225
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.775,
+        1.035,
+        -51.025
+      ],
+      "max": [
+        5.815,
+        1.115,
+        -47.225
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.775,
+        1.435,
+        -51.025
+      ],
+      "max": [
+        5.815,
+        1.515,
+        -47.225
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.775,
+        1.835,
+        -51.025
+      ],
+      "max": [
+        5.815,
+        1.915,
+        -47.225
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.775,
+        2.235,
+        -51.025
+      ],
+      "max": [
+        5.815,
+        2.315,
+        -47.225
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.775,
+        2.635,
+        -51.025
+      ],
+      "max": [
+        5.815,
+        2.715,
+        -47.225
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        5.625,
+        3.525,
+        -49.475
+      ],
+      "max": [
+        5.871,
+        3.725,
+        -48.775
+      ],
+      "color": "#ffe0a0",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        5.525,
+        4.075,
+        -53.125
+      ],
+      "max": [
+        5.825,
+        5.275,
+        -45.125
+      ],
+      "color": "#dd6a1e",
+      "detail": true,
+      "finish": "gloss paint"
+    },
+    {
+      "min": [
+        5.475,
+        4.375,
+        -52.125
+      ],
+      "max": [
+        5.535,
+        4.975,
+        -46.125
+      ],
+      "color": "#ffe0a0",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        6.025,
+        -0.125,
+        -49.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        6.025,
+        3.875,
+        -55.825
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "j2",
+      "at": [
+        6.025,
+        3.875,
+        -42.425
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "j3",
+      "at": [
+        6.025,
+        7.875,
+        -49.125
+      ],
+      "dir": "+y"
+    }
+  ]
+}

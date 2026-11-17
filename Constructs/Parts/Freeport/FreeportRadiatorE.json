@@ -1,0 +1,554 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Freeport Radiator E",
+  "description": "One of Freeport One's radiator wings off the reactor boom: dark fins that shed the reactor's heat, the hot ones glowing.",
+  "group": "Ship",
+  "section": "Freeport station",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 12000.0,
+  "health": 15000,
+  "armour": 5,
+  "material": "steel",
+  "color": "#3a3f43",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        1.375,
+        -14.125,
+        139.675
+      ],
+      "max": [
+        45.875,
+        13.875,
+        141.075
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        1.375,
+        -14.125,
+        140.175
+      ],
+      "max": [
+        45.88,
+        13.875,
+        140.575
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        2.775,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        2.975,
+        13.475,
+        141.075
+      ],
+      "color": "#7a3a24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        4.275,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        4.475,
+        13.475,
+        141.075
+      ],
+      "color": "#7a3a24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        5.775,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        5.975,
+        13.475,
+        141.075
+      ],
+      "color": "#7a3a24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        7.275,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        7.475,
+        13.475,
+        141.075
+      ],
+      "color": "#7a3a24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        8.775,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        8.975,
+        13.475,
+        141.075
+      ],
+      "color": "#7a3a24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        10.275,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        10.475,
+        13.475,
+        141.075
+      ],
+      "color": "#7a3a24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        11.775,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        11.975,
+        13.475,
+        141.075
+      ],
+      "color": "#7a3a24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        13.275,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        13.475,
+        13.475,
+        141.075
+      ],
+      "color": "#7a3a24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        14.775,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        14.975,
+        13.475,
+        141.075
+      ],
+      "color": "#7a3a24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        16.275,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        16.475,
+        13.475,
+        141.075
+      ],
+      "color": "#7a3a24",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        17.775,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        17.975,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        19.275,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        19.475,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        20.775,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        20.975,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        22.275,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        22.475,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        23.775,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        23.975,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        25.275,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        25.475,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        26.775,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        26.975,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        28.275,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        28.475,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        29.775,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        29.975,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        31.275,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        31.475,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        32.775,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        32.975,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        34.275,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        34.475,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        35.775,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        35.975,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        37.275,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        37.475,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        38.775,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        38.975,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        40.275,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        40.475,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        41.775,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        41.975,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        43.275,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        43.475,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        44.775,
+        -13.725,
+        139.675
+      ],
+      "max": [
+        44.975,
+        13.475,
+        141.075
+      ],
+      "color": "#3a3f43",
+      "detail": true,
+      "finish": "dirty steel"
+    },
+    {
+      "min": [
+        1.377,
+        13.475,
+        139.575
+      ],
+      "max": [
+        45.878,
+        14.172,
+        141.175
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        1.377,
+        -14.422,
+        139.575
+      ],
+      "max": [
+        45.878,
+        -13.725,
+        141.175
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        45.175,
+        -14.425,
+        139.578
+      ],
+      "max": [
+        45.875,
+        14.175,
+        141.172
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        45.775,
+        14.275,
+        139.975
+      ],
+      "max": [
+        46.575,
+        15.075,
+        140.775
+      ],
+      "color": "#e0402c",
+      "detail": true,
+      "shape": "sphere",
+      "segments": 8,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        1.375,
+        -0.625,
+        140.375
+      ],
+      "dir": "-x"
+    }
+  ]
+}

@@ -1,0 +1,309 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Freeport Warehouse Roof",
+  "description": "The roof of the warehouse, a sealed building at Freeport One.",
+  "group": "Ship",
+  "section": "Freeport station",
+  "role": "frame",
+  "tool": "welder",
+  "collider": "boxes",
+  "mass": 9000.0,
+  "health": 25000,
+  "armour": 20,
+  "material": "steel",
+  "color": "#a9ada6",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -30.125,
+        11.875,
+        1.875
+      ],
+      "max": [
+        -3.125,
+        12.275,
+        37.875
+      ],
+      "color": "#a9ada6",
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -30.225,
+        11.925,
+        1.775
+      ],
+      "max": [
+        -3.025,
+        12.225,
+        37.975
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "painted steel"
+    },
+    {
+      "min": [
+        -29.725,
+        12.275,
+        2.275
+      ],
+      "max": [
+        -3.525,
+        14.275,
+        37.475
+      ],
+      "color": "#a9ada6",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          -29.725,
+          12.275,
+          37.475
+        ],
+        [
+          -3.525,
+          12.275,
+          37.475
+        ],
+        [
+          -29.725,
+          12.275,
+          2.275
+        ],
+        [
+          -3.525,
+          12.275,
+          2.275
+        ],
+        [
+          -17.625,
+          14.275,
+          37.475
+        ],
+        [
+          -15.625,
+          14.275,
+          37.475
+        ],
+        [
+          -17.625,
+          14.275,
+          2.275
+        ],
+        [
+          -15.625,
+          14.275,
+          2.275
+        ]
+      ],
+      "paintable": false,
+      "finish": "painted plating"
+    },
+    {
+      "min": [
+        -17.425,
+        14.275,
+        3.875
+      ],
+      "max": [
+        -15.825,
+        14.875,
+        35.875
+      ],
+      "color": "#2a2e31",
+      "detail": true,
+      "finish": "grating"
+    },
+    {
+      "min": [
+        -25.125,
+        12.875,
+        32.675
+      ],
+      "max": [
+        -21.125,
+        13.275,
+        35.075
+      ],
+      "color": "#9fe8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -12.125,
+        12.875,
+        32.675
+      ],
+      "max": [
+        -8.125,
+        13.275,
+        35.075
+      ],
+      "color": "#9fe8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -25.125,
+        12.875,
+        25.675
+      ],
+      "max": [
+        -21.125,
+        13.275,
+        28.075
+      ],
+      "color": "#9fe8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -12.125,
+        12.875,
+        25.675
+      ],
+      "max": [
+        -8.125,
+        13.275,
+        28.075
+      ],
+      "color": "#9fe8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -25.125,
+        12.875,
+        18.675
+      ],
+      "max": [
+        -21.125,
+        13.275,
+        21.075
+      ],
+      "color": "#9fe8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -12.125,
+        12.875,
+        18.675
+      ],
+      "max": [
+        -8.125,
+        13.275,
+        21.075
+      ],
+      "color": "#9fe8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -25.125,
+        12.875,
+        11.675
+      ],
+      "max": [
+        -21.125,
+        13.275,
+        14.075
+      ],
+      "color": "#9fe8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -12.125,
+        12.875,
+        11.675
+      ],
+      "max": [
+        -8.125,
+        13.275,
+        14.075
+      ],
+      "color": "#9fe8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -25.125,
+        12.875,
+        4.675
+      ],
+      "max": [
+        -21.125,
+        13.275,
+        7.075
+      ],
+      "color": "#9fe8ff",
+      "detail": true,
+      "glow": true
+    },
+    {
+      "min": [
+        -12.125,
+        12.875,
+        4.675
+      ],
+      "max": [
+        -8.125,
+        13.275,
+        7.075
+      ],
+      "color": "#9fe8ff",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "j0",
+      "at": [
+        -16.625,
+        11.875,
+        2.025
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j1",
+      "at": [
+        -16.625,
+        11.875,
+        37.725
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j2",
+      "at": [
+        -3.275,
+        11.875,
+        19.875
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "j3",
+      "at": [
+        -29.975,
+        11.875,
+        19.875
+      ],
+      "dir": "-y"
+    }
+  ]
+}
