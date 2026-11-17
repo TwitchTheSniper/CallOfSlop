@@ -788,6 +788,8 @@ public sealed partial class ConstructEdits
         c.GrabRot = ConstructGrab.LookQ(h, yaw) * h.GrabRel;
         c.GrabFrameVel = frameVel;
         c.GrabFrameSpin = frameSpin;
+        if (frameVel != Vector3.Zero)
+            c.SpeedKept = frameVel.Length() + ConstructPhysics.MaxSpeed; // (held aboard a fast ship: its deck's speed and the beam's pull, past the physics' limit; let go, it keeps what it had)
         c.GrabAccel = ConstructGrab.AccelFor(c.Mass, InfiniteParts, PullOf(player, InfiniteParts));
         if (c.PartCount == 1 && c.Parts[0].D.Explosive != null && ConstructOrdnance.TrySnap(world, c))
         {

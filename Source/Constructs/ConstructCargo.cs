@@ -188,6 +188,7 @@ public static class ConstructCargo
             var at = b.WorldCom;
             b.Vel = c.PointVel(at) + c.SegPointVel(b.CarrySeg, at);
             b.AngVel = c.AngVel;
+            b.KeepSpeed(); // (a ship's speed in orbit is far past the physics' limit for a free body: it keeps it, Construct.SpeedKept)
             world.Events.Add($"construct {c.Id}: let construct {b.Id} go");
         }
         b.CarriedBy = 0;
