@@ -168,6 +168,25 @@ public static class RideCheck
                     lapses++;
                 w.Remove(beside);
             }
+            // ...and one cut free there that the physics then steps: it keeps the ship's speed past the physics' limit (a part
+            // detached from a fast ship flew off behind it: Construct.SpeedKept). Made well over the ship, so the step meets
+            // nothing, and the ship is held where it is for that step.
+            if (ConstructBuild.PlaceNew(w, ConstructParts.Need("Deck Plate"), at + GravityFrames.UpAt(at) * (c.Radius * 2 + 20f), 0) is { } cut)
+            {
+                cut.Rebuild();
+                cut.Vel = c.PointVel(cut.WorldCom);
+                cut.AngVel = c.AngVel;
+                var want = cut.Vel;
+                ConstructRide.SpawnIntoMotion(w);
+                c.Anchored = true;
+                ConstructPhysics.Step(w, World.Query, World.TickDt);
+                c.Anchored = false;
+                var off = Vector3.Dot(want - cut.Vel, want.LengthSquared() > 1e-4f ? Vector3.Normalize(want) : Vector3.Zero);
+                Console.WriteLine($"  plate cut free, a physics step on: {cut.Vel.Length():0.00} m/s, the ship there {want.Length():0.00} m/s (fell behind by {off:0.00} m/s)");
+                if (off > 0.5f)
+                    lapses++;
+                w.Remove(cut);
+            }
         }
         return lapses;
     }
