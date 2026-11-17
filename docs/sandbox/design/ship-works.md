@@ -287,6 +287,15 @@ works sockets on its sides and an **Ammo in** port at its foot.
 - Power and data already cross a turntable (the Halberd's gun stations wire through one); nothing new.
 - The ring's size limits what stands on it by the turntable's existing rating.
 
+**Built (phase 3, 2026-11-17).** `ShipWorksParts.Ring`: S/M/L, race radius 0.5/0.8/1.2 m, trunk 0.6/1.0/1.5 m deep,
+12/36/100 kN m, `"collider": "boxes"`. `ConstructWorks.IsRing` (a joint whose WorksKind is Mount) floods as an assembly
+whether or not a head reaches it; `RingUnder` walks a gun down its joints; `ConstructAmmo.RingFeed` is the feed into a
+ring, which `ConstructWeapons.Feed` takes first (`CGun.Ring`, `RingFed`). The Zero Day's four PDCs stand on Turret Ring S,
+each with **its own magazine** by its barbette rather than one amidships: one store feeding four rings up to 22 m away
+through two decks was beyond the conduit router (it gave up, or ran the feed outside the hull), and a hit on one magazine
+should not silence every gun. A feed through solid void or hull is laid by the ship's generator with nodes
+(`BuildingParts.Blueprint.Feeds` with nodes, `"laid": true`). Inventory: Weapons > Turret works.
+
 ### 5.3 The Autoloader
 
 **Autoloader S/M/L** (`kind: loader`), bolted to the trunk. Needs the ring fed. It serves a ring of its size.
@@ -295,6 +304,10 @@ works sockets on its sides and an **Ammo in** port at its foot.
 - A belt gun: no `feedReload` pause between its 3 s lots; it fires on until the store is empty.
 - No autoloader: the gun reloads at its own rate. No ring feed: the autoloader does nothing and its look line says so.
 - It lands on `CGun.ReloadTicks` and the feed's reload where `BuildGuns` sets them (at the rebuild, not per shot).
+- Built (phase 3): `ShipWorksParts.Loader`, S/M/L serving 1/2/4 guns, bolted by its `front` to a trunk socket;
+  `ConstructWeapons.Autoload` shares the working loaders of a ring's assembly between its fed guns (a share short of the
+  guns loads each that much). A Cannon (3.5 s) on a Turret Ring M with an Autoloader M reloads in 1.4 s. No ship carries
+  one yet: the Zero Day's barbette wells leave no room beside the trunk, and its PDCs are belt guns.
 
 ### 5.4 Lasers (new weapon kind; phase 5)
 

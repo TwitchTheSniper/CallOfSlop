@@ -29,6 +29,9 @@ public struct CGun
     public float Crater; // and the crater it digs (m)
     public short FeedRoute; // the ammo feed into it (-1: none; ConstructAmmo.cs)
     public short FeedSocket; // an ammo reel's socket bolted to it (-1: none)
+    public short Ring; // the Turret Ring it stands on, down its joints (-1: none; ConstructWorks.IsRing)
+    public bool RingFed; // its feed is its ring's: an ammo feed into the ring's Ammo in (ship-works.md 5.2)
+    public float Loaded; // 0..1: the share of it its ring's autoloaders serve (ConstructWorks.LoadersAt; 0 when its ring isn't fed)
     public short MagPart; // the magazine on its receiver (-1: none): rounds a player brought (ConstructAmmo.cs)
     public float RoundV; // what its rounds leave at (m/s; 0: they fly straight: flames, rockets)
     public short Director; // the fire director wired into it (-1: none): it aims where the director's gunner looks
@@ -206,7 +209,7 @@ public static class ConstructWeapons
                 continue; // (a merged receiver's other members: its lead is the gun)
             c.ReserveGuns(c.GunCount + 1);
             ref var g = ref c.Guns[c.GunCount];
-            g = new CGun { Part = (ushort)i, Seg = c.Parts[i].Seg, Problem = "", Seat = -1, Sensor = CGun.NoSensor, Director = -1, Turret = -1, FeedRoute = -1, FeedSocket = -1, MagPart = -1 };
+            g = new CGun { Part = (ushort)i, Seg = c.Parts[i].Seg, Problem = "", Seat = -1, Sensor = CGun.NoSensor, Director = -1, Turret = -1, FeedRoute = -1, FeedSocket = -1, MagPart = -1, Ring = -1 };
             using var gunScratch = Scratch.Begin(); // (a frame a gun: given back each turn of the loop, as the old stackalloc never was)
             Span<bool> mine = gunScratch.Take<bool>(c.PartCount);
             try
@@ -234,6 +237,40 @@ public static class ConstructWeapons
         }
         if (c.GunCount > 0)
             c.Recoils ??= new CRecoil[Construct.MaxRecoils]; // (gr01: made with the guns, never at a shot)
+        Autoload(c);
+    }
+
+    /// <summary>
+    /// The autoloaders (ship-works.md 5.3): the guns fed through a Turret Ring share the working Autoloaders in its assembly (each
+    /// serves so many guns). A gun of six rounds or fewer reloads in <see cref="ShipWorks.LoaderReload"/> of its time; a bigger one
+    /// (a belt) doesn't stop between loads. A share short of the guns loads each that much. At the rebuild, never per shot.
+    /// </summary>
+    private static void Autoload(Construct c)
+    {
+        for (var k = 0; k < c.GunCount; k++)
+        {
+            ref var g = ref c.Guns[k];
+            if (!g.RingFed || g.Def == null || g.Loaded > 0)
+                continue;
+            var served = ConstructWorks.LoadersAt(c, g.Ring);
+            if (served <= 0)
+                continue;
+            var asm = ConstructWorks.AsmOfPiece(c, g.Ring);
+            var guns = 0;
+            for (var j = k; j < c.GunCount; j++)
+                if (c.Guns[j].RingFed && c.Guns[j].Def != null && (c.Guns[j].Ring == g.Ring || ConstructWorks.AsmOfPiece(c, c.Guns[j].Ring) == asm))
+                    guns++;
+            var share = MathF.Min(1, served / guns);
+            for (var j = k; j < c.GunCount; j++)
+            {
+                ref var o = ref c.Guns[j];
+                if (!o.RingFed || o.Def == null || o.Ring != g.Ring && ConstructWorks.AsmOfPiece(c, o.Ring) != asm)
+                    continue;
+                o.Loaded = share;
+                var by = o.Mag <= 6 ? 1 - share * (1 - ShipWorks.Current.LoaderReload) : 1 - share; // (a belt: no pause at full)
+                o.ReloadTicks = (ushort)Math.Max(1, (int)MathF.Round(o.ReloadTicks * by));
+            }
+        }
     }
 
     private static int GunNeighbour(Construct c, int part, int k)
@@ -423,7 +460,7 @@ public static class ConstructWeapons
         if (problem.Length == 0 && barrel < 0)
             problem = "no barrel on the receiver";
         g.MagPart = (short)feed;
-        var direct = feed < 0 && ConstructAmmo.HasFeedLink(c, i, mine); // (an ammo feed straight into the gun: it needs no magazine)
+        var direct = feed < 0 && (ConstructAmmo.HasFeedLink(c, i, mine) || ConstructAmmo.RingFeed(c, ConstructWorks.RingUnder(c, i)) >= 0); // (an ammo feed straight into the gun, or into the Turret Ring it stands on: it needs no magazine)
         if (problem.Length == 0 && feed < 0 && !direct)
             problem = "no magazine or ammo feed on the receiver";
         var res = problem.Length == 0 ? BuildStats.ReceiverStats(d.Name, root, null, ChargeOf(c, i, d)) : null;
@@ -700,6 +737,7 @@ public static class ConstructWeapons
     {
         ref var g = ref c.Guns[k];
         g.BoxCount = 0;
+        g.Ring = (short)ConstructWorks.RingUnder(c, g.Part);
         using var scratch = Scratch.Begin();
         Span<bool> seen = scratch.Take<bool>(c.PartCount);
         Span<ushort> queue = scratch.Take<ushort>(c.PartCount);
@@ -727,6 +765,12 @@ public static class ConstructWeapons
                 else if (role == PartRole.FeedChute)
                     queue[tail++] = (ushort)o;
             }
+        }
+        if (ConstructAmmo.RingFeed(c, g.Ring) is var ringFeed and >= 0)
+        {
+            g.FeedRoute = (short)ringFeed; // (the ring's feed comes first: ship-works.md 5.2)
+            g.RingFed = true;
+            return;
         }
         for (var r = 0; r < c.RouteCount; r++)
             if (c.Routes[r].Type == RouteType.Feed && c.Routes[r].To < c.PartCount && mine[c.Routes[r].To])

@@ -14,5 +14,6 @@
     "ion": { "conditioner": 0 }
   },
   "mendMaterial": "metal", // a works piece broken by damage is mended with the attach tool for this (Recycling.json's materials)
-  "mendPerTonne": 2 // ...this much a tonne of the piece, at least 1
+  "mendPerTonne": 2, // ...this much a tonne of the piece, at least 1
+  "loaderReload": 0.4 // a gun of six rounds or fewer on a Turret Ring with its Autoloaders reloads in this share of its time (a belt-fed one doesn't stop)
 }

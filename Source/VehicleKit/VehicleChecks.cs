@@ -867,7 +867,7 @@ public static class VehicleChecks
     private static void Guns(ConstructBuild.Blueprint bp, VehicleReport r)
     {
         var q = new SelfTest.DriveWorld();
-        var w = new ConstructWorld();
+        var w = new ConstructWorld { CreativeRecycling = true }; // (built as creative spawns it: a magazine's creative fill is what its guns fire)
         if (Fresh(bp, w, q) is not { } c)
             return;
         r.Notes.Add($"guns: {c.GunCount}, seats {string.Join(", ", Enumerable.Range(0, c.PartCount).Where(i => c.DefOf(i).Role == PartRole.Seat).Select(i => c.SeatKindOf(i).ToString()))}");

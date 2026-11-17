@@ -186,6 +186,17 @@ public static class ConstructAmmo
         return false;
     }
 
+    /// <summary>The ammo feed into Turret Ring <paramref name="ring"/>'s Ammo in (the route), or -1 (no ring, or nothing linked into it).</summary>
+    public static int RingFeed(Construct c, int ring)
+    {
+        if (ring < 0 || ring >= c.PartCount)
+            return -1;
+        for (var r = 0; r < c.RouteCount; r++)
+            if (c.Routes[r].Type == RouteType.Feed && c.Routes[r].To == ring)
+                return r;
+        return -1;
+    }
+
     /// <summary>The Ammo part of a type (the build's "ammo" socket), or null when its file is gone.</summary>
     public static PartDef? PartOf(int type) => Parts.Find(Types[Math.Clamp(type, 0, Types.Length - 1)]);
 

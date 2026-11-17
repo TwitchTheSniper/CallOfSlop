@@ -79,7 +79,14 @@ inside the hull, in one room with engineering.
   six-round drum Ordnance Rack loaded with designed torpedoes (radar seeker, HE warhead) that leave through the launch
   port in the sponson's front face. The fire buttons are on the torpedo room's walls.
 - The Zero Day Railgun along the spine, fixed forward and aimed by the ship (the pilot fires it).
-- Four Zero Day PDCs on barbettes on the beam, run from the two gun stations (ops and the mess).
+- Four Zero Day PDCs on barbettes on the beam, run from the two gun stations (ops and the mess). Each turns on a **Turret
+  Ring S** whose trunk goes down the barbette's well, fed from its own **magazine** (ship-works.md 5.2): an Ammo
+  Container standing inside against ops' or the mess's side wall by its barbette, its 0.7 m3 box (2,400 rounds as
+  sealed) in the hull's void behind the wall, sealed by the wall, the deck and the void round it (`MagazineAt` cuts the
+  void). The feed is laid by the generator (`MagazineFeed`: up the wall, through it, the void and the hull into the
+  barbette, up into the trunk's foot), since the router can't pass solid void. Nothing is bolted to the guns outside, so
+  shooting a turret off leaves its rounds inside; a hit on the magazine through the hull cooks it off there. Creative
+  fills the magazines; in Survival they come empty, like any store.
 - Four Zero Day Countermeasure Launchers (flare guns) on the spine, all fired by the flares button in ops.
 
 ## Getting aboard
