@@ -1,7 +1,9 @@
 # Start-up time: where it goes and how to cut it
 
-Status: proposal (2026-11-17), measured on main d662cd0f77. Maps and their code belong to the maps developer
-(CLAUDE.md "Who owns what"): the map-side phases below need their agreement first. The constructs-side phases are ours.
+Status: phases 0-3 being built (2026-11-17), measured on main d662cd0f77. Maps and their code belong to the maps developer
+(CLAUDE.md "Who owns what"), who isn't working on these systems now: the user settled section 6 (below) and asked us to
+run the map-side phases too. Phase 0 is on `claude/startup-phase0`, phases 1-3 on `claude/startup-phases123`
+(notes: `startup-time-notes.md`).
 No game code was changed for this study. The figures came from a throwaway trace in `Maps.LoadFolder` and
 `Program.RunLoop` that was never committed.
 
@@ -206,7 +208,24 @@ Phase 1 is the best value for the least change: two small edits in the maps code
 on this box. Phase 2 is the structural fix. It also stops the dev map cache from mattering, because after a build only
 the maps used are rebuilt.
 
-## 6. To agree with the maps developer
+## 6. Decided (user, 2026-11-17)
+
+The maps developer isn't working on these systems now, so the user settled every point below on the doc's
+recommendation:
+
+1. The sandbox section's part and blueprint names are checked at session start, in `--check-map` and in the map
+   contract check, not in `SandboxMap.Read` (B).
+2. `Map.LightBake` becomes lazy (forced before the first tick and before a bake is written), byte-identical; the
+   bake's cells run in parallel (C).
+3. A header index with build on first use (D): `Maps.All` keeps building everything, `Find` and `Get` build one map,
+   menus read `Maps.Index`.
+4. Ids stay list positions sorted by header order and name; a file that fails to build keeps its slot.
+5. `name` and `order` stay plain top-level fields of a map file, never set by an op or a generator at build time.
+6. `pack.json` may carry `"archived": true`, which hides the pack from the menus' default lists.
+7. One of our agents does phases 1-3.
+
+The questions as first asked:
+
 
 1. May the sandbox section's part and blueprint names be checked at session start and in the map contract check,
    instead of in `SandboxMap.Read` (B)?
