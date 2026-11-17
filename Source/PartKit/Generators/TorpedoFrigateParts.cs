@@ -2304,8 +2304,10 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         o.Own(Out);
         o.Own(LOut);
         o.Own(BoardingOut);
+        o.Own(POut);
         var (shuttle, shuttleOrder) = ShuttleStructure();
-        foreach (var (p, folder) in parts.Select(x => (x, Out)).Append((ShuttleLadder(), Out)).Concat(ShuttleParts(shuttle)))
+        var (limpet, limpetOrder) = LimpetStructure();
+        foreach (var (p, folder) in parts.Select(x => (x, Out)).Append((ShuttleLadder(), Out)).Concat(ShuttleParts(shuttle)).Concat(LimpetParts(limpet)))
         {
             var d = p.Json();
             var name = (string)d["name"]!;
@@ -2314,6 +2316,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         }
         BuildingParts.AddPartDefs(o, defs, Out);
         o.File($"{BpOut}/Shuttle.json", PyJson.Dumps(ShuttleBlueprint(defs, shuttleOrder), 2) + "\n");
+        o.File($"{BpOut}/Limpet.json", PyJson.Dumps(LimpetBlueprint(defs, limpetOrder), 2) + "\n");
         o.File($"{BpOut}/ZeroDayFrigate.json", PyJson.Dumps(Blueprint(defs), 2) + "\n");
         o.File($"{BpOut}/ZeroDayFrigateCrewed.json", PyJson.Dumps(Blueprint(defs, crewed: true), 2) + "\n");
     }
