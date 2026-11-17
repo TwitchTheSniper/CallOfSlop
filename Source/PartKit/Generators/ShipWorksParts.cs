@@ -59,6 +59,9 @@ public sealed class ShipWorksParts : IPartGenerator
     // Autoloader: guns it serves, width, height, depth, mass, health (its height fits its ring's trunk).
     private static readonly double[] LoaderServes = [1, 2, 4], LoaderW = [0.5, 0.8, 1.1], LoaderH = [0.5, 0.8, 1.2], LoaderD = [0.6, 0.9, 1.3], LoaderMass = [300, 700, 1500], LoaderHealth = [1500, 3000, 5000];
 
+    // Reload Hoist S and L: kg of one weapon it lifts, width, height, depth, mass, health, watts (ship-works.md 6).
+    private static readonly double[] HoistServes = [400, 3000], HoistW = [0.8, 1.4], HoistH = [1.0, 1.8], HoistD = [1.2, 2.0], HoistMass = [500, 1800], HoistHealth = [2000, 5000], HoistPower = [1500, 4000];
+
     private static double[] P(double x, double y, double z) => [x, y, z];
 
     private static void Solid(Part p, double x0, double y0, double z0, double x1, double y1, double z1, string color, string finish) =>
@@ -186,6 +189,40 @@ public sealed class ShipWorksParts : IPartGenerator
         p.Sock("deck", P(0, -h / 2, Math.Round(-d / 2, 2)), "-y");
         p.Set(("onBreak", "disable"), ("worksPiece", Kw(("kind", "loader"), ("serves", LoaderServes[s]))));
         return p.Stats(LoaderMass[s], LoaderHealth[s], 20);
+    }
+
+    /// <summary>
+    /// A Reload Hoist (ship-works.md 6): a frame with a rail, a winch and a hook block, bolted by its back to a Hull Mount's inner face
+    /// (or to works on one) behind a launcher rack on that mount. Ordnance Racks bolted to it are its magazine; with power it moves one
+    /// weapon at a time from them onto an empty station of the launcher (ConstructHoists.cs).
+    /// </summary>
+    private static Part Hoist(int s)
+    {
+        var (w, h, d) = (HoistW[s], HoistH[s], HoistD[s]);
+        var p = new Part($"Reload Hoist {(s == 0 ? "S" : "L")}", Small, Section, Desc($"A launcher's reload hoist: bolt it behind the Hull Mount a launcher rack is on, and bolt Ordnance Racks to it as its magazine. With power it moves one weapon at a time, up to {HoistServes[s]:0} kg, from the magazine onto an empty station of the launcher: about 6 s for a 25 cm missile, longer for a heavier one."),
+            role: "frame", tool: "welder", material: "steel", color: Steel, group: Group);
+        var (y0, y1) = (-h / 2, h / 2);
+        Solid(p, -w / 2, y0, -0.1, w / 2, y1, -0.002, Steel, "painted plating"); // (the flange on the mount)
+        Solid(p, -w / 2, y0, -d, w / 2, y0 + 0.06, -0.098, Bed, "dirty steel"); // (the frame's floor)
+        foreach (var x in new[] { -w / 2 + 0.04, w / 2 - 0.04 })
+            foreach (var z in new[] { -d + 0.04, -d * 0.5 })
+                Look(p, x - 0.035, y0 + 0.058, z - 0.035, x + 0.035, y1 - 0.003, z + 0.035, Dark, "dirty steel"); // (its posts)
+        Look(p, -0.06, y1 - 0.07, -d + 0.004, 0.06, y1 - 0.003, -0.098, Trim, "steel"); // (the rail, out to the mount)
+        Look(p, -w / 2 + 0.004, y1 - 0.06, -d + 0.005, w / 2 - 0.004, y1 - 0.01, -d + 0.07, Dark, "dirty steel"); // (the cross beam over the back posts)
+        Cyl(p, 0, y1 - 0.2, h * 0.11, -d * 0.85, -d * 0.6, Copper, "copper", segments: 12); // (the winch's drum)
+        Look(p, -0.09, y1 - 0.5, -d * 0.4, 0.09, y1 - 0.33, -d * 0.28, Hazard, "hazard paint"); // (the hook block)
+        Look(p, -0.012, y1 - 0.33, -d * 0.35, 0.012, y1 - 0.075, -d * 0.33, Cable, "dirty steel"); // (its cable up to the rail)
+        Look(p, -w * 0.36, y0 + 0.058, -d * 0.9, w * 0.36, y0 + 0.11, -d * 0.6, Trim, "painted plating"); // (the cradle a weapon is set in)
+        Look(p, w / 2 - 0.09, y0 + h * 0.55, -0.16, w / 2 - 0.06, y0 + h * 0.7, -0.12, Gauge, "", glow: true); // (its ready lamp)
+        Hidden(p, -w / 2, y0 + 0.06, -d, w / 2, y1, -0.1);
+        p.Sock("back", P(0, 0, 0), "+z");
+        p.Sock("front", P(0, 0, -d), "-z");
+        p.Sock("+x", P(w / 2, 0, Math.Round(-d + 0.3, 2)), "+x");
+        p.Sock("-x", P(-w / 2, 0, Math.Round(-d + 0.3, 2)), "-x");
+        p.Sock("under", P(0, y0, Math.Round(-d * 0.65, 2)), "-y");
+        p.Sock("top", P(0, y1, Math.Round(-d * 0.65, 2)), "+y");
+        p.Set(("power", HoistPower[s]), ("onBreak", "disable"), ("worksPiece", Kw(("kind", "hoist"), ("serves", HoistServes[s]))));
+        return p.Stats(HoistMass[s], HoistHealth[s], 20);
     }
 
     // ---- the mount -------------------------------------------------------------------------------------------------
@@ -492,6 +529,8 @@ public sealed class ShipWorksParts : IPartGenerator
             parts.Add(Ring(s));
         for (var s = 0; s < 3; s++)
             parts.Add(Loader(s));
+        parts.Add(Hoist(0));
+        parts.Add(Hoist(1));
         WriteParts(o, Out, parts.Select(p => ("", p)));
     }
 }
