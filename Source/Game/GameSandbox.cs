@@ -573,6 +573,8 @@ public sealed partial class Game
                     Constructs.CraftChanged(c); // (the same: its terminals' parts may have been renumbered)
                 if (ConstructStation.Any(c))
                     Constructs.StationChanged(c);
+                if (LinkedLogistics.Any(c) && !Constructs.LinkDirty.Contains(c.Id))
+                    Constructs.LinkDirty.Add(c.Id); // (the same: a Full leaves a client's link parts without their panels' state, "no state heard", until the next change)
             }
         Constructs.StructureDirty.Clear();
         foreach (var id in Constructs.RidersDirty)

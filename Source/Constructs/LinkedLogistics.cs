@@ -402,6 +402,40 @@ public static partial class LinkedLogistics
         return false;
     }
 
+    public const int MaxStatusLines = 48;
+
+    /// <summary>A status as its lines (u8 count, then each a str): one str strips the '\n' between them and stops at 255 bytes, so a client's
+    /// panel ran its lines together and lost the end of a route's.</summary>
+    private static void WriteLines(PacketWriter w, string s)
+    {
+        var count = 1;
+        foreach (var ch in s)
+            if (ch == '\n')
+                count++;
+        count = Math.Min(count, MaxStatusLines);
+        w.U8((byte)count);
+        var start = 0;
+        for (var k = 0; k < count; k++)
+        {
+            var end = k == count - 1 ? -1 : s.IndexOf('\n', start);
+            if (end < 0)
+                end = s.Length;
+            w.Str(s[start..end]);
+            start = Math.Min(s.Length, end + 1);
+        }
+    }
+
+    private static string ReadLines(ref PacketReader r)
+    {
+        int count = r.U8();
+        if (count <= 1)
+            return count == 0 ? "" : r.Str();
+        var sb = new System.Text.StringBuilder();
+        for (var k = 0; k < count; k++)
+            sb.Append(k > 0 ? "\n" : "").Append(r.Str());
+        return sb.ToString();
+    }
+
     /// <summary>One body's link parts as its panels show them: ids, names, status lines, offers, a port's manifest, a route computer's docks.</summary>
     public static void Write(PacketWriter w, Construct c)
     {
@@ -413,7 +447,9 @@ public static partial class LinkedLogistics
         {
             if (c.Parts[i].Link is not { } lp)
                 continue;
-            w.U16((ushort)i).U32(lp.Id).U32(lp.Pair).Str(lp.Name).Str(lp.Status).U8(lp.Linked).U8((byte)(lp.Waiting ? 1 : 0));
+            w.U16((ushort)i).U32(lp.Id).U32(lp.Pair).Str(lp.Name);
+            WriteLines(w, lp.Status);
+            w.U8(lp.Linked).U8((byte)(lp.Waiting ? 1 : 0));
             var on = Math.Min(lp.Offers.Length, 128);
             w.U8((byte)on);
             for (var k = 0; k < on; k++)
@@ -448,7 +484,7 @@ public static partial class LinkedLogistics
         for (var k = 0; k < n; k++)
         {
             var part = r.U16();
-            var lp = new LinkPart { Id = r.U32(), Pair = r.U32(), Name = r.Str(), Status = r.Str(), Linked = r.U8(), Waiting = r.U8() != 0 };
+            var lp = new LinkPart { Id = r.U32(), Pair = r.U32(), Name = r.Str(), Status = ReadLines(ref r), Linked = r.U8(), Waiting = r.U8() != 0 };
             int on = r.U8();
             lp.Offers = new LinkOffer[on];
             for (var j = 0; j < on; j++)

@@ -555,7 +555,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //   ids, names, status lines, offers by PartRef, a port's manifest, a Route Computer's docks: LinkedLogistics.Write); CActKind.Link
     //   at the end of CActKind (u16 body, u16 part, u8 LinkOp, u32 a, u32 b, str text); the Building Station's Sub-jobs setting is a
     //   choice (Off, Auto, Linked).
-    public const ushort ProtocolVersion = 327;
+    // 328: CBodyKind.Link's status is its lines (u8 count, then a str each), not one str: a str strips the '\n' and stops at 255 bytes.
+    public const ushort ProtocolVersion = 328;
 
     /// <summary>The server info's old one-byte version field holds this: "the version is in the 'V' extension" (protocol 243).</summary>
     public const byte VersionEscape = 255;
