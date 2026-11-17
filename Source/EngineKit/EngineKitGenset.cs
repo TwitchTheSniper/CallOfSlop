@@ -71,8 +71,7 @@ public static class EngineKitGenset
         var paintMachine = palette?.Colour(dice, "machine");
         var setName = name.Length > 0 ? name : $"{(palette != null ? palette.Name + " " : "")}Genset {engine.Kw:0} kW";
         var burn = engine.BurnLps;
-        var tanks = Math.Clamp((int)MathF.Ceiling(burn * EnduranceMinutes * 60 / 300f), 1, MaxTanks);
-        var batteries = Math.Clamp((int)MathF.Ceiling(engine.Kw * 5 / 300f), 1, MaxBatteries); // (five seconds of full output, at least the starter's)
+        var (tanks, batteries) = Stores(engine);
         var s = new BlueprintScript(setName) { Group = "Engine Kit", Description = $"An engine generator set made by the Engine Kit for {r}: a {engine.Name} turning a {head}. It runs as the circuit asks." };
         try
         {
@@ -98,25 +97,83 @@ public static class EngineKitGenset
 
     private static readonly Orient Ahead = new(Vector3.UnitY, Vector3.UnitY, Vector3.UnitZ, Vector3.UnitZ); // own +z to the vehicle's +z (the head's drive, its -z, faces the engine)
 
-    private static void Build(BlueprintScript s, EngineRequest r, EnginePlan p, EngineResult engine, string head, int tanks, int batteries, string? paintEngine, string? paintPower, string? paintMachine)
+    /// <summary>What <see cref="Place"/> put down: the head (its run input holds the set off), the flywheel (the engine's output), the tanks and the batteries.</summary>
+    public sealed record Placed(VPart Head, VPart Flywheel, VPart[] Tanks, VPart[] Batteries);
+
+    /// <summary>
+    /// The ground a set takes, from its head's feet (x, z in the script's frame; the engine runs back along -z from the head, the tanks and batteries ahead along
+    /// +z): its corners, with a half-metre walkway round the engine.
+    /// </summary>
+    public static (float X0, float X1, float Z0, float Z1) Footprint(EngineResult engine, string head, int tanks, int batteries)
     {
         var hd = ConstructParts.Find(head) ?? throw new VehicleKitException($"no part named {head}");
         var headLen = hd.BoundsMax.Z - hd.BoundsMin.Z;
         var width = MathF.Max(engine.Dims.Y, hd.BoundsMax.X - hd.BoundsMin.X);
-        // The skid: 2 m Foundations (top at 0.3 m), the head's feet at z 0.25 (on the tops' 0.5 m grid), the engine back along -z, tanks and batteries ahead.
-        const float floor = 0.3f;
-        var headZ = 0.25f;
-        var front = headZ + headLen / 2 + 0.25f; // (the head's end cap, and a walkway)
-        var tankZ = Grid(front + 0.5f); // (a Large Fuel Tank's centre: it is 1 m long)
-        var battZ = tankZ + 1f; // (the tank is 1 m long, a battery 0.2 m deep: on the grid, clear of it)
-        var back = headZ - headLen / 2 - engine.Dims.X - 0.5f;
+        var (_, battZ) = Rows(headLen);
         var rowW = MathF.Max(tanks * 1f, batteries * 0.5f); // (tanks a metre apart, batteries half: whole steps of the socket grid)
-        var x0 = MathF.Min(0.25f - width / 2 - 0.5f, -0.25f - rowW / 2);
-        var x1 = MathF.Max(0.25f + width / 2 + 0.5f, -0.25f + rowW / 2);
-        var z1 = battZ + 0.6f;
+        return (MathF.Min(-width / 2 - 0.5f, -0.5f - rowW / 2), MathF.Max(width / 2 + 0.5f, -0.5f + rowW / 2), -headLen / 2 - engine.Dims.X - 0.5f, battZ + 0.6f);
+    }
+
+    /// <summary>The tank row's and the battery row's z from the head's feet (on the 0.5 m grid when the feet are).</summary>
+    private static (float Tank, float Battery) Rows(float headLen)
+    {
+        var tankZ = Grid(headLen / 2 + 0.25f + 0.5f + 0.25f) - 0.25f; // (past the end cap and a walkway; a Large Fuel Tank is 1 m long)
+        return (tankZ, tankZ + 1f); // (a battery is 0.2 m deep: on the grid, clear of the tank)
+    }
+
+    /// <summary>
+    /// Puts a set down in <paramref name="s"/> with its head's feet at <paramref name="feet"/> (a floor's top, on its sockets' 0.5 m grid): the head facing -z, the
+    /// flywheel on its drive and plan <paramref name="p"/>'s engine back along -z, <paramref name="tanks"/> Large Fuel Tanks in a row ahead (the first piped to the
+    /// flywheel: the construct's fuel is one pool) and <paramref name="batteries"/> Batteries beyond them. Throws <see cref="VehicleKitException"/> with the build
+    /// rules' reason. The factory kit's power block calls this (FactoryKit/FactoryGenset.cs).
+    /// </summary>
+    public static Placed Place(BlueprintScript s, Vector3 feet, EngineRequest r, EnginePlan p, string head, int tanks, int batteries, string? paintEngine = null, string? paintPower = null, string? paintMachine = null)
+    {
+        var hd = ConstructParts.Find(head) ?? throw new VehicleKitException($"no part named {head}");
+        var (tankZ, battZ) = Rows(hd.BoundsMax.Z - hd.BoundsMin.Z);
+        var gen = s.Stand(head, feet, Ahead, null, "bottom");
+        if (paintMachine != null)
+            s.Paint(gen, paintMachine);
+        // The flywheel on its drive, turned so its +y is up (the banks' "up"); the engine back from it.
+        var flyName = $"{EngineKit.SizeWords[p.Size]} Flywheel";
+        var spin = -1;
+        for (var k = 0; k < 4 && spin < 0; k++)
+            if (s.TurnOf(gen, "drive", flyName, "+z", k) is { } turn && Vector3.Dot(Rot24.Apply(turn, Vector3.UnitY), Vector3.UnitY) > 0.99f)
+                spin = k;
+        if (spin < 0)
+            throw new VehicleKitException($"a {flyName} won't go on the {head}'s drive upright");
+        var from = s.Parts.Count;
+        var fly = s.Onto(gen, "drive", flyName, "+z", spin);
+        EngineKit.Assemble(s, r, p, fly);
+        if (paintEngine != null)
+            for (var k = from; k < s.Parts.Count; k++)
+                if (s.Parts[k].Def.Piece is EnginePiece.Crank or EnginePiece.Output)
+                    s.Paint(s.Parts[k], paintEngine);
+        // Fuel: a row of Large Fuel Tanks ahead, a metre apart (no two faces flush), the first piped to the flywheel's Fuel in; the batteries beyond them.
+        var tankParts = new VPart[tanks];
+        for (var k = 0; k < tanks; k++)
+        {
+            tankParts[k] = s.Stand("Large Fuel Tank", feet + new Vector3(-0.5f - tanks / 2 + k, 0, tankZ), Ahead, null, "-y");
+            if (paintPower != null)
+                s.Paint(tankParts[k], paintPower);
+        }
+        if (tanks > 0)
+            s.Link("pipe", tankParts[0], fly, laid: true);
+        var battParts = new VPart[batteries];
+        for (var k = 0; k < batteries; k++)
+            battParts[k] = s.Stand("Battery", feet + new Vector3(-0.5f - 0.5f * (batteries / 2) + 0.5f * k, 0, battZ), Ahead, null, "-y");
+        return new Placed(gen, fly, tankParts, battParts);
+    }
+
+    /// <summary>A set on its own skid: 2 m Foundations (top at 0.3 m) under it all, so it anchors where it is set down.</summary>
+    private static void Build(BlueprintScript s, EngineRequest r, EnginePlan p, EngineResult engine, string head, int tanks, int batteries, string? paintEngine, string? paintPower, string? paintMachine)
+    {
+        var feet = new Vector3(0.25f, 0.3f, 0.25f); // (on the Foundations' top socket grid)
+        var (x0, x1, z0, z1) = Footprint(engine, head, tanks, batteries);
+        (x0, x1, z0, z1) = (x0 + feet.X, x1 + feet.X, z0 + feet.Z, z1 + feet.Z);
         int i0 = (int)MathF.Floor((x0 + 1) / 2), i1 = (int)MathF.Ceiling((x1 - 1) / 2);
-        int j0 = (int)MathF.Floor((back + 1) / 2), j1 = (int)MathF.Ceiling((z1 - 1) / 2);
-        var root = s.Root("Foundation", new Vector3(0, 0.15f, 0), Ahead);
+        int j0 = (int)MathF.Floor((z0 + 1) / 2), j1 = (int)MathF.Ceiling((z1 - 1) / 2);
+        s.Root("Foundation", new Vector3(0, 0.15f, 0), Ahead);
         var down = new HashSet<(int, int)> { (0, 0) };
         for (var grew = true; grew;)
         {
@@ -130,36 +187,12 @@ public static class EngineKitGenset
                         grew = true;
                     }
         }
-        // The head on the skid; the flywheel on its drive, turned so its +y is up (the banks' "up"); the engine back from it.
-        var gen = s.Stand(head, new Vector3(0.25f, floor, headZ), Ahead, null, "bottom");
-        if (paintMachine != null)
-            s.Paint(gen, paintMachine);
-        var flyName = $"{EngineKit.SizeWords[p.Size]} Flywheel";
-        var spin = -1;
-        for (var k = 0; k < 4 && spin < 0; k++)
-            if (s.TurnOf(gen, "drive", flyName, "+z", k) is { } turn && Vector3.Dot(Rot24.Apply(turn, Vector3.UnitY), Vector3.UnitY) > 0.99f)
-                spin = k;
-        if (spin < 0)
-            throw new VehicleKitException($"a {flyName} won't go on the {head}'s drive upright");
-        var fly = s.Onto(gen, "drive", flyName, "+z", spin);
-        EngineKit.Assemble(s, r, p, fly);
-        if (paintEngine != null)
-            for (var k = 0; k < s.Parts.Count; k++)
-                if (s.Parts[k].Def.Piece is EnginePiece.Crank or EnginePiece.Output)
-                    s.Paint(s.Parts[k], paintEngine);
-        // Fuel: a row of Large Fuel Tanks ahead, a metre apart (no two faces flush) (one fuel pool: the first is piped to the flywheel's Fuel in), and the batteries beyond them.
-        VPart? first = null;
-        for (var k = 0; k < tanks; k++)
-        {
-            var t = s.Stand("Large Fuel Tank", new Vector3(Grid(-0.25f - tanks / 2) + k, floor, tankZ), Ahead, null, "-y");
-            if (paintPower != null)
-                s.Paint(t, paintPower);
-            first ??= t;
-        }
-        s.Link("pipe", first!, fly, laid: true);
-        for (var k = 0; k < batteries; k++)
-            s.Stand("Battery", new Vector3(Grid(-0.25f - 0.5f * (batteries / 2)) + 0.5f * k, floor, battZ), Ahead, null, "-y");
+        Place(s, feet, r, p, head, tanks, batteries, paintEngine, paintPower, paintMachine);
     }
+
+    /// <summary>How many Large Fuel Tanks and Batteries a set of <paramref name="engine"/> carries: <see cref="EnduranceMinutes"/> at full throttle, five seconds of full output.</summary>
+    public static (int Tanks, int Batteries) Stores(EngineResult engine) =>
+        (Math.Clamp((int)MathF.Ceiling(engine.BurnLps * EnduranceMinutes * 60 / 300f), 1, MaxTanks), Math.Clamp((int)MathF.Ceiling(engine.Kw * 5 / 300f), 1, MaxBatteries));
 
     /// <summary>The nearest place on the Foundations' 0.5 m socket grid (x.25 and x.75).</summary>
     private static float Grid(float v) => MathF.Round((v - 0.25f) * 2) / 2 + 0.25f;

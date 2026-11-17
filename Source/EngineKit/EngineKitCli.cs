@@ -23,6 +23,14 @@ public static class EngineKitCli
             return Read(readFile);
         if (args.Any(a => a.Equals("--genset-ship", StringComparison.OrdinalIgnoreCase)))
             return EngineKitGenset.Ship(args.Any(a => a.Equals("--check", StringComparison.OrdinalIgnoreCase))); // (the shipped engine generator sets: EngineKitGenset.cs)
+        if (Arg("--genset-for") is { } forKw)
+        {
+            var set = FactoryKit.FactoryGenset.For(double.Parse(forKw, CultureInfo.InvariantCulture), Arg("--tier") is { } ft ? int.Parse(ft, CultureInfo.InvariantCulture) : 1, 0, out var why);
+            var fp = set != null ? FactoryKit.FactoryGenset.Footprint(set) : default;
+            Console.WriteLine(set == null ? $"--genset-for: {why}" : string.Create(CultureInfo.InvariantCulture,
+                $"--genset-for {forKw} kW: {set.Engine.Name} {set.Engine.Kw:0} kW on a {set.Head}, {set.Kw:0} kW into the circuit, {set.Tanks} tank(s), {set.Batteries} battery(ies); ground x {fp.X0:0.##} to {fp.X1:0.##}, z {fp.Z0:0.##} to {fp.Z1:0.##} m from the head's feet{(set.Engine.Note.Length > 0 ? "; " + set.Engine.Note : "")}"));
+            return set == null ? 1 : 0;
+        }
         if (Arg("--genset-run") is { } runFile)
             return GensetRun.Cli(runFile, args); // (a set run headless against a load that rises and falls: GensetRun.cs)
         var power = F("--power");
