@@ -101,7 +101,7 @@ The boarding ladder climbs from the ground up the belly shaft into the airlock; 
 both landings are clear. `--check-building "Zero Day Frigate"` passes (327 m2 a standing person can reach and leave,
 from the ground up the boarding ladder and the two ladders between the decks). The legs leave 2.5 m under the keel so
 people can walk beneath it to the shaft. A ladder in the mess climbs through the spine into the Shuttle on its
-cradle ([shuttle.md](shuttle.md)).
+cradle ([shuttle.md](shuttle.md)), through a Docking Hatch on the cradle that opens with the Shuttle's own while the clamp holds it.
 
 ## Flames
 

@@ -13,6 +13,7 @@ public sealed class CDoorDef
     public float Travel; // metres
     public float Seconds; // how long it takes to open or shut
     public int Hang = -1; // the socket it hangs by (its other sockets take what rides on the leaf)
+    public bool Dock; // "dock": true: a docking hatch, opened and shut by the server as its body docks (ConstructDoors.StepDocks)
     public int Ticks => Math.Max(1, (int)MathF.Round(Seconds * World.TickRate));
 }
 
@@ -26,6 +27,8 @@ public sealed partial class ConstructWorld
 {
     /// <summary>Server: event doors that started moving (Flags bit 0: towards open) or settled (bit 1), for the clients (CBodyKind.Door).</summary>
     public readonly List<(ushort Body, ushort Part, byte Flags)> DoorEvents = new(64);
+
+    internal int DockDoorTicks; // (ConstructDoors.StepDocks's count to its next look: one a world)
 }
 
 /// <summary>
@@ -52,7 +55,7 @@ public static class ConstructDoors
         var where = $"{file}, door";
         if (d.Role != PartRole.Door)
             throw new ConstructPartException($"{file}: only a part with \"role\": \"door\" has a \"door\" block");
-        ConstructParts.Known(b, ["kind", "axis", "pivot", "angle", "travel", "seconds", "hang"], where);
+        ConstructParts.Known(b, ["kind", "axis", "pivot", "angle", "travel", "seconds", "hang", "dock"], where);
         var dd = new CDoorDef();
         var kind = ConstructParts.Str(ConstructParts.Need(b, "kind", where), file, "door.kind");
         dd.Slide = kind switch
@@ -83,6 +86,7 @@ public static class ConstructDoors
         dd.Hang = Array.FindIndex(d.Sockets, s => s.Name == hang);
         if (dd.Hang < 0)
             throw new ConstructPartException($"{file}: \"door.hang\" names one of its sockets");
+        dd.Dock = ConstructParts.Opt(b, "dock") is { } dk && dk.ValueKind == JsonValueKind.True;
         d.Door = dd;
         d.DataIn = ["Open", "Toggle", "Lock"]; // (In, In1, In2: high opens and low shuts; a rise toggles; high locks F out)
     }
@@ -194,12 +198,112 @@ public static class ConstructDoors
     {
         if (world.DoorEvents.Count > 4096)
             world.DoorEvents.Clear(); // (a world nobody flushes: a generator's, a test's)
+        if (++world.DockDoorTicks >= DockEvery)
+        {
+            world.DockDoorTicks = 0;
+            StepDocks(world);
+        }
         foreach (var c in world.Bodies)
         {
             if (!c.EnsureDoors() || (c.DoorMovingCount | c.DoorWiredCount) == 0)
                 continue;
             StepBody(world, c);
         }
+    }
+
+    // ---- Docking hatches ------------------------------------------------------------------------------------------
+
+    private const int DockEvery = 15; // ticks between looks (a quarter second: a hatch is no hurry)
+    private const float DockMate = 1.0f; // m: two docking hatches this close (shut, world) are mated
+
+    /// <summary>
+    /// Server, every <see cref="DockEvery"/> ticks: docking hatches (a <c>"door"</c> block with <c>"dock": true</c>, the Shuttle's
+    /// and the Zero Day's: Karl, 2026-11-17, "a docking hatch which opens when docked"). A craft held by a dock (a Docking Clamp
+    /// or a bay: <see cref="Construct.CarriedBy"/> with a <see cref="Construct.CarryTag"/>; a grapple's grip has none) whose
+    /// hatch lies within <see cref="DockMate"/> of one on the body holding it opens both; when the dock lets go both shut. Only
+    /// a change commands a door, so F still opens or shuts one by hand between. Costs a compare a body without one.
+    /// </summary>
+    private static void StepDocks(ConstructWorld world)
+    {
+        foreach (var c in world.Bodies)
+        {
+            if (!c.EnsureDoors() || c.DoorDockCount == 0)
+                continue;
+            for (var k = 0; k < c.DoorCount; k++)
+                c.Doors[k].MateNow = false;
+        }
+        foreach (var b in world.Bodies)
+        {
+            if (b.DoorDockCount == 0 || b.CarriedBy == 0 || b.CarryTag == 0 || world.Get(b.CarriedBy) is not { } c || c.DoorDockCount == 0)
+                continue;
+            if (b.Dirty || !c.EnsureDoors())
+            {
+                // (a body waiting for its rebuild can't be looked at: both keep what they had, or an edit or a hit would flap them shut)
+                KeepMates(b);
+                KeepMates(c);
+                continue;
+            }
+            for (var i = 0; i < b.DoorCount; i++)
+            {
+                ref var di = ref b.Doors[i];
+                if (!b.Parts[di.Part].D.Door!.Dock)
+                    continue;
+                var wi = b.ToWorld(ShutPos(b, di.Part));
+                for (var j = 0; j < c.DoorCount; j++)
+                {
+                    ref var dj = ref c.Doors[j];
+                    if (!c.Parts[dj.Part].D.Door!.Dock || Vector3.DistanceSquared(wi, c.ToWorld(ShutPos(c, dj.Part))) > DockMate * DockMate)
+                        continue;
+                    di.MateNow = dj.MateNow = true;
+                }
+            }
+        }
+        foreach (var c in world.Bodies)
+        {
+            if (c.DoorDockCount == 0 || c.Dirty)
+                continue;
+            for (var k = 0; k < c.DoorCount; k++)
+            {
+                ref var dr = ref c.Doors[k];
+                if (!c.Parts[dr.Part].D.Door!.Dock || c.Parts[dr.Part].Broken)
+                    continue;
+                if (!dr.DockSeen || dr.MateNow != dr.Mated)
+                {
+                    // (the first look opens a hatch already mated, as a ship built docked; one not mated is left as it settled;
+                    // a locked one is left as it is, so a craft caught by a clamp can't open a ship's locked hatch)
+                    if ((dr.DockSeen || dr.MateNow) && !Locked(c, dr.Part))
+                    {
+                        Command(world, c, k, dr.MateNow);
+                        dr.ShutDue = !dr.MateNow;
+                    }
+                    dr.DockSeen = true;
+                    dr.Mated = dr.MateNow;
+                }
+                else if (dr.ShutDue && !IsMoving(c, dr.Part))
+                {
+                    // (shut on undocking, it opened again for a player in the way: shut it once they are out; done once it has shut)
+                    if (SettledOpen(c, dr.Part) && !Locked(c, dr.Part))
+                        Command(world, c, k, false);
+                    else
+                        dr.ShutDue = false;
+                }
+            }
+        }
+    }
+
+    /// <summary>A body that can't be looked at this time: its docking hatches keep the mate they had.</summary>
+    private static void KeepMates(Construct c)
+    {
+        for (var k = 0; k < c.DoorCount; k++)
+            c.Doors[k].MateNow |= c.Doors[k].Mated;
+    }
+
+    /// <summary>Where door part <paramref name="part"/> is when shut, in the body frame (a slid-open hatch's place less its travel).</summary>
+    private static Vector3 ShutPos(Construct c, int part)
+    {
+        ref var p = ref c.Parts[part];
+        var dd = p.D.Door!;
+        return dd.Slide && SettledOpen(c, part) ? p.Pos - Rot24.Apply(p.Rot, ConstructParts.DirVector(dd.Axis)) * dd.Travel : p.Pos;
     }
 
     private static void StepBody(ConstructWorld world, Construct c)

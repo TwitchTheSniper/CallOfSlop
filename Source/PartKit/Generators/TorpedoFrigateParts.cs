@@ -1001,7 +1001,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         Detail(p, ShuttleShaft.X0 - 0.1, y1 - 0.012, ShuttleShaft.Z0 - 0.1, ShuttleShaft.X1 + 0.1, y1, ShuttleShaft.Z0, Hazard, "hazard paint");
         Detail(p, ShuttleShaft.X0 - 0.1, y1 - 0.012, ShuttleShaft.Z1, ShuttleShaft.X1 + 0.1, y1, ShuttleShaft.Z1 + 0.1, Hazard, "hazard paint");
         Detail(p, ShuttleShaft.X0 + 0.2, y1 - 0.02, ShuttleShaft.Z0 - 0.22, ShuttleShaft.X1 - 0.2, y1 - 0.012, ShuttleShaft.Z0 - 0.12, Red, glow: true);
-        Sock(p, "director", Cx + 2.9, Ft1, 41.3, "+y"); // (the Fire Director in the starboard aft corner, under the mast's radar: a wire reaches 8 m)
+        Sock(p, "director", Cx + Uw - 0.3, Ft1, 41.3, "+y"); // (the Fire Director in the starboard aft corner, under the mast's radar: a wire reaches 8 m; against the wall, clear of the aft ladder's landing)
         DoorSock(p, "doorCabinB", false, 25.9, Cx - 1.0, Ft1);
         DoorSock(p, "doorHead", false, 31.9, Cx - 1.0, Ft1);
         DoorSock(p, "doorMed", false, 25.9, Cx + 1.0, Ft1);
@@ -1207,6 +1207,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         // The Long Range Sensor (the radar, wired to the Fire Director in the mess below) on the cradle deck aft of the shuttle, between its
         // drive and the mast: a wire reaches 8 m.
         p.Sock("sensor", P(Cx + 0.75, CradleY, CradleZ1 - 0.35), "+y");
+        p.Sock("dockHatch", P(Cx, CradleY, ShuttleZ - DockHatchHang), "+y"); // (the Docking Hatch's shoe on the deck ahead of the shaft, the lid over it; it slides aft, between the shuttle's keel and the cradle)
         foreach (var (s, z, n) in new[] { (-1, 17.6, "flaresFL"), (1, 17.6, "flaresFR"), (-1, 21.4, "flaresBL"), (1, 21.4, "flaresBR") })
             Sock(p, n, Cx + s * 1.75, Top(z) - 0.02, z, "+y");
         return p.Stats(8000, 24000, 45, 15.0);
@@ -2247,6 +2248,7 @@ public sealed partial class TorpedoFrigateParts : IPartGenerator
         var clamp = Hang(bp, "Docking Clamp Medium", spine, "shuttleClamp", "-y");
         bp.Steps[clamp]["config"] = ShuttleClampConfig();
         Hang(bp, "Zero Day Shuttle Ladder", ua, "shuttleLadder", "bottom");
+        bp.HangTurned("Docking Hatch", Holder(bp, spine, "dockHatch"), "dockHatch", "base", BuildingParts.R0); // (opens with the shuttle's own while the clamp holds it)
         // The railgun along the spine, fired by the pilot; its slug box on the breech.
         var rail = Hang(bp, "Zero Day Railgun", spine, "railgun", "back");
         Hang(bp, "Ammo Box", rail, "ammo", "bottom");

@@ -217,6 +217,7 @@ public enum CfgKey : byte
     AiCrew, // Flight Stabilizer: an AI crew flies and fights the craft from its seats (ShipAiMode; ConstructShipAi.cs)
     SubJobs, // Building Station: Auto, it takes other stations' sub-blueprint uses as sub-jobs; Off, it keeps to its player's builds (ConstructStationTree.cs)
     ShellWear0, ShellWear1, ShellWear2, ShellWear3, // Robot Shell: its works' wear, two bytes a setting (not on the panel; ShellWear.cs)
+    ShellDamage, // Robot Shell: health it has lost (shells don't heal: a repair with the attach tool or a crew engineer puts it back; not on the panel)
     COUNT,
 }
 
@@ -852,7 +853,7 @@ public static class ConstructConfig
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,
                 CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.Wall or CfgKey.CutLength => d.IsExtruder && !d.IsPanelFormer || ProductionLines.IsConsole(d), // (a console's: its next bill line)
                 CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => d.IsExtruder && !d.IsPanelFormer,
-                >= CfgKey.ShellWear0 and <= CfgKey.ShellWear3 => d.ShellBody,
+                (>= CfgKey.ShellWear0 and <= CfgKey.ShellWear3) or CfgKey.ShellDamage => d.ShellBody,
                 CfgKey.RunMode => d.IsWheelFormer && !d.IsPanelFormer,
                 CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,
                 CfgKey.Charge => d.IsReceiverGun,
