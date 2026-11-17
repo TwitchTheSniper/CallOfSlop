@@ -389,3 +389,5 @@ These override the text above where they differ.
 10. **Data lives in a new top-level `Crew/` folder:** `Crew/Factions/*.json`, `Crew/Jobs.json`, moddable like the rest.
 
 The "To agree with Karl" list stands: raise it with him before phase 1 changes his crew.
+
+**Karl agreed (2026-11-16, via the user)** to the "To agree with Karl" list: seated crew replace his bodiless crew, NPC ships get breakdowns once engineers exist, `--ship-ai-check` becomes `--crew-check`, scuttling as the design proposes, and his crew fittings become stations.
