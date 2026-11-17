@@ -82,6 +82,12 @@ Karl (2026-11-17): "mild, but over time they wear down and need maintenance". Da
 reason, and then shells don't wear); rules `Source/Constructs/ShellWear.cs`; the game's side `Source/Game/GameShellWear.cs`; the
 looks `Source/UI/UiShellWear.cs`, `Source/Render/LegAnimator.cs` (`ShellLegs`); the sounds `Source/Audio/SynthShell.cs`.
 
+**Damage doesn't heal (Karl, 2026-11-17).** A worn shell never regenerates health (`Game.RegenTick` skips `InShell`). When it stands
+again, the health it lost is kept in its hidden `shellDamage` setting and the next wearer wakes with it (`ShellWear.HealthOf`/`PutHealth`).
+The attach tool's Fire on a damaged standing shell repairs it to full first (`ShellFix.Repair`, the service's material and cost), and a
+crew engineer's service patches the damage too. Hits show oil, not blood: the body marks in `BodyBloodRender.OilColor`, a spray of
+drops from the debris pool (`Game.ShellOilFx`) and the screen overlay in `BloodOverlayRenderer.OilColors`.
+
 - **Eight works.** Two leg actuators, two arm actuators, the power cell, the processor, the optics and the plating, each a byte
   of wear (0 new, 255 failed). Worn ones wear only in Survival, while someone wears the shell: legs by how much they walk, arms
   with a tool out (a little without), the rest all the time. The file gives each family's hours from new to failed (5 to 12).

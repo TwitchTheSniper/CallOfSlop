@@ -144,6 +144,7 @@ public sealed partial class Game
         run.Channel = ConstructShell.ChannelOf(sp);
         run.Owner = shell.Owner;
         ShellWear.Read(sp, sp.D, ref p.ShellWear); // (its works' wear goes with them: GameShellWear.cs)
+        var shellHp = ShellWear.HealthOf(sp, sp.D); // (as damaged as it was left: shells don't heal, Health.cs)
         run.Acc = default;
         run.Sent = p.ShellWear;
         var pack = SandboxHands.Packs[p.Id];
@@ -165,7 +166,7 @@ public sealed partial class Game
         p.Teleport(feet);
         p.Yaw = MathF.Atan2(fwd.X, -fwd.Z);
         p.Pitch = 0;
-        p.Health = World.MaxHealth;
+        p.Health = shellHp;
         p.InShell = true;
         (p.ShellChair, p.ShellSeat) = (chair.Id, (ushort)seat); // (their body is drawn sitting there: ShellBodyOf)
         ShellBroadcast(p);
@@ -199,6 +200,7 @@ public sealed partial class Game
         {
             ConstructConfig.Put(ref stood.Parts[0], run.ShellDef, CfgKey.Channel, run.Channel);
             ShellWear.Write(ref stood.Parts[0], run.ShellDef, p.ShellWear); // (it stands as worn as they left it)
+            ShellWear.PutHealth(ref stood.Parts[0], run.ShellDef, p.Health); // (and as damaged)
             stood.Owner = run.Owner;
             stood.Frozen = dock == null; // (it stands as it was left until someone moves it; one for a dock is clamped on first)
             stood.Rebuild();
@@ -315,6 +317,32 @@ public sealed partial class Game
         else
             ShellReturn(p, lost: false, "You clamp the shell on the dock and wake in the chair.", c, part);
         return true;
+    }
+
+    /// <summary>The colours of a shell's oil: what it sprays when hit and the marks on it (BodyBloodRender.OilColor).</summary>
+    private static readonly Vector3 OilA = new(0.035f, 0.03f, 0.022f), OilB = new(0.09f, 0.07f, 0.035f);
+
+    /// <summary>
+    /// Both sides, a tracer that ends on a player wearing a robot shell (Karl, 2026-11-17): a few drops of dark oil spray off
+    /// where it hit, in place of blood. Cosmetic, from the debris pool (nothing allocates). <paramref name="hitFlags"/> as
+    /// <see cref="TracerSounds"/>: 0 or a miss flag says it hit nobody.
+    /// </summary>
+    private void ShellOilFx(Vector3 from, Vector3 to, int hitFlags)
+    {
+        if (hitFlags == 0 || hitFlags > 0 && (hitFlags & 1) == 0)
+            return;
+        foreach (var p in Players.Values)
+        {
+            if (!p.Alive || !p.InShell)
+                continue;
+            var box = World.Hitbox(p.RenderPosition, p.RenderStance, p.RenderYaw);
+            var grown = new Box(box.Center, box.Half + new Vector3(0.25f));
+            if (to.X < grown.Min.X || to.Y < grown.Min.Y || to.Z < grown.Min.Z || to.X > grown.Max.X || to.Y > grown.Max.Y || to.Z > grown.Max.Z)
+                continue;
+            PropDebris.SpawnBox(new Box(to, new Vector3(0.04f)), from, PropDamage.Bullet, (int)(to.X * 131 + to.Z * 977) ^ (int)(PropDebris.Spawned & 0xFFFF),
+                7, 0.01f, 0.028f, 2.4f, OilA, OilB);
+            return;
+        }
     }
 
     /// <summary>Server: a player leaves the game: back in their body first, so their record is the body's and the shell stands.</summary>
@@ -528,7 +556,7 @@ public sealed partial class Game
         if (!me.InShell)
             return;
         if (_sbShell.Stale(me.Health))
-            _sbShell.Text = $"ROBOT SHELL  {me.Health}%  -  your body waits in the chair (Esc menu: leave the shell)";
+            _sbShell.Text = $"ROBOT SHELL  {me.Health * 100 / World.MaxHealth}%  -  no self-repair, your body waits in the chair (Esc menu: leave the shell)";
         lines.Add(new HudLine(_sbShell.Text, orange));
         ShellWearHud(me, lines, orange, dim); // (its worn works: GameShellWear.cs)
     }
