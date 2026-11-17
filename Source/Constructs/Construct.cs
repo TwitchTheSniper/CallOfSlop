@@ -209,6 +209,7 @@ public struct CWheel
     public float SideSign; // which side of the centre of mass (skid steering: +1 right, -1 left)
     public float Share; // this tick: its share of the engine's torque (the differentials)
     public float LastGrip; // last tick: the most friction impulse its tyre had (an open differential drives its wheels no harder than the one that grips least)
+    public float RestShare; // kg of the body's weight it carries standing still on level ground (ConstructPhysics.RestShares: drive grip from 1 g)
     public float Slew; // how fast its contact follows the ground (m/s; 0: at once)
     public float MotorTorque, MotorPower, MotorTop; // a hub motor in its mount (ConstructThrust.cs): N m and W this contact gets, m/s it fades out at; 0: none
     public Vector3 ArmOut, ArmAxis; // an arm's way out from its hinge (level) and the axis a rising hub turns about (body frame)
@@ -414,6 +415,10 @@ public sealed partial class Construct
     public float SpringLanding;
     public CSpring[] Springs = [];
     public int SpringCount;
+    // What CWheel.RestShare was worked out for (ConstructPhysics.RestShares): worked out again when one changes.
+    public float RestShareMass = -1;
+    public Vector3 RestShareCom;
+    public int RestShareWheels;
 
     // Power (milestone 3; ConstructPower.cs): a construct with a battery is electrical (its logic parts, motors, lamps and
     // horns run on the charge, and its engine needs the starter); one without runs as milestone 2 did.
