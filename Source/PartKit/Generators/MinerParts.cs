@@ -959,8 +959,8 @@ public sealed class MinerParts : IPartGenerator
         Sock(p, "table", Cx - 1.6, Ft1, 23.6, "+y");
         Sock(p, "growL", Cx - 1.9, Ft1 + 0.125, ZAft, "-z");
         for (var i = 0; i < 3; i++) // (the Shell Control Chairs down the mess's starboard wall, aft of the ladder: Karl, 2026-11-17)
-            Sock(p, $"linkChair{i}", Cx + Uw - 0.5, Ft1, 23.15 + i * 0.85, "+y");
-        Sock(p, "growR", Cx + 1.7, Ft1 + 0.125, ZAft, "-z");
+            Sock(p, $"linkChair{i}", Cx + Uw - 0.5, Ft1, 23.8 + i * 0.8, "+y"); // (the first clear of the aft ladder's landing)
+        Sock(p, "growR", Cx + 1.05, Ft1 + 0.125, ZAft, "-z"); // (to port of the last Shell Control Chair)
         DoorSock(p, "doorHead", false, 16.6, Cx - 1.0, Ft1);
         DoorSock(p, "doorMed", false, 16.6, Cx + 1.0, Ft1);
         DoorSock(p, "doorMess", true, Cx - 0.75, 19.125, Ft1);
