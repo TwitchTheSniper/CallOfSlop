@@ -1,0 +1,144 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Roof Sheet 4x10 m",
+  "description": "A corrugated roof sheet a bay wide: lay it from one Portal Rafter to the next.",
+  "group": "Building",
+  "section": "Factory shell",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 360.0,
+  "health": 2400,
+  "armour": 3,
+  "material": "steel",
+  "color": "#6f7a6a",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        0.0,
+        0.003,
+        -0.25
+      ],
+      "max": [
+        4.0,
+        0.043,
+        9.75
+      ]
+    },
+    {
+      "min": [
+        0.2,
+        0.043,
+        -0.247
+      ],
+      "max": [
+        0.3,
+        0.068,
+        9.747
+      ],
+      "detail": true
+    },
+    {
+      "min": [
+        0.7,
+        0.043,
+        -0.247
+      ],
+      "max": [
+        0.8,
+        0.068,
+        9.747
+      ],
+      "detail": true
+    },
+    {
+      "min": [
+        1.2,
+        0.043,
+        -0.247
+      ],
+      "max": [
+        1.3,
+        0.068,
+        9.747
+      ],
+      "detail": true
+    },
+    {
+      "min": [
+        1.7,
+        0.043,
+        -0.247
+      ],
+      "max": [
+        1.8,
+        0.068,
+        9.747
+      ],
+      "detail": true
+    },
+    {
+      "min": [
+        2.2,
+        0.043,
+        -0.247
+      ],
+      "max": [
+        2.3,
+        0.068,
+        9.747
+      ],
+      "detail": true
+    },
+    {
+      "min": [
+        2.7,
+        0.043,
+        -0.247
+      ],
+      "max": [
+        2.8,
+        0.068,
+        9.747
+      ],
+      "detail": true
+    },
+    {
+      "min": [
+        3.2,
+        0.043,
+        -0.247
+      ],
+      "max": [
+        3.3,
+        0.068,
+        9.747
+      ],
+      "detail": true
+    },
+    {
+      "min": [
+        3.7,
+        0.043,
+        -0.247
+      ],
+      "max": [
+        3.8,
+        0.068,
+        9.747
+      ],
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "rest",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}
