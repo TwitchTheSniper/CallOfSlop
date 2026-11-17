@@ -35,7 +35,7 @@ public sealed partial class Game
     {
         var here = c.WorldCom;
         var up = ConstructPhysics.HoldUp(here);
-        if (o.Kind == NavKind.Come && o.Phase != NavPhase.Landing && Players.GetValueOrDefault(o.By) is { Alive: true } p)
+        if (o.Kind == NavKind.Come && o.Phase != NavPhase.Landing && Players.GetValueOrDefault(o.By) is { Alive: true } p && p.Sim.RideBody != c.Id)
             o.Point = NavBeside(c, p.Position, here); // (a player who walks off is followed; once it is coming down, or they have come aboard, the spot stays)
         var spot = o.Point.ToVector3();
         if (!o.Engaged)
@@ -88,24 +88,40 @@ public sealed partial class Game
         return edge > 0 && ConstructPhysics.HoldHeight(p.Position) > edge - (was ? 150f : 0f);
     }
 
-    /// <summary>Is a player aboard this ship: riding it, or within its hull (on a spacewalk the ride may not hold them)?</summary>
-    private static bool NavAboard(Player p, Construct c) =>
-        p.Sim.RideBody == c.Id || Vector3.DistanceSquared(p.Position, c.WorldCom) < c.Radius * c.Radius * 0.6f;
+    /// <summary>Why this ship can't set down on a spot (null: it can).</summary>
+    private string? NavCantLand(Construct c)
+    {
+        ref var sp = ref c.Parts[c.Stabs[0].Part];
+        return ConstructFlight.KeysOf(c, sp, sp.D) is FlightPattern.Plane or FlightPattern.Rocket ? "It can't set down on a spot: a plane or a rocket needs somewhere to land on its own"
+            : c.SpaceShip != 0 && SpaceEdge <= 0 ? "There is no way down from here"
+            : c.SpaceShip != 0 && LandOverLimit(c, out _) ? "It is too heavy to land on this world"
+            : null;
+    }
 
-    /// <summary>Host: does a Come order hold beside its player in space now (else it lands beside them)? A change resets the autopilot's mode.</summary>
-    private bool NavComeSpace(NavOrder o, Construct c)
+    /// <summary>
+    /// Host, each tick before a Come order flies: does it hold beside its player in space (<see cref="NavOrder.ComeSpace"/>)
+    /// or land beside them? A change resets the autopilot's mode. Returns why the order ends, or null: its player is gone
+    /// or came aboard while it held beside them in space, or it can't land where they have gone down to.
+    /// </summary>
+    private string? NavComeMode(NavOrder o, Construct c)
     {
         if (o.Phase == NavPhase.Landing)
-            return false; // (coming down: it finishes)
-        if (Players.GetValueOrDefault(o.By) is { Alive: true } p && NavPlayerInSpace(p, o.ComeSpace) is var space && space != o.ComeSpace)
-        {
-            o.ComeSpace = space;
-            c.NavLand = 0;
-            if (c.SpaceShip == 0)
-                o.Engaged = false; // (in a sky: a climb out, or a waypoint to land at, set again next)
-            Console.WriteLine($"[nav] construct {c.Id}'s player is {(space ? "out in space: it holds beside them" : "back in the sky: it lands beside them")}");
-        }
-        return o.ComeSpace;
+            return null; // (coming down: it finishes on the spot it has)
+        if (Players.GetValueOrDefault(o.By) is not { Alive: true } p)
+            return o.ComeSpace ? "its player is gone" : null; // (on the ground it lands on the last spot it had)
+        if (o.ComeSpace && p.Sim.RideBody == c.Id)
+            return "its player is aboard"; // (it would hold off its own deck)
+        var space = NavPlayerInSpace(p, o.ComeSpace);
+        if (space == o.ComeSpace)
+            return null;
+        if (!space && NavCantLand(c) is { } cant)
+            return cant;
+        o.ComeSpace = space;
+        c.NavLand = 0;
+        if (c.SpaceShip == 0)
+            o.Engaged = false; // (in a sky: a climb out, or a waypoint to land at, set again next)
+        Console.WriteLine($"[nav] construct {c.Id}'s player is {(space ? "out in space: it holds beside them" : "back in the sky: it lands beside them")}");
+        return null;
     }
 
     /// <summary>
@@ -121,11 +137,14 @@ public sealed partial class Game
         var pp = pose.ToEcliptic(at);
         var r = pos - pp;
         var v = vel - pose.VelocityToEcliptic(at, Vec3d.From(moving));
-        var to = (r.Length > 1 ? r.Normalized() : Vec3d.UnitX) * (c.Radius + NavComeBeside + NavComeStandoff); // (on the side it comes from)
-        var gap = to - r;
-        var way = gap.Length > 0.5 ? gap.Normalized() : Vec3d.Zero;
         sys.StateOf(o.Body, t, out var bp, out _);
         var centre = bp - pp;
+        var hold = c.Radius + NavComeBeside + NavComeStandoff;
+        var to = (r.Length > 1 ? r.Normalized() : Vec3d.UnitX) * hold; // (on the side it comes from)
+        if ((to - centre).Length < SpaceEdge - SpaceEdgeHysteresis + 50 && centre.Length > 1)
+            to = -centre.Normalized() * hold; // (a player just under the edge: over them, or it would be back in the sky)
+        var gap = to - r;
+        var way = gap.Length > 0.5 ? gap.Normalized() : Vec3d.Zero;
         way = NavGuidance.Avoid(r, to, way, centre, Math.Min(NavMinOrbit(sys, o.Body) - NavEdgeMargin * 0.5, 0.92 * (to - centre).Length));
         var gravity = NavGuidance.Gravity(sys, pos, t) - NavGuidance.Gravity(sys, pp, t);
         var a = NavGuidance.GoTo(r, v, to, way, 0, gravity, Math.Min(aMax, NavComeAccel), out o.Distance, out o.SpeedError);

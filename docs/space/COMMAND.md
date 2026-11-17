@@ -145,7 +145,9 @@ landing limit.
   in one and flies the `GoTo` law in the player's own frame: to its radius plus `NavComeBeside` plus `NavComeStandoff`
   (40 m) from them, on the side it comes from, planned on no more than `NavComeAccel` (5 m/s2) since it turns to brake
   and an overshoot would run them down; only the difference in gravity between it and them is cancelled. It holds there
-  (phase Hold) as they drift. A player who comes aboard ends it ("You are aboard it" when the order is given).
+  (phase Hold) as they drift; a player just under the edge has it hold over them, so it stays out of the sky. A player
+  who rides it, dies or leaves ends it ("You are aboard it" when the order is given). A player who goes back down has it
+  land beside them, if it can land there (the plane, rocket and weight checks are made again then, `NavCantLand`).
 - **Down:** it has sat still while asked down for a second within 4 m of the ground: the order ends, its autopilot off and its stabilizer at rest (`ConstructFlight.NavSetDown`), as a pilot leaves
   a ship that landed. Still for ten seconds higher up (a repulsor field or its gas holding it, or something the ray
   doesn't see) the order gives up and leaves it hovering, since let go in the air it would fall. Cancelling a landing

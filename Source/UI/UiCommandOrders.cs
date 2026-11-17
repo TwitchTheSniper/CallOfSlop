@@ -184,7 +184,7 @@ public sealed partial class Ui
 
     /// <summary>Can this ship be told to come to the local player: they are on foot on the bubble's world, and it can land?</summary>
     private static bool CmdCanCome(Game g, Construct c) =>
-        g.Local is { Alive: true } me && !g.SandboxHands.Hand(me.Id).Seated && me.Sim.RideBody != c.Id && Vector3.DistanceSquared(me.Position, c.WorldCom) >= c.Radius * c.Radius * 0.6f && c.SpaceAway == 0 && (CmdCanLand(c) || CmdOutInSpace(g, me));
+        g.Local is { Alive: true } me && !g.SandboxHands.Hand(me.Id).Seated && me.Sim.RideBody != c.Id && c.SpaceAway == 0 && (CmdCanLand(c) || CmdOutInSpace(g, me));
 
     /// <summary>Is a player out in space (over the sky's edge)? A ship told to come to them holds beside them there (Game/GameNavLand.cs).</summary>
     private static bool CmdOutInSpace(Game g, Player p) => g.SpaceEdge > 0 && ConstructPhysics.HoldHeight(p.Position) > g.SpaceEdge;
